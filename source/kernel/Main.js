@@ -16,7 +16,7 @@ function makeCircleGrid(itemCount) {
 	var cy = getRand(r,  canvasHeight - r);
 	//console.log([r, cx, cy]);
 	
-	var aShape  = Morph.create(Rectangle.create(cx - r, cy - r, 2*r, 2*r), "ellipse");
+	var aShape  = Morph.create(Morph, Rectangle.create(cx - r, cy - r, 2*r, 2*r), "ellipse");
 	aShape.setColor(randColor(true));
 	aShape.shape.setBorderColor(randColor(true));
 	aShape.shape.setFillOpacity(getRand(0, 1));
@@ -24,7 +24,7 @@ function makeCircleGrid(itemCount) {
 	aShape.fullRadius = r + aShape.shape.getBorderWidth();
 	
 	morphic.world.addMorph(aShape);
-	aShape.vector = ptPolar(15, getRand(0, Math.PI *2));
+	aShape.vector = Point.polar(15, getRand(0, Math.PI *2));
 	aShape.startSteppingFunction(30,function(msTime) {
 		// var pt = this.getTranslation();
 		this.translateBy(this.vector);
@@ -91,17 +91,17 @@ function main() {
 	world.setColor(Color.lightGray);
 	
 	if (window.location.query()["world"] == "true") {    
-	    var m = Morph.create(Rectangle.create(40, 20, 50, 50), "rectangle");
+	    var m = Morph.create(Morph, Rectangle.create(40, 20, 50, 50), "rectangle");
 	    world.addMorph(m);
 	    var rr = Rectangle.create(100, 50, 200, 150);
 	    console.log('rectangle is ' + rr.asString());
-	    m = Morph.create(rr, "ellipse");
+	    m = Morph.create(Morph, rr, "ellipse");
 	    m.setColor(Color.red);
 	    
 	    world.addMorph(m);
 	    //m.addClipRect(Rectangle.create(0,0, 10, 10), "bar");
 	    console.log('rectangle ' + Rectangle.create(200, 50, 100, 50) + ' Rectangle ' + Rectangle + "," + Rectangle.prototype);
-	    m = Morph.create(Rectangle.create(200, 50, 100, 50), "rectangle");
+	    m = Morph.create(Morph, Rectangle.create(200, 50, 100, 50), "rectangle");
 	    
 	    m.setShape(new Shape("polyline",null,[pt(0,0),pt(70,0),pt(40,30),pt(0,0)],
 				 Color.blue,1,Color.black));
@@ -133,11 +133,11 @@ function main() {
 		var nVerts = 10;
 		for(var i=0; i<=nVerts; i++) {
 		    var a = startAngle + (2*Math.PI/nVerts*i);
-		    var p = ptPolar(r,a);
+		    var p = Point.polar(r,a);
 		    if(i%2 == 0) p = p.scaleBy(0.39);
 		    vertices.push(p.addPt(center)); }
 		return vertices; }
-	    m = Morph.create(pt(0,0).asRectangle(),"rectangle");
+	    m = Morph.create(Morph, pt(0,0).asRectangle(),"rectangle");
 	    m.setShape(new Shape("polyline",null,makeStarVertices(50,pt(0,0),0),Color.yellow,1,Color.black));
 	    m.setPosition(pt(100,300));
 	    world.addMorph(m);
@@ -153,6 +153,10 @@ function main() {
 	    world.addMorph(clockWidget);
 	    clockWidget.startStepping(1000);
 	}
+
+	var clipWidget = ClipMorph.create(Rectangle.create(10, 200, 150, 150));
+	world.addMorph(clipWidget);
+
 	/*
 	if (true) var handle = window.setInterval(function() {
 	
