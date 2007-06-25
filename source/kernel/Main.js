@@ -91,7 +91,7 @@ function main() {
 	world.setColor(Color.lightGray);
 	
 	if (window.location.query()["world"] == "true") {    
-	    var m = Morph.create(Morph, Rectangle.create(40, 20, 50, 50), "rectangle");
+	    var m = Morph.create(Morph, Rectangle.create(40, 20, 50, 50), "rect");
 	    world.addMorph(m);
 	    var rr = Rectangle.create(100, 50, 200, 150);
 	    console.log('rectangle is ' + rr.asString());
@@ -101,7 +101,7 @@ function main() {
 	    world.addMorph(m);
 	    //m.addClipRect(Rectangle.create(0,0, 10, 10), "bar");
 	    console.log('rectangle ' + Rectangle.create(200, 50, 100, 50) + ' Rectangle ' + Rectangle + "," + Rectangle.prototype);
-	    m = Morph.create(Morph, Rectangle.create(200, 50, 100, 50), "rectangle");
+	    m = Morph.create(Morph, Rectangle.create(200, 50, 100, 50), "rect");
 	    
 	    m.setShape(new Shape("polyline",null,[pt(0,0),pt(70,0),pt(40,30),pt(0,0)],
 				 Color.blue,1,Color.black));
@@ -137,7 +137,7 @@ function main() {
 		    if(i%2 == 0) p = p.scaleBy(0.39);
 		    vertices.push(p.addPt(center)); }
 		return vertices; }
-	    m = Morph.create(Morph, pt(0,0).asRectangle(),"rectangle");
+	    m = Morph.create(Morph, pt(0,0).asRectangle(),"rect");
 	    m.setShape(new Shape("polyline",null,makeStarVertices(50,pt(0,0),0),Color.yellow,1,Color.black));
 	    m.setPosition(pt(100,300));
 	    world.addMorph(m);
