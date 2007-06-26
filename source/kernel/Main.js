@@ -139,7 +139,7 @@ function main() {
 	    m.setShape(PolygonShape.create(makeStarVertices(50,pt(0,0),0),Color.yellow,1,Color.black));
 	    m.setPosition(pt(100,300));
 	    world.addMorph(m);
-	    var spinningStar = true;
+	    var spinningStar = false;
 	    if(spinningStar) {  // Make the star spin as a test of stepping
 		m.startSteppingFunction(60,function(msTime) {
 			this.setRotation(this.getRotation() + 0.02); }) }
