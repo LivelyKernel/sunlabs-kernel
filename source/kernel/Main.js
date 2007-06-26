@@ -94,7 +94,6 @@ function main() {
 	    var m = Morph.create(Morph, Rectangle.create(40, 20, 50, 50), "rect");
 	    world.addMorph(m);
 	    var rr = Rectangle.create(100, 50, 200, 150);
-	    console.log('rectangle is ' + rr.asString());
 	    m = Morph.create(Morph, rr, "ellipse");
 	    m.setColor(Color.red);
 	    
@@ -103,8 +102,7 @@ function main() {
 	    console.log('rectangle ' + Rectangle.create(200, 50, 100, 50) + ' Rectangle ' + Rectangle + "," + Rectangle.prototype);
 	    m = Morph.create(Morph, Rectangle.create(200, 50, 100, 50), "rect");
 	    
-	    m.setShape(new Shape("polyline",null,[pt(0,0),pt(70,0),pt(40,30),pt(0,0)],
-				 Color.blue,1,Color.black));
+	    m.setShape(PolygonShape.create([pt(0,0),pt(70,0),pt(40,30),pt(0,0)], Color.blue,1,Color.black));
 	    
 	    world.addMorph(m);
 	    if (true) {
@@ -138,7 +136,7 @@ function main() {
 		    vertices.push(p.addPt(center)); }
 		return vertices; }
 	    m = Morph.create(Morph, pt(0,0).asRectangle(),"rect");
-	    m.setShape(new Shape("polyline",null,makeStarVertices(50,pt(0,0),0),Color.yellow,1,Color.black));
+	    m.setShape(PolygonShape.create(makeStarVertices(50,pt(0,0),0),Color.yellow,1,Color.black));
 	    m.setPosition(pt(100,300));
 	    world.addMorph(m);
 	    var spinningStar = true;
