@@ -6,8 +6,8 @@ console.log('created world');
 
 // some support for the circles demo
 function makeCircleGrid(itemCount) {
-    var canvasWidth = morphic.canvas.getWidth();
-    var canvasHeight = morphic.canvas.getHeight();
+    var canvasWidth = morphic.canvas.bounds().width;
+    var canvasHeight = morphic.canvas.bounds().height;
     
     var minR = 10, maxR = canvasWidth / 3;
     for (var j = 0; j < itemCount; ++j) {
@@ -172,7 +172,7 @@ morphic.makeWorld = function() { // set up a world with morphs to copy
     var showPenScript = true;
     if(showPenScript) {  // Make a script pane to try stuff out
 	widget = TextMorph.create(TextMorph, pt(50,30).extent(pt(250,50)), Pen.script);
-	widget.align(widget.bounds().bottomRight(),w.bounds().bottomRight().subPt(pt(50,50))); 
+	widget.align(widget.bounds().bottomRight(), w.bounds().topRight().addPt(pt(-50,100))); 
 	w.addMorph(widget);
 	zzScript = widget; 
     }
