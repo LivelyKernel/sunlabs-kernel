@@ -131,54 +131,6 @@ Array.prototype.copyWithoutAll = function(otherArray) {
     return this.filter(function(x) { return otherArray.indexOf(x) < 0 });
 };
 
-morphic.makeWorld = function() { // set up a world with morphs to copy
-	// var zzHand, zzRect, zzEll, zzLine, zzPoly, zzText, zzScript;  //comment to make these global for debugging access
-    var w = morphic.world;
-    w.addHand(HandMorph.create(true));
-    w.setColor(Color.gray);
-    var colors = Color.wheel(4);
-    var loc = pt(30,450); 
-    var widgetExtent = pt(70, 30);
-    var dy = pt(0,50); 
-    var dx = pt(120,0);
-    widget = Morph.create(Morph, loc.extent(widgetExtent), "rect");			// rectangle
-    widget.setColor(colors[0]);
-    w.addMorph(widget);
-    zzRect = widget;
-    widget = Morph.create(Morph, loc.addPt(dx).extent(widgetExtent), "ellipse");	// ellipse
-    widget.setColor(colors[1]);
-    w.addMorph(widget);
-    zzEll = widget;
-    loc = loc.addPt(dy);
-    widget = Morph.makeLine([loc.addXY(0,15),loc.addXY(70,15)], 2, Color.black);
-    w.addMorph(widget);
-    zzLine = widget;
-    var l2 = loc.addPt(dx);
-    widget = Morph.create(Morph, l2.asRectangle(),"rect");					// polygon
-    widget.setShape(PolygonShape.create([pt(0,0),pt(70,0),pt(40,30),pt(0,0)],
-					 colors[2],1,Color.black));
-    w.addMorph(widget);
-    zzPoly = widget;
-    loc = loc.addPt(dy);
-    var showBigText = true;
-    if(showBigText) {
-	widget = TextMorph.create(TextMorph, loc.extent(pt(100,50)),"Big Text");		// big text
-	widget.setFontSize(20);
-	w.addMorph(widget);
-	zzText = widget;
-	widget = TextMorph.create(TextMorph, loc.addPt(dx).extent(pt(140,50)),"Unbordered");	// unbordered text
-	widget.setFontSize(20);  widget.setBorderWidth(0);  widget.setColor(null);
-	w.addMorph(widget); }
-    var showPenScript = true;
-    if(showPenScript) {  // Make a script pane to try stuff out
-	widget = TextMorph.create(TextMorph, pt(50,30).extent(pt(250,50)), Pen.script);
-	widget.align(widget.bounds().bottomRight(), w.bounds().topRight().addPt(pt(-50,100))); 
-	w.addMorph(widget);
-	zzScript = widget; 
-    }
-    return w; 
-};
-
 morphic.buildWorld = function(otherWorld, server) {
     var widget; 
     // zzHand = world.worldState.hands[0];
@@ -288,9 +240,11 @@ morphic.buildWorld = function(otherWorld, server) {
     }
 
     var colorPicker = false;
-    if(colorPicker) morphic.world.addMorph(new ColorPickerMorph(canvas.bounds.bottomCenter().subPt(pt(0,50)).extent(pt(50,30)),
-							world,"setColor",false)) ;	
-    // if(innerWorld) world.addMorph(new LinkMorph(otherWorld));
+    if(colorPicker) morphic.world.addMorph(ColorPickerMorph.create(canvas.bounds().bottomCenter().subPt(pt(0,50)).extent(pt(50,30)),
+								   morphic.world,"setColor",false)) ;	
+    var innerWorld = false;
+    if (innerWorld) 
+	morphic.world.addMorph(LinkMorph.create(null));
     
     var slideWorld = false;
     if(slideWorld) { // Make a slide for "turning web programming upside down"
@@ -323,7 +277,7 @@ function main() {
 	    console.log('failed to load rss due to: ' + e);
 	}
     }
-    morphic.makeWorld();
+    WorldMorph.makeWorld();
     console.log('made world');
     morphic.buildWorld();
     return;
