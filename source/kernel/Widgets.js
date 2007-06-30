@@ -1,7 +1,7 @@
 function CheapListMorph() {};
 CheapListMorph.inheritsFromPrototype(TextMorph.prototype, 'CheapListMorph');
 
-CheapListMorph.create = function(initialBounds,itemList) {
+CheapListMorph.create = function(initialBounds, itemList) {
 //	itemList is an array of strings
 //	Note:  A proper ListMorph is a list of independent submorphs
 //	CheapListMorphs simply leverage off Textmorph's ability to display
@@ -11,23 +11,25 @@ CheapListMorph.create = function(initialBounds,itemList) {
 	m.wrap = false;
 	m.itemList = itemList;
 	// this default pin may get overwritten by, eg, connect()...
-	m.selectionPin = new Pin(this, new Model(this), "mySelection");
-	m.listPin = new Pin(this, this.selectionPin.model, "myList");
+	m.selectionPin = new Pin(m, new Model(m), "mySelection");
+	m.listPin = new Pin(m, m.selectionPin.model, "myList");
 	m.layoutChanged();
 	m.setBorderColor(Color.blue); 
 	return m;
 };
-CheapListMorph.prototype.takesKeyboardFocus = function() { return false; 
+CheapListMorph.prototype.takesKeyboardFocus = function() { 
+    return false;
 };
 CheapListMorph.prototype.mouseDown = function(evt) {
-	evt.hand.setMouseFocus(this);
-	this.selectLineAt(this.charOfPoint(this.localize(evt.mousePoint))); 
+    evt.hand.setMouseFocus(this);
+    this.selectLineAt(this.charOfPoint(this.localize(evt.mousePoint))); 
 };
 CheapListMorph.prototype.mouseMoved = function(evt) {  
-	if(!evt.mouseButtonPressed) return;
-	var mp = this.localize(evt.mousePoint);
-	if (!this.shape.bounds.containsPoint(mp)) this.selectLineAt(-1);
-	else this.selectLineAt(this.charOfPoint(mp)); 
+    if (!evt.mouseButtonPressed) return;
+    var mp = this.localize(evt.mousePoint);
+    if (!this.shape.bounds().containsPoint(mp)) 
+	this.selectLineAt(-1);
+    else this.selectLineAt(this.charOfPoint(mp)); 
 };
 CheapListMorph.prototype.mouseUp = function(evt) {
 	evt.hand.setMouseFocus(null);
@@ -203,40 +205,44 @@ function SliderMorph() {};
 SliderMorph.inheritsFromPrototype(Morph.prototype, 'SliderMorph');
 
 SliderMorph.create = function(initialBounds) {
-	var m = Morph.create(SliderMorph, initialBounds, "rect");
-	m.setColor(Color.blue.lighter());
-	m.valuePin = new Pin(m, new Model(m), "myValue",0.0); // may get overwritten by, eg, connect()
-	m.extentPin = new Pin(m, m.valuePin.model, "myExtent", 0.0);
-	m.slider = Morph.create(Morph, Rectangle.create(0,0,8,8), "rect");
-	m.slider.relayMouseEvents(m, {mouseDown: "sliderPressed", mouseMoved: "sliderMoved", mouseUp: "sliderReleased"})
-	m.addMorph(m.slider);
-	m.adjustForNewBounds(m.valuePin.read(0.0)); 
-	return m;
-}
+    var m = Morph.create(SliderMorph, initialBounds, "rect");
+    m.setColor(Color.blue.lighter());
+    m.valuePin = new Pin(m, new Model(m), "myValue",0.0); // may get overwritten by, eg, connect()
+    m.extentPin = new Pin(m, m.valuePin.model, "myExtent", 0.0);
+    m.slider = Morph.create(Morph, Rectangle.create(0,0,8,8), "rect");
+    m.slider.relayMouseEvents(m, {mousedown: "sliderPressed", mousemove: "sliderMoved", mouseup: "sliderReleased"})
+    m.addMorph(m.slider);
+    m.adjustForNewBounds(m.valuePin.read(0.0)); 
+    return m;
+};
 
 SliderMorph.prototype.vertical = function() {
     var bnds = this.shape.bounds();
     return bnds.height > bnds.width; 
 };
+
 SliderMorph.prototype.adjustForNewBounds = function() {
 	// This method adjusts the slider for changes in value as well as geometry
 	var val = this.valuePin.read(0.0);
 	var bnds = this.shape.bounds();
 	var ext = this.extentPin.read(0.0);
-	if(this.vertical()) { // more vertical...
+	if (this.vertical()) { // more vertical...
 		var elevPix = Math.max(ext*bnds.height,6); // thickness of elevator in pixels
 		var topLeft = pt(0,(bnds.height-elevPix)*val);
-		var sliderExt = pt(bnds.width,elevPix); }
-	else { // more horizontal...
+		var sliderExt = pt(bnds.width,elevPix); 
+	} else { // more horizontal...
 		var elevPix = Math.max(ext*bnds.width,6); // thickness of elevator in pixels
 		var topLeft = pt((bnds.width-elevPix)*val,0);
-		var sliderExt = pt(elevPix,bnds.height); }
-	this.slider.setBounds(bnds.topLeft().addPt(topLeft).extent(sliderExt)); }
+		var sliderExt = pt(elevPix,bnds.height); 
+	}
+	this.slider.setBounds(bnds.topLeft().addPt(topLeft).extent(sliderExt)); 
+};
 SliderMorph.prototype.sliderPressed = function(evt,slider) {
 	//	Note: want setMouseFocus to also cache the transform and record the hitPoint.
 	//	Ideally thereafter only have to say, eg, morph moveTo: evt.hand.adjustedMousePoint
 	this.hitPoint = this.localize(evt.mousePoint).subPt(this.slider.bounds().topLeft());
-	evt.hand.setMouseFocus(slider); }
+	evt.hand.setMouseFocus(slider); 
+};
 SliderMorph.prototype.sliderMoved = function(evt,slider) {
 	if(!evt.mouseButtonPressed) return;
 	// Compute a new value from a new mouse point, and emit it
@@ -266,10 +272,10 @@ SliderMorph.prototype.updateView = function(aspect,controller) {
 	if(aspect == this.valuePin.varName || aspect == this.extentPin.varName) this.adjustForNewBounds(); }
 	
 function ScrollPane() {};
-ScrollPane.inheritsFromPrototype(Morph.prototype, 'SliderMorph');
+ScrollPane.inheritsFromPrototype(Morph.prototype, 'ScrollPane');
 
-ScrollPane.create = function(morphToClip,initialBounds) {
-    var m = Morph.create(Morph, initialBounds, "rect");
+ScrollPane.create = function(morphToClip, initialBounds) {
+    var m = Morph.create(ScrollPane, initialBounds, "rect");
     var bnds = m.shape.bounds();
     var clipR = bnds.withWidth(bnds.width-12).insetBy(1);
     m.clipToShape();
@@ -310,11 +316,17 @@ ScrollPane.prototype.scrollToTop = function() {
 	this.scrollBar.adjustForNewBounds(); }
 
 function ListPane(initialBounds) {
-    return ScrollPane.create(CheapListMorph.create(initialBounds,["-----"]), initialBounds); 
+    var pane = ScrollPane.create(CheapListMorph.create(initialBounds,["-----"]), initialBounds); 
+    this.setAttributeNS(morphic.ns.MORPHIC, "type", "ListPane");
+    return pane;
+
 };
 
 function TextPane(initialBounds) {
-    return ScrollPane.create(TextMorph.create(TextMorph, initialBounds,"-----"), initialBounds); 
+    var pane = ScrollPane.create(TextMorph.create(TextMorph, initialBounds,"-----"), initialBounds); 
+    this.setAttributeNS(morphic.ns.MORPHIC, "type", "TextPane");
+    return pane;
+    
 };
 
 function FunctionPane() {};

@@ -245,6 +245,96 @@ morphic.buildWorld = function(otherWorld, server) {
     var innerWorld = false;
     if (innerWorld) 
 	morphic.world.addMorph(LinkMorph.create(null));
+
+    
+    var showWidgets = true;
+    if (showWidgets) { 
+	var panel = Morph.create(Morph, Rectangle.create(580,260,300,200), "rect");
+	panel.setColor(Color.blue.lighter().lighter());
+	panel.setBorderWidth(2);
+	panel.setBorderColor(Color.red);
+	panel.model = new Model();
+	var m; 
+	// Two simple buttons, one toggles...
+	panel.addMorph(m = ButtonMorph.create(Rectangle.create(20,20,50,20)));
+	m.connect({model: panel.model, value: "buttonValue"});
+	panel.addMorph(m = ButtonMorph.create(Rectangle.create(20,50,50,20)));
+	m.connect({model: panel.model, value: "buttonValue"});
+	m.toggles = true;
+	// Two buttons sharing same value...
+	panel.addMorph(m = ButtonMorph.create(Rectangle.create(80,20,50,20)));
+	m.connect({model: panel.model, value: "buttonValue2"});
+	panel.addMorph(m = ButtonMorph.create(Rectangle.create(80,50,50,20)));
+	m.connect({model: panel.model, value: "buttonValue2"});
+	// Two lists sharing same selection...
+	panel.addMorph(m = CheapListMorph.create(Rectangle.create(20,80,50,20),["one","two","three"]));
+	m.connect({model: panel.model, selection: "selectedItem"});
+	panel.addMorph(m = CheapListMorph.create(Rectangle.create(80,80,50,20),["one","two","three"]));
+	m.connect({model: panel.model, selection: "selectedItem"});
+	// Three text views sharing same text...
+	panel.addMorph(m = TextMorph.create(TextMorph, Rectangle.create(140,20,140,20),"Hello World"));
+	m.connect({model: panel.model, text: "sharedText", selection: "textSelection"});
+	panel.addMorph(m = TextMorph.create(TextMorph, Rectangle.create(140,50,140,20),"Hello World"));
+	m.connect({model: panel.model, text: "sharedText", selection: "textSelection"});
+	panel.addMorph(m = TextMorph.create(TextMorph, Rectangle.create(140,80,140,20),"Hello World"));
+	m.connect({model: panel.model, text: "sharedText", selection: "textSelection"});
+	m.autoAccept = true;
+	panel.addMorph(m = TextMorph.create(TextMorph, Rectangle.create(140,110,140,20),"selection"));
+	m.connect({model: panel.model, text: "textSelection"});
+	panel.addMorph(m = PrintMorph.create(Rectangle.create(20,140,100,20),"3+4"));
+	m.connect({model: panel.model, value: "printValue"});
+	panel.addMorph(m = PrintMorph.create(Rectangle.create(20,170,100,20),"3+4"));
+	m.connect({model: panel.model, value: "printValue"});
+	panel.addMorph(m = PrintMorph.create(Rectangle.create(140,140,80,20),"0.5"));
+	m.connect({model: panel.model, value: "sliderValue"});
+	panel.addMorph(m = PrintMorph.create(Rectangle.create(230,140,50,20),"0.1"));
+	m.connect({model: panel.model, value: "sliderExtent"});
+	panel.addMorph(m = SliderMorph.create(Rectangle.create(140,170,100,20)));
+	m.connect({model: panel.model, value: "sliderValue", extent: "-sliderExtent"});
+	// Add a PrintMorph in the world to view the model state
+	morphic.world.addMorph(m = PrintMorph.create(Rectangle.create(500,120,300,200),"model"));
+	m.connect({model: panel.model, value: "this"});
+	morphic.world.addMorph(panel); 
+    }
+    var showBrowser = false;
+    if(showBrowser) { // Good-old three-pane browser...
+	var panel = Morph.create(Morph, Rectangle.create(20,20,400,320),"rect");
+	panel.setColor(Color.blue.lighter().lighter());
+	panel.setBorderWidth(2);
+	 	panel.model = new Model();
+	 	var m; 
+		panel.addMorph(m = new TextMorph(new Rectangle(120,0,200,150),"JavaScript Code Browser"));
+			m.wrap = false; m.layoutChanged();;
+		panel.addMorph(m = new ListPane(new Rectangle(0,20,200,150)));
+			m.connect({model: panel.model, list: "classList", selection: "className"});
+		panel.addMorph(m = new ListPane(new Rectangle(200,20,200,150)));
+			m.connect({model: panel.model, list: "methodList", selection: "methodName"});
+		panel.addMorph(m = new TextPane(new Rectangle(0,170,400,150)));
+			m.connect({model: panel.model, text: "methodString", selection: "methodSelection"});
+//	Note function components need to get split from function views
+//	for now we use a dangling morph as a component.  Later we'll put a component in the model
+//	and a view in the model inspector
+		m = new FunctionPane(new Rectangle(0,300,400,22),"function() { return Global.classNames() }");
+			m.connect({model: panel.model, result: "classList"});
+		m = new FunctionPane(new Rectangle(0,322,400,36),"function(className) { return methodNameList(className) }");
+			m.connect({model: panel.model, className: "className", result: "methodList"});
+		m = new FunctionPane(new Rectangle(0,358,400,50),"function(className,methodName) { return methodString(className,methodName); }");
+			m.connect({model: panel.model, className: "className", methodName: "methodName", result: "methodString"});
+	 	world.addMorph(panel);
+	 	panel.model.changed("initialize");
+		// Add a PrintMorph in the world to view the model state
+		// world.addMorph(m = new PrintMorph(new Rectangle(500,20,300,200),"model"));
+		//	m.connect({model: panel.model, value: "this"});
+		zzPanel = panel; }
+
+
+
+
+
+
+
+
+
     
     var slideWorld = false;
     if(slideWorld) { // Make a slide for "turning web programming upside down"
