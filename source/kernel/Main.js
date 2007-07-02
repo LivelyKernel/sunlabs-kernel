@@ -18,9 +18,9 @@ function makeCircleGrid(itemCount) {
 	
 	var aShape  = Morph.create(Morph, Rectangle.create(cx - r, cy - r, 2*r, 2*r), "ellipse");
 	aShape.setColor(randColor(true));
-	aShape.shape.setBorderColor(randColor(true));
-	aShape.shape.setFillOpacity(getRand(0, 1));
-	aShape.shape.setBorderWidth(getRand(0, 3));
+	aShape.setBorderColor(randColor(true));
+	aShape.setFillOpacity(getRand(0, 1));
+	aShape.setBorderWidth(getRand(0, 3));
 	aShape.fullRadius = r + aShape.shape.getBorderWidth();
 	
 	morphic.world.addMorph(aShape);
