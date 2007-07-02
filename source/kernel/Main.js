@@ -6,8 +6,8 @@ console.log('created world');
 
 // some support for the circles demo
 function makeCircleGrid(itemCount) {
-    var canvasWidth = morphic.canvas.bounds().width;
-    var canvasHeight = morphic.canvas.bounds().height;
+    var canvasWidth = this.canvas().bounds().width;
+    var canvasHeight = this.canvas().bounds().height;
     
     var minR = 10, maxR = canvasWidth / 3;
     for (var j = 0; j < itemCount; ++j) {
@@ -132,6 +132,8 @@ Array.prototype.copyWithoutAll = function(otherArray) {
 };
 
 morphic.buildWorld = function(otherWorld, server) {
+    morphic.world.addHand(HandMorph.create(true));
+    
     var widget; 
     // zzHand = world.worldState.hands[0];
     var showBitmap = false;
@@ -244,7 +246,7 @@ morphic.buildWorld = function(otherWorld, server) {
 								   morphic.world,"setColor",false)) ;	
     var innerWorld = false;
     if (innerWorld) 
-	morphic.world.addMorph(LinkMorph.create(null));
+	morphic.world.addMorph(LinkMorph.create(morphic.world, null));
 
     
     var showWidgets = true;
