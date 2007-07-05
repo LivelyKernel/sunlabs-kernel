@@ -73,59 +73,28 @@ function randColor(alpha)
 
 var Global = this;
 
-Object.prototype.functionNames = function() {
-    var functionNames = [];
-    for (var name in this) { 
-	try {
-	    if (this[name] instanceof Function) 
-		functionNames.push(name); 
-	} catch (er) {
-	    // FF can throw an exception here ...
-	}
-    }
-    return functionNames;//.sort(); 
-};
-
-Object.prototype.listClassNames = function() {
+Object.prototype.listClassNames = function(exclude) {
     var a = [];
+    var objectFunctionCount = Object.functionNames().length;
     for (var name in this) {
 	if (!this[name] || !this[name].prototype)
 	    continue;
-	if (name.indexOf("SVG") == 0) 
+	if (exclude && name.indexOf(exclude) == 0) 
 	    continue; // skip the SVGs
 	try {
 	    if ((this[name] instanceof Function) 
-		&& (this[name].prototype.functionNames().length > Object.prototype.functionNames().length)) {
+		&& (this[name].functionNames().length > objectFunctionCount)) {
 		a.push(name); 
 	    }
 	} catch (er) {
 	    // FF can throw an exception here
 	}
-
     }
     a.push("Object", "Global"); // a few others of note
     // console.log('found array ' + a.sort());
-    return a;//.sort(); 
+    return a.sort(); 
 };
 
-Object.prototype.localFunctionNames = function() {
-    var sup;
-    if (this.constructor == null || this.constructor.superConstructor == null) {
-	sup = (this === Object.prototype) ? null : Object.prototype; 
-    } else; // FIXME  
-    //sup = this.constructor.superConstructor.prototype;
-    var superNames = (sup == null) ? [] : sup.functionNames();
-    var localNames = [];
-    for (var name in this) {
-	if (this[name] instanceof Function) {
-	    if (name.indexOf("SVG") == 0) 
-		continue;
-	    if (!(superNames.indexOf(name) >= 0) || this[name] !== sup[name]) 
-		localNames.push(name);
-	} 
-    }
-    return localNames;//.sort(); 
-};
 
 Array.prototype.copyWithoutAll = function(otherArray) {
     return this.filter(function(x) { return otherArray.indexOf(x) < 0 });
@@ -153,17 +122,18 @@ morphic.buildWorld = function(otherWorld, server) {
     }
     var showBrowseMenu = true;
     if (showBrowseMenu) {  // Make a stay-up menu
-	var classNames = Global.listClassNames();
+	var classNames = Global.listClassNames("SVG");
 	// console.log('found classes ' + classNames);
 	// Function to o methodPane
 	var showMethodPane = function(item, sourceMenu) {
 	    var theClass = item[3];
 	    var className = item[4];
 	    var methodName = item[0];
-	    var code = (className == "Global") ? Global[methodName].toString()
+	    var code = (className == "Global") ? Global.constructor[methodName].toString()
 	    : theClass.prototype[methodName].toString();
-	    if(className != "Global" && methodName != "constructor") {
-		code = className + ".prototype." + methodName + " = " + code; }
+	    if (className != "Global" && methodName != "constructor") {
+		code = className + ".prototype." + methodName + " = " + code; 
+	    }
 	    var codePane = TextMorph.create(TextMorph, sourceMenu.position().extent(pt(350,50)),code);
 	    sourceMenu.parentMenu.spawnee = codePane; // so it can be removed
 	    morphic.world.addMorph(codePane); 
@@ -171,26 +141,38 @@ morphic.buildWorld = function(otherWorld, server) {
 	// Function to show the method names
 	var showMethodNameMenu = function(item,sourceMenu) {
 	    
-
+	    // SVGTextElement.prototype.profiler("start");
+	    
 	    if (sourceMenu.spawnee != null) sourceMenu.spawnee.remove();
 	    var name = item[0];
 	    var theClass = Global[name];
-	    var fns = (name == "Global") ? Global.functionNames().copyWithoutAll(classNames)
-	    : theClass.prototype.localFunctionNames();
+	    var fns = (name == "Global") ? Global.constructor.functionNames().copyWithoutAll(classNames)
+	    : theClass.localFunctionNames();
 
-	    var fnList = fns.map(function(each) { return [each, this, showMethodPane, theClass, name]});
+	    var fnList = fns.map(function(each) { return [each, this, showMethodPane, theClass, name]}, this);
 
 	    var menu = CheapMenuMorph.create(sourceMenu.bounds().topRight().addXY(0,1), fnList);
 	    sourceMenu.spawnee = menu; // so it can be removed
 	    menu.parentMenu = sourceMenu;
-	    //console.log('started at ' + new Date());
 	    morphic.world.addMorph(menu); 
-	    //console.log('finished at ' + new Date());
+	    
+	    //var stats = SVGTextElement.prototype.profiler("ticks");
+	    //	    SVGTextElement.prototype.profiler("stop");
+	    /*
+	    for (var field in stats) {
+		if (stats[field] instanceof Function) 
+		    continue;
+		if (stats[field] == 0)
+		    continue;
+		console.info('stat: ' + field + " = " + stats[field]);
+	    }
+	    */
 	}
-	var items = classNames.map(function(each) { return [each, this, showMethodNameMenu]});
+	var items =  classNames.map(function(each) { return [each, this, showMethodNameMenu]}, this);
 	widget = CheapMenuMorph.create(pt(30,20), items);
 	widget.stayUp = true; // keep on screen
 	morphic.world.addMorph(widget); 
+	
     }
     
     var showStar = true;

@@ -367,7 +367,7 @@ FunctionPane.prototype.argNames = function() { // pin names parallel to func arg
     return names; 
 };
 FunctionPane.prototype.computeResult = function() {
-    var args = this.argPins().map(function(pin) {return pin.read()});
+    var args = this.argPins().map(function(each) {return each.read()});
     for (var i = 0; i < args.length; i++) {
 	if (args[i] == null) 
 	    return; // Only fire if all args have value
