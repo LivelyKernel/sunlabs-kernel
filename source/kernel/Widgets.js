@@ -1,13 +1,11 @@
-function CheapListMorph() {};
-CheapListMorph.inheritsFromPrototype(TextMorph.prototype, 'CheapListMorph');
-
-CheapListMorph.create = function(initialBounds, itemList) {
+CheapListMorph = HostClass.extend(TextMorph);
+CheapListMorph.instantiate = function(initialBounds, itemList) {
 //	itemList is an array of strings
 //	Note:  A proper ListMorph is a list of independent submorphs
 //	CheapListMorphs simply leverage off Textmorph's ability to display
 // 	multiline paragraphs, though some effort is made to use a similar interface.
 	var listText = (itemList == null) ? "" : itemList.join("\n");
-	var m = TextMorph.create(TextMorph, initialBounds, listText);
+	var m = TextMorph(CheapListMorph, initialBounds, listText);
 	m.wrap = false;
 	m.itemList = itemList;
 	// this default pin may get overwritten by, eg, connect()...
@@ -47,31 +45,32 @@ CheapListMorph.prototype.selectLineAt = function(charIx) {
 };
 CheapListMorph.prototype.lineRect = function(r) { //Menu selection displays full width
     var bounds = this.shape.bounds();
-    return CheapListMorph.superClass.lineRect.call(this,Rectangle.create(bounds.x, r.y, bounds.width, r.height)); 
+    return CheapListMorph.superClass.lineRect.call(this, Rectangle.create(bounds.x, r.y, bounds.width, r.height)); 
 };
 CheapListMorph.prototype.updateList = function(newList) {
-	this.itemList = newList;
-	var listText = (this.itemList == null) ? "" : this.itemList.join("\n");
-	this.updateTextString(listText); 
+    this.itemList = newList;
+    var listText = (this.itemList == null) ? "" : this.itemList.join("\n");
+    this.updateTextString(listText); 
 };
 CheapListMorph.prototype.setSelectionToMatch = function(item) {
-	var lineStart = -1; var firstChar = 0;
-	for (var i = 0; i<this.itemList.length; i++) {
-		if (this.itemList[i] == item) {
-		    lineStart = firstChar; break; 
-		}
-		firstChar += this.itemList[i].length + 1; 
+    var lineStart = -1; 
+    var firstChar = 0;
+    for (var i = 0; i < this.itemList.length; i++) {
+	if (this.itemList[i] == item) {
+	    lineStart = firstChar; 
+	    break; 
 	}
-	this.selectLineAt(lineStart); 
+	firstChar += this.itemList[i].length + 1; 
+    }
+    this.selectLineAt(lineStart); 
 };
-CheapListMorph.prototype.updateView = function(aspect,controller) {
+
+CheapListMorph.prototype.updateView = function(aspect, controller) {
     if (aspect == this.listPin.varName) 
 	this.updateList(this.listPin.read());
-    
     if (aspect == this.selectionPin.varName) 
 	this.setSelectionToMatch(this.selectionPin.read()); 
 };
-
 
 
 
@@ -103,51 +102,84 @@ CheapListMorph.prototype.updateView = function(aspect,controller) {
 //		sets the name, also triggers update of aspect
 
 function Model(dep) { // An MVC-style model.
-	//Broadcasts an update message to all dependents when a value changes.
-	this.dependents = (dep != null) ? [dep] : []; }
-Model.prototype.addDependent = function (dep) { this.dependents.push(dep); };
+    //Broadcasts an update message to all dependents when a value changes.
+    this.dependents = (dep != null) ? [dep] : []; 
+};
+Model.prototype.addDependent = function (dep) { 
+    this.dependents.push(dep); 
+};
 Model.prototype.removeDependent = function (dep) {
-	var ix = indexOfItemInArray(dep,this.dependents);
-	if(ix < 0) return;
-	this.dependents.splice(ix,1); };
+    var ix = this.dependents.indexOf(dep);
+    if(ix < 0) return;
+    this.dependents.splice(ix, 1); 
+};
 Model.prototype.set = function (varName,newValue,source) {
 	this[varName] = newValue;
-	this.changed(varName,source); };
+	this.changed(varName, source); 
+};
 Model.prototype.changed = function(varName,source) {
 	// If source is given, we don't update the source of the change
 	// If varName is not given, then null will be the aspect of the updateView()
-	for(var i=0; i<this.dependents.length; i++) {
-		if(source != this.dependents[i]) this.dependents[i].updateView(varName,source); } }
+    for (var i = 0; i < this.dependents.length; i++) {
+	if (source != this.dependents[i]) 
+	    this.dependents[i].updateView(varName, source); 
+    } 
+};
 Model.prototype.toString = function() {
-	var str = "";
-	for (var name in this) {
-		if (!(this[name] instanceof Function) && (name!="dependents")) str += name + ": " + this[name] + "\n" }
-	return str; }
-		
-
+    var str = "";
+    for (var name in this) {
+	if (!(this[name] instanceof Function) && (name != "dependents")) 
+	    str += name + ": " + this[name] + "\n";
+    }
+    return str; 
+}
+ 
 function Pin(component, model, varName, initialValue) { // A Fabrik-style variable interface
 	this.component = component; // the component that will be the source for writes
 	this.model = model;  // the model toand from which reads and writes will pass
 	this.varName = varName;  // the variable in the model to which this pin is wired
 	this.reads = true;
 	this.writes = true; // R/W by default
-	if(this.varName[0] == "+") {this.varName = this.varName.substring(1); this.reads = false; };
-	if(this.varName[0] == "-") {this.varName = this.varName.substring(1); this.writes = false; };
-	if(initialValue != null) this.write(initialValue); }
+	if (this.varName[0] == "+") {
+	    this.varName = this.varName.substring(1); 
+	    this.reads = false; 
+	}
+	if (this.varName[0] == "-") {
+	    this.varName = this.varName.substring(1); 
+	    this.writes = false; 
+	}
+	if (initialValue != null) // KP: what if it's undefined?
+	    this.write(initialValue); 
+};
+
+Pin.prototype.toString = function() {
+    return "Pin(" + this.varName + ")";
+};
+
 Pin.prototype.read = function (nullValue) {
 	var val = (this.reads) ? this.model[this.varName] : null;
-	if(this.varName == "this") val = this.model; // temp hack for model viewer
-	return (val == null) ? nullValue : val; }
-Pin.prototype.write = function (newValue) { if(this.writes) this.model.set(this.varName,newValue,this.component); };
+	if (this.varName == "this") 
+	    val = this.model; // temp hack for model viewer
+	return (val == null) ? nullValue : val; 
+}
+Pin.prototype.write = function (newValue) { 
+    if (this.writes) 
+	this.model.set(this.varName, newValue, this.component); 
+}
 
 function MessagePort(component,model,readName,writeName) { // A more flexible message interface
 	// Note that widgets can be used with either Fabrik-style variable wiring, or O-O style messages
 	this.component = component; // the component that will be the source for writes
 	this.model = model;  // the model toand from which reads and writes will pass
 	this.readName = readName;
-	this.writeName = writeName; }
-MessagePort.prototype.read = function () { return (this.readName != null) ? this.model[this.readName].call(this.model) : null; };
-MessagePort.prototype.write = function (newValue) { if(this.writeName != null) this.model[this.writeName].call(this.model, newValue); };
+	this.writeName = writeName; 
+	this.read = function () { 
+	    return (this.readName != null) ? this.model[this.readName].call(this.model) : null; 
+	};
+	this.write = function (newValue) { 
+	    if (this.writeName != null) this.model[this.writeName].call(this.model, newValue); 
+	};
+};
 
 
 // Morph model category
@@ -157,7 +189,7 @@ Morph.prototype.connect = function(plugSpec) {
     for (var prop in plugSpec)  {
 	if (prop != "model" && plugSpec.hasOwnProperty(prop)) {
 	    var portSpec = plugSpec[prop];
-	    if(portSpec instanceof Array) {
+	    if (portSpec  instanceof Array) {
 		console.log("port " + portSpec); 
 		this[prop + "Pin"] = new MessagePort(this, model, portSpec[0], portSpec[1]); 
 	    } else {
@@ -174,19 +206,19 @@ Morph.prototype.connect = function(plugSpec) {
 Morph.prototype.updateView = function(aspect,controller) { }
     
 
-function ButtonMorph() {};
+function ButtonMorph(initialBounds) {
+    // A ButtonMorph is the simplest widget
+    // It read and writes the boolean variable, this.model[this.propertyName]
+    
+    var m = Morph(ButtonMorph, initialBounds, "rect");
+    m.toggles = false; // if true each push toggles the model state
+    m.setColor(m.baseColor = Color.green);
+    // this default pin may get overwritten by, eg, connect()...
+    m.valuePin = new Pin(m, new Model(m), "myValue"); 
+    return m;
+};
 ButtonMorph.inheritsFromPrototype(Morph.prototype, 'ButtonMorph');
 
-ButtonMorph.create = function(initialBounds) {
-	// A ButtonMorph is the simplest widget
-	// It read and writes the boolean variable, this.model[this.propertyName]
-	var m = Morph.create(ButtonMorph, initialBounds, "rect");
-	m.toggles = false; // if true each push toggles the model state
-	m.setColor(m.baseColor = Color.green);
-	// this default pin may get overwritten by, eg, connect()...
-	m.valuePin = new Pin(m, new Model(m), "myValue"); 
-	return m;
-}
 
 ButtonMorph.prototype.handlesMouseDown = function(evt) { return true }
 ButtonMorph.prototype.mouseDown = function(evt) {
@@ -196,20 +228,20 @@ ButtonMorph.prototype.mouseUp = function(evt) {
 	var newValue = this.toggles ? !this.valuePin.read() : false;
 	this.valuePin.write(newValue); this.showColorFor(newValue); }
 ButtonMorph.prototype.showColorFor = function(value) {
-	this.setColor(value ? this.baseColor.lighter() : this.baseColor); }
+	this.setColor(value ? this.baseColor.lighter() : this.baseColor); 
+}
 ButtonMorph.prototype.updateView = function(aspect,controller) {
-	if(aspect != this.valuePin.varName) return;
-	this.showColorFor(this.valuePin.read()); }
+    if (aspect != this.valuePin.varName) return;
+    this.showColorFor(this.valuePin.read()); 
+};
 
-function SliderMorph() {};
-SliderMorph.inheritsFromPrototype(Morph.prototype, 'SliderMorph');
-
-SliderMorph.create = function(initialBounds) {
-    var m = Morph.create(SliderMorph, initialBounds, "rect");
+SliderMorph = HostClass.extend(Morph);
+SliderMorph.instantiate = function(initialBounds) {
+    var m = Morph(SliderMorph, initialBounds, "rect");
     m.setColor(Color.blue.lighter());
     m.valuePin = new Pin(m, new Model(m), "myValue",0.0); // may get overwritten by, eg, connect()
     m.extentPin = new Pin(m, m.valuePin.model, "myExtent", 0.0);
-    m.slider = Morph.create(Morph, Rectangle.create(0,0,8,8), "rect");
+    m.slider = Morph(Morph, Rectangle.create(0,0,8,8), "rect");
     m.slider.relayMouseEvents(m, {mousedown: "sliderPressed", mousemove: "sliderMoved", mouseup: "sliderReleased"})
     m.addMorph(m.slider);
     m.adjustForNewBounds(m.valuePin.read(0.0)); 
@@ -269,29 +301,31 @@ SliderMorph.prototype.mouseDown = function(evt) {
 	this.adjustForNewBounds(); }
 SliderMorph.prototype.clipValue = function(val) { return Math.min(1.0,Math.max(0,0,val)); }
 SliderMorph.prototype.updateView = function(aspect,controller) {
-	if(aspect == this.valuePin.varName || aspect == this.extentPin.varName) this.adjustForNewBounds(); }
+    if (aspect == this.valuePin.varName || aspect == this.extentPin.varName) 
+	this.adjustForNewBounds(); 
+};
 	
-function ScrollPane() {};
-ScrollPane.inheritsFromPrototype(Morph.prototype, 'ScrollPane');
-
-ScrollPane.create = function(morphToClip, initialBounds) {
-    var m = Morph.create(ScrollPane, initialBounds, "rect");
+ScrollPane = HostClass.extend(Morph);
+ScrollPane.instantiate = function(morphType, morphToClip, initialBounds) {
+    var m = Morph(morphType, initialBounds, "rect");
     var bnds = m.shape.bounds();
-    var clipR = bnds.withWidth(bnds.width-12).insetBy(1);
-    m.clipToShape();
+    var clipR = bnds.withWidth(bnds.width - 12).insetBy(1);
+    //m.clipToShape();
     /*
-    this.clipMorph = new ClipMorph(clipR);
-    this.clipMorph.setBorderWidth(0); 
-    this.clipMorph.setColor(morphToClip.shape.getColor());
-    this.addMorph(this.clipMorph);
+      this.clipMorph = new ClipMorph(clipR);
+      this.clipMorph.setBorderWidth(0); 
+      this.clipMorph.setColor(morphToClip.shape.getColor());
+      this.addMorph(this.clipMorph);
     */
+    m.addMorph(morphToClip); // moved b/c setBounds & setBounds
     morphToClip.setBounds(clipR);  
     morphToClip.setBorderWidth(0);
+    morphToClip.clipToShape();
     m.innerMorph = morphToClip;
     //m.clipMorph.addMorph(morphToClip);
-    m.addMorph(morphToClip);
-    m.scrollBar = SliderMorph.create(bnds.withTopLeft(clipR.topRight()))
-    m.scrollBar.connect({model: this, value: ["getScrollPosition", "setScrollPosition"], extent: ["getVisibleExtent"]});
+    
+    m.scrollBar = SliderMorph(bnds.withTopLeft(clipR.topRight()))
+    m.scrollBar.connect({model: m, value: ["getScrollPosition", "setScrollPosition"], extent: ["getVisibleExtent"]});
     m.addMorph(m.scrollBar);
     m.setBorderWidth(2); 
     m.setColor(null); 
@@ -304,50 +338,53 @@ ScrollPane.prototype.connect = function(plugSpec) { // connection is mapped to i
 ScrollPane.prototype.getScrollPosition = function() { 
 	var ht = this.innerMorph.bounds().height;
 	var slideRoom = ht - this.bounds().height;
-	return -this.innerMorph.position().y/slideRoom; }
+	return -this.innerMorph.position().y/slideRoom; 
+}
 ScrollPane.prototype.setScrollPosition = function(scrollPos) { 
 	var ht = this.innerMorph.bounds().height;
 	var slideRoom = ht - this.bounds().height;
-	this.innerMorph.setPosition(pt(this.innerMorph.position().x, -slideRoom*scrollPos)); }
+	this.innerMorph.setPosition(pt(this.innerMorph.position().x, -slideRoom*scrollPos)); 
+}
 ScrollPane.prototype.getVisibleExtent = function(scrollPos) {
-	return Math.min(1,this.bounds().height / Math.max(10, this.innerMorph.bounds().height)); }
+	return Math.min(1, this.bounds().height / Math.max(10, this.innerMorph.bounds().height)); 
+}
 ScrollPane.prototype.scrollToTop = function() {
-	this.setScrollPosition(0);
-	this.scrollBar.adjustForNewBounds(); }
+    this.setScrollPosition(0);
+    this.scrollBar.adjustForNewBounds(); 
+};
 
 function ListPane(initialBounds) {
-    var pane = ScrollPane.create(CheapListMorph.create(initialBounds,["-----"]), initialBounds); 
-    this.setAttributeNS(morphic.ns.MORPHIC, "type", "ListPane");
+    var pane = ScrollPane(ScrollPane, CheapListMorph(initialBounds,["-----"]), initialBounds); 
+    pane.setAttributeNS(morphic.ns.MORPHIC, "type", "ListPane");
     return pane;
-
 };
 
 function TextPane(initialBounds) {
-    var pane = ScrollPane.create(TextMorph.create(TextMorph, initialBounds,"-----"), initialBounds); 
-    this.setAttributeNS(morphic.ns.MORPHIC, "type", "TextPane");
+    var pane = ScrollPane(ScrollPane, TextMorph(TextMorph, initialBounds,"-----"), initialBounds); 
+    pane.setAttributeNS(morphic.ns.MORPHIC, "type", "TextPane");
     return pane;
     
 };
 
-function FunctionPane() {};
-FunctionPane.inheritsFromPrototype(ScrollPane.prototype, 'FunctionPane');
-
-FunctionPane.create = function(initialBounds,functionText) {
-	//	Just like a textPane, except it edits a function definition,
-	//	And its participation in model networks is as that function body
-	if (functionText == null) functionText = "function() { return null; }";
-	var m = ScrollPane.create(TextMorph.create(TextMorph, initialBounds, functionText), initialBounds);
-	m.functionText = functionText;
-	m.innerMorph.connect({model: m, text: [null,"compileNewDef"]});
-	m.compileNewDef(functionText); 
+FunctionPane = HostClass.extend(ScrollPane);
+FunctionPane.instantiate = function(initialBounds, functionText) {
+    //	Just like a textPane, except it edits a function definition,
+    //	And its participation in model networks is as that function body
+    if (functionText == null) functionText = "function() { return null; }";
+    var m = ScrollPane(FunctionPane, TextMorph(TextMorph, initialBounds, functionText), initialBounds);
+    m.functionText = functionText;
+    m.innerMorph.connect({model: m, text: [null, "compileNewDef"]});
+    m.compileNewDef(functionText); 
+    return m;
 };
 
 FunctionPane.prototype.connect = function(plugSpec) { // get around override
     Morph.prototype.connect.call(this, plugSpec); 
 };
+
 FunctionPane.prototype.compileNewDef = function(contentString) {
     this.functionBody = eval("(" + contentString + ")");
-    if(this.resultPin != null) 
+    if (this.resultPin != null) 
 	this.computeResult(); 
 };
 FunctionPane.prototype.argPins = function() {
@@ -367,19 +404,25 @@ FunctionPane.prototype.argNames = function() { // pin names parallel to func arg
     return names; 
 };
 FunctionPane.prototype.computeResult = function() {
-    var args = this.argPins().map(function(each) {return each.read()});
+    console.log('computing result on ' + this.functionText);
+    var args = this.argPins().map(function(each) { return each.read()});
     for (var i = 0; i < args.length; i++) {
-	if (args[i] == null) 
+	if (args[i] == null)  {
+	    var offender = this.argPins()[i];
+	    console.log('no value for ' + offender + "," + offender.varName);
 	    return; // Only fire if all args have value
+	}
     }
     var model = this.resultPin.model;
-    var res = this.functionBody.apply(model,args);
+    var res = this.functionBody.apply(model, args);
+    console.log('eval returned ' + res);
     this.resultPin.write(res); 
 };
-FunctionPane.prototype.updateView = function(aspect,controller) {
+FunctionPane.prototype.updateView = function(aspect, controller) {
+    //console.log('in ' + this + '.updateView ' + aspect);
     if (aspect == "initialize") 
 	this.computeResult(); 
-    if (this.argNames().indexOf(aspect) >= 0)
+    if (this.argNames().include(aspect))
 	this.computeResult();
 }
     
