@@ -16,7 +16,7 @@ function makeCircleGrid(itemCount) {
 	var cy = getRand(r,  canvasHeight - r);
 	//console.log([r, cx, cy]);
 	
-	var aShape  = Morph(Morph, Rectangle.create(cx - r, cy - r, 2*r, 2*r), "ellipse");
+	var aShape  = Morph(Rectangle.create(cx - r, cy - r, 2*r, 2*r), "ellipse");
 	aShape.setColor(randColor(true));
 	aShape.setBorderColor(randColor(true));
 	aShape.setFillOpacity(getRand(0, 1));
@@ -131,7 +131,7 @@ morphic.buildWorld = function(otherWorld, server) {
 	    if (className != "Global" && methodName != "constructor") {
 		code = className + ".prototype." + methodName + " = " + code; 
 	    }
-	    var codePane = TextMorph(TextMorph, sourceMenu.position().extent(pt(350,50)),code);
+	    var codePane = TextMorph(sourceMenu.position().extent(pt(350,50)),code);
 	    sourceMenu.parentMenu.spawnee = codePane; // so it can be removed
 	    morphic.world.addMorph(codePane); 
 	}
@@ -183,7 +183,7 @@ morphic.buildWorld = function(otherWorld, server) {
 		if(i%2 == 0) p = p.scaleBy(0.39);
 		vertices.push(p.addPt(center)); }
 	    return vertices; }
-	widget = Morph(Morph, pt(0,0).asRectangle(), "rect");
+	widget = Morph(pt(0,0).asRectangle(), "rect");
 	widget.setShape(PolygonShape.create(makeStarVertices(50,pt(0,0),0),Color.yellow,1,Color.black));
 	widget.setPosition(pt(300,400));
 	morphic.world.addMorph(widget);
@@ -206,7 +206,7 @@ morphic.buildWorld = function(otherWorld, server) {
     
     var canvasTest = false;
     if(canvasTest) { // canvas test -- doesn't work any more :-(
-	widget = new Morph(new Rectangle(20, 20, 100, 100), "rectangle");	
+	widget = Morph(new Rectangle(20, 20, 100, 100), "rectangle");	
 	var b = widget.bounds();
 	println("b rect = " + [b.x, b.y, b.width, b.height]);
 	widget.clippingCanvas = canvas.primCanvas.createClippingCanvas(b.x, b.y, b.width, b.height);
@@ -230,7 +230,7 @@ morphic.buildWorld = function(otherWorld, server) {
     
     var showWidgets = true;
     if (showWidgets) { 
-	var panel = Morph(Morph, Rectangle.create(580,260,300,200), "rect");
+	var panel = Morph(Rectangle.create(580,260,300,200), "rect");
 	panel.setColor(Color.blue.lighter().lighter());
 	panel.setBorderWidth(2);
 	panel.setBorderColor(Color.red);
@@ -248,19 +248,19 @@ morphic.buildWorld = function(otherWorld, server) {
 	panel.addMorph(m = ButtonMorph(Rectangle.create(80,50,50,20)));
 	m.connect({model: panel.model, value: "buttonValue2"});
 	// Two lists sharing same selection...
-	panel.addMorph(m = new CheapListMorph(Rectangle.create(20,80,50,20),["one","two","three"]));
+	panel.addMorph(m = CheapListMorph(Rectangle.create(20,80,50,20),["one","two","three"]));
 	m.connect({model: panel.model, selection: "selectedItem"});
-	panel.addMorph(m = new CheapListMorph(Rectangle.create(80,80,50,20),["one","two","three"]));
+	panel.addMorph(m = CheapListMorph(Rectangle.create(80,80,50,20),["one","two","three"]));
 	m.connect({model: panel.model, selection: "selectedItem"});
 	// Three text views sharing same text...
-	panel.addMorph(m = TextMorph(TextMorph, Rectangle.create(140,20,140,20),"Hello World"));
+	panel.addMorph(m = TextMorph(Rectangle.create(140,20,140,20),"Hello World"));
 	m.connect({model: panel.model, text: "sharedText", selection: "textSelection"});
-	panel.addMorph(m = TextMorph(TextMorph, Rectangle.create(140,50,140,20),"Hello World"));
+	panel.addMorph(m = TextMorph(Rectangle.create(140,50,140,20),"Hello World"));
 	m.connect({model: panel.model, text: "sharedText", selection: "textSelection"});
-	panel.addMorph(m = TextMorph(TextMorph, Rectangle.create(140,80,140,20),"Hello World"));
+	panel.addMorph(m = TextMorph(Rectangle.create(140,80,140,20),"Hello World"));
 	m.connect({model: panel.model, text: "sharedText", selection: "textSelection"});
 	m.autoAccept = true;
-	panel.addMorph(m = TextMorph(TextMorph, Rectangle.create(140,110,140,20),"selection"));
+	panel.addMorph(m = TextMorph(Rectangle.create(140,110,140,20), "selection"));
 	m.connect({model: panel.model, text: "textSelection"});
 	panel.addMorph(m = PrintMorph(Rectangle.create(20,140,100,20),"3+4"));
 	m.connect({model: panel.model, value: "printValue"});
@@ -279,12 +279,12 @@ morphic.buildWorld = function(otherWorld, server) {
     }
     var showBrowser = true;
     if(showBrowser) { // Good-old three-pane browser...
-	var panel = Morph(Morph, Rectangle.create(20,20,400,320), "rect");
+	var panel = Morph(Rectangle.create(20,20,400,320), "rect");
 	panel.setColor(Color.blue.lighter().lighter());
 	panel.setBorderWidth(2);
 	panel.model = new Model();
 	var m; 
-	panel.addMorph(m = TextMorph(TextMorph, Rectangle.create(120,0,200,150), "JavaScript Code Browser"));
+	panel.addMorph(m = TextMorph(Rectangle.create(120,0,200,150), "JavaScript Code Browser"));
 	m.wrap = false; 
 	m.layoutChanged();
 	    
@@ -316,7 +316,7 @@ morphic.buildWorld = function(otherWorld, server) {
     
     var slideWorld = false;
     if(slideWorld) { // Make a slide for "turning web programming upside down"
-		var lm = new LinkMorph(null);
+		var lm = LinkMorph(null);
 		var morphs = lm.myWorld.submorphs.slice(0);
 		for(var i=0; i<morphs.length; i++) { // delete all but return link
 			var m = morphs[i];
@@ -325,7 +325,7 @@ morphic.buildWorld = function(otherWorld, server) {
 		var loc = pt(100,300);
 		var captions = ["               JavaScript","            Widget World","     HTML, DOM, CSS, ETC...","                Browser","   bios:  Network,  Graphics"];
 		for(var i=0; i<captions.length; i++) { // add boxed text
-			var txt = new TextMorph(loc.extent(pt(300,50)),captions[i]);
+			var txt = TextMorph(loc.extent(pt(300,50)),captions[i]);
 			txt.setFontSize(20);
 			txt.setColor(Color.hsb(70*i,0.7,0.8));
 			loc = loc.addXY(0,33);

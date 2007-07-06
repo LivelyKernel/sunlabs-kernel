@@ -1,11 +1,11 @@
-CheapListMorph = HostClass.extend(TextMorph);
-CheapListMorph.instantiate = function(initialBounds, itemList) {
+CheapListMorph = HostClass.create('CheapListMorph', TextMorph);
+CheapListMorph.construct = function(initialBounds, itemList) {
 //	itemList is an array of strings
 //	Note:  A proper ListMorph is a list of independent submorphs
 //	CheapListMorphs simply leverage off Textmorph's ability to display
 // 	multiline paragraphs, though some effort is made to use a similar interface.
 	var listText = (itemList == null) ? "" : itemList.join("\n");
-	var m = TextMorph(CheapListMorph, initialBounds, listText);
+	var m = CheapListMorph.superconstruct(this, initialBounds, listText);
 	m.wrap = false;
 	m.itemList = itemList;
 	// this default pin may get overwritten by, eg, connect()...
@@ -203,21 +203,20 @@ Morph.prototype.connect = function(plugSpec) {
 	model.addDependent(this); 
 };
 
-Morph.prototype.updateView = function(aspect,controller) { }
-    
+Morph.prototype.updateView = function(aspect, controller) { };
 
-function ButtonMorph(initialBounds) {
+ButtonMorph = HostClass.create('ButtonMorph', Morph);
+ButtonMorph.construct = function(initialBounds) {
     // A ButtonMorph is the simplest widget
     // It read and writes the boolean variable, this.model[this.propertyName]
     
-    var m = Morph(ButtonMorph, initialBounds, "rect");
+    var m = ButtonMorph.superconstruct(this, initialBounds, "rect");
     m.toggles = false; // if true each push toggles the model state
     m.setColor(m.baseColor = Color.green);
     // this default pin may get overwritten by, eg, connect()...
     m.valuePin = new Pin(m, new Model(m), "myValue"); 
     return m;
 };
-ButtonMorph.inheritsFromPrototype(Morph.prototype, 'ButtonMorph');
 
 
 ButtonMorph.prototype.handlesMouseDown = function(evt) { return true }
@@ -235,13 +234,13 @@ ButtonMorph.prototype.updateView = function(aspect,controller) {
     this.showColorFor(this.valuePin.read()); 
 };
 
-SliderMorph = HostClass.extend(Morph);
-SliderMorph.instantiate = function(initialBounds) {
-    var m = Morph(SliderMorph, initialBounds, "rect");
+SliderMorph = HostClass.create('SliderMorph', Morph);
+SliderMorph.construct = function(initialBounds) {
+    var m = SliderMorph.superconstruct(this, initialBounds, "rect");
     m.setColor(Color.blue.lighter());
     m.valuePin = new Pin(m, new Model(m), "myValue",0.0); // may get overwritten by, eg, connect()
     m.extentPin = new Pin(m, m.valuePin.model, "myExtent", 0.0);
-    m.slider = Morph(Morph, Rectangle.create(0,0,8,8), "rect");
+    m.slider = Morph(Rectangle.create(0,0,8,8), "rect");
     m.slider.relayMouseEvents(m, {mousedown: "sliderPressed", mousemove: "sliderMoved", mouseup: "sliderReleased"})
     m.addMorph(m.slider);
     m.adjustForNewBounds(m.valuePin.read(0.0)); 
@@ -305,14 +304,14 @@ SliderMorph.prototype.updateView = function(aspect,controller) {
 	this.adjustForNewBounds(); 
 };
 	
-ScrollPane = HostClass.extend(Morph);
-ScrollPane.instantiate = function(morphType, morphToClip, initialBounds) {
-    var m = Morph(morphType, initialBounds, "rect");
+ScrollPane = HostClass.create('ScrollPane', Morph);
+ScrollPane.construct = function(morphToClip, initialBounds) {
+    var m = ScrollPane.superconstruct(this, initialBounds, "rect");
     var bnds = m.shape.bounds();
     var clipR = bnds.withWidth(bnds.width - 12).insetBy(1);
     //m.clipToShape();
     /*
-      this.clipMorph = new ClipMorph(clipR);
+      this.clipMorph = ClipMorph(clipR);
       this.clipMorph.setBorderWidth(0); 
       this.clipMorph.setColor(morphToClip.shape.getColor());
       this.addMorph(this.clipMorph);
@@ -354,24 +353,24 @@ ScrollPane.prototype.scrollToTop = function() {
 };
 
 function ListPane(initialBounds) {
-    var pane = ScrollPane(ScrollPane, CheapListMorph(initialBounds,["-----"]), initialBounds); 
+    var pane = ScrollPane(CheapListMorph(initialBounds,["-----"]), initialBounds); 
     pane.setAttributeNS(morphic.ns.MORPHIC, "type", "ListPane");
     return pane;
 };
 
 function TextPane(initialBounds) {
-    var pane = ScrollPane(ScrollPane, TextMorph(TextMorph, initialBounds,"-----"), initialBounds); 
+    var pane = ScrollPane(TextMorph(initialBounds,"-----"), initialBounds); 
     pane.setAttributeNS(morphic.ns.MORPHIC, "type", "TextPane");
     return pane;
     
 };
 
-FunctionPane = HostClass.extend(ScrollPane);
-FunctionPane.instantiate = function(initialBounds, functionText) {
+FunctionPane = HostClass.create('FunctionPane', ScrollPane);
+FunctionPane.construct = function(initialBounds, functionText) {
     //	Just like a textPane, except it edits a function definition,
     //	And its participation in model networks is as that function body
     if (functionText == null) functionText = "function() { return null; }";
-    var m = ScrollPane(FunctionPane, TextMorph(TextMorph, initialBounds, functionText), initialBounds);
+    var m = FunctionPane.superconstruct(this, TextMorph(initialBounds, functionText), initialBounds);
     m.functionText = functionText;
     m.innerMorph.connect({model: m, text: [null, "compileNewDef"]});
     m.compileNewDef(functionText); 
@@ -390,22 +389,26 @@ FunctionPane.prototype.compileNewDef = function(contentString) {
 FunctionPane.prototype.argPins = function() {
     var pins = [];
     for (var pinName in this) {
-	if (pinName.endsWith("Pin") && pinName != "resultPin") 
+	// KP: instanceof is an optimization
+	if (!(pinName instanceof Function) && pinName.endsWith("Pin") && pinName != "resultPin") 
 	    pins.push(this[pinName]);
     }
     return pins; 
 };
 FunctionPane.prototype.argNames = function() { // pin names parallel to func arg names
     var names = [];
-    for (var pinName in this) 
-	if (pinName.endsWith("Pin") && pinName != "resultPin") {
+    for (var pinName in this) {
+	// KP: instanceof is an optimization
+	if (!(pinName instanceof Function) && pinName.endsWith("Pin") && pinName != "resultPin") {
 	    names.push(pinName.substring(0, pinName.length - 3)); 
 	}
+    }
+    console.log('computed argNames as ' + names);
     return names; 
 };
 FunctionPane.prototype.computeResult = function() {
     console.log('computing result on ' + this.functionText);
-    var args = this.argPins().map(function(each) { return each.read()});
+    var args = this.argPins().invoke('read');
     for (var i = 0; i < args.length; i++) {
 	if (args[i] == null)  {
 	    var offender = this.argPins()[i];
