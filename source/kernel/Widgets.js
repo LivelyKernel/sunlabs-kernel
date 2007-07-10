@@ -323,7 +323,6 @@ ScrollPane.construct = function(morphToClip, initialBounds) {
     // Make a clipMorph with the content (morphToClip) embedded in it
     m.clipMorph = new ClipMorph(clipR);    m.clipMorph.setBorderWidth(0);
     m.clipMorph.setColor(morphToClip.shape.getColor());
-    m.clipMorph.openForDragAndDrop = false;
     morphToClip.setBorderWidth(0);
     morphToClip.setPosition(clipR.topLeft());
     m.innerMorph = morphToClip;
