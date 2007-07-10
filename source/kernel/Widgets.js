@@ -211,7 +211,10 @@ ButtonMorph.construct = function(initialBounds) {
     
     var m = ButtonMorph.superconstruct(this, initialBounds, "rect");
     m.toggles = false; // if true each push toggles the model state
-    m.setLinearGradient(m.baseColor = Color.green, m.baseColor.lighter());
+    m.setLinearGradient(m.baseColor = Color.gray.darker(), m.baseColor.lighter(), true);
+    m.setBorderWidth(0.3);
+    m.setBorderColor(m.baseColor);
+    m.shape.roundEdgesBy(4);
     // this default pin may get overwritten by, eg, connect()...
     m.valuePin = new Pin(m, new Model(m), "myValue"); 
     return m;
@@ -227,7 +230,7 @@ ButtonMorph.prototype.mouseUp = function(evt) {
 	this.valuePin.write(newValue); this.showColorFor(newValue); }
 ButtonMorph.prototype.showColorFor = function(value) {
     var base = value ? this.baseColor.lighter() : this.baseColor;
-    this.setLinearGradient(base, base.lighter());
+    this.setLinearGradient(base, base.lighter(), true);
 }
 ButtonMorph.prototype.updateView = function(aspect,controller) {
     if (aspect != this.valuePin.varName) return;
