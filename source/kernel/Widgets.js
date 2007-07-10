@@ -211,7 +211,7 @@ ButtonMorph.construct = function(initialBounds) {
     
     var m = ButtonMorph.superconstruct(this, initialBounds, "rect");
     m.toggles = false; // if true each push toggles the model state
-    m.setLinearGradient(m.baseColor = Color.gray.darker(), m.baseColor.lighter(), true);
+    m.setLinearGradient(m.baseColor = Color.gray.darker(), m.baseColor.lighter(), LinearGradient.SouthNorth);
     m.setBorderWidth(0.3);
     m.setBorderColor(m.baseColor);
     m.shape.roundEdgesBy(4);
@@ -230,7 +230,7 @@ ButtonMorph.prototype.mouseUp = function(evt) {
 	this.valuePin.write(newValue); this.showColorFor(newValue); }
 ButtonMorph.prototype.showColorFor = function(value) {
     var base = value ? this.baseColor.lighter() : this.baseColor;
-    this.setLinearGradient(base, base.lighter(), true);
+    this.setLinearGradient(base, base.lighter(), LinearGradient.SouthNorth);
 }
 ButtonMorph.prototype.updateView = function(aspect,controller) {
     if (aspect != this.valuePin.varName) return;
@@ -271,7 +271,8 @@ SliderMorph.prototype.adjustForNewBounds = function() {
 	var sliderExt = pt(elevPix,bnds.height); 
     }
     this.slider.setBounds(bnds.topLeft().addPt(topLeft).extent(sliderExt)); 
-    this.setLinearGradient(Color.blue.lighter(), Color.blue.lighter().lighter(), !this.vertical());
+    this.setLinearGradient(Color.blue.lighter().lighter(), Color.blue.lighter(),
+			   this.vertical() ? LinearGradient.EastWest : LinearGradient.NorthSouth);
     
 };
 SliderMorph.prototype.sliderPressed = function(evt,slider) {
