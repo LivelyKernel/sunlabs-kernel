@@ -359,3 +359,52 @@ function main() {
 }
 
 main();
+
+function extra() {
+
+    var model = new Model();
+    
+    var m = ButtonMorph(morphic.world.bounds().rightCenter().subPt(pt(300, 0)).extent(pt(250, 20)));
+    m.connect({model: model, value: "active"});
+    m.toggles = true;
+    morphic.world.addMorph(m);
+
+    // before advice
+    var oldAddMorph = HandMorph.prototype.addMorph;
+    HandMorph.prototype.addMorph = function(m) {
+	if (this.grabbedMorphPin != null) {
+	    this.grabbedMorphPin.write(m);
+    	}
+	return oldAddMorph.call(this, m);
+    };
+
+    // before advice
+    var oldRemoveMorph = HandMorph.prototype.removeMorph;
+    HandMorph.prototype.removeMorph = function(m) {
+	if (this.grabbedMorphPin != null) {
+	    this.grabbedMorphPin.write(null);
+    	}
+	return oldRemoveMorph.call(this, m);
+    };
+
+    morphic.world.firstHand().connect({model: model, grabbedMorph: 'grabbedMorph'});
+    var serializer = function(active, grabbedMorph) { 
+	if (!active) 
+	    return;
+	console.log('grabbed morph is ' + grabbedMorph); 
+	if (grabbedMorph.hasSubmorphs()) 
+	    return "not serializing complex morph " + grabbedMorph.asString() + " to avoid mayhem";
+	return new XMLSerializer().serializeToString(grabbedMorph); 
+    };
+    
+    var evaluator = FunctionPane(m.bounds().bottomLeft().extent(pt(0, 0)), serializer.toString());
+    evaluator.connect({model: model, active: "active", grabbedMorph: 'grabbedMorph', result: "serializedMorph"});
+    
+    m = TextMorph(m.bounds().bottomLeft().extent(pt(250, 300)), "toggle button for an XML dump of the dragged morph");
+
+    m.connect({model: model, text: "serializedMorph"});
+    
+    morphic.world.addMorph(m);
+
+};
+extra();
