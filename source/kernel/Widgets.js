@@ -229,7 +229,7 @@ ButtonMorph.prototype.mouseUp = function(evt) {
 	this.valuePin.write(newValue); this.showColorFor(newValue); }
 ButtonMorph.prototype.showColorFor = function(value) {
     var base = value ? this.baseColor.lighter() : this.baseColor;
-    this.setGradient(LinearGradient.setGradient(base, base.lighter(), LinearGradient.SouthNorth));
+    this.setGradient(LinearGradient.makeGradient(base, base.lighter(), LinearGradient.SouthNorth));
 }
 ButtonMorph.prototype.updateView = function(aspect,controller) {
     if (aspect != this.valuePin.varName) return;
