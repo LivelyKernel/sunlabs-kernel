@@ -6,7 +6,7 @@ CheapListMorph.construct = function(initialBounds, itemList) {
 // 	multiline paragraphs, though some effort is made to use a similar interface.
 	var listText = (itemList == null) ? "" : itemList.join("\n");
 	var m = CheapListMorph.superconstruct(this, initialBounds, listText);
-	m.wrap = false;
+	m.wrap = "noWrap";
 	m.itemList = itemList;
 	// this default pin may get overwritten by, eg, connect()...
 	m.selectionPin = new Pin(m, new Model(m), "mySelection");
@@ -50,6 +50,7 @@ CheapListMorph.prototype.lineRect = function(r) { //Menu selection displays full
 CheapListMorph.prototype.updateList = function(newList) {
     this.itemList = newList;
     var listText = (this.itemList == null) ? "" : this.itemList.join("\n");
+console.log('***updateList');
     this.updateTextString(listText); 
 };
 CheapListMorph.prototype.setSelectionToMatch = function(item) {
@@ -58,10 +59,8 @@ CheapListMorph.prototype.setSelectionToMatch = function(item) {
     for (var i = 0; i < this.itemList.length; i++) {
 	if (this.itemList[i] == item) {
 	    lineStart = firstChar; 
-	    break; 
-	}
-	firstChar += this.itemList[i].length + 1; 
-    }
+	    break; }
+	firstChar += this.itemList[i].length + 1; }
     this.selectLineAt(lineStart); 
 };
 
@@ -71,6 +70,7 @@ CheapListMorph.prototype.updateView = function(aspect, controller) {
     if (aspect == this.selectionPin.varName) 
 	this.setSelectionToMatch(this.selectionPin.read()); 
 };
+
 
 
 
@@ -163,6 +163,7 @@ Pin.prototype.read = function (nullValue) {
 	return (val == null) ? nullValue : val; 
 }
 Pin.prototype.write = function (newValue) { 
+    console.log('Pin.write varName: ' + this.varName /* + " newValue: " + newValue.asString() */);
     if (this.writes) 
 	this.model.set(this.varName, newValue, this.component); 
 }
@@ -193,7 +194,7 @@ Morph.prototype.connect = function(plugSpec) {
 		console.log("port " + portSpec); 
 		this[prop + "Pin"] = new MessagePort(this, model, portSpec[0], portSpec[1]); 
 	    } else {
-		console.log("pin " + portSpec); 
+		// console.log("pin " + portSpec); 
 		this[prop + "Pin"] = new Pin(this, model, portSpec); 
 		mvc = true; 
 	    } 
@@ -319,7 +320,13 @@ ScrollPane.construct = function(morphToClip, initialBounds) {
     m.addMorph(morphToClip); // moved b/c setBounds & setBounds
     morphToClip.setBounds(clipR);  
     morphToClip.setBorderWidth(0);
-    morphToClip.clipToShape();
+    //morphToClip.clipToShape();
+    morphToClip.clipToPath(clipR.translatedBy(m.bounds().topLeft().negated()).toPath());
+
+console.log('clipR = ' + clipR.asString());
+console.log('this.position() = ' + m.bounds().topLeft().asString());
+console.log('morphToClip.position() = ' + morphToClip.bounds().topLeft().asString());
+
     m.innerMorph = morphToClip;
     //m.clipMorph.addMorph(morphToClip);
     
@@ -353,13 +360,13 @@ ScrollPane.prototype.scrollToTop = function() {
 };
 
 function ListPane(initialBounds) {
-    var pane = ScrollPane(CheapListMorph(initialBounds,["-----"]), initialBounds); 
+    var pane = ScrollPane(CheapListMorph(initialBounds,["-----","-----","-----"]), initialBounds); 
     pane.setAttributeNS(morphic.ns.MORPHIC, "type", "ListPane");
     return pane;
 };
 
 function TextPane(initialBounds) {
-    var pane = ScrollPane(TextMorph(initialBounds,"-----"), initialBounds); 
+    var pane = ScrollPane(TextMorph(initialBounds,"-----\n-----\n-----"), initialBounds); 
     pane.setAttributeNS(morphic.ns.MORPHIC, "type", "TextPane");
     return pane;
     

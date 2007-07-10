@@ -117,7 +117,7 @@ morphic.buildWorld = function(otherWorld, server) {
 	
 	//world.addMorph(new PixmapMorph('file:Applications/Canvascape/sky.jpg', new Rectangle(50, 50, 500, 150)));
     }
-    var showBrowseMenu = true;
+    var showBrowseMenu = false;
     if (showBrowseMenu) {  // Make a stay-up menu
 	var classNames = Global.listClassNames("SVG");
 	// console.log('found classes ' + classNames);
@@ -299,7 +299,10 @@ morphic.buildWorld = function(otherWorld, server) {
 	//	and a view in the model inspector
 	m = FunctionPane(Rectangle.create(0,300,400,22), "function() { return Global.listClassNames('SVG') }");
 	m.connect({model: panel.model, result: "classList"});
-	m = FunctionPane(Rectangle.create(0,322,400,36), "function(className) { return methodNameList(className) }");
+	m = FunctionPane(Rectangle.create(0,322,400,36), "function(className) {" +
+"	    var theClass = Global[className];" +
+"	    return (className == 'Global') ? Global.constructor.functionNames().without(classNames)" +
+"	    	: theClass.localFunctionNames(); }");
 	m.connect({model: panel.model, className: "className", result: "methodList"});
 	m = FunctionPane(Rectangle.create(0,358,400,50), "function(className,methodName) { return Function.methodString(className,methodName); }");
 	m.connect({model: panel.model, className: "className", methodName: "methodName", result: "methodString"});
@@ -307,8 +310,8 @@ morphic.buildWorld = function(otherWorld, server) {
 	morphic.world.addMorph(panel);
 	panel.model.changed("initialize");
 	// Add a PrintMorph in the world to view the model state
-	// morphic.world.addMorph(m = PrintMorph(new Rectangle(500,20,300,200), "model"));
-	// m.connect({model: panel.model, value: "this"});
+	morphic.world.addMorph(m = PrintMorph(Rectangle.create(500,20,300,200), "model"));
+	m.connect({model: panel.model, value: "this"});
 	zzPanel = panel; 
     }
     
