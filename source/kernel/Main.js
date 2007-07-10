@@ -313,8 +313,8 @@ morphic.buildWorld = function(otherWorld, server) {
 	morphic.world.addMorph(panel);
 	panel.model.changed("initialize");
 	// Add a PrintMorph in the world to view the model state
-	morphic.world.addMorph(m = PrintMorph(Rectangle.create(500,20,300,200), "model"));
-	m.connect({model: panel.model, value: "this"});
+	// morphic.world.addMorph(m = PrintMorph(Rectangle.create(500,20,300,200), "model"));
+	// m.connect({model: panel.model, value: "this"});
 	zzPanel = panel; 
     }
     

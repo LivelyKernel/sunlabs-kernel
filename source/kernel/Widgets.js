@@ -162,7 +162,7 @@ Pin.prototype.read = function (nullValue) {
 	return (val == null) ? nullValue : val; 
 }
 Pin.prototype.write = function (newValue) { 
-    console.log('Pin.write varName: ' + this.varName /* + " newValue: " + newValue.asString() */);
+    // console.log('Pin.write varName: ' + this.varName /* + " newValue: " + newValue.asString() */);
     if (this.writes) 
 	this.model.set(this.varName, newValue, this.component); 
 }
@@ -189,7 +189,6 @@ Morph.prototype.connect = function(plugSpec) {
 	if (prop != "model" && plugSpec.hasOwnProperty(prop)) {
 	    var portSpec = plugSpec[prop];
 	    if (portSpec  instanceof Array) {
-		console.log("port " + portSpec); 
 		this[prop + "Pin"] = new MessagePort(this, model, portSpec[0], portSpec[1]); 
 	    } else {
 		// console.log("pin " + portSpec); 
@@ -319,26 +318,11 @@ ScrollPane.construct = function(morphToClip, initialBounds) {
     var m = ScrollPane.superconstruct(this, initialBounds, "rect");
     var bnds = m.shape.bounds();
     var clipR = bnds.withWidth(bnds.width - 12).insetBy(1);
-    //m.clipToShape();
-    /*
-      this.clipMorph = ClipMorph(clipR);
-      this.clipMorph.setBorderWidth(0); 
-      this.clipMorph.setColor(morphToClip.shape.getColor());
-      this.addMorph(this.clipMorph);
-    */
     m.addMorph(morphToClip); // moved b/c setBounds & setBounds
     morphToClip.setBounds(clipR);  
     morphToClip.setBorderWidth(0);
-    //morphToClip.clipToShape();
     morphToClip.clipToPath(clipR.translatedBy(m.bounds().topLeft().negated()).toPath());
-
-console.log('clipR = ' + clipR.asString());
-console.log('this.position() = ' + m.bounds().topLeft().asString());
-console.log('morphToClip.position() = ' + morphToClip.bounds().topLeft().asString());
-
     m.innerMorph = morphToClip;
-    //m.clipMorph.addMorph(morphToClip);
-    
     m.scrollBar = SliderMorph(bnds.withTopLeft(clipR.topRight()))
     m.scrollBar.connect({model: m, value: ["getScrollPosition", "setScrollPosition"], extent: ["getVisibleExtent"]});
     m.addMorph(m.scrollBar);
@@ -418,27 +402,27 @@ FunctionPane.prototype.argNames = function() { // pin names parallel to func arg
 	    names.push(pinName.substring(0, pinName.length - 3)); 
 	}
     }
-    console.log('computed argNames as ' + names);
+    // console.log('computed argNames as ' + names);
     return names; 
 };
 FunctionPane.prototype.computeResult = function() {
-    console.log('computing result on ' + this.functionText);
+    // console.log('computing result on ' + this.functionText);
     var args = this.argPins().invoke('read');
     for (var i = 0; i < args.length; i++) {
 	if (args[i] == null)  {
 	    var offender = this.argPins()[i];
-	    console.log('no value for ' + offender + "," + offender.varName);
+	    // console.log('no value for ' + offender + "," + offender.varName);
 	    return; // Only fire if all args have value
 	}
     }
     var model = this.resultPin.model;
     var res = this.functionBody.apply(model, args);
-    console.log('eval returned ' + res + ' to result pin ' + this.resultPin);
+    // console.log('eval returned ' + res + ' to result pin ' + this.resultPin);
     this.resultPin.write(res); 
 };
 
 FunctionPane.prototype.updateView = function(aspect, controller) {
-    console.log('in ' + this.asString() + '.updateView ' + aspect + ' on function ' + this.functionText);
+    // console.log('in ' + this.asString() + '.updateView ' + aspect + ' on function ' + this.functionText);
     if (aspect == "initialize") 
 	this.computeResult(); 
     if (this.argNames().include(aspect)) 
