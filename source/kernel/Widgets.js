@@ -50,7 +50,6 @@ CheapListMorph.prototype.lineRect = function(r) { //Menu selection displays full
 CheapListMorph.prototype.updateList = function(newList) {
     this.itemList = newList;
     var listText = (this.itemList == null) ? "" : this.itemList.join("\n");
-console.log('***updateList');
     this.updateTextString(listText); 
 };
 
@@ -316,50 +315,57 @@ SliderMorph.prototype.updateView = function(aspect,controller) {
 ScrollPane = HostClass.create('ScrollPane', Morph);
 ScrollPane.construct = function(morphToClip, initialBounds) {
     var m = ScrollPane.superconstruct(this, initialBounds, "rect");
+    m.setBorderWidth(2);
+    m.setColor(null); 
     var bnds = m.shape.bounds();
     var clipR = bnds.withWidth(bnds.width - 12).insetBy(1);
-    m.addMorph(morphToClip); // moved b/c setBounds & setBounds
-    morphToClip.setBounds(clipR);  
+
+    // Make a clipMorph with the content (morphToClip) embedded in it
+    m.clipMorph = new ClipMorph(clipR);    m.clipMorph.setBorderWidth(0);
+    m.clipMorph.setColor(morphToClip.shape.getColor());
+    m.clipMorph.openForDragAndDrop = false;
     morphToClip.setBorderWidth(0);
-    morphToClip.clipToPath(clipR.translatedBy(m.bounds().topLeft().negated()).toPath());
+    morphToClip.setPosition(clipR.topLeft());
     m.innerMorph = morphToClip;
+    m.clipMorph.addMorph(morphToClip);
+    m.addMorph(m.clipMorph);
+
+    // Add a scrollbar
     m.scrollBar = SliderMorph(bnds.withTopLeft(clipR.topRight()))
     m.scrollBar.connect({model: m, value: ["getScrollPosition", "setScrollPosition"], extent: ["getVisibleExtent"]});
     m.addMorph(m.scrollBar);
-    m.setBorderWidth(2); 
-    m.setColor(null); 
     return m;
 };
 
 ScrollPane.prototype.connect = function(plugSpec) { // connection is mapped to innerMorph
 	this.innerMorph.connect(plugSpec); 
-}
+};
 ScrollPane.prototype.getScrollPosition = function() { 
 	var ht = this.innerMorph.bounds().height;
 	var slideRoom = ht - this.bounds().height;
 	return -this.innerMorph.position().y/slideRoom; 
-}
+};
 ScrollPane.prototype.setScrollPosition = function(scrollPos) { 
 	var ht = this.innerMorph.bounds().height;
 	var slideRoom = ht - this.bounds().height;
 	this.innerMorph.setPosition(pt(this.innerMorph.position().x, -slideRoom*scrollPos)); 
-}
+};
 ScrollPane.prototype.getVisibleExtent = function(scrollPos) {
 	return Math.min(1, this.bounds().height / Math.max(10, this.innerMorph.bounds().height)); 
-}
+};
 ScrollPane.prototype.scrollToTop = function() {
     this.setScrollPosition(0);
     this.scrollBar.adjustForNewBounds(); 
 };
 
 function ListPane(initialBounds) {
-    var pane = ScrollPane(CheapListMorph(initialBounds,["-----","-----","-----"]), initialBounds); 
+    var pane = ScrollPane(CheapListMorph(initialBounds,["-----"]), initialBounds); 
     pane.setAttributeNS(morphic.ns.MORPHIC, "type", "ListPane");
     return pane;
 };
 
 function TextPane(initialBounds) {
-    var pane = ScrollPane(TextMorph(initialBounds,"-----\n-----\n-----"), initialBounds); 
+    var pane = ScrollPane(TextMorph(initialBounds,"-----"), initialBounds); 
     pane.setAttributeNS(morphic.ns.MORPHIC, "type", "TextPane");
     return pane;
 };

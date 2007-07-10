@@ -199,11 +199,12 @@ morphic.buildWorld = function(otherWorld, server) {
 	//clockWidget.addClipRect(Rectangle.create(20,20,80,80));
 	morphic.world.addMorph(widget);
 	widget.startStepping(1000);
-    }
+	}
     
-    var clipWidget = ClipMorph(Rectangle.create(500, 200, 150, 150));
-    morphic.world.addMorph(clipWidget);
-    
+    if(false) {
+	var clipWidget = ClipMorph(Rectangle.create(500, 200, 150, 150));
+    	morphic.world.addMorph(clipWidget);
+	}
     
     var canvasTest = false;
     if(canvasTest) { // canvas test -- doesn't work any more :-(
@@ -231,7 +232,7 @@ morphic.buildWorld = function(otherWorld, server) {
     
     var showWidgets = true;
     if (showWidgets) { 
-	var panel = Morph(Rectangle.create(580,260,300,200), "rect");
+	var panel = Morph(Rectangle.create(600,300,300,200), "rect");
 	panel.setColor(Color.blue.lighter().lighter());
 	panel.setBorderWidth(2);
 	panel.setBorderColor(Color.red);
@@ -274,7 +275,7 @@ morphic.buildWorld = function(otherWorld, server) {
 	panel.addMorph(m = SliderMorph(Rectangle.create(140,170,100,20)));
 	m.connect({model: panel.model, value: "sliderValue", extent: "-sliderExtent"});
 	// Add a PrintMorph in the world to view the model state
-	morphic.world.addMorph(m = PrintMorph(Rectangle.create(500,120,300,200),"model"));
+	morphic.world.addMorph(m = PrintMorph(Rectangle.create(600,140,300,200),"model"));
 	m.connect({model: panel.model, value: "this"});
 	morphic.world.addMorph(panel); 
     }
