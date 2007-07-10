@@ -53,6 +53,7 @@ CheapListMorph.prototype.updateList = function(newList) {
 console.log('***updateList');
     this.updateTextString(listText); 
 };
+
 CheapListMorph.prototype.setSelectionToMatch = function(item) {
     var lineStart = -1; 
     var firstChar = 0;
@@ -65,14 +66,12 @@ CheapListMorph.prototype.setSelectionToMatch = function(item) {
 };
 
 CheapListMorph.prototype.updateView = function(aspect, controller) {
-    if (aspect == this.listPin.varName) 
+    if (aspect == this.listPin.varName) {
 	this.updateList(this.listPin.read());
+    }
     if (aspect == this.selectionPin.varName) 
 	this.setSelectionToMatch(this.selectionPin.read()); 
 };
-
-
-
 
 
 //	Basic theory of widgets...
@@ -182,7 +181,6 @@ function MessagePort(component,model,readName,writeName) { // A more flexible me
 	};
 };
 
-
 // Morph model category
 Morph.prototype.connect = function(plugSpec) {
     var model = plugSpec.model;
@@ -203,8 +201,8 @@ Morph.prototype.connect = function(plugSpec) {
     if(mvc) 
 	model.addDependent(this); 
 };
-
 Morph.prototype.updateView = function(aspect, controller) { };
+
 
 ButtonMorph = HostClass.create('ButtonMorph', Morph);
 ButtonMorph.construct = function(initialBounds) {
@@ -213,7 +211,7 @@ ButtonMorph.construct = function(initialBounds) {
     
     var m = ButtonMorph.superconstruct(this, initialBounds, "rect");
     m.toggles = false; // if true each push toggles the model state
-    m.setColor(m.baseColor = Color.green);
+    m.setLinearGradient(m.baseColor = Color.green, m.baseColor.lighter());
     // this default pin may get overwritten by, eg, connect()...
     m.valuePin = new Pin(m, new Model(m), "myValue"); 
     return m;
@@ -228,7 +226,8 @@ ButtonMorph.prototype.mouseUp = function(evt) {
 	var newValue = this.toggles ? !this.valuePin.read() : false;
 	this.valuePin.write(newValue); this.showColorFor(newValue); }
 ButtonMorph.prototype.showColorFor = function(value) {
-	this.setColor(value ? this.baseColor.lighter() : this.baseColor); 
+    var base = value ? this.baseColor.lighter() : this.baseColor;
+    this.setLinearGradient(base, base.lighter());
 }
 ButtonMorph.prototype.updateView = function(aspect,controller) {
     if (aspect != this.valuePin.varName) return;
@@ -238,7 +237,8 @@ ButtonMorph.prototype.updateView = function(aspect,controller) {
 SliderMorph = HostClass.create('SliderMorph', Morph);
 SliderMorph.construct = function(initialBounds) {
     var m = SliderMorph.superconstruct(this, initialBounds, "rect");
-    m.setColor(Color.blue.lighter());
+    //m.setColor(Color.blue.lighter());
+    // KP: setting color moved to adjustForNewBounds
     m.valuePin = new Pin(m, new Model(m), "myValue",0.0); // may get overwritten by, eg, connect()
     m.extentPin = new Pin(m, m.valuePin.model, "myExtent", 0.0);
     m.slider = Morph(Rectangle.create(0,0,8,8), "rect");
@@ -255,21 +255,24 @@ SliderMorph.prototype.vertical = function() {
 
 SliderMorph.prototype.adjustForNewBounds = function() {
 	// This method adjusts the slider for changes in value as well as geometry
-	var val = this.valuePin.read(0.0);
-	var bnds = this.shape.bounds();
-	var ext = this.extentPin.read(0.0);
-	if (this.vertical()) { // more vertical...
-		var elevPix = Math.max(ext*bnds.height,6); // thickness of elevator in pixels
-		var topLeft = pt(0,(bnds.height-elevPix)*val);
-		var sliderExt = pt(bnds.width,elevPix); 
-	} else { // more horizontal...
-		var elevPix = Math.max(ext*bnds.width,6); // thickness of elevator in pixels
-		var topLeft = pt((bnds.width-elevPix)*val,0);
-		var sliderExt = pt(elevPix,bnds.height); 
-	}
-	this.slider.setBounds(bnds.topLeft().addPt(topLeft).extent(sliderExt)); 
+    var val = this.valuePin.read(0.0);
+    var bnds = this.shape.bounds();
+    var ext = this.extentPin.read(0.0);
+    if (this.vertical()) { // more vertical...
+	var elevPix = Math.max(ext*bnds.height,6); // thickness of elevator in pixels
+	var topLeft = pt(0,(bnds.height-elevPix)*val);
+	var sliderExt = pt(bnds.width,elevPix); 
+    } else { // more horizontal...
+	var elevPix = Math.max(ext*bnds.width,6); // thickness of elevator in pixels
+	var topLeft = pt((bnds.width-elevPix)*val,0);
+	var sliderExt = pt(elevPix,bnds.height); 
+    }
+    this.slider.setBounds(bnds.topLeft().addPt(topLeft).extent(sliderExt)); 
+    this.setLinearGradient(Color.blue.lighter(), Color.blue.lighter().lighter(), !this.vertical());
+    
 };
 SliderMorph.prototype.sliderPressed = function(evt,slider) {
+    
 	//	Note: want setMouseFocus to also cache the transform and record the hitPoint.
 	//	Ideally thereafter only have to say, eg, morph moveTo: evt.hand.adjustedMousePoint
 	this.hitPoint = this.localize(evt.mousePoint).subPt(this.slider.bounds().topLeft());
@@ -278,17 +281,19 @@ SliderMorph.prototype.sliderPressed = function(evt,slider) {
 SliderMorph.prototype.sliderMoved = function(evt,slider) {
 	if(!evt.mouseButtonPressed) return;
 	// Compute a new value from a new mouse point, and emit it
+
 	var p = this.localize(evt.mousePoint).subPt(this.hitPoint);
 	var bnds = this.shape.bounds();
 	var ext = this.extentPin.read(0.0);
-	if(this.vertical()) { // more vertical...
-		var elevPix = Math.max(ext*bnds.height,6); // thickness of elevator in pixels
-		var newValue = p.y / (bnds.height-elevPix); }
-	else { // more horizontal...
-		var elevPix = Math.max(ext*bnds.width,6); // thickness of elevator in pixels
-		var newValue = p.x / (bnds.width-elevPix); }
+	var elevPix = Math.max(ext*bnds.height,6); // thickness of elevator in pixels
+	if (this.vertical()) { // more vertical...
+	    var newValue = p.y / (bnds.height-elevPix); 
+	} else { // more horizontal...
+	    var newValue = p.x / (bnds.width-elevPix); 
+	}
 	this.valuePin.write(this.clipValue(newValue));
-	this.adjustForNewBounds(); }
+	this.adjustForNewBounds(); 
+}
 SliderMorph.prototype.sliderReleased = function(evt,slider) { evt.hand.setMouseFocus(null) }
 SliderMorph.prototype.handlesMouseDown = function(evt) { return true }
 SliderMorph.prototype.mouseDown = function(evt) {
@@ -369,7 +374,6 @@ function TextPane(initialBounds) {
     var pane = ScrollPane(TextMorph(initialBounds,"-----\n-----\n-----"), initialBounds); 
     pane.setAttributeNS(morphic.ns.MORPHIC, "type", "TextPane");
     return pane;
-    
 };
 
 FunctionPane = HostClass.create('FunctionPane', ScrollPane);
@@ -425,14 +429,15 @@ FunctionPane.prototype.computeResult = function() {
     }
     var model = this.resultPin.model;
     var res = this.functionBody.apply(model, args);
-    console.log('eval returned ' + res);
+    console.log('eval returned ' + res + ' to result pin ' + this.resultPin);
     this.resultPin.write(res); 
 };
+
 FunctionPane.prototype.updateView = function(aspect, controller) {
-    //console.log('in ' + this + '.updateView ' + aspect);
+    console.log('in ' + this.asString() + '.updateView ' + aspect + ' on function ' + this.functionText);
     if (aspect == "initialize") 
 	this.computeResult(); 
-    if (this.argNames().include(aspect))
+    if (this.argNames().include(aspect)) 
 	this.computeResult();
 };
     

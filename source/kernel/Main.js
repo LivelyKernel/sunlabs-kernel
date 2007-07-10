@@ -1,7 +1,5 @@
 morphic.world = WorldMorph("canvas");
-console.log('created world');
-
-
+console.log('created world ' + morphic.world.bounds().asString());
 
 
 // some support for the circles demo
@@ -77,11 +75,12 @@ Object.prototype.listClassNames = function(exclude) {
     var a = [];
     var objectFunctionCount = Object.functionNames().length;
     for (var name in this) {
-	if (!this[name] || !this[name].prototype)
-	    continue;
-	if (exclude && name.startsWith(exclude)) 
-	    continue; // skip the SVGs
 	try {
+	    if (!this[name] || !this[name].prototype)
+		continue;
+	    if (exclude && name.startsWith(exclude)) 
+		continue; // skip the SVGs
+	    
 	    if ((this[name] instanceof Function) 
 		&& (this[name].functionNames().length > objectFunctionCount)) {
 		a.push(name); 
@@ -185,6 +184,7 @@ morphic.buildWorld = function(otherWorld, server) {
 	    return vertices; }
 	widget = Morph(pt(0,0).asRectangle(), "rect");
 	widget.setShape(PolygonShape.create(makeStarVertices(50,pt(0,0),0),Color.yellow,1,Color.black));
+	widget.setLinearGradient(Color.yellow, Color.yellow.lighter().lighter());
 	widget.setPosition(pt(300,400));
 	morphic.world.addMorph(widget);
 	var spinningStar = true;
@@ -260,7 +260,7 @@ morphic.buildWorld = function(otherWorld, server) {
 	panel.addMorph(m = TextMorph(Rectangle.create(140,80,140,20),"Hello World"));
 	m.connect({model: panel.model, text: "sharedText", selection: "textSelection"});
 	m.autoAccept = true;
-	panel.addMorph(m = TextMorph(Rectangle.create(140,110,140,20), "selection"));
+	panel.addMorph(m = TextMorph(Rectangle.create(140,110,140,20),"selection"));
 	m.connect({model: panel.model, text: "textSelection"});
 	panel.addMorph(m = PrintMorph(Rectangle.create(20,140,100,20),"3+4"));
 	m.connect({model: panel.model, value: "printValue"});
@@ -284,9 +284,11 @@ morphic.buildWorld = function(otherWorld, server) {
 	panel.setBorderWidth(2);
 	panel.model = new Model();
 	var m; 
-	panel.addMorph(m = TextMorph(Rectangle.create(120,0,200,150), "JavaScript Code Browser"));
+	panel.addMorph(m = TextMorph(Rectangle.create(120,0,160,150), "JavaScript Code Browser"));
+	m.setLinearGradient(Color.blue.lighter().lighter(), Color.blue.lighter().lighter().lighter());
 	m.wrap = false; 
 	m.layoutChanged();
+
 	    
 	panel.addMorph(m = ListPane(Rectangle.create(0,20,200,150)));
 	m.connect({model: panel.model, list: "classList", selection: "className"});
@@ -353,8 +355,5 @@ function main() {
     morphic.buildWorld();
     return;
 }
-
-
-
 
 main();
