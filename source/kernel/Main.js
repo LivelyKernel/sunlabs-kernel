@@ -184,7 +184,8 @@ morphic.buildWorld = function(otherWorld, server) {
 	    return vertices; }
 	widget = Morph(pt(0,0).asRectangle(), "rect");
 	widget.setShape(PolygonShape.create(makeStarVertices(50,pt(0,0),0),Color.yellow,1,Color.black));
-	widget.setLinearGradient(Color.yellow, Color.yellow.lighter().lighter());
+
+	//makeGradient(Color.yellow, Color.yellow.lighter().lighter()));
 	widget.setPosition(pt(300,400));
 	morphic.world.addMorph(widget);
 	var spinningStar = true;
@@ -285,7 +286,7 @@ morphic.buildWorld = function(otherWorld, server) {
 	panel.model = new Model();
 	var m; 
 	panel.addMorph(m = TextMorph(Rectangle.create(120,0,160,150), "JavaScript Code Browser"));
-	m.setLinearGradient(Color.blue.lighter().lighter(), Color.blue.lighter().lighter().lighter());
+	m.setGradient(LinearGradient.makeGradient(Color.blue.lighter().lighter(), Color.blue.lighter().lighter().lighter()));
 	m.wrap = false; 
 	m.layoutChanged();
 
