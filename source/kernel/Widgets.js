@@ -359,7 +359,7 @@ ScrollPane.prototype.scrollToTop = function() {
 
 function ListPane(initialBounds) {
     var pane = ScrollPane(CheapListMorph(initialBounds,["-----"]), initialBounds); 
-    pane.setAttributeNS(morphic.ns.MORPHIC, "type", "ListPane");
+    morphic.setType(pane, "ListPane");
     return pane;
 };
 

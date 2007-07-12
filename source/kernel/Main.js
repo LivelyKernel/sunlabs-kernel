@@ -325,24 +325,24 @@ morphic.buildWorld = function(otherWorld, server) {
     
 
     
-    var slideWorld = false;
+    var slideWorld = true;
     if(slideWorld) { // Make a slide for "turning web programming upside down"
-		var lm = LinkMorph(null);
-		var morphs = lm.myWorld.submorphs.slice(0);
-		for(var i=0; i<morphs.length; i++) { // delete all but return link
-			var m = morphs[i];
-			if(m.className() != "LinkMorph") m.remove(); }
-		lm.setPosition(lm.position().addXY(65,0));
-		var loc = pt(100,300);
-		var captions = ["               JavaScript","            Widget World","     HTML, DOM, CSS, ETC...","                Browser","   bios:  Network,  Graphics"];
-		for(var i=0; i<captions.length; i++) { // add boxed text
-			var txt = TextMorph(loc.extent(pt(300,50)),captions[i]);
-			txt.setFontSize(20);
-			txt.setColor(Color.hsb(70*i,0.7,0.8));
-			loc = loc.addXY(0,33);
-			lm.myWorld.addMorph(txt); }
-		morphic.world.addMorph(lm); }
-	return morphic.world;
+	var lm = LinkMorph(null);
+	// grr why doesn't this work???
+	lm.myWorld.submorphs().each( function(m) { console.log('inspecting ' + m.asString()); if (!(m instanceof LinkMorph))  m.remove(); });
+	lm.setPosition(lm.position().addXY(65,0));
+	var loc = pt(100, 200);
+	var captions = ["               JavaScript","            Widget World","     HTML, DOM, CSS, ETC...","                Browser","   bios:  Network,  Graphics"];
+	for (var i= 0; i < captions.length; i++) { // add boxed text
+	    var txt = TextMorph(loc.extent(pt(300,50)), captions[i]);
+	    txt.setFontSize(20);
+	    txt.setColor(Color.hsb(70*i,0.7,0.8));
+	    loc = loc.addXY(0,33);
+	    lm.myWorld.addMorph(txt); 
+	}
+	morphic.world.addMorph(lm); 
+    }
+    return morphic.world;
 }
 
 
