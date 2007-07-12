@@ -102,21 +102,6 @@ morphic.buildWorld = function(otherWorld, server) {
     console.log('added hand ' + morphic.world.firstHand().asString());
     var widget; 
     // zzHand = world.worldState.hands[0];
-    var showBitmap = false;
-    if(showBitmap) { 
-	var width = 800;
-	var height = 500;
-	var url = "http://maps.google.com/mapdata?"+
-	    "Point=b&Point.latitude_e6=61500000&Point.longitude_e6=-3191200000&Point.iconid=15&"+
-	    "Point=e&Point=b&Point.latitude_e6=61500000&Point.longitude_e6=-3191200600&Point.iconid=16&"+
-	    "Point=e&latitude_e6=61500000&longitude_e6=-3191200000&zm=8000&w=" +
-	    width + "&h=" + height + "&cc=US&min_priority=2";
-	morphic.world.addMorphBack(new PixmapMorph(url, new Rectangle(50, 10, width, height)));
-	var checkurl = "file:Applications/ScriptBrowserDemo/src/widget/templates/check.gif";
-	morphic.world.addMorphBack(new PixmapMorph(checkurl, new Rectangle(20, 20, 16*3, 16)));
-	
-	//world.addMorph(new PixmapMorph('file:Applications/Canvascape/sky.jpg', new Rectangle(50, 50, 500, 150)));
-    }
     var showBrowseMenu = false;
     if (showBrowseMenu) {  // Make a stay-up menu
 	var classNames = Global.listClassNames("SVG");
@@ -227,7 +212,23 @@ morphic.buildWorld = function(otherWorld, server) {
 							    morphic.world,"setColor",false)) ;	
     var innerWorld = true;
     if (innerWorld) {
-	morphic.world.addMorph(LinkMorph(null, pt(260, 460)));
+	morphic.world.addMorph(widget = LinkMorph(null, pt(260, 460)));
+	var showBitmap = true;
+	if(showBitmap) { 
+	    var width = 800;
+	    var height = 500;
+	    var url = "http://maps.google.com/mapdata?"+
+		"Point=b&Point.latitude_e6=61500000&Point.longitude_e6=-3191200000&Point.iconid=15&"+
+		"Point=e&Point=b&Point.latitude_e6=61500000&Point.longitude_e6=-3191200600&Point.iconid=16&"+
+		"Point=e&latitude_e6=61500000&longitude_e6=-3191200000&zm=8000&w=" +
+		width + "&h=" + height + "&cc=US&min_priority=2";
+	    widget.myWorld.addMorph(PixmapMorph(Rectangle.create(50, 10, width, height), url), true);
+	    //var checkurl = "file:Applications/ScriptBrowserDemo/src/widget/templates/check.gif";
+	    //morphic.world.addMorphBack(new PixmapMorph(checkurl, new Rectangle(20, 20, 16*3, 16)));
+	    
+	    //world.addMorph(new PixmapMorph('file:Applications/Canvascape/sky.jpg', new Rectangle(50, 50, 500, 150)));
+	}
+	
     }
     
     var showWidgets = true;
@@ -401,7 +402,7 @@ function extra() {
     var evaluator = FunctionPane(m.bounds().bottomLeft().extent(pt(9999, 9999)), serializer.toString());
     evaluator.connect({model: model, active: "active", grabbedMorph: 'grabbedMorph', result: "serializedMorph"});
     
-    m = TextMorph(m.bounds().bottomLeft().extent(pt(250, 300)), "toggle button for an XML dump of the dragged morph");
+    m = TextMorph(m.bounds().bottomLeft().extent(pt(250, 300)), "toggle button for an XML dump of the grabbed morph");
 
     m.connect({model: model, text: "serializedMorph"});
     
