@@ -122,9 +122,6 @@ morphic.buildWorld = function(otherWorld, server) {
 	}
 	// Function to show the method names
 	var showMethodNameMenu = function(item,sourceMenu) {
-	    
-	    // SVGTextElement.prototype.profiler("start");
-	    
 	    if (sourceMenu.spawnee != null) sourceMenu.spawnee.remove();
 	    var name = item[0];
 	    var theClass = Global[name];
@@ -137,18 +134,6 @@ morphic.buildWorld = function(otherWorld, server) {
 	    sourceMenu.spawnee = menu; // so it can be removed
 	    menu.parentMenu = sourceMenu;
 	    morphic.world.addMorph(menu); 
-	    
-	    //var stats = SVGTextElement.prototype.profiler("ticks");
-	    //	    SVGTextElement.prototype.profiler("stop");
-	    /*
-	    for (var field in stats) {
-		if (stats[field] instanceof Function) 
-		    continue;
-		if (stats[field] == 0)
-		    continue;
-		console.info('stat: ' + field + " = " + stats[field]);
-	    }
-	    */
 	}
 	var items =  classNames.map(function(each) { return [each, this, showMethodNameMenu]}, this);
 	widget = CheapMenuMorph(pt(30,20), items);
@@ -392,7 +377,7 @@ function extra() {
     morphic.world.firstHand().connect({model: model, grabbedMorph: 'grabbedMorph'});
     var serializer = function(active, grabbedMorph) { 
 	if (!active) 
-	    return;
+	    return "toggle button for an XML dump of the grabbed morph";
 	console.log('grabbed morph is ' + grabbedMorph); 
 	if (grabbedMorph.hasSubmorphs()) 
 	    return "not serializing complex morph " + grabbedMorph.asString() + " to avoid mayhem";
@@ -409,4 +394,34 @@ function extra() {
     morphic.world.addMorph(m);
 
 };
-extra();
+   extra();
+
+/*
+	    SVGTextElement.prototype.profiler("start");
+	    var stats = SVGTextElement.prototype.profiler("ticks");
+	    	    SVGTextElement.prototype.profiler("stop");
+	    for (var field in stats) {
+		if (stats[field] instanceof Function) 
+		    continue;
+		if (stats[field] == 0)
+		    continue;
+		console.info('stat: ' + field + " = " + stats[field]);
+	    	}
+*/
+
+function showStatsViewer() {
+	var m = ButtonMorph(morphic.world.bounds().topCenter().addXY(0,20).extent(pt(150, 20)));
+    	m.connect({model: m, value: ["getValue", "setValue"]});
+	m.setValue = function(newValue) {this.onState = newValue;
+		if(newValue == false) {
+			if(this.statsMorph == null) {
+				this.statsMorph = TextMorph(m.bottomLeft().extent(pt(200,20)), "no text");
+				morphic.world.addMorph(this.statsMorph); }
+			this.statsMorph.setTextString("Now we will have some text"); } }
+	m.getValue = function() {return (this. onState == null) ? false : this. onState};
+	morphic.world.addMorph(m);
+	t = TextMorph(pt(0,0).extent(m.bounds().extent()), 'Display and reset stats');
+	t.setColor(null); t.setBorderWidth(0);
+	m.addMorph(t);
+	};
+//  showStatsViewer();
