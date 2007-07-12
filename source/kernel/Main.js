@@ -185,7 +185,6 @@ morphic.buildWorld = function(otherWorld, server) {
 	    return vertices; }
 	widget = Morph(pt(0,0).asRectangle(), "rect");
 	widget.setShape(PolygonShape.create(makeStarVertices(50,pt(0,0),0),Color.yellow,1,Color.black));
-
 	//makeGradient(Color.yellow, Color.yellow.lighter().lighter()));
 	widget.setPosition(pt(300,400));
 	morphic.world.addMorph(widget);
@@ -227,11 +226,8 @@ morphic.buildWorld = function(otherWorld, server) {
     if(colorPicker) morphic.world.addMorph(ColorPickerMorph(canvas.bounds().bottomCenter().subPt(pt(0,50)).extent(pt(50,30)),
 							    morphic.world,"setColor",false)) ;	
     var innerWorld = true;
-    try {
-    if (innerWorld) 
-	morphic.world.addMorph(LinkMorph(null));
-    } catch (er) {
-	console.log('error '+ er);
+    if (innerWorld) {
+	morphic.world.addMorph(LinkMorph(null, pt(260, 460)));
     }
     
     var showWidgets = true;
@@ -327,10 +323,10 @@ morphic.buildWorld = function(otherWorld, server) {
     
     var slideWorld = true;
     if(slideWorld) { // Make a slide for "turning web programming upside down"
-	var lm = LinkMorph(null);
+	var lm = LinkMorph(null, pt(260, 520));
 	// grr why doesn't this work???
 	lm.myWorld.submorphs().each( function(m) { console.log('inspecting ' + m.asString()); if (!(m instanceof LinkMorph))  m.remove(); });
-	lm.setPosition(lm.position().addXY(65,0));
+	// lm.setPosition(lm.position().addXY(65,0));
 	var loc = pt(100, 200);
 	var captions = ["               JavaScript","            Widget World","     HTML, DOM, CSS, ETC...","                Browser","   bios:  Network,  Graphics"];
 	for (var i= 0; i < captions.length; i++) { // add boxed text
