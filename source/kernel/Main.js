@@ -394,12 +394,12 @@ function extra() {
     morphic.world.addMorph(m);
 
 };
-   extra();
+//   extra();
 
 /*
-	    SVGTextElement.prototype.profiler("start");
-	    var stats = SVGTextElement.prototype.profiler("ticks");
-	    	    SVGTextElement.prototype.profiler("stop");
+	    TextMorph.prototype.profiler("start");
+	    var stats = TextMorph.prototype.profiler("ticks");
+	    	    TextMorph.prototype.profiler("stop");
 	    for (var field in stats) {
 		if (stats[field] instanceof Function) 
 		    continue;
@@ -410,18 +410,27 @@ function extra() {
 */
 
 function showStatsViewer() {
+	Morph.prototype.profiler("start");
 	var m = ButtonMorph(morphic.world.bounds().topCenter().addXY(0,20).extent(pt(150, 20)));
     	m.connect({model: m, value: ["getValue", "setValue"]});
 	m.setValue = function(newValue) {this.onState = newValue;
-		if(newValue == false) {
+		if(newValue == false) { // on mouseUp...
 			if(this.statsMorph == null) {
-				this.statsMorph = TextMorph(m.bottomLeft().extent(pt(200,20)), "no text");
+				this.statsMorph = TextMorph(this.bounds().bottomLeft().extent(pt(200,20)), "no text");
 				morphic.world.addMorph(this.statsMorph); }
-			this.statsMorph.setTextString("Now we will have some text"); } }
+			var stats = Morph.prototype.profiler("ticks");
+			var statsText = "";
+			for (var field in stats) {
+				if (stats[field] instanceof Function) continue;
+				if (stats[field] == 0) continue;
+				statsText += ('stat: ' + field + " = " + stats[field] + "\n");
+	    			}
+			this.statsMorph.setTextString(statsText);
+			Morph.prototype.profiler("reset"); } }
 	m.getValue = function() {return (this. onState == null) ? false : this. onState};
 	morphic.world.addMorph(m);
-	t = TextMorph(pt(0,0).extent(m.bounds().extent()), 'Display and reset stats');
-	t.setColor(null); t.setBorderWidth(0);
-	m.addMorph(t);
+//	t = TextMorph(pt(0,0).extent(m.bounds().extent()), 'Display and reset stats');
+//	t.setColor(null); t.setBorderWidth(0);
+//	m.addMorph(t);
 	};
-//  showStatsViewer();
+  showStatsViewer();
