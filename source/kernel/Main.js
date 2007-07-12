@@ -1,5 +1,4 @@
-morphic.world = WorldMorph("canvas");
-console.log('created world ' + morphic.world.bounds().asString());
+
 
 
 // some support for the circles demo
@@ -98,7 +97,9 @@ Object.prototype.listClassNames = function(exclude) {
 
 morphic.buildWorld = function(otherWorld, server) {
     morphic.world.addHand(HandMorph(true));
-    
+    morphic.world.hands.each(function(hand) { morphic.canvas.appendChild(hand); }.bind(this));
+
+    console.log('added hand ' + morphic.world.firstHand().asString());
     var widget; 
     // zzHand = world.worldState.hands[0];
     var showBitmap = false;
@@ -225,10 +226,13 @@ morphic.buildWorld = function(otherWorld, server) {
     var colorPicker = false;
     if(colorPicker) morphic.world.addMorph(ColorPickerMorph(canvas.bounds().bottomCenter().subPt(pt(0,50)).extent(pt(50,30)),
 							    morphic.world,"setColor",false)) ;	
-    var innerWorld = false;
+    var innerWorld = true;
+    try {
     if (innerWorld) 
-	morphic.world.addMorph(LinkMorph(morphic.world, null));
-
+	morphic.world.addMorph(LinkMorph(null));
+    } catch (er) {
+	console.log('error '+ er);
+    }
     
     var showWidgets = true;
     if (showWidgets) { 
@@ -344,7 +348,8 @@ morphic.buildWorld = function(otherWorld, server) {
 
 var rss;
 function main() {
-    
+    morphic.world = WorldMorph.createPrototypeWorld();
+    morphic.world.displayWorldOn(morphic.canvas);
     if (window.location.query()["rss"]== "true") {
 	try {
 	    rss = loadRSS(morphic.world, pt(300, 20));
@@ -352,7 +357,7 @@ function main() {
 	    console.log('failed to load rss due to: ' + e);
 	}
     }
-    WorldMorph.makeWorld();
+
     console.log('made world');
     morphic.buildWorld();
     return;
@@ -397,7 +402,7 @@ function extra() {
 	return new XMLSerializer().serializeToString(grabbedMorph); 
     };
     
-    var evaluator = FunctionPane(m.bounds().bottomLeft().extent(pt(0, 0)), serializer.toString());
+    var evaluator = FunctionPane(m.bounds().bottomLeft().extent(pt(9999, 9999)), serializer.toString());
     evaluator.connect({model: model, active: "active", grabbedMorph: 'grabbedMorph', result: "serializedMorph"});
     
     m = TextMorph(m.bounds().bottomLeft().extent(pt(250, 300)), "toggle button for an XML dump of the dragged morph");
