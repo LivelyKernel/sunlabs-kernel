@@ -271,12 +271,16 @@ morphic.buildWorld = function(otherWorld, server) {
 	panel.setColor(Color.blue.lighter().lighter());
 	panel.setBorderWidth(2);
 	panel.model = new Model();
-	var m; 
-	panel.addMorph(m = TextMorph(Rectangle.create(120,0,160,150), "JavaScript Code Browser"));
-	m.setGradient(LinearGradient.makeGradient(Color.blue.lighter().lighter(), Color.blue.lighter().lighter().lighter()));
-	m.wrap = false; 
-	m.layoutChanged();
-
+	var titleBar = Morph(Rectangle.create(0,0,400,20), "rect");
+	titleBar.setGradient(LinearGradient.makeGradient(Color.blue.lighter(), Color.blue.lighter().lighter().lighter()));
+	panel.addMorph(titleBar);
+	titleBar.handlesMouseDown = function(evt) {return true};  // hack for now
+	titleBar.ignoreEvents();
+	var m = TextMorph(Rectangle.create(0,0,160,150), "JavaScript Code Browser");
+	titleBar.addMorph(m);
+	m.setColor(null);  m.setBorderWidth(0);  m.ignoreEvents();
+	m.wrap="shrinkWrap";  m.layoutChanged();
+	m.align(m.bounds().topCenter(),titleBar.shape.bounds().topCenter());
 	    
 	panel.addMorph(m = ListPane(Rectangle.create(0,20,200,150)));
 	m.connect({model: panel.model, list: "classList", selection: "className"});
