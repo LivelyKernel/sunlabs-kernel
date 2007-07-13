@@ -409,8 +409,8 @@ function extra() {
 	    	}
 */
 
-function showStatsViewer() {
-	Morph.prototype.profiler("start");
+function showStatsViewer(profilee,ticksOrTallies) {
+	profilee.profiler("start");
 	var m = ButtonMorph(morphic.world.bounds().topCenter().addXY(0,20).extent(pt(150, 20)));
     	m.connect({model: m, value: ["getValue", "setValue"]});
 	m.setValue = function(newValue) {this.onState = newValue;
@@ -418,19 +418,19 @@ function showStatsViewer() {
 			if(this.statsMorph == null) {
 				this.statsMorph = TextMorph(this.bounds().bottomLeft().extent(pt(200,20)), "no text");
 				morphic.world.addMorph(this.statsMorph); }
-			var stats = Morph.prototype.profiler("ticks");
+			var stats = profilee.profiler(ticksOrTallies);
 			var statsText = "";
 			for (var field in stats) {
 				if (stats[field] instanceof Function) continue;
 				if (stats[field] == 0) continue;
-				statsText += ('stat: ' + field + " = " + stats[field] + "\n");
+				statsText += (ticksOrTallies + ': ' + field + " = " + stats[field] + "\n");
 	    			}
 			this.statsMorph.setTextString(statsText);
-			Morph.prototype.profiler("reset"); } }
+			profilee.profiler("reset"); } }
 	m.getValue = function() {return (this. onState == null) ? false : this. onState};
 	morphic.world.addMorph(m);
-//	t = TextMorph(pt(0,0).extent(m.bounds().extent()), 'Display and reset stats');
-//	t.setColor(null); t.setBorderWidth(0);
-//	m.addMorph(t);
+	t = TextMorph(pt(0,0).extent(m.bounds().extent()), 'Display and reset stats');
+	t.ignoreEvents();  t.setColor(null); t.setBorderWidth(0);
+	m.addMorph(t);
 	};
-  showStatsViewer();
+  showStatsViewer(TextMorph.prototype,"ticks");
