@@ -18,18 +18,18 @@ CheapListMorph.construct = function(initialBounds, itemList) {
 CheapListMorph.prototype.takesKeyboardFocus = function() { 
     return false;
 };
-CheapListMorph.prototype.mouseDown = function(evt) {
+CheapListMorph.prototype.mousedownAction = function(evt) {
     evt.hand.setMouseFocus(this);
     this.selectLineAt(this.charOfPoint(this.localize(evt.mousePoint))); 
 };
-CheapListMorph.prototype.mouseMoved = function(evt) {  
+CheapListMorph.prototype.onousemove = function(evt) {  
     if (!evt.mouseButtonPressed) return;
     var mp = this.localize(evt.mousePoint);
     if (!this.shape.bounds().containsPoint(mp)) 
 	this.selectLineAt(-1);
     else this.selectLineAt(this.charOfPoint(mp)); 
 };
-CheapListMorph.prototype.mouseUp = function(evt) {
+CheapListMorph.prototype.mouseupAction = function(evt) {
 	evt.hand.setMouseFocus(null);
 	if (this.hasNullSelection()) return this.selectionPin.write(null);
 	var lineNo = this.lineNo(this.ensureTextBox().getBounds(this.selectionRange[0]));
@@ -220,10 +220,10 @@ ButtonMorph.construct = function(initialBounds) {
 
 
 ButtonMorph.prototype.handlesMouseDown = function(evt) { return true }
-ButtonMorph.prototype.mouseDown = function(evt) {
+ButtonMorph.prototype.mousedownAction = function(evt) {
 	if(!this.toggles) {this.valuePin.write(true); this.showColorFor(true); } }
-ButtonMorph.prototype.mouseMoved = function(evt) { }
-ButtonMorph.prototype.mouseUp = function(evt) {
+ButtonMorph.prototype.mousemoveAction = function(evt) { }
+ButtonMorph.prototype.mouseupAction = function(evt) {
 	var newValue = this.toggles ? !this.valuePin.read() : false;
 	this.valuePin.write(newValue); this.showColorFor(newValue); }
 ButtonMorph.prototype.showColorFor = function(value) {
@@ -297,8 +297,8 @@ SliderMorph.prototype.sliderMoved = function(evt,slider) {
 	this.adjustForNewBounds(); 
 }
 SliderMorph.prototype.sliderReleased = function(evt,slider) { evt.hand.setMouseFocus(null) }
-SliderMorph.prototype.handlesMouseDown = function(evt) { return true }
-SliderMorph.prototype.mouseDown = function(evt) {
+SliderMorph.prototype.handlesMouseDown = function(evt) { return true; };
+SliderMorph.prototype.mousedownAction = function(evt) {
 	var inc = this.extentPin.read(0.1);
 	var newValue = this.valuePin.read(0.0);
 	var delta = this.localize(evt.mousePoint).subPt(this.slider.bounds().center());
@@ -321,7 +321,8 @@ ScrollPane.construct = function(morphToClip, initialBounds) {
     var clipR = bnds.withWidth(bnds.width - 12).insetBy(1);
 
     // Make a clipMorph with the content (morphToClip) embedded in it
-    m.clipMorph = new ClipMorph(clipR);    m.clipMorph.setBorderWidth(0);
+    m.clipMorph = new ClipMorph(clipR);    
+    m.clipMorph.setBorderWidth(0);
     m.clipMorph.setColor(morphToClip.shape.getColor());
     morphToClip.setBorderWidth(0);
     morphToClip.setPosition(clipR.topLeft());

@@ -186,7 +186,7 @@ morphic.buildWorld = function(otherWorld, server) {
 	widget.clippingCanvas.fillEllipse(new Rectangle(20, 20, 60, 60), Color.red);
 	// dojo.mixin(widget, { drawOn: function(canvas, rect) { this.clippingCanvas.render();}  });
 	widget.drawOn = function(canvas) { this.clippingCanvas.render();} 
-	widget.mouseDown = function(evt) {
+	widget.mousedownAction = function(evt) {
 	    this.moveBy(pt(10, 10));
 	    this.clippingCanvas.setOrigin(this.shape.bounds.x, this.shape.bounds.y); };
 	morphic.world.addMorph(widget); 
@@ -418,7 +418,7 @@ function showStatsViewer(profilee,ticksOrTallies) {
 	var m = ButtonMorph(morphic.world.bounds().topCenter().addXY(0,20).extent(pt(150, 20)));
     	m.connect({model: m, value: ["getValue", "setValue"]});
 	m.setValue = function(newValue) {this.onState = newValue;
-		if(newValue == false) { // on mouseUp...
+		if(newValue == false) { // on mouseup...
 			if(this.statsMorph == null) {
 				this.statsMorph = TextMorph(this.bounds().bottomLeft().extent(pt(200,20)), "no text");
 				morphic.world.addMorph(this.statsMorph); }
