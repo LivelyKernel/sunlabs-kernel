@@ -186,7 +186,7 @@ morphic.buildWorld = function(otherWorld, server) {
 	widget.clippingCanvas.fillEllipse(new Rectangle(20, 20, 60, 60), Color.red);
 	// dojo.mixin(widget, { drawOn: function(canvas, rect) { this.clippingCanvas.render();}  });
 	widget.drawOn = function(canvas) { this.clippingCanvas.render();} 
-	widget.mousedownAction = function(evt) {
+	widget.onMouseDown = function(evt) {
 	    this.moveBy(pt(10, 10));
 	    this.clippingCanvas.setOrigin(this.shape.bounds.x, this.shape.bounds.y); };
 	morphic.world.addMorph(widget); 

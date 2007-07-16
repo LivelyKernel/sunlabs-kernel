@@ -18,18 +18,18 @@ CheapListMorph.construct = function(initialBounds, itemList) {
 CheapListMorph.prototype.takesKeyboardFocus = function() { 
     return false;
 };
-CheapListMorph.prototype.mousedownAction = function(evt) {
+CheapListMorph.prototype.onMouseDown = function(evt) {
     evt.hand.setMouseFocus(this);
     this.selectLineAt(this.charOfPoint(this.localize(evt.mousePoint))); 
 };
-CheapListMorph.prototype.onousemove = function(evt) {  
+CheapListMorph.prototype.onMouseMove = function(evt) {  
     if (!evt.mouseButtonPressed) return;
     var mp = this.localize(evt.mousePoint);
     if (!this.shape.bounds().containsPoint(mp)) 
 	this.selectLineAt(-1);
     else this.selectLineAt(this.charOfPoint(mp)); 
 };
-CheapListMorph.prototype.mouseupAction = function(evt) {
+CheapListMorph.prototype.onMouseUp = function(evt) {
 	evt.hand.setMouseFocus(null);
 	if (this.hasNullSelection()) return this.selectionPin.write(null);
 	var lineNo = this.lineNo(this.ensureTextBox().getBounds(this.selectionRange[0]));
@@ -220,10 +220,10 @@ ButtonMorph.construct = function(initialBounds) {
 
 
 ButtonMorph.prototype.handlesMouseDown = function(evt) { return true }
-ButtonMorph.prototype.mousedownAction = function(evt) {
+ButtonMorph.prototype.onMouseDown = function(evt) {
 	if(!this.toggles) {this.valuePin.write(true); this.showColorFor(true); } }
-ButtonMorph.prototype.mousemoveAction = function(evt) { }
-ButtonMorph.prototype.mouseupAction = function(evt) {
+ButtonMorph.prototype.onMouseMove = function(evt) { }
+ButtonMorph.prototype.onMouseUp = function(evt) {
 	var newValue = this.toggles ? !this.valuePin.read() : false;
 	this.valuePin.write(newValue); this.showColorFor(newValue); }
 ButtonMorph.prototype.showColorFor = function(value) {
@@ -243,7 +243,7 @@ SliderMorph.construct = function(initialBounds) {
     m.valuePin = new Pin(m, new Model(m), "myValue",0.0); // may get overwritten by, eg, connect()
     m.extentPin = new Pin(m, m.valuePin.model, "myExtent", 0.0);
     m.slider = Morph(Rectangle.create(0,0,8,8), "rect");
-    m.slider.relayMouseEvents(m, {mousedown: "sliderPressed", mousemove: "sliderMoved", mouseup: "sliderReleased"})
+    m.slider.relayMouseEvents(m, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"})
     m.addMorph(m.slider);
     m.adjustForNewBounds(m.valuePin.read(0.0)); 
     return m;
@@ -298,7 +298,7 @@ SliderMorph.prototype.sliderMoved = function(evt,slider) {
 }
 SliderMorph.prototype.sliderReleased = function(evt,slider) { evt.hand.setMouseFocus(null) }
 SliderMorph.prototype.handlesMouseDown = function(evt) { return true; };
-SliderMorph.prototype.mousedownAction = function(evt) {
+SliderMorph.prototype.onMouseDown = function(evt) {
 	var inc = this.extentPin.read(0.1);
 	var newValue = this.valuePin.read(0.0);
 	var delta = this.localize(evt.mousePoint).subPt(this.slider.bounds().center());
