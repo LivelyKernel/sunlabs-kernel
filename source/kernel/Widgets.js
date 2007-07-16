@@ -45,7 +45,7 @@ CheapListMorph.prototype.selectLineAt = function(charIx) {
 };
 CheapListMorph.prototype.lineRect = function(r) { //Menu selection displays full width
     var bounds = this.shape.bounds();
-    return CheapListMorph.superClass.lineRect.call(this, Rectangle.create(bounds.x, r.y, bounds.width, r.height)); 
+    return CheapListMorph.superClass.lineRect.call(this, Rectangle(bounds.x, r.y, bounds.width, r.height)); 
 };
 CheapListMorph.prototype.updateList = function(newList) {
     this.itemList = newList;
@@ -242,7 +242,7 @@ SliderMorph.construct = function(initialBounds) {
     // KP: setting color moved to adjustForNewBounds
     m.valuePin = new Pin(m, new Model(m), "myValue",0.0); // may get overwritten by, eg, connect()
     m.extentPin = new Pin(m, m.valuePin.model, "myExtent", 0.0);
-    m.slider = Morph(Rectangle.create(0,0,8,8), "rect");
+    m.slider = Morph(Rectangle(0,0,8,8), "rect");
     m.slider.relayMouseEvents(m, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"})
     m.addMorph(m.slider);
     m.adjustForNewBounds(m.valuePin.read(0.0)); 
