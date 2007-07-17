@@ -209,7 +209,7 @@ ButtonMorph.construct = function(initialBounds) {
     
     var m = ButtonMorph.superconstruct(this, initialBounds, "rect");
     m.toggles = false; // if true each push toggles the model state
-    m.setGradient(LinearGradient.makeGradient(m.baseColor = Color.gray.darker(), m.baseColor.lighter(), LinearGradient.SouthNorth));
+    m.setFill(LinearGradient.makeGradient(m.baseColor = Color.gray.darker(), m.baseColor.lighter(), LinearGradient.SouthNorth));
     m.setBorderWidth(0.3);
     m.setBorderColor(m.baseColor);
     m.shape.roundEdgesBy(4);
@@ -228,7 +228,7 @@ ButtonMorph.prototype.onMouseUp = function(evt) {
 	this.valuePin.write(newValue); this.showColorFor(newValue); }
 ButtonMorph.prototype.showColorFor = function(value) {
     var base = value ? this.baseColor.lighter() : this.baseColor;
-    this.setGradient(LinearGradient.makeGradient(base, base.lighter(), LinearGradient.SouthNorth));
+    this.setFill(LinearGradient.makeGradient(base, base.lighter(), LinearGradient.SouthNorth));
 }
 ButtonMorph.prototype.updateView = function(aspect,controller) {
     if (aspect != this.valuePin.varName) return;
@@ -238,7 +238,7 @@ ButtonMorph.prototype.updateView = function(aspect,controller) {
 SliderMorph = HostClass.create('SliderMorph', Morph);
 SliderMorph.construct = function(initialBounds) {
     var m = SliderMorph.superconstruct(this, initialBounds, "rect");
-    //m.setColor(Color.blue.lighter());
+    //m.setFill(Color.blue.lighter());
     // KP: setting color moved to adjustForNewBounds
     m.valuePin = new Pin(m, new Model(m), "myValue",0.0); // may get overwritten by, eg, connect()
     m.extentPin = new Pin(m, m.valuePin.model, "myExtent", 0.0);
@@ -269,8 +269,8 @@ SliderMorph.prototype.adjustForNewBounds = function() {
 	var sliderExt = pt(elevPix,bnds.height); 
     }
     this.slider.setBounds(bnds.topLeft().addPt(topLeft).extent(sliderExt)); 
-    this.setGradient(LinearGradient.makeGradient(Color.blue.lighter().lighter(), Color.blue.lighter(),
-						 this.vertical() ? LinearGradient.EastWest : LinearGradient.NorthSouth));
+    this.setFill(LinearGradient.makeGradient(Color.blue.lighter().lighter(), Color.blue.lighter(),
+					     this.vertical() ? LinearGradient.EastWest : LinearGradient.NorthSouth));
     
 };
 SliderMorph.prototype.sliderPressed = function(evt,slider) {
@@ -316,14 +316,14 @@ ScrollPane = HostClass.create('ScrollPane', Morph);
 ScrollPane.construct = function(morphToClip, initialBounds) {
     var m = ScrollPane.superconstruct(this, initialBounds, "rect");
     m.setBorderWidth(2);
-    m.setColor(null); 
+    m.setFill(null); 
     var bnds = m.shape.bounds();
     var clipR = bnds.withWidth(bnds.width - 12).insetBy(1);
 
     // Make a clipMorph with the content (morphToClip) embedded in it
     m.clipMorph = new ClipMorph(clipR);    
     m.clipMorph.setBorderWidth(0);
-    m.clipMorph.setColor(morphToClip.shape.getColor());
+    m.clipMorph.shape.setFill(morphToClip.shape.getFill());
     morphToClip.setBorderWidth(0);
     morphToClip.setPosition(clipR.topLeft());
     m.innerMorph = morphToClip;

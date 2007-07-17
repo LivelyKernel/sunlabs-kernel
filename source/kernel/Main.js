@@ -14,7 +14,7 @@ function makeCircleGrid(itemCount) {
 	//console.log([r, cx, cy]);
 	
 	var aShape  = Morph(Rectangle(cx - r, cy - r, 2*r, 2*r), "ellipse");
-	aShape.setColor(randColor(true));
+	aShape.setFill(randColor(true));
 	aShape.setBorderColor(randColor(true));
 	aShape.setFillOpacity(getRand(0, 1));
 	aShape.setBorderWidth(getRand(0, 3));
@@ -152,7 +152,7 @@ morphic.buildWorld = function(otherWorld, server) {
     
     var colorPicker = false;
     if(colorPicker) morphic.world.addMorph(ColorPickerMorph(canvas.bounds().bottomCenter().subPt(pt(0,50)).extent(pt(50,30)),
-							    morphic.world,"setColor",false)) ;	
+							    morphic.world,"setFill",false)) ;	
     var innerWorld = true;
     if (innerWorld) {
 	morphic.world.addMorph(widget = LinkMorph(null, pt(260, 460)));
@@ -174,7 +174,7 @@ morphic.buildWorld = function(otherWorld, server) {
     var showWidgets = true;
     if (showWidgets) { 
 	var panel = Morph(Rectangle(600,300,300,200), "rect");
-	panel.setColor(Color.blue.lighter().lighter());
+	panel.setFill(Color.blue.lighter().lighter());
 	panel.setBorderWidth(2);
 	panel.setBorderColor(Color.red);
 	panel.model = new Model();
@@ -223,17 +223,17 @@ morphic.buildWorld = function(otherWorld, server) {
     var showBrowser = true;
     if(showBrowser) { // Good-old three-pane browser...
 	var panel = Morph(Rectangle(20,20,400,320), "rect");
-	panel.setColor(Color.blue.lighter().lighter());
+	panel.setFill(Color.blue.lighter().lighter());
 	panel.setBorderWidth(2);
 	panel.model = new Model();
 	var titleBar = Morph(Rectangle(0,0,400,20), "rect");
-	titleBar.setGradient(LinearGradient.makeGradient(Color.blue.lighter(), Color.blue.lighter().lighter().lighter()));
+	titleBar.setFill(LinearGradient.makeGradient(Color.blue.lighter(), Color.blue.lighter().lighter().lighter()));
 	panel.addMorph(titleBar);
 	titleBar.handlesMouseDown = function(evt) {return true};  // hack for now
 	titleBar.ignoreEvents();
 	var m = TextMorph(Rectangle(0,0,160,150), "JavaScript Code Browser");
 	titleBar.addMorph(m);
-	m.setColor(null);  m.setBorderWidth(0);  m.ignoreEvents();
+	m.setFill(null);  m.setBorderWidth(0);  m.ignoreEvents();
 	m.wrap="shrinkWrap";  m.layoutChanged();
 	m.align(m.bounds().topCenter(), titleBar.shape.bounds().topCenter());
 	    
@@ -281,7 +281,7 @@ morphic.buildWorld = function(otherWorld, server) {
 	for (var i = 0; i < captions.length; i++) { // add boxed text
 	    var txt = TextMorph(loc.extent(pt(300,50)), captions[i]);
 	    txt.setFontSize(20);
-	    txt.setColor(Color.hsb(70*i,0.7,0.8));
+	    txt.setFill(Color.hsb(70*i,0.7,0.8));
 	    loc = loc.addXY(0,33);
 	    lm.myWorld.addMorph(txt); 
 	}
@@ -393,7 +393,7 @@ function showStatsViewer(profilee,ticksOrTallies) {
 	m.getValue = function() {return (this. onState == null) ? false : this. onState};
 	morphic.world.addMorph(m);
 	t = TextMorph(pt(0,0).extent(m.bounds().extent()), 'Display and reset stats');
-	t.ignoreEvents();  t.setColor(null); t.setBorderWidth(0);
+	t.ignoreEvents();  t.setFill(null); t.setBorderWidth(0);
 	m.addMorph(t);
 	};
   showStatsViewer(TextMorph.prototype,"ticks");
