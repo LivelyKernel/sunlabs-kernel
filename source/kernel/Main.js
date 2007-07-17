@@ -174,7 +174,10 @@ morphic.buildWorld = function(otherWorld, server) {
     var showWidgets = true;
     if (showWidgets) { 
 	var panel = Morph(Rectangle(600,300,300,200), "rect");
-	panel.setFill(Color.blue.lighter().lighter());
+	//panel.setFill(Color.blue.lighter().lighter());
+
+	panel.setFill(StipplePattern.create(Color.blue.lighter().lighter(), 4, Color.gray.lighter(), 1));
+
 	panel.setBorderWidth(2);
 	panel.setBorderColor(Color.red);
 	panel.model = new Model();
