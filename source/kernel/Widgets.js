@@ -119,7 +119,7 @@ Model.prototype.changed = function(varName,source) {
 	// If source is given, we don't update the source of the change
 	// If varName is not given, then null will be the aspect of the updateView()
     for (var i = 0; i < this.dependents.length; i++) {
-	if (source != this.dependents[i]) 
+	if (source != this.dependents[i]) // KP: FIXME: != or !==?
 	    this.dependents[i].updateView(varName, source); 
     } 
 };
@@ -161,7 +161,7 @@ Pin.prototype.read = function (nullValue) {
 	return (val == null) ? nullValue : val; 
 }
 Pin.prototype.write = function (newValue) { 
-    // console.log('Pin.write varName: ' + this.varName /* + " newValue: " + newValue.asString() */);
+    // console.log('Pin.write varName: ' + this.varName /* + " newValue: " + newValue.inspect() */);
     if (this.writes) 
 	this.model.set(this.varName, newValue, this.component); 
 }
@@ -428,7 +428,7 @@ FunctionPane.prototype.computeResult = function() {
 };
 
 FunctionPane.prototype.updateView = function(aspect, controller) {
-    // console.log('in ' + this.asString() + '.updateView ' + aspect + ' on function ' + this.functionText);
+    // console.log('in ' + this.inspect() + '.updateView ' + aspect + ' on function ' + this.functionText);
     if (aspect == "initialize") 
 	this.computeResult(); 
     if (this.argNames().include(aspect)) 

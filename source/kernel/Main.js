@@ -70,36 +70,11 @@ function randColor(alpha)
 
 var Global = this;
 
-Object.prototype.listClassNames = function(exclude) {
-    var a = [];
-    var objectFunctionCount = Object.functionNames().length;
-    for (var name in this) {
-	try {
-	    if (!this[name] || !this[name].prototype)
-		continue;
-	    if (exclude && name.startsWith(exclude)) 
-		continue; // skip the SVGs
-	    
-	    if ((this[name] instanceof Function) 
-		&& (this[name].functionNames().length > objectFunctionCount)) {
-		a.push(name); 
-	    }
-	} catch (er) {
-	    // FF can throw an exception here
-	}
-    }
-    a.push("Object", "Global"); // a few others of note
-    // console.log('found array ' + a.sort());
-    return a.sort(); 
-};
-
-
-
 morphic.buildWorld = function(otherWorld, server) {
     morphic.world.addHand(HandMorph(true));
     morphic.world.hands.each(function(hand) { morphic.canvas.appendChild(hand); }.bind(this));
 
-    console.log('added hand ' + morphic.world.firstHand().asString());
+    console.log('added hand ' + morphic.world.firstHand().inspect());
     var widget; 
     // zzHand = world.worldState.hands[0];
     var showBrowseMenu = false;
@@ -139,7 +114,6 @@ morphic.buildWorld = function(otherWorld, server) {
 	widget = CheapMenuMorph(pt(30,20), items);
 	widget.stayUp = true; // keep on screen
 	morphic.world.addMorph(widget); 
-	
     }
     
     var showStar = true;
@@ -171,33 +145,18 @@ morphic.buildWorld = function(otherWorld, server) {
 	widget.startStepping(1000);
 	}
     
-    if(false) {
+    if (false) {
 	var clipWidget = ClipMorph(Rectangle(500, 200, 150, 150));
     	morphic.world.addMorph(clipWidget);
-	}
-    
-    var canvasTest = false;
-    if(canvasTest) { // canvas test -- doesn't work any more :-(
-	widget = Morph(new Rectangle(20, 20, 100, 100), "rectangle");	
-	var b = widget.bounds();
-	println("b rect = " + [b.x, b.y, b.width, b.height]);
-	widget.clippingCanvas = canvas.primCanvas.createClippingCanvas(b.x, b.y, b.width, b.height);
-	widget.clippingCanvas.fillRect(new Rectangle(10, 10, 80, 80), Color.blue);
-	widget.clippingCanvas.fillEllipse(new Rectangle(20, 20, 60, 60), Color.red);
-	// dojo.mixin(widget, { drawOn: function(canvas, rect) { this.clippingCanvas.render();}  });
-	widget.drawOn = function(canvas) { this.clippingCanvas.render();} 
-	widget.onMouseDown = function(evt) {
-	    this.moveBy(pt(10, 10));
-	    this.clippingCanvas.setOrigin(this.shape.bounds.x, this.shape.bounds.y); };
-	morphic.world.addMorph(widget); 
     }
-
+    
     var colorPicker = false;
     if(colorPicker) morphic.world.addMorph(ColorPickerMorph(canvas.bounds().bottomCenter().subPt(pt(0,50)).extent(pt(50,30)),
 							    morphic.world,"setColor",false)) ;	
     var innerWorld = true;
     if (innerWorld) {
 	morphic.world.addMorph(widget = LinkMorph(null, pt(260, 460)));
+
 	var showBitmap = true;
 	if(showBitmap) { 
 	    var width = 800;
@@ -207,11 +166,7 @@ morphic.buildWorld = function(otherWorld, server) {
 		"Point=e&Point=b&Point.latitude_e6=61500000&Point.longitude_e6=-3191200600&Point.iconid=16&"+
 		"Point=e&latitude_e6=61500000&longitude_e6=-3191200000&zm=8000&w=" +
 		width + "&h=" + height + "&cc=US&min_priority=2";
-	    widget.myWorld.addMorph(PixmapMorph(Rectangle(50, 10, width, height), url), true);
-	    //var checkurl = "file:Applications/ScriptBrowserDemo/src/widget/templates/check.gif";
-	    //morphic.world.addMorphBack(new PixmapMorph(checkurl, new Rectangle(20, 20, 16*3, 16)));
-	    
-	    //world.addMorph(new PixmapMorph('file:Applications/Canvascape/sky.jpg', new Rectangle(50, 50, 500, 150)));
+	    widget.myWorld.addMorphBack(PixmapMorph(Rectangle(50, 10, width, height), url));
 	}
 	
     }
@@ -309,17 +264,21 @@ morphic.buildWorld = function(otherWorld, server) {
 	zzPanel = panel; 
     }
     
-
-    
     var slideWorld = true;
     if(slideWorld) { // Make a slide for "turning web programming upside down"
 	var lm = LinkMorph(null, pt(260, 520));
-	// grr why doesn't this work???
-	lm.myWorld.submorphs().each( function(m) { console.log('inspecting ' + m.asString()); if (!(m instanceof LinkMorph))  m.remove(); });
+
+	// KP: note that element deletion interferes with iteration, so
+	// we make an array first and then remove 
+	lm.myWorld.submorphs().toArray().each(function(m) { 
+		if (m instanceof LinkMorph) 
+		    return;
+		m.remove(); 
+	    });
 	// lm.setPosition(lm.position().addXY(65,0));
 	var loc = pt(100, 200);
 	var captions = ["               JavaScript","            Widget World","     HTML, DOM, CSS, ETC...","                Browser","   bios:  Network,  Graphics"];
-	for (var i= 0; i < captions.length; i++) { // add boxed text
+	for (var i = 0; i < captions.length; i++) { // add boxed text
 	    var txt = TextMorph(loc.extent(pt(300,50)), captions[i]);
 	    txt.setFontSize(20);
 	    txt.setColor(Color.hsb(70*i,0.7,0.8));
@@ -384,7 +343,7 @@ function extra() {
 	    return "toggle button for an XML dump of the grabbed morph";
 	console.log('grabbed morph is ' + grabbedMorph); 
 	if (grabbedMorph.hasSubmorphs()) 
-	    return "not serializing complex morph " + grabbedMorph.asString() + " to avoid mayhem";
+	    return "not serializing complex morph " + grabbedMorph.inspect() + " to avoid mayhem";
 	return new XMLSerializer().serializeToString(grabbedMorph); 
     };
     
@@ -418,7 +377,7 @@ function showStatsViewer(profilee,ticksOrTallies) {
 	var m = ButtonMorph(morphic.world.bounds().topCenter().addXY(0,20).extent(pt(150, 20)));
     	m.connect({model: m, value: ["getValue", "setValue"]});
 	m.setValue = function(newValue) {this.onState = newValue;
-		if(newValue == false) { // on mouseup...
+					 if(newValue == false) { // on mouseup...
 			if(this.statsMorph == null) {
 				this.statsMorph = TextMorph(this.bounds().bottomLeft().extent(pt(200,20)), "no text");
 				morphic.world.addMorph(this.statsMorph); }
