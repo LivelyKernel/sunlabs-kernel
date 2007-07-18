@@ -168,7 +168,8 @@ morphic.buildWorld = function(otherWorld, server) {
 		width + "&h=" + height + "&cc=US&min_priority=2";
 	    widget.myWorld.addMorphBack(PixmapMorph(Rectangle(50, 10, width, height), url));
 	}
-	
+	widget.myWorld.addMorph(DoodleMorph(pt(500, 50).extent(pt(400,400))));
+
     }
     
     var showWidgets = true;
@@ -288,7 +289,12 @@ morphic.buildWorld = function(otherWorld, server) {
 	    loc = loc.addXY(0,33);
 	    lm.myWorld.addMorph(txt); 
 	}
+
+
 	morphic.world.addMorph(lm); 
+
+
+
     }
     return morphic.world;
 }
