@@ -166,10 +166,9 @@ morphic.buildWorld = function(otherWorld, server) {
 		"Point=e&Point=b&Point.latitude_e6=61500000&Point.longitude_e6=-3191200600&Point.iconid=16&"+
 		"Point=e&latitude_e6=61500000&longitude_e6=-3191200000&zm=8000&w=" +
 		width + "&h=" + height + "&cc=US&min_priority=2";
-	    widget.myWorld.addMorphBack(PixmapMorph(Rectangle(50, 10, width, height), url));
+	    widget.myWorld.addMorphBack(ImageMorph(Rectangle(50, 10, width, height), url));
 	}
 	widget.myWorld.addMorph(DoodleMorph(pt(500, 50).extent(pt(400,400))));
-
     }
     
     var showWidgets = true;
@@ -230,17 +229,8 @@ morphic.buildWorld = function(otherWorld, server) {
 	panel.setFill(Color.blue.lighter().lighter());
 	panel.setBorderWidth(2);
 	panel.model = new Model();
-	var titleBar = Morph(Rectangle(0,0,400,20), "rect");
-	titleBar.setFill(LinearGradient.makeGradient(Color.blue.lighter(), Color.blue.lighter().lighter().lighter()));
-	panel.addMorph(titleBar);
-	titleBar.handlesMouseDown = function(evt) {return true};  // hack for now
-	titleBar.ignoreEvents();
-	var m = TextMorph(Rectangle(0,0,160,150), "JavaScript Code Browser");
-	titleBar.addMorph(m);
-	m.setFill(null);  m.setBorderWidth(0);  m.ignoreEvents();
-	m.wrap="shrinkWrap";  m.layoutChanged();
-	m.align(m.bounds().topCenter(), titleBar.shape.bounds().topCenter());
-	    
+	panel.addMorph(Morph.makeTitleBar('JavaScript Code Browser', 400));
+	
 	panel.addMorph(m = ListPane(Rectangle(0,20,200,150)));
 	m.connect({model: panel.model, list: "classList", selection: "className"});
 	panel.addMorph(m = ListPane(Rectangle(200,20,200,150)));
@@ -350,7 +340,7 @@ function extra() {
     var serializer = function(active, grabbedMorph) { 
 	if (!active) 
 	    return "toggle button for an XML dump of the grabbed morph";
-	console.log('grabbed morph is ' + grabbedMorph); 
+	console.log('grabbed morph is %s', grabbedMorph); 
 	if (grabbedMorph.hasSubmorphs()) 
 	    return "not serializing complex morph " + grabbedMorph.inspect() + " to avoid mayhem";
 	return new XMLSerializer().serializeToString(grabbedMorph); 
@@ -360,13 +350,27 @@ function extra() {
     evaluator.connect({model: model, active: "active", grabbedMorph: 'grabbedMorph', result: "serializedMorph"});
     
     m = TextMorph(m.bounds().bottomLeft().extent(pt(250, 300)), "toggle button for an XML dump of the grabbed morph");
+    
+    m.processCommandKeys = function(key) {
+	if (key == 's') {
+	    //console.log('intercepting command-s');
+	    var snippet = document.implementation.createDocument("", "", null);
+	    snippet.write(this.textString);
+	    console.log('snippet is %s', new XMLSerializer().serializeToString(snippet.documentElement));
+	    return;
+	} else {
+	    return TextMorph.prototype.processCommandKeys.call(this, key);
+	}
+
+    };
 
     m.connect({model: model, text: "serializedMorph"});
     
     morphic.world.addMorph(m);
 
 };
-//   extra();
+if (this['localconfig'] && localconfig.xmldumper)
+    extra();
 
 /*
 	    TextMorph.prototype.profiler("start");
