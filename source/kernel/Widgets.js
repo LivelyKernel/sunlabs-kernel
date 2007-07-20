@@ -19,11 +19,37 @@ CheapListMorph.construct = function(initialBounds, itemList) {
 Object.extend(CheapListMorph.prototype, {
 
     takesKeyboardFocus: function() { 
-	return false;
+	return true;
+    },
+
+    onKeyDown: function(evt) {
+	switch (evt.keyCode) {
+	case Event.KEY_UP: {
+	    var lineNo = this.lineNo(this.ensureTextBox().getBounds(this.selectionRange[0]));
+	    if (lineNo > 0) {
+		this.selectLineAt(this.selectionRange[0] - 1); 
+		this.selectionPin.write(this.itemList[lineNo - 1]); 
+	    } 
+	    break;
+	}
+	case Event.KEY_DOWN: {
+	    var lineNo = this.lineNo(this.ensureTextBox().getBounds(this.selectionRange[0]));
+	    if (lineNo < this.itemList.length - 1) {
+		this.selectLineAt(this.selectionRange[1] + 2); // skip the '\n' ?
+		this.selectionPin.write(this.itemList[lineNo + 1]); 
+	    } 
+	    break;
+	}
+	}
+	Event.stop(evt);
     },
 
     onMouseDown: function(evt) {
 	evt.hand.setMouseFocus(this);
+	if (this.takesKeyboardFocus()) {
+	    evt.hand.setKeyboardFocus(this);
+	    this.setHasKeyboardFocus(true); 
+	}
 	this.selectLineAt(this.charOfPoint(this.localize(evt.mousePoint))); 
     },
 
@@ -130,7 +156,7 @@ Object.extend(CheapMenuMorph.prototype, {
 	if(!evt.mouseButtonPressed) return;
 	var charIx = this.charOfPoint(this.localize(evt.mousePoint));
 	this.startSelection(charIx);
-	this.selectionRange = TextMorph.selectWord(this.textString,this.selectionRange[0]);
+	this.selectionRange = TextMorph.selectWord(this.textString, this.selectionRange[0]);
 	this.changed(); 
     },
 
