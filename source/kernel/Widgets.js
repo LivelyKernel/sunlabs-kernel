@@ -4,73 +4,177 @@ CheapListMorph.construct = function(initialBounds, itemList) {
 //	Note:  A proper ListMorph is a list of independent submorphs
 //	CheapListMorphs simply leverage off Textmorph's ability to display
 // 	multiline paragraphs, though some effort is made to use a similar interface.
-	var listText = (itemList == null) ? "" : itemList.join("\n");
-	var m = CheapListMorph.superconstruct(this, initialBounds, listText);
-	m.wrap = "noWrap";
-	m.itemList = itemList;
-	// this default pin may get overwritten by, eg, connect()...
-	m.selectionPin = new Pin(m, new Model(m), "mySelection");
-	m.listPin = new Pin(m, m.selectionPin.model, "myList");
-	m.layoutChanged();
-	m.setBorderColor(Color.blue); 
-	return m;
+    var listText = (itemList == null) ? "" : itemList.join("\n");
+    var m = CheapListMorph.superconstruct(this, initialBounds, listText);
+    m.wrap = "noWrap";
+    m.itemList = itemList;
+    // this default pin may get overwritten by, eg, connect()...
+    m.selectionPin = new Pin(m, new Model(m), "mySelection");
+    m.listPin = new Pin(m, m.selectionPin.model, "myList");
+    m.layoutChanged();
+    m.setBorderColor(Color.blue); 
+    return m;
 };
-CheapListMorph.prototype.takesKeyboardFocus = function() { 
-    return false;
-};
-CheapListMorph.prototype.onMouseDown = function(evt) {
-    evt.hand.setMouseFocus(this);
-    this.selectLineAt(this.charOfPoint(this.localize(evt.mousePoint))); 
-};
-CheapListMorph.prototype.onMouseMove = function(evt) {  
-    if (!evt.mouseButtonPressed) return;
-    var mp = this.localize(evt.mousePoint);
-    if (!this.shape.bounds().containsPoint(mp)) 
-	this.selectLineAt(-1);
-    else this.selectLineAt(this.charOfPoint(mp)); 
-};
-CheapListMorph.prototype.onMouseUp = function(evt) {
+
+Object.extend(CheapListMorph.prototype, {
+
+    takesKeyboardFocus: function() { 
+	return false;
+    },
+
+    onMouseDown: function(evt) {
+	evt.hand.setMouseFocus(this);
+	this.selectLineAt(this.charOfPoint(this.localize(evt.mousePoint))); 
+    },
+
+    onMouseMove: function(evt) {  
+	if (!evt.mouseButtonPressed) return;
+	var mp = this.localize(evt.mousePoint);
+	if (!this.shape.bounds().containsPoint(mp)) 
+	    this.selectLineAt(-1);
+	else this.selectLineAt(this.charOfPoint(mp)); 
+    },
+
+    onMouseUp: function(evt) {
 	evt.hand.setMouseFocus(null);
 	if (this.hasNullSelection()) return this.selectionPin.write(null);
 	var lineNo = this.lineNo(this.ensureTextBox().getBounds(this.selectionRange[0]));
 	this.selectionPin.write(this.itemList[lineNo]); 
-};
-CheapListMorph.prototype.drawSelection = function() {
+    },
+
+    drawSelection: function() {
 	if (this.hasNullSelection()) return;
 	CheapListMorph.superClass.drawSelection.call(this); 
-};
-CheapListMorph.prototype.selectLineAt = function(charIx) {  
+    },
+    
+    selectLineAt: function(charIx) {  
 	this.selectionRange = (charIx == -1) ? [0,-1] : TextMorph.selectWord(this.textString, charIx);
 	this.changed(); 
-};
-CheapListMorph.prototype.lineRect = function(r) { //Menu selection displays full width
-    var bounds = this.shape.bounds();
-    return CheapListMorph.superClass.lineRect.call(this, Rectangle(bounds.x, r.y, bounds.width, r.height)); 
-};
-CheapListMorph.prototype.updateList = function(newList) {
-    this.itemList = newList;
-    var listText = (this.itemList == null) ? "" : this.itemList.join("\n");
-    this.updateTextString(listText); 
-};
+    },
+    
+    lineRect: function(r) { //Menu selection displays full width
+	var bounds = this.shape.bounds();
+	return CheapListMorph.superClass.lineRect.call(this, Rectangle(bounds.x, r.y, bounds.width, r.height)); 
+    },
+    
+    updateList: function(newList) {
+	this.itemList = newList;
+	var listText = (this.itemList == null) ? "" : this.itemList.join("\n");
+	this.updateTextString(listText); 
+    },
 
-CheapListMorph.prototype.setSelectionToMatch = function(item) {
-    var lineStart = -1; 
-    var firstChar = 0;
-    for (var i = 0; i < this.itemList.length; i++) {
-	if (this.itemList[i] == item) {
-	    lineStart = firstChar; 
-	    break; }
-	firstChar += this.itemList[i].length + 1; }
-    this.selectLineAt(lineStart); 
-};
+    setSelectionToMatch: function(item) {
+	var lineStart = -1; 
+	var firstChar = 0;
+	for (var i = 0; i < this.itemList.length; i++) {
+	    if (this.itemList[i] == item) {
+		lineStart = firstChar; 
+		break; }
+	    firstChar += this.itemList[i].length + 1; }
+	this.selectLineAt(lineStart); 
+    },
 
-CheapListMorph.prototype.updateView = function(aspect, controller) {
-    if (aspect == this.listPin.varName) {
-	this.updateList(this.listPin.read());
+    updateView: function(aspect, controller) {
+	if (aspect == this.listPin.varName) {
+	    this.updateList(this.listPin.read());
+	}
+	if (aspect == this.selectionPin.varName) 
+	    this.setSelectionToMatch(this.selectionPin.read()); 
     }
-    if (aspect == this.selectionPin.varName) 
-	this.setSelectionToMatch(this.selectionPin.read()); 
+});
+
+
+
+CheapMenuMorph = HostClass.create('CheapMenuMorph', TextMorph);
+
+CheapMenuMorph.construct = function(location, itemList) { // Later do proper submorph implementation
+// Note:  A proper morphic menu consists of a stack of submorphs that are essentially
+//	active buttons, and that can even be dragged out and used as such.
+//	CheapMenuMorphs, on the contrary, simply leverage off Textmorph's ability to display
+// 	multiline paragraphs, though some effort is made to use a similar interface.
+    var m = CheapMenuMorph.superconstruct(this, location.extent(pt(200, 200)),
+					  CheapMenuMorph.makeMenuString(itemList));
+    m.wrap = "noWrap";
+    m.itemList = itemList;
+    m.stayUp = false; // set true to keep on screen
+    m.textColor = Color.blue;
+    m.layoutChanged();
+    m.setBorderColor(Color.blue); 
+    m.setFill(StipplePattern.create(Color.white, 3, Color.blue.lighter().lighter().lighter().lighter().lighter(), 1));
+    return m;
 };
+
+CheapMenuMorph.makeMenuString = function(listOfTuples) {
+    return listOfTuples.map(function(each) {return each[0]}).join("\n");
+};
+
+Object.extend(CheapMenuMorph.prototype, {
+    addItem: function(item) {
+	// item is a triple [name,target,function,args (if any)]
+	this.itemList.push(item) 
+    },
+    ensureTextString: function() {
+	if (this.textString == null)  
+	    this.textString = CheapMenuMorph.makeMenuString(this.itemList);
+	return this.textString; 
+    },
+
+    onMouseDown: function(evt) {
+	CheapMenuMorph.superClass.onMouseDown.call(this,evt);
+	this.selectionRange = TextMorph.selectWord(this.textString, this.selectionRange[0]);
+	this.changed(); 
+    },
+
+    onMouseMove: function(evt) {  
+	if(!evt.mouseButtonPressed) return;
+	var charIx = this.charOfPoint(this.localize(evt.mousePoint));
+	this.startSelection(charIx);
+	this.selectionRange = TextMorph.selectWord(this.textString,this.selectionRange[0]);
+	this.changed(); 
+    },
+
+    onMouseUp: function(evt) {
+	evt.hand.setMouseFocus(null);
+	if(this.hasNullSelection()) 
+	    return this.setNullSelectionAt(0);
+	var lineNo = this.lineNo(this.ensureTextBox().getBounds(this.selectionRange[0]));
+	var item = this.itemList[lineNo];
+	
+	if (item) { // KP: added conditional
+	    var target = item[1];
+	    var func = item[2];
+	    if (func != null) { 
+		func.call(target, item, this); 
+	    } // call as target.func(selectedItem,thisMenu)
+	}
+	this.setNullSelectionAt(0);
+	if (!this.stayUp) 
+	    this.remove(); 
+    },
+
+    takesKeyboardFocus: function() { 
+	return false; 
+    },
+
+    drawSelection: function(canvas) {
+	if (this.hasNullSelection()) return;
+	CheapMenuMorph.superClass.drawSelection.call(this,canvas); 
+    },
+
+    lineRect: function(r) { //Menu selection displays full width
+	var bounds = this.shape.bounds();
+	return CheapMenuMorph.superClass.lineRect.call(this, Rectangle(bounds.x, r.y, bounds.width, r.height)); 
+    },
+
+    layoutChanged: function() {
+	// ???
+	//if (!(this instanceof HandMorph) )
+	//console.log('change of layout on ' + this.inspect());
+	this.getTransform().setOn(this);
+	this.fullBounds = null;
+	//this.bounds(); 
+    }
+});
 
 
 //	Basic theory of widgets...
@@ -99,40 +203,51 @@ CheapListMorph.prototype.updateView = function(aspect, controller) {
 //	ex: setSelectorName
 //		sets the name, also triggers update of aspect
 
-function Model(dep) { // An MVC-style model.
-    //Broadcasts an update message to all dependents when a value changes.
-    this.dependents = (dep != null) ? [dep] : []; 
-};
-Model.prototype.addDependent = function (dep) { 
-    this.dependents.push(dep); 
-};
-Model.prototype.removeDependent = function (dep) {
-    var ix = this.dependents.indexOf(dep);
-    if(ix < 0) return;
-    this.dependents.splice(ix, 1); 
-};
-Model.prototype.set = function (varName,newValue,source) {
+Model = Class.create();// An MVC-style model.
+
+Object.extend(Model.prototype, {
+    initialize: function(dep) { 
+	//Broadcasts an update message to all dependents when a value changes.
+	this.dependents = (dep != null) ? [dep] : []; 
+    },
+
+    addDependent: function (dep) { 
+	this.dependents.push(dep); 
+    },
+
+    removeDependent: function (dep) {
+	var ix = this.dependents.indexOf(dep);
+	if (ix < 0) return;
+	this.dependents.splice(ix, 1); 
+    },
+
+    set: function (varName, newValue, source) {
 	this[varName] = newValue;
 	this.changed(varName, source); 
-};
-Model.prototype.changed = function(varName,source) {
+    },
+
+    changed: function(varName, source) {
 	// If source is given, we don't update the source of the change
 	// If varName is not given, then null will be the aspect of the updateView()
-    for (var i = 0; i < this.dependents.length; i++) {
-	if (source != this.dependents[i]) // KP: FIXME: != or !==?
-	    this.dependents[i].updateView(varName, source); 
-    } 
-};
-Model.prototype.toString = function() {
-    var str = "";
-    for (var name in this) {
-	if (!(this[name] instanceof Function) && (name != "dependents")) 
-	    str += name + ": " + this[name] + "\n";
+	for (var i = 0; i < this.dependents.length; i++) {
+	    if (source != this.dependents[i]) // KP: FIXME: != or !==?
+		this.dependents[i].updateView(varName, source); 
+	} 
+    },
+    
+    toString: function() {
+	var str = "";
+	for (var name in this) {
+	    if (!(this[name] instanceof Function) && (name != "dependents")) 
+		str += name + ": " + this[name] + "\n";
+	}
+	return str; 
     }
-    return str; 
-}
- 
-function Pin(component, model, varName, initialValue) { // A Fabrik-style variable interface
+});
+
+Pin = Class.create();
+Object.extend(Pin.prototype, {
+    initialize: function(component, model, varName, initialValue) { // A Fabrik-style variable interface
 	this.component = component; // the component that will be the source for writes
 	this.model = model;  // the model toand from which reads and writes will pass
 	this.varName = varName;  // the variable in the model to which this pin is wired
@@ -148,58 +263,68 @@ function Pin(component, model, varName, initialValue) { // A Fabrik-style variab
 	}
 	if (initialValue != null) // KP: what if it's undefined?
 	    this.write(initialValue); 
-};
+    },
 
-Pin.prototype.toString = function() {
-    return "Pin(" + this.varName + ")";
-};
+    toString: function() {
+	return "Pin(" + this.varName + ")";
+    },
 
-Pin.prototype.read = function (nullValue) {
+    read: function (nullValue) {
 	var val = (this.reads) ? this.model[this.varName] : null;
 	if (this.varName == "this") 
 	    val = this.model; // temp hack for model viewer
 	return (val == null) ? nullValue : val; 
-}
-Pin.prototype.write = function (newValue) { 
-    // console.log('Pin.write varName: ' + this.varName /* + " newValue: " + newValue.inspect() */);
-    if (this.writes) 
-	this.model.set(this.varName, newValue, this.component); 
-}
+    },
 
-function MessagePort(component,model,readName,writeName) { // A more flexible message interface
+    write: function (newValue) { 
+	// console.log('Pin.write varName: ' + this.varName /* + " newValue: " + newValue.inspect() */);
+	if (this.writes) 
+	    this.model.set(this.varName, newValue, this.component); 
+    }
+});
+
+MessagePort = Class.create();
+Object.extend(MessagePort.prototype, {
+    initialize: function(component, model, readName, writeName) { // A more flexible message interface
 	// Note that widgets can be used with either Fabrik-style variable wiring, or O-O style messages
 	this.component = component; // the component that will be the source for writes
 	this.model = model;  // the model toand from which reads and writes will pass
 	this.readName = readName;
 	this.writeName = writeName; 
-	this.read = function () { 
-	    return (this.readName != null) ? this.model[this.readName].call(this.model) : null; 
-	};
-	this.write = function (newValue) { 
-	    if (this.writeName != null) this.model[this.writeName].call(this.model, newValue); 
-	};
-};
+    },
 
-// Morph model category
-Morph.prototype.connect = function(plugSpec) {
-    var model = plugSpec.model;
-    var mvc = false;
-    for (var prop in plugSpec)  {
-	if (prop != "model" && plugSpec.hasOwnProperty(prop)) {
-	    var portSpec = plugSpec[prop];
-	    if (portSpec  instanceof Array) {
-		this[prop + "Pin"] = new MessagePort(this, model, portSpec[0], portSpec[1]); 
-	    } else {
-		// console.log("pin " + portSpec); 
-		this[prop + "Pin"] = new Pin(this, model, portSpec); 
-		mvc = true; 
-	    } 
-	}
+    read: function () { 
+	return (this.readName != null) ? this.model[this.readName].call(this.model) : null; 
+    },
+
+    write: function (newValue) { 
+	if (this.writeName != null) this.model[this.writeName].call(this.model, newValue); 
     }
-    if(mvc) 
-	model.addDependent(this); 
-};
-Morph.prototype.updateView = function(aspect, controller) { };
+});
+	      
+// Morph model category
+Object.extend(Morph.prototype, {
+    connect: function(plugSpec) {
+	var model = plugSpec.model;
+	var mvc = false;
+	for (var prop in plugSpec)  {
+	    if (prop != "model" && plugSpec.hasOwnProperty(prop)) {
+		var portSpec = plugSpec[prop];
+		if (portSpec  instanceof Array) {
+		    this[prop + "Pin"] = new MessagePort(this, model, portSpec[0], portSpec[1]); 
+		} else {
+		    // console.log("pin " + portSpec); 
+		    this[prop + "Pin"] = new Pin(this, model, portSpec); 
+		    mvc = true; 
+		} 
+	    }
+	}
+	if(mvc) 
+	    model.addDependent(this); 
+    },
+
+    updateView: function(aspect, controller) { }
+});
 
 
 ButtonMorph = HostClass.create('ButtonMorph', Morph);
@@ -217,7 +342,6 @@ ButtonMorph.construct = function(initialBounds) {
     m.valuePin = new Pin(m, new Model(m), "myValue"); 
     return m;
 };
-
 
 ButtonMorph.prototype.handlesMouseDown = function(evt) { return true }
 ButtonMorph.prototype.onMouseDown = function(evt) {
