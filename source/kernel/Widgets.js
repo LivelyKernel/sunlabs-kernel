@@ -100,7 +100,8 @@ CheapMenuMorph.construct = function(location, itemList) { // Later do proper sub
     m.textColor = Color.blue;
     m.layoutChanged();
     m.setBorderColor(Color.blue); 
-    m.setFill(StipplePattern.create(Color.white, 3, Color.blue.lighter().lighter().lighter().lighter().lighter(), 1));
+    m.setBorderWidth(0.5);
+    m.setFill(StipplePattern.create(Color.white, 3, Color.blue.lighter(5), 1));
     return m;
 };
 
