@@ -229,7 +229,7 @@ morphic.buildWorld = function(otherWorld, server) {
 	panel.setFill(Color.blue.lighter().lighter());
 	panel.setBorderWidth(2);
 	panel.model = new Model();
-	panel.addMorph(Morph.makeTitleBar('JavaScript Code Browser', 400));
+	panel.addMorph(Morph.makeTitleBar('JavaScript Code Browser', 400, panel));
 	
 	panel.addMorph(m = ListPane(Rectangle(0,20,200,150)));
 	m.connect({model: panel.model, list: "classList", selection: "className"});
