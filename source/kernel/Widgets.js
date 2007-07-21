@@ -257,7 +257,7 @@ Object.extend(Model.prototype, {
 	// If source is given, we don't update the source of the change
 	// If varName is not given, then null will be the aspect of the updateView()
 	for (var i = 0; i < this.dependents.length; i++) {
-	    if (source != this.dependents[i]) // KP: FIXME: != or !==?
+	    if (source !== this.dependents[i]) // KP: FIXME: != or !==?
 		this.dependents[i].updateView(varName, source); 
 	} 
     },
@@ -518,6 +518,12 @@ function ListPane(initialBounds) {
 function TextPane(initialBounds) {
     var pane = ScrollPane(TextMorph(initialBounds,"-----"), initialBounds); 
     pane.setAttributeNS(morphic.ns.MORPHIC, "type", "TextPane");
+    return pane;
+};
+
+function PrintPane(initialBounds) {
+    var pane = ScrollPane(PrintMorph(initialBounds,"-----"), initialBounds); 
+    pane.setAttributeNS(morphic.ns.MORPHIC, "type", "printPane");
     return pane;
 };
 
