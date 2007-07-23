@@ -77,43 +77,39 @@ morphic.buildWorld = function(otherWorld, server) {
     console.log('added hand ' + morphic.world.firstHand().inspect());
     var widget; 
     // zzHand = world.worldState.hands[0];
-    var showBrowseMenu = false;
+    var showBrowseMenu = true;
     if (showBrowseMenu) {  // Make a stay-up menu
 	var classNames = Global.listClassNames("SVG");
-	// console.log('found classes ' + classNames);
-	// Function to o methodPane
-	var showMethodPane = function(item, sourceMenu) {
-	    var theClass = item[3];
-	    var className = item[4];
-	    var methodName = item[0];
+	var browser = {};
+	// When className is selected, show the method names
+	browser.selectedClassName = function(className) {
+	    if (this.spawnee != null) this.spawnee.remove();
+	    this.selectedClass = className;
+	    if (className == null) return;
+	    var methodNames = (className == "Global") ? Global.constructor.functionNames().without(classNames)
+			: Global[className].localFunctionNames();
+
+	    this.topRight = this.classMenu.bounds().topRight();
+	    var methodMenu = NewCheapMenuMorph(this.topRight, browser, "selectedMethodName", methodNames);
+	    this.spawnee = methodMenu; // so it can be removed
+	    morphic.world.addMorph(methodMenu); 
+	    }
+	// When methodName is selected, show the method text
+	browser.selectedMethodName = function(methodName) {
+	    var className = this.selectedClass;
 	    var code = (className == "Global") ? Global.constructor[methodName].toString()
-	    : theClass.prototype[methodName].toString();
+			: Global[className].prototype[methodName].toString();
 	    if (className != "Global" && methodName != "constructor") {
 		code = className + ".prototype." + methodName + " = " + code; 
-	    }
-	    var codePane = TextMorph(sourceMenu.position().extent(pt(350,50)),code);
-	    sourceMenu.parentMenu.spawnee = codePane; // so it can be removed
+	    	}
+	    var codePane = TextMorph(this.topRight.extent(pt(350,50)),code);
+	    this.spawnee = codePane; // so it can be removed
 	    morphic.world.addMorph(codePane); 
-	}
-	// Function to show the method names
-	var showMethodNameMenu = function(item,sourceMenu) {
-	    if (sourceMenu.spawnee != null) sourceMenu.spawnee.remove();
-	    var name = item[0];
-	    var theClass = Global[name];
-	    var fns = (name == "Global") ? Global.constructor.functionNames().without(classNames)
-	    : theClass.localFunctionNames();
-
-	    var fnList = fns.map(function(each) { return [each, this, showMethodPane, theClass, name]}, this);
-
-	    var menu = CheapMenuMorph(sourceMenu.bounds().topRight().addXY(0,1), fnList);
-	    sourceMenu.spawnee = menu; // so it can be removed
-	    menu.parentMenu = sourceMenu;
-	    morphic.world.addMorph(menu); 
-	}
-	var items =  classNames.map(function(each) { return [each, this, showMethodNameMenu]}, this);
-	widget = CheapMenuMorph(pt(30,20), items);
-	widget.stayUp = true; // keep on screen
-	morphic.world.addMorph(widget); 
+	    }
+	//Put up a permanent menu of class names...
+	browser.classMenu = NewCheapMenuMorph(pt(30,20), browser, "selectedClassName", classNames);
+	browser.classMenu.stayUp = true; // keep on screen
+	morphic.world.addMorph(browser.classMenu); 
     }
     
     var showStar = true;

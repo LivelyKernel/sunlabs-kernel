@@ -111,6 +111,50 @@ Object.extend(CheapListMorph.prototype, {
 
 
 
+NewCheapMenuMorph = HostClass.create('NewCheapMenuMorph', CheapListMorph);
+NewCheapMenuMorph.construct = function(location, target, targetFunctionName, itemList, parametersIfAny) {
+//	target and targetFunctionName determine the call at mouseUp
+//	itemList is an array of strings
+//	parametersIfAny is a parallel list or a singleton, or null
+//	Note:  A proper ListMorph is a list of independent submorphs
+//	CheapListMorphs simply leverage off Textmorph's ability to display multiline paragraphs
+    var m = NewCheapMenuMorph.superconstruct(this, location.extent(pt(200, 200)), itemList);
+    m.target = target;
+    m.targetFunctionName = targetFunctionName;
+    m.parameters = parametersIfAny;
+    m.stayUp = false; // set true to keep on screen
+    m.textColor = Color.blue;
+    m.setBorderWidth(0.5);
+    m.setFill(StipplePattern.create(Color.white, 3, Color.blue.lighter(5), 1));
+    return m;
+};
+
+Object.extend(NewCheapMenuMorph.prototype, {
+
+    takesKeyboardFocus: function() { 
+	return false;
+    },
+    onMouseUp: function(evt) {
+	evt.hand.setMouseFocus(null);
+	if(this.hasNullSelection()) 
+	    return this.setNullSelectionAt(0);
+	var lineNo = this.lineNo(this.ensureTextBox().getBounds(this.selectionRange[0]));
+	var selectedItem = this.itemList[lineNo];
+	var parameter = (this.parameters instanceof Array) ? this.parameters[lineNo]
+		: this.parameters;
+	
+	if (selectedItem) { // KP: added conditional
+	    var func = this.target[this.targetFunctionName];
+	    if (func == null) console.log('Could not find function ' + this.targetFunctionName);
+	    	// call as target.targetFunctionName(selectedItem,parameter)
+		else func.call(this.target, selectedItem, parameter); 
+	}
+	this.setNullSelectionAt(0);
+	if (!this.stayUp) this.remove(); 
+    }
+});
+
+
 CheapMenuMorph = HostClass.create('CheapMenuMorph', TextMorph);
 
 CheapMenuMorph.construct = function(location, itemList) { // Later do proper submorph implementation
