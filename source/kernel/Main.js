@@ -128,7 +128,7 @@ morphic.buildWorld = function(otherWorld, server) {
 		vertices.push(p.addPt(center)); }
 	    return vertices; }
 	widget = Morph(pt(0,0).asRectangle(), "rect");
-	widget.setShape(PolygonShape.create(makeStarVertices(50,pt(0,0),0),Color.yellow,1,Color.black));
+	widget.setShape(PolygonShape(null, makeStarVertices(50,pt(0,0),0),Color.yellow,1,Color.black));
 	//makeGradient(Color.yellow, Color.yellow.lighter().lighter()));
 	widget.setPosition(pt(300,400));
 	morphic.world.addMorph(widget);
@@ -370,6 +370,24 @@ function extra() {
     morphic.world.addMorph(m);
 
 };
+
+function showXMLDump(morph) {
+
+    var panel = Morph(morph.bounds().topLeft().addPt(pt(5,0)).extent(pt(250, 300)), "rect");
+    morphic.world.addMorph(panel);
+    var tb = panel.addMorph(Morph.makeTitleBar("XML dump", panel.bounds().width, panel));
+    var tbheight = tb.bounds().height;
+    if (morph.hasSubmorphs()) {
+	var xml = 'not serializing complex morph to avoid mayhem';
+    } else {
+        var xml = new XMLSerializer().serializeToString(morph); 
+    }
+    panel.addMorph(TextMorph(Rectangle(0, tbheight, panel.bounds().width, panel.bounds().height - tbheight), xml));
+
+};
+
+
+
 if (this['localconfig'] && localconfig.xmldumper)
     extra();
 
