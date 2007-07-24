@@ -143,11 +143,11 @@ Object.extend(CheapMenuMorph.prototype, {
 	var parameter = (this.parameters instanceof Array) ? this.parameters[lineNo]
 		: this.parameters;
 	
-	if (selectedItem) { // KP: added conditional
+	if (selectedItem) {
 	    var func = this.target[this.targetFunctionName];
 	    if (func == null) console.log('Could not find function ' + this.targetFunctionName);
-	    	// call as target.targetFunctionName(selectedItem,parameter)
-		else func.call(this.target, selectedItem, parameter); 
+	    	// call as target.targetFunctionName(selectedItem,parameter,evt)
+		else func.call(this.target, selectedItem, parameter, evt); 
 	}
 	this.setNullSelectionAt(0);
 	if (!this.stayUp) this.remove(); 
