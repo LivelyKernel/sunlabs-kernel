@@ -111,14 +111,14 @@ Object.extend(CheapListMorph.prototype, {
 
 
 
-NewCheapMenuMorph = HostClass.create('NewCheapMenuMorph', CheapListMorph);
-NewCheapMenuMorph.construct = function(location, target, targetFunctionName, itemList, parametersIfAny) {
+CheapMenuMorph = HostClass.create('CheapMenuMorph', CheapListMorph);
+CheapMenuMorph.construct = function(location, target, targetFunctionName, itemList, parametersIfAny) {
 //	target and targetFunctionName determine the call at mouseUp
 //	itemList is an array of strings
 //	parametersIfAny is a parallel list or a singleton, or null
 //	Note:  A proper ListMorph is a list of independent submorphs
 //	CheapListMorphs simply leverage off Textmorph's ability to display multiline paragraphs
-    var m = NewCheapMenuMorph.superconstruct(this, location.extent(pt(200, 200)), itemList);
+    var m = CheapMenuMorph.superconstruct(this, location.extent(pt(200, 200)), itemList);
     m.target = target;
     m.targetFunctionName = targetFunctionName;
     m.parameters = parametersIfAny;
@@ -129,7 +129,7 @@ NewCheapMenuMorph.construct = function(location, target, targetFunctionName, ite
     return m;
 };
 
-Object.extend(NewCheapMenuMorph.prototype, {
+Object.extend(CheapMenuMorph.prototype, {
 
     takesKeyboardFocus: function() { 
 	return false;
@@ -154,98 +154,6 @@ Object.extend(NewCheapMenuMorph.prototype, {
     }
 });
 
-
-CheapMenuMorph = HostClass.create('CheapMenuMorph', TextMorph);
-
-CheapMenuMorph.construct = function(location, itemList) { // Later do proper submorph implementation
-// Note:  A proper morphic menu consists of a stack of submorphs that are essentially
-//	active buttons, and that can even be dragged out and used as such.
-//	CheapMenuMorphs, on the contrary, simply leverage off Textmorph's ability to display
-// 	multiline paragraphs, though some effort is made to use a similar interface.
-    var m = CheapMenuMorph.superconstruct(this, location.extent(pt(200, 200)),
-					  CheapMenuMorph.makeMenuString(itemList));
-    m.wrap = "noWrap";
-    m.itemList = itemList;
-    m.stayUp = false; // set true to keep on screen
-    m.textColor = Color.blue;
-    m.layoutChanged();
-    m.setBorderColor(Color.blue); 
-    m.setBorderWidth(0.5);
-    m.setFill(StipplePattern.create(Color.white, 3, Color.blue.lighter(5), 1));
-    return m;
-};
-
-CheapMenuMorph.makeMenuString = function(listOfTuples) {
-    return listOfTuples.map(function(each) {return each[0]}).join("\n");
-};
-
-Object.extend(CheapMenuMorph.prototype, {
-    addItem: function(item) {
-	// item is a triple [name,target,function,args (if any)]
-	this.itemList.push(item) 
-    },
-    ensureTextString: function() {
-	if (this.textString == null)  
-	    this.textString = CheapMenuMorph.makeMenuString(this.itemList);
-	return this.textString; 
-    },
-
-    onMouseDown: function(evt) {
-	CheapMenuMorph.superClass.onMouseDown.call(this,evt);
-	this.selectionRange = TextMorph.selectWord(this.textString, this.selectionRange[0]);
-	this.changed(); 
-    },
-
-    onMouseMove: function(evt) {  
-	if(!evt.mouseButtonPressed) return;
-	var charIx = this.charOfPoint(this.localize(evt.mousePoint));
-	this.startSelection(charIx);
-	this.selectionRange = TextMorph.selectWord(this.textString, this.selectionRange[0]);
-	this.changed(); 
-    },
-
-    onMouseUp: function(evt) {
-	evt.hand.setMouseFocus(null);
-	if(this.hasNullSelection()) 
-	    return this.setNullSelectionAt(0);
-	var lineNo = this.lineNo(this.ensureTextBox().getBounds(this.selectionRange[0]));
-	var item = this.itemList[lineNo];
-	
-	if (item) { // KP: added conditional
-	    var target = item[1];
-	    var func = item[2];
-	    if (func != null) { 
-		func.call(target, item, this); 
-	    } // call as target.func(selectedItem,thisMenu)
-	}
-	this.setNullSelectionAt(0);
-	if (!this.stayUp) 
-	    this.remove(); 
-    },
-
-    takesKeyboardFocus: function() { 
-	return false; 
-    },
-
-    drawSelection: function(canvas) {
-	if (this.hasNullSelection()) return;
-	CheapMenuMorph.superClass.drawSelection.call(this,canvas); 
-    },
-
-    lineRect: function(r) { //Menu selection displays full width
-	var bounds = this.shape.bounds();
-	return CheapMenuMorph.superClass.lineRect.call(this, Rectangle(bounds.x, r.y, bounds.width, r.height)); 
-    },
-
-    layoutChanged: function() {
-	// ???
-	//if (!(this instanceof HandMorph) )
-	//console.log('change of layout on ' + this.inspect());
-	this.getTransform().setOn(this);
-	this.fullBounds = null;
-	//this.bounds(); 
-    }
-});
 
 
 //	Basic theory of widgets...

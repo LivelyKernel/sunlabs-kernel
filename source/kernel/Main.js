@@ -77,7 +77,7 @@ morphic.buildWorld = function(otherWorld, server) {
     console.log('added hand ' + morphic.world.firstHand().inspect());
     var widget; 
     // zzHand = world.worldState.hands[0];
-    var showBrowseMenu = true;
+    var showBrowseMenu = false;
     if (showBrowseMenu) {  // Make a stay-up menu
 	var classNames = Global.listClassNames("SVG");
 	var browser = {};
@@ -90,7 +90,7 @@ morphic.buildWorld = function(otherWorld, server) {
 			: Global[className].localFunctionNames();
 
 	    this.topRight = this.classMenu.bounds().topRight();
-	    var methodMenu = NewCheapMenuMorph(this.topRight, browser, "selectedMethodName", methodNames);
+	    var methodMenu = CheapMenuMorph(this.topRight, browser, "selectedMethodName", methodNames);
 	    this.spawnee = methodMenu; // so it can be removed
 	    morphic.world.addMorph(methodMenu); 
 	    }
@@ -107,7 +107,7 @@ morphic.buildWorld = function(otherWorld, server) {
 	    morphic.world.addMorph(codePane); 
 	    }
 	//Put up a permanent menu of class names...
-	browser.classMenu = NewCheapMenuMorph(pt(30,20), browser, "selectedClassName", classNames);
+	browser.classMenu = CheapMenuMorph(pt(30,20), browser, "selectedClassName", classNames);
 	browser.classMenu.stayUp = true; // keep on screen
 	morphic.world.addMorph(browser.classMenu); 
     }
