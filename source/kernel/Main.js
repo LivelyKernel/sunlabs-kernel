@@ -241,7 +241,7 @@ morphic.buildWorld = function(otherWorld, server) {
 	m.connect({model: panel.model, result: "classList"});
 	m = FunctionPane(Rectangle(0,322,400,36), "function(className) {" +
 "	    var theClass = Global[className];" +
-"	    return (className == 'Global') ? Global.constructor.functionNames().without(classNames)" +
+"	    return (className == 'Global') ? Global.constructor.functionNames().without(className)" +
 "	    	: theClass.localFunctionNames(); }");
 	m.connect({model: panel.model, className: "className", result: "methodList"});
 	m = FunctionPane(Rectangle(0,358,400,50), "function(className,methodName) { return Function.methodString(className,methodName); }");
