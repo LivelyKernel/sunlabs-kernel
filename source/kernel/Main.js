@@ -131,7 +131,8 @@ morphic.buildWorld = function(otherWorld, server) {
 	var spinningStar = true;
 	if(spinningStar) {  // Make the star spin as a test of stepping
 	    widget.startSteppingFunction(60, function(msTime) {
-		    this.setRotation(this.getRotation() + 0.02); }) }
+		    this.setRotation(this.getRotation() + 0.1); }) 
+	}
     }
     var showClock = true;
     if (showClock) {
@@ -139,7 +140,7 @@ morphic.buildWorld = function(otherWorld, server) {
 	//clockWidget.addClipRect(Rectangle(20,20,80,80));
 	morphic.world.addMorph(widget);
 	widget.startStepping(1000);
-	}
+    }
     
     if (false) {
 	var clipWidget = ClipMorph(Rectangle(500, 200, 150, 150));
@@ -379,9 +380,7 @@ function showXMLDump(morph) {
         var xml = new XMLSerializer().serializeToString(morph); 
     }
     panel.addMorph(TextMorph(Rectangle(0, tbheight, panel.bounds().width, panel.bounds().height - tbheight), xml));
-
 };
-
 
 
 if (this['localconfig'] && localconfig.xmldumper)

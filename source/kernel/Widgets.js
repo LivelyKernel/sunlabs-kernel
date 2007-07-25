@@ -1,5 +1,6 @@
 CheapListMorph = HostClass.create('CheapListMorph', TextMorph);
-CheapListMorph.construct = function(initialBounds, itemList) {
+Object.extend(CheapListMorph, {
+    construct: function(initialBounds, itemList) {
 //	itemList is an array of strings
 //	Note:  A proper ListMorph is a list of independent submorphs
 //	CheapListMorphs simply leverage off Textmorph's ability to display
@@ -14,7 +15,8 @@ CheapListMorph.construct = function(initialBounds, itemList) {
     m.layoutChanged();
     m.setBorderColor(Color.blue); 
     return m;
-};
+    }
+});
 
 Object.extend(CheapListMorph.prototype, {
 
@@ -112,22 +114,25 @@ Object.extend(CheapListMorph.prototype, {
 
 
 CheapMenuMorph = HostClass.create('CheapMenuMorph', CheapListMorph);
-CheapMenuMorph.construct = function(location, target, targetFunctionName, itemList, parametersIfAny) {
-//	target and targetFunctionName determine the call at mouseUp
-//	itemList is an array of strings
-//	parametersIfAny is a parallel list or a singleton, or null
-//	Note:  A proper ListMorph is a list of independent submorphs
-//	CheapListMorphs simply leverage off Textmorph's ability to display multiline paragraphs
-    var m = CheapMenuMorph.superconstruct(this, location.extent(pt(200, 200)), itemList);
-    m.target = target;
-    m.targetFunctionName = targetFunctionName;
-    m.parameters = parametersIfAny;
-    m.stayUp = false; // set true to keep on screen
-    m.textColor = Color.blue;
-    m.setBorderWidth(0.5);
-    m.setFill(StipplePattern.create(Color.white, 3, Color.blue.lighter(5), 1));
-    return m;
-};
+
+Object.extend(CheapMenuMorph, {
+    construct: function(location, target, targetFunctionName, itemList, parametersIfAny) {
+	//	target and targetFunctionName determine the call at mouseUp
+	//	itemList is an array of strings
+	//	parametersIfAny is a parallel list or a singleton, or null
+	//	Note:  A proper ListMorph is a list of independent submorphs
+	//	CheapListMorphs simply leverage off Textmorph's ability to display multiline paragraphs
+	var m = CheapMenuMorph.superconstruct(this, location.extent(pt(200, 200)), itemList);
+	m.target = target;
+	m.targetFunctionName = targetFunctionName;
+	m.parameters = parametersIfAny;
+	m.stayUp = false; // set true to keep on screen
+	m.textColor = Color.blue;
+	m.setBorderWidth(0.5);
+	m.setFill(StipplePattern.create(Color.white, 3, Color.blue.lighter(5), 1));
+	return m;
+    }
+});
 
 Object.extend(CheapMenuMorph.prototype, {
 
@@ -248,14 +253,14 @@ Object.extend(Pin.prototype, {
 	return "Pin(" + this.varName + ")";
     },
 
-    read: function (nullValue) {
+    read: function(nullValue) {
 	var val = (this.reads) ? this.model[this.varName] : null;
 	if (this.varName == "this") 
 	    val = this.model; // temp hack for model viewer
 	return (val == null) ? nullValue : val; 
     },
 
-    write: function (newValue) { 
+    write: function(newValue) { 
 	// console.log('Pin.write varName: ' + this.varName /* + " newValue: " + newValue.inspect() */);
 	if (this.writes) 
 	    this.model.set(this.varName, newValue, this.component); 
@@ -305,88 +310,110 @@ Object.extend(Morph.prototype, {
     updateView: function(aspect, controller) { }
 });
 
-
+/**
+* @class ButtonMorph
+*/
 ButtonMorph = HostClass.create('ButtonMorph', Morph);
-ButtonMorph.construct = function(initialBounds) {
-    // A ButtonMorph is the simplest widget
-    // It read and writes the boolean variable, this.model[this.propertyName]
-    
-    var m = ButtonMorph.superconstruct(this, initialBounds, "rect");
-    m.toggles = false; // if true each push toggles the model state
-    m.setFill(LinearGradient.makeGradient(m.baseColor = Color.gray.darker(), m.baseColor.lighter(), LinearGradient.SouthNorth));
-    m.setBorderWidth(0.3);
-    m.setBorderColor(m.baseColor);
-    m.shape.roundEdgesBy(4);
-    // this default pin may get overwritten by, eg, connect()...
-    m.valuePin = new Pin(m, new Model(m), "myValue"); 
-    return m;
-};
+Object.extend(ButtonMorph, {
+    construct: function(initialBounds) {
+	// A ButtonMorph is the simplest widget
+	// It read and writes the boolean variable, this.model[this.propertyName]
+	
+	var m = ButtonMorph.superconstruct(this, initialBounds, "rect");
+	m.toggles = false; // if true each push toggles the model state
+	m.setFill(LinearGradient.makeGradient(m.baseColor = Color.gray.darker(), m.baseColor.lighter(), LinearGradient.SouthNorth));
+	m.setBorderWidth(0.3);
+	m.setBorderColor(m.baseColor);
+	m.shape.roundEdgesBy(4);
+	// this default pin may get overwritten by, eg, connect()...
+	m.valuePin = new Pin(m, new Model(m), "myValue"); 
+	return m;
+    }
+});
 
-ButtonMorph.prototype.handlesMouseDown = function(evt) { return true }
-ButtonMorph.prototype.onMouseDown = function(evt) {
-	if(!this.toggles) {this.valuePin.write(true); this.showColorFor(true); } }
-ButtonMorph.prototype.onMouseMove = function(evt) { }
-ButtonMorph.prototype.onMouseUp = function(evt) {
+Object.extend(ButtonMorph.prototype, {
+    handlesMouseDown: function(evt) { return true; },
+    
+    onMouseDown: function(evt) {
+	if (!this.toggles) {
+	    this.valuePin.write(true); 
+	    this.showColorFor(true); 
+	} 
+    },
+    
+    onMouseMove: function(evt) { },
+
+    onMouseUp: function(evt) {
 	var newValue = this.toggles ? !this.valuePin.read() : false;
-	this.valuePin.write(newValue); this.showColorFor(newValue); }
-ButtonMorph.prototype.showColorFor = function(value) {
-    var base = value ? this.baseColor.lighter() : this.baseColor;
-    this.setFill(LinearGradient.makeGradient(base, base.lighter(), LinearGradient.SouthNorth));
-}
-ButtonMorph.prototype.updateView = function(aspect,controller) {
-    if (aspect != this.valuePin.varName) return;
-    this.showColorFor(this.valuePin.read()); 
-};
+	this.valuePin.write(newValue); 
+	this.showColorFor(newValue); 
+    },
+    
+    showColorFor: function(value) {
+	var base = value ? this.baseColor.lighter() : this.baseColor;
+	this.setFill(LinearGradient.makeGradient(base, base.lighter(), LinearGradient.SouthNorth));
+    },
+
+    updateView: function(aspect, controller) {
+	if (aspect != this.valuePin.varName) return;
+	this.showColorFor(this.valuePin.read()); 
+    }
+});
 
 SliderMorph = HostClass.create('SliderMorph', Morph);
-SliderMorph.construct = function(initialBounds) {
-    var m = SliderMorph.superconstruct(this, initialBounds, "rect");
-    //m.setFill(Color.blue.lighter());
-    // KP: setting color moved to adjustForNewBounds
-    m.valuePin = new Pin(m, new Model(m), "myValue",0.0); // may get overwritten by, eg, connect()
-    m.extentPin = new Pin(m, m.valuePin.model, "myExtent", 0.0);
-    m.slider = Morph(Rectangle(0,0,8,8), "rect");
-    m.slider.relayMouseEvents(m, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"})
-    m.addMorph(m.slider);
-    m.adjustForNewBounds(m.valuePin.read(0.0)); 
-    return m;
-};
 
-SliderMorph.prototype.vertical = function() {
-    var bnds = this.shape.bounds();
-    return bnds.height > bnds.width; 
-};
-
-SliderMorph.prototype.adjustForNewBounds = function() {
-	// This method adjusts the slider for changes in value as well as geometry
-    var val = this.valuePin.read(0.0);
-    var bnds = this.shape.bounds();
-    var ext = this.extentPin.read(0.0);
-    if (this.vertical()) { // more vertical...
-	var elevPix = Math.max(ext*bnds.height,6); // thickness of elevator in pixels
-	var topLeft = pt(0,(bnds.height-elevPix)*val);
-	var sliderExt = pt(bnds.width,elevPix); 
-    } else { // more horizontal...
-	var elevPix = Math.max(ext*bnds.width,6); // thickness of elevator in pixels
-	var topLeft = pt((bnds.width-elevPix)*val,0);
-	var sliderExt = pt(elevPix,bnds.height); 
+Object.extend(SliderMorph, {
+    construct: function(initialBounds) {
+	var m = SliderMorph.superconstruct(this, initialBounds, "rect");
+	//m.setFill(Color.blue.lighter());
+	// KP: setting color moved to adjustForNewBounds
+	m.valuePin = new Pin(m, new Model(m), "myValue",0.0); // may get overwritten by, eg, connect()
+	m.extentPin = new Pin(m, m.valuePin.model, "myExtent", 0.0);
+	m.slider = Morph(Rectangle(0,0,8,8), "rect");
+	m.slider.relayMouseEvents(m, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"})
+	m.addMorph(m.slider);
+	m.adjustForNewBounds(m.valuePin.read(0.0)); 
+	return m;
     }
-    this.slider.setBounds(bnds.topLeft().addPt(topLeft).extent(sliderExt)); 
-    this.setFill(LinearGradient.makeGradient(Color.blue.lighter().lighter(), Color.blue.lighter(),
-					     this.vertical() ? LinearGradient.EastWest : LinearGradient.NorthSouth));
+});
+
+Object.extend(SliderMorph.prototype, {
+    vertical: function() {
+	var bnds = this.shape.bounds();
+	return bnds.height > bnds.width; 
+    },
     
-};
-SliderMorph.prototype.sliderPressed = function(evt,slider) {
+    adjustForNewBounds: function() {
+	// This method adjusts the slider for changes in value as well as geometry
+	var val = this.valuePin.read(0.0);
+	var bnds = this.shape.bounds();
+	var ext = this.extentPin.read(0.0);
+	if (this.vertical()) { // more vertical...
+	    var elevPix = Math.max(ext*bnds.height,6); // thickness of elevator in pixels
+	    var topLeft = pt(0,(bnds.height-elevPix)*val);
+	    var sliderExt = pt(bnds.width,elevPix); 
+	} else { // more horizontal...
+	    var elevPix = Math.max(ext*bnds.width,6); // thickness of elevator in pixels
+	    var topLeft = pt((bnds.width-elevPix)*val,0);
+	    var sliderExt = pt(elevPix,bnds.height); 
+	}
+	this.slider.setBounds(bnds.topLeft().addPt(topLeft).extent(sliderExt)); 
+	this.setFill(LinearGradient.makeGradient(Color.blue.lighter().lighter(), Color.blue.lighter(),
+						 this.vertical() ? LinearGradient.EastWest : LinearGradient.NorthSouth));
+	
+    },
     
+    sliderPressed: function(evt, slider) {
 	//	Note: want setMouseFocus to also cache the transform and record the hitPoint.
 	//	Ideally thereafter only have to say, eg, morph moveTo: evt.hand.adjustedMousePoint
 	this.hitPoint = this.localize(evt.mousePoint).subPt(this.slider.bounds().topLeft());
 	evt.hand.setMouseFocus(slider); 
-};
-SliderMorph.prototype.sliderMoved = function(evt,slider) {
+    },
+    
+    sliderMoved: function(evt, slider) {
 	if(!evt.mouseButtonPressed) return;
 	// Compute a new value from a new mouse point, and emit it
-
+	
 	var p = this.localize(evt.mousePoint).subPt(this.hitPoint);
 	var bnds = this.shape.bounds();
 	var ext = this.extentPin.read(0.0);
@@ -398,68 +425,85 @@ SliderMorph.prototype.sliderMoved = function(evt,slider) {
 	}
 	this.valuePin.write(this.clipValue(newValue));
 	this.adjustForNewBounds(); 
-}
-SliderMorph.prototype.sliderReleased = function(evt,slider) { evt.hand.setMouseFocus(null) }
-SliderMorph.prototype.handlesMouseDown = function(evt) { return true; };
-SliderMorph.prototype.onMouseDown = function(evt) {
+    },
+
+    sliderReleased: function(evt, slider) { evt.hand.setMouseFocus(null) },
+    
+    handlesMouseDown: function(evt) { return true; },
+    
+    onMouseDown: function(evt) {
 	var inc = this.extentPin.read(0.1);
 	var newValue = this.valuePin.read(0.0);
 	var delta = this.localize(evt.mousePoint).subPt(this.slider.bounds().center());
 	if(this.vertical() ? delta.y > 0 : delta.x > 0) newValue += inc;
-		else newValue -= inc;
+	else newValue -= inc;
 	this.valuePin.write(this.clipValue(newValue));
-	this.adjustForNewBounds(); }
-SliderMorph.prototype.clipValue = function(val) { return Math.min(1.0,Math.max(0,0,val)); }
-SliderMorph.prototype.updateView = function(aspect,controller) {
-    if (aspect == this.valuePin.varName || aspect == this.extentPin.varName) 
 	this.adjustForNewBounds(); 
-};
+    },
+    
+    clipValue: function(val) { 
+	return Math.min(1.0,Math.max(0,0,val)); 
+    },
+    
+    updateView: function(aspect, controller) {
+	if (aspect == this.valuePin.varName || aspect == this.extentPin.varName) 
+	    this.adjustForNewBounds(); 
+    }
+});
 	
 ScrollPane = HostClass.create('ScrollPane', Morph);
-ScrollPane.construct = function(morphToClip, initialBounds) {
-    var m = ScrollPane.superconstruct(this, initialBounds, "rect");
-    m.setBorderWidth(2);
-    m.setFill(null); 
-    var bnds = m.shape.bounds();
-    var clipR = bnds.withWidth(bnds.width - 12).insetBy(1);
+Object.extend(ScrollPane, {
+    construct: function(morphToClip, initialBounds) {
+	var m = ScrollPane.superconstruct(this, initialBounds, "rect");
+	m.setBorderWidth(2);
+	m.setFill(null); 
+	var bnds = m.shape.bounds();
+	var clipR = bnds.withWidth(bnds.width - 12).insetBy(1);
+	
+	// Make a clipMorph with the content (morphToClip) embedded in it
+	m.clipMorph = new ClipMorph(clipR);    
+	m.clipMorph.setBorderWidth(0);
+	m.clipMorph.shape.setFill(morphToClip.shape.getFill());
+	morphToClip.setBorderWidth(0);
+	morphToClip.setPosition(clipR.topLeft());
+	m.innerMorph = morphToClip;
+	m.clipMorph.addMorph(morphToClip);
+	m.addMorph(m.clipMorph);
+	
+	// Add a scrollbar
+	m.scrollBar = SliderMorph(bnds.withTopLeft(clipR.topRight()))
+	m.scrollBar.connect({model: m, value: ["getScrollPosition", "setScrollPosition"], extent: ["getVisibleExtent"]});
+	m.addMorph(m.scrollBar);
+	return m;
+    }
+});
 
-    // Make a clipMorph with the content (morphToClip) embedded in it
-    m.clipMorph = new ClipMorph(clipR);    
-    m.clipMorph.setBorderWidth(0);
-    m.clipMorph.shape.setFill(morphToClip.shape.getFill());
-    morphToClip.setBorderWidth(0);
-    morphToClip.setPosition(clipR.topLeft());
-    m.innerMorph = morphToClip;
-    m.clipMorph.addMorph(morphToClip);
-    m.addMorph(m.clipMorph);
-
-    // Add a scrollbar
-    m.scrollBar = SliderMorph(bnds.withTopLeft(clipR.topRight()))
-    m.scrollBar.connect({model: m, value: ["getScrollPosition", "setScrollPosition"], extent: ["getVisibleExtent"]});
-    m.addMorph(m.scrollBar);
-    return m;
-};
-
-ScrollPane.prototype.connect = function(plugSpec) { // connection is mapped to innerMorph
+Object.extend(ScrollPane.prototype, {
+    connect: function(plugSpec) { // connection is mapped to innerMorph
 	this.innerMorph.connect(plugSpec); 
-};
-ScrollPane.prototype.getScrollPosition = function() { 
+    },
+    
+    getScrollPosition: function() { 
 	var ht = this.innerMorph.bounds().height;
 	var slideRoom = ht - this.bounds().height;
 	return -this.innerMorph.position().y/slideRoom; 
-};
-ScrollPane.prototype.setScrollPosition = function(scrollPos) { 
+    },
+    
+    setScrollPosition: function(scrollPos) { 
 	var ht = this.innerMorph.bounds().height;
 	var slideRoom = ht - this.bounds().height;
 	this.innerMorph.setPosition(pt(this.innerMorph.position().x, -slideRoom*scrollPos)); 
-};
-ScrollPane.prototype.getVisibleExtent = function(scrollPos) {
+    },
+    
+    getVisibleExtent: function(scrollPos) {
 	return Math.min(1, this.bounds().height / Math.max(10, this.innerMorph.bounds().height)); 
-};
-ScrollPane.prototype.scrollToTop = function() {
-    this.setScrollPosition(0);
-    this.scrollBar.adjustForNewBounds(); 
-};
+    },
+    
+    scrollToTop: function() {
+	this.setScrollPosition(0);
+	this.scrollBar.adjustForNewBounds(); 
+    }
+});
 
 function ListPane(initialBounds) {
     var pane = ScrollPane(CheapListMorph(initialBounds,["-----"]), initialBounds); 
@@ -480,68 +524,76 @@ function PrintPane(initialBounds) {
 };
 
 FunctionPane = HostClass.create('FunctionPane', ScrollPane);
-FunctionPane.construct = function(initialBounds, functionText) {
-    //	Just like a textPane, except it edits a function definition,
-    //	And its participation in model networks is as that function body
-    if (functionText == null) functionText = "function() { return null; }";
-    var m = FunctionPane.superconstruct(this, TextMorph(initialBounds, functionText), initialBounds);
-    m.functionText = functionText;
-    m.innerMorph.connect({model: m, text: [null, "compileNewDef"]});
-    m.compileNewDef(functionText); 
-    return m;
-};
 
-FunctionPane.prototype.connect = function(plugSpec) { // get around override
-    Morph.prototype.connect.call(this, plugSpec); 
-};
-
-FunctionPane.prototype.compileNewDef = function(contentString) {
-    this.functionBody = eval("(" + contentString + ")");
-    if (this.resultPin != null) 
-	this.computeResult(); 
-};
-FunctionPane.prototype.argPins = function() {
-    var pins = [];
-    for (var pinName in this) {
-	// KP: instanceof is an optimization
-	if (!(pinName instanceof Function) && pinName.endsWith("Pin") && pinName != "resultPin") 
-	    pins.push(this[pinName]);
+Object.extend(FunctionPane, {
+    construct: function(initialBounds, functionText) {
+	//	Just like a textPane, except it edits a function definition,
+	//	And its participation in model networks is as that function body
+	if (functionText == null) functionText = "function() { return null; }";
+	var m = FunctionPane.superconstruct(this, TextMorph(initialBounds, functionText), initialBounds);
+	m.functionText = functionText;
+	m.innerMorph.connect({model: m, text: [null, "compileNewDef"]});
+	m.compileNewDef(functionText); 
+	return m;
     }
-    return pins; 
-};
-FunctionPane.prototype.argNames = function() { // pin names parallel to func arg names
-    var names = [];
-    for (var pinName in this) {
-	// KP: instanceof is an optimization
-	if (!(pinName instanceof Function) && pinName.endsWith("Pin") && pinName != "resultPin") {
-	    names.push(pinName.substring(0, pinName.length - 3)); 
+});
+
+Object.extend(FunctionPane.prototype, {
+    connect: function(plugSpec) { // get around override
+	Morph.prototype.connect.call(this, plugSpec); 
+    },
+
+    compileNewDef: function(contentString) {
+	this.functionBody = eval("(" + contentString + ")");
+	if (this.resultPin != null) 
+	    this.computeResult(); 
+    },
+    
+    argPins: function() {
+	var pins = [];
+	for (var pinName in this) {
+	    // KP: instanceof is an optimization
+	    if (!(pinName instanceof Function) && pinName.endsWith("Pin") && pinName != "resultPin") 
+		pins.push(this[pinName]);
 	}
-    }
-    // console.log('computed argNames as ' + names);
-    return names; 
-};
-FunctionPane.prototype.computeResult = function() {
-    // console.log('computing result on ' + this.functionText);
-    var args = this.argPins().invoke('read');
-    for (var i = 0; i < args.length; i++) {
-	if (args[i] == null)  {
-	    var offender = this.argPins()[i];
-	    // console.log('no value for ' + offender + "," + offender.varName);
-	    return; // Only fire if all args have value
+	return pins; 
+    },
+    
+    argNames: function() { // pin names parallel to func arg names
+	var names = [];
+	for (var pinName in this) {
+	    // KP: instanceof is an optimization
+	    if (!(pinName instanceof Function) && pinName.endsWith("Pin") && pinName != "resultPin") {
+		names.push(pinName.substring(0, pinName.length - 3)); 
+	    }
 	}
-    }
-    var model = this.resultPin.model;
-    var res = this.functionBody.apply(model, args);
-    // console.log('eval returned ' + res + ' to result pin ' + this.resultPin);
-    this.resultPin.write(res); 
-};
+	// console.log('computed argNames as ' + names);
+	return names; 
+    },
 
-FunctionPane.prototype.updateView = function(aspect, controller) {
-    // console.log('in ' + this.inspect() + '.updateView ' + aspect + ' on function ' + this.functionText);
-    if (aspect == "initialize") 
-	this.computeResult(); 
-    if (this.argNames().include(aspect)) 
-	this.computeResult();
-};
+    computeResult: function() {
+	// console.log('computing result on ' + this.functionText);
+	var args = this.argPins().invoke('read');
+	for (var i = 0; i < args.length; i++) {
+	    if (args[i] == null)  {
+		var offender = this.argPins()[i];
+		// console.log('no value for ' + offender + "," + offender.varName);
+		return; // Only fire if all args have value
+	    }
+	}
+	var model = this.resultPin.model;
+	var res = this.functionBody.apply(model, args);
+	// console.log('eval returned ' + res + ' to result pin ' + this.resultPin);
+	this.resultPin.write(res); 
+    },
+
+    updateView: function(aspect, controller) {
+	// console.log('in ' + this.inspect() + '.updateView ' + aspect + ' on function ' + this.functionText);
+	if (aspect == "initialize") 
+	    this.computeResult(); 
+	if (this.argNames().include(aspect)) 
+	    this.computeResult();
+    }
+});
     
 console.log('Loaded Widgets.js');
