@@ -153,7 +153,7 @@ morphic.buildWorld = function(otherWorld, server) {
     var innerWorld = true;
     if (innerWorld) {
 	morphic.world.addMorph(widget = LinkMorph(null, pt(260, 460)));
-
+	widget.myWorld.onEnter = function() { if (!this.rssReader) this.rssReader = loadRSS(this, pt(900, 50)); }
 	var showBitmap = true;
 	if(showBitmap) { 
 	    var width = 800;
