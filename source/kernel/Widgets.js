@@ -318,20 +318,27 @@ Object.extend(ButtonMorph, {
     construct: function(initialBounds) {
 	// A ButtonMorph is the simplest widget
 	// It read and writes the boolean variable, this.model[this.propertyName]
-	
 	var m = ButtonMorph.superconstruct(this, initialBounds, "rect");
-	m.toggles = false; // if true each push toggles the model state
-	m.setFill(LinearGradient.makeGradient(m.baseColor = Color.gray.darker(), m.baseColor.lighter(), LinearGradient.SouthNorth));
-	m.setBorderWidth(0.3);
-	m.setBorderColor(m.baseColor);
-	m.shape.roundEdgesBy(4);
-	// this default pin may get overwritten by, eg, connect()...
-	m.valuePin = new Pin(m, new Model(m), "myValue"); 
-	return m;
+	// ButtonMorph.superClass.initialize.call(m, initialBounds, "rect"); 
+	return m.initialize();
     }
 });
 
 Object.extend(ButtonMorph.prototype, {
+
+    initialize: function() {
+	
+	this.toggles = false; // if true each push toggles the model state
+	this.baseColor = Color.gray.darker();
+	this.setFill(LinearGradient.makeGradient(this.baseColor, this.baseColor.lighter(), LinearGradient.SouthNorth));
+	this.setBorderWidth(0.3);
+	this.setBorderColor(this.baseColor);
+	this.shape.roundEdgesBy(4);
+	// this default pin may get overwritten by, eg, connect()...
+	this.valuePin = new Pin(this, new Model(this), "myValue"); 
+	return this;
+    },
+
     handlesMouseDown: function(evt) { return true; },
     
     onMouseDown: function(evt) {
@@ -454,31 +461,35 @@ Object.extend(SliderMorph.prototype, {
 ScrollPane = HostClass.create('ScrollPane', Morph);
 Object.extend(ScrollPane, {
     construct: function(morphToClip, initialBounds) {
-	var m = ScrollPane.superconstruct(this, initialBounds, "rect");
-	m.setBorderWidth(2);
-	m.setFill(null); 
-	var bnds = m.shape.bounds();
-	var clipR = bnds.withWidth(bnds.width - 12).insetBy(1);
-	
-	// Make a clipMorph with the content (morphToClip) embedded in it
-	m.clipMorph = new ClipMorph(clipR);    
-	m.clipMorph.setBorderWidth(0);
-	m.clipMorph.shape.setFill(morphToClip.shape.getFill());
-	morphToClip.setBorderWidth(0);
-	morphToClip.setPosition(clipR.topLeft());
-	m.innerMorph = morphToClip;
-	m.clipMorph.addMorph(morphToClip);
-	m.addMorph(m.clipMorph);
-	
-	// Add a scrollbar
-	m.scrollBar = SliderMorph(bnds.withTopLeft(clipR.topRight()))
-	m.scrollBar.connect({model: m, value: ["getScrollPosition", "setScrollPosition"], extent: ["getVisibleExtent"]});
-	m.addMorph(m.scrollBar);
-	return m;
+	return ScrollPane.superconstruct(this, initialBounds, "rect").initialize(morphToClip);
     }
 });
 
 Object.extend(ScrollPane.prototype, {
+
+    initialize: function(morphToClip) {
+	this.setBorderWidth(2);
+	this.setFill(null); 
+	var bnds = this.shape.bounds();
+	var clipR = bnds.withWidth(bnds.width - 12).insetBy(1);
+	
+	// Make a clipMorph with the content (morphToClip) embedded in it
+	this.clipMorph = ClipMorph(clipR);    
+	this.clipMorph.setBorderWidth(0);
+	this.clipMorph.shape.setFill(morphToClip.shape.getFill());
+	morphToClip.setBorderWidth(0);
+	morphToClip.setPosition(clipR.topLeft());
+	this.innerMorph = morphToClip;
+	this.clipMorph.addMorph(morphToClip);
+	this.addMorph(this.clipMorph);
+	
+	// Add a scrollbar
+	this.scrollBar = SliderMorph(bnds.withTopLeft(clipR.topRight()))
+	this.scrollBar.connect({model: this, value: ["getScrollPosition", "setScrollPosition"], extent: ["getVisibleExtent"]});
+	this.addMorph(this.scrollBar);
+	return this;
+    },
+
     connect: function(plugSpec) { // connection is mapped to innerMorph
 	this.innerMorph.connect(plugSpec); 
     },
@@ -539,6 +550,7 @@ Object.extend(FunctionPane, {
 });
 
 Object.extend(FunctionPane.prototype, {
+
     connect: function(plugSpec) { // get around override
 	Morph.prototype.connect.call(this, plugSpec); 
     },
