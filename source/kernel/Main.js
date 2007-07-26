@@ -277,13 +277,10 @@ morphic.buildWorld = function(otherWorld, server) {
 	    loc = loc.addXY(0,33);
 	    lm.myWorld.addMorph(txt); 
 	}
-
-
 	morphic.world.addMorph(lm); 
-
-
-
     }
+
+
     return morphic.world;
 }
 
