@@ -146,20 +146,23 @@ Object.extend(CheapMenuMorph.prototype, {
     takesKeyboardFocus: function() { 
 	return false;
     },
+
     onMouseUp: function(evt) {
 	evt.hand.setMouseFocus(null);
-	if(this.hasNullSelection()) 
-	    return this.setNullSelectionAt(0);
-	var lineNo = this.lineNo(this.ensureTextBox().getBounds(this.selectionRange[0]));
-	var selectedItem = this.itemList[lineNo];
-	var parameter = (this.parameters instanceof Array) ? this.parameters[lineNo]
+
+	if (!this.hasNullSelection()) {
+	    
+	    var lineNo = this.lineNo(this.ensureTextBox().getBounds(this.selectionRange[0]));
+	    var selectedItem = this.itemList[lineNo];
+	    var parameter = (this.parameters instanceof Array) ? this.parameters[lineNo]
 		: this.parameters;
-	
-	if (selectedItem) {
-	    var func = this.target[this.targetFunctionName];
-	    if (func == null) console.log('Could not find function ' + this.targetFunctionName);
+	    
+	    if (selectedItem) {
+		var func = this.target[this.targetFunctionName];
+		if (func == null) console.log('Could not find function ' + this.targetFunctionName);
 	    	// call as target.targetFunctionName(selectedItem,parameter,evt)
 		else func.call(this.target, selectedItem, parameter, evt); 
+	    }
 	}
 	this.setNullSelectionAt(0);
 	if (!this.stayUp) this.remove(); 
@@ -329,13 +332,15 @@ Object.extend(ButtonMorph.prototype, {
     initialize: function(initialBounds) {
 	ButtonMorph.superClass.initialize.call(this, initialBounds, "rect");
 	this.toggles = false; // if true each push toggles the model state
+	// this default pin may get overwritten by, eg, connect()...
+	this.valuePin = new Pin(this, new Model(this), "myValue"); 
+	
+	// Styling
 	this.baseColor = Color.gray.darker();
 	this.setFill(LinearGradient.makeGradient(this.baseColor, this.baseColor.lighter(), LinearGradient.SouthNorth));
 	this.setBorderWidth(0.3);
 	this.setBorderColor(this.baseColor);
 	this.shape.roundEdgesBy(4);
-	// this default pin may get overwritten by, eg, connect()...
-	this.valuePin = new Pin(this, new Model(this), "myValue"); 
 	return this;
     },
 
@@ -373,7 +378,7 @@ Object.extend(SliderMorph.prototype, {
 
     initialize: function(initialBounds) {
 	SliderMorph.superClass.initialize.call(this, initialBounds, "rect");
-	//m.setFill(Color.blue.lighter());
+	//this.setFill(Color.blue.lighter());
 	// KP: setting color moved to adjustForNewBounds
 	this.valuePin = new Pin(this, new Model(this), "myValue",0.0); // may get overwritten by, eg, connect()
 	this.extentPin = new Pin(this, this.valuePin.model, "myExtent", 0.0);
@@ -458,7 +463,6 @@ Object.extend(SliderMorph.prototype, {
 });
 	
 ScrollPane = HostClass.create('ScrollPane', Morph);
-
 
 Object.extend(ScrollPane.prototype, {
 
