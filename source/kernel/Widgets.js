@@ -5,21 +5,24 @@ Object.extend(CheapListMorph, {
 //	Note:  A proper ListMorph is a list of independent submorphs
 //	CheapListMorphs simply leverage off Textmorph's ability to display
 // 	multiline paragraphs, though some effort is made to use a similar interface.
-    var listText = (itemList == null) ? "" : itemList.join("\n");
-    var m = CheapListMorph.superconstruct(this, initialBounds, listText);
-    m.wrap = "noWrap";
-    m.itemList = itemList;
-    // this default pin may get overwritten by, eg, connect()...
-    m.selectionPin = new Pin(m, new Model(m), "mySelection");
-    m.listPin = new Pin(m, m.selectionPin.model, "myList");
-    m.layoutChanged();
-    m.setBorderColor(Color.blue); 
-    return m;
+	var listText = (itemList == null) ? "" : itemList.join("\n");
+	return CheapListMorph.superconstruct(this, initialBounds, listText).initialize(itemList);
     }
 });
 
 Object.extend(CheapListMorph.prototype, {
-
+    
+    initialize: function(itemList) {
+	this.wrap = "noWrap";
+	this.itemList = itemList;
+	// this default pin may get overwritten by, eg, connect()...
+	this.selectionPin = new Pin(this, new Model(this), "mySelection");
+	this.listPin = new Pin(this, this.selectionPin.model, "myList");
+	this.layoutChanged();
+	this.setBorderColor(Color.blue); 
+	return this;
+    },
+    
     takesKeyboardFocus: function() { 
 	return true;
     },
@@ -122,19 +125,26 @@ Object.extend(CheapMenuMorph, {
 	//	parametersIfAny is a parallel list or a singleton, or null
 	//	Note:  A proper ListMorph is a list of independent submorphs
 	//	CheapListMorphs simply leverage off Textmorph's ability to display multiline paragraphs
-	var m = CheapMenuMorph.superconstruct(this, location.extent(pt(200, 200)), itemList);
-	m.target = target;
-	m.targetFunctionName = targetFunctionName;
-	m.parameters = parametersIfAny;
-	m.stayUp = false; // set true to keep on screen
-	m.textColor = Color.blue;
-	m.setBorderWidth(0.5);
-	m.setFill(StipplePattern.create(Color.white, 3, Color.blue.lighter(5), 1));
-	return m;
+	return CheapMenuMorph.superconstruct(this, location.extent(pt(200, 200)), itemList).initializeCheapMenuMorph(target, targetFunctionName, parametersIfAny);
     }
 });
 
 Object.extend(CheapMenuMorph.prototype, {
+    initializeCheapMenuMorph: function(target, targetFunctionName, parametersIfAny) {
+	this.target = target;
+	this.targetFunctionName = targetFunctionName;
+	this.parameters = parametersIfAny;
+	this.stayUp = false; // set true to keep on screen
+	
+	// styling
+	this.textColor = Color.blue;
+	this.setBorderWidth(0.5);
+	this.setFill(Color.blue.lighter(5));
+	//this.setFill(StipplePattern.create(Color.white, 3, Color.blue.lighter(5), 1));
+	this.shape.roundEdgesBy(6);
+	this.shape.setFillOpacity(0.75);
+	return this;
+    },
 
     takesKeyboardFocus: function() { 
 	return false;
@@ -371,20 +381,24 @@ SliderMorph = HostClass.create('SliderMorph', Morph);
 
 Object.extend(SliderMorph, {
     construct: function(initialBounds) {
-	var m = SliderMorph.superconstruct(this, initialBounds, "rect");
-	//m.setFill(Color.blue.lighter());
-	// KP: setting color moved to adjustForNewBounds
-	m.valuePin = new Pin(m, new Model(m), "myValue",0.0); // may get overwritten by, eg, connect()
-	m.extentPin = new Pin(m, m.valuePin.model, "myExtent", 0.0);
-	m.slider = Morph(Rectangle(0,0,8,8), "rect");
-	m.slider.relayMouseEvents(m, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"})
-	m.addMorph(m.slider);
-	m.adjustForNewBounds(m.valuePin.read(0.0)); 
-	return m;
+	return SliderMorph.superconstruct(this, initialBounds, "rect").initialize();
     }
 });
 
 Object.extend(SliderMorph.prototype, {
+
+    initialize: function() {
+	//m.setFill(Color.blue.lighter());
+	// KP: setting color moved to adjustForNewBounds
+	this.valuePin = new Pin(this, new Model(this), "myValue",0.0); // may get overwritten by, eg, connect()
+	this.extentPin = new Pin(this, this.valuePin.model, "myExtent", 0.0);
+	this.slider = Morph(Rectangle(0, 0, 8, 8), "rect");
+	this.slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"})
+	this.addMorph(this.slider);
+	this.adjustForNewBounds(this.valuePin.read(0.0)); 
+	return this;
+    },
+
     vertical: function() {
 	var bnds = this.shape.bounds();
 	return bnds.height > bnds.width; 
@@ -541,15 +555,19 @@ Object.extend(FunctionPane, {
 	//	Just like a textPane, except it edits a function definition,
 	//	And its participation in model networks is as that function body
 	if (functionText == null) functionText = "function() { return null; }";
-	var m = FunctionPane.superconstruct(this, TextMorph(initialBounds, functionText), initialBounds);
-	m.functionText = functionText;
-	m.innerMorph.connect({model: m, text: [null, "compileNewDef"]});
-	m.compileNewDef(functionText); 
-	return m;
+	return FunctionPane.superconstruct(this, TextMorph(initialBounds, functionText), initialBounds).initializeFunctionPane(functionText);
     }
 });
 
 Object.extend(FunctionPane.prototype, {
+    
+    // FIXME should be initialize
+    initializeFunctionPane: function(functionText) {
+	this.functionText = functionText;
+	this.innerMorph.connect({model: this, text: [null, "compileNewDef"]});
+	this.compileNewDef(functionText); 
+	return this;
+    },
 
     connect: function(plugSpec) { // get around override
 	Morph.prototype.connect.call(this, plugSpec); 
