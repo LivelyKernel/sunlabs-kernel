@@ -20,7 +20,7 @@ function makeCircleGrid(itemCount) {
 	aShape.setBorderWidth(getRand(0, 3));
 	aShape.fullRadius = r + aShape.shape.getBorderWidth();
 	
-	morphic.world.addMorph(aShape);
+	WorldMorph.current().addMorph(aShape);
 	aShape.vector = Point.polar(15, getRand(0, Math.PI *2));
 	aShape.startSteppingFunction(30,function(msTime) {
 		// var pt = this.getTranslation();

@@ -1,18 +1,16 @@
 CheapListMorph = HostClass.create('CheapListMorph', TextMorph);
-Object.extend(CheapListMorph, {
-    construct: function(initialBounds, itemList) {
-//	itemList is an array of strings
-//	Note:  A proper ListMorph is a list of independent submorphs
-//	CheapListMorphs simply leverage off Textmorph's ability to display
-// 	multiline paragraphs, though some effort is made to use a similar interface.
-	var listText = (itemList == null) ? "" : itemList.join("\n");
-	return CheapListMorph.superconstruct(this, initialBounds, listText).initialize(itemList);
-    }
-});
 
 Object.extend(CheapListMorph.prototype, {
     
-    initialize: function(itemList) {
+    initialize: function(initialBounds, itemList) {
+	//	itemList is an array of strings
+	//	Note:  A proper ListMorph is a list of independent submorphs
+	//	CheapListMorphs simply leverage off Textmorph's ability to display
+	// 	multiline paragraphs, though some effort is made to use a similar interface.
+	
+	var listText = (itemList == null) ? "" : itemList.join("\n");
+	CheapListMorph.superClass.initialize.call(this, initialBounds, listText);
+
 	this.wrap = "noWrap";
 	this.itemList = itemList;
 	// this default pin may get overwritten by, eg, connect()...
@@ -118,19 +116,18 @@ Object.extend(CheapListMorph.prototype, {
 
 CheapMenuMorph = HostClass.create('CheapMenuMorph', CheapListMorph);
 
-Object.extend(CheapMenuMorph, {
-    construct: function(location, target, targetFunctionName, itemList, parametersIfAny) {
+
+Object.extend(CheapMenuMorph.prototype, {
+
+    initialize: function(location, target, targetFunctionName, itemList, parametersIfAny) {
 	//	target and targetFunctionName determine the call at mouseUp
 	//	itemList is an array of strings
 	//	parametersIfAny is a parallel list or a singleton, or null
 	//	Note:  A proper ListMorph is a list of independent submorphs
 	//	CheapListMorphs simply leverage off Textmorph's ability to display multiline paragraphs
-	return CheapMenuMorph.superconstruct(this, location.extent(pt(200, 200)), itemList).initializeCheapMenuMorph(target, targetFunctionName, parametersIfAny);
-    }
-});
 
-Object.extend(CheapMenuMorph.prototype, {
-    initializeCheapMenuMorph: function(target, targetFunctionName, parametersIfAny) {
+	CheapMenuMorph.superClass.initialize.call(this, location.extent(pt(200, 200)), itemList);
+
 	this.target = target;
 	this.targetFunctionName = targetFunctionName;
 	this.parameters = parametersIfAny;
@@ -324,20 +321,13 @@ Object.extend(Morph.prototype, {
 * @class ButtonMorph
 */
 ButtonMorph = HostClass.create('ButtonMorph', Morph);
-Object.extend(ButtonMorph, {
-    construct: function(initialBounds) {
-	// A ButtonMorph is the simplest widget
-	// It read and writes the boolean variable, this.model[this.propertyName]
-	var m = ButtonMorph.superconstruct(this, initialBounds, "rect");
-	// ButtonMorph.superClass.initialize.call(m, initialBounds, "rect"); 
-	return m.initialize();
-    }
-});
 
 Object.extend(ButtonMorph.prototype, {
 
-    initialize: function() {
-	
+    // A ButtonMorph is the simplest widget
+    // It read and writes the boolean variable, this.model[this.propertyName]
+    initialize: function(initialBounds) {
+	ButtonMorph.superClass.initialize.call(this, initialBounds, "rect");
 	this.toggles = false; // if true each push toggles the model state
 	this.baseColor = Color.gray.darker();
 	this.setFill(LinearGradient.makeGradient(this.baseColor, this.baseColor.lighter(), LinearGradient.SouthNorth));
@@ -379,15 +369,10 @@ Object.extend(ButtonMorph.prototype, {
 
 SliderMorph = HostClass.create('SliderMorph', Morph);
 
-Object.extend(SliderMorph, {
-    construct: function(initialBounds) {
-	return SliderMorph.superconstruct(this, initialBounds, "rect").initialize();
-    }
-});
-
 Object.extend(SliderMorph.prototype, {
 
-    initialize: function() {
+    initialize: function(initialBounds) {
+	SliderMorph.superClass.initialize.call(this, initialBounds, "rect");
 	//m.setFill(Color.blue.lighter());
 	// KP: setting color moved to adjustForNewBounds
 	this.valuePin = new Pin(this, new Model(this), "myValue",0.0); // may get overwritten by, eg, connect()
@@ -473,15 +458,12 @@ Object.extend(SliderMorph.prototype, {
 });
 	
 ScrollPane = HostClass.create('ScrollPane', Morph);
-Object.extend(ScrollPane, {
-    construct: function(morphToClip, initialBounds) {
-	return ScrollPane.superconstruct(this, initialBounds, "rect").initialize(morphToClip);
-    }
-});
+
 
 Object.extend(ScrollPane.prototype, {
 
-    initialize: function(morphToClip) {
+    initialize: function(morphToClip, initialBounds) {
+	ScrollPane.superClass.initialize.call(this, initialBounds, "rect");
 	this.setBorderWidth(2);
 	this.setFill(null); 
 	var bnds = this.shape.bounds();
@@ -550,19 +532,13 @@ function PrintPane(initialBounds) {
 
 FunctionPane = HostClass.create('FunctionPane', ScrollPane);
 
-Object.extend(FunctionPane, {
-    construct: function(initialBounds, functionText) {
-	//	Just like a textPane, except it edits a function definition,
-	//	And its participation in model networks is as that function body
-	if (functionText == null) functionText = "function() { return null; }";
-	return FunctionPane.superconstruct(this, TextMorph(initialBounds, functionText), initialBounds).initializeFunctionPane(functionText);
-    }
-});
-
 Object.extend(FunctionPane.prototype, {
-    
-    // FIXME should be initialize
-    initializeFunctionPane: function(functionText) {
+
+    //	Just like a textPane, except it edits a function definition,
+    //	And its participation in model networks is as that function body
+    initialize: function(initialBounds, functionText) {
+	if (functionText == null) functionText = "function() { return null; }";
+	FunctionPane.superClass.initialize.call(this, TextMorph(initialBounds, functionText), initialBounds);
 	this.functionText = functionText;
 	this.innerMorph.connect({model: this, text: [null, "compileNewDef"]});
 	this.compileNewDef(functionText); 
