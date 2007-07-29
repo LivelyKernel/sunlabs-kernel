@@ -74,7 +74,7 @@ Object.extend(CheapListMorph.prototype, {
     initialize: function(initialBounds, itemList) {
 	//	itemList is an array of strings
 	//	Note:  A proper ListMorph is a list of independent submorphs
-	//	CheapListMorphs simply leverage off Textmorph's ability to display
+	//	CheapListMorphs simply leverage Textmorph's ability to display
 	// 	multiline paragraphs, though some effort is made to use a similar interface.
 	
 	var listText = (itemList == null) ? "" : itemList.join("\n");
@@ -97,7 +97,7 @@ Object.extend(CheapListMorph.prototype, {
     onKeyDown: function(evt) {
 	switch (evt.keyCode) {
 	case Event.KEY_UP: {
-	    var lineNo = this.lineNo(this.ensureTextBox().getBounds(this.selectionRange[0]));
+	    var lineNo = this.selectedLineNo();
 	    if (lineNo > 0) {
 		this.selectLineAt(this.selectionRange[0] - 1); 
 		this.selectionPin.write(this.itemList[lineNo - 1]); 
@@ -105,7 +105,7 @@ Object.extend(CheapListMorph.prototype, {
 	    break;
 	}
 	case Event.KEY_DOWN: {
-	    var lineNo = this.lineNo(this.ensureTextBox().getBounds(this.selectionRange[0]));
+	    var lineNo = this.selectedLineNo();
 	    if (lineNo < this.itemList.length - 1) {
 		this.selectLineAt(this.selectionRange[1] + 2); // skip the '\n' ?
 		this.selectionPin.write(this.itemList[lineNo + 1]); 
@@ -122,37 +122,51 @@ Object.extend(CheapListMorph.prototype, {
 	    evt.hand.setKeyboardFocus(this);
 	    this.setHasKeyboardFocus(true); 
 	}
-	this.selectLineAt(this.charOfPoint(this.localize(evt.mousePoint))); 
+	this.selectLineAt(this.charOfY(this.localize(evt.mousePoint))); 
     },
 
     onMouseMove: function(evt) {  
 	if (!evt.mouseButtonPressed) return;
 	var mp = this.localize(evt.mousePoint);
-	if (!this.shape.bounds().containsPoint(mp)) 
-	    this.selectLineAt(-1);
-	else this.selectLineAt(this.charOfPoint(mp)); 
+	if (!this.shape.bounds().containsPoint(mp)) this.selectLineAt(-1);
+		else this.selectLineAt(this.charOfY(mp)); 
     },
 
     onMouseUp: function(evt) {
 	evt.hand.setMouseFocus(null);
 	if (this.hasNullSelection()) return this.selectionPin.write(null);
-	var lineNo = this.lineNo(this.ensureTextBox().getBounds(this.selectionRange[0]));
-	this.selectionPin.write(this.itemList[lineNo]); 
+	this.selectionPin.write(this.itemList[this.selectedLineNo()]); 
+    },
+
+    charOfY: function(p) { // Like charOfPoint, for the leftmost character in the line
+	return this.charOfPoint(pt(this.inset.x+1,p.y)); 
+    },
+    
+    selectedLineNo: function() { // Return the item index for the current selection
+	return this.lineNo(this.ensureTextBox().getBounds(this.selectionRange[0]));
+    },
+    
+   showsSelectionWithoutFocus: function() { 
+	return true;  // Overridden in, eg, Lists
     },
 
     drawSelection: function() {
-	if (this.hasNullSelection()) return;
-	CheapListMorph.superClass.drawSelection.call(this); 
+	if (this.hasNullSelection()) { // Null sel in a list is blank
+	    for (var child = this.selectionElement.firstChild; child != null; child = child.nextSibling) {
+		this.selectionElement.removeChild(child);
+		}
+	    }
+	else CheapListMorph.superClass.drawSelection.call(this); 
     },
     
     selectLineAt: function(charIx) {  
 	this.selectionRange = (charIx == -1) ? [0,-1] : TextMorph.selectWord(this.textString, charIx);
-	this.changed(); 
+	this.drawSelection(); 
     },
     
     lineRect: function(r) { //Menu selection displays full width
 	var bounds = this.shape.bounds();
-	return CheapListMorph.superClass.lineRect.call(this, Rectangle(bounds.x, r.y, bounds.width, r.height)); 
+	return CheapListMorph.superClass.lineRect.call(this, Rectangle(bounds.x+2, r.y, bounds.width-4, r.height)); 
     },
     
     updateList: function(newList) {
@@ -184,7 +198,6 @@ Object.extend(CheapListMorph.prototype, {
 
 
 CheapMenuMorph = HostClass.create('CheapMenuMorph', CheapListMorph);
-
 
 Object.extend(CheapMenuMorph.prototype, {
 
@@ -221,7 +234,7 @@ Object.extend(CheapMenuMorph.prototype, {
 
 	if (!this.hasNullSelection()) {
 	    
-	    var lineNo = this.lineNo(this.ensureTextBox().getBounds(this.selectionRange[0]));
+	    var lineNo = this.selectedLineNo();
 	    var selectedItem = this.itemList[lineNo];
 	    var parameter = (this.parameters instanceof Array) ? this.parameters[lineNo]
 		: this.parameters;
