@@ -1,3 +1,72 @@
+ColorPickerMorph = HostClass.create('ColorPickerMorph', Morph);
+
+Object.extend(ColorPickerMorph.prototype, {
+    initialize: function(initialBounds,targetMorph,setFillFunctionName,popup) {
+	ColorPickerMorph.superClass.initialize.call(this, initialBounds, "rect");
+	this.targetMorph = targetMorph;
+	this.setFillFunctionName = setFillFunctionName; // name like "setBorderColor"
+	this.setFill(null);
+	this.setBorderWidth(1); 
+	this.setBorderColor(Color.black);
+	this.colorWheelCache = null;
+	this.isPopup = popup; 
+	this.buildView();
+	return this;
+    },
+    buildView: function() {
+    // Slow -- should be cached as a bitmap and invalidated by layoutChanged
+    // Try caching wheel as an interim measure
+    var r = this.shape.bounds().insetBy(this.shape.getBorderWidth());
+    var rh2 = r.height/2;
+    var dd = 2; // grain for less resolution in output (input is still full resolution)
+    //DI: This could be done with width*2 gradients, instead of width*height simple fills
+    //    For now it seems to perform OK at 2x granularity, and actual color choices 
+    //    are still full resolution
+    for (var x = 0; x < r.width; x+=dd) {
+	for(var y = 0; y < r.height; y+=dd) { // lightest down to neutral
+		var patchFill = this.colorMap(x, y, rh2, this.colorWheel(r.width + 1)).toString();
+		var element = RectShape(null, Rectangle(x + r.x, y + r.y, dd, dd), patchFill, 0, null);
+		// element.setAttributeNS("fill", this.colorMap(x, rh2, rh2, this.colorWheel(r.width + 1)).toString());
+		this.addChildElement(element);
+		}
+	}
+    },
+    colorMap: function(x,y,rh2,wheel) {
+	var columnHue = wheel[x];
+ 	if (y <= rh2) return columnHue.mixedWith(Color.white,y/rh2); // lightest down to neutral
+ 		else return Color.black.mixedWith(columnHue,(y-rh2)/rh2);  // neutral down to darkest
+    },
+    colorWheel: function(n) { 
+	if(this.colorWheelCache && this.colorWheelCache.length == n) return this.colorWheelCache;
+	console.log("computing wheel for " + n);
+	return this.colorWheelCache = Color.wheelHsb(n,338,1,1);
+    },
+    handlesMouseDown: function(evt) { return true;
+    },
+    onMouseDown: function(evt) { return this.mousemoveAction(evt);
+    },
+    onMouseUp: function(evt) {
+	if(!this.isPopup) return;
+	this.remove();
+	evt.hand.setMouseFocus(null);
+    },
+    onMouseMove: function(evt) {
+	if(evt.mouseButtonPressed) { 
+	    var r = this.bounds().insetBy(this.shape.getBorderWidth());
+	    var rh2 = r.height/2;
+	    var wheel = this.colorWheel(r.width+1);
+	    var relp = r.constrainPt(evt.mousePoint.addXY(-2,-2)).subPt(r.topLeft());
+	    var selectedColor = this.colorMap(relp.x,relp.y,rh2,wheel);
+	    this.targetMorph[this.setFillFunctionName].call(this.targetMorph,selectedColor,true);
+	} 
+    },
+    isTransient: function(name) {
+	if (ColorPickerMorph.superClass.isTransient.call(this, name)) return true;
+	return ["colorWheelCache"].include(name);
+    }
+});
+
+
 CheapListMorph = HostClass.create('CheapListMorph', TextMorph);
 
 Object.extend(CheapListMorph.prototype, {
