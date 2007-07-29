@@ -170,7 +170,7 @@ morphic.buildWorld = function(otherWorld, server) {
     
     var showWidgets = true;
     if (showWidgets) { 
-	var panel = Morph(Rectangle(600,300,300,200), "rect");
+	var panel = Morph(Rectangle(600,300,300,220), "rect");
 	//panel.setFill(Color.blue.lighter().lighter());
 	// panel.addMorph(Morph.makeTitleBar('Panel', panel.bounds().width, panel));
 
