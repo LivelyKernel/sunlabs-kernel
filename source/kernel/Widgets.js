@@ -53,7 +53,7 @@ Object.extend(ColorPickerMorph.prototype, {
     handlesMouseDown: function(evt) { return true;
     },
 
-    onMouseDown: function(evt) { return this.mousemoveAction(evt);
+    onMouseDown: function(evt) { return this.onMouseMove(evt);
     },
 
     onMouseUp: function(evt) {
