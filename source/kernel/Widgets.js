@@ -1,6 +1,11 @@
+/**
+ * @class ColorPickerMorph
+ */ 
+
 ColorPickerMorph = HostClass.create('ColorPickerMorph', Morph);
 
 Object.extend(ColorPickerMorph.prototype, {
+
     initialize: function(initialBounds,targetMorph,setFillFunctionName,popup) {
 	ColorPickerMorph.superClass.initialize.call(this, initialBounds, "rect");
 	this.targetMorph = targetMorph;
@@ -13,6 +18,7 @@ Object.extend(ColorPickerMorph.prototype, {
 	this.buildView();
 	return this;
     },
+
     buildView: function() {
     // Slow -- should be cached as a bitmap and invalidated by layoutChanged
     // Try caching wheel as an interim measure
@@ -31,25 +37,31 @@ Object.extend(ColorPickerMorph.prototype, {
 		}
 	}
     },
+
     colorMap: function(x,y,rh2,wheel) {
 	var columnHue = wheel[x];
  	if (y <= rh2) return columnHue.mixedWith(Color.white,y/rh2); // lightest down to neutral
  		else return Color.black.mixedWith(columnHue,(y-rh2)/rh2);  // neutral down to darkest
     },
+
     colorWheel: function(n) { 
 	if(this.colorWheelCache && this.colorWheelCache.length == n) return this.colorWheelCache;
 	console.log("computing wheel for " + n);
 	return this.colorWheelCache = Color.wheelHsb(n,338,1,1);
     },
+
     handlesMouseDown: function(evt) { return true;
     },
+
     onMouseDown: function(evt) { return this.mousemoveAction(evt);
     },
+
     onMouseUp: function(evt) {
 	if(!this.isPopup) return;
 	this.remove();
 	evt.hand.setMouseFocus(null);
     },
+
     onMouseMove: function(evt) {
 	if(evt.mouseButtonPressed) { 
 	    var r = this.bounds().insetBy(this.shape.getBorderWidth());
@@ -60,12 +72,16 @@ Object.extend(ColorPickerMorph.prototype, {
 	    this.targetMorph[this.setFillFunctionName].call(this.targetMorph,selectedColor,true);
 	} 
     },
+
     isTransient: function(name) {
 	if (ColorPickerMorph.superClass.isTransient.call(this, name)) return true;
 	return ["colorWheelCache"].include(name);
     }
 });
 
+/**
+ * @class CheapListMorph
+ */ 
 
 CheapListMorph = HostClass.create('CheapListMorph', TextMorph);
 
@@ -146,7 +162,7 @@ Object.extend(CheapListMorph.prototype, {
 	return this.lineNo(this.ensureTextBox().getBounds(this.selectionRange[0]));
     },
     
-   showsSelectionWithoutFocus: function() { 
+    showsSelectionWithoutFocus: function() { 
 	return true;  // Overridden in, eg, Lists
     },
 
@@ -195,7 +211,9 @@ Object.extend(CheapListMorph.prototype, {
     }
 });
 
-
+/**
+ * @class CheapMenuMorph
+ */ 
 
 CheapMenuMorph = HostClass.create('CheapMenuMorph', CheapListMorph);
 
@@ -279,9 +297,14 @@ Object.extend(CheapMenuMorph.prototype, {
 //	ex: setSelectorName
 //		sets the name, also triggers update of aspect
 
+/**
+ * @class Model
+ */ 
+
 Model = Class.create();// An MVC-style model.
 
 Object.extend(Model.prototype, {
+
     initialize: function(dep) { 
 	//Broadcasts an update message to all dependents when a value changes.
 	this.dependents = (dep != null) ? [dep] : []; 
@@ -321,7 +344,12 @@ Object.extend(Model.prototype, {
     }
 });
 
+/**
+ * @class Pin
+ */ 
+
 Pin = Class.create();
+
 Object.extend(Pin.prototype, {
     initialize: function(component, model, varName, initialValue) { // A Fabrik-style variable interface
 	this.component = component; // the component that will be the source for writes
@@ -359,6 +387,10 @@ Object.extend(Pin.prototype, {
     }
 });
 
+/**
+ * @class MessagePort
+ */ 
+
 MessagePort = Class.create();
 Object.extend(MessagePort.prototype, {
     initialize: function(component, model, readName, writeName) { // A more flexible message interface
@@ -377,6 +409,10 @@ Object.extend(MessagePort.prototype, {
 	if (this.writeName != null) this.model[this.writeName].call(this.model, newValue); 
     }
 });
+
+/**
+ * @class Morph
+ */ 
 	      
 // Morph model category
 Object.extend(Morph.prototype, {
@@ -403,8 +439,9 @@ Object.extend(Morph.prototype, {
 });
 
 /**
-* @class ButtonMorph
-*/
+ * @class ButtonMorph
+ */ 
+
 ButtonMorph = HostClass.create('ButtonMorph', Morph);
 
 Object.extend(ButtonMorph.prototype, {
@@ -453,6 +490,10 @@ Object.extend(ButtonMorph.prototype, {
 	this.showColorFor(this.valuePin.read()); 
     }
 });
+
+/**
+ * @class SliderMorph
+ */ 
 
 SliderMorph = HostClass.create('SliderMorph', Morph);
 
@@ -544,6 +585,10 @@ Object.extend(SliderMorph.prototype, {
     }
 });
 	
+/**
+ * @class ScrollPane
+ */ 
+
 ScrollPane = HostClass.create('ScrollPane', Morph);
 
 Object.extend(ScrollPane.prototype, {
@@ -598,11 +643,19 @@ Object.extend(ScrollPane.prototype, {
     }
 });
 
+/**
+ * @class ListPane
+ */ 
+
 function ListPane(initialBounds) {
     var pane = ScrollPane(CheapListMorph(initialBounds,["-----"]), initialBounds); 
     morphic.setType(pane, "ListPane");
     return pane;
 };
+
+/**
+ * @class TextPane
+ */ 
 
 function TextPane(initialBounds) {
     var pane = ScrollPane(TextMorph(initialBounds,"-----"), initialBounds); 
@@ -610,11 +663,19 @@ function TextPane(initialBounds) {
     return pane;
 };
 
+/**
+ * @class PrintPane
+ */ 
+
 function PrintPane(initialBounds) {
     var pane = ScrollPane(PrintMorph(initialBounds,"-----"), initialBounds); 
     pane.setAttributeNS(morphic.ns.MORPHIC, "type", "printPane");
     return pane;
 };
+
+/**
+ * @class FunctionPane
+ */ 
 
 FunctionPane = HostClass.create('FunctionPane', ScrollPane);
 
