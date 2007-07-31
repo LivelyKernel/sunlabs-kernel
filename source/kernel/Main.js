@@ -418,8 +418,11 @@ function showXMLDump(morph) {
 	if (key == 's') {
 	    //var snippet = document.implementation.createDocument("", "", null);
 	    var parser = new DOMParser();
-	    var doc = parser.parseFromString('<?xml version="1.0" standalone="yes"?> <svg>' + txtMorph.textString + "</svg>" , "text/xml");
-	    console.log('serialized ' + new XMLSerializer().serializeToString(doc));
+	    var xml = parser.parseFromString('<?xml version="1.0" standalone="no"?> ' + txtMorph.textString + " " , "text/xml");
+	    console.log('serialized ' + new XMLSerializer().serializeToString(xml));
+	    var m = Morph.becomeMorph(document.adoptNode(xml.documentElement));
+	    console.log('have morph %s', m);
+	    WorldMorph.current().addMorph(m);
 	    return;
         } else {
             return TextMorph.prototype.processCommandKeys.call(this, key);
