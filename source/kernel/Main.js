@@ -382,15 +382,18 @@ function extra() {
     m = TextMorph(m.bounds().bottomLeft().extent(pt(250, 300)), "toggle button for an XML dump of the grabbed morph");
     
     m.processCommandKeys = function(key) {
-        if (key == 's') {
-            // console.log('intercepting command-s');
-            var snippet = document.implementation.createDocument("", "", null);
-            snippet.write(this.textString);
-            console.log('snippet is %s', new XMLSerializer().serializeToString(snippet.documentElement));
-            return;
-        } else {
-            return TextMorph.prototype.processCommandKeys.call(this, key);
-        }
+
+	if (key == 's') {
+	    console.log('DOMParser: ' + new DOMParser());
+	    //console.log('intercepting command-s');
+	    var snippet = document.implementation.createDocument("", "", null);
+	    snippet.write(this.textString);
+	    console.log('snippet is %s', new XMLSerializer().serializeToString(snippet.documentElement));
+	    return;
+	} else {
+	    return TextMorph.prototype.processCommandKeys.call(this, key);
+	}
+
     };
 
     m.connect({model: model, text: "serializedMorph"});
@@ -409,8 +412,20 @@ function showXMLDump(morph) {
     } else {
         var xml = new XMLSerializer().serializeToString(morph); 
     }
-    
-    panel.addMorph(TextMorph(Rectangle(0, tbheight, panel.bounds().width, panel.bounds().height - tbheight), xml));
+
+    var txtMorph = TextMorph(Rectangle(0, tbheight, panel.bounds().width, panel.bounds().height - tbheight), xml);
+    txtMorph.processCommandKeys = function(key) {
+	if (key == 's') {
+	    //var snippet = document.implementation.createDocument("", "", null);
+	    var parser = new DOMParser();
+	    var doc = parser.parseFromString('<?xml version="1.0" standalone="yes"?> <svg>' + txtMorph.textString + "</svg>" , "text/xml");
+	    console.log('serialized ' + new XMLSerializer().serializeToString(doc));
+	    return;
+        } else {
+            return TextMorph.prototype.processCommandKeys.call(this, key);
+	}
+    };
+    panel.addMorph(txtMorph);
 };
 
 
@@ -439,7 +454,7 @@ function showStatsViewer(profilee,ticksOrTallies) {
         if (newValue == false) { // on mouseup...
             if (this.statsMorph == null) {
                 this.statsMorph = TextMorph(this.bounds().bottomLeft().extent(pt(200,20)), "no text");
-                morphic.world.addMorph(this.statsMorph); 
+                WorldMorph.current().addMorph(this.statsMorph); 
             }
             
             var stats = profilee.profiler(ticksOrTallies);
@@ -459,7 +474,7 @@ function showStatsViewer(profilee,ticksOrTallies) {
     
     m.getValue = function() { return (this.onState == null) ? false : this. onState };
 
-    morphic.world.addMorph(m);
+    WorldMorph.current().addMorph(m);
     t = TextMorph(pt(0,0).extent(m.bounds().extent()), 'Display and reset stats');
     t.ignoreEvents();
     t.setFill(null);
