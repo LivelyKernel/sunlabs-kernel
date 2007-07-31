@@ -566,6 +566,7 @@ Object.extend(SliderMorph.prototype, {
     handlesMouseDown: function(evt) { return true; },
     
     onMouseDown: function(evt) {
+	evt.hand.setMouseFocus(this);
 	var inc = this.extentPin.read(0.1);
 	var newValue = this.valuePin.read(0.0);
 	var delta = this.localize(evt.mousePoint).subPt(this.slider.bounds().center());
@@ -574,6 +575,9 @@ Object.extend(SliderMorph.prototype, {
 	this.valuePin.write(this.clipValue(newValue));
 	this.adjustForNewBounds(); 
     },
+    onMouseUp: function(evt) {
+	evt.hand.setMouseFocus(null);
+   },
     
     clipValue: function(val) { 
 	return Math.min(1.0,Math.max(0,0,val)); 
