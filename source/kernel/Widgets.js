@@ -270,6 +270,8 @@ Object.extend(MenuMorph.prototype, {
     },
 
     removeItemNamed: function(itemName) {
+	// May not remove all if some have same name
+	// Does not yet fix up the lines array
 	for(var i=0; i<this.items.length; i++)
 		if(this.items[i][0] == itemName) this.items.splice(i,1);
     },
