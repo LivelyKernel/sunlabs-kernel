@@ -253,13 +253,11 @@ Object.extend(MenuMorph.prototype, {
 	//	with calls of the form...
 	//	    var menu = MenuMorph([]);
 	//	    menu.addItem(nextItem);  //May be several of these
-	//	    menu.addLine();          // interspersed tih these
+	//	    menu.addLine();          // interspersed with these
 	//	    menu.openIn(world,location,stayUp,captionIfAny);
 
-console.log('menu init');
         this.items = items;
 	this.lines = lines ? lines : [];
-console.log('menu init done');
 	return this;
     },
 
