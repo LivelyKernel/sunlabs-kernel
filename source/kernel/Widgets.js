@@ -22,7 +22,7 @@ Object.extend(ColorPickerMorph.prototype, {
     buildView: function() {
         // Slow -- should be cached as a bitmap and invalidated by layoutChanged
         // Try caching wheel as an interim measure
-        var r = this.shape.bounds().insetBy(this.shape.getBorderWidth());
+        var r = this.shape.bounds().insetBy(this.shape.getStrokeWidth());
         var rh2 = r.height/2;
         var dd = 2; // grain for less resolution in output (input is still full resolution)
         
@@ -67,7 +67,7 @@ Object.extend(ColorPickerMorph.prototype, {
 
     onMouseMove: function(evt) {
         if (evt.mouseButtonPressed) { 
-            var r = this.bounds().insetBy(this.shape.getBorderWidth());
+            var r = this.bounds().insetBy(this.shape.getStrokeWidth());
             var rh2 = r.height/2;
             var wheel = this.colorWheel(r.width+1);
             var relp = r.constrainPt(evt.mousePoint.addXY(-2,-2)).subPt(r.topLeft());
@@ -723,7 +723,7 @@ Object.extend(SliderMorph.prototype, {
     updateView: function(aspect, controller) {
         if (aspect == this.valuePin.varName || aspect == this.extentPin.varName) 
             this.adjustForNewBounds(); 
-        }
+    }
 });
     
 /**
@@ -793,7 +793,7 @@ Object.extend(ScrollPane.prototype, {
 
 function ListPane(initialBounds) {
     var pane = ScrollPane(CheapListMorph(initialBounds,["-----"]), initialBounds); 
-    morphic.setType(pane, "ListPane");
+    Morph.setType(pane, "ListPane");
     return pane;
 };
 

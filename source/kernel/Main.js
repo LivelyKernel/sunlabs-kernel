@@ -21,7 +21,7 @@ function makeCircleGrid(itemCount) {
         aShape.setBorderColor(randColor(true));
         aShape.setFillOpacity(getRand(0, 1));
         aShape.setBorderWidth(getRand(0, 3));
-        aShape.fullRadius = r + aShape.shape.getBorderWidth();
+        aShape.fullRadius = r + aShape.shape.getStrokeWidth();
     
         WorldMorph.current().addMorph(aShape);
 
@@ -77,11 +77,11 @@ function randColor(alpha) {
 
 var Global = this;
 
-morphic.buildWorld = function(otherWorld, server) {
-    morphic.world.addHand(HandMorph(true));
-    morphic.world.hands.each(function(hand) { morphic.canvas.appendChild(hand); }.bind(this));
+WorldMorph.populateWithExamples = function(world, otherWorld, server) {
+    world.addHand(HandMorph(true));
+    world.hands.each(function(hand) { world.parentNode.appendChild(hand); });
 
-    console.log('added hand ' + morphic.world.firstHand().inspect());
+    console.log('added hand %s', world.firstHand());
 
     var widget; 
     // zzHand = world.worldState.hands[0];
@@ -102,52 +102,51 @@ morphic.buildWorld = function(otherWorld, server) {
         }
     
         widget = Morph(pt(0,0).asRectangle(), "rect");
-        widget.setShape(PolygonShape(null, makeStarVertices(50,pt(0,0),0),Color.yellow,1,Color.black));
+        widget.setShape(PolygonShape(null, makeStarVertices(50,pt(0,0),0), Color.yellow,1,Color.black));
         // makeGradient(Color.yellow, Color.yellow.lighter().lighter()));
-        widget.setPosition(pt(300,400));
-        morphic.world.addMorph(widget);
+        widget.setPosition(pt(300, 400));
+        world.addMorph(widget);
             
         var spinningStar = true;
         if (spinningStar) {  // Make the star spin as a test of stepping
-            widget.startSteppingFunction(60, function(msTime) {
-            this.setRotation(this.getRotation() + 0.1); }) 
+            widget.startSteppingFunction(60, function(msTime) { this.setRotation(this.getRotation() + 0.1) });
         }
     }
     
     var showClock = true;
     if (showClock) {
-        widget  = ClockMorph(pt(500,460),50);
+        widget = ClockMorph(pt(500, 460), 50);
         // clockWidget.addClipRect(Rectangle(20,20,80,80));
-        morphic.world.addMorph(widget);
+        world.addMorph(widget);
         widget.startStepping(1000);
     }
     
     if (false) {
         var clipWidget = ClipMorph(Rectangle(500, 200, 150, 150));
-        morphic.world.addMorph(clipWidget);
+        world.addMorph(clipWidget);
     }
     
     var colorPicker = false;
-    if (colorPicker) morphic.world.addMorph(ColorPickerMorph(canvas.bounds().bottomCenter().subPt(pt(0,50)).extent(pt(50,30)),
-                                            morphic.world,"setFill",false)) ;    
+    if (colorPicker) world.addMorph(ColorPickerMorph(canvas.bounds().bottomCenter().subPt(pt(0,50)).extent(pt(50,30)),
+						     world, "setFill", false));
     
     var innerWorld = true;
     if (innerWorld) {
-        morphic.world.addMorph(widget = LinkMorph(null, pt(260, 460)));
-        widget.myWorld.onEnter = function() { if (!this.rssReader) this.rssReader = loadRSS(this, pt(900, 50)); }
+        world.addMorph(widget = LinkMorph(null, pt(260, 460)));
+        widget.myWorld.onEnter = function() { if (!world.rssReader) world.rssReader = loadRSS(world, pt(900, 50)); }
     
         var showBitmap = true;
         if (showBitmap) { 
             var width = 800;
             var height = 500;
             var url = "http://maps.google.com/mapdata?"+
-            "Point=b&Point.latitude_e6=61500000&Point.longitude_e6=-3191200000&Point.iconid=15&"+
-            "Point=e&Point=b&Point.latitude_e6=61500000&Point.longitude_e6=-3191200600&Point.iconid=16&"+
-            "Point=e&latitude_e6=61500000&longitude_e6=-3191200000&zm=8000&w=" +
-            width + "&h=" + height + "&cc=US&min_priority=2";
+		"Point=b&Point.latitude_e6=61500000&Point.longitude_e6=-3191200000&Point.iconid=15&"+
+		"Point=e&Point=b&Point.latitude_e6=61500000&Point.longitude_e6=-3191200600&Point.iconid=16&"+
+		"Point=e&latitude_e6=61500000&longitude_e6=-3191200000&zm=8000&w=" +
+		width + "&h=" + height + "&cc=US&min_priority=2";
             widget.myWorld.addMorphBack(ImageMorph(Rectangle(50, 10, width, height), url));
         }
-    
+	
         widget.myWorld.addMorph(DoodleMorph(pt(500, 50).extent(pt(400,400))));
     }
     
@@ -205,9 +204,9 @@ morphic.buildWorld = function(otherWorld, server) {
         m.connect({model: panel.model, value: "sliderValue", extent: "-sliderExtent"});
         
         // Add a PrintMorph in the world to view the model state
-        morphic.world.addMorph(m = PrintMorph(Rectangle(600,140,300,200),"model"));
+        world.addMorph(m = PrintMorph(Rectangle(600,140,300,200),"model"));
         m.connect({model: panel.model, value: "this"});
-        morphic.world.addMorph(panel); 
+        world.addMorph(panel); 
     }
     
     var showBrowser = true;
@@ -237,7 +236,7 @@ morphic.buildWorld = function(otherWorld, server) {
         m = FunctionPane(Rectangle(0,358,400,50), "function(className,methodName) { return Function.methodString(className,methodName); }");
         m.connect({model: panel.model, className: "className", methodName: "methodName", result: "methodString"});
     
-        morphic.world.addMorph(panel);
+        world.addMorph(panel);
         panel.model.changed("initialize");
     
         // Add a PrintMorph in the world to view the model state
@@ -269,26 +268,27 @@ morphic.buildWorld = function(otherWorld, server) {
             lm.myWorld.addMorph(txt); 
         }
     
-        morphic.world.addMorph(lm); 
+        world.addMorph(lm); 
     }
 
-    return morphic.world;
+    return world;
 }
 
 var rss;
 function main() {
-    morphic.world = WorldMorph.createPrototypeWorld();
-    morphic.world.displayWorldOn(morphic.canvas);
+    var world  = WorldMorph.createPrototypeWorld();
+    morphic.world = world;
+    world.displayWorldOn(morphic.canvas);
     if (window.location.query()["rss"]== "true") {
         try {
-            rss = loadRSS(morphic.world, pt(300, 20));
+            rss = loadRSS(world, pt(300, 20));
         } catch (e) {
             console.log('failed to load rss due to: ' + e);
         }
     }
-
     console.log('made world');
-    morphic.buildWorld();
+    morphic.world = WorldMorph.populateWithExamples(world);
+    
     return;
 }
 
@@ -378,13 +378,7 @@ function showXMLDump(morph) {
     var txtMorph = TextMorph(Rectangle(0, tbheight, panel.bounds().width, panel.bounds().height - tbheight), xml);
     txtMorph.processCommandKeys = function(key) {
 	if (key == 's') {
-	    //var snippet = document.implementation.createDocument("", "", null);
-	    var parser = new DOMParser();
-	    var xml = parser.parseFromString('<?xml version="1.0" standalone="no"?> ' + txtMorph.textString + " " , "text/xml");
-	    console.log('serialized ' + new XMLSerializer().serializeToString(xml));
-	    var m = Morph.becomeMorph(document.adoptNode(xml.documentElement));
-	    console.log('have morph %s', m);
-	    WorldMorph.current().addMorph(m);
+	    WorldMorph.current().addMorph(Morph.becomeMorph($X(txtMorph.textString)));
 	    return;
         } else {
             return TextMorph.prototype.processCommandKeys.call(this, key);
