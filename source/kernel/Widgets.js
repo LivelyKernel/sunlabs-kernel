@@ -271,7 +271,9 @@ console.log('menu init done');
         this.lines.push(this.items.length);
     },
 
-    removeItem: function(itemName) { // Not yet supported
+    removeItemNamed: function(itemName) {
+	for(var i=0; i<this.items.length; i++)
+		if(this.items[i][0] == itemName) this.items.splice(i,1);
     },
 
     openIn: function(world, location, remainOnScreen, captionIfAny) { 
@@ -332,7 +334,8 @@ Object.extend(CheapMenuMorph.prototype, {
         //    Note:  A proper ListMorph is a list of independent submorphs
         //    CheapListMorphs simply leverage off Textmorph's ability to display multiline paragraphs
 
-        CheapMenuMorph.superClass.initialize.call(this, location.extent(pt(200, 200)), itemList);
+        itemList = itemList.concat("--old menu--");  //Please update so we can remove CheapMenuMorph
+	CheapMenuMorph.superClass.initialize.call(this, location.extent(pt(200, 200)), itemList);
 
         this.target = target;
         this.targetFunctionName = targetFunctionName;
