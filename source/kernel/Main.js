@@ -86,44 +86,6 @@ morphic.buildWorld = function(otherWorld, server) {
     var widget; 
     // zzHand = world.worldState.hands[0];
     
-    var showBrowseMenu = false;
-    if (showBrowseMenu) {  // Make a stay-up menu
-        var classNames = Global.listClassNames("SVG");
-        var browser = {};
-        // When className is selected, show the method names
-        browser.selectedClassName = function(className) {
-            if (this.spawnee != null) this.spawnee.remove();
-            this.selectedClass = className;
-            if (className == null) return;
-            var methodNames = (className == "Global") ? Global.constructor.functionNames().without(classNames)
-            : Global[className].localFunctionNames();
-
-            this.topRight = this.classMenu.bounds().topRight();
-            var methodMenu = CheapMenuMorph(this.topRight, browser, "selectedMethodName", methodNames);
-            this.spawnee = methodMenu; // so it can be removed
-            morphic.world.addMorph(methodMenu); 
-        }
-    
-        // When methodName is selected, show the method text
-        browser.selectedMethodName = function(methodName) {
-            var className = this.selectedClass;
-            var code = (className == "Global") ? Global.constructor[methodName].toString()
-                : Global[className].prototype[methodName].toString();
-            if (className != "Global" && methodName != "constructor") {
-                code = className + ".prototype." + methodName + " = " + code; 
-            }
-        
-            var codePane = TextMorph(this.topRight.extent(pt(350,50)),code);
-            this.spawnee = codePane; // so it can be removed
-            morphic.world.addMorph(codePane); 
-        }
-        
-        // Put up a permanent menu of class names...
-        browser.classMenu = CheapMenuMorph(pt(30,20), browser, "selectedClassName", classNames);
-        browser.classMenu.stayUp = true; // keep on screen
-        morphic.world.addMorph(browser.classMenu); 
-    }
-    
     var showStar = true;
     if (showStar) {  // Make a star
         var makeStarVertices = function(r,center,startAngle) {
