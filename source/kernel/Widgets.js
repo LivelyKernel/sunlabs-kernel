@@ -232,6 +232,91 @@ Object.extend(CheapListMorph.prototype, {
 });
 
 /**
+ * @class MenuMorph
+ */ 
+
+MenuMorph = HostClass.create('MenuMorph', CheapListMorph);
+
+Object.extend(MenuMorph.prototype, {
+
+    initialize: function(items, lines) {
+        //    items is an array of menuItems, each of which is an array of the form
+	//	[itemName, target, functionName, parameterIfAny]
+        //    At mouseUp, the call is of the form
+	//	target.function(parameterOrNull,event,menuItem)
+	//    Note that the last item is seldom used, but it allows the caller to put
+	//	additional data at the end of the menuItem, where the receiver can find it.
+	//    The optional parameter lineList is an array of indices into items.
+	//	It will cause a line to be displayed below each item so indexed
+    
+        //    It is intended that a menu can also be created incrementally
+	//	with calls of the form...
+	//	    var menu = MenuMorph([]);
+	//	    menu.addItem(nextItem);  //May be several of these
+	//	    menu.addLine();          // interspersed tih these
+	//	    menu.openIn(world,location,stayUp,captionIfAny);
+
+console.log('menu init');
+        this.items = items;
+	this.lines = lines ? lines : [];
+console.log('menu init done');
+	return this;
+    },
+
+    addItem: function(item) { 
+        this.items.push(item);
+    },
+
+    addLine: function(item) { // Not yet supported
+        this.lines.push(this.items.length);
+    },
+
+    removeItem: function(itemName) { // Not yet supported
+    },
+
+    openIn: function(world, location, remainOnScreen, captionIfAny) { 
+	// Note: on a mouseDown invocation (as from a menu button),
+	// mouseFocus should be set immediately before or after this call
+        this.stayUp = remainOnScreen; // set true to keep on screen
+	this.caption = captionIfAny;  // Not yet implemented
+	this.compose(location);
+	world.addMorph(this);
+    },
+
+    compose: function(location) { 
+	var itemNames = this.items.map(function (item) { return item[0] });
+        MenuMorph.superClass.initialize.call(this, location.extent(pt(200, 200)), itemNames);
+
+        // styling
+        this.textColor = Color.blue;
+        this.setBorderWidth(0.5);
+        this.setFill(Color.blue.lighter(5));
+        
+        //this.setFill(StipplePattern.create(Color.white, 3, Color.blue.lighter(5), 1));
+        this.shape.roundEdgesBy(6);
+        this.shape.setFillOpacity(0.75);
+    },
+
+    takesKeyboardFocus: function() { 
+        return false;
+    },
+
+    onMouseUp: function(evt) {
+        if (!this.hasNullSelection()) var item = this.items[this.selectedLineNo()];
+        this.setNullSelectionAt(0);  // Clean up now, in case the call fails
+        evt.hand.setMouseFocus(null);
+        if (!this.stayUp) this.remove(); 
+
+	if (item) { // Now execute the menu item...
+            var func = item[1][item[2]];  // target[functionName]
+            if (func == null) console.log('Could not find function ' + item[2]);
+        	// call as target.function(parameterOrNull,event,menuItem)
+		else func.call(item[1], item[3], evt, item); 
+	}
+    }
+});
+
+/**
  * @class CheapMenuMorph
  */ 
 
