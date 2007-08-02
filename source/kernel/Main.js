@@ -132,7 +132,14 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
     if (show3DLogo) world.addMorph(Sun3DMorph(pt(900, 130).extent(pt(200, 200))));
     
     var showAsteroids = true;
-    if (showAsteroids) world.addMorph(GameMorph(pt(580, 340).extent(pt(600, 300))));
+    if (showAsteroids) {
+        var asteroidsGame = GameMorph(pt(580, 340).extent(pt(600, 300))); 
+        world.addMorph(asteroidsGame);
+        // This is an ugly way to run the game -- the game object should
+        // really be a morph (to be fixed later)
+        initAsteroidsGame(asteroidsGame);
+        // runAsteroidsGame(asteroidsGame);
+    }
     
     var innerWorld = true;
     if (innerWorld) {
