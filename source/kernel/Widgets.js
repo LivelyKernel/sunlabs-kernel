@@ -545,9 +545,10 @@ Object.extend(MessagePort.prototype, {
           
 // Morph model category
 Object.extend(Morph.prototype, {
-    
     connect: function(plugSpec) {
-        var model = plugSpec.model;
+	this.connectToModel(plugSpec.model, plugSpec);
+    },
+    connectToModel: function(model, plugSpec) { // New call separates model from {spec}
         var mvc = false;
     
         for (var prop in plugSpec)  {

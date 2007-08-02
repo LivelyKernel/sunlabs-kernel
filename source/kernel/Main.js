@@ -121,14 +121,12 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
         widget.startStepping(1000);
     }
     
-    if (false) {
-        var clipWidget = ClipMorph(Rectangle(500, 200, 150, 150));
-        world.addMorph(clipWidget);
-    }
+    var showClipMorph = false;
+    if (showClipMorph) world.addMorph(ClipMorph(Rectangle(500, 200, 150, 150)));
     
-    var colorPicker = false;
-    if (colorPicker) world.addMorph(ColorPickerMorph(canvas.bounds().bottomCenter().subPt(pt(0,50)).extent(pt(50,30)),
-						     world, "setFill", false));
+    var showColorPicker = true;
+    if (showColorPicker) world.addMorph(ColorPickerMorph(world.bounds().bottomCenter().subPt(pt(0,50)).extent(pt(50,30)),
+			world, "setFill", false));
     
     var innerWorld = true;
     if (innerWorld) {
@@ -154,42 +152,9 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
     if (showWidgets)
 	new WidgetTester().openIn(morphic.world, pt(600,150));
  
-    
     var showBrowser = true;
-    if (showBrowser) { // Good-old three-pane browser...
-        var panel = Morph(Rectangle(20,20,400,320), "rect");
-        panel.setFill(Color.blue.lighter().lighter());
-        panel.setBorderWidth(2);
-        panel.model = new Model();
-        panel.addMorph(Morph.makeTitleBar('JavaScript Code Browser', 400, panel));
-    
-        panel.addMorph(m = ListPane(Rectangle(0,20,200,150)));
-        m.connect({model: panel.model, list: "classList", selection: "className"});
-        panel.addMorph(m = ListPane(Rectangle(200,20,200,150)));
-        m.connect({model: panel.model, list: "methodList", selection: "methodName"});
-        panel.addMorph(m = TextPane(Rectangle(0,170,400,150)));
-        m.connect({model: panel.model, text: "methodString", selection: "methodSelection"});
-        //    Note function components need to get split from function views
-        //    for now we use a dangling morph as a component.  Later we'll put a component in the model
-        //    and a view in the model inspector
-        m = FunctionPane(Rectangle(0,300,400,22), "function() { return Global.listClassNames('SVG') }");
-        m.connect({model: panel.model, result: "classList"});
-        m = FunctionPane(Rectangle(0,322,400,36), "function(className) {" +
-            "        var theClass = Global[className];" +
-            "        return (className == 'Global') ? Global.constructor.functionNames().without(className)" +
-            "            : theClass.localFunctionNames(); }");
-        m.connect({model: panel.model, className: "className", result: "methodList"});
-        m = FunctionPane(Rectangle(0,358,400,50), "function(className,methodName) { return Function.methodString(className,methodName); }");
-        m.connect({model: panel.model, className: "className", methodName: "methodName", result: "methodString"});
-    
-        world.addMorph(panel);
-        panel.model.changed("initialize");
-    
-        // Add a PrintMorph in the world to view the model state
-        // morphic.world.addMorph(m = PrintMorph(Rectangle(500,20,300,200), "model"));
-        // m.connect({model: panel.model, value: "this"});
-        zzPanel = panel; 
-    }
+    if (showBrowser)
+	new SimpleBrowser().openIn(morphic.world, pt(20,20));
     
     var slideWorld = true;
     if (slideWorld) { // Make a slide for "turning web programming upside down"
@@ -337,55 +302,8 @@ function showXMLDump(morph) {
 if (this['localconfig'] && localconfig.xmldumper)
     extra();
 
-/*
-        TextMorph.prototype.profiler("start");
-        var stats = TextMorph.prototype.profiler("ticks");
-        TextMorph.prototype.profiler("stop");
-        for (var field in stats) {
-            if (stats[field] instanceof Function) 
-                continue;
-            if (stats[field] == 0)
-                continue;
-            console.info('stat: ' + field + " = " + stats[field]);
-        }
-*/
 
-function showStatsViewer(profilee,ticksOrTallies) {
-    profilee.profiler("start");
-    var m = ButtonMorph(morphic.world.bounds().topCenter().addXY(0,20).extent(pt(150, 20)));
-    m.connect({model: m, value: ["getValue", "setValue"]});
-    m.setValue = function(newValue) {
-        this.onState = newValue;
-        if (newValue == false) { // on mouseup...
-            if (this.statsMorph == null) {
-                this.statsMorph = TextMorph(this.bounds().bottomLeft().extent(pt(200,20)), "no text");
-                WorldMorph.current().addMorph(this.statsMorph); 
-            }
-            
-            var stats = profilee.profiler(ticksOrTallies);
-            var statsText = "";
-            
-            for (var field in stats) {
-                if (stats[field] instanceof Function) continue;
-                if (stats[field] == 0) continue;
-                    
-                statsText += (ticksOrTallies + ': ' + field + " = " + stats[field] + "\n");
-            }
-            
-            this.statsMorph.setTextString(statsText);
-            profilee.profiler("reset"); 
-        } 
-    }
-    
-    m.getValue = function() { return (this.onState == null) ? false : this. onState };
+if(true) showStatsViewer(TextMorph.prototype, "ticks");
 
-    WorldMorph.current().addMorph(m);
-    t = TextMorph(pt(0,0).extent(m.bounds().extent()), 'Display and reset stats');
-    t.ignoreEvents();
-    t.setFill(null);
-    t.setBorderWidth(0);
-    m.addMorph(t);
-};
 
-showStatsViewer(TextMorph.prototype, "ticks");
-
+console.log('loaded Main');
