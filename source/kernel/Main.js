@@ -112,7 +112,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
             widget.startSteppingFunction(60, function(msTime) { this.setRotation(this.getRotation() + 0.1) });
         }
     }
-    
+
     var showClock = true;
     if (showClock) {
         widget = ClockMorph(pt(500, 460), 50);
@@ -127,6 +127,9 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
     var showColorPicker = true;
     if (showColorPicker) world.addMorph(ColorPickerMorph(world.bounds().bottomCenter().subPt(pt(0,50)).extent(pt(50,30)),
 			world, "setFill", false));
+    
+    var show3DLogo = true;
+    if (show3DLogo) world.addMorph(Sun3DMorph(pt(950, 150).extent(pt(200, 200))));
     
     var innerWorld = true;
     if (innerWorld) {
