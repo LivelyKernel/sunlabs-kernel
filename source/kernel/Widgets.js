@@ -545,11 +545,10 @@ Object.extend(MessagePort.prototype, {
           
 // Morph model category
 Object.extend(Morph.prototype, {
-    connect: function(plugSpec) {
-	this.connectToModel(plugSpec.model, plugSpec);
-    },
-    connectToModel: function(model, plugSpec) { // New call separates model from {spec}
-        var mvc = false;
+    connect: function(plugSpec) { // Old variable access version from widget panel
+			// and other apps that got built in its image
+        var model = plugSpec.model;
+	var mvc = false;
     
         for (var prop in plugSpec)  {
             if (prop != "model" && plugSpec.hasOwnProperty(prop)) {
@@ -565,6 +564,14 @@ Object.extend(Morph.prototype, {
         }
     
         if (mvc) model.addDependent(this); 
+    },
+
+    connectModel: function(connector) {
+	// connector makes this view pluggable to different models, as in
+	// {model: someModel, getList: "getItemList", setSelection: "chooseItem"}
+	this.modelConnector = connector;
+        if(connector.model.addDependent)  // for mvc-style updating
+		connector.model.addDependent(this); 
     },
 
     updateView: function(aspect, controller) { }
