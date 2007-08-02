@@ -150,7 +150,16 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
         widget.myWorld.addMorph(DoodleMorph(pt(500, 50).extent(pt(400,400))));
     }
     
-    var showWidgets = true;
+    var showWidgets2 = true;
+    console.log('Tools 1');
+    if (showWidgets2) {
+	console.log('Tools 1a');
+	var v1 = new WidgetTester();
+	console.log('Tools 1b ' + v1.toString());
+	v1.openIn(morphic.world, pt(600,150));
+	};
+ 
+    var showWidgets = false;
     if (showWidgets) { 
         var panel = Morph(Rectangle(600,300,300,220), "rect");
         // panel.setFill(Color.blue.lighter().lighter());

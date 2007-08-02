@@ -162,6 +162,10 @@ Object.extend(CheapListMorph.prototype, {
 
     onMouseUp: function(evt) {
         evt.hand.setMouseFocus(null);
+        this.emitSelection(); 
+    },
+
+    emitSelection: function() {
         if (this.hasNullSelection()) return this.selectionPin.write(null);
         this.selectionPin.write(this.itemList[this.selectedLineNo()]); 
     },
@@ -197,9 +201,12 @@ Object.extend(CheapListMorph.prototype, {
     },
     
     updateList: function(newList) {
-        this.itemList = newList;
+        var priorItem = this.selectionPin.read();
+	this.itemList = newList;
         var listText = (this.itemList == null) ? "" : this.itemList.join("\n");
-        this.updateTextString(listText); 
+        this.updateTextString(listText);
+	this.setSelectionToMatch(priorItem);
+        this.emitSelection(); 
     },
 
     setSelectionToMatch: function(item) {
@@ -211,10 +218,8 @@ Object.extend(CheapListMorph.prototype, {
                 lineStart = firstChar; 
                break; 
             }
-        
             firstChar += this.itemList[i].length + 1; 
         }
-        
         this.selectLineAt(lineStart); 
     },
 
@@ -653,11 +658,11 @@ Object.extend(SliderMorph.prototype, {
         var ext = this.extentPin.read(0.0);
     
         if (this.vertical()) { // more vertical...
-            var elevPix = Math.max(ext*bnds.height,6); // thickness of elevator in pixels
+            var elevPix = Math.max(ext*bnds.height,8); // thickness of elevator in pixels
             var topLeft = pt(0,(bnds.height-elevPix)*val);
             var sliderExt = pt(bnds.width,elevPix); 
         } else { // more horizontal...
-            var elevPix = Math.max(ext*bnds.width,6); // thickness of elevator in pixels
+            var elevPix = Math.max(ext*bnds.width,8); // thickness of elevator in pixels
             var topLeft = pt((bnds.width-elevPix)*val,0);
             var sliderExt = pt(elevPix,bnds.height); 
         }
@@ -717,7 +722,7 @@ Object.extend(SliderMorph.prototype, {
     },
     
     clipValue: function(val) { 
-        return Math.min(1.0,Math.max(0,0,val)); 
+        return Math.min(1.0,Math.max(0,0,val.roundTo(0.001))); 
     },
     
     updateView: function(aspect, controller) {
@@ -740,7 +745,8 @@ Object.extend(ScrollPane.prototype, {
         this.setFill(null); 
     
         var bnds = this.shape.bounds();
-        var clipR = bnds.withWidth(bnds.width - 12).insetBy(1);
+        var scrollBarWidth = 14;
+	var clipR = bnds.withWidth(bnds.width - scrollBarWidth).insetBy(1);
     
         // Make a clipMorph with the content (morphToClip) embedded in it
         this.clipMorph = ClipMorph(clipR);    
