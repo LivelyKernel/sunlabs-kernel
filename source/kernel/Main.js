@@ -150,73 +150,10 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
         widget.myWorld.addMorph(DoodleMorph(pt(500, 50).extent(pt(400,400))));
     }
     
-    var showWidgets2 = true;
-    console.log('Tools 1');
-    if (showWidgets2) {
-	console.log('Tools 1a');
-	var v1 = new WidgetTester();
-	console.log('Tools 1b ' + v1.toString());
-	v1.openIn(morphic.world, pt(600,150));
-	};
+    var showWidgets = true;
+    if (showWidgets)
+	new WidgetTester().openIn(morphic.world, pt(600,150));
  
-    var showWidgets = false;
-    if (showWidgets) { 
-        var panel = Morph(Rectangle(600,300,300,220), "rect");
-        // panel.setFill(Color.blue.lighter().lighter());
-        // panel.addMorph(Morph.makeTitleBar('Panel', panel.bounds().width, panel));
-
-        panel.setFill(StipplePattern.create(Color.blue.lighter().lighter(), 4, Color.gray.lighter(), 1));
-
-        panel.setBorderWidth(2);
-        panel.setBorderColor(Color.red);
-        panel.model = new Model();
-        var m; 
-    
-        // Two simple buttons, one toggles...
-        panel.addMorph(m = ButtonMorph(Rectangle(20,20,50,20)));
-        m.connect({model: panel.model, value: "buttonValue"});
-        panel.addMorph(m = ButtonMorph(Rectangle(20,50,50,20)));
-        m.connect({model: panel.model, value: "buttonValue"});
-        m.toggles = true;
-    
-        // Two buttons sharing same value...
-        panel.addMorph(m = ButtonMorph(Rectangle(80,20,50,20)));
-        m.connect({model: panel.model, value: "buttonValue2"});
-        panel.addMorph(m = ButtonMorph(Rectangle(80,50,50,20)));
-        m.connect({model: panel.model, value: "buttonValue2"});
-     
-        // Two lists sharing same selection...
-        panel.addMorph(m = CheapListMorph(Rectangle(20,80,50,20),["one","two","three"]));
-        m.connect({model: panel.model, selection: "selectedItem"});
-        panel.addMorph(m = CheapListMorph(Rectangle(80,80,50,20),["one","two","three"]));
-        m.connect({model: panel.model, selection: "selectedItem"});
-    
-        // Three text views sharing same text...
-        panel.addMorph(m = TextMorph(Rectangle(140,20,140,20),"Hello World"));
-        m.connect({model: panel.model, text: "sharedText", selection: "textSelection"});
-        panel.addMorph(m = TextMorph(Rectangle(140,50,140,20),"Hello World"));
-        m.connect({model: panel.model, text: "sharedText", selection: "textSelection"});
-        panel.addMorph(m = TextMorph(Rectangle(140,80,140,20),"Hello World"));
-        m.connect({model: panel.model, text: "sharedText", selection: "textSelection"});
-        m.autoAccept = true;
-        panel.addMorph(m = TextMorph(Rectangle(140,110,140,20),"selection"));
-        m.connect({model: panel.model, text: "textSelection"});
-        panel.addMorph(m = PrintMorph(Rectangle(20,140,100,20),"3+4"));
-        m.connect({model: panel.model, value: "printValue"});
-        panel.addMorph(m = PrintMorph(Rectangle(20,170,100,20),"3+4"));
-        m.connect({model: panel.model, value: "printValue"});
-        panel.addMorph(m = PrintMorph(Rectangle(140,140,80,20),"0.5"));
-        m.connect({model: panel.model, value: "sliderValue"});
-        panel.addMorph(m = PrintMorph(Rectangle(230,140,50,20),"0.1"));
-        m.connect({model: panel.model, value: "sliderExtent"});
-        panel.addMorph(m = SliderMorph(Rectangle(140,170,100,20)));
-        m.connect({model: panel.model, value: "sliderValue", extent: "-sliderExtent"});
-        
-        // Add a PrintMorph in the world to view the model state
-        world.addMorph(m = PrintMorph(Rectangle(600,140,300,200),"model"));
-        m.connect({model: panel.model, value: "this"});
-        world.addMorph(panel); 
-    }
     
     var showBrowser = true;
     if (showBrowser) { // Good-old three-pane browser...
