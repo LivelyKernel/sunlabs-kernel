@@ -207,7 +207,7 @@ main();
 
 
 
-if(true) showStatsViewer(TextMorph.prototype, "ticks");
+if(true) showStatsViewer(TextLine.prototype, "TextLine...");
 
 
 console.log('loaded Main');
