@@ -104,7 +104,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
         widget = Morph(pt(0,0).asRectangle(), "rect");
         widget.setShape(PolygonShape(null, makeStarVertices(50,pt(0,0),0), Color.yellow,1,Color.black));
         // makeGradient(Color.yellow, Color.yellow.lighter().lighter()));
-        widget.setPosition(pt(300, 400));
+        widget.setPosition(pt(320, 400));
         world.addMorph(widget);
             
         var spinningStar = true;
@@ -115,7 +115,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
 
     var showClock = true;
     if (showClock) {
-        widget = ClockMorph(pt(500, 460), 50);
+        widget = ClockMorph(pt(500, 480), 50);
         // clockWidget.addClipRect(Rectangle(20,20,80,80));
         world.addMorph(widget);
         widget.startStepping(1000);
@@ -129,7 +129,10 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
                                         world, "setFill", false));
     
     var show3DLogo = true;
-    if (show3DLogo) world.addMorph(Sun3DMorph(pt(950, 150).extent(pt(200, 200))));
+    if (show3DLogo) world.addMorph(Sun3DMorph(pt(900, 130).extent(pt(200, 200))));
+    
+    var showAsteroids = true;
+    if (showAsteroids) world.addMorph(GameMorph(pt(580, 360).extent(pt(600, 300))));
     
     var innerWorld = true;
     if (innerWorld) {
@@ -153,7 +156,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
     }
     
     var showWidgets = true;
-    if (showWidgets) new WidgetTester().openIn(morphic.world, pt(600,150));
+    if (showWidgets) new WidgetTester().openIn(morphic.world, pt(500, 60));
  
     var showBrowser = true;
     if (showBrowser) new SimpleBrowser().openIn(morphic.world, pt(20,20));
