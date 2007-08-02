@@ -187,7 +187,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
 
 var rss;
 function main() {
-    var world  = WorldMorph.createPrototypeWorld();
+    var world = WorldMorph.createPrototypeWorld();
     morphic.world = world;
     world.displayWorldOn(morphic.canvas);
     if (window.location.query()["rss"]== "true") {
@@ -205,102 +205,6 @@ function main() {
 
 main();
 
-function extra() {
-
-    var model = new Model();
-    
-    var m = ButtonMorph(morphic.world.bounds().rightCenter().subPt(pt(300, 0)).extent(pt(250, 20)));
-    m.connect({model: model, value: "active"});
-    m.toggles = true;
-    morphic.world.addMorph(m);
-
-    // before advice
-    var oldAddMorph = HandMorph.prototype.addMorph;
-    HandMorph.prototype.addMorph = function(m) {
-
-        if (this.grabbedMorphPin != null) {
-            this.grabbedMorphPin.write(m);
-        }
-
-        return oldAddMorph.call(this, m);
-    };
-
-    // before advice
-    var oldRemoveMorph = HandMorph.prototype.removeMorph;
-    HandMorph.prototype.removeMorph = function(m) {
-        if (this.grabbedMorphPin != null) {
-            this.grabbedMorphPin.write(null);
-        }
-    
-        return oldRemoveMorph.call(this, m);
-    };
-
-    morphic.world.firstHand().connect({model: model, grabbedMorph: 'grabbedMorph'});
-    
-    var serializer = function(active, grabbedMorph) { 
-        if (!active) 
-            return "toggle button for an XML dump of the grabbed morph";
-    
-        console.log('grabbed morph is %s', grabbedMorph); 
-    
-        if (grabbedMorph.hasSubmorphs()) 
-            return "not serializing complex morph " + grabbedMorph.inspect() + " to avoid mayhem";
-    
-        return new XMLSerializer().serializeToString(grabbedMorph); 
-    };
-    
-    var evaluator = FunctionPane(m.bounds().bottomLeft().extent(pt(9999, 9999)), serializer.toString());
-    evaluator.connect({model: model, active: "active", grabbedMorph: 'grabbedMorph', result: "serializedMorph"});
-    
-    m = TextMorph(m.bounds().bottomLeft().extent(pt(250, 300)), "toggle button for an XML dump of the grabbed morph");
-    
-    m.processCommandKeys = function(key) {
-
-	if (key == 's') {
-	    console.log('DOMParser: ' + new DOMParser());
-	    //console.log('intercepting command-s');
-	    var snippet = document.implementation.createDocument("", "", null);
-	    snippet.write(this.textString);
-	    console.log('snippet is %s', new XMLSerializer().serializeToString(snippet.documentElement));
-	    return;
-	} else {
-	    return TextMorph.prototype.processCommandKeys.call(this, key);
-	}
-
-    };
-
-    m.connect({model: model, text: "serializedMorph"});
-    
-    morphic.world.addMorph(m);
-};
-
-function showXMLDump(morph) {
-    var panel = Morph(morph.bounds().topLeft().addPt(pt(5,0)).extent(pt(250, 300)), "rect");
-    morphic.world.addMorph(panel);
-    var tb = panel.addMorph(Morph.makeTitleBar("XML dump", panel.bounds().width, panel));
-    var tbheight = tb.bounds().height;
-    
-    if (morph.hasSubmorphs()) {
-        var xml = 'not serializing complex morph to avoid mayhem';
-    } else {
-        var xml = new XMLSerializer().serializeToString(morph); 
-    }
-
-    var txtMorph = TextMorph(Rectangle(0, tbheight, panel.bounds().width, panel.bounds().height - tbheight), xml);
-    txtMorph.processCommandKeys = function(key) {
-	if (key == 's') {
-	    WorldMorph.current().addMorph(Morph.becomeMorph($X(txtMorph.textString)));
-	    return;
-        } else {
-            return TextMorph.prototype.processCommandKeys.call(this, key);
-	}
-    };
-    panel.addMorph(txtMorph);
-};
-
-
-if (this['localconfig'] && localconfig.xmldumper)
-    extra();
 
 
 if(true) showStatsViewer(TextMorph.prototype, "ticks");
