@@ -126,7 +126,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
     
     var showColorPicker = true;
     if (showColorPicker) world.addMorph(ColorPickerMorph(world.bounds().bottomCenter().subPt(pt(0,50)).extent(pt(50,30)),
-			world, "setFill", false));
+                                        world, "setFill", false));
     
     var show3DLogo = true;
     if (show3DLogo) world.addMorph(Sun3DMorph(pt(950, 150).extent(pt(200, 200))));
@@ -141,23 +141,22 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
             var width = 800;
             var height = 500;
             var url = "http://maps.google.com/mapdata?"+
-		"Point=b&Point.latitude_e6=61500000&Point.longitude_e6=-3191200000&Point.iconid=15&"+
-		"Point=e&Point=b&Point.latitude_e6=61500000&Point.longitude_e6=-3191200600&Point.iconid=16&"+
-		"Point=e&latitude_e6=61500000&longitude_e6=-3191200000&zm=8000&w=" +
-		width + "&h=" + height + "&cc=US&min_priority=2";
+            "Point=b&Point.latitude_e6=61500000&Point.longitude_e6=-3191200000&Point.iconid=15&"+
+            "Point=e&Point=b&Point.latitude_e6=61500000&Point.longitude_e6=-3191200600&Point.iconid=16&"+
+            "Point=e&latitude_e6=61500000&longitude_e6=-3191200000&zm=8000&w=" +
+            width + "&h=" + height + "&cc=US&min_priority=2";
+            
             widget.myWorld.addMorphBack(ImageMorph(Rectangle(50, 10, width, height), url));
         }
-	
+
         widget.myWorld.addMorph(DoodleMorph(pt(500, 50).extent(pt(400,400))));
     }
     
     var showWidgets = true;
-    if (showWidgets)
-	new WidgetTester().openIn(morphic.world, pt(600,150));
+    if (showWidgets) new WidgetTester().openIn(morphic.world, pt(600,150));
  
     var showBrowser = true;
-    if (showBrowser)
-	new SimpleBrowser().openIn(morphic.world, pt(20,20));
+    if (showBrowser) new SimpleBrowser().openIn(morphic.world, pt(20,20));
     
     var slideWorld = true;
     if (slideWorld) { // Make a slide for "turning web programming upside down"
@@ -208,9 +207,7 @@ function main() {
 
 main();
 
-
-
-if(true) showStatsViewer(TextLine.prototype, "TextLine...");
-
+if (true) showStatsViewer(TextLine.prototype, "TextLine...");
 
 console.log('loaded Main');
+
