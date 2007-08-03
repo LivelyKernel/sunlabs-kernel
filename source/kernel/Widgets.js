@@ -225,19 +225,10 @@ Object.extend(CheapListMorph.prototype, {
         }
         this.selectLineAt(lineStart); 
     },
-/*
-    updateView: function(aspect, controller) {
-        if (this.listPin && aspect == this.listPin.varName) {
-            this.updateList(this.listPin.read());
-        }
-        if (this.selectionPin && aspect == this.selectionPin.varName) {
-            this.setSelectionToMatch(this.selectionPin.read()); 
-        }
-    },
-*/
+
     updateView: function(aspect, controller) {
         var c = this.modelConnector;
-        if(c) {
+        if(c) { // New style connect
 		if (aspect == c.getList) this.updateList(this.getList());
 		if (aspect == c.getSelection) this.setSelectionToMatch(this.getSelection());
 		return;
@@ -715,13 +706,15 @@ Object.extend(SliderMorph.prototype, {
     initialize: function(initialBounds) {
         SliderMorph.superClass.initialize.call(this, initialBounds, "rect");
         // this.setFill(Color.blue.lighter());
-        // KP: setting color moved to adjustForNewBounds
-        this.valuePin = new Pin(this, new Model(this), "myValue",0.0); // may get overwritten by, eg, connect()
-        this.extentPin = new Pin(this, this.valuePin.model, "myExtent", 0.0);
+
+        // this default self connection may get overwritten by, eg, connectModel()...
+        this.modelConnector = {model: this, getValue: "getMyValue", setValue: "setMyValue", getExtent: "getMyExtent"};
+	this.myValue = 0.0;
+ 
         this.slider = Morph(Rectangle(0, 0, 8, 8), "rect");
         this.slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"})
         this.addMorph(this.slider);
-        this.adjustForNewBounds(this.valuePin.read(0.0)); 
+        this.adjustForNewBounds(this.getValue()); 
     
         return this;
     },
@@ -733,9 +726,9 @@ Object.extend(SliderMorph.prototype, {
     
     adjustForNewBounds: function() {
         // This method adjusts the slider for changes in value as well as geometry
-        var val = this.valuePin.read(0.0);
+        var val = this.getValue();
         var bnds = this.shape.bounds();
-        var ext = this.extentPin.read(0.0);
+        var ext = this.getExtent();
     
         if (this.vertical()) { // more vertical...
             var elevPix = Math.max(ext*bnds.height,8); // thickness of elevator in pixels
@@ -767,7 +760,7 @@ Object.extend(SliderMorph.prototype, {
     
         var p = this.localize(evt.mousePoint).subPt(this.hitPoint);
         var bnds = this.shape.bounds();
-        var ext = this.extentPin.read(0.0);
+        var ext = this.getExtent();
         var elevPix = Math.max(ext*bnds.height,6); // thickness of elevator in pixels
     
         if (this.vertical()) { // more vertical...
@@ -776,7 +769,7 @@ Object.extend(SliderMorph.prototype, {
             var newValue = p.x / (bnds.width-elevPix); 
         }
     
-        this.valuePin.write(this.clipValue(newValue));
+        this.setValue(this.clipValue(newValue));
         this.adjustForNewBounds(); 
     },
 
@@ -786,14 +779,14 @@ Object.extend(SliderMorph.prototype, {
     
     onMouseDown: function(evt) {
         evt.hand.setMouseFocus(this);
-        var inc = this.extentPin.read(0.1);
-        var newValue = this.valuePin.read(0.0);
+        var inc = this.getExtent();
+        var newValue = this.getValue();
         var delta = this.localize(evt.mousePoint).subPt(this.slider.bounds().center());
     
         if (this.vertical() ? delta.y > 0 : delta.x > 0) newValue += inc;
         else newValue -= inc;
     
-        this.valuePin.write(this.clipValue(newValue));
+        this.setValue(this.clipValue(newValue));
         this.adjustForNewBounds(); 
     },
     
@@ -804,11 +797,47 @@ Object.extend(SliderMorph.prototype, {
     clipValue: function(val) { 
         return Math.min(1.0,Math.max(0,0,val.roundTo(0.001))); 
     },
-    
+
     updateView: function(aspect, controller) {
+        var c = this.modelConnector;
+        if(c) {
+		if (aspect == c.getValue || aspect == c.getExtent) this. adjustForNewBounds();
+		return;
+	}
         if (aspect == this.valuePin.varName || aspect == this.extentPin.varName) 
             this.adjustForNewBounds(); 
+    },
+
+    getValue: function() {
+        var c = this.modelConnector;
+	if(c) return c.model[c.getValue]();  // call the model's value accessor
+	else return this.valuePin.read(0.0);  // variable style access
+    },
+
+    setValue: function(value) {
+        var c = this.modelConnector;
+	if(c) c.model[c.setValue](value);  // call the model's value accessor
+	else this.valuePin.write(value);  // variable style access
+    },
+
+    getExtent: function() {
+        var c = this.modelConnector;
+	if(c) return c.model[c.getExtent]();  // call the model's value accessor
+	else return this.extentPin.read(0.0);  // variable style access
+    },
+
+    getMyExtent: function() { // Getter and setter for when this is its own model
+        return 0.0 ;
+    },
+
+    getMyValue: function() {
+        return this.myValue;
+    },
+
+    setMyValue: function(value) {
+        this.myValue = value;
     }
+// */
 });
     
 /**
