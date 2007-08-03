@@ -104,7 +104,7 @@ Object.extend(CheapListMorph.prototype, {
         this.itemList = itemList;
     
         // this default self connection may get overwritten by, eg, connectModel()...
-        this.modelConnector = {model: this,
+        this.modelPlug = {model: this,
 		getList: "getMyList",
 		getSelection: "getMySelection",
 		setSelection: "setMySelection"};
@@ -227,7 +227,7 @@ Object.extend(CheapListMorph.prototype, {
     },
 
     updateView: function(aspect, controller) {
-        var c = this.modelConnector;
+        var c = this.modelPlug;
         if(c) { // New style connect
 		if (aspect == c.getList) this.updateList(this.getList());
 		if (aspect == c.getSelection) this.setSelectionToMatch(this.getSelection());
@@ -242,19 +242,19 @@ Object.extend(CheapListMorph.prototype, {
     },
 
     getList: function() {
-        var c = this.modelConnector;
+        var c = this.modelPlug;
 	if(c) return c.model[c.getList]();  // call the model's value accessor
 	else return this.listPin.read(null);  // variable style access
     },
 
     getSelection: function() {
-        var c = this.modelConnector;
+        var c = this.modelPlug;
 	if(c) return c.model[c.getSelection]();  // call the model's value accessor
 	else return this.selectionPin.read(null);  // variable style access
     },
 
     setSelection: function(item) {
-        var c = this.modelConnector;
+        var c = this.modelPlug;
 	if(c) c.model[c.setSelection](item);  // call the model's value accessor
 	else this.selectionPin.write(item);  // variable style access
     },
@@ -585,7 +585,7 @@ Object.extend(Morph.prototype, {
 			// and other apps that got built in its image
         var model = plugSpec.model;
 	var mvc = false;
-	this.modelConnector = null; // defeat default self-model
+	this.modelPlug = null; // defeat default self-model
     
         for (var prop in plugSpec)  {
             if (prop != "model" && plugSpec.hasOwnProperty(prop)) {
@@ -603,12 +603,30 @@ Object.extend(Morph.prototype, {
         if (mvc) model.addDependent(this); 
     },
 
-    connectModel: function(connector) {
+    connectModel: function(plug) {
 	// connector makes this view pluggable to different models, as in
 	// {model: someModel, getList: "getItemList", setSelection: "chooseItem"}
-	this.modelConnector = connector;
-        if(connector.model.addDependent)  // for mvc-style updating
-		connector.model.addDependent(this); 
+	this.modelPlug = plug;
+        if(plug.model.addDependent)  // for mvc-style updating
+		plug.model.addDependent(this); 
+    },
+
+    getPlugValue: function(plug, functionName, defaultValue) {
+	// Allows for graceful handling of missing accessors
+	if(plug == null) return defaultValue;
+	if(functionName == null) return defaultValue;
+        var func = plug.model[functionName];
+	if(func == null) return defaultValue;
+	return func.call(plug.model); 
+    },
+
+    setPlugValue: function(plug, functionName, newtValue) {
+	// Allows for graceful handling of missing accessors
+	if(plug == null) return;
+	if(functionName == null) return;
+        var func = plug.model[functionName];
+        if(func == null) return;
+	return func.call(plug.model, newValue); 
     },
 
     updateView: function(aspect, controller) { }
@@ -630,7 +648,7 @@ Object.extend(ButtonMorph.prototype, {
         this.toggles = false; // if true each push toggles the model state
 
         // this default self connection may get overwritten by, eg, connectModel()...
-        this.modelConnector = {model: this, getValue: "getMyValue", setValue: "setMyValue"};
+        this.modelPlug = {model: this, getValue: "getMyValue", setValue: "setMyValue"};
 	    
         // Styling
         this.baseColor = Color.gray.darker();
@@ -665,7 +683,7 @@ Object.extend(ButtonMorph.prototype, {
     },
 
     updateView: function(aspect, controller) {
-        var c = this.modelConnector;
+        var c = this.modelPlug;
         if(c) {
 		if (aspect == c.getValue) this.showColorFor(this.getValue());
 		return;
@@ -675,13 +693,13 @@ Object.extend(ButtonMorph.prototype, {
     },
 
     getValue: function() {
-        var c = this.modelConnector;
+        var c = this.modelPlug;
 	if(c) return c.model[c.getValue]();  // call the model's value accessor
 	else return this.valuePin.read(false);  // variable style access
     },
 
     setValue: function(value) {
-        var c = this.modelConnector;
+        var c = this.modelPlug;
 	if(c) c.model[c.setValue](value);  // call the model's value accessor
 	else this.valuePin.write(value);  // variable style access
     },
@@ -708,7 +726,7 @@ Object.extend(SliderMorph.prototype, {
         // this.setFill(Color.blue.lighter());
 
         // this default self connection may get overwritten by, eg, connectModel()...
-        this.modelConnector = {model: this, getValue: "getMyValue", setValue: "setMyValue", getExtent: "getMyExtent"};
+        this.modelPlug = {model: this, getValue: "getMyValue", setValue: "setMyValue", getExtent: "getMyExtent"};
 	this.myValue = 0.0;
  
         this.slider = Morph(Rectangle(0, 0, 8, 8), "rect");
@@ -799,7 +817,7 @@ Object.extend(SliderMorph.prototype, {
     },
 
     updateView: function(aspect, controller) {
-        var c = this.modelConnector;
+        var c = this.modelPlug;
         if(c) {
 		if (aspect == c.getValue || aspect == c.getExtent) this. adjustForNewBounds();
 		return;
@@ -809,19 +827,19 @@ Object.extend(SliderMorph.prototype, {
     },
 
     getValue: function() {
-        var c = this.modelConnector;
+        var c = this.modelPlug;
 	if(c) return c.model[c.getValue]();  // call the model's value accessor
 	else return this.valuePin.read(0.0);  // variable style access
     },
 
     setValue: function(value) {
-        var c = this.modelConnector;
+        var c = this.modelPlug;
 	if(c) c.model[c.setValue](value);  // call the model's value accessor
 	else this.valuePin.write(value);  // variable style access
     },
 
     getExtent: function() {
-        var c = this.modelConnector;
+        var c = this.modelPlug;
 	if(c) return c.model[c.getExtent]();  // call the model's value accessor
 	else return this.extentPin.read(0.0);  // variable style access
     },
