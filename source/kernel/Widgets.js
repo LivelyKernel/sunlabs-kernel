@@ -103,9 +103,12 @@ Object.extend(CheapListMorph.prototype, {
         this.wrap = "noWrap";
         this.itemList = itemList;
     
-        // this default pin may get overwritten by, eg, connect()...
-        this.selectionPin = new Pin(this, new Model(this), "mySelection");
-        this.listPin = new Pin(this, this.selectionPin.model, "myList");
+        // this default self connection may get overwritten by, eg, connectModel()...
+        this.modelConnector = {model: this,
+		getList: "getMyList",
+		getSelection: "getMySelection",
+		setSelection: "setMySelection"};
+
         this.layoutChanged();
         this.setBorderColor(Color.blue); 
     
@@ -122,7 +125,7 @@ Object.extend(CheapListMorph.prototype, {
             var lineNo = this.selectedLineNo();
             if (lineNo > 0) {
                 this.selectLineAt(this.selectionRange[0] - 1); 
-                this.selectionPin.write(this.itemList[lineNo - 1]); 
+                this.setSelection(this.itemList[lineNo - 1]); 
             } 
             break;
         }
@@ -131,7 +134,7 @@ Object.extend(CheapListMorph.prototype, {
             var lineNo = this.selectedLineNo();
             if (lineNo < this.itemList.length - 1) {
                 this.selectLineAt(this.selectionRange[1] + 2); // skip the '\n' ?
-                this.selectionPin.write(this.itemList[lineNo + 1]); 
+                this.setSelection(this.itemList[lineNo + 1]); 
             } 
             break;
         }
@@ -166,8 +169,8 @@ Object.extend(CheapListMorph.prototype, {
     },
 
     emitSelection: function() {
-        if (this.hasNullSelection()) return this.selectionPin.write(null);
-        this.selectionPin.write(this.itemList[this.selectedLineNo()]); 
+        if (this.hasNullSelection()) return this.setSelection(null);
+        this.setSelection(this.itemList[this.selectedLineNo()]); 
     },
 
     charOfY: function(p) { // Like charOfPoint, for the leftmost character in the line
@@ -201,7 +204,7 @@ Object.extend(CheapListMorph.prototype, {
     },
     
     updateList: function(newList) {
-        var priorItem = this.selectionPin.read();
+        var priorItem = this.getSelection();
 	this.itemList = newList;
         var listText = (this.itemList == null) ? "" : this.itemList.join("\n");
         this.updateTextString(listText);
@@ -222,18 +225,60 @@ Object.extend(CheapListMorph.prototype, {
         }
         this.selectLineAt(lineStart); 
     },
-
+/*
     updateView: function(aspect, controller) {
-        if (aspect == this.listPin.varName) {
+        if (this.listPin && aspect == this.listPin.varName) {
             this.updateList(this.listPin.read());
         }
-    
-        if (aspect == this.selectionPin.varName) {
+        if (this.selectionPin && aspect == this.selectionPin.varName) {
             this.setSelectionToMatch(this.selectionPin.read()); 
         }
-        
-    }
-    
+    },
+*/
+    updateView: function(aspect, controller) {
+        var c = this.modelConnector;
+        if(c) {
+		if (aspect == c.getList) this.updateList(this.getList());
+		if (aspect == c.getSelection) this.setSelectionToMatch(this.getSelection());
+		return;
+	}
+        if (this.listPin && aspect == this.listPin.varName) {
+            this.updateList(this.listPin.read());
+        }
+        if (this.selectionPin && aspect == this.selectionPin.varName) {
+            this.setSelectionToMatch(this.selectionPin.read()); 
+        }
+    },
+
+    getList: function() {
+        var c = this.modelConnector;
+	if(c) return c.model[c.getList]();  // call the model's value accessor
+	else return this.listPin.read(null);  // variable style access
+    },
+
+    getSelection: function() {
+        var c = this.modelConnector;
+	if(c) return c.model[c.getSelection]();  // call the model's value accessor
+	else return this.selectionPin.read(null);  // variable style access
+    },
+
+    setSelection: function(item) {
+        var c = this.modelConnector;
+	if(c) c.model[c.setSelection](item);  // call the model's value accessor
+	else this.selectionPin.write(item);  // variable style access
+    },
+
+    getMyList: function() { // Getter and setter for when this is its own model
+        return this.itemlist;
+    },
+
+    getMySelection: function() {
+        return this.mySelection;
+    },
+
+    setMySelection: function(value) {
+        this.mySelection = value;
+    }   
 });
 
 /**
@@ -549,6 +594,7 @@ Object.extend(Morph.prototype, {
 			// and other apps that got built in its image
         var model = plugSpec.model;
 	var mvc = false;
+	this.modelConnector = null; // defeat default self-model
     
         for (var prop in plugSpec)  {
             if (prop != "model" && plugSpec.hasOwnProperty(prop)) {
@@ -591,9 +637,10 @@ Object.extend(ButtonMorph.prototype, {
     initialize: function(initialBounds) {
         ButtonMorph.superClass.initialize.call(this, initialBounds, "rect");
         this.toggles = false; // if true each push toggles the model state
-        // this default pin may get overwritten by, eg, connect()...
-        this.valuePin = new Pin(this, new Model(this), "myValue"); 
-    
+
+        // this default self connection may get overwritten by, eg, connectModel()...
+        this.modelConnector = {model: this, getValue: "getMyValue", setValue: "setMyValue"};
+	    
         // Styling
         this.baseColor = Color.gray.darker();
         this.setFill(LinearGradient.makeGradient(this.baseColor, this.baseColor.lighter(), LinearGradient.SouthNorth));
@@ -608,7 +655,7 @@ Object.extend(ButtonMorph.prototype, {
     
     onMouseDown: function(evt) {
         if (!this.toggles) {
-            this.valuePin.write(true); 
+            this.setValue(true); 
             this.showColorFor(true); 
         } 
     },
@@ -616,8 +663,8 @@ Object.extend(ButtonMorph.prototype, {
     onMouseMove: function(evt) { },
 
     onMouseUp: function(evt) {
-        var newValue = this.toggles ? !this.valuePin.read() : false;
-        this.valuePin.write(newValue); 
+        var newValue = this.toggles ? ! this.getValue() : false;
+        this.setValue(newValue); 
         this.showColorFor(newValue); 
     },
     
@@ -627,8 +674,33 @@ Object.extend(ButtonMorph.prototype, {
     },
 
     updateView: function(aspect, controller) {
-        if (aspect != this.valuePin.varName) return;
-        this.showColorFor(this.valuePin.read()); 
+        var c = this.modelConnector;
+        if(c) {
+		if (aspect == c.getValue) this.showColorFor(this.getValue());
+		return;
+	}
+	if (aspect == this.valuePin.varName) 
+        	this.showColorFor(this.getValue());
+    },
+
+    getValue: function() {
+        var c = this.modelConnector;
+	if(c) return c.model[c.getValue]();  // call the model's value accessor
+	else return this.valuePin.read(false);  // variable style access
+    },
+
+    setValue: function(value) {
+        var c = this.modelConnector;
+	if(c) c.model[c.setValue](value);  // call the model's value accessor
+	else this.valuePin.write(value);  // variable style access
+    },
+
+    getMyValue: function() { // Getter and setter for when this is its own model
+        return this.myValue;
+    },
+
+    setMyValue: function(value) {
+        this.myValue = value;
     }
 });
 
