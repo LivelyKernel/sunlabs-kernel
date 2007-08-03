@@ -620,13 +620,13 @@ Object.extend(Morph.prototype, {
 	return func.call(plug.model); 
     },
 
-    setPlugValue: function(plug, functionName, newtValue) {
+    setPlugValue: function(plug, functionName, newValue, view) {
 	// Allows for graceful handling of missing accessors
 	if(plug == null) return;
 	if(functionName == null) return;
         var func = plug.model[functionName];
         if(func == null) return;
-	return func.call(plug.model, newValue); 
+	func.call(plug.model, newValue, view); 
     },
 
     updateView: function(aspect, controller) { }
@@ -683,9 +683,9 @@ Object.extend(ButtonMorph.prototype, {
     },
 
     updateView: function(aspect, controller) {
-        var c = this.modelPlug;
-        if(c) {
-		if (aspect == c.getValue) this.showColorFor(this.getValue());
+        var p = this.modelPlug;
+        if(p) {
+		if (aspect == p.getValue) this.showColorFor(this.getValue());
 		return;
 	}
 	if (aspect == this.valuePin.varName) 
@@ -693,14 +693,14 @@ Object.extend(ButtonMorph.prototype, {
     },
 
     getValue: function() {
-        var c = this.modelPlug;
-	if(c) return c.model[c.getValue]();  // call the model's value accessor
+        var p = this.modelPlug;
+	if(p) return this.getPlugValue(p, p.getValue, false);  // call the model's value accessor
 	else return this.valuePin.read(false);  // variable style access
     },
 
     setValue: function(value) {
-        var c = this.modelPlug;
-	if(c) c.model[c.setValue](value);  // call the model's value accessor
+        var p = this.modelPlug;
+	if(p) this.setPlugValue(p, p.setValue, value);  // call the model's value accessor
 	else this.valuePin.write(value);  // variable style access
     },
 
@@ -817,9 +817,9 @@ Object.extend(SliderMorph.prototype, {
     },
 
     updateView: function(aspect, controller) {
-        var c = this.modelPlug;
-        if(c) {
-		if (aspect == c.getValue || aspect == c.getExtent) this. adjustForNewBounds();
+        var p = this.modelPlug;
+        if(p) {
+		if (aspect == p.getValue || aspect == p.getExtent) this.adjustForNewBounds();
 		return;
 	}
         if (aspect == this.valuePin.varName || aspect == this.extentPin.varName) 
