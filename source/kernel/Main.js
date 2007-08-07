@@ -215,9 +215,9 @@ function main() {
     return;
 }
 
-main();
+if (false) showStatsViewer(TextLine.prototype, "TextLine...");
 
-if (true) showStatsViewer(TextLine.prototype, "TextLine...");
+main();
 
 console.log('loaded Main');
 

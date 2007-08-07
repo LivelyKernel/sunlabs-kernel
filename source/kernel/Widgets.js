@@ -1,3 +1,11 @@
+// Note:  The widget/model connection mechanism is in transition.
+// The new model simply adds a modelPlug object to each view, and it 
+// contains references to the model and method names corresponding to 
+// each of the getters and setters appropriate to the view.
+
+// The old model used "pin" connectors to access variables.
+// When these have been completely supplanted, the various getModelValue
+
 /**
  * @class ColorPickerMorph
  */ 
@@ -6,11 +14,12 @@ ColorPickerMorph = HostClass.create('ColorPickerMorph', Morph);
 
 Object.extend(ColorPickerMorph.prototype, {
 
-    initialize: function(initialBounds,targetMorph,setFillFunctionName,popup) {
+    initialize: function(initialBounds, targetMorph, setFillName, popup) {
         ColorPickerMorph.superClass.initialize.call(this, initialBounds, "rect");
         this.targetMorph = targetMorph;
-        this.setFillFunctionName = setFillFunctionName; // name like "setBorderColor"
-        this.setFill(null);
+        this.setFillFunctionName = setFillName; // name like "setBorderColor"
+        if (targetMorph != null) this.connectModel({model: targetMorph, setColor: setFillName});
+	this.setFill(null);
         this.setBorderWidth(1); 
         this.setBorderColor(Color.black);
         this.colorWheelCache = null;
@@ -72,7 +81,7 @@ Object.extend(ColorPickerMorph.prototype, {
             var wheel = this.colorWheel(r.width+1);
             var relp = r.constrainPt(evt.mousePoint.addXY(-2,-2)).subPt(r.topLeft());
             var selectedColor = this.colorMap(relp.x,relp.y,rh2,wheel);
-            this.targetMorph[this.setFillFunctionName].call(this.targetMorph,selectedColor,true);
+            this.setModelValue('setColor', selectedColor);
         } 
     },
 
@@ -242,21 +251,18 @@ Object.extend(CheapListMorph.prototype, {
     },
 
     getList: function() {
-        var c = this.modelPlug;
-	if(c) return c.model[c.getList]();  // call the model's value accessor
-	else return this.listPin.read(null);  // variable style access
+        if(this.modelPlug) return this.getModelValue('getList', ["-----"]);
+	else return this.listPin.read(null);
     },
 
     getSelection: function() {
-        var c = this.modelPlug;
-	if(c) return c.model[c.getSelection]();  // call the model's value accessor
-	else return this.selectionPin.read(null);  // variable style access
+        if(this.modelPlug) return this.getModelValue('getSelection', null);
+	else return this.selectionPin.read(null);
     },
 
     setSelection: function(item) {
-        var c = this.modelPlug;
-	if(c) c.model[c.setSelection](item);  // call the model's value accessor
-	else this.selectionPin.write(item);  // variable style access
+        if(this.modelPlug) this.setModelValue('setSelection', item); 
+	else this.selectionPin.write(item); 
     },
 
     getMyList: function() { // Getter and setter for when this is its own model
@@ -479,9 +485,12 @@ Object.extend(Model.prototype, {
     changed: function(varName, source) {
         // If source is given, we don't update the source of the change
         // If varName is not given, then null will be the aspect of the updateView()
+console.log('changed ' + varName);
         for (var i = 0; i < this.dependents.length; i++) {
-            if (source !== this.dependents[i]) // KP: FIXME: != or !==?
-            this.dependents[i].updateView(varName, source); 
+            if (source !== this.dependents[i])
+            	{
+		this.dependents[i].updateView(varName, source);
+		} 
         } 
     },
     
@@ -611,20 +620,22 @@ Object.extend(Morph.prototype, {
 		plug.model.addDependent(this); 
     },
 
-    getPlugValue: function(plug, functionName, defaultValue) {
+    getModelValue: function(functionName, defaultValue) {
 	// Allows for graceful handling of missing accessors
-	if(plug == null) return defaultValue;
-	if(functionName == null) return defaultValue;
-        var func = plug.model[functionName];
+	var plug = this.modelPlug;
+	if(plug == null || plug.model == null || functionName == null) return defaultValue;
+        var func = plug.model[plug[functionName]];
 	if(func == null) return defaultValue;
+console.log("reading " + functionName + " as " + func.call(plug.model).toString());
 	return func.call(plug.model); 
     },
 
-    setPlugValue: function(plug, functionName, newValue, view) {
+    setModelValue: function(functionName, newValue, view) {
 	// Allows for graceful handling of missing accessors
-	if(plug == null) return;
-	if(functionName == null) return;
-        var func = plug.model[functionName];
+console.log("set " + functionName + " to " + newValue.toString());
+	var plug = this.modelPlug;
+	if(plug == null || plug.model == null || functionName == null) return;
+        var func = plug.model[plug[functionName]];
         if(func == null) return;
 	func.call(plug.model, newValue, view); 
     },
@@ -693,15 +704,13 @@ Object.extend(ButtonMorph.prototype, {
     },
 
     getValue: function() {
-        var p = this.modelPlug;
-	if(p) return this.getPlugValue(p, p.getValue, false);  // call the model's value accessor
+	if(this.modelPlug) return this.getModelValue('getValue', false);
 	else return this.valuePin.read(false);  // variable style access
     },
 
     setValue: function(value) {
-        var p = this.modelPlug;
-	if(p) this.setPlugValue(p, p.setValue, value);  // call the model's value accessor
-	else this.valuePin.write(value);  // variable style access
+        if(this.modelPlug) this.setModelValue('setValue', value);
+	else this.valuePin.write(value);
     },
 
     getMyValue: function() { // Getter and setter for when this is its own model
@@ -855,9 +864,8 @@ Object.extend(SliderMorph.prototype, {
     setMyValue: function(value) {
         this.myValue = value;
     }
-// */
 });
-    
+
 /**
  * @class ScrollPane
  */ 
@@ -895,6 +903,10 @@ Object.extend(ScrollPane.prototype, {
 
     connect: function(plugSpec) { // connection is mapped to innerMorph
         this.innerMorph.connect(plugSpec); 
+    },
+    
+    connectModel: function(plugSpec) { // connection is mapped to innerMorph
+        this.innerMorph.connectModel(plugSpec); 
     },
     
     getScrollPosition: function() { 
@@ -950,91 +962,6 @@ function PrintPane(initialBounds) {
     return pane;
 };
 
-/**
- * @class FunctionPane
- */ 
-
-FunctionPane = HostClass.create('FunctionPane', ScrollPane);
-
-Object.extend(FunctionPane.prototype, {
-
-    //    Just like a textPane, except it edits a function definition,
-    //    And its participation in model networks is as that function body
-    initialize: function(initialBounds, functionText) {
-        if (functionText == null) functionText = "function() { return null; }";
-        
-        FunctionPane.superClass.initialize.call(this, TextMorph(initialBounds, functionText), initialBounds);
-        this.functionText = functionText;
-        this.innerMorph.connect({model: this, text: [null, "compileNewDef"]});
-        this.compileNewDef(functionText); 
-        
-        return this;
-    },
-
-    connect: function(plugSpec) { // get around override
-        Morph.prototype.connect.call(this, plugSpec); 
-    },
-
-    compileNewDef: function(contentString) {
-        this.functionBody = eval("(" + contentString + ")");
-        if (this.resultPin != null) this.computeResult(); 
-    },
-    
-    argPins: function() {
-        var pins = [];
-    
-        for (var pinName in this) {
-            // KP: instanceof is an optimization
-            if (!(pinName instanceof Function) && pinName.endsWith("Pin") && pinName != "resultPin") 
-            pins.push(this[pinName]);
-        }
-    
-        return pins; 
-    },
-    
-    argNames: function() { // pin names parallel to func arg names
-        var names = [];
-    
-        for (var pinName in this) {
-            // KP: instanceof is an optimization
-            if (!(pinName instanceof Function) && pinName.endsWith("Pin") && pinName != "resultPin") {
-                names.push(pinName.substring(0, pinName.length - 3)); 
-            }
-        }
-        
-        // console.log('computed argNames as ' + names);
-        return names; 
-    },
-
-    computeResult: function() {
-        // console.log('computing result on ' + this.functionText);
-        var args = this.argPins().invoke('read');
-    
-        for (var i = 0; i < args.length; i++) {
-            if (args[i] == null)  {
-                var offender = this.argPins()[i];
-                // console.log('no value for ' + offender + "," + offender.varName);
-                return; // Only fire if all args have value
-            }
-        }
-        
-        var model = this.resultPin.model;
-        var res = this.functionBody.apply(model, args);
-        // console.log('eval returned ' + res + ' to result pin ' + this.resultPin);
-        this.resultPin.write(res); 
-    },
-
-    updateView: function(aspect, controller) {
-        // console.log('in ' + this.inspect() + '.updateView ' + aspect + ' on function ' + this.functionText);
-        if (aspect == "initialize") 
-            this.computeResult(); 
-    
-        if (this.argNames().include(aspect)) {
-            this.computeResult();
-        }
-    }
-        
-});
     
 console.log('Loaded Widgets.js');
 
