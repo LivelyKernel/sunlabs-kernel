@@ -85,7 +85,6 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
 
     var widget; 
     // zzHand = world.worldState.hands[0];
-    
     var showStar = true;
     if (showStar) {  // Make a star
         var makeStarVertices = function(r,center,startAngle) {
@@ -119,6 +118,13 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
         // clockWidget.addClipRect(Rectangle(20,20,80,80));
         world.addMorph(widget);
         widget.startStepping(1000);
+    }
+    var showMap = true;
+    if(showMap){
+        widget = MapFrameMorph(new Rectangle(0 ,0,2*IMAGEWIDTH,2*IMAGEHEIGHT), true);
+        widget.setScale(0.7);
+        widget.moveBy(pt(800,80));
+        world.addMorph(widget);
     }
     
     var showClipMorph = false;
@@ -158,6 +164,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
             
             widget.myWorld.addMorphBack(ImageMorph(Rectangle(50, 10, width, height), url));
         }
+
 
         widget.myWorld.addMorph(DoodleMorph(pt(500, 50).extent(pt(400,400))));
     }
