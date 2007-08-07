@@ -946,8 +946,8 @@ function ListPane(initialBounds) {
  * @class TextPane
  */ 
 
-function TextPane(initialBounds) {
-    var pane = ScrollPane(TextMorph(initialBounds,"-----"), initialBounds); 
+function TextPane(initialBounds, defaultText) {
+    var pane = ScrollPane(TextMorph(initialBounds, defaultText), initialBounds); 
     pane.setAttributeNS(morphic.ns.MORPHIC, "type", "TextPane");
     return pane;
 };
@@ -956,9 +956,9 @@ function TextPane(initialBounds) {
  * @class PrintPane
  */ 
 
-function PrintPane(initialBounds) {
-    var pane = ScrollPane(PrintMorph(initialBounds,"-----"), initialBounds); 
-    pane.setAttributeNS(morphic.ns.MORPHIC, "type", "PrintPane");
+function PrintPane(initialBounds, defaultText) {
+    var pane = ScrollPane(PrintMorph(initialBounds, defaultText), initialBounds); 
+    pane.setAttributeNS(morphic.ns.MORPHIC, "type", "printPane");
     return pane;
 };
 

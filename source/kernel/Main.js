@@ -120,7 +120,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
         widget.startStepping(1000);
     }
 
-    var showMap = true;
+    var showMap = false;
     if (showMap){
         widget = MapFrameMorph(new Rectangle(0, 0, 2*IMAGEWIDTH, 2*IMAGEHEIGHT), true);
         widget.setScale(0.7);
