@@ -79,9 +79,6 @@ var Global = this;
 
 WorldMorph.populateWithExamples = function(world, otherWorld, server) {
     world.addHand(HandMorph(true));
-    world.hands.each(function(hand) { world.parentNode.appendChild(hand); });
-
-    console.log('added hand %s', world.firstHand());
 
     var widget; 
     // zzHand = world.worldState.hands[0];
@@ -172,8 +169,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
     }
     
     var showWidgets = true;
-    if (showWidgets) new WidgetTester().openIn(morphic.world, pt(460, 20));
- 
+    if (showWidgets) new WidgetTester().openIn(WorldMorph.current(), pt(460, 20));
     var slideWorld = true;
     if (slideWorld) { // Make a slide for "turning web programming upside down"
         var lm = LinkMorph(null, pt(260, 520));
@@ -210,15 +206,14 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
     }
 
     var showBrowser = true;
-    if (showBrowser) new SimpleBrowser().openIn(morphic.world, pt(20,20));
-
+    if (showBrowser) new SimpleBrowser().openIn(WorldMorph.current(), pt(20,20));
     return world;
 }
 
 var rss;
 function main() {
     var world = WorldMorph.createPrototypeWorld();
-    morphic.world = world;
+    WorldMorph.setCurrent(world);
     world.displayWorldOn(morphic.canvas);
     if (window.location.query()["rss"]== "true") {
         try {
@@ -228,7 +223,7 @@ function main() {
         }
     }
     console.log('made world');
-    morphic.world = WorldMorph.populateWithExamples(world);
+    WorldMorph.setCurrent(WorldMorph.populateWithExamples(world));
     
     return;
 }
@@ -243,5 +238,5 @@ console.log('loaded Main');
 if (false) {
     // var store = new WebStore('http://idisk.mac.com/xysztof/Public/Lively');
     var store = new WebStore('localhost', '~kappa');
-    store.openIn(morphic.world, pt(500, 30));
+    store.openIn(WorldMorph.current(), pt(500, 30));
 }
