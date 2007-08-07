@@ -165,9 +165,6 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
     var showWidgets = true;
     if (showWidgets) new WidgetTester().openIn(morphic.world, pt(500, 60));
  
-    var showBrowser = true;
-    if (showBrowser) new SimpleBrowser().openIn(morphic.world, pt(20,20));
-    
     var slideWorld = true;
     if (slideWorld) { // Make a slide for "turning web programming upside down"
         var lm = LinkMorph(null, pt(260, 520));
@@ -193,6 +190,18 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
     
         world.addMorph(lm); 
     }
+
+    // example icon morph with a fisheye effect 'on'
+    var showIcon = true;
+    if (showIcon) {
+        // maybe the icons should have a rectangle shaped images (unlike here)
+        var icon = IconMorph(Rectangle(100,400,80,50), "http://logos.sun.com/images/SunSample.gif", "this is an icon", null);
+        icon.toggleFisheye();    
+        world.addMorph(icon);
+    }
+
+    var showBrowser = true;
+    if (showBrowser) new SimpleBrowser().openIn(morphic.world, pt(20,20));
 
     return world;
 }
