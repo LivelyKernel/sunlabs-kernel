@@ -114,16 +114,18 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
 
     var showClock = true;
     if (showClock) {
-        widget = ClockMorph(pt(500, 480), 50);
+        widget = ClockMorph(pt(500, 450), 50);
         // clockWidget.addClipRect(Rectangle(20,20,80,80));
         world.addMorph(widget);
         widget.startStepping(1000);
     }
+
     var showMap = true;
-    if(showMap){
-        widget = MapFrameMorph(new Rectangle(0 ,0,2*IMAGEWIDTH,2*IMAGEHEIGHT), true);
+    if (showMap){
+        widget = MapFrameMorph(new Rectangle(0, 0, 2*IMAGEWIDTH, 2*IMAGEHEIGHT), true);
         widget.setScale(0.7);
-        widget.moveBy(pt(800,80));
+        // widget.moveBy(pt(800,80));
+        widget.moveTo(pt(330, 540));
         world.addMorph(widget);
     }
     
@@ -135,7 +137,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
                                         world, "setFill", false));
     
     var show3DLogo = true;
-    if (show3DLogo) world.addMorph(Sun3DMorph(pt(900, 130).extent(pt(200, 200))));
+    if (show3DLogo) world.addMorph(Sun3DMorph(pt(800, 125).extent(pt(200, 200))));
     
     var showAsteroids = true;
     if (showAsteroids) {
@@ -170,7 +172,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
     }
     
     var showWidgets = true;
-    if (showWidgets) new WidgetTester().openIn(morphic.world, pt(500, 60));
+    if (showWidgets) new WidgetTester().openIn(morphic.world, pt(460, 20));
  
     var slideWorld = true;
     if (slideWorld) { // Make a slide for "turning web programming upside down"
@@ -202,7 +204,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
     var showIcon = true;
     if (showIcon) {
         // maybe the icons should have a rectangle shaped images (unlike here)
-        var icon = IconMorph(Rectangle(100,400,80,50), "http://logos.sun.com/images/SunSample.gif", "this is an icon", null);
+        var icon = IconMorph(Rectangle(80, 360, 80, 50), "http://logos.sun.com/images/SunSample.gif", "Fisheye Icon!", null);
         icon.toggleFisheye();    
         world.addMorph(icon);
     }
