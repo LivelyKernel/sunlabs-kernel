@@ -626,13 +626,13 @@ Object.extend(Morph.prototype, {
 	if(plug == null || plug.model == null || functionName == null) return defaultValue;
         var func = plug.model[plug[functionName]];
 	if(func == null) return defaultValue;
-console.log("reading " + functionName + " as " + func.call(plug.model).toString());
+console.log("reading %s as %s", functionName, func.call(plug.model));
 	return func.call(plug.model); 
     },
 
     setModelValue: function(functionName, newValue, view) {
 	// Allows for graceful handling of missing accessors
-console.log("set " + functionName + " to " + newValue.toString());
+console.log("set %s to %s", functionName, newValue);
 	var plug = this.modelPlug;
 	if(plug == null || plug.model == null || functionName == null) return;
         var func = plug.model[plug[functionName]];
@@ -958,7 +958,7 @@ function TextPane(initialBounds) {
 
 function PrintPane(initialBounds) {
     var pane = ScrollPane(PrintMorph(initialBounds,"-----"), initialBounds); 
-    pane.setAttributeNS(morphic.ns.MORPHIC, "type", "printPane");
+    pane.setAttributeNS(morphic.ns.MORPHIC, "type", "PrintPane");
     return pane;
 };
 

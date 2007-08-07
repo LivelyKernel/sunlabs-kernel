@@ -239,3 +239,9 @@ main();
 
 console.log('loaded Main');
 
+
+if (false) {
+    // var store = new WebStore('http://idisk.mac.com/xysztof/Public/Lively');
+    var store = new WebStore('localhost', '~kappa');
+    store.openIn(morphic.world, pt(500, 30));
+}
