@@ -485,7 +485,7 @@ Object.extend(Model.prototype, {
     changed: function(varName, source) {
         // If source is given, we don't update the source of the change
         // If varName is not given, then null will be the aspect of the updateView()
-console.log('changed ' + varName);
+//console.log('changed ' + varName);
         for (var i = 0; i < this.dependents.length; i++) {
             if (source !== this.dependents[i])
             	{
@@ -626,13 +626,13 @@ Object.extend(Morph.prototype, {
 	if(plug == null || plug.model == null || functionName == null) return defaultValue;
         var func = plug.model[plug[functionName]];
 	if(func == null) return defaultValue;
-console.log("reading %s as %s", functionName, func.call(plug.model));
+//console.log("reading %s as %s", functionName, func.call(plug.model));
 	return func.call(plug.model); 
     },
 
     setModelValue: function(functionName, newValue, view) {
 	// Allows for graceful handling of missing accessors
-console.log("set %s to %s", functionName, newValue);
+//console.log("set %s to %s", functionName, newValue);
 	var plug = this.modelPlug;
 	if(plug == null || plug.model == null || functionName == null) return;
         var func = plug.model[plug[functionName]];
@@ -730,9 +730,10 @@ SliderMorph = HostClass.create('SliderMorph', Morph);
 
 Object.extend(SliderMorph.prototype, {
 
-    initialize: function(initialBounds) {
+    initialize: function(initialBounds, scaleIfAny) {
         SliderMorph.superClass.initialize.call(this, initialBounds, "rect");
-        // this.setFill(Color.blue.lighter());
+        this.scale = (scaleIfAny == null) ? 1.0 : scaleIfAny;
+	this.setFill(Color.blue.lighter());
 
         // this default self connection may get overwritten by, eg, connectModel()...
         this.modelPlug = {model: this, getValue: "getMyValue", setValue: "setMyValue", getExtent: "getMyExtent"};
@@ -837,20 +838,19 @@ Object.extend(SliderMorph.prototype, {
 
     getValue: function() {
         var c = this.modelPlug;
-	if(c) return c.model[c.getValue]();  // call the model's value accessor
-	else return this.valuePin.read(0.0);  // variable style access
+	if(c) return c.model[c.getValue](0.0) / this.scale;  // call the model's value accessor
+	else return this.valuePin.read(0.0) / this.scale;  // variable style access
     },
 
     setValue: function(value) {
         var c = this.modelPlug;
-	if(c) c.model[c.setValue](value);  // call the model's value accessor
-	else this.valuePin.write(value);  // variable style access
+	if(c) c.model[c.setValue](value * this.scale);  // call the model's value accessor
+	else this.valuePin.write(value * this.scale);  // variable style access
     },
 
     getExtent: function() {
-        var c = this.modelPlug;
-	if(c) return c.model[c.getExtent]();  // call the model's value accessor
-	else return this.extentPin.read(0.0);  // variable style access
+	if(this.modelPlug) return this.getModelValue('getExtent',(0.0));
+	else return this.extentPin.read(0.0);
     },
 
     getMyExtent: function() { // Getter and setter for when this is its own model
