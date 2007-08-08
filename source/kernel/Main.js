@@ -148,8 +148,12 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
     var innerWorld = true;
     if (innerWorld) {
         world.addMorph(widget = LinkMorph(null, pt(260, 460)));
-        widget.myWorld.onEnter = function() { if (!world.rssReader) world.rssReader = loadRSS(world, pt(900, 50)); }
-    
+/*
+        widget.myWorld.onEnter = function() {
+		console.log('initting RSS reader');
+		// if (!world.rssReader) world.rssReader = loadRSS(world, pt(900, 50));
+		}
+*/    
         var showBitmap = true;
         if (showBitmap) { 
             var width = 800;
@@ -206,6 +210,10 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
 
     var showBrowser = true;
     if (showBrowser) new SimpleBrowser().openIn(WorldMorph.current(), pt(20,20));
+
+    var showRSS = true;
+    if (showRSS) loadRSS(world, pt(300, 20));
+
     return world;
 }
 
@@ -214,13 +222,16 @@ function main() {
     var world = WorldMorph.createPrototypeWorld();
     WorldMorph.setCurrent(world);
     world.displayWorldOn(morphic.canvas);
+/*
     if (window.location.query()["rss"]== "true") {
         try {
-            rss = loadRSS(world, pt(300, 20));
+            console.log('trying loadRSS');
+		rss = loadRSS(world, pt(300, 20));
         } catch (e) {
             console.log('failed to load rss due to: %s', e);
         }
     }
+*/
     console.log('made world');
     WorldMorph.populateWithExamples(world);
 }

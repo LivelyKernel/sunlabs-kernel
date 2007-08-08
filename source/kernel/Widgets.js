@@ -502,19 +502,7 @@ Object.extend(Model.prototype, {
 		this.dependents[i].updateView(varName, source);
 		} 
         } 
-    },
-    
-    toString: function() {
-        var str = "";
-    
-        for (var name in this) {
-            if (!(this[name] instanceof Function) && (name != "dependents")) 
-                str += name + ": " + this[name] + "\n";
-        }
-    
-        return str; 
     }
-    
 });
 
 /**
