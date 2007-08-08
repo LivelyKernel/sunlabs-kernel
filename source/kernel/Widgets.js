@@ -203,8 +203,17 @@ Object.extend(CheapListMorph.prototype, {
     },
     
     selectLineAt: function(charIx) {  
-        this.selectionRange = (charIx == -1) ? [0,-1] : TextMorph.selectWord(this.textString, charIx);
+        this.selectionRange = (charIx == -1) ? [0,-1] : /*TextMorph.selectWord*/ this.lineRange(this.textString, charIx);
+console.log('SelectLine ' + charIx.toString() + ' / ' + this.selectionRange.toString());
         this.drawSelection(); 
+    },
+    
+    lineRange: function(str, charIx) { // like selectWord, but looks for matching newLines 
+        var i1 = charIx;
+	while (i1>0 && str[i1-1] != '\n') i1--; // scan back to prior newline
+	var i2 = i1;
+	while (i2<str.length-1 && str[i2+1] != '\n') i2++; // and forward to next newline
+	return [i1, i2];
     },
     
     lineRect: function(r) { //Menu selection displays full width
