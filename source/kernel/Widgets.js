@@ -203,8 +203,7 @@ Object.extend(CheapListMorph.prototype, {
     },
     
     selectLineAt: function(charIx) {  
-        this.selectionRange = (charIx == -1) ? [0,-1] : /*TextMorph.selectWord*/ this.lineRange(this.textString, charIx);
-console.log('SelectLine ' + charIx.toString() + ' / ' + this.selectionRange.toString());
+        this.selectionRange = (charIx == -1) ? [0,-1] : this.lineRange(this.textString, charIx);
         this.drawSelection(); 
     },
     
