@@ -78,7 +78,6 @@ function randColor(alpha) {
 var Global = this;
 
 WorldMorph.populateWithExamples = function(world, otherWorld, server) {
-    world.addHand(HandMorph(true));
 
     var widget; 
     // zzHand = world.worldState.hands[0];
@@ -219,13 +218,11 @@ function main() {
         try {
             rss = loadRSS(world, pt(300, 20));
         } catch (e) {
-            console.log('failed to load rss due to: ' + e);
+            console.log('failed to load rss due to: %s', e);
         }
     }
     console.log('made world');
-    WorldMorph.setCurrent(WorldMorph.populateWithExamples(world));
-    
-    return;
+    WorldMorph.populateWithExamples(world);
 }
 
 if (false) showStatsViewer(TextLine.prototype, "TextLine...");
