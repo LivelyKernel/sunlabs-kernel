@@ -119,7 +119,7 @@ Object.extend(CheapListMorph.prototype, {
 		setSelection: "setMySelection"};
 
         this.layoutChanged();
-        this.setBorderColor(Color.blue); 
+        this.setBorderColor(Color.black); 
     
         return this;
     },
@@ -313,7 +313,8 @@ Object.extend(MenuMorph.prototype, {
     },
 
     addLine: function(item) { // Not yet supported
-        this.lines.push(this.items.length);
+        // The idea is for this to add a real line on top of the text
+	this.items.push(['-----']);
     },
 
     removeItemNamed: function(itemName) {
@@ -329,6 +330,7 @@ Object.extend(MenuMorph.prototype, {
         this.stayUp = remainOnScreen; // set true to keep on screen
 	this.caption = captionIfAny;  // Not yet implemented
 	this.compose(location);
+        this.setBorderColor(Color.blue); 
 	world.addMorph(this);
     },
 
