@@ -113,7 +113,6 @@ Object.extend(CheapListMorph.prototype, {
 
         this.wrap = "noWrap";
         this.itemList = itemList;
-    
         // this default self connection may get overwritten by, eg, connectModel()...
         this.modelPlug = {model: this,
 		getList: "getMyList",
@@ -135,9 +134,10 @@ Object.extend(CheapListMorph.prototype, {
         case Event.KEY_UP: {
             var lineNo = this.selectedLineNo();
             if (lineNo > 0) {
-                this.selectLineAt(this.selectionRange[0] - 1); 
+                this.selectLineAt(this.selectionRange[0] - 2); 
                 this.setSelection(this.itemList[lineNo - 1]); 
             } 
+	    evt.stop();
             break;
         }
     
@@ -147,11 +147,11 @@ Object.extend(CheapListMorph.prototype, {
                 this.selectLineAt(this.selectionRange[1] + 2); // skip the '\n' ?
                 this.setSelection(this.itemList[lineNo + 1]); 
             } 
+	    evt.stop();
             break;
         }
         }
-    
-        Event.stop(evt);
+
     },
 
     onMouseDown: function(evt) {
@@ -203,7 +203,7 @@ Object.extend(CheapListMorph.prototype, {
             }
         } else CheapListMorph.superClass.drawSelection.call(this); 
     },
-    
+
     selectLineAt: function(charIx) {  
         this.selectionRange = (charIx == -1) ? [0,-1] : this.lineRange(this.textString, charIx);
         this.drawSelection(); 

@@ -131,7 +131,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
     var showAsteroids = true;
     if (showAsteroids) {
         gameMorph = GameMorph(pt(580, 340).extent(pt(600, 300))); 
-        world.addMorph(gameMorph);
+        world.addMorph(WindowMorph(gameMorph, 'Asteroids!'));
         // This is an ugly way to run the game -- the game object should
         // be a real morph (to be fixed later)
         initAsteroidsGame();
@@ -141,12 +141,12 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
     var innerWorld = true;
     if (innerWorld) {
         world.addMorph(widget = LinkMorph(null, pt(260, 460)));
-/*
+	
         widget.myWorld.onEnter = function() {
-		console.log('initting RSS reader');
-		// if (!world.rssReader) world.rssReader = loadRSS(world, pt(900, 50));
-		}
-*/    
+	    console.log('initting RSS reader');
+	    if (!world.rssReader) world.rssReader = loadRSS(world, pt(900, 50));
+	}
+	
         var showBitmap = true;
         if (showBitmap) { 
             var width = 800;
@@ -212,7 +212,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
     var showBrowser = true;
     if (showBrowser) new SimpleBrowser().openIn(WorldMorph.current(), pt(20,20));
 
-    var showRSS = true;
+    var showRSS = false;
     if (showRSS) loadRSS(world, pt(300, 20));
 
     return world;
