@@ -220,16 +220,6 @@ function main() {
     var world = WorldMorph.createPrototypeWorld();
     WorldMorph.setCurrent(world);
     world.displayWorldOn(morphic.canvas);
-/*
-    if (window.location.query()["rss"]== "true") {
-        try {
-            console.log('trying loadRSS');
-            rss = loadRSS(world, pt(300, 20));
-        } catch (e) {
-            console.log('failed to load rss due to: %s', e);
-        }
-    }
-*/
     console.log('made world');
     WorldMorph.populateWithExamples(world);
 }
@@ -240,7 +230,7 @@ console.log('loaded Main');
 
 if (false) showStatsViewer(TextLine.prototype, "TextLine...");
 
-if (false) {
+if (this['showWebStore']) {
     // var store = new WebStore('http://idisk.mac.com/xysztof/Public/Lively');
     var store = new WebStore('localhost', '~kappa');
     store.openIn(WorldMorph.current(), pt(500, 30));
