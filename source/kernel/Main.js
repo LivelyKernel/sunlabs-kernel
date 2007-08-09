@@ -116,14 +116,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
         widget.startStepping(1000);
     }
 
-    var showMap = false;
-    if (showMap){
-        widget = MapFrameMorph(new Rectangle(0, 0, 2*IMAGEWIDTH, 2*IMAGEHEIGHT), true);
-        widget.setScale(0.7);
-        // widget.moveBy(pt(800,80));
-        widget.moveTo(pt(330, 540));
-        world.addMorph(widget);
-    }
+
     
     var showClipMorph = false;
     if (showClipMorph) world.addMorph(ClipMorph(Rectangle(500, 200, 150, 150)));
@@ -165,6 +158,14 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
             width + "&h=" + height + "&cc=US&min_priority=2";
             
             widget.myWorld.addMorphBack(ImageMorph(Rectangle(50, 10, width, height), url));
+        }
+        var showMap = false;
+        if (showMap){
+            var map = new MapFrameMorph(new Rectangle(0, 0, 2*IMAGEWIDTH, 2*IMAGEHEIGHT), true);
+            map.setScale(0.7);
+            // widget.moveBy(pt(800,80));
+            map.moveTo(pt(800, 80));
+            widget.myWorld.addMorph(map);
         }
 
 
