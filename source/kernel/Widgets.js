@@ -966,7 +966,7 @@ function TextPane(initialBounds, defaultText) {
 
 function PrintPane(initialBounds, defaultText) {
     var pane = ScrollPane(PrintMorph(initialBounds, defaultText), initialBounds); 
-    pane.setAttributeNS(morphic.ns.MORPHIC, "type", "printPane");
+    pane.setAttributeNS(morphic.ns.MORPHIC, "type", "PrintPane");
     return pane;
 };
 

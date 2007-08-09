@@ -124,7 +124,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
                                         world, "setFill", false));
     
     var show3DLogo = true;
-    if (show3DLogo) world.addMorph(Sun3DMorph(pt(800, 125).extent(pt(200, 200))));
+    if (show3DLogo) world.addMorph(WindowMorph(Sun3DMorph(pt(800, 125).extent(pt(200, 200))), 'Sun 3D Logo'));
     
     var showAsteroids = true;
     if (showAsteroids) {
@@ -166,8 +166,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
             widget.myWorld.addMorph(map);
         }
 
-
-        widget.myWorld.addMorph(DoodleMorph(pt(875, 350).extent(pt(300, 300))));
+        widget.myWorld.addMorph(WindowMorph(DoodleMorph(pt(875, 350).extent(pt(300, 300))), 'Doodle Morph'));
     }
     
     var showWidgets = true;
