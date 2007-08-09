@@ -236,12 +236,11 @@ function main() {
     WorldMorph.populateWithExamples(world);
 }
 
-if (false) showStatsViewer(TextLine.prototype, "TextLine...");
-
 main();
 
 console.log('loaded Main');
 
+if (false) showStatsViewer(TextLine.prototype, "TextLine...");
 
 if (false) {
     // var store = new WebStore('http://idisk.mac.com/xysztof/Public/Lively');
