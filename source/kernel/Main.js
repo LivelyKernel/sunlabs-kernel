@@ -130,7 +130,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
     
     var showAsteroids = true;
     if (showAsteroids) {
-        gameMorph = GameMorph(pt(580, 340).extent(pt(600, 300))); 
+        gameMorph = GameMorph(pt(580, 360).extent(pt(600, 300))); 
         world.addMorph(WindowMorph(gameMorph, 'Asteroids!'));
         // This is an ugly way to run the game -- the game object should
         // be a real morph (to be fixed later)
