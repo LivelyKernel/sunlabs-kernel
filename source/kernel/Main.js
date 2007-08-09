@@ -139,12 +139,12 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
     var innerWorld = true;
     if (innerWorld) {
         world.addMorph(widget = LinkMorph(null, pt(260, 460)));
-	
+
         widget.myWorld.onEnter = function() {
-	    console.log('initting RSS reader');
-	    if (!world.rssReader) world.rssReader = loadRSS(world, pt(725, 120));
-	}
-	
+            console.log('initting RSS reader');
+            if (!world.rssReader) world.rssReader = loadRSS(world, pt(725, 120));
+        }
+
         var showBitmap = true;
         if (showBitmap) { 
             var width = 800;
@@ -225,7 +225,7 @@ function main() {
     if (window.location.query()["rss"]== "true") {
         try {
             console.log('trying loadRSS');
-		rss = loadRSS(world, pt(300, 20));
+            rss = loadRSS(world, pt(300, 20));
         } catch (e) {
             console.log('failed to load rss due to: %s', e);
         }
