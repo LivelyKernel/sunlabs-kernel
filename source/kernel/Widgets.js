@@ -19,7 +19,7 @@ Object.extend(ColorPickerMorph.prototype, {
         this.targetMorph = targetMorph;
         this.setFillFunctionName = setFillName; // name like "setBorderColor"
         if (targetMorph != null) this.connectModel({model: targetMorph, setColor: setFillName});
-	this.setFill(null);
+        this.setFill(null);
         this.setBorderWidth(1); 
         this.setBorderColor(Color.black);
         this.colorWheelCache = null;
@@ -78,10 +78,10 @@ Object.extend(ColorPickerMorph.prototype, {
         if (evt.mouseButtonPressed) { 
             var r = this.bounds().insetBy(this.shape.getStrokeWidth());
             r = pt(0,0).extent(r.extent());
-	    var rh2 = r.height/2;
+            var rh2 = r.height/2;
             var wheel = this.colorWheel(r.width+1);
             var relp = r.constrainPt(this.localize(evt.mousePoint).addXY(-2,-2));
-//console.log('mp = ' + this.localize(evt.mousePoint).inspect() + ' / relp = ' + relp.inspect());
+            // console.log('mp = ' + this.localize(evt.mousePoint).inspect() + ' / relp = ' + relp.inspect());
             var selectedColor = this.colorMap(relp.x,relp.y,rh2,wheel);
             this.setModelValue('setColor', selectedColor);
         } 
@@ -103,10 +103,10 @@ CheapListMorph = HostClass.create('CheapListMorph', TextMorph);
 Object.extend(CheapListMorph.prototype, {
     
     initialize: function(initialBounds, itemList) {
-        //    itemList is an array of strings
-        //    Note:  A proper ListMorph is a list of independent submorphs
-        //    CheapListMorphs simply leverage Textmorph's ability to display
-        //    multiline paragraphs, though some effort is made to use a similar interface.
+        // itemList is an array of strings
+        // Note:  A proper ListMorph is a list of independent submorphs
+        // CheapListMorphs simply leverage Textmorph's ability to display
+        // multiline paragraphs, though some effort is made to use a similar interface.
     
         var listText = (itemList == null) ? "" : itemList.join("\n");
         CheapListMorph.superClass.initialize.call(this, initialBounds, listText);
@@ -114,10 +114,12 @@ Object.extend(CheapListMorph.prototype, {
         this.wrap = "noWrap";
         this.itemList = itemList;
         // this default self connection may get overwritten by, eg, connectModel()...
-        this.modelPlug = {model: this,
-		getList: "getMyList",
-		getSelection: "getMySelection",
-		setSelection: "setMySelection"};
+        this.modelPlug = {
+            model: this,
+            getList: "getMyList",
+            getSelection: "getMySelection",
+            setSelection: "setMySelection"
+        };
 
         this.layoutChanged();
         this.setBorderColor(Color.black); 
@@ -137,7 +139,7 @@ Object.extend(CheapListMorph.prototype, {
                 this.selectLineAt(this.selectionRange[0] - 2); 
                 this.setSelection(this.itemList[lineNo - 1]); 
             } 
-	    evt.stop();
+            evt.stop();
             break;
         }
     
@@ -147,7 +149,7 @@ Object.extend(CheapListMorph.prototype, {
                 this.selectLineAt(this.selectionRange[1] + 2); // skip the '\n' ?
                 this.setSelection(this.itemList[lineNo + 1]); 
             } 
-	    evt.stop();
+            evt.stop();
             break;
         }
         }
@@ -211,10 +213,10 @@ Object.extend(CheapListMorph.prototype, {
     
     lineRange: function(str, charIx) { // like selectWord, but looks for matching newLines 
         var i1 = charIx;
-	while (i1>0 && str[i1-1] != '\n') i1--; // scan back to prior newline
-	var i2 = i1;
-	while (i2<str.length-1 && str[i2+1] != '\n') i2++; // and forward to next newline
-	return [i1, i2];
+        while (i1>0 && str[i1-1] != '\n') i1--; // scan back to prior newline
+        var i2 = i1;
+        while (i2<str.length-1 && str[i2+1] != '\n') i2++; // and forward to next newline
+        return [i1, i2];
     },
     
     lineRect: function(r) { //Menu selection displays full width
@@ -224,10 +226,10 @@ Object.extend(CheapListMorph.prototype, {
     
     updateList: function(newList) {
         var priorItem = this.getSelection();
-	this.itemList = newList;
+        this.itemList = newList;
         var listText = (this.itemList == null) ? "" : this.itemList.join("\n");
         this.updateTextString(listText);
-	this.setSelectionToMatch(priorItem);
+        this.setSelectionToMatch(priorItem);
         this.emitSelection(); 
     },
 
@@ -247,11 +249,13 @@ Object.extend(CheapListMorph.prototype, {
 
     updateView: function(aspect, controller) {
         var c = this.modelPlug;
-        if(c) { // New style connect
-		if (aspect == c.getList) this.updateList(this.getList());
-		if (aspect == c.getSelection) this.setSelectionToMatch(this.getSelection());
-		return;
-	}
+        
+        if (c) { // New style connect
+            if (aspect == c.getList) this.updateList(this.getList());
+            if (aspect == c.getSelection) this.setSelectionToMatch(this.getSelection());
+            return;
+        }
+   
         if (this.listPin && aspect == this.listPin.varName) {
             this.updateList(this.listPin.read());
         }
@@ -261,18 +265,18 @@ Object.extend(CheapListMorph.prototype, {
     },
 
     getList: function() {
-        if(this.modelPlug) return this.getModelValue('getList', ["-----"]);
-	else return this.listPin.read(null);
+        if (this.modelPlug) return this.getModelValue('getList', ["-----"]);
+        else return this.listPin.read(null);
     },
 
     getSelection: function() {
-        if(this.modelPlug) return this.getModelValue('getSelection', null);
-	else return this.selectionPin.read(null);
+        if (this.modelPlug) return this.getModelValue('getSelection', null);
+        else return this.selectionPin.read(null);
     },
 
     setSelection: function(item) {
-        if(this.modelPlug) this.setModelValue('setSelection', item); 
-	else this.selectionPin.write(item); 
+        if (this.modelPlug) this.setModelValue('setSelection', item); 
+        else this.selectionPin.write(item); 
     },
 
     getMyList: function() { // Getter and setter for when this is its own model
@@ -297,25 +301,25 @@ MenuMorph = HostClass.create('MenuMorph', CheapListMorph);
 Object.extend(MenuMorph.prototype, {
 
     initialize: function(items, lines) {
-        //    items is an array of menuItems, each of which is an array of the form
-	//	[itemName, target, functionName, parameterIfAny]
-        //    At mouseUp, the call is of the form
-	//	target.function(parameterOrNull,event,menuItem)
-	//    Note that the last item is seldom used, but it allows the caller to put
-	//	additional data at the end of the menuItem, where the receiver can find it.
-	//    The optional parameter lineList is an array of indices into items.
-	//	It will cause a line to be displayed below each item so indexed
+        // items is an array of menuItems, each of which is an array of the form
+        // [itemName, target, functionName, parameterIfAny]
+        // At mouseUp, the call is of the form
+        // target.function(parameterOrNull,event,menuItem)
+        // Note that the last item is seldom used, but it allows the caller to put
+        // additional data at the end of the menuItem, where the receiver can find it.
+        // The optional parameter lineList is an array of indices into items.
+        // It will cause a line to be displayed below each item so indexed
     
-        //    It is intended that a menu can also be created incrementally
-	//	with calls of the form...
-	//	    var menu = MenuMorph([]);
-	//	    menu.addItem(nextItem);  //May be several of these
-	//	    menu.addLine();          // interspersed with these
-	//	    menu.openIn(world,location,stayUp,captionIfAny);
+        // It is intended that a menu can also be created incrementally
+        // with calls of the form...
+        //     var menu = MenuMorph([]);
+        //     menu.addItem(nextItem);  // May be several of these
+        //     menu.addLine();          // interspersed with these
+        //     menu.openIn(world,location,stayUp,captionIfAny);
 
         this.items = items;
-	this.lines = lines ? lines : [];
-	return this;
+        this.lines = lines ? lines : [];
+        return this;
     },
 
     addItem: function(item) { 
@@ -324,28 +328,29 @@ Object.extend(MenuMorph.prototype, {
 
     addLine: function(item) { // Not yet supported
         // The idea is for this to add a real line on top of the text
-	this.items.push(['-----']);
+        this.items.push(['-----']);
     },
 
     removeItemNamed: function(itemName) {
-	// May not remove all if some have same name
-	// Does not yet fix up the lines array
-	for(var i=0; i<this.items.length; i++)
-		if(this.items[i][0] == itemName) this.items.splice(i,1);
+        // May not remove all if some have same name
+        // Does not yet fix up the lines array
+        for (var i=0; i<this.items.length; i++)
+            if (this.items[i][0] == itemName)
+                this.items.splice(i,1);
     },
 
     openIn: function(world, location, remainOnScreen, captionIfAny) { 
-	// Note: on a mouseDown invocation (as from a menu button),
-	// mouseFocus should be set immediately before or after this call
+        // Note: on a mouseDown invocation (as from a menu button),
+        // mouseFocus should be set immediately before or after this call
         this.stayUp = remainOnScreen; // set true to keep on screen
-	this.caption = captionIfAny;  // Not yet implemented
-	this.compose(location);
+        this.caption = captionIfAny;  // Not yet implemented
+        this.compose(location);
         this.setBorderColor(Color.blue); 
-	world.addMorph(this);
+        world.addMorph(this);
     },
 
     compose: function(location) { 
-	var itemNames = this.items.map(function (item) { return item[0] });
+        var itemNames = this.items.map(function (item) { return item[0] });
         MenuMorph.superClass.initialize.call(this, location.extent(pt(200, 200)), itemNames);
 
         // styling
@@ -368,12 +373,12 @@ Object.extend(MenuMorph.prototype, {
         evt.hand.setMouseFocus(null);
         if (!this.stayUp) this.remove(); 
 
-	if (item) { // Now execute the menu item...
+        if (item) { // Now execute the menu item...
             var func = item[1][item[2]];  // target[functionName]
             if (func == null) console.log('Could not find function ' + item[2]);
-        	// call as target.function(parameterOrNull,event,menuItem)
-		else func.call(item[1], item[3], evt, item); 
-	}
+            // call as target.function(parameterOrNull,event,menuItem)
+            else func.call(item[1], item[3], evt, item); 
+        }
     }
 });
 
@@ -394,7 +399,7 @@ Object.extend(CheapMenuMorph.prototype, {
         //    CheapListMorphs simply leverage off Textmorph's ability to display multiline paragraphs
 
         itemList = itemList.concat("--old menu--");  //Please update so we can remove CheapMenuMorph
-	CheapMenuMorph.superClass.initialize.call(this, location.extent(pt(200, 200)), itemList);
+        CheapMenuMorph.superClass.initialize.call(this, location.extent(pt(200, 200)), itemList);
 
         this.target = target;
         this.targetFunctionName = targetFunctionName;
@@ -499,10 +504,9 @@ Object.extend(Model.prototype, {
         // If varName is not given, then null will be the aspect of the updateView()
 //console.log('changed ' + varName);
         for (var i = 0; i < this.dependents.length; i++) {
-            if (source !== this.dependents[i])
-            	{
-		this.dependents[i].updateView(varName, source);
-		} 
+            if (source !== this.dependents[i]) {
+                this.dependents[i].updateView(varName, source);
+            } 
         } 
     }
 });
@@ -591,10 +595,10 @@ Object.extend(MessagePort.prototype, {
 // Morph model category
 Object.extend(Morph.prototype, {
     connect: function(plugSpec) { // Old variable access version from widget panel
-			// and other apps that got built in its image
+        // and other apps that got built in its image
         var model = plugSpec.model;
-	var mvc = false;
-	this.modelPlug = null; // defeat default self-model
+        var mvc = false;
+        this.modelPlug = null; // defeat default self-model
     
         for (var prop in plugSpec)  {
             if (prop != "model" && plugSpec.hasOwnProperty(prop)) {
@@ -613,31 +617,32 @@ Object.extend(Morph.prototype, {
     },
 
     connectModel: function(plug) {
-	// connector makes this view pluggable to different models, as in
-	// {model: someModel, getList: "getItemList", setSelection: "chooseItem"}
-	this.modelPlug = plug;
-        if(plug.model.addDependent)  // for mvc-style updating
-		plug.model.addDependent(this); 
+        // connector makes this view pluggable to different models, as in
+        // {model: someModel, getList: "getItemList", setSelection: "chooseItem"}
+        this.modelPlug = plug;
+        
+        if (plug.model.addDependent)  // for mvc-style updating
+            plug.model.addDependent(this); 
     },
 
     getModelValue: function(functionName, defaultValue) {
-	// Allows for graceful handling of missing accessors
-	var plug = this.modelPlug;
-	if(plug == null || plug.model == null || functionName == null) return defaultValue;
+        // Allows for graceful handling of missing accessors
+        var plug = this.modelPlug;
+        if (plug == null || plug.model == null || functionName == null) return defaultValue;
         var func = plug.model[plug[functionName]];
-	if(func == null) return defaultValue;
-//console.log("reading %s as %s", functionName, func.call(plug.model));
-	return func.call(plug.model); 
+        if (func == null) return defaultValue;
+        // console.log("reading %s as %s", functionName, func.call(plug.model));
+        return func.call(plug.model); 
     },
 
     setModelValue: function(functionName, newValue, view) {
-	// Allows for graceful handling of missing accessors
-//console.log("set %s to %s", functionName, newValue);
-	var plug = this.modelPlug;
-	if(plug == null || plug.model == null || functionName == null) return;
+        // Allows for graceful handling of missing accessors
+        // console.log("set %s to %s", functionName, newValue);
+        var plug = this.modelPlug;
+        if (plug == null || plug.model == null || functionName == null) return;
         var func = plug.model[plug[functionName]];
-        if(func == null) return;
-	func.call(plug.model, newValue, view); 
+        if (func == null) return;
+        func.call(plug.model, newValue, view); 
     },
 
     updateView: function(aspect, controller) { }
@@ -660,7 +665,7 @@ Object.extend(ButtonMorph.prototype, {
 
         // this default self connection may get overwritten by, eg, connectModel()...
         this.modelPlug = {model: this, getValue: "getMyValue", setValue: "setMyValue"};
-	    
+    
         // Styling
         this.baseColor = Color.gray.darker();
         this.setFill(LinearGradient.makeGradient(this.baseColor, this.baseColor.lighter(), LinearGradient.SouthNorth));
@@ -695,22 +700,23 @@ Object.extend(ButtonMorph.prototype, {
 
     updateView: function(aspect, controller) {
         var p = this.modelPlug;
-        if(p) {
-		if (aspect == p.getValue) this.showColorFor(this.getValue());
-		return;
-	}
-	if (aspect == this.valuePin.varName) 
-        	this.showColorFor(this.getValue());
+        
+        if (p) {
+            if (aspect == p.getValue) this.showColorFor(this.getValue());
+            return;
+        }
+
+        if (aspect == this.valuePin.varName) this.showColorFor(this.getValue());
     },
 
     getValue: function() {
-	if(this.modelPlug) return this.getModelValue('getValue', false);
-	else return this.valuePin.read(false);  // variable style access
+        if (this.modelPlug) return this.getModelValue('getValue', false);
+        else return this.valuePin.read(false);  // variable style access
     },
 
     setValue: function(value) {
-        if(this.modelPlug) this.setModelValue('setValue', value);
-	else this.valuePin.write(value);
+        if (this.modelPlug) this.setModelValue('setValue', value);
+        else this.valuePin.write(value);
     },
 
     getMyValue: function() { // Getter and setter for when this is its own model
@@ -733,11 +739,11 @@ Object.extend(SliderMorph.prototype, {
     initialize: function(initialBounds, scaleIfAny) {
         SliderMorph.superClass.initialize.call(this, initialBounds, "rect");
         this.scale = (scaleIfAny == null) ? 1.0 : scaleIfAny;
-	this.setFill(Color.blue.lighter());
+        this.setFill(Color.blue.lighter());
 
         // this default self connection may get overwritten by, eg, connectModel()...
         this.modelPlug = {model: this, getValue: "getMyValue", setValue: "setMyValue", getExtent: "getMyExtent"};
-	this.myValue = 0.0;
+        this.myValue = 0.0;
  
         this.slider = Morph(Rectangle(0, 0, 8, 8), "rect");
         this.slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"})
@@ -828,29 +834,31 @@ Object.extend(SliderMorph.prototype, {
 
     updateView: function(aspect, controller) {
         var p = this.modelPlug;
-        if(p) {
-		if (aspect == p.getValue || aspect == p.getExtent) this.adjustForNewBounds();
-		return;
-	}
+        
+        if (p) {
+            if (aspect == p.getValue || aspect == p.getExtent) this.adjustForNewBounds();
+            return;
+        }
+        
         if (aspect == this.valuePin.varName || aspect == this.extentPin.varName) 
             this.adjustForNewBounds(); 
     },
 
     getValue: function() {
         var c = this.modelPlug;
-	if(c) return c.model[c.getValue](0.0) / this.scale;  // call the model's value accessor
-	else return this.valuePin.read(0.0) / this.scale;  // variable style access
+        if (c) return c.model[c.getValue](0.0) / this.scale;  // call the model's value accessor
+        else return this.valuePin.read(0.0) / this.scale;  // variable style access
     },
 
     setValue: function(value) {
         var c = this.modelPlug;
-	if(c) c.model[c.setValue](value * this.scale);  // call the model's value accessor
-	else this.valuePin.write(value * this.scale);  // variable style access
+        if (c) c.model[c.setValue](value * this.scale);  // call the model's value accessor
+        else this.valuePin.write(value * this.scale);  // variable style access
     },
 
     getExtent: function() {
-	if(this.modelPlug) return this.getModelValue('getExtent',(0.0));
-	else return this.extentPin.read(0.0);
+        if (this.modelPlug) return this.getModelValue('getExtent',(0.0));
+        else return this.extentPin.read(0.0);
     },
 
     getMyExtent: function() { // Getter and setter for when this is its own model
@@ -881,7 +889,7 @@ Object.extend(ScrollPane.prototype, {
     
         var bnds = this.shape.bounds();
         var scrollBarWidth = 14;
-	var clipR = bnds.withWidth(bnds.width - scrollBarWidth).insetBy(1);
+        var clipR = bnds.withWidth(bnds.width - scrollBarWidth).insetBy(1);
     
         // Make a clipMorph with the content (morphToClip) embedded in it
         this.clipMorph = ClipMorph(clipR);    
