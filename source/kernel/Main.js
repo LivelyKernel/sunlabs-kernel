@@ -116,8 +116,6 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
         widget.startStepping(1000);
     }
 
-
-    
     var showClipMorph = false;
     if (showClipMorph) world.addMorph(ClipMorph(Rectangle(500, 200, 150, 150)));
     
@@ -144,7 +142,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
 	
         widget.myWorld.onEnter = function() {
 	    console.log('initting RSS reader');
-	    if (!world.rssReader) world.rssReader = loadRSS(world, pt(900, 50));
+	    if (!world.rssReader) world.rssReader = loadRSS(world, pt(725, 120));
 	}
 	
         var showBitmap = true;
@@ -159,17 +157,17 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
             
             widget.myWorld.addMorphBack(ImageMorph(Rectangle(50, 10, width, height), url));
         }
-        var showMap = false;
+
+        var showMap = true;
         if (showMap){
             var map = new MapFrameMorph(new Rectangle(0, 0, 2*IMAGEWIDTH, 2*IMAGEHEIGHT), true);
             map.setScale(0.7);
-            // widget.moveBy(pt(800,80));
-            map.moveTo(pt(800, 80));
+            map.moveTo(pt(320, 275));
             widget.myWorld.addMorph(map);
         }
 
 
-        widget.myWorld.addMorph(DoodleMorph(pt(500, 50).extent(pt(400,400))));
+        widget.myWorld.addMorph(DoodleMorph(pt(875, 350).extent(pt(300, 300))));
     }
     
     var showWidgets = true;
