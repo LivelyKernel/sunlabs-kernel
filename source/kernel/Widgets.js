@@ -77,9 +77,11 @@ Object.extend(ColorPickerMorph.prototype, {
     onMouseMove: function(evt) {
         if (evt.mouseButtonPressed) { 
             var r = this.bounds().insetBy(this.shape.getStrokeWidth());
-            var rh2 = r.height/2;
+            r = pt(0,0).extent(r.extent());
+	    var rh2 = r.height/2;
             var wheel = this.colorWheel(r.width+1);
-            var relp = r.constrainPt(evt.mousePoint.addXY(-2,-2)).subPt(r.topLeft());
+            var relp = r.constrainPt(this.localize(evt.mousePoint).addXY(-2,-2));
+//console.log('mp = ' + this.localize(evt.mousePoint).inspect() + ' / relp = ' + relp.inspect());
             var selectedColor = this.colorMap(relp.x,relp.y,rh2,wheel);
             this.setModelValue('setColor', selectedColor);
         } 
