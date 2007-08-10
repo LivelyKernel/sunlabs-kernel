@@ -123,7 +123,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
                                         world, "setFill", false));
     
     var show3DLogo = true;
-    if (show3DLogo) world.addMorph(WindowMorph(Sun3DMorph(pt(800, 125).extent(pt(200, 200))), 'Sun 3D Logo'));
+    if (show3DLogo) world.addMorph(WindowMorph(Sun3DMorph(pt(950, 125).extent(pt(200, 200))), 'Sun 3D Logo'));
     
     var showAsteroids = true;
     if (showAsteroids) {
@@ -165,17 +165,10 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
             map.moveTo(pt(320, 275));
             widget.myWorld.addMorph(map);
         }
-        var showStock = false;
-        if (showStock){
-          new StockMorph().openIn(widget.myWorld/*WorldMorph.current()*/, pt(500, 20));
-        }
 
         widget.myWorld.addMorph(WindowMorph(DoodleMorph(pt(875, 350).extent(pt(300, 300))), 'Doodle Morph'));
     }
     
-    var showWidgets = true;
-    if (showWidgets) new WidgetTester().openIn(WorldMorph.current(), pt(460, 20));
-
     var slideWorld = true;
     if (slideWorld) { // Make a slide for "turning web programming upside down"
         var lm = LinkMorph(null, pt(260, 520));
@@ -214,12 +207,18 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
     // example weather morph
     var showWeather = true;
     if (showWeather) {
-        // maybe the icons should have a rectangle shaped images (unlike here)
-        new WeatherTester().openIn(WorldMorph.current(), pt(500, 200));
+        // Maybe the icons should have rectangular images (unlike here)
+        new WeatherTester().openIn(WorldMorph.current(), pt(700, 50));
     }
+
+    var showWidgets = true;
+    if (showWidgets) new WidgetTester().openIn(WorldMorph.current(), pt(460, 20));
 
     var showBrowser = true;
     if (showBrowser) new SimpleBrowser().openIn(WorldMorph.current(), pt(20,20));
+
+    var showStocks = true;
+    if (showStocks) new StockMorph().openIn(/* widget.myWorld */ WorldMorph.current(), pt(300, 500));
 
     var showRSS = false;
     if (showRSS) loadRSS(world, pt(300, 20));
