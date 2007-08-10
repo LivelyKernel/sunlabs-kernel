@@ -98,6 +98,7 @@ Object.extend(NetRequest, {
     options: {
 	contentType: 'text/xml',
 	asynchronous: true,
+	method: 'get',
 	
 	onLoaded: function(transport) { 
 	    console.info('loaded %s %s', transport.status, transport); 
@@ -120,21 +121,71 @@ Object.extend(NetRequest, {
 	if (window.location.href.startsWith('file:')) {       
             this['netscape'] && netscape.security.PrivilegeManager.enablePrivilege("UniversalBrowserRead");
 	}
-    }
+    },
+
+    
 });
 
+Object.extend(NetRequest.prototype, {
+    
+    
+    process: function(documentElement) {
+	console.log('override me');
+    },
+
+
+    request: function(url, options, model, variable) {
+	if (options === NetRequest.options) 
+	    options = options.clone();
+        options.requestHeaders =  { "If-Modified-Since": "Sat, 1 Jan 2000 00:00:00 GMT" };
+        options.onSuccess = function(transport) {
+            var result = transport.responseXML.documentElement;
+            console.log('success %s', transport.status);
+	    this.process(result);
+            model.changed(modelVariable);
+        }.bind(this);
+	new Ajax.Request(url, options);
+    }
+
+});
+
+var FeedChannel = Class.create();
+
+
+Object.extend(FeedChannel.prototype, {
+    initialize: function() {
+	this.items =  morphic.query(this, 'item') || [];
+	for (var i = 0; i < this.items.length; i++) {
+	    HostClass.becomeInstance(this.items[i], FeedItem);
+	    this.items[i].initialize();
+	}
+    }
+
+});
+
+
+var FeedItem = Class.create();
+Object.extend(FeedItem.prototype, {
+    initialize: function() {
+	this.title = morphic.query(this, 'title')[0].textContent;
+	this.description = morphic.query(this, 'description')[0].textContent;
+	// console.log('created item %s=%s', this.title, this.description);
+    }
+    
+});
 
 /**
  * @class Feed: RSS feed reader
  */
   
 // FIXME something clever, maybe an external library?
+
 var Feed = Class.create();
 
 Object.extend(Feed.prototype, {
 
     url: null,
-    result: null,
+    channels: null,
     
     initialize: function(name, url) {
         this.name = name;
@@ -147,37 +198,43 @@ Object.extend(Feed.prototype, {
 
     request: function(model, modelVariable) {
         // console.log('in request on %s', this.url);
-        var self = this;
+        var feed = this;
+	
         new Ajax.Request(this.url, Object.extend({
             method: 'get', 
             requestHeaders: { "If-Modified-Since": "Sat, 1 Jan 2000 00:00:00 GMT" },
-
+	    
             onSuccess: function(transport) {
-                self.result = transport.responseXML.documentElement;
+                var result = transport.responseXML.documentElement;
                 console.log('success %s', transport.status);
-                var channels = self.query('/rss/channel');
-                var items = self.query('/rss/channel/item');
-                console.log('items ' + items.length); 
-		
-                self.contents = new Hash();
-                
-                for (var i = 0; i < items.length; i++) {
-                    var title = self.query('title', items[i])[0].textContent;
-                    self.contents[title] =  self.query('description', items[i])[0].textContent;
-                }
-                
+		feed.process(result);
                 model.changed(modelVariable);
             }
 	    
         }, NetRequest.options));
+
+    },
+
+    process: function(result) {
+        this.channels = this.query('/rss/channel', result);
+	for (var i = 0; i < this.channels.length; i++) {
+	    HostClass.becomeInstance(this.channels[i], FeedChannel);
+	    this.channels[i].initialize();
+	}
     },
 
     items: function() {
-        return this.contents.keys();
+        return this.channels[0].items.pluck('title');
     },
     
     getEntry: function(title) {
-        return this.contents[title];
+	var items = this.channels[0].items;
+	for (var i = 0; i < items.length; i++) {
+	    if (items[i].title == title) {
+		return items[i].description;
+	    }
+	}
+        return "";
     }
     
 });
