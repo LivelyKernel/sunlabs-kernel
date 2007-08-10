@@ -171,6 +171,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
     
     var showWidgets = true;
     if (showWidgets) new WidgetTester().openIn(WorldMorph.current(), pt(460, 20));
+
     var slideWorld = true;
     if (slideWorld) { // Make a slide for "turning web programming upside down"
         var lm = LinkMorph(null, pt(260, 520));
