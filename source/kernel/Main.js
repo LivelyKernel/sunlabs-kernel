@@ -162,7 +162,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
         if (showMap){
             var map = new MapFrameMorph(new Rectangle(0, 0, 2*IMAGEWIDTH, 2*IMAGEHEIGHT), true);
             map.setScale(0.7);
-            map.moveTo(pt(320, 275));
+            map.setPosition(pt(320, 275));
             widget.myWorld.addMorph(map);
         }
 

@@ -783,7 +783,7 @@ Object.extend(SliderMorph.prototype, {
     
     sliderPressed: function(evt, slider) {
         //    Note: want setMouseFocus to also cache the transform and record the hitPoint.
-        //    Ideally thereafter only have to say, eg, morph moveTo: evt.hand.adjustedMousePoint
+        //    Ideally thereafter only have to say, eg, morph.setPosition(evt.hand.adjustedMousePoint)
         this.hitPoint = this.localize(evt.mousePoint).subPt(this.slider.bounds().topLeft());
         evt.hand.setMouseFocus(slider); 
     },

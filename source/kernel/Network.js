@@ -114,6 +114,12 @@ Object.extend(NetRequest, {
 	onException: function(e) {
 	    console.warn('exception %s', e);
 	}
+    },
+
+    requestNetworkAccess: function() {
+	if (window.location.href.startsWith('file:')) {       
+            this['netscape'] && netscape.security.PrivilegeManager.enablePrivilege("UniversalBrowserRead");
+	}
     }
 });
 
