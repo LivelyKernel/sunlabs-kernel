@@ -131,8 +131,8 @@ Object.extend(CheapListMorph.prototype, {
         return true;
     },
 
-    onKeyDown: function(evt) {
-        switch (evt.keyCode) {
+    onKeyPress: function(evt) {
+        switch (evt.sanitizedKeyCode()) {
         case Event.KEY_UP: {
             var lineNo = this.selectedLineNo();
             if (lineNo > 0) {
@@ -156,14 +156,13 @@ Object.extend(CheapListMorph.prototype, {
 
     },
 
+    onKeyDown: function(evt) {
+	// do nothing
+    },
+    
     onMouseDown: function(evt) {
         evt.hand.setMouseFocus(this);
-    
-        if (this.takesKeyboardFocus()) {
-            evt.hand.setKeyboardFocus(this);
-            this.setHasKeyboardFocus(true); 
-        }
-    
+	this.requestKeyboardFocus(evt.hand);
         this.selectLineAt(this.charOfY(this.localize(evt.mousePoint))); 
     },
 
