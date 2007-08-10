@@ -165,6 +165,10 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
             map.moveTo(pt(320, 275));
             widget.myWorld.addMorph(map);
         }
+        var showStock = false;
+        if (showStock){
+          new StockMorph().openIn(widget.myWorld/*WorldMorph.current()*/, pt(500, 20));
+        }
 
         widget.myWorld.addMorph(WindowMorph(DoodleMorph(pt(875, 350).extent(pt(300, 300))), 'Doodle Morph'));
     }
