@@ -211,6 +211,13 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
         world.addMorph(icon);
     }
 
+    // example weather morph
+    var showWeather = true;
+    if (showWeather) {
+        // maybe the icons should have a rectangle shaped images (unlike here)
+        new WeatherTester().openIn(WorldMorph.current(), pt(500, 200));
+    }
+
     var showBrowser = true;
     if (showBrowser) new SimpleBrowser().openIn(WorldMorph.current(), pt(20,20));
 
