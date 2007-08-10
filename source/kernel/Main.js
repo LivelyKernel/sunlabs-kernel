@@ -1,9 +1,8 @@
 // AT: It seems that this file still contains a lot of stuff
-// that should be moved to separate file(s).  For instance,
-// all the demos as well as browser/inspector related 
-// functionality should be stored elsewhere.
+// that should be moved to separate file(s) intended to examples
+// and sample applications.
 
-// some support for the circles demo
+// Support for the circles demo
 function makeCircleGrid(itemCount) {
     var canvasWidth = this.canvas().bounds().width;
     var canvasHeight = this.canvas().bounds().height;
@@ -139,12 +138,11 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
     var innerWorld = true;
     if (innerWorld) {
         world.addMorph(widget = LinkMorph(null, pt(260, 460)));
-	
+
         widget.myWorld.onEnter = function() {
-            if (widget.myWorld.rssReader) 
-		return;
-	    console.log('initting RSS reader');
-	    widget.myWorld.rssReader = loadRSS(widget.myWorld, pt(725, 120));
+            if (widget.myWorld.rssReader) return;
+            console.log('initting RSS reader');
+            widget.myWorld.rssReader = loadRSS(widget.myWorld, pt(725, 120));
         }
 
         var showBitmap = true;

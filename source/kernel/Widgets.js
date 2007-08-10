@@ -157,12 +157,12 @@ Object.extend(CheapListMorph.prototype, {
     },
 
     onKeyDown: function(evt) {
-	// do nothing
+        // do nothing
     },
     
     onMouseDown: function(evt) {
         evt.hand.setMouseFocus(this);
-	this.requestKeyboardFocus(evt.hand);
+        this.requestKeyboardFocus(evt.hand);
         this.selectLineAt(this.charOfY(this.localize(evt.mousePoint))); 
     },
 
@@ -474,7 +474,7 @@ Object.extend(CheapMenuMorph.prototype, {
  * @class Model
  */ 
 
-Model = Class.create();// An MVC-style model.
+Model = Class.create(); // An MVC-style model.
 
 Object.extend(Model.prototype, {
 
@@ -501,7 +501,7 @@ Object.extend(Model.prototype, {
     changed: function(varName, source) {
         // If source is given, we don't update the source of the change
         // If varName is not given, then null will be the aspect of the updateView()
-//console.log('changed ' + varName);
+        //console.log('changed ' + varName);
         for (var i = 0; i < this.dependents.length; i++) {
             if (source !== this.dependents[i]) {
                 this.dependents[i].updateView(varName, source);
@@ -593,6 +593,7 @@ Object.extend(MessagePort.prototype, {
           
 // Morph model category
 Object.extend(Morph.prototype, {
+
     connect: function(plugSpec) { // Old variable access version from widget panel
         // and other apps that got built in its image
         var model = plugSpec.model;
