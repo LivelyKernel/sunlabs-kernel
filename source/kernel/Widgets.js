@@ -504,6 +504,7 @@ Object.extend(Model.prototype, {
         //console.log('changed ' + varName);
         for (var i = 0; i < this.dependents.length; i++) {
             if (source !== this.dependents[i]) {
+		// console.log('updating %s for name %s', this.dependents[i], varName);
                 this.dependents[i].updateView(varName, source);
             } 
         } 

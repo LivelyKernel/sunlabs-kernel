@@ -98,8 +98,7 @@ Object.extend(NetRequest, {
     options: {
 	contentType: 'text/xml',
 	asynchronous: true,
-	method: 'get',
-	
+
 	onLoaded: function(transport) { 
 	    console.info('loaded %s %s', transport.status, transport); 
 	},
@@ -122,22 +121,27 @@ Object.extend(NetRequest, {
             this['netscape'] && netscape.security.PrivilegeManager.enablePrivilege("UniversalBrowserRead");
 	}
     },
-
     
+    documentToString: function(doc) {
+	if (doc != null) 
+	    return new XMLSerializer().serializeToString(doc.documentElement); 
+	else
+	    return "[not xml?]";
+    }
+
 });
 
 Object.extend(NetRequest.prototype, {
-    
     
     process: function(documentElement) {
 	console.log('override me');
     },
 
-
     request: function(url, options, model, variable) {
 	if (options === NetRequest.options) 
 	    options = options.clone();
-        options.requestHeaders =  { "If-Modified-Since": "Sat, 1 Jan 2000 00:00:00 GMT" };
+        // options.requestHeaders =  { "If-Modified-Since": "Sat, 1 Jan 2000 00:00:00 GMT" };
+	options.method = 'get';
         options.onSuccess = function(transport) {
             var result = transport.responseXML.documentElement;
             console.log('success %s', transport.status);
@@ -163,7 +167,6 @@ Object.extend(FeedChannel.prototype, {
 
 });
 
-
 var FeedItem = Class.create();
 Object.extend(FeedItem.prototype, {
     initialize: function() {
@@ -171,13 +174,11 @@ Object.extend(FeedItem.prototype, {
 	this.description = morphic.query(this, 'description')[0].textContent;
 	// console.log('created item %s=%s', this.title, this.description);
     }
-    
 });
 
 /**
  * @class Feed: RSS feed reader
  */
-  
 // FIXME something clever, maybe an external library?
 
 var Feed = Class.create();
@@ -187,8 +188,7 @@ Object.extend(Feed.prototype, {
     url: null,
     channels: null,
     
-    initialize: function(name, url) {
-        this.name = name;
+    initialize: function(url) {
         this.url = url;
     },
     
@@ -196,10 +196,12 @@ Object.extend(Feed.prototype, {
 	return morphic.query(target ? target : this.result, xpQuery) || [];
     },
 
-    request: function(model, modelVariable) {
+    request: function(model /*model variables*/) {
         // console.log('in request on %s', this.url);
         var feed = this;
-	
+	var modelVariables = $A(arguments);
+	modelVariables.shift();
+
         new Ajax.Request(this.url, Object.extend({
             method: 'get', 
             requestHeaders: { "If-Modified-Since": "Sat, 1 Jan 2000 00:00:00 GMT" },
@@ -207,15 +209,18 @@ Object.extend(Feed.prototype, {
             onSuccess: function(transport) {
                 var result = transport.responseXML.documentElement;
                 console.log('success %s', transport.status);
-		feed.process(result);
-                model.changed(modelVariable);
+		feed.processResult(result);
+		console.log('changing %s', modelVariables);
+		for (var i = 0; i < modelVariables.length; i++) {
+                    model.changed(modelVariables[i]);
+		}
             }
 	    
         }, NetRequest.options));
 
     },
 
-    process: function(result) {
+    processResult: function(result) {
         this.channels = this.query('/rss/channel', result);
 	for (var i = 0; i < this.channels.length; i++) {
 	    HostClass.becomeInstance(this.channels[i], FeedChannel);
