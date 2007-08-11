@@ -596,6 +596,7 @@ Object.extend(Morph.prototype, {
 
     connect: function(plugSpec) { // Old variable access version from widget panel
         // and other apps that got built in its image
+//console.log('Someone is still using connect' + this.inspect());
         var model = plugSpec.model;
         var mvc = false;
         this.modelPlug = null; // defeat default self-model

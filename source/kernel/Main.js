@@ -118,10 +118,6 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
     var showClipMorph = false;
     if (showClipMorph) world.addMorph(ClipMorph(Rectangle(500, 200, 150, 150)));
     
-    var showColorPicker = true;
-    if (showColorPicker) world.addMorph(ColorPickerMorph(world.bounds().bottomLeft().addPt(pt(30, -50)).extent(pt(50, 30)),
-                                        world, "setFill", false));
-    
     var show3DLogo = true;
     if (show3DLogo) world.addMorph(WindowMorph(Sun3DMorph(pt(950, 125).extent(pt(200, 200))), 'Sun 3D Logo'));
     
