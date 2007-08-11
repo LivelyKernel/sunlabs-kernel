@@ -128,7 +128,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
         // This is an ugly way to run the game -- the game object should
         // be a real morph (to be fixed later)
         initAsteroidsGame();
-        runAsteroidsGame();
+        gameMorph.runAsteroidsGame();
     }
     
     var innerWorld = true;
