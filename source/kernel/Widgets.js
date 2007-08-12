@@ -669,7 +669,7 @@ Object.extend(ButtonMorph.prototype, {
         this.modelPlug = {model: this, getValue: "getMyValue", setValue: "setMyValue"};
     
         // Styling
-        this.baseColor = Color.gray.darker();
+        this.baseColor = Color.neutral.gray;
         this.setFill(LinearGradient.makeGradient(this.baseColor, this.baseColor.lighter(), LinearGradient.SouthNorth));
         this.setBorderWidth(0.3);
         this.setBorderColor(this.baseColor);
@@ -778,7 +778,7 @@ Object.extend(SliderMorph.prototype, {
     
         this.slider.setBounds(bnds.topLeft().addPt(topLeft).extent(sliderExt)); 
     
-        this.setFill(LinearGradient.makeGradient(Color.blue.lighter().lighter(), Color.blue.lighter(),
+        this.setFill(LinearGradient.makeGradient(Color.primary.blue.lighter().lighter(), Color.primary.blue,
                      this.vertical() ? LinearGradient.EastWest : LinearGradient.NorthSouth));
     
     },
