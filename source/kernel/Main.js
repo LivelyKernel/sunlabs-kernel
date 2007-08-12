@@ -195,7 +195,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
     var showIcon = true;
     if (showIcon) {
         // maybe the icons should have a rectangle shaped images (unlike here)
-        var icon = IconMorph(Rectangle(80, 360, 80, 50), "http://logos.sun.com/images/SunSample.gif", "Fisheye Icon!", null);
+        var icon = ImageMorph(Rectangle(30, 360, 80, 50), "http://logos.sun.com/images/SunSample.gif");
         icon.toggleFisheye();    
         world.addMorph(icon);
     }
