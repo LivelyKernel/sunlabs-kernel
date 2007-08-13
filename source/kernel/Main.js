@@ -147,7 +147,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
                 if (!widget.myWorld.mapMorph) {
                     var map = MapFrameMorph(new Rectangle(0, 0, 2*IMAGEWIDTH, 2*IMAGEHEIGHT), true);
                     map.setScale(0.7);
-                    map.setPosition(pt(320, 275));
+                    map.setPosition(pt(320, 175));
                     widget.myWorld.addMorph(map);
                     widget.myWorld.mapMorph = map;
                 }
@@ -210,17 +210,14 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
     var showWeather = true;
     if (showWeather) {
         // Maybe the icons should have rectangular images (unlike here)
-        new WeatherTester().openIn(WorldMorph.current(), pt(700, 50));
+        new WeatherWidget().openIn(world, pt(700, 50));
     }
 
-    var showWidgets = true;
-    if (showWidgets) new WidgetTester().openIn(WorldMorph.current(), pt(460, 20));
-
     var showBrowser = true;
-    if (showBrowser) new SimpleBrowser().openIn(WorldMorph.current(), pt(20,20));
+    if (showBrowser) new SimpleBrowser().openIn(world, pt(20,20));
 
     var showStocks = true;
-    if (showStocks) new StockMorph().openIn(/* widget.myWorld */ WorldMorph.current(), pt(300, 500));
+    if (showStocks) new StockMorph().openIn(/* widget.myWorld */ world, pt(300, 500));
 
     var showRSS = false;
     if (showRSS) loadRSS(world, pt(300, 20));
