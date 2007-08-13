@@ -254,28 +254,18 @@ Object.extend(CheapListMorph.prototype, {
             if (aspect == c.getSelection) this.setSelectionToMatch(this.getSelection());
             return;
         }
-   
-        if (this.listPin && aspect == this.listPin.varName) {
-            this.updateList(this.listPin.read());
-        }
-        if (this.selectionPin && aspect == this.selectionPin.varName) {
-            this.setSelectionToMatch(this.selectionPin.read()); 
-        }
     },
 
     getList: function() {
         if (this.modelPlug) return this.getModelValue('getList', ["-----"]);
-        else return this.listPin.read(null);
     },
 
     getSelection: function() {
         if (this.modelPlug) return this.getModelValue('getSelection', null);
-        else return this.selectionPin.read(null);
     },
 
     setSelection: function(item) {
         if (this.modelPlug) this.setModelValue('setSelection', item); 
-        else this.selectionPin.write(item); 
     },
 
     getMyList: function() { // Getter and setter for when this is its own model
@@ -512,111 +502,11 @@ Object.extend(Model.prototype, {
 });
 
 /**
- * @class Pin
- */ 
-
-Pin = Class.create();
-
-Object.extend(Pin.prototype, {
-    
-    initialize: function(component, model, varName, initialValue) { // A Fabrik-style variable interface
-        this.component = component; // the component that will be the source for writes
-        this.model = model;  // the model toand from which reads and writes will pass
-        this.varName = varName;  // the variable in the model to which this pin is wired
-        this.reads = true;
-        this.writes = true; // R/W by default
-    
-        if (this.varName[0] == "+") {
-            this.varName = this.varName.substring(1); 
-            this.reads = false; 
-        }
-        
-        if (this.varName[0] == "-") {
-            this.varName = this.varName.substring(1); 
-            this.writes = false; 
-        }
-        
-        if (initialValue != null) // KP: what if it's undefined?
-            this.write(initialValue); 
-    
-    },
-
-    toString: function() {
-        return "Pin(" + this.varName + ")";
-    },
-
-    read: function(nullValue) {
-        var val = (this.reads) ? this.model[this.varName] : null;
-        
-        if (this.varName == "this") 
-            val = this.model; // temp hack for model viewer
-    
-        return (val == null) ? nullValue : val; 
-    },
-
-    write: function(newValue) { 
-        // console.log('Pin.write varName: ' + this.varName /* + " newValue: " + newValue.inspect() */);
-        if (this.writes) 
-            this.model.set(this.varName, newValue, this.component); 
-    }
-    
-});
-
-/**
- * @class MessagePort
- */ 
-
-MessagePort = Class.create();
-
-Object.extend(MessagePort.prototype, {
-
-    initialize: function(component, model, readName, writeName) { // A more flexible message interface
-        // Note that widgets can be used with either Fabrik-style variable wiring, or O-O style messages
-        this.component = component; // the component that will be the source for writes
-        this.model = model;  // the model toand from which reads and writes will pass
-        this.readName = readName;
-        this.writeName = writeName; 
-    },
-
-    read: function () { 
-        return (this.readName != null) ? this.model[this.readName].call(this.model) : null; 
-    },
-
-    write: function (newValue) { 
-        if (this.writeName != null) this.model[this.writeName].call(this.model, newValue); 
-    }
-    
-});
-
-/**
  * @class Morph
  */ 
           
 // Morph model category
 Object.extend(Morph.prototype, {
-
-    connect: function(plugSpec) { // Old variable access version from widget panel
-        // and other apps that got built in its image
-//console.log('Someone is still using connect' + this.inspect());
-        var model = plugSpec.model;
-        var mvc = false;
-        this.modelPlug = null; // defeat default self-model
-    
-        for (var prop in plugSpec)  {
-            if (prop != "model" && plugSpec.hasOwnProperty(prop)) {
-                var portSpec = plugSpec[prop];
-                if (portSpec  instanceof Array) {
-                    this[prop + "Pin"] = new MessagePort(this, model, portSpec[0], portSpec[1]); 
-                } else {
-                    // console.log("pin " + portSpec); 
-                    this[prop + "Pin"] = new Pin(this, model, portSpec); 
-                    mvc = true; 
-                } 
-            }
-        }
-    
-        if (mvc) model.addDependent(this); 
-    },
 
     connectModel: function(plug) {
         // connector makes this view pluggable to different models, as in
@@ -709,17 +599,14 @@ Object.extend(ButtonMorph.prototype, {
             if (aspect == p.getValue) this.changeAppearanceFor(this.getValue());
             return;
         }
-        if (aspect == this.valuePin.varName) this.changeAppearanceFor(this.getValue());
     },
 
     getValue: function() {
         if (this.modelPlug) return this.getModelValue('getValue', false);
-        else return this.valuePin.read(false);  // variable style access
     },
 
     setValue: function(value) {
         if (this.modelPlug) this.setModelValue('setValue', value);
-        else this.valuePin.write(value);
     },
 
     getMyValue: function() { // Getter and setter for when this is its own model
@@ -770,14 +657,13 @@ Object.extend(SliderMorph.prototype, {
     initialize: function(initialBounds, scaleIfAny) {
         SliderMorph.superClass.initialize.call(this, initialBounds, "rect");
         this.scale = (scaleIfAny == null) ? 1.0 : scaleIfAny;
-        this.setFill(Color.blue.lighter());
 
         // this default self connection may get overwritten by, eg, connectModel()...
         this.modelPlug = {model: this, getValue: "getMyValue", setValue: "setMyValue", getExtent: "getMyExtent"};
         this.myValue = 0.0;
  
         this.slider = Morph(Rectangle(0, 0, 8, 8), "rect");
-        this.slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"})
+        this.slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});
         this.addMorph(this.slider);
         this.adjustForNewBounds(this.getValue()); 
     
@@ -807,9 +693,12 @@ Object.extend(SliderMorph.prototype, {
     
         this.slider.setBounds(bnds.topLeft().addPt(topLeft).extent(sliderExt)); 
     
+	var direction = this.vertical() ? LinearGradient.EastWest : LinearGradient.NorthSouth;
         this.setFill(LinearGradient.makeGradient(Color.primary.blue.lighter().lighter(), Color.primary.blue,
-                     this.vertical() ? LinearGradient.EastWest : LinearGradient.NorthSouth));
-    
+						direction));
+	this.slider.setFill(LinearGradient.makeGradient(Color.primary.green.lighter().lighter(), 
+							Color.primary.green, direction));
+							
     },
     
     sliderPressed: function(evt, slider) {
@@ -870,26 +759,20 @@ Object.extend(SliderMorph.prototype, {
             if (aspect == p.getValue || aspect == p.getExtent) this.adjustForNewBounds();
             return;
         }
-        
-        if (aspect == this.valuePin.varName || aspect == this.extentPin.varName) 
-            this.adjustForNewBounds(); 
     },
 
     getValue: function() {
         var c = this.modelPlug;
         if (c) return c.model[c.getValue](0.0) / this.scale;  // call the model's value accessor
-        else return this.valuePin.read(0.0) / this.scale;  // variable style access
     },
 
     setValue: function(value) {
         var c = this.modelPlug;
         if (c) c.model[c.setValue](value * this.scale);  // call the model's value accessor
-        else this.valuePin.write(value * this.scale);  // variable style access
     },
 
     getExtent: function() {
         if (this.modelPlug) return this.getModelValue('getExtent',(0.0));
-        else return this.extentPin.read(0.0);
     },
 
     getMyExtent: function() { // Getter and setter for when this is its own model
@@ -934,16 +817,13 @@ Object.extend(ScrollPane.prototype, {
     
         // Add a scrollbar
         this.scrollBar = SliderMorph(bnds.withTopLeft(clipR.topRight()))
-        this.scrollBar.connect({model: this, value: ["getScrollPosition", "setScrollPosition"], extent: ["getVisibleExtent"]});
+        this.scrollBar.connectModel({model: this, getValue: "getScrollPosition", setValue: "setScrollPosition", 
+				     getExtent: "getVisibleExtent"});
         this.addMorph(this.scrollBar);
         
         return this;
     },
 
-    connect: function(plugSpec) { // connection is mapped to innerMorph
-        this.innerMorph.connect(plugSpec); 
-    },
-    
     connectModel: function(plugSpec) { // connection is mapped to innerMorph
         this.innerMorph.connectModel(plugSpec); 
     },
