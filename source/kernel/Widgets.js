@@ -659,6 +659,9 @@ ButtonMorph = HostClass.create('ButtonMorph', Morph);
 
 Object.extend(ButtonMorph.prototype, {
 
+    baseColor: Color.neutral.gray,
+    myValue: false,
+
     // A ButtonMorph is the simplest widget
     // It read and writes the boolean variable, this.model[this.propertyName]
     initialize: function(initialBounds) {
@@ -669,46 +672,44 @@ Object.extend(ButtonMorph.prototype, {
         this.modelPlug = {model: this, getValue: "getMyValue", setValue: "setMyValue"};
     
         // Styling
-        this.baseColor = Color.neutral.gray;
-        this.setFill(LinearGradient.makeGradient(this.baseColor, this.baseColor.lighter(), LinearGradient.SouthNorth));
         this.setBorderWidth(0.3);
         this.setBorderColor(this.baseColor);
         this.shape.roundEdgesBy(4);
-    
+	this.changeAppearanceFor(this.myValue);
+
         return this;
     },
 
     handlesMouseDown: function(evt) { return true; },
     
     onMouseDown: function(evt) {
+	console.log('%s handling %s', this, evt);
         if (!this.toggles) {
             this.setValue(true); 
-            this.showColorFor(true); 
+            this.changeAppearanceFor(true); 
         } 
     },
     
     onMouseMove: function(evt) { },
 
     onMouseUp: function(evt) {
-        var newValue = this.toggles ? ! this.getValue() : false;
+        var newValue = this.toggles ? !this.getValue() : false;
         this.setValue(newValue); 
-        this.showColorFor(newValue); 
+        this.changeAppearanceFor(newValue); 
     },
     
-    showColorFor: function(value) {
+    changeAppearanceFor: function(value) {
         var base = value ? this.baseColor.lighter() : this.baseColor;
         this.setFill(LinearGradient.makeGradient(base, base.lighter(), LinearGradient.SouthNorth));
     },
 
     updateView: function(aspect, controller) {
         var p = this.modelPlug;
-        
         if (p) {
-            if (aspect == p.getValue) this.showColorFor(this.getValue());
+            if (aspect == p.getValue) this.changeAppearanceFor(this.getValue());
             return;
         }
-
-        if (aspect == this.valuePin.varName) this.showColorFor(this.getValue());
+        if (aspect == this.valuePin.varName) this.changeAppearanceFor(this.getValue());
     },
 
     getValue: function() {
@@ -729,6 +730,34 @@ Object.extend(ButtonMorph.prototype, {
         this.myValue = value;
     }
 });
+
+ImageButtonMorph = HostClass.create('ImageButtonMorph', ButtonMorph);
+Object.extend(ImageButtonMorph.prototype, {
+
+    normalImageHref: null,
+    activatedImageHref: null,
+    image: null,
+
+    initialize: function(initialBounds, normalImageHref, activatedImageHref) {
+	console.log('arguments %s', $A(arguments));
+	this.image = ImageMorph(Rectangle(0, 0, initialBounds.width, initialBounds.height), normalImageHref);
+	this.normalImageHref = normalImageHref;
+	this.activatedImageHref = activatedImageHref;
+	ImageButtonMorph.superClass.initialize.call(this, initialBounds);
+	this.addMorph(this.image);
+	this.image.handlesMouseDown = function() { return true; }
+        this.image.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
+    },
+    
+    changeAppearanceFor: function(value) {
+	console.log('changing on %s from %s to %s', value, this.activatedImageHref, this.normalImageHref);
+	if (value) this.image.loadURL(this.activatedImageHref);
+	else this.image.loadURL(this.normalImageHref);
+    }
+    
+});
+
+
 
 /**
  * @class SliderMorph
