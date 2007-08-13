@@ -549,13 +549,13 @@ ButtonMorph = HostClass.create('ButtonMorph', Morph);
 
 Object.extend(ButtonMorph.prototype, {
 
-    baseColor: Color.neutral.gray,
-    myValue: false,
 
     // A ButtonMorph is the simplest widget
     // It read and writes the boolean variable, this.model[this.propertyName]
     initialize: function(initialBounds) {
         ButtonMorph.superClass.initialize.call(this, initialBounds, "rect");
+	this.baseColor = Color.neutral.gray;
+	this.myValue = false;
         this.toggles = false; // if true each push toggles the model state
 
         // this default self connection may get overwritten by, eg, connectModel()...
@@ -620,10 +620,6 @@ Object.extend(ButtonMorph.prototype, {
 
 ImageButtonMorph = HostClass.create('ImageButtonMorph', ButtonMorph);
 Object.extend(ImageButtonMorph.prototype, {
-
-    normalImageHref: null,
-    activatedImageHref: null,
-    image: null,
 
     initialize: function(initialBounds, normalImageHref, activatedImageHref) {
 	console.log('arguments %s', $A(arguments));
