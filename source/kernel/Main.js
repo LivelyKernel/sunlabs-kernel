@@ -136,22 +136,22 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
         world.addMorph(widget = LinkMorph(null, pt(260, 460)));
 
         widget.myWorld.onEnter = function() {
+
             if (!widget.myWorld.rssReader) {
-		console.log('initting RSS reader');
-		widget.myWorld.rssReader = loadRSS(widget.myWorld, pt(725, 120));
-	    }
+                console.log('initting RSS reader');
+                widget.myWorld.rssReader = loadRSS(widget.myWorld, pt(725, 120));
+            }
+
             var showMap = true;
             if (showMap) {
-		if (!widget.myWorld.mapMorph) {
-		    var map = MapFrameMorph(new Rectangle(0, 0, 2*IMAGEWIDTH, 2*IMAGEHEIGHT), true);
-		    map.setScale(0.7);
-		    map.setPosition(pt(320, 275));
-		    widget.myWorld.addMorph(map);
-		    widget.myWorld.mapMorph = map;
-		}
+                if (!widget.myWorld.mapMorph) {
+                    var map = MapFrameMorph(new Rectangle(0, 0, 2*IMAGEWIDTH, 2*IMAGEHEIGHT), true);
+                    map.setScale(0.7);
+                    map.setPosition(pt(320, 275));
+                    widget.myWorld.addMorph(map);
+                    widget.myWorld.mapMorph = map;
+                }
             }
-	    
-
         }
 
         var showBitmap = true;
@@ -167,8 +167,11 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
             widget.myWorld.addMorphBack(ImageMorph(Rectangle(50, 10, width, height), url));
         }
 
+        var showStocks = true;
+        if (showStocks) new StockMorph().openIn(widget.myWorld /* WorldMorph.current() */, pt(300, 500));
 
-        widget.myWorld.addMorph(WindowMorph(DoodleMorph(pt(875, 350).extent(pt(300, 300))), 'Doodle Morph'));
+        var showDoodle = true;
+        if (showDoodle) widget.myWorld.addMorph(WindowMorph(DoodleMorph(pt(875, 350).extent(pt(300, 300))), 'Doodle Morph'));
     }
     
     var slideWorld = true;
@@ -218,9 +221,6 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
 
     var showBrowser = true;
     if (showBrowser) new SimpleBrowser().openIn(WorldMorph.current(), pt(20,20));
-
-    var showStocks = true;
-    if (showStocks) new StockMorph().openIn(/* widget.myWorld */ WorldMorph.current(), pt(300, 500));
 
     var showRSS = false;
     if (showRSS) loadRSS(world, pt(300, 20));
