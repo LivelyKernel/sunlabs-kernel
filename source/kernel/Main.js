@@ -167,9 +167,6 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
             widget.myWorld.addMorphBack(ImageMorph(Rectangle(50, 10, width, height), url));
         }
 
-        var showStocks = true;
-        if (showStocks) new StockMorph().openIn(widget.myWorld /* WorldMorph.current() */, pt(300, 500));
-
         var showDoodle = true;
         if (showDoodle) widget.myWorld.addMorph(WindowMorph(DoodleMorph(pt(875, 350).extent(pt(300, 300))), 'Doodle Morph'));
     }
@@ -222,6 +219,9 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
     var showBrowser = true;
     if (showBrowser) new SimpleBrowser().openIn(WorldMorph.current(), pt(20,20));
 
+    var showStocks = true;
+    if (showStocks) new StockMorph().openIn(/* widget.myWorld */ WorldMorph.current(), pt(300, 500));
+
     var showRSS = false;
     if (showRSS) loadRSS(world, pt(300, 20));
 
@@ -248,3 +248,4 @@ if (this['showWebStore']) {
     var store = new WebStore('localhost', '~kappa');
     store.openIn(WorldMorph.current(), pt(500, 30));
 }
+
