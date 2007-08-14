@@ -215,7 +215,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
         new WeatherWidget().openIn(world, pt(700, 50));
     }
 
-    var showWidgets = false;
+    var showWidgets = true;
     if (showWidgets) new WidgetTester().openIn(world, pt(460, 20));
 
     var showBrowser = showMostExamples;
