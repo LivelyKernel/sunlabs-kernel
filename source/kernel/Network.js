@@ -163,6 +163,8 @@ Object.extend(FeedChannel.prototype, {
 	    HostClass.becomeInstance(this.items[i], FeedItem);
 	    this.items[i].initialize();
 	}
+	this.title = (morphic.query(this, 'title') || ['none'])[0].textContent;
+	console.log('title %s', this.title);
     }
 
 });
@@ -184,12 +186,12 @@ Object.extend(FeedItem.prototype, {
 var Feed = Class.create();
 
 Object.extend(Feed.prototype, {
-
-    url: null,
-    channels: null,
+    
+    dump: false,
     
     initialize: function(url) {
         this.url = url;
+	this.channels = null;
     },
     
     query: function(xpQuery, target) {
@@ -209,6 +211,9 @@ Object.extend(Feed.prototype, {
             onSuccess: function(transport) {
                 var result = transport.responseXML.documentElement;
                 console.log('success %s', transport.status);
+		if (feed.dump)
+		    console.log('transmission dump %s', NetRequest.documentToString(transport.responseXML));
+		
 		feed.processResult(result);
 		console.log('changing %s', modelVariables);
 		for (var i = 0; i < modelVariables.length; i++) {
