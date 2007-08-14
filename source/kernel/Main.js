@@ -1,83 +1,7 @@
-// AT: It seems that this file still contains a lot of stuff
-// that should be moved to separate file(s) intended to examples
-// and sample applications.
-
-// Support for the circles demo
-function makeCircleGrid(itemCount) {
-    var canvasWidth = this.canvas().bounds().width;
-    var canvasHeight = this.canvas().bounds().height;
-    
-    var minR = 10, maxR = canvasWidth / 3;
-
-    for (var j = 0; j < itemCount; ++j) {
-        var r = getRandSkewed(minR, maxR);
-        var cx = getRand(r,  canvasWidth  - r);
-        var cy = getRand(r,  canvasHeight - r);
-        //console.log([r, cx, cy]);
-    
-        var aShape  = Morph(Rectangle(cx - r, cy - r, 2*r, 2*r), "ellipse");
-        aShape.setFill(randColor(true));
-        aShape.setBorderColor(randColor(true));
-        aShape.setFillOpacity(getRand(0, 1));
-        aShape.setBorderWidth(getRand(0, 3));
-        aShape.fullRadius = r + aShape.shape.getStrokeWidth();
-    
-        WorldMorph.current().addMorph(aShape);
-
-        aShape.vector = Point.polar(15, getRand(0, Math.PI *2));
-        aShape.startSteppingFunction(30,function(msTime) {
-
-            // var pt = this.getTranslation();
-            this.translateBy(this.vector);
-            var worldpt = this.origin;
-        
-            if ((worldpt.x - this.fullRadius < 0) || (worldpt.x + this.fullRadius > canvasWidth)) {
-                this.vector.x = -this.vector.x;
-            }
-        
-            if ((worldpt.y - this.fullRadius < 0) || (worldpt.y + this.fullRadius > canvasHeight)) {
-                this.vector.y = - this.vector.y;
-            }
-
-            // this.translateBy(pt.x + 10, pt.y + 10); 
-        });
-        
-        // console.log('added ' + aShape.shape);
-        // dojo.html.setClass(aShape.getEventSource(), "movable");
-    }
-}
-
-function getRand(from, to) {
-    return Math.random() * (to - from) + from;
-}
-
-function getRandSkewed(from, to) {
-    // let skew stats to smaller values
-    var seed = 0;
-    
-    for (var i = 0; i < getRandSkewed.skew_stat_factor; ++i){
-        seed += Math.random();
-    }
-    
-    seed = 2 * Math.abs(seed / getRandSkewed.skew_stat_factor - 0.5);
-    return seed * (to - from) + from;
-}
-
-getRandSkewed.skew_stat_factor = 15;
-
-function randColor(alpha) {
-    var red   = getRand(0, 1);
-    var green = getRand(0, 1);
-    var blue  = getRand(0, 1);
-    var opacity = 1;
-    var color = new Color(red, green, blue);
-    return color;    
-}
-
 var Global = this;
 var showMostExamples = true;  // DI: Set to false for much faster turnaround time on slow machines
 
-var StockWidget = null;
+var stockWidget = null;
 
 WorldMorph.populateWithExamples = function(world, otherWorld, server) {
 
@@ -223,7 +147,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
     if (showBrowser) new SimpleBrowser().openIn(world, pt(20,20));
 
     var showStocks = showMostExamples;
-    if (showStocks) StockWidget = new StockMorph().openIn(/* widget.myWorld */ world, pt(300, 500));
+    if (showStocks) stockWidget = new StockWidget().openIn(/* widget.myWorld */ world, pt(300, 500));
 
     var showRSS = false;
     if (showRSS) loadRSS(world, pt(300, 20));
@@ -245,7 +169,7 @@ main();
 // FIXME: We should use Morphic functions for timers
 // Update stock charts every 30 seconds
 function updateStocks() {
-    if (StockWidget) StockWidget.refreshCharts();
+    if (stockWidget) stockWidget.refreshCharts();
 }
 
 // setInterval(updateStocks, 30000);

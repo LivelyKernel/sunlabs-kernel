@@ -132,22 +132,24 @@ Object.extend(NetRequest, {
 });
 
 Object.extend(NetRequest.prototype, {
-    
-    process: function(documentElement) {
+    initialize: function(model) {
+	this.model = model;
+    },
+
+    process: function(transport) {
 	console.log('override me');
     },
 
-    request: function(url, options, model, variable) {
+    request: function(url, options) {
 	if (options === NetRequest.options) 
 	    options = options.clone();
-        // options.requestHeaders =  { "If-Modified-Since": "Sat, 1 Jan 2000 00:00:00 GMT" };
-	options.method = 'get';
+	options = Object.derive(NetRequest.options, options);
         options.onSuccess = function(transport) {
-            var result = transport.responseXML.documentElement;
-            console.log('success %s', transport.status);
+	    var result = transport;
+	    console.log('success %s', transport.status);
 	    this.process(result);
-            model.changed(modelVariable);
         }.bind(this);
+	
 	new Ajax.Request(url, options);
     }
 
@@ -204,7 +206,7 @@ Object.extend(Feed.prototype, {
 	var modelVariables = $A(arguments);
 	modelVariables.shift();
 
-        new Ajax.Request(this.url, Object.extend({
+        new Ajax.Request(this.url, Object.derive(NetRequest.options, {
             method: 'get', 
             requestHeaders: { "If-Modified-Since": "Sat, 1 Jan 2000 00:00:00 GMT" },
 	    
@@ -213,7 +215,6 @@ Object.extend(Feed.prototype, {
                 console.log('success %s', transport.status);
 		if (feed.dump)
 		    console.log('transmission dump %s', NetRequest.documentToString(transport.responseXML));
-		
 		feed.processResult(result);
 		console.log('changing %s', modelVariables);
 		for (var i = 0; i < modelVariables.length; i++) {
@@ -221,7 +222,7 @@ Object.extend(Feed.prototype, {
 		}
             }
 	    
-        }, NetRequest.options));
+        }));
 
     },
 
