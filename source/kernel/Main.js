@@ -77,6 +77,7 @@ function randColor(alpha) {
 var Global = this;
 var showMostExamples = true;  // DI: Set to false for much faster turnaround time on slow machines
 
+var StockWidget = null;
 
 WorldMorph.populateWithExamples = function(world, otherWorld, server) {
 
@@ -100,7 +101,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
         widget = Morph(pt(0,0).asRectangle(), "rect");
         widget.setShape(PolygonShape(null, makeStarVertices(50,pt(0,0),0), Color.yellow,1,Color.black));
         // makeGradient(Color.yellow, Color.yellow.lighter().lighter()));
-        widget.setPosition(pt(320, 400));
+        widget.setPosition(pt(320, 380));
         world.addMorph(widget);
             
         var spinningStar = showMostExamples;
@@ -111,7 +112,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
 
     var showClock = true;
     if (showClock) {
-        widget = ClockMorph(pt(500, 450), 50);
+        widget = ClockMorph(pt(500, 420), 50);
         // clockWidget.addClipRect(Rectangle(20,20,80,80));
         world.addMorph(widget);
         widget.startStepping(1000);
@@ -222,7 +223,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
     if (showBrowser) new SimpleBrowser().openIn(world, pt(20,20));
 
     var showStocks = showMostExamples;
-    if (showStocks) new StockMorph().openIn(/* widget.myWorld */ world, pt(300, 500));
+    if (showStocks) StockWidget = new StockMorph().openIn(/* widget.myWorld */ world, pt(300, 500));
 
     var showRSS = false;
     if (showRSS) loadRSS(world, pt(300, 20));
@@ -240,6 +241,14 @@ function main() {
 }
 
 main();
+
+// FIXME: We should use Morphic functions for timers
+// Update stock charts every 30 seconds
+function updateStocks() {
+    if (StockWidget) StockWidget.refreshCharts();
+}
+
+// setInterval(updateStocks, 30000);
 
 console.log('loaded Main');
 
