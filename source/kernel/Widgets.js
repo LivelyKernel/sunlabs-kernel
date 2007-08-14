@@ -470,7 +470,7 @@ Object.extend(Model.prototype, {
 
     initialize: function(dep) { 
         // Broadcasts an update message to all dependents when a value changes.
-        this.dependents = (dep != null) ? [dep] : []; 
+        this.dependents = (dep != null) ? [dep] : [];
     },
 
     addDependent: function (dep) { 

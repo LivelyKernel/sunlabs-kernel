@@ -75,6 +75,8 @@ function randColor(alpha) {
 }
 
 var Global = this;
+var showMostExamples = true;  // DI: Set to false for much faster turnaround time on slow machines
+
 
 WorldMorph.populateWithExamples = function(world, otherWorld, server) {
 
@@ -101,7 +103,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
         widget.setPosition(pt(320, 400));
         world.addMorph(widget);
             
-        var spinningStar = true;
+        var spinningStar = showMostExamples;
         if (spinningStar) {  // Make the star spin as a test of stepping
             widget.startSteppingFunction(60, function(msTime) { this.setRotation(this.getRotation() + 0.1) });
         }
@@ -118,10 +120,10 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
     var showClipMorph = false;
     if (showClipMorph) world.addMorph(ClipMorph(Rectangle(500, 200, 150, 150)));
     
-    var show3DLogo = true;
+    var show3DLogo = showMostExamples;
     if (show3DLogo) world.addMorph(WindowMorph(Sun3DMorph(pt(950, 125).extent(pt(200, 200))), 'Sun 3D Logo'));
     
-    var showAsteroids = true;
+    var showAsteroids = showMostExamples;
     if (showAsteroids) {
         gameMorph = GameMorph(pt(580, 360).extent(pt(600, 300))); 
         world.addMorph(WindowMorph(gameMorph, 'Asteroids!'));
@@ -131,7 +133,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
         gameMorph.runAsteroidsGame();
     }
     
-    var innerWorld = true;
+    var innerWorld = showMostExamples;
     if (innerWorld) {
         world.addMorph(widget = LinkMorph(null, pt(260, 460)));
 
@@ -171,7 +173,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
         if (showDoodle) widget.myWorld.addMorph(WindowMorph(DoodleMorph(pt(875, 350).extent(pt(300, 300))), 'Doodle Morph'));
     }
     
-    var slideWorld = true;
+    var slideWorld = showMostExamples;
     if (slideWorld) { // Make a slide for "turning web programming upside down"
         var lm = LinkMorph(null, pt(260, 520));
 
@@ -198,7 +200,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
     }
 
     // example icon morph with a fisheye effect 'on'
-    var showIcon = true;
+    var showIcon = showMostExamples;
     if (showIcon) {
         // maybe the icons should have a rectangle shaped images (unlike here)
         var icon = ImageMorph(Rectangle(30, 360, 80, 50), "http://logos.sun.com/images/SunSample.gif");
@@ -207,16 +209,19 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
     }
 
     // example weather morph
-    var showWeather = true;
+    var showWeather = showMostExamples;
     if (showWeather) {
         // Maybe the icons should have rectangular images (unlike here)
         new WeatherWidget().openIn(world, pt(700, 50));
     }
 
-    var showBrowser = true;
+    var showWidgets = false;
+    if (showWidgets) new WidgetTester().openIn(world, pt(460, 20));
+
+    var showBrowser = showMostExamples;
     if (showBrowser) new SimpleBrowser().openIn(world, pt(20,20));
 
-    var showStocks = true;
+    var showStocks = showMostExamples;
     if (showStocks) new StockMorph().openIn(/* widget.myWorld */ world, pt(300, 500));
 
     var showRSS = false;
@@ -231,7 +236,7 @@ function main() {
     WorldMorph.setCurrent(world);
     world.displayWorldOn(morphic.canvas);
     console.log('made world');
-    WorldMorph.populateWithExamples(world);
+    WorldMorph.populateWithExamples(world, showMostExamples);
 }
 
 main();
