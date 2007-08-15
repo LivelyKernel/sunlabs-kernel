@@ -199,9 +199,7 @@ Object.extend(CheapListMorph.prototype, {
 
     drawSelection: function() {
         if (this.hasNullSelection()) { // Null sel in a list is blank
-            for (var child = this.selectionElement.firstChild; child != null; child = child.nextSibling) {
-                this.selectionElement.removeChild(child);
-            }
+	    this.undrawSelection();
         } else CheapListMorph.superClass.drawSelection.call(this); 
     },
 
@@ -657,7 +655,7 @@ Object.extend(SliderMorph.prototype, {
         // this default self connection may get overwritten by, eg, connectModel()...
         this.modelPlug = {model: this, getValue: "getMyValue", setValue: "setMyValue", getExtent: "getMyExtent"};
         this.myValue = 0.0;
- 
+	
         this.slider = Morph(Rectangle(0, 0, 8, 8), "rect");
         this.slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});
         this.addMorph(this.slider);
@@ -731,10 +729,12 @@ Object.extend(SliderMorph.prototype, {
     
     onMouseDown: function(evt) {
         evt.hand.setMouseFocus(this);
+	this.requestKeyboardFocus(evt.hand);
+	
         var inc = this.getExtent();
         var newValue = this.getValue();
         var delta = this.localize(evt.mousePoint).subPt(this.slider.bounds().center());
-    
+	
         if (this.vertical() ? delta.y > 0 : delta.x > 0) newValue += inc;
         else newValue -= inc;
     
@@ -783,7 +783,41 @@ Object.extend(SliderMorph.prototype, {
 
     setMyValue: function(value) {
         this.myValue = value;
+    },
+
+    takesKeyboardFocus: function() { 
+        // unlike, eg, cheapMenus
+        return true; 
+    },
+    
+    setHasKeyboardFocus: function(newSetting) { 
+	return newSetting; // no need to remember
+    },
+
+    onKeyPress: function(evt) {
+	var delta = 0;
+	if (this.vertical()) {
+            switch (evt.sanitizedKeyCode()) {
+	    case Event.KEY_DOWN: delta = 1; break;
+	    case Event.KEY_UP:  delta = -1; break;
+	    default: return false;
+	    } 
+	} else {
+            switch (evt.sanitizedKeyCode()) {
+	    case Event.KEY_RIGHT: delta = 1;  break; 	    
+	    case Event.KEY_LEFT:  delta = -1; break;
+	    default: return false;
+	    }    
+	}
+	console.log('handled evt %s value now %s', evt, this.getValue());
+	this.adjustForNewBounds();
+	this.setValue(this.clipValue(this.getValue() + delta * this.getExtent()));
+	evt.stop();
+	return true;
     }
+
+
+
 });
 
 /**
