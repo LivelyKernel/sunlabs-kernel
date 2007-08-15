@@ -148,8 +148,8 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
 
     var showStocks = showMostExamples;
     if (showStocks) {
-        stockWidget = new StockWidget().openIn(/* widget.myWorld */ world, pt(300, 500));
-        stockWidget.startSteppingRefreshCharts();
+        stockWidget = new StockWidget().openIn(world, pt(300, 500));
+        stockWidget.startSteppingRefreshCharts(stockWidget);
     }
 
     var showRSS = false;
