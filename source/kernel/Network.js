@@ -126,7 +126,7 @@ Object.extend(NetRequest, {
 	if (doc != null) 
 	    return new XMLSerializer().serializeToString(doc.documentElement); 
 	else
-	    return "[not xml?]";
+	    return null;
     }
 
 });

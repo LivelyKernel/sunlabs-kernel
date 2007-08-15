@@ -672,6 +672,8 @@ Object.extend(SliderMorph.prototype, {
     },
     
     adjustForNewBounds: function() {
+	SliderMorph.superClass.adjustForNewBounds.call(this);
+	
         // This method adjusts the slider for changes in value as well as geometry
         var val = this.getValue();
         var bnds = this.shape.bounds();
