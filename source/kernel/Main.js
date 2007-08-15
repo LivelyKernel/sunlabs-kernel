@@ -50,11 +50,11 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
     
     var showAsteroids = showMostExamples;
     if (showAsteroids) {
-        gameMorph = GameMorph(pt(580, 360).extent(pt(600, 300))); 
+        var gameMorph = apps.asteroids.makeGameMorph(pt(580, 360).extent(pt(600, 300)));
         world.addMorph(WindowMorph(gameMorph, 'Asteroids!'));
         // This is an ugly way to run the game -- the game object should
         // be a real morph (to be fixed later)
-        initAsteroidsGame();
+        apps.asteroids.initialize();
         gameMorph.runAsteroidsGame();
     }
     
@@ -72,7 +72,8 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
             var showMap = true;
             if (showMap) {
                 if (!widget.myWorld.mapMorph) {
-                    var map = MapFrameMorph(new Rectangle(0, 0, 2*TileSize.x, 2*TileSize.y), true);
+		    var tile = apps.maps.tileExtent;
+                    var map = apps.maps.MapFrameMorph(new Rectangle(0, 0, 2*tile.x, 2*tile.y), true);
                     map.setScale(0.7);
                     map.setPosition(pt(320, 175));
                     widget.myWorld.addMorph(map);
