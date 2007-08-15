@@ -147,7 +147,10 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
     if (showBrowser) new SimpleBrowser().openIn(world, pt(20,20));
 
     var showStocks = showMostExamples;
-    if (showStocks) stockWidget = new StockWidget().openIn(/* widget.myWorld */ world, pt(300, 500));
+    if (showStocks) {
+        stockWidget = new StockWidget().openIn(/* widget.myWorld */ world, pt(300, 500));
+        stockWidget.startSteppingRefreshCharts();
+    }
 
     var showRSS = false;
     if (showRSS) loadRSS(world, pt(300, 20));
@@ -165,14 +168,6 @@ function main() {
 }
 
 main();
-
-// FIXME: We should use Morphic functions for timers
-// Update stock charts every 30 seconds
-function updateStocks() {
-    if (stockWidget) stockWidget.refreshCharts();
-}
-
-// setInterval(updateStocks, 30000);
 
 console.log('loaded Main');
 
