@@ -152,6 +152,9 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
         stockWidget.startSteppingRefreshCharts(stockWidget);
     }
 
+    var showMessenger = showMostExamples;
+    if (showMessenger) new MessengerWidget().openIn(world, pt(30, 600));
+
     var showRSS = false;
     if (showRSS) loadRSS(world, pt(300, 20));
 
