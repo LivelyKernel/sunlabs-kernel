@@ -889,7 +889,7 @@ Object.extend(ScrollPane.prototype, {
 
 function ListPane(initialBounds) {
     var pane = ScrollPane(CheapListMorph(initialBounds,["-----"]), initialBounds); 
-    Morph.setType(pane, "ListPane");
+    pane.setType("ListPane");
     return pane;
 };
 

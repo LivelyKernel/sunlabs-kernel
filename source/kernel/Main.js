@@ -113,7 +113,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
 
         // KP: note that element deletion interferes with iteration, so
         // we make an array first and then remove 
-        lm.myWorld.submorphs().toArray().each(function(m) { 
+        lm.myWorld.submorphs.toArray().each(function(m) { 
             if (m instanceof LinkMorph) return;
             m.remove(); 
         });
@@ -137,7 +137,10 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
     var showIcon = showMostExamples;
     if (showIcon) {
         // maybe the icons should have a rectangle shaped images (unlike here)
-        var icon = ImageMorph(Rectangle(30, 360, 80, 50), "http://logos.sun.com/images/SunSample.gif");
+        //var icon = ImageMorph(Rectangle(30, 360, 80, 50), "http://logos.sun.com/images/SunSample.gif");
+        var icon = ImageMorph(Rectangle(30, 360, 100, 45), "http://logos.sun.com/images/SunSample.gif");
+
+	icon.loadGraphics('#SunLogo', 0.15);
         icon.toggleFisheye();    
         world.addMorph(icon);
     }

@@ -31,7 +31,7 @@ Ajax.Request.prototype.request = function(url) {
         this.options.asynchronous);
 	
       if (this.options.asynchronous)
-        setTimeout(function() { this.respondToReadyState(1) }.bind(this), 10);
+          setTimeout(function() { this.respondToReadyState(1) }.bind(this).logExceptions('Network Timer'), 10);
 
       this.transport.onreadystatechange = this.onStateChange.bind(this);
 	
@@ -166,7 +166,6 @@ Object.extend(FeedChannel.prototype, {
 	    this.items[i].initialize();
 	}
 	this.title = (morphic.query(this, 'title') || ['none'])[0].textContent;
-	console.log('title %s', this.title);
     }
 
 });
