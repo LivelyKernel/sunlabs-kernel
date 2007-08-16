@@ -1,5 +1,6 @@
 var Global = this;
-var showMostExamples = true;  // DI: Set to false for much faster turnaround time on slow machines
+var showMostExamples = false;  // DI: Set to false for much faster turnaround time on slow machines
+			// also stops spinning star from running down battery ;-)
 
 var stockWidget = null;
 
