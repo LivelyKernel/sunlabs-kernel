@@ -78,6 +78,15 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
                     widget.myWorld.mapMorph = map;
                 }
             }
+            var showCanvasScape = true;
+            if (showCanvasScape) {
+              console.log("creating csm");
+              var csm = CanvasScapeMorph(Rectangle(20,400,800,300)/*pt(400, 350).extent(pt(800, 300))*/);
+              var m = WindowMorph(csm, 'CanvasScape');
+              widget.myWorld.addMorph(m);
+              //csm.startSteppingFunction(200, function(msTime) { this.changeKey( 37, 1); });
+              console.log("creating csm done");
+          }
         }
 
         var showBitmap = true;
