@@ -199,7 +199,7 @@ Object.extend(CheapListMorph.prototype, {
 
     drawSelection: function() {
         if (this.hasNullSelection()) { // Null sel in a list is blank
-	    this.undrawSelection();
+            this.undrawSelection();
         } else CheapListMorph.superClass.drawSelection.call(this); 
     },
 
@@ -492,7 +492,7 @@ Object.extend(Model.prototype, {
         //console.log('changed ' + varName);
         for (var i = 0; i < this.dependents.length; i++) {
             if (source !== this.dependents[i]) {
-		// console.log('updating %s for name %s', this.dependents[i], varName);
+                // console.log('updating %s for name %s', this.dependents[i], varName);
                 this.dependents[i].updateView(varName, source);
             } 
         } 
@@ -552,8 +552,8 @@ Object.extend(ButtonMorph.prototype, {
     // It read and writes the boolean variable, this.model[this.propertyName]
     initialize: function(initialBounds) {
         ButtonMorph.superClass.initialize.call(this, initialBounds, "rect");
-	this.baseColor = Color.neutral.gray;
-	this.myValue = false;
+        this.baseColor = Color.neutral.gray;
+        this.myValue = false;
         this.toggles = false; // if true each push toggles the model state
 
         // this default self connection may get overwritten by, eg, connectModel()...
@@ -563,7 +563,7 @@ Object.extend(ButtonMorph.prototype, {
         this.setBorderWidth(0.3);
         this.setBorderColor(this.baseColor);
         this.shape.roundEdgesBy(4);
-	this.changeAppearanceFor(this.myValue);
+        this.changeAppearanceFor(this.myValue);
 
         return this;
     },
@@ -571,7 +571,7 @@ Object.extend(ButtonMorph.prototype, {
     handlesMouseDown: function(evt) { return true; },
     
     onMouseDown: function(evt) {
-	console.log('%s handling %s', this, evt);
+        console.log('%s handling %s', this, evt);
         if (!this.toggles) {
             this.setValue(true); 
             this.changeAppearanceFor(true); 
@@ -620,25 +620,23 @@ ImageButtonMorph = HostClass.create('ImageButtonMorph', ButtonMorph);
 Object.extend(ImageButtonMorph.prototype, {
 
     initialize: function(initialBounds, normalImageHref, activatedImageHref) {
-	console.log('arguments %s', $A(arguments));
-	this.image = ImageMorph(Rectangle(0, 0, initialBounds.width, initialBounds.height), normalImageHref);
-	this.normalImageHref = normalImageHref;
-	this.activatedImageHref = activatedImageHref;
-	ImageButtonMorph.superClass.initialize.call(this, initialBounds);
-	this.addMorph(this.image);
-	this.image.handlesMouseDown = function() { return true; }
+        console.log('arguments %s', $A(arguments));
+        this.image = ImageMorph(Rectangle(0, 0, initialBounds.width, initialBounds.height), normalImageHref);
+        this.normalImageHref = normalImageHref;
+        this.activatedImageHref = activatedImageHref;
+        ImageButtonMorph.superClass.initialize.call(this, initialBounds);
+        this.addMorph(this.image);
+        this.image.handlesMouseDown = function() { return true; }
         this.image.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
     },
     
     changeAppearanceFor: function(value) {
-	console.log('changing on %s from %s to %s', value, this.activatedImageHref, this.normalImageHref);
-	if (value) this.image.loadURL(this.activatedImageHref);
-	else this.image.loadURL(this.normalImageHref);
+        console.log('changing on %s from %s to %s', value, this.activatedImageHref, this.normalImageHref);
+        if (value) this.image.loadURL(this.activatedImageHref);
+        else this.image.loadURL(this.normalImageHref);
     }
     
 });
-
-
 
 /**
  * @class SliderMorph
@@ -655,7 +653,7 @@ Object.extend(SliderMorph.prototype, {
         // this default self connection may get overwritten by, eg, connectModel()...
         this.modelPlug = {model: this, getValue: "getMyValue", setValue: "setMyValue", getExtent: "getMyExtent"};
         this.myValue = 0.0;
-	
+
         this.slider = Morph(Rectangle(0, 0, 8, 8), "rect");
         this.slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});
         this.addMorph(this.slider);
@@ -670,8 +668,8 @@ Object.extend(SliderMorph.prototype, {
     },
     
     adjustForNewBounds: function() {
-	SliderMorph.superClass.adjustForNewBounds.call(this);
-	
+        SliderMorph.superClass.adjustForNewBounds.call(this);
+
         // This method adjusts the slider for changes in value as well as geometry
         var val = this.getValue();
         var bnds = this.shape.bounds();
@@ -689,12 +687,11 @@ Object.extend(SliderMorph.prototype, {
     
         this.slider.setBounds(bnds.topLeft().addPt(topLeft).extent(sliderExt)); 
     
-	var direction = this.vertical() ? LinearGradient.EastWest : LinearGradient.NorthSouth;
-        this.setFill(LinearGradient.makeGradient(Color.primary.blue.lighter().lighter(), Color.primary.blue,
-						direction));
-	this.slider.setFill(LinearGradient.makeGradient(Color.primary.green.lighter().lighter(), 
-							Color.primary.green, direction));
-							
+        var direction = this.vertical() ? LinearGradient.EastWest : LinearGradient.NorthSouth;
+        this.setFill(LinearGradient.makeGradient(Color.primary.blue.lighter().lighter(),
+                     Color.primary.blue, direction));
+        this.slider.setFill(LinearGradient.makeGradient(Color.primary.green.lighter().lighter(), 
+                            Color.primary.green, direction));
     },
     
     sliderPressed: function(evt, slider) {
@@ -729,12 +726,12 @@ Object.extend(SliderMorph.prototype, {
     
     onMouseDown: function(evt) {
         evt.hand.setMouseFocus(this);
-	this.requestKeyboardFocus(evt.hand);
-	
+        this.requestKeyboardFocus(evt.hand);
+
         var inc = this.getExtent();
         var newValue = this.getValue();
         var delta = this.localize(evt.mousePoint).subPt(this.slider.bounds().center());
-	
+
         if (this.vertical() ? delta.y > 0 : delta.x > 0) newValue += inc;
         else newValue -= inc;
     
@@ -791,32 +788,30 @@ Object.extend(SliderMorph.prototype, {
     },
     
     setHasKeyboardFocus: function(newSetting) { 
-	return newSetting; // no need to remember
+        return newSetting; // no need to remember
     },
 
     onKeyPress: function(evt) {
-	var delta = 0;
-	if (this.vertical()) {
+        var delta = 0;
+        if (this.vertical()) {
             switch (evt.sanitizedKeyCode()) {
-	    case Event.KEY_DOWN: delta = 1; break;
-	    case Event.KEY_UP:  delta = -1; break;
-	    default: return false;
-	    } 
-	} else {
+            case Event.KEY_DOWN: delta = 1; break;
+            case Event.KEY_UP:  delta = -1; break;
+            default: return false;
+            } 
+        } else {
             switch (evt.sanitizedKeyCode()) {
-	    case Event.KEY_RIGHT: delta = 1;  break; 	    
-	    case Event.KEY_LEFT:  delta = -1; break;
-	    default: return false;
-	    }    
-	}
-	console.log('handled evt %s value now %s', evt, this.getValue());
-	this.adjustForNewBounds();
-	this.setValue(this.clipValue(this.getValue() + delta * this.getExtent()));
-	evt.stop();
-	return true;
+            case Event.KEY_RIGHT: delta = 1;  break;    
+            case Event.KEY_LEFT:  delta = -1; break;
+            default: return false;
+            }    
+        }
+        console.log('handled evt %s value now %s', evt, this.getValue());
+        this.adjustForNewBounds();
+        this.setValue(this.clipValue(this.getValue() + delta * this.getExtent()));
+        evt.stop();
+        return true;
     }
-
-
 
 });
 
@@ -850,7 +845,7 @@ Object.extend(ScrollPane.prototype, {
         // Add a scrollbar
         this.scrollBar = SliderMorph(bnds.withTopLeft(clipR.topRight()))
         this.scrollBar.connectModel({model: this, getValue: "getScrollPosition", setValue: "setScrollPosition", 
-				     getExtent: "getVisibleExtent"});
+                                     getExtent: "getVisibleExtent"});
         this.addMorph(this.scrollBar);
         
         return this;
@@ -913,6 +908,5 @@ function PrintPane(initialBounds, defaultText) {
     return pane;
 };
 
-    
 console.log('Loaded Widgets.js');
 
