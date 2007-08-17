@@ -14,14 +14,15 @@ ColorPickerMorph = HostClass.create('ColorPickerMorph', Morph);
 
 Object.extend(ColorPickerMorph.prototype, {
 
+    defaultFill: null,
+    defaultBorderWidth: 1, 
+    defaultBorderColor: Color.black,
+
     initialize: function(initialBounds, targetMorph, setFillName, popup) {
         ColorPickerMorph.superClass.initialize.call(this, initialBounds, "rect");
         this.targetMorph = targetMorph;
         this.setFillFunctionName = setFillName; // name like "setBorderColor"
         if (targetMorph != null) this.connectModel({model: targetMorph, setColor: setFillName});
-        this.setFill(null);
-        this.setBorderWidth(1); 
-        this.setBorderColor(Color.black);
         this.colorWheelCache = null;
         this.isPopup = popup; 
         this.buildView();
@@ -102,6 +103,8 @@ CheapListMorph = HostClass.create('CheapListMorph', TextMorph);
 
 Object.extend(CheapListMorph.prototype, {
     
+    defaultBorderColor: Color.black,
+    
     initialize: function(initialBounds, itemList) {
         // itemList is an array of strings
         // Note:  A proper ListMorph is a list of independent submorphs
@@ -122,8 +125,6 @@ Object.extend(CheapListMorph.prototype, {
         };
 
         this.layoutChanged();
-        this.setBorderColor(Color.black); 
-    
         return this;
     },
     
@@ -287,6 +288,11 @@ MenuMorph = HostClass.create('MenuMorph', CheapListMorph);
 
 Object.extend(MenuMorph.prototype, {
 
+    defaultBorderColor: Color.blue,
+    defaultBorderWidth: 0.5,
+    defaultFill: Color.blue.lighter(5),
+
+
     initialize: function(items, lines) {
         // items is an array of menuItems, each of which is an array of the form
         // [itemName, target, functionName, parameterIfAny]
@@ -332,7 +338,6 @@ Object.extend(MenuMorph.prototype, {
         this.stayUp = remainOnScreen; // set true to keep on screen
         this.caption = captionIfAny;  // Not yet implemented
         this.compose(location);
-        this.setBorderColor(Color.blue); 
         world.addMorph(this);
     },
 
@@ -342,9 +347,6 @@ Object.extend(MenuMorph.prototype, {
 
         // styling
         this.textColor = Color.blue;
-        this.setBorderWidth(0.5);
-        this.setFill(Color.blue.lighter(5));
-        
         //this.setFill(StipplePattern.create(Color.white, 3, Color.blue.lighter(5), 1));
         this.shape.roundEdgesBy(6);
         this.shape.setFillOpacity(0.75);
@@ -377,6 +379,9 @@ CheapMenuMorph = HostClass.create('CheapMenuMorph', CheapListMorph);
 
 Object.extend(CheapMenuMorph.prototype, {
 
+    defaultBorderWidth: 0.5,
+    defaultFill: Color.blue.lighter(5),
+
     initialize: function(location, target, targetFunctionName, itemList, parametersIfAny) {
         //    target and targetFunctionName determine the call at mouseUp
         //    itemList is an array of strings
@@ -395,8 +400,6 @@ Object.extend(CheapMenuMorph.prototype, {
     
         // styling
         this.textColor = Color.blue;
-        this.setBorderWidth(0.5);
-        this.setFill(Color.blue.lighter(5));
         
         //this.setFill(StipplePattern.create(Color.white, 3, Color.blue.lighter(5), 1));
         this.shape.roundEdgesBy(6);
@@ -548,13 +551,15 @@ ButtonMorph = HostClass.create('ButtonMorph', Morph);
 Object.extend(ButtonMorph.prototype, {
 
     focusHaloBorderWidth: 3, // override the default
-
+    defaultBorderWidth: 0.3,
+    defaultFill: Color.neutral.gray,
+    defaultBorderColor: Color.neutral.gray,
 
     // A ButtonMorph is the simplest widget
     // It read and writes the boolean variable, this.model[this.propertyName]
     initialize: function(initialBounds) {
         ButtonMorph.superClass.initialize.call(this, initialBounds, "rect");
-        this.baseColor = Color.neutral.gray;
+        this.baseColor = this.defaultFill;
         this.myValue = false;
         this.toggles = false; // if true each push toggles the model state
 
@@ -562,8 +567,6 @@ Object.extend(ButtonMorph.prototype, {
         this.modelPlug = {model: this, getValue: "getMyValue", setValue: "setMyValue"};
     
         // Styling
-        this.setBorderWidth(0.3);
-        this.setBorderColor(this.baseColor);
         this.shape.roundEdgesBy(4);
         this.changeAppearanceFor(this.myValue);
 
@@ -860,10 +863,11 @@ ScrollPane = HostClass.create('ScrollPane', Morph);
 
 Object.extend(ScrollPane.prototype, {
 
+    defaultBorderWidth: 2,
+    defaultFill: null,
+
     initialize: function(morphToClip, initialBounds) {
         ScrollPane.superClass.initialize.call(this, initialBounds, "rect");
-        this.setBorderWidth(2);
-        this.setFill(null); 
     
         var bnds = this.shape.bounds();
         var scrollBarWidth = 14;
@@ -871,7 +875,6 @@ Object.extend(ScrollPane.prototype, {
     
         // Make a clipMorph with the content (morphToClip) embedded in it
         this.clipMorph = ClipMorph(clipR);    
-        this.clipMorph.setBorderWidth(0);
         this.clipMorph.shape.setFill(morphToClip.shape.getFill());
         morphToClip.setBorderWidth(0);
         morphToClip.setPosition(clipR.topLeft());
