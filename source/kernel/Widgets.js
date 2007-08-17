@@ -547,6 +547,8 @@ ButtonMorph = HostClass.create('ButtonMorph', Morph);
 
 Object.extend(ButtonMorph.prototype, {
 
+    focusHaloBorderWidth: 3, // override the default
+
 
     // A ButtonMorph is the simplest widget
     // It read and writes the boolean variable, this.model[this.propertyName]
@@ -571,7 +573,7 @@ Object.extend(ButtonMorph.prototype, {
     handlesMouseDown: function(evt) { return true; },
     
     onMouseDown: function(evt) {
-        console.log('%s handling %s', this, evt);
+        this.requestKeyboardFocus(evt.hand);
         if (!this.toggles) {
             this.setValue(true); 
             this.changeAppearanceFor(true); 
@@ -613,7 +615,42 @@ Object.extend(ButtonMorph.prototype, {
 
     setMyValue: function(value) {
         this.myValue = value;
-    }
+    },
+
+    takesKeyboardFocus: function() { 
+        // unlike, eg, cheapMenus
+        return true; 
+    },
+    
+    setHasKeyboardFocus: function(newSetting) { 
+        return newSetting; // no need to remember
+    },
+
+    onKeyDown: function(evt) {
+        switch (evt.sanitizedKeyCode()) {
+	case Event.KEY_ENTER:
+        case Event.KEY_SPACEBAR:
+	    this.changeAppearanceFor(true);
+            evt.stop();
+            return true;
+	}
+	return false;
+    },
+
+    onKeyUp: function(evt) {
+        var newValue = this.toggles ? !this.getValue() : false;
+        switch (evt.sanitizedKeyCode()) {
+	case Event.KEY_ENTER:
+        case Event.KEY_SPACEBAR:
+	    this.changeAppearanceFor(newValue);
+	    this.setValue(newValue);
+            evt.stop();
+            return true;
+	}
+	return false;
+    },
+
+
 });
 
 ImageButtonMorph = HostClass.create('ImageButtonMorph', ButtonMorph);
@@ -894,7 +931,7 @@ function ListPane(initialBounds) {
 
 function TextPane(initialBounds, defaultText) {
     var pane = ScrollPane(TextMorph(initialBounds, defaultText), initialBounds); 
-    pane.setAttributeNS(morphic.ns.MORPHIC, "type", "TextPane");
+    pane.setType("TextPane");
     return pane;
 };
 
@@ -904,7 +941,7 @@ function TextPane(initialBounds, defaultText) {
 
 function PrintPane(initialBounds, defaultText) {
     var pane = ScrollPane(PrintMorph(initialBounds, defaultText), initialBounds); 
-    pane.setAttributeNS(morphic.ns.MORPHIC, "type", "PrintPane");
+    pane.setType("PrintPane");
     return pane;
 };
 
