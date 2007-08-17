@@ -24,7 +24,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
         }
     
         widget = Morph(pt(0,0).asRectangle(), "rect");
-        widget.setShape(PolygonShape(null, makeStarVertices(50,pt(0,0),0), Color.yellow,1,Color.black));
+        widget.setShape(PolygonShape(null, makeStarVertices(50,pt(0,0),0), Color.yellow, 1, Color.black));
         // makeGradient(Color.yellow, Color.yellow.lighter().lighter()));
         widget.setPosition(pt(320, 380));
         world.addMorph(widget);
@@ -179,6 +179,8 @@ function main() {
     WorldMorph.setCurrent(world);
     world.displayWorldOn(morphic.canvas);
     console.log('made world');
+    if (this['omitExamples'])
+	return;
     WorldMorph.populateWithExamples(world, showMostExamples);
 }
 

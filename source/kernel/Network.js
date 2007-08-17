@@ -31,9 +31,9 @@ Ajax.Request.prototype.request = function(url) {
         this.options.asynchronous);
 	
       if (this.options.asynchronous)
-          setTimeout(function() { this.respondToReadyState(1) }.bind(this).logExceptions('Network Timer'), 10);
+          setTimeout(function() { this.respondToReadyState(1) }.bind(this).withLogging('Network Timer'), 10);
 
-      this.transport.onreadystatechange = this.onStateChange.bind(this);
+	this.transport.onreadystatechange = this.onStateChange.bind(this).withLogging('Network Request Handler');
 	
       this.setRequestHeaders();
 
@@ -159,11 +159,11 @@ var FeedChannel = Class.create();
 
 
 Object.extend(FeedChannel.prototype, {
-    initialize: function() {
+    become: function() {
 	this.items =  morphic.query(this, 'item') || [];
 	for (var i = 0; i < this.items.length; i++) {
 	    HostClass.becomeInstance(this.items[i], FeedItem);
-	    this.items[i].initialize();
+	    this.items[i].become();
 	}
 	this.title = (morphic.query(this, 'title') || ['none'])[0].textContent;
     }
@@ -172,7 +172,7 @@ Object.extend(FeedChannel.prototype, {
 
 var FeedItem = Class.create();
 Object.extend(FeedItem.prototype, {
-    initialize: function() {
+    become: function() {
 	this.title = morphic.query(this, 'title')[0].textContent;
 	this.description = morphic.query(this, 'description')[0].textContent;
 	// console.log('created item %s=%s', this.title, this.description);
@@ -229,7 +229,7 @@ Object.extend(Feed.prototype, {
         this.channels = this.query('/rss/channel', result);
 	for (var i = 0; i < this.channels.length; i++) {
 	    HostClass.becomeInstance(this.channels[i], FeedChannel);
-	    this.channels[i].initialize();
+	    this.channels[i].become();
 	}
     },
 
