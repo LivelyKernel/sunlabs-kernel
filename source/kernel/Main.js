@@ -1,6 +1,6 @@
 var Global = this;
-var showMostExamples = true;  // DI: Set to false for much faster turnaround time on slow machines
-			// also stops spinning star from running down battery ;-)
+var showMostExamples = true; // DI: Set to false for much faster turnaround time on slow machines
+                             // also stops spinning star from running down battery ;-)
 
 var stockWidget = null;
 
@@ -140,7 +140,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
         //var icon = ImageMorph(Rectangle(30, 360, 80, 50), "http://logos.sun.com/images/SunSample.gif");
         var icon = ImageMorph(Rectangle(30, 360, 100, 45), "http://logos.sun.com/images/SunSample.gif");
 
-	icon.loadGraphics('#SunLogo', 0.15);
+        icon.loadGraphics('#SunLogo', 0.15);
         icon.toggleFisheye();    
         world.addMorph(icon);
     }
@@ -179,8 +179,7 @@ function main() {
     WorldMorph.setCurrent(world);
     world.displayWorldOn(morphic.canvas);
     console.log('made world');
-    if (this['omitExamples'])
-	return;
+    if (this['omitExamples']) return;
     WorldMorph.populateWithExamples(world, showMostExamples);
 }
 
