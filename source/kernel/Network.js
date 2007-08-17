@@ -1,3 +1,6 @@
+// ===========================================================================
+// Networking functionality
+// ===========================================================================
 
 // explicitly override prototype.js's verb simulation over post
 Ajax.Request.prototype.request = function(url) {
@@ -10,173 +13,195 @@ Ajax.Request.prototype.request = function(url) {
       params['_method'] = this.method;
       this.method = 'post';
     }
-*/
+    */
 
     this.parameters = params;
 
     if (params = Hash.toQueryString(params)) {
-      // when GET, append parameters to URL
-      if (this.method == 'get')
-        this.url += (this.url.include('?') ? '&' : '?') + params;
-      else if (/Konqueror|Safari|KHTML/.test(navigator.userAgent))
-        params += '&_=';
+        // when GET, append parameters to URL
+        if (this.method == 'get') {
+            this.url += (this.url.include('?') ? '&' : '?') + params;
+        } else if (/Konqueror|Safari|KHTML/.test(navigator.userAgent)) {
+            params += '&_=';
+        }
     }
 
     try {
-      if (this.options.onCreate) this.options.onCreate(this.transport);
-	
-      Ajax.Responders.dispatch('onCreate', this, this.transport);
+        if (this.options.onCreate) this.options.onCreate(this.transport);
 
-      this.transport.open(this.method.toUpperCase(), this.url,
-        this.options.asynchronous);
-	
-      if (this.options.asynchronous)
-          setTimeout(function() { this.respondToReadyState(1) }.bind(this).withLogging('Network Timer'), 10);
+        Ajax.Responders.dispatch('onCreate', this, this.transport);
 
-	this.transport.onreadystatechange = this.onStateChange.bind(this).withLogging('Network Request Handler');
-	
-      this.setRequestHeaders();
+        this.transport.open(this.method.toUpperCase(), this.url,
+                            this.options.asynchronous);
 
-      this.body = /put|post/.test(this.method) ? (this.options.body || this.options.postBody || params) : null;
-	
-      this.transport.send(this.body);
-      /* Force Firefox to handle ready state 4 for synchronous requests */
-      if (!this.options.asynchronous && this.transport.overrideMimeType)
-        this.onStateChange();
+        if (this.options.asynchronous) {
+            setTimeout(function() { this.respondToReadyState(1) }.bind(this).withLogging('Network Timer'), 10);
+        }
 
-    }
-    catch (e) {
-	console.log('error %s, stack %s', e, Function.callStack());
-	this.dispatchException(e);
+        this.transport.onreadystatechange = this.onStateChange.bind(this).withLogging('Network Request Handler');
+
+        this.setRequestHeaders();
+
+        this.body = /put|post/.test(this.method) ? (this.options.body || this.options.postBody || params) : null;
+
+        this.transport.send(this.body);
+      
+        /* Force Firefox to handle ready state 4 for synchronous requests */
+        if (!this.options.asynchronous && this.transport.overrideMimeType) {
+            this.onStateChange();
+        }
+
+    } catch (e) {
+        console.log('error %s, stack %s', e, Function.callStack());
+        this.dispatchException(e);
     }
 };
 
-//debugging
+// Debugging
 Ajax.Request.prototype.setRequestHeaders = function() {
     var headers = {
-      'X-Requested-With': 'XMLHttpRequest',
-      'X-Prototype-Version': Prototype.Version,
-      'Accept': 'text/javascript, text/html, application/xml, text/xml, */*'
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-Prototype-Version': Prototype.Version,
+        'Accept': 'text/javascript, text/html, application/xml, text/xml, */*'
     };
 
     if (this.method == 'post') {
-      headers['Content-type'] = this.options.contentType +
-        (this.options.encoding ? '; charset=' + this.options.encoding : '');
+        headers['Content-type'] = this.options.contentType +
+            (this.options.encoding ? '; charset=' + this.options.encoding : '');
 
-      /* Force "Connection: close" for older Mozilla browsers to work
-       * around a bug where XMLHttpRequest sends an incorrect
-       * Content-length header. See Mozilla Bugzilla #246651.
-       */
-      if (this.transport.overrideMimeType &&
-          (navigator.userAgent.match(/Gecko\/(\d{4})/) || [0,2005])[1] < 2005)
-            headers['Connection'] = 'close';
+        /* Force "Connection: close" for older Mozilla browsers to work
+         * around a bug where XMLHttpRequest sends an incorrect
+         * Content-length header. See Mozilla Bugzilla #246651.
+         */
+        if (this.transport.overrideMimeType &&
+            (navigator.userAgent.match(/Gecko\/(\d{4})/) || [0,2005])[1] < 2005)
+                headers['Connection'] = 'close';
     }
 
     // user-defined headers
     if (typeof this.options.requestHeaders == 'object') {
-      var extras = this.options.requestHeaders;
+        var extras = this.options.requestHeaders;
 
-      if (typeof extras.push == 'function')
-        for (var i = 0, length = extras.length; i < length; i += 2)
-          headers[extras[i]] = extras[i+1];
-      else
-        $H(extras).each(function(pair) { headers[pair.key] = pair.value });
+        if (typeof extras.push == 'function') {
+            for (var i = 0, length = extras.length; i < length; i += 2) {
+                headers[extras[i]] = extras[i+1];
+            }
+        } else {
+            $H(extras).each(function(pair) { headers[pair.key] = pair.value });
+        }
     }
 
     for (var name in headers) {
-	if (!headers.hasOwnProperty(name))
-	    continue; //avoid inheriting state, e.g. functions
-	// console.log('setting %s = %s', name, headers[name]);
-	this.transport.setRequestHeader(name, headers[name]);
+        // Avoid inheriting state, e.g. functions
+        if (!headers.hasOwnProperty(name)) continue;
+
+        // console.log('setting %s = %s', name, headers[name]);
+        this.transport.setRequestHeader(name, headers[name]);
     }
 };
 
+/**
+ * @class NetRequest
+ */ 
 
 var NetRequest = Class.create();
 
 Object.extend(NetRequest, {
     options: {
-	contentType: 'text/xml',
-	asynchronous: true,
+    contentType: 'text/xml',
+    asynchronous: true,
 
-	onLoaded: function(transport) { 
-	    console.info('loaded %s %s', transport.status, transport); 
-	},
-	
-	onFailure: function(transport) {
-	    console.warn('failure %s %s', transport.status, transport);
-	},
-	
-	onInteractive: function(transport) {
-	    console.info('receiving %s %s', transport.status, transport);
-	},
-	
-	onException: function(e) {
-	    console.warn('exception %s', e);
-	}
+    onLoaded: function(transport) { 
+        console.info('loaded %s %s', transport.status, transport); 
+    },
+
+    onFailure: function(transport) {
+        console.warn('failure %s %s', transport.status, transport);
+    },
+
+    onInteractive: function(transport) {
+        console.info('receiving %s %s', transport.status, transport);
+    },
+
+    onException: function(e) {
+        console.warn('exception %s', e);
+    }
     },
 
     requestNetworkAccess: function() {
-	if (window.location.href.startsWith('file:')) {       
+        if (window.location.href.startsWith('file:')) {       
             this['netscape'] && netscape.security.PrivilegeManager.enablePrivilege("UniversalBrowserRead");
-	}
+        }
     },
     
     documentToString: function(doc) {
-	if (doc != null) 
-	    return new XMLSerializer().serializeToString(doc.documentElement); 
-	else
-	    return null;
+        if (doc != null) return new XMLSerializer().serializeToString(doc.documentElement); 
+        else return null;
     }
 
 });
 
 Object.extend(NetRequest.prototype, {
+    
     initialize: function(model) {
-	this.model = model;
+        this.model = model;
     },
 
     process: function(transport) {
-	console.log('override me');
+        console.log('override me');
     },
 
     request: function(url, options) {
-	if (options === NetRequest.options) 
-	    options = options.clone();
-	options = Object.derive(NetRequest.options, options);
+        if (options === NetRequest.options) options = options.clone();
+    
+        options = Object.derive(NetRequest.options, options);
+        
         options.onSuccess = function(transport) {
-	    var result = transport;
-	    console.log('success %s', transport.status);
-	    this.process(result);
+            var result = transport;
+            console.log('success %s', transport.status);
+            this.process(result);
         }.bind(this);
-	
-	new Ajax.Request(url, options);
+    
+        new Ajax.Request(url, options);
     }
 
 });
+
+/**
+ * @class FeedChannel
+ */ 
 
 var FeedChannel = Class.create();
 
-
 Object.extend(FeedChannel.prototype, {
+
     become: function() {
-	this.items =  morphic.query(this, 'item') || [];
-	for (var i = 0; i < this.items.length; i++) {
-	    HostClass.becomeInstance(this.items[i], FeedItem);
-	    this.items[i].become();
-	}
-	this.title = (morphic.query(this, 'title') || ['none'])[0].textContent;
+        this.items =  morphic.query(this, 'item') || [];
+    
+        for (var i = 0; i < this.items.length; i++) {
+            HostClass.becomeInstance(this.items[i], FeedItem);
+            this.items[i].become();
+        }
+    
+        this.title = (morphic.query(this, 'title') || ['none'])[0].textContent;
     }
 
 });
 
+/**
+ * @class FeedItem
+ */ 
+
 var FeedItem = Class.create();
+
 Object.extend(FeedItem.prototype, {
+
     become: function() {
-	this.title = morphic.query(this, 'title')[0].textContent;
-	this.description = morphic.query(this, 'description')[0].textContent;
-	// console.log('created item %s=%s', this.title, this.description);
+        this.title = morphic.query(this, 'title')[0].textContent;
+        this.description = morphic.query(this, 'description')[0].textContent;
+        // console.log('created item %s=%s', this.title, this.description);
     }
+    
 });
 
 /**
@@ -192,45 +217,46 @@ Object.extend(Feed.prototype, {
     
     initialize: function(url) {
         this.url = url;
-	this.channels = null;
+        this.channels = null;
     },
     
     query: function(xpQuery, target) {
-	return morphic.query(target ? target : this.result, xpQuery) || [];
+        return morphic.query(target ? target : this.result, xpQuery) || [];
     },
 
     request: function(model /*model variables*/) {
         // console.log('in request on %s', this.url);
         var feed = this;
-	var modelVariables = $A(arguments);
-	modelVariables.shift();
+        var modelVariables = $A(arguments);
+        modelVariables.shift();
 
         new Ajax.Request(this.url, Object.derive(NetRequest.options, {
-            method: 'get', 
+            method: 'get',
             requestHeaders: { "If-Modified-Since": "Sat, 1 Jan 2000 00:00:00 GMT" },
-	    
+        
             onSuccess: function(transport) {
                 var result = transport.responseXML.documentElement;
                 console.log('success %s', transport.status);
-		if (feed.dump)
-		    console.log('transmission dump %s', NetRequest.documentToString(transport.responseXML));
-		feed.processResult(result);
-		console.log('changing %s', modelVariables);
-		for (var i = 0; i < modelVariables.length; i++) {
+        
+                if (feed.dump) console.log('transmission dump %s', NetRequest.documentToString(transport.responseXML));
+        
+                feed.processResult(result);
+                console.log('changing %s', modelVariables);
+        
+                for (var i = 0; i < modelVariables.length; i++) {
                     model.changed(modelVariables[i]);
-		}
-            }
-	    
+                }
+            }    
         }));
-
     },
 
     processResult: function(result) {
         this.channels = this.query('/rss/channel', result);
-	for (var i = 0; i < this.channels.length; i++) {
-	    HostClass.becomeInstance(this.channels[i], FeedChannel);
-	    this.channels[i].become();
-	}
+    
+        for (var i = 0; i < this.channels.length; i++) {
+            HostClass.becomeInstance(this.channels[i], FeedChannel);
+            this.channels[i].become();
+        }
     },
 
     items: function() {
@@ -238,13 +264,16 @@ Object.extend(Feed.prototype, {
     },
     
     getEntry: function(title) {
-	var items = this.channels[0].items;
-	for (var i = 0; i < items.length; i++) {
-	    if (items[i].title == title) {
-		return items[i].description;
-	    }
-	}
+        var items = this.channels[0].items;
+    
+        for (var i = 0; i < items.length; i++) {
+            if (items[i].title == title) {
+                return items[i].description;
+            }
+        }
+        
         return "";
     }
     
 });
+
