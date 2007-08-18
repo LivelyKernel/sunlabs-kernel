@@ -235,6 +235,10 @@ Object.extend(Feed.prototype, {
             requestHeaders: { "If-Modified-Since": "Sat, 1 Jan 2000 00:00:00 GMT" },
         
             onSuccess: function(transport) {
+		if (!transport.responseXML) {
+		    feed.processResult(null);
+		    return;
+		}
                 var result = transport.responseXML.documentElement;
                 console.log('success %s', transport.status);
         
@@ -246,11 +250,16 @@ Object.extend(Feed.prototype, {
                 for (var i = 0; i < modelVariables.length; i++) {
                     model.changed(modelVariables[i]);
                 }
-            }    
+            }.withLogging('Success Handler for ' + feed)
         }));
     },
 
+    
     processResult: function(result) {
+	if (!result) {
+	    console.log('no results for %s', this);
+	    return;
+	}
         this.channels = this.query('/rss/channel', result);
     
         for (var i = 0; i < this.channels.length; i++) {

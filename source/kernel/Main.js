@@ -100,11 +100,12 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
             "Point=e&latitude_e6=61500000&longitude_e6=-3191200000&zm=8000&w=" +
             width + "&h=" + height + "&cc=US&min_priority=2";
             
-            widget.myWorld.addMorphBack(ImageMorph(Rectangle(50, 10, width, height), url));
+            widget.myWorld.addMorphBack(WindowMorph(ImageMorph(Rectangle(50, 10, width, height), url), 'Tampere'));
         }
 
         var showDoodle = true;
-        if (showDoodle) widget.myWorld.addMorph(WindowMorph(DoodleMorph(pt(875, 350).extent(pt(300, 300))), 'Doodle Morph'));
+        if (showDoodle) widget.myWorld.addMorph(WindowMorph(DoodleMorph(pt(875, 350).extent(pt(300, 300))), 
+							    'Doodle Morph'));
     }
     
     var slideWorld = showMostExamples;
@@ -190,7 +191,7 @@ console.log('loaded Main');
 if (false) showStatsViewer(TextLine.prototype, "TextLine...");
 
 if (this['showWebStore']) {
-    // var store = new WebStore('http://idisk.mac.com/xysztof/Public/Lively');
+    //var store = new WebStore('http://idisk.mac.com/xysztof/Public/Lively');
     var store = new WebStore('localhost', '~kappa');
     store.openIn(WorldMorph.current(), pt(500, 30));
 }

@@ -104,7 +104,8 @@ CheapListMorph = HostClass.create('CheapListMorph', TextMorph);
 Object.extend(CheapListMorph.prototype, {
     
     defaultBorderColor: Color.black,
-    
+    wrap: 'noWrap',
+
     initialize: function(initialBounds, itemList) {
         // itemList is an array of strings
         // Note:  A proper ListMorph is a list of independent submorphs
@@ -114,7 +115,6 @@ Object.extend(CheapListMorph.prototype, {
         var listText = (itemList == null) ? "" : itemList.join("\n");
         CheapListMorph.superClass.initialize.call(this, initialBounds, listText);
 
-        this.wrap = "noWrap";
         this.itemList = itemList;
         // this default self connection may get overwritten by, eg, connectModel()...
         this.modelPlug = {
@@ -352,10 +352,6 @@ Object.extend(MenuMorph.prototype, {
         this.shape.setFillOpacity(0.75);
     },
 
-    takesKeyboardFocus: function() { 
-        return false;
-    },
-
     onMouseUp: function(evt) {
         if (!this.hasNullSelection()) var item = this.items[this.selectedLineNo()];
         this.setNullSelectionAt(0);  // Clean up now, in case the call fails
@@ -368,70 +364,6 @@ Object.extend(MenuMorph.prototype, {
             // call as target.function(parameterOrNull,event,menuItem)
             else func.call(item[1], item[3], evt, item); 
         }
-    }
-});
-
-/**
- * @class CheapMenuMorph
- */ 
-
-CheapMenuMorph = HostClass.create('CheapMenuMorph', CheapListMorph);
-
-Object.extend(CheapMenuMorph.prototype, {
-
-    defaultBorderWidth: 0.5,
-    defaultFill: Color.blue.lighter(5),
-
-    initialize: function(location, target, targetFunctionName, itemList, parametersIfAny) {
-        //    target and targetFunctionName determine the call at mouseUp
-        //    itemList is an array of strings
-        //    parametersIfAny is a parallel list or a singleton, or null
-    
-        //    Note:  A proper ListMorph is a list of independent submorphs
-        //    CheapListMorphs simply leverage off Textmorph's ability to display multiline paragraphs
-
-        itemList = itemList.concat("--old menu--");  //Please update so we can remove CheapMenuMorph
-        CheapMenuMorph.superClass.initialize.call(this, location.extent(pt(200, 200)), itemList);
-
-        this.target = target;
-        this.targetFunctionName = targetFunctionName;
-        this.parameters = parametersIfAny;
-        this.stayUp = false; // set true to keep on screen
-    
-        // styling
-        this.textColor = Color.blue;
-        
-        //this.setFill(StipplePattern.create(Color.white, 3, Color.blue.lighter(5), 1));
-        this.shape.roundEdgesBy(6);
-        this.shape.setFillOpacity(0.75);
-    
-        return this;
-    },
-
-    takesKeyboardFocus: function() { 
-        return false;
-    },
-
-    onMouseUp: function(evt) {
-        evt.hand.setMouseFocus(null);
-
-        if (!this.hasNullSelection()) {
-        
-            var lineNo = this.selectedLineNo();
-            var selectedItem = this.itemList[lineNo];
-            var parameter = (this.parameters instanceof Array) ? this.parameters[lineNo] : this.parameters;
-        
-            if (selectedItem) {
-                var func = this.target[this.targetFunctionName];
-                if (func == null) console.log('Could not find function ' + this.targetFunctionName);
-                    // call as target.targetFunctionName(selectedItem,parameter,evt)
-                else func.call(this.target, selectedItem, parameter, evt); 
-            }
-        }
-    
-        this.setNullSelectionAt(0);
-
-        if (!this.stayUp) this.remove(); 
     }
 });
 
