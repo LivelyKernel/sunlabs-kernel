@@ -1,10 +1,1454 @@
-// Note:  The widget/model connection mechanism is in transition.
-// The new model simply adds a modelPlug object to each view, and it 
-// contains references to the model and method names corresponding to 
-// each of the getters and setters appropriate to the view.
+/**
+ * Widgets.js.  This file defines the various graphical widgets
+ * (morphs) that will be included in the system when it starts.
+ */
 
-// The old model used "pin" connectors to access variables.
-// When these have been completely supplanted, the various getModelValue
+/**
+ * @class TitleBarMorph
+ */
+  
+TitleBarMorph = HostClass.create('TitleBarMorph', Morph);
+
+Object.extend(TitleBarMorph.prototype, {
+    // prototype variables
+    barHeight: 20,
+    controlSpacing: 3,
+    defaultBorderWidth: 0.5,
+
+    initialize: function(headline, windowWidth, windowMorph, isExternal) {
+        this.windowMorph = windowMorph;
+        const bh = this.barHeight;
+        const spacing = this.controlSpacing;
+        TitleBarMorph.superClass.initialize.call(this, Rectangle(0, isExternal? - bh : 0, 
+                                                 windowWidth, bh), "rect");
+        this.setFill(LinearGradient.makeGradient(Color.primary.blue, Color.primary.blue.lighter(3)));
+        // Unfortunately, the code below also prevents the window from being moved...
+        //this.ignoreEvents();
+        //this.relayMouseEvents(windowMorph, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"})
+        //this.mouseHandler.handlesMouseDown = function() { return false; }
+
+        var cell = Rectangle(0, 0, bh, bh);
+        var closeButton = WindowControlMorph(cell, spacing, Color.primary.orange, windowMorph, 
+            function() { this.initiateShutdown(); }, "Close");
+        this.addMorph(closeButton);
+
+        // FIXME this should be simpler
+        var sign = document.createSVGElement("use").withHref("#CloseIcon");
+
+        sign.applyTransform(Transform.createSimilitude(pt(-9, -9), 0, 0.035));
+        //sign.setAttributeNS(null, 'transform', 'translate(-9, -9), scale(0.035)');
+        closeButton.addChildElement(sign);
+
+        cell = cell.translatedBy(pt(bh - spacing, 0));
+        var menuButton = WindowControlMorph(cell, spacing, Color.primary.blue, windowMorph, 
+            function(evt) { this.targetMorph.showMorphMenu(evt); }, "Menu");
+        this.addMorph(menuButton);
+
+        // uncomment for extra icon fun
+        /*
+        sign = document.createSVGElement("use").withHref("#GearIcon");
+        sign.setAttributeNS(null, 'transform', 'translate(-10, -10) scale(0.040)');
+        menuButton.addChildElement(sign);
+        */
+        
+        cell = cell.translatedBy(pt(bh - spacing, 0));
+        var collapseButton = WindowControlMorph(cell, spacing, Color.primary.yellow, windowMorph, 
+            function() { this.toggleCollapse(); }, "Collapse");
+        this.addMorph(collapseButton);
+
+        // var font = morphic.FontInfo.forFamily(TextMorph.prototype.fontFamily, TextMorph.prototype.fontSize);
+
+        var label;
+        if (headline instanceof TextMorph) {
+            label = headline;
+        } else { // String
+            var width = headline.length * 8; // wild guess headlineString.length * 2 *  font.getCharWidth(' ') + 2;
+            label = TextMorph.makeLabel(Rectangle(0, 0, width, bh), headline);
+        }
+
+        label.align(label.bounds().topCenter(), this.shape.bounds().topCenter());
+        this.addMorph(label);
+        return this;
+    },
+
+    handlesMouseDown: function(evt) {return false },  // hack for now
+
+    acceptsDropping: function(morph) {
+        return morph instanceof WindowControlMorph; // not used yet... how about text...
+    },
+
+    okToBeGrabbedBy: function(evt) {
+        return this.windowMorph.isCollapsed() ? this : this.windowMorph;
+    }
+
+});
+
+/**
+ * @class WindowControlMorph
+ * Transient?
+ */ 
+
+WindowControlMorph = HostClass.create('WindowControlMorph', Morph);
+
+Object.extend(WindowControlMorph.prototype, {
+    defaultBorderWidth: 0,
+
+    initialize: function(rect, inset, color, target, action, helpText) {
+        WindowControlMorph.superClass.initialize.call(this, rect.insetBy(inset), 'ellipse');
+        this.setFill(RadialGradient.makeCenteredGradient(color.lighter(2), color));
+        this.setBorderWidth(0);
+        this.target = target;
+        this.action = action;
+        this.color = color;
+        var handler = { handleEvent: function(evt) { evt.init(); this['on' + evt.capitalizedType()].call(this, evt); }.bind(this).withLogging('WindowControlMorph Handler') };
+        this.addEventListener("mouseover", handler, true);
+        this.addEventListener("mouseout", handler, true);
+        this.helpText = helpText; // string to be displayed when mouse is brought over the icon
+        return this;
+    },
+
+    handlesMouseDown: function() { return true; },
+
+    onMouseDown: function(evt) {
+        this.hideHelp();
+        return this.action.call(this.target, evt);
+    },
+
+    onMouseOver: function(evt) {
+        this.setFill(RadialGradient.makeCenteredGradient(Color.white, this.color));
+        if (this.helpText) {
+            this.showHelp(evt);
+        }
+    },
+    
+    onMouseOut: function(evt) {
+        this.setFill(RadialGradient.makeCenteredGradient(this.color.lighter(2), this.color));
+        this.hideHelp();
+    },
+    
+    onMouseMove: function(evt) {
+        // really want onMouseLeave
+        //console.log('got event %s', evt);
+    },
+    
+    checkForControlPointNear: function() { return false; },
+    
+    okToBeGrabbedBy: function() { return this.isDesignMode() ? this : null; },
+    
+    showHelp: function(evt) {
+        // FIXME: The size of the balloon should be calculated based on string size
+        this.help = TextMorph(Rectangle(evt.x, evt.y, 80, 20), this.helpText);
+        // trying to relay mouse events to the WindowControlMorph
+        this.help.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
+        // some eye candy for the help
+        this.help.shape.roundEdgesBy(15);
+        this.help.setFill(Color.primary.yellow.lighter(3));
+        this.help.shape.setFillOpacity(0.8);
+        this.world().addMorph(this.help);
+    },
+    
+    hideHelp: function() {
+        if (this.help) this.help.remove();
+    },
+    
+    setHelpText: function ( newText ) {
+        this.helpText = newText;
+    }
+    
+});
+
+/**
+ * @class PanelMorph
+ */
+PanelMorph = HostClass.create('PanelMorph', Morph);
+
+Object.extend(PanelMorph.prototype, {
+
+    initialize: function(extent/*:Point*/) {
+        PanelMorph.superClass.initialize.call(this, pt(0, 0).extent(extent), 'rect');
+        this.lastNavigable = null;
+    },
+
+    takesKeyboardFocus: function() {
+        return true;
+    },
+
+    onMouseDown: function(evt) {
+        evt.hand.setMouseFocus(this);
+        this.requestKeyboardFocus(evt.hand);
+        return true;
+    },    
+    
+    onKeyPress: function(evt) {
+        switch (evt.sanitizedKeyCode()) {
+        case Event.KEY_TAB: { 
+            this.focusOnNext(evt);
+            evt.stop();
+            return true;
+        }
+        }
+    },
+    
+    handlesMouseDown: function(evt) { 
+        return false;
+    },
+
+    focusOnNext: function(evt) {
+        var current = evt.hand.keyboardFocus;
+        if (current && current.nextNavigableSibling) {
+            current.relinquishKeyboardFocus(evt.hand);
+            current.nextNavigableSibling.requestKeyboardFocus(evt.hand);
+            console.log('navigate to next submorph from %s (%s) to %s', current, current.nextNavigableSibling);
+        } else {
+            console.log('current focus %s, nowhere to go navigate next', current);
+        }
+    },
+
+    addMorphFrontOrBack: function(m, front) {
+        if (m.takesKeyboardFocus()) {
+            if (this.lastNavigable) this.lastNavigable.nextNavigableSibling = m;
+            this.lastNavigable = m;
+        }
+
+        return PanelMorph.superClass.addMorphFrontOrBack.call(this, m, front);
+    },
+
+    updateView: function(aspect, controller) {
+        var plug = this.modelPlug;
+        if (!plug) return;
+        
+        if (aspect == plug.getVisible) {
+            var state = this.getModelValue('getVisible', "");
+            if (state == false) this.remove();
+        }
+    }
+
+});
+
+/**
+ * @class WindowMorph
+ */
+  
+WindowMorph = HostClass.create('WindowMorph', Morph);
+Object.extend(WindowMorph, {
+    EXPANDED: "expanded",
+    COLLAPSED: "collapsed",
+    SHUTDOWN: "shutdown"
+});
+
+Object.extend(WindowMorph.prototype, {
+
+    state: WindowMorph.EXPANDED,
+    titleBar: null,
+    targetMorph: null,
+    
+    initialize: function(targetMorph, headline, location) {
+        var bounds = targetMorph.bounds().clone();
+        var titleBar = TitleBarMorph(headline, bounds.width, this, false);
+        var titleHeight = titleBar.bounds().height;
+
+        bounds.height += titleHeight;
+        WindowMorph.superClass.initialize.call(this, location ? rect(location, bounds.extent()) : bounds, 'rect');
+        this.targetMorph = targetMorph;
+        this.titleBar = titleBar;
+        this.addMorph(this.titleBar);
+        bounds.y -= titleHeight;
+        targetMorph.translateBy(bounds.topLeft().negated());
+        this.addMorph(targetMorph);
+        return this;
+    },
+
+    toggleCollapse: function() {
+        return this.isCollapsed() ? this.expand() : this.collapse();
+    },
+    
+    collapse: function() { 
+        if (this.isCollapsed()) {
+            console.log('collapsing collapsed window %s?', this);
+            return;
+        }
+        
+        this.expandedPosition = this.position();
+        var owner = this.owner();
+
+        this.remove();
+        owner.addMorph(this.titleBar);
+
+        if (this.collapsedPosition) { 
+            this.titleBar.setPosition(this.collapsedPosition);
+        } else { 
+            this.titleBar.setPosition(this.expandedPosition);
+        }
+
+        this.state = WindowMorph.COLLAPSED;
+        // this.titleBar.enableEvents();
+    },
+    
+    isCollapsed: function() {
+        return this.state === WindowMorph.COLLAPSED;
+    },
+    
+    isShutdown: function() {
+        return this.state === WindowMorph.SHUTDOWN;
+    },
+
+    expand: function() {
+        if (!this.isCollapsed()) {
+            console.log('expanding expanded window %s?', this);
+            return;
+        }
+        
+        this.collapsedPosition = this.titleBar.position();
+        var owner = this.titleBar.owner();
+        this.titleBar.remove();
+        this.setPosition(this.expandedPosition);        
+        owner.addMorph(this);
+        this.addMorph(this.titleBar);
+        this.titleBar.setPosition(pt(0,0))
+
+        //this.titleBar.ignoreEvents();
+        this.state = "expanded";
+        //this.action = collapse;
+    },
+
+    initiateShutdown: function() {
+        this.state = WindowMorph.SHUTDOWN;
+        this.targetMorph.shutdown(); // shutdown may be prevented ...
+        this.remove();
+        return true;
+    },
+
+    updateView: function(aspect, controller) {
+        var plug = this.modelPlug;
+        
+        if (!plug) return;
+        
+        if (aspect == plug.getState) {
+            //this.loadURL(this.getModelValue('getURL', ""));
+            var state = this.getModelValue('getState', "");
+            switch (state) {
+            case WindowMorph.EXPANDED:
+                if (this.isCollapsed()) this.expand();
+                break;
+            case WindowMorph.COLLAPSED:
+                if (!this.isCollapsed()) this.collapse();
+                break;
+            case WindowMorph.SHUTDOWN:
+                if (!this.isShutdown()) this.initiateShutdown();
+                break;
+            }
+        }
+    }
+
+});
+   
+/**
+ * @class HandleMorph
+ * HandleMorphs are small rectangular objects that are displayed
+ * whenever there is a chance to manipulate the shape of the current
+ * object, e.g., to resize, re-scale, or rotate it.  
+ */ 
+
+HandleMorph = HostClass.create('HandleMorph', Morph);
+
+Object.extend(HandleMorph, {
+    // Counter for displaying balloon help only a certain number of times
+    helpCounter: 0,
+});
+
+Object.extend(HandleMorph.prototype, {
+    defaultFill: null,
+    defaultBorderColor: Color.blue,
+    defaultBorderWidth: 1,
+
+    initialize: function(location, shapeType, hand, targetMorph, partName) {
+        HandleMorph.superClass.initialize.call(this, location.asRectangle().expandBy(5), shapeType);
+        this.targetMorph = targetMorph;
+        this.partName = partName; // may be a name like "topRight" or a vertex index
+        this.initialScale = null;
+        this.initialRotation = null; 
+        this.helpText = "Drag to resize this morph\n" + 
+                        "Cmd+shift+drag to scale the morph \n" + 
+                        "Shift+drag to change border width \n" + 
+                        "Cmd+drag to rotate the morph \n"; 
+        return this;
+    },
+
+    showHelp: function(evt) {
+        // Show the balloon help only if it hasn't been shown too many times already
+        if (HandleMorph.helpCounter < 20) {
+            HandleMorph.helpCounter++;
+            this.help = TextMorph(Rectangle(evt.x, evt.y, 200, 20), this.helpText);
+            // trying to relay mouse events to the WindowControlMorph
+            this.help.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
+            // some eye candy for the help
+            this.help.shape.roundEdgesBy(15);
+            this.help.setFill(Color.primary.yellow.lighter(3));
+            this.help.shape.setFillOpacity(.8);
+            this.world().addMorph(this.help);
+        }
+    },
+    
+    hideHelp: function() {
+        if (this.help) this.help.remove();
+    },
+    
+    setHelpText: function ( newText ) {
+        this.helpText = newText;
+    },
+
+    onMouseDown: function(evt) {
+        if (evt.altKey) {
+            // this.showMorphMenu(evt);
+            // if (evt.hand.shiftKeyPressed) this.showColorPicker(evt.mousePoint,this.targetMorph,evt.hand,"setBorderColor");
+            // else this.showColorPicker(evt.mousePoint,this.targetMorph,evt.hand,"setFill"); 
+            if (evt.shiftKey) {
+                this.initialScale = this.targetMorph.getScale();
+                // console.log('initial scale ' + this.initialScale + ' initial rotation ' + this.targetMorph.getRotation());
+                this.initialRotation = this.targetMorph.getRotation();
+            }
+        }
+        this.hideHelp();
+    },
+    
+    onMouseUp: function(evt) {
+        if (!evt.shiftKey && !evt.altKey && !evt.cmdKey) {
+            // last call for, eg, vertex deletion
+            this.targetMorph.reshape(this.partName, this.bounds().center(), this, true); 
+        }
+    
+        evt.hand.setMouseFocus(null);
+        // console.log('removing ' + this.inspect());
+        this.remove(); 
+    },
+    
+    onMouseMove: function(evt) {
+        // When dragged, I also drag the designated control point of my target
+        if (!evt.mouseButtonPressed) { 
+            // Mouse up: Remove handle if mouse drifts away
+            if (!this.containsWorldPoint(evt.mousePoint)) {
+                evt.hand.setMouseFocus(null);
+                this.hideHelp();
+                this.remove(); 
+            }
+            return; 
+        }
+    
+        // Mouse down: edit targetMorph
+        this.align(this.bounds().center(), this.owner().localize(evt.mousePoint));
+
+        var p0 = evt.hand.lastMouseDownPoint;
+        var p1 = evt.mousePoint;
+
+        if (evt.altKey) {
+            // ctrl-drag for rotation (unshifted) and scale (shifted)
+            var ctr = this.targetMorph.owner().worldPoint(this.targetMorph.origin); //origin for rotation and scaling
+            var v1 = p1.subPt(ctr); //vector from origin
+            var v0 = p0.subPt(ctr); //vector from origin at mousedown
+            
+            if (evt.shiftKey) {
+                var ratio = v1.r() / v0.r();
+                ratio = Math.max(0.1,Math.min(10,ratio));
+                // console.log('set scale to ' + this.initialScale + ' times ' +  ratio);
+                this.targetMorph.setScale(this.initialScale*ratio); 
+            } else { 
+                this.targetMorph.setRotation(this.initialRotation + v1.theta() - v0.theta()); 
+            } 
+        } else {    // normal drag for reshape (unshifted) and borderWidth (shifted)
+            var d = p1.dist(p0); //dist from mousedown
+        
+            if (evt.shiftKey) {
+                this.targetMorph.setBorderWidth(Math.max(0, Math.floor(d/3)/2), true);
+            } else { 
+                this.targetMorph.reshape(this.partName, this.targetMorph.localize(evt.mousePoint), this, false);
+            } 
+        }
+    },
+    
+    showColorPicker: function(loc, target, hand, functionName) { 
+        // Need proper logic here to place color picker visible, yet clear of the damage rect
+        // Want to align opposite corner of picker with designated corner of handle
+        var picker = ColorPickerMorph(loc.addXY(5,5).extent(pt(50,30)),target,functionName,true);
+        var world = this.world(); 
+        this.remove();
+        hand.setMouseFocus(picker);
+        this.world().addMorph(picker);
+    },
+
+    inspect: function() {
+        return HandleMorph.superClass.inspect.call(this) + " on " + Object.inspect(this.targetMorph);
+    },
+    
+    scaleFor: function(scaleFactor) {
+        this.applyFunctionToShape(function(s) {
+            this.setBounds(this.bounds().center().asRectangle().expandBy(5/s));
+            this.setStrokeWidth(1/s); 
+        }, scaleFactor);
+    }
+    
+});
+
+/**
+ * @class PasteUpMorph
+ * PasteUp morphs are used for layouts,
+ * most notably for the world and, eg, palettes
+ */ 
+
+PasteUpMorph = HostClass.create('PasteUpMorph', Morph);
+
+Object.extend(PasteUpMorph.prototype, {
+
+    initialize: function(bounds, shapeType) {
+        return PasteUpMorph.superClass.initialize.call(this, bounds, shapeType);
+    },
+    
+    mouseEvent: function(evt, hasFocus) {
+        if (evt.type == "mousedown" && this.onMouseDown(evt)) return; 
+        PasteUpMorph.superClass.mouseEvent.call(this, evt, hasFocus); 
+    },
+
+    onMouseDown: function(evt) {  //default behavior is to grab a submorph
+        var m = this.morphToGrabOrReceive(evt);
+        if (m == null) { this.makeSelection(evt); return true; }
+        if (m.handlesMouseDown(evt)) return false;
+        evt.hand.grabMorph(m, evt);
+        return true; 
+    },
+
+    makeSelection: function(evt) {  //default behavior is to grab a submorph
+        if (this.world().currentSelection != null) this.world().currentSelection.removeOnlyIt();
+        if ( !evt.hand.mouseButtonPressed ) return;
+        var m = SelectionMorph(evt.mousePoint.extent(pt(5,5)));
+        this.world().addMorph(m);
+        this.world().currentSelection = m;
+        var handle = HandleMorph(evt.mousePoint, "rect", evt.hand, m, "bottomRight");
+        m.addMorph(handle);
+        handle.setBounds(handle.bounds().center().asRectangle().expandBy(1));
+        if (evt.hand.mouseFocus instanceof HandleMorph) evt.hand.mouseFocus.remove();
+        evt.hand.setMouseFocus(handle);
+    }
+    
+});
+
+/**
+ * @class WorldMorph
+ */ 
+
+WorldMorph = HostClass.create('WorldMorph', PasteUpMorph);
+
+Object.extend(WorldMorph, {
+    
+    worldCount: 0,
+
+    currentWorld: null,
+    
+    current: function() {
+        return WorldMorph.currentWorld;
+    },
+
+    setCurrent: function(newWorld) {
+        WorldMorph.currentWorld = newWorld;
+    },
+
+    // Set up a world with morphs to copy
+    // This should be moved elsewhere!
+    createPrototypeWorld: function() {
+        var zzHand, zzRect, zzEll, zzLine, zzPoly, zzText, zzScript;  //comment to make these global for debugging access
+        var w = WorldMorph('canvas');
+        // w.styleDictionary = WorldMorph.defaultStyles; // * wrong
+        // w.applyStyle(); // Because it wasnt there until now
+        // w.setFill(StipplePattern.create(Color.neutral.lightGray, 6, new Color(0.83, 0.83, 0.83), 1));
+        // w.setFill(LinearGradient({x1:0, y1:0, x2:400, y2:300}).addStop(0, Color.white).addStop("50%", new Color(102/255, 102/255, 136/255)).addStop("400", Color.black));
+
+        // This style is way better for debugging on smaller screens
+        // It allows the user to see the console log through the world
+
+        w.shape.setFillOpacity(0.4);
+
+        var colors = Color.wheel(4);
+        var loc = pt(30,450); 
+        var widgetExtent = pt(70, 30);
+        var dy = pt(0,50); 
+        var dx = pt(120,0);
+        
+        widget = Morph(loc.extent(widgetExtent), "rect");            // rectangle
+
+        widget.setFill(colors[0]);
+        w.addMorph(widget);
+        zzRect = widget;
+
+        //widget = Morph.fromMarkup('<g type="Morph" transform="translate(210,395)"><ellipse cx="0" cy="0" rx="35" ry="15" type="ellicapse" fill="rgb(98,179,17)" stroke-width="1" stroke="rgb(0,0,0)"/><g type="Submorphs"/></g>');
+
+        widget = Morph(loc.addPt(dx).extent(widgetExtent), "ellipse");    // ellipse
+        widget.setFill(colors[1]);
+
+        w.addMorph(widget);
+        zzEll = widget;
+        loc = loc.addPt(dy);
+        widget = Morph.makeLine([loc.addXY(0,15),loc.addXY(70,15)], 2, Color.black);
+        w.addMorph(widget);
+        zzLine = widget;
+        var l2 = loc.addPt(dx);
+        
+        widget = Morph(l2.asRectangle(),"rect"); // polygon
+        widget.setShape(PolygonShape(null, [pt(0,0),pt(70,0),pt(40,30),pt(0,0)],
+                        colors[2],1,Color.black));
+        w.addMorph(widget);
+        zzPoly = widget;
+        loc = loc.addPt(dy);    
+        var showBigText = true;
+        
+        if (showBigText) {
+            widget = TextMorph(loc.extent(pt(100,50)),"Big Text"); // big text
+            widget.setFontSize(20);
+            widget.setTextColor(Color.blue);
+            w.addMorph(widget);
+            zzText = widget;
+            widget = TextMorph(loc.addPt(dx).extent(pt(140,50)),"Unbordered"); // unbordered text
+            widget.setFontSize(20);  
+            widget.setBorderWidth(0);  
+            widget.setFill(null);
+            w.addMorph(widget); 
+        }
+        
+        var showPenScript = true;
+    
+        if (showPenScript) {  // Make a script pane to try stuff out
+            widget = TextMorph(pt(50,30).extent(pt(250,50)), Pen.script);
+            widget.align(widget.bounds().bottomRight(), w.bounds().topRight().addPt(pt(-50,100))); 
+            w.addMorph(widget);
+            zzScript = widget; 
+        }
+        
+        return w; 
+    },
+    
+    defaultStyles: { // --Style architecture is under construction!--
+        primitive: { // This is to be the simples widgets -- flat fills and no rounding or translucency
+            styleName: 'primitive',
+            widgetPanel: { borderColor: Color.red, borderWidth: 2, rounding: 0, fill: Color.blue.lighter(), rounding: 0, opacity: 1},
+            vslider:     { borderColor: Color.black, borderWidth: 1, fill: Color.blue.lighter()},
+            hslider:     { borderColor: Color.black, borderWidth: 1, fill: Color.blue.lighter()},
+            elevator:    { borderColor: Color.black, borderWidth: 1, fill: Color.green.lighter(2)},
+            titleBar:    { borderColor: Color.green.lighter(), borderWidth: 1},
+            button:      { borderColor: Color.green.lighter(), borderWidth: 1},
+            clock:       { size: 100, borderColor: Color.green.lighter(), borderWidth: 1, fill: Color.yellow, roman: true},
+            link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue}
+        },
+
+        lively: { // This is to be the style we like to show for our personality
+            styleName: 'lively',
+            widgetPanel: { borderColor: Color.blue, borderWidth: 4, rounding: 16, fill: Color.blue.lighter(), opacity: 0.4},
+            vslider:     { borderColor: Color.black, borderWidth: 1, 
+                           fill: LinearGradient.makeGradient(Color.primary.blue.lighter().lighter(), Color.primary.blue, LinearGradient.EastWest)},
+            hslider:     { borderColor: Color.black, borderWidth: 1,
+                           fill: LinearGradient.makeGradient(Color.primary.blue.lighter().lighter(), Color.primary.blue, LinearGradient.NorthSouth)},
+            elevator:    { borderColor: Color.green.lighter(), borderWidth: 1},
+            titleBar:    { borderColor: Color.green.lighter(), borderWidth: 1},
+            button:      { borderColor: Color.green.lighter(), borderWidth: 1},
+            clock:       { size: 100, borderColor: Color.green.lighter(), borderWidth: 1, fill: Color.yellow, roman: true},
+            link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue}
+        },
+
+        turquoise: { // Like turquoise, black and silver jewelry, [or other artistic style]
+            styleName: 'turquoise',
+            widgetPanel: { borderColor: Color.red, borderWidth: 2, fill: Color.blue.lighter()},
+            slider:      { borderColor: Color.green.lighter(), borderWidth: 1},
+            elevator:    { borderColor: Color.green.lighter(), borderWidth: 1},
+            titleBar:    { borderColor: Color.green.lighter(), borderWidth: 1},
+            button:      { borderColor: Color.green.lighter(), borderWidth: 1},
+            clock:       { size: 100, borderColor: Color.green.lighter(), borderWidth: 1, fill: Color.yellow, roman: true},
+            link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue}
+        }
+    }
+
+});
+
+Object.extend(window.parent, {
+    onbeforeunload: function(evt) { console.log('window got unload event %s', evt); },
+    onblur: function(evt) { console.log('window got blur event %s', evt); },
+    onfocus: function(evt) { console.log('window got focus event %s', evt); },
+});
+
+Object.extend(WorldMorph.prototype, {
+
+    defaultFill: Color.primary.blue,
+
+    initialize: function(svgId, backgroundImageId) {
+        var bounds = document.getElementById(svgId).bounds();
+        // sometimes bounds has zero dimensions (when reloading thes same page, timing issues?
+        // in Firefox bounds may be 1x1 size?? maybe everything should be run from onload or sth?
+
+        if (bounds.width < 2) {
+            bounds.width = 800;
+        }
+
+        if (bounds.height < 2) {
+            bounds.height = 600;
+        }
+
+        if (backgroundImageId) {
+            var background = document.createSVGElement("use").withHref(backgroundImageId);
+            this.addChildElement(background);
+        }
+            
+        WorldMorph.superClass.initialize.call(this, bounds, "rect");
+
+        this.hands = [];
+        this.worldStyles = WorldMorph.defaultStyles;
+        this.setStyleDictionary(this.worldStyles['lively']);
+
+        // merged from WorldState
+        this.stepList = [];
+        this.lastStepTime = (new Date()).getTime();
+        this.mainLoop = window.setInterval(function() {this.doOneCycle()}.bind(this).withLogging('Main Loop'), 30);
+
+        this.worldId = ++WorldMorph.worldCount;
+        return this;
+    },
+
+    remove: function() {
+        if (!this.parentNode) return null;  // already removed
+        this.stopStepping();
+        this.parentNode.removeChild(this);
+        return this;
+
+        // console.log('removed ' + this.inspect());
+        // this.owner = null; 
+    },
+
+    displayWorldOn: function(canvas) {
+        this.remove();
+
+        canvas.appendChild(this);
+        this.addHand(HandMorph(true));
+
+        if (this.worldId != 1)
+            window.parent.location.hash = '#world_' + this.worldId;
+        else
+            window.parent.location.hash = "";
+    },
+    
+    addHand: function(hand) {
+        this.hands.push(hand);
+        hand.ownerWorld = this;
+        hand.registerForEvents(this);
+        hand.registerForEvents(hand);
+        hand.layoutChanged();
+    
+        Event.keyboardEvents.forEach(function(each) {
+            document.documentElement.addEventListener(each, hand.handler, false);
+        });
+        
+        this.parentNode.appendChild(hand);
+        console.log('added hand %s', hand);
+    },
+    
+    removeHand: function(hand) {
+        this.parentNode.removeChild(hand);
+        hand.unregisterForEvents(this);
+        hand.unregisterForEvents(hand);
+
+        Event.keyboardEvents.forEach(function(each) {
+            document.documentElement.removeEventListener(each, hand.handler, false);
+        });
+
+        this.hands.splice(this.hands.indexOf(hand), 1);
+    
+        console.log('removed hand %s, now %s', hand, this.hands.length);
+    },
+
+    morphMenu: function(evt) { 
+        var menu = WorldMorph.superClass.morphMenu.call(this,evt);
+        menu.addLine();
+        menu.addItem(["restart system", this, 'restart']);
+        menu.addItem(["choose style", this, 'chooseStyleDictionary']);
+        return menu;
+    },
+   
+    chooseStyleDictionary: function(ignored,evt) { 
+        var styles = this.worldStyles;
+        var target = this; // trouble with function scope
+        var skinNames = Object.properties(styles);
+        var items = skinNames.map(
+        function(each) { return [each, target, "setStyleDictionary", styles[each]]; });
+        MenuMorph(items).openIn(this.world(), evt.mousePoint);
+    },
+  
+    setStyleDictionary: function(styleDict) { 
+        this.styleDictionary = styleDict;
+        this.withAllSubmorphsDo( function() { this.applyLinkedStyles(); });
+    },
+  
+    restart: function() {
+        window.location.reload();
+    },
+
+    defaultOrigin: function(bounds) { 
+        return bounds.topLeft(); 
+    },
+    
+    world: function() { 
+        return this; 
+    },
+    
+    firstHand: function() {
+        return this.hands[0];
+    },
+    
+    moveBy: function(delta) { // don't try to move the world
+    },
+    
+//    morphMenuItems: function() { // May be overridden
+//        return ["inspect", "fill color", "selection color"];
+//    },
+        
+
+    startStepping: function(morph) {
+        var ix = this.stepList.indexOf(morph);
+        if (ix < 0) this.stepList.push(morph); 
+    },
+    
+    stopStepping: function(morph) {
+        var ix = this.stepList.indexOf(morph);
+        if (ix >= 0) this.stepList.splice(ix, 1); 
+    },
+    
+    doOneCycle: function (world) {
+        // Process stepping behavior
+        var msTime = (new Date()).getTime();
+        
+        for (var i = 0; i < this.stepList.length; i++) {
+            this.stepList[i].tick(msTime);
+        }
+
+        this.lastStepTime = msTime;
+        
+        // FIXME: be clever about rescheduling the next cycle?
+    },
+
+    onEnter: function() {},
+    onExit: function() {},
+
+    /**
+     * override b/c of parent treatement
+     */
+    relativize: function(pt) { 
+        return pt.matrixTransform(this.parentNode.getTransformToElement(this)); 
+    },
+
+});
+
+/**
+ * @class DomEventHandler
+ */ 
+
+// HandMorph could be its own event listener but FF doesn't like it when
+// an svg element is registered as a handler
+DomEventHandler = Class.create();
+
+Object.extend(DomEventHandler.prototype, {
+    
+    initialize: function (hand) {
+        this.hand = hand;
+        return this;
+    },
+    
+    handleEvent: function(evt) {
+        evt.hand = this.hand;
+        evt.init();
+        // console.log('original target ' + evt.target);
+
+        switch(evt.type) {
+        case "mousemove":
+        case "mousedown":
+        case "mouseup":
+            this.hand.handleMouseEvent(evt);
+            // evt.preventDefault();
+            break;
+        case "keydown":
+        case "keypress": 
+        case "keyup":
+            this.hand.handleKeyboardEvent(evt);
+            break;
+        default:
+            console.log("unknown event type " + evt.type);
+        }
+        evt.stopPropagation();
+    }.withLogging('Event Handler'),
+    
+});
+
+/**
+ * @class HandMorph
+ * Defines the little triangle that represents the user's cursor.
+ * Since there may be multiple users manipulating a Morphic world
+ * simultaneously, we do not want to use the default system cursor.   
+ */ 
+
+HandMorph = HostClass.create('HandMorph', Morph);
+
+Object.extend(HandMorph, {
+    shadowOffset: pt(5,5),
+    handleOnCapture: true
+});
+
+Object.extend(HandMorph.prototype, {
+
+    initialize: function(local) {
+        HandMorph.superClass.initialize.call(this, pt(5,5).extent(pt(10,10)), "rect");
+    
+        this.setShape(PolygonShape(null, [pt(0,0),pt(9,5), pt(5,9), pt(0,0)], 
+                     (local ? Color.blue : Color.red), 1, Color.black));
+        this.shape.disablePointerEvents();
+    
+        this.replaceChild(this.submorphs, this.shape);
+        this.appendChild(this.shape); // make sure submorphs are render first, then the hand shape 
+
+        this.isLocal = local;
+        this.setFill(local? Color.primary.blue : Color.primary.green); 
+
+        this.keyboardFocus = null;
+        this.mouseFocus = null;
+        this.mode = "normal";
+        this.lastMouseEvent = Event.makeSyntheticMouseEvent().init();
+        this.lastMouseDownPoint = pt(0,0);
+        this.hasMovedSignificantly = false;
+        this.grabInfo = null;
+        
+        this.mouseButtonPressed = false;
+
+        this.keyboardFocus = null; 
+        this.eventListeners = null;
+        this.targetOffset = pt(0,0);
+
+        this.temporaryCursor = null;
+        this.temporaryCursorOffset = pt(0,0);
+
+        this.userInitials = null; 
+        this.priorPoint = null;
+
+        this.handler = new DomEventHandler(this);
+        this.ownerWorld = null;
+
+        return this;
+    },
+    
+    registerForEvents: function(morph) {
+        var handler = this.handler;
+        Event.basicInputEvents.forEach(function(name) { 
+             morph.addEventListener(name, handler, HandMorph.handleOnCapture)}
+        );
+    },
+    
+    unregisterForEvents: function(morph) {
+        var handler = this.handler; 
+        Event.basicInputEvents.forEach(function(name) { 
+            morph.removeEventListener(name, handler, HandMorph.handleOnCapture)}
+        );
+    },
+    
+    setMouseFocus: function(morphOrNull) {
+        this.mouseFocus = morphOrNull; 
+    },
+    
+    setKeyboardFocus: function(morphOrNull) {
+        if (this.keyboardFocus === morphOrNull) return;
+
+        if (this.keyboardFocus != null) {
+            console.log('blur %s', this.keyboardFocus);
+            this.keyboardFocus.onBlur(this);
+            this.keyboardFocus.setHasKeyboardFocus(false);
+        }
+        
+        this.keyboardFocus = morphOrNull; 
+        
+        if (this.keyboardFocus) {
+            console.log('focus %s', this.keyboardFocus);
+            this.keyboardFocus.onFocus(this);
+        }
+    },
+    
+    setHandMode: function(newMode) {
+        this.mode = newMode; 
+    },
+    
+    owner: function() {
+        return this.ownerWorld;
+    },
+
+    world: function() {
+        return this.ownerWorld;
+    },
+
+/*
+    startStepping: function(stepTime) {
+        console.log('HandMorph doesnt currently step');
+    },
+    
+    stopStepping: function() {
+        console.log('HandMorph doesnt currently step');
+    },
+*/
+
+    handleMouseEvent: function(evt) { 
+        evt.hand = this; // extra copy needed for entry from HandRemoteControl
+    
+        if (evt.type == "mousemove") { // it is just a move
+            evt.setButtonPressedAndPriorPoint(this.mouseButtonPressed, this.lastMouseEvent.mousePoint);
+            this.setPosition(evt.mousePoint);
+            this.recordChange('origin');
+             
+            if (evt.mousePoint.dist(this.lastMouseDownPoint) > 10) 
+                this.hasMovedSignificantly = true;
+                
+            if (!this.hasSubmorphs()) {
+                (this.mouseFocus || this.owner()).mouseEvent(evt, this.mouseFocus != null);
+            }
+        
+            this.lastMouseEvent = evt;
+            return;
+        }
+    
+        // console.log('handling %s',  evt);
+        // it is MouseDown or MouseUp
+        if (!evt.mousePoint.eqPt(this.position())) { // Only happens in some OSes
+            // and when window wake-up click hits a morph
+            console.log("mouseButton event includes a move!");
+            this.moveBy(evt.mousePoint.subPt(this.position())); 
+        }
+        
+        this.mouseButtonPressed = (evt.type == "mousedown"); 
+        this.setBorderWidth(this.mouseButtonPressed ? 3 : 1);
+        evt.setButtonPressedAndPriorPoint(this.mouseButtonPressed, this.lastMouseEvent.mousePoint);
+    
+        if (this.mouseFocus != null) {
+            if (this.mouseButtonPressed) {
+                this.mouseFocus.mouseEvent(evt, true);
+                this.lastMouseDownPoint = evt.mousePoint; 
+            } else 
+                this.mouseFocus.mouseEvent(evt, true); 
+        } else {
+            if (this.hasSubmorphs() && (evt.type == "mousedown" || this.hasMovedSignificantly)) {
+                // If laden, then drop on mouse up or down
+                var m = this.topSubmorph();
+                var receiver = this.owner().morphToGrabOrReceive(evt, m);
+                if (receiver == null) {
+                    this.ungrab(m);
+                } else { 
+                    console.log('dropping %s on %s', m, receiver);
+                    if (this.shadowMorph) {
+                        this.shadowMorph.remove();
+                        this.shadowMorph = null;
+                    }
+            
+                    while(this.hasSubmorphs())  // was just receiver.addMorph(m);
+                        receiver.addMorph(this.topSubmorph());
+            
+                   //DI: May need to be updated for multiple drop above...
+                   //println('changing ' + m);
+                   //m.changed(); // KP: maybe needed for ClipMorphs
+                   // m.updateOwner(); 
+                   //m.updateBackendFields('origin'); 
+                }
+            } else {
+                // console.log('hand dispatching event ' + event.type + ' to owner '+ this.owner().inspect());
+                // KP: this will tell the world to send the event to the right morph
+                this.owner().mouseEvent(evt, false);
+            }
+            
+            if (evt.type == "mousedown") {
+                this.lastMouseDownPoint = evt.mousePoint;
+                this.hasMovedSignificantly = false; 
+            }
+        }
+        this.lastMouseEvent = evt; 
+    },
+    
+    handleKeyboardEvent: function(evt) { 
+        evt.hand = this; // KP: just to be sure
+        // manual bubbling up b/c the event won't bubble by itself
+        for (var responder = this.keyboardFocus; responder != null; responder = responder.owner()) {
+            if (responder.takesKeyboardFocus()) {
+                var handler = responder["on" + evt.capitalizedType()];
+                if (handler) {
+                    if (handler.call(responder, evt)) break; // event consumed?
+                }
+            }
+        } 
+    },
+    
+    grabMorph: function(grabbedMorph, evt) { 
+        if (evt.altKey) {
+            grabbedMorph.showMorphMenu(evt);
+            return;
+        }
+
+        grabbedMorph = grabbedMorph.okToBeGrabbedBy(evt);
+        if (!grabbedMorph) return;
+
+        if (this.keyboardFocus && grabbedMorph !== this.keyboardFocus) {
+            this.keyboardFocus.relinquishKeyboardFocus(this);
+        }
+
+        //console.log('grabbing %s', grabbedMorph);
+        this.grabInfo = [grabbedMorph.owner(), grabbedMorph.position()]; // For cancelling grab or drop [also indexInOwner?]
+
+        //console.log('grabbed %s', grabbedMorph);
+        this.addMorph(grabbedMorph);
+        
+        // grabbedMorph.updateOwner(); 
+        this.changed(); //for drop shadow
+    },
+    
+    ungrab: function(morph) { 
+        // Needs to put back in former owner, position, submorphIndex
+    },
+    
+    bounds: function() {
+        // account for the extra extent of the drop shadow
+        // FIXME drop shadow ...
+        if (this.shadowMorph)
+            return HandMorph.superClass.bounds.call(this).expandBy(HandMorph.shadowOffset.x);
+        else return HandMorph.superClass.bounds.call(this); 
+    },
+    
+    inspect: function() { 
+        var superString = HandMorph.superClass.inspect.call(this);
+        var extraString = ", local=" + this.isLocal + ",id="+this.id;
+        if (!this.hasSubmorphs()) return superString + ", an empty hand" + extraString;
+        return superString + ", a hand carrying " + this.topSubmorph().inspect() + extraString; 
+    }
+    
+});
+
+/**
+ * @class LinkMorph
+ * LinkMorph implements a two-way hyperlink between two morphic worlds
+ */ 
+
+LinkMorph = HostClass.create('LinkMorph', Morph);
+
+Object.extend(LinkMorph.prototype, {
+
+    fishEye: true,  
+    fisheyeGrowth: 2, // make it grow more
+    fisheyeProximity: 0.5, // make it grow only when the hand gets closer
+    defaultFill: Color.black,
+    defaultBorderColor: Color.black,
+
+    initialize: function(otherWorld /*, rest*/) {
+        // In a scripter, type: world.addMorph(LinkMorph(null))
+        var bounds = arguments[1];
+    
+        if (!bounds) {
+            bounds = WorldMorph.current().bounds().bottomLeft().addXY(330,-250).asRectangle().expandBy(25);
+        } else if (bounds instanceof Point) {
+            bounds = bounds.asRectangle().expandBy(25);
+        }
+    
+        LinkMorph.superClass.initialize.call(this, bounds, "ellipse");
+
+        //this.setFill(RadialGradient.makeCenteredGradient(Color.primary.blue.lighter(), Color.black));
+
+        // FIXME this should be simpler
+        var sign = document.createSVGElement("use").withHref("#WebSpiderIcon");
+        sign.applyTransform(Transform.createSimilitude(pt(-26, -26), 0, 0.1));
+        this.addChildElement(sign);
+        //this.toggleFisheye();
+
+        if (!otherWorld) {
+            otherWorld = WorldMorph.createPrototypeWorld(morphic.canvas, 2, null);  //*** need a way to generate proper world numbers
+            var pathBack = LinkMorph(WorldMorph.current(), bounds);
+            pathBack.setFill(RadialGradient.makeCenteredGradient(Color.primary.yellow, Color.black));
+            otherWorld.addMorph(pathBack);
+        } 
+    
+        // var defs = document.createSVGElement('defs');
+        // morph.addChildElement(defs);
+        // defs.appendChild(otherWorld);
+        this.myWorld = otherWorld;
+    
+        // morph.assign('myWorld', otherWorld);
+
+        // Balloon help support
+        var handler = { handleEvent: function(evt) { evt.init(); this['on' + evt.capitalizedType()].call(this, evt); }.bind(this).withLogging('Mouseover Handler') };
+        this.addEventListener("mouseover", handler, true);
+        this.addEventListener("mouseout", handler, true);
+        this.helpText = "Shift-click to open or close a subworld"; 
+
+        return this;
+    },
+    
+    okToBeGrabbedBy: function(evt) {
+        console.log('ok to be grabbed %s', this);
+
+        this.hideHelp();
+        if (!evt.shiftKey) return this;
+
+        console.log('entering world %s', this.myWorld);
+
+        this.myWorld.changed();
+
+        WorldMorph.current().onExit();    
+
+        // remove old hands
+        WorldMorph.current().hands.clone().each(function(hand) { 
+            WorldMorph.current().removeHand(hand);
+        });
+        
+        var canvas = WorldMorph.current().canvas();
+        WorldMorph.current().remove();
+        
+        console.log('left world %s', WorldMorph.current());
+        // morphic.canvas.appendChild(this.myWorld);
+    
+        // display world first, then add hand, order is important!
+        WorldMorph.setCurrent(this.myWorld);
+        WorldMorph.current().displayWorldOn(canvas);    
+        WorldMorph.current().onEnter();    
+    
+        return null; 
+    },
+
+    checkForControlPointNear: function(evt) {
+        return null;
+    },
+
+    onMouseOver: function(evt) {
+        if (this.helpText) this.showHelp(evt);
+    },
+    
+    onMouseOut: function(evt) {
+        this.hideHelp();
+    },
+    
+    showHelp: function(evt) {
+        // Create only one help balloon at a time
+        if (this.help) return;
+        
+        this.help = TextMorph(Rectangle(evt.x, evt.y, 200, 20), this.helpText);
+        // trying to relay mouse events to the WindowControlMorph
+        this.help.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
+        
+        // some eye candy for the help
+        this.help.shape.roundEdgesBy(15);
+        this.help.setFill(Color.primary.yellow.lighter(3));
+        this.help.shape.setFillOpacity(.8);
+        this.world().addMorph(this.help);
+    },
+    
+    hideHelp: function() {
+        if (this.help) {
+            this.help.remove();
+            this.help = null;
+        }
+    },
+    
+    setHelpText: function ( newText ) {
+        this.helpText = newText;
+    }
+
+});
+
+/**
+ * @class ImageMorph
+ */
+
+ImageMorph = HostClass.create('ImageMorph', Morph);
+
+Object.extend(ImageMorph.prototype, {
+    
+    defaultFill: Color.blue.lighter(),
+    defaultBorderWidth: 0,
+   
+    initialize: function(viewPort, url) {
+        ImageMorph.superClass.initialize.call(this, viewPort, "rect");
+        this.url = url;
+        //this.setFill(Color.blue.lighter());
+        //this.setBorderWidth(0);
+        this.dim = viewPort.extent();
+        // console.log('got dim %s', this.dim);
+        // this.image.setAttributeNS(null, 'ondragstart', '{console.log("not dragging %s", evt); evt.preventDefault(); }');
+        // onDragStart =
+        if (url) { 
+            this.loadURL(url);
+        }
+    },
+
+    loadGraphics: function(localURL, scale) {
+        if (this.image && this.image.tagName == 'image') {
+            this.removeChild(this.image);
+            this.image = null;
+        }
+
+        this.setFill(null);
+        this.image = document.createSVGElement("use").withHref(localURL);
+
+        if (scale) {
+            this.image.setAttributeNS(null, 'transform', 'scale(' + scale + ')');
+        }
+        
+        this.addChildElement(this.image);
+    },
+
+    loadURL: function(url) {
+        if (this.image && this.image.tagName != 'image') {
+            this.removeChild(this.image);
+            this.image = null;
+        }
+
+        if (!this.image) {
+            this.image = document.createSVGElement("image", { width: this.dim.x, height: this.dim.y});
+            this.image.disableBrowserDrag();
+            this.addChildElement(this.image);
+        } 
+
+        this.image.withHref(url);
+    },
+
+    updateView: function(aspect, controller) {
+        var p = this.modelPlug;
+        if (!p) return;
+        if (aspect == p.getURL) {
+            this.loadURL(this.getModelValue('getURL', ""));
+        }
+    }
+
+});
+
+
+/**
+ * @class ClipMorph
+ */
+ClipMorph = HostClass.create('ClipMorph', Morph);
+
+Object.extend(ClipMorph.prototype, {
+
+    defaultFill: null,
+    defaultBorderWidth: 0,
+
+    initialize: function(initialBounds) {
+        ClipMorph.superClass.initialize.call(this, initialBounds, "rect");
+    
+        // A clipMorph is like a window through which its submorphs are seen
+        // Its bounds are strictly limited by its shape
+        // Display of its submorphs are strictly clipped to its shape, and
+        // (optionally) reports of damage from submorphs are also clipped so that,
+        // eg, scrolling can be more efficient
+        // this.setBorderColor(Color.black);
+        // this.setFill(null);
+        // this.setBorderWidth(0); 
+        this.clipToShape();
+        return this;
+    },
+
+    defaultOrigin: function(bounds) { 
+        return bounds.topLeft(); 
+    },
+
+    bounds: function() {
+        if (this.fullBounds != null) return this.fullBounds;
+        var tfm = this.transform.baseVal.consolidate();
+        this.fullBounds = tfm.transformRectToRect(this.shape.bounds());
+    
+        if (/polyline|polygon/.test(this.shape.getType())) {
+            // double border margin for polylines to account for elbow protrusions
+            this.fullBounds.expandBy(this.shape.getStrokeWidth()*2);
+        } else {
+            this.fullBounds.expandBy(this.shape.getStrokeWidth());
+        }
+        
+        // same copy&pasete from Morph but not including the submorphs
+        
+        if (this.fullBounds.width < 3 || this.fullBounds.height < 3) {
+            // Prevent horizontal or vertical lines from being ungrabbable
+            this.fullBounds = this.fullBounds.expandBy(3); 
+        }
+        
+        if (this.drawBounds) this.updateBoundsElement();
+    
+        return this.fullBounds; 
+    }
+    
+    
+});
+
+/**
+ * @class SelectionMorph
+ */
+
+SelectionMorph = HostClass.create('SelectionMorph', Morph);
+
+Object.extend(SelectionMorph.prototype, {
+    
+    defaultBorderWidth: 1,
+    defaultBorderColor: Color.blue,
+    defaulFill: Color.secondary.blue,
+
+    initialize: function(viewPort) {
+        SelectionMorph.superClass.initialize.call(this, viewPort, "rect");
+        this.selectedMorphs = [];
+        this.shape.setFillOpacity(0.1);
+        // this.shape.setAttributeNS(null, "stroke-dasharray", "3,2");
+        return this;
+    },
+    
+    reshape: function(partName, newPoint, handle, lastCall) {
+        SelectionMorph.superClass.reshape.call(this, partName, newPoint, handle, lastCall);
+        this.selectedMorphs = [];
+        this.owner().submorphs.each((function(m) {
+            var p1 = m.bounds().topLeft();
+            var p2 = m.bounds().bottomRight();
+            if (this.bounds().containsPoint(p1) && this.bounds().containsPoint(p2))
+                if (m !== this) this.selectedMorphs.push(m);
+            }).bind(this));
+            
+        if (lastCall && this.selectedMorphs.length == 0) this.remove();
+    },
+    
+    morphMenu: function(evt) { 
+        var menu = SelectionMorph.superClass.morphMenu.call(this,evt);
+        menu.removeItemNamed("inspect");
+        menu.removeItemNamed("XML");
+        return menu;
+    },
+    
+    remove: function() { 
+        this.selectedMorphs.invoke('remove');
+        this.removeOnlyIt();
+    },
+    
+    removeOnlyIt: function() { 
+        this.world().currentSelection = null;
+        SelectionMorph.superClass.remove.call(this);
+    },
+    
+    copyToHand: function(hand) { 
+        this.selectedMorphs.invoke('copyToHand', hand);
+    },
+    
+    setBorderWidth: function(width) { 
+        if (this.selectedMorphs.length==0) SelectionMorph.superClass.setBorderWidth.call(this,width);
+        else this.selectedMorphs.invoke('setBorderWidth', width);
+    },
+    
+    setFill: function(color) { 
+        if (this.selectedMorphs.length==0) SelectionMorph.superClass.setFill.call(this,color);
+        else this.selectedMorphs.invoke('setFill', color);
+    },
+    
+    setBorderColor: function(color) { 
+        if (this.selectedMorphs.length==0) SelectionMorph.superClass.setBorderColor.call(this,color);
+        else this.selectedMorphs.invoke('setBorderColor', color);
+    },
+    
+    okToBeGrabbedBy: function(evt) { // DI: Need to verify that z-order is preserved
+        this.selectedMorphs.forEach( function(m) { evt.hand.addMorph(m); } );
+        return this;
+    }
+    
+});
 
 /**
  * @class ColorPickerMorph
@@ -122,16 +1566,16 @@ Object.extend(CheapListMorph.prototype, {
     },
 
     initializeTransientState: function(initialBounds) {
-	CheapListMorph.superClass.initializeTransientState.call(this, initialBounds);
-	// FIXME make persistent
+        CheapListMorph.superClass.initializeTransientState.call(this, initialBounds);
+        // FIXME make persistent
         // this default self connection may get overwritten by, eg, connectModel()...
-	this.modelPlug = {
-	    model: this,
+        this.modelPlug = {
+            model: this,
             getList: "getMyList",
             getSelection: "getMySelection",
             setSelection: "setMySelection"
         };
-	this.itemList = [];// FIXME recover that state
+        this.itemList = [];// FIXME recover that state
 
     },
     
@@ -299,7 +1743,6 @@ Object.extend(MenuMorph.prototype, {
     defaultBorderWidth: 0.5,
     defaultFill: Color.blue.lighter(5),
 
-
     initialize: function(items, lines) {
         // items is an array of menuItems, each of which is an array of the form
         // [itemName, target, functionName, parameterIfAny]
@@ -401,87 +1844,6 @@ Object.extend(MenuMorph.prototype, {
 //        sets the name, also triggers update of aspect
 
 /**
- * @class Model
- */ 
-
-Model = Class.create(); // An MVC-style model.
-
-Object.extend(Model.prototype, {
-
-    initialize: function(dep) { 
-        // Broadcasts an update message to all dependents when a value changes.
-        this.dependents = (dep != null) ? [dep] : [];
-    },
-
-    addDependent: function (dep) { 
-        this.dependents.push(dep); 
-    },
-
-    removeDependent: function (dep) {
-        var ix = this.dependents.indexOf(dep);
-        if (ix < 0) return;
-        this.dependents.splice(ix, 1); 
-    },
-
-    set: function (varName, newValue, source) {
-        this[varName] = newValue;
-        this.changed(varName, source); 
-    },
-
-    changed: function(varName, source) {
-        // If source is given, we don't update the source of the change
-        // If varName is not given, then null will be the aspect of the updateView()
-        //console.log('changed ' + varName);
-        for (var i = 0; i < this.dependents.length; i++) {
-            if (source !== this.dependents[i]) {
-                // console.log('updating %s for name %s', this.dependents[i], varName);
-                this.dependents[i].updateView(varName, source);
-            } 
-        } 
-    }
-});
-
-/**
- * @class Morph
- */ 
-          
-// Morph model category
-Object.extend(Morph.prototype, {
-
-    connectModel: function(plug) {
-        // connector makes this view pluggable to different models, as in
-        // {model: someModel, getList: "getItemList", setSelection: "chooseItem"}
-        this.modelPlug = plug;
-        
-        if (plug.model.addDependent)  // for mvc-style updating
-            plug.model.addDependent(this); 
-    },
-
-    getModelValue: function(functionName, defaultValue) {
-        // Allows for graceful handling of missing accessors
-        var plug = this.modelPlug;
-        if (plug == null || plug.model == null || functionName == null) return defaultValue;
-        var func = plug.model[plug[functionName]];
-        if (func == null) return defaultValue;
-        // console.log("reading %s as %s", functionName, func.call(plug.model));
-        return func.call(plug.model); 
-    },
-
-    setModelValue: function(functionName, newValue, view) {
-        // Allows for graceful handling of missing accessors
-        // console.log("set %s to %s", functionName, newValue);
-        var plug = this.modelPlug;
-        if (plug == null || plug.model == null || functionName == null) return;
-        var func = plug.model[plug[functionName]];
-        if (func == null) return;
-        func.call(plug.model, newValue, view); 
-    },
-
-    updateView: function(aspect, controller) { }
-    
-});
-
-/**
  * @class ButtonMorph
  */ 
 
@@ -570,32 +1932,36 @@ Object.extend(ButtonMorph.prototype, {
 
     onKeyDown: function(evt) {
         switch (evt.sanitizedKeyCode()) {
-	case Event.KEY_ENTER:
+        case Event.KEY_ENTER:
         case Event.KEY_SPACEBAR:
-	    this.changeAppearanceFor(true);
+            this.changeAppearanceFor(true);
             evt.stop();
             return true;
-	}
-	return false;
+        }
+        return false;
     },
 
     onKeyUp: function(evt) {
         var newValue = this.toggles ? !this.getValue() : false;
         switch (evt.sanitizedKeyCode()) {
-	case Event.KEY_ENTER:
+        case Event.KEY_ENTER:
         case Event.KEY_SPACEBAR:
-	    this.changeAppearanceFor(newValue);
-	    this.setValue(newValue);
+            this.changeAppearanceFor(newValue);
+            this.setValue(newValue);
             evt.stop();
             return true;
-	}
-	return false;
+        }
+        return false;
     },
-
 
 });
 
+/**
+ * @class ImageButtonMorph
+ */ 
+
 ImageButtonMorph = HostClass.create('ImageButtonMorph', ButtonMorph);
+
 Object.extend(ImageButtonMorph.prototype, {
 
     initialize: function(initialBounds, normalImageHref, activatedImageHref) {

@@ -1,3 +1,7 @@
+/**
+ * Main.js.  System startup and demo loading.
+ */
+
 var Global = this;
 var showMostExamples = true; // DI: Set to false for much faster turnaround time on slow machines
                              // also stops spinning star from running down battery ;-)
@@ -81,13 +85,13 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
             }
             var showCanvasScape = true;
             if (showCanvasScape) {
-		if (!widget.myWorld.csMorph) {
-		    console.log("creating csm");
-		    var csm = CanvasScapeMorph(Rectangle(20,400,800,300)/*pt(400, 350).extent(pt(800, 300))*/);
-		    widget.myWorld.csMorph = widget.myWorld.addMorph(WindowMorph(csm, 'CanvasScape'));
-		    //csm.startSteppingFunction(200, function(msTime) { this.changeKey( 37, 1); });
-		    console.log("creating csm done");
-		}
+                if (!widget.myWorld.csMorph) {
+                    console.log("creating csm");
+                    var csm = CanvasScapeMorph(Rectangle(20,400,800,300)/*pt(400, 350).extent(pt(800, 300))*/);
+                    widget.myWorld.csMorph = widget.myWorld.addMorph(WindowMorph(csm, 'CanvasScape'));
+                    //csm.startSteppingFunction(200, function(msTime) { this.changeKey( 37, 1); });
+                    console.log("creating csm done");
+                }
             }
         }
 
@@ -106,7 +110,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
 
         var showDoodle = true;
         if (showDoodle) widget.myWorld.addMorph(WindowMorph(DoodleMorph(pt(875, 350).extent(pt(300, 300))), 
-							    'Doodle Morph'));
+                                                'Doodle Morph'));
     }
     
     var slideWorld = showMostExamples;
@@ -187,8 +191,6 @@ function main() {
 
 main();
 
-console.log('loaded Main');
-
 if (false) showStatsViewer(TextLine.prototype, "TextLine...");
 
 if (this['showWebStore']) {
@@ -196,4 +198,6 @@ if (this['showWebStore']) {
     var store = new WebStore('localhost', '~kappa');
     store.openIn(WorldMorph.current(), pt(500, 30));
 }
+
+console.log('loaded Main.js');
 

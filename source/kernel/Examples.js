@@ -1,0 +1,3904 @@
+/**
+ * Examples.js.  This file contains the sample morphs (mini-applications)
+ * that will be included in the system when it starts. 
+ */
+
+// ===========================================================================
+// Widget (panel) Tester Demo
+// ===========================================================================
+
+/**
+ * @class WidgetTester
+ * This class implements a panel with various sample widgets
+ * such as buttons, sliders, etc.  
+ */
+
+WidgetTester = Class.extend(Model);
+
+Object.extend(WidgetTester.prototype, {
+
+    initialize: function() { 
+        WidgetTester.superClass.initialize.call(this);
+    },
+
+    openIn: function(world, location) {
+        world.addMorphAt(this.buildView(pt(300, 220)), location);
+    },
+    
+    buildView: function(extent) {
+        var panel = PanelMorph(extent);
+        // Make a fancy panel.  Note: Transparency does not
+        // work with gradients or stipple patterns yet!
+        panel.linkToStyles(['widgetPanel']);
+        // panel.applyStyleNamed('widgetPanel');
+        panel.model = this;
+        var m; 
+
+        // Two simple buttons, one toggles...
+        panel.addMorph(m = ButtonMorph(Rectangle(20,20,50,20)));
+        m.connectModel({model: this, getValue: "getB1Value", setValue: "setB1Value"});
+        panel.addMorph(m = ButtonMorph(Rectangle(20,50,50,20)));
+        m.connectModel({model: this, getValue: "getB1Value", setValue: "setB1Value"});
+        m.toggles = true;
+
+        // Two buttons sharing same value...
+        panel.addMorph(m = ButtonMorph(Rectangle(80,20,50,20)));
+        m.connectModel({model: this, getValue: "getB2Value", setValue: "setB2Value"});
+        panel.addMorph(m = ButtonMorph(Rectangle(80,50,50,20)));
+        m.connectModel({model: this, getValue: "getB2Value", setValue: "setB2Value"});
+        this.getB1Value = function() { return this.B1Value; };
+        this.setB1Value = function(val, v) { this.B1Value = val; this.changed("getB1Value", v); };
+        this.getB2Value = function() { return this.B2Value; };
+        this.setB2Value = function(val, v) { this.B2Value = val; this.changed("getB2Value", v); };
+
+        // Two lists sharing same selection...
+        panel.addMorph(m = CheapListMorph(Rectangle(20,80,50,20),["one","two","three"]));
+        m.connectModel({model: this, getSelection: "getListItem", setSelection: "setListItem"});
+        panel.addMorph(m = CheapListMorph(Rectangle(80,80,50,20),["one","two","three"]));
+        m.connectModel({model: this, getSelection: "getListItem", setSelection: "setListItem"});
+        this.getListItem = function() { return this.listItem; };
+        this.setListItem = function(item, v) { this.listItem = item; this.changed("getListItem", v); };
+
+        // Three text views sharing same text...
+        panel.addMorph(m = TextMorph(Rectangle(140,20,140,20),"Hello World"));
+        m.connectModel({model: this, getText: "getText", setText: "setText", setSelection: "setTextSel"});
+        panel.addMorph(m = TextMorph(Rectangle(140,50,140,20),"Hello World"));
+        m.connectModel({model: this, getText: "getText", setText: "setText", setSelection: "setTextSel"});
+        panel.addMorph(m = TextMorph(Rectangle(140,80,140,20),"Hello World"));
+        m.connectModel({model: this, getText: "getText", setText: "setText", setSelection: "setTextSel"});
+        m.autoAccept = true;
+        panel.addMorph(m = TextMorph(Rectangle(140,110,140,20),"selection"));
+        m.connectModel({model: this, getText: "getTextSel"});
+        this.getText = function() { return this.sharedText; };
+        this.setText = function(str, v) { this.sharedText = str; this.changed("getText", v); };
+        this.sharedText = "Hello World";
+        this.getTextSel = function() { return this.textSel; };
+        this.setTextSel = function(str, v) { this.textSel = str; this.changed("getTextSel", v); };
+
+        // Two linked print views sharing the same value
+        panel.addMorph(m = PrintMorph(Rectangle(20,140,100,20),"3+4"));
+        m.connectModel({model: this, getValue: "getPrintValue", setValue: "setPrintValue"});
+        panel.addMorph(m = PrintMorph(Rectangle(20,170,100,20),"3+4"));
+        m.connectModel({model: this, getValue: "getPrintValue", setValue: "setPrintValue"});
+        this.getPrintValue = function() { return this.printValue; };
+        this.setPrintValue = function(val, v) { this.printValue = val; this.changed("getPrintValue", v); };
+
+        // Slider linked to print view, with another for slider width
+        panel.addMorph(m = PrintMorph(Rectangle(140,140,80,20),"0.5"));
+        m.connectModel({model: this, getValue: "getSliderValue", setValue: "setSliderValue"});
+        panel.addMorph(m = PrintMorph(Rectangle(230,140,50,20),"0.1"));
+        m.connectModel({model: this, setValue: "setSliderExtent"});
+        panel.addMorph(m = SliderMorph(Rectangle(140,170,140,20)));
+        m.connectModel({model: this, getValue: "getSliderValue", setValue: "setSliderValue", getExtent: "getSliderExtent"});
+        this.getSliderValue = function() { return this.sliderValue; };
+        this.setSliderValue = function(val, v) { this.sliderValue = val; this.changed("getSliderValue", v); };
+        this.getSliderExtent = function() { return this.sliderExtent; };
+        this.setSliderExtent = function(val, v) { this.sliderExtent = val; this.changed("getSliderExtent", v); };
+        this.sliderValue = 0.2;
+        this.sliderExtent = 0.1;
+        
+        return panel;
+    }
+});
+
+// ===========================================================================
+// The Clock example
+// ===========================================================================
+
+/**
+ * @class ClockMorph
+ */
+
+ClockMorph = HostClass.create('ClockMorph', Morph);
+
+Object.extend(ClockMorph.prototype, {
+
+    defaultBorderWidth: 2,
+
+    initialize: function(position, radius) {
+        ClockMorph.superClass.initialize.call(this, position.asRectangle().expandBy(radius), "ellipse");
+        this.openForDragAndDrop = false;
+        this.setFill(RadialGradient.makeCenteredGradient(Color.yellow.lighter().lighter(), Color.yellow));
+        this.makeNewFace();
+        return this;
+    },
+
+    copy: function() {
+        var newClock = ClockMorph.superClass.copy.call(this);
+        newClock.removeAllMorphs();
+        newClock.makeNewFace();
+        return newClock; 
+    },
+
+    makeNewFace: function() {
+        var bnds = this.shape.bounds();
+        var radius = bnds.width/2;
+        var labels = [];
+        var fontSize = Math.max(Math.floor(0.04 * (bnds.width + bnds.height)),2);
+        var labelSize = fontSize; // room to center with default inset
+
+        for (var i=0; i < 12; i++) {
+            var labelPosition = bnds.center().addPt(Point.polar(radius*0.85,((i-3)/12)*Math.PI*2)).addXY(labelSize, 0);
+            var label = TextMorph(pt(0,0).extent(pt(labelSize*3,labelSize)), 
+            // (i>0 ? i : 12) + "");  // English numerals
+            ['XII','I','II','III','IV','V','VI','VII','VIII','IX','X','XI'][i]); // Roman
+            label.wrap = "shrinkWrap";
+            label.setFontSize(fontSize);    label.inset = pt(0,0);        
+            label.setBorderWidth(0);        label.setFill(null);
+            label.align(label.bounds().center(),labelPosition.addXY(1,1));
+            this.addMorph(label);
+        }
+    
+        this.hands = [Morph.makeLine([pt(0,0),pt(0,-radius*0.5)],4,Color.blue),
+                      Morph.makeLine([pt(0,0),pt(0,-radius*0.7)],3,Color.blue),
+                      Morph.makeLine([pt(0,0),pt(0,-radius*0.75)],2,Color.red)];
+
+        for (var i = 0; i < 3; i++) 
+            this.addMorph(this.hands[i]);
+    
+        this.setHands();
+        this.changed(); 
+    },
+    
+    reshape: function(a,b,c,d) { /*no reshaping*/ },
+    
+    stepActivity: function(msTime) { this.setHands(); },
+
+    setHands: function() {
+        var currentDate = new Date();
+        var center = this.shape.bounds().center();
+        var second = currentDate.getSeconds();
+        var minute = currentDate.getMinutes() + second/60;
+        var hour = currentDate.getHours() + minute/60;
+        this.hands[0].setRotation(hour/12*2*Math.PI);
+        this.hands[1].setRotation(minute/60*2*Math.PI);
+        this.hands[2].setRotation(second/60*2*Math.PI); 
+    }
+    
+});
+
+/**
+ * @class IconMorph
+ */
+
+IconMorph = HostClass.create('IconMorph', ImageMorph);
+
+Object.extend(IconMorph.prototype, {
+    initialize: function(viewPort, url, name, target) {
+        IconMorph.superClass.initialize.call(this, viewPort, url);
+        this.label = new TextMorph.makeLabel(Rectangle(viewPort.width, viewPort.height/3, 100, 30), name);
+        this.label.setBorderWidth(1);
+        this.label.setFill(Color.white);
+        this.addMorph(this.label);
+        return this;
+    }
+});
+
+
+// ===========================================================================
+// The Pen/Hilbert curve demo
+// ===========================================================================
+
+/**
+ * @class Pen
+ */
+  
+Pen = Class.create();
+
+Object.extend(Pen.prototype, {
+
+    initialize: function(loc) {
+        this.location = (typeof(loc) != 'undefined') ? loc : WorldMorph.current().bounds().center();
+        this.penWidth = 2;
+        this.penColor = Color.blue;
+        this.fillColor = null;
+        this.heading = 0;
+        this.newLine(this.location); 
+    },
+    
+    setPenColor: function(color) { 
+        this.penColor = color; 
+    },
+    
+    setPenWidth: function(size) { 
+        this.penWidth = size; 
+    },
+    
+    turn: function(degrees) { 
+        this.heading += degrees; 
+    },
+    
+    go: function(dist) { 
+        this.location = this.location.addPt(Point.polar(dist, this.heading.toRadians()));
+        this.vertices.push(this.location); 
+    },
+    
+    drawLines: function() {
+        var morph = Morph(this.startingLocation.asRectangle(), "rect");
+        var verts = Shape.translateVerticesBy(this.vertices, this.startingLocation.negated());
+    
+        if (this.fillColor) 
+            morph.setShape(PolygonShape(null, verts, this.fillColor, this.penWidth, this.penColor));
+        else 
+            morph.setShape(PolylineShape(null, verts, this.penWidth, this.penColor));
+    
+        WorldMorph.current().addMorph(morph); 
+    
+        /* if (morph.world().backend()) 
+        morph.world().backend().createMorph(morph.morphId(), morph, morph.world().morphId());*/
+    },
+    
+    fillLines: function(color) { 
+        this.fillColor = color; 
+        this.drawLines(); 
+    },
+    
+    hilbert: function(n,s) {
+        // Draw an nth level Hilbert curve with side length s.
+        if (n == 0) 
+            return this.turn(180);
+    
+        if (n > 0) { 
+            var a = 90;  
+            var m = n - 1; 
+        } else { 
+            var a = -90;  
+            var m = n + 1; 
+        }
+        
+        this.turn(a); 
+        this.hilbert(0 - m, s);
+        this.turn(a); 
+        this.go(s); 
+        this.hilbert(m, s);
+        this.turn(0 - a); 
+        this.go(s); 
+        this.turn(0 - a); 
+        this.hilbert(m, s);
+        this.go(s); 
+        this.turn(a); 
+        this.hilbert(0 - m, s);
+        this.turn(a); 
+    },
+    
+    filbert: function(n, s, color) {
+        // Two Hilbert curves form a Hilbert tile
+        this.setPenColor(Color.black); 
+        this.setPenWidth(1);
+        this.hilbert(n, s); 
+        this.go(s);
+        this.hilbert(n, s); 
+        this.go(s);
+        this.fillLines(color); 
+    },
+    
+    newLine: function(loc) {
+        this.startingLocation = loc;
+        this.vertices = [ loc ];
+    },
+    
+    filberts: function(n, s) {
+        // Four interlocking filberts
+        var n2 = Math.pow(2,n-1);
+    
+        for (var i = 0; i < 4; i++) {
+            this.filbert(n, s, Color.wheel(4)[i]);
+            this.go((n2 - 1)*s); 
+            this.turn(-90); 
+            this.go(n2 * s); 
+            this.turn(180);
+            this.newLine();  
+        } 
+    }
+    
+});
+
+// The default script for the Pen/Hilbert demo
+Pen.script = ["P = new Pen();",
+"P.setPenColor(Color.red);",
+"for(var i=1; i<=40; i++)",
+"   { P.go(2*i); P.turn(89); };",
+"P.drawLines();",
+""].join("\n");
+
+// safari & ff don't honor xml:space=preserve, so no spaces
+Pen.script = ["P = new Pen();",
+"P.setPenColor(Color.red);",
+"for(var i=1; i<=40; i++)",
+          //"&lt;&gt;&quot;&amp;<>{ P.go(2*i); P.turn(89); };",
+"{ P.go(2*i); P.turn(89); };",
+"P.drawLines();",
+""].join("\n");
+
+// ===========================================================================
+// The RSS Feed Reader Example
+// ===========================================================================
+
+var buildRSSViewer = function(feed, world, point) {
+    var extent = pt(500, 200);
+    var panel = PanelMorph(extent, "rect");
+    panel.setFill(Color.blue.lighter().lighter());
+    panel.setBorderWidth(2);
+    var model = new Model();
+    panel.model = model;
+
+    // Model functions
+    model.feed = feed;
+    model.getItemList = function() { return this.feed.items() };
+    model.setItemTitle = function(title) { this.itemTitle = title; this.changed("getEntry"); };
+    model.getEntry = function() { return this.feed.getEntry(this.itemTitle) };
+    model.getChannelTitle = function() { return "RSS feed from " + this.feed.channels[0].title; };
+
+    // View layout
+    var localRect = pt(0,0).extent(extent);
+    var m = panel.addMorph(ListPane(localRect.withBottomRight(localRect.bottomCenter())));
+    m.connectModel({model: model, getList: "getItemList", setSelection: "setItemTitle"});
+    m = panel.addMorph(PrintPane(localRect.withTopLeft(localRect.topCenter())));
+    m.connectModel({model: model, getValue: "getEntry"});
+    m = TextMorph.makeLabel(Rectangle(0, 0, 150, 15), 'RSS feed                    ');
+    m.connectModel({model: model, getText: 'getChannelTitle'});
+    world.addMorphAt(WindowMorph(panel, m), point);
+    feed.request(model, "getItemList", 'getChannelTitle');
+    return panel;
+}
+
+function loadRSS(world, point) {
+    var feed = new Feed("http://news.com.com/2547-1_3-0-5.xml");
+    return buildRSSViewer(feed, world, point);
+}
+
+// ===========================================================================
+// The Doodle Draw Example
+// ===========================================================================
+
+/**
+ * @class DoodleMorph
+ */
+
+// TODO: get some reason in the whole doodleMorph... ;)
+// Solve how to "disable" selection mode
+var IMAGES = "http://www.cs.tut.fi/~kuusipal/flair/";
+
+// Something about the DoodleMorph buttons
+// 1. select allows the controlpoint to pop-up on the object 
+//    (objects seem to be moveable even without this mode)
+// 2. draw a rectangle on a fixed location
+// 3. draw a ellipse on a fixed location
+// 4. change the drawing color
+// 5. copy (do we need this???)
+// 6. connect, aiming for some sort of collaboration (not implemented yet)
+
+DoodleMorph = HostClass.create('DoodleMorph', ClipMorph);
+
+Object.extend(DoodleMorph.prototype, {
+
+    defaultBorderWidth: 0,
+    defaultFill: Color.veryLightGray,
+
+    initialize: function(rect) {
+        DoodleMorph.superClass.initialize.call(this, rect, "rect");
+        this.drawingColor = Color.red;
+
+        // The doodle that we are creating currently
+        this.currentMorph = null;
+        this.start = null;
+
+        const iconSize = 40;
+        var r = Rectangle(1, 1, iconSize, iconSize /* rect.height - iconSize - 10 */);
+        this.selectbutton = new ImageButtonMorph(r, IMAGES + "select.png", IMAGES + "select_down.png");
+        var r = Rectangle(1, 41, iconSize, iconSize /* rect.height - iconSize - 10 */);
+        this.rectbutton = new ImageButtonMorph(r, IMAGES + "rectangle.png", IMAGES + "rectangle_down.png");
+        var r = Rectangle(1, 81, iconSize, iconSize /* rect.height - iconSize - 10 */);
+        this.circlebutton = new ImageButtonMorph(r, IMAGES + "circle.png", IMAGES + "circle_down.png");
+        var r = Rectangle(1, 121, iconSize, iconSize /* rect.height - iconSize - 10 */);
+        this.colorsbutton = new ImageButtonMorph(r, IMAGES + "colors.png", IMAGES + "colors_down.png");
+        var r = Rectangle(1, 161, iconSize, iconSize /* rect.height - iconSize - 10 */);
+        this.copybutton = new ImageButtonMorph(r, IMAGES + "copy.png", IMAGES + "copy_down.png");
+        var r = Rectangle(1, 201, iconSize, iconSize /* rect.height - iconSize - 10 */);
+        this.worldbutton = new ImageButtonMorph(r, IMAGES + "world.png", IMAGES + "world_down.png");
+
+
+        // this.rectbutton.align(this.rectbutton.bounds().leftCenter(),
+        // this.mapclip.bounds().rightCenter().addXY(clipInset, 0));
+        // this.rectbutton.connectModel({model: this.mapmodel, setValue: "goRight", getValue: "isStepping"});
+        this.selectbutton.toggles = true;
+        this.selectbutton.connectModel({model: this, setValue: "setSelectionMode", getValue: "getSelectionMode"});
+        this.addMorph(this.selectbutton);
+
+        this.rectbutton.onMouseUp = function(evt) {
+            var newValue = this.toggles ? !this.getValue() : false;
+//            this.setValue(newValue); 
+            this.changeAppearanceFor(newValue); 
+        };
+        this.rectbutton.connectModel({model: this, setValue: "addRect"});
+        this.addMorph(this.rectbutton);
+
+        this.circlebutton.onMouseUp = function(evt) {
+            var newValue = this.toggles ? !this.getValue() : false;
+//            this.setValue(newValue); 
+            this.changeAppearanceFor(newValue); 
+        };
+        this.circlebutton.connectModel({model: this, setValue: "addCirc"});
+        this.addMorph(this.circlebutton);
+
+        this.colorsbutton.onMouseUp = function(evt) {
+            var newValue = this.toggles ? !this.getValue() : false;
+            this.changeAppearanceFor(newValue); 
+        };
+        this.colorsbutton.connectModel({model: this, setValue: "setColor"});
+        this.addMorph(this.colorsbutton);
+
+        // TODO: Do we need a copy button??
+//        this.copybutton.connectModel({model: this, setValue: "copyToHand"});//, getValue: "getBValue"});
+        this.addMorph(this.copybutton);
+
+        // TODO: this will be the connect button
+        this.worldbutton.toggles = true;
+//        this.worldbutton.connectModel({model: this, setValue: "setBValue", getValue: "getBValue"});
+        this.addMorph(this.worldbutton);
+
+        // Position for new objects created from menus
+        this.newPos = 25;
+
+        return this;
+    },
+    
+    onMouseDown: function(evt) {
+        if (!this.currentMorph) {
+            this.start = this.localize(evt.mousePoint);
+            this.currentMorph = Morph(this.start.asRectangle());
+            // TODO: relaying events stops from moving morphs after drawing them..
+//            this.currentMorph.relayMouseEvents(this, {onMouseMove: "onMouseMove"});
+
+            // 'solution' 1: we disable the drawn morph and enable morphs only 
+            // when selection tool is in use
+            if (!this.value) {
+                this.currentMorph.ignoreEvents();
+            }
+            
+            this.addMorph(this.currentMorph);
+            this.currentMorph.setShape(PolylineShape(null, [pt(0,0)], 2, this.drawingColor));
+            evt.hand.setFill(Color.yellow);
+        } else {
+            this.onMouseUp(evt);
+        }
+
+    },
+
+    onMouseMove: function(evt) {
+
+        if (this.currentMorph) {
+            var verts = this.currentMorph.shape.vertices();
+            var pt = this.localize(evt.mousePoint.subPt(this.start));
+        
+            if (verts.length > 0 && !verts[verts.length - 1].eqPt(pt)) {
+                verts.push(pt);
+                this.currentMorph.shape.setVertices(verts);
+            }
+        } else {
+            this.checkForControlPointNear(evt);
+        }
+
+    },
+
+    onMouseUp: function(evt) {
+        this.currentMorph = null;
+        this.start = null;
+        
+        // FIXME save and restore
+        evt.hand.setFill(Color.primary.blue);
+    },
+
+    handlesMouseDown: function() { return true; },
+
+
+    // Add menu items for creating rectangles and ellipses
+    morphMenu: function(evt) {
+        var menu = DoodleMorph.superClass.morphMenu.call(this, evt);
+        menu.addLine();
+        menu.addItem(["add rectangle", this, 'addShape', 'rect']);
+        menu.addItem(["add ellipse",   this, 'addShape', 'ellipse']);
+        return menu;
+    },
+
+/*    addShape: function(shapeType) {
+        var morph = Morph(Rectangle(this.newPos * 2, this.newPos, 60, 20), shapeType);
+        morph.setFill(null);
+        morph.setBorderWidth(2);
+        morph.setBorderColor(Color.red);
+        this.addMorph(morph);
+
+        this.newPos += 25;
+        if (this.newPos > 125) this.newPos = 25;            
+    },*/
+    addRect: function() {
+        var morph = Morph(Rectangle(this.newPos * 2, this.newPos, 60, 20), 'rect');
+        morph.setFill(null);
+        morph.setBorderWidth(2);
+        morph.setBorderColor(this.drawingColor);
+        if (!this.value) {
+            morph.ignoreEvents();
+        }
+        this.addMorph(morph);
+
+        this.newPos += 25;
+        if (this.newPos > 125) this.newPos = 25;            
+    },
+    
+    addCirc: function() {
+        var morph = Morph(Rectangle(this.newPos * 2, this.newPos, 60, 20), 'ellipse');
+        morph.setFill(null);
+        morph.setBorderWidth(2);
+        morph.setBorderColor(this.drawingColor);
+        if (!this.value) {
+            morph.ignoreEvents();
+        }
+        this.addMorph(morph);
+
+        this.newPos += 25;
+        if (this.newPos > 125) this.newPos = 25;            
+    },
+    
+    setColor: function() {
+        this.colorpicker = ColorPickerMorph(Rectangle(0, 0, 50, 30));
+        this.colorpicker.moveBy(this.colorsbutton.bounds().topRight());
+        this.addMorph(this.colorpicker);
+        this.colorpicker.connectModel({model: this, setColor: "setColoring"});
+    },
+    
+    setColoring: function(color) {
+        this.drawingColor = color;
+//        this.withAllSubmorphsDo(function() {this.setBorderColor(color);}, null);
+        this.colorpicker.remove();
+    },
+
+    setSelectionMode: function (val, v) {
+        this.value = val;
+        if (this.value) {
+            this.withAllSubmorphsDo(function() {if (this.getType() != "ImageButtonMorph" && this.getType() != "ImageMorph") this.enableEvents();}, null);
+        } else {
+            this.withAllSubmorphsDo(function() {
+                        if (this.getType() != "ImageButtonMorph" && this.getType() != "ImageMorph") {
+ //                           console.log(this.getType() + " is now ignoring events");
+                            this.ignoreEvents();
+                        }}, null);
+            this.enableEvents();
+        }
+    },
+    
+    getSelectionMode: function () {
+        return this.value;
+    }
+        
+});
+
+// Namespace for applications
+var apps = {};
+
+// ===========================================================================
+// The 3D Rotation Example
+// ===========================================================================
+
+/*==============================================================================
+ * ThreeDeeDemo.js -- 3D object rotation demo
+ * Based on C code written originally in the 1980s
+ * and a Java version written in 1998.
+ *============================================================================*/
+
+
+apps.threedee = function() {
+
+// Tables for rapid sin calculation
+    var upper = new Array( 
+        0, 3050, 5582, 6159, 1627, 5440, 7578, 3703, 3659, 9461, 2993, 
+        4887, 226, 7813, 8902, 7469, 6260, 1054, 5473, 6862, 3701, 5349, 
+        4523, 978, 9455, 9604, 1604, 2008, 6059, 6048, 1, 3990, 6695, 
+        1275, 6679, 8431, 4456, 4841, 6329, 3241, 3302, 5690, 1901, 860, 
+        2796, 5741, 9414, 4187, 3469, 1923, 4309, 2870, 6152, 3863, 5473, 
+        5603, 6047, 3457, 1412, 5011, 2521, 5462, 3319, 1496, 3801, 4411, 
+        3244, 4157, 7398, 6297, 5625, 538, 5266, 8623, 8015, 652, 7317, 
+        9010, 5819, 374, 7325, 5375, 5393, 5859, 1997, 6283, 819, 2186, 
+        3281, 6565, 1
+    ); 
+
+    var lower = new Array(
+        1, 174761, 159945, 117682, 23324, 62417, 72497, 30385, 26291, 60479, 
+        17236, 25612, 1087, 34732, 36797, 28858, 22711, 3605, 17711, 21077, 
+        10821, 14926, 12074, 2503, 23246, 22725, 3659, 4423, 12906, 12475, 2, 
+        7747, 12634, 2341, 11944, 14699, 7581, 8044, 10280, 5150, 5137, 8673, 
+        2841, 1261, 4025, 8119, 13087, 5725, 4668, 2548, 5625, 3693, 7807, 4837, 
+        6765, 6840, 7294, 4122, 1665, 5846, 2911, 6245, 3759, 1679, 4229, 4867, 
+        3551, 4516, 7979, 6745, 5986, 569, 5537, 9017, 8338, 675, 7541, 9247, 
+        5949, 381, 7438, 5442, 5446, 5903, 2008, 6307, 821, 2189, 
+        3283, 6566, 1
+    );
+
+    function rapidSin90(multiplier, sin) {
+        return Math.round(multiplier * upper[sin] / lower[sin]);
+    }
+// Rapid sin and cos functions.  Note that you must supply 
+// a multiplier in addition to the (decimal) angle parameter,
+// or otherwise the result is always 0 or 1.
+    function rapidSin(multiplier, sin) {
+
+        while (sin < 0) sin += 360; // Can be slow...
+        sin %= 360;
+
+        if (sin <=  90) return rapidSin90(multiplier, sin);
+        if (sin <= 180) return rapidSin90(multiplier, 180-sin);
+        if (sin <= 270) return -rapidSin90(multiplier, sin-180);
+        return -rapidSin90(multiplier, 360-sin);
+    }
+    
+    function rapidCos(multiplier, cos) {
+        return rapidSin(multiplier, cos+90);
+    }
+
+/*==============================================================================
+ * Constants for the 3D viewer
+ *============================================================================*/
+
+// center: Used for storing the center coordinates
+// of our physical drawing plane (window).
+    var center = pt(90, 100); // Math.round(window.width / 2), Math.round(window.height / 2);
+
+// planeDist: The 2D projection plane distance from origo
+    var planeDist = -180;
+
+// clipPlane: Object move limit (to avoid clipping problems)
+    var clipPlane = -5750;
+
+/*==============================================================================
+ * 3D object definition (the object to be rotated/displayed)
+ *============================================================================*/
+
+// points3D: The endpoints of the wireframe image
+// Define "Sun rose" as a wireframe image
+    var points3D  = [
+    [750, 200, 0], 
+    [553, 234, 0],
+    [380, 334, 0],
+    [252, 487, 0],
+    [183, 675, 0],
+    [175, 2700, 0],
+    [650, 2700, 0],
+    [650, 775, 0],
+    [850, 775, 0],
+    [850, 2700, 0],
+    [1325, 2700, 0],
+    [1316, 675, 0],
+    [1248, 487, 0],
+    [1119, 334, 0],
+    [946, 234, 0],
+    [750, 200, 0],
+
+    [2150, 2700, 0],
+    [1953, 2665, 0],
+    [1780, 2565, 0],
+    [1652, 2412, 0],
+    [1583, 2225, 0],
+    [1575, 200, 0],
+    [2050, 200, 0],
+    [2050, 2125, 0],
+    [2250, 2125, 0],
+    [2250, 200, 0],
+    [2725, 200, 0],
+    [2716, 2225, 0],
+    [2648, 2412, 0],
+    [2519, 2565, 0],
+    [2346, 2665, 0],
+    [2150, 2700, 0],
+
+    [-200, 750, 0],
+    [-234, 553, 0],
+    [-334, 380, 0],
+    [-487, 252, 0],
+    [-675, 184, 0],
+    [-2700, 175, 0],
+    [-2700, 650, 0],
+    [-775, 650, 0],
+    [-775, 850, 0],
+    [-2700, 850, 0],
+    [-2700, 1325, 0],
+    [-675, 1316, 0],
+    [-487, 1248, 0],
+    [-334, 1119, 0],
+    [-234, 946, 0],
+    [-200, 750, 0],
+
+    [-2700, 2150, 0],
+    [-2665, 1953, 0],
+    [-2565, 1780, 0],
+    [-2412, 1652, 0],
+    [-2225, 1583, 0],
+    [-200, 1575, 0],
+    [-200, 2050, 0],
+    [-2125, 2050, 0],
+    [-2125, 2250, 0],
+    [-200, 2250, 0],
+    [-200, 2725, 0],
+    [-2225, 2716, 0],
+    [-2412, 2648, 0],
+    [-2565, 2519, 0],
+    [-2665, 2346, 0],
+    [-2700, 2150, 0],
+
+    [-2150, -2700, 0],
+    [-2346, -2665, 0],
+    [-2519, -2565, 0],
+    [-2648, -2412, 0],
+    [-2716, -2225, 0],
+    [-2725, -200, 0],
+    [-2250, -200, 0],
+    [-2250, -2125, 0],
+    [-2050, -2125, 0],
+    [-2050, -200, 0],
+    [-1575, -200, 0],
+    [-1583, -2225, 0],
+    [-1652, -2412, 0],
+    [-1780, -2565, 0],
+    [-1953, -2665, 0],
+    [-2150, -2700, 0],
+
+    [-750, -200, 0],
+    [-946, -235, 0],
+    [-1119, -335, 0],
+    [-1248, -488, 0],
+    [-1316, -675, 0],
+    [-1325, -2700, 0],
+    [-850, -2700, 0],
+    [-850, -775, 0],
+    [-650, -775, 0],
+    [-650, -2700, 0],
+    [-175, -2700, 0],
+    [-183, -675, 0],
+    [-252, -488, 0],
+    [-380, -335, 0],
+    [-553, -235, 0],
+    [-750, -200, 0],
+
+    [2700, -2150, 0],
+    [2665, -2346, 0],
+    [2565, -2519, 0],
+    [2412, -2648, 0],
+    [2225, -2716, 0],
+    [200, -2725, 0],
+    [200, -2250, 0],
+    [2125, -2250, 0],
+    [2125, -2050, 0],
+    [200, -2050, 0],
+    [200, -1575, 0],
+    [2225, -1583, 0],
+    [2412, -1652, 0],
+    [2565, -1780, 0],
+    [2665, -1953, 0],
+    [2700, -2150, 0],
+
+    [200, -750, 0],
+    [235, -946, 0],
+    [335, -1119, 0],
+    [488, -1248, 0],
+    [675, -1316, 0],
+    [2700, -1325, 0],
+    [2700, -850, 0],
+    [775, -850, 0],
+    [775, -650, 0],
+    [2700, -650, 0],
+    [2700, -175, 0],
+    [675, -184, 0],
+    [488, -252, 0],
+    [335, -380, 0],
+    [235, -553, 0],
+    [200, -750, 0],
+
+    [0, 0, 0],
+    [0, 0, 2000]
+];
+
+// print(i + " points loaded to the object wireframe");
+
+/*==============================================================================
+ * WireObject instance constructor
+ *============================================================================*/
+
+WireObject = Class.create();
+
+Object.extend(WireObject.prototype, {
+    // WireObject constructor: create the wireframe object
+    initialize: function(hereX, hereY, hereZ) {
+
+        // Set the location of the object
+        this.x = hereX;
+        this.y = hereY;
+        this.z = hereZ;
+
+        // Allocate arrays for storing the individual point
+        // projection coordinates of the object
+        this.px = [];
+        this.py = [];
+        this.pz = [];
+
+        // Initialize the 3D projection vector
+        for (var i = 0; i < points3D.length; i++) {
+            this.px[i] = points3D[i][0];
+            this.py[i] = points3D[i][1];
+            this.pz[i] = points3D[i][2];
+        }
+                
+        // Create the 2D projection (view) vector
+        this.vx = [];
+        this.vy = [];
+
+    },
+    
+    /*==============================================================================
+     * WireObject instance rotation and projection methods
+     *============================================================================*/
+
+    // Function WireObject.rotate: rotate the object by the given angle
+    // (angles are expressed in decimal degrees, i.e., full circle = 360)
+    rotate: function(angleX, angleY, angleZ) {
+
+        var limit = points3D.length;
+        
+        for (var i = 0; i < limit; i++) {
+            var rx = points3D[i][0];
+            var ry = points3D[i][1];
+            var rz = points3D[i][2];
+    
+            // Rotate around X axis
+            if (angleX != 0) {
+                var nry = ry;
+                ry = rapidCos(ry, angleX) -
+                    rapidSin(rz, angleX);
+                rz = rapidSin(nry, angleX) +
+                    rapidCos(rz, angleX);
+            }
+            
+            // Rotate around Y axis
+            if (angleY != 0) {
+                var nrx = rx;
+                rx = rapidCos(rx, angleY) -
+                    rapidSin(rz, angleY);
+                rz = rapidSin(nrx, angleY) +
+                    rapidCos(rz, angleY);
+            }
+    
+            // Rotate around Z axis
+            if (angleZ != 0) {
+                var nrx = rx;
+                rx = rapidCos(rx, angleZ) -
+                    rapidSin(ry, angleZ);
+                ry = rapidSin(nrx, angleZ) +
+                    rapidCos(ry, angleZ);
+            }
+            
+            this.px[i] = rx;
+            this.py[i] = ry;
+            this.pz[i] = rz;
+        }
+    },
+      
+// Function WireObject.project: calculate a 2D projection
+// for the wireframe object based on the camera coordinates
+    project: function(cameraX, cameraY, cameraZ) {
+        var sx, sy, sz;
+        var cx, cy;
+        
+        var limit = points3D.length;
+        for (var i = 0; i < limit; i++) {
+            sx = this.x + this.px[i] + cameraX;
+            sy = this.y + this.py[i] + cameraY;
+            sz = this.z + this.pz[i] + cameraZ;
+            
+            // Calculate perspective projection
+            cx = Math.round(sx * planeDist / sz);
+            cy = Math.round(sy * planeDist / sz);
+            
+            // Note: for parallel (non-perspective) projection,
+            // replace 'cx' and 'cy' below with 'sx' and 'sy'
+            this.vx[i] = center.x  + cx;
+            this.vy[i] = center.y - cy;
+        }
+    },
+
+    // Function WireObject.display: display the 2D projection of the object
+    display: function(morphArray) {
+    
+        // NOTE: Sun Logo consists of eight U's
+        // Because we cannot use different colors
+        // for drawing the different line segments,
+        // we draw the logo as eight separate polyline
+        // morphs, all generated from the same projection
+        // vector.
+    
+        var U = 0;
+    
+        for (var i = 0; i < 8; i++) { 
+            var shape = PolygonShape(null, [pt(this.vx[U],this.vy[U])], Color.primary.blue, 2, Color.black);
+            shape.setLineJoin(Shape.LineJoins.ROUND);
+            morphArray[i].setShape(shape);
+            // shape.setFill(new Color(0xAA, 0, 0xCC)); // Approximate Sun purple color
+
+            var verts = shape.vertices();
+        
+            // Note: Loop starts from 1 intentionally!
+            for (var j = 1; j < 16; j++) {
+                var thisPt = pt(this.vx[U+j], this.vy[U+j]);
+                verts.push(thisPt);
+            }
+            shape.setVertices(verts);
+        
+            // Proceed to the next Sun U
+            U += 16;
+        }
+    },
+
+// Function paint(): (Re)paint the 3D view
+    paint: function(morphArray, angleX, angleY, angleZ) {
+        this.rotate(angleX, angleY, angleZ);
+        this.project(0, 0, 0);
+        this.display(morphArray);
+    }
+
+});
+    // module exports
+    return { WireObject: WireObject }
+
+}();
+
+/**
+ * @class Sun3DMorph
+ */
+  
+Sun3DMorph = HostClass.create('Sun3DMorph', ClipMorph);
+
+Object.extend(Sun3DMorph.prototype, {
+
+    defaultFill: Color.veryLightGray,
+    
+    initialize: function(rect) {
+
+        Sun3DMorph.superClass.initialize.call(this, rect, "rect");
+
+        this.shape.setFillOpacity(0.2);        
+
+        // Create a bunch of polyline objects for drawing the Sun U's 
+        this.morphArray = [];
+        for (var i = 0; i < 8; i++) {
+            this.morphArray[i] = Morph(pt(10,10).asRectangle());
+            this.morphArray[i].setShape(PolylineShape(null, [pt(0,0)], 2, Color.red));
+            this.addMorph(this.morphArray[i]);
+        }
+
+        this.wireObject = new apps.threedee.WireObject(0,  0, -6000);
+        this.wireObject.paint(this.morphArray, 0, 0, 0);
+
+        return this;
+    },
+
+    onMouseMove: function(evt) {
+
+        var angleY = -evt.mousePoint.x;
+        var angleX = -evt.mousePoint.y;
+        this.wireObject.paint(this.morphArray, angleX, angleY, 0);
+    
+        return true;
+    },
+
+/*    
+    handlesMouseDown: function(evt) { 
+        return true; 
+    }
+*/        
+
+});
+
+apps.asteroids = function() {
+
+// ===========================================================================
+// The Asteroids Game Example
+// ===========================================================================
+
+// The JavaScript implementation of the Asteroids game
+// is derived from a Java applet written and copyrighted
+// by Mike Hall in 1998
+
+/*****************************************************************************
+
+  Asteroids.js
+
+  Keyboard Controls:
+
+  S            - Start Game    P           - Pause Game
+  Cursor Left  - Rotate Left   Cursor Up   - Fire Thrusters
+  Cursor Right - Rotate Right  Cursor Down - Fire Retro Thrusters
+  Spacebar     - Fire Cannon   H           - Hyperspace
+  M            - Toggle Sound  D           - Toggle Graphics Detail
+
+*****************************************************************************/
+
+// IMPORTANT NOTE: The code below has not yet been
+// structured according to the Morphic UI conventions.   
+
+// The game instance
+var gameMorph = null;
+
+/* GamePolygon class */
+function GamePolygon() {
+    this.points  = []; // Stores the coordinates as Morphic points
+    this.xpoints = []; // Stores the raw x-coordinates of the points
+    this.ypoints = []; // Stores the raw y-coordinates of the points
+    this.npoints = 0;  // Number of points in the polygon
+}
+
+// Add a point to a game polygon
+GamePolygon.prototype.addPoint = function(x, y) {
+    this.points.push(pt(x, y));
+    this.xpoints.push(x);
+    this.ypoints.push(y);
+    this.npoints = this.points.length;
+}
+
+// Check if the given point is inside the game polygon
+GamePolygon.prototype.inside = function(x, y) {
+
+    var inside = false;
+    var j = 0;
+
+    for (var i = 0; i < this.npoints; i++) {
+        j++; 
+        if (j == this.npoints) j=0;
+    
+        if (this.ypoints[i]<y && this.ypoints[j]>=y
+            || this.ypoints[j]<y && this.ypoints[i]>=y) {
+        
+            if (this.xpoints[i]+(y-this.ypoints[i])/(this.ypoints[j]-this.ypoints[i])*(this.xpoints[j]-this.xpoints[i])<x) {
+                inside = !inside; 
+            }
+        }
+    }
+
+    return inside;
+} 
+
+/* Graphics parameters */
+
+// Dimensions of the graphics area (should be based on the size of the window)
+var gameWidth  = 600;
+var gameHeight = 300;
+
+/************************************************************************************************
+  The AsteroidsSprite class defines a game object, including it's shape, position, movement and
+  rotation. It also can detemine if two objects collide.
+************************************************************************************************/
+AsteroidsSprite = Class.create();
+
+Object.extend(AsteroidsSprite.prototype, {
+    /* GamePolygon */ shape: null,  // Initial sprite shape, centered at the origin (0,0).
+    /* boolean */ active: false,         // Active flag.
+    /* double */  angle: 0,              // Current angle of rotation.
+    /* double */  deltaAngle:  0,         // Amount to change the rotation angle.
+    /* double */  currentX: 0,           // Current position on screen.
+    /* double */  currentY: 0,
+    /* double */  deltaX: 0,             // Amount to change the screen position.
+    /* double */  deltaY: 0,
+    /* GamePolygon */ sprite: null, // Final location and shape of sprite after applying rotation and
+    // moving to screen position. Used for drawing on the screen and
+    // in detecting collisions.
+    // Morphic-specific data
+    morph: null,
+    morphShape: null,
+
+
+    initialize: function() {
+        this.shape = new GamePolygon();
+    },
+    
+    // Methods:
+
+    advance: function() {
+        // Update the rotation and position of the sprite based on the delta values. If the sprite
+        // moves off the edge of the screen, it is wrapped around to the other side.
+
+        this.angle += this.deltaAngle;
+        if (this.angle < 0)
+            this.angle += 2 * Math.PI;
+        if (this.angle > 2 * Math.PI)
+            this.angle -= 2 * Math.PI;
+        this.currentX += this.deltaX;
+        if (this.currentX < -gameWidth / 2)
+            this.currentX += gameWidth;
+        if (this.currentX > gameWidth / 2)
+            this.currentX -= gameWidth;
+        this.currentY -= this.deltaY;
+        if (this.currentY < -gameHeight / 2)
+            this.currentY += gameHeight;
+        if (this.currentY > gameHeight / 2)
+            this.currentY -= gameHeight;
+    },
+    
+    render: function() {
+        // Render the sprite's shape and location by rotating its base shape
+        // and moving it to its proper screen position.
+    
+        this.sprite = new GamePolygon();
+    
+        for (var i = 0; i < this.shape.npoints; i++) {
+                this.sprite.addPoint(Math.round(this.shape.xpoints[i] * Math.cos(this.angle) + this.shape.ypoints[i] * Math.sin(this.angle)  +  this.currentX + gameWidth  / 2),
+                                     Math.round(this.shape.ypoints[i] * Math.cos(this.angle) - this.shape.xpoints[i] * Math.sin(this.angle)  + this.currentY + gameHeight / 2));
+        }
+    
+        // Create a new morph based on the sprite
+        this.morph = this.createMorph(this.sprite);
+    
+    },
+    
+    isColliding: function(/* AsteroidsSprite */ s) {
+        var i;
+        // Determine if one sprite overlaps with another, i.e., if any vertice
+        // of one sprite lands inside the other.
+    
+        for (i = 0; i < s.sprite.npoints; i++)
+            if (this.sprite.inside(s.sprite.xpoints[i], s.sprite.ypoints[i]))
+                return true;
+        for (i = 0; i < this.sprite.npoints; i++)
+            if (s.sprite.inside(this.sprite.xpoints[i], this.sprite.ypoints[i]))
+                return true;
+        return false;
+    },
+
+    createMorph: function(sprite) {
+        // This function creates a Morph out of a game polygon/sprite
+        var vertices = sprite.points;
+    
+        if (sprite.xpoints.length > 0) {
+            var morph;
+        
+            // This is inefficient: We should reuse the shape instead of creating a new one
+            var shape = this.morphShape = PolygonShape(null, vertices, Color.black, 1, Color.yellow);
+            if (this.morph) {
+                morph = this.morph; 
+                morph.setPosition(pt(sprite.xpoints[0], sprite.ypoints[0]));
+                morph.setShape(shape);
+            } else {
+                morph = Morph(Rectangle(sprite.xpoints[0], sprite.ypoints[0], 20, 20), "rect");
+                morph.setShape(shape);
+                gameMorph.addMorph(morph);
+            }
+            return morph;
+        } else {
+            return null;
+        }
+    }
+
+});
+
+/************************************************************************************************
+  Main application code -- constants and variables
+************************************************************************************************/
+
+  // Constants
+
+  /* static final int */ var DELAY = 50;             // Milliseconds between screen updates.
+
+  /* static final int */ var MAX_SHIPS = 3;           // Starting number of ships per game.
+
+  /* static final int */ var MAX_SHOTS =  6;          // Maximum number of sprites for photons,
+  /* static final int */ var MAX_ROCKS =  8;          // asteroids and explosions.
+  /* static final int */ var MAX_SCRAP = 20;
+
+  /* static final int */ var SCRAP_COUNT = 30;        // Counter starting values.
+  /* static final int */ var HYPER_COUNT = 60;
+  /* static final int */ var STORM_PAUSE = 30;
+  /* static final int */ var UFO_PASSES  =  3;
+
+  /* static final int */ var MIN_ROCK_SIDES =  8;     // Asteroid shape and size ranges.
+  /* static final int */ var MAX_ROCK_SIDES = 12;
+  /* static final int */ var MIN_ROCK_SIZE  = 15; // 20
+  /* static final int */ var MAX_ROCK_SIZE  = 30; // 40
+  /* static final int */ var MIN_ROCK_SPEED =  2;
+  /* static final int */ var MAX_ROCK_SPEED = 12;
+
+  /* static final int */ var BIG_POINTS    =  25;     // Points for shooting different objects.
+  /* static final int */ var SMALL_POINTS  =  50;
+  /* static final int */ var UFO_POINTS    = 250;
+  /* static final int */ var MISSILE_POINTS = 500;
+
+  /* static final int */ var NEW_SHIP_POINTS = 5000;  // Number of points needed to earn a new ship.
+  /* static final int */ var NEW_UFO_POINTS  = 2750;  // Number of points between flying saucers.
+
+  // Background stars.
+
+  /* int */ var numStars = 0;
+  /* Point[] */ stars = [];
+
+  // Game data.
+
+  /* int */ var score = 0;
+  /* int */ var highScore = 0;
+  /* int */ var newShipScore = 0;
+  /* int */ var newUfoScore = 0;
+
+  /* boolean */ var loaded = false;
+  /* boolean */ var paused = false;
+  /* boolean */ var playing = false;
+  /* boolean */ var sound = false;
+  /* boolean */ var detail = false;
+
+  // Key flags.
+
+  /* boolean */ var left  = false;
+  /* boolean */ var right = false;
+  /* boolean */ var up    = false;
+  /* boolean */ var down  = false;
+
+  // Sprite objects.
+
+  /* AsteroidsSprite */   var ship = null;
+  /* AsteroidsSprite */   var ufo = null;
+  /* AsteroidsSprite */   var missile = null;
+  /* AsteroidsSprite[] */ var photons    = []; /* new AsteroidsSprite[MAX_SHOTS]; */
+  /* AsteroidsSprite[] */ var asteroids  = []; /* new AsteroidsSprite[MAX_ROCKS]; */
+  /* AsteroidsSprite[] */ var explosions = []; /* new AsteroidsSprite[MAX_SCRAP]; */
+
+  // Ship data.
+
+  /* int */ var shipsLeft = 0;       // Number of ships left to play, including current one.
+  /* int */ var shipCounter = 0;     // Time counter for ship explosion.
+  /* int */ var hyperCounter = 0;    // Time counter for hyperspace.
+
+  // Photon data.
+
+  /* int[] */ var photonCounter = []; /* new int[MAX_SHOTS]; */ // Time counter for life of a photon.
+  /* int   */ var photonIndex = 0;                              // Next available photon sprite.
+
+  // Flying saucer data.
+
+  /* int */ var ufoPassesLeft = 0;    // Number of flying saucer passes.
+  /* int */ var ufoCounter = 0;       // Time counter for each pass.
+
+  // Missile data.
+
+  /* int */ var missileCounter;    // Counter for life of missile.
+
+  // Asteroid data.
+
+  /* boolean[] */ var asteroidIsSmall = [] /* new boolean[MAX_ROCKS]; */ // Asteroid size flag.
+  /* int       */ var asteroidsCounter = 0;                              // Break-time counter.
+  /* int       */ var asteroidsSpeed = 0;                                // Asteroid speed.
+  /* int       */ var asteroidsLeft = 0;                                 // Number of active asteroids.
+
+  // Explosion data.
+
+  /* int[] */ var explosionCounter = []; /* new int[MAX_SCRAP]; */ // Time counters for explosions.
+  /* int   */ var explosionIndex = 0;                              // Next available explosion sprite.
+
+  // Sound clips.
+  // NOTE: Audio is not supported yet in the JavaScript version
+  /* AudioClip */ var crashSound = null;
+  /* AudioClip */ var explosionSound = null;
+  /* AudioClip */ var fireSound = null;
+  /* AudioClip */ var missileSound = null;
+  /* AudioClip */ var saucerSound = null;
+  /* AudioClip */ var thrustersSound = null;
+  /* AudioClip */ var warpSound = null;
+
+  // Flags for looping sound clips.
+
+  /* boolean */ var thrustersPlaying = false;
+  /* boolean */ var saucerPlaying = false;
+  /* boolean */ var missilePlaying = false;
+
+  // Values for the offscreen image.
+
+  /* Dimension */ var offDimension = null;
+  /* Image */     var offImage = null;
+  /* Graphics */  var offGraphics = null;
+
+  // Font data.
+  /* NOTE: Fonts are not supported yet in the JavaScript version
+  Font font = new Font("Helvetica", Font.BOLD, 12);
+  FontMetrics fm;
+  */
+  
+  var text_score = null;
+  var text_ships = null;
+  var text_high  = null;
+  var text_name  = null;
+  var text_info  = null;
+  
+  var fontWidth = 16;
+  var fontHeight = 16; // getStringHeight("X");
+
+
+/************************************************************************************************
+  Main application code -- Methods.
+************************************************************************************************/
+
+  // Application initialization
+  function initAsteroidsGame() {
+
+    // Generate starry background.
+    initBackground();
+
+    // Show score, opening texts, etc.
+    showTextStrings();
+
+    // Create shape for the ship sprite.
+
+    ship = new AsteroidsSprite();
+    ship.shape.addPoint(0, -10);
+    ship.shape.addPoint(7, 10);
+    ship.shape.addPoint(-7, 10);
+
+    // Create shape for the photon sprites.
+
+    var i;
+    for (i = 0; i < MAX_SHOTS; i++) {
+      photons[i] = new AsteroidsSprite();
+      photons[i].shape.addPoint(1, 1);
+      photons[i].shape.addPoint(1, -1);
+      photons[i].shape.addPoint(-1, 1);
+      photons[i].shape.addPoint(-1, -1);
+    }
+
+    // Create shape for the flying saucer.
+
+    ufo = new AsteroidsSprite();
+    ufo.shape.addPoint(-15, 0);
+    ufo.shape.addPoint(-10, -5);
+    ufo.shape.addPoint(-5, -5);
+    ufo.shape.addPoint(-5, -9);
+    ufo.shape.addPoint(5, -9);
+    ufo.shape.addPoint(5, -5);
+    ufo.shape.addPoint(10, -5);
+    ufo.shape.addPoint(15, 0);
+    ufo.shape.addPoint(10, 5);
+    ufo.shape.addPoint(-10, 5);
+
+    // Create shape for the guided missile.
+
+    missile = new AsteroidsSprite();
+    missile.shape.addPoint(0, -4);
+    missile.shape.addPoint(1, -3);
+    missile.shape.addPoint(1, 3);
+    missile.shape.addPoint(2, 4);
+    missile.shape.addPoint(-2, 4);
+    missile.shape.addPoint(-1, 3);
+    missile.shape.addPoint(-1, -3);
+
+    // Create asteroid sprites.
+
+    for (i = 0; i < MAX_ROCKS; i++)
+      asteroids[i] = new AsteroidsSprite();
+
+    // Create explosion sprites.
+
+    for (i = 0; i < MAX_SCRAP; i++)
+      explosions[i] = new AsteroidsSprite();
+
+    // Set font data.
+    /* NOTE: Fonts are not supported yet
+    g.setFont(font);
+    fm = g.getFontMetrics();
+    fontWidth = fm.getMaxAdvance();
+    fontHeight = fm.getHeight();
+    */
+
+    // Initialize game data and put us in 'game over' mode.
+
+    highScore = 0;
+    sound = false;
+    detail = false;
+    initGame();
+    endGame();
+  }
+
+  function initGame() {
+
+    // Initialize game data and sprites.
+
+    score = 0;
+    shipsLeft = MAX_SHIPS;
+    asteroidsSpeed = MIN_ROCK_SPEED;
+    newShipScore = NEW_SHIP_POINTS;
+    newUfoScore = NEW_UFO_POINTS;
+    initShip();
+    initPhotons();
+    stopUfo();
+    stopMissile();
+    initAsteroids();
+    initExplosions();
+    playing = true;
+    paused = false;
+  }
+
+  function endGame() {
+
+    // Stop ship, flying saucer, guided missile and associated sounds.
+
+    playing = false;
+    stopShip();
+    stopUfo();
+    stopMissile();
+  }
+
+  // Create the starry background
+  function initBackground() {
+
+    numStars = Math.floor(gameWidth * gameHeight / 5000);
+    stars = []; /* new Point[numStars]; */
+
+    for (var i = 0; i < numStars; i++) {
+      stars[i] = pt((Math.random() * gameWidth), (Math.random() * gameHeight));
+
+      var m = Morph(Rectangle(stars[i].x, stars[i].y, 1, 1), "rect");
+      m.setFill(Color.yellow);
+      m.setBorderColor(Color.yellow);
+      gameMorph.addMorph(m);
+    }
+  }
+
+  function showTextStrings() {
+  
+    if (!text_score) {
+        text_score = TextMorph(Rectangle(10, 0, 100, fontHeight), "Score: " + score);
+        text_score.setFill(Color.black);
+        text_score.setTextColor(Color.yellow);
+        gameMorph.addMorph(text_score);
+    } else {
+        text_score.setTextString("Score: " + score);
+    }
+
+    if (!text_ships) {
+        text_ships = TextMorph(Rectangle(10, gameHeight, 100, fontHeight), "Ships: " + shipsLeft);
+        text_ships.setFill(Color.black);
+        text_ships.setTextColor(Color.yellow);
+        gameMorph.addMorph(text_ships);
+    } else {
+        text_ships.setTextString("Ships: " + shipsLeft);
+    }
+
+    if (!text_high) {
+        text_high = TextMorph(Rectangle(gameWidth-120, 0, 100, fontHeight), "High: " + highScore);
+        text_high.setFill(Color.black);
+        text_high.setTextColor(Color.yellow);
+        gameMorph.addMorph(text_high);
+    } else {
+        text_high.setTextString("High: " + highScore);
+    }
+
+    if (!playing) {
+      if (!text_name) {
+          text_name = TextMorph(Rectangle(gameWidth / 2 - 140, gameHeight / 2 - 36, 280, 16), "A S T E R O I D S ! Copyright 1998 by Mike Hall");
+          text_name.setFill(Color.black);
+          text_name.setTextColor(Color.yellow);
+          gameMorph.addMorph(text_name);
+      }
+      
+      if (!text_info) {
+          text_info = TextMorph(Rectangle(gameWidth / 2 - 100, gameHeight / 2, 200, 16), "Game Over: Press S to start");
+          text_info.setFill(Color.black);
+          text_info.setTextColor(Color.yellow);
+          gameMorph.addMorph(text_info);
+      }
+    } else {
+        if (text_name) {
+            text_name.remove();
+            text_name = null;
+        }
+        
+        if (text_info) {
+            text_info.remove();
+            text_info = null;    
+        }  
+    }
+  }
+
+var GameMorph = HostClass.create('GameMorph', ClipMorph);
+
+GameMorph.prototype.runAsteroidsGame = function() {
+    
+    // var i, j;
+    // var startTime;
+    
+    // Load sounds.
+    
+    if (!loaded) {
+        loadSounds();
+        loaded = true;
+        // loadThread.stop();
+    }
+    
+    // This is the main loop.
+    
+    if (!paused) {
+
+        // Move and process all sprites.
+
+        updateShip();
+        updatePhotons();
+        updateUfo();
+        updateMissile();
+        updateAsteroids();
+        updateExplosions();
+
+        // Check the score and advance high score, add a new ship or start the flying
+        // saucer as necessary.
+
+        if (score > highScore)
+            highScore = score;
+        if (score > newShipScore) {
+            newShipScore += NEW_SHIP_POINTS;
+            shipsLeft++;
+        }
+        if (playing && score > newUfoScore && !ufo.active) {
+            newUfoScore += NEW_UFO_POINTS;
+            ufoPassesLeft = UFO_PASSES;
+            initUfo();
+        }
+
+        // If all asteroids have been destroyed create a new batch.
+
+        if (asteroidsLeft <= 0) {
+            if (--asteroidsCounter <= 0)
+                initAsteroids();
+        }
+
+        // Update the screen and set the timer for the next loop.
+        // repaint();
+        
+        // Update score
+        showTextStrings();
+
+    }
+    this.timeoutID = window.setTimeout(arguments.callee.withLogging('Asteroid Timer'), DELAY);
+};
+
+  function loadSounds() {
+
+    // Load all sound clips by playing and immediately stopping them.
+
+    /* NOTE: Sounds are not supported yet
+    try {
+      crashSound     = getAudioClip(new URL(getDocumentBase(), "crash.au"));
+      explosionSound = getAudioClip(new URL(getDocumentBase(), "explosion.au"));
+      fireSound      = getAudioClip(new URL(getDocumentBase(), "fire.au"));
+      missileSound    = getAudioClip(new URL(getDocumentBase(), "missile.au"));
+      saucerSound    = getAudioClip(new URL(getDocumentBase(), "saucer.au"));
+      thrustersSound = getAudioClip(new URL(getDocumentBase(), "thrusters.au"));
+      warpSound      = getAudioClip(new URL(getDocumentBase(), "warp.au"));
+    }
+    catch (MalformedURLException e) {}
+
+    crashSound.play();     crashSound.stop();
+    explosionSound.play(); explosionSound.stop();
+    fireSound.play();      fireSound.stop();
+    missileSound.play();    missileSound.stop();
+    saucerSound.play();    saucerSound.stop();
+    thrustersSound.play(); thrustersSound.stop();
+    warpSound.play();      warpSound.stop();
+    */
+  }
+
+  function initShip() {
+
+    ship.active = true;
+    ship.angle = 0.0;
+    ship.deltaAngle = 0.0;
+    ship.currentX = 0.0;
+    ship.currentY = 0.0;
+    ship.deltaX = 0.0;
+    ship.deltaY = 0.0;
+    ship.render();
+//    if (loaded)
+//      thrustersSound.stop();
+    thrustersPlaying = false;
+
+    hyperCounter = 0;
+  }
+
+  function updateShip() {
+
+    var dx, dy, limit;
+
+    if (!playing)
+      return;
+
+    // Rotate the ship if left or right cursor key is down.
+
+    if (left) {
+      ship.angle += Math.PI / 16.0;
+      if (ship.angle > 2 * Math.PI)
+        ship.angle -= 2 * Math.PI;
+    }
+    if (right) {
+      ship.angle -= Math.PI / 16.0;
+      if (ship.angle < 0)
+        ship.angle += 2 * Math.PI;
+    }
+
+    // Fire thrusters if up or down cursor key is down. Don't let ship go past
+    // the speed limit.
+
+    dx = -Math.sin(ship.angle);
+    dy =  Math.cos(ship.angle);
+    limit = 0.8 * MIN_ROCK_SIZE;
+    if (up) {
+      if (ship.deltaX + dx > -limit && ship.deltaX + dx < limit)
+        ship.deltaX += dx;
+      if (ship.deltaY + dy > -limit && ship.deltaY + dy < limit)
+        ship.deltaY += dy;
+    }
+    if (down) {
+      if (ship.deltaX - dx > -limit && ship.deltaX - dx < limit)
+        ship.deltaX -= dx;
+      if (ship.deltaY - dy > -limit && ship.deltaY - dy < limit)
+        ship.deltaY -= dy;
+    }
+
+    // Move the ship. If it is currently in hyperspace, advance the countdown.
+
+    if (ship.active) {
+      ship.advance();
+      ship.render();
+
+      if (ship.morph) {
+          ship.morph.setBorderColor(Color.purple);
+      }  
+
+
+      if (hyperCounter > 0) {
+        hyperCounter--;
+
+        if (ship.morph) {
+            // var c = 255 - (255 / HYPER_COUNT) * hyperCounter;
+            ship.morph.setFill(Color.random());    
+        }
+      }
+    }
+
+    // Ship is exploding, advance the countdown or create a new ship if it is
+    // done exploding. The new ship is added as though it were in hyperspace.
+    // (This gives the player time to move the ship if it is in imminent danger.)
+    // If that was the last ship, end the game.
+
+    else {
+      if (--shipCounter <= 0) {
+        if (shipsLeft > 0) {
+          initShip();
+          hyperCounter = HYPER_COUNT;
+        }
+        else
+          endGame();
+      }
+    }
+  }
+
+  function stopShip() {
+
+    ship.active = false;
+    shipCounter = SCRAP_COUNT;
+    if (shipsLeft > 0)
+      shipsLeft--;
+//    if (loaded)
+//      thrustersSound.stop();
+    thrustersPlaying = false;
+    
+    if (ship.morph) {
+        ship.morph.remove();
+        ship.morph = null;
+    } 
+  }
+
+  function initPhotons() {
+
+    for (var i = 0; i < MAX_SHOTS; i++) {
+      photons[i].active = false;
+      photonCounter[i] = 0;
+
+      if (photons[i].morph) {
+          photons[i].morph.remove();
+          photons[i].morph = null;
+      } 
+
+    }
+    photonIndex = 0;
+  }
+
+  function updatePhotons() {
+
+    // Move any active photons. Stop it when its counter has expired.
+
+    for (var i = 0; i < MAX_SHOTS; i++)
+      if (photons[i].active) {
+    
+        photons[i].advance();
+        photons[i].render();
+
+        if (--photonCounter[i] < 0) {
+          photons[i].active = false;
+                              
+          if (photons[i].morph) {
+              photons[i].morph.remove();
+              photons[i].morph = null;
+          }
+        }
+      }
+  }
+
+  function initUfo() {
+
+    var temp;
+
+    // Randomly set flying saucer at left or right edge of the screen.
+
+    ufo.active = true;
+    ufo.currentX = -gameWidth / 2;
+    ufo.currentY = Math.random() * gameHeight;
+    ufo.deltaX = MIN_ROCK_SPEED + Math.random() * (MAX_ROCK_SPEED - MIN_ROCK_SPEED);
+    if (Math.random() < 0.5) {
+      ufo.deltaX = -ufo.deltaX;
+      ufo.currentX = gameWidth / 2;
+    }
+    ufo.deltaY = MIN_ROCK_SPEED + Math.random() * (MAX_ROCK_SPEED - MIN_ROCK_SPEED);
+    if (Math.random() < 0.5)
+      ufo.deltaY = -ufo.deltaY;
+    ufo.render();
+    saucerPlaying = true;
+//    if (sound)
+//      saucerSound.loop();
+
+    // Set counter for this pass.
+
+    ufoCounter = Math.floor(gameWidth / Math.abs(ufo.deltaX));
+  }
+
+  function updateUfo() {
+
+    var i, d;
+
+    // Move the flying saucer and check for collision with a photon. Stop it when its
+    // counter has expired.
+
+    if (ufo.active) {
+      ufo.advance();
+      ufo.render();
+      if (--ufoCounter <= 0) {
+        if (--ufoPassesLeft > 0)
+          initUfo();
+        else
+          stopUfo();
+      } else {
+        for (i = 0; i < MAX_SHOTS; i++)
+          if (photons[i].active && ufo.isColliding(photons[i])) {
+//            if (sound)
+//              crashSound.play();
+            explode(ufo);
+            stopUfo();
+            score += UFO_POINTS;
+          }
+
+          // On occasion, fire a missile at the ship if the saucer is not
+          // too close to it.
+
+          d = Math.max(Math.abs(ufo.currentX - ship.currentX), Math.abs(ufo.currentY - ship.currentY));
+          if (ship.active && hyperCounter <= 0 && ufo.active && !missile.active &&
+              d > 4 * MAX_ROCK_SIZE && Math.random() < .03)
+            initMissile();
+       }
+    }
+  }
+
+  function stopUfo() {
+
+    ufo.active = false;
+    ufoCounter = 0;
+    ufoPassesLeft = 0;
+//    if (loaded)
+//      saucerSound.stop();
+    saucerPlaying = false;
+
+    if (ufo.morph) {
+        ufo.morph.remove();
+        ufo.morph = null;
+    } 
+  }
+
+  function initMissile() {
+
+    missile.active = true;
+    missile.angle = 0.0;
+    missile.deltaAngle = 0.0;
+    missile.currentX = ufo.currentX;
+    missile.currentY = ufo.currentY;
+    missile.deltaX = 0.0;
+    missile.deltaY = 0.0;
+    missile.render();
+    missileCounter = 3 * Math.max(gameWidth, gameHeight) / MIN_ROCK_SIZE;
+//    if (sound)
+//      missileSound.loop();
+    missilePlaying = true;
+  }
+
+  function updateMissile() {
+
+    var i;
+
+    // Move the guided missile and check for collision with ship or photon. Stop it when its
+    // counter has expired.
+
+    if (missile.active) {
+      if (--missileCounter <= 0)
+        stopMissile();
+      else {
+        guideMissile();
+        missile.advance();
+        missile.render();
+
+        if (missile.morph) {
+            var c = Math.min(missileCounter * 24, 255);
+            missile.morph.setBorderColor(new Color(c, c, c));
+        }
+
+        for (i = 0; i < MAX_SHOTS; i++)
+          if (photons[i].active && missile.isColliding(photons[i])) {
+//            if (sound)
+//              crashSound.play();
+            explode(missile);
+            stopMissile();
+            score += MISSILE_POINTS;
+          }
+        if (missile.active && ship.active && hyperCounter <= 0 && ship.isColliding(missile)) {
+//          if (sound)
+//            crashSound.play();
+          explode(ship);
+          stopShip();
+          stopUfo();
+          stopMissile();
+        }
+      }
+    }
+  }
+
+  function guideMissile() {
+
+    /* double */ var dx, dy, angle;
+
+    if (!ship.active || hyperCounter > 0)
+      return;
+
+    // Find the angle needed to hit the ship.
+
+    dx = ship.currentX - missile.currentX;
+    dy = ship.currentY - missile.currentY;
+    if (dx == 0 && dy == 0)
+      angle = 0;
+    if (dx == 0) {
+      if (dy < 0)
+        angle = -Math.PI / 2;
+      else
+        angle = Math.PI / 2;
+    }
+    else {
+      angle = Math.atan(Math.abs(dy / dx));
+      if (dy > 0)
+        angle = -angle;
+      if (dx < 0)
+        angle = Math.PI - angle;
+    }
+
+    // Adjust angle for screen coordinates.
+
+    missile.angle = angle - Math.PI / 2;
+
+    // Change the missile's angle so that it points toward the ship.
+
+    missile.deltaX = MIN_ROCK_SIZE / 3 * -Math.sin(missile.angle);
+    missile.deltaY = MIN_ROCK_SIZE / 3 *  Math.cos(missile.angle);
+  }
+
+  function stopMissile() {
+
+    missile.active = false;
+    missileCounter = 0;
+//    if (loaded)
+//      missileSound.stop();
+    missilePlaying = false;
+
+    if (missile.morph) {
+        missile.morph.remove();
+        missile.morph = null;
+    } 
+  }
+
+  function initAsteroids() {
+
+    var i, j;
+    var s;
+    /* double */ var theta, r;
+    var x, y;
+
+    // Create random shapes, positions and movements for each asteroid.
+
+    for (i = 0; i < MAX_ROCKS; i++) {
+
+      // Create a jagged shape for the asteroid and give it a random rotation.
+      if (asteroids[i].morph) {
+          asteroids[i].morph.remove();
+          asteroids[i].morph = null;
+      }
+       
+      asteroids[i].shape = new GamePolygon();
+      s = MIN_ROCK_SIDES + (Math.random() * (MAX_ROCK_SIDES - MIN_ROCK_SIDES));
+      for (j = 0; j < s; j ++) {
+        theta = 2 * Math.PI / s * j;
+        r = MIN_ROCK_SIZE + (Math.random() * (MAX_ROCK_SIZE - MIN_ROCK_SIZE));
+        x = -Math.round(r * Math.sin(theta));
+        y =  Math.round(r * Math.cos(theta));
+        asteroids[i].shape.addPoint(x, y);
+      }
+      asteroids[i].active = true;
+      asteroids[i].angle = 0.0;
+      asteroids[i].deltaAngle = (Math.random() - 0.5) / 10;
+
+      // Place the asteroid at one edge of the screen.
+
+      if (Math.random() < 0.5) {
+        asteroids[i].currentX = -gameWidth / 2;
+        if (Math.random() < 0.5)
+          asteroids[i].currentX = gameWidth / 2;
+        asteroids[i].currentY = Math.random() * gameHeight;
+      }
+      else {
+        asteroids[i].currentX = Math.random() * gameWidth;
+        asteroids[i].currentY = -gameHeight / 2;
+        if (Math.random() < 0.5)
+          asteroids[i].currentY = gameHeight / 2;
+      }
+
+      // Set a random motion for the asteroid.
+
+      asteroids[i].deltaX = Math.random() * asteroidsSpeed;
+      if (Math.random() < 0.5)
+        asteroids[i].deltaX = -asteroids[i].deltaX;
+      asteroids[i].deltaY = Math.random() * asteroidsSpeed;
+      if (Math.random() < 0.5)
+        asteroids[i].deltaY = -asteroids[i].deltaY;
+
+      asteroids[i].render();
+      asteroidIsSmall[i] = false;
+    }
+
+    asteroidsCounter = STORM_PAUSE;
+    asteroidsLeft = MAX_ROCKS;
+    if (asteroidsSpeed < MAX_ROCK_SPEED)
+      asteroidsSpeed++;
+  }
+
+  function initSmallAsteroids(n) {
+
+    var count;
+    var i, j;
+    var s;
+    /* double */ var tempX, tempY;
+    /* double */ var theta, r;
+    var x, y;
+
+    // Create one or two smaller asteroids from a larger one using inactive asteroids. The new
+    // asteroids will be placed in the same position as the old one but will have a new, smaller
+    // shape and new, randomly generated movements.
+
+    count = 0;
+    i = 0;
+    tempX = asteroids[n].currentX;
+    tempY = asteroids[n].currentY;
+    do {
+      if (!asteroids[i].active) {
+
+        if (asteroids[i].morph) {
+            asteroids[i].morph.remove();
+            asteroids[i].morph = null;
+        }
+
+        asteroids[i].shape = new GamePolygon();
+        s = MIN_ROCK_SIDES + (Math.random() * (MAX_ROCK_SIDES - MIN_ROCK_SIDES));
+        for (j = 0; j < s; j ++) {
+          theta = 2 * Math.PI / s * j;
+          r = (MIN_ROCK_SIZE + (Math.random() * (MAX_ROCK_SIZE - MIN_ROCK_SIZE))) / 2;
+          x = -Math.round(r * Math.sin(theta));
+          y =  Math.round(r * Math.cos(theta));
+          asteroids[i].shape.addPoint(x, y);
+        }
+        asteroids[i].active = true;
+        asteroids[i].angle = 0.0;
+        asteroids[i].deltaAngle = (Math.random() - 0.5) / 10;
+        asteroids[i].currentX = tempX;
+        asteroids[i].currentY = tempY;
+        asteroids[i].deltaX = Math.random() * 2 * asteroidsSpeed - asteroidsSpeed;
+        asteroids[i].deltaY = Math.random() * 2 * asteroidsSpeed - asteroidsSpeed;
+        asteroids[i].render();
+        asteroidIsSmall[i] = true;
+        count++;
+        asteroidsLeft++;
+      }
+      i++;
+    } while (i < MAX_ROCKS && count < 2);
+  }
+
+  function updateAsteroids() {
+
+    var i, j;
+
+    // Move any active asteroids and check for collisions.
+
+    for (i = 0; i < MAX_ROCKS; i++)
+      if (asteroids[i].active) {
+      
+        asteroids[i].advance();
+        asteroids[i].render();
+
+        // If hit by photon, kill asteroid and advance score. If asteroid is large,
+        // make some smaller ones to replace it.
+
+        for (j = 0; j < MAX_SHOTS; j++)
+          if (photons[j].active && asteroids[i].active && asteroids[i].isColliding(photons[j])) {
+            asteroidsLeft--;
+            asteroids[i].active = false;
+            photons[j].active = false;
+
+//            if (sound)
+//              explosionSound.play();
+            explode(asteroids[i]);
+            
+            if (asteroids[i].morph) {
+                asteroids[i].morph.remove();
+                asteroids[i].morph = null;
+            }
+            
+            if (photons[j].morph) {
+                photons[j].morph.remove();
+                photons[j].morph = null;
+            }
+
+            if (!asteroidIsSmall[i]) {
+              score += BIG_POINTS;
+              initSmallAsteroids(i);
+            }
+            else
+              score += SMALL_POINTS;
+          }
+
+        // If the ship is not in hyperspace, see if it is hit.
+
+        if (ship.active && hyperCounter <= 0 && asteroids[i].active && asteroids[i].isColliding(ship)) {
+//          if (sound)
+//            crashSound.play();
+          explode(ship);
+          stopShip();
+          stopUfo();
+          stopMissile();
+        }
+    }
+  }
+
+  function initExplosions() {
+
+    for (var i = 0; i < MAX_SCRAP; i++) {
+      explosions[i].shape = new GamePolygon();
+      explosions[i].active = false;
+      explosionCounter[i] = 0;
+
+      if (explosions[i].morph) {
+          explosions[i].morph.remove();
+          explosions[i].morph = null;
+      }
+
+    }
+    explosionIndex = 0;
+  }
+
+  function explode(/* AsteroidsSprite */ s) {
+
+    var c, i, j;
+
+    // Create sprites for explosion animation. The each individual line segment of the given sprite
+    // is used to create a new sprite that will move outward  from the sprite's original position
+    // with a random rotation.
+
+    s.render();
+    c = 2;
+    if (detail || s.sprite.npoints < 6)
+      c = 1;
+    for (i = 0; i < s.sprite.npoints; i += c) {
+      explosionIndex++;
+      if (explosionIndex >= MAX_SCRAP)
+        explosionIndex = 0;
+        
+      if (explosions[explosionIndex].morph) {
+          explosions[explosionIndex].morph.remove();
+          explosions[explosionIndex].morph = null;
+      }
+        
+      explosions[explosionIndex].active = true;
+      explosions[explosionIndex].shape = new GamePolygon();
+      explosions[explosionIndex].shape.addPoint(s.shape.xpoints[i], s.shape.ypoints[i]);
+      j = i + 1;
+      if (j >= s.sprite.npoints)
+        j -= s.sprite.npoints;
+      explosions[explosionIndex].shape.addPoint(s.shape.xpoints[j], s.shape.ypoints[j]);
+      explosions[explosionIndex].angle = s.angle;
+      explosions[explosionIndex].deltaAngle = (Math.random() * 2 * Math.PI - Math.PI) / 15;
+      explosions[explosionIndex].currentX = s.currentX;
+      explosions[explosionIndex].currentY = s.currentY;
+      explosions[explosionIndex].deltaX = -s.shape.xpoints[i] / 5;
+      explosions[explosionIndex].deltaY = -s.shape.ypoints[i] / 5;
+      explosionCounter[explosionIndex] = SCRAP_COUNT;
+    }
+  }
+
+  function updateExplosions() {
+
+    // Move any active explosion debris. Stop explosion when its counter has expired.
+
+    for (var i = 0; i < MAX_SCRAP; i++)
+      if (explosions[i].active) {
+        explosions[i].advance();
+        explosions[i].render();
+        
+        if (explosions[i].morph) {
+            // var c = (255 / SCRAP_COUNT) * explosionCounter[i];
+            explosions[i].morph.setFill(Color.random() /* new Color(0, c, c) */);
+            explosions[i].morph.setBorderColor(Color.random() /* new Color(0, c, c) */);
+        }
+        
+        if (--explosionCounter[i] < 0) {
+          explosions[i].active = false;
+          
+          if (explosions[i].morph) {
+              explosions[i].morph.remove();
+              explosions[i].morph = null;
+          }
+        }
+      }
+  }
+
+/*
+ * The game morph and event handlers
+ */
+  /* Keycodes */
+
+  var KEY_S     = 83; // Start
+  var KEY_M     = 77; // Mute
+  var KEY_D     = 68; // Detail
+  var KEY_P     = 80; // Pause
+  var KEY_H     = 72; // Hyperspace
+
+  function keyDown(event) {
+
+    var key = event.keyCode || event.charCode;
+
+    // Check if any cursor keys have been pressed and set flags.
+
+    if (key == Event.KEY_LEFT)
+      left = true;
+    if (key == Event.KEY_RIGHT)
+      right = true;
+    if (key == Event.KEY_UP)
+      up = true;
+    if (key == Event.KEY_DOWN)
+      down = true;
+
+    if ((up || down) && ship.active && !thrustersPlaying) {
+//      if (sound && !paused)
+//        thrustersSound.loop();
+      thrustersPlaying = true;
+    }
+
+    // Spacebar: fire a photon and start its counter.
+
+    if (key == Event.KEY_SPACEBAR && ship.active) {
+//      if (sound & !paused)
+//        fireSound.play();
+      photonIndex++;
+      if (photonIndex >= MAX_SHOTS)
+        photonIndex = 0;
+      photons[photonIndex].active = true;
+      photons[photonIndex].currentX = ship.currentX;
+      photons[photonIndex].currentY = ship.currentY;
+      photons[photonIndex].deltaX = MIN_ROCK_SIZE * -Math.sin(ship.angle);
+      photons[photonIndex].deltaY = MIN_ROCK_SIZE *  Math.cos(ship.angle);
+      photonCounter[photonIndex] = Math.min(gameWidth, gameHeight) / MIN_ROCK_SIZE;
+    }
+
+    // 'H' key: warp ship into hyperspace by moving to a random location and starting counter.
+
+    if (key == KEY_H && ship.active && hyperCounter <= 0) {
+      ship.currentX = Math.random() * gameWidth;
+      ship.currentX = Math.random() * gameHeight;
+      hyperCounter = HYPER_COUNT;
+//      if (sound & !paused)
+//        warpSound.play();
+    }
+
+    // 'P' key: toggle pause mode and start or stop any active looping sound clips.
+
+    if (key == KEY_P) {
+      if (paused) {
+//        if (sound && missilePlaying)
+//          missileSound.loop();
+//        if (sound && saucerPlaying)
+//          saucerSound.loop();
+//        if (sound && thrustersPlaying)
+//          thrustersSound.loop();
+      }
+      else {
+//        if (missilePlaying)
+//          missileSound.stop();
+//        if (saucerPlaying)
+//          saucerSound.stop();
+//        if (thrustersPlaying)
+//          thrustersSound.stop();
+      }
+      paused = !paused;
+    }
+
+    // 'M' key: toggle sound on or off and stop any looping sound clips.
+
+    if (key == KEY_M && loaded) {
+/*
+      if (sound) {
+        crashSound.stop();
+        explosionSound.stop();
+        fireSound.stop();
+        missileSound.stop();
+        saucerSound.stop();
+        thrustersSound.stop();
+        warpSound.stop();
+      }
+      else {
+        if (missilePlaying && !paused)
+          missileSound.loop();
+        if (saucerPlaying && !paused)
+          saucerSound.loop();
+        if (thrustersPlaying && !paused)
+          thrustersSound.loop();
+      }
+      sound = !sound;
+*/
+    }
+
+    // 'D' key: toggle graphics detail on or off.
+
+    if (key == KEY_D) {
+      detail = !detail;
+    }
+
+    // 'S' key: start the game, if not already in progress.
+
+    if (key == KEY_S && loaded && !playing)
+      initGame();
+
+    return true;
+  }
+
+  function keyUp(event) {
+
+    var key = event.keyCode || event.charCode;
+
+    // Check if any cursor keys where released and set flags.
+
+    if (key == Event.KEY_LEFT)
+      left = false;
+    if (key == Event.KEY_RIGHT)
+      right = false;
+    if (key == Event.KEY_UP)
+      up = false;
+    if (key == Event.KEY_DOWN)
+      down = false;
+
+    if (!up && !down && thrustersPlaying) {
+//      thrustersSound.stop();
+      thrustersPlaying = false;
+    }
+
+    return true;
+  }
+
+Object.extend(GameMorph.prototype, {
+    
+    timeoutID: null,
+    initialize: function(rect) {
+        GameMorph.superClass.initialize.call(this, rect, "rect");
+        // Set black background color for the game
+        this.setFill(Color.black);
+        return this;
+    },
+    
+    handlesMouseDown: function() {
+        return true; // hack
+    },
+
+    onMouseDown: function(evt) {
+        evt.hand.setMouseFocus(this);
+        this.requestKeyboardFocus(evt.hand);
+        return true; 
+    },
+
+    setHasKeyboardFocus: function(newSetting) { 
+        return newSetting;
+    },
+    
+    takesKeyboardFocus: function() { 
+        return true; 
+    },
+
+    onKeyDown: function(evt) { 
+        keyDown(evt);
+        return true; 
+    },
+
+    onKeyUp: function(evt) { 
+        keyUp(evt);
+        return true; 
+    },
+
+    shutdown: function() {
+        if (this.timeoutID) {
+            console.log('shutting down the game');
+            window.clearTimeout(this.timeoutID);
+        }
+        GameMorph.superClass.shutdown.call(this);
+    }
+
+});
+
+    function makeGameMorph(rect) {
+        gameMorph = GameMorph(rect); 
+        return gameMorph;
+    }
+
+    // module exports
+    return {
+        initialize: initAsteroidsGame,
+        makeGameMorph: makeGameMorph
+    };
+
+}(); // end of asteroid module
+
+// initAsteroidsGame(xxx);
+// runAsteroidsGame(xxx);
+
+// ===========================================================================
+// The Weather Widget Example
+// ===========================================================================
+
+/**
+ * @class WeatherWidget
+ */
+ 
+ // Weather widget works by selecting the city from the list.
+ // It uses the XMLHttpRequest to obtain weather info for the selected city
+ 
+ // Maybe we should consider using other weather service.  These images are crappy
+ // TODO: changing city info takes time depending on network load.
+WeatherWidget = Class.extend(Model);
+
+Object.extend(WeatherWidget.prototype, {
+
+    initialize: function() { 
+        WeatherWidget.superClass.initialize.call(this);
+        // Fetch weather upon starting the widget
+        this.getWeather("menlo-park", "california");
+    },
+    
+    openIn: function(world, location) {
+        world.addMorphAt(WindowMorph(this.buildView(), 'Weather Widget'), location);
+    },
+    
+    getListItem: function() {
+        return this.listItem;            
+    },
+    
+    setListItem: function(item, v) {
+        this.listItem = item; 
+        this.changed("getListItem", v); 
+        
+        // initialize UI update
+        switch (item) {
+        case "Menlo Park, California":
+            this.getWeather("menlo-park", "california");
+            break;
+        case "Tampere, Finland":
+            this.getWeather("tampere", "finland");
+            break;
+        case "London, United Kingdom":
+            this.getWeather("london", "united_kingdom");                    
+            break;
+        }
+    },
+
+    feed: null,
+    weatherDataArr: null,
+    previousResult: null,
+    
+    imageurl: "http://www.weatherforecastmap.com/images/weather/34.gif",     // default weather is sunny ;)
+    
+    parseWeatherData: function() {
+        if (this.previousResult != this.feed.channels[0]) {
+            // we got a new value asynchronously
+            this.previousResult = this.feed.channels[0];
+            this.weatherDataArr = this.previousResult.items[0].description.split(",");
+        }
+        
+        return this.weatherDataArr;
+    },
+
+    getWeatherDesc: function() { return this.parseWeatherData()[0]; },
+    getTemperature: function() { return this.parseWeatherData()[1].replace("&deg;","°"); },
+    getWind: function()        { return this.parseWeatherData()[2]; },
+    getPressure: function()    { return this.parseWeatherData()[3]; },
+    getVisibility: function()  { return this.parseWeatherData()[4]; },
+    getHumidity: function()    { return this.parseWeatherData()[5]; },
+    getUV: function()          { return this.parseWeatherData()[6]; },
+    getDate: function()        { return this.parseWeatherData().slice(7).join(', '); },
+    getImageURL: function()    { return this.imageurl; },
+    
+    buildView: function() {
+        var panel = PanelMorph(pt(300, 255));
+        panel.setBorderWidth(2);
+        //panel.setBorderColor(Color.blue);
+        panel.setFill(LinearGradient.makeGradient(Color.white, Color.primary.blue.lighter(), LinearGradient.EastWest));
+        // TODO: add rounding to all the elements (panel, window & titlebar)
+        // or make the titlebar round depending on the window
+        var m; 
+
+        panel.addMorph(m = ImageMorph(Rectangle(50,155,20,20), "http://www.cs.tut.fi/~kuusipal/flair/visibility.gif"));
+        m.setFill(Color.white);
+        panel.addMorph(m = ImageMorph(Rectangle(50,180,20,20), "http://www.cs.tut.fi/~kuusipal/flair/humidity.gif"));
+        m.setFill(Color.white);
+
+        panel.addMorph(m = CheapListMorph(Rectangle(80,3,200,20),["Menlo Park, California", "Tampere, Finland", "London, United Kingdom"]));
+        m.connectModel({model: this, getSelection: "getListItem", setSelection: "setListItem"});
+        m.selectLineAt(0); // Select the first item by default
+
+        // build the textfields for the weather panel
+        panel.addMorph(TextMorph(Rectangle(80,55, 200,20), "---")).connectModel({model: this, getText: "getWeatherDesc"});
+        panel.addMorph(TextMorph(Rectangle(80,80, 200,20), "---")).connectModel({model: this, getText: "getTemperature"});
+        panel.addMorph(TextMorph(Rectangle(80,105, 200,20), "---")).connectModel({model: this, getText: "getWind"});
+        panel.addMorph(TextMorph(Rectangle(80,130, 200,20), "---")).connectModel({model: this, getText: "getPressure"});
+        panel.addMorph(TextMorph(Rectangle(80,155, 200,20), "---")).connectModel({model: this, getText: "getVisibility"});
+        panel.addMorph(TextMorph(Rectangle(80,180, 200,20), "---")).connectModel({model: this, getText: "getHumidity"});
+        panel.addMorph(TextMorph(Rectangle(80,205, 200,20), "---")).connectModel({model: this, getText: "getUV"});
+        panel.addMorph(TextMorph(Rectangle(80,230, 200,20), "---")).connectModel({model: this, getText: "getDate"});
+    
+        var image = panel.addMorph(ImageMorph(Rectangle(20,25,50,50)));
+        image.connectModel({model: this, getURL: "getImageURL"});
+        image.setFill(Color.white);
+        this.changed('getImageURL');
+        return panel;
+    },
+
+    getWeather: function(city, country) {
+        this.feed = new Feed("http://weatherforecastmap.com/" + country + "/" + city + "/index.html");
+        this.feed.request(this, 'getWeatherDesc', "getTemperature", "getWind", "getPressure", 
+                          "getVisibility", "getHumidity", "getUV", "getDate");
+        var model = this;
+
+        new Ajax.Request("http://weatherforecastmap.com/" + country + "/" + city + "/", { 
+            method: 'get',
+            
+            onSuccess: function(transport) {
+                try {
+                    text = transport.responseText;
+                    var begin = text.indexOf("http://www.weatherforecastmap.com/images/weather/");
+                    var end = text.indexOf(".gif", begin);
+                    model.imageurl = text.substring(begin, end + ".gif".length);
+                    console.log('picked image url ' + model.imageurl);
+                    model.changed('getImageURL');
+                } catch (e) { console.log('got error %s', e); }
+            },
+            
+            onFailure: function(transport) {
+                console.log('problem with %s', transport);
+            },
+
+            onException: function(e) {
+                console.log('exception  %s, %s', e, Object.toJSON(e));
+            }
+    
+        });
+    }
+    
+});
+
+// ===========================================================================
+// The Stock Widget Example
+// ===========================================================================
+
+/**
+ * @class StockWidget
+ */
+
+StockWidget = Class.extend(Model);
+
+Object.extend(StockWidget.prototype, {
+    
+    initialize: function() { 
+        StockWidget.superClass.initialize.call(this);
+        this.imageurl = null;
+        this.feed = null;
+        return this;
+    },
+    
+    openIn: function(world, location) {
+        this.windowMorph = WindowMorph(this.buildView((pt(580, 460))), 'Stock Widget');
+        world.addMorphAt(this.windowMorph, location);
+        this.setStockIndex('DOW JONES');
+        return this;
+    },
+
+    makeURL: function(ticker) {
+        return "http://finance.google.com/finance?morenews=10&rating=1&q=INDEX" + ticker + "&output=rss";
+    },
+
+    // FIXME: The image links here are no longer necessary.  Remove later.
+    config: $H({
+    "DOW JONES": { 
+        ticker: 'DJX:.DJI', 
+        image: "http://bigcharts.marketwatch.com/charts/gqplus/fpDJIA-narrow.gqplus?167" },
+        // image: "http://newsimg.bbc.co.uk/media/images/42214000/jpg/_42214402_dowtwo.jpg" },
+    "NASDAQ": { 
+        ticker: 'NASDAQ:.IXIC',
+        image: "http://bigcharts.marketwatch.com/charts/gqplus/fpNASDAQ-narrow.gqplus?167" },
+        // image: "http://content.nasdaq.com/graphs/HOMEIXIC.gif?89649" },
+    "NYSE": { 
+        ticker: 'NYSE:NYA.X',
+        image: "http://www.forecasts.org/images/stock-market/nysecomp.gif"},
+
+    "S&P INX": { 
+        ticker: 'SP:.INX',
+        image: "http://stockcharts.com/charts/historical/images/SPX1960t.png" }
+    }),
+       
+    getStockIndex: function() { 
+        return this.listItem; 
+    },
+    
+    setStockIndex: function(item, v) { 
+        this.listItem = item; 
+        var entry = this.config[this.listItem];
+        this.imageurl = entry.image;
+        this.changed('getIndexChartURL');
+        this.feed = new Feed(this.makeURL(entry.ticker));
+        this.feed.request(this, 'getNewsHeaders');
+        this.changed("getStockIndex", v); 
+    },
+    
+    getNewsHeaders: function() {
+        return this.feed.channels[0].items.pluck('title');
+    },
+
+    getIndexChartURL: function() { 
+        return this.imageurl; 
+    },
+    
+    getCompany: function() { 
+        return this.companyListItem; 
+    },
+
+    setCompany: function(item, v) {
+        this.companyListItem = item; 
+        console.log('setting item ' + item);
+        this.getUrl("http://download.finance.yahoo.com/d/quotes.csv",
+                    { s:item.toLowerCase(), f:'sl1d1t1c1ohgv', e: '.csv'});
+        this.changed("getCompany", v); 
+    },
+
+    buildView: function(extent) {
+        var panel = PanelMorph(extent);
+        
+        // panel.setFill(StipplePattern.create(Color.primary.blue.lighter(), 1, Color.gray.lighter(), 1));
+        panel.setFill(LinearGradient.makeGradient(Color.white, Color.primary.blue.lighter(), LinearGradient.EastWest));
+        panel.setBorderWidth(2);
+        //panel.setBorderColor(Color.blue);
+        //var url = "http://www.nasdaq.com/aspxcontent/NasdaqRSS.aspx?data=quotes&symbol=stock"
+
+        // Marketwatch/Bigcharts logo
+        var m = panel.addMorph(ImageMorph(Rectangle(20, 10, 135, 68), "http://b.mktw.net/images/logo/frontpage.gif" ));
+        
+        // Dow Jones chart
+        var image = ImageMorph(Rectangle(160, 10, 175, 160), "http://bigcharts.marketwatch.com/charts/gqplus/fpDJIA-narrow.gqplus?167");
+        this.leftChartImage = image;
+        m = panel.addMorph(image);
+        m.setFill(Color.white);
+        
+        // NASDAQ chart
+        image = ImageMorph(Rectangle(360, 10, 175, 160), "http://bigcharts.marketwatch.com/charts/gqplus/fpNASDAQ-narrow.gqplus?167");
+        this.rightChartImage = image;
+        m = panel.addMorph(image);
+        m.setFill(Color.white);
+        // m.connectModel({model: this, getURL: "getIndexChartURL"});
+
+        // Newsfeed selector
+        m = panel.addMorph(CheapListMorph(Rectangle(20, 180, 90, 20), this.config.keys()));
+        m.connectModel({model: this, getSelection: "getStockIndex", setSelection: "setStockIndex"});
+
+        // Newsfeed panel
+        m = panel.addMorph(ListPane(Rectangle(160, 180, 410, 150)));
+        m.connectModel({model: this, getList: "getNewsHeaders"});
+
+        // Company-specific stock quotes
+        //this.dataList = panel.addMorph(CheapListMorph(Rectangle(20,300,130,40), this.dataArray));
+        m = panel.addMorph(TextMorph(Rectangle(160, 340, 410, 20), "")).connectModel({model: this, getText: 'getQuotes'});
+
+        // Company selector for stock quotes
+        m = panel.addMorph(CheapListMorph(Rectangle(20, 340, 120, 40), ["SUNW", "NOK", "GOOG", "QQQQ"]));
+        m.connectModel({model: this, getSelection: "getCompany", setSelection: "setCompany"});
+        this.setCompany('SUNW');
+        var model = this;
+        
+        panel.shutdown = function() {
+            PanelMorph.superClass.shutdown.call(this);
+            console.log('shutting down the stock widget');
+            model.timer && clearInterval(model.timer);
+        }
+        
+        return panel;
+    },
+
+    getQuotes: function() {
+        return this.formatQuote(this.lastQuote);
+    },
+
+    refreshCharts: function() {
+        // NOTE: 'stockWidget' is defined in Main.js (FIXME later)
+        if (!stockWidget.windowMorph || !stockWidget.windowMorph.targetMorph) return;
+        console.log("Refreshing charts...");
+
+        // FIXME: Ugly + implementation-specific
+        var panel = stockWidget.windowMorph.targetMorph;
+        
+        var leftImage = ImageMorph(Rectangle(160, 10, 175, 160), 
+            "http://bigcharts.marketwatch.com/charts/gqplus/fpDJIA-narrow.gqplus?167");
+        var rightImage = ImageMorph(Rectangle(360, 10, 175, 160), 
+            "http://bigcharts.marketwatch.com/charts/gqplus/fpNASDAQ-narrow.gqplus?167");
+
+        // Remove old images
+        if (stockWidget.leftChartImage)  panel.removeMorph(stockWidget.leftChartImage);
+        if (stockWidget.rightChartImage) panel.removeMorph(stockWidget.rightChartImage);
+        
+        // Replace images with the new ones
+        stockWidget.leftChartImage = leftImage;
+        panel.addMorph(leftImage);
+
+        stockWidget.rightChartImage = rightImage;
+        panel.addMorph(rightImage);
+    },
+
+    startSteppingRefreshCharts: function(widget) {
+        // this.startSteppingFunction(30000, this.refreshCharts);
+        this.timer = setInterval(this.refreshCharts.withLogging('Stock Refresh'), 30000);
+    },
+
+    getUrl: function(url, params) {
+        NetRequest.requestNetworkAccess();
+        var req = new NetRequest(this);
+
+        req.process = function(transport) {
+            var text = transport.responseText;
+            console.log('got data %s', text);
+            this.model.lastQuote = transport.responseText.split(',');
+            this.model.changed('getQuotes');
+        };
+
+        req.request(url, {contentType: 'text/html', parameters: params || {} });
+    },
+  
+    formatQuote: function(arr) {
+        return "Name: " + arr[0] + "\n" 
+            + "Last: " + arr[1]+ "\n"
+            + "Change: " + arr[4]+ "\n"
+            + "Open: " + arr[5]+ "\n"
+            + "High: " + arr[6]+ "\n"
+            + "Low: " + arr[7]+ "\n"
+            + "Volume: " + this.trim(arr[8]);
+    },
+  
+    trim: function(str) {
+        if (!str) return null;
+        return str.toString().strip().replace(/[\s]{2,}/,' ');
+    }
+
+});
+
+// ===========================================================================
+// The Map Widget Example
+// ===========================================================================
+
+apps.maps = function() {
+
+/* MAPMORPH BEGINS HERE*/
+/* EXPERIMENTAL SVG version by Pekka Reijula 
+*/
+
+// 6 is largest as a system print, lower numbers are debugprints
+// 6 is to be used if user must be notified lower levels to developer use
+var debugpriority = 6;
+pd = function (text, priority) {
+    if (priority >= debugpriority) {
+        console.log(text);
+    }
+}
+
+//Here we begin the Map Application
+//constants for all mapmorphs to use
+var IMAGEFOLDER = "http://www.cs.tut.fi/~reijula/mapimages/";
+
+var MAPSFOLDER = IMAGEFOLDER + "maps";
+var MAPSURL = []; //format "http://mt.google.com/mt?n=404&v=w2.99&x=" + tempx + "&y=" + tempy + "&zoom="+zoomRatio
+MAPSURL[0] = "http://mt.google.com/mt?n=404&v=w2.99&x=";
+MAPSURL[1] = "&y=";
+MAPSURL[2] = "&zoom=";
+
+var SATELLITESFOLDER = IMAGEFOLDER + "satellitemaps";
+var SATELLITESURL = [];//format http://kh.google.com/kh?n=404&v=10&t=%s
+SATELLITESURL[0] = "http://kh.google.com/kh?n=404&v=10&t=";
+SATELLITESURL[1] = "";
+SATELLITESURL[2] = "";
+
+var TileSize = pt(256, 256);
+//var IMAGEWIDTH = 256;
+//var IMAGEHEIGHT = 256;
+
+/**
+ * @class ZoomLevel
+ * -tells everything program needs to know for certain zoomlevel
+ */
+function Zoomlevel() {
+    this.zoom = 0;
+    this.maxX = 0;
+    this.maxY = 0;
+    this.hotspotX = 0;
+    this.hotspotY = 0;
+    this.toSource = function toSource() {
+        return this.zoom + ":" + this.maxX + ":" + this.maxY;
+    }
+}
+
+/**
+ * @class Maparea
+ *   -tells how big is the functional map area
+ *   -and its location
+ *   -contains function (boolean) returns true if x,y is inside area
+ */
+function MapArea() {
+    this.x = 0;
+    this.y = 0;
+    this.width = 0;
+    this.height = 0;
+    this.Contains = function(x_, y_){
+        if ( (x_ >= this.x) && (x_ < (this.x + this.width)) ) {
+            if ( (y_ >= this.y) && (y_ < (this.y + this.height)) ) {
+                return true;
+            }
+        }
+        return false;
+    }
+}
+
+/**
+ * @class MapFrameMorph
+ */
+
+/*
+Mapframe has all buttons and cliprect where the actual map is located
+Typically the actual map is used straigth with this.map 
+online parameter tells should the application load the maps from google
+
+Mapframe has menu which can be accessed by Ctrl+MouseClick in frame area
+*/
+
+MapFrameMorph = HostClass.create('MapFrameMorph', Morph);
+
+Object.extend(MapFrameMorph.prototype, {
+    defaultBorderWidth: 5,
+    defaultFill: new Color(0.5,0.5,0.5,0.8),
+
+    initialize: function( initialBounds, online) { 
+        pd("MapFrameMorph",2);
+        MapFrameMorph.superClass.initialize.call(this,initialBounds,"rectangle");
+        this.online = online;
+        this.topLeft = this.bounds().topLeft();
+        this.bottomRight = this.bounds().bottomRight();
+
+        var clipInset = 23;
+        this.mapclip = ClipMorph(pt(0, 0).extent(initialBounds.extent()).insetBy(clipInset));
+
+        this.map = new MapMorph(new Rectangle(0, 0, 5*TileSize.x, 5*TileSize.y), this.online);
+        //this.map.moveBy(pt(-2.5*TileSize.x,-2.5*TileSize.y)); //does not work in safari
+        this.map.hasFrame = true;
+        this.mapclip.addMorph(this.map);
+        this.addMorph(this.mapclip);
+        //this.addMorph(this.map);
+
+        this.mapmodel = new MapModel(this);
+
+        const iconSize = 40;
+        var r = Rectangle(0, 0, iconSize/2, initialBounds.height - iconSize - 10);
+        this.leftbutton = ImageButtonMorph(r, IMAGEFOLDER + "buttonleft.PNG", 
+                                          IMAGEFOLDER + "buttonleftdown.PNG");
+        this.leftbutton.align(this.leftbutton.bounds().rightCenter(), 
+                              this.mapclip.bounds().leftCenter().addXY(-clipInset, 0));
+        this.leftbutton.connectModel({model: this.mapmodel, setValue: "goLeft", getValue: "isStepping"});
+        this.leftbutton.toggles = true;
+        //this.leftbutton.moveBy(pt(-80,-80));
+        this.addMorph(this.leftbutton);
+
+        this.rightbutton = new ImageButtonMorph(r, IMAGEFOLDER + "buttonright.PNG", 
+                                                IMAGEFOLDER + "buttonrightdown.PNG");
+        this.rightbutton.align(this.rightbutton.bounds().leftCenter(), 
+        this.mapclip.bounds().rightCenter().addXY(clipInset, 0));
+
+        this.rightbutton.connectModel({model: this.mapmodel, setValue: "goRight", getValue: "isStepping"});
+        this.rightbutton.toggles = true;
+        this.addMorph(this.rightbutton);
+        //this.rightbutton.moveBy(pt(-80,-80));
+
+        r = Rectangle(this.topLeft.x + 25,this.topLeft.y-20,this.bottomRight.x-this.topLeft.x-52,20);
+        this.upbutton =  ImageButtonMorph(r, IMAGEFOLDER + "buttonup.PNG",IMAGEFOLDER + "buttonupdown.PNG");
+        this.upbutton.connectModel({model: this.mapmodel, setValue: "goUp", getValue: "isStepping"});
+        this.upbutton.toggles = true;
+        this.addMorph(this.upbutton);
+        //this.upbutton.moveBy(pt(-80,-80));
+
+        r = Rectangle(this.topLeft.x + 25,this.bottomRight.y,this.bottomRight.x-this.topLeft.x-52,20);
+        this.downbutton = ImageButtonMorph(r, IMAGEFOLDER + "buttondown.PNG", IMAGEFOLDER + "buttondowndown.PNG");
+        this.downbutton.connectModel({model: this.mapmodel, setValue: "goDown", getValue: "isStepping"});
+        this.downbutton.toggles = true;
+        //this.downbutton.moveBy(pt(-80,-80));
+        this.addMorph(this.downbutton);
+
+        r = Rectangle(0, 0, iconSize, iconSize);
+        this.zinbutton = ImageButtonMorph(r, IMAGEFOLDER + "zoom.PNG",IMAGEFOLDER + "zoomdown.PNG");
+        this.zinbutton.align(this.zinbutton.bounds().topLeft(), this.bounds().topLeft());
+        this.zinbutton.connectModel({model: this.mapmodel, setValue: "setZoomIn"});
+        this.addMorph(this.zinbutton);
+        //this.zinbutton.moveBy(pt(-80,-80));
+
+        //r = new Rectangle(this.bottomRight.x-20,this.bottomRight.y-20,40,40);
+        this.zoutbutton = ImageButtonMorph(r, IMAGEFOLDER + "zoomout.PNG", IMAGEFOLDER + "zoomoutdown.PNG");
+        this.zoutbutton.align(this.zoutbutton.bounds().bottomRight(), this.bounds().bottomRight());
+        this.zoutbutton.connectModel({model: this.mapmodel, setValue: "setZoomOut"}); 
+        //this.zoutbutton.moveBy(pt(-80,-80));
+        this.addMorph(this.zoutbutton);
+
+        //r = new Rectangle(this.topLeft.x -20,this.bottomRight.y-20,40,40);
+        this.maptypebutton = ImageButtonMorph(r, IMAGEFOLDER + "maptype.PNG", IMAGEFOLDER + "maptype2.PNG");
+        this.maptypebutton.align(this.maptypebutton.bounds().bottomLeft(), this.bounds().bottomLeft());
+        this.maptypebutton.connectModel({model: this.mapmodel, setValue: "setMapType", getValue: "isSatelliteView"});
+        this.maptypebutton.toggles = true;
+        this.addMorph(this.maptypebutton);
+        //this.maptypebutton.moveBy(pt(-80,-80));
+
+        pd("MapFrameMorph constructed",2);
+        return this;
+    }, 
+    
+    okToBeGrabbedBy: function(evt) {
+        /*if (evt.hand.ctrlKeyPressed) {
+        var menu =  new CheapMenuMorph(evt.mousePoint,[
+                ["Add mapmarker", this, this.handleMenuSelection, "addmarker"]
+                ,["Remove all markers", this, this.handleMenuSelection, "removemarkers"]
+                ,["Toggle online mode on/off", this, this.handleMenuSelection, "online"]
+                ,["CockRoach Demo", this, this.handleMenuSelection, "cockroach"]
+                ]);
+        this.addMorph(menu);
+
+        return false;
+        } */
+        return true; 
+    }
+
+});
+
+/**
+ * @class MapModel
+ */
+
+MapModel = Class.extend(Model);
+
+Object.extend(MapModel.prototype, {
+
+    initialize: function(frame) {
+        MapModel.superClass.initialize.call(this, frame);
+        this.frame = frame;
+    },
+
+    goTo: function(flag, dx, dy) {
+        var map = this.frame.map;
+        console.log('stopped stepping for %s %s', dx, dy);
+        if (!flag) {
+            map.stopStepping();
+            map.stepping = false;
+        } else {
+            map.startSteppingFunction(100, function(msTime) { 
+                var value = this.getScale()*20;
+                var vector = pt(value*dx, value*dy);
+                this.moveBy(vector); 
+                this.onScrollTest(vector);
+            });
+            map.stepping = true;
+        }
+    },
+    
+    isStepping: function() {
+        console.log('is stepping %s', this.frame.map.stepping);
+        return this.frame.map.stepping;
+    },
+    
+    goRight: function(flag) {
+        this.goTo(flag, -1, 0);
+    },
+    
+    goLeft: function(flag) {
+        this.goTo(flag, 1, 0);
+    },
+
+    goUp: function(flag) {
+        this.goTo(flag, 0, 1);
+    },
+    
+    goDown: function(flag) {
+        this.goTo(flag, 0, -1);
+    },
+    
+    setZoomIn: function(flag) {
+        console.log('zooming out');
+        if (flag) this.frame.map.loadImagesToMap("zoomin");
+    },
+    
+    setZoomOut: function(flag) {
+        if (flag) this.frame.map.loadImagesToMap("zoomout");
+    },
+
+    setMapType: function(flag) {
+        this.frame.map.changeMapType();
+    },
+    
+    isSatelliteView: function() {
+        return this.frame.map.selectedmap == SATELLITESFOLDER;
+    }
+
+});
+
+/**
+ * @class MapFrameMorph
+ *
+ * Mapmorph is the 5x5 maptile largemap located inside Mapframe cliprect
+ * It can be moved with dragging. 
+ * When dragged longer distance than 1 tile new maps are loaded and map is centered
+ *
+ * May have mapmarkers as submorphs
+ */
+
+MapMorph = HostClass.create('MapMorph', Morph);
+
+Object.extend(MapMorph.prototype, {
+  initialize: function( initialBounds, online) { 
+      pd("MapMorph",2);
+      MapMorph.superClass.initialize.call(this,initialBounds,"rect");
+
+      this.setFill(Color.blue.lighter());
+      this.setBorderWidth(0);
+      this.selectedmap = MAPSFOLDER; 
+      this.selectedURL = [];
+      this.selectedURL = MAPSURL;
+      
+      this.images = [ [], [], [], [], [] ];
+      this.imagerects = [ [], [], [], [], [] ];
+      
+      //maparea 
+      this.maparea = new MapArea();
+      this.maparea.x = 0;
+      this.maparea.y = 0;
+      this.maparea.width = 3*TileSize.x;
+      this.maparea.height = 3*TileSize.y;
+      // Current map zoom ratio
+      this.zoomRatio;
+      this.mapmovedX = 0;
+      this.mapmovedY = 0;
+      //zoomobjects
+      this.zo = []; 
+      //image in process
+      this.x = 0; //this.ix = 0;
+      this.y = 0; //,this.iy = 0;
+      /* Imagemap 5x5 matrix like this 3x3
+      (x-1,y-1)  (x  ,y-1)  (x+1,y-1)
+      (x-1,y  )  (x  ,y  )  (x+1,y  ) 
+      (x-1,y+1)  (x  ,y+1)  (x+1,y+1)
+      */
+      this.imagesloaded = false;
+      
+      //these for calculatin moved amount
+      this.startpoint = null;
+      this.endpoint = null;
+      
+      this.pointerimages = [];
+      //this.addMapMarker("file:icon.PNG", new Rectangle(this.shape.bounds.center().x,this.shape.bounds.center().y,16,20));
+      //this.addMapMarker("file:icon.PNG", new Rectangle(this.shape.bounds.center().x+50,this.shape.bounds.center().y,16,20));
+      //this.addMorph(this.pointerimages[0]);
+      
+      this.online = online;
+      this.hasFrame = false;
+      this.initMap();
+      /* var img = null;
+         for (var y = 0; y < 5; y += 1){
+              for (var x = 0; x < 5; x += 1){
+                                
+                     img = document.createSVGElement("image", {x:x*256, y: y*256, width: 256, height: 256});
+                     img.withHref("http://www.cs.tut.fi/~reijula/mapimages/map579_288.png");
+                     this.addChildElement(img);
+                     //this.addChildElement(this.images[this.iy][this.ix]);
+                     //var success = canvas.drawPixmap(this.images[this.iy][this.ix], this.imagerects[this.iy][this.ix]);
+  
+              }
+      } */
+
+      this.stepping = false;
+      return this;
+  }, 
+  
+    copy: function() {
+        var newMap = MapMorph.superClass.copy.call(this);
+        newMap.removeAllMorphs();
+        return newMap; 
+    },
+
+    draw: function() {
+        //MapMorph.superClass.draw.call(this, canvas); // draw the underlying 
+        //println("drawing all map images " );
+        // canvas.primCanvas.drawPixmap(this.bitmap, 0, 0);
+        var success = false;
+        for (var iy = 0; iy < 5; iy ++) {
+            for (var ix = 0; ix < 5; ix ++) {
+                if (this.images[iy][ix]) {
+                    // pd("adding image " + this.images[this.iy][this.ix] + " ix " + this.ix + " iy " + this.iy,2);
+                    var imgId = "mapFragment_" + this.id + "_" + iy + "_" + ix;
+                    var oldImg = document.getElementById(imgId);
+                    if (oldImg) {
+                        oldImg.parentNode.removeChild(oldImg);
+                    }
+    
+                    var img = document.createSVGElement("image", 
+                    {x: ix*TileSize.x, y: iy*TileSize.y, width: 256, height: 256}).withHref(this.images[iy][ix]);
+                    img.setAttribute("id", imgId);
+                    img.disableBrowserDrag();
+                    this.addChildElement(img);
+                }
+            }
+       }
+       pd("Draw complete",2);
+    
+    /*
+    var img = document.createSVGElement("image", {x:600,y:600, width: 473, height: 473});
+    img.setHref("http://www.cs.tut.fi/~reijula/mapimages/map579_288.png");
+    this.addChildElement(img);
+    img = document.createSVGElement("image", {x:1100,y:800, width: 32, height: 32});
+    img.setAttributeNS(Namespace.XLINK, "href", "http://www.cs.tut.fi/~reijula/mapimages/maptype.PNG");
+    this.addChildElement(img);
+    */
+    
+    }, 
+  
+  /*
+  This function updates mapmovement and it also adds menu to mapframe
+  */
+  okToBeGrabbedBy: function(evt) {
+    pd("coords" + evt.mousePoint + " center " + this.bounds().center()+ " in wc " +this.worldPoint(this.bounds().center()), 2);
+    this.startpoint = evt.mousePoint; //this line is here only bacause this morph does not listen mousedown events
+    /* NOT implemented in SVG version
+      if (this.hasFrame && evt.hand.ctrlKeyPressed) {
+      var menu =  new CheapMenuMorph(evt.mousePoint,[
+                ["Add mapmarker", this.owner.owner, this.owner.owner.handleMenuSelection, "addmarker"]
+                ,["Remove all markers", this.owner.owner, this.owner.owner.handleMenuSelection, "removemarkers"]]);
+      this.owner.owner.addMorph(menu);
+    } 
+    */
+    return null; //otherwise map will be able to take out from mapframe
+    
+  },
+  
+  handlesMouseDown: function(evt) { pd("handlesMouseDown", 2); return false; },
+  /*onMouseMove: function(evt) { 
+    if (evt.mousePoint && this.startpoint){ 
+      pd("moved",2);
+      this.moveBy(pt(evt.mousePoint.subPt(this.startpoint)));
+    } 
+  },*/
+  /* Disabled, since does not work correctly in SVG-morphs
+  onMouseUp: function(evt) { 
+    pd("-------------MapMorph.prototype.mouseUp" + evt,3);
+    if (evt.mousePoint && this.startpoint){
+        this.endpoint = evt.mousePoint;
+        pd("scale of map: " + this.getScale(), 2)
+        var currentscale = this.getScale();
+        this.mapmovedX += (this.endpoint.x - this.startpoint.x);
+        this.mapmovedY += (this.endpoint.y - this.startpoint.y);
+        pd("moved x " + this.mapmovedX + " y " + this.mapmovedY, 2);
+       if ( ( this.mapmovedX > TileSize.x*currentscale )){
+            //do until map is at place
+                while( this.mapmovedX > TileSize.x*currentscale){
+                    this.mapmovedX -= TileSize.x*currentscale;
+                    this.mapX = -TileSize.x*currentscale;
+                    //moving map right
+                    //alert("right");
+                    this.x -= 1;
+                    this.x = this.getValueX(this.x);
+                    this.loadImagesToMap("left");
+                    this.moveBy(pt(-TileSize.x*currentscale,0));
+                }
+            }else if ( ( this.mapmovedX < -TileSize.x*currentscale) ){
+                //do until map is at place
+                while( this.mapmovedX < -TileSize.x*currentscale){
+                    this.mapmovedX += TileSize.x*currentscale;
+                    this.mapX = -TileSize.x*currentscale;
+                    //moving map left
+                    //alert("left");
+                    this.x += 1;
+                    this.x = this.getValueX(this.x);
+                    this.loadImagesToMap("right");
+                    this.moveBy(pt(TileSize.x*currentscale,0));
+                }
+            }
+            if ( ( this.mapmovedY < -TileSize.y*currentscale) ){
+                //do until map is at place
+                while( this.mapmovedY < -TileSize.y*currentscale){        
+                    this.mapmovedY += TileSize.y*currentscale;
+                    this.mapY = -TileSize.y*currentscale;
+                    //moving map up
+                    //alert("up");
+                    this.y += 1;
+                    this.y = this.getValueY(this.y);
+                    this.loadImagesToMap("down");
+                    this.moveBy(pt(0,TileSize.y*currentscale));
+                }
+
+            }else if ( ( this.mapmovedY > TileSize.y*currentscale) ){
+                //do until map is at place
+                while( this.mapmovedY > TileSize.y*currentscale){    
+                    this.mapmovedY -= TileSize.y*currentscale;
+                    this.mapY = -TileSize.y*currentscale;
+                    //moving map down
+                    //alert("down");
+                    this.y -= 1;
+                    this.y = this.getValueY(this.y);
+                    this.loadImagesToMap("up");
+                    this.moveBy(pt(0,-TileSize.y*currentscale));
+   
+                }
+
+            }
+        }
+    this.buttondown = false;
+    this.startpoint = null;
+    this.endpoint = null;
+    this.changed();
+    
+  },*/
+  
+  onScrollTest: function(p) { 
+      //pd("onScrollTest",3);
+      var currentscale = this.getScale();
+      this.mapmovedX += p.x;
+      this.mapmovedY += p.y;
+      // pd("moved x " + this.mapmovedX + " y " + this.mapmovedY, 2);
+      if ( ( this.mapmovedX > TileSize.x*currentscale )){
+          //do until map is at place
+             while( this.mapmovedX > TileSize.x*currentscale){
+                    this.mapmovedX -= TileSize.x*currentscale;
+                    this.mapX = -TileSize.x*currentscale;
+                    //moving map right
+                    //alert("right");
+                    this.x -= 1;
+                    this.x = this.getValueX(this.x);
+                    this.loadImagesToMap("left");
+                    this.moveBy(pt(-TileSize.x*currentscale,0));
+                }
+            }else if ( ( this.mapmovedX < -TileSize.x*currentscale) ){
+                //do until map is at place
+                while( this.mapmovedX < -TileSize.x*currentscale){
+                    this.mapmovedX += TileSize.x*currentscale;
+                    this.mapX = -TileSize.x*currentscale;
+                    //moving map left
+                    //alert("left");
+                    this.x += 1;
+                    this.x = this.getValueX(this.x);
+                    this.loadImagesToMap("right");
+                    this.moveBy(pt(TileSize.x*currentscale,0));
+                }
+            }
+            if ( ( this.mapmovedY < -TileSize.y*currentscale) ){
+                //do until map is at place
+                while( this.mapmovedY < -TileSize.y*currentscale){        
+                    this.mapmovedY += TileSize.y*currentscale;
+                    this.mapY = -TileSize.y*currentscale;
+                    //moving map up
+                    //alert("up");
+                    this.y += 1;
+                    this.y = this.getValueY(this.y);
+                    this.loadImagesToMap("down");
+                    this.moveBy(pt(0,TileSize.y*currentscale));
+                }
+
+            }else if ( ( this.mapmovedY > TileSize.y*currentscale) ){
+                //do until map is at place
+                while( this.mapmovedY > TileSize.y*currentscale){    
+                    this.mapmovedY -= TileSize.y*currentscale;
+                    this.mapY = -TileSize.y*currentscale;
+                    //moving map down
+                    //alert("down");
+                    this.y -= 1;
+                    this.y = this.getValueY(this.y);
+                    this.loadImagesToMap("up");
+                    this.moveBy(pt(0,-TileSize.y*currentscale));
+   
+                }
+
+            }
+
+      this.buttondown = false;
+      this.startpoint = null;
+      this.endpoint = null;
+      this.changed();
+  },
+  
+  addMapMarker: function(url, rect){
+      if (rect == null) {rect = new Rectangle(this.shape.bounds.center().x,this.shape.bounds.center().y,16,20);}
+      this.pointerimages.push(new MapMarkerMorph(url, rect, pt(0,0)));
+      this.addMorph(this.pointerimages[this.pointerimages.length-1]);
+  },
+  
+  getMapMarkers: function(){
+      return this.pointerimages;
+  },
+  
+  initMap: function(){
+      this.initializeZoomObjects();
+      this.zoomRatio = 13;
+      //map starting position corner is topleft and not in screen but above it!
+      this.mapX = this.maparea.x -TileSize.x, this.mapY = this.maparea.y -TileSize.y;
+      this.mapmovedX = 0, this.mapmovedY = 0;
+      this.x = this.zo[this.zoomRatio].hotspotX, this.y = this.zo[this.zoomRatio].hotspotY;
+      this.loadInitImages();
+      pd("init complete",2);
+  },
+  
+  loadInitImages: function() {
+        for (var iy = 0; iy < 5; iy += 1){
+            for (var ix = 0; ix < 5; ix += 1){
+            this.loadImagesCorrectly(ix, iy);
+            }
+        }
+        this.draw();
+        this.imagesloaded = true;
+  },
+  
+  getValueX: function(x){
+      var value = x;
+      if (value < 0) value = this.zo[this.zoomRatio].maxX + 1 + value;
+      if (value > this.zo[this.zoomRatio].maxX) value = value - this.zo[this.zoomRatio].maxX -1;
+      return value;
+  },
+  
+  getValueY: function(y){
+      var value = y;
+      if (value < 0) value = this.zo[this.zoomRatio].maxY + 1 + value; //for handling not only -1 but -x also
+      if (value > this.zo[this.zoomRatio].maxY) value = value - this.zo[this.zoomRatio].maxY -1;
+      return value;
+  },
+  
+  loadImagesCorrectly: function(ix, iy){
+    pd("loadImagesCorrectly ",2);
+    var tempx = this.getValueX(this.x + ix -2);
+    var tempy = this.getValueY(this.y + iy -2);
+    var img = null;
+    if(!this.online) img = this.loadImageFromDisk(tempx, tempy, this.zoomRatio);
+    var satURL ="";
+    //alert("URL x " + tempx + " y "+ tempy  + " xmax " + (1 + zo[zoomRatio].maxX) + " " + generateSatelliteURL(tempx,tempy));
+    if (img){
+        //found from disk
+        //this.images[iy][ix] = img;
+        //var image = document.createSVGElement("image", { width: this.bounds().width, height: this.bounds().height});
+        //image.setAttributeNS(Namespace.XLINK, "href", img);
+            
+        this.images[iy][ix] = img;
+        //this.images[iy][ix] = new Pixmap(img , canvas.primCanvas, this.shape.bounds);
+        this.imagerects[iy][ix] = new Rectangle(ix*TileSize.x, iy*TileSize.y, TileSize.x*5, TileSize.y*5);
+        if (this.images[iy][ix] == null ){
+              pd("--image is NULL!", 5);
+         }else {pd("loaded image from file:" + this.images[iy][ix], 5);}
+    } else {
+        pd ("Loading",2);
+        if (this.selectedURL == MAPSURL){
+            img = this.selectedURL[0] + tempx + this.selectedURL[1] + tempy + this.selectedURL[2] + this.zoomRatio;
+        } else if (this.selectedURL == SATELLITESURL){
+            satURL = this.generateSatelliteURL(tempx,tempy);
+            img = this.selectedURL[0] + satURL;
+        }
+        if (img != null ){
+            if (this.selectedURL == MAPSURL){
+                //saveImageToDisk(this.selectedURL[0] + tempx + this.selectedURL[1] + tempy + this.selectedURL[2] + zoomRatio, tempx, tempy,zoomRatio);
+            } else if (this.selectedURL == SATELLITESURL){
+                satURL = this.generateSatelliteURL(tempx,tempy);
+                //saveImageToDisk(this.selectedURL[0] + satURL, tempx, tempy,zoomRatio);
+            }
+            pd("Loading img online:" + img + " ix " + ix + " iy " + iy, 2);
+            //var image = document.createSVGElement("image", { x: ix*TileSize.x,y: iy*TileSize.y,width: TileSize.x, height: TileSize.y});
+            //image.setAttributeNS(Namespace.XLINK, "href", img);
+            //this.addChildElement(image);
+
+            this.images[iy][ix] = img;
+            this.imagerects[iy][ix] = new Rectangle(ix*TileSize.x, iy*TileSize.y, TileSize.x*5, TileSize.y*5);
+
+            //this.imagerects[iy][ix] = new Rectangle(-5*TileSize.x+ix*TileSize.x, -5*TileSize.y+iy*TileSize.y, TileSize.x*5, TileSize.y*5);
+            // pd("Loaded img online:" + img, 2);
+            
+        }else {
+            //alert("error processing ixiy" + ix + iy + " image " + img);
+            this.images[iy][ix] = null; 
+            this.imagerects[iy][ix] = null;
+            pd("Error processing map image",6);
+        }
+    }
+    this.changed();
+    //drawMap();
+  },
+  
+  /*Tries to find image from file
+    if not found 
+    returns null                    TODO find how to tell if url has content.?
+    or
+    image
+  */
+  loadImageFromDisk: function(x,y,zoom){
+    var filename = "map"+x+"_"+y+".png";
+    var foldername = "file:" + this.selectedmap + "/" +zoom+ "/";
+    pd("loaded: " + foldername+filename,1);
+    return foldername+filename;
+  },
+  
+  loadImagesToMap: function(direction) {
+      pd("MapMorph.prototype.loadImagesToMap direction" + direction,2);
+      switch (direction) {
+      case "down":
+            this.rollImage(direction);
+            var iy = 4;
+            for (var ix = 0; ix < 5; ix += 1){
+                this.loadImagesCorrectly(ix, iy);    
+            }
+            this.imagesloaded = true;
+            break;
+    
+      case "up":
+            this.rollImage(direction);
+            var iy = 0;
+            for (var ix = 0; ix < 5; ix ++) {
+                this.loadImagesCorrectly(ix, iy);   
+            }
+            this.imagesloaded = true;
+            break;
+      case "right":
+            this.rollImage(direction);
+            var ix = 4;
+            for (var iy = 0; iy < 5; iy ++) {
+                this.loadImagesCorrectly(ix, iy);  
+            }
+            this.imagesloaded = true;
+            break;
+    
+      case "left":
+            this.rollImage(direction);
+            var ix = 0;
+            for (var iy = 0; iy < 5; iy ++) {
+                this.loadImagesCorrectly(ix, iy);    
+            }
+            this.imagesloaded = true;
+            break;
+      case "zoomin":
+            this.ZoomIn();
+            break;
+      case "zoomout":
+            this.ZoomOut();
+            break;
+    
+      }
+      this.draw();
+      this.changed();
+  },
+  
+    ZoomIn: function() {
+        pd("MapMorph.prototype.ZoomIn",2);
+        this.zoomRatio -= 1;
+        if (this.zoomRatio < 0) {
+            this.zoomRatio = 0;
+            pd("Minimum zoom level reached",6);
+        }else {
+            //try to keep the center in same position in new zoom
+            this.x = this.x*2
+            this.y = this.y*2;
+            //also keep markers in position
+            /* TODO HOW TO MOVE WHILE ZOOM?
+            for(var i = 0; i < this.pointerimages.length; i++){
+                this.pointerimages[i].moveBy(pt(TileSize.x, TileSize.y));
+            } */  
+        }
+        this.loadInitImages();
+    },
+  
+    ZoomOut: function() {
+        pd("MapMorph.prototype.ZoomOut",2);
+        this.zoomRatio += 1;
+        if (this.zoomRatio > 16) {
+            this.zoomRatio = 16;
+            pd("Maximum zoom level reached",6);
+        }else {
+            //try to keep the center in same position in new zoom
+            this.x = Math.floor(this.x/2);
+            this.y = Math.floor(this.y/2);
+        }
+        this.loadInitImages();
+    },
+    
+  generateSatelliteURL: function(x,y){
+      //pd("MapMorph.prototype.generateSatelliteURL",2);
+    var tempx = x;
+    var tempy = y;
+    var x_max = 0;
+    x_max = (1 + this.zo[this.zoomRatio].maxX);
+    var zoom = this.zoomRatio;
+    var URLstring = "t";
+    /*QuadTree search for mapURL*/
+    //for (var i = 0; i < (17 - zoomRatio); i++){
+    while(x_max > 1) {
+        if ( tempx > (x_max/2) ){
+            if( tempy > (x_max/2) ){
+                //downright s
+                URLstring += "s";
+                //reduce y by half of ymax to next round
+                tempy = tempy - x_max/2;
+            } else {
+                //toprigth r
+                URLstring += "r";
+            }
+            //reduce x by half of ymax to next round
+            tempx = tempx - x_max/2;
+        } else {
+            if( tempy > (x_max/2) ){
+                //downleft t
+                URLstring += "t";
+                //reduce y by half of ymax to next round
+                tempy = tempy - x_max/2;
+            } else {
+                //topleft q
+                URLstring += "q";
+            }
+
+        }
+        x_max = x_max / 2;//zo[16 - i ].maxY +1;
+    }
+    pd("MapMorph.prototype.generateSatelliteURL returns string" + URLstring,1);
+    return URLstring;
+    
+  },
+
+    changeMapType: function() {
+        pd("MapMorph.prototype.ChangeMapType",2);
+        if (this.selectedmap == SATELLITESFOLDER){
+            this.selectedmap = MAPSFOLDER;
+            this.selectedURL = MAPSURL;
+            this.loadInitImages();
+        } else if (this.selectedmap == MAPSFOLDER){
+            this.selectedmap = SATELLITESFOLDER;
+            this.selectedURL = SATELLITESURL;
+            this.loadInitImages();
+            //alert("Entering experimental mapmode.");
+        }
+        this.changed();
+  },
+
+  // Move the imagematrix to some direction
+  // done before loading images
+  rollImage: function(direction) {
+    pd("MapMorph.prototype.rollImage direction" + direction,2);
+    switch (direction) {
+
+    case "down":
+        this.images[0][0] = this.images[1][0];
+        this.images[0][1] = this.images[1][1];
+        this.images[0][2] = this.images[1][2];
+        this.images[0][3] = this.images[1][3];
+        this.images[0][4] = this.images[1][4];
+                        
+        this.images[1][0] = this.images[2][0];
+        this.images[1][1] = this.images[2][1];
+        this.images[1][2] = this.images[2][2];
+        this.images[1][3] = this.images[2][3];
+        this.images[1][4] = this.images[2][4]; 
+                
+        this.images[2][0] = this.images[3][0];
+        this.images[2][1] = this.images[3][1];
+        this.images[2][2] = this.images[3][2];
+        this.images[2][3] = this.images[3][3];
+        this.images[2][4] = this.images[3][4];   
+              
+        this.images[3][0] = this.images[4][0];
+        this.images[3][1] = this.images[4][1];
+        this.images[3][2] = this.images[4][2];
+        this.images[3][3] = this.images[4][3];
+        this.images[3][4] = this.images[4][4]; 
+        //roll also mapmarks
+        for(var i = 0; i < this.pointerimages.length; i++){
+            this.pointerimages[i].moveBy(pt(0, -TileSize.y));
+        }              
+        //images.shift();
+        break;
+
+    case "up":
+        this.images[4][0] = this.images[3][0];
+        this.images[4][1] = this.images[3][1];
+        this.images[4][2] = this.images[3][2];
+        this.images[4][3] = this.images[3][3];
+        this.images[4][4] = this.images[3][4]; 
+               
+        this.images[3][0] = this.images[2][0];
+        this.images[3][1] = this.images[2][1];
+        this.images[3][2] = this.images[2][2];
+        this.images[3][3] = this.images[2][3];
+        this.images[3][4] = this.images[2][4]; 
+            
+        this.images[2][0] = this.images[1][0];
+        this.images[2][1] = this.images[1][1];
+        this.images[2][2] = this.images[1][2];
+        this.images[2][3] = this.images[1][3];
+        this.images[2][4] = this.images[1][4]; 
+               
+        this.images[1][0] = this.images[0][0];
+        this.images[1][1] = this.images[0][1];
+        this.images[1][2] = this.images[0][2];
+        this.images[1][3] = this.images[0][3];
+        this.images[1][4] = this.images[0][4];        
+
+        //images[2] = images[1]; // DO NOT DO THIS, -> javascript nice copy-features
+        //images[1] = images[0];
+        
+        //roll also mapmarks
+        for(var i = 0; i < this.pointerimages.length; i++){
+            this.pointerimages[i].moveBy(pt(0, TileSize.y));
+        }
+        break;
+    
+    case "right":
+        this.images[0][0] = this.images[0][1];
+        this.images[1][0] = this.images[1][1];
+        this.images[2][0] = this.images[2][1];
+        this.images[3][0] = this.images[3][1];
+        this.images[4][0] = this.images[4][1];       
+        
+        this.images[0][1] = this.images[0][2];
+        this.images[1][1] = this.images[1][2];
+        this.images[2][1] = this.images[2][2];
+        this.images[3][1] = this.images[3][2];
+        this.images[4][1] = this.images[4][2]; 
+
+        this.images[0][2] = this.images[0][3];
+        this.images[1][2] = this.images[1][3];
+        this.images[2][2] = this.images[2][3];
+        this.images[3][2] = this.images[3][3];
+        this.images[4][2] = this.images[4][3]; 
+
+        this.images[0][3] = this.images[0][4];
+        this.images[1][3] = this.images[1][4];
+        this.images[2][3] = this.images[2][4];
+        this.images[3][3] = this.images[3][4];
+        this.images[4][3] = this.images[4][4]; 
+        for(var i = 0; i < this.pointerimages.length; i++){
+            this.pointerimages[i].moveBy(pt(-TileSize.x, 0));
+        }                    
+        break;
+
+    case "left":
+        this.images[0][4] = this.images[0][3];
+        this.images[1][4] = this.images[1][3];
+        this.images[2][4] = this.images[2][3];
+        this.images[3][4] = this.images[3][3];
+        this.images[4][4] = this.images[4][3];
+
+        this.images[0][3] = this.images[0][2];
+        this.images[1][3] = this.images[1][2];
+        this.images[2][3] = this.images[2][2];
+        this.images[3][3] = this.images[3][2];
+        this.images[4][3] = this.images[4][2];
+    
+        this.images[0][2] = this.images[0][1];
+        this.images[1][2] = this.images[1][1];
+        this.images[2][2] = this.images[2][1];
+        this.images[3][2] = this.images[3][1];
+        this.images[4][2] = this.images[4][1];        
+        
+        this.images[0][1] = this.images[0][0];
+        this.images[1][1] = this.images[1][0];
+        this.images[2][1] = this.images[2][0];
+        this.images[3][1] = this.images[3][0];
+        this.images[4][1] = this.images[4][0];        
+        for(var i = 0; i < this.pointerimages.length; i++){
+            this.pointerimages[i].moveBy(pt(TileSize.x, 0));
+        }      
+        break;
+    }
+  },
+  
+  /*Initializes Map areas for each zoomlevel
+  Hotspots are the locations of Tampere at the moment
+  */
+  initializeZoomObjects: function(){
+    //zo.length = 18
+    for (var i = 0; i < 18; i +=1){
+        this.zo[i] = null;
+    }
+
+    //alert("zo length " + zo.length);
+    this.zo[0] = new Zoomlevel();
+    this.zo[0].maxX = 130880;     //estimate
+    this.zo[0].maxY = 130880;     //estimate
+    this.zo[0].hotspotX = 74188;
+    this.zo[0].hotspotY = 36946;
+    
+    this.zo[1] = new Zoomlevel();
+    this.zo[1].maxX = 65540;     //estimate
+    this.zo[1].maxY = 65440;     //estimate
+    this.zo[1].hotspotX = 37094;
+    this.zo[1].hotspotY = 18473;
+    
+    this.zo[2] = new Zoomlevel();
+    this.zo[2].maxX = 32736;     //estimate
+    this.zo[2].maxY = 32736;     //estimate
+    this.zo[2].hotspotX = 18547;
+    this.zo[2].hotspotY = 9236;
+    
+    this.zo[3] = new Zoomlevel();
+    this.zo[3].maxX = 16368;     //estimate
+    this.zo[3].maxY = 16368;     //estimate
+    this.zo[3].hotspotX = 9273;
+    this.zo[3].hotspotY = 4618;
+    
+    this.zo[4] = new Zoomlevel();
+    this.zo[4].maxX = 8184;     //estimate
+    this.zo[4].maxY = 8184;     //estimate
+    this.zo[4].hotspotX = 4636;
+    this.zo[4].hotspotY = 2309;
+    
+    this.zo[5] = new Zoomlevel();
+    this.zo[5].maxX = 4092;     //estimate
+    this.zo[5].maxY = 4092;     //estimate
+    this.zo[5].hotspotX = 2318;
+    this.zo[5].hotspotY = 1154;
+    
+    this.zo[6] = new Zoomlevel();
+    this.zo[6].maxX = 2047;     //estimate
+    this.zo[6].maxY = 2047;     //estimate
+    this.zo[6].hotspotX = 1159;
+    this.zo[6].hotspotY = 577;
+        
+    this.zo[7] = new Zoomlevel();
+    this.zo[7].maxX = 1023;
+    this.zo[7].maxY = 1023;
+    this.zo[7].hotspotX = 579;
+    this.zo[7].hotspotY = 288;
+    
+    this.zo[8] = new Zoomlevel();
+    this.zo[8].maxX = 511;
+    this.zo[8].maxY = 511;
+    this.zo[8].hotspotX = 289;
+    this.zo[8].hotspotY = 144;
+    
+    this.zo[9] = new Zoomlevel();
+    this.zo[9].maxX = 255;
+    this.zo[9].maxY = 255;
+    this.zo[9].hotspotX = 144;
+    this.zo[9].hotspotY = 72;
+    
+    this.zo[10] = new Zoomlevel();
+    this.zo[10].maxX = 127;
+    this.zo[10].maxY = 127;
+    this.zo[10].hotspotX = 72;
+    this.zo[10].hotspotY = 36;
+    
+    this.zo[11] = new Zoomlevel();
+    this.zo[11].maxX = 63;
+    this.zo[11].maxY = 63;
+    this.zo[11].hotspotX = 36;
+    this.zo[11].hotspotY = 18;
+    
+    this.zo[12] = new Zoomlevel();
+    this.zo[12].maxX = 31;
+    this.zo[12].maxY = 31;
+    this.zo[12].hotspotX = 18;
+    this.zo[12].hotspotY = 8;
+    
+    this.zo[13] = new Zoomlevel();
+    this.zo[13].maxX = 15;
+    this.zo[13].maxY = 15;
+    this.zo[13].hotspotX = 8;
+    this.zo[13].hotspotY = 4;
+    
+    this.zo[14] = new Zoomlevel();
+    this.zo[14].maxX = 7;
+    this.zo[14].maxY = 7;
+    this.zo[14].hotspotX = 4;
+    this.zo[14].hotspotY = 2;
+    
+    this.zo[15] = new Zoomlevel();
+    this.zo[15].maxX = 3;
+    this.zo[15].maxY = 3;
+    this.zo[15].hotspotX = 2;
+    this.zo[15].hotspotY = 1;
+    
+    this.zo[16] = new Zoomlevel();
+    this.zo[16].maxX = 1;
+    this.zo[16].maxY = 1;
+    this.zo[16].hotspotX = 1;
+    this.zo[16].hotspotY = 1;
+
+  }
+  
+});
+
+    // module exports
+    return { MapFrameMorph: MapFrameMorph, tileExtent: TileSize }
+
+}();
+
+// ===========================================================================
+// The Bouncing Spheres Example
+// ===========================================================================
+
+/**
+ * @class BouncingSpheres
+ */
+
+var BouncingSpheres = Class.create();
+
+Object.extend(BouncingSpheres, {
+    makeCircleGrid: function (itemCount) {
+        var canvasWidth = this.canvas().bounds().width;
+        var canvasHeight = this.canvas().bounds().height;
+
+        var minR = 10, maxR = canvasWidth / 3;
+
+        for (var j = 0; j < itemCount; ++j) {
+            var r = BouncingSpheres.getRandSkewed(minR, maxR);
+            var cx = BouncingSpheres.getRand(r,  canvasWidth  - r);
+            var cy = BouncingSpheres.getRand(r,  canvasHeight - r);
+            //console.log([r, cx, cy]);
+    
+            var aShape  = Morph(Rectangle(cx - r, cy - r, 2*r, 2*r), "ellipse");
+            aShape.setFill(BouncingSpheres.randColor(true));
+            aShape.setBorderColor(BouncingSpheres.randColor(true));
+            aShape.setFillOpacity(BouncingSpheres.getRand(0, 1));
+            aShape.setBorderWidth(BouncingSpheres.getRand(0, 3));
+            aShape.fullRadius = r + aShape.shape.getStrokeWidth();
+    
+            WorldMorph.current().addMorph(aShape);
+    
+            aShape.vector = Point.polar(15, BouncingSpheres.getRand(0, Math.PI *2));
+            aShape.startSteppingFunction(30,function(msTime) {
+
+                // var pt = this.getTranslation();
+                this.translateBy(this.vector);
+                var worldpt = this.origin;
+
+                if ((worldpt.x - this.fullRadius < 0) || (worldpt.x + this.fullRadius > canvasWidth)) {
+                    this.vector.x = -this.vector.x;
+                }
+
+                if ((worldpt.y - this.fullRadius < 0) || (worldpt.y + this.fullRadius > canvasHeight)) {
+                    this.vector.y = - this.vector.y;
+                }
+
+                // this.translateBy(pt.x + 10, pt.y + 10); 
+            });
+            
+            // console.log('added ' + aShape.shape);
+            // dojo.html.setClass(aShape.getEventSource(), "movable");
+        }
+    },
+
+    getRand: function(from, to) {
+        return Math.random() * (to - from) + from;
+    },
+    
+    getRandSkewed: function(from, to) {
+        // let skew stats to smaller values
+        var seed = 0;
+
+        for (var i = 0; i < BouncingSpheres.skew_stat_factor; ++i) {
+            seed += Math.random();
+        }
+
+        seed = 2 * Math.abs(seed / BouncingSpheres.skew_stat_factor - 0.5);
+        return seed * (to - from) + from;
+    },
+    
+    skew_stat_factor: 15,
+    
+    randColor: function(alpha) {
+        var red   = BouncingSpheres.getRand(0, 1);
+        var green = BouncingSpheres.getRand(0, 1);
+        var blue  = BouncingSpheres.getRand(0, 1);
+        var opacity = 1;
+        var color = new Color(red, green, blue);
+        return color;    
+    }
+
+});
+    
+// ===========================================================================
+// The Instant Messenger Widget Example
+// ===========================================================================
+
+/**
+ * @class MessengerWidget
+ * Placeholder for an instant messenger widget (to be completed) 
+ */
+ 
+MessengerWidget = Class.extend(Model);
+
+Object.extend(MessengerWidget.prototype, {
+
+    initialize: function() { 
+        MessengerWidget.superClass.initialize.call(this);
+    },
+    
+    openIn: function(world, location) {
+        world.addMorphAt(WindowMorph(this.buildView(), 'Instant Messenger'), location);
+    },
+    
+    buildView: function() {
+        var panel = PanelMorph(pt(300, 255));
+        panel.setBorderWidth(2);
+        panel.setFill(LinearGradient.makeGradient(Color.white, Color.primary.blue.lighter(), LinearGradient.EastWest));
+
+        panel.addMorph(TextPane(        Rectangle( 10,  10, 280, 180), " ")).connectModel({model: this, getText: null});
+        panel.addMorph(TextMorph(       Rectangle( 10, 210, 220,  50), "<enter text here>")).connectModel({model: this, getText: null});
+        panel.addMorph(ImageButtonMorph(Rectangle(240, 200,  50,  50), "http://www.cs.tut.fi/~taivalsa/Software/Talk.PNG",
+                                                                       "http://www.cs.tut.fi/~taivalsa/Software/Talk_down.PNG"));
+
+        return panel;
+    }
+    
+});
+
+console.log('loaded Examples.js');
+
