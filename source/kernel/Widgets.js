@@ -116,16 +116,23 @@ Object.extend(CheapListMorph.prototype, {
         CheapListMorph.superClass.initialize.call(this, initialBounds, listText);
 
         this.itemList = itemList;
+
+        this.layoutChanged();
+        return this;
+    },
+
+    initializeTransientState: function(initialBounds) {
+	CheapListMorph.superClass.initializeTransientState.call(this, initialBounds);
+	// FIXME make persistent
         // this default self connection may get overwritten by, eg, connectModel()...
-        this.modelPlug = {
-            model: this,
+	this.modelPlug = {
+	    model: this,
             getList: "getMyList",
             getSelection: "getMySelection",
             setSelection: "setMySelection"
         };
+	this.itemList = [];// FIXME recover that state
 
-        this.layoutChanged();
-        return this;
     },
     
     takesKeyboardFocus: function() { 
