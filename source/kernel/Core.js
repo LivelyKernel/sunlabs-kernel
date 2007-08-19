@@ -20,7 +20,7 @@ var console = window.parent.console;
 
 Namespace =  {
     SVG : morphic.canvas.getAttribute("xmlns"),
-    LIVELY : morphic.canvas.getAttribute("xmlns"), // FIXME Safari XMLSerializer seems to do wierd things w/namespaces
+    LIVELY : morphic.canvas.getAttribute("xmlns:lively"), // FIXME Safari XMLSerializer seems to do wierd things w/namespaces
     XLINK : morphic.canvas.getAttribute("xmlns:xlink"),
     DAV : morphic.canvas.getAttribute("xmlns:D"),
     resolver : function(prefix) {
@@ -1168,20 +1168,22 @@ Object.extend(DisplayObject.prototype, {
         return this;
     },
 
+    getType: function()  {
+        try {
+	    //return element.getAttributeNS(Namespace.LIVELY, "type");
+            return this.getAttribute("type");
+        } catch (er) {
+            console.log('in getType this is %s', this);
+            throw er;
+        }
+    },
+
+
     withHref: function(localURl) {
         this.setAttributeNS(Namespace.XLINK, "href", localURl);
         return this;
     },
 
-    getType: function()  {
-        //element.getAttributeNS(Namespace.LIVELY, "type");
-        try {
-            return this.getAttribute("type");
-        } catch(er) {
-            console.log('in getType this is %s', this);
-            throw er;
-        }
-    },
 
     copy: function() { 
         return this.cloneNode(true); 
@@ -1781,8 +1783,7 @@ DisplayObjectList = function(type) {
 
 DisplayObjectList.become = function(obj, type) {
     obj.__proto__ = DisplayObjectList.prototype;
-    //obj.setAttributeNS(Namespace.LIVELY, "type", type);
-    obj.setAttribute("type", type);
+    obj.setType(type);
     return obj;
 };
 
@@ -2249,11 +2250,11 @@ Object.extend(Morph.prototype, {
                 console.log('cloning node b/c original has an owner, id %s', id);
                 element = element.cloneNode(true);
             }
+
             id = fieldname + '_' + this.id;
-            // FIXME: so now we're somehow owning the element?
             element.setAttribute("id", id);
-            
             this.defs.appendChild(element);
+
             //return "url(#xpointer(id(" + id + ")))"; 
             return "url(#" + id + ")";
         } else return null;

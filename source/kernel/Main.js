@@ -3,8 +3,6 @@
  */
 
 var Global = this;
-var showMostExamples = true; // DI: Set to false for much faster turnaround time on slow machines
-                             // also stops spinning star from running down battery ;-)
 
 var stockWidget = null;
 
@@ -33,7 +31,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
         widget.setPosition(pt(320, 380));
         world.addMorph(widget);
             
-        var spinningStar = showMostExamples;
+        var spinningStar = !Config.skipMostExamples;
         if (spinningStar) {  // Make the star spin as a test of stepping
             widget.startSteppingFunction(60, function(msTime) { this.setRotation(this.getRotation() + 0.1) });
         }
@@ -50,10 +48,10 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
     var showClipMorph = false;
     if (showClipMorph) world.addMorph(ClipMorph(Rectangle(500, 200, 150, 150)));
     
-    var show3DLogo = showMostExamples;
+    var show3DLogo = !Config.skipMostExamples;
     if (show3DLogo) world.addMorph(WindowMorph(Sun3DMorph(pt(950, 125).extent(pt(200, 200))), 'Sun 3D Logo'));
     
-    var showAsteroids = showMostExamples;
+    var showAsteroids = !Config.skipMostExamples;
     if (showAsteroids) {
         var gameMorph = apps.asteroids.makeGameMorph(pt(580, 360).extent(pt(600, 300)));
         world.addMorph(WindowMorph(gameMorph, 'Asteroids!'));
@@ -61,7 +59,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
         gameMorph.runAsteroidsGame();
     }
     
-    var innerWorld = showMostExamples;
+    var innerWorld = !Config.skipMostExamples;
     if (innerWorld) {
         world.addMorph(widget = LinkMorph(null, pt(260, 460)));
 
@@ -113,7 +111,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
                                                 'Doodle Morph'));
     }
     
-    var slideWorld = showMostExamples;
+    var slideWorld = !Config.skipMostExamples;
     if (slideWorld) { // Make a slide for "turning web programming upside down"
         var lm = LinkMorph(null, pt(260, 520));
 
@@ -140,7 +138,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
     }
 
     // example icon morph with a fisheye effect 'on'
-    var showIcon = showMostExamples;
+    var showIcon = !Config.skipMostExamples;
     if (showIcon) {
         // maybe the icons should have a rectangle shaped images (unlike here)
         //var icon = ImageMorph(Rectangle(30, 360, 80, 50), "http://logos.sun.com/images/SunSample.gif");
@@ -152,7 +150,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
     }
 
     // example weather morph
-    var showWeather = showMostExamples;
+    var showWeather = !Config.skipMostExamples;
     if (showWeather) {
         // Maybe the icons should have rectangular images (unlike here)
         new WeatherWidget().openIn(world, pt(700, 50));
@@ -161,16 +159,16 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
     var showWidgets = true;
     if (showWidgets) new WidgetTester().openIn(world, pt(460, 20));
 
-    var showBrowser = showMostExamples;
+    var showBrowser = !Config.skipMostExamples;
     if (showBrowser) new SimpleBrowser().openIn(world, pt(20,20));
 
-    var showStocks = showMostExamples;
+    var showStocks = !Config.skipMostExamples;
     if (showStocks) {
         stockWidget = new StockWidget().openIn(world, pt(300, 500));
         stockWidget.startSteppingRefreshCharts(stockWidget);
     }
 
-    var showMessenger = showMostExamples;
+    var showMessenger = !Config.skipMostExamples;
     if (showMessenger) new MessengerWidget().openIn(world, pt(30, 600));
 
     var showRSS = false;
@@ -185,15 +183,15 @@ function main() {
     WorldMorph.setCurrent(world);
     world.displayWorldOn(morphic.canvas);
     console.log('made world');
-    if (this['omitExamples']) return;
-    WorldMorph.populateWithExamples(world, showMostExamples);
+    if (Config.skipAllExamples) return;
+    WorldMorph.populateWithExamples(world, !Config.skipMostExamples);
 }
 
 main();
 
 if (false) showStatsViewer(TextLine.prototype, "TextLine...");
 
-if (this['showWebStore']) {
+if (Config.showWebStore) {
     //var store = new WebStore('http://idisk.mac.com/xysztof/Public/Lively');
     var store = new WebStore('localhost', '~kappa');
     store.openIn(WorldMorph.current(), pt(500, 30));
