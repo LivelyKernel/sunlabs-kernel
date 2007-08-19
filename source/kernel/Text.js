@@ -20,7 +20,7 @@ Object.extend(TextLine, {
 
     become: function(node) {
         var elt = HostClass.becomeInstance(node, TextLine);
-        var font = morphic.FontInfo.forFamily(elt.getAttribute("font-family"), elt.getAttribute("font-size"));
+        var font = FontInfo.forFamily(elt.getAttribute("font-family"), elt.getAttribute("font-size"));
         elt.init(elt.textContent, 0, elt.naiveGetX(), elt.naiveGetY() - font.getSize(), font);
         return elt;
     }
@@ -372,21 +372,18 @@ Object.extend(TextMorph.prototype, {
     
         if (this.textBox && this.textBox.lines) {
             // FIXME hack!!!
-            this.font = morphic.FontInfo.forFamily(this.textBox.lines[0].getAttribute("font-family"), 
+            this.font = FontInfo.forFamily(this.textBox.lines[0].getAttribute("font-family"), 
             this.textBox.lines[0].getAttribute("font-size"));
             console.log('got font %s', font);
         } else {
-            this.font = morphic.FontInfo.forFamily(this.fontFamily, this.fontSize);
+            this.font = FontInfo.forFamily(this.fontFamily, this.fontSize);
         }
     },
 
     initializePersistentState: function(initialBounds, shapeType) {
         // this.textBox = null;
         TextMorph.superClass.initializePersistentState.call(this, initialBounds, shapeType);
-        /*
-        this.selectionElement = this.addChildElement(document.createSVGElement('use'));
-        this.selectionElement.setHref("#TextSelectionStyle");
-        */
+        // this.selectionElement = this.addChildElement(document.createSVGElement('use').withHref("#TextSelectionStyle"));
 
         // the selection element is persistent although its contents are not
         // generic <g> element with 1-3 rectangles inside
@@ -1040,7 +1037,7 @@ Object.category(TextMorph.prototype, "accessing", function() {
     },
 
     setFontSize: function(newSize) {
-        this.font = morphic.FontInfo.forFamily(this.font.getFamily(), newSize);
+        this.font = FontInfo.forFamily(this.font.getFamily(), newSize);
         // this.textBox.element.setAttributeNS(null, "font-size", newSize);
         this.inset = pt((this.getFontSize()/3)+2,(this.getFontSize()/3));
         this.setTextString(this.textString); 

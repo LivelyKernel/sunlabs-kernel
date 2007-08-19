@@ -9,13 +9,13 @@
 
 var morphic = { 
     canvas : document.getElementById("canvas"),
-    FontInfo : window.parent.FontInfo,
-    console: window.parent.console
 };
 
-morphic.console.platformConsole = console; // the web browser may also have a console
+var FontInfo = window.parent.FontInfo;
 
-var console = morphic.console;
+window.parent.console.platformConsole = console;
+var console = window.parent.console;
+
 // document.oncontextmenu = function(evt) { console.log('no menu for you %s', evt); return false; }
 
 Namespace =  {
@@ -24,7 +24,7 @@ Namespace =  {
     XLINK : morphic.canvas.getAttribute("xmlns:xlink"),
     DAV : morphic.canvas.getAttribute("xmlns:D"),
     resolver : function(prefix) {
-        console.log('prefix ' + prefix + ' value ' + this[prefix]);
+        console.log('prefix %s value %s', prefix, this[prefix]);
         return this[prefix];
     }
 };
@@ -87,7 +87,29 @@ Object.extend(Class, {
     methodNameList: function(className) {
         if (className != "Global") return this.globalScope[className].localFunctionNames();
         return Global.functionNames().copyWithoutAll(this.globalScope.classNames()); 
+    },
+
+    listClassNames: function(scope, excludePrefix) {
+	var a = [];
+	
+	for (var name in scope) { 
+            if (excludePrefix && name.startsWith(excludePrefix)) 
+		continue;     
+            try {
+		if (Class.isClass(scope[name])) {
+                    a.push(name); 
+		}
+            } catch (er) {
+		// FF can throw an exception here
+            }
+	}
+	
+	a.push("Object", "Global"); // a few others of note
+	
+	// console.log('found array ' + a.sort());
+	return a.sort(); 
     }
+    
 });
 
 /**
@@ -117,27 +139,6 @@ Object.extend(Object, {
     }
     
 });
-
-Object.prototype.listClassNames = function(excludePrefix) {
-    var a = [];
-
-    for (var name in this) { 
-        if (excludePrefix && name.startsWith(excludePrefix)) continue;     
-    
-        try {
-            if (Class.isClass(this[name])) {
-                a.push(name); 
-            }
-        } catch (er) {
-            // FF can throw an exception here
-        }
-    }
-    
-    a.push("Object", "Global"); // a few others of note
-    
-    // console.log('found array ' + a.sort());
-    return a.sort(); 
-};
 
 Object.properties = function(object) {
     var a = [];
@@ -2204,19 +2205,6 @@ Object.extend(Morph.prototype, {
     
     updateBoundsElement: function() {
     
-        /*    
-        var r = this.fullBounds;
-      
-        if (this.owner() === this.world()) 
-            var transform = this.getTransformToElement(this);
-        else 
-            var transform = this.getTransformToElement(this.owner() || this.canvas());
-    
-        // r is in coordinates of this.owner()
-        r = rect(r.topLeft().matrixTransform(transform), 
-        r.bottomRight().matrixTransform(transform));
-        */
-    
         var newElement = RectShape(null, this.fullBounds, null, 1, Color.blue);
         newElement.disablePointerEvents();
     
@@ -2878,7 +2866,6 @@ Object.extend(Morph.prototype, {
         if (this.world()) {
             this.world().stopStepping(this); 
         } // else: can happen if removing a morph whose parent is not in the world
-
     }
     
 });

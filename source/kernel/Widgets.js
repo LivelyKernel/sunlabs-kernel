@@ -56,7 +56,7 @@ Object.extend(TitleBarMorph.prototype, {
             function() { this.toggleCollapse(); }, "Collapse");
         this.addMorph(collapseButton);
 
-        // var font = morphic.FontInfo.forFamily(TextMorph.prototype.fontFamily, TextMorph.prototype.fontSize);
+        // var font = FontInfo.forFamily(TextMorph.prototype.fontFamily, TextMorph.prototype.fontSize);
 
         var label;
         if (headline instanceof TextMorph) {
