@@ -398,7 +398,7 @@ Object.extend(WindowControlMorph.prototype, {
         this.target = target;
         this.action = action;
         this.color = color;
-        var handler = { handleEvent: function(evt) { evt.init(); this['on' + evt.capitalizedType()].call(this, evt); }.bind(this).withLogging('WindowControlMorph Handler') };
+        var handler = { handleEvent: function(evt) { evt.init(); this['on' + evt.capitalizedType()].call(this, evt); }.bind(this).logErrors('WindowControlMorph Handler') };
         this.addEventListener("mouseover", handler, true);
         this.addEventListener("mouseout", handler, true);
         this.helpText = helpText; // string to be displayed when mouse is brought over the icon
@@ -1182,6 +1182,7 @@ Object.extend(SliderMorph.prototype, {
             console.warn('no slider in %s, %s', this, this.textContent);
            return;
         }
+	console.log('slider %s', this.slider);
         this.slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});
         this.scale = 1.0; // FIXME restore from markup
     },
@@ -1749,7 +1750,7 @@ Object.extend(WorldMorph.prototype, {
         // merged from WorldState
         this.stepList = [];
         this.lastStepTime = (new Date()).getTime();
-        this.mainLoop = window.setInterval(function() {this.doOneCycle()}.bind(this).withLogging('Main Loop'), 30);
+        this.mainLoop = window.setInterval(function() {this.doOneCycle()}.bind(this).logErrors('Main Loop'), 30);
 
         this.worldId = ++WorldMorph.worldCount;
         return this;
@@ -1922,7 +1923,7 @@ Object.extend(DomEventHandler.prototype, {
             console.log("unknown event type " + evt.type);
         }
         evt.stopPropagation();
-    }.withLogging('Event Handler'),
+    }.logErrors('Event Handler'),
     
 });
 
@@ -2219,7 +2220,7 @@ Object.extend(LinkMorph.prototype, {
         // morph.assign('myWorld', otherWorld);
 
         // Balloon help support
-        var handler = { handleEvent: function(evt) { evt.init(); this['on' + evt.capitalizedType()].call(this, evt); }.bind(this).withLogging('Mouseover Handler') };
+        var handler = { handleEvent: function(evt) { evt.init(); this['on' + evt.capitalizedType()].call(this, evt); }.bind(this).logErrors('Mouseover Handler') };
         this.addEventListener("mouseover", handler, true);
         this.addEventListener("mouseout", handler, true);
         this.helpText = "Shift-click to open or close a subworld"; 

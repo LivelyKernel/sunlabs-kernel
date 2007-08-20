@@ -1573,7 +1573,7 @@ GameMorph.prototype.runAsteroidsGame = function() {
         showTextStrings();
 
     }
-    this.timeoutID = window.setTimeout(arguments.callee.withLogging('Asteroid Timer'), DELAY);
+    this.timeoutID = window.setTimeout(arguments.callee.logErrors('Asteroid Timer'), DELAY);
 };
 
   function loadSounds() {
@@ -2699,7 +2699,7 @@ Object.extend(StockWidget.prototype, {
 
     startSteppingRefreshCharts: function(widget) {
         // this.startSteppingFunction(30000, this.refreshCharts);
-        this.timer = setInterval(this.refreshCharts.withLogging('Stock Refresh'), 30000);
+        this.timer = setInterval(this.refreshCharts.logErrors('Stock Refresh'), 30000);
     },
 
     getUrl: function(url, params) {

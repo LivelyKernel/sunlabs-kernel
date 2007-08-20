@@ -260,7 +260,20 @@ if (Prototype.Browser.WebKit) {
     }
 }
 
-Function.prototype.withLogging = function(prefix) {
+Function.prototype.logErrors = function(prefix) {
+    var advice = function (proceed/*,args*/) {
+	var args = $A(arguments); args.shift(); 
+	try {
+	    return proceed.apply(this, args); 
+	} catch (er) {
+            if (prefix) console.warn("%s: %s", prefix, er);
+            else console.warn("%s", er);
+            throw er;
+	}
+    };
+    return this.wrap(advice);
+};
+/*
     var __method = this;
     return function() {
         try {
@@ -272,6 +285,18 @@ Function.prototype.withLogging = function(prefix) {
         }
     }
 };
+*/
+
+Function.prototype.logCalls = function(prefix) {
+    var advice = function(proceed) {
+	var args = $A(arguments); args.shift(); 
+	console.log('%s: %s args: %s', prefix, this, args); 
+	return proceed.apply(this, args); 
+    };
+    return this.wrap(advice);
+};
+
+
 
 /**
  * Extensions to class String
@@ -2289,8 +2314,8 @@ Object.extend(Morph.prototype, {
     },
 
     getNamedMorph: function(name) {
-	for (var node = this.firstChild; node != null; node = node.nextSibling) {
-	    if (node.getAttribute("property") == name) {
+	for (var node = this.submorphs.firstChild; node != null; node = node.nextSibling) {
+	    if (node.getAttribute("property") == name) { // FIXME Lively NS
 		if (!(node instanceof Morph)) {
 		    console.warn('%s is not a morph but %s', name,  node);
 		}
@@ -2304,7 +2329,7 @@ Object.extend(Morph.prototype, {
 	if (this[name]) {
 	    console.warn('morph named %s already exists? %s', name, this[name]);
 	}
-	morph.setAttribute("property", name);
+	morph.setAttribute("property", name); // FIXME Lively NS
 	this[name] = morph;
 	return this.addMorph(morph);
     }
@@ -2502,7 +2527,7 @@ Object.category(Morph.prototype, 'transforms', function() { return {
     getTransform: function() {
         if (this.cachedTransform == null) { 
             // we need to include fisheyeScaling to the transformation
-            this.cachedTransform = Transform.createSimilitude(this.origin, this.rotation, this.scale * (this.fisheyeScale ? this.fisheyeScale:1));
+            this.cachedTransform = Transform.createSimilitude(this.origin, this.rotation, this.scale * this.fisheyeScale);
         }
         
         return this.cachedTransform;
@@ -2512,10 +2537,8 @@ Object.category(Morph.prototype, 'transforms', function() { return {
         this.origin = tfm.getTranslation();
         this.rotation = tfm.getRotation();
         this.scale = tfm.getScale();
-        // if the fisheye is 'on' we must make sure the Morph keeps its original size
-        if (this.fisheyeScale) {
-            this.scale = this.scale/this.fisheyeScale;
-        }
+        // we must make sure the Morph keeps its original size (wrt/fisheyeScale)
+        this.scale = this.scale/this.fisheyeScale;
         this.cachedTransform = tfm; //Transform.createSimilitude(this.origin, this.rotation, this.scale);
     },
 

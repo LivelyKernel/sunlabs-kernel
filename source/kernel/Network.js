@@ -35,10 +35,10 @@ Ajax.Request.prototype.request = function(url) {
                             this.options.asynchronous);
 
         if (this.options.asynchronous) {
-            setTimeout(function() { this.respondToReadyState(1) }.bind(this).withLogging('Network Timer'), 10);
+            setTimeout(function() { this.respondToReadyState(1) }.bind(this).logErrors('Network Timer'), 10);
         }
 
-        this.transport.onreadystatechange = this.onStateChange.bind(this).withLogging('Network Request Handler');
+        this.transport.onreadystatechange = this.onStateChange.bind(this).logErrors('Network Request Handler');
 
         this.setRequestHeaders();
 
@@ -246,11 +246,11 @@ Object.extend(Feed.prototype, {
         
                 feed.processResult(result);
                 console.log('changing %s', modelVariables);
-        
+		
                 for (var i = 0; i < modelVariables.length; i++) {
                     model.changed(modelVariables[i]);
                 }
-            }.withLogging('Success Handler for ' + feed)
+            }.logErrors('Success Handler for ' + feed)
         }));
     },
 
