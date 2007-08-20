@@ -18,7 +18,7 @@ Object.extend(SimpleBrowser.prototype, {
 
     initialize: function() { SimpleBrowser.superClass.initialize.call(this); },
 
-    getClassList: function() { return Class.listClassNames(Global, 'SVG'); },
+    getClassList: function() { return Class.listClassNames(Global).filter(function(n) { return !n.startsWith('SVG')}); },
 
     setClassName: function(n) { this.className = n; this.changed("getMethodList"); },
 

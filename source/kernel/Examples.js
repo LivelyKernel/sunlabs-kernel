@@ -208,7 +208,7 @@ Pen = Class.create();
 Object.extend(Pen.prototype, {
 
     initialize: function(loc) {
-        this.location = (typeof(loc) != 'undefined') ? loc : WorldMorph.current().bounds().center();
+        this.location = (loc !== undefined) ? loc : WorldMorph.current().bounds().center();
         this.penWidth = 2;
         this.penColor = Color.blue;
         this.fillColor = null;
@@ -341,7 +341,7 @@ var buildRSSViewer = function(feed, world, point) {
     panel.setBorderWidth(2);
     var model = new Model();
     panel.model = model;
-
+    
     // Model functions
     model.feed = feed;
     model.getItemList = function() { return this.feed.items() };

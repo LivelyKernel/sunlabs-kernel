@@ -55,6 +55,7 @@ document.createSVGElement = function(name, attributes) {
     return element;
 };
 
+
 // ===========================================================================
 // Our extensions to JavaScript base libraries
 // ===========================================================================
@@ -89,12 +90,10 @@ Object.extend(Class, {
         return Global.functionNames().copyWithoutAll(this.globalScope.classNames()); 
     },
 
-    listClassNames: function(scope, excludePrefix) {
+    listClassNames: function(scope) {
 	var a = [];
 	
 	for (var name in scope) { 
-            if (excludePrefix && name.startsWith(excludePrefix)) 
-		continue;     
             try {
 		if (Class.isClass(scope[name])) {
                     a.push(name); 
@@ -802,7 +801,7 @@ Object.extend(LinearGradient, {
     WestEast:   rect(pt(1, 0), pt(0, 0)),
     
     create: function(vector) {
-        if (typeof (vector) == 'undefined') 
+        if (vector === undefined) 
             vector = LinearGradient.NorthSouth;
 
         return LinearGradient({x1: vector.x, y1: vector.y, x2: vector.maxX(), y2: vector.maxY()}); 
@@ -835,7 +834,7 @@ Object.extend(RadialGradient, {
         // elt.setAttributeNS(null, "cx", c.x);
         // elt.setAttributeNS(null, "cy", c.y);
         // elt.setAttributeNS(null, "r", r);
-        if (typeof(f) != 'undefined') {
+        if (f !== undefined) {
             elt.setAttributeNS(null, "fx", f.x);
             elt.setAttributeNS(null, "fy", f.y);
         }
@@ -1145,6 +1144,13 @@ Object.extend(Event.prototype, {
         
 });
 
+Object.extend(window.parent, {
+    onbeforeunload: function(evt) { console.log('window got unload event %s', evt); },
+    onblur: function(evt) { console.log('window got blur event %s', evt); },
+    onfocus: function(evt) { console.log('window got focus event %s', evt); },
+});
+
+
 // ===========================================================================
 // Graphics primitives
 // ===========================================================================
@@ -1178,12 +1184,10 @@ Object.extend(DisplayObject.prototype, {
         }
     },
 
-
     withHref: function(localURl) {
         this.setAttributeNS(Namespace.XLINK, "href", localURl);
         return this;
     },
-
 
     copy: function() { 
         return this.cloneNode(true); 
@@ -1311,17 +1315,14 @@ Object.extend(Shape.prototype, {
         if (this.shouldIgnorePointerEvents)
             this.disablePointerEvents();
 
-        if (typeof(fill) != 'undefined')
+        if (fill !== undefined)
             this.setFill(fill);
-        /* else this.setFill(Shape.defaultFill);*/
         
-        if (typeof(strokeWidth) != 'undefined')
+        if (strokeWidth !== undefined)
             this.setStrokeWidth(strokeWidth);
-        /* else this.setStrokeWidth(Shape.defaultStrokeWidth);*/
         
-        if (typeof(stroke) != 'undefined')
+        if (stroke !== undefined)
             this.setStroke(stroke);
-        /* else this.setStroke(Shape.defaultStroke);*/
     },
     
     applyFunction: function(func,arg) { 
@@ -1344,10 +1345,11 @@ Object.extend(Shape, {
     translateVerticesBy: function(vertices, delta) { // utility class method
         return vertices.invoke('addPt', delta); 
     },
-    LineJoins: { MITER: "miter", ROUND: "round", BEVEL: "bevel" },
-    LineCaps: { BUTT: "butt", ROUND: "round", SQUARE: "square" },
+    LineJoins: { MITER: "miter", ROUND: "round",  BEVEL: "bevel" },
+    LineCaps:  { BUTT: "butt",   ROUND: "round", SQUARE: "square" },
     
     classForTag: function(tagName) {
+
         switch (tagName) {
         case "rect":
         case "rectangle":
@@ -1868,26 +1870,32 @@ Object.extend(Morph, {
 
     fromMarkup: function(string) {
         return Morph.becomeMorph($X(string));
-    },
-
-    // Morph event handling 
-    // Note: a singleton
-    mouseHandlerForDragging: {
-
-        handleMouseEvent: function(evt, targetMorph) {
-            var handler = targetMorph['on' + evt.capitalizedType()];
-            // handler = targetMorph[adapter[evt.type]]
-            // console.log('target for ' + evt.type + 'Action is ' + handler + ' target ' + targetMorph.inspect());
-            handler.call(targetMorph, evt);
-            return true; 
-        },
-
-        handlesMouseDown: function(evt) { 
-            return false;
-        }
     }
     
 });
+
+// Morph event handling 
+MouseHandlerForDragging = Class.create();
+
+
+Object.extend(MouseHandlerForDragging.prototype, {
+    initialize: function() {
+	throw new Error('singleton, use the prototype');
+    },
+
+    handleMouseEvent: function(evt, targetMorph) {
+        var handler = targetMorph['on' + evt.capitalizedType()];
+        // handler = targetMorph[adapter[evt.type]]
+        // console.log('target for ' + evt.type + 'Action is ' + handler + ' target ' + targetMorph.inspect());
+        handler.call(targetMorph, evt);
+        return true; 
+    },
+    
+    handlesMouseDown: function(evt) { 
+        return false;
+    }
+});
+
 
 // Morph initialization functions
 Object.extend(Morph.prototype, {
@@ -1908,7 +1916,7 @@ Object.extend(Morph.prototype, {
     clipPath: null, // KP: should every morph should have one of those?
     keyboardHandler: null, //a KeyboardHandler for keyboard repsonse, etc
     openForDragAndDrop: true,
-    mouseHandler: Morph.mouseHandlerForDragging, //a MouseHandler for mouse sensitivity, etc
+    mouseHandler: MouseHandlerForDragging.prototype, //a MouseHandler for mouse sensitivity, etc
     stepHandler: null, //a stepHandler for time-varying morphs and animation 
     drawBounds: false,
 
@@ -1945,17 +1953,36 @@ Object.extend(Morph.prototype, {
                         def.setAttribute('id', newPathId);
                         console.log('assigned new id %s', def.getAttribute('id'));
                         break;
+		    case 'linearGradient':
+		    case 'radialGradient': // FIXME gradients can be used on strokes too
+			var newFillId = "fill_" + this.id;
+			if (this.shape) {
+			    var myFill = this.shape.getAttributeNS(null, 'fill');
+			    if (myFill) {
+				this.shape.setAttributeNS(null, 'fill', 'url(#' + newFillId + ')');
+			    } else {
+				console.log('myFill undefined on %s', this);
+			    }
+			} else {
+			    console.log('ouch, cant set fill %s yet, no shape...', newFillId);
+			}
+                        def.setAttribute('id', newFillId);
+			break;
                     default:
                         console.log('unknown def %s', def);
                     }
                 }
 
                 // let it be
-            } else if (/FocusHalo/.test(children[i].getType())) { //don't restore
-                this.removeChild(children[i]);
-            } else {
-                this.restoreFromElement(children[i]);
-            }        
+            } else if (DisplayObject.prototype.getType.call(children[i])) {
+		if (/FocusHalo/.test(DisplayObject.prototype.getType.call(children[i]))) { //don't restore
+                    this.removeChild(children[i]);
+		} else {
+                    this.restoreFromElement(children[i]);
+		}   
+	    } else {
+		console.warn('cannot handle element %s, %s', children[i].tagName, children[i].textContent);
+	    }
         }
     },
     
@@ -1977,6 +2004,7 @@ Object.extend(Morph.prototype, {
         switch (type) {
         case 'Submorphs':
             this.submorphs = DisplayObjectList.become(element, type);
+	    console.log('recursing into children of %s', this);
             this.submorphs.each(function(m) { Morph.becomeMorph(m); });
             return true;
         case 'FocusHalo':
@@ -2258,7 +2286,29 @@ Object.extend(Morph.prototype, {
             //return "url(#xpointer(id(" + id + ")))"; 
             return "url(#" + id + ")";
         } else return null;
+    },
+
+    getNamedMorph: function(name) {
+	for (var node = this.firstChild; node != null; node = node.nextSibling) {
+	    if (node.getAttribute("property") == name) {
+		if (!(node instanceof Morph)) {
+		    console.warn('%s is not a morph but %s', name,  node);
+		}
+		return node;
+	    }
+	}
+	return null;
+    },
+
+    setNamedMorph: function(name, morph) {
+	if (this[name]) {
+	    console.warn('morph named %s already exists? %s', name, this[name]);
+	}
+	morph.setAttribute("property", name);
+	this[name] = morph;
+	return this.addMorph(morph);
     }
+
 });
 
 // Submorph management functions
@@ -2627,7 +2677,7 @@ Object.extend(Morph.prototype, {
     },
     
     enableEvents: function() {
-        this.mouseHandler = Morph.mouseHandlerForDragging;
+        this.mouseHandler = MouseHandlerForDragging.prototype;
     },
 
     relayMouseEvents: function(target, eventSpec) {
@@ -2715,6 +2765,8 @@ Object.extend(Morph.prototype, {
     }
     
 });
+
+
 
 /**
  * @class MouseHandlerForRelay
@@ -3041,10 +3093,12 @@ Object.extend(Morph.prototype, {
     addSvgInspector: function() {
 
         var xml = new XMLSerializer().serializeToString(this); 
-        const maxSize = 2000;
+	console.log('%s serialized to %s', this, xml);
+        const maxSize = 1500;
         // xml = '<svg xmlns="http://www.w3.org/2000/svg  xmlns:xlink="http://www.w3.org/1999/xlink> ' + xml + ' </svg>';
 
-        var txtMorph = TextMorph(Rectangle(0, 0, 250, 300), xml.truncate(maxSize));
+	var pane = TextPane(Rectangle(0, 0, 250, 300), xml.truncate(maxSize));
+        var txtMorph = pane.innerMorph;
         txtMorph.xml = xml;
         txtMorph.processCommandKeys = function(key) {
             switch (key) {
@@ -3065,7 +3119,7 @@ Object.extend(Morph.prototype, {
             }
          }
 
-        this.world().addMorph(WindowMorph(txtMorph, "XML dump", this.bounds().topLeft().addPt(pt(5,0))));
+        this.world().addMorph(WindowMorph(pane, "XML dump", this.bounds().topLeft().addPt(pt(5,0))));
     }
     
 });

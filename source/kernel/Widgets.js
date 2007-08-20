@@ -664,11 +664,6 @@ Object.extend(WorldMorph, {
 
 });
 
-Object.extend(window.parent, {
-    onbeforeunload: function(evt) { console.log('window got unload event %s', evt); },
-    onblur: function(evt) { console.log('window got blur event %s', evt); },
-    onfocus: function(evt) { console.log('window got focus event %s', evt); },
-});
 
 Object.extend(WorldMorph.prototype, {
 
@@ -1558,7 +1553,7 @@ Object.extend(CheapListMorph.prototype, {
     
         var listText = (itemList == null) ? "" : itemList.join("\n");
         CheapListMorph.superClass.initialize.call(this, initialBounds, listText);
-
+	
         this.itemList = itemList;
 
         this.layoutChanged();
@@ -1849,30 +1844,34 @@ Object.extend(MenuMorph.prototype, {
 
 ButtonMorph = HostClass.create('ButtonMorph', Morph);
 
-Object.extend(ButtonMorph.prototype, {
+Object.category(ButtonMorph.prototype, "core", function() { return {
 
     focusHaloBorderWidth: 3, // override the default
     defaultBorderWidth: 0.3,
     defaultFill: Color.neutral.gray,
     defaultBorderColor: Color.neutral.gray,
+    defaultEdgeRoundingRadius: 4,
 
     // A ButtonMorph is the simplest widget
     // It read and writes the boolean variable, this.model[this.propertyName]
     initialize: function(initialBounds) {
         ButtonMorph.superClass.initialize.call(this, initialBounds, "rect");
-        this.baseColor = this.defaultFill;
-        this.myValue = false;
-        this.toggles = false; // if true each push toggles the model state
-
-        // this default self connection may get overwritten by, eg, connectModel()...
-        this.modelPlug = {model: this, getValue: "getMyValue", setValue: "setMyValue"};
-    
         // Styling
-        this.shape.roundEdgesBy(4);
+        this.shape.roundEdgesBy(this.defaultEdgeRoundingRadius);
         this.changeAppearanceFor(this.myValue);
-
         return this;
     },
+
+    initializeTransientState: function(initialBounds) {
+        ButtonMorph.superClass.initializeTransientState.call(this, initialBounds);
+        // FIXME make persistent
+        // this default self connection may get overwritten by, eg, connectModel()...
+        this.modelPlug = {model: this, getValue: "getMyValue", setValue: "setMyValue"};
+        this.baseColor = this.defaultFill;
+	this.myValue = false;
+        this.toggles = false; // if true each push toggles the model state // FIXME: should be persistent
+    },
+
 
     handlesMouseDown: function(evt) { return true; },
     
@@ -1952,9 +1951,9 @@ Object.extend(ButtonMorph.prototype, {
             return true;
         }
         return false;
-    },
+    }
 
-});
+}});
 
 /**
  * @class ImageButtonMorph
@@ -1995,18 +1994,32 @@ Object.extend(SliderMorph.prototype, {
         SliderMorph.superClass.initialize.call(this, initialBounds, "rect");
         this.scale = (scaleIfAny == null) ? 1.0 : scaleIfAny;
 
-        // this default self connection may get overwritten by, eg, connectModel()...
-        this.modelPlug = {model: this, getValue: "getMyValue", setValue: "setMyValue", getExtent: "getMyExtent"};
-        this.myValue = 0.0;
-
-        this.slider = Morph(Rectangle(0, 0, 8, 8), "rect");
-        this.slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});
-        this.addMorph(this.slider);
+        var slider = Morph(Rectangle(0, 0, 8, 8), "rect");
+        slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});
+        this.setNamedMorph("slider", slider);
         this.adjustForNewBounds(this.getValue()); 
     
         return this;
     },
 
+    initializeTransientState: function(initialBounds) {
+        SliderMorph.superClass.initializeTransientState.call(this, initialBounds);
+	// this default self connection may get overwritten by, eg, connectModel()...
+        this.modelPlug = {model: this, getValue: "getMyValue", setValue: "setMyValue", getExtent: "getMyExtent"};
+	this.myValue = 0.0;
+    },
+
+    restoreFromMarkup: function() {
+	SliderMorph.superClass.restoreFromMarkup.call(this);
+	this.slider = this.getNamedMorph('slider');
+	if (!this.slider) {
+	    console.warn('no slider in %s, %s', this, this.textContent);
+	    return;
+	}
+	this.slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});
+	this.scale = 1.0; // FIXME restore from markup
+    },
+	
     vertical: function() {
         var bnds = this.shape.bounds();
         return bnds.height > bnds.width; 
@@ -2072,11 +2085,10 @@ Object.extend(SliderMorph.prototype, {
     onMouseDown: function(evt) {
         evt.hand.setMouseFocus(this);
         this.requestKeyboardFocus(evt.hand);
-
         var inc = this.getExtent();
         var newValue = this.getValue();
         var delta = this.localize(evt.mousePoint).subPt(this.slider.bounds().center());
-
+	
         if (this.vertical() ? delta.y > 0 : delta.x > 0) newValue += inc;
         else newValue -= inc;
     
@@ -2116,7 +2128,7 @@ Object.extend(SliderMorph.prototype, {
     },
 
     getMyExtent: function() { // Getter and setter for when this is its own model
-        return 0.0 ;
+        return 0.0;
     },
 
     getMyValue: function() {

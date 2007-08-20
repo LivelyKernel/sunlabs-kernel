@@ -397,7 +397,7 @@ Object.extend(TextMorph.prototype, {
     restoreFromElement: function(element) /*:Boolean*/ {
         if (TextMorph.superClass.restoreFromElement.call(this, element)) return true;
 
-        var type = element.getAttribute('type');
+        var type = DisplayObject.prototype.getType.call(element);
     
         switch (type) {
         case 'TextBox':
