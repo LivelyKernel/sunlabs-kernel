@@ -297,7 +297,6 @@ Function.prototype.logCalls = function(prefix) {
 };
 
 
-
 /**
  * Extensions to class String
  */  
@@ -3121,7 +3120,7 @@ Object.extend(Morph.prototype, {
         // xml = '<svg xmlns="http://www.w3.org/2000/svg  xmlns:xlink="http://www.w3.org/1999/xlink> ' + xml + ' </svg>';
 
 	var pane = TextPane(Rectangle(0, 0, 250, 300), xml.truncate(maxSize));
-        var txtMorph = pane.innerMorph;
+        var txtMorph = pane.innerMorph();
         txtMorph.xml = xml;
         txtMorph.processCommandKeys = function(key) {
             switch (key) {
@@ -3141,7 +3140,6 @@ Object.extend(Morph.prototype, {
                 return TextMorph.prototype.processCommandKeys.call(this, key);
             }
          }
-
         this.world().addMorph(WindowMorph(pane, "XML dump", this.bounds().topLeft().addPt(pt(5,0))));
     }
     

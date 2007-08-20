@@ -2523,11 +2523,11 @@ Object.extend(WeatherWidget.prototype, {
             onFailure: function(transport) {
                 console.log('problem with %s', transport);
             },
-
+	    
             onException: function(e) {
                 console.log('exception  %s, %s', e, Object.toJSON(e));
             }
-    
+	    
         });
     }
     

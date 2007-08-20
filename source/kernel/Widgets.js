@@ -1358,41 +1358,43 @@ Object.extend(ScrollPane.prototype, {
         var clipR = bnds.withWidth(bnds.width - scrollBarWidth).insetBy(1);
     
         // Make a clipMorph with the content (morphToClip) embedded in it
-        this.clipMorph = ClipMorph(clipR);    
-        this.clipMorph.shape.setFill(morphToClip.shape.getFill());
+	var clipMorph = this.setNamedMorph('clipMorph', ClipMorph(clipR));    
+        clipMorph.shape.setFill(morphToClip.shape.getFill());
         morphToClip.setBorderWidth(0);
         morphToClip.setPosition(clipR.topLeft());
-        this.innerMorph = morphToClip;
-        this.clipMorph.addMorph(morphToClip);
-        this.addMorph(this.clipMorph);
+        //this.innerMorph = morphToClip;
+	clipMorph.addMorph(morphToClip);
     
         // Add a scrollbar
-        this.scrollBar = SliderMorph(bnds.withTopLeft(clipR.topRight()))
-        this.scrollBar.connectModel({model: this, getValue: "getScrollPosition", setValue: "setScrollPosition", 
-                                     getExtent: "getVisibleExtent"});
-        this.addMorph(this.scrollBar);
+        var scrollBar = this.setNamedMorph('scrollBar', SliderMorph(bnds.withTopLeft(clipR.topRight())));
+	scrollBar.connectModel({model: this, getValue: "getScrollPosition", setValue: "setScrollPosition", 
+                                getExtent: "getVisibleExtent"});
         
         return this;
     },
+    
+    innerMorph: function() {
+	return this.clipMorph.submorphs.firstChild;
+    },
 
     connectModel: function(plugSpec) { // connection is mapped to innerMorph
-        this.innerMorph.connectModel(plugSpec); 
+        this.innerMorph().connectModel(plugSpec); 
     },
     
     getScrollPosition: function() { 
-        var ht = this.innerMorph.bounds().height;
+        var ht = this.innerMorph().bounds().height;
         var slideRoom = ht - this.bounds().height;
-        return -this.innerMorph.position().y/slideRoom; 
+        return -this.innerMorph().position().y/slideRoom; 
     },
     
     setScrollPosition: function(scrollPos) { 
-        var ht = this.innerMorph.bounds().height;
+        var ht = this.innerMorph().bounds().height;
         var slideRoom = ht - this.bounds().height;
-        this.innerMorph.setPosition(pt(this.innerMorph.position().x, -slideRoom*scrollPos)); 
+        this.innerMorph().setPosition(pt(this.innerMorph().position().x, -slideRoom*scrollPos)); 
     },
     
     getVisibleExtent: function(scrollPos) {
-        return Math.min(1, this.bounds().height / Math.max(10, this.innerMorph.bounds().height)); 
+        return Math.min(1, this.bounds().height / Math.max(10, this.innerMorph().bounds().height)); 
     },
     
     scrollToTop: function() {
@@ -1516,11 +1518,6 @@ Object.extend(ColorPickerMorph.prototype, {
             var selectedColor = this.colorMap(relp.x,relp.y,rh2,wheel);
             this.setModelValue('setColor', selectedColor);
         } 
-    },
-
-    isTransient: function(name) {
-        if (ColorPickerMorph.superClass.isTransient.call(this, name)) return true;
-        return ["colorWheelCache"].include(name);
     }
     
 });
