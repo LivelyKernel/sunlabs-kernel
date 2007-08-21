@@ -1182,7 +1182,7 @@ Object.extend(SliderMorph.prototype, {
             console.warn('no slider in %s, %s', this, this.textContent);
            return;
         }
-	console.log('slider %s', this.slider);
+        console.log('slider %s', this.slider);
         this.slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});
         this.scale = 1.0; // FIXME restore from markup
     },
@@ -1358,23 +1358,23 @@ Object.extend(ScrollPane.prototype, {
         var clipR = bnds.withWidth(bnds.width - scrollBarWidth).insetBy(1);
     
         // Make a clipMorph with the content (morphToClip) embedded in it
-	var clipMorph = this.setNamedMorph('clipMorph', ClipMorph(clipR));    
+        var clipMorph = this.setNamedMorph('clipMorph', ClipMorph(clipR));    
         clipMorph.shape.setFill(morphToClip.shape.getFill());
         morphToClip.setBorderWidth(0);
         morphToClip.setPosition(clipR.topLeft());
         //this.innerMorph = morphToClip;
-	clipMorph.addMorph(morphToClip);
+        clipMorph.addMorph(morphToClip);
     
         // Add a scrollbar
         var scrollBar = this.setNamedMorph('scrollBar', SliderMorph(bnds.withTopLeft(clipR.topRight())));
-	scrollBar.connectModel({model: this, getValue: "getScrollPosition", setValue: "setScrollPosition", 
+        scrollBar.connectModel({model: this, getValue: "getScrollPosition", setValue: "setScrollPosition", 
                                 getExtent: "getVisibleExtent"});
         
         return this;
     },
     
     innerMorph: function() {
-	return this.clipMorph.submorphs.firstChild;
+        return this.clipMorph.submorphs.firstChild;
     },
 
     connectModel: function(plugSpec) { // connection is mapped to innerMorph
@@ -1570,7 +1570,7 @@ Object.extend(PasteUpMorph.prototype, {
         this.world().currentSelection = m;
         var handle = HandleMorph(evt.mousePoint, "rect", evt.hand, m, "bottomRight");
         m.addMorph(handle);
-        handle.setBounds(handle.bounds().center().asRectangle().expandBy(1));
+        handle.setBounds(handle.bounds().center().asRectangle());
         if (evt.hand.mouseFocus instanceof HandleMorph) evt.hand.mouseFocus.remove();
         evt.hand.setMouseFocus(handle);
     }
