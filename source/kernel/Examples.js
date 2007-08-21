@@ -605,7 +605,6 @@ var apps = {};
  * and a Java version written in 1998.
  *============================================================================*/
 
-
 apps.threedee = function() {
 
 // Tables for rapid sin calculation
@@ -658,22 +657,22 @@ apps.threedee = function() {
  * Constants for the 3D viewer
  *============================================================================*/
 
-// center: Used for storing the center coordinates
-// of our physical drawing plane (window).
+    // center: Used for storing the center coordinates
+    // of our physical drawing plane (window).
     var center = pt(90, 100); // Math.round(window.width / 2), Math.round(window.height / 2);
 
-// planeDist: The 2D projection plane distance from origo
+    // planeDist: The 2D projection plane distance from origo
     var planeDist = -180;
 
-// clipPlane: Object move limit (to avoid clipping problems)
+    // clipPlane: Object move limit (to avoid clipping problems)
     var clipPlane = -5750;
 
 /*==============================================================================
  * 3D object definition (the object to be rotated/displayed)
  *============================================================================*/
 
-// points3D: The endpoints of the wireframe image
-// Define "Sun rose" as a wireframe image
+    // points3D: The endpoints of the wireframe image
+    // Define "Sun rose" as a wireframe image
     var points3D  = [
     [750, 200, 0], 
     [553, 234, 0],
@@ -899,8 +898,8 @@ Object.extend(WireObject.prototype, {
         }
     },
       
-// Function WireObject.project: calculate a 2D projection
-// for the wireframe object based on the camera coordinates
+    // Function WireObject.project: calculate a 2D projection
+    // for the wireframe object based on the camera coordinates
     project: function(cameraX, cameraY, cameraZ) {
         var sx, sy, sz;
         var cx, cy;
@@ -954,7 +953,7 @@ Object.extend(WireObject.prototype, {
         }
     },
 
-// Function paint(): (Re)paint the 3D view
+    // Function paint(): (Re)paint the 3D view
     paint: function(morphArray, angleX, angleY, angleZ) {
         this.rotate(angleX, angleY, angleZ);
         this.project(0, 0, 0);
@@ -965,7 +964,7 @@ Object.extend(WireObject.prototype, {
     // module exports
     return { WireObject: WireObject }
 
-}();
+}(); // end of the 3D demo module
 
 /**
  * @class Sun3DMorph
@@ -1014,8 +1013,6 @@ Object.extend(Sun3DMorph.prototype, {
 
 });
 
-apps.asteroids = function() {
-
 // ===========================================================================
 // The Asteroids Game Example
 // ===========================================================================
@@ -1023,6 +1020,9 @@ apps.asteroids = function() {
 // The JavaScript implementation of the Asteroids game
 // is derived from a Java applet written and copyrighted
 // by Mike Hall in 1998
+
+// Note: The code below has been translated from the original
+// Java implementation (and it still shows...)
 
 /*****************************************************************************
 
@@ -1038,8 +1038,7 @@ apps.asteroids = function() {
 
 *****************************************************************************/
 
-// IMPORTANT NOTE: The code below has not yet been
-// structured according to the Morphic UI conventions.   
+apps.asteroids = function() {
 
 // The game instance
 var gameMorph = null;
@@ -1092,6 +1091,7 @@ var gameHeight = 300;
   The AsteroidsSprite class defines a game object, including it's shape, position, movement and
   rotation. It also can detemine if two objects collide.
 ************************************************************************************************/
+
 AsteroidsSprite = Class.create();
 
 Object.extend(AsteroidsSprite.prototype, {
@@ -1109,7 +1109,6 @@ Object.extend(AsteroidsSprite.prototype, {
     // Morphic-specific data
     morph: null,
     morphShape: null,
-
 
     initialize: function() {
         this.shape = new GamePolygon();
@@ -1200,7 +1199,7 @@ Object.extend(AsteroidsSprite.prototype, {
 
   // Constants
 
-  /* static final int */ var DELAY = 50;             // Milliseconds between screen updates.
+  /* static final int */ var DELAY = 50;              // Milliseconds between screen updates.
 
   /* static final int */ var MAX_SHIPS = 3;           // Starting number of ships per game.
 
@@ -1215,8 +1214,8 @@ Object.extend(AsteroidsSprite.prototype, {
 
   /* static final int */ var MIN_ROCK_SIDES =  8;     // Asteroid shape and size ranges.
   /* static final int */ var MAX_ROCK_SIDES = 12;
-  /* static final int */ var MIN_ROCK_SIZE  = 15; // 20
-  /* static final int */ var MAX_ROCK_SIZE  = 30; // 40
+  /* static final int */ var MIN_ROCK_SIZE  = 15;     // Used to be 20
+  /* static final int */ var MAX_ROCK_SIZE  = 30;     // Used to be 40
   /* static final int */ var MIN_ROCK_SPEED =  2;
   /* static final int */ var MAX_ROCK_SPEED = 12;
 
@@ -2385,10 +2384,7 @@ Object.extend(GameMorph.prototype, {
         makeGameMorph: makeGameMorph
     };
 
-}(); // end of asteroid module
-
-// initAsteroidsGame(xxx);
-// runAsteroidsGame(xxx);
+}(); // end of the asteroid game module
 
 // ===========================================================================
 // The Weather Widget Example
@@ -2398,11 +2394,11 @@ Object.extend(GameMorph.prototype, {
  * @class WeatherWidget
  */
  
- // Weather widget works by selecting the city from the list.
- // It uses the XMLHttpRequest to obtain weather info for the selected city
+// Weather widget works by selecting the city from the list.
+// It uses the XMLHttpRequest to obtain weather info for the selected city
  
- // Maybe we should consider using other weather service.  These images are crappy
- // TODO: changing city info takes time depending on network load.
+// Maybe we should consider using other weather service.
+// These images are of low quality
 WeatherWidget = Class.extend(Model);
 
 Object.extend(WeatherWidget.prototype, {
@@ -2739,10 +2735,6 @@ Object.extend(StockWidget.prototype, {
 
 apps.maps = function() {
 
-/* MAPMORPH BEGINS HERE*/
-/* EXPERIMENTAL SVG version by Pekka Reijula 
-*/
-
 // 6 is largest as a system print, lower numbers are debugprints
 // 6 is to be used if user must be notified lower levels to developer use
 var debugpriority = 6;
@@ -2752,8 +2744,7 @@ pd = function (text, priority) {
     }
 }
 
-//Here we begin the Map Application
-//constants for all mapmorphs to use
+// Constants that all mapmorphs use
 var IMAGEFOLDER = "http://www.cs.tut.fi/~reijula/mapimages/";
 
 var MAPSFOLDER = IMAGEFOLDER + "maps";
@@ -3778,7 +3769,7 @@ Object.extend(MapMorph.prototype, {
     // module exports
     return { MapFrameMorph: MapFrameMorph, tileExtent: TileSize }
 
-}();
+}(); // end of the map demo module
 
 // ===========================================================================
 // The Bouncing Spheres Example

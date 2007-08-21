@@ -605,7 +605,7 @@ Object.extend(HandleMorph.prototype, {
                         "Cmd+shift+drag to scale the morph \n" + 
                         "Shift+drag to change border width \n" + 
                         "Cmd+drag to rotate the morph \n"; 
-        this.circleHelpText = "Drag to modify the shape of the line\n" + 
+        this.circleHelpText = "Drag to reshape the line\n" + 
                         "Cmd+shift+drag to scale the morph\n" + 
                         "Shift+drag to change border width\n" + 
                         "Cmd+drag to rotate the morph"; 
