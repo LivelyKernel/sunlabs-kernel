@@ -723,7 +723,9 @@ Object.extend(HandleMorph.prototype, {
 });
 
 /**
- * @class SelectionMorph
+ * @class SelectionMorph: The selection "tray" object that
+ * allows multiple objects to be moved and otherwise manipulated
+ * simultaneously. 
  */
 
 SelectionMorph = HostClass.create('SelectionMorph', Morph);

@@ -79,7 +79,7 @@ Object.extend(Class, {
         
         if (base) {
             constr.superClass = base.prototype;
-           Object.extend(constr.prototype, base.prototype);
+            Object.extend(constr.prototype, base.prototype);
         }
 
         return constr;
@@ -91,22 +91,22 @@ Object.extend(Class, {
     },
 
     listClassNames: function(scope) {
-	var a = [];
-	
-	for (var name in scope) { 
+        var a = [];
+
+        for (var name in scope) { 
             try {
-		if (Class.isClass(scope[name])) {
+                if (Class.isClass(scope[name])) {
                     a.push(name); 
-		}
+                }
             } catch (er) {
-		// FF can throw an exception here
+                // FF can throw an exception here
             }
-	}
-	
-	a.push("Object", "Global"); // a few others of note
-	
-	// console.log('found array ' + a.sort());
-	return a.sort(); 
+        }
+
+        a.push("Object", "Global"); // a few others of note
+
+        // console.log('found array ' + a.sort());
+        return a.sort(); 
     }
     
 });
@@ -143,7 +143,7 @@ Object.properties = function(object, predicate) {
     var a = [];
     for (var name in object) {  
         if (!(object[name] instanceof Function) && !predicate || predicate(object))
-	    a.push(name);
+            a.push(name);
     } 
 
     return a.sort();
@@ -263,14 +263,14 @@ if (Prototype.Browser.WebKit) {
 
 Function.prototype.logErrors = function(prefix) {
     var advice = function (proceed/*,args*/) {
-	var args = $A(arguments); args.shift(); 
-	try {
-	    return proceed.apply(this, args); 
-	} catch (er) {
+        var args = $A(arguments); args.shift(); 
+        try {
+            return proceed.apply(this, args); 
+        } catch (er) {
             if (prefix) console.warn("%s: %s", prefix, er);
             else console.warn("%s", er);
             throw er;
-	}
+        }
     };
     return this.wrap(advice);
 };
@@ -290,9 +290,9 @@ Function.prototype.logErrors = function(prefix) {
 
 Function.prototype.logCalls = function(prefix) {
     var advice = function(proceed) {
-	var args = $A(arguments); args.shift(); 
-	console.log('%s: %s args: %s', prefix, this, args); 
-	return proceed.apply(this, args); 
+        var args = $A(arguments); args.shift(); 
+        console.log('%s: %s args: %s', prefix, this, args); 
+        return proceed.apply(this, args); 
     };
     return this.wrap(advice);
 };
@@ -1201,7 +1201,7 @@ Object.extend(DisplayObject.prototype, {
 
     getType: function()  {
         try {
-	    //return element.getAttributeNS(Namespace.LIVELY, "type");
+            // return element.getAttributeNS(Namespace.LIVELY, "type");
             return this.getAttribute("type");
         } catch (er) {
             console.log('in getType this is %s', this);
@@ -1885,7 +1885,8 @@ Object.extend(Morph, {
         node.pvtSetTransform(node.transform.baseVal.consolidate());
 
         var prevId = node.pickId();
-	if (importer) { importer.addMapping(prevId, node.id); }
+        if (importer) { importer.addMapping(prevId, node.id); }
+        
         node.restoreFromMarkup(importer);    
         node.initializeTransientState(null);
 
@@ -1893,17 +1894,16 @@ Object.extend(Morph, {
     
         return node; 
     },
-
     
 });
 
 // Morph event handling 
 MouseHandlerForDragging = Class.create();
 
-
 Object.extend(MouseHandlerForDragging.prototype, {
+    
     initialize: function() {
-	throw new Error('singleton, use the prototype');
+        throw new Error('singleton, use the prototype');
     },
 
     handleMouseEvent: function(evt, targetMorph) {
@@ -1976,21 +1976,21 @@ Object.extend(Morph.prototype, {
                         def.setAttribute('id', newPathId);
                         console.log('assigned new id %s', def.getAttribute('id'));
                         break;
-		    case 'linearGradient':
-		    case 'radialGradient': // FIXME gradients can be used on strokes too
-			var newFillId = "fill_" + this.id;
-			if (this.shape) {
-			    var myFill = this.shape.getAttributeNS(null, 'fill');
-			    if (myFill) {
-				this.shape.setAttributeNS(null, 'fill', 'url(#' + newFillId + ')');
-			    } else {
-				console.log('myFill undefined on %s', this);
-			    }
-			} else {
-			    console.log('ouch, cant set fill %s yet, no shape...', newFillId);
-			}
+                    case 'linearGradient':
+                    case 'radialGradient': // FIXME gradients can be used on strokes too
+                        var newFillId = "fill_" + this.id;
+                        if (this.shape) {
+                            var myFill = this.shape.getAttributeNS(null, 'fill');
+                            if (myFill) {
+                                this.shape.setAttributeNS(null, 'fill', 'url(#' + newFillId + ')');
+                            } else {
+                                console.log('myFill undefined on %s', this);
+                            }
+                        } else {
+                            console.log('ouch, cant set fill %s yet, no shape...', newFillId);
+                        }
                         def.setAttribute('id', newFillId);
-			break;
+                        break;
                     default:
                         console.log('unknown def %s', def);
                     }
@@ -1998,14 +1998,14 @@ Object.extend(Morph.prototype, {
 
                 // let it be
             } else if (DisplayObject.prototype.getType.call(children[i])) {
-		if (/FocusHalo/.test(DisplayObject.prototype.getType.call(children[i]))) { //don't restore
+                if (/FocusHalo/.test(DisplayObject.prototype.getType.call(children[i]))) { //don't restore
                     this.removeChild(children[i]);
-		} else {
+                } else {
                     this.restoreFromElement(children[i], importer);
-		}   
-	    } else {
-		console.warn('cannot handle element %s, %s', children[i].tagName, children[i].textContent);
-	    }
+                }   
+            } else {
+                console.warn('cannot handle element %s, %s', children[i].tagName, children[i].textContent);
+            }
         }
     },
     
@@ -2027,7 +2027,7 @@ Object.extend(Morph.prototype, {
         switch (type) {
         case 'Submorphs':
             this.submorphs = DisplayObjectList.become(element, type);
-	    console.log('recursing into children of %s', this);
+            console.log('recursing into children of %s', this);
             this.submorphs.each(function(m) { Morph.becomeMorph(m, importer); });
             return true;
         case 'FocusHalo':
@@ -2062,13 +2062,12 @@ Object.extend(Morph.prototype, {
     },
     
     pickId: function() {
-	var previous = this.getAttribute("id"); // this can happen when deserializing
+        var previous = this.getAttribute("id"); // this can happen when deserializing
         this.id = Morph.newMorphId();
         this.setAttribute("id", this.id); // this may happen automatically anyway by setting the id property
-	return previous;
+        return previous;
     },
-    
-    
+
     // setup various things 
     initializeTransientState: function(initialBounds) { 
         this.fullBounds = initialBounds; // a Rectangle in owner coordinates
@@ -2314,24 +2313,24 @@ Object.extend(Morph.prototype, {
     },
 
     getNamedMorph: function(name) {
-	for (var node = this.submorphs.firstChild; node != null; node = node.nextSibling) {
-	    if (node.getAttribute("property") == name) { // FIXME Lively NS
-		if (!(node instanceof Morph)) {
-		    console.warn('%s is not a morph but %s', name,  node);
-		}
-		return node;
-	    }
-	}
-	return null;
+        for (var node = this.submorphs.firstChild; node != null; node = node.nextSibling) {
+            if (node.getAttribute("property") == name) { // FIXME Lively NS
+                if (!(node instanceof Morph)) {
+                    console.warn('%s is not a morph but %s', name,  node);
+                }
+                return node;
+            }
+        }
+        return null;
     },
 
     setNamedMorph: function(name, morph) {
-	if (this[name]) {
-	    console.warn('morph named %s already exists? %s', name, this[name]);
-	}
-	morph.setAttribute("property", name); // FIXME Lively NS
-	this[name] = morph;
-	return this.addMorph(morph);
+        if (this[name]) {
+            console.warn('morph named %s already exists? %s', name, this[name]);
+        }
+        morph.setAttribute("property", name); // FIXME Lively NS
+        this[name] = morph;
+        return this.addMorph(morph);
     }
 
 });
@@ -2829,7 +2828,8 @@ Object.extend(Morph.prototype, {
         if (handle == null) return false;
         this.addMorph(handle);  // after which it should get converted appropriately here
         handle.showHelp(evt);
-        handle.scaleFor(this.cumulativeTransform().getScale());
+        // Don't scale -- the code below makes the handle excessively large!
+        // handle.scaleFor(this.cumulativeTransform().getScale());
         if (evt.hand.mouseFocus instanceof HandleMorph) evt.hand.mouseFocus.remove();
         evt.hand.setMouseFocus(handle);
         return true; 
@@ -3109,48 +3109,55 @@ Object.extend(Morph.prototype, {
     
 });
 
+/**
+ * @class Exporter: Implementation class for morph serialization
+ */
+
 var Exporter = Class.create();
 
 Object.extend(Exporter.prototype, {
     rootMorph: null,
+    
     initialize: function(rootMorph) {
-	this.rootMorph = rootMorph;
+        this.rootMorph = rootMorph;
     },
     
     serialize: function() {
-	return new XMLSerializer().serializeToString(this.rootMorph);
+        return new XMLSerializer().serializeToString(this.rootMorph);
     },
 
     serializeModel: function() {
-	return this.rootMorph.model &&  this.rootMorph.model.toMarkup(this);
+        return this.rootMorph.model &&  this.rootMorph.model.toMarkup(this);
     }
     
 });
 
+/**
+ * @class Importer: Implementation class for morph de-serialization
+ */
 
 var Importer = Class.create();
-
 
 Object.extend(Importer.prototype, {
     morphMap: null,
     
     initialize: function() {
-	this.morphMap = new Hash();
+        this.morphMap = new Hash();
     },
     
     addMapping: function(oldId, newId) {
-	this.morphMap["" + oldId] = "" + newId; // force strings just in case
+        this.morphMap["" + oldId] = "" + newId; // force strings just in case
     },
     
     lookupMorph: function(oldId) {
-	var newId = this.morphMap["" + oldId];
-	if (newId) {
-	    var result = document.getElementById(newId);
-	    console.log('importer found document id %s', result);
-	    return result;
-	} else {
-	    return null;
-	}
+        var newId = this.morphMap["" + oldId];
+        if (newId) {
+            var result = document.getElementById(newId);
+            console.log('importer found document id %s', result);
+            return result;
+        } else {
+            return null;
+        }
     },
     
     importFrom: function(string) {
@@ -3158,59 +3165,58 @@ Object.extend(Importer.prototype, {
     },
 
     importModelFrom: function(string) {
-	console.log('restoring model from markup %s', string);
-	var ptree = $X(string);
-	var m = new Model();
-	for (var node = ptree.firstChild; node != null; node = node.nextSibling) {
-	    if (node.tagName != 'dependent') 
-		continue;
-	    var id = node.getAttribute('ref');
-	    
-	    var dependent = this.lookupMorph(id);
-	    if (!dependent)  {
-		console.log('dep %s not found', id);
-		continue; // 
+        console.log('restoring model from markup %s', string);
+        var ptree = $X(string);
+        var m = new Model();
+ 
+        for (var node = ptree.firstChild; node != null; node = node.nextSibling) {
+            if (node.tagName != 'dependent') continue;
+            var id = node.getAttribute('ref');
+    
+            var dependent = this.lookupMorph(id);
+            if (!dependent)  {
+                console.log('dep %s not found', id);
+                continue; 
+            }
+    
+            var plug = {};
 
-	    }
-	    var plug = {};
+            for (var acc = node.firstChild; acc != null;  acc = acc.nextSibling) {
+                if (acc.tagName != 'accessor') continue;
 
-	    for (var acc = node.firstChild; acc != null;  acc = acc.nextSibling) {
-		if (acc.tagName != 'accessor') 
-		    continue;
-		if (dependent) {
-		    plug[acc.getAttribute('formal')] = acc.getAttribute('actual');
-		}
-	    }
-	    console.log('dependent %s, %s modelPlug %s', dependent, id, Object.toJSON(plug));
-	    plug.model = m;
-	    dependent.connectModel(plug);
-	}
+                if (dependent) {
+                    plug[acc.getAttribute('formal')] = acc.getAttribute('actual');
+                }
+            }
+     
+            console.log('dependent %s, %s modelPlug %s', dependent, id, Object.toJSON(plug));
+            plug.model = m;
+            dependent.connectModel(plug);
+        }
 
-	return m;
+        return m;
     }
     
-
 });
-
-
 
 // SVG inspector for Morphs
 Object.extend(Morph.prototype, {
     
     addSvgInspector: function() {
 
-	var exporter = new Exporter(this);
+        var exporter = new Exporter(this);
         var xml = exporter.serialize();
-	console.log('%s serialized to %s', this, xml);
-	var modelxml = exporter.serializeModel();
+        console.log('%s serialized to %s', this, xml);
+        var modelxml = exporter.serializeModel();
 
         const maxSize = 1500;
         // xml = '<svg xmlns="http://www.w3.org/2000/svg  xmlns:xlink="http://www.w3.org/1999/xlink> ' + xml + ' </svg>';
 
-	var pane = TextPane(Rectangle(0, 0, 250, 300), xml.truncate(maxSize));
+        var pane = TextPane(Rectangle(0, 0, 250, 300), xml.truncate(maxSize));
         var txtMorph = pane.innerMorph();
         txtMorph.xml = xml;
-	var target = this;
+        var target = this;
+        
         txtMorph.processCommandKeys = function(key) {
             switch (key) {
             case 's':
@@ -3219,14 +3225,15 @@ Object.extend(Morph.prototype, {
                     console.warn('discarding changes is any from ' + txt);
                     txt = this.xml;
                 }
-		var importer = new Importer();
-		var copy = importer.importFrom(txt);
+                var importer = new Importer();
+                var copy = importer.importFrom(txt);
                 WorldMorph.current().addMorph(importer.importFrom(txt));
-		if (target.model) {
-		    copy.model = importer.importModelFrom(modelxml);
-		    console.log('restore %s', copy.model);
-		    console.log('importer %s', importer);
-		}
+                
+                if (target.model) {
+                    copy.model = importer.importModelFrom(modelxml);
+                    console.log('restore %s', copy.model);
+                    console.log('importer %s', importer);
+                }
                 return;
             case 'f':
                 var filename = prompt('save as ');
@@ -3254,7 +3261,6 @@ Object.extend(Morph, {
     }
 
 });
-
 
 // Model-specific extensions to class Morph (see Model class definition below)
 Object.extend(Morph.prototype, {
@@ -3348,13 +3354,10 @@ Object.extend(Model.prototype, {
     },
 
     toMarkup: function(exporter) {
-	return "<model> " + this.dependents.map(function(dep) { 
-	    return '<dependent ref="' + dep.id + '">' 
-		+ Object.properties(dep.modelPlug || {}).filter(function(name) { return name != 'model'; }).map(function(prop) { return '<accessor formal="' + prop + '" actual="' + dep.modelPlug[prop] + '"/>'; }).join(' ') + "</dependent>"; }).join('') + "</model>";
-    },
-
-
-    
+        return "<model> " + this.dependents.map(function(dep) { 
+            return '<dependent ref="' + dep.id + '">' 
+            + Object.properties(dep.modelPlug || {}).filter(function(name) { return name != 'model'; }).map(function(prop) { return '<accessor formal="' + prop + '" actual="' + dep.modelPlug[prop] + '"/>'; }).join(' ') + "</dependent>"; }).join('') + "</model>";
+    }
 
 });
 
