@@ -108,26 +108,27 @@ var NetRequest = Class.create();
 
 Object.extend(NetRequest, {
     options: {
-    contentType: 'text/xml',
-    asynchronous: true,
+	contentType: 'text/xml',
+	asynchronous: true,
+	requester: null,
 
-    onLoaded: function(transport) { 
-        console.info('loaded %s %s', transport.status, transport); 
+	onLoaded: function(transport) { 
+            console.info('%s: loaded %s %s', transport.status, transport); 
+	},
+	
+	onFailure: function(transport) {
+            console.warn('%s: failure %s %s', transport.status, transport);
+	},
+	
+	onInteractive: function(transport) {
+            console.info('receiving %s %s', transport.status, transport);
+	},
+	
+	onException: function(e) {
+            console.warn('exception %s', e);
+	}
     },
-
-    onFailure: function(transport) {
-        console.warn('failure %s %s', transport.status, transport);
-    },
-
-    onInteractive: function(transport) {
-        console.info('receiving %s %s', transport.status, transport);
-    },
-
-    onException: function(e) {
-        console.warn('exception %s', e);
-    }
-    },
-
+    
     requestNetworkAccess: function() {
         if (window.location.href.startsWith('file:')) {       
             this['netscape'] && netscape.security.PrivilegeManager.enablePrivilege("UniversalBrowserRead");
@@ -158,7 +159,7 @@ Object.extend(NetRequest.prototype, {
         
         options.onSuccess = function(transport) {
             var result = transport;
-            console.log('success %s', transport.status);
+            console.info('%s success, status %s', url, transport.status);
             this.process(result);
         }.bind(this);
     
@@ -224,7 +225,7 @@ Object.extend(Feed.prototype, {
         return morphic.query(target ? target : this.result, xpQuery) || [];
     },
 
-    request: function(model /*model variables*/) {
+    request: function(model /*, ... model variables*/) {
         // console.log('in request on %s', this.url);
         var feed = this;
         var modelVariables = $A(arguments);
@@ -240,12 +241,12 @@ Object.extend(Feed.prototype, {
 		    return;
 		}
                 var result = transport.responseXML.documentElement;
-                console.log('success %s', transport.status);
+                console.info('%s: success %s', feed, transport.status);
         
                 if (feed.dump) console.log('transmission dump %s', NetRequest.documentToString(transport.responseXML));
         
                 feed.processResult(result);
-                console.log('changing %s', modelVariables);
+                console.log('%s changing %s', feed, modelVariables);
 		
                 for (var i = 0; i < modelVariables.length; i++) {
                     model.changed(modelVariables[i]);
@@ -254,6 +255,9 @@ Object.extend(Feed.prototype, {
         }));
     },
 
+    toString: function() {
+	return "#<Feed: " + this.url + ">";
+    },
     
     processResult: function(result) {
 	if (!result) {
@@ -282,6 +286,40 @@ Object.extend(Feed.prototype, {
         }
         
         return "";
+    },
+
+    buildView: function() {
+	var extent = pt(500, 200);
+	var panel = PanelMorph(extent, "rect");
+	panel.addMorph = panel.addMorph.logCalls('addMorph');
+	panel.setFill(Color.blue.lighter().lighter());
+	panel.setBorderWidth(2);
+	var feed = this;
+	panel.model = Object.extend(new Model(), {
+	    getItemList:     function()      { return feed.items() },
+	    setItemTitle:    function(title) { this.itemTitle = title; this.changed("getEntry"); },
+	    getEntry:        function()      { return feed.getEntry(this.itemTitle) },
+	    getChannelTitle: function()      { return "RSS feed from " + feed.channels[0].title; }
+	});
+	
+
+	// View layout
+	var localRect = pt(0,0).extent(extent);
+	var m = panel.addMorph(ListPane(localRect.withBottomRight(localRect.bottomCenter())));
+	
+	m.connectModel({model: panel.model, getList: "getItemList", setSelection: "setItemTitle"});
+	m = panel.addMorph(PrintPane(localRect.withTopLeft(localRect.topCenter())));
+	m.connectModel({model: panel.model, getValue: "getEntry"});
+	return panel;
+    },
+
+    openIn: function(world, location) {
+	var panel = this.buildView();
+	var title = TextMorph.makeLabel(Rectangle(0, 0, 150, 15), 'RSS feed                    ');
+	title.connectModel({model: panel.model, getText: 'getChannelTitle'});
+	var window = world.addMorphAt(WindowMorph(panel, title), location);
+	this.request(panel.model, "getItemList", 'getChannelTitle');
+	return window;
     }
     
 });

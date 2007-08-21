@@ -142,8 +142,8 @@ Object.extend(Object, {
 Object.properties = function(object, predicate) {
     var a = [];
     for (var name in object) {  
-        if (!(object[name] instanceof Function) && !predicate || predicate(object))
-            a.push(name);
+        if (!(object[name] instanceof Function) && (predicate ? predicate(object) : true))
+	    a.push(name);
     } 
 
     return a.sort();
@@ -2220,13 +2220,13 @@ Object.extend(Morph.prototype, {
             this.clipToShape();
         }
         
-        this.adjustForNewBounds(bounds);
+        this.adjustForNewBounds();
         this.layoutChanged();
         this.changed(); 
     },
 
     /// override to respond to reshape events    
-    adjustForNewBounds: function(oldBounds) {
+    adjustForNewBounds: function() {
         if (this.focusHalo) {
             this.removeFocusHalo();
             this.addFocusHalo();
@@ -2513,7 +2513,7 @@ Object.extend(Morph.prototype, {
 
     /** Use inspect() instead of toString b/c toString cannot be overriden */
     inspect: function() { 
-        return "a " + (this.constructor.name || this.getType()) + "(" + Object.inspect(this.shape) + ")"; 
+        return "a " + this.getType() + "(" + "#" + this.id + ", " + Object.inspect(this.shape) + ")"; 
     }
     
 });

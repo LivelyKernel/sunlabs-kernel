@@ -559,9 +559,7 @@ Object.extend(TextMorph.prototype, {
     
         with (this.shape) { setBounds(bounds().withHeight(bottomY - bounds().y))};
 
-        // Make sure focus halo gets updated when the height changes        
-        this.removeFocusHalo();
-        if (this.hasKeyboardFocus) this.addFocusHalo(); 
+	this.adjustForNewBounds();
 
     },
 

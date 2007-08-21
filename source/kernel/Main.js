@@ -67,7 +67,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
 
             if (!widget.myWorld.rssReader) {
                 console.log('initting RSS reader');
-                widget.myWorld.rssReader = loadRSS(widget.myWorld, pt(725, 120));
+                widget.myWorld.rssReader = new Feed("http://news.com.com/2547-1_3-0-5.xml").openIn(widget.myWorld, pt(725, 120));
             }
 
             var showMap = true;
@@ -171,13 +171,9 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
     var showMessenger = !Config.skipMostExamples;
     if (showMessenger) new MessengerWidget().openIn(world, pt(30, 600));
 
-    var showRSS = false;
-    if (showRSS) loadRSS(world, pt(300, 20));
-
     return world;
 }
 
-var rss;
 function main() {
     var world = WorldMorph.createPrototypeWorld();
     WorldMorph.setCurrent(world);

@@ -330,42 +330,6 @@ Pen.script = ["P = new Pen();",
 "P.drawLines();",
 ""].join("\n");
 
-// ===========================================================================
-// The RSS Feed Reader Example
-// ===========================================================================
-
-var buildRSSViewer = function(feed, world, point) {
-    var extent = pt(500, 200);
-    var panel = PanelMorph(extent, "rect");
-    panel.setFill(Color.blue.lighter().lighter());
-    panel.setBorderWidth(2);
-    var model = new Model();
-    panel.model = model;
-    
-    // Model functions
-    model.feed = feed;
-    model.getItemList = function() { return this.feed.items() };
-    model.setItemTitle = function(title) { this.itemTitle = title; this.changed("getEntry"); };
-    model.getEntry = function() { return this.feed.getEntry(this.itemTitle) };
-    model.getChannelTitle = function() { return "RSS feed from " + this.feed.channels[0].title; };
-
-    // View layout
-    var localRect = pt(0,0).extent(extent);
-    var m = panel.addMorph(ListPane(localRect.withBottomRight(localRect.bottomCenter())));
-    m.connectModel({model: model, getList: "getItemList", setSelection: "setItemTitle"});
-    m = panel.addMorph(PrintPane(localRect.withTopLeft(localRect.topCenter())));
-    m.connectModel({model: model, getValue: "getEntry"});
-    m = TextMorph.makeLabel(Rectangle(0, 0, 150, 15), 'RSS feed                    ');
-    m.connectModel({model: model, getText: 'getChannelTitle'});
-    world.addMorphAt(WindowMorph(panel, m), point);
-    feed.request(model, "getItemList", 'getChannelTitle');
-    return panel;
-}
-
-function loadRSS(world, point) {
-    var feed = new Feed("http://news.com.com/2547-1_3-0-5.xml");
-    return buildRSSViewer(feed, world, point);
-}
 
 // ===========================================================================
 // The Doodle Draw Example
@@ -3885,7 +3849,6 @@ Object.extend(MessengerWidget.prototype, {
         panel.addMorph(TextMorph(       Rectangle( 10, 210, 220,  50), "<enter text here>")).connectModel({model: this, getText: null});
         panel.addMorph(ImageButtonMorph(Rectangle(240, 200,  50,  50), "http://www.cs.tut.fi/~taivalsa/Software/Talk.PNG",
                                                                        "http://www.cs.tut.fi/~taivalsa/Software/Talk_down.PNG"));
-
         return panel;
     }
     

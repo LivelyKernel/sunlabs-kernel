@@ -224,7 +224,6 @@ ImageButtonMorph = HostClass.create('ImageButtonMorph', ButtonMorph);
 Object.extend(ImageButtonMorph.prototype, {
 
     initialize: function(initialBounds, normalImageHref, activatedImageHref) {
-        console.log('arguments %s', $A(arguments));
         this.image = ImageMorph(Rectangle(0, 0, initialBounds.width, initialBounds.height), normalImageHref);
         this.normalImageHref = normalImageHref;
         this.activatedImageHref = activatedImageHref;
@@ -235,7 +234,7 @@ Object.extend(ImageButtonMorph.prototype, {
     },
     
     changeAppearanceFor: function(value) {
-        console.log('changing on %s from %s to %s', value, this.activatedImageHref, this.normalImageHref);
+        //console.log('changing on %s from %s to %s', value, this.activatedImageHref, this.normalImageHref);
         if (value) this.image.loadURL(this.activatedImageHref);
         else this.image.loadURL(this.normalImageHref);
     }
@@ -873,7 +872,7 @@ Object.extend(PanelMorph.prototype, {
         if (!plug) return;
         
         if (aspect == plug.getVisible) {
-            var state = this.getModelValue('getVisible', "");
+            var state = this.getModelValue('getVisible', true);
             if (state == false) this.remove();
         }
     }
@@ -1015,10 +1014,13 @@ Object.extend(CheapListMorph.prototype, {
     },
     
     updateList: function(newList) {
+	console.log('%s updated to %s', this, newList);
+	
         var priorItem = this.getSelection();
         this.itemList = newList;
         var listText = (this.itemList == null) ? "" : this.itemList.join("\n");
         this.updateTextString(listText);
+	console.log('string is %s vs %s', this.textString, this.textContent); 
         this.setSelectionToMatch(priorItem);
         this.emitSelection(); 
     },
@@ -1292,7 +1294,12 @@ Object.extend(SliderMorph.prototype, {
 
     getValue: function() {
         var c = this.modelPlug;
-        if (c) return c.model[c.getValue](0.0) / this.scale;  // call the model's value accessor
+	try {
+            if (c) return c.model[c.getValue](0.0) / this.scale;  // call the model's value accessor
+	} catch (er) {
+	    console.log('get value %s, model %s', c.getValue, c.model);
+	    throw er;
+	}
     },
 
     setValue: function(value) {
@@ -1372,7 +1379,6 @@ Object.extend(ScrollPane.prototype, {
         clipMorph.shape.setFill(morphToClip.shape.getFill());
         morphToClip.setBorderWidth(0);
         morphToClip.setPosition(clipR.topLeft());
-        //this.innerMorph = morphToClip;
         clipMorph.addMorph(morphToClip);
     
         // Add a scrollbar
@@ -1384,7 +1390,7 @@ Object.extend(ScrollPane.prototype, {
     },
     
     innerMorph: function() {
-        return this.clipMorph.submorphs.firstChild;
+	return this.clipMorph.submorphs.firstChild;
     },
 
     connectModel: function(plugSpec) { // connection is mapped to innerMorph
