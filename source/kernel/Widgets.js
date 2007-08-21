@@ -601,10 +601,14 @@ Object.extend(HandleMorph.prototype, {
         this.partName = partName; // may be a name like "topRight" or a vertex index
         this.initialScale = null;
         this.initialRotation = null; 
-        this.helpText = "Drag to resize this morph\n" + 
+        this.controlHelpText = "Drag to resize this morph\n" + 
                         "Cmd+shift+drag to scale the morph \n" + 
                         "Shift+drag to change border width \n" + 
                         "Cmd+drag to rotate the morph \n"; 
+        this.circleHelpText = "Drag to modify the shape of the line\n" + 
+                        "Cmd+shift+drag to scale the morph\n" + 
+                        "Shift+drag to change border width\n" + 
+                        "Cmd+drag to rotate the morph"; 
         return this;
     },
 
@@ -612,7 +616,11 @@ Object.extend(HandleMorph.prototype, {
         // Show the balloon help only if it hasn't been shown too many times already
         if (HandleMorph.helpCounter < 20) {
             HandleMorph.helpCounter++;
-            this.help = TextMorph(Rectangle(evt.x, evt.y, 200, 20), this.helpText);
+            if (this.shape.getType() == "rect") {
+                this.help = TextMorph(Rectangle(evt.x, evt.y, 200, 20), this.controlHelpText);
+            } else {
+                this.help = TextMorph(Rectangle(evt.x, evt.y, 200, 20), this.circleHelpText);
+            }
             // trying to relay mouse events to the WindowControlMorph
             this.help.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
             // some eye candy for the help
