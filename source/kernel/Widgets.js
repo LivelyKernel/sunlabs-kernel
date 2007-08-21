@@ -1175,8 +1175,8 @@ Object.extend(SliderMorph.prototype, {
         this.myValue = 0.0;
     },
 
-    restoreFromMarkup: function() {
-        SliderMorph.superClass.restoreFromMarkup.call(this);
+    restoreFromMarkup: function(importer) {
+        SliderMorph.superClass.restoreFromMarkup.call(this, importer);
         this.slider = this.getNamedMorph('slider');
         if (!this.slider) {
             console.warn('no slider in %s, %s', this, this.textContent);

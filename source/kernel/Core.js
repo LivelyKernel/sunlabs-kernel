@@ -139,11 +139,12 @@ Object.extend(Object, {
     
 });
 
-Object.properties = function(object) {
+Object.properties = function(object, predicate) {
     var a = [];
     for (var name in object) {  
-        if (!(object[name] instanceof Function)) a.push(name); 
-    }    
+        if (!(object[name] instanceof Function) && !predicate || predicate(object))
+	    a.push(name);
+    } 
 
     return a.sort();
 };
@@ -1869,7 +1870,7 @@ Object.extend(Morph, {
         return ++Morph.morphCounter;
     },
 
-    becomeMorph: function(node) {
+    becomeMorph: function(node, importer) {
         console.log('making morph from %s', node);
         // call reflectively b/c 'this' is not a DisplayObject yet. 
         var morphTypeName = DisplayObject.prototype.getType.call(node); 
@@ -1883,8 +1884,9 @@ Object.extend(Morph, {
 
         node.pvtSetTransform(node.transform.baseVal.consolidate());
 
-        node.pickId();
-        node.restoreFromMarkup();    
+        var prevId = node.pickId();
+	if (importer) { importer.addMapping(prevId, node.id); }
+        node.restoreFromMarkup(importer);    
         node.initializeTransientState(null);
 
         if (this.drawBounds) node.updateBoundsElement();
@@ -1892,9 +1894,6 @@ Object.extend(Morph, {
         return node; 
     },
 
-    fromMarkup: function(string) {
-        return Morph.becomeMorph($X(string));
-    }
     
 });
 
@@ -1955,7 +1954,7 @@ Object.extend(Morph.prototype, {
         if (this.drawBounds) this.updateBoundsElement();
     },
     
-    restoreFromMarkup: function() {
+    restoreFromMarkup: function(importer) {
         //  wade through the children
         var children = [];
         for (var desc = this.firstChild; desc != null; desc = desc.nextSibling) {
@@ -2002,7 +2001,7 @@ Object.extend(Morph.prototype, {
 		if (/FocusHalo/.test(DisplayObject.prototype.getType.call(children[i]))) { //don't restore
                     this.removeChild(children[i]);
 		} else {
-                    this.restoreFromElement(children[i]);
+                    this.restoreFromElement(children[i], importer);
 		}   
 	    } else {
 		console.warn('cannot handle element %s, %s', children[i].tagName, children[i].textContent);
@@ -2010,7 +2009,7 @@ Object.extend(Morph.prototype, {
         }
     },
     
-    restoreFromElement: function(element/*:Element*/)/*:Boolean*/ {
+    restoreFromElement: function(element/*:Element*/, importer/*Importer*/)/*:Boolean*/ {
         if (!element || !element.tagName) {
            console.log('undefined element %s %s', element, element && element.tagName);
            return;
@@ -2029,7 +2028,7 @@ Object.extend(Morph.prototype, {
         case 'Submorphs':
             this.submorphs = DisplayObjectList.become(element, type);
 	    console.log('recursing into children of %s', this);
-            this.submorphs.each(function(m) { Morph.becomeMorph(m); });
+            this.submorphs.each(function(m) { Morph.becomeMorph(m, importer); });
             return true;
         case 'FocusHalo':
             return true;
@@ -2063,8 +2062,10 @@ Object.extend(Morph.prototype, {
     },
     
     pickId: function() {
+	var previous = this.getAttribute("id"); // this can happen when deserializing
         this.id = Morph.newMorphId();
         this.setAttribute("id", this.id); // this may happen automatically anyway by setting the id property
+	return previous;
     },
     
     
@@ -2398,7 +2399,6 @@ Object.extend(Morph.prototype, {
         this.submorphs.removeAll();
         // while (submorphs.firstChild) submorphs.removeChild(submorphs.firstChild);
         this.layoutChanged(); 
-       
     },
     
     hasSubmorphs: function() {
@@ -3109,19 +3109,108 @@ Object.extend(Morph.prototype, {
     
 });
 
+var Exporter = Class.create();
+
+Object.extend(Exporter.prototype, {
+    rootMorph: null,
+    initialize: function(rootMorph) {
+	this.rootMorph = rootMorph;
+    },
+    
+    serialize: function() {
+	return new XMLSerializer().serializeToString(this.rootMorph);
+    },
+
+    serializeModel: function() {
+	return this.rootMorph.model &&  this.rootMorph.model.toMarkup(this);
+    }
+    
+});
+
+
+var Importer = Class.create();
+
+
+Object.extend(Importer.prototype, {
+    morphMap: null,
+    
+    initialize: function() {
+	this.morphMap = new Hash();
+    },
+    
+    addMapping: function(oldId, newId) {
+	this.morphMap["" + oldId] = "" + newId; // force strings just in case
+    },
+    
+    lookupMorph: function(oldId) {
+	var newId = this.morphMap["" + oldId];
+	if (newId) {
+	    var result = document.getElementById(newId);
+	    console.log('importer found document id %s', result);
+	    return result;
+	} else {
+	    return null;
+	}
+    },
+    
+    importFrom: function(string) {
+        return Morph.becomeMorph($X(string), this);
+    },
+
+    importModelFrom: function(string) {
+	console.log('restoring model from markup %s', string);
+	var ptree = $X(string);
+	var m = new Model();
+	for (var node = ptree.firstChild; node != null; node = node.nextSibling) {
+	    if (node.tagName != 'dependent') 
+		continue;
+	    var id = node.getAttribute('ref');
+	    
+	    var dependent = this.lookupMorph(id);
+	    if (!dependent)  {
+		console.log('dep %s not found', id);
+		continue; // 
+
+	    }
+	    var plug = {};
+
+	    for (var acc = node.firstChild; acc != null;  acc = acc.nextSibling) {
+		if (acc.tagName != 'accessor') 
+		    continue;
+		if (dependent) {
+		    plug[acc.getAttribute('formal')] = acc.getAttribute('actual');
+		}
+	    }
+	    console.log('dependent %s, %s modelPlug %s', dependent, id, Object.toJSON(plug));
+	    plug.model = m;
+	    dependent.connectModel(plug);
+	}
+
+	return m;
+    }
+    
+
+});
+
+
+
 // SVG inspector for Morphs
 Object.extend(Morph.prototype, {
     
     addSvgInspector: function() {
 
-        var xml = new XMLSerializer().serializeToString(this); 
+	var exporter = new Exporter(this);
+        var xml = exporter.serialize();
 	console.log('%s serialized to %s', this, xml);
+	var modelxml = exporter.serializeModel();
+
         const maxSize = 1500;
         // xml = '<svg xmlns="http://www.w3.org/2000/svg  xmlns:xlink="http://www.w3.org/1999/xlink> ' + xml + ' </svg>';
 
 	var pane = TextPane(Rectangle(0, 0, 250, 300), xml.truncate(maxSize));
         var txtMorph = pane.innerMorph();
         txtMorph.xml = xml;
+	var target = this;
         txtMorph.processCommandKeys = function(key) {
             switch (key) {
             case 's':
@@ -3130,7 +3219,14 @@ Object.extend(Morph.prototype, {
                     console.warn('discarding changes is any from ' + txt);
                     txt = this.xml;
                 }
-                WorldMorph.current().addMorph(Morph.fromMarkup(txt));
+		var importer = new Importer();
+		var copy = importer.importFrom(txt);
+                WorldMorph.current().addMorph(importer.importFrom(txt));
+		if (target.model) {
+		    copy.model = importer.importModelFrom(modelxml);
+		    console.log('restore %s', copy.model);
+		    console.log('importer %s', importer);
+		}
                 return;
             case 'f':
                 var filename = prompt('save as ');
@@ -3158,6 +3254,7 @@ Object.extend(Morph, {
     }
 
 });
+
 
 // Model-specific extensions to class Morph (see Model class definition below)
 Object.extend(Morph.prototype, {
@@ -3248,7 +3345,17 @@ Object.extend(Model.prototype, {
                 this.dependents[i].updateView(varName, source);
             } 
         } 
-    }
+    },
+
+    toMarkup: function(exporter) {
+	return "<model> " + this.dependents.map(function(dep) { 
+	    return '<dependent ref="' + dep.id + '">' 
+		+ Object.properties(dep.modelPlug || {}).filter(function(name) { return name != 'model'; }).map(function(prop) { return '<accessor formal="' + prop + '" actual="' + dep.modelPlug[prop] + '"/>'; }).join(' ') + "</dependent>"; }).join('') + "</model>";
+    },
+
+
+    
+
 });
 
 console.log('loaded Core.js');
