@@ -1607,10 +1607,8 @@ Object.extend(WorldMorph, {
         WorldMorph.currentWorld = newWorld;
     },
 
-    // Set up a world with morphs to copy
-    // This should be moved elsewhere!
-    createPrototypeWorld: function() {
-        var zzHand, zzRect, zzEll, zzLine, zzPoly, zzText, zzScript;  //comment to make these global for debugging access
+    // Create an empty world
+    createEmptyWorld: function() {
         var w = WorldMorph('canvas');
         // w.styleDictionary = WorldMorph.defaultStyles; // * wrong
         // w.applyStyle(); // Because it wasnt there until now
@@ -1620,6 +1618,15 @@ Object.extend(WorldMorph, {
         // This style is way better for debugging on smaller screens
         // It allows the user to see the console log through the world
         w.shape.setFillOpacity(0.4);
+
+        return w;
+    },
+
+    // Set up a world with morphs to copy
+    // FIXME: This is sample code and should be moved elsewhere!
+    createPrototypeWorld: function() {
+        var widget, zzRect, zzEll, zzLine, zzPoly, zzText, zzScript; // Comment to make these global for debugging access
+        var w = this.createEmptyWorld();
 
         var colors = Color.wheel(4);
         var loc = pt(30,450); 
@@ -1642,22 +1649,24 @@ Object.extend(WorldMorph, {
 
         w.addMorph(widget);
         zzEll = widget;
+
+        // Create a sample line
         loc = loc.addPt(dy);
         widget = Morph.makeLine([loc.addXY(0,15),loc.addXY(70,15)], 2, Color.black);
         w.addMorph(widget);
         zzLine = widget;
         var l2 = loc.addPt(dx);
         
-        // A sample polygon
+        // Create a sample polygon
         widget = Morph(l2.asRectangle(),"rect");
         widget.setShape(PolygonShape(null, [pt(0,0),pt(70,0),pt(40,30),pt(0,0)],
                         colors[2],1,Color.black));
         w.addMorph(widget);
         zzPoly = widget;
         loc = loc.addPt(dy);    
-        var showBigText = true;
         
-        // Sample text widgets
+        // Create sample text widgets
+        var showBigText = true;
         if (showBigText) {
             widget = TextMorph(loc.extent(pt(100,50)),"Big Text"); // big text
             widget.setFontSize(20);
@@ -1670,10 +1679,9 @@ Object.extend(WorldMorph, {
             widget.setFill(null);
             w.addMorph(widget); 
         }
-        
-        var showPenScript = true;
-    
+            
         // Sample executable script pane
+        var showPenScript = true;
         if (showPenScript) {
             widget = TextMorph(pt(50,30).extent(pt(250,50)), Pen.script);
             widget.align(widget.bounds().bottomRight(), w.bounds().topRight().addPt(pt(-50,100))); 
