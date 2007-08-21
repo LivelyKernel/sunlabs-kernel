@@ -97,11 +97,11 @@ Object.extend(TextLine.prototype, {
             } 
         
             if (this.getBounds(i).maxX() >= rightX) { // Hit right bounds -- wrap at word break if possible
-                if (indexOfLastSpace >= 0)
+                if (indexOfLastSpace >= 0) {
                     this.setStopIndex(indexOfLastSpace); 
-                else 
+                } else { 
                     this.setStopIndex(Math.max(this.startIndex, i - 1)); 
-            
+                }
                 return;
             }
         }
@@ -223,8 +223,9 @@ Object.extend(TextBox.prototype, {
     },
     
     renderText: function(x, y, compositionWidth, font) {
-        if (this.lines == null) 
+        if (this.lines == null) { 
             this.lines = this.composeLines(x, y, compositionWidth, font);
+        }
     
         var lineY = y;
 
@@ -276,8 +277,7 @@ Object.extend(TextBox.prototype, {
     },
 
     lineForY: function(y) {
-        if (this.lines.length < 1 || y < this.lines[0].topY) 
-            return null;
+        if (this.lines.length < 1 || y < this.lines[0].topY) return null;
     
         for (var i = 0; i < this.lines.length; i++) {
             line = this.lines[i];
@@ -441,9 +441,7 @@ Object.extend(TextMorph.prototype, {
 
     bounds: function() {
         if (this.fullBounds != null) return this.fullBounds;
-
-        if (this.textBox) 
-            this.textBox.destroy();
+        if (this.textBox) this.textBox.destroy();
 
         this.textBox = null;
         this.fitText(); // adjust bounds or text for fit
@@ -534,7 +532,7 @@ Object.extend(TextMorph.prototype, {
     // DI: Should rename fitWidth to be composeLineWrap and fitHeight to be composeWordWrap
     fitText: function() { 
         if (this.wrap == "wrap") this.fitHeight();
-        else this.fitWidth(); 
+        else this.fitWidth();
     },
 
     fitHeight: function() { //Returns true iff height changes
@@ -560,6 +558,11 @@ Object.extend(TextMorph.prototype, {
         var bottomY = this.inset.y + maxY;
     
         with (this.shape) { setBounds(bounds().withHeight(bottomY - bounds().y))};
+
+        // Make sure focus halo gets updated when the height changes        
+        this.removeFocusHalo();
+        if (this.hasKeyboardFocus) this.addFocusHalo(); 
+
     },
 
     fitWidth: function() {
@@ -730,8 +733,9 @@ Object.extend(TextMorph.prototype, {
     },
 
     onMouseMove: function(evt) {  
-        if (!this.isSelecting) 
+        if (!this.isSelecting) { 
             return TextMorph.superClass.onMouseMove.call(this, evt);
+        }
         this.extendSelection(evt);
     },
     
@@ -747,8 +751,7 @@ Object.extend(TextMorph.prototype, {
         this.selectionRange = TextMorph.selectWord(this.textString, this.selectionRange[0]);
         this.setModelSelection(this.selectionString());
         this.drawSelection(); 
-    },
-
+    }
     
 });
 
@@ -797,9 +800,8 @@ Object.extend(TextMorph.prototype, {
         this.selectionRange = (ext >= piv) ? [piv,ext-1] : [ext,piv-1];
         this.setModelSelection(this.selectionString());
         this.drawSelection(); 
-    },
+    }
 
-    
 });
 
 // TextMorph keyboard event functions
