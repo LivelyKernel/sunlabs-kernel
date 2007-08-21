@@ -1891,9 +1891,33 @@ Object.extend(Morph, {
         node.initializeTransientState(null);
 
         if (this.drawBounds) node.updateBoundsElement();
-    
+	
         return node; 
     },
+
+    // this function creates an advice function that ensures that the mutation is properly recorded
+    onChange: function(fieldName) {
+	return function(proceed, newValue) {
+	    var result = proceed(newValue);
+	    this.recordChange(fieldName);
+            this.changed(); 
+	    return result;
+	}
+    },
+
+    onLayoutChange: function(fieldName) { 
+	return function(/* arguments*/) {
+	    this.changed();
+	    var args = $A(arguments);
+	    var proceed = args.shift();
+	    var result = proceed.apply(this, args);
+	    this.recordChange(fieldName);
+	    this.layoutChanged();
+            this.changed(); 
+	    return result;
+	}
+    },
+
     
 });
 
@@ -2095,25 +2119,15 @@ Object.extend(Morph.prototype, {
             var ref = this.assign('fill', fill);
             this.shape.setFill(ref);
         }
-        this.recordChange('shape');
-        this.changed(); 
-    },
+    }.wrap(Morph.onChange('shape')),
 
     getFill: function() {
         return this.shape.getFill();
     },
 
-    setBorderColor: function(newColor) {
-        this.shape.setStroke(newColor); 
-        this.recordChange('shape');
-        this.changed(); 
-    },
-    
-    setBorderWidth: function(newWidth) {
-        this.shape.setStrokeWidth(newWidth); 
-        this.recordChange('shape');
-        this.changed(); 
-    },
+    setBorderColor: function(newColor) { this.shape.setStroke(newColor); }.wrap(Morph.onChange('shape')),
+	
+    setBorderWidth: function(newWidth) { this.shape.setStrokeWidth(newWidth); }.wrap(Morph.onChange('shape')),
 
     getBorderWidth: function() {
         return this.shape.getStrokeWidth(); 
@@ -2166,7 +2180,6 @@ Object.extend(Morph.prototype, {
 
     // NOTE:  The following four methods should all be factored into a single bit of reshaping logic
     applyFunctionToShape: function() {  // my kingdom for a Smalltalk block!
-        this.changed();
         var args = $A(arguments);
         var func = args.shift();
         func.apply(this.shape, args);
@@ -2175,27 +2188,20 @@ Object.extend(Morph.prototype, {
             this.clipToShape();
         }
         this.adjustForNewBounds();
-        this.layoutChanged();
-        this.changed(); 
-    },
+    }.wrap(Morph.onLayoutChange('shape')),
     
     setShape: function(newShape) {
-        this.changed(); 
         this.replaceChild(newShape, this.shape);
         this.shape = newShape;
-        this.layoutChanged(); 
-
+        //this.layoutChanged(); 
         if (this.clipPath) {
             console.log('clipped to new shape ' + this.shape);
             this.clipToShape();
         }
-
         this.adjustForNewBounds();
-        this.changed(); 
-    },
+    }.wrap(Morph.onLayoutChange('shape')),
 
     reshape: function(partName, newPoint, handle, lastCall) {
-        this.changed(); 
         this.shape.reshape(partName,newPoint,handle,lastCall); 
     
         // FIXME: consider converting polyline to polygon when vertices merge.
@@ -2203,15 +2209,10 @@ Object.extend(Morph.prototype, {
             console.log('clipped to new shape ' + this.shape);
             this.clipToShape();
         }
-
         this.adjustForNewBounds();
-        this.recordChange('shape');
-        this.layoutChanged(); 
-        this.changed(); 
-    },
+    }.wrap(Morph.onLayoutChange('shape')),
     
     setBounds: function(newRect) {
-        this.changed();
         var bounds = this.bounds();
         this.shape.setBounds(this.relativizeRect(newRect)); // FIXME some shapes don't support setFromRect
 
@@ -2219,11 +2220,8 @@ Object.extend(Morph.prototype, {
             console.log('clipped to new shape ' + this.shape);
             this.clipToShape();
         }
-        
         this.adjustForNewBounds();
-        this.layoutChanged();
-        this.changed(); 
-    },
+    }.wrap(Morph.onLayoutChange('shape')),
 
     /// override to respond to reshape events    
     adjustForNewBounds: function() {
@@ -2527,7 +2525,6 @@ Object.category(Morph.prototype, 'transforms', function() { return {
             // we need to include fisheyeScaling to the transformation
             this.cachedTransform = Transform.createSimilitude(this.origin, this.rotation, this.scale * this.fisheyeScale);
         }
-        
         return this.cachedTransform;
     },
 
@@ -2539,14 +2536,9 @@ Object.category(Morph.prototype, 'transforms', function() { return {
         this.scale = this.scale/this.fisheyeScale;
         this.cachedTransform = tfm; //Transform.createSimilitude(this.origin, this.rotation, this.scale);
     },
-
-    setTransform: function(tfm) { 
-        this.changed();
-        this.pvtSetTransform(tfm);
-        this.layoutChanged();  
-        this.changed(); 
-    },
-
+    
+    setTransform: function(tfm) { this.pvtSetTransform(tfm); }.wrap(Morph.onLayoutChange('transform')),
+    
     translateBy: function(delta) {
         this.changed();
         this.origin = this.origin.addPt(delta);
@@ -2565,21 +2557,14 @@ Object.category(Morph.prototype, 'transforms', function() { return {
     setRotation: function(theta) { // in radians
         this.rotation = theta;
         this.cachedTransform = null;
-        this.recordChange('rotation');
-        this.layoutChanged();  
-        this.changed(); 
-    },
+    }.wrap(Morph.onLayoutChange('rotation')),
     
     setScale: function(scale/*:float*/) {
-        this.changed();
         this.scale = scale;
         // var debugBounds = this.bounds();
         this.cachedTransform = null;
-        this.recordChange('scale');
-        this.layoutChanged();  
         // console.log('bounds from ' + debugBounds.inspect() + ' to ' + this.bounds().inspect());
-        this.changed(); 
-    },
+    }.wrap(Morph.onLayoutChange('scale')),
     
     defaultOrigin: function(bounds, shapeType) { 
         try {

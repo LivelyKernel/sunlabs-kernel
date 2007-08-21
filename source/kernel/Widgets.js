@@ -1014,13 +1014,10 @@ Object.extend(CheapListMorph.prototype, {
     },
     
     updateList: function(newList) {
-	console.log('%s updated to %s', this, newList);
-	
         var priorItem = this.getSelection();
         this.itemList = newList;
         var listText = (this.itemList == null) ? "" : this.itemList.join("\n");
         this.updateTextString(listText);
-	console.log('string is %s vs %s', this.textString, this.textContent); 
         this.setSelectionToMatch(priorItem);
         this.emitSelection(); 
     },
