@@ -1826,7 +1826,12 @@ Object.extend(WorldMorph.prototype, {
         var menu = WorldMorph.superClass.morphMenu.call(this,evt);
         menu.addLine();
         menu.addItem(["restart system", this, 'restart']);
-        menu.addItem(["choose style", this, 'chooseStyleDictionary']);
+        menu.addItem(["choose theme", this, 'chooseStyleDictionary']);
+
+        // The following items are not applicable to the world
+        menu.removeItemNamed("duplicate");
+        menu.removeItemNamed("remove");
+        menu.removeItemNamed("toggle fisheye");
         return menu;
     },
    
