@@ -2677,7 +2677,8 @@ Object.extend(Morph.prototype, {
     },
 
     ignoreEvents: function() { // will not respond nor get focus
-        this.mouseHandler = null; 
+        this.mouseHandler = null;
+	this.suppressHandles = true; // nor offer handles 
     },
     
     enableEvents: function() {
@@ -2809,8 +2810,9 @@ Object.extend(Morph.prototype, {
 
     checkForControlPointNear: function(evt) {
         // console.log('checking %s', this);
+        if(this.suppressHandles) return false; // disabled
         if (this.owner() == null) return false; // can't reshape the world
-        var handle = this.shape.possibleHandleForControlPoint(this, this.localize(evt.mousePoint), evt.hand);
+	var handle = this.shape.possibleHandleForControlPoint(this, this.localize(evt.mousePoint), evt.hand);
         if (handle == null) return false;
         this.addMorph(handle);  // after which it should get converted appropriately here
         handle.showHelp(evt);
@@ -2835,7 +2837,7 @@ Object.extend(Morph.prototype, {
     },
 
     showMorphMenu: function(evt) { 
-        this.morphMenu(evt).openIn(this.world(), evt.mousePoint); 
+        this.morphMenu(evt).openIn(this.world(), evt.mousePoint, false, this.inspect()); 
     },
 
     morphMenu: function(evt) { 

@@ -327,10 +327,7 @@ Object.extend(TitleBarMorph.prototype, {
         TitleBarMorph.superClass.initialize.call(this, Rectangle(0, isExternal? - bh : 0, 
                                                  windowWidth, bh), "rect");
         this.setFill(LinearGradient.makeGradient(Color.primary.blue, Color.primary.blue.lighter(3)));
-        // Unfortunately, the code below also prevents the window from being moved...
-        //this.ignoreEvents();
-        //this.relayMouseEvents(windowMorph, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"})
-        //this.mouseHandler.handlesMouseDown = function() { return false; }
+        this.ignoreEvents();
 
         var cell = Rectangle(0, 0, bh, bh);
         var closeButton = WindowControlMorph(cell, spacing, Color.primary.orange, windowMorph, 
@@ -1137,6 +1134,16 @@ Object.extend(MenuMorph.prototype, {
         this.caption = captionIfAny;  // Not yet implemented
         this.compose(location);
         world.addMorph(this);
+	if (captionIfAny) { // Still under construction
+	    var caption = captionIfAny.substr(0,30);
+	    if (captionIfAny.length > caption.length) caption += '...';
+	    var label = new TextMorph(Rectangle(0, 0, 200, 20), caption);
+	    label.wrap = "noWrap";  label.fitText();
+            label.shape.roundEdgesBy(4);
+            label.shape.setFillOpacity(0.75);
+            label.align(label.bounds().bottomLeft(), this.shape.bounds().topLeft());
+            this.addMorph(label);
+	}
     },
 
     compose: function(location) { 
@@ -1282,7 +1289,9 @@ Object.extend(SliderMorph.prototype, {
     },
     
     onMouseMove: function(evt) {
-	// Overriden so won't drag me
+	// Overriden so won't drag me if mouse pressed
+	if (evt.mouseButtonPressed) return
+	return SliderMorph.superClass.onMouseMove.call(this, evt);
     },
     
     onMouseUp: function(evt) {
@@ -1388,8 +1397,10 @@ Object.extend(ScrollPane.prototype, {
         var scrollBar = this.setNamedMorph('scrollBar', SliderMorph(bnds.withTopLeft(clipR.topRight())));
         scrollBar.connectModel({model: this, getValue: "getScrollPosition", setValue: "setScrollPosition", 
                                 getExtent: "getVisibleExtent"});
-        
-        return this;
+
+	// suppress handles throughout
+        [this, clipMorph, morphToClip, scrollBar].map(function(m) {m.suppressHandles = true});
+	return this;
     },
     
     innerMorph: function() {
