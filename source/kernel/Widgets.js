@@ -1272,6 +1272,10 @@ Object.extend(SliderMorph.prototype, {
         this.adjustForNewBounds(); 
     },
     
+    onMouseMove: function(evt) {
+	// Overriden so won't drag me
+    },
+    
     onMouseUp: function(evt) {
         evt.hand.setMouseFocus(null);
     },
