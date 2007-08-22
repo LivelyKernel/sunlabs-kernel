@@ -339,8 +339,6 @@ Pen.script = ["P = new Pen();",
  * @class DoodleMorph
  */
 
-// TODO: get some reason in the whole doodleMorph... ;)
-// Solve how to "disable" selection mode
 var IMAGES = "http://www.cs.tut.fi/~kuusipal/flair/";
 
 // Something about the DoodleMorph buttons
@@ -480,8 +478,8 @@ Object.extend(DoodleMorph.prototype, {
     morphMenu: function(evt) {
         var menu = DoodleMorph.superClass.morphMenu.call(this, evt);
         menu.addLine();
-        menu.addItem(["add rectangle", this, 'addShape', 'rect']);
-        menu.addItem(["add ellipse",   this, 'addShape', 'ellipse']);
+        menu.addItem(["add rectangle", this, 'addRect']);
+        menu.addItem(["add ellipse",   this, 'addCircle']);
         return menu;
     },
 
@@ -539,7 +537,8 @@ Object.extend(DoodleMorph.prototype, {
     setSelectionMode: function (val, v) {
         this.value = val;
         if (this.value) {
-            this.withAllSubmorphsDo(function() {if (this.getType() != "ImageButtonMorph" && this.getType() != "ImageMorph") this.enableEvents();}, null);
+            this.withAllSubmorphsDo(function() {if (this.getType() != "ImageButtonMorph" && 
+                                                this.getType() != "ImageMorph") this.enableEvents();}, null);
         } else {
             this.withAllSubmorphsDo(function() {
                         if (this.getType() != "ImageButtonMorph" && this.getType() != "ImageMorph") {
@@ -2388,13 +2387,13 @@ Object.extend(WeatherWidget.prototype, {
         // initialize UI update
         switch (item) {
         case "Menlo Park, California":
-            this.getWeather("menlo-park", "california");
+            this.getWeather("menlo-park", "california"); // "USCA0050"
             break;
         case "Tampere, Finland":
-            this.getWeather("tampere", "finland");
+            this.getWeather("tampere", "finland"); // "FIXX0031"
             break;
         case "London, United Kingdom":
-            this.getWeather("london", "united_kingdom");                    
+            this.getWeather("london", "united_kingdom"); // "UKXX0318"             
             break;
         }
     },

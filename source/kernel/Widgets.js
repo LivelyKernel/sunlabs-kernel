@@ -1828,6 +1828,7 @@ Object.extend(WorldMorph.prototype, {
     morphMenu: function(evt) { 
         var menu = WorldMorph.superClass.morphMenu.call(this,evt);
         menu.addLine();
+        menu.addItem(["new object...", this, 'addMorphs', evt]);
         menu.addItem(["restart system", this, 'restart']);
         menu.addItem(["choose theme", this, 'chooseStyleDictionary']);
 
@@ -1907,6 +1908,21 @@ Object.extend(WorldMorph.prototype, {
     relativize: function(pt) { 
         return pt.matrixTransform(this.parentNode.getTransformToElement(this)); 
     },
+
+    addMorphs: function(evt) {
+        console.log("mouse point == " + evt.mousePoint);
+        var items = [
+            ["LinkMorph", this.world(), "addMorph", LinkMorph(null)],
+            ["TextMorph", this.world(), "addMorph", TextMorph(evt.mousePoint.extent(pt(120,10)), "This is a TextMorph")],
+            ["Image Morph", this.world(), "addMorph", ImageMorph(evt.mousePoint.extent(pt(100, 45)), "http://logos.sun.com/images/SunSample.gif")],
+            ["Clock Morph", this.world(), "addMorph", ClockMorph(evt.mousePoint,50)],//new SimpleInspector(this), "openIn", this.world()],
+            ["Widget Tester", new WidgetTester(), "openIn", this.world()],
+            ["Doodle Morph", this.world(), "addMorph", WindowMorph(DoodleMorph(evt.mousePoint.extent(pt(300, 300))), 'Doodle Morph')],
+            ["Weather Widget", new WeatherWidget(), "openIn", this.world()],
+            ["Stock Widget", new StockWidget(), "openIn", this.world()],
+            ];
+        MenuMorph(items).openIn(this.world(), evt.mousePoint);
+    }
 
 });
 
