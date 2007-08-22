@@ -3278,18 +3278,26 @@ Object.extend(Morph.prototype, {
     },
 
     getModelValue: function(functionName, defaultValue) {
-        // Allows for graceful handling of missing accessors
+        // functionName is a view-specific message, such as "getList"
+	// The model plug then provides a reference to the model, as well as
+	// the specific model accessor for the aspect being viewed, say "getItemList"
+	// Failure at any stage will return the default value.
         var plug = this.modelPlug;
         if (plug == null || plug.model == null || functionName == null) return defaultValue;
         var func = plug.model[plug[functionName]];
         if (func == null) return defaultValue;
-        // console.log("reading %s as %s", functionName, func.call(plug.model));
         return func.call(plug.model); 
     },
 
     setModelValue: function(functionName, newValue, view) {
-        // Allows for graceful handling of missing accessors
-        // console.log("set %s to %s", functionName, newValue);
+        // functionName is a view-specific message, such as "setSelection"
+	// The model plug then provides a reference to the model, as well as
+	// the specific model accessor for the aspect being viewed, say "chooseItem"
+	// Failure at any stage is tolerated without error.
+	// Successful sets to the model supply not only the newValue, but also
+	// a reference to this view.  This allows the model's changed() method
+	// to skip this view when broadcasting updateView(), and thus avoid
+	// needless computation for a view that is already up to date.
         var plug = this.modelPlug;
         if (plug == null || plug.model == null || functionName == null) return;
         var func = plug.model[plug[functionName]];
@@ -3297,7 +3305,14 @@ Object.extend(Morph.prototype, {
         func.call(plug.model, newValue, view); 
     },
 
-    updateView: function(aspect, controller) { }
+    updateView: function(aspect, controller) {
+	// This method is sent in response to logic within the model executing
+	// 	this.changed(aspect, source)
+	// The aspect used is the name of the get-message for the aspect
+	// that needs to be updated in the view (and presumably redisplayed)
+	// All actual view morphs will override this method with code that
+	// checks for their aspect and does something useful in that case.
+    }
     
 });
 
@@ -3311,14 +3326,18 @@ Object.extend(Morph.prototype, {
  * propagated to multiple listeners/subscribers/dependents. 
  */ 
 
-// Note:  The widget/model connection mechanism is in transition.
-// The new model simply adds a modelPlug object to each view, and it 
-// contains references to the model and method names corresponding to 
-// each of the getters and setters appropriate to the view.
+// A typical model/view relationship is set up in the following manner:
+//        panel.addMorph(m = ListPane(Rectangle(200,0,200,150)));
+//        m.connectModel({model: this, getList: "getMethodList", setSelection: "setMethodName"});
+// The "plug" object passed to connectModel() points to the model, and converts from
+// view-specific messages like getList() and setSelection() to model-specific messages
+// like getMethodList() and setMethodName.  This allow a single model to have, eg,
+// several list views, each viewing a different list aspect of the model.
 
-// The old model used "pin" connectors to access variables.
-// When these have been completely supplanted, the various getModelValue
-// calls go away.
+// A number of morphs are used as views, or "widgets".  These include TextMorph,
+// ListMorph, ButtonMorph, SliderMorph, etc.  Each of these morphs uses the above
+// plug mechanism to get or set model values and to respond to model changes.
+// these are documented in Morph.getModelValue, setModelValue, and updateView
 
 Model = Class.create();
 
@@ -3339,16 +3358,9 @@ Object.extend(Model.prototype, {
         this.dependents.splice(ix, 1); 
     },
 
-    // KP: this seems to be deprecated??
-    /*
-    set: function (varName, newValue, source) {
-        this[varName] = newValue;
-        this.changed(varName, source); 
-    }.logCalls('Model.set', true),
-*/
-
     changed: function(varName, source) {
-        // If source is given, we don't update the source of the change
+	// Broadcast the message "updateView" to all dependents
+        // If source (a dependent) is given, we skip it (already updated)
         // If varName is not given, then null will be the aspect of the updateView()
         //console.log('changed ' + varName);
         for (var i = 0; i < this.dependents.length; i++) {

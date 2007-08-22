@@ -45,7 +45,10 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
     }
 
     var showClipMorph = Config.skipMostExamples;
-    if (showClipMorph) world.addMorph(ClipMorph(Rectangle(500, 200, 150, 150)));
+    if (showClipMorph) {
+	world.addMorph(widget = ClipMorph(Rectangle(600, 300, 150, 150)));
+	widget.setFill(Color.green.lighter());
+    }
     
     var show3DLogo = !Config.skipMostExamples;
     if (show3DLogo) world.addMorph(WindowMorph(Sun3DMorph(pt(950, 125).extent(pt(200, 200))), 'Sun 3D Logo'));
