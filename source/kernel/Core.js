@@ -2846,7 +2846,9 @@ Object.extend(Morph.prototype, {
             ["reset rotation", this, "setRotation", 0],
             ["toggle fisheye", this, "toggleFisheye"]
             ];
-        return MenuMorph(items); 
+        var m = MenuMorph(items); 
+	if(evt.mouseButtonPressed) evt.hand.setMouseFocus(m);
+	return m;
     },
 
     openColorPicker: function(funcName, evt) {

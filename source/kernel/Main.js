@@ -45,7 +45,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
         widget.startStepping(1000);
     }
 
-    var showClipMorph = false;
+    var showClipMorph = Config.skipMostExamples;
     if (showClipMorph) world.addMorph(ClipMorph(Rectangle(500, 200, 150, 150)));
     
     var show3DLogo = !Config.skipMostExamples;
