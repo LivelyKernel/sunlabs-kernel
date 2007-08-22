@@ -4,7 +4,6 @@
 
 var Global = this;
 
-var stockWidget = null;
 
 WorldMorph.populateWithExamples = function(world, otherWorld, server) {
 
@@ -164,8 +163,8 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
 
     var showStocks = !Config.skipMostExamples;
     if (showStocks) {
-        stockWidget = new StockWidget().openIn(world, pt(300, 500));
-        stockWidget.startSteppingRefreshCharts(stockWidget);
+	var stockWidget = new StockWidget();
+        stockWidget.startSteppingRefreshCharts(stockWidget.openIn(world, pt(300, 500)));
     }
 
     var showMessenger = !Config.skipMostExamples;

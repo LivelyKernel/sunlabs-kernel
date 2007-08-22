@@ -153,11 +153,6 @@ Object.properties = function(object, predicate) {
  * Extensions to class Function
  */  
 
-function $X(string) {
-    var parser = new DOMParser();
-    var xml = parser.parseFromString('<?xml version="1.0" standalone="no"?> ' + string, "text/xml");
-    return document.adoptNode(xml.documentElement);
-}
 
 Function.callStack = function() {
     var result = [];
@@ -288,14 +283,18 @@ Function.prototype.logErrors = function(prefix) {
 };
 */
 
-Function.prototype.logCalls = function(prefix) {
+Function.prototype.logCalls = function(prefix, isUrgent) {
     var advice = function(proceed) {
         var args = $A(arguments); args.shift(); 
-        console.log('%s: %s args: %s', prefix, this, args); 
+	if (isUrgent) 
+	    console.warn('%s: %s args: %s', prefix, this, args); 
+	else 
+	    console.log('%s: %s args: %s', prefix, this, args); 
         return proceed.apply(this, args); 
     };
     return this.wrap(advice);
 };
+
 
 
 /**
@@ -2226,8 +2225,7 @@ Object.extend(Morph.prototype, {
     /// override to respond to reshape events    
     adjustForNewBounds: function() {
         if (this.focusHalo) {
-            this.removeFocusHalo();
-            this.addFocusHalo();
+            this.adjustFocusHalo();
         }
     },
     
@@ -2751,24 +2749,27 @@ Object.extend(Morph.prototype, {
         if (!this.focusHalo) return false;
         
         this.removeChild(this.focusHalo);
-        console.log('removed focus halo on %s', this);
-
         this.focusHalo = null;
         return true;
-    },
+    }.logCalls('removeFocusHalo'),
     
+    adjustFocusHalo: function() {
+	this.focusHalo.removeAll();
+        var shape = RectShape(null, this.shape.bounds().insetBy(-2), null, this.focusHaloBorderWidth, this.focusedBorderColor);
+	this.focusHalo.push(shape);
+    },
+
+
     addFocusHalo: function() {
         if (this.focusHalo) return false;
         
         this.focusHalo = this.addChildElement(DisplayObjectList('FocusHalo'));
-        var shape = RectShape(null, this.shape.bounds().insetBy(-2), null, this.focusHaloBorderWidth, this.focusedBorderColor);
+
         this.focusHalo.setStrokeOpacity(0.3);
         this.focusHalo.setLineJoin(Shape.LineJoins.ROUND);
-        this.focusHalo.push(shape);
-        
-        console.log('added focus halo on %s', this);
+	this.adjustFocusHalo();
         return true;
-    }
+    }.logCalls('addFocusHalo')
     
 });
 
@@ -2843,6 +2844,7 @@ Object.extend(Morph.prototype, {
             ["inspect", new SimpleInspector(this), "openIn", this.world()],
             ["style", new StylePanel(this), "openIn", this.world()],
             ["show SVG code", this, "addSvgInspector", this],
+            ["dump model", this, "dumpModel", this], // debugging, will go away
             ["reset rotation", this, "setRotation", 0],
             ["toggle fisheye", this, "toggleFisheye"]
             ];
@@ -3113,8 +3115,8 @@ Object.extend(Exporter.prototype, {
         return new XMLSerializer().serializeToString(this.rootMorph);
     },
 
-    serializeModel: function() {
-        return this.rootMorph.model &&  this.rootMorph.model.toMarkup(this);
+    serializeModel: function(model) {
+        return model &&  model.toMarkup(this);
     }
     
 });
@@ -3148,12 +3150,18 @@ Object.extend(Importer.prototype, {
     },
     
     importFrom: function(string) {
-        return Morph.becomeMorph($X(string), this);
+        return Morph.becomeMorph(this.parse(string), this);
+    },
+
+    parse: function(string) {
+	var parser = new DOMParser();
+	var xml = parser.parseFromString('<?xml version="1.0" standalone="no"?> ' + string, "text/xml");
+	return document.adoptNode(xml.documentElement);
     },
 
     importModelFrom: function(string) {
         console.log('restoring model from markup %s', string);
-        var ptree = $X(string);
+        var ptree = this.parse(string);
         var m = new Model();
  
         for (var node = ptree.firstChild; node != null; node = node.nextSibling) {
@@ -3188,13 +3196,20 @@ Object.extend(Importer.prototype, {
 
 // SVG inspector for Morphs
 Object.extend(Morph.prototype, {
+
+    dumpModel: function() {
+	var exporter = new Exporter(this);
+        var xml = exporter.serialize();
+        var modelxml = exporter.serializeModel(this.model);
+	console.log('%s has model %s, %s', this, this.model, modelxml);
+    },
     
     addSvgInspector: function() {
 
         var exporter = new Exporter(this);
         var xml = exporter.serialize();
         console.log('%s serialized to %s', this, xml);
-        var modelxml = exporter.serializeModel();
+        var modelxml = exporter.serializeModel(this.model);
 
         const maxSize = 1500;
         // xml = '<svg xmlns="http://www.w3.org/2000/svg  xmlns:xlink="http://www.w3.org/1999/xlink> ' + xml + ' </svg>';
@@ -3219,7 +3234,6 @@ Object.extend(Morph.prototype, {
                 if (target.model) {
                     copy.model = importer.importModelFrom(modelxml);
                     console.log('restore %s', copy.model);
-                    console.log('importer %s', importer);
                 }
                 return;
             case 'f':
@@ -3229,7 +3243,7 @@ Object.extend(Morph.prototype, {
             default:
                 return TextMorph.prototype.processCommandKeys.call(this, key);
             }
-         }
+        }
         this.world().addMorph(WindowMorph(pane, "XML dump", this.bounds().topLeft().addPt(pt(5,0))));
     }
     
@@ -3323,10 +3337,13 @@ Object.extend(Model.prototype, {
         this.dependents.splice(ix, 1); 
     },
 
+    // KP: this seems to be deprecated??
+    /*
     set: function (varName, newValue, source) {
         this[varName] = newValue;
         this.changed(varName, source); 
-    },
+    }.logCalls('Model.set', true),
+*/
 
     changed: function(varName, source) {
         // If source is given, we don't update the source of the change
@@ -3338,6 +3355,16 @@ Object.extend(Model.prototype, {
                 this.dependents[i].updateView(varName, source);
             } 
         } 
+    },
+
+    toString: function() {
+	return "#<Model: " + Object.inspect(this.dependents) + ">";
+    },
+
+    inspect: function() {
+	var hash = new Hash(this);
+	delete hash.dependents;
+	return "#<Model: " + Object.toJSON(hash) + ">";
     },
 
     toMarkup: function(exporter) {

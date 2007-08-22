@@ -205,6 +205,14 @@ Object.extend(ImageMorph.prototype, {
         this.image.withHref(url);
     },
 
+    reload: function() {
+	if (this.url) {
+	    this.url = this.url + "?" + new Date();
+	    this.loadURL(this.url);
+	}
+    },
+
+
     updateView: function(aspect, controller) {
         var p = this.modelPlug;
         if (!p) return;
@@ -1172,7 +1180,7 @@ Object.extend(SliderMorph.prototype, {
         var slider = Morph(Rectangle(0, 0, 8, 8), "rect");
         slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});
         this.setNamedMorph("slider", slider);
-        this.adjustForNewBounds(this.getValue()); 
+        this.adjustForNewBounds(); 
     
         return this;
     },
@@ -1194,6 +1202,7 @@ Object.extend(SliderMorph.prototype, {
         console.log('slider %s', this.slider);
         this.slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});
         this.scale = 1.0; // FIXME restore from markup
+	//this.adjustForNewBounds();
     },
 
     vertical: function() {
@@ -1203,7 +1212,7 @@ Object.extend(SliderMorph.prototype, {
     
     adjustForNewBounds: function() {
         SliderMorph.superClass.adjustForNewBounds.call(this);
-
+	
         // This method adjusts the slider for changes in value as well as geometry
         var val = this.getValue();
         var bnds = this.shape.bounds();
@@ -1294,18 +1303,11 @@ Object.extend(SliderMorph.prototype, {
     },
 
     getValue: function() {
-        var c = this.modelPlug;
-	try {
-            if (c) return c.model[c.getValue](0.0) / this.scale;  // call the model's value accessor
-	} catch (er) {
-	    console.log('get value %s, model %s', c.getValue, c.model);
-	    throw er;
-	}
+        if (this.modelPlug) return this.getModelValue('getValue', 0) / this.scale;
     },
 
     setValue: function(value) {
-        var c = this.modelPlug;
-        if (c) c.model[c.setValue](value * this.scale);  // call the model's value accessor
+        if (this.modelPlug) this.setModelValue('setValue', value * this.scale);
     },
 
     getExtent: function() {
@@ -1914,7 +1916,7 @@ Object.extend(WorldMorph.prototype, {
     },
 
     addMorphs: function(evt) {
-        console.log("mouse point == " + evt.mousePoint);
+        console.log("mouse point == %s", evt.mousePoint);
         var items = [
             ["LinkMorph", this.world(), "addMorph", LinkMorph(null)],
             ["TextMorph", this.world(), "addMorph", TextMorph(evt.mousePoint.extent(pt(120,10)), "This is a TextMorph")],

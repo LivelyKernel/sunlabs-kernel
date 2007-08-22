@@ -22,7 +22,9 @@ Object.extend(WidgetTester.prototype, {
     },
 
     openIn: function(world, location) {
-        world.addMorphAt(this.buildView(pt(300, 220)), location);
+	var view = this.buildView(pt(300, 220));
+        world.addMorphAt(view, location);
+	return view;
     },
     
     buildView: function(extent) {
@@ -2512,10 +2514,11 @@ Object.extend(StockWidget.prototype, {
     },
     
     openIn: function(world, location) {
-        this.windowMorph = WindowMorph(this.buildView((pt(580, 460))), 'Stock Widget');
+	var view = this.buildView((pt(580, 460)));
+        this.windowMorph = WindowMorph(view, 'Stock Widget');
         world.addMorphAt(this.windowMorph, location);
         this.setStockIndex('DOW JONES');
-        return this;
+        return view;
     },
 
     makeURL: function(ticker) {
@@ -2589,13 +2592,13 @@ Object.extend(StockWidget.prototype, {
         
         // Dow Jones chart
         var image = ImageMorph(Rectangle(160, 10, 175, 160), "http://bigcharts.marketwatch.com/charts/gqplus/fpDJIA-narrow.gqplus?167");
-        this.leftChartImage = image;
+        panel.leftChartImage = image;
         m = panel.addMorph(image);
         m.setFill(Color.white);
         
         // NASDAQ chart
         image = ImageMorph(Rectangle(360, 10, 175, 160), "http://bigcharts.marketwatch.com/charts/gqplus/fpNASDAQ-narrow.gqplus?167");
-        this.rightChartImage = image;
+        panel.rightChartImage = image;
         m = panel.addMorph(image);
         m.setFill(Color.white);
         // m.connectModel({model: this, getURL: "getIndexChartURL"});
@@ -2621,7 +2624,7 @@ Object.extend(StockWidget.prototype, {
         panel.shutdown = function() {
             PanelMorph.superClass.shutdown.call(this);
             console.log('shutting down the stock widget');
-            model.timer && clearInterval(model.timer);
+            model.timer && window.clearInterval(model.timer);
         }
         
         return panel;
@@ -2631,34 +2634,15 @@ Object.extend(StockWidget.prototype, {
         return this.formatQuote(this.lastQuote);
     },
 
-    refreshCharts: function() {
-        // NOTE: 'stockWidget' is defined in Main.js (FIXME later)
-        if (!stockWidget.windowMorph || !stockWidget.windowMorph.targetMorph) return;
+    refreshCharts: function(panel) {
         console.log("Refreshing charts...");
-
-        // FIXME: Ugly + implementation-specific
-        var panel = stockWidget.windowMorph.targetMorph;
-        
-        var leftImage = ImageMorph(Rectangle(160, 10, 175, 160), 
-            "http://bigcharts.marketwatch.com/charts/gqplus/fpDJIA-narrow.gqplus?167");
-        var rightImage = ImageMorph(Rectangle(360, 10, 175, 160), 
-            "http://bigcharts.marketwatch.com/charts/gqplus/fpNASDAQ-narrow.gqplus?167");
-
-        // Remove old images
-        if (stockWidget.leftChartImage)  panel.removeMorph(stockWidget.leftChartImage);
-        if (stockWidget.rightChartImage) panel.removeMorph(stockWidget.rightChartImage);
-        
-        // Replace images with the new ones
-        stockWidget.leftChartImage = leftImage;
-        panel.addMorph(leftImage);
-
-        stockWidget.rightChartImage = rightImage;
-        panel.addMorph(rightImage);
+        panel.leftChartImage.reload(); 
+        panel.rightChartImage.reload(); 
     },
 
-    startSteppingRefreshCharts: function(widget) {
+    startSteppingRefreshCharts: function(panel) {
         // this.startSteppingFunction(30000, this.refreshCharts);
-        this.timer = setInterval(this.refreshCharts.logErrors('Stock Refresh'), 30000);
+        this.timer = setInterval(this.refreshCharts.bind(this).curry(panel).logErrors('Stock Refresh'), 30000);
     },
 
     getUrl: function(url, params) {
