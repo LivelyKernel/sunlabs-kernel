@@ -93,7 +93,7 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
     updateView: function(aspect, controller) {
         var p = this.modelPlug;
         if (p) {
-            if (aspect == p.getValue) this.changeAppearanceFor(this.getValue());
+            if (aspect == p.getValue || aspect == 'all') this.changeAppearanceFor(this.getValue());
             return;
         }
     },
@@ -876,7 +876,7 @@ Object.extend(PanelMorph.prototype, {
         var plug = this.modelPlug;
         if (!plug) return;
         
-        if (aspect == plug.getVisible) {
+        if (aspect == plug.getVisible || aspect == 'all') {
             var state = this.getModelValue('getVisible', true);
             if (state == false) this.remove();
         }
@@ -1045,7 +1045,7 @@ Object.extend(CheapListMorph.prototype, {
         var c = this.modelPlug;
         
         if (c) { // New style connect
-            if (aspect == c.getList) this.updateList(this.getList());
+            if (aspect == c.getList || aspect == 'all') this.updateList(this.getList());
             if (aspect == c.getSelection) this.setSelectionToMatch(this.getSelection());
             return;
         }
@@ -1306,7 +1306,7 @@ Object.extend(SliderMorph.prototype, {
         var p = this.modelPlug;
         
         if (p) {
-            if (aspect == p.getValue || aspect == p.getExtent) this.adjustForNewBounds();
+            if (aspect == p.getValue || aspect == p.getExtent || aspect == 'all') this.adjustForNewBounds();
             return;
         }
     },

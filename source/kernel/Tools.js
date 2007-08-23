@@ -144,9 +144,8 @@ Object.extend(StylePanel.prototype, {
     initialize: function(targetMorph) {
         StylePanel.superClass.initialize.call(this);
         this.targetMorph = targetMorph;
-        this.borderWidth = targetMorph.getBorderWidth();
-        this.rounding = targetMorph.getAttribute('rx');
-        if (this.rounding == null) this.rounding = 0;
+        this.originalSpec = targetMorph.makeStyleSpec();
+	for (var p in this.originalSpec) this[p] = this.originalSpec[p];
     },
 
     getBorderWidth: function() { return this.borderWidth; },
@@ -169,8 +168,10 @@ Object.extend(StylePanel.prototype, {
         this.changed('getRounding');
     },
 
+    getFillTypes: function() { return ["simple fill", "linear gradient", "radial gradient", "stipple"]; },
     getFillType: function() { return this.fillType; },
     setFillType: function(type) { this.fillType = type; },
+    getFillDirs: function() { return ["NorthSouth", "SouthNorth", "EastWest", "WestEast"]; },
     getFillDir: function() { return this.fillDir; },
     setFillDir: function(dir) { this.fillDir = dir; },
     setColor1: function(color) { this.color1 = color; this.setFill(); },
@@ -187,18 +188,27 @@ Object.extend(StylePanel.prototype, {
             this.targetMorph.setFill(RadialGradient.makeCenteredGradient(this.color1, this.color2));
     },
      
-    getOpacity: function() { return this.opacity; },
+    getFillOpacity: function() { return this.fillOpacity; },
     
-    setOpacity: function(op) {
-        this.opacity = op.roundTo(0.01);
-        this.targetMorph.shape.setFillOpacity(this.opacity);
-        this.changed('getOpacity')
+    setFillOpacity: function(op) {
+        this.fillOpacity = op.roundTo(0.01);
+        this.targetMorph.shape.setFillOpacity(this.fillOpacity);
+        this.changed('getFillOpacity');
+	this.setStrokeOpacity(op); // Stroke opacity is linked to fill
+    },
+
+    getStrokeOpacity: function() { return this.strokeOpacity; },
+    
+    setStrokeOpacity: function(op) {
+        this.strokeOpacity = op.roundTo(0.01);
+        this.targetMorph.shape.setStrokeOpacity(this.strokeOpacity);
+        this.changed('getStrokeOpacity')
     },
 
     openIn: function(world, location) {
-        var rect = ((location==null) ? location : pt(50,50)).extent(pt(400,240));
+        var rect = ((location==null) ? location : pt(50,50)).extent(pt(400,270));
         world.addMorph(WindowMorph(this.buildView(rect), 'Style Panel'));
-        this.changed('getRounding')
+        this.changed('all')
     },
 
     buildView: function(rect) {
@@ -228,10 +238,10 @@ Object.extend(StylePanel.prototype, {
         m.connectModel({model: this, getValue: "getRounding", setValue: "setRounding"});
 
         y += 30;
-        panel.addMorph(m = CheapListMorph(Rectangle(50, y, 100, 50),["simple fill", "linear gradient", "radial gradient", "stipple"]));
-        m.connectModel({model: this, getSelection: "getFillType", setSelection: "setFillType"});
-        panel.addMorph(m = CheapListMorph(Rectangle(160, y, 75, 60),["NorthSouth", "SouthNorth", "EastWest", "WestEast"]));
-        m.connectModel({model: this, getSelection: "getFillDir", setSelection: "setFillDir"});
+        panel.addMorph(m = CheapListMorph(Rectangle(50, y, 100, 50),[]));
+        m.connectModel({model: this, getList: "getFillTypes", getSelection: "getFillType", setSelection: "setFillType"});
+        panel.addMorph(m = CheapListMorph(Rectangle(160, y, 75, 60),[]));
+        m.connectModel({model: this, getList: "getFillDirs", getSelection: "getFillDir", setSelection: "setFillDir"});
         panel.addMorph(m = ColorPickerMorph(Rectangle(250, y, 50, 30)));
         m.connectModel({model: this, setColor: "setColor1"});
         panel.addMorph(m = ColorPickerMorph(Rectangle(250, y+40, 50, 30)));
@@ -240,9 +250,16 @@ Object.extend(StylePanel.prototype, {
         y += 80;
         panel.addMorph(TextMorph.makeLabel(Rectangle(50, y, 90, 20), 'Fill Opacity'));
         panel.addMorph(m = PrintMorph(Rectangle(150, y, 40, 20)));
-        m.connectModel({model: this, getValue: "getOpacity", setValue: "setOpacity"});
+        m.connectModel({model: this, getValue: "getFillOpacity", setValue: "setFillOpacity"});
         panel.addMorph(m = SliderMorph(Rectangle(200, y, 100, 20), 1.0));
-        m.connectModel({model: this, getValue: "getOpacity", setValue: "setOpacity"});
+        m.connectModel({model: this, getValue: "getFillOpacity", setValue: "setFillOpacity"});
+
+        y += 30;
+        panel.addMorph(TextMorph.makeLabel(Rectangle(50, y, 90, 20), 'Stroke Opacity'));
+        panel.addMorph(m = PrintMorph(Rectangle(150, y, 40, 20)));
+        m.connectModel({model: this, getValue: "getStrokeOpacity", setValue: "setStrokeOpacity"});
+        panel.addMorph(m = SliderMorph(Rectangle(200, y, 100, 20), 1.0));
+        m.connectModel({model: this, getValue: "getStrokeOpacity", setValue: "setStrokeOpacity"});
 
         panel.morphMenu = function(evt) { 
             var menu = Morph.prototype.morphMenu.call(this,evt);

@@ -1252,8 +1252,16 @@ Object.extend(DisplayObject.prototype, {
         this.setAttributeNS(null, "fill-opacity", alpha);
     },
 
+    getFillOpacity: function(alpha) {
+        this.getAttributeNS(null, "fill-opacity");
+    },
+
     setStrokeOpacity: function(alpha) {
         this.setAttributeNS(null, "stroke-opacity", alpha);
+    },
+
+    getStrokeOpacity: function(alpha) {
+        this.getAttributeNS(null, "stroke-opacity");
     },
 
     setLineJoin: function(joinType) {
@@ -1459,6 +1467,10 @@ Object.extend(RectShape.prototype, {
             return null;
         var loc = this.bounds().partNamed(partName);
         return HandleMorph(loc, "rect", hand, targetMorph, partName); 
+    },
+    
+    getEdgeRounding: function() {
+        return this.getAttributeNS(null, "rx");
     },
     
     roundEdgesBy: function(r) {
@@ -2126,6 +2138,10 @@ Object.extend(Morph.prototype, {
 
     setBorderColor: function(newColor) { this.shape.setStroke(newColor); }.wrap(Morph.onChange('shape')),
 	
+    getBorderColor: function() {
+	return this.shape.getStroke();
+    },
+	
     setBorderWidth: function(newWidth) { this.shape.setStrokeWidth(newWidth); }.wrap(Morph.onChange('shape')),
 
     getBorderWidth: function() {
@@ -2138,12 +2154,22 @@ Object.extend(Morph.prototype, {
         if (spec.borderColor) this.setBorderColor(spec.borderColor);
         if (spec.rounding) this.shape.roundEdgesBy(spec.rounding);
         if (spec.fill) this.setFill(spec.fill);
-        if (spec.opacity) {
-            this.shape.setFillOpacity(spec.opacity);
-            this.shape.setStrokeOpacity(spec.opacity); 
-        }
         if (spec.fillOpacity) this.shape.setFillOpacity(spec.fillOpacity);
         if (spec.strokeOpacity) this.shape.setStrokeOpacity(spec.strokeOpacity);
+    },
+
+    makeStyleSpec: function() {
+        // Adjust all visual attributes specified in the style spec
+        var spec = { };
+	spec.borderWidth = this.getBorderWidth();
+	spec.borderColor = this.getBorderColor();
+	spec.fill = this.getFill();
+	spec.rounding = + this.shape.getEdgeRounding();
+	spec.fillOpacity = this.shape.getFillOpacity();
+	if (!spec.fillOpacity) spec.fillOpacity = 1.0;
+	spec.strokeOpacity = this.shape.getStrokeOpacity();
+	if (!spec.strokeOpacity) spec.strokeOpacity = 1.0;
+	return spec;
     },
 
     applyStyleNamed: function(name) {

@@ -1064,7 +1064,7 @@ Object.category(TextMorph.prototype, "accessing", function() {
     updateView: function(aspect, controller) {
         var p = this.modelPlug;
         if (p) {
-            if (aspect == p.getText) this.updateTextString(this.getModelText());
+            if (aspect == p.getText  || aspect == 'all') this.updateTextString(this.getModelText());
 
             // if (aspect == p.getSelection) this.searchForMatch(this.getModelSelection());
             return;
@@ -1159,7 +1159,7 @@ Object.extend(PrintMorph.prototype, {
     updateView: function(aspect, controller) {
         var p = this.modelPlug;
         if (p) {
-            if (aspect == p.getValue) this.updateTextString(this.getModelText());
+            if (aspect == p.getValue || aspect == 'all') this.updateTextString(this.getModelText());
         }
     },
     
