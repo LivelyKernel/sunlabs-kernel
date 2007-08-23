@@ -1630,7 +1630,7 @@ Object.extend(WorldMorph, {
     // Create an empty world
     createEmptyWorld: function() {
         var w = WorldMorph('canvas');
-        // w.styleDictionary = WorldMorph.defaultStyles; // * wrong
+        // w.displayTheme = WorldMorph.defaultThemes; // * wrong
         // w.applyStyle(); // Because it wasnt there until now
         // w.setFill(StipplePattern.create(Color.neutral.lightGray, 6, new Color(0.83, 0.83, 0.83), 1));
         // w.setFill(LinearGradient({x1:0, y1:0, x2:400, y2:300}).addStop(0, Color.white).addStop("50%", new Color(102/255, 102/255, 136/255)).addStop("400", Color.black));
@@ -1713,14 +1713,14 @@ Object.extend(WorldMorph, {
     },
 
     // Default styles for the style manager    
-    defaultStyles: { // --Style architecture is under construction!--
+    defaultThemes: { // --Style architecture is under construction!--
         primitive: { // This is to be the simples widgets -- flat fills and no rounding or translucency
             styleName: 'primitive',
-            widgetPanel: { borderColor: Color.red, borderWidth: 2, rounding: 0, fill: Color.blue.lighter(), rounding: 0, opacity: 1},
+            widgetPanel: { borderColor: Color.red, borderWidth: 2, rounding: 0, fill: Color.blue.lighter(), opacity: 1},
             vslider:     { borderColor: Color.black, borderWidth: 1, fill: Color.blue.lighter()},
             hslider:     { borderColor: Color.black, borderWidth: 1, fill: Color.blue.lighter()},
             elevator:    { borderColor: Color.black, borderWidth: 1, fill: Color.green.lighter(2)},
-            titleBar:    { borderColor: Color.green.lighter(), borderWidth: 1},
+            titleBar:    { borderColor: Color.black, borderWidth: 1, fill: Color.white},
             button:      { borderColor: Color.green.lighter(), borderWidth: 1},
             clock:       { size: 100, borderColor: Color.green.lighter(), borderWidth: 1, fill: Color.yellow, roman: true},
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue}
@@ -1779,8 +1779,8 @@ Object.extend(WorldMorph.prototype, {
         WorldMorph.superClass.initialize.call(this, bounds, "rect");
 
         this.hands = [];
-        this.worldStyles = WorldMorph.defaultStyles;
-        this.setStyleDictionary(this.worldStyles['lively']);
+        this.displayThemes = WorldMorph.defaultThemes;
+        this.setDisplayTheme(this.displayThemes['lively']);
 
         // merged from WorldState
         this.stepList = [];
@@ -1846,7 +1846,7 @@ Object.extend(WorldMorph.prototype, {
         var menu = WorldMorph.superClass.morphMenu.call(this,evt);
         menu.addLine();
         menu.addItem(["new object...", this, 'addMorphs', evt]);
-        menu.addItem(["choose display theme", this, 'chooseStyleDictionary']);
+        menu.addItem(["choose display theme", this, 'chooseDisplayTheme']);
         menu.addItem(["restart system", this, 'restart']);
 
         // The following items are not applicable to the world
@@ -1856,17 +1856,17 @@ Object.extend(WorldMorph.prototype, {
         return menu;
     },
    
-    chooseStyleDictionary: function(ignored,evt) { 
-        var styles = this.worldStyles;
+    chooseDisplayTheme: function(ignored,evt) { 
+        var themes = this.displayThemes;
         var target = this; // trouble with function scope
-        var skinNames = Object.properties(styles);
-        var items = skinNames.map(
-        function(each) { return [each, target, "setStyleDictionary", styles[each]]; });
+        var themeNames = Object.properties(themes);
+        var items = themeNames.map(
+        	function(each) { return [each, target, "setDisplayTheme", themes[each]]; });
         MenuMorph(items).openIn(this.world(), evt.mousePoint);
     },
   
-    setStyleDictionary: function(styleDict) { 
-        this.styleDictionary = styleDict;
+    setDisplayTheme: function(styleDict) { 
+        this.displayTheme = styleDict;
         this.withAllSubmorphsDo( function() { this.applyLinkedStyles(); });
     },
   

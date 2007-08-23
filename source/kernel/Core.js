@@ -2152,7 +2152,10 @@ Object.extend(Morph.prototype, {
         if (spec.borderWidth) this.setBorderWidth(spec.borderWidth);
         if (spec.borderColor) this.setBorderColor(spec.borderColor);
         if (spec.rounding) this.shape.roundEdgesBy(spec.rounding);
+		else this.shape.roundEdgesBy(0);
         if (spec.fill) this.setFill(spec.fill);
+        if (spec.opacity) {this.shape.setFillOpacity(spec.opacity);
+        		this.shape.setStrokeOpacity(spec.opacity); }
         if (spec.fillOpacity) this.shape.setFillOpacity(spec.fillOpacity);
         if (spec.strokeOpacity) this.shape.setStrokeOpacity(spec.strokeOpacity);
     },
@@ -2177,7 +2180,7 @@ Object.extend(Morph.prototype, {
 
     styleNamed: function(name) {
         // Look the name up in the Morph tree, else in current world
-        if (this.styleDictionary) return this.styleDictionary[name];
+        if (this.displayTheme) return this.displayTheme[name];
         if (this.owner()) return this.owner().styleNamed(name);
         return WorldMorph.current().styleNamed(name);
     },
