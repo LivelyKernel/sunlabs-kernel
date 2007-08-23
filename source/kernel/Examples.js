@@ -22,9 +22,9 @@ Object.extend(WidgetTester.prototype, {
     },
 
     openIn: function(world, location) {
-	var view = this.buildView(pt(300, 220));
+        var view = this.buildView(pt(300, 220));
         world.addMorphAt(view, location);
-	return view;
+        return view;
     },
     
     buildView: function(extent) {
@@ -181,6 +181,7 @@ Object.extend(ClockMorph.prototype, {
 
 /**
  * @class IconMorph
+ * FIXME: IconMorph is not used currently.  Remove or move to Widgets.js 
  */
 
 IconMorph = HostClass.create('IconMorph', ImageMorph);
@@ -195,7 +196,6 @@ Object.extend(IconMorph.prototype, {
         return this;
     }
 });
-
 
 // ===========================================================================
 // The Pen/Hilbert curve demo
@@ -494,7 +494,9 @@ Object.extend(DoodleMorph.prototype, {
 
         this.newPos += 25;
         if (this.newPos > 125) this.newPos = 25;            
-    },*/
+    },
+*/
+
     addRect: function() {
         var morph = Morph(Rectangle(this.newPos * 2, this.newPos, 60, 20), 'rect');
         morph.setFill(null);
@@ -988,6 +990,9 @@ Object.extend(Sun3DMorph.prototype, {
 
 // Note: The code below has been translated from the original
 // Java implementation (and it still shows...)
+
+// FIXME: There are still problems with the coordinate space.
+// For instance, shooting is not as precise as in the original game.
 
 /*****************************************************************************
 
@@ -2484,11 +2489,11 @@ Object.extend(WeatherWidget.prototype, {
             onFailure: function(transport) {
                 console.log('problem with %s', transport);
             },
-	    
+    
             onException: function(e) {
                 console.log('exception  %s, %s', e, Object.toJSON(e));
             }
-	    
+    
         });
     }
     
@@ -2514,7 +2519,7 @@ Object.extend(StockWidget.prototype, {
     },
     
     openIn: function(world, location) {
-	var view = this.buildView((pt(580, 460)));
+        var view = this.buildView((pt(580, 460)));
         this.windowMorph = WindowMorph(view, 'Stock Widget');
         world.addMorphAt(this.windowMorph, location);
         this.setStockIndex('DOW JONES');
@@ -2944,7 +2949,7 @@ Object.extend(MapModel.prototype, {
 MapMorph = HostClass.create('MapMorph', Morph);
 
 Object.extend(MapMorph.prototype, {
-  initialize: function( initialBounds, online) { 
+    initialize: function( initialBounds, online) { 
       pd("MapMorph",2);
       MapMorph.superClass.initialize.call(this,initialBounds,"rect");
 
@@ -3006,7 +3011,7 @@ Object.extend(MapMorph.prototype, {
 
       this.stepping = false;
       return this;
-  }, 
+    }, 
   
     copy: function() {
         var newMap = MapMorph.superClass.copy.call(this);
@@ -3833,6 +3838,800 @@ Object.extend(MessengerWidget.prototype, {
         panel.addMorph(ImageButtonMorph(Rectangle(240, 200,  50,  50), "http://www.cs.tut.fi/~taivalsa/Software/Talk.PNG",
                                                                        "http://www.cs.tut.fi/~taivalsa/Software/Talk_down.PNG"));
         return panel;
+    }
+    
+});
+
+// ===========================================================================
+// The CanvasScape 3D Maze Walker Example
+// ===========================================================================
+
+// This code is derived from an implementation written and copyrighted
+// by Abraham Joffe (http://www.abrahamjoffe.com.au/ben/canvascape/).
+// We have intentionally left the gun out of the game...  
+
+/**
+ * @class MiniMapMorph: The "radar view" for the game
+ */
+
+MiniMapMorph = HostClass.create('MiniMapMorph', Morph);
+
+Object.extend(MiniMapMorph.prototype, {
+
+    initialize: function(rect) {
+        MiniMapMorph.superClass.initialize.call(this, rect, "rect");
+        console.log("minimap init"); 
+        this.setFill(Color.black); 
+        this.x = rect.topLeft().x;
+        this.y = rect.topLeft().y;
+        this.width = 0;//8*arena.length;
+        this.height = 0;//8*arena[0].length;
+        this.color = Color.yellow;//0xcc33333;
+        this.background = Color.black;
+        this.px = 0;//this.x + this.width / 2; //player pos
+        this.py = 0;//this.y +  this.height / 2;       
+        this.player;
+        console.log("minimap init done"); 
+        
+        return this;
+    }, 
+    
+    updatePlayerLocation: function(xloc, yloc) {
+        //this.pLoc = this.worldPoint(pt(xloc,yloc));
+        //console.log("location " + this.pLoc.x + " " + this.pLoc.y);
+        if (this.player) {
+          this.removeMorph(this.player)
+          this.player = Morph(Rectangle(xloc -3, yloc -3, 6, 6),"ellipse");   
+          this.player.setFill(Color.blue);
+          this.addMorph(this.player);
+        } else {
+          this.player = Morph(Rectangle(xloc -3, yloc -3, 6, 6),"ellipse");   
+          this.player.setFill(Color.blue);
+          this.addMorph(this.player);
+        }
+    }, 
+    
+    getPlayerLocation: function(){
+        return this.pLoc;
+    }
+    
+});
+
+/**
+ * @class CanvasScapeMorph
+ */
+
+CanvasScapeMorph = HostClass.create('CanvasScapeMorph', ClipMorph);
+
+Object.extend(CanvasScapeMorph.prototype, {
+    
+    initialize: function(rect) {
+        CanvasScapeMorph.superClass.initialize.call(this, rect, "rect");
+        console.log("init"); 
+        this.setFill(Color.veryLightGray);
+        this.initParameters();
+        this.initGame(); 
+        this.loadLevel(1);
+        //this.initUnderMap();
+        this.addMorph(this.map);
+        return this;
+    }, 
+    
+    initGame: function() {
+        console.log("initGame"); 
+        this.level = "Level 1";
+        this.timepassed = 0;
+        this.mseconds = 0;
+        this.timeleft = this.level1time;
+        this.timepassed = 0;
+        this.found = 0;
+        this.gameon = true;
+        this.timeleft = this.level1time;
+        this.playerPos=[2,2]; // x,y (from top left)
+        this.playerDir=0.2; // theta, facing right=0=2pi
+        this.note = "Click on the floor and press space bar to start the game";
+        this.drawCanvas();
+        //this.startSteppingFunction(200, function(msTime) { this.changeKey( 37, 1); });
+        //this.startSteppingFunction(1000, function(msTime) { /*changeKey(37, 1);*/  });
+    },
+    
+    handlesMouseDown: function() {
+        return true;
+    },
+
+    onMouseDown: function(evt) {
+        evt.hand.setMouseFocus(this);
+        this.requestKeyboardFocus(evt.hand);
+        return true; 
+    },
+   
+    setHasKeyboardFocus: function(newSetting) { 
+        return newSetting;
+    },
+    
+    takesKeyboardFocus: function() {
+        return true; 
+    },
+
+    onKeyDown: function(evt) { 
+        this.keyDown(evt);
+        return true; 
+    },
+
+    onKeyUp: function(evt) { 
+        this.keyUp(evt);
+        return true; 
+    },
+
+    initParameters: function(){
+        console.log("initParameters");
+        this.startint = 0;
+        this.sinterval = 0;
+        this.level1time = 70;
+        this.level2time = 80;
+        this.level3time = 180;
+      
+        this.arena=[];
+        this.arena[0]= [1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        this.arena[1]= [1,0,0,0,2,0,0,0,0,0,1,2,0,1]
+        this.arena[2]= [1,0,0,1,0,1,1,1,0,0,0,0,1,1]
+        this.arena[3]= [1,0,1,0,0,0,0,1,0,0,1,0,0,1]
+        this.arena[4]= [1,0,0,0,0,1,0,1,0,0,1,1,0,1]
+        this.arena[5]= [1,0,1,1,0,0,0,0,0,0,0,0,0,1]
+        this.arena[6]= [1,0,2,1,0,1,1,1,0,0,1,2,1,1]
+        this.arena[7]= [1,1,0,1,0,0,0,1,0,0,0,0,0,1]
+        this.arena[8]= [1,0,0,1,0,1,0,0,0,0,1,1,0,1]
+        this.arena[9]= [1,0,2,0,0,1,0,0,0,0,1,2,0,1]
+        this.arena[10]=[1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        this.found  = 0;
+        this.maxobjects = 6; // number 2:s in map
+      
+        if (!this.difficulty) this.difficulty = "medium";
+      
+        this.gameon = false;
+        this.sky = ImageMorph(Rectangle(0,20,4800,150), "http://www.cs.tut.fi/~reijula/images/sky2.jpg");
+        this.sky.setHasKeyboardFocus = function(newSetting) { return newSetting;
+        this.owner().setHasKeyboardFocus( true); };
+        this.sky.takesKeyboardFocus = function() { this.owner().setHasKeyboardFocus( true);};
+        this.sky.onKeyUp = function(evt) {console.log("skyonup")}; 
+        this.sky.onKeyDown = function(evt) {console.log("skyondown")};
+        this.sky.relayMouseEvents(this, {onKeyDown: "onKeyDown", onKeyUp: "onKeyUp", setHasKeyboardFocus: "setHasKeyboardFocus", takesKeyboardFocus: "takesKeyboardFocus"});
+        this.addMorph(this.sky);
+      
+        /*this.floor = ImageMorph(Rectangle(0,150, 450, 150), "http://www.cs.tut.fi/~reijula/images/floor.png");
+        this.floor.setScale(2);
+        this.floor.relayMouseEvents(this, {onKeyDown: "onKeyDown", onKeyUp: "onKeyUp"});
+        this.addMorph(this.floor);*/
+        
+        this.objArray = new Array();    
+        this.overlay;      
+        this.pi=Math.PI;    
+        this.total=0;     
+        this.samples=400;
+        this.playerPos=[2,2]; // x,y (from top left)
+        this.playerDir=0.2; // theta, facing right=0=2pi
+        this.playerPosZ=1;
+        this.key=[0,0,0,0,0]; // left, right, up, down
+        this.playerVelY=0;
+        this.face=[];
+        this.jumpCycle=0;
+        this.color = Color.red;
+        this.note = "";
+        this.map = MiniMapMorph(Rectangle(5,25,8*this.arena.length,8*this.arena[0].length));
+        
+        //this.map.px = this.map.x + this.map.width / 2; //player pos
+        //this.map.py = this.map.y + this.map.height / 2;
+      
+        this.morphArray =[];
+      
+        /*this.startButton = ButtonMorph(Rectangle(300,140,50,100));
+        this.buttonListener = new Model();
+        this.buttonListener.parent = this;
+        this.buttonListener.setValue = function() {
+            this.parent.removeAllMorphs();
+            if (this.parent.map) this.parent.map.remove();
+            this.parent.initParameters();
+            this.parent.initGame(); 
+            this.parent.initUnderMap();
+            this.parent.addMorph(this.parent.map);
+            this.parent.startSteppingFunction(35, function(msTime) { this.parent.update(); });
+        }
+        this.startButton.connectModel({model: this.buttonListener, getValue: "getValue", setValue: "setValue"});
+        this.addMorph(this.startButton);*/
+        console.log("initParameters completed");
+    },
+     
+    wallDistance: function(theta) {
+
+        var data=[];
+        this.face=[];
+    
+        var x = this.playerPos[0], y = this.playerPos[1];
+        var deltaX, deltaY;
+        var distX, distY;
+        var stepX, stepY;
+        var mapX, mapY;
+        
+        var atX=Math.floor(x), atY=Math.floor(y);
+    
+        var thisRow=-1;
+        var thisSide=-1;
+    
+        var lastHeight=0;
+    
+        this.objArray = new Array();
+      
+        for (var i=0; i<this.samples; i++) {
+            theta+=this.pi/(3*this.samples)+2*this.pi;
+            theta%=2*this.pi;
+    
+            mapX = atX, mapY = atY;
+    
+            deltaX=1/Math.cos(theta);
+            deltaY=1/Math.sin(theta);
+    
+            if (deltaX>0) {
+                stepX = 1;
+                distX = (mapX + 1 - x) * deltaX;
+            } else {
+                stepX = -1;
+                distX = (x - mapX) * (deltaX*=-1);        
+            }
+            
+            if (deltaY>0) {
+                stepY = 1;
+                distY = (mapY + 1 - y) * deltaY;
+            } else {
+                stepY = -1;
+                distY = (y - mapY) * (deltaY*=-1);
+            }
+
+            for (var j=0; j<20; j++) {
+                if (distX < distY) {
+                    mapX += stepX;
+                    //drawString(0,75, "a mapx " + mapX + " mapy " + mapY);
+                    if (this.arena[mapX][mapY]) {
+                        if (thisRow!=mapX || thisSide!=0) {
+    
+                            if (i>0) {
+                                if (this.arena[mapX][mapY] == 2){
+                                    this.objArray.push(data.length);
+                                }
+                                data.push(i);
+                                data.push(lastHeight);
+                            }
+                            if (this.arena[mapX][mapY] == 2){
+                                this.objArray.push(data.length);
+                            }
+                            data.push(i);
+                            data.push(distX);
+                            thisSide=0;
+                            thisRow=mapX;
+    
+                            this.face.push(1+stepX);
+                        }
+                        lastHeight=distX;
+                        break;
+                    }
+                    distX += deltaX;
+                }
+                else {
+                    mapY += stepY;
+                    if (this.arena[mapX][mapY]) {
+                        if (thisRow!=mapY || thisSide!=1) {
+                            
+                            if (i>0) {
+                                if (this.arena[mapX][mapY] == 2){
+                                this.objArray.push(data.length);
+                                }
+                                data.push(i);
+                                data.push(lastHeight);
+                            }
+                            if (this.arena[mapX][mapY] == 2){
+                                this.objArray.push(data.length);
+                            }    
+                            data.push(i);
+                            data.push(distY);
+                            thisSide=1;
+                            thisRow=mapY;
+    
+                            this.face.push(2+stepY)
+                        }
+                        lastHeight=distY;
+                        break;
+                    }
+                    distY += deltaY;
+                }
+            }
+        }
+        data.push(i);
+        data.push(lastHeight);
+        return data;
+    }, 
+    
+    drawCanvas: function(){
+        var morppi;
+
+        //console.log("ma" + this.morphArray.length + " " + this.submorphs.length);
+        for (var r = 0; r < this.morphArray.length; r++){
+            this.morphArray[r].remove();
+        }
+        
+        this.morphArray = [];
+        // drawImage(Math.floor(-this.playerDir/(2*this.pi)*2400), canvas.y, sky);
+        // console.log("imgpos" + -this.playerDir/(2*this.pi)*2400);
+        this.sky.setPosition(pt( -this.playerDir/(2*this.pi)*2400, 0));
+        
+        morppi = TextMorph(Rectangle(0,0,800,20));
+        morppi.setTextString(this.level+ ". Blue walls found " + this.found + " / " + this.maxobjects + ". Time left: " + this.timeleft + ". Time passed: " + this.timepassed);
+        this.addMorph(morppi);
+        this.morphArray.push(morppi);
+        
+        if (this.note != "") {
+            morppi = TextMorph(Rectangle(0,280,800,20));
+            morppi.setTextString(this.note);
+            this.addMorph(morppi);
+            this.morphArray.push(morppi);
+        }
+        
+        var theta = this.playerDir-this.pi/6;
+    
+        var wall=this.wallDistance(theta);
+        //theta = this.playerDir-this.pi/6;
+        //var obj = objDistance(theta);
+    
+        //playerrect in map
+        //this.map.px = this.map.x + 8*this.playerPos[0];
+        //this.map.py = this.map.y + 8*this.playerPos[1];
+        this.map.updatePlayerLocation(8*this.playerPos[0], 8*this.playerPos[1]);
+        this.color = Color.black;//setColor(0);
+        //fillRect(map.px - 2, map.py - 2, 4, 4);
+
+        //about visible area
+        /*    arrX = new Array();
+            arrX[0] = map.px - 2;
+            arrX[1] = map.px - 2 + 60*Math.cos(this.playerDir-this.pi/6);
+            arrX[2] = map.px - 2 + 60*Math.cos(this.playerDir+this.pi/6);
+            arrY = new Array();
+            arrY[0] = map.py - 2;
+            arrY[1] = map.py - 2 + 60*Math.sin(this.playerDir-this.pi/6);
+            arrY[2] = map.py - 2 + 60*Math.sin(this.playerDir+this.pi/6);        
+            fillPolygon(arrX, arrY, 3);
+        */
+        //this.initUnderMap(); //THIS IS HEAVY NOW... so it's commented
+
+        var linGrad;
+        
+        var tl,tr,bl,br;
+        
+        var theta1,theta2,fix1,fix2;
+        var drawobject = false;
+
+        for (var i=0; i<wall.length; i+=4) {
+    
+            theta1=this.playerDir-this.pi/6 + this.pi*wall[i]/(3*this.samples);
+            theta2=this.playerDir-this.pi/6 + this.pi*wall[i+2]/(3*this.samples);
+            
+            fix1 = Math.cos(theta1-this.playerDir);
+            fix2 = Math.cos(theta2-this.playerDir);
+    
+            var h=2-this.playerPosZ;
+    
+            var wallH1=100/(wall[i+1]*fix1);
+            var wallH2=100/(wall[i+3]*fix2);
+    
+            tl=[wall[i]*2, 150-wallH1*h];
+            tr=[wall[i+2]*2, 150-wallH2*h]
+            br=[wall[i+2]*2, tr[1]+wallH2*2];
+            bl=[wall[i]*2, tl[1]+wallH1*2]
+    
+            var shade1=Math.floor(wallH1*2+20); if (shade1>255) shade1=255;
+            var shade2=Math.floor(wallH2*2+20); if (shade2>255) shade2=255;
+    
+            //linGrad = canvas.createLinearGradient(tl[0],0,tr[0],0);
+            //linGrad.addColorStop(0, 'rgba('+(this.face[i/4]%2==0 ? shade1 : 0)+','+(this.face[i/4]==1 ? shade1 : 0)+','+(this.face[i/4]==2 ? 0 : shade1)+',1)');
+            //linGrad.addColorStop(1, 'rgba('+(this.face[i/4]%2==0 ? shade2 : 0)+','+(this.face[i/4]==1 ? shade2 : 0)+','+(this.face[i/4]==2 ? 0 : shade2)+',1)');
+            // rgba used because of Opera 9 bug
+                        
+            //canvas.beginPath();
+            //canvas.moveTo(tl[0], tl[1]);
+            //canvas.lineTo(tr[0], tr[1]);
+            //canvas.lineTo(br[0], br[1]);
+            //canvas.lineTo(bl[0], bl[1]);
+            //canvas.fillStyle = linGrad;
+            //canvas.fill();
+            
+            //objects
+            drawobject = false;
+            for (var s = 0; s < this.objArray.length; s+=1) {
+                //stop("oA " + this.objArray[s] + " i " + i + " len " + this.objArray.length + " " + wall.length);
+                if ( (this.objArray[s] >= i-1) && (this.objArray[s] < i + 2) ) {
+                    //wall is an object
+                    //setColor(0xcc3333);
+                    wallH1=100/(wall[i+1]*fix1);
+                    wallH2=100/(wall[i+3]*fix2);
+    
+                    tl=[wall[i]*2, 150-wallH1*h];
+                    tr=[wall[i+2]*2, 150-wallH2*h]
+                    br=[wall[i+2]*2, tr[1]+wallH2*2];
+                    bl=[wall[i]*2, tl[1]+wallH1*2]
+                    drawobject = true;
+                }
+            }
+
+            if ( (i/4)%2 == 0) {
+                var c = ((this.face[i/4]%2==0 ? shade1 : 1) * (this.face[i/4]==1 ? shade1 : 1) * (this.face[i/4]==2 ? 1 : shade1))/255;
+                this.color= new Color(shade1/512,shade1/512,shade1/512);
+                //this.color= new Color( (this.face[i/4]%2==0 ? shade1 : 1)/255 , (this.face[i/4]==1 ? shade1 : 1)/255 , (this.face[i/4]==2 ? 1 : shade1)/255 );
+                //setColor( (this.face[i/4]%2==0 ? shade1 : 1) * (this.face[i/4]==1 ? shade1 : 1) * (this.face[i/4]==2 ? 1 : shade1));
+            } else {
+                var c = ((this.face[i/4]%2==0 ? shade1 : 1) * (this.face[i/4]==1 ? shade1 : 1) * (this.face[i/4]==2 ? 1 : shade1))/255;
+                this.color= new Color(c,c,c);
+                this.color= new Color(shade2/512,shade2/512,shade2/512);
+                //this.color= new Color( (this.face[i/4]%2==0 ? shade2 : 1)/255 , (this.face[i/4]==1 ? shade2 : 1)/255 ,(this.face[i/4]==2 ? 1 : shade2)/255 );
+                //setColor(100*100+(shade2/3));
+                //setColor( (this.face[i/4]%2==0 ? shade2 : 1) * (this.face[i/4]==1 ? shade2 : 1) *(this.face[i/4]==2 ? 1 : shade2));
+            }
+
+            if (drawobject) {
+                morppi = Morph(pt(0,0).asRectangle(),"rect"); // polygon
+                  
+                morppi.setShape(PolygonShape(null, [pt(tl[0],tl[1]),pt(tr[0],tr[1]),pt(br[0],br[1]),pt(bl[0],bl[1])],
+                                Color.blue,1,Color.black));
+                this.addMorph(morppi);
+            } else {
+                morppi = Morph(pt(0,0).asRectangle(),"rect"); // polygon
+                
+                morppi.setShape(PolygonShape(null, [pt(tl[0],tl[1]),pt(tr[0],tr[1]),pt(br[0],br[1]),pt(bl[0],bl[1])],
+                                this.color,1,Color.black));
+                this.addMorph(morppi);
+            }
+            
+            this.morphArray.push(morppi);
+               
+            //drawString(0,30, "map x y " + map.px + " " + map.py + "to x y " + map.px + this.playerPos[0]*8+Math.cos(theta1)*(wall[i+1])*8 + " " + map.py, map.py + this.playerPos[1]*8+Math.sin(theta1)*(wall[i+1])*8 );
+            //drawString(0,0, "thetas " + theta + " theta1 " + theta1 + " theta2 " + theta2 + "p dir" + this.playerDir);
+            //drawLine(map.px, map.py, map.px +50,  map.py +50)
+    
+            //drawLine(map.px,  map.py, map.px + this.playerPos[0]*8+Math.cos(theta1)*(wall[i+1])*8, map.py + this.playerPos[1]*8+Math.sin(theta1)*(wall[i+1])*8);
+            //drawLine(map.px, map.py, map.px + this.playerPos[0]*8+Math.cos(theta2)*(wall[i+3])*8, map.py + this.playerPos[1]*8+Math.sin(theta2)*(wall[i+3])*8);
+            //map.lineTo(this.playerPos[0]*8+Math.cos(theta1)*(wall[i+1])*8, this.playerPos[1]*8+Math.sin(theta1)*(wall[i+1])*8);
+            //map.lineTo(this.playerPos[0]*8+Math.cos(theta2)*(wall[i+3])*8, this.playerPos[1]*8+Math.sin(theta2)*(wall[i+3])*8);
+
+        }
+
+    }, 
+    
+    nearWall: function(x,y){
+        var xx,yy;
+        if (isNaN(x)) x=this.playerPos[0];
+        if (isNaN(y)) y=this.playerPos[1];
+
+        for (var i=-0.1; i<=0.1; i+=0.2) {
+            xx=Math.floor(x+i);
+            for (var j=-0.1; j<=0.1; j+=0.2) {
+                yy=Math.floor(y+j);
+                if (this.arena[xx][yy] == 2) {
+                //drawString(0,60,"Object hit");
+                this.arena[xx][yy] = 0;
+                this.found += 1;
+                if (this.found == this.maxobjects){
+                    this.endLevel();
+                }
+                }
+                if (this.arena[xx][yy]) return true;
+            }
+        }
+        
+        return false;
+    },
+
+    wobbleGun: function(){
+        var mag=this.playerVelY;
+        //this.overlay.style.backgroundPosition=(10+Math.cos(this.total/6.23)*mag*90)+"px "+(10+Math.cos(this.total/5)*mag*90)+"px";
+    },
+    
+    update: function(){
+        this.total++;
+        var change=false;
+    
+        if (this.jumpCycle) {
+            this.jumpCycle--;
+            change=true;
+            this.playerPosZ = 1 + this.jumpCycle*(20-this.jumpCycle)/110;
+        } else if (this.key[4]) this.jumpCycle=20;
+        
+        if (this.key[0]) {
+            if (!this.key[1]) {
+                this.playerDir-=0.07; //left
+                change=true;
+            }
+        } else if (this.key[1]) {
+            this.playerDir+=0.07; //right
+            change=true;
+        }
+    
+        if (change) {
+            this.playerDir+=2*this.pi;
+            this.playerDir%=2*this.pi;
+            //document.getElementById("sky").style.backgroundPosition=Math.floor(1-this.playerDir/(2*this.pi)*2400)+"px 0";
+        }
+    
+        if (this.key[2] && !this.key[3]) {
+            if (this.playerVelY<0.1) this.playerVelY += 0.02;
+        } else if (this.key[3] && !this.key[2]) {
+            if (this.playerVelY>-0.1) this.playerVelY -= 0.02;
+        } else {
+            if (this.playerVelY<-0.02) this.playerVelY += 0.015;
+            else if (this.playerVelY>0.02) this.playerVelY -= 0.015;
+            else this.playerVelY=0;
+        }
+
+        if (this.playerVelY!=0) {
+    
+            var oldX=this.playerPos[0];;
+            var oldY=this.playerPos[1];        
+            var newX=oldX+Math.cos(this.playerDir)*this.playerVelY;
+            var newY=oldY+Math.sin(this.playerDir)*this.playerVelY;
+    
+            if (!this.nearWall(newX, oldY)) {
+                this.playerPos[0]=newX;
+                oldX=newX;
+                change=true;
+            }
+
+            if (!this.nearWall(oldX, newY)) {
+                this.playerPos[1]=newY;
+                change=true;
+            }
+    
+        }
+        
+        if (this.playerVelY) this.wobbleGun();
+        if (change) this.drawCanvas();
+    
+    }, 
+
+    initUnderMap: function(){ // now its actually drawMinimap
+        this.map.removeAllMorphs();
+        var morppi;
+        //var underMap=document.getElementById("underMap").getContext("2d");
+        //underMap.fillStyle="#FFF";
+
+        this.color = this.map.color;
+        //underMap.fillRect(0,0, 200, 200);
+        //underMap.fillStyle="#444";
+        for (var i=0; i<this.arena.length; i++) {
+            for (var j=0; j<this.arena[i].length; j++) {
+                if (this.arena[i][j] && this.arena[i][j] != 2) {
+                    if (this.difficulty != "hard") {
+                        morppi = Morph(Rectangle( i*8,  j*8, 8, 8),"rect");   
+                        morppi.setFill(this.color);
+                        this.map.addMorph(morppi);
+                    }
+                    //fillRect(undermap.x + i*8, undermap.y + j*8, 8, 8);
+                } 
+                /*if (arena[i][j] == 2 && ) {
+                    (undermap.color);
+                    fillRect(undermap.x + i*8, undermap.y + j*8, 8, 8);
+                    setColor(undermap.color);
+                }*/
+                if (this.arena[i][j] == 2 && this.difficulty == "easy") {
+                    //this.color = Color.red;//setColor(0xcccc33);
+                    morppi = Morph(Rectangle( i*8,  j*8, 8, 8),"rect");   
+                    morppi.setFill(Color.red);
+                    this.map.addMorph(morppi);
+                    //fillRect(undermap.x + i*8, undermap.y + j*8, 8, 8);
+                    //this.color = this.undermap.color; //setColor(undermap.color);
+                }
+            }    
+        }
+        
+        this.color = Color.black;
+    },
+
+    calculateMaxObjects: function() {
+        var count = 0;
+        for (i = 0; i < this.arena.length; i++){
+            for (j = 0; j < this.arena[i].length; j++){
+                if (this.arena[i][j] == 2){
+                    count +=1;
+                }
+            }
+        }
+        this.maxobjects = count;
+    },
+    
+    endLevel: function() {
+        if (this.level == "Level 1") {
+            this.note = "Level 2";
+            this.loadLevel(2);
+            this.timeleft = this.timeleft + this.level2time;
+            return;
+        } else if (this.level == "Level 2") {
+            this.note = "Level 3";
+            this.loadLevel(3);
+            this.timeleft = this.timeleft + this.level3time;
+            return;
+        } else if (this.level == "Level 3"){
+            this.note = "Game completed.  Press space bar for another game.";
+            this.level="Finished";
+            this.endGame();
+        }
+    },
+
+    changeKey: function(which, to) {
+        // FIXME: Hard-coded key codes used here!
+        switch (which){
+            case 65: case 37: this.key[0]=to; break; // left
+            case 87: case 38: this.key[2]=to; break; // up
+            case 68: case 39: this.key[1]=to; break; // right
+            case 83: case 40: this.key[3]=to; break; // down
+            //case 32: this.key[4]=to; break; // space bar;
+            case 17: 
+                //newGame();
+                break; 
+        }
+        //this.update();
+    },
+
+    keyDown: function(event) {
+        event = event || window.event;
+
+        var key = event.keyCode || event.charCode;
+      
+        // Check if any cursor keys have been pressed and set flags.      
+        if (key == Event.KEY_LEFT)
+            this.changeKey(37, 1);
+        else if (key == Event.KEY_RIGHT)
+            this.changeKey(39, 1);
+        else if (key == Event.KEY_UP)
+            this.changeKey(38, 1);
+        else if (key == Event.KEY_DOWN)
+            this.changeKey(40, 1);
+        else if (event.keyCode == 32) { //spacebar
+            this.startGame();
+        }
+    },
+      
+    keyUp: function(event) {
+        event = event || window.event;
+    
+        var key = event.keyCode || event.charCode;
+    
+        // Check if any cursor keys have been pressed and set flags.
+    
+        if (key == Event.KEY_LEFT)
+            this.changeKey(37, 0);
+        else if (key == Event.KEY_RIGHT)
+            this.changeKey(39, 0);
+        else if (key == Event.KEY_UP)
+            this.changeKey(38, 0);
+        else if (key == Event.KEY_DOWN)
+            this.changeKey(40, 0);
+    },
+
+    loadLevel: function(number){
+    
+        if (number == 1) {
+            this.arena = [];
+            this.arena[0]= [1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+            this.arena[1]= [1,0,0,0,2,0,0,0,0,0,1,2,0,1]
+            this.arena[2]= [1,0,0,1,0,1,1,1,0,0,0,0,1,1]
+            this.arena[3]= [1,0,1,0,0,0,0,1,0,0,1,0,0,1]
+            this.arena[4]= [1,0,0,0,0,1,0,1,0,0,1,1,0,1]
+            this.arena[5]= [1,0,1,1,0,0,0,0,0,0,0,0,0,1]
+            this.arena[6]= [1,0,2,1,0,1,1,1,0,0,1,2,1,1]
+            this.arena[7]= [1,1,0,1,0,0,0,1,0,0,0,0,0,1]
+            this.arena[8]= [1,0,0,1,0,1,0,0,0,0,1,1,0,1]
+            this.arena[9]= [1,0,2,0,0,1,0,0,0,0,1,2,0,1]
+            this.arena[10]=[1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+            this.calculateMaxObjects();
+            this.level = "Level 1";
+
+        } else if (number == 2) {
+            this.arena = [];
+            this.arena[0]= [1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+            this.arena[1]= [1,0,0,0,0,0,1,0,0,0,0,2,0,1]
+            this.arena[2]= [1,0,0,0,1,0,1,0,1,2,1,1,0,1]
+            this.arena[3]= [1,1,1,1,1,0,1,0,1,0,0,2,0,1]
+            this.arena[4]= [1,0,0,0,0,0,0,0,1,1,1,1,0,1]
+            this.arena[5]= [1,0,1,1,1,0,1,0,0,0,0,0,0,1]
+            this.arena[6]= [1,0,0,0,0,0,0,0,0,0,0,1,1,1]
+            this.arena[7]= [1,0,1,0,0,0,0,1,1,1,0,0,0,1]
+            this.arena[8]= [1,0,2,1,1,1,0,1,2,1,0,1,0,1]
+            this.arena[9]= [1,1,0,0,0,0,2,0,0,0,0,1,2,1]
+            this.arena[10]=[1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+            this.calculateMaxObjects();
+            this.level = "Level 2";
+
+        } else if (number == 3) {
+            this.arena = [];
+            this.arena[0]= [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+            this.arena[1]= [1,0,0,1,0,0,0,2,1,2,0,0,1,0,1,2,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1]
+            this.arena[2]= [1,0,0,1,0,0,0,2,1,0,1,0,1,0,0,1,0,0,1,1,1,1,2,0,0,1,0,1,0,1,0,0,0,1,0,1,1,1,1,1,1,0,1,0,2,1,2,0,1]
+            this.arena[3]= [1,1,0,1,0,1,0,0,0,0,1,0,1,0,0,1,0,0,2,1,1,1,1,0,0,1,0,1,0,1,2,0,0,1,0,1,0,0,0,0,1,0,1,0,1,1,1,0,1]
+            this.arena[4]= [1,0,0,1,0,1,1,1,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,1,0,0,0,1,0,1,0,1,2,2,1,0,1,0,0,1,0,0,1]
+            this.arena[5]= [1,0,0,1,0,1,0,1,0,0,1,0,1,1,1,0,1,1,1,1,1,1,1,1,1,1,0,0,0,1,1,1,0,0,0,1,0,1,2,2,1,0,1,0,0,1,0,0,1]
+            this.arena[6]= [1,1,0,0,0,0,0,0,0,0,1,0,0,0,1,0,1,0,0,0,1,0,0,2,1,0,0,0,0,0,0,0,1,0,0,1,0,1,1,1,1,0,1,0,1,1,1,0,1]
+            this.arena[7]= [1,0,0,0,1,1,1,1,0,1,1,1,1,0,1,2,1,0,1,0,1,2,1,0,1,0,1,0,0,0,0,0,1,2,0,1,0,0,0,0,0,0,1,0,0,0,0,0,1]
+            this.arena[8]= [1,0,1,1,1,2,0,0,0,1,1,0,0,2,1,0,1,0,1,2,1,0,1,0,0,2,1,1,1,1,1,0,1,0,0,1,1,1,1,1,1,1,1,1,1,0,1,1,1]
+            this.arena[9]= [1,0,0,2,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,1,0,2,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,1]
+            this.arena[10]=[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+            this.calculateMaxObjects();
+            this.level = "Level 3";
+        }
+        
+        this.playerPos=[2,2]; // x,y (from top left)
+        this.playerDir=0.2; // theta, facing right=0=2pi
+        this.map.width = 8*this.arena.length;
+        this.map.height = 8*this.arena[0].length;
+        this.map.updatePlayerLocation(8*this.playerPos[0], 8*this.playerPos[1]);
+        this.map.shape.setBounds(Rectangle(0,0,this.map.width, this.map.height));
+        this.initUnderMap();
+        //this.map.px = this.map.x + this.map.width / 2; //player pos
+        //this.map.py = this.map.y +  this.map.height / 2;
+        
+        this.key=[0,0,0,0,0];
+        /*this.undermap.width = 8*this.arena.length;
+        this.undermap.height = 8*this.arena[0].length;
+        this.undermap.px = this.undermap.x + this.undermap.width / 2; //player pos
+        this.undermap.py = this.undermap.y +  this.undermap.height / 2;*/
+        this.found = 0;
+        //removeAllTimers();
+        //timepassed = 0;
+        //gameon = false;
+
+        this.drawCanvas();
+    },
+
+    stopGame: function(){
+        this.note = "You ran out of time.  Press space bar for another game.";
+        this.update();
+        //this.removeAllMorphs();
+        if (this.map) this.map.remove();
+        //this.initParameters();
+        this.initGame(); 
+        this.initUnderMap();
+        this.addMorph(this.map);
+        this.stopStepping();
+    },
+
+    startGame: function(){
+        //this.removeAllMorphs();
+        if (this.map) this.map.remove();
+        //this.initParameters();
+        this.initGame();
+        this.map = MiniMapMorph(Rectangle(5,25,8*this.arena.length,8*this.arena[0].length)); 
+        this.initUnderMap();
+        this.addMorph(this.map);
+        this.note="";
+        this.startSteppingFunction(35, function(msTime) { 
+            this.mseconds += 35;
+        
+            if (this.mseconds > 1000) {
+                this.mseconds -= 1000;
+                this.timepassed += 1;
+                this.timeleft -= 1;
+                if (this.timeleft <= 0) this.stopGame();
+            }
+            this.update(); 
+        });
+    },
+
+    setDifficulty: function(dif){
+        this.difficulty = dif;
+        this.startGame();
+    },
+
+    morphMenu: function(evt) {
+        var menu = CanvasScapeMorph.superClass.morphMenu.call(this, evt);
+        menu.addLine();
+        menu.addItem(["Stop game",  this, 'stopGame']);
+        menu.addItem(["Start easy game",  this, 'setDifficulty', 'easy']);
+        menu.addItem(["Start medium game",  this, 'setDifficulty', 'medium']);
+        menu.addItem(["Start hard game",  this, 'setDifficulty', 'hard']);
+        return menu;
     }
     
 });
