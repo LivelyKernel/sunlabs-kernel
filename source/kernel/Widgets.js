@@ -53,7 +53,7 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
         ButtonMorph.superClass.initialize.call(this, initialBounds, "rect");
         // Styling
         this.shape.roundEdgesBy(this.defaultEdgeRoundingRadius);
-        this.changeAppearanceFor(this.myValue);
+        this.changeAppearanceFor(this.getModelValue('MyValue', false));
         return this;
     },
 
@@ -61,9 +61,10 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
         ButtonMorph.superClass.initializeTransientState.call(this, initialBounds);
         // FIXME make persistent
         // this default self connection may get overwritten by, eg, connectModel()...
-        this.modelPlug = {model: this, getValue: "getMyValue", setValue: "setMyValue"};
+	var model = new SimpleModel(this, "MyValue");
+        model.setMyValue(false);
+        this.modelPlug = {model: model, getValue: "getMyValue", setValue: "setMyValue"};
         this.baseColor = this.defaultFill;
-        this.myValue = false;
         this.toggles = false; // if true each push toggles the model state // FIXME: should be persistent
     },
 
@@ -104,14 +105,6 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
 
     setValue: function(value) {
         if (this.modelPlug) this.setModelValue('setValue', value);
-    },
-
-    getMyValue: function() { // Getter and setter for when this is its own model
-        return this.myValue;
-    },
-
-    setMyValue: function(value) {
-        this.myValue = value;
     },
 
     takesKeyboardFocus: function() { 
@@ -914,14 +907,14 @@ Object.extend(CheapListMorph.prototype, {
         CheapListMorph.superClass.initializeTransientState.call(this, initialBounds);
         // FIXME make persistent
         // this default self connection may get overwritten by, eg, connectModel()...
+	var model = new SimpleModel(null, 'MyList', 'MySelection');
         this.modelPlug = {
-            model: this,
+            model: model,
             getList: "getMyList",
             getSelection: "getMySelection",
             setSelection: "setMySelection"
         };
         this.itemList = [];// FIXME recover that state
-
     },
     
     takesKeyboardFocus: function() { 
@@ -1063,17 +1056,6 @@ Object.extend(CheapListMorph.prototype, {
         if (this.modelPlug) this.setModelValue('setSelection', item); 
     },
 
-    getMyList: function() { // Getter and setter for when this is its own model
-        return this.itemlist;
-    },
-
-    getMySelection: function() {
-        return this.mySelection;
-    },
-
-    setMySelection: function(value) {
-        this.mySelection = value;
-    }   
 });
 
 /**
@@ -1195,8 +1177,8 @@ Object.extend(SliderMorph.prototype, {
     initializeTransientState: function(initialBounds) {
         SliderMorph.superClass.initializeTransientState.call(this, initialBounds);
         // this default self connection may get overwritten by, eg, connectModel()...
-        this.modelPlug = {model: this, getValue: "getMyValue", setValue: "setMyValue", getExtent: "getMyExtent"};
-        this.myValue = 0.0;
+	var model = new SimpleModel(null, 'MyValue', 'MyExtent');
+        this.modelPlug = {model: model, getValue: "getMyValue", setValue: "setMyValue", getExtent: "getMyExtent"};
     },
 
     restoreFromMarkup: function(importer) {
@@ -1304,7 +1286,6 @@ Object.extend(SliderMorph.prototype, {
 
     updateView: function(aspect, controller) {
         var p = this.modelPlug;
-        
         if (p) {
             if (aspect == p.getValue || aspect == p.getExtent || aspect == 'all') this.adjustForNewBounds();
             return;
@@ -1321,18 +1302,6 @@ Object.extend(SliderMorph.prototype, {
 
     getExtent: function() {
         if (this.modelPlug) return this.getModelValue('getExtent',(0.0));
-    },
-
-    getMyExtent: function() { // Getter and setter for when this is its own model
-        return 0.0;
-    },
-
-    getMyValue: function() {
-        return this.myValue;
-    },
-
-    setMyValue: function(value) {
-        this.myValue = value;
     },
 
     takesKeyboardFocus: function() { 

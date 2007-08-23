@@ -3140,7 +3140,7 @@ Object.extend(Exporter.prototype, {
         return new XMLSerializer().serializeToString(this.rootMorph);
     },
 
-    serializeModel: function(model) {
+    serializeSimpleModel: function(model) {
         return model &&  model.toMarkup(this);
     }
     
@@ -3190,7 +3190,10 @@ Object.extend(Importer.prototype, {
         var m = new Model();
  
         for (var node = ptree.firstChild; node != null; node = node.nextSibling) {
-            if (node.tagName != 'dependent') continue;
+            if (node.tagName != 'dependent') {
+		console.log('got unexpected node %s %s', node.tagName, node); 
+		continue;
+	    }
             var id = node.getAttribute('ref');
     
             var dependent = this.lookupMorph(id);
@@ -3209,7 +3212,7 @@ Object.extend(Importer.prototype, {
                 }
             }
      
-            console.log('dependent %s, %s modelPlug %s', dependent, id, Object.toJSON(plug));
+            console.log('dependent %s, old id %s modelPlug %s', dependent, id, Object.toJSON(plug));
             plug.model = m;
             dependent.connectModel(plug);
         }
@@ -3225,8 +3228,8 @@ Object.extend(Morph.prototype, {
     dumpModel: function() {
         var exporter = new Exporter(this);
         var xml = exporter.serialize();
-        var modelxml = exporter.serializeModel(this.model);
-        console.log('%s has model %s, %s', this, this.model, modelxml);
+        var modelxml = exporter.serializeSimpleModel(this.model);
+	console.log('%s has model %s, %s', this, this.model, modelxml);
     },
     
     addSvgInspector: function() {
@@ -3234,7 +3237,7 @@ Object.extend(Morph.prototype, {
         var exporter = new Exporter(this);
         var xml = exporter.serialize();
         console.log('%s serialized to %s', this, xml);
-        var modelxml = exporter.serializeModel(this.model);
+        var modelxml = exporter.serializeSimpleModel(this.model);
 
         const maxSize = 1500;
         // xml = '<svg xmlns="http://www.w3.org/2000/svg  xmlns:xlink="http://www.w3.org/1999/xlink> ' + xml + ' </svg>';
@@ -3258,6 +3261,7 @@ Object.extend(Morph.prototype, {
                 
                 if (target.model) {
                     copy.model = importer.importModelFrom(modelxml);
+		    console.log('restoring from model %s', modelxml);
                     console.log('restore %s', copy.model);
                 }
                 return;
@@ -3411,6 +3415,28 @@ Object.extend(Model.prototype, {
     }
 
 });
+
+SimpleModel = Class.extend(Model);
+
+Object.extend(SimpleModel.prototype, {
+
+    initialize: function(dep /*, rest */) {
+	SimpleModel.superClass.initialize.call(this, dep);
+	var variables = $A(arguments);
+	variables.shift();
+	for (var i = 0; i < variables.length; i++) {
+	    var varName = variables[i];
+
+	    // functional programming is fun!
+	    this[varName] = null;
+	    this['get' + varName] = function(name) { return function() { return this[name]; } } (varName); // let name = varName ()
+	    this['set' + varName] = function(name) { return function(newValue, v) { this[name] = newValue; 
+										    this.changed('get' + name, v); }} (varName);
+	}
+    }
+
+});
+
 
 console.log('loaded Core.js');
 

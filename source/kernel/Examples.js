@@ -33,71 +33,57 @@ Object.extend(WidgetTester.prototype, {
         // work with gradients or stipple patterns yet!
         panel.linkToStyles(['widgetPanel']);
         // panel.applyStyleNamed('widgetPanel');
-        panel.model = this;
+	var model = new SimpleModel(null, 'Text', 'TextSel', 'ListItem', 'PrintValue', 'B1Value', 'B2Value', 'SliderValue', 'SliderExtent');
+        panel.model = model;
         var m; 
 
         // Two simple buttons, one toggles...
         panel.addMorph(m = ButtonMorph(Rectangle(20,20,50,20)));
-        m.connectModel({model: this, getValue: "getB1Value", setValue: "setB1Value"});
+        m.connectModel({model: model, getValue: "getB1Value", setValue: "setB1Value"});
         panel.addMorph(m = ButtonMorph(Rectangle(20,50,50,20)));
-        m.connectModel({model: this, getValue: "getB1Value", setValue: "setB1Value"});
+        m.connectModel({model: model, getValue: "getB1Value", setValue: "setB1Value"});
         m.toggles = true;
 
         // Two buttons sharing same value...
         panel.addMorph(m = ButtonMorph(Rectangle(80,20,50,20)));
-        m.connectModel({model: this, getValue: "getB2Value", setValue: "setB2Value"});
+        m.connectModel({model: model, getValue: "getB2Value", setValue: "setB2Value"});
         panel.addMorph(m = ButtonMorph(Rectangle(80,50,50,20)));
-        m.connectModel({model: this, getValue: "getB2Value", setValue: "setB2Value"});
-        this.getB1Value = function() { return this.B1Value; };
-        this.setB1Value = function(val, v) { this.B1Value = val; this.changed("getB1Value", v); };
-        this.getB2Value = function() { return this.B2Value; };
-        this.setB2Value = function(val, v) { this.B2Value = val; this.changed("getB2Value", v); };
+        m.connectModel({model: model, getValue: "getB2Value", setValue: "setB2Value"});
 
         // Two lists sharing same selection...
         panel.addMorph(m = CheapListMorph(Rectangle(20,80,50,20),["one","two","three"]));
-        m.connectModel({model: this, getSelection: "getListItem", setSelection: "setListItem"});
+        m.connectModel({model: model, getSelection: "getListItem", setSelection: "setListItem"});
         panel.addMorph(m = CheapListMorph(Rectangle(80,80,50,20),["one","two","three"]));
-        m.connectModel({model: this, getSelection: "getListItem", setSelection: "setListItem"});
-        this.getListItem = function() { return this.listItem; };
-        this.setListItem = function(item, v) { this.listItem = item; this.changed("getListItem", v); };
+        m.connectModel({model: model, getSelection: "getListItem", setSelection: "setListItem"});
 
         // Three text views sharing same text...
         panel.addMorph(m = TextMorph(Rectangle(140,20,140,20),"Hello World"));
-        m.connectModel({model: this, getText: "getText", setText: "setText", setSelection: "setTextSel"});
+        m.connectModel({model: model, getText: "getText", setText: "setText", setSelection: "setTextSel"});
         panel.addMorph(m = TextMorph(Rectangle(140,50,140,20),"Hello World"));
-        m.connectModel({model: this, getText: "getText", setText: "setText", setSelection: "setTextSel"});
+        m.connectModel({model: model, getText: "getText", setText: "setText", setSelection: "setTextSel"});
         panel.addMorph(m = TextMorph(Rectangle(140,80,140,20),"Hello World"));
-        m.connectModel({model: this, getText: "getText", setText: "setText", setSelection: "setTextSel"});
+        m.connectModel({model: model, getText: "getText", setText: "setText", setSelection: "setTextSel"});
         m.autoAccept = true;
         panel.addMorph(m = TextMorph(Rectangle(140,110,140,20),"selection"));
-        m.connectModel({model: this, getText: "getTextSel"});
-        this.getText = function() { return this.sharedText; };
-        this.setText = function(str, v) { this.sharedText = str; this.changed("getText", v); };
-        this.sharedText = "Hello World";
-        this.getTextSel = function() { return this.textSel; };
-        this.setTextSel = function(str, v) { this.textSel = str; this.changed("getTextSel", v); };
+        m.connectModel({model: model, getText: "getTextSel"});
+	model.SharedText = "Hello World";
 
         // Two linked print views sharing the same value
         panel.addMorph(m = PrintMorph(Rectangle(20,140,100,20),"3+4"));
-        m.connectModel({model: this, getValue: "getPrintValue", setValue: "setPrintValue"});
+        m.connectModel({model: model, getValue: "getPrintValue", setValue: "setPrintValue"});
         panel.addMorph(m = PrintMorph(Rectangle(20,170,100,20),"3+4"));
-        m.connectModel({model: this, getValue: "getPrintValue", setValue: "setPrintValue"});
-        this.getPrintValue = function() { return this.printValue; };
-        this.setPrintValue = function(val, v) { this.printValue = val; this.changed("getPrintValue", v); };
+        m.connectModel({model: model, getValue: "getPrintValue", setValue: "setPrintValue"});
 
         // Slider linked to print view, with another for slider width
         panel.addMorph(m = PrintMorph(Rectangle(140,140,80,20),"0.5"));
-        m.connectModel({model: this, getValue: "getSliderValue", setValue: "setSliderValue"});
+        m.connectModel({model: model, getValue: "getSliderValue", setValue: "setSliderValue"});
         panel.addMorph(m = PrintMorph(Rectangle(230,140,50,20),"0.1"));
-        m.connectModel({model: this, setValue: "setSliderExtent"});
+        m.connectModel({model: model, setValue: "setSliderExtent"});
         panel.addMorph(m = SliderMorph(Rectangle(140,170,140,20)));
-        m.connectModel({model: this, getValue: "getSliderValue", setValue: "setSliderValue", getExtent: "getSliderExtent"});
-        this.getSliderValue = function() { return this.sliderValue; };
-        this.setSliderValue = function(val, v) { this.sliderValue = val; this.changed("getSliderValue", v); };
-        this.getSliderExtent = function() { return this.sliderExtent; };
-        this.setSliderExtent = function(val, v) { this.sliderExtent = val; this.changed("getSliderExtent", v); };
-        this.sliderValue = 0.2;
-        this.sliderExtent = 0.1;
+        m.connectModel({model: model, getValue: "getSliderValue", setValue: "setSliderValue", getExtent: "getSliderExtent"});
+
+        model.SliderValue = 0.2;
+        model.SliderExtent = 0.1;
         
         return panel;
     }
