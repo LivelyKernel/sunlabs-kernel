@@ -3,31 +3,13 @@
  * (morphs) that will be included in the system when it starts.
  */
 
-//    Basic theory of widgets...
-//    A widget is a view/controller, and it views some aspect of a model
-//    Viewing is by way of Pins which use MVC-style variable viewing,
-//    Each has an "aspect" for for inducing and responding to model changes
-//    The idea is that the parent morph has a model for the MVC relationships
-//    with the various widgets embedded in it.
-//    There are also MessagePins that simply send getter/setter messages
+//	Basic theory of widgets...
+//	A widget is a view/controller morph, and it views some aspect of a model
+//	Viewing is by way of "plugs" which use MVC-style viewing, and select some
+//	aspect or aspects of the model to be viewed.
 
-//    A widget comes with a model pointer and a property name for each property
-//        that it controls.  The model pointer is typically automatically set to
-//        the widget's owner, but it can be pointed at other objects, and even at itself
-//        for testing or, eg, for isolated text editing or presentation.
-
-//    Browser example...
-//    Add a list to a panel
-//        adds a submorph as usual
-//        adds properties "part1List", "part1Selection"
-//        list1.getList(target) = { classNames(); }
-//        list1.setSelection(selection) = { owner.setModelProperty("className",selection,this); }
-//    Add second list
-//        part2.getList = global[part1.selection].methodNames()
-//    if change first selection, how propagate?
-//        owner.setModelProperty("selectedClass")
-//    ex: setSelectorName
-//        sets the name, also triggers update of aspect
+//	See the comments in Model, and the Model protocol in Morph (getModelValue(), etc)
+//	The Inspector and Browser are fairly simple examples of this architecture in use.
 
 // ===========================================================================
 // Simple widgets
