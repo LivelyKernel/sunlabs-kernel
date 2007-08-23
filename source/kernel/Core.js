@@ -2160,15 +2160,15 @@ Object.extend(Morph.prototype, {
     makeStyleSpec: function() {
         // Adjust all visual attributes specified in the style spec
         var spec = { };
-        spec.borderWidth = this.getBorderWidth();
-        spec.borderColor = this.getBorderColor();
-        spec.fill = this.getFill();
-        spec.rounding = + this.shape.getEdgeRounding();
-        spec.fillOpacity = this.shape.getFillOpacity();
-        if (!spec.fillOpacity) spec.fillOpacity = 1.0;
-        spec.strokeOpacity = this.shape.getStrokeOpacity();
-        if (!spec.strokeOpacity) spec.strokeOpacity = 1.0;
-        return spec;
+	spec.borderWidth = this.getBorderWidth();
+	spec.borderColor = this.getBorderColor();
+	spec.fill = this.getFill();
+	if (this.shape.getEdgeRounding) spec.rounding = + this.shape.getEdgeRounding();
+	spec.fillOpacity = this.shape.getFillOpacity();
+	if (!spec.fillOpacity) spec.fillOpacity = 1.0;
+	spec.strokeOpacity = this.shape.getStrokeOpacity();
+	if (!spec.strokeOpacity) spec.strokeOpacity = 1.0;
+	return spec;
     },
 
     applyStyleNamed: function(name) {
@@ -2863,9 +2863,9 @@ Object.extend(Morph.prototype, {
     morphMenu: function(evt) { 
         var items = [["duplicate", this, "copyToHand", evt.hand],
             ["remove", this, "remove"],
-            ["inspect", new SimpleInspector(this), "openIn", this.world()],
-            ["style", new StylePanel(this), "openIn", this.world()],
-            ["show SVG code", this, "addSvgInspector", this], // debugging, this should go away eventually
+            ["inspect", SimpleInspector, "openOn", this],
+            ["style", StylePanel, "openOn", this],
+            ["show SVG code", this, "addSvgInspector", this],
             ["dump model", this, "dumpModel", this], // debugging, will go away
             ["reset rotation", this, "setRotation", 0],
             ["toggle fisheye", this, "toggleFisheye"]

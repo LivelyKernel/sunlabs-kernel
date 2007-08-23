@@ -70,6 +70,13 @@ Object.extend(SimpleBrowser.prototype, {
    
 SimpleInspector = Class.extend(Model);
 
+Object.extend(SimpleInspector, {
+
+    openOn: function(target) {
+        new SimpleInspector(target).openIn(WorldMorph.current(), pt(50,50));
+    }
+});
+
 Object.extend(SimpleInspector.prototype, {
 
     initialize: function(targetMorph) {
@@ -139,13 +146,20 @@ Object.extend(SimpleInspector.prototype, {
    
 StylePanel = Class.extend(Model);
 
+Object.extend(StylePanel, {
+
+    openOn: function(morph) {
+        new StylePanel(morph).openIn(WorldMorph.current(), pt(30,30));
+    }
+});
+
 Object.extend(StylePanel.prototype, {
 
     initialize: function(targetMorph) {
         StylePanel.superClass.initialize.call(this);
         this.targetMorph = targetMorph;
-        // this.originalSpec = targetMorph.makeStyleSpec();
-        // for (var p in this.originalSpec) this[p] = this.originalSpec[p];
+        this.originalSpec = targetMorph.makeStyleSpec();
+	for (var p in this.originalSpec) this[p] = this.originalSpec[p];
     },
 
     getBorderWidth: function() { return this.borderWidth; },
