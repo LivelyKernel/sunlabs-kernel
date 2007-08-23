@@ -1846,8 +1846,8 @@ Object.extend(WorldMorph.prototype, {
         var menu = WorldMorph.superClass.morphMenu.call(this,evt);
         menu.addLine();
         menu.addItem(["new object...", this, 'addMorphs', evt]);
+        menu.addItem(["choose display theme", this, 'chooseStyleDictionary']);
         menu.addItem(["restart system", this, 'restart']);
-        menu.addItem(["choose theme", this, 'chooseStyleDictionary']);
 
         // The following items are not applicable to the world
         menu.removeItemNamed("duplicate");
@@ -1929,14 +1929,15 @@ Object.extend(WorldMorph.prototype, {
     addMorphs: function(evt) {
         console.log("mouse point == %s", evt.mousePoint);
         var items = [
-            ["LinkMorph", this.world(), "addMorph", LinkMorph(null)],
+            ["New subworld (LinkMorph)", this.world(), "addMorph", LinkMorph(null)],
+            ["Rectangle", this.world(), "addMorph", Morph(Rectangle(evt.mousePoint.x, evt.mousePoint.y, 50, 30), "rect")],
+            ["Ellipse", this.world(), "addMorph", Morph(Rectangle(evt.mousePoint.x, evt.mousePoint.y, 50, 30), "ellipse")],
             ["TextMorph", this.world(), "addMorph", TextMorph(evt.mousePoint.extent(pt(120,10)), "This is a TextMorph")],
             ["Image Morph", this.world(), "addMorph", ImageMorph(evt.mousePoint.extent(pt(100, 45)), "http://logos.sun.com/images/SunSample.gif")],
-            ["Clock Morph", this.world(), "addMorph", ClockMorph(evt.mousePoint,50)],//new SimpleInspector(this), "openIn", this.world()],
-            ["Widget Tester", new WidgetTester(), "openIn", this.world()],
+            ["Clock Morph", this.world(), "addMorph", ClockMorph(evt.mousePoint,50)],
+            ["Class Browser", this.world(), "addMorph", new SimpleInspector(this)],
+            //new SimpleInspector(this), "openIn", this.world()],
             ["Doodle Morph", this.world(), "addMorph", WindowMorph(DoodleMorph(evt.mousePoint.extent(pt(300, 300))), 'Doodle Morph')],
-            ["Weather Widget", new WeatherWidget(), "openIn", this.world()],
-            ["Stock Widget", new StockWidget(), "openIn", this.world()],
             ];
         MenuMorph(items).openIn(this.world(), evt.mousePoint);
     }
