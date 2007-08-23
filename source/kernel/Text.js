@@ -716,7 +716,8 @@ Object.extend(TextMorph.prototype, {
 
     handlesMouseDown: function(evt) {
         // Do selecting if click is in selectable area
-        return this.shape.bounds().insetByPt(this.inset).containsPoint(this.localize(evt.mousePoint)); 
+        if (evt.altKey) return false;
+	return this.shape.bounds().insetByPt(this.inset).containsPoint(this.localize(evt.mousePoint)); 
     },
 
     onMouseDown: function(evt) {

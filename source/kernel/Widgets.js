@@ -68,7 +68,7 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
         this.toggles = false; // if true each push toggles the model state // FIXME: should be persistent
     },
 
-    handlesMouseDown: function(evt) { return true; },
+    handlesMouseDown: function(evt) { return !evt.altKey; },
     
     onMouseDown: function(evt) {
         this.requestKeyboardFocus(evt.hand);
@@ -1254,7 +1254,7 @@ Object.extend(SliderMorph.prototype, {
 
     sliderReleased: function(evt, slider) { evt.hand.setMouseFocus(null) },
     
-    handlesMouseDown: function(evt) { return true; },
+    handlesMouseDown: function(evt) { return !evt.altKey; },
     
     onMouseDown: function(evt) {
         evt.hand.setMouseFocus(this);
@@ -1493,7 +1493,7 @@ Object.extend(ColorPickerMorph.prototype, {
     },
 
     handlesMouseDown: function(evt) { 
-        return true;
+        return !evt.altKey;
     },
 
     onMouseDown: function(evt) {

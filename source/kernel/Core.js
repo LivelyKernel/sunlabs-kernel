@@ -2718,7 +2718,7 @@ Object.extend(Morph.prototype, {
     },
 
     handlesMouseDown: function(evt) {
-        if (this.mouseHandler == null) return false;  //default behavior
+        if (this.mouseHandler == null || evt.altKey) return false;  //default behavior
         return this.mouseHandler.handlesMouseDown(); 
     },
 
