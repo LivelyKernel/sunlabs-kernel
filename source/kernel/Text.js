@@ -357,7 +357,6 @@ Object.extend(TextMorph.prototype, {
         // "noWrap" simply sets height based on line breaks only
         // "shrinkWrap" sets both width and height based on line breaks only
 
-
     initializeTransientState: function(initialBounds) {
         TextMorph.superClass.initializeTransientState.call(this, initialBounds);
         // this.textBox = null;
@@ -559,7 +558,7 @@ Object.extend(TextMorph.prototype, {
     
         with (this.shape) { setBounds(bounds().withHeight(bottomY - bounds().y))};
 
-	this.adjustForNewBounds();
+        this.adjustForNewBounds();
 
     },
 

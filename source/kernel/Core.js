@@ -55,7 +55,6 @@ document.createSVGElement = function(name, attributes) {
     return element;
 };
 
-
 // ===========================================================================
 // Our extensions to JavaScript base libraries
 // ===========================================================================
@@ -142,8 +141,9 @@ Object.extend(Object, {
 Object.properties = function(object, predicate) {
     var a = [];
     for (var name in object) {  
-        if (!(object[name] instanceof Function) && (predicate ? predicate(object) : true))
-	    a.push(name);
+        if (!(object[name] instanceof Function) && (predicate ? predicate(object) : true)) {
+            a.push(name);
+        }
     } 
 
     return a.sort();
@@ -269,6 +269,7 @@ Function.prototype.logErrors = function(prefix) {
     };
     return this.wrap(advice);
 };
+
 /*
     var __method = this;
     return function() {
@@ -286,16 +287,15 @@ Function.prototype.logErrors = function(prefix) {
 Function.prototype.logCalls = function(prefix, isUrgent) {
     var advice = function(proceed) {
         var args = $A(arguments); args.shift(); 
-	if (isUrgent) 
-	    console.warn('%s: %s args: %s', prefix, this, args); 
-	else 
-	    console.log('%s: %s args: %s', prefix, this, args); 
+        if (isUrgent) { 
+            console.warn('%s: %s args: %s', prefix, this, args); 
+        } else { 
+            console.log('%s: %s args: %s', prefix, this, args);
+        } 
         return proceed.apply(this, args); 
     };
     return this.wrap(advice);
 };
-
-
 
 /**
  * Extensions to class String
@@ -1902,34 +1902,33 @@ Object.extend(Morph, {
         node.initializeTransientState(null);
 
         if (this.drawBounds) node.updateBoundsElement();
-	
+
         return node; 
     },
 
     // this function creates an advice function that ensures that the mutation is properly recorded
     onChange: function(fieldName) {
-	return function(proceed, newValue) {
-	    var result = proceed(newValue);
-	    this.recordChange(fieldName);
+        return function(proceed, newValue) {
+            var result = proceed(newValue);
+            this.recordChange(fieldName);
             this.changed(); 
-	    return result;
-	}
+            return result;
+        }
     },
 
     onLayoutChange: function(fieldName) { 
-	return function(/* arguments*/) {
-	    this.changed();
-	    var args = $A(arguments);
-	    var proceed = args.shift();
-	    var result = proceed.apply(this, args);
-	    this.recordChange(fieldName);
-	    this.layoutChanged();
+        return function(/* arguments*/) {
+            this.changed();
+            var args = $A(arguments);
+            var proceed = args.shift();
+            var result = proceed.apply(this, args);
+            this.recordChange(fieldName);
+            this.layoutChanged();
             this.changed(); 
-	    return result;
-	}
+            return result;
+        }
     },
 
-    
 });
 
 // Morph event handling 
@@ -2137,11 +2136,11 @@ Object.extend(Morph.prototype, {
     },
 
     setBorderColor: function(newColor) { this.shape.setStroke(newColor); }.wrap(Morph.onChange('shape')),
-	
+
     getBorderColor: function() {
-	return this.shape.getStroke();
+        return this.shape.getStroke();
     },
-	
+
     setBorderWidth: function(newWidth) { this.shape.setStrokeWidth(newWidth); }.wrap(Morph.onChange('shape')),
 
     getBorderWidth: function() {
@@ -2161,15 +2160,15 @@ Object.extend(Morph.prototype, {
     makeStyleSpec: function() {
         // Adjust all visual attributes specified in the style spec
         var spec = { };
-	spec.borderWidth = this.getBorderWidth();
-	spec.borderColor = this.getBorderColor();
-	spec.fill = this.getFill();
-	spec.rounding = + this.shape.getEdgeRounding();
-	spec.fillOpacity = this.shape.getFillOpacity();
-	if (!spec.fillOpacity) spec.fillOpacity = 1.0;
-	spec.strokeOpacity = this.shape.getStrokeOpacity();
-	if (!spec.strokeOpacity) spec.strokeOpacity = 1.0;
-	return spec;
+        spec.borderWidth = this.getBorderWidth();
+        spec.borderColor = this.getBorderColor();
+        spec.fill = this.getFill();
+        spec.rounding = + this.shape.getEdgeRounding();
+        spec.fillOpacity = this.shape.getFillOpacity();
+        if (!spec.fillOpacity) spec.fillOpacity = 1.0;
+        spec.strokeOpacity = this.shape.getStrokeOpacity();
+        if (!spec.strokeOpacity) spec.strokeOpacity = 1.0;
+        return spec;
     },
 
     applyStyleNamed: function(name) {
@@ -2704,7 +2703,7 @@ Object.extend(Morph.prototype, {
 
     ignoreEvents: function() { // will not respond nor get focus
         this.mouseHandler = null;
-	this.suppressHandles = true; // nor offer handles 
+        this.suppressHandles = true; // nor offer handles 
     },
     
     enableEvents: function() {
@@ -2781,26 +2780,21 @@ Object.extend(Morph.prototype, {
     }.logCalls('removeFocusHalo'),
     
     adjustFocusHalo: function() {
-	this.focusHalo.removeAll();
+        this.focusHalo.removeAll();
         var shape = RectShape(null, this.shape.bounds().insetBy(-2), null, this.focusHaloBorderWidth, this.focusedBorderColor);
-	this.focusHalo.push(shape);
+        this.focusHalo.push(shape);
     },
-
 
     addFocusHalo: function() {
         if (this.focusHalo) return false;
-        
         this.focusHalo = this.addChildElement(DisplayObjectList('FocusHalo'));
-
         this.focusHalo.setStrokeOpacity(0.3);
         this.focusHalo.setLineJoin(Shape.LineJoins.ROUND);
-	this.adjustFocusHalo();
+        this.adjustFocusHalo();
         return true;
     }.logCalls('addFocusHalo')
     
 });
-
-
 
 /**
  * @class MouseHandlerForRelay
@@ -2838,7 +2832,7 @@ Object.extend(Morph.prototype, {
         // console.log('checking %s', this);
         if(this.suppressHandles) return false; // disabled
         if (this.owner() == null) return false; // can't reshape the world
-	var handle = this.shape.possibleHandleForControlPoint(this, this.localize(evt.mousePoint), evt.hand);
+        var handle = this.shape.possibleHandleForControlPoint(this, this.localize(evt.mousePoint), evt.hand);
         if (handle == null) return false;
         this.addMorph(handle);  // after which it should get converted appropriately here
         handle.showHelp(evt);
@@ -2871,14 +2865,14 @@ Object.extend(Morph.prototype, {
             ["remove", this, "remove"],
             ["inspect", new SimpleInspector(this), "openIn", this.world()],
             ["style", new StylePanel(this), "openIn", this.world()],
-            ["show SVG code", this, "addSvgInspector", this],
+            ["show SVG code", this, "addSvgInspector", this], // debugging, this should go away eventually
             ["dump model", this, "dumpModel", this], // debugging, will go away
             ["reset rotation", this, "setRotation", 0],
             ["toggle fisheye", this, "toggleFisheye"]
             ];
         var m = MenuMorph(items); 
-	if(evt.mouseButtonPressed) evt.hand.setMouseFocus(m);
-	return m;
+        if (evt.mouseButtonPressed) evt.hand.setMouseFocus(m);
+        return m;
     },
 
     openColorPicker: function(funcName, evt) {
@@ -3182,9 +3176,9 @@ Object.extend(Importer.prototype, {
     },
 
     parse: function(string) {
-	var parser = new DOMParser();
-	var xml = parser.parseFromString('<?xml version="1.0" standalone="no"?> ' + string, "text/xml");
-	return document.adoptNode(xml.documentElement);
+        var parser = new DOMParser();
+        var xml = parser.parseFromString('<?xml version="1.0" standalone="no"?> ' + string, "text/xml");
+        return document.adoptNode(xml.documentElement);
     },
 
     importModelFrom: function(string) {
@@ -3226,10 +3220,10 @@ Object.extend(Importer.prototype, {
 Object.extend(Morph.prototype, {
 
     dumpModel: function() {
-	var exporter = new Exporter(this);
+        var exporter = new Exporter(this);
         var xml = exporter.serialize();
         var modelxml = exporter.serializeModel(this.model);
-	console.log('%s has model %s, %s', this, this.model, modelxml);
+        console.log('%s has model %s, %s', this, this.model, modelxml);
     },
     
     addSvgInspector: function() {
@@ -3305,9 +3299,9 @@ Object.extend(Morph.prototype, {
 
     getModelValue: function(functionName, defaultValue) {
         // functionName is a view-specific message, such as "getList"
-	// The model plug then provides a reference to the model, as well as
-	// the specific model accessor for the aspect being viewed, say "getItemList"
-	// Failure at any stage will return the default value.
+        // The model plug then provides a reference to the model, as well as
+        // the specific model accessor for the aspect being viewed, say "getItemList"
+        // Failure at any stage will return the default value.
         var plug = this.modelPlug;
         if (plug == null || plug.model == null || functionName == null) return defaultValue;
         var func = plug.model[plug[functionName]];
@@ -3317,13 +3311,13 @@ Object.extend(Morph.prototype, {
 
     setModelValue: function(functionName, newValue, view) {
         // functionName is a view-specific message, such as "setSelection"
-	// The model plug then provides a reference to the model, as well as
-	// the specific model accessor for the aspect being viewed, say "chooseItem"
-	// Failure at any stage is tolerated without error.
-	// Successful sets to the model supply not only the newValue, but also
-	// a reference to this view.  This allows the model's changed() method
-	// to skip this view when broadcasting updateView(), and thus avoid
-	// needless computation for a view that is already up to date.
+        // The model plug then provides a reference to the model, as well as
+        // the specific model accessor for the aspect being viewed, say "chooseItem"
+        // Failure at any stage is tolerated without error.
+        // Successful sets to the model supply not only the newValue, but also
+        // a reference to this view.  This allows the model's changed() method
+        // to skip this view when broadcasting updateView(), and thus avoid
+        // needless computation for a view that is already up to date.
         var plug = this.modelPlug;
         if (plug == null || plug.model == null || functionName == null) return;
         var func = plug.model[plug[functionName]];
@@ -3332,12 +3326,12 @@ Object.extend(Morph.prototype, {
     },
 
     updateView: function(aspect, controller) {
-	// This method is sent in response to logic within the model executing
-	// 	this.changed(aspect, source)
-	// The aspect used is the name of the get-message for the aspect
-	// that needs to be updated in the view (and presumably redisplayed)
-	// All actual view morphs will override this method with code that
-	// checks for their aspect and does something useful in that case.
+        // This method is sent in response to logic within the model executing
+        //     this.changed(aspect, source)
+        // The aspect used is the name of the get-message for the aspect
+        // that needs to be updated in the view (and presumably redisplayed)
+        // All actual view morphs will override this method with code that
+        // checks for their aspect and does something useful in that case.
     }
     
 });
@@ -3385,7 +3379,7 @@ Object.extend(Model.prototype, {
     },
 
     changed: function(varName, source) {
-	// Broadcast the message "updateView" to all dependents
+        // Broadcast the message "updateView" to all dependents
         // If source (a dependent) is given, we skip it (already updated)
         // If varName is not given, then null will be the aspect of the updateView()
         //console.log('changed ' + varName);
@@ -3398,13 +3392,13 @@ Object.extend(Model.prototype, {
     },
 
     toString: function() {
-	return "#<Model: " + Object.inspect(this.dependents) + ">";
+        return "#<Model: " + Object.inspect(this.dependents) + ">";
     },
 
     inspect: function() {
-	var hash = new Hash(this);
-	delete hash.dependents;
-	return "#<Model: " + Object.toJSON(hash) + ">";
+        var hash = new Hash(this);
+        delete hash.dependents;
+        return "#<Model: " + Object.toJSON(hash) + ">";
     },
 
     toMarkup: function(exporter) {

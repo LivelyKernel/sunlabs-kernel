@@ -145,7 +145,7 @@ Object.extend(StylePanel.prototype, {
         StylePanel.superClass.initialize.call(this);
         this.targetMorph = targetMorph;
         // this.originalSpec = targetMorph.makeStyleSpec();
-	// for (var p in this.originalSpec) this[p] = this.originalSpec[p];
+        // for (var p in this.originalSpec) this[p] = this.originalSpec[p];
     },
 
     getBorderWidth: function() { return this.borderWidth; },
@@ -194,7 +194,7 @@ Object.extend(StylePanel.prototype, {
         this.fillOpacity = op.roundTo(0.01);
         this.targetMorph.shape.setFillOpacity(this.fillOpacity);
         this.changed('getFillOpacity');
-	this.setStrokeOpacity(op); // Stroke opacity is linked to fill
+        this.setStrokeOpacity(op); // Stroke opacity is linked to fill
     },
 
     getStrokeOpacity: function() { return this.strokeOpacity; },

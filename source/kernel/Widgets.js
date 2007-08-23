@@ -206,12 +206,11 @@ Object.extend(ImageMorph.prototype, {
     },
 
     reload: function() {
-	if (this.url) {
-	    this.url = this.url + "?" + new Date();
-	    this.loadURL(this.url);
-	}
+        if (this.url) {
+            this.url = this.url + "?" + new Date();
+            this.loadURL(this.url);
+        }
     },
-
 
     updateView: function(aspect, controller) {
         var p = this.modelPlug;
@@ -819,6 +818,7 @@ Object.extend(SelectionMorph.prototype, {
 /**
  * @class PanelMorph
  */
+
 PanelMorph = HostClass.create('PanelMorph', Morph);
 
 Object.extend(PanelMorph.prototype, {
@@ -1134,16 +1134,16 @@ Object.extend(MenuMorph.prototype, {
         this.caption = captionIfAny;  // Not yet implemented
         this.compose(location);
         world.addMorph(this);
-	if (captionIfAny) { // Still under construction
-	    var caption = captionIfAny.substr(0,30);
-	    if (captionIfAny.length > caption.length) caption += '...';
-	    var label = new TextMorph(Rectangle(0, 0, 200, 20), caption);
-	    label.wrap = "noWrap";  label.fitText();
+        if (captionIfAny) { // Still under construction
+            var caption = captionIfAny.substr(0,30);
+            if (captionIfAny.length > caption.length) caption += '...';
+            var label = new TextMorph(Rectangle(0, 0, 200, 20), caption);
+            label.wrap = "noWrap";  label.fitText();
             label.shape.roundEdgesBy(4);
             label.shape.setFillOpacity(0.75);
             label.align(label.bounds().bottomLeft(), this.shape.bounds().topLeft());
             this.addMorph(label);
-	}
+        }
     },
 
     compose: function(location) { 
@@ -1209,7 +1209,7 @@ Object.extend(SliderMorph.prototype, {
         console.log('slider %s', this.slider);
         this.slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});
         this.scale = 1.0; // FIXME restore from markup
-	//this.adjustForNewBounds();
+        //this.adjustForNewBounds();
     },
 
     vertical: function() {
@@ -1219,7 +1219,7 @@ Object.extend(SliderMorph.prototype, {
     
     adjustForNewBounds: function() {
         SliderMorph.superClass.adjustForNewBounds.call(this);
-	
+
         // This method adjusts the slider for changes in value as well as geometry
         var val = this.getValue();
         var bnds = this.shape.bounds();
@@ -1289,9 +1289,9 @@ Object.extend(SliderMorph.prototype, {
     },
     
     onMouseMove: function(evt) {
-	// Overriden so won't drag me if mouse pressed
-	if (evt.mouseButtonPressed) return
-	return SliderMorph.superClass.onMouseMove.call(this, evt);
+        // Overriden so won't drag me if mouse pressed
+        if (evt.mouseButtonPressed) return
+        return SliderMorph.superClass.onMouseMove.call(this, evt);
     },
     
     onMouseUp: function(evt) {
@@ -1398,13 +1398,13 @@ Object.extend(ScrollPane.prototype, {
         scrollBar.connectModel({model: this, getValue: "getScrollPosition", setValue: "setScrollPosition", 
                                 getExtent: "getVisibleExtent"});
 
-	// suppress handles throughout
+        // suppress handles throughout
         [this, clipMorph, morphToClip, scrollBar].map(function(m) {m.suppressHandles = true});
-	return this;
+        return this;
     },
     
     innerMorph: function() {
-	return this.clipMorph.submorphs.firstChild;
+        return this.clipMorph.submorphs.firstChild;
     },
 
     connectModel: function(plugSpec) { // connection is mapped to innerMorph
@@ -2355,5 +2355,5 @@ Object.extend(LinkMorph.prototype, {
 
 });
 
-console.log('Loaded Widgets.js');
+console.log('loaded Widgets.js');
 

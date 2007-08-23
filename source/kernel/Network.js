@@ -1,6 +1,10 @@
-// ===========================================================================
-// Networking functionality
-// ===========================================================================
+/**
+ * Network.js.  Networking extensions for the Flair system.
+ *
+ * Note: In a browser-based implementation of the Flair system,
+ * most of the necessary networking functionality is inherited
+ * from the browser.  
+ */
 
 // explicitly override prototype.js's verb simulation over post
 Ajax.Request.prototype.request = function(url) {
@@ -108,25 +112,25 @@ var NetRequest = Class.create();
 
 Object.extend(NetRequest, {
     options: {
-	contentType: 'text/xml',
-	asynchronous: true,
-	requester: null,
+        contentType: 'text/xml',
+        asynchronous: true,
+        requester: null,
 
-	onLoaded: function(transport) { 
+        onLoaded: function(transport) { 
             console.info('%s: loaded %s %s', transport.status, transport); 
-	},
-	
-	onFailure: function(transport) {
+        },
+
+        onFailure: function(transport) {
             console.warn('%s: failure %s %s', transport.status, transport);
-	},
-	
-	onInteractive: function(transport) {
+        },
+
+        onInteractive: function(transport) {
             console.info('receiving %s %s', transport.status, transport);
-	},
-	
-	onException: function(e) {
+        },
+
+        onException: function(e) {
             console.warn('exception %s', e);
-	}
+        }
     },
     
     requestNetworkAccess: function() {
@@ -236,10 +240,11 @@ Object.extend(Feed.prototype, {
             requestHeaders: { "If-Modified-Since": "Sat, 1 Jan 2000 00:00:00 GMT" },
         
             onSuccess: function(transport) {
-		if (!transport.responseXML) {
-		    feed.processResult(null);
-		    return;
-		}
+                if (!transport.responseXML) {
+                    feed.processResult(null);
+                   return;
+                }
+
                 var result = transport.responseXML.documentElement;
                 console.info('%s: success %s', feed, transport.status);
         
@@ -247,7 +252,7 @@ Object.extend(Feed.prototype, {
         
                 feed.processResult(result);
                 console.log('%s changing %s', feed, modelVariables);
-		
+
                 for (var i = 0; i < modelVariables.length; i++) {
                     model.changed(modelVariables[i]);
                 }
@@ -256,14 +261,15 @@ Object.extend(Feed.prototype, {
     },
 
     toString: function() {
-	return "#<Feed: " + this.url + ">";
+        return "#<Feed: " + this.url + ">";
     },
     
     processResult: function(result) {
-	if (!result) {
-	    console.log('no results for %s', this);
-	    return;
-	}
+        if (!result) {
+            console.log('no results for %s', this);
+           return;
+        }
+
         this.channels = this.query('/rss/channel', result);
     
         for (var i = 0; i < this.channels.length; i++) {
@@ -289,38 +295,39 @@ Object.extend(Feed.prototype, {
     },
 
     buildView: function() {
-	var extent = pt(500, 200);
-	var panel = PanelMorph(extent, "rect");
-	panel.addMorph = panel.addMorph.logCalls('addMorph');
-	panel.setFill(Color.blue.lighter().lighter());
-	panel.setBorderWidth(2);
-	var feed = this;
-	panel.model = Object.extend(new Model(), {
-	    getItemList:     function()      { return feed.items() },
-	    setItemTitle:    function(title) { this.itemTitle = title; this.changed("getEntry"); },
-	    getEntry:        function()      { return feed.getEntry(this.itemTitle) },
-	    getChannelTitle: function()      { return "RSS feed from " + feed.channels[0].title; }
-	});
-	
+        var extent = pt(500, 200);
+        var panel = PanelMorph(extent, "rect");
+        panel.addMorph = panel.addMorph.logCalls('addMorph');
+        panel.setFill(Color.blue.lighter().lighter());
+        panel.setBorderWidth(2);
+        var feed = this;
+        panel.model = Object.extend(new Model(), {
+            getItemList:     function()      { return feed.items() },
+            setItemTitle:    function(title) { this.itemTitle = title; this.changed("getEntry"); },
+            getEntry:        function()      { return feed.getEntry(this.itemTitle) },
+           getChannelTitle: function()      { return "RSS feed from " + feed.channels[0].title; }
+	    });
 
-	// View layout
-	var localRect = pt(0,0).extent(extent);
-	var m = panel.addMorph(ListPane(localRect.withBottomRight(localRect.bottomCenter())));
-	
-	m.connectModel({model: panel.model, getList: "getItemList", setSelection: "setItemTitle"});
-	m = panel.addMorph(PrintPane(localRect.withTopLeft(localRect.topCenter())));
-	m.connectModel({model: panel.model, getValue: "getEntry"});
-	return panel;
+        // View layout
+        var localRect = pt(0,0).extent(extent);
+        var m = panel.addMorph(ListPane(localRect.withBottomRight(localRect.bottomCenter())));
+
+        m.connectModel({model: panel.model, getList: "getItemList", setSelection: "setItemTitle"});
+        m = panel.addMorph(PrintPane(localRect.withTopLeft(localRect.topCenter())));
+        m.connectModel({model: panel.model, getValue: "getEntry"});
+        return panel;
     },
 
     openIn: function(world, location) {
-	var panel = this.buildView();
-	var title = TextMorph.makeLabel(Rectangle(0, 0, 150, 15), 'RSS feed                    ');
-	title.connectModel({model: panel.model, getText: 'getChannelTitle'});
-	var window = world.addMorphAt(WindowMorph(panel, title), location);
-	this.request(panel.model, "getItemList", 'getChannelTitle');
-	return window;
+        var panel = this.buildView();
+        var title = TextMorph.makeLabel(Rectangle(0, 0, 150, 15), 'RSS feed                    ');
+        title.connectModel({model: panel.model, getText: 'getChannelTitle'});
+        var window = world.addMorphAt(WindowMorph(panel, title), location);
+        this.request(panel.model, "getItemList", 'getChannelTitle');
+        return window;
     }
     
 });
+
+console.log('loaded Network.js');
 
