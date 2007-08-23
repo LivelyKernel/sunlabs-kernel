@@ -144,8 +144,8 @@ Object.extend(StylePanel.prototype, {
     initialize: function(targetMorph) {
         StylePanel.superClass.initialize.call(this);
         this.targetMorph = targetMorph;
-        this.originalSpec = targetMorph.makeStyleSpec();
-	for (var p in this.originalSpec) this[p] = this.originalSpec[p];
+        // this.originalSpec = targetMorph.makeStyleSpec();
+	// for (var p in this.originalSpec) this[p] = this.originalSpec[p];
     },
 
     getBorderWidth: function() { return this.borderWidth; },
