@@ -30,7 +30,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
         widget.setPosition(pt(320, 380));
         world.addMorph(widget);
             
-        var spinningStar = !Config.skipMostExamples;
+        var spinningStar = !Config.skipMostExamples || Config.spinningStar;
         if (spinningStar) {  // Make the star spin as a test of stepping
             widget.startSteppingFunction(60, function(msTime) { this.setRotation(this.getRotation() + 0.1) });
         }
@@ -161,7 +161,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
     var showWidgets = true;
     if (showWidgets) new WidgetTester().openIn(world, pt(460, 20));
 
-    var showBrowser = !Config.skipMostExamples;
+    var showBrowser = !Config.skipMostExamples || Config.browserAnyway;
     if (showBrowser) new SimpleBrowser().openIn(world, pt(20,20));
 
     var showStocks = !Config.skipMostExamples;

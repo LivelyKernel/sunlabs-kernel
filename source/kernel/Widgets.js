@@ -2060,7 +2060,18 @@ Object.extend(HandMorph.prototype, {
             if (evt.mousePoint.dist(this.lastMouseDownPoint) > 10) 
                 this.hasMovedSignificantly = true;
                 
-            if (!this.hasSubmorphs()) {
+            if (evt.altKey && this.mode == "altDragForDup") {
+		if (this.hasMovedSignificantly) {
+			var m = this.dragMorph;
+			this.dragMorph = null;
+			this.mode = "normal";
+			m.copyToHand(this);
+			this.topSubmorph().moveBy(evt.mousePoint.subPt(this.lastMouseDownPoint));
+		}
+		return;
+	    }
+
+	    if (!this.hasSubmorphs()) {
                 (this.mouseFocus || this.owner()).mouseEvent(evt, this.mouseFocus != null);
             }
         
@@ -2087,7 +2098,15 @@ Object.extend(HandMorph.prototype, {
             } else 
                 this.mouseFocus.mouseEvent(evt, true); 
         } else {
-            if (this.hasSubmorphs() && (evt.type == "mousedown" || this.hasMovedSignificantly)) {
+            if (this.mode == "altDragForDup" && evt.type == "mouseup") {
+		var m = this.dragMorph;
+		this.dragMorph = null;
+		this.mode = "normal";
+		m.showMorphMenu(evt);
+		return;
+	    }
+
+	    if (this.hasSubmorphs() && (evt.type == "mousedown" || this.hasMovedSignificantly)) {
                 // If laden, then drop on mouse up or down
                 var m = this.topSubmorph();
                 var receiver = this.owner().morphToGrabOrReceive(evt, m);
@@ -2138,7 +2157,11 @@ Object.extend(HandMorph.prototype, {
     
     grabMorph: function(grabbedMorph, evt) { 
         if (evt.altKey) {
-            grabbedMorph.showMorphMenu(evt);
+            if (Config.altDragForDup) {
+		this.mode = "altDragForDup";
+		this.dragMorph = grabbedMorph; 
+		return; }
+	    grabbedMorph.showMorphMenu(evt);
             return;
         }
 
