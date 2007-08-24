@@ -27,7 +27,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
         widget = Morph(pt(0,0).asRectangle(), "rect");
         widget.setShape(PolygonShape(null, makeStarVertices(50,pt(0,0),0), Color.yellow, 1, Color.black));
         // makeGradient(Color.yellow, Color.yellow.lighter().lighter()));
-        widget.setPosition(pt(320, 380));
+        widget.setPosition(pt(320, 480));
         world.addMorph(widget);
             
         var spinningStar = !Config.skipMostExamples || Config.spinningStar;
@@ -38,7 +38,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
 
     var showClock = true;
     if (showClock) {
-        widget = ClockMorph(pt(500, 420), 50);
+        widget = ClockMorph(pt(500, 525), 50);
         // clockWidget.addClipRect(Rectangle(20,20,80,80));
         world.addMorph(widget);
         widget.startStepping(1000);
@@ -113,7 +113,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
                                                 'Doodle Morph'));
     }
     
-    var slideWorld = !Config.skipMostExamples;
+    var slideWorld = true;
     if (slideWorld) { // Make a slide for "turning web programming upside down"
         var lm = LinkMorph(null, pt(260, 520));
 
