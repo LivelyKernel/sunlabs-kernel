@@ -179,7 +179,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
 function main() {
     var world = WorldMorph.createPrototypeWorld();
     WorldMorph.setCurrent(world);
-    world.displayWorldOn(morphic.canvas);
+    world.displayWorldOn(Canvas);
     console.log('made world');
     if (Config.skipAllExamples) return;
     WorldMorph.populateWithExamples(world, !Config.skipMostExamples);

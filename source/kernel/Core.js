@@ -7,9 +7,16 @@
 // Namespaces and core DOM bindings
 // ===========================================================================
 
-var morphic = { 
-    canvas : document.getElementById("canvas"),
-};
+
+var Canvas = document.getElementById("canvas"); // singleton for now
+
+Object.extend(Canvas, {
+    // Canvas bounds
+    bounds: function() {
+	return Rectangle(this.x.baseVal.value, this.y.baseVal.value, 
+			 this.width.baseVal.value, this.height.baseVal.value);
+    }
+});
 
 var FontInfo = window.parent.FontInfo;
 
@@ -19,33 +26,36 @@ var console = window.parent.console;
 // document.oncontextmenu = function(evt) { console.log('no menu for you %s', evt); return false; }
 
 Namespace =  {
-    SVG : morphic.canvas.getAttribute("xmlns"),
-    LIVELY : morphic.canvas.getAttribute("xmlns:lively"), // FIXME Safari XMLSerializer seems to do wierd things w/namespaces
-    XLINK : morphic.canvas.getAttribute("xmlns:xlink"),
-    DAV : morphic.canvas.getAttribute("xmlns:D"),
+    SVG : Canvas.getAttribute("xmlns"),
+    LIVELY : Canvas.getAttribute("xmlns:lively"), // FIXME Safari XMLSerializer seems to do wierd things w/namespaces
+    XLINK : Canvas.getAttribute("xmlns:xlink"),
+    DAV : Canvas.getAttribute("xmlns:D"),
     resolver : function(prefix) {
         console.log('prefix %s value %s', prefix, this[prefix]);
         return this[prefix];
     }
 };
 
-// Canvas bounds
-morphic.canvas.bounds = function() {
-    return Rectangle(this.x.baseVal.value, this.y.baseVal.value, 
-                     this.width.baseVal.value, this.height.baseVal.value);
-};
 
 // SVG/DOM bindings 
-morphic.query = function(aNode, aExpr) {
-    var xpe = new XPathEvaluator();
-    var nsResolver = xpe.createNSResolver(aNode.ownerDocument == null ?
-                     aNode.documentElement : aNode.ownerDocument.documentElement);
-    var result = xpe.evaluate(aExpr, aNode, nsResolver, 0, null);
-    var found = [];
-    var res;
-    while (res = result.iterateNext()) found.push(res);
-    return found;
-}
+
+
+var Query = Class.create();
+Object.extend(Query, {
+    evaluate: function(aNode, aExpr, defaultValue) {
+	var xpe = new XPathEvaluator();
+	var nsResolver = xpe.createNSResolver(aNode.ownerDocument == null ?
+					      aNode.documentElement : aNode.ownerDocument.documentElement);
+	var result = xpe.evaluate(aExpr, aNode, nsResolver, 0, null);
+	var found = [];
+	var res = null;
+	while (res = result.iterateNext()) found.push(res);
+	if (defaultValue && found.length == 0) {
+	    return [ defaultValue ];
+	}
+	return found;
+    }
+});
 
 document.createSVGElement = function(name, attributes) {
     var element = document.createElementNS(Namespace.SVG, name);
@@ -431,13 +441,13 @@ Object.category(HostClass, "core", function() { return {
  */
 
 Point = function(x,y) {
-    var p = morphic.canvas.createSVGPoint();
+    var p = Canvas.createSVGPoint();
     p.x = x;
     p.y = y;
     return p;
 };
 
-Point.prototype = morphic.canvas.createSVGPoint().__proto__;
+Point.prototype = Canvas.createSVGPoint().__proto__;
 Point.prototype.constructor = Point;
 
 Object.extend(Point.prototype, function() { return {
@@ -500,7 +510,7 @@ console.log("Point");
  */
 
 Rectangle = function(x, y, w, h) { 
-    var r = morphic.canvas.createSVGRect();
+    var r = Canvas.createSVGRect();
     r.x = x; 
     r.y = y; 
     r.width = w; 
@@ -508,7 +518,7 @@ Rectangle = function(x, y, w, h) {
     return r;
 };
 
-Rectangle.prototype = morphic.canvas.createSVGRect().__proto__;
+Rectangle.prototype = Canvas.createSVGRect().__proto__;
 Rectangle.prototype.constructor = Rectangle;
 
 Object.category(Rectangle.prototype, 'core', function() { return {
@@ -901,10 +911,10 @@ Object.extend(StipplePattern, {
  */
 
 function Transform() {
-    return morphic.canvas.createSVGTransform();
+    return Canvas.createSVGTransform();
 }
 
-Transform.prototype = morphic.canvas.createSVGTransform().__proto__;
+Transform.prototype = Canvas.createSVGTransform().__proto__;
 Transform.prototype.constructor = Transform;
 
 Object.extend(Transform, {
@@ -923,7 +933,7 @@ Object.extend(Transform, {
      */
     createSimilitude: function(delta, angleInRadians, scale) {
         // console.log('similitude delta is ' + delta.inspect());
-        var matrix = morphic.canvas.createSVGMatrix();
+        var matrix = Canvas.createSVGMatrix();
         matrix = matrix.translate(delta.x, delta.y).rotate(angleInRadians.toDegrees()).scale(scale);
         return Transform.fromMatrix(matrix);
     },
@@ -3188,37 +3198,48 @@ Object.extend(Importer.prototype, {
     importModelFrom: function(string) {
         console.log('restoring model from markup %s', string);
         var ptree = this.parse(string);
-        var m = new Model();
- 
+	var model = new SimpleModel(null);
         for (var node = ptree.firstChild; node != null; node = node.nextSibling) {
-            if (node.tagName != 'dependent') {
+	    switch (node.tagName) {
+	    case 'dependent':
+		var id = node.getAttribute('ref');
+		
+		var dependent = this.lookupMorph(id);
+		if (!dependent)  {
+                    console.log('dep %s not found', id);
+                    continue; 
+		}
+    
+		var plug = {};
+		
+		for (var acc = node.firstChild; acc != null;  acc = acc.nextSibling) {
+                    if (acc.tagName != 'accessor') continue;
+		    
+                    if (dependent) {
+			plug[acc.getAttribute('formal')] = acc.getAttribute('actual');
+                    }
+		}
+		
+		console.log('dependent %s, old id %s modelPlug %s', dependent, id, Object.toJSON(plug));
+		plug.model = model;
+		dependent.connectModel(plug);
+		break;
+	    case 'variable':
+		var name = node.getAttribute('name');
+		var value = node.textContent;
+		if (value) {
+		    value = value.evalJSON();
+		}
+		model.addVariable(name, value);
+		//var value = node.getAttribute('value');
+		//variables.push(name);
+		break;
+	    default:
 		console.log('got unexpected node %s %s', node.tagName, node); 
-		continue;
 	    }
-            var id = node.getAttribute('ref');
-    
-            var dependent = this.lookupMorph(id);
-            if (!dependent)  {
-                console.log('dep %s not found', id);
-                continue; 
-            }
-    
-            var plug = {};
-
-            for (var acc = node.firstChild; acc != null;  acc = acc.nextSibling) {
-                if (acc.tagName != 'accessor') continue;
-
-                if (dependent) {
-                    plug[acc.getAttribute('formal')] = acc.getAttribute('actual');
-                }
-            }
-     
-            console.log('dependent %s, old id %s modelPlug %s', dependent, id, Object.toJSON(plug));
-            plug.model = m;
-            dependent.connectModel(plug);
         }
 
-        return m;
+        return model;
     }
     
 });
@@ -3229,7 +3250,7 @@ Object.extend(Morph.prototype, {
     dumpModel: function() {
         var exporter = new Exporter(this);
         var xml = exporter.serialize();
-        var modelxml = exporter.serializeSimpleModel(this.model);
+        var modelxml = exporter.serializeSimpleModel(this.model || this.modelPlug.model);
 	console.log('%s has model %s, %s', this, this.model, modelxml);
     },
     
@@ -3393,7 +3414,7 @@ Object.extend(Model.prototype, {
         //console.log('changed ' + varName);
         for (var i = 0; i < this.dependents.length; i++) {
             if (source !== this.dependents[i]) {
-                // console.log('updating %s for name %s', this.dependents[i], varName);
+                //console.log('updating %s for name %s', this.dependents[i], varName);
                 this.dependents[i].updateView(varName, source);
             } 
         } 
@@ -3409,11 +3430,6 @@ Object.extend(Model.prototype, {
         return "#<Model: " + Object.toJSON(hash) + ">";
     },
 
-    toMarkup: function(exporter) {
-        return "<model> " + this.dependents.map(function(dep) { 
-            return '<dependent ref="' + dep.id + '">' 
-            + Object.properties(dep.modelPlug || {}).filter(function(name) { return name != 'model'; }).map(function(prop) { return '<accessor formal="' + prop + '" actual="' + dep.modelPlug[prop] + '"/>'; }).join(' ') + "</dependent>"; }).join('') + "</model>";
-    }
 
 });
 
@@ -3421,20 +3437,37 @@ SimpleModel = Class.extend(Model);
 
 Object.extend(SimpleModel.prototype, {
 
-    initialize: function(dep /*, rest */) {
+    initialize: function(dep /*, variables... */) {
 	SimpleModel.superClass.initialize.call(this, dep);
 	var variables = $A(arguments);
 	variables.shift();
 	for (var i = 0; i < variables.length; i++) {
-	    var varName = variables[i];
-
-	    // functional programming is fun!
-	    this[varName] = null;
-	    this['get' + varName] = function(name) { return function() { return this[name]; } } (varName); // let name = varName ()
-	    this['set' + varName] = function(name) { return function(newValue, v) { this[name] = newValue; 
-										    this.changed('get' + name, v); }} (varName);
+	    this.addVariable(variables[i], null);
 	}
+    },
+
+    addVariable: function(varName, initialValue) {
+	    // functional programming is fun!
+	this[varName] = initialValue;
+	this['get' + varName] = function(name) { return function() { return this[name]; } } (varName); // let name = varName ()
+	this['set' + varName] = function(name) { return function(newValue, v) { this[name] = newValue; 
+										this.changed('get' + name, v); }} (varName);
+
+    },
+
+    toMarkup: function(exporter) {
+	function escapeValue(value) {
+	    return value == null  ? "null" : "<![CDATA[" + Object.toJSON(value) + "]]>";
+	}
+
+	var model = this;
+        return "<model> " 
+	    +  Object.properties(this).filter(function(name) { return name != 'dependents'}).map(function(name) { return '<variable name="' + name + '">' + escapeValue(model[name]) + '</variable>'; }).join('')
+	    + this.dependents.map(function(dep) { 
+		return '<dependent ref="' + dep.id + '">' 
+		    + Object.properties(dep.modelPlug || {}).filter(function(name) { return name != 'model'; }).map(function(prop) { return '<accessor formal="' + prop + '" actual="' + dep.modelPlug[prop] + '"/>'; }).join(' ') + "</dependent>"; }).join('') + "</model>";
     }
+    
 
 });
 

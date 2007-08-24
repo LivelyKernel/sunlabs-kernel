@@ -312,7 +312,6 @@ Object.extend(TitleBarMorph.prototype, {
         var sign = document.createSVGElement("use").withHref("#CloseIcon");
 
         sign.applyTransform(Transform.createSimilitude(pt(-9, -9), 0, 0.035));
-        //sign.setAttributeNS(null, 'transform', 'translate(-9, -9), scale(0.035)');
         closeButton.addChildElement(sign);
 
         cell = cell.translatedBy(pt(bh - spacing, 0));
@@ -372,7 +371,6 @@ Object.extend(WindowControlMorph.prototype, {
     initialize: function(rect, inset, color, target, action, helpText) {
         WindowControlMorph.superClass.initialize.call(this, rect.insetBy(inset), 'ellipse');
         this.setFill(RadialGradient.makeCenteredGradient(color.lighter(2), color));
-        this.setBorderWidth(0);
         this.target = target;
         this.action = action;
         this.color = color;
@@ -2232,7 +2230,7 @@ Object.extend(LinkMorph.prototype, {
         //this.toggleFisheye();
 
         if (!otherWorld) {
-            otherWorld = WorldMorph.createPrototypeWorld(morphic.canvas, 2, null);  //*** need a way to generate proper world numbers
+            otherWorld = WorldMorph.createPrototypeWorld(Canvas, 2, null);  //*** need a way to generate proper world numbers
             var pathBack = LinkMorph(WorldMorph.current(), bounds);
             pathBack.setFill(RadialGradient.makeCenteredGradient(Color.primary.yellow, Color.black));
             otherWorld.addMorph(pathBack);
@@ -2275,7 +2273,7 @@ Object.extend(LinkMorph.prototype, {
         WorldMorph.current().remove();
         
         console.log('left world %s', WorldMorph.current());
-        // morphic.canvas.appendChild(this.myWorld);
+        // Canvas.appendChild(this.myWorld);
     
         // display world first, then add hand, order is important!
         WorldMorph.setCurrent(this.myWorld);

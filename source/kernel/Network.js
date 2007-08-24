@@ -181,14 +181,14 @@ var FeedChannel = Class.create();
 Object.extend(FeedChannel.prototype, {
 
     become: function() {
-        this.items =  morphic.query(this, 'item') || [];
+        this.items = Query.evaluate(this, 'item');
     
         for (var i = 0; i < this.items.length; i++) {
             HostClass.becomeInstance(this.items[i], FeedItem);
             this.items[i].become();
         }
     
-        this.title = (morphic.query(this, 'title') || ['none'])[0].textContent;
+        this.title = (Query.evaluate(this, 'title', 'none'))[0].textContent;
     }
 
 });
@@ -202,8 +202,8 @@ var FeedItem = Class.create();
 Object.extend(FeedItem.prototype, {
 
     become: function() {
-        this.title = morphic.query(this, 'title')[0].textContent;
-        this.description = morphic.query(this, 'description')[0].textContent;
+        this.title = Query.evaluate(this, 'title')[0].textContent;
+        this.description = Query.evaluate(this, 'description')[0].textContent;
         // console.log('created item %s=%s', this.title, this.description);
     }
     
@@ -226,7 +226,7 @@ Object.extend(Feed.prototype, {
     },
     
     query: function(xpQuery, target) {
-        return morphic.query(target ? target : this.result, xpQuery) || [];
+        return Query.evaluate(target ? target : this.result, xpQuery);
     },
 
     request: function(model /*, ... model variables*/) {
