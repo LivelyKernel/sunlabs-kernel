@@ -2146,7 +2146,7 @@ Object.extend(HandMorph.prototype, {
     },
     
     grabMorph: function(grabbedMorph, evt) { 
-        if (evt.shiftKey && Config.shiftDragForDup) {
+        if (evt.shiftKey && Config.shiftDragForDup && !(grabbedMorph instanceof LinkMorph)) {
 		this.mode = "shiftDragForDup";
 		this.dragMorph = grabbedMorph; 
 		return;
