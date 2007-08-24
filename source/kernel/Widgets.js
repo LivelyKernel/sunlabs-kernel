@@ -412,7 +412,8 @@ Object.extend(WindowControlMorph.prototype, {
     okToBeGrabbedBy: function() { return this.isDesignMode() ? this : null; },
     
     showHelp: function(evt) {
-        // FIXME: The size of the balloon should be calculated based on string size
+        if (Config.suppressBalloonHelp) return;  // DI: maybe settable in window menu?
+	// FIXME: The size of the balloon should be calculated based on string size
         this.help = TextMorph(Rectangle(evt.x, evt.y, 80, 20), this.helpText);
         // trying to relay mouse events to the WindowControlMorph
         this.help.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
@@ -591,6 +592,7 @@ Object.extend(HandleMorph.prototype, {
     },
 
     showHelp: function(evt) {
+        if (Config.suppressBalloonHelp) return;  // DI: maybe settable in window menu?
         // Show the balloon help only if it hasn't been shown too many times already
         if (HandleMorph.helpCounter < 20) {
             HandleMorph.helpCounter++;
@@ -2187,7 +2189,7 @@ LinkMorph = HostClass.create('LinkMorph', Morph);
 
 Object.extend(LinkMorph.prototype, {
 
-    fishEye: true,  
+    fishEye: !Config.suppressFisheye, 
     fisheyeGrowth: 2, // make it grow more
     fisheyeProximity: 0.5, // make it grow only when the hand gets closer
     defaultFill: Color.black,
@@ -2280,7 +2282,8 @@ Object.extend(LinkMorph.prototype, {
     },
     
     showHelp: function(evt) {
-        // Create only one help balloon at a time
+        if (Config.suppressBalloonHelp) return;  // DI: maybe settable in window menu?
+	// Create only one help balloon at a time
         if (this.help) return;
         
         this.help = TextMorph(Rectangle(evt.x, evt.y, 200, 20), this.helpText);

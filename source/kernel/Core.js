@@ -2626,7 +2626,8 @@ Object.category(Morph.prototype, 'transforms', function() { return {
     
     // toggle fisheye effect on/off
     toggleFisheye: function() {
-        // if fisheye is true, we need to scale the morph to original size
+        if (Config.suppressFisheye) return;
+	// if fisheye is true, we need to scale the morph to original size
         if (this.fishEye) {
             this.scale = this.getScale()/this.fisheyeScale;
             this.setFisheyeScale(1.0);
