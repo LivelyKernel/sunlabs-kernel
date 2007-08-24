@@ -623,7 +623,7 @@ Object.extend(TextMorph.prototype, {
         var jRect = this.ensureTextBox().getBounds(this.selectionRange[0]);
         if (jRect == null) {
             console.log("text box failure in drawSelection index = " + this.selectionRange[0]); 
-            return; o
+            return;
         }
     
         var r1 = this.lineRect(jRect.withWidth(1));
@@ -717,7 +717,7 @@ Object.extend(TextMorph.prototype, {
     handlesMouseDown: function(evt) {
         // Do selecting if click is in selectable area
         if (evt.altKey) return false;
-	return this.shape.bounds().insetByPt(this.inset).containsPoint(this.localize(evt.mousePoint)); 
+        return this.shape.bounds().insetByPt(this.inset).containsPoint(this.localize(evt.mousePoint)); 
     },
 
     onMouseDown: function(evt) {
