@@ -2636,7 +2636,6 @@ Object.category(Morph.prototype, 'transforms', function() { return {
     
     // toggle fisheye effect on/off
     toggleFisheye: function() {
-        if (Config.suppressFisheye) return;
 	// if fisheye is true, we need to scale the morph to original size
         if (this.fishEye) {
             this.scale = this.getScale()/this.fisheyeScale;
@@ -2882,11 +2881,16 @@ Object.extend(Morph.prototype, {
             ["show SVG code", this, "addSvgInspector", this],
             ["dump model", this, "dumpModel", this], // debugging, will go away
             ["reset rotation", this, "setRotation", 0],
+//            [((!this.openForDragAndDrop) ? "close DnD" : "open DnD"), this, "toggleDnD"],
             ["toggle fisheye", this, "toggleFisheye"]
             ];
         var m = MenuMorph(items); 
         if (evt.mouseButtonPressed) evt.hand.setMouseFocus(m);
         return m;
+    },
+
+    toggleDnD: function() {
+        this.openForDragAndDrop = this.openForDragAndDrop ? false : true;
     },
 
     openColorPicker: function(funcName, evt) {

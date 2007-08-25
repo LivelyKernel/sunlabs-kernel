@@ -2203,7 +2203,7 @@ LinkMorph = HostClass.create('LinkMorph', Morph);
 
 Object.extend(LinkMorph.prototype, {
 
-    fishEye: !Config.suppressFisheye, 
+    fishEye: true, 
     fisheyeGrowth: 2, // make it grow more
     fisheyeProximity: 0.5, // make it grow only when the hand gets closer
     defaultFill: Color.black,
