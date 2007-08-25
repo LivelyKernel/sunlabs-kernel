@@ -33,7 +33,7 @@ Object.extend(WidgetTester.prototype, {
         // work with gradients or stipple patterns yet!
         panel.linkToStyles(['widgetPanel']);
         // panel.applyStyleNamed('widgetPanel');
-	var model = new SimpleModel(null, 'Text', 'TextSel', 'ListItem', 'PrintValue', 'B1Value', 'B2Value', 'SliderValue', 'SliderExtent');
+        var model = new SimpleModel(null, 'Text', 'TextSel', 'ListItem', 'PrintValue', 'B1Value', 'B2Value', 'SliderValue', 'SliderExtent');
         panel.model = model;
         var m; 
 
@@ -66,7 +66,7 @@ Object.extend(WidgetTester.prototype, {
         m.autoAccept = true;
         panel.addMorph(m = TextMorph(Rectangle(140,110,140,20),"selection"));
         m.connectModel({model: model, getText: "getTextSel"});
-	model.SharedText = "Hello World";
+        model.SharedText = "Hello World";
 
         // Two linked print views sharing the same value
         panel.addMorph(m = PrintMorph(Rectangle(20,140,100,20),"3+4"));
@@ -2904,7 +2904,6 @@ Object.extend(MapModel.prototype, {
     },
     
     setZoomIn: function(flag) {
-        console.log('zooming out');
         if (flag) this.frame.map.loadImagesToMap("zoomin");
     },
     
