@@ -1758,10 +1758,12 @@ Object.extend(WorldMorph.prototype, {
         canvas.appendChild(this);
         this.addHand(HandMorph(true));
 
+        /* This breaks the firefox from running... 
         if (this.worldId != 1)
             window.parent.location.hash = '#world_' + this.worldId;
         else
             window.parent.location.hash = "";
+        */
     },
     
     addHand: function(hand) {
