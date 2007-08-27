@@ -206,7 +206,7 @@ Object.extend(StylePanel.prototype, {
     
     setFillOpacity: function(op) {
         this.fillOpacity = op.roundTo(0.01);
-        this.targetMorph.shape.setFillOpacity(this.fillOpacity);
+        this.targetMorph.setFillOpacity(this.fillOpacity);
         this.changed('getFillOpacity');
         this.setStrokeOpacity(op); // Stroke opacity is linked to fill
     },
@@ -215,7 +215,7 @@ Object.extend(StylePanel.prototype, {
     
     setStrokeOpacity: function(op) {
         this.strokeOpacity = op.roundTo(0.01);
-        this.targetMorph.shape.setStrokeOpacity(this.strokeOpacity);
+        this.targetMorph.setStrokeOpacity(this.strokeOpacity);
         this.changed('getStrokeOpacity')
     },
 

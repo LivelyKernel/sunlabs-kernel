@@ -2176,6 +2176,10 @@ Object.extend(Morph.prototype, {
         return this.shape.getStrokeWidth(); 
     },
 
+    setFillOpacity: function(op) { this.shape.setFillOpacity(op); }.wrap(Morph.onChange('shape')),
+
+    setStrokeOpacity: function(op) { this.shape.setStrokeOpacity(op); }.wrap(Morph.onChange('shape')),
+
     applyStyle: function(spec) {
         // Adjust all visual attributes specified in the style spec
         if (spec.borderWidth) this.setBorderWidth(spec.borderWidth);
@@ -2183,10 +2187,10 @@ Object.extend(Morph.prototype, {
         if (spec.rounding) this.shape.roundEdgesBy(spec.rounding);
 		else this.shape.roundEdgesBy(0);
         if (spec.fill) this.setFill(spec.fill);
-        if (spec.opacity) {this.shape.setFillOpacity(spec.opacity);
-        		this.shape.setStrokeOpacity(spec.opacity); }
-        if (spec.fillOpacity) this.shape.setFillOpacity(spec.fillOpacity);
-        if (spec.strokeOpacity) this.shape.setStrokeOpacity(spec.strokeOpacity);
+        if (spec.opacity) {this.setFillOpacity(spec.opacity);
+        		this.setStrokeOpacity(spec.opacity); }
+        if (spec.fillOpacity) this.setFillOpacity(spec.fillOpacity);
+        if (spec.strokeOpacity) this.setStrokeOpacity(spec.strokeOpacity);
         if (spec.fillType) this.fillType = spec.fillType;
         if (spec.baseColor) this. baseColor = spec. baseColor;
     },

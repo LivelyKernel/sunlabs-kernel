@@ -795,6 +795,16 @@ Object.extend(SelectionMorph.prototype, {
         else this.selectedMorphs.invoke('setBorderColor', color);
     },
     
+    setFillOpacity: function(op) { 
+        if (this.selectedMorphs.length==0) SelectionMorph.superClass.setFillOpacity.call(this,op);
+        else this.selectedMorphs.invoke('setFillOpacity', op);
+    },
+    
+    setStrokeOpacity: function(op) { 
+        if (this.selectedMorphs.length==0) SelectionMorph.superClass.setStrokeOpacity.call(this,op);
+        else this.selectedMorphs.invoke('setStrokeOpacity', op);
+    },
+    
     okToBeGrabbedBy: function(evt) { // DI: Need to verify that z-order is preserved
         this.selectedMorphs.forEach( function(m) { evt.hand.addMorph(m); } );
         return this;
@@ -2112,7 +2122,8 @@ Object.extend(HandMorph.prototype, {
 			this.dragMorph = null;
 			this.mode = "normal";
 			m.copyToHand(this);
-			this.topSubmorph().moveBy(evt.mousePoint.subPt(this.lastMouseDownPoint));
+			var offset = evt.mousePoint.subPt(this.lastMouseDownPoint);
+			this.submorphs.each(function(m) { m.moveBy(offset); });
 		}
 		return;
 	    }
