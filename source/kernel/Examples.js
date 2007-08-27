@@ -1051,12 +1051,12 @@ AsteroidsSprite = Class.create();
 
 Object.extend(AsteroidsSprite.prototype, {
     /* GamePolygon */ shape: null,  // Initial sprite shape, centered at the origin (0,0).
-    /* boolean */ active: false,         // Active flag.
-    /* double */  angle: 0,              // Current angle of rotation.
-    /* double */  deltaAngle:  0,         // Amount to change the rotation angle.
-    /* double */  currentX: 0,           // Current position on screen.
+    /* boolean */ active: false,    // Active flag.
+    /* double */  angle: 0,         // Current angle of rotation.
+    /* double */  deltaAngle:  0,   // Amount to change the rotation angle.
+    /* double */  currentX: 0,      // Current position on screen.
     /* double */  currentY: 0,
-    /* double */  deltaX: 0,             // Amount to change the screen position.
+    /* double */  deltaX: 0,        // Amount to change the screen position.
     /* double */  deltaY: 0,
     /* GamePolygon */ sprite: null, // Final location and shape of sprite after applying rotation and
     // moving to screen position. Used for drawing on the screen and
@@ -1155,6 +1155,8 @@ Object.extend(AsteroidsSprite.prototype, {
   // Constants
 
   /* static final int */ var DELAY = 50;              // Milliseconds between screen updates.
+  /* static final int */ var SHORTDELAY = 50;         // Milliseconds between screen updates.
+  /* static final int */ var LONGDELAY = 1000;        // Longer delay when the game is collapsed.
 
   /* static final int */ var MAX_SHIPS = 3;           // Starting number of ships per game.
 
@@ -1234,7 +1236,7 @@ Object.extend(AsteroidsSprite.prototype, {
 
   // Missile data.
 
-  /* int */ var missileCounter;    // Counter for life of missile.
+  /* int */ var missileCounter;       // Counter for life of missile.
 
   // Asteroid data.
 
@@ -1284,7 +1286,6 @@ Object.extend(AsteroidsSprite.prototype, {
   
   var fontWidth = 16;
   var fontHeight = 16; // getStringHeight("X");
-
 
 /************************************************************************************************
   Main application code -- Methods.
@@ -1474,9 +1475,6 @@ var GameMorph = HostClass.create('GameMorph', ClipMorph);
 
 GameMorph.prototype.runAsteroidsGame = function() {
     
-    // var i, j;
-    // var startTime;
-    
     // Load sounds.
     
     if (!loaded) {
@@ -1486,7 +1484,24 @@ GameMorph.prototype.runAsteroidsGame = function() {
     }
     
     // This is the main loop.
-    
+
+    // If the game is collapsed, use a longer delay to reduce CPU usage
+    if (gameMorph.owner().isCollapsed()) {
+        if (DELAY == SHORTDELAY) {
+           // Set new, longer timer delay for the game
+           if (this.timeoutID) clearTimeout(this.timeoutID);
+           this.timeoutID = window.setTimeout(arguments.callee.logErrors('Asteroid Timer'), DELAY = LONGDELAY);
+           console.log("Setting longer timer for Asteroids");
+        }
+    } else {
+        if (DELAY == LONGDELAY) {
+           // Set new, shorter timer delay for the game
+           if (this.timeoutID) clearTimeout(this.timeoutID);
+           this.timeoutID = window.setTimeout(arguments.callee.logErrors('Asteroid Timer'), DELAY = SHORTDELAY);
+           console.log("Setting short timer for Asteroids");
+        }
+    }
+
     if (!paused) {
 
         // Move and process all sprites.
@@ -1527,6 +1542,8 @@ GameMorph.prototype.runAsteroidsGame = function() {
         showTextStrings();
 
     }
+
+    // Set timer for the game
     this.timeoutID = window.setTimeout(arguments.callee.logErrors('Asteroid Timer'), DELAY);
 };
 
@@ -1539,7 +1556,7 @@ GameMorph.prototype.runAsteroidsGame = function() {
       crashSound     = getAudioClip(new URL(getDocumentBase(), "crash.au"));
       explosionSound = getAudioClip(new URL(getDocumentBase(), "explosion.au"));
       fireSound      = getAudioClip(new URL(getDocumentBase(), "fire.au"));
-      missileSound    = getAudioClip(new URL(getDocumentBase(), "missile.au"));
+      missileSound   = getAudioClip(new URL(getDocumentBase(), "missile.au"));
       saucerSound    = getAudioClip(new URL(getDocumentBase(), "saucer.au"));
       thrustersSound = getAudioClip(new URL(getDocumentBase(), "thrusters.au"));
       warpSound      = getAudioClip(new URL(getDocumentBase(), "warp.au"));
@@ -2143,11 +2160,11 @@ GameMorph.prototype.runAsteroidsGame = function() {
  */
   /* Keycodes */
 
-  var KEY_S     = 83; // Start
-  var KEY_M     = 77; // Mute
-  var KEY_D     = 68; // Detail
-  var KEY_P     = 80; // Pause
-  var KEY_H     = 72; // Hyperspace
+  var KEY_S = 83; // Start
+  var KEY_M = 77; // Mute
+  var KEY_D = 68; // Detail
+  var KEY_P = 80; // Pause
+  var KEY_H = 72; // Hyperspace
 
   function keyDown(event) {
 
@@ -2283,6 +2300,7 @@ GameMorph.prototype.runAsteroidsGame = function() {
 Object.extend(GameMorph.prototype, {
     
     timeoutID: null,
+    
     initialize: function(rect) {
         GameMorph.superClass.initialize.call(this, rect, "rect");
         // Set black background color for the game
