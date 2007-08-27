@@ -23,7 +23,6 @@ var FontInfo = window.parent.FontInfo;
 window.parent.console.platformConsole = console;
 var console = window.parent.console;
 
-// document.oncontextmenu = function(evt) { console.log('no menu for you %s', evt); return false; }
 
 Namespace =  {
     SVG : Canvas.getAttribute("xmlns"),
@@ -1188,7 +1187,18 @@ Object.extend(Event.prototype, {
 Object.extend(window.parent, {
     onbeforeunload: function(evt) { console.log('window got unload event %s', evt); },
     onblur: function(evt) { console.log('window got blur event %s', evt); },
-    onfocus: function(evt) { console.log('window got focus event %s', evt); },
+    onfocus: function(evt) { console.log('window got focus event %s', evt); }
+});
+
+Object.extend(document, {
+    oncontextmenu: function(evt) { 
+	var targetMorph = evt.target.parentNode; // target is probably shape (change me if pointer-events changes for shapes)
+	if ((targetMorph instanceof Morph) && !(targetMorph instanceof WorldMorph)) {
+	    evt.preventDefault();
+	    evt.mousePoint = pt(evt.clientX, evt.clientY);
+	    targetMorph.showMorphMenu(evt); 
+	} // else get the system context menu
+    }.logErrors('Context Menu Handler')
 });
 
 
