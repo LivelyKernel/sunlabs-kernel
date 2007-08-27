@@ -32,7 +32,6 @@ Object.extend(WidgetTester.prototype, {
         // Make a fancy panel.  Note: Transparency does not
         // work with gradients or stipple patterns yet!
         panel.linkToStyles(['widgetPanel']);
-        // panel.applyStyleNamed('widgetPanel');
         var model = new SimpleModel(null, 'Text', 'TextSel', 'ListItem', 'PrintValue', 'B1Value', 'B2Value', 'SliderValue', 'SliderExtent');
         panel.model = model;
         var m; 

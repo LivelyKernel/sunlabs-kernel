@@ -34,7 +34,6 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
     initialize: function(initialBounds) {
         ButtonMorph.superClass.initialize.call(this, initialBounds, "rect");
         // Styling
-        this.shape.roundEdgesBy(this.defaultEdgeRoundingRadius);
         this.changeAppearanceFor(this.getModelValue('MyValue', false));
         return this;
     },
@@ -47,6 +46,7 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
         model.setMyValue(false);
         this.modelPlug = {model: model, getValue: "getMyValue", setValue: "setMyValue"};
         this.baseColor = this.defaultFill;
+        this.linkToStyles(['button']);
         this.toggles = false; // if true each push toggles the model state // FIXME: should be persistent
     },
 
@@ -70,7 +70,21 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
     
     changeAppearanceFor: function(value) {
         var base = value ? this.baseColor.lighter() : this.baseColor;
-        this.setFill(LinearGradient.makeGradient(base, base.lighter(), LinearGradient.SouthNorth));
+        switch (this.fillType) {
+	    case "linear gradient" :
+		this.setFill(LinearGradient.makeGradient(base, base.lighter(), LinearGradient.SouthNorth));
+		break;
+	    case "radial gradient" :
+		this.setFill(RadialGradient.makeCenteredGradient(base.lighter(), base));
+		break;
+	    default:
+		this.setFill(base);
+	}
+    },
+
+    applyStyle: function(spec) {
+        ButtonMorph.superClass.applyStyle.call(this,spec);
+        this.changeAppearanceFor(this.getValue());
     },
 
     updateView: function(aspect, controller) {
@@ -300,7 +314,8 @@ Object.extend(TitleBarMorph.prototype, {
         const spacing = this.controlSpacing;
         TitleBarMorph.superClass.initialize.call(this, Rectangle(0, isExternal? - bh : 0, 
                                                  windowWidth, bh), "rect");
-        this.setFill(LinearGradient.makeGradient(Color.primary.blue, Color.primary.blue.lighter(3)));
+        this.linkToStyles(['titleBar']);
+	// this.setFill(LinearGradient.makeGradient(Color.primary.blue, Color.primary.blue.lighter(3)));
         this.ignoreEvents();
 
         var cell = Rectangle(0, 0, bh, bh);
@@ -462,6 +477,7 @@ Object.extend(WindowMorph.prototype, {
         bounds.y -= titleHeight;
         targetMorph.translateBy(bounds.topLeft().negated());
         this.addMorph(targetMorph);
+        this.linkToStyles(['window']);
         return this;
     },
 
@@ -1667,38 +1683,56 @@ Object.extend(WorldMorph, {
     defaultThemes: { // --Style architecture is under construction!--
         primitive: { // This is to be the simples widgets -- flat fills and no rounding or translucency
             styleName: 'primitive',
-            widgetPanel: { borderColor: Color.red, borderWidth: 2, rounding: 0, fill: Color.blue.lighter(), opacity: 1},
+            window:      { rounding: 0 },
+            titleBar:    { rounding: 0, borderWidth: 2, bordercolor: Color.black,
+				fill: Color.primary.blue.lighter()},
+            panel:	 {  },
             vslider:     { borderColor: Color.black, borderWidth: 1, fill: Color.blue.lighter()},
             hslider:     { borderColor: Color.black, borderWidth: 1, fill: Color.blue.lighter()},
             elevator:    { borderColor: Color.black, borderWidth: 1, fill: Color.green.lighter(2)},
-            titleBar:    { borderColor: Color.black, borderWidth: 1, fill: Color.white},
-            button:      { borderColor: Color.green.lighter(), borderWidth: 1},
-            clock:       { size: 100, borderColor: Color.green.lighter(), borderWidth: 1, fill: Color.yellow, roman: true},
+            button:      { borderColor: Color.black, borderWidth: 1, rounding: 0,
+				baseColor: Color.neutral.gray, fillType: "simple" },
+            widgetPanel: { borderColor: Color.red, borderWidth: 2, rounding: 0,
+				fill: Color.blue.lighter(), opacity: 1},
+            clock:       { size: 100, borderColor: Color.green.lighter(), borderWidth: 1,
+				fill: Color.yellow, roman: true},
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue}
         },
 
         lively: { // This is to be the style we like to show for our personality
             styleName: 'lively',
-            widgetPanel: { borderColor: Color.blue, borderWidth: 4, rounding: 16, fill: Color.blue.lighter(), opacity: 0.4},
+            window:	 { rounding: 8 },
+            titleBar:    { rounding: 8, borderWidth: 2, bordercolor: Color.black,
+			    fill: LinearGradient.makeGradient(Color.primary.blue, Color.primary.blue.lighter(3))},
+            panel:	 {  },
             vslider:     { borderColor: Color.black, borderWidth: 1, 
                            fill: LinearGradient.makeGradient(Color.primary.blue.lighter().lighter(), Color.primary.blue, LinearGradient.EastWest)},
             hslider:     { borderColor: Color.black, borderWidth: 1,
                            fill: LinearGradient.makeGradient(Color.primary.blue.lighter().lighter(), Color.primary.blue, LinearGradient.NorthSouth)},
             elevator:    { borderColor: Color.green.lighter(), borderWidth: 1},
-            titleBar:    { borderColor: Color.green.lighter(), borderWidth: 1},
-            button:      { borderColor: Color.green.lighter(), borderWidth: 1},
-            clock:       { size: 100, borderColor: Color.green.lighter(), borderWidth: 1, fill: Color.yellow, roman: true},
+            button:      { borderColor: Color.neutral.gray, borderWidth: 0.3, rounding: 4,
+				baseColor: Color.neutral.gray, fillType: "linear gradient" },
+            widgetPanel: { borderColor: Color.blue, borderWidth: 4, rounding: 16,
+				fill: Color.blue.lighter(), opacity: 0.4},
+            clock:       { size: 100, borderColor: Color.green.lighter(), borderWidth: 1,
+				fill: Color.yellow, roman: true},
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue}
         },
 
         turquoise: { // Like turquoise, black and silver jewelry, [or other artistic style]
             styleName: 'turquoise',
-            widgetPanel: { borderColor: Color.red, borderWidth: 2, fill: Color.blue.lighter()},
+            window:      { rounding: 8},
+            titleBar:    { rounding: 8, borderWidth: 2, bordercolor: Color.black,
+				fill: LinearGradient.makeGradient(Color.turquoise, Color.turquoise.lighter(3))},
+            panel:	 {  },
             slider:      { borderColor: Color.green.lighter(), borderWidth: 1},
             elevator:    { borderColor: Color.green.lighter(), borderWidth: 1},
-            titleBar:    { borderColor: Color.green.lighter(), borderWidth: 1},
-            button:      { borderColor: Color.green.lighter(), borderWidth: 1},
-            clock:       { size: 100, borderColor: Color.green.lighter(), borderWidth: 1, fill: Color.yellow, roman: true},
+            button:      { borderColor: Color.neutral.gray.darker(), borderWidth: 2, rounding: 8,
+				baseColor: Color.turquoise.darker(), fillType: "radial gradient" },
+            widgetPanel: { borderColor: Color.neutral.gray.darker(), borderWidth: 4,
+				fill: Color.turquoise.lighter(3), rounding: 16},
+            clock:       { size: 100, borderColor: Color.green.lighter(), borderWidth: 1,
+				fill: Color.yellow, roman: true},
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue}
         }
     }

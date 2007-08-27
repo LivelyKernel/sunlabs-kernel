@@ -793,6 +793,7 @@ Object.extend(Color, {
     darkGray: Color.gray.darker(),
     lightGray: Color.gray.lighter(),
     veryLightGray: Color.gray.lighter().lighter(),
+    turquoise: Color.rgb(0, 240, 255),
     primary: {
         // Sun palette
         blue: Color.rgb(0x53, 0x82, 0xA1),
@@ -2168,6 +2169,8 @@ Object.extend(Morph.prototype, {
         		this.shape.setStrokeOpacity(spec.opacity); }
         if (spec.fillOpacity) this.shape.setFillOpacity(spec.fillOpacity);
         if (spec.strokeOpacity) this.shape.setStrokeOpacity(spec.strokeOpacity);
+        if (spec.fillType) this.fillType = spec.fillType;
+        if (spec.baseColor) this. baseColor = spec. baseColor;
     },
 
     makeStyleSpec: function() {
