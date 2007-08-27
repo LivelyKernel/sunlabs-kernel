@@ -2137,7 +2137,8 @@ Object.extend(Morph.prototype, {
             this.assign('fill', null);
             this.shape.setFill(fill.toString());
         } else {
-            var ref = this.assign('fill', fill);
+            console.log(fill.toString());
+	    var ref = this.assign('fill', fill.cloneNode(true));
             this.shape.setFill(ref);
         }
     }.wrap(Morph.onChange('shape')),
