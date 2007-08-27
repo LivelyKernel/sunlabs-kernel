@@ -31,7 +31,7 @@ Object.extend(TextLine.prototype, {
 
     makeSpan: function(start, stop, leadingSpaces) {
         // return;
-        var span = document.createSVGElement("tspan");
+        var span = NodeFactory.create("tspan");
         span.textString = this.textString.substring(start, stop + 1);
 
         if (leadingSpaces) {
@@ -382,7 +382,7 @@ Object.extend(TextMorph.prototype, {
     initializePersistentState: function(initialBounds, shapeType) {
         // this.textBox = null;
         TextMorph.superClass.initializePersistentState.call(this, initialBounds, shapeType);
-        // this.selectionElement = this.addChildElement(document.createSVGElement('use').withHref("#TextSelectionStyle"));
+        // this.selectionElement = this.addChildElement(NodeFactory.create('use').withHref("#TextSelectionStyle"));
 
         // the selection element is persistent although its contents are not
         // generic <g> element with 1-3 rectangles inside

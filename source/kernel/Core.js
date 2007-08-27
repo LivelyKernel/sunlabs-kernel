@@ -30,10 +30,6 @@ Namespace =  {
     LIVELY : Canvas.getAttribute("xmlns:lively"), // FIXME Safari XMLSerializer seems to do wierd things w/namespaces
     XLINK : Canvas.getAttribute("xmlns:xlink"),
     DAV : Canvas.getAttribute("xmlns:D"),
-    resolver : function(prefix) {
-        console.log('prefix %s value %s', prefix, this[prefix]);
-        return this[prefix];
-    }
 };
 
 
@@ -42,6 +38,11 @@ Namespace =  {
 
 var Query = Class.create();
 Object.extend(Query, {
+    resolver: function(prefix) {
+        console.log('prefix %s value %s', prefix, Namespace[prefix]);
+        return Namespace[prefix];
+    },
+
     evaluate: function(aNode, aExpr, defaultValue) {
 	var xpe = new XPathEvaluator();
 	var nsResolver = xpe.createNSResolver(aNode.ownerDocument == null ?
@@ -57,12 +58,28 @@ Object.extend(Query, {
     }
 });
 
-document.createSVGElement = function(name, attributes) {
-    var element = document.createElementNS(Namespace.SVG, name);
-    if (attributes) {
-        $H(attributes).each(function(pair) { element.setAttributeNS(null, pair[0], pair[1].toString()); });
+var NodeFactory = {
+    create: function(name, attributes) {
+	var element = document.createElementNS(Namespace.SVG, name);
+	if (attributes) {
+            $H(attributes).each(function(pair) { element.setAttributeNS(null, pair[0], pair[1].toString()); });
+	}
+	return element;
+    },
+
+    prototypes: new Hash(), // elementName -> prototype
+
+    // Somethimes object.constructor.prototype doesn't work for host objects b/c the actuall hidden object.__proto__
+    // doesn't have its .constructor property set to the right value or the constructor doesn't have it's .prototype
+    // value set
+    getPrototype: function(elementName) { // remember prototypes
+	var proto = this.prototypes[elementName];
+	if (!proto) {
+	    this.prototypes[elementName] = proto = this.create(elementName).__proto__;
+	}
+	return proto;
     }
-    return element;
+    
 };
 
 // ===========================================================================
@@ -266,47 +283,36 @@ if (Prototype.Browser.WebKit) {
     }
 }
 
-Function.prototype.logErrors = function(prefix) {
-    var advice = function (proceed/*,args*/) {
-        var args = $A(arguments); args.shift(); 
-        try {
+Object.extend(Function.prototype, {
+    
+    logErrors: function(prefix) {
+	var advice = function (proceed/*,args*/) {
+            var args = $A(arguments); args.shift(); 
+            try {
+		return proceed.apply(this, args); 
+            } catch (er) {
+		if (prefix) console.warn("%s: %s", prefix, er);
+		else console.warn("%s", er);
+		throw er;
+            }
+	};
+	return this.wrap(advice);
+    },
+    
+    logCalls: function(prefix, isUrgent) {
+	var advice = function(proceed) {
+            var args = $A(arguments); args.shift(); 
+            if (isUrgent) { 
+		console.warn('%s: %s args: %s', prefix, this, args); 
+            } else { 
+		console.log('%s: %s args: %s', prefix, this, args);
+            } 
             return proceed.apply(this, args); 
-        } catch (er) {
-            if (prefix) console.warn("%s: %s", prefix, er);
-            else console.warn("%s", er);
-            throw er;
-        }
-    };
-    return this.wrap(advice);
-};
-
-/*
-    var __method = this;
-    return function() {
-        try {
-            return __method.apply(this, arguments);
-        } catch (er) {
-            if (prefix) console.warn("%s: %s", prefix, er);
-            else console.warn("%s", er);
-            throw er;
-        }
+	};
+	return this.wrap(advice);
     }
-};
-*/
 
-Function.prototype.logCalls = function(prefix, isUrgent) {
-    var advice = function(proceed) {
-        var args = $A(arguments); args.shift(); 
-        if (isUrgent) { 
-            console.warn('%s: %s args: %s', prefix, this, args); 
-        } else { 
-            console.log('%s: %s args: %s', prefix, this, args);
-        } 
-        return proceed.apply(this, args); 
-    };
-    return this.wrap(advice);
-};
-
+});
 /**
  * Extensions to class String
  */  
@@ -390,14 +396,14 @@ Object.category(HostClass, "core", function() { return {
         var constr = function() {
             var args = $A(arguments);
             var initList = args.shift();
-            var inst = HostClass.becomeInstance(document.createSVGElement(elementName, initList), constr);
+            var inst = HostClass.becomeInstance(NodeFactory.create(elementName, initList), constr);
             
             if (inst.initialize) inst.initialize.apply(inst, args);
         
             return inst;
         }
         
-        var accessInstance = document.createSVGElement(elementName);
+        var accessInstance = NodeFactory.create(elementName);
         constr.prototype = accessInstance.__proto__;
         constr.prototype.constructor = constr;
         constr.become = function(element) { return HostClass.becomeInstance(element, constr); };
@@ -850,7 +856,7 @@ Object.extend(LinearGradient, {
 
 Object.extend(LinearGradient.prototype, { 
     addStop: function(offset, color) {
-        this.appendChild(document.createSVGElement("stop", {offset: offset, "stop-color": color}));
+        this.appendChild(NodeFactory.create("stop", {offset: offset, "stop-color": color}));
         return this;
     }
 });
@@ -900,8 +906,8 @@ StipplePattern = HostClass.fromElement('pattern');
 Object.extend(StipplePattern, { 
     create: function(color1, h1, color2, h2) {
         var elt = StipplePattern({patternUnits: 'userSpaceOnUse', x: 0, y: 0, width: 100, height: h1 + h2});
-        elt.appendChild(document.createSVGElement('rect', {x: 0, y: 0,  width: 100, height: h1,      fill: color1}));
-        elt.appendChild(document.createSVGElement('rect', {x: 0, y: h1, width: 100, height: h1 + h2, fill: color2}));
+        elt.appendChild(NodeFactory.create('rect', {x: 0, y: 0,  width: 100, height: h1,      fill: color1}));
+        elt.appendChild(NodeFactory.create('rect', {x: 0, y: h1, width: 100, height: h1 + h2, fill: color2}));
         return elt;
     }
 });
@@ -1313,9 +1319,9 @@ Object.extend(DisplayObject.prototype, {
 // Setting up web browser behavior to fit our needs, e.g., prevent the browser
 // from interpreting mouse drags on behalf of us.
 (function() {
-    Object.extend(document.createSVGElement('g').__proto__, DisplayObject.prototype);
-    Object.extend(document.createSVGElement('use').__proto__, DisplayObject.prototype);
-    var proto = Object.extend(document.createSVGElement('image').__proto__, DisplayObject.prototype);
+    Object.extend(NodeFactory.getPrototype('g'), DisplayObject.prototype);
+    Object.extend(NodeFactory.getPrototype('use'), DisplayObject.prototype);
+    var proto = Object.extend(NodeFactory.getPrototype('image'), DisplayObject.prototype);
     
     var dragDisabler = { handleEvent: function(evt) { evt.preventDefault(); return false ;}};
     proto.disableBrowserDrag = function() {
@@ -1827,7 +1833,7 @@ Object.extend(PathShape.prototype, {
 });
 
 DisplayObjectList = function(type) {
-    return DisplayObjectList.become(document.createSVGElement('g'), type);
+    return DisplayObjectList.become(NodeFactory.create('g'), type);
 };
 
 DisplayObjectList.become = function(obj, type) {
@@ -1836,7 +1842,7 @@ DisplayObjectList.become = function(obj, type) {
     return obj;
 };
 
-DisplayObjectList.prototype = Object.derive(document.createSVGElement("g").__proto__);
+DisplayObjectList.prototype = Object.derive(NodeFactory.getPrototype('g'));
 
 Object.extend(DisplayObjectList.prototype, Enumerable);
 Object.extend(DisplayObjectList.prototype, {
@@ -1876,12 +1882,12 @@ Object.extend(DisplayObjectList.prototype, {
  * @class Morph
  */ 
 
-Morph = HostClass.extendPrototype(document.createSVGElement("g"), 'Morph');
+Morph = HostClass.extendPrototype(NodeFactory.create("g"), 'Morph');
 
 Object.extend(Morph, {
     
     makeMorph: function(constr) {
-        var element = HostClass.becomeInstance(document.createSVGElement("g"), constr);
+        var element = HostClass.becomeInstance(NodeFactory.create("g"), constr);
         element.setType(constr.name);
         return element;
     },
@@ -2324,12 +2330,16 @@ Object.extend(Morph.prototype, {
         var old = this[fieldname];
         
         if (!this.defs && element) { // lazily create the field
-            this.defs = document.createSVGElement('defs');
+            this.defs = NodeFactory.create('defs');
             this.addChildElement(this.defs);
         }
         
         if (old) {
-            this.defs.removeChild(old);
+	    if (old.parentNode !== this.defs) {
+		console.warn('old value %s is not owned by %s', old, this);
+		return null;
+	    }
+	    this.defs.removeChild(old);
         }
         
         this[fieldname] = element;
@@ -3134,7 +3144,7 @@ Object.extend(Morph.prototype, {
 Object.extend(Morph.prototype, {
 
     clipToPath: function(path) {
-        var clipPath = document.createSVGElement('clipPath');
+        var clipPath = NodeFactory.create('clipPath');
         clipPath.appendChild(path);
         var ref = this.assign('clipPath', clipPath);
         this.setAttributeNS(null, "clip-path", ref);
@@ -3262,8 +3272,10 @@ Object.extend(Morph.prototype, {
     dumpModel: function() {
         var exporter = new Exporter(this);
         var xml = exporter.serialize();
-        var modelxml = exporter.serializeSimpleModel(this.model || this.modelPlug.model);
+	console.log('%s dumping model %s', this, this.model);
+        var modelxml = exporter.serializeSimpleModel(this.model);
 	console.log('%s has model %s, %s', this, this.model, modelxml);
+	console.log('%s has model keys %s', this, Object.keys(this.model));
     },
     
     addSvgInspector: function() {
@@ -3291,12 +3303,12 @@ Object.extend(Morph.prototype, {
                 }
                 var importer = new Importer();
                 var copy = importer.importFrom(txt);
-                WorldMorph.current().addMorph(importer.importFrom(txt));
+                WorldMorph.current().addMorph(copy);
                 
                 if (target.model) {
                     copy.model = importer.importModelFrom(modelxml);
 		    console.log('restoring from model %s', modelxml);
-                    console.log('restore %s', copy.model);
+                    console.log('copy %s has model %s', copy, copy.model);
                 }
                 return;
             case 'f':

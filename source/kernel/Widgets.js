@@ -170,7 +170,7 @@ Object.extend(ImageMorph.prototype, {
         }
 
         this.setFill(null);
-        this.image = document.createSVGElement("use").withHref(localURL);
+        this.image = NodeFactory.create("use").withHref(localURL);
 
         if (scale) {
             this.image.setAttributeNS(null, 'transform', 'scale(' + scale + ')');
@@ -186,7 +186,7 @@ Object.extend(ImageMorph.prototype, {
         }
 
         if (!this.image) {
-            this.image = document.createSVGElement("image", { width: this.dim.x, height: this.dim.y});
+            this.image = NodeFactory.create("image", { width: this.dim.x, height: this.dim.y});
             this.image.disableBrowserDrag();
             this.addChildElement(this.image);
         } 
@@ -324,7 +324,7 @@ Object.extend(TitleBarMorph.prototype, {
         this.addMorph(closeButton);
 
         // FIXME this should be simpler
-        var sign = document.createSVGElement("use").withHref("#CloseIcon");
+        var sign = NodeFactory.create("use").withHref("#CloseIcon");
 
         sign.applyTransform(Transform.createSimilitude(pt(-9, -9), 0, 0.035));
         closeButton.addChildElement(sign);
@@ -336,7 +336,7 @@ Object.extend(TitleBarMorph.prototype, {
 
         // uncomment for extra icon fun
         /*
-        sign = document.createSVGElement("use").withHref("#GearIcon");
+        sign = NodeFactory.create("use").withHref("#GearIcon");
         sign.setAttributeNS(null, 'transform', 'translate(-10, -10) scale(0.040)');
         menuButton.addChildElement(sign);
         */
@@ -587,6 +587,14 @@ Object.extend(HandleMorph.prototype, {
     defaultFill: null,
     defaultBorderColor: Color.blue,
     defaultBorderWidth: 1,
+    controlHelpText: "Drag to resize this morph\n" + 
+        "Cmd+shift+drag to scale the morph \n" + 
+        "Shift+drag to change border width \n" + 
+        "Cmd+drag to rotate the morph \n",
+    circleHelpText: "Drag to reshape the line\n" + 
+        "Cmd+shift+drag to scale the morph\n" + 
+        "Shift+drag to change border width\n" + 
+        "Cmd+drag to rotate the morph",
 
     initialize: function(location, shapeType, hand, targetMorph, partName) {
         HandleMorph.superClass.initialize.call(this, location.asRectangle().expandBy(5), shapeType);
@@ -594,14 +602,6 @@ Object.extend(HandleMorph.prototype, {
         this.partName = partName; // may be a name like "topRight" or a vertex index
         this.initialScale = null;
         this.initialRotation = null; 
-        this.controlHelpText = "Drag to resize this morph\n" + 
-                        "Cmd+shift+drag to scale the morph \n" + 
-                        "Shift+drag to change border width \n" + 
-                        "Cmd+drag to rotate the morph \n"; 
-        this.circleHelpText = "Drag to reshape the line\n" + 
-                        "Cmd+shift+drag to scale the morph\n" + 
-                        "Shift+drag to change border width\n" + 
-                        "Cmd+drag to rotate the morph"; 
         return this;
     },
 
@@ -892,14 +892,17 @@ Object.extend(CheapListMorph.prototype, {
         // CheapListMorphs simply leverage Textmorph's ability to display
         // multiline paragraphs, though some effort is made to use a similar interface.
     
-        var listText = (itemList == null) ? "" : itemList.join("\n");
+        var listText = itemList ? itemList.join("\n") : "";
         CheapListMorph.superClass.initialize.call(this, initialBounds, listText);
 
         this.itemList = itemList;
-
+	this.setModelValue('setList', itemList);
+	console.log('model now %s', this.modelPlug.model);
+	
         this.layoutChanged();
         return this;
     },
+
 
     initializeTransientState: function(initialBounds) {
         CheapListMorph.superClass.initializeTransientState.call(this, initialBounds);
@@ -909,10 +912,19 @@ Object.extend(CheapListMorph.prototype, {
         this.modelPlug = {
             model: model,
             getList: "getMyList",
+	    setList: "setMyList",
             getSelection: "getMySelection",
-            setSelection: "setMySelection"
+            setSelection: "setMySelection",
         };
+	
         this.itemList = [];// FIXME recover that state
+    },
+
+
+    restoreFromMarkup: function(importer) {
+	CheapListMorph.superClass.restoreFromMarkup.call(this, importer);
+	this.itemList = this.textString.split('\n');
+	this.updateView('all');
     },
     
     takesKeyboardFocus: function() { 
@@ -1012,7 +1024,7 @@ Object.extend(CheapListMorph.prototype, {
     updateList: function(newList) {
         var priorItem = this.getSelection();
         this.itemList = newList;
-        var listText = (this.itemList == null) ? "" : this.itemList.join("\n");
+        var listText = (newList == null) ? "" : newList.join("\n");
         this.updateTextString(listText);
         this.setSelectionToMatch(priorItem);
         this.emitSelection(); 
@@ -1021,7 +1033,6 @@ Object.extend(CheapListMorph.prototype, {
     setSelectionToMatch: function(item) {
         var lineStart = -1; 
         var firstChar = 0;
-    
         for (var i = 0; i < this.itemList.length; i++) {
             if (this.itemList[i] == item) {
                 lineStart = firstChar; 
@@ -1034,13 +1045,13 @@ Object.extend(CheapListMorph.prototype, {
 
     updateView: function(aspect, controller) {
         var c = this.modelPlug;
-        
+
         if (c) { // New style connect
             if (aspect == c.getList || aspect == 'all') this.updateList(this.getList());
             if (aspect == c.getSelection) this.setSelectionToMatch(this.getSelection());
             return;
         }
-    },
+    },//.logCalls('updateView'),
 
     getList: function() {
         if (this.modelPlug) return this.getModelValue('getList', ["-----"]);
@@ -1757,7 +1768,7 @@ Object.extend(WorldMorph.prototype, {
         }
 
         if (backgroundImageId) {
-            var background = document.createSVGElement("use").withHref(backgroundImageId);
+            var background = NodeFactory.create("use").withHref(backgroundImageId);
             this.addChildElement(background);
         }
             
@@ -1792,12 +1803,13 @@ Object.extend(WorldMorph.prototype, {
         canvas.appendChild(this);
         this.addHand(HandMorph(true));
 
-        /* This breaks the firefox from running... 
-        if (this.worldId != 1)
-            window.parent.location.hash = '#world_' + this.worldId;
-        else
-            window.parent.location.hash = "";
-        */
+
+	if (Prototype.Browser.WebKit) {
+            if (this.worldId != 1)
+		window.parent.location.hash = '#world_' + this.worldId;
+            else
+		window.parent.location.hash = "";
+	} // Mozilla doesn't like this and starts reloading the page over and over
     },
     
     addHand: function(hand) {
@@ -2260,7 +2272,7 @@ Object.extend(LinkMorph.prototype, {
         //this.setFill(RadialGradient.makeCenteredGradient(Color.primary.blue.lighter(), Color.black));
 
         // FIXME this should be simpler
-        var sign = document.createSVGElement("use").withHref("#WebSpiderIcon");
+        var sign = NodeFactory.create("use").withHref("#WebSpiderIcon");
         sign.applyTransform(Transform.createSimilitude(pt(-26, -26), 0, 0.1));
         this.addChildElement(sign);
         //this.toggleFisheye();
@@ -2272,7 +2284,7 @@ Object.extend(LinkMorph.prototype, {
             otherWorld.addMorph(pathBack);
         } 
     
-        // var defs = document.createSVGElement('defs');
+        // var defs = NodeFactory.create('defs');
         // morph.addChildElement(defs);
         // defs.appendChild(otherWorld);
         this.myWorld = otherWorld;

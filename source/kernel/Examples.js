@@ -1484,20 +1484,19 @@ GameMorph.prototype.runAsteroidsGame = function() {
     }
     
     // This is the main loop.
-
     // If the game is collapsed, use a longer delay to reduce CPU usage
     if (gameMorph.owner().isCollapsed()) {
         if (DELAY == SHORTDELAY) {
            // Set new, longer timer delay for the game
            if (this.timeoutID) clearTimeout(this.timeoutID);
-           this.timeoutID = window.setTimeout(arguments.callee.logErrors('Asteroid Timer'), DELAY = LONGDELAY);
+            this.timeoutID = window.setTimeout(arguments.callee.bind(this).logErrors('Asteroid Timer'), DELAY = LONGDELAY);
            console.log("Setting longer timer for Asteroids");
         }
     } else {
         if (DELAY == LONGDELAY) {
            // Set new, shorter timer delay for the game
            if (this.timeoutID) clearTimeout(this.timeoutID);
-           this.timeoutID = window.setTimeout(arguments.callee.logErrors('Asteroid Timer'), DELAY = SHORTDELAY);
+            this.timeoutID = window.setTimeout(arguments.callee.bind(this).logErrors('Asteroid Timer'), DELAY = SHORTDELAY);
            console.log("Setting short timer for Asteroids");
         }
     }
@@ -1544,7 +1543,7 @@ GameMorph.prototype.runAsteroidsGame = function() {
     }
 
     // Set timer for the game
-    this.timeoutID = window.setTimeout(arguments.callee.logErrors('Asteroid Timer'), DELAY);
+    this.timeoutID = window.setTimeout(arguments.callee.bind(this).logErrors('Asteroid Timer'), DELAY);
 };
 
   function loadSounds() {
@@ -2624,9 +2623,9 @@ Object.extend(StockWidget.prototype, {
         m = panel.addMorph(TextMorph(Rectangle(160, 340, 410, 20), "")).connectModel({model: this, getText: 'getQuotes'});
 
         // Company selector for stock quotes
-        m = panel.addMorph(CheapListMorph(Rectangle(20, 340, 120, 40), ["SUNW", "NOK", "GOOG", "QQQQ"]));
+        m = panel.addMorph(CheapListMorph(Rectangle(20, 340, 120, 40), ["JAVA", "NOK", "GOOG", "QQQQ"]));
         m.connectModel({model: this, getSelection: "getCompany", setSelection: "setCompany"});
-        this.setCompany('SUNW');
+        this.setCompany('JAVA');
         var model = this;
         
         panel.shutdown = function() {
@@ -3002,7 +3001,7 @@ Object.extend(MapMorph.prototype, {
          for (var y = 0; y < 5; y += 1){
               for (var x = 0; x < 5; x += 1){
                                 
-                     img = document.createSVGElement("image", {x:x*256, y: y*256, width: 256, height: 256});
+                     img = NodeFactory.create("image", {x:x*256, y: y*256, width: 256, height: 256});
                      img.withHref("http://www.cs.tut.fi/~reijula/mapimages/map579_288.png");
                      this.addChildElement(img);
                      //this.addChildElement(this.images[this.iy][this.ix]);
@@ -3036,7 +3035,7 @@ Object.extend(MapMorph.prototype, {
                         oldImg.parentNode.removeChild(oldImg);
                     }
     
-                    var img = document.createSVGElement("image", 
+                    var img = NodeFactory.create("image", 
                     {x: ix*TileSize.x, y: iy*TileSize.y, width: 256, height: 256}).withHref(this.images[iy][ix]);
                     img.setAttribute("id", imgId);
                     img.disableBrowserDrag();
@@ -3047,10 +3046,10 @@ Object.extend(MapMorph.prototype, {
        pd("Draw complete",2);
     
     /*
-    var img = document.createSVGElement("image", {x:600,y:600, width: 473, height: 473});
+    var img = NodeFactory.create("image", {x:600,y:600, width: 473, height: 473});
     img.setHref("http://www.cs.tut.fi/~reijula/mapimages/map579_288.png");
     this.addChildElement(img);
-    img = document.createSVGElement("image", {x:1100,y:800, width: 32, height: 32});
+    img = NodeFactory.create("image", {x:1100,y:800, width: 32, height: 32});
     img.setAttributeNS(Namespace.XLINK, "href", "http://www.cs.tut.fi/~reijula/mapimages/maptype.PNG");
     this.addChildElement(img);
     */
@@ -3275,7 +3274,7 @@ Object.extend(MapMorph.prototype, {
     if (img){
         //found from disk
         //this.images[iy][ix] = img;
-        //var image = document.createSVGElement("image", { width: this.bounds().width, height: this.bounds().height});
+        //var image = NodeFactory.create("image", { width: this.bounds().width, height: this.bounds().height});
         //image.setAttributeNS(Namespace.XLINK, "href", img);
             
         this.images[iy][ix] = img;
@@ -3300,7 +3299,7 @@ Object.extend(MapMorph.prototype, {
                 //saveImageToDisk(this.selectedURL[0] + satURL, tempx, tempy,zoomRatio);
             }
             pd("Loading img online:" + img + " ix " + ix + " iy " + iy, 2);
-            //var image = document.createSVGElement("image", { x: ix*TileSize.x,y: iy*TileSize.y,width: TileSize.x, height: TileSize.y});
+            //var image = NodeFactory.create("image", { x: ix*TileSize.x,y: iy*TileSize.y,width: TileSize.x, height: TileSize.y});
             //image.setAttributeNS(Namespace.XLINK, "href", img);
             //this.addChildElement(image);
 
