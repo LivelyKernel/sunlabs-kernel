@@ -264,12 +264,12 @@ Object.extend(Credential.prototype, {
         y+= 40;
         m = panel.addMorph(ButtonMorph(Rectangle(80, y, 50, height)));
         m.addMorph(TextMorph.makeLabel(m.shape.bounds(), 'OK'));
-        m.toggles = true;
+        m.setToggle(true);
         m.connectModel({model: this, getValue: "getOKValue", setValue: "setOKValue"});
 
         m = panel.addMorph(ButtonMorph(Rectangle(140, y, 50, height)));
         m.addMorph(TextMorph.makeLabel(m.shape.bounds(), 'Cancel'));
-        m.toggles = true;
+        m.setToggle(true);
         m.connectModel({model: this, getValue: "getCancelValue", setValue: "setCancelValue"});
 
         panel.connectModel({model: this, getVisible: "shouldDisplayPanel"});

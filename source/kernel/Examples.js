@@ -41,7 +41,7 @@ Object.extend(WidgetTester.prototype, {
         m.connectModel({model: model, getValue: "getB1Value", setValue: "setB1Value"});
         panel.addMorph(m = ButtonMorph(Rectangle(20,50,50,20)));
         m.connectModel({model: model, getValue: "getB1Value", setValue: "setB1Value"});
-        m.toggles = true;
+        m.setToggle(true);
 
         // Two buttons sharing same value...
         panel.addMorph(m = ButtonMorph(Rectangle(80,20,50,20)));
@@ -370,12 +370,12 @@ Object.extend(DoodleMorph.prototype, {
         // this.rectbutton.align(this.rectbutton.bounds().leftCenter(),
         // this.mapclip.bounds().rightCenter().addXY(clipInset, 0));
         // this.rectbutton.connectModel({model: this.mapmodel, setValue: "goRight", getValue: "isStepping"});
-        this.selectbutton.toggles = true;
+        this.selectbutton.setToggle(true);
         this.selectbutton.connectModel({model: this, setValue: "setSelectionMode", getValue: "getSelectionMode"});
         this.addMorph(this.selectbutton);
 
         this.rectbutton.onMouseUp = function(evt) {
-            var newValue = this.toggles ? !this.getValue() : false;
+            var newValue = this.isToggle() ? !this.getValue() : false;
 //            this.setValue(newValue); 
             this.changeAppearanceFor(newValue); 
         };
@@ -383,7 +383,7 @@ Object.extend(DoodleMorph.prototype, {
         this.addMorph(this.rectbutton);
 
         this.circlebutton.onMouseUp = function(evt) {
-            var newValue = this.toggles ? !this.getValue() : false;
+            var newValue = this.isToggle() ? !this.getValue() : false;
 //            this.setValue(newValue); 
             this.changeAppearanceFor(newValue); 
         };
@@ -391,7 +391,7 @@ Object.extend(DoodleMorph.prototype, {
         this.addMorph(this.circlebutton);
 
         this.colorsbutton.onMouseUp = function(evt) {
-            var newValue = this.toggles ? !this.getValue() : false;
+            var newValue = this.isToggle() ? !this.getValue() : false;
             this.changeAppearanceFor(newValue); 
         };
         this.colorsbutton.connectModel({model: this, setValue: "setColor"});
@@ -402,7 +402,7 @@ Object.extend(DoodleMorph.prototype, {
         this.addMorph(this.copybutton);
 
         // TODO: this will be the connect button
-        this.worldbutton.toggles = true;
+        this.worldbutton.setToggle(true);
 //        this.worldbutton.connectModel({model: this, setValue: "setBValue", getValue: "getBValue"});
         this.addMorph(this.worldbutton);
 
@@ -2797,7 +2797,7 @@ Object.extend(MapFrameMorph.prototype, {
         this.leftbutton.align(this.leftbutton.bounds().rightCenter(), 
                               this.mapclip.bounds().leftCenter().addXY(-clipInset, 0));
         this.leftbutton.connectModel({model: this.mapmodel, setValue: "goLeft", getValue: "isStepping"});
-        this.leftbutton.toggles = true;
+        this.leftbutton.setToggle(true);
         //this.leftbutton.moveBy(pt(-80,-80));
         this.addMorph(this.leftbutton);
 
@@ -2807,21 +2807,21 @@ Object.extend(MapFrameMorph.prototype, {
         this.mapclip.bounds().rightCenter().addXY(clipInset, 0));
 
         this.rightbutton.connectModel({model: this.mapmodel, setValue: "goRight", getValue: "isStepping"});
-        this.rightbutton.toggles = true;
+        this.rightbutton.setToggle(true);
         this.addMorph(this.rightbutton);
         //this.rightbutton.moveBy(pt(-80,-80));
 
         r = Rectangle(this.topLeft.x + 25,this.topLeft.y-20,this.bottomRight.x-this.topLeft.x-52,20);
         this.upbutton =  ImageButtonMorph(r, IMAGEFOLDER + "buttonup.PNG",IMAGEFOLDER + "buttonupdown.PNG");
         this.upbutton.connectModel({model: this.mapmodel, setValue: "goUp", getValue: "isStepping"});
-        this.upbutton.toggles = true;
+        this.upbutton.setToggle(true);
         this.addMorph(this.upbutton);
         //this.upbutton.moveBy(pt(-80,-80));
 
         r = Rectangle(this.topLeft.x + 25,this.bottomRight.y,this.bottomRight.x-this.topLeft.x-52,20);
         this.downbutton = ImageButtonMorph(r, IMAGEFOLDER + "buttondown.PNG", IMAGEFOLDER + "buttondowndown.PNG");
         this.downbutton.connectModel({model: this.mapmodel, setValue: "goDown", getValue: "isStepping"});
-        this.downbutton.toggles = true;
+        this.downbutton.setToggle(true);
         //this.downbutton.moveBy(pt(-80,-80));
         this.addMorph(this.downbutton);
 
@@ -2843,7 +2843,7 @@ Object.extend(MapFrameMorph.prototype, {
         this.maptypebutton = ImageButtonMorph(r, IMAGEFOLDER + "maptype.PNG", IMAGEFOLDER + "maptype2.PNG");
         this.maptypebutton.align(this.maptypebutton.bounds().bottomLeft(), this.bounds().bottomLeft());
         this.maptypebutton.connectModel({model: this.mapmodel, setValue: "setMapType", getValue: "isSatelliteView"});
-        this.maptypebutton.toggles = true;
+        this.maptypebutton.setToggle(true);
         this.addMorph(this.maptypebutton);
         //this.maptypebutton.moveBy(pt(-80,-80));
 

@@ -2024,6 +2024,9 @@ Object.extend(Morph.prototype, {
         
         for (var i = 0; i < children.length; i++) {
             if (children[i].tagName == 'defs') { // FIXME FIXME, this is painfully ad hoc!
+		if (this.defs) {
+		    console.warn('%s already has defs %s', this, this.defs);
+		}
 		this.defs = children[i];
                 for (var def = children[i].firstChild; def != null; def = def.nextSibling) {
                     switch (def.tagName) {
@@ -2032,8 +2035,9 @@ Object.extend(Morph.prototype, {
                         var myClipPath = this.getAttributeNS(null, 'clip-path');
                         if (myClipPath) {
                             this.setAttributeNS(null, 'clip-path', 'url(#'  + newPathId + ')');
+			    this.clipPath = def;
                         } else { 
-                            console.log('myClip is  undefined on %s', this); 
+                            console.log('myClip is undefined on %s', this); 
                         }
                         def.setAttribute('id', newPathId);
                         console.log('assigned new id %s', def.getAttribute('id'));
@@ -2047,7 +2051,7 @@ Object.extend(Morph.prototype, {
                                 this.shape.setAttributeNS(null, 'fill', 'url(#' + newFillId + ')');
 				this.fill = def;
                             } else {
-                                console.log('myFill undefined on %s', this);
+                                console.warn('myFill undefined on %s', this);
                             }
                         } else {
                             console.warn('ouch, cant set fill %s yet, no shape...', newFillId);
@@ -2055,10 +2059,9 @@ Object.extend(Morph.prototype, {
                         def.setAttribute('id', newFillId);
                         break;
                     default:
-                        console.log('unknown def %s', def);
+                        console.warn('unknown def %s', def);
                     }
                 }
-
                 // let it be
             } else if (DisplayObject.prototype.getType.call(children[i])) {
                 if (/FocusHalo/.test(DisplayObject.prototype.getType.call(children[i]))) { //don't restore

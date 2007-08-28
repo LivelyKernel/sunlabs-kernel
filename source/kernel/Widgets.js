@@ -36,7 +36,7 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
         // Styling
 	this.setModelValue('setValue', false);
         this.changeAppearanceFor(false);
-        this.toggles = false; // if true each push toggles the model state 
+        this.setToggle(false); // if true each push toggles the model state 
         return this;
     },
 
@@ -52,6 +52,19 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
 
     },
 
+    // simple way of making values persistent: map to attributes
+
+    // KP: FIXME general way of declaring properties mapping to attributes
+    setToggle: function(flag) {
+	this.setAttribute("toggle", !!flag);
+    },
+
+    isToggle: function() {
+	var value = this.getAttribute("toggle");
+	if (value && value == 'true') return true;
+	else return false;
+    },
+
     restoreFromMarkup: function(importer) {
 	ButtonMorph.superClass.restoreFromMarkup.call(this, importer);
 	this.updateView('all');
@@ -62,7 +75,7 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
     
     onMouseDown: function(evt) {
         this.requestKeyboardFocus(evt.hand);
-        if (!this.toggles) {
+        if (!this.isToggle()) {
             this.setValue(true); 
             this.changeAppearanceFor(true); 
         } 
@@ -71,7 +84,7 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
     onMouseMove: function(evt) { },
 
     onMouseUp: function(evt) {
-        var newValue = this.toggles ? !this.getValue() : false;
+        var newValue = this.isToggle() ? !this.getValue() : false;
         this.setValue(newValue); 
         this.changeAppearanceFor(newValue); 
     },
@@ -132,7 +145,7 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
     },
 
     onKeyUp: function(evt) {
-        var newValue = this.toggles ? !this.getValue() : false;
+        var newValue = this.isToggle() ? !this.getValue() : false;
         switch (evt.sanitizedKeyCode()) {
         case Event.KEY_ENTER:
         case Event.KEY_SPACEBAR:
