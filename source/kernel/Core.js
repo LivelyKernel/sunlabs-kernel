@@ -2024,6 +2024,7 @@ Object.extend(Morph.prototype, {
         
         for (var i = 0; i < children.length; i++) {
             if (children[i].tagName == 'defs') { // FIXME FIXME, this is painfully ad hoc!
+		this.defs = children[i];
                 for (var def = children[i].firstChild; def != null; def = def.nextSibling) {
                     switch (def.tagName) {
                     case "clipPath":
@@ -2044,11 +2045,12 @@ Object.extend(Morph.prototype, {
                             var myFill = this.shape.getAttributeNS(null, 'fill');
                             if (myFill) {
                                 this.shape.setAttributeNS(null, 'fill', 'url(#' + newFillId + ')');
+				this.fill = def;
                             } else {
                                 console.log('myFill undefined on %s', this);
                             }
                         } else {
-                            console.log('ouch, cant set fill %s yet, no shape...', newFillId);
+                            console.warn('ouch, cant set fill %s yet, no shape...', newFillId);
                         }
                         def.setAttribute('id', newFillId);
                         break;
@@ -2922,7 +2924,7 @@ Object.extend(Morph.prototype, {
     },
 
     toggleDnD: function() {
-        this.openForDragAndDrop = this.openForDragAndDrop ? false : true;
+        this.openForDragAndDrop = !this.openForDragAndDrop;
     },
 
     openColorPicker: function(funcName, evt) {
@@ -3242,7 +3244,7 @@ Object.extend(Importer.prototype, {
 		
 		var dependent = this.lookupMorph(id);
 		if (!dependent)  {
-                    console.log('dep %s not found', id);
+                    console.warn('dep %s not found', id);
                     continue; 
 		}
     
@@ -3469,48 +3471,69 @@ Object.extend(Model.prototype, {
         var hash = new Hash(this);
         delete hash.dependents;
         return "#<Model: " + Object.toJSON(hash) + ">";
-    },
-
+    }
 
 });
 
 SimpleModel = Class.extend(Model);
 
-Object.extend(SimpleModel.prototype, {
-
-    initialize: function(dep /*, variables... */) {
-	SimpleModel.superClass.initialize.call(this, dep);
-	var variables = $A(arguments);
-	variables.shift();
-	for (var i = 0; i < variables.length; i++) {
-	    this.addVariable(variables[i], null);
-	}
-    },
-
-    addVariable: function(varName, initialValue) {
-	    // functional programming is fun!
-	this[varName] = initialValue;
-	this['get' + varName] = function(name) { return function() { return this[name]; } } (varName); // let name = varName ()
-	this['set' + varName] = function(name) { return function(newValue, v) { this[name] = newValue; 
-										this.changed('get' + name, v); }} (varName);
-
-    },
-
-    toMarkup: function(exporter) {
-	function escapeValue(value) {
-	    return value == null  ? "null" : "<![CDATA[" + Object.toJSON(value) + "]]>";
-	}
-
-	var model = this;
-        return "<model> " 
-	    +  Object.properties(this).filter(function(name) { return name != 'dependents'}).map(function(name) { return '<variable name="' + name + '">' + escapeValue(model[name]) + '</variable>'; }).join('')
-	    + this.dependents.map(function(dep) { 
-		return '<dependent ref="' + dep.id + '">' 
-		    + Object.properties(dep.modelPlug || {}).filter(function(name) { return name != 'model'; }).map(function(prop) { return '<accessor formal="' + prop + '" actual="' + dep.modelPlug[prop] + '"/>'; }).join(' ') + "</dependent>"; }).join('') + "</model>";
+Object.category(SimpleModel.prototype,  "core", function() { 
+    
+    function getter(varName) {
+	return "get" + varName;
     }
     
+    function setter(varName) {
+	return "set" + varName;
+    }
 
-});
+    function escapeValue(value) {
+	return value == null  ? "null" : "<![CDATA[" + Object.toJSON(value) + "]]>";
+    }
+    
+    return {
+	
+	initialize: function(dep /*, variables... */) {
+	    SimpleModel.superClass.initialize.call(this, dep);
+	    var variables = $A(arguments);
+	    variables.shift();
+	    for (var i = 0; i < variables.length; i++) {
+		this.addVariable(variables[i], null);
+	    }
+	},
+	
+	addVariable: function(varName, initialValue) {
+	    // functional programming is fun!
+	    this[varName] = initialValue;
+	    this[getter(varName)] = function(name) { return function() { return this[name]; } } (varName); // let name = varName ()
+	    this[setter(varName)] = function(name) { return function(newValue, v) { this[name] = newValue; 
+										    this.changed(getter(name), v); }} (varName);
+	},
+	
+	makePlug: function() {
+	    var model = this;
+	    var plug = { };
+	    this.variables().forEach(function(v) { plug[getter(v)] = model[getter(v)]; plug[setter(v)] = model[setter(v)]; });
+	    plug.model = model;
+	    return plug;
+	},
+	
+	variables: function() {
+	    return Object.properties(this).filter(function(name) { return name != 'dependents'});
+	},
+	
+	toMarkup: function(exporter) {
+	    var model = this;
+            return "<model> " 
+		+  this.variables().map(function(name) { 
+		    return '<variable name="' + name + '">' + escapeValue(model[name]) + '</variable>'; }).join('')
+		+ this.dependents.map(function(dep) { 
+		    return '<dependent ref="' + dep.id + '">' 
+			+ Object.properties(dep.modelPlug || {}).filter(function(name) { return name != 'model'; }).map(function(prop) { return '<accessor formal="' + prop + '" actual="' + dep.modelPlug[prop] + '"/>'; }).join(' ') + "</dependent>"; }).join('') + "</model>";
+	}
+	
+	
+    }});
 
 
 console.log('loaded Core.js');

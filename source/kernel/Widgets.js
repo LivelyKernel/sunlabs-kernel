@@ -34,7 +34,9 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
     initialize: function(initialBounds) {
         ButtonMorph.superClass.initialize.call(this, initialBounds, "rect");
         // Styling
-        this.changeAppearanceFor(this.getModelValue('MyValue', false));
+	this.setModelValue('setValue', false);
+        this.changeAppearanceFor(false);
+        this.toggles = false; // if true each push toggles the model state 
         return this;
     },
 
@@ -42,13 +44,19 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
         ButtonMorph.superClass.initializeTransientState.call(this, initialBounds);
         // FIXME make persistent
         // this default self connection may get overwritten by, eg, connectModel()...
-	var model = new SimpleModel(this, "MyValue");
-        model.setMyValue(false);
-        this.modelPlug = {model: model, getValue: "getMyValue", setValue: "setMyValue"};
+	var model = new SimpleModel(this, "Value");
+
+        this.modelPlug = model.makePlug();
         this.baseColor = this.defaultFill;
         this.linkToStyles(['button']);
-        this.toggles = false; // if true each push toggles the model state // FIXME: should be persistent
+
     },
+
+    restoreFromMarkup: function(importer) {
+	ButtonMorph.superClass.restoreFromMarkup.call(this, importer);
+	this.updateView('all');
+    },
+
 
     handlesMouseDown: function(evt) { return !evt.altKey; },
     
@@ -91,7 +99,7 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
         var p = this.modelPlug;
         if (p) {
             if (aspect == p.getValue || aspect == 'all') this.changeAppearanceFor(this.getValue());
-            return;
+            return this.getValue();
         }
     },
 
@@ -916,14 +924,8 @@ Object.extend(CheapListMorph.prototype, {
         CheapListMorph.superClass.initializeTransientState.call(this, initialBounds);
         // FIXME make persistent
         // this default self connection may get overwritten by, eg, connectModel()...
-	var model = new SimpleModel(null, 'MyList', 'MySelection');
-        this.modelPlug = {
-            model: model,
-            getList: "getMyList",
-	    setList: "setMyList",
-            getSelection: "getMySelection",
-            setSelection: "setMySelection",
-        };
+	var model = new SimpleModel(null, 'List', 'Selection');
+        this.modelPlug = model.makePlug();
     },
 
 
@@ -1199,8 +1201,8 @@ Object.extend(SliderMorph.prototype, {
     initializeTransientState: function(initialBounds) {
         SliderMorph.superClass.initializeTransientState.call(this, initialBounds);
         // this default self connection may get overwritten by, eg, connectModel()...
-	var model = new SimpleModel(null, 'MyValue', 'MyExtent');
-        this.modelPlug = {model: model, getValue: "getMyValue", setValue: "setMyValue", getExtent: "getMyExtent"};
+	var model = new SimpleModel(null, 'Value', 'Extent');
+        this.modelPlug = model.makePlug();
     },
 
     restoreFromMarkup: function(importer) {
