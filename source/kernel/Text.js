@@ -124,22 +124,13 @@ Object.extend(TextWord.prototype, {
  * This 'class' represents a chunk of text which might be printable or might be whitespace
  */ 
 
-var WordChunk = function() {};
+WordChunk = Class.create();
 
 Object.extend(WordChunk, {
 
     // create a chunk representing printable text
     createWord: function(offset, length) {
-        var w = new WordChunk();
-	w.start = offset;
-	w.length = length;
-	w.isWhite = false;
-	w.isNewLine = false;
-	w.isTab = false;
-	w.render = true;
-	w.bounds = null;
-	w.wasComposed = false;
-	w.word = null;
+        var w = new WordChunk(offset, length);
 	return w;
     },
 
@@ -169,6 +160,18 @@ Object.extend(WordChunk, {
 });
 
 Object.extend(WordChunk.prototype, {
+
+    initialize: function(offset, length) {
+	this.start = offset;
+	this.length = length;
+	this.isWhite = false;
+	this.isNewLine = false;
+	this.isTab = false;
+	this.render = true;
+	this.bounds = null;
+	this.wasComposed = false;
+	this.word = null;
+    },
 
     // accessor function
     setWord: function(newWord) {
@@ -229,38 +232,26 @@ Object.extend(WordChunk.prototype, {
  * This 'class' renders lines composed of words and whitespace
  */ 
 
-var nTextLine = function() {};
-
-Object.extend(nTextLine, {
-
-    // create a new line
-    create: function(textString, startIndex, leftX, topY, font, chunkSkeleton) {
-	var elt = new nTextLine();
-	elt.textString = textString;
-        elt.font = font;
-	elt.startIndex = startIndex;
-	elt.overallStopIndex = textString.legnth - 1;
-	elt.leftX = leftX;
-	elt.topY = topY;
-
-	// XXX
-	elt.spaceWidth = font.getCharWidth(' ');
-	elt.words = [];
-	elt.hasComposed = false;
-	elt.chunks = chunkSkeleton;
-	return elt;
-    },
-
-    // I don't think this does anything, works, or is needed - kam
-    become: function(node) {
-        var elt = HostClass.becomeInstance(node, nTextLine);
-	console.log("nTextLine: surprisingly, this was called");
-        // FIXME
-        return elt;
-    }
-});
+var nTextLine = Class.create();
 
 Object.extend(nTextLine.prototype, {
+    // create a new line
+    initialize: function(textString, startIndex, leftX, topY, font, chunkSkeleton) {
+	this.textString = textString;
+        this.font = font;
+	this.startIndex = startIndex;
+	this.overallStopIndex = textString.legnth - 1;
+	this.leftX = leftX;
+	this.topY = topY;
+
+	// XXX
+	this.spaceWidth = font.getCharWidth(' ');
+	this.words = [];
+	this.hasComposed = false;
+	this.chunks = chunkSkeleton;
+	return this;
+    },
+
 
     // is the character 'c' what we consider to be whitespace? (private)
     isWhiteSpace: function(c) {
@@ -557,9 +548,11 @@ Object.extend(TextBox.prototype, {
         this.setTextColor(textColor);
         
         this.setType("TextBox");
+	/*
         for (var type in ['beforecopy', 'beforecut', 'beforepaste', 'cut', 'copy', 'paste']) {
             this.addEventListener('beforecopy', this.eventHandler, true);
         }
+        */
 
         this.lines = null;//: TextLine[]
         this.leftX = null;//: float
@@ -613,7 +606,7 @@ Object.extend(TextBox.prototype, {
 	var chunkSkeleton;
 
         while (startIndex <= stopIndex) {
-            var line = nTextLine.create(this.textString, startIndex, x, lineY, font, chunkSkeleton);
+            var line = new nTextLine(this.textString, startIndex, x, lineY, font, chunkSkeleton);
             line.compose(compositionWidth);
             line.adjustAfterComposition();
             lines.push(line);
