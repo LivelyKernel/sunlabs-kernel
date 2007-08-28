@@ -886,6 +886,10 @@ Object.extend(TextMorph.prototype, {
 
         if (!evt.altKey) {
             var replacement = String.fromCharCode(evt.charCode);
+            //reijula in enter in firefox causes charcode 0 here, so we use keycode
+            if (evt.charCode == 0) {
+               replacement = String.fromCharCode(evt.keyCode);
+            }
             this.replaceSelectionWith(replacement); 
             evt.stop(); // done
         } 
