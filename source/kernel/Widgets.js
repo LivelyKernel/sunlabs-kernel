@@ -1700,6 +1700,14 @@ Object.extend(WorldMorph, {
             zzScript = widget; 
         }
         if (Config.showTestText) {
+Pen.script = "gggggggggg " +
+"hhhhhhhhhh\n" +
+"iiiiiiiiii " +
+"jjjjjjjjjj\n" +
+"kkkkkkkkkk " +
+"llllllllll\n" +
+"mmmmmmmmmm " +
+"nnnnnnnnnn\n";
             widget = TestTextMorph(pt(50,50).extent(pt(250,50)), Pen.script);
             w.addMorph(widget);
 	    widget.setScale(3.0);
