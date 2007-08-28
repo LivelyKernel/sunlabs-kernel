@@ -907,12 +907,10 @@ Object.extend(CheapListMorph.prototype, {
 
         this.itemList = itemList;
 	this.setModelValue('setList', itemList);
-	console.log('model now %s', this.modelPlug.model);
-	
+	//console.log('model now %s', this.modelPlug.model);
         this.layoutChanged();
         return this;
     },
-
 
     initializeTransientState: function(initialBounds) {
         CheapListMorph.superClass.initializeTransientState.call(this, initialBounds);
@@ -926,8 +924,6 @@ Object.extend(CheapListMorph.prototype, {
             getSelection: "getMySelection",
             setSelection: "setMySelection",
         };
-	
-        this.itemList = [];// FIXME recover that state
     },
 
 
@@ -1057,10 +1053,17 @@ Object.extend(CheapListMorph.prototype, {
         var c = this.modelPlug;
 
         if (c) { // New style connect
-            if (aspect == c.getList || aspect == 'all') this.updateList(this.getList());
-            if (aspect == c.getSelection) this.setSelectionToMatch(this.getSelection());
-            return;
-        }
+	    switch (aspect) {
+	    case this.modelPlug.getList:
+	    case 'all':
+		this.updateList(this.getList());
+		return this.itemList; // debugging
+	    case this.modelPlug.getSelection:
+		var selection = this.getSelection();
+		this.setSelectionToMatch(selection);
+		return selection; //debugging
+            }
+	}
     },//.logCalls('updateView'),
 
     getList: function() {

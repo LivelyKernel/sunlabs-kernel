@@ -298,15 +298,15 @@ Object.extend(Function.prototype, {
 	return this.wrap(advice);
     },
     
-    logCalls: function(prefix, isUrgent) {
+    logCalls: function(name, isUrgent) {
 	var advice = function(proceed) {
             var args = $A(arguments); args.shift(); 
-            if (isUrgent) { 
-		console.warn('%s: %s args: %s', prefix, this, args); 
-            } else { 
-		console.log('%s: %s args: %s', prefix, this, args);
-            } 
-            return proceed.apply(this, args); 
+            var result = proceed.apply(this, args);
+            if (isUrgent) 
+		console.warn('%s.%s(%s) -> %s', this, name, args, result); 
+            else
+		console.log( '%s.%s(%s) -> %s', this, name, args, result);
+	    return result;
 	};
 	return this.wrap(advice);
     }
@@ -1909,10 +1909,10 @@ Object.extend(Morph, {
     },
 
     becomeMorph: function(node, importer) {
-        console.log('making morph from %s', node);
+        //console.log('making morph from %s', node);
         // call reflectively b/c 'this' is not a DisplayObject yet. 
         var morphTypeName = DisplayObject.prototype.getType.call(node); 
-        console.log('have morph %s', morphTypeName);
+        //console.log('have morph %s', morphTypeName);
 
         if (!morphTypeName || !window[morphTypeName]) {
             throw new Error('node cannot be a morph of type ' + morphTypeName);
@@ -2078,7 +2078,7 @@ Object.extend(Morph.prototype, {
         
         if (/ellipse|rect|polyline|polygon/.test(element.tagName)) {
             HostClass.becomeInstance(element, Shape.classForTag(element.tagName));
-            console.log('made element %s, ' + element, element);
+            //console.log('made element %s, ' + element, element);
             this.shape = element;
             return true;
         }
@@ -2088,7 +2088,7 @@ Object.extend(Morph.prototype, {
         switch (type) {
         case 'Submorphs':
             this.submorphs = DisplayObjectList.become(element, type);
-            console.log('recursing into children of %s', this);
+            //console.log('recursing into children of %s', this);
             this.submorphs.each(function(m) { Morph.becomeMorph(m, importer); });
             return true;
         case 'FocusHalo':
@@ -2837,7 +2837,7 @@ Object.extend(Morph.prototype, {
         this.focusHalo.setLineJoin(Shape.LineJoins.ROUND);
         this.adjustFocusHalo();
         return true;
-    }.logCalls('addFocusHalo')
+    }
     
 });
 
@@ -3214,7 +3214,7 @@ Object.extend(Importer.prototype, {
         var newId = this.morphMap["" + oldId];
         if (newId) {
             var result = document.getElementById(newId);
-            console.log('importer found document id %s', result);
+            //console.log('importer found document id %s', result);
             return result;
         } else {
             return null;
@@ -3256,7 +3256,7 @@ Object.extend(Importer.prototype, {
                     }
 		}
 		
-		console.log('dependent %s, old id %s modelPlug %s', dependent, id, Object.toJSON(plug));
+		//console.log('dependent %s, old id %s modelPlug %s', dependent, id, Object.toJSON(plug));
 		plug.model = model;
 		dependent.connectModel(plug);
 		break;
@@ -3286,10 +3286,13 @@ Object.extend(Morph.prototype, {
     dumpModel: function() {
         var exporter = new Exporter(this);
         var xml = exporter.serialize();
-	console.log('%s dumping model %s', this, this.model);
+	//console.log('%s dumping model %s', this, this.model);
         var modelxml = exporter.serializeSimpleModel(this.model);
-	console.log('%s has model %s, %s', this, this.model, modelxml);
-	console.log('%s has model keys %s', this, Object.keys(this.model));
+	//console.log('%s has model %s, %s', this, this.model, modelxml);
+	//console.log('%s has model keys %s', this, Object.keys(this.model));
+	var model = this.model;
+	console.log('%s model %s', this, Object.keys(this.model).filter(function(k) { return !(model[k] instanceof Function) && k !='dependents' }).map(function(k) { return k + " = " + Object.inspect(model[k]); }));
+	
     },
     
     addSvgInspector: function() {
