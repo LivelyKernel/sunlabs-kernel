@@ -1699,6 +1699,11 @@ Object.extend(WorldMorph, {
             w.addMorph(widget);
             zzScript = widget; 
         }
+        if (Config.showTestText) {
+            widget = TestTextMorph(pt(50,50).extent(pt(250,50)), Pen.script);
+            w.addMorph(widget);
+	    widget.setScale(3.0);
+        }
         
         return w; 
     },
