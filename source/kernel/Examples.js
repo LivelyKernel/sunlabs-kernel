@@ -4165,12 +4165,14 @@ Object.extend(CanvasScapeMorph.prototype, {
         
         morppi = TextMorph(Rectangle(0,0,800,20));
         morppi.setTextString(this.level+ ". Blue walls found " + this.found + " / " + this.maxobjects + ". Time left: " + this.timeleft + ". Time passed: " + this.timepassed);
+        morppi.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseUp: "onMouseUp"});
         this.addMorph(morppi);
         this.morphArray.push(morppi);
         
         if (this.note != "") {
             morppi = TextMorph(Rectangle(0,280,800,20));
             morppi.setTextString(this.note);
+            morppi.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseUp: "onMouseUp"});
             this.addMorph(morppi);
             this.morphArray.push(morppi);
         }
@@ -4276,13 +4278,13 @@ Object.extend(CanvasScapeMorph.prototype, {
 
             if (drawobject) {
                 morppi = Morph(pt(0,0).asRectangle(),"rect"); // polygon
-                  
+                morppi.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseUp: "onMouseUp"});
                 morppi.setShape(PolygonShape(null, [pt(tl[0],tl[1]),pt(tr[0],tr[1]),pt(br[0],br[1]),pt(bl[0],bl[1])],
                                 Color.blue,1,Color.black));
                 this.addMorph(morppi);
             } else {
                 morppi = Morph(pt(0,0).asRectangle(),"rect"); // polygon
-                
+                morppi.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseUp: "onMouseUp"});
                 morppi.setShape(PolygonShape(null, [pt(tl[0],tl[1]),pt(tr[0],tr[1]),pt(br[0],br[1]),pt(bl[0],bl[1])],
                                 this.color,1,Color.black));
                 this.addMorph(morppi);
