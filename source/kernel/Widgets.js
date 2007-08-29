@@ -2326,7 +2326,7 @@ Object.extend(LinkMorph.prototype, {
         this.addChildElement(sign);
 
         if (!otherWorld) {
-            otherWorld = WorldMorph.createPrototypeWorld(Canvas, 2, null);  //*** need a way to generate proper world numbers
+            otherWorld = WorldMorph.createEmptyWorld(Canvas, 2, null);  //*** need a way to generate proper world numbers
             var pathBack = LinkMorph(WorldMorph.current(), bounds);
             pathBack.setFill(RadialGradient.makeCenteredGradient(Color.primary.yellow, Color.black));
             otherWorld.addMorph(pathBack);
