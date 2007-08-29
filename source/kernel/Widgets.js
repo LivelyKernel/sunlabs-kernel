@@ -1975,7 +1975,7 @@ Object.extend(WorldMorph.prototype, {
     addMorphs: function(evt) {
         console.log("mouse point == %s", evt.mousePoint);
         var items = [
-            ["New subworld (LinkMorph)", this.world(), "addMorph", LinkMorph(null)],
+            ["New subworld (LinkMorph)", this.world(), "addMorph", LinkMorph(null, evt.mousePoint)],
             ["Rectangle", this.world(), "addMorph", Morph(Rectangle(evt.mousePoint.x, evt.mousePoint.y, 50, 30), "rect")],
             ["Ellipse", this.world(), "addMorph", Morph(Rectangle(evt.mousePoint.x, evt.mousePoint.y, 50, 30), "ellipse")],
             ["TextMorph", this.world(), "addMorph", TextMorph(evt.mousePoint.extent(pt(120,10)), "This is a TextMorph")],
