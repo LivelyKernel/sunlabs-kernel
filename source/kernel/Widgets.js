@@ -3,13 +3,13 @@
  * (morphs) that will be included in the system when it starts.
  */
 
-//	Basic theory of widgets...
-//	A widget is a view/controller morph, and it views some aspect of a model
-//	Viewing is by way of "plugs" which use MVC-style viewing, and select some
-//	aspect or aspects of the model to be viewed.
+//  Basic theory of widgets...
+//  A widget is a view/controller morph, and it views some aspect of a model
+//  Viewing is by way of "plugs" which use MVC-style viewing, and select some
+//  aspect or aspects of the model to be viewed.
 
-//	See the comments in Model, and the Model protocol in Morph (getModelValue(), etc)
-//	The Inspector and Browser are fairly simple examples of this architecture in use.
+//  See the comments in Model, and the Model protocol in Morph (getModelValue(), etc)
+//  The Inspector and Browser are fairly simple examples of this architecture in use.
 
 // ===========================================================================
 // Simple widgets
@@ -34,7 +34,7 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
     initialize: function(initialBounds) {
         ButtonMorph.superClass.initialize.call(this, initialBounds, "rect");
         // Styling
-	this.setModelValue('setValue', false);
+        this.setModelValue('setValue', false);
         this.changeAppearanceFor(false);
         this.setToggle(false); // if true each push toggles the model state 
         return this;
@@ -44,7 +44,7 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
         ButtonMorph.superClass.initializeTransientState.call(this, initialBounds);
         // FIXME make persistent
         // this default self connection may get overwritten by, eg, connectModel()...
-	var model = new SimpleModel(this, "Value");
+        var model = new SimpleModel(this, "Value");
 
         this.modelPlug = model.makePlug();
         this.baseColor = this.defaultFill;
@@ -56,20 +56,19 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
 
     // KP: FIXME general way of declaring properties mapping to attributes
     setToggle: function(flag) {
-	this.setAttribute("toggle", !!flag);
+        this.setAttribute("toggle", !!flag);
     },
 
     isToggle: function() {
-	var value = this.getAttribute("toggle");
-	if (value && value == 'true') return true;
-	else return false;
+        var value = this.getAttribute("toggle");
+        if (value && value == 'true') return true;
+        else return false;
     },
 
     restoreFromMarkup: function(importer) {
-	ButtonMorph.superClass.restoreFromMarkup.call(this, importer);
-	this.updateView('all');
+        ButtonMorph.superClass.restoreFromMarkup.call(this, importer);
+        this.updateView('all');
     },
-
 
     handlesMouseDown: function(evt) { return !evt.altKey; },
     
@@ -92,15 +91,15 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
     changeAppearanceFor: function(value) {
         var base = value ? this.baseColor.lighter() : this.baseColor;
         switch (this.fillType) {
-	    case "linear gradient" :
-		this.setFill(LinearGradient.makeGradient(base, base.lighter(), LinearGradient.SouthNorth));
-		break;
-	    case "radial gradient" :
-		this.setFill(RadialGradient.makeCenteredGradient(base.lighter(), base));
-		break;
-	    default:
-		this.setFill(base);
-	}
+        case "linear gradient" :
+            this.setFill(LinearGradient.makeGradient(base, base.lighter(), LinearGradient.SouthNorth));
+            break;
+        case "radial gradient" :
+            this.setFill(RadialGradient.makeCenteredGradient(base.lighter(), base));
+            break;
+        default:
+            this.setFill(base);
+        }
     },
 
     applyStyle: function(spec) {
@@ -180,21 +179,20 @@ Object.extend(ImageMorph.prototype, {
     },
 
     restoreFromMarkup: function(importer) {
-	ImageMorph.superClass.restoreFromMarkup.call(this, importer);
+        ImageMorph.superClass.restoreFromMarkup.call(this, importer);
     },
 
-    
     loadGraphics: function(localURL, scale) {
         if (this.image && this.image.tagName == 'image') {
             this.removeChild(this.image);
             this.image = null;
         }
-	
+
         this.setFill(null);
         this.image = NodeFactory.create("use").withHref(localURL);
 
         if (scale) {
-	    this.image.applyTransform(Transform.createSimilitude(pt(0, 0), 0, scale));
+            this.image.applyTransform(Transform.createSimilitude(pt(0, 0), 0, scale));
         }
         
         this.addChildElement(this.image);
@@ -211,7 +209,7 @@ Object.extend(ImageMorph.prototype, {
             this.image.disableBrowserDrag();
             this.addChildElement(this.image);
         }
-	
+
         this.image.withHref(url);
     },
 
@@ -336,7 +334,7 @@ Object.extend(TitleBarMorph.prototype, {
         TitleBarMorph.superClass.initialize.call(this, Rectangle(0, isExternal? - bh : 0, 
                                                  windowWidth, bh), "rect");
         this.linkToStyles(['titleBar']);
-	// this.setFill(LinearGradient.makeGradient(Color.primary.blue, Color.primary.blue.lighter(3)));
+        // this.setFill(LinearGradient.makeGradient(Color.primary.blue, Color.primary.blue.lighter(3)));
         this.ignoreEvents();
 
         var cell = Rectangle(0, 0, bh, bh);
@@ -402,6 +400,7 @@ Object.extend(TitleBarMorph.prototype, {
 WindowControlMorph = HostClass.create('WindowControlMorph', Morph);
 
 Object.extend(WindowControlMorph.prototype, {
+
     defaultBorderWidth: 0,
 
     initialize: function(rect, inset, color, target, action, helpText) {
@@ -410,7 +409,7 @@ Object.extend(WindowControlMorph.prototype, {
         this.target = target;
         this.action = action;
         this.color = color;
-	MouseOverHandler.observe(this);
+        MouseOverHandler.observe(this);
         this.helpText = helpText; // string to be displayed when mouse is brought over the icon
         return this;
     },
@@ -445,7 +444,7 @@ Object.extend(WindowControlMorph.prototype, {
     
     showHelp: function(evt) {
         if (Config.suppressBalloonHelp) return;  // DI: maybe settable in window menu?
-	// FIXME: The size of the balloon should be calculated based on string size
+        // FIXME: The size of the balloon should be calculated based on string size
         this.help = TextMorph(Rectangle(evt.x, evt.y, 80, 20), this.helpText);
         // trying to relay mouse events to the WindowControlMorph
         this.help.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
@@ -925,8 +924,8 @@ Object.extend(CheapListMorph.prototype, {
         CheapListMorph.superClass.initialize.call(this, initialBounds, listText);
 
         this.itemList = itemList;
-	this.setModelValue('setList', itemList);
-	//console.log('model now %s', this.modelPlug.model);
+        this.setModelValue('setList', itemList);
+        //console.log('model now %s', this.modelPlug.model);
         this.layoutChanged();
         return this;
     },
@@ -935,15 +934,14 @@ Object.extend(CheapListMorph.prototype, {
         CheapListMorph.superClass.initializeTransientState.call(this, initialBounds);
         // FIXME make persistent
         // this default self connection may get overwritten by, eg, connectModel()...
-	var model = new SimpleModel(null, 'List', 'Selection');
+        var model = new SimpleModel(null, 'List', 'Selection');
         this.modelPlug = model.makePlug();
     },
 
-
     restoreFromMarkup: function(importer) {
-	CheapListMorph.superClass.restoreFromMarkup.call(this, importer);
-	this.itemList = this.textString.split('\n');
-	this.updateView('all');
+        CheapListMorph.superClass.restoreFromMarkup.call(this, importer);
+        this.itemList = this.textString.split('\n');
+        this.updateView('all');
     },
     
     takesKeyboardFocus: function() { 
@@ -1066,17 +1064,17 @@ Object.extend(CheapListMorph.prototype, {
         var c = this.modelPlug;
 
         if (c) { // New style connect
-	    switch (aspect) {
-	    case this.modelPlug.getList:
-	    case 'all':
-		this.updateList(this.getList());
-		return this.itemList; // debugging
-	    case this.modelPlug.getSelection:
-		var selection = this.getSelection();
-		this.setSelectionToMatch(selection);
-		return selection; //debugging
+            switch (aspect) {
+            case this.modelPlug.getList:
+            case 'all':
+                this.updateList(this.getList());
+                return this.itemList; // debugging
+            case this.modelPlug.getSelection:
+                var selection = this.getSelection();
+                this.setSelectionToMatch(selection);
+                return selection; //debugging
             }
-	}
+        }
     },//.logCalls('updateView'),
 
     getList: function() {
@@ -1212,7 +1210,7 @@ Object.extend(SliderMorph.prototype, {
     initializeTransientState: function(initialBounds) {
         SliderMorph.superClass.initializeTransientState.call(this, initialBounds);
         // this default self connection may get overwritten by, eg, connectModel()...
-	var model = new SimpleModel(null, 'Value', 'Extent');
+        var model = new SimpleModel(null, 'Value', 'Extent');
         this.modelPlug = model.makePlug();
     },
 
@@ -1712,18 +1710,19 @@ Object.extend(WorldMorph, {
             w.addMorph(widget);
             zzScript = widget; 
         }
+
         if (Config.showTestText) {
-Pen.script = "gggggggggg " +
-"hhhhhhhhhh\n" +
-"iiiiiiiiii " +
-"jjjjjjjjjj\n" +
-"kkkkkkkkkk " +
-"llllllllll\n" +
-"mmmmmmmmmm " +
-"nnnnnnnnnn\n";
+            Pen.script = "gggggggggg " +
+            "hhhhhhhhhh\n" +
+            "iiiiiiiiii " +
+            "jjjjjjjjjj\n" +
+            "kkkkkkkkkk " +
+            "llllllllll\n" +
+            "mmmmmmmmmm " +
+            "nnnnnnnnnn\n";
             widget = TestTextMorph(pt(50,50).extent(pt(250,50)), Pen.script);
             w.addMorph(widget);
-	    widget.setScale(3.0);
+            widget.setScale(3.0);
         }
         
         return w; 
@@ -1732,40 +1731,40 @@ Pen.script = "gggggggggg " +
     // Default styles for the style manager    
     defaultThemes: { // --Style architecture is under construction!--
         primitive: { // This is to be the simples widgets -- flat fills and no rounding or translucency
-            styleName: 'primitive',
+            styleName:   'primitive',
             window:      { rounding: 0 },
             titleBar:    { rounding: 0, borderWidth: 2, bordercolor: Color.black,
-				fill: Color.primary.blue.lighter()},
-            panel:	 {  },
+            fill:        Color.primary.blue.lighter()},
+            panel:       {  },
             vslider:     { borderColor: Color.black, borderWidth: 1, fill: Color.blue.lighter()},
             hslider:     { borderColor: Color.black, borderWidth: 1, fill: Color.blue.lighter()},
             elevator:    { borderColor: Color.black, borderWidth: 1, fill: Color.green.lighter(2)},
             button:      { borderColor: Color.black, borderWidth: 1, rounding: 0,
-				baseColor: Color.neutral.gray, fillType: "simple" },
+            baseColor:   Color.neutral.gray, fillType: "simple" },
             widgetPanel: { borderColor: Color.red, borderWidth: 2, rounding: 0,
-				fill: Color.blue.lighter(), opacity: 1},
+            fill:        Color.blue.lighter(), opacity: 1},
             clock:       { size: 100, borderColor: Color.green.lighter(), borderWidth: 1,
-				fill: Color.yellow, roman: true},
+            fill:        Color.yellow, roman: true},
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue}
         },
 
         lively: { // This is to be the style we like to show for our personality
             styleName: 'lively',
-            window:	 { rounding: 8 },
+            window:      { rounding: 8 },
             titleBar:    { rounding: 8, borderWidth: 2, bordercolor: Color.black,
-			    fill: LinearGradient.makeGradient(Color.primary.blue, Color.primary.blue.lighter(3))},
-            panel:	 {  },
+            fill:        LinearGradient.makeGradient(Color.primary.blue, Color.primary.blue.lighter(3))},
+            panel:       {  },
             vslider:     { borderColor: Color.black, borderWidth: 1, 
                            fill: LinearGradient.makeGradient(Color.primary.blue.lighter().lighter(), Color.primary.blue, LinearGradient.EastWest)},
             hslider:     { borderColor: Color.black, borderWidth: 1,
                            fill: LinearGradient.makeGradient(Color.primary.blue.lighter().lighter(), Color.primary.blue, LinearGradient.NorthSouth)},
             elevator:    { borderColor: Color.green.lighter(), borderWidth: 1},
             button:      { borderColor: Color.neutral.gray, borderWidth: 0.3, rounding: 4,
-				baseColor: Color.neutral.gray, fillType: "linear gradient" },
+            baseColor:   Color.neutral.gray, fillType: "linear gradient" },
             widgetPanel: { borderColor: Color.blue, borderWidth: 4, rounding: 16,
-				fill: Color.blue.lighter(), opacity: 0.4},
+            fill:        Color.blue.lighter(), opacity: 0.4},
             clock:       { size: 100, borderColor: Color.green.lighter(), borderWidth: 1,
-				fill: Color.yellow, roman: true},
+            fill:        Color.yellow, roman: true},
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue}
         },
 
@@ -1773,16 +1772,16 @@ Pen.script = "gggggggggg " +
             styleName: 'turquoise',
             window:      { rounding: 8},
             titleBar:    { rounding: 8, borderWidth: 2, bordercolor: Color.black,
-				fill: LinearGradient.makeGradient(Color.turquoise, Color.turquoise.lighter(3))},
-            panel:	 {  },
+            fill:        LinearGradient.makeGradient(Color.turquoise, Color.turquoise.lighter(3))},
+            panel:       {  },
             slider:      { borderColor: Color.green.lighter(), borderWidth: 1},
             elevator:    { borderColor: Color.green.lighter(), borderWidth: 1},
             button:      { borderColor: Color.neutral.gray.darker(), borderWidth: 2, rounding: 8,
-				baseColor: Color.turquoise.darker(), fillType: "radial gradient" },
+            baseColor:   Color.turquoise.darker(), fillType: "radial gradient" },
             widgetPanel: { borderColor: Color.neutral.gray.darker(), borderWidth: 4,
-				fill: Color.turquoise.lighter(3), rounding: 16},
+            fill:        Color.turquoise.lighter(3), rounding: 16},
             clock:       { size: 100, borderColor: Color.green.lighter(), borderWidth: 1,
-				fill: Color.yellow, roman: true},
+            fill:        Color.yellow, roman: true},
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue}
         }
     }
@@ -1842,13 +1841,14 @@ Object.extend(WorldMorph.prototype, {
         canvas.appendChild(this);
         this.addHand(HandMorph(true));
 
-
-	if (Prototype.Browser.WebKit) {
-            if (this.worldId != 1)
-		window.parent.location.hash = '#world_' + this.worldId;
-            else
-		window.parent.location.hash = "";
-	} // Mozilla doesn't like this and starts reloading the page over and over
+        // Mozilla doesn't like this and starts reloading the page over and over
+        if (Prototype.Browser.WebKit) {
+            if (this.worldId != 1) {
+                window.parent.location.hash = '#world_' + this.worldId;
+            } else {
+                window.parent.location.hash = "";
+            }
+        }
     },
     
     addHand: function(hand) {
@@ -1899,7 +1899,7 @@ Object.extend(WorldMorph.prototype, {
         var target = this; // trouble with function scope
         var themeNames = Object.properties(themes);
         var items = themeNames.map(
-        	function(each) { return [each, target, "setDisplayTheme", themes[each]]; });
+            function(each) { return [each, target, "setDisplayTheme", themes[each]]; });
         MenuMorph(items).openIn(this.world(), evt.mousePoint);
     },
   
@@ -2146,18 +2146,18 @@ Object.extend(HandMorph.prototype, {
                 this.hasMovedSignificantly = true;
                 
             if (evt.shiftKey && this.mode == "shiftDragForDup") {
-		if (this.hasMovedSignificantly) {
-			var m = this.dragMorph;
-			this.dragMorph = null;
-			this.mode = "normal";
-			m.copyToHand(this);
-			var offset = evt.mousePoint.subPt(this.lastMouseDownPoint);
-			this.submorphs.each(function(m) { m.moveBy(offset); });
-		}
-		return;
-	    }
+                if (this.hasMovedSignificantly) {
+                    var m = this.dragMorph;
+                    this.dragMorph = null;
+                    this.mode = "normal";
+                    m.copyToHand(this);
+                    var offset = evt.mousePoint.subPt(this.lastMouseDownPoint);
+                    this.submorphs.each(function(m) { m.moveBy(offset); });
+                }
+                return;
+            }
 
-	    if (!this.hasSubmorphs()) {
+            if (!this.hasSubmorphs()) {
                 (this.mouseFocus || this.owner()).mouseEvent(evt, this.mouseFocus != null);
             }
         
@@ -2184,7 +2184,7 @@ Object.extend(HandMorph.prototype, {
             } else 
                 this.mouseFocus.mouseEvent(evt, true); 
         } else {
-	    if (this.hasSubmorphs() && (evt.type == "mousedown" || this.hasMovedSignificantly)) {
+            if (this.hasSubmorphs() && (evt.type == "mousedown" || this.hasMovedSignificantly)) {
                 // If laden, then drop on mouse up or down
                 var m = this.topSubmorph();
                 var receiver = this.owner().morphToGrabOrReceive(evt, m);
@@ -2235,12 +2235,13 @@ Object.extend(HandMorph.prototype, {
     
     grabMorph: function(grabbedMorph, evt) { 
         if (evt.shiftKey && Config.shiftDragForDup && !(grabbedMorph instanceof LinkMorph)) {
-		this.mode = "shiftDragForDup";
-		this.dragMorph = grabbedMorph; 
-		return;
-	}
+            this.mode = "shiftDragForDup";
+            this.dragMorph = grabbedMorph; 
+            return;
+        }
+        
         if (evt.altKey) {
-	    grabbedMorph.showMorphMenu(evt);
+            grabbedMorph.showMorphMenu(evt);
             return;
         }
 
@@ -2331,7 +2332,7 @@ Object.extend(LinkMorph.prototype, {
         // morph.assign('myWorld', otherWorld);
 
         // Balloon help support
-	MouseOverHandler.observe(this);
+        MouseOverHandler.observe(this);
         this.helpText = "Shift-click to open or close a subworld"; 
 
         return this;
@@ -2382,7 +2383,8 @@ Object.extend(LinkMorph.prototype, {
     
     showHelp: function(evt) {
         if (Config.suppressBalloonHelp) return;  // DI: maybe settable in window menu?
-	// Create only one help balloon at a time
+        
+        // Create only one help balloon at a time
         if (this.help) return;
         
         this.help = TextMorph(Rectangle(evt.x, evt.y, 200, 20), this.helpText);
