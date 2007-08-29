@@ -173,33 +173,33 @@ Object.extend(ImageMorph.prototype, {
     initialize: function(viewPort, url) {
         ImageMorph.superClass.initialize.call(this, viewPort, "rect");
         this.url = url;
-        //this.setFill(Color.blue.lighter());
-        //this.setBorderWidth(0);
         this.dim = viewPort.extent();
-        // console.log('got dim %s', this.dim);
-        // this.image.setAttributeNS(null, 'ondragstart', '{console.log("not dragging %s", evt); evt.preventDefault(); }');
-        // onDragStart =
         if (url) { 
             this.loadURL(url);
         }
     },
 
+    restoreFromMarkup: function(importer) {
+	ImageMorph.superClass.restoreFromMarkup.call(this, importer);
+    },
+
+    
     loadGraphics: function(localURL, scale) {
         if (this.image && this.image.tagName == 'image') {
             this.removeChild(this.image);
             this.image = null;
         }
-
+	
         this.setFill(null);
         this.image = NodeFactory.create("use").withHref(localURL);
 
         if (scale) {
-            this.image.setAttributeNS(null, 'transform', 'scale(' + scale + ')');
+	    this.image.applyTransform(Transform.createSimilitude(pt(0, 0), 0, scale));
         }
         
         this.addChildElement(this.image);
     },
-
+    
     loadURL: function(url) {
         if (this.image && this.image.tagName != 'image') {
             this.removeChild(this.image);
@@ -210,8 +210,8 @@ Object.extend(ImageMorph.prototype, {
             this.image = NodeFactory.create("image", { width: this.dim.x, height: this.dim.y});
             this.image.disableBrowserDrag();
             this.addChildElement(this.image);
-        } 
-
+        }
+	
         this.image.withHref(url);
     },
 
@@ -410,9 +410,7 @@ Object.extend(WindowControlMorph.prototype, {
         this.target = target;
         this.action = action;
         this.color = color;
-        var handler = { handleEvent: function(evt) { evt.init(); this['on' + evt.capitalizedType()].call(this, evt); }.bind(this).logErrors('WindowControlMorph Handler') };
-        this.addEventListener("mouseover", handler, true);
-        this.addEventListener("mouseout", handler, true);
+	MouseOverHandler.observe(this);
         this.helpText = helpText; // string to be displayed when mouse is brought over the icon
         return this;
     },
@@ -2298,7 +2296,7 @@ Object.extend(LinkMorph.prototype, {
     fisheyeProximity: 0.5, // make it grow only when the hand gets closer
     defaultFill: Color.black,
     defaultBorderColor: Color.black,
-
+    
     initialize: function(otherWorld /*, rest*/) {
         // In a scripter, type: world.addMorph(LinkMorph(null))
         var bounds = arguments[1];
@@ -2317,7 +2315,6 @@ Object.extend(LinkMorph.prototype, {
         var sign = NodeFactory.create("use").withHref("#WebSpiderIcon");
         sign.applyTransform(Transform.createSimilitude(pt(-26, -26), 0, 0.1));
         this.addChildElement(sign);
-        //this.toggleFisheye();
 
         if (!otherWorld) {
             otherWorld = WorldMorph.createPrototypeWorld(Canvas, 2, null);  //*** need a way to generate proper world numbers
@@ -2334,9 +2331,7 @@ Object.extend(LinkMorph.prototype, {
         // morph.assign('myWorld', otherWorld);
 
         // Balloon help support
-        var handler = { handleEvent: function(evt) { evt.init(); this['on' + evt.capitalizedType()].call(this, evt); }.bind(this).logErrors('Mouseover Handler') };
-        this.addEventListener("mouseover", handler, true);
-        this.addEventListener("mouseout", handler, true);
+	MouseOverHandler.observe(this);
         this.helpText = "Shift-click to open or close a subworld"; 
 
         return this;

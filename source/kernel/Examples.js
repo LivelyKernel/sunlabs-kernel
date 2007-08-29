@@ -4492,7 +4492,7 @@ Object.extend(CanvasScapeMorph.prototype, {
             this.changeKey(38, 1);
         else if (key == Event.KEY_DOWN)
             this.changeKey(40, 1);
-        else if (event.keyCode == 32) { //spacebar
+        else if (event.keyCode == Event.KEY_SPACEBAR) { 
             this.startGame();
         }
     },

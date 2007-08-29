@@ -1980,6 +1980,28 @@ Object.extend(MouseHandlerForDragging.prototype, {
     }
 });
 
+var MouseOverHandler = { 
+    handleEvent: function(evt) { 
+	evt.init();
+	var target = evt.currentTarget;
+	if (target instanceof Morph) {
+	    var handler = target['on' + evt.capitalizedType()];
+	    if (handler) {
+		handler.call(target, evt);
+	    }
+	} else {
+	    console.warn('mouseover event on nonmorph %s', target);
+	}
+
+    }.logErrors('MouseOver Handler'),
+
+    observe: function(morph) {
+	morph.addEventListener("mouseover", this, true);
+	morph.addEventListener("mouseout", this, true);
+    }
+
+};
+
 
 // Morph initialization functions
 Object.extend(Morph.prototype, {
