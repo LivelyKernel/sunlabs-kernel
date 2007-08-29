@@ -1418,7 +1418,7 @@ Object.extend(AsteroidsSprite.prototype, {
     }
 
     if (!text_ships) {
-        text_ships = TextMorph(Rectangle(10, gameHeight, 100, fontHeight), "Ships: " + shipsLeft);
+        text_ships = TextMorph(Rectangle(10, gameHeight-fontHeight-6, 100, fontHeight), "Ships: " + shipsLeft);
         text_ships.setFill(Color.black);
         text_ships.setTextColor(Color.yellow);
         gameMorph.addMorph(text_ships);
