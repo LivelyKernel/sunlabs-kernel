@@ -285,5 +285,5 @@ Object.extend(Credential.prototype, {
 
 });
 
-console.log('loaded WebStore.js');
+console.log('loaded Storage.js');
 
