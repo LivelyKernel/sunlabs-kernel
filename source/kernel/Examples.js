@@ -338,36 +338,43 @@ Object.extend(DoodleMorph.prototype, {
     initialize: function(rect) {
         DoodleMorph.superClass.initialize.call(this, rect, "rect");
         this.drawingColor = Color.red;
-
+        this.lineWidth = 2.0;
+        
         // The doodle that we are creating currently
         this.currentMorph = null;
         this.start = null;
 
         const iconSize = 40;
-        var r = Rectangle(1, 1, iconSize, iconSize /* rect.height - iconSize - 10 */);
-        this.selectbutton = new ImageButtonMorph(r, IMAGES + "select.png", IMAGES + "select_down.png");
-        var r = Rectangle(1, 41, iconSize, iconSize /* rect.height - iconSize - 10 */);
+        var r = Rectangle(0, 0, iconSize, iconSize /* rect.height - iconSize - 10 */);
+        this.linebutton = new ImageButtonMorph(r, IMAGES + "line.png", IMAGES + "line_down.png");
+        var r = Rectangle(0, 40, iconSize, iconSize /* rect.height - iconSize - 10 */);
         this.rectbutton = new ImageButtonMorph(r, IMAGES + "rectangle.png", IMAGES + "rectangle_down.png");
-        var r = Rectangle(1, 81, iconSize, iconSize /* rect.height - iconSize - 10 */);
+        var r = Rectangle(0, 80, iconSize, iconSize /* rect.height - iconSize - 10 */);
         this.circlebutton = new ImageButtonMorph(r, IMAGES + "circle.png", IMAGES + "circle_down.png");
-        var r = Rectangle(1, 121, iconSize, iconSize /* rect.height - iconSize - 10 */);
+        var r = Rectangle(0, 120, iconSize, iconSize /* rect.height - iconSize - 10 */);
+        this.fillbutton = new ImageButtonMorph(r, IMAGES + "copy.png", IMAGES + "copy_down.png");
+        var r = Rectangle(0, 160, iconSize, iconSize /* rect.height - iconSize - 10 */);
+        this.widthbutton = new ImageButtonMorph(r, IMAGES + "lines.png", IMAGES + "lines_down.png");
+        var r = Rectangle(0, 200, iconSize, iconSize /* rect.height - iconSize - 10 */);
         this.colorsbutton = new ImageButtonMorph(r, IMAGES + "colors.png", IMAGES + "colors_down.png");
-        var r = Rectangle(1, 161, iconSize, iconSize /* rect.height - iconSize - 10 */);
-        this.copybutton = new ImageButtonMorph(r, IMAGES + "copy.png", IMAGES + "copy_down.png");
-        var r = Rectangle(1, 201, iconSize, iconSize /* rect.height - iconSize - 10 */);
-        this.worldbutton = new ImageButtonMorph(r, IMAGES + "world.png", IMAGES + "world_down.png");
+        var r = Rectangle(0, 240, iconSize, iconSize /* rect.height - iconSize - 10 */);
+        this.stylebutton = new ImageButtonMorph(r, IMAGES + "style.png", IMAGES + "style_down.png");
 
 
         // this.rectbutton.align(this.rectbutton.bounds().leftCenter(),
         // this.mapclip.bounds().rightCenter().addXY(clipInset, 0));
         // this.rectbutton.connectModel({model: this.mapmodel, setValue: "goRight", getValue: "isStepping"});
-        this.selectbutton.setToggle(true);
-        this.selectbutton.connectModel({model: this, setValue: "setSelectionMode", getValue: "getSelectionMode"});
-        this.addMorph(this.selectbutton);
+//        this.linebutton.setToggle(true);
+
+        this.linebutton.onMouseUp = function(evt) {
+            var newValue = this.isToggle() ? !this.getValue() : false;
+            this.changeAppearanceFor(newValue); 
+        };
+        this.linebutton.connectModel({model: this, setValue: "addLine"});
+        this.addMorph(this.linebutton);
 
         this.rectbutton.onMouseUp = function(evt) {
             var newValue = this.isToggle() ? !this.getValue() : false;
-//            this.setValue(newValue); 
             this.changeAppearanceFor(newValue); 
         };
         this.rectbutton.connectModel({model: this, setValue: "addRect"});
@@ -375,27 +382,32 @@ Object.extend(DoodleMorph.prototype, {
 
         this.circlebutton.onMouseUp = function(evt) {
             var newValue = this.isToggle() ? !this.getValue() : false;
-//            this.setValue(newValue); 
             this.changeAppearanceFor(newValue); 
         };
         this.circlebutton.connectModel({model: this, setValue: "addCirc"});
         this.addMorph(this.circlebutton);
+                
+		this.fillbutton.setToggle(true);
+        this.fillbutton.connectModel({model: this, setValue: "setFillMode", getValue: "getFillMode"});
+        this.addMorph(this.fillbutton);
 
-        this.colorsbutton.onMouseUp = function(evt) {
+        this.widthbutton.onMouseUp = function(evt) {
+            var newValue = this.toggles ? !this.getValue() : false;
+            this.changeAppearanceFor(newValue); 
+        };
+        this.widthbutton.connectModel({model: this, setValue: "setLine"});//"setBValue", getValue: "getBValue"});
+        this.addMorph(this.widthbutton);
+
+        this.colorsbutton.setToggle(true);
+        this.colorsbutton.connectModel({model: this, setValue: "setColor", getValue: "getColor"});
+        this.addMorph(this.colorsbutton);
+
+        this.stylebutton.onMouseUp = function(evt) {
             var newValue = this.isToggle() ? !this.getValue() : false;
             this.changeAppearanceFor(newValue); 
         };
-        this.colorsbutton.connectModel({model: this, setValue: "setColor"});
-        this.addMorph(this.colorsbutton);
-
-        // TODO: Do we need a copy button??
-//        this.copybutton.connectModel({model: this, setValue: "copyToHand"});//, getValue: "getBValue"});
-        this.addMorph(this.copybutton);
-
-        // TODO: this will be the connect button
-        this.worldbutton.setToggle(true);
-//        this.worldbutton.connectModel({model: this, setValue: "setBValue", getValue: "getBValue"});
-        this.addMorph(this.worldbutton);
+        this.stylebutton.connectModel({model: this, setValue: "setStyle"});
+        this.addMorph(this.stylebutton);
 
         // Position for new objects created from menus
         this.newPos = 25;
@@ -403,31 +415,11 @@ Object.extend(DoodleMorph.prototype, {
         return this;
     },
     
-    onMouseDown: function(evt) {
-        if (!this.currentMorph) {
-            this.start = this.localize(evt.mousePoint);
-            this.currentMorph = Morph(this.start.asRectangle());
-            // TODO: relaying events stops from moving morphs after drawing them..
-//            this.currentMorph.relayMouseEvents(this, {onMouseMove: "onMouseMove"});
+    onMouseMove: function(evt) { // something left-over from free draw
+//        if (evt.type == "mousedown" && this.onMouseDown(evt)) return;
+//        DoodleMorph.superClass.mouseEvent.call(this, evt, hasFocus); 
 
-            // 'solution' 1: we disable the drawn morph and enable morphs only 
-            // when selection tool is in use
-            if (!this.value) {
-                this.currentMorph.ignoreEvents();
-            }
-            
-            this.addMorph(this.currentMorph);
-            this.currentMorph.setShape(PolylineShape(null, [pt(0,0)], 2, this.drawingColor));
-            evt.hand.setFill(Color.yellow);
-        } else {
-            this.onMouseUp(evt);
-        }
-
-    },
-
-    onMouseMove: function(evt) {
-
-        if (this.currentMorph) {
+/*        if (this.currentMorph) {
             var verts = this.currentMorph.shape.vertices();
             var pt = this.localize(evt.mousePoint.subPt(this.start));
         
@@ -438,19 +430,58 @@ Object.extend(DoodleMorph.prototype, {
         } else {
             this.checkForControlPointNear(evt);
         }
-
+*/
     },
 
-    onMouseUp: function(evt) {
-        this.currentMorph = null;
-        this.start = null;
+    onMouseUp: function(evt) { // something left-over from free draw
+/*        if (this.fillmode) {
+            var m = evt.hand.topSubmorph();
+            var receiver = this.owner().morphToGrabOrReceive(evt, m);
+            if (receiver == null) {
+                this.ungrab(m);
+            } else { 
+                if (m != null) {
+                    m.setFill(this.drawingColor);
+                } 
+        
+                while(evt.hand.hasSubmorphs()) { // was just receiver.addMorph(m);
+                    receiver.addMorph(evt.hand.topSubmorph());
+                }
+            }
+        }*/
         
         // FIXME save and restore
-        evt.hand.setFill(Color.primary.blue);
+        evt.hand.setFill(Color.primary.blue); 
+    },
+
+    mouseEvent: function(evt, hasFocus) {
+        if (evt.type == "mousedown" && this.onMouseDown(evt)) return; 
+        DoodleMorph.superClass.mouseEvent.call(this, evt, hasFocus); 
+    },
+
+    onMouseDown: function(evt) {  //default behavior is to grab a submorph
+        var m = this.morphToGrabOrReceive(evt);
+        if (m == null || m == this) { this.makeSelection(evt); return true; }
+        if (m.handlesMouseDown(evt)) return false;
+        evt.hand.grabMorph(m, evt);
+        return true; 
     },
 
     handlesMouseDown: function() { return true; },
 
+    makeSelection: function(evt) {  //default behavior is to grab a submorph
+        if (this.currentSelection != null) this.currentSelection.removeOnlyIt();
+        if ( !evt.hand.mouseButtonPressed ) return;
+        var m = SelectionMorph(evt.mousePoint.extent(pt(5,5)), this);
+        m.shape.setAttributeNS(null, "stroke-dasharray", "3,2");
+        this.addMorph(m);
+        this.currentSelection = m;
+        var handle = HandleMorph(evt.mousePoint, "rect", evt.hand, m, "bottomRight");
+        m.addMorph(handle);
+        handle.setBounds(handle.bounds().center().asRectangle());
+        if (evt.hand.mouseFocus instanceof HandleMorph) evt.hand.mouseFocus.remove();
+        evt.hand.setMouseFocus(handle);
+    },    
 
     // Add menu items for creating rectangles and ellipses
     morphMenu: function(evt) {
@@ -461,26 +492,27 @@ Object.extend(DoodleMorph.prototype, {
         return menu;
     },
 
-/*    addShape: function(shapeType) {
-        var morph = Morph(Rectangle(this.newPos * 2, this.newPos, 60, 20), shapeType);
+    addLine: function() {
+        var morph = Morph(Rectangle(this.newPos * 2, this.newPos, 60, 20), 'rect');
         morph.setFill(null);
-        morph.setBorderWidth(2);
-        morph.setBorderColor(Color.red);
+        morph.setBorderWidth(this.lineWidth);
+        morph.setBorderColor(this.drawingColor);
+        morph.setShape(PolylineShape(null, [pt(0,20),pt(60,0)], this.lineWidth, this.drawingColor));
         this.addMorph(morph);
 
         this.newPos += 25;
         if (this.newPos > 125) this.newPos = 25;            
     },
-*/
 
     addRect: function() {
         var morph = Morph(Rectangle(this.newPos * 2, this.newPos, 60, 20), 'rect');
-        morph.setFill(null);
-        morph.setBorderWidth(2);
-        morph.setBorderColor(this.drawingColor);
-        if (!this.value) {
-            morph.ignoreEvents();
+        if ( this.fillmode ) {
+            morph.setFill(this.fillColor);
+        } else {
+            morph.setFill(null);
         }
+        morph.setBorderWidth(this.lineWidth);
+        morph.setBorderColor(this.drawingColor);
         this.addMorph(morph);
 
         this.newPos += 25;
@@ -489,34 +521,139 @@ Object.extend(DoodleMorph.prototype, {
     
     addCirc: function() {
         var morph = Morph(Rectangle(this.newPos * 2, this.newPos, 60, 20), 'ellipse');
-        morph.setFill(null);
-        morph.setBorderWidth(2);
-        morph.setBorderColor(this.drawingColor);
-        if (!this.value) {
-            morph.ignoreEvents();
+        if ( this.fillmode ) {
+            morph.setFill(this.fillColor);
+        } else {
+            morph.setFill(null);
         }
+        morph.setBorderWidth(this.lineWidth);
+        morph.setBorderColor(this.drawingColor);
         this.addMorph(morph);
 
         this.newPos += 25;
         if (this.newPos > 125) this.newPos = 25;            
     },
     
-    setColor: function() {
+    setColor: function(val) {
+        this.colorvalue = val;
+        if ( !this.colorvalue ) { // false
+            this.colorMorph.remove();
+            return;
+        }
+        if ( this.colorMorph != null ) {
+            this.addMorph(this.colorMorph);
+            return;
+        }
+  
+        this.colorMorph = Morph(Rectangle(0, 0, 100, 110));
+        this.colorMorph.shape.roundEdgesBy(10);
+        this.colorMorph.setFill(Color.white);
+        this.colorMorph.shape.setFillOpacity(.7);
+
+        var m = TextMorph(Rectangle(-45, -50, 90, 20), "Border color");
+        m.setBorderWidth(0);
+        m.shape.roundEdgesBy(10);
+        m.shape.setFillOpacity(0);
+        this.colorMorph.addMorph(m);
+        m = TextMorph(Rectangle(-45, 0, 90, 20), "Fill color");
+        m.setBorderWidth(0);
+        m.shape.roundEdgesBy(10);
+        m.shape.setFillOpacity(0);
+        this.colorMorph.addMorph(m);
+
+/*        if ( this.colorpicker != null ) {
+            this.addMorph(this.colorpicker);
+            return;
+        }
         this.colorpicker = ColorPickerMorph(Rectangle(0, 0, 50, 30));
         this.colorpicker.moveBy(this.colorsbutton.bounds().topRight());
         this.addMorph(this.colorpicker);
+*/
+        this.colorpicker = ColorPickerMorph(Rectangle(-45, -30, 50, 30));
+        this.colorMorph.addMorph(this.colorpicker);
+        this.fillpicker = ColorPickerMorph(Rectangle(-45, 20, 50, 30));
+        this.colorMorph.addMorph(this.fillpicker);
+
+        this.colorMorph.borderRect = Morph(Rectangle(15, -30, 30, 30), 'ellipse');
+        this.colorMorph.borderRect.setFill(this.drawingColor);
+        this.colorMorph.addMorph(this.colorMorph.borderRect);
+        this.colorMorph.fillRect = Morph(Rectangle(15, 20, 30, 30), 'ellipse');
+        this.colorMorph.fillRect.setFill(this.fillColor);
+        this.colorMorph.addMorph(this.colorMorph.fillRect);
+
+        this.colorMorph.moveBy(this.colorsbutton.bounds().topRight().subPt(pt(0,20)));
+        this.addMorph(this.colorMorph);
         this.colorpicker.connectModel({model: this, setColor: "setColoring"});
+        this.fillpicker.connectModel({model: this, setColor: "setFillColor"});
+    },
+    
+    getColor: function() {
+        return this.colorvalue;
     },
     
     setColoring: function(color) {
         this.drawingColor = color;
+        this.colorMorph.borderRect.setFill(this.drawingColor);
+        if ( this.currentSelection != null ) {
+            this.currentSelection.setBorderColor(this.drawingColor);
+        }
+
 //        this.withAllSubmorphsDo(function() {this.setBorderColor(color);}, null);
-        this.colorpicker.remove();
+/*        if ( this.currentSelection != null && !this.fillmode ) {
+            this.currentSelection.setBorderColor(this.drawingColor);
+        } else if (this.currentSelection != null && this.fillmode) {
+            this.currentSelection.setFill(this.drawingColor);
+        }*/
     },
 
+    setFillColor: function(color) {
+        this.fillColor = color;
+        this.colorMorph.fillRect.setFill(this.fillColor);
+        if ( this.currentSelection != null ) {
+            this.currentSelection.setFill(this.fillColor);
+        }
+
+    },
+
+    setLine: function() {
+        var items = [
+            ["No borders", this, "setLineWidth", 0],
+            ["1", this, "setLineWidth", 1],
+            ["2", this, "setLineWidth", 2],
+            ["3", this, "setLineWidth", 3],
+            ["4", this, "setLineWidth", 4],
+            ["5", this, "setLineWidth", 5],
+            ["10", this, "setLineWidth", 10],
+            ["15", this, "setLineWidth", 15],
+        ];
+        MenuMorph(items).openIn(this.world(), this.worldPoint(this.widthbutton.bounds().topRight()));//evt.mousePoint);
+    }, 
+    
+    setLineWidth: function (newWidth) {
+        this.lineWidth = newWidth;
+        if ( this.currentSelection != null ) {
+            this.currentSelection.setBorderWidth(this.lineWidth);
+        }
+    },
+    
+    setFillMode: function(val) {
+        this.fillmode = val;
+    },
+    
+    getFillMode: function() {
+        return this.fillmode;
+    },
+    
+    setStyle: function() {
+        if ( this.currentSelection != null ) {
+            StylePanel.openOn(this.currentSelection);
+        }
+    },
+    
+    // TODO probably totally irrelevant... since we're not using selection mode any more
     setSelectionMode: function (val, v) {
         this.value = val;
-        if (this.value) {
+/*        if (this.value) {
             this.withAllSubmorphsDo(function() {if (this.getType() != "ImageButtonMorph" && 
                                                 this.getType() != "ImageMorph") this.enableEvents();}, null);
         } else {
@@ -526,7 +663,7 @@ Object.extend(DoodleMorph.prototype, {
                             this.ignoreEvents();
                         }}, null);
             this.enableEvents();
-        }
+        }*/
     },
     
     getSelectionMode: function () {

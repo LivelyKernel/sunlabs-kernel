@@ -756,10 +756,15 @@ Object.extend(SelectionMorph.prototype, {
     defaultBorderColor: Color.blue,
     defaulFill: Color.secondary.blue,
 
-    initialize: function(viewPort) {
+    initialize: function(viewPort, defaultworldOrNull) {
         SelectionMorph.superClass.initialize.call(this, viewPort, "rect");
         this.selectedMorphs = [];
         this.shape.setFillOpacity(0.1);
+        if (defaultworldOrNull == null) {
+            this.myWorld = this.world();
+        } else {
+            this.myWorld = defaultworldOrNull;
+        }
         // this.shape.setAttributeNS(null, "stroke-dasharray", "3,2");
         return this;
     },
@@ -789,8 +794,11 @@ Object.extend(SelectionMorph.prototype, {
         this.removeOnlyIt();
     },
     
-    removeOnlyIt: function() { 
-        this.world().currentSelection = null;
+    removeOnlyIt: function() {
+        if ( this.myWorld == null ) {
+            this.myWorld = this.world();
+        } 
+        this.myWorld.currentSelection = null;
         SelectionMorph.superClass.remove.call(this);
     },
     
