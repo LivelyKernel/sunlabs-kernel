@@ -336,8 +336,9 @@ Object.extend(nTextLine.prototype, {
 	    }
 	    if (c.isTab) {
 	      c.bounds.width = this.tabWidth;
-	      c.bounds.width = 	(Math.floor((c.bounds.x + c.bounds.width) / c.bounds.width)
-				 * c.bounds.width) - c.bounds.x;
+	      var tabXBoundary = c.bounds.x - this.leftX;
+	      c.bounds.width = 	(Math.floor((tabXBoundary + c.bounds.width) / c.bounds.width)
+				 * c.bounds.width) - tabXBoundary;
 	    } else {
 	      c.bounds.width = spaceIncrement * c.length;
 	    }
@@ -347,9 +348,7 @@ Object.extend(nTextLine.prototype, {
 				     mostRecentBounds.maxX(),
 				     this.topY, this.font);
 	    c.word.compose(compositionWidth - (mostRecentBounds.maxX() - this.leftX), c.length - 1);
-	    //XXX - fixme - not quite ready for primetime
-	    //if (c.bounds == null)
-	      c.bounds = c.word.getBounds(c.start).union(c.word.getBounds(c.start + c.length - 1));
+	    c.bounds = c.word.getBounds(c.start).union(c.word.getBounds(c.start + c.length - 1));
 	    if (c.word.getLineBrokeOnCompose()) {
 	      if (i == 0) {
 		// XXX in the future, another chunk needs to be inserted in the array at this point
@@ -461,14 +460,16 @@ Object.extend(nTextLine.prototype, {
 	  return null;
 	var nc = [];
 	for (var i = 0; i < this.chunks.length; i++) {
-	  if (this.chunks[i].start >= sIndex) {
-	    var c = this.chunks[i].cloneSkeleton();
-	    if (this.chunks[i].bounds != null)
-	      c.bounds = this.chunks[i].bounds.clone();
+	  var tc = this.chunks[i];
+	  if (tc.start >= sIndex) {
+	    var c = tc.cloneSkeleton();
+	    // probably don't need this opmization now that we demand load extents
+	    //if (tc.bounds != null)
+	    //  c.bounds = tc.bounds.clone();
 	    nc.push(c);
-	  } else if (this.chunks[i].start < sIndex && (this.chunks[i].start + this.chunks[i].length) > sIndex) {
+	  } else if (tc.start < sIndex && (tc.start + tc.length) > sIndex) {
 	    // this chunk has been broken up by a word wrap
-	    var c = this.chunks[i].cloneSkeleton();
+	    var c = tc.cloneSkeleton();
 	    c.length -= sIndex - c.start;
 	    c.start = sIndex;
 	    nc.push(c);
