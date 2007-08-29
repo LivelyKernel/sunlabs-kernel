@@ -1641,7 +1641,7 @@ Object.extend(WorldMorph, {
 
         // This style is way better for debugging on smaller screens
         // It allows the user to see the console log through the world
-        w.shape.setFillOpacity(0.4);
+        w.shape.setFillOpacity(0.9);
 
         return w;
     },
