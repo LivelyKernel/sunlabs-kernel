@@ -270,6 +270,7 @@ Object.extend(Pen.prototype, {
     
     filbert: function(n, s, color) {
         // Two Hilbert curves form a Hilbert tile
+        this.newLine();  
         this.setPenColor(Color.black); 
         this.setPenWidth(1);
         this.hilbert(n, s); 
@@ -280,8 +281,8 @@ Object.extend(Pen.prototype, {
     },
     
     newLine: function(loc) {
-        this.startingLocation = loc;
-        this.vertices = [ loc ];
+        this.startingLocation = loc ? loc : this.location;
+        this.vertices = [ this.startingLocation ];
     },
     
     filberts: function(n, s) {
@@ -294,7 +295,6 @@ Object.extend(Pen.prototype, {
             this.turn(-90); 
             this.go(n2 * s); 
             this.turn(180);
-            this.newLine();  
         } 
     }
     
