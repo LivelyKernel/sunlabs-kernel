@@ -308,15 +308,6 @@ Pen.script = ["P = new Pen();",
 "P.drawLines();",
 ""].join("\n");
 
-// safari & ff don't honor xml:space=preserve, so no spaces
-Pen.script = ["P = new Pen();",
-"P.setPenColor(Color.red);",
-"for(var i=1; i<=50; i++)",
-          //"&lt;&gt;&quot;&amp;<>{ P.go(2*i); P.turn(89); };",
-"{ P.go(2*i); P.turn(89); };",
-"P.drawLines();",
-""].join("\n");
-
 
 // ===========================================================================
 // The Doodle Draw Example

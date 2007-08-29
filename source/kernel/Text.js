@@ -75,20 +75,13 @@ Object.extend(TextWord.prototype, {
     // get the bounds of the character pointed to by stringIndex
     //   return a (0,0),0x0 point if there are no bounds
     getBounds: function(stringIndex) { 
-        var elementIndex = stringIndex - this.startIndex;
-        var result = this.getExtentOfChar(elementIndex);
+        var result = this.getExtentOfChar(stringIndex);
 
-        if (result) {
-	  if ((this.stopIndex - this.startIndex) < 5) {
-	    // HACK!!! - font bounding box is slightly broken - kam
-	    return result.withWidth(result.width + 3);
-	  }
+        if (result)
           return result;
-        } else {
-          console.warn('TextWord.getBounds(%s) undefined, string "%s" extents %s', 
-                       elementIndex, this.textContent, this.extentTableToString());
-          return pt(0,0).asRectangle();
-        }
+        console.warn('TextWord.getBounds(%s) undefined, string "%s" extents %s', 
+                     elementIndex, this.textContent, this.extentTableToString());
+        return pt(0,0).asRectangle();
     },
 
     // keep a copy of the substring we were working on (do we really need this? - kam)
@@ -183,6 +176,11 @@ Object.extend(WordChunk.prototype, {
 	return this.word;
     },
 
+    // query
+    isSpaces: function() {
+      return this.isWhite && !this.isTab && !this.isNewLine;
+    },
+
     // clone a chunk only copying minimal information
     cloneSkeleton: function() {
       var c = WordChunk.createWord(this.start, this.length);
@@ -243,9 +241,8 @@ Object.extend(nTextLine.prototype, {
 	this.overallStopIndex = textString.legnth - 1;
 	this.leftX = leftX;
 	this.topY = topY;
-
-	// XXX
 	this.spaceWidth = font.getCharWidth(' ');
+	this.tabWidth = this.spaceWidth * 4;
 	this.words = [];
 	this.hasComposed = false;
 	this.chunks = chunkSkeleton;
@@ -338,7 +335,9 @@ Object.extend(nTextLine.prototype, {
 	      break;
 	    }
 	    if (c.isTab) {
-	      c.bounds.width = spaceIncrement * 4;
+	      c.bounds.width = this.tabWidth;
+	      c.bounds.width = 	(Math.floor((c.bounds.x + c.bounds.width) / c.bounds.width)
+				 * c.bounds.width) - c.bounds.x;
 	    } else {
 	      c.bounds.width = spaceIncrement * c.length;
 	    }
@@ -349,10 +348,8 @@ Object.extend(nTextLine.prototype, {
 				     this.topY, this.font);
 	    c.word.compose(compositionWidth - (mostRecentBounds.maxX() - this.leftX), c.length - 1);
 	    //XXX - fixme - not quite ready for primetime
-	    //c.word.adjustAfterComposition(); // shorten the string
 	    //if (c.bounds == null)
 	      c.bounds = c.word.getBounds(c.start).union(c.word.getBounds(c.start + c.length - 1));
-	    //c.log("union");
 	    if (c.word.getLineBrokeOnCompose()) {
 	      if (i == 0) {
 		// XXX in the future, another chunk needs to be inserted in the array at this point
@@ -388,15 +385,26 @@ Object.extend(nTextLine.prototype, {
 	return this.topY
     },
 
-    // get the bounds of the character at stringIndex (doesn't do virtual spacing for whitespace)
+    // get the bounds of the character at stringIndex
     getBounds: function(stringIndex) {
 	for (var i = 0; i < this.chunks.length; i++) {
-	  if (stringIndex >= this.chunks[i].start &&
-	      stringIndex < (this.chunks[i].start + this.chunks[i].length)) {
+	  var c = this.chunks[i];
+
+	  if (stringIndex >= c.start &&
+	      stringIndex < (c.start + c.length)) {
 	    // DI:  Following code finds the actual character bounds
-	    if (this.chunks[i].word && this.chunks[i].word.getBounds)
-		return this.chunks[i].word.getBounds(stringIndex);
-		else return this.chunks[i].bounds;
+	    if (c.word && c.word.getBounds)
+		return c.word.getBounds(stringIndex);
+	    else {
+	      if (c.isSpaces()) {
+		var virtualSpaceSize = c.bounds.width / c.length;
+		var b = c.bounds.clone();
+		b.width = virtualSpaceSize;
+		b.x += virtualSpaceSize * (stringIndex - c.start);
+		return b;
+	      } else
+	       return c.bounds;
+	    }
 	  }
 	}
 	return null;
@@ -413,16 +421,13 @@ Object.extend(nTextLine.prototype, {
 	    if (c.word == null) {
 	      var virtualSpaceSize = c.bounds.width / c.length;
 	      var spacesIn = Math.floor((rightX - c.bounds.x) / virtualSpaceSize);
-	      // console.log("indexForX detailed whitespace to offset: " + (c.start + spacesIn));
 	      return c.start + spacesIn;
 	    } else {
 	      for (var i = c.start; i < (c.start + c.length); i++) {
 		var b = c.word.getBounds(i);
-		// console.log("indexForX bounds: ", b);
 		if (rightX >= b.x && rightX <= b.maxX())
 		  break;
 	      }
-	      // console.log("indexForX detailed to offset: " + i);
 	      return i;
 	    }
 	    return c.start; // failsafe
@@ -475,6 +480,11 @@ Object.extend(nTextLine.prototype, {
     // accessor function
     setChunkSkeleton: function(c) {
 	this.chunks = c;
+    },
+
+    // accessor function
+    setTabWidth: function(w, asSpaces) {
+	this.tabWidth = asSpaces ? w * this.spaceWidth : w;
     },
 
     // log debugging information to the console
@@ -557,6 +567,8 @@ Object.extend(TextBox.prototype, {
         this.lines = null;//: TextLine[]
         this.leftX = null;//: float
         this.topY = null;//: float
+	this.tabWidth = 4;
+	this.tabsAsSpaces = true;
     },
     
     recoverLines: function() {
@@ -588,6 +600,11 @@ Object.extend(TextBox.prototype, {
     setTextColor: function(textColor) {
         this.setAttributeNS(null, "fill", textColor);
     },
+
+    setTabWidth: function(width, asSpaces) {
+	this.tabWidth = width;
+	this.tabsAsSpaces = asSpaces;
+    },
     
     // compose the lines if necessary and then render them
     renderText: function(x, y, compositionWidth, font) {
@@ -607,6 +624,7 @@ Object.extend(TextBox.prototype, {
 
         while (startIndex <= stopIndex) {
             var line = new nTextLine(this.textString, startIndex, x, lineY, font, chunkSkeleton);
+	    line.setTabWidth(this.tabWidth, this.tabsAsSpaces);
             line.compose(compositionWidth);
             line.adjustAfterComposition();
             lines.push(line);
