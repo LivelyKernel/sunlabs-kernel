@@ -3902,7 +3902,7 @@ Object.extend(CanvasScapeMorph.prototype, {
         this.timeleft = this.level1time;
         this.playerPos=[2,2]; // x,y (from top left)
         this.playerDir=0.2; // theta, facing right=0=2pi
-        this.note = "Click on the floor and press space bar to start the game";
+        this.note = "Click on the floor and press space bar to start the game. Use arrow keys to steer yourself through the maze.";
         this.drawCanvas();
         //this.startSteppingFunction(200, function(msTime) { this.changeKey( 37, 1); });
         //this.startSteppingFunction(1000, function(msTime) { /*changeKey(37, 1);*/  });
