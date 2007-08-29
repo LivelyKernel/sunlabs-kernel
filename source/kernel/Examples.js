@@ -2840,22 +2840,11 @@ Object.extend(MapFrameMorph.prototype, {
 
         pd("MapFrameMorph constructed",2);
         return this;
-    }, 
+    } 
     
-    okToBeGrabbedBy: function(evt) {
-        /*if (evt.hand.ctrlKeyPressed) {
-        var menu =  new CheapMenuMorph(evt.mousePoint,[
-                ["Add mapmarker", this, this.handleMenuSelection, "addmarker"]
-                ,["Remove all markers", this, this.handleMenuSelection, "removemarkers"]
-                ,["Toggle online mode on/off", this, this.handleMenuSelection, "online"]
-                ,["CockRoach Demo", this, this.handleMenuSelection, "cockroach"]
-                ]);
-        this.addMorph(menu);
-
-        return false;
-        } */
+    /*, okToBeGrabbedBy: function(evt) {
         return true; 
-    }
+    }*/
 
 });
 
@@ -2929,7 +2918,7 @@ Object.extend(MapModel.prototype, {
 });
 
 /**
- * @class MapFrameMorph
+ * @class MapMorph
  *
  * Mapmorph is the 5x5 maptile largemap located inside Mapframe cliprect
  * It can be moved with dragging. 
@@ -3027,7 +3016,7 @@ Object.extend(MapMorph.prototype, {
                     }
     
                     var img = NodeFactory.create("image", 
-                    {x: ix*TileSize.x, y: iy*TileSize.y, width: 256, height: 256}).withHref(this.images[iy][ix]);
+                    {x: -TileSize.x + ix*TileSize.x, y: -TileSize.y + iy*TileSize.y, width: 256, height: 256}).withHref(this.images[iy][ix]);
                     img.setAttribute("id", imgId);
                     img.disableBrowserDrag();
                     this.addChildElement(img);
@@ -3053,14 +3042,6 @@ Object.extend(MapMorph.prototype, {
   okToBeGrabbedBy: function(evt) {
     pd("coords" + evt.mousePoint + " center " + this.bounds().center()+ " in wc " +this.worldPoint(this.bounds().center()), 2);
     this.startpoint = evt.mousePoint; //this line is here only bacause this morph does not listen mousedown events
-    /* NOT implemented in SVG version
-      if (this.hasFrame && evt.hand.ctrlKeyPressed) {
-      var menu =  new CheapMenuMorph(evt.mousePoint,[
-                ["Add mapmarker", this.owner.owner, this.owner.owner.handleMenuSelection, "addmarker"]
-                ,["Remove all markers", this.owner.owner, this.owner.owner.handleMenuSelection, "removemarkers"]]);
-      this.owner.owner.addMorph(menu);
-    } 
-    */
     return null; //otherwise map will be able to take out from mapframe
     
   },
