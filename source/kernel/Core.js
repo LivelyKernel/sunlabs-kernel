@@ -2045,12 +2045,13 @@ Object.extend(Morph.prototype, {
         }
         
         for (var i = 0; i < children.length; i++) {
-            if (children[i].tagName == 'defs') { // FIXME FIXME, this is painfully ad hoc!
+	    var node = children[i];
+            if (node.tagName == 'defs') { // FIXME FIXME, this is painfully ad hoc!
 		if (this.defs) {
 		    console.warn('%s already has defs %s', this, this.defs);
 		}
-		this.defs = children[i];
-                for (var def = children[i].firstChild; def != null; def = def.nextSibling) {
+		this.defs = node;
+                for (var def = node.firstChild; def != null; def = def.nextSibling) {
                     switch (def.tagName) {
                     case "clipPath":
                         var newPathId = "clipPath_" + this.id;
@@ -2085,14 +2086,14 @@ Object.extend(Morph.prototype, {
                     }
                 }
                 // let it be
-            } else if (DisplayObject.prototype.getType.call(children[i])) {
-                if (/FocusHalo/.test(DisplayObject.prototype.getType.call(children[i]))) { //don't restore
-                    this.removeChild(children[i]);
+            } else if (DisplayObject.prototype.getType.call(node)) {
+                if (/FocusHalo/.test(DisplayObject.prototype.getType.call(node))) { //don't restore
+                    this.removeChild(node);
                 } else {
-                    this.restoreFromElement(children[i], importer);
+                    this.restoreFromElement(node, importer);
                 }   
             } else {
-                console.warn('cannot handle element %s, %s', children[i].tagName, children[i].textContent);
+                console.warn('cannot handle element %s, %s', node.tagName, node.textContent);
             }
         }
     },
@@ -2109,6 +2110,12 @@ Object.extend(Morph.prototype, {
             this.shape = element;
             return true;
         }
+
+	if (/image|use/.test(element.tagName)) {
+	    this.image = element;
+	    console.log('made image %s', this.image);
+	    return true;
+	}
         
         var type = element.getAttribute('type');
         

@@ -574,9 +574,9 @@ Object.extend(TextBox.prototype, {
     recoverLines: function() {
         var tls = [];
         for (var child = this.firstChild; child != null; child = child.nextSibling) {
-            if (child.tagName == 'tspan') tls.push(TextLine.become(child));
+            if (child.tagName == 'tspan') 
+		tls.push(TextWord.become(child));
         }
-        tls.forEach(function(m) { TextLine.become(m); });
         return tls;
     },
 
