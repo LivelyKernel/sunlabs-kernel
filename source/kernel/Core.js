@@ -406,24 +406,22 @@ Object.category(HostClass, "core", function() { return {
         return element;
     },
     
-    fromElement: function(elementName) {
+    fromElementType: function(elementName, hasInit) {
+	
         var constr = function() {
-            var args = $A(arguments);
-            var initList = args.shift();
-            var inst = HostClass.becomeInstance(NodeFactory.create(elementName, initList), constr);
-            
-            if (inst.initialize) inst.initialize.apply(inst, args);
-        
-            return inst;
+	    var args = $A(arguments);
+	    var node = hasInit ? NodeFactory.create(elementName, args.shift()) : NodeFactory.create(elementName);
+	    instance = HostClass.becomeInstance(node, constr);
+	    if (instance.initialize) instance.initialize.apply(instance, args);
+	    return instance;
         }
-        
-        var accessInstance = NodeFactory.create(elementName);
-        constr.prototype = accessInstance.__proto__;
+        constr.prototype = NodeFactory.getPrototype(elementName);
         constr.prototype.constructor = constr;
         constr.become = function(element) { return HostClass.becomeInstance(element, constr); };
         constr.name = elementName;
         return constr;
     },
+
     
     create: function(name, superClass) {
         return HostClass.extendPrototype(superClass.prototype, name);
@@ -847,7 +845,7 @@ console.log("Color");
  */
 
 // note that Colors and Gradients are similar
-LinearGradient = HostClass.fromElement('linearGradient');
+LinearGradient = HostClass.fromElementType('linearGradient', true);
 
 Object.extend(LinearGradient, {
     NorthSouth: rect(pt(0, 0), pt(0, 1)),
@@ -879,7 +877,7 @@ Object.extend(LinearGradient.prototype, {
  * @class RadialGradient (NOTE: PORTING-SENSITIVE CODE)
  */
 
-RadialGradient = HostClass.fromElement('radialGradient');
+RadialGradient = HostClass.fromElementType('radialGradient', true);
 
 Object.extend(RadialGradient, {
 
@@ -915,7 +913,7 @@ Object.extend(RadialGradient.prototype, {
  * @class StipplePattern (NOTE: PORTING-SENSITIVE CODE)
  */
 
-StipplePattern = HostClass.fromElement('pattern');
+StipplePattern = HostClass.fromElementType('pattern', true);
 
 Object.extend(StipplePattern, { 
     create: function(color1, h1, color2, h2) {
@@ -1450,7 +1448,7 @@ Object.extend(Shape, {
  */ 
 
 // RectShape is synonymous with SVGRectElement but hides the SVG nomenclature
-RectShape = HostClass.fromElement('rect');
+RectShape = HostClass.fromElementType('rect', false);
 Shape.mixInto(RectShape);
 
 Object.extend(RectShape.prototype, {
@@ -1528,7 +1526,7 @@ Object.extend(RectShape.prototype, {
  * @class EllipseShape
  */ 
 
-EllipseShape = HostClass.fromElement('ellipse');
+EllipseShape = HostClass.fromElementType('ellipse', false);
 Shape.mixInto(EllipseShape);
 
 Object.extend(EllipseShape.prototype, {
@@ -1581,7 +1579,7 @@ Object.extend(EllipseShape.prototype, {
  * @class PolygonShape
  */ 
 
-PolygonShape = HostClass.fromElement('polygon');
+PolygonShape = HostClass.fromElementType('polygon', false);
 Shape.mixInto(PolygonShape);
 
 Object.extend(PolygonShape.prototype, { 
@@ -1742,7 +1740,7 @@ Object.extend(PolygonShape.prototype, {
  * @class PolylineShape
  */ 
 
-PolylineShape = HostClass.fromElement('polyline');
+PolylineShape = HostClass.fromElementType('polyline', false);
 Shape.mixInto(PolylineShape);
 
 Object.extend(PolylineShape.prototype, {
@@ -1779,7 +1777,7 @@ Object.extend(PolylineShape.prototype, {
  * @class PathShape
  */ 
 
-PathShape = HostClass.fromElement('path');
+PathShape = HostClass.fromElementType('path', false);
 Shape.mixInto(PathShape);
 
 Object.extend(PathShape.prototype, {
@@ -2153,12 +2151,12 @@ Object.extend(Morph.prototype, {
         // a rect shape by default, will change later
         switch (shapeType) {
         case "ellipse":
-            this.shape = EllipseShape(null, initialBounds.translatedBy(this.origin.negated()), 
+            this.shape = EllipseShape(initialBounds.translatedBy(this.origin.negated()), 
                          this.defaultFill, this.defaultBorderWidth, this.defaultBorderColor);
             break;
         default:
             // polygons and polylines are set explicitly later
-            this.shape = RectShape(null, initialBounds.translatedBy(this.origin.negated()), 
+            this.shape = RectShape(initialBounds.translatedBy(this.origin.negated()), 
             this.defaultFill, this.defaultBorderWidth, this.defaultBorderColor);
             break;
         }
@@ -2368,7 +2366,7 @@ Object.extend(Morph.prototype, {
     
     updateBoundsElement: function() {
     
-        var newElement = RectShape(null, this.fullBounds, null, 1, Color.blue);
+        var newElement = RectShape(this.fullBounds, null, 1, Color.blue);
         newElement.disablePointerEvents();
     
         if (!this.canvas())
@@ -2877,7 +2875,7 @@ Object.extend(Morph.prototype, {
     
     adjustFocusHalo: function() {
         this.focusHalo.removeAll();
-        var shape = RectShape(null, this.shape.bounds().insetBy(-2), null, this.focusHaloBorderWidth, this.focusedBorderColor);
+        var shape = RectShape(this.shape.bounds().insetBy(-2), null, this.focusHaloBorderWidth, this.focusedBorderColor);
         this.focusHalo.push(shape);
     },
 
@@ -3412,7 +3410,7 @@ Object.extend(Morph, {
         // make a line with its origin at the first vertex
         var line = Morph(verts[0].asRectangle(), "rect");
         var vertices = Shape.translateVerticesBy(verts, verts[0].negated());
-        line.setShape(PolylineShape(null, vertices, lineWidth, lineColor));
+        line.setShape(PolylineShape(vertices, lineWidth, lineColor));
         return line; 
     }
 

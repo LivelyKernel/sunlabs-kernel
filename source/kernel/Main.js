@@ -44,8 +44,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
       
       // Create a sample polygon
       widget = Morph(l2.asRectangle(),"rect");
-      widget.setShape(PolygonShape(null, [pt(0,0),pt(70,0),pt(40,30),pt(0,0)],
-                      colors[2],1,Color.black));
+      widget.setShape(PolygonShape([pt(0,0),pt(70,0),pt(40,30),pt(0,0)], colors[2],1,Color.black));
       world.addMorph(widget);
       zzPoly = widget;
       loc = loc.addPt(dy);    
@@ -105,7 +104,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
         }
     
         widget = Morph(pt(0,0).asRectangle(), "rect");
-        widget.setShape(PolygonShape(null, makeStarVertices(50,pt(0,0),0), Color.yellow, 1, Color.black));
+        widget.setShape(PolygonShape(makeStarVertices(50,pt(0,0),0), Color.yellow, 1, Color.black));
         // makeGradient(Color.yellow, Color.yellow.lighter().lighter()));
         widget.setPosition(pt(320, 480));
         world.addMorph(widget);

@@ -1585,7 +1585,7 @@ Object.extend(ColorPickerMorph.prototype, {
         for (var x = 0; x < r.width; x+=dd) {
             for (var y = 0; y < r.height; y+=dd) { // lightest down to neutral
                 var patchFill = this.colorMap(x, y, rh2, this.colorWheel(r.width + 1)).toString();
-                var element = RectShape(null, Rectangle(x + r.x, y + r.y, dd, dd), patchFill, 0, null);
+                var element = RectShape(Rectangle(x + r.x, y + r.y, dd, dd), patchFill, 0, null);
                 // element.setAttributeNS("fill", this.colorMap(x, rh2, rh2, this.colorWheel(r.width + 1)).toString());
                 this.addChildElement(element);
             }
@@ -2048,7 +2048,7 @@ Object.extend(HandMorph.prototype, {
     initialize: function(local) {
         HandMorph.superClass.initialize.call(this, pt(5,5).extent(pt(10,10)), "rect");
     
-        this.setShape(PolygonShape(null, [pt(0,0),pt(9,5), pt(5,9), pt(0,0)], 
+        this.setShape(PolygonShape([pt(0,0),pt(9,5), pt(5,9), pt(0,0)], 
                      (local ? Color.blue : Color.red), 1, Color.black));
         this.shape.disablePointerEvents();
     

@@ -6,7 +6,7 @@
  * @class TextWord
  * This 'class' renders single words
  */ 
-var TextWord = HostClass.fromElement('tspan');
+var TextWord = HostClass.fromElementType('tspan', false);
 Object.extend(TextWord, {
 
     create: function(textString, startIndex, leftX, topY, font) {
@@ -526,7 +526,7 @@ Object.extend(nTextLine.prototype, {
  * @class TextBox
  */ 
 
-var TextBox = HostClass.fromElement('text');
+var TextBox = HostClass.fromElementType('text', false);
 
 Object.extend(TextBox.prototype, DisplayObject.prototype);
 
@@ -1026,18 +1026,17 @@ Object.extend(TextMorph.prototype, {
         }
     
         if (this.lineNo(r2) == this.lineNo(r1)) {
-            this.selectionElement.push(RectShape(null, r1.union(r2)).roundEdgesBy(4));
+            this.selectionElement.push(RectShape(r1.union(r2)).roundEdgesBy(4));
         } else { // Selection is on two or more lines
             var localBounds = this.shape.bounds();
             r1 = r1.withBottomRight(pt(localBounds.maxX() - this.inset.x, r1.maxY()));
             r2 = r2.withBottomLeft(pt(localBounds.x + this.inset.x, r2.maxY()));
-            this.selectionElement.push(RectShape(null, r1).roundEdgesBy(4));
-            this.selectionElement.push(RectShape(null, r2).roundEdgesBy(4));
+            this.selectionElement.push(RectShape(r1).roundEdgesBy(4));
+            this.selectionElement.push(RectShape(r2).roundEdgesBy(4));
         
             if (this.lineNo(r2) != this.lineNo(r1) + 1) {
                 // Selection spans 3 or more lines; fill the block between top and bottom lines
-                this.selectionElement.push(RectShape(null, 
-                                Rectangle.fromAny(r1.bottomRight(), r2.topLeft())).roundEdgesBy(4)); 
+                this.selectionElement.push(RectShape(Rectangle.fromAny(r1.bottomRight(), r2.topLeft())).roundEdgesBy(4)); 
             }
         }
     
@@ -1250,7 +1249,7 @@ Object.extend(TextMorph.prototype, {
         if (evt.altKey) {
             var replacement = (String.fromCharCode(evt.keyCode)).toLowerCase();
             return this.processCommandKeys(replacement);
-        } 
+        }
     },
     
     onKeyPress: function(evt) {
