@@ -4,6 +4,8 @@
 
 var Global = this;
 
+Config.shiftDragForDup = true; // easy duplicate gesture
+
 
 WorldMorph.populateWithExamples = function(world, otherWorld, server) {
 
@@ -44,12 +46,17 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
         widget.startStepping(1000);
     }
 
-    var showLogo = true;
-    if (showLogo) {
-        var P = new Pen();
-	P.go(110);  P.turn(90);  P.go(180);
-	P.filberts(3,5);
-    }
+    var showLogo = false;
+    if (showLogo) { var logoMenu = new MenuMorph([]);
+        for (var i=1; i<=4; i++)
+		logoMenu.addItem([i.toString(), this, "makeLogo", i]);
+	logoMenu.makeLogo = function(order) {
+		if(this.morphs) for (var i=0; i<4; i++) this.morphs[i].remove();
+		var P = new Pen();
+		P.go(110);  P.turn(90);  P.go(180);
+		this.morphs = P.filberts(order,5); };
+        logoMenu.openIn(world, pt(600,100), true, "Choose logo size"); 
+	}
 
     var showClipMorph = Config.skipMostExamples;
     if (showClipMorph) {

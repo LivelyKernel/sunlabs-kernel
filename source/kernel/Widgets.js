@@ -1150,6 +1150,16 @@ Object.extend(MenuMorph.prototype, {
                 this.items.splice(i,1);
     },
 
+    removeItemsNamed: function(nameList) {
+        nameList.each(function(n) { this.removeItemNamed(n); }.bind(this));
+    },
+
+    keepOnlyItemsNamed: function(nameList) {
+        var rejects = [];
+	this.items.each( function(item) { if(nameList.indexOf(item[0]) < 0) rejects.push(item[0])});
+	this.removeItemsNamed(rejects);
+    },
+
     openIn: function(world, location, remainOnScreen, captionIfAny) { 
         // Note: on a mouseDown invocation (as from a menu button),
         // mouseFocus should be set immediately before or after this call
@@ -1158,9 +1168,7 @@ Object.extend(MenuMorph.prototype, {
         this.compose(location);
         world.addMorph(this);
         if (captionIfAny) { // Still under construction
-            var caption = captionIfAny.substr(0,30);
-            if (captionIfAny.length > caption.length) caption += '...';
-            var label = new TextMorph(Rectangle(0, 0, 200, 20), caption);
+            var label = new TextMorph(Rectangle(0, 0, 200, 20), captionIfAny);
             label.wrap = "noWrap";  label.fitText();
             label.shape.roundEdgesBy(4);
             label.shape.setFillOpacity(0.75);
@@ -1890,18 +1898,20 @@ Object.extend(WorldMorph.prototype, {
 
     morphMenu: function(evt) { 
         var menu = WorldMorph.superClass.morphMenu.call(this,evt);
+        menu.keepOnlyItemsNamed(["inspect", "style"]);
         menu.addLine();
         menu.addItem(["new object...", this, 'addMorphs', evt]);
         menu.addItem(["choose display theme", this, 'chooseDisplayTheme']);
+        menu.addItem([(Config.suppressBalloonHelp ? "enable balloon help" : "disable balloon help"),
+			this, "toggleBalloonHelp"]);
         menu.addItem(["restart system", this, 'restart']);
-
-        // The following items are not applicable to the world
-        menu.removeItemNamed("duplicate");
-        menu.removeItemNamed("remove");
-        menu.removeItemNamed("toggle fisheye");
         return menu;
     },
    
+    toggleBalloonHelp: function() {
+        Config.suppressBalloonHelp = !Config.suppressBalloonHelp;
+    },
+
     chooseDisplayTheme: function(ignored,evt) { 
         var themes = this.displayThemes;
         var target = this; // trouble with function scope
@@ -2300,9 +2310,10 @@ LinkMorph = HostClass.create('LinkMorph', Morph);
 
 Object.extend(LinkMorph.prototype, {
 
-    fishEye: true, 
-    fisheyeGrowth: 2, // make it grow more
-    fisheyeProximity: 0.5, // make it grow only when the hand gets closer
+//  DI: I feel fisheye is distracting here;  OK in palettes maybe
+//    fishEye: true, 
+//    fisheyeGrowth: 2, // make it grow more
+//    fisheyeProximity: 0.5, // make it grow only when the hand gets closer
     defaultFill: Color.black,
     defaultBorderColor: Color.black,
     
@@ -2341,21 +2352,14 @@ Object.extend(LinkMorph.prototype, {
 
         // Balloon help support
         MouseOverHandler.observe(this);
-        this.helpText = "Shift-click to open or close a subworld"; 
+        this.helpText = "Click here to enter or leave a subworld.\nUse menu 'grab' to move me."; 
 
         return this;
     },
     
     okToBeGrabbedBy: function(evt) {
-        console.log('ok to be grabbed %s', this);
-
         this.hideHelp();
-        if (!evt.shiftKey) return this;
-
-        console.log('entering world %s', this.myWorld);
-
         this.myWorld.changed();
-
         WorldMorph.current().onExit();    
 
         // remove old hands
@@ -2391,11 +2395,12 @@ Object.extend(LinkMorph.prototype, {
     
     showHelp: function(evt) {
         if (Config.suppressBalloonHelp) return;  // DI: maybe settable in window menu?
+        if (this.owner() instanceof HandMorph) return;
         
         // Create only one help balloon at a time
         if (this.help) return;
         
-        this.help = TextMorph(Rectangle(evt.x, evt.y, 200, 20), this.helpText);
+        this.help = TextMorph(Rectangle(evt.x, evt.y, 250, 20), this.helpText);
         // trying to relay mouse events to the WindowControlMorph
         this.help.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
         

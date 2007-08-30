@@ -668,7 +668,7 @@ Object.extend(TextBox.prototype, {
         for (var i = 0; i < this.lines.length; i++) {
             line = this.lines[i];
             if (y < this.lines[i].getTopY() + this.lineHeight) {
-                console.log('hit line ' + i + ' for y ' + y + ' slice ' + line.startIndex + "," + line.stopIndex);
+                // console.log('hit line ' + i + ' for y ' + y + ' slice ' + line.startIndex + "," + line.stopIndex);
                 return line; 
             }
         }

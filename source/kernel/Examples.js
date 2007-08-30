@@ -233,6 +233,8 @@ Object.extend(Pen.prototype, {
     
         /* if (morph.world().backend()) 
         morph.world().backend().createMorph(morph.morphId(), morph, morph.world().morphId());*/
+
+	return morph;
     },
     
     fillLines: function(color) { 
@@ -277,7 +279,7 @@ Object.extend(Pen.prototype, {
         this.go(s);
         this.hilbert(n, s); 
         this.go(s);
-        this.fillLines(color); 
+        return this.fillLines(color); 
     },
     
     newLine: function(loc) {
@@ -288,14 +290,16 @@ Object.extend(Pen.prototype, {
     filberts: function(n, s) {
         // Four interlocking filberts
         var n2 = Math.pow(2,n-1);
+	var morphs = [ ];
     
         for (var i = 0; i < 4; i++) {
-            this.filbert(n, s, Color.wheel(4)[i]);
+            morphs.push(this.filbert(n, s, Color.wheel(4)[i]));
             this.go((n2 - 1)*s); 
             this.turn(-90); 
             this.go(n2 * s); 
             this.turn(180);
-        } 
+        }
+	return morphs; 
     }
     
 });

@@ -252,8 +252,8 @@ Function.methodString = function(className, methodName) {
     var func = (className == "Global") ? Function.globalScope[methodName] : Function.globalScope[className].prototype[methodName];
     if (func == null) return "no code";
     var code = func.toString();
-    if (className == "Global" || methodName == "constructor") return code.withSingleSpacesOnly();
-    return (className + ".prototype." + methodName + " = " + code).withSingleSpacesOnly(); 
+    if (className == "Global" || methodName == "constructor") return code;
+    return className + ".prototype." + methodName + " = " + code; 
 };
 
 Function.prototype.mixInto = function(targetFun) {
@@ -317,8 +317,9 @@ Object.extend(Function.prototype, {
  */  
 
 Object.extend(String.prototype, {
-    withSingleSpacesOnly: function() { 
-        return this.replace(/[ \t]+/g, ' ');
+    shortenTo: function(len) { 
+    	if (this.length <= len) return this
+	return this.substring(0,len-4) + '...'
     },
 
     withNiceDecimals: function() {
@@ -2936,7 +2937,8 @@ Object.extend(Morph.prototype, {
     },
 
     showMorphMenu: function(evt) { 
-        this.morphMenu(evt).openIn(this.world(), evt.mousePoint, false, this.inspect()); 
+        this.morphMenu(evt).openIn(this.world(), evt.mousePoint, false,
+		this.inspect().shortenTo(30)); 
     },
 
     morphMenu: function(evt) { 
@@ -2947,22 +2949,32 @@ Object.extend(Morph.prototype, {
             ["show SVG code", this, "addSvgInspector", this],
             ["dump model", this, "dumpModel", this], // debugging, will go away
             ["reset rotation", this, "setRotation", 0],
-//            [((!this.openForDragAndDrop) ? "close DnD" : "open DnD"), this, "toggleDnD"],
-            ["toggle fisheye", this, "toggleFisheye"]
+            [((!this.openForDragAndDrop) ? "close DnD" : "open DnD"), this, "toggleDnD", evt.mousePoint],
+            ["toggle fisheye", this, "toggleFisheye"],
+            ["drill", this, "showCoreSample", evt.mousePoint],
+            ["grab", this, "pickMeUp", evt]
             ];
         var m = MenuMorph(items); 
         if (evt.mouseButtonPressed) evt.hand.setMouseFocus(m);
         return m;
     },
 
-    toggleDnD: function() {
-        this.openForDragAndDrop = !this.openForDragAndDrop;
+    toggleDnD: function(loc) {
+	if (true) return this.notify("Sorry, DnD control is\nnot yet available", loc);        	this.openForDragAndDrop = !this.openForDragAndDrop;
     },
 
-    openColorPicker: function(funcName, evt) {
-        var picker = ColorPickerMorph(evt.mousePoint.addXY(5,5).extent(pt(50,30)),this,funcName,true);
-        this.world().addMorph(picker);
-        evt.hand.setMouseFocus(picker);
+    pickMeUp: function(evt) {
+	var offset = evt.hand.position().subPt(evt.hand.lastMouseDownPoint);
+	this.moveBy(offset);
+	evt.hand.addMorph(this);
+    },
+
+    notify: function(msg, loc) {
+	MenuMorph([["OK", 0, "toString"]]).openIn(this.world(), loc, false, msg); 
+    },
+
+    showCoreSample: function(loc) {
+	if (true) return this.notify("Sorry, core sample is\nnot yet available", loc);
     },
 
     copyToHand: function(hand) {
