@@ -48,7 +48,6 @@ Object.extend(SimpleBrowser.prototype, {
         var panel = PanelMorph(extent);
         panel.setFill(Color.primary.blue.lighter().lighter());
         panel.setBorderWidth(2);
-        panel.model = this;
         panel.addMorph(m = ListPane(Rectangle(0,0,200,150)));
         m.connectModel({model: this, getList: "getClassList", setSelection: "setClassName"});
         panel.addMorph(m = ListPane(Rectangle(200,0,200,150)));
@@ -114,7 +113,6 @@ Object.extend(SimpleInspector.prototype, {
         var panel = Morph(rect, "rect");
         panel.setFill(Color.primary.blue.lighter().lighter());
         panel.setBorderWidth(2);
-        panel.model = this;
 
         var m;
         panel.addMorph(m = ListPane(Rectangle(0,0,200,150)));
@@ -127,7 +125,7 @@ Object.extend(SimpleInspector.prototype, {
         panel.morphMenu = function(evt) { 
             var menu = Morph.prototype.morphMenu.call(this,evt);
             menu.addLine();
-            menu.addItem(['inspect selection', new SimpleInspector(panel.model.selectedItem()), "openIn", this.world()])
+            menu.addItem(['inspect selection', new SimpleInspector(panel.getModel().selectedItem()), "openIn", this.world()])
             return menu; 
         }
 
@@ -229,7 +227,6 @@ Object.extend(StylePanel.prototype, {
         var panel = PanelMorph(rect.extent(), "rect");
         panel.setFill(Color.primary.blue.lighter().lighter());
         panel.setBorderWidth(2);
-        panel.model = this;
     
         var m;
         var y = 10;
@@ -278,7 +275,7 @@ Object.extend(StylePanel.prototype, {
         panel.morphMenu = function(evt) { 
             var menu = Morph.prototype.morphMenu.call(this,evt);
             menu.addLine();
-            menu.addItem(['inspect model', new SimpleInspector(panel.model), "openIn", this.world()])
+            menu.addItem(['inspect model', new SimpleInspector(panel.getModel()), "openIn", this.world()])
             return menu;
         }
 
