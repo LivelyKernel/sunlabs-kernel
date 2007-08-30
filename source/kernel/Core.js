@@ -28,7 +28,7 @@ Namespace =  {
     SVG : Canvas.getAttribute("xmlns"),
     LIVELY : Canvas.getAttribute("xmlns:lively"), // FIXME Safari XMLSerializer seems to do wierd things w/namespaces
     XLINK : Canvas.getAttribute("xmlns:xlink"),
-    DAV : Canvas.getAttribute("xmlns:D"),
+    DAV : Canvas.getAttribute("xmlns:D")
 };
 
 
@@ -596,7 +596,7 @@ Object.extend(Rectangle.prototype, {
         return Rectangle(this.x+p.x,this.y+p.y,this.width-(p.x*2),this.height-(p.y*2)) 
     },
     
-    expandBy: function(delta) { return this.insetBy(0-delta) },
+    expandBy: function(delta) { return this.insetBy(0-delta) }
 });
 
 Object.category(Rectangle, 'statics', function () { return {
@@ -805,7 +805,7 @@ Object.extend(Color, {
         blue: Color.rgb(0x53, 0x82, 0xA1),
         orange: Color.rgb(0xef, 0x6f, 0x00),
         green: Color.rgb(0xb2, 0xbc, 00),
-        yellow: Color.rgb(0xff, 0xc7, 0x26),
+        yellow: Color.rgb(0xff, 0xc7, 0x26)
     },
 
     secondary: {
@@ -943,7 +943,7 @@ Object.extend(Transform, {
         var matrix = Canvas.createSVGMatrix();
         matrix = matrix.translate(delta.x, delta.y).rotate(angleInRadians.toDegrees()).scale(scale);
         return Transform.fromMatrix(matrix);
-    },
+    }
 
 });
 
@@ -1046,7 +1046,7 @@ Object.extend(CharSet, {
     
     nonBlank: function(cc) {  
         return " \n\r\t".include(cc) == false;
-    },
+    }
     
 });
 
@@ -1395,8 +1395,8 @@ Object.extend(Shape.prototype, {
 
     toPath: function() {
         throw new Error('unimplemented');
-    },
-    
+    }
+   
 });
 
 // Default visual attributes for Shapes
@@ -1955,7 +1955,7 @@ Object.extend(Morph, {
             this.changed(); 
             return result;
         }
-    },
+    }
 
 });
 
@@ -3018,7 +3018,7 @@ Object.extend(Morph.prototype, {
     
     acceptsDropping: function(morph) { 
         return this.openForDragAndDrop;
-    },
+    }
 
 });
 
