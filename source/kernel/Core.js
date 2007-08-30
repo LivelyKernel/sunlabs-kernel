@@ -342,7 +342,21 @@ Object.extend(String.prototype, {
         }
 
         return ss.substr(0,len);
-    }
+    },
+
+    // very simple format mechanism, maybe extend with precision and such
+    format: function(/*, exprs*/) {
+	var str = this;
+	
+	for (var i = 0; i < arguments.length; i++) {
+	    var a = arguments[i];
+	    var object = (a instanceof String || typeof(a) == 'string') ? a : Object.inspect(a); // avoid quotes
+            str = str.replace(new RegExp("%" + (i + 1), "g"), object);
+	}
+	
+	return str;
+    },
+
     
 });
 
@@ -491,7 +505,7 @@ Object.extend(Point.prototype, function() { return {
     extent: function(ext) { return Rectangle(this.x, this.y, ext.x, ext.y); },
 
     inspect: function() { // KP: toString not overridable :(
-        return "pt(" + this.x.roundTo(0.01) + "," + this.y.roundTo(0.01) + ")"; 
+        return "pt(%1,%2)".format(this.x.roundTo(0.01), this.y.roundTo(0.01)); 
     },
 
     // Polar coordinates...
@@ -650,7 +664,7 @@ Object.category(Rectangle.prototype, 'part naming', function() { return {
     },
 
     inspect: function() { // KP: toString -> inspect
-        return "rect(" + this.topLeft().inspect() + "," + this.bottomRight().inspect() + ")"; 
+        return "rect(%1,%2)".format(this.topLeft(), this.bottomRight());
     }
     
 }});
@@ -1154,14 +1168,14 @@ Object.extend(Event.prototype, {
         return Event.capitalizer[this.type] || this.type;
     },
     
-    setButtonPressedAndPriorPoint: function(buttonPressed,priorPoint) {
+    setButtonPressedAndPriorPoint: function(buttonPressed, priorPoint) {
         this.mouseButtonPressed = buttonPressed;
         // if moving or releasing, priorPoint will get found by prior morph
         this.priorPoint = priorPoint; 
     },
         
     inspect: function() {
-        return "Event(" + this.type + (this.mousePoint ? "," + this.mousePoint.inspect() : "") + ")";
+        return "Event(%1%2)".format(this.type, this.mousePoint ? "," + this.mousePoint : "");
     },
 
     // is anyone using this?
@@ -1173,10 +1187,6 @@ Object.extend(Event.prototype, {
         } 
 
         return props.sort(); 
-    },
-
-    inspect: function() {
-        return "Event(" + this.type + (this.mousePoint ? "," + this.mousePoint.inspect() : "") + ")";
     },
 
     stop: function() {
@@ -1222,7 +1232,7 @@ Object.extend(DisplayObject.prototype, {
 
     setType: function(type)  {
         //this.setAttributeNS(Namespace.LIVELY, "type", type);
-        this.setAttributeNS(null, "type", type);
+        this.setAttribute("type", type);
         return this;
     },
 
@@ -1368,7 +1378,7 @@ Object.extend(Shape.prototype, {
     shouldIgnorePointerEvents: false,
 
     inspect: function() {
-        return "a Shape(" + '"' + this.getType() + '"' + "," + this.bounds().inspect() + ")"; 
+        return 'a Shape(%1,%2)'.format(this.getType(), this.bounds().inspect());
     },
 
     getType: function() { 
@@ -2620,7 +2630,7 @@ Object.extend(Morph.prototype, {
 
     /** Use inspect() instead of toString b/c toString cannot be overriden */
     inspect: function() { 
-        return "a " + this.getType() + "(" + "#" + this.id + ", " + Object.inspect(this.shape) + ")"; 
+        return "%1(#%2,%3)".format(this.getType(), this.id, this.shape);
     }
     
 });
@@ -3520,13 +3530,13 @@ Object.extend(Model.prototype, {
     },
 
     toString: function() {
-        return "#<Model: " + Object.inspect(this.dependents) + ">";
+        return "#<Model:%1>".format(this.dependents);
     },
 
     inspect: function() {
         var hash = new Hash(this);
         delete hash.dependents;
-        return "#<Model: " + Object.toJSON(hash) + ">";
+        return "#<Model:%1>".format(Object.toJSON(hash));
     }
 
 });
@@ -3544,7 +3554,7 @@ Object.category(SimpleModel.prototype,  "core", function() {
     }
 
     function escapeValue(value) {
-	return value == null  ? "null" : "<![CDATA[" + Object.toJSON(value) + "]]>";
+	return value == null  ? "null" : "<![CDATA[%1]]>".format(Object.toJSON(value));
     }
     
     return {
@@ -3580,15 +3590,13 @@ Object.category(SimpleModel.prototype,  "core", function() {
 	
 	toMarkup: function(exporter) {
 	    var model = this;
-            return "<model> " 
-		+  this.variables().map(function(name) { 
-		    return '<variable name="' + name + '">' + escapeValue(model[name]) + '</variable>'; }).join('')
-		+ this.dependents.map(function(dep) { 
-		    return '<dependent ref="' + dep.id + '">' 
-			+ Object.properties(dep.modelPlug || {}).filter(function(name) { return name != 'model'; }).map(function(prop) { return '<accessor formal="' + prop + '" actual="' + dep.modelPlug[prop] + '"/>'; }).join(' ') + "</dependent>"; }).join('') + "</model>";
+            return "<model>%1%2</model>".format( 
+		this.variables().map(function(name) { 
+		    return '<variable name="%1">%2</variable>'.format(name, escapeValue(model[name])); }).join(''),
+		this.dependents.map(function(dep) { 
+		    return '<dependent ref="%1">%2</dependent>'.format(dep.id, 
+								       Object.properties(dep.modelPlug || {}).filter(function(name) { return name != 'model'; }).map(function(prop) { return '<accessor formal="%1" actual="%2"/>'.format(prop, dep.modelPlug[prop]); }).join(' '))}).join(''));
 	}
-	
-	
     }});
 
 

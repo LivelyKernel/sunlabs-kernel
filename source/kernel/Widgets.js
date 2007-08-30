@@ -2283,9 +2283,9 @@ Object.extend(HandMorph.prototype, {
     
     inspect: function() { 
         var superString = HandMorph.superClass.inspect.call(this);
-        var extraString = ", local=" + this.isLocal + ",id="+this.id;
+        var extraString = ", local=%1,id=%2".format(this.isLocal, this.id);
         if (!this.hasSubmorphs()) return superString + ", an empty hand" + extraString;
-        return superString + ", a hand carrying " + this.topSubmorph().inspect() + extraString; 
+        return "%1, a hand carrying %2%3".format(superString, this.topSubmorph(), extraString);
     }
     
 });
