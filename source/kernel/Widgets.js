@@ -807,28 +807,92 @@ Object.extend(SelectionMorph.prototype, {
     },
     
     setBorderWidth: function(width) { 
-        if (this.selectedMorphs.length==0) SelectionMorph.superClass.setBorderWidth.call(this,width);
-        else this.selectedMorphs.invoke('setBorderWidth', width);
+        if (this.selectedMorphs.length==0) {
+            SelectionMorph.superClass.setBorderWidth.call(this,width);
+        } else { 
+            this.selectedMorphs.invoke('setBorderWidth', width);
+            for ( var i = 0; i < this.selectedMorphs.length; i++ ) {
+                if (this.selectedMorphs[i].hasSubmorphs()) {
+                    this.selectedMorphs[i].withAllSubmorphsDo(function() {this.setBorderWidth(width)}, null);
+                }
+            }
+        }
     },
     
     setFill: function(color) { 
-        if (this.selectedMorphs.length==0) SelectionMorph.superClass.setFill.call(this,color);
-        else this.selectedMorphs.invoke('setFill', color);
+        if (this.selectedMorphs.length==0) {
+            SelectionMorph.superClass.setFill.call(this,color);
+        } else {
+            this.selectedMorphs.invoke('setFill', color);
+            for ( var i = 0; i < this.selectedMorphs.length; i++ ) {
+                if (this.selectedMorphs[i].hasSubmorphs()) {
+                    this.selectedMorphs[i].withAllSubmorphsDo(function() {this.setFill(color)}, null);
+                }
+            }
+        }
     },
     
     setBorderColor: function(color) { 
-        if (this.selectedMorphs.length==0) SelectionMorph.superClass.setBorderColor.call(this,color);
-        else this.selectedMorphs.invoke('setBorderColor', color);
+        if (this.selectedMorphs.length==0) {
+            SelectionMorph.superClass.setBorderColor.call(this,color);
+        } else {
+            this.selectedMorphs.invoke('setBorderColor', color);
+            for ( var i = 0; i < this.selectedMorphs.length; i++ ) {
+                if (this.selectedMorphs[i].hasSubmorphs()) {
+                    this.selectedMorphs[i].withAllSubmorphsDo(function() {this.setBorderColor(color)}, null);
+                }
+            }
+        }
     },
     
     setFillOpacity: function(op) { 
-        if (this.selectedMorphs.length==0) SelectionMorph.superClass.setFillOpacity.call(this,op);
-        else this.selectedMorphs.invoke('setFillOpacity', op);
+        if (this.selectedMorphs.length==0) {
+            SelectionMorph.superClass.setFillOpacity.call(this,op);
+        } else { 
+            this.selectedMorphs.invoke('setFillOpacity', op);
+            for ( var i = 0; i < this.selectedMorphs.length; i++ ) {
+                if (this.selectedMorphs[i].hasSubmorphs()) {
+                    this.selectedMorphs[i].withAllSubmorphsDo(function() {this.setFillOpacity(op)}, null);
+                }
+            }
+        }
     },
     
     setStrokeOpacity: function(op) { 
-        if (this.selectedMorphs.length==0) SelectionMorph.superClass.setStrokeOpacity.call(this,op);
-        else this.selectedMorphs.invoke('setStrokeOpacity', op);
+        if (this.selectedMorphs.length==0) {
+            SelectionMorph.superClass.setStrokeOpacity.call(this,op);
+        } else { 
+            this.selectedMorphs.invoke('setStrokeOpacity', op);
+            for ( var i = 0; i < this.selectedMorphs.length; i++ ) {
+                if (this.selectedMorphs[i].hasSubmorphs()) {
+                    this.selectedMorphs[i].withAllSubmorphsDo(function() {this.setStrokeOpacity(op)}, null);
+                }
+            }
+        }
+    },
+
+// TODO: there MUST be a better way to do this
+// there "might" be some performance issues with this :)
+    setRotation: function(theta) {
+        for ( var i = 0; i < this.selectedMorphs.length; i++ ) {
+            this.addMorph(this.selectedMorphs[i]);
+        }
+        SelectionMorph.superClass.setRotation.call(this,theta);
+        for ( var i = 0; i < this.selectedMorphs.length; i++ ) {
+            this.world().addMorph(this.selectedMorphs[i]);
+        }
+    },
+    
+// TODO: there MUST be a better way to do this.. but it works without a sweat
+// there "might" be some performance issues with this :)
+    setScale: function(scale) {
+        for ( var i = 0; i < this.selectedMorphs.length; i++ ) {
+            this.addMorph(this.selectedMorphs[i]);
+        }
+        SelectionMorph.superClass.setScale.call(this,scale);
+        for ( var i = 0; i < this.selectedMorphs.length; i++ ) {
+            this.world().addMorph(this.selectedMorphs[i]);
+        }
     },
     
     okToBeGrabbedBy: function(evt) { // DI: Need to verify that z-order is preserved
