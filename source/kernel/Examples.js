@@ -351,17 +351,15 @@ Object.extend(DoodleMorph.prototype, {
         const iconSize = 40;
         var r = Rectangle(0, 0, iconSize, iconSize /* rect.height - iconSize - 10 */);
         this.linebutton = new ImageButtonMorph(r, IMAGES + "line.png", IMAGES + "line_down.png");
-        var r = Rectangle(0, 40, iconSize, iconSize /* rect.height - iconSize - 10 */);
+        var r = Rectangle(0, iconSize, iconSize, iconSize /* rect.height - iconSize - 10 */);
         this.rectbutton = new ImageButtonMorph(r, IMAGES + "rectangle.png", IMAGES + "rectangle_down.png");
-        var r = Rectangle(0, 80, iconSize, iconSize /* rect.height - iconSize - 10 */);
+        var r = Rectangle(0, iconSize*2, iconSize, iconSize /* rect.height - iconSize - 10 */);
         this.circlebutton = new ImageButtonMorph(r, IMAGES + "circle.png", IMAGES + "circle_down.png");
-        var r = Rectangle(0, 120, iconSize, iconSize /* rect.height - iconSize - 10 */);
-        this.fillbutton = new ImageButtonMorph(r, IMAGES + "copy.png", IMAGES + "copy_down.png");
-        var r = Rectangle(0, 160, iconSize, iconSize /* rect.height - iconSize - 10 */);
+        var r = Rectangle(0, iconSize*3, iconSize, iconSize /* rect.height - iconSize - 10 */);
         this.widthbutton = new ImageButtonMorph(r, IMAGES + "lines.png", IMAGES + "lines_down.png");
-        var r = Rectangle(0, 200, iconSize, iconSize /* rect.height - iconSize - 10 */);
+        var r = Rectangle(0, iconSize*4, iconSize, iconSize /* rect.height - iconSize - 10 */);
         this.colorsbutton = new ImageButtonMorph(r, IMAGES + "colors.png", IMAGES + "colors_down.png");
-        var r = Rectangle(0, 240, iconSize, iconSize /* rect.height - iconSize - 10 */);
+        var r = Rectangle(0, iconSize*5, iconSize, iconSize /* rect.height - iconSize - 10 */);
         this.stylebutton = new ImageButtonMorph(r, IMAGES + "style.png", IMAGES + "style_down.png");
 
 
@@ -391,10 +389,6 @@ Object.extend(DoodleMorph.prototype, {
         this.circlebutton.connectModel({model: this, setValue: "addCirc"});
         this.addMorph(this.circlebutton);
                 
-		this.fillbutton.setToggle(true);
-        this.fillbutton.connectModel({model: this, setValue: "setFillMode", getValue: "getFillMode"});
-        this.addMorph(this.fillbutton);
-
         this.widthbutton.onMouseUp = function(evt) {
             var newValue = this.toggles ? !this.getValue() : false;
             this.changeAppearanceFor(newValue); 
@@ -510,11 +504,7 @@ Object.extend(DoodleMorph.prototype, {
 
     addRect: function() {
         var morph = Morph(Rectangle(this.newPos * 2, this.newPos, 60, 20), 'rect');
-        if ( this.fillmode ) {
-            morph.setFill(this.fillColor);
-        } else {
-            morph.setFill(null);
-        }
+        morph.setFill(this.fillColor);
         morph.setBorderWidth(this.lineWidth);
         morph.setBorderColor(this.drawingColor);
         this.addMorph(morph);
@@ -525,11 +515,7 @@ Object.extend(DoodleMorph.prototype, {
     
     addCirc: function() {
         var morph = Morph(Rectangle(this.newPos * 2, this.newPos, 60, 20), 'ellipse');
-        if ( this.fillmode ) {
-            morph.setFill(this.fillColor);
-        } else {
-            morph.setFill(null);
-        }
+        morph.setFill(this.fillColor);
         morph.setBorderWidth(this.lineWidth);
         morph.setBorderColor(this.drawingColor);
         this.addMorph(morph);
@@ -545,6 +531,9 @@ Object.extend(DoodleMorph.prototype, {
             return;
         }
         if ( this.colorMorph != null ) {
+            if ( this.colorMorph.position() != this.colorsbutton.bounds().topRight().subPt(pt(0,20)) ) {
+                this.colorMorph.setPosition(this.colorsbutton.bounds().topRight().subPt(pt(0,20)));
+            }
             this.addMorph(this.colorMorph);
             return;
         }
@@ -554,25 +543,19 @@ Object.extend(DoodleMorph.prototype, {
         this.colorMorph.setFill(Color.white);
         this.colorMorph.shape.setFillOpacity(.7);
 
-        var m = TextMorph(Rectangle(-45, -50, 90, 20), "Border color");
+        var m = TextMorph(Rectangle(-45, -50, 80, 20), "Border color");
+        m.relayMouseEvents(this.colorMorph, {onMouseDown: "onMouseDown", onMouseUp: "onMouseUp"});
         m.setBorderWidth(0);
         m.shape.roundEdgesBy(10);
         m.shape.setFillOpacity(0);
         this.colorMorph.addMorph(m);
-        m = TextMorph(Rectangle(-45, 0, 90, 20), "Fill color");
+        m = TextMorph(Rectangle(-45, 0, 80, 20), "Fill color");
+        m.relayMouseEvents(this.colorMorph, {onMouseDown: "onMouseDown", onMouseUp: "onMouseUp"});
         m.setBorderWidth(0);
         m.shape.roundEdgesBy(10);
         m.shape.setFillOpacity(0);
         this.colorMorph.addMorph(m);
 
-/*        if ( this.colorpicker != null ) {
-            this.addMorph(this.colorpicker);
-            return;
-        }
-        this.colorpicker = ColorPickerMorph(Rectangle(0, 0, 50, 30));
-        this.colorpicker.moveBy(this.colorsbutton.bounds().topRight());
-        this.addMorph(this.colorpicker);
-*/
         this.colorpicker = ColorPickerMorph(Rectangle(-45, -30, 50, 30));
         this.colorMorph.addMorph(this.colorpicker);
         this.fillpicker = ColorPickerMorph(Rectangle(-45, 20, 50, 30));
@@ -638,14 +621,6 @@ Object.extend(DoodleMorph.prototype, {
         if ( this.currentSelection != null ) {
             this.currentSelection.setBorderWidth(this.lineWidth);
         }
-    },
-    
-    setFillMode: function(val) {
-        this.fillmode = val;
-    },
-    
-    getFillMode: function() {
-        return this.fillmode;
     },
     
     setStyle: function() {
