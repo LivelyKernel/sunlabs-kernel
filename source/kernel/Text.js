@@ -330,6 +330,7 @@ Object.extend(nTextLine.prototype, {
 	    c.bounds = mostRecentBounds.clone();
 	    c.bounds.x += c.bounds.width;
 	    if (c.isNewLine) {
+	      c.bounds.width = (this.leftX + compositionWidth) - c.bounds.x;
 	      runningStartIndex = c.start + c.length;
 	      c.wasComposed = true;
 	      break;
