@@ -291,8 +291,7 @@ Object.extend(ClipMorph.prototype, {
 
     bounds: function() {
         if (this.fullBounds != null) return this.fullBounds;
-        var tfm = this.transform.baseVal.consolidate();
-        this.fullBounds = tfm.transformRectToRect(this.shape.bounds());
+        this.fullBounds = this.retrieveTransform().transformRectToRect(this.shape.bounds());
     
         if (/polyline|polygon/.test(this.shape.getType())) {
             // double border margin for polylines to account for elbow protrusions

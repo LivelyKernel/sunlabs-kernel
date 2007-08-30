@@ -943,7 +943,7 @@ Object.extend(Transform, {
         var matrix = Canvas.createSVGMatrix();
         matrix = matrix.translate(delta.x, delta.y).rotate(angleInRadians.toDegrees()).scale(scale);
         return Transform.fromMatrix(matrix);
-    }
+    },
 
 });
 
@@ -1323,7 +1323,13 @@ Object.extend(DisplayObject.prototype, {
         */
         // KP: Safari needs the attribute instead of the programmatic thing
         this.setAttributeNS(null, 'transform', transform.toAttributeValue());
+    },
+
+    retrieveTransform: function() {
+	return this.transform.baseVal.consolidate() || Transform();// identity if no transform specified
     }
+
+    
     
 });
 
@@ -1921,7 +1927,7 @@ Object.extend(Morph, {
     
         node = HostClass.becomeInstance(node, window[morphTypeName]);
 
-        node.pvtSetTransform(node.transform.baseVal.consolidate());
+        node.pvtSetTransform(node.retrieveTransform());
 
         var prevId = node.pickId();
         if (importer) { importer.addMapping(prevId, node.id); }
@@ -3098,7 +3104,7 @@ Object.extend(Morph.prototype, {
     bounds: function() {
         if (this.fullBounds != null) return this.fullBounds;
         
-        var tfm = this.transform.baseVal.consolidate();
+        var tfm = this.retrieveTransform();
         this.fullBounds = tfm.transformRectToRect(this.shape.bounds());
     
         if (/polyline|polygon/.test(this.shape.getType())) {
@@ -3333,7 +3339,8 @@ Object.extend(Morph.prototype, {
         var exporter = new Exporter(this);
         var xml = exporter.serialize();
 	//console.log('%s dumping model %s', this, this.model);
-        var modelxml = exporter.serializeSimpleModel(this.model);
+	
+        var modelxml = exporter.serializeSimpleModel(this.modelPlug.model);
 	//console.log('%s has model %s, %s', this, this.model, modelxml);
 	//console.log('%s has model keys %s', this, Object.keys(this.model));
 	var model = this.model;
@@ -3412,6 +3419,11 @@ Object.extend(Morph.prototype, {
         if (plug.model.addDependent)  // for mvc-style updating
             plug.model.addDependent(this); 
     },
+
+    getModel: function() {
+	return this.modelPlug && this.modelPlug.model;
+    },
+
 
     getModelValue: function(functionName, defaultValue) {
         // functionName is a view-specific message, such as "getList"
