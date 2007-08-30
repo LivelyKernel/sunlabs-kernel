@@ -1187,161 +1187,6 @@ Object.extend(TextMorph.prototype, {
 
 });
 
-// TextMorph keyboard event functions
-Object.extend(TextMorph.prototype, {
-
-    takesKeyboardFocus: function() { 
-        // unlike, eg, cheapMenus
-        return true; 
-    },
-    
-    setHasKeyboardFocus: function(newSetting) { 
-        this.hasKeyboardFocus = newSetting;
-        return newSetting;
-    },
-    
-    onFocus: function(hand) {
-        TextMorph.superClass.onFocus.call(this, hand);
-        this.drawSelection();
-    },
-
-    onBlur: function(hand) {
-        TextMorph.superClass.onBlur.call(this, hand);
-        if (!this.showsSelectionWithoutFocus()) this.undrawSelection();
-    },
-
-
-    onKeyDown: function(evt) {
-        if (!this.acceptInput) return;
-        
-        // For some reason, this function is never called in Windows -- dunno why!
-
-        // have to process commands in keydown...
-        if (evt.altKey) {
-            var replacement = (String.fromCharCode(evt.keyCode)).toLowerCase();
-            return this.processCommandKeys(replacement);
-        } 
-    },
-    
-    onKeyPress: function(evt) {
-        if (!this.acceptInput) return;
-        
-        // cleanup: separate BS logic, diddle selection range and use replaceSelectionWith()
-        var before;
-    
-        if (evt.sanitizedKeyCode() == Event.KEY_BACKSPACE && this.hasNullSelection()) {
-            before = this.textString.substring(0, this.selectionRange[1]); 
-        } else { 
-            before = this.textString.substring(0, this.selectionRange[0]);
-        } 
-    
-        var after = this.textString.substring(this.selectionRange[1] + 1, this.textString.length);
-
-        switch (evt.sanitizedKeyCode()) {
-        case Event.KEY_BACKSPACE: { // Replace the selection after checking for type-ahead
-            this.setTextString(before.concat(after));
-            this.setNullSelectionAt(before.length); 
-            evt.stop(); // do not use for browser navigation
-            return;
-        }
-        case Event.KEY_LEFT: {
-            // forget the existing selection
-            this.setNullSelectionAt(Math.max(before.length - 1, 0));
-            evt.stop();
-            return;
-        } 
-        case Event.KEY_RIGHT: {
-            // forget the existing selection
-            this.setNullSelectionAt(Math.min(before.length + 1, this.textString.length));
-            evt.stop();
-            return;
-        }
-        case Event.KEY_ESC: {
-            this.relinquishKeyboardFocus(this.world().firstHand());
-            return;
-        }
-        case Event.KEY_UP:
-        case Event.KEY_DOWN: {
-            // do nothing for now
-            // don't scroll the page
-            evt.stop();
-            return;
-        }
-        }
-
-        if (!evt.altKey) {
-            var replacement = String.fromCharCode(evt.charCode);
-            this.replaceSelectionWith(replacement); 
-            evt.stop(); // done
-        } 
-    },
-    
-    processCommandKeys: function(key) { 
-        console.log('command ' + key);
-
-        switch (key) {
-        case "s": {
-            this.saveContents(this.textString); 
-            return; 
-        }
-    
-        case "x": {
-            this.clipboardString = this.selectionString(); 
-            this.replaceSelectionWith("");
-            return; 
-        }
-        
-        case "c": {
-            this.clipboardString = this.selectionString(); 
-            return; 
-        }
-        
-        case "v": {
-            if (this.clipboardString)
-                this.replaceSelectionWith(this.clipboardString); 
-            return; 
-        }
-    
-        case "d": {
-            this.evalInContext(this.selectionString()); 
-            return; 
-        }
-        
-        case "p": {
-            var strToEval = this.selectionString();
-            this.setNullSelectionAt(this.selectionRange[1] + 1);
-            console.log('selection = ' + strToEval);
-            this.replaceSelectionWith(" " + this.evalInContext(strToEval).toString());
-            return; 
-        }
-        
-        case "a": {
-            this.setSelectionRange(0, this.textString.length - 1); 
-            return;
-        }
-        
-        case "j": {
-            return;
-        }
-
-        case "i": {
-            this.addSvgInspector();
-            return;
-        }
-
-        case "z": {
-            if (this.undoTextString) {
-                this.setTextString(this.undoTextString);
-            }
-        }
-        }
-
-        var bracketIndex = CharSet.leftBrackets.indexOf(key);
-
-        if (bracketIndex >= 0) this.addOrRemoveBrackets(bracketIndex); 
-
-    }
-});
 
 // TextMorph accessor functions
 Object.category(TextMorph.prototype, "accessing", function() {
@@ -2139,37 +1984,8 @@ Object.extend(TextMorph.prototype, {
 
     onKeyDown: function(evt) {
         if (!this.acceptInput) return;
-        
-        // For some reason, this function is never called in Windows -- dunno why!
-
-        // have to process commands in keydown...
-        if (evt.altKey) {
-            var replacement = (String.fromCharCode(evt.keyCode)).toLowerCase();
-            return this.processCommandKeys(replacement);
-        } 
-    },
-    
-    onKeyPress: function(evt) {
-        if (!this.acceptInput) return;
-        
-        // cleanup: separate BS logic, diddle selection range and use replaceSelectionWith()
-        var before;
-    
-        if (evt.sanitizedKeyCode() == Event.KEY_BACKSPACE && this.hasNullSelection()) {
-            before = this.textString.substring(0, this.selectionRange[1]); 
-        } else { 
-            before = this.textString.substring(0, this.selectionRange[0]);
-        } 
-    
-        var after = this.textString.substring(this.selectionRange[1] + 1, this.textString.length);
-
+	var before = this.textString.substring(0, this.selectionRange[0]); 
         switch (evt.sanitizedKeyCode()) {
-        case Event.KEY_BACKSPACE: { // Replace the selection after checking for type-ahead
-            this.setTextString(before.concat(after));
-            this.setNullSelectionAt(before.length); 
-            evt.stop(); // do not use for browser navigation
-            return;
-        }
         case Event.KEY_LEFT: {
             // forget the existing selection
             this.setNullSelectionAt(Math.max(before.length - 1, 0));
@@ -2193,16 +2009,37 @@ Object.extend(TextMorph.prototype, {
             evt.stop();
             return;
         }
-        }
+	}
 
-        if (!evt.altKey) {
-            var replacement = String.fromCharCode(evt.charCode);
-            //reijula in enter in firefox causes charcode 0 here, so we use keycode
-            if (evt.charCode == 0) {
-               replacement = String.fromCharCode(evt.keyCode);
-            }
-            this.replaceSelectionWith(replacement); 
-            evt.stop(); // done
+        
+        // For some reason, this function is never called in Windows -- dunno why!
+
+        // have to process commands in keydown...
+        if (evt.altKey) {
+            var replacement = (String.fromCharCode(evt.keyCode)).toLowerCase();
+            return this.processCommandKeys(replacement);
+        } 
+    },
+    
+    onKeyPress: function(evt) {
+        if (!this.acceptInput) return;
+
+        // cleanup: separate BS logic, diddle selection range and use replaceSelectionWith()
+
+	if (evt.keyCode == Event.KEY_BACKSPACE) { // Replace the selection after checking for type-ahead
+	    var before = this.textString.substring(0, this.selectionRange[this.hasNullSelection() ? 1 : 0]); 
+            var after = this.textString.substring(this.selectionRange[1] + 1, this.textString.length);
+
+            this.setTextString(before.concat(after));
+            this.setNullSelectionAt(before.length); 
+            evt.stop(); // do not use for browser navigation
+            return;
+        } else if (!evt.altKey) {
+	    if (evt.charCode && evt.charCode < 63200) { // account for Safari's keypress codes 
+		var replacement = String.fromCharCode(evt.charCode);
+		this.replaceSelectionWith(replacement); 
+		evt.stop(); // done
+	    }
         } 
     },
     
