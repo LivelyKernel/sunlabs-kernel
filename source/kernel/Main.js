@@ -187,7 +187,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
             }
         }
 
-        var showBitmap = true;
+        var showBitmap = false;
         if (showBitmap) { 
             var width = 800;
             var height = 500;
