@@ -1057,41 +1057,32 @@ Object.extend(TextMorph.prototype, {
         return pt(r.x, y1).extent(pt(r.width, lineHeight)); 
     },
     
-    charOfPoint: function(rawp) {  //Sanitized hit function
+    charOfPoint: function(localP) {  //Sanitized hit function
+	// DI: Nearly perfect now except past last char if not EOL
+	// Note that hit(x,y) expects x,y to be in morph coordinates,
+	// but y should have 2 subtracted from it.
+	// Also getBnds(i) reports rectangles that need 2 added to their y values.
+	// GetBounds(i) returns -1 above and below the text bounds, and
+	// 0 right of the bounds, and leftmost character left of the bounds.
         var tl = this.textTopLeft();
-        var px = Math.max(tl.x + 1, rawp.x);
-        var py = rawp.y;
+        var px = Math.max(localP.x, tl.x); // ensure no returns of 0 left of bounds
+        var px = Math.min(px, this.innerBounds().maxX()-1); // nor right of bounds
+        var py = localP.y - 2;
+        var hit = this.textBox.hit(px, py);
         var charIx = this.textBox.hit(px, py);
-        // console.log('first hit ' + charIx);
     
-        // TextBox returns -1 between lines -- try a little lower
+        // hit(x,y) returns -1 above and below box -- return 1st char or past last
         if (charIx < 0) 
-            charIx = this.textBox.hit(px, py + 2);
-
+            return py < tl.y ? 0 : this.textString.length;
+  
         if (charIx >= 0) { // It's a normal character hit
             // People tend to click on gaps rather than character centers...
             var jRect = this.textBox.getBounds(charIx);
-            
-            if (jRect != null && px < jRect.center().x) {
-                // console.log('correcting from ' + charIx);
-                charIx = Math.min(charIx + 1, this.textString.length); 
+            if (jRect != null && px > jRect.center().x) {
+               charIx = Math.min(charIx + 1, this.textString.length); 
             }
-        
-            // console.log('charOfPoint returning ' + charIx);
-            return charIx;
+	return charIx;
         }
-        
-        // TextBox returns -1 above box -- return first char
-        if (py < tl.y) 
-            charIx = 0;
-            
-        // TextBox returns -1 right of last char on line -- try left of next line
-        if (charIx < 0) 
-            charIx = this.textBox.hit(tl.x + 1, py + this.lineHeight()) - 1;
-            
-        // TextBox won't hit last character -- maybe that's it
-        if (charIx < 0) 
-            return this.textString.length;
             
         return charIx; 
     }
@@ -1583,8 +1574,9 @@ Object.extend(TestTextMorph.prototype, {
     track: function(evt) {
         var localP = this.localize(evt.mousePoint);
 	var tl = this.textTopLeft();
-        var px = Math.max(tl.x + 1, localP.x);
-        var py = localP.y;
+        var px = Math.max(localP.x, tl.x); // ensure no returns of 0 left of bounds
+        var px = Math.min(px, this.innerBounds().maxX());
+        var py = localP.y - 2;
         var hit = this.textBox.hit(px, py);
         var charIx = this.charOfPoint(localP);
 	console.log('localP = ' + localP.inspect() + ' hit = ' + hit + ' charOfPoint = ' + charIx);  // display the index for the mouse point
