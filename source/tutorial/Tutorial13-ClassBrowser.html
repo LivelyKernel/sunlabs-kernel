@@ -1,0 +1,58 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html debug="false">
+  <head>
+    <title>JavaScript Live Tutorial</title>
+    <script type="text/javascript" src="firebug/firebug.js"></script> 
+  </head>
+  
+  <body>
+    <script type="text/javascript" src="fontinfo.js"> </script>
+    
+    <h2>JavaScript Live Tutorial: (13) Class Browser</h2>
+    <a href="index.html">Back to Introduction</A>
+    <a href="Tutorial12-OnTheFly.html">PREVIOUS</A>
+    <a href="Tutorial13-ClassBrowser.js">Source code of this demo</A>
+    <a href="Tutorial14-Inspector.html">NEXT</A>
+    <hr>
+    The JavaScript Live system has a <i>class browser</i> that allows
+    the behavior of the system to be viewed and edited interactively.<br>
+    The left upper panel contains the names of the JavaScript Live classes
+    in the system. <br>
+    When you select one of them, the right upper panel shows
+    all the methods (functions) of that class.<br>
+    When you choose one of the methods, the lower panel shows the
+    source code of the method.
+    <p>
+    There are various keyboard shortcuts to edit the methods:<ul>
+    <li> <i>Command-S (Alt-S)</i>: Save (accept) the changes
+    <li> <i>Command-A (Alt-A)</i>: Select All
+    <li> <i>Command-X (Alt-X)</i>: Cut
+    <li> <i>Command-C (Alt-C)</i>: Copy
+    <li> <i>Command-V (Alt-V)</i>: Paste
+    <li> <i>Command-Z (Alt-Z)</i>: Undo
+    </ul>
+    <p>
+    <hr>
+    <b>Try it yourself!</b> Try viewing the methods of class <i>RectShape</i>.<br>
+    Try editing some of the methods to make changes to the behavior of the system
+    itself.<br>
+    For instance, if you modify the method <i>RectShape.setFill</i> as shown below,
+    you change the way menus and many other objects in the system are drawn.<br>
+    You have to accept the changes by pressing <i>Command-S</i> or by choosing the "<i>evaluate text</i>"
+    popup menu item of the text that you just edited.  
+    <p>
+    <code>
+    RectShape.prototype.setFill = function(string)<br>
+    {<br>
+      this.setAttributeNS(null, "fill", Color.green);<br>
+    }<br>
+    </code>
+    <p>
+    Try opening a popup menu after completing this change.<br>
+    The background color of the menu should now be green.
+    <p>
+    <iframe src="Tutorial13-ClassBrowser.svg" hspace="20" width="60%" height="60%" align="center" frameborder="10"></iframe>
+    <p>
+    <hr>
+  </body>
+</html>
