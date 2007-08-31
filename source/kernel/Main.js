@@ -230,6 +230,22 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
         world.addMorph(lm); 
     }
 
+    // TODO list morph
+    var showTODO = !Config.skipMostExamples;
+    if (showTODO) {
+        var todoMorph = TextMorph(Rectangle(450, 300, 250,20),
+                        "TODO:\n" + 
+                        "Browser specific configs(?)\n" +
+                        "BuZilla up and running for the release\n" +
+                        "More widgets?\n" +
+                        "-Widget for managing timers\n" + 
+                        "-\"virtual desktop\" widget to drag-and-drop morph to another world?\n"
+                        );
+        todoMorph.shape.roundEdgesBy(10);
+        todoMorph.shape.setFillOpacity(.7);
+        world.addMorph(todoMorph);
+    }
+
     // example icon morph with a fisheye effect 'on'
     var showIcon = !Config.skipMostExamples;
     if (showIcon) {
