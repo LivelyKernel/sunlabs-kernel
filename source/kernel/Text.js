@@ -327,7 +327,7 @@ Object.extend(nTextLine.prototype, {
 	    this.chunks = this.wordDecomposition(this.startIndex);
 	for (var i = 0; i < this.chunks.length; i++) {
 	    var c = this.chunks[i];
-
+	    
 	    if (c.isWhite) {
 		var spaceIncrement = this.spaceWidth;
 		c.bounds = mostRecentBounds.clone();
@@ -342,10 +342,11 @@ Object.extend(nTextLine.prototype, {
 		if (c.isTab) {
 		    c.bounds.width = this.tabWidth;
 		    var tabXBoundary = c.bounds.x - this.leftX;
-		    c.bounds.width = 	(Math.floor((tabXBoundary + c.bounds.width) / c.bounds.width)
-					 * c.bounds.width) - tabXBoundary;
+		    c.bounds.width = (Math.floor((tabXBoundary + c.bounds.width) / c.bounds.width)
+				      * c.bounds.width) - tabXBoundary;
 		} else {
 		    c.bounds.width = spaceIncrement * c.length;
+		    if (lastWord) lastWord.setAttribute("trail", c.length); // little helper for serialization
 		}
 		runningStartIndex = c.start + c.length;
 	    } else {
@@ -539,7 +540,6 @@ Object.extend(TextBox, {
 
     become: function(node) {
         var elt = HostClass.becomeInstance(node, TextBox);
-        elt.lines = elt.recoverLines();
         var content = elt.recoverTextContent();
 
         var lineHeight = parseFloat(elt.getAttributeNS(Namespace.LIVELY, "line-height"));
@@ -573,31 +573,25 @@ Object.extend(TextBox.prototype, {
 	this.tabsAsSpaces = true;
     },
     
-    recoverLines: function() { // FIXME lines are not line but spans
-        var tls = [];
-        for (var child = this.firstChild; child != null; child = child.nextSibling) {
-            if (child.tagName == 'tspan') 
-		tls.push(TextWord.become(child));
-        }
-        return tls;
-    },
 
     recoverTextContent: function() {
-        // concatenate content from all the lines
-        if (this.lines == null) {
-            console.log('no lines for %s', this);
-            return;
-        }
-        
-        var content = "";
 
-        for (var i = 0; i < this.lines.length; i++ ) {
-            content += this.lines[i].textContent; // FIXME lines are not lines but words
-	    if (this.lines[i].getAttribute("nl") == 'true') {
-		content += "\n";
+        var content = "";
+        for (var child = this.firstChild; child != null; child = child.nextSibling) {
+            if (child.tagName == 'tspan')  {
+		var word = TextWord.become(child);
+		content += word.textContent; 
+		if (word.getAttribute("nl") == 'true') {
+		    content += "\n";
+		}
+		var trail = parseInt(word.getAttribute("trail"));
+		if (trail) {
+		    for (var j = 0; j < trail; j++) {
+			content += ' ';
+		    }
+		}
 	    }
         }
-
         console.log('reassembled textString to %s', content);
         return content;
     },
@@ -648,7 +642,7 @@ Object.extend(TextBox.prototype, {
     },
 
     // return the index of the character whose bounds include pt(x,y), else -1
-    hit: function(x,y) {
+    hit: function(x, y) {
         var line = this.lineForY(y);
         return line == null ? -1 : line.indexForX(x); 
     },
@@ -1488,7 +1482,7 @@ Object.extend(TextMorph, {
                 i = -1; // spl check for */
 
             if (i >= 0) {
-                i1 = TextMorph.matchBrackets(str, CharSet.rightBrackets[i],CharSet.leftBrackets[i],i1,-1);
+                i1 = TextMorph.matchBrackets(str, CharSet.rightBrackets[i], CharSet.leftBrackets[i],i1,-1);
                 return [i1+1, i2]; 
             } 
         }
