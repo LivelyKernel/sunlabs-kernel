@@ -33,7 +33,7 @@ Object.extend(WidgetTester.prototype, {
         // work with gradients or stipple patterns yet!
         panel.linkToStyles(['widgetPanel']);
         var model = new SimpleModel(null, 'Text', 'TextSel', 'ListItem', 'PrintValue', 'B1Value', 'B2Value', 'SliderValue', 'SliderExtent');
-        panel.model = model;
+        panel.connectModel({model: model});
         var m; 
 
         // Two simple buttons, one toggles...

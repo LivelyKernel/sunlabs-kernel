@@ -1403,10 +1403,6 @@ Object.extend(Shape.prototype, {
         func.call(this, arg); 
     },
     
-    verticesTranslatedBy: function(delta) { 
-        return Shape.translateVerticesBy(this.vertices(), delta); 
-    },
-
     toPath: function() {
         throw new Error('unimplemented');
     }
@@ -3346,13 +3342,11 @@ Object.extend(Morph.prototype, {
     dumpModel: function() {
         var exporter = new Exporter(this);
         var xml = exporter.serialize();
-	//console.log('%s dumping model %s', this, this.model);
 	
-        var modelxml = exporter.serializeSimpleModel(this.modelPlug.model);
-	//console.log('%s has model %s, %s', this, this.model, modelxml);
-	//console.log('%s has model keys %s', this, Object.keys(this.model));
-	var model = this.model;
-	console.log('%s model %s', this, Object.keys(this.model).filter(function(k) { return !(model[k] instanceof Function) && k !='dependents' }).map(function(k) { return k + " = " + Object.inspect(model[k]); }));
+	var model = this.getModel();
+        var modelxml = exporter.serializeSimpleModel(model);
+	
+	console.log('%s model %s', this, Object.keys(model).filter(function(k) { return !(model[k] instanceof Function) && k !='dependents' }).map(function(k) { return k + " = " + Object.inspect(model[k]); }));
 	
     },
     
@@ -3361,7 +3355,7 @@ Object.extend(Morph.prototype, {
         var exporter = new Exporter(this);
         var xml = exporter.serialize();
         console.log('%s serialized to %s', this, xml);
-        var modelxml = exporter.serializeSimpleModel(this.model);
+        var modelxml = exporter.serializeSimpleModel(this.getModel());
 
         const maxSize = 1500;
         // xml = '<svg xmlns="http://www.w3.org/2000/svg  xmlns:xlink="http://www.w3.org/1999/xlink> ' + xml + ' </svg>';
@@ -3383,7 +3377,7 @@ Object.extend(Morph.prototype, {
                 var copy = importer.importFrom(txt);
                 WorldMorph.current().addMorph(copy);
                 
-                if (target.model) {
+                if (target.getModel()) {
                     copy.model = importer.importModelFrom(modelxml);
 		    console.log('restoring from model %s', modelxml);
                     console.log('copy %s has model %s', copy, copy.model);
