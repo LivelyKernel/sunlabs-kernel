@@ -132,7 +132,7 @@ Object.extend(ClockMorph.prototype, {
             label.wrap = "shrinkWrap";
             label.setFontSize(fontSize);    label.inset = pt(0,0);        
             label.setBorderWidth(0);        label.setFill(null);
-            label.align(label.bounds().center(),labelPosition.addXY(1,1));
+	    label.align(label.bounds().center(),labelPosition.addXY(-3,1));
             this.addMorph(label);
         }
     

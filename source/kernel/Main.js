@@ -140,7 +140,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
 
     var showClipMorph = Config.skipMostExamples;
     if (showClipMorph) {
-        world.addMorph(widget = ClipMorph(Rectangle(600, 300, 300, 150, 150)));
+        world.addMorph(widget = ClipMorph(Rectangle(600, 300, 150, 150)));
         widget.setFill(Color.green.lighter());
     }
     
