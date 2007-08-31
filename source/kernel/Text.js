@@ -9,23 +9,6 @@
 var TextWord = HostClass.fromElementType('tspan', false);
 Object.extend(TextWord, {
 
-    create: function(textString, startIndex, leftX, topY, font) {
-        var elt = TextWord();
-        elt.textString = textString;
-        elt.startIndex = startIndex;
-        elt.stopIndex = textString.length - 1;
-        elt.leftX = leftX;
-        elt.topY = topY; 
-        elt.textContent = elt.textString; //.substring(elt.startIndex);
-        elt.font = font;
-        elt.setAttribute("font-family", font.getFamily()); // has to be individually set
-        elt.setAttribute("font-size", font.getSize()); // has to be individually set
-        elt.setX(leftX);
-        elt.setY(topY + font.getSize());
-	elt.didLineBreak = false;
-        return elt;
-    },
-
     become: function(node) {
         var elt = HostClass.becomeInstance(node, TextWord);
         elt.font = FontInfo.forFamily(elt.getAttribute("font-family"), elt.getAttribute("font-size"));
@@ -36,6 +19,24 @@ Object.extend(TextWord, {
 });
 
 Object.extend(TextWord.prototype, {
+
+    initialize: function(textString, startIndex, leftX, topY, font) {
+        this.textString = textString;
+        this.startIndex = startIndex;
+        this.stopIndex = textString.length - 1;
+        this.leftX = leftX;
+        this.topY = topY; 
+        this.textContent = this.textString; //.substring(this.startIndex);
+        this.font = font;
+        this.setAttribute("font-family", font.getFamily()); // has to be individually set
+        this.setAttribute("font-size", font.getSize()); // has to be individually set
+        this.setX(leftX);
+        this.setY(topY + font.getSize());
+	this.didLineBreak = false;
+        return this;
+    },
+
+
 
     // compose a word within compositionWidth, stopping if the width or string width is exceeded
     // compositionWidth is in the same units as character metrics
@@ -345,9 +346,9 @@ Object.extend(nTextLine.prototype, {
 	    }
 	    runningStartIndex = c.start + c.length;
 	  } else {
-	    c.word = TextWord.create(this.textString, c.start,
-				     mostRecentBounds.maxX(),
-				     this.topY, this.font);
+	    c.word = TextWord(this.textString, c.start,
+			      mostRecentBounds.maxX(),
+			      this.topY, this.font);
 	    c.word.compose(compositionWidth - (mostRecentBounds.maxX() - this.leftX), c.length - 1);
 	    c.bounds = c.word.getBounds(c.start).union(c.word.getBounds(c.start + c.length - 1));
 	    if (c.word.getLineBrokeOnCompose()) {
@@ -531,11 +532,6 @@ var TextBox = HostClass.fromElementType('text', false);
 Object.extend(TextBox.prototype, DisplayObject.prototype);
 
 Object.extend(TextBox, {
-    create: function(textString, lineHeight, textColor) {
-        var elt = TextBox(null);
-        elt.init(textString, lineHeight, textColor);
-        return elt;
-    },
 
     become: function(node) {
         var elt = HostClass.becomeInstance(node, TextBox);
@@ -543,7 +539,7 @@ Object.extend(TextBox, {
         var content = elt.recoverTextContent();
 
         var lineHeight = parseFloat(elt.getAttributeNS(Namespace.LIVELY, "line-height"));
-        elt.init(content, lineHeight, Color.black); // FIXME
+        elt.initialize(content, lineHeight, Color.black); // FIXME
         return elt;
     }
 
@@ -552,7 +548,7 @@ Object.extend(TextBox, {
 Object.extend(TextBox.prototype, {
     eventHandler: { handleEvent: function(evt) { console.log('got event %s on %s', evt, evt.target); }},
 
-    init: function(textString, lineHeight, textColor) {
+    initialize: function(textString, lineHeight, textColor) {
         this.textString = textString;//: String
         this.lineHeight = lineHeight;//: float
         this.setAttributeNS(Namespace.LIVELY, "line-height", lineHeight); // serialization helper, FIXME?
@@ -760,7 +756,7 @@ Object.extend(TextMorph.prototype, {
         if (this.textBox && this.textBox.lines) {
             // FIXME hack!!!
             this.font = FontInfo.forFamily(this.textBox.lines[0].getAttribute("font-family"), 
-            this.textBox.lines[0].getAttribute("font-size"));
+					   this.textBox.lines[0].getAttribute("font-size"));
             console.log('got font %s', font);
         } else {
             this.font = FontInfo.forFamily(this.fontFamily, this.fontSize);
@@ -896,7 +892,7 @@ Object.extend(TextMorph.prototype, {
         if (this.ensureTextString() == null) return null;
         
         if (this.textBox == null) {
-            this.textBox = TextBox.create(this.textString, this.lineHeight(), this.textColor);
+            this.textBox = TextBox(this.textString, this.lineHeight(), this.textColor);
             // this.textBox.setFontSize(this.fontSize);
             var topLeft = this.textTopLeft();
             this.textBox.renderText(topLeft.x, topLeft.y, this.compositionWidth(), this.font);
@@ -1081,7 +1077,7 @@ Object.extend(TextMorph.prototype, {
             if (jRect != null && px > jRect.center().x) {
                charIx = Math.min(charIx + 1, this.textString.length); 
             }
-	return charIx;
+	    return charIx;
         }
             
         return charIx; 
