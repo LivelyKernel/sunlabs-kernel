@@ -317,10 +317,12 @@ Object.extend(Function.prototype, {
  */  
 
 Object.extend(String.prototype, {
+    /* KP: use truncate() from prototype
     shortenTo: function(len) { 
     	if (this.length <= len) return this
 	return this.substring(0,len-4) + '...'
     },
+*/
 
     withNiceDecimals: function() {
         // JS can't print nice decimals
@@ -1173,7 +1175,7 @@ Object.extend(Event.prototype, {
     },
         
     inspect: function() {
-        return "Event(%1%2)".format(this.type, this.mousePoint ? "," + this.mousePoint : "");
+        return "Event(%1%2)".format(this.type, this.mousePoint ? "," + this.mousePoint.inspect() : "");
     },
 
     // is anyone using this?
@@ -2947,18 +2949,17 @@ Object.extend(Morph.prototype, {
     },
 
     showMorphMenu: function(evt) { 
-        this.morphMenu(evt).openIn(this.world(), evt.mousePoint, false,
-		this.inspect().shortenTo(30)); 
+        this.morphMenu(evt).openIn(this.world(), evt.mousePoint, false, this.inspect().truncate()); 
     },
 
     morphMenu: function(evt) { 
-        var items = [["duplicate", this, "copyToHand", evt.hand],
-            ["remove", this, "remove"],
-            ["inspect", SimpleInspector, "openOn", this],
-            ["style", StylePanel, "openOn", this],
-            ["show SVG code", this, "addSvgInspector", this],
-            ["dump model", this, "dumpModel", this], // debugging, will go away
-            ["reset rotation", this, "setRotation", 0],
+        var items = [["duplicate", this.copyToHand.bind(this).curry(evt.hand)],
+            ["remove", this.remove.bind(this)],
+            ["inspect", SimpleInspector.openOn.curry(this)],
+            ["style", StylePanel.openOn.curry(this)],
+            ["show SVG code", this.addSvgInspector.bind(this).curry(this)],
+            ["dump model", this.dumpModel.bind(this).curry(this)], // debugging, will go away
+            ["reset rotation", this.setRotation.bind(this).curry(0)],
             [((!this.openForDragAndDrop) ? "close DnD" : "open DnD"), this, "toggleDnD", evt.mousePoint],
             ["toggle fisheye", this, "toggleFisheye"],
             ["drill", this, "showCoreSample", evt.mousePoint],
@@ -2970,7 +2971,8 @@ Object.extend(Morph.prototype, {
     },
 
     toggleDnD: function(loc) {
-	if (true) return this.notify("Sorry, DnD control is\nnot yet available", loc);        	this.openForDragAndDrop = !this.openForDragAndDrop;
+	if (true) return this.notify("Sorry, DnD control is\nnot yet available", loc);        	
+	this.openForDragAndDrop = !this.openForDragAndDrop;
     },
 
     pickMeUp: function(evt) {

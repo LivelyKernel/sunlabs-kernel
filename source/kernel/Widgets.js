@@ -1258,10 +1258,14 @@ Object.extend(MenuMorph.prototype, {
         if (!this.stayUp) this.remove(); 
 
         if (item) { // Now execute the menu item...
-            var func = item[1][item[2]];  // target[functionName]
-            if (func == null) console.log('Could not find function ' + item[2]);
-            // call as target.function(parameterOrNull,event,menuItem)
-            else func.call(item[1], item[3], evt, item); 
+	    if (item[1] instanceof Function) { // alternative style, items ['menu entry', function] pairs
+		item[1].call(this, evt);
+	    } else {
+		var func = item[1][item[2]];  // target[functionName]
+		if (func == null) console.log('Could not find function ' + item[2]);
+		// call as target.function(parameterOrNull,event,menuItem)
+		else func.call(item[1], item[3], evt, item); 
+	    }
         }
     }
 });
@@ -1973,17 +1977,18 @@ Object.extend(WorldMorph.prototype, {
 
     addMorphs: function(evt) {
         console.log("mouse point == %s", evt.mousePoint);
+	var world = this.world();
         var items = [
-            ["New subworld (LinkMorph)", this.world(), "addMorph", LinkMorph(null, evt.mousePoint)],
-            ["Rectangle", this.world(), "addMorph", Morph(Rectangle(evt.mousePoint.x, evt.mousePoint.y, 50, 30), "rect")],
-            ["Ellipse", this.world(), "addMorph", Morph(Rectangle(evt.mousePoint.x, evt.mousePoint.y, 50, 30), "ellipse")],
-            ["TextMorph", this.world(), "addMorph", TextMorph(evt.mousePoint.extent(pt(120,10)), "This is a TextMorph")],
-            ["Image Morph", this.world(), "addMorph", ImageMorph(evt.mousePoint.extent(pt(100, 45)), "http://logos.sun.com/images/SunSample.gif")],
-            ["Clock Morph", this.world(), "addMorph", ClockMorph(evt.mousePoint,50)],
-            ["Class Browser", this.world(), "addMorph", new SimpleInspector(this)],
+            ["New subworld (LinkMorph)", function(evt) { world.addMorph(LinkMorph(null, evt.mousePoint));}],
+            ["Rectangle", function(evt) { world.addMorph(Morph(evt.mousePoint.extent(pt(50, 30)), "rect"));}],
+            ["Ellipse", function(evt) { world.addMorph(Morph(evt.mousePoint.extent(pt(50, 30)), "ellipse"));}],
+            ["TextMorph", function(evt) { world.addMorph(TextMorph(evt.mousePoint.extent(pt(120, 10)), "This is a TextMorph"));}],
+            ["Image Morph", function(evt) { world.addMorph(ImageMorph(evt.mousePoint.extent(pt(100, 45)), "http://logos.sun.com/images/SunSample.gif"))}],
+            ["Clock Morph", function(evt) { world.addMorph(ClockMorph(evt.mousePoint, 50));}],
+            ["Class Browser", function(evt) { world.addMorph(new SimpleInspector(this));}],
             //new SimpleInspector(this), "openIn", this.world()],
-            ["Doodle Morph", this.world(), "addMorph", WindowMorph(DoodleMorph(evt.mousePoint.extent(pt(300, 300))), 'Doodle Morph')],
-            ];
+            ["Doodle Morph", function(evt) { world.addMorph(WindowMorph(DoodleMorph(evt.mousePoint.extent(pt(300, 300))), 'Doodle Morph'))}],
+        ];
         MenuMorph(items).openIn(this.world(), evt.mousePoint);
     }
 
