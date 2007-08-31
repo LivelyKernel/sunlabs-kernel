@@ -227,7 +227,7 @@ Object.extend(Pen.prototype, {
         if (this.fillColor) 
             morph.setShape(PolygonShape(verts, this.fillColor, this.penWidth, this.penColor));
         else 
-            morph.setShape(PolylineShape(this.penWidth, this.penColor));
+            morph.setShape(PolylineShape(verts, this.penWidth, this.penColor));
     
         WorldMorph.current().addMorph(morph); 
     
