@@ -974,16 +974,21 @@ Object.extend(TextMorph.prototype, {
                 console.log("null bounds at char " + i); 
                 return false; 
             }
-            maxX = Math.max(maxX,jRect.maxX());
-            maxY = Math.max(maxY,jRect.maxY()); 
+            if(jRect.width < 100) { // line break character gets extended to comp width
+		maxX = Math.max(maxX,jRect.maxX());
+            	maxY = Math.max(maxY,jRect.maxY()); 
+	    }
         }
         
         // if (this.innerBounds().width==(maxX-x0) && this.innerBounds().height==(maxY-y0)) return; // No change in width *** check convergence
         var bottomRight = this.inset.addXY(maxX,maxY);
 
         // DI: This should just say, eg, this.shape.setBottomRight(bottomRight);
-        if (this.wrap = "noWrap")  with (this.shape) { setBounds(bounds().withHeight(bottomRight.y - bounds().y)); }
-        else with (this.shape) { setBounds(bounds().withBottomRight(bottomRight)); } 
+        if (this.wrap == "noWrap")
+	        with (this.shape) { setBounds(bounds().withHeight(bottomRight.y - bounds().y))};
+
+        if (this.wrap == "shrinkWrap")
+        	with (this.shape) { setBounds(bounds().withBottomRight(bottomRight))};
     },
 
     showsSelectionWithoutFocus: function() { 

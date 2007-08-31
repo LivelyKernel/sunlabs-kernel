@@ -123,21 +123,24 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
         widget.startStepping(1000);
     }
 
-    var showLogo = false;
-    if (showLogo) { var logoMenu = new MenuMorph([]);
-        for (var i=1; i<=4; i++)
-		logoMenu.addItem([i.toString(), this, "makeLogo", i]);
+    var hilbertFun = true;
+    if (hilbertFun) {
+	var logoMenu = MenuMorph([]);
+// /*
+        for (var i=0; i<=4; i++)
+		logoMenu.addItem([i.toString(), logoMenu, "makeLogo", i]);
 	logoMenu.makeLogo = function(order) {
 		if(this.morphs) for (var i=0; i<4; i++) this.morphs[i].remove();
+		if (i=0) { this.morphs == null; return; }
 		var P = new Pen();
-		P.go(110);  P.turn(90);  P.go(180);
 		this.morphs = P.filberts(order,5); };
-        logoMenu.openIn(world, pt(600,100), true, "Choose logo size"); 
+// */
+        logoMenu.openIn(world, pt(300, 380), true, "Hilbert Fun"); 
 	}
 
     var showClipMorph = Config.skipMostExamples;
     if (showClipMorph) {
-        world.addMorph(widget = ClipMorph(Rectangle(600, 300, 150, 150)));
+        world.addMorph(widget = ClipMorph(Rectangle(600, 300, 300, 150, 150)));
         widget.setFill(Color.green.lighter());
     }
     

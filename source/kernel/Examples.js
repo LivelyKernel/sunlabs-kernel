@@ -239,7 +239,7 @@ Object.extend(Pen.prototype, {
     
     fillLines: function(color) { 
         this.fillColor = color; 
-        this.drawLines(); 
+        return this.drawLines();
     },
     
     hilbert: function(n,s) {
