@@ -155,12 +155,13 @@ Object.extend(WordChunk, {
 
 Object.extend(WordChunk.prototype, {
 
+    isWhite: false,
+    isNewLine: false,
+    isTab: false,
+
     initialize: function(offset, length) {
 	this.start = offset;
 	this.length = length;
-	this.isWhite = false;
-	this.isNewLine = false;
-	this.isTab = false;
 	this.render = true;
 	this.bounds = null;
 	this.wasComposed = false;
@@ -193,7 +194,7 @@ Object.extend(WordChunk.prototype, {
 
     // fully clone a chunk (see warnings)
     clone: function(src) {
-      var c = cloneSkeleton;
+	var c = cloneSkeleton; // KP: does this work? cloneSkeleton seems undefined here
       c.render = this.render;
       c.bounds = this.bounds; // BEWARE - not cloned
       c.wasComposed = this.wasComposed;
@@ -244,7 +245,7 @@ Object.extend(nTextLine.prototype, {
 	this.topY = topY;
 	this.spaceWidth = font.getCharWidth(' ');
 	this.tabWidth = this.spaceWidth * 4;
-	this.words = [];
+	this.words = []; //KP: unused?
 	this.hasComposed = false;
 	this.chunks = chunkSkeleton;
 	return this;
@@ -319,53 +320,56 @@ Object.extend(nTextLine.prototype, {
     compose: function(compositionWidth) {
 	var runningStartIndex = this.startIndex;
 	var mostRecentBounds = new Rectangle(this.leftX, this.topY, 0, 0);
-
+	var lastWord = null;
+	
 	// a way to optimize out repeated scanning
 	if (this.chunks == null)
-	  this.chunks = this.wordDecomposition(this.startIndex);
+	    this.chunks = this.wordDecomposition(this.startIndex);
 	for (var i = 0; i < this.chunks.length; i++) {
-	  var c = this.chunks[i];
+	    var c = this.chunks[i];
 
-	  if (c.isWhite) {
-	    var spaceIncrement = this.spaceWidth;
-	    c.bounds = mostRecentBounds.clone();
-	    c.bounds.x += c.bounds.width;
-	    if (c.isNewLine) {
-	      c.bounds.width = (this.leftX + compositionWidth) - c.bounds.x;
-	      runningStartIndex = c.start + c.length;
-	      c.wasComposed = true;
-	      break;
-	    }
-	    if (c.isTab) {
-	      c.bounds.width = this.tabWidth;
-	      var tabXBoundary = c.bounds.x - this.leftX;
-	      c.bounds.width = 	(Math.floor((tabXBoundary + c.bounds.width) / c.bounds.width)
-				 * c.bounds.width) - tabXBoundary;
+	    if (c.isWhite) {
+		var spaceIncrement = this.spaceWidth;
+		c.bounds = mostRecentBounds.clone();
+		c.bounds.x += c.bounds.width;
+		if (c.isNewLine) {
+		    c.bounds.width = (this.leftX + compositionWidth) - c.bounds.x;
+		    runningStartIndex = c.start + c.length;
+		    c.wasComposed = true;
+		    if (lastWord) lastWord.setAttribute("nl", "true"); // little helper for serialization
+		    break;
+		}
+		if (c.isTab) {
+		    c.bounds.width = this.tabWidth;
+		    var tabXBoundary = c.bounds.x - this.leftX;
+		    c.bounds.width = 	(Math.floor((tabXBoundary + c.bounds.width) / c.bounds.width)
+					 * c.bounds.width) - tabXBoundary;
+		} else {
+		    c.bounds.width = spaceIncrement * c.length;
+		}
+		runningStartIndex = c.start + c.length;
 	    } else {
-	      c.bounds.width = spaceIncrement * c.length;
+		c.word = TextWord(this.textString, c.start,
+				  mostRecentBounds.maxX(),
+				  this.topY, this.font);
+		lastWord = c.word;
+		c.word.compose(compositionWidth - (mostRecentBounds.maxX() - this.leftX), c.length - 1);
+		c.bounds = c.word.getBounds(c.start).union(c.word.getBounds(c.start + c.length - 1));
+		if (c.word.getLineBrokeOnCompose()) {
+		    if (i == 0) {
+			// XXX in the future, another chunk needs to be inserted in the array at this point
+			//     otherwise the bounds will be messed up - kam
+			runningStartIndex = c.word.getStopIndex() + 1;
+		    } else {
+			// Back up to re-render this word and abort rendering
+			c.render = false;
+		    }
+		    break;
+		}
+		runningStartIndex = c.start + c.length;
 	    }
-	    runningStartIndex = c.start + c.length;
-	  } else {
-	    c.word = TextWord(this.textString, c.start,
-			      mostRecentBounds.maxX(),
-			      this.topY, this.font);
-	    c.word.compose(compositionWidth - (mostRecentBounds.maxX() - this.leftX), c.length - 1);
-	    c.bounds = c.word.getBounds(c.start).union(c.word.getBounds(c.start + c.length - 1));
-	    if (c.word.getLineBrokeOnCompose()) {
-	      if (i == 0) {
-		// XXX in the future, another chunk needs to be inserted in the array at this point
-		//     otherwise the bounds will be messed up - kam
-		runningStartIndex = c.word.getStopIndex() + 1;
-	      } else {
-		// Back up to re-render this word and abort rendering
-		c.render = false;
-	      }
-	      break;
-	    }
-	    runningStartIndex = c.start + c.length;
-	  }
-	  mostRecentBounds = c.bounds;
-	  c.wasComposed = true;
+	    mostRecentBounds = c.bounds;
+	    c.wasComposed = true;
 	}
 	this.overallStopIndex = runningStartIndex - 1;
 	this.hasComposed = true;
@@ -569,7 +573,7 @@ Object.extend(TextBox.prototype, {
 	this.tabsAsSpaces = true;
     },
     
-    recoverLines: function() {
+    recoverLines: function() { // FIXME lines are not line but spans
         var tls = [];
         for (var child = this.firstChild; child != null; child = child.nextSibling) {
             if (child.tagName == 'tspan') 
@@ -588,7 +592,10 @@ Object.extend(TextBox.prototype, {
         var content = "";
 
         for (var i = 0; i < this.lines.length; i++ ) {
-            content += this.lines[i].textContent;
+            content += this.lines[i].textContent; // FIXME lines are not lines but words
+	    if (this.lines[i].getAttribute("nl") == 'true') {
+		content += "\n";
+	    }
         }
 
         console.log('reassembled textString to %s', content);
@@ -598,7 +605,7 @@ Object.extend(TextBox.prototype, {
     setTextColor: function(textColor) {
         this.setAttributeNS(null, "fill", textColor);
     },
-
+    
     setTabWidth: function(width, asSpaces) {
 	this.tabWidth = width;
 	this.tabsAsSpaces = asSpaces;
@@ -656,7 +663,7 @@ Object.extend(TextBox.prototype, {
         }
         return null; 
     },
-
+    
     // find what line contains the y value in character metric space
     lineForY: function(y) {
         if (this.lines.length < 1 || y < this.lines[0].topY) 
@@ -669,7 +676,7 @@ Object.extend(TextBox.prototype, {
                 return line; 
             }
         }
-    
+	
         return null; 
     },
     
@@ -718,7 +725,7 @@ Object.extend(TextMorph, {
         morph.okToBeGrabbedBy = function(evt) { this.isDesignMode() ? this : null; }
         return morph;
     }
-
+    
 });
 
 // debuging convenience    
