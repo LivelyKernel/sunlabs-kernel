@@ -1830,8 +1830,8 @@ Object.extend(WorldMorph.prototype, {
         // merged from WorldState
         this.stepList = [];
         this.lastStepTime = (new Date()).getTime();
-        this.mainLoop = window.setInterval(function() {this.doOneCycle()}.bind(this).logErrors('Main Loop'), 30);
-
+	this.mainLoopFunc = this.doOneCycle.bind(this).logErrors('Main Loop');
+        this.mainLoop = window.setTimeout(this.mainLoopFunc, 30);
         this.worldId = ++WorldMorph.worldCount;
         return this;
     },
@@ -1947,6 +1947,10 @@ Object.extend(WorldMorph.prototype, {
     startStepping: function(morph) {
         var ix = this.stepList.indexOf(morph);
         if (ix < 0) this.stepList.push(morph); 
+	if (!this.mainLoop) {
+	    // kickstart the timer (note arbitrary delay)
+	    this.mainLoop = window.setTimeout(this.mainLoopFunc, 60);
+	}
     },
     
     stopStepping: function(morph) {
@@ -1957,13 +1961,18 @@ Object.extend(WorldMorph.prototype, {
     doOneCycle: function (world) {
         // Process stepping behavior
         var msTime = (new Date()).getTime();
-        
+        var timeOfNextStep = Infinity;
         for (var i = 0; i < this.stepList.length; i++) {
-            this.stepList[i].tick(msTime);
+            var time = this.stepList[i].tick(msTime);
+	    if (time > 0) 
+		timeOfNextStep = Math.min(time, timeOfNextStep);
         }
-
         this.lastStepTime = msTime;
-        
+	if (timeOfNextStep == Infinity) { // didn't find anything to cycle through
+	    this.mainLoop = null; 
+	} else {
+            this.mainLoop = window.setTimeout(this.mainLoopFunc, timeOfNextStep - msTime);
+	}
         // FIXME: be clever about rescheduling the next cycle?
     },
 
@@ -1976,7 +1985,7 @@ Object.extend(WorldMorph.prototype, {
     relativize: function(pt) { 
         return pt.matrixTransform(this.parentNode.getTransformToElement(this)); 
     },
-
+    
     addMorphs: function(evt) {
         console.log("mouse point == %s", evt.mousePoint);
 	var world = this.world();

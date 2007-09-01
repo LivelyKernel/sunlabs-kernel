@@ -3042,8 +3042,11 @@ Object.extend(Morph.prototype, {
 Object.extend(Morph.prototype, {
 
     tick: function(msTime) {
-        if (this.stepHandler != null) return this.stepHandler.tick(msTime,this);
-        return false;
+        if (this.stepHandler != null) {
+	    this.stepHandler.tick(msTime, this);
+	    return this.stepHandler.timeOfNextStep;
+	}
+        return 0;
     },
 
     stepActivity: function(msTime) { }, // May be overridden
@@ -3085,10 +3088,9 @@ Object.extend(StepHandler.prototype, {
     },
     
     tick: function(msTime, owner) { //: Boolean whether step function was called
-        if (msTime < this.timeOfNextStep) return false;
+        if (msTime < this.timeOfNextStep) return 0;
         this.stepFunction.call(this.owner,msTime);  // this.owner.stepActivity(msTime);
-        this.timeOfNextStep = msTime + this.stepTime;
-        return true;
+        return this.timeOfNextStep = msTime + this.stepTime;
     },
 
     // Note stepFunctions are written to be evaluate in the context of the morph itself
