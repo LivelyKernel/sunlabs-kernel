@@ -547,6 +547,8 @@ Object.category(Rectangle.prototype, 'core', function() { return {
     maxY: function() { return this.y + this.height; },
     withWidth: function(w) { return Rectangle(this.x, this.y, w, this.height)},
     withHeight: function(h) { return Rectangle(this.x, this.y, this.width, h)},
+    withX: function(x) { return Rectangle(x, this.y, this.width, this.height)},
+    withY: function(y) { return Rectangle(this.x, y, this.width, this.height)},
     extent: function() { return Point(this.width,this.height); },
     withExtent: function(ext) { return Rectangle(this.x, this.y, ext.x, ext.y); },
     center: function() { return Point(this.x+(this.width/2),this.y+(this.height/2))},

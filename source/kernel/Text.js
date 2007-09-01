@@ -20,28 +20,25 @@ Object.extend(TextWord, {
 
 Object.extend(TextWord.prototype, {
 
-    initialize: function(textString, startIndex, leftX, topY, font) {
+    initialize: function(textString, startIndex, topLeft, font) {
         this.textString = textString;
         this.startIndex = startIndex;
         this.stopIndex = textString.length - 1;
-        this.leftX = leftX;
-        this.topY = topY; 
+        this.topLeft = topLeft;
         this.textContent = this.textString; //.substring(this.startIndex);
         this.font = font;
         this.setAttribute("font-family", font.getFamily()); // has to be individually set
         this.setAttribute("font-size", font.getSize()); // has to be individually set
-        this.setX(leftX);
-        this.setY(topY + font.getSize());
+        this.setX(topLeft.x);
+        this.setY(topLeft.y + font.getSize());
 	this.didLineBreak = false;
         return this;
     },
 
-
-
     // compose a word within compositionWidth, stopping if the width or string width is exceeded
     // compositionWidth is in the same units as character metrics
     compose: function(compositionWidth, length) {
-        var rightX = this.leftX + compositionWidth;
+        var rightX = this.topLeft.x + compositionWidth;
         var leadingSpaces = 0;
     
 	this.didLineBreak = false;
@@ -97,8 +94,7 @@ Object.extend(TextWord.prototype, {
 		  " substr: (" + this.textString,substring(this.startIndex, this.stopIndex) + ")" +
 		  " startIndex: " + this.startIndex +
 		  " stopIndex: " + this.stopIndex +
-		  " leftX: " + this.leftX +
-		  " topY: " + this.topY +
+	          " topLeft: " + this.topLeft.inspect() +
 		  " textContent: " + this.textContent +
 		  " didLineBreak: " + this.didLineBreak;
     },
@@ -228,24 +224,22 @@ Object.extend(WordChunk.prototype, {
 });
 
 /**
- * @class nTextLine
+ * @class TextLine
  * This 'class' renders lines composed of words and whitespace
  */ 
 
-var nTextLine = Class.create();
+var TextLine = Class.create();
 
-Object.extend(nTextLine.prototype, {
+Object.extend(TextLine.prototype, {
     // create a new line
-    initialize: function(textString, startIndex, leftX, topY, font, chunkSkeleton) {
+    initialize: function(textString, startIndex, topLeft, font, chunkSkeleton) {
 	this.textString = textString;
         this.font = font;
 	this.startIndex = startIndex;
 	this.overallStopIndex = textString.legnth - 1;
-	this.leftX = leftX;
-	this.topY = topY;
+	this.topLeft = topLeft;
 	this.spaceWidth = font.getCharWidth(' ');
 	this.tabWidth = this.spaceWidth * 4;
-	this.words = []; //KP: unused?
 	this.hasComposed = false;
 	this.chunks = chunkSkeleton;
 	return this;
@@ -319,7 +313,7 @@ Object.extend(nTextLine.prototype, {
     // compose a line of text, breaking it appropriately at compositionWidth
     compose: function(compositionWidth) {
 	var runningStartIndex = this.startIndex;
-	var mostRecentBounds = new Rectangle(this.leftX, this.topY, 0, 0);
+	var mostRecentBounds = this.topLeft.asRectangle();
 	var lastWord = null;
 	
 	// a way to optimize out repeated scanning
@@ -330,31 +324,26 @@ Object.extend(nTextLine.prototype, {
 	    
 	    if (c.isWhite) {
 		var spaceIncrement = this.spaceWidth;
-		c.bounds = mostRecentBounds.clone();
-		c.bounds.x += c.bounds.width;
+		c.bounds = mostRecentBounds.withX(mostRecentBounds.maxX());
 		if (c.isNewLine) {
-		    c.bounds.width = (this.leftX + compositionWidth) - c.bounds.x;
+		    c.bounds.width = (this.topLeft.x + compositionWidth) - c.bounds.x;
 		    runningStartIndex = c.start + c.length;
 		    c.wasComposed = true;
 		    if (lastWord) lastWord.setAttribute("nl", "true"); // little helper for serialization
 		    break;
 		}
 		if (c.isTab) {
-		    c.bounds.width = this.tabWidth;
-		    var tabXBoundary = c.bounds.x - this.leftX;
-		    c.bounds.width = (Math.floor((tabXBoundary + c.bounds.width) / c.bounds.width)
-				      * c.bounds.width) - tabXBoundary;
+		    var tabXBoundary = c.bounds.x - this.topLeft.x;
+		    c.bounds.width = Math.floor((tabXBoundary + this.tabWidth) / this.tabWidth) * this.tabWidth - tabXBoundary;
 		} else {
 		    c.bounds.width = spaceIncrement * c.length;
 		    if (lastWord) lastWord.setAttribute("trail", c.length); // little helper for serialization
 		}
 		runningStartIndex = c.start + c.length;
 	    } else {
-		c.word = TextWord(this.textString, c.start,
-				  mostRecentBounds.maxX(),
-				  this.topY, this.font);
+		c.word = TextWord(this.textString, c.start, pt(mostRecentBounds.maxX(), this.topLeft.y), this.font);
 		lastWord = c.word;
-		c.word.compose(compositionWidth - (mostRecentBounds.maxX() - this.leftX), c.length - 1);
+		c.word.compose(compositionWidth - (mostRecentBounds.maxX() - this.topLeft.x), c.length - 1);
 		c.bounds = c.word.getBounds(c.start).union(c.word.getBounds(c.start + c.length - 1));
 		if (c.word.getLineBrokeOnCompose()) {
 		    if (i == 0) {
@@ -388,7 +377,7 @@ Object.extend(nTextLine.prototype, {
     
     // accessor function
     getTopY: function() {
-	return this.topY
+	return this.topLeft.y;
     },
 
     // get the bounds of the character at stringIndex
@@ -403,11 +392,10 @@ Object.extend(nTextLine.prototype, {
 		return c.word.getBounds(stringIndex);
 	    else {
 	      if (c.isSpaces()) {
-		var virtualSpaceSize = c.bounds.width / c.length;
-		var b = c.bounds.clone();
-		b.width = virtualSpaceSize;
-		b.x += virtualSpaceSize * (stringIndex - c.start);
-		return b;
+		  var virtualSpaceSize = c.bounds.width / c.length;
+		  var b = c.bounds.withWidth(virtualSpaceSize);
+		  b.x += virtualSpaceSize * (stringIndex - c.start);
+		  return b;
 	      } else
 	       return c.bounds;
 	    }
@@ -509,8 +497,7 @@ Object.extend(nTextLine.prototype, {
       var lString = "textString: (" + this.textString + ")" +
 		    " startIndex: " + this.startIndex +
 		    " overallStopIndex: " + this.overallStopIndex +
-		    " leftX: " + this.leftX +
-		    " topY: " + this.topY +
+	            " topLeft: " + this.topLeft.inspect() +
 		    " spaceWidth: " + this.spaceWidth + 
 		    " hasComposed: " + this.hasComposed;
       return lString;
@@ -567,8 +554,6 @@ Object.extend(TextBox.prototype, {
         */
 
         this.lines = null;//: TextLine[]
-        this.leftX = null;//: float
-        this.topY = null;//: float
 	this.tabWidth = 4;
 	this.tabsAsSpaces = true;
     },
@@ -606,29 +591,29 @@ Object.extend(TextBox.prototype, {
     },
     
     // compose the lines if necessary and then render them
-    renderText: function(x, y, compositionWidth, font) {
+    renderText: function(topLeft, compositionWidth, font) {
         if (this.lines == null) 
-            this.lines = this.composeLines(x, y, compositionWidth, font);
+            this.lines = this.composeLines(topLeft, compositionWidth, font);
         for (var i = 0; i < this.lines.length; i++)
 	    this.lines[i].render(this);
     },
     
     // compose all of the lines in the text
-    composeLines: function(x, y, compositionWidth, font) {
+    composeLines: function(initialTopLeft, compositionWidth, font) {
         var lines = [];
         var startIndex = 0;
         var stopIndex = this.textString.length - 1;
-        var lineY = y;
+        var topLeft = initialTopLeft.clone();
 	var chunkSkeleton;
 
         while (startIndex <= stopIndex) {
-            var line = new nTextLine(this.textString, startIndex, x, lineY, font, chunkSkeleton);
+            var line = new TextLine(this.textString, startIndex, topLeft, font, chunkSkeleton);
 	    line.setTabWidth(this.tabWidth, this.tabsAsSpaces);
             line.compose(compositionWidth);
             line.adjustAfterComposition();
             lines.push(line);
 	    startIndex = line.getNextStartIndex();
-            lineY += this.lineHeight;
+            topLeft = topLeft.addXY(0, this.lineHeight);
 	    // this is an optimization that keeps us from having to re-scan the string on each line
 	    chunkSkeleton = line.cloneChunkSkeleton(startIndex);
         }
@@ -660,7 +645,7 @@ Object.extend(TextBox.prototype, {
     
     // find what line contains the y value in character metric space
     lineForY: function(y) {
-        if (this.lines.length < 1 || y < this.lines[0].topY) 
+        if (this.lines.length < 1 || y < this.lines[0].getTopY()) 
             return null;
     
         for (var i = 0; i < this.lines.length; i++) {
@@ -896,7 +881,7 @@ Object.extend(TextMorph.prototype, {
             this.textBox = TextBox(this.textString, this.lineHeight(), this.textColor);
             // this.textBox.setFontSize(this.fontSize);
             var topLeft = this.textTopLeft();
-            this.textBox.renderText(topLeft.x, topLeft.y, this.compositionWidth(), this.font);
+            this.textBox.renderText(topLeft, this.compositionWidth(), this.font);
             this.addChildElement(this.textBox);
         }
         
