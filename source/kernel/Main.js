@@ -287,7 +287,7 @@ function main() {
 
 main();
 
-if (true) showStatsViewer(GameMorph.prototype, "GamePolygon...");
+if (false) showStatsViewer(TextLine.prototype, "TextLine...");
 
 if (Config.showWebStore) {
     //var store = new WebStore('http://idisk.mac.com/xysztof/Public/Lively');

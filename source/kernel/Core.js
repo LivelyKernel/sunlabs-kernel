@@ -2824,6 +2824,8 @@ Object.extend(Morph.prototype, {
         evt.hand.setMouseFocus(null); 
     },
 
+    onMouseOver: function(evt) { }, //default behavior
+
     designMode: false,
     
     setDesignMode: function(flag) {

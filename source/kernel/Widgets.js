@@ -2171,8 +2171,12 @@ Object.extend(HandMorph.prototype, {
                 return;
             }
 
-            if (!this.hasSubmorphs()) {
-                (this.mouseFocus || this.owner()).mouseEvent(evt, this.mouseFocus != null);
+            if (this.mouseFocus==null && this.hasSubmorphs()) { // generate mouseOver events when laden
+           	var receiver = this.owner().morphToGrabOrReceive(evt, null);
+		if (receiver != null) receiver.onMouseOver(evt);
+	    }
+	    else {
+		(this.mouseFocus || this.owner()).mouseEvent(evt, this.mouseFocus != null);
             }
         
             this.lastMouseEvent = evt;
@@ -2304,7 +2308,8 @@ Object.extend(HandMorph.prototype, {
         if (evt.shiftKey && Config.shiftDragForDup && !(grabbedMorph instanceof LinkMorph)) {
             this.mode = "shiftDragForDup";
             this.dragMorph = grabbedMorph; 
-            return;
+            this.setMouseFocus(null);
+	    return;
         }
         
         if (evt.altKey) {
@@ -2360,9 +2365,9 @@ LinkMorph = HostClass.create('LinkMorph', Morph);
 Object.extend(LinkMorph.prototype, {
 
 //  DI: I feel fisheye is distracting here;  OK in palettes maybe
-//    fishEye: true, 
-//    fisheyeGrowth: 2, // make it grow more
-//    fisheyeProximity: 0.5, // make it grow only when the hand gets closer
+    baseFisheye: false, 
+    fisheyeGrowth: 2, // make it grow more
+    fisheyeProximity: 0.5, // make it grow only when the hand gets closer
     defaultFill: Color.black,
     defaultBorderColor: Color.black,
     
@@ -2407,7 +2412,18 @@ Object.extend(LinkMorph.prototype, {
     },
     
     okToBeGrabbedBy: function(evt) {
-        this.hideHelp();
+        this.enterMyWorld(evt); 
+        return null; 
+    },
+
+    enterMyWorld: function(evt) { // needs vars for oldWorld, newWorld
+        carriedMorphs = [];
+	while (evt.hand.hasSubmorphs()) {
+	    var m = evt.hand.topSubmorph();
+	    carriedMorphs.push(m);
+	    m.remove();
+	}
+	this.hideHelp();
         this.myWorld.changed();
         WorldMorph.current().onExit();    
 
@@ -2425,9 +2441,9 @@ Object.extend(LinkMorph.prototype, {
         // display world first, then add hand, order is important!
         WorldMorph.setCurrent(this.myWorld);
         WorldMorph.current().displayWorldOn(canvas);    
-        WorldMorph.current().onEnter();    
-    
-        return null; 
+        WorldMorph.current().onEnter(); 
+	carriedMorphs.each(function(m) { WorldMorph.current().firstHand().addMorph(m) });
+	WorldMorph.current().firstHand().emergingFromWormHole = true; // prevent re-entering
     },
 
     checkForControlPointNear: function(evt) {
@@ -2435,10 +2451,23 @@ Object.extend(LinkMorph.prototype, {
     },
 
     onMouseOver: function(evt) {
-        if (this.helpText) this.showHelp(evt);
+	// Note this event does not have hand bound except if laden!
+        if (evt.hand && evt.hand.hasSubmorphs()) {
+	    if(evt.hand.emergingFromWormHole) evt.hand.setMouseFocus(this);
+	    else this.enterMyWorld(evt);
+	}
+	else if (this.helpText) this.showHelp(evt);
+    },
+    
+    onMouseMove: function(evt) {
+	// Wait until hand leaves a linkMorph before enabling reentry
+	if (this.containsWorldPoint(evt.mousePoint)) return;
+	evt.hand.setMouseFocus(null);
+	evt.hand.emergingFromWormHole = false;
     },
     
     onMouseOut: function(evt) {
+        this.fishEye = this.baseFisheye;
         this.hideHelp();
     },
     
@@ -2457,7 +2486,8 @@ Object.extend(LinkMorph.prototype, {
         this.help.shape.roundEdgesBy(15);
         this.help.setFill(Color.primary.yellow.lighter(3));
         this.help.shape.setFillOpacity(.8);
-        this.world().addMorph(this.help);
+        this.help.openForDragAndDrop = false; // so it wont interfere with mouseovers
+	this.world().addMorph(this.help);
     },
     
     hideHelp: function() {
