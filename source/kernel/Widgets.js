@@ -2206,10 +2206,6 @@ Object.extend(HandMorph.prototype, {
                     this.ungrab(m);
                 } else { 
                     console.log('dropping %s on %s', m, receiver);
-                    if (this.shadowMorph) {
-                        this.shadowMorph.remove();
-                        this.shadowMorph = null;
-                    }
             
                     while(this.hasSubmorphs())  // was just receiver.addMorph(m);
                         receiver.addMorph(this.topSubmorph());
@@ -2233,10 +2229,67 @@ Object.extend(HandMorph.prototype, {
         }
         this.lastMouseEvent = evt; 
     },
-    
+
+    moveTopMorph: function(evt) {
+	switch (evt.sanitizedKeyCode()) {
+        case Event.KEY_LEFT: {
+	    this.topSubmorph().moveBy(pt(-10,0));
+	    evt.stop();
+	    return true;
+        } 
+        case Event.KEY_RIGHT: {
+	    // forget the existing selection
+	    this.topSubmorph().moveBy(pt(10, 0));
+	    evt.stop();
+	    return true;
+        }
+        case Event.KEY_UP: {
+	    this.topSubmorph().moveBy(pt(0, -10));
+	    evt.stop();
+	    return true;
+	    
+	}
+        case Event.KEY_DOWN: {
+	    this.topSubmorph().moveBy(pt(0, 10));
+	    evt.stop();
+	    return true;
+        }
+	}
+	return false;
+    },
+	
+    transformTopMorph: function(evt) {
+	var m = this.topSubmorph();
+	switch (String.fromCharCode(evt.charCode)) {
+	case '>':
+	    m.setScale(m.getScale()*1.1);
+	    evt.stop();
+	    return true;
+	case '<':
+	    m.setScale(m.getScale()/1.1);
+	    evt.stop();
+	    return true;
+	case ']':
+	    m.setRotation(m.getRotation() + 2*Math.PI/16);
+	    evt.stop();
+	    return true;
+	case '[':
+	    m.setRotation(m.getRotation() - 2*Math.PI/16);
+	    evt.stop();
+	    return true;
+	}
+	return false;
+    },
+
     handleKeyboardEvent: function(evt) { 
         evt.hand = this; // KP: just to be sure
-        // manual bubbling up b/c the event won't bubble by itself
+	if (this.hasSubmorphs())  {
+	    if (evt.type == 'keydown' && this.moveTopMorph(evt))
+		return;
+	    else if (evt.type == 'keypress' && this.transformTopMorph(evt)) 
+		return;
+	}
+	// manual bubbling up b/c the event won't bubble by itself    
         for (var responder = this.keyboardFocus; responder != null; responder = responder.owner()) {
             if (responder.takesKeyboardFocus()) {
                 var handler = responder["on" + evt.capitalizedType()];
@@ -2246,7 +2299,7 @@ Object.extend(HandMorph.prototype, {
             }
         } 
     },
-    
+	
     grabMorph: function(grabbedMorph, evt) { 
         if (evt.shiftKey && Config.shiftDragForDup && !(grabbedMorph instanceof LinkMorph)) {
             this.mode = "shiftDragForDup";
