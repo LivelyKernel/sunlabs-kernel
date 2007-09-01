@@ -124,19 +124,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
     }
 
     var hilbertFun = true;
-    if (hilbertFun) {
-	var logoMenu = MenuMorph([]);
-// /*
-        for (var i=0; i<=4; i++)
-		logoMenu.addItem([i.toString(), logoMenu, "makeLogo", i]);
-	logoMenu.makeLogo = function(order) {
-		if(this.morphs) for (var i=0; i<4; i++) this.morphs[i].remove();
-		if (i=0) { this.morphs == null; return; }
-		var P = new Pen();
-		this.morphs = P.filberts(order,5); };
-// */
-        logoMenu.openIn(world, pt(300, 380), true, "Hilbert Fun"); 
-	}
+    if (hilbertFun) Pen.hilbertFun(world);
 
     var showClipMorph = Config.skipMostExamples;
     if (showClipMorph) {
@@ -299,7 +287,7 @@ function main() {
 
 main();
 
-if (false) showStatsViewer(TextLine.prototype, "TextLine...");
+if (true) showStatsViewer(GameMorph.prototype, "GamePolygon...");
 
 if (Config.showWebStore) {
     //var store = new WebStore('http://idisk.mac.com/xysztof/Public/Lively');

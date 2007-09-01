@@ -304,11 +304,25 @@ Object.extend(Pen.prototype, {
     
 });
 
+// The menu-driven filled Hilbert curve demo
+Pen.hilbertFun = function(world) {
+    var logoMenu = MenuMorph([]);
+	for (var i=0; i<=5; i++)
+	    logoMenu.addItem([i.toString(), logoMenu, "makeLogo", i]);
+	logoMenu.makeLogo = function(order) {
+	    if(this.morphs) for (var i=0; i<4; i++) this.morphs[i].remove();
+	    if (i=0) { this.morphs == null; return; }
+	    var P = new Pen();
+	    this.morphs = P.filberts(order,5);
+	};
+        logoMenu.openIn(world, pt(300, 380), true, "Hilbert Fun"); 
+    }
+
 // The default script for the Pen/Hilbert demo
 Pen.script = ["P = new Pen();",
 "P.setPenColor(Color.red);",
 "for(var i=1; i<=40; i++)",
-"   { P.go(2*i); P.turn(89); };",
+"	{ P.go(2*i); P.turn(89); };",
 "P.drawLines();",
 ""].join("\n");
 
