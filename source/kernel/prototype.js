@@ -14,7 +14,19 @@ var Prototype = {
     IE:     !!(window.attachEvent && !window.opera),
     Opera:  !!window.opera,
     WebKit: navigator.userAgent.indexOf('AppleWebKit/') > -1,
-    Gecko:  navigator.userAgent.indexOf('Gecko') > -1 && navigator.userAgent.indexOf('KHTML') == -1
+    Gecko:  navigator.userAgent.indexOf('Gecko') > -1 && navigator.userAgent.indexOf('KHTML') == -1,
+     /*Browser and platform info*/
+    BrowserName: navigator.appName,
+    BrowserVersion: navigator.appName,
+    BrowserCode: navigator.appCodeName,
+    BrowserPlatform: navigator.platform,
+    BrowserUserAgentHeader: navigator.userAgent,
+    AlertBrowserInfo: function (){ alert("Browser name: "+ navigator.appName
+      + "\nVersion: " + navigator.appName
+      + "\nCode: " + navigator.appCodeName
+      + "\nPlatform: " + navigator.platform
+      + "\nUserAgentHeader: " + navigator.userAgent
+      ) }
   },
 
   BrowserFeatures: {

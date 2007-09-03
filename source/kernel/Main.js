@@ -230,6 +230,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
         var todoMorph = TextMorph(Rectangle(450, 300, 250,20),
                         "TODO:\n" + 
                         "Browser specific configs(?)\n" +
+                        "Browser specific info can be alerted with command: Prototype.Browser.AlertBrowserInfo();\n" +
                         "BuZilla up and running for the release\n" +
                         "More widgets?\n" +
                         "-Widget for managing timers\n" + 
