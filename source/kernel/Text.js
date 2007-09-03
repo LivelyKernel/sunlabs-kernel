@@ -1059,21 +1059,20 @@ Object.extend(TextMorph.prototype, {
         var py = localP.y - 2;
         var hit = this.textBox.hit(px, py);
         var charIx = this.textBox.hit(px, py);
+	var len = this.textString.length;
     
         // hit(x,y) returns -1 above and below box -- return 1st char or past last
-        if (charIx < 0) 
-            return py < tl.y ? 0 : this.textString.length;
+        if (charIx < 0) return py < tl.y ? 0 : len;
   
-        if (charIx >= 0) { // It's a normal character hit
-            // People tend to click on gaps rather than character centers...
-            var jRect = this.textBox.getBounds(charIx);
-            if (jRect != null && px > jRect.center().x) {
-               charIx = Math.min(charIx + 1, this.textString.length); 
-            }
-	    return charIx;
-        }
-            
-        return charIx; 
+        if (charIx == 0 && this.textBox.getBounds(len-1).topRight().lessPt(localP))
+	    return len;
+
+	// It's a normal character hit
+	// People tend to click on gaps rather than character centers...
+	var cRect = this.textBox.getBounds(charIx);
+	if (cRect != null && px > cRect.center().x)
+	    return Math.min(charIx + 1, len);
+	return charIx;
     }
     
 }); 
