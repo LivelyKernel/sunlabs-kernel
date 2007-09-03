@@ -992,10 +992,12 @@ Object.extend(TextMorph.prototype, {
         }
 
         this.undrawSelection();
-        
-        // console.log('will draw selection ' + this.selectionRange + ' on '  + this.inspect());
-    
-        var jRect = this.ensureTextBox().getBounds(this.selectionRange[0]);
+        if (this.selectionRange[0] > this.textString.length-1) { // null sel at end
+		var jRect = this.ensureTextBox().getBounds(this.selectionRange[0]-1);
+		jRect = jRect.translatedBy(pt(jRect.width,0));
+	} else {
+		var jRect = this.ensureTextBox().getBounds(this.selectionRange[0]);
+	}
         if (jRect == null) {
             console.log("text box failure in drawSelection index = " + this.selectionRange[0]); 
             return;
