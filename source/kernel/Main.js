@@ -81,7 +81,7 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
           "kkkkkkkkkk " +
           "llllllllll\n" +
           "mmmmmmmmmm " +
-          "nnnnnnnnnn\n";
+          "nnnnnnnnnn";
           widget = TestTextMorph(pt(50,50).extent(pt(250,50)), Pen.script);
           world.addMorph(widget);
           widget.setScale(3.0);
@@ -110,9 +110,6 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
         world.addMorph(widget);
             
         var spinningStar = !Config.skipMostExamples || Config.spinningStar;
-//        if (spinningStar) {  // Make the star spin as a test of stepping
-//            widget.startSteppingFunction(60, function(msTime) { this.setRotation(this.getRotation() + 0.1) });
-//        }
         if (spinningStar) {  // Make the star spin as a test of stepping
             widget.startStepping(60, "rotateBy", 0.1);
         }

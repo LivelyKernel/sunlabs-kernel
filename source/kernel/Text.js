@@ -1292,7 +1292,7 @@ Object.extend(TextMorph.prototype, {
         }
         
         case "a": {
-            this.setSelectionRange(0, this.textString.length - 1); 
+            this.setSelectionRange(0, this.textString.length); 
             return;
         }
         
