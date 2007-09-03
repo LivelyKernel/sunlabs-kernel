@@ -110,8 +110,11 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
         world.addMorph(widget);
             
         var spinningStar = !Config.skipMostExamples || Config.spinningStar;
+//        if (spinningStar) {  // Make the star spin as a test of stepping
+//            widget.startSteppingFunction(60, function(msTime) { this.setRotation(this.getRotation() + 0.1) });
+//        }
         if (spinningStar) {  // Make the star spin as a test of stepping
-            widget.startSteppingFunction(60, function(msTime) { this.setRotation(this.getRotation() + 0.1) });
+            widget.startStepping(60, "rotateBy", 0.1);
         }
     }
 

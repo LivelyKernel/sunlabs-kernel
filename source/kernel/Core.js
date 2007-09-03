@@ -2711,6 +2711,10 @@ Object.category(Morph.prototype, 'transforms', function() { return {
         this.translateBy(delta);
     },
     
+    rotateBy: function(delta) {
+        this.setRotation(this.getRotation()+delta);
+    },
+    
     align: function(p1, p2) {
         this.translateBy(p2.subPt(p1)); 
     },
@@ -3051,11 +3055,27 @@ Object.extend(Morph.prototype, {
 
     stepActivity: function(msTime) { }, // May be overridden
     
-    startStepping: function(stepTime) {
-        this.stopStepping();
+    startStepping: function(stepTime, scriptName, argIfAny) {
+        if (!scriptName) {
+	// Old code schedules the morph for stepTime
+	this.stopStepping();
         if (this.stepHandler == null) this.stepHandler = new StepHandler(this,stepTime);
         if (stepTime != null) this.stepHandler.stepTime = stepTime;
         this.world().startStepping(this); 
+	return; }
+
+	// New code schedules an action
+console.log('startestepping ' + this.inspect());
+	var action = { actor: this, scriptName: scriptName, argIfAny: argIfAny, stepTime: stepTime, ticks: 0 };
+	console.log('new action = ' + action);
+	this.addActiveScript(action);
+        this.world().startStepping(action); 
+    },
+    
+    addActiveScript: function(action) {
+	// Every morph carries a list of currently active actions (alarms and repetitive scripts)
+        if(!this.activeScripts) this.activeScripts = [action];
+	else this.activeScripts.push(action);
     },
     
     startSteppingFunction: function(stepTime, func) {

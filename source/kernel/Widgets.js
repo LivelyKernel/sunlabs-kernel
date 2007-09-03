@@ -1827,8 +1827,8 @@ Object.extend(WorldMorph.prototype, {
         this.displayThemes = WorldMorph.defaultThemes;
         this.setDisplayTheme(this.displayThemes['lively']);
 
-        // merged from WorldState
-        this.stepList = [];
+        this.stepList = [];  // an array of morphs to be ticked
+        this.scheduledActions = [];  // an array of schedulableActions to be evaluated
         this.lastStepTime = (new Date()).getTime();
 	this.mainLoopFunc = this.doOneCycle.bind(this).logErrors('Main Loop');
         this.mainLoop = window.setTimeout(this.mainLoopFunc, 30);
@@ -1944,13 +1944,19 @@ Object.extend(WorldMorph.prototype, {
 //        return ["inspect", "fill color", "selection color"];
 //    },
 
-    startStepping: function(morph) {
-        var ix = this.stepList.indexOf(morph);
-        if (ix < 0) this.stepList.push(morph); 
+    startStepping: function(morphOrAction) {
+        if (morphOrAction.scriptName == null) {
+	// Old code for ticking morphs
+	var ix = this.stepList.indexOf(morphOrAction);
+        if (ix < 0) this.stepList.push(morphOrAction); 
 	if (!this.mainLoop) {
 	    // kickstart the timer (note arbitrary delay)
 	    this.mainLoop = window.setTimeout(this.mainLoopFunc, 60);
 	}
+	return; }
+
+	// New code for stepping schedulableActions
+	this.scheduleAction(new Date().getTime(), morphOrAction);
     },
     
     stopStepping: function(morph) {
@@ -1959,21 +1965,81 @@ Object.extend(WorldMorph.prototype, {
     },
     
     doOneCycle: function (world) {
-        // Process stepping behavior
-        var msTime = (new Date()).getTime();
+        // Process scheduled scripts
+	var msTimer = new Date();
+	var msTime = msTimer.getTime();
+
+        // Old ticking scripts...
+	var msTime = new Date().getTime();
         var timeOfNextStep = Infinity;
         for (var i = 0; i < this.stepList.length; i++) {
             var time = this.stepList[i].tick(msTime);
 	    if (time > 0) 
 		timeOfNextStep = Math.min(time, timeOfNextStep);
         }
+
+        // New scheduled scripts...
+	// Run through the scheduledActions queue, executing those whose time has come
+	// and rescheduling those that have a repeatRate
+	// Note that actions with error will not get rescheduled
+	// (and, unless we take the time to catch here, will cause all later 
+	// ones in the queue to miss this tick.  Better less overhead, I say
+	// DI: **NOTE** this needs to be reviewed for msClock rollover
+	// -- also note we need more time info for multi-day alarm range
+		// When we do this, I suggest that actions carry a date and msTime
+		// and until their day is come, they carry a msTime > a day
+		// That way they won't interfere with daily scheduling, but they can
+		// still be dealt with on world changes, day changes, save and load.
+        var list = this.scheduledActions;  // shorthand
+	var timeStarted = msTime;  // for tallying script overheads
+	while (list.length>0 && list[list.length-1][0] <= msTime) {
+            var schedNode = list.pop();  // [time, action] -- now removed
+	    var action = schedNode[1];
+	    action.actor[action.scriptName].call(action.actor, action.argIfAny);
+	    // Note: if error in script above, it won't get rescheduled below
+	    if (action.stepTime > 0) {
+		var nextTime = msTime + action.stepTime;
+		this.scheduleAction(nextTime, action)
+		timeOfNextStep = Math.min(nextTime, timeOfNextStep);
+		}
+	    var timeNow = msTimer.getTime();
+	    var ticks = timeNow - timeStarted;
+	    if (ticks > 0) action.ticks += ticks;  // tally time spent in that script
+	    timeStarted = timeNow;
+	}
+	// Each second, run through the tick tallies and mult by 0.9 to 10-sec "average"
+	if (!this.secondTick) this.secondTick = 0;
+	var secondsNow = Math.floor(msTime / 1000);
+	var tallies = {};
+	if (this.secondTick != secondsNow) {
+	    this.secondTick = secondsNow;
+	    for (var i=0; i<list.length; i++) {
+		var action = list[i][1];
+		tallies[action.scriptName] = action.ticks;
+		action.ticks *= 0.9 // 10-sec decaying moving window
+	    }
+//	    console.log('Script timings...');
+//	    for (var p in tallies) console.log(p + ': ' + tallies[p].toString());
+	}
         this.lastStepTime = msTime;
 	if (timeOfNextStep == Infinity) { // didn't find anything to cycle through
 	    this.mainLoop = null; 
 	} else {
             this.mainLoop = window.setTimeout(this.mainLoopFunc, timeOfNextStep - msTime);
 	}
-        // FIXME: be clever about rescheduling the next cycle?
+    },
+
+    scheduleAction: function(msTime, action) { 
+	// Insert a SchedulableAction into the scheduledActions queue
+        var list = this.scheduledActions;  // shorthand
+	for (var i=list.length-1; i>=0; i--) {
+	    var schedNode = list[i];
+	    if (schedNode[0] > msTime) {
+		list.splice(i+1, 0, [msTime, action]);
+		return; 
+	    }
+	}
+	list.splice(0, 0, [msTime, action]);
     },
 
     onEnter: function() {},
@@ -2146,16 +2212,6 @@ Object.extend(HandMorph.prototype, {
     world: function() {
         return this.ownerWorld;
     },
-
-/*
-    startStepping: function(stepTime) {
-        console.log('HandMorph doesnt currently step');
-    },
-    
-    stopStepping: function() {
-        console.log('HandMorph doesnt currently step');
-    },
-*/
 
     handleMouseEvent: function(evt) { 
         evt.hand = this; // extra copy needed for entry from HandRemoteControl
