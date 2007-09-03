@@ -1275,9 +1275,10 @@ Object.extend(AsteroidsSprite.prototype, {
 
   // Constants
 
-  /* static final int */ var DELAY = 0.05;              // Seconds between screen updates.
-  /* static final int */ var SHORTDELAY = 0.05;         // Seconds between screen updates.
-  /* static final int */ var LONGDELAY = 1.0;        // Longer delay when the game is collapsed.
+  /* static final int */ var SHORTDELAY = 50;         // Milliseconds between screen updates.
+  /* static final int */ var LONGDELAY = 1000;        // Longer delay when the game is collapsed.
+  /* static final int */ var DELAY = -1;              // Milliseconds between screen updates.
+
 
   /* static final int */ var MAX_SHIPS = 3;           // Starting number of ships per game.
 
@@ -1594,7 +1595,11 @@ Object.extend(AsteroidsSprite.prototype, {
 
 var GameMorph = HostClass.create('GameMorph', ClipMorph);
 
+var USE_FUNCTIONAL_DELAY = false;
+
 GameMorph.prototype.runAsteroidsGame = function() {
+
+    // This is the main loop.
     
     // Load sounds.
     
@@ -1604,23 +1609,7 @@ GameMorph.prototype.runAsteroidsGame = function() {
         // loadThread.stop();
     }
     
-    // This is the main loop.
-    // If the game is collapsed, use a longer delay to reduce CPU usage
-    if (this.owner().isCollapsed()) {
-        if (DELAY == SHORTDELAY) {
-            // Set new, longer timer delay for the game
-            if (this.timeoutID) window.clearTimeout(this.timeoutID);
-            this.timeoutID = arguments.callee.bind(this).logErrors('Asteroid Timer').delay((DELAY = LONGDELAY));
-            console.log("Setting longer timer for Asteroids");
-        }
-    } else {
-        if (DELAY == LONGDELAY) {
-           // Set new, shorter timer delay for the game
-            if (this.timeoutID) window.clearTimeout(this.timeoutID);
-            this.timeoutID = arguments.callee.bind(this).logErrors('Asteroid Timer').delay((DELAY = SHORTDELAY));
-            console.log("Setting short timer for Asteroids");
-        }
-    }
+
     
     if (!paused) {
 
@@ -1663,8 +1652,15 @@ GameMorph.prototype.runAsteroidsGame = function() {
 
     }
 
-    // Set timer for the game
-    this.timeoutID = arguments.callee.bind(this).logErrors('Asteroid Timer').delay(DELAY);
+    // If the game is collapsed, use a longer delay to reduce CPU usage
+    var oldDelay = DELAY;
+    DELAY = this.owner().isCollapsed() ? LONGDELAY : SHORTDELAY;
+    if (oldDelay != DELAY) console.log("Changing timer from %s to %s for Asteroids", oldDelay, DELAY);
+    
+    // Set new timer delay for the game
+    if (this.timeoutID) window.clearTimeout(this.timeoutID);
+    if (!this.timerCallback) this.timerCallback = arguments.callee.bind(this).logErrors('Asteroid Timer');
+    this.timeoutID = USE_FUNCTIONAL_DELAY ? this.timerCallback.delay(DELAY/1000) : window.setTimeout(this.timerCallback, DELAY);
 };
 
   function loadSounds() {
