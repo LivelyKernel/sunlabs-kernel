@@ -1354,7 +1354,7 @@ Object.extend(DisplayObject.prototype, {
     
     var dragDisabler = { handleEvent: function(evt) { evt.preventDefault(); return false ;}};
     proto.disableBrowserDrag = function() {
-        this.addEventListener("dragstart", dragDisabler, false);
+        this.addEventListener("dragstart", dragDisabler, true);
     }
 })();
 
@@ -2115,8 +2115,8 @@ Object.extend(Morph.prototype, {
     
     restoreFromElement: function(element/*:Element*/, importer/*Importer*/)/*:Boolean*/ {
         if (!element || !element.tagName) {
-           console.log('undefined element %s %s', element, element && element.tagName);
-           return;
+            console.log('undefined element %s %s', element, element && element.tagName);
+            return;
         }
         
         if (/ellipse|rect|polyline|polygon/.test(element.tagName)) {
@@ -2126,12 +2126,6 @@ Object.extend(Morph.prototype, {
             return true;
         }
 
-	if (/image|use/.test(element.tagName)) {
-	    this.image = element;
-	    console.log('made image %s', this.image);
-	    return true;
-	}
-        
         var type = element.getAttribute('type');
         
         switch (type) {
@@ -3046,6 +3040,7 @@ Object.extend(Morph.prototype, {
 Object.extend(Morph.prototype, {
 
     tick: function(msTime) {
+	// returns 0 if step handler not triggered, otherwise the time when the handler should be called next.
         if (this.stepHandler != null) {
 	    this.stepHandler.tick(msTime, this);
 	    return this.stepHandler.timeOfNextStep;

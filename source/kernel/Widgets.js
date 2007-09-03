@@ -189,15 +189,27 @@ Object.extend(ImageMorph.prototype, {
         }
 
         this.setFill(null);
-        this.image = NodeFactory.create("use").withHref(localURL);
-
+	var image = NodeFactory.create("use").withHref(localURL);
+	image.setType('Image');
+	
         if (scale) {
-            this.image.applyTransform(Transform.createSimilitude(pt(0, 0), 0, scale));
+            image.applyTransform(Transform.createSimilitude(pt(0, 0), 0, scale));
         }
-        
-        this.addChildElement(this.image);
+        this.image = this.addChildElement(image);
+
     },
-    
+
+    restoreFromElement: function(element, importer) /*:Boolean*/ {
+        if (ImageMorph.superClass.restoreFromElement.call(this, element, importer)) return true;
+        var type = DisplayObject.prototype.getType.call(element);
+	if (/image|use/.test(element.tagName)) {
+	    this.image = element;
+	    console.log('made image %s', this.image.tagName);
+	    return true;
+	}
+	return false;
+    },
+
     loadURL: function(url) {
         if (this.image && this.image.tagName != 'image') {
             this.removeChild(this.image);
@@ -205,9 +217,10 @@ Object.extend(ImageMorph.prototype, {
         }
 
         if (!this.image) {
-            this.image = NodeFactory.create("image", { width: this.dim.x, height: this.dim.y});
-            this.image.disableBrowserDrag();
-            this.addChildElement(this.image);
+            var image = NodeFactory.create("image", { width: this.dim.x, height: this.dim.y});
+	    image.setType('Image');
+            image.disableBrowserDrag();
+            this.image = this.addChildElement(image);
         }
 
         this.image.withHref(url);
@@ -382,6 +395,7 @@ Object.extend(TitleBarMorph.prototype, {
     handlesMouseDown: function(evt) {return false },  // hack for now
 
     acceptsDropping: function(morph) {
+	//console.log('accept drop from %s of %s, %s', this, morph, morph instanceof WindowControlMorph);
         return morph instanceof WindowControlMorph; // not used yet... how about text...
     },
 
@@ -2120,12 +2134,10 @@ Object.extend(DomEventHandler.prototype, {
 
 HandMorph = HostClass.create('HandMorph', Morph);
 
-Object.extend(HandMorph, {
-    shadowOffset: pt(5,5),
-    handleOnCapture: true
-});
 
 Object.extend(HandMorph.prototype, {
+    shadowOffset: pt(5,5),
+    handleOnCapture: true,
 
     initialize: function(local) {
         HandMorph.superClass.initialize.call(this, pt(5,5).extent(pt(10,10)), "rect");
@@ -2167,17 +2179,15 @@ Object.extend(HandMorph.prototype, {
     },
     
     registerForEvents: function(morph) {
-        var handler = this.handler;
+        var self = this;
         Event.basicInputEvents.forEach(function(name) { 
-             morph.addEventListener(name, handler, HandMorph.handleOnCapture)}
-        );
+            morph.addEventListener(name, self.handler, self.handleOnCapture)});
     },
     
     unregisterForEvents: function(morph) {
-        var handler = this.handler; 
+        var self = this; 
         Event.basicInputEvents.forEach(function(name) { 
-            morph.removeEventListener(name, handler, HandMorph.handleOnCapture)}
-        );
+            morph.removeEventListener(name, self.handler, self.handleOnCapture)});
     },
     
     setMouseFocus: function(morphOrNull) {
@@ -2407,7 +2417,7 @@ Object.extend(HandMorph.prototype, {
         // account for the extra extent of the drop shadow
         // FIXME drop shadow ...
         if (this.shadowMorph)
-            return HandMorph.superClass.bounds.call(this).expandBy(HandMorph.shadowOffset.x);
+            return HandMorph.superClass.bounds.call(this).expandBy(this.shadowOffset.x);
         else return HandMorph.superClass.bounds.call(this); 
     },
     
@@ -2430,11 +2440,12 @@ LinkMorph = HostClass.create('LinkMorph', Morph);
 Object.extend(LinkMorph.prototype, {
 
 //  DI: I feel fisheye is distracting here;  OK in palettes maybe
-    baseFisheye: false, 
+    fishEye: false, 
     fisheyeGrowth: 2, // make it grow more
     fisheyeProximity: 0.5, // make it grow only when the hand gets closer
     defaultFill: Color.black,
     defaultBorderColor: Color.black,
+    helpText: "Click here to enter or leave a subworld.\nUse menu 'grab' to move me.",
     
     initialize: function(otherWorld /*, rest*/) {
         // In a scripter, type: world.addMorph(LinkMorph(null))
@@ -2471,7 +2482,7 @@ Object.extend(LinkMorph.prototype, {
 
         // Balloon help support
         MouseOverHandler.observe(this);
-        this.helpText = "Click here to enter or leave a subworld.\nUse menu 'grab' to move me."; 
+
 
         return this;
     },
@@ -2498,16 +2509,30 @@ Object.extend(LinkMorph.prototype, {
         });
         
         var canvas = WorldMorph.current().canvas();
-        WorldMorph.current().remove();
+        var oldWorld = WorldMorph.current().remove();
         
         console.log('left world %s', WorldMorph.current());
         // Canvas.appendChild(this.myWorld);
     
         // display world first, then add hand, order is important!
-        WorldMorph.setCurrent(this.myWorld);
-        WorldMorph.current().displayWorldOn(canvas);    
+	var newWorld = this.myWorld;
+        WorldMorph.setCurrent(newWorld);
+	
+        newWorld.displayWorldOn(canvas); 
+
         WorldMorph.current().onEnter(); 
 	carriedMorphs.each(function(m) { WorldMorph.current().firstHand().addMorph(m) });
+	if (Config.showThumbnail) {
+	    const scale = 0.1;
+	    if (newWorld.thumbnail) {
+		newWorld.thumbnail.remove();
+	    }
+	    newWorld.thumbnail = Morph(Rectangle(0, 0, Canvas.bounds().width*scale, Canvas.bounds().height*scale), "rect");
+	    newWorld.addMorph(newWorld.thumbnail);
+	    newWorld.thumbnail.setScale(scale);
+	    newWorld.thumbnail.addMorph(oldWorld);
+	}
+
 	WorldMorph.current().firstHand().emergingFromWormHole = true; // prevent re-entering
     },
 
@@ -2532,7 +2557,6 @@ Object.extend(LinkMorph.prototype, {
     },
     
     onMouseOut: function(evt) {
-        this.fishEye = this.baseFisheye;
         this.hideHelp();
     },
     

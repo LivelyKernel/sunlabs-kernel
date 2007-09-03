@@ -763,8 +763,8 @@ Object.extend(TextMorph.prototype, {
 
     },
     
-    restoreFromElement: function(element, context) /*:Boolean*/ {
-        if (TextMorph.superClass.restoreFromElement.call(this, element)) return true;
+    restoreFromElement: function(element, importer) /*:Boolean*/ {
+        if (TextMorph.superClass.restoreFromElement.call(this, element, importer)) return true;
 
         var type = DisplayObject.prototype.getType.call(element);
     
