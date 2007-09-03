@@ -2509,9 +2509,10 @@ Object.extend(LinkMorph.prototype, {
         });
         
         var canvas = WorldMorph.current().canvas();
-        var oldWorld = WorldMorph.current().remove();
+        var oldWorld = WorldMorph.current();
+	oldWorld.remove();
         
-        console.log('left world %s', WorldMorph.current());
+        console.log('left world %s', oldWorld);
         // Canvas.appendChild(this.myWorld);
     
         // display world first, then add hand, order is important!
@@ -2520,20 +2521,20 @@ Object.extend(LinkMorph.prototype, {
 	
         newWorld.displayWorldOn(canvas); 
 
-        WorldMorph.current().onEnter(); 
-	carriedMorphs.each(function(m) { WorldMorph.current().firstHand().addMorph(m) });
+        newWorld.onEnter(); 
+	carriedMorphs.each(function(m) { newWorld.firstHand().addMorph(m) });
 	if (Config.showThumbnail) {
 	    const scale = 0.1;
 	    if (newWorld.thumbnail) {
 		newWorld.thumbnail.remove();
 	    }
-	    newWorld.thumbnail = Morph(Rectangle(0, 0, Canvas.bounds().width*scale, Canvas.bounds().height*scale), "rect");
+	    newWorld.thumbnail = Morph(Rectangle(0, 0, canvas.bounds().width*scale, canvas.bounds().height*scale), "rect");
 	    newWorld.addMorph(newWorld.thumbnail);
 	    newWorld.thumbnail.setScale(scale);
 	    newWorld.thumbnail.addMorph(oldWorld);
 	}
 
-	WorldMorph.current().firstHand().emergingFromWormHole = true; // prevent re-entering
+	newWorld.firstHand().emergingFromWormHole = true; // prevent re-entering
     },
 
     checkForControlPointNear: function(evt) {
