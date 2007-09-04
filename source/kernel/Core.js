@@ -374,8 +374,7 @@ Object.category(Number.prototype, 'extensions', function() { return {
     },
     
     roundTo: function(quantum) {
-        if (this < 0) return 0 - (0-this).roundTo(quantum);
-        return Math.floor(0.5 + this/quantum)*quantum; 
+        return Math.round(this/quantum)*quantum; 
     },
     
     toDegrees: function() { 
@@ -2517,6 +2516,7 @@ Object.extend(Morph.prototype, {
         if (!this.owner()) return null;  // already removed
 
         this.stopStepping();
+        this.stopSteppingScripts();
         this.owner().removeMorph(this);
 
         return this;
@@ -3039,16 +3039,17 @@ Object.extend(Morph.prototype, {
 // Morph stepping/timer functions
 Object.extend(Morph.prototype, {
 
-    tick: function(msTime) {
-	// returns 0 if step handler not triggered, otherwise the time when the handler should be called next.
-        if (this.stepHandler != null) {
-	    this.stepHandler.tick(msTime, this);
-	    return this.stepHandler.timeOfNextStep;
+    startSteppingScripts: function() { }, // May be overridden to start stepping scripts
+    
+    stopSteppingScripts: function() {
+	if(this.activeScripts) {
+	    var world = WorldMorph.current();
+	    for (var i=0; i<this.activeScript.length; i++) {
+		world.stopStepping(activeScripts[i]);
+	    }
+	    this.activeScripts = null;
 	}
-        return 0;
     },
-
-    stepActivity: function(msTime) { }, // May be overridden
     
     startStepping: function(stepTime, scriptName, argIfAny) {
         if (!scriptName) {
@@ -3059,10 +3060,9 @@ Object.extend(Morph.prototype, {
         this.world().startStepping(this); 
 	return; }
 
-	// New code schedules an action
-console.log('startestepping ' + this.inspect());
-	var action = { actor: this, scriptName: scriptName, argIfAny: argIfAny, stepTime: stepTime, ticks: 0 };
-	console.log('new action = ' + action);
+	// New code schedules an action -- note this call is in seconds!
+	var action = { actor: this, scriptName: scriptName, argIfAny: argIfAny,
+			stepTime: Math.round(stepTime*1000), ticks: 0 };
 	this.addActiveScript(action);
         this.world().startStepping(action); 
     },
@@ -3082,7 +3082,21 @@ console.log('startestepping ' + this.inspect());
         if (this.world()) {
             this.world().stopStepping(this); 
         } // else: can happen if removing a morph whose parent is not in the world
+    },
+
+	// The following methods are deprecated...
+    tick: function(msTime) {
+	// returns 0 if step handler not triggered, otherwise the time when the handler should be called next.
+        if (this.stepHandler != null) {
+	    this.stepHandler.tick(msTime, this);
+	    return this.stepHandler.timeOfNextStep;
+	}
+        return 0;
+    },
+
+    stepActivity: function(msTime) {  // May be overridden
     }
+    
     
 });
 

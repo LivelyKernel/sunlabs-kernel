@@ -151,6 +151,10 @@ Object.extend(ClockMorph.prototype, {
     
     stepActivity: function(msTime) { this.setHands(); },
 
+    startSteppingScripts: function() {
+	this.startStepping(1, "setHands"); // once per second
+    },
+
     setHands: function() {
         var currentDate = new Date();
         var center = this.shape.bounds().center();

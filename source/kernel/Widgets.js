@@ -1966,9 +1966,29 @@ Object.extend(WorldMorph.prototype, {
     moveBy: function(delta) { // don't try to move the world
     },
     
-//    morphMenuItems: function() { // May be overridden
-//        return ["inspect", "fill color", "selection color"];
-//    },
+//	*** The new truth about ticking scripts ***
+//	A morph may have any number of active scripts
+//	Each is activated by a call such as
+//	    this.startStepping(1/20, "rotateBy", 0.1);
+//	Note that stepTime is in seconds, but it is in milliseconds in all lower-level methods
+//	The arguments are: stepTime, scriptName, argIfAny
+//	This in turn will create a SchedulableAction of the form
+//	{ actor: aMorph, scriptName: "rotateBy", argIfAny: 0.1, stepTime: 50, ticks: 0 }
+//	and this action will be both added to an array, activeScripts in the morph,
+//	and it will be added to the world's scheduledActions list, which is an array of
+//	tuples of the form [msTimeToRun, action]
+//	The ticks field is used to tally ticks spent in each schedulableAction --
+//	It is incremented on every execution, and it is multiplied by 0.9 every second
+//	Thus giving a crude 10-second average of milliseconds spent in this script
+//	every 10 seconds.  The result is divided by 10 in the printouts.
+//
+//	The message startSteppingScripts can be sent to morphs when they are placed in the world.
+//	It is intended that this may be overridden to start any required stepping.
+//	The message stopSteppingScripts will be sent when morphs are removed from the world.
+//	In this case the activeScripts array of the morph is used to determine exactly what
+//	scripts need to be unscheduled.  Note that startSteppingScripts is not sent
+//	automatically, whereas stopSteppingScripts is.  We know you won't forget to 
+//	turn your gadgets on, but we're more concerned to turn them off when you're done.
 
     startStepping: function(morphOrAction) {
         if (morphOrAction.scriptName == null) {
@@ -1981,13 +2001,34 @@ Object.extend(WorldMorph.prototype, {
 	}
 	return; }
 
+	var action = morphOrAction;
 	// New code for stepping schedulableActions
-	this.scheduleAction(new Date().getTime(), morphOrAction);
+	this.stopStepping(action);  // maybe replacing arg or stepTime
+	this.scheduleAction(new Date().getTime(), action);
+	if (!this.mainLoop) {
+	    // kickstart the timer (note arbitrary delay)
+	    this.mainLoop = window.setTimeout(this.mainLoopFunc, 60);
+	}
     },
     
-    stopStepping: function(morph) {
-        var ix = this.stepList.indexOf(morph);
-        if (ix >= 0) this.stepList.splice(ix, 1); 
+    stopStepping: function(morphOrAction) {
+        if (morphOrAction == null || morphOrAction.scriptName == null) {
+	// Old code for ticking morphs
+        var ix = this.stepList.indexOf(morphOrAction);
+        if (ix >= 0) this.stepList.splice(ix, 1);
+	return; }
+
+	var action = morphOrAction;
+	// New code for deleting actions from the scheduledActions list
+        var list = this.scheduledActions;  // shorthand
+	for (var i=0; i<list.length; i++) {
+	    var actn = list[i][1];
+	    if (actn.actor === action.actor && actn.scriptName == action.scriptName) {
+		list.splice(i, 1);
+		return; 
+	    }
+	}
+	console.log('failed to stopStepping ' + action.scriptName);
     },
     
     doOneCycle: function (world) {
@@ -2044,8 +2085,12 @@ Object.extend(WorldMorph.prototype, {
 		tallies[action.scriptName] = action.ticks;
 		action.ticks *= 0.9 // 10-sec decaying moving window
 	    }
-//	    console.log('Script timings...');
-//	    for (var p in tallies) console.log(p + ': ' + tallies[p].toString());
+	    if (Config.showSchedulerStats && secondsNow % 10 == 0) {
+		console.log('Old Scheduler length = ' + this.stepList.length);
+		console.log('New Scheduler length = ' + this.scheduledActions.length);
+		console.log('Script timings...');  // approx ms per second per script
+		for (var p in tallies) console.log(p + ': ' + (tallies[p]/10).toString());
+	    }
 	}
         this.lastStepTime = msTime;
 	if (timeOfNextStep == Infinity) { // didn't find anything to cycle through

@@ -110,17 +110,22 @@ WorldMorph.populateWithExamples = function(world, otherWorld, server) {
         world.addMorph(widget);
             
         var spinningStar = !Config.skipMostExamples || Config.spinningStar;
-        if (spinningStar) {  // Make the star spin as a test of stepping
-            widget.startStepping(60, "rotateBy", 0.1);
-        }
-    }
+	if(spinningStar) {  // Make the star spin as a test of stepping	    if (Config.useNewScheduler) {
+		widget.startStepping(1/20, "rotateBy", 0.1);
+	    } else {
+		widget.startSteppingFunction(60,function(msTime) {			this.setRotation(this.getRotation() + 0.1); }) }
+	}    }
 
     var showClock = true;
     if (showClock) {
         widget = ClockMorph(pt(500, 525), 50);
         // clockWidget.addClipRect(Rectangle(20,20,80,80));
         world.addMorph(widget);
-        widget.startStepping(1000);
+	if (Config.useNewScheduler) {
+		widget.startSteppingScripts(); // not yet
+	} else {
+        	widget.startStepping(1000);
+	}
     }
 
     var hilbertFun = true;
