@@ -1112,7 +1112,12 @@ Object.extend(TextMorph.prototype, {
         if (this.priorSelection[1] != this.priorSelection[0] - 1) return;
         if (this.selectionRange[0] != this.priorSelection[0]) return;
         
-        this.selectionRange = TextMorph.selectWord(this.textString, this.selectionRange[0]);
+	// It is a null selection, repeated in the same place -- select word or range
+        if (this.selectionRange[0] == 0 || this.selectionRange[0] == this.textString.length) {
+            this.setSelectionRange(0, this.textString.length); 
+	} else {
+	    this.selectionRange = TextMorph.selectWord(this.textString, this.selectionRange[0]);
+	}
         this.setModelSelection(this.selectionString());
         this.drawSelection(); 
     }
