@@ -181,9 +181,8 @@ Object.extend(ImageMorph.prototype, {
     restoreFromElement: function(element, importer) /*:Boolean*/ {
         if (TextMorph.superClass.restoreFromElement.call(this, element, importer)) return true;
 	var type = DisplayObject.prototype.getType.call(element);
-	
+/*	****** DI:  Something is terribly wrong here -- needs to be restored from another version
 	switch (type) {
-
 	    var image = element;
 	    if (image.namespaceURI != Namespace.SVG) {
 		// this brittle and annoying piece of code is a workaround around the likely brokenness
@@ -191,7 +190,7 @@ Object.extend(ImageMorph.prototype, {
 		this.removeChild(image);
 		this.dim = pt(parseInt(image.getAttribute("width")),
 			      parseInt(image.getAttribute("height")));
-		var href = image.getAttributeNS(null /*"xlink"*/, "href");
+		var href = image.getAttributeNS(null "xlink", "href");
 		this.loadURL(href);
 	    } else {
 		this.image = image;
@@ -201,7 +200,7 @@ Object.extend(ImageMorph.prototype, {
 	default:
 	    return false;
 	}
-	
+*/	
     },
 
 
