@@ -178,9 +178,32 @@ Object.extend(ImageMorph.prototype, {
         }
     },
 
-    restoreFromMarkup: function(importer) {
-        ImageMorph.superClass.restoreFromMarkup.call(this, importer);
+    restoreFromElement: function(element, importer) /*:Boolean*/ {
+        if (TextMorph.superClass.restoreFromElement.call(this, element, importer)) return true;
+	var type = DisplayObject.prototype.getType.call(element);
+	
+	switch (type) {
+
+	    var image = element;
+	    if (image.namespaceURI != Namespace.SVG) {
+		// this brittle and annoying piece of code is a workaround around the likely brokenness
+		// of Safari's XMLSerializer's handling of namespaces
+		this.removeChild(image);
+		this.dim = pt(parseInt(image.getAttribute("width")),
+			      parseInt(image.getAttribute("height")));
+		var href = image.getAttributeNS(null /*"xlink"*/, "href");
+		this.loadURL(href);
+	    } else {
+		this.image = image;
+	    }
+	    return true;
+	}
+	default:
+	    return false;
+	}
+	
     },
+
 
     loadGraphics: function(localURL, scale) {
         if (this.image && this.image.tagName == 'image') {
@@ -189,26 +212,15 @@ Object.extend(ImageMorph.prototype, {
         }
 
         this.setFill(null);
-	var image = NodeFactory.create("use").withHref(localURL);
+	var image = this.image = NodeFactory.create("use").withHref(localURL);
 	image.setType('Image');
-	
         if (scale) {
             image.applyTransform(Transform.createSimilitude(pt(0, 0), 0, scale));
         }
-        this.image = this.addChildElement(image);
+        this.addChildElement(image);
 
     },
 
-    restoreFromElement: function(element, importer) /*:Boolean*/ {
-        if (ImageMorph.superClass.restoreFromElement.call(this, element, importer)) return true;
-        var type = DisplayObject.prototype.getType.call(element);
-	if (/image|use/.test(element.tagName)) {
-	    this.image = element;
-	    console.log('made image %s', this.image.tagName);
-	    return true;
-	}
-	return false;
-    },
 
     loadURL: function(url) {
         if (this.image && this.image.tagName != 'image') {
@@ -217,12 +229,12 @@ Object.extend(ImageMorph.prototype, {
         }
 
         if (!this.image) {
-            var image = NodeFactory.create("image", { width: this.dim.x, height: this.dim.y});
+            var image = this.image = NodeFactory.create("image", { width: this.dim.x, height: this.dim.y});
 	    image.setType('Image');
             image.disableBrowserDrag();
-            this.image = this.addChildElement(image);
+            this.addChildElement(image);
         }
-
+	
         this.image.withHref(url);
     },
 
