@@ -3,21 +3,6 @@
  * as well as the core Morphic graphics framework.
  */
 
-// KP: moved this from prototype, unclear whether we need this, the duplication of fields etc.
-Object.extend(Prototype.Browser, {
-    /*Browser and platform info*/
-    BrowserName: navigator.appName,
-    BrowserVersion: navigator.appName,
-    BrowserCode: navigator.appCodeName,
-    BrowserPlatform: navigator.platform,
-    BrowserUserAgentHeader: navigator.userAgent,
-    AlertBrowserInfo: function (){ alert("Browser name: "+ navigator.appName
-					 + "\nVersion: " + navigator.appName
-					 + "\nCode: " + navigator.appCodeName
-					 + "\nPlatform: " + navigator.platform
-					 + "\nUserAgentHeader: " + navigator.userAgent ) }
-});
-
 // ===========================================================================
 // Namespaces and core DOM bindings
 // ===========================================================================

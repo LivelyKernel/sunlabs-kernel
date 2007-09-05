@@ -9,7 +9,7 @@
 // ===========================================================================
 
 /**
- * @class SimpleBrowser
+ * @class SimpleBrowser: A simple JavaScript class browser
  */
    
 SimpleBrowser = Class.extend(Model);
@@ -64,7 +64,7 @@ Object.extend(SimpleBrowser.prototype, {
 // ===========================================================================
 
 /**
- * @class SimpleInspector
+ * @class SimpleInspector: A simple JavaScript object (instance) inspector
  */
    
 SimpleInspector = Class.extend(Model);
@@ -74,6 +74,7 @@ Object.extend(SimpleInspector, {
     openOn: function(target) {
         new SimpleInspector(target).openIn(WorldMorph.current(), pt(50,50));
     }
+
 });
 
 Object.extend(SimpleInspector.prototype, {
@@ -122,12 +123,12 @@ Object.extend(SimpleInspector.prototype, {
         panel.addMorph(m = TextPane(Rectangle(0,150,400,100), "Coming soon: doits in context and a menu button"));
         m.connectModel({model: this, doitContext: "contextForEval"});
 
-	var thisModel = this;
+        var thisModel = this;
         panel.morphMenu = function(evt) { 
             var menu = Morph.prototype.morphMenu.call(this,evt);
             menu.addLine();
-	    // DI: thisModel used to be panel.getModel() and it failed.
-	    //     but will soon be a list pane menu item anyway
+            // DI: thisModel used to be panel.getModel() and it failed.
+            //     but will soon be a list pane menu item anyway
             menu.addItem(['inspect selection', new SimpleInspector(thisModel.selectedItem()), "openIn", WorldMorph.current()])
             return menu; 
         }
@@ -142,7 +143,7 @@ Object.extend(SimpleInspector.prototype, {
 // ===========================================================================
   
 /**
- * @class StylePanel
+ * @class StylePanel: Interactive style editor for morphs 
  */
    
 StylePanel = Class.extend(Model);
@@ -152,6 +153,7 @@ Object.extend(StylePanel, {
     openOn: function(morph) {
         new StylePanel(morph).openIn(WorldMorph.current(), pt(30,30));
     }
+
 });
 
 Object.extend(StylePanel.prototype, {
@@ -160,7 +162,7 @@ Object.extend(StylePanel.prototype, {
         StylePanel.superClass.initialize.call(this);
         this.targetMorph = targetMorph;
         this.originalSpec = targetMorph.makeStyleSpec();
-	for (var p in this.originalSpec) this[p] = this.originalSpec[p];
+        for (var p in this.originalSpec) this[p] = this.originalSpec[p];
     },
 
     getBorderWidth: function() { return this.borderWidth; },
@@ -375,6 +377,25 @@ function showStatsViewer(profilee,title) {
     var t = TextMorph.makeLabel(pt(0,0).extent(m.bounds().extent()), 'Display and reset stats');
     m.addMorph(t);
 };
+
+// ===========================================================================
+// Host environment (browser) identification
+// ===========================================================================
+
+// KP: moved this from prototype, unclear whether we need this, the duplication of fields etc.
+Object.extend(Prototype.Browser, {
+    /*Browser and platform info*/
+    BrowserName: navigator.appName,
+    BrowserVersion: navigator.appName,
+    BrowserCode: navigator.appCodeName,
+    BrowserPlatform: navigator.platform,
+    BrowserUserAgentHeader: navigator.userAgent,
+    AlertBrowserInfo: function (){ alert("Browser name: "+ navigator.appName
+					 + "\nVersion: " + navigator.appName
+					 + "\nCode: " + navigator.appCodeName
+					 + "\nPlatform: " + navigator.platform
+					 + "\nUserAgentHeader: " + navigator.userAgent ) }
+});
 
 console.log('loaded Tools.js');
 
