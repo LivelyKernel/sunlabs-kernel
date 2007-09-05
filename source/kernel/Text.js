@@ -549,6 +549,9 @@ Object.extend(TextBox.prototype, {
         this.setTextColor(textColor);
         this.setType("TextBox");
 	this.fontInfo = font;
+	this.setAttributeNS(null, "font-size", font.getSize());
+	this.setAttributeNS(null, "font-family", font.getFamily());
+
 	/*
         for (var type in ['beforecopy', 'beforecut', 'beforepaste', 'cut', 'copy', 'paste']) {
             this.addEventListener('beforecopy', this.eventHandler, true);
@@ -682,7 +685,7 @@ Object.extend(TextMorph, {
         var morph = TextMorph(rect, textString);
         morph.setBorderWidth(0);
         morph.setFill(null);
-        morph.wrap = "shrinkWrap";
+        morph.setWrapStyle(WrapStyle.SHRINK);
         // morph.isAccepting = false;
         morph.ignoreEvents();
         morph.layoutChanged();
@@ -692,7 +695,7 @@ Object.extend(TextMorph, {
 
     makeInputLine: function(rect, initialText) {
         var morph = TextMorph(rect, initialText ? initialText : "");
-        morph.wrap = "noWrap";
+        morph.setWrapStyle(WrapStyle.NONE);
         morph.onKeyPress = function(evt) {
             if (evt.sanitizedKeyCode() == Event.KEY_ENTER) {
                 this.saveContents(this.textString);
@@ -704,9 +707,16 @@ Object.extend(TextMorph, {
 
         morph.okToBeGrabbedBy = function(evt) { this.isDesignMode() ? this : null; }
         return morph;
-    }
+    },
+
     
 });
+
+var WrapStyle = { 
+    NORMAL: "wrap", // fits text to bounds width using word wrap and sets height
+    NONE: "noWrap", // simply sets height based on line breaks only
+    SHRINK: "shrinkWrap" // sets both width and height based on line breaks only
+};
 
 // debuging convenience    
 TextMorph.lastInstance = null;
@@ -724,9 +734,9 @@ Object.extend(TextMorph.prototype, {
     defaultBorderColor: Color.black,
     selectionColor: Color.primary.green,
     inset: pt(6,4), // remember this shouldn't be modified unless every morph should get the value 
-    wrap: "wrap",  // "wrap" fits text to bounds width using word wrap and sets height
-        // "noWrap" simply sets height based on line breaks only
-        // "shrinkWrap" sets both width and height based on line breaks only
+
+
+    wrap: WrapStyle.NORMAL,
 
     initializeTransientState: function(initialBounds) {
         TextMorph.superClass.initializeTransientState.call(this, initialBounds);
@@ -753,6 +763,12 @@ Object.extend(TextMorph.prototype, {
         //this.selectionElement.setAttributeNS(null, "fill", "url(#SelectionGradient)");
         this.selectionElement.setAttributeNS(null, "stroke-width", 0);
         this.font = FontInfo.forFamily(this.fontFamily, this.fontSize);
+	this.setAttributeNS(Namespace.LIVELY, "wrap", this.wrap);
+    },
+
+    restoreFromMarkup: function(importer) {
+        TextMorph.superClass.restoreFromMarkup.call(this, importer);
+	this.wrap = this.getAttributeNS(Namespace.LIVELY, "wrap");
 	
     },
     
@@ -838,6 +854,12 @@ Object.extend(TextMorph.prototype, {
         return this.textColor;
     },
 
+    setWrapStyle: function(style) {
+	this.wrap = style;
+	this.setAttributeNS(Namespace.LIVELY, "wrap", style);
+    },
+
+
     // Since command keys do not always work,
     // make it possible to evaluate the contents
     // of the TextMorph via popup menu
@@ -872,13 +894,9 @@ Object.extend(TextMorph.prototype, {
         if (this.ensureTextString() == null) return null;
         
         if (this.textBox == null) {
-            this.textBox = TextBox(this.textString, this.lineHeight(), this.textColor, this.font);
-            // this.textBox.setFontSize(this.fontSize);
+            var textBox = this.textBox = TextBox(this.textString, this.lineHeight(), this.textColor, this.font);
             var topLeft = this.textTopLeft();
-	    this.textBox.setAttributeNS(null, "font-size", this.font.getSize());
-	    this.textBox.setAttributeNS(null, "font-family", this.font.getFamily());
-            this.textBox.renderText(topLeft, this.compositionWidth());
-
+            textBox.renderText(topLeft, this.compositionWidth());
             this.addChildElement(this.textBox);
         }
         
@@ -891,13 +909,13 @@ Object.extend(TextMorph.prototype, {
     }, 
     
     compositionWidth: function() {
-        if (this.wrap == "wrap") return this.shape.bounds().width - (2*this.inset.x);
+        if (this.wrap === WrapStyle.NORMAL) return this.shape.bounds().width - (2*this.inset.x);
         else return 9999; // Huh??
     },
 
     // DI: Should rename fitWidth to be composeLineWrap and fitHeight to be composeWordWrap
     fitText: function() { 
-        if (this.wrap == "wrap") this.fitHeight();
+        if (this.wrap === WrapStyle.NORMAL) this.fitHeight();
         else this.fitWidth();
     },
 
@@ -966,10 +984,10 @@ Object.extend(TextMorph.prototype, {
         var bottomRight = this.inset.addXY(maxX,maxY);
 
         // DI: This should just say, eg, this.shape.setBottomRight(bottomRight);
-        if (this.wrap == "noWrap")
+        if (this.wrap === WrapStyle.NONE)
 	        with (this.shape) { setBounds(bounds().withHeight(bottomRight.y - bounds().y))};
 
-        if (this.wrap == "shrinkWrap")
+        if (this.wrap === WrapStyle.SHRINK)
         	with (this.shape) { setBounds(bounds().withBottomRight(bottomRight))};
     },
 

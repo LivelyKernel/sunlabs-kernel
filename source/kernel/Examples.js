@@ -129,7 +129,7 @@ Object.extend(ClockMorph.prototype, {
             var label = TextMorph(pt(0,0).extent(pt(labelSize*3,labelSize)), 
             // (i>0 ? i : 12) + "");  // English numerals
             ['XII','I','II','III','IV','V','VI','VII','VIII','IX','X','XI'][i]); // Roman
-            label.wrap = "shrinkWrap";
+            label.setWrapStyle(WrapStyle.SHRINK);
             label.setFontSize(fontSize);    label.inset = pt(0,0);        
             label.setBorderWidth(0);        label.setFill(null);
             label.align(label.bounds().center(),labelPosition.addXY(-3,1));

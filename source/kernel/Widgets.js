@@ -1047,7 +1047,7 @@ CheapListMorph = HostClass.create('CheapListMorph', TextMorph);
 Object.extend(CheapListMorph.prototype, {
     
     defaultBorderColor: Color.black,
-    wrap: 'noWrap',
+    wrap: WrapStyle.NONE,
 
     initialize: function(initialBounds, itemList) {
         // itemList is an array of strings
@@ -1296,7 +1296,7 @@ Object.extend(MenuMorph.prototype, {
         world.addMorph(this);
         if (captionIfAny) { // Still under construction
             var label = new TextMorph(Rectangle(0, 0, 200, 20), captionIfAny);
-            label.wrap = "shrinkWrap";  label.fitText();
+            label.setWrapStyle(WrapStyle.SHRINK);  label.fitText();
             label.shape.roundEdgesBy(4);
             label.shape.setFillOpacity(0.75);
             label.align(label.bounds().bottomCenter(), this.shape.bounds().topCenter());
@@ -1307,7 +1307,7 @@ Object.extend(MenuMorph.prototype, {
     compose: function(location) { 
         var itemNames = this.items.map(function (item) { return item[0] });
         MenuMorph.superClass.initialize.call(this, location.extent(pt(200, 200)), itemNames);
-        this.wrap = "shrinkWrap";  this.fitText(); // first layout is wasted!
+        this.setWrapStyle(WrapStyle.SHRINK);  this.fitText(); // first layout is wasted!
 
 
         // styling
