@@ -127,7 +127,7 @@ Object.extend(SimpleInspector.prototype, {
             var menu = Morph.prototype.morphMenu.call(this,evt);
             menu.addLine();
 	    // DI: thisModel used to be panel.getModel() and it failed.
-	    //     but should be a list pane menu item anyway
+	    //     but will soon be a list pane menu item anyway
             menu.addItem(['inspect selection', new SimpleInspector(thisModel.selectedItem()), "openIn", WorldMorph.current()])
             return menu; 
         }
