@@ -277,6 +277,32 @@ Object.extend(ImageButtonMorph.prototype, {
     
 });
 
+/**
+ * @class IconMorph: Simple icons
+ */
+
+IconMorph = HostClass.create('IconMorph', ImageMorph);
+
+Object.extend(IconMorph.prototype, {
+    initialize: function(viewPort, url, name, targetUrl) {
+        IconMorph.superClass.initialize.call(this, viewPort, url);
+        this.label = new TextMorph.makeLabel(Rectangle(viewPort.width, viewPort.height/3, 100, 30), name);
+        this.target = targetUrl;
+        this.label.setFill(Color.white);
+        this.addMorph(this.label);
+        return this;
+    },
+    
+    okToBeGrabbedBy: function(evt) { // TODO fix the same movement problem as in linkmorph
+        this.open(); 
+        return null; 
+    },
+
+    open: function () {
+        window.open(this.target);
+    }
+});
+
 // ===========================================================================
 // Window widgets
 // ===========================================================================
