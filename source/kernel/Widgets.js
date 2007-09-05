@@ -800,6 +800,7 @@ Object.extend(SelectionMorph.prototype, {
             if (this.bounds().containsPoint(p1) && this.bounds().containsPoint(p2))
                 if (m !== this) this.selectedMorphs.push(m);
             }).bind(this));
+        this.selectedMorphs.reverse();
             
         if (lastCall && this.selectedMorphs.length == 0) this.remove();
     },
@@ -2343,8 +2344,8 @@ Object.extend(HandMorph.prototype, {
                 } else { 
                     console.log('dropping %s on %s', m, receiver);
             
-                    while(this.hasSubmorphs())  // was just receiver.addMorph(m);
-                        receiver.addMorph(this.topSubmorph());
+                    while(this.hasSubmorphs()) // drop in same z-order as in hand
+			receiver.addMorph(this.submorphs.firstChild);
             
                    //DI: May need to be updated for multiple drop above...
                    //println('changing ' + m);
@@ -2553,7 +2554,7 @@ Object.extend(LinkMorph.prototype, {
         carriedMorphs = [];
 	while (evt.hand.hasSubmorphs()) {
 	    var m = evt.hand.topSubmorph();
-	    carriedMorphs.push(m);
+	    carriedMorphs.splice(0, 0, m);
 	    m.remove();
 	}
 	this.hideHelp();
