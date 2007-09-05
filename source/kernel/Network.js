@@ -305,8 +305,8 @@ Object.extend(Feed.prototype, {
             getItemList:     function()      { return feed.items() },
             setItemTitle:    function(title) { this.itemTitle = title; this.changed("getEntry"); },
             getEntry:        function()      { return feed.getEntry(this.itemTitle) },
-           getChannelTitle: function()      { return "RSS feed from " + feed.channels[0].title; }
-	    });
+            getChannelTitle: function()      { return "RSS feed from " + feed.channels[0].title; }
+        });
 
         // View layout
         var localRect = pt(0,0).extent(extent);
