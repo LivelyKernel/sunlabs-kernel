@@ -3066,8 +3066,8 @@ Object.extend(Morph.prototype, {
     stopSteppingScripts: function() {
 	if(this.activeScripts) {
 	    var world = WorldMorph.current();
-	    for (var i=0; i<this.activeScript.length; i++) {
-		world.stopStepping(activeScripts[i]);
+	    for (var i=0; i<this.activeScripts.length; i++) {
+		world.stopStepping(this.activeScripts[i]);
 	    }
 	    this.activeScripts = null;
 	}
