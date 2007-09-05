@@ -7,14 +7,13 @@
 // Namespaces and core DOM bindings
 // ===========================================================================
 
-
 var Canvas = document.getElementById("canvas"); // singleton for now
 
 Object.extend(Canvas, {
     // Canvas bounds
     bounds: function() {
-	return Rectangle(this.x.baseVal.value, this.y.baseVal.value, 
-			 this.width.baseVal.value, this.height.baseVal.value);
+        return Rectangle(this.x.baseVal.value, this.y.baseVal.value, 
+                         this.width.baseVal.value, this.height.baseVal.value);
     }
 });
 
@@ -34,36 +33,41 @@ Namespace =  {
 
 // SVG/DOM bindings 
 
+/**
+ * @class Query
+ */
 
 var Query = Class.create();
 Object.extend(Query, {
+
     resolver: function(prefix) {
         console.log('prefix %s value %s', prefix, Namespace[prefix]);
         return Namespace[prefix];
     },
 
     evaluate: function(aNode, aExpr, defaultValue) {
-	var xpe = new XPathEvaluator();
-	var nsResolver = xpe.createNSResolver(aNode.ownerDocument == null ?
-					      aNode.documentElement : aNode.ownerDocument.documentElement);
-	var result = xpe.evaluate(aExpr, aNode, nsResolver, 0, null);
-	var found = [];
-	var res = null;
-	while (res = result.iterateNext()) found.push(res);
-	if (defaultValue && found.length == 0) {
-	    return [ defaultValue ];
-	}
-	return found;
+        var xpe = new XPathEvaluator();
+        var nsResolver = xpe.createNSResolver(aNode.ownerDocument == null ?
+                         aNode.documentElement : aNode.ownerDocument.documentElement);
+        var result = xpe.evaluate(aExpr, aNode, nsResolver, 0, null);
+        var found = [];
+        var res = null;
+        while (res = result.iterateNext()) found.push(res);
+        if (defaultValue && found.length == 0) {
+            return [ defaultValue ];
+        }
+        return found;
     }
+
 });
 
 var NodeFactory = {
     create: function(name, attributes) {
-	var element = document.createElementNS(Namespace.SVG, name);
-	if (attributes) {
+        var element = document.createElementNS(Namespace.SVG, name);
+        if (attributes) {
             $H(attributes).each(function(pair) { element.setAttributeNS(null, pair[0], pair[1].toString()); });
-	}
-	return element;
+        }
+        return element;
     },
 
     prototypes: new Hash(), // elementName -> prototype
@@ -72,11 +76,11 @@ var NodeFactory = {
     // doesn't have its .constructor property set to the right value or the constructor doesn't have it's .prototype
     // value set
     getPrototype: function(elementName) { // remember prototypes
-	var proto = this.prototypes[elementName];
-	if (!proto) {
-	    this.prototypes[elementName] = proto = this.create(elementName).__proto__;
-	}
-	return proto;
+        var proto = this.prototypes[elementName];
+        if (!proto) {
+            this.prototypes[elementName] = proto = this.create(elementName).__proto__;
+        }
+        return proto;
     }
     
 };
@@ -137,7 +141,7 @@ Object.extend(Class, {
 });
 
 /**
- * Our extensions to class Object
+ * Extensions to class Object
  */  
 
 /**
@@ -178,7 +182,6 @@ Object.properties = function(object, predicate) {
 /**
  * Extensions to class Function
  */  
-
 
 Function.callStack = function() {
     var result = [];
@@ -285,30 +288,34 @@ if (Prototype.Browser.WebKit) {
 Object.extend(Function.prototype, {
     
     logErrors: function(prefix) {
-	var advice = function (proceed/*,args*/) {
+        var advice = function (proceed/*,args*/) {
             var args = $A(arguments); args.shift(); 
             try {
-		return proceed.apply(this, args); 
+                return proceed.apply(this, args); 
             } catch (er) {
-		if (prefix) console.warn("%s: %s", prefix, er);
-		else console.warn("%s", er);
-		throw er;
+                if (prefix) console.warn("%s: %s", prefix, er);
+                else console.warn("%s", er);
+
+                throw er;
             }
-	};
-	return this.wrap(advice);
+        }
+
+        return this.wrap(advice);
     },
     
     logCalls: function(name, isUrgent) {
-	var advice = function(proceed) {
+        var advice = function(proceed) {
             var args = $A(arguments); args.shift(); 
             var result = proceed.apply(this, args);
-            if (isUrgent) 
-		console.warn('%s.%s(%s) -> %s', this, name, args, result); 
-            else
-		console.log( '%s.%s(%s) -> %s', this, name, args, result);
-	    return result;
-	};
-	return this.wrap(advice);
+            if (isUrgent) { 
+                console.warn('%s.%s(%s) -> %s', this, name, args, result); 
+            } else {
+                console.log( '%s.%s(%s) -> %s', this, name, args, result);
+            }
+           return result;
+        }
+    
+        return this.wrap(advice);
     }
 
 });
@@ -319,10 +326,10 @@ Object.extend(Function.prototype, {
 Object.extend(String.prototype, {
     /* KP: use truncate() from prototype
     shortenTo: function(len) { 
-    	if (this.length <= len) return this
-	return this.substring(0,len-4) + '...'
+        if (this.length <= len) return this
+        return this.substring(0,len-4) + '...'
     },
-*/
+    */
 
     withNiceDecimals: function() {
         // JS can't print nice decimals
@@ -348,18 +355,17 @@ Object.extend(String.prototype, {
 
     // very simple format mechanism, maybe extend with precision and such
     format: function(/*, exprs*/) {
-	var str = this;
-	
-	for (var i = 0; i < arguments.length; i++) {
-	    var a = arguments[i];
-	    var object = (a instanceof String || typeof(a) == 'string') ? a : Object.inspect(a); // avoid quotes
+        var str = this;
+
+        for (var i = 0; i < arguments.length; i++) {
+            var a = arguments[i];
+            var object = (a instanceof String || typeof(a) == 'string') ? a : Object.inspect(a); // avoid quotes
             str = str.replace(new RegExp("%" + (i + 1), "g"), object);
-	}
-	
-	return str;
+        }
+
+        return str;
     },
 
-    
 });
 
 /**
@@ -408,13 +414,13 @@ Object.category(HostClass, "core", function() { return {
     },
     
     fromElementType: function(elementName, hasInit) {
-	
+
         var constr = function() {
-	    var args = $A(arguments);
-	    var node = hasInit ? NodeFactory.create(elementName, args.shift()) : NodeFactory.create(elementName);
-	    instance = HostClass.becomeInstance(node, constr);
-	    if (instance.initialize) instance.initialize.apply(instance, args);
-	    return instance;
+            var args = $A(arguments);
+            var node = hasInit ? NodeFactory.create(elementName, args.shift()) : NodeFactory.create(elementName);
+            instance = HostClass.becomeInstance(node, constr);
+            if (instance.initialize) instance.initialize.apply(instance, args);
+            return instance;
         }
         constr.prototype = NodeFactory.getPrototype(elementName);
         constr.prototype.constructor = constr;
@@ -423,7 +429,6 @@ Object.category(HostClass, "core", function() { return {
         return constr;
     },
 
-    
     create: function(name, superClass) {
         return HostClass.extendPrototype(superClass.prototype, name);
     },
@@ -1204,15 +1209,14 @@ Object.extend(window.parent, {
 
 Object.extend(document, {
     oncontextmenu: function(evt) { 
-	var targetMorph = evt.target.parentNode; // target is probably shape (change me if pointer-events changes for shapes)
-	if ((targetMorph instanceof Morph) && !(targetMorph instanceof WorldMorph)) {
-	    evt.preventDefault();
-	    evt.mousePoint = pt(evt.clientX, evt.clientY);
-	    targetMorph.showMorphMenu(evt); 
-	} // else get the system context menu
+        var targetMorph = evt.target.parentNode; // target is probably shape (change me if pointer-events changes for shapes)
+        if ((targetMorph instanceof Morph) && !(targetMorph instanceof WorldMorph)) {
+            evt.preventDefault();
+            evt.mousePoint = pt(evt.clientX, evt.clientY);
+            targetMorph.showMorphMenu(evt); 
+        } // else get the system context menu
     }.logErrors('Context Menu Handler')
 });
-
 
 // ===========================================================================
 // Graphics primitives
@@ -1335,10 +1339,8 @@ Object.extend(DisplayObject.prototype, {
     },
 
     retrieveTransform: function() {
-	return this.transform.baseVal.consolidate() || Transform();// identity if no transform specified
+        return this.transform.baseVal.consolidate() || Transform();// identity if no transform specified
     }
-
-    
     
 });
 
@@ -1994,26 +1996,25 @@ Object.extend(MouseHandlerForDragging.prototype, {
 
 var MouseOverHandler = { 
     handleEvent: function(evt) { 
-	evt.init();
-	var target = evt.currentTarget;
-	if (target instanceof Morph) {
-	    var handler = target['on' + evt.capitalizedType()];
-	    if (handler) {
-		handler.call(target, evt);
-	    }
-	} else {
-	    console.warn('mouseover event on nonmorph %s', target);
-	}
+        evt.init();
+        var target = evt.currentTarget;
+        if (target instanceof Morph) {
+            var handler = target['on' + evt.capitalizedType()];
+            if (handler) {
+                handler.call(target, evt);
+            }
+        } else {
+            console.warn('mouseover event on nonmorph %s', target);
+        }
 
     }.logErrors('MouseOver Handler'),
 
     observe: function(morph) {
-	morph.addEventListener("mouseover", this, true);
-	morph.addEventListener("mouseout", this, true);
+        morph.addEventListener("mouseover", this, true);
+        morph.addEventListener("mouseout", this, true);
     }
 
 };
-
 
 // Morph initialization functions
 Object.extend(Morph.prototype, {
@@ -2057,12 +2058,12 @@ Object.extend(Morph.prototype, {
         }
         
         for (var i = 0; i < children.length; i++) {
-	    var node = children[i];
+            var node = children[i];
             if (node.tagName == 'defs') { // FIXME FIXME, this is painfully ad hoc!
-		if (this.defs) {
-		    console.warn('%s already has defs %s', this, this.defs);
-		}
-		this.defs = node;
+            if (this.defs) {
+                console.warn('%s already has defs %s', this, this.defs);
+            }
+            this.defs = node;
                 for (var def = node.firstChild; def != null; def = def.nextSibling) {
                     switch (def.tagName) {
                     case "clipPath":
@@ -2070,7 +2071,7 @@ Object.extend(Morph.prototype, {
                         var myClipPath = this.getAttributeNS(null, 'clip-path');
                         if (myClipPath) {
                             this.setAttributeNS(null, 'clip-path', 'url(#'  + newPathId + ')');
-			    this.clipPath = def;
+                            this.clipPath = def;
                         } else { 
                             console.log('myClip is undefined on %s', this); 
                         }
@@ -2084,7 +2085,7 @@ Object.extend(Morph.prototype, {
                             var myFill = this.shape.getAttributeNS(null, 'fill');
                             if (myFill) {
                                 this.shape.setAttributeNS(null, 'fill', 'url(#' + newFillId + ')');
-				this.fill = def;
+                                this.fill = def;
                             } else {
                                 console.warn('myFill undefined on %s', this);
                             }
@@ -2193,9 +2194,9 @@ Object.extend(Morph.prototype, {
             this.assign('fill', null);
             this.shape.setFill(fill.toString());
         } else {
-//		DI: NOTE the cloning should be handled by assign (see comment there)
-//		but it doesn't seem to work right, so we do it here
-	    var ref = this.assign('fill', fill.cloneNode(true));
+//      DI: NOTE the cloning should be handled by assign (see comment there)
+//      but it doesn't seem to work right, so we do it here
+            var ref = this.assign('fill', fill.cloneNode(true));
             this.shape.setFill(ref);
         }
     }.wrap(Morph.onChange('shape')),
@@ -2225,10 +2226,12 @@ Object.extend(Morph.prototype, {
         if (spec.borderWidth) this.setBorderWidth(spec.borderWidth);
         if (spec.borderColor) this.setBorderColor(spec.borderColor);
         if (spec.rounding) this.shape.roundEdgesBy(spec.rounding);
-		else this.shape.roundEdgesBy(0);
+        else this.shape.roundEdgesBy(0);
         if (spec.fill) this.setFill(spec.fill);
-        if (spec.opacity) {this.setFillOpacity(spec.opacity);
-        		this.setStrokeOpacity(spec.opacity); }
+        if (spec.opacity) {
+                this.setFillOpacity(spec.opacity);
+                this.setStrokeOpacity(spec.opacity); 
+        }
         if (spec.fillOpacity) this.setFillOpacity(spec.fillOpacity);
         if (spec.strokeOpacity) this.setStrokeOpacity(spec.strokeOpacity);
         if (spec.fillType) this.fillType = spec.fillType;
@@ -2238,15 +2241,15 @@ Object.extend(Morph.prototype, {
     makeStyleSpec: function() {
         // Adjust all visual attributes specified in the style spec
         var spec = { };
-	spec.borderWidth = this.getBorderWidth();
-	spec.borderColor = this.getBorderColor();
-	spec.fill = this.getFill();
-	if (this.shape.getEdgeRounding) spec.rounding = + this.shape.getEdgeRounding();
-	spec.fillOpacity = this.shape.getFillOpacity();
-	if (!spec.fillOpacity) spec.fillOpacity = 1.0;
-	spec.strokeOpacity = this.shape.getStrokeOpacity();
-	if (!spec.strokeOpacity) spec.strokeOpacity = 1.0;
-	return spec;
+        spec.borderWidth = this.getBorderWidth();
+        spec.borderColor = this.getBorderColor();
+        spec.fill = this.getFill();
+        if (this.shape.getEdgeRounding) spec.rounding = + this.shape.getEdgeRounding();
+        spec.fillOpacity = this.shape.getFillOpacity();
+        if (!spec.fillOpacity) spec.fillOpacity = 1.0;
+        spec.strokeOpacity = this.shape.getStrokeOpacity();
+        if (!spec.strokeOpacity) spec.strokeOpacity = 1.0;
+        return spec;
     },
 
     applyStyleNamed: function(name) {
@@ -2389,11 +2392,11 @@ Object.extend(Morph.prototype, {
         }
         
         if (old) {
-	    if (old.parentNode !== this.defs) {
-		console.warn('old value %s is not owned by %s', old, this);
-		return null;
-	    }
-	    this.defs.removeChild(old);
+            if (old.parentNode !== this.defs) {
+                console.warn('old value %s is not owned by %s', old, this);
+                return null;
+	        }
+            this.defs.removeChild(old);
         }
         
         this[fieldname] = element;
@@ -2401,9 +2404,9 @@ Object.extend(Morph.prototype, {
         if (element) {
             var id = element.getAttribute("id");
         
-//	KP sez... this should recognize if an element already has an ID
-//	Then it is owned by another and should be cloned.  But it didn't
-//	Work for the case of setFill.  May need more debugging...
+//          KP sez... this should recognize if an element already has an ID
+//          Then it is owned by another and should be cloned.  But it didn't
+//	        Work for the case of setFill.  May need more debugging...
             if (id) {
                 console.log('cloning node b/c original has an owner, id %s', id);
                 element = element.cloneNode(true);
@@ -2536,7 +2539,6 @@ Object.extend(Morph.prototype, {
             return this.submorphs.lastChild;
         }
     },
-    
 
     // morph gets an opportunity to shut down when WindowMorph closes 
     shutdown: function() {
@@ -2590,15 +2592,16 @@ Object.extend(Morph.prototype, {
         
         if (other.stepHandler != null) { 
             this.stepHandler = other.stepHandler.copyForOwner(this);
-	}
+        }
 
         if (other.activeScripts != null) { 
             for (var i=0; i<other.activeScripts.length; i++) {
-		var a = other.activeScripts[i];
-		// Copy all reflexive scripts (messages to self)
-		if (a.actor === other)
-			this.startStepping(a.stepTime/1000, a.scriptName, a.argIfAny);
-	    }
+                var a = other.activeScripts[i];
+                // Copy all reflexive scripts (messages to self)
+                if (a.actor === other) {
+                    this.startStepping(a.stepTime/1000, a.scriptName, a.argIfAny);
+                }
+            }
         } 
 
         this.layoutChanged();
@@ -2722,7 +2725,7 @@ Object.category(Morph.prototype, 'transforms', function() { return {
     
     // toggle fisheye effect on/off
     toggleFisheye: function() {
-	// if fisheye is true, we need to scale the morph to original size
+        // if fisheye is true, we need to scale the morph to original size
         if (this.fishEye) {
             this.scale = this.getScale()/this.fisheyeScale;
             this.setFisheyeScale(1.0);
@@ -2980,22 +2983,22 @@ Object.extend(Morph.prototype, {
     },
 
     toggleDnD: function(loc) {
-	if (true) return this.notify("Sorry, DnD control is\nnot yet available", loc);        	
-	this.openForDragAndDrop = !this.openForDragAndDrop;
+        if (true) return this.notify("Sorry, DnD control is\nnot yet available", loc);
+        this.openForDragAndDrop = !this.openForDragAndDrop;
     },
 
     pickMeUp: function(evt) {
-	var offset = evt.hand.position().subPt(evt.hand.lastMouseDownPoint);
-	this.moveBy(offset);
-	evt.hand.addMorph(this);
+        var offset = evt.hand.position().subPt(evt.hand.lastMouseDownPoint);
+        this.moveBy(offset);
+        evt.hand.addMorph(this);
     },
 
     notify: function(msg, loc) {
-	MenuMorph([["OK", 0, "toString"]]).openIn(this.world(), loc, false, msg); 
+        MenuMorph([["OK", 0, "toString"]]).openIn(this.world(), loc, false, msg); 
     },
 
     showCoreSample: function(loc) {
-	if (true) return this.notify("Sorry, core sample is\nnot yet available", loc);
+        if (true) return this.notify("Sorry, core sample is\nnot yet available", loc);
     },
 
     copyToHand: function(hand) {
@@ -3049,35 +3052,36 @@ Object.extend(Morph.prototype, {
     startSteppingScripts: function() { }, // May be overridden to start stepping scripts
     
     stopSteppingScripts: function() {
-	if(this.activeScripts) {
-	    var world = WorldMorph.current();
-	    for (var i=0; i<this.activeScripts.length; i++) {
-		world.stopStepping(this.activeScripts[i]);
-	    }
-	    this.activeScripts = null;
-	}
+        if (this.activeScripts) {
+            var world = WorldMorph.current();
+            for (var i=0; i<this.activeScripts.length; i++) {
+                world.stopStepping(this.activeScripts[i]);
+            }
+            this.activeScripts = null;
+        }
     },
     
     startStepping: function(stepTime, scriptName, argIfAny) {
         if (!scriptName) {
-	// Old code schedules the morph for stepTime
-	this.stopStepping();
-        if (this.stepHandler == null) this.stepHandler = new StepHandler(this,stepTime);
-        if (stepTime != null) this.stepHandler.stepTime = stepTime;
-        WorldMorph.current().startStepping(this); 
-	return; }
+            // Old code schedules the morph for stepTime
+            this.stopStepping();
+            if (this.stepHandler == null) this.stepHandler = new StepHandler(this,stepTime);
+            if (stepTime != null) this.stepHandler.stepTime = stepTime;
+            WorldMorph.current().startStepping(this); 
+            return; 
+        }
 
-	// New code schedules an action -- note this call is in seconds!
-	var action = { actor: this, scriptName: scriptName, argIfAny: argIfAny,
-			stepTime: Math.round(stepTime*1000), ticks: 0 };
-	this.addActiveScript(action);
+        // New code schedules an action -- note this call is in seconds!
+        var action = { actor: this, scriptName: scriptName, argIfAny: argIfAny,
+                       stepTime: Math.round(stepTime*1000), ticks: 0 };
+        this.addActiveScript(action);
         WorldMorph.current().startStepping(action); 
     },
     
     addActiveScript: function(action) {
-	// Every morph carries a list of currently active actions (alarms and repetitive scripts)
-        if(!this.activeScripts) this.activeScripts = [action];
-	else this.activeScripts.push(action);
+        // Every morph carries a list of currently active actions (alarms and repetitive scripts)
+        if (!this.activeScripts) this.activeScripts = [action];
+        else this.activeScripts.push(action);
     },
     
     startSteppingFunction: function(stepTime, func) {
@@ -3091,19 +3095,18 @@ Object.extend(Morph.prototype, {
         } // else: can happen if removing a morph whose parent is not in the world
     },
 
-	// The following methods are deprecated...
+    // The following methods are deprecated...
     tick: function(msTime) {
-	// returns 0 if step handler not triggered, otherwise the time when the handler should be called next.
+        // returns 0 if step handler not triggered, otherwise the time when the handler should be called next.
         if (this.stepHandler != null) {
-	    this.stepHandler.tick(msTime, this);
-	    return this.stepHandler.timeOfNextStep;
-	}
+            this.stepHandler.tick(msTime, this);
+            return this.stepHandler.timeOfNextStep;
+        }
         return 0;
     },
 
     stepActivity: function(msTime) {  // May be overridden
     }
-    
     
 });
 
@@ -3331,45 +3334,46 @@ Object.extend(Importer.prototype, {
     importModelFrom: function(string) {
         console.log('restoring model from markup %s', string);
         var ptree = this.parse(string);
-	var model = new SimpleModel(null);
+        var model = new SimpleModel(null);
+        
         for (var node = ptree.firstChild; node != null; node = node.nextSibling) {
-	    switch (node.tagName) {
-	    case 'dependent':
-		var id = node.getAttribute('ref');
-		
-		var dependent = this.lookupMorph(id);
-		if (!dependent)  {
+            switch (node.tagName) {
+            case 'dependent':
+                var id = node.getAttribute('ref');
+
+                var dependent = this.lookupMorph(id);
+                if (!dependent)  {
                     console.warn('dep %s not found', id);
                     continue; 
-		}
+                }
     
-		var plug = {};
-		
-		for (var acc = node.firstChild; acc != null;  acc = acc.nextSibling) {
+                var plug = {};
+
+                for (var acc = node.firstChild; acc != null;  acc = acc.nextSibling) {
                     if (acc.tagName != 'accessor') continue;
-		    
+    
                     if (dependent) {
-			plug[acc.getAttribute('formal')] = acc.getAttribute('actual');
+                        plug[acc.getAttribute('formal')] = acc.getAttribute('actual');
                     }
-		}
-		
-		//console.log('dependent %s, old id %s modelPlug %s', dependent, id, Object.toJSON(plug));
-		plug.model = model;
-		dependent.connectModel(plug);
-		break;
-	    case 'variable':
-		var name = node.getAttribute('name');
-		var value = node.textContent;
-		if (value) {
-		    value = value.evalJSON();
-		}
-		model.addVariable(name, value);
-		//var value = node.getAttribute('value');
-		//variables.push(name);
-		break;
-	    default:
-		console.log('got unexpected node %s %s', node.tagName, node); 
-	    }
+                }
+
+                //console.log('dependent %s, old id %s modelPlug %s', dependent, id, Object.toJSON(plug));
+                plug.model = model;
+                dependent.connectModel(plug);
+                break;
+            case 'variable':
+                var name = node.getAttribute('name');
+                var value = node.textContent;
+                if (value) {
+                    value = value.evalJSON();
+                }
+                model.addVariable(name, value);
+                //var value = node.getAttribute('value');
+                //variables.push(name);
+                break;
+            default:
+                console.log('got unexpected node %s %s', node.tagName, node); 
+            }
         }
 
         return model;
@@ -3383,12 +3387,11 @@ Object.extend(Morph.prototype, {
     dumpModel: function() {
         var exporter = new Exporter(this);
         var xml = exporter.serialize();
-	
-	var model = this.getModel();
+
+        var model = this.getModel();
         var modelxml = model.toMarkup();
-	
-	console.log('%s model %s', this, Object.keys(model).filter(function(k) { return !(model[k] instanceof Function) && k !='dependents' }).map(function(k) { return k + " = " + Object.inspect(model[k]); }));
-	
+
+        console.log('%s model %s', this, Object.keys(model).filter(function(k) { return !(model[k] instanceof Function) && k !='dependents' }).map(function(k) { return k + " = " + Object.inspect(model[k]); }));
     },
     
     addSvgInspector: function() {
@@ -3420,7 +3423,7 @@ Object.extend(Morph.prototype, {
                 
                 if (target.getModel()) {
                     copy.model = importer.importModelFrom(modelxml);
-		    console.log('restoring from model %s', modelxml);
+                    console.log('restoring from model %s', modelxml);
                     console.log('copy %s has model %s', copy, copy.model);
                 }
                 return;
@@ -3464,9 +3467,8 @@ Object.extend(Morph.prototype, {
     },
 
     getModel: function() {
-	return this.modelPlug && this.modelPlug.model;
+        return this.modelPlug && this.modelPlug.model;
     },
-
 
     getModelValue: function(functionName, defaultValue) {
         // functionName is a view-specific message, such as "getList"
@@ -3573,69 +3575,73 @@ Object.extend(Model.prototype, {
     },
     
     toMarkup: function(exporter) {
-	return null;
+        return null;
     }
 
 });
+
+/**
+ * @class SimpleModel
+ */ 
 
 SimpleModel = Class.extend(Model);
 
 Object.category(SimpleModel.prototype,  "core", function() { 
     
     function getter(varName) {
-	return "get" + varName;
+        return "get" + varName;
     }
     
     function setter(varName) {
-	return "set" + varName;
+        return "set" + varName;
     }
 
     function escapeValue(value) {
-	return value == null  ? "null" : "<![CDATA[%1]]>".format(Object.toJSON(value));
+        return value == null  ? "null" : "<![CDATA[%1]]>".format(Object.toJSON(value));
     }
     
     return {
-	
-	initialize: function(dep /*, variables... */) {
-	    SimpleModel.superClass.initialize.call(this, dep);
-	    var variables = $A(arguments);
-	    variables.shift();
-	    for (var i = 0; i < variables.length; i++) {
-		this.addVariable(variables[i], null);
-	    }
-	},
-	
-	addVariable: function(varName, initialValue) {
-	    // functional programming is fun!
-	    this[varName] = initialValue;
-	    this[getter(varName)] = function(name) { return function() { return this[name]; } } (varName); // let name = varName ()
-	    this[setter(varName)] = function(name) { return function(newValue, v) { this[name] = newValue; 
-										    this.changed(getter(name), v); }} (varName);
-	},
-	
-	makePlug: function() {
-	    var model = this;
-	    var plug = { };
-	    this.variables().forEach(function(v) { plug[getter(v)] = model[getter(v)]; plug[setter(v)] = model[setter(v)]; });
-	    plug.model = model;
-	    return plug;
-	},
-	
-	variables: function() {
-	    return Object.properties(this).filter(function(name) { return name != 'dependents'});
-	},
-	
-	toMarkup: function(exporter) {
-	    var model = this;
-            return "<model>%1%2</model>".format( 
-		this.variables().map(function(name) { 
-		    return '<variable name="%1">%2</variable>'.format(name, escapeValue(model[name])); }).join(''),
-		this.dependents.map(function(dep) { 
-		    return '<dependent ref="%1">%2</dependent>'.format(dep.id, 
-								       Object.properties(dep.modelPlug || {}).filter(function(name) { return name != 'model'; }).map(function(prop) { return '<accessor formal="%1" actual="%2"/>'.format(prop, dep.modelPlug[prop]); }).join(' '))}).join(''));
-	}
-    }});
 
+        initialize: function(dep /*, variables... */) {
+            SimpleModel.superClass.initialize.call(this, dep);
+            var variables = $A(arguments);
+            variables.shift();
+            for (var i = 0; i < variables.length; i++) {
+                this.addVariable(variables[i], null);
+            }
+        },
+
+        addVariable: function(varName, initialValue) {
+            // functional programming is fun!
+            this[varName] = initialValue;
+            this[getter(varName)] = function(name) { return function() { return this[name]; } } (varName); // let name = varName ()
+            this[setter(varName)] = function(name) { return function(newValue, v) { this[name] = newValue; 
+                                                     this.changed(getter(name), v); }} (varName);
+        },
+
+        makePlug: function() {
+            var model = this;
+            var plug = { };
+            this.variables().forEach(function(v) { plug[getter(v)] = model[getter(v)]; plug[setter(v)] = model[setter(v)]; });
+            plug.model = model;
+            return plug;
+        },
+
+        variables: function() {
+            return Object.properties(this).filter(function(name) { return name != 'dependents'});
+        },
+
+        toMarkup: function(exporter) {
+            var model = this;
+            return "<model>%1%2</model>".format( 
+                this.variables().map(function(name) { 
+                    return '<variable name="%1">%2</variable>'.format(name, escapeValue(model[name])); }).join(''),
+                this.dependents.map(function(dep) { 
+                    return '<dependent ref="%1">%2</dependent>'.format(dep.id, 
+                        Object.properties(dep.modelPlug || {}).filter(function(name) { return name != 'model'; }).map(function(prop) { return '<accessor formal="%1" actual="%2"/>'.format(prop, dep.modelPlug[prop]); }).join(' '))}).join(''));
+        }
+
+    }});
 
 console.log('loaded Core.js');
 
