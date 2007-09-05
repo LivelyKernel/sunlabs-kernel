@@ -132,7 +132,7 @@ Object.extend(ClockMorph.prototype, {
             label.wrap = "shrinkWrap";
             label.setFontSize(fontSize);    label.inset = pt(0,0);        
             label.setBorderWidth(0);        label.setFill(null);
-	    label.align(label.bounds().center(),labelPosition.addXY(-3,1));
+            label.align(label.bounds().center(),labelPosition.addXY(-3,1));
             this.addMorph(label);
         }
     
@@ -152,7 +152,7 @@ Object.extend(ClockMorph.prototype, {
     stepActivity: function(msTime) { this.setHands(); },
 
     startSteppingScripts: function() {
-	this.startStepping(1, "setHands"); // once per second
+        this.startStepping(1, "setHands"); // once per second
     },
 
     setHands: function() {
@@ -238,7 +238,7 @@ Object.extend(Pen.prototype, {
         /* if (morph.world().backend()) 
         morph.world().backend().createMorph(morph.morphId(), morph, morph.world().morphId());*/
 
-	return morph;
+        return morph;
     },
     
     fillLines: function(color) { 
@@ -294,7 +294,7 @@ Object.extend(Pen.prototype, {
     filberts: function(n, s) {
         // Four interlocking filberts
         var n2 = Math.pow(2,n-1);
-	var morphs = [ ];
+        var morphs = [ ];
     
         for (var i = 0; i < 4; i++) {
             morphs.push(this.filbert(n, s, Color.wheel(4)[i]));
@@ -303,7 +303,8 @@ Object.extend(Pen.prototype, {
             this.go(n2 * s); 
             this.turn(180);
         }
-	return morphs; 
+
+        return morphs; 
     }
     
 });
@@ -311,16 +312,20 @@ Object.extend(Pen.prototype, {
 // The menu-driven filled Hilbert curve demo
 Pen.hilbertFun = function(world) {
     var logoMenu = MenuMorph([]);
-	for (var i=0; i<=5; i++)
+
+    for (var i=0; i<=5; i++) {
 	    logoMenu.addItem([i.toString(), logoMenu, "makeLogo", i]);
-	logoMenu.makeLogo = function(order) {
-	    if(this.morphs) for (var i=0; i<4; i++) this.morphs[i].remove();
-	    if (i=0) { this.morphs == null; return; }
-	    var P = new Pen();
-	    this.morphs = P.filberts(order,5);
-	};
-        logoMenu.openIn(world, pt(300, 380), true, "Hilbert Fun"); 
-    }
+	}
+
+    logoMenu.makeLogo = function(order) {
+        if (this.morphs) for (var i=0; i<4; i++) this.morphs[i].remove();
+        if (i=0) { this.morphs == null; return; }
+        var P = new Pen();
+        this.morphs = P.filberts(order,5);
+    };
+
+    logoMenu.openIn(world, pt(380, 380), true, "Hilbert Fun"); 
+}
 
 // The default script for the Pen/Hilbert demo
 Pen.script = ["P = new Pen();",
@@ -329,7 +334,6 @@ Pen.script = ["P = new Pen();",
 "	{ P.go(2*i); P.turn(89); };",
 "P.drawLines();",
 ""].join("\n");
-
 
 // ===========================================================================
 // The Doodle Draw Example
@@ -340,15 +344,6 @@ Pen.script = ["P = new Pen();",
  */
 
 var IMAGES = "http://www.cs.tut.fi/~kuusipal/flair/";
-
-// Something about the DoodleMorph buttons
-// 1. select allows the controlpoint to pop-up on the object 
-//    (objects seem to be moveable even without this mode)
-// 2. draw a rectangle on a fixed location
-// 3. draw a ellipse on a fixed location
-// 4. change the drawing color
-// 5. copy (do we need this???)
-// 6. connect, aiming for some sort of collaboration (not implemented yet)
 
 DoodleMorph = HostClass.create('DoodleMorph', ClipMorph);
 
@@ -380,12 +375,6 @@ Object.extend(DoodleMorph.prototype, {
         var r = Rectangle(0, iconSize*5, iconSize, iconSize /* rect.height - iconSize - 10 */);
         this.stylebutton = new ImageButtonMorph(r, IMAGES + "style.png", IMAGES + "style_down.png");
 
-
-        // this.rectbutton.align(this.rectbutton.bounds().leftCenter(),
-        // this.mapclip.bounds().rightCenter().addXY(clipInset, 0));
-        // this.rectbutton.connectModel({model: this.mapmodel, setValue: "goRight", getValue: "isStepping"});
-//        this.linebutton.setToggle(true);
-
         this.linebutton.onMouseUp = function(evt) {
             var newValue = this.isToggle() ? !this.getValue() : false;
             this.changeAppearanceFor(newValue); 
@@ -411,7 +400,7 @@ Object.extend(DoodleMorph.prototype, {
             var newValue = this.toggles ? !this.getValue() : false;
             this.changeAppearanceFor(newValue); 
         };
-        this.widthbutton.connectModel({model: this, setValue: "setLine"});//"setBValue", getValue: "getBValue"});
+        this.widthbutton.connectModel({model: this, setValue: "setLine"});
         this.addMorph(this.widthbutton);
 
         this.colorsbutton.setToggle(true);
@@ -1612,9 +1601,7 @@ GameMorph.prototype.runAsteroidsGame = function() {
         loaded = true;
         // loadThread.stop();
     }
-    
 
-    
     if (!paused) {
 
         // Move and process all sprites.
@@ -3446,7 +3433,6 @@ Object.extend(MapMorph.prototype, {
             }
             this.imagesloaded = true;
             break;
-    
       case "up":
             this.rollImage(direction);
             var iy = 0;
@@ -3462,8 +3448,7 @@ Object.extend(MapMorph.prototype, {
                 this.loadImagesCorrectly(ix, iy);  
             }
             this.imagesloaded = true;
-            break;
-    
+            break;    
       case "left":
             this.rollImage(direction);
             var ix = 0;
