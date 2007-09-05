@@ -120,13 +120,22 @@ function populateWorldWithExamples(world, otherWorld, server) {
     var showTODO = !Config.skipMostExamples;
     if (showTODO) {
         var todoMorph = TextMorph(Rectangle(440, 260, 250,20),
-                        "TODO:\n" + 
-                        "Browser specific configs(?)\n" +
-                        "Browser specific info can be alerted with command: Prototype.Browser.AlertBrowserInfo();\n" +
-                        "BuZilla up and running for the release\n" +
-                        "More widgets?\n" +
-                        "-Widget for managing timers\n" + 
-                        "-\"virtual desktop\" widget to drag-and-drop morph to another world?\n"
+                        "TODO (LARGE):\n" + 
+                        "- Object scripting/timer management\n" +
+                        "- Web page generation support\n" +
+                        "- Local/remote storage capabilities\n" +
+                        "TODO (SMALL):\n" + 
+                        "- Clean up system menus\n" +
+                        "- Clean up demo world(s)\n" +
+                        "- Use common location for resources\n" +
+                        "MAJOR BUGS:\n" + 
+                        "- Coordinate transformations are broken\n" +
+                        "- Shortcut keys don't work on Windows!\n" +
+                        "- 'Same origin' networking policy violated\n" +
+                        "- It is still too easy to rip things apart\n" +
+                        "MINOR BUGS:\n" + 
+                        "- Selection tray creation/removal has bugs\n" +
+                        "- Not all 'new object...' menu items work\n"
                         );
         todoMorph.shape.roundEdgesBy(10);
         todoMorph.shape.setFillOpacity(.7);
