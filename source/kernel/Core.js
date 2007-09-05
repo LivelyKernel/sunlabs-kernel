@@ -25,7 +25,7 @@ var console = window.parent.console;
 
 Namespace =  {
     SVG : Canvas.getAttribute("xmlns"),
-    LIVELY : null, //Canvas.getAttribute("xmlns:lively"), // FIXME Safari XMLSerializer seems to do wierd things w/namespaces
+    LIVELY : Prototype.Browser.WebKit ? null : Canvas.getAttribute("xmlns:lively"), // Safari XMLSerializer seems to do wierd things w/namespaces
     XLINK : Canvas.getAttribute("xmlns:xlink"),
     DAV : Canvas.getAttribute("xmlns:D")
 };
@@ -511,6 +511,7 @@ Object.extend(Point.prototype, function() { return {
     inspect: function() { // KP: toString not overridable :(
         return "pt(%1,%2)".format(this.x.roundTo(0.01), this.y.roundTo(0.01)); 
     },
+    
 
     // Polar coordinates...
     r: function() { return this.dist(pt(0,0)); },
@@ -520,6 +521,11 @@ Object.extend(Point.prototype, function() { return {
 }}());
 
 Object.extend(Point, {
+    parse: function(string) { // reverse of inspect
+	var array = string.substring(3, string.length - 1).split(',');
+	return Point(array[0], array[1]);
+    },
+    
     polar: function(r, theta) {return Point(r*Math.cos(theta), r*Math.sin(theta)); },
     random: function(scalePt) { return Point(scalePt.x.randomSmallerInteger(), scalePt.y.randomSmallerInteger()); }
 });
@@ -1942,8 +1948,13 @@ Object.extend(Morph, {
         node.restoreFromMarkup(importer);    
         node.initializeTransientState(null);
 
-        if (this.drawBounds) node.updateBoundsElement();
+        if (Morph.prototype.drawBounds) node.updateBoundsElement();
+	if (node.activeScripts) {
+	    console.log('started stepping %s', node);
+	    node.startSteppingScripts();
+	}
 
+	
         return node; 
     },
 
@@ -2059,11 +2070,14 @@ Object.extend(Morph.prototype, {
         
         for (var i = 0; i < children.length; i++) {
             var node = children[i];
-            if (node.tagName == 'defs') { // FIXME FIXME, this is painfully ad hoc!
-            if (this.defs) {
-                console.warn('%s already has defs %s', this, this.defs);
-            }
-            this.defs = node;
+	    if (node.tagName == 'action') {
+		var action = node.textContent.evalJSON();
+		this.addActiveScript(action);
+	    } else if (node.tagName == 'defs') { // FIXME FIXME, this is painfully ad hoc!
+		if (this.defs) {
+                    console.warn('%s already has defs %s', this, this.defs);
+		}
+		this.defs = node;
                 for (var def = node.firstChild; def != null; def = def.nextSibling) {
                     switch (def.tagName) {
                     case "clipPath":
@@ -2178,6 +2192,7 @@ Object.extend(Morph.prototype, {
     
         // this.created = false; // exists on server now
         // some of this stuff may become persistent
+
     }
 
 });
@@ -2969,7 +2984,7 @@ Object.extend(Morph.prototype, {
             ["remove", this.remove.bind(this)],
             ["inspect", SimpleInspector.openOn.curry(this)],
             ["style", StylePanel.openOn.curry(this)],
-            ["show SVG code", this.addSvgInspector.bind(this).curry(this)],
+            ["show Lively markup", this.addSvgInspector.bind(this).curry(this)],
             ["dump model", this.dumpModel.bind(this).curry(this)], // debugging, will go away
             ["reset rotation", this.setRotation.bind(this).curry(0)],
             [((!this.openForDragAndDrop) ? "close DnD" : "open DnD"), this, "toggleDnD", evt.mousePoint],
@@ -3082,6 +3097,10 @@ Object.extend(Morph.prototype, {
         // Every morph carries a list of currently active actions (alarms and repetitive scripts)
         if (!this.activeScripts) this.activeScripts = [action];
         else this.activeScripts.push(action);
+	var actionCode = document.createElementNS(Namespace.LIVELY, "action");
+	actionCode.appendChild(document.createCDATASection(Object.toJSON(action)));
+	this.addChildElement(actionCode);
+	console.log('added code %s', actionCode.textContent);
     },
     
     startSteppingFunction: function(stepTime, func) {
@@ -3206,7 +3225,7 @@ Object.extend(Morph.prototype, {
         try {
             return pt.matrixTransform(this.owner().getTransformToElement(this)); 
         } catch (er) {
-            console.log('got error %s owner %s', er, this.owner());
+            console.log('got error %s owner %s this %s', er, this.owner(), this);
             return pt;
         }
     },
@@ -3407,34 +3426,6 @@ Object.extend(Morph.prototype, {
         var pane = TextPane(Rectangle(0, 0, 250, 300), xml.truncate(maxSize));
         var txtMorph = pane.innerMorph();
         txtMorph.xml = xml;
-        var target = this;
-        
-        txtMorph.processCommandKeys = function(key) {
-            switch (key) {
-            case 's':
-                var txt = this.textString;
-                if (xml.length > maxSize) {
-                    console.warn('discarding changes is any from ' + txt);
-                    txt = this.xml;
-                }
-                var importer = new Importer();
-                var copy = importer.importFrom(txt);
-                WorldMorph.current().addMorph(copy);
-                
-                if (target.getModel()) {
-                    copy.model = importer.importModelFrom(modelxml);
-                    console.log('restoring from model %s', modelxml);
-                    console.log('copy %s has model %s', copy, copy.model);
-                }
-                return;
-            case 'f':
-                var filename = prompt('save as ');
-                console.log('save file as %s', filename);
-                return;
-            default:
-                return TextMorph.prototype.processCommandKeys.call(this, key);
-            }
-        }
         this.world().addMorph(WindowMorph(pane, "XML dump", this.bounds().topLeft().addPt(pt(5,0))));
     }
     

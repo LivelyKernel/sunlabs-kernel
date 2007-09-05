@@ -769,8 +769,12 @@ Object.extend(TextMorph.prototype, {
     restoreFromMarkup: function(importer) {
         TextMorph.superClass.restoreFromMarkup.call(this, importer);
 	this.wrap = this.getAttributeNS(Namespace.LIVELY, "wrap");
-	
+	var inset = this.getAttributeNS(Namespace.LIVELY, "inset");
+	if (inset) {
+	    this.inset = Point.parse(inset);
+	}
     },
+
     
     restoreFromElement: function(element, importer) /*:Boolean*/ {
         if (TextMorph.superClass.restoreFromElement.call(this, element, importer)) return true;
@@ -855,8 +859,21 @@ Object.extend(TextMorph.prototype, {
     },
 
     setWrapStyle: function(style) {
-	this.wrap = style;
-	this.setAttributeNS(Namespace.LIVELY, "wrap", style);
+	if (style === TextMorph.prototype.wrap) {
+	    delete this.wrap;
+	} else {
+	    this.wrap = style;
+	    this.setAttributeNS(Namespace.LIVELY, "wrap", style);
+	}
+    },
+
+    setInset: function(ext) {
+	if (ext.eqPt(TextMorph.prototype.inset)) {
+	    delete this.inset;
+	} else {
+	    this.inset = ext;
+	    this.setAttributeNS(Namespace.LIVELY, "inset", ext.inspect());
+	}
     },
 
 
@@ -864,8 +881,29 @@ Object.extend(TextMorph.prototype, {
     // make it possible to evaluate the contents
     // of the TextMorph via popup menu
     morphMenu: function(evt) { 
+	var self = this;
         var menu = TextMorph.superClass.morphMenu.call(this, evt);
-        menu.addItem(["evaluate text", this, 'evaluateText']);
+        menu.addItem(["evaluate text", function() { self.evaluateText() }]);
+	menu.addItem(["evaluate as Lively markup", function() { 
+            var importer = new Importer();
+	    var txt = self.xml || self.textString;
+	    console.log('evaluating markup ' + txt);
+            var morph = importer.importFrom(txt);
+            WorldMorph.current().addMorph(morph);
+            /*
+            if (self.getModel()) {
+                copy.model = importer.importModelFrom(modelxml);
+                console.log('restoring from model %s', modelxml);
+                console.log('copy %s has model %s', copy, copy.model);
+            }
+            */
+	}]);
+	menu.addItem(["save as ...", function() { 
+	    var store = WorldMorph.current().defaultStore;
+	    if (store) store.saveAs(window.prompt('save as ...'), (self.xml || self.textString)); 
+	    else console.log('no store to save to');
+	}]);
+
         return menu;
     },
 

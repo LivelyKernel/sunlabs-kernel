@@ -295,6 +295,7 @@ if (Config.showWebStore) {
     //var store = new WebStore('http://idisk.mac.com/xysztof/Public/Lively');
     var store = new WebStore('localhost', '~kappa');
     store.openIn(WorldMorph.current(), pt(500, 30));
+    WorldMorph.current().defaultStore = store;
 }
 
 console.log('loaded Main.js');

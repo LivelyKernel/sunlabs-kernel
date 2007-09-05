@@ -124,24 +124,21 @@ Object.extend(ClockMorph.prototype, {
         var fontSize = Math.max(Math.floor(0.04 * (bnds.width + bnds.height)),2);
         var labelSize = fontSize; // room to center with default inset
 
-        for (var i=0; i < 12; i++) {
+        for (var i = 0; i < 12; i++) {
             var labelPosition = bnds.center().addPt(Point.polar(radius*0.85,((i-3)/12)*Math.PI*2)).addXY(labelSize, 0);
             var label = TextMorph(pt(0,0).extent(pt(labelSize*3,labelSize)), 
             // (i>0 ? i : 12) + "");  // English numerals
             ['XII','I','II','III','IV','V','VI','VII','VIII','IX','X','XI'][i]); // Roman
             label.setWrapStyle(WrapStyle.SHRINK);
-            label.setFontSize(fontSize);    label.inset = pt(0,0);        
+            label.setFontSize(fontSize);    label.setInset(pt(0,0));        
             label.setBorderWidth(0);        label.setFill(null);
             label.align(label.bounds().center(),labelPosition.addXY(-3,1));
             this.addMorph(label);
         }
     
-        this.hands = [Morph.makeLine([pt(0,0),pt(0,-radius*0.5)],4,Color.blue),
-                      Morph.makeLine([pt(0,0),pt(0,-radius*0.7)],3,Color.blue),
-                      Morph.makeLine([pt(0,0),pt(0,-radius*0.75)],2,Color.red)];
-
-        for (var i = 0; i < 3; i++) 
-            this.addMorph(this.hands[i]);
+	this.setNamedMorph("hours", Morph.makeLine([pt(0,0),pt(0,-radius*0.5)],4,Color.blue));
+	this.setNamedMorph("minutes", Morph.makeLine([pt(0,0),pt(0,-radius*0.7)],3,Color.blue));
+	this.setNamedMorph("seconds", Morph.makeLine([pt(0,0),pt(0,-radius*0.75)],2,Color.red));
     
         this.setHands();
         this.changed(); 
@@ -161,9 +158,9 @@ Object.extend(ClockMorph.prototype, {
         var second = currentDate.getSeconds();
         var minute = currentDate.getMinutes() + second/60;
         var hour = currentDate.getHours() + minute/60;
-        this.hands[0].setRotation(hour/12*2*Math.PI);
-        this.hands[1].setRotation(minute/60*2*Math.PI);
-        this.hands[2].setRotation(second/60*2*Math.PI); 
+        this.getNamedMorph('hours').setRotation(hour/12*2*Math.PI);
+        this.getNamedMorph('minutes').setRotation(minute/60*2*Math.PI);
+        this.getNamedMorph('seconds').setRotation(second/60*2*Math.PI); 
     }
     
 });

@@ -47,6 +47,11 @@ Object.extend(WebStore.prototype, {
         new Ajax.Request(url, options);
     },
 
+    saveAs: function(name, content) {
+	console.log('saving content %s', content);
+	this.save('http://' + this.host + '/' +  this.path + "/" + name, content, 'LastWriteStatus');
+    },
+
     save: function(url, content, modelVariable) {
         // retrieve the the contents of the url and save in the indicated model variable
         console.log('saving url ' + url);
