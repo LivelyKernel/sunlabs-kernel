@@ -176,13 +176,22 @@ Object.extend(ClockMorph.prototype, {
 IconMorph = HostClass.create('IconMorph', ImageMorph);
 
 Object.extend(IconMorph.prototype, {
-    initialize: function(viewPort, url, name, target) {
+    initialize: function(viewPort, url, name, targetUrl) {
         IconMorph.superClass.initialize.call(this, viewPort, url);
         this.label = new TextMorph.makeLabel(Rectangle(viewPort.width, viewPort.height/3, 100, 30), name);
-        this.label.setBorderWidth(1);
+        this.target = targetUrl;
         this.label.setFill(Color.white);
         this.addMorph(this.label);
         return this;
+    },
+    
+    okToBeGrabbedBy: function(evt) { // TODO fix the same movement problem as in linkmorph
+        this.open(); 
+        return null; 
+    },
+
+    open: function () {
+        window.open(this.target);
     }
 });
 
@@ -3910,6 +3919,27 @@ Object.extend(MessengerWidget.prototype, {
 
     initialize: function() { 
         MessengerWidget.superClass.initialize.call(this);
+        //this.id = 1971055351;
+        this.id = Math.round(Math.random()*2147483647);
+        this.text = "";
+        this.chatroom = "";
+        this.server = "http://dev.experimentalstuff.com:8093/";
+//        console.log("address == " + this.server + "foreground.html?login=IM");
+        var id = this.id
+        new Ajax.Request(this.server + "foreground.html?login=IM", { 
+            method: 'get',
+            
+            onSuccess: function(transport) {
+                console.log("accessing database: " + id +"\n" + transport.responseText);
+            },
+            
+            onFailure: function(transport) {
+                console.log(transport.responseText);
+            },
+    
+            onException: function(e) {
+            }
+        });
     },
     
     openIn: function(world, location) {
@@ -3920,12 +3950,95 @@ Object.extend(MessengerWidget.prototype, {
         var panel = PanelMorph(pt(300, 255));
         panel.setBorderWidth(2);
         panel.setFill(LinearGradient.makeGradient(Color.white, Color.primary.blue.lighter(), LinearGradient.EastWest));
-
-        panel.addMorph(TextPane(        Rectangle( 10,  10, 280, 180), " ")).connectModel({model: this, getText: null});
-        panel.addMorph(TextMorph(       Rectangle( 10, 210, 220,  50), "<enter text here>")).connectModel({model: this, getText: null});
-        panel.addMorph(ImageButtonMorph(Rectangle(240, 200,  50,  50), "http://www.cs.tut.fi/~taivalsa/Software/Talk.PNG",
-                                                                       "http://www.cs.tut.fi/~taivalsa/Software/Talk_down.PNG"));
+        var m = null;
+        panel.addMorph(m = TextPane( Rectangle(10, 10, 280, 180), " ")).connectModel({model: this, getText: "getChatText", setText: "setChatText"});
+        m.innerMorph().autoAccept = true;
+        panel.addMorph(m = TextMorph( Rectangle(10, 210, 220, 50), "<enter text here>")).connectModel({model: this, getText: "getIMText", setText: "setIMText"});
+        m.autoAccept = true;
+        panel.addMorph(m = ImageButtonMorph(Rectangle(240, 200,  50,  50), 
+        "http://www.cs.tut.fi/~taivalsa/Software/Talk.PNG", "http://www.cs.tut.fi/~taivalsa/Software/Talk_down.PNG")).connectModel({model: this, setValue: "send"});
+        // disable the 2 set value calls for the button
+        m.onMouseUp = function(evt) {
+            var newValue = this.isToggle() ? !this.getValue() : false;
+            this.changeAppearanceFor(newValue); 
+        };        
         return panel;
+    },
+    
+    setIMText: function(newtext) {
+        this.text = newtext;
+        this.changed("getIMText");
+    },
+
+    getIMText: function() {
+        return this.text;
+    },
+
+    getChatText: function() {
+        return this.chatroom;
+    },
+
+    setChatText: function(newtext) {
+        if ( this.chatroom == "" ) {
+            this.chatroom = this.id + ": " + newtext + "\n";
+        } else {
+            this.chatroom = this.getChatText() + this.id + ": " + newtext + "\n";
+        }
+        this.changed("getChatText");
+    },
+    
+    send: function() {
+        var parent = this;
+        new Ajax.Request(this.server + "foreground.html?action=updatemany&key." + this.id + "=" + this.text, { 
+            method: 'get',
+            
+            onSuccess: function(transport) {
+                console.log("something has been commited \n %s", transport.responseText);
+                parent.setChatText(parent.getIMText()); // add the current line immediately
+                parent.setIMText(""); // yes yes.. so its a little laggy to add the current line and delete it...
+            },
+            
+            onFailure: function(transport) {
+                console.log('problem with %s', transport);
+            },
+    
+            onException: function(e) {
+                console.log('exception  %s, %s', e, Object.toJSON(e));
+            }
+        });
+        
+        this.load();
+    }, 
+    
+    load: function() {
+        var parent = this;
+        new Ajax.Request(this.server + "background.html", { 
+            method: 'get',
+            
+            onSuccess: function(transport) {
+                console.log("loaded response: %s", transport.responseText);
+                if ( transport.responseText ) { // makes sure we dont start adding empty lines (hopefully)
+                    parent.setChatText(transport.responseText.trim());
+                }
+  /*              try {
+                    text = transport.responseText;
+                    var begin = text.indexOf("http://www.weatherforecastmap.com/images/weather/");
+                    var end = text.indexOf(".gif", begin);
+                    model.imageurl = text.substring(begin, end + ".gif".length);
+                    console.log('picked image url ' + model.imageurl);
+                    model.changed('getImageURL');
+                } catch (e) { console.log('got error %s', e); }*/
+            },
+            
+            onFailure: function(transport) {
+                console.log('problem with %s', transport);
+            },
+    
+            onException: function(e) {
+                console.log('exception  %s, %s', e, Object.toJSON(e));
+            }
+        });
+
     }
     
 });
