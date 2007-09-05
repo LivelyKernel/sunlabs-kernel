@@ -684,11 +684,12 @@ Object.extend(HandleMorph.prototype, {
                 this.initialRotation = this.targetMorph.getRotation();
             }
         }
+        if (this.targetMorph.getType() == "WindowMorph"){ this.initialScale = this.targetMorph.getScale(); }
         this.hideHelp();
     },
     
     onMouseUp: function(evt) {
-        if (!evt.shiftKey && !evt.altKey && !evt.cmdKey) {
+        if (!evt.shiftKey && !evt.altKey && !evt.cmdKey && this.targetMorph.getType() != "WindowMorph") {
             // last call for, eg, vertex deletion
             this.targetMorph.reshape(this.partName, this.bounds().center(), this, true); 
         }
@@ -736,7 +737,21 @@ Object.extend(HandleMorph.prototype, {
             if (evt.shiftKey) {
                 this.targetMorph.setBorderWidth(Math.max(0, Math.floor(d/3)/2), true);
             } else { 
-                this.targetMorph.reshape(this.partName, this.targetMorph.localize(evt.mousePoint), this, false);
+                console.log("TargetMorph: " + this.targetMorph.getType());
+                if (this.targetMorph.getType() == "WindowMorph"){
+                  //scale the whole window
+                  var ctr = this.targetMorph.owner().worldPoint(this.targetMorph.origin); //origin for rotation and scaling
+                  var v1 = p1.subPt(ctr); //vector from origin
+                  var v0 = p0.subPt(ctr); //vector from origin at mousedown
+                  var ratio = v1.r() / v0.r();
+                  ratio = Math.max(0.1,Math.min(10,ratio));
+                  // console.log('set scale to ' + this.initialScale + ' times ' +  ratio);
+                  this.targetMorph.setScale(this.initialScale*ratio); 
+                }else {
+                  this.targetMorph.reshape(this.partName, this.targetMorph.localize(evt.mousePoint), this, false);
+                }
+                
+                
             } 
         }
     },
