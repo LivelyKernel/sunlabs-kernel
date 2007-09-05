@@ -122,10 +122,13 @@ Object.extend(SimpleInspector.prototype, {
         panel.addMorph(m = TextPane(Rectangle(0,150,400,100), "Coming soon: doits in context and a menu button"));
         m.connectModel({model: this, doitContext: "contextForEval"});
 
+	var thisModel = this;
         panel.morphMenu = function(evt) { 
             var menu = Morph.prototype.morphMenu.call(this,evt);
             menu.addLine();
-            menu.addItem(['inspect selection', new SimpleInspector(panel.getModel().selectedItem()), "openIn", this.world()])
+	    // DI: thisModel used to be panel.getModel() and it failed.
+	    //     but should be a list pane menu item anyway
+            menu.addItem(['inspect selection', new SimpleInspector(thisModel.selectedItem()), "openIn", WorldMorph.current()])
             return menu; 
         }
 

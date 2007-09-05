@@ -2605,6 +2605,15 @@ Object.extend(Morph.prototype, {
         
         if (other.stepHandler != null) { 
             this.stepHandler = other.stepHandler.copyForOwner(this);
+	}
+
+        if (other.activeScripts != null) { 
+            for (var i=0; i<other.activeScripts.length; i++) {
+		var a = other.activeScripts[i];
+		// Copy all reflexive scripts (messages to self)
+		if (a.actor === other)
+			this.startStepping(a.stepTime/1000, a.scriptName, a.argIfAny);
+	    }
         } 
 
         this.layoutChanged();
@@ -3070,14 +3079,14 @@ Object.extend(Morph.prototype, {
 	this.stopStepping();
         if (this.stepHandler == null) this.stepHandler = new StepHandler(this,stepTime);
         if (stepTime != null) this.stepHandler.stepTime = stepTime;
-        this.world().startStepping(this); 
+        WorldMorph.current().startStepping(this); 
 	return; }
 
 	// New code schedules an action -- note this call is in seconds!
 	var action = { actor: this, scriptName: scriptName, argIfAny: argIfAny,
 			stepTime: Math.round(stepTime*1000), ticks: 0 };
 	this.addActiveScript(action);
-        this.world().startStepping(action); 
+        WorldMorph.current().startStepping(action); 
     },
     
     addActiveScript: function(action) {

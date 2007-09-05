@@ -2000,7 +2000,7 @@ Object.extend(WorldMorph.prototype, {
 
 	var action = morphOrAction;
 	// New code for stepping schedulableActions
-	this.stopStepping(action);  // maybe replacing arg or stepTime
+	this.stopStepping(action, true);  // maybe replacing arg or stepTime
 	this.scheduleAction(new Date().getTime(), action);
 	if (!this.mainLoop) {
 	    // kickstart the timer (note arbitrary delay)
@@ -2008,7 +2008,7 @@ Object.extend(WorldMorph.prototype, {
 	}
     },
     
-    stopStepping: function(morphOrAction) {
+    stopStepping: function(morphOrAction, fromStart) {
         if (morphOrAction == null || morphOrAction.scriptName == null) {
 	// Old code for ticking morphs
         var ix = this.stepList.indexOf(morphOrAction);
@@ -2017,6 +2017,8 @@ Object.extend(WorldMorph.prototype, {
 
 	var action = morphOrAction;
 	// New code for deleting actions from the scheduledActions list
+	// fromStart means it is just getting rid of a previous one if there,
+	// but not an error if not found
         var list = this.scheduledActions;  // shorthand
 	for (var i=0; i<list.length; i++) {
 	    var actn = list[i][1];
@@ -2025,7 +2027,8 @@ Object.extend(WorldMorph.prototype, {
 		return; 
 	    }
 	}
-	console.log('failed to stopStepping ' + action.scriptName);
+	// DI: This happens often, as when installing the first time
+	if (fromStart == null) console.log('failed to stopStepping ' + action.scriptName);
     },
     
     doOneCycle: function (world) {
