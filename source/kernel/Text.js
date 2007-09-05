@@ -11,7 +11,7 @@ Object.extend(TextWord, {
 
     become: function(node) {
         var elt = HostClass.becomeInstance(node, TextWord);
-        elt.font = FontInfo.forFamily(elt.getAttribute("font-family"), elt.getAttribute("font-size"));
+        elt.fontInfo = FontInfo.forFamily(elt.getAttribute("font-family"), elt.getAttribute("font-size"));
         // FIXME
         return elt;
     }
@@ -26,9 +26,9 @@ Object.extend(TextWord.prototype, {
         this.stopIndex = textString.length - 1;
         this.topLeft = topLeft;
         this.textContent = this.textString; //.substring(this.startIndex);
-        this.font = font;
-        this.setAttribute("font-family", font.getFamily()); // has to be individually set
-        this.setAttribute("font-size", font.getSize()); // has to be individually set
+	this.fontInfo = font;
+        //this.setAttribute("font-family", font.getFamily()); // has to be individually set
+        //this.setAttribute("font-size", font.getSize()); // has to be individually set
         this.setX(topLeft.x);
         this.setY(topLeft.y + font.getSize());
 	this.didLineBreak = false;
@@ -76,7 +76,7 @@ Object.extend(TextWord.prototype, {
         var result = this.getExtentOfChar(stringIndex);
 
         if (result)
-          return result;
+            return result;
         console.warn('TextWord.getBounds(%s) undefined, string "%s" extents %s', 
                      elementIndex, this.textContent, this.extentTableToString());
         return pt(0,0).asRectangle();
@@ -103,7 +103,7 @@ Object.extend(TextWord.prototype, {
     log: function(label) {
 	var lString = this.toString();
 	if (label != null)
-	  lString = label + ": " + lString;
+	    lString = label + ": " + lString;
 	console.log(lString);
     }
     
@@ -244,8 +244,8 @@ Object.extend(TextLine.prototype, {
 	this.chunks = chunkSkeleton;
 	return this;
     },
-
-
+    
+    
     // is the character 'c' what we consider to be whitespace? (private)
     isWhiteSpace: function(c) {
         return (c == ' ' || c == '\t' || c == '\r' || c == '\n');
@@ -383,23 +383,23 @@ Object.extend(TextLine.prototype, {
     // get the bounds of the character at stringIndex
     getBounds: function(stringIndex) {
 	for (var i = 0; i < this.chunks.length; i++) {
-	  var c = this.chunks[i];
-
-	  if (stringIndex >= c.start &&
-	      stringIndex < (c.start + c.length)) {
-	    // DI:  Following code finds the actual character bounds
-	    if (c.word && c.word.getBounds)
-		return c.word.getBounds(stringIndex);
-	    else {
-	      if (c.isSpaces()) {
-		  var virtualSpaceSize = c.bounds.width / c.length;
-		  var b = c.bounds.withWidth(virtualSpaceSize);
-		  b.x += virtualSpaceSize * (stringIndex - c.start);
-		  return b;
-	      } else
-	       return c.bounds;
+	    var c = this.chunks[i];
+	    
+	    if (stringIndex >= c.start &&
+		stringIndex < (c.start + c.length)) {
+		// DI:  Following code finds the actual character bounds
+		if (c.word && c.word.getBounds) {
+		    return c.word.getBounds(stringIndex);
+		} else {
+		    if (c.isSpaces()) {
+			var virtualSpaceSize = c.bounds.width / c.length;
+			var b = c.bounds.withWidth(virtualSpaceSize);
+			b.x += virtualSpaceSize * (stringIndex - c.start);
+			return b;
+		    } else
+			return c.bounds;
+		}
 	    }
-	  }
 	}
 	return null;
     },
@@ -407,32 +407,32 @@ Object.extend(TextLine.prototype, {
     // find the pointer into 'textString' for a given X coordinate in character metric space
     indexForX: function(rightX) {
 	for (var i = 0; i < this.chunks.length; i++) {
-	  var c = this.chunks[i];
-
-	  if (!c.wasComposed)
-	    continue;
-	  if (rightX >= c.bounds.x && rightX <= c.bounds.maxX()) {
-	    if (c.word == null) {
-	      var virtualSpaceSize = c.bounds.width / c.length;
-	      var spacesIn = Math.floor((rightX - c.bounds.x) / virtualSpaceSize);
-	      return c.start + spacesIn;
-	    } else {
-	      for (var i = c.start; i < (c.start + c.length); i++) {
-		var b = c.word.getBounds(i);
-		if (rightX >= b.x && rightX <= b.maxX())
-		  break;
-	      }
-	      return i;
+	    var c = this.chunks[i];
+	    
+	    if (!c.wasComposed)
+		continue;
+	    if (rightX >= c.bounds.x && rightX <= c.bounds.maxX()) {
+		if (c.word == null) {
+		    var virtualSpaceSize = c.bounds.width / c.length;
+		    var spacesIn = Math.floor((rightX - c.bounds.x) / virtualSpaceSize);
+		    return c.start + spacesIn;
+		} else {
+		    for (var i = c.start; i < (c.start + c.length); i++) {
+			var b = c.word.getBounds(i);
+			if (rightX >= b.x && rightX <= b.maxX())
+			    break;
+		    }
+		    return i;
+		}
+		return c.start; // failsafe
 	    }
-	    return c.start; // failsafe
-	  }
 	}
 	return 0; // should not get here unless rightX is out of bounds
     },
 
     // return a boolean if this line contains this pointer into 'textString'
     containsThisIndex: function(index) {
-      return index <= this.getStopIndex();
+	return index <= this.getStopIndex();
     },
 
     // forward this on to all of the words (do we need this? - kam)
@@ -530,7 +530,9 @@ Object.extend(TextBox, {
         var content = elt.recoverTextContent();
 
         var lineHeight = parseFloat(elt.getAttributeNS(Namespace.LIVELY, "line-height"));
-        elt.initialize(content, lineHeight, Color.black); // FIXME
+	var font = FontInfo.forFamily(elt.getFontFamily(), elt.getFontSize());
+
+        elt.initialize(content, lineHeight, Color.black, font); // FIXME
         return elt;
     }
 
@@ -539,14 +541,14 @@ Object.extend(TextBox, {
 Object.extend(TextBox.prototype, {
     eventHandler: { handleEvent: function(evt) { console.log('got event %s on %s', evt, evt.target); }},
 
-    initialize: function(textString, lineHeight, textColor) {
+    initialize: function(textString, lineHeight, textColor, font) {
         this.textString = textString;//: String
         this.lineHeight = lineHeight;//: float
         this.setAttributeNS(Namespace.LIVELY, "line-height", lineHeight); // serialization helper, FIXME?
         this.setAttributeNS(null, "kerning", 0);
         this.setTextColor(textColor);
-        
         this.setType("TextBox");
+	this.fontInfo = font;
 	/*
         for (var type in ['beforecopy', 'beforecut', 'beforepaste', 'cut', 'copy', 'paste']) {
             this.addEventListener('beforecopy', this.eventHandler, true);
@@ -577,7 +579,6 @@ Object.extend(TextBox.prototype, {
 		}
 	    }
         }
-        console.log('reassembled textString to %s', content);
         return content;
     },
 
@@ -591,9 +592,9 @@ Object.extend(TextBox.prototype, {
     },
     
     // compose the lines if necessary and then render them
-    renderText: function(topLeft, compositionWidth, font) {
+    renderText: function(topLeft, compositionWidth) {
         if (this.lines == null) 
-            this.lines = this.composeLines(topLeft, compositionWidth, font);
+            this.lines = this.composeLines(topLeft, compositionWidth, this.fontInfo);
         for (var i = 0; i < this.lines.length; i++)
 	    this.lines[i].render(this);
     },
@@ -738,15 +739,6 @@ Object.extend(TextMorph.prototype, {
         this.isSelecting = false; // true if last onmousedown was in character area (hit>0)
         this.acceptInput = true; // whether it accepts changes to text KP: change: interactive changes
         // note selection is transient
-    
-        if (this.textBox && this.textBox.lines) {
-            // FIXME hack!!!
-            this.font = FontInfo.forFamily(this.textBox.lines[0].getAttribute("font-family"), 
-					   this.textBox.lines[0].getAttribute("font-size"));
-            console.log('got font %s', font);
-        } else {
-            this.font = FontInfo.forFamily(this.fontFamily, this.fontSize);
-        }
     },
 
     initializePersistentState: function(initialBounds, shapeType) {
@@ -760,7 +752,8 @@ Object.extend(TextMorph.prototype, {
         this.selectionElement.setAttributeNS(null, "fill", this.selectionColor);
         //this.selectionElement.setAttributeNS(null, "fill", "url(#SelectionGradient)");
         this.selectionElement.setAttributeNS(null, "stroke-width", 0);
-
+        this.font = FontInfo.forFamily(this.fontFamily, this.fontSize);
+	
     },
     
     restoreFromElement: function(element, importer) /*:Boolean*/ {
@@ -773,12 +766,13 @@ Object.extend(TextMorph.prototype, {
             this.textBox = TextBox.become(element); // FIXME
             console.log('found textbox %s %s', this.textBox, this.textBox && this.textBox.textString);
             this.textString = this.textBox.textString;
+	    this.font = this.textBox.fontInfo;
             return true;
         case 'Selection':
             // that's ok, it's actually transient 
             // remove all chidren b/c they're really transient
             this.selectionElement = DisplayObjectList.become(element, type);
-            console.log('processing selection %s', element);
+            //console.log('processing selection %s', element);
             this.undrawSelection();
             return true;
         default:
@@ -878,10 +872,13 @@ Object.extend(TextMorph.prototype, {
         if (this.ensureTextString() == null) return null;
         
         if (this.textBox == null) {
-            this.textBox = TextBox(this.textString, this.lineHeight(), this.textColor);
+            this.textBox = TextBox(this.textString, this.lineHeight(), this.textColor, this.font);
             // this.textBox.setFontSize(this.fontSize);
             var topLeft = this.textTopLeft();
-            this.textBox.renderText(topLeft, this.compositionWidth(), this.font);
+	    this.textBox.setAttributeNS(null, "font-size", this.font.getSize());
+	    this.textBox.setAttributeNS(null, "font-family", this.font.getFamily());
+            this.textBox.renderText(topLeft, this.compositionWidth());
+
             this.addChildElement(this.textBox);
         }
         
@@ -1404,7 +1401,7 @@ Object.category(TextMorph.prototype, "accessing", function() {
     },
 
     setFontSize: function(newSize) {
-        this.font = FontInfo.forFamily(this.font.getFamily(), newSize);
+        this.font = FontInfo.forFamily(this.getFontFamily(), newSize);
         // this.textBox.element.setAttributeNS(null, "font-size", newSize);
         this.inset = pt((this.getFontSize()/3)+2,(this.getFontSize()/3));
         this.setTextString(this.textString); 

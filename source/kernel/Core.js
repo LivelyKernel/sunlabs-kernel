@@ -41,7 +41,7 @@ var console = window.parent.console;
 
 Namespace =  {
     SVG : Canvas.getAttribute("xmlns"),
-    LIVELY : Canvas.getAttribute("xmlns:lively"), // FIXME Safari XMLSerializer seems to do wierd things w/namespaces
+    LIVELY : null, //Canvas.getAttribute("xmlns:lively"), // FIXME Safari XMLSerializer seems to do wierd things w/namespaces
     XLINK : Canvas.getAttribute("xmlns:xlink"),
     DAV : Canvas.getAttribute("xmlns:D")
 };
@@ -1247,17 +1247,15 @@ DisplayObject = Class.create();
 Object.extend(DisplayObject.prototype, {
 
     setType: function(type)  {
-        //this.setAttributeNS(Namespace.LIVELY, "type", type);
-        this.setAttribute("type", type);
+        this.setAttributeNS(Namespace.LIVELY, "type", type);
         return this;
     },
 
     getType: function()  {
         try {
-            // return element.getAttributeNS(Namespace.LIVELY, "type");
-            return this.getAttribute("type");
+            return this.getAttributeNS(Namespace.LIVELY, "type");
         } catch (er) {
-            console.log('in getType this is %s', this);
+            console.log('in getType this is %s caller is %s', this, arguments.callee.caller);
             throw er;
         }
     },
@@ -2140,7 +2138,7 @@ Object.extend(Morph.prototype, {
             return true;
         }
 
-        var type = element.getAttribute('type');
+        var type = element.getAttributeNS(Namespace.LIVELY, 'type');
         
         switch (type) {
         case 'Submorphs':
@@ -3295,9 +3293,6 @@ Object.extend(Exporter.prototype, {
         return new XMLSerializer().serializeToString(this.rootMorph);
     },
 
-    serializeSimpleModel: function(model) {
-        return model &&  model.toMarkup(this);
-    }
     
 });
 
@@ -3396,7 +3391,7 @@ Object.extend(Morph.prototype, {
         var xml = exporter.serialize();
 	
 	var model = this.getModel();
-        var modelxml = exporter.serializeSimpleModel(model);
+        var modelxml = model.toMarkup();
 	
 	console.log('%s model %s', this, Object.keys(model).filter(function(k) { return !(model[k] instanceof Function) && k !='dependents' }).map(function(k) { return k + " = " + Object.inspect(model[k]); }));
 	
@@ -3407,7 +3402,7 @@ Object.extend(Morph.prototype, {
         var exporter = new Exporter(this);
         var xml = exporter.serialize();
         console.log('%s serialized to %s', this, xml);
-        var modelxml = exporter.serializeSimpleModel(this.getModel());
+        var modelxml = (this.getModel() || { toMarkup: function() { return null }}).toMarkup();
 
         const maxSize = 1500;
         // xml = '<svg xmlns="http://www.w3.org/2000/svg  xmlns:xlink="http://www.w3.org/1999/xlink> ' + xml + ' </svg>';
@@ -3581,6 +3576,10 @@ Object.extend(Model.prototype, {
         var hash = new Hash(this);
         delete hash.dependents;
         return "#<Model:%1>".format(Object.toJSON(hash));
+    },
+    
+    toMarkup: function(exporter) {
+	return null;
     }
 
 });
