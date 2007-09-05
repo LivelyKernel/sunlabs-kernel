@@ -323,8 +323,8 @@ Pen.hilbertFun = function(world) {
     var logoMenu = MenuMorph([]);
 
     for (var i=0; i<=5; i++) {
-	    logoMenu.addItem([i.toString(), logoMenu, "makeLogo", i]);
-	}
+        logoMenu.addItem([i.toString(), logoMenu, "makeLogo", i]);
+    }
 
     logoMenu.makeLogo = function(order) {
         if (this.morphs) for (var i=0; i<4; i++) this.morphs[i].remove();

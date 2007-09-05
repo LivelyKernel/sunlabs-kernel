@@ -180,27 +180,27 @@ Object.extend(ImageMorph.prototype, {
 
     restoreFromElement: function(element, importer) /*:Boolean*/ {
         if (TextMorph.superClass.restoreFromElement.call(this, element, importer)) return true;
-	var type = DisplayObject.prototype.getType.call(element);
-	switch (type) {
-	case 'Image':
-	    var image = element;
-	    if (image.namespaceURI != Namespace.SVG) {
-		// this brittle and annoying piece of code is a workaround around the likely brokenness
-		// of Safari's XMLSerializer's handling of namespaces
-		this.removeChild(image);
-		this.dim = pt(parseInt(image.getAttribute("width")),
-			      parseInt(image.getAttribute("height")));
-		var href = image.getAttributeNS(null /* "xlink"*/, "href");
-		this.loadURL(href);
-	    } else {
-		this.image = image;
-	    }
-	    return true;
-	default:
-	    return false;
-	}
-    },
 
+        var type = DisplayObject.prototype.getType.call(element);
+
+        switch (type) {
+        case 'Image':
+            var image = element;
+            if (image.namespaceURI != Namespace.SVG) {
+                // this brittle and annoying piece of code is a workaround around the likely brokenness
+                // of Safari's XMLSerializer's handling of namespaces
+                this.removeChild(image);
+                this.dim = pt(parseInt(image.getAttribute("width")), parseInt(image.getAttribute("height")));
+                var href = image.getAttributeNS(null /* "xlink"*/, "href");
+                this.loadURL(href);
+            } else {
+                this.image = image;
+            }
+            return true;
+        default:
+            return false;
+        }
+    },
 
     loadGraphics: function(localURL, scale) {
         if (this.image && this.image.tagName == 'image') {
@@ -209,15 +209,14 @@ Object.extend(ImageMorph.prototype, {
         }
 
         this.setFill(null);
-	var image = this.image = NodeFactory.create("use").withHref(localURL);
-	image.setType('Image');
+        var image = this.image = NodeFactory.create("use").withHref(localURL);
+        image.setType('Image');
         if (scale) {
             image.applyTransform(Transform.createSimilitude(pt(0, 0), 0, scale));
         }
         this.addChildElement(image);
 
     },
-
 
     loadURL: function(url) {
         if (this.image && this.image.tagName != 'image') {
@@ -227,11 +226,11 @@ Object.extend(ImageMorph.prototype, {
 
         if (!this.image) {
             var image = this.image = NodeFactory.create("image", { width: this.dim.x, height: this.dim.y});
-	    image.setType('Image');
+            image.setType('Image');
             image.disableBrowserDrag();
             this.addChildElement(image);
         }
-	
+
         this.image.withHref(url);
     },
 
@@ -404,7 +403,7 @@ Object.extend(TitleBarMorph.prototype, {
     handlesMouseDown: function(evt) {return false },  // hack for now
 
     acceptsDropping: function(morph) {
-	//console.log('accept drop from %s of %s, %s', this, morph, morph instanceof WindowControlMorph);
+        //console.log('accept drop from %s of %s, %s', this, morph, morph instanceof WindowControlMorph);
         return morph instanceof WindowControlMorph; // not used yet... how about text...
     },
 
@@ -909,8 +908,8 @@ Object.extend(SelectionMorph.prototype, {
         }
     },
 
-// TODO: there MUST be a better way to do this
-// there "might" be some performance issues with this :)
+    // TODO: there MUST be a better way to do this
+    // there "might" be some performance issues with this :)
     setRotation: function(theta) {
         for ( var i = 0; i < this.selectedMorphs.length; i++ ) {
             this.addMorph(this.selectedMorphs[i]);
@@ -1258,8 +1257,8 @@ Object.extend(MenuMorph.prototype, {
 
     keepOnlyItemsNamed: function(nameList) {
         var rejects = [];
-	this.items.each( function(item) { if(nameList.indexOf(item[0]) < 0) rejects.push(item[0])});
-	this.removeItemsNamed(rejects);
+        this.items.each( function(item) { if(nameList.indexOf(item[0]) < 0) rejects.push(item[0])});
+        this.removeItemsNamed(rejects);
     },
 
     openIn: function(world, location, remainOnScreen, captionIfAny) { 
@@ -1299,14 +1298,14 @@ Object.extend(MenuMorph.prototype, {
         if (!this.stayUp) this.remove(); 
 
         if (item) { // Now execute the menu item...
-	    if (item[1] instanceof Function) { // alternative style, items ['menu entry', function] pairs
-		item[1].call(this, evt);
-	    } else {
-		var func = item[1][item[2]];  // target[functionName]
-		if (func == null) console.log('Could not find function ' + item[2]);
-		// call as target.function(parameterOrNull,event,menuItem)
-		else func.call(item[1], item[3], evt, item); 
-	    }
+            if (item[1] instanceof Function) { // alternative style, items ['menu entry', function] pairs
+                item[1].call(this, evt);
+            } else {
+                var func = item[1][item[2]];  // target[functionName]
+                if (func == null) console.log('Could not find function ' + item[2]);
+                // call as target.function(parameterOrNull,event,menuItem)
+                else func.call(item[1], item[3], evt, item); 
+            }
         }
     }
 });
@@ -1763,20 +1762,10 @@ Object.extend(WorldMorph, {
 
         // This style is way better for debugging on smaller screens
         // It allows the user to see the console log through the world
-        w.shape.setFillOpacity(0.9);
+        // w.shape.setFillOpacity(0.9);
 
         return w;
     },
-
-    // NOT needed since main calls createEmptyWorld and samples have been moved to main.js
-    // Set up a world with morphs to copy
-    // FIXME: This is sample code and should be moved elsewhere!
-    /*createPrototypeWorld: function() {
-       
-        var w = this.createEmptyWorld();
-        
-        return w; 
-    },*/
 
     // Default styles for the style manager    
     defaultThemes: { // --Style architecture is under construction!--
@@ -1869,7 +1858,7 @@ Object.extend(WorldMorph.prototype, {
         this.stepList = [];  // an array of morphs to be ticked
         this.scheduledActions = [];  // an array of schedulableActions to be evaluated
         this.lastStepTime = (new Date()).getTime();
-	this.mainLoopFunc = this.doOneCycle.bind(this).logErrors('Main Loop');
+        this.mainLoopFunc = this.doOneCycle.bind(this).logErrors('Main Loop');
         this.mainLoop = window.setTimeout(this.mainLoopFunc, 30);
         this.worldId = ++WorldMorph.worldCount;
         return this;
@@ -1937,7 +1926,7 @@ Object.extend(WorldMorph.prototype, {
         menu.addItem(["new object...", this, 'addMorphs', evt]);
         menu.addItem(["choose display theme", this, 'chooseDisplayTheme']);
         menu.addItem([(Config.suppressBalloonHelp ? "enable balloon help" : "disable balloon help"),
-			this, "toggleBalloonHelp"]);
+                     this, "toggleBalloonHelp"]);
         menu.addItem(["restart system", this, 'restart']);
         return menu;
     },
@@ -1979,154 +1968,170 @@ Object.extend(WorldMorph.prototype, {
     moveBy: function(delta) { // don't try to move the world
     },
     
-//	*** The new truth about ticking scripts ***
-//	A morph may have any number of active scripts
-//	Each is activated by a call such as
-//	    this.startStepping(1/20, "rotateBy", 0.1);
-//	Note that stepTime is in seconds, but it is in milliseconds in all lower-level methods
-//	The arguments are: stepTime, scriptName, argIfAny
-//	This in turn will create a SchedulableAction of the form
-//	{ actor: aMorph, scriptName: "rotateBy", argIfAny: 0.1, stepTime: 50, ticks: 0 }
-//	and this action will be both added to an array, activeScripts in the morph,
-//	and it will be added to the world's scheduledActions list, which is an array of
-//	tuples of the form [msTimeToRun, action]
-//	The ticks field is used to tally ticks spent in each schedulableAction --
-//	It is incremented on every execution, and it is multiplied by 0.9 every second
-//	Thus giving a crude 10-second average of milliseconds spent in this script
-//	every 10 seconds.  The result is divided by 10 in the printouts.
+//  *** The new truth about ticking scripts ***
+//  A morph may have any number of active scripts
+//  Each is activated by a call such as
+//      this.startStepping(1/20, "rotateBy", 0.1);
+//  Note that stepTime is in seconds, but it is in milliseconds in all lower-level methods
+//  The arguments are: stepTime, scriptName, argIfAny
+//  This in turn will create a SchedulableAction of the form
+//  { actor: aMorph, scriptName: "rotateBy", argIfAny: 0.1, stepTime: 50, ticks: 0 }
+//  and this action will be both added to an array, activeScripts in the morph,
+//  and it will be added to the world's scheduledActions list, which is an array of
+//  tuples of the form [msTimeToRun, action]
+//  The ticks field is used to tally ticks spent in each schedulableAction --
+//  It is incremented on every execution, and it is multiplied by 0.9 every second
+//  Thus giving a crude 10-second average of milliseconds spent in this script
+//  every 10 seconds.  The result is divided by 10 in the printouts.
 //
-//	The message startSteppingScripts can be sent to morphs when they are placed in the world.
-//	It is intended that this may be overridden to start any required stepping.
-//	The message stopSteppingScripts will be sent when morphs are removed from the world.
-//	In this case the activeScripts array of the morph is used to determine exactly what
-//	scripts need to be unscheduled.  Note that startSteppingScripts is not sent
-//	automatically, whereas stopSteppingScripts is.  We know you won't forget to 
-//	turn your gadgets on, but we're more concerned to turn them off when you're done.
+//  The message startSteppingScripts can be sent to morphs when they are placed in the world.
+//  It is intended that this may be overridden to start any required stepping.
+//  The message stopSteppingScripts will be sent when morphs are removed from the world.
+//  In this case the activeScripts array of the morph is used to determine exactly what
+//  scripts need to be unscheduled.  Note that startSteppingScripts is not sent
+//  automatically, whereas stopSteppingScripts is.  We know you won't forget to 
+//  turn your gadgets on, but we're more concerned to turn them off when you're done.
 
     startStepping: function(morphOrAction) {
         if (morphOrAction.scriptName == null) {
-	// Old code for ticking morphs
-	var ix = this.stepList.indexOf(morphOrAction);
-        if (ix < 0) this.stepList.push(morphOrAction); 
-	if (!this.mainLoop) {
-	    // kickstart the timer (note arbitrary delay)
-	    this.mainLoop = window.setTimeout(this.mainLoopFunc, 60);
-	}
-	return; }
+            // Old code for ticking morphs
+            var ix = this.stepList.indexOf(morphOrAction);
+            if (ix < 0) this.stepList.push(morphOrAction); 
+            if (!this.mainLoop) {
+                // kickstart the timer (note arbitrary delay)
+                this.mainLoop = window.setTimeout(this.mainLoopFunc, 60);
+            }
+            return;
+        }
 
-	var action = morphOrAction;
-	// New code for stepping schedulableActions
-	this.stopStepping(action, true);  // maybe replacing arg or stepTime
-	this.scheduleAction(new Date().getTime(), action);
-	if (!this.mainLoop) {
-	    // kickstart the timer (note arbitrary delay)
-	    this.mainLoop = window.setTimeout(this.mainLoopFunc, 60);
-	}
+        var action = morphOrAction;
+
+        // New code for stepping schedulableActions
+        this.stopStepping(action, true);  // maybe replacing arg or stepTime
+        this.scheduleAction(new Date().getTime(), action);
+
+        if (!this.mainLoop) {
+            // kickstart the timer (note arbitrary delay)
+            this.mainLoop = window.setTimeout(this.mainLoopFunc, 60);
+        }
     },
     
     stopStepping: function(morphOrAction, fromStart) {
         if (morphOrAction == null || morphOrAction.scriptName == null) {
-	// Old code for ticking morphs
-        var ix = this.stepList.indexOf(morphOrAction);
-        if (ix >= 0) this.stepList.splice(ix, 1);
-	return; }
+            // Old code for ticking morphs
+            var ix = this.stepList.indexOf(morphOrAction);
+            if (ix >= 0) this.stepList.splice(ix, 1);
+            return;
+        }
 
-	var action = morphOrAction;
-	// New code for deleting actions from the scheduledActions list
-	// fromStart means it is just getting rid of a previous one if there,
-	// but not an error if not found
+        var action = morphOrAction;
+
+        // New code for deleting actions from the scheduledActions list
+        // fromStart means it is just getting rid of a previous one if there,
+        // but not an error if not found
         var list = this.scheduledActions;  // shorthand
-	for (var i=0; i<list.length; i++) {
-	    var actn = list[i][1];
-	    if (actn.actor === action.actor && actn.scriptName == action.scriptName) {
-		list.splice(i, 1);
-		return; 
-	    }
-	}
-	// DI: This happens often, as when installing the first time
-	if (fromStart == null) console.log('failed to stopStepping ' + action.scriptName);
+        for (var i=0; i<list.length; i++) {
+            var actn = list[i][1];
+            if (actn.actor === action.actor && actn.scriptName == action.scriptName) {
+                list.splice(i, 1);
+                return; 
+            }
+        }
+
+        // DI: This happens often, as when installing the first time
+        if (fromStart == null) console.log('failed to stopStepping ' + action.scriptName);
     },
     
     doOneCycle: function (world) {
         // Process scheduled scripts
-	var msTimer = new Date();
-	var msTime = msTimer.getTime();
+        var msTimer = new Date();
+        var msTime = msTimer.getTime();
 
         // Old ticking scripts...
-	var msTime = new Date().getTime();
+        var msTime = new Date().getTime();
         var timeOfNextStep = Infinity;
         for (var i = 0; i < this.stepList.length; i++) {
             var time = this.stepList[i].tick(msTime);
-	    if (time > 0) 
-		timeOfNextStep = Math.min(time, timeOfNextStep);
+            if (time > 0) { 
+                timeOfNextStep = Math.min(time, timeOfNextStep);
+            }
         }
 
         // New scheduled scripts...
-	// Run through the scheduledActions queue, executing those whose time has come
-	// and rescheduling those that have a repeatRate
-	// Note that actions with error will not get rescheduled
-	// (and, unless we take the time to catch here, will cause all later 
-	// ones in the queue to miss this tick.  Better less overhead, I say
-	// DI: **NOTE** this needs to be reviewed for msClock rollover
-	// -- also note we need more time info for multi-day alarm range
-		// When we do this, I suggest that actions carry a date and msTime
-		// and until their day is come, they carry a msTime > a day
-		// That way they won't interfere with daily scheduling, but they can
-		// still be dealt with on world changes, day changes, save and load.
+        // Run through the scheduledActions queue, executing those whose time has come
+        // and rescheduling those that have a repeatRate
+        // Note that actions with error will not get rescheduled
+        // (and, unless we take the time to catch here, will cause all later 
+        // ones in the queue to miss this tick.  Better less overhead, I say
+        // DI: **NOTE** this needs to be reviewed for msClock rollover
+        // -- also note we need more time info for multi-day alarm range
+        // When we do this, I suggest that actions carry a date and msTime
+        // and until their day is come, they carry a msTime > a day
+        // That way they won't interfere with daily scheduling, but they can
+        // still be dealt with on world changes, day changes, save and load.
         var list = this.scheduledActions;  // shorthand
-	var timeStarted = msTime;  // for tallying script overheads
-	while (list.length>0 && list[list.length-1][0] <= msTime) {
+        var timeStarted = msTime;  // for tallying script overheads
+        while (list.length>0 && list[list.length-1][0] <= msTime) {
             var schedNode = list.pop();  // [time, action] -- now removed
-	    var action = schedNode[1];
-	    action.actor[action.scriptName].call(action.actor, action.argIfAny);
-	    // Note: if error in script above, it won't get rescheduled below
-	    if (action.stepTime > 0) {
-		var nextTime = msTime + action.stepTime;
-		this.scheduleAction(nextTime, action)
-		timeOfNextStep = Math.min(nextTime, timeOfNextStep);
-		}
-	    var timeNow = msTimer.getTime();
-	    var ticks = timeNow - timeStarted;
-	    if (ticks > 0) action.ticks += ticks;  // tally time spent in that script
-	    timeStarted = timeNow;
-	}
-	// Each second, run through the tick tallies and mult by 0.9 to 10-sec "average"
-	if (!this.secondTick) this.secondTick = 0;
-	var secondsNow = Math.floor(msTime / 1000);
-	var tallies = {};
-	if (this.secondTick != secondsNow) {
-	    this.secondTick = secondsNow;
-	    for (var i=0; i<list.length; i++) {
-		var action = list[i][1];
-		tallies[action.scriptName] = action.ticks;
-		action.ticks *= 0.9 // 10-sec decaying moving window
-	    }
-	    if (Config.showSchedulerStats && secondsNow % 10 == 0) {
-		console.log('Old Scheduler length = ' + this.stepList.length);
-		console.log('New Scheduler length = ' + this.scheduledActions.length);
-		console.log('Script timings...');  // approx ms per second per script
-		for (var p in tallies) console.log(p + ': ' + (tallies[p]/10).toString());
-	    }
-	}
+            var action = schedNode[1];
+            action.actor[action.scriptName].call(action.actor, action.argIfAny);
+            // Note: if error in script above, it won't get rescheduled below
+
+            if (action.stepTime > 0) {
+                var nextTime = msTime + action.stepTime;
+                this.scheduleAction(nextTime, action)
+                timeOfNextStep = Math.min(nextTime, timeOfNextStep);
+            }
+
+            var timeNow = msTimer.getTime();
+            var ticks = timeNow - timeStarted;
+            if (ticks > 0) action.ticks += ticks;  // tally time spent in that script
+            timeStarted = timeNow;
+        }
+
+        // Each second, run through the tick tallies and mult by 0.9 to 10-sec "average"
+        if (!this.secondTick) this.secondTick = 0;
+
+        var secondsNow = Math.floor(msTime / 1000);
+        var tallies = {};
+
+        if (this.secondTick != secondsNow) {
+            this.secondTick = secondsNow;
+
+            for (var i=0; i<list.length; i++) {
+                var action = list[i][1];
+                tallies[action.scriptName] = action.ticks;
+                action.ticks *= 0.9 // 10-sec decaying moving window
+            }
+
+            if (Config.showSchedulerStats && secondsNow % 10 == 0) {
+                console.log('Old Scheduler length = ' + this.stepList.length);
+                console.log('New Scheduler length = ' + this.scheduledActions.length);
+                console.log('Script timings...');  // approx ms per second per script
+                for (var p in tallies) console.log(p + ': ' + (tallies[p]/10).toString());
+            }
+        }
+
         this.lastStepTime = msTime;
-	if (timeOfNextStep == Infinity) { // didn't find anything to cycle through
-	    this.mainLoop = null; 
-	} else {
+
+        if (timeOfNextStep == Infinity) { // didn't find anything to cycle through
+            this.mainLoop = null; 
+        } else {
             this.mainLoop = window.setTimeout(this.mainLoopFunc, timeOfNextStep - msTime);
-	}
+        }
     },
 
     scheduleAction: function(msTime, action) { 
-	// Insert a SchedulableAction into the scheduledActions queue
+        // Insert a SchedulableAction into the scheduledActions queue
         var list = this.scheduledActions;  // shorthand
-	for (var i=list.length-1; i>=0; i--) {
-	    var schedNode = list[i];
-	    if (schedNode[0] > msTime) {
-		list.splice(i+1, 0, [msTime, action]);
-		return; 
-	    }
-	}
-	list.splice(0, 0, [msTime, action]);
+        for (var i=list.length-1; i>=0; i--) {
+            var schedNode = list[i];
+            if (schedNode[0] > msTime) {
+                list.splice(i+1, 0, [msTime, action]);
+                return; 
+            }
+        }
+        list.splice(0, 0, [msTime, action]);
     },
 
     onEnter: function() {},
@@ -2141,7 +2146,7 @@ Object.extend(WorldMorph.prototype, {
     
     addMorphs: function(evt) {
         console.log("mouse point == %s", evt.mousePoint);
-	var world = this.world();
+        var world = this.world();
         var items = [
             ["New subworld (LinkMorph)", function(evt) { world.addMorph(LinkMorph(null, evt.mousePoint));}],
             ["Rectangle", function(evt) { world.addMorph(Morph(evt.mousePoint.extent(pt(50, 30)), "rect"));}],
@@ -2150,7 +2155,6 @@ Object.extend(WorldMorph.prototype, {
             ["Image Morph", function(evt) { world.addMorph(ImageMorph(evt.mousePoint.extent(pt(100, 45)), "http://logos.sun.com/images/SunSample.gif"))}],
             ["Clock Morph", function(evt) { world.addMorph(ClockMorph(evt.mousePoint, 50));}],
             ["Class Browser", function(evt) { world.addMorph(new SimpleInspector(this));}],
-            //new SimpleInspector(this), "openIn", this.world()],
             ["Doodle Morph", function(evt) { world.addMorph(WindowMorph(DoodleMorph(evt.mousePoint.extent(pt(300, 300))), 'Doodle Morph'))}],
         ];
         MenuMorph(items).openIn(this.world(), evt.mousePoint);
@@ -2320,11 +2324,10 @@ Object.extend(HandMorph.prototype, {
             }
 
             if (this.mouseFocus==null && this.hasSubmorphs()) { // generate mouseOver events when laden
-           	var receiver = this.owner().morphToGrabOrReceive(evt, null);
-		if (receiver != null) receiver.onMouseOver(evt);
-	    }
-	    else {
-		(this.mouseFocus || this.owner()).mouseEvent(evt, this.mouseFocus != null);
+                var receiver = this.owner().morphToGrabOrReceive(evt, null);
+                if (receiver != null) receiver.onMouseOver(evt);
+            } else {
+                (this.mouseFocus || this.owner()).mouseEvent(evt, this.mouseFocus != null);
             }
         
             this.lastMouseEvent = evt;
@@ -2359,8 +2362,9 @@ Object.extend(HandMorph.prototype, {
                 } else { 
                     console.log('dropping %s on %s', m, receiver);
             
-                    while(this.hasSubmorphs()) // drop in same z-order as in hand
-			receiver.addMorph(this.submorphs.firstChild);
+                    while (this.hasSubmorphs()) { // drop in same z-order as in hand
+                        receiver.addMorph(this.submorphs.firstChild);
+                    }
             
                    //DI: May need to be updated for multiple drop above...
                    //println('changing ' + m);
@@ -2383,65 +2387,59 @@ Object.extend(HandMorph.prototype, {
     },
 
     moveTopMorph: function(evt) {
-	switch (evt.sanitizedKeyCode()) {
-        case Event.KEY_LEFT: {
-	    this.topSubmorph().moveBy(pt(-10,0));
-	    evt.stop();
-	    return true;
-        } 
-        case Event.KEY_RIGHT: {
-	    // forget the existing selection
-	    this.topSubmorph().moveBy(pt(10, 0));
-	    evt.stop();
-	    return true;
+        switch (evt.sanitizedKeyCode()) {
+        case Event.KEY_LEFT:
+            this.topSubmorph().moveBy(pt(-10,0));
+            evt.stop();
+            return true;
+        case Event.KEY_RIGHT:
+            // forget the existing selection
+            this.topSubmorph().moveBy(pt(10, 0));
+            evt.stop();
+            return true;
+        case Event.KEY_UP:
+            this.topSubmorph().moveBy(pt(0, -10));
+            evt.stop();
+            return true;
+        case Event.KEY_DOWN:
+            this.topSubmorph().moveBy(pt(0, 10));
+            evt.stop();
+            return true;
         }
-        case Event.KEY_UP: {
-	    this.topSubmorph().moveBy(pt(0, -10));
-	    evt.stop();
-	    return true;
-	    
-	}
-        case Event.KEY_DOWN: {
-	    this.topSubmorph().moveBy(pt(0, 10));
-	    evt.stop();
-	    return true;
-        }
-	}
-	return false;
+        return false;
     },
-	
+
     transformTopMorph: function(evt) {
-	var m = this.topSubmorph();
-	switch (String.fromCharCode(evt.charCode)) {
-	case '>':
-	    m.setScale(m.getScale()*1.1);
-	    evt.stop();
-	    return true;
-	case '<':
-	    m.setScale(m.getScale()/1.1);
-	    evt.stop();
-	    return true;
-	case ']':
-	    m.setRotation(m.getRotation() + 2*Math.PI/16);
-	    evt.stop();
-	    return true;
-	case '[':
-	    m.setRotation(m.getRotation() - 2*Math.PI/16);
-	    evt.stop();
-	    return true;
-	}
-	return false;
+        var m = this.topSubmorph();
+        switch (String.fromCharCode(evt.charCode)) {
+        case '>':
+            m.setScale(m.getScale()*1.1);
+            evt.stop();
+            return true;
+        case '<':
+            m.setScale(m.getScale()/1.1);
+            evt.stop();
+            return true;
+        case ']':
+            m.setRotation(m.getRotation() + 2*Math.PI/16);
+            evt.stop();
+            return true;
+        case '[':
+            m.setRotation(m.getRotation() - 2*Math.PI/16);
+            evt.stop();
+            return true;
+        }
+        return false;
     },
 
     handleKeyboardEvent: function(evt) { 
         evt.hand = this; // KP: just to be sure
-	if (this.hasSubmorphs())  {
-	    if (evt.type == 'keydown' && this.moveTopMorph(evt))
-		return;
-	    else if (evt.type == 'keypress' && this.transformTopMorph(evt)) 
-		return;
-	}
-	// manual bubbling up b/c the event won't bubble by itself    
+        if (this.hasSubmorphs())  {
+            if (evt.type == 'keydown' && this.moveTopMorph(evt)) return;
+            else if (evt.type == 'keypress' && this.transformTopMorph(evt)) return;
+        }
+
+        // manual bubbling up b/c the event won't bubble by itself    
         for (var responder = this.keyboardFocus; responder != null; responder = responder.owner()) {
             if (responder.takesKeyboardFocus()) {
                 var handler = responder["on" + evt.capitalizedType()];
@@ -2451,13 +2449,13 @@ Object.extend(HandMorph.prototype, {
             }
         } 
     },
-	
+
     grabMorph: function(grabbedMorph, evt) { 
         if (evt.shiftKey && Config.shiftDragForDup && !(grabbedMorph instanceof LinkMorph)) {
             this.mode = "shiftDragForDup";
             this.dragMorph = grabbedMorph; 
             this.setMouseFocus(null);
-	    return;
+            return;
         }
         
         if (evt.altKey) {
@@ -2556,7 +2554,6 @@ Object.extend(LinkMorph.prototype, {
         // Balloon help support
         MouseOverHandler.observe(this);
 
-
         return this;
     },
     
@@ -2567,12 +2564,13 @@ Object.extend(LinkMorph.prototype, {
 
     enterMyWorld: function(evt) { // needs vars for oldWorld, newWorld
         carriedMorphs = [];
-	while (evt.hand.hasSubmorphs()) {
-	    var m = evt.hand.topSubmorph();
-	    carriedMorphs.splice(0, 0, m);
-	    m.remove();
-	}
-	this.hideHelp();
+        while (evt.hand.hasSubmorphs()) {
+            var m = evt.hand.topSubmorph();
+            carriedMorphs.splice(0, 0, m);
+            m.remove();
+        }
+
+        this.hideHelp();
         this.myWorld.changed();
         WorldMorph.current().onExit();    
 
@@ -2583,31 +2581,32 @@ Object.extend(LinkMorph.prototype, {
         
         var canvas = WorldMorph.current().canvas();
         var oldWorld = WorldMorph.current();
-	oldWorld.remove();
+        oldWorld.remove();
         
         console.log('left world %s', oldWorld);
         // Canvas.appendChild(this.myWorld);
     
         // display world first, then add hand, order is important!
-	var newWorld = this.myWorld;
+        var newWorld = this.myWorld;
         WorldMorph.setCurrent(newWorld);
-	
+
         newWorld.displayWorldOn(canvas); 
 
         newWorld.onEnter(); 
-	carriedMorphs.each(function(m) { newWorld.firstHand().addMorph(m) });
-	if (Config.showThumbnail) {
-	    const scale = 0.1;
-	    if (newWorld.thumbnail) {
-		newWorld.thumbnail.remove();
-	    }
-	    newWorld.thumbnail = Morph(Rectangle(0, 0, canvas.bounds().width*scale, canvas.bounds().height*scale), "rect");
-	    newWorld.addMorph(newWorld.thumbnail);
-	    newWorld.thumbnail.setScale(scale);
-	    newWorld.thumbnail.addMorph(oldWorld);
-	}
+        carriedMorphs.each(function(m) { newWorld.firstHand().addMorph(m) });
 
-	newWorld.firstHand().emergingFromWormHole = true; // prevent re-entering
+        if (Config.showThumbnail) {
+            const scale = 0.1;
+            if (newWorld.thumbnail) {
+                newWorld.thumbnail.remove();
+            }
+            newWorld.thumbnail = Morph(Rectangle(0, 0, canvas.bounds().width*scale, canvas.bounds().height*scale), "rect");
+            newWorld.addMorph(newWorld.thumbnail);
+            newWorld.thumbnail.setScale(scale);
+            newWorld.thumbnail.addMorph(oldWorld);
+        }
+
+        newWorld.firstHand().emergingFromWormHole = true; // prevent re-entering
     },
 
     checkForControlPointNear: function(evt) {
@@ -2615,19 +2614,18 @@ Object.extend(LinkMorph.prototype, {
     },
 
     onMouseOver: function(evt) {
-	// Note this event does not have hand bound except if laden!
+        // Note this event does not have hand bound except if laden!
         if (evt.hand && evt.hand.hasSubmorphs()) {
-	    if(evt.hand.emergingFromWormHole) evt.hand.setMouseFocus(this);
-	    else this.enterMyWorld(evt);
-	}
-	else if (this.helpText) this.showHelp(evt);
+            if (evt.hand.emergingFromWormHole) evt.hand.setMouseFocus(this);
+            else this.enterMyWorld(evt);
+        } else if (this.helpText) this.showHelp(evt);
     },
     
     onMouseMove: function(evt) {
-	// Wait until hand leaves a linkMorph before enabling reentry
-	if (this.containsWorldPoint(evt.mousePoint)) return;
-	evt.hand.setMouseFocus(null);
-	evt.hand.emergingFromWormHole = false;
+        // Wait until hand leaves a linkMorph before enabling reentry
+        if (this.containsWorldPoint(evt.mousePoint)) return;
+        evt.hand.setMouseFocus(null);
+        evt.hand.emergingFromWormHole = false;
     },
     
     onMouseOut: function(evt) {
@@ -2650,7 +2648,7 @@ Object.extend(LinkMorph.prototype, {
         this.help.setFill(Color.primary.yellow.lighter(3));
         this.help.shape.setFillOpacity(.8);
         this.help.openForDragAndDrop = false; // so it wont interfere with mouseovers
-	this.world().addMorph(this.help);
+        this.world().addMorph(this.help);
     },
     
     hideHelp: function() {
