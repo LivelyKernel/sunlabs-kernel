@@ -102,7 +102,7 @@ function populateWorldWithExamples(world, otherWorld, server) {
     }
 
     var showTester = true;
-    if (showTester) new WidgetTester().openIn(world, pt(460, 20));
+    if (showTester) new WidgetTester().openIn(world, pt(460, 10));
 
     var showBrowser = !Config.skipMostExamples || Config.browserAnyway;
     if (showBrowser) new SimpleBrowser().openIn(world, pt(20,20));
@@ -119,7 +119,7 @@ function populateWorldWithExamples(world, otherWorld, server) {
     // TODO list morph
     var showTODO = !Config.skipMostExamples;
     if (showTODO) {
-        var todoMorph = TextMorph(Rectangle(440, 260, 250,20),
+        var todoMorph = TextMorph(Rectangle(440, 240, 250, 20),
                         "TODO (LARGE):\n" + 
                         "- Object scripting/timer management\n" +
                         "- Web page generation support\n" +
@@ -128,17 +128,19 @@ function populateWorldWithExamples(world, otherWorld, server) {
                         "- Clean up system menus\n" +
                         "- Clean up demo world(s)\n" +
                         "- Use common location for resources\n" +
+                        "- DnD and Drill features still missing\n" +
                         "MAJOR BUGS:\n" + 
                         "- Coordinate transformations are broken\n" +
                         "- Shortcut keys don't work on Windows!\n" +
                         "- 'Same origin' networking policy violated\n" +
                         "- It is still too easy to rip things apart\n" +
                         "MINOR BUGS:\n" + 
+                        "- Window duplication/removal do not work\n" +
                         "- Selection tray creation/removal has bugs\n" +
                         "- Not all 'new object...' menu items work\n"
                         );
         todoMorph.shape.roundEdgesBy(10);
-        todoMorph.shape.setFillOpacity(.7);
+        todoMorph.shape.setFillOpacity(0.6);
         world.addMorph(todoMorph);
     }
 
