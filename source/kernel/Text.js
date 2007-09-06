@@ -1321,19 +1321,19 @@ Object.extend(TextMorph.prototype, {
         }
     
         case "x": {
-            this.clipboardString = this.selectionString(); 
+            TextMorph.clipboardString = this.selectionString(); 
             this.replaceSelectionWith("");
             return; 
         }
         
         case "c": {
-            this.clipboardString = this.selectionString(); 
+            TextMorph.clipboardString = this.selectionString(); 
             return; 
         }
         
         case "v": {
-            if (this.clipboardString)
-                this.replaceSelectionWith(this.clipboardString); 
+            if (TextMorph.clipboardString)
+                this.replaceSelectionWith(TextMorph.clipboardString); 
             return; 
         }
     

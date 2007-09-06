@@ -2537,7 +2537,6 @@ Object.extend(Morph.prototype, {
         if (!this.owner()) return null;  // already removed
 
         this.stopStepping();
-        this.stopSteppingScripts();
         this.owner().removeMorph(this);
 
         return this;
@@ -3123,7 +3122,8 @@ Object.extend(Morph.prototype, {
     
     stopStepping: function() {
         if (this.world()) {
-            this.world().stopStepping(this); 
+            this.world().stopStepping(this);
+	this.stopSteppingScripts();
         } // else: can happen if removing a morph whose parent is not in the world
     },
 
