@@ -762,7 +762,6 @@ Object.extend(HandleMorph.prototype, {
             if (evt.shiftKey) {
                 this.targetMorph.setBorderWidth(Math.max(0, Math.floor(d/3)/2), true);
             } else { 
-                console.log("TargetMorph: " + this.targetMorph.getType());
                 if (this.targetMorph.getType() == "WindowMorph"){
                   //scale the whole window
                   var ctr = this.targetMorph.owner().worldPoint(this.targetMorph.origin).addPt(this.targetMorph.shape.bounds().center()); //origin for rotation and scaling
