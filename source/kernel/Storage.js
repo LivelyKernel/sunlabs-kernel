@@ -89,7 +89,7 @@ Object.extend(WebStore.prototype, {
             onSuccess: function(transport) {
                 try {
                     console.log('propfind received %s', 
-                    NetRequest.documentToString(transport.responseXML) || transport.responseText);
+				NetRequest.documentToString(transport.responseXML) || transport.responseText);
     
                     var result = transport.responseXML.documentElement;
     
