@@ -2100,8 +2100,10 @@ Object.extend(WorldMorph.prototype, {
         while (list.length>0 && list[list.length-1][0] <= msTime) {
             var schedNode = list.pop();  // [time, action] -- now removed
             var action = schedNode[1];
-            action.actor[action.scriptName].call(action.actor, action.argIfAny);
-            // Note: if error in script above, it won't get rescheduled below
+	    // function feature not yet working
+	    var func = (action.scriptName instanceof Function) ? action.scriptName : action.actor[action.scriptName];
+	    func.call(action.actor, action.argIfAny);
+	    // Note: if error in script above, it won't get rescheduled below (this is good)
 
             if (action.stepTime > 0) {
                 var nextTime = msTime + action.stepTime;
