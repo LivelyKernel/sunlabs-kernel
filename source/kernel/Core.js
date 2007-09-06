@@ -2537,6 +2537,7 @@ Object.extend(Morph.prototype, {
         if (!this.owner()) return null;  // already removed
 
         this.stopStepping();
+	this.stopSteppingScripts();
         this.owner().removeMorph(this);
 
         return this;
@@ -3109,6 +3110,7 @@ Object.extend(Morph.prototype, {
         // Every morph carries a list of currently active actions (alarms and repetitive scripts)
         if (!this.activeScripts) this.activeScripts = [action];
         else this.activeScripts.push(action);
+console.log('added script ' + action.scriptName);
 	var actionCode = document.createElementNS(Namespace.LIVELY, "action");
 	actionCode.appendChild(document.createCDATASection(Object.toJSON(action)));
 	this.addChildElement(actionCode);
@@ -3123,7 +3125,6 @@ Object.extend(Morph.prototype, {
     stopStepping: function() {
         if (this.world()) {
             this.world().stopStepping(this);
-	this.stopSteppingScripts();
         } // else: can happen if removing a morph whose parent is not in the world
     },
 
