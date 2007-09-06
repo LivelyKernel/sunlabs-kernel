@@ -2023,10 +2023,7 @@ Object.extend(WorldMorph.prototype, {
             // Old code for ticking morphs
             var ix = this.stepList.indexOf(morphOrAction);
             if (ix < 0) this.stepList.push(morphOrAction); 
-            if (!this.mainLoop) {
-                // kickstart the timer (note arbitrary delay)
-                this.mainLoop = window.setTimeout(this.mainLoopFunc, 60);
-            }
+            if (!this.mainLoop) this.kickstartMainLoop();
             return;
         }
 
@@ -2035,11 +2032,6 @@ Object.extend(WorldMorph.prototype, {
         // New code for stepping schedulableActions
         this.stopStepping(action, true);  // maybe replacing arg or stepTime
         this.scheduleAction(new Date().getTime(), action);
-
-        if (!this.mainLoop) {
-            // kickstart the timer (note arbitrary delay)
-            this.mainLoop = window.setTimeout(this.mainLoopFunc, 60);
-        }
     },
     
     stopStepping: function(morphOrAction, fromStart) {
@@ -2058,14 +2050,15 @@ Object.extend(WorldMorph.prototype, {
         var list = this.scheduledActions;  // shorthand
         for (var i=0; i<list.length; i++) {
             var actn = list[i][1];
-            if (actn.actor === action.actor && actn.scriptName == action.scriptName) {
+            if (actn === action) {
                 list.splice(i, 1);
                 return; 
             }
         }
 
-        // DI: This happens often, as when installing the first time
-        if (fromStart == null) console.log('failed to stopStepping ' + action.scriptName);
+        // Never found that action to remove.  Note this is not an error if called
+	// from startStepping just to get rid of previous version
+        if (!fromStart) console.log('failed to stopStepping ' + action.scriptName);
     },
     
     doOneCycle: function (world) {
@@ -2100,15 +2093,13 @@ Object.extend(WorldMorph.prototype, {
         while (list.length>0 && list[list.length-1][0] <= msTime) {
             var schedNode = list.pop();  // [time, action] -- now removed
             var action = schedNode[1];
-	    // function feature not yet working
-	    var func = (action.scriptName instanceof Function) ? action.scriptName : action.actor[action.scriptName];
+	    var func = action.actor[action.scriptName];
 	    func.call(action.actor, action.argIfAny);
 	    // Note: if error in script above, it won't get rescheduled below (this is good)
 
             if (action.stepTime > 0) {
                 var nextTime = msTime + action.stepTime;
                 this.scheduleAction(nextTime, action)
-                timeOfNextStep = Math.min(nextTime, timeOfNextStep);
             }
 
             var timeNow = msTimer.getTime();
@@ -2116,22 +2107,19 @@ Object.extend(WorldMorph.prototype, {
             if (ticks > 0) action.ticks += ticks;  // tally time spent in that script
             timeStarted = timeNow;
         }
+	if (list.length > 0) timeOfNextStep = Math.min(list[list.length-1][0], timeOfNextStep);
 
         // Each second, run through the tick tallies and mult by 0.9 to 10-sec "average"
         if (!this.secondTick) this.secondTick = 0;
-
         var secondsNow = Math.floor(msTime / 1000);
-        var tallies = {};
-
         if (this.secondTick != secondsNow) {
             this.secondTick = secondsNow;
-
+            var tallies = {};
             for (var i=0; i<list.length; i++) {
                 var action = list[i][1];
                 tallies[action.scriptName] = action.ticks;
                 action.ticks *= 0.9 // 10-sec decaying moving window
             }
-
             if (Config.showSchedulerStats && secondsNow % 10 == 0) {
                 console.log('Old Scheduler length = ' + this.stepList.length);
                 console.log('New Scheduler length = ' + this.scheduledActions.length);
@@ -2139,14 +2127,21 @@ Object.extend(WorldMorph.prototype, {
                 for (var p in tallies) console.log(p + ': ' + (tallies[p]/10).toString());
             }
         }
-
         this.lastStepTime = msTime;
+        this.setNextStepTime(timeOfNextStep);
+    },
 
+    setNextStepTime: function(timeOfNextStep) {
         if (timeOfNextStep == Infinity) { // didn't find anything to cycle through
             this.mainLoop = null; 
         } else {
-            this.mainLoop = window.setTimeout(this.mainLoopFunc, timeOfNextStep - msTime);
+            this.mainLoop = window.setTimeout(this.mainLoopFunc, timeOfNextStep - this.lastStepTime);
         }
+    },
+
+    kickstartMainLoop: function() {
+	// kickstart the timer (note arbitrary delay)
+	this.mainLoop = window.setTimeout(this.mainLoopFunc, 10);
     },
 
     scheduleAction: function(msTime, action) { 
@@ -2156,10 +2151,12 @@ Object.extend(WorldMorph.prototype, {
             var schedNode = list[i];
             if (schedNode[0] > msTime) {
                 list.splice(i+1, 0, [msTime, action]);
+		this.kickstartMainLoop();
                 return; 
             }
         }
         list.splice(0, 0, [msTime, action]);
+	this.kickstartMainLoop();
     },
 
     onEnter: function() {},

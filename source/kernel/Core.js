@@ -2743,6 +2743,10 @@ Object.category(Morph.prototype, 'transforms', function() { return {
         this.setScale(this.getScale()*delta);
     },
     
+    throb: function() {
+        this.scaleBy(this.getScale() <= 1 ? 2 : 0.9);
+    },
+    
     align: function(p1, p2) {
         this.translateBy(p2.subPt(p1)); 
     },
