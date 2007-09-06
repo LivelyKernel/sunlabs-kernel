@@ -232,7 +232,7 @@ Function.prototype.localFunctionNames = function(exclude) {
     try {
         var superNames = (sup == null) ? [] : sup.functionNames();
     } catch (e) {
-        console.log('this.superClass.constructor is ' + this.superClass.constructor);
+	var superNames = [];
     }
     
     var localNames = [];
@@ -2455,6 +2455,11 @@ Object.extend(Morph.prototype, {
         morph.setAttribute("property", name); // FIXME Lively NS
         this[name] = morph;
         return this.addMorph(morph);
+    },
+
+    evalInThis: function(str) {
+	// eval the string argument in this context (ie, 'this' = this morph)
+        return eval(str);
     }
 
 });
@@ -2732,6 +2737,10 @@ Object.category(Morph.prototype, 'transforms', function() { return {
     
     rotateBy: function(delta) {
         this.setRotation(this.getRotation()+delta);
+    },
+    
+    scaleBy: function(delta) {
+        this.setScale(this.getScale()*delta);
     },
     
     align: function(p1, p2) {

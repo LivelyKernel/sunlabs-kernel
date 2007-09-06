@@ -1417,9 +1417,7 @@ Object.category(TextMorph.prototype, "accessing", function() {
     
     evalInContext: function(str) {    
         // Evaluate the string argument in a context which may be supplied by the modelPlug
-        var result;
-        with (this.getModelValue('doitContext', this)) { result = eval(str) };
-        return result; 
+        return this.getModelValue('doitContext', this).evalInThis(str);
     },
     
     addOrRemoveBrackets: function(bracketIndex) {

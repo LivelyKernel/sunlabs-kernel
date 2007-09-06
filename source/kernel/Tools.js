@@ -120,7 +120,7 @@ Object.extend(SimpleInspector.prototype, {
         m.connectModel({model: this, getList: "getPropList", setSelection: "setPropName"});
         panel.addMorph(m = TextPane(Rectangle(200,0,200,150)));
         m.connectModel({model: this, getText: "getPropText", setText: "setPropText"});
-        panel.addMorph(m = TextPane(Rectangle(0,150,400,100), "Coming soon: doits in context and a menu button"));
+        panel.addMorph(m = TextPane(Rectangle(0,150,400,100), "Coming soon: menu buttons"));
         m.connectModel({model: this, doitContext: "contextForEval"});
 
         var thisModel = this;
