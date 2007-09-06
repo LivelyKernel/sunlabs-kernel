@@ -3989,10 +3989,16 @@ Object.extend(MessengerWidget.prototype, {
             method: 'get',
             
             onSuccess: function(transport) {
-//               console.log("loaded response: %s", transport.responseText);
                 // what crap is coming with the response?? function something something..
                 try {
-                    var text = transport.responseText.substring(0, transport.responseText.indexOf("function"));
+//                    console.log("Oh noes: %s", transport.responseText);
+                    // cut out the crap from the first package
+                    var end = transport.responseText.indexOf("function");
+                    if ( end == -1 ) {
+                        var text = transport.responseText.substr(0);
+                    } else {
+                        var text = transport.responseText.substring(0, end);
+                    }
                     parent.parseResponse(text);
                     parent.textpanel.setScrollPosition(1);//this.textpanel.innerMorph().bounds().height);
                 } catch (e) { console.log('got error %s', e); }
@@ -4012,10 +4018,9 @@ Object.extend(MessengerWidget.prototype, {
     parseResponse: function (response) {
         // remove whitespaces
         //var IDstring = response.replace(/\(\{(.*)\}\)/gm, " ");
-        console.log("parsing response %s", response);
+//        console.log("parsing response %s", response);
         var IDstring = response.replace(/^\s+|\s+$/g, '');
         var IDs = IDstring.match(/\d+/g);
-//        console.log("number of holes in your soul: " + IDs.length);
         if ( !IDs ) {
             return;
         }
@@ -4029,15 +4034,20 @@ Object.extend(MessengerWidget.prototype, {
                     end = response.length;
                 }
                 var contents = response.substring(begin, end);
-                var lastwhitespace = contents.lastIndexOf(" ");
-                var line = contents.substring(0, lastwhitespace);
-                //console.log("b: %s end: %s contents: %s white_ind: %s\nline: %s", begin, end, contents, lastwhitespace, line);
+                var line = ""; 
+                if (IDs.length > 1) {
+                    var lastwhitespace = contents.lastIndexOf(" ");
+                    line = contents.substring(0, lastwhitespace);
+                } else {
+                    line = contents;
+                }
                 line = line.replace(/^\s+|\s+$/g, ''); // remove white spaces
                 console.log(i + ": " + IDs[i] + "=" + line + "\n");
-//                console.log(i + " line: " + IDs[i] + ": " + line + "\n");
 
                 // set it to chat window
-                this.setChatText(IDs[i] + ": " + line);
+                if ( line != "" || line != null ) {
+                    this.setChatText(IDs[i] + ": " + line);
+                }
             }
 /*
 // kill the database            
