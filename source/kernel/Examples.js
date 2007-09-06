@@ -3950,32 +3950,34 @@ Object.extend(MessengerWidget.prototype, {
 
     setChatText: function(newtext) {
         if ( this.chatroom == "" ) {
-            this.chatroom = this.id + ": " + newtext + "\n";
+            this.chatroom = newtext + "\n";
         } else {
-            this.chatroom = this.getChatText() + this.id + ": " + newtext + "\n";
+            this.chatroom = this.getChatText() + newtext + "\n";
         }
         this.changed("getChatText");
     },
     
     send: function() {
         var parent = this;
-        new Ajax.Request(this.server + "foreground.html?action=updatemany&key." + this.id + "=" + this.text, { 
-            method: 'get',
-            
-            onSuccess: function(transport) {
-                console.log("something has been commited \n %s", transport.responseText);
-                parent.setChatText(parent.getIMText()); // add the current line immediately
-                parent.setIMText(""); // yes yes.. so its a little laggy to add the current line and delete it...
-            },
-            
-            onFailure: function(transport) {
-                console.log('problem with %s', transport);
-            },
-    
-            onException: function(e) {
-                console.log('exception  %s, %s', e, Object.toJSON(e));
-            }
-        });
+        if ( this.text != null && this.text != "" ) {
+            new Ajax.Request(this.server + "foreground.html?action=updatemany&key." + this.id + "=" + this.text, { 
+                method: 'get',
+                
+                onSuccess: function(transport) {
+                    console.log("sent: \n%s", transport.responseText);
+                    parent.setChatText(parent.id + ": " + parent.getIMText()); // add the current line immediately
+                    parent.setIMText(""); // yes yes.. so its a little laggy to add the current line and delete it...
+                },
+                
+                onFailure: function(transport) {
+                    console.log('problem with %s', transport);
+                },
+        
+                onException: function(e) {
+                    console.log('exception  %s, %s', e, Object.toJSON(e));
+                }
+            });
+        }
         
         this.load();
     }, 
@@ -3986,10 +3988,13 @@ Object.extend(MessengerWidget.prototype, {
             method: 'get',
             
             onSuccess: function(transport) {
-                console.log("loaded response: %s", transport.responseText);
-                if ( transport.responseText ) { // makes sure we dont start adding empty lines (hopefully)
-                    parent.setChatText(transport.responseText.trim());
-                }
+                // console.log("loaded response: %s", transport.responseText);
+                // what crap is coming with the response?? function something something..
+                var text = transport.responseText.substring(0, transport.responseText.indexOf("function"));
+                parent.parseResponse(text);
+//                if ( transport.responseText ) { // makes sure we dont start adding empty lines (hopefully)
+//                    parent.setChatText(transport.responseText.trim());
+//                }
   /*              try {
                     text = transport.responseText;
                     var begin = text.indexOf("http://www.weatherforecastmap.com/images/weather/");
@@ -4009,6 +4014,28 @@ Object.extend(MessengerWidget.prototype, {
             }
         });
 
+    },
+    
+    parseResponse: function (response) {
+        // remove whitespaces
+        //var IDstring = response.replace(/\(\{(.*)\}\)/gm, " ");
+        var IDstring = response.replace(/^\s+|\s+$/g, '');
+        var IDs = IDstring.match(/\d+/g);
+        console.log("number of holes in your soul: " + IDs.length);
+        for ( var i = 0; i < IDs.length; i++ ) {
+            if ( IDs[i] != this.id ) {
+                // parse answer..
+                // gets the line from the first '=', starting from the location of the given ID
+                var begin = response.indexOf("=", response.indexOf(IDs[i]))+1;
+                var contents = response.substring(begin, response.indexOf("=", begin));
+                var line = contents.substring(0, contents.lastIndexOf(" "));
+                line = line.replace(/^\s+|\s+$/g, ''); // remove white spaces
+//            console.log(i + ": " + IDs[i] + "\n");
+//                console.log(i + " line: " + IDs[i] + ": " + line + "\n");
+                // set it to chat window
+                this.setChatText(IDs[i] + ": " + line);
+            }
+        }
     }
     
 });
