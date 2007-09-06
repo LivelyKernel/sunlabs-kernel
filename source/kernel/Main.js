@@ -281,10 +281,10 @@ function main() {
     WorldMorph.setCurrent(world);
     world.displayWorldOn(Canvas);
     console.log('made world');
-    if (Config.skipAllExamples) return;
+    if (/* Config.skipAllExamples*/ false) return;
 
     // Populate the world with sample objects, widgets and applications
-    populateWorldWithExamples(world, !Config.skipMostExamples);
+    populateWorldWithExamples(world, /* !Config.skipMostExamples*/ true);
 }
 
 main();

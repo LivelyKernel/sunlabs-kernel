@@ -2151,12 +2151,12 @@ Object.extend(WorldMorph.prototype, {
             var schedNode = list[i];
             if (schedNode[0] > msTime) {
                 list.splice(i+1, 0, [msTime, action]);
-		this.kickstartMainLoop();
+		if(!this.mainLoop) this.kickstartMainLoop();
                 return; 
             }
         }
         list.splice(0, 0, [msTime, action]);
-	this.kickstartMainLoop();
+	if(!this.mainLoop) this.kickstartMainLoop();
     },
 
     onEnter: function() {},
