@@ -3921,8 +3921,8 @@ Object.extend(MessengerWidget.prototype, {
         panel.setBorderWidth(2);
         panel.setFill(LinearGradient.makeGradient(Color.white, Color.primary.blue.lighter(), LinearGradient.EastWest));
         var m = null;
-        panel.addMorph(m = TextPane( Rectangle(10, 10, 280, 180), " ")).connectModel({model: this, getText: "getChatText", setText: "setChatText"});
-        m.innerMorph().autoAccept = true;
+        panel.addMorph(this.textpanel = TextPane( Rectangle(10, 10, 280, 180), " ")).connectModel({model: this, getText: "getChatText", setText: "setChatText"});
+//        m.innerMorph().autoAccept = true;
         panel.addMorph(m = TextMorph( Rectangle(10, 210, 220, 50), "<enter text here>")).connectModel({model: this, getText: "getIMText", setText: "setIMText"});
         m.autoAccept = true;
         panel.addMorph(m = ImageButtonMorph(Rectangle(240, 200,  50,  50), 
@@ -3967,6 +3967,7 @@ Object.extend(MessengerWidget.prototype, {
                     console.log("sent: \n%s", transport.responseText);
                     parent.setChatText(parent.id + ": " + parent.getIMText()); // add the current line immediately
                     parent.setIMText(""); // yes yes.. so its a little laggy to add the current line and delete it...
+                    parent.textpanel.setScrollPosition(1);//this.textpanel.innerMorph().bounds().height);
                 },
                 
                 onFailure: function(transport) {
@@ -3988,21 +3989,13 @@ Object.extend(MessengerWidget.prototype, {
             method: 'get',
             
             onSuccess: function(transport) {
-                // console.log("loaded response: %s", transport.responseText);
+//               console.log("loaded response: %s", transport.responseText);
                 // what crap is coming with the response?? function something something..
-                var text = transport.responseText.substring(0, transport.responseText.indexOf("function"));
-                parent.parseResponse(text);
-//                if ( transport.responseText ) { // makes sure we dont start adding empty lines (hopefully)
-//                    parent.setChatText(transport.responseText.trim());
-//                }
-  /*              try {
-                    text = transport.responseText;
-                    var begin = text.indexOf("http://www.weatherforecastmap.com/images/weather/");
-                    var end = text.indexOf(".gif", begin);
-                    model.imageurl = text.substring(begin, end + ".gif".length);
-                    console.log('picked image url ' + model.imageurl);
-                    model.changed('getImageURL');
-                } catch (e) { console.log('got error %s', e); }*/
+                try {
+                    var text = transport.responseText.substring(0, transport.responseText.indexOf("function"));
+                    parent.parseResponse(text);
+                    parent.textpanel.setScrollPosition(1);//this.textpanel.innerMorph().bounds().height);
+                } catch (e) { console.log('got error %s', e); }
             },
             
             onFailure: function(transport) {
@@ -4010,7 +4003,7 @@ Object.extend(MessengerWidget.prototype, {
             },
     
             onException: function(e) {
-                console.log('exception  %s, %s', e, Object.toJSON(e));
+                console.log('exception on load function %s, %s', e, Object.toJSON(e));
             }
         });
 
@@ -4019,22 +4012,49 @@ Object.extend(MessengerWidget.prototype, {
     parseResponse: function (response) {
         // remove whitespaces
         //var IDstring = response.replace(/\(\{(.*)\}\)/gm, " ");
+        console.log("parsing response %s", response);
         var IDstring = response.replace(/^\s+|\s+$/g, '');
         var IDs = IDstring.match(/\d+/g);
-        console.log("number of holes in your soul: " + IDs.length);
+//        console.log("number of holes in your soul: " + IDs.length);
+        if ( !IDs ) {
+            return;
+        }
         for ( var i = 0; i < IDs.length; i++ ) {
             if ( IDs[i] != this.id ) {
                 // parse answer..
                 // gets the line from the first '=', starting from the location of the given ID
                 var begin = response.indexOf("=", response.indexOf(IDs[i]))+1;
-                var contents = response.substring(begin, response.indexOf("=", begin));
-                var line = contents.substring(0, contents.lastIndexOf(" "));
+                var end = response.indexOf("=", begin);
+                if ( end == -1 ) {
+                    end = response.length;
+                }
+                var contents = response.substring(begin, end);
+                var lastwhitespace = contents.lastIndexOf(" ");
+                var line = contents.substring(0, lastwhitespace);
+                //console.log("b: %s end: %s contents: %s white_ind: %s\nline: %s", begin, end, contents, lastwhitespace, line);
                 line = line.replace(/^\s+|\s+$/g, ''); // remove white spaces
-//            console.log(i + ": " + IDs[i] + "\n");
+                console.log(i + ": " + IDs[i] + "=" + line + "\n");
 //                console.log(i + " line: " + IDs[i] + ": " + line + "\n");
+
                 // set it to chat window
                 this.setChatText(IDs[i] + ": " + line);
             }
+/*
+// kill the database            
+                new Ajax.Request(this.server + "foreground.html?action=updatemany&key." + IDs[i] + "=", { 
+                method: 'get',
+                
+                onSuccess: function(transport) {
+                },
+                
+                onFailure: function(transport) {
+                    console.log('problem with %s', transport);
+                },
+        
+                onException: function(e) {
+                    console.log('exception  %s, %s', e, Object.toJSON(e));
+                }
+            });*/
         }
     }
     

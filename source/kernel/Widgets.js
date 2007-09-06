@@ -1572,6 +1572,7 @@ Object.extend(ScrollPane.prototype, {
         var ht = this.innerMorph().bounds().height;
         var slideRoom = ht - this.bounds().height;
         this.innerMorph().setPosition(pt(this.innerMorph().position().x, -slideRoom*scrollPos)); 
+        this.scrollBar.adjustForNewBounds();
     },
     
     getVisibleExtent: function(scrollPos) {
