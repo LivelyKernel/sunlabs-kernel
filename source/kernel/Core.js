@@ -27,8 +27,19 @@ Namespace =  {
     SVG : Canvas.getAttribute("xmlns"),
     LIVELY : Prototype.Browser.WebKit ? null : Canvas.getAttribute("xmlns:lively"), // Safari XMLSerializer seems to do wierd things w/namespaces
     XLINK : Canvas.getAttribute("xmlns:xlink"),
-    DAV : Canvas.getAttribute("xmlns:D")
+    DAV : Canvas.getAttribute("xmlns:D"),
+    XHTML: document.documentElement.getAttribute("xmlns") 
 };
+
+var Loader = Class.create();
+Object.extend(Loader, {
+    loadScript: function(ns, url) {
+	var script = document.createElementNS(Namespace.XHTML, "script");
+	script.setAttributeNS("src", url);
+	document.documentElement.appendChild(script);
+	//document.documentElement.removeChild(script);
+    }
+});
 
 
 // SVG/DOM bindings 
@@ -2070,9 +2081,12 @@ Object.extend(Morph.prototype, {
         
         for (var i = 0; i < children.length; i++) {
             var node = children[i];
-	    if (node.tagName == 'action') {
-		var action = node.textContent.evalJSON();
-		this.addActiveScript(action);
+	    if (node.nodeName == '#text') {
+		// whitespace, ignore
+	    } else if (node.tagName == 'action') {
+		var a = node.textContent.evalJSON();
+		console.log('starting stepping %s based on %s', this, node.textContent);
+                this.startStepping(a.stepTime/1000, a.scriptName, a.argIfAny);
 	    } else if (node.tagName == 'defs') { // FIXME FIXME, this is painfully ad hoc!
 		if (this.defs) {
                     console.warn('%s already has defs %s', this, this.defs);
@@ -3114,7 +3128,6 @@ console.log('added script ' + action.scriptName);
 	var actionCode = document.createElementNS(Namespace.LIVELY, "action");
 	actionCode.appendChild(document.createCDATASection(Object.toJSON(action)));
 	this.addChildElement(actionCode);
-	console.log('added code %s', actionCode.textContent);
     },
     
     startSteppingFunction: function(stepTime, func) {

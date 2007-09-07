@@ -12,34 +12,42 @@ function populateWorldWithExamples(world, otherWorld, server) {
 
     var showStar = true;
     if (showStar) {  // Make a star
-        var makeStarVertices = function(r,center,startAngle) {
-            var vertices = [];
-            var nVerts = 10;
-            for (var i=0; i<=nVerts; i++) {
-                var a = startAngle + (2*Math.PI/nVerts*i);
+
+	if (Config.loadFromMarkup) {
+	    var node = document.getElementById('RotatingStar');
+	    widget = Morph.becomeMorph(node.getElementsByTagName('g')[0], new Importer());
+            world.addMorph(widget);
+	} else {
+	    
+            var makeStarVertices = function(r,center,startAngle) {
+		var vertices = [];
+		var nVerts = 10;
+		for (var i=0; i<=nVerts; i++) {
+                    var a = startAngle + (2*Math.PI/nVerts*i);
                 var p = Point.polar(r,a);
-                if (i%2 == 0) p = p.scaleBy(0.39);
-                vertices.push(p.addPt(center)); 
+                    if (i%2 == 0) p = p.scaleBy(0.39);
+                    vertices.push(p.addPt(center)); 
+		}
+		
+		return vertices; 
             }
+	    
+            widget = Morph(pt(0,0).asRectangle(), "rect");
+            widget.setShape(PolygonShape(makeStarVertices(50,pt(0,0),0), Color.yellow, 1, Color.black));
+            // makeGradient(Color.yellow, Color.yellow.lighter().lighter()));
+            widget.setPosition(pt(135, 360));
+            world.addMorph(widget);
             
-            return vertices; 
-        }
-    
-        widget = Morph(pt(0,0).asRectangle(), "rect");
-        widget.setShape(PolygonShape(makeStarVertices(50,pt(0,0),0), Color.yellow, 1, Color.black));
-        // makeGradient(Color.yellow, Color.yellow.lighter().lighter()));
-        widget.setPosition(pt(135, 360));
-        world.addMorph(widget);
-            
-        var spinningStar = !Config.skipMostExamples || Config.spinningStar;
-        if (spinningStar) {  // Make the star spin as a test of stepping
-            if (Config.useNewScheduler) {
-                widget.startStepping(1/20, "rotateBy", 0.1);
-            } else {
-                widget.startSteppingFunction(60,function(msTime) {
-                this.setRotation(this.getRotation() + 0.1); }) 
+            var spinningStar = !Config.skipMostExamples || Config.spinningStar;
+            if (spinningStar) {  // Make the star spin as a test of stepping
+		if (Config.useNewScheduler) {
+                    widget.startStepping(1/20, "rotateBy", 0.1);
+		} else {
+                    widget.startSteppingFunction(60,function(msTime) {
+			this.setRotation(this.getRotation() + 0.1); }) 
+		}
             }
-        }
+	}
     }
 
     var showClock = true;
