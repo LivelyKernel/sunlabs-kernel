@@ -2240,8 +2240,8 @@ Object.extend(Morph.prototype, {
         // Adjust all visual attributes specified in the style spec
         if (spec.borderWidth) this.setBorderWidth(spec.borderWidth);
         if (spec.borderColor) this.setBorderColor(spec.borderColor);
-        if (spec.rounding) this.shape.roundEdgesBy(spec.rounding);
-        else this.shape.roundEdgesBy(0);
+        if (this.shape.roundEdgesBy) 
+		this.shape.roundEdgesBy(spec.rounding ? spec.rounding : 0);
         if (spec.fill) this.setFill(spec.fill);
         if (spec.opacity) {
                 this.setFillOpacity(spec.opacity);
@@ -2249,8 +2249,8 @@ Object.extend(Morph.prototype, {
         }
         if (spec.fillOpacity) this.setFillOpacity(spec.fillOpacity);
         if (spec.strokeOpacity) this.setStrokeOpacity(spec.strokeOpacity);
-        if (spec.fillType) this.fillType = spec.fillType;
-        if (spec.baseColor) this. baseColor = spec. baseColor;
+	this.fillType = spec.fillType ? spec.fillType : "simple";
+        this.baseColor = spec.baseColor ? spec.baseColor : Color.gray;
     },
 
     makeStyleSpec: function() {

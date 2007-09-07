@@ -89,7 +89,7 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
     },
     
     changeAppearanceFor: function(value) {
-        var base = value ? this.baseColor.lighter() : this.baseColor;
+        var base = value ? this.baseColor : this.baseColor.darker();
         switch (this.fillType) {
         case "linear gradient" :
             this.setFill(LinearGradient.makeGradient(base, base.lighter(), LinearGradient.SouthNorth));
@@ -1346,12 +1346,12 @@ Object.extend(SliderMorph.prototype, {
     initialize: function(initialBounds, scaleIfAny) {
         SliderMorph.superClass.initialize.call(this, initialBounds, "rect");
         this.scale = (scaleIfAny == null) ? 1.0 : scaleIfAny;
-
         var slider = Morph(Rectangle(0, 0, 8, 8), "rect");
         slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});
         this.setNamedMorph("slider", slider);
+        this.linkToStyles(['slider']);
+
         this.adjustForNewBounds(); 
-    
         return this;
     },
 
@@ -1380,6 +1380,14 @@ Object.extend(SliderMorph.prototype, {
         return bnds.height > bnds.width; 
     },
     
+    applyStyle: function(spec) {
+	this.baseColor = Color.primary.blue;
+	this.fillType = "simple";
+	SliderMorph.superClass.applyStyle.call(this, spec);
+	// need to call adjust to update graphics, but only after slider exists
+        if (this.slider) this.adjustForNewBounds(); 
+    },
+    
     adjustForNewBounds: function() {
         SliderMorph.superClass.adjustForNewBounds.call(this);
 
@@ -1400,11 +1408,14 @@ Object.extend(SliderMorph.prototype, {
     
         this.slider.setBounds(bnds.topLeft().addPt(topLeft).extent(sliderExt)); 
     
-        var direction = this.vertical() ? LinearGradient.EastWest : LinearGradient.NorthSouth;
-        this.setFill(LinearGradient.makeGradient(Color.primary.blue.lighter().lighter(),
-                     Color.primary.blue, direction));
-        this.slider.setFill(LinearGradient.makeGradient(Color.primary.green.lighter().lighter(), 
-                            Color.primary.green, direction));
+        if (this.fillType == "linear gradient") {
+	    var direction = this.vertical() ? LinearGradient.EastWest : LinearGradient.NorthSouth;
+	    this.setFill(LinearGradient.makeGradient(this.baseColor.lighter(2), this.baseColor, direction));
+	    this.slider.setFill(LinearGradient.makeGradient(this.baseColor.lighter(), this.baseColor.darker(), direction));
+	} else {
+	    this.setFill(this.baseColor);
+	    this.slider.setFill(this.baseColor.darker());
+	}
     },
     
     sliderPressed: function(evt, slider) {
@@ -1799,17 +1810,16 @@ Object.extend(WorldMorph, {
             styleName:   'primitive',
             window:      { rounding: 0 },
             titleBar:    { rounding: 0, borderWidth: 2, bordercolor: Color.black,
-            fill:        Color.primary.blue.lighter()},
+            			fill: Color.neutral.gray.lighter() },
             panel:       {  },
-            vslider:     { borderColor: Color.black, borderWidth: 1, fill: Color.blue.lighter()},
-            hslider:     { borderColor: Color.black, borderWidth: 1, fill: Color.blue.lighter()},
-            elevator:    { borderColor: Color.black, borderWidth: 1, fill: Color.green.lighter(2)},
+            slider:     { borderColor: Color.black, borderWidth: 1,
+				baseColor: Color.neutral.gray.lighter() },
             button:      { borderColor: Color.black, borderWidth: 1, rounding: 0,
-            baseColor:   Color.neutral.gray, fillType: "simple" },
+            			baseColor: Color.lightGray, fillType: "simple" },
             widgetPanel: { borderColor: Color.red, borderWidth: 2, rounding: 0,
-            fill:        Color.blue.lighter(), opacity: 1},
-            clock:       { size: 100, borderColor: Color.green.lighter(), borderWidth: 1,
-            fill:        Color.yellow, roman: true},
+            			fill: Color.blue.lighter(), opacity: 1},
+            clock:       { borderColor: Color.black, borderWidth: 1,
+            			fill: RadialGradient.makeCenteredGradient(Color.yellow.lighter(2), Color.yellow) },
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue}
         },
 
@@ -1817,19 +1827,16 @@ Object.extend(WorldMorph, {
             styleName: 'lively',
             window:      { rounding: 8 },
             titleBar:    { rounding: 8, borderWidth: 2, bordercolor: Color.black,
-            fill:        LinearGradient.makeGradient(Color.primary.blue, Color.primary.blue.lighter(3))},
+            			fill: LinearGradient.makeGradient(Color.primary.blue, Color.primary.blue.lighter(3))},
             panel:       {  },
-            vslider:     { borderColor: Color.black, borderWidth: 1, 
-                           fill: LinearGradient.makeGradient(Color.primary.blue.lighter().lighter(), Color.primary.blue, LinearGradient.EastWest)},
-            hslider:     { borderColor: Color.black, borderWidth: 1,
-                           fill: LinearGradient.makeGradient(Color.primary.blue.lighter().lighter(), Color.primary.blue, LinearGradient.NorthSouth)},
-            elevator:    { borderColor: Color.green.lighter(), borderWidth: 1},
+            slider:     { borderColor: Color.black, borderWidth: 1, 
+				baseColor: Color.primary.blue, fillType: "linear gradient"},
             button:      { borderColor: Color.neutral.gray, borderWidth: 0.3, rounding: 4,
-            baseColor:   Color.neutral.gray, fillType: "linear gradient" },
+            		    baseColor:   Color.primary.blue, fillType: "linear gradient" },
             widgetPanel: { borderColor: Color.blue, borderWidth: 4, rounding: 16,
-            fill:        Color.blue.lighter(), opacity: 0.4},
-            clock:       { size: 100, borderColor: Color.green.lighter(), borderWidth: 1,
-            fill:        Color.yellow, roman: true},
+            			fill: Color.blue.lighter(), opacity: 0.4},
+            clock:       { borderColor: Color.black, borderWidth: 1,
+            			fill: RadialGradient.makeCenteredGradient(Color.primary.blue.lighter(2), Color.primary.blue.lighter()) },
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue}
         },
 
@@ -1837,16 +1844,16 @@ Object.extend(WorldMorph, {
             styleName: 'turquoise',
             window:      { rounding: 8},
             titleBar:    { rounding: 8, borderWidth: 2, bordercolor: Color.black,
-            fill:        LinearGradient.makeGradient(Color.turquoise, Color.turquoise.lighter(3))},
+            			fill: LinearGradient.makeGradient(Color.turquoise, Color.turquoise.lighter(3))},
             panel:       {  },
-            slider:      { borderColor: Color.green.lighter(), borderWidth: 1},
-            elevator:    { borderColor: Color.green.lighter(), borderWidth: 1},
+            slider:      { borderColor: Color.black, borderWidth: 1, 
+				baseColor: Color.turquoise, fillType: "linear gradient"},
             button:      { borderColor: Color.neutral.gray.darker(), borderWidth: 2, rounding: 8,
-            baseColor:   Color.turquoise.darker(), fillType: "radial gradient" },
+            			baseColor: Color.turquoise, fillType: "radial gradient" },
             widgetPanel: { borderColor: Color.neutral.gray.darker(), borderWidth: 4,
-            fill:        Color.turquoise.lighter(3), rounding: 16},
-            clock:       { size: 100, borderColor: Color.green.lighter(), borderWidth: 1,
-            fill:        Color.yellow, roman: true},
+            			fill: Color.turquoise.lighter(3), rounding: 16},
+            clock:       { borderColor: Color.black, borderWidth: 1,
+            			fill: RadialGradient.makeCenteredGradient(Color.turquoise.lighter(2), Color.turquoise) },
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue}
         }
     }

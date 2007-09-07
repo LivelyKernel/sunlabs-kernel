@@ -105,7 +105,7 @@ Object.extend(ClockMorph.prototype, {
     initialize: function(position, radius) {
         ClockMorph.superClass.initialize.call(this, position.asRectangle().expandBy(radius), "ellipse");
         this.openForDragAndDrop = false;
-        this.setFill(RadialGradient.makeCenteredGradient(Color.yellow.lighter().lighter(), Color.yellow));
+        this.linkToStyles(['clock']);
         this.makeNewFace();
         return this;
     },
