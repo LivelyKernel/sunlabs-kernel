@@ -2196,6 +2196,10 @@ Object.extend(WorldMorph.prototype, {
 
 
     makeShrinkWrappedWorldWith: function(morph, filename) {
+	if (filename == null) {
+	    console.log('null filename, not publishing %s', morph);
+	    return;
+	}
 	var livelySource = null;
 	var url = "http://" + this.defaultStore.host + "/" + this.defaultStore.path + "/lively.xhtml";
 	new Ajax.Request(url, { 

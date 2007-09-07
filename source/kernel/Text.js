@@ -784,7 +784,7 @@ Object.extend(TextMorph.prototype, {
         switch (type) {
         case 'TextBox':
             this.textBox = TextBox.become(element); // FIXME
-            console.log('found textbox %s %s', this.textBox, this.textBox && this.textBox.textString);
+            // console.log('found textbox %s %s', this.textBox, this.textBox && this.textBox.textString);
             this.textString = this.textBox.textString;
 	    this.font = this.textBox.fontInfo;
             return true;
@@ -828,10 +828,10 @@ Object.extend(TextMorph.prototype, {
 
         this.textBox = null;
         this.fitText(); // adjust bounds or text for fit
-    
+	
         return TextMorph.superClass.bounds.call(this); 
     },
-
+    
     copy: function() {
         var copy = TextMorph(this.bounds(), this.textString);
         copy.morphCopyFrom(this);
@@ -903,7 +903,7 @@ Object.extend(TextMorph.prototype, {
 	    if (store) store.saveAs(window.prompt('save as ...'), (self.xml || self.textString)); 
 	    else console.log('no store to save to');
 	}]);
-
+	
         return menu;
     },
 
