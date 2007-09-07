@@ -1220,8 +1220,8 @@ Object.extend(Event.prototype, {
 
 Object.extend(window.parent, {
     onbeforeunload: function(evt) { console.log('window got unload event %s', evt); },
-    onblur: function(evt) { console.log('window got blur event %s', evt); },
-    onfocus: function(evt) { console.log('window got focus event %s', evt); }
+    onblur: function(evt) { /*console.log('window got blur event %s', evt);*/ },
+    onfocus: function(evt) { /*console.log('window got focus event %s', evt);*/ }
 });
 
 Object.extend(document, {
@@ -3017,7 +3017,8 @@ Object.extend(Morph.prototype, {
             [((!this.openForDragAndDrop) ? "close DnD" : "open DnD"), this, "toggleDnD", evt.mousePoint],
             ["toggle fisheye", this, "toggleFisheye"],
             ["drill", this, "showCoreSample", evt.mousePoint],
-            ["grab", this, "pickMeUp", evt]
+            ["grab", this, "pickMeUp", evt],
+            ["publish shrink-wrapped as...", function(m) { WorldMorph.current().makeShrinkWrappedWorldWith(m, prompt('publish as')) }.curry(this)]
             ];
         var m = MenuMorph(items); 
         if (evt.mouseButtonPressed) evt.hand.setMouseFocus(m);

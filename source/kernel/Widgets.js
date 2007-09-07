@@ -1856,7 +1856,9 @@ Object.extend(WorldMorph, {
             			fill: RadialGradient.makeCenteredGradient(Color.turquoise.lighter(2), Color.turquoise) },
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue}
         }
-    }
+    },
+
+
 
 });
 
@@ -2190,7 +2192,68 @@ Object.extend(WorldMorph.prototype, {
             ["Doodle Morph", function(evt) { world.addMorph(WindowMorph(DoodleMorph(evt.mousePoint.extent(pt(300, 300))), 'Doodle Morph'))}],
         ];
         MenuMorph(items).openIn(this.world(), evt.mousePoint);
-    }
+    },
+
+
+    makeShrinkWrappedWorldWith: function(morph, filename) {
+	var livelySource = null;
+	var url = "http://" + this.defaultStore.host + "/" + this.defaultStore.path + "/lively.xhtml";
+	new Ajax.Request(url, { 
+            method: 'get',
+            asynchronous: false,
+            onSuccess: function(transport) {
+                livelySource = transport.responseXML;
+            }.logErrors('onSuccess'),
+            
+            onFailure: function(transport) {
+                console.log('problem with %s', transport);
+            },
+    
+            onException: function(e) {
+                console.log('exception  %s, %s', e, Object.toJSON(e));
+            }
+	    
+        });
+	console.log('got source %s url %s', livelySource, url);
+	var mainDefs = livelySource.getElementById('Main');
+	console.log('main defs %s', mainDefs);
+	var mainScript = mainDefs.getElementsByTagName('script')[0];
+	var preamble = livelySource.createElementNS(Namespace.SVG, "script");
+	preamble.appendChild(livelySource.createCDATASection("Config.skipAllExamples = true"));
+	mainDefs.insertBefore(preamble, mainScript);
+	console.log('mainDefs now %s', new XMLSerializer().serializeToString(livelySource));
+	url = "http://" + this.defaultStore.host + "/" + this.defaultStore.path + "/" + filename;
+	var container = livelySource.createElementNS(Namespace.SVG, 'g');
+	container.appendChild(livelySource.importNode(morph, true));
+	container.setAttribute("id", "ShrinkWrapped");
+	mainDefs.appendChild(container);
+	mainDefs.appendChild(livelySource.createTextNode('\n'));
+	var postamble = livelySource.createElementNS(Namespace.SVG, "script");
+	postamble.appendChild(livelySource.createCDATASection('WorldMorph.current().addMorphWithContainerId("ShrinkWrapped");'));
+	mainDefs.appendChild(postamble);
+	
+	new Ajax.Request(url, { 
+            method: 'put',
+            asynchronous: false,
+	    body: new XMLSerializer().serializeToString(livelySource),
+            onFailure: function(transport) {
+                console.log('problem with %s', transport);
+            },
+    
+            onException: function(e) {
+                console.log('exception  %s, %s', e, Object.toJSON(e));
+            }
+	    
+        });
+	
+
+    },
+
+    addMorphWithContainerId: function(id) {
+	var node = document.getElementById(id);
+	var widget = Morph.becomeMorph(node.getElementsByTagName('g')[0], new Importer());
+        this.addMorph(widget);
+    },
 
 });
 

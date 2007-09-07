@@ -14,9 +14,7 @@ function populateWorldWithExamples(world, otherWorld, server) {
     if (showStar) {  // Make a star
 
 	if (Config.loadFromMarkup) {
-	    var node = document.getElementById('RotatingStar');
-	    widget = Morph.becomeMorph(node.getElementsByTagName('g')[0], new Importer());
-            world.addMorph(widget);
+	    world.addMorphWithContainerId('RotatingStar');
 	} else {
 	    
             var makeStarVertices = function(r,center,startAngle) {
@@ -289,24 +287,24 @@ function main() {
     WorldMorph.setCurrent(world);
     world.displayWorldOn(Canvas);
     console.log('made world');
-    if (/* Config.skipAllExamples*/ false) return;
+    if (Config.skipAllExamples) return;
 
     // Populate the world with sample objects, widgets and applications
     populateWorldWithExamples(world, /* !Config.skipMostExamples*/ true);
+    if (false) showStatsViewer(TextLine.prototype, "TextLine...");
+    
+    if (Config.showWebStore) {
+	//var store = new WebStore('http://idisk.mac.com/xysztof/Public/Lively');
+	var store = new WebStore('localhost', '~kappa/');
+	
+	//var store = new WebStore('www.hanaalliance.org', 'jsl/');
+	store.openIn(WorldMorph.current(), pt(500, 30));
+	WorldMorph.current().defaultStore = store;
+    }
 }
 
 main();
 
-if (false) showStatsViewer(TextLine.prototype, "TextLine...");
-
-if (Config.showWebStore) {
-    //var store = new WebStore('http://idisk.mac.com/xysztof/Public/Lively');
-    var store = new WebStore('localhost', '~kappa');
-
-    //var store = new WebStore('www.hanaalliance.org', 'jsl');
-    store.openIn(WorldMorph.current(), pt(500, 30));
-    WorldMorph.current().defaultStore = store;
-}
 
 console.log('loaded Main.js');
 
