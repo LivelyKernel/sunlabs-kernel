@@ -222,6 +222,11 @@ Object.extend(StylePanel.prototype, {
         this.changed('getStrokeOpacity')
     },
 
+    setTextColor: function(c) { // Maybe add a little color swatch in the view
+        this.textColor = c;
+        this.targetMorph.setTextColor(this.textColor);
+    },
+
     openIn: function(world, location) {
         var rect = ((location==null) ? location : pt(50,50)).extent(pt(400,270));
         world.addMorph(WindowMorph(this.buildView(rect), 'Style Panel'));
@@ -229,7 +234,9 @@ Object.extend(StylePanel.prototype, {
     },
 
     buildView: function(rect) {
-        var panel = PanelMorph(rect.extent(), "rect");
+        var panelExtent = rect.extent();
+	if (this.targetMorph.setTextColor) panelExtent = panelExtent.addXY(0,30);
+	var panel = PanelMorph(panelExtent, "rect");
         panel.setFill(Color.primary.blue.lighter().lighter());
         panel.setBorderWidth(2);
     
@@ -276,6 +283,13 @@ Object.extend(StylePanel.prototype, {
         m.connectModel({model: this, getValue: "getStrokeOpacity", setValue: "setStrokeOpacity"});
         panel.addMorph(m = SliderMorph(Rectangle(200, y, 100, 20), 1.0));
         m.connectModel({model: this, getValue: "getStrokeOpacity", setValue: "setStrokeOpacity"});
+
+	if (this.targetMorph.setTextColor) {
+            y += 30;
+            panel.addMorph(TextMorph.makeLabel(Rectangle(50, y, 100, 20), 'Text Color'));
+            panel.addMorph(m = ColorPickerMorph(Rectangle(250, y, 50, 30)));
+            m.connectModel({model: this, setColor: "setTextColor"});
+	}
 
         panel.morphMenu = function(evt) { 
             var menu = Morph.prototype.morphMenu.call(this,evt);
