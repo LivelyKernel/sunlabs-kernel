@@ -187,19 +187,24 @@ Object.extend(StylePanel.prototype, {
 
     getFillTypes: function() { return ["simple fill", "linear gradient", "radial gradient", "stipple"]; },
     getFillType: function() { return this.fillType; },
-    setFillType: function(type) { this.fillType = type; },
+    setFillType: function(type) { this.fillType = type;  this.setFill(); },
     getFillDirs: function() { return ["NorthSouth", "SouthNorth", "EastWest", "WestEast"]; },
     getFillDir: function() { return this.fillDir; },
-    setFillDir: function(dir) { this.fillDir = dir; },
+    setFillDir: function(dir) { this.fillDir = dir;  this.setFill(); },
     setColor1: function(color) { this.color1 = color; this.setFill(); },
     setColor2: function(color) { this.color2 = color; this.setFill(); },
     
     setFill: function() {
-        if (this.fillType == null) return;
-        if (this.fillType == 'simple fill') this.targetMorph.setFill(this.color1);
+        if (this.fillType == null) this.fillType = 'simple fill';
+	if (this.color1 == null) this.color1 = Color.gray;
+	if (this.color2 == null) this.color2 = Color.gray;
+
+        if (this.fillType == 'simple fill')  this.targetMorph.setFill(this.color1);
     
-        if (this.fillType == 'linear gradient' && this.fillDir != null)
+        if (this.fillType == 'linear gradient') {
+	    if (this.fillDir == null) this.fillDir = 'NorthSouth';
             this.targetMorph.setFill(LinearGradient.makeGradient(this.color1, this.color2, LinearGradient[this.fillDir]));
+	}
     
         if (this.fillType == 'radial gradient')
             this.targetMorph.setFill(RadialGradient.makeCenteredGradient(this.color1, this.color2));
@@ -228,39 +233,40 @@ Object.extend(StylePanel.prototype, {
     },
 
     openIn: function(world, location) {
-        var rect = ((location==null) ? location : pt(50,50)).extent(pt(400,270));
+        var rect = ((location==null) ? location : pt(50,50)).extent(pt(340,100));
         world.addMorph(WindowMorph(this.buildView(rect), 'Style Panel'));
         this.changed('all')
     },
 
     buildView: function(rect) {
         var panelExtent = rect.extent();
-	if (this.targetMorph.setTextColor) panelExtent = panelExtent.addXY(0,30);
 	var panel = PanelMorph(panelExtent, "rect");
         panel.setFill(Color.primary.blue.lighter().lighter());
         panel.setBorderWidth(2);
-    
         var m;
         var y = 10;
+
         panel.addMorph(TextMorph.makeLabel(Rectangle(50, y, 100, 20), 'Border Width'));
         panel.addMorph(m = PrintMorph(Rectangle(160, y, 30, 20)));
         m.connectModel({model: this, getValue: "getBorderWidth", setValue: "setBorderWidth"});
         panel.addMorph(m = SliderMorph(Rectangle(200, y, 100, 20), 10.0));
         m.connectModel({model: this, getValue: "getBorderWidth", setValue: "setBorderWidth"});
-
         y += 30;
+
         panel.addMorph(TextMorph.makeLabel(Rectangle(50, y, 100, 20), 'Border Color'));
         panel.addMorph(m = ColorPickerMorph(Rectangle(250, y, 50, 30)));
         m.connectModel({model: this, setColor: "setBorderColor"});
-
         y += 40;
-        panel.addMorph(TextMorph.makeLabel(Rectangle(50, y, 100, 20), 'Round Edges'));
-        panel.addMorph(m = PrintMorph(Rectangle(160, y, 30, 20)));
-        m.connectModel({model: this, getValue: "getRounding", setValue: "setRounding"});
-        panel.addMorph(m = SliderMorph(Rectangle(200, y, 100, 20), 50.0));
-        m.connectModel({model: this, getValue: "getRounding", setValue: "setRounding"});
 
-        y += 30;
+	if(this.targetMorph.shape.roundEdgesBy) {
+	    panel.addMorph(TextMorph.makeLabel(Rectangle(50, y, 100, 20), 'Round Corners'));
+	    panel.addMorph(m = PrintMorph(Rectangle(160, y, 30, 20)));
+	    m.connectModel({model: this, getValue: "getRounding", setValue: "setRounding"});
+	    panel.addMorph(m = SliderMorph(Rectangle(200, y, 100, 20), 50.0));
+	    m.connectModel({model: this, getValue: "getRounding", setValue: "setRounding"});
+	    y += 30;
+	}
+
         panel.addMorph(m = CheapListMorph(Rectangle(50, y, 100, 50),[]));
         m.connectModel({model: this, getList: "getFillTypes", getSelection: "getFillType", setSelection: "setFillType"});
         panel.addMorph(m = CheapListMorph(Rectangle(160, y, 75, 60),[]));
@@ -269,27 +275,31 @@ Object.extend(StylePanel.prototype, {
         m.connectModel({model: this, setColor: "setColor1"});
         panel.addMorph(m = ColorPickerMorph(Rectangle(250, y+40, 50, 30)));
         m.connectModel({model: this, setColor: "setColor2"});
-
         y += 80;
+
         panel.addMorph(TextMorph.makeLabel(Rectangle(50, y, 90, 20), 'Fill Opacity'));
         panel.addMorph(m = PrintMorph(Rectangle(150, y, 40, 20)));
         m.connectModel({model: this, getValue: "getFillOpacity", setValue: "setFillOpacity"});
         panel.addMorph(m = SliderMorph(Rectangle(200, y, 100, 20), 1.0));
         m.connectModel({model: this, getValue: "getFillOpacity", setValue: "setFillOpacity"});
-
         y += 30;
+
         panel.addMorph(TextMorph.makeLabel(Rectangle(50, y, 90, 20), 'Stroke Opacity'));
         panel.addMorph(m = PrintMorph(Rectangle(150, y, 40, 20)));
         m.connectModel({model: this, getValue: "getStrokeOpacity", setValue: "setStrokeOpacity"});
         panel.addMorph(m = SliderMorph(Rectangle(200, y, 100, 20), 1.0));
         m.connectModel({model: this, getValue: "getStrokeOpacity", setValue: "setStrokeOpacity"});
+	y += 30;
 
 	if (this.targetMorph.setTextColor) {
-            y += 30;
             panel.addMorph(TextMorph.makeLabel(Rectangle(50, y, 100, 20), 'Text Color'));
             panel.addMorph(m = ColorPickerMorph(Rectangle(250, y, 50, 30)));
             m.connectModel({model: this, setColor: "setTextColor"});
+            y += 40;
 	}
+
+	var oldBounds = panel.shape.bounds();
+	panel.shape.setBounds(oldBounds.withHeight(y + 5 - oldBounds.y))
 
         panel.morphMenu = function(evt) { 
             var menu = Morph.prototype.morphMenu.call(this,evt);

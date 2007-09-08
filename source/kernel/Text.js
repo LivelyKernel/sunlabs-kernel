@@ -979,7 +979,8 @@ Object.extend(TextMorph.prototype, {
     
         var bottomY = this.inset.y + maxY;
     
-        with (this.shape) { setBounds(bounds().withHeight(bottomY - bounds().y))};
+	var oldBounds = this.shape.bounds();
+	this.shape.setBounds(oldBounds.withHeight(bottomY - oldBounds.y))
 
         this.adjustForNewBounds();
 

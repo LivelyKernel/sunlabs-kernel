@@ -2346,6 +2346,8 @@ Object.extend(Morph.prototype, {
         this.adjustForNewBounds();
     }.wrap(Morph.onLayoutChange('shape')),
     
+    // DI: ***Note get/setBounds should be deprecated in favor of get/setExtent and get/setPosition
+    // This is so that layout management can move things around without deep layout changes
     setBounds: function(newRect) {
         var bounds = this.bounds();
         this.shape.setBounds(this.relativizeRect(newRect)); // FIXME some shapes don't support setFromRect

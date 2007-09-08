@@ -630,6 +630,126 @@ Object.extend(WindowMorph.prototype, {
 
 });
    
+/**
+ * @class TabbedPanelMorph: Alternative to windows for off-screen content
+ */
+  
+// ***Note TabbedPanelMorph is not written yet
+//	Just a copy of WindowMorph, prior to my rewriting it -- DI ***
+TabbedPanelMorph = HostClass.create('TabbedPanelMorph', Morph);
+Object.extend(TabbedPanelMorph, {
+    EXPANDED: "expanded",
+    COLLAPSED: "collapsed",
+    SHUTDOWN: "shutdown"
+});
+
+Object.extend(TabbedPanelMorph.prototype, {
+
+    state: TabbedPanelMorph.EXPANDED,
+    titleBar: null,
+    targetMorph: null,
+    
+    initialize: function(targetMorph, headline, location) {
+        var bounds = targetMorph.bounds().clone();
+        var titleBar = TitleBarMorph(headline, bounds.width, this, false);
+        var titleHeight = titleBar.bounds().height;
+
+        bounds.height += titleHeight;
+        TabbedPanelMorph.superClass.initialize.call(this, location ? rect(location, bounds.extent()) : bounds, 'rect');
+        this.targetMorph = targetMorph;
+        this.titleBar = titleBar;
+        this.addMorph(this.titleBar);
+        bounds.y -= titleHeight;
+        targetMorph.translateBy(bounds.topLeft().negated());
+        this.addMorph(targetMorph);
+        this.linkToStyles(['window']);
+        return this;
+    },
+
+    toggleCollapse: function() {
+        return this.isCollapsed() ? this.expand() : this.collapse();
+    },
+    
+    collapse: function() { 
+        if (this.isCollapsed()) {
+            console.log('collapsing collapsed window %s?', this);
+            return;
+        }
+        
+        this.expandedPosition = this.position();
+        var owner = this.owner();
+
+        this.remove();
+        owner.addMorph(this.titleBar);
+
+        if (this.collapsedPosition) { 
+            this.titleBar.setPosition(this.collapsedPosition);
+        } else { 
+            this.titleBar.setPosition(this.expandedPosition);
+        }
+
+        this.state = TabbedPanelMorph.COLLAPSED;
+        // this.titleBar.enableEvents();
+    },
+    
+    isCollapsed: function() {
+        return this.state === TabbedPanelMorph.COLLAPSED;
+    },
+    
+    isShutdown: function() {
+        return this.state === TabbedPanelMorph.SHUTDOWN;
+    },
+
+    expand: function() {
+        if (!this.isCollapsed()) {
+            console.log('expanding expanded window %s?', this);
+            return;
+        }
+        
+        this.collapsedPosition = this.titleBar.position();
+        var owner = this.titleBar.owner();
+        this.titleBar.remove();
+        this.setPosition(this.expandedPosition);        
+        owner.addMorph(this);
+        this.addMorph(this.titleBar);
+        this.titleBar.setPosition(pt(0,0))
+
+        //this.titleBar.ignoreEvents();
+        this.state = "expanded";
+        //this.action = collapse;
+    },
+
+    initiateShutdown: function() {
+        this.state = TabbedPanelMorph.SHUTDOWN;
+        this.targetMorph.shutdown(); // shutdown may be prevented ...
+        this.remove();
+        return true;
+    },
+
+    updateView: function(aspect, controller) {
+        var plug = this.modelPlug;
+        
+        if (!plug) return;
+        
+        if (aspect == plug.getState) {
+            //this.loadURL(this.getModelValue('getURL', ""));
+            var state = this.getModelValue('getState', "");
+            switch (state) {
+            case TabbedPanelMorph.EXPANDED:
+                if (this.isCollapsed()) this.expand();
+                break;
+            case TabbedPanelMorph.COLLAPSED:
+                if (!this.isCollapsed()) this.collapse();
+                break;
+            case TabbedPanelMorph.SHUTDOWN:
+                if (!this.isShutdown()) this.initiateShutdown();
+                break;
+            }
+        }
+    }
+
+});
+   
 // ===========================================================================
 // Handles and selection widgets
 // ===========================================================================
