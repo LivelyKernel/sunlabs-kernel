@@ -3013,18 +3013,45 @@ Object.extend(Morph.prototype, {
             ["remove", this.remove.bind(this)],
             ["inspect", SimpleInspector.openOn.curry(this)],
             ["style", StylePanel.openOn.curry(this)],
-            ["show Lively markup", this.addSvgInspector.bind(this).curry(this)],
-            ["dump model", this.dumpModel.bind(this).curry(this)], // debugging, will go away
+            ["drill", this, "showCoreSample", evt.mousePoint],
+            ["grab", this, "pickMeUp", evt],
             ["reset rotation", this.setRotation.bind(this).curry(0)],
             [((!this.openForDragAndDrop) ? "close DnD" : "open DnD"), this, "toggleDnD", evt.mousePoint],
             ["toggle fisheye", this, "toggleFisheye"],
-            ["drill", this, "showCoreSample", evt.mousePoint],
-            ["grab", this, "pickMeUp", evt],
+            ["-----"],
+            ["put me in a window", this, "putContentInWindow", this.position()],
+            ["put me in a tab", this, "putContentInTab", this.position()],
+            ["put me in the open", this, "putContentInWorld", this.position()],
+            ["-----"],
+            ["show Lively markup", this.addSvgInspector.bind(this).curry(this)],
+            ["dump model", this.dumpModel.bind(this).curry(this)], // debugging, will go away
             ["publish shrink-wrapped as...", function(m) { WorldMorph.current().makeShrinkWrappedWorldWith(m, prompt('publish as')) }.curry(this)]
             ];
         var m = MenuMorph(items); 
         if (evt.mouseButtonPressed) evt.hand.setMouseFocus(m);
         return m;
+    },
+
+    putContentInWindow: function(loc) {
+	var w = this.world();
+	var wm = WindowMorph(this.windowContent(), this.windowTitle());
+	w.addMorphAt(wm, loc.addXY(0, -wm.titleBar.bounds().height));
+    },
+
+    putContentInTab: function(loc) {
+        this.world().addMorphAt(TabbedPanelMorph(this.windowContent(), this.windowTitle()), loc);
+    },
+
+    putContentInWorld: function(loc) {
+        this.world().addMorphAt(this.windowContent(), loc);
+    },
+
+    windowContent: function() {
+	return this; // Default response, overridden by containers
+    },
+
+    windowTitle: function() {
+	return this.inspect().truncate(); // Default response, overridden by containers
     },
 
     toggleDnD: function(loc) {

@@ -380,7 +380,6 @@ Object.extend(TitleBarMorph.prototype, {
         TitleBarMorph.superClass.initialize.call(this, Rectangle(0, isExternal? - bh : 0, 
                                                  windowWidth, bh), "rect");
         this.linkToStyles(['titleBar']);
-        // this.setFill(LinearGradient.makeGradient(Color.primary.blue, Color.primary.blue.lighter(3)));
         this.ignoreEvents();
 
         var cell = Rectangle(0, 0, bh, bh);
@@ -413,20 +412,21 @@ Object.extend(TitleBarMorph.prototype, {
 
         // var font = FontInfo.forFamily(TextMorph.prototype.fontFamily, TextMorph.prototype.fontSize);
 
-        var label;
         if (headline instanceof TextMorph) {
-            label = headline;
+            this.label = headline;
         } else { // String
             var width = headline.length * 8; // wild guess headlineString.length * 2 *  font.getCharWidth(' ') + 2;
-            label = TextMorph.makeLabel(Rectangle(0, 0, width, bh), headline);
+            this.label = TextMorph.makeLabel(Rectangle(0, 0, width, bh), headline);
         }
 
-        label.align(label.bounds().topCenter(), this.shape.bounds().topCenter());
-        this.addMorph(label);
+        this.label.align(this.label.bounds().topCenter(), this.shape.bounds().topCenter());
+        this.addMorph(this.label);
         return this;
     },
 
-    handlesMouseDown: function(evt) {return false },  // hack for now
+    titleString: function() {return this.label.textString; },
+
+    handlesMouseDown: function(evt) {return false; },  // hack for now
 
     acceptsDropping: function(morph) {
         //console.log('accept drop from %s of %s, %s', this, morph, morph instanceof WindowControlMorph);
@@ -540,12 +540,21 @@ Object.extend(WindowMorph.prototype, {
         this.titleBar = titleBar;
         this.addMorph(this.titleBar);
         bounds.y -= titleHeight;
-        targetMorph.translateBy(bounds.topLeft().negated());
+        //targetMorph.translateBy(bounds.topLeft().negated());
         this.addMorph(targetMorph);
-        this.linkToStyles(['window']);
+        targetMorph.setPosition(pt(0, titleHeight));
+	this.linkToStyles(['window']);
         return this;
     },
 
+    windowContent: function() {
+        return this.targetMorph;
+    },
+    
+    windowTitle: function() {
+        return this.titleBar;
+    },
+    
     toggleCollapse: function() {
         return this.isCollapsed() ? this.expand() : this.collapse();
     },
