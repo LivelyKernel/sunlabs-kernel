@@ -3013,15 +3013,15 @@ Object.extend(Morph.prototype, {
             ["remove", this.remove.bind(this)],
             ["inspect", SimpleInspector.openOn.curry(this)],
             ["style", StylePanel.openOn.curry(this)],
-            ["drill", this, "showCoreSample", evt.mousePoint],
+            ["drill", this, "showOwnerChain", evt],
             ["grab", this, "pickMeUp", evt],
             ["reset rotation", this.setRotation.bind(this).curry(0)],
             [((!this.openForDragAndDrop) ? "close DnD" : "open DnD"), this, "toggleDnD", evt.mousePoint],
             ["toggle fisheye", this, "toggleFisheye"],
             ["-----"],
-            ["put me in a window", this, "putContentInWindow", this.position()],
-            ["put me in a tab", this, "putContentInTab", this.position()],
-            ["put me in the open", this, "putContentInWorld", this.position()],
+            ["put me in a window", this, "putMeInAWindow", this.position()],
+            ["put me in a tab", this, "putMeInATab", this.position()],
+            ["put me in the open", this, "putMeInTheWorld", this.position()],
             ["-----"],
             ["show Lively markup", this.addSvgInspector.bind(this).curry(this)],
             ["dump model", this.dumpModel.bind(this).curry(this)], // debugging, will go away
@@ -3032,18 +3032,27 @@ Object.extend(Morph.prototype, {
         return m;
     },
 
-    putContentInWindow: function(loc) {
+    putMeInAWindow: function(loc) {
 	var w = this.world();
 	var wm = WindowMorph(this.windowContent(), this.windowTitle());
-	w.addMorphAt(wm, loc.addXY(0, -wm.titleBar.bounds().height));
+	// Position it so the content stays in place
+	w.addMorphAt(wm, loc.subPt(wm.contentOffset));
     },
 
-    putContentInTab: function(loc) {
+    putMeInATab: function(loc) {
         this.world().addMorphAt(TabbedPanelMorph(this.windowContent(), this.windowTitle()), loc);
     },
 
-    putContentInWorld: function(loc) {
-        this.world().addMorphAt(this.windowContent(), loc);
+    putMeInTheWorld: function(loc) {
+        var c = this.immediateContainer();
+	var loc = c ? c.position().addPt(c.contentOffset) : this.position();
+	this.world().addMorphAt(this, loc);
+	if(c) c.remove();
+    },
+
+    immediateContainer: function() { // Containers override to return themselves
+        if(this.owner()) return this.owner().immediateContainer();
+	else return null;
     },
 
     windowContent: function() {
@@ -3069,8 +3078,10 @@ Object.extend(Morph.prototype, {
         MenuMorph([["OK", 0, "toString"]]).openIn(this.world(), loc, false, msg); 
     },
 
-    showCoreSample: function(loc) {
-        if (true) return this.notify("Sorry, core sample is\nnot yet available", loc);
+    showOwnerChain: function(evt) {
+        var items = this.ownerChain().map(
+            function(each) { return [each.inspect().truncate(), each, "showMorphMenu", evt]; });
+        MenuMorph(items).openIn(this.world(), evt.mousePoint);
     },
 
     copyToHand: function(hand) {
@@ -3110,6 +3121,14 @@ Object.extend(Morph.prototype, {
             return this.acceptsDropping(droppingMorph) ? this : null;
         // On grabs, can't pick up the world or morphs that handle mousedown
         else return (!evt.altKey && this === this.world()) ? null : this; 
+    },
+    
+    ownerChain: function() {
+        // Return an array of me and all my owner
+        if (!this.owner()) return [];
+	var owners = this.owner().ownerChain();
+	owners.push(this);
+	return owners;
     },
     
     acceptsDropping: function(morph) { 

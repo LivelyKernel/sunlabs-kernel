@@ -110,12 +110,14 @@ Object.extend(ClockMorph.prototype, {
         return this;
     },
 
+/*
     copy: function() {
         var newClock = ClockMorph.superClass.copy.call(this);
         newClock.removeAllMorphs();
         newClock.makeNewFace();
         return newClock; 
     },
+*/
 
     makeNewFace: function() {
         var bnds = this.shape.bounds();

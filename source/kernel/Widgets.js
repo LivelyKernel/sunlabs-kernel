@@ -412,19 +412,18 @@ Object.extend(TitleBarMorph.prototype, {
 
         // var font = FontInfo.forFamily(TextMorph.prototype.fontFamily, TextMorph.prototype.fontSize);
 
-        if (headline instanceof TextMorph) {
-            this.label = headline;
+        var label;
+	if (headline instanceof TextMorph) {
+            label = headline;
         } else { // String
             var width = headline.length * 8; // wild guess headlineString.length * 2 *  font.getCharWidth(' ') + 2;
-            this.label = TextMorph.makeLabel(Rectangle(0, 0, width, bh), headline);
+            label = TextMorph.makeLabel(Rectangle(0, 0, width, bh), headline);
         }
 
-        this.label.align(this.label.bounds().topCenter(), this.shape.bounds().topCenter());
-        this.addMorph(this.label);
+        label.align(label.bounds().topCenter(), this.shape.bounds().topCenter());
+        this.addMorph(label);
         return this;
     },
-
-    titleString: function() {return this.label.textString; },
 
     handlesMouseDown: function(evt) {return false; },  // hack for now
 
@@ -539,10 +538,9 @@ Object.extend(WindowMorph.prototype, {
         this.targetMorph = targetMorph;
         this.titleBar = titleBar;
         this.addMorph(this.titleBar);
-        bounds.y -= titleHeight;
-        //targetMorph.translateBy(bounds.topLeft().negated());
         this.addMorph(targetMorph);
-        targetMorph.setPosition(pt(0, titleHeight));
+	this.contentOffset = pt(0, titleHeight);
+        targetMorph.setPosition(this.contentOffset);
 	this.linkToStyles(['window']);
         return this;
     },
@@ -551,14 +549,17 @@ Object.extend(WindowMorph.prototype, {
         return this.targetMorph;
     },
     
-    windowTitle: function() {
-        return this.titleBar;
+    immediateContainer: function() {
+	// Content may need to know
+        return this;
     },
-    
+
     toggleCollapse: function() {
         return this.isCollapsed() ? this.expand() : this.collapse();
     },
     
+    // DI:  This is way too complicated.  The only access is via the toggleCollapse button,
+    // and therefore no reason to test, eg, double-expand or collapse
     collapse: function() { 
         if (this.isCollapsed()) {
             console.log('collapsing collapsed window %s?', this);
