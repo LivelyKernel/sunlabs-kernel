@@ -196,15 +196,15 @@ Object.extend(StylePanel.prototype, {
     
     setFill: function() {
         if (this.fillType == null) this.fillType = 'simple fill';
-	if (this.color1 == null) this.color1 = Color.gray;
-	if (this.color2 == null) this.color2 = Color.gray;
+        if (this.color1 == null) this.color1 = Color.gray;
+        if (this.color2 == null) this.color2 = Color.gray;
 
         if (this.fillType == 'simple fill')  this.targetMorph.setFill(this.color1);
     
         if (this.fillType == 'linear gradient') {
-	    if (this.fillDir == null) this.fillDir = 'NorthSouth';
+            if (this.fillDir == null) this.fillDir = 'NorthSouth';
             this.targetMorph.setFill(LinearGradient.makeGradient(this.color1, this.color2, LinearGradient[this.fillDir]));
-	}
+        }
     
         if (this.fillType == 'radial gradient')
             this.targetMorph.setFill(RadialGradient.makeCenteredGradient(this.color1, this.color2));
@@ -240,7 +240,7 @@ Object.extend(StylePanel.prototype, {
 
     buildView: function(rect) {
         var panelExtent = rect.extent();
-	var panel = PanelMorph(panelExtent, "rect");
+        var panel = PanelMorph(panelExtent, "rect");
         panel.setFill(Color.primary.blue.lighter().lighter());
         panel.setBorderWidth(2);
         var m;
@@ -258,14 +258,14 @@ Object.extend(StylePanel.prototype, {
         m.connectModel({model: this, setColor: "setBorderColor"});
         y += 40;
 
-	if(this.targetMorph.shape.roundEdgesBy) {
-	    panel.addMorph(TextMorph.makeLabel(Rectangle(50, y, 100, 20), 'Round Corners'));
-	    panel.addMorph(m = PrintMorph(Rectangle(160, y, 30, 20)));
-	    m.connectModel({model: this, getValue: "getRounding", setValue: "setRounding"});
-	    panel.addMorph(m = SliderMorph(Rectangle(200, y, 100, 20), 50.0));
-	    m.connectModel({model: this, getValue: "getRounding", setValue: "setRounding"});
-	    y += 30;
-	}
+        if (this.targetMorph.shape.roundEdgesBy) {
+            panel.addMorph(TextMorph.makeLabel(Rectangle(50, y, 100, 20), 'Round Corners'));
+            panel.addMorph(m = PrintMorph(Rectangle(160, y, 30, 20)));
+            m.connectModel({model: this, getValue: "getRounding", setValue: "setRounding"});
+            panel.addMorph(m = SliderMorph(Rectangle(200, y, 100, 20), 50.0));
+            m.connectModel({model: this, getValue: "getRounding", setValue: "setRounding"});
+            y += 30;
+        }
 
         panel.addMorph(m = CheapListMorph(Rectangle(50, y, 100, 50),[]));
         m.connectModel({model: this, getList: "getFillTypes", getSelection: "getFillType", setSelection: "setFillType"});
@@ -289,17 +289,17 @@ Object.extend(StylePanel.prototype, {
         m.connectModel({model: this, getValue: "getStrokeOpacity", setValue: "setStrokeOpacity"});
         panel.addMorph(m = SliderMorph(Rectangle(200, y, 100, 20), 1.0));
         m.connectModel({model: this, getValue: "getStrokeOpacity", setValue: "setStrokeOpacity"});
-	y += 30;
+        y += 30;
 
-	if (this.targetMorph.setTextColor) {
+        if (this.targetMorph.setTextColor) {
             panel.addMorph(TextMorph.makeLabel(Rectangle(50, y, 100, 20), 'Text Color'));
             panel.addMorph(m = ColorPickerMorph(Rectangle(250, y, 50, 30)));
             m.connectModel({model: this, setColor: "setTextColor"});
             y += 40;
-	}
+        }
 
-	var oldBounds = panel.shape.bounds();
-	panel.shape.setBounds(oldBounds.withHeight(y + 5 - oldBounds.y))
+        var oldBounds = panel.shape.bounds();
+        panel.shape.setBounds(oldBounds.withHeight(y + 5 - oldBounds.y))
 
         panel.morphMenu = function(evt) { 
             var menu = Morph.prototype.morphMenu.call(this,evt);
@@ -415,10 +415,10 @@ Object.extend(Prototype.Browser, {
     BrowserPlatform: navigator.platform,
     BrowserUserAgentHeader: navigator.userAgent,
     AlertBrowserInfo: function (){ alert("Browser name: "+ navigator.appName
-					 + "\nVersion: " + navigator.appName
-					 + "\nCode: " + navigator.appCodeName
-					 + "\nPlatform: " + navigator.platform
-					 + "\nUserAgentHeader: " + navigator.userAgent ) }
+                     + "\nVersion: " + navigator.appName
+                     + "\nCode: " + navigator.appCodeName
+                     + "\nPlatform: " + navigator.platform
+                     + "\nUserAgentHeader: " + navigator.userAgent ) }
 });
 
 console.log('loaded Tools.js');
