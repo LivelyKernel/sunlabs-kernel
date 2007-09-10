@@ -22,7 +22,6 @@ var FontInfo = window.parent.FontInfo;
 window.parent.console.platformConsole = console;
 var console = window.parent.console;
 
-
 Namespace =  {
     SVG : Canvas.getAttribute("xmlns"),
     LIVELY : Prototype.Browser.WebKit ? null : Canvas.getAttribute("xmlns:lively"), // Safari XMLSerializer seems to do wierd things w/namespaces
@@ -34,13 +33,12 @@ Namespace =  {
 var Loader = Class.create();
 Object.extend(Loader, {
     loadScript: function(ns, url) {
-	var script = document.createElementNS(Namespace.XHTML, "script");
-	script.setAttributeNS("src", url);
-	document.documentElement.appendChild(script);
-	//document.documentElement.removeChild(script);
+        var script = document.createElementNS(Namespace.XHTML, "script");
+        script.setAttributeNS("src", url);
+        document.documentElement.appendChild(script);
+        //document.documentElement.removeChild(script);
     }
 });
-
 
 // SVG/DOM bindings 
 
@@ -243,7 +241,7 @@ Function.prototype.localFunctionNames = function(exclude) {
     try {
         var superNames = (sup == null) ? [] : sup.functionNames();
     } catch (e) {
-	var superNames = [];
+        var superNames = [];
     }
     
     var localNames = [];
@@ -533,8 +531,8 @@ Object.extend(Point.prototype, function() { return {
 
 Object.extend(Point, {
     parse: function(string) { // reverse of inspect
-	var array = string.substring(3, string.length - 1).split(',');
-	return Point(array[0], array[1]);
+        var array = string.substring(3, string.length - 1).split(',');
+        return Point(array[0], array[1]);
     },
     
     polar: function(r, theta) {return Point(r*Math.cos(theta), r*Math.sin(theta)); },
@@ -1589,6 +1587,7 @@ Object.extend(EllipseShape.prototype, {
     reshape: RectShape.prototype.reshape,
 
     possibleHandleForControlPoint: RectShape.prototype.possibleHandleForControlPoint
+
 });
 
 /**
@@ -1704,7 +1703,7 @@ Object.extend(PolygonShape.prototype, {
         return null; 
     },
     
-    // blatantly stolen from http://local.wasp.uwa.edu.au/~pbourke/geometry/insidepoly/
+    // borrowed from http://local.wasp.uwa.edu.au/~pbourke/geometry/insidepoly/
     containsPoint: function(p) {
         var counter = 0;
         var vertices = this.vertices();
@@ -1960,12 +1959,12 @@ Object.extend(Morph, {
         node.initializeTransientState(null);
 
         if (Morph.prototype.drawBounds) node.updateBoundsElement();
-	if (node.activeScripts) {
-	    console.log('started stepping %s', node);
-	    node.startSteppingScripts();
-	}
 
-	
+        if (node.activeScripts) {
+            console.log('started stepping %s', node);
+            node.startSteppingScripts();
+        }
+
         return node; 
     },
 
@@ -2081,17 +2080,17 @@ Object.extend(Morph.prototype, {
         
         for (var i = 0; i < children.length; i++) {
             var node = children[i];
-	    if (node.nodeName == '#text') {
-		// whitespace, ignore
-	    } else if (node.tagName == 'action') {
-		var a = node.textContent.evalJSON();
-		console.log('starting stepping %s based on %s', this, node.textContent);
+            if (node.nodeName == '#text') {
+                // whitespace, ignore
+            } else if (node.tagName == 'action') {
+                var a = node.textContent.evalJSON();
+                console.log('starting stepping %s based on %s', this, node.textContent);
                 this.startStepping(a.stepTime/1000, a.scriptName, a.argIfAny);
-	    } else if (node.tagName == 'defs') { // FIXME FIXME, this is painfully ad hoc!
-		if (this.defs) {
+            } else if (node.tagName == 'defs') { // FIXME FIXME, this is painfully ad hoc!
+                if (this.defs) {
                     console.warn('%s already has defs %s', this, this.defs);
-		}
-		this.defs = node;
+                }
+                this.defs = node;
                 for (var def = node.firstChild; def != null; def = def.nextSibling) {
                     switch (def.tagName) {
                     case "clipPath":
@@ -2254,8 +2253,9 @@ Object.extend(Morph.prototype, {
         // Adjust all visual attributes specified in the style spec
         if (spec.borderWidth) this.setBorderWidth(spec.borderWidth);
         if (spec.borderColor) this.setBorderColor(spec.borderColor);
-        if (this.shape.roundEdgesBy) 
-		this.shape.roundEdgesBy(spec.rounding ? spec.rounding : 0);
+        if (this.shape.roundEdgesBy) { 
+            this.shape.roundEdgesBy(spec.rounding ? spec.rounding : 0);
+        }
         if (spec.fill) this.setFill(spec.fill);
         if (spec.opacity) {
                 this.setFillOpacity(spec.opacity);
@@ -2263,7 +2263,7 @@ Object.extend(Morph.prototype, {
         }
         if (spec.fillOpacity) this.setFillOpacity(spec.fillOpacity);
         if (spec.strokeOpacity) this.setStrokeOpacity(spec.strokeOpacity);
-	this.fillType = spec.fillType ? spec.fillType : "simple";
+        this.fillType = spec.fillType ? spec.fillType : "simple";
         this.baseColor = spec.baseColor ? spec.baseColor : Color.gray;
     },
 
@@ -2426,7 +2426,7 @@ Object.extend(Morph.prototype, {
             if (old.parentNode !== this.defs) {
                 console.warn('old value %s is not owned by %s', old, this);
                 return null;
-	        }
+            }
             this.defs.removeChild(old);
         }
         
@@ -2437,7 +2437,7 @@ Object.extend(Morph.prototype, {
         
 //          KP sez... this should recognize if an element already has an ID
 //          Then it is owned by another and should be cloned.  But it didn't
-//	        Work for the case of setFill.  May need more debugging...
+//          Work for the case of setFill.  May need more debugging...
             if (id) {
                 console.log('cloning node b/c original has an owner, id %s', id);
                 element = element.cloneNode(true);
@@ -2474,7 +2474,7 @@ Object.extend(Morph.prototype, {
     },
 
     evalInThis: function(str) {
-	// eval the string argument in this context (ie, 'this' = this morph)
+        // eval the string argument in this context (ie, 'this' = this morph)
         return eval(str);
     }
 
@@ -2553,7 +2553,7 @@ Object.extend(Morph.prototype, {
         if (!this.owner()) return null;  // already removed
 
         this.stopStepping();
-	this.stopSteppingScripts();
+        this.stopSteppingScripts();
         this.owner().removeMorph(this);
 
         return this;
@@ -2672,7 +2672,6 @@ Object.extend(Morph.prototype, {
     }
     
 });
-
 
 // Morph coordinate transformation functions
 Object.category(Morph.prototype, 'transforms', function() { return {
@@ -3034,39 +3033,39 @@ Object.extend(Morph.prototype, {
 
     putMeInAWindow: function(loc) {
         var c = this.immediateContainer();
-	var w = this.world();
-	var wm = WindowMorph(this.windowContent(), this.windowTitle());
-	// Position it so the content stays in place
-	w.addMorphAt(wm, loc.subPt(wm.contentOffset));
-	if(c) c.remove();
+        var w = this.world();
+        var wm = WindowMorph(this.windowContent(), this.windowTitle());
+        // Position it so the content stays in place
+        w.addMorphAt(wm, loc.subPt(wm.contentOffset));
+        if (c) c.remove();
     },
 
     putMeInATab: function(loc) {
         var c = this.immediateContainer();
-	var w = this.world();
-	var wm = TabbedPanelMorph(this.windowContent(), this.windowTitle());
-	w.addMorphAt(wm, loc);
-	if(c) c.remove();
+        var w = this.world();
+        var wm = TabbedPanelMorph(this.windowContent(), this.windowTitle());
+        w.addMorphAt(wm, loc);
+        if (c) c.remove();
     },
 
     putMeInTheWorld: function(loc) {
         var c = this.immediateContainer();
-	var loc = c ? c.position().addPt(c.contentOffset) : this.position();
-	this.world().addMorphAt(this, loc);
-	if(c) c.remove();
+        var loc = c ? c.position().addPt(c.contentOffset) : this.position();
+        this.world().addMorphAt(this, loc);
+        if(c) c.remove();
     },
 
     immediateContainer: function() { // Containers override to return themselves
-        if(this.owner()) return this.owner().immediateContainer();
-	else return null;
+        if (this.owner()) return this.owner().immediateContainer();
+        else return null;
     },
 
     windowContent: function() {
-	return this; // Default response, overridden by containers
+        return this; // Default response, overridden by containers
     },
 
     windowTitle: function() {
-	return this.inspect().truncate(); // Default response, overridden by containers
+        return this.inspect().truncate(); // Default response, overridden by containers
     },
 
     toggleDnD: function(loc) {
@@ -3132,9 +3131,9 @@ Object.extend(Morph.prototype, {
     ownerChain: function() {
         // Return an array of me and all my owner
         if (!this.owner()) return [];
-	var owners = this.owner().ownerChain();
-	owners.push(this);
-	return owners;
+        var owners = this.owner().ownerChain();
+        owners.push(this);
+        return owners;
     },
     
     acceptsDropping: function(morph) { 
@@ -3179,10 +3178,10 @@ Object.extend(Morph.prototype, {
         // Every morph carries a list of currently active actions (alarms and repetitive scripts)
         if (!this.activeScripts) this.activeScripts = [action];
         else this.activeScripts.push(action);
-console.log('added script ' + action.scriptName);
-	var actionCode = document.createElementNS(Namespace.LIVELY, "action");
-	actionCode.appendChild(document.createCDATASection(Object.toJSON(action)));
-	this.addChildElement(actionCode);
+        console.log('added script ' + action.scriptName);
+        var actionCode = document.createElementNS(Namespace.LIVELY, "action");
+        actionCode.appendChild(document.createCDATASection(Object.toJSON(action)));
+        this.addChildElement(actionCode);
     },
     
     startSteppingFunction: function(stepTime, func) {
@@ -3391,7 +3390,6 @@ Object.extend(Exporter.prototype, {
         return new XMLSerializer().serializeToString(this.rootMorph);
     },
 
-    
 });
 
 /**
