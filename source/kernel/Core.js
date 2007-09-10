@@ -127,10 +127,10 @@ Object.extend(Class, {
         if (className != "Global") return this.globalScope[className].localFunctionNames();
         return Global.functionNames().copyWithoutAll(this.globalScope.classNames()); 
     },
-
+    
     listClassNames: function(scope) {
         var a = [];
-
+	
         for (var name in scope) { 
             try {
                 if (Class.isClass(scope[name])) {
@@ -140,9 +140,9 @@ Object.extend(Class, {
                 // FF can throw an exception here
             }
         }
-
+	
         a.push("Object", "Global"); // a few others of note
-
+	
         // console.log('found array ' + a.sort());
         return a.sort(); 
     }
@@ -220,7 +220,7 @@ Function.prototype.functionNames = function() {
     for (var name in this.prototype) { 
         try {
             if (this.prototype[name] instanceof Function) 
-            functionNames.push(name); 
+		functionNames.push(name); 
         } catch (er) {
             // FF can throw an exception here ...
         }
@@ -2454,7 +2454,7 @@ Object.extend(Morph.prototype, {
 
     getNamedMorph: function(name) {
         for (var node = this.submorphs.firstChild; node != null; node = node.nextSibling) {
-            if (node.getAttribute("property") == name) { // FIXME Lively NS
+            if (node.getAttributeNS(Namespace.LIVELY, "property") == name) { 
                 if (!(node instanceof Morph)) {
                     console.warn('%s is not a morph but %s', name,  node);
                 }
@@ -2468,7 +2468,7 @@ Object.extend(Morph.prototype, {
         if (this[name]) {
             console.warn('morph named %s already exists? %s', name, this[name]);
         }
-        morph.setAttribute("property", name); // FIXME Lively NS
+        morph.setAttributeNS(Namespace.LIVELY, "property", name); 
         this[name] = morph;
         return this.addMorph(morph);
     },
@@ -3306,7 +3306,7 @@ Object.extend(Morph.prototype, {
         try {
             return pt.matrixTransform(this.owner().getTransformToElement(this)); 
         } catch (er) {
-            console.log('got error %s owner %s this %s', er, this.owner(), this);
+            console.log('got error %s owner %s this %s stack %s', er, this.owner(), this, er.stack);
             return pt;
         }
     },
@@ -3363,6 +3363,7 @@ Object.extend(Morph.prototype, {
     clipToPath: function(path) {
         var clipPath = NodeFactory.create('clipPath');
         clipPath.appendChild(path);
+	clipPath.setAttributeNS(null, "shape-rendering", "optimizeSpeed");
         var ref = this.assign('clipPath', clipPath);
         this.setAttributeNS(null, "clip-path", ref);
     },

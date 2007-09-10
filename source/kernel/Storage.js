@@ -49,7 +49,7 @@ Object.extend(WebStore.prototype, {
 
     saveAs: function(name, content) {
 	console.log('saving content %s', content);
-	this.save('http://' + this.host + '/' +  this.path + "/" + name, content, 'LastWriteStatus');
+	this.save("http://%1/%2/%3".format(this.host, this.path, name), content, "LastWriteStatus");
     },
 
     save: function(url, content, modelVariable) {
@@ -59,17 +59,17 @@ Object.extend(WebStore.prototype, {
         var options = Object.derive(NetRequest.options, {
             method: 'PUT',
             body: content,
-         
+            
             onSuccess: function(transport) {
                 store[modelVariable] = transport.status;
                 store.changed('get' + modelVariable);
             },
     
             onFailure: function(transport) {
+		alert('failed saving with response ' + transport.responseText);
                 console.log('failed with response %s', transport.responseText);
-                console.log('authenticate %s',transport.getResponseHeader('WWW-Authenticate'));
-                store[modelVariable] = transport.status;
-                store.changed('get' + modelVariable);
+                //store[modelVariable] = transport.status;
+                //store.changed('get' + modelVariable);
             }
         });
 
@@ -85,21 +85,17 @@ Object.extend(WebStore.prototype, {
         var options = Object.derive(NetRequest.options, {
             method: 'PROPFIND', 
             requestHeaders: { "Depth": depth },
-    
+	    
             onSuccess: function(transport) {
-                try {
-                    console.log('propfind received %s', 
-				NetRequest.documentToString(transport.responseXML) || transport.responseText);
-    
-                    var result = transport.responseXML.documentElement;
-    
-                    store[modelVariable] = Query.evaluate(result, xpQueryString);
-                    store.changed('get' + modelVariable);
-                    // console.info('got listing %s', store[modelVariable].pluck('textContent'));
-                } catch (e) {
-                    console.log('exception %s in %s', e, Function.callStack());
-                }
-            } 
+                console.log('propfind received %s', 
+			    NetRequest.documentToString(transport.responseXML) || transport.responseText);
+		
+                var result = transport.responseXML.documentElement;
+		
+                store[modelVariable] = Query.evaluate(result, xpQueryString);
+                store.changed('get' + modelVariable);
+                // console.info('got listing %s', store[modelVariable].pluck('textContent'));
+            }.logErrors('onSuccess')
         });
         
         new Ajax.Request(url, options);
@@ -112,37 +108,32 @@ Object.extend(WebStore.prototype, {
     setCurrentDirectory: function(name) {
         this.CurrentDirectory = name;
         if (this.CurrentDirectory != null) {
-            var url = "http://" + this.host + "/" + this.CurrentDirectory;
+            var url = "http://%1/%2".format(this.host, this.CurrentDirectory);
             // initialize getting the contents
-           this.propfind(url, 1, '/D:multistatus/D:response/D:href', 'CurrentDirectoryContents');
+            this.propfind(url, 1, "/D:multistatus/D:response/D:href", "CurrentDirectoryContents");
         }
     },
     
     getCurrentDirectoryContents: function() {
-        return (this.CurrentDirectoryContents || []).map(function(n) { 
-            // strip the leading slashes b/c ListMorph doesn't like them???
-            var txt = n.textContent;
-            if (txt) {
-                if (txt.startsWith('/')) { 
-                    return txt.substring(1);
-                }
-            }
-           return txt;
-        });
+        return (this.CurrentDirectoryContents || []).pluck("textContent");
     },
     
     setCurrentResource: function(name) {
-        this.currentResource = name;
+	if (name && name.startsWith('/')) 
+            this.currentResource = name.substring(1);
+	else 
+	    this.currentResource = name;
+	console.log('current resource set to %s', this.currentResource);
         if (this.currentResource) {
             // initialize getting the resource contents
-            this.fetch(this.currentResourceURL(), 'CurrentResourceContents');
+            this.fetch(this.currentResourceURL(), "CurrentResourceContents");
         }
     },
     
     currentResourceURL: function() {
-        return 'http://' + this.host + '/' +  this.currentResource;
+        return "http://%1/%2".format(this.host, this.currentResource);
     },
-
+    
     getCurrentResourceContents: function() {
         return this.CurrentResourceContents;
     },
@@ -152,30 +143,24 @@ Object.extend(WebStore.prototype, {
     },
     
     buildView: function(extent) {
-        var panel = PanelMorph(extent, "rect");
-        panel.setFill(Color.blue.lighter().lighter());
-        panel.setBorderWidth(2);
-        panel.model = this;
-    
-        panel.addMorph(m = ListPane(Rectangle(0,0,200,150)));
-        m.connectModel({model: this, getList: "getDirectoryList", setSelection: "setCurrentDirectory"});
-        panel.addMorph(m = ListPane(Rectangle(200,0,200,150)));
-        m.connectModel({model: this, getList: "getCurrentDirectoryContents", setSelection: "setCurrentResource"});
-        panel.addMorph(m = TextPane(Rectangle(0,150,400,150)));
-
-        m.connectModel({model: this, getText: "getCurrentResourceContents", setText: "setCurrentResourceContents"});
-
+        var panel = PanelMorph.makeBrowser(extent, 0.4);
+	var m = panel.getNamedMorph('leftPane');
+	m.connectModel({model: this, getList: "getDirectoryList", setSelection: "setCurrentDirectory"});
+	m = panel.getNamedMorph('rightPane');
+	m.connectModel({model: this, getList: "getCurrentDirectoryContents", setSelection: "setCurrentResource"});
+	m = panel.getNamedMorph('bottomPane');
+	m.connectModel({model: this, getText: "getCurrentResourceContents", setText: "setCurrentResourceContents"});
+	
         var model = this;
         
         m.innerMorph().processCommandKeys = function(key) {
             if (key == 's') {
                 console.log('in %s', this.owner());
                 // model.addCredentialDialog(this.world());
-                model.save('http://' + model.host + '/' +  model.currentResource, 
-                this.textString, 'LastWriteStatus');
+                model.save(model.currentResourceURL(), this.textString, 'LastWriteStatus');
                 return;
             } else {
-               return TextMorph.prototype.processCommandKeys.call(this, key);
+		return TextMorph.prototype.processCommandKeys.call(this, key);
             }
         }
         return panel;
@@ -184,7 +169,7 @@ Object.extend(WebStore.prototype, {
     addCredentialDialog: function(panel) {
         (new Credential()).openIn(panel.world(), panel.worldPoint(panel.bounds().topLeft()).addXY(30, 20));
     },
-
+    
     openIn: function(world, location) {
         console.log('opening web store in %s', location);
         var panel = this.buildView(pt(400,300));
@@ -273,7 +258,7 @@ Object.extend(Credential.prototype, {
         m.connectModel({model: this, getValue: "getOKValue", setValue: "setOKValue"});
 
         m = panel.addMorph(ButtonMorph(Rectangle(140, y, 50, height)));
-        m.addMorph(TextMorph.makeLabel(m.shape.bounds(), 'Cancel'));
+        m.addMorph(TextMorph.makeLabel(m.shape.bounds(), "Cancel"));
         m.setToggle(true);
         m.connectModel({model: this, getValue: "getCancelValue", setValue: "setCancelValue"});
 

@@ -1173,6 +1173,29 @@ Object.extend(PanelMorph.prototype, {
 
 });
 
+
+Object.extend(PanelMorph, {
+    makeBrowser: function(extent, bottomPaneProportion) {
+	var panel = PanelMorph(extent);
+        panel.setFill(Color.primary.blue.lighter().lighter());
+        panel.setBorderWidth(2);
+	if (bottomPaneProportion === undefined) bottomPaneProportion = 0;
+	var r = Rectangle(0, 0, extent.x/2, extent.y*(1 - bottomPaneProportion));
+	var left = panel.setNamedMorph("leftPane", ListPane(r));
+        var right = panel.setNamedMorph("rightPane", ListPane(r));
+	right.align(right.bounds().topLeft(), left.bounds().topRight());
+	if (bottomPaneProportion) {
+	    r = Rectangle(0, 0, extent.x, extent.y*bottomPaneProportion);
+	    var bottom = panel.setNamedMorph("bottomPane", TextPane(r, "-----"));
+	    bottom.align(bottom.bounds().topLeft(), left.bounds().bottomLeft());
+	}
+        return panel;
+    }
+    
+});
+
+
+
 /**
  * @class CheapListMorph
  */ 
@@ -2450,6 +2473,7 @@ HandMorph = HostClass.create('HandMorph', Morph);
 Object.extend(HandMorph.prototype, {
     shadowOffset: pt(5,5),
     handleOnCapture: true,
+    applyDropShadowFilter: false,
 
     initialize: function(local) {
         HandMorph.superClass.initialize.call(this, pt(5,5).extent(pt(10,10)), "rect");
@@ -2710,12 +2734,16 @@ Object.extend(HandMorph.prototype, {
 
         //console.log('grabbed %s', grabbedMorph);
         this.addMorph(grabbedMorph);
-        
+	if (this.applyDropShadowFilter)
+            grabbedMorph.setAttributeNS(null, "filter", "url(#DropShadowFilter)");
+
         // grabbedMorph.updateOwner(); 
         this.changed(); //for drop shadow
     },
     
     ungrab: function(morph) { 
+	if (this.applyDropShadowFilter)
+            morph.removeAttributeNS(null, "filter");
         // Needs to put back in former owner, position, submorphIndex
     },
     

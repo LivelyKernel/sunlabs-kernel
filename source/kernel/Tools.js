@@ -45,16 +45,14 @@ Object.extend(SimpleBrowser.prototype, {
     },
 
     buildView: function(extent) {
-        var panel = PanelMorph(extent);
-        panel.setFill(Color.primary.blue.lighter().lighter());
-        panel.setBorderWidth(2);
-        panel.addMorph(m = ListPane(Rectangle(0,0,200,150)));
-        m.connectModel({model: this, getList: "getClassList", setSelection: "setClassName"});
-        panel.addMorph(m = ListPane(Rectangle(200,0,200,150)));
-        m.connectModel({model: this, getList: "getMethodList", setSelection: "setMethodName"});
-        panel.addMorph(m = TextPane(Rectangle(0,150,400,150), "-----"));
-        m.connectModel({model: this, getText: "getMethodString", setText: "setMethodString"});
-        return panel;
+	var panel = PanelMorph.makeBrowser(extent, 0.4);
+	var m = panel.getNamedMorph('leftPane');
+	m.connectModel({model: this, getList: "getClassList", setSelection: "setClassName"});
+	m = panel.getNamedMorph('rightPane');
+	m.connectModel({model: this, getList: "getMethodList", setSelection: "setMethodName"});
+	m = panel.getNamedMorph('bottomPane');
+	m.connectModel({model: this, getText: "getMethodString", setText: "setMethodString"});
+	return panel;
     }
     
 });
@@ -111,17 +109,14 @@ Object.extend(SimpleInspector.prototype, {
     },
 
     buildView: function(rect) {
-        var panel = Morph(rect, "rect");
-        panel.setFill(Color.primary.blue.lighter().lighter());
-        panel.setBorderWidth(2);
-
-        var m;
-        panel.addMorph(m = ListPane(Rectangle(0,0,200,150)));
-        m.connectModel({model: this, getList: "getPropList", setSelection: "setPropName"});
-        panel.addMorph(m = TextPane(Rectangle(200,0,200,150)));
-        m.connectModel({model: this, getText: "getPropText", setText: "setPropText"});
-        panel.addMorph(m = TextPane(Rectangle(0,150,400,100), "doits here have this === inspectee"));
-        m.connectModel({model: this, doitContext: "contextForEval"});
+	var panel = PanelMorph.makeBrowser(rect.extent(), 0.4);
+	var m = panel.getNamedMorph('leftPane');
+	m.connectModel({model: this, getList: "getPropList", setSelection: "setPropName"});
+	m = panel.getNamedMorph('rightPane');
+	m.connectModel({model: this, getText: "getPropText", setText: "setPropText"});
+	m = panel.getNamedMorph('bottomPane');
+	m.connectModel({model: this, doitContext: "contextForEval"});	
+	m.innerMorph().setTextString("doits here have this === inspectee");
 
         var thisModel = this;
         panel.morphMenu = function(evt) { 
