@@ -3040,7 +3040,9 @@ Object.extend(Morph.prototype, {
     },
 
     putMeInATab: function(loc) {
-        this.world().addMorphAt(TabbedPanelMorph(this.windowContent(), this.windowTitle()), loc);
+	var w = this.world();
+	var wm = TabbedPanelMorph(this.windowContent(), this.windowTitle());
+	w.addMorphAt(wm, loc);
     },
 
     putMeInTheWorld: function(loc) {

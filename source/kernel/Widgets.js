@@ -530,7 +530,7 @@ Object.extend(WindowMorph.prototype, {
     
     initialize: function(targetMorph, headline, location) {
         var bounds = targetMorph.bounds().clone();
-        var titleBar = TitleBarMorph(headline, bounds.width, this, false);
+        var titleBar = this.makeTitleBar(headline, bounds.width);
         var titleHeight = titleBar.bounds().height;
 
         bounds.height += titleHeight;
@@ -543,6 +543,11 @@ Object.extend(WindowMorph.prototype, {
         targetMorph.setPosition(this.contentOffset);
 	this.linkToStyles(['window']);
         return this;
+    },
+
+    makeTitleBar: function(headline, width) {
+	// Overridden in TabbedPanelMorph
+        return TitleBarMorph(headline, width, this, false);
     },
 
     windowContent: function() {
@@ -646,40 +651,14 @@ Object.extend(WindowMorph.prototype, {
   
 // ***Note TabbedPanelMorph is not written yet
 //	Just a copy of WindowMorph, prior to my rewriting it -- DI ***
-TabbedPanelMorph = HostClass.create('TabbedPanelMorph', Morph);
-Object.extend(TabbedPanelMorph, {
-    EXPANDED: "expanded",
-    COLLAPSED: "collapsed",
-    SHUTDOWN: "shutdown"
-});
-
+TabbedPanelMorph = HostClass.create('TabbedPanelMorph', WindowMorph);
 Object.extend(TabbedPanelMorph.prototype, {
 
-    state: TabbedPanelMorph.EXPANDED,
-    titleBar: null,
-    targetMorph: null,
-    
     initialize: function(targetMorph, headline, location) {
-        var bounds = targetMorph.bounds().clone();
-        var titleBar = TitleBarMorph(headline, bounds.width, this, false);
-        var titleHeight = titleBar.bounds().height;
-
-        bounds.height += titleHeight;
-        TabbedPanelMorph.superClass.initialize.call(this, location ? rect(location, bounds.extent()) : bounds, 'rect');
-        this.targetMorph = targetMorph;
-        this.titleBar = titleBar;
-        this.addMorph(this.titleBar);
-        bounds.y -= titleHeight;
-        targetMorph.translateBy(bounds.topLeft().negated());
-        this.addMorph(targetMorph);
-        this.linkToStyles(['window']);
+        TabbedPanelMorph.superClass.initialize.call(this, targetMorph, headline, location);
         return this;
     },
 
-    toggleCollapse: function() {
-        return this.isCollapsed() ? this.expand() : this.collapse();
-    },
-    
     collapse: function() { 
         if (this.isCollapsed()) {
             console.log('collapsing collapsed window %s?', this);
@@ -727,35 +706,6 @@ Object.extend(TabbedPanelMorph.prototype, {
         //this.titleBar.ignoreEvents();
         this.state = "expanded";
         //this.action = collapse;
-    },
-
-    initiateShutdown: function() {
-        this.state = TabbedPanelMorph.SHUTDOWN;
-        this.targetMorph.shutdown(); // shutdown may be prevented ...
-        this.remove();
-        return true;
-    },
-
-    updateView: function(aspect, controller) {
-        var plug = this.modelPlug;
-        
-        if (!plug) return;
-        
-        if (aspect == plug.getState) {
-            //this.loadURL(this.getModelValue('getURL', ""));
-            var state = this.getModelValue('getState', "");
-            switch (state) {
-            case TabbedPanelMorph.EXPANDED:
-                if (this.isCollapsed()) this.expand();
-                break;
-            case TabbedPanelMorph.COLLAPSED:
-                if (!this.isCollapsed()) this.collapse();
-                break;
-            case TabbedPanelMorph.SHUTDOWN:
-                if (!this.isShutdown()) this.initiateShutdown();
-                break;
-            }
-        }
     }
 
 });
