@@ -26,12 +26,12 @@ Object.extend(TextWord.prototype, {
         this.stopIndex = textString.length - 1;
         this.topLeft = topLeft;
         this.textContent = this.textString; //.substring(this.startIndex);
-	this.fontInfo = font;
+        this.fontInfo = font;
         //this.setAttribute("font-family", font.getFamily()); // has to be individually set
         //this.setAttribute("font-size", font.getSize()); // has to be individually set
         this.setX(topLeft.x);
         this.setY(topLeft.y + font.getSize());
-	this.didLineBreak = false;
+        this.didLineBreak = false;
         return this;
     },
 
@@ -41,18 +41,18 @@ Object.extend(TextWord.prototype, {
         var rightX = this.topLeft.x + compositionWidth;
         var leadingSpaces = 0;
     
-	this.didLineBreak = false;
-	// get the character bounds until it hits the right side of the compositionWidth
+        this.didLineBreak = false;
+        // get the character bounds until it hits the right side of the compositionWidth
         for (var i = this.startIndex; i < this.textString.length && i < (this.startIndex + length); i++) {
-          if (this.getBounds(i).maxX() >= rightX) {
-	    // Hit right bounds -- wrap at word break if possible
-            this.setStopIndex(Math.max(this.startIndex, i - 1)); 
-	    this.didLineBreak = true;
-            return;
-          }
+            if (this.getBounds(i).maxX() >= rightX) {
+                // Hit right bounds -- wrap at word break if possible
+                this.setStopIndex(Math.max(this.startIndex, i - 1)); 
+                this.didLineBreak = true;
+                return;
+            }
         }
         // Reached the end of text
-	this.setStopIndex(i);
+        this.setStopIndex(i);
     },
     
     // accessor function
@@ -62,12 +62,12 @@ Object.extend(TextWord.prototype, {
 
     // accessor function
     getStopIndex: function() {
-	return this.stopIndex;
+        return this.stopIndex;
     },
 
     // return true if we bumped into the width limit while composing
     getLineBrokeOnCompose: function() {
-	return this.didLineBreak;
+        return this.didLineBreak;
     },
     
     // get the bounds of the character pointed to by stringIndex
@@ -90,21 +90,22 @@ Object.extend(TextWord.prototype, {
 
     // string representation
     toString: function() {
-	return "textString: (" + this.textString + ")" +
-		  " substr: (" + this.textString,substring(this.startIndex, this.stopIndex) + ")" +
-		  " startIndex: " + this.startIndex +
-		  " stopIndex: " + this.stopIndex +
-	          " topLeft: " + this.topLeft.inspect() +
-		  " textContent: " + this.textContent +
-		  " didLineBreak: " + this.didLineBreak;
+        return "textString: (" + this.textString + ")" +
+               " substr: (" + this.textString,substring(this.startIndex, this.stopIndex) + ")" +
+               " startIndex: " + this.startIndex +
+               " stopIndex: " + this.stopIndex +
+               " topLeft: " + this.topLeft.inspect() +
+               " textContent: " + this.textContent +
+               " didLineBreak: " + this.didLineBreak;
     },
 
     // log debugging information to the console
     log: function(label) {
-	var lString = this.toString();
-	if (label != null)
-	    lString = label + ": " + lString;
-	console.log(lString);
+        var lString = this.toString();
+        if (label != null) {
+            lString = label + ": " + lString;
+        }
+        console.log(lString);
     }
     
 });
@@ -121,30 +122,30 @@ Object.extend(WordChunk, {
     // create a chunk representing printable text
     createWord: function(offset, length) {
         var w = new WordChunk(offset, length);
-	return w;
+        return w;
     },
 
     // create a chunk representing whitespace (typically space characters)
     createWhite: function(offset, length) {
-	var w = this.createWord(offset, length);
-	w.isWhite = true;
-	return w;
+        var w = this.createWord(offset, length);
+        w.isWhite = true;
+        return w;
     },
 
     // create a chunk representing a newline
     createNewLine: function(offset) {
-	var w = this.createWord(offset, 1);
-	w.isWhite = true;
-	w.isNewLine = true;
-	return w;
+        var w = this.createWord(offset, 1);
+        w.isWhite = true;
+        w.isNewLine = true;
+        return w;
     },
 
     // create a chunk representing a tab
     createTab: function(offset) {
-	var w = this.createWord(offset, 1);
-	w.isWhite = true;
-	w.isTab = true;
-	return w;
+        var w = this.createWord(offset, 1);
+        w.isWhite = true;
+        w.isTab = true;
+        return w;
     }
 
 });
@@ -156,71 +157,74 @@ Object.extend(WordChunk.prototype, {
     isTab: false,
 
     initialize: function(offset, length) {
-	this.start = offset;
-	this.length = length;
-	this.render = true;
-	this.bounds = null;
-	this.wasComposed = false;
-	this.word = null;
+        this.start = offset;
+        this.length = length;
+        this.render = true;
+        this.bounds = null;
+        this.wasComposed = false;
+        this.word = null;
     },
 
     // accessor function
     setWord: function(newWord) {
-	this.word = newWord;
+        this.word = newWord;
     },
 
     // accessor function
     getWord: function() {
-	return this.word;
+        return this.word;
     },
 
     // query
     isSpaces: function() {
-      return this.isWhite && !this.isTab && !this.isNewLine;
+        return this.isWhite && !this.isTab && !this.isNewLine;
     },
 
     // clone a chunk only copying minimal information
     cloneSkeleton: function() {
-      var c = WordChunk.createWord(this.start, this.length);
-      c.isWhite = this.isWhite;
-      c.isNewLine = this.isNewLine;
-      c.isTab = this.isTab;
-      return c;
+        var c = WordChunk.createWord(this.start, this.length);
+        c.isWhite = this.isWhite;
+        c.isNewLine = this.isNewLine;
+        c.isTab = this.isTab;
+        return c;
     },
 
     // fully clone a chunk (see warnings)
     clone: function(src) {
-	var c = cloneSkeleton; // KP: does this work? cloneSkeleton seems undefined here
-      c.render = this.render;
-      c.bounds = this.bounds; // BEWARE - not cloned
-      c.wasComposed = this.wasComposed;
-      c.word = this.word;     // BEWARE - not cloned
-      return c;
+        var c = cloneSkeleton; // KP: does this work? cloneSkeleton seems undefined here
+        c.render = this.render;
+        c.bounds = this.bounds; // BEWARE - not cloned
+        c.wasComposed = this.wasComposed;
+        c.word = this.word;     // BEWARE - not cloned
+        return c;
     },
 
     // string representation
     toString: function() {
-      var lString = "Chunk start: " + this.start +
-		    " length: " + this.length +
-		    " isWhite: " + this.isWhite +
-		    " isNewLine: " + this.isNewLine +
-		    " isTab: " + this.isTab +
-		    " wasComposed: " + this.wasComposed;
-      if (this.bounds == null)
-	lString += " null bounds";
-      else
-	lString += " @(" + this.bounds.x + "," + this.bounds.y + ")(" +
-		   this.bounds.width + "x" + this.bounds.height + ")";
-      return lString;
+        var lString = "Chunk start: " + this.start +
+            " length: " + this.length +
+            " isWhite: " + this.isWhite +
+            " isNewLine: " + this.isNewLine +
+            " isTab: " + this.isTab +
+            " wasComposed: " + this.wasComposed;
+        if (this.bounds == null) {
+            lString += " null bounds";
+        } else {
+            lString += " @(" + this.bounds.x + "," + this.bounds.y + ")(" +
+                       this.bounds.width + "x" + this.bounds.height + ")";
+        }
+        return lString;
     },
 
     // log debugging information to the console
     log: function(label) {
-      var lString = this.toString();
-      if (lString != null)
-	lString = label + ": " + lString;
-      console.log(lString);
+        var lString = this.toString();
+        if (lString != null) {
+            lString = label + ": " + lString;
+        }
+        console.log(lString);
     }
+    
 });
 
 /**
@@ -231,21 +235,21 @@ Object.extend(WordChunk.prototype, {
 var TextLine = Class.create();
 
 Object.extend(TextLine.prototype, {
+
     // create a new line
     initialize: function(textString, startIndex, topLeft, font, chunkSkeleton) {
-	this.textString = textString;
+        this.textString = textString;
         this.font = font;
-	this.startIndex = startIndex;
-	this.overallStopIndex = textString.legnth - 1;
-	this.topLeft = topLeft;
-	this.spaceWidth = font.getCharWidth(' ');
-	this.tabWidth = this.spaceWidth * 4;
-	this.hasComposed = false;
-	this.chunks = chunkSkeleton;
-	return this;
+        this.startIndex = startIndex;
+        this.overallStopIndex = textString.legnth - 1;
+        this.topLeft = topLeft;
+        this.spaceWidth = font.getCharWidth(' ');
+        this.tabWidth = this.spaceWidth * 4;
+        this.hasComposed = false;
+        this.chunks = chunkSkeleton;
+        return this;
     },
-    
-    
+
     // is the character 'c' what we consider to be whitespace? (private)
     isWhiteSpace: function(c) {
         return (c == ' ' || c == '\t' || c == '\r' || c == '\n');
@@ -253,267 +257,279 @@ Object.extend(TextLine.prototype, {
 
     // is the character 'c' what we consider to be a newline? (private)
     isNewLine: function(c) {
-	return (c == '\r' || c == '\n');
+        return (c == '\r' || c == '\n');
     },
 
     // we found a word so figure out where the chunk extends to (private)
     chunkFromWord: function(wString, offset) {
         for (var i = offset; i < wString.length; i++) {
-	  // BEWARE - hand inlined (yuk!) for a surprisingly moderate gain (3026 vs 2984 ticks) - kam
-	  //if (this.isWhiteSpace(wString[i]))
-	  var c = wString[i];
-	  if (c == ' ' || c == '\t' || c == '\r' || c == '\n')
-	  // end if inline
-	    return i - offset;
-	}
-	return i - offset;
+            // BEWARE - hand inlined (yuk!) for a surprisingly moderate gain (3026 vs 2984 ticks) - kam
+            //if (this.isWhiteSpace(wString[i]))
+            var c = wString[i];
+            if (c == ' ' || c == '\t' || c == '\r' || c == '\n') {
+                // end if inline
+                return i - offset;
+            }
+        }
+        return i - offset;
     },
 
     // we found a space so figure out where the chunk extends to (private)
     chunkFromSpace: function(wString, offset) {
         for (var i = offset; i < wString.length; i++) {
-	  if (wString[i] != ' ')
-	    return i - offset;
-	}
-	return i - offset;
+            if (wString[i] != ' ') {
+                return i - offset;
+            }
+        }
+        return i - offset;
     },
 
     // look at wString starting at startOffset and return an array with all of the chunks in it
     chunkFromString: function(wString, startOffset) {
-	var offset = startOffset;
-	var pieces = [];
-	var chunkSize;
+        var offset = startOffset;
+        var pieces = [];
+        var chunkSize;
 
-	while (offset < wString.length) {
-	  chunkSize = 1; // default is one character long
-	  if (this.isWhiteSpace(wString[offset])) {
-	    if (this.isNewLine(wString[offset]))
-	      pieces.push(WordChunk.createNewLine(offset));
-	    else if (wString[offset] == '\t') {
-	      pieces.push(WordChunk.createTab(offset));
-	    } else {
-	      chunkSize = this.chunkFromSpace(wString, offset);
-	      pieces.push(WordChunk.createWhite(offset, chunkSize));
-	    }
-	  } else {
-	    chunkSize = this.chunkFromWord(wString, offset);
-	    pieces.push(WordChunk.createWord(offset, chunkSize));
-	  }
-	  offset += chunkSize;
-	}
-	return pieces;
+        while (offset < wString.length) {
+            chunkSize = 1; // default is one character long
+            if (this.isWhiteSpace(wString[offset])) {
+                if (this.isNewLine(wString[offset])) {
+                    pieces.push(WordChunk.createNewLine(offset));
+                } else if (wString[offset] == '\t') {
+                   pieces.push(WordChunk.createTab(offset));
+                } else {
+                    chunkSize = this.chunkFromSpace(wString, offset);
+                    pieces.push(WordChunk.createWhite(offset, chunkSize));
+                }
+           } else {
+               chunkSize = this.chunkFromWord(wString, offset);
+               pieces.push(WordChunk.createWord(offset, chunkSize));
+           }
+           offset += chunkSize;
+        }
+        return pieces;
     },
 
     // do a chunkFromString on the string contained in the textString instance variable
     wordDecomposition: function(offset) {
-	var chunks = this.chunkFromString(this.textString, offset);
-	return chunks;
+        var chunks = this.chunkFromString(this.textString, offset);
+        return chunks;
     },
 
     // compose a line of text, breaking it appropriately at compositionWidth
     compose: function(compositionWidth) {
-	var runningStartIndex = this.startIndex;
-	var mostRecentBounds = this.topLeft.asRectangle();
-	var lastWord = null;
-	
-	// a way to optimize out repeated scanning
-	if (this.chunks == null)
-	    this.chunks = this.wordDecomposition(this.startIndex);
-	for (var i = 0; i < this.chunks.length; i++) {
-	    var c = this.chunks[i];
-	    
-	    if (c.isWhite) {
-		var spaceIncrement = this.spaceWidth;
-		c.bounds = mostRecentBounds.withX(mostRecentBounds.maxX());
-		if (c.isNewLine) {
-		    c.bounds.width = (this.topLeft.x + compositionWidth) - c.bounds.x;
-		    runningStartIndex = c.start + c.length;
-		    c.wasComposed = true;
-		    if (lastWord) lastWord.setAttribute("nl", "true"); // little helper for serialization
-		    break;
-		}
-		if (c.isTab) {
-		    var tabXBoundary = c.bounds.x - this.topLeft.x;
-		    c.bounds.width = Math.floor((tabXBoundary + this.tabWidth) / this.tabWidth) * this.tabWidth - tabXBoundary;
-		} else {
-		    c.bounds.width = spaceIncrement * c.length;
-		    if (lastWord) lastWord.setAttribute("trail", c.length); // little helper for serialization
-		}
-		runningStartIndex = c.start + c.length;
-	    } else {
-		c.word = TextWord(this.textString, c.start, pt(mostRecentBounds.maxX(), this.topLeft.y), this.font);
-		lastWord = c.word;
-		c.word.compose(compositionWidth - (mostRecentBounds.maxX() - this.topLeft.x), c.length - 1);
-		c.bounds = c.word.getBounds(c.start).union(c.word.getBounds(c.start + c.length - 1));
-		if (c.word.getLineBrokeOnCompose()) {
-		    if (i == 0) {
-			// XXX in the future, another chunk needs to be inserted in the array at this point
-			//     otherwise the bounds will be messed up - kam
-			runningStartIndex = c.word.getStopIndex() + 1;
-		    } else {
-			// Back up to re-render this word and abort rendering
-			c.render = false;
-		    }
-		    break;
-		}
-		runningStartIndex = c.start + c.length;
-	    }
-	    mostRecentBounds = c.bounds;
-	    c.wasComposed = true;
-	}
-	this.overallStopIndex = runningStartIndex - 1;
-	this.hasComposed = true;
+        var runningStartIndex = this.startIndex;
+        var mostRecentBounds = this.topLeft.asRectangle();
+        var lastWord = null;
+    
+        // a way to optimize out repeated scanning
+        if (this.chunks == null) {
+            this.chunks = this.wordDecomposition(this.startIndex);
+        }
+    
+        for (var i = 0; i < this.chunks.length; i++) {
+            var c = this.chunks[i];
+        
+            if (c.isWhite) {
+                var spaceIncrement = this.spaceWidth;
+                c.bounds = mostRecentBounds.withX(mostRecentBounds.maxX());
+                if (c.isNewLine) {
+                    c.bounds.width = (this.topLeft.x + compositionWidth) - c.bounds.x;
+                    runningStartIndex = c.start + c.length;
+                    c.wasComposed = true;
+                    if (lastWord) lastWord.setAttribute("nl", "true"); // little helper for serialization
+                    break;
+                }
+                if (c.isTab) {
+                    var tabXBoundary = c.bounds.x - this.topLeft.x;
+                    c.bounds.width = Math.floor((tabXBoundary + this.tabWidth) / this.tabWidth) * this.tabWidth - tabXBoundary;
+                } else {
+                    c.bounds.width = spaceIncrement * c.length;
+                    if (lastWord) lastWord.setAttribute("trail", c.length); // little helper for serialization
+                }
+                runningStartIndex = c.start + c.length;
+            } else {
+                c.word = TextWord(this.textString, c.start, pt(mostRecentBounds.maxX(), this.topLeft.y), this.font);
+                lastWord = c.word;
+                c.word.compose(compositionWidth - (mostRecentBounds.maxX() - this.topLeft.x), c.length - 1);
+                c.bounds = c.word.getBounds(c.start).union(c.word.getBounds(c.start + c.length - 1));
+                if (c.word.getLineBrokeOnCompose()) {
+                    if (i == 0) {
+                        // XXX in the future, another chunk needs to be inserted in the array at this point
+                        //     otherwise the bounds will be messed up - kam
+                        runningStartIndex = c.word.getStopIndex() + 1;
+                    } else {
+                        // Back up to re-render this word and abort rendering
+                        c.render = false;
+                    }
+                    break;
+               }
+               runningStartIndex = c.start + c.length;
+            }
+            mostRecentBounds = c.bounds;
+            c.wasComposed = true;
+        }
+        this.overallStopIndex = runningStartIndex - 1;
+        this.hasComposed = true;
     },
 
     // accessor function (maybe delete - kam)
     getStopIndex: function() {
-	return this.overallStopIndex;
+        return this.overallStopIndex;
     },
 
     // after this line, where do we start from?
     getNextStartIndex: function() {
-	return this.overallStopIndex + 1;
+        return this.overallStopIndex + 1;
     },
     
     // accessor function
     getTopY: function() {
-	return this.topLeft.y;
+        return this.topLeft.y;
     },
 
     // get the bounds of the character at stringIndex
     getBounds: function(stringIndex) {
-	for (var i = 0; i < this.chunks.length; i++) {
-	    var c = this.chunks[i];
-	    
-	    if (stringIndex >= c.start &&
-		stringIndex < (c.start + c.length)) {
-		// DI:  Following code finds the actual character bounds
-		if (c.word && c.word.getBounds) {
-		    return c.word.getBounds(stringIndex);
-		} else {
-		    if (c.isSpaces()) {
-			var virtualSpaceSize = c.bounds.width / c.length;
-			var b = c.bounds.withWidth(virtualSpaceSize);
-			b.x += virtualSpaceSize * (stringIndex - c.start);
-			return b;
-		    } else
-			return c.bounds;
-		}
-	    }
-	}
-	return null;
+        for (var i = 0; i < this.chunks.length; i++) {
+            var c = this.chunks[i];
+        
+            if (stringIndex >= c.start &&
+                stringIndex < (c.start + c.length)) {
+                // DI:  Following code finds the actual character bounds
+                if (c.word && c.word.getBounds) {
+                    return c.word.getBounds(stringIndex);
+                } else {
+                    if (c.isSpaces()) {
+                        var virtualSpaceSize = c.bounds.width / c.length;
+                        var b = c.bounds.withWidth(virtualSpaceSize);
+                        b.x += virtualSpaceSize * (stringIndex - c.start);
+                        return b;
+                    } else {
+                        return c.bounds;
+                    }
+                }
+            }
+        }
+        return null;
     },
 
     // find the pointer into 'textString' for a given X coordinate in character metric space
     indexForX: function(rightX) {
-	for (var i = 0; i < this.chunks.length; i++) {
-	    var c = this.chunks[i];
-	    
-	    if (!c.wasComposed)
-		continue;
-	    if (rightX >= c.bounds.x && rightX <= c.bounds.maxX()) {
-		if (c.word == null) {
-		    var virtualSpaceSize = c.bounds.width / c.length;
-		    var spacesIn = Math.floor((rightX - c.bounds.x) / virtualSpaceSize);
-		    return c.start + spacesIn;
-		} else {
-		    for (var i = c.start; i < (c.start + c.length); i++) {
-			var b = c.word.getBounds(i);
-			if (rightX >= b.x && rightX <= b.maxX())
-			    break;
-		    }
-		    return i;
-		}
-		return c.start; // failsafe
-	    }
-	}
-	return 0; // should not get here unless rightX is out of bounds
+        for (var i = 0; i < this.chunks.length; i++) {
+            var c = this.chunks[i];
+        
+            if (!c.wasComposed) continue;
+        
+            if (rightX >= c.bounds.x && rightX <= c.bounds.maxX()) {
+                if (c.word == null) {
+                    var virtualSpaceSize = c.bounds.width / c.length;
+                    var spacesIn = Math.floor((rightX - c.bounds.x) / virtualSpaceSize);
+                    return c.start + spacesIn;
+                } else {
+                    for (var i = c.start; i < (c.start + c.length); i++) {
+                        var b = c.word.getBounds(i);
+                        if (rightX >= b.x && rightX <= b.maxX()) break;
+                    }
+                    return i;
+                }
+                return c.start; // failsafe
+            }
+        }
+        return 0; // should not get here unless rightX is out of bounds
     },
 
     // return a boolean if this line contains this pointer into 'textString'
     containsThisIndex: function(index) {
-	return index <= this.getStopIndex();
+        return index <= this.getStopIndex();
     },
 
     // forward this on to all of the words (do we need this? - kam)
     adjustAfterComposition: function() {
-	for (i = 0; i < this.chunks.length; i++)
-	  if (this.chunks[i].word != null)
-	    this.chunks[i].word.adjustAfterComposition();
+        for (i = 0; i < this.chunks.length; i++) {
+            if (this.chunks[i].word != null) {
+                this.chunks[i].word.adjustAfterComposition();
+            }
+        }
     },
 
     // render each word contained in the line
     render: function(renderer) {
-	for (var i = 0; i < this.chunks.length; i++)
-	  if (this.chunks[i].word != null && this.chunks[i].render)
-	    renderer.appendChild(this.chunks[i].word);
+        for (var i = 0; i < this.chunks.length; i++) {
+            if (this.chunks[i].word != null && this.chunks[i].render) {
+                renderer.appendChild(this.chunks[i].word);
+            }
+        }
     },
 
     // clone the important parts of the chunks we have found to avoid re-scanning
     cloneChunkSkeleton: function(sIndex) {
-	if (this.chunks == null)
-	  return null;
-	var nc = [];
-	for (var i = 0; i < this.chunks.length; i++) {
-	  var tc = this.chunks[i];
-	  if (tc.start >= sIndex) {
-	    var c = tc.cloneSkeleton();
-	    // probably don't need this opmization now that we demand load extents
-	    //if (tc.bounds != null)
-	    //  c.bounds = tc.bounds.clone();
-	    nc.push(c);
-	  } else if (tc.start < sIndex && (tc.start + tc.length) > sIndex) {
-	    // this chunk has been broken up by a word wrap
-	    var c = tc.cloneSkeleton();
-	    c.length -= sIndex - c.start;
-	    c.start = sIndex;
-	    nc.push(c);
-	  }
-	}
-	return nc;
+        if (this.chunks == null) return null;
+    
+        var nc = [];
+        for (var i = 0; i < this.chunks.length; i++) {
+            var tc = this.chunks[i];
+            if (tc.start >= sIndex) {
+                var c = tc.cloneSkeleton();
+                // probably don't need this opmization now that we demand load extents
+                //if (tc.bounds != null)
+                //  c.bounds = tc.bounds.clone();
+                nc.push(c);
+            } else if (tc.start < sIndex && (tc.start + tc.length) > sIndex) {
+                // this chunk has been broken up by a word wrap
+                var c = tc.cloneSkeleton();
+                c.length -= sIndex - c.start;
+                c.start = sIndex;
+                nc.push(c);
+            }
+        }
+        return nc;
     },
 
     // accessor function
     setChunkSkeleton: function(c) {
-	this.chunks = c;
+        this.chunks = c;
     },
 
     // accessor function
     setTabWidth: function(w, asSpaces) {
-	this.tabWidth = asSpaces ? w * this.spaceWidth : w;
+        this.tabWidth = asSpaces ? w * this.spaceWidth : w;
     },
 
     // log debugging information to the console
     logChunks: function(label) {
-      if (this.chunks) {
-        for (i = 0; i < this.chunks.length; i++)
-          this.chunks[i].log(label + ": TextLine");
-      } else
-        console.log(label + ": " + "no chunks");
+        if (this.chunks) {
+            for (i = 0; i < this.chunks.length; i++) {
+                this.chunks[i].log(label + ": TextLine");
+            }
+        } else {
+            console.log(label + ": " + "no chunks");
+        }
     },
 
     // string representation
     toString: function() {
-      var lString = "textString: (" + this.textString + ")" +
-		    " startIndex: " + this.startIndex +
-		    " overallStopIndex: " + this.overallStopIndex +
-	            " topLeft: " + this.topLeft.inspect() +
-		    " spaceWidth: " + this.spaceWidth + 
-		    " hasComposed: " + this.hasComposed;
-      return lString;
+        var lString = "textString: (" + this.textString + ")" +
+            " startIndex: " + this.startIndex +
+            " overallStopIndex: " + this.overallStopIndex +
+            " topLeft: " + this.topLeft.inspect() +
+            " spaceWidth: " + this.spaceWidth + 
+            " hasComposed: " + this.hasComposed;
+        return lString;
     },
 
     // log debugging information to the console
     log: function(label, printChunks) {
-      var lString = this.toString();
-      if (label != null)
-	lString = label + ": " + lString;
-      console.log(lString);
-      if (printChunks != null & printChunks)
-	this.logChunks(label);
+        var lString = this.toString();
+        if (label != null) {
+            lString = label + ": " + lString;
+        }
+        console.log(lString);
+        if (printChunks != null & printChunks) {
+            this.logChunks(label);
+        }
     }
+    
 });
-
 
 /**
  * @class TextBox
@@ -530,7 +546,7 @@ Object.extend(TextBox, {
         var content = elt.recoverTextContent();
 
         var lineHeight = parseFloat(elt.getAttributeNS(Namespace.LIVELY, "line-height"));
-	var font = FontInfo.forFamily(elt.getFontFamily(), elt.getFontSize());
+        var font = FontInfo.forFamily(elt.getFontFamily(), elt.getFontSize());
 
         elt.initialize(content, lineHeight, Color.black, font); // FIXME
         return elt;
@@ -548,39 +564,40 @@ Object.extend(TextBox.prototype, {
         this.setAttributeNS(null, "kerning", 0);
         this.setTextColor(textColor);
         this.setType("TextBox");
-	this.fontInfo = font;
-	this.setAttributeNS(null, "font-size", font.getSize());
-	this.setAttributeNS(null, "font-family", font.getFamily());
+        this.fontInfo = font;
+        this.setAttributeNS(null, "font-size", font.getSize());
+        this.setAttributeNS(null, "font-family", font.getFamily());
 
-	/*
+        /*
         for (var type in ['beforecopy', 'beforecut', 'beforepaste', 'cut', 'copy', 'paste']) {
             this.addEventListener('beforecopy', this.eventHandler, true);
         }
         */
 
         this.lines = null;//: TextLine[]
-	this.tabWidth = 4;
-	this.tabsAsSpaces = true;
+        this.tabWidth = 4;
+        this.tabsAsSpaces = true;
     },
     
 
     recoverTextContent: function() {
 
         var content = "";
+        
         for (var child = this.firstChild; child != null; child = child.nextSibling) {
             if (child.tagName == 'tspan')  {
-		var word = TextWord.become(child);
-		content += word.textContent; 
-		if (word.getAttribute("nl") == 'true') {
-		    content += "\n";
-		}
-		var trail = parseInt(word.getAttribute("trail"));
-		if (trail) {
-		    for (var j = 0; j < trail; j++) {
-			content += ' ';
-		    }
-		}
-	    }
+                var word = TextWord.become(child);
+                content += word.textContent; 
+                if (word.getAttribute("nl") == 'true') {
+                    content += "\n";
+                }
+                var trail = parseInt(word.getAttribute("trail"));
+                if (trail) {
+                    for (var j = 0; j < trail; j++) {
+                        content += ' ';
+                    }
+                }
+            }
         }
         return content;
     },
@@ -590,16 +607,18 @@ Object.extend(TextBox.prototype, {
     },
     
     setTabWidth: function(width, asSpaces) {
-	this.tabWidth = width;
-	this.tabsAsSpaces = asSpaces;
+        this.tabWidth = width;
+        this.tabsAsSpaces = asSpaces;
     },
     
     // compose the lines if necessary and then render them
     renderText: function(topLeft, compositionWidth) {
-        if (this.lines == null) 
+        if (this.lines == null) { 
             this.lines = this.composeLines(topLeft, compositionWidth, this.fontInfo);
-        for (var i = 0; i < this.lines.length; i++)
-	    this.lines[i].render(this);
+        }
+        for (var i = 0; i < this.lines.length; i++) {
+            this.lines[i].render(this);
+        }
     },
     
     // compose all of the lines in the text
@@ -608,18 +627,18 @@ Object.extend(TextBox.prototype, {
         var startIndex = 0;
         var stopIndex = this.textString.length - 1;
         var topLeft = initialTopLeft.clone();
-	var chunkSkeleton;
+        var chunkSkeleton;
 
         while (startIndex <= stopIndex) {
             var line = new TextLine(this.textString, startIndex, topLeft, font, chunkSkeleton);
-	    line.setTabWidth(this.tabWidth, this.tabsAsSpaces);
+            line.setTabWidth(this.tabWidth, this.tabsAsSpaces);
             line.compose(compositionWidth);
             line.adjustAfterComposition();
             lines.push(line);
-	    startIndex = line.getNextStartIndex();
+            startIndex = line.getNextStartIndex();
             topLeft = topLeft.addXY(0, this.lineHeight);
-	    // this is an optimization that keeps us from having to re-scan the string on each line
-	    chunkSkeleton = line.cloneChunkSkeleton(startIndex);
+            // this is an optimization that keeps us from having to re-scan the string on each line
+            chunkSkeleton = line.cloneChunkSkeleton(startIndex);
         }
         return lines;
     },
@@ -640,17 +659,16 @@ Object.extend(TextBox.prototype, {
     lineForIndex: function(stringIndex) {
         for (var i = 0; i < this.lines.length; i++) {
             var line = this.lines[i];
-	    if (line.containsThisIndex(stringIndex)) {
-	      return line;
-	    }
+            if (line.containsThisIndex(stringIndex)) {
+                return line;
+            }
         }
         return null; 
     },
     
     // find what line contains the y value in character metric space
     lineForY: function(y) {
-        if (this.lines.length < 1 || y < this.lines[0].getTopY()) 
-            return null;
+        if (this.lines.length < 1 || y < this.lines[0].getTopY()) return null;
     
         for (var i = 0; i < this.lines.length; i++) {
             line = this.lines[i];
@@ -659,7 +677,7 @@ Object.extend(TextBox.prototype, {
                 return line; 
             }
         }
-	
+    
         return null; 
     },
     
@@ -669,8 +687,6 @@ Object.extend(TextBox.prototype, {
         }
     }
 });
-
-
 
 /**
  * @class TextMorph
@@ -708,7 +724,6 @@ Object.extend(TextMorph, {
         morph.okToBeGrabbedBy = function(evt) { this.isDesignMode() ? this : null; }
         return morph;
     },
-
     
 });
 
@@ -734,7 +749,6 @@ Object.extend(TextMorph.prototype, {
     defaultBorderColor: Color.black,
     selectionColor: Color.primary.green,
     inset: pt(6,4), // remember this shouldn't be modified unless every morph should get the value 
-
 
     wrap: WrapStyle.NORMAL,
 
@@ -763,19 +777,18 @@ Object.extend(TextMorph.prototype, {
         //this.selectionElement.setAttributeNS(null, "fill", "url(#SelectionGradient)");
         this.selectionElement.setAttributeNS(null, "stroke-width", 0);
         this.font = FontInfo.forFamily(this.fontFamily, this.fontSize);
-	this.setAttributeNS(Namespace.LIVELY, "wrap", this.wrap);
+        this.setAttributeNS(Namespace.LIVELY, "wrap", this.wrap);
     },
 
     restoreFromMarkup: function(importer) {
         TextMorph.superClass.restoreFromMarkup.call(this, importer);
-	this.wrap = this.getAttributeNS(Namespace.LIVELY, "wrap");
-	var inset = this.getAttributeNS(Namespace.LIVELY, "inset");
-	if (inset) {
-	    this.inset = Point.parse(inset);
-	}
+        this.wrap = this.getAttributeNS(Namespace.LIVELY, "wrap");
+        var inset = this.getAttributeNS(Namespace.LIVELY, "inset");
+        if (inset) {
+            this.inset = Point.parse(inset);
+        }
     },
 
-    
     restoreFromElement: function(element, importer) /*:Boolean*/ {
         if (TextMorph.superClass.restoreFromElement.call(this, element, importer)) return true;
 
@@ -786,7 +799,7 @@ Object.extend(TextMorph.prototype, {
             this.textBox = TextBox.become(element); // FIXME
             // console.log('found textbox %s %s', this.textBox, this.textBox && this.textBox.textString);
             this.textString = this.textBox.textString;
-	    this.font = this.textBox.fontInfo;
+            this.font = this.textBox.fontInfo;
             return true;
         case 'Selection':
             // that's ok, it's actually transient 
@@ -828,7 +841,7 @@ Object.extend(TextMorph.prototype, {
 
         this.textBox = null;
         this.fitText(); // adjust bounds or text for fit
-	
+    
         return TextMorph.superClass.bounds.call(this); 
     },
     
@@ -859,35 +872,39 @@ Object.extend(TextMorph.prototype, {
     },
 
     setWrapStyle: function(style) {
-	if (style === TextMorph.prototype.wrap) {
-	    delete this.wrap;
-	} else {
-	    this.wrap = style;
-	    this.setAttributeNS(Namespace.LIVELY, "wrap", style);
-	}
+        if (style === TextMorph.prototype.wrap) {
+            delete this.wrap;
+        } else {
+            this.wrap = style;
+            this.setAttributeNS(Namespace.LIVELY, "wrap", style);
+        }
     },
 
     setInset: function(ext) {
-	if (ext.eqPt(TextMorph.prototype.inset)) {
-	    delete this.inset;
-	} else {
-	    this.inset = ext;
-	    this.setAttributeNS(Namespace.LIVELY, "inset", ext.inspect());
-	}
+        if (ext.eqPt(TextMorph.prototype.inset)) {
+            delete this.inset;
+        } else {
+            this.inset = ext;
+            this.setAttributeNS(Namespace.LIVELY, "inset", ext.inspect());
+        }
     },
-
 
     // Since command keys do not always work,
     // make it possible to evaluate the contents
     // of the TextMorph via popup menu
     morphMenu: function(evt) { 
-	var self = this;
+        var self = this;
         var menu = TextMorph.superClass.morphMenu.call(this, evt);
+
+        // Add a separator line
+        menu.addLine();
+
         menu.addItem(["evaluate text", function() { self.evaluateText() }]);
-	menu.addItem(["evaluate as Lively markup", function() { 
+
+        menu.addItem(["evaluate as Lively markup", function() { 
             var importer = new Importer();
-	    var txt = self.xml || self.textString;
-	    console.log('evaluating markup ' + txt);
+            var txt = self.xml || self.textString;
+            console.log('evaluating markup ' + txt);
             var morph = importer.importFrom(txt);
             WorldMorph.current().addMorph(morph);
             /*
@@ -897,13 +914,14 @@ Object.extend(TextMorph.prototype, {
                 console.log('copy %s has model %s', copy, copy.model);
             }
             */
-	}]);
-	menu.addItem(["save as ...", function() { 
-	    var store = WorldMorph.current().defaultStore;
-	    if (store) store.saveAs(window.prompt('save as ...'), (self.xml || self.textString)); 
-	    else console.log('no store to save to');
-	}]);
-	
+         }]);
+    
+        menu.addItem(["save as ...", function() { 
+            var store = WorldMorph.current().defaultStore;
+            if (store) store.saveAs(window.prompt('save as ...'), (self.xml || self.textString)); 
+            else console.log('no store to save to');
+        }]);
+    
         return menu;
     },
 
@@ -979,11 +997,10 @@ Object.extend(TextMorph.prototype, {
     
         var bottomY = this.inset.y + maxY;
     
-	var oldBounds = this.shape.bounds();
-	this.shape.setBounds(oldBounds.withHeight(bottomY - oldBounds.y))
+        var oldBounds = this.shape.bounds();
+        this.shape.setBounds(oldBounds.withHeight(bottomY - oldBounds.y))
 
         this.adjustForNewBounds();
-
     },
 
     fitWidth: function() {
@@ -1013,10 +1030,10 @@ Object.extend(TextMorph.prototype, {
                 console.log("null bounds at char " + i); 
                 return false; 
             }
-            if(jRect.width < 100) { // line break character gets extended to comp width
-		maxX = Math.max(maxX,jRect.maxX());
-            	maxY = Math.max(maxY,jRect.maxY()); 
-	    }
+            if (jRect.width < 100) { // line break character gets extended to comp width
+                maxX = Math.max(maxX,jRect.maxX());
+                maxY = Math.max(maxY,jRect.maxY()); 
+            }
         }
         
         // if (this.innerBounds().width==(maxX-x0) && this.innerBounds().height==(maxY-y0)) return; // No change in width *** check convergence
@@ -1024,10 +1041,10 @@ Object.extend(TextMorph.prototype, {
 
         // DI: This should just say, eg, this.shape.setBottomRight(bottomRight);
         if (this.wrap === WrapStyle.NONE)
-	        with (this.shape) { setBounds(bounds().withHeight(bottomRight.y - bounds().y))};
+            with (this.shape) { setBounds(bounds().withHeight(bottomRight.y - bounds().y))};
 
         if (this.wrap === WrapStyle.SHRINK)
-        	with (this.shape) { setBounds(bounds().withBottomRight(bottomRight))};
+            with (this.shape) { setBounds(bounds().withBottomRight(bottomRight))};
     },
 
     showsSelectionWithoutFocus: function() { 
@@ -1046,12 +1063,14 @@ Object.extend(TextMorph.prototype, {
         }
 
         this.undrawSelection();
+
         if (this.selectionRange[0] > this.textString.length-1) { // null sel at end
-		var jRect = this.ensureTextBox().getBounds(this.selectionRange[0]-1);
-		jRect = jRect.translatedBy(pt(jRect.width,0));
-	} else {
-		var jRect = this.ensureTextBox().getBounds(this.selectionRange[0]);
-	}
+            var jRect = this.ensureTextBox().getBounds(this.selectionRange[0]-1);
+            jRect = jRect.translatedBy(pt(jRect.width,0));
+        } else {
+            var jRect = this.ensureTextBox().getBounds(this.selectionRange[0]);
+        }
+        
         if (jRect == null) {
             console.log("text box failure in drawSelection index = " + this.selectionRange[0]); 
             return;
@@ -1101,32 +1120,33 @@ Object.extend(TextMorph.prototype, {
     },
     
     charOfPoint: function(localP) {  //Sanitized hit function
-	// DI: Nearly perfect now except past last char if not EOL
-	// Note that hit(x,y) expects x,y to be in morph coordinates,
-	// but y should have 2 subtracted from it.
-	// Also getBnds(i) reports rectangles that need 2 added to their y values.
-	// GetBounds(i) returns -1 above and below the text bounds, and
-	// 0 right of the bounds, and leftmost character left of the bounds.
+        // DI: Nearly perfect now except past last char if not EOL
+        // Note that hit(x,y) expects x,y to be in morph coordinates,
+        // but y should have 2 subtracted from it.
+        // Also getBnds(i) reports rectangles that need 2 added to their y values.
+        // GetBounds(i) returns -1 above and below the text bounds, and
+        // 0 right of the bounds, and leftmost character left of the bounds.
         var tl = this.textTopLeft();
         var px = Math.max(localP.x, tl.x); // ensure no returns of 0 left of bounds
         var px = Math.min(px, this.innerBounds().maxX()-1); // nor right of bounds
         var py = localP.y - 2;
         var hit = this.textBox.hit(px, py);
         var charIx = this.textBox.hit(px, py);
-	var len = this.textString.length;
+        var len = this.textString.length;
     
         // hit(x,y) returns -1 above and below box -- return 1st char or past last
         if (charIx < 0) return py < tl.y ? 0 : len;
   
         if (charIx == 0 && this.textBox.getBounds(len-1).topRight().lessPt(localP))
-	    return len;
+        return len;
 
-	// It's a normal character hit
-	// People tend to click on gaps rather than character centers...
-	var cRect = this.textBox.getBounds(charIx);
-	if (cRect != null && px > cRect.center().x)
-	    return Math.min(charIx + 1, len);
-	return charIx;
+        // It's a normal character hit
+        // People tend to click on gaps rather than character centers...
+        var cRect = this.textBox.getBounds(charIx);
+        if (cRect != null && px > cRect.center().x) {
+            return Math.min(charIx + 1, len);
+        }
+        return charIx;
     }
     
 }); 
@@ -1166,12 +1186,13 @@ Object.extend(TextMorph.prototype, {
         if (this.priorSelection[1] != this.priorSelection[0] - 1) return;
         if (this.selectionRange[0] != this.priorSelection[0]) return;
         
-	// It is a null selection, repeated in the same place -- select word or range
+        // It is a null selection, repeated in the same place -- select word or range
         if (this.selectionRange[0] == 0 || this.selectionRange[0] == this.textString.length) {
             this.setSelectionRange(0, this.textString.length); 
-	} else {
-	    this.selectionRange = TextMorph.selectWord(this.textString, this.selectionRange[0]);
-	}
+        } else {
+            this.selectionRange = TextMorph.selectWord(this.textString, this.selectionRange[0]);
+        }
+        
         this.setModelSelection(this.selectionString());
         this.drawSelection(); 
     }
@@ -1250,10 +1271,11 @@ Object.extend(TextMorph.prototype, {
         if (!this.showsSelectionWithoutFocus()) this.undrawSelection();
     },
 
-
     onKeyDown: function(evt) {
         if (!this.acceptInput) return;
-	var before = this.textString.substring(0, this.selectionRange[0]); 
+        
+        var before = this.textString.substring(0, this.selectionRange[0]); 
+        
         switch (evt.sanitizedKeyCode()) {
         case Event.KEY_LEFT: {
             // forget the existing selection
@@ -1278,10 +1300,7 @@ Object.extend(TextMorph.prototype, {
             evt.stop();
             return;
         }
-	}
-
-        
-        // For some reason, this function is never called in Windows -- dunno why!
+        }
 
         // have to process commands in keydown...
         if (evt.altKey) {
@@ -1295,8 +1314,8 @@ Object.extend(TextMorph.prototype, {
 
         // cleanup: separate BS logic, diddle selection range and use replaceSelectionWith()
 
-	if (evt.keyCode == Event.KEY_BACKSPACE) { // Replace the selection after checking for type-ahead
-	    var before = this.textString.substring(0, this.selectionRange[this.hasNullSelection() ? 1 : 0]); 
+        if (evt.keyCode == Event.KEY_BACKSPACE) { // Replace the selection after checking for type-ahead
+            var before = this.textString.substring(0, this.selectionRange[this.hasNullSelection() ? 1 : 0]); 
             var after = this.textString.substring(this.selectionRange[1] + 1, this.textString.length);
 
             this.setTextString(before.concat(after));
@@ -1304,12 +1323,12 @@ Object.extend(TextMorph.prototype, {
             evt.stop(); // do not use for browser navigation
             return;
         } else if (!evt.altKey) {
-	    if (evt.charCode && evt.charCode < 63200) { // account for Safari's keypress codes 
-		var replacement = String.fromCharCode(evt.charCode);
-		this.replaceSelectionWith(replacement); 
-		evt.stop(); // done
-	    }
-        } 
+            if (evt.charCode && evt.charCode < 63200) { // account for Safari's keypress codes 
+                var replacement = String.fromCharCode(evt.charCode);
+                this.replaceSelectionWith(replacement); 
+                evt.stop(); // done
+            }
+        }
     },
     
     processCommandKeys: function(key) { 
@@ -1467,7 +1486,6 @@ Object.category(TextMorph.prototype, "accessing", function() {
         pvtUpdateTextString(this, replacement); 
     },
     
-    
     updateTextString: function(newStr) {
         pvtUpdateTextString(this, newStr);
         this.resetScrollPane(); 
@@ -1561,7 +1579,6 @@ Object.extend(TextMorph, {
     
 });
 
-
 /**
  * @class PrintMorph
  * A PrintMorph is just like a TextMorph, except it converts its model value
@@ -1593,44 +1610,42 @@ Object.extend(PrintMorph.prototype, {
 
 });
 
-
-
-
 TestTextMorph = HostClass.create('TestTextMorph', TextMorph);
 
 Object.extend(TestTextMorph.prototype, {
     
-//	All this does is create a rectangle at mouseDown, and then
-//	while the mouse moves, it prints the index of the nearest character,
-//	and adjusts the rectangle to display the bounds for that index.
+    //    All this does is create a rectangle at mouseDown, and then
+    //    while the mouse moves, it prints the index of the nearest character,
+    //    and adjusts the rectangle to display the bounds for that index.
 
     onMouseDown: function(evt) {
         this.isSelecting = true;
-	this.boundsMorph = Morph(pt(0,0).asRectangle(), "rect");
-	this.boundsMorph.setFill(null);
-	this.boundsMorph.setBorderColor(Color.red);
-	this.addMorph(this.boundsMorph);
+        this.boundsMorph = Morph(pt(0,0).asRectangle(), "rect");
+        this.boundsMorph.setFill(null);
+        this.boundsMorph.setBorderColor(Color.red);
+        this.addMorph(this.boundsMorph);
         evt.hand.setMouseFocus(this);
         this.requestKeyboardFocus(evt.hand);
         this.track(evt);
-	return true; 
+        return true; 
     },
 
     track: function(evt) {
         var localP = this.localize(evt.mousePoint);
-	var tl = this.textTopLeft();
+        var tl = this.textTopLeft();
         var px = Math.max(localP.x, tl.x); // ensure no returns of 0 left of bounds
         var px = Math.min(px, this.innerBounds().maxX());
         var py = localP.y - 2;
         var hit = this.textBox.hit(px, py);
         var charIx = this.charOfPoint(localP);
-	console.log('localP = ' + localP.inspect() + ' hit = ' + hit + ' charOfPoint = ' + charIx);  // display the index for the mouse point
+        console.log('localP = ' + localP.inspect() + ' hit = ' + hit + ' charOfPoint = ' + charIx);  // display the index for the mouse point
         var jRect = this.ensureTextBox().getBounds(hit);
         if (jRect == null) {
             console.log("text box failure in drawSelection"); 
-            return; }
-	console.log('rect = ' + jRect. inspect());
-	this.boundsMorph.setBounds(jRect);  // show the bounds for that character
+            return; 
+        }
+        console.log('rect = ' + jRect. inspect());
+        this.boundsMorph.setBounds(jRect);  // show the bounds for that character
     },
 
     onMouseMove: function(evt) {  
@@ -1643,9 +1658,10 @@ Object.extend(TestTextMorph.prototype, {
     onMouseUp: function(evt) {
         evt.hand.setMouseFocus(null);
         this.isSelecting = false;
-	this.boundsMorph.remove();
+        this.boundsMorph.remove();
     }
 
 });
 
 console.log('loaded Text.js');
+
