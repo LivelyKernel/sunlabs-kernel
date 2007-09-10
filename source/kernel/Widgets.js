@@ -413,7 +413,7 @@ Object.extend(TitleBarMorph.prototype, {
         // var font = FontInfo.forFamily(TextMorph.prototype.fontFamily, TextMorph.prototype.fontSize);
 
         var label;
-	if (headline instanceof TextMorph) {
+        if (headline instanceof TextMorph) {
             label = headline;
         } else { // String
             var width = headline.length * 8; // wild guess headlineString.length * 2 *  font.getCharWidth(' ') + 2;
@@ -438,7 +438,6 @@ Object.extend(TitleBarMorph.prototype, {
 
 });
 
-
 /**
  * @class TitleTabMorph: Title bars for Window morphs
  */
@@ -462,17 +461,17 @@ Object.extend(TitleTabMorph.prototype, {
         this.addMorph(menuButton);
 
         var label;
-	if (headline instanceof TextMorph) {
+        if (headline instanceof TextMorph) {
             label = headline;
         } else { // String
             var width = headline.length * 8;
-	    // wild guess headlineString.length * 2 *  font.getCharWidth(' ') + 2; 
+            // wild guess headlineString.length * 2 *  font.getCharWidth(' ') + 2; 
             label = TextMorph.makeLabel(Rectangle(0, 0, width, bh), headline);
         }
         var topY = this.shape.bounds().y;
-	label.align(label.bounds().topLeft(), pt(menuButton.bounds().maxX(), topY));
+        label.align(label.bounds().topLeft(), pt(menuButton.bounds().maxX(), topY));
         this.addMorph(label);
-	this.shape.setBounds(this.shape.bounds().withTopRight(pt(label.bounds().maxX(), topY)))
+        this.shape.setBounds(this.shape.bounds().withTopRight(pt(label.bounds().maxX(), topY)))
         return this;
     }
 
@@ -579,14 +578,14 @@ Object.extend(WindowMorph.prototype, {
         this.titleBar = titleBar;
         this.addMorph(this.titleBar);
         this.addMorph(targetMorph);
-	this.contentOffset = pt(0, titleHeight);
+        this.contentOffset = pt(0, titleHeight);
         targetMorph.setPosition(this.contentOffset);
-	this.linkToStyles(['window']);
+        this.linkToStyles(['window']);
         return this;
     },
 
     makeTitleBar: function(headline, width) {
-	// Overridden in TabbedPanelMorph
+        // Overridden in TabbedPanelMorph
         return TitleBarMorph(headline, width, this, false);
     },
 
@@ -595,7 +594,7 @@ Object.extend(WindowMorph.prototype, {
     },
     
     immediateContainer: function() {
-	// Content may need to know
+        // Content may need to know
         return this;
     },
 
@@ -690,17 +689,18 @@ Object.extend(WindowMorph.prototype, {
  */
   
 // ***Note TabbedPanelMorph is not written yet
-//	Just a copy of WindowMorph, prior to my rewriting it -- DI ***
+// Just a copy of WindowMorph, prior to my rewriting it -- DI ***
 TabbedPanelMorph = HostClass.create('TabbedPanelMorph', WindowMorph);
+
 Object.extend(TabbedPanelMorph.prototype, {
 
     initialize: function(targetMorph, headline, location, sideName) {
         if (sideName == null) sideName = 'south';
-	TabbedPanelMorph.superClass.initialize.call(this, targetMorph, headline, location);
+        TabbedPanelMorph.superClass.initialize.call(this, targetMorph, headline, location);
         this.setFill(null);
-	this.setBorderColor(null);
-	this.newToTheWorld = true;
-	return this;
+        this.setBorderColor(null);
+        this.newToTheWorld = true;
+        return this;
     },
 
     makeTitleBar: function(headline, width) {
@@ -708,12 +708,12 @@ Object.extend(TabbedPanelMorph.prototype, {
     },
 
     layoutChanged: function() { // Will get called when added to world
-	// Here we take care of where in the world it should go.
-	if (this.newToTheWorld) {
-		// Place me where I should be in the expanded state
-		// and set up location for collapsed state
-		this.newToTheWorld = false;
-	}
+        // Here we take care of where in the world it should go.
+        if (this.newToTheWorld) {
+            // Place me where I should be in the expanded state
+            // and set up location for collapsed state
+           this.newToTheWorld = false;
+        }
         TabbedPanelMorph.superClass.layoutChanged.call(this);
     },
 
@@ -909,11 +909,9 @@ Object.extend(HandleMorph.prototype, {
                   ratio = Math.max(0.1,Math.min(10,ratio));
                   //console.log("ctr %s v0 %s v1 %s set scale to %s times %s",ctr,v0,v1,this.initialScale, ratio);
                   this.targetMorph.setScale(this.initialScale*ratio); 
-                }else {
+                } else {
                   this.targetMorph.reshape(this.partName, this.targetMorph.localize(evt.mousePoint), this, false);
-                }
-                
-                
+                }                
             } 
         }
     },
@@ -1420,7 +1418,7 @@ Object.extend(MenuMorph.prototype, {
 
     keepOnlyItemsNamed: function(nameList) {
         var rejects = [];
-        this.items.each( function(item) { if(nameList.indexOf(item[0]) < 0) rejects.push(item[0])});
+        this.items.each( function(item) { if (nameList.indexOf(item[0]) < 0) rejects.push(item[0])});
         this.removeItemsNamed(rejects);
     },
 
@@ -1519,10 +1517,10 @@ Object.extend(SliderMorph.prototype, {
     },
     
     applyStyle: function(spec) {
-	this.baseColor = Color.primary.blue;
-	this.fillType = "simple";
-	SliderMorph.superClass.applyStyle.call(this, spec);
-	// need to call adjust to update graphics, but only after slider exists
+        this.baseColor = Color.primary.blue;
+        this.fillType = "simple";
+        SliderMorph.superClass.applyStyle.call(this, spec);
+        // need to call adjust to update graphics, but only after slider exists
         if (this.slider) this.adjustForNewBounds(); 
     },
     
@@ -1547,13 +1545,13 @@ Object.extend(SliderMorph.prototype, {
         this.slider.setBounds(bnds.topLeft().addPt(topLeft).extent(sliderExt)); 
     
         if (this.fillType == "linear gradient") {
-	    var direction = this.vertical() ? LinearGradient.EastWest : LinearGradient.NorthSouth;
-	    this.setFill(LinearGradient.makeGradient(this.baseColor.lighter(2), this.baseColor, direction));
-	    this.slider.setFill(LinearGradient.makeGradient(this.baseColor.lighter(), this.baseColor.darker(), direction));
-	} else {
-	    this.setFill(this.baseColor);
-	    this.slider.setFill(this.baseColor.darker());
-	}
+            var direction = this.vertical() ? LinearGradient.EastWest : LinearGradient.NorthSouth;
+            this.setFill(LinearGradient.makeGradient(this.baseColor.lighter(2), this.baseColor, direction));
+            this.slider.setFill(LinearGradient.makeGradient(this.baseColor.lighter(), this.baseColor.darker(), direction));
+        } else {
+            this.setFill(this.baseColor);
+            this.slider.setFill(this.baseColor.darker());
+        }
     },
     
     sliderPressed: function(evt, slider) {
@@ -1948,16 +1946,16 @@ Object.extend(WorldMorph, {
             styleName:   'primitive',
             window:      { rounding: 0 },
             titleBar:    { rounding: 0, borderWidth: 2, bordercolor: Color.black,
-            			fill: Color.neutral.gray.lighter() },
+                           fill: Color.neutral.gray.lighter() },
             panel:       {  },
-            slider:     { borderColor: Color.black, borderWidth: 1,
-				baseColor: Color.neutral.gray.lighter() },
+            slider:      { borderColor: Color.black, borderWidth: 1,
+			               baseColor: Color.neutral.gray.lighter() },
             button:      { borderColor: Color.black, borderWidth: 1, rounding: 0,
-            			baseColor: Color.lightGray, fillType: "simple" },
+                           baseColor: Color.lightGray, fillType: "simple" },
             widgetPanel: { borderColor: Color.red, borderWidth: 2, rounding: 0,
-            			fill: Color.blue.lighter(), opacity: 1},
+                           fill: Color.blue.lighter(), opacity: 1},
             clock:       { borderColor: Color.black, borderWidth: 1,
-            			fill: RadialGradient.makeCenteredGradient(Color.yellow.lighter(2), Color.yellow) },
+                           fill: RadialGradient.makeCenteredGradient(Color.yellow.lighter(2), Color.yellow) },
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue}
         },
 
@@ -1965,16 +1963,16 @@ Object.extend(WorldMorph, {
             styleName: 'lively',
             window:      { rounding: 8 },
             titleBar:    { rounding: 8, borderWidth: 2, bordercolor: Color.black,
-            			fill: LinearGradient.makeGradient(Color.primary.blue, Color.primary.blue.lighter(3))},
+                           fill: LinearGradient.makeGradient(Color.primary.blue, Color.primary.blue.lighter(3))},
             panel:       {  },
-            slider:     { borderColor: Color.black, borderWidth: 1, 
-				baseColor: Color.primary.blue, fillType: "linear gradient"},
+            slider:      { borderColor: Color.black, borderWidth: 1, 
+                           baseColor: Color.primary.blue, fillType: "linear gradient"},
             button:      { borderColor: Color.neutral.gray, borderWidth: 0.3, rounding: 4,
-            		    baseColor:   Color.primary.blue, fillType: "linear gradient" },
+                           baseColor:   Color.primary.blue, fillType: "linear gradient" },
             widgetPanel: { borderColor: Color.blue, borderWidth: 4, rounding: 16,
-            			fill: Color.blue.lighter(), opacity: 0.4},
+                           fill: Color.blue.lighter(), opacity: 0.4},
             clock:       { borderColor: Color.black, borderWidth: 1,
-            			fill: RadialGradient.makeCenteredGradient(Color.primary.blue.lighter(2), Color.primary.blue.lighter()) },
+                           fill: RadialGradient.makeCenteredGradient(Color.primary.blue.lighter(2), Color.primary.blue.lighter()) },
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue}
         },
 
@@ -1982,21 +1980,19 @@ Object.extend(WorldMorph, {
             styleName: 'turquoise',
             window:      { rounding: 8},
             titleBar:    { rounding: 8, borderWidth: 2, bordercolor: Color.black,
-            			fill: LinearGradient.makeGradient(Color.turquoise, Color.turquoise.lighter(3))},
+                           fill: LinearGradient.makeGradient(Color.turquoise, Color.turquoise.lighter(3))},
             panel:       {  },
             slider:      { borderColor: Color.black, borderWidth: 1, 
-				baseColor: Color.turquoise, fillType: "linear gradient"},
+                           baseColor: Color.turquoise, fillType: "linear gradient"},
             button:      { borderColor: Color.neutral.gray.darker(), borderWidth: 2, rounding: 8,
-            			baseColor: Color.turquoise, fillType: "radial gradient" },
+                           baseColor: Color.turquoise, fillType: "radial gradient" },
             widgetPanel: { borderColor: Color.neutral.gray.darker(), borderWidth: 4,
-            			fill: Color.turquoise.lighter(3), rounding: 16},
+                           fill: Color.turquoise.lighter(3), rounding: 16},
             clock:       { borderColor: Color.black, borderWidth: 1,
-            			fill: RadialGradient.makeCenteredGradient(Color.turquoise.lighter(2), Color.turquoise) },
+                           fill: RadialGradient.makeCenteredGradient(Color.turquoise.lighter(2), Color.turquoise) },
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue}
         }
-    },
-
-
+    }
 
 });
 
@@ -2204,7 +2200,7 @@ Object.extend(WorldMorph.prototype, {
         }
 
         // Never found that action to remove.  Note this is not an error if called
-	// from startStepping just to get rid of previous version
+        // from startStepping just to get rid of previous version
         if (!fromStart) console.log('failed to stopStepping ' + action.scriptName);
     },
     
@@ -2240,9 +2236,9 @@ Object.extend(WorldMorph.prototype, {
         while (list.length>0 && list[list.length-1][0] <= msTime) {
             var schedNode = list.pop();  // [time, action] -- now removed
             var action = schedNode[1];
-	    var func = action.actor[action.scriptName];
-	    func.call(action.actor, action.argIfAny);
-	    // Note: if error in script above, it won't get rescheduled below (this is good)
+            var func = action.actor[action.scriptName];
+            func.call(action.actor, action.argIfAny);
+            // Note: if error in script above, it won't get rescheduled below (this is good)
 
             if (action.stepTime > 0) {
                 var nextTime = msTime + action.stepTime;
@@ -2254,7 +2250,8 @@ Object.extend(WorldMorph.prototype, {
             if (ticks > 0) action.ticks += ticks;  // tally time spent in that script
             timeStarted = timeNow;
         }
-	if (list.length > 0) timeOfNextStep = Math.min(list[list.length-1][0], timeOfNextStep);
+
+        if (list.length > 0) timeOfNextStep = Math.min(list[list.length-1][0], timeOfNextStep);
 
         // Each second, run through the tick tallies and mult by 0.9 to 10-sec "average"
         if (!this.secondTick) this.secondTick = 0;
@@ -2287,8 +2284,8 @@ Object.extend(WorldMorph.prototype, {
     },
 
     kickstartMainLoop: function() {
-	// kickstart the timer (note arbitrary delay)
-	this.mainLoop = window.setTimeout(this.mainLoopFunc, 10);
+        // kickstart the timer (note arbitrary delay)
+        this.mainLoop = window.setTimeout(this.mainLoopFunc, 10);
     },
 
     scheduleAction: function(msTime, action) { 
@@ -2298,12 +2295,12 @@ Object.extend(WorldMorph.prototype, {
             var schedNode = list[i];
             if (schedNode[0] > msTime) {
                 list.splice(i+1, 0, [msTime, action]);
-		if(!this.mainLoop) this.kickstartMainLoop();
+                if (!this.mainLoop) this.kickstartMainLoop();
                 return; 
             }
         }
         list.splice(0, 0, [msTime, action]);
-	if(!this.mainLoop) this.kickstartMainLoop();
+        if (!this.mainLoop) this.kickstartMainLoop();
     },
 
     onEnter: function() {},
@@ -2334,15 +2331,16 @@ Object.extend(WorldMorph.prototype, {
 
 
     makeShrinkWrappedWorldWith: function(morph, filename) {
-	if (filename == null) {
-	    console.log('null filename, not publishing %s', morph);
-	    return;
-	}
-	var livelySource = null;
-	var url = "http://" + this.defaultStore.host + "/" + this.defaultStore.path + "/lively.xhtml";
-	new Ajax.Request(url, { 
+        if (filename == null) {
+            console.log('null filename, not publishing %s', morph);
+           return;
+        }
+        var livelySource = null;
+        var url = "http://" + this.defaultStore.host + "/" + this.defaultStore.path + "/lively.xhtml";
+        new Ajax.Request(url, { 
             method: 'get',
             asynchronous: false,
+        
             onSuccess: function(transport) {
                 livelySource = transport.responseXML;
             }.logErrors('onSuccess'),
@@ -2354,30 +2352,32 @@ Object.extend(WorldMorph.prototype, {
             onException: function(e) {
                 console.log('exception  %s, %s', e, Object.toJSON(e));
             }
-	    
+    
         });
-	console.log('got source %s url %s', livelySource, url);
-	var mainDefs = livelySource.getElementById('Main');
-	console.log('main defs %s', mainDefs);
-	var mainScript = mainDefs.getElementsByTagName('script')[0];
-	var preamble = livelySource.createElementNS(Namespace.SVG, "script");
-	preamble.appendChild(livelySource.createCDATASection("Config.skipAllExamples = true"));
-	mainDefs.insertBefore(preamble, mainScript);
-	console.log('mainDefs now %s', new XMLSerializer().serializeToString(livelySource));
-	url = "http://" + this.defaultStore.host + "/" + this.defaultStore.path + "/" + filename;
-	var container = livelySource.createElementNS(Namespace.SVG, 'g');
-	container.appendChild(livelySource.importNode(morph, true));
-	container.setAttribute("id", "ShrinkWrapped");
-	mainDefs.appendChild(container);
-	mainDefs.appendChild(livelySource.createTextNode('\n'));
-	var postamble = livelySource.createElementNS(Namespace.SVG, "script");
-	postamble.appendChild(livelySource.createCDATASection('WorldMorph.current().addMorphWithContainerId("ShrinkWrapped");'));
-	mainDefs.appendChild(postamble);
-	
-	new Ajax.Request(url, { 
+
+        console.log('got source %s url %s', livelySource, url);
+        var mainDefs = livelySource.getElementById('Main');
+        console.log('main defs %s', mainDefs);
+        var mainScript = mainDefs.getElementsByTagName('script')[0];
+        var preamble = livelySource.createElementNS(Namespace.SVG, "script");
+        preamble.appendChild(livelySource.createCDATASection("Config.skipAllExamples = true"));
+        mainDefs.insertBefore(preamble, mainScript);
+        console.log('mainDefs now %s', new XMLSerializer().serializeToString(livelySource));
+        url = "http://" + this.defaultStore.host + "/" + this.defaultStore.path + "/" + filename;
+        var container = livelySource.createElementNS(Namespace.SVG, 'g');
+        container.appendChild(livelySource.importNode(morph, true));
+        container.setAttribute("id", "ShrinkWrapped");
+        mainDefs.appendChild(container);
+        mainDefs.appendChild(livelySource.createTextNode('\n'));
+        var postamble = livelySource.createElementNS(Namespace.SVG, "script");
+        postamble.appendChild(livelySource.createCDATASection('WorldMorph.current().addMorphWithContainerId("ShrinkWrapped");'));
+        mainDefs.appendChild(postamble);
+
+        new Ajax.Request(url, { 
             method: 'put',
             asynchronous: false,
-	    body: new XMLSerializer().serializeToString(livelySource),
+            body: new XMLSerializer().serializeToString(livelySource),
+
             onFailure: function(transport) {
                 console.log('problem with %s', transport);
             },
@@ -2387,15 +2387,14 @@ Object.extend(WorldMorph.prototype, {
             }
 	    
         });
-	
 
     },
 
     addMorphWithContainerId: function(id) {
-	var node = document.getElementById(id);
-	var widget = Morph.becomeMorph(node.getElementsByTagName('g')[0], new Importer());
+        var node = document.getElementById(id);
+        var widget = Morph.becomeMorph(node.getElementsByTagName('g')[0], new Importer());
         this.addMorph(widget);
-    },
+    }
 
 });
 
@@ -2447,7 +2446,6 @@ Object.extend(DomEventHandler.prototype, {
  */ 
 
 HandMorph = HostClass.create('HandMorph', Morph);
-
 
 Object.extend(HandMorph.prototype, {
     shadowOffset: pt(5,5),
