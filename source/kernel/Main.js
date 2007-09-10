@@ -13,23 +13,23 @@ function populateWorldWithExamples(world, otherWorld, server) {
     var showStar = true;
     if (showStar) {  // Make a star
 
-	if (Config.loadFromMarkup) {
-	    world.addMorphWithContainerId('RotatingStar');
-	} else {
-	    
+        if (Config.loadFromMarkup) {
+            world.addMorphWithContainerId('RotatingStar');
+        } else {
             var makeStarVertices = function(r,center,startAngle) {
-		var vertices = [];
-		var nVerts = 10;
-		for (var i=0; i<=nVerts; i++) {
+                var vertices = [];
+                var nVerts = 10;
+
+                for (var i=0; i<=nVerts; i++) {
                     var a = startAngle + (2*Math.PI/nVerts*i);
-                var p = Point.polar(r,a);
+                    var p = Point.polar(r,a);
                     if (i%2 == 0) p = p.scaleBy(0.39);
                     vertices.push(p.addPt(center)); 
-		}
-		
-		return vertices; 
+                }
+
+                return vertices; 
             }
-	    
+    
             widget = Morph(pt(0,0).asRectangle(), "rect");
             widget.setShape(PolygonShape(makeStarVertices(50,pt(0,0),0), Color.yellow, 1, Color.black));
             // makeGradient(Color.yellow, Color.yellow.lighter().lighter()));
@@ -38,14 +38,14 @@ function populateWorldWithExamples(world, otherWorld, server) {
             
             var spinningStar = !Config.skipMostExamples || Config.spinningStar;
             if (spinningStar) {  // Make the star spin as a test of stepping
-		if (Config.useNewScheduler) {
+                if (Config.useNewScheduler) {
                     widget.startStepping(1/20, "rotateBy", 0.1);
-		} else {
+                } else {
                     widget.startSteppingFunction(60,function(msTime) {
-			this.setRotation(this.getRotation() + 0.1); }) 
-		}
+                    this.setRotation(this.getRotation() + 0.1); }) 
+                }
             }
-	}
+        }
     }
 
     var showClock = true;
@@ -88,7 +88,7 @@ function populateWorldWithExamples(world, otherWorld, server) {
         world.addMorph(widget);
     }
 
-    // example icon morph with a fisheye effect 'on'
+    // Sample icon morph with a fisheye effect 'on'
     var showIcon = !Config.skipMostExamples;
     if (showIcon) {
         // maybe the icons should have a rectangle shaped images (unlike here)
@@ -100,7 +100,7 @@ function populateWorldWithExamples(world, otherWorld, server) {
         world.addMorph(icon);
     }
 
-    // example weather morph
+    // Sample weather morph
     var showWeather = !Config.skipMostExamples;
     if (showWeather) {
         // Maybe the icons should have rectangular images (unlike here)
@@ -122,7 +122,6 @@ function populateWorldWithExamples(world, otherWorld, server) {
     var showMessenger = !Config.skipMostExamples;
     if (showMessenger) new MessengerWidget().openIn(world, pt(30, 600));
 
-    // TODO list morph
     var showTODO = !Config.skipMostExamples;
     if (showTODO) {
         var todoMorph = TextMorph(Rectangle(440, 240, 250, 20),
@@ -216,7 +215,7 @@ function populateWorldWithExamples(world, otherWorld, server) {
         
         // lm2.setPosition(lm2.position().addXY(65,0));
         var loc = pt(100, 200);
-        var captions = ["               JavaScript","            Widget World","     HTML, DOM, CSS, ETC...","                Browser","   bios:  Network,  Graphics"];
+        var captions = ["               JavaScript","                 Widgets","      HTML, CSS, DOM, etc.","                Browser","    OS: Network, Graphics, ..."];
     
         for (var i = 0; i < captions.length; i++) { // add boxed text
             var txt = TextMorph(loc.extent(pt(300,50)), captions[i]);
@@ -275,36 +274,36 @@ function populateWorldWithExamples(world, otherWorld, server) {
                 lm2.myWorld.addMorph(widget); 
             }
         }
-
     }
 
     return world;
 }
 
 function main() {
+
     // Create an empty world
     var world = WorldMorph.createEmptyWorld();
     WorldMorph.setCurrent(world);
     world.displayWorldOn(Canvas);
     console.log('made world');
-    if (Config.skipAllExamples) return;
 
     // Populate the world with sample objects, widgets and applications
-    populateWorldWithExamples(world, /* !Config.skipMostExamples*/ true);
+    if (Config.skipAllExamples) return;
+    else populateWorldWithExamples(world, /* !Config.skipMostExamples*/ true);
+
     if (false) showStatsViewer(TextLine.prototype, "TextLine...");
     
     if (Config.showWebStore) {
-	//var store = new WebStore('http://idisk.mac.com/xysztof/Public/Lively');
-	var store = new WebStore('localhost', '~kappa/');
-	
-	//var store = new WebStore('www.hanaalliance.org', 'jsl/');
-	store.openIn(WorldMorph.current(), pt(500, 30));
-	WorldMorph.current().defaultStore = store;
+        //var store = new WebStore('http://idisk.mac.com/xysztof/Public/Lively');
+        var store = new WebStore('localhost', '~kappa/');
+
+        //var store = new WebStore('www.hanaalliance.org', 'jsl/');
+        store.openIn(WorldMorph.current(), pt(500, 30));
+        WorldMorph.current().defaultStore = store;
     }
 }
 
 main();
-
 
 console.log('loaded Main.js');
 
