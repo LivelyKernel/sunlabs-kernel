@@ -3033,16 +3033,20 @@ Object.extend(Morph.prototype, {
     },
 
     putMeInAWindow: function(loc) {
+        var c = this.immediateContainer();
 	var w = this.world();
 	var wm = WindowMorph(this.windowContent(), this.windowTitle());
 	// Position it so the content stays in place
 	w.addMorphAt(wm, loc.subPt(wm.contentOffset));
+	if(c) c.remove();
     },
 
     putMeInATab: function(loc) {
+        var c = this.immediateContainer();
 	var w = this.world();
 	var wm = TabbedPanelMorph(this.windowContent(), this.windowTitle());
 	w.addMorphAt(wm, loc);
+	if(c) c.remove();
     },
 
     putMeInTheWorld: function(loc) {

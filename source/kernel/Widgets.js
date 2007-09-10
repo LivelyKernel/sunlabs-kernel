@@ -438,6 +438,46 @@ Object.extend(TitleBarMorph.prototype, {
 
 });
 
+
+/**
+ * @class TitleTabMorph: Title bars for Window morphs
+ */
+  
+TitleTabMorph = HostClass.create('TitleTabMorph', TitleBarMorph);
+
+Object.extend(TitleTabMorph.prototype, {
+
+    initialize: function(headline, windowWidth, windowMorph, isExternal) {
+        this.windowMorph = windowMorph;
+        const bh = this.barHeight;
+        const spacing = this.controlSpacing;
+        TitleBarMorph.superClass.initialize.call(this, Rectangle(0, isExternal? - bh : 0, 
+                                                 windowWidth, bh), "rect");
+        this.linkToStyles(['titleBar']);
+        this.ignoreEvents();
+
+        var cell = Rectangle(0, 0, bh, bh);
+        var menuButton = WindowControlMorph(cell, spacing, Color.primary.blue, windowMorph, 
+            function(evt) { this.targetMorph.showMorphMenu(evt); }, "Menu");
+        this.addMorph(menuButton);
+
+        var label;
+	if (headline instanceof TextMorph) {
+            label = headline;
+        } else { // String
+            var width = headline.length * 8;
+	    // wild guess headlineString.length * 2 *  font.getCharWidth(' ') + 2; 
+            label = TextMorph.makeLabel(Rectangle(0, 0, width, bh), headline);
+        }
+        var topY = this.shape.bounds().y;
+	label.align(label.bounds().topLeft(), pt(menuButton.bounds().maxX(), topY));
+        this.addMorph(label);
+	this.shape.setBounds(this.shape.bounds().withTopRight(pt(label.bounds().maxX(), topY)))
+        return this;
+    }
+
+});
+
 /**
  * @class WindowControlMorph: Event handling for Window morphs
  * Transient?
@@ -654,9 +694,27 @@ Object.extend(WindowMorph.prototype, {
 TabbedPanelMorph = HostClass.create('TabbedPanelMorph', WindowMorph);
 Object.extend(TabbedPanelMorph.prototype, {
 
-    initialize: function(targetMorph, headline, location) {
-        TabbedPanelMorph.superClass.initialize.call(this, targetMorph, headline, location);
-        return this;
+    initialize: function(targetMorph, headline, location, sideName) {
+        if (sideName == null) sideName = 'south';
+	TabbedPanelMorph.superClass.initialize.call(this, targetMorph, headline, location);
+        this.setFill(null);
+	this.setBorderColor(null);
+	this.newToTheWorld = true;
+	return this;
+    },
+
+    makeTitleBar: function(headline, width) {
+        return TitleTabMorph(headline, width, this, false);
+    },
+
+    layoutChanged: function() { // Will get called when added to world
+	// Here we take care of where in the world it should go.
+	if (this.newToTheWorld) {
+		// Place me where I should be in the expanded state
+		// and set up location for collapsed state
+		this.newToTheWorld = false;
+	}
+        TabbedPanelMorph.superClass.layoutChanged.call(this);
     },
 
     collapse: function() { 
