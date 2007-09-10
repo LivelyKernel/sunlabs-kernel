@@ -11,7 +11,7 @@ Object.extend(TextWord, {
 
     become: function(node) {
         var elt = HostClass.becomeInstance(node, TextWord);
-        elt.fontInfo = FontInfo.forFamily(elt.getAttribute("font-family"), elt.getAttribute("font-size"));
+        elt.fontInfo = FontInfo.forFamily(elt.getFontFamily(), elt.getFontSize());
         // FIXME
         return elt;
     }
@@ -27,8 +27,6 @@ Object.extend(TextWord.prototype, {
         this.topLeft = topLeft;
         this.textContent = this.textString; //.substring(this.startIndex);
         this.fontInfo = font;
-        //this.setAttribute("font-family", font.getFamily()); // has to be individually set
-        //this.setAttribute("font-size", font.getSize()); // has to be individually set
         this.setX(topLeft.x);
         this.setY(topLeft.y + font.getSize());
         this.didLineBreak = false;
@@ -74,7 +72,6 @@ Object.extend(TextWord.prototype, {
     //   return a (0,0),0x0 point if there are no bounds
     getBounds: function(stringIndex) { 
         var result = this.getExtentOfChar(stringIndex);
-
         if (result)
             return result;
         console.warn('TextWord.getBounds(%s) undefined, string "%s" extents %s', 
@@ -85,7 +82,6 @@ Object.extend(TextWord.prototype, {
     // keep a copy of the substring we were working on (do we really need this? - kam)
     adjustAfterComposition: function() {
         this.textContent = this.textString.substring(this.startIndex, this.stopIndex + 1); // XXX
-        // this.element.setAttribute("visibility", "visible");
     },
 
     // string representation
@@ -191,7 +187,7 @@ Object.extend(WordChunk.prototype, {
 
     // fully clone a chunk (see warnings)
     clone: function(src) {
-        var c = cloneSkeleton; // KP: does this work? cloneSkeleton seems undefined here
+        var c = cloneSkeleton; // KP: does this work? cloneSkeleton seems undefined here, maybe this.cloneSkeleton()?
         c.render = this.render;
         c.bounds = this.bounds; // BEWARE - not cloned
         c.wasComposed = this.wasComposed;
@@ -543,12 +539,9 @@ Object.extend(TextBox, {
 
     become: function(node) {
         var elt = HostClass.becomeInstance(node, TextBox);
-        var content = elt.recoverTextContent();
-
         var lineHeight = parseFloat(elt.getAttributeNS(Namespace.LIVELY, "line-height"));
         var font = FontInfo.forFamily(elt.getFontFamily(), elt.getFontSize());
-
-        elt.initialize(content, lineHeight, Color.black, font); // FIXME
+        elt.initialize(elt.recoverTextContent(), lineHeight, elt.getTextColor(), font);
         return elt;
     }
 
@@ -565,14 +558,7 @@ Object.extend(TextBox.prototype, {
         this.setTextColor(textColor);
         this.setType("TextBox");
         this.fontInfo = font;
-        this.setAttributeNS(null, "font-size", font.getSize());
-        this.setAttributeNS(null, "font-family", font.getFamily());
-
-        /*
-        for (var type in ['beforecopy', 'beforecut', 'beforepaste', 'cut', 'copy', 'paste']) {
-            this.addEventListener('beforecopy', this.eventHandler, true);
-        }
-        */
+	font.applyTo(this);
 
         this.lines = null;//: TextLine[]
         this.tabWidth = 4;
@@ -603,9 +589,13 @@ Object.extend(TextBox.prototype, {
     },
 
     setTextColor: function(textColor) {
-        this.setAttributeNS(null, "fill", textColor);
+        this.setFill(textColor);
     },
-    
+
+    getTextColor: function() {
+	return Color.parse(this.getFill());
+    },
+
     setTabWidth: function(width, asSpaces) {
         this.tabWidth = width;
         this.tabsAsSpaces = asSpaces;
@@ -778,6 +768,10 @@ Object.extend(TextMorph.prototype, {
         this.selectionElement.setAttributeNS(null, "stroke-width", 0);
         this.font = FontInfo.forFamily(this.fontFamily, this.fontSize);
         this.setAttributeNS(Namespace.LIVELY, "wrap", this.wrap);
+        // KP: set attributes on the text elt, not on the morph, so that we can retrieve it
+        this.setFill(this.defaultBackgroundColor);
+        this.setBorderWidth(this.defaultBorderWidth);
+        this.setBorderColor(this.defaultBorderColor);
     },
 
     restoreFromMarkup: function(importer) {
@@ -800,6 +794,7 @@ Object.extend(TextMorph.prototype, {
             // console.log('found textbox %s %s', this.textBox, this.textBox && this.textBox.textString);
             this.textString = this.textBox.textString;
             this.font = this.textBox.fontInfo;
+	    this.textColor = this.textBox.getTextColor();
             return true;
         case 'Selection':
             // that's ok, it's actually transient 
@@ -820,10 +815,6 @@ Object.extend(TextMorph.prototype, {
 
         this.textString = textString;
 
-        // KP: set attributes on the text elt, not on the morph, so that we can retrieve it
-        this.setFill(this.defaultBackgroundColor);
-        this.setBorderWidth(this.defaultBorderWidth);
-        this.setBorderColor(this.defaultBorderColor);
         // KP: note layoutChanged will be called on addition to the tree
         // DI: ... and yet this seems necessary!
         this.layoutChanged();
@@ -865,7 +856,7 @@ Object.extend(TextMorph.prototype, {
         if (this.textBox) {
             this.textBox.setTextColor(color);
         }
-    },
+    }.logCalls('setTextColor'),
     
     getTextColor: function() {
         return this.textColor;

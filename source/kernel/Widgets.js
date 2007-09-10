@@ -1698,13 +1698,13 @@ Object.extend(ScrollPane.prototype, {
 
     defaultBorderWidth: 2,
     defaultFill: null,
+    scrollBarWidth: 14,
 
     initialize: function(morphToClip, initialBounds) {
         ScrollPane.superClass.initialize.call(this, initialBounds, "rect");
     
         var bnds = this.shape.bounds();
-        var scrollBarWidth = 14;
-        var clipR = bnds.withWidth(bnds.width - scrollBarWidth).insetBy(1);
+        var clipR = bnds.withWidth(bnds.width - this.scrollBarWidth).insetBy(1);
     
         // Make a clipMorph with the content (morphToClip) embedded in it
         var clipMorph = this.setNamedMorph('clipMorph', ClipMorph(clipR));    

@@ -812,7 +812,7 @@ Object.category(Color, 'core', function() { return {
         return a; 
     },
     
-    fromSVGColorString: function(str) {
+    parse: function(str) {
         if (!str || str == "none") 
             return null;
 
@@ -1281,17 +1281,16 @@ Object.extend(DisplayObject.prototype, {
     },
     
     getFill: function() {
-        return this.getAttribute("fill");
+        return this.getAttributeNS(null, "fill");
     },
     
     setStroke: function(paint) {
         //console.log('new color ' + color);
-        this.setAttributeNS(null, "stroke", paint == null? "none" : paint.toString());
+        this.setAttributeNS(null, "stroke", paint == null ? "none" : paint.toString());
     },
     
     getStroke: function() {
-        //console.log('get border color');
-        return Color.fromSVGColorString(this.getAttribute("stroke"));
+        return this.getAttributeNS(null, "stroke");
     },
     
     setStrokeWidth: function(width) {
@@ -1300,7 +1299,7 @@ Object.extend(DisplayObject.prototype, {
 
     getStrokeWidth: function() {
         // FIXME stroke-width can have units
-        return parseFloat(this.getAttribute("stroke-width"));
+        return parseFloat(this.getAttributeNS(null, "stroke-width"));
     },
  
     setFillOpacity: function(alpha) {
@@ -2236,7 +2235,7 @@ Object.extend(Morph.prototype, {
     setBorderColor: function(newColor) { this.shape.setStroke(newColor); }.wrap(Morph.onChange('shape')),
 
     getBorderColor: function() {
-        return this.shape.getStroke();
+        return Color.parse(this.shape.getStroke());
     },
 
     setBorderWidth: function(newWidth) { this.shape.setStrokeWidth(newWidth); }.wrap(Morph.onChange('shape')),
