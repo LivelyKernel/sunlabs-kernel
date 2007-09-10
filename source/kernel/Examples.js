@@ -138,9 +138,9 @@ Object.extend(ClockMorph.prototype, {
             this.addMorph(label);
         }
     
-	this.setNamedMorph("hours", Morph.makeLine([pt(0,0),pt(0,-radius*0.5)],4,Color.blue));
-	this.setNamedMorph("minutes", Morph.makeLine([pt(0,0),pt(0,-radius*0.7)],3,Color.blue));
-	this.setNamedMorph("seconds", Morph.makeLine([pt(0,0),pt(0,-radius*0.75)],2,Color.red));
+        this.setNamedMorph("hours", Morph.makeLine([pt(0,0),pt(0,-radius*0.5)],4,Color.blue));
+        this.setNamedMorph("minutes", Morph.makeLine([pt(0,0),pt(0,-radius*0.7)],3,Color.blue));
+        this.setNamedMorph("seconds", Morph.makeLine([pt(0,0),pt(0,-radius*0.75)],2,Color.red));
     
         this.setHands();
         this.changed(); 
@@ -401,42 +401,10 @@ Object.extend(DoodleMorph.prototype, {
         return this;
     },
     
-    onMouseMove: function(evt) { // something left-over from free draw
-//        if (evt.type == "mousedown" && this.onMouseDown(evt)) return;
-//        DoodleMorph.superClass.mouseEvent.call(this, evt, hasFocus); 
-
-/*        if (this.currentMorph) {
-            var verts = this.currentMorph.shape.vertices();
-            var pt = this.localize(evt.mousePoint.subPt(this.start));
-        
-            if (verts.length > 0 && !verts[verts.length - 1].eqPt(pt)) {
-                verts.push(pt);
-                this.currentMorph.shape.setVertices(verts);
-            }
-        } else {
-            this.checkForControlPointNear(evt);
-        }
-*/
+    onMouseMove: function(evt) {
     },
 
-    onMouseUp: function(evt) { // something left-over from free draw
-/*        if (this.fillmode) {
-            var m = evt.hand.topSubmorph();
-            var receiver = this.owner().morphToGrabOrReceive(evt, m);
-            if (receiver == null) {
-                this.ungrab(m);
-            } else { 
-                if (m != null) {
-                    m.setFill(this.drawingColor);
-                } 
-        
-                while(evt.hand.hasSubmorphs()) { // was just receiver.addMorph(m);
-                    receiver.addMorph(evt.hand.topSubmorph());
-                }
-            }
-        }*/
-        
-        // FIXME save and restore
+    onMouseUp: function(evt) {
         evt.hand.setFill(Color.primary.blue); 
     },
 
@@ -445,7 +413,7 @@ Object.extend(DoodleMorph.prototype, {
         DoodleMorph.superClass.mouseEvent.call(this, evt, hasFocus); 
     },
 
-    onMouseDown: function(evt) {  //default behavior is to grab a submorph
+    onMouseDown: function(evt) { // Default behavior is to grab a submorph
         var m = this.morphToGrabOrReceive(evt);
         if (m == null || m == this) { this.makeSelection(evt); return true; }
         if (m.handlesMouseDown(evt)) return false;
@@ -455,7 +423,7 @@ Object.extend(DoodleMorph.prototype, {
 
     handlesMouseDown: function() { return true; },
 
-    makeSelection: function(evt) {  //default behavior is to grab a submorph
+    makeSelection: function(evt) { // Default behavior is to grab a submorph
         if (this.currentSelection != null) this.currentSelection.removeOnlyIt();
         if ( !evt.hand.mouseButtonPressed ) return;
         var m = SelectionMorph(evt.mousePoint.extent(pt(5,5)), this);
@@ -572,13 +540,6 @@ Object.extend(DoodleMorph.prototype, {
         if ( this.currentSelection != null ) {
             this.currentSelection.setBorderColor(this.drawingColor);
         }
-
-//        this.withAllSubmorphsDo(function() {this.setBorderColor(color);}, null);
-/*        if ( this.currentSelection != null && !this.fillmode ) {
-            this.currentSelection.setBorderColor(this.drawingColor);
-        } else if (this.currentSelection != null && this.fillmode) {
-            this.currentSelection.setFill(this.drawingColor);
-        }*/
     },
 
     setFillColor: function(color) {
@@ -617,20 +578,9 @@ Object.extend(DoodleMorph.prototype, {
         }
     },
     
-    // TODO probably totally irrelevant... since we're not using selection mode any more
+    // TODO probably totally irrelevant since we're not using selection mode any more
     setSelectionMode: function (val, v) {
         this.value = val;
-/*        if (this.value) {
-            this.withAllSubmorphsDo(function() {if (this.getType() != "ImageButtonMorph" && 
-                                                this.getType() != "ImageMorph") this.enableEvents();}, null);
-        } else {
-            this.withAllSubmorphsDo(function() {
-                        if (this.getType() != "ImageButtonMorph" && this.getType() != "ImageMorph") {
- //                           console.log(this.getType() + " is now ignoring events");
-                            this.ignoreEvents();
-                        }}, null);
-            this.enableEvents();
-        }*/
     },
     
     getSelectionMode: function () {
@@ -654,7 +604,12 @@ var apps = {};
 
 apps.threedee = function() {
 
-// Tables for rapid sin calculation
+    // Rapid sin and cos functions inherited from the original
+    // C program.  Note that you must supply a multiplier in 
+    // addition to the (decimal) angle parameter,
+    // or otherwise the result is always 0 or 1.
+
+    // Tables for rapid sin calculation
     var upper = new Array( 
         0, 3050, 5582, 6159, 1627, 5440, 7578, 3703, 3659, 9461, 2993, 
         4887, 226, 7813, 8902, 7469, 6260, 1054, 5473, 6862, 3701, 5349, 
@@ -682,9 +637,7 @@ apps.threedee = function() {
     function rapidSin90(multiplier, sin) {
         return Math.round(multiplier * upper[sin] / lower[sin]);
     }
-// Rapid sin and cos functions.  Note that you must supply 
-// a multiplier in addition to the (decimal) angle parameter,
-// or otherwise the result is always 0 or 1.
+
     function rapidSin(multiplier, sin) {
 
         while (sin < 0) sin += 360; // Can be slow...
@@ -860,8 +813,6 @@ apps.threedee = function() {
     [0, 0, 0],
     [0, 0, 2000]
 ];
-
-// print(i + " points loaded to the object wireframe");
 
 /*==============================================================================
  * WireObject instance constructor
@@ -1051,12 +1002,6 @@ Object.extend(Sun3DMorph.prototype, {
     
         return true;
     },
-
-/*    
-    handlesMouseDown: function(evt) { 
-        return true; 
-    }
-*/        
 
 });
 
@@ -2456,9 +2401,9 @@ Object.extend(GameMorph.prototype, {
  */
  
 // Weather widget works by selecting the city from the list.
-// It uses the XMLHttpRequest to obtain weather info for the selected city
+// It uses XMLHttpRequest to obtain weather info for the selected city
  
-// Maybe we should consider using other weather service.
+// We should consider using other weather service.
 // These images are of low quality
 WeatherWidget = Class.extend(Model);
 
@@ -2871,11 +2816,9 @@ Object.extend(MapFrameMorph.prototype, {
         this.mapclip = ClipMorph(pt(0, 0).extent(initialBounds.extent()).insetBy(clipInset));
 
         this.map = new MapMorph(new Rectangle(0, 0, 5*TileSize.x, 5*TileSize.y), this.online);
-        //this.map.moveBy(pt(-2.5*TileSize.x,-2.5*TileSize.y)); //does not work in safari
         this.map.hasFrame = true;
         this.mapclip.addMorph(this.map);
         this.addMorph(this.mapclip);
-        //this.addMorph(this.map);
 
         this.mapmodel = new MapModel(this);
 
@@ -2887,7 +2830,6 @@ Object.extend(MapFrameMorph.prototype, {
                               this.mapclip.bounds().leftCenter().addXY(-clipInset, 0));
         this.leftbutton.connectModel({model: this.mapmodel, setValue: "goLeft", getValue: "isStepping"});
         this.leftbutton.setToggle(true);
-        //this.leftbutton.moveBy(pt(-80,-80));
         this.addMorph(this.leftbutton);
 
         this.rightbutton = new ImageButtonMorph(r, IMAGEFOLDER + "buttonright.PNG", 
@@ -2898,20 +2840,17 @@ Object.extend(MapFrameMorph.prototype, {
         this.rightbutton.connectModel({model: this.mapmodel, setValue: "goRight", getValue: "isStepping"});
         this.rightbutton.setToggle(true);
         this.addMorph(this.rightbutton);
-        //this.rightbutton.moveBy(pt(-80,-80));
 
         r = Rectangle(this.topLeft.x + 25,this.topLeft.y-20,this.bottomRight.x-this.topLeft.x-52,20);
         this.upbutton =  ImageButtonMorph(r, IMAGEFOLDER + "buttonup.PNG",IMAGEFOLDER + "buttonupdown.PNG");
         this.upbutton.connectModel({model: this.mapmodel, setValue: "goUp", getValue: "isStepping"});
         this.upbutton.setToggle(true);
         this.addMorph(this.upbutton);
-        //this.upbutton.moveBy(pt(-80,-80));
 
         r = Rectangle(this.topLeft.x + 25,this.bottomRight.y,this.bottomRight.x-this.topLeft.x-52,20);
         this.downbutton = ImageButtonMorph(r, IMAGEFOLDER + "buttondown.PNG", IMAGEFOLDER + "buttondowndown.PNG");
         this.downbutton.connectModel({model: this.mapmodel, setValue: "goDown", getValue: "isStepping"});
         this.downbutton.setToggle(true);
-        //this.downbutton.moveBy(pt(-80,-80));
         this.addMorph(this.downbutton);
 
         r = Rectangle(0, 0, iconSize, iconSize);
@@ -2919,31 +2858,22 @@ Object.extend(MapFrameMorph.prototype, {
         this.zinbutton.align(this.zinbutton.bounds().topLeft(), this.bounds().topLeft());
         this.zinbutton.connectModel({model: this.mapmodel, setValue: "setZoomIn"});
         this.addMorph(this.zinbutton);
-        //this.zinbutton.moveBy(pt(-80,-80));
 
-        //r = new Rectangle(this.bottomRight.x-20,this.bottomRight.y-20,40,40);
         this.zoutbutton = ImageButtonMorph(r, IMAGEFOLDER + "zoomout.PNG", IMAGEFOLDER + "zoomoutdown.PNG");
         this.zoutbutton.align(this.zoutbutton.bounds().bottomRight(), this.bounds().bottomRight());
         this.zoutbutton.connectModel({model: this.mapmodel, setValue: "setZoomOut"}); 
-        //this.zoutbutton.moveBy(pt(-80,-80));
         this.addMorph(this.zoutbutton);
 
-        //r = new Rectangle(this.topLeft.x -20,this.bottomRight.y-20,40,40);
         this.maptypebutton = ImageButtonMorph(r, IMAGEFOLDER + "maptype.PNG", IMAGEFOLDER + "maptype2.PNG");
         this.maptypebutton.align(this.maptypebutton.bounds().bottomLeft(), this.bounds().bottomLeft());
         this.maptypebutton.connectModel({model: this.mapmodel, setValue: "setMapType", getValue: "isSatelliteView"});
         this.maptypebutton.setToggle(true);
         this.addMorph(this.maptypebutton);
-        //this.maptypebutton.moveBy(pt(-80,-80));
 
         pd("MapFrameMorph constructed",2);
         return this;
     } 
     
-    /*, okToBeGrabbedBy: function(evt) {
-        return true; 
-    }*/
-
 });
 
 /**
@@ -3068,25 +2998,10 @@ Object.extend(MapMorph.prototype, {
       this.endpoint = null;
       
       this.pointerimages = [];
-      //this.addMapMarker("file:icon.PNG", new Rectangle(this.shape.bounds.center().x,this.shape.bounds.center().y,16,20));
-      //this.addMapMarker("file:icon.PNG", new Rectangle(this.shape.bounds.center().x+50,this.shape.bounds.center().y,16,20));
-      //this.addMorph(this.pointerimages[0]);
       
       this.online = online;
       this.hasFrame = false;
       this.initMap();
-      /* var img = null;
-         for (var y = 0; y < 5; y += 1){
-              for (var x = 0; x < 5; x += 1){
-                                
-                     img = NodeFactory.create("image", {x:x*256, y: y*256, width: 256, height: 256});
-                     img.withHref("http://www.cs.tut.fi/~reijula/mapimages/map579_288.png");
-                     this.addChildElement(img);
-                     //this.addChildElement(this.images[this.iy][this.ix]);
-                     //var success = canvas.drawPixmap(this.images[this.iy][this.ix], this.imagerects[this.iy][this.ix]);
-  
-              }
-      } */
 
       this.stepping = false;
       return this;
@@ -3099,9 +3014,6 @@ Object.extend(MapMorph.prototype, {
     },
 
     draw: function() {
-        //MapMorph.superClass.draw.call(this, canvas); // draw the underlying 
-        //println("drawing all map images " );
-        // canvas.primCanvas.drawPixmap(this.bitmap, 0, 0);
         var success = false;
         for (var iy = 0; iy < 5; iy ++) {
             for (var ix = 0; ix < 5; ix ++) {
@@ -3123,15 +3035,6 @@ Object.extend(MapMorph.prototype, {
        }
        pd("Draw complete",2);
     
-    /*
-    var img = NodeFactory.create("image", {x:600,y:600, width: 473, height: 473});
-    img.setHref("http://www.cs.tut.fi/~reijula/mapimages/map579_288.png");
-    this.addChildElement(img);
-    img = NodeFactory.create("image", {x:1100,y:800, width: 32, height: 32});
-    img.setAttributeNS(Namespace.XLINK, "href", "http://www.cs.tut.fi/~reijula/mapimages/maptype.PNG");
-    this.addChildElement(img);
-    */
-    
     }, 
   
   /*
@@ -3140,87 +3043,13 @@ Object.extend(MapMorph.prototype, {
   okToBeGrabbedBy: function(evt) {
     pd("coords" + evt.mousePoint + " center " + this.bounds().center()+ " in wc " +this.worldPoint(this.bounds().center()), 2);
     this.startpoint = evt.mousePoint; //this line is here only bacause this morph does not listen mousedown events
-    return null; //otherwise map will be able to take out from mapframe
-    
+    return null; //otherwise map will be able to take out from mapframe  
   },
   
-  handlesMouseDown: function(evt) { pd("handlesMouseDown", 2); return false; },
-  /*onMouseMove: function(evt) { 
-    if (evt.mousePoint && this.startpoint){ 
-      pd("moved",2);
-      this.moveBy(pt(evt.mousePoint.subPt(this.startpoint)));
-    } 
-  },*/
-  /* Disabled, since does not work correctly in SVG-morphs
-  onMouseUp: function(evt) { 
-    pd("-------------MapMorph.prototype.mouseUp" + evt,3);
-    if (evt.mousePoint && this.startpoint){
-        this.endpoint = evt.mousePoint;
-        pd("scale of map: " + this.getScale(), 2)
-        var currentscale = this.getScale();
-        this.mapmovedX += (this.endpoint.x - this.startpoint.x);
-        this.mapmovedY += (this.endpoint.y - this.startpoint.y);
-        pd("moved x " + this.mapmovedX + " y " + this.mapmovedY, 2);
-       if ( ( this.mapmovedX > TileSize.x*currentscale )){
-            //do until map is at place
-                while( this.mapmovedX > TileSize.x*currentscale){
-                    this.mapmovedX -= TileSize.x*currentscale;
-                    this.mapX = -TileSize.x*currentscale;
-                    //moving map right
-                    //alert("right");
-                    this.x -= 1;
-                    this.x = this.getValueX(this.x);
-                    this.loadImagesToMap("left");
-                    this.moveBy(pt(-TileSize.x*currentscale,0));
-                }
-            }else if ( ( this.mapmovedX < -TileSize.x*currentscale) ){
-                //do until map is at place
-                while( this.mapmovedX < -TileSize.x*currentscale){
-                    this.mapmovedX += TileSize.x*currentscale;
-                    this.mapX = -TileSize.x*currentscale;
-                    //moving map left
-                    //alert("left");
-                    this.x += 1;
-                    this.x = this.getValueX(this.x);
-                    this.loadImagesToMap("right");
-                    this.moveBy(pt(TileSize.x*currentscale,0));
-                }
-            }
-            if ( ( this.mapmovedY < -TileSize.y*currentscale) ){
-                //do until map is at place
-                while( this.mapmovedY < -TileSize.y*currentscale){        
-                    this.mapmovedY += TileSize.y*currentscale;
-                    this.mapY = -TileSize.y*currentscale;
-                    //moving map up
-                    //alert("up");
-                    this.y += 1;
-                    this.y = this.getValueY(this.y);
-                    this.loadImagesToMap("down");
-                    this.moveBy(pt(0,TileSize.y*currentscale));
-                }
-
-            }else if ( ( this.mapmovedY > TileSize.y*currentscale) ){
-                //do until map is at place
-                while( this.mapmovedY > TileSize.y*currentscale){    
-                    this.mapmovedY -= TileSize.y*currentscale;
-                    this.mapY = -TileSize.y*currentscale;
-                    //moving map down
-                    //alert("down");
-                    this.y -= 1;
-                    this.y = this.getValueY(this.y);
-                    this.loadImagesToMap("up");
-                    this.moveBy(pt(0,-TileSize.y*currentscale));
-   
-                }
-
-            }
-        }
-    this.buttondown = false;
-    this.startpoint = null;
-    this.endpoint = null;
-    this.changed();
-    
-  },*/
+  handlesMouseDown: function(evt) {
+      pd("handlesMouseDown", 2);
+      return false;
+  },
   
   onScrollTest: function(p) { 
       //pd("onScrollTest",3);
@@ -3228,9 +3057,9 @@ Object.extend(MapMorph.prototype, {
       this.mapmovedX += p.x;
       this.mapmovedY += p.y;
       // pd("moved x " + this.mapmovedX + " y " + this.mapmovedY, 2);
-      if ( ( this.mapmovedX > TileSize.x*currentscale )){
+      if ( ( this.mapmovedX > TileSize.x*currentscale )) {
           //do until map is at place
-             while( this.mapmovedX > TileSize.x*currentscale){
+          while ( this.mapmovedX > TileSize.x*currentscale) {
                     this.mapmovedX -= TileSize.x*currentscale;
                     this.mapX = -TileSize.x*currentscale;
                     //moving map right
@@ -3239,10 +3068,11 @@ Object.extend(MapMorph.prototype, {
                     this.x = this.getValueX(this.x);
                     this.loadImagesToMap("left");
                     this.moveBy(pt(-TileSize.x*currentscale,0));
-                }
-            }else if ( ( this.mapmovedX < -TileSize.x*currentscale) ){
+          }
+          
+      } else if ( ( this.mapmovedX < -TileSize.x*currentscale) ) {
                 //do until map is at place
-                while( this.mapmovedX < -TileSize.x*currentscale){
+                while ( this.mapmovedX < -TileSize.x*currentscale) {
                     this.mapmovedX += TileSize.x*currentscale;
                     this.mapX = -TileSize.x*currentscale;
                     //moving map left
@@ -3252,10 +3082,11 @@ Object.extend(MapMorph.prototype, {
                     this.loadImagesToMap("right");
                     this.moveBy(pt(TileSize.x*currentscale,0));
                 }
-            }
-            if ( ( this.mapmovedY < -TileSize.y*currentscale) ){
+      }
+      
+      if ( ( this.mapmovedY < -TileSize.y*currentscale) ) {
                 //do until map is at place
-                while( this.mapmovedY < -TileSize.y*currentscale){        
+                while ( this.mapmovedY < -TileSize.y*currentscale) {        
                     this.mapmovedY += TileSize.y*currentscale;
                     this.mapY = -TileSize.y*currentscale;
                     //moving map up
@@ -3266,9 +3097,9 @@ Object.extend(MapMorph.prototype, {
                     this.moveBy(pt(0,TileSize.y*currentscale));
                 }
 
-            }else if ( ( this.mapmovedY > TileSize.y*currentscale) ){
+      } else if ( ( this.mapmovedY > TileSize.y*currentscale) ) {
                 //do until map is at place
-                while( this.mapmovedY > TileSize.y*currentscale){    
+                while ( this.mapmovedY > TileSize.y*currentscale) {    
                     this.mapmovedY -= TileSize.y*currentscale;
                     this.mapY = -TileSize.y*currentscale;
                     //moving map down
@@ -3279,8 +3110,7 @@ Object.extend(MapMorph.prototype, {
                     this.moveBy(pt(0,-TileSize.y*currentscale));
    
                 }
-
-            }
+      }
 
       this.buttondown = false;
       this.startpoint = null;
@@ -3338,23 +3168,18 @@ Object.extend(MapMorph.prototype, {
     var tempx = this.getValueX(this.x + ix -2);
     var tempy = this.getValueY(this.y + iy -2);
     var img = null;
-    if(!this.online) img = this.loadImageFromDisk(tempx, tempy, this.zoomRatio);
+    if (!this.online) img = this.loadImageFromDisk(tempx, tempy, this.zoomRatio);
     var satURL ="";
     //alert("URL x " + tempx + " y "+ tempy  + " xmax " + (1 + zo[zoomRatio].maxX) + " " + generateSatelliteURL(tempx,tempy));
     if (img){
-        //found from disk
-        //this.images[iy][ix] = img;
-        //var image = NodeFactory.create("image", { width: this.bounds().width, height: this.bounds().height});
-        //image.setAttributeNS(Namespace.XLINK, "href", img);
-            
         this.images[iy][ix] = img;
         //this.images[iy][ix] = new Pixmap(img , canvas.primCanvas, this.shape.bounds);
         this.imagerects[iy][ix] = new Rectangle(ix*TileSize.x, iy*TileSize.y, TileSize.x*5, TileSize.y*5);
-        if (this.images[iy][ix] == null ){
+        if (this.images[iy][ix] == null ) {
               pd("--image is NULL!", 5);
-         }else {pd("loaded image from file:" + this.images[iy][ix], 5);}
+        } else {pd("loaded image from file:" + this.images[iy][ix], 5);}
     } else {
-        pd ("Loading",2);
+        pd("Loading",2);
         if (this.selectedURL == MAPSURL){
             img = this.selectedURL[0] + tempx + this.selectedURL[1] + tempy + this.selectedURL[2] + this.zoomRatio;
         } else if (this.selectedURL == SATELLITESURL){
@@ -3369,17 +3194,10 @@ Object.extend(MapMorph.prototype, {
                 //saveImageToDisk(this.selectedURL[0] + satURL, tempx, tempy,zoomRatio);
             }
             pd("Loading img online:" + img + " ix " + ix + " iy " + iy, 2);
-            //var image = NodeFactory.create("image", { x: ix*TileSize.x,y: iy*TileSize.y,width: TileSize.x, height: TileSize.y});
-            //image.setAttributeNS(Namespace.XLINK, "href", img);
-            //this.addChildElement(image);
-
             this.images[iy][ix] = img;
             this.imagerects[iy][ix] = new Rectangle(ix*TileSize.x, iy*TileSize.y, TileSize.x*5, TileSize.y*5);
-
-            //this.imagerects[iy][ix] = new Rectangle(-5*TileSize.x+ix*TileSize.x, -5*TileSize.y+iy*TileSize.y, TileSize.x*5, TileSize.y*5);
-            // pd("Loaded img online:" + img, 2);
             
-        }else {
+        } else {
             //alert("error processing ixiy" + ix + iy + " image " + img);
             this.images[iy][ix] = null; 
             this.imagerects[iy][ix] = null;
@@ -3387,7 +3205,6 @@ Object.extend(MapMorph.prototype, {
         }
     }
     this.changed();
-    //drawMap();
   },
   
   /*Tries to find image from file
@@ -3456,15 +3273,10 @@ Object.extend(MapMorph.prototype, {
         if (this.zoomRatio < 0) {
             this.zoomRatio = 0;
             pd("Minimum zoom level reached",6);
-        }else {
+        } else {
             //try to keep the center in same position in new zoom
             this.x = this.x*2
             this.y = this.y*2;
-            //also keep markers in position
-            /* TODO HOW TO MOVE WHILE ZOOM?
-            for(var i = 0; i < this.pointerimages.length; i++){
-                this.pointerimages[i].moveBy(pt(TileSize.x, TileSize.y));
-            } */  
         }
         this.loadInitImages();
     },
@@ -3475,7 +3287,7 @@ Object.extend(MapMorph.prototype, {
         if (this.zoomRatio > 16) {
             this.zoomRatio = 16;
             pd("Maximum zoom level reached",6);
-        }else {
+        } else {
             //try to keep the center in same position in new zoom
             this.x = Math.floor(this.x/2);
             this.y = Math.floor(this.y/2);
@@ -3493,9 +3305,9 @@ Object.extend(MapMorph.prototype, {
     var URLstring = "t";
     /*QuadTree search for mapURL*/
     //for (var i = 0; i < (17 - zoomRatio); i++){
-    while(x_max > 1) {
+    while (x_max > 1) {
         if ( tempx > (x_max/2) ){
-            if( tempy > (x_max/2) ){
+            if ( tempy > (x_max/2) ){
                 //downright s
                 URLstring += "s";
                 //reduce y by half of ymax to next round
@@ -3507,7 +3319,7 @@ Object.extend(MapMorph.prototype, {
             //reduce x by half of ymax to next round
             tempx = tempx - x_max/2;
         } else {
-            if( tempy > (x_max/2) ){
+            if ( tempy > (x_max/2) ){
                 //downleft t
                 URLstring += "t";
                 //reduce y by half of ymax to next round
@@ -3839,11 +3651,8 @@ Object.extend(BouncingSpheres, {
                     this.vector.y = - this.vector.y;
                 }
 
-                // this.translateBy(pt.x + 10, pt.y + 10); 
             });
             
-            // console.log('added ' + aShape.shape);
-            // dojo.html.setClass(aShape.getEventSource(), "movable");
         }
     },
 
@@ -4052,7 +3861,7 @@ Object.extend(MessengerWidget.prototype, {
                 }
             }
 /*
-// kill the database            
+// FIXME: kill the database            
                 new Ajax.Request(this.server + "foreground.html?action=updatemany&key." + IDs[i] + "=", { 
                 method: 'get',
                 
@@ -4248,26 +4057,7 @@ Object.extend(CanvasScapeMorph.prototype, {
         this.color = Color.red;
         this.note = "";
         this.map = MiniMapMorph(Rectangle(5,25,8*this.arena.length,8*this.arena[0].length));
-        
-        //this.map.px = this.map.x + this.map.width / 2; //player pos
-        //this.map.py = this.map.y + this.map.height / 2;
-      
         this.morphArray =[];
-      
-        /*this.startButton = ButtonMorph(Rectangle(300,140,50,100));
-        this.buttonListener = new Model();
-        this.buttonListener.parent = this;
-        this.buttonListener.setValue = function() {
-            this.parent.removeAllMorphs();
-            if (this.parent.map) this.parent.map.remove();
-            this.parent.initParameters();
-            this.parent.initGame(); 
-            this.parent.initUnderMap();
-            this.parent.addMorph(this.parent.map);
-            this.parent.startSteppingFunction(35, function(msTime) { this.parent.update(); });
-        }
-        this.startButton.connectModel({model: this.buttonListener, getValue: "getValue", setValue: "setValue"});
-        this.addMorph(this.startButton);*/
         console.log("initParameters completed");
     },
      
@@ -4406,36 +4196,13 @@ Object.extend(CanvasScapeMorph.prototype, {
             this.morphArray.push(morppi);
         }
         
-        var theta = this.playerDir-this.pi/6;
-    
+        var theta = this.playerDir-this.pi/6;    
         var wall=this.wallDistance(theta);
-        //theta = this.playerDir-this.pi/6;
-        //var obj = objDistance(theta);
-    
-        //playerrect in map
-        //this.map.px = this.map.x + 8*this.playerPos[0];
-        //this.map.py = this.map.y + 8*this.playerPos[1];
         this.map.updatePlayerLocation(8*this.playerPos[0], 8*this.playerPos[1]);
         this.color = Color.black;//setColor(0);
-        //fillRect(map.px - 2, map.py - 2, 4, 4);
-
-        //about visible area
-        /*    arrX = new Array();
-            arrX[0] = map.px - 2;
-            arrX[1] = map.px - 2 + 60*Math.cos(this.playerDir-this.pi/6);
-            arrX[2] = map.px - 2 + 60*Math.cos(this.playerDir+this.pi/6);
-            arrY = new Array();
-            arrY[0] = map.py - 2;
-            arrY[1] = map.py - 2 + 60*Math.sin(this.playerDir-this.pi/6);
-            arrY[2] = map.py - 2 + 60*Math.sin(this.playerDir+this.pi/6);        
-            fillPolygon(arrX, arrY, 3);
-        */
-        //this.initUnderMap(); //THIS IS HEAVY NOW... so it's commented
 
         var linGrad;
-        
-        var tl,tr,bl,br;
-        
+        var tl,tr,bl,br;        
         var theta1,theta2,fix1,fix2;
         var drawobject = false;
 
@@ -4460,20 +4227,6 @@ Object.extend(CanvasScapeMorph.prototype, {
             var shade1=Math.floor(wallH1*2+20); if (shade1>255) shade1=255;
             var shade2=Math.floor(wallH2*2+20); if (shade2>255) shade2=255;
     
-            //linGrad = canvas.createLinearGradient(tl[0],0,tr[0],0);
-            //linGrad.addColorStop(0, 'rgba('+(this.face[i/4]%2==0 ? shade1 : 0)+','+(this.face[i/4]==1 ? shade1 : 0)+','+(this.face[i/4]==2 ? 0 : shade1)+',1)');
-            //linGrad.addColorStop(1, 'rgba('+(this.face[i/4]%2==0 ? shade2 : 0)+','+(this.face[i/4]==1 ? shade2 : 0)+','+(this.face[i/4]==2 ? 0 : shade2)+',1)');
-            // rgba used because of Opera 9 bug
-                        
-            //canvas.beginPath();
-            //canvas.moveTo(tl[0], tl[1]);
-            //canvas.lineTo(tr[0], tr[1]);
-            //canvas.lineTo(br[0], br[1]);
-            //canvas.lineTo(bl[0], bl[1]);
-            //canvas.fillStyle = linGrad;
-            //canvas.fill();
-            
-            //objects
             drawobject = false;
             for (var s = 0; s < this.objArray.length; s+=1) {
                 //stop("oA " + this.objArray[s] + " i " + i + " len " + this.objArray.length + " " + wall.length);
@@ -4494,15 +4247,10 @@ Object.extend(CanvasScapeMorph.prototype, {
             if ( (i/4)%2 == 0) {
                 var c = ((this.face[i/4]%2==0 ? shade1 : 1) * (this.face[i/4]==1 ? shade1 : 1) * (this.face[i/4]==2 ? 1 : shade1))/255;
                 this.color= new Color(shade1/512,shade1/512,shade1/512);
-                //this.color= new Color( (this.face[i/4]%2==0 ? shade1 : 1)/255 , (this.face[i/4]==1 ? shade1 : 1)/255 , (this.face[i/4]==2 ? 1 : shade1)/255 );
-                //setColor( (this.face[i/4]%2==0 ? shade1 : 1) * (this.face[i/4]==1 ? shade1 : 1) * (this.face[i/4]==2 ? 1 : shade1));
             } else {
                 var c = ((this.face[i/4]%2==0 ? shade1 : 1) * (this.face[i/4]==1 ? shade1 : 1) * (this.face[i/4]==2 ? 1 : shade1))/255;
                 this.color= new Color(c,c,c);
                 this.color= new Color(shade2/512,shade2/512,shade2/512);
-                //this.color= new Color( (this.face[i/4]%2==0 ? shade2 : 1)/255 , (this.face[i/4]==1 ? shade2 : 1)/255 ,(this.face[i/4]==2 ? 1 : shade2)/255 );
-                //setColor(100*100+(shade2/3));
-                //setColor( (this.face[i/4]%2==0 ? shade2 : 1) * (this.face[i/4]==1 ? shade2 : 1) *(this.face[i/4]==2 ? 1 : shade2));
             }
 
             if (drawobject) {
@@ -4521,15 +4269,6 @@ Object.extend(CanvasScapeMorph.prototype, {
             
             this.morphArray.push(morppi);
                
-            //drawString(0,30, "map x y " + map.px + " " + map.py + "to x y " + map.px + this.playerPos[0]*8+Math.cos(theta1)*(wall[i+1])*8 + " " + map.py, map.py + this.playerPos[1]*8+Math.sin(theta1)*(wall[i+1])*8 );
-            //drawString(0,0, "thetas " + theta + " theta1 " + theta1 + " theta2 " + theta2 + "p dir" + this.playerDir);
-            //drawLine(map.px, map.py, map.px +50,  map.py +50)
-    
-            //drawLine(map.px,  map.py, map.px + this.playerPos[0]*8+Math.cos(theta1)*(wall[i+1])*8, map.py + this.playerPos[1]*8+Math.sin(theta1)*(wall[i+1])*8);
-            //drawLine(map.px, map.py, map.px + this.playerPos[0]*8+Math.cos(theta2)*(wall[i+3])*8, map.py + this.playerPos[1]*8+Math.sin(theta2)*(wall[i+3])*8);
-            //map.lineTo(this.playerPos[0]*8+Math.cos(theta1)*(wall[i+1])*8, this.playerPos[1]*8+Math.sin(theta1)*(wall[i+1])*8);
-            //map.lineTo(this.playerPos[0]*8+Math.cos(theta2)*(wall[i+3])*8, this.playerPos[1]*8+Math.sin(theta2)*(wall[i+3])*8);
-
         }
 
     }, 
@@ -4627,12 +4366,8 @@ Object.extend(CanvasScapeMorph.prototype, {
     initUnderMap: function(){ // now its actually drawMinimap
         this.map.removeAllMorphs();
         var morppi;
-        //var underMap=document.getElementById("underMap").getContext("2d");
-        //underMap.fillStyle="#FFF";
 
         this.color = this.map.color;
-        //underMap.fillRect(0,0, 200, 200);
-        //underMap.fillStyle="#444";
         for (var i=0; i<this.arena.length; i++) {
             for (var j=0; j<this.arena[i].length; j++) {
                 if (this.arena[i][j] && this.arena[i][j] != 2) {
@@ -4641,20 +4376,12 @@ Object.extend(CanvasScapeMorph.prototype, {
                         morppi.setFill(this.color);
                         this.map.addMorph(morppi);
                     }
-                    //fillRect(undermap.x + i*8, undermap.y + j*8, 8, 8);
                 } 
-                /*if (arena[i][j] == 2 && ) {
-                    (undermap.color);
-                    fillRect(undermap.x + i*8, undermap.y + j*8, 8, 8);
-                    setColor(undermap.color);
-                }*/
                 if (this.arena[i][j] == 2 && this.difficulty == "easy") {
                     //this.color = Color.red;//setColor(0xcccc33);
                     morppi = Morph(Rectangle( i*8,  j*8, 8, 8),"rect");   
                     morppi.setFill(Color.red);
                     this.map.addMorph(morppi);
-                    //fillRect(undermap.x + i*8, undermap.y + j*8, 8, 8);
-                    //this.color = this.undermap.color; //setColor(undermap.color);
                 }
             }    
         }
@@ -4732,7 +4459,6 @@ Object.extend(CanvasScapeMorph.prototype, {
         var key = event.keyCode || event.charCode;
     
         // Check if any cursor keys have been pressed and set flags.
-    
         if (key == Event.KEY_LEFT)
             this.changeKey(37, 0);
         else if (key == Event.KEY_RIGHT)
@@ -4801,18 +4527,9 @@ Object.extend(CanvasScapeMorph.prototype, {
         this.map.updatePlayerLocation(8*this.playerPos[0], 8*this.playerPos[1]);
         this.map.shape.setBounds(Rectangle(0,0,this.map.width, this.map.height));
         this.initUnderMap();
-        //this.map.px = this.map.x + this.map.width / 2; //player pos
-        //this.map.py = this.map.y +  this.map.height / 2;
         
         this.key=[0,0,0,0,0];
-        /*this.undermap.width = 8*this.arena.length;
-        this.undermap.height = 8*this.arena[0].length;
-        this.undermap.px = this.undermap.x + this.undermap.width / 2; //player pos
-        this.undermap.py = this.undermap.y +  this.undermap.height / 2;*/
         this.found = 0;
-        //removeAllTimers();
-        //timepassed = 0;
-        //gameon = false;
 
         this.drawCanvas();
     },
