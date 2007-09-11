@@ -395,7 +395,7 @@ Object.extend(TitleBarMorph.prototype, {
 
         cell = cell.translatedBy(pt(bh - spacing, 0));
         var menuButton = WindowControlMorph(cell, spacing, Color.primary.blue, windowMorph, 
-            function(evt) { this.targetMorph.showMorphMenu(evt); }, "Menu");
+            function(evt) { windowMorph.showTargetMorphMenu(evt); }, "Menu");
         this.addMorph(menuButton);
 
         // uncomment for extra icon fun
@@ -457,8 +457,14 @@ Object.extend(TitleTabMorph.prototype, {
 
         var cell = Rectangle(0, 0, bh, bh);
         var menuButton = WindowControlMorph(cell, spacing, Color.primary.blue, windowMorph, 
-            function(evt) { this.targetMorph.showMorphMenu(evt); }, "Menu");
+            function(evt) { windowMorph.showTargetMorphMenu(evt); }, "Menu");
         this.addMorph(menuButton);
+        
+        // Collapse button is retained only while we get things going...
+	cell = cell.translatedBy(pt(bh - spacing, 0));
+        var collapseButton = WindowControlMorph(cell, spacing, Color.primary.yellow, windowMorph, 
+            function() { this.toggleCollapse(); }, "Collapse");
+        this.addMorph(collapseButton);
 
         var label;
         if (headline instanceof TextMorph) {
@@ -469,10 +475,27 @@ Object.extend(TitleTabMorph.prototype, {
             label = TextMorph.makeLabel(Rectangle(0, 0, width, bh), headline);
         }
         var topY = this.shape.bounds().y;
-        label.align(label.bounds().topLeft(), pt(menuButton.bounds().maxX(), topY));
+        label.align(label.bounds().topLeft(), cell.topRight());
         this.addMorph(label);
         this.shape.setBounds(this.shape.bounds().withTopRight(pt(label.bounds().maxX(), topY)))
         return this;
+    },
+
+    okToBeGrabbedBy: function(evt) {
+        return this;
+    },
+
+    handlesMouseDown: function() { return true; },
+
+    onMouseDown: function(evt) {
+console.log('mouseDown');
+        evt.hand.setMouseFocus(this);
+    },
+
+    onMouseUp: function(evt) {
+console.log('mouseUp');
+        evt.hand.setMouseFocus(null);
+	this.windowMorph.toggleCollapse();
     }
 
 });
@@ -636,6 +659,13 @@ Object.extend(WindowMorph.prototype, {
         return true;
     },
 
+    showTargetMorphMenu: function(evt) { 
+        var tm = this.targetMorph.morphMenu(evt);
+	tm.replaceItemNamed("remove", ["remove", this.initiateShutdown.bind(this)]);
+	tm.removeItemNamed("duplicate");
+	tm.openIn(WorldMorph.current(), evt.mousePoint, false, this.targetMorph.inspect().truncate()); 
+    },
+
     updateView: function(aspect, controller) {
         var plug = this.modelPlug;
         if (!plug) return;
@@ -669,49 +699,28 @@ Object.extend(TabbedPanelMorph.prototype, {
 	// be a container for applications that may frequently want to be put out of the way.
 	// With windows, you collapse them to their title bars, with tabbed panels, you
 	// click their tab and they retreat to the edge of the screen like a file folder.
-        if (sideName == null) sideName = 'south';
-        TabbedPanelMorph.superClass.initialize.call(this, targetMorph, headline, location);
+        this.sideName = sideName ? sideName : "south";
+	TabbedPanelMorph.superClass.initialize.call(this, targetMorph, headline, location);
         this.setFill(null);
         this.setBorderColor(null);
         this.newToTheWorld = true;
-        return this;
+        this.setPositions();
+	this.moveBy(this.expandedPosition.subPt(this.position()));
+	return this;
+    },
+
+    setPositions: function() {
+	// Compute the nearest collapsed and expanded positions for side tabs
+	var wBounds = WorldMorph.current().shape.bounds();
+        if (this.sideName == "south") {
+	    var edgePt = this.position().nearestPointOnLineBetween(wBounds.bottomLeft(), wBounds.bottomRight());
+	    this.collapsedPosition = edgePt.subPt(this.contentOffset);  // tabPosition
+	    this.expandedPosition = edgePt.addXY(0,-this.shape.bounds().height);
+	}
     },
 
     makeTitleBar: function(headline, width) {
         return TitleTabMorph(headline, width, this, false);
-    },
-
-    layoutChanged: function() { // Will get called when added to world
-        // Here we take care of where in the world it should go.
-        if (this.newToTheWorld) {
-            // Place me where I should be in the expanded state
-            // and set up location for collapsed state
-           this.newToTheWorld = false;
-        }
-        TabbedPanelMorph.superClass.layoutChanged.call(this);
-    },
-
-    collapse: function() { 
-        if (this.isCollapsed()) return;
-        this.expandedPosition = this.position();
-        var owner = this.owner();
-        this.remove();
-        owner.addMorph(this.titleBar);
-        if (this.collapsedPosition) this.titleBar.setPosition(this.collapsedPosition);
-        	else this.titleBar.setPosition(this.expandedPosition);
-        this.state = "collapsed";
-    },
-    
-    expand: function() {
-        if (!this.isCollapsed()) return;
-        this.collapsedPosition = this.titleBar.position();
-        var owner = this.titleBar.owner();
-        this.titleBar.remove();
-        this.setPosition(this.expandedPosition);        
-        owner.addMorph(this);
-        this.addMorph(this.titleBar);
-        this.titleBar.setPosition(pt(0,0))
-        this.state = "expanded";
     }
 
 });
@@ -1383,6 +1392,12 @@ Object.extend(MenuMorph.prototype, {
                 this.items.splice(i,1);
     },
 
+    replaceItemNamed: function(itemName, newItem) {
+        for (var i=0; i<this.items.length; i++)
+            if (this.items[i][0] == itemName)
+                this.items[i] = newItem;
+    },
+
     removeItemsNamed: function(nameList) {
         nameList.each(function(n) { this.removeItemNamed(n); }.bind(this));
     },
@@ -1415,8 +1430,7 @@ Object.extend(MenuMorph.prototype, {
 	var visibleRect = menuRect.intersection(this.world().shape.bounds()); 
 	var delta = visibleRect.topLeft().subPt(menuRect.topLeft());  // delta to fix topLeft off screen
 	delta = delta.addPt(visibleRect.bottomRight().subPt(menuRect.bottomRight()));  // same for bottomRight
-	if (delta.dist(pt(0,0)) > 1) this.translateBy(delta);  // move if more than round-off error
-    },
+	if (delta.dist(pt(0,0)) > 1) this.moveBy(delta);  // move if significant    },
 
     compose: function(location) { 
         var itemNames = this.items.map(function (item) { return item[0] });

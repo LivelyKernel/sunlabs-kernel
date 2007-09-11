@@ -3043,7 +3043,7 @@ Object.extend(Morph.prototype, {
         var c = this.immediateContainer();
         var w = this.world();
         var wm = TabbedPanelMorph(this.windowContent(), this.windowTitle());
-        w.addMorphAt(wm, loc);
+        w.addMorphAt(wm, wm.position());
         if (c) c.remove();
     },
 
