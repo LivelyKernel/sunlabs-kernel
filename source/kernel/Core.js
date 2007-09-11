@@ -620,15 +620,19 @@ Object.extend(Rectangle.prototype, {
     },
 
     translatedBy: function(d) {
-        return Rectangle(this.x+d.x,this.y+d.y,this.width,this.height); 
+        return Rectangle(this.x+d.x, this.y+d.y, this.width, this.height); 
+    },
+    
+    scaleByRect: function(r) { // r is a relative rect, as a pane spec in a window
+        return Rectangle(r.x*this.width, r.y*this.height, r.width*this.width, r.height*this.height); 
     },
     
     insetBy: function(d) {
-        return Rectangle(this.x+d,this.y+d,this.width-(d*2),this.height-(d*2)) 
+        return Rectangle(this.x+d, this.y+d, this.width-(d*2), this.height-(d*2)) 
     },
 
     insetByPt: function(p) {
-        return Rectangle(this.x+p.x,this.y+p.y,this.width-(p.x*2),this.height-(p.y*2)) 
+        return Rectangle(this.x+p.x, this.y+p.y, this.width-(p.x*2), this.height-(p.y*2)) 
     },
     
     expandBy: function(delta) { return this.insetBy(0-delta) }

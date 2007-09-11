@@ -1133,6 +1133,12 @@ Object.extend(PanelMorph.prototype, {
 
 Object.extend(PanelMorph, {
     makeBrowser: function(extent, bottomPaneProportion) {
+	// DI:  This has to get fixed.  Inspector doesnt have same panes as browser.
+	//  The idea is good.  We want something *like*...
+	//  makeBrowser([['leftPane', ListPane, rect(0, 0, 0.5, 0.6)],
+	//	['rightPane', ListPane, rect(0.5, 0, 0.5, 0.6)],
+	//	['bottomPane', TextPane, rect(0, 0.6, 1, 0.4)]  ])
+	// Note: <Rect> scaleByRect will be useful here
 	var panel = PanelMorph(extent);
         panel.setFill(Color.primary.blue.lighter().lighter());
         panel.setBorderWidth(2);
@@ -1140,6 +1146,24 @@ Object.extend(PanelMorph, {
 	var r = Rectangle(0, 0, extent.x/2, extent.y*(1 - bottomPaneProportion));
 	var left = panel.setNamedMorph("leftPane", ListPane(r));
         var right = panel.setNamedMorph("rightPane", ListPane(r));
+	right.align(right.bounds().topLeft(), left.bounds().topRight());
+	if (bottomPaneProportion) {
+	    r = Rectangle(0, 0, extent.x, extent.y*bottomPaneProportion);
+	    var bottom = panel.setNamedMorph("bottomPane", TextPane(r, "-----"));
+	    bottom.align(bottom.bounds().topLeft(), left.bounds().bottomLeft());
+	}
+        return panel;
+    },
+
+    makeInspector: function(extent, bottomPaneProportion) {
+	// DI:  Obviously, this should go away when makeBrowser gets generalized
+	var panel = PanelMorph(extent);
+        panel.setFill(Color.primary.blue.lighter().lighter());
+        panel.setBorderWidth(2);
+	if (bottomPaneProportion === undefined) bottomPaneProportion = 0;
+	var r = Rectangle(0, 0, extent.x/2, extent.y*(1 - bottomPaneProportion));
+	var left = panel.setNamedMorph("leftPane", ListPane(r));
+        var right = panel.setNamedMorph("rightPane", TextPane(r, "-----"));
 	right.align(right.bounds().topLeft(), left.bounds().topRight());
 	if (bottomPaneProportion) {
 	    r = Rectangle(0, 0, extent.x, extent.y*bottomPaneProportion);
@@ -2199,8 +2223,6 @@ Object.extend(WorldMorph.prototype, {
     
     doOneCycle: function (world) {
         // Process scheduled scripts
-        var msTimer = new Date();
-        var msTime = msTimer.getTime();
 
         // Old ticking scripts...
         var msTime = new Date().getTime();
@@ -2238,7 +2260,7 @@ Object.extend(WorldMorph.prototype, {
                 this.scheduleAction(nextTime, action)
             }
 
-            var timeNow = msTimer.getTime();
+            var timeNow = new Date().getTime();
             var ticks = timeNow - timeStarted;
             if (ticks > 0) action.ticks += ticks;  // tally time spent in that script
             timeStarted = timeNow;

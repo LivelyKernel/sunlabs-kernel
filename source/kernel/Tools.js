@@ -86,11 +86,14 @@ Object.extend(SimpleInspector.prototype, {
         return Object.properties(this.inspectee);
     },
 
-    setPropName: function(n, v) { this.propName = n; this.changed("getPropText", v) },
+    setPropName: function(n, v) {
+	console.log('setPropName: ' + n.inspect());
+	this.propName = n; this.changed("getPropText", v) },
 
     getPropList: function() { return Object.properties(this.inspectee); },
 
-    getPropText: function() { return [Object.inspect(this.inspectee[this.propName]).withNiceDecimals()]; },
+    getPropText: function() {
+	return Object.inspect(this.inspectee[this.propName]).withNiceDecimals(); },
 
     setPropText: function(txt, v) { this.inspectee[this.propName] = eval(txt); },
 
@@ -109,11 +112,11 @@ Object.extend(SimpleInspector.prototype, {
     },
 
     buildView: function(rect) {
-	var panel = PanelMorph.makeBrowser(rect.extent(), 0.4);
+	var panel = PanelMorph.makeInspector(rect.extent(), 0.4);
 	var m = panel.getNamedMorph('leftPane');
 	m.connectModel({model: this, getList: "getPropList", setSelection: "setPropName"});
 	m = panel.getNamedMorph('rightPane');
-	m.connectModel({model: this, getList: "getPropText", setSelection: "setPropText"});
+	m.connectModel({model: this, getText: "getPropText", setText: "setPropText"});
 	m = panel.getNamedMorph('bottomPane');
 	m.connectModel({model: this, doitContext: "contextForEval"});	
 	m.innerMorph().setTextString("doits here have this === inspectee");
@@ -130,7 +133,6 @@ Object.extend(SimpleInspector.prototype, {
 
         return WindowMorph(panel, 'Inspector');
     }
-    
 });
 
 // ===========================================================================
