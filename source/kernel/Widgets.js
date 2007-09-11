@@ -553,17 +553,11 @@ Object.extend(WindowControlMorph.prototype, {
 /**
  * @class WindowMorph: Full-fledged windows with title bar, etc.
  */
-  
 WindowMorph = HostClass.create('WindowMorph', Morph);
-Object.extend(WindowMorph, {
-    EXPANDED: "expanded",
-    COLLAPSED: "collapsed",
-    SHUTDOWN: "shutdown"
-});
 
 Object.extend(WindowMorph.prototype, {
 
-    state: WindowMorph.EXPANDED,
+    state: "expanded",
     titleBar: null,
     targetMorph: null,
     
@@ -602,44 +596,27 @@ Object.extend(WindowMorph.prototype, {
         return this.isCollapsed() ? this.expand() : this.collapse();
     },
     
-    // DI:  This is way too complicated.  The only access is via the toggleCollapse button,
-    // and therefore no reason to test, eg, double-expand or collapse
     collapse: function() { 
-        if (this.isCollapsed()) {
-            console.log('collapsing collapsed window %s?', this);
-            return;
-        }
-        
+        if (this.isCollapsed()) return;
         this.expandedPosition = this.position();
         var owner = this.owner();
-
         this.remove();
         owner.addMorph(this.titleBar);
-
-        if (this.collapsedPosition) { 
-            this.titleBar.setPosition(this.collapsedPosition);
-        } else { 
-            this.titleBar.setPosition(this.expandedPosition);
-        }
-
-        this.state = WindowMorph.COLLAPSED;
-        // this.titleBar.enableEvents();
+        if (this.collapsedPosition) this.titleBar.setPosition(this.collapsedPosition);
+        	else this.titleBar.setPosition(this.expandedPosition);
+        this.state = "collapsed";
     },
     
     isCollapsed: function() {
-        return this.state === WindowMorph.COLLAPSED;
+        return this.state == "collapsed";
     },
     
     isShutdown: function() {
-        return this.state === WindowMorph.SHUTDOWN;
+        return this.state == "shutdown";
     },
 
     expand: function() {
-        if (!this.isCollapsed()) {
-            console.log('expanding expanded window %s?', this);
-            return;
-        }
-        
+        if (!this.isCollapsed()) return;
         this.collapsedPosition = this.titleBar.position();
         var owner = this.titleBar.owner();
         this.titleBar.remove();
@@ -647,37 +624,32 @@ Object.extend(WindowMorph.prototype, {
         owner.addMorph(this);
         this.addMorph(this.titleBar);
         this.titleBar.setPosition(pt(0,0))
-
-        //this.titleBar.ignoreEvents();
         this.state = "expanded";
-        //this.action = collapse;
     },
 
     initiateShutdown: function() {
-        this.state = WindowMorph.SHUTDOWN;
+        if (this.isShutdown()) return;
         this.targetMorph.shutdown(); // shutdown may be prevented ...
-        this.remove();
+        if (this.isCollapsed()) this.titleBar.remove();
+		else this.remove();
+	this.state = "shutdown"; // no one will ever know...
         return true;
     },
 
     updateView: function(aspect, controller) {
         var plug = this.modelPlug;
-        
         if (!plug) return;
         
         if (aspect == plug.getState) {
             //this.loadURL(this.getModelValue('getURL', ""));
             var state = this.getModelValue('getState', "");
             switch (state) {
-            case WindowMorph.EXPANDED:
-                if (this.isCollapsed()) this.expand();
-                break;
-            case WindowMorph.COLLAPSED:
-                if (!this.isCollapsed()) this.collapse();
-                break;
-            case WindowMorph.SHUTDOWN:
-                if (!this.isShutdown()) this.initiateShutdown();
-                break;
+            case "expanded":
+                this.expand();  break;
+            case "collapsed":
+                this.collapse();  break;
+            case "shutdown":
+                this.initiateShutdown();  break;
             }
         }
     }
@@ -688,13 +660,15 @@ Object.extend(WindowMorph.prototype, {
  * @class TabbedPanelMorph: Alternative to windows for off-screen content
  */
   
-// ***Note TabbedPanelMorph is not written yet
-// Just a copy of WindowMorph, prior to my rewriting it -- DI ***
 TabbedPanelMorph = HostClass.create('TabbedPanelMorph', WindowMorph);
 
 Object.extend(TabbedPanelMorph.prototype, {
 
     initialize: function(targetMorph, headline, location, sideName) {
+	// A TabbedPanelMorph is pretty much like a WindowMorph, in that it is intended to 
+	// be a container for applications that may frequently want to be put out of the way.
+	// With windows, you collapse them to their title bars, with tabbed panels, you
+	// click their tab and they retreat to the edge of the screen like a file folder.
         if (sideName == null) sideName = 'south';
         TabbedPanelMorph.superClass.initialize.call(this, targetMorph, headline, location);
         this.setFill(null);
@@ -718,41 +692,18 @@ Object.extend(TabbedPanelMorph.prototype, {
     },
 
     collapse: function() { 
-        if (this.isCollapsed()) {
-            console.log('collapsing collapsed window %s?', this);
-            return;
-        }
-        
+        if (this.isCollapsed()) return;
         this.expandedPosition = this.position();
         var owner = this.owner();
-
         this.remove();
         owner.addMorph(this.titleBar);
-
-        if (this.collapsedPosition) { 
-            this.titleBar.setPosition(this.collapsedPosition);
-        } else { 
-            this.titleBar.setPosition(this.expandedPosition);
-        }
-
-        this.state = TabbedPanelMorph.COLLAPSED;
-        // this.titleBar.enableEvents();
+        if (this.collapsedPosition) this.titleBar.setPosition(this.collapsedPosition);
+        	else this.titleBar.setPosition(this.expandedPosition);
+        this.state = "collapsed";
     },
     
-    isCollapsed: function() {
-        return this.state === TabbedPanelMorph.COLLAPSED;
-    },
-    
-    isShutdown: function() {
-        return this.state === TabbedPanelMorph.SHUTDOWN;
-    },
-
     expand: function() {
-        if (!this.isCollapsed()) {
-            console.log('expanding expanded window %s?', this);
-            return;
-        }
-        
+        if (!this.isCollapsed()) return;
         this.collapsedPosition = this.titleBar.position();
         var owner = this.titleBar.owner();
         this.titleBar.remove();
@@ -760,10 +711,7 @@ Object.extend(TabbedPanelMorph.prototype, {
         owner.addMorph(this);
         this.addMorph(this.titleBar);
         this.titleBar.setPosition(pt(0,0))
-
-        //this.titleBar.ignoreEvents();
         this.state = "expanded";
-        //this.action = collapse;
     }
 
 });
@@ -1460,6 +1408,14 @@ Object.extend(MenuMorph.prototype, {
             label.align(label.bounds().bottomCenter(), this.shape.bounds().topCenter());
             this.addMorph(label);
         }
+	// If menu and/or caption is off screen, move it back so it is visible
+	var menuRect = this.bounds();  //includes caption if any
+	// Intersect with world bounds to get visible region.  Note we need shape.bounds,
+	// since world.bounds() would include stick-outs, including this menu!
+	var visibleRect = menuRect.intersection(this.world().shape.bounds()); 
+	var delta = visibleRect.topLeft().subPt(menuRect.topLeft());  // delta to fix topLeft off screen
+	delta = delta.addPt(visibleRect.bottomRight().subPt(menuRect.bottomRight()));  // same for bottomRight
+	if (delta.dist(pt(0,0)) > 1) this.translateBy(delta);  // move if more than round-off error
     },
 
     compose: function(location) { 
