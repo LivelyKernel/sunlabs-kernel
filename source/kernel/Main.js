@@ -75,7 +75,8 @@ function populateWorldWithExamples(world, otherWorld, server) {
     // Sample executable script pane
     var showPenScript = true;
     if (showPenScript) {
-        widget = TextMorph(pt(50,30).extent(pt(250,50)),Pen.script);
+        if (Config.showTestText) widget = TestTextMorph(pt(50,30).extent(pt(250,50)),Pen.script);
+		else widget = TextMorph(pt(50,30).extent(pt(250,50)),Pen.script);
         widget.align(widget.bounds().bottomRight(), world.bounds().topRight().addPt(pt(-50,100))); 
         world.addMorph(widget);
     }

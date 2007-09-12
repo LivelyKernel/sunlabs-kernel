@@ -259,11 +259,7 @@ Object.extend(TextLine.prototype, {
     // we found a word so figure out where the chunk extends to (private)
     chunkFromWord: function(wString, offset) {
         for (var i = offset; i < wString.length; i++) {
-            // BEWARE - hand inlined (yuk!) for a surprisingly moderate gain (3026 vs 2984 ticks) - kam
-            //if (this.isWhiteSpace(wString[i]))
-            var c = wString[i];
-            if (c == ' ' || c == '\t' || c == '\r' || c == '\n') {
-                // end if inline
+            if (this.isWhiteSpace(wString[i])) {
                 return i - offset;
             }
         }
@@ -890,7 +886,8 @@ Object.extend(TextMorph.prototype, {
         // Add a separator line
         menu.addLine();
 
-        menu.addItem(["evaluate text", function() { self.evaluateText() }]);
+        menu.addItem(["evaluate text", function() { self.evalInContext(self.textString) }]);
+        menu.addItem(["save text", function() { self.saveContents(self.textString) }]);
 
         menu.addItem(["evaluate as Lively markup", function() { 
             var importer = new Importer();
@@ -914,10 +911,6 @@ Object.extend(TextMorph.prototype, {
         }]);
     
         return menu;
-    },
-
-    evaluateText: function() {
-        this.evalInContext(this.textString);
     }
 
 });
