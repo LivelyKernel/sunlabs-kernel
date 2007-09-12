@@ -142,11 +142,33 @@ function populateWorldWithExamples(world, otherWorld, server) {
                         "MINOR BUGS:\n" + 
                         "- Window duplication/removal do not work\n" +
                         "- Selection tray creation/removal has bugs\n" +
-                        "- Not all 'new object...' menu items work\n"
+                        "- Not all 'new object...' menu items work\n" + 
+						"- Moving text morphs leads to text selection even if text is not near mouse"
                         );
         todoMorph.shape.roundEdgesBy(10);
         todoMorph.shape.setFillOpacity(0.6);
         world.addMorph(todoMorph);
+    }
+
+    var showOSReleaseTODO = !Config.skipMostExamples;
+    if (showOSReleaseTODO) {
+        var todoOSReleaseMorph = TextMorph(Rectangle(1000, 700, 350, 20),
+                        "Issues related to OS releasing:\n" + 
+                        "- Definition of what will actually be released \n" +
+						"  + Applications/SVG?\n" +
+						"  + Tutorial\n" +
+ 						"  + Tutorial implemented with the system itself?\n" +
+						"  + Technical documentation?\n" + 
+						"  + FAQ\n" + 
+                        "- Setting up associated infrastructure\n" + 
+						"  + mailing list\n" + 
+						"  + bug reporting service?\n" + 
+						"  + blogs (yes, I hate them too!)?\n" + 
+                        "- Determining how to let others participate in development\n" 
+                        );
+        todoOSReleaseMorph.shape.roundEdgesBy(10);
+        todoOSReleaseMorph.shape.setFillOpacity(0.6);
+        world.addMorph(todoOSReleaseMorph);
     }
 
     var innerWorld = !Config.skipMostExamples;
