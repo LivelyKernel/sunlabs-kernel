@@ -93,13 +93,9 @@ Object.extend(SimpleInspector.prototype, {
     getPropList: function() { return Object.properties(this.inspectee); },
 
     getPropText: function() {
-	return Object.inspect(this.inspectee[this.propName]).withNiceDecimals(); },
+	return Object.inspect(this.selectedItem()).withNiceDecimals(); },
 
-    setPropText: function(txt, v) { this.inspectee[this.propName] = eval(txt); },
-
-    evalText: function(str, v) { this.evalResult = eval(str); },
-
-    evalResult: function(txt) { return this.evalResult.inspect(); },
+    setPropText: function(txt, v) { this.inspectee[this.propName] = this.inspectee.evalInThis(txt); },
 
     selectedItem: function() { return this.inspectee[this.propName]; },
 
@@ -116,7 +112,7 @@ Object.extend(SimpleInspector.prototype, {
 	var m = panel.getNamedMorph('leftPane');
 	m.connectModel({model: this, getList: "getPropList", setSelection: "setPropName"});
 	m = panel.getNamedMorph('rightPane');
-	m.connectModel({model: this, getText: "getPropText", setText: "setPropText"});
+	m.connectModel({model: this, getText: "getPropText", setText: "setPropText", doitContext: "contextForEval"});
 	m = panel.getNamedMorph('bottomPane');
 	m.connectModel({model: this, doitContext: "contextForEval"});	
 	m.innerMorph().setTextString("doits here have this === inspectee");

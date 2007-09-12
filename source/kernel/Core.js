@@ -184,7 +184,6 @@ Object.properties = function(object, predicate) {
             a.push(name);
         }
     } 
-
     return a.sort();
 };
 
@@ -328,6 +327,19 @@ Object.extend(Function.prototype, {
     }
 
 });
+
+/**
+ * Extensions to class Object
+ */  
+
+Object.extend(Object.prototype, {
+    evalInThis: function(str) {
+	// eval the string str in the context of this object
+	return eval(str);
+    }
+});
+
+
 /**
  * Extensions to class String
  */  
@@ -2474,11 +2486,6 @@ Object.extend(Morph.prototype, {
         morph.setAttributeNS(Namespace.LIVELY, "property", name); 
         this[name] = morph;
         return this.addMorph(morph);
-    },
-
-    evalInThis: function(str) {
-        // eval the string argument in this context (ie, 'this' = this morph)
-        return eval(str);
     }
 
 });
