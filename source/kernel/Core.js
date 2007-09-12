@@ -2088,7 +2088,7 @@ Object.extend(Morph.prototype, {
             } else if (node.tagName == 'action') {
                 var a = node.textContent.evalJSON();
                 console.log('starting stepping %s based on %s', this, node.textContent);
-                this.startStepping(a.stepTime/1000, a.scriptName, a.argIfAny);
+                this.startStepping(a.stepTime, a.scriptName, a.argIfAny);
             } else if (node.tagName == 'defs') { // FIXME FIXME, this is painfully ad hoc!
                 if (this.defs) {
                     console.warn('%s already has defs %s', this, this.defs);
@@ -2638,7 +2638,7 @@ Object.extend(Morph.prototype, {
                 var a = other.activeScripts[i];
                 // Copy all reflexive scripts (messages to self)
                 if (a.actor === other) {
-                    this.startStepping(a.stepTime/1000, a.scriptName, a.argIfAny);
+                    this.startStepping(a.stepTime, a.scriptName, a.argIfAny);
                 }
             }
         } 
@@ -3170,9 +3170,9 @@ Object.extend(Morph.prototype, {
             return; 
         }
 
-        // New code schedules an action -- note this call is in seconds!
+        // New code schedules an action
         var action = { actor: this, scriptName: scriptName, argIfAny: argIfAny,
-                       stepTime: Math.round(stepTime*1000), ticks: 0 };
+                       stepTime: stepTime, ticks: 0 };
         this.addActiveScript(action);
         WorldMorph.current().startStepping(action); 
     },

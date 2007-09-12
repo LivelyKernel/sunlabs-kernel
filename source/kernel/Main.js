@@ -38,12 +38,7 @@ function populateWorldWithExamples(world, otherWorld, server) {
             
             var spinningStar = !Config.skipMostExamples || Config.spinningStar;
             if (spinningStar) {  // Make the star spin as a test of stepping
-                if (Config.useNewScheduler) {
-                    widget.startStepping(1/20, "rotateBy", 0.1);
-                } else {
-                    widget.startSteppingFunction(60,function(msTime) {
-                    this.setRotation(this.getRotation() + 0.1); }) 
-                }
+                widget.startStepping(60, "rotateBy", 0.1);
             }
         }
     }
@@ -53,11 +48,7 @@ function populateWorldWithExamples(world, otherWorld, server) {
         widget = ClockMorph(pt(65, 410), 50);
         // clockWidget.addClipRect(Rectangle(20,20,80,80));
         world.addMorph(widget);
-        if (Config.useNewScheduler) {
-            widget.startSteppingScripts(); // not yet
-        } else {
-            widget.startStepping(1000);
-        }
+	widget.startSteppingScripts();
     }
 
     var hilbertFun = true;

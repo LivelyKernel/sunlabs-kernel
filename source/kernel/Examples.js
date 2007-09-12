@@ -148,10 +148,8 @@ Object.extend(ClockMorph.prototype, {
     
     reshape: function(a,b,c,d) { /*no reshaping*/ },
     
-    stepActivity: function(msTime) { this.setHands(); },
-
     startSteppingScripts: function() {
-        this.startStepping(1, "setHands"); // once per second
+        this.startStepping(1000, "setHands"); // once per second
     },
 
     setHands: function() {
