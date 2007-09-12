@@ -87,7 +87,6 @@ Object.extend(SimpleInspector.prototype, {
     },
 
     setPropName: function(n, v) {
-	console.log('setPropName: ' + n.inspect());
 	this.propName = n; this.changed("getPropText", v) },
 
     getPropList: function() { return Object.properties(this.inspectee); },

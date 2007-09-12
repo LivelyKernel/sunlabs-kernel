@@ -2221,6 +2221,12 @@ Object.extend(WorldMorph.prototype, {
         if (!fromStart) console.log('failed to stopStepping ' + action.scriptName);
     },
     
+    inspectScheduledActions: function () {
+	// inspect an array of all the actions in the scheduler.  Note this
+	// is not the same as scheduledActions which is an array of tuples with times
+	SimpleInspector.openOn(this.scheduledActions.map(function(each) { return each[1]; }));
+    },
+
     doOneCycle: function (world) {
         // Process scheduled scripts
 
