@@ -5,6 +5,7 @@
 var Global = this;
 
 Config.shiftDragForDup = true; // easy duplicate gesture
+Config.useNewScheduler = true; // both schedulers active now
 
 function populateWorldWithExamples(world, otherWorld, server) {
 
