@@ -130,7 +130,7 @@ Object.extend(Class, {
     
     listClassNames: function(scope) {
         var a = [];
-	
+
         for (var name in scope) { 
             try {
                 if (Class.isClass(scope[name])) {
@@ -140,9 +140,9 @@ Object.extend(Class, {
                 // FF can throw an exception here
             }
         }
-	
+
         a.push("Object", "Global"); // a few others of note
-	
+
         // console.log('found array ' + a.sort());
         return a.sort(); 
     }
@@ -218,8 +218,7 @@ Function.prototype.functionNames = function() {
 
     for (var name in this.prototype) { 
         try {
-            if (this.prototype[name] instanceof Function) 
-		functionNames.push(name); 
+            if (this.prototype[name] instanceof Function) functionNames.push(name); 
         } catch (er) {
             // FF can throw an exception here ...
         }
@@ -334,11 +333,10 @@ Object.extend(Function.prototype, {
 
 Object.extend(Object.prototype, {
     evalInThis: function(str) {
-	// eval the string str in the context of this object
-	return eval(str);
+        // eval the string str in the context of this object
+        return eval(str);
     }
 });
-
 
 /**
  * Extensions to class String
@@ -3018,7 +3016,8 @@ Object.extend(Morph.prototype, {
     },
 
     morphMenu: function(evt) { 
-        var items = [["duplicate", this.copyToHand.bind(this).curry(evt.hand)],
+        var items = [
+            ["duplicate", this.copyToHand.bind(this).curry(evt.hand)],
             ["remove", this.remove.bind(this)],
             ["inspect", SimpleInspector.openOn.curry(this)],
             ["style", StylePanel.openOn.curry(this)],
@@ -3373,7 +3372,7 @@ Object.extend(Morph.prototype, {
     clipToPath: function(path) {
         var clipPath = NodeFactory.create('clipPath');
         clipPath.appendChild(path);
-	clipPath.setAttributeNS(null, "shape-rendering", "optimizeSpeed");
+        clipPath.setAttributeNS(null, "shape-rendering", "optimizeSpeed");
         var ref = this.assign('clipPath', clipPath);
         this.setAttributeNS(null, "clip-path", ref);
     },
@@ -3728,135 +3727,136 @@ Object.category(SimpleModel.prototype,  "core", function() {
 // Affine Transforms
 
 // generalized 2D affine transformation matricies - kam
-//		matrix values in column major order ignoring the bottom row (6 values total)
-//		| 0 2 4 |
-//		| 1 3 5 |
-//		0 -> m11, 1 -> m21, 2 -> m12, 3 -> m22, 4-> tx, 5 -> ty
-//		This is the PostScript convention
+//      matrix values in column major order ignoring the bottom row (6 values total)
+//      | 0 2 4 |
+//      | 1 3 5 |
+//      0 -> m11, 1 -> m21, 2 -> m12, 3 -> m22, 4-> tx, 5 -> ty
+//      This is the PostScript convention
 
 TransformationMatrix2D = Class.create();
 
 Object.extend(TransformationMatrix2D, {
     create: function(matrixValues) {
-      var n = new TransformationMatrix2D(matrixValues);
-      return n;
+        var n = new TransformationMatrix2D(matrixValues);
+        return n;
     }
 });
 
 Object.extend(TransformationMatrix2D.prototype, {
     initialize: function(matrixValues) {
-      if (!matrixValues)
-	matrixValues = [1, 0, 0, 1, 0, 0];
-      this.matrix = matrixValues;
+        if (!matrixValues) matrixValues = [1, 0, 0, 1, 0, 0];
+        this.matrix = matrixValues;
     },
 
     transform: function(x, y) {
-      var result = new Array(2);
-      result[0] = x * this.matrix[0] + y * this.matrix[2] + this.matrix[4];
-      result[1] = x * this.matrix[1] + y * this.matrix[3] + this.matrix[5];
-      return result;
+        var result = new Array(2);
+        result[0] = x * this.matrix[0] + y * this.matrix[2] + this.matrix[4];
+        result[1] = x * this.matrix[1] + y * this.matrix[3] + this.matrix[5];
+        return result;
     },
 
     transformPoint: function(pt) {
-      var p = new Point();
-      r = this.transform(pt.x, pt.y);
-      p.x = r[0];
-      p.y = r[1];
-      return p;
+        var p = new Point();
+        r = this.transform(pt.x, pt.y);
+        p.x = r[0];
+        p.y = r[1];
+        return p;
     },
 
     itransform: function(x, y) {
-      var result = new Array(2);
-      result[0] = (this.matrix[3] * x - this.matrix[3] * this.matrix[4]
-		   - this.matrix[2] * y + this.matrix[2] * this.matrix[5]) /
-		   (this.matrix[3] * this.matrix[0] - this.matrix[2] * this.matrix[1]);
-      result[1] = (this.matrix[1] * x - this.matrix[1] * this.matrix[4]
-		   - this.matrix[0] * y + this.matrix[0] * this.matrix[5]) /
-		   (this.matrix[1] * this.matrix[2] - this.matrix[0] * this.matrix[3]);
-      return result;
+        var result = new Array(2);
+        result[0] = (this.matrix[3] * x - this.matrix[3] * this.matrix[4]
+             - this.matrix[2] * y + this.matrix[2] * this.matrix[5]) /
+             (this.matrix[3] * this.matrix[0] - this.matrix[2] * this.matrix[1]);
+        result[1] = (this.matrix[1] * x - this.matrix[1] * this.matrix[4]
+             - this.matrix[0] * y + this.matrix[0] * this.matrix[5]) /
+             (this.matrix[1] * this.matrix[2] - this.matrix[0] * this.matrix[3]);
+        return result;
     },
 
     transformArray: function(pt) {
-      return this.transform(pt[0], pt[1]);
+        return this.transform(pt[0], pt[1]);
     },
 
     itransformArray: function(pt) {
-      return this.itransform(pt[0], pt[1]);
+        return this.itransform(pt[0], pt[1]);
     },
 
     concatenate: function(mtx) {
-      var newMatrix = Array(6);
-      newMatrix[0] = mtx.matrix[0] * this.matrix[0] + mtx.matrix[2] * this.matrix[1];
-      newMatrix[2] = mtx.matrix[0] * this.matrix[2] + mtx.matrix[2] * this.matrix[3];
-      newMatrix[4] = mtx.matrix[0] * this.matrix[4] + mtx.matrix[2] * this.matrix[5] + mtx.matrix[4];
-      newMatrix[1] = mtx.matrix[1] * this.matrix[0] + mtx.matrix[3] * this.matrix[1];
-      newMatrix[3] = mtx.matrix[1] * this.matrix[2] + mtx.matrix[3] * this.matrix[3];
-      newMatrix[5] = mtx.matrix[1] * this.matrix[4] + mtx.matrix[3] * this.matrix[5] + mtx.matrix[5];
-      return TransformationMatrix2D.create(newMatrix);
+        var newMatrix = Array(6);
+        newMatrix[0] = mtx.matrix[0] * this.matrix[0] + mtx.matrix[2] * this.matrix[1];
+        newMatrix[2] = mtx.matrix[0] * this.matrix[2] + mtx.matrix[2] * this.matrix[3];
+        newMatrix[4] = mtx.matrix[0] * this.matrix[4] + mtx.matrix[2] * this.matrix[5] + mtx.matrix[4];
+        newMatrix[1] = mtx.matrix[1] * this.matrix[0] + mtx.matrix[3] * this.matrix[1];
+        newMatrix[3] = mtx.matrix[1] * this.matrix[2] + mtx.matrix[3] * this.matrix[3];
+        newMatrix[5] = mtx.matrix[1] * this.matrix[4] + mtx.matrix[3] * this.matrix[5] + mtx.matrix[5];
+        return TransformationMatrix2D.create(newMatrix);
     },
 
     identity: function() {
-      return TransformationMatrix2D.create(Array(1, 0, 0, 1, 0, 0));
+        return TransformationMatrix2D.create(Array(1, 0, 0, 1, 0, 0));
     },
 
     set: function(tmtx) {
-      this.matrix = tmtx.matrix;
+        this.matrix = tmtx.matrix;
     },
 
     setValues: function(matrixValues) {
-      this.matrix = matrixValues;
+        this.matrix = matrixValues;
     },
 
     translate: function(x, y) {
-      var tmtx = TransformationMatrix2D.create(new Array(1, 0, 0, 1, x, y));
-      return this.concatenate(tmtx);
+        var tmtx = TransformationMatrix2D.create(new Array(1, 0, 0, 1, x, y));
+        return this.concatenate(tmtx);
     },
 
     rotateRad: function(rad) {
-      var tmtx = TransformationMatrix2D.create(new Array(Math.cos(rad), Math.sin(rad),
-							-Math.sin(rad), Math.cos(rad),
-							0, 0));
-      return this.concatenate(tmtx);
+        var tmtx = TransformationMatrix2D.create(new Array(
+                       Math.cos(rad), Math.sin(rad),
+                       -Math.sin(rad), Math.cos(rad), 0, 0));
+        return this.concatenate(tmtx);
     },
 
     rotate: function(deg) {
-      return this.rotateRad(Math.PI * deg/180);
+        return this.rotateRad(Math.PI * deg/180);
     },
 
     scale: function(x, y) {
-      var tmtx = TransformationMatrix2D.create(new Array(x, 0, 0, y, 0, 0));
-      return this.concatenate(tmtx);
+        var tmtx = TransformationMatrix2D.create(new Array(x, 0, 0, y, 0, 0));
+        return this.concatenate(tmtx);
     },
 
     shear: function(x, y) {
-      var tmtx = TransformationMatrix2D.create(new Array(1, y, x, 1, 0, 0));
-      return this.concatenate(tmtx);
+        var tmtx = TransformationMatrix2D.create(new Array(1, y, x, 1, 0, 0));
+        return this.concatenate(tmtx);
     },
 
     findTMFromPoints: function(x1, y1, x2, y2, x3, y3, xo1, yo1, xo2, yo2, xo3, yo3) {
-      var a, b, c, d, e, f;
-      
-      b = ((x2 - x1) * (x3 * xo2 - x2 * xo3) - (x3 - x2) * (x2 * xo1 - x1 * xo2)) /
-	  ((x2 - x1) * (x3 * y2  - x2 * y3)  - (x3 - x2) * (x2 * y1  - x1 * y2));
-      e = ((x3 * xo2 - x2 * xo3) * (y1 * x2 - y2 * x1) - (x2 * xo1 - x1 * xo2) * (y2 * x3 - y3 * x2)) /
-	  ((x3 - x2) * (y1 * x2 - y2 * x1) - (x2 - x1) * (y2 * x3 - y3 * x2));
-      d = ((x2 - x1) * (x3 * yo2 - x2 * yo3) - (x3 - x2) * (x2 * yo1 - x1 * yo2)) /
-	  ((x2 - x1) * (x3 * y2  - x2 * y3)  - (x3 - x2) * (x2 * y1  - x1 * y2));
-      f = ((x3 * yo2 - x2 * yo3) * (y1 * x2 - y2 * x1) - (x2 * yo1 - x1 * yo2) * (y2 * x3 - y3 * x2)) /
-	  ((x3 - x2) * (y1 * x2 - y2 * x1) - (x2 - x1) * (y2 * x3 - y3 * x2));
-      if (Math.abs(x1) <= 1e-6) {
-	  if (Math.abs(x2) <= 1e-6) {
-	      a = (xo3 - b * y3 - e) / x3;
-	      c = (yo3 - d * y3 - f) / x3;
-	  } else {
-	      a = (xo2 - b * y2 - e) / x2;
-	      c = (yo2 - d * y2 - f) / x2;
-	  }
-      } else {
-	  a = (xo1 - b * y1 - e) / x1;
-	  c = (yo1 - d * y1 - f) / x1;
-      }
-      return TransformationMatrix2D.create(new Array(a, c, b, d, e, f));
+        var a, b, c, d, e, f;
+
+        b = ((x2 - x1) * (x3 * xo2 - x2 * xo3) - (x3 - x2) * (x2 * xo1 - x1 * xo2)) /
+            ((x2 - x1) * (x3 * y2  - x2 * y3)  - (x3 - x2) * (x2 * y1  - x1 * y2));
+        e = ((x3 * xo2 - x2 * xo3) * (y1 * x2 - y2 * x1) - (x2 * xo1 - x1 * xo2) * (y2 * x3 - y3 * x2)) /
+            ((x3 - x2) * (y1 * x2 - y2 * x1) - (x2 - x1) * (y2 * x3 - y3 * x2));
+        d = ((x2 - x1) * (x3 * yo2 - x2 * yo3) - (x3 - x2) * (x2 * yo1 - x1 * yo2)) /
+            ((x2 - x1) * (x3 * y2  - x2 * y3)  - (x3 - x2) * (x2 * y1  - x1 * y2));
+        f = ((x3 * yo2 - x2 * yo3) * (y1 * x2 - y2 * x1) - (x2 * yo1 - x1 * yo2) * (y2 * x3 - y3 * x2)) /
+            ((x3 - x2) * (y1 * x2 - y2 * x1) - (x2 - x1) * (y2 * x3 - y3 * x2));
+
+        if (Math.abs(x1) <= 1e-6) {
+            if (Math.abs(x2) <= 1e-6) {
+                a = (xo3 - b * y3 - e) / x3;
+                c = (yo3 - d * y3 - f) / x3;
+            } else {
+                a = (xo2 - b * y2 - e) / x2;
+                c = (yo2 - d * y2 - f) / x2;
+            }
+        } else {
+            a = (xo1 - b * y1 - e) / x1;
+            c = (yo1 - d * y1 - f) / x1;
+        }
+
+        return TransformationMatrix2D.create(new Array(a, c, b, d, e, f));
     }
 });
 
@@ -3875,168 +3875,169 @@ TransformationMatrix3D = Class.create();
 
 Object.extend(TransformationMatrix3D, {
     create: function(matrixValues) {
-      var n = new TransformationMatrix3D(matrixValues);
-      return n;
-    },
+        var n = new TransformationMatrix3D(matrixValues);
+        return n;
+    }
 });
 
 Object.extend(TransformationMatrix3D.prototype, {
     initialize: function(matrixValues) {
-      if (!matrixValues)
-	matrixValues = [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0];
-      this.matrix = matrixValues;
+        if (!matrixValues) matrixValues = [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0];
+        this.matrix = matrixValues;
     },
 
     transform: function(x, y, z) {
-      var result = new Array(3);
-      result[0] = x * this.matrix[0] + y * this.matrix[3] + z * this.matrix[6] + this.matrix[9];
-      result[1] = x * this.matrix[1] + y * this.matrix[4] + z * this.matrix[7] + this.matrix[10];
-      result[2] = x * this.matrix[2] + y * this.matrix[5] + z * this.matrix[8] + this.matrix[11];
-      return result;
+        var result = new Array(3);
+        result[0] = x * this.matrix[0] + y * this.matrix[3] + z * this.matrix[6] + this.matrix[9];
+        result[1] = x * this.matrix[1] + y * this.matrix[4] + z * this.matrix[7] + this.matrix[10];
+        result[2] = x * this.matrix[2] + y * this.matrix[5] + z * this.matrix[8] + this.matrix[11];
+        return result;
     },
 
     transformArray: function(pt) {
-      return this.transform(pt[0], pt[1], pt[2]);
+        return this.transform(pt[0], pt[1], pt[2]);
     },
 
     concatenate: function(mtx) {
-      var newMatrix = Array(12);
-      newMatrix[0]  = mtx.matrix[0] * this.matrix[0] + mtx.matrix[3] * this.matrix[1] + mtx.matrix[6] * this.matrix[2];
-      newMatrix[3]  = mtx.matrix[0] * this.matrix[3] + mtx.matrix[3] * this.matrix[4] + mtx.matrix[6] * this.matrix[5];
-      newMatrix[6]  = mtx.matrix[0] * this.matrix[6] + mtx.matrix[3] * this.matrix[7] + mtx.matrix[6] * this.matrix[8];
-      newMatrix[9]  = mtx.matrix[0] * this.matrix[9] + mtx.matrix[3] * this.matrix[10] + mtx.matrix[6] * this.matrix[11] + mtx.matrix[9];
-  
-      newMatrix[1]  = mtx.matrix[1] * this.matrix[0] + mtx.matrix[4] * this.matrix[1] + mtx.matrix[7] * this.matrix[2];
-      newMatrix[4]  = mtx.matrix[1] * this.matrix[3] + mtx.matrix[4] * this.matrix[4] + mtx.matrix[7] * this.matrix[5];
-      newMatrix[7]  = mtx.matrix[1] * this.matrix[6] + mtx.matrix[4] * this.matrix[7] + mtx.matrix[7] * this.matrix[8];
-      newMatrix[10] = mtx.matrix[1] * this.matrix[9] + mtx.matrix[4] * this.matrix[10] + mtx.matrix[7] * this.matrix[11] + mtx.matrix[10];
-      
-      newMatrix[2]  = mtx.matrix[2] * this.matrix[0] + mtx.matrix[5] * this.matrix[1] + mtx.matrix[8] * this.matrix[2];
-      newMatrix[5]  = mtx.matrix[2] * this.matrix[3] + mtx.matrix[5] * this.matrix[4] + mtx.matrix[8] * this.matrix[5];
-      newMatrix[8]  = mtx.matrix[2] * this.matrix[6] + mtx.matrix[5] * this.matrix[7] + mtx.matrix[8] * this.matrix[8];
-      newMatrix[11] = mtx.matrix[2] * this.matrix[9] + mtx.matrix[5] * this.matrix[10] + mtx.matrix[8] * this.matrix[11] + mtx.matrix[11];
+        var newMatrix = Array(12);
+        newMatrix[0]  = mtx.matrix[0] * this.matrix[0] + mtx.matrix[3] * this.matrix[1] + mtx.matrix[6] * this.matrix[2];
+        newMatrix[3]  = mtx.matrix[0] * this.matrix[3] + mtx.matrix[3] * this.matrix[4] + mtx.matrix[6] * this.matrix[5];
+        newMatrix[6]  = mtx.matrix[0] * this.matrix[6] + mtx.matrix[3] * this.matrix[7] + mtx.matrix[6] * this.matrix[8];
+        newMatrix[9]  = mtx.matrix[0] * this.matrix[9] + mtx.matrix[3] * this.matrix[10] + mtx.matrix[6] * this.matrix[11] + mtx.matrix[9];
+
+        newMatrix[1]  = mtx.matrix[1] * this.matrix[0] + mtx.matrix[4] * this.matrix[1] + mtx.matrix[7] * this.matrix[2];
+        newMatrix[4]  = mtx.matrix[1] * this.matrix[3] + mtx.matrix[4] * this.matrix[4] + mtx.matrix[7] * this.matrix[5];
+        newMatrix[7]  = mtx.matrix[1] * this.matrix[6] + mtx.matrix[4] * this.matrix[7] + mtx.matrix[7] * this.matrix[8];
+        newMatrix[10] = mtx.matrix[1] * this.matrix[9] + mtx.matrix[4] * this.matrix[10] + mtx.matrix[7] * this.matrix[11] + mtx.matrix[10];
+
+        newMatrix[2]  = mtx.matrix[2] * this.matrix[0] + mtx.matrix[5] * this.matrix[1] + mtx.matrix[8] * this.matrix[2];
+        newMatrix[5]  = mtx.matrix[2] * this.matrix[3] + mtx.matrix[5] * this.matrix[4] + mtx.matrix[8] * this.matrix[5];
+        newMatrix[8]  = mtx.matrix[2] * this.matrix[6] + mtx.matrix[5] * this.matrix[7] + mtx.matrix[8] * this.matrix[8];
+        newMatrix[11] = mtx.matrix[2] * this.matrix[9] + mtx.matrix[5] * this.matrix[10] + mtx.matrix[8] * this.matrix[11] + mtx.matrix[11];
     
-      return TransformationMatrix3D.create(newMatrix);
+        return TransformationMatrix3D.create(newMatrix);
     },
 
     identity: function() {
-      return TransformationMatrix3D.create(Array(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0));
+        return TransformationMatrix3D.create(Array(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0));
     },
 
     set: function(tmtx) {
-      this.matrix = tmtx.matrix;
+        this.matrix = tmtx.matrix;
     },
 
     setValues: function(matrixValues) {
-      this.matrix = matrixValues;
+        this.matrix = matrixValues;
     },
 
     translate: function(x, y, z) {
-      var tmtx = TransformationMatrix3D.create(new Array(1, 0, 0, 0, 1, 0, 0, 0, 1, x, y, z));
-      return this.concatenate(tmtx);
+        var tmtx = TransformationMatrix3D.create(new Array(1, 0, 0, 0, 1, 0, 0, 0, 1, x, y, z));
+        return this.concatenate(tmtx);
     },
 
     rotateRadX: function(rad) {
-      var tmtx = TransformationMatrix3D.create(new Array(1, 0, 0,
-						      0, Math.cos(rad), Math.sin(rad),
-						      0,-Math.sin(rad), Math.cos(rad),
-						      0, 0, 0));
-      return this.concatenate(tmtx);
+        var tmtx = TransformationMatrix3D.create(new Array(1, 0, 0,
+                       0, Math.cos(rad), Math.sin(rad),
+                       0,-Math.sin(rad), Math.cos(rad),
+                       0, 0, 0));
+        return this.concatenate(tmtx);
     },
 
     rotateX: function(deg) {
-      return this.rotateRadX(Math.PI * deg/180);
+        return this.rotateRadX(Math.PI * deg/180);
     },
 
     rotateRadY: function(rad) {
-      var tmtx = TransformationMatrix3D.create(new Array(Math.cos(rad), 0, -Math.sin(rad),
-						      0, 1, 0,
-						      Math.sin(rad), 0, Math.cos(rad),
-						      0, 0, 0));
-      return this.concatenate(tmtx);
+        var tmtx = TransformationMatrix3D.create(new Array(Math.cos(rad), 0, -Math.sin(rad),
+                       0, 1, 0,
+                       Math.sin(rad), 0, Math.cos(rad),
+                       0, 0, 0));
+        return this.concatenate(tmtx);
     },
 
     rotateY: function(deg) {
-      return this.rotateRadY(Math.PI * deg/180);
+        return this.rotateRadY(Math.PI * deg/180);
     },
 
     rotateRadZ: function(rad) {
-      var tmtx = TransformationMatrix3D.create(new Array(Math.cos(rad), Math.sin(rad), 0,
-						      -Math.sin(rad), Math.cos(rad), 0,
-						      0, 0, 1,
-						      0, 0, 0));
-      return this.concatenate(tmtx);
+        var tmtx = TransformationMatrix3D.create(new Array(Math.cos(rad), Math.sin(rad), 0,
+                       -Math.sin(rad), Math.cos(rad), 0,
+                       0, 0, 1,
+                       0, 0, 0));
+        return this.concatenate(tmtx);
     },
 
     rotateZ: function(deg) {
-      return this.rotateRadZ(Math.PI * deg/180);
+        return this.rotateRadZ(Math.PI * deg/180);
     },
 
     scale: function(x, y, z) {
-      var tmtx = TransformationMatrix3D.create(new Array(x, 0, 0, 0, y, 0, 0, 0, z, 0, 0, 0));
-      return this.concatenate(tmtx);
+        var tmtx = TransformationMatrix3D.create(new Array(x, 0, 0, 0, y, 0, 0, 0, z, 0, 0, 0));
+        return this.concatenate(tmtx);
     },
 
     perspectiveMultiply: function(u, v, fb1, fb2) {
-      var result = Array(16);
+        var result = Array(16);
+
+        result[0]  = u * this.matrix[0];
+        result[4]  = u * this.matrix[1];
+        result[8]  = u * this.matrix[6];
+        result[12] = u * this.matrix[9];
       
-      result[0]  = u * this.matrix[0];
-      result[4]  = u * this.matrix[1];
-      result[8]  = u * this.matrix[6];
-      result[12] = u * this.matrix[9];
-      
-      result[1]  = v * this.matrix[1];
-      result[5]  = v * this.matrix[4];
-      result[9]  = v * this.matrix[7];
-      result[13] = v * this.matrix[10];
-      
-      result[2]  = fb1 * this.matrix[2];
-      result[6]  = fb1 * this.matrix[5];
-      result[10] = fb1 * this.matrix[8];
-      result[14] = fb1 * this.matrix[11] + fb2;
-      
-      result[3]  = this.matrix[2];
-      result[7]  = this.matrix[5];
-      result[11] = this.matrix[8];
-      result[15] = this.matrix[11];
+        result[1]  = v * this.matrix[1];
+        result[5]  = v * this.matrix[4];
+        result[9]  = v * this.matrix[7];
+        result[13] = v * this.matrix[10];
+
+        result[2]  = fb1 * this.matrix[2];
+        result[6]  = fb1 * this.matrix[5];
+        result[10] = fb1 * this.matrix[8];
+        result[14] = fb1 * this.matrix[11] + fb2;
+
+        result[3]  = this.matrix[2];
+        result[7]  = this.matrix[5];
+        result[11] = this.matrix[8];
+        result[15] = this.matrix[11];
     },
 
     perspectivePointMultiply: function(x, y, z, perspective) {
-      var rMtx = Array(4);
-      var result = Array(2);
-    
-      rMtx[0] = perspective[0] * x + perspective[4] * y + perspective[8]  * z + perspective[12];
-      rMtx[1] = perspective[1] * x + perspective[5] * y + perspective[9]  * z + perspective[13];
-      // rMtx[2] is typically unused - kam
-      //rMtx[2] = perspective[2] * x + perspective[6] * y + perspective[10] * z + perspective[14];
-      rMtx[3] = perspective[3] * x + perspective[7] * y + perspective[11] * z + perspective[15];
-      result[0] = rMtx[0] / rMtx[3];
-      result[1] = rMtx[1] / rMtx[3];
-      // debug matrix values - kam
-      //result[2] = rMtx[0]; result[3] = rMtx[1]; result[4] = rMtx[3];
-      return result;
+        var rMtx = Array(4);
+        var result = Array(2);
+
+        rMtx[0] = perspective[0] * x + perspective[4] * y + perspective[8]  * z + perspective[12];
+        rMtx[1] = perspective[1] * x + perspective[5] * y + perspective[9]  * z + perspective[13];
+        // rMtx[2] is typically unused - kam
+        //rMtx[2] = perspective[2] * x + perspective[6] * y + perspective[10] * z + perspective[14];
+        rMtx[3] = perspective[3] * x + perspective[7] * y + perspective[11] * z + perspective[15];
+        result[0] = rMtx[0] / rMtx[3];
+        result[1] = rMtx[1] / rMtx[3];
+        // debug matrix values - kam
+        //result[2] = rMtx[0]; result[3] = rMtx[1]; result[4] = rMtx[3];
+        return result;
     },
 
     perspectiveMatrix: function(u, v, fb1, fb2) {
-      var perspective = Array(16);
-      
-      for (var i = 1; i < 16; i++)
-	  perspective[i] = 0;
-      perspective[0] = u;
-      perspective[5] = v;
-      perspective[10] = fb1;
-      perspective[11] = 1;
-      perspective[14] = fb2;
-      return perspective;
+        var perspective = Array(16);
+
+        for (var i = 1; i < 16; i++) perspective[i] = 0;
+        perspective[0] = u;
+        perspective[5] = v;
+        perspective[10] = fb1;
+        perspective[11] = 1;
+        perspective[14] = fb2;
+        return perspective;
     },
 
     perspectiveTransform: function(uAngle, vAngle, f, b, x, y, z) {
-      var perspectiveMatrix;
+        var perspectiveMatrix;
       
-      perspectiveMatrix = this.perspectiveMatrix(1/Math.tan(Math.PI * uAngle / 180), 1/Math.tan(Math.PI * vAngle / 180),
-						   (b + f)/(b - f), -2 * b * f / (b - f));
-      return this.perspectivePointMultiply(x, y, z, perspectiveMatrix);
-    },
+        perspectiveMatrix = this.perspectiveMatrix(
+                                1/Math.tan(Math.PI * uAngle / 180), 
+                                1/Math.tan(Math.PI * vAngle / 180),
+                                (b + f)/(b - f), 
+                                -2 * b * f / (b - f));
+        return this.perspectivePointMultiply(x, y, z, perspectiveMatrix);
+    }
 });
 
 // A matrix stack for affine transform composition - kam
@@ -4046,53 +4047,52 @@ TransformationMatrixStack = Class.create();
 
 Object.extend(TransformationMatrixStack, {
     create: function(tm) {
-      var n = new TransformationMatrixStack(tm);
+        var n = new TransformationMatrixStack(tm);
 
-      n.tmPrototype = tm;
-      n.clear();
-      return n;
+        n.tmPrototype = tm;
+        n.clear();
+        return n;
     }
 });
 
 Object.extend(TransformationMatrixStack.prototype, {
     initialize: function(tm) {
-      this.tmPrototype = tm;
-      this.clear();
+        this.tmPrototype = tm;
+        this.clear();
     },
 
     clear: function() {
-      var x = this.tmPrototype; // XXX
-      this.stack = Array(1); 
-      this.ctm = this.stack[0] = this.tmPrototype.identity();
-      this.ctmDirty = false;
+        var x = this.tmPrototype; // XXX
+        this.stack = Array(1); 
+        this.ctm = this.stack[0] = this.tmPrototype.identity();
+        this.ctmDirty = false;
     },
 
     getCTM: function() {
-      if (this.ctmDirty)
-	  this.recomposeCTM();
-      return this.ctm;
+        if (this.ctmDirty) this.recomposeCTM();
+        return this.ctm;
     },
 
     push: function(tm) {
-      if (this.ctmDirty)
-	  this.recomposeCTM();
-      this.stack.push(tm);
-      this.ctm = this.ctm.concatenate(tm);
-      return this.ctm;
+        if (this.ctmDirty) this.recomposeCTM();
+        this.stack.push(tm);
+        this.ctm = this.ctm.concatenate(tm);
+        return this.ctm;
     },
 
     pop: function() {
-      if (this.stack.length > 1) {
-	  this.stack.pop();
-	  this.ctmDirty = true;
-      }
+        if (this.stack.length > 1) {
+            this.stack.pop();
+            this.ctmDirty = true;
+        }
     },
 
     recomposeCTM: function() {
-      this.ctm = this.tmPrototype.identity();
-      for (i = 0; i < this.stack.length; i++)
-	  this.ctm = this.ctm.concatenate(this.stack[i]);
-      this.ctmDirty = false;
+        this.ctm = this.tmPrototype.identity();
+        for (i = 0; i < this.stack.length; i++) {
+            this.ctm = this.ctm.concatenate(this.stack[i]);
+        }
+        this.ctmDirty = false;
     }
 });
 
@@ -4100,28 +4100,27 @@ Object.extend(TransformationMatrixStack.prototype, {
 
 Object.extend(Morph.prototype, {
     setAffineTransformFromRects: function(localRect, warpedRect) {
-      this.myAffineTransformStack = 
-	TransformationMatrixStack.create(new TransformationMatrix2D());
-      this.myAffineTransformStack.push(this.myAffineTransformStack.getCTM().findTMFromPoints(
-	localRect.topLeft().x, localRect.topLeft().y,
-	localRect.topRight().x, localRect.topRight().y,
-	localRect.bottomRight().x, localRect.bottomRight().y,
-	warpedRect.topLeft().x, warpedRect.topLeft().y,
-	warpedRect.topRight().x, warpedRect.topRight().y,
-	warpedRect.bottomRight().x, warpedRect.bottomRight().y));
+        this.myAffineTransformStack = TransformationMatrixStack.create(new TransformationMatrix2D());
+        this.myAffineTransformStack.push(this.myAffineTransformStack.getCTM().findTMFromPoints(
+        localRect.topLeft().x, localRect.topLeft().y,
+        localRect.topRight().x, localRect.topRight().y,
+        localRect.bottomRight().x, localRect.bottomRight().y,
+        warpedRect.topLeft().x, warpedRect.topLeft().y,
+        warpedRect.topRight().x, warpedRect.topRight().y,
+        warpedRect.bottomRight().x, warpedRect.bottomRight().y));
     },
 
     getAffineTransformStack: function() {
-	return this.myAffineTransformStack;
+        return this.myAffineTransformStack;
     },
 
     // shortcut - kam
     affineTransformPoint: function(pt) {
-	if (this.myAffineTransformStack) {
-	  return this.myAffineTransformStack.getCTM().transformPoint(pt);
-	} else
-	  return pt;
-    }
+        if (this.myAffineTransformStack) {
+            return this.myAffineTransformStack.getCTM().transformPoint(pt);
+        } else
+            return pt;
+        }
 });
 
 console.log('loaded Core.js');
