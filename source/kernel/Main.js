@@ -7,13 +7,41 @@ var Global = this;
 Config.shiftDragForDup = true; // easy duplicate gesture
 Config.useNewScheduler = true; // both schedulers active now
 
+// Small stuff that will always be shown
+Config.showClock = true;
+Config.showStar = true;
+Config.showHilbertFun = true;
+Config.showPenScript = true;
+Config.showTester = true;
+Config.showBitmap = false;
+Config.showMap = true;
+Config.showSampleMorphs = true;
+Config.showTextSamples = true;
+
+// More complex stuff that unnecessarily might slow things down
+Config.showClipMorph = Config.skipMostExamples;
+Config.show3DLogo = !Config.skipMostExamples;
+Config.showAsteroids = !Config.skipMostExamples;
+Config.showIcon = !Config.skipMostExamples;
+Config.showWeather = !Config.skipMostExamples;
+Config.showMessenger = !Config.skipMostExamples;
+Config.showStocks = !Config.skipMostExamples;
+Config.showTODO = !Config.skipMostExamples;
+Config.showOSReleaseTODO = !Config.skipMostExamples;
+Config.showInnerWorld = !Config.skipMostExamples;
+Config.showCanvasScape = !Config.skipMostExamples;
+Config.showRSSReader = !Config.skipMostExamples;
+Config.slideWorld = !Config.skipMostExamples;
+Config.showDoodle = !Config.skipMostExamples;
+
+// Browser initialization can be overriden with Config.browserAnyway
+Config.showBrowser = !Config.skipMostExamples || Config.browserAnyway;
 
 function populateWorldWithExamples(world, otherWorld, server) {
 
     var widget;
 
-    var showStar = true;
-    if (showStar) {  // Make a star
+    if (Config.showStar) {  // Make a star
 
         if (Config.loadFromMarkup) {
             world.addMorphWithContainerId('RotatingStar');
@@ -45,28 +73,23 @@ function populateWorldWithExamples(world, otherWorld, server) {
         }
     }
 
-    var showClock = true;
-    if (showClock) {
+    if (Config.showClock) {
         widget = ClockMorph(pt(65, 410), 50);
         // clockWidget.addClipRect(Rectangle(20,20,80,80));
         world.addMorph(widget);
 	widget.startSteppingScripts();
     }
 
-    var hilbertFun = true;
-    if (hilbertFun) Pen.hilbertFun(world);
+    if (Config.showHilbertFun) Pen.hilbertFun(world);
 
-    var showClipMorph = Config.skipMostExamples;
-    if (showClipMorph) {
+    if (Config.showClipMorph) {
         world.addMorph(widget = ClipMorph(Rectangle(600, 300, 150, 150)));
         widget.setFill(Color.green.lighter());
     }
     
-    var show3DLogo = !Config.skipMostExamples;
-    if (show3DLogo) world.addMorph(WindowMorph(Sun3DMorph(pt(950, 125).extent(pt(200, 200))), 'Sun 3D Logo'));
+    if (Config.show3DLogo) world.addMorph(WindowMorph(Sun3DMorph(pt(950, 125).extent(pt(200, 200))), 'Sun 3D Logo'));
     
-    var showAsteroids = !Config.skipMostExamples;
-    if (showAsteroids) {
+    if (Config.showAsteroids) {
         var gameMorph = apps.asteroids.makeGameMorph(pt(580, 360).extent(pt(600, 300)));
         world.addMorph(WindowMorph(gameMorph, 'Asteroids!'));
         apps.asteroids.initialize();
@@ -74,8 +97,7 @@ function populateWorldWithExamples(world, otherWorld, server) {
     }
     
     // Sample executable script pane
-    var showPenScript = true;
-    if (showPenScript) {
+    if (Config.showPenScript) {
         if (Config.showTestText) widget = TestTextMorph(pt(50,30).extent(pt(250,50)),Pen.script);
 		else widget = TextMorph(pt(50,30).extent(pt(250,50)),Pen.script);
         widget.align(widget.bounds().bottomRight(), world.bounds().topRight().addPt(pt(-50,100))); 
@@ -83,8 +105,7 @@ function populateWorldWithExamples(world, otherWorld, server) {
     }
 
     // Sample icon morph with a fisheye effect 'on'
-    var showIcon = !Config.skipMostExamples;
-    if (showIcon) {
+    if (Config.showIcon) {
         // maybe the icons should have a rectangle shaped images (unlike here)
         //var icon = ImageMorph(Rectangle(30, 360, 80, 50), "http://logos.sun.com/images/SunSample.gif");
         var icon = ImageMorph(Rectangle(30, 500, 100, 45));
@@ -95,29 +116,23 @@ function populateWorldWithExamples(world, otherWorld, server) {
     }
 
     // Sample weather morph
-    var showWeather = !Config.skipMostExamples;
-    if (showWeather) {
+    if (Config.showWeather) {
         // Maybe the icons should have rectangular images (unlike here)
         new WeatherWidget().openIn(world, pt(700, 50));
     }
 
-    var showTester = true;
-    if (showTester) new WidgetTester().openIn(world, pt(460, 10));
+    if (Config.showTester) new WidgetTester().openIn(world, pt(460, 10));
 
-    var showBrowser = !Config.skipMostExamples || Config.browserAnyway;
-    if (showBrowser) new SimpleBrowser().openIn(world, pt(20,20));
+    if (Config.showBrowser) new SimpleBrowser().openIn(world, pt(20,20));
 
-    var showStocks = !Config.skipMostExamples;
-    if (showStocks) {
+    if (Config.showStocks) {
         var stockWidget = new StockWidget();
         stockWidget.startSteppingRefreshCharts(stockWidget.openIn(world, pt(300, 500)));
     }
 
-    var showMessenger = !Config.skipMostExamples;
-    if (showMessenger) new MessengerWidget().openIn(world, pt(30, 600));
+    if (Config.showMessenger) new MessengerWidget().openIn(world, pt(30, 600));
 
-    var showTODO = !Config.skipMostExamples;
-    if (showTODO) {
+    if (Config.showTODO) {
         var todoMorph = TextMorph(Rectangle(440, 240, 250, 20),
                         "TODO (LARGE):\n" + 
                         "- Object scripting/timer management\n" +
@@ -144,8 +159,7 @@ function populateWorldWithExamples(world, otherWorld, server) {
         world.addMorph(todoMorph);
     }
 
-    var showOSReleaseTODO = !Config.skipMostExamples;
-    if (showOSReleaseTODO) {
+    if (Config.showOSReleaseTODO) {
         var todoOSReleaseMorph = TextMorph(Rectangle(1000, 700, 350, 20),
                         "Issues related to OS releasing:\n" + 
                         "- Definition of what will actually be released \n" +
@@ -167,24 +181,21 @@ function populateWorldWithExamples(world, otherWorld, server) {
         world.addMorph(todoOSReleaseMorph);
     }
 
-    var innerWorld = !Config.skipMostExamples;
-    if (innerWorld) {
+    if (Config.showInnerWorld) {
         
         var lm1 = LinkMorph(null, pt(280, 400));
         world.addMorph(lm1);
 
         lm1.myWorld.onEnter = function() {
 
-            var showCanvasScape = true;
-            if (showCanvasScape) {
+            if (Config.showCanvasScape) {
                 if (!lm1.myWorld.csMorph) {
                     var csm = CanvasScapeMorph(Rectangle(30,30,800,300)/*pt(400, 350).extent(pt(800, 300))*/);
                     lm1.myWorld.csMorph = lm1.myWorld.addMorph(WindowMorph(csm, 'CanvasScape'));
                 }
             }
 
-            var showMap = true;
-            if (showMap) {
+            if (Config.showMap) {
                 if (!lm1.myWorld.mapMorph) {
                     var tile = apps.maps.tileExtent;
                     var map = apps.maps.MapFrameMorph(new Rectangle(0, 0, 2*tile.x, 2*tile.y), true);
@@ -195,15 +206,14 @@ function populateWorldWithExamples(world, otherWorld, server) {
                 }
             }
 
-            if (!lm1.myWorld.rssReader) {
+            if (!lm1.myWorld.rssReader && Config.showRSSReader) {
                 console.log('initting RSS reader');
                 lm1.myWorld.rssReader = new Feed("http://news.com.com/2547-1_3-0-5.xml").openIn(lm1.myWorld, pt(725, 120));
             }
 
         }
 
-        var showBitmap = false;
-        if (showBitmap) { 
+        if (Config.showBitmap) { 
             var width = 800;
             var height = 500;
             var url = "http://maps.google.com/mapdata?"+
@@ -215,13 +225,11 @@ function populateWorldWithExamples(world, otherWorld, server) {
             lm1.myWorld.addMorphBack(WindowMorph(ImageMorph(Rectangle(50, 10, width, height), url), 'Tampere'));
         }
 
-        var showDoodle = true;
-        if (showDoodle) lm1.myWorld.addMorph(WindowMorph(DoodleMorph(pt(875, 350).extent(pt(300, 300))), 
+        if (Config.showDoodle) lm1.myWorld.addMorph(WindowMorph(DoodleMorph(pt(875, 350).extent(pt(300, 300))), 
                                                 'Doodle Morph'));
     }
     
-    var slideWorld = true;
-    if (slideWorld) { // Make a slide for "turning web programming upside down"
+    if (Config.slideWorld) { // Make a slide for "turning web programming upside down"
         var lm2 = LinkMorph(null, pt(280, 460));
 
         // KP: note that element deletion interferes with iteration, so
@@ -245,8 +253,7 @@ function populateWorldWithExamples(world, otherWorld, server) {
     
         world.addMorph(lm2); 
 
-        var showSampleMorphs = true;
-        if (showSampleMorphs){
+        if (Config.showSampleMorphs){
             var colors = Color.wheel(4);
             var loc = pt(30,450); 
             var widgetExtent = pt(70, 30);
@@ -278,8 +285,7 @@ function populateWorldWithExamples(world, otherWorld, server) {
             loc = loc.addPt(dy);    
       
             // Create sample text widgets
-            var showBigText = true;
-            if (showBigText) {
+            if (Config.showTextSamples) {
                 widget = TextMorph(loc.extent(pt(100,50)),"Big Text"); // big text
                 widget.setFontSize(20);
                 widget.setTextColor(Color.blue);
