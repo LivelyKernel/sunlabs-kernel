@@ -149,8 +149,8 @@ function populateWorldWithExamples(world, otherWorld, server) {
                         "- Shortcut keys don't work on Safari/Windows\n" +
                         "- It is still far too easy to rip things apart\n" +
                         "MINOR BUGS:\n" + 
-                        "- Reset rotation/scaling do not work for windows\n" +
                         "- Selection tray creation/removal has bugs\n" +
+                        "- Selection/resizing only works down and right\n" +
 						"- Text selection has bugs"
                         );
 

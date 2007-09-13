@@ -662,12 +662,11 @@ Object.extend(WindowMorph.prototype, {
     showTargetMorphMenu: function(evt) { 
         var tm = this.targetMorph.morphMenu(evt);
       	tm.replaceItemNamed("remove", ["remove", this.initiateShutdown.bind(this)]);
-      	tm.replaceItemNamed("reset rotation", ["reset rotation", this.resetRotation.bind(this).curry(0)]);
+      	tm.replaceItemNamed("reset rotation", ["reset rotation", this.setRotation.bind(this).curry(0)]);
+      	tm.replaceItemNamed("reset scaling", ["reset scaling", this.setScale.bind(this).curry(1)]);
       	tm.removeItemNamed("duplicate");
+      	tm.removeItemNamed("turn fisheye on");
       	tm.openIn(WorldMorph.current(), evt.mousePoint, false, this.targetMorph.inspect().truncate()); 
-    },
-    resetRotation: function(param) {
-        this.setRotation(param);
     },
 
     updateView: function(aspect, controller) {
