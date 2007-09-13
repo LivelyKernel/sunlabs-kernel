@@ -7,6 +7,7 @@ var Global = this;
 Config.shiftDragForDup = true; // easy duplicate gesture
 Config.useNewScheduler = true; // both schedulers active now
 
+
 function populateWorldWithExamples(world, otherWorld, server) {
 
     var widget;
@@ -155,9 +156,11 @@ function populateWorldWithExamples(world, otherWorld, server) {
 						"  + FAQ\n" + 
                         "- Setting up associated infrastructure\n" + 
 						"  + mailing list\n" + 
+						"  + discussion forums?\n" + 
 						"  + bug reporting service?\n" + 
 						"  + blogs (yes, I hate them too!)?\n" + 
-                        "- Determining how to let others participate in development\n" 
+                        "- Determining how to let others participate in development\n" +
+						"- Trademarking?"
                         );
         todoOSReleaseMorph.shape.roundEdgesBy(10);
         todoOSReleaseMorph.shape.setFillOpacity(0.6);
