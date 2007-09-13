@@ -2351,14 +2351,13 @@ Object.extend(WorldMorph.prototype, {
         var world = this.world();
         var items = [
             ["New subworld (LinkMorph)", function(evt) { world.addMorph(LinkMorph(null, evt.mousePoint));}],
-            ["Rectangle", function(evt) { world.addMorph(Morph(evt.mousePoint.extent(pt(50, 30)), "rect"));}],
-            ["Ellipse", function(evt) { world.addMorph(Morph(evt.mousePoint.extent(pt(50, 30)), "ellipse"));}],
+            ["Rectangle", function(evt) { world.addMorph(Morph(evt.mousePoint.extent(pt(60, 30)), "rect"));}],
+            ["Ellipse", function(evt) { world.addMorph(Morph(evt.mousePoint.extent(pt(50, 50)), "ellipse"));}],
             ["TextMorph", function(evt) { world.addMorph(TextMorph(evt.mousePoint.extent(pt(120, 10)), "This is a TextMorph"));}],
-            ["Class Browser", function(evt) { world.addMorph(new SimpleInspector(this));}]
+            ["Class Browser", function(evt) { new SimpleBrowser().openIn(world, evt.mousePoint); }]
         ];
         MenuMorph(items).openIn(this.world(), evt.mousePoint);
     },
-
 
     makeShrinkWrappedWorldWith: function(morph, filename) {
         if (filename == null) {
