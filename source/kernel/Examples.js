@@ -2410,7 +2410,7 @@ Object.extend(WeatherWidget.prototype, {
     initialize: function() { 
         WeatherWidget.superClass.initialize.call(this);
         // Fetch weather upon starting the widget
-        this.getWeather("menlo-park", "california");
+        this.getWeather("stanford", "US", "CA");
     },
     
     openIn: function(world, location) {
@@ -2427,8 +2427,8 @@ Object.extend(WeatherWidget.prototype, {
         
         // initialize UI update
         switch (item) {
-        case "Menlo Park, California":
-            this.getWeather("menlo-park", "california"); // "USCA0050"
+        case "Stanford, California":
+            this.getWeather("stanford", "US", "CA"); // "USCA0050"
             break;
         case "Tampere, Finland":
             this.getWeather("tampere", "finland"); // "FIXX0031"
@@ -2443,33 +2443,86 @@ Object.extend(WeatherWidget.prototype, {
     weatherDataArr: null,
     previousResult: null,
     
-    imageurl: "http://www.weatherforecastmap.com/images/weather/34.gif",     // default weather is sunny ;)
+    imageurl: "http://deskwx.weatherbug.com/images/Forecast/icons/cond016.gif",//"http://www.weatherforecastmap.com/images/weather/34.gif",
     
     parseWeatherData: function() {
         if (this.previousResult != this.feed.channels[0]) {
+            this.weatherDataArr = [];
             // we got a new value asynchronously
             this.previousResult = this.feed.channels[0];
-            this.weatherDataArr = this.previousResult.items[0].description.split(",");
+            //this.weatherDataArr = this.previousResult.items[0].description.split(",");
+            var text = this.previousResult.items[0].description;
+            var text2 = this.previousResult.items[1].description;
+            this.weatherDataArr[0] = "---";
+            var ind2 = text2.indexOf("http://")+7;
+            ind2 = text2.indexOf("http://", ind2);
+            if ( ind2 != -1 && text2.indexOf(".gif", ind2) != -1) {
+                this.imageurl = text2.substring( ind2, text2.indexOf(".gif", ind2)+4 );
+                this.changed('getImageURL');
+            }
+            ind2 = text2.indexOf(">", ind2) + 1;
+            if ( ind2 != -1 ) {
+                this.weatherDataArr[0] = text2.substring( ind2, text2.indexOf(".", ind2) ).replace("<br />", "").replace(/^\s+|\s+$/g, '');
+            } else {
+	            this.weatherDataArr[0] = "---";
+			}
+            
+            var ind = text.indexOf("Temperature:");
+            if ( ind != -1 ) {
+                this.weatherDataArr[1] = text.substring( ind, text.indexOf("&deg;", ind) ).replace("</b>", " ") + "°C";
+            }else {
+	            this.weatherDataArr[1] = "---";
+			}
+            ind = text.indexOf("Humidity:");
+            if ( ind != -1 ) {
+                this.weatherDataArr[3] = text.substring( ind, text.indexOf("%", ind)+1 ).replace("</b>", " ");
+            }else {
+	            this.weatherDataArr[3] = "---";
+			}
+            text = text.substr(text.indexOf("%", ind)+1 );
+            ind = text.indexOf("Point:");
+            if ( ind != -1 ) {
+                this.weatherDataArr[4] = "Dew " + text.substring( ind, text.indexOf("&deg;", ind) ).replace("</b>", " ") + "°C";
+            }else {
+	            this.weatherDataArr[4] = "---";
+			}
+            ind = text.indexOf("Speed:");
+            if ( ind != -1 ) {
+                this.weatherDataArr[2] = "Wind " + text.substring( ind, text.indexOf("&nbsp;", ind) ).replace("</b>", " ");
+            }else {
+	            this.weatherDataArr[2] = "---";
+			}
+            ind = text.indexOf("Gusts:");
+            if ( ind != -1 ) {
+                var toIndex = text.indexOf("</div>", ind);
+                if ( text.indexOf("Pressure:") != -1 ) {
+                    toIndex = text.indexOf("<br />", ind)
+                }
+                this.weatherDataArr[5] = "Wind " + text.substring( ind, toIndex ).replace("</b>", " ");
+            }else {
+	            this.weatherDataArr[5] = "---";
+			}
+
         }
         
         return this.weatherDataArr;
     },
 
     getWeatherDesc: function() { return this.parseWeatherData()[0]; },
-    getTemperature: function() { return this.parseWeatherData()[1].replace("&deg;","°"); },
+    getTemperature: function() { return this.parseWeatherData()[1]; },
     getWind: function()        { return this.parseWeatherData()[2]; },
-    getPressure: function()    { return this.parseWeatherData()[3]; },
-    getVisibility: function()  { return this.parseWeatherData()[4]; },
-    getHumidity: function()    { return this.parseWeatherData()[5]; },
-    getUV: function()          { return this.parseWeatherData()[6]; },
-    getDate: function()        { return this.parseWeatherData().slice(7).join(', '); },
+    getHumidity: function()    { return this.parseWeatherData()[3]; },
+    getDewPoint: function()    { return this.parseWeatherData()[4]; },
+    getGusts: function()       { return this.parseWeatherData()[5]; },
+//    getUV: function()          { return this.parseWeatherData()[6]; },
+//    getDate: function()        { return this.parseWeatherData().slice(7).join(', '); },
     getImageURL: function()    { return this.imageurl; },
     
     buildView: function() {
-        var panel = PanelMorph(pt(300, 255));
+        var panel = PanelMorph(pt(300, 210));
         panel.setBorderWidth(2);
         //panel.setBorderColor(Color.blue);
-        panel.setFill(LinearGradient.makeGradient(Color.white, Color.primary.blue.lighter(), LinearGradient.EastWest));
+        panel.setFill(LinearGradient.makeGradient(Color.white, Color.primary.blue, LinearGradient.WestEast));
         // TODO: add rounding to all the elements (panel, window & titlebar)
         // or make the titlebar round depending on the window
         var m; 
@@ -2479,7 +2532,7 @@ Object.extend(WeatherWidget.prototype, {
         panel.addMorph(m = ImageMorph(Rectangle(50,180,20,20), "http://www.cs.tut.fi/~kuusipal/flair/humidity.gif"));
         m.setFill(Color.white);
 
-        panel.addMorph(m = CheapListMorph(Rectangle(80,3,200,20),["Menlo Park, California", "Tampere, Finland", "London, United Kingdom"]));
+        panel.addMorph(m = CheapListMorph(Rectangle(80,3,200,20),["Stanford, California", "Tampere, Finland", "London, United Kingdom"]));
         m.connectModel({model: this, getSelection: "getListItem", setSelection: "setListItem"});
         m.selectLineAt(0); // Select the first item by default
 
@@ -2487,48 +2540,26 @@ Object.extend(WeatherWidget.prototype, {
         panel.addMorph(TextMorph(Rectangle(80,55, 200,20), "---")).connectModel({model: this, getText: "getWeatherDesc"});
         panel.addMorph(TextMorph(Rectangle(80,80, 200,20), "---")).connectModel({model: this, getText: "getTemperature"});
         panel.addMorph(TextMorph(Rectangle(80,105, 200,20), "---")).connectModel({model: this, getText: "getWind"});
-        panel.addMorph(TextMorph(Rectangle(80,130, 200,20), "---")).connectModel({model: this, getText: "getPressure"});
-        panel.addMorph(TextMorph(Rectangle(80,155, 200,20), "---")).connectModel({model: this, getText: "getVisibility"});
+        panel.addMorph(TextMorph(Rectangle(80,130, 200,20), "---")).connectModel({model: this, getText: "getGusts"});
+        panel.addMorph(TextMorph(Rectangle(80,155, 200,20), "---")).connectModel({model: this, getText: "getDewPoint"});
         panel.addMorph(TextMorph(Rectangle(80,180, 200,20), "---")).connectModel({model: this, getText: "getHumidity"});
-        panel.addMorph(TextMorph(Rectangle(80,205, 200,20), "---")).connectModel({model: this, getText: "getUV"});
-        panel.addMorph(TextMorph(Rectangle(80,230, 200,20), "---")).connectModel({model: this, getText: "getDate"});
+//        panel.addMorph(TextMorph(Rectangle(80,230, 200,20), "---")).connectModel({model: this, getText: "getDate"});
     
-        var image = panel.addMorph(ImageMorph(Rectangle(20,25,50,50)));
+        var image = panel.addMorph(ImageMorph(Rectangle(20,32,50,42)));
         image.connectModel({model: this, getURL: "getImageURL"});
         image.setFill(Color.white);
         this.changed('getImageURL');
         return panel;
     },
 
-    getWeather: function(city, country) {
-        this.feed = new Feed("http://weatherforecastmap.com/" + country + "/" + city + "/index.html");
-        this.feed.request(this, 'getWeatherDesc', "getTemperature", "getWind", "getPressure", 
-                          "getVisibility", "getHumidity", "getUV", "getDate");
+    getWeather: function(city, country, state) {
+//        this.feed = new Feed("http://weatherforecastmap.com/" + country + "/" + city + "/index.html");
+//        this.feed.request(this, 'getWeatherDesc', "getTemperature", "getWind", "getPressure", 
+//                          "getVisibility", "getHumidity", "getUV", "getDate");
+        this.feed = new Feed("http://feeds2.weatherbug.com/rss.aspx?f=1&zipCode=&country="+ country + "&state=" + (state ? state : "") + "&city="+ city + "&feed=&zCode=z4641&units=1");
+        this.feed.request(this, 'getWeatherDesc', "getTemperature", "getWind", "getGusts", 
+                          "getDewPoint", "getHumidity");
         var model = this;
-
-        new Ajax.Request("http://weatherforecastmap.com/" + country + "/" + city + "/", { 
-            method: 'get',
-            
-            onSuccess: function(transport) {
-                try {
-                    text = transport.responseText;
-                    var begin = text.indexOf("http://www.weatherforecastmap.com/images/weather/");
-                    var end = text.indexOf(".gif", begin);
-                    model.imageurl = text.substring(begin, end + ".gif".length);
-                    console.log('picked image url ' + model.imageurl);
-                    model.changed('getImageURL');
-                } catch (e) { console.log('got error %s', e); }
-            },
-            
-            onFailure: function(transport) {
-                console.log('problem with %s', transport);
-            },
-    
-            onException: function(e) {
-                console.log('exception  %s, %s', e, Object.toJSON(e));
-            }
-    
-        });
     }
     
 });
