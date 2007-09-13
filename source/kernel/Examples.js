@@ -2427,7 +2427,7 @@ Object.extend(WeatherWidget.prototype, {
         
         // initialize UI update
         switch (item) {
-        case "Stanford, California":
+        case "Palo Alto, California":
             this.getWeather("stanford", "US", "CA"); // "USCA0050"
             break;
         case "Tampere, Finland":
@@ -2445,6 +2445,7 @@ Object.extend(WeatherWidget.prototype, {
     
     imageurl: "http://deskwx.weatherbug.com/images/Forecast/icons/cond016.gif",//"http://www.weatherforecastmap.com/images/weather/34.gif",
     
+    // FIXME: Parsing the web page manually is rather clunky...
     parseWeatherData: function() {
         if (this.previousResult != this.feed.channels[0]) {
             this.weatherDataArr = [];
@@ -2464,34 +2465,34 @@ Object.extend(WeatherWidget.prototype, {
             if ( ind2 != -1 ) {
                 this.weatherDataArr[0] = text2.substring( ind2, text2.indexOf(".", ind2) ).replace("<br />", "").replace(/^\s+|\s+$/g, '');
             } else {
-	            this.weatherDataArr[0] = "---";
-			}
+                this.weatherDataArr[0] = "---";
+            }
             
             var ind = text.indexOf("Temperature:");
             if ( ind != -1 ) {
                 this.weatherDataArr[1] = text.substring( ind, text.indexOf("&deg;", ind) ).replace("</b>", " ") + "°C";
-            }else {
-	            this.weatherDataArr[1] = "---";
-			}
+            } else {
+                this.weatherDataArr[1] = "---";
+            }
             ind = text.indexOf("Humidity:");
             if ( ind != -1 ) {
                 this.weatherDataArr[3] = text.substring( ind, text.indexOf("%", ind)+1 ).replace("</b>", " ");
-            }else {
-	            this.weatherDataArr[3] = "---";
-			}
+            } else {
+                this.weatherDataArr[3] = "---";
+            }
             text = text.substr(text.indexOf("%", ind)+1 );
             ind = text.indexOf("Point:");
             if ( ind != -1 ) {
                 this.weatherDataArr[4] = "Dew " + text.substring( ind, text.indexOf("&deg;", ind) ).replace("</b>", " ") + "°C";
-            }else {
-	            this.weatherDataArr[4] = "---";
-			}
+            } else {
+                this.weatherDataArr[4] = "---";
+            }
             ind = text.indexOf("Speed:");
             if ( ind != -1 ) {
                 this.weatherDataArr[2] = "Wind " + text.substring( ind, text.indexOf("&nbsp;", ind) ).replace("</b>", " ");
-            }else {
-	            this.weatherDataArr[2] = "---";
-			}
+            } else {
+                this.weatherDataArr[2] = "---";
+            }
             ind = text.indexOf("Gusts:");
             if ( ind != -1 ) {
                 var toIndex = text.indexOf("</div>", ind);
@@ -2499,9 +2500,9 @@ Object.extend(WeatherWidget.prototype, {
                     toIndex = text.indexOf("<br />", ind)
                 }
                 this.weatherDataArr[5] = "Wind " + text.substring( ind, toIndex ).replace("</b>", " ");
-            }else {
-	            this.weatherDataArr[5] = "---";
-			}
+            } else {
+                this.weatherDataArr[5] = "---";
+            }
 
         }
         
@@ -2532,7 +2533,7 @@ Object.extend(WeatherWidget.prototype, {
         panel.addMorph(m = ImageMorph(Rectangle(50,180,20,20), "http://www.cs.tut.fi/~kuusipal/flair/humidity.gif"));
         m.setFill(Color.white);
 
-        panel.addMorph(m = CheapListMorph(Rectangle(80,3,200,20),["Stanford, California", "Tampere, Finland", "London, United Kingdom"]));
+        panel.addMorph(m = CheapListMorph(Rectangle(80,3,200,20),["Palo Alto, California", "Tampere, Finland", "London, United Kingdom"]));
         m.connectModel({model: this, getSelection: "getListItem", setSelection: "setListItem"});
         m.selectLineAt(0); // Select the first item by default
 
