@@ -1176,6 +1176,13 @@ Object.extend(Event.prototype, {
         //  use this.timeStamp
         // this.msTime = (new Date()).getTime();
         this.mouseButtonPressed = false;
+        
+        //Safari somehow gets the x and y coords so we add them here to Firefox too --PR
+        //console.log("InitMouseOver fix for Firefox evt.x=%s evt.clientX", this.x, this.clientX);
+        if (this.x == null && this.y == null){
+                this.x = this.clientX;
+                this.y = this.clientY-3;   
+        }    
     
         return this;
     },
