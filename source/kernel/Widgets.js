@@ -1956,9 +1956,9 @@ Object.extend(WorldMorph, {
         return w;
     },
 
-    // Default styles for the style manager    
-    defaultThemes: { // --Style architecture is under construction!--
-        primitive: { // This is to be the simples widgets -- flat fills and no rounding or translucency
+    // Default themes for the theme manager    
+    defaultThemes: {
+        primitive: { // Primitive look and feel -- flat fills and no rounding or translucency
             styleName:   'primitive',
             window:      { rounding: 0 },
             titleBar:    { rounding: 0, borderWidth: 2, bordercolor: Color.black,
@@ -2109,7 +2109,9 @@ Object.extend(WorldMorph.prototype, {
         menu.keepOnlyItemsNamed(["inspect", "style"]);
         menu.addLine();
         menu.addItem(["new object...", this, 'addMorphs', evt]);
-        menu.addItem(["choose display theme", this, 'chooseDisplayTheme']);
+        menu.addItem(["choose display theme...", this, 'chooseDisplayTheme']);
+        menu.addItem([(Config.useDebugBackground ? "use normal background" : "use debug background"),
+                     this, 'toggleDebugBackground']);
         menu.addItem([(Config.suppressBalloonHelp ? "enable balloon help" : "disable balloon help"),
                      this, "toggleBalloonHelp"]);
         menu.addItem(["restart system", this, 'restart']);
@@ -2118,6 +2120,17 @@ Object.extend(WorldMorph.prototype, {
    
     toggleBalloonHelp: function() {
         Config.suppressBalloonHelp = !Config.suppressBalloonHelp;
+    },
+
+    toggleDebugBackground: function() {
+        // Debug background is transparent, so that we can see the console
+        // if it is not otherwise visible
+        Config.useDebugBackground = !Config.useDebugBackground;
+        if (Config.useDebugBackground) {
+            this.shape.setFillOpacity(0.8);
+        } else {
+            this.shape.setFillOpacity(1.0);
+        }
     },
 
     chooseDisplayTheme: function(ignored,evt) { 
@@ -2341,10 +2354,7 @@ Object.extend(WorldMorph.prototype, {
             ["Rectangle", function(evt) { world.addMorph(Morph(evt.mousePoint.extent(pt(50, 30)), "rect"));}],
             ["Ellipse", function(evt) { world.addMorph(Morph(evt.mousePoint.extent(pt(50, 30)), "ellipse"));}],
             ["TextMorph", function(evt) { world.addMorph(TextMorph(evt.mousePoint.extent(pt(120, 10)), "This is a TextMorph"));}],
-            ["Image Morph", function(evt) { world.addMorph(ImageMorph(evt.mousePoint.extent(pt(100, 45)), "http://logos.sun.com/images/SunSample.gif"))}],
-            ["Clock Morph", function(evt) { world.addMorph(ClockMorph(evt.mousePoint, 50));}],
-            ["Class Browser", function(evt) { world.addMorph(new SimpleInspector(this));}],
-            ["Doodle Morph", function(evt) { world.addMorph(WindowMorph(DoodleMorph(evt.mousePoint.extent(pt(300, 300))), 'Doodle Morph'))}],
+            ["Class Browser", function(evt) { world.addMorph(new SimpleInspector(this));}]
         ];
         MenuMorph(items).openIn(this.world(), evt.mousePoint);
     },
