@@ -34,10 +34,16 @@ var Loader = Class.create();
 Object.extend(Loader, {
     loadScript: function(ns, url) {
         var script = document.createElementNS(Namespace.XHTML, "script");
-        script.setAttributeNS("src", url);
+        script.setAttributeNS(Namespace.XHTML, "src", url);
         document.documentElement.appendChild(script);
         //document.documentElement.removeChild(script);
-    }
+    },
+    
+    insertContents: function(iframe) {
+	var node = iframe.contentDocument.documentElement;	
+	document.documentElement.appendChild(document.adoptNode(node));
+    },
+    
 });
 
 // SVG/DOM bindings 
