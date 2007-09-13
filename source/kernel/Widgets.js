@@ -658,12 +658,16 @@ Object.extend(WindowMorph.prototype, {
         this.state = "shutdown"; // no one will ever know...
         return true;
     },
-
+    
     showTargetMorphMenu: function(evt) { 
         var tm = this.targetMorph.morphMenu(evt);
-        tm.replaceItemNamed("remove", ["remove", this.initiateShutdown.bind(this)]);
-        tm.removeItemNamed("duplicate");
-        tm.openIn(WorldMorph.current(), evt.mousePoint, false, this.targetMorph.inspect().truncate()); 
+      	tm.replaceItemNamed("remove", ["remove", this.initiateShutdown.bind(this)]);
+      	tm.replaceItemNamed("reset rotation", ["reset rotation", this.resetRotation.bind(this).curry(0)]);
+      	tm.removeItemNamed("duplicate");
+      	tm.openIn(WorldMorph.current(), evt.mousePoint, false, this.targetMorph.inspect().truncate()); 
+    },
+    resetRotation: function(param) {
+        this.setRotation(param);
     },
 
     updateView: function(aspect, controller) {
