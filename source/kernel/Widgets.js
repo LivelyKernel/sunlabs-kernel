@@ -461,7 +461,7 @@ Object.extend(TitleTabMorph.prototype, {
         this.addMorph(menuButton);
         
         // Collapse button is retained only while we get things going...
-	cell = cell.translatedBy(pt(bh - spacing, 0));
+        cell = cell.translatedBy(pt(bh - spacing, 0));
         var collapseButton = WindowControlMorph(cell, spacing, Color.primary.yellow, windowMorph, 
             function() { this.toggleCollapse(); }, "Collapse");
         this.addMorph(collapseButton);
@@ -495,7 +495,7 @@ console.log('mouseDown');
     onMouseUp: function(evt) {
 console.log('mouseUp');
         evt.hand.setMouseFocus(null);
-	this.windowMorph.toggleCollapse();
+        this.windowMorph.toggleCollapse();
     }
 
 });
@@ -626,7 +626,7 @@ Object.extend(WindowMorph.prototype, {
         this.remove();
         owner.addMorph(this.titleBar);
         if (this.collapsedPosition) this.titleBar.setPosition(this.collapsedPosition);
-        	else this.titleBar.setPosition(this.expandedPosition);
+        else this.titleBar.setPosition(this.expandedPosition);
         this.state = "collapsed";
     },
     
@@ -654,16 +654,16 @@ Object.extend(WindowMorph.prototype, {
         if (this.isShutdown()) return;
         this.targetMorph.shutdown(); // shutdown may be prevented ...
         if (this.isCollapsed()) this.titleBar.remove();
-		else this.remove();
-	this.state = "shutdown"; // no one will ever know...
+        else this.remove();
+        this.state = "shutdown"; // no one will ever know...
         return true;
     },
 
     showTargetMorphMenu: function(evt) { 
         var tm = this.targetMorph.morphMenu(evt);
-	tm.replaceItemNamed("remove", ["remove", this.initiateShutdown.bind(this)]);
-	tm.removeItemNamed("duplicate");
-	tm.openIn(WorldMorph.current(), evt.mousePoint, false, this.targetMorph.inspect().truncate()); 
+        tm.replaceItemNamed("remove", ["remove", this.initiateShutdown.bind(this)]);
+        tm.removeItemNamed("duplicate");
+        tm.openIn(WorldMorph.current(), evt.mousePoint, false, this.targetMorph.inspect().truncate()); 
     },
 
     updateView: function(aspect, controller) {
@@ -695,28 +695,28 @@ TabbedPanelMorph = HostClass.create('TabbedPanelMorph', WindowMorph);
 Object.extend(TabbedPanelMorph.prototype, {
 
     initialize: function(targetMorph, headline, location, sideName) {
-	// A TabbedPanelMorph is pretty much like a WindowMorph, in that it is intended to 
-	// be a container for applications that may frequently want to be put out of the way.
-	// With windows, you collapse them to their title bars, with tabbed panels, you
-	// click their tab and they retreat to the edge of the screen like a file folder.
+        // A TabbedPanelMorph is pretty much like a WindowMorph, in that it is intended to 
+        // be a container for applications that may frequently want to be put out of the way.
+        // With windows, you collapse them to their title bars, with tabbed panels, you
+        // click their tab and they retreat to the edge of the screen like a file folder.
         this.sideName = sideName ? sideName : "south";
-	TabbedPanelMorph.superClass.initialize.call(this, targetMorph, headline, location);
+        TabbedPanelMorph.superClass.initialize.call(this, targetMorph, headline, location);
         this.setFill(null);
         this.setBorderColor(null);
         this.newToTheWorld = true;
         this.setPositions();
-	this.moveBy(this.expandedPosition.subPt(this.position()));
-	return this;
+        this.moveBy(this.expandedPosition.subPt(this.position()));
+        return this;
     },
 
     setPositions: function() {
-	// Compute the nearest collapsed and expanded positions for side tabs
-	var wBounds = WorldMorph.current().shape.bounds();
+        // Compute the nearest collapsed and expanded positions for side tabs
+        var wBounds = WorldMorph.current().shape.bounds();
         if (this.sideName == "south") {
-	    var edgePt = this.position().nearestPointOnLineBetween(wBounds.bottomLeft(), wBounds.bottomRight());
-	    this.collapsedPosition = edgePt.subPt(this.contentOffset);  // tabPosition
-	    this.expandedPosition = edgePt.addXY(0,-this.shape.bounds().height);
-	}
+            var edgePt = this.position().nearestPointOnLineBetween(wBounds.bottomLeft(), wBounds.bottomRight());
+            this.collapsedPosition = edgePt.subPt(this.contentOffset);  // tabPosition
+            this.expandedPosition = edgePt.addXY(0,-this.shape.bounds().height);
+        }
     },
 
     makeTitleBar: function(headline, width) {
@@ -1130,52 +1130,50 @@ Object.extend(PanelMorph.prototype, {
 
 });
 
-
+// AT: Shouldn't this code be moved to Tools.js?
 Object.extend(PanelMorph, {
     makeBrowser: function(extent, bottomPaneProportion) {
-	// DI:  This has to get fixed.  Inspector doesnt have same panes as browser.
-	//  The idea is good.  We want something *like*...
-	//  makeBrowser([['leftPane', ListPane, rect(0, 0, 0.5, 0.6)],
-	//	['rightPane', ListPane, rect(0.5, 0, 0.5, 0.6)],
-	//	['bottomPane', TextPane, rect(0, 0.6, 1, 0.4)]  ])
-	// Note: <Rect> scaleByRect will be useful here
-	var panel = PanelMorph(extent);
+        // DI:  This has to get fixed.  Inspector doesnt have same panes as browser.
+        //  The idea is good.  We want something *like*...
+        //  makeBrowser([['leftPane', ListPane, rect(0, 0, 0.5, 0.6)],
+        //    ['rightPane', ListPane, rect(0.5, 0, 0.5, 0.6)],
+        //    ['bottomPane', TextPane, rect(0, 0.6, 1, 0.4)]  ])
+        // Note: <Rect> scaleByRect will be useful here
+        var panel = PanelMorph(extent);
         panel.setFill(Color.primary.blue.lighter().lighter());
         panel.setBorderWidth(2);
-	if (bottomPaneProportion === undefined) bottomPaneProportion = 0;
-	var r = Rectangle(0, 0, extent.x/2, extent.y*(1 - bottomPaneProportion));
-	var left = panel.setNamedMorph("leftPane", ListPane(r));
+        if (bottomPaneProportion === undefined) bottomPaneProportion = 0;
+        var r = Rectangle(0, 0, extent.x/2, extent.y*(1 - bottomPaneProportion));
+        var left = panel.setNamedMorph("leftPane", ListPane(r));
         var right = panel.setNamedMorph("rightPane", ListPane(r));
-	right.align(right.bounds().topLeft(), left.bounds().topRight());
-	if (bottomPaneProportion) {
-	    r = Rectangle(0, 0, extent.x, extent.y*bottomPaneProportion);
-	    var bottom = panel.setNamedMorph("bottomPane", TextPane(r, "-----"));
-	    bottom.align(bottom.bounds().topLeft(), left.bounds().bottomLeft());
-	}
+        right.align(right.bounds().topLeft(), left.bounds().topRight());
+        if (bottomPaneProportion) {
+            r = Rectangle(0, 0, extent.x, extent.y*bottomPaneProportion);
+            var bottom = panel.setNamedMorph("bottomPane", TextPane(r, "-----"));
+            bottom.align(bottom.bounds().topLeft(), left.bounds().bottomLeft());
+        }
         return panel;
     },
 
     makeInspector: function(extent, bottomPaneProportion) {
-	// DI:  Obviously, this should go away when makeBrowser gets generalized
-	var panel = PanelMorph(extent);
+        // DI:  Obviously, this should go away when makeBrowser gets generalized
+        var panel = PanelMorph(extent);
         panel.setFill(Color.primary.blue.lighter().lighter());
         panel.setBorderWidth(2);
-	if (bottomPaneProportion === undefined) bottomPaneProportion = 0;
-	var r = Rectangle(0, 0, extent.x/2, extent.y*(1 - bottomPaneProportion));
-	var left = panel.setNamedMorph("leftPane", ListPane(r));
+        if (bottomPaneProportion === undefined) bottomPaneProportion = 0;
+        var r = Rectangle(0, 0, extent.x/2, extent.y*(1 - bottomPaneProportion));
+        var left = panel.setNamedMorph("leftPane", ListPane(r));
         var right = panel.setNamedMorph("rightPane", TextPane(r, "-----"));
-	right.align(right.bounds().topLeft(), left.bounds().topRight());
-	if (bottomPaneProportion) {
-	    r = Rectangle(0, 0, extent.x, extent.y*bottomPaneProportion);
-	    var bottom = panel.setNamedMorph("bottomPane", TextPane(r, "-----"));
-	    bottom.align(bottom.bounds().topLeft(), left.bounds().bottomLeft());
-	}
+        right.align(right.bounds().topLeft(), left.bounds().topRight());
+        if (bottomPaneProportion) {
+            r = Rectangle(0, 0, extent.x, extent.y*bottomPaneProportion);
+            var bottom = panel.setNamedMorph("bottomPane", TextPane(r, "-----"));
+            bottom.align(bottom.bounds().topLeft(), left.bounds().bottomLeft());
+        }
         return panel;
     }
     
 });
-
-
 
 /**
  * @class CheapListMorph
@@ -1447,14 +1445,15 @@ Object.extend(MenuMorph.prototype, {
             label.align(label.bounds().bottomCenter(), this.shape.bounds().topCenter());
             this.addMorph(label);
         }
-	// If menu and/or caption is off screen, move it back so it is visible
-	var menuRect = this.bounds();  //includes caption if any
-	// Intersect with world bounds to get visible region.  Note we need shape.bounds,
-	// since world.bounds() would include stick-outs, including this menu!
-	var visibleRect = menuRect.intersection(this.world().shape.bounds()); 
-	var delta = visibleRect.topLeft().subPt(menuRect.topLeft());  // delta to fix topLeft off screen
-	delta = delta.addPt(visibleRect.bottomRight().subPt(menuRect.bottomRight()));  // same for bottomRight
-	if (delta.dist(pt(0,0)) > 1) this.moveBy(delta);  // move if significant    },
+        // If menu and/or caption is off screen, move it back so it is visible
+        var menuRect = this.bounds();  //includes caption if any
+        // Intersect with world bounds to get visible region.  Note we need shape.bounds,
+        // since world.bounds() would include stick-outs, including this menu!
+        var visibleRect = menuRect.intersection(this.world().shape.bounds()); 
+        var delta = visibleRect.topLeft().subPt(menuRect.topLeft());  // delta to fix topLeft off screen
+        delta = delta.addPt(visibleRect.bottomRight().subPt(menuRect.bottomRight()));  // same for bottomRight
+        if (delta.dist(pt(0,0)) > 1) this.moveBy(delta);  // move if significant
+    },
 
     compose: function(location) { 
         var itemNames = this.items.map(function (item) { return item[0] });
@@ -1966,7 +1965,7 @@ Object.extend(WorldMorph, {
                            fill: Color.neutral.gray.lighter() },
             panel:       {  },
             slider:      { borderColor: Color.black, borderWidth: 1,
-			               baseColor: Color.neutral.gray.lighter() },
+                           baseColor: Color.neutral.gray.lighter() },
             button:      { borderColor: Color.black, borderWidth: 1, rounding: 0,
                            baseColor: Color.lightGray, fillType: "simple" },
             widgetPanel: { borderColor: Color.red, borderWidth: 2, rounding: 0,
@@ -2222,9 +2221,9 @@ Object.extend(WorldMorph.prototype, {
     },
     
     inspectScheduledActions: function () {
-	// inspect an array of all the actions in the scheduler.  Note this
-	// is not the same as scheduledActions which is an array of tuples with times
-	SimpleInspector.openOn(this.scheduledActions.map(function(each) { return each[1]; }));
+        // inspect an array of all the actions in the scheduler.  Note this
+        // is not the same as scheduledActions which is an array of tuples with times
+        SimpleInspector.openOn(this.scheduledActions.map(function(each) { return each[1]; }));
     },
 
     doOneCycle: function (world) {
@@ -2406,7 +2405,7 @@ Object.extend(WorldMorph.prototype, {
             onException: function(e) {
                 console.log('exception  %s, %s', e, Object.toJSON(e));
             }
-	    
+    
         });
 
     },
@@ -2732,16 +2731,18 @@ Object.extend(HandMorph.prototype, {
 
         //console.log('grabbed %s', grabbedMorph);
         this.addMorph(grabbedMorph);
-	if (this.applyDropShadowFilter)
+        if (this.applyDropShadowFilter) {
             grabbedMorph.setAttributeNS(null, "filter", "url(#DropShadowFilter)");
+        }
 
         // grabbedMorph.updateOwner(); 
         this.changed(); //for drop shadow
     },
     
     ungrab: function(morph) { 
-	if (this.applyDropShadowFilter)
+        if (this.applyDropShadowFilter) {
             morph.removeAttributeNS(null, "filter");
+        }
         // Needs to put back in former owner, position, submorphIndex
     },
     
@@ -2771,10 +2772,6 @@ LinkMorph = HostClass.create('LinkMorph', Morph);
 
 Object.extend(LinkMorph.prototype, {
 
-//  DI: I feel fisheye is distracting here;  OK in palettes maybe
-    fishEye: false, 
-    fisheyeGrowth: 2, // make it grow more
-    fisheyeProximity: 0.5, // make it grow only when the hand gets closer
     defaultFill: Color.black,
     defaultBorderColor: Color.black,
     helpText: "Click here to enter or leave a subworld.\nUse menu 'grab' to move me.",

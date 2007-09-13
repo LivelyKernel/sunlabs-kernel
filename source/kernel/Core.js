@@ -2068,10 +2068,10 @@ Object.extend(Morph.prototype, {
     focusedBorderColor: Color.blue,
     focusHaloBorderWidth: 4,
 
-    fishEye: false,  // defines if fisheye effect is used
-    fisheyeScale: 1.0,   // set the default scaling to 1.0
-    fisheyeGrowth: 2.0, // upto fisheyeGrowth size bigger
-    fisheyeProximity: 1.0, // when to react wrt/ size
+    fishEye: false,        // defines if fisheye effect is used
+    fisheyeScale: 1.0,     // set the default scaling to 1.0
+    fisheyeGrowth: 1.0,    // upto fisheyeGrowth size bigger (1.0 = double size)
+    fisheyeProximity: 0.5, // where to react wrt/ size (how close we need to be)
 
     clipPath: null, // KP: should every morph should have one of those?
     keyboardHandler: null, //a KeyboardHandler for keyboard repsonse, etc
@@ -3031,13 +3031,13 @@ Object.extend(Morph.prototype, {
             ["drill", this, "showOwnerChain", evt],
             ["grab", this, "pickMeUp", evt],
             ["reset rotation", this.setRotation.bind(this).curry(0)],
-            [((!this.openForDragAndDrop) ? "close DnD" : "open DnD"), this, "toggleDnD", evt.mousePoint],
-            ["toggle fisheye", this, "toggleFisheye"],
+            [((this.fishEye) ? "turn fisheye off" : "turn fisheye on"), this, "toggleFisheye"],
             ["-----"],
             ["put me in a window", this, "putMeInAWindow", this.position()],
             ["put me in a tab", this, "putMeInATab", this.position()],
             ["put me in the open", this, "putMeInTheWorld", this.position()],
             ["-----"],
+            [((!this.openForDragAndDrop) ? "close DnD" : "open DnD"), this, "toggleDnD", evt.mousePoint],
             ["show Lively markup", this.addSvgInspector.bind(this).curry(this)],
             ["dump model", this.dumpModel.bind(this).curry(this)], // debugging, will go away
             ["publish shrink-wrapped as...", function(m) { WorldMorph.current().makeShrinkWrappedWorldWith(m, prompt('publish as')) }.curry(this)]
