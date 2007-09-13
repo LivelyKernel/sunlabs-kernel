@@ -133,48 +133,49 @@ function populateWorldWithExamples(world, otherWorld, server) {
     if (Config.showMessenger) new MessengerWidget().openIn(world, pt(30, 600));
 
     if (Config.showTODO) {
-        var todoMorph = TextMorph(Rectangle(440, 240, 250, 20),
+        var todoMorph = TextMorph(Rectangle(440, 240, 300, 20),
                         "TODO (LARGE):\n" + 
-                        "- Object scripting/timer management\n" +
                         "- Web page generation support\n" +
                         "- Local/remote storage capabilities\n" +
+                        '- Demo applications should be more "Morphic"\n' +
+                        "- Collaboration capabilities\n" +
+                        "- Better development/debugging tools\n" +
                         "TODO (SMALL):\n" + 
-                        "- Clean up system menus\n" +
                         "- Clean up demo world(s)\n" +
-                        "- Use common location for resources\n" +
-                        "- DnD and Drill features still missing\n" +
+                        "- Use common location for external resources\n" +
                         "MAJOR BUGS:\n" + 
                         "- Coordinate transformations are broken\n" +
-                        "- Shortcut keys don't work on Windows!\n" +
-                        "- 'Same origin' networking policy violated\n" +
-                        "- It is still too easy to rip things apart\n" +
+                        '- "Same origin" networking policy violated\n' +
+                        "- Shortcut keys don't work on Safari/Windows\n" +
+                        "- It is still far too easy to rip things apart\n" +
                         "MINOR BUGS:\n" + 
-                        "- Window duplication/removal do not work\n" +
+                        "- Reset rotation/scaling do not work for windows\n" +
                         "- Selection tray creation/removal has bugs\n" +
-                        "- Not all 'new object...' menu items work\n" + 
-						"- Moving text morphs leads to text selection even if text is not near mouse"
+						"- Text selection has bugs"
                         );
+
         todoMorph.shape.roundEdgesBy(10);
         todoMorph.shape.setFillOpacity(0.6);
         world.addMorph(todoMorph);
     }
 
     if (Config.showOSReleaseTODO) {
-        var todoOSReleaseMorph = TextMorph(Rectangle(1000, 700, 350, 20),
-                        "Issues related to OS releasing:\n" + 
-                        "- Definition of what will actually be released \n" +
-						"  + Applications/SVG?\n" +
-						"  + Tutorial\n" +
+        var todoOSReleaseMorph = TextMorph(Rectangle(1200, 500, 350, 20),
+                        "Administrative issues:\n" + 
+                        "- Deciding what will actually be released\n" +
+						"  + Which applications?\n" +
+						"  + HTML tutorial\n" +
  						"  + Tutorial implemented with the system itself?\n" +
 						"  + Technical documentation?\n" + 
 						"  + FAQ\n" + 
                         "- Setting up associated infrastructure\n" + 
+						"  + web site + server\n" + 
 						"  + mailing list\n" + 
-						"  + discussion forums?\n" + 
+						"  + discussion forums\n" + 
 						"  + bug reporting service?\n" + 
 						"  + blogs (yes, I hate them too!)?\n" + 
                         "- Determining how to let others participate in development\n" +
-						"- Trademarking?"
+						"- Trademarking, licensing & other legal issues"
                         );
         todoOSReleaseMorph.shape.roundEdgesBy(10);
         todoOSReleaseMorph.shape.setFillOpacity(0.6);
