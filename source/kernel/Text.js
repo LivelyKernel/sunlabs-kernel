@@ -883,11 +883,11 @@ Object.extend(TextMorph.prototype, {
         var self = this;
         var menu = TextMorph.superClass.morphMenu.call(this, evt);
 
-        // Add a separator line
-        menu.addLine();
+        // Add a descriptive separator line
+        menu.addItem(['----- text functions -----']);
 
-        menu.addItem(["evaluate text", function() { self.evalInContext(self.textString) }]);
-        menu.addItem(["save text", function() { self.saveContents(self.textString) }]);
+        menu.addItem(["accept changes", function() { self.saveContents(self.textString) }]);
+        menu.addItem(["evaluate as JavaScript code", function() { self.evalInContext(self.textString) }]);
 
         menu.addItem(["evaluate as Lively markup", function() { 
             var importer = new Importer();

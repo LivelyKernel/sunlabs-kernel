@@ -3031,6 +3031,7 @@ Object.extend(Morph.prototype, {
             ["drill", this, "showOwnerChain", evt],
             ["grab", this, "pickMeUp", evt],
             ["reset rotation", this.setRotation.bind(this).curry(0)],
+            ["reset scaling", this.setScale.bind(this).curry(1)],
             [((this.fishEye) ? "turn fisheye off" : "turn fisheye on"), this, "toggleFisheye"],
             ["-----"],
             ["put me in a window", this, "putMeInAWindow", this.position()],
