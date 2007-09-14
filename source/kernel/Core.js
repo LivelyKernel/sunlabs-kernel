@@ -349,12 +349,7 @@ Object.extend(Object.prototype, {
  */  
 
 Object.extend(String.prototype, {
-    /* KP: use truncate() from prototype
-    shortenTo: function(len) { 
-        if (this.length <= len) return this
-        return this.substring(0,len-4) + '...'
-    },
-    */
+    isString: function() { return true; },
 
     withNiceDecimals: function() {
         // JS can't print nice decimals
@@ -2081,7 +2076,7 @@ Object.extend(Morph.prototype, {
 
     clipPath: null, // KP: should every morph should have one of those?
     keyboardHandler: null, //a KeyboardHandler for keyboard repsonse, etc
-    openForDragAndDrop: true,
+    openForDragAndDrop: true, // Submorphs can be extracted from or dropped into me
     mouseHandler: MouseHandlerForDragging.prototype, //a MouseHandler for mouse sensitivity, etc
     stepHandler: null, //a stepHandler for time-varying morphs and animation 
     drawBounds: false,
@@ -2250,15 +2245,17 @@ Object.extend(Morph.prototype, {
         } else {
 //      DI: NOTE the cloning should be handled by assign (see comment there)
 //      but it doesn't seem to work right, so we do it here
-            // *** stylePanel breaks without this test, yet we already checked for colors!
-	    if(!fill.cloneNode) return;  // DI:  FIXME  this is wrong wrong
 	    var ref = this.assign('fill', fill.cloneNode(true));
             this.shape.setFill(ref);
         }
     }.wrap(Morph.onChange('shape')),
 
     getFill: function() {
-        return this.shape.getFill();
+        var fillObj = this.shape.getFill();
+	// if the fill is a color-string, then make a real color
+	// DI: there must be a better way to test for strings :-(
+	if (fillObj.isString()) return Color.parse(fillObj);
+	return fillObj
     },
 
     setBorderColor: function(newColor) { this.shape.setStroke(newColor); }.wrap(Morph.onChange('shape')),
@@ -3099,8 +3096,20 @@ Object.extend(Morph.prototype, {
     },
 
     toggleDnD: function(loc) {
-        if (true) return this.notify("Sorry, DnD control is\nnot yet available", loc);
         this.openForDragAndDrop = !this.openForDragAndDrop;
+    },
+
+    openDnD: function(loc) {
+        this.openForDragAndDrop = true;
+    },
+
+    closeDnD: function(loc) {
+        this.openForDragAndDrop = false;
+    },
+
+    closeAllToDnD: function(loc) {
+	// Close this and all submorphs to drag and drop
+        this.withAllSubmorphsDo( function() { this.closeDnD(); });
     },
 
     pickMeUp: function(evt) {
@@ -3129,35 +3138,48 @@ Object.extend(Morph.prototype, {
         copy.withAllSubmorphsDo(function() { this.startStepping(null); }, null);
     },
 
-    morphToGrabOrReceive: function(evt, droppingMorph) {
-        // Return the morph to grab from a mouse down event. If none, return null.
-        // If droppingMorph is not null, then check as well if this is a willing recipient.
+    morphToGrabOrReceiveDroppingMorph: function(evt, droppingMorph) {
+	return this.morphToGrabOrReceive(evt, droppingMorph, true);
+	},
+
+    morphToGrabOrReceive: function(evt, droppingMorph, checkForDnD) {
+	// If checkForDnD is false, return the morph to receive this mosue event (or null)
+	// If checkForDnD is true, return the morph to grab from a mouse down event (or null)
+        // If droppingMorph is not null, then check that this is a willing recipient (else null)
+
         if (!this.fullContainsWorldPoint(evt.mousePoint)) return null;  // not contained anywhere
 
-        // First check all the submorphs (front first)
-        //console.log(this.inspect() + ' looking for submorphs : ' + this.hasSubmorphs());
-        if (this.openForDragAndDrop && this.hasSubmorphs()) {
-            //  look at submorphs
+        // First check all the submorphs, front first
+        if (this.hasSubmorphs()) {
             var hit = null;
             this.submorphs.each(function(m) { 
-                hit = m.morphToGrabOrReceive(evt); 
+                hit = m.morphToGrabOrReceive(evt, droppingMorph, checkForDnD); 
                 if (hit != null) throw $break; 
             });
-    
-            if (hit != null) return hit;
-        
-        } // hit a submorph
+            if (hit != null) return hit;  // hit a submorph
+        }
 
         // Check if it's really in this morph (not just fullBounds)
         if (!this.containsWorldPoint(evt.mousePoint)) return null;
 
+	// If no DnD check, then we have a hit
+	if (!checkForDnD) return this;
+
         // On drops, check that this is a willing recipient
-        if (droppingMorph != null) 
+        if (droppingMorph != null) {
             return this.acceptsDropping(droppingMorph) ? this : null;
+		}
+
         // On grabs, can't pick up the world or morphs that handle mousedown
         else return (!evt.altKey && this === this.world()) ? null : this; 
     },
     
+    morphToReceiveEvent: function(evt) {
+	// This should replace morphToGrabOrReceive... in Hand where events
+	// must be displatched to morphs that are closed to DnD
+	return this.morphToGrabOrReceive(evt, null, false);
+	},
+
     ownerChain: function() {
         // Return an array of me and all my owner
         if (!this.owner()) return [];

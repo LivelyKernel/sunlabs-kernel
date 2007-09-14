@@ -598,7 +598,8 @@ Object.extend(WindowMorph.prototype, {
         this.contentOffset = pt(0, titleHeight);
         targetMorph.setPosition(this.contentOffset);
         this.linkToStyles(['window']);
-        return this;
+        this.closeAllToDnD();
+	return this;
     },
 
     makeTitleBar: function(headline, width) {
@@ -1902,7 +1903,7 @@ Object.extend(PasteUpMorph.prototype, {
     },
 
     onMouseDown: function(evt) {  //default behavior is to grab a submorph
-        var m = this.morphToGrabOrReceive(evt);
+        var m = this.morphToGrabOrReceiveDroppingMorph(evt);
         if (m == null) { this.makeSelection(evt); return true; }
         if (m.handlesMouseDown(evt)) return false;
         evt.hand.grabMorph(m, evt);
@@ -2603,7 +2604,7 @@ Object.extend(HandMorph.prototype, {
             }
 
             if (this.mouseFocus==null && this.hasSubmorphs()) { // generate mouseOver events when laden
-                var receiver = this.owner().morphToGrabOrReceive(evt, null);
+                var receiver = this.owner().morphToReceiveEvent(evt);
                 if (receiver != null) receiver.onMouseOver(evt);
             } else {
                 (this.mouseFocus || this.owner()).mouseEvent(evt, this.mouseFocus != null);
@@ -2635,22 +2636,19 @@ Object.extend(HandMorph.prototype, {
             if (this.hasSubmorphs() && (evt.type == "mousedown" || this.hasMovedSignificantly)) {
                 // If laden, then drop on mouse up or down
                 var m = this.topSubmorph();
-                var receiver = this.owner().morphToGrabOrReceive(evt, m);
-                if (receiver == null) {
-                    this.ungrab(m);
-                } else { 
-                    console.log('dropping %s on %s', m, receiver);
+                var receiver = this.owner().morphToGrabOrReceiveDroppingMorph(evt, m);
+		// For now, failed drops go to world; later maybe put them back?
+                if (receiver == null) receiver = this.world();
+		console.log('dropping %s on %s', m, receiver);
             
-                    while (this.hasSubmorphs()) { // drop in same z-order as in hand
+		while (this.hasSubmorphs()) { // drop in same z-order as in hand
                         receiver.addMorph(this.submorphs.firstChild);
-                    }
-            
+		}
                    //DI: May need to be updated for multiple drop above...
                    //println('changing ' + m);
                    //m.changed(); // KP: maybe needed for ClipMorphs
                    // m.updateOwner(); 
                    //m.updateBackendFields('origin'); 
-                }
             } else {
                 // console.log('hand dispatching event ' + event.type + ' to owner '+ this.owner().inspect());
                 // KP: this will tell the world to send the event to the right morph
@@ -2760,13 +2758,6 @@ Object.extend(HandMorph.prototype, {
 
         // grabbedMorph.updateOwner(); 
         this.changed(); //for drop shadow
-    },
-    
-    ungrab: function(morph) { 
-        if (this.applyDropShadowFilter) {
-            morph.removeAttributeNS(null, "filter");
-        }
-        // Needs to put back in former owner, position, submorphIndex
     },
     
     bounds: function() {
