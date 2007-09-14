@@ -65,8 +65,8 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
         else return false;
     },
 
-    restoreFromMarkup: function(importer) {
-        ButtonMorph.superClass.restoreFromMarkup.call(this, importer);
+    restorePersistentState: function(importer) {
+        ButtonMorph.superClass.restorePersistentState.call(this, importer);
         this.updateView('all');
     },
 
@@ -1214,8 +1214,8 @@ Object.extend(CheapListMorph.prototype, {
         this.modelPlug = model.makePlug();
     },
 
-    restoreFromMarkup: function(importer) {
-        CheapListMorph.superClass.restoreFromMarkup.call(this, importer);
+    restorePersistentState: function(importer) {
+        CheapListMorph.superClass.restorePersistentState.call(this, importer);
         this.itemList = this.textString.split('\n');
         this.updateView('all');
     },
@@ -1499,6 +1499,8 @@ SliderMorph = HostClass.create('SliderMorph', Morph);
 
 Object.extend(SliderMorph.prototype, {
 
+    baseColor: Color.primary.blue, // KP: stopgap fix for serialization??
+    
     initialize: function(initialBounds, scaleIfAny) {
         SliderMorph.superClass.initialize.call(this, initialBounds, "rect");
         this.scale = (scaleIfAny == null) ? 1.0 : scaleIfAny;
@@ -1506,8 +1508,8 @@ Object.extend(SliderMorph.prototype, {
         slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});
         this.setNamedMorph("slider", slider);
         this.linkToStyles(['slider']);
-
         this.adjustForNewBounds(); 
+
         return this;
     },
 
@@ -1518,8 +1520,8 @@ Object.extend(SliderMorph.prototype, {
         this.modelPlug = model.makePlug();
     },
 
-    restoreFromMarkup: function(importer) {
-        SliderMorph.superClass.restoreFromMarkup.call(this, importer);
+    restorePersistentState: function(importer) {
+        SliderMorph.superClass.restorePersistentState.call(this, importer);
         this.slider = this.getNamedMorph('slider');
         if (!this.slider) {
             console.warn('no slider in %s, %s', this, this.textContent);
@@ -2817,13 +2819,7 @@ Object.extend(LinkMorph.prototype, {
             pathBack.setFill(RadialGradient.makeCenteredGradient(Color.primary.yellow, Color.black));
             otherWorld.addMorph(pathBack);
         } 
-    
-        // var defs = NodeFactory.create('defs');
-        // morph.addChildElement(defs);
-        // defs.appendChild(otherWorld);
         this.myWorld = otherWorld;
-    
-        // morph.assign('myWorld', otherWorld);
 
         // Balloon help support
         MouseOverHandler.observe(this);

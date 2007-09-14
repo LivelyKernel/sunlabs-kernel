@@ -770,8 +770,8 @@ Object.extend(TextMorph.prototype, {
         this.setBorderColor(this.defaultBorderColor);
     },
 
-    restoreFromMarkup: function(importer) {
-        TextMorph.superClass.restoreFromMarkup.call(this, importer);
+    restorePersistentState: function(importer) {
+        TextMorph.superClass.restorePersistentState.call(this, importer);
         this.wrap = this.getAttributeNS(Namespace.LIVELY, "wrap");
         var inset = this.getAttributeNS(Namespace.LIVELY, "inset");
         if (inset) {
@@ -895,14 +895,12 @@ Object.extend(TextMorph.prototype, {
             console.log('evaluating markup ' + txt);
             var morph = importer.importFrom(txt);
             WorldMorph.current().addMorph(morph);
-            /*
-            if (self.getModel()) {
-                copy.model = importer.importModelFrom(modelxml);
-                console.log('restoring from model %s', modelxml);
-                console.log('copy %s has model %s', copy, copy.model);
+            if (self.modelxml) {
+                morph.model = importer.importModelFrom(self.modelxml);
+                console.log('restoring from model %s', self.modelxml);
+                console.log('copy %s has model %s', morph, morph.model);
             }
-            */
-         }]);
+        }]);
     
         menu.addItem(["save as ...", function() { 
             var store = WorldMorph.current().defaultStore;

@@ -2069,7 +2069,7 @@ Object.extend(Morph.prototype, {
         if (importer) { 
 	    importer.addMapping(prevId, this.id); 
 	}
-        this.restoreFromMarkup(importer);    
+        this.restorePersistentState(importer);    
         this.initializeTransientState(null);
 
         if (this.drawBounds) this.updateBoundsElement();
@@ -2079,7 +2079,7 @@ Object.extend(Morph.prototype, {
         }
     },
     
-    restoreFromMarkup: function(importer) {
+    restorePersistentState: function(importer) {
         //  wade through the children
         var children = [];
         for (var desc = this.firstChild; desc != null; desc = desc.nextSibling) {
@@ -3037,7 +3037,6 @@ Object.extend(Morph.prototype, {
             ["-----"],
             [((this.openForDragAndDrop) ? "close DnD" : "open DnD"), this, "toggleDnD", evt.mousePoint],
             ["show Lively markup", this.addSvgInspector.bind(this).curry(this)],
-            ["dump model", this.dumpModel.bind(this).curry(this)], // debugging, will go away
             ["publish shrink-wrapped as...", function(m) { WorldMorph.current().makeShrinkWrappedWorldWith(m, prompt('publish as')) }.curry(this)]
             ];
         var m = MenuMorph(items); 
@@ -3493,15 +3492,12 @@ Object.extend(Importer.prototype, {
             switch (node.tagName) {
             case 'dependent':
                 var id = node.getAttribute('ref');
-
                 var dependent = this.lookupMorph(id);
                 if (!dependent)  {
                     console.warn('dep %s not found', id);
                     continue; 
                 }
-    
                 var plug = {};
-
                 for (var acc = node.firstChild; acc != null;  acc = acc.nextSibling) {
                     if (acc.tagName != 'accessor') continue;
     
@@ -3509,7 +3505,6 @@ Object.extend(Importer.prototype, {
                         plug[acc.getAttribute('formal')] = acc.getAttribute('actual');
                     }
                 }
-
                 //console.log('dependent %s, old id %s modelPlug %s', dependent, id, Object.toJSON(plug));
                 plug.model = model;
                 dependent.connectModel(plug);
@@ -3551,16 +3546,21 @@ Object.extend(Morph.prototype, {
 
         var exporter = new Exporter(this);
         var xml = exporter.serialize();
-        console.log('%s serialized to %s', this, xml);
+
+	console.log('%s serialized to %s', this, xml);        
         var modelxml = (this.getModel() || { toMarkup: function() { return null }}).toMarkup();
-
+	console.log('model %s', modelxml);
         const maxSize = 1500;
-        // xml = '<svg xmlns="http://www.w3.org/2000/svg  xmlns:xlink="http://www.w3.org/1999/xlink> ' + xml + ' </svg>';
-
-        var pane = TextPane(Rectangle(0, 0, 250, 300), xml.truncate(maxSize));
-        var txtMorph = pane.innerMorph();
+	var extent = pt(500, 300);
+        var panel = PanelMorph(extent);
+        var r = Rectangle(0, 0, extent.x/2, extent.y);
+        var left = panel.setNamedMorph("leftPane", TextPane(r, xml.truncate(maxSize)));
+        var right = panel.setNamedMorph("rightPane", TextPane(r, modelxml.truncate(maxSize)));
+        right.align(right.bounds().topLeft(), left.bounds().topRight());
+        var txtMorph = left.innerMorph();
         txtMorph.xml = xml;
-        this.world().addMorph(WindowMorph(pane, "XML dump", this.bounds().topLeft().addPt(pt(5,0))));
+	txtMorph.modelxml = modelxml;
+        this.world().addMorph(WindowMorph(panel, "XML dump", this.bounds().topLeft().addPt(pt(5,0))));
     }
     
 });
