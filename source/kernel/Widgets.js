@@ -2118,7 +2118,11 @@ Object.extend(WorldMorph.prototype, {
         menu.addItem([(Config.suppressBalloonHelp ? "enable balloon help" : "disable balloon help"),
                      this, "toggleBalloonHelp"]);
         menu.addItem(["restart system", this, 'restart']);
-        return menu;
+	menu.addItem(["publish world as ... ", function() { 
+	    console.log('world has morphs %s', WorldMorph.current().submorphs);
+	    WorldMorph.current().makeShrinkWrappedWorldWith(WorldMorph.current().submorphs,
+							    prompt('world start file'));}]);
+	return menu;
     },
    
     toggleBalloonHelp: function() {
@@ -2362,19 +2366,20 @@ Object.extend(WorldMorph.prototype, {
         MenuMorph(items).openIn(this.world(), evt.mousePoint);
     },
 
-    makeShrinkWrappedWorldWith: function(morph, filename) {
+    makeShrinkWrappedWorldWith: function(morphs, filename) {
         if (filename == null) {
-            console.log('null filename, not publishing %s', morph);
+            console.log('null filename, not publishing %s', morphs);
            return;
         }
-        var livelySource = null;
+	console.log('morphs is %s', morphs);
+        var newDoc = null;
         var url = "http://" + this.defaultStore.host + "/" + this.defaultStore.path + "/lively.xhtml";
         new Ajax.Request(url, { 
             method: 'get',
             asynchronous: false,
         
             onSuccess: function(transport) {
-                livelySource = transport.responseXML;
+                newDoc = transport.responseXML;
             }.logErrors('onSuccess'),
             
             onFailure: function(transport) {
@@ -2387,45 +2392,51 @@ Object.extend(WorldMorph.prototype, {
     
         });
 
-        console.log('got source %s url %s', livelySource, url);
-        var mainDefs = livelySource.getElementById('Main');
+        console.log('got source %s url %s', newDoc, url);
+        var mainDefs = newDoc.getElementById('Main');
         console.log('main defs %s', mainDefs);
         var mainScript = mainDefs.getElementsByTagName('script')[0];
-        var preamble = livelySource.createElementNS(Namespace.SVG, "script");
-        preamble.appendChild(livelySource.createCDATASection("Config.skipAllExamples = true"));
+        var preamble = newDoc.createElementNS(Namespace.SVG, "script");
+        preamble.appendChild(newDoc.createCDATASection("Config.skipAllExamples = true"));
         mainDefs.insertBefore(preamble, mainScript);
-        console.log('mainDefs now %s', new XMLSerializer().serializeToString(livelySource));
         url = "http://" + this.defaultStore.host + "/" + this.defaultStore.path + "/" + filename;
-        var container = livelySource.createElementNS(Namespace.SVG, 'g');
-        container.appendChild(livelySource.importNode(morph, true));
+        var container = newDoc.createElementNS(Namespace.SVG, 'g');
+	morphs.each(function(morph) {
+	    console.log('processing morph %s', morph);
+            container.appendChild(newDoc.importNode(morph, true));
+	    container.appendChild(newDoc.createTextNode('\n\n'));
+	});
         container.setAttribute("id", "ShrinkWrapped");
         mainDefs.appendChild(container);
-        mainDefs.appendChild(livelySource.createTextNode('\n'));
-        var postamble = livelySource.createElementNS(Namespace.SVG, "script");
-        postamble.appendChild(livelySource.createCDATASection('WorldMorph.current().addMorphWithContainerId("ShrinkWrapped");'));
+        mainDefs.appendChild(newDoc.createTextNode('\n'));
+        var postamble = newDoc.createElementNS(Namespace.SVG, "script");
+        postamble.appendChild(newDoc.createCDATASection('WorldMorph.current().addMorphsFrom("ShrinkWrapped");'));
         mainDefs.appendChild(postamble);
-
+	var content = new XMLSerializer().serializeToString(newDoc);
+	console.info('writing new file ' + content);
+	var failed = false;
         new Ajax.Request(url, { 
             method: 'put',
             asynchronous: false,
-            body: new XMLSerializer().serializeToString(livelySource),
-
+            body: content,
             onFailure: function(transport) {
                 console.log('problem with %s', transport);
+		failed = true;
             },
-    
             onException: function(e) {
                 console.log('exception  %s, %s', e, Object.toJSON(e));
+		failed = true;
             }
-    
         });
-
     },
 
-    addMorphWithContainerId: function(id) {
-        var node = document.getElementById(id);
-        var widget = Morph.becomeMorph(node.getElementsByTagName('g')[0], new Importer());
-        this.addMorph(widget);
+    addMorphsFrom: function(id) {
+        var container = document.getElementById(id);
+	for (var node = container.firstChild; node != null; node = node.nextSibling) {
+	    console.log('got node %s, %s, %s', node.tagName, node, Morph.prototype.getType.call(node));
+	    if (node.tagName != 'g') continue;
+	    this.addMorph(Morph.becomeMorph(node, new Importer()));
+	}
     }
 
 });
