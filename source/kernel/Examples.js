@@ -2520,7 +2520,7 @@ Object.extend(WeatherWidget.prototype, {
     getImageURL: function()    { return this.imageurl; },
     
     buildView: function() {
-        var panel = PanelMorph(pt(300, 210));
+        var panel = PanelMorph(pt(300, 235));
         panel.setBorderWidth(2);
         //panel.setBorderColor(Color.blue);
         panel.setFill(LinearGradient.makeGradient(Color.white, Color.primary.blue, LinearGradient.WestEast));
@@ -2528,10 +2528,18 @@ Object.extend(WeatherWidget.prototype, {
         // or make the titlebar round depending on the window
         var m; 
 
-        panel.addMorph(m = ImageMorph(Rectangle(50,155,20,20), "http://www.cs.tut.fi/~kuusipal/flair/visibility.gif"));
-        m.setFill(Color.white);
-        panel.addMorph(m = ImageMorph(Rectangle(50,180,20,20), "http://www.cs.tut.fi/~kuusipal/flair/humidity.gif"));
-        m.setFill(Color.white);
+        panel.addMorph(m = ImageMorph(Rectangle(50,105,20,20), "http://www.cs.tut.fi/~kuusipal/flair/temperature.gif"));
+        m.setFill(null);
+        panel.addMorph(m = ImageMorph(Rectangle(50,130,20,20), "http://www.cs.tut.fi/~kuusipal/flair/wind.gif"));
+        m.setFill(null);
+        panel.addMorph(m = ImageMorph(Rectangle(50,155,20,20), "http://www.cs.tut.fi/~kuusipal/flair/windgusts.gif"));
+        m.setFill(null);
+//        panel.addMorph(m = ImageMorph(Rectangle(50,155,20,20), "http://www.cs.tut.fi/~kuusipal/flair/visibility.gif"));
+//        m.setFill(null);
+        panel.addMorph(m = ImageMorph(Rectangle(50,180,20,20), "http://www.cs.tut.fi/~kuusipal/flair/dew.gif"));
+        m.setFill(null);
+        panel.addMorph(m = ImageMorph(Rectangle(50,205,20,20), "http://www.cs.tut.fi/~kuusipal/flair/humidity.gif"));
+        m.setFill(null);
 
         panel.addMorph(m = CheapListMorph(Rectangle(80,3,200,20),["Palo Alto, California", "Tampere, Finland", "London, United Kingdom"]));
         m.connectModel({model: this, getSelection: "getListItem", setSelection: "setListItem"});
@@ -2539,16 +2547,16 @@ Object.extend(WeatherWidget.prototype, {
 
         // build the textfields for the weather panel
         panel.addMorph(TextMorph(Rectangle(80,55, 200,20), "---")).connectModel({model: this, getText: "getWeatherDesc"});
-        panel.addMorph(TextMorph(Rectangle(80,80, 200,20), "---")).connectModel({model: this, getText: "getTemperature"});
-        panel.addMorph(TextMorph(Rectangle(80,105, 200,20), "---")).connectModel({model: this, getText: "getWind"});
-        panel.addMorph(TextMorph(Rectangle(80,130, 200,20), "---")).connectModel({model: this, getText: "getGusts"});
-        panel.addMorph(TextMorph(Rectangle(80,155, 200,20), "---")).connectModel({model: this, getText: "getDewPoint"});
-        panel.addMorph(TextMorph(Rectangle(80,180, 200,20), "---")).connectModel({model: this, getText: "getHumidity"});
+        panel.addMorph(TextMorph(Rectangle(80,105, 200,20), "---")).connectModel({model: this, getText: "getTemperature"});
+        panel.addMorph(TextMorph(Rectangle(80,130, 200,20), "---")).connectModel({model: this, getText: "getWind"});
+        panel.addMorph(TextMorph(Rectangle(80,155, 200,20), "---")).connectModel({model: this, getText: "getGusts"});
+        panel.addMorph(TextMorph(Rectangle(80,180, 200,20), "---")).connectModel({model: this, getText: "getDewPoint"});
+        panel.addMorph(TextMorph(Rectangle(80,205, 200,20), "---")).connectModel({model: this, getText: "getHumidity"});
 //        panel.addMorph(TextMorph(Rectangle(80,230, 200,20), "---")).connectModel({model: this, getText: "getDate"});
     
-        var image = panel.addMorph(ImageMorph(Rectangle(20,32,50,42)));
+        var image = panel.addMorph(ImageMorph(Rectangle(20,55,50,42)));
         image.connectModel({model: this, getURL: "getImageURL"});
-        image.setFill(Color.white);
+        image.setFill(null);
         this.changed('getImageURL');
         return panel;
     },
