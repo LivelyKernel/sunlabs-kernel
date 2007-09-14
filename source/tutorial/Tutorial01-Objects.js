@@ -37,13 +37,11 @@ Object.extend(TutorialMorph.prototype, {
         // Create a sample polygon
         var l2 = loc.addPt(dx);
         widget = Morph(l2.asRectangle(),"rect");
-        widget.setShape(PolygonShape(null, [pt(0,0),pt(70,0),pt(40,30),pt(0,0)],
-                        colors[2],1,Color.black));
+        widget.setShape(PolygonShape([pt(0,0),pt(70,0),pt(40,30),pt(0,0)], colors[2],1,Color.black));
         world.addMorph(widget);
     
-        loc = loc.addPt(dy);    
-    
         // Create sample text widgets
+        loc = loc.addPt(dy);    
         widget = TextMorph(loc.extent(pt(100,50)), "Big Text");
         widget.setFontSize(20);
         widget.setTextColor(Color.blue);
