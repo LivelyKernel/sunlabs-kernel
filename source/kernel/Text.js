@@ -1454,15 +1454,22 @@ Object.category(TextMorph.prototype, "accessing", function() {
         return this.font.getFamily();
     },
     
+    setFontFamily: function(familyName) {
+	this.fontFamily = familyName;
+	this.font = FontInfo.forFamily(this.fontFamily, this.fontSize);
+	this.layoutChanged();
+	this.changed();
+    },
+    
     getFontSize: function() {
         return this.font.getSize();
     },
 
     setFontSize: function(newSize) {
         this.font = FontInfo.forFamily(this.getFontFamily(), newSize);
-        // this.textBox.element.setAttributeNS(null, "font-size", newSize);
         this.inset = pt((this.getFontSize()/3)+2,(this.getFontSize()/3));
-        this.setTextString(this.textString); 
+        this.layoutChanged();
+	this.changed();
     },
     
     setTextString: function(replacement) {

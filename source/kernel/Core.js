@@ -2240,7 +2240,7 @@ Object.extend(Morph.prototype, {
 Object.extend(Morph.prototype, {
     
     setFill: function(fill) {
-        //console.log('setting %s on %s', fill, this);
+        // console.log('setting %s on %s', fill, this);
         if (fill == null) {
             this.assign('fill', null);
             this.shape.setFill("none");
@@ -2250,7 +2250,9 @@ Object.extend(Morph.prototype, {
         } else {
 //      DI: NOTE the cloning should be handled by assign (see comment there)
 //      but it doesn't seem to work right, so we do it here
-            var ref = this.assign('fill', fill.cloneNode(true));
+            // *** stylePanel breaks without this test, yet we already checked for colors!
+	    if(!fill.cloneNode) return;  // DI:  FIXME  this is wrong wrong
+	    var ref = this.assign('fill', fill.cloneNode(true));
             this.shape.setFill(ref);
         }
     }.wrap(Morph.onChange('shape')),
@@ -2299,6 +2301,11 @@ Object.extend(Morph.prototype, {
         spec.borderWidth = this.getBorderWidth();
         spec.borderColor = this.getBorderColor();
         spec.fill = this.getFill();
+	spec.fillType = "simple";
+	if ((spec.fill) instanceof LinearGradient) spec.fillType = "linear gradient";
+	if ((spec.fill) instanceof RadialGradient) spec.fillType = "radial gradient";
+	if (this.baseColor) spec.baseColor = this.baseColor;
+        if (this.fillType) spec.fillType = this.fillType;
         if (this.shape.getEdgeRounding) spec.rounding = + this.shape.getEdgeRounding();
         spec.fillOpacity = this.shape.getFillOpacity();
         if (!spec.fillOpacity) spec.fillOpacity = 1.0;

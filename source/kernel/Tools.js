@@ -154,7 +154,7 @@ Object.extend(StylePanel.prototype, {
         StylePanel.superClass.initialize.call(this);
         this.targetMorph = targetMorph;
         this.originalSpec = targetMorph.makeStyleSpec();
-        for (var p in this.originalSpec) this[p] = this.originalSpec[p];
+	for (var p in this.originalSpec) this[p] = this.originalSpec[p];
     },
 
     getBorderWidth: function() { return this.borderWidth; },
@@ -177,7 +177,7 @@ Object.extend(StylePanel.prototype, {
         this.changed('getRounding');
     },
 
-    getFillTypes: function() { return ["simple fill", "linear gradient", "radial gradient", "stipple"]; },
+    getFillTypes: function() { return ["simple", "linear gradient", "radial gradient", "stipple"]; },
     getFillType: function() { return this.fillType; },
     setFillType: function(type) { this.fillType = type;  this.setFill(); },
     getFillDirs: function() { return ["NorthSouth", "SouthNorth", "EastWest", "WestEast"]; },
@@ -187,11 +187,11 @@ Object.extend(StylePanel.prototype, {
     setColor2: function(color) { this.color2 = color; this.setFill(); },
     
     setFill: function() {
-        if (this.fillType == null) this.fillType = 'simple fill';
-        if (this.color1 == null) this.color1 = Color.gray;
-        if (this.color2 == null) this.color2 = Color.gray;
+        if (this.fillType == null) this.fillType = 'simple';
+        if (this.color1 == null) this.color1 = this.fill;
+        if (this.color2 == null) this.color2 = this.fill;
 
-        if (this.fillType == 'simple fill')  this.targetMorph.setFill(this.color1);
+        if (this.fillType == 'simple')  this.targetMorph.setFill(this.color1);
     
         if (this.fillType == 'linear gradient') {
             if (this.fillDir == null) this.fillDir = 'NorthSouth';
@@ -224,6 +224,20 @@ Object.extend(StylePanel.prototype, {
         this.targetMorph.setTextColor(this.textColor);
     },
 
+    getFontFamily: function() { return this.targetMorph.getFontFamily(); },
+    
+    setFontFamily: function(familyName) {
+        this.familyName = familyName ;
+	this.targetMorph.setFontFamily(familyName);
+    },
+
+    getFontSize: function() { return this.targetMorph.getFontSize().toString(); },
+    
+    setFontSize: function(fontSize) {
+        this.fontSize = eval(fontSize) ;
+	this.targetMorph.setFontSize(this.fontSize);
+    },
+
     openIn: function(world, location) {
         var rect = ((location==null) ? location : pt(50,50)).extent(pt(340,100));
         world.addMorph(WindowMorph(this.buildView(rect), 'Style Panel'));
@@ -239,7 +253,7 @@ Object.extend(StylePanel.prototype, {
         var y = 10;
 
         panel.addMorph(TextMorph.makeLabel(Rectangle(50, y, 100, 20), 'Border Width'));
-        panel.addMorph(m = PrintMorph(Rectangle(160, y, 30, 20)));
+        panel.addMorph(m = PrintMorph(Rectangle(150, y, 40, 20)));
         m.connectModel({model: this, getValue: "getBorderWidth", setValue: "setBorderWidth"});
         panel.addMorph(m = SliderMorph(Rectangle(200, y, 100, 20), 10.0));
         m.connectModel({model: this, getValue: "getBorderWidth", setValue: "setBorderWidth"});
@@ -252,7 +266,7 @@ Object.extend(StylePanel.prototype, {
 
         if (this.targetMorph.shape.roundEdgesBy) {
             panel.addMorph(TextMorph.makeLabel(Rectangle(50, y, 100, 20), 'Round Corners'));
-            panel.addMorph(m = PrintMorph(Rectangle(160, y, 30, 20)));
+            panel.addMorph(m = PrintMorph(Rectangle(150, y, 40, 20)));
             m.connectModel({model: this, getValue: "getRounding", setValue: "setRounding"});
             panel.addMorph(m = SliderMorph(Rectangle(200, y, 100, 20), 50.0));
             m.connectModel({model: this, getValue: "getRounding", setValue: "setRounding"});
@@ -288,6 +302,16 @@ Object.extend(StylePanel.prototype, {
             panel.addMorph(m = ColorPickerMorph(Rectangle(250, y, 50, 30)));
             m.connectModel({model: this, setColor: "setTextColor"});
             y += 40;
+
+            panel.addMorph(TextMorph.makeLabel(Rectangle(50, y, 100, 20), 'Font Family'));
+            panel.addMorph(m = TextMorph(Rectangle(150, y, 150, 20)));
+            m.connectModel({model: this, getText: "getFontFamily", setText: "setFontFamily"});
+            y += 30;
+
+            panel.addMorph(TextMorph.makeLabel(Rectangle(50, y, 100, 20), 'Font Size'));
+            panel.addMorph(m = TextMorph(Rectangle(150, y, 50, 20)));
+            m.connectModel({model: this, getText: "getFontSize", setText: "setFontSize"});
+            y += 30;
         }
 
         var oldBounds = panel.shape.bounds();
