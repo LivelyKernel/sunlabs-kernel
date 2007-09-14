@@ -1959,35 +1959,6 @@ Object.extend(Morph, {
         return ++Morph.morphCounter;
     },
 
-    becomeMorph: function(node, importer) {
-        //console.log('making morph from %s', node);
-        // call reflectively b/c 'this' is not a DisplayObject yet. 
-        var morphTypeName = DisplayObject.prototype.getType.call(node); 
-        //console.log('have morph %s', morphTypeName);
-
-        if (!morphTypeName || !window[morphTypeName]) {
-            throw new Error('node cannot be a morph of type ' + morphTypeName);
-        }
-    
-        node = HostClass.becomeInstance(node, window[morphTypeName]);
-
-        node.pvtSetTransform(node.retrieveTransform());
-
-        var prevId = node.pickId();
-        if (importer) { importer.addMapping(prevId, node.id); }
-        
-        node.restoreFromMarkup(importer);    
-        node.initializeTransientState(null);
-
-        if (Morph.prototype.drawBounds) node.updateBoundsElement();
-
-        if (node.activeScripts) {
-            console.log('started stepping %s', node);
-            node.startSteppingScripts();
-        }
-
-        return node; 
-    },
 
     // this function creates an advice function that ensures that the mutation is properly recorded
     onChange: function(fieldName) {
@@ -2091,6 +2062,22 @@ Object.extend(Morph.prototype, {
         this.initializeTransientState(initialBounds);
         if (this.drawBounds) this.updateBoundsElement();
     },
+
+    reinitialize: function(importer) {
+        this.pvtSetTransform(this.retrieveTransform());
+        var prevId = this.pickId();
+        if (importer) { 
+	    importer.addMapping(prevId, this.id); 
+	}
+        this.restoreFromMarkup(importer);    
+        this.initializeTransientState(null);
+
+        if (this.drawBounds) this.updateBoundsElement();
+        if (this.activeScripts) {
+            console.log('started stepping %s', this);
+            this.startSteppingScripts();
+        }
+    },
     
     restoreFromMarkup: function(importer) {
         //  wade through the children
@@ -2178,7 +2165,7 @@ Object.extend(Morph.prototype, {
         case 'Submorphs':
             this.submorphs = DisplayObjectList.become(element, type);
             //console.log('recursing into children of %s', this);
-            this.submorphs.each(function(m) { Morph.becomeMorph(m, importer); });
+            this.submorphs.each(function(m) { importer.importFromNode(m); });
             return true;
         case 'FocusHalo':
             return true;
@@ -3472,9 +3459,23 @@ Object.extend(Importer.prototype, {
             return null;
         }
     },
+
+    importFromNode: function(node) {
+        ///console.log('making morph from %s %s', node, node.getAttributeNS(Namespace.LIVELY, "type"));
+        // call reflectively b/c 'this' is not a DisplayObject yet. 
+        var morphTypeName = DisplayObject.prototype.getType.call(node); 
+        //console.log('have morph %s', morphTypeName);
+
+        if (!morphTypeName || !window[morphTypeName]) {
+            throw new Error('node cannot be a morph of type ' + morphTypeName);
+        }
+        HostClass.becomeInstance(node, window[morphTypeName]);
+	node.reinitialize(this);
+        return node; 
+    },
     
     importFrom: function(string) {
-        return Morph.becomeMorph(this.parse(string), this);
+        return this.importFromNode(this.parse(string), this);
     },
 
     parse: function(string) {

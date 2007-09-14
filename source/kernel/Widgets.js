@@ -2394,9 +2394,8 @@ Object.extend(WorldMorph.prototype, {
         });
 
         console.log('got source %s url %s', newDoc, url);
-        var mainDefs = newDoc.getElementById('Main');
-        console.log('main defs %s', mainDefs);
-        var mainScript = mainDefs.getElementsByTagName('script')[0];
+        var mainDefs = newDoc.getElementById('Defaults');
+        var mainScript = newDoc.getElementById('Main');
         var preamble = newDoc.createElementNS(Namespace.SVG, "script");
         preamble.appendChild(newDoc.createCDATASection("Config.skipAllExamples = true"));
         mainDefs.insertBefore(preamble, mainScript);
@@ -2433,11 +2432,14 @@ Object.extend(WorldMorph.prototype, {
 
     addMorphsFrom: function(id) {
         var container = document.getElementById(id);
+	var morphs = [];
 	for (var node = container.firstChild; node != null; node = node.nextSibling) {
-	    console.log('got node %s, %s, %s', node.tagName, node, Morph.prototype.getType.call(node));
 	    if (node.tagName != 'g') continue;
-	    this.addMorph(Morph.becomeMorph(node, new Importer()));
+	    morphs.push(node);
 	}
+	
+	var importer = new Importer();
+	morphs.each(function(m) { this.addMorph(importer.importFromNode(m)) }.bind(this));
     }
 
 });
