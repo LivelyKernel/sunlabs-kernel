@@ -3048,7 +3048,7 @@ Object.extend(Morph.prototype, {
             ["put me in a tab", this, "putMeInATab", this.position()],
             ["put me in the open", this, "putMeInTheWorld", this.position()],
             ["-----"],
-            [((!this.openForDragAndDrop) ? "close DnD" : "open DnD"), this, "toggleDnD", evt.mousePoint],
+            [((this.openForDragAndDrop) ? "close DnD" : "open DnD"), this, "toggleDnD", evt.mousePoint],
             ["show Lively markup", this.addSvgInspector.bind(this).curry(this)],
             ["dump model", this.dumpModel.bind(this).curry(this)], // debugging, will go away
             ["publish shrink-wrapped as...", function(m) { WorldMorph.current().makeShrinkWrappedWorldWith(m, prompt('publish as')) }.curry(this)]
