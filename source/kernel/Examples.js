@@ -86,6 +86,7 @@ Object.extend(WidgetTester.prototype, {
         
         return panel;
     }
+
 });
 
 // ===========================================================================
@@ -999,7 +1000,7 @@ Object.extend(Sun3DMorph.prototype, {
         this.wireObject.paint(this.morphArray, angleX, angleY, 0);
     
         return true;
-    },
+    }
 
 });
 

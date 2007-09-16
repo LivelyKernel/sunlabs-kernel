@@ -7,6 +7,7 @@
  * This 'class' renders single words
  */ 
 var TextWord = HostClass.fromElementType('tspan', false);
+
 Object.extend(TextWord, {
 
     become: function(node) {
@@ -554,13 +555,12 @@ Object.extend(TextBox.prototype, {
         this.setTextColor(textColor);
         this.setType("TextBox");
         this.fontInfo = font;
-	font.applyTo(this);
+        font.applyTo(this);
 
         this.lines = null;//: TextLine[]
         this.tabWidth = 4;
         this.tabsAsSpaces = true;
     },
-    
 
     recoverTextContent: function() {
 
@@ -589,7 +589,7 @@ Object.extend(TextBox.prototype, {
     },
 
     getTextColor: function() {
-	return Color.parse(this.getFill());
+        return Color.parse(this.getFill());
     },
 
     setTabWidth: function(width, asSpaces) {
@@ -672,6 +672,7 @@ Object.extend(TextBox.prototype, {
             this.parentNode.removeChild(this);
         }
     }
+
 });
 
 /**
@@ -709,7 +710,7 @@ Object.extend(TextMorph, {
 
         morph.okToBeGrabbedBy = function(evt) { this.isDesignMode() ? this : null; }
         return morph;
-    },
+    }
     
 });
 
@@ -790,7 +791,7 @@ Object.extend(TextMorph.prototype, {
             // console.log('found textbox %s %s', this.textBox, this.textBox && this.textBox.textString);
             this.textString = this.textBox.textString;
             this.font = this.textBox.fontInfo;
-	    this.textColor = this.textBox.getTextColor();
+            this.textColor = this.textBox.getTextColor();
             return true;
         case 'Selection':
             // that's ok, it's actually transient 
@@ -1376,8 +1377,8 @@ Object.extend(TextMorph.prototype, {
         var bracketIndex = CharSet.leftBrackets.indexOf(key);
 
         if (bracketIndex >= 0) this.addOrRemoveBrackets(bracketIndex); 
-
     }
+
 });
 
 // TextMorph accessor functions
@@ -1453,10 +1454,10 @@ Object.category(TextMorph.prototype, "accessing", function() {
     },
     
     setFontFamily: function(familyName) {
-	this.fontFamily = familyName;
-	this.font = FontInfo.forFamily(this.fontFamily, this.fontSize);
-	this.layoutChanged();
-	this.changed();
+        this.fontFamily = familyName;
+        this.font = FontInfo.forFamily(this.fontFamily, this.fontSize);
+        this.layoutChanged();
+        this.changed();
     },
     
     getFontSize: function() {
@@ -1467,7 +1468,7 @@ Object.category(TextMorph.prototype, "accessing", function() {
         this.font = FontInfo.forFamily(this.getFontFamily(), newSize);
         this.inset = pt((this.getFontSize()/3)+2,(this.getFontSize()/3));
         this.layoutChanged();
-	this.changed();
+        this.changed();
     },
     
     setTextString: function(replacement) {

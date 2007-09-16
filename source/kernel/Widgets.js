@@ -284,6 +284,7 @@ Object.extend(ImageButtonMorph.prototype, {
 IconMorph = HostClass.create('IconMorph', ImageMorph);
 
 Object.extend(IconMorph.prototype, {
+
     initialize: function(viewPort, url, name, targetUrl) {
         IconMorph.superClass.initialize.call(this, viewPort, url);
         this.label = new TextMorph.makeLabel(Rectangle(viewPort.width, viewPort.height/3, 100, 30), name);
@@ -301,6 +302,7 @@ Object.extend(IconMorph.prototype, {
     open: function () {
         window.open(this.target);
     }
+
 });
 
 // ===========================================================================
@@ -488,12 +490,12 @@ Object.extend(TitleTabMorph.prototype, {
     handlesMouseDown: function() { return true; },
 
     onMouseDown: function(evt) {
-console.log('mouseDown');
+        console.log('mouseDown');
         evt.hand.setMouseFocus(this);
     },
 
     onMouseUp: function(evt) {
-console.log('mouseUp');
+        console.log('mouseUp');
         evt.hand.setMouseFocus(null);
         this.windowMorph.toggleCollapse();
     }
@@ -599,7 +601,7 @@ Object.extend(WindowMorph.prototype, {
         targetMorph.setPosition(this.contentOffset);
         this.linkToStyles(['window']);
         this.closeAllToDnD();
-	return this;
+        return this;
     },
 
     makeTitleBar: function(headline, width) {
@@ -662,12 +664,12 @@ Object.extend(WindowMorph.prototype, {
     
     showTargetMorphMenu: function(evt) { 
         var tm = this.targetMorph.morphMenu(evt);
-      	tm.replaceItemNamed("remove", ["remove", this.initiateShutdown.bind(this)]);
-      	tm.replaceItemNamed("reset rotation", ["reset rotation", this.setRotation.bind(this).curry(0)]);
-      	tm.replaceItemNamed("reset scaling", ["reset scaling", this.setScale.bind(this).curry(1)]);
-      	tm.removeItemNamed("duplicate");
-      	tm.removeItemNamed("turn fisheye on");
-      	tm.openIn(WorldMorph.current(), evt.mousePoint, false, this.targetMorph.inspect().truncate()); 
+        tm.replaceItemNamed("remove", ["remove", this.initiateShutdown.bind(this)]);
+        tm.replaceItemNamed("reset rotation", ["reset rotation", this.setRotation.bind(this).curry(0)]);
+        tm.replaceItemNamed("reset scaling", ["reset scaling", this.setScale.bind(this).curry(1)]);
+        tm.removeItemNamed("duplicate");
+        tm.removeItemNamed("turn fisheye on");
+        tm.openIn(WorldMorph.current(), evt.mousePoint, false, this.targetMorph.inspect().truncate()); 
     },
 
     updateView: function(aspect, controller) {
@@ -1363,7 +1365,7 @@ Object.extend(CheapListMorph.prototype, {
 
     setSelection: function(item) {
         if (this.modelPlug) this.setModelValue('setSelection', item); 
-    },
+    }
 
 });
 
@@ -1489,6 +1491,7 @@ Object.extend(MenuMorph.prototype, {
             }
         }
     }
+
 });
 
 /**
@@ -2121,11 +2124,11 @@ Object.extend(WorldMorph.prototype, {
         menu.addItem([(Config.suppressBalloonHelp ? "enable balloon help" : "disable balloon help"),
                      this, "toggleBalloonHelp"]);
         menu.addItem(["restart system", this, 'restart']);
-	menu.addItem(["publish world as ... ", function() { 
-	    console.log('world has morphs %s', WorldMorph.current().submorphs);
-	    WorldMorph.current().makeShrinkWrappedWorldWith(WorldMorph.current().submorphs,
-							    prompt('world start file'));}]);
-	return menu;
+        menu.addItem(["publish world as ... ", function() { 
+        console.log('world has morphs %s', WorldMorph.current().submorphs);
+        WorldMorph.current().makeShrinkWrappedWorldWith(WorldMorph.current().submorphs,
+            prompt('world start file'));}]);
+        return menu;
     },
    
     toggleBalloonHelp: function() {
@@ -2374,7 +2377,7 @@ Object.extend(WorldMorph.prototype, {
             console.log('null filename, not publishing %s', morphs);
            return;
         }
-	console.log('morphs is %s', morphs);
+        console.log('morphs is %s', morphs);
         var newDoc = null;
         var url = "http://" + this.defaultStore.host + "/" + this.defaultStore.path + "/lively.xhtml";
         new Ajax.Request(url, { 
@@ -2403,45 +2406,45 @@ Object.extend(WorldMorph.prototype, {
         mainDefs.insertBefore(preamble, mainScript);
         url = "http://" + this.defaultStore.host + "/" + this.defaultStore.path + "/" + filename;
         var container = newDoc.createElementNS(Namespace.SVG, 'g');
-	morphs.each(function(morph) {
-	    console.log('processing morph %s', morph);
+        morphs.each(function(morph) {
+            console.log('processing morph %s', morph);
             container.appendChild(newDoc.importNode(morph, true));
-	    container.appendChild(newDoc.createTextNode('\n\n'));
-	});
+            container.appendChild(newDoc.createTextNode('\n\n'));
+        });
         container.setAttribute("id", "ShrinkWrapped");
         mainDefs.appendChild(container);
         mainDefs.appendChild(newDoc.createTextNode('\n'));
         var postamble = newDoc.createElementNS(Namespace.SVG, "script");
         postamble.appendChild(newDoc.createCDATASection('WorldMorph.current().addMorphsFrom("ShrinkWrapped");'));
         mainDefs.appendChild(postamble);
-	var content = new XMLSerializer().serializeToString(newDoc);
-	console.info('writing new file ' + content);
-	var failed = false;
+        var content = new XMLSerializer().serializeToString(newDoc);
+        console.info('writing new file ' + content);
+        var failed = false;
         new Ajax.Request(url, { 
             method: 'put',
             asynchronous: false,
             body: content,
             onFailure: function(transport) {
                 console.log('problem with %s', transport);
-		failed = true;
+                failed = true;
             },
             onException: function(e) {
                 console.log('exception  %s, %s', e, Object.toJSON(e));
-		failed = true;
+                failed = true;
             }
         });
     },
 
     addMorphsFrom: function(id) {
         var container = document.getElementById(id);
-	var morphs = [];
-	for (var node = container.firstChild; node != null; node = node.nextSibling) {
-	    if (node.tagName != 'g') continue;
-	    morphs.push(node);
-	}
-	
-	var importer = new Importer();
-	morphs.each(function(m) { this.addMorph(importer.importFromNode(m)) }.bind(this));
+        var morphs = [];
+        for (var node = container.firstChild; node != null; node = node.nextSibling) {
+            if (node.tagName != 'g') continue;
+            morphs.push(node);
+        }
+
+        var importer = new Importer();
+        morphs.each(function(m) { this.addMorph(importer.importFromNode(m)) }.bind(this));
     }
 
 });
@@ -2482,7 +2485,7 @@ Object.extend(DomEventHandler.prototype, {
             console.log("unknown event type " + evt.type);
         }
         evt.stopPropagation();
-    }.logErrors('Event Handler'),
+    }.logErrors('Event Handler')
     
 });
 
@@ -2496,6 +2499,7 @@ Object.extend(DomEventHandler.prototype, {
 HandMorph = HostClass.create('HandMorph', Morph);
 
 Object.extend(HandMorph.prototype, {
+
     shadowOffset: pt(5,5),
     handleOnCapture: true,
     applyDropShadowFilter: false,
@@ -2641,18 +2645,18 @@ Object.extend(HandMorph.prototype, {
                 // If laden, then drop on mouse up or down
                 var m = this.topSubmorph();
                 var receiver = this.owner().morphToGrabOrReceiveDroppingMorph(evt, m);
-		// For now, failed drops go to world; later maybe put them back?
+                // For now, failed drops go to world; later maybe put them back?
                 if (receiver == null) receiver = this.world();
-		console.log('dropping %s on %s', m, receiver);
+                console.log('dropping %s on %s', m, receiver);
             
-		while (this.hasSubmorphs()) { // drop in same z-order as in hand
-                        receiver.addMorph(this.submorphs.firstChild);
-		}
-                   //DI: May need to be updated for multiple drop above...
-                   //println('changing ' + m);
-                   //m.changed(); // KP: maybe needed for ClipMorphs
-                   // m.updateOwner(); 
-                   //m.updateBackendFields('origin'); 
+                while (this.hasSubmorphs()) { // drop in same z-order as in hand
+                    receiver.addMorph(this.submorphs.firstChild);
+                }
+                // DI: May need to be updated for multiple drop above...
+                // println('changing ' + m);
+                // m.changed(); // KP: maybe needed for ClipMorphs
+                // m.updateOwner(); 
+                // m.updateBackendFields('origin'); 
             } else {
                 // console.log('hand dispatching event ' + event.type + ' to owner '+ this.owner().inspect());
                 // KP: this will tell the world to send the event to the right morph

@@ -45,14 +45,14 @@ Object.extend(SimpleBrowser.prototype, {
     },
 
     buildView: function(extent) {
-	var panel = PanelMorph.makeBrowser(extent, 0.4);
-	var m = panel.getNamedMorph('leftPane');
-	m.connectModel({model: this, getList: "getClassList", setSelection: "setClassName"});
-	m = panel.getNamedMorph('rightPane');
-	m.connectModel({model: this, getList: "getMethodList", setSelection: "setMethodName"});
-	m = panel.getNamedMorph('bottomPane');
-	m.connectModel({model: this, getText: "getMethodString", setText: "setMethodString"});
-	return panel;
+        var panel = PanelMorph.makeBrowser(extent, 0.4);
+        var m = panel.getNamedMorph('leftPane');
+        m.connectModel({model: this, getList: "getClassList", setSelection: "setClassName"});
+        m = panel.getNamedMorph('rightPane');
+        m.connectModel({model: this, getList: "getMethodList", setSelection: "setMethodName"});
+        m = panel.getNamedMorph('bottomPane');
+        m.connectModel({model: this, getText: "getMethodString", setText: "setMethodString"});
+        return panel;
     }
     
 });
@@ -87,12 +87,13 @@ Object.extend(SimpleInspector.prototype, {
     },
 
     setPropName: function(n, v) {
-	this.propName = n; this.changed("getPropText", v) },
+        this.propName = n; this.changed("getPropText", v) },
 
     getPropList: function() { return Object.properties(this.inspectee); },
 
     getPropText: function() {
-	return Object.inspect(this.selectedItem()).withNiceDecimals(); },
+        return Object.inspect(this.selectedItem()).withNiceDecimals();
+    },
 
     setPropText: function(txt, v) { this.inspectee[this.propName] = this.inspectee.evalInThis(txt); },
 
@@ -107,14 +108,14 @@ Object.extend(SimpleInspector.prototype, {
     },
 
     buildView: function(rect) {
-	var panel = PanelMorph.makeInspector(rect.extent(), 0.4);
-	var m = panel.getNamedMorph('leftPane');
-	m.connectModel({model: this, getList: "getPropList", setSelection: "setPropName"});
-	m = panel.getNamedMorph('rightPane');
-	m.connectModel({model: this, getText: "getPropText", setText: "setPropText", doitContext: "contextForEval"});
-	m = panel.getNamedMorph('bottomPane');
-	m.connectModel({model: this, doitContext: "contextForEval"});	
-	m.innerMorph().setTextString("doits here have this === inspectee");
+        var panel = PanelMorph.makeInspector(rect.extent(), 0.4);
+        var m = panel.getNamedMorph('leftPane');
+        m.connectModel({model: this, getList: "getPropList", setSelection: "setPropName"});
+        m = panel.getNamedMorph('rightPane');
+        m.connectModel({model: this, getText: "getPropText", setText: "setPropText", doitContext: "contextForEval"});
+        m = panel.getNamedMorph('bottomPane');
+        m.connectModel({model: this, doitContext: "contextForEval"});
+        m.innerMorph().setTextString("doits here have this === inspectee");
 
         var thisModel = this;
         panel.morphMenu = function(evt) { 
@@ -128,6 +129,7 @@ Object.extend(SimpleInspector.prototype, {
 
         return WindowMorph(panel, 'Inspector');
     }
+
 });
 
 // ===========================================================================
@@ -154,7 +156,7 @@ Object.extend(StylePanel.prototype, {
         StylePanel.superClass.initialize.call(this);
         this.targetMorph = targetMorph;
         this.originalSpec = targetMorph.makeStyleSpec();
-	for (var p in this.originalSpec) this[p] = this.originalSpec[p];
+        for (var p in this.originalSpec) this[p] = this.originalSpec[p];
     },
 
     getBorderWidth: function() { return this.borderWidth; },
@@ -228,14 +230,14 @@ Object.extend(StylePanel.prototype, {
     
     setFontFamily: function(familyName) {
         this.familyName = familyName ;
-	this.targetMorph.setFontFamily(familyName);
+        this.targetMorph.setFontFamily(familyName);
     },
 
     getFontSize: function() { return this.targetMorph.getFontSize().toString(); },
     
     setFontSize: function(fontSize) {
         this.fontSize = eval(fontSize) ;
-	this.targetMorph.setFontSize(this.fontSize);
+        this.targetMorph.setFontSize(this.fontSize);
     },
 
     openIn: function(world, location) {
