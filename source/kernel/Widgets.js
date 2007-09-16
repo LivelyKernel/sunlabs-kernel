@@ -2116,18 +2116,20 @@ Object.extend(WorldMorph.prototype, {
     morphMenu: function(evt) { 
         var menu = WorldMorph.superClass.morphMenu.call(this,evt);
         menu.keepOnlyItemsNamed(["inspect", "style"]);
+        menu.addItem([(Config.suppressBalloonHelp ? "enable balloon help" : "disable balloon help"),
+                     this, "toggleBalloonHelp"]);
         menu.addLine();
         menu.addItem(["new object...", this, 'addMorphs', evt]);
+        menu.addLine();
         menu.addItem(["choose display theme...", this, 'chooseDisplayTheme']);
         menu.addItem([(Config.useDebugBackground ? "use normal background" : "use debug background"),
                      this, 'toggleDebugBackground']);
-        menu.addItem([(Config.suppressBalloonHelp ? "enable balloon help" : "disable balloon help"),
-                     this, "toggleBalloonHelp"]);
-        menu.addItem(["restart system", this, 'restart']);
+        menu.addLine();
         menu.addItem(["publish world as ... ", function() { 
-        console.log('world has morphs %s', WorldMorph.current().submorphs);
-        WorldMorph.current().makeShrinkWrappedWorldWith(WorldMorph.current().submorphs,
+            console.log('world has morphs %s', WorldMorph.current().submorphs);
+            WorldMorph.current().makeShrinkWrappedWorldWith(WorldMorph.current().submorphs,
             prompt('world start file'));}]);
+        menu.addItem(["restart system", this, 'restart']);
         return menu;
     },
    
