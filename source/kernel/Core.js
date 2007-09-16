@@ -24,7 +24,7 @@ var console = window.parent.console;
 
 Namespace =  {
     SVG : Canvas.getAttribute("xmlns"),
-    LIVELY : Prototype.Browser.WebKit ? null : Canvas.getAttribute("xmlns:lively"), // Safari XMLSerializer seems to do wierd things w/namespaces
+    LIVELY : Prototype.Browser.WebKit ? null : Canvas.getAttribute("xmlns:lively"), // Safari XMLSerializer seems to do weird things w/namespaces
     XLINK : Canvas.getAttribute("xmlns:xlink"),
     DAV : Canvas.getAttribute("xmlns:D"),
     XHTML: document.documentElement.getAttribute("xmlns") 
@@ -32,6 +32,7 @@ Namespace =  {
 
 var Loader = Class.create();
 Object.extend(Loader, {
+
     loadScript: function(ns, url) {
         var script = document.createElementNS(Namespace.XHTML, "script");
         script.setAttributeNS(Namespace.XHTML, "src", url);
@@ -40,9 +41,9 @@ Object.extend(Loader, {
     },
     
     insertContents: function(iframe) {
-	var node = iframe.contentDocument.documentElement;	
-	document.documentElement.appendChild(document.adoptNode(node));
-    },
+        var node = iframe.contentDocument.documentElement;
+        document.documentElement.appendChild(document.adoptNode(node));
+    }
     
 });
 
@@ -167,6 +168,7 @@ Object.extend(Class, {
 Category = function() {};
 
 Object.extend(Object, {
+
     // true prototypal inheritance like in, say, Self
     derive: function(parent, initializer) {
         var result = initializer || {};
@@ -410,6 +412,7 @@ Object.category(Number.prototype, 'extensions', function() { return {
     toRadians: function() { 
         return this/180 * Math.PI; 
     }
+
 }});
 
 // ===========================================================================
@@ -474,6 +477,7 @@ Object.category(HostClass, "core", function() { return {
         constr.name = name;
         return constr;
     }
+
 }});
 
 // ===========================================================================
@@ -647,6 +651,7 @@ Object.extend(Rectangle.prototype, {
     },
     
     expandBy: function(delta) { return this.insetBy(0-delta) }
+
 });
 
 Object.category(Rectangle, 'statics', function () { return {
@@ -655,6 +660,7 @@ Object.category(Rectangle, 'statics', function () { return {
 }});
 
 Object.category(Rectangle.prototype, 'part naming', function() { return {
+
     partNamed: function(partName) { 
         return this[partName].call(this); 
     },
@@ -706,6 +712,7 @@ Object.category(Rectangle.prototype, 'part naming', function() { return {
 }});
 
 Object.category(Rectangle, 'factories',  function() { return {
+
     fromAny: function(ptA, ptB) {
         return rect(ptA.minPt(ptB), ptA.maxPt(ptB));
     },
@@ -721,6 +728,7 @@ Object.category(Rectangle, 'factories',  function() { return {
     
         return rect(min, max); 
     }
+
 }});
 
 // Shorthand for creating rectangle objects
@@ -782,7 +790,6 @@ Object.category(Color, 'core', function() { return {
     yellow: new Color(0.8,0.8,0),
     blue:  new Color(0,0,0.8),
     purple: new Color(1,0,1),
-
 
     random: function() {
         return new Color(Math.random(),Math.random(),Math.random()); 
@@ -941,6 +948,7 @@ Object.extend(RadialGradient, {
         // FIXME revisit the meaning of the arguments
         return RadialGradient.create(pt(0.5, 0.5), 0.4).addStop(0, stopColor1).addStop(1, stopColor2);
     }
+
 });
 
 Object.extend(RadialGradient.prototype, { 
@@ -993,7 +1001,7 @@ Object.extend(Transform, {
         var matrix = Canvas.createSVGMatrix();
         matrix = matrix.translate(delta.x, delta.y).rotate(angleInRadians.toDegrees()).scale(scale);
         return Transform.fromMatrix(matrix);
-    },
+    }
 
 });
 
@@ -1555,6 +1563,7 @@ Object.extend(RectShape.prototype, {
         this.setAttributeNS(null, "ry", r);
         return this;
     }
+
 });
 
 /**
@@ -1770,6 +1779,7 @@ Object.extend(PolygonShape.prototype, {
 
         return HandleMorph(loc, shape, hand, targetMorph, partName); 
     }
+
 });
 
 /**
@@ -1891,6 +1901,7 @@ Object.extend(PathShape.prototype, {
         }
         return Rectangle.unionPts(vertices);
     }
+
 });
 
 DisplayObjectList = function(type) {
@@ -2067,8 +2078,8 @@ Object.extend(Morph.prototype, {
         this.pvtSetTransform(this.retrieveTransform());
         var prevId = this.pickId();
         if (importer) { 
-	    importer.addMapping(prevId, this.id); 
-	}
+            importer.addMapping(prevId, this.id); 
+        }
         this.restorePersistentState(importer);    
         this.initializeTransientState(null);
 
@@ -2230,19 +2241,19 @@ Object.extend(Morph.prototype, {
             this.assign('fill', null);
             this.shape.setFill(fill.toString());
         } else {
-//      DI: NOTE the cloning should be handled by assign (see comment there)
-//      but it doesn't seem to work right, so we do it here
-	    var ref = this.assign('fill', fill.cloneNode(true));
+//          DI: NOTE the cloning should be handled by assign (see comment there)
+//          but it doesn't seem to work right, so we do it here
+            var ref = this.assign('fill', fill.cloneNode(true));
             this.shape.setFill(ref);
         }
     }.wrap(Morph.onChange('shape')),
 
     getFill: function() {
         var fillObj = this.shape.getFill();
-	// if the fill is a color-string, then make a real color
-	// DI: there must be a better way to test for strings :-(
-	if (fillObj.isString()) return Color.parse(fillObj);
-	return fillObj
+        // if the fill is a color string, then make a real color
+        // DI: there must be a better way to test for strings :-(
+        if (fillObj.isString()) return Color.parse(fillObj);
+        return fillObj
     },
 
     setBorderColor: function(newColor) { this.shape.setStroke(newColor); }.wrap(Morph.onChange('shape')),
@@ -2285,10 +2296,10 @@ Object.extend(Morph.prototype, {
         spec.borderWidth = this.getBorderWidth();
         spec.borderColor = this.getBorderColor();
         spec.fill = this.getFill();
-	spec.fillType = "simple";
-	if ((spec.fill) instanceof LinearGradient) spec.fillType = "linear gradient";
-	if ((spec.fill) instanceof RadialGradient) spec.fillType = "radial gradient";
-	if (this.baseColor) spec.baseColor = this.baseColor;
+        spec.fillType = "simple";
+        if ((spec.fill) instanceof LinearGradient) spec.fillType = "linear gradient";
+        if ((spec.fill) instanceof RadialGradient) spec.fillType = "radial gradient";
+        if (this.baseColor) spec.baseColor = this.baseColor;
         if (this.fillType) spec.fillType = this.fillType;
         if (this.shape.getEdgeRounding) spec.rounding = + this.shape.getEdgeRounding();
         spec.fillOpacity = this.shape.getFillOpacity();
@@ -2655,6 +2666,7 @@ Object.extend(Morph.prototype, {
         this.layoutChanged();
         return this; 
     }
+
 });
 
 // Morph bindings to its parent, world, canvas, etc.
@@ -2813,6 +2825,7 @@ Object.category(Morph.prototype, 'transforms', function() { return {
             }
         }
     }
+
 }});
 
 // Morph mouse event handling functions
@@ -2982,6 +2995,7 @@ Object.extend(MouseHandlerForRelay.prototype, {
     handlesMouseDown: function(evt) { 
         return true; 
     }
+
 });
 
 // Morph grabbing and menu functionality
@@ -3094,7 +3108,7 @@ Object.extend(Morph.prototype, {
     },
 
     closeAllToDnD: function(loc) {
-	// Close this and all submorphs to drag and drop
+        // Close this and all submorphs to drag and drop
         this.withAllSubmorphsDo( function() { this.closeDnD(); });
     },
 
@@ -3125,12 +3139,12 @@ Object.extend(Morph.prototype, {
     },
 
     morphToGrabOrReceiveDroppingMorph: function(evt, droppingMorph) {
-	return this.morphToGrabOrReceive(evt, droppingMorph, true);
-	},
+        return this.morphToGrabOrReceive(evt, droppingMorph, true);
+    },
 
     morphToGrabOrReceive: function(evt, droppingMorph, checkForDnD) {
-	// If checkForDnD is false, return the morph to receive this mosue event (or null)
-	// If checkForDnD is true, return the morph to grab from a mouse down event (or null)
+        // If checkForDnD is false, return the morph to receive this mosue event (or null)
+        // If checkForDnD is true, return the morph to grab from a mouse down event (or null)
         // If droppingMorph is not null, then check that this is a willing recipient (else null)
 
         if (!this.fullContainsWorldPoint(evt.mousePoint)) return null;  // not contained anywhere
@@ -3148,23 +3162,23 @@ Object.extend(Morph.prototype, {
         // Check if it's really in this morph (not just fullBounds)
         if (!this.containsWorldPoint(evt.mousePoint)) return null;
 
-	// If no DnD check, then we have a hit
-	if (!checkForDnD) return this;
+        // If no DnD check, then we have a hit
+        if (!checkForDnD) return this;
 
         // On drops, check that this is a willing recipient
         if (droppingMorph != null) {
             return this.acceptsDropping(droppingMorph) ? this : null;
-		}
+        }
 
         // On grabs, can't pick up the world or morphs that handle mousedown
         else return (!evt.altKey && this === this.world()) ? null : this; 
     },
     
     morphToReceiveEvent: function(evt) {
-	// This should replace morphToGrabOrReceive... in Hand where events
-	// must be displatched to morphs that are closed to DnD
-	return this.morphToGrabOrReceive(evt, null, false);
-	},
+        // This should replace morphToGrabOrReceive... in Hand where events
+        // must be displatched to morphs that are closed to DnD
+        return this.morphToGrabOrReceive(evt, null, false);
+    },
 
     ownerChain: function() {
         // Return an array of me and all my owner
@@ -3427,7 +3441,7 @@ Object.extend(Exporter.prototype, {
     
     serialize: function() {
         return new XMLSerializer().serializeToString(this.rootMorph);
-    },
+    }
 
 });
 
@@ -3469,7 +3483,7 @@ Object.extend(Importer.prototype, {
             throw new Error('node cannot be a morph of type ' + morphTypeName);
         }
         HostClass.becomeInstance(node, window[morphTypeName]);
-	node.reinitialize(this);
+        node.reinitialize(this);
         return node; 
     },
     
@@ -3547,11 +3561,11 @@ Object.extend(Morph.prototype, {
         var exporter = new Exporter(this);
         var xml = exporter.serialize();
 
-	console.log('%s serialized to %s', this, xml);        
+        console.log('%s serialized to %s', this, xml);        
         var modelxml = (this.getModel() || { toMarkup: function() { return null }}).toMarkup();
-	console.log('model %s', modelxml);
+        console.log('model %s', modelxml);
         const maxSize = 1500;
-	var extent = pt(500, 300);
+        var extent = pt(500, 300);
         var panel = PanelMorph(extent);
         var r = Rectangle(0, 0, extent.x/2, extent.y);
         var left = panel.setNamedMorph("leftPane", TextPane(r, xml.truncate(maxSize)));
@@ -3559,7 +3573,7 @@ Object.extend(Morph.prototype, {
         right.align(right.bounds().topLeft(), left.bounds().topRight());
         var txtMorph = left.innerMorph();
         txtMorph.xml = xml;
-	txtMorph.modelxml = modelxml;
+        txtMorph.modelxml = modelxml;
         this.world().addMorph(WindowMorph(panel, "XML dump", this.bounds().topLeft().addPt(pt(5,0))));
     }
     
@@ -4162,9 +4176,10 @@ Object.extend(Morph.prototype, {
     affineTransformPoint: function(pt) {
         if (this.myAffineTransformStack) {
             return this.myAffineTransformStack.getCTM().transformPoint(pt);
-        } else
+        } else {
             return pt;
         }
+    }
 });
 
 console.log('loaded Core.js');
