@@ -2,6 +2,9 @@
  * @class TutorialMorph
  */
 
+// Ensure that we can "tear" a copy of an object by pressing the Shift key
+Config.shiftDragForDup = true;
+
 TutorialMorph = HostClass.create('TutorialMorph', Morph);
 
 Object.extend(TutorialMorph.prototype, {
