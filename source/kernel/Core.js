@@ -2147,6 +2147,10 @@ Object.extend(Morph.prototype, {
                         }
                         def.setAttribute('id', newFillId);
                         break;
+		    case 'modelPlug':
+			this.modelPlug = Model.becomePlug(def);
+			console.log('%s reconstructed plug %s', this, this.modelPlug);
+			break;
                     default:
                         console.warn('unknown def %s', def);
                     }
@@ -3526,17 +3530,9 @@ Object.extend(Importer.prototype, {
                     console.warn('dep %s not found', id);
                     continue; 
                 }
-                var plug = {};
-                for (var acc = node.firstChild; acc != null;  acc = acc.nextSibling) {
-                    if (acc.tagName != 'accessor') continue;
-    
-                    if (dependent) {
-                        plug[acc.getAttribute('formal')] = acc.getAttribute('actual');
-                    }
-                }
-                //console.log('dependent %s, old id %s modelPlug %s', dependent, id, Object.toJSON(plug));
-                plug.model = model;
-                dependent.connectModel(plug);
+		console.log('hooking up dependent %s plug %s, old model %s', dependent, dependent.modelPlug, dependent.modelPlug.model);
+                dependent.modelPlug.model = model;
+		model.addDependent(dependent);
                 break;
             case 'variable':
                 var name = node.getAttribute('name');
@@ -3553,6 +3549,7 @@ Object.extend(Importer.prototype, {
             }
         }
 
+	console.log('restored model %s', model);
         return model;
     }
     
@@ -3568,7 +3565,7 @@ Object.extend(Morph.prototype, {
 	
         console.log('%s serialized to %s', this, xml);        
         
-	var modelNode = (this.getModel() || { toMarkup: function(_) { return null }}).toMarkup(exporter);
+	var modelNode = (this.getModel() || { toMarkup: function(_) { return null }}).toMarkup(document, exporter);
 	var modelxml =  new XMLSerializer().serializeToString(modelNode);
         console.log('model %s', modelxml);
         const maxSize = 1500;
@@ -3581,7 +3578,9 @@ Object.extend(Morph.prototype, {
         var txtMorph = left.innerMorph();
         txtMorph.xml = xml;
         txtMorph.modelxml = modelxml;
-	DisplayObject.prototype.setType.call(modelNode, "Model");
+	console.log('model node is %s', modelNode);
+	if (modelNode) 
+	    DisplayObject.prototype.setType.call(modelNode, "Model");
         this.world().addMorph(WindowMorph(panel, "XML dump", this.bounds().topLeft().addPt(pt(5,0))));
     }
     
@@ -3608,7 +3607,6 @@ Object.extend(Morph.prototype, {
         // connector makes this view pluggable to different models, as in
         // {model: someModel, getList: "getItemList", setSelection: "chooseItem"}
         this.assign('modelPlug', Model.makePlug(plugSpec));
-        // console.log('%s: my plug is %s', this, this.modelPlug);
         if (plugSpec.model.addDependent)  // for mvc-style updating
             plugSpec.model.addDependent(this); 
     },
@@ -3744,7 +3742,19 @@ Object.extend(Model, {
 	    return new XMLSerializer().serializeToString(this);
 	}
 	return node;
+    },
+
+    becomePlug: function(node) {
+        for (var acc = node.firstChild; acc != null;  acc = acc.nextSibling) {
+            if (acc.tagName != 'accessor') continue;
+            node[acc.getAttribute('formal')] = acc.getAttribute('actual');
+        }
+	node.inspect = function() {
+	    return new XMLSerializer().serializeToString(this);
+	}
+	return node;
     }
+    
 });
 
 
@@ -3818,6 +3828,7 @@ Object.category(SimpleModel.prototype,  "core", function() {
 		var dependentEl = modelEl.appendChild(doc.createElementNS(Namespace.LIVELY, "dependent"));
 		var dep = this.dependents[i];
 		dependentEl.setAttributeNS(Namespace.LIVELY, "ref", dep.id);
+		/*
 		var props = Object.properties(dep.modelPlug || {});
 		for (var j = 0; j < props.length; j++) {
 		    var prop = props[j];
@@ -3826,6 +3837,7 @@ Object.category(SimpleModel.prototype,  "core", function() {
 		    acc.setAttributeNS(Namespace.LIVELY, "formal", prop);
 		    acc.setAttributeNS(Namespace.LIVELY, "actual", dep.modelPlug[prop]);
 		}
+               */
 	    }
 	    return modelEl;
 	}

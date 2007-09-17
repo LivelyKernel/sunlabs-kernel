@@ -29,10 +29,17 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
     defaultBorderColor: Color.neutral.gray,
     defaultEdgeRoundingRadius: 4,
 
+    baseColor: Color.neutral.gray, // KP: stopgap fix for serialization??
+
     // A ButtonMorph is the simplest widget
     // It read and writes the boolean variable, this.model[this.propertyName]
     initialize: function(initialBounds) {
         ButtonMorph.superClass.initialize.call(this, initialBounds, "rect");
+        
+	var model = new SimpleModel(this, "Value");
+        // this default self connection may get overwritten by, eg, connectModel()...
+        this.assign('modelPlug', model.makePlug());
+
         // Styling
         this.setModelValue('setValue', false);
         this.changeAppearanceFor(false);
@@ -43,31 +50,24 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
     initializeTransientState: function(initialBounds) {
         ButtonMorph.superClass.initializeTransientState.call(this, initialBounds);
         // FIXME make persistent
-        // this default self connection may get overwritten by, eg, connectModel()...
-        var model = new SimpleModel(this, "Value");
-
-        this.assign('modelPlug', model.makePlug());
         this.baseColor = this.defaultFill;
         this.linkToStyles(['button']);
-
-    },
-
-    // simple way of making values persistent: map to attributes
-
-    // KP: FIXME general way of declaring properties mapping to attributes
-    setToggle: function(flag) {
-        this.setAttribute("toggle", !!flag);
-    },
-
-    isToggle: function() {
-        var value = this.getAttribute("toggle");
-        if (value && value == 'true') return true;
-        else return false;
     },
 
     restorePersistentState: function(importer) {
         ButtonMorph.superClass.restorePersistentState.call(this, importer);
-        this.updateView('all');
+        this.changeAppearanceFor(this.getModelValue('getValue', false));
+    },
+
+    // KP: FIXME general way of declaring properties mapping to attributes
+    setToggle: function(flag) {
+        this.setAttributeNS(Namespace.LIVELY, "toggle", !!flag);
+    },
+
+    isToggle: function() {
+        var value = this.getAttributeNS(Namespace.LIVELY, "toggle");
+        if (value && value == 'true') return true;
+        else return false;
     },
 
     handlesMouseDown: function(evt) { return !evt.altKey; },
@@ -1201,6 +1201,9 @@ Object.extend(CheapListMorph.prototype, {
     
         var listText = itemList ? itemList.join("\n") : "";
         CheapListMorph.superClass.initialize.call(this, initialBounds, listText);
+        // this default self connection may get overwritten by, eg, connectModel()...
+        var model = new SimpleModel(null, 'List', 'Selection');
+        this.assign('modelPlug', model.makePlug());
 
         this.itemList = itemList;
         this.setModelValue('setList', itemList);
@@ -1209,18 +1212,11 @@ Object.extend(CheapListMorph.prototype, {
         return this;
     },
 
-    initializeTransientState: function(initialBounds) {
-        CheapListMorph.superClass.initializeTransientState.call(this, initialBounds);
-        // FIXME make persistent
-        // this default self connection may get overwritten by, eg, connectModel()...
-        var model = new SimpleModel(null, 'List', 'Selection');
-        this.assign('modelPlug', model.makePlug());
-    },
-
     restorePersistentState: function(importer) {
         CheapListMorph.superClass.restorePersistentState.call(this, importer);
+	console.log('restoring: textString is %s', this.textString);
         this.itemList = this.textString.split('\n');
-        this.updateView('all');
+        this.setModelValue('setList', this.itemList);
     },
     
     takesKeyboardFocus: function() { 
@@ -1507,6 +1503,9 @@ Object.extend(SliderMorph.prototype, {
     
     initialize: function(initialBounds, scaleIfAny) {
         SliderMorph.superClass.initialize.call(this, initialBounds, "rect");
+        var model = new SimpleModel(null, 'Value', 'Extent');
+        // this default self connection may get overwritten by, eg, connectModel()...
+        this.assign('modelPlug', model.makePlug());
         this.scale = (scaleIfAny == null) ? 1.0 : scaleIfAny;
         var slider = Morph(Rectangle(0, 0, 8, 8), "rect");
         slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});
@@ -1516,14 +1515,7 @@ Object.extend(SliderMorph.prototype, {
 
         return this;
     },
-
-    initializeTransientState: function(initialBounds) {
-        SliderMorph.superClass.initializeTransientState.call(this, initialBounds);
-        // this default self connection may get overwritten by, eg, connectModel()...
-        var model = new SimpleModel(null, 'Value', 'Extent');
-        this.assign('modelPlug', model.makePlug());
-    },
-
+    
     restorePersistentState: function(importer) {
         SliderMorph.superClass.restorePersistentState.call(this, importer);
         this.slider = this.getNamedMorph('slider');
@@ -1531,7 +1523,6 @@ Object.extend(SliderMorph.prototype, {
             console.warn('no slider in %s, %s', this, this.textContent);
            return;
         }
-        console.log('slider %s', this.slider);
         this.slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});
         this.scale = 1.0; // FIXME restore from markup
         //this.adjustForNewBounds();
