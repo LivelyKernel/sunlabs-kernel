@@ -1909,11 +1909,16 @@ Object.extend(PasteUpMorph.prototype, {
     },
 
     onMouseDown: function(evt) {  //default behavior is to grab a submorph
-        var m = this.morphToGrabOrReceiveDroppingMorph(evt);
+        var m = this.morphToReceiveEvent(evt);
         if (m == null) { this.makeSelection(evt); return true; }
         if (m.handlesMouseDown(evt)) return false;
         evt.hand.grabMorph(m, evt);
         return true; 
+    },
+
+    okToBeGrabbedBy: function(evt) {
+	// Paste-ups, especially the world, cannot be grabbed normally
+        return null; 
     },
 
     makeSelection: function(evt) {  //default behavior is to grab a submorph
@@ -2619,7 +2624,11 @@ Object.extend(HandMorph.prototype, {
                 var receiver = this.owner().morphToReceiveEvent(evt);
                 if (receiver != null) receiver.onMouseOver(evt);
             } else {
-                (this.mouseFocus || this.owner()).mouseEvent(evt, this.mouseFocus != null);
+	    	if (this.mouseFocus) this.mouseFocus.mouseEvent(evt, this.mouseFocus != null);
+	    	else if (!this.mouseButtonPressed) this.owner().mouseEvent(evt, this.mouseFocus != null);
+		// Try doing nothing with drag if there is no focus
+		//  in an attempt to stop dragging things by accident
+	    	// else if (this.owner()) this.owner().mouseEvent(evt, this.mouseFocus != null);
             }
         
             this.lastMouseEvent = evt;
@@ -2667,8 +2676,9 @@ Object.extend(HandMorph.prototype, {
 		}
             } else {
                 // console.log('hand dispatching event ' + event.type + ' to owner '+ this.owner().inspect());
-                // KP: this will tell the world to send the event to the right morph
-                this.owner().mouseEvent(evt, false);
+                // This will tell the world to send the event to the right morph
+		// We do not dispatch mouseup the same way -- only if focus gets set on mousedown
+                if (evt.type == "mousedown") this.owner().mouseEvent(evt, false);
             }
             
             if (evt.type == "mousedown") {
@@ -2756,16 +2766,20 @@ Object.extend(HandMorph.prototype, {
             return;
         }
 
-        grabbedMorph = grabbedMorph.okToBeGrabbedBy(evt);
+        // Give grabbed morph a chance to, eg, spawn a copy or other referent
+	grabbedMorph = grabbedMorph.okToBeGrabbedBy(evt);
         if (!grabbedMorph) return;
+
+	if (grabbedMorph.owner() && !grabbedMorph.owner().openForDragAndDrop) return;
 
         if (this.keyboardFocus && grabbedMorph !== this.keyboardFocus) {
             this.keyboardFocus.relinquishKeyboardFocus(this);
         }
 
         //console.log('grabbing %s', grabbedMorph);
-        this.grabInfo = [grabbedMorph.owner(), grabbedMorph.position()]; // For cancelling grab or drop [also indexInOwner?]
-
+        // Save info for cancelling grab or drop [also need indexInOwner?]
+	// But for now we simply drop on world, so this isn't needed
+	this.grabInfo = [grabbedMorph.owner(), grabbedMorph.position()];
         //console.log('grabbed %s', grabbedMorph);
         this.addMorph(grabbedMorph);
         if (this.applyDropShadowFilter) {

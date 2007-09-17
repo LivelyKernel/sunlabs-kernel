@@ -3175,8 +3175,8 @@ Object.extend(Morph.prototype, {
         // Check if it's really in this morph (not just fullBounds)
         if (!this.containsWorldPoint(evt.mousePoint)) return null;
 
-        // If no DnD check, then we have a hit
-        if (!checkForDnD) return this;
+        // If no DnD check, then we have a hit (unless no handler in which case a miss)
+        if (!checkForDnD) return this.mouseHandler ? this : null;
 
         // On drops, check that this is a willing recipient
         if (droppingMorph != null) {
@@ -3184,7 +3184,9 @@ Object.extend(Morph.prototype, {
         }
 
         // On grabs, can't pick up the world or morphs that handle mousedown
-        else return (!evt.altKey && this === this.world()) ? null : this; 
+	// DI:  I think the world is adequately checked for now elsewhere
+        // else return (!evt.altKey && this === this.world()) ? null : this; 
+        else return this; 
     },
     
     morphToReceiveEvent: function(evt) {
