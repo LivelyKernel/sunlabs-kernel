@@ -73,9 +73,16 @@ Object.extend(Query, {
             return [ defaultValue ];
         }
         return found;
+    },
+
+    $: function(id) {
+	return document.getElementById(id);
     }
 
 });
+
+
+
 
 var NodeFactory = {
     create: function(name, attributes) {
@@ -2451,11 +2458,15 @@ Object.extend(Morph.prototype, {
         }
         
         if (old) {
-            if (old.parentNode !== this.defs) {
-                console.warn('old value %s is not owned by %s', old, this);
-                return null;
-            }
-            this.defs.removeChild(old);
+            if (old.parentNode) {
+		if (old.parentNode !== this.defs) {
+                    console.warn('assign to field %s: old value %s is not owned by %s', fieldname, old, this);
+                    return null;
+		}
+		this.defs.removeChild(old);
+	    } else {
+                console.warn('assign to field %s: old value %s is orphaned in %s', fieldname, old, this);
+	    }
         }
         
         this[fieldname] = element;
@@ -3548,23 +3559,15 @@ Object.extend(Importer.prototype, {
 // SVG inspector for Morphs
 Object.extend(Morph.prototype, {
 
-    dumpModel: function() {
-        var exporter = new Exporter(this);
-        var xml = exporter.serialize();
-
-        var model = this.getModel();
-        var modelxml = model.toMarkup();
-
-        console.log('%s model %s', this, Object.keys(model).filter(function(k) { return !(model[k] instanceof Function) && k !='dependents' }).map(function(k) { return k + " = " + Object.inspect(model[k]); }));
-    },
-    
     addSvgInspector: function() {
 
         var exporter = new Exporter(this);
         var xml = exporter.serialize();
-
+	
         console.log('%s serialized to %s', this, xml);        
-        var modelxml = (this.getModel() || { toMarkup: function() { return null }}).toMarkup();
+        
+	var modelNode = (this.getModel() || { toMarkup: function(_) { return null }}).toMarkup(exporter);
+	var modelxml =  new XMLSerializer().serializeToString(modelNode);
         console.log('model %s', modelxml);
         const maxSize = 1500;
         var extent = pt(500, 300);
@@ -3576,6 +3579,7 @@ Object.extend(Morph.prototype, {
         var txtMorph = left.innerMorph();
         txtMorph.xml = xml;
         txtMorph.modelxml = modelxml;
+	DisplayObject.prototype.setType.call(modelNode, "Model");
         this.world().addMorph(WindowMorph(panel, "XML dump", this.bounds().topLeft().addPt(pt(5,0))));
     }
     
@@ -3598,13 +3602,13 @@ Object.extend(Morph, {
 // Model-specific extensions to class Morph (see Model class definition below)
 Object.extend(Morph.prototype, {
 
-    connectModel: function(plug) {
+    connectModel: function(plugSpec) {
         // connector makes this view pluggable to different models, as in
         // {model: someModel, getList: "getItemList", setSelection: "chooseItem"}
-        this.modelPlug = plug;
-        
-        if (plug.model.addDependent)  // for mvc-style updating
-            plug.model.addDependent(this); 
+        this.assign('modelPlug', Model.makePlug(plugSpec));
+        console.log('%s: my plug is %s', this, this.modelPlug);
+        if (plugSpec.model.addDependent)  // for mvc-style updating
+            plugSpec.model.addDependent(this); 
     },
 
     getModel: function() {
@@ -3715,11 +3719,33 @@ Object.extend(Model.prototype, {
         return "#<Model:%1>".format(Object.toJSON(hash));
     },
     
-    toMarkup: function(exporter) {
+    toMarkupString: function(exporter) {
         return null;
     }
 
 });
+
+Object.extend(Model, {
+    makePlug: function(spec) {
+	var node = document.createElementNS(Namespace.LIVELY, "modelPlug");
+	var props = Object.properties(spec);
+	for (var i = 0; i < props.length; i++) {
+	    var prop = props[i];
+	    node[prop] = spec[prop];
+	    if (prop != 'model') {
+		var acc = node.appendChild(document.createElementNS(Namespace.LIVELY, "accessor"));
+		acc.setAttributeNS(Namespace.LIVELY, "formal", prop);
+		acc.setAttributeNS(Namespace.LIVELY, "actual", spec[prop]);
+	    }
+	}
+	node.inspect = function() {
+	    return new XMLSerializer().serializeToString(this);
+	}
+	return node;
+    }
+});
+
+
 
 /**
  * @class SimpleModel
@@ -3762,26 +3788,45 @@ Object.category(SimpleModel.prototype,  "core", function() {
 
         makePlug: function() {
             var model = this;
-            var plug = { };
-            this.variables().forEach(function(v) { plug[getter(v)] = model[getter(v)]; plug[setter(v)] = model[setter(v)]; });
-            plug.model = model;
-            return plug;
+            var spec = { };
+            this.variables().forEach(function(v) { spec[getter(v)] = model[getter(v)]; spec[setter(v)] = model[setter(v)]; });
+            spec.model = model;
+            return Model.makePlug(spec);
         },
 
         variables: function() {
             return Object.properties(this).filter(function(name) { return name != 'dependents'});
         },
 
-        toMarkup: function(exporter) {
-            var model = this;
-            return "<model>%1%2</model>".format( 
-                this.variables().map(function(name) { 
-                    return '<variable name="%1">%2</variable>'.format(name, escapeValue(model[name])); }).join(''),
-                this.dependents.map(function(dep) { 
-                    return '<dependent ref="%1">%2</dependent>'.format(dep.id, 
-                        Object.properties(dep.modelPlug || {}).filter(function(name) { return name != 'model'; }).map(function(prop) { return '<accessor formal="%1" actual="%2"/>'.format(prop, dep.modelPlug[prop]); }).join(' '))}).join(''));
-        }
+	toMarkupString: function(exporter) {
+	    //var doc = document.getImplementation().createDocument("", "", "");
+	    return new XMLSerializer().serializeToString(this.toMarkup(document, exporter));
+	},
 
+	toMarkup: function(doc, exporter) {
+	    var modelEl = doc.createElementNS(Namespace.LIVELY, "model");
+	    var vars = this.variables();
+	    for (var i = 0; i < vars.length; i++) {
+		var varEl = modelEl.appendChild(doc.createElementNS(Namespace.LIVELY, "variable"));
+		var name = vars[i];
+		varEl.setAttributeNS(Namespace.LIVELY, "name", name);
+		varEl.appendChild(doc.createTextNode(Object.toJSON(this[name])));
+	    }
+	    for (var i = 0; i < this.dependents.length; i++) {
+		var dependentEl = modelEl.appendChild(doc.createElementNS(Namespace.LIVELY, "dependent"));
+		var dep = this.dependents[i];
+		dependentEl.setAttributeNS(Namespace.LIVELY, "ref", dep.id);
+		var props = Object.properties(dep.modelPlug || {});
+		for (var j = 0; j < props.length; j++) {
+		    var prop = props[j];
+		    if (prop == 'model') continue;
+		    var acc = dependentEl.appendChild(doc.createElementNS(Namespace.LIVELY, "accessor"));
+		    acc.setAttributeNS(Namespace.LIVELY, "formal", prop);
+		    acc.setAttributeNS(Namespace.LIVELY, "actual", dep.modelPlug[prop]);
+		}
+	    }
+	    return modelEl;
+	}
     }});
 
 // Affine Transforms

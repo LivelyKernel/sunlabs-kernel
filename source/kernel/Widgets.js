@@ -46,7 +46,7 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
         // this default self connection may get overwritten by, eg, connectModel()...
         var model = new SimpleModel(this, "Value");
 
-        this.modelPlug = model.makePlug();
+        this.assign('modelPlug', model.makePlug());
         this.baseColor = this.defaultFill;
         this.linkToStyles(['button']);
 
@@ -1214,7 +1214,7 @@ Object.extend(CheapListMorph.prototype, {
         // FIXME make persistent
         // this default self connection may get overwritten by, eg, connectModel()...
         var model = new SimpleModel(null, 'List', 'Selection');
-        this.modelPlug = model.makePlug();
+        this.assign('modelPlug', model.makePlug());
     },
 
     restorePersistentState: function(importer) {
@@ -1521,7 +1521,7 @@ Object.extend(SliderMorph.prototype, {
         SliderMorph.superClass.initializeTransientState.call(this, initialBounds);
         // this default self connection may get overwritten by, eg, connectModel()...
         var model = new SimpleModel(null, 'Value', 'Extent');
-        this.modelPlug = model.makePlug();
+        this.assign('modelPlug', model.makePlug());
     },
 
     restorePersistentState: function(importer) {
