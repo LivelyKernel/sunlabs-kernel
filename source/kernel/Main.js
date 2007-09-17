@@ -79,7 +79,7 @@ function populateWorldWithExamples(world, otherWorld, server) {
         widget = ClockMorph(pt(65, 410), 50);
         // clockWidget.addClipRect(Rectangle(20,20,80,80));
         world.addMorph(widget);
-	widget.startSteppingScripts();
+        widget.startSteppingScripts();
     }
 
     if (Config.showHilbertFun) Pen.hilbertFun(world);
@@ -101,7 +101,7 @@ function populateWorldWithExamples(world, otherWorld, server) {
     // Sample executable script pane
     if (Config.showPenScript) {
         if (Config.showTestText) widget = TestTextMorph(pt(50,30).extent(pt(250,50)),Pen.script);
-		else widget = TextMorph(pt(50,30).extent(pt(250,50)),Pen.script);
+        else widget = TextMorph(pt(50,30).extent(pt(250,50)),Pen.script);
         widget.align(widget.bounds().bottomRight(), world.bounds().topRight().addPt(pt(-50,100))); 
         world.addMorph(widget);
     }
@@ -144,6 +144,7 @@ function populateWorldWithExamples(world, otherWorld, server) {
                         "- Better development/debugging tools\n" +
                         "TODO (SMALL):\n" + 
                         "- Clean up demo world(s)\n" +
+                        "- Clean up console warning/error messages\n" +
                         "- Use common location for external resources\n" +
                         "MAJOR BUGS:\n" + 
                         "- Coordinate transformations are broken\n" +
@@ -152,8 +153,8 @@ function populateWorldWithExamples(world, otherWorld, server) {
                         "- It is still far too easy to rip things apart\n" +
                         "MINOR BUGS:\n" + 
                         "- Selection tray creation/removal has bugs\n" +
-                        "- Selection/resizing only works down and right\n" +
-						"- Text selection has bugs"
+                        "- Selection/resizing only works in one direction\n" +
+                        "- Text selection has bugs"
                         );
 
         todoMorph.shape.roundEdgesBy(10);
@@ -165,19 +166,19 @@ function populateWorldWithExamples(world, otherWorld, server) {
         var todoOSReleaseMorph = TextMorph(Rectangle(1200, 500, 350, 20),
                         "Administrative issues:\n" + 
                         "- Deciding what will actually be released\n" +
-						"  + Which applications?\n" +
-						"  + HTML tutorial\n" +
- 						"  + Tutorial implemented with the system itself?\n" +
-						"  + Technical documentation?\n" + 
-						"  + FAQ\n" + 
+                        "  + Which applications?\n" +
+                        "  + HTML tutorial\n" +
+                        "  + Tutorial implemented with the system itself?\n" +
+                        "  + Technical documentation?\n" + 
+                        "  + FAQ\n" + 
                         "- Setting up associated infrastructure\n" + 
-						"  + web site + server\n" + 
-						"  + mailing list\n" + 
-						"  + discussion forums\n" + 
-						"  + bug reporting service?\n" + 
-						"  + blogs (yes, I hate them too!)?\n" + 
+                        "  + web site + server\n" + 
+                        "  + mailing list\n" + 
+                        "  + discussion forums\n" + 
+                        "  + bug reporting service?\n" + 
+                        "  + blogs (yes, I hate them too!)?\n" + 
                         "- Determining how to let others participate in development\n" +
-						"- Trademarking, licensing & other legal issues"
+                        "- Trademarking, licensing & other legal issues"
                         );
         todoOSReleaseMorph.shape.roundEdgesBy(10);
         todoOSReleaseMorph.shape.setFillOpacity(0.6);
