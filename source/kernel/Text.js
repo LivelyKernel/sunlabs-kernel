@@ -961,7 +961,7 @@ Object.extend(TextMorph.prototype, {
     fitHeight: function() { //Returns true iff height changes
         // Wrap text to bounds width, and set height from total text height
         if (this.ensureTextBox() == null) { 
-            console.log("textbox error in fitHeight"); 
+            if(this.TextString != null) console.log("textbox error in fitHeight: " + this.textString.truncate() + "..."); 
             return; 
         }
         
@@ -990,7 +990,7 @@ Object.extend(TextMorph.prototype, {
         // Set morph bounds based on max text width and height
         var composer = this.ensureTextBox();
         if (!composer) {
-            console.log("fitWidth failure on TextBox.ensureTextBox"); 
+            if (this.textString != null) console.log("fitWidth failure on TextBox.ensureTextBox: " + this.textString.truncate() + "..."); 
             return;
         }
         

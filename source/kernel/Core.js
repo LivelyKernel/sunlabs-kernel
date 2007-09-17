@@ -3608,7 +3608,7 @@ Object.extend(Morph.prototype, {
         // connector makes this view pluggable to different models, as in
         // {model: someModel, getList: "getItemList", setSelection: "chooseItem"}
         this.assign('modelPlug', Model.makePlug(plugSpec));
-        console.log('%s: my plug is %s', this, this.modelPlug);
+        // console.log('%s: my plug is %s', this, this.modelPlug);
         if (plugSpec.model.addDependent)  // for mvc-style updating
             plugSpec.model.addDependent(this); 
     },
