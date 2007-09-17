@@ -18,7 +18,7 @@ Object.extend(TutorialMorph.prototype, {
         // Add a clock
         var widget = ClockMorph(pt(110, 110), 100);
         world.addMorph(widget);
-        widget.startStepping(1000);
+        widget.startSteppingScripts();
 
         // Add a Doodle Morph
         widget = WindowMorph(DoodleMorph(pt(445, 10).extent(pt(300, 300))), 'Doodle Morph');
@@ -29,6 +29,7 @@ Object.extend(TutorialMorph.prototype, {
         world.addMorph(WindowMorph(gameMorph, 'Asteroids!'));
         apps.asteroids.initialize();
         gameMorph.runAsteroidsGame();
+        
     },
 
     // Function that creates the tutorial demo
