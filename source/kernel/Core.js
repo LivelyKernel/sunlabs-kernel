@@ -2609,6 +2609,8 @@ Object.extend(Morph.prototype, {
 // Morph copying functions
 Object.extend(Morph.prototype, {
     
+    okToDuplicate: function() { return true; },  // default is OK
+    
     copy: function() {
         var copy = Morph(this.bounds(), "rect"); 
         return copy.morphCopyFrom(this); 
@@ -2873,7 +2875,6 @@ Object.extend(Morph.prototype, {
 
     ignoreEvents: function() { // will not respond nor get focus
         this.mouseHandler = null;
-        this.suppressHandles = true; // nor offer handles 
     },
     
     enableEvents: function() {
@@ -3054,7 +3055,8 @@ Object.extend(Morph.prototype, {
             ["publish shrink-wrapped as...", function(m) { WorldMorph.current().makeShrinkWrappedWorldWith(m, prompt('publish as')) }.curry(this)]
             ];
         var m = MenuMorph(items); 
-        if (evt.mouseButtonPressed) evt.hand.setMouseFocus(m);
+        if (!this.okToDuplicate()) m.removeItemNamed("duplicate");
+	if (evt.mouseButtonPressed) evt.hand.setMouseFocus(m);
         return m;
     },
 

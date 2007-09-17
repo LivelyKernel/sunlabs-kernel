@@ -423,11 +423,10 @@ Object.extend(TitleBarMorph.prototype, {
         }
 
         label.align(label.bounds().topCenter(), this.shape.bounds().topCenter());
-        this.addMorph(label);
+        label.ignoreEvents();
+	this.addMorph(label);
         return this;
     },
-
-    handlesMouseDown: function(evt) {return false; },  // hack for now
 
     acceptsDropping: function(morph) {
         //console.log('accept drop from %s of %s, %s', this, morph, morph instanceof WindowControlMorph);
@@ -436,6 +435,10 @@ Object.extend(TitleBarMorph.prototype, {
 
     okToBeGrabbedBy: function(evt) {
         return this.windowMorph.isCollapsed() ? this : this.windowMorph;
+    },
+
+    okToDuplicate: function(evt) {
+        return false;
     }
 
 });
@@ -480,7 +483,8 @@ Object.extend(TitleTabMorph.prototype, {
         label.align(label.bounds().topLeft(), cell.topRight());
         this.addMorph(label);
         this.shape.setBounds(this.shape.bounds().withTopRight(pt(label.bounds().maxX(), topY)))
-        return this;
+        this.suppressHandles = true;
+	return this;
     },
 
     okToBeGrabbedBy: function(evt) {
@@ -490,12 +494,10 @@ Object.extend(TitleTabMorph.prototype, {
     handlesMouseDown: function() { return true; },
 
     onMouseDown: function(evt) {
-        console.log('mouseDown');
         evt.hand.setMouseFocus(this);
     },
 
     onMouseUp: function(evt) {
-        console.log('mouseUp');
         evt.hand.setMouseFocus(null);
         this.windowMorph.toggleCollapse();
     }
@@ -624,33 +626,37 @@ Object.extend(WindowMorph.prototype, {
     
     collapse: function() { 
         if (this.isCollapsed()) return;
-        this.expandedPosition = this.position();
-        var owner = this.owner();
+        this.expandedTransform = this.getTransform();
+        this.tbTransform = this.titleBar.getTransform();
+	var owner = this.owner();
+        var titleTransform = this.titleBar.cumulativeTransform();
+	owner.addMorph(this.titleBar);
+        this.titleBar.setTransform(this.collapsedTransform ? this.collapsedTransform : this.expandedTransform);
+	this.titleBar.setRotation(this.titleBar.getRotation());  // see comment in HandMorph
+	this.titleBar.enableEvents();
         this.remove();
-        owner.addMorph(this.titleBar);
-        if (this.collapsedPosition) this.titleBar.setPosition(this.collapsedPosition);
-        else this.titleBar.setPosition(this.expandedPosition);
         this.state = "collapsed";
     },
     
+    expand: function() {
+        if (!this.isCollapsed()) return;
+        this.collapsedTransform = this.titleBar.getTransform();
+        var owner = this.titleBar.owner();
+        owner.addMorph(this);
+        this.setTransform(this.expandedTransform);        
+        this.titleBar.remove();
+        this.addMorph(this.titleBar);
+        this.titleBar.setTransform(this.tbTransform)
+	this.titleBar.ignoreEvents();
+        this.state = "expanded";
+    },
+
     isCollapsed: function() {
         return this.state == "collapsed";
     },
     
     isShutdown: function() {
         return this.state == "shutdown";
-    },
-
-    expand: function() {
-        if (!this.isCollapsed()) return;
-        this.collapsedPosition = this.titleBar.position();
-        var owner = this.titleBar.owner();
-        this.titleBar.remove();
-        this.setPosition(this.expandedPosition);        
-        owner.addMorph(this);
-        this.addMorph(this.titleBar);
-        this.titleBar.setPosition(pt(0,0))
-        this.state = "expanded";
     },
 
     initiateShutdown: function() {
@@ -800,22 +806,13 @@ Object.extend(HandleMorph.prototype, {
     },
 
     onMouseDown: function(evt) {
-        if (evt.altKey) {
-            // this.showMorphMenu(evt);
-            // if (evt.hand.shiftKeyPressed) this.showColorPicker(evt.mousePoint,this.targetMorph,evt.hand,"setBorderColor");
-            // else this.showColorPicker(evt.mousePoint,this.targetMorph,evt.hand,"setFill"); 
-            if (evt.shiftKey) {
-                this.initialScale = this.targetMorph.getScale();
-                // console.log('initial scale ' + this.initialScale + ' initial rotation ' + this.targetMorph.getRotation());
-                this.initialRotation = this.targetMorph.getRotation();
-            }
-        }
-        if (this.targetMorph.getType() == "WindowMorph"){ this.initialScale = this.targetMorph.getScale(); }
         this.hideHelp();
     },
     
     onMouseUp: function(evt) {
-        if (!evt.shiftKey && !evt.altKey && !evt.cmdKey && this.targetMorph.getType() != "WindowMorph") {
+        if (!evt.shiftKey && !evt.altKey && !evt.cmdKey &&
+		// these hack tests should be replaced by receiver tests
+		!(this.targetMorph.getType() == "WindowMorph" || this.targetMorph.getType() == "TitleBarMorph")) {
             // last call for, eg, vertex deletion
             this.targetMorph.reshape(this.partName, this.bounds().center(), this, true); 
         }
@@ -840,12 +837,14 @@ Object.extend(HandleMorph.prototype, {
         // Mouse down: edit targetMorph
         this.align(this.bounds().center(), this.owner().localize(evt.mousePoint));
 
-        var p0 = evt.hand.lastMouseDownPoint;
+        var p0 = evt.hand.lastMouseDownPoint; // in world coords
         var p1 = evt.mousePoint;
-
+	if (!this.initialScale) this.initialScale = this.targetMorph.getScale();
+	if (!this.initialRotation) this.initialRotation = this.targetMorph.getRotation();
         if (evt.altKey) {
             // ctrl-drag for rotation (unshifted) and scale (shifted)
-            var ctr = this.targetMorph.owner().worldPoint(this.targetMorph.origin).addPt(this.targetMorph.shape.bounds().center());  //origin for rotation and scaling
+            var ctr = this.targetMorph.owner().worldPoint(this.targetMorph.origin);  //origin for rotation and scaling
+	    // this.world().addMorph(new Morph(ctr.extent(pt(5,5)),"rect"));
             var v1 = p1.subPt(ctr); //vector from origin
             var v0 = p0.subPt(ctr); //vector from origin at mousedown
             
@@ -863,14 +862,16 @@ Object.extend(HandleMorph.prototype, {
             if (evt.shiftKey) {
                 this.targetMorph.setBorderWidth(Math.max(0, Math.floor(d/3)/2), true);
             } else { 
-                if (this.targetMorph.getType() == "WindowMorph"){
-                  //scale the whole window
-                  var ctr = this.targetMorph.owner().worldPoint(this.targetMorph.origin).addPt(this.targetMorph.shape.bounds().center()); //origin for rotation and scaling
+		// these hack tests should be replaced by receiver tests
+                if (this.targetMorph.getType() == "WindowMorph" || this.targetMorph.getType() == "TitleBarMorph"){
+                  //scale the whole window instead of reframing
+		  // DI:  Note this should reframe windows, with proportional layout of the interior frames
+		  // this code is all copied -- should be factored or, better, removed
+                  var ctr = this.targetMorph.owner().worldPoint(this.targetMorph.origin);
                   var v1 = p1.subPt(ctr); //vector from origin
                   var v0 = p0.subPt(ctr); //vector from origin at mousedown
                   var ratio = v1.r() / v0.r();
                   ratio = Math.max(0.1,Math.min(10,ratio));
-                  //console.log("ctr %s v0 %s v1 %s set scale to %s times %s",ctr,v0,v1,this.initialScale, ratio);
                   this.targetMorph.setScale(this.initialScale*ratio); 
                 } else {
                   this.targetMorph.reshape(this.partName, this.targetMorph.localize(evt.mousePoint), this, false);
@@ -2604,7 +2605,8 @@ Object.extend(HandMorph.prototype, {
             if (evt.shiftKey && this.mode == "shiftDragForDup") {
                 if (this.hasMovedSignificantly) {
                     var m = this.dragMorph;
-                    this.dragMorph = null;
+                    if(!m.okToDuplicate()) return;
+		    this.dragMorph = null;
                     this.mode = "normal";
                     m.copyToHand(this);
                     var offset = evt.mousePoint.subPt(this.lastMouseDownPoint);
@@ -2651,14 +2653,18 @@ Object.extend(HandMorph.prototype, {
                 if (receiver == null) receiver = this.world();
                 console.log('dropping %s on %s', m, receiver);
             
-                while (this.hasSubmorphs()) { // drop in same z-order as in hand
-                    receiver.addMorph(this.submorphs.firstChild);
-                }
-                // DI: May need to be updated for multiple drop above...
-                // println('changing ' + m);
-                // m.changed(); // KP: maybe needed for ClipMorphs
-                // m.updateOwner(); 
-                // m.updateBackendFields('origin'); 
+		while (this.hasSubmorphs()) { // drop in same z-order as in hand
+                        var m = this.submorphs.firstChild;
+			receiver.addMorph(m); // this removes it from hand
+			//DI: May need to be updated for collaboration...
+			//m.updateBackendFields('origin'); 
+
+                	// FIXME - folowing stmt is a workaround for the fact that if the targetMorph gets
+			//	dragged, its rotation value set in degrees rather than radians, and this
+			//	may foul things up later if .rotation is read rather than .getRotation
+			//	Remove this stmt after it gets fixed.
+			m.setRotation(m.getRotation()); //work-around for invalid degree/radian confusion
+		}
             } else {
                 // console.log('hand dispatching event ' + event.type + ' to owner '+ this.owner().inspect());
                 // KP: this will tell the world to send the event to the right morph
