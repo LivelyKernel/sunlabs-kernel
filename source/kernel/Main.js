@@ -17,6 +17,8 @@ Config.showBitmap = false;
 Config.showMap = true;
 Config.showSampleMorphs = true;
 Config.showTextSamples = true;
+// enabling / disabling network using demos hel debugging on firefox
+Config.showNetworkExamples = true;
 
 // More complex stuff that unnecessarily might slow things down
 Config.showClipMorph = Config.skipMostExamples;
@@ -116,7 +118,7 @@ function populateWorldWithExamples(world, otherWorld, server) {
     }
 
     // Sample weather morph
-    if (Config.showWeather) {
+    if (Config.showWeather && Config.showNetworkExamples) {
         // Maybe the icons should have rectangular images (unlike here)
         new WeatherWidget().openIn(world, pt(700, 50));
     }
@@ -125,12 +127,12 @@ function populateWorldWithExamples(world, otherWorld, server) {
 
     if (Config.showBrowser) new SimpleBrowser().openIn(world, pt(20,20));
 
-    if (Config.showStocks) {
+    if (Config.showStocks && Config.showNetworkExamples) {
         var stockWidget = new StockWidget();
         stockWidget.startSteppingRefreshCharts(stockWidget.openIn(world, pt(300, 500)));
     }
 
-    if (Config.showMessenger) new MessengerWidget().openIn(world, pt(30, 600));
+    if (Config.showMessenger && Config.showNetworkExamples) new MessengerWidget().openIn(world, pt(30, 600));
 
     if (Config.showTODO) {
         var todoMorph = TextMorph(Rectangle(440, 240, 300, 20),
@@ -207,7 +209,7 @@ function populateWorldWithExamples(world, otherWorld, server) {
                 }
             }
 
-            if (!lm1.myWorld.rssReader && Config.showRSSReader) {
+            if (!lm1.myWorld.rssReader && Config.showRSSReader && Config.showNetworkExamples) {
                 console.log('initting RSS reader');
                 lm1.myWorld.rssReader = new Feed("http://news.com.com/2547-1_3-0-5.xml").openIn(lm1.myWorld, pt(725, 120));
             }
