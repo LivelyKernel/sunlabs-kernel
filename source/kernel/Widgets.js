@@ -2798,7 +2798,9 @@ Object.extend(LinkMorph.prototype, {
 
     defaultFill: Color.black,
     defaultBorderColor: Color.black,
-    helpText: "Click here to enter or leave a subworld.\nUse menu 'grab' to move me.",
+    helpText: "Click here to enter or leave a subworld.\n" +
+              "Use menu 'grab' to move me.  Drag objects\n" +
+              "onto me to transport objects between worlds.",
     
     initialize: function(otherWorld /*, rest*/) {
         // In a scripter, type: world.addMorph(LinkMorph(null))
@@ -2915,7 +2917,7 @@ Object.extend(LinkMorph.prototype, {
         // Create only one help balloon at a time
         if (this.help) return;
         
-        this.help = TextMorph(Rectangle(evt.x, evt.y, 250, 20), this.helpText);
+        this.help = TextMorph(Rectangle(evt.x, evt.y, 260, 20), this.helpText);
         // trying to relay mouse events to the WindowControlMorph
         this.help.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
         
