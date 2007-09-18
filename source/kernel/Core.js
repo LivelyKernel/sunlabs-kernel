@@ -2916,7 +2916,9 @@ Object.extend(Morph.prototype, {
         evt.hand.setMouseFocus(null); 
     },
 
-    onMouseOver: function(evt) { }, //default behavior
+    onMouseOver: function(evt) {
+	// default behavior is do nothing
+	},
 
     designMode: false,
     

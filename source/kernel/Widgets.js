@@ -1255,7 +1255,8 @@ Object.extend(CheapListMorph.prototype, {
     onMouseDown: function(evt) {
         evt.hand.setMouseFocus(this);
         this.requestKeyboardFocus(evt.hand);
-        this.selectLineAt(this.charOfY(this.localize(evt.mousePoint))); 
+        // this.selectLineAt(this.charOfY(this.localize(evt.mousePoint))); 
+        this.onMouseMove(evt); 
     },
 
     onMouseMove: function(evt) {  
@@ -1456,13 +1457,15 @@ Object.extend(MenuMorph.prototype, {
         var delta = visibleRect.topLeft().subPt(menuRect.topLeft());  // delta to fix topLeft off screen
         delta = delta.addPt(visibleRect.bottomRight().subPt(menuRect.bottomRight()));  // same for bottomRight
         if (delta.dist(pt(0,0)) > 1) this.moveBy(delta);  // move if significant
+
+	// Note menu gets mouse focus by default.  If you don't want it, you'll have to null it
+	world.firstHand().setMouseFocus(this);
     },
 
     compose: function(location) { 
         var itemNames = this.items.map(function (item) { return item[0] });
         MenuMorph.superClass.initialize.call(this, location.extent(pt(200, 200)), itemNames);
         this.setWrapStyle(WrapStyle.SHRINK);  this.fitText(); // first layout is wasted!
-
 
         // styling
         this.textColor = Color.blue;
