@@ -24,13 +24,13 @@ Object.extend(TutorialMorph.prototype, {
 
     // Function to populate the world
     populateWorld: function(world) { 
-    
+
         // Create a polygon shape that looks like a star
         var widget = Morph(pt(0,0).asRectangle(), "rect");
-        widget.setShape(PolygonShape(null, this.makeStarVertices(50,pt(0,0),0), Color.yellow, 1, Color.black));
+        widget.setShape(PolygonShape(this.makeStarVertices(50,pt(0,0),0), Color.yellow, 1, Color.black));
         widget.setPosition(pt(100, 100));
         world.addMorph(widget);
-        widget.startSteppingFunction(60, function(msTime) { this.setRotation(this.getRotation() + 0.1) });
+        widget.startStepping(60, "rotateBy", 0.1);
 
         // Add a label to the star
         var widget2 = TextMorph(pt(10, 10).extent(pt(150, 50)), "I'm using a timer...");
@@ -40,18 +40,17 @@ Object.extend(TutorialMorph.prototype, {
         // Create three additional timed copies of the object that we just created
         var copy = widget.copy();
         world.addMorph(copy); 
-        copy.withAllSubmorphsDo(function() { this.startStepping(null); }, null);
         copy.moveBy(pt(300, 0));
 
         copy = copy.copy();
         world.addMorph(copy); 
-        copy.withAllSubmorphsDo(function() { this.startStepping(null); }, null);
-        copy.moveBy(pt(0, 200));
+        copy.moveBy(pt(-300, 200));
 
-        copy = copy.copy();
-        world.addMorph(copy); 
-        copy.withAllSubmorphsDo(function() { this.startStepping(null); }, null);
-        copy.moveBy(pt(-300, 0));
+        // Place the last copy on top of the previous one (just for fun...)
+        var copy2 = copy.copy();
+        copy2.setPosition(pt(0, 0));
+        copy.addMorph(copy2); 
+        // copy.moveBy(pt(-300, 0));
 
     },
 
