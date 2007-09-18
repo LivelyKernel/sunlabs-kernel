@@ -2341,6 +2341,7 @@ Object.extend(WorldMorph.prototype, {
         var world = this.world();
         var items = [
             ["New subworld (LinkMorph)", function(evt) { world.addMorph(LinkMorph(null, evt.mousePoint));}],
+            ["Line", function(evt) { world.addMorph(Morph.makeLine([evt.mousePoint, evt.mousePoint.addXY(60, 30)], 2, Color.black));}],
             ["Rectangle", function(evt) { world.addMorph(Morph(evt.mousePoint.extent(pt(60, 30)), "rect"));}],
             ["Ellipse", function(evt) { world.addMorph(Morph(evt.mousePoint.extent(pt(50, 50)), "ellipse"));}],
             ["TextMorph", function(evt) { world.addMorph(TextMorph(evt.mousePoint.extent(pt(120, 10)), "This is a TextMorph"));}],
