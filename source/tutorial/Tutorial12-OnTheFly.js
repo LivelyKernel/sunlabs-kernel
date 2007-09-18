@@ -26,9 +26,12 @@ Object.extend(TutorialMorph.prototype, {
 
         var widget = TextMorph(pt( 50, 120).extent(pt(250, 50)), this.script3);
         world.addMorph(widget);
+        widget.rotateBy(0.1); // Just for fun...
 
         var widget = TextMorph(pt(400, 120).extent(pt(250, 50)), this.script4);
         world.addMorph(widget);
+        widget.rotateBy(0.2); // Just for fun...
+        widget.setScale(1.2); // Just for fun...
 
     },
 
