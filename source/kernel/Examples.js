@@ -414,7 +414,7 @@ Object.extend(DoodleMorph.prototype, {
     },
 
     onMouseDown: function(evt) { // Default behavior is to grab a submorph
-	this.openForDragAndDrop = true;
+        this.openForDragAndDrop = true;
         var m = this.morphToReceiveEvent(evt);
         if (m == null || m == this) { this.makeSelection(evt); return true; }
         if (m.handlesMouseDown(evt)) return false;
@@ -2413,7 +2413,7 @@ Object.extend(WeatherWidget.prototype, {
     initialize: function() { 
         WeatherWidget.superClass.initialize.call(this);
         // Fetch weather upon starting the widget
-        this.getWeather("6568"); // san fransisco international as default
+        this.getWeather("6568"); // San Francisco International (SFO) as default
     },
     
     openIn: function(world, location) {
@@ -2430,9 +2430,9 @@ Object.extend(WeatherWidget.prototype, {
         
         // initialize UI update
         switch (item) {
-        case "San Fransisco Intern., California":
+        case "San Francisco, California":
             this.getWeather("6568");
-//          this.getWeather("stanford", "US", "CA"); // "USCA0050"  6568 -- san fransisco international
+//          this.getWeather("stanford", "US", "CA"); // "USCA0050"  6568 -- San Francisco International (SFO)
             // bbc's USA cities: http://www.bbc.co.uk/cgi-perl/weather/search/new_search.pl?search_query=USA&x=0&y=0
             break;
         case "Tampere, Finland":
@@ -2513,7 +2513,7 @@ Object.extend(WeatherWidget.prototype, {
         panel.addMorph(m = ImageMorph(Rectangle(10,205,20,20), "http://www.cs.tut.fi/~kuusipal/flair/visibility.gif"));
         m.setFill(null);
 
-        panel.addMorph(m = CheapListMorph(Rectangle(40,3,200,20),["San Fransisco Intern., California", "Tampere, Finland", "London, United Kingdom"]));
+        panel.addMorph(m = CheapListMorph(Rectangle(40,3,200,20),["San Francisco, California", "Tampere, Finland", "London, United Kingdom"]));
         m.connectModel({model: this, getSelection: "getListItem", setSelection: "setListItem"});
         m.selectLineAt(0); // Select the first item by default
 
