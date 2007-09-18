@@ -1085,7 +1085,7 @@ Object.extend(AsteroidsSprite.prototype, {
     /* double */  deltaX: 0,        // Amount to change the screen position.
     /* double */  deltaY: 0,
     /* Point[] */ shape: null,  // Initial sprite shape, centered at the origin (0,0).
-    /* Point[] */ sprite: null, // Final location and shape of sprite after applying rotation and
+    /* PolygonShape */ sprite: null, // Final location and shape of sprite after applying rotation and
     // moving to screen position. Used for drawing on the screen and
     // in detecting collisions.
     // Morphic-specific data
@@ -1094,7 +1094,8 @@ Object.extend(AsteroidsSprite.prototype, {
 
     initialize: function(vertices) {
         this.shape = vertices;
-	this.sprite = null;
+        this.sprite = PolygonShape([], Color.black, 1, Color.yellow);
+
     },
     
     // Methods:
@@ -1123,17 +1124,15 @@ Object.extend(AsteroidsSprite.prototype, {
     render: function() {
         // Render the sprite's shape and location by rotating its base shape
         // and moving it to its proper screen position.
-    
-        this.sprite = [];
-	
+	var matrix = Transform.createSimilitude(pt(this.currentX + gameWidth/2, this.currentY + gameHeight/2), -this.angle, 1).matrix;
+	var verts = [];
         for (var i = 0; i < this.shape.length; i++) {
-            this.sprite.push(pt(Math.round(this.shape[i].x * Math.cos(this.angle) + this.shape[i].y * Math.sin(this.angle)  +  this.currentX + gameWidth  / 2),
-				Math.round(this.shape[i].y * Math.cos(this.angle) - this.shape[i].x * Math.sin(this.angle)  + this.currentY + gameHeight / 2)));
+	    verts.push(this.shape[i].matrixTransform(matrix));
         }
-    
+	
+        this.sprite.setVertices(verts);
         // Create a new morph based on the sprite
         this.morph = this.createMorph(this.sprite);
-    
     },
     
     isColliding: function(/* AsteroidsSprite */ s) {
@@ -1141,30 +1140,30 @@ Object.extend(AsteroidsSprite.prototype, {
         // Determine if one sprite overlaps with another, i.e., if any vertice
         // of one sprite lands inside the other.
     
-        for (i = 0; i < s.sprite.length; i++)
-            if (inside(this.sprite, s.sprite[i]))
+	var mine = this.sprite.vertices();
+	var other = s.sprite.vertices();
+        for (i = 0; i < other.length; i++)
+            if (inside(mine, other[i]))
                 return true;
-        for (i = 0; i < this.sprite.length; i++)
-            if (inside(s.sprite, this.sprite[i]))
+        for (i = 0; i < mine.length; i++)
+            if (inside(other, mine[i]))
                 return true;
         return false;
     },
 
     createMorph: function(sprite) {
         // This function creates a Morph out of a game polygon/sprite
-	
-        if (sprite.length > 0) {
+	var verts = sprite.vertices();
+        if (verts.length > 0) {
             var morph;
-        
             // This is inefficient: We should reuse the shape instead of creating a new one
-            var shape = this.morphShape = PolygonShape(sprite, Color.black, 1, Color.yellow);
             if (this.morph) {
                 morph = this.morph; 
-                morph.setPosition(sprite[0]);
-                morph.setShape(shape);
+                morph.setPosition(verts[0]);
+                morph.setShape(sprite);
             } else {
-                morph = Morph(sprite[0].extent(pt(20, 20)), "rect");
-                morph.setShape(shape);
+                morph = Morph(verts[0].extent(pt(20, 20)), "rect");
+                morph.setShape(sprite);
                 gameMorph.addMorph(morph);
             }
             return morph;
@@ -2094,10 +2093,11 @@ GameMorph.prototype.runAsteroidsGame = function() {
     // with a random rotation.
 
     s.render();
+    var sverts = s.sprite.vertices();
     c = 2;
-    if (detail || s.sprite.length < 6)
+    if (detail || sverts.length < 6)
       c = 1;
-    for (i = 0; i < s.sprite.length; i += c) {
+    for (i = 0; i < sverts.length; i += c) {
       explosionIndex++;
       if (explosionIndex >= MAX_SCRAP)
         explosionIndex = 0;
@@ -2111,8 +2111,8 @@ GameMorph.prototype.runAsteroidsGame = function() {
       explosions[explosionIndex].shape = [];
       explosions[explosionIndex].shape.push(s.shape[i].clone());
       j = i + 1;
-      if (j >= s.sprite.length)
-        j -= s.sprite.length;
+      if (j >= sverts.length)
+        j -= sverts.length;
       explosions[explosionIndex].shape.push(s.shape[j].clone());
       explosions[explosionIndex].angle = s.angle;
       explosions[explosionIndex].deltaAngle = (Math.random() * 2 * Math.PI - Math.PI) / 15;
