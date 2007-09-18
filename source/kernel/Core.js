@@ -646,7 +646,7 @@ Object.extend(Rectangle.prototype, {
     },
     
     scaleByRect: function(r) { // r is a relative rect, as a pane spec in a window
-        return Rectangle(r.x*this.width, r.y*this.height, r.width*this.width, r.height*this.height); 
+        return Rectangle(this.x + (r.x*this.width), this.y + (r.y*this.height), r.width*this.width, r.height*this.height); 
     },
     
     insetBy: function(d) {

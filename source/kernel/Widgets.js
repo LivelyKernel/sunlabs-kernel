@@ -1137,49 +1137,24 @@ Object.extend(PanelMorph.prototype, {
 
 });
 
-// AT: Shouldn't this code be moved to Tools.js?
 Object.extend(PanelMorph, {
-    makeBrowser: function(extent, bottomPaneProportion) {
-        // DI:  This has to get fixed.  Inspector doesnt have same panes as browser.
-        //  The idea is good.  We want something *like*...
-        //  makeBrowser([['leftPane', ListPane, rect(0, 0, 0.5, 0.6)],
-        //    ['rightPane', ListPane, rect(0.5, 0, 0.5, 0.6)],
-        //    ['bottomPane', TextPane, rect(0, 0.6, 1, 0.4)]  ])
-        // Note: <Rect> scaleByRect will be useful here
+    makePanedPanel: function(extent, paneSpecs) {
+	// Generalized constructor for paned window panels
+	// paneSpec is an array of arrays of the form...
+	//	['leftPane', ListPane, Rectangle(0, 0, 0.5, 0.6)],
+	// See example calls in, eg, SimpleBrowser.buildView() for how to use this
         var panel = PanelMorph(extent);
-        panel.setFill(Color.primary.blue.lighter().lighter());
+	panel.setFill(Color.primary.blue.lighter().lighter());
         panel.setBorderWidth(2);
-        if (bottomPaneProportion === undefined) bottomPaneProportion = 0;
-        var r = Rectangle(0, 0, extent.x/2, extent.y*(1 - bottomPaneProportion));
-        var left = panel.setNamedMorph("leftPane", ListPane(r));
-        var right = panel.setNamedMorph("rightPane", ListPane(r));
-        right.align(right.bounds().topLeft(), left.bounds().topRight());
-        if (bottomPaneProportion) {
-            r = Rectangle(0, 0, extent.x, extent.y*bottomPaneProportion);
-            var bottom = panel.setNamedMorph("bottomPane", TextPane(r, "-----"));
-            bottom.align(bottom.bounds().topLeft(), left.bounds().bottomLeft());
-        }
-        return panel;
-    },
 
-    makeInspector: function(extent, bottomPaneProportion) {
-        // DI:  Obviously, this should go away when makeBrowser gets generalized
-        var panel = PanelMorph(extent);
-        panel.setFill(Color.primary.blue.lighter().lighter());
-        panel.setBorderWidth(2);
-        if (bottomPaneProportion === undefined) bottomPaneProportion = 0;
-        var r = Rectangle(0, 0, extent.x/2, extent.y*(1 - bottomPaneProportion));
-        var left = panel.setNamedMorph("leftPane", ListPane(r));
-        var right = panel.setNamedMorph("rightPane", TextPane(r, "-----"));
-        right.align(right.bounds().topLeft(), left.bounds().topRight());
-        if (bottomPaneProportion) {
-            r = Rectangle(0, 0, extent.x, extent.y*bottomPaneProportion);
-            var bottom = panel.setNamedMorph("bottomPane", TextPane(r, "-----"));
-            bottom.align(bottom.bounds().topLeft(), left.bounds().bottomLeft());
-        }
+	paneSpecs.each( function(spec) {
+		var paneName = spec[0];
+		var paneConstructor = spec[1];
+		var paneRect = pt(0,0).extent(extent).scaleByRect(spec[2]);
+		panel.setNamedMorph(paneName, paneConstructor(paneRect));
+        });
         return panel;
     }
-    
 });
 
 /**
