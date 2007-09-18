@@ -34,7 +34,7 @@ var Loader = Class.create();
 Object.extend(Loader, {
 
     loadScript: function(ns, url) {
-        var script = document.createElementNS(Namespace.XHTML, "script");
+        var script = NodeFactory.createNS(Namespace.XHTML, "script");
         script.setAttributeNS(Namespace.XHTML, "src", url);
         document.documentElement.appendChild(script);
         //document.documentElement.removeChild(script);
@@ -85,13 +85,18 @@ Object.extend(Query, {
 
 
 var NodeFactory = {
-    create: function(name, attributes) {
-        var element = document.createElementNS(Namespace.SVG, name);
+    createNS: function(ns, name, attributes) {
+        var element = document.createElementNS(ns, name);
         if (attributes) {
             $H(attributes).each(function(pair) { element.setAttributeNS(null, pair[0], pair[1].toString()); });
         }
         return element;
     },
+    
+    create: function(name, attributes) {
+	return this.createNS(Namespace.SVG, name, attributes);
+    },
+
 
     prototypes: new Hash(), // elementName -> prototype
 
@@ -2107,19 +2112,26 @@ Object.extend(Morph.prototype, {
 
         for (var i = 0; i < children.length; i++) {
             var node = children[i];
-            if (node.nodeName == '#text') {
-                // whitespace, ignore
-            } else if (node.tagName == 'action') {
-                var a = node.textContent.evalJSON();
-                console.log('starting stepping %s based on %s', this, node.textContent);
+	    switch (node.tagName) {
+	    case "action": {
+		var a = node.textContent.evalJSON();
+                console.info("starting stepping %s based on %s", this, node.textContent);
                 this.startStepping(a.stepTime, a.scriptName, a.argIfAny);
-	    } else if (node.tagName == 'model') {
-		if (modelNode != null) console.warn('%s already has modelNode %s', this, modelNode);
-
+		break;
+	    }
+	    case "model": {
+		if (modelNode != null) console.warn("%s already has modelNode %s", this, modelNode);
 		modelNode = node;
 		// postpone hooking up model until all the morphs are reconstructed
-		console.log('found modelNode %s', new XMLSerializer().serializeToString(node));
-            } else if (node.tagName == 'defs') { // FIXME FIXME, this is painfully ad hoc!
+		console.info("found modelNode %s", new XMLSerializer().serializeToString(node));
+		break;
+	    } 
+	    case "modelPlug": {
+		this.modelPlug = this.addChildElement(Model.becomePlug(node));
+		console.info("%s reconstructed plug %s", this, this.modelPlug);
+		break;
+            } 
+	    case "defs": { // FIXME FIXME, this is painfully ad hoc!
                 if (this.defs) console.warn('%s already has defs %s', this, this.defs);
                 this.defs = node;
                 for (var def = node.firstChild; def != null; def = def.nextSibling) {
@@ -2136,8 +2148,8 @@ Object.extend(Morph.prototype, {
                         def.setAttribute('id', newPathId);
                         console.log('assigned new id %s', def.getAttribute('id'));
                         break;
-                    case 'linearGradient':
-                    case 'radialGradient': // FIXME gradients can be used on strokes too
+                    case "linearGradient":
+                    case "radialGradient": // FIXME gradients can be used on strokes too
                         var newFillId = "fill_" + this.id;
                         if (this.shape) {
                             var myFill = this.shape.getAttributeNS(null, 'fill');
@@ -2152,30 +2164,33 @@ Object.extend(Morph.prototype, {
                         }
                         def.setAttribute('id', newFillId);
                         break;
-		    case 'modelPlug':
-			this.modelPlug = Model.becomePlug(def);
-			console.log('%s reconstructed plug %s', this, this.modelPlug);
-			break;
                     default:
                         console.warn('unknown def %s', def);
                     }
                 }
+		break;
                 // let it be
-            } else if (DisplayObject.prototype.getType.call(node)) {
-                if (/FocusHalo/.test(DisplayObject.prototype.getType.call(node))) { //don't restore
-                    this.removeChild(node);
-                } else {
-                    this.restoreFromElement(node, importer);
-                }   
-            } else {
-                console.warn('cannot handle element %s, %s', node.tagName, node.textContent);
-            }
-        }
+            } 
+	    default: {
+		if (DisplayObject.prototype.getType.call(node)) {
+                    if (/FocusHalo/.test(DisplayObject.prototype.getType.call(node))) { //don't restore
+			this.removeChild(node);
+                    } else {
+			this.restoreFromElement(node, importer);
+                    }   
+		} else if (node.nodeName == '#text') {
+		    console.log('text tag name %s', node.tagName);
+                    // whitespace, ignore
+		} else {
+                    console.warn('cannot handle element %s, %s', node.tagName, node.textContent);
+		}
+	    }
+            } // end for
+	}
 	if (modelNode) {
 	    var model = importer.importModelFrom(modelNode);
-	    this.removeChild(modelNode); // currently modelNode is not permanently stored (
+	    this.removeChild(modelNode); // currently modelNode is not permanently stored 
 	}
-	
     },
     
     restoreFromElement: function(element/*:Element*/, importer/*Importer*/)/*:Boolean*/ {
@@ -3262,7 +3277,7 @@ Object.extend(Morph.prototype, {
         if (!this.activeScripts) this.activeScripts = [action];
         else this.activeScripts.push(action);
         console.log('added script ' + action.scriptName);
-        var actionCode = document.createElementNS(Namespace.LIVELY, "action");
+        var actionCode = NodeFactory.createNS(Namespace.LIVELY, "action");
         actionCode.appendChild(document.createCDATASection(Object.toJSON(action)));
         this.addChildElement(actionCode);
     },
@@ -3623,8 +3638,11 @@ Object.extend(Morph.prototype, {
     connectModel: function(plugSpec) {
         // connector makes this view pluggable to different models, as in
         // {model: someModel, getList: "getItemList", setSelection: "chooseItem"}
-        this.assign('modelPlug', Model.makePlug(plugSpec));
-        if (plugSpec.model.addDependent)  // for mvc-style updating
+	var newPlug = Model.makePlug(plugSpec);
+	if (this.modelPlug) this.replaceChild(newPlug, this.modelPlug);
+	else this.addChildElement(newPlug);
+	this.modelPlug = newPlug;
+	if (plugSpec.model.addDependent) // for mvc-style updating
             plugSpec.model.addDependent(this); 
     },
 
@@ -3744,13 +3762,13 @@ Object.extend(Model.prototype, {
 
 Object.extend(Model, {
     makePlug: function(spec) {
-	var node = document.createElementNS(Namespace.LIVELY, "modelPlug");
+	var node = NodeFactory.createNS(Namespace.LIVELY, "modelPlug");
 	var props = Object.properties(spec);
 	for (var i = 0; i < props.length; i++) {
 	    var prop = props[i];
 	    node[prop] = spec[prop];
 	    if (prop != 'model') {
-		var acc = node.appendChild(document.createElementNS(Namespace.LIVELY, "accessor"));
+		var acc = node.appendChild(NodeFactory.createNS(Namespace.LIVELY, "accessor"));
 		acc.setAttributeNS(Namespace.LIVELY, "formal", prop);
 		acc.setAttributeNS(Namespace.LIVELY, "actual", spec[prop]);
 	    }

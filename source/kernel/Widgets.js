@@ -38,7 +38,7 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
         
 	var model = new SimpleModel(this, "Value");
         // this default self connection may get overwritten by, eg, connectModel()...
-        this.assign('modelPlug', model.makePlug());
+        this.modelPlug = this.addChildElement(model.makePlug());
 
         // Styling
         this.setModelValue('setValue', false);
@@ -1180,9 +1180,8 @@ Object.extend(CheapListMorph.prototype, {
         var listText = itemList ? itemList.join("\n") : "";
         CheapListMorph.superClass.initialize.call(this, initialBounds, listText);
         // this default self connection may get overwritten by, eg, connectModel()...
-        var model = new SimpleModel(null, 'List', 'Selection');
-        this.assign('modelPlug', model.makePlug());
-
+        var model = new SimpleModel(null, "List", "Selection");
+	this.modelPlug = this.addChildElement(model.makePlug());
         this.itemList = itemList;
         this.setModelValue('setList', itemList);
         //console.log('model now %s', this.modelPlug.model);
@@ -1192,7 +1191,6 @@ Object.extend(CheapListMorph.prototype, {
 
     restorePersistentState: function(importer) {
         CheapListMorph.superClass.restorePersistentState.call(this, importer);
-	console.log('restoring: textString is %s', this.textString);
         this.itemList = this.textString.split('\n');
         this.setModelValue('setList', this.itemList);
     },
@@ -1484,9 +1482,9 @@ Object.extend(SliderMorph.prototype, {
     
     initialize: function(initialBounds, scaleIfAny) {
         SliderMorph.superClass.initialize.call(this, initialBounds, "rect");
-        var model = new SimpleModel(null, 'Value', 'Extent');
+        var model = new SimpleModel(null, "Value", "Extent");
         // this default self connection may get overwritten by, eg, connectModel()...
-        this.assign('modelPlug', model.makePlug());
+        this.modelPlug = this.addChildElement(model.makePlug());
         this.scale = (scaleIfAny == null) ? 1.0 : scaleIfAny;
         var slider = Morph(Rectangle(0, 0, 8, 8), "rect");
         slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});
