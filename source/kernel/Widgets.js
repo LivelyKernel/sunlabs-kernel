@@ -1733,9 +1733,7 @@ Object.extend(ScrollPane.prototype, {
  */ 
 
 function ListPane(initialBounds) {
-    var pane = ScrollPane(CheapListMorph(initialBounds,["-----"]), initialBounds); 
-    pane.setType("ListPane");
-    return pane;
+    return ScrollPane(CheapListMorph(initialBounds,["-----"]), initialBounds); 
 };
 
 /**
@@ -1743,9 +1741,7 @@ function ListPane(initialBounds) {
  */ 
 
 function TextPane(initialBounds, defaultText) {
-    var pane = ScrollPane(TextMorph(initialBounds, defaultText), initialBounds); 
-    pane.setType("TextPane");
-    return pane;
+    return ScrollPane(TextMorph(initialBounds, defaultText), initialBounds); 
 };
 
 /**
@@ -1753,9 +1749,7 @@ function TextPane(initialBounds, defaultText) {
  */ 
 
 function PrintPane(initialBounds, defaultText) {
-    var pane = ScrollPane(PrintMorph(initialBounds, defaultText), initialBounds); 
-    pane.setType("PrintPane");
-    return pane;
+    return ScrollPane(PrintMorph(initialBounds, defaultText), initialBounds); 
 };
 
 // ===========================================================================
@@ -2356,6 +2350,10 @@ Object.extend(WorldMorph.prototype, {
             console.log('null filename, not publishing %s', morphs);
            return;
         }
+	if (!this.defaultStore) {
+	    alert("no store to access the startup file, location " + location);
+	    return;
+	}
         console.log('morphs is %s', morphs);
         var newDoc = null;
         var url = "http://" + this.defaultStore.host + "/" + this.defaultStore.path + "/lively.xhtml";
@@ -2386,8 +2384,15 @@ Object.extend(WorldMorph.prototype, {
         url = "http://" + this.defaultStore.host + "/" + this.defaultStore.path + "/" + filename;
         var container = newDoc.createElementNS(Namespace.SVG, 'g');
         morphs.each(function(morph) {
-            console.log('processing morph %s', morph);
+
+	    var model = morph.getModel();
+            console.log('processing morph %s model %s', morph, model);
+	    var modelNode = null;
+	    if (model) 
+		modelNode = morph.addChildElement(model.toMarkup(newDoc));
             container.appendChild(newDoc.importNode(morph, true));
+	    if (modelNode)
+		modelNode.parentNode.removeChild(modelNode);
             container.appendChild(newDoc.createTextNode('\n\n'));
         });
         container.setAttribute("id", "ShrinkWrapped");

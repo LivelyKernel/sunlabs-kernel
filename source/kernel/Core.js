@@ -3487,7 +3487,7 @@ Object.extend(Exporter.prototype, {
     
     serialize: function() {
 	// model is inserted as part of the root morph.
-	var modelNode = (this.rootMorph.getModel() || { toMarkup: function() { return null; }}).toMarkup(document, this);
+	var modelNode = (this.rootMorph.getModel() || { toMarkup: function() { return null; }}).toMarkup();
 	if (modelNode) {
 	    this.rootMorph.addChildElement(modelNode);
 	}
@@ -3534,19 +3534,10 @@ Object.extend(Importer.prototype, {
         }
 
         HostClass.becomeInstance(node, window[morphTypeName]);
-        node.reinitialize(this);
-/*
-	var modelNodes = node.getElementsByTagName("model");
-
-	if (modelNodes.length == 1) {
-	    console.log('found modelNode %s', new XMLSerializer().serializeToString(modelNode));
-  	    var modelNode = modelNodes[0];
-            var model = this.importModelFrom(modelNodes);
-            modelNode.parentNode.removeChild(modelNode);
-        } else if (modelNodes.length != 0) {
-	    console.log('unexpected model nodes');
+	if (!node.reinitialize) {
+	    console.log('why no reinit in %s', new XMLSerializer().serializeToString(node)); 
 	}
-*/
+        node.reinitialize(this);
         return node; 
     },
     
@@ -3846,10 +3837,11 @@ Object.category(SimpleModel.prototype,  "core", function() {
         },
 
 	toMarkupString: function(exporter) {
-	    return new XMLSerializer().serializeToString(this.toMarkup(document, exporter));
+	    return new XMLSerializer().serializeToString(this.toMarkup(document));
 	},
 
-	toMarkup: function(doc, exporter) {
+	toMarkup: function(doc) {
+	    if (!doc) doc = document;
 	    var modelEl = doc.createElementNS(Namespace.LIVELY, "model");
 	    var vars = this.variables();
 	    for (var i = 0; i < vars.length; i++) {
