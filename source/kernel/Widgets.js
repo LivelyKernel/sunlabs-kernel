@@ -2739,6 +2739,7 @@ Object.extend(HandMorph.prototype, {
 	grabbedMorph = grabbedMorph.okToBeGrabbedBy(evt);
         if (!grabbedMorph) return;
 
+	// console.log('owner = ' + Object.inspect(grabbedMorph.owner()) + '; open = ' + Object.inspect(grabbedMorph.owner().openForDragAndDrop));
 	if (grabbedMorph.owner() && !grabbedMorph.owner().openForDragAndDrop) return;
 
         if (this.keyboardFocus && grabbedMorph !== this.keyboardFocus) {

@@ -414,7 +414,8 @@ Object.extend(DoodleMorph.prototype, {
     },
 
     onMouseDown: function(evt) { // Default behavior is to grab a submorph
-        var m = this.morphToGrabOrReceive(evt);
+	this.openForDragAndDrop = true;
+        var m = this.morphToReceiveEvent(evt);
         if (m == null || m == this) { this.makeSelection(evt); return true; }
         if (m.handlesMouseDown(evt)) return false;
         evt.hand.grabMorph(m, evt);
