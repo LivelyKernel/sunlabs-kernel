@@ -13,14 +13,46 @@ Object.extend(TutorialMorph.prototype, {
     populateWorld: function(world) { 
     
         // Add a LinkMorph
-        var widget = LinkMorph(null, pt(100, 100));
+        var link = LinkMorph(null, pt(50, 50));
+        world.addMorph(link);
+
+        // Add a TextMorph to the main world
+        var text = TextMorph(pt(150, 40).extent(pt(300, 50)), "This is the top-level world");
+        text.setFontSize(20);
+        text.setTextColor(Color.blue);
+        world.addMorph(text);
+
+        var widget;
+        var colors = Color.wheel(4);
+        var widgetExtent = pt(70, 30);
+        var loc = pt(30, 150); 
+        var dy = pt(0, 50); 
+        var dx = pt(120, 0);
+ 
+        // Create a sample rectangle       
+        widget = Morph(loc.extent(widgetExtent), "rect");
+        widget.setFill(colors[0]);
         world.addMorph(widget);
 
-        // Add a TextMorph
-        widget = TextMorph(pt(250, 80).extent(pt(300, 50)), "This is the top-level world");
-        widget.setFontSize(20);
-        widget.setTextColor(Color.blue);
+        // Create a sample ellipse
+        widget = Morph(loc.addPt(dx).extent(widgetExtent), "ellipse");
+        widget.setFill(colors[1]);
         world.addMorph(widget);
+
+        // Create a sample line
+        loc = loc.addPt(dy);
+        widget = Morph.makeLine([loc.addXY(0,15),loc.addXY(70,15)], 2, Color.black);
+        world.addMorph(widget);
+        
+        // Create a sample polygon
+        var l2 = loc.addPt(dx);
+        widget = Morph(l2.asRectangle(),"rect");
+        widget.setShape(PolygonShape([pt(0,0),pt(70,0),pt(40,30),pt(0,0)], colors[2],1,Color.black));
+        world.addMorph(widget);
+    
+        // Add an ImageMorph to the subworld
+        var image = ImageMorph(pt(140, 60).extent(340, 340), "http://www.cs.tut.fi/~taivalsa/Software/Halloween.jpg");
+        link.myWorld.addMorph(image); 
 
     },
 

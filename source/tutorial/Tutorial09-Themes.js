@@ -15,7 +15,7 @@ Object.extend(TutorialMorph.prototype, {
         var widget = new WidgetTester();
         widget.openIn(world, pt(50, 50));
         
-        world.addMorph(WindowMorph(Sun3DMorph(pt(550, 50).extent(pt(200, 200))), 'Sun 3D Logo'));
+        world.addMorph(WindowMorph(Sun3DMorph(pt(520, 50).extent(pt(200, 200))), 'Sun 3D Logo'));
 
     },
 

@@ -21,7 +21,7 @@ Object.extend(TutorialMorph.prototype, {
         widget.startSteppingScripts();
 
         // Add a Doodle Morph
-        widget = WindowMorph(DoodleMorph(pt(445, 10).extent(pt(300, 300))), 'Doodle Morph');
+        widget = WindowMorph(DoodleMorph(pt(425, 10).extent(pt(300, 300))), 'Doodle Morph');
         world.addMorph(widget);
         
         // Add Asteroids game
