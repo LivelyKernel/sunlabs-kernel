@@ -310,7 +310,7 @@ function populateWorldWithExamples(world, otherWorld, server) {
 function main() {
 
     // Create an empty world
-    var world = WorldMorph.createEmptyWorld();
+    var world = WorldMorph(Canvas);
     WorldMorph.setCurrent(world);
     world.displayWorldOn(Canvas);
     console.log('made world');

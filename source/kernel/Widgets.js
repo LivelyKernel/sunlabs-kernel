@@ -1903,6 +1903,7 @@ Object.extend(PasteUpMorph.prototype, {
 /**
  * @class WorldMorph: A Morphic world
  */ 
+// KP: WorldMorph isn't really a widget
 
 WorldMorph = HostClass.create('WorldMorph', PasteUpMorph);
 
@@ -1920,9 +1921,9 @@ Object.extend(WorldMorph, {
         WorldMorph.currentWorld = newWorld;
     },
 
-    // Create an empty world
+    // Create an empty world KP: obsolete?
     createEmptyWorld: function() {
-        var w = WorldMorph('canvas');
+        var w = WorldMorph(Canvas);
         // w.displayTheme = WorldMorph.defaultThemes; // * wrong
         // w.applyStyle(); // Because it wasnt there until now
         // w.setFill(StipplePattern.create(Color.neutral.lightGray, 6, new Color(0.83, 0.83, 0.83), 1));
@@ -1995,8 +1996,8 @@ Object.extend(WorldMorph.prototype, {
 
     defaultFill: Color.primary.blue,
 
-    initialize: function(svgId, backgroundImageId) {
-        var bounds = document.getElementById(svgId).bounds();
+    initialize: function(canvas, backgroundImageId) {
+        var bounds = canvas.bounds();
         // sometimes bounds has zero dimensions (when reloading thes same page, timing issues?
         // in Firefox bounds may be 1x1 size?? maybe everything should be run from onload or sth?
 
@@ -2788,6 +2789,7 @@ Object.extend(HandMorph.prototype, {
  * @class LinkMorph
  * LinkMorph implements a two-way hyperlink between two Morphic worlds
  */ 
+// KP: LinkMorph isn't really a widget
 
 LinkMorph = HostClass.create('LinkMorph', Morph);
 
@@ -2819,7 +2821,7 @@ Object.extend(LinkMorph.prototype, {
         this.addChildElement(sign);
 
         if (!otherWorld) {
-            otherWorld = WorldMorph.createEmptyWorld(Canvas, 2, null);  //*** need a way to generate proper world numbers
+            otherWorld = WorldMorph(Canvas);
             var pathBack = LinkMorph(WorldMorph.current(), bounds);
             pathBack.setFill(RadialGradient.makeCenteredGradient(Color.primary.yellow, Color.black));
             otherWorld.addMorph(pathBack);
