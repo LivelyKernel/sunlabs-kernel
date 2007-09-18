@@ -2085,7 +2085,7 @@ Object.extend(Morph.prototype, {
         this.pvtSetTransform(this.retrieveTransform());
         var prevId = this.pickId();
         if (importer) { 
-            importer.addMapping(prevId, this.id); 
+            importer.addMapping(prevId, this); 
         }
         this.restorePersistentState(importer);    
         this.initializeTransientState(null);
@@ -2103,7 +2103,8 @@ Object.extend(Morph.prototype, {
         for (var desc = this.firstChild; desc != null; desc = desc.nextSibling) {
             children.push(desc);
         }
-        
+        var modelNode = null;
+
         for (var i = 0; i < children.length; i++) {
             var node = children[i];
             if (node.nodeName == '#text') {
@@ -2112,10 +2113,14 @@ Object.extend(Morph.prototype, {
                 var a = node.textContent.evalJSON();
                 console.log('starting stepping %s based on %s', this, node.textContent);
                 this.startStepping(a.stepTime, a.scriptName, a.argIfAny);
+	    } else if (node.tagName == 'model') {
+		if (modelNode != null) console.warn('%s already has modelNode %s', this, modelNode);
+
+		modelNode = node;
+		// postpone hooking up model until all the morphs are reconstructed
+		console.log('found modelNode %s', new XMLSerializer().serializeToString(node));
             } else if (node.tagName == 'defs') { // FIXME FIXME, this is painfully ad hoc!
-                if (this.defs) {
-                    console.warn('%s already has defs %s', this, this.defs);
-                }
+                if (this.defs) console.warn('%s already has defs %s', this, this.defs);
                 this.defs = node;
                 for (var def = node.firstChild; def != null; def = def.nextSibling) {
                     switch (def.tagName) {
@@ -2166,6 +2171,11 @@ Object.extend(Morph.prototype, {
                 console.warn('cannot handle element %s, %s', node.tagName, node.textContent);
             }
         }
+	if (modelNode) {
+	    var model = importer.importModelFrom(modelNode);
+	    this.removeChild(modelNode); // currently modelNode is not permanently stored (
+	}
+	
     },
     
     restoreFromElement: function(element/*:Element*/, importer/*Importer*/)/*:Boolean*/ {
@@ -3070,7 +3080,7 @@ Object.extend(Morph.prototype, {
             [((this.openForDragAndDrop) ? "close DnD" : "open DnD"), this, "toggleDnD", evt.mousePoint],
             ["show Lively markup", this.addSvgInspector.bind(this).curry(this)],
             ["publish shrink-wrapped as...", function(m) { WorldMorph.current().makeShrinkWrappedWorldWith(m, prompt('publish as')) }.curry(this)]
-            ];
+        ];
         var m = MenuMorph(items); 
         if (!this.okToDuplicate()) m.removeItemNamed("duplicate");
 	if (evt.mouseButtonPressed) evt.hand.setMouseFocus(m);
@@ -3461,7 +3471,16 @@ Object.extend(Exporter.prototype, {
     },
     
     serialize: function() {
-        return new XMLSerializer().serializeToString(this.rootMorph);
+	// model is inserted as part of the root morph.
+	var modelNode = (this.rootMorph.getModel() || { toMarkup: function() { return null; }}).toMarkup(document, this);
+	if (modelNode) {
+	    this.rootMorph.addChildElement(modelNode);
+	}
+        var result = new XMLSerializer().serializeToString(this.rootMorph);
+	if (modelNode) {
+	    this.rootMorph.removeChild(modelNode);
+	}
+	return result;
     }
 
 });
@@ -3479,19 +3498,14 @@ Object.extend(Importer.prototype, {
         this.morphMap = new Hash();
     },
     
-    addMapping: function(oldId, newId) {
-        this.morphMap["" + oldId] = "" + newId; // force strings just in case
+    addMapping: function(oldId, newMorph) {
+        this.morphMap["" + oldId] = newMorph; // force strings just in case
     },
     
     lookupMorph: function(oldId) {
-        var newId = this.morphMap["" + oldId];
-        if (newId) {
-            var result = document.getElementById(newId);
-            //console.log('importer found document id %s', result);
-            return result;
-        } else {
-            return null;
-        }
+        var result = this.morphMap["" + oldId];
+	if (!result) console.log('no mapping found for oldId %s', oldId);
+	return result;
     },
 
     importFromNode: function(node) {
@@ -3501,14 +3515,27 @@ Object.extend(Importer.prototype, {
         //console.log('have morph %s', morphTypeName);
 
         if (!morphTypeName || !window[morphTypeName]) {
-            throw new Error('node cannot be a morph of type ' + morphTypeName);
+            throw new Error('node %1 (parent %2) cannot be a morph of %3'.format(node.tagName, node.parentNode, morphTypeName));
         }
+
         HostClass.becomeInstance(node, window[morphTypeName]);
         node.reinitialize(this);
+/*
+	var modelNodes = node.getElementsByTagName("model");
+
+	if (modelNodes.length == 1) {
+	    console.log('found modelNode %s', new XMLSerializer().serializeToString(modelNode));
+  	    var modelNode = modelNodes[0];
+            var model = this.importModelFrom(modelNodes);
+            modelNode.parentNode.removeChild(modelNode);
+        } else if (modelNodes.length != 0) {
+	    console.log('unexpected model nodes');
+	}
+*/
         return node; 
     },
     
-    importFrom: function(string) {
+    importFromString: function(string) {
         return this.importFromNode(this.parse(string), this);
     },
 
@@ -3518,21 +3545,20 @@ Object.extend(Importer.prototype, {
         return document.adoptNode(xml.documentElement);
     },
 
-    importModelFrom: function(string) {
-        console.log('restoring model from markup %s', string);
-        var ptree = this.parse(string);
+    importModelFrom: function(ptree) {
+        //console.log('restoring model from markup %s', string);
+        //var ptree = this.parse(string);
         var model = new SimpleModel(null);
         
         for (var node = ptree.firstChild; node != null; node = node.nextSibling) {
             switch (node.tagName) {
             case 'dependent':
-                var id = node.getAttribute('ref');
-                var dependent = this.lookupMorph(id);
+                var oldId = node.getAttribute('ref');
+                var dependent = this.lookupMorph(oldId);
                 if (!dependent)  {
-                    console.warn('dep %s not found', id);
+                    console.warn('dep %s not found', oldId);
                     continue; 
                 }
-		console.log('hooking up dependent %s plug %s, old model %s', dependent, dependent.modelPlug, dependent.modelPlug.model);
                 dependent.modelPlug.model = model;
 		model.addDependent(dependent);
                 break;
@@ -3559,30 +3585,19 @@ Object.extend(Importer.prototype, {
 
 // SVG inspector for Morphs
 Object.extend(Morph.prototype, {
-
+    
     addSvgInspector: function() {
-
         var exporter = new Exporter(this);
         var xml = exporter.serialize();
-	
         console.log('%s serialized to %s', this, xml);        
         
-	var modelNode = (this.getModel() || { toMarkup: function(_) { return null }}).toMarkup(document, exporter);
-	var modelxml =  new XMLSerializer().serializeToString(modelNode);
-        console.log('model %s', modelxml);
         const maxSize = 1500;
         var extent = pt(500, 300);
         var panel = PanelMorph(extent);
-        var r = Rectangle(0, 0, extent.x/2, extent.y);
-        var left = panel.setNamedMorph("leftPane", TextPane(r, xml.truncate(maxSize)));
-        var right = panel.setNamedMorph("rightPane", TextPane(r, modelxml.truncate(maxSize)));
-        right.align(right.bounds().topLeft(), left.bounds().topRight());
-        var txtMorph = left.innerMorph();
+        var r = Rectangle(0, 0, extent.x, extent.y);
+        var pane = panel.setNamedMorph("pane", TextPane(r, xml.truncate(maxSize)));
+        var txtMorph = pane.innerMorph();
         txtMorph.xml = xml;
-        txtMorph.modelxml = modelxml;
-	console.log('model node is %s', modelNode);
-	if (modelNode) 
-	    DisplayObject.prototype.setType.call(modelNode, "Model");
         this.world().addMorph(WindowMorph(panel, "XML dump", this.bounds().topLeft().addPt(pt(5,0))));
     }
     
@@ -3799,7 +3814,7 @@ Object.category(SimpleModel.prototype,  "core", function() {
             this[setter(varName)] = function(name) { return function(newValue, v) { this[name] = newValue; 
                                                      this.changed(getter(name), v); }} (varName);
         },
-
+	
         makePlug: function() {
             var model = this;
             var spec = { };
@@ -3813,7 +3828,6 @@ Object.category(SimpleModel.prototype,  "core", function() {
         },
 
 	toMarkupString: function(exporter) {
-	    //var doc = document.getImplementation().createDocument("", "", "");
 	    return new XMLSerializer().serializeToString(this.toMarkup(document, exporter));
 	},
 
@@ -3827,19 +3841,8 @@ Object.category(SimpleModel.prototype,  "core", function() {
 		varEl.appendChild(doc.createTextNode(Object.toJSON(this[name])));
 	    }
 	    for (var i = 0; i < this.dependents.length; i++) {
-		var dependentEl = modelEl.appendChild(doc.createElementNS(Namespace.LIVELY, "dependent"));
-		var dep = this.dependents[i];
-		dependentEl.setAttributeNS(Namespace.LIVELY, "ref", dep.id);
-		/*
-		var props = Object.properties(dep.modelPlug || {});
-		for (var j = 0; j < props.length; j++) {
-		    var prop = props[j];
-		    if (prop == 'model') continue;
-		    var acc = dependentEl.appendChild(doc.createElementNS(Namespace.LIVELY, "accessor"));
-		    acc.setAttributeNS(Namespace.LIVELY, "formal", prop);
-		    acc.setAttributeNS(Namespace.LIVELY, "actual", dep.modelPlug[prop]);
-		}
-               */
+		var depEl = modelEl.appendChild(doc.createElementNS(Namespace.LIVELY, "dependent"));
+		depEl.setAttributeNS(Namespace.LIVELY, "ref", this.dependents[i].id);
 	    }
 	    return modelEl;
 	}

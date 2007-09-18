@@ -894,13 +894,8 @@ Object.extend(TextMorph.prototype, {
             var importer = new Importer();
             var txt = self.xml || self.textString;
             console.log('evaluating markup ' + txt);
-            var morph = importer.importFrom(txt);
+            var morph = importer.importFromString(txt);
             WorldMorph.current().addMorph(morph);
-            if (self.modelxml) {
-                morph.model = importer.importModelFrom(self.modelxml);
-                console.log('restoring from model %s', self.modelxml);
-                console.log('copy %s has model %s', morph, morph.model);
-            }
         }]);
     
         menu.addItem(["save as ...", function() { 
