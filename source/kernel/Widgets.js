@@ -535,7 +535,7 @@ Object.extend(WindowControlMorph.prototype, {
 
     onMouseOver: function(evt) {
         this.setFill(RadialGradient.makeCenteredGradient(Color.white, this.color));
-        if (this.helpText) {
+        if (this.helpText && !this.helpOpen) {
             this.showHelp(evt);
         }
     },
@@ -556,19 +556,22 @@ Object.extend(WindowControlMorph.prototype, {
     
     showHelp: function(evt) {
         if (Config.suppressBalloonHelp) return;  // DI: maybe settable in window menu?
+        this.helpOpen = true;
         // FIXME: The size of the balloon should be calculated based on string size
-        this.help = TextMorph(Rectangle(evt.x, evt.y, 80, 20), this.helpText);
+        if ( !this.help ) {
+            this.help = TextMorph(Rectangle(evt.x, evt.y, 80, 20), this.helpText);
+            this.help.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
+            // some eye candy for the help
+            this.help.shape.roundEdgesBy(15);
+            this.help.setFill(Color.primary.yellow.lighter(3));
+            this.help.shape.setFillOpacity(0.8);
+        }
         // trying to relay mouse events to the WindowControlMorph
-        this.help.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
-        // some eye candy for the help
-        this.help.shape.roundEdgesBy(15);
-        this.help.setFill(Color.primary.yellow.lighter(3));
-        this.help.shape.setFillOpacity(0.8);
         this.world().addMorph(this.help);
     },
     
     hideHelp: function() {
-        if (this.help) this.help.remove();
+        if (this.help) {this.help.remove(); this.helpOpen = false;}
     },
     
     setHelpText: function ( newText ) {
