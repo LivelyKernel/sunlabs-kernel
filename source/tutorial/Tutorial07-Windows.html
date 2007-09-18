@@ -14,11 +14,13 @@
     <a href="Tutorial07-Windows.js">Source code of this demo</A>
     <a href="Tutorial08-Styles.html">NEXT</A>
     <hr>
-    The Lively Kernel system can support windows that behave
+    Lively Kernel supports windows that behave
     much like windows in conventional desktop operating systems.
     Windows are distinguished from other objects in the system
     by the presence of a <i>title bar</i>.  The title bar contains the
-    name of the window as well as some <i>window control buttons</i>.
+    name of the window as well as some <i>window control buttons</i>
+    to close or collapse the window (red and yellow buttons, respectively),
+    as well as to open the popup menu of the window (blue button).
     Window controls have <i>balloon help</i> to summarize the behavior
     of each control.
     <p>    
@@ -30,12 +32,14 @@
     <p>
     Notes:<ul>
     <li>A window can be moved by grabbing it from the title bar.
-    <li>Pressing the window collapse button once will collapse
+    <li>A window can be resized or rotated using the handles in its corners.<p>
+    <li>Pressing the red <i>close</i> button will close the window.
+    <li>Pressing the yellow <i>collapse</i> button once will collapse
     the window.  Pressing the collapse button another time will
-    restore the window.
-    <li>The menu button opens a menu that allows the contents
+    restore/expand the window.  <br>Note that a collapsed window can be moved
+    independently of the normal location of the window on the screen.
+    <li>The blue <i>menu</i> button opens a menu that allows the contents
     of the window to be manipulated.
-    <li>A window can be resized or rotated using the handles in its corners.
     </ul>
     <p>
     <hr>
