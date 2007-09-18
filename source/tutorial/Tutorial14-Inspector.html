@@ -14,8 +14,20 @@
     <a href="Tutorial14-Inspector.js">Source code of this demo</A>
     <a href="Tutorial15-Scripting.html">NEXT</A>
     <hr>
+    Every object in Lively Kernel can be inspected using an <i>object inspector</i>.
+    An object inspector displays the attributes (JavaScript variables/fields)
+    of the object in a panel view.<br>
     You can open an inspector for every object in the system by choosing
     the "inspect" operation from the popup menu of the object.
+    <p>
+    The upper left panel of the inspector shows the attribute names.
+    When you select one of the attributes, the upper right panel shows
+    the current value of that attribute.
+    <p>
+    The lower panel is the <i>evaluator panel</i>.  When you type JavaScript
+    code in that panel, you can use the "<i>evaluate as JavaScript code</i>"
+    menu item of the evaluator panel to execute that code in the context
+    of the inspected object.
     <p>    
         <img src="Tutorial14-Image1.PNG">
         <img src="Tutorial14-Image2.PNG">
@@ -23,7 +35,16 @@
     <hr>
     <b>Try it yourself!</b> Try opening an inspector for the rectangle object
     that is shown in the display.  View the various attributes of the rectangle
-    object using the inspector.
+    object using the inspector.<br>
+    Additionally, try the evaluator panel by typing the following text
+    in the evaluator panel:
+    <p>
+    <code>
+    this.startStepping(100, "rotateBy", 0.1);
+    </code>
+    <p>Use the "<i>evaluate as JavaScript code</i>" menu operation of the 
+    lower panel (by Command/Alt-clicking the text that you just typed) to
+    execute the code. 
     <p>
     <iframe src="Tutorial14-Inspector.svg" hspace="20" width="60%" height="60%" align="center" frameborder="10"></iframe>
     <p>
