@@ -1039,44 +1039,30 @@ apps.asteroids = function() {
 // The game instance
 var gameMorph = null;
 
-/* GamePolygon class */
-function GamePolygon() {
-    this.points  = []; // Stores the coordinates as Morphic points
-    this.xpoints = []; // Stores the raw x-coordinates of the points
-    this.ypoints = []; // Stores the raw y-coordinates of the points
-    this.npoints = 0;  // Number of points in the polygon
-}
-
-// Add a point to a game polygon
-GamePolygon.prototype.addPoint = function(x, y) {
-    this.points.push(pt(x, y));
-    this.xpoints.push(x);
-    this.ypoints.push(y);
-    this.npoints = this.points.length;
-}
-
-// Check if the given point is inside the game polygon
-GamePolygon.prototype.inside = function(x, y) {
-
-    var inside = false;
-    var j = 0;
-
-    for (var i = 0; i < this.npoints; i++) {
-        j++; 
-        if (j == this.npoints) j=0;
     
-        if (this.ypoints[i]<y && this.ypoints[j]>=y
-            || this.ypoints[j]<y && this.ypoints[i]>=y) {
-        
-            if (this.xpoints[i]+(y-this.ypoints[i])/(this.ypoints[j]-this.ypoints[i])*(this.xpoints[j]-this.xpoints[i])<x) {
-                inside = !inside; 
+    // Check if the given point is inside the game polygon
+    function inside(verts, p) {
+	
+	var inside = false;
+	var j = 0;
+	var x = p.x;
+	var y = p.y;
+	
+	for (var i = 0; i < verts.length; i++) {
+            j++; 
+            if (j == verts.length) j = 0;
+	    
+            if (verts[i].y < y && verts[j].y >= y || verts[j].y < y && verts[i].y >= y) {
+		
+		if (verts[i].x + (y - verts[i].y)/(verts[j].y - verts[i].y)*(verts[j].x - verts[i].x) < x) {
+                    inside = !inside; 
+		}
             }
-        }
-    }
-
-    return inside;
-} 
-
+	}
+	
+	return inside;
+    } 
+    
 /* Graphics parameters */
 
 // Dimensions of the graphics area (should be based on the size of the window)
@@ -1091,7 +1077,6 @@ var gameHeight = 300;
 AsteroidsSprite = Class.create();
 
 Object.extend(AsteroidsSprite.prototype, {
-    /* GamePolygon */ shape: null,  // Initial sprite shape, centered at the origin (0,0).
     /* boolean */ active: false,    // Active flag.
     /* double */  angle: 0,         // Current angle of rotation.
     /* double */  deltaAngle:  0,   // Amount to change the rotation angle.
@@ -1099,15 +1084,17 @@ Object.extend(AsteroidsSprite.prototype, {
     /* double */  currentY: 0,
     /* double */  deltaX: 0,        // Amount to change the screen position.
     /* double */  deltaY: 0,
-    /* GamePolygon */ sprite: null, // Final location and shape of sprite after applying rotation and
+    /* Point[] */ shape: null,  // Initial sprite shape, centered at the origin (0,0).
+    /* Point[] */ sprite: null, // Final location and shape of sprite after applying rotation and
     // moving to screen position. Used for drawing on the screen and
     // in detecting collisions.
     // Morphic-specific data
     morph: null,
     morphShape: null,
 
-    initialize: function() {
-        this.shape = new GamePolygon();
+    initialize: function(vertices) {
+        this.shape = vertices;
+	this.sprite = null;
     },
     
     // Methods:
@@ -1137,11 +1124,11 @@ Object.extend(AsteroidsSprite.prototype, {
         // Render the sprite's shape and location by rotating its base shape
         // and moving it to its proper screen position.
     
-        this.sprite = new GamePolygon();
-    
-        for (var i = 0; i < this.shape.npoints; i++) {
-                this.sprite.addPoint(Math.round(this.shape.xpoints[i] * Math.cos(this.angle) + this.shape.ypoints[i] * Math.sin(this.angle)  +  this.currentX + gameWidth  / 2),
-                                     Math.round(this.shape.ypoints[i] * Math.cos(this.angle) - this.shape.xpoints[i] * Math.sin(this.angle)  + this.currentY + gameHeight / 2));
+        this.sprite = [];
+	
+        for (var i = 0; i < this.shape.length; i++) {
+            this.sprite.push(pt(Math.round(this.shape[i].x * Math.cos(this.angle) + this.shape[i].y * Math.sin(this.angle)  +  this.currentX + gameWidth  / 2),
+				Math.round(this.shape[i].y * Math.cos(this.angle) - this.shape[i].x * Math.sin(this.angle)  + this.currentY + gameHeight / 2)));
         }
     
         // Create a new morph based on the sprite
@@ -1154,30 +1141,29 @@ Object.extend(AsteroidsSprite.prototype, {
         // Determine if one sprite overlaps with another, i.e., if any vertice
         // of one sprite lands inside the other.
     
-        for (i = 0; i < s.sprite.npoints; i++)
-            if (this.sprite.inside(s.sprite.xpoints[i], s.sprite.ypoints[i]))
+        for (i = 0; i < s.sprite.length; i++)
+            if (inside(this.sprite, s.sprite[i]))
                 return true;
-        for (i = 0; i < this.sprite.npoints; i++)
-            if (s.sprite.inside(this.sprite.xpoints[i], this.sprite.ypoints[i]))
+        for (i = 0; i < this.sprite.length; i++)
+            if (inside(s.sprite, this.sprite[i]))
                 return true;
         return false;
     },
 
     createMorph: function(sprite) {
         // This function creates a Morph out of a game polygon/sprite
-        var vertices = sprite.points;
-    
-        if (sprite.xpoints.length > 0) {
+	
+        if (sprite.length > 0) {
             var morph;
         
             // This is inefficient: We should reuse the shape instead of creating a new one
-            var shape = this.morphShape = PolygonShape(vertices, Color.black, 1, Color.yellow);
+            var shape = this.morphShape = PolygonShape(sprite, Color.black, 1, Color.yellow);
             if (this.morph) {
                 morph = this.morph; 
-                morph.setPosition(pt(sprite.xpoints[0], sprite.ypoints[0]));
+                morph.setPosition(sprite[0]);
                 morph.setShape(shape);
             } else {
-                morph = Morph(Rectangle(sprite.xpoints[0], sprite.ypoints[0], 20, 20), "rect");
+                morph = Morph(sprite[0].extent(pt(20, 20)), "rect");
                 morph.setShape(shape);
                 gameMorph.addMorph(morph);
             }
@@ -1336,64 +1322,39 @@ Object.extend(AsteroidsSprite.prototype, {
   // Application initialization
   function initAsteroidsGame() {
 
-    // Generate starry background.
-    initBackground();
-
-    // Show score, opening texts, etc.
-    showTextStrings();
-
-    // Create shape for the ship sprite.
-
-    ship = new AsteroidsSprite();
-    ship.shape.addPoint(0, -10);
-    ship.shape.addPoint(7, 10);
-    ship.shape.addPoint(-7, 10);
-
-    // Create shape for the photon sprites.
-
-    var i;
-    for (i = 0; i < MAX_SHOTS; i++) {
-      photons[i] = new AsteroidsSprite();
-      photons[i].shape.addPoint(1, 1);
-      photons[i].shape.addPoint(1, -1);
-      photons[i].shape.addPoint(-1, 1);
-      photons[i].shape.addPoint(-1, -1);
-    }
-
-    // Create shape for the flying saucer.
-
-    ufo = new AsteroidsSprite();
-    ufo.shape.addPoint(-15, 0);
-    ufo.shape.addPoint(-10, -5);
-    ufo.shape.addPoint(-5, -5);
-    ufo.shape.addPoint(-5, -9);
-    ufo.shape.addPoint(5, -9);
-    ufo.shape.addPoint(5, -5);
-    ufo.shape.addPoint(10, -5);
-    ufo.shape.addPoint(15, 0);
-    ufo.shape.addPoint(10, 5);
-    ufo.shape.addPoint(-10, 5);
-
-    // Create shape for the guided missile.
-
-    missile = new AsteroidsSprite();
-    missile.shape.addPoint(0, -4);
-    missile.shape.addPoint(1, -3);
-    missile.shape.addPoint(1, 3);
-    missile.shape.addPoint(2, 4);
-    missile.shape.addPoint(-2, 4);
-    missile.shape.addPoint(-1, 3);
-    missile.shape.addPoint(-1, -3);
-
-    // Create asteroid sprites.
-
-    for (i = 0; i < MAX_ROCKS; i++)
-      asteroids[i] = new AsteroidsSprite();
-
-    // Create explosion sprites.
-
-    for (i = 0; i < MAX_SCRAP; i++)
-      explosions[i] = new AsteroidsSprite();
+      // Generate starry background.
+      initBackground();
+      
+      // Show score, opening texts, etc.
+      showTextStrings();
+      
+      // Create shape for the ship sprite.
+      
+      ship = new AsteroidsSprite([pt(0, -10), pt(7, 10), pt(-7, 10)]);
+      
+      // Create shape for the photon sprites.
+      
+      for (var i = 0; i < MAX_SHOTS; i++) {
+	  photons[i] = new AsteroidsSprite([pt(1, 1), pt(1, -1), pt(-1, 1), pt(-1, -1)]);
+      }
+      
+      // Create shape for the flying saucer.
+      
+      ufo = new AsteroidsSprite([pt(-15, 0), pt(-10, -5), pt(-5, -5), pt(-5, -9), pt(5, -9), pt(5, -5), pt(10, -5), pt(15, 0), pt(10, 5),pt(-10, 5)]);
+      
+      // Create shape for the guided missile.
+      
+      missile = new AsteroidsSprite([pt(0, -4), pt(1, -3), pt(1, 3), pt(2, 4), pt(-2, 4),pt(-1, 3), pt(-1, -3)]);
+      
+      // Create asteroid sprites.
+      
+      for (i = 0; i < MAX_ROCKS; i++)
+	  asteroids[i] = new AsteroidsSprite([]);
+      
+      // Create explosion sprites.
+      
+      for (i = 0; i < MAX_SCRAP; i++)
+	  explosions[i] = new AsteroidsSprite([]);
 
     // Set font data.
     /* NOTE: Fonts are not supported yet
@@ -1448,12 +1409,12 @@ Object.extend(AsteroidsSprite.prototype, {
     stars = []; /* new Point[numStars]; */
 
     for (var i = 0; i < numStars; i++) {
-      stars[i] = pt((Math.random() * gameWidth), (Math.random() * gameHeight));
-
-      var m = Morph(Rectangle(stars[i].x, stars[i].y, 1, 1), "rect");
-      m.setFill(Color.yellow);
-      m.setBorderColor(Color.yellow);
-      gameMorph.addMorph(m);
+	stars[i] = pt((Math.random() * gameWidth), (Math.random() * gameHeight));
+	
+	var m = Morph(stars[i].extent(pt(1, 1)), "rect");
+	m.setFill(Color.yellow);
+	m.setBorderColor(Color.yellow);
+	gameMorph.addMorph(m);
     }
   }
 
@@ -1955,14 +1916,14 @@ GameMorph.prototype.runAsteroidsGame = function() {
           asteroids[i].morph = null;
       }
        
-      asteroids[i].shape = new GamePolygon();
+      asteroids[i].shape = [];
       s = MIN_ROCK_SIDES + (Math.random() * (MAX_ROCK_SIDES - MIN_ROCK_SIDES));
       for (j = 0; j < s; j ++) {
         theta = 2 * Math.PI / s * j;
         r = MIN_ROCK_SIZE + (Math.random() * (MAX_ROCK_SIZE - MIN_ROCK_SIZE));
         x = -Math.round(r * Math.sin(theta));
         y =  Math.round(r * Math.cos(theta));
-        asteroids[i].shape.addPoint(x, y);
+        asteroids[i].shape.push(pt(x, y));
       }
       asteroids[i].active = true;
       asteroids[i].angle = 0.0;
@@ -2027,14 +1988,14 @@ GameMorph.prototype.runAsteroidsGame = function() {
             asteroids[i].morph = null;
         }
 
-        asteroids[i].shape = new GamePolygon();
+        asteroids[i].shape = [];
         s = MIN_ROCK_SIDES + (Math.random() * (MAX_ROCK_SIDES - MIN_ROCK_SIDES));
         for (j = 0; j < s; j ++) {
           theta = 2 * Math.PI / s * j;
           r = (MIN_ROCK_SIZE + (Math.random() * (MAX_ROCK_SIZE - MIN_ROCK_SIZE))) / 2;
           x = -Math.round(r * Math.sin(theta));
           y =  Math.round(r * Math.cos(theta));
-          asteroids[i].shape.addPoint(x, y);
+          asteroids[i].shape.push(pt(x, y));
         }
         asteroids[i].active = true;
         asteroids[i].angle = 0.0;
@@ -2111,9 +2072,9 @@ GameMorph.prototype.runAsteroidsGame = function() {
   function initExplosions() {
 
     for (var i = 0; i < MAX_SCRAP; i++) {
-      explosions[i].shape = new GamePolygon();
-      explosions[i].active = false;
-      explosionCounter[i] = 0;
+	explosions[i].shape = [];
+	explosions[i].active = false;
+	explosionCounter[i] = 0;
 
       if (explosions[i].morph) {
           explosions[i].morph.remove();
@@ -2134,9 +2095,9 @@ GameMorph.prototype.runAsteroidsGame = function() {
 
     s.render();
     c = 2;
-    if (detail || s.sprite.npoints < 6)
+    if (detail || s.sprite.length < 6)
       c = 1;
-    for (i = 0; i < s.sprite.npoints; i += c) {
+    for (i = 0; i < s.sprite.length; i += c) {
       explosionIndex++;
       if (explosionIndex >= MAX_SCRAP)
         explosionIndex = 0;
@@ -2147,18 +2108,18 @@ GameMorph.prototype.runAsteroidsGame = function() {
       }
         
       explosions[explosionIndex].active = true;
-      explosions[explosionIndex].shape = new GamePolygon();
-      explosions[explosionIndex].shape.addPoint(s.shape.xpoints[i], s.shape.ypoints[i]);
+      explosions[explosionIndex].shape = [];
+      explosions[explosionIndex].shape.push(s.shape[i].clone());
       j = i + 1;
-      if (j >= s.sprite.npoints)
-        j -= s.sprite.npoints;
-      explosions[explosionIndex].shape.addPoint(s.shape.xpoints[j], s.shape.ypoints[j]);
+      if (j >= s.sprite.length)
+        j -= s.sprite.length;
+      explosions[explosionIndex].shape.push(s.shape[j].clone());
       explosions[explosionIndex].angle = s.angle;
       explosions[explosionIndex].deltaAngle = (Math.random() * 2 * Math.PI - Math.PI) / 15;
       explosions[explosionIndex].currentX = s.currentX;
       explosions[explosionIndex].currentY = s.currentY;
-      explosions[explosionIndex].deltaX = -s.shape.xpoints[i] / 5;
-      explosions[explosionIndex].deltaY = -s.shape.ypoints[i] / 5;
+      explosions[explosionIndex].deltaX = -s.shape[i].x / 5;
+      explosions[explosionIndex].deltaY = -s.shape[i].y / 5;
       explosionCounter[explosionIndex] = SCRAP_COUNT;
     }
   }
@@ -2362,11 +2323,16 @@ Object.extend(GameMorph.prototype, {
 
     onKeyDown: function(evt) { 
         keyDown(evt);
+	if (evt.keyCode == Event.KEY_ESC) {
+            this.relinquishKeyboardFocus(this.world().firstHand());
+	}
+	evt.stop();
         return true; 
     },
 
     onKeyUp: function(evt) { 
         keyUp(evt);
+	evt.stop();
         return true; 
     },
 
