@@ -30,27 +30,31 @@ Object.extend(TutorialMorph.prototype, {
         widget.setShape(PolygonShape(this.makeStarVertices(50,pt(0,0),0), Color.yellow, 1, Color.black));
         widget.setPosition(pt(100, 100));
         world.addMorph(widget);
-        widget.startStepping(60, "rotateBy", 0.1);
+        
+        // Rotate the star every 50 milliseconds
+        widget.startStepping(50, "rotateBy", 0.1);
 
         // Add a label to the star
         var widget2 = TextMorph(pt(10, 10).extent(pt(150, 50)), "I'm using a timer...");
         widget2.setFontSize(20);
         widget.addMorph(widget2);
 
-        // Create three additional timed copies of the object that we just created
+        // Create two additional copies of the object that we just created
         var copy = widget.copy();
         world.addMorph(copy); 
         copy.moveBy(pt(300, 0));
 
-        copy = copy.copy();
-        world.addMorph(copy); 
-        copy.moveBy(pt(-300, 200));
-
-        // Place the last copy on top of the previous one (just for fun...)
+        // Place the second copy on top of the previous one (just for fun...)
         var copy2 = copy.copy();
         copy2.setPosition(pt(0, 0));
         copy.addMorph(copy2); 
-        // copy.moveBy(pt(-300, 0));
+
+        // Add a clock that rotates and moves slowly as it ticks
+        var clock = ClockMorph(pt(100, 300), 50);
+        world.addMorph(clock);
+        clock.startStepping(1000, "rotateBy", 0.1);
+        clock.startStepping(1000, "moveBy", pt(10, 0));
+        clock.startSteppingScripts();
 
     },
 
