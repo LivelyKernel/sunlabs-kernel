@@ -881,18 +881,18 @@ Object.extend(TextMorph.prototype, {
     // make it possible to evaluate the contents
     // of the TextMorph via popup menu
     morphMenu: function(evt) { 
-        var self = this;
+
         var menu = TextMorph.superClass.morphMenu.call(this, evt);
 
         // Add a descriptive separator line
         menu.addItem(['----- text functions -----']);
 
-        menu.addItem(["accept changes", function() { self.saveContents(self.textString) }]);
-        menu.addItem(["evaluate as JavaScript code", function() { self.evalInContext(self.textString) }]);
+        menu.addItem(["accept changes", function() { this.saveContents(this.textString) }]);
+        menu.addItem(["evaluate as JavaScript code", function() { this.evalInContext(this.textString) }]);
 
         menu.addItem(["evaluate as Lively markup", function() { 
             var importer = new Importer();
-            var txt = self.xml || self.textString;
+            var txt = this.xml || this.textString;
             console.log('evaluating markup ' + txt);
             var morph = importer.importFromString(txt);
             WorldMorph.current().addMorph(morph);
@@ -900,7 +900,7 @@ Object.extend(TextMorph.prototype, {
     
         menu.addItem(["save as ...", function() { 
             var store = WorldMorph.current().defaultStore;
-            if (store) store.saveAs(window.prompt('save as ...'), (self.xml || self.textString)); 
+            if (store) store.saveAs(WorldMorph.current().prompt('save as ...'), (this.xml || this.textString)); 
             else console.log('no store to save to');
         }]);
     

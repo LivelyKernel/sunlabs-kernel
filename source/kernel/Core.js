@@ -3095,9 +3095,9 @@ Object.extend(Morph.prototype, {
             ["-----"],
             [((this.openForDragAndDrop) ? "close DnD" : "open DnD"), this, "toggleDnD", evt.mousePoint],
             ["show Lively markup", this.addSvgInspector.bind(this).curry(this)],
-            ["publish shrink-wrapped as...", function(m) { WorldMorph.current().makeShrinkWrappedWorldWith(m, prompt('publish as')) }.curry(this)]
+            ["publish shrink-wrapped as...", function(m) { WorldMorph.current().makeShrinkWrappedWorldWith(m, WorldMorph.current().prompt('publish as')) }.curry(this)]
         ];
-        var m = MenuMorph(items); 
+        var m = MenuMorph(items, this); 
         if (!this.okToDuplicate()) m.removeItemNamed("duplicate");
         if (evt.mouseButtonPressed) evt.hand.setMouseFocus(m);
         return m;
@@ -3164,13 +3164,13 @@ Object.extend(Morph.prototype, {
     },
 
     notify: function(msg, loc) {
-        MenuMorph([["OK", 0, "toString"]]).openIn(this.world(), loc, false, msg); 
+        MenuMorph([["OK", 0, "toString"]], this).openIn(this.world(), loc, false, msg); 
     },
 
     showOwnerChain: function(evt) {
         var items = this.ownerChain().map(
             function(each) { return [each.inspect().truncate(), each, "showMorphMenu", evt]; });
-        MenuMorph(items).openIn(this.world(), evt.mousePoint);
+        MenuMorph(items, this).openIn(this.world(), evt.mousePoint);
     },
 
     copyToHand: function(hand) {

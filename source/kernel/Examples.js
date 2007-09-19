@@ -569,7 +569,7 @@ Object.extend(DoodleMorph.prototype, {
             ["10", this, "setLineWidth", 10],
             ["15", this, "setLineWidth", 15],
         ];
-        MenuMorph(items).openIn(this.world(), this.worldPoint(this.widthbutton.bounds().topRight()));//evt.mousePoint);
+        MenuMorph(items, this).openIn(this.world(), this.worldPoint(this.widthbutton.bounds().topRight()));//evt.mousePoint);
     }, 
     
     setLineWidth: function (newWidth) {

@@ -1364,7 +1364,7 @@ Object.extend(MenuMorph.prototype, {
     defaultBorderWidth: 0.5,
     defaultFill: Color.blue.lighter(5),
 
-    initialize: function(items, lines) {
+    initialize: function(items, targetMorph, lines) {
         // items is an array of menuItems, each of which is an array of the form
         // [itemName, target, functionName, parameterIfAny]
         // At mouseUp, the call is of the form
@@ -1382,6 +1382,7 @@ Object.extend(MenuMorph.prototype, {
         //     menu.openIn(world,location,stayUp,captionIfAny);
 
         this.items = items;
+	this.targetMorph = targetMorph;
         this.lines = lines ? lines : [];
         return this;
     },
@@ -1450,8 +1451,8 @@ Object.extend(MenuMorph.prototype, {
     compose: function(location) { 
         var itemNames = this.items.map(function (item) { return item[0] });
         MenuMorph.superClass.initialize.call(this, location.extent(pt(200, 200)), itemNames);
-        this.setWrapStyle(WrapStyle.SHRINK);  this.fitText(); // first layout is wasted!
-
+        this.setWrapStyle(WrapStyle.SHRINK);  
+	this.fitText(); // first layout is wasted!
         // styling
         this.textColor = Color.blue;
         //this.setFill(StipplePattern.create(Color.white, 3, Color.blue.lighter(5), 1));
@@ -1467,7 +1468,7 @@ Object.extend(MenuMorph.prototype, {
 
         if (item) { // Now execute the menu item...
             if (item[1] instanceof Function) { // alternative style, items ['menu entry', function] pairs
-                item[1].call(this, evt);
+                item[1].call(this.targetMorph || this, evt);
             } else {
                 var func = item[1][item[2]];  // target[functionName]
                 if (func == null) console.log('Could not find function ' + item[2]);
@@ -1930,23 +1931,12 @@ Object.extend(WorldMorph, {
 
     setCurrent: function(newWorld) {
         WorldMorph.currentWorld = newWorld;
-    },
+    }
+});
 
-    // Create an empty world KP: obsolete?
-    createEmptyWorld: function() {
-        var w = WorldMorph(Canvas);
-        // w.displayTheme = WorldMorph.defaultThemes; // * wrong
-        // w.applyStyle(); // Because it wasnt there until now
-        // w.setFill(StipplePattern.create(Color.neutral.lightGray, 6, new Color(0.83, 0.83, 0.83), 1));
-        // w.setFill(LinearGradient({x1:0, y1:0, x2:400, y2:300}).addStop(0, Color.white).addStop("50%", new Color(102/255, 102/255, 136/255)).addStop("400", Color.black));
+Object.extend(WorldMorph.prototype, {
 
-        // This style is way better for debugging on smaller screens
-        // It allows the user to see the console log through the world
-        // w.shape.setFillOpacity(0.9);
-
-        return w;
-    },
-
+    defaultFill: Color.primary.blue,
     // Default themes for the theme manager    
     defaultThemes: {
         primitive: { // Primitive look and feel -- flat fills and no rounding or translucency
@@ -1999,13 +1989,8 @@ Object.extend(WorldMorph, {
                            fill: RadialGradient.makeCenteredGradient(Color.turquoise.lighter(2), Color.turquoise) },
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue}
         }
-    }
+    },
 
-});
-
-Object.extend(WorldMorph.prototype, {
-
-    defaultFill: Color.primary.blue,
 
     initialize: function(canvas, backgroundImageId) {
         var bounds = canvas.bounds();
@@ -2028,7 +2013,7 @@ Object.extend(WorldMorph.prototype, {
         WorldMorph.superClass.initialize.call(this, bounds, "rect");
 
         this.hands = [];
-        this.displayThemes = WorldMorph.defaultThemes;
+        this.displayThemes = this.defaultThemes;
         this.setDisplayTheme(this.displayThemes['lively']);
 
         this.stepList = [];  // an array of morphs to be ticked
@@ -2108,10 +2093,8 @@ Object.extend(WorldMorph.prototype, {
                      this, 'toggleDebugBackground']);
         menu.addLine();
         menu.addItem(["publish world as ... ", function() { 
-            console.log('world has morphs %s', WorldMorph.current().submorphs);
-            WorldMorph.current().makeShrinkWrappedWorldWith(WorldMorph.current().submorphs,
-            prompt('world start file'));}]);
-        menu.addItem(["restart system", this, 'restart']);
+            this.makeShrinkWrappedWorldWith(this.submorphs, this.prompt('world file'));}]);
+        menu.addItem(["restart system", this, "restart"]);
         return menu;
     },
    
@@ -2136,7 +2119,7 @@ Object.extend(WorldMorph.prototype, {
         var themeNames = Object.properties(themes);
         var items = themeNames.map(
             function(each) { return [each, target, "setDisplayTheme", themes[each]]; });
-        MenuMorph(items).openIn(this.world(), evt.mousePoint);
+        MenuMorph(items, this).openIn(this.world(), evt.mousePoint);
     },
   
     setDisplayTheme: function(styleDict) { 
@@ -2354,7 +2337,7 @@ Object.extend(WorldMorph.prototype, {
             ["TextMorph", function(evt) { world.addMorph(TextMorph(evt.mousePoint.extent(pt(120, 10)), "This is a TextMorph"));}],
             ["Class Browser", function(evt) { new SimpleBrowser().openIn(world, evt.mousePoint); }]
         ];
-        MenuMorph(items).openIn(this.world(), evt.mousePoint);
+        MenuMorph(items, this).openIn(this.world(), evt.mousePoint);
     },
 
     makeShrinkWrappedWorldWith: function(morphs, filename) {
@@ -2363,7 +2346,7 @@ Object.extend(WorldMorph.prototype, {
            return;
         }
         if (!this.defaultStore) {
-            alert("no store to access the startup file, location " + location);
+            this.alert("no store to access the startup file, location " + location);
             return;
         }
         console.log('morphs is %s', morphs);
@@ -2443,6 +2426,15 @@ Object.extend(WorldMorph.prototype, {
 
         var importer = new Importer();
         morphs.each(function(m) { this.addMorph(importer.importFromNode(m)) }.bind(this));
+    },
+
+    alert: function(message) {
+	return this.notify(message, this.bounds().center());
+    },
+
+    prompt: function(message) {
+	// FIXME replace with a native solution
+	return window.prompt(message);
     }
 
 });

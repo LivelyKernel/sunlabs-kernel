@@ -117,15 +117,15 @@ Object.extend(NetRequest, {
         requester: null,
 
         onLoaded: function(transport) { 
-            console.info('%s: loaded %s %s', transport.status, transport); 
+            console.info('%s: loaded %s', transport, transport.status); 
         },
 
         onFailure: function(transport) {
-            console.warn('%s: failure %s %s', transport.status, transport);
+            console.warn('%s: failure %s', transport, transport.status);
         },
 
         onInteractive: function(transport) {
-            console.info('receiving %s %s', transport.status, transport);
+            console.info('%s: receiving %s', transport, transport.status);
         },
 
         onException: function(e) {
