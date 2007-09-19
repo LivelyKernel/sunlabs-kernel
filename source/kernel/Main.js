@@ -4,7 +4,7 @@
 
 var Global = this;
 
-Config.shiftDragForDup = true; // easy duplicate gesture
+Config.shiftDragForDup = true; // allows easy object duplication using the Shift key
 Config.useNewScheduler = true; // both schedulers active now
 
 // Small stuff that will always be shown
@@ -17,10 +17,11 @@ Config.showBitmap = false;
 Config.showMap = true;
 Config.showSampleMorphs = true;
 Config.showTextSamples = true;
-// enabling / disabling network using demos hel debugging on firefox
+
+// enables/disables network-dependent demos
 Config.showNetworkExamples = true;
 
-// More complex stuff that unnecessarily might slow things down
+// More complex demos
 Config.showClipMorph = Config.skipMostExamples;
 Config.show3DLogo = !Config.skipMostExamples;
 Config.showAsteroids = !Config.skipMostExamples;
@@ -36,7 +37,7 @@ Config.showRSSReader = !Config.skipMostExamples;
 Config.slideWorld = !Config.skipMostExamples;
 Config.showDoodle = !Config.skipMostExamples;
 
-// Browser initialization can be overriden with Config.browserAnyway
+// Class browser visibility can be overridden with Config.browserAnyway
 Config.showBrowser = !Config.skipMostExamples || Config.browserAnyway;
 
 function populateWorldWithExamples(world, otherWorld, server) {
@@ -109,7 +110,7 @@ function populateWorldWithExamples(world, otherWorld, server) {
     // Sample icon morph with a fisheye effect 'on'
     if (Config.showIcon) {
         // maybe the icons should have a rectangle shaped images (unlike here)
-        //var icon = ImageMorph(Rectangle(30, 360, 80, 50), "http://logos.sun.com/images/SunSample.gif");
+        // var icon = ImageMorph(Rectangle(30, 360, 80, 50), "http://logos.sun.com/images/SunSample.gif");
         var icon = ImageMorph(Rectangle(30, 500, 100, 45));
 
         icon.loadGraphics('#SunLogo', 0.15);
