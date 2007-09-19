@@ -51,9 +51,19 @@ Object.extend(TutorialMorph.prototype, {
         world.addMorph(widget);
     
         // Add an ImageMorph to the subworld
-        var image = ImageMorph(pt(140, 60).extent(340, 340), "http://www.cs.tut.fi/~taivalsa/Software/Halloween.jpg");
+        var image = ImageMorph(pt(140, 60).extent(672/2, 448/2), "http://www.cs.tut.fi/~taivalsa/Software/Halloween4.jpg");
         link.myWorld.addMorph(image); 
 
+        // Add a TextMorph
+        var credits = TextMorph(pt(140, 300).extent(pt(400, 300)), 
+                          "Our Core Team Members (pictured from left to right):\n"
+                        + "- Tommi Mikkonen\n" 
+                        + "- Krzsysztof Palacz\n"
+                        + "- Dan Ingalls\n"
+                        + "- Antero Taivalsaari");
+        credits.setBorderWidth(0);  
+        credits.setFill(null);
+        link.myWorld.addMorph(credits); 
     },
 
     // Function that creates the tutorial demo
