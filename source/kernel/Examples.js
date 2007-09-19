@@ -359,6 +359,7 @@ Object.extend(DoodleMorph.prototype, {
 
         this.linebutton.onMouseUp = function(evt) {
             var newValue = this.isToggle() ? !this.getValue() : false;
+	    evt.hand.setMouseFocus(null); 
             this.changeAppearanceFor(newValue); 
         };
         this.linebutton.connectModel({model: this, setValue: "addLine"});
@@ -366,6 +367,7 @@ Object.extend(DoodleMorph.prototype, {
 
         this.rectbutton.onMouseUp = function(evt) {
             var newValue = this.isToggle() ? !this.getValue() : false;
+	    evt.hand.setMouseFocus(null); 
             this.changeAppearanceFor(newValue); 
         };
         this.rectbutton.connectModel({model: this, setValue: "addRect"});
@@ -373,6 +375,7 @@ Object.extend(DoodleMorph.prototype, {
 
         this.circlebutton.onMouseUp = function(evt) {
             var newValue = this.isToggle() ? !this.getValue() : false;
+	    evt.hand.setMouseFocus(null); 
             this.changeAppearanceFor(newValue); 
         };
         this.circlebutton.connectModel({model: this, setValue: "addCirc"});
@@ -380,6 +383,7 @@ Object.extend(DoodleMorph.prototype, {
                 
         this.widthbutton.onMouseUp = function(evt) {
             var newValue = this.toggles ? !this.getValue() : false;
+	    evt.hand.setMouseFocus(null); 
             this.changeAppearanceFor(newValue); 
         };
         this.widthbutton.connectModel({model: this, setValue: "setLine"});
@@ -391,6 +395,7 @@ Object.extend(DoodleMorph.prototype, {
 
         this.stylebutton.onMouseUp = function(evt) {
             var newValue = this.isToggle() ? !this.getValue() : false;
+	    evt.hand.setMouseFocus(null); 
             this.changeAppearanceFor(newValue); 
         };
         this.stylebutton.connectModel({model: this, setValue: "setStyle"});
