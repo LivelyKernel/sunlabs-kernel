@@ -76,7 +76,7 @@ Object.extend(Query, {
     },
 
     $: function(id) {
-	return document.getElementById(id);
+        return document.getElementById(id);
     }
 
 });
@@ -94,9 +94,8 @@ var NodeFactory = {
     },
     
     create: function(name, attributes) {
-	return this.createNS(Namespace.SVG, name, attributes);
+        return this.createNS(Namespace.SVG, name, attributes);
     },
-
 
     prototypes: new Hash(), // elementName -> prototype
 
@@ -398,7 +397,7 @@ Object.extend(String.prototype, {
         }
 
         return str;
-    },
+    }
 
 });
 
@@ -2112,26 +2111,26 @@ Object.extend(Morph.prototype, {
 
         for (var i = 0; i < children.length; i++) {
             var node = children[i];
-	    switch (node.tagName) {
-	    case "action": {
-		var a = node.textContent.evalJSON();
+            switch (node.tagName) {
+            case "action": {
+                var a = node.textContent.evalJSON();
                 console.info("starting stepping %s based on %s", this, node.textContent);
                 this.startStepping(a.stepTime, a.scriptName, a.argIfAny);
-		break;
-	    }
-	    case "model": {
-		if (modelNode != null) console.warn("%s already has modelNode %s", this, modelNode);
-		modelNode = node;
-		// postpone hooking up model until all the morphs are reconstructed
-		console.info("found modelNode %s", new XMLSerializer().serializeToString(node));
-		break;
-	    } 
-	    case "modelPlug": {
-		this.modelPlug = this.addChildElement(Model.becomePlug(node));
-		console.info("%s reconstructed plug %s", this, this.modelPlug);
-		break;
+                break;
+            }
+            case "model": {
+                if (modelNode != null) console.warn("%s already has modelNode %s", this, modelNode);
+                modelNode = node;
+                // postpone hooking up model until all the morphs are reconstructed
+                console.info("found modelNode %s", new XMLSerializer().serializeToString(node));
+                break;
             } 
-	    case "defs": { // FIXME FIXME, this is painfully ad hoc!
+            case "modelPlug": {
+                this.modelPlug = this.addChildElement(Model.becomePlug(node));
+                console.info("%s reconstructed plug %s", this, this.modelPlug);
+                break;
+            } 
+            case "defs": { // FIXME FIXME, this is painfully ad hoc!
                 if (this.defs) console.warn('%s already has defs %s', this, this.defs);
                 this.defs = node;
                 for (var def = node.firstChild; def != null; def = def.nextSibling) {
@@ -2168,29 +2167,30 @@ Object.extend(Morph.prototype, {
                         console.warn('unknown def %s', def);
                     }
                 }
-		break;
+                break;
                 // let it be
             } 
-	    default: {
-		if (DisplayObject.prototype.getType.call(node)) {
+            default: {
+                if (DisplayObject.prototype.getType.call(node)) {
                     if (/FocusHalo/.test(DisplayObject.prototype.getType.call(node))) { //don't restore
-			this.removeChild(node);
+                        this.removeChild(node);
                     } else {
-			this.restoreFromElement(node, importer);
+                        this.restoreFromElement(node, importer);
                     }   
-		} else if (node.nodeName == '#text') {
-		    console.log('text tag name %s', node.tagName);
+                } else if (node.nodeName == '#text') {
+                    console.log('text tag name %s', node.tagName);
                     // whitespace, ignore
-		} else {
+                } else {
                     console.warn('cannot handle element %s, %s', node.tagName, node.textContent);
-		}
-	    }
-            } // end for
-	}
-	if (modelNode) {
-	    var model = importer.importModelFrom(modelNode);
-	    this.removeChild(modelNode); // currently modelNode is not permanently stored 
-	}
+                }
+            }
+            }
+        } // end for
+
+        if (modelNode) {
+            var model = importer.importModelFrom(modelNode);
+            this.removeChild(modelNode); // currently modelNode is not permanently stored 
+        }
     },
     
     restoreFromElement: function(element/*:Element*/, importer/*Importer*/)/*:Boolean*/ {
@@ -2488,14 +2488,14 @@ Object.extend(Morph.prototype, {
         
         if (old) {
             if (old.parentNode) {
-		if (old.parentNode !== this.defs) {
+                if (old.parentNode !== this.defs) {
                     console.warn('assign to field %s: old value %s is not owned by %s', fieldname, old, this);
                     return null;
-		}
-		this.defs.removeChild(old);
-	    } else {
+                }
+                this.defs.removeChild(old);
+            } else {
                 console.warn('assign to field %s: old value %s is orphaned in %s', fieldname, old, this);
-	    }
+            }
         }
         
         this[fieldname] = element;
@@ -2775,7 +2775,7 @@ Object.category(Morph.prototype, 'transforms', function() { return {
         if (this.owner() && this.owner() !== this.world()) this.owner().layoutChanged(); 
         this.changed(); 
     },
-    
+
     setRotation: function(theta) { // in radians
         this.rotation = theta;
         this.cachedTransform = null;
@@ -2933,7 +2933,7 @@ Object.extend(Morph.prototype, {
     onMouseDown: function(evt) { }, //default behavior
     
     onMouseMove: function(evt) { //default behavior
-	if(evt.mouseButtonPressed && this.owner().openForDragAndDrop) this.moveBy(evt.mousePoint.subPt(evt.priorPoint));
+        if (evt.mouseButtonPressed && this.owner().openForDragAndDrop) this.moveBy(evt.mousePoint.subPt(evt.priorPoint));
         else this.checkForControlPointNear(evt);
     },
     
@@ -2942,8 +2942,8 @@ Object.extend(Morph.prototype, {
     },
 
     onMouseOver: function(evt) {
-	// default behavior is do nothing
-	},
+        // default behavior is do nothing
+    },
 
     designMode: false,
     
@@ -3098,7 +3098,7 @@ Object.extend(Morph.prototype, {
         ];
         var m = MenuMorph(items); 
         if (!this.okToDuplicate()) m.removeItemNamed("duplicate");
-	if (evt.mouseButtonPressed) evt.hand.setMouseFocus(m);
+        if (evt.mouseButtonPressed) evt.hand.setMouseFocus(m);
         return m;
     },
 
@@ -3215,7 +3215,7 @@ Object.extend(Morph.prototype, {
         }
 
         // On grabs, can't pick up the world or morphs that handle mousedown
-	// DI:  I think the world is adequately checked for now elsewhere
+        // DI:  I think the world is adequately checked for now elsewhere
         // else return (!evt.altKey && this === this.world()) ? null : this; 
         else return this; 
     },
@@ -3486,16 +3486,16 @@ Object.extend(Exporter.prototype, {
     },
     
     serialize: function() {
-	// model is inserted as part of the root morph.
-	var modelNode = (this.rootMorph.getModel() || { toMarkup: function() { return null; }}).toMarkup();
-	if (modelNode) {
-	    this.rootMorph.addChildElement(modelNode);
-	}
+        // model is inserted as part of the root morph.
+        var modelNode = (this.rootMorph.getModel() || { toMarkup: function() { return null; }}).toMarkup();
+        if (modelNode) {
+            this.rootMorph.addChildElement(modelNode);
+        }
         var result = new XMLSerializer().serializeToString(this.rootMorph);
-	if (modelNode) {
-	    this.rootMorph.removeChild(modelNode);
-	}
-	return result;
+        if (modelNode) {
+            this.rootMorph.removeChild(modelNode);
+        }
+        return result;
     }
 
 });
@@ -3519,8 +3519,8 @@ Object.extend(Importer.prototype, {
     
     lookupMorph: function(oldId) {
         var result = this.morphMap["" + oldId];
-	if (!result) console.log('no mapping found for oldId %s', oldId);
-	return result;
+        if (!result) console.log('no mapping found for oldId %s', oldId);
+        return result;
     },
 
     importFromNode: function(node) {
@@ -3534,9 +3534,10 @@ Object.extend(Importer.prototype, {
         }
 
         HostClass.becomeInstance(node, window[morphTypeName]);
-	if (!node.reinitialize) {
-	    console.log('why no reinit in %s', new XMLSerializer().serializeToString(node)); 
-	}
+        if (!node.reinitialize) {
+            console.log('why no reinit in %s', new XMLSerializer().serializeToString(node)); 
+        }
+
         node.reinitialize(this);
         return node; 
     },
@@ -3566,7 +3567,7 @@ Object.extend(Importer.prototype, {
                     continue; 
                 }
                 dependent.modelPlug.model = model;
-		model.addDependent(dependent);
+                model.addDependent(dependent);
                 break;
             case 'variable':
                 var name = node.getAttribute('name');
@@ -3583,7 +3584,7 @@ Object.extend(Importer.prototype, {
             }
         }
 
-	console.log('restored model %s', model);
+        console.log('restored model %s', model);
         return model;
     }
     
@@ -3629,12 +3630,13 @@ Object.extend(Morph.prototype, {
     connectModel: function(plugSpec) {
         // connector makes this view pluggable to different models, as in
         // {model: someModel, getList: "getItemList", setSelection: "chooseItem"}
-	var newPlug = Model.makePlug(plugSpec);
-	if (this.modelPlug) this.replaceChild(newPlug, this.modelPlug);
-	else this.addChildElement(newPlug);
-	this.modelPlug = newPlug;
-	if (plugSpec.model.addDependent) // for mvc-style updating
-            plugSpec.model.addDependent(this); 
+        var newPlug = Model.makePlug(plugSpec);
+        if (this.modelPlug) this.replaceChild(newPlug, this.modelPlug);
+        else this.addChildElement(newPlug);
+        this.modelPlug = newPlug;
+        if (plugSpec.model.addDependent) { // for mvc-style updating
+            plugSpec.model.addDependent(this);
+        } 
     },
 
     getModel: function() {
@@ -3753,21 +3755,21 @@ Object.extend(Model.prototype, {
 
 Object.extend(Model, {
     makePlug: function(spec) {
-	var node = NodeFactory.createNS(Namespace.LIVELY, "modelPlug");
-	var props = Object.properties(spec);
-	for (var i = 0; i < props.length; i++) {
-	    var prop = props[i];
-	    node[prop] = spec[prop];
-	    if (prop != 'model') {
-		var acc = node.appendChild(NodeFactory.createNS(Namespace.LIVELY, "accessor"));
-		acc.setAttributeNS(Namespace.LIVELY, "formal", prop);
-		acc.setAttributeNS(Namespace.LIVELY, "actual", spec[prop]);
-	    }
-	}
-	node.inspect = function() {
-	    return new XMLSerializer().serializeToString(this);
-	}
-	return node;
+        var node = NodeFactory.createNS(Namespace.LIVELY, "modelPlug");
+        var props = Object.properties(spec);
+        for (var i = 0; i < props.length; i++) {
+            var prop = props[i];
+            node[prop] = spec[prop];
+            if (prop != 'model') {
+                var acc = node.appendChild(NodeFactory.createNS(Namespace.LIVELY, "accessor"));
+                acc.setAttributeNS(Namespace.LIVELY, "formal", prop);
+                acc.setAttributeNS(Namespace.LIVELY, "actual", spec[prop]);
+            }
+        }
+        node.inspect = function() {
+            return new XMLSerializer().serializeToString(this);
+        }
+        return node;
     },
 
     becomePlug: function(node) {
@@ -3775,15 +3777,13 @@ Object.extend(Model, {
             if (acc.tagName != 'accessor') continue;
             node[acc.getAttribute('formal')] = acc.getAttribute('actual');
         }
-	node.inspect = function() {
-	    return new XMLSerializer().serializeToString(this);
-	}
-	return node;
+        node.inspect = function() {
+            return new XMLSerializer().serializeToString(this);
+        }
+        return node;
     }
     
 });
-
-
 
 /**
  * @class SimpleModel
@@ -3823,7 +3823,7 @@ Object.category(SimpleModel.prototype,  "core", function() {
             this[setter(varName)] = function(name) { return function(newValue, v) { this[name] = newValue; 
                                                      this.changed(getter(name), v); }} (varName);
         },
-	
+
         makePlug: function() {
             var model = this;
             var spec = { };
@@ -3836,26 +3836,26 @@ Object.category(SimpleModel.prototype,  "core", function() {
             return Object.properties(this).filter(function(name) { return name != 'dependents'});
         },
 
-	toMarkupString: function(exporter) {
-	    return new XMLSerializer().serializeToString(this.toMarkup(document));
-	},
+        toMarkupString: function(exporter) {
+            return new XMLSerializer().serializeToString(this.toMarkup(document));
+        },
 
-	toMarkup: function(doc) {
-	    if (!doc) doc = document;
-	    var modelEl = doc.createElementNS(Namespace.LIVELY, "model");
-	    var vars = this.variables();
-	    for (var i = 0; i < vars.length; i++) {
-		var varEl = modelEl.appendChild(doc.createElementNS(Namespace.LIVELY, "variable"));
-		var name = vars[i];
-		varEl.setAttributeNS(Namespace.LIVELY, "name", name);
-		varEl.appendChild(doc.createTextNode(Object.toJSON(this[name])));
-	    }
-	    for (var i = 0; i < this.dependents.length; i++) {
-		var depEl = modelEl.appendChild(doc.createElementNS(Namespace.LIVELY, "dependent"));
-		depEl.setAttributeNS(Namespace.LIVELY, "ref", this.dependents[i].id);
-	    }
-	    return modelEl;
-	}
+        toMarkup: function(doc) {
+            if (!doc) doc = document;
+            var modelEl = doc.createElementNS(Namespace.LIVELY, "model");
+            var vars = this.variables();
+            for (var i = 0; i < vars.length; i++) {
+                var varEl = modelEl.appendChild(doc.createElementNS(Namespace.LIVELY, "variable"));
+                var name = vars[i];
+                varEl.setAttributeNS(Namespace.LIVELY, "name", name);
+                varEl.appendChild(doc.createTextNode(Object.toJSON(this[name])));
+            }
+            for (var i = 0; i < this.dependents.length; i++) {
+                var depEl = modelEl.appendChild(doc.createElementNS(Namespace.LIVELY, "dependent"));
+                depEl.setAttributeNS(Namespace.LIVELY, "ref", this.dependents[i].id);
+            }
+            return modelEl;
+        }
     }});
 
 // Affine Transforms
@@ -4256,6 +4256,7 @@ Object.extend(Morph.prototype, {
             return pt;
         }
     }
+
 });
 
 console.log('loaded Core.js');
