@@ -2933,7 +2933,7 @@ Object.extend(Morph.prototype, {
     onMouseDown: function(evt) { }, //default behavior
     
     onMouseMove: function(evt) { //default behavior
-        if (evt.mouseButtonPressed) this.moveBy(evt.mousePoint.subPt(evt.priorPoint));
+	if(evt.mouseButtonPressed) this.moveBy(evt.mousePoint.subPt(evt.priorPoint));
         else this.checkForControlPointNear(evt);
     },
     

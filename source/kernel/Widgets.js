@@ -1874,8 +1874,10 @@ Object.extend(PasteUpMorph.prototype, {
 
     onMouseDown: function(evt) {  //default behavior is to grab a submorph
         var m = this.morphToReceiveEvent(evt);
-        if (m == null) { this.makeSelection(evt); return true; }
-        if (m.handlesMouseDown(evt)) return false;
+        if (m == null || !evt.altKey) {
+		if (m == null || (m == this.world())) { this.makeSelection(evt); return true; }
+        	if (m.handlesMouseDown(evt)) return false;
+	}
         evt.hand.grabMorph(m, evt);
         return true; 
     },
@@ -2584,8 +2586,8 @@ Object.extend(HandMorph.prototype, {
             if (evt.mousePoint.dist(this.lastMouseDownPoint) > 10) 
                 this.hasMovedSignificantly = true;
                 
-            if (evt.shiftKey && this.mode == "shiftDragForDup") {
-                if (this.hasMovedSignificantly) {
+            if (evt.shiftKey) {
+                if (this.hasMovedSignificantly && this.mode == "shiftDragForDup") {
                     var m = this.dragMorph;
                     if(!m.okToDuplicate()) return;
 		    this.dragMorph = null;
@@ -2601,11 +2603,12 @@ Object.extend(HandMorph.prototype, {
                 var receiver = this.owner().morphToReceiveEvent(evt);
                 if (receiver != null) receiver.onMouseOver(evt);
             } else {
+                // (this.mouseFocus || this.owner()).mouseEvent(evt, this.mouseFocus != null);
 	    	if (this.mouseFocus) this.mouseFocus.mouseEvent(evt, this.mouseFocus != null);
-	    	else if (!this.mouseButtonPressed) this.owner().mouseEvent(evt, this.mouseFocus != null);
+	    	// else if (!this.mouseButtonPressed) this.owner().mouseEvent(evt, this.mouseFocus != null);
 		// Try doing nothing with drag if there is no focus
 		//  in an attempt to stop dragging things by accident
-	    	// else if (this.owner()) this.owner().mouseEvent(evt, this.mouseFocus != null);
+	    	else if (this.owner()) this.owner().mouseEvent(evt, this.mouseFocus != null);
             }
         
             this.lastMouseEvent = evt;
@@ -2731,7 +2734,7 @@ Object.extend(HandMorph.prototype, {
     },
 
     grabMorph: function(grabbedMorph, evt) { 
-        if (evt.shiftKey && Config.shiftDragForDup && !(grabbedMorph instanceof LinkMorph)) {
+        if (evt.shiftKey && !(grabbedMorph instanceof LinkMorph)) {
             this.mode = "shiftDragForDup";
             this.dragMorph = grabbedMorph; 
             this.setMouseFocus(null);
