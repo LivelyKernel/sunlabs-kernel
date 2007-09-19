@@ -1038,30 +1038,6 @@ apps.asteroids = function() {
 
 // The game instance
 var gameMorph = null;
-
-    
-    // Check if the given point is inside the game polygon
-    function inside(verts, p) {
-	
-	var inside = false;
-	var j = 0;
-	var x = p.x;
-	var y = p.y;
-	
-	for (var i = 0; i < verts.length; i++) {
-            j++; 
-            if (j == verts.length) j = 0;
-	    
-            if (verts[i].y < y && verts[j].y >= y || verts[j].y < y && verts[i].y >= y) {
-		
-		if (verts[i].x + (y - verts[i].y)/(verts[j].y - verts[i].y)*(verts[j].x - verts[i].x) < x) {
-                    inside = !inside; 
-		}
-            }
-	}
-	
-	return inside;
-    } 
     
 /* Graphics parameters */
 
@@ -1095,7 +1071,6 @@ Object.extend(AsteroidsSprite.prototype, {
     initialize: function(vertices) {
         this.shape = vertices;
         this.sprite = PolygonShape([], Color.black, 1, Color.yellow);
-
     },
     
     // Methods:
@@ -1124,29 +1099,25 @@ Object.extend(AsteroidsSprite.prototype, {
     render: function() {
         // Render the sprite's shape and location by rotating its base shape
         // and moving it to its proper screen position.
+
 	var matrix = Transform.createSimilitude(pt(this.currentX + gameWidth/2, this.currentY + gameHeight/2), -this.angle, 1).matrix;
-	var verts = [];
-        for (var i = 0; i < this.shape.length; i++) {
-	    verts.push(this.shape[i].matrixTransform(matrix));
-        }
 	
-        this.sprite.setVertices(verts);
+        this.sprite.setVertices(this.shape.map(function(v) { return v.matrixTransform(matrix)}));
         // Create a new morph based on the sprite
         this.morph = this.createMorph(this.sprite);
     },
     
     isColliding: function(/* AsteroidsSprite */ s) {
-        var i;
         // Determine if one sprite overlaps with another, i.e., if any vertice
         // of one sprite lands inside the other.
-    
+
 	var mine = this.sprite.vertices();
 	var other = s.sprite.vertices();
-        for (i = 0; i < other.length; i++)
-            if (inside(mine, other[i]))
+        for (var i = 0; i < other.length; i++)
+            if (this.sprite.containsPoint(other[i]))
                 return true;
-        for (i = 0; i < mine.length; i++)
-            if (inside(other, mine[i]))
+        for (var i = 0; i < mine.length; i++)
+            if (s.sprite.containsPoint(mine[i]))
                 return true;
         return false;
     },
@@ -1334,16 +1305,16 @@ Object.extend(AsteroidsSprite.prototype, {
       // Create shape for the photon sprites.
       
       for (var i = 0; i < MAX_SHOTS; i++) {
-	  photons[i] = new AsteroidsSprite([pt(1, 1), pt(1, -1), pt(-1, 1), pt(-1, -1)]);
+	  photons[i] = new AsteroidsSprite([pt(1,1), pt(1,-1), pt(-1,1), pt(-1,-1)]);
       }
       
       // Create shape for the flying saucer.
       
-      ufo = new AsteroidsSprite([pt(-15, 0), pt(-10, -5), pt(-5, -5), pt(-5, -9), pt(5, -9), pt(5, -5), pt(10, -5), pt(15, 0), pt(10, 5),pt(-10, 5)]);
+      ufo = new AsteroidsSprite([pt(-15,0), pt(-10,-5), pt(-5,-5), pt(-5,-9), pt(5,-9), pt(5,-5), pt(10,-5), pt(15,0), pt(10,5),pt(-10,5)]);
       
       // Create shape for the guided missile.
       
-      missile = new AsteroidsSprite([pt(0, -4), pt(1, -3), pt(1, 3), pt(2, 4), pt(-2, 4),pt(-1, 3), pt(-1, -3)]);
+      missile = new AsteroidsSprite([pt(0,-4), pt(1,-3), pt(1,3), pt(2,4), pt(-2,4),pt(-1,3), pt(-1,-3)]);
       
       // Create asteroid sprites.
       
