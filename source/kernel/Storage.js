@@ -14,7 +14,8 @@ Object.extend(WebStore.prototype, {
         WebStore.superClass.initialize.call(this);
         this.host = host;
         this.path = path;
-
+	
+	this.DirectoryList = [ path ];
         this.CurrentDirectory = null;
         this.CurrentDirectoryContents = null;
         this.CurrentResource =  null;
@@ -102,13 +103,14 @@ Object.extend(WebStore.prototype, {
     },
     
     getDirectoryList: function() {
-        return [ this.path ];
+        return this.DirectoryList;
     },
+
 
     setCurrentDirectory: function(name) {
         this.CurrentDirectory = name;
         if (this.CurrentDirectory != null) {
-            var url = "http://%1/%2".format(this.host, this.CurrentDirectory);
+            var url = "http://%1%2%3".format(this.host, this.CurrentDirectory.endsWith('/') ? "": '/', this.CurrentDirectory);
             // initialize getting the contents
             this.propfind(url, 1, "/D:multistatus/D:response/D:href", "CurrentDirectoryContents");
         }
@@ -119,20 +121,34 @@ Object.extend(WebStore.prototype, {
     },
     
     setCurrentResource: function(name) {
-        if (name && name.startsWith('/')) { 
-            this.currentResource = name.substring(1);
-        } else { 
-            this.currentResource = name;
-        }
-        console.log('current resource set to %s', this.currentResource);
-        if (this.currentResource) {
-            // initialize getting the resource contents
-            this.fetch(this.currentResourceURL(), "CurrentResourceContents");
+        if (name) {
+	    if (name.endsWith('/')) { // directory, enter it!
+		console.log('enter %s', name);
+		this.DirectoryList = this.getCurrentDirectoryContents();
+		this.changed('getDirectoryList');
+		this.CurrentDirectory = name;//.substring(0, name.length - 1);
+		console.log('current directory %s now', this.CurrentDirectory);
+		this.CurrentDirectoryContents = [];
+		this.changed('getCurrentDirectoryContents');
+
+	    } else {
+		this.currentResource = name;
+		console.log('current resource set to %s', this.currentResource);
+		
+		// initialize getting the resource contents
+		this.fetch(this.currentResourceURL(), "CurrentResourceContents");
+	    }
         }
     },
     
     currentResourceURL: function() {
-        return "http://%1/%2".format(this.host, this.currentResource);
+	var path = this.currentResource;
+	if (!path) { 
+	    path = "";
+	} else if (path.startsWith('/')) {
+	    path = path.substring(1);
+	}
+        return "http://%1/%2".format(this.host, path);
     },
     
     getCurrentResourceContents: function() {
@@ -155,7 +171,7 @@ Object.extend(WebStore.prototype, {
         m.connectModel({model: this, getList: "getCurrentDirectoryContents", setSelection: "setCurrentResource"});
         m = panel.getNamedMorph('bottomPane');
         m.connectModel({model: this, getText: "getCurrentResourceContents", setText: "setCurrentResourceContents"});
-
+	
         var model = this;
         
         m.innerMorph().processCommandKeys = function(key) {
@@ -179,7 +195,7 @@ Object.extend(WebStore.prototype, {
         console.log('opening web store in %s', location);
         var panel = this.buildView(pt(400,300));
         world.addMorphAt(WindowMorph(panel, "Directory Browser on " + this.host), location);
-        this.addCredentialDialog(panel);
+        // this.addCredentialDialog(panel);
         this.changed('getDirectoryList');
     }
 

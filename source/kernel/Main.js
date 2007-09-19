@@ -324,7 +324,7 @@ function main() {
     
     if (Config.showWebStore) {
         //var store = new WebStore('http://idisk.mac.com/xysztof/Public/Lively');
-        var store = new WebStore('localhost', '~kappa/');
+        var store = new WebStore('localhost', '~kappa');
         //var store = new WebStore('www.hanaalliance.org', 'jsl/');
         store.openIn(WorldMorph.current(), pt(500, 30));
         WorldMorph.current().defaultStore = store;
