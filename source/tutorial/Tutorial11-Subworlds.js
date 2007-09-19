@@ -58,7 +58,7 @@ Object.extend(TutorialMorph.prototype, {
         var credits = TextMorph(pt(140, 300).extent(pt(400, 300)), 
                           "Our Core Team Members (pictured from left to right):\n"
                         + "- Tommi Mikkonen\n" 
-                        + "- Krzsysztof Palacz\n"
+                        + "- Krzysztof Palacz\n"
                         + "- Dan Ingalls\n"
                         + "- Antero Taivalsaari");
         credits.setBorderWidth(0);  
