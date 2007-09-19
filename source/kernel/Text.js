@@ -1,5 +1,5 @@
 /**
- * Text.js.  This file defines the text support interface for the Flair system.
+ * Text.js.  Text-related functionality.
  */
 
 /**

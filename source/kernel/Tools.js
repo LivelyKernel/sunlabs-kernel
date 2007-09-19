@@ -1,7 +1,6 @@
 /**
- * Tools.js.  This file defines various tools related to the Flair system,
- * such as the class browser, object inspector, style editor, and
- * profiling and debugging capabilities.  
+ * Tools.js.  This file defines various tools such as the class browser,
+ * object inspector, style editor, and profiling and debugging capabilities.  
  */
 
 // ===========================================================================

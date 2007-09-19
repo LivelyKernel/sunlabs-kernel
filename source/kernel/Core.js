@@ -1,6 +1,6 @@
 /**
- * Core.js.  This file contains the core of the Flair system
- * as well as the core Morphic graphics framework.
+ * Core.js.  This file contains the core system definition
+ * as well as the core Morphic graphics framework. 
  */
 
 // ===========================================================================
@@ -1958,8 +1958,8 @@ Object.extend(DisplayObjectList.prototype, {
 // Morph functionality
 // ===========================================================================
 
-// Every graphical object in the Flair system is a morph.
-// For further information about morphs, read our documentation. 
+// Every graphical object in our system is a morph.
+// For further information about morphs, read the documentation. 
 
 /**
  * @class Morph

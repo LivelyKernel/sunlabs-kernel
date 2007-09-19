@@ -1,5 +1,5 @@
 /**
- * Storage.js.  Storage system implementation for the Flair system.
+ * Storage.js.  Storage system implementation.
  */
 
 /**

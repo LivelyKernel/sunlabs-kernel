@@ -1,9 +1,9 @@
 /**
- * Network.js.  Networking extensions for the Flair system.
+ * Network.js.  Networking capabilities.
  *
- * Note: In a browser-based implementation of the Flair system,
- * most of the necessary networking functionality is inherited
- * from the browser.  
+ * Note: In a browser-based implementation of our system,
+ * most of the necessary networking functionality is 
+ * inherited from the browser.  
  */
 
 // explicitly override prototype.js's verb simulation over post
