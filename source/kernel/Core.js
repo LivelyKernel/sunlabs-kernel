@@ -3079,23 +3079,24 @@ Object.extend(Morph.prototype, {
 
     morphMenu: function(evt) { 
         var items = [
-            ["duplicate", this.copyToHand.bind(this).curry(evt.hand)],
-            ["remove", this.remove.bind(this)],
-            ["inspect", SimpleInspector.openOn.curry(this)],
-            ["style", StylePanel.openOn.curry(this)],
-            ["drill", this, "showOwnerChain", evt],
-            ["grab", this, "pickMeUp", evt],
-            ["reset rotation", this.setRotation.bind(this).curry(0)],
-            ["reset scaling", this.setScale.bind(this).curry(1)],
-            [((this.fishEye) ? "turn fisheye off" : "turn fisheye on"), this, "toggleFisheye"],
+            ["duplicate", this.copyToHand.curry(evt.hand)],
+            ["remove", this.remove],
+            ["inspect", function() { new SimpleInspector(this).open()}],
+            ["style", function() { new StylePanel(this).open()}],
+            ["drill", this.showOwnerChain.curry(evt)],
+            ["grab", this.pickMeUp.curry(evt)],
+            ["reset rotation", this.setRotation.curry(0)],
+            ["reset scaling", this.setScale.curry(1)],
+            [((this.fishEye) ? "turn fisheye off" : "turn fisheye on"), this.toggleFisheye],
             ["-----"],
-            ["put me in a window", this, "putMeInAWindow", this.position()],
-            ["put me in a tab", this, "putMeInATab", this.position()],
-            ["put me in the open", this, "putMeInTheWorld", this.position()],
+            ["put me in a window", this.putMeInAWindow.curry(this.position())],
+            ["put me in a tab", this.putMeInATab.curry(this.position())],
+            ["put me in the open", this.putMeInTheWorld.curry(this.position())],
             ["-----"],
-            [((this.openForDragAndDrop) ? "close DnD" : "open DnD"), this, "toggleDnD", evt.mousePoint],
-            ["show Lively markup", this.addSvgInspector.bind(this).curry(this)],
-            ["publish shrink-wrapped as...", function(m) { WorldMorph.current().makeShrinkWrappedWorldWith(m, WorldMorph.current().prompt('publish as')) }.curry(this)]
+            [((this.openForDragAndDrop) ? "close DnD" : "open DnD"), this.toggleDnD.curry(evt.mousePoint)],
+            ["show Lively markup", this.addSvgInspector.curry(this)],
+            ["publish shrink-wrapped as...", function() { 
+		WorldMorph.current().makeShrinkWrappedWorldWith(this, WorldMorph.current().prompt('publish as')) }]
         ];
         var m = MenuMorph(items, this); 
         if (!this.okToDuplicate()) m.removeItemNamed("duplicate");

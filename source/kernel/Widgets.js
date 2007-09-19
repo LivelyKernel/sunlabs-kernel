@@ -675,9 +675,9 @@ Object.extend(WindowMorph.prototype, {
     
     showTargetMorphMenu: function(evt) { 
         var tm = this.targetMorph.morphMenu(evt);
-        tm.replaceItemNamed("remove", ["remove", this.initiateShutdown.bind(this)]);
-        tm.replaceItemNamed("reset rotation", ["reset rotation", this.setRotation.bind(this).curry(0)]);
-        tm.replaceItemNamed("reset scaling", ["reset scaling", this.setScale.bind(this).curry(1)]);
+        tm.replaceItemNamed("remove", ["remove", this.initiateShutdown]);
+        tm.replaceItemNamed("reset rotation", ["reset rotation", this.setRotation.curry(0)]);
+        tm.replaceItemNamed("reset scaling", ["reset scaling", this.setScale.curry(1)]);
         tm.removeItemNamed("duplicate");
         tm.removeItemNamed("turn fisheye on");
         tm.openIn(WorldMorph.current(), evt.mousePoint, false, this.targetMorph.inspect().truncate()); 
@@ -2216,7 +2216,7 @@ Object.extend(WorldMorph.prototype, {
     inspectScheduledActions: function () {
         // inspect an array of all the actions in the scheduler.  Note this
         // is not the same as scheduledActions which is an array of tuples with times
-        SimpleInspector.openOn(this.scheduledActions.map(function(each) { return each[1]; }));
+        new SimpleInspector(this.scheduledActions.map(function(each) { return each[1]; })).open();
     },
 
     doOneCycle: function (world) {
@@ -2361,7 +2361,7 @@ Object.extend(WorldMorph.prototype, {
             }.logErrors('onSuccess'),
             
             onFailure: function(transport) {
-                console.log('problem with %s', transport);
+                WorldMorph.current().alert('problem accessing ' + url);
             },
     
             onException: function(e) {
@@ -2369,7 +2369,8 @@ Object.extend(WorldMorph.prototype, {
             }
     
         });
-
+	if (!newDoc) 
+	    return;
         console.log('got source %s url %s', newDoc, url);
         var mainDefs = newDoc.getElementById('Defaults');
         var mainScript = newDoc.getElementById('Main');
@@ -2429,7 +2430,9 @@ Object.extend(WorldMorph.prototype, {
     },
 
     alert: function(message) {
-	return this.notify(message, this.bounds().center());
+	var fill = this.getFill();
+	this.setFill(Color.black); // poor man's modal dialog
+        MenuMorph([["OK", function() { this.setFill(fill)}]], this).openIn(this, this.bounds().center(), false, message); 
     },
 
     prompt: function(message) {

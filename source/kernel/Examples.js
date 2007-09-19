@@ -580,8 +580,8 @@ Object.extend(DoodleMorph.prototype, {
     },
     
     setStyle: function() {
-        if ( this.currentSelection != null ) {
-            StylePanel.openOn(this.currentSelection);
+        if (this.currentSelection != null) {
+            new StylePanel(this.currentSelection).open();
         }
     },
     

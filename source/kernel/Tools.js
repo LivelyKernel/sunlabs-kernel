@@ -70,14 +70,6 @@ Object.extend(SimpleBrowser.prototype, {
    
 SimpleInspector = Class.extend(Model);
 
-Object.extend(SimpleInspector, {
-
-    openOn: function(target) {
-        new SimpleInspector(target).openIn(WorldMorph.current(), pt(50,50));
-    }
-
-});
-
 Object.extend(SimpleInspector.prototype, {
 
     initialize: function(targetMorph) {
@@ -106,13 +98,17 @@ Object.extend(SimpleInspector.prototype, {
     contextForEval: function() { return this.inspectee; },
 
     openIn: function(world, location) {
-        var rect = ((location==null) ? location : pt(50,50)).extent(pt(400,250));
+        var rect = (location || pt(50,50)).extent(pt(400,250));
         var window = this.buildView(rect);
         world.addMorph(window);
         this.changed('getPropList');
         // DI: experimental continuous update feature.  It works, but not removed upon close
         // var rightPane = window.targetMorph.getNamedMorph('rightPane').innerMorph();
         // rightPane.startStepping(1000, 'updateView', 'getPropText');
+    },
+
+    open: function() {
+	return this.openIn(WorldMorph.current());
     },
 
     buildView: function(rect) {
@@ -135,7 +131,7 @@ Object.extend(SimpleInspector.prototype, {
             menu.addLine();
             // DI: thisModel used to be panel.getModel() and it failed.
             //     but will soon be a list pane menu item anyway
-            menu.addItem(['inspect selection', new SimpleInspector(thisModel.selectedItem()), "openIn", WorldMorph.current()])
+            menu.addItem(['inspect selection', function() { new SimpleInspector(thisModel.selectedItem()).openIn(WorldMorph.current())}])
             return menu; 
         }
 
@@ -153,14 +149,6 @@ Object.extend(SimpleInspector.prototype, {
  */
    
 StylePanel = Class.extend(Model);
-
-Object.extend(StylePanel, {
-
-    openOn: function(morph) {
-        new StylePanel(morph).openIn(WorldMorph.current(), pt(30,30));
-    }
-
-});
 
 Object.extend(StylePanel.prototype, {
 
@@ -253,9 +241,13 @@ Object.extend(StylePanel.prototype, {
     },
 
     openIn: function(world, location) {
-        var rect = ((location==null) ? location : pt(50,50)).extent(pt(340,100));
+        var rect = (location || pt(50,50)).extent(pt(340,100));
         world.addMorph(WindowMorph(this.buildView(rect), 'Style Panel'));
         this.changed('all')
+    },
+
+    open: function(morph) {
+        return this.openIn(WorldMorph.current());
     },
 
     buildView: function(rect) {
