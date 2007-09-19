@@ -48,8 +48,8 @@ Object.extend(WebStore.prototype, {
     },
 
     saveAs: function(name, content) {
-	console.log('saving content %s', content);
-	this.save("http://%1/%2/%3".format(this.host, this.path, name), content, "LastWriteStatus");
+        console.log('saving content %s', content);
+        this.save("http://%1/%2/%3".format(this.host, this.path, name), content, "LastWriteStatus");
     },
 
     save: function(url, content, modelVariable) {
@@ -66,7 +66,7 @@ Object.extend(WebStore.prototype, {
             },
     
             onFailure: function(transport) {
-		alert('failed saving with response ' + transport.responseText);
+                alert('failed saving with response ' + transport.responseText);
                 console.log('failed with response %s', transport.responseText);
                 //store[modelVariable] = transport.status;
                 //store.changed('get' + modelVariable);
@@ -85,13 +85,13 @@ Object.extend(WebStore.prototype, {
         var options = Object.derive(NetRequest.options, {
             method: 'PROPFIND', 
             requestHeaders: { "Depth": depth },
-	    
+    
             onSuccess: function(transport) {
                 console.log('propfind received %s', 
-			    NetRequest.documentToString(transport.responseXML) || transport.responseText);
-		
+                NetRequest.documentToString(transport.responseXML) || transport.responseText);
+
                 var result = transport.responseXML.documentElement;
-		
+
                 store[modelVariable] = Query.evaluate(result, xpQueryString);
                 store.changed('get' + modelVariable);
                 // console.info('got listing %s', store[modelVariable].pluck('textContent'));
@@ -119,11 +119,12 @@ Object.extend(WebStore.prototype, {
     },
     
     setCurrentResource: function(name) {
-	if (name && name.startsWith('/')) 
+        if (name && name.startsWith('/')) { 
             this.currentResource = name.substring(1);
-	else 
-	    this.currentResource = name;
-	console.log('current resource set to %s', this.currentResource);
+        } else { 
+            this.currentResource = name;
+        }
+        console.log('current resource set to %s', this.currentResource);
         if (this.currentResource) {
             // initialize getting the resource contents
             this.fetch(this.currentResourceURL(), "CurrentResourceContents");
@@ -144,17 +145,17 @@ Object.extend(WebStore.prototype, {
     
     buildView: function(extent) {
         var panel = PanelMorph.makePanedPanel(extent, [
-		['leftPane', ListPane, Rectangle(0, 0, 0.5, 0.6)],
-		['rightPane', ListPane, Rectangle(0.5, 0, 0.5, 0.6)],
-		['bottomPane', TextPane, Rectangle(0, 0.6, 1, 0.4)]
-	]);
-	var m = panel.getNamedMorph('leftPane');
-	m.connectModel({model: this, getList: "getDirectoryList", setSelection: "setCurrentDirectory"});
-	m = panel.getNamedMorph('rightPane');
-	m.connectModel({model: this, getList: "getCurrentDirectoryContents", setSelection: "setCurrentResource"});
-	m = panel.getNamedMorph('bottomPane');
-	m.connectModel({model: this, getText: "getCurrentResourceContents", setText: "setCurrentResourceContents"});
-	
+            ['leftPane', ListPane, Rectangle(0, 0, 0.5, 0.6)],
+            ['rightPane', ListPane, Rectangle(0.5, 0, 0.5, 0.6)],
+            ['bottomPane', TextPane, Rectangle(0, 0.6, 1, 0.4)]
+        ]);
+        var m = panel.getNamedMorph('leftPane');
+        m.connectModel({model: this, getList: "getDirectoryList", setSelection: "setCurrentDirectory"});
+        m = panel.getNamedMorph('rightPane');
+        m.connectModel({model: this, getList: "getCurrentDirectoryContents", setSelection: "setCurrentResource"});
+        m = panel.getNamedMorph('bottomPane');
+        m.connectModel({model: this, getText: "getCurrentResourceContents", setText: "setCurrentResourceContents"});
+
         var model = this;
         
         m.innerMorph().processCommandKeys = function(key) {
@@ -164,7 +165,7 @@ Object.extend(WebStore.prototype, {
                 model.save(model.currentResourceURL(), this.textString, 'LastWriteStatus');
                 return;
             } else {
-		return TextMorph.prototype.processCommandKeys.call(this, key);
+                return TextMorph.prototype.processCommandKeys.call(this, key);
             }
         }
         return panel;

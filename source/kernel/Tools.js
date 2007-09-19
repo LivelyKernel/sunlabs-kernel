@@ -46,10 +46,10 @@ Object.extend(SimpleBrowser.prototype, {
 
     buildView: function(extent) {
         var panel = PanelMorph.makePanedPanel(extent, [
-		['leftPane', ListPane, Rectangle(0, 0, 0.5, 0.6)],
-		['rightPane', ListPane, Rectangle(0.5, 0, 0.5, 0.6)],
-		['bottomPane', TextPane, Rectangle(0, 0.6, 1, 0.4)]
-	]);
+            ['leftPane', ListPane, Rectangle(0, 0, 0.5, 0.6)],
+            ['rightPane', ListPane, Rectangle(0.5, 0, 0.5, 0.6)],
+            ['bottomPane', TextPane, Rectangle(0, 0.6, 1, 0.4)]
+        ]);
         var m = panel.getNamedMorph('leftPane');
         m.connectModel({model: this, getList: "getClassList", setSelection: "setClassName"});
         m = panel.getNamedMorph('rightPane');
@@ -97,7 +97,7 @@ Object.extend(SimpleInspector.prototype, {
 
     getPropText: function() {
         if (this.selectedItem() == null) return "-----";
-	return Object.inspect(this.selectedItem()).withNiceDecimals();
+        return Object.inspect(this.selectedItem()).withNiceDecimals();
     },
 
     setPropText: function(txt, v) { this.inspectee[this.propName] = this.inspectee.evalInThis(txt); },
@@ -109,19 +109,19 @@ Object.extend(SimpleInspector.prototype, {
     openIn: function(world, location) {
         var rect = ((location==null) ? location : pt(50,50)).extent(pt(400,250));
         var window = this.buildView(rect);
-	world.addMorph(window);
+        world.addMorph(window);
         this.changed('getPropList');
-	// DI: experimental continuous update feature.  It works, but not removed upon close
-	// var rightPane = window.targetMorph.getNamedMorph('rightPane').innerMorph();
-	// rightPane.startStepping(1000, 'updateView', 'getPropText');
+        // DI: experimental continuous update feature.  It works, but not removed upon close
+        // var rightPane = window.targetMorph.getNamedMorph('rightPane').innerMorph();
+        // rightPane.startStepping(1000, 'updateView', 'getPropText');
     },
 
     buildView: function(rect) {
         var panel = PanelMorph.makePanedPanel(rect.extent(), [
-		['leftPane', ListPane, Rectangle(0, 0, 0.5, 0.6)],
-		['rightPane', TextPane, Rectangle(0.5, 0, 0.5, 0.6)],
-		['bottomPane', TextPane, Rectangle(0, 0.6, 1, 0.4)]
-	]);
+            ['leftPane', ListPane, Rectangle(0, 0, 0.5, 0.6)],
+            ['rightPane', TextPane, Rectangle(0.5, 0, 0.5, 0.6)],
+            ['bottomPane', TextPane, Rectangle(0, 0.6, 1, 0.4)]
+        ]);
         var m = panel.getNamedMorph('leftPane');
         m.connectModel({model: this, getList: "getPropList", setSelection: "setPropName"});
         m = panel.getNamedMorph('rightPane');

@@ -36,7 +36,7 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
     initialize: function(initialBounds) {
         ButtonMorph.superClass.initialize.call(this, initialBounds, "rect");
         
-	var model = new SimpleModel(this, "Value");
+        var model = new SimpleModel(this, "Value");
         // this default self connection may get overwritten by, eg, connectModel()...
         this.modelPlug = this.addChildElement(model.makePlug());
 
@@ -75,7 +75,7 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
     onMouseDown: function(evt) {
         this.requestKeyboardFocus(evt.hand);
         evt.hand.setMouseFocus(this);
-	if (!this.isToggle()) {
+	    if (!this.isToggle()) {
             this.setValue(true); 
             this.changeAppearanceFor(true); 
         } 
@@ -426,7 +426,7 @@ Object.extend(TitleBarMorph.prototype, {
 
         label.align(label.bounds().topCenter(), this.shape.bounds().topCenter());
         label.ignoreEvents();
-	this.addMorph(label);
+        this.addMorph(label);
         return this;
     },
 
@@ -486,7 +486,7 @@ Object.extend(TitleTabMorph.prototype, {
         this.addMorph(label);
         this.shape.setBounds(this.shape.bounds().withTopRight(pt(label.bounds().maxX(), topY)))
         this.suppressHandles = true;
-	return this;
+        return this;
     },
 
     okToBeGrabbedBy: function(evt) {
@@ -633,12 +633,12 @@ Object.extend(WindowMorph.prototype, {
         if (this.isCollapsed()) return;
         this.expandedTransform = this.getTransform();
         this.tbTransform = this.titleBar.getTransform();
-	var owner = this.owner();
+        var owner = this.owner();
         var titleTransform = this.titleBar.cumulativeTransform();
-	owner.addMorph(this.titleBar);
+        owner.addMorph(this.titleBar);
         this.titleBar.setTransform(this.collapsedTransform ? this.collapsedTransform : this.expandedTransform);
-	this.titleBar.setRotation(this.titleBar.getRotation());  // see comment in HandMorph
-	this.titleBar.enableEvents();
+        this.titleBar.setRotation(this.titleBar.getRotation());  // see comment in HandMorph
+        this.titleBar.enableEvents();
         this.remove();
         this.state = "collapsed";
     },
@@ -652,7 +652,7 @@ Object.extend(WindowMorph.prototype, {
         this.titleBar.remove();
         this.addMorph(this.titleBar);
         this.titleBar.setTransform(this.tbTransform)
-	this.titleBar.ignoreEvents();
+        this.titleBar.ignoreEvents();
         this.state = "expanded";
     },
 
@@ -816,10 +816,10 @@ Object.extend(HandleMorph.prototype, {
     
     onMouseUp: function(evt) {
         if (!evt.shiftKey && !evt.altKey && !evt.cmdKey &&
-		// these hack tests should be replaced by receiver tests
-		!(this.targetMorph.getType() == "WindowMorph" || this.targetMorph.getType() == "TitleBarMorph")) {
-            // last call for, eg, vertex deletion
-            this.targetMorph.reshape(this.partName, this.bounds().center(), this, true); 
+            // these hack tests should be replaced by receiver tests
+            !(this.targetMorph.getType() == "WindowMorph" || this.targetMorph.getType() == "TitleBarMorph")) {
+                // last call for, eg, vertex deletion
+                this.targetMorph.reshape(this.partName, this.bounds().center(), this, true); 
         }
     
         evt.hand.setMouseFocus(null);
@@ -844,12 +844,12 @@ Object.extend(HandleMorph.prototype, {
 
         var p0 = evt.hand.lastMouseDownPoint; // in world coords
         var p1 = evt.mousePoint;
-	if (!this.initialScale) this.initialScale = this.targetMorph.getScale();
-	if (!this.initialRotation) this.initialRotation = this.targetMorph.getRotation();
+        if (!this.initialScale) this.initialScale = this.targetMorph.getScale();
+        if (!this.initialRotation) this.initialRotation = this.targetMorph.getRotation();
         if (evt.altKey) {
             // ctrl-drag for rotation (unshifted) and scale (shifted)
             var ctr = this.targetMorph.owner().worldPoint(this.targetMorph.origin);  //origin for rotation and scaling
-	    // this.world().addMorph(new Morph(ctr.extent(pt(5,5)),"rect"));
+            // this.world().addMorph(new Morph(ctr.extent(pt(5,5)),"rect"));
             var v1 = p1.subPt(ctr); //vector from origin
             var v0 = p0.subPt(ctr); //vector from origin at mousedown
             
@@ -867,11 +867,11 @@ Object.extend(HandleMorph.prototype, {
             if (evt.shiftKey) {
                 this.targetMorph.setBorderWidth(Math.max(0, Math.floor(d/3)/2), true);
             } else { 
-		// these hack tests should be replaced by receiver tests
+                // these hack tests should be replaced by receiver tests
                 if (this.targetMorph.getType() == "WindowMorph" || this.targetMorph.getType() == "TitleBarMorph"){
-                  //scale the whole window instead of reframing
-		  // DI:  Note this should reframe windows, with proportional layout of the interior frames
-		  // this code is all copied -- should be factored or, better, removed
+                  // scale the whole window instead of reframing
+                  // DI:  Note this should reframe windows, with proportional layout of the interior frames
+                  // this code is all copied -- should be factored or, better, removed
                   var ctr = this.targetMorph.owner().worldPoint(this.targetMorph.origin);
                   var v1 = p1.subPt(ctr); //vector from origin
                   var v0 = p0.subPt(ctr); //vector from origin at mousedown
@@ -1143,23 +1143,26 @@ Object.extend(PanelMorph.prototype, {
 });
 
 Object.extend(PanelMorph, {
+
     makePanedPanel: function(extent, paneSpecs) {
-	// Generalized constructor for paned window panels
-	// paneSpec is an array of arrays of the form...
-	//	['leftPane', ListPane, Rectangle(0, 0, 0.5, 0.6)],
-	// See example calls in, eg, SimpleBrowser.buildView() for how to use this
+        // Generalized constructor for paned window panels
+        // paneSpec is an array of arrays of the form...
+        //     ['leftPane', ListPane, Rectangle(0, 0, 0.5, 0.6)],
+        // See example calls in, eg, SimpleBrowser.buildView() for how to use this
         var panel = PanelMorph(extent);
-	panel.setFill(Color.primary.blue.lighter().lighter());
+        panel.setFill(Color.primary.blue.lighter().lighter());
         panel.setBorderWidth(2);
 
-	paneSpecs.each( function(spec) {
-		var paneName = spec[0];
-		var paneConstructor = spec[1];
-		var paneRect = pt(0,0).extent(extent).scaleByRect(spec[2]);
-		panel.setNamedMorph(paneName, paneConstructor(paneRect));
+        paneSpecs.each( function(spec) {
+            var paneName = spec[0];
+            var paneConstructor = spec[1];
+            var paneRect = pt(0,0).extent(extent).scaleByRect(spec[2]);
+            panel.setNamedMorph(paneName, paneConstructor(paneRect));
         });
+
         return panel;
     }
+
 });
 
 /**
@@ -1183,7 +1186,7 @@ Object.extend(CheapListMorph.prototype, {
         CheapListMorph.superClass.initialize.call(this, initialBounds, listText);
         // this default self connection may get overwritten by, eg, connectModel()...
         var model = new SimpleModel(null, "List", "Selection");
-	this.modelPlug = this.addChildElement(model.makePlug());
+        this.modelPlug = this.addChildElement(model.makePlug());
         this.itemList = itemList;
         this.setModelValue('setList', itemList);
         //console.log('model now %s', this.modelPlug.model);
@@ -1436,8 +1439,8 @@ Object.extend(MenuMorph.prototype, {
         delta = delta.addPt(visibleRect.bottomRight().subPt(menuRect.bottomRight()));  // same for bottomRight
         if (delta.dist(pt(0,0)) > 1) this.moveBy(delta);  // move if significant
 
-	// Note menu gets mouse focus by default.  If you don't want it, you'll have to null it
-	world.firstHand().setMouseFocus(this);
+        // Note menu gets mouse focus by default.  If you don't want it, you'll have to null it
+        world.firstHand().setMouseFocus(this);
     },
 
     compose: function(location) { 
@@ -1877,15 +1880,15 @@ Object.extend(PasteUpMorph.prototype, {
     onMouseDown: function(evt) {  //default behavior is to grab a submorph
         var m = this.morphToReceiveEvent(evt);
         if (m == null || !evt.altKey) {
-		if (m == null || (m == this.world())) { this.makeSelection(evt); return true; }
-        	if (m.handlesMouseDown(evt)) return false;
-	}
+            if (m == null || (m == this.world())) { this.makeSelection(evt); return true; }
+            if (m.handlesMouseDown(evt)) return false;
+        }
         evt.hand.grabMorph(m, evt);
         return true; 
     },
 
     okToBeGrabbedBy: function(evt) {
-	// Paste-ups, especially the world, cannot be grabbed normally
+        // Paste-ups, especially the world, cannot be grabbed normally
         return null; 
     },
 
@@ -2355,10 +2358,10 @@ Object.extend(WorldMorph.prototype, {
             console.log('null filename, not publishing %s', morphs);
            return;
         }
-	if (!this.defaultStore) {
-	    alert("no store to access the startup file, location " + location);
-	    return;
-	}
+        if (!this.defaultStore) {
+            alert("no store to access the startup file, location " + location);
+            return;
+        }
         console.log('morphs is %s', morphs);
         var newDoc = null;
         var url = "http://" + this.defaultStore.host + "/" + this.defaultStore.path + "/lively.xhtml";
@@ -2390,14 +2393,16 @@ Object.extend(WorldMorph.prototype, {
         var container = newDoc.createElementNS(Namespace.SVG, 'g');
         morphs.each(function(morph) {
 
-	    var model = morph.getModel();
+            var model = morph.getModel();
             console.log('processing morph %s model %s', morph, model);
-	    var modelNode = null;
-	    if (model) 
-		modelNode = morph.addChildElement(model.toMarkup(newDoc));
+            var modelNode = null;
+            if (model) { 
+                modelNode = morph.addChildElement(model.toMarkup(newDoc));
+            }
             container.appendChild(newDoc.importNode(morph, true));
-	    if (modelNode)
-		modelNode.parentNode.removeChild(modelNode);
+            if (modelNode) {
+                modelNode.parentNode.removeChild(modelNode);
+            }
             container.appendChild(newDoc.createTextNode('\n\n'));
         });
         container.setAttribute("id", "ShrinkWrapped");
@@ -2591,8 +2596,8 @@ Object.extend(HandMorph.prototype, {
             if (evt.shiftKey) {
                 if (this.hasMovedSignificantly && this.mode == "shiftDragForDup") {
                     var m = this.dragMorph;
-                    if(!m.okToDuplicate()) return;
-		    this.dragMorph = null;
+                    if (!m.okToDuplicate()) return;
+                    this.dragMorph = null;
                     this.mode = "normal";
                     m.copyToHand(this);
                     var offset = evt.mousePoint.subPt(this.lastMouseDownPoint);
@@ -2606,11 +2611,11 @@ Object.extend(HandMorph.prototype, {
                 if (receiver != null) receiver.onMouseOver(evt);
             } else {
                 // (this.mouseFocus || this.owner()).mouseEvent(evt, this.mouseFocus != null);
-	    	if (this.mouseFocus) this.mouseFocus.mouseEvent(evt, this.mouseFocus != null);
-	    	// else if (!this.mouseButtonPressed) this.owner().mouseEvent(evt, this.mouseFocus != null);
-		// Try doing nothing with drag if there is no focus
-		//  in an attempt to stop dragging things by accident
-	    	else if (this.owner()) this.owner().mouseEvent(evt, this.mouseFocus != null);
+                if (this.mouseFocus) this.mouseFocus.mouseEvent(evt, this.mouseFocus != null);
+                // else if (!this.mouseButtonPressed) this.owner().mouseEvent(evt, this.mouseFocus != null);
+                // Try doing nothing with drag if there is no focus
+                //  in an attempt to stop dragging things by accident
+                else if (this.owner()) this.owner().mouseEvent(evt, this.mouseFocus != null);
             }
         
             this.lastMouseEvent = evt;
@@ -2644,22 +2649,22 @@ Object.extend(HandMorph.prototype, {
                 if (receiver == null) receiver = this.world();
                 console.log('dropping %s on %s', m, receiver);
             
-		while (this.hasSubmorphs()) { // drop in same z-order as in hand
-                        var m = this.submorphs.firstChild;
-			receiver.addMorph(m); // this removes it from hand
-			//DI: May need to be updated for collaboration...
-			//m.updateBackendFields('origin'); 
+                while (this.hasSubmorphs()) { // drop in same z-order as in hand
+                    var m = this.submorphs.firstChild;
+                    receiver.addMorph(m); // this removes it from hand
+                    //DI: May need to be updated for collaboration...
+                    //m.updateBackendFields('origin'); 
 
-                	// FIXME - folowing stmt is a workaround for the fact that if the targetMorph gets
-			//	dragged, its rotation value set in degrees rather than radians, and this
-			//	may foul things up later if .rotation is read rather than .getRotation
-			//	Remove this stmt after it gets fixed.
-			m.setRotation(m.getRotation()); //work-around for invalid degree/radian confusion
-		}
+                    // FIXME - folowing stmt is a workaround for the fact that if the targetMorph gets
+                    // dragged, its rotation value set in degrees rather than radians, and this
+                    // may foul things up later if .rotation is read rather than .getRotation
+                    // Remove this stmt after it gets fixed.
+                    m.setRotation(m.getRotation()); //work-around for invalid degree/radian confusion
+                }
             } else {
                 // console.log('hand dispatching event ' + event.type + ' to owner '+ this.owner().inspect());
                 // This will tell the world to send the event to the right morph
-		// We do not dispatch mouseup the same way -- only if focus gets set on mousedown
+                // We do not dispatch mouseup the same way -- only if focus gets set on mousedown
                 if (evt.type == "mousedown") this.owner().mouseEvent(evt, false);
             }
             
@@ -2749,21 +2754,21 @@ Object.extend(HandMorph.prototype, {
         }
 
         // Give grabbed morph a chance to, eg, spawn a copy or other referent
-	grabbedMorph = grabbedMorph.okToBeGrabbedBy(evt);
+        grabbedMorph = grabbedMorph.okToBeGrabbedBy(evt);
         if (!grabbedMorph) return;
 
-	// console.log('owner = ' + Object.inspect(grabbedMorph.owner()) + '; open = ' + Object.inspect(grabbedMorph.owner().openForDragAndDrop));
-	if (grabbedMorph.owner() && !grabbedMorph.owner().openForDragAndDrop) return;
+        // console.log('owner = ' + Object.inspect(grabbedMorph.owner()) + '; open = ' + Object.inspect(grabbedMorph.owner().openForDragAndDrop));
+        if (grabbedMorph.owner() && !grabbedMorph.owner().openForDragAndDrop) return;
 
         if (this.keyboardFocus && grabbedMorph !== this.keyboardFocus) {
             this.keyboardFocus.relinquishKeyboardFocus(this);
         }
 
-        //console.log('grabbing %s', grabbedMorph);
+        // console.log('grabbing %s', grabbedMorph);
         // Save info for cancelling grab or drop [also need indexInOwner?]
-	// But for now we simply drop on world, so this isn't needed
-	this.grabInfo = [grabbedMorph.owner(), grabbedMorph.position()];
-        //console.log('grabbed %s', grabbedMorph);
+        // But for now we simply drop on world, so this isn't needed
+        this.grabInfo = [grabbedMorph.owner(), grabbedMorph.position()];
+        // console.log('grabbed %s', grabbedMorph);
         this.addMorph(grabbedMorph);
         if (this.applyDropShadowFilter) {
             grabbedMorph.setAttributeNS(null, "filter", "url(#DropShadowFilter)");
@@ -2929,7 +2934,7 @@ Object.extend(LinkMorph.prototype, {
         this.help.shape.roundEdgesBy(15);
         this.help.setFill(Color.primary.yellow.lighter(3));
         this.help.shape.setFillOpacity(.8);
-        this.help.openForDragAndDrop = false; // so it wont interfere with mouseovers
+        this.help.openForDragAndDrop = false; // so it won't interfere with mouseovers
         this.world().addMorph(this.help);
     },
     
