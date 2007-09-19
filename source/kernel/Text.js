@@ -684,18 +684,6 @@ TextMorph = HostClass.create('TextMorph', Morph);
 // TextMorph attributes and initialization functions
 Object.extend(TextMorph, {
 
-    makeLabel: function(rect, textString) {
-        var morph = TextMorph(rect, textString);
-        morph.setBorderWidth(0);
-        morph.setFill(null);
-        morph.setWrapStyle(WrapStyle.SHRINK);
-        // morph.isAccepting = false;
-        morph.ignoreEvents();
-        morph.layoutChanged();
-        morph.okToBeGrabbedBy = function(evt) { this.isDesignMode() ? this : null; }
-        return morph;
-    },
-
     makeInputLine: function(rect, initialText) {
         var morph = TextMorph(rect, initialText ? initialText : "");
         morph.setWrapStyle(WrapStyle.NONE);
@@ -877,6 +865,18 @@ Object.extend(TextMorph.prototype, {
         }
     },
 
+    beLabel: function() {
+        this.setBorderWidth(0);
+        this.setFill(null);
+	this.setWrapStyle(WrapStyle.SHRINK);
+        // morph.isAccepting = false;
+        this.ignoreEvents();
+        this.layoutChanged();
+        this.okToBeGrabbedBy = function(evt) { this.isDesignMode() ? this : null; }
+        return this;
+    },
+
+
     // Since command keys do not always work,
     // make it possible to evaluate the contents
     // of the TextMorph via popup menu
@@ -1042,9 +1042,10 @@ Object.extend(TextMorph.prototype, {
 
         this.undrawSelection();
 
-        if (this.selectionRange[0] > this.textString.length-1) { // null sel at end
+        if (this.selectionRange[0] > this.textString.length - 1) { // null sel at end
             var jRect = this.ensureTextBox().getBounds(this.selectionRange[0]-1);
-            jRect = jRect.translatedBy(pt(jRect.width,0));
+	    if (jRect)
+		jRect = jRect.translatedBy(pt(jRect.width,0));
         } else {
             var jRect = this.ensureTextBox().getBounds(this.selectionRange[0]);
         }

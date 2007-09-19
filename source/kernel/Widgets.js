@@ -289,7 +289,7 @@ Object.extend(IconMorph.prototype, {
 
     initialize: function(viewPort, url, name, targetUrl) {
         IconMorph.superClass.initialize.call(this, viewPort, url);
-        this.label = new TextMorph.makeLabel(Rectangle(viewPort.width, viewPort.height/3, 100, 30), name);
+        this.label = new TextMorph(Rectangle(viewPort.width, viewPort.height/3, 100, 30), name).beLabel();
         this.target = targetUrl;
         this.label.setFill(Color.white);
         this.addMorph(this.label);
@@ -421,7 +421,7 @@ Object.extend(TitleBarMorph.prototype, {
             label = headline;
         } else { // String
             var width = headline.length * 8; // wild guess headlineString.length * 2 *  font.getCharWidth(' ') + 2;
-            label = TextMorph.makeLabel(Rectangle(0, 0, width, bh), headline);
+            label = TextMorph(Rectangle(0, 0, width, bh), headline).beLabel();
         }
 
         label.align(label.bounds().topCenter(), this.shape.bounds().topCenter());
@@ -479,7 +479,7 @@ Object.extend(TitleTabMorph.prototype, {
         } else { // String
             var width = headline.length * 8;
             // wild guess headlineString.length * 2 *  font.getCharWidth(' ') + 2; 
-            label = TextMorph.makeLabel(Rectangle(0, 0, width, bh), headline);
+            label = TextMorph(Rectangle(0, 0, width, bh), headline).beLabel();
         }
         var topY = this.shape.bounds().y;
         label.align(label.bounds().topLeft(), cell.topRight());

@@ -320,7 +320,7 @@ Object.extend(Feed.prototype, {
 
     openIn: function(world, location) {
         var panel = this.buildView();
-        var title = TextMorph.makeLabel(Rectangle(0, 0, 150, 15), 'RSS feed                    ');
+        var title = TextMorph(Rectangle(0, 0, 150, 15), 'RSS feed                    ').beLabel();
         title.connectModel({model: panel.model, getText: 'getChannelTitle'});
         var window = world.addMorphAt(WindowMorph(panel, title), location);
         this.request(panel.model, "getItemList", 'getChannelTitle');

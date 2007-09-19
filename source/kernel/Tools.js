@@ -266,20 +266,20 @@ Object.extend(StylePanel.prototype, {
         var m;
         var y = 10;
 
-        panel.addMorph(TextMorph.makeLabel(Rectangle(50, y, 100, 20), 'Border Width'));
+        panel.addMorph(TextMorph(Rectangle(50, y, 100, 20), "Border Width").beLabel());
         panel.addMorph(m = PrintMorph(Rectangle(150, y, 40, 20)));
         m.connectModel({model: this, getValue: "getBorderWidth", setValue: "setBorderWidth"});
         panel.addMorph(m = SliderMorph(Rectangle(200, y, 100, 20), 10.0));
         m.connectModel({model: this, getValue: "getBorderWidth", setValue: "setBorderWidth"});
         y += 30;
 
-        panel.addMorph(TextMorph.makeLabel(Rectangle(50, y, 100, 20), 'Border Color'));
+        panel.addMorph(TextMorph(Rectangle(50, y, 100, 20), 'Border Color').beLabel());
         panel.addMorph(m = ColorPickerMorph(Rectangle(250, y, 50, 30)));
         m.connectModel({model: this, setColor: "setBorderColor"});
         y += 40;
 
         if (this.targetMorph.shape.roundEdgesBy) {
-            panel.addMorph(TextMorph.makeLabel(Rectangle(50, y, 100, 20), 'Round Corners'));
+            panel.addMorph(TextMorph(Rectangle(50, y, 100, 20), 'Round Corners').beLabel());
             panel.addMorph(m = PrintMorph(Rectangle(150, y, 40, 20)));
             m.connectModel({model: this, getValue: "getRounding", setValue: "setRounding"});
             panel.addMorph(m = SliderMorph(Rectangle(200, y, 100, 20), 50.0));
@@ -297,14 +297,14 @@ Object.extend(StylePanel.prototype, {
         m.connectModel({model: this, setColor: "setColor2"});
         y += 80;
 
-        panel.addMorph(TextMorph.makeLabel(Rectangle(50, y, 90, 20), 'Fill Opacity'));
+        panel.addMorph(TextMorph(Rectangle(50, y, 90, 20), 'Fill Opacity').beLabel());
         panel.addMorph(m = PrintMorph(Rectangle(150, y, 40, 20)));
         m.connectModel({model: this, getValue: "getFillOpacity", setValue: "setFillOpacity"});
         panel.addMorph(m = SliderMorph(Rectangle(200, y, 100, 20), 1.0));
         m.connectModel({model: this, getValue: "getFillOpacity", setValue: "setFillOpacity"});
         y += 30;
 
-        panel.addMorph(TextMorph.makeLabel(Rectangle(50, y, 90, 20), 'Stroke Opacity'));
+        panel.addMorph(TextMorph(Rectangle(50, y, 90, 20), 'Stroke Opacity').beLabel());
         panel.addMorph(m = PrintMorph(Rectangle(150, y, 40, 20)));
         m.connectModel({model: this, getValue: "getStrokeOpacity", setValue: "setStrokeOpacity"});
         panel.addMorph(m = SliderMorph(Rectangle(200, y, 100, 20), 1.0));
@@ -312,17 +312,17 @@ Object.extend(StylePanel.prototype, {
         y += 30;
 
         if (this.targetMorph.setTextColor) {
-            panel.addMorph(TextMorph.makeLabel(Rectangle(50, y, 100, 20), 'Text Color'));
+            panel.addMorph(TextMorph(Rectangle(50, y, 100, 20), "Text Color").beLabel());
             panel.addMorph(m = ColorPickerMorph(Rectangle(250, y, 50, 30)));
             m.connectModel({model: this, setColor: "setTextColor"});
             y += 40;
 
-            panel.addMorph(TextMorph.makeLabel(Rectangle(50, y, 100, 20), 'Font Family'));
+            panel.addMorph(TextMorph(Rectangle(50, y, 100, 20), 'Font Family').beLabel());
             panel.addMorph(m = TextMorph(Rectangle(150, y, 150, 20)));
             m.connectModel({model: this, getText: "getFontFamily", setText: "setFontFamily"});
             y += 30;
 
-            panel.addMorph(TextMorph.makeLabel(Rectangle(50, y, 100, 20), 'Font Size'));
+            panel.addMorph(TextMorph(Rectangle(50, y, 100, 20), 'Font Size').beLabel());
             panel.addMorph(m = TextMorph(Rectangle(150, y, 50, 20)));
             m.connectModel({model: this, getText: "getFontSize", setText: "setFontSize"});
             y += 30;
@@ -428,7 +428,7 @@ function showStatsViewer(profilee,title) {
     }
     
     WorldMorph.current().addMorph(m);
-    var t = TextMorph.makeLabel(pt(0,0).extent(m.bounds().extent()), 'Display and reset stats');
+    var t = TextMorph(pt(0,0).extent(m.bounds().extent()), 'Display and reset stats').beLabel();
     m.addMorph(t);
 };
 

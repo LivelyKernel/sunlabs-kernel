@@ -161,7 +161,7 @@ Object.extend(WebStore.prototype, {
         m.innerMorph().processCommandKeys = function(key) {
             if (key == 's') {
                 console.log('in %s', this.owner());
-                // model.addCredentialDialog(this.world());
+                //model.addCredentialDialog(this.world());
                 model.save(model.currentResourceURL(), this.textString, 'LastWriteStatus');
                 return;
             } else {
@@ -179,7 +179,7 @@ Object.extend(WebStore.prototype, {
         console.log('opening web store in %s', location);
         var panel = this.buildView(pt(400,300));
         world.addMorphAt(WindowMorph(panel, "Directory Browser on " + this.host), location);
-        //this.addCredentialDialog(panel);
+        this.addCredentialDialog(panel);
         this.changed('getDirectoryList');
     }
 
@@ -240,10 +240,10 @@ Object.extend(Credential.prototype, {
         const height = 20;
         var y = height;
 
-        panel.addMorph(TextMorph.makeLabel(panel.shape.bounds().insetBy(height).withHeight(height), 'Authorization'));
+        panel.addMorph(TextMorph(panel.shape.bounds().insetBy(height).withHeight(height), 'Authorization').beLabel());
 
         y += 30;
-        panel.addMorph(TextMorph.makeLabel(Rectangle(30, y, 80, height), 'User name'));
+        panel.addMorph(TextMorph(Rectangle(30, y, 80, height), 'User name').beLabel());
 
         var m = panel.addMorph(TextMorph.makeInputLine(Rectangle(150, y, 100, height)));
         m.connectModel({model: this, setText: "setUserName"});
@@ -252,18 +252,18 @@ Object.extend(Credential.prototype, {
         m.setNullSelectionAt(0);
 
         y+= 30;
-        panel.addMorph(TextMorph.makeLabel(Rectangle(30, y, 80, height), 'Password'));
+        panel.addMorph(TextMorph(Rectangle(30, y, 80, height), 'Password').beLabel());
         m = panel.addMorph(TextMorph.makeInputLine(Rectangle(150, y, 100, height)));
         m.connectModel({model: this, setText: "setPassword"});
 
         y+= 40;
         m = panel.addMorph(ButtonMorph(Rectangle(80, y, 50, height)));
-        m.addMorph(TextMorph.makeLabel(m.shape.bounds(), 'OK'));
+        m.addMorph(TextMorph(m.shape.bounds(), 'OK').beLabel());
         m.setToggle(true);
         m.connectModel({model: this, getValue: "getOKValue", setValue: "setOKValue"});
 
         m = panel.addMorph(ButtonMorph(Rectangle(140, y, 50, height)));
-        m.addMorph(TextMorph.makeLabel(m.shape.bounds(), "Cancel"));
+        m.addMorph(TextMorph(m.shape.bounds(), "Cancel").beLabel());
         m.setToggle(true);
         m.connectModel({model: this, getValue: "getCancelValue", setValue: "setCancelValue"});
 

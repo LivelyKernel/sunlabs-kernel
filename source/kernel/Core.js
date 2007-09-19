@@ -1772,6 +1772,7 @@ Object.extend(PolygonShape.prototype, {
         }
     },
     
+
     possibleHandleForControlPoint: function(targetMorph, mousePoint, hand) {
         var partName = this.controlPointNear(mousePoint);
 
