@@ -2691,7 +2691,7 @@ pd = function (text, priority) {
 }
 
 // Constants that all mapmorphs use
-var IMAGEFOLDER = "http://www.cs.tut.fi/~reijula/mapimages/";
+var IMAGEFOLDER = "Resources/map/";
 
 var MAPSFOLDER = IMAGEFOLDER + "maps";
 var MAPSURL = []; //format "http://mt.google.com/mt?n=404&v=w2.99&x=" + tempx + "&y=" + tempy + "&zoom="+zoomRatio
@@ -3983,7 +3983,7 @@ Object.extend(CanvasScapeMorph.prototype, {
         if (!this.difficulty) this.difficulty = "medium";
       
         this.gameon = false;
-        this.sky = ImageMorph(Rectangle(0,20,4800,150), "http://www.cs.tut.fi/~reijula/images/sky2.jpg");
+        this.sky = ImageMorph(Rectangle(0,20,4800,150), "Resources/canvasscape/sky2.jpg");
         this.sky.setHasKeyboardFocus = function(newSetting) { return newSetting;
         this.owner().setHasKeyboardFocus( true); };
         this.sky.takesKeyboardFocus = function() { this.owner().setHasKeyboardFocus( true);};

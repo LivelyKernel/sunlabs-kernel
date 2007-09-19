@@ -2009,11 +2009,11 @@ Object.extend(WorldMorph.prototype, {
         // in Firefox bounds may be 1x1 size?? maybe everything should be run from onload or sth?
 
         if (bounds.width < 2) {
-            bounds.width = 800;
+            bounds.width = 1280;
         }
 
         if (bounds.height < 2) {
-            bounds.height = 600;
+            bounds.height = 1024;
         }
 
         if (backgroundImageId) {
