@@ -684,21 +684,6 @@ TextMorph = HostClass.create('TextMorph', Morph);
 // TextMorph attributes and initialization functions
 Object.extend(TextMorph, {
 
-    makeInputLine: function(rect, initialText) {
-        var morph = TextMorph(rect, initialText ? initialText : "");
-        morph.setWrapStyle(WrapStyle.NONE);
-        morph.onKeyPress = function(evt) {
-            if (evt.sanitizedKeyCode() == Event.KEY_ENTER) {
-                this.saveContents(this.textString);
-                return true;
-            } else {
-                return TextMorph.prototype.onKeyPress.call(this, evt);
-            }
-        };
-
-        morph.okToBeGrabbedBy = function(evt) { this.isDesignMode() ? this : null; }
-        return morph;
-    }
     
 });
 
@@ -798,7 +783,7 @@ Object.extend(TextMorph.prototype, {
         TextMorph.superClass.initialize.call(this, rect, "rect");
         TextMorph.lastInstance = this; 
 
-        this.textString = textString;
+        this.textString = textString || "";
 
         // KP: note layoutChanged will be called on addition to the tree
         // DI: ... and yet this seems necessary!
@@ -872,6 +857,21 @@ Object.extend(TextMorph.prototype, {
         // morph.isAccepting = false;
         this.ignoreEvents();
         this.layoutChanged();
+        this.okToBeGrabbedBy = function(evt) { this.isDesignMode() ? this : null; }
+        return this;
+    },
+
+    beInputLine: function() {
+        this.setWrapStyle(WrapStyle.NONE);
+        this.onKeyPress = function(evt) {
+            if (evt.sanitizedKeyCode() == Event.KEY_ENTER) {
+                this.saveContents(this.textString);
+                return true;
+            } else {
+                return TextMorph.prototype.onKeyPress.call(this, evt);
+            }
+        };
+
         this.okToBeGrabbedBy = function(evt) { this.isDesignMode() ? this : null; }
         return this;
     },

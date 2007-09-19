@@ -245,7 +245,7 @@ Object.extend(Credential.prototype, {
         y += 30;
         panel.addMorph(TextMorph(Rectangle(30, y, 80, height), 'User name').beLabel());
 
-        var m = panel.addMorph(TextMorph.makeInputLine(Rectangle(150, y, 100, height)));
+        var m = panel.addMorph(TextMorph(Rectangle(150, y, 100, height)).beInputLine());
         m.connectModel({model: this, setText: "setUserName"});
 
         m.requestKeyboardFocus(WorldMorph.current().firstHand()); //??
@@ -253,7 +253,7 @@ Object.extend(Credential.prototype, {
 
         y+= 30;
         panel.addMorph(TextMorph(Rectangle(30, y, 80, height), 'Password').beLabel());
-        m = panel.addMorph(TextMorph.makeInputLine(Rectangle(150, y, 100, height)));
+        m = panel.addMorph(TextMorph(Rectangle(150, y, 100, height)).beInputLine());
         m.connectModel({model: this, setText: "setPassword"});
 
         y+= 40;
