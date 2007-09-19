@@ -2127,7 +2127,7 @@ Object.extend(Morph.prototype, {
                 break;
             } 
             case "modelPlug": {
-                this.modelPlug = this.addChildElement(Model.becomePlug(node));
+                this.modelPlug = this.addChildElement(Model.becomePlugNode(node));
                 console.info("%s reconstructed plug %s", this, this.modelPlug);
                 break;
             } 
@@ -3560,7 +3560,7 @@ Object.extend(Importer.prototype, {
         
         for (var node = ptree.firstChild; node != null; node = node.nextSibling) {
             switch (node.tagName) {
-            case 'dependent':
+            case "dependent":
                 var oldId = node.getAttribute('ref');
                 var dependent = this.lookupMorph(oldId);
                 if (!dependent)  {
@@ -3570,7 +3570,7 @@ Object.extend(Importer.prototype, {
                 dependent.modelPlug.model = model;
                 model.addDependent(dependent);
                 break;
-            case 'variable':
+            case "variable":
                 var name = node.getAttribute('name');
                 var value = node.textContent;
                 if (value) {
@@ -3631,7 +3631,7 @@ Object.extend(Morph.prototype, {
     connectModel: function(plugSpec) {
         // connector makes this view pluggable to different models, as in
         // {model: someModel, getList: "getItemList", setSelection: "chooseItem"}
-        var newPlug = Model.makePlug(plugSpec);
+        var newPlug = Model.makePlugNode(plugSpec);
         if (this.modelPlug) this.replaceChild(newPlug, this.modelPlug);
         else this.addChildElement(newPlug);
         this.modelPlug = newPlug;
@@ -3746,16 +3746,12 @@ Object.extend(Model.prototype, {
         var hash = new Hash(this);
         delete hash.dependents;
         return "#<Model:%1>".format(Object.toJSON(hash));
-    },
-    
-    toMarkupString: function(exporter) {
-        return null;
     }
 
 });
 
 Object.extend(Model, {
-    makePlug: function(spec) {
+    makePlugNode: function(spec) {
         var node = NodeFactory.createNS(Namespace.LIVELY, "modelPlug");
         var props = Object.properties(spec);
         for (var i = 0; i < props.length; i++) {
@@ -3773,7 +3769,7 @@ Object.extend(Model, {
         return node;
     },
 
-    becomePlug: function(node) {
+    becomePlugNode: function(node) {
         for (var acc = node.firstChild; acc != null;  acc = acc.nextSibling) {
             if (acc.tagName != 'accessor') continue;
             node[acc.getAttribute('formal')] = acc.getAttribute('actual');
@@ -3830,15 +3826,11 @@ Object.category(SimpleModel.prototype,  "core", function() {
             var spec = { };
             this.variables().forEach(function(v) { spec[getter(v)] = model[getter(v)]; spec[setter(v)] = model[setter(v)]; });
             spec.model = model;
-            return Model.makePlug(spec);
+            return Model.makePlugNode(spec);
         },
 
         variables: function() {
             return Object.properties(this).filter(function(name) { return name != 'dependents'});
-        },
-
-        toMarkupString: function(exporter) {
-            return new XMLSerializer().serializeToString(this.toMarkup(document));
         },
 
         toMarkup: function(doc) {
