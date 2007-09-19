@@ -3699,6 +3699,7 @@ Object.extend(MessengerWidget.prototype, {
         // disable the 2 set value calls for the button
         m.onMouseUp = function(evt) {
             var newValue = this.isToggle() ? !this.getValue() : false;
+            evt.hand.setMouseFocus(null); 
             this.changeAppearanceFor(newValue); 
         };        
         return panel;

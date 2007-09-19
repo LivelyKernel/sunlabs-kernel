@@ -810,6 +810,10 @@ Object.extend(HandleMorph.prototype, {
         this.helpText = newText;
     },
 
+    okToDuplicate: function(evt) {
+        return false;
+    },
+
     onMouseDown: function(evt) {
         this.hideHelp();
     },
@@ -2593,7 +2597,7 @@ Object.extend(HandMorph.prototype, {
             if (evt.mousePoint.dist(this.lastMouseDownPoint) > 10) 
                 this.hasMovedSignificantly = true;
                 
-            if (evt.shiftKey) {
+            if (evt.shiftKey && this.mode == "shiftDragForDup") {
                 if (this.hasMovedSignificantly && this.mode == "shiftDragForDup") {
                     var m = this.dragMorph;
                     if (!m.okToDuplicate()) return;
