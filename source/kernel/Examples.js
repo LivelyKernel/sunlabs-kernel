@@ -1100,8 +1100,8 @@ Object.extend(AsteroidsSprite.prototype, {
         // Render the sprite's shape and location by rotating its base shape
         // and moving it to its proper screen position.
 
-	var matrix = Transform.createSimilitude(pt(this.currentX + gameWidth/2, this.currentY + gameHeight/2), -this.angle, 1).matrix;
-	
+        var matrix = Transform.createSimilitude(pt(this.currentX + gameWidth/2, this.currentY + gameHeight/2), -this.angle, 1).matrix;
+
         this.sprite.setVertices(this.shape.map(function(v) { return v.matrixTransform(matrix)}));
         // Create a new morph based on the sprite
         this.morph = this.createMorph(this.sprite);
@@ -1111,8 +1111,8 @@ Object.extend(AsteroidsSprite.prototype, {
         // Determine if one sprite overlaps with another, i.e., if any vertice
         // of one sprite lands inside the other.
 
-	var mine = this.sprite.vertices();
-	var other = s.sprite.vertices();
+        var mine = this.sprite.vertices();
+        var other = s.sprite.vertices();
         for (var i = 0; i < other.length; i++)
             if (this.sprite.containsPoint(other[i]))
                 return true;
@@ -1124,7 +1124,7 @@ Object.extend(AsteroidsSprite.prototype, {
 
     createMorph: function(sprite) {
         // This function creates a Morph out of a game polygon/sprite
-	var verts = sprite.vertices();
+        var verts = sprite.vertices();
         if (verts.length > 0) {
             var morph;
             // This is inefficient: We should reuse the shape instead of creating a new one
@@ -1305,7 +1305,7 @@ Object.extend(AsteroidsSprite.prototype, {
       // Create shape for the photon sprites.
       
       for (var i = 0; i < MAX_SHOTS; i++) {
-	  photons[i] = new AsteroidsSprite([pt(1,1), pt(1,-1), pt(-1,1), pt(-1,-1)]);
+          photons[i] = new AsteroidsSprite([pt(1,1), pt(1,-1), pt(-1,1), pt(-1,-1)]);
       }
       
       // Create shape for the flying saucer.
@@ -1319,12 +1319,12 @@ Object.extend(AsteroidsSprite.prototype, {
       // Create asteroid sprites.
       
       for (i = 0; i < MAX_ROCKS; i++)
-	  asteroids[i] = new AsteroidsSprite([]);
+          asteroids[i] = new AsteroidsSprite([]);
       
       // Create explosion sprites.
       
       for (i = 0; i < MAX_SCRAP; i++)
-	  explosions[i] = new AsteroidsSprite([]);
+          explosions[i] = new AsteroidsSprite([]);
 
     // Set font data.
     /* NOTE: Fonts are not supported yet
@@ -1379,12 +1379,12 @@ Object.extend(AsteroidsSprite.prototype, {
     stars = []; /* new Point[numStars]; */
 
     for (var i = 0; i < numStars; i++) {
-	stars[i] = pt((Math.random() * gameWidth), (Math.random() * gameHeight));
-	
-	var m = Morph(stars[i].extent(pt(1, 1)), "rect");
-	m.setFill(Color.yellow);
-	m.setBorderColor(Color.yellow);
-	gameMorph.addMorph(m);
+        stars[i] = pt((Math.random() * gameWidth), (Math.random() * gameHeight));
+
+        var m = Morph(stars[i].extent(pt(1, 1)), "rect");
+        m.setFill(Color.yellow);
+        m.setBorderColor(Color.yellow);
+        gameMorph.addMorph(m);
     }
   }
 
@@ -2042,9 +2042,9 @@ GameMorph.prototype.runAsteroidsGame = function() {
   function initExplosions() {
 
     for (var i = 0; i < MAX_SCRAP; i++) {
-	explosions[i].shape = [];
-	explosions[i].active = false;
-	explosionCounter[i] = 0;
+      explosions[i].shape = [];
+      explosions[i].active = false;
+      explosionCounter[i] = 0;
 
       if (explosions[i].morph) {
           explosions[i].morph.remove();
@@ -2294,16 +2294,16 @@ Object.extend(GameMorph.prototype, {
 
     onKeyDown: function(evt) { 
         keyDown(evt);
-	if (evt.keyCode == Event.KEY_ESC) {
+        if (evt.keyCode == Event.KEY_ESC) {
             this.relinquishKeyboardFocus(this.world().firstHand());
-	}
-	evt.stop();
+        }
+        evt.stop();
         return true; 
     },
 
     onKeyUp: function(evt) { 
         keyUp(evt);
-	evt.stop();
+        evt.stop();
         return true; 
     },
 
