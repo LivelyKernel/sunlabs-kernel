@@ -320,11 +320,12 @@ Pen.script = ["P = new Pen();",
 // The Doodle Draw Example
 // ===========================================================================
 
+// Note: This image path is used also by the weather widget
+var IMAGES = "http://www.cs.tut.fi/~kuusipal/flair/";
+
 /**
  * @class DoodleMorph
  */
-
-var IMAGES = "http://www.cs.tut.fi/~kuusipal/flair/";
 
 DoodleMorph = HostClass.create('DoodleMorph', ClipMorph);
 
@@ -2433,21 +2434,21 @@ Object.extend(WeatherWidget.prototype, {
         // or make the titlebar round depending on the window
         var m; 
 
-        panel.addMorph(m = ImageMorph(Rectangle(10,20,25,20), "http://www.cs.tut.fi/~kuusipal/flair/city.gif"));
+        panel.addMorph(m = ImageMorph(Rectangle(10,20,25,20), IMAGES + "city.gif"));
         m.setFill(null);
-        panel.addMorph(m = ImageMorph(Rectangle(10,55,25,20), "http://www.cs.tut.fi/~kuusipal/flair/weather.gif"));
+        panel.addMorph(m = ImageMorph(Rectangle(10,55,25,20), IMAGES + "weather.gif"));
         m.setFill(null);
-        panel.addMorph(m = ImageMorph(Rectangle(10,80,20,20), "http://www.cs.tut.fi/~kuusipal/flair/temperature.gif"));
+        panel.addMorph(m = ImageMorph(Rectangle(10,80,20,20), IMAGES + "temperature.gif"));
         m.setFill(null);
-        panel.addMorph(m = ImageMorph(Rectangle(10,105,20,20), "http://www.cs.tut.fi/~kuusipal/flair/wind.gif"));
+        panel.addMorph(m = ImageMorph(Rectangle(10,105,20,20), IMAGES + "wind.gif"));
         m.setFill(null);
-        panel.addMorph(m = ImageMorph(Rectangle(10,130,20,20), "http://www.cs.tut.fi/~kuusipal/flair/wind_dir.gif"));
+        panel.addMorph(m = ImageMorph(Rectangle(10,130,20,20), IMAGES + "wind_dir.gif"));
         m.setFill(null);
-        panel.addMorph(m = ImageMorph(Rectangle(10,155,20,20), "http://www.cs.tut.fi/~kuusipal/flair/barometer.gif"));
+        panel.addMorph(m = ImageMorph(Rectangle(10,155,20,20), IMAGES + "barometer.gif"));
         m.setFill(null);
-        panel.addMorph(m = ImageMorph(Rectangle(10,180,20,20), "http://www.cs.tut.fi/~kuusipal/flair/humidity.gif"));
+        panel.addMorph(m = ImageMorph(Rectangle(10,180,20,20), IMAGES + "humidity.gif"));
         m.setFill(null);
-        panel.addMorph(m = ImageMorph(Rectangle(10,205,20,20), "http://www.cs.tut.fi/~kuusipal/flair/visibility.gif"));
+        panel.addMorph(m = ImageMorph(Rectangle(10,205,20,20), IMAGES + "visibility.gif"));
         m.setFill(null);
 
         panel.addMorph(m = CheapListMorph(Rectangle(40,3,200,20),["San Francisco, California", "Tampere, Finland", "London, United Kingdom"]));
