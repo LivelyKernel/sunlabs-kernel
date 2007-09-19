@@ -1,0 +1,47 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html debug="false">
+  <head>
+    <title>Lively Kernel Tutorial</title>
+  </head>
+  
+  <body>
+    <script type="text/javascript" src="../firebug/firebug.js"></script> 
+    <script type="text/javascript" src="../fontinfo.js"> </script>
+    
+    <h2>Lively Kernel Tutorial: (16) Advanced UI Features: Drilling and Grabbing (Layers of) Objects</h2>
+    <a href="index.html">Back to Introduction</A>
+    <a href="Tutorial15-Scripting.html">PREVIOUS</A>
+    <a href="Tutorial16-Misc1.js">Source code of this demo</A>
+    <a href="Tutorial17-Misc2.html">NEXT</A>
+    <hr>
+    Lively Kernel has a convenient "<i>drill</i>"" operation that allows you
+    to take a "core sample" of the visual structure of the objects that 
+    have been laid on top of each other.<br>
+    For instance, if you use the "<i>drill</i>" operation to
+    view the internal, implementation-level structure of the upper left panel of a class browser,
+    you get a "<i>drill menu</i>" object that shows you the different layers of objects
+    in the panel, starting from the bottommost object (in this case: a <i>WindowMorph</i>)
+    to the topmost object (in this case: a <i>CheapListMorph</i>)<br>
+    When you choose any of the objects in the drill menu,
+    you can open a menu to manipulate that particular object directly,
+    even though that object is not necessarily topmost on the screen.<br>
+    Using this feature you can, e.g., open an inspector or a style panel to edit
+    the properties of objects that are deep down in the visual structure.<br>
+    You can also use a special "<i>grab</i>" menu operation to pick up objects
+    that are not topmost on the screen, e.g., to move an entire panel with its contents
+    away from its current location.
+    <p>    
+        <img src="Tutorial16-Image1.PNG">
+        <img src="Tutorial16-Image2.PNG">
+        <img src="Tutorial16-Image3.PNG">
+        <img src="Tutorial16-Image4.PNG">
+    <p>
+    <hr>
+    <b>Try it yourself!</b> Use the "<i>drill</i>"" and "<i>grab</i>" menu operations to 
+    pick up various (layers of) objects in the the class browser shown below.
+    <p>
+    <iframe src="Tutorial16-Misc1.svg" hspace="20" width="60%" height="60%" align="center" frameborder="10"></iframe>
+    <p>
+    <hr>
+  </body>
+</html>
