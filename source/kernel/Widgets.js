@@ -74,7 +74,8 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
     
     onMouseDown: function(evt) {
         this.requestKeyboardFocus(evt.hand);
-        if (!this.isToggle()) {
+        evt.hand.setMouseFocus(this);
+	if (!this.isToggle()) {
             this.setValue(true); 
             this.changeAppearanceFor(true); 
         } 
@@ -85,6 +86,7 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
     onMouseUp: function(evt) {
         var newValue = this.isToggle() ? !this.getValue() : false;
         this.setValue(newValue); 
+        evt.hand.setMouseFocus(null);
         this.changeAppearanceFor(newValue); 
     },
     
