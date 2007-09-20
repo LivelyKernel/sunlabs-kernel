@@ -392,10 +392,10 @@ Object.extend(TitleBarMorph.prototype, {
         this.addMorph(closeButton);
 
         // FIXME this should be simpler
-        var sign = NodeFactory.create("use").withHref("#CloseIcon");
+        // var sign = NodeFactory.create("use").withHref("#CloseIcon");
 
-        sign.applyTransform(Transform.createSimilitude(pt(-9, -9), 0, 0.035));
-        closeButton.addChildElement(sign);
+        // sign.applyTransform(Transform.createSimilitude(pt(-9, -9), 0, 0.035));
+        // closeButton.addChildElement(sign);
 
         cell = cell.translatedBy(pt(bh - spacing, 0));
         var menuButton = WindowControlMorph(cell, spacing, Color.primary.blue, windowMorph, 
@@ -2822,17 +2822,28 @@ Object.extend(LinkMorph.prototype, {
     
         LinkMorph.superClass.initialize.call(this, bounds, "ellipse");
 
-        //this.setFill(RadialGradient.makeCenteredGradient(Color.primary.blue.lighter(), Color.black));
+        // Make me look a bit like a world
+	this.setFill(RadialGradient.makeCenteredGradient(Color.primary.green, Color.primary.blue));
+	[Rectangle(0.15,0,0.7,1), Rectangle(0.35,0,0.3,1), Rectangle(0,0.3,1,0.4)].each( function(each) {
+		// Make longitude / latitude lines
+		var lineMorph = Morph(bounds.scaleByRect(each), "ellipse");
+		lineMorph.setFill(null); lineMorph.setBorderWidth(1); lineMorph.setBorderColor(Color.black);
+		lineMorph.align(lineMorph.bounds().center(),this.shape.bounds().center());
+		lineMorph.suppressHandles = true;
+		lineMorph.okToBeGrabbedBy = function (evt) { this.enterMyWorld(evt) }.bind(this);
+		this.addMorph(lineMorph);
+	}.bind(this));
+	this.openForDragAndDrop = false;
 
         // FIXME this should be simpler
-        var sign = NodeFactory.create("use").withHref("#WebSpiderIcon");
-        sign.applyTransform(Transform.createSimilitude(pt(-26, -26), 0, 0.1));
-        this.addChildElement(sign);
+        // var sign = NodeFactory.create("use").withHref("#WebSpiderIcon");
+        // sign.applyTransform(Transform.createSimilitude(pt(-26, -26), 0, 0.1));
+        // this.addChildElement(sign);
 
         if (!otherWorld) {
             otherWorld = WorldMorph(Canvas);
             var pathBack = LinkMorph(WorldMorph.current(), bounds);
-            pathBack.setFill(RadialGradient.makeCenteredGradient(Color.primary.yellow, Color.black));
+            pathBack.setFill(RadialGradient.makeCenteredGradient(Color.primary.yellow, Color.gray));
             otherWorld.addMorph(pathBack);
         } 
         this.myWorld = otherWorld;
