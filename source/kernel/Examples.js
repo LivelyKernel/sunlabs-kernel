@@ -305,7 +305,6 @@ Pen.hilbertFun = function(world) {
     };
 
     logoMenu.openIn(world, pt(380, 380), true, "Hilbert Fun");
-    world.firstHand().setMouseFocus(null); 
 }
 
 // The default script for the Pen/Hilbert demo
@@ -358,7 +357,6 @@ Object.extend(DoodleMorph.prototype, {
 
         this.linebutton.onMouseUp = function(evt) {
             var newValue = this.isToggle() ? !this.getValue() : false;
-	    evt.hand.setMouseFocus(null); 
             this.changeAppearanceFor(newValue); 
         };
         this.linebutton.connectModel({model: this, setValue: "addLine"});
@@ -366,15 +364,13 @@ Object.extend(DoodleMorph.prototype, {
 
         this.rectbutton.onMouseUp = function(evt) {
             var newValue = this.isToggle() ? !this.getValue() : false;
-	    evt.hand.setMouseFocus(null); 
-            this.changeAppearanceFor(newValue); 
+           this.changeAppearanceFor(newValue); 
         };
         this.rectbutton.connectModel({model: this, setValue: "addRect"});
         this.addMorph(this.rectbutton);
 
         this.circlebutton.onMouseUp = function(evt) {
             var newValue = this.isToggle() ? !this.getValue() : false;
-	    evt.hand.setMouseFocus(null); 
             this.changeAppearanceFor(newValue); 
         };
         this.circlebutton.connectModel({model: this, setValue: "addCirc"});
@@ -382,7 +378,6 @@ Object.extend(DoodleMorph.prototype, {
                 
         this.widthbutton.onMouseUp = function(evt) {
             var newValue = this.toggles ? !this.getValue() : false;
-	    evt.hand.setMouseFocus(null); 
             this.changeAppearanceFor(newValue); 
         };
         this.widthbutton.connectModel({model: this, setValue: "setLine"});
@@ -394,7 +389,6 @@ Object.extend(DoodleMorph.prototype, {
 
         this.stylebutton.onMouseUp = function(evt) {
             var newValue = this.isToggle() ? !this.getValue() : false;
-	    evt.hand.setMouseFocus(null); 
             this.changeAppearanceFor(newValue); 
         };
         this.stylebutton.connectModel({model: this, setValue: "setStyle"});
@@ -414,7 +408,8 @@ Object.extend(DoodleMorph.prototype, {
     },
 
     mouseEvent: function(evt, hasFocus) {
-        if (evt.type == "mousedown" && this.onMouseDown(evt)) return; 
+	if (hasFocus && evt.hand.mouseFocus !== this) return;
+	if (evt.type == "mousedown" && this.onMouseDown(evt)) return; 
         DoodleMorph.superClass.mouseEvent.call(this, evt, hasFocus); 
     },
 
@@ -2284,7 +2279,6 @@ Object.extend(GameMorph.prototype, {
     },
 
     onMouseDown: function(evt) {
-        evt.hand.setMouseFocus(this);
         this.requestKeyboardFocus(evt.hand);
         return true; 
     },
@@ -3701,7 +3695,6 @@ Object.extend(MessengerWidget.prototype, {
         // disable the 2 set value calls for the button
         m.onMouseUp = function(evt) {
             var newValue = this.isToggle() ? !this.getValue() : false;
-            evt.hand.setMouseFocus(null); 
             this.changeAppearanceFor(newValue); 
         };        
         return panel;
@@ -3937,7 +3930,6 @@ Object.extend(CanvasScapeMorph.prototype, {
     },
 
     onMouseDown: function(evt) {
-        evt.hand.setMouseFocus(this);
         this.requestKeyboardFocus(evt.hand);
         return true; 
     },

@@ -1144,7 +1144,6 @@ Object.extend(TextMorph.prototype, {
         var charIx = this.charOfPoint(this.localize(evt.mousePoint));
 
         this.startSelection(charIx);
-        evt.hand.setMouseFocus(this);
         this.requestKeyboardFocus(evt.hand);
         return true; 
     },
@@ -1157,7 +1156,6 @@ Object.extend(TextMorph.prototype, {
     },
     
     onMouseUp: function(evt) {
-        evt.hand.setMouseFocus(null);
         this.isSelecting = false;
     
         // Check for repeated null selection meaning select word
@@ -1610,7 +1608,6 @@ Object.extend(TestTextMorph.prototype, {
         this.boundsMorph.setFill(null);
         this.boundsMorph.setBorderColor(Color.red);
         this.addMorph(this.boundsMorph);
-        evt.hand.setMouseFocus(this);
         this.requestKeyboardFocus(evt.hand);
         this.track(evt);
         return true; 
@@ -1642,7 +1639,6 @@ Object.extend(TestTextMorph.prototype, {
     },
     
     onMouseUp: function(evt) {
-        evt.hand.setMouseFocus(null);
         this.isSelecting = false;
         this.boundsMorph.remove();
     }

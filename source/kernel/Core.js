@@ -868,6 +868,17 @@ Object.extend(Color, {
     lightGray: Color.gray.lighter(),
     veryLightGray: Color.gray.lighter().lighter(),
     turquoise: Color.rgb(0, 240, 255),
+//    brown: Color.rgb(182, 67, 0),
+//    red: Color.rgb(255, 0, 0),
+    orange: Color.rgb(255, 153, 0),
+//    yellow: Color.rgb(204, 255, 0),
+//    limeGreen: Color.rgb(51, 255, 0),
+//    green: Color.rgb(0, 255, 102),
+//    cyan: Color.rgb(0, 255, 255),
+//    blue: Color.rgb(0, 102, 255),
+//    purple: Color.rgb(131, 0, 201),
+//    magenta: Color.rgb(204, 0, 255),
+//    pink: Color.rgb(255, 30, 153),
     primary: {
         // Sun palette
         blue: Color.rgb(0x53, 0x82, 0xA1),
@@ -2018,10 +2029,12 @@ Object.extend(MouseHandlerForDragging.prototype, {
     },
 
     handleMouseEvent: function(evt, targetMorph) {
-        var handler = targetMorph['on' + evt.capitalizedType()];
-        // handler = targetMorph[adapter[evt.type]]
+        var capType = evt.capitalizedType();
+	var handler = targetMorph['on' + capType];
         // console.log('target for ' + evt.type + 'Action is ' + handler + ' target ' + targetMorph.inspect());
-        handler.call(targetMorph, evt);
+        if(capType == "MouseDown") evt.hand.setMouseFocus(targetMorph);
+	handler.call(targetMorph, evt);
+        if(capType == "MouseUp") evt.hand.setMouseFocus(null);
         return true; 
     },
     
@@ -2938,9 +2951,7 @@ Object.extend(Morph.prototype, {
         else this.checkForControlPointNear(evt);
     },
     
-    onMouseUp: function(evt) { 
-        evt.hand.setMouseFocus(null); 
-    },
+    onMouseUp: function(evt) { }, //default behavior
 
     onMouseOver: function(evt) {
         // default behavior is do nothing
@@ -3030,9 +3041,12 @@ Object.extend(MouseHandlerForRelay.prototype, {
     
     handleMouseEvent: function(evt, appendage) {
         // console.log("this.eventSpec[this.adapter[evt.type]] = " + this.eventSpec["on" + evt.capitalizedType()]);
-        var targetHandler = this.target[this.eventSpec['on' + evt.capitalizedType()]];
+        var capType = evt.capitalizedType();
+	var targetHandler = this.target[this.eventSpec['on' + capType]];
         if (targetHandler == null) return true; //FixMe: should this be false?
-        targetHandler.call(this.target, evt, appendage);
+        if (capType == "MouseDown") evt.hand.setMouseFocus(appendage);
+	targetHandler.call(this.target, evt, appendage);
+        if (capType == "MouseUp") evt.hand.setMouseFocus(null);
         return true; 
     },
     
@@ -3074,7 +3088,10 @@ Object.extend(Morph.prototype, {
     },
 
     showMorphMenu: function(evt) { 
-        this.morphMenu(evt).openIn(this.world(), evt.mousePoint, false, this.inspect().truncate()); 
+        var menu = this.morphMenu(evt);
+        // if (evt.mouseButtonPressed) evt.hand.setMouseFocus(menu);
+	// evt.hand.setMouseFocus(menu);
+	menu.openIn(this.world(), evt.mousePoint, false, this.inspect().truncate()); 
     },
 
     morphMenu: function(evt) { 
@@ -3098,10 +3115,9 @@ Object.extend(Morph.prototype, {
             ["publish shrink-wrapped as...", function() { 
 		WorldMorph.current().makeShrinkWrappedWorldWith(this, WorldMorph.current().prompt('publish as')) }]
         ];
-        var m = MenuMorph(items, this); 
-        if (!this.okToDuplicate()) m.removeItemNamed("duplicate");
-        if (evt.mouseButtonPressed) evt.hand.setMouseFocus(m);
-        return m;
+        var menu = MenuMorph(items, this); 
+        if (!this.okToDuplicate()) menu.removeItemNamed("duplicate");
+        return menu;
     },
 
     putMeInAWindow: function(loc) {

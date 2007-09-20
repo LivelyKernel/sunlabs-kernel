@@ -74,8 +74,7 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
     
     onMouseDown: function(evt) {
         this.requestKeyboardFocus(evt.hand);
-        evt.hand.setMouseFocus(this);
-	    if (!this.isToggle()) {
+	if (!this.isToggle()) {
             this.setValue(true); 
             this.changeAppearanceFor(true); 
         } 
@@ -86,7 +85,6 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
     onMouseUp: function(evt) {
         var newValue = this.isToggle() ? !this.getValue() : false;
         this.setValue(newValue); 
-        evt.hand.setMouseFocus(null);
         this.changeAppearanceFor(newValue); 
     },
     
@@ -496,11 +494,9 @@ Object.extend(TitleTabMorph.prototype, {
     handlesMouseDown: function() { return true; },
 
     onMouseDown: function(evt) {
-        evt.hand.setMouseFocus(this);
     },
 
     onMouseUp: function(evt) {
-        evt.hand.setMouseFocus(null);
         this.windowMorph.toggleCollapse();
     }
 
@@ -825,9 +821,6 @@ Object.extend(HandleMorph.prototype, {
                 // last call for, eg, vertex deletion
                 this.targetMorph.reshape(this.partName, this.bounds().center(), this, true); 
         }
-    
-        evt.hand.setMouseFocus(null);
-        // console.log('removing ' + this.inspect());
         this.remove(); 
     },
     
@@ -889,16 +882,6 @@ Object.extend(HandleMorph.prototype, {
         }
     },
     
-    showColorPicker: function(loc, target, hand, functionName) { 
-        // Need proper logic here to place color picker visible, yet clear of the damage rect
-        // Want to align opposite corner of picker with designated corner of handle
-        var picker = ColorPickerMorph(loc.addXY(5,5).extent(pt(50,30)),target,functionName,true);
-        var world = this.world(); 
-        this.remove();
-        hand.setMouseFocus(picker);
-        this.world().addMorph(picker);
-    },
-
     inspect: function() {
         return HandleMorph.superClass.inspect.call(this) + " on " + Object.inspect(this.targetMorph);
     },
@@ -1095,7 +1078,6 @@ Object.extend(PanelMorph.prototype, {
     },
 
     onMouseDown: function(evt) {
-        evt.hand.setMouseFocus(this);
         this.requestKeyboardFocus(evt.hand);
         return true;
     },    
@@ -1238,7 +1220,6 @@ Object.extend(CheapListMorph.prototype, {
     },
     
     onMouseDown: function(evt) {
-        evt.hand.setMouseFocus(this);
         this.requestKeyboardFocus(evt.hand);
         // this.selectLineAt(this.charOfY(this.localize(evt.mousePoint))); 
         this.onMouseMove(evt); 
@@ -1254,7 +1235,6 @@ Object.extend(CheapListMorph.prototype, {
     },
 
     onMouseUp: function(evt) {
-        evt.hand.setMouseFocus(null);
         this.emitSelection(); 
     },
 
@@ -1444,8 +1424,8 @@ Object.extend(MenuMorph.prototype, {
         delta = delta.addPt(visibleRect.bottomRight().subPt(menuRect.bottomRight()));  // same for bottomRight
         if (delta.dist(pt(0,0)) > 1) this.moveBy(delta);  // move if significant
 
-        // Note menu gets mouse focus by default.  If you don't want it, you'll have to null it
-        world.firstHand().setMouseFocus(this);
+        // Note menu gets mouse focus by default if pop-up.  If you don't want it, you'll have to null it
+        if (!remainOnScreen) world.firstHand().setMouseFocus(this);
     },
 
     compose: function(location) { 
@@ -1463,7 +1443,6 @@ Object.extend(MenuMorph.prototype, {
     onMouseUp: function(evt) {
         if (!this.hasNullSelection()) var item = this.items[this.selectedLineNo()];
         this.setNullSelectionAt(0);  // Clean up now, in case the call fails
-        evt.hand.setMouseFocus(null);
         if (!this.stayUp) this.remove(); 
 
         if (item) { // Now execute the menu item...
@@ -1564,7 +1543,6 @@ Object.extend(SliderMorph.prototype, {
         //    Note: want setMouseFocus to also cache the transform and record the hitPoint.
         //    Ideally thereafter only have to say, eg, morph.setPosition(evt.hand.adjustedMousePoint)
         this.hitPoint = this.localize(evt.mousePoint).subPt(this.slider.bounds().topLeft());
-        evt.hand.setMouseFocus(slider); 
     },
     
     sliderMoved: function(evt, slider) {
@@ -1586,12 +1564,11 @@ Object.extend(SliderMorph.prototype, {
         this.adjustForNewBounds(); 
     },
 
-    sliderReleased: function(evt, slider) { evt.hand.setMouseFocus(null) },
+    sliderReleased: function(evt, slider) { },
     
     handlesMouseDown: function(evt) { return !evt.altKey; },
     
     onMouseDown: function(evt) {
-        evt.hand.setMouseFocus(this);
         this.requestKeyboardFocus(evt.hand);
         var inc = this.getExtent();
         var newValue = this.getValue();
@@ -1610,11 +1587,7 @@ Object.extend(SliderMorph.prototype, {
         return SliderMorph.superClass.onMouseMove.call(this, evt);
     },
     
-    onMouseUp: function(evt) {
-        evt.hand.setMouseFocus(null);
-    },
-    
-    clipValue: function(val) { 
+   clipValue: function(val) { 
         return Math.min(1.0,Math.max(0,0,val.roundTo(0.001))); 
     },
 
@@ -1832,7 +1805,6 @@ Object.extend(ColorPickerMorph.prototype, {
     onMouseUp: function(evt) {
         if (!this.isPopup) return;
         this.remove();
-        evt.hand.setMouseFocus(null);
     },
 
     onMouseMove: function(evt) {
@@ -2549,6 +2521,7 @@ Object.extend(HandMorph.prototype, {
     },
     
     setMouseFocus: function(morphOrNull) {
+	// console.log('setMouseFocus: ' + Object.inspect(morphOrNull));
         this.mouseFocus = morphOrNull; 
     },
     
@@ -2556,7 +2529,7 @@ Object.extend(HandMorph.prototype, {
         if (this.keyboardFocus === morphOrNull) return;
 
         if (this.keyboardFocus != null) {
-            console.log('blur %s', this.keyboardFocus);
+            // console.log('blur %s', this.keyboardFocus);
             this.keyboardFocus.onBlur(this);
             this.keyboardFocus.setHasKeyboardFocus(false);
         }
@@ -2564,7 +2537,7 @@ Object.extend(HandMorph.prototype, {
         this.keyboardFocus = morphOrNull; 
         
         if (this.keyboardFocus) {
-            console.log('focus %s', this.keyboardFocus);
+            // console.log('focus %s', this.keyboardFocus);
             this.keyboardFocus.onFocus(this);
         }
     },
@@ -2823,7 +2796,7 @@ Object.extend(LinkMorph.prototype, {
         LinkMorph.superClass.initialize.call(this, bounds, "ellipse");
 
         // Make me look a bit like a world
-	this.setFill(RadialGradient.makeCenteredGradient(Color.primary.green, Color.primary.blue));
+	this.setFill(RadialGradient.makeCenteredGradient(Color.green, Color.blue));
 	[Rectangle(0.15,0,0.7,1), Rectangle(0.35,0,0.3,1), Rectangle(0,0.3,1,0.4)].each( function(each) {
 		// Make longitude / latitude lines
 		var lineMorph = Morph(bounds.scaleByRect(each), "ellipse");
@@ -2843,7 +2816,7 @@ Object.extend(LinkMorph.prototype, {
         if (!otherWorld) {
             otherWorld = WorldMorph(Canvas);
             var pathBack = LinkMorph(WorldMorph.current(), bounds);
-            pathBack.setFill(RadialGradient.makeCenteredGradient(Color.primary.yellow, Color.gray));
+            pathBack.setFill(RadialGradient.makeCenteredGradient(Color.orange, Color.red.darker()));
             otherWorld.addMorph(pathBack);
         } 
         this.myWorld = otherWorld;
