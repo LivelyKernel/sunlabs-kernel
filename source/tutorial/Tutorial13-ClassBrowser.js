@@ -4,7 +4,7 @@
 
 TutorialMorph = HostClass.create('TutorialMorph', Morph);
 
-// Make sure the application knows about the Global context
+// Make sure the class browser knows about the Global context
 Global = this;
 
 Object.extend(TutorialMorph.prototype, {
@@ -24,7 +24,7 @@ Object.extend(TutorialMorph.prototype, {
     createTutorial: function() {
         
         // Create an empty world
-        world = WorldMorph.createEmptyWorld();
+        world = WorldMorph(Canvas);
         
         // Set the world current and display it
         WorldMorph.setCurrent(world);

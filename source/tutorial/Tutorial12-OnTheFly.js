@@ -39,7 +39,7 @@ Object.extend(TutorialMorph.prototype, {
     createTutorial: function() {
         
         // Create an empty world
-        world = WorldMorph.createEmptyWorld();
+        world = WorldMorph(Canvas);
         
         // Set the world current and display it
         WorldMorph.setCurrent(world);

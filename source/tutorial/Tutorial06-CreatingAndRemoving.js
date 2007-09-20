@@ -2,6 +2,7 @@
  * @class TutorialMorph
  */
 
+// For historical compatibility:
 // Ensure that we can "tear" a copy of an object by pressing the Shift key
 Config.shiftDragForDup = true;
 
@@ -61,7 +62,7 @@ Object.extend(TutorialMorph.prototype, {
     createTutorial: function() {
         
         // Create an empty world
-        world = WorldMorph.createEmptyWorld();
+        world = WorldMorph(Canvas);
         
         // Set the world current and display it
         WorldMorph.setCurrent(world);
