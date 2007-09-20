@@ -14,20 +14,28 @@
     <a href="Tutorial16-Misc1.js">Source code of this demo</A>
     <a href="Tutorial17-Misc2.html">NEXT</A>
     <hr>
-    Lively Kernel has a convenient "<i>drill</i>"" operation that allows you
-    to take a "core sample" of the visual structure of the objects that 
-    have been laid on top of each other.<br>
-    For instance, if you use the "<i>drill</i>" operation to
-    view the internal, implementation-level structure of the upper left panel of a class browser,
-    you get a "<i>drill menu</i>" object that shows you the different layers of objects
-    in the panel, starting from the bottommost object (in this case: a <i>WindowMorph</i>)
-    to the topmost object (in this case: a <i>CheapListMorph</i>)<br>
-    When you choose any of the objects in the drill menu,
-    you can open a menu to manipulate that particular object directly,
-    even though that object is not necessarily topmost on the screen.<br>
+    Lively Kernel has a convenient "<i>drill</i>" operation that allows you to 
+    analyze ("take a core sample of") the visual hierarchy of the objects
+    that have been laid on top of each other, and access any of those objects
+    easily.  When you use the "<i>drill</i>" menu operation for an object,
+    the system opens a <i>drill menu</i> that visualizes the different
+    layers of objects under the object that you just clicked, starting
+    from the bottommost object to the topmost object.
+    <p>
+    For instance, if you use the "<i>drill</i>" operation to view the 
+    hierarchy of the upper left panel of a class browser (see the screen
+    snapshots below), you get a <i>drill menu</i> object that shows
+    you the layers of objects in that panel, starting from the 
+    bottommost object (in this case: a <i>WindowMorph</i>) to the
+    topmost object (in this case: a <i>CheapListMorph</i>)
+    <p>
+    When you choose any of the objects in the drill menu, the system opens
+    a regular popup menu that allows you to manipulate that particular object directly,
+    even though that object is not necessarily topmost on the screen.
     Using this feature you can, e.g., open an inspector or a style panel to edit
-    the properties of objects that are deep down in the visual structure.<br>
-    You can also use a special "<i>grab</i>" menu operation to pick up objects
+    the properties of objects that are deep down in the visual hierarchy.
+    <p>
+    Additionally, you can use a special "<i>grab</i>" menu operation to pick up objects
     that are not topmost on the screen, e.g., to move an entire panel with its contents
     away from its current location.
     <p>    

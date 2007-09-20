@@ -23,7 +23,8 @@ Object.extend(TutorialMorph.prototype, {
         world.addMorph(widget);
 
         // Open a style panel for the rectangle
-        StylePanel.openOn(widget);
+        new StylePanel(widget).open();
+
     },
 
     // Function that creates the tutorial demo
