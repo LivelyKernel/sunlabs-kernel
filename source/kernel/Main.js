@@ -320,7 +320,7 @@ function main() {
     if (Config.skipAllExamples) return;
     else populateWorldWithExamples(world, /* !Config.skipMostExamples*/ true);
 
-if(true) { // Display a color swatch
+if(false) { // Display a color swatch
 	var colors = Color.wheelHsb(10,0,1,1);
 	var m;
 	for (var i=0; i<colors.length; i++) {
