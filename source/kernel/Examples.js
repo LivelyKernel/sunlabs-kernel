@@ -320,9 +320,6 @@ Pen.script = ["P = new Pen();",
 // The Doodle Draw Example
 // ===========================================================================
 
-// Note: This image path is used also by the weather widget
-var IMAGES = "http://www.cs.tut.fi/~kuusipal/flair/";
-
 /**
  * @class DoodleMorph
  */
@@ -333,6 +330,7 @@ Object.extend(DoodleMorph.prototype, {
 
     defaultBorderWidth: 0,
     defaultFill: Color.veryLightGray,
+    imagepath: "Resources/doodle/",
 
     initialize: function(rect) {
         DoodleMorph.superClass.initialize.call(this, rect, "rect");
@@ -344,18 +342,19 @@ Object.extend(DoodleMorph.prototype, {
         this.start = null;
 
         const iconSize = 40;
-        var r = Rectangle(0, 0, iconSize, iconSize /* rect.height - iconSize - 10 */);
-        this.linebutton = new ImageButtonMorph(r, IMAGES + "line.png", IMAGES + "line_down.png");
-        var r = Rectangle(0, iconSize, iconSize, iconSize /* rect.height - iconSize - 10 */);
-        this.rectbutton = new ImageButtonMorph(r, IMAGES + "rectangle.png", IMAGES + "rectangle_down.png");
-        var r = Rectangle(0, iconSize*2, iconSize, iconSize /* rect.height - iconSize - 10 */);
-        this.circlebutton = new ImageButtonMorph(r, IMAGES + "circle.png", IMAGES + "circle_down.png");
-        var r = Rectangle(0, iconSize*3, iconSize, iconSize /* rect.height - iconSize - 10 */);
-        this.widthbutton = new ImageButtonMorph(r, IMAGES + "lines.png", IMAGES + "lines_down.png");
-        var r = Rectangle(0, iconSize*4, iconSize, iconSize /* rect.height - iconSize - 10 */);
-        this.colorsbutton = new ImageButtonMorph(r, IMAGES + "colors.png", IMAGES + "colors_down.png");
-        var r = Rectangle(0, iconSize*5, iconSize, iconSize /* rect.height - iconSize - 10 */);
-        this.stylebutton = new ImageButtonMorph(r, IMAGES + "style.png", IMAGES + "style_down.png");
+        console.log("Images from " + this.imagepath + "line.png");
+        var r = Rectangle(0, 0, iconSize, iconSize);
+        this.linebutton = new ImageButtonMorph(r, this.imagepath + "line.png", this.imagepath + "line_down.png");
+        var r = Rectangle(0, iconSize, iconSize, iconSize);
+        this.rectbutton = new ImageButtonMorph(r, this.imagepath + "rectangle.png", this.imagepath + "rectangle_down.png");
+        var r = Rectangle(0, iconSize*2, iconSize, iconSize);
+        this.circlebutton = new ImageButtonMorph(r, this.imagepath + "circle.png", this.imagepath + "circle_down.png");
+        var r = Rectangle(0, iconSize*3, iconSize, iconSize);
+        this.widthbutton = new ImageButtonMorph(r, this.imagepath + "lines.png", this.imagepath + "lines_down.png");
+        var r = Rectangle(0, iconSize*4, iconSize, iconSize);
+        this.colorsbutton = new ImageButtonMorph(r, this.imagepath + "colors.png", this.imagepath + "colors_down.png");
+        var r = Rectangle(0, iconSize*5, iconSize, iconSize);
+        this.stylebutton = new ImageButtonMorph(r, this.imagepath + "style.png", this.imagepath + "style_down.png");
 
         this.linebutton.onMouseUp = function(evt) {
             var newValue = this.isToggle() ? !this.getValue() : false;
@@ -2353,6 +2352,8 @@ WeatherWidget = Class.extend(Model);
 
 Object.extend(WeatherWidget.prototype, {
 
+    imagepath: "Resources/weather/",
+    
     initialize: function() { 
         WeatherWidget.superClass.initialize.call(this);
         // Fetch weather upon starting the widget
@@ -2393,7 +2394,6 @@ Object.extend(WeatherWidget.prototype, {
     weatherDataArr: null,
     previousResult: null,
     
-//    imageurl: "http://www.bbc.co.uk/weather/images/symbols/animated_sym/15.gif", //http://deskwx.weatherbug.com/images/Forecast/icons/cond016.gif",
     imageurl: "http://www.bbc.co.uk/weather/images/banners/weather_logo.gif",
     
     parseWeatherData: function() {
@@ -2403,7 +2403,6 @@ Object.extend(WeatherWidget.prototype, {
             this.previousResult = this.feed.channels[0];
             //this.weatherDataArr = this.previousResult.items[0].description.split(",");
             var text = this.previousResult.items[0].description;
-//            console.log("%s",this.previousResult.items());
             var arr = text.split(",");
             var topic = this.previousResult.items[0].title;
             var weather = topic.substring(topic.indexOf("."), topic.indexOf("GMT:")+4).replace(/^\s+|\s+$/g, '');
@@ -2426,8 +2425,6 @@ Object.extend(WeatherWidget.prototype, {
     getDewPoint: function()    { return this.parseWeatherData()[5]; },
     getGusts: function()       { return this.parseWeatherData()[2]; },
     getVisibility: function()  { return this.parseWeatherData()[6]; },
-//    getUV: function()          { return this.parseWeatherData()[6]; },
-//    getDate: function()        { return this.parseWeatherData().slice(7).join(', '); },
     getImageURL: function()    { return this.imageurl; },
     
     buildView: function() {
@@ -2439,21 +2436,21 @@ Object.extend(WeatherWidget.prototype, {
         // or make the titlebar round depending on the window
         var m; 
 
-        panel.addMorph(m = ImageMorph(Rectangle(10,20,25,20), IMAGES + "city.gif"));
+        panel.addMorph(m = ImageMorph(Rectangle(10,20,25,20), this.imagepath + "city.png"));
         m.setFill(null);
-        panel.addMorph(m = ImageMorph(Rectangle(10,55,25,20), IMAGES + "weather.gif"));
+        panel.addMorph(m = ImageMorph(Rectangle(10,55,25,20), this.imagepath + "weather.png"));
         m.setFill(null);
-        panel.addMorph(m = ImageMorph(Rectangle(10,80,20,20), IMAGES + "temperature.gif"));
+        panel.addMorph(m = ImageMorph(Rectangle(10,80,20,20), this.imagepath + "temperature.png"));
         m.setFill(null);
-        panel.addMorph(m = ImageMorph(Rectangle(10,105,20,20), IMAGES + "wind.gif"));
+        panel.addMorph(m = ImageMorph(Rectangle(10,105,20,20), this.imagepath + "wind.png"));
         m.setFill(null);
-        panel.addMorph(m = ImageMorph(Rectangle(10,130,20,20), IMAGES + "wind_dir.gif"));
+        panel.addMorph(m = ImageMorph(Rectangle(10,130,20,20), this.imagepath + "wind_dir.png"));
         m.setFill(null);
-        panel.addMorph(m = ImageMorph(Rectangle(10,155,20,20), IMAGES + "barometer.gif"));
+        panel.addMorph(m = ImageMorph(Rectangle(10,155,20,20), this.imagepath + "barometer.png"));
         m.setFill(null);
-        panel.addMorph(m = ImageMorph(Rectangle(10,180,20,20), IMAGES + "humidity.gif"));
+        panel.addMorph(m = ImageMorph(Rectangle(10,180,20,20), this.imagepath + "humidity.png"));
         m.setFill(null);
-        panel.addMorph(m = ImageMorph(Rectangle(10,205,20,20), IMAGES + "visibility.gif"));
+        panel.addMorph(m = ImageMorph(Rectangle(10,205,20,20), this.imagepath + "visibility.png"));
         m.setFill(null);
 
         panel.addMorph(m = CheapListMorph(Rectangle(40,3,200,20),["San Francisco, California", "Tampere, Finland", "London, United Kingdom"]));
