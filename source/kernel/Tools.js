@@ -108,7 +108,7 @@ Object.extend(SimpleInspector.prototype, {
     },
 
     open: function() {
-	return this.openIn(WorldMorph.current());
+        return this.openIn(WorldMorph.current());
     },
 
     buildView: function(rect) {

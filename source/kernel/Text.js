@@ -682,10 +682,6 @@ Object.extend(TextBox.prototype, {
 TextMorph = HostClass.create('TextMorph', Morph);
 
 // TextMorph attributes and initialization functions
-Object.extend(TextMorph, {
-
-    
-});
 
 var WrapStyle = { 
     NORMAL: "wrap", // fits text to bounds width using word wrap and sets height
@@ -693,10 +689,8 @@ var WrapStyle = {
     SHRINK: "shrinkWrap" // sets both width and height based on line breaks only
 };
 
-
 // TextMorph attributes and basic functions
 Object.extend(TextMorph.prototype, {
-    // maybe use a CSS class for this ??
 
     // these are prototype variables
     fontSize: 12,
@@ -850,7 +844,7 @@ Object.extend(TextMorph.prototype, {
     beLabel: function() {
         this.setBorderWidth(0);
         this.setFill(null);
-	this.setWrapStyle(WrapStyle.SHRINK);
+        this.setWrapStyle(WrapStyle.SHRINK);
         // morph.isAccepting = false;
         this.ignoreEvents();
         this.layoutChanged();
@@ -873,8 +867,7 @@ Object.extend(TextMorph.prototype, {
         return this;
     },
 
-
-    // Since command keys do not always work,
+    // Since command keys do not work on all browsers,
     // make it possible to evaluate the contents
     // of the TextMorph via popup menu
     morphMenu: function(evt) { 
@@ -953,7 +946,7 @@ Object.extend(TextMorph.prototype, {
     fitHeight: function() { //Returns true iff height changes
         // Wrap text to bounds width, and set height from total text height
         if (this.ensureTextBox() == null) { 
-            if(this.TextString != null) console.log("textbox error in fitHeight: " + this.textString.truncate() + "..."); 
+            if (this.TextString != null) console.log("textbox error in fitHeight: " + this.textString.truncate() + "..."); 
             return; 
         }
         
@@ -1041,8 +1034,9 @@ Object.extend(TextMorph.prototype, {
 
         if (this.selectionRange[0] > this.textString.length - 1) { // null sel at end
             var jRect = this.ensureTextBox().getBounds(this.selectionRange[0]-1);
-	    if (jRect)
-		jRect = jRect.translatedBy(pt(jRect.width,0));
+            if (jRect) {
+                jRect = jRect.translatedBy(pt(jRect.width,0));
+            }
         } else {
             var jRect = this.ensureTextBox().getBounds(this.selectionRange[0]);
         }

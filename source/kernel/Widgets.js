@@ -74,7 +74,7 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
     
     onMouseDown: function(evt) {
         this.requestKeyboardFocus(evt.hand);
-	if (!this.isToggle()) {
+        if (!this.isToggle()) {
             this.setValue(true); 
             this.changeAppearanceFor(true); 
         } 
@@ -757,9 +757,11 @@ Object.extend(HandleMorph, {
 });
 
 Object.extend(HandleMorph.prototype, {
+
     defaultFill: null,
     defaultBorderColor: Color.blue,
     defaultBorderWidth: 1,
+
     controlHelpText: "Drag to resize this morph\n" + 
         "Cmd+shift+drag to scale the morph \n" + 
         "Shift+drag to change border width \n" + 
@@ -1173,7 +1175,7 @@ Object.extend(CheapListMorph.prototype, {
         this.itemList = itemList;
         this.setModelValue('setList', itemList);
         //console.log('model now %s', this.modelPlug.model);
-	if (!this.font) alert('wha, null font in %1'.format(this));
+        if (!this.font) alert('wha, null font in %1'.format(this));
         this.layoutChanged();
         return this;
     },
@@ -1360,10 +1362,10 @@ Object.extend(MenuMorph.prototype, {
         //     menu.openIn(world,location,stayUp,captionIfAny);
 
         this.items = items;
-	this.targetMorph = targetMorph;
+        this.targetMorph = targetMorph;
         this.lines = lines ? lines : [];
-	console.log('what, font is %s in %s', this.font, this);
-	//this.layoutChanged();
+        console.log('what, font is %s in %s', this.font, this);
+        //this.layoutChanged();
         return this;
     },
 
@@ -1432,7 +1434,7 @@ Object.extend(MenuMorph.prototype, {
         var itemNames = this.items.map(function (item) { return item[0] });
         MenuMorph.superClass.initialize.call(this, location.extent(pt(200, 200)), itemNames);
         this.setWrapStyle(WrapStyle.SHRINK);  
-	this.fitText(); // first layout is wasted!
+        this.fitText(); // first layout is wasted!
         // styling
         this.textColor = Color.blue;
         //this.setFill(StipplePattern.create(Color.white, 3, Color.blue.lighter(5), 1));
@@ -2316,11 +2318,14 @@ Object.extend(WorldMorph.prototype, {
             console.log('null filename, not publishing %s', morphs);
            return;
         }
+
         if (!WebStore.defaultStore) {
             this.alert("no store to access the startup file, location " + location);
             return;
         }
+
         console.log('morphs is %s', morphs);
+
         var newDoc = null;
         var url = "http://" + WebStore.defaultStore.host + "/" + WebStore.defaultStore.path + "/lively.xhtml";
         new Ajax.Request(url, { 
@@ -2340,8 +2345,9 @@ Object.extend(WorldMorph.prototype, {
             }
     
         });
-	if (!newDoc) 
-	    return;
+
+        if (!newDoc) return;
+
         console.log('got source %s url %s', newDoc, url);
         var mainDefs = newDoc.getElementById('Defaults');
         var mainScript = newDoc.getElementById('Main');
@@ -2350,6 +2356,7 @@ Object.extend(WorldMorph.prototype, {
         mainDefs.insertBefore(preamble, mainScript);
         url = "http://" + WebStore.defaultStore.host + "/" + WebStore.defaultStore.path + "/" + filename;
         var container = newDoc.createElementNS(Namespace.SVG, 'g');
+
         morphs.each(function(morph) {
 
             var model = morph.getModel();
@@ -2364,6 +2371,7 @@ Object.extend(WorldMorph.prototype, {
             }
             container.appendChild(newDoc.createTextNode('\n\n'));
         });
+
         container.setAttribute("id", "ShrinkWrapped");
         mainDefs.appendChild(container);
         mainDefs.appendChild(newDoc.createTextNode('\n'));
@@ -2373,6 +2381,7 @@ Object.extend(WorldMorph.prototype, {
         var content = new XMLSerializer().serializeToString(newDoc);
         console.info('writing new file ' + content);
         var failed = false;
+
         new Ajax.Request(url, { 
             method: 'put',
             asynchronous: false,
@@ -2401,17 +2410,17 @@ Object.extend(WorldMorph.prototype, {
     },
 
     alert: function(message) {
-	var fill = this.getFill();
-	this.setFill(Color.black); // poor man's modal dialog
+        var fill = this.getFill();
+        this.setFill(Color.black); // poor man's modal dialog
 
         var menu = MenuMorph([["OK", function() { this.setFill(fill)}]], this);
-	//menu.setFontSize(20);
-	menu.openIn(this, this.bounds().center(), false, message); 
+        // menu.setFontSize(20);
+        menu.openIn(this, this.bounds().center(), false, message); 
     }.logErrors('alert'),
 
     prompt: function(message) {
-	// FIXME replace with a native solution
-	return window.prompt(message);
+        // FIXME replace with a native solution
+        return window.prompt(message);
     }
 
 });
@@ -2523,7 +2532,7 @@ Object.extend(HandMorph.prototype, {
     },
     
     setMouseFocus: function(morphOrNull) {
-	// console.log('setMouseFocus: ' + Object.inspect(morphOrNull));
+        // console.log('setMouseFocus: ' + Object.inspect(morphOrNull));
         this.mouseFocus = morphOrNull; 
     },
     
@@ -2798,17 +2807,17 @@ Object.extend(LinkMorph.prototype, {
         LinkMorph.superClass.initialize.call(this, bounds, "ellipse");
 
         // Make me look a bit like a world
-	this.setFill(RadialGradient.makeCenteredGradient(Color.green, Color.blue));
-	[Rectangle(0.15,0,0.7,1), Rectangle(0.35,0,0.3,1), Rectangle(0,0.3,1,0.4)].each( function(each) {
-		// Make longitude / latitude lines
-		var lineMorph = Morph(bounds.scaleByRect(each), "ellipse");
-		lineMorph.setFill(null); lineMorph.setBorderWidth(1); lineMorph.setBorderColor(Color.black);
-		lineMorph.align(lineMorph.bounds().center(),this.shape.bounds().center());
-		lineMorph.suppressHandles = true;
-		lineMorph.okToBeGrabbedBy = function (evt) { this.enterMyWorld(evt) }.bind(this);
-		this.addMorph(lineMorph);
-	}.bind(this));
-	this.openForDragAndDrop = false;
+        this.setFill(RadialGradient.makeCenteredGradient(Color.green, Color.blue));
+        [Rectangle(0.15,0,0.7,1), Rectangle(0.35,0,0.3,1), Rectangle(0,0.3,1,0.4)].each( function(each) {
+            // Make longitude / latitude lines
+            var lineMorph = Morph(bounds.scaleByRect(each), "ellipse");
+            lineMorph.setFill(null); lineMorph.setBorderWidth(1); lineMorph.setBorderColor(Color.black);
+            lineMorph.align(lineMorph.bounds().center(),this.shape.bounds().center());
+            lineMorph.suppressHandles = true;
+            lineMorph.okToBeGrabbedBy = function (evt) { this.enterMyWorld(evt) }.bind(this);
+            this.addMorph(lineMorph);
+        }.bind(this));
+        this.openForDragAndDrop = false;
 
         // FIXME this should be simpler
         // var sign = NodeFactory.create("use").withHref("#WebSpiderIcon");
