@@ -151,13 +151,17 @@ Object.extend(NetRequest, {
     },
 
     rewriteURL: function(url) {
-	if (Config.proxyURL && url.startsWith('http://')) {
-	    if (url.startsWith('http://www.hanaalliance.org')) return url;
-	    var result = Config.proxyURL + url.substring('http://'.length);
-	    console.log('rewrote %s to %s', url, result);
-	    return result;
-	} else 
-	    return url;
+	if (Config.proxyURL) {
+	    var splitter = new RegExp('(http)://([^/]*)(/.*)');
+	    var urlMatch = url.match(splitter);
+	    var proxyMatch = Config.proxyURL.match(splitter);
+	    if (urlMatch[1] == 'http' &&  proxyMatch[2] != urlMatch[2]) {
+		var result = Config.proxyURL + urlMatch[2] + urlMatch[3];
+		console.log('rewrote %s to %s', url, result);
+		return result;
+	    }
+	} 
+	return url;
     }
 
 });
@@ -247,10 +251,10 @@ Object.extend(Feed.prototype, {
 
     request: function(model /*, ... model variables*/) {
         // console.log('in request on %s', this.url);
+	NetRequest.requestNetworkAccess();
         var feed = this;
         var modelVariables = $A(arguments);
         modelVariables.shift();
-
         new Ajax.Request(NetRequest.rewriteURL(this.url), Object.derive(NetRequest.options, {
             method: 'get',
             requestHeaders: { "If-Modified-Since": "Sat, 1 Jan 2000 00:00:00 GMT" },
