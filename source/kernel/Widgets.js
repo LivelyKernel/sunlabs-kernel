@@ -1,3 +1,13 @@
+/*
+ * Copyright © 2006-2007 Sun Microsystems, Inc.
+ * All rights reserved.  Use is subject to license terms.
+ * This distribution may include materials developed by third parties.
+ *  
+ * Sun, Sun Microsystems, the Sun logo, Java and JavaScript are trademarks
+ * or registered trademarks of Sun Microsystems, Inc. in the U.S. and
+ * other countries.
+ */ 
+
 /**
  * Widgets.js.  This file defines the various graphical widgets
  * (morphs) that will be included in the system when it starts.
