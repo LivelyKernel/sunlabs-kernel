@@ -351,7 +351,6 @@ Object.extend(DoodleMorph.prototype, {
         this.start = null;
 
         const iconSize = 40;
-        console.log("Images from " + this.imagepath + "line.png");
         var r = Rectangle(0, 0, iconSize, iconSize);
         this.linebutton = new ImageButtonMorph(r, this.imagepath + "line.png", this.imagepath + "line_down.png");
         var r = Rectangle(0, iconSize, iconSize, iconSize);
@@ -573,7 +572,13 @@ Object.extend(DoodleMorph.prototype, {
             ["10", this, "setLineWidth", 10],
             ["15", this, "setLineWidth", 15],
         ];
-        MenuMorph(items, this).openIn(this.world(), this.worldPoint(this.widthbutton.bounds().topRight()));//evt.mousePoint);
+        if ( !this.borderMenuOpen ) {
+            this.borderMenuOpen = true;
+            (this.borders = MenuMorph(items, this)).openIn(this.world(), this.worldPoint(this.widthbutton.bounds().topRight()));
+        } else {
+            this.borders.remove();
+            this.borderMenuOpen = false;
+        }
     }, 
     
     setLineWidth: function (newWidth) {
@@ -581,23 +586,14 @@ Object.extend(DoodleMorph.prototype, {
         if ( this.currentSelection != null ) {
             this.currentSelection.setBorderWidth(this.lineWidth);
         }
+        this.borderMenuOpen = false;
     },
     
     setStyle: function() {
         if (this.currentSelection != null) {
             new StylePanel(this.currentSelection).open();
         }
-    },
-    
-    // TODO probably totally irrelevant since we're not using selection mode any more
-    setSelectionMode: function (val, v) {
-        this.value = val;
-    },
-    
-    getSelectionMode: function () {
-        return this.value;
     }
-        
 });
 
 // Namespace for applications

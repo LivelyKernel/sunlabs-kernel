@@ -1671,7 +1671,7 @@ Object.extend(ScrollPane.prototype, {
         ScrollPane.superClass.initialize.call(this, initialBounds, "rect");
     
         var bnds = this.shape.bounds();
-        var clipR = bnds.withWidth(bnds.width - this.scrollBarWidth).insetBy(1);
+        var clipR = bnds.withWidth(bnds.width - this.scrollBarWidth+1).insetBy(1);
         morphToClip.shape.setBounds(clipR); // FIXME what if the targetmorph should be bigger than the clipmorph?
         // Make a clipMorph with the content (morphToClip) embedded in it
         var clipMorph = this.setNamedMorph('clipMorph', ClipMorph(clipR));    
