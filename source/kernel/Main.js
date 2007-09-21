@@ -52,20 +52,16 @@ function populateWorldWithExamples(world, otherWorld, server) {
             var makeStarVertices = function(r,center,startAngle) {
                 var vertices = [];
                 var nVerts = 10;
-
                 for (var i=0; i<=nVerts; i++) {
                     var a = startAngle + (2*Math.PI/nVerts*i);
                     var p = Point.polar(r,a);
                     if (i%2 == 0) p = p.scaleBy(0.39);
                     vertices.push(p.addPt(center)); 
                 }
-
                 return vertices; 
             }
     
-            widget = Morph(pt(0,0).asRectangle(), "rect");
-            widget.setShape(PolygonShape(makeStarVertices(50,pt(0,0),0), Color.yellow, 1, Color.black));
-            // makeGradient(Color.yellow, Color.yellow.lighter().lighter()));
+            widget = Morph.makePolygon(makeStarVertices(50,pt(0,0),0), 1, Color.black, Color.yellow);
             widget.setPosition(pt(115, 360));
             world.addMorph(widget);
             
@@ -229,10 +225,9 @@ function populateWorldWithExamples(world, otherWorld, server) {
             lm2.myWorld.addMorph(widget);
       
             // Create a sample polygon
-            var l2 = loc.addPt(dx);
-            widget = Morph(l2.asRectangle(),"rect");
-            widget.setShape(PolygonShape([pt(0,0),pt(70,0),pt(40,30),pt(0,0)], colors[2],1,Color.black));
+           widget = Morph.makePolygon([pt(0,0),pt(70,0),pt(40,30),pt(0,0)], 1, Color.black, colors[2]);
             lm2.myWorld.addMorph(widget);
+	    widget.setPosition(loc.addPt(dx));
             loc = loc.addPt(dy);    
       
             // Create sample text widgets

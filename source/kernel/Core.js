@@ -2765,8 +2765,9 @@ Object.extend(Morph.prototype, {
         return this.owner() ? this.owner().world() : null;
     },
 
-    /** Use inspect() instead of toString b/c toString cannot be overriden */
-    inspect: function() { 
+    inspect: function() {
+	// Formerly a replacement for toString() which can't be overridden
+	// in some cases.  Now deprecated in favor of Object.inspect(this) 
         return "%1(#%2,%3)".format(this.getType(), this.id, this.shape);
     }
     
@@ -2804,7 +2805,8 @@ Object.category(Morph.prototype, 'transforms', function() { return {
         // This should become a new transformChanged() method
         this.applyTransform(this.getTransform());
         if (this.fullBounds != null) this.fullBounds = this.fullBounds.translatedBy(delta);
-        // May affect owner, however...
+	// DI: I don't think this can affect owner.  It may increase fullbounds
+	//   due to stickouts, but not the bounds for layout...
         if (this.owner() && this.owner() !== this.world()) this.owner().layoutChanged(); 
         this.changed(); 
     },
@@ -2841,10 +2843,6 @@ Object.category(Morph.prototype, 'transforms', function() { return {
         return this.getTransform().getScale(); 
     },
     
-    hackScale: function() { 
-        return this.cumulativeTransform().transformRectToRect(Rectangle(0,0,1,1)).width;
-    },
-
     moveBy: function(delta) {
         this.translateBy(delta);
     },
@@ -3647,18 +3645,33 @@ Object.extend(Morph.prototype, {
     
 });
 
-// Morph utility functions
-// FIXME: There is probably a better place for this function
+// Morph convenience functions
 Object.extend(Morph, {
 
     makeLine: function(verts, lineWidth, lineColor) {
         // make a line with its origin at the first vertex
+	// Note this works for simple lines (2 vertices) and general polylines
         var line = Morph(verts[0].asRectangle(), "rect");
         var vertices = Shape.translateVerticesBy(verts, verts[0].negated());
         line.setShape(PolylineShape(vertices, lineWidth, lineColor));
         return line; 
-    }
+    },
 
+    makeCircle: function(location, radius, lineWidth, lineColor, fill) {
+        // make a line with its origin at the first vertex
+        var circle = Morph(location.asRectangle().expandBy(radius), "ellipse")
+	circle.setBorderWidth(lineWidth);
+	circle.setBorderColor(lineColor);
+	circle.setFill(fill);
+	return circle; 
+    },
+
+    makePolygon: function(verts, lineWidth, lineColor, fill) {
+        // make a polygon with its origin at the center of the bounding box
+	poly = Morph(pt(0,0).asRectangle(), "rect");
+        poly.setShape(PolygonShape(verts, fill, lineWidth, lineColor));
+	return poly; 
+    }
 });
 
 // Model-specific extensions to class Morph (see Model class definition below)
