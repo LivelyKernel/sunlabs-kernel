@@ -1287,7 +1287,12 @@ Object.extend(TextMorph.prototype, {
         if (!this.acceptInput) return;
 
         // cleanup: separate BS logic, diddle selection range and use replaceSelectionWith()
-
+        if (evt.altKey && navigator.platform =="Win32") {
+            //AltGr pressed
+            var replacement = (String.fromCharCode(evt.charCode)).toLowerCase();
+            this.processCommandKeys(replacement);
+            evt.stop();
+        }
         if (evt.keyCode == Event.KEY_BACKSPACE) { // Replace the selection after checking for type-ahead
             var before = this.textString.substring(0, this.selectionRange[this.hasNullSelection() ? 1 : 0]); 
             var after = this.textString.substring(this.selectionRange[1] + 1, this.textString.length);
