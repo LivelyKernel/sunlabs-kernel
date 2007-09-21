@@ -54,7 +54,15 @@ Object.extend(Loader, {
     
     insertContents: function(iframe) {
         var node = iframe.contentDocument.documentElement;
-        document.documentElement.appendChild(document.adoptNode(node));
+	var adoptedNode = null;
+	try {
+	    adoptedNode = document.adoptNode(node);
+	} catch (e) {
+	    // FF can fail here
+	    console.log('failed to insert iframe contents: %e', e);
+	    return;
+	}
+        document.documentElement.appendChild(adoptedNode);
     }
     
 });
