@@ -11,25 +11,27 @@
 /**
  * defaultconfig.js.  System default configuration.
  */
-
+var Config = {
 // Allows easy object duplication using the Shift key
-Config.shiftDragForDup = true;
+    shiftDragForDup: true,
+    
+    // New scheduler is the default now
+    useNewScheduler: true,
+    
+    // URL that acts as a proxy for network operations 
+    // Config.proxyURL = 'http://www.hanaalliance.org/jsl/proxy/';
 
-// New scheduler is the default now
-Config.useNewScheduler = true;
+    // Quickly enabling/disabling most demos
+    skipMostExamples: false,
+    skipAllExamples:  false,
+    showWebStore: false,
+    
+    // Additional demo configuration options 
+    loadFromMarkup: false,
+    showThumbnail: false,
+    
+    // Enables/disables network-dependent demos
+    showNetworkExamples: true
 
-// URL that acts as a proxy for network operations 
-// Config.proxyURL = 'http://www.hanaalliance.org/jsl/proxy/';
-
-// Quickly enabling/disabling most demos
-Config.skipMostExamples = false;
-Config.skipAllExamples = Config.skipMostExamples && false;
-Config.showWebStore = false;
-
-// Additional demo configuration options 
-Config.loadFromMarkup = false;
-Config.showThumbnail = false;
-
-// Enables/disables network-dependent demos
-Config.showNetworkExamples = true;
+}
 

@@ -2020,18 +2020,8 @@ Object.extend(WorldMorph.prototype, {
 
     displayWorldOn: function(canvas) {
         this.remove();
-
         canvas.appendChild(this);
         this.addHand(HandMorph(true));
-
-        // Mozilla doesn't like this and starts reloading the page over and over
-        if (Prototype.Browser.WebKit) {
-            if (this.worldId != 1) {
-                window.parent.location.hash = '#world_' + this.worldId;
-            } else {
-                window.parent.location.hash = "";
-            }
-        }
     },
     
     addHand: function(hand) {
@@ -2046,7 +2036,6 @@ Object.extend(WorldMorph.prototype, {
         });
         
         this.parentNode.appendChild(hand);
-        console.log('added hand %s', hand);
     },
     
     removeHand: function(hand) {
@@ -2059,8 +2048,6 @@ Object.extend(WorldMorph.prototype, {
         });
 
         this.hands.splice(this.hands.indexOf(hand), 1);
-    
-        console.log('removed hand %s, now %s', hand, this.hands.length);
     },
 
     morphMenu: function(evt) { 
