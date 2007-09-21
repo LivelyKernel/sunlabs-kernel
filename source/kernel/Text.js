@@ -36,7 +36,7 @@ Object.extend(TextWord.prototype, {
         this.startIndex = startIndex;
         this.stopIndex = textString.length - 1;
         this.topLeft = topLeft;
-        this.textContent = this.textString; //.substring(this.startIndex);
+        this.textContent = this.textString.substring(this.startIndex);
         this.fontInfo = font;
         this.setX(topLeft.x);
         this.setY(topLeft.y + font.getSize());
@@ -652,15 +652,22 @@ Object.extend(TextBox.prototype, {
     },
 
     // find what line contains the index 'stringIndex'
-    lineForIndex: function(stringIndex) {
+    lineNumberForIndex: function(stringIndex) {
+	// TODO: linear search doesn't scale
         for (var i = 0; i < this.lines.length; i++) {
             var line = this.lines[i];
             if (line.containsThisIndex(stringIndex)) {
-                return line;
+                return i;
             }
         }
-        return null; 
+        return -1; 
     },
+
+    lineForIndex: function(stringIndex) {
+	return this.lines[this.lineNumberForIndex(stringIndex)];
+    },
+    
+
     
     // find what line contains the y value in character metric space
     lineForY: function(y) {
@@ -679,6 +686,7 @@ Object.extend(TextBox.prototype, {
     
     destroy: function() {
         if (this.parentNode) {
+	    //console.log('destroying %s', this.textString);
             this.parentNode.removeChild(this);
         }
     }
@@ -711,7 +719,6 @@ Object.extend(TextMorph.prototype, {
     defaultBorderColor: Color.black,
     selectionColor: Color.primary.green,
     inset: pt(6,4), // remember this shouldn't be modified unless every morph should get the value 
-    debugLayoutChanged: false,
     wrap: WrapStyle.NORMAL,
 
     initializeTransientState: function(initialBounds) {
@@ -1267,6 +1274,30 @@ Object.extend(TextMorph.prototype, {
             evt.stop();
             return;
         }
+	case Event.KEY_UP: {
+	    var lineNo = this.textBox.lineNumberForIndex(before.length);
+	    var line = this.textBox.lines[lineNo];
+	    if (lineNo > 0) {
+		var lineIndex = before.length  - line.startIndex;
+		var newLine = this.textBox.lines[lineNo - 1];
+		this.setNullSelectionAt(Math.min(newLine.startIndex + lineIndex, newLine.getStopIndex()));
+	    }
+	    evt.stop();
+	    return;
+	}
+
+	case Event.KEY_DOWN: {
+	    var lineNo = this.textBox.lineNumberForIndex(before.length);
+	    var line = this.textBox.lines[lineNo];
+	    if (lineNo < this.textBox.lines.length - 1) {
+		var lineIndex = before.length  - line.startIndex;
+		var newLine = this.textBox.lines[lineNo + 1];
+		this.setNullSelectionAt(Math.min(newLine.startIndex + lineIndex, newLine.getStopIndex()));
+	    }
+	    evt.stop();
+	    return;
+	}
+
         case Event.KEY_ESC: {
             this.relinquishKeyboardFocus(this.world().firstHand());
             return;
