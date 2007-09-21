@@ -61,7 +61,7 @@ Object.extend(TutorialMorph.prototype, {
         world.addMorph(widget);
     
         // Add an ImageMorph to the subworld
-        var image = ImageMorph(pt(140, 60).extent(672/2, 448/2), "http://www.cs.tut.fi/~taivalsa/Software/Halloween4.jpg");
+        var image = ImageMorph(pt(140, 60).extent(672/2, 448/2), "../Resources/images/Halloween4.jpg");
         link.myWorld.addMorph(image); 
 
         // Add a TextMorph

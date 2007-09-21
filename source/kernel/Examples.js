@@ -320,7 +320,7 @@ Pen.hilbertFun = function(world) {
 // The default script for the Pen/Hilbert demo
 Pen.script = ["P = new Pen();",
 "P.setPenColor(Color.red);",
-"for(var i=1; i<=40; i++)",
+"for (var i=1; i<=40; i++)",
 "	{ P.go(2*i); P.turn(89); };",
 "P.drawLines();",
 ""].join("\n");
@@ -418,8 +418,8 @@ Object.extend(DoodleMorph.prototype, {
     },
 
     mouseEvent: function(evt, hasFocus) {
-	if (hasFocus && evt.hand.mouseFocus !== this) return;
-	if (evt.type == "mousedown" && this.onMouseDown(evt)) return; 
+        if (hasFocus && evt.hand.mouseFocus !== this) return;
+        if (evt.type == "mousedown" && this.onMouseDown(evt)) return; 
         DoodleMorph.superClass.mouseEvent.call(this, evt, hasFocus); 
     },
 
@@ -3347,7 +3347,7 @@ Object.extend(MapMorph.prototype, {
         this.images[3][3] = this.images[4][3];
         this.images[3][4] = this.images[4][4]; 
         //roll also mapmarks
-        for(var i = 0; i < this.pointerimages.length; i++){
+        for (var i = 0; i < this.pointerimages.length; i++) {
             this.pointerimages[i].moveBy(pt(0, -TileSize.y));
         }              
         //images.shift();
@@ -3382,7 +3382,7 @@ Object.extend(MapMorph.prototype, {
         //images[1] = images[0];
         
         //roll also mapmarks
-        for(var i = 0; i < this.pointerimages.length; i++){
+        for (var i = 0; i < this.pointerimages.length; i++) {
             this.pointerimages[i].moveBy(pt(0, TileSize.y));
         }
         break;
@@ -3411,7 +3411,7 @@ Object.extend(MapMorph.prototype, {
         this.images[2][3] = this.images[2][4];
         this.images[3][3] = this.images[3][4];
         this.images[4][3] = this.images[4][4]; 
-        for(var i = 0; i < this.pointerimages.length; i++){
+        for (var i = 0; i < this.pointerimages.length; i++) {
             this.pointerimages[i].moveBy(pt(-TileSize.x, 0));
         }                    
         break;
@@ -3440,7 +3440,7 @@ Object.extend(MapMorph.prototype, {
         this.images[2][1] = this.images[2][0];
         this.images[3][1] = this.images[3][0];
         this.images[4][1] = this.images[4][0];        
-        for(var i = 0; i < this.pointerimages.length; i++){
+        for (var i = 0; i < this.pointerimages.length; i++) {
             this.pointerimages[i].moveBy(pt(TileSize.x, 0));
         }      
         break;
@@ -3662,6 +3662,8 @@ MessengerWidget = Class.extend(Model);
 
 Object.extend(MessengerWidget.prototype, {
 
+    imagepath: "Resources/IM/",
+
     initialize: function() { 
         MessengerWidget.superClass.initialize.call(this);
         //this.id = 1971055351;
@@ -3701,7 +3703,7 @@ Object.extend(MessengerWidget.prototype, {
         panel.addMorph(m = TextMorph( Rectangle(10, 210, 220, 50), "<enter text here>")).connectModel({model: this, getText: "getIMText", setText: "setIMText"});
         m.autoAccept = true;
         panel.addMorph(m = ImageButtonMorph(Rectangle(240, 200,  50,  50), 
-        "http://www.cs.tut.fi/~taivalsa/Software/Talk.PNG", "http://www.cs.tut.fi/~taivalsa/Software/Talk_down.PNG")).connectModel({model: this, setValue: "send"});
+        this.imagepath + "Talk.PNG", this.imagepath + "Talk_down.PNG")).connectModel({model: this, setValue: "send"});
         // disable the 2 set value calls for the button
         m.onMouseUp = function(evt) {
             var newValue = this.isToggle() ? !this.getValue() : false;
@@ -3997,7 +3999,7 @@ Object.extend(CanvasScapeMorph.prototype, {
         this.sky.relayMouseEvents(this, {onKeyDown: "onKeyDown", onKeyUp: "onKeyUp", setHasKeyboardFocus: "setHasKeyboardFocus", takesKeyboardFocus: "takesKeyboardFocus"});
         this.addMorph(this.sky);
       
-        /*this.floor = ImageMorph(Rectangle(0,150, 450, 150), "http://www.cs.tut.fi/~reijula/images/floor.png");
+        /*this.floor = ImageMorph(Rectangle(0,150, 450, 150), "/images/floor.png");
         this.floor.setScale(2);
         this.floor.relayMouseEvents(this, {onKeyDown: "onKeyDown", onKeyUp: "onKeyUp"});
         this.addMorph(this.floor);*/
