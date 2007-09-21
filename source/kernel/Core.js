@@ -7,6 +7,8 @@
 // Namespaces and core DOM bindings
 // ===========================================================================
 
+var Global = this;
+
 var Canvas = document.getElementById("canvas"); // singleton for now
 
 Object.extend(Canvas, {
@@ -792,6 +794,7 @@ Object.extend(Color.prototype, {
 });
 
 Object.category(Color, 'core', function() { return {
+
     black: new Color(0,0,0),
     white: new Color(1,1,1),
     gray: new Color(0.8,0.8,0.8),
@@ -2029,11 +2032,11 @@ Object.extend(MouseHandlerForDragging.prototype, {
 
     handleMouseEvent: function(evt, targetMorph) {
         var capType = evt.capitalizedType();
-	var handler = targetMorph['on' + capType];
+        var handler = targetMorph['on' + capType];
         // console.log('target for ' + evt.type + 'Action is ' + handler + ' target ' + targetMorph.inspect());
-        if(capType == "MouseDown") evt.hand.setMouseFocus(targetMorph);
-	handler.call(targetMorph, evt);
-        if(capType == "MouseUp") evt.hand.setMouseFocus(null);
+        if (capType == "MouseDown") evt.hand.setMouseFocus(targetMorph);
+        handler.call(targetMorph, evt);
+        if (capType == "MouseUp") evt.hand.setMouseFocus(null);
         return true; 
     },
     
@@ -2268,12 +2271,11 @@ Object.extend(Morph.prototype, {
     // setup various things 
     initializeTransientState: function(initialBounds) { 
         this.fullBounds = initialBounds; // a Rectangle in owner coordinates
-        // this incudes the shape as well as any submorphs
+        // this includes the shape as well as any submorphs
         // cached here and lazily computed by bounds(); invalidated by layoutChanged()
     
         // this.created = false; // exists on server now
         // some of this stuff may become persistent
-
     }
 
 });
@@ -2518,7 +2520,7 @@ Object.extend(Morph.prototype, {
         
 //          KP sez... this should recognize if an element already has an ID
 //          Then it is owned by another and should be cloned.  But it didn't
-//          Work for the case of setFill.  May need more debugging...
+//          work for the case of setFill.  May need more debugging...
             if (id) {
                 console.log('cloning node b/c original has an owner, id %s', id);
                 element = element.cloneNode(true);
@@ -2672,7 +2674,7 @@ Object.extend(Morph.prototype, {
     // KP: FIXME clone non morphs... but how
     morphCopyFrom: function(other/*:Morph*/) { //:Morph
 
-        //for(var p in other) {this[p] = other[p]; } // shallow copy by default
+        // for (var p in other) {this[p] = other[p]; } // shallow copy by default
         // KP: was an iteration but has to be by hand b/c of inheriting from SVGGElement
         this.setShape(other.shape.copy());    
         this.origin = other.origin;
@@ -3041,10 +3043,10 @@ Object.extend(MouseHandlerForRelay.prototype, {
     handleMouseEvent: function(evt, appendage) {
         // console.log("this.eventSpec[this.adapter[evt.type]] = " + this.eventSpec["on" + evt.capitalizedType()]);
         var capType = evt.capitalizedType();
-	var targetHandler = this.target[this.eventSpec['on' + capType]];
+        var targetHandler = this.target[this.eventSpec['on' + capType]];
         if (targetHandler == null) return true; //FixMe: should this be false?
         if (capType == "MouseDown") evt.hand.setMouseFocus(appendage);
-	targetHandler.call(this.target, evt, appendage);
+        targetHandler.call(this.target, evt, appendage);
         if (capType == "MouseUp") evt.hand.setMouseFocus(null);
         return true; 
     },
@@ -3060,7 +3062,7 @@ Object.extend(Morph.prototype, {
 
     checkForControlPointNear: function(evt) {
         // console.log('checking %s', this);
-        if(this.suppressHandles) return false; // disabled
+        if (this.suppressHandles) return false; // disabled
         if (this.owner() == null) return false; // can't reshape the world
         var handle = this.shape.possibleHandleForControlPoint(this, this.localize(evt.mousePoint), evt.hand);
         if (handle == null) return false;
@@ -3089,8 +3091,8 @@ Object.extend(Morph.prototype, {
     showMorphMenu: function(evt) { 
         var menu = this.morphMenu(evt);
         // if (evt.mouseButtonPressed) evt.hand.setMouseFocus(menu);
-	// evt.hand.setMouseFocus(menu);
-	menu.openIn(this.world(), evt.mousePoint, false, this.inspect().truncate()); 
+        // evt.hand.setMouseFocus(menu);
+        menu.openIn(this.world(), evt.mousePoint, false, this.inspect().truncate()); 
     },
 
     morphMenu: function(evt) { 
@@ -3112,7 +3114,7 @@ Object.extend(Morph.prototype, {
             [((this.openForDragAndDrop) ? "close DnD" : "open DnD"), this.toggleDnD.curry(evt.mousePoint)],
             ["show Lively markup", this.addSvgInspector.curry(this)],
             ["publish shrink-wrapped as...", function() { 
-		WorldMorph.current().makeShrinkWrappedWorldWith(this, WorldMorph.current().prompt('publish as')) }]
+            WorldMorph.current().makeShrinkWrappedWorldWith(this, WorldMorph.current().prompt('publish as')) }]
         ];
         var menu = MenuMorph(items, this); 
         if (!this.okToDuplicate()) menu.removeItemNamed("duplicate");
@@ -3140,7 +3142,7 @@ Object.extend(Morph.prototype, {
         var c = this.immediateContainer();
         var loc = c ? c.position().addPt(c.contentOffset) : this.position();
         this.world().addMorphAt(this, loc);
-        if(c) c.remove();
+        if (c) c.remove();
     },
 
     immediateContainer: function() { // Containers override to return themselves

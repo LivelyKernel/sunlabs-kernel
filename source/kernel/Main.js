@@ -2,8 +2,6 @@
  * Main.js.  System startup and demo loading.
  */
 
-var Global = this;
-
 Config.shiftDragForDup = true; // allows easy object duplication using the Shift key
 Config.useNewScheduler = true; // both schedulers active now
 
@@ -230,8 +228,7 @@ function populateWorldWithExamples(world, otherWorld, server) {
             lm1.myWorld.addMorphBack(WindowMorph(ImageMorph(Rectangle(50, 10, width, height), url), 'Tampere'));
         }
 
-        if (Config.showDoodle) lm1.myWorld.addMorph(WindowMorph(DoodleMorph(pt(875, 350).extent(pt(300, 300))), 
-                                                'Doodle Morph'));
+        if (Config.showDoodle) lm1.myWorld.addMorph(WindowMorph(DoodleMorph(pt(875, 350).extent(pt(300, 300))), 'Doodle Morph'));
     }
     
     if (Config.slideWorld) { // Make a slide for "turning web programming upside down"
@@ -269,8 +266,6 @@ function populateWorldWithExamples(world, otherWorld, server) {
             widget = Morph(loc.extent(widgetExtent), "rect");
             widget.setFill(colors[0]);
             lm2.myWorld.addMorph(widget);
-  
-            //widget = Morph.fromMarkup('<g type="Morph" transform="translate(210,395)"><ellipse cx="0" cy="0" rx="35" ry="15" type="ellicapse" fill="rgb(98,179,17)" stroke-width="1" stroke="rgb(0,0,0)"/><g type="Submorphs"/></g>');
   
             // Create a sample ellipse
             widget = Morph(loc.addPt(dx).extent(widgetExtent), "ellipse");
@@ -320,25 +315,25 @@ function main() {
     if (Config.skipAllExamples) return;
     else populateWorldWithExamples(world, /* !Config.skipMostExamples*/ true);
 
-if(false) { // Display a color swatch
-	var colors = Color.wheelHsb(10,0,1,1);
-	var m;
-	for (var i=0; i<colors.length; i++) {
-	world.addMorph(m = Morph(Rectangle (i*40, 0, 35, 35), "rect"));
-	m.setFill(colors[i]);
-	console.log(colors[i].toString());
-	};
-}
+    if (false) { // Display a color swatch
+        var colors = Color.wheelHsb(10,0,1,1);
+        var m;
+        for (var i=0; i<colors.length; i++) {
+            world.addMorph(m = Morph(Rectangle(i*40, 0, 35, 35), "rect"));
+            m.setFill(colors[i]);
+            console.log(colors[i].toString());
+        };
+     }
 
     if (false) showStatsViewer(TextLine.prototype, "TextLine...");
     
     if (Config.showWebStore) {
-	if (location.protocol == 'file:') {
-	    var store = new WebStore('localhost', '~kappa'); // TODO: hardcoded
-	} else {
+        if (location.protocol == 'file:') {
+            var store = new WebStore('localhost', '~kappa'); // TODO: hardcoded
+        } else {
             var store = new WebStore(location.hostname, location.pathname.substring(0, location.pathname.lastIndexOf('lively.xhtml')));
-	}
-	WebStore.defaultStore = store;
+        }
+        WebStore.defaultStore = store;
         store.openIn(WorldMorph.current(), pt(500, 30));
     }
 }
