@@ -37,8 +37,6 @@ Config.showIcon = !Config.skipMostExamples;
 Config.showWeather = !Config.skipMostExamples;
 Config.showMessenger = !Config.skipMostExamples;
 Config.showStocks = !Config.skipMostExamples;
-Config.showTODO = !Config.skipMostExamples;
-Config.showOSReleaseTODO = !Config.skipMostExamples;
 Config.showInnerWorld = !Config.skipMostExamples;
 Config.showCanvasScape = !Config.skipMostExamples;
 Config.showRSSReader = !Config.skipMostExamples;
@@ -142,57 +140,6 @@ function populateWorldWithExamples(world, otherWorld, server) {
     }
 
     if (Config.showMessenger && Config.showNetworkExamples) new MessengerWidget().openIn(world, pt(30, 600));
-
-    if (Config.showTODO) {
-        var todoMorph = TextMorph(Rectangle(440, 240, 300, 20),
-                        "TODO (LARGE):\n" + 
-                        "- Web page generation support\n" +
-                        "- Local/remote storage capabilities\n" +
-                        '- Demo applications should be more "Morphic"\n' +
-                        "- Collaboration capabilities\n" +
-                        "- Better development/debugging tools\n" +
-                        "TODO (SMALL):\n" + 
-                        "- Clean up demo world(s)\n" +
-                        "- Clean up console warning/error messages\n" +
-                        "- Use common location for external resources\n" +
-                        "MAJOR BUGS:\n" + 
-                        "- Coordinate transformations are broken\n" +
-                        '- "Same origin" networking policy violated\n' +
-                        "- Shortcut keys don't work on Safari/Windows\n" +
-                        "- It is still far too easy to rip things apart\n" +
-                        "MINOR BUGS:\n" + 
-                        "- Selection tray creation/removal has bugs\n" +
-                        "- Selection/resizing only works in one direction\n" +
-                        "- Text selection has bugs"
-                        );
-
-        todoMorph.shape.roundEdgesBy(10);
-        todoMorph.shape.setFillOpacity(0.6);
-        world.addMorph(todoMorph);
-    }
-
-    if (Config.showOSReleaseTODO) {
-        var todoOSReleaseMorph = TextMorph(Rectangle(1200, 500, 350, 20),
-                        "Administrative issues:\n" + 
-                        "- Deciding what will actually be released\n" +
-                        "  + Which applications?\n" +
-                        "  + HTML tutorial\n" +
-                        "  + Tutorial implemented with the system itself?\n" +
-                        "  + Technical documentation?\n" + 
-                        "  + FAQ\n" + 
-                        "- Setting up associated infrastructure\n" + 
-                        "  + web site + server\n" + 
-                        "  + mailing list\n" + 
-                        "  + discussion forums\n" + 
-                        "  + bug reporting service?\n" + 
-                        "  + blogs (yes, I hate them too!)?\n" + 
-                        "- Determining how to let others participate in development\n" +
-                        "- Trademarking, licensing & other legal issues"
-                        );
-        todoOSReleaseMorph.shape.roundEdgesBy(10);
-        todoOSReleaseMorph.shape.setFillOpacity(0.6);
-        world.addMorph(todoOSReleaseMorph);
-    }
 
     if (Config.showInnerWorld) {
         
