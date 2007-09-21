@@ -602,6 +602,7 @@
 
 <script type="text/ecmascript" xlink:href="../prototype.js"/>
 <script type="text/ecmascript"> <![CDATA[ var Config = {} ]]> </script>
+<script type="text/ecmascript" xlink:href="../defaultconfig.js"/>
 <script type="text/ecmascript" xlink:href="../localconfig.js"/> <!-- ignored if file not there -->
 <script type="text/ecmascript" xlink:href="../Core.js"/>
 <script type="text/ecmascript" xlink:href="../svgtext-compat.js"/>
