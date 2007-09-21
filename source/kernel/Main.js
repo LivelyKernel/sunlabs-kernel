@@ -12,8 +12,7 @@
  * Main.js.  System startup and demo loading.
  */
 
-
-// Small stuff that will always be shown
+// Small demos that will always be shown
 Config.showClock = true;
 Config.showStar = true;
 Config.showHilbertFun = true;
@@ -23,9 +22,6 @@ Config.showBitmap = false;
 Config.showMap = true;
 Config.showSampleMorphs = true;
 Config.showTextSamples = true;
-
-// enables/disables network-dependent demos
-Config.showNetworkExamples = true;
 
 // More complex demos
 Config.showClipMorph = Config.skipMostExamples;
@@ -70,7 +66,7 @@ function populateWorldWithExamples(world, otherWorld, server) {
             widget = Morph(pt(0,0).asRectangle(), "rect");
             widget.setShape(PolygonShape(makeStarVertices(50,pt(0,0),0), Color.yellow, 1, Color.black));
             // makeGradient(Color.yellow, Color.yellow.lighter().lighter()));
-            widget.setPosition(pt(135, 360));
+            widget.setPosition(pt(115, 360));
             world.addMorph(widget);
             
             var spinningStar = !Config.skipMostExamples || Config.spinningStar;
@@ -81,7 +77,7 @@ function populateWorldWithExamples(world, otherWorld, server) {
     }
 
     if (Config.showClock) {
-        widget = ClockMorph(pt(65, 410), 50);
+        widget = ClockMorph(pt(285, 410), 50);
         // clockWidget.addClipRect(Rectangle(20,20,80,80));
         world.addMorph(widget);
         widget.startSteppingScripts();
@@ -94,10 +90,10 @@ function populateWorldWithExamples(world, otherWorld, server) {
         widget.setFill(Color.green.lighter());
     }
     
-    if (Config.show3DLogo) world.addMorph(WindowMorph(Sun3DMorph(pt(950, 125).extent(pt(200, 200))), 'Sun 3D Logo'));
+    if (Config.show3DLogo) world.addMorph(WindowMorph(Sun3DMorph(pt(960, 125).extent(pt(200, 200))), 'Sun 3D Logo'));
     
     if (Config.showAsteroids) {
-        var gameMorph = apps.asteroids.makeGameMorph(pt(580, 360).extent(pt(600, 300)));
+        var gameMorph = apps.asteroids.makeGameMorph(pt(500, 360).extent(pt(600, 300)));
         world.addMorph(WindowMorph(gameMorph, 'Asteroids!'));
         apps.asteroids.initialize();
         gameMorph.runAsteroidsGame();
@@ -115,7 +111,7 @@ function populateWorldWithExamples(world, otherWorld, server) {
     if (Config.showIcon) {
         // maybe the icons should have a rectangle shaped images (unlike here)
         // var icon = ImageMorph(Rectangle(30, 360, 80, 50), "http://logos.sun.com/images/SunSample.gif");
-        var icon = ImageMorph(Rectangle(30, 500, 100, 45));
+        var icon = ImageMorph(Rectangle(460, 250, 100, 45));
 
         icon.loadGraphics('#SunLogo', 0.15);
         icon.toggleFisheye();    
@@ -125,23 +121,23 @@ function populateWorldWithExamples(world, otherWorld, server) {
     // Sample weather morph
     if (Config.showWeather && Config.showNetworkExamples) {
         // Maybe the icons should have rectangular images (unlike here)
-        new WeatherWidget().openIn(world, pt(700, 50));
+        new WeatherWidget().openIn(world, pt(685, 50));
     }
 
     if (Config.showTester) new WidgetTester().openIn(world, pt(460, 10));
 
     if (Config.showBrowser) new SimpleBrowser().openIn(world, pt(20,20));
 
+    if (Config.showDoodle) world.addMorph(WindowMorph(DoodleMorph(pt(30, 530).extent(pt(300, 300))), 'Doodle Morph'));
+
     if (Config.showStocks && Config.showNetworkExamples) {
         var stockWidget = new StockWidget();
-        stockWidget.startSteppingRefreshCharts(stockWidget.openIn(world, pt(300, 500)));
+        stockWidget.startSteppingRefreshCharts(stockWidget.openIn(world, pt(350, 500)));
     }
-
-    if (Config.showMessenger && Config.showNetworkExamples) new MessengerWidget().openIn(world, pt(30, 600));
 
     if (Config.showInnerWorld) {
         
-        var lm1 = LinkMorph(null, pt(280, 400));
+        var lm1 = LinkMorph(null, pt(60, 400));
         world.addMorph(lm1);
 
         lm1.myWorld.onEnter = function() {
@@ -165,7 +161,7 @@ function populateWorldWithExamples(world, otherWorld, server) {
             }
 
             if (!lm1.myWorld.rssReader && Config.showRSSReader && Config.showNetworkExamples) {
-                console.log('initting RSS reader');
+                console.log('initializing RSS reader');
                 lm1.myWorld.rssReader = new Feed("http://www.news.com/2547-1_3-0-5.xml").openIn(lm1.myWorld, pt(725, 120));
             }
 
@@ -183,11 +179,11 @@ function populateWorldWithExamples(world, otherWorld, server) {
             lm1.myWorld.addMorphBack(WindowMorph(ImageMorph(Rectangle(50, 10, width, height), url), 'Tampere'));
         }
 
-        if (Config.showDoodle) lm1.myWorld.addMorph(WindowMorph(DoodleMorph(pt(875, 350).extent(pt(300, 300))), 'Doodle Morph'));
+        if (Config.showMessenger && Config.showNetworkExamples) new MessengerWidget().openIn(lm1.myWorld, pt(875, 375));
     }
     
     if (Config.slideWorld) { // Make a slide for "turning web programming upside down"
-        var lm2 = LinkMorph(null, pt(280, 460));
+        var lm2 = LinkMorph(null, pt(60, 460));
 
         // KP: note that element deletion interferes with iteration, so
         // we make an array first and then remove 
@@ -212,7 +208,7 @@ function populateWorldWithExamples(world, otherWorld, server) {
 
         if (Config.showSampleMorphs){
             var colors = Color.wheel(4);
-            var loc = pt(30,450); 
+            var loc = pt(150, 450); 
             var widgetExtent = pt(70, 30);
             var dy = pt(0,50); 
             var dx = pt(120,0);

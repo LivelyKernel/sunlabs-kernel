@@ -12,13 +12,24 @@
  * defaultconfig.js.  System default configuration.
  */
 
-Config.shiftDragForDup = true; // allows easy object duplication using the Shift key
-Config.useNewScheduler = true; // both schedulers active now
+// Allows easy object duplication using the Shift key
+Config.shiftDragForDup = true;
 
-Config.showWebStore = true;
-Config.skipMostExamples = false;
-Config.showThumbnail = false;
+// New scheduler is the default now
 Config.useNewScheduler = true;
-Config.loadFromMarkup = false;
+
+// URL that acts as a proxy for network operations 
+// Config.proxyURL = 'http://www.hanaalliance.org/jsl/proxy/';
+
+// Quickly enabling/disabling most demos
+Config.skipMostExamples = false;
 Config.skipAllExamples = Config.skipMostExamples && false;
-//Config.proxyURL = 'http://www.hanaalliance.org/jsl/proxy/';
+Config.showWebStore = false;
+
+// Additional demo configuration options 
+Config.loadFromMarkup = false;
+Config.showThumbnail = false;
+
+// Enables/disables network-dependent demos
+Config.showNetworkExamples = true;
+
