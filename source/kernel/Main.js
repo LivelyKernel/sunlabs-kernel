@@ -12,8 +12,6 @@
  * Main.js.  System startup and demo loading.
  */
 
-Config.shiftDragForDup = true; // allows easy object duplication using the Shift key
-Config.useNewScheduler = true; // both schedulers active now
 
 // Small stuff that will always be shown
 Config.showClock = true;
