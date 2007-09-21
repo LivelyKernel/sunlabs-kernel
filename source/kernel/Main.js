@@ -213,7 +213,7 @@ function populateWorldWithExamples(world, otherWorld, server) {
 
             if (!lm1.myWorld.rssReader && Config.showRSSReader && Config.showNetworkExamples) {
                 console.log('initting RSS reader');
-                lm1.myWorld.rssReader = new Feed("http://news.com.com/2547-1_3-0-5.xml").openIn(lm1.myWorld, pt(725, 120));
+                lm1.myWorld.rssReader = new Feed("http://www.news.com/2547-1_3-0-5.xml").openIn(lm1.myWorld, pt(725, 120));
             }
 
         }
@@ -333,11 +333,13 @@ if(false) { // Display a color swatch
     if (false) showStatsViewer(TextLine.prototype, "TextLine...");
     
     if (Config.showWebStore) {
-        //var store = new WebStore('http://idisk.mac.com/xysztof/Public/Lively');
-        var store = new WebStore('localhost', '~kappa');
-        //var store = new WebStore('www.hanaalliance.org', 'jsl/');
+	if (location.protocol == 'file:') {
+	    var store = new WebStore('localhost', '~kappa'); // TODO: hardcoded
+	} else {
+            var store = new WebStore(location.hostname, location.pathname.substring(0, location.pathname.lastIndexOf('lively.xhtml')));
+	}
+	WebStore.defaultStore = store;
         store.openIn(WorldMorph.current(), pt(500, 30));
-        WorldMorph.current().defaultStore = store;
     }
 }
 

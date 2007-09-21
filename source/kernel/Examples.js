@@ -3661,7 +3661,7 @@ Object.extend(MessengerWidget.prototype, {
         this.server = "http://dev.experimentalstuff.com:8093/";
 //        console.log("address == " + this.server + "foreground.html?login=IM");
         var id = this.id
-        new Ajax.Request(this.server + "foreground.html?login=IM", { 
+        new Ajax.Request(NetRequest.rewriteURL(this.server) + "foreground.html?login=IM", { 
             method: 'get',
             
             onSuccess: function(transport) {

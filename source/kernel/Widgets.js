@@ -412,7 +412,7 @@ Object.extend(TitleBarMorph.prototype, {
             function() { this.toggleCollapse(); }, "Collapse");
         this.addMorph(collapseButton);
 
-        // var font = FontInfo.forFamily(TextMorph.prototype.fontFamily, TextMorph.prototype.fontSize);
+        // var font = Font.forFamily(TextMorph.prototype.fontFamily, TextMorph.prototype.fontSize);
 
         var label;
         if (headline instanceof TextMorph) {
@@ -1101,10 +1101,7 @@ Object.extend(PanelMorph.prototype, {
         if (current && current.nextNavigableSibling) {
             current.relinquishKeyboardFocus(evt.hand);
             current.nextNavigableSibling.requestKeyboardFocus(evt.hand);
-            console.log('navigate to next submorph from %s (%s) to %s', current, current.nextNavigableSibling);
-        } else {
-            console.log('current focus %s, nowhere to go navigate next', current);
-        }
+        } 
     },
 
     addMorphFrontOrBack: function(m, front) {
@@ -1176,6 +1173,7 @@ Object.extend(CheapListMorph.prototype, {
         this.itemList = itemList;
         this.setModelValue('setList', itemList);
         //console.log('model now %s', this.modelPlug.model);
+	if (!this.font) alert('wha, null font in %1'.format(this));
         this.layoutChanged();
         return this;
     },
@@ -1364,6 +1362,8 @@ Object.extend(MenuMorph.prototype, {
         this.items = items;
 	this.targetMorph = targetMorph;
         this.lines = lines ? lines : [];
+	console.log('what, font is %s in %s', this.font, this);
+	//this.layoutChanged();
         return this;
     },
 
@@ -1635,7 +1635,6 @@ Object.extend(SliderMorph.prototype, {
             default: return false;
             }    
         }
-        console.log('handled evt %s value now %s', evt, this.getValue());
         this.adjustForNewBounds();
         this.setValue(this.clipValue(this.getValue() + delta * this.getExtent()));
         evt.stop();
@@ -2317,13 +2316,13 @@ Object.extend(WorldMorph.prototype, {
             console.log('null filename, not publishing %s', morphs);
            return;
         }
-        if (!this.defaultStore) {
+        if (!WebStore.defaultStore) {
             this.alert("no store to access the startup file, location " + location);
             return;
         }
         console.log('morphs is %s', morphs);
         var newDoc = null;
-        var url = "http://" + this.defaultStore.host + "/" + this.defaultStore.path + "/lively.xhtml";
+        var url = "http://" + WebStore.defaultStore.host + "/" + WebStore.defaultStore.path + "/lively.xhtml";
         new Ajax.Request(url, { 
             method: 'get',
             asynchronous: false,
@@ -2349,7 +2348,7 @@ Object.extend(WorldMorph.prototype, {
         var preamble = newDoc.createElementNS(Namespace.SVG, "script");
         preamble.appendChild(newDoc.createCDATASection("Config.skipAllExamples = true"));
         mainDefs.insertBefore(preamble, mainScript);
-        url = "http://" + this.defaultStore.host + "/" + this.defaultStore.path + "/" + filename;
+        url = "http://" + WebStore.defaultStore.host + "/" + WebStore.defaultStore.path + "/" + filename;
         var container = newDoc.createElementNS(Namespace.SVG, 'g');
         morphs.each(function(morph) {
 
@@ -2404,8 +2403,11 @@ Object.extend(WorldMorph.prototype, {
     alert: function(message) {
 	var fill = this.getFill();
 	this.setFill(Color.black); // poor man's modal dialog
-        MenuMorph([["OK", function() { this.setFill(fill)}]], this).openIn(this, this.bounds().center(), false, message); 
-    },
+
+        var menu = MenuMorph([["OK", function() { this.setFill(fill)}]], this);
+	//menu.setFontSize(20);
+	menu.openIn(this, this.bounds().center(), false, message); 
+    }.logErrors('alert'),
 
     prompt: function(message) {
 	// FIXME replace with a native solution

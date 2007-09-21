@@ -17,7 +17,7 @@ Object.extend(Canvas, {
     }
 });
 
-var FontInfo = window.parent.FontInfo;
+var Font = window.parent.Font;
 
 window.parent.console.platformConsole = console;
 var console = window.parent.console;
@@ -319,9 +319,8 @@ Object.extend(Function.prototype, {
             try {
                 return proceed.apply(this, args); 
             } catch (er) {
-                if (prefix) console.warn("%s: %s", prefix, er);
+                if (prefix) console.warn("%s.%s(%s): err: %s", this, prefix, args,  er);
                 else console.warn("%s", er);
-
                 throw er;
             }
         }
@@ -1023,7 +1022,7 @@ Object.extend(Transform, {
         var matrix = Canvas.createSVGMatrix();
         matrix = matrix.translate(delta.x, delta.y).rotate(angleInRadians.toDegrees()).scale(scale);
         return Transform.fromMatrix(matrix);
-    }
+    }.logErrors('createSimilitude')
 
 });
 
@@ -2099,7 +2098,7 @@ Object.extend(Morph.prototype, {
         if (this.drawBounds) this.updateBoundsElement();
     },
 
-    reinitialize: function(importer) {
+    reinitialize: function(importer/*:Importer*/) { // called when restoring from external representation (markup)
         this.pvtSetTransform(this.retrieveTransform());
         var prevId = this.pickId();
         if (importer) { 
@@ -2133,7 +2132,7 @@ Object.extend(Morph.prototype, {
                 break;
             }
             case "model": {
-                if (modelNode != null) console.warn("%s already has modelNode %s", this, modelNode);
+                if (modelNode) console.warn("%s already has modelNode %s", this, modelNode);
                 modelNode = node;
                 // postpone hooking up model until all the morphs are reconstructed
                 console.info("found modelNode %s", new XMLSerializer().serializeToString(node));
@@ -3004,7 +3003,7 @@ Object.extend(Morph.prototype, {
         this.removeChild(this.focusHalo);
         this.focusHalo = null;
         return true;
-    }.logCalls('removeFocusHalo'),
+    },
     
     adjustFocusHalo: function() {
         this.focusHalo.removeAll();

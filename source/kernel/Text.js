@@ -12,7 +12,7 @@ Object.extend(TextWord, {
 
     become: function(node) {
         var elt = HostClass.becomeInstance(node, TextWord);
-        elt.fontInfo = FontInfo.forFamily(elt.getFontFamily(), elt.getFontSize());
+        elt.fontInfo = Font.forFamily(elt.getFontFamily(), elt.getFontSize());
         // FIXME
         return elt;
     }
@@ -537,7 +537,7 @@ Object.extend(TextBox, {
     become: function(node) {
         var elt = HostClass.becomeInstance(node, TextBox);
         var lineHeight = parseFloat(elt.getAttributeNS(Namespace.LIVELY, "line-height"));
-        var font = FontInfo.forFamily(elt.getFontFamily(), elt.getFontSize());
+        var font = Font.forFamily(elt.getFontFamily(), elt.getFontSize());
         elt.initialize(elt.recoverTextContent(), lineHeight, elt.getTextColor(), font);
         return elt;
     }
@@ -693,8 +693,6 @@ var WrapStyle = {
     SHRINK: "shrinkWrap" // sets both width and height based on line breaks only
 };
 
-// debuging convenience    
-TextMorph.lastInstance = null;
 
 // TextMorph attributes and basic functions
 Object.extend(TextMorph.prototype, {
@@ -709,7 +707,7 @@ Object.extend(TextMorph.prototype, {
     defaultBorderColor: Color.black,
     selectionColor: Color.primary.green,
     inset: pt(6,4), // remember this shouldn't be modified unless every morph should get the value 
-
+    debugLayoutChanged: false,
     wrap: WrapStyle.NORMAL,
 
     initializeTransientState: function(initialBounds) {
@@ -736,7 +734,7 @@ Object.extend(TextMorph.prototype, {
         this.selectionElement.setAttributeNS(null, "fill", this.selectionColor);
         //this.selectionElement.setAttributeNS(null, "fill", "url(#SelectionGradient)");
         this.selectionElement.setAttributeNS(null, "stroke-width", 0);
-        this.font = FontInfo.forFamily(this.fontFamily, this.fontSize);
+        this.font = Font.forFamily(this.fontFamily, this.fontSize);
         this.setAttributeNS(Namespace.LIVELY, "wrap", this.wrap);
         // KP: set attributes on the text elt, not on the morph, so that we can retrieve it
         this.setFill(this.defaultBackgroundColor);
@@ -781,7 +779,6 @@ Object.extend(TextMorph.prototype, {
 
     initialize: function(rect, textString) {
         TextMorph.superClass.initialize.call(this, rect, "rect");
-        TextMorph.lastInstance = this; 
 
         this.textString = textString || "";
 
@@ -795,7 +792,7 @@ Object.extend(TextMorph.prototype, {
     defaultOrigin: function(bounds) { 
         return bounds.topLeft(); 
     },
-
+    
     bounds: function() {
         if (this.fullBounds != null) return this.fullBounds;
         if (this.textBox) this.textBox.destroy();
@@ -899,7 +896,7 @@ Object.extend(TextMorph.prototype, {
         }]);
     
         menu.addItem(["save as ...", function() { 
-            var store = WorldMorph.current().defaultStore;
+            var store = WebStore.defaultStore;
             if (store) store.saveAs(WorldMorph.current().prompt('save as ...'), (this.xml || this.textString)); 
             else console.log('no store to save to');
         }]);
@@ -1449,7 +1446,7 @@ Object.category(TextMorph.prototype, "accessing", function() {
     
     setFontFamily: function(familyName) {
         this.fontFamily = familyName;
-        this.font = FontInfo.forFamily(this.fontFamily, this.fontSize);
+        this.font = Font.forFamily(this.fontFamily, this.fontSize);
         this.layoutChanged();
         this.changed();
     },
@@ -1459,7 +1456,7 @@ Object.category(TextMorph.prototype, "accessing", function() {
     },
 
     setFontSize: function(newSize) {
-        this.font = FontInfo.forFamily(this.getFontFamily(), newSize);
+        this.font = Font.forFamily(this.getFontFamily(), newSize);
         this.inset = pt((this.getFontSize()/3)+2,(this.getFontSize()/3));
         this.layoutChanged();
         this.changed();

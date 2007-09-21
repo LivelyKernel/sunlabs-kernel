@@ -30,36 +30,32 @@ Ajax.Request.prototype.request = function(url) {
         }
     }
 
-    try {
-        if (this.options.onCreate) this.options.onCreate(this.transport);
-
-        Ajax.Responders.dispatch('onCreate', this, this.transport);
-
-        this.transport.open(this.method.toUpperCase(), this.url,
-                            this.options.asynchronous);
-
-        if (this.options.asynchronous) {
-            setTimeout(function() { this.respondToReadyState(1) }.bind(this).logErrors('Network Timer'), 10);
-        }
-
-        this.transport.onreadystatechange = this.onStateChange.bind(this).logErrors('Network Request Handler');
-
-        this.setRequestHeaders();
-
-        this.body = /put|post/.test(this.method) ? (this.options.body || this.options.postBody || params) : null;
-
-        this.transport.send(this.body);
-      
-        /* Force Firefox to handle ready state 4 for synchronous requests */
-        if (!this.options.asynchronous && this.transport.overrideMimeType) {
-            this.onStateChange();
-        }
-
-    } catch (e) {
-        console.log('error %s, stack %s', e, Function.callStack());
-        this.dispatchException(e);
+    
+    if (this.options.onCreate) this.options.onCreate(this.transport);
+    
+    Ajax.Responders.dispatch('onCreate', this, this.transport);
+    
+    this.transport.open(this.method.toUpperCase(), this.url,
+                        this.options.asynchronous);
+    
+    if (this.options.asynchronous) {
+        setTimeout(function() { this.respondToReadyState(1) }.bind(this).logErrors('Network Timer'), 10);
     }
-};
+    
+    this.transport.onreadystatechange = this.onStateChange.bind(this).logErrors('Network Request Handler');
+    
+    this.setRequestHeaders();
+    
+    this.body = /put|post/.test(this.method) ? (this.options.body || this.options.postBody || params) : null;
+    
+    this.transport.send(this.body);
+    
+    /* Force Firefox to handle ready state 4 for synchronous requests */
+    if (!this.options.asynchronous && this.transport.overrideMimeType) {
+        this.onStateChange();
+    }
+
+}.logErrors('request');
 
 // Debugging
 Ajax.Request.prototype.setRequestHeaders = function() {
@@ -142,6 +138,16 @@ Object.extend(NetRequest, {
     documentToString: function(doc) {
         if (doc != null) return new XMLSerializer().serializeToString(doc.documentElement); 
         else return null;
+    },
+
+    rewriteURL: function(url) {
+	if (Config.proxyURL && url.startsWith('http://')) {
+	    if (url.startsWith('http://www.hanaalliance.org')) return url;
+	    var result = Config.proxyURL + url.substring('http://'.length);
+	    console.log('rewrote %s to %s', url, result);
+	    return result;
+	} else 
+	    return url;
     }
 
 });
@@ -167,7 +173,7 @@ Object.extend(NetRequest.prototype, {
             this.process(result);
         }.bind(this);
     
-        new Ajax.Request(url, options);
+        new Ajax.Request(NetRequest.rewriteURL(url), options);
     }
 
 });
@@ -235,7 +241,7 @@ Object.extend(Feed.prototype, {
         var modelVariables = $A(arguments);
         modelVariables.shift();
 
-        new Ajax.Request(this.url, Object.derive(NetRequest.options, {
+        new Ajax.Request(NetRequest.rewriteURL(this.url), Object.derive(NetRequest.options, {
             method: 'get',
             requestHeaders: { "If-Modified-Since": "Sat, 1 Jan 2000 00:00:00 GMT" },
         
