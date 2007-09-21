@@ -1,10 +1,16 @@
+/*
+ * Copyright © 2006-2007 Sun Microsystems, Inc.
+ * All rights reserved.  Use is subject to license terms.
+ * This distribution may include materials developed by third parties.
+ *  
+ * Sun, Sun Microsystems, the Sun logo, Java and JavaScript are trademarks
+ * or registered trademarks of Sun Microsystems, Inc. in the U.S. and
+ * other countries.
+ */ 
+
 /**
  * @class TutorialMorph
  */
-
-// For historical compatibility:
-// Ensure that we can "tear" a copy of an object by pressing the Shift key
-Config.shiftDragForDup = true;
 
 TutorialMorph = HostClass.create('TutorialMorph', Morph);
 
