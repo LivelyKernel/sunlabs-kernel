@@ -3421,39 +3421,36 @@ Object.extend(Morph.prototype, {
     },
     
     /** 
-     * map owner coordinates to world
+     * mapping coordinates in the hierarchy
      * @return [Point]
      */
+
+    // map local point to world coordinates
     worldPoint: function(pt) { 
         return pt.matrixTransform(this.getTransformToElement(this.canvas())); 
     },
 
-    /**
-     * map owner coordinates to local
-     */
+    // map owner point to local coordinates
     relativize: function(pt) { 
-        if (!this.owner()) {
-            throw new Error('no owner, call me after adding to a morph? ' + this.inspect());
-        }
-        
-        try {
-            return pt.matrixTransform(this.owner().getTransformToElement(this)); 
-        } catch (er) {
-            console.log('got error %s owner %s this %s stack %s', er, this.owner(), this, er.stack);
-            return pt;
-        }
+        if (!this.owner()) throw new Error('no owner; call me after adding to a morph? ' + this.inspect());
+        return pt.matrixTransform(this.owner().getTransformToElement(this)); 
     },
 
-    // map owner coordinates to local
+    // map owner rectangle to local coordinates
     relativizeRect: function(r) { 
         return rect(this.relativize(r.topLeft()), this.relativize(r.bottomRight()));
     },
     
-    // map world coordinates to local
-    localize: function(pt/*:Point*/) {   
+    // map world point to local coordinates
+    localize: function(pt) {   
         return pt.matrixTransform(this.canvas().getTransformToElement(this));
     },
     
+    // map local point to owner coordinates
+    localizePointFrom: function(pt, otherMorph) {   
+        return pt.matrixTransform(otherMorph.getTransformToElement(this));
+    },
+
     transformForNewOwner: function(newOwner) {
         return Transform.fromMatrix(this.getTransformToElement(newOwner));
     },
@@ -3658,7 +3655,7 @@ Object.extend(Morph, {
     },
 
     makeCircle: function(location, radius, lineWidth, lineColor, fill) {
-        // make a line with its origin at the first vertex
+        // make a circle of the given radius with its origin at the center
         var circle = Morph(location.asRectangle().expandBy(radius), "ellipse")
 	circle.setBorderWidth(lineWidth);
 	circle.setBorderColor(lineColor);
@@ -3667,7 +3664,7 @@ Object.extend(Morph, {
     },
 
     makePolygon: function(verts, lineWidth, lineColor, fill) {
-        // make a polygon with its origin at the center of the bounding box
+        // make a polygon with its origin at the starting vertex
 	poly = Morph(pt(0,0).asRectangle(), "rect");
         poly.setShape(PolygonShape(verts, fill, lineWidth, lineColor));
 	return poly; 
