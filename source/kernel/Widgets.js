@@ -922,19 +922,24 @@ Object.extend(SelectionMorph.prototype, {
 
     initialize: function(viewPort, defaultworldOrNull) {
         SelectionMorph.superClass.initialize.call(this, viewPort, "rect");
-        this.selectedMorphs = [];
+	this.originalPoint = viewPort.topLeft();
+        this.reshapeName = "bottomRight";
+	this.selectedMorphs = [];
         this.shape.setFillOpacity(0.1);
-        if (defaultworldOrNull == null) {
-            this.myWorld = this.world();
-        } else {
-            this.myWorld = defaultworldOrNull;
-        }
+        this.myWorld = defaultworldOrNull ? defaultworldOrNull : this.world();
         // this.shape.setAttributeNS(null, "stroke-dasharray", "3,2");
         return this;
     },
     
     reshape: function(partName, newPoint, handle, lastCall) {
-        SelectionMorph.superClass.reshape.call(this, partName, newPoint, handle, lastCall);
+        // User might actually move in another direction than toward bottomRight
+	// This code watches that and changes the control point if so
+	var selRect = Rectangle.fromAny(pt(0,0), newPoint);
+ 	if(this.reshapeName == null && selRect.width*selRect.height > 30)
+		this.reshapeName = selRect.partNameNearest(Rectangle.corners, newPoint);
+		this.setBounds(this.originalPoint.asRectangle())
+
+	SelectionMorph.superClass.reshape.call(this, this.reshapeName, newPoint, handle, lastCall);
         this.selectedMorphs = [];
         this.owner().submorphs.each(function(m) {
 		if( m !== this && this.bounds().containsRect(m.bounds())) this.selectedMorphs.push(m);
