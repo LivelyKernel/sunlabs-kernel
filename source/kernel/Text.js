@@ -1314,7 +1314,9 @@ Object.extend(TextMorph.prototype, {
         // have to process commands in keydown...
         if (evt.altKey) {
             var replacement = (String.fromCharCode(evt.keyCode)).toLowerCase();
-            return this.processCommandKeys(replacement);
+            if (this.processCommandKeys(replacement))
+		evt.stop();
+	    
         }
     },
     
@@ -1345,35 +1347,35 @@ Object.extend(TextMorph.prototype, {
         }
     },
     
-    processCommandKeys: function(key) { 
+    processCommandKeys: function(key) {  //: Boolean (was the command processed?)
         console.log('command ' + key);
 
         switch (key) {
         case "s": {
             this.saveContents(this.textString); 
-            return; 
+            return true; 
         }
     
         case "x": {
             TextMorph.clipboardString = this.selectionString(); 
             this.replaceSelectionWith("");
-            return; 
+            return true; 
         }
         
         case "c": {
             TextMorph.clipboardString = this.selectionString(); 
-            return; 
+            return true; 
         }
         
         case "v": {
             if (TextMorph.clipboardString)
                 this.replaceSelectionWith(TextMorph.clipboardString); 
-            return; 
+            return true; 
         }
     
         case "d": {
             this.evalInContext(this.selectionString()); 
-            return; 
+            return true; 
         }
         
         case "p": {
@@ -1381,33 +1383,39 @@ Object.extend(TextMorph.prototype, {
             this.setNullSelectionAt(this.selectionRange[1] + 1);
             console.log('selection = ' + strToEval);
             this.replaceSelectionWith(" " + this.evalInContext(strToEval).toString());
-            return; 
+            return true; 
         }
         
         case "a": {
             this.setSelectionRange(0, this.textString.length); 
-            return;
+            return true;
         }
         
         case "j": {
-            return;
+            return true; 
         }
 
         case "i": {
             this.addSvgInspector();
-            return;
+            return true;
         }
 
         case "z": {
             if (this.undoTextString) {
                 this.setTextString(this.undoTextString);
             }
+	    return true;
         }
         }
 
         var bracketIndex = CharSet.leftBrackets.indexOf(key);
 
-        if (bracketIndex >= 0) this.addOrRemoveBrackets(bracketIndex); 
+        if (bracketIndex >= 0) {
+	    this.addOrRemoveBrackets(bracketIndex); 
+	    return true;
+	} 
+	return false;
+
     }
 
 });
