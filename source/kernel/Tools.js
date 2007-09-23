@@ -434,24 +434,22 @@ function showStatsViewer(profilee,title) {
     m.addMorph(t);
 };
 
-// ===========================================================================
-// Host environment (browser) identification
-// ===========================================================================
 
-// KP: moved this from prototype, unclear whether we need this, the duplication of fields etc.
-Object.extend(Prototype.Browser, {
-    /*Browser and platform info*/
-    BrowserName: navigator.appName,
-    BrowserVersion: navigator.appName,
-    BrowserCode: navigator.appCodeName,
-    BrowserPlatform: navigator.platform,
-    BrowserUserAgentHeader: navigator.userAgent,
-    AlertBrowserInfo: function (){ alert("Browser name: "+ navigator.appName
-                     + "\nVersion: " + navigator.appName
-                     + "\nCode: " + navigator.appCodeName
-                     + "\nPlatform: " + navigator.platform
-                     + "\nUserAgentHeader: " + navigator.userAgent ) }
+// inspection tools, called interactively
+Object.extend(console, {
+    morphs: function(morph) {
+	var array = [];
+	(morph || WorldMorph.current()).submorphs.each(function(m) { array.push(m) });
+	return array;
+    },
+
+    $: function(id) {
+        return document.getElementById(id.toString());
+    }
+
 });
+
+
 
 console.log('loaded Tools.js');
 

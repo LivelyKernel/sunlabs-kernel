@@ -93,10 +93,6 @@ Object.extend(Query, {
             return [ defaultValue ];
         }
         return found;
-    },
-
-    $: function(id) {
-        return document.getElementById(id);
     }
 
 });
@@ -2774,8 +2770,8 @@ Object.extend(Morph.prototype, {
     },
 
     inspect: function() {
-	// Formerly a replacement for toString() which can't be overridden
-	// in some cases.  Now deprecated in favor of Object.inspect(this) 
+	// A replacement for toString() which can't be overridden in
+	// some cases.  Invoked by Object.inspect.
         return "%1(#%2,%3)".format(this.getType(), this.id, this.shape);
     }
     
@@ -3856,10 +3852,6 @@ Object.category(SimpleModel.prototype,  "core", function() {
         return "set" + varName;
     }
 
-    function escapeValue(value) {
-        return value == null  ? "null" : "<![CDATA[%1]]>".format(Object.toJSON(value));
-    }
-    
     return {
 
         initialize: function(dep /*, variables... */) {
