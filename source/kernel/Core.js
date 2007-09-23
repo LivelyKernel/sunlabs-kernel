@@ -377,8 +377,6 @@ Object.extend(Object.prototype, {
  */  
 
 Object.extend(String.prototype, {
-    isString: function() { return true; },
-
     withNiceDecimals: function() {
         // JS can't print nice decimals
         var dotIx = this.indexOf('.');
@@ -2317,12 +2315,17 @@ Object.extend(Morph.prototype, {
 
     getFill: function() {
         var fillObj = this.shape.getFill();
-        // if the fill is a color string, then make a real color
-        // DI: there must be a better way to test for strings :-(
-        if (fillObj.isString()) return Color.parse(fillObj);
-        return fillObj
-    },
-
+	if (fillObj == "none") return null;
+	var match = fillObj.match("url\\(#(.*)\\)");
+	if (match) {
+	    var def = document.getElementById(match[1]);
+	    // console.log('found url %s def %s', match[1], def);
+	    return def;
+	} else {
+	    return Color.parse(fillObj);
+	}
+    }.logErrors('getFill'),
+    
     setBorderColor: function(newColor) { this.shape.setStroke(newColor); }.wrap(Morph.onChange('shape')),
 
     getBorderColor: function() {
