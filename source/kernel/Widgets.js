@@ -831,7 +831,7 @@ Object.extend(HandleMorph.prototype, {
             // these hack tests should be replaced by receiver tests
             !(this.targetMorph.getType() == "WindowMorph" || this.targetMorph.getType() == "TitleBarMorph")) {
                 // last call for, eg, vertex deletion
-                this.targetMorph.reshape(this.partName, this.bounds().center(), this, true); 
+                this.targetMorph.reshape(this.partName, this.targetMorph.localize(evt.mousePoint), this, true); 
         }
         this.remove(); 
     },
@@ -858,7 +858,6 @@ Object.extend(HandleMorph.prototype, {
         if (evt.altKey) {
             // ctrl-drag for rotation (unshifted) and scale (shifted)
             var ctr = this.targetMorph.owner().worldPoint(this.targetMorph.origin);  //origin for rotation and scaling
-            // this.world().addMorph(new Morph(ctr.extent(pt(5,5)),"rect"));
             var v1 = p1.subPt(ctr); //vector from origin
             var v0 = p0.subPt(ctr); //vector from origin at mousedown
             
@@ -937,17 +936,14 @@ Object.extend(SelectionMorph.prototype, {
     reshape: function(partName, newPoint, handle, lastCall) {
         SelectionMorph.superClass.reshape.call(this, partName, newPoint, handle, lastCall);
         this.selectedMorphs = [];
-        this.owner().submorphs.each((function(m) {
-            var p1 = m.bounds().topLeft();
-            var p2 = m.bounds().bottomRight();
-            if (this.bounds().containsPoint(p1) && this.bounds().containsPoint(p2))
-                if (m !== this) this.selectedMorphs.push(m);
-            }).bind(this));
+        this.owner().submorphs.each(function(m) {
+		if( m !== this && this.bounds().containsRect(m.bounds())) this.selectedMorphs.push(m);
+       		}.bind(this));
         this.selectedMorphs.reverse();
             
         if (lastCall && this.selectedMorphs.length == 0) this.remove();
     },
-    
+
     morphMenu: function(evt) { 
         var menu = SelectionMorph.superClass.morphMenu.call(this,evt);
         menu.removeItemNamed("inspect");
@@ -1867,8 +1863,9 @@ Object.extend(PasteUpMorph.prototype, {
 
     onMouseDown: function(evt) {  //default behavior is to grab a submorph
         var m = this.morphToReceiveEvent(evt);
-        if (m == null || !evt.altKey) {
-            if (m == null || (m == this.world())) { this.makeSelection(evt); return true; }
+        if (m == null) { this.makeSelection(evt); return true; }
+	if (!evt.altKey) {
+            if (m == this.world()) { this.makeSelection(evt); return true; }
             if (m.handlesMouseDown(evt)) return false;
         }
         evt.hand.grabMorph(m, evt);
@@ -1882,14 +1879,14 @@ Object.extend(PasteUpMorph.prototype, {
 
     makeSelection: function(evt) {  //default behavior is to grab a submorph
         if (this.world().currentSelection != null) this.world().currentSelection.removeOnlyIt();
-        if ( !evt.hand.mouseButtonPressed ) return;
-        var m = SelectionMorph(evt.mousePoint.extent(pt(5,5)));
+        var m = SelectionMorph(evt.mousePoint.extent(pt(0,0)));
         this.world().addMorph(m);
         this.world().currentSelection = m;
-        var handle = HandleMorph(evt.mousePoint, "rect", evt.hand, m, "bottomRight");
+        var handle = HandleMorph(pt(0,0), "rect", evt.hand, m, "bottomRight");
         m.addMorph(handle);
         handle.setBounds(handle.bounds().center().asRectangle());
-        if (evt.hand.mouseFocus instanceof HandleMorph) evt.hand.mouseFocus.remove();
+        m.setBounds(evt.mousePoint.asRectangle()); // prevent handle from making bounds any larger
+	// if (evt.hand.mouseFocus instanceof HandleMorph) evt.hand.mouseFocus.remove(); // DI: necess?
         evt.hand.setMouseFocus(handle);
     }
     

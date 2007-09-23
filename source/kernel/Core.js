@@ -638,7 +638,11 @@ Object.category(Rectangle.prototype, 'core', function() { return {
 Object.extend(Rectangle.prototype, {
 
     containsPoint: function(p) {
-        with (this) { return x <= p.x && p.x <= x + width && y<= p.y && p.y <= y + height; } 
+	return this.x <= p.x && p.x <= this.x + this.width && this.y<= p.y && p.y <= this.y + this.height;
+    },
+
+    containsRect: function(r) {
+	return this.x <= r.x && this.y<= r.y && r.maxX()<=this.maxX() && r.maxY()<=this.maxY();
     },
 
     constrainPt: function(pt) { return pt.maxPt(this.topLeft()).minPt(this.bottomRight()); },
