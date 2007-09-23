@@ -786,9 +786,7 @@ Object.extend(Color.prototype, {
         this.b = b;
     },
     
-    /*
-     * Mix with another color
-    */
+    // Mix with another color -- 1.0 is all this, 0.0 is all other
     mixedWith: function(other, proportion) { 
         var p = proportion;
         var q = 1.0 - p;
@@ -2443,6 +2441,12 @@ Object.extend(Morph.prototype, {
         this.adjustForNewBounds();
     }.wrap(Morph.onLayoutChange('shape')),
     
+    setVertices: function(newVerts) {
+	// particular to polygons
+        this.shape.setVertices(newVerts);
+        this.adjustForNewBounds();
+    }.wrap(Morph.onLayoutChange('shape')),
+
     // DI: ***Note get/setBounds should be deprecated in favor of get/setExtent and get/setPosition
     // This is so that layout management can move things around without deep layout changes
     setBounds: function(newRect) {
@@ -3385,6 +3389,7 @@ Object.extend(StepHandler.prototype, {
 // Morph bounds, coordinates, moving and damage reporting functions
 Object.extend(Morph.prototype, { 
     
+    // bounds returns the full bounding box in owner coordinates of this morph and all its submorphs
     bounds: function() {
         if (this.fullBounds != null) return this.fullBounds;
         
@@ -3416,6 +3421,9 @@ Object.extend(Morph.prototype, {
         return this.fullBounds; 
     },
     
+    // innerBounds returns the bounds of this morph only, and in local coordinates
+    innerBounds: function() { return this.shape.bounds() },
+
     cumulativeTransform: function() {
         return Transform.fromMatrix(this.canvas().getTransformToElement(this));
     },

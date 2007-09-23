@@ -1431,7 +1431,7 @@ Object.extend(MenuMorph.prototype, {
         var menuRect = this.bounds();  //includes caption if any
         // Intersect with world bounds to get visible region.  Note we need shape.bounds,
         // since world.bounds() would include stick-outs, including this menu!
-        var visibleRect = menuRect.intersection(this.world().shape.bounds()); 
+        var visibleRect = menuRect.intersection(this.owner().shape.bounds()); 
         var delta = visibleRect.topLeft().subPt(menuRect.topLeft());  // delta to fix topLeft off screen
         delta = delta.addPt(visibleRect.bottomRight().subPt(menuRect.bottomRight()));  // same for bottomRight
         if (delta.dist(pt(0,0)) > 1) this.moveBy(delta);  // move if significant

@@ -27,6 +27,7 @@ Config.showTextSamples = true;
 Config.showClipMorph = Config.skipMostExamples;
 Config.show3DLogo = !Config.skipMostExamples;
 Config.showAsteroids = !Config.skipMostExamples;
+Config.showEngine = !Config.skipMostExamples;
 Config.showIcon = !Config.skipMostExamples;
 Config.showWeather = !Config.skipMostExamples;
 Config.showMessenger = !Config.skipMostExamples;
@@ -86,6 +87,8 @@ function populateWorldWithExamples(world, otherWorld, server) {
         widget.setFill(Color.green.lighter());
     }
     
+    if (Config.showEngine) makeEngine();
+
     if (Config.show3DLogo) world.addMorph(WindowMorph(Sun3DMorph(pt(960, 125).extent(pt(200, 200))), 'Sun 3D Logo'));
     
     if (Config.showAsteroids) {
