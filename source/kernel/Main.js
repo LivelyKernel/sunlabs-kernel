@@ -24,7 +24,7 @@ Config.showSampleMorphs = true;
 Config.showTextSamples = true;
 
 // More complex demos
-Config.showClipMorph = Config.skipMostExamples;
+Config.showClipMorph = !Config.skipMostExamples;
 Config.show3DLogo = !Config.skipMostExamples;
 Config.showAsteroids = !Config.skipMostExamples;
 Config.showEngine = !Config.skipMostExamples;
@@ -32,11 +32,15 @@ Config.showIcon = !Config.skipMostExamples;
 Config.showWeather = !Config.skipMostExamples;
 Config.showMessenger = !Config.skipMostExamples;
 Config.showStocks = !Config.skipMostExamples;
-Config.showInnerWorld = !Config.skipMostExamples;
 Config.showCanvasScape = !Config.skipMostExamples;
 Config.showRSSReader = !Config.skipMostExamples;
-Config.slideWorld = !Config.skipMostExamples;
 Config.showDoodle = !Config.skipMostExamples;
+Config.showWebStore = !Config.skipMostExamples;
+
+// Worlds
+Config.showInnerWorld = !Config.skipMostExamples;
+Config.showSlideWorld = !Config.skipMostExamples;
+Config.showDeveloperWorld = !Config.skipMostExamples;
 
 // Class browser visibility can be overridden with Config.browserAnyway
 Config.showBrowser = !Config.skipMostExamples || Config.browserAnyway;
@@ -45,51 +49,19 @@ function populateWorldWithExamples(world, otherWorld, server) {
 
     var widget;
 
-    if (Config.showStar) {  // Make a star
-
-        if (Config.loadFromMarkup) {
-            world.addMorphWithContainerId('RotatingStar');
-        } else {
-            var makeStarVertices = function(r,center,startAngle) {
-                var vertices = [];
-                var nVerts = 10;
-                for (var i=0; i<=nVerts; i++) {
-                    var a = startAngle + (2*Math.PI/nVerts*i);
-                    var p = Point.polar(r,a);
-                    if (i%2 == 0) p = p.scaleBy(0.39);
-                    vertices.push(p.addPt(center)); 
-                }
-                return vertices; 
-            }
-    
-            widget = Morph.makePolygon(makeStarVertices(50,pt(0,0),0), 1, Color.black, Color.yellow);
-            widget.setPosition(pt(115, 360));
-            world.addMorph(widget);
-            
-            var spinningStar = !Config.skipMostExamples || Config.spinningStar;
-            if (spinningStar) {  // Make the star spin as a test of stepping
-                widget.startStepping(60, "rotateBy", 0.1);
-            }
-        }
-    }
-
     if (Config.showClock) {
-        widget = ClockMorph(pt(285, 410), 50);
+        widget = ClockMorph(pt(60, 60), 50);
         // clockWidget.addClipRect(Rectangle(20,20,80,80));
         world.addMorph(widget);
         widget.startSteppingScripts();
     }
-
-    if (Config.showHilbertFun) Pen.hilbertFun(world);
-
+    /*
     if (Config.showClipMorph) {
         world.addMorph(widget = ClipMorph(Rectangle(600, 300, 150, 150)));
         widget.setFill(Color.green.lighter());
     }
-    
+    */
     if (Config.showEngine) makeEngine();
-
-    if (Config.show3DLogo) world.addMorph(WindowMorph(Sun3DMorph(pt(960, 125).extent(pt(200, 200))), 'Sun 3D Logo'));
     
     if (Config.showAsteroids) {
         var gameMorph = apps.asteroids.makeGameMorph(pt(500, 360).extent(pt(600, 300)));
@@ -98,19 +70,11 @@ function populateWorldWithExamples(world, otherWorld, server) {
         gameMorph.runAsteroidsGame();
     }
     
-    // Sample executable script pane
-    if (Config.showPenScript) {
-        if (Config.showTestText) widget = TestTextMorph(pt(50,30).extent(pt(250,50)),Pen.script);
-        else widget = TextMorph(pt(50,30).extent(pt(250,50)),Pen.script);
-        widget.align(widget.bounds().bottomRight(), world.bounds().topRight().addPt(pt(-50,100))); 
-        world.addMorph(widget);
-    }
-
     // Sample icon morph with a fisheye effect 'on'
     if (Config.showIcon) {
         // maybe the icons should have a rectangle shaped images (unlike here)
         // var icon = ImageMorph(Rectangle(30, 360, 80, 50), "http://logos.sun.com/images/SunSample.gif");
-        var icon = ImageMorph(Rectangle(460, 250, 100, 45));
+        var icon = ImageMorph(Rectangle(60, 250, 100, 45));
 
         icon.loadGraphics('#SunLogo', 0.15);
         icon.toggleFisheye();    
@@ -123,12 +87,6 @@ function populateWorldWithExamples(world, otherWorld, server) {
         new WeatherWidget().openIn(world, pt(685, 50));
     }
 
-    if (Config.showTester) new WidgetTester().openIn(world, pt(460, 10));
-
-    if (Config.showBrowser) new SimpleBrowser().openIn(world, pt(20,20));
-
-    if (Config.showDoodle) world.addMorph(WindowMorph(DoodleMorph(pt(30, 530).extent(pt(300, 300))), 'Doodle Morph'));
-
     if (Config.showStocks && Config.showNetworkExamples) {
         var stockWidget = new StockWidget();
         stockWidget.startSteppingRefreshCharts(stockWidget.openIn(world, pt(350, 500)));
@@ -136,8 +94,14 @@ function populateWorldWithExamples(world, otherWorld, server) {
 
     if (Config.showInnerWorld) {
         
-        var lm1 = LinkMorph(null, pt(60, 400));
+        var lm1 = LinkMorph(null, pt(60, 460));
         world.addMorph(lm1);
+
+        var widgetTextMorph = TextMorph(Rectangle(90, 440, 100, 25),
+		 			     		"More complex sample widgets");
+
+        widgetTextMorph.shape.roundEdgesBy(10);
+        world.addMorph(widgetTextMorph);
 
         lm1.myWorld.onEnter = function() {
 
@@ -181,8 +145,14 @@ function populateWorldWithExamples(world, otherWorld, server) {
         if (Config.showMessenger && Config.showNetworkExamples) new MessengerWidget().openIn(lm1.myWorld, pt(875, 375));
     }
     
-    if (Config.slideWorld) { // Make a slide for "turning web programming upside down"
-        var lm2 = LinkMorph(null, pt(60, 460));
+    if (Config.showSlideWorld) { // Make a slide for "turning web programming upside down"
+        var lm2 = LinkMorph(null, pt(60, 400));
+
+        var samplesTextMorph = TextMorph(Rectangle(90, 380, 100, 25),
+		 			     		"Simple example morphs");
+
+        samplesTextMorph.shape.roundEdgesBy(10);
+        world.addMorph(samplesTextMorph);
 
         // KP: note that element deletion interferes with iteration, so
         // we make an array first and then remove 
@@ -192,7 +162,7 @@ function populateWorldWithExamples(world, otherWorld, server) {
         });
         
         // lm2.setPosition(lm2.position().addXY(65,0));
-        var loc = pt(100, 200);
+        var loc = pt(100, 80);
         var captions = ["               JavaScript","                 Widgets","      HTML, CSS, DOM, etc.","                Browser","    OS: Network, Graphics, ..."];
     
         for (var i = 0; i < captions.length; i++) { // add boxed text
@@ -204,6 +174,36 @@ function populateWorldWithExamples(world, otherWorld, server) {
         }
     
         world.addMorph(lm2); 
+
+        if (Config.showStar) {  // Make a star
+
+            if (Config.loadFromMarkup) {
+                world.addMorphWithContainerId('RotatingStar');
+            } else {
+                var makeStarVertices = function(r,center,startAngle) {
+                    var vertices = [];
+                    var nVerts = 10;
+                    for (var i=0; i<=nVerts; i++) {
+                        var a = startAngle + (2*Math.PI/nVerts*i);
+                        var p = Point.polar(r,a);
+                        if (i%2 == 0) p = p.scaleBy(0.39);
+                        vertices.push(p.addPt(center)); 
+                    }
+                    return vertices; 
+                }
+    
+                widget = Morph.makePolygon(makeStarVertices(50,pt(0,0),0), 1, Color.black, Color.yellow);
+                widget.setPosition(pt(105, 300));
+                lm2.myWorld.addMorph(widget);
+            
+                var spinningStar = !Config.skipMostExamples || Config.spinningStar;
+                if (spinningStar) {  // Make the star spin as a test of stepping
+                    widget.startStepping(60, "rotateBy", 0.1);
+                }
+            }
+        }
+
+        if (Config.show3DLogo) lm2.myWorld.addMorph(WindowMorph(Sun3DMorph(pt(440, 100).extent(pt(200, 200))), 'Sun 3D Logo'));
 
         if (Config.showSampleMorphs){
             var colors = Color.wheel(4);
@@ -228,9 +228,9 @@ function populateWorldWithExamples(world, otherWorld, server) {
             lm2.myWorld.addMorph(widget);
       
             // Create a sample polygon
-           widget = Morph.makePolygon([pt(0,0),pt(70,0),pt(40,30),pt(0,0)], 1, Color.black, colors[2]);
+            widget = Morph.makePolygon([pt(0,0),pt(70,0),pt(40,30),pt(0,0)], 1, Color.black, colors[2]);
             lm2.myWorld.addMorph(widget);
-	    widget.setPosition(loc.addPt(dx));
+	        widget.setPosition(loc.addPt(dx));
             loc = loc.addPt(dy);    
       
             // Create sample text widgets
@@ -249,6 +249,42 @@ function populateWorldWithExamples(world, otherWorld, server) {
         }
     }
 
+    if (Config.showDeveloperWorld) {
+        
+        var devWorld = LinkMorph(null, pt(60, 520));
+        world.addMorph(devWorld);
+
+        var developerTextMorph = TextMorph(Rectangle(90, 500, 100, 25),
+		 			     		"Tools for self-modification");
+
+        developerTextMorph.shape.roundEdgesBy(10);
+        world.addMorph(developerTextMorph);
+
+        if (Config.showBrowser) new SimpleBrowser().openIn(devWorld.myWorld, pt(20,20));
+
+        if (Config.showHilbertFun) Pen.hilbertFun(devWorld.myWorld);
+
+        if (Config.showDoodle) devWorld.myWorld.addMorph(WindowMorph(DoodleMorph(pt(450, 320).extent(pt(300, 300))), 'Doodle Morph'));
+
+        // Sample executable script pane
+        if (Config.showPenScript) {
+            if (Config.showTestText) widget = TestTextMorph(pt(50,30).extent(pt(250,50)),Pen.script);
+            else widget = TextMorph(pt(50,30).extent(pt(250,50)),Pen.script);
+            widget.align(widget.bounds().bottomRight(), world.bounds().topRight().addPt(pt(-150,100))); 
+            devWorld.myWorld.addMorph(widget);
+        }
+	    if (Config.showWebStore) {
+            if (location.protocol == 'file:') {
+                var store = new WebStore('localhost', '~kappa'); // TODO: hardcoded
+            } else {
+                var store = new WebStore(location.hostname, location.pathname.substring(0, location.pathname.lastIndexOf('lively.xhtml')));
+            }
+            WebStore.defaultStore = store;
+            store.openIn(devWorld.myWorld, pt(500, 30));
+        }
+        if (Config.showTester) new WidgetTester().openIn(devWorld.myWorld, pt(135, 480));
+
+	}
     return world;
 }
 
@@ -275,16 +311,6 @@ function main() {
      }
 
     if (false) showStatsViewer(TextLine.prototype, "TextLine...");
-    
-    if (Config.showWebStore) {
-        if (location.protocol == 'file:') {
-            var store = new WebStore('localhost', '~kappa'); // TODO: hardcoded
-        } else {
-            var store = new WebStore(location.hostname, location.pathname.substring(0, location.pathname.lastIndexOf('lively.xhtml')));
-        }
-        WebStore.defaultStore = store;
-        store.openIn(WorldMorph.current(), pt(500, 30));
-    }
 }
 
 main();
