@@ -24,8 +24,8 @@ Object.extend(WebStore.prototype, {
         WebStore.superClass.initialize.call(this);
         this.host = host;
         this.path = path;
-	
-	this.DirectoryList = [ path ];
+
+        this.DirectoryList = [ path ];
         this.CurrentDirectory = null;
         this.CurrentDirectoryContents = null;
         this.CurrentResource =  null;
@@ -48,7 +48,7 @@ Object.extend(WebStore.prototype, {
             },
     
             onFailure: function(transport) {
-		WorldMorph.current().alert('failed fetching url ' + url);
+                WorldMorph.current().alert('failed fetching url ' + url);
                 store[modelVariable] = "resource unavailable";
                 store.changed('get' + modelVariable);
             }
@@ -97,17 +97,17 @@ Object.extend(WebStore.prototype, {
         var options = Object.derive(NetRequest.options, {
             method: 'PROPFIND', 
             requestHeaders: { "Depth": depth },
-	    
+    
             onFailure: function(transport) {
-		WorldMorph.current().alert('%1: failure %2 url %3'.format(transport, transport.status, url));
+                WorldMorph.current().alert('%1: failure %2 url %3'.format(transport, transport.status, url));
             },
 
             onSuccess: function(transport) {
                 console.log('propfind received %s', 
-			    NetRequest.documentToString(transport.responseXML) || transport.responseText);
-		
+                    NetRequest.documentToString(transport.responseXML) || transport.responseText);
+
                 var result = transport.responseXML.documentElement;
-		
+
                 store[modelVariable] = Query.evaluate(result, xpQueryString);
                 store.changed('get' + modelVariable);
                 // console.info('got listing %s', store[modelVariable].pluck('textContent'));
@@ -120,7 +120,6 @@ Object.extend(WebStore.prototype, {
     getDirectoryList: function() {
         return this.DirectoryList;
     },
-    
 
     setCurrentDirectory: function(name) {
         this.CurrentDirectory = name;
@@ -137,33 +136,31 @@ Object.extend(WebStore.prototype, {
     
     setCurrentResource: function(name) {
         if (name) {
-	    if (name.endsWith('/')) { // directory, enter it!
-		this.DirectoryList = this.getCurrentDirectoryContents();
-		this.changed('getDirectoryList');
-		this.CurrentDirectory = name;//.substring(0, name.length - 1);
-		console.log('current directory %s now', this.CurrentDirectory);
-		this.CurrentResource = null;
-		this.CurrentDirectoryContents = [];
-		this.changed('getCurrentDirectoryContents');
+            if (name.endsWith('/')) { // directory, enter it!
+                this.DirectoryList = this.getCurrentDirectoryContents();
+                this.changed('getDirectoryList');
+                this.CurrentDirectory = name;//.substring(0, name.length - 1);
+                console.log('current directory %s now', this.CurrentDirectory);
+                this.CurrentResource = null;
+                this.CurrentDirectoryContents = [];
+                this.changed('getCurrentDirectoryContents');
+            } else {
+                this.CurrentResource = name;
+                console.log('current resource set to %s', this.CurrentResource);
 
-
-	    } else {
-		this.CurrentResource = name;
-		console.log('current resource set to %s', this.CurrentResource);
-		
-		// initialize getting the resource contents
-		this.fetch(this.currentResourceURL(), "CurrentResourceContents");
-	    }
+                // initialize getting the resource contents
+                this.fetch(this.currentResourceURL(), "CurrentResourceContents");
+            }
         }
     },
     
     currentResourceURL: function() {
-	var path = this.CurrentResource;
-	if (!path) { 
-	    path = "";
-	} else if (path.startsWith('/')) {
-	    path = path.substring(1);
-	}
+        var path = this.CurrentResource;
+        if (!path) { 
+            path = "";
+        } else if (path.startsWith('/')) {
+            path = path.substring(1);
+        }
         return "http://%1/%2".format(this.host, path);
     },
     
@@ -187,7 +184,7 @@ Object.extend(WebStore.prototype, {
         m.connectModel({model: this, getList: "getCurrentDirectoryContents", setSelection: "setCurrentResource"});
         m = panel.getNamedMorph('bottomPane');
         m.connectModel({model: this, getText: "getCurrentResourceContents", setText: "setCurrentResourceContents"});
-	
+
         var model = this;
         
         m.innerMorph().processCommandKeys = function(key) {

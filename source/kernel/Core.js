@@ -54,14 +54,14 @@ Object.extend(Loader, {
     
     insertContents: function(iframe) {
         var node = iframe.contentDocument.documentElement;
-	var adoptedNode = null;
-	try {
-	    adoptedNode = document.adoptNode(node);
-	} catch (e) {
-	    // FF can fail here
-	    console.log('failed to insert iframe contents: %e', e);
-	    return;
-	}
+        var adoptedNode = null;
+        try {
+            adoptedNode = document.adoptNode(node);
+        } catch (e) {
+            // FF can fail here
+            console.log('failed to insert iframe contents: %e', e);
+           return;
+        }
         document.documentElement.appendChild(adoptedNode);
     }
     
@@ -96,9 +96,6 @@ Object.extend(Query, {
     }
 
 });
-
-
-
 
 var NodeFactory = {
     createNS: function(ns, name, attributes) {
@@ -632,11 +629,11 @@ Object.category(Rectangle.prototype, 'core', function() { return {
 Object.extend(Rectangle.prototype, {
 
     containsPoint: function(p) {
-	return this.x <= p.x && p.x <= this.x + this.width && this.y<= p.y && p.y <= this.y + this.height;
+        return this.x <= p.x && p.x <= this.x + this.width && this.y<= p.y && p.y <= this.y + this.height;
     },
 
     containsRect: function(r) {
-	return this.x <= r.x && this.y<= r.y && r.maxX()<=this.maxX() && r.maxY()<=this.maxY();
+        return this.x <= r.x && this.y<= r.y && r.maxX()<=this.maxX() && r.maxY()<=this.maxY();
     },
 
     constrainPt: function(pt) { return pt.maxPt(this.topLeft()).minPt(this.bottomRight()); },
@@ -1220,15 +1217,15 @@ Object.extend(Event.prototype, {
         } 
         this.hand = null;
 
-        //  use this.timeStamp
+        // use this.timeStamp
         // this.msTime = (new Date()).getTime();
         this.mouseButtonPressed = false;
         
-        //Safari somehow gets the x and y coords so we add them here to Firefox too --PR
-        //console.log("InitMouseOver fix for Firefox evt.x=%s evt.clientX", this.x, this.clientX);
-        if (this.x == null && this.y == null){
-                this.x = this.clientX;
-                this.y = this.clientY-3;   
+        // Safari somehow gets the x and y coords so we add them here to Firefox too --PR
+        // console.log("InitMouseOver fix for Firefox evt.x=%s evt.clientX", this.x, this.clientX);
+        if (this.x == null && this.y == null) {
+            this.x = this.clientX;
+            this.y = this.clientY-3;   
         }    
     
         return this;
@@ -1798,7 +1795,6 @@ Object.extend(PolygonShape.prototype, {
             return true;
         }
     },
-    
 
     possibleHandleForControlPoint: function(targetMorph, mousePoint, hand) {
         var partName = this.controlPointNear(mousePoint);
@@ -2051,9 +2047,9 @@ Object.extend(MouseHandlerForDragging.prototype, {
         if (capType == "MouseDown") evt.hand.setMouseFocus(targetMorph);
         handler.call(targetMorph, evt);
         if (capType == "MouseUp") {
-		// if focus changed, then don't cancel it
-		if(evt.hand.mouseFocus === targetMorph) evt.hand.setMouseFocus(null);
-	}
+            // if focus changed, then don't cancel it
+            if (evt.hand.mouseFocus === targetMorph) evt.hand.setMouseFocus(null);
+        }
         return true; 
     },
     
@@ -2318,15 +2314,15 @@ Object.extend(Morph.prototype, {
 
     getFill: function() {
         var fillObj = this.shape.getFill();
-	if (fillObj == "none") return null;
-	var match = fillObj.match("url\\(#(.*)\\)");
-	if (match) {
-	    var def = document.getElementById(match[1]);
-	    // console.log('found url %s def %s', match[1], def);
-	    return def;
-	} else {
-	    return Color.parse(fillObj);
-	}
+        if (fillObj == "none") return null;
+        var match = fillObj.match("url\\(#(.*)\\)");
+        if (match) {
+            var def = document.getElementById(match[1]);
+            // console.log('found url %s def %s', match[1], def);
+            return def;
+        } else {
+            return Color.parse(fillObj);
+        }
     }.logErrors('getFill'),
     
     setBorderColor: function(newColor) { this.shape.setStroke(newColor); }.wrap(Morph.onChange('shape')),
@@ -2448,7 +2444,7 @@ Object.extend(Morph.prototype, {
     }.wrap(Morph.onLayoutChange('shape')),
     
     setVertices: function(newVerts) {
-	// particular to polygons
+        // particular to polygons
         this.shape.setVertices(newVerts);
         this.adjustForNewBounds();
     }.wrap(Morph.onLayoutChange('shape')),
@@ -2776,8 +2772,8 @@ Object.extend(Morph.prototype, {
     },
 
     inspect: function() {
-	// A replacement for toString() which can't be overridden in
-	// some cases.  Invoked by Object.inspect.
+        // A replacement for toString() which can't be overridden in
+        // some cases.  Invoked by Object.inspect.
         return "%1(#%2,%3)".format(this.getType(), this.id, this.shape);
     }
     
@@ -2815,8 +2811,8 @@ Object.category(Morph.prototype, 'transforms', function() { return {
         // This should become a new transformChanged() method
         this.applyTransform(this.getTransform());
         if (this.fullBounds != null) this.fullBounds = this.fullBounds.translatedBy(delta);
-	// DI: I don't think this can affect owner.  It may increase fullbounds
-	//   due to stickouts, but not the bounds for layout...
+        // DI: I don't think this can affect owner.  It may increase fullbounds
+        //     due to stickouts, but not the bounds for layout...
         if (this.owner() && this.owner() !== this.world()) this.owner().layoutChanged(); 
         this.changed(); 
     },
@@ -3661,7 +3657,7 @@ Object.extend(Morph, {
 
     makeLine: function(verts, lineWidth, lineColor) {
         // make a line with its origin at the first vertex
-	// Note this works for simple lines (2 vertices) and general polylines
+        // Note this works for simple lines (2 vertices) and general polylines
         var line = Morph(verts[0].asRectangle(), "rect");
         var vertices = Shape.translateVerticesBy(verts, verts[0].negated());
         line.setShape(PolylineShape(vertices, lineWidth, lineColor));
@@ -3671,17 +3667,17 @@ Object.extend(Morph, {
     makeCircle: function(location, radius, lineWidth, lineColor, fill) {
         // make a circle of the given radius with its origin at the center
         var circle = Morph(location.asRectangle().expandBy(radius), "ellipse")
-	circle.setBorderWidth(lineWidth);
-	circle.setBorderColor(lineColor);
-	circle.setFill(fill);
-	return circle; 
+        circle.setBorderWidth(lineWidth);
+        circle.setBorderColor(lineColor);
+        circle.setFill(fill);
+        return circle; 
     },
 
     makePolygon: function(verts, lineWidth, lineColor, fill) {
         // make a polygon with its origin at the starting vertex
-	poly = Morph(pt(0,0).asRectangle(), "rect");
+        poly = Morph(pt(0,0).asRectangle(), "rect");
         poly.setShape(PolygonShape(verts, fill, lineWidth, lineColor));
-	return poly; 
+        return poly; 
     }
 });
 

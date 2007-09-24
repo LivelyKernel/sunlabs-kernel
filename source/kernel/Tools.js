@@ -434,13 +434,12 @@ function showStatsViewer(profilee,title) {
     m.addMorph(t);
 };
 
-
-// inspection tools, called interactively
+// Inspection tools, called interactively
 Object.extend(console, {
     morphs: function(morph) {
-	var array = [];
-	(morph || WorldMorph.current()).submorphs.each(function(m) { array.push(m) });
-	return array;
+        var array = [];
+        (morph || WorldMorph.current()).submorphs.each(function(m) { array.push(m) });
+        return array;
     },
 
     $: function(id) {
@@ -448,8 +447,6 @@ Object.extend(console, {
     }
 
 });
-
-
 
 console.log('loaded Tools.js');
 

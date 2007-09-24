@@ -922,9 +922,9 @@ Object.extend(SelectionMorph.prototype, {
 
     initialize: function(viewPort, defaultworldOrNull) {
         SelectionMorph.superClass.initialize.call(this, viewPort, "rect");
-	this.originalPoint = viewPort.topLeft();
+        this.originalPoint = viewPort.topLeft();
         this.reshapeName = "bottomRight";
-	this.selectedMorphs = [];
+        this.selectedMorphs = [];
         this.shape.setFillOpacity(0.1);
         this.myWorld = defaultworldOrNull ? defaultworldOrNull : this.world();
         // this.shape.setAttributeNS(null, "stroke-dasharray", "3,2");
@@ -933,17 +933,18 @@ Object.extend(SelectionMorph.prototype, {
     
     reshape: function(partName, newPoint, handle, lastCall) {
         // User might actually move in another direction than toward bottomRight
-	// This code watches that and changes the control point if so
-	var selRect = Rectangle.fromAny(pt(0,0), newPoint);
- 	if(this.reshapeName == null && selRect.width*selRect.height > 30)
-		this.reshapeName = selRect.partNameNearest(Rectangle.corners, newPoint);
-		this.setBounds(this.originalPoint.asRectangle())
+        // This code watches that and changes the control point if so
+        var selRect = Rectangle.fromAny(pt(0,0), newPoint);
+        if (this.reshapeName == null && selRect.width*selRect.height > 30) {
+            this.reshapeName = selRect.partNameNearest(Rectangle.corners, newPoint);
+        }
+        this.setBounds(this.originalPoint.asRectangle())
 
-	SelectionMorph.superClass.reshape.call(this, this.reshapeName, newPoint, handle, lastCall);
+        SelectionMorph.superClass.reshape.call(this, this.reshapeName, newPoint, handle, lastCall);
         this.selectedMorphs = [];
         this.owner().submorphs.each(function(m) {
-		if( m !== this && this.bounds().containsRect(m.bounds())) this.selectedMorphs.push(m);
-       		}.bind(this));
+            if (m !== this && this.bounds().containsRect(m.bounds())) this.selectedMorphs.push(m);
+        }.bind(this));
         this.selectedMorphs.reverse();
             
         if (lastCall && this.selectedMorphs.length == 0) this.remove();
@@ -1869,7 +1870,7 @@ Object.extend(PasteUpMorph.prototype, {
     onMouseDown: function(evt) {  //default behavior is to grab a submorph
         var m = this.morphToReceiveEvent(evt);
         if (m == null) { this.makeSelection(evt); return true; }
-	if (!evt.altKey) {
+        if (!evt.altKey) {
             if (m == this.world()) { this.makeSelection(evt); return true; }
             if (m.handlesMouseDown(evt)) return false;
         }
@@ -1891,7 +1892,7 @@ Object.extend(PasteUpMorph.prototype, {
         m.addMorph(handle);
         handle.setBounds(handle.bounds().center().asRectangle());
         m.setBounds(evt.mousePoint.asRectangle()); // prevent handle from making bounds any larger
-	// if (evt.hand.mouseFocus instanceof HandleMorph) evt.hand.mouseFocus.remove(); // DI: necess?
+        // if (evt.hand.mouseFocus instanceof HandleMorph) evt.hand.mouseFocus.remove(); // DI: necess?
         evt.hand.setMouseFocus(handle);
     }
     
@@ -2163,7 +2164,7 @@ Object.extend(WorldMorph.prototype, {
             // Old code for ticking morphs
             var ix = this.stepList.indexOf(morphOrAction);
             if (ix >= 0) this.stepList.splice(ix, 1);
-	    return;
+            return;
         }
 
         var action = morphOrAction;
@@ -2846,10 +2847,10 @@ Object.extend(LinkMorph.prototype, {
         carriedMorphs = [];
         while (evt.hand.hasSubmorphs()) {
             var m = evt.hand.topSubmorph();
-	    if (m.activeScripts) {
-		m.suspendedScripts = m.activeScripts.clone();
-		m.stopSteppingScripts();
-	    }
+            if (m.activeScripts) {
+                m.suspendedScripts = m.activeScripts.clone();
+                m.stopSteppingScripts();
+            }
             carriedMorphs.splice(0, 0, m);
             m.remove();
         }
@@ -2878,12 +2879,12 @@ Object.extend(LinkMorph.prototype, {
 
         newWorld.onEnter(); 
         carriedMorphs.each(function(m) {
-		newWorld.firstHand().addMorph(m)
-		if(m.suspendedScripts) {
-		    for (var i=0; i<m.suspendedScripts.length; i++) newWorld.startStepping(m.suspendedScripts[i]);
-		    m.suspendedScripts = null;
-		}
-	    });
+            newWorld.firstHand().addMorph(m)
+            if (m.suspendedScripts) {
+                for (var i=0; i<m.suspendedScripts.length; i++) newWorld.startStepping(m.suspendedScripts[i]);
+                m.suspendedScripts = null;
+            }
+        });
 
         if (Config.showThumbnail) {
             const scale = 0.1;
@@ -2906,7 +2907,7 @@ Object.extend(LinkMorph.prototype, {
     onMouseOver: function(evt) {
         // Note this event does not have hand bound except if laden!
         // console.log("link.onMouseOver")
-	if (evt.hand && evt.hand.hasSubmorphs()) {
+        if (evt.hand && evt.hand.hasSubmorphs()) {
             if (evt.hand.emergingFromWormHole) evt.hand.setMouseFocus(this);
             else this.enterMyWorld(evt);
         } else if (this.helpText) this.showHelp(evt);

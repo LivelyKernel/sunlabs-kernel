@@ -653,7 +653,7 @@ Object.extend(TextBox.prototype, {
 
     // find what line contains the index 'stringIndex'
     lineNumberForIndex: function(stringIndex) {
-	// TODO: linear search doesn't scale
+        // TODO: linear search doesn't scale
         for (var i = 0; i < this.lines.length; i++) {
             var line = this.lines[i];
             if (line.containsThisIndex(stringIndex)) {
@@ -664,11 +664,9 @@ Object.extend(TextBox.prototype, {
     },
 
     lineForIndex: function(stringIndex) {
-	return this.lines[this.lineNumberForIndex(stringIndex)];
+        return this.lines[this.lineNumberForIndex(stringIndex)];
     },
-    
 
-    
     // find what line contains the y value in character metric space
     lineForY: function(y) {
         if (this.lines.length < 1 || y < this.lines[0].getTopY()) return null;
@@ -686,7 +684,7 @@ Object.extend(TextBox.prototype, {
     
     destroy: function() {
         if (this.parentNode) {
-	    //console.log('destroying %s', this.textString);
+            //console.log('destroying %s', this.textString);
             this.parentNode.removeChild(this);
         }
     }
@@ -1274,30 +1272,28 @@ Object.extend(TextMorph.prototype, {
             evt.stop();
             return;
         }
-	case Event.KEY_UP: {
-	    var lineNo = this.textBox.lineNumberForIndex(before.length);
-	    var line = this.textBox.lines[lineNo];
-	    if (lineNo > 0) {
-		var lineIndex = before.length  - line.startIndex;
-		var newLine = this.textBox.lines[lineNo - 1];
-		this.setNullSelectionAt(Math.min(newLine.startIndex + lineIndex, newLine.getStopIndex()));
-	    }
-	    evt.stop();
-	    return;
-	}
-
-	case Event.KEY_DOWN: {
-	    var lineNo = this.textBox.lineNumberForIndex(before.length);
-	    var line = this.textBox.lines[lineNo];
-	    if (lineNo < this.textBox.lines.length - 1) {
-		var lineIndex = before.length  - line.startIndex;
-		var newLine = this.textBox.lines[lineNo + 1];
-		this.setNullSelectionAt(Math.min(newLine.startIndex + lineIndex, newLine.getStopIndex()));
-	    }
-	    evt.stop();
-	    return;
-	}
-
+        case Event.KEY_UP: {
+            var lineNo = this.textBox.lineNumberForIndex(before.length);
+            var line = this.textBox.lines[lineNo];
+            if (lineNo > 0) {
+                var lineIndex = before.length  - line.startIndex;
+                var newLine = this.textBox.lines[lineNo - 1];
+                this.setNullSelectionAt(Math.min(newLine.startIndex + lineIndex, newLine.getStopIndex()));
+            }
+            evt.stop();
+            return;
+        }
+        case Event.KEY_DOWN: {
+            var lineNo = this.textBox.lineNumberForIndex(before.length);
+            var line = this.textBox.lines[lineNo];
+            if (lineNo < this.textBox.lines.length - 1) {
+                var lineIndex = before.length  - line.startIndex;
+                var newLine = this.textBox.lines[lineNo + 1];
+                this.setNullSelectionAt(Math.min(newLine.startIndex + lineIndex, newLine.getStopIndex()));
+            }
+            evt.stop();
+            return;
+        }
         case Event.KEY_ESC: {
             this.relinquishKeyboardFocus(this.world().firstHand());
             return;
@@ -1314,9 +1310,7 @@ Object.extend(TextMorph.prototype, {
         // have to process commands in keydown...
         if (evt.altKey) {
             var replacement = (String.fromCharCode(evt.keyCode)).toLowerCase();
-            if (this.processCommandKeys(replacement))
-		evt.stop();
-	    
+            if (this.processCommandKeys(replacement)) evt.stop();
         }
     },
     
@@ -1404,17 +1398,18 @@ Object.extend(TextMorph.prototype, {
             if (this.undoTextString) {
                 this.setTextString(this.undoTextString);
             }
-	    return true;
+            return true;
         }
         }
 
         var bracketIndex = CharSet.leftBrackets.indexOf(key);
 
         if (bracketIndex >= 0) {
-	    this.addOrRemoveBrackets(bracketIndex); 
-	    return true;
-	} 
-	return false;
+            this.addOrRemoveBrackets(bracketIndex); 
+            return true;
+        } 
+        
+        return false;
 
     }
 

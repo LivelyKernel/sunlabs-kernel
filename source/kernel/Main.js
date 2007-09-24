@@ -98,7 +98,7 @@ function populateWorldWithExamples(world, otherWorld, server) {
         world.addMorph(lm1);
 
         var widgetTextMorph = TextMorph(Rectangle(90, 440, 100, 25),
-		 			     		"More complex sample widgets");
+                                        "More complex sample widgets");
 
         widgetTextMorph.shape.roundEdgesBy(10);
         world.addMorph(widgetTextMorph);
@@ -149,7 +149,7 @@ function populateWorldWithExamples(world, otherWorld, server) {
         var lm2 = LinkMorph(null, pt(60, 400));
 
         var samplesTextMorph = TextMorph(Rectangle(90, 380, 100, 25),
-		 			     		"Simple example morphs");
+                                         "Simple example morphs");
 
         samplesTextMorph.shape.roundEdgesBy(10);
         world.addMorph(samplesTextMorph);
@@ -230,7 +230,7 @@ function populateWorldWithExamples(world, otherWorld, server) {
             // Create a sample polygon
             widget = Morph.makePolygon([pt(0,0),pt(70,0),pt(40,30),pt(0,0)], 1, Color.black, colors[2]);
             lm2.myWorld.addMorph(widget);
-	        widget.setPosition(loc.addPt(dx));
+            widget.setPosition(loc.addPt(dx));
             loc = loc.addPt(dy);    
       
             // Create sample text widgets
@@ -255,7 +255,7 @@ function populateWorldWithExamples(world, otherWorld, server) {
         world.addMorph(devWorld);
 
         var developerTextMorph = TextMorph(Rectangle(90, 500, 100, 25),
-		 			     		"Tools for self-modification");
+                                           "Tools for self-modification");
 
         developerTextMorph.shape.roundEdgesBy(10);
         world.addMorph(developerTextMorph);
@@ -273,7 +273,8 @@ function populateWorldWithExamples(world, otherWorld, server) {
             widget.align(widget.bounds().bottomRight(), world.bounds().topRight().addPt(pt(-150,100))); 
             devWorld.myWorld.addMorph(widget);
         }
-	    if (Config.showWebStore) {
+
+        if (Config.showWebStore) {
             if (location.protocol == 'file:') {
                 var store = new WebStore('localhost', '~kappa'); // TODO: hardcoded
             } else {
@@ -282,9 +283,10 @@ function populateWorldWithExamples(world, otherWorld, server) {
             WebStore.defaultStore = store;
             store.openIn(devWorld.myWorld, pt(500, 30));
         }
-        if (Config.showTester) new WidgetTester().openIn(devWorld.myWorld, pt(135, 480));
 
-	}
+        if (Config.showTester) new WidgetTester().openIn(devWorld.myWorld, pt(135, 480));
+    }
+
     return world;
 }
 

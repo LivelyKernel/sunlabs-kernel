@@ -151,17 +151,17 @@ Object.extend(NetRequest, {
     },
 
     rewriteURL: function(url) {
-	if (Config.proxyURL) {
-	    var splitter = new RegExp('(http)://([^/]*)(/.*)');
-	    var urlMatch = url.match(splitter);
-	    var proxyMatch = Config.proxyURL.match(splitter);
-	    if (urlMatch[1] == 'http' &&  proxyMatch[2] != urlMatch[2]) {
-		var result = Config.proxyURL + urlMatch[2] + urlMatch[3];
-		console.log('rewrote %s to %s', url, result);
-		return result;
-	    }
-	} 
-	return url;
+        if (Config.proxyURL) {
+            var splitter = new RegExp('(http)://([^/]*)(/.*)');
+            var urlMatch = url.match(splitter);
+            var proxyMatch = Config.proxyURL.match(splitter);
+            if (urlMatch[1] == 'http' &&  proxyMatch[2] != urlMatch[2]) {
+                var result = Config.proxyURL + urlMatch[2] + urlMatch[3];
+                console.log('rewrote %s to %s', url, result);
+                return result;
+            }
+        } 
+        return url;
     }
 
 });
@@ -251,7 +251,7 @@ Object.extend(Feed.prototype, {
 
     request: function(model /*, ... model variables*/) {
         // console.log('in request on %s', this.url);
-	NetRequest.requestNetworkAccess();
+        NetRequest.requestNetworkAccess();
         var feed = this;
         var modelVariables = $A(arguments);
         modelVariables.shift();
