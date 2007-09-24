@@ -3186,6 +3186,11 @@ Object.extend(Morph.prototype, {
         this.withAllSubmorphsDo( function() { this.closeDnD(); });
     },
 
+    openAllToDnD: function(loc) {
+        // Close this and all submorphs to drag and drop
+        this.withAllSubmorphsDo( function() { this.openDnD(); });
+    },
+
     pickMeUp: function(evt) {
         var offset = evt.hand.position().subPt(evt.hand.lastMouseDownPoint);
         this.moveBy(offset);

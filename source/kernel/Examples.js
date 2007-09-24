@@ -4621,52 +4621,68 @@ Object.extend(CanvasScapeMorph.prototype, {
 // The Morphic Radial Engine Demo
 // ===========================================================================
 
-// Morphic Engine demo ------------ start
 makeEngine = function() {
-    // A lively Model by Dan Ingalls - 9/25/2007
-    var bnds = Rectangle(0, 0, 400, 400);
-    var engine = Morph(bnds.withHeight(600), "rectangle");
+    var engine = EngineMorph(Rectangle(0, 0, 400, 600), "rectangle");
     // KP: add the top morph to the world first, to make firefox happy
     WorldMorph.current().addMorphAt(WindowMorph(engine, 'A Lively Engine'), pt(250, 5));
+    engine.openAllToDnD();  // have a little fun...
+    engine.makeCylinders(1); 
+    engine.startSteppingScripts(); }
 
+EngineMorph = HostClass.create('EngineMorph', Morph);
+
+Object.extend(EngineMorph.prototype, {
+initialize: function(fullRect,type) {
+    // A lively model by Dan Ingalls - 9/25/2007
+    EngineMorph.superClass.initialize.call(this, fullRect, type);
+    this.setFill(LinearGradient.makeGradient(Color.gray, Color.darkGray, LinearGradient.NorthSouth));
+    this.makeLayout();
+    this.running = true; },
+
+makeLayout: function() {
+    var bnds = this.innerBounds().withHeight(this.innerBounds().width);
     var center = bnds.center();
-    var stroke = bnds.height*0.14;
-    engine.alernateTiming = false;
-    engine.crank = Morph.makeCircle(center, stroke*0.8, 4, Color.black, Color.gray);
-    engine.addMorph(engine.crank);
-    engine.crankPin = Morph.makeCircle(pt(0, -stroke/2), stroke*0.25, 0, null, Color.black);
-    engine.crank.addMorph(engine.crankPin);
-    engine.running = true;
-    engine.angleStep = Math.PI / 8;
+    this.stroke = bnds.height*0.14;
+    this.alernateTiming = false;
+    this.crank = Morph.makeCircle(center, this.stroke*0.8, 4, Color.black, Color.gray);
+    this.addMorph(this.crank);
+    this.crankPin = Morph.makeCircle(pt(0, -this.stroke/2), this.stroke*0.25, 0, null, Color.black);
+    this.crank.addMorph(this.crankPin);
+    this.crankAngle = 0;  // goes up to 4*pi, while rotation wraps at 2*pi
+    this.angleStep = Math.PI/8;
 
     var menu = MenuMorph([]);
-    for (var i=1; i<=9; i++) menu.addItem([i.toString(), engine, 'makeCylinders', i]);
-    menu.openIn(engine, pt(80,440), true, "Number of cylinders"); 
+    for (var i=1; i<=9; i++) menu.addItem([i.toString(), this, 'makeCylinders', i]);
+    menu.openIn(this, pt(80,440), true, "Number of cylinders"); 
 
     menu = MenuMorph([
-        ["sequential", engine, 'setAlernateTiming', false],
-        ["alternate", engine, 'setAlernateTiming', true] ]);
-        menu.openIn(engine, pt(300,440), true, "Ignition timing"); 
+        ["sequential", this, 'setAlernateTiming', false],
+        ["alternate", this, 'setAlernateTiming', true] ]);
+        menu.openIn(this, pt(300,440), true, "Ignition timing"); 
 
     menu = MenuMorph([
-        ["stop", engine, 'setRunning', false],
-        ["step", engine, 'doStep', null],
-        ["run", engine, 'setRunning', true] ]);
-        menu.openIn(engine, pt(315,515), true, "Operating State"); 
+        ["run", this, 'setRunning', true],
+        ["stop", this, 'setRunning', false],
+        ["step", this, 'doStep'],
+        ["rebuild", this, 'rebuild'] ]);
+        menu.openIn(this, pt(315,515), true, "Operating State"); 
 
     var label = TextMorph(Rectangle(0, 0, 100, 20), "The Radial Engine").beLabel();
-    label.setFontSize(20);  engine.addMorph(label);
+    label.setFontSize(20);  this.addMorph(label);
     label.align(label.bounds().topCenter(), bnds.bottomCenter().addXY(0, -20));
+    },
 
-    engine.makeCylinders = function(nCylinders) {
+makeCylinders: function(nCylinders) {
     // Build cylinder-piston assembly with center or rotation at crank center
-    this.fullAngle = 0;  // goes up to 4*pi, while rotation wraps at 2*pi
-    this.crank.setRotation(this.fullAngle);
+    this.crankAngle = 0;
+    this.crank.setRotation(this.crankAngle);
+    var bnds = this.innerBounds().withHeight(this.innerBounds().width);
+    var center = bnds.center();
     var relBore = 0.14;
     var cr = bnds.scaleByRect(Rectangle(0.5 - (relBore/2), 0.1, relBore, 0.2));
     var dHead = cr.width*0.2;  // slight dome at top of cylinder -- room for valves
     var cylVerts = [cr.topRight(), cr.bottomRight(),  //vertices of cylinder polygon
-        cr.topRight().addXY(0, stroke), cr.topLeft().addXY(0, stroke),
+        cr.topRight().addXY(0, this.stroke), cr.topLeft().addXY(0, this.stroke),
         cr.bottomLeft(), cr.topLeft(),
         cr.topLeft().addXY(dHead, -dHead), cr.topRight().addXY(-dHead, -dHead),
         cr.topRight()];
@@ -4675,7 +4691,7 @@ makeEngine = function() {
     cylinder.setPosition(cr.topLeft().addXY(0, -dHead));
     var pistonBW = 2;
     var pistonDx = (cylinder.getBorderWidth() + pistonBW) / 2;
-    var piston = Morph(cr.insetByPt(pt(pistonDx, (cr.height-stroke)/2)), "rectangle");
+    var piston = Morph(cr.insetByPt(pt(pistonDx, (cr.height-this.stroke)/2)), "rectangle");
     piston.setFill(Color.darkGray);
     piston.setBorderWidth(pistonBW);
     cylinder.addMorph(piston);
@@ -4683,10 +4699,8 @@ makeEngine = function() {
     piston.addMorph(wristPin);
 
     // Duplicate and rotate the cylinder assembly to complete the engine
-    if (this.cylinders) this.cylinders.each( // remove previous assemblies
-        function(each) { each.connectingRod.remove(); each.remove(); }
-    );
-
+    if (this.cylinders) this.cylinders.each( // remove any previous assemblies
+        function(each) { each.connectingRod.remove(); each.remove(); } );
     this.cylinders = [];
     for (var i=0; i<nCylinders; i++) {
         var cyl = cylinder.copy();
@@ -4695,63 +4709,61 @@ makeEngine = function() {
         if (this.alernateTiming && i%2 == 1) cyl.angle += Math.PI*2;
         cyl.setRotation(cyl.angle);
         cyl.piston = cyl.topSubmorph();
+        cyl.piston.topPos = cyl.innerBounds().topLeft().addXY(pistonDx, dHead);
         cyl.wristPin = cyl.piston.topSubmorph();
+        this.movePiston(cyl);
         this.cylinders.push(cyl);
-
-        cyl.movePiston = function(engine) { // Method to move piston and connecting rod
-            var pi = Math.PI;
-            var phase = (engine.fullAngle - this.angle);
-            if (phase < 0) phase += pi*4;
-            var dy = (Math.cos(phase) - 1) * stroke/2;
-            this.piston.setPosition(this.innerBounds().topLeft().addXY(pistonDx, dHead - dy));
-            var cycle = Math.floor(phase / pi);
-            var frac = phase / pi - cycle;  // fractional part of cycle used to mix colors
-            switch (cycle) {
-                case 0: this.setFill(Color.blue.lighter());  break;  // intake
-                case 1: this.setFill(Color.blue.mixedWith(Color.blue.lighter(), frac));  break;  // compression
-                case 2: this.setFill(Color.red.lighter().mixedWith(Color.red, frac));  break;  // power
-                case 3: this.setFill(Color.red.lighter());  break; 
-            }  // exhaust
-            if (Math.abs(phase-2*pi) < engine.angleStep/2) this.setFill(Color.yellow);  // ignition
-        };
-        cyl.movePiston(this);
         cyl.connectingRod = Morph.makeLine(
             [this.localizePointFrom(cyl.wristPin.bounds().center(), cyl.piston),
             this.localizePointFrom(this.crankPin.bounds().center(), this.crank)],
-            cr.width*0.15, Color.gray.darker(2)
-        );
-        this.addMorph(cyl.connectingRod);
-    }
-    this.openDnD();  // if we're playing with it, might as well have some real fun
-    this.crank.openDnD();  // (get closed by putting in a window)
-    } // end of engine.makeCylinders
+            cr.width*0.15, Color.gray.darker(2) );
+        this.addMorph(cyl.connectingRod) };
+    },
 
-    engine.setAlernateTiming = function(trueOrFalse) {
-        this.alernateTiming = trueOrFalse;
-        this.makeCylinders(this.cylinders.length);
-    };
+movePiston: function(cyl) { // Method to move piston and connecting rod
+        var pi = Math.PI;
+        var phase = (this.crankAngle - cyl.angle);
+        if (phase < 0) phase += pi*4;
+        var dy = (Math.cos(phase) - 1) * this.stroke/2;
+        cyl.piston.setPosition(cyl.piston.topPos.addXY(0, -dy));
+        var cycle = Math.floor(phase / pi);
+        var frac = phase / pi - cycle;  // fractional part of cycle used to mix colors
+        switch (cycle) {
+            case 0: cyl.setFill(Color.blue.lighter());  break;  // intake
+            case 1: cyl.setFill(Color.blue.mixedWith(Color.blue.lighter(), frac));  break;  // compression
+            case 2: cyl.setFill(Color.red.lighter().mixedWith(Color.red, frac));  break;  // power
+            case 3: cyl.setFill(Color.red.lighter());  break; 
+        }  // exhaust
+        if (Math.abs(phase-2*pi) < this.angleStep/2) cyl.setFill(Color.yellow);  // ignition
+        },
 
-    engine.setRunning = function(trueOrFalse) { this.running = trueOrFalse; };
+setRunning: function(trueOrFalse) { this.running = trueOrFalse; },
 
-    engine.nextStep = function() { if (this.running) this.doStep() };
+nextStep: function() { if (this.running) this.doStep(); },
 
-    engine.doStep = function() {
-        this.fullAngle += this.angleStep;
-        if (this.fullAngle > Math.PI*4) this.fullAngle -= Math.PI*4;
-        this.crank.setRotation(this.fullAngle);  // Rotate the crankshaft
+doStep: function() {
+        this.crankAngle += this.angleStep;
+        if (this.crankAngle > Math.PI*4) this.crankAngle -= Math.PI*4;
+        this.crank.setRotation(this.crankAngle);  // Rotate the crankshaft
         this.cylinders.each(function(cyl) {
-            cyl.movePiston(this);  // Move the pistons
+            this.movePiston(cyl);  // Move the pistons
             cyl.connectingRod.setVertices(  // Relocate the connecting rods
                 [cyl.connectingRod.localizePointFrom(cyl.wristPin.bounds().center(), cyl.piston),
                 cyl.connectingRod.localizePointFrom(this.crankPin.bounds().center(), this.crank)] );
-        }.bind(this) );
-    }
-    // WorldMorph.current().addMorph(engine);
-    engine.makeCylinders(1);
-    engine.startStepping(100,'nextStep');
-    //WorldMorph.current().addMorphAt(WindowMorph(engine, 'A Lively Engine'), pt(250, 5));
-}
-// Engine demo ------------ end
+        }.bind(this) ); },
+
+setAlernateTiming: function(trueOrFalse) {
+	// Demonstrate alternate and sequential firing order
+        this.alernateTiming = trueOrFalse;
+        this.makeCylinders(this.cylinders.length); },
+
+rebuild: function() {
+	this.removeAllMorphs();
+	this.makeLayout();
+	this.makeCylinders(this.cylinders.length); },
+
+startSteppingScripts: function() { this.startStepping(100,'nextStep'); }
+});  // EngineMorph ------------ end
 
 console.log('loaded Examples.js');
 
