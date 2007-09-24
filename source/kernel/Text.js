@@ -832,7 +832,7 @@ Object.extend(TextMorph.prototype, {
         if (this.textBox) {
             this.textBox.setTextColor(color);
         }
-    }.logCalls('setTextColor'),
+    },
     
     getTextColor: function() {
         return this.textColor;

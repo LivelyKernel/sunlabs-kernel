@@ -2057,17 +2057,17 @@ Object.extend(WorldMorph.prototype, {
         var menu = WorldMorph.superClass.morphMenu.call(this,evt);
         menu.keepOnlyItemsNamed(["inspect", "style"]);
         menu.addItem([(Config.suppressBalloonHelp ? "enable balloon help" : "disable balloon help"),
-                     this, "toggleBalloonHelp"]);
+                     this.toggleBalloonHelp]);
         menu.addLine();
-        menu.addItem(["new object...", this, 'addMorphs', evt]);
+        menu.addItem(["new object...", this.addMorphs.curry(evt)]);
         menu.addLine();
-        menu.addItem(["choose display theme...", this, 'chooseDisplayTheme']);
+        menu.addItem(["choose display theme...", this.chooseDisplayTheme]);
         menu.addItem([(Config.useDebugBackground ? "use normal background" : "use debug background"),
-                     this, 'toggleDebugBackground']);
+                      this.toggleDebugBackground]);
         menu.addLine();
         menu.addItem(["publish world as ... ", function() { 
             this.makeShrinkWrappedWorldWith(this.submorphs, this.prompt('world file'));}]);
-        menu.addItem(["restart system", this, "restart"]);
+        menu.addItem(["restart system", this.restart]);
         return menu;
     },
    
@@ -2079,11 +2079,7 @@ Object.extend(WorldMorph.prototype, {
         // Debug background is transparent, so that we can see the console
         // if it is not otherwise visible
         Config.useDebugBackground = !Config.useDebugBackground;
-        if (Config.useDebugBackground) {
-            this.shape.setFillOpacity(0.8);
-        } else {
-            this.shape.setFillOpacity(1.0);
-        }
+        this.shape.setFillOpacity(Config.useDebugBackground ? 0.8 : 1.0);
     },
 
     chooseDisplayTheme: function(ignored,evt) { 
@@ -2382,7 +2378,7 @@ Object.extend(WorldMorph.prototype, {
         console.info('writing new file ' + content);
         var failed = false;
 
-        new Ajax.Request(url, { 
+        new Ajax.Request(NetRequest.rewriteURL(url), { 
             method: 'put',
             asynchronous: false,
             body: content,

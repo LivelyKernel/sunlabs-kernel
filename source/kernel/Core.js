@@ -33,6 +33,10 @@ var Font = window.parent.Font;
 
 window.parent.console.platformConsole = console;
 var console = window.parent.console;
+window.onerror = function(message, url, code) {
+    console.log('in %s: %s, code %s', url, message, code);
+};
+
 
 Namespace =  {
     SVG : Canvas.getAttribute("xmlns"),
@@ -2540,7 +2544,6 @@ Object.extend(Morph.prototype, {
         if (element) {
             var id = element.getAttribute("id");
             if (id) {
-                console.log('cloning node b/c original has an owner, id %s', id);
                 this[fieldname] = element = element.cloneNode(true);
             }
 	    
@@ -2751,7 +2754,6 @@ Object.extend(Morph.prototype, {
     },
 
     owner: function() {
-        //console.log('owner is ' + this.parentNode + ' constr ' + this.parentNode.constructor.name + ' me ' + this.shape);
         if (this.parentNode) { // the submorphs
             if (this.parentNode.parentNode instanceof Morph) {
                 return this.parentNode.parentNode;
@@ -2817,17 +2819,11 @@ Object.category(Morph.prototype, 'transforms', function() { return {
     
     setScale: function(scale/*:float*/) {
         this.scale = scale;
-        // var debugBounds = this.bounds();
         this.cachedTransform = null;
-        // console.log('bounds from ' + debugBounds.inspect() + ' to ' + this.bounds().inspect());
     }.wrap(Morph.onLayoutChange('scale')),
     
     defaultOrigin: function(bounds, shapeType) { 
-        try {
-            return (shapeType == "rect" || shapeType == "rectangle") ? bounds.topLeft() : bounds.center(); 
-        } catch (e) {
-            console.log('problem in caller %s on %s', arguments.callee.caller, this);
-        }
+        return (shapeType == "rect" || shapeType == "rectangle") ? bounds.topLeft() : bounds.center(); 
     },
     
     getTranslation: function() { 
@@ -3212,7 +3208,6 @@ Object.extend(Morph.prototype, {
         // KP: is the following necessary?
         this.owner().addMorph(copy); // set up owner the original parent so that it can be reparented to this: 
         hand.addMorph(copy);  
-        // if (this.world().backend()) this.world().backend().createMorph(copy.morphId(), copy, this.morphId());
         copy.withAllSubmorphsDo(function() { this.startStepping(null); }, null);
     },
 

@@ -2491,7 +2491,6 @@ Object.extend(WeatherWidget.prototype, {
         this.feed = new Feed("http://feeds.bbc.co.uk/weather/feeds/rss/obs/world/" + citycode + ".xml");
         this.feed.request(this, 'getWeatherDesc', "getTemperature", "getWind", "getGusts", 
                           "getDewPoint", "getHumidity", "getVisibility");
-        var model = this;
     }
     
 });
@@ -3808,7 +3807,8 @@ Object.extend(MessengerWidget.prototype, {
     send: function() {
         var parent = this;
         if ( this.text != null && this.text != "" ) {
-            new Ajax.Request(this.server + "foreground.html?action=updatemany&key." + this.id + "=" + this.text, { 
+	    var url = this.server + "foreground.html?action=updatemany&key." + this.id + "=" + this.text;
+            new Ajax.Request(NetRequest.rewriteURL(url), { 
                 method: 'get',
                 
                 onSuccess: function(transport) {
@@ -3832,7 +3832,7 @@ Object.extend(MessengerWidget.prototype, {
     
     load: function() {
         var parent = this;
-        new Ajax.Request(this.server + "background.html", { 
+        new Ajax.Request(NetRequest.rewriteURL(this.server + "background.html"), { 
             method: 'get',
             
             onSuccess: function(transport) {
@@ -3896,7 +3896,7 @@ Object.extend(MessengerWidget.prototype, {
             }
 /*
 // FIXME: kill the database if needed           
-                new Ajax.Request(this.server + "foreground.html?action=updatemany&key." + IDs[i] + "=", { 
+                new Ajax.Request(NetRequest.rewriteURL(this.server + "foreground.html?action=updatemany&key." + IDs[i] + "="), { 
                 method: 'get',
                 
                 onSuccess: function(transport) {
