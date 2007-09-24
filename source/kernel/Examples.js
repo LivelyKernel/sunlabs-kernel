@@ -4626,6 +4626,9 @@ makeEngine = function() {
     // A lively Model by Dan Ingalls - 9/25/2007
     var bnds = Rectangle(0, 0, 400, 400);
     var engine = Morph(bnds.withHeight(600), "rectangle");
+    // KP: add the top morph to the world first, to make firefox happy
+    WorldMorph.current().addMorphAt(WindowMorph(engine, 'A Lively Engine'), pt(250, 5));
+
     var center = bnds.center();
     var stroke = bnds.height*0.14;
     engine.alernateTiming = false;
@@ -4745,7 +4748,7 @@ makeEngine = function() {
     // WorldMorph.current().addMorph(engine);
     engine.makeCylinders(1);
     engine.startStepping(100,'nextStep');
-    WorldMorph.current().addMorphAt(WindowMorph(engine, 'A Lively Engine'), pt(250, 5));
+    //WorldMorph.current().addMorphAt(WindowMorph(engine, 'A Lively Engine'), pt(250, 5));
 }
 // Engine demo ------------ end
 
