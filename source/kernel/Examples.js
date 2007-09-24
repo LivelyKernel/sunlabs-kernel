@@ -2860,7 +2860,7 @@ Object.extend(MapModel.prototype, {
                 var value = this.getScale()*20;
                 var vector = pt(value*dx, value*dy);
                 this.moveBy(vector); 
-                this.onScrollTest(vector);
+                this.scrollMap(vector);
             });
             map.stepping = true;
         }
@@ -3001,18 +3001,92 @@ Object.extend(MapMorph.prototype, {
   This function updates mapmovement and it also adds menu to mapframe
   */
   okToBeGrabbedBy: function(evt) {
-    pd("coords" + evt.mousePoint + " center " + this.bounds().center()+ " in wc " +this.worldPoint(this.bounds().center()), 2);
+    console.log("coords" + evt.mousePoint + " center " + this.bounds().center()+ " in wc " +this.worldPoint(this.bounds().center()));
     this.startpoint = evt.mousePoint; //this line is here only bacause this morph does not listen mousedown events
     return null; //otherwise map will be able to take out from mapframe  
   },
   
   handlesMouseDown: function(evt) {
-      pd("handlesMouseDown", 2);
-      return false;
+      //pd("handlesMouseDown", 2);
+      return true;
+  },
+  onMouseDown: function(evt){
+      //console.log("coords" + evt.mousePoint + " center " + this.bounds().center()+ " in wc " +this.worldPoint(this.bounds().center()));
+    this.startpoint = evt.mousePoint; //this line is here only bacause this morph does not listen mousedown events
+  },
+  //Disabled, since does not work correctly in SVG-morphs
+  onMouseUp: function(evt) { 
+    //console.log("-------------MapMorph.prototype.mouseUp" );
+    if (evt.mousePoint && this.startpoint){
+        this.endpoint = evt.mousePoint;
+        pd("scale of map: " + this.getScale(), 2)
+        var currentscale = this.getScale();
+        this.mapmovedX += (this.endpoint.x - this.startpoint.x);
+        this.mapmovedY += (this.endpoint.y - this.startpoint.y);
+        //console.log("moved x " + this.mapmovedX + " y " + this.mapmovedY);
+       if ( ( this.mapmovedX > TileSize.x*currentscale )){
+            //do until map is at place
+                while( this.mapmovedX > TileSize.x*currentscale){
+                    this.mapmovedX -= TileSize.x*currentscale;
+                    this.mapX = -TileSize.x*currentscale;
+                    //moving map right
+                    //alert("right");
+                    this.x -= 1;
+                    this.x = this.getValueX(this.x);
+                    this.loadImagesToMap("left");
+                    this.moveBy(pt(-TileSize.x*currentscale,0));
+                }
+            }else if ( ( this.mapmovedX < -TileSize.x*currentscale) ){
+                //do until map is at place
+                while( this.mapmovedX < -TileSize.x*currentscale){
+                    this.mapmovedX += TileSize.x*currentscale;
+                    this.mapX = -TileSize.x*currentscale;
+                    //moving map left
+                    //alert("left");
+                    this.x += 1;
+                    this.x = this.getValueX(this.x);
+                    this.loadImagesToMap("right");
+                    this.moveBy(pt(TileSize.x*currentscale,0));
+                }
+            }
+            if ( ( this.mapmovedY < -TileSize.y*currentscale) ){
+                //do until map is at place
+                while( this.mapmovedY < -TileSize.y*currentscale){        
+                    this.mapmovedY += TileSize.y*currentscale;
+                    this.mapY = -TileSize.y*currentscale;
+                    //moving map up
+                    //alert("up");
+                    this.y += 1;
+                    this.y = this.getValueY(this.y);
+                    this.loadImagesToMap("down");
+                    this.moveBy(pt(0,TileSize.y*currentscale));
+                }
+
+            }else if ( ( this.mapmovedY > TileSize.y*currentscale) ){
+                //do until map is at place
+                while( this.mapmovedY > TileSize.y*currentscale){    
+                    this.mapmovedY -= TileSize.y*currentscale;
+                    this.mapY = -TileSize.y*currentscale;
+                    //moving map down
+                    //alert("down");
+                    this.y -= 1;
+                    this.y = this.getValueY(this.y);
+                    this.loadImagesToMap("up");
+                    this.moveBy(pt(0,-TileSize.y*currentscale));
+   
+                }
+
+            }
+        }
+    this.buttondown = false;
+    this.startpoint = null;
+    this.endpoint = null;
+    this.changed();
+    
   },
   
-  onScrollTest: function(p) { 
-      //pd("onScrollTest",3);
+  scrollMap: function(p) { 
+      //pd("scrollMap",3);
       var currentscale = this.getScale();
       this.mapmovedX += p.x;
       this.mapmovedY += p.y;
@@ -3169,7 +3243,7 @@ Object.extend(MapMorph.prototype, {
   
   /*Tries to find image from file
     if not found 
-    returns null                    TODO find how to tell if url has content.?
+    returns null                    
     or
     image
   */
