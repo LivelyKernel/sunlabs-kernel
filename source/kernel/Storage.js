@@ -39,8 +39,9 @@ Object.extend(WebStore.prototype, {
         // retrieve the the contents of the url and save in the indicated model variable
         console.log('fetching url ' + url);
         var store = this;
-        var options = Object.derive(NetRequest.options, {
+        var options =  {
             method: 'GET',
+            contentType: 'text/xml',
 
             onSuccess: function(transport) {
                 store[modelVariable] = transport.responseText;
@@ -54,7 +55,7 @@ Object.extend(WebStore.prototype, {
             }
             // FIXME: on exception
 
-        });
+        };
 
         new NetRequest(url, options);
     },
@@ -68,10 +69,11 @@ Object.extend(WebStore.prototype, {
         // retrieve the the contents of the url and save in the indicated model variable
         console.log('saving url ' + url);
         var store = this;
-        var options = Object.derive(NetRequest.options, {
+        var options =  {
             method: 'PUT',
             body: content,
-            
+            contentType: 'text/xml',
+	    
             onSuccess: function(transport) {
                 store[modelVariable] = transport.status;
                 store.changed('get' + modelVariable);
@@ -79,11 +81,10 @@ Object.extend(WebStore.prototype, {
     
             onFailure: function(transport) {
                 WorldMorph.current().alert('failed saving with response ' + transport.responseText);
-                console.log('failed with response %s', transport.responseText);
                 //store[modelVariable] = transport.status;
                 //store.changed('get' + modelVariable);
             }
-        });
+        };
 
         new NetRequest(url, options);
     },
@@ -94,25 +95,26 @@ Object.extend(WebStore.prototype, {
         if (depth != 0 && depth != 1) depth = 'infinity';
 
         var store = this;
-        var options = Object.derive(NetRequest.options, {
+        var options = {
             method: 'PROPFIND', 
+            contentType: 'text/xml',
             requestHeaders: { "Depth": depth },
-    
+	    
             onFailure: function(transport) {
                 WorldMorph.current().alert('%1: failure %2 url %3'.format(transport, transport.status, url));
             },
-
+	    
             onSuccess: function(transport) {
                 console.log('propfind received %s', 
-                    NetRequest.documentToString(transport.responseXML) || transport.responseText);
-
+			    Exporter.nodeToString(transport.responseXML) || transport.responseText);
+		
                 var result = transport.responseXML.documentElement;
 
                 store[modelVariable] = Query.evaluate(result, xpQueryString);
                 store.changed('get' + modelVariable);
                 // console.info('got listing %s', store[modelVariable].pluck('textContent'));
             }.logErrors('onSuccess')
-        });
+        };
         
         new NetRequest(url, options);
     },

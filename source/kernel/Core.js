@@ -2155,7 +2155,7 @@ Object.extend(Morph.prototype, {
                 if (modelNode) console.warn("%s already has modelNode %s", this, modelNode);
                 modelNode = node;
                 // postpone hooking up model until all the morphs are reconstructed
-                console.info("found modelNode %s", new XMLSerializer().serializeToString(node));
+                console.info("found modelNode %s", Exporter.nodeToString(node));
                 break;
             } 
             case "modelPlug": {
@@ -3512,6 +3512,13 @@ Object.extend(Morph.prototype, {
  */
 
 var Exporter = Class.create();
+Object.extend(Exporter, {
+    nodeToString: function(node) {
+	return node ? new XMLSerializer().serializeToString(node) : null;
+    }
+
+});
+
 
 Object.extend(Exporter.prototype, {
     rootMorph: null,
@@ -3526,7 +3533,7 @@ Object.extend(Exporter.prototype, {
         if (modelNode) {
             this.rootMorph.addChildElement(modelNode);
         }
-        var result = new XMLSerializer().serializeToString(this.rootMorph);
+        var result = Exporter.nodeToString(this.rootMorph);
         if (modelNode) {
             this.rootMorph.removeChild(modelNode);
         }
@@ -3570,7 +3577,7 @@ Object.extend(Importer.prototype, {
 
         HostClass.becomeInstance(node, window[morphTypeName]);
         if (!node.reinitialize) {
-            console.log('why no reinit in %s', new XMLSerializer().serializeToString(node)); 
+            console.log('why no reinit in %s', Exporter.nodeToString(node)); 
         }
 
         node.reinitialize(this);
@@ -3813,7 +3820,7 @@ Object.extend(Model, {
             }
         }
         node.inspect = function() {
-            return new XMLSerializer().serializeToString(this);
+            return Exporter.nodeToString(this);
         }
         return node;
     },
@@ -3824,7 +3831,7 @@ Object.extend(Model, {
             node[acc.getAttribute('formal')] = acc.getAttribute('actual');
         }
         node.inspect = function() {
-            return new XMLSerializer().serializeToString(this);
+            return Exporter.nodeToString(this);
         }
         return node;
     }

@@ -23,27 +23,40 @@
 
 var NetRequest = Class.extend(Ajax.Request);
 
-Object.extend(NetRequest, {
-    options: {
-        contentType: 'text/xml',
-        asynchronous: true,
-        requester: null,
+Object.extend(NetRequest.prototype, {
 
-        onLoaded: function(transport) { 
-            console.info('%s: loaded %s', transport, transport.status); 
-        },
+    logger: {
+	onComplete: function(request, transport, json) {
+	    if (transport.status.toString().startsWith('2')) {
+		console.info("%s %s: status %s", request.method, request.url, transport.status);
+	    } else {
+		console.warn("%s %s: status %s", request.method, request.url, transport.status);
+	    }
+	},
+	
+	onException: function(request, exception) {
+	    console.warn("%s %s: exception %s", request.method, request.url, exception);
+	}
+	
+    },
 
-        onFailure: function(transport) {
-            console.warn('%s: failure %s', transport, transport.status);
-        },
 
-        onInteractive: function(transport) {
-            console.info('%s: receiving %s', transport, transport.status);
-        },
+    initialize: function(url, options) {
+	this.requestNetworkAccess();
+	NetRequest.superClass.initialize.call(this, this.rewriteURL(url), options);
+    },
 
-        onException: function(e) {
-            console.warn('exception %s', e);
-        }
+    rewriteURL: function(url) {
+        if (Config.proxyURL) {
+            var splitter = new RegExp('http://([^/]*)(/.*)');
+            var urlMatch = url.match(splitter);
+            var proxyMatch = Config.proxyURL.match(splitter);
+            if (urlMatch && proxyMatch && proxyMatch[1] != urlMatch[1]) {
+                var result = Config.proxyURL + urlMatch[1] + urlMatch[2];
+                return result;
+            }
+        } 
+        return url;
     },
     
     requestNetworkAccess: function() {
@@ -51,36 +64,7 @@ Object.extend(NetRequest, {
             netscape.security.PrivilegeManager.enablePrivilege("UniversalBrowserRead");
         }
     },
-    
-    documentToString: function(doc) {
-        if (doc != null) return new XMLSerializer().serializeToString(doc.documentElement); 
-        else return null;
-    },
 
-    rewriteURL: function(url) {
-        if (Config.proxyURL) {
-            var splitter = new RegExp('(http)://([^/]*)(/.*)');
-            var urlMatch = url.match(splitter);
-            var proxyMatch = Config.proxyURL.match(splitter);
-            if (urlMatch[1] == 'http' &&  proxyMatch[2] != urlMatch[2]) {
-                var result = Config.proxyURL + urlMatch[2] + urlMatch[3];
-                console.log('rewrote %s to %s', url, result);
-                return result;
-            }
-        } 
-        return url;
-    }
-
-});
-
-
-Object.extend(NetRequest.prototype, {
-
-    initialize: function(url, options) {
-	NetRequest.requestNetworkAccess();
-	NetRequest.superClass.initialize.call(this, NetRequest.rewriteURL(url), options);
-    },
-        
 
     // explicitly override prototype.js's verb simulation over post
     request: function(url) {
@@ -178,6 +162,8 @@ Object.extend(NetRequest.prototype, {
     
 });
 
+Ajax.Responders.register(NetRequest.prototype.logger);
+
 /**
  * @class FeedChannel
  */ 
@@ -242,21 +228,21 @@ Object.extend(Feed.prototype, {
         var modelVariables = $A(arguments);
         modelVariables.shift();
 	var hourAgo = new Date((new Date()).getTime() - 1000*60*60);
-        new NetRequest(this.url, Object.derive(NetRequest.options, {
+        new NetRequest(this.url, {
             method: 'get',
             requestHeaders: { "If-Modified-Since": hourAgo.toString()  },
-        
+            contentType: 'text/xml',
+
             onSuccess: function(transport) {
                 if (!transport.responseXML) {
                     feed.processResult(null);
                     return;
                 }
-
+		
                 var result = transport.responseXML.documentElement;
-                console.info('%s: success %s', feed, transport.status);
-        
-                if (feed.dump) console.log('transmission dump %s', NetRequest.documentToString(transport.responseXML));
-        
+		
+                if (feed.dump) console.log('transmission dump %s', Exporter.nodeToString(transport.responseXML));
+		
                 feed.processResult(result);
                 console.log('%s changing %s', feed, modelVariables);
 
@@ -264,7 +250,7 @@ Object.extend(Feed.prototype, {
                     model.changed(modelVariables[i]);
                 }
             }.logErrors('Success Handler for ' + feed)
-        }));
+        });
     },
 
     toString: function() {

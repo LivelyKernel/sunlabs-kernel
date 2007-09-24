@@ -2655,15 +2655,10 @@ Object.extend(StockWidget.prototype, {
 	    parameters: params || {},
             onSuccess: function(transport) {
                 var result = transport.responseText;
-                console.info('success %s', transport.status);
 		model.lastQuote = result.split(',');
 		model.changed('getQuotes');
-		
-            }.logErrors('Success Handler for ' + this),
+            }
 
-	    onException: function(e) {
-		console.warn('exception %s', e);
-	    },
         });
 	
     },
@@ -3760,10 +3755,8 @@ Object.extend(MessengerWidget.prototype, {
             
             onFailure: function(transport) {
                 console.log(transport.responseText);
-            },
-    
-            onException: function(e) {
             }
+
         });
     },
     
@@ -3823,15 +3816,8 @@ Object.extend(MessengerWidget.prototype, {
                     parent.setChatText(parent.id + ": " + parent.getIMText()); // add the current line immediately
                     parent.setIMText(""); // yes yes.. so its a little laggy to add the current line and delete it...
                     parent.textpanel.setScrollPosition(1);//this.textpanel.innerMorph().bounds().height);
-                },
-                
-                onFailure: function(transport) {
-                    console.log('problem with %s', transport);
-                },
-        
-                onException: function(e) {
-                    console.log('exception  %s, %s', e, Object.toJSON(e));
                 }
+                
             });
         }
         
@@ -3855,15 +3841,8 @@ Object.extend(MessengerWidget.prototype, {
                     parent.parseResponse(text);
                     parent.textpanel.setScrollPosition(1);//this.textpanel.innerMorph().bounds().height);
                 } catch (e) { console.log('got error %s', e); }
-            },
-            
-            onFailure: function(transport) {
-                console.log('problem with %s', transport);
-            },
-    
-            onException: function(e) {
-                console.log('exception on load function %s, %s', e, Object.toJSON(e));
             }
+            
         });
 
     },
@@ -3908,15 +3887,8 @@ Object.extend(MessengerWidget.prototype, {
                 method: 'get',
                 
                 onSuccess: function(transport) {
-                },
-                
-                onFailure: function(transport) {
-                    console.log('problem with %s', transport);
-                },
-        
-                onException: function(e) {
-                    console.log('exception  %s, %s', e, Object.toJSON(e));
                 }
+                
             });*/
         }
     }

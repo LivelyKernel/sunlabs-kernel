@@ -2334,12 +2334,8 @@ Object.extend(WorldMorph.prototype, {
             
             onFailure: function(transport) {
                 WorldMorph.current().alert('problem accessing ' + url);
-            },
-    
-            onException: function(e) {
-                console.log('exception  %s, %s', e, Object.toJSON(e));
             }
-    
+            
         });
 
         if (!newDoc) return;
@@ -2374,22 +2370,18 @@ Object.extend(WorldMorph.prototype, {
         var postamble = newDoc.createElementNS(Namespace.SVG, "script");
         postamble.appendChild(newDoc.createCDATASection('WorldMorph.current().addMorphsFrom("ShrinkWrapped");'));
         mainDefs.appendChild(postamble);
-        var content = new XMLSerializer().serializeToString(newDoc);
+        var content = Exporter.nodeToString(newDoc);
         console.info('writing new file ' + content);
-        var failed = false;
+        var failed = true;
 
         new NetRequest(url, { 
             method: 'put',
             asynchronous: false,
             body: content,
-            onFailure: function(transport) {
-                console.log('problem with %s', transport);
-                failed = true;
-            },
-            onException: function(e) {
-                console.log('exception  %s, %s', e, Object.toJSON(e));
-                failed = true;
+            onSuccess: function(transport) {
+                failed = false;
             }
+
         });
     },
 
