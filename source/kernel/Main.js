@@ -73,8 +73,8 @@ function populateWorldWithExamples(world, otherWorld, server) {
     // Sample icon morph with a fisheye effect 'on'
     if (Config.showIcon) {
         // maybe the icons should have a rectangle shaped images (unlike here)
-        // var icon = ImageMorph(Rectangle(30, 360, 80, 50), "http://logos.sun.com/images/SunSample.gif");
-        var icon = ImageMorph(Rectangle(60, 250, 100, 45));
+        // var icon = ImageMorph(Rectangle(30, 330, 80, 50), "http://logos.sun.com/images/SunSample.gif");
+        var icon = ImageMorph(Rectangle(60, 580, 100, 45));
 
         icon.loadGraphics('#SunLogo', 0.15);
         icon.toggleFisheye();    
@@ -84,13 +84,43 @@ function populateWorldWithExamples(world, otherWorld, server) {
     // Sample weather morph
     if (Config.showWeather && Config.showNetworkExamples) {
         // Maybe the icons should have rectangular images (unlike here)
-        new WeatherWidget().openIn(world, pt(685, 50));
+        new WeatherWidget().openIn(world, pt(785, 50));
     }
 
     if (Config.showStocks && Config.showNetworkExamples) {
         var stockWidget = new StockWidget();
         stockWidget.startSteppingRefreshCharts(stockWidget.openIn(world, pt(350, 500)));
     }
+
+    if (Config.showStar) {  // Make a star
+
+        if (Config.loadFromMarkup) {
+            world.addMorphWithContainerId('RotatingStar');
+        } else {
+            var makeStarVertices = function(r,center,startAngle) {
+                var vertices = [];
+                var nVerts = 10;
+                for (var i=0; i<=nVerts; i++) {
+                    var a = startAngle + (2*Math.PI/nVerts*i);
+                    var p = Point.polar(r,a);
+                    if (i%2 == 0) p = p.scaleBy(0.39);
+                    vertices.push(p.addPt(center)); 
+                }
+                return vertices; 
+            }
+    
+                widget = Morph.makePolygon(makeStarVertices(50,pt(0,0),0), 1, Color.black, Color.yellow);
+            widget.setPosition(pt(105, 250));
+            world.addMorph(widget);
+            
+            var spinningStar = !Config.skipMostExamples || Config.spinningStar;
+            if (spinningStar) {  // Make the star spin as a test of stepping
+                widget.startStepping(60, "rotateBy", 0.1);
+            }
+        }
+    }
+
+    if (Config.show3DLogo) world.addMorph(WindowMorph(Sun3DMorph(pt(570, 100).extent(pt(200, 200))), 'Sun 3D Logo'));
 
     if (Config.showInnerWorld) {
         
@@ -107,7 +137,7 @@ function populateWorldWithExamples(world, otherWorld, server) {
 
             if (Config.showCanvasScape) {
                 if (!lm1.myWorld.csMorph) {
-                    var csm = CanvasScapeMorph(Rectangle(30,30,800,300)/*pt(400, 350).extent(pt(800, 300))*/);
+                    var csm = CanvasScapeMorph(Rectangle(20,50,800,300));
                     lm1.myWorld.csMorph = lm1.myWorld.addMorph(WindowMorph(csm, 'CanvasScape'));
                 }
             }
@@ -117,7 +147,7 @@ function populateWorldWithExamples(world, otherWorld, server) {
                     var tile = apps.maps.tileExtent;
                     var map = apps.maps.MapFrameMorph(new Rectangle(0, 0, 2*tile.x, 2*tile.y), true);
                     map.setScale(0.7);
-                    map.setPosition(pt(320, 275));
+                    map.setPosition(pt(160, 250));
                     lm1.myWorld.addMorph(map);
                     lm1.myWorld.mapMorph = map;
                 }
@@ -141,6 +171,9 @@ function populateWorldWithExamples(world, otherWorld, server) {
             
             lm1.myWorld.addMorphBack(WindowMorph(ImageMorph(Rectangle(50, 10, width, height), url), 'Tampere'));
         }
+
+
+        if (Config.showDoodle) lm1.myWorld.addMorph(WindowMorph(DoodleMorph(pt(560, 380).extent(pt(300, 300))), 'Doodle Morph'));
 
         if (Config.showMessenger && Config.showNetworkExamples) new MessengerWidget().openIn(lm1.myWorld, pt(875, 375));
     }
@@ -174,36 +207,6 @@ function populateWorldWithExamples(world, otherWorld, server) {
         }
     
         world.addMorph(lm2); 
-
-        if (Config.showStar) {  // Make a star
-
-            if (Config.loadFromMarkup) {
-                world.addMorphWithContainerId('RotatingStar');
-            } else {
-                var makeStarVertices = function(r,center,startAngle) {
-                    var vertices = [];
-                    var nVerts = 10;
-                    for (var i=0; i<=nVerts; i++) {
-                        var a = startAngle + (2*Math.PI/nVerts*i);
-                        var p = Point.polar(r,a);
-                        if (i%2 == 0) p = p.scaleBy(0.39);
-                        vertices.push(p.addPt(center)); 
-                    }
-                    return vertices; 
-                }
-    
-                widget = Morph.makePolygon(makeStarVertices(50,pt(0,0),0), 1, Color.black, Color.yellow);
-                widget.setPosition(pt(105, 300));
-                lm2.myWorld.addMorph(widget);
-            
-                var spinningStar = !Config.skipMostExamples || Config.spinningStar;
-                if (spinningStar) {  // Make the star spin as a test of stepping
-                    widget.startStepping(60, "rotateBy", 0.1);
-                }
-            }
-        }
-
-        if (Config.show3DLogo) lm2.myWorld.addMorph(WindowMorph(Sun3DMorph(pt(440, 100).extent(pt(200, 200))), 'Sun 3D Logo'));
 
         if (Config.showSampleMorphs){
             var colors = Color.wheel(4);
@@ -264,8 +267,6 @@ function populateWorldWithExamples(world, otherWorld, server) {
 
         if (Config.showHilbertFun) Pen.hilbertFun(devWorld.myWorld);
 
-        if (Config.showDoodle) devWorld.myWorld.addMorph(WindowMorph(DoodleMorph(pt(450, 320).extent(pt(300, 300))), 'Doodle Morph'));
-
         // Sample executable script pane
         if (Config.showPenScript) {
             if (Config.showTestText) widget = TestTextMorph(pt(50,30).extent(pt(250,50)),Pen.script);
@@ -281,7 +282,7 @@ function populateWorldWithExamples(world, otherWorld, server) {
                 var store = new WebStore(location.hostname, location.pathname.substring(0, location.pathname.lastIndexOf('lively.xhtml')));
             }
             WebStore.defaultStore = store;
-            store.openIn(devWorld.myWorld, pt(500, 30));
+            store.openIn(devWorld.myWorld, pt(460, 120));
         }
 
         if (Config.showTester) new WidgetTester().openIn(devWorld.myWorld, pt(135, 480));
