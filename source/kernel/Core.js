@@ -230,7 +230,7 @@ Function.callStack = function() {
     var result = [];
 
     for (var caller = arguments.callee.caller; caller != null; caller = caller.caller) {
-        result.push(caller.inspect());
+        result.push(Object.inspect(caller));
     }
     
     return result;
@@ -2050,7 +2050,10 @@ Object.extend(MouseHandlerForDragging.prototype, {
         // console.log('target for ' + evt.type + 'Action is ' + handler + ' target ' + targetMorph.inspect());
         if (capType == "MouseDown") evt.hand.setMouseFocus(targetMorph);
         handler.call(targetMorph, evt);
-        if (capType == "MouseUp") evt.hand.setMouseFocus(null);
+        if (capType == "MouseUp") {
+		// if focus changed, then don't cancel it
+		if(evt.hand.mouseFocus === targetMorph) evt.hand.setMouseFocus(null);
+	}
         return true; 
     },
     

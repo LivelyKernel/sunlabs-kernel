@@ -2905,7 +2905,8 @@ Object.extend(LinkMorph.prototype, {
 
     onMouseOver: function(evt) {
         // Note this event does not have hand bound except if laden!
-        if (evt.hand && evt.hand.hasSubmorphs()) {
+        // console.log("link.onMouseOver")
+	if (evt.hand && evt.hand.hasSubmorphs()) {
             if (evt.hand.emergingFromWormHole) evt.hand.setMouseFocus(this);
             else this.enterMyWorld(evt);
         } else if (this.helpText) this.showHelp(evt);
@@ -2913,6 +2914,7 @@ Object.extend(LinkMorph.prototype, {
     
     onMouseMove: function(evt) {
         // Wait until hand leaves a linkMorph before enabling reentry
+        // console.log("link.onMouseMove")
         if (this.containsWorldPoint(evt.mousePoint)) return;
         evt.hand.setMouseFocus(null);
         evt.hand.emergingFromWormHole = false;
