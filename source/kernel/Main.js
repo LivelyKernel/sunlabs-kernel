@@ -316,7 +316,11 @@ function main() {
     if (false) showStatsViewer(TextLine.prototype, "TextLine...");
 }
 
-main();
+// the delay here is a workaround to give FF 2.0 the time to update
+// the DOM to reflect the geometry of objects on the screen, which is
+// needed to figure out font geometry. Apparently the update happens
+// after control returns to the caller of JS
+main.delay(0.05);
 
 console.log('loaded Main.js');
 
