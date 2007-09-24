@@ -2305,23 +2305,21 @@ Object.extend(Morph.prototype, {
             this.assign('fill', null);
             this.shape.setFill(fill.toString());
         } else {
-//          DI: NOTE the cloning should be handled by assign (see comment there)
-//          but it doesn't seem to work right, so we do it here
-            var ref = this.assign('fill', fill.cloneNode(true));
+            var ref = this.assign('fill', fill);
             this.shape.setFill(ref);
         }
     }.wrap(Morph.onChange('shape')),
 
     getFill: function() {
-        var fillObj = this.shape.getFill();
-        if (fillObj == "none") return null;
-        var match = fillObj.match("url\\(#(.*)\\)");
+        var fill = this.shape.getFill();
+        if (fill == "none") return null;
+        var match = fill.match("url\\(#(.*)\\)");
         if (match) {
             var def = document.getElementById(match[1]);
             // console.log('found url %s def %s', match[1], def);
             return def;
         } else {
-            return Color.parse(fillObj);
+            return Color.parse(fill);
         }
     }.logErrors('getFill'),
     
@@ -2541,20 +2539,15 @@ Object.extend(Morph.prototype, {
     
         if (element) {
             var id = element.getAttribute("id");
-        
-//          KP sez... this should recognize if an element already has an ID
-//          Then it is owned by another and should be cloned.  But it didn't
-//          work for the case of setFill.  May need more debugging...
             if (id) {
                 console.log('cloning node b/c original has an owner, id %s', id);
-                element = element.cloneNode(true);
+                this[fieldname] = element = element.cloneNode(true);
             }
-
+	    
             id = fieldname + '_' + this.id;
             element.setAttribute("id", id);
             this.defs.appendChild(element);
-
-            //return "url(#xpointer(id(" + id + ")))"; 
+	    
             return "url(#" + id + ")";
         } else return null;
     },
