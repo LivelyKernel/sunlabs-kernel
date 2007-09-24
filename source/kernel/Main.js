@@ -45,7 +45,7 @@ Config.showDeveloperWorld = !Config.skipMostExamples;
 // Class browser visibility can be overridden with Config.browserAnyway
 Config.showBrowser = !Config.skipMostExamples || Config.browserAnyway;
 
-function populateWorldWithExamples(world, otherWorld, server) {
+function populateWorldWithExamples(world) {
 
     var widget;
 
@@ -279,7 +279,8 @@ function populateWorldWithExamples(world, otherWorld, server) {
             if (location.protocol == 'file:') {
                 var store = new WebStore('localhost', '~kappa'); // TODO: hardcoded
             } else {
-                var store = new WebStore(location.hostname, location.pathname.substring(0, location.pathname.lastIndexOf('lively.xhtml')));
+                var store = new WebStore(location.hostname, 
+		    location.pathname.substring(0, location.pathname.lastIndexOf('index.xhtml')));
             }
             WebStore.defaultStore = store;
             store.openIn(devWorld.myWorld, pt(460, 120));
@@ -301,7 +302,7 @@ function main() {
 
     // Populate the world with sample objects, widgets and applications
     if (Config.skipAllExamples) return;
-    else populateWorldWithExamples(world, /* !Config.skipMostExamples*/ true);
+    else populateWorldWithExamples(world);
 
     if (false) { // Display a color swatch
         var colors = Color.wheelHsb(10,0,1,1);

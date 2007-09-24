@@ -2324,7 +2324,7 @@ Object.extend(WorldMorph.prototype, {
 
         var newDoc = null;
         var url = "http://" + WebStore.defaultStore.host + "/" + WebStore.defaultStore.path + "/lively.xhtml";
-        new Ajax.Request(url, { 
+        new NetRequest(url, { 
             method: 'get',
             asynchronous: false,
         
@@ -2378,7 +2378,7 @@ Object.extend(WorldMorph.prototype, {
         console.info('writing new file ' + content);
         var failed = false;
 
-        new Ajax.Request(NetRequest.rewriteURL(url), { 
+        new NetRequest(url, { 
             method: 'put',
             asynchronous: false,
             body: content,

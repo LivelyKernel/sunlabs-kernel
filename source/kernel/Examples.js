@@ -2647,17 +2647,25 @@ Object.extend(StockWidget.prototype, {
     },
 
     getUrl: function(url, params) {
-        NetRequest.requestNetworkAccess();
-        var req = new NetRequest(this);
+	var model = this;
+	
+        new NetRequest(url,  {
+            method: 'get',
+	    contentType: 'text/html', 
+	    parameters: params || {},
+            onSuccess: function(transport) {
+                var result = transport.responseText;
+                console.info('success %s', transport.status);
+		model.lastQuote = result.split(',');
+		model.changed('getQuotes');
+		
+            }.logErrors('Success Handler for ' + this),
 
-        req.process = function(transport) {
-            var text = transport.responseText;
-            console.log('got data %s', text);
-            this.model.lastQuote = transport.responseText.split(',');
-            this.model.changed('getQuotes');
-        };
-
-        req.request(url, {contentType: 'text/html', parameters: params || {} });
+	    onException: function(e) {
+		console.warn('exception %s', e);
+	    },
+        });
+	
     },
   
     formatQuote: function(arr) {
@@ -3743,7 +3751,7 @@ Object.extend(MessengerWidget.prototype, {
         this.server = "http://dev.experimentalstuff.com:8093/";
 //        console.log("address == " + this.server + "foreground.html?login=IM");
         var id = this.id
-        new Ajax.Request(NetRequest.rewriteURL(this.server) + "foreground.html?login=IM", { 
+        new NetRequest(this.server + "foreground.html?login=IM", { 
             method: 'get',
             
             onSuccess: function(transport) {
@@ -3808,7 +3816,7 @@ Object.extend(MessengerWidget.prototype, {
         var parent = this;
         if ( this.text != null && this.text != "" ) {
 	    var url = this.server + "foreground.html?action=updatemany&key." + this.id + "=" + this.text;
-            new Ajax.Request(NetRequest.rewriteURL(url), { 
+            new NetRequest(url, { 
                 method: 'get',
                 
                 onSuccess: function(transport) {
@@ -3832,7 +3840,7 @@ Object.extend(MessengerWidget.prototype, {
     
     load: function() {
         var parent = this;
-        new Ajax.Request(NetRequest.rewriteURL(this.server + "background.html"), { 
+        new NetRequest(this.server + "background.html", { 
             method: 'get',
             
             onSuccess: function(transport) {
@@ -3896,7 +3904,7 @@ Object.extend(MessengerWidget.prototype, {
             }
 /*
 // FIXME: kill the database if needed           
-                new Ajax.Request(NetRequest.rewriteURL(this.server + "foreground.html?action=updatemany&key." + IDs[i] + "="), { 
+                new NetRequest(this.server + "foreground.html?action=updatemany&key." + IDs[i] + "=", { 
                 method: 'get',
                 
                 onSuccess: function(transport) {

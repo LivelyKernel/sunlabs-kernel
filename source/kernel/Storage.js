@@ -56,7 +56,7 @@ Object.extend(WebStore.prototype, {
 
         });
 
-        new Ajax.Request(url, options);
+        new NetRequest(url, options);
     },
 
     saveAs: function(name, content) {
@@ -85,7 +85,7 @@ Object.extend(WebStore.prototype, {
             }
         });
 
-        new Ajax.Request(url, options);
+        new NetRequest(url, options);
     },
 
     // FIXME handle object argument
@@ -114,7 +114,7 @@ Object.extend(WebStore.prototype, {
             }.logErrors('onSuccess')
         });
         
-        new Ajax.Request(url, options);
+        new NetRequest(url, options);
     },
     
     getDirectoryList: function() {
