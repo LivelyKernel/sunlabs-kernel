@@ -2121,8 +2121,8 @@ Object.extend(WorldMorph.prototype, {
 //  *** The new truth about ticking scripts ***
 //  A morph may have any number of active scripts
 //  Each is activated by a call such as
-//      this.startStepping(1/20, "rotateBy", 0.1);
-//  Note that stepTime is in seconds, but it is in milliseconds in all lower-level methods
+//      this.startStepping(50, "rotateBy", 0.1);
+//  Note that stepTime is in milliseconds, as are all lower-level methods
 //  The arguments are: stepTime, scriptName, argIfAny
 //  This in turn will create a SchedulableAction of the form
 //  { actor: aMorph, scriptName: "rotateBy", argIfAny: 0.1, stepTime: 50, ticks: 0 }
@@ -2163,7 +2163,7 @@ Object.extend(WorldMorph.prototype, {
             // Old code for ticking morphs
             var ix = this.stepList.indexOf(morphOrAction);
             if (ix >= 0) this.stepList.splice(ix, 1);
-            return;
+	    return;
         }
 
         var action = morphOrAction;
@@ -2846,6 +2846,10 @@ Object.extend(LinkMorph.prototype, {
         carriedMorphs = [];
         while (evt.hand.hasSubmorphs()) {
             var m = evt.hand.topSubmorph();
+	    if (m.activeScripts) {
+		m.suspendedScripts = m.activeScripts.clone();
+		m.stopSteppingScripts();
+	    }
             carriedMorphs.splice(0, 0, m);
             m.remove();
         }
@@ -2873,7 +2877,13 @@ Object.extend(LinkMorph.prototype, {
         newWorld.displayWorldOn(canvas); 
 
         newWorld.onEnter(); 
-        carriedMorphs.each(function(m) { newWorld.firstHand().addMorph(m) });
+        carriedMorphs.each(function(m) {
+		newWorld.firstHand().addMorph(m)
+		if(m.suspendedScripts) {
+		    for (var i=0; i<m.suspendedScripts.length; i++) newWorld.startStepping(m.suspendedScripts[i]);
+		    m.suspendedScripts = null;
+		}
+	    });
 
         if (Config.showThumbnail) {
             const scale = 0.1;

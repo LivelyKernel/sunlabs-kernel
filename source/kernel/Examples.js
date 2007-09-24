@@ -146,6 +146,7 @@ Object.extend(ClockMorph.prototype, {
             label.setFontSize(fontSize);    label.setInset(pt(0,0));        
             label.setBorderWidth(0);        label.setFill(null);
             label.align(label.bounds().center(),labelPosition.addXY(-3,1));
+	    label.suppressHandles = true;
             this.addMorph(label);
         }
     
@@ -4711,6 +4712,7 @@ makeEngine = function() {
 			cr.width*0.15, Color.gray.darker(2));
 		this.addMorph(cyl.connectingRod);
 		}
+	this.openDnD();  // if we're playing with it, might as well have some real fun
 	}
 
 	engine.setAlernateTiming = function(trueOrFalse) {
