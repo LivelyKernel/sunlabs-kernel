@@ -4723,6 +4723,7 @@ makeEngine = function() {
         this.addMorph(cyl.connectingRod);
     }
     this.openDnD();  // if we're playing with it, might as well have some real fun
+    this.crank.openDnD();  // (get closed by putting in a window)
     } // end of engine.makeCylinders
 
     engine.setAlernateTiming = function(trueOrFalse) {
