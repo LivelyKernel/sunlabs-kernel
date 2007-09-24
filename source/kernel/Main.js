@@ -92,34 +92,6 @@ function populateWorldWithExamples(world, otherWorld, server) {
         stockWidget.startSteppingRefreshCharts(stockWidget.openIn(world, pt(350, 500)));
     }
 
-    if (Config.showStar) {  // Make a star
-
-        if (Config.loadFromMarkup) {
-            world.addMorphWithContainerId('RotatingStar');
-        } else {
-            var makeStarVertices = function(r,center,startAngle) {
-                var vertices = [];
-                var nVerts = 10;
-                for (var i=0; i<=nVerts; i++) {
-                    var a = startAngle + (2*Math.PI/nVerts*i);
-                    var p = Point.polar(r,a);
-                    if (i%2 == 0) p = p.scaleBy(0.39);
-                    vertices.push(p.addPt(center)); 
-                }
-                return vertices; 
-            }
-    
-                widget = Morph.makePolygon(makeStarVertices(50,pt(0,0),0), 1, Color.black, Color.yellow);
-            widget.setPosition(pt(105, 250));
-            world.addMorph(widget);
-            
-            var spinningStar = !Config.skipMostExamples || Config.spinningStar;
-            if (spinningStar) {  // Make the star spin as a test of stepping
-                widget.startStepping(60, "rotateBy", 0.1);
-            }
-        }
-    }
-
     if (Config.show3DLogo) world.addMorph(WindowMorph(Sun3DMorph(pt(570, 100).extent(pt(200, 200))), 'Sun 3D Logo'));
 
     if (Config.showInnerWorld) {
@@ -207,6 +179,34 @@ function populateWorldWithExamples(world, otherWorld, server) {
         }
     
         world.addMorph(lm2); 
+
+        if (Config.showStar) {  // Make a star
+
+            if (Config.loadFromMarkup) {
+                world.addMorphWithContainerId('RotatingStar');
+            } else {
+                var makeStarVertices = function(r,center,startAngle) {
+                    var vertices = [];
+                    var nVerts = 10;
+                    for (var i=0; i<=nVerts; i++) {
+                        var a = startAngle + (2*Math.PI/nVerts*i);
+                        var p = Point.polar(r,a);
+                        if (i%2 == 0) p = p.scaleBy(0.39);
+                        vertices.push(p.addPt(center)); 
+                    }
+                    return vertices; 
+                }
+    
+                widget = Morph.makePolygon(makeStarVertices(50,pt(0,0),0), 1, Color.black, Color.yellow);
+                widget.setPosition(pt(125, 275));
+                lm2.myWorld.addMorph(widget);
+            
+                var spinningStar = !Config.skipMostExamples || Config.spinningStar;
+                if (spinningStar) {  // Make the star spin as a test of stepping
+                    widget.startStepping(60, "rotateBy", 0.1);
+                }
+            }
+        }
 
         if (Config.showSampleMorphs){
             var colors = Color.wheel(4);
