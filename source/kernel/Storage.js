@@ -120,25 +120,26 @@ Object.extend(WebStore.prototype, {
         return this.DirectoryList;
     },
 
+    getCurrentDirectory: function() {
+	return this.CurrentDirectory;
+    },
+
     setCurrentDirectory: function(name) {
-
-
 	if (!name) 
 	    return;
 
 	// add the parent of the current directory to the DirectoryList if it's not there?	
-	var segments = name.split('/');
+	var segments = name.split("/");
 	segments.splice(segments.length - 2, 2);
-	var parent = segments.join('/') + '/';
-	
+	var parent = segments.join("/") + "/";
 	if (this.DirectoryList.indexOf(parent) < 0)  {
 	    // a hack to add the parent dir to enable navigation, just in case.
 	    this.DirectoryList.push(parent);
-	    var before = this.CurrentDirectory;
-	    this.changed('getDirectoryList'); // this may set CurrentDirectory to null
-	    
+	    this.changed('getDirectoryList'); // this may set CurrentDirectory to null so assign to it later here	
 	}
+	    
 	this.CurrentDirectory = name;
+	this.changed('getCurrentDirectory');
 
 	console.log('host %s, dir %s name %s', this.host, this.CurrentDirectory, name);
 	// initialize getting the contents
@@ -152,6 +153,7 @@ Object.extend(WebStore.prototype, {
     
     setCurrentResource: function(name) {
         if (name) {
+
             if (name.endsWith('/')) { // directory, enter it!
 		
 		// only entries with trailing slash i.e., directories
@@ -159,6 +161,7 @@ Object.extend(WebStore.prototype, {
 		    this.getCurrentDirectoryContents().filter(function(name) { return name.endsWith('/')});
                 this.changed("getDirectoryList");
                 this.CurrentDirectory = name;
+		this.changed('getCurrentDirectory');
                 console.log('entering directory %s now', this.CurrentDirectory);
                 this.CurrentResource = null;
                 this.CurrentDirectoryContents = [];
@@ -197,11 +200,12 @@ Object.extend(WebStore.prototype, {
             ['rightPane', ListPane, Rectangle(0.5, 0, 0.5, 0.6)],
             ['bottomPane', TextPane, Rectangle(0, 0.6, 1, 0.4)]
         ]);
-        var m = panel.getNamedMorph('leftPane');
-        m.connectModel({model: this, getList: "getDirectoryList", setSelection: "setCurrentDirectory"});
-        m = panel.getNamedMorph('rightPane');
+        var m = panel.getNamedMorph("leftPane");
+        m.connectModel({model: this, getList: "getDirectoryList", setSelection: "setCurrentDirectory", 
+			getSelection: "getCurrentDirectory"});
+        m = panel.getNamedMorph("rightPane");
         m.connectModel({model: this, getList: "getCurrentDirectoryContents", setSelection: "setCurrentResource"});
-        m = panel.getNamedMorph('bottomPane');
+        m = panel.getNamedMorph("bottomPane");
         m.connectModel({model: this, getText: "getCurrentResourceContents", setText: "setCurrentResourceContents"});
 
         var model = this;
