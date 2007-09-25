@@ -19,7 +19,8 @@
 var WebStore = Class.extend(Model);
 
 Object.extend(WebStore.prototype, {
-    
+    maxFileSize: 3000,
+
     initialize: function(host, path) {
         WebStore.superClass.initialize.call(this);
         this.host = host;
@@ -29,8 +30,8 @@ Object.extend(WebStore.prototype, {
         this.CurrentDirectory = null;
         this.CurrentDirectoryContents = null;
         this.CurrentResource =  null;
-        this.CurrentResourceContents = null;
-        this.LastWriteStatus = 0;
+        this.CurrentResourceContents = "";
+        this.lastWriteStatus = 0;
     },
 
     // basic protocol methods:
@@ -44,13 +45,13 @@ Object.extend(WebStore.prototype, {
 
             onSuccess: function(transport) {
                 store[modelVariable] = transport.responseText;
-                store.changed('get' + modelVariable);
+                store.changed("get" + modelVariable);
             },
     
             onFailure: function(transport) {
                 WorldMorph.current().alert('failed fetching url ' + url);
                 store[modelVariable] = "resource unavailable";
-                store.changed('get' + modelVariable);
+                store.changed("get" + modelVariable);
             }
             // FIXME: on exception
 
@@ -75,13 +76,13 @@ Object.extend(WebStore.prototype, {
 	    
             onSuccess: function(transport) {
                 store[modelVariable] = transport.status;
-                store.changed('get' + modelVariable);
+                store.changed("get" + modelVariable);
             },
     
             onFailure: function(transport) {
                 WorldMorph.current().alert('failed saving with response ' + transport.responseText);
                 //store[modelVariable] = transport.status;
-                //store.changed('get' + modelVariable);
+                //store.changed(modelVariable);
             }
         };
 
@@ -106,12 +107,9 @@ Object.extend(WebStore.prototype, {
             onSuccess: function(transport) {
                 console.log('propfind received %s', 
 			    Exporter.nodeToString(transport.responseXML) || transport.responseText);
-		
                 var result = transport.responseXML.documentElement;
-
                 store[modelVariable] = Query.evaluate(result, xpQueryString);
-                store.changed('get' + modelVariable);
-                // console.info('got listing %s', store[modelVariable].pluck('textContent'));
+                store.changed("get" + modelVariable);
             }.logErrors('onSuccess')
         };
         
@@ -123,12 +121,29 @@ Object.extend(WebStore.prototype, {
     },
 
     setCurrentDirectory: function(name) {
-        this.CurrentDirectory = name;
-        if (this.CurrentDirectory != null) {
-            var url = "http://%1%2%3".format(this.host, this.CurrentDirectory.endsWith('/') ? "": '/', this.CurrentDirectory);
-            // initialize getting the contents
-            this.propfind(url, 1, "/D:multistatus/D:response/D:href", "CurrentDirectoryContents");
-        }
+
+
+	if (!name) 
+	    return;
+
+	// add the parent of the current directory to the DirectoryList if it's not there?	
+	var segments = name.split('/');
+	segments.splice(segments.length - 2, 2);
+	var parent = segments.join('/') + '/';
+	
+	if (this.DirectoryList.indexOf(parent) < 0)  {
+	    // a hack to add the parent dir to enable navigation, just in case.
+	    this.DirectoryList.push(parent);
+	    var before = this.CurrentDirectory;
+	    this.changed('getDirectoryList'); // this may set CurrentDirectory to null
+	    
+	}
+	this.CurrentDirectory = name;
+
+	console.log('host %s, dir %s name %s', this.host, this.CurrentDirectory, name);
+	// initialize getting the contents
+	this.propfind(this.currentDirectoryURL(), 1, "/D:multistatus/D:response/D:href", "CurrentDirectoryContents");
+
     },
     
     getCurrentDirectoryContents: function() {
@@ -138,10 +153,13 @@ Object.extend(WebStore.prototype, {
     setCurrentResource: function(name) {
         if (name) {
             if (name.endsWith('/')) { // directory, enter it!
-                this.DirectoryList = this.getCurrentDirectoryContents();
-                this.changed('getDirectoryList');
-                this.CurrentDirectory = name;//.substring(0, name.length - 1);
-                console.log('current directory %s now', this.CurrentDirectory);
+		
+		// only entries with trailing slash i.e., directories
+                this.DirectoryList = 
+		    this.getCurrentDirectoryContents().filter(function(name) { return name.endsWith('/')});
+                this.changed("getDirectoryList");
+                this.CurrentDirectory = name;
+                console.log('entering directory %s now', this.CurrentDirectory);
                 this.CurrentResource = null;
                 this.CurrentDirectoryContents = [];
                 this.changed('getCurrentDirectoryContents');
@@ -156,17 +174,17 @@ Object.extend(WebStore.prototype, {
     },
     
     currentResourceURL: function() {
-        var path = this.CurrentResource;
-        if (!path) { 
-            path = "";
-        } else if (path.startsWith('/')) {
-            path = path.substring(1);
-        }
-        return "http://%1/%2".format(this.host, path);
+	if (!this.CurrentResource) return "http://" + this.host;
+	else return "http://%1%2%3".format(this.host, this.CurrentResource.startsWith('/') ? "": "/", this.CurrentResource);
+    },
+
+    currentDirectoryURL: function() {
+        return "http://%1%2%3".format(this.host, this.CurrentDirectory.startsWith('/') ? "": "/", this.CurrentDirectory);
+
     },
     
     getCurrentResourceContents: function() {
-        return this.CurrentResourceContents;
+        return (this.CurrentResourceContents || "").truncate(this.maxFileSize);
     },
     
     setCurrentResourceContents: function(contents) {
@@ -185,15 +203,19 @@ Object.extend(WebStore.prototype, {
         m.connectModel({model: this, getList: "getCurrentDirectoryContents", setSelection: "setCurrentResource"});
         m = panel.getNamedMorph('bottomPane');
         m.connectModel({model: this, getText: "getCurrentResourceContents", setText: "setCurrentResourceContents"});
-	
+
         var model = this;
         
         m.innerMorph().processCommandKeys = function(key) {
             if (key == 's') {
-                console.log('in %s', this.owner());
-                //model.addCredentialDialog(this.world());
-                model.save(model.currentResourceURL(), this.textString, 'LastWriteStatus');
-                return;
+		if (model.CurrentResourceContents.length > model.maxFileSize) {
+		    this.world().alert("not saving file, size " + model.CurrentResourceContents.length 
+				       + " > " + model.maxFileSize + ", too large");
+		} else {
+		    model.CurrentResourceContents = this.textString;
+                    model.save(model.currentResourceURL(), this.textString, "LastWriteStatus");
+		}
+                return true;
             } else {
                 return TextMorph.prototype.processCommandKeys.call(this, key);
             }

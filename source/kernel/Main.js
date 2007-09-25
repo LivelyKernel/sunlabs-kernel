@@ -277,7 +277,7 @@ function populateWorldWithExamples(world) {
 
         if (Config.showWebStore) {
             if (location.protocol == 'file:') {
-                var store = new WebStore('localhost', '~kappa'); // TODO: hardcoded
+                var store = new WebStore('localhost', '/~kappa/'); // TODO: hardcoded
             } else {
                 var store = new WebStore(location.hostname, 
 		    location.pathname.substring(0, location.pathname.lastIndexOf('index.xhtml')));
