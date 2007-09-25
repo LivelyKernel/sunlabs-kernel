@@ -865,13 +865,12 @@ Object.category(Color, 'core', function() { return {
     parse: function(str) {
         if (!str || str == "none") 
             return null;
-
-        if (str.startsWith("rgb(")) {
-            var arr = str.substring("rgb(".length, str.indexOf(")")).split(",");
-            return Color.rgb(parseInt(arr[0]), parseInt(arr[1]), parseInt(arr[2]));
-        } else {
+	// FIXME this should be much more refined
+	var match = str.match("rgb\\((\\d+),(\\d+),(\\d+)\\)");
+        if (match) 
+            return Color.rgb(parseInt(match[1]), parseInt(match[2]), parseInt(match[3]));
+        else 
             throw new Error('color ' + str + ' unsupported');
-        }
     },
     
     rgb: function(r, g, b) {
@@ -2637,9 +2636,7 @@ Object.extend(Morph.prototype, {
     },
     
     removeAllMorphs: function() {
-        // with (this) {
         this.submorphs.removeAll();
-        // while (submorphs.firstChild) submorphs.removeChild(submorphs.firstChild);
         this.layoutChanged(); 
     },
     
@@ -3125,7 +3122,7 @@ Object.extend(Morph.prototype, {
             [((this.openForDragAndDrop) ? "close DnD" : "open DnD"), this.toggleDnD.curry(evt.mousePoint)],
             ["show Lively markup", this.addSvgInspector.curry(this)],
             ["publish shrink-wrapped as...", function() { 
-            WorldMorph.current().makeShrinkWrappedWorldWith(this, WorldMorph.current().prompt('publish as')) }]
+		WorldMorph.current().makeShrinkWrappedWorldWith(this, WorldMorph.current().prompt('publish as')) }]
         ];
         var menu = MenuMorph(items, this); 
         if (!this.okToDuplicate()) menu.removeItemNamed("duplicate");

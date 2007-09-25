@@ -283,7 +283,8 @@ function populateWorldWithExamples(world) {
 		    location.pathname.substring(0, location.pathname.lastIndexOf('index.xhtml')));
             }
             WebStore.defaultStore = store;
-            store.openIn(devWorld.myWorld, pt(460, 120));
+            store.openIn(Config.webStoreInMain ? WorldMorph.current() : devWorld.myWorld, pt(460, 120));
+
         }
 
         if (Config.showTester) new WidgetTester().openIn(devWorld.myWorld, pt(135, 480));

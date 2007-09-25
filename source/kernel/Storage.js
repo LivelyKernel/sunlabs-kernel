@@ -37,7 +37,6 @@ Object.extend(WebStore.prototype, {
 
     fetch: function(url, modelVariable) {
         // retrieve the the contents of the url and save in the indicated model variable
-        console.log('fetching url ' + url);
         var store = this;
         var options =  {
             method: 'GET',
@@ -186,7 +185,7 @@ Object.extend(WebStore.prototype, {
         m.connectModel({model: this, getList: "getCurrentDirectoryContents", setSelection: "setCurrentResource"});
         m = panel.getNamedMorph('bottomPane');
         m.connectModel({model: this, getText: "getCurrentResourceContents", setText: "setCurrentResourceContents"});
-
+	
         var model = this;
         
         m.innerMorph().processCommandKeys = function(key) {
@@ -201,7 +200,7 @@ Object.extend(WebStore.prototype, {
         }
         return panel;
     },
-
+    
     addCredentialDialog: function(panel) {
         (new Credential()).openIn(panel.world(), panel.worldPoint(panel.bounds().topLeft()).addXY(30, 20));
     },
