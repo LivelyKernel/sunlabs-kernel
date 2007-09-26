@@ -276,11 +276,11 @@ function populateWorldWithExamples(world) {
         }
 
         if (Config.showWebStore) {
+	    var store;
             if (location.protocol == 'file:') {
-                var store = new WebStore('localhost', '/~kappa/'); // TODO: hardcoded
+                store = new WebStore('localhost', '/~kappa/'); // TODO: hardcoded
             } else {
-                var store = new WebStore(location.hostname, 
-		    location.pathname.substring(0, location.pathname.lastIndexOf('index.xhtml')));
+                store = WebStore.onCurrentLocation();
             }
             WebStore.defaultStore = store;
             store.openIn(Config.webStoreInMain ? WorldMorph.current() : devWorld.myWorld, pt(460, 120));
@@ -299,7 +299,8 @@ function main() {
     var world = WorldMorph(Canvas);
     WorldMorph.setCurrent(world);
     world.displayWorldOn(Canvas);
-    console.log('made world');
+    console.log('made world ');
+    world.addMorphsFrom("ShrinkWrapped");
 
     // Populate the world with sample objects, widgets and applications
     if (Config.skipAllExamples) return;

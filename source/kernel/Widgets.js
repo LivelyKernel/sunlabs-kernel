@@ -2306,6 +2306,9 @@ Object.extend(WorldMorph.prototype, {
             ["TextMorph", function(evt) { world.addMorph(TextMorph(evt.mousePoint.extent(pt(120, 10)), "This is a TextMorph"));}],
             ["Class Browser", function(evt) { new SimpleBrowser().openIn(world, evt.mousePoint); }]
         ];
+	if (window.location.protocol == "http:") {
+	    items.push(["File Browser", function(evt) { WebStore.onCurrentLocation().openIn(world, evt.mousePoint) }])
+	}
         MenuMorph(items, this).openIn(this.world(), evt.mousePoint);
     },
 
@@ -2366,10 +2369,7 @@ Object.extend(WorldMorph.prototype, {
 
         container.setAttribute("id", "ShrinkWrapped");
         mainDefs.appendChild(container);
-        mainDefs.appendChild(newDoc.createTextNode('\n'));
-        var postamble = newDoc.createElementNS(Namespace.SVG, "script");
-        postamble.appendChild(newDoc.createCDATASection('WorldMorph.current().addMorphsFrom("ShrinkWrapped");'));
-        mainDefs.appendChild(postamble);
+
         var content = Exporter.nodeToString(newDoc);
         console.info('writing new file ' + content);
         var failed = true;
@@ -2380,13 +2380,18 @@ Object.extend(WorldMorph.prototype, {
             body: content,
             onSuccess: function(transport) {
                 failed = false;
-            }
+            },
+	    onFailure: function(transport) {
+		this.alert('failed saving world at url %s', url);
+		failed = true;
+	    }
 
         });
     },
 
     addMorphsFrom: function(id) {
         var container = document.getElementById(id);
+	if (!container) return null;
         var morphs = [];
         for (var node = container.firstChild; node != null; node = node.nextSibling) {
             if (node.tagName != 'g') continue;
@@ -2395,6 +2400,7 @@ Object.extend(WorldMorph.prototype, {
 
         var importer = new Importer();
         morphs.each(function(m) { this.addMorph(importer.importFromNode(m)) }.bind(this));
+	return morphs;
     },
 
     alert: function(message) {

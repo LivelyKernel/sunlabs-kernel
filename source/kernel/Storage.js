@@ -46,6 +46,15 @@ Object.extend(Resource.prototype, {
 
 var WebStore = Class.extend(Model);
 
+Object.extend(WebStore, {
+    defaultStore: null,
+    onCurrentLocation: function() {
+	return new WebStore(location.hostname, 
+			    location.pathname.substring(0, location.pathname.lastIndexOf('index.xhtml')));
+    }
+
+});
+
 Object.extend(WebStore.prototype, {
     maxFileSize: 3000,
 
@@ -112,6 +121,7 @@ Object.extend(WebStore.prototype, {
                 //store[modelVariable] = transport.status;
                 //store.changed(modelVariable);
             }
+	    
         };
 
         new NetRequest(url, options);
@@ -265,10 +275,11 @@ Object.extend(WebStore.prototype, {
         (new Credential()).openIn(panel.world(), panel.worldPoint(panel.bounds().topLeft()).addXY(30, 20));
     },
     
-    openIn: function(world, location) {
-        console.log('opening web store in %s', location);
-        var panel = this.buildView(pt(400,300));
-        world.addMorphAt(WindowMorph(panel, "Directory Browser on " + this.host), location);
+    openIn: function(world, loc) {
+	if (!loc) loc = world.bounds().center();
+        console.log('opening web store at %s', loc);
+        var panel = this.buildView(pt(400, 300));
+        world.addMorphAt(WindowMorph(panel, "Directory Browser on " + this.host), loc);
         // this.addCredentialDialog(panel);
         this.changed('getDirectoryList');
     }
@@ -362,11 +373,13 @@ Object.extend(Credential.prototype, {
 
     },
 
-    openIn: function(world, location) {
-        console.log('opening credential dialog in %s', location);
-        world.addMorphAt(this.buildView(), location);
+    openIn: function(world, loc) {
+        console.log('opening credential dialog in %s', loc);
+        world.addMorphAt(this.buildView(), loc);
         //this.changed('getDirectoryList');
-    }
+    },
+    
+    
 
 });
 
