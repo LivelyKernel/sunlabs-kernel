@@ -683,6 +683,7 @@ Object.extend(WindowMorph.prototype, {
 	return true;  // it's in my content area
     },
 	
+    // Next four methods hold onto control until mouseUp brings the window forward.
     handlesMouseDown: function(evt) { return this.needsToComeForward(evt); },
 
     onMouseDown: function(evt) { },
@@ -2104,7 +2105,7 @@ Object.extend(WorldMorph.prototype, {
         menu.addLine();
         menu.addItem(["new object...", this.addMorphs.curry(evt)]);
         menu.addLine();
-        menu.addItem(["choose display theme...", this.chooseDisplayTheme]);
+        menu.addItem(["choose display theme...", this, 'chooseDisplayTheme', null]);
         menu.addItem([(Config.useDebugBackground ? "use normal background" : "use debug background"),
                       this.toggleDebugBackground]);
         menu.addLine();
@@ -2131,7 +2132,8 @@ Object.extend(WorldMorph.prototype, {
         var themeNames = Object.properties(themes);
         var items = themeNames.map(
             function(each) { return [each, target, "setDisplayTheme", themes[each]]; });
-        MenuMorph(items, this).openIn(this.world(), evt.mousePoint);
+        var menu = MenuMorph(items, this);
+	menu.openIn(this.world(), evt.mousePoint);
     },
   
     setDisplayTheme: function(styleDict) { 
@@ -2625,7 +2627,7 @@ Object.extend(HandMorph.prototype, {
 			this.mouseOverMorph = receiver;
 			// console.log('msOverMorph set to: ' + Object.inspect(this.mouseOverMorph));
 			this.mouseOverMorph.onMouseOver(evt);
-			if (!receiver.canvas()) return;  // prevent errors after world-switch
+			if (!receiver || !receiver.canvas()) return;  // prevent errors after world-switch
 
 		    // Note if onMouseOver sets focus, it will get onMouseMove
 		    if(this.mouseFocus) this.mouseFocus.mouseEvent(evt, true);
