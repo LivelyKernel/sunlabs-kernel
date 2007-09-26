@@ -16,6 +16,34 @@
  * @class WebStore: Network-based storage
  */ 
 
+Resource = Class.create();
+
+Object.extend(Resource.prototype, {
+    initialize: function(href) {
+	this.href = href;
+    },
+    become: function() {
+        this.href = Query.evaluate(this, 'D:href')[0].textContent;
+    },
+    toString: function() {
+	return this.href;
+    },
+    
+    name: function() {
+	return this.href;
+	/*
+	var segments = this.href.split('/');
+	if (this.href.endsWith('/')) {
+	    return segments.splice(segments.length - 2, 2).join('/');
+	} else {
+	    return segments[segments.length -1];
+	}
+*/
+
+    }
+});
+
+
 var WebStore = Class.extend(Model);
 
 Object.extend(WebStore.prototype, {
@@ -28,7 +56,7 @@ Object.extend(WebStore.prototype, {
 
         this.DirectoryList = [ path ];
         this.CurrentDirectory = null;
-        this.CurrentDirectoryContents = null;
+        this.CurrentDirectoryContents = null; // :Resource[]
         this.CurrentResource =  null;
         this.CurrentResourceContents = "";
         this.lastWriteStatus = 0;
@@ -90,7 +118,7 @@ Object.extend(WebStore.prototype, {
     },
 
     // FIXME handle object argument
-    propfind: function(url, depth, xpQueryString, modelVariable) {
+    propfind: function(url, depth, xpQueryString, modelVariable, resultType) {
         // find the properties given the url and save the results of the indicated query into the model variable
         if (depth != 0 && depth != 1) depth = 'infinity';
 
@@ -107,8 +135,15 @@ Object.extend(WebStore.prototype, {
             onSuccess: function(transport) {
                 console.log('propfind received %s', 
 			    Exporter.nodeToString(transport.responseXML) || transport.responseText);
-                var result = transport.responseXML.documentElement;
-                store[modelVariable] = Query.evaluate(result, xpQueryString);
+                var result = Query.evaluate(transport.responseXML.documentElement, xpQueryString);
+		if (!resultType) 
+                    store[modelVariable] = result;
+		else 
+		    store[modelVariable] = result.map(function(r) { 
+			HostClass.becomeInstance(r, resultType); 
+			r.become(); 
+			return r;
+		    });
                 store.changed("get" + modelVariable);
             }.logErrors('onSuccess')
         };
@@ -143,22 +178,21 @@ Object.extend(WebStore.prototype, {
 
 	console.log('host %s, dir %s name %s', this.host, this.CurrentDirectory, name);
 	// initialize getting the contents
-	this.propfind(this.currentDirectoryURL(), 1, "/D:multistatus/D:response/D:href", "CurrentDirectoryContents");
-
+	this.propfind(this.currentDirectoryURL(), 1, "/D:multistatus/D:response", "CurrentDirectoryContents", Resource);
     },
     
     getCurrentDirectoryContents: function() {
-        return (this.CurrentDirectoryContents || []).pluck("textContent");
+	return (this.CurrentDirectoryContents || []).invoke("name");
     },
     
     setCurrentResource: function(name) {
         if (name) {
-
+	    console.log('name is %s', name);
             if (name.endsWith('/')) { // directory, enter it!
 		
 		// only entries with trailing slash i.e., directories
                 this.DirectoryList = 
-		    this.getCurrentDirectoryContents().filter(function(name) { return name.endsWith('/')});
+		    this.getCurrentDirectoryContents().filter(function(res) { return res.endsWith('/')});
                 this.changed("getDirectoryList");
                 this.CurrentDirectory = name;
 		this.changed('getCurrentDirectory');
