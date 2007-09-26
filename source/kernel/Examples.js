@@ -346,6 +346,7 @@ Object.extend(DoodleMorph.prototype, {
         DoodleMorph.superClass.initialize.call(this, rect, "rect");
         this.drawingColor = Color.red;
         this.lineWidth = 2.0;
+        this.colorvalue = true;
         
         // The doodle that we are creating currently
         this.currentMorph = null;
@@ -393,7 +394,6 @@ Object.extend(DoodleMorph.prototype, {
         this.widthbutton.connectModel({model: this, setValue: "setLine"});
         this.addMorph(this.widthbutton);
 
-        this.colorsbutton.setToggle(true);
         this.colorsbutton.connectModel({model: this, setValue: "setColor", getValue: "getColor"});
         this.addMorph(this.colorsbutton);
 
@@ -426,7 +426,10 @@ Object.extend(DoodleMorph.prototype, {
     onMouseDown: function(evt) { // Default behavior is to grab a submorph
         this.openForDragAndDrop = true;
         var m = this.morphToReceiveEvent(evt);
-        if (m == null || m == this) { this.makeSelection(evt); return true; }
+        if (m == null || m == this) { 
+            this.makeSelection(evt); 
+            return true; 
+        }
         if (m.handlesMouseDown(evt)) return false;
         evt.hand.grabMorph(m, evt);
         return true; 
@@ -434,7 +437,7 @@ Object.extend(DoodleMorph.prototype, {
 
     handlesMouseDown: function() { return true; },
 
-    makeSelection: function(evt) { // Default behavior is to grab a submorph
+    makeSelection: function(evt) { 
         if (this.currentSelection != null) this.currentSelection.removeOnlyIt();
         if ( !evt.hand.mouseButtonPressed ) return;
         var m = SelectionMorph(evt.mousePoint.extent(pt(5,5)), this);
@@ -444,7 +447,7 @@ Object.extend(DoodleMorph.prototype, {
         var handle = HandleMorph(evt.mousePoint, "rect", evt.hand, m, "bottomRight");
         m.addMorph(handle);
         handle.setBounds(handle.bounds().center().asRectangle());
-        if (evt.hand.mouseFocus instanceof HandleMorph) evt.hand.mouseFocus.remove();
+//        if (evt.hand.mouseFocus instanceof HandleMorph) evt.hand.mouseFocus.remove();
         evt.hand.setMouseFocus(handle);
     },    
 
@@ -492,8 +495,9 @@ Object.extend(DoodleMorph.prototype, {
     },
     
     setColor: function(val) {
-        this.colorvalue = val;
+        this.colorvalue = val && this.colorvalue;
         if ( !this.colorvalue ) { // false
+            this.colorvalue = !this.colorvalue;
             this.colorMorph.remove();
             return;
         }
@@ -502,6 +506,7 @@ Object.extend(DoodleMorph.prototype, {
                 this.colorMorph.setPosition(this.colorsbutton.bounds().topRight().subPt(pt(0,20)));
             }
             this.addMorph(this.colorMorph);
+            this.colorvalue = !this.colorvalue;
             return;
         }
   
@@ -539,6 +544,7 @@ Object.extend(DoodleMorph.prototype, {
         this.addMorph(this.colorMorph);
         this.colorpicker.connectModel({model: this, setColor: "setColoring"});
         this.fillpicker.connectModel({model: this, setColor: "setFillColor"});
+        this.colorvalue = !this.colorvalue;
     },
     
     getColor: function() {
