@@ -259,7 +259,7 @@ function populateWorldWithExamples(world) {
         world.addMorph(devWorld);
 
         var developerTextMorph = TextMorph(Rectangle(90, 500, 100, 25),
-                                           "Tools for self-modification");
+                                           "Development Tools");
 
         developerTextMorph.shape.roundEdgesBy(10);
         world.addMorph(developerTextMorph);
