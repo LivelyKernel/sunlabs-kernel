@@ -577,6 +577,8 @@ Object.extend(WindowControlMorph.prototype, {
             this.help.shape.roundEdgesBy(15);
             this.help.setFill(Color.primary.yellow.lighter(3));
             this.help.shape.setFillOpacity(0.8);
+        } else if ( this.help.position() != pt(evt.x, evt.y) ) {
+            this.help.setPosition(pt(evt.x, evt.y));
         }
         // trying to relay mouse events to the WindowControlMorph
         this.world().addMorph(this.help);
