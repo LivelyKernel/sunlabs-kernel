@@ -89,7 +89,8 @@ function populateWorldWithExamples(world) {
 
     if (Config.showStocks && Config.showNetworkExamples) {
         var stockWidget = new StockWidget();
-        stockWidget.startSteppingRefreshCharts(stockWidget.openIn(world, pt(350, 500)));
+        var panel = stockWidget.openIn(world, pt(350, 500));
+	stockWidget.startSteppingRefreshCharts(panel);
     }
 
     if (Config.show3DLogo) world.addMorph(WindowMorph(Sun3DMorph(pt(570, 100).extent(pt(200, 200))), 'Sun 3D Logo'));

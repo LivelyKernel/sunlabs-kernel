@@ -381,7 +381,7 @@ TitleBarMorph = HostClass.create('TitleBarMorph', Morph);
 
 Object.extend(TitleBarMorph.prototype, {
     // prototype variables
-    barHeight: 20,
+    barHeight: 22,
     controlSpacing: 3,
     defaultBorderWidth: 0.5,
 
@@ -424,17 +424,17 @@ Object.extend(TitleBarMorph.prototype, {
 
         // var font = Font.forFamily(TextMorph.prototype.fontFamily, TextMorph.prototype.fontSize);
 
-        var label;
         if (headline instanceof TextMorph) {
-            label = headline;
+            this.label = headline;
         } else { // String
             var width = headline.length * 8; // wild guess headlineString.length * 2 *  font.getCharWidth(' ') + 2;
-            label = TextMorph(Rectangle(0, 0, width, bh), headline).beLabel();
+            this.label = TextMorph(Rectangle(0, 0, width, bh), headline).beLabel();
+	    this.label.shape.roundEdgesBy(8);
         }
 
-        label.align(label.bounds().topCenter(), this.shape.bounds().topCenter());
-        label.ignoreEvents();
-        this.addMorph(label);
+        this.label.align(this.label.bounds().topCenter(), this.shape.bounds().topCenter().addXY(0,1));
+        this.label.ignoreEvents();
+        this.addMorph(this.label);
         return this;
     },
 
@@ -443,12 +443,17 @@ Object.extend(TitleBarMorph.prototype, {
         return morph instanceof WindowControlMorph; // not used yet... how about text...
     },
 
+    highlight: function(trueForLight) {
+        if (trueForLight) this.label.setFill(Color.white);
+	else this.label.setFill(null);
+    },
+
     okToBeGrabbedBy: function(evt) {
         return this.windowMorph.isCollapsed() ? this : this.windowMorph;
     },
 
     okToDuplicate: function(evt) {
-        return false;
+	return false;
     }
 
 });
@@ -621,14 +626,9 @@ Object.extend(WindowMorph.prototype, {
         return TitleBarMorph(headline, width, this, false);
     },
 
-    windowContent: function() {
-        return this.targetMorph;
-    },
+    windowContent: function() { return this.targetMorph; },
     
-    immediateContainer: function() {
-        // Content may need to know
-        return this;
-    },
+    immediateContainer: function() { return this;  },
 
     toggleCollapse: function() {
         return this.isCollapsed() ? this.expand() : this.collapse();
@@ -661,56 +661,51 @@ Object.extend(WindowMorph.prototype, {
         this.state = "expanded";
     },
 
-    isCollapsed: function() {
-        return this.state == "collapsed";
-    },
+    isCollapsed: function() { return this.state == "collapsed"; },
 
-/*
-    // Dan's experiment to promote windows on first click
+    //Following methods promote windows on first click----------------
     morphToGrabOrReceive: function(evt, droppingMorph, checkForDnD) {
-	// If this window is "on top", then respond normally
-	if (this.isCollapsed() || this === this.world().topSubmorph())
-	{ return WindowMorph.superClass.morphToGrabOrReceive.call(this, evt, droppingMorph, checkForDnD) }
-
+	// If this window is doesn't need to come forward, then respond normally
+	if (!this.needsToComeForward(evt)) {
+	    return WindowMorph.superClass.morphToGrabOrReceive.call(this, evt, droppingMorph, checkForDnD)
+	}
 	// Otherwise, hold mouse focus until mouseUp brings it to the top
-console.log('windowmorph MTGR 2');
 	return this;
     },
 
-    handlesMouseDown: function(evt) {
-	return ! this.isInFront();
+    needsToComeForward: function(evt) {
+	if (!this.fullContainsWorldPoint(evt.mousePoint)) return false;  // not clicked in me
+	if (this === this.world().topSubmorph()) return false;  // already on top
+	if (this.isCollapsed()) return false;  // collapsed labels OK from below
+	if (this.titleBar.fullContainsWorldPoint(evt.mousePoint)) return false;  // labels OK from below
+	return true;  // it's in my content area
     },
+	
+    handlesMouseDown: function(evt) { return this.needsToComeForward(evt); },
 
-    isInFront: function(evt) {
-	return this.isCollapsed() || this === this.world().topSubmorph();
-    },
-
-    onMouseDown: function(evt) {
-    },
+    onMouseDown: function(evt) { },
 
     onMouseMove: function(evt) { },
 
     onMouseUp: function(evt) {
 	// I've been clicked on when not on top.  Bring me to the top now
-	evt.hand.setMouseFocus(null);
-console.log('windowmorph mouseUp');
-console.log('this.isInFront() = ' + this.isInFront());
+	var oldTop = this.world().topSubmorph();
+	if(oldTop instanceof WindowMorph) oldTop.titleBar.highlight(false);
 	this.world().addMorphFront(this);
-console.log('this.isInFront() = ' + this.isInFront());
-	// this.lightTitleTab();
+	evt.hand.setMouseFocus(null);
+	this.titleBar.highlight(true);
 	return true;
     },
 
     mouseEvent: function(evt, hasFocus) {
-	if (this.isInFront())
-	{ return WindowMorph.superClass.mouseEvent.call(this, evt, hasFocus) }
+	if (!this.needsToComeForward(evt)) {
+	    return WindowMorph.superClass.mouseEvent.call(this, evt, hasFocus)
+	}
         return this.mouseHandler.handleMouseEvent(evt, this); 
     },
-*/
+    //End of window promotion methods----------------
 
-    isShutdown: function() {
-        return this.state == "shutdown";
-    },
+    isShutdown: function() { return this.state == "shutdown"; },
 
     initiateShutdown: function() {
         if (this.isShutdown()) return;

@@ -2622,6 +2622,12 @@ Object.extend(StockWidget.prototype, {
         this.setCompany('JAVA');
         var model = this;
         
+	panel.refresh = function() {
+	    // console.log("Refreshing charts...");
+	    this.leftChartImage.reload(); 
+	    this.rightChartImage.reload(); 
+	},
+
         panel.shutdown = function() {
             PanelMorph.superClass.shutdown.call(this);
             console.log('shutting down the stock widget');
@@ -2635,15 +2641,9 @@ Object.extend(StockWidget.prototype, {
         return this.formatQuote(this.lastQuote);
     },
 
-    refreshCharts: function(panel) {
-        console.log("Refreshing charts...");
-        panel.leftChartImage.reload(); 
-        panel.rightChartImage.reload(); 
-    },
-
     startSteppingRefreshCharts: function(panel) {
-        // this.startSteppingFunction(30000, this.refreshCharts);
-        this.timer = setInterval(this.refreshCharts.bind(this).curry(panel).logErrors('Stock Refresh'), 30000);
+        panel.startStepping(60000, 'refresh');
+	//this.timer = setInterval(this.refreshCharts.bind(this).curry(panel).logErrors('Stock Refresh'), 30000);
     },
 
     getUrl: function(url, params) {
