@@ -2061,6 +2061,7 @@ Object.extend(MouseHandlerForDragging.prototype, {
     }
 });
 
+// DI: MouseOverHandler is no longer needed because HandMorph provides this function
 var MouseOverHandler = { 
     handleEvent: function(evt) { 
         evt.init();
@@ -2957,14 +2958,15 @@ Object.extend(Morph.prototype, {
     
     onMouseMove: function(evt) { //default behavior
         if (evt.mouseButtonPressed && this.owner().openForDragAndDrop) this.moveBy(evt.mousePoint.subPt(evt.priorPoint));
-        else this.checkForControlPointNear(evt);
+        //else this.checkForControlPointNear(evt);
+        if (!evt.mouseButtonPressed) this.checkForControlPointNear(evt);
     },
     
     onMouseUp: function(evt) { }, //default behavior
 
-    onMouseOver: function(evt) {
-        // default behavior is do nothing
-    },
+    onMouseOver: function(evt) { }, //default behavior
+
+    onMouseOut: function(evt) { }, //default behavior
 
     designMode: false,
     
@@ -3442,7 +3444,11 @@ Object.extend(Morph.prototype, {
     },
     
     // map world point to local coordinates
-    localize: function(pt) {   
+    localize: function(pt) {
+	if(pt == null) console.log('null pt');   
+	if(pt.matrixTransform == null) console.log('null pt.matrixTransform');   
+	if(this.canvas() == null) console.log('null this.canvas()');   
+	if(this.canvas().getTransformToElement(this) == null) console.log('null this.canvas().getTransformToElement(this)');   
         return pt.matrixTransform(this.canvas().getTransformToElement(this));
     },
     

@@ -529,7 +529,6 @@ Object.extend(WindowControlMorph.prototype, {
         this.target = target;
         this.action = action;
         this.color = color;
-        MouseOverHandler.observe(this);
         this.helpText = helpText; // string to be displayed when mouse is brought over the icon
         return this;
     },
@@ -665,7 +664,50 @@ Object.extend(WindowMorph.prototype, {
     isCollapsed: function() {
         return this.state == "collapsed";
     },
-    
+
+/*
+    // Dan's experiment to promote windows on first click
+    morphToGrabOrReceive: function(evt, droppingMorph, checkForDnD) {
+	// If this window is "on top", then respond normally
+	if (this.isCollapsed() || this === this.world().topSubmorph())
+	{ return WindowMorph.superClass.morphToGrabOrReceive.call(this, evt, droppingMorph, checkForDnD) }
+
+	// Otherwise, hold mouse focus until mouseUp brings it to the top
+console.log('windowmorph MTGR 2');
+	return this;
+    },
+
+    handlesMouseDown: function(evt) {
+	return ! this.isInFront();
+    },
+
+    isInFront: function(evt) {
+	return this.isCollapsed() || this === this.world().topSubmorph();
+    },
+
+    onMouseDown: function(evt) {
+    },
+
+    onMouseMove: function(evt) { },
+
+    onMouseUp: function(evt) {
+	// I've been clicked on when not on top.  Bring me to the top now
+	evt.hand.setMouseFocus(null);
+console.log('windowmorph mouseUp');
+console.log('this.isInFront() = ' + this.isInFront());
+	this.world().addMorphFront(this);
+console.log('this.isInFront() = ' + this.isInFront());
+	// this.lightTitleTab();
+	return true;
+    },
+
+    mouseEvent: function(evt, hasFocus) {
+	if (this.isInFront())
+	{ return WindowMorph.superClass.mouseEvent.call(this, evt, hasFocus) }
+        return this.mouseHandler.handleMouseEvent(evt, this); 
+    },
+*/
+
     isShutdown: function() {
         return this.state == "shutdown";
     },
@@ -925,6 +967,7 @@ Object.extend(SelectionMorph.prototype, {
         this.originalPoint = viewPort.topLeft();
         this.reshapeName = "bottomRight";
         this.selectedMorphs = [];
+	this.initialSelection = true;
         this.shape.setFillOpacity(0.1);
         this.myWorld = defaultworldOrNull ? defaultworldOrNull : this.world();
         // this.shape.setAttributeNS(null, "stroke-dasharray", "3,2");
@@ -932,13 +975,15 @@ Object.extend(SelectionMorph.prototype, {
     },
     
     reshape: function(partName, newPoint, handle, lastCall) {
-        // User might actually move in another direction than toward bottomRight
+        // Initial selection might actually move in another direction than toward bottomRight
         // This code watches that and changes the control point if so
-        var selRect = Rectangle.fromAny(pt(0,0), newPoint);
-        if (this.reshapeName == null && selRect.width*selRect.height > 30) {
-            this.reshapeName = selRect.partNameNearest(Rectangle.corners, newPoint);
-        }
-        this.setBounds(this.originalPoint.asRectangle())
+        if (this.initialSelection) {
+		var selRect = Rectangle.fromAny(pt(0,0), newPoint);
+        	if (selRect.width*selRect.height > 30) {
+            		this.reshapeName = selRect.partNameNearest(Rectangle.corners, newPoint);
+        	}
+        	this.setBounds(this.originalPoint.asRectangle())
+	} else { this.reshapeName = partName; }
 
         SelectionMorph.superClass.reshape.call(this, this.reshapeName, newPoint, handle, lastCall);
         this.selectedMorphs = [];
@@ -947,7 +992,8 @@ Object.extend(SelectionMorph.prototype, {
         }.bind(this));
         this.selectedMorphs.reverse();
             
-        if (lastCall && this.selectedMorphs.length == 0) this.remove();
+        if (lastCall) this.initialSelection = false;
+	if (lastCall && this.selectedMorphs.length == 0) this.remove();
     },
 
     morphMenu: function(evt) { 
@@ -2489,7 +2535,7 @@ Object.extend(HandMorph.prototype, {
 
         this.keyboardFocus = null;
         this.mouseFocus = null;
-        this.mode = "normal";
+        this.mouseOverMorph = null;
         this.lastMouseEvent = Event.makeSyntheticMouseEvent().init();
         this.lastMouseDownPoint = pt(0,0);
         this.hasMovedSignificantly = false;
@@ -2547,10 +2593,6 @@ Object.extend(HandMorph.prototype, {
         }
     },
     
-    setHandMode: function(newMode) {
-        this.mode = newMode; 
-    },
-    
     owner: function() {
         return this.ownerWorld;
     },
@@ -2561,46 +2603,45 @@ Object.extend(HandMorph.prototype, {
 
     handleMouseEvent: function(evt) { 
         evt.hand = this; // extra copy needed for entry from HandRemoteControl
+	evt.setButtonPressedAndPriorPoint(this.mouseButtonPressed, this.lastMouseEvent.mousePoint);
     
-        if (evt.type == "mousemove") { // it is just a move
-            evt.setButtonPressedAndPriorPoint(this.mouseButtonPressed, this.lastMouseEvent.mousePoint);
+        //-------------
+	// mouse move
+	//-------------
+	if (evt.type == "mousemove") { // it is just a move
             this.setPosition(evt.mousePoint);
             this.recordChange('origin');
              
             if (evt.mousePoint.dist(this.lastMouseDownPoint) > 10) 
                 this.hasMovedSignificantly = true;
                 
-            if (evt.shiftKey && this.mode == "shiftDragForDup") {
-                if (this.hasMovedSignificantly && this.mode == "shiftDragForDup") {
-                    var m = this.dragMorph;
-                    if (!m.okToDuplicate()) return;
-                    this.dragMorph = null;
-                    this.mode = "normal";
-                    m.copyToHand(this);
-                    var offset = evt.mousePoint.subPt(this.lastMouseDownPoint);
-                    this.submorphs.each(function(m) { m.moveBy(offset); });
-                }
-                return;
-            }
+            if (this.mouseFocus) { // if mouseFocus is set, events go to that morph
+		this.mouseFocus.mouseEvent(evt, true);
 
-            if (this.mouseFocus==null && this.hasSubmorphs()) { // generate mouseOver events when laden
-                var receiver = this.owner().morphToReceiveEvent(evt);
-                if (receiver != null) receiver.onMouseOver(evt);
             } else {
-                // (this.mouseFocus || this.owner()).mouseEvent(evt, this.mouseFocus != null);
-                if (this.mouseFocus) this.mouseFocus.mouseEvent(evt, this.mouseFocus != null);
-                // else if (!this.mouseButtonPressed) this.owner().mouseEvent(evt, this.mouseFocus != null);
-                // Try doing nothing with drag if there is no focus
-                //  in an attempt to stop dragging things by accident
-                else if (this.owner()) this.owner().mouseEvent(evt, this.mouseFocus != null);
+		if (this.owner()) {
+		    var receiver = this.owner().morphToReceiveEvent(evt);
+		    if (receiver !== this.mouseOverMorph) {
+
+			// if over a new morph, send onMouseOut, onMouseOver
+			if(this.mouseOverMorph) this.mouseOverMorph.onMouseOut(evt);
+			this.mouseOverMorph = receiver;
+			// console.log('msOverMorph set to: ' + Object.inspect(this.mouseOverMorph));
+			this.mouseOverMorph.onMouseOver(evt);
+			if (!receiver.canvas()) return;  // prevent errors after world-switch
+
+		    // Note if onMouseOver sets focus, it will get onMouseMove
+		    if(this.mouseFocus) this.mouseFocus.mouseEvent(evt, true);
+		    else if(!evt.hand.hasSubmorphs()) this.owner().mouseEvent(evt, false); }
+		} 
             }
-        
             this.lastMouseEvent = evt;
             return;
         }
     
-        // console.log('handling %s',  evt);
-        // it is MouseDown or MouseUp
+        //-------------------
+	// mouse up or down
+	//-------------------
         if (!evt.mousePoint.eqPt(this.position())) { // Only happens in some OSes
             // and when window wake-up click hits a morph
             console.log("mouseButton event includes a move!");
@@ -2644,7 +2685,6 @@ Object.extend(HandMorph.prototype, {
                 // We do not dispatch mouseup the same way -- only if focus gets set on mousedown
                 if (evt.type == "mousedown") this.owner().mouseEvent(evt, false);
             }
-            
             if (evt.type == "mousedown") {
                 this.lastMouseDownPoint = evt.mousePoint;
                 this.hasMovedSignificantly = false; 
@@ -2719,10 +2759,9 @@ Object.extend(HandMorph.prototype, {
 
     grabMorph: function(grabbedMorph, evt) { 
         if (evt.shiftKey && !(grabbedMorph instanceof LinkMorph)) {
-            this.mode = "shiftDragForDup";
-            this.dragMorph = grabbedMorph; 
-            this.setMouseFocus(null);
-            return;
+	    if (!grabbedMorph.okToDuplicate()) return;
+	    grabbedMorph.copyToHand(this);
+	    return;
         }
         
         if (evt.altKey) {
@@ -2734,7 +2773,6 @@ Object.extend(HandMorph.prototype, {
         grabbedMorph = grabbedMorph.okToBeGrabbedBy(evt);
         if (!grabbedMorph) return;
 
-        // console.log('owner = ' + Object.inspect(grabbedMorph.owner()) + '; open = ' + Object.inspect(grabbedMorph.owner().openForDragAndDrop));
         if (grabbedMorph.owner() && !grabbedMorph.owner().openForDragAndDrop) return;
 
         if (this.keyboardFocus && grabbedMorph !== this.keyboardFocus) {
@@ -2807,16 +2845,11 @@ Object.extend(LinkMorph.prototype, {
             var lineMorph = Morph(bounds.scaleByRect(each), "ellipse");
             lineMorph.setFill(null); lineMorph.setBorderWidth(1); lineMorph.setBorderColor(Color.black);
             lineMorph.align(lineMorph.bounds().center(),this.shape.bounds().center());
-            lineMorph.suppressHandles = true;
-            lineMorph.okToBeGrabbedBy = function (evt) { this.enterMyWorld(evt) }.bind(this);
+            lineMorph.ignoreEvents();
             this.addMorph(lineMorph);
         }.bind(this));
         this.openForDragAndDrop = false;
-
-        // FIXME this should be simpler
-        // var sign = NodeFactory.create("use").withHref("#WebSpiderIcon");
-        // sign.applyTransform(Transform.createSimilitude(pt(-26, -26), 0, 0.1));
-        // this.addChildElement(sign);
+	this.suppressHandles = true;
 
         if (!otherWorld) {
             otherWorld = WorldMorph(Canvas);
@@ -2825,10 +2858,6 @@ Object.extend(LinkMorph.prototype, {
             otherWorld.addMorph(pathBack);
         } 
         this.myWorld = otherWorld;
-
-        // Balloon help support
-        MouseOverHandler.observe(this);
-
         return this;
     },
     
@@ -2839,7 +2868,14 @@ Object.extend(LinkMorph.prototype, {
 
     enterMyWorld: function(evt) { // needs vars for oldWorld, newWorld
         carriedMorphs = [];
-        while (evt.hand.hasSubmorphs()) {
+        if (evt.hand.hasSubmorphs() && evt.hand.topSubmorph() instanceof SelectionMorph) {
+		var selection = evt.hand.topSubmorph();
+		for (var i=0; i<selection.selectedMorphs.length; i++) {
+		    evt.hand.addMorph(selection.selectedMorphs[i])
+		}
+		selection.removeOnlyIt();
+	}
+	while (evt.hand.hasSubmorphs()) {
             var m = evt.hand.topSubmorph();
             if (m.activeScripts) {
                 m.suspendedScripts = m.activeScripts.clone();
@@ -2891,31 +2927,17 @@ Object.extend(LinkMorph.prototype, {
             newWorld.thumbnail.addMorph(oldWorld);
         }
 
-        newWorld.firstHand().emergingFromWormHole = true; // prevent re-entering
-    },
-
-    checkForControlPointNear: function(evt) {
-        return null;
+        if (carriedMorphs.length > 0) newWorld.firstHand().emergingFromWormHole = true; // prevent re-entering
     },
 
     onMouseOver: function(evt) {
-        // Note this event does not have hand bound except if laden!
-        // console.log("link.onMouseOver")
-        if (evt.hand && evt.hand.hasSubmorphs()) {
-            if (evt.hand.emergingFromWormHole) evt.hand.setMouseFocus(this);
-            else this.enterMyWorld(evt);
+	if (evt.hand.hasSubmorphs()) { // if hand is laden enter world bearing gifts
+            if (!evt.hand.emergingFromWormHole) this.enterMyWorld(evt);
         } else if (this.helpText) this.showHelp(evt);
     },
     
-    onMouseMove: function(evt) {
-        // Wait until hand leaves a linkMorph before enabling reentry
-        // console.log("link.onMouseMove")
-        if (this.containsWorldPoint(evt.mousePoint)) return;
-        evt.hand.setMouseFocus(null);
-        evt.hand.emergingFromWormHole = false;
-    },
-    
     onMouseOut: function(evt) {
+	evt.hand.emergingFromWormHole = false;
         this.hideHelp();
     },
     
