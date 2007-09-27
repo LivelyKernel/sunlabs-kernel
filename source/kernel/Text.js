@@ -815,8 +815,8 @@ Object.extend(TextMorph.prototype, {
     copy: function() {
         var copy = TextMorph(this.bounds(), this.textString);
         copy.morphCopyFrom(this);
-        // copy.textBox = null;
-        copy.setFontSize(this.getFontSize());
+        copy.setFontFamilyAndSize(this.fontFamily,this.fontSize);
+        copy.setTextColor(this.getTextColor());
         // FIXME what about all the other stuff ...
         copy.selectionRange = copy.selectionRange.slice(0);
         return copy; 
@@ -1429,7 +1429,6 @@ Object.category(TextMorph.prototype, "accessing", function() {
         // introducing new variable, simple one-level undo
         morph.undoTextString = morph.textString;
         morph.textString = replacement;
-        // canvas.setFontSize(this.fontSize);
         morph.recordChange('textString');
     
         if (morph.textBox) morph.textBox.destroy();
@@ -1487,6 +1486,12 @@ Object.category(TextMorph.prototype, "accessing", function() {
         return this.font.getFamily();
     },
     
+    setFontFamilyAndSize: function(familyName, newSize) {
+	// Avoids creating an extra font
+        this.fontFamily = familyName;
+        this.setFontSize(newSize);
+    },
+    
     setFontFamily: function(familyName) {
         this.fontFamily = familyName;
         this.font = Font.forFamily(this.fontFamily, this.fontSize);
@@ -1494,13 +1499,12 @@ Object.category(TextMorph.prototype, "accessing", function() {
         this.changed();
     },
     
-    getFontSize: function() {
-        return this.font.getSize();
-    },
+    getFontSize: function() { return this.fontSize; },
 
     setFontSize: function(newSize) {
-        this.font = Font.forFamily(this.getFontFamily(), newSize);
-        this.inset = pt((this.getFontSize()/3)+2,(this.getFontSize()/3));
+        this.fontSize = newSize;
+	this.font = Font.forFamily(this.fontFamily, newSize);
+        this.inset = pt(newSize+2, newSize/3);
         this.layoutChanged();
         this.changed();
     },
