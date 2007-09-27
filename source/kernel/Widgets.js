@@ -449,6 +449,8 @@ Object.extend(TitleBarMorph.prototype, {
     },
 
     okToBeGrabbedBy: function(evt) {
+	var oldTop = WorldMorph.current().topSubmorph();
+	if(oldTop instanceof WindowMorph) oldTop.titleBar.highlight(false);
         return this.windowMorph.isCollapsed() ? this : this.windowMorph;
     },
 
