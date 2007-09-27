@@ -3829,7 +3829,6 @@ Object.extend(MessengerWidget.prototype, {
         }
         this.nickName = null;
         this.initpanel.remove();
-        console.log(this.nick);
         this.id = this.nick;
     },
     
@@ -3907,7 +3906,7 @@ Object.extend(MessengerWidget.prototype, {
                     line = contents;
                 }
                 line = line.replace(/^\s+|\s+$/g, ''); // remove white spaces
-                console.log(i + ": " + IDs[i] + "=" + line + "\n");
+                //console.log(i + ": " + IDs[i] + "=" + line + "\n");
 
                 // set it to chat window
                 if ( line != "" || line != null ) {
