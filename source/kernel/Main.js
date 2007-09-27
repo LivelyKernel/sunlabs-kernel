@@ -133,6 +133,29 @@ function populateWorldWithExamples(world) {
                 lm1.myWorld.rssReader = new Feed("http://www.news.com/2547-1_3-0-5.xml").openIn(lm1.myWorld, pt(725, 120));
             }
 
+	    // Add sample curve stuff
+	    if (Config.showCurveExample) {
+		
+		// bezier blob
+		var shape1 = [pt(0,0), pt(50,0), pt(50,50), pt(0,50), pt(0,0)];
+		var widget = Morph(pt(100,100).asRectangle(),"rect");
+		widget.setShape(PathShape(shape1, Color.red, 3, Color.black));
+		lm1.myWorld.addMorph(widget);
+		widget = Morph(pt(250,50).asRectangle(),"rect");
+		
+		// rectangle with rounded corners
+		var shape2 = [pt(10,0), pt(60,0), pt(70,10), pt(70,40),
+		    pt(60,50), pt(10,50), pt(0,40), pt(0, 10), pt(10,0)];
+		for (var i = 2; i<=8; i+=2) {
+		    // this will work too
+		    // shape2[i].radius = pt(10,10); shape2[i].type = "arc";
+		    shape2[i].radius = 10; shape2[i].type = "arc";
+		}
+		widget.setShape(PathShape(shape2, Color.green, 2, Color.red));
+		lm1.myWorld.addMorph(widget);
+	    }
+	    
+
         }
 
         if (Config.showBitmap) { 
@@ -320,6 +343,7 @@ function main() {
      }
 
     if (false) showStatsViewer(TextLine.prototype, "TextLine...");
+
 }
 
 // the delay here is a workaround to give FF 2.0 the time to update

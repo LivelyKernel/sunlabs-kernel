@@ -25,6 +25,7 @@ var Config = {
     skipMostExamples: false,
     skipAllExamples:  false,
     showWebStore: false,
+    showCurveExample: false,
     
     // Additional demo configuration options 
     loadFromMarkup: false,

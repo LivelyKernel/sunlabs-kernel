@@ -822,6 +822,7 @@ Object.category(Color, 'core', function() { return {
     yellow: new Color(0.8,0.8,0),
     blue:  new Color(0,0,0.8),
     purple: new Color(1,0,1),
+    magenta: new Color(1,0,1),
 
     random: function() {
         return new Color(Math.random(),Math.random(),Math.random()); 
@@ -1704,7 +1705,7 @@ Object.extend(PolygonShape.prototype, {
         return Rectangle.unionPts(vertices);
     },
 
-    copy: function() { 
+    oldcopy: function() { 
         var newShape = this.cloneNode(true); 
         if (newShape.points.numberOfItems != this.points.numberOfItems) {
             // ARGH, Safari doesn't clone polygons properly???
@@ -1870,16 +1871,54 @@ PathShape = HostClass.fromElementType('path', false);
 Shape.mixInto(PathShape);
 
 Object.extend(PathShape.prototype, {
-
-    initialize: function() {
-        this.init();
+    
+    initialize: function(vertlist, color, borderWidth, borderColor) {
+        this.init(color, borderWidth, borderColor);
+        if (vertlist) this.setVertices(vertlist);
         return this;
     },
-
+    
+    setVertices: function(vertlist) {
+	// emit SVG path symbol based on point attributes
+	// p==point, i=array index
+	function map2svg(p,i) {
+            var code;
+            if (i==0 || p.type && p.type=="move") {
+		code = "M";
+            } else if (p.type && p.type=="line") {
+		code = "L";
+            } else if (p.type && p.type=="arc" && p.radius) {
+		code = "A" + (p.radius.x || p.radius) + "," +
+                    (p.radius.y || p.radius) + " " + (p.angle || "0") +
+                    " " + (p.mode || "0,1");
+            } else if (p.type && p.type=="curve" && p.control) {
+		// keep control points relative so translation works
+		code = "Q" + (p.x+p.control.x) + "," + (p.y+p.control.y) + " ";
+            } else {
+		code = "T";  // default - bezier curve with implied control pts
+            }
+            return code + p.x + "," + p.y;
+	}
+	var d = vertlist.map(map2svg).join('');
+	console.log("d=" + d);
+        this.setAttributeNS(null, "d", d);
+        this.verticesList = vertlist;
+	delete this.cachedBounds;
+	// Function.callStack().map(function(x,i) {console.log(i + ") " + x)});
+    },
+    
+    vertices: function() {
+	return this.verticesList;
+    },
+    
     moveTo: function(x, y) {
         this.pathSegList.appendItem(this.createSVGPathSegMovetoAbs(x, y));
     },
     
+     curveTo: function(x, y) {
+	 this.pathSegList.appendItem(this.createSVGPathSegCurvetoQuadraticSmoothAbs(x, y));
+     },
+
     lineTo: function(x, y) {
         this.pathSegList.appendItem(this.createSVGPathSegLinetoAbs(x, y));
     },
@@ -1892,7 +1931,7 @@ Object.extend(PathShape.prototype, {
         return false; // FIXME
     },
     
-    copy: function() { 
+    oldcopy: function() { 
         var newShape = this.cloneNode(true); 
         if (newShape.pathSegList.numberOfItems != this.pathSegList.numberOfItems) {
             // ARGH, Safari doesn't clone lists properly???
@@ -1906,6 +1945,9 @@ Object.extend(PathShape.prototype, {
                 case seg.PATHSEG_LINETO_ABS:
                     newShape.lineTo(seg.x, seg.y);
                     break;
+                case seg.PATHSEG_CURVETO_QUADRATIC_SMOOTH_ABS:
+                    newShape.curveTo(seg.x, seg.y);
+                    break;
                 case seg.PATHSEG_CLOSEPATH:
                     newShape.close();
                     break;
@@ -1917,34 +1959,26 @@ Object.extend(PathShape.prototype, {
         return newShape;
     },
 
-    bounds: function() {
-        // FIXME quick and dirty, fix for arcs
-        var vertices = [];
-    
-        if (this.pathSegList.numberOfItems == 0) {
-            return pt(0, 0).asRectangle(); //???
-        }
-    
-        for (var i = 0; i < this.pathSegList.numberOfItems; i++) {
-            // How annoying, no way of cloning path segments
-            var seg = this.pathSegList.getItem(i);
-            switch (seg.pathSegType) {
-            case seg.PATHSEG_MOVETO_ABS:
-                vertices.push(pt(seg.x, seg.y));
-                break;
-            case seg.PATHSEG_LINETO_ABS:
-                vertices.push(pt(seg.x, seg.y));
-                break;
-            case seg.PATHSEG_CLOSEPATH:
-                // newShape.close();
-                break;
-            default:
-                console.log('cannot deal with ' + seg.pathSegType);
-            }
-        }
-        return Rectangle.unionPts(vertices);
-    }
+    copy: function() { 
+        var newShape = this.cloneNode(true); 
+        newShape.setVertices(this.vertices());
+        return newShape;
+    },
 
+    bounds: function() {
+        if (!this.cachedBounds) {
+            this.cachedBounds = Rectangle.unionPts(this.vertices());
+	}
+        return this.cachedBounds;
+    },
+
+    // poorman's traits :)
+    inspect: PolygonShape.prototype.inspect,
+    containsPoint: PolygonShape.prototype.containsPoint,
+    controlPointNear: PolygonShape.prototype.controlPointNear,
+    possibleHandleForControlPoint: PolygonShape.prototype.possibleHandleForControlPoint,
+    reshape: PolygonShape.prototype.reshape,
+    controlPointNear: PolygonShape.prototype.controlPointNear
 });
 
 DisplayObjectList = function(type) {
@@ -2845,7 +2879,7 @@ Object.category(Morph.prototype, 'transforms', function() { return {
     rotateBy: function(delta) {
         this.setRotation(this.getRotation()+delta);
     },
-    
+
     scaleBy: function(delta) {
         this.setScale(this.getScale()*delta);
     },
