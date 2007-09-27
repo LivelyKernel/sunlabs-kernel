@@ -121,15 +121,6 @@ Object.extend(ClockMorph.prototype, {
         return this;
     },
 
-/*
-    copy: function() {
-        var newClock = ClockMorph.superClass.copy.call(this);
-        newClock.removeAllMorphs();
-        newClock.makeNewFace();
-        return newClock; 
-    },
-*/
-
     makeNewFace: function() {
         var bnds = this.shape.bounds();
         var radius = bnds.width/2;
@@ -146,7 +137,6 @@ Object.extend(ClockMorph.prototype, {
             label.setFontSize(fontSize);    label.setInset(pt(0,0));        
             label.setBorderWidth(0);        label.setFill(null);
             label.align(label.bounds().center(),labelPosition.addXY(-2,1));
-            label.suppressHandles = true;
             this.addMorph(label);
         }
     

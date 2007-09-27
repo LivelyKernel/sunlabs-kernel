@@ -3198,9 +3198,9 @@ Object.extend(Morph.prototype, {
     },
 
     showOwnerChain: function(evt) {
-        var items = this.ownerChain().map(
+	var items = this.ownerChain().reverse().map(
             function(each) { return [each.inspect().truncate(), each, "showMorphMenu", evt]; });
-        MenuMorph(items, this).openIn(this.world(), evt.mousePoint);
+        MenuMorph(items, this).openIn(this.world(), evt.mousePoint, false, "Top item is topmost");
     },
 
     copyToHand: function(hand) {
@@ -3257,7 +3257,8 @@ Object.extend(Morph.prototype, {
     },
 
     ownerChain: function() {
-        // Return an array of me and all my owner
+        // Return an array of me and all my owners
+	// First item is, eg, world; last item is me
         if (!this.owner()) return [];
         var owners = this.owner().ownerChain();
         owners.push(this);
