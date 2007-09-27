@@ -2709,8 +2709,7 @@ SATELLITESURL[1] = "";
 SATELLITESURL[2] = "";
 
 var TileSize = pt(256, 256);
-//var IMAGEWIDTH = 256;
-//var IMAGEHEIGHT = 256;
+
 
 /**
  * @class ZoomLevel
@@ -3015,9 +3014,8 @@ Object.extend(MapMorph.prototype, {
       //console.log("coords" + evt.mousePoint + " center " + this.bounds().center()+ " in wc " +this.worldPoint(this.bounds().center()));
     this.startpoint = evt.mousePoint; //this line is here only bacause this morph does not listen mousedown events
   },
-  //Disabled, since does not work correctly in SVG-morphs
   onMouseUp: function(evt) { 
-    //console.log("-------------MapMorph.prototype.mouseUp" );
+    //Sometimes map pops up from the framework... FIXME
     if (evt.mousePoint && this.startpoint){
         this.endpoint = evt.mousePoint;
         pd("scale of map: " + this.getScale(), 2)
@@ -3031,7 +3029,6 @@ Object.extend(MapMorph.prototype, {
                     this.mapmovedX -= TileSize.x*currentscale;
                     this.mapX = -TileSize.x*currentscale;
                     //moving map right
-                    //alert("right");
                     this.x -= 1;
                     this.x = this.getValueX(this.x);
                     this.loadImagesToMap("left");
@@ -3043,7 +3040,6 @@ Object.extend(MapMorph.prototype, {
                     this.mapmovedX += TileSize.x*currentscale;
                     this.mapX = -TileSize.x*currentscale;
                     //moving map left
-                    //alert("left");
                     this.x += 1;
                     this.x = this.getValueX(this.x);
                     this.loadImagesToMap("right");
@@ -3056,7 +3052,6 @@ Object.extend(MapMorph.prototype, {
                     this.mapmovedY += TileSize.y*currentscale;
                     this.mapY = -TileSize.y*currentscale;
                     //moving map up
-                    //alert("up");
                     this.y += 1;
                     this.y = this.getValueY(this.y);
                     this.loadImagesToMap("down");
@@ -3069,7 +3064,6 @@ Object.extend(MapMorph.prototype, {
                     this.mapmovedY -= TileSize.y*currentscale;
                     this.mapY = -TileSize.y*currentscale;
                     //moving map down
-                    //alert("down");
                     this.y -= 1;
                     this.y = this.getValueY(this.y);
                     this.loadImagesToMap("up");
@@ -3098,7 +3092,6 @@ Object.extend(MapMorph.prototype, {
                     this.mapmovedX -= TileSize.x*currentscale;
                     this.mapX = -TileSize.x*currentscale;
                     //moving map right
-                    //alert("right");
                     this.x -= 1;
                     this.x = this.getValueX(this.x);
                     this.loadImagesToMap("left");
@@ -3111,7 +3104,6 @@ Object.extend(MapMorph.prototype, {
                     this.mapmovedX += TileSize.x*currentscale;
                     this.mapX = -TileSize.x*currentscale;
                     //moving map left
-                    //alert("left");
                     this.x += 1;
                     this.x = this.getValueX(this.x);
                     this.loadImagesToMap("right");
@@ -3125,7 +3117,6 @@ Object.extend(MapMorph.prototype, {
                     this.mapmovedY += TileSize.y*currentscale;
                     this.mapY = -TileSize.y*currentscale;
                     //moving map up
-                    //alert("up");
                     this.y += 1;
                     this.y = this.getValueY(this.y);
                     this.loadImagesToMap("down");
@@ -3138,7 +3129,6 @@ Object.extend(MapMorph.prototype, {
                     this.mapmovedY -= TileSize.y*currentscale;
                     this.mapY = -TileSize.y*currentscale;
                     //moving map down
-                    //alert("down");
                     this.y -= 1;
                     this.y = this.getValueY(this.y);
                     this.loadImagesToMap("up");
@@ -3205,16 +3195,13 @@ Object.extend(MapMorph.prototype, {
     var img = null;
     if (!this.online) img = this.loadImageFromDisk(tempx, tempy, this.zoomRatio);
     var satURL ="";
-    //alert("URL x " + tempx + " y "+ tempy  + " xmax " + (1 + zo[zoomRatio].maxX) + " " + generateSatelliteURL(tempx,tempy));
     if (img){
         this.images[iy][ix] = img;
-        //this.images[iy][ix] = new Pixmap(img , canvas.primCanvas, this.shape.bounds);
         this.imagerects[iy][ix] = new Rectangle(ix*TileSize.x, iy*TileSize.y, TileSize.x*5, TileSize.y*5);
         if (this.images[iy][ix] == null ) {
               pd("--image is NULL!", 5);
         } else {pd("loaded image from file:" + this.images[iy][ix], 5);}
     } else {
-        pd("Loading",2);
         if (this.selectedURL == MAPSURL){
             img = this.selectedURL[0] + tempx + this.selectedURL[1] + tempy + this.selectedURL[2] + this.zoomRatio;
         } else if (this.selectedURL == SATELLITESURL){
@@ -3228,12 +3215,10 @@ Object.extend(MapMorph.prototype, {
                 satURL = this.generateSatelliteURL(tempx,tempy);
                 //saveImageToDisk(this.selectedURL[0] + satURL, tempx, tempy,zoomRatio);
             }
-            pd("Loading img online:" + img + " ix " + ix + " iy " + iy, 2);
             this.images[iy][ix] = img;
             this.imagerects[iy][ix] = new Rectangle(ix*TileSize.x, iy*TileSize.y, TileSize.x*5, TileSize.y*5);
             
         } else {
-            //alert("error processing ixiy" + ix + iy + " image " + img);
             this.images[iy][ix] = null; 
             this.imagerects[iy][ix] = null;
             pd("Error processing map image",6);
@@ -3996,7 +3981,6 @@ Object.extend(CanvasScapeMorph.prototype, {
         this.initParameters();
         this.initGame(); 
         this.loadLevel(1);
-        //this.initUnderMap();
         this.addMorph(this.map);
         return this;
     }, 
@@ -4015,8 +3999,6 @@ Object.extend(CanvasScapeMorph.prototype, {
         this.playerDir=0.2; // theta, facing right=0=2pi
         this.note = "Click on the floor and press space bar to start the game. Use arrow keys to steer yourself through the maze.";
         this.drawCanvas();
-        //this.startSteppingFunction(200, function(msTime) { this.changeKey( 37, 1); });
-        //this.startSteppingFunction(1000, function(msTime) { /*changeKey(37, 1);*/  });
     },
     
     handlesMouseDown: function() {
@@ -4047,7 +4029,6 @@ Object.extend(CanvasScapeMorph.prototype, {
     },
 
     initParameters: function(){
-        console.log("initParameters");
         this.startint = 0;
         this.sinterval = 0;
         this.level1time = 70;
@@ -4080,11 +4061,6 @@ Object.extend(CanvasScapeMorph.prototype, {
         this.sky.onKeyDown = function(evt) {console.log("skyondown")};
         this.sky.relayMouseEvents(this, {onKeyDown: "onKeyDown", onKeyUp: "onKeyUp", setHasKeyboardFocus: "setHasKeyboardFocus", takesKeyboardFocus: "takesKeyboardFocus"});
         this.addMorph(this.sky);
-      
-        /*this.floor = ImageMorph(Rectangle(0,150, 450, 150), "/images/floor.png");
-        this.floor.setScale(2);
-        this.floor.relayMouseEvents(this, {onKeyDown: "onKeyDown", onKeyUp: "onKeyUp"});
-        this.addMorph(this.floor);*/
         
         this.objArray = new Array();    
         this.overlay;      
@@ -4153,7 +4129,6 @@ Object.extend(CanvasScapeMorph.prototype, {
             for (var j=0; j<20; j++) {
                 if (distX < distY) {
                     mapX += stepX;
-                    //drawString(0,75, "a mapx " + mapX + " mapy " + mapY);
                     if (this.arena[mapX][mapY]) {
                         if (thisRow!=mapX || thisSide!=0) {
     
@@ -4216,14 +4191,11 @@ Object.extend(CanvasScapeMorph.prototype, {
     drawCanvas: function(){
         var morppi;
 
-        //console.log("ma" + this.morphArray.length + " " + this.submorphs.length);
         for (var r = 0; r < this.morphArray.length; r++){
             this.morphArray[r].remove();
         }
         
         this.morphArray = [];
-        // drawImage(Math.floor(-this.playerDir/(2*this.pi)*2400), canvas.y, sky);
-        // console.log("imgpos" + -this.playerDir/(2*this.pi)*2400);
         this.sky.setPosition(pt( -this.playerDir/(2*this.pi)*2400, 0));
         
         morppi = TextMorph(Rectangle(0,0,800,20));
@@ -4243,7 +4215,7 @@ Object.extend(CanvasScapeMorph.prototype, {
         var theta = this.playerDir-this.pi/6;    
         var wall=this.wallDistance(theta);
         this.map.updatePlayerLocation(8*this.playerPos[0], 8*this.playerPos[1]);
-        this.color = Color.black;//setColor(0);
+        this.color = Color.black;
 
         var linGrad;
         var tl,tr,bl,br;        
@@ -4273,10 +4245,8 @@ Object.extend(CanvasScapeMorph.prototype, {
     
             drawobject = false;
             for (var s = 0; s < this.objArray.length; s+=1) {
-                //stop("oA " + this.objArray[s] + " i " + i + " len " + this.objArray.length + " " + wall.length);
                 if ( (this.objArray[s] >= i-1) && (this.objArray[s] < i + 2) ) {
                     //wall is an object
-                    //setColor(0xcc3333);
                     wallH1=100/(wall[i+1]*fix1);
                     wallH2=100/(wall[i+3]*fix2);
     
@@ -4327,7 +4297,6 @@ Object.extend(CanvasScapeMorph.prototype, {
             for (var j=-0.1; j<=0.1; j+=0.2) {
                 yy=Math.floor(y+j);
                 if (this.arena[xx][yy] == 2) {
-                //drawString(0,60,"Object hit");
                 this.arena[xx][yy] = 0;
                 this.found += 1;
                 if (this.found == this.maxobjects){
@@ -4343,6 +4312,7 @@ Object.extend(CanvasScapeMorph.prototype, {
 
     wobbleGun: function(){
         var mag=this.playerVelY;
+        //not in use
         //this.overlay.style.backgroundPosition=(10+Math.cos(this.total/6.23)*mag*90)+"px "+(10+Math.cos(this.total/5)*mag*90)+"px";
     },
     
@@ -4369,7 +4339,6 @@ Object.extend(CanvasScapeMorph.prototype, {
         if (change) {
             this.playerDir+=2*this.pi;
             this.playerDir%=2*this.pi;
-            //document.getElementById("sky").style.backgroundPosition=Math.floor(1-this.playerDir/(2*this.pi)*2400)+"px 0";
         }
     
         if (this.key[2] && !this.key[3]) {
@@ -4422,7 +4391,7 @@ Object.extend(CanvasScapeMorph.prototype, {
                     }
                 } 
                 if (this.arena[i][j] == 2 && this.difficulty == "easy") {
-                    //this.color = Color.red;//setColor(0xcccc33);
+                    //this.color = Color.red;
                     morppi = Morph(Rectangle( i*8,  j*8, 8, 8),"rect");   
                     morppi.setFill(Color.red);
                     this.map.addMorph(morppi);
@@ -4475,7 +4444,6 @@ Object.extend(CanvasScapeMorph.prototype, {
                 //newGame();
                 break; 
         }
-        //this.update();
     },
 
     keyDown: function(event) {
@@ -4581,9 +4549,7 @@ Object.extend(CanvasScapeMorph.prototype, {
     stopGame: function(){
         this.note = "You ran out of time.  Press space bar for another game.";
         this.update();
-        //this.removeAllMorphs();
         if (this.map) this.map.remove();
-        //this.initParameters();
         this.initGame(); 
         this.initUnderMap();
         this.addMorph(this.map);
@@ -4591,9 +4557,7 @@ Object.extend(CanvasScapeMorph.prototype, {
     },
 
     startGame: function(){
-        //this.removeAllMorphs();
         if (this.map) this.map.remove();
-        //this.initParameters();
         this.initGame();
         this.map = MiniMapMorph(Rectangle(5,25,8*this.arena.length,8*this.arena[0].length)); 
         this.initUnderMap();
