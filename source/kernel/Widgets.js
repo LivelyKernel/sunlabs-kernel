@@ -646,6 +646,7 @@ Object.extend(WindowMorph.prototype, {
         this.titleBar.setTransform(this.collapsedTransform ? this.collapsedTransform : this.expandedTransform);
         this.titleBar.setRotation(this.titleBar.getRotation());  // see comment in HandMorph
         this.titleBar.enableEvents();
+	this.titleBar.highlight(false);
         this.remove();
         this.state = "collapsed";
     },
@@ -654,6 +655,7 @@ Object.extend(WindowMorph.prototype, {
         if (!this.isCollapsed()) return;
         this.collapsedTransform = this.titleBar.getTransform();
         var owner = this.titleBar.owner();
+	this.takeHighlight();
         owner.addMorph(this);
         this.setTransform(this.expandedTransform);        
         this.titleBar.remove();
@@ -668,7 +670,7 @@ Object.extend(WindowMorph.prototype, {
     //Following methods promote windows on first click----------------
     morphToGrabOrReceive: function(evt, droppingMorph, checkForDnD) {
 	// If this window is doesn't need to come forward, then respond normally
-	if (!this.needsToComeForward(evt)) {
+	if (!this.needsToComeForward(evt) || droppingMorph != null) {
 	    return WindowMorph.superClass.morphToGrabOrReceive.call(this, evt, droppingMorph, checkForDnD)
 	}
 	// Otherwise, hold mouse focus until mouseUp brings it to the top
@@ -676,6 +678,7 @@ Object.extend(WindowMorph.prototype, {
     },
 
     needsToComeForward: function(evt) {
+	if (this.owner() !== this.world()) return true; // weird case -- not directly in world
 	if (!this.fullContainsWorldPoint(evt.mousePoint)) return false;  // not clicked in me
 	if (this === this.world().topSubmorph()) return false;  // already on top
 	if (this.isCollapsed()) return false;  // collapsed labels OK from below
@@ -694,11 +697,10 @@ Object.extend(WindowMorph.prototype, {
 
     onMouseUp: function(evt) {
 	// I've been clicked on when not on top.  Bring me to the top now
+	this.takeHighlight()
 	var oldTop = this.world().topSubmorph();
-	if(oldTop instanceof WindowMorph) oldTop.titleBar.highlight(false);
 	this.world().addMorphFront(this);
 	evt.hand.setMouseFocus(null);
-	this.titleBar.highlight(true);
 	return true;
     },
 
@@ -707,6 +709,18 @@ Object.extend(WindowMorph.prototype, {
 	    return WindowMorph.superClass.mouseEvent.call(this, evt, hasFocus)
 	}
         return this.mouseHandler.handleMouseEvent(evt, this); 
+    },
+
+    okToBeGrabbedBy: function(evt) {
+	this.takeHighlight();
+        return this; 
+    },
+
+    takeHighlight: function() {
+	// I've been clicked on.  unhighlight old top, and highlight me
+	var oldTop = WorldMorph.current().topSubmorph();
+	if(oldTop instanceof WindowMorph) oldTop.titleBar.highlight(false);
+	this.titleBar.highlight(true);
     },
     //End of window promotion methods----------------
 
@@ -1109,7 +1123,7 @@ Object.extend(SelectionMorph.prototype, {
         }
     },
     
-    okToBeGrabbedBy: function(evt) { // DI: Need to verify that z-order is preserved
+    okToBeGrabbedBy: function(evt) {
         this.selectedMorphs.forEach( function(m) { evt.hand.addMorph(m); } );
         return this;
     }
