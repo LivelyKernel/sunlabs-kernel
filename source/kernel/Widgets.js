@@ -814,14 +814,14 @@ Object.extend(HandleMorph.prototype, {
     defaultBorderColor: Color.blue,
     defaultBorderWidth: 1,
 
-    controlHelpText: "Drag to resize this morph\n" + 
-        "Cmd+shift+drag to scale the morph \n" + 
-        "Shift+drag to change border width \n" + 
-        "Cmd+drag to rotate the morph \n",
+    controlHelpText: "Drag to resize this object\n" + 
+        "Alt+drag to rotate the object \n" +
+        "Alt+shift+drag to scale the object \n" + 
+        "Shift+drag to change border width ", 
     circleHelpText: "Drag to reshape the line\n" + 
-        "Cmd+shift+drag to scale the morph\n" + 
-        "Shift+drag to change border width\n" + 
-        "Cmd+drag to rotate the morph",
+        "Cmd+drag to rotate the object \n" +
+        "Cmd+shift+drag to scale the object \n" + 
+        "Shift+drag to change width ", 
 
     initialize: function(location, shapeType, hand, targetMorph, partName) {
         HandleMorph.superClass.initialize.call(this, location.asRectangle().expandBy(5), shapeType);
