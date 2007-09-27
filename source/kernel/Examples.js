@@ -3826,7 +3826,7 @@ Object.extend(MessengerWidget.prototype, {
         if ( this.nickName.textString == "<please enter your nickname>" ) {
             this.nick = Config.random;
         } else {
-            this.nick = this.nickName.textString.replace(/^\s+|\s+$/g, '').replace(/\s/g, "_");
+            this.nick = this.nickName.textString.replace(/^\s+|\s+$/g, '').replace(/\s/g, "_").replace(/=/g, "_");
         }
         this.nickName = null;
         this.initpanel.remove();
@@ -3914,7 +3914,7 @@ Object.extend(MessengerWidget.prototype, {
                 }
             }
 /*
-// FIXME: kill the database if needed           
+// FIXME: kill the database if needed
                 new NetRequest(this.server + "foreground.html?action=updatemany&key." + IDs[i] + "=", { 
                 method: 'get',
                 
