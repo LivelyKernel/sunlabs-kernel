@@ -22,6 +22,7 @@ var Global = this;
 var Canvas = document.getElementById("canvas"); // singleton for now
 
 Object.extend(Canvas, {
+
     // Canvas bounds
     bounds: function() {
         return Rectangle(this.x.baseVal.value, this.y.baseVal.value, 
@@ -30,7 +31,8 @@ Object.extend(Canvas, {
 
     // these don't seem to be calculated, at least in safari, so we assume a containing <div> with the same position
     offsetLeft: Canvas.parentNode.offsetLeft,
-    offsetTop: Canvas.parentNode.offsetTop    
+    offsetTop: Canvas.parentNode.offsetTop
+        
 });
 
 var Font = window.parent.Font;
@@ -868,14 +870,15 @@ Object.category(Color, 'core', function() { return {
     },
     
     parse: function(str) {
-        if (!str || str == "none") 
-            return null;
-	// FIXME this should be much more refined
-	var match = str.match("rgb\\((\\d+),(\\d+),(\\d+)\\)");
-        if (match) 
+        if (!str || str == "none") return null;
+
+        // FIXME this should be much more refined
+        var match = str.match("rgb\\((\\d+),(\\d+),(\\d+)\\)");
+        if (match) { 
             return Color.rgb(parseInt(match[1]), parseInt(match[2]), parseInt(match[3]));
-        else 
+        } else { 
             throw new Error('color ' + str + ' unsupported');
+        }
     },
     
     rgb: function(r, g, b) {
@@ -1221,13 +1224,13 @@ Object.extend(Event.prototype, {
     init: function() {
         if (this.isMouse()) {
             this.mousePoint = pt(this.pageX - Canvas.offsetLeft, this.pageY - Canvas.offsetTop - 3);
-	    //this.mousePoint = pt(this.clientX, this.clientY  - 3);
+            //this.mousePoint = pt(this.clientX, this.clientY  - 3);
             this.priorPoint = this.mousePoint; 
             // Safari somehow gets the x and y coords so we add them here to Firefox too --PR
             // console.log("InitMouseOver fix for Firefox evt.x=%s evt.clientX", this.x, this.clientX);
             if (this.x == null && this.y == null) {
-		this.x = this.mousePoint.x;
-		this.y = this.mousePoint.y;
+                this.x = this.mousePoint.x;
+                this.y = this.mousePoint.y;
             }    
         } 
         this.hand = null;
@@ -1879,36 +1882,37 @@ Object.extend(PathShape.prototype, {
     },
     
     setVertices: function(vertlist) {
-	// emit SVG path symbol based on point attributes
-	// p==point, i=array index
-	function map2svg(p,i) {
+        // emit SVG path symbol based on point attributes
+        // p==point, i=array index
+        function map2svg(p,i) {
             var code;
             if (i==0 || p.type && p.type=="move") {
-		code = "M";
+                code = "M";
             } else if (p.type && p.type=="line") {
-		code = "L";
+                code = "L";
             } else if (p.type && p.type=="arc" && p.radius) {
-		code = "A" + (p.radius.x || p.radius) + "," +
+                code = "A" + (p.radius.x || p.radius) + "," +
                     (p.radius.y || p.radius) + " " + (p.angle || "0") +
                     " " + (p.mode || "0,1 ");
             } else if (p.type && p.type=="curve" && p.control) {
-		// keep control points relative so translation works
-		code = "Q" + (p.x+p.control.x) + "," + (p.y+p.control.y) + " ";
+               // keep control points relative so translation works
+               code = "Q" + (p.x+p.control.x) + "," + (p.y+p.control.y) + " ";
             } else {
-		code = "T";  // default - bezier curve with implied control pts
+               code = "T";  // default - bezier curve with implied control pts
             }
             return code + p.x + "," + p.y;
-	}
-	var d = vertlist.map(map2svg).join('');
-	console.log("d=" + d);
+        }
+
+        var d = vertlist.map(map2svg).join('');
+        console.log("d=" + d);
         this.setAttributeNS(null, "d", d);
         this.verticesList = vertlist;
-	delete this.cachedBounds;
-	// Function.callStack().map(function(x,i) {console.log(i + ") " + x)});
+        delete this.cachedBounds;
+        // Function.callStack().map(function(x,i) {console.log(i + ") " + x)});
     },
     
     vertices: function() {
-	return this.verticesList;
+        return this.verticesList;
     },
     
     moveTo: function(x, y) {
@@ -1916,7 +1920,7 @@ Object.extend(PathShape.prototype, {
     },
     
      curveTo: function(x, y) {
-	 this.pathSegList.appendItem(this.createSVGPathSegCurvetoQuadraticSmoothAbs(x, y));
+        this.pathSegList.appendItem(this.createSVGPathSegCurvetoQuadraticSmoothAbs(x, y));
      },
 
     lineTo: function(x, y) {
@@ -1968,7 +1972,7 @@ Object.extend(PathShape.prototype, {
     bounds: function() {
         if (!this.cachedBounds) {
             this.cachedBounds = Rectangle.unionPts(this.vertices());
-	}
+        }
         return this.cachedBounds;
     },
 
@@ -1979,6 +1983,7 @@ Object.extend(PathShape.prototype, {
     possibleHandleForControlPoint: PolygonShape.prototype.possibleHandleForControlPoint,
     reshape: PolygonShape.prototype.reshape,
     controlPointNear: PolygonShape.prototype.controlPointNear
+
 });
 
 DisplayObjectList = function(type) {
@@ -2585,11 +2590,11 @@ Object.extend(Morph.prototype, {
             if (id) {
                 this[fieldname] = element = element.cloneNode(true);
             }
-	    
+    
             id = fieldname + '_' + this.id;
             element.setAttribute("id", id);
             this.defs.appendChild(element);
-	    
+    
             return "url(#" + id + ")";
         } else return null;
     },
@@ -3160,7 +3165,8 @@ Object.extend(Morph.prototype, {
             [((this.openForDragAndDrop) ? "close DnD" : "open DnD"), this.toggleDnD.curry(evt.mousePoint)],
             ["show Lively markup", this.addSvgInspector.curry(this)],
             ["publish shrink-wrapped as...", function() { 
-		WorldMorph.current().makeShrinkWrappedWorldWith(this, WorldMorph.current().prompt('publish as')) }]
+                WorldMorph.current().makeShrinkWrappedWorldWith(this, WorldMorph.current().prompt('publish as')) }
+            ]
         ];
         var menu = MenuMorph(items, this); 
         if (!this.okToDuplicate()) menu.removeItemNamed("duplicate");
@@ -3237,8 +3243,9 @@ Object.extend(Morph.prototype, {
     },
 
     showOwnerChain: function(evt) {
-	var items = this.ownerChain().reverse().map(
-            function(each) { return [each.inspect().truncate(), each, "showMorphMenu", evt]; });
+        var items = this.ownerChain().reverse().map(
+            function(each) { return [each.inspect().truncate(), each, "showMorphMenu", evt]; }
+        );
         MenuMorph(items, this).openIn(this.world(), evt.mousePoint, false, "Top item is topmost");
     },
 
@@ -3297,7 +3304,7 @@ Object.extend(Morph.prototype, {
 
     ownerChain: function() {
         // Return an array of me and all my owners
-	// First item is, eg, world; last item is me
+        // First item is, eg, world; last item is me
         if (!this.owner()) return [];
         var owners = this.owner().ownerChain();
         owners.push(this);
@@ -3482,10 +3489,10 @@ Object.extend(Morph.prototype, {
     
     // map world point to local coordinates
     localize: function(pt) {
-	if(pt == null) console.log('null pt');   
-	if(pt.matrixTransform == null) console.log('null pt.matrixTransform');   
-	if(this.canvas() == null) console.log('null this.canvas()');   
-	if(this.canvas().getTransformToElement(this) == null) console.log('null this.canvas().getTransformToElement(this)');   
+        if (pt == null) console.log('null pt');   
+        if (pt.matrixTransform == null) console.log('null pt.matrixTransform');   
+        if (this.canvas() == null) console.log('null this.canvas()');   
+        if (this.canvas().getTransformToElement(this) == null) console.log('null this.canvas().getTransformToElement(this)');   
         return pt.matrixTransform(this.canvas().getTransformToElement(this));
     },
     
@@ -3553,12 +3560,12 @@ Object.extend(Morph.prototype, {
 
 var Exporter = Class.create();
 Object.extend(Exporter, {
+
     nodeToString: function(node) {
-	return node ? new XMLSerializer().serializeToString(node) : null;
+        return node ? new XMLSerializer().serializeToString(node) : null;
     }
 
 });
-
 
 Object.extend(Exporter.prototype, {
     rootMorph: null,

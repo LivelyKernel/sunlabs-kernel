@@ -12,7 +12,8 @@
  * defaultconfig.js.  System default configuration.
  */
 var Config = {
-// Allows easy object duplication using the Shift key
+
+    // Allows easy object duplication using the Shift key
     shiftDragForDup: true,
     
     // New scheduler is the default now
