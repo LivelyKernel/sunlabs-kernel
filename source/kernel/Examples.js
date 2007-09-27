@@ -3881,7 +3881,6 @@ Object.extend(MessengerWidget.prototype, {
     
     parseResponse: function (response) {
         // remove whitespaces
-        console.log("parsing response %s", response);
         var idstring = response.replace(/<!--[^-]*-->/g, "");
         var IDstring = idstring.replace(/^\s+|\s+$/g, '');
         var IDs = IDstring.match(/\w+(?==)/g);
