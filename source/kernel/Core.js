@@ -26,7 +26,11 @@ Object.extend(Canvas, {
     bounds: function() {
         return Rectangle(this.x.baseVal.value, this.y.baseVal.value, 
                          this.width.baseVal.value, this.height.baseVal.value);
-    }
+    },
+
+    // these don't seem to be calculated, at least in safari, so we assume a containing <div> with the same position
+    offsetLeft: Canvas.parentNode.offsetLeft,
+    offsetTop: Canvas.parentNode.offsetTop    
 });
 
 var Font = window.parent.Font;
@@ -1215,8 +1219,15 @@ Object.extend(Event.prototype, {
 
     init: function() {
         if (this.isMouse()) {
-            this.mousePoint = pt(this.clientX, this.clientY - 3);
+            this.mousePoint = pt(this.pageX - Canvas.offsetLeft, this.pageY - Canvas.offsetTop - 3);
+	    //this.mousePoint = pt(this.clientX, this.clientY  - 3);
             this.priorPoint = this.mousePoint; 
+            // Safari somehow gets the x and y coords so we add them here to Firefox too --PR
+            // console.log("InitMouseOver fix for Firefox evt.x=%s evt.clientX", this.x, this.clientX);
+            if (this.x == null && this.y == null) {
+		this.x = this.mousePoint.x;
+		this.y = this.mousePoint.y;
+            }    
         } 
         this.hand = null;
 
@@ -1224,12 +1235,6 @@ Object.extend(Event.prototype, {
         // this.msTime = (new Date()).getTime();
         this.mouseButtonPressed = false;
         
-        // Safari somehow gets the x and y coords so we add them here to Firefox too --PR
-        // console.log("InitMouseOver fix for Firefox evt.x=%s evt.clientX", this.x, this.clientX);
-        if (this.x == null && this.y == null) {
-            this.x = this.clientX;
-            this.y = this.clientY-3;   
-        }    
     
         return this;
     },
