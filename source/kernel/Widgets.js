@@ -2353,10 +2353,15 @@ Object.extend(WorldMorph.prototype, {
             ["TextMorph", function(evt) { world.addMorph(TextMorph(evt.mousePoint.extent(pt(120, 10)), "This is a TextMorph"));}],
             ["Class Browser", function(evt) { new SimpleBrowser().openIn(world, evt.mousePoint); }]
         ];
-	if (window.location.protocol == "http:") {
+	if (this.isLoadedFromNetwork()) 
 	    items.push(["File Browser", function(evt) { WebStore.onCurrentLocation().openIn(world, evt.mousePoint) }])
-	}
         MenuMorph(items, this).openIn(this.world(), evt.mousePoint);
+    },
+
+    isLoadedFromNetwork: function() {
+	// TODO this is not foolproof
+	return window.location.protocol == "http:";
+
     },
 
     makeShrinkWrappedWorldWith: function(morphs, filename) {
@@ -2365,15 +2370,10 @@ Object.extend(WorldMorph.prototype, {
            return;
         }
 
-        if (!WebStore.defaultStore) {
-            this.alert("no store to access the startup file, location " + location);
-            return;
-        }
-
         console.log('morphs is %s', morphs);
 
         var newDoc = null;
-        var url = "http://" + WebStore.defaultStore.host + "/" + WebStore.defaultStore.path + "/lively.xhtml";
+        var url = window.location.toString();
         new NetRequest(url, { 
             method: 'get',
             asynchronous: false,
@@ -2396,7 +2396,7 @@ Object.extend(WorldMorph.prototype, {
         var preamble = newDoc.createElementNS(Namespace.SVG, "script");
         preamble.appendChild(newDoc.createCDATASection("Config.skipAllExamples = true"));
         mainDefs.insertBefore(preamble, mainScript);
-        url = "http://" + WebStore.defaultStore.host + "/" + WebStore.defaultStore.path + "/" + filename;
+        var newurl = url.substring(0, url.lastIndexOf('/') + 1) + "/" + filename;
         var container = newDoc.createElementNS(Namespace.SVG, 'g');
 
         morphs.each(function(morph) {
@@ -2413,7 +2413,7 @@ Object.extend(WorldMorph.prototype, {
             }
             container.appendChild(newDoc.createTextNode('\n\n'));
         });
-
+	
         container.setAttribute("id", "ShrinkWrapped");
         mainDefs.appendChild(container);
 
@@ -2421,7 +2421,7 @@ Object.extend(WorldMorph.prototype, {
         console.info('writing new file ' + content);
         var failed = true;
 
-        new NetRequest(url, { 
+        new NetRequest(newurl, { 
             method: 'put',
             asynchronous: false,
             body: content,
@@ -2429,7 +2429,7 @@ Object.extend(WorldMorph.prototype, {
                 failed = false;
             },
 	    onFailure: function(transport) {
-		this.alert('failed saving world at url %s', url);
+		this.alert('failed saving world at url %s', newurl);
 		failed = true;
 	    }
 
