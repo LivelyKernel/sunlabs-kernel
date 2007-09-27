@@ -688,7 +688,9 @@ Object.extend(WindowMorph.prototype, {
 
     onMouseDown: function(evt) { },
 
-    onMouseMove: function(evt) { },
+    onMouseMove: function(evt) {
+	if(!evt.mouseButtonPressed) WindowMorph.superClass.onMouseMove.call(this, evt);
+	},    
 
     onMouseUp: function(evt) {
 	// I've been clicked on when not on top.  Bring me to the top now
@@ -721,9 +723,9 @@ Object.extend(WindowMorph.prototype, {
     
     showTargetMorphMenu: function(evt) { 
         var tm = this.targetMorph.morphMenu(evt);
-        tm.replaceItemNamed("remove", ["remove", this.initiateShutdown]);
-        tm.replaceItemNamed("reset rotation", ["reset rotation", this.setRotation.curry(0)]);
-        tm.replaceItemNamed("reset scaling", ["reset scaling", this.setScale.curry(1)]);
+        tm.replaceItemNamed("remove", ["remove", this, 'initiateShutdown']);
+        tm.replaceItemNamed("reset rotation", ["reset rotation", this, 'setRotation', 0]);
+        tm.replaceItemNamed("reset scaling", ["reset scaling", this, 'setScale', 1]);
         tm.removeItemNamed("duplicate");
         tm.removeItemNamed("turn fisheye on");
         tm.openIn(WorldMorph.current(), evt.mousePoint, false, this.targetMorph.inspect().truncate()); 
@@ -2105,7 +2107,7 @@ Object.extend(WorldMorph.prototype, {
         menu.addLine();
         menu.addItem(["new object...", this.addMorphs.curry(evt)]);
         menu.addLine();
-        menu.addItem(["choose display theme...", this, 'chooseDisplayTheme', null]);
+        menu.addItem(["choose display theme...", this.chooseDisplayTheme]);
         menu.addItem([(Config.useDebugBackground ? "use normal background" : "use debug background"),
                       this.toggleDebugBackground]);
         menu.addLine();
@@ -2126,7 +2128,7 @@ Object.extend(WorldMorph.prototype, {
         this.shape.setFillOpacity(Config.useDebugBackground ? 0.8 : 1.0);
     },
 
-    chooseDisplayTheme: function(ignored,evt) { 
+    chooseDisplayTheme: function(evt) { 
         var themes = this.displayThemes;
         var target = this; // trouble with function scope
         var themeNames = Object.properties(themes);
