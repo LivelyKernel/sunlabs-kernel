@@ -145,7 +145,7 @@ Object.extend(ClockMorph.prototype, {
             label.setWrapStyle(WrapStyle.SHRINK);
             label.setFontSize(fontSize);    label.setInset(pt(0,0));        
             label.setBorderWidth(0);        label.setFill(null);
-            label.align(label.bounds().center(),labelPosition.addXY(-3,1));
+            label.align(label.bounds().center(),labelPosition.addXY(-2,1));
             label.suppressHandles = true;
             this.addMorph(label);
         }

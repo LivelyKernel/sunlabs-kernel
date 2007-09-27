@@ -1504,7 +1504,7 @@ Object.category(TextMorph.prototype, "accessing", function() {
     setFontSize: function(newSize) {
         this.fontSize = newSize;
 	this.font = Font.forFamily(this.fontFamily, newSize);
-        this.inset = pt(newSize+2, newSize/3);
+        this.inset = pt(newSize/2+2, newSize/3);
         this.layoutChanged();
         this.changed();
     },
