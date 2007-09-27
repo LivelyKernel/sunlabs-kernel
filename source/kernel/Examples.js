@@ -1025,10 +1025,11 @@ Object.extend(Sun3DMorph.prototype, {
 
 // The JavaScript implementation of the Asteroids game
 // is derived from a Java applet written and copyrighted
-// by Mike Hall in 1998
+// by Mike Hall in 1998.  The code is used here by permission.
 
 // Note: The code below has been translated from the original
-// Java implementation (and it still shows...)
+// Java implementation, so this is not an ideal example of a
+// truly "Morphic" application
 
 // FIXME: There are still problems with the coordinate space.
 // For instance, shooting is not as precise as in the original game.
@@ -3907,7 +3908,6 @@ Object.extend(MessengerWidget.prototype, {
 
 // This code is derived from an implementation written and copyrighted
 // by Abraham Joffe (http://www.abrahamjoffe.com.au/ben/canvascape/).
-// We have intentionally left the gun out of the game...  
 
 /**
  * @class MiniMapMorph: The "radar view" for the game
