@@ -3784,6 +3784,7 @@ Object.extend(MessengerWidget.prototype, {
         
         this.initpanel = PanelMorph(pt(300, 255));
         panel.addMorph(this.initpanel);
+        this.initpanel.setFill(LinearGradient.makeGradient(Color.white, Color.primary.blue, LinearGradient.NorthSouth));
         this.initpanel.addMorph(this.nickName = TextMorph( Rectangle(10, 10, 220, 20), "<please enter your nickname>"));//.connectModel({model: this, getText: "getIMText", setText: "setIMText"});
         this.initpanel.addMorph(b = ButtonMorph(Rectangle(240,10,50,20)));
         b.onMouseUp = function(evt) {
