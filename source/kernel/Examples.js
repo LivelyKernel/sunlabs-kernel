@@ -571,6 +571,7 @@ Object.extend(DoodleMorph.prototype, {
         ];
         if ( !this.borderMenuOpen ) {
             this.borderMenuOpen = true;
+            // TODO: window raising puts the menu on the background
             (this.borders = MenuMorph(items, this)).openIn(this.world(), this.worldPoint(this.widthbutton.bounds().topRight()));
         } else {
             this.borders.remove();
@@ -3736,18 +3737,21 @@ Object.extend(MessengerWidget.prototype, {
 
     initialize: function() { 
         MessengerWidget.superClass.initialize.call(this);
-        //this.id = 1971055351;
-        this.id = Math.round(Math.random()*2147483647);
+//        this.id = Math.round(Math.random()*2147483647); // TODO: use Config.random for requests?
+        this.id = Config.random;
         this.text = "";
         this.chatroom = "";
         this.server = "http://dev.experimentalstuff.com:8093/";
+//        this.server = "http://localhost:8093/";
 //        console.log("address == " + this.server + "foreground.html?login=IM");
-        var id = this.id
+        var id = this.id;
+        var parent = this;
         new NetRequest(this.server + "foreground.html?login=IM", { 
             method: 'get',
             
             onSuccess: function(transport) {
 //                console.log("accessing database: " + id +"\n" + transport.responseText);
+                parent.load(); // start loading changes from the database
             },
             
             onFailure: function(transport) {
@@ -3776,7 +3780,22 @@ Object.extend(MessengerWidget.prototype, {
         m.onMouseUp = function(evt) {
             var newValue = this.isToggle() ? !this.getValue() : false;
             this.changeAppearanceFor(newValue); 
-        };        
+        };
+        
+        this.initpanel = PanelMorph(pt(300, 255));
+        panel.addMorph(this.initpanel);
+        this.initpanel.addMorph(this.nickName = TextMorph( Rectangle(10, 10, 220, 20), "<please enter your nickname>"));//.connectModel({model: this, getText: "getIMText", setText: "setIMText"});
+        this.initpanel.addMorph(b = ButtonMorph(Rectangle(240,10,50,20)));
+        b.onMouseUp = function(evt) {
+            var newValue = this.isToggle() ? !this.getValue() : false;
+            this.changeAppearanceFor(newValue); 
+        };
+        b.connectModel({model: this, setValue: "setNick"});
+        this.initpanel.addMorph(m = TextMorph( Rectangle(250, 10, 30, 20), "GO"));
+        m.relayMouseEvents(b, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
+        m.shape.setFillOpacity(0);
+        m.setBorderWidth(0);
+        
         return panel;
     },
     
@@ -3802,14 +3821,27 @@ Object.extend(MessengerWidget.prototype, {
         this.changed("getChatText");
     },
     
+    setNick: function() {
+        if ( this.nickName.textString == "<please enter your nickname>" ) {
+            this.nick = Config.random;
+        } else {
+            this.nick = this.nickName.textString.replace(/^\s+|\s+$/g, '').replace(/\s/g, "_");
+        }
+        this.nickName = null;
+        this.initpanel.remove();
+        console.log(this.nick);
+        this.id = this.nick;
+    },
+    
     send: function() {
         var parent = this;
         if ( this.text != null && this.text != "" ) {
-	    var url = this.server + "foreground.html?action=updatemany&key." + this.id + "=" + this.text;
+    	    var url = this.server + "foreground.html?action=updatemany&key." + this.id + "=" + this.text.replace(/=/g, "");
             new NetRequest(url, { 
                 method: 'get',
                 
                 onSuccess: function(transport) {
+//                    console.log("response: " + parent.id +"\n" + transport.responseText);
                     parent.setChatText(parent.id + ": " + parent.getIMText()); // add the current line immediately
                     parent.setIMText(""); // yes yes.. so its a little laggy to add the current line and delete it...
                     parent.textpanel.setScrollPosition(1);//this.textpanel.innerMorph().bounds().height);
@@ -3818,7 +3850,7 @@ Object.extend(MessengerWidget.prototype, {
             });
         }
         
-        this.load();
+//        this.load();
     }, 
     
     load: function() {
@@ -3828,6 +3860,7 @@ Object.extend(MessengerWidget.prototype, {
             
             onSuccess: function(transport) {
                 // what crap is coming with the response?? function something something..
+                // console.log(transport.responseText);
                 try {
                     var end = transport.responseText.indexOf("function");
                     if ( end == -1 ) {
@@ -3836,24 +3869,27 @@ Object.extend(MessengerWidget.prototype, {
                         var text = transport.responseText.substring(0, end);
                     }
                     parent.parseResponse(text);
-                    parent.textpanel.setScrollPosition(1);//this.textpanel.innerMorph().bounds().height);
+                    parent.textpanel.setScrollPosition(1);
                 } catch (e) { console.log('got error %s', e); }
+                // start polling for new events
+                parent.load();
             }
-            
+                        
         });
 
     },
     
     parseResponse: function (response) {
         // remove whitespaces
-        //var IDstring = response.replace(/\(\{(.*)\}\)/gm, " ");
-//        console.log("parsing response %s", response);
-        var IDstring = response.replace(/^\s+|\s+$/g, '');
-        var IDs = IDstring.match(/\d+/g);
+        console.log("parsing response %s", response);
+        var idstring = response.replace(/<!--[^-]*-->/g, "");
+        var IDstring = idstring.replace(/^\s+|\s+$/g, '');
+        var IDs = IDstring.match(/\w+(?==)/g);
         if ( !IDs ) {
             return;
         }
         for ( var i = 0; i < IDs.length; i++ ) {
+            //console.log("ID " + IDs[i]);
             if ( IDs[i] != this.id ) {
                 // parse answer..
                 // gets the line from the first '=', starting from the location of the given ID

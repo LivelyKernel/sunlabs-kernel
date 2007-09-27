@@ -22,6 +22,8 @@ Config.showBitmap = false;
 Config.showMap = true;
 Config.showSampleMorphs = true;
 Config.showTextSamples = true;
+// Config.random is used as the ID for the messenger morph for each user
+Config.random = Math.round(Math.random()*2147483647);
 
 // More complex demos
 Config.showClipMorph = !Config.skipMostExamples;

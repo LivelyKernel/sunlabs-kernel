@@ -122,6 +122,7 @@ Object.extend(NetRequest.prototype, {
 	var headers = {
             'X-Requested-With': 'XMLHttpRequest',
             'X-Prototype-Version': Prototype.Version,
+            'X-Test-UniqueId': Config.random,
             'Accept': 'text/javascript, text/html, application/xml, text/xml, */*'
 	};
 	
@@ -155,7 +156,7 @@ Object.extend(NetRequest.prototype, {
             // Avoid inheriting state, e.g. functions
             if (!headers.hasOwnProperty(name)) continue;
 	    
-            // console.log('setting %s = %s', name, headers[name]);
+            //console.log('setting %s = %s', name, headers[name]);
             this.transport.setRequestHeader(name, headers[name]);
 	}
     }
