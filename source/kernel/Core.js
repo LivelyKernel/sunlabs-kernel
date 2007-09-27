@@ -1890,7 +1890,7 @@ Object.extend(PathShape.prototype, {
             } else if (p.type && p.type=="arc" && p.radius) {
 		code = "A" + (p.radius.x || p.radius) + "," +
                     (p.radius.y || p.radius) + " " + (p.angle || "0") +
-                    " " + (p.mode || "0,1");
+                    " " + (p.mode || "0,1 ");
             } else if (p.type && p.type=="curve" && p.control) {
 		// keep control points relative so translation works
 		code = "Q" + (p.x+p.control.x) + "," + (p.y+p.control.y) + " ";
