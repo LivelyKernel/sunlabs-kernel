@@ -2657,8 +2657,8 @@ Object.extend(HandMorph.prototype, {
             if (this.mouseButtonPressed) {
                 this.mouseFocus.mouseEvent(evt, true);
                 this.lastMouseDownPoint = evt.mousePoint; 
-            } else 
-                this.mouseFocus.mouseEvent(evt, true); 
+            }
+	    else this.mouseFocus.mouseEvent(evt, true); 
         } else {
             if (this.hasSubmorphs() && (evt.type == "mousedown" || this.hasMovedSignificantly)) {
                 // If laden, then drop on mouse up or down
@@ -2667,19 +2667,7 @@ Object.extend(HandMorph.prototype, {
                 // For now, failed drops go to world; later maybe put them back?
                 if (receiver == null) receiver = this.world();
                 console.log('dropping %s on %s', m, receiver);
-            
-                while (this.hasSubmorphs()) { // drop in same z-order as in hand
-                    var m = this.submorphs.firstChild;
-                    receiver.addMorph(m); // this removes it from hand
-                    //DI: May need to be updated for collaboration...
-                    //m.updateBackendFields('origin'); 
-
-                    // FIXME - folowing stmt is a workaround for the fact that if the targetMorph gets
-                    // dragged, its rotation value set in degrees rather than radians, and this
-                    // may foul things up later if .rotation is read rather than .getRotation
-                    // Remove this stmt after it gets fixed.
-                    m.setRotation(m.getRotation()); //work-around for invalid degree/radian confusion
-                }
+                this.dropMorphsOn(receiver);
             } else {
                 // console.log('hand dispatching event ' + event.type + ' to owner '+ this.owner().inspect());
                 // This will tell the world to send the event to the right morph
@@ -2692,6 +2680,64 @@ Object.extend(HandMorph.prototype, {
             }
         }
         this.lastMouseEvent = evt; 
+    },
+
+    grabMorph: function(grabbedMorph, evt) { 
+        if (evt.shiftKey && !(grabbedMorph instanceof LinkMorph)) {
+	    if (!grabbedMorph.okToDuplicate()) return;
+	    grabbedMorph.copyToHand(this);
+	    return;
+        }
+        if (evt.altKey) {
+            grabbedMorph.showMorphMenu(evt);
+            return;
+        }
+        // Give grabbed morph a chance to, eg, spawn a copy or other referent
+        grabbedMorph = grabbedMorph.okToBeGrabbedBy(evt);
+        if (!grabbedMorph) return;
+
+        if (grabbedMorph.owner() && !grabbedMorph.owner().openForDragAndDrop) return;
+
+        if (this.keyboardFocus && grabbedMorph !== this.keyboardFocus) {
+            this.keyboardFocus.relinquishKeyboardFocus(this);
+        }
+        // console.log('grabbing %s', grabbedMorph);
+        // Save info for cancelling grab or drop [also need indexInOwner?]
+        // But for now we simply drop on world, so this isn't needed
+        this.grabInfo = [grabbedMorph.owner(), grabbedMorph.position()];
+        // console.log('grabbed %s', grabbedMorph);
+        this.addMorph(grabbedMorph);
+        if (this.applyDropShadowFilter) {
+            grabbedMorph.setAttributeNS(null, "filter", "url(#DropShadowFilter)");
+        }
+        // grabbedMorph.updateOwner(); 
+        this.changed(); //for drop shadow
+    },
+    
+    dropMorphsOn: function (receiver) {
+ 	if (receiver !== this.world()) this.unbundleCarriedSelection();
+	while (this.hasSubmorphs()) { // drop in same z-order as in hand
+	    var m = this.submorphs.firstChild;
+	    receiver.addMorph(m); // this removes it from hand
+	    //DI: May need to be updated for collaboration...
+	    //m.updateBackendFields('origin'); 
+
+	    // FIXME - folowing stmt is a workaround for the fact that if the targetMorph gets
+	    // dragged, its rotation value set in degrees rather than radians, and this
+	    // may foul things up later if .rotation is read rather than .getRotation
+	    // Remove this stmt after it gets fixed.
+	    m.setRotation(m.getRotation()); //work-around for invalid degree/radian confusion
+	}
+    },
+
+    unbundleCarriedSelection: function() {
+	// Unpack the selected morphs from a selection prior to drop or jump to other world
+	if (!this.hasSubmorphs() || !(this.topSubmorph() instanceof SelectionMorph)) return;
+	var selection = this.topSubmorph();
+	for (var i=0; i<selection.selectedMorphs.length; i++) {
+	    this.addMorph(selection.selectedMorphs[i])
+	}
+	selection.removeOnlyIt();
     },
 
     moveTopMorph: function(evt) {
@@ -2758,42 +2804,6 @@ Object.extend(HandMorph.prototype, {
         } 
     },
 
-    grabMorph: function(grabbedMorph, evt) { 
-        if (evt.shiftKey && !(grabbedMorph instanceof LinkMorph)) {
-	    if (!grabbedMorph.okToDuplicate()) return;
-	    grabbedMorph.copyToHand(this);
-	    return;
-        }
-        
-        if (evt.altKey) {
-            grabbedMorph.showMorphMenu(evt);
-            return;
-        }
-
-        // Give grabbed morph a chance to, eg, spawn a copy or other referent
-        grabbedMorph = grabbedMorph.okToBeGrabbedBy(evt);
-        if (!grabbedMorph) return;
-
-        if (grabbedMorph.owner() && !grabbedMorph.owner().openForDragAndDrop) return;
-
-        if (this.keyboardFocus && grabbedMorph !== this.keyboardFocus) {
-            this.keyboardFocus.relinquishKeyboardFocus(this);
-        }
-
-        // console.log('grabbing %s', grabbedMorph);
-        // Save info for cancelling grab or drop [also need indexInOwner?]
-        // But for now we simply drop on world, so this isn't needed
-        this.grabInfo = [grabbedMorph.owner(), grabbedMorph.position()];
-        // console.log('grabbed %s', grabbedMorph);
-        this.addMorph(grabbedMorph);
-        if (this.applyDropShadowFilter) {
-            grabbedMorph.setAttributeNS(null, "filter", "url(#DropShadowFilter)");
-        }
-
-        // grabbedMorph.updateOwner(); 
-        this.changed(); //for drop shadow
-    },
-    
     bounds: function() {
         // account for the extra extent of the drop shadow
         // FIXME drop shadow ...
@@ -2869,23 +2879,18 @@ Object.extend(LinkMorph.prototype, {
 
     enterMyWorld: function(evt) { // needs vars for oldWorld, newWorld
         carriedMorphs = [];
-        if (evt.hand.hasSubmorphs() && evt.hand.topSubmorph() instanceof SelectionMorph) {
-		var selection = evt.hand.topSubmorph();
-		for (var i=0; i<selection.selectedMorphs.length; i++) {
-		    evt.hand.addMorph(selection.selectedMorphs[i])
-		}
-		selection.removeOnlyIt();
-	}
+
+	// Save, and suspend stepping of, any carried morphs
+        evt.hand.unbundleCarriedSelection();
 	while (evt.hand.hasSubmorphs()) {
             var m = evt.hand.topSubmorph();
-            if (m.activeScripts) {
+            if (m.activeScripts) { //Fixme: this must be deep
                 m.suspendedScripts = m.activeScripts.clone();
                 m.stopSteppingScripts();
             }
             carriedMorphs.splice(0, 0, m);
             m.remove();
         }
-
         this.hideHelp();
         this.myWorld.changed();
         WorldMorph.current().onExit();    

@@ -2665,11 +2665,8 @@ Object.extend(Morph.prototype, {
     },
     
     topSubmorph: function() {
-        if (this.submorphs == null) {
-            return null;
-        } else { 
-            return this.submorphs.lastChild;
-        }
+        if (this.submorphs == null) return null;
+        else return this.submorphs.lastChild;
     },
 
     // morph gets an opportunity to shut down when WindowMorph closes 
