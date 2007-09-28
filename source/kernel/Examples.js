@@ -337,6 +337,8 @@ Object.extend(DoodleMorph.prototype, {
         this.drawingColor = Color.red;
         this.lineWidth = 2.0;
         this.colorvalue = true;
+        this.borderMenuOpen = false;
+        this.line = false;
         
         // The doodle that we are creating currently
         this.currentMorph = null;
@@ -381,9 +383,10 @@ Object.extend(DoodleMorph.prototype, {
             var newValue = this.toggles ? !this.getValue() : false;
             this.changeAppearanceFor(newValue); 
         };
-        this.widthbutton.connectModel({model: this, setValue: "setLine"});
+        this.widthbutton.connectModel({model: this, setValue: "setLine", getValue: "getLine"});
         this.addMorph(this.widthbutton);
 
+        this.colorsbutton.setToggle(true);
         this.colorsbutton.connectModel({model: this, setValue: "setColor", getValue: "getColor"});
         this.addMorph(this.colorsbutton);
 
@@ -407,12 +410,6 @@ Object.extend(DoodleMorph.prototype, {
         evt.hand.setFill(Color.primary.blue); 
     },
 
-    mouseEvent: function(evt, hasFocus) {
-        if (hasFocus && evt.hand.mouseFocus !== this) return;
-        if (evt.type == "mousedown" && this.onMouseDown(evt)) return; 
-        DoodleMorph.superClass.mouseEvent.call(this, evt, hasFocus); 
-    },
-
     onMouseDown: function(evt) { // Default behavior is to grab a submorph
         this.openForDragAndDrop = true;
         var m = this.morphToReceiveEvent(evt);
@@ -430,7 +427,7 @@ Object.extend(DoodleMorph.prototype, {
     makeSelection: function(evt) { 
         if (this.currentSelection != null) this.currentSelection.removeOnlyIt();
         if ( !evt.hand.mouseButtonPressed ) return;
-        var m = SelectionMorph(evt.mousePoint.extent(pt(5,5)), this);
+        var m = SelectionMorph(this.localize(evt.mousePoint).extent(pt(5,5)), this);
         m.shape.setAttributeNS(null, "stroke-dasharray", "3,2");
         this.addMorph(m);
         this.currentSelection = m;
@@ -485,9 +482,8 @@ Object.extend(DoodleMorph.prototype, {
     },
     
     setColor: function(val) {
-        this.colorvalue = val && this.colorvalue;
-        if ( !this.colorvalue ) { // false
-            this.colorvalue = !this.colorvalue;
+        this.colorvalue = val;
+        if ( !this.colorvalue && this.colorMorph != null ) { // false
             this.colorMorph.remove();
             return;
         }
@@ -496,45 +492,45 @@ Object.extend(DoodleMorph.prototype, {
                 this.colorMorph.setPosition(this.colorsbutton.bounds().topRight().subPt(pt(0,20)));
             }
             this.addMorph(this.colorMorph);
-            this.colorvalue = !this.colorvalue;
             return;
         }
   
-        this.colorMorph = Morph(Rectangle(0, 0, 100, 110));
-        this.colorMorph.shape.roundEdgesBy(10);
-        this.colorMorph.setFill(Color.white);
-        this.colorMorph.shape.setFillOpacity(.7);
+        if ( this.colorvalue ) {
+            this.colorMorph = Morph(Rectangle(0, 0, 100, 110));
+            this.colorMorph.shape.roundEdgesBy(10);
+            this.colorMorph.setFill(Color.white);
+            this.colorMorph.shape.setFillOpacity(.7);
 
-        var m = TextMorph(Rectangle(-45, -50, 80, 20), "Border color");
-        m.relayMouseEvents(this.colorMorph, {onMouseDown: "onMouseDown", onMouseUp: "onMouseUp"});
-        m.setBorderWidth(0);
-        m.shape.roundEdgesBy(10);
-        m.shape.setFillOpacity(0);
-        this.colorMorph.addMorph(m);
-        m = TextMorph(Rectangle(-45, 0, 80, 20), "Fill color");
-        m.relayMouseEvents(this.colorMorph, {onMouseDown: "onMouseDown", onMouseUp: "onMouseUp"});
-        m.setBorderWidth(0);
-        m.shape.roundEdgesBy(10);
-        m.shape.setFillOpacity(0);
-        this.colorMorph.addMorph(m);
+            var m = TextMorph(Rectangle(-45, -50, 80, 20), "Border color");
+            m.relayMouseEvents(this.colorMorph, {onMouseDown: "onMouseDown", onMouseUp: "onMouseUp"});
+            m.setBorderWidth(0);
+            m.shape.roundEdgesBy(10);
+            m.shape.setFillOpacity(0);
+            this.colorMorph.addMorph(m);
+            m = TextMorph(Rectangle(-45, 0, 80, 20), "Fill color");
+            m.relayMouseEvents(this.colorMorph, {onMouseDown: "onMouseDown", onMouseUp: "onMouseUp"});
+            m.setBorderWidth(0);
+            m.shape.roundEdgesBy(10);
+            m.shape.setFillOpacity(0);
+            this.colorMorph.addMorph(m);
 
-        this.colorpicker = ColorPickerMorph(Rectangle(-45, -30, 50, 30));
-        this.colorMorph.addMorph(this.colorpicker);
-        this.fillpicker = ColorPickerMorph(Rectangle(-45, 20, 50, 30));
-        this.colorMorph.addMorph(this.fillpicker);
+            this.colorpicker = ColorPickerMorph(Rectangle(-45, -30, 50, 30));
+            this.colorMorph.addMorph(this.colorpicker);
+            this.fillpicker = ColorPickerMorph(Rectangle(-45, 20, 50, 30));
+            this.colorMorph.addMorph(this.fillpicker);
 
-        this.colorMorph.borderRect = Morph(Rectangle(15, -30, 30, 30), 'ellipse');
-        this.colorMorph.borderRect.setFill(this.drawingColor);
-        this.colorMorph.addMorph(this.colorMorph.borderRect);
-        this.colorMorph.fillRect = Morph(Rectangle(15, 20, 30, 30), 'ellipse');
-        this.colorMorph.fillRect.setFill(this.fillColor);
-        this.colorMorph.addMorph(this.colorMorph.fillRect);
+            this.colorMorph.borderRect = Morph(Rectangle(15, -30, 30, 30), 'ellipse');
+            this.colorMorph.borderRect.setFill(this.drawingColor);
+            this.colorMorph.addMorph(this.colorMorph.borderRect);
+            this.colorMorph.fillRect = Morph(Rectangle(15, 20, 30, 30), 'ellipse');
+            this.colorMorph.fillRect.setFill(this.fillColor);
+            this.colorMorph.addMorph(this.colorMorph.fillRect);
 
-        this.colorMorph.moveBy(this.colorsbutton.bounds().topRight().subPt(pt(0,20)));
-        this.addMorph(this.colorMorph);
-        this.colorpicker.connectModel({model: this, setColor: "setColoring"});
-        this.fillpicker.connectModel({model: this, setColor: "setFillColor"});
-        this.colorvalue = !this.colorvalue;
+            this.colorMorph.moveBy(this.colorsbutton.bounds().topRight().subPt(pt(0,20)));
+            this.addMorph(this.colorMorph);
+            this.colorpicker.connectModel({model: this, setColor: "setColoring"});
+            this.fillpicker.connectModel({model: this, setColor: "setFillColor"});
+        }
     },
     
     getColor: function() {
@@ -558,7 +554,8 @@ Object.extend(DoodleMorph.prototype, {
 
     },
 
-    setLine: function() {
+    setLine: function(value) {
+        this.line = value;
         var items = [
             ["No borders", this, "setLineWidth", 0],
             ["1", this, "setLineWidth", 1],
@@ -571,12 +568,15 @@ Object.extend(DoodleMorph.prototype, {
         ];
         if ( !this.borderMenuOpen ) {
             this.borderMenuOpen = true;
-            // TODO: window raising puts the menu on the background
-            (this.borders = MenuMorph(items, this)).openIn(this.world(), this.worldPoint(this.widthbutton.bounds().topRight()));
+            (this.borders = MenuMorph(items, this)).openIn(this.world(), this.worldPoint(this.widthbutton.bounds().topRight()), true);
         } else {
             this.borders.remove();
             this.borderMenuOpen = false;
         }
+    },
+    
+    getLine: function() {
+        return this.line;
     }, 
     
     setLineWidth: function (newWidth) {
@@ -584,6 +584,7 @@ Object.extend(DoodleMorph.prototype, {
         if ( this.currentSelection != null ) {
             this.currentSelection.setBorderWidth(this.lineWidth);
         }
+        this.borders.remove();
         this.borderMenuOpen = false;
     },
     
@@ -3736,7 +3737,6 @@ Object.extend(MessengerWidget.prototype, {
             
             onSuccess: function(transport) {
 //                console.log("accessing database: " + id +"\n" + transport.responseText);
-                parent.load(); // start loading changes from the database
             },
             
             onFailure: function(transport) {
@@ -3808,8 +3808,9 @@ Object.extend(MessengerWidget.prototype, {
     },
     
     setNick: function() {
+        this.load(); // start loading changes from the database
         if ( this.nickName.textString == "<please enter your nickname>" ) {
-            this.nick = Config.random;
+            this.nick = "anonymous" + Math.round(Math.random()*499);;
         } else {
             this.nick = this.nickName.textString.replace(/^\s+|\s+$/g, '').replace(/\s/g, "_").replace(/=/g, "_");
         }
