@@ -248,7 +248,7 @@ Object.extend(TextLine.prototype, {
         this.textString = textString;
         this.font = font;
         this.startIndex = startIndex;
-        this.overallStopIndex = textString.legnth - 1;
+        this.overallStopIndex = textString.length - 1;
         this.topLeft = topLeft;
         this.spaceWidth = font.getCharWidth(' ');
         this.tabWidth = this.spaceWidth * 4;
@@ -443,7 +443,7 @@ Object.extend(TextLine.prototype, {
 
     // return a boolean if this line contains this pointer into 'textString'
     containsThisIndex: function(index) {
-        return index <= this.getStopIndex();
+        return this.startIndex <= index && index <= this.getStopIndex();
     },
 
     // forward this on to all of the words (do we need this? - kam)
@@ -568,6 +568,7 @@ Object.extend(TextBox.prototype, {
         font.applyTo(this);
 
         this.lines = null;//: TextLine[]
+	this.lineNumberHint = 0;
         this.tabWidth = 4;
         this.tabsAsSpaces = true;
     },
@@ -653,12 +654,17 @@ Object.extend(TextBox.prototype, {
 
     // find what line contains the index 'stringIndex'
     lineNumberForIndex: function(stringIndex) {
-        // TODO: linear search doesn't scale
-        for (var i = 0; i < this.lines.length; i++) {
-            var line = this.lines[i];
-            if (line.containsThisIndex(stringIndex)) {
-                return i;
-            }
+	// Could use a binary search, but instead we check same as last time,
+	// then next line after, and finally a linear search.
+	if (this.lineNumberHint < this.lines.length && this.lines[this.lineNumberHint].containsThisIndex(stringIndex))
+		return this.lineNumberHint;  // Same line as last time
+
+	this.lineNumberHint++;  // Try next one down (dominant use pattern)
+	if (this.lineNumberHint < this.lines.length && this.lines[this.lineNumberHint].containsThisIndex(stringIndex))
+		return this.lineNumberHint;  // Next line after last time
+
+        for (var i = 0; i < this.lines.length; i++) {  // Do it the hard way
+            if (this.lines[i].containsThisIndex(stringIndex)) { this.lineNumberHint = i; return i; }
         }
         return -1; 
     },

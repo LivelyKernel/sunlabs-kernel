@@ -342,8 +342,10 @@ function main() {
         };
      }
 
-    if (false) showStatsViewer(TextLine.prototype, "TextLine...");
-
+    if (false) 
+	showStatsViewer(TextWord.prototype, "TextWord...");
+	showStatsViewer(TextLine.prototype, "TextLine...");
+	showStatsViewer(TextBox.prototype, "TextBox...");
 }
 
 // the delay here is a workaround to give FF 2.0 the time to update
