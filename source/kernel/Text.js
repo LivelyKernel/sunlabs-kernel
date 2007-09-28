@@ -340,7 +340,7 @@ Object.extend(TextLine.prototype, {
                     c.bounds.width = (this.topLeft.x + compositionWidth) - c.bounds.x;
                     runningStartIndex = c.start + c.length;
                     c.wasComposed = true;
-                    if (lastWord) lastWord.setAttribute(Namespace.LIVELY, "nl", "true"); // little helper for serialization
+                    if (lastWord) lastWord.setAttributeNS(Namespace.LIVELY, "nl", "true"); // little helper for serialization
                     break;
                 }
                 if (c.isTab) {
@@ -734,7 +734,7 @@ Object.extend(TextMorph.prototype, {
 
     // these are prototype variables
     fontSize: 12,
-    fontFamily: 'Helvetica',
+    fontFamily: (Config.defaultFontFamily || 'Helvetica'),
     textColor: Color.black,
     defaultBackgroundColor: Color.veryLightGray,
     defaultBorderWidth: 1,
@@ -742,6 +742,7 @@ Object.extend(TextMorph.prototype, {
     selectionColor: Color.primary.green,
     inset: pt(6,4), // remember this shouldn't be modified unless every morph should get the value 
     wrap: WrapStyle.NORMAL,
+    maxSafeSize: 4000, 
 
     initializeTransientState: function(initialBounds) {
         TextMorph.superClass.initializeTransientState.call(this, initialBounds);
