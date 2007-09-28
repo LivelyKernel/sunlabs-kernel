@@ -1487,7 +1487,7 @@ Object.category(TextMorph.prototype, "accessing", function() {
     },
     
     setFontFamilyAndSize: function(familyName, newSize) {
-	// Avoids creating an extra font
+        // Avoids creating an extra font
         this.fontFamily = familyName;
         this.setFontSize(newSize);
     },
@@ -1503,7 +1503,7 @@ Object.category(TextMorph.prototype, "accessing", function() {
 
     setFontSize: function(newSize) {
         this.fontSize = newSize;
-	this.font = Font.forFamily(this.fontFamily, newSize);
+        this.font = Font.forFamily(this.fontFamily, newSize);
         this.inset = pt(newSize/2+2, newSize/3);
         this.layoutChanged();
         this.changed();

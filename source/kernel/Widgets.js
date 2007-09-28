@@ -429,7 +429,7 @@ Object.extend(TitleBarMorph.prototype, {
         } else { // String
             var width = headline.length * 8; // wild guess headlineString.length * 2 *  font.getCharWidth(' ') + 2;
             this.label = TextMorph(Rectangle(0, 0, width, bh), headline).beLabel();
-	    this.label.shape.roundEdgesBy(8);
+            this.label.shape.roundEdgesBy(8);
         }
 
         this.label.align(this.label.bounds().topCenter(), this.shape.bounds().topCenter().addXY(0,1));
@@ -445,17 +445,17 @@ Object.extend(TitleBarMorph.prototype, {
 
     highlight: function(trueForLight) {
         if (trueForLight) this.label.setFill(Color.white);
-	else this.label.setFill(null);
+        else this.label.setFill(null);
     },
 
     okToBeGrabbedBy: function(evt) {
-	var oldTop = WorldMorph.current().topSubmorph();
-	if(oldTop instanceof WindowMorph) oldTop.titleBar.highlight(false);
+        var oldTop = WorldMorph.current().topSubmorph();
+        if (oldTop instanceof WindowMorph) oldTop.titleBar.highlight(false);
         return this.windowMorph.isCollapsed() ? this : this.windowMorph;
     },
 
     okToDuplicate: function(evt) {
-	return false;
+        return false;
     }
 
 });
@@ -648,7 +648,7 @@ Object.extend(WindowMorph.prototype, {
         this.titleBar.setTransform(this.collapsedTransform ? this.collapsedTransform : this.expandedTransform);
         this.titleBar.setRotation(this.titleBar.getRotation());  // see comment in HandMorph
         this.titleBar.enableEvents();
-	this.titleBar.highlight(false);
+        this.titleBar.highlight(false);
         this.remove();
         this.state = "collapsed";
     },
@@ -657,7 +657,7 @@ Object.extend(WindowMorph.prototype, {
         if (!this.isCollapsed()) return;
         this.collapsedTransform = this.titleBar.getTransform();
         var owner = this.titleBar.owner();
-	this.takeHighlight();
+        this.takeHighlight();
         owner.addMorph(this);
         this.setTransform(this.expandedTransform);        
         this.titleBar.remove();
@@ -671,60 +671,60 @@ Object.extend(WindowMorph.prototype, {
 
     //Following methods promote windows on first click----------------
     morphToGrabOrReceive: function(evt, droppingMorph, checkForDnD) {
-	// If this window is doesn't need to come forward, then respond normally
-	if (!this.needsToComeForward(evt) || droppingMorph != null) {
-	    return WindowMorph.superClass.morphToGrabOrReceive.call(this, evt, droppingMorph, checkForDnD)
-	}
-	// Otherwise, hold mouse focus until mouseUp brings it to the top
-	return this;
+        // If this window is doesn't need to come forward, then respond normally
+        if (!this.needsToComeForward(evt) || droppingMorph != null) {
+            return WindowMorph.superClass.morphToGrabOrReceive.call(this, evt, droppingMorph, checkForDnD)
+        }
+        // Otherwise, hold mouse focus until mouseUp brings it to the top
+        return this;
     },
 
     needsToComeForward: function(evt) {
-	if (this.owner() !== this.world()) return true; // weird case -- not directly in world
-	if (!this.fullContainsWorldPoint(evt.mousePoint)) return false;  // not clicked in me
-	if (this === this.world().topSubmorph()) return false;  // already on top
-	if (this.isCollapsed()) return false;  // collapsed labels OK from below
-	if (this.titleBar.fullContainsWorldPoint(evt.mousePoint)) return false;  // labels OK from below
-	return true;  // it's in my content area
+        if (this.owner() !== this.world()) return true; // weird case -- not directly in world
+        if (!this.fullContainsWorldPoint(evt.mousePoint)) return false;  // not clicked in me
+        if (this === this.world().topSubmorph()) return false;  // already on top
+        if (this.isCollapsed()) return false;  // collapsed labels OK from below
+        if (this.titleBar.fullContainsWorldPoint(evt.mousePoint)) return false;  // labels OK from below
+        return true;  // it's in my content area
     },
-	
+
     // Next four methods hold onto control until mouseUp brings the window forward.
     handlesMouseDown: function(evt) { return this.needsToComeForward(evt); },
 
     onMouseDown: function(evt) { },
 
     onMouseMove: function(evt) {
-	if(!evt.mouseButtonPressed) WindowMorph.superClass.onMouseMove.call(this, evt);
-	},    
+        if (!evt.mouseButtonPressed) WindowMorph.superClass.onMouseMove.call(this, evt);
+    },    
 
     onMouseUp: function(evt) {
-	// I've been clicked on when not on top.  Bring me to the top now
-	this.takeHighlight()
-	var oldTop = this.world().topSubmorph();
-	this.world().addMorphFront(this);
-	evt.hand.setMouseFocus(null);
-	return true;
+        // I've been clicked on when not on top.  Bring me to the top now
+        this.takeHighlight()
+        var oldTop = this.world().topSubmorph();
+        this.world().addMorphFront(this);
+        evt.hand.setMouseFocus(null);
+        return true;
     },
 
     mouseEvent: function(evt, hasFocus) {
-	if (!this.needsToComeForward(evt)) {
-	    return WindowMorph.superClass.mouseEvent.call(this, evt, hasFocus)
-	}
+        if (!this.needsToComeForward(evt)) {
+            return WindowMorph.superClass.mouseEvent.call(this, evt, hasFocus)
+        }
         return this.mouseHandler.handleMouseEvent(evt, this); 
     },
 
     okToBeGrabbedBy: function(evt) {
-	this.takeHighlight();
+        this.takeHighlight();
         return this; 
     },
 
     takeHighlight: function() {
-	// I've been clicked on.  unhighlight old top, and highlight me
-	var oldTop = WorldMorph.current().topSubmorph();
-	if(oldTop instanceof WindowMorph) oldTop.titleBar.highlight(false);
-	this.titleBar.highlight(true);
+        // I've been clicked on.  unhighlight old top, and highlight me
+        var oldTop = WorldMorph.current().topSubmorph();
+        if (oldTop instanceof WindowMorph) oldTop.titleBar.highlight(false);
+        this.titleBar.highlight(true);
     },
-    //End of window promotion methods----------------
+    // End of window promotion methods----------------
 
     isShutdown: function() { return this.state == "shutdown"; },
 
@@ -983,7 +983,7 @@ Object.extend(SelectionMorph.prototype, {
         this.originalPoint = viewPort.topLeft();
         this.reshapeName = "bottomRight";
         this.selectedMorphs = [];
-	this.initialSelection = true;
+        this.initialSelection = true;
         this.shape.setFillOpacity(0.1);
         this.myWorld = defaultworldOrNull ? defaultworldOrNull : this.world();
         // this.shape.setAttributeNS(null, "stroke-dasharray", "3,2");
@@ -994,12 +994,12 @@ Object.extend(SelectionMorph.prototype, {
         // Initial selection might actually move in another direction than toward bottomRight
         // This code watches that and changes the control point if so
         if (this.initialSelection) {
-		var selRect = Rectangle.fromAny(pt(0,0), newPoint);
-        	if (selRect.width*selRect.height > 30) {
-            		this.reshapeName = selRect.partNameNearest(Rectangle.corners, newPoint);
-        	}
-        	this.setBounds(this.originalPoint.asRectangle())
-	} else { this.reshapeName = partName; }
+            var selRect = Rectangle.fromAny(pt(0,0), newPoint);
+            if (selRect.width*selRect.height > 30) {
+                this.reshapeName = selRect.partNameNearest(Rectangle.corners, newPoint);
+            }
+            this.setBounds(this.originalPoint.asRectangle())
+        } else { this.reshapeName = partName; }
 
         SelectionMorph.superClass.reshape.call(this, this.reshapeName, newPoint, handle, lastCall);
         this.selectedMorphs = [];
@@ -1009,7 +1009,7 @@ Object.extend(SelectionMorph.prototype, {
         this.selectedMorphs.reverse();
             
         if (lastCall) this.initialSelection = false;
-	if (lastCall && this.selectedMorphs.length == 0) this.remove();
+        if (lastCall && this.selectedMorphs.length == 0) this.remove();
     },
 
     morphMenu: function(evt) { 
@@ -1663,7 +1663,7 @@ Object.extend(SliderMorph.prototype, {
         return SliderMorph.superClass.onMouseMove.call(this, evt);
     },
     
-   clipValue: function(val) { 
+    clipValue: function(val) { 
         return Math.min(1.0,Math.max(0,0,val.roundTo(0.001))); 
     },
 
@@ -1980,6 +1980,7 @@ Object.extend(WorldMorph, {
     setCurrent: function(newWorld) {
         WorldMorph.currentWorld = newWorld;
     }
+
 });
 
 Object.extend(WorldMorph.prototype, {
@@ -2038,7 +2039,6 @@ Object.extend(WorldMorph.prototype, {
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue}
         }
     },
-
 
     initialize: function(canvas, backgroundImageId) {
         var bounds = canvas.bounds();
@@ -2151,7 +2151,7 @@ Object.extend(WorldMorph.prototype, {
         var items = themeNames.map(
             function(each) { return [each, target, "setDisplayTheme", themes[each]]; });
         var menu = MenuMorph(items, this);
-	menu.openIn(this.world(), evt.mousePoint);
+        menu.openIn(this.world(), evt.mousePoint);
     },
   
     setDisplayTheme: function(styleDict) { 
@@ -2369,15 +2369,15 @@ Object.extend(WorldMorph.prototype, {
             ["TextMorph", function(evt) { world.addMorph(TextMorph(evt.mousePoint.extent(pt(120, 10)), "This is a TextMorph"));}],
             ["Class Browser", function(evt) { new SimpleBrowser().openIn(world, evt.mousePoint); }]
         ];
-	if (this.isLoadedFromNetwork()) 
-	    items.push(["File Browser", function(evt) { WebStore.onCurrentLocation().openIn(world, evt.mousePoint) }])
+        if (this.isLoadedFromNetwork()) { 
+            items.push(["File Browser", function(evt) { WebStore.onCurrentLocation().openIn(world, evt.mousePoint) }])
+        }
         MenuMorph(items, this).openIn(this.world(), evt.mousePoint);
     },
 
     isLoadedFromNetwork: function() {
-	// TODO this is not foolproof
-	return window.location.protocol == "http:";
-
+        // TODO this is not foolproof
+        return window.location.protocol == "http:";
     },
 
     makeShrinkWrappedWorldWith: function(morphs, filename) {
@@ -2429,7 +2429,7 @@ Object.extend(WorldMorph.prototype, {
             }
             container.appendChild(newDoc.createTextNode('\n\n'));
         });
-	
+
         container.setAttribute("id", "ShrinkWrapped");
         mainDefs.appendChild(container);
 
@@ -2444,17 +2444,16 @@ Object.extend(WorldMorph.prototype, {
             onSuccess: function(transport) {
                 failed = false;
             },
-	    onFailure: function(transport) {
-		this.alert('failed saving world at url %s', newurl);
-		failed = true;
-	    }
-
+            onFailure: function(transport) {
+                this.alert('failed saving world at url %s', newurl);
+                failed = true;
+            }
         });
     },
 
     addMorphsFrom: function(id) {
         var container = document.getElementById(id);
-	if (!container) return null;
+        if (!container) return null;
         var morphs = [];
         for (var node = container.firstChild; node != null; node = node.nextSibling) {
             if (node.tagName != 'g') continue;
@@ -2463,7 +2462,7 @@ Object.extend(WorldMorph.prototype, {
 
         var importer = new Importer();
         morphs.each(function(m) { this.addMorph(importer.importFromNode(m)) }.bind(this));
-	return morphs;
+        return morphs;
     },
 
     alert: function(message) {
@@ -2620,45 +2619,46 @@ Object.extend(HandMorph.prototype, {
 
     handleMouseEvent: function(evt) { 
         evt.hand = this; // extra copy needed for entry from HandRemoteControl
-	evt.setButtonPressedAndPriorPoint(this.mouseButtonPressed, this.lastMouseEvent.mousePoint);
+        evt.setButtonPressedAndPriorPoint(this.mouseButtonPressed, this.lastMouseEvent.mousePoint);
     
         //-------------
-	// mouse move
-	//-------------
-	if (evt.type == "mousemove") { // it is just a move
+        // mouse move
+        //-------------
+        if (evt.type == "mousemove") { // it is just a move
             this.setPosition(evt.mousePoint);
             this.recordChange('origin');
              
-            if (evt.mousePoint.dist(this.lastMouseDownPoint) > 10) 
+            if (evt.mousePoint.dist(this.lastMouseDownPoint) > 10) { 
                 this.hasMovedSignificantly = true;
+            }
                 
             if (this.mouseFocus) { // if mouseFocus is set, events go to that morph
-		this.mouseFocus.mouseEvent(evt, true);
-
+                this.mouseFocus.mouseEvent(evt, true);
             } else {
-		if (this.owner()) {
-		    var receiver = this.owner().morphToReceiveEvent(evt);
-		    if (receiver !== this.mouseOverMorph) {
+                if (this.owner()) {
+                    var receiver = this.owner().morphToReceiveEvent(evt);
+                    if (receiver !== this.mouseOverMorph) {
 
-			// if over a new morph, send onMouseOut, onMouseOver
-			if(this.mouseOverMorph) this.mouseOverMorph.onMouseOut(evt);
-			this.mouseOverMorph = receiver;
-			// console.log('msOverMorph set to: ' + Object.inspect(this.mouseOverMorph));
-			this.mouseOverMorph.onMouseOver(evt);
-			if (!receiver || !receiver.canvas()) return;  // prevent errors after world-switch
+                        // if over a new morph, send onMouseOut, onMouseOver
+                        if (this.mouseOverMorph) this.mouseOverMorph.onMouseOut(evt);
+                        this.mouseOverMorph = receiver;
+                        // console.log('msOverMorph set to: ' + Object.inspect(this.mouseOverMorph));
+                        this.mouseOverMorph.onMouseOver(evt);
+                        if (!receiver || !receiver.canvas()) return;  // prevent errors after world-switch
 
-		    // Note if onMouseOver sets focus, it will get onMouseMove
-		    if(this.mouseFocus) this.mouseFocus.mouseEvent(evt, true);
-		    else if(!evt.hand.hasSubmorphs()) this.owner().mouseEvent(evt, false); }
-		} 
+                        // Note if onMouseOver sets focus, it will get onMouseMove
+                        if (this.mouseFocus) this.mouseFocus.mouseEvent(evt, true);
+                        else if (!evt.hand.hasSubmorphs()) this.owner().mouseEvent(evt, false); 
+                    }
+                } 
             }
             this.lastMouseEvent = evt;
             return;
         }
     
         //-------------------
-	// mouse up or down
-	//-------------------
+        // mouse up or down
+        //-------------------
         if (!evt.mousePoint.eqPt(this.position())) { // Only happens in some OSes
             // and when window wake-up click hits a morph
             console.log("mouseButton event includes a move!");
@@ -2674,7 +2674,7 @@ Object.extend(HandMorph.prototype, {
                 this.mouseFocus.mouseEvent(evt, true);
                 this.lastMouseDownPoint = evt.mousePoint; 
             }
-	    else this.mouseFocus.mouseEvent(evt, true); 
+            else this.mouseFocus.mouseEvent(evt, true); 
         } else {
             if (this.hasSubmorphs() && (evt.type == "mousedown" || this.hasMovedSignificantly)) {
                 // If laden, then drop on mouse up or down
@@ -2700,9 +2700,9 @@ Object.extend(HandMorph.prototype, {
 
     grabMorph: function(grabbedMorph, evt) { 
         if (evt.shiftKey && !(grabbedMorph instanceof LinkMorph)) {
-	    if (!grabbedMorph.okToDuplicate()) return;
-	    grabbedMorph.copyToHand(this);
-	    return;
+            if (!grabbedMorph.okToDuplicate()) return;
+            grabbedMorph.copyToHand(this);
+            return;
         }
         if (evt.altKey) {
             grabbedMorph.showMorphMenu(evt);
@@ -2731,29 +2731,29 @@ Object.extend(HandMorph.prototype, {
     },
     
     dropMorphsOn: function (receiver) {
- 	if (receiver !== this.world()) this.unbundleCarriedSelection();
-	while (this.hasSubmorphs()) { // drop in same z-order as in hand
-	    var m = this.submorphs.firstChild;
-	    receiver.addMorph(m); // this removes it from hand
-	    //DI: May need to be updated for collaboration...
-	    //m.updateBackendFields('origin'); 
+        if (receiver !== this.world()) this.unbundleCarriedSelection();
+        while (this.hasSubmorphs()) { // drop in same z-order as in hand
+            var m = this.submorphs.firstChild;
+            receiver.addMorph(m); // this removes it from hand
+            // DI: May need to be updated for collaboration...
+            // m.updateBackendFields('origin'); 
 
-	    // FIXME - folowing stmt is a workaround for the fact that if the targetMorph gets
-	    // dragged, its rotation value set in degrees rather than radians, and this
-	    // may foul things up later if .rotation is read rather than .getRotation
-	    // Remove this stmt after it gets fixed.
-	    m.setRotation(m.getRotation()); //work-around for invalid degree/radian confusion
-	}
+            // FIXME - folowing stmt is a workaround for the fact that if the targetMorph gets
+            // dragged, its rotation value set in degrees rather than radians, and this
+            // may foul things up later if .rotation is read rather than .getRotation
+            // Remove this stmt after it gets fixed.
+            m.setRotation(m.getRotation()); //work-around for invalid degree/radian confusion
+        }
     },
 
     unbundleCarriedSelection: function() {
-	// Unpack the selected morphs from a selection prior to drop or jump to other world
-	if (!this.hasSubmorphs() || !(this.topSubmorph() instanceof SelectionMorph)) return;
-	var selection = this.topSubmorph();
-	for (var i=0; i<selection.selectedMorphs.length; i++) {
-	    this.addMorph(selection.selectedMorphs[i])
-	}
-	selection.removeOnlyIt();
+        // Unpack the selected morphs from a selection prior to drop or jump to other world
+        if (!this.hasSubmorphs() || !(this.topSubmorph() instanceof SelectionMorph)) return;
+        var selection = this.topSubmorph();
+        for (var i=0; i<selection.selectedMorphs.length; i++) {
+            this.addMorph(selection.selectedMorphs[i])
+        }
+        selection.removeOnlyIt();
     },
 
     moveTopMorph: function(evt) {
@@ -2876,7 +2876,7 @@ Object.extend(LinkMorph.prototype, {
             this.addMorph(lineMorph);
         }.bind(this));
         this.openForDragAndDrop = false;
-	this.suppressHandles = true;
+        this.suppressHandles = true;
 
         if (!otherWorld) {
             otherWorld = WorldMorph(Canvas);
@@ -2896,9 +2896,9 @@ Object.extend(LinkMorph.prototype, {
     enterMyWorld: function(evt) { // needs vars for oldWorld, newWorld
         carriedMorphs = [];
 
-	// Save, and suspend stepping of, any carried morphs
+        // Save, and suspend stepping of, any carried morphs
         evt.hand.unbundleCarriedSelection();
-	while (evt.hand.hasSubmorphs()) {
+        while (evt.hand.hasSubmorphs()) {
             var m = evt.hand.topSubmorph();
             if (m.activeScripts) { //Fixme: this must be deep
                 m.suspendedScripts = m.activeScripts.clone();
@@ -2953,13 +2953,13 @@ Object.extend(LinkMorph.prototype, {
     },
 
     onMouseOver: function(evt) {
-	if (evt.hand.hasSubmorphs()) { // if hand is laden enter world bearing gifts
+        if (evt.hand.hasSubmorphs()) { // if hand is laden enter world bearing gifts
             if (!evt.hand.emergingFromWormHole) this.enterMyWorld(evt);
         } else if (this.helpText) this.showHelp(evt);
     },
     
     onMouseOut: function(evt) {
-	evt.hand.emergingFromWormHole = false;
+        evt.hand.emergingFromWormHole = false;
         this.hideHelp();
     },
     
