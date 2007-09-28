@@ -324,7 +324,7 @@ Object.extend(TextLine.prototype, {
         var runningStartIndex = this.startIndex;
         var mostRecentBounds = this.topLeft.asRectangle();
         var lastWord = null;
-    
+	var leadingSpaces = 0;
         // a way to optimize out repeated scanning
         if (this.chunks == null) {
             this.chunks = this.wordDecomposition(this.startIndex);
@@ -340,7 +340,7 @@ Object.extend(TextLine.prototype, {
                     c.bounds.width = (this.topLeft.x + compositionWidth) - c.bounds.x;
                     runningStartIndex = c.start + c.length;
                     c.wasComposed = true;
-                    if (lastWord) lastWord.setAttribute("nl", "true"); // little helper for serialization
+                    if (lastWord) lastWord.setAttribute(Namespace.LIVELY, "nl", "true"); // little helper for serialization
                     break;
                 }
                 if (c.isTab) {
@@ -348,12 +348,17 @@ Object.extend(TextLine.prototype, {
                     c.bounds.width = Math.floor((tabXBoundary + this.tabWidth) / this.tabWidth) * this.tabWidth - tabXBoundary;
                 } else {
                     c.bounds.width = spaceIncrement * c.length;
-                    if (lastWord) lastWord.setAttribute("trail", c.length); // little helper for serialization
+                    if (lastWord) lastWord.setAttributeNS(Namespace.LIVELY, "trail", c.length); // little helper for serialization
+		    else leadingSpaces = c.length;
                 }
                 runningStartIndex = c.start + c.length;
             } else {
                 c.word = TextWord(this.textString, c.start, pt(mostRecentBounds.maxX(), this.topLeft.y), this.font);
                 lastWord = c.word;
+		if (leadingSpaces) { 
+		    lastWord.setAttributeNS(Namespace.LIVELY, "lead", leadingSpaces);
+		    leadingSpaces = 0;
+		}
                 c.word.compose(compositionWidth - (mostRecentBounds.maxX() - this.topLeft.x), c.length - 1);
                 c.bounds = c.word.getBounds(c.start).union(c.word.getBounds(c.start + c.length - 1));
                 if (c.word.getLineBrokeOnCompose()) {
@@ -580,16 +585,29 @@ Object.extend(TextBox.prototype, {
         for (var child = this.firstChild; child != null; child = child.nextSibling) {
             if (child.tagName == 'tspan')  {
                 var word = TextWord.become(child);
+                var lead = parseInt(word.getAttributeNS(Namespace.LIVELY, "lead"));
+                if (lead) {
+		    var spaces = "";
+                    for (var j = 0; j < lead; j++) 
+                        spaces += ' ';
+                    content += spaces;
+                }
+
                 content += word.textContent; 
-                if (word.getAttribute("nl") == 'true') {
+
+                var trail = parseInt(word.getAttributeNS(Namespace.LIVELY, "trail"));
+                if (trail) {
+		    var spaces = "";
+                    for (var j = 0; j < trail; j++) {
+                        spaces += ' ';
+                    }
+		    content += spaces;
+                }
+
+                if (word.getAttributeNS(Namespace.LIVELY, "nl") == "true") {
                     content += "\n";
                 }
-                var trail = parseInt(word.getAttribute("trail"));
-                if (trail) {
-                    for (var j = 0; j < trail; j++) {
-                        content += ' ';
-                    }
-                }
+
             }
         }
         return content;
