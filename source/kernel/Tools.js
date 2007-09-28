@@ -65,6 +65,18 @@ Object.extend(SimpleBrowser.prototype, {
         m.connectModel({model: this, getList: "getMethodList", setSelection: "setMethodName"});
         m = panel.getNamedMorph('bottomPane');
         m.connectModel({model: this, getText: "getMethodString", setText: "setMethodString"});
+
+	var thisModel = this;
+        panel.morphMenu = function(evt) { // Offer to open a stats panel
+	    var menu = Morph.prototype.morphMenu.call(this, evt);
+            if (thisModel.className == null) return menu;
+	    var theClass = Global[thisModel.className];
+	    if (theClass.prototype == null) return menu;
+            menu.addLine();
+            menu.addItem(['analyze selection', function() {
+		showStatsViewer(theClass.prototype, thisModel.className + "..."); }])
+            return menu; 
+        }
         return panel;
     }
     
@@ -87,12 +99,9 @@ Object.extend(SimpleInspector.prototype, {
         this.inspectee = targetMorph;
     },
 
-    getPropList: function() {
-        return Object.properties(this.inspectee);
-    },
+    getPropList: function() { return Object.properties(this.inspectee); },
 
-    setPropName: function(n, v) {
-        this.propName = n; this.changed("getPropText", v) },
+    setPropName: function(n, v) { this.propName = n; this.changed("getPropText", v) },
 
     getPropList: function() { return Object.properties(this.inspectee); },
 
@@ -117,9 +126,7 @@ Object.extend(SimpleInspector.prototype, {
         // rightPane.startStepping(1000, 'updateView', 'getPropText');
     },
 
-    open: function() {
-        return this.openIn(WorldMorph.current());
-    },
+    open: function() { return this.openIn(WorldMorph.current()); },
 
     buildView: function(rect) {
         var panel = PanelMorph.makePanedPanel(rect.extent(), [
@@ -136,15 +143,14 @@ Object.extend(SimpleInspector.prototype, {
         m.innerMorph().setTextString("doits here have this === inspectee");
 
         var thisModel = this;
-        panel.morphMenu = function(evt) { 
-            var menu = Morph.prototype.morphMenu.call(this,evt);
+        panel.morphMenu = function(evt) { // offer to inspect the current selection
+            var menu = Morph.prototype.morphMenu.call(this, evt);
+            if (thisModel.selectedItem() == null) return menu;
             menu.addLine();
-            // DI: thisModel used to be panel.getModel() and it failed.
-            //     but will soon be a list pane menu item anyway
-            menu.addItem(['inspect selection', function() { new SimpleInspector(thisModel.selectedItem()).openIn(WorldMorph.current())}])
+            menu.addItem(['inspect selection', function() {
+		new SimpleInspector(thisModel.selectedItem()).openIn(WorldMorph.current())}])
             return menu; 
         }
-
         return WindowMorph(panel, 'Inspector');
     }
 

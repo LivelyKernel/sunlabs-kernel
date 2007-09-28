@@ -997,7 +997,7 @@ Object.extend(TextMorph.prototype, {
         }
         
         // console.log('last char is ' + jRect.inspect() + ' for string ' + this.textString);
-        var maxY = jRect.maxY();
+        var maxY = Math.max(this.lineHeight(), jRect.maxY());
     
         if (this.shape.bounds().maxY() == maxY + this.inset.y) 
             return; // No change in height  // *** check that this converges
@@ -1021,6 +1021,8 @@ Object.extend(TextMorph.prototype, {
         var jRect = composer.getBounds(0);
         if (jRect == null) { 
             console.log("fitWidth failure on TextBox.getBounds"); 
+            var minH = this.lineHeight();
+	    with (this.shape) { setBounds(bounds().withHeight(minH))};
             return; 
         }
     
@@ -1029,21 +1031,24 @@ Object.extend(TextMorph.prototype, {
         var maxX = jRect.maxX();  
         var maxY = jRect.maxY();
     
-        // DI: really only need to check last char before each CR...
-        // DI: in fact text box should already have done this
-        for (var i = 0; i < this.textString.length; i++) { 
-            jRect = composer.getBounds(i);
-            if (jRect == null) { 
-                console.log("null bounds at char " + i); 
-                return false; 
-            }
-            if (jRect.width < 100) { // line break character gets extended to comp width
-                maxX = Math.max(maxX,jRect.maxX());
-                maxY = Math.max(maxY,jRect.maxY()); 
-            }
+        // DI: really only need to check last char before line breaks...
+        // ... and last character
+        var s = this.textString;
+	var iMax = s.length-1;
+	for (var i = 0; i <= iMax; i++) {
+            var c = this.textString[Math.min(i+1, iMax)];
+	    if (i == iMax || c == "\n" || c == "\r") {
+		jRect = composer.getBounds(i);
+		if (jRect == null) { console.log("null bounds at char " + i); return false; }
+		if (jRect.width < 100) { // line break character gets extended to comp width
+		    maxX = Math.max(maxX,jRect.maxX());
+		    maxY = Math.max(maxY,jRect.maxY()); 
+		}
+	    }
         }
         
-        // if (this.innerBounds().width==(maxX-x0) && this.innerBounds().height==(maxY-y0)) return; // No change in width *** check convergence
+        // if (this.innerBounds().width==(maxX-x0) && this.innerBounds().height==(maxY-y0)) return;
+	// No change in width *** check convergence
         var bottomRight = this.inset.addXY(maxX,maxY);
 
         // DI: This should just say, eg, this.shape.setBottomRight(bottomRight);
