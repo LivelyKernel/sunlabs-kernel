@@ -92,7 +92,7 @@ function populateWorldWithExamples(world) {
     if (Config.showStocks && Config.showNetworkExamples) {
         var stockWidget = new StockWidget();
         var panel = stockWidget.openIn(world, pt(350, 500));
-	stockWidget.startSteppingRefreshCharts(panel);
+        stockWidget.startSteppingRefreshCharts(panel);
     }
 
     if (Config.show3DLogo) world.addMorph(WindowMorph(Sun3DMorph(pt(570, 100).extent(pt(200, 200))), 'Sun 3D Logo'));
@@ -133,29 +133,30 @@ function populateWorldWithExamples(world) {
                 lm1.myWorld.rssReader = new Feed("http://www.news.com/2547-1_3-0-5.xml").openIn(lm1.myWorld, pt(725, 120));
             }
 
-	    // Add sample curve stuff
-	    if (Config.showCurveExample) {
-		
-		// bezier blob
-		var shape1 = [pt(0,0), pt(50,0), pt(50,50), pt(0,50), pt(0,0)];
-		var widget = Morph(pt(100,100).asRectangle(),"rect");
-		widget.setShape(PathShape(shape1, Color.red, 3, Color.black));
-		lm1.myWorld.addMorph(widget);
-		widget = Morph(pt(250,50).asRectangle(),"rect");
-		
-		// rectangle with rounded corners
-		var shape2 = [pt(10,0), pt(60,0), pt(70,10), pt(70,40),
-		    pt(60,50), pt(10,50), pt(0,40), pt(0, 10), pt(10,0)];
-		for (var i = 2; i<=8; i+=2) {
-		    // this will work too
-		    // shape2[i].radius = pt(10,10); shape2[i].type = "arc";
-		    shape2[i].radius = 10; shape2[i].type = "arc";
-		}
-		widget.setShape(PathShape(shape2, Color.green, 2, Color.red));
-		lm1.myWorld.addMorph(widget);
-	    }
-	    
+            // Add sample curve stuff
+            if (Config.showCurveExample) {
 
+                // bezier blob
+                var shape1 = [pt(0,0), pt(50,0), pt(50,50), pt(0,50), pt(0,0)];
+                var widget = Morph(pt(100,100).asRectangle(),"rect");
+                widget.setShape(PathShape(shape1, Color.red, 3, Color.black));
+                lm1.myWorld.addMorph(widget);
+                widget = Morph(pt(250,50).asRectangle(),"rect");
+
+                // rectangle with rounded corners
+                var shape2 = [pt(10,0), pt(60,0), pt(70,10), pt(70,40),
+                    pt(60,50), pt(10,50), pt(0,40), pt(0, 10), pt(10,0)];
+
+                for (var i = 2; i<=8; i+=2) {
+                    // this will work too
+                    // shape2[i].radius = pt(10,10); shape2[i].type = "arc";
+                    shape2[i].radius = 10; shape2[i].type = "arc";
+                }
+
+                widget.setShape(PathShape(shape2, Color.green, 2, Color.red));
+                lm1.myWorld.addMorph(widget);
+            }    
+        
         }
 
         if (Config.showBitmap) { 
@@ -302,7 +303,7 @@ function populateWorldWithExamples(world) {
         }
 
         if (Config.showWebStore) {
-	    var store;
+            var store;
             if (location.protocol == 'file:') {
                 store = new WebStore('localhost', '/~kappa/'); // TODO: hardcoded
             } else {
@@ -310,7 +311,6 @@ function populateWorldWithExamples(world) {
             }
             WebStore.defaultStore = store;
             store.openIn(Config.webStoreInMain ? WorldMorph.current() : devWorld.myWorld, pt(460, 120));
-
         }
 
         if (Config.showTester) new WidgetTester().openIn(devWorld.myWorld, pt(135, 480));
