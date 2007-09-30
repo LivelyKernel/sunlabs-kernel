@@ -324,7 +324,8 @@ Object.extend(TextLine.prototype, {
         var runningStartIndex = this.startIndex;
         var mostRecentBounds = this.topLeft.asRectangle();
         var lastWord = null;
-	var leadingSpaces = 0;
+        var leadingSpaces = 0;
+
         // a way to optimize out repeated scanning
         if (this.chunks == null) {
             this.chunks = this.wordDecomposition(this.startIndex);
@@ -349,16 +350,17 @@ Object.extend(TextLine.prototype, {
                 } else {
                     c.bounds.width = spaceIncrement * c.length;
                     if (lastWord) lastWord.setAttributeNS(Namespace.LIVELY, "trail", c.length); // little helper for serialization
-		    else leadingSpaces = c.length;
+                    else leadingSpaces = c.length;
                 }
                 runningStartIndex = c.start + c.length;
             } else {
                 c.word = TextWord(this.textString, c.start, pt(mostRecentBounds.maxX(), this.topLeft.y), this.font);
                 lastWord = c.word;
-		if (leadingSpaces) { 
-		    lastWord.setAttributeNS(Namespace.LIVELY, "lead", leadingSpaces);
-		    leadingSpaces = 0;
-		}
+
+                if (leadingSpaces) { 
+                    lastWord.setAttributeNS(Namespace.LIVELY, "lead", leadingSpaces);
+                    leadingSpaces = 0;
+                }
                 c.word.compose(compositionWidth - (mostRecentBounds.maxX() - this.topLeft.x), c.length - 1);
                 c.bounds = c.word.getBounds(c.start).union(c.word.getBounds(c.start + c.length - 1));
                 if (c.word.getLineBrokeOnCompose()) {
@@ -573,7 +575,7 @@ Object.extend(TextBox.prototype, {
         font.applyTo(this);
 
         this.lines = null;//: TextLine[]
-	this.lineNumberHint = 0;
+        this.lineNumberHint = 0;
         this.tabWidth = 4;
         this.tabsAsSpaces = true;
     },
@@ -587,7 +589,7 @@ Object.extend(TextBox.prototype, {
                 var word = TextWord.become(child);
                 var lead = parseInt(word.getAttributeNS(Namespace.LIVELY, "lead"));
                 if (lead) {
-		    var spaces = "";
+                    var spaces = "";
                     for (var j = 0; j < lead; j++) 
                         spaces += ' ';
                     content += spaces;
@@ -597,11 +599,11 @@ Object.extend(TextBox.prototype, {
 
                 var trail = parseInt(word.getAttributeNS(Namespace.LIVELY, "trail"));
                 if (trail) {
-		    var spaces = "";
+                    var spaces = "";
                     for (var j = 0; j < trail; j++) {
                         spaces += ' ';
                     }
-		    content += spaces;
+                    content += spaces;
                 }
 
                 if (word.getAttributeNS(Namespace.LIVELY, "nl") == "true") {
@@ -672,14 +674,14 @@ Object.extend(TextBox.prototype, {
 
     // find what line contains the index 'stringIndex'
     lineNumberForIndex: function(stringIndex) {
-	// Could use a binary search, but instead we check same as last time,
-	// then next line after, and finally a linear search.
-	if (this.lineNumberHint < this.lines.length && this.lines[this.lineNumberHint].containsThisIndex(stringIndex))
-		return this.lineNumberHint;  // Same line as last time
+        // Could use a binary search, but instead we check same as last time,
+        // then next line after, and finally a linear search.
+        if (this.lineNumberHint < this.lines.length && this.lines[this.lineNumberHint].containsThisIndex(stringIndex))
+            return this.lineNumberHint;  // Same line as last time
 
-	this.lineNumberHint++;  // Try next one down (dominant use pattern)
-	if (this.lineNumberHint < this.lines.length && this.lines[this.lineNumberHint].containsThisIndex(stringIndex))
-		return this.lineNumberHint;  // Next line after last time
+        this.lineNumberHint++;  // Try next one down (dominant use pattern)
+        if (this.lineNumberHint < this.lines.length && this.lines[this.lineNumberHint].containsThisIndex(stringIndex))
+            return this.lineNumberHint;  // Next line after last time
 
         for (var i = 0; i < this.lines.length; i++) {  // Do it the hard way
             if (this.lines[i].containsThisIndex(stringIndex)) { this.lineNumberHint = i; return i; }
@@ -1023,7 +1025,7 @@ Object.extend(TextMorph.prototype, {
         if (jRect == null) { 
             console.log("fitWidth failure on TextBox.getBounds"); 
             var minH = this.lineHeight();
-	    with (this.shape) { setBounds(bounds().withHeight(minH))};
+            with (this.shape) { setBounds(bounds().withHeight(minH)) };
             return; 
         }
     
@@ -1035,21 +1037,21 @@ Object.extend(TextMorph.prototype, {
         // DI: really only need to check last char before line breaks...
         // ... and last character
         var s = this.textString;
-	var iMax = s.length-1;
-	for (var i = 0; i <= iMax; i++) {
+        var iMax = s.length-1;
+        for (var i = 0; i <= iMax; i++) {
             var c = this.textString[Math.min(i+1, iMax)];
-	    if (i == iMax || c == "\n" || c == "\r") {
-		jRect = composer.getBounds(i);
-		if (jRect == null) { console.log("null bounds at char " + i); return false; }
-		if (jRect.width < 100) { // line break character gets extended to comp width
-		    maxX = Math.max(maxX,jRect.maxX());
-		    maxY = Math.max(maxY,jRect.maxY()); 
-		}
-	    }
+            if (i == iMax || c == "\n" || c == "\r") {
+                jRect = composer.getBounds(i);
+                if (jRect == null) { console.log("null bounds at char " + i); return false; }
+                if (jRect.width < 100) { // line break character gets extended to comp width
+                    maxX = Math.max(maxX,jRect.maxX());
+                    maxY = Math.max(maxY,jRect.maxY()); 
+                }
+            }
         }
         
         // if (this.innerBounds().width==(maxX-x0) && this.innerBounds().height==(maxY-y0)) return;
-	// No change in width *** check convergence
+        // No change in width *** check convergence
         var bottomRight = this.inset.addXY(maxX,maxY);
 
         // DI: This should just say, eg, this.shape.setBottomRight(bottomRight);

@@ -1901,9 +1901,10 @@ Object.extend(PathShape.prototype, {
                code = "T";  // default - bezier curve with implied control pts
             }
             return code + p.x + "," + p.y;
-	}
-	var d = vertlist.map(map2svg).join('');
-	// console.log("d=" + d);
+        }
+
+        var d = vertlist.map(map2svg).join('');
+        // console.log("d=" + d);
         this.setAttributeNS(null, "d", d);
         this.verticesList = vertlist;
         delete this.cachedBounds;
@@ -1918,9 +1919,9 @@ Object.extend(PathShape.prototype, {
         this.pathSegList.appendItem(this.createSVGPathSegMovetoAbs(x, y));
     },
     
-     curveTo: function(x, y) {
+    curveTo: function(x, y) {
         this.pathSegList.appendItem(this.createSVGPathSegCurvetoQuadraticSmoothAbs(x, y));
-     },
+    },
 
     lineTo: function(x, y) {
         this.pathSegList.appendItem(this.createSVGPathSegLinetoAbs(x, y));

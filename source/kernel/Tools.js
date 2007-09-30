@@ -66,15 +66,16 @@ Object.extend(SimpleBrowser.prototype, {
         m = panel.getNamedMorph('bottomPane');
         m.connectModel({model: this, getText: "getMethodString", setText: "setMethodString"});
 
-	var thisModel = this;
+        var thisModel = this;
         panel.morphMenu = function(evt) { // Offer to open a stats panel
-	    var menu = Morph.prototype.morphMenu.call(this, evt);
+            var menu = Morph.prototype.morphMenu.call(this, evt);
             if (thisModel.className == null) return menu;
-	    var theClass = Global[thisModel.className];
-	    if (theClass.prototype == null) return menu;
+            var theClass = Global[thisModel.className];
+            if (theClass.prototype == null) return menu;
             menu.addLine();
             menu.addItem(['analyze selection', function() {
-		showStatsViewer(theClass.prototype, thisModel.className + "..."); }])
+               showStatsViewer(theClass.prototype, thisModel.className + "..."); 
+            }]);
             return menu; 
         }
         return panel;
@@ -148,7 +149,7 @@ Object.extend(SimpleInspector.prototype, {
             if (thisModel.selectedItem() == null) return menu;
             menu.addLine();
             menu.addItem(['inspect selection', function() {
-		new SimpleInspector(thisModel.selectedItem()).openIn(WorldMorph.current())}])
+            new SimpleInspector(thisModel.selectedItem()).openIn(WorldMorph.current())}])
             return menu; 
         }
         return WindowMorph(panel, 'Inspector');
