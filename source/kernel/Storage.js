@@ -62,7 +62,6 @@ Object.extend(WebStore, {
 });
 
 Object.extend(WebStore.prototype, {
-    maxFileSize: 3000,
 
     initialize: function(host, path) {
         WebStore.superClass.initialize.call(this);
@@ -132,6 +131,32 @@ Object.extend(WebStore.prototype, {
 
         new NetRequest(url, options);
     },
+
+
+    deleteResource: function(url, modelVariable) {
+        // retrieve the the contents of the url and save in the indicated model variable
+        console.log('deleting url ' + url);
+        var store = this;
+        var options =  {
+            method: 'DELETE',
+            contentType: 'text/xml',
+    
+            onSuccess: function(transport) {
+		// FIXME: the content may indicate that we failed to delete!
+                //store[modelVariable] = transport.status;
+                store.changed("get" + modelVariable);
+		console.log('success deleting:  ' + (transport.responseXML || transport.responseText));
+            },
+    
+            onFailure: function(transport) {
+                WorldMorph.current().alert('failed deleting with response ' + transport.responseText);
+            }
+    
+        };
+
+        new NetRequest(url, options);
+    },
+
 
     // FIXME handle object argument
     propfind: function(url, depth, xpQueryString, modelVariable, resultType) {
@@ -235,7 +260,7 @@ Object.extend(WebStore.prototype, {
     },
     
     getCurrentResourceContents: function() {
-        return (this.CurrentResourceContents || "").truncate(this.maxFileSize);
+        return (this.CurrentResourceContents || "").truncate(TextMorph.prototype.maxSafeSize);
     },
     
     setCurrentResourceContents: function(contents) {
@@ -253,16 +278,28 @@ Object.extend(WebStore.prototype, {
             getSelection: "getCurrentDirectory"});
         m = panel.getNamedMorph("rightPane");
         m.connectModel({model: this, getList: "getCurrentDirectoryContents", setSelection: "setCurrentResource"});
+	var oldpress = m.innerMorph().onKeyPress;
+	m.innerMorph().onKeyPress = function(evt) {
+	    if (evt.keyCode == Event.KEY_BACKSPACE) { // Replace the selection after checking for type-ahead
+		var result = this.world().confirm("delete file " + this.itemList[this.selectedLineNo()]);
+		evt.stop();
+		if (result) {
+		    model.deleteResource(this.itemList[this.selectedLineNo()], "CurrentDirectoryContents");
+		}
+	    } else oldpress.call(this, evt);
+	};
+	
+
         m = panel.getNamedMorph("bottomPane");
         m.connectModel({model: this, getText: "getCurrentResourceContents", setText: "setCurrentResourceContents"});
-
+	
         var model = this;
         
         m.innerMorph().processCommandKeys = function(key) {
             if (key == 's') {
-                if (model.CurrentResourceContents.length > model.maxFileSize) {
+                if (model.CurrentResourceContents.length > TextMorph.prototype.maxSafeSize) {
                     this.world().alert("not saving file, size " + model.CurrentResourceContents.length 
-                        + " > " + model.maxFileSize + ", too large");
+                        + " > " + TextMorph.prototype.maxSafeSize + ", too large");
                 } else {
                     model.CurrentResourceContents = this.textString;
                     model.save(model.currentResourceURL(), this.textString, "LastWriteStatus");
@@ -275,9 +312,6 @@ Object.extend(WebStore.prototype, {
         return panel;
     },
     
-    addCredentialDialog: function(panel) {
-        (new Credential()).openIn(panel.world(), panel.worldPoint(panel.bounds().topLeft()).addXY(30, 20));
-    },
     
     openIn: function(world, loc) {
         if (!loc) loc = world.bounds().center();
@@ -290,100 +324,4 @@ Object.extend(WebStore.prototype, {
 
 });  
 
-/**
- * @class Credential
- */ 
-
-var Credential = Class.extend(Model);
-
-Object.extend(Credential.prototype, {
-    userName: "",
-    password: "",
-    status: "active",
-
-    setUserName: function(string) {
-        console.log('user name ' + string);
-        this.userName = string;
-    },
-
-    setPassword: function(string) {
-        console.log('password ' + string);
-        this.password = string;
-    },
-
-    setCancelValue: function(arg) {
-        this.status = "cancel";
-        this.changed('getOKValue');
-        this.changed('shouldDisplayPanel');
-    },
-
-    setOKValue: function(arg) {
-        this.status = "ok";
-        this.changed('getCancelValue');
-        this.changed('shouldDisplayPanel');
-    },
-
-    getCancelValue: function(arg) {
-        return this.status == "cancel";
-    },
-
-    getOKValue: function(arg) {
-        return this.status == "ok";
-    },
-
-    shouldDisplayPanel: function(arg) {
-        return this.status == 'active';
-    },
-
-    buildView: function() {
-        var extent = pt(300, 160);
-        var panel = PanelMorph(extent);
-        panel.shape.roundEdgesBy(5);
-        panel.setFill(StipplePattern.create(Color.white, 3, Color.blue.lighter(5), 1));
-
-        panel.setBorderWidth(2);
-        const height = 20;
-        var y = height;
-
-        panel.addMorph(TextMorph(panel.shape.bounds().insetBy(height).withHeight(height), 'Authorization').beLabel());
-
-        y += 30;
-        panel.addMorph(TextMorph(Rectangle(30, y, 80, height), 'User name').beLabel());
-
-        var m = panel.addMorph(TextMorph(Rectangle(150, y, 100, height)).beInputLine());
-        m.connectModel({model: this, setText: "setUserName"});
-
-        m.requestKeyboardFocus(WorldMorph.current().firstHand()); //??
-        m.setNullSelectionAt(0);
-
-        y+= 30;
-        panel.addMorph(TextMorph(Rectangle(30, y, 80, height), 'Password').beLabel());
-        m = panel.addMorph(TextMorph(Rectangle(150, y, 100, height)).beInputLine());
-        m.connectModel({model: this, setText: "setPassword"});
-
-        y+= 40;
-        m = panel.addMorph(ButtonMorph(Rectangle(80, y, 50, height)));
-        m.addMorph(TextMorph(m.shape.bounds(), 'OK').beLabel());
-        m.setToggle(true);
-        m.connectModel({model: this, getValue: "getOKValue", setValue: "setOKValue"});
-
-        m = panel.addMorph(ButtonMorph(Rectangle(140, y, 50, height)));
-        m.addMorph(TextMorph(m.shape.bounds(), "Cancel").beLabel());
-        m.setToggle(true);
-        m.connectModel({model: this, getValue: "getCancelValue", setValue: "setCancelValue"});
-
-        panel.connectModel({model: this, getVisible: "shouldDisplayPanel"});
-        return panel;
-
-    },
-
-    openIn: function(world, loc) {
-        console.log('opening credential dialog in %s', loc);
-        world.addMorphAt(this.buildView(), loc);
-        //this.changed('getDirectoryList');
-    }
-
-});
-
 console.log('loaded Storage.js');
-

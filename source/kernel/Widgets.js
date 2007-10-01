@@ -397,7 +397,7 @@ Object.extend(TitleBarMorph.prototype, {
         var cell = Rectangle(0, 0, bh, bh);
         var closeButton = WindowControlMorph(cell, spacing, Color.primary.orange, windowMorph, 
             function() { this.initiateShutdown(); }, "Close");
-        this.addMorph(closeButton);
+        this.setNamedMorph('closeButton', closeButton);
 
         // FIXME this should be simpler
         // var sign = NodeFactory.create("use").withHref("#CloseIcon");
@@ -408,7 +408,7 @@ Object.extend(TitleBarMorph.prototype, {
         cell = cell.translatedBy(pt(bh - spacing, 0));
         var menuButton = WindowControlMorph(cell, spacing, Color.primary.blue, windowMorph, 
             function(evt) { windowMorph.showTargetMorphMenu(evt); }, "Menu");
-        this.addMorph(menuButton);
+        this.setNamedMorph('menuButton', menuButton);
 
         // uncomment for extra icon fun
         /*
@@ -420,23 +420,37 @@ Object.extend(TitleBarMorph.prototype, {
         cell = cell.translatedBy(pt(bh - spacing, 0));
         var collapseButton = WindowControlMorph(cell, spacing, Color.primary.yellow, windowMorph, 
             function() { this.toggleCollapse(); }, "Collapse");
-        this.addMorph(collapseButton);
-
+        this.setNamedMorph('collapseButton', collapseButton);
+	
         // var font = Font.forFamily(TextMorph.prototype.fontFamily, TextMorph.prototype.fontSize);
-
+	
+	var label;
         if (headline instanceof TextMorph) {
-            this.label = headline;
+            label = headline;
         } else { // String
             var width = headline.length * 8; // wild guess headlineString.length * 2 *  font.getCharWidth(' ') + 2;
-            this.label = TextMorph(Rectangle(0, 0, width, bh), headline).beLabel();
-            this.label.shape.roundEdgesBy(8);
+            label = TextMorph(Rectangle(0, 0, width, bh), headline).beLabel();
+            label.shape.roundEdgesBy(8);
         }
 
-        this.label.align(this.label.bounds().topCenter(), this.shape.bounds().topCenter().addXY(0,1));
-        this.label.ignoreEvents();
-        this.addMorph(this.label);
+        label.align(label.bounds().topCenter(), this.shape.bounds().topCenter().addXY(0,1));
+        label.ignoreEvents();
+        this.setNamedMorph('label', label);
+	
         return this;
     },
+
+    restorePersistentState: function(importer) {
+	TitleBarMorph.superClass.restorePersistentState.call(this, importer);
+	this.closeButton = this.getNamedMorph('closeButton');
+	this.menuButton = this.getNamedMorph('menuButton');
+	this.collapseButton = this.getNamedMorph('collapseButton');
+	this.label = this.getNamedMorph('label');
+	if (DisplayObject.prototype.getType.call(this.parentNode) == "WindowMorph") {
+	    this.closeButton.target = this.menuButton.target = this.collapseButton.target = this.parentNode;
+	}
+    },
+    
 
     acceptsDropping: function(morph) {
         //console.log('accept drop from %s of %s, %s', this, morph, morph instanceof WindowControlMorph);
@@ -614,10 +628,8 @@ Object.extend(WindowMorph.prototype, {
 
         bounds.height += titleHeight;
         WindowMorph.superClass.initialize.call(this, location ? rect(location, bounds.extent()) : bounds, 'rect');
-        this.targetMorph = targetMorph;
-        this.titleBar = titleBar;
-        this.addMorph(this.titleBar);
-        this.addMorph(targetMorph);
+        this.setNamedMorph("targetMorph", targetMorph);
+        this.setNamedMorph("titleBar", titleBar);
         this.contentOffset = pt(0, titleHeight);
         targetMorph.setPosition(this.contentOffset);
         this.linkToStyles(['window']);
@@ -625,6 +637,14 @@ Object.extend(WindowMorph.prototype, {
         return this;
     },
 
+
+    restorePersistentState: function(importer) {
+	WindowMorph.superClass.restorePersistentState.call(this, importer);
+	this.targetMorph = this.getNamedMorph('targetMorph');
+	this.titleBar = this.getNamedMorph('titleBar');
+	this.contentOffset = pt(0, this.titleBar.bounds().height);
+    },
+    
     makeTitleBar: function(headline, width) {
         // Overridden in TabbedPanelMorph
         return TitleBarMorph(headline, width, this, false);
@@ -2477,6 +2497,11 @@ Object.extend(WorldMorph.prototype, {
     prompt: function(message) {
         // FIXME replace with a native solution
         return window.prompt(message);
+    },
+
+    confirm: function(message) {
+	// FIXME replace with a native solution
+	return window.confirm(message);
     }
 
 });
@@ -2643,7 +2668,7 @@ Object.extend(HandMorph.prototype, {
                         if (this.mouseOverMorph) this.mouseOverMorph.onMouseOut(evt);
                         this.mouseOverMorph = receiver;
                         // console.log('msOverMorph set to: ' + Object.inspect(this.mouseOverMorph));
-                        this.mouseOverMorph.onMouseOver(evt);
+                        if (this.mouseOverMorph) this.mouseOverMorph.onMouseOver(evt);
                         if (!receiver || !receiver.canvas()) return;  // prevent errors after world-switch
 
                         // Note if onMouseOver sets focus, it will get onMouseMove

@@ -735,8 +735,8 @@ var WrapStyle = {
 Object.extend(TextMorph.prototype, {
 
     // these are prototype variables
-    fontSize: 12,
-    fontFamily: (Config.defaultFontFamily || 'Helvetica'),
+    fontSize:   Config.defaultFontSize   || 12,
+    fontFamily: Config.defaultFontFamily || 'Helvetica',
     textColor: Color.black,
     defaultBackgroundColor: Color.veryLightGray,
     defaultBorderWidth: 1,

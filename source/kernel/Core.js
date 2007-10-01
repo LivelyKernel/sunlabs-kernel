@@ -30,8 +30,8 @@ Object.extend(Canvas, {
     },
 
     // these don't seem to be calculated, at least in safari, so we assume a containing <div> with the same position
-    offsetLeft: Canvas.parentNode.offsetLeft,
-    offsetTop: Canvas.parentNode.offsetTop
+    offsetLeft: Canvas.parentNode.offsetLeft || 0,
+    offsetTop: Canvas.parentNode.offsetTop || 0
         
 });
 
@@ -2599,6 +2599,11 @@ Object.extend(Morph.prototype, {
         } else return null;
     },
 
+    query: function(xpathQuery, defaultValue) {
+	// run a query against this morph
+	return Query.evaluate(xpathQuery, this, defaultValue);
+    },
+
     getNamedMorph: function(name) {
         for (var node = this.submorphs.firstChild; node != null; node = node.nextSibling) {
             if (node.getAttributeNS(Namespace.LIVELY, "property") == name) { 
@@ -2937,7 +2942,8 @@ Object.category(Morph.prototype, 'transforms', function() { return {
 
 // Morph mouse event handling functions
 Object.extend(Morph.prototype, {
-
+    
+    // KP: equivalent of the DOM capture phase
     mouseEvent: function(evt, hasFocus) {
     // Dispatch this event to the frontmost receptive morph that contains it
     // Note boolean return for event consumption has not been QA'd
@@ -3687,11 +3693,10 @@ Object.extend(Morph.prototype, {
         var xml = exporter.serialize();
         console.log('%s serialized to %s', this, xml);        
         
-        const maxSize = 1500;
         var extent = pt(500, 300);
         var panel = PanelMorph(extent);
         var r = Rectangle(0, 0, extent.x, extent.y);
-        var pane = panel.setNamedMorph("pane", TextPane(r, xml.truncate(maxSize)));
+        var pane = panel.setNamedMorph("pane", TextPane(r, xml.truncate(TextMorph.prototype.maxSafeSize)));
         var txtMorph = pane.innerMorph();
         txtMorph.xml = xml;
         this.world().addMorph(WindowMorph(panel, "XML dump", this.bounds().topLeft().addPt(pt(5,0))));
