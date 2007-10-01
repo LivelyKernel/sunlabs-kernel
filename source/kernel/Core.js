@@ -28,10 +28,6 @@ Object.extend(Canvas, {
         return Rectangle(this.x.baseVal.value, this.y.baseVal.value, 
                          this.width.baseVal.value, this.height.baseVal.value);
     },
-
-    // these don't seem to be calculated, at least in safari, so we assume a containing <div> with the same position
-    offsetLeft: Canvas.parentNode.offsetLeft || 0,
-    offsetTop: Canvas.parentNode.offsetTop || 0
         
 });
 
@@ -1223,7 +1219,9 @@ Object.extend(Event.prototype, {
 
     init: function() {
         if (this.isMouse()) {
-            this.mousePoint = pt(this.pageX - Canvas.offsetLeft, this.pageY - Canvas.offsetTop - 3);
+	    // note that FF doesn't doesnt calculate offsetLeft/offsetTop early enough we don't precompute these values
+	    // assume the parent node of Canvas has the same bounds as Canvas
+            this.mousePoint = pt(this.pageX - Canvas.parentNode.offsetLeft, this.pageY - Canvas.parentNode.offsetTop - 3);
             //this.mousePoint = pt(this.clientX, this.clientY  - 3);
             this.priorPoint = this.mousePoint; 
             // Safari somehow gets the x and y coords so we add them here to Firefox too --PR
