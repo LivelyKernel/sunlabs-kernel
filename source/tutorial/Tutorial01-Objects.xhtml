@@ -1,0 +1,71 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html debug="false" xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Lively Kernel Tutorial</title>
+  </head>
+  
+  <body topmargin="0" leftmargin="0">
+    <script src="../firebug/firebug.js"/>
+    <script src="../prototype.js"/>
+    <script src="../fontinfo.js"/>
+    
+
+    <h2>Lively Kernel Tutorial: (1) Basic Object Types and Moving Objects</h2>
+    <button onClick="window.location='index.htm'">Back to Introduction</button>
+    <button onClick="window.location='Tutorial01-Objects.js'">Source code of this demo</button>
+    <button onClick="window.location='Tutorial02-Handles.xhtml'">NEXT</button>
+    <hr />
+    Like most desktop environments, Lively Kernel applications consist
+    of objects that can be manipulated directly by the user. 
+    
+    A Lively Kernel application can contain various types of objects.
+    The simplest object types include structures such as rectangles,
+    ellipses, lines and text. 
+    In the area below you see a few examples of the basic object types.
+    <p />    
+        <img src="Tutorial01-Image1.PNG" />
+    <p />
+    <hr />
+    <b>Try it yourself!</b> Try manipulating each object below by grabbing it with a mouse and moving it around.<br />
+    Note: To grab text objects, click on the area right <i>above</i> or <i>left</i> of the text.
+    <p />
+<!--    <object data="Tutorial01-Objects.svg" width="800px" height="480px" type="image/svg+xml">
+        *** Unable to load Lively Kernel (unsupported web browser) ***
+    </object> -->
+    
+    <div>  
+    <svg id="canvas"
+         width="80%" height="100%" 
+         xmlns="http://www.w3.org/2000/svg" 
+         xmlns:lively="http://www.experimentalstuff.com/Lively"
+         xmlns:xlink="http://www.w3.org/1999/xlink"
+         xmlns:xhtml="http://www.w3.org/1999/xhtml"
+         xmlns:D="DAV"
+         xml:space="preserve"
+         zoomAndPan="disable">
+    
+    <defs id="Defaults">
+    
+    <script type="text/ecmascript" xlink:href="../defaultconfig.js"/>
+    <script type="text/ecmascript"> <![CDATA[ var Config = {} ]]> </script>
+    <script type="text/ecmascript" xlink:href="../prototype.js"/>
+    <script type="text/ecmascript" xlink:href="../localconfig.js"/> <!-- ignored if file not there -->
+    <script type="text/ecmascript" xlink:href="../Core.js"/>
+    <script type="text/ecmascript" xlink:href="../svgtext-compat.js"/>
+    <script type="text/ecmascript" xlink:href="../Text.js"/>
+    <xhtml:iframe onload="Loader.insertContents(this)"  src="../Definitions.svg"/>
+    <script type="text/ecmascript" xlink:href="../Widgets.js"/>
+    <script type="text/ecmascript" xlink:href="../Tools.js"/>
+    <script type="text/ecmascript" xlink:href="Tutorial01-Objects.js"/>
+    
+    </defs>
+    
+    </svg>
+</div>
+
+    
+    <p />
+    <hr />
+  </body>
+</html>
