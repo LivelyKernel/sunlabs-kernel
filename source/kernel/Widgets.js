@@ -2064,7 +2064,7 @@ Object.extend(WorldMorph.prototype, {
         var bounds = canvas.bounds();
         // sometimes bounds has zero dimensions (when reloading thes same page, timing issues?
         // in Firefox bounds may be 1x1 size?? maybe everything should be run from onload or sth?
-
+	this.itsCanvas = canvas; 
         if (bounds.width < 2) {
             bounds.width = 1280;
         }
@@ -2090,8 +2090,14 @@ Object.extend(WorldMorph.prototype, {
         this.mainLoopFunc = this.doOneCycle.bind(this).logErrors('Main Loop');
         this.mainLoop = window.setTimeout(this.mainLoopFunc, 30);
         this.worldId = ++WorldMorph.worldCount;
+
         return this;
     },
+
+    canvas: function() {
+	return this.itsCanvas;
+    },
+
 
     remove: function() {
         if (!this.parentNode) return null;  // already removed

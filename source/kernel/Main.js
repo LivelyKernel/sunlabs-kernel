@@ -40,9 +40,9 @@ Config.showDoodle = !Config.skipMostExamples;
 Config.showWebStore = !Config.skipMostExamples;
 
 // Worlds
-Config.showInnerWorld = !Config.skipMostExamples;
-Config.showSlideWorld = !Config.skipMostExamples;
-Config.showDeveloperWorld = !Config.skipMostExamples;
+Config.showInnerWorld = true; //!Config.skipMostExamples;
+Config.showSlideWorld = true; //!Config.skipMostExamples;
+Config.showDeveloperWorld = true; //!Config.skipMostExamples;
 
 // Class browser visibility can be overridden with Config.browserAnyway
 Config.showBrowser = !Config.skipMostExamples || Config.browserAnyway;
@@ -320,6 +320,7 @@ function populateWorldWithExamples(world) {
 }
 
 function main() {
+
 
     // Create an empty world
     var world = WorldMorph(Canvas);

@@ -59,7 +59,14 @@ Object.extend(NetRequest.prototype, {
     
     requestNetworkAccess: function() {
         if (window.location.protocol == "file:"  && window["netscape"]) {       
-            netscape.security.PrivilegeManager.enablePrivilege("UniversalBrowserRead");
+	    try {
+		netscape.security.PrivilegeManager.enablePrivilege("UniversalBrowserRead");
+		console.log("requested browser read privilege");
+		return true;
+	    } catch (er) {
+		console.log("no privilege granted: " + er);
+		return false;
+	    }
         }
     },
 
@@ -68,13 +75,6 @@ Object.extend(NetRequest.prototype, {
         this.url = url;
         this.method = this.options.method;
         var params = Object.clone(this.options.parameters);
-        /*
-        if (!['get', 'post'].include(this.method)) {
-            // simulate other verbs over post
-            params['_method'] = this.method;
-            this.method = 'post';
-        }
-        */
 
         this.parameters = params;
 
@@ -86,29 +86,34 @@ Object.extend(NetRequest.prototype, {
                 params += '&_=';
             }
         }
-
-        if (this.options.onCreate) this.options.onCreate(this.transport);
-
-        Ajax.Responders.dispatch('onCreate', this, this.transport);
-
-        this.transport.open(this.method.toUpperCase(), this.url, this.options.asynchronous);
-
-        if (this.options.asynchronous) {
-            setTimeout(function() { this.respondToReadyState(1) }.bind(this).logErrors('Network Timer'), 10);
-        }
-
-        this.transport.onreadystatechange = this.onStateChange.bind(this).logErrors('Network Request Handler');
-
-        this.setRequestHeaders();
-
-        this.body = /put|post/.test(this.method) ? (this.options.body || this.options.postBody || params) : null;
-
-        this.transport.send(this.body);
-
-        /* Force Firefox to handle ready state 4 for synchronous requests */
-        if (!this.options.asynchronous && this.transport.overrideMimeType) {
-            this.onStateChange();
-        }
+	
+	try {
+            if (this.options.onCreate) this.options.onCreate(this.transport);
+	    
+            Ajax.Responders.dispatch('onCreate', this, this.transport);
+	    
+	    
+            this.transport.open(this.method.toUpperCase(), this.url, this.options.asynchronous);
+	    
+            if (this.options.asynchronous) {
+		setTimeout(function() { this.respondToReadyState(1) }.bind(this).logErrors('Network Timer'), 10);
+            }
+	    
+            this.transport.onreadystatechange = this.onStateChange.bind(this).logErrors('Network Request Handler');
+	    
+            this.setRequestHeaders();
+	    
+            this.body = /put|post/.test(this.method) ? (this.options.body || this.options.postBody || params) : null;
+	    
+            this.transport.send(this.body);
+	    
+            /* Force Firefox to handle ready state 4 for synchronous requests */
+            if (!this.options.asynchronous && this.transport.overrideMimeType) {
+		this.onStateChange();
+            }
+	} catch (e) {
+	    this.dispatchException(e);
+	}
 
     }.logErrors('request'),
     
@@ -150,8 +155,6 @@ Object.extend(NetRequest.prototype, {
         for (var name in headers) {
             // Avoid inheriting state, e.g. functions
             if (!headers.hasOwnProperty(name)) continue;
-    
-            //console.log('setting %s = %s', name, headers[name]);
             this.transport.setRequestHeader(name, headers[name]);
         }
     }

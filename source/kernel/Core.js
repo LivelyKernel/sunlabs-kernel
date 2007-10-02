@@ -222,7 +222,7 @@ Object.properties = function(object, predicate) {
             a.push(name);
         }
     } 
-    return a.sort();
+    return a;
 };
 
 /**
@@ -251,21 +251,23 @@ Function.prototype.inspect = function() {
     return this.toString().substring(8, 88);
 };
 
-Function.prototype.functionNames = function() {
+Function.prototype.functionNames = function(filter) {
     var functionNames = [];
 
     for (var name in this.prototype) { 
         try {
-            if (this.prototype[name] instanceof Function) functionNames.push(name); 
+            if (this.prototype[name] instanceof Function) 
+		if (!filter || filter(name))
+		    functionNames.push(name); 
         } catch (er) {
             // FF can throw an exception here ...
         }
     }
     
-    return functionNames.sort(); 
+    return functionNames;
 };
 
-Function.prototype.localFunctionNames = function(exclude) {
+Function.prototype.localFunctionNames = function() {
     var sup;
     
     if (!this.superClass) {
@@ -280,18 +282,10 @@ Function.prototype.localFunctionNames = function(exclude) {
         var superNames = [];
     }
     
-    var localNames = [];
-    
-    for (var name in this.prototype) {
-        if (this.prototype[name] instanceof Function) {
-            if (exclude && name.startsWith(exclude)) continue;
-        
-            if (!superNames.include(name) || this.prototype[name] !== sup.prototype[name]) 
-                localNames.push(name);
-        }
-    }
-    
-    return localNames.sort(); 
+    return this.functionNames(function(name) {
+        return !superNames.include(name) || this.prototype[name] !== sup.prototype[name];
+    });
+
 };
 
 Function.globalScope = window;
@@ -1222,6 +1216,7 @@ Object.extend(Event.prototype, {
 	    // note that FF doesn't doesnt calculate offsetLeft/offsetTop early enough we don't precompute these values
 	    // assume the parent node of Canvas has the same bounds as Canvas
             this.mousePoint = pt(this.pageX - (Canvas.parentNode.offsetLeft || 0), this.pageY - (Canvas.parentNode.offsetTop || 0) - 3);
+
             //this.mousePoint = pt(this.clientX, this.clientY  - 3);
             this.priorPoint = this.mousePoint; 
             // Safari somehow gets the x and y coords so we add them here to Firefox too --PR
@@ -2792,7 +2787,14 @@ Object.extend(Morph.prototype, {
 Object.extend(Morph.prototype, {
     
     canvas: function() {
-        return this.ownerSVGElement;
+	try {
+	    var world = this.world();
+	    return world && world.canvas();
+            // return this.ownerSVGElement;
+	} catch (er) {
+	    console.log("no ownerSVG ? %s, %s", this, er.stack);
+	    return null;
+	}
     },
 
     owner: function() {
@@ -3482,8 +3484,14 @@ Object.extend(Morph.prototype, {
 
     // map owner point to local coordinates
     relativize: function(pt) { 
-        if (!this.owner()) throw new Error('no owner; call me after adding to a morph? ' + this.inspect());
-        return pt.matrixTransform(this.owner().getTransformToElement(this)); 
+        if (!this.owner()) 
+	    throw new Error('no owner; call me after adding to a morph? ' + this.inspect());
+	try {
+            return pt.matrixTransform(this.owner().getTransformToElement(this)); 
+	} catch (er) {
+	    //console.info("ignoring relativize wrt/%s", this);
+	    return pt;
+	}
     },
 
     // map owner rectangle to local coordinates
@@ -3495,14 +3503,20 @@ Object.extend(Morph.prototype, {
     localize: function(pt) {
         if (pt == null) console.log('null pt');   
         if (pt.matrixTransform == null) console.log('null pt.matrixTransform');   
-        if (this.canvas() == null) console.log('null this.canvas()');   
-        if (this.canvas().getTransformToElement(this) == null) console.log('null this.canvas().getTransformToElement(this)');   
+        if (this.canvas() == null) {
+	    console.log('null this.canvas()');   
+	    return pt;
+	}
         return pt.matrixTransform(this.canvas().getTransformToElement(this));
     },
     
     // map local point to owner coordinates
     localizePointFrom: function(pt, otherMorph) {   
-        return pt.matrixTransform(otherMorph.getTransformToElement(this));
+	try {
+            return pt.matrixTransform(otherMorph.getTransformToElement(this));
+	} catch (er) {
+	    return pt;
+	}
     },
 
     transformForNewOwner: function(newOwner) {
