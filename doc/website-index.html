@@ -1,0 +1,191 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html debug="false"><head><title>Lively Kernel</title></head><body>
+     <h1>Sun Labs Lively Kernel</h1>
+<p>  <!-- BEGIN D7 COMPONENT V.0 -->
+<div class="d7v0">
+<div class="skip"><a href="#content-of-tab"><img src="/im/a.gif" width="0" height="0" border="0" alt="Skip over tab links"></a></div>
+<table border="0" cellpadding="0" cellspacing="0"> 
+<tr valign="bottom">
+<td nowrap="nowrap" class="suntabactive"><div><img src="/im/a.gif" width="0" height="0" border="0" alt="Active Tab ">Overview</div></td>
+<td nowrap="nowrap" class="suntab"><div><a class="a7" href="faq.html">FAQ</a></div></td>
+<td nowrap="nowrap" class="suntab"><div><a class="a7" href="http://research.sun.com/projects/lively/forums">Forums</a></div></td>
+<td nowrap="nowrap" class="suntab"><div><a href="tutorial/index.htm">Interactive Tutorial</a></div></td>
+<td nowrap="nowrap" class="suntab"><div><a class="a7" href="index.xhtml">Enter Lively Kernel</a></div></td>
+</tr>
+</table>
+</div>
+<!-- END D7 COMPONENT V.0 -->
+
+  
+    <p>  
+    <span style=color:red><b>Important</b>: At this point, the Lively
+    Kernel system runs well only in the Safari 3.0 web browser.  With all
+    the other web browsers, you may still experience various bugs and unusual
+    behavior.</span>
+    <p>
+
+    <i>Sun Labs Lively Kernel</i> a novel web programming environment developed
+    by Project Flair at Sun Microsystems Labs.  The main goal of Lively Kernel
+    is to bring the same kind of simplicity, generality and flexibility to web
+    programming that we have known in desktop programming for thirty years,
+    but without the installation and upgrade hassles than conventional
+    desktop applications have.
+    <p>
+
+    </p><h3><a name="motivation">Motivation</a></h3>
+    Lively Kernel places a special emphasis on treating web applications
+    as real <i>applications</i>, as opposed to the document-oriented nature of
+    most web applications today. In general, we want to put <i>programming</i>
+    into web development, as opposed to the current weaving of HTML, XML
+    and CSS documents that is also sometimes referred to as programming.
+    </p><p>
+    A key difference between Lively Kernel and other systems in the same area 
+    is our focus on <i>uniformity</i>.  Our goal is to build a platform
+    using a minimum number of underlying technologies.  This is in contrast
+    with many current web technologies that utilize a diverse array of
+    technologies such as HTML, CSS, DOM, JavaScript, PHP, XML, and so on.
+    In Lively Kernel we attempt to do as much as possible using a 
+    single technology: <i>JavaScript</i>. We have chosen JavaScript primarily
+    because of its ubiquitous availability in the web browsers today
+    and because of its syntactic similarity to other highly popular
+    languages such as C, C++ and Java.  However, we also want to leverage
+    the dynamic aspects of JavaScript, especially the ability to modify
+    applications at runtime. Such capabilities are an essential ingredient
+    in building a malleable web programming environment that allows
+    applications to be developed interactively and collaboratively.
+
+    </p><h3><a name="infrastructure">Infrastructure</a></h3>
+    The Lively Kernel system runs in 
+    <a href="#supported">supported web browsers</a> without installation
+    or any plug-in components whatsoever.  
+    The system utilizes the JavaScript engine, graphics capabilities
+    and asynchronous networking features that are already available
+    in commercial web browsers today.  In general, one of our goals
+    has been to leverage existing technologies as much as possible.
+    </p><p>
+    A unique feature of Lively Kernel is a graphics
+    library called <i>Morphic</i>.  Morphic is a user interface
+    framework that supports composable graphical objects,
+    along with the machinery required to display and animate these
+    objects, handle user inputs, and manage underlying system resources
+    such as displays, fonts and color maps.  A key goal of Morphic
+    is to make it easy to construct and edit interactive graphical objects,
+    both by direct manipulation and from within programs.
+    The Morphic user interface framework was originally developed for the 
+    <a href="http://research.sun.com/self/">Self</a> system
+    at Sun Labs, but it later became popular also as part of
+    the <a href="http://www.squeak.org/">Squeak</a> Smalltalk environment.
+    Lively Kernel brings the flexibility and power of Morphic 
+    also to JavaScript developers and to web application development in general.
+    </p><p>
+
+    </p><h3><a name="features">Main features</a></h3>
+    The main features of Lively Kernel include:
+    </p><p>
+    <li>
+    <it>Small web programming environment and computing kernel, 
+    written entirely with JavaScript</it>. In addition to its application 
+    execution capabilities, the platform can also function as 
+    an <i>integrated development environment (IDE)</i>, making the 
+    whole system self-contained and able to improve and 
+    extend itself on the fly. 
+    </li>
+    <li>
+    <it>Programmatic access to the user interface</it>. Our system provides
+    programmatic access from JavaScript to the user interface via the
+    Morphic user interface framework.  The user interface is built around
+    an event-based programming model familiar to most web developers. 
+    </li>
+    <li>
+    <it>Asynchronous networking</it>.  As in Ajax, you can use asynchronous HTTP
+    to perform all the network operations asynchronously, without
+    blocking the user interface. 
+    </li>
+
+    </p><h3><a name="using">What can you do with it?</a></h3>
+    Lively Kernel allows you to do pretty much everything
+    that you would expect to do in a conventional desktop
+    programming environment.  The main difference is that 
+    in Lively Kernel everything takes place in a web browser.
+    </p><p>
+    Utilizing the features described above, you can build conventional,
+    desktop-style applications that run on the web.  Utilizing the 
+    capabilities of the Morphic user interface framework, you can
+    also build desktop-like environments and systems in which numerous
+    applications and widgets run simultaneously in a regular web browser.
+
+    </p><h3><a name="getit">How do I get it?</a></h3>
+    Sun Labs Lively Kernel is alive on the web, meaning that you do not 
+    download it or install it. If your browser supports Lively Kernel 
+    (see the list of <a href="#supported">supported web browsers</a> below), 
+    then merely clicking on the <i>Enter Lively Kernel</i> link causes the 
+    system to come to life in your computer. You may see some static elements 
+    on the screen but, by default, everything there is alive and changeable.
+
+    </p><h3><a name="understand">Where is the source code or binaries?</a></h3>
+    The entirety of Lively Kernel is written in JavaScript, a dynamic language 
+    that uses no binary files for execution. Lively Kernel does not require any 
+    installation or plug-ins, since the necessary JavaScript engine is already 
+    part of your web browser. As soon as you click on a link to start the system,
+    all the Lively  Kernel code is loaded into your browser and running.
+    At some point we may compress the files to make for faster startup but,
+    if so, we will still make the full uncompressed sources available on this site.
+
+    </p><h3><a name="supported">Supported web browsers</a></h3>
+    Lively Kernel is intended to run in every commercial web browser client 
+    with no plug-ins or installation whatsoever. However, because of differences 
+    in the underlying graphics and other capabilities of various web browsers, 
+    we only support a limited set of browsers and browser versions.
+    Currently, we have tested our system on Windows XP and MacOS
+    using the following browsers:
+    <ul>  
+        <li><a href="http://www.apple.com/safari/download/">Safari 3.0.3 public beta release</a> (<b><span style=color:red>recommended</span></b> for best performance and quality of experience)
+        <li><a href="http://www.mozilla.com/">Firefox 2.0.0.7</a> (still various bugs left)
+        <li><a href="http://www.mozilla.org/projects/firefox/3.0a8/releasenotes/">Firefox 3.0 alpha release</a> (still various bugs left)
+    </ul>
+    The browsers above provide support for 
+        <a href="http://www.w3.org/Graphics/SVG/">Scalable Vector Graphics (SVG)</a>,
+    a graphics library that we use as the underlying low level graphics interface.
+    The SVG interfaces are hidden from the application developer,
+    but our implementation requires an SVG-compatible graphics engine. 
+    To end users and developers, Lively Kernel is an environment that
+    is based purely on JavaScript, not SVG.</p><p>
+    <b>IMPORTANT!</b> Lively Kernel requires SVG support and does <b>not</b> 
+    currently run on Microsoft Internet Explorer.  We are hoping to have support
+    for Microsoft Internet Explorer available soon.
+    </p><p>
+
+    </p><h3><a name="contribution">Contribute</a></h3>
+    Visit the forums to find out what people want and what they are 
+    working on. If you produce a bug fix or enhancement, post it 
+    on a forum to share it, and submit it to us to proffer 
+    it for inclusion in future releases.
+
+    </p><h3><a name="caution"><span style=color:red>Caution</span></a></h3>
+    Sun Labs Lively Kernel is research software.  It may be remarkable in 
+    various ways, but it is not production software.  
+    Rather, it is an experimental system for turning the web as we know it 
+    into a universe of objects that are active, accessible, changeable;  
+    in short, lively.
+    <p>
+    We are making Lively Kernel available as open source software to 
+    encourage further exploration by academics and adventurous developers, 
+    and we anticipate rapid progress toward future versions of the system 
+    that are not only lively but also well-behaved. 
+    
+    </p><h3><a name="credits">Credits</a></h3>
+    Sun Labs Lively Kernel is the result of a cooperation between four 
+    experienced software developers, all frustrated with the state of 
+    the web programming practice today:
+    <ul>
+        <li><a href="/people/mybio.php?c=394">Dan Ingalls</a>
+        <li><a href="http://www.cs.tut.fi/~tjm">Tommi Mikkonen</a>
+        <li><a href="/people/mybio.php?c=127">Krzysztof Palacz </a>
+        <li><a href="/people/mybio.php?c=898">Antero Taivalsaari</a>
+    </ul>
+    While developing Lively Kernel, we have received help from various
+    other people.  We would especially like to thank Stephen Uhler,
+    Kristen McIntyre, Richard Ortiz, Mikko Kuusipalo and Pekka Reijula
+    for their valuable contributions.
+    </p>
+     </body></html>
