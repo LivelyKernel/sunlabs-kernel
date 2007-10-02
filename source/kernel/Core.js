@@ -1221,7 +1221,7 @@ Object.extend(Event.prototype, {
         if (this.isMouse()) {
 	    // note that FF doesn't doesnt calculate offsetLeft/offsetTop early enough we don't precompute these values
 	    // assume the parent node of Canvas has the same bounds as Canvas
-            this.mousePoint = pt(this.pageX - Canvas.parentNode.offsetLeft, this.pageY - Canvas.parentNode.offsetTop - 3);
+            this.mousePoint = pt(this.pageX - (Canvas.parentNode.offsetLeft || 0), this.pageY - (Canvas.parentNode.offsetTop || 0) - 3);
             //this.mousePoint = pt(this.clientX, this.clientY  - 3);
             this.priorPoint = this.mousePoint; 
             // Safari somehow gets the x and y coords so we add them here to Firefox too --PR
