@@ -41,7 +41,7 @@ Object.extend(TutorialMorph.prototype, {
         var weatherWidget = new WeatherWidget().openIn(world, pt(620, 50));
 
         // Open an RSS feed reader
-        var rssReader = new Feed("http://news.com.com/2547-1_3-0-5.xml").openIn(world, pt(635, 340));
+        var rssReader = new Feed("http://www.news.com/2547-1_3-0-5.xml").openIn(world, pt(635, 340));
 
     },
 
