@@ -1,0 +1,94 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html debug="false" xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Lively Kernel Tutorial</title>
+  </head>
+  
+  <body topmargin="0" leftmargin="0">
+    <script src="../firebug/firebug.js"/>
+    <script src="../prototype.js"/>
+    <script src="../fontinfo.js"/>
+    
+    <h2>Lively Kernel Tutorial: (14) Object Inspector</h2>
+    <button onclick="window.location='index.xhtml'">Back to Introduction</button>
+    <button onclick="window.location='Tutorial13-ClassBrowser.xhtml'">PREVIOUS</button>
+    <button onclick="window.location='Tutorial14-Inspector.js'">Source code of this demo</button>
+    <button onclick="window.location='Tutorial15-Scripting.xhtml'">NEXT</button>
+    <hr />
+    Every object in Lively Kernel can be inspected using an <i>object inspector</i>.
+    An object inspector displays the attributes (JavaScript variables/fields)
+    of the object in a panel view.<br />
+    You can open an inspector for every object in the system by choosing
+    the "<i>inspect</i>" operation from the popup menu of the object.
+    <p />
+    The upper left panel of the inspector shows the attribute names.
+    When you select one of the attributes, the upper right panel shows
+    the current value of that attribute.  You can edit the value of an attribute
+    by editing the contents of the text displayed in the upper right panel.
+    To accept changes that you have made, choose the "<i>accept changes</i>"
+    menu item from the popup menu of the upper right panel.
+    <p />
+    The lower panel is the <i>evaluator panel</i>.  When you type JavaScript
+    code in that panel, you can use the "<i>evaluate as JavaScript code</i>"
+    menu item of the evaluator panel to execute that code in the context
+    of the inspected object.
+    <p />    
+        <img src="Tutorial14-Image1.PNG"/>
+        <img src="Tutorial14-Image2.PNG"/>
+        <img src="Tutorial14-Image3.PNG"/>
+    <p />
+    Notes:<ul>
+    <li>When editing attribute values and code, you can use the same
+    keyboard shortcuts as in the class browser (and in editing TextMorphs
+    in general).</li></ul>
+    <hr />
+    <b>Try it yourself!</b> Try opening an inspector for the rectangle object
+    that is shown in the display.  View the various attributes of the rectangle
+    object using the inspector.<br />
+    Try modifying some of the attributes.  For instance, the "fishEye" attribute
+    is a good candidate.  Remember to accept your changes using the "<i>accept changes</i>"
+    menu item of the upper right panel.<br />
+    Additionally, try the evaluator panel by typing the following text
+    in the evaluator panel:
+    <p />
+    <code>
+    this.startStepping(100, "rotateBy", 0.1);
+    </code>
+    <p />Use the "<i>evaluate as JavaScript code</i>" menu operation of the 
+    lower panel (open the popup menu by Alt-clicking the text
+    that you just typed) to execute the code. 
+    <p />
+    <div>  
+        <svg id="canvas"
+             width="80%" height="100%" 
+             xmlns="http://www.w3.org/2000/svg" 
+             xmlns:lively="http://www.experimentalstuff.com/Lively"
+             xmlns:xlink="http://www.w3.org/1999/xlink"
+             xmlns:xhtml="http://www.w3.org/1999/xhtml"
+             xmlns:D="DAV"
+             xml:space="preserve"
+             zoomAndPan="disable">
+        
+        <defs id="Defaults">
+        
+        <script type="text/ecmascript" xlink:href="../defaultconfig.js"/>
+        <script type="text/ecmascript"> <![CDATA[ var Config = {} ]]> </script>
+        <script type="text/ecmascript" xlink:href="../prototype.js"/>
+        <script type="text/ecmascript" xlink:href="../localconfig.js"/> <!-- ignored if file not there -->
+        <script type="text/ecmascript" xlink:href="../Core.js"/>
+        <script type="text/ecmascript" xlink:href="../svgtext-compat.js"/>
+        <script type="text/ecmascript" xlink:href="../Text.js"/>
+        <xhtml:iframe onload="Loader.insertContents(this)"  src="../Definitions.svg"/>
+        <script type="text/ecmascript" xlink:href="../Widgets.js"/>
+        <script type="text/ecmascript" xlink:href="../Tools.js"/>
+        <script type="text/ecmascript" xlink:href="Tutorial14-Inspector.js"/>
+        
+        </defs>
+        
+        </svg>
+    </div>
+    <p />
+    <hr />
+  </body>
+</html>

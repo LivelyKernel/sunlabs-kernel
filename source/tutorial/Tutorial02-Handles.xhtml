@@ -1,0 +1,88 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html debug="false" xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Lively Kernel Tutorial</title>
+  </head>
+  
+  <body>
+    <script src="../firebug/firebug.js"/>
+    <script src="../prototype.js"/>
+    <script src="../fontinfo.js"/>
+    
+    <h2>Lively Kernel Tutorial: (2) Resizing, Rotating and Reshaping Objects Using Handles</h2>
+    <button onClick="window.location='index.htm'">Back to Introduction</button>
+    <button onClick="window.location='Tutorial01-Objects.xhtml'">PREVIOUS</button>
+    <button onClick="window.location='Tutorial02-Handles.js'">Source code of this demo</button>
+    <button onClick="window.location='Tutorial03-Composing.xhtml'">NEXT</button>
+    <hr />
+    You can resize, rotate and reshape objects using <i>handles</i> that
+    are displayed in the corners of each object.<br />
+    Line objects can be reshaped by grabbing the <i>round handle</i>
+    in the middle of the line.<br />
+    Handles have <i>balloon help</i> to summarize the behavior
+    of each handle.
+    <p />
+    <img src="Tutorial02-Image1.PNG"/>
+    <img src="Tutorial02-Image2.PNG"/>
+    <img src="Tutorial02-Image3.PNG"/>
+    <img src="Tutorial02-Image4.PNG"/>
+    <p />
+    Notes: <ul>
+    <li>You can rotate an object by keeping the <i>Alt</i> key down
+    while dragging one of the handles.</li>
+    <li>You can resize (scale) an object by keeping both the <i>Alt</i> 
+    and <i>Shift</i> keys down while dragging one of the handles.</li>  
+    <li>You can change the border width of each object by keeping the <i>Shift</i> key down
+    while dragging one of the handles.</li>
+    <p />
+    <li>You can create polygons/polyline objects by "splitting" a line using 
+    the round blue handle in the middle of the line.</li>
+    <li>You can remove/join vertices of a polygon/polyline by dragging any point
+    of a polyline onto another point.  <br />When a join operation is about to happen, 
+    the blue handle changes temporarily into a red handle.</li></ul>
+    <p />
+    <hr />
+    <b>Try it yourself!</b>
+    Try modifying the objects below by using their handles.<br />
+    <p />
+    <!--
+    <object data="Tutorial02-Handles.svg" width="800px" height="480px" type="image/svg+xml">
+        *** Unable to load Lively Kernel (unsupported web browser) ***
+    </object>
+    -->
+    
+    <div>  
+        <svg id="canvas"
+             width="80%" height="100%" 
+             xmlns="http://www.w3.org/2000/svg" 
+             xmlns:lively="http://www.experimentalstuff.com/Lively"
+             xmlns:xlink="http://www.w3.org/1999/xlink"
+             xmlns:xhtml="http://www.w3.org/1999/xhtml"
+             xmlns:D="DAV"
+             xml:space="preserve"
+             zoomAndPan="disable">
+        
+        <defs id="Defaults">
+        
+        <script type="text/ecmascript" xlink:href="../defaultconfig.js"/>
+        <script type="text/ecmascript"> <![CDATA[ var Config = {} ]]> </script>
+        <script type="text/ecmascript" xlink:href="../prototype.js"/>
+        <script type="text/ecmascript" xlink:href="../localconfig.js"/> <!-- ignored if file not there -->
+        <script type="text/ecmascript" xlink:href="../Core.js"/>
+        <script type="text/ecmascript" xlink:href="../svgtext-compat.js"/>
+        <script type="text/ecmascript" xlink:href="../Text.js"/>
+        <xhtml:iframe onload="Loader.insertContents(this)"  src="../Definitions.svg"/>
+        <script type="text/ecmascript" xlink:href="../Widgets.js"/>
+        <script type="text/ecmascript" xlink:href="../Tools.js"/>
+        <script type="text/ecmascript" xlink:href="Tutorial02-Handles.js"/>
+        
+        </defs>
+        
+        </svg>
+    </div>
+
+    <p />
+    <hr />
+  </body>
+</html>

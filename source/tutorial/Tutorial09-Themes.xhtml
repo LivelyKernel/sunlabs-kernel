@@ -1,0 +1,72 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html debug="false" xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Lively Kernel Tutorial</title>
+  </head>
+  
+  <body topmargin="0" leftmargin="0">
+    <script src="../firebug/firebug.js"/>
+    <script src="../prototype.js"/>
+    <script src="../fontinfo.js"/>
+    
+    <h2>Lively Kernel Tutorial: (9) Display Themes</h2>
+    <button onClick="window.location='index.htm'">Back to Introduction</button>
+    <button onClick="window.location='Tutorial08-Styles.xhtml'">PREVIOUS</button>
+    <button onClick="window.location='Tutorial09-Themes.js'">Source code of this demo</button>
+    <button onClick="window.location='Tutorial10-Applications.xhtml'">NEXT</button>
+    <hr />
+    Lively Kernel can support different user interface <i>themes</i>.
+    Themes are collections of style settings that are applied automatically
+    to all the applicable graphical objects in the system.<hr />
+    You can change the user interface theme by choosing the "<i>choose display theme...</i>"
+    operation from the popup menu of the world.<hr /> 
+    <p />    
+        <img src="Tutorial09-Image1.PNG"/>
+        <img src="Tutorial09-Image2.PNG"/>
+        <img src="Tutorial09-Image3.PNG"/>
+        <img src="Tutorial09-Image4.PNG"/>
+    <p />
+    Notes:<ul>
+    <li> Alt-click the background of the display to invoke the popup menu of the world.</li>
+    </ul>
+    <p />
+    <hr />
+    <b>Try it yourself!</b> Try changing the display theme by invoking the popup
+    menu of the world and selecting the "<i>choose display theme...</i>" operation.<hr />
+    While trying out the different themes, also try the various controls (buttons,
+    fields, sliders, etc.) included in the pane below.
+    <p />
+    <div>  
+        <svg id="canvas"
+             width="80%" height="100%" 
+             xmlns="http://www.w3.org/2000/svg" 
+             xmlns:lively="http://www.experimentalstuff.com/Lively"
+             xmlns:xlink="http://www.w3.org/1999/xlink"
+             xmlns:xhtml="http://www.w3.org/1999/xhtml"
+             xmlns:D="DAV"
+             xml:space="preserve"
+             zoomAndPan="disable">
+        
+        <defs id="Defaults">
+        
+        <script type="text/ecmascript" xlink:href="../defaultconfig.js"/>
+        <script type="text/ecmascript"> <![CDATA[ var Config = {} ]]> </script>
+        <script type="text/ecmascript" xlink:href="../prototype.js"/>
+        <script type="text/ecmascript" xlink:href="../localconfig.js"/> <!-- ignored if file not there -->
+        <script type="text/ecmascript" xlink:href="../Core.js"/>
+        <script type="text/ecmascript" xlink:href="../svgtext-compat.js"/>
+        <script type="text/ecmascript" xlink:href="../Text.js"/>
+        <xhtml:iframe onload="Loader.insertContents(this)"  src="../Definitions.svg"/>
+        <script type="text/ecmascript" xlink:href="../Widgets.js"/>
+        <script type="text/ecmascript" xlink:href="../Tools.js"/>
+        <script type="text/ecmascript" xlink:href="Tutorial09-Themes.js"/>
+        
+        </defs>
+        
+        </svg>
+    </div>
+    <p />
+    <hr />
+  </body>
+</html>

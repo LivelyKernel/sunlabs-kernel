@@ -1,0 +1,87 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html debug="false" xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Lively Kernel Tutorial</title>
+  </head>
+  
+  <body topmargin="0" leftmargin="0">
+    <script src="../firebug/firebug.js"/>
+    <script src="../prototype.js"/>
+    <script src="../fontinfo.js"/>
+    
+    <h2>Lively Kernel Tutorial: (7) Windows and Window Controls</h2>
+    <button onClick="window.location='index.htm'">Back to Introduction</button>
+    <button onClick="window.location='Tutorial06-CreatingAndRemoving.xhtml'">PREVIOUS</button>
+    <button onClick="window.location='Tutorial07-Windows.js'">Source code of this demo</button>
+    <button onClick="window.location='Tutorial08-Styles.xhtml'">NEXT</button>
+    <hr />
+    Lively Kernel supports windows that behave
+    much like windows in conventional desktop operating systems.
+    Windows are distinguished from other objects in the system
+    by the presence of a <i>title bar</i>.  The title bar contains the
+    name of the window as well as some <i>window control buttons</i>
+    to close or collapse the window (red and yellow buttons, respectively),
+    as well as to open the popup menu of the window (blue button).
+    Window controls have <i>balloon help</i> to summarize the behavior
+    of each control.
+    <p />    
+        <img src="Tutorial07-Image1.PNG"/>
+        <img src="Tutorial07-Image2.PNG"/>
+        <img src="Tutorial07-Image3.PNG"/>
+        <img src="Tutorial07-Image4.PNG"/>
+        <img src="Tutorial07-Image5.PNG"/>
+    <p />
+    Notes:<ul>
+    <li>A window can be moved by grabbing it from the title bar.</li>
+    <li>A window can be resized or rotated using the handles in its corners.<p /></li>
+    <li>Pressing the red <i>Close</i> button will close the window.</li>
+    <li>Pressing the yellow <i>Collapse</i> button once will collapse
+    the window.  Pressing the collapse button another time will
+    restore/expand the window.  <br />Note that a collapsed window can be moved
+    independently of the normal location of the window on the screen.</li>
+    <li>The blue <i>Menu</i> button opens a menu that allows the contents
+    of the window to be manipulated.</li>
+    </ul>
+    <p />
+    <hr />
+    <b>Try it yourself!</b> Move the window around by grabbing its title bar.
+    Try out the menus and the collapse/expand functionality.  <br />Furthermore,
+    try rotating and resizing the window. Finally,
+    close the window by pressing its <i>Close</i> button.<p />
+    Note that all the objects inside the Sun 3D logo below are
+    full-fledged objects that you can manipulate directly.
+    <p />
+    <div>  
+        <svg id="canvas"
+             width="80%" height="100%" 
+             xmlns="http://www.w3.org/2000/svg" 
+             xmlns:lively="http://www.experimentalstuff.com/Lively"
+             xmlns:xlink="http://www.w3.org/1999/xlink"
+             xmlns:xhtml="http://www.w3.org/1999/xhtml"
+             xmlns:D="DAV"
+             xml:space="preserve"
+             zoomAndPan="disable">
+        
+        <defs id="Defaults">
+        
+        <script type="text/ecmascript" xlink:href="../defaultconfig.js"/>
+        <script type="text/ecmascript"> <![CDATA[ var Config = {} ]]> </script>
+        <script type="text/ecmascript" xlink:href="../prototype.js"/>
+        <script type="text/ecmascript" xlink:href="../localconfig.js"/> <!-- ignored if file not there -->
+        <script type="text/ecmascript" xlink:href="../Core.js"/>
+        <script type="text/ecmascript" xlink:href="../svgtext-compat.js"/>
+        <script type="text/ecmascript" xlink:href="../Text.js"/>
+        <xhtml:iframe onload="Loader.insertContents(this)"  src="../Definitions.svg"/>
+        <script type="text/ecmascript" xlink:href="../Widgets.js"/>
+        <script type="text/ecmascript" xlink:href="../Tools.js"/>
+        <script type="text/ecmascript" xlink:href="Tutorial07-Windows.js"/>
+        
+        </defs>
+        
+        </svg>
+    </div>
+    <p />
+    <hr />
+  </body>
+</html>
