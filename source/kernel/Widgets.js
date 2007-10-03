@@ -237,7 +237,6 @@ Object.extend(ImageMorph.prototype, {
         if (!this.image) {
             var image = this.image = NodeFactory.create("image", { width: this.dim.x, height: this.dim.y});
             image.setType('Image');
-            image.disableBrowserDrag();
             this.addChildElement(image);
         }
 
@@ -587,14 +586,14 @@ Object.extend(WindowControlMorph.prototype, {
         this.helpOpen = true;
         // FIXME: The size of the balloon should be calculated based on string size
         if ( !this.help ) {
-            this.help = TextMorph(Rectangle(evt.x, evt.y, 80, 20), this.helpText);
+            this.help = TextMorph(evt.mousePoint.extent(pt(80, 20)), this.helpText);
             this.help.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
             // some eye candy for the help
             this.help.shape.roundEdgesBy(15);
             this.help.setFill(Color.primary.yellow.lighter(3));
             this.help.shape.setFillOpacity(0.8);
-        } else if ( this.help.position() != pt(evt.x, evt.y) ) {
-            this.help.setPosition(pt(evt.x, evt.y));
+        } else if ( this.help.position() != evt.mousePoint ) {
+            this.help.setPosition(evt.mousePoint);
         }
         // trying to relay mouse events to the WindowControlMorph
         this.world().addMorph(this.help);
@@ -873,11 +872,9 @@ Object.extend(HandleMorph.prototype, {
         // Show the balloon help only if it hasn't been shown too many times already
         if (HandleMorph.helpCounter < 20) {
             HandleMorph.helpCounter++;
-            if (this.shape.getType() == "rect") {
-                this.help = TextMorph(Rectangle(evt.x, evt.y, 200, 20), this.controlHelpText);
-            } else {
-                this.help = TextMorph(Rectangle(evt.x, evt.y, 200, 20), this.circleHelpText);
-            }
+            this.help = TextMorph(evt.mousePoint.extent(pt(200, 20)), 
+				  this.shape.getType() == "rect" ? this.controlHelpText : this.circleHelpText);
+	    
             // trying to relay mouse events to the WindowControlMorph
             this.help.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
             // some eye candy for the help
@@ -3001,7 +2998,7 @@ Object.extend(LinkMorph.prototype, {
         // Create only one help balloon at a time
         if (this.help) return;
         
-        this.help = TextMorph(Rectangle(evt.x, evt.y, 260, 20), this.helpText);
+        this.help = TextMorph(evt.mousePoint.extent(pt(260, 20)), this.helpText);
         // trying to relay mouse events to the WindowControlMorph
         this.help.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
         

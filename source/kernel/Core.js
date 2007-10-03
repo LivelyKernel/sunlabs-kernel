@@ -179,9 +179,9 @@ Object.extend(Class, {
         }
 
         a.push("Object", "Global"); // a few others of note
-
+	
         // console.log('found array ' + a.sort());
-        return a.sort(); 
+        return a;
     }
     
 });
@@ -1269,17 +1269,6 @@ Object.extend(Event.prototype, {
         return "Event(%1%2)".format(this.type, this.mousePoint ? "," + this.mousePoint.inspect() : "");
     },
 
-    // is anyone using this?
-    properties: function() {
-        var props = [];
-        
-        for (var name in this.prototype) {
-            if (! (this[name] instanceof Function) && this.hasOwnProperty(name)) props.push(name);
-        } 
-
-        return props.sort(); 
-    },
-
     stop: function() {
         Event.stop(this);
     }
@@ -1297,7 +1286,9 @@ Object.extend(document, {
         var targetMorph = evt.target.parentNode; // target is probably shape (change me if pointer-events changes for shapes)
         if ((targetMorph instanceof Morph) && !(targetMorph instanceof WorldMorph)) {
             evt.preventDefault();
-            evt.mousePoint = pt(evt.clientX, evt.clientY);
+            evt.mousePoint = pt(evt.pageX - (Canvas.parentNode.offsetLeft || 0), 
+				evt.pageY - (Canvas.parentNode.offsetTop  || 0) - 3);
+            // evt.mousePoint = pt(evt.clientX, evt.clientY);
             targetMorph.showMorphMenu(evt); 
         } // else get the system context menu
     }.logErrors('Context Menu Handler')
@@ -1431,14 +1422,19 @@ Object.extend(DisplayObject.prototype, {
 // Setting up web browser behavior to fit our needs, e.g., prevent the browser
 // from interpreting mouse drags on behalf of us.
 (function() {
-    Object.extend(NodeFactory.getPrototype('g'), DisplayObject.prototype);
-    Object.extend(NodeFactory.getPrototype('use'), DisplayObject.prototype);
-    var proto = Object.extend(NodeFactory.getPrototype('image'), DisplayObject.prototype);
+
+    var disabler = { handleEvent: function(evt) { evt.preventDefault(); return false ;}};
+
+    Object.extend(Object.extend(NodeFactory.getPrototype('g'), DisplayObject.prototype), {
+	disableBrowserHandlers: function() {
+            this.addEventListener("dragstart", disabler, true);
+	    this.addEventListener("selectstart", disabler, true);
+	}
+    });
     
-    var dragDisabler = { handleEvent: function(evt) { evt.preventDefault(); return false ;}};
-    proto.disableBrowserDrag = function() {
-        this.addEventListener("dragstart", dragDisabler, true);
-    }
+    Object.extend(NodeFactory.getPrototype('use'), DisplayObject.prototype);
+    Object.extend(NodeFactory.getPrototype('image'), DisplayObject.prototype);
+
 })();
 
 // ===========================================================================
@@ -2153,6 +2149,7 @@ Object.extend(Morph.prototype, {
         this.initializePersistentState(initialBounds, shapeType);
         this.initializeTransientState(initialBounds);
         if (this.drawBounds) this.updateBoundsElement();
+	this.disableBrowserHandlers();
     },
 
     reinitialize: function(importer/*:Importer*/) { // called when restoring from external representation (markup)
@@ -2165,6 +2162,8 @@ Object.extend(Morph.prototype, {
         this.initializeTransientState(null);
 
         if (this.drawBounds) this.updateBoundsElement();
+	this.disableBrowserHandlers();
+	
         if (this.activeScripts) {
             console.log('started stepping %s', this);
             this.startSteppingScripts();

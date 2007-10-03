@@ -2989,7 +2989,6 @@ Object.extend(MapMorph.prototype, {
                     var img = NodeFactory.create("image", 
                     {x: -TileSize.x + ix*TileSize.x, y: -TileSize.y + iy*TileSize.y, width: 256, height: 256}).withHref(this.images[iy][ix]);
                     img.setAttribute("id", imgId);
-                    img.disableBrowserDrag();
                     this.addChildElement(img);
                 }
             }
