@@ -46,12 +46,17 @@ Object.extend(NetRequest.prototype, {
 
     rewriteURL: function(url) {
         if (Config.proxyURL) {
-            var splitter = new RegExp('http://([^/]*)(/.*)');
+            var splitter = new RegExp("http://([^/:]*)(:[0-9]+)?(/.*)");
             var urlMatch = url.match(splitter);
             var proxyMatch = Config.proxyURL.match(splitter);
+	    //console.warn("url match " + urlMatch + " on " + url);
             if (urlMatch && proxyMatch && proxyMatch[1] != urlMatch[1]) {
-                var result = Config.proxyURL + urlMatch[1] + urlMatch[2];
-                return result;
+		if (urlMatch[2] != null) {
+		    console.warn("proxying on nondefault ports not supported: " + url);
+		} else {
+                    var result = Config.proxyURL + urlMatch[1]  + urlMatch[3];
+                    return result;
+		}
             }
         } 
         return url;
