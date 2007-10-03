@@ -16,6 +16,7 @@
     <button onclick="window.location='Tutorial13-ClassBrowser.js'">Source code of this demo</button>
     <button onclick="window.location='Tutorial14-Inspector.xhtml'">NEXT</button>
     <hr />
+    <p>
     Lively Kernel has a <i>class browser</i> that allows
     the behavior of the system to be viewed and edited interactively.<br />
     The upper left panel of the browser contains the names of the 
@@ -24,9 +25,9 @@
     all the methods (functions) of that class.<br />
     When you choose one of the methods, the lower panel shows the
     source code of the method.
-    <p />    
+    </p>    
         <img src="Tutorial13-Image1.PNG"/>
-    <p />
+    <p>
     Notes:<ul>
     <li>To save changes after editing a method, use the "<i>accept changes</i>"
     operation that is available in the popup menu of the method panel.<br />
@@ -48,8 +49,9 @@
     <li>Double-clicking near a bracket, parenthesis or a JavaScript comment (/* ... */) 
     selects text inside the brackets/parentheses/comment.</li>
     </ul>
-    <p />
+    </p>
     <hr />
+    <p>
     <b>Try it yourself!</b> Try viewing the methods of class <i>RectShape</i>.<br />
     Try editing some of the methods to make changes to the behavior of the system
     itself.<br />
@@ -58,17 +60,17 @@
     You have to accept the changes by pressing <i>Alt-S</i> or by choosing 
     the "<i>evaluate as JavaScript code</i>"
     popup menu item of the text that you just edited.  
-    <p />
+    </p>
     <code>
     RectShape.prototype.setFill = function(string)<br />
     {<br />
       this.setAttributeNS(null, "fill", Color.green);<br />
     }<br />
     </code>
-    <p />
+    <p>
     Try opening any popup menu after completing this change.<br />
     The background color of the menu should now be green.
-    <p />
+    </p>
     <div>  
         <svg id="canvas"
              width="80%" height="100%" 
@@ -98,7 +100,6 @@
         
         </svg>
     </div>
-    <p />
     <hr />
   </body>
 </html>
