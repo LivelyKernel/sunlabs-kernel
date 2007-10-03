@@ -3726,7 +3726,7 @@ Object.extend(MessengerWidget.prototype, {
         this.id = Config.random;
         this.text = "";
         this.chatroom = "";
-        this.server = "http://dev.experimentalstuff.com:8093/";
+        this.server = "http://livelykernel.sunlabs.com:8093/";
 //        this.server = "http://localhost:8093/";
 //        console.log("address == " + this.server + "foreground.html?login=IM");
         var id = this.id;
