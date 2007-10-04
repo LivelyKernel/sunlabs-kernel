@@ -284,7 +284,7 @@ Function.prototype.localFunctionNames = function() {
     
     return this.functionNames(function(name) {
         return !superNames.include(name) || this.prototype[name] !== sup.prototype[name];
-    });
+    }.bind(this));
 
 };
 
