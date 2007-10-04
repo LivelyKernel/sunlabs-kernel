@@ -2928,10 +2928,7 @@ Object.extend(LinkMorph.prototype, {
         evt.hand.unbundleCarriedSelection();
         while (evt.hand.hasSubmorphs()) {
             var m = evt.hand.topSubmorph();
-            if (m.activeScripts) { //Fixme: this must be deep
-                m.suspendedScripts = m.activeScripts.clone();
-                m.stopSteppingScripts();
-            }
+            m.suspendAllActiveScripts();
             carriedMorphs.splice(0, 0, m);
             m.remove();
         }
@@ -2959,11 +2956,8 @@ Object.extend(LinkMorph.prototype, {
 
         newWorld.onEnter(); 
         carriedMorphs.each(function(m) {
-            newWorld.firstHand().addMorph(m)
-            if (m.suspendedScripts) {
-                for (var i=0; i<m.suspendedScripts.length; i++) newWorld.startStepping(m.suspendedScripts[i]);
-                m.suspendedScripts = null;
-            }
+            newWorld.firstHand().addMorph(m);
+	    m.resumeAllSuspendedScripts();
         });
 
         if (Config.showThumbnail) {

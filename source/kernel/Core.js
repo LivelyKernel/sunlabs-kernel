@@ -2772,6 +2772,7 @@ Object.extend(Morph.prototype, {
                 // Copy all reflexive scripts (messages to self)
                 if (a.actor === other) {
                     this.startStepping(a.stepTime, a.scriptName, a.argIfAny);
+		    // Note -- may want to startStepping other as well so they are sync'd
                 }
             }
         } 
@@ -3373,6 +3374,27 @@ Object.extend(Morph.prototype, {
         if (this.world()) {
             this.world().stopStepping(this);
         } // else: can happen if removing a morph whose parent is not in the world
+    },
+
+    suspendAllActiveScripts: function() {
+        this.withAllSubmorphsDo( function() { this.suspendActiveScripts(); });
+    },
+
+    suspendActiveScripts: function() {
+	if (this.activeScripts) { 
+	    this.suspendedScripts = this.activeScripts.clone();
+	    this.stopSteppingScripts();
+	}
+    },
+
+    resumeAllSuspendedScripts: function() {
+        var world = WorldMorph.current();
+	this.withAllSubmorphsDo( function() {
+		if (this.suspendedScripts) {
+		    for (var i=0; i<this.suspendedScripts.length; i++) world.startStepping(this.suspendedScripts[i]);
+		    this.suspendedScripts = null;
+		}
+        });
     },
 
     // The following methods are deprecated...
