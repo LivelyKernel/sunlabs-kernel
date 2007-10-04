@@ -1,0 +1,73 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html debug="false" xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Lively Kernel Tutorial</title>
+  </head>
+  
+  <body topmargin="0" leftmargin="0">
+    <script src="../firebug/firebug.js"/>
+    <script src="../prototype.js"/>
+    <script src="../fontinfo.js"/>
+    
+    <h2>Lively Kernel Tutorial: (18) Sample Applications</h2>
+    <button onclick="window.location='index.xhtml'">Back to Introduction</button>
+    <button onclick="window.location='Tutorial17-Misc2.xhtml'">PREVIOUS</button>
+    <button onclick="window.location='Tutorial18-MoreApps1.js'">Source code of this demo</button>
+    <button onclick="window.location='Tutorial19-MoreApps2.xhtml'">NEXT</button>
+    <hr />
+    <p>
+    Below is a three-dimensional maze walker game implementation based on code
+    originally written by <a href="http://www.abrahamjoffe.com.au/ben/canvascape/">Abraham Joffe</a>.<br />
+    </p>    
+        <img src="Tutorial18-Image1.PNG"/>
+    <p>
+    Notes:<ul>
+    <li>Since all the graphical objects in this game have been implemented as morphs,
+    you can flexibly move objects around.</li>
+    <li>For instance, you can move the radar view outside the actual game window, or pick up the status bars and move them to a different location.</li>
+    </ul>
+    </p>
+    <hr />
+    <p>
+    <b>Try it yourself!</b> Click on the floor area of the game and then press space bar
+    to start the game.<br />
+    Use the arrow keys to navigate through the maze.<br />
+    Try to find all the blue walls, and steer yourself through all of them
+    to proceed to more advanced game levels.
+    </p>
+    <p>
+    <div>  
+        <svg id="canvas"
+             width="80%" height="100%" 
+             xmlns="http://www.w3.org/2000/svg" 
+             xmlns:lively="http://www.experimentalstuff.com/Lively"
+             xmlns:xlink="http://www.w3.org/1999/xlink"
+             xmlns:xhtml="http://www.w3.org/1999/xhtml"
+             xmlns:D="DAV"
+             xml:space="preserve"
+             zoomAndPan="disable">
+        
+        <defs id="Defaults">
+        
+        <script type="text/ecmascript" xlink:href="../defaultconfig.js"/>
+        <script type="text/ecmascript"> <![CDATA[ var Config = {} ]]> </script>
+        <script type="text/ecmascript" xlink:href="../prototype.js"/>
+        <script type="text/ecmascript" xlink:href="../localconfig.js"/> <!-- ignored if file not there -->
+        <script type="text/ecmascript" xlink:href="../Core.js"/>
+        <script type="text/ecmascript" xlink:href="../svgtext-compat.js"/>
+        <script type="text/ecmascript" xlink:href="../Text.js"/>
+        <xhtml:iframe onload="Loader.insertContents(this)"  src="../Definitions.svg"/>
+        <script type="text/ecmascript" xlink:href="../Widgets.js"/>
+        <script type="text/ecmascript" xlink:href="../Tools.js"/>
+        <script type="text/ecmascript" xlink:href="Tutorial18-MoreApps1.js"/>
+        
+        </defs>
+        
+        </svg>
+    </div>
+
+    </p>
+    <hr />
+  </body>
+</html>

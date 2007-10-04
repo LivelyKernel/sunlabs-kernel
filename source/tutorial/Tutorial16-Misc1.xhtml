@@ -1,0 +1,91 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html debug="false" xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Lively Kernel Tutorial</title>
+  </head>
+  
+  <body topmargin="0" leftmargin="0">
+    <script src="../firebug/firebug.js"/>
+    <script src="../prototype.js"/>
+    <script src="../fontinfo.js"/>
+    
+    <h2>Lively Kernel Tutorial: (16) Advanced UI Features: Drilling and Grabbing (Layers of) Objects</h2>
+    <button onclick="window.location='index.xhtml'">Back to Introduction</button>
+    <button onclick="window.location='Tutorial15-Scripting.xhtml'">PREVIOUS</button>
+    <button onclick="window.location='Tutorial16-Misc1.js'">Source code of this demo</button>
+    <button onclick="window.location='Tutorial17-Misc2.xhtml'">NEXT</button>
+    <hr />
+    <p>
+    Lively Kernel has a convenient "<i>drill</i>" feature that allows you to 
+    analyze ("take a core sample of") the visual hierarchy of the objects
+    that have been laid on top of each other, and access any of those objects
+    easily.  When you use the "<i>drill</i>" menu operation for an object,
+    the system opens a <i>drill menu</i> that visualizes the different
+    layers of objects under the object that you just clicked, starting
+    from the bottommost object to the topmost object (= the object itself).
+    </p>
+    <p>
+    For instance, if you use the "<i>drill</i>" operation to view the 
+    hierarchy of the upper left panel of a class browser (see the screen
+    snapshots below), you get a <i>drill menu</i> object that shows
+    you the layers of objects in that panel, starting from the 
+    bottommost object (in this case: a <i>WindowMorph</i>) to the
+    topmost object (in this case: a <i>CheapListMorph</i>)
+    </p>
+    <p>
+    When you choose any of the objects in the drill menu, the system opens
+    a regular popup menu that allows you to manipulate that particular object directly,
+    even though that object is not necessarily topmost on the screen.
+    Using this feature you can, e.g., open an inspector or a style panel to edit
+    the properties of objects that are deep down in the visual hierarchy.
+    </p>
+    <p>
+    Additionally, you can use a special "<i>grab</i>" menu operation to pick up objects
+    that are not topmost on the screen, e.g., to move an entire panel with its contents
+    away from its current location.
+    </p>
+        <img src="Tutorial16-Image1.PNG"/>
+        <img src="Tutorial16-Image2.PNG"/>
+        <img src="Tutorial16-Image3.PNG"/>
+        <img src="Tutorial16-Image4.PNG"/>
+    <hr />
+    <p>
+    <b>Try it yourself!</b> Use the "<i>drill</i>"" and "<i>grab</i>" menu operations to 
+    pick up various (layers of) objects in the the class browser shown below.
+    </p>
+    <p>
+    <div>  
+        <svg id="canvas"
+             width="80%" height="100%" 
+             xmlns="http://www.w3.org/2000/svg" 
+             xmlns:lively="http://www.experimentalstuff.com/Lively"
+             xmlns:xlink="http://www.w3.org/1999/xlink"
+             xmlns:xhtml="http://www.w3.org/1999/xhtml"
+             xmlns:D="DAV"
+             xml:space="preserve"
+             zoomAndPan="disable">
+        
+        <defs id="Defaults">
+        
+        <script type="text/ecmascript" xlink:href="../defaultconfig.js"/>
+        <script type="text/ecmascript"> <![CDATA[ var Config = {} ]]> </script>
+        <script type="text/ecmascript" xlink:href="../prototype.js"/>
+        <script type="text/ecmascript" xlink:href="../localconfig.js"/> <!-- ignored if file not there -->
+        <script type="text/ecmascript" xlink:href="../Core.js"/>
+        <script type="text/ecmascript" xlink:href="../svgtext-compat.js"/>
+        <script type="text/ecmascript" xlink:href="../Text.js"/>
+        <xhtml:iframe onload="Loader.insertContents(this)"  src="../Definitions.svg"/>
+        <script type="text/ecmascript" xlink:href="../Widgets.js"/>
+        <script type="text/ecmascript" xlink:href="../Tools.js"/>
+        <script type="text/ecmascript" xlink:href="Tutorial16-Misc1.js"/>
+        
+        </defs>
+        
+        </svg>
+    </div>
+
+    </p>
+    <hr />
+  </body>
+</html>
