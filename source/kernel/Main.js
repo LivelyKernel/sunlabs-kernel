@@ -70,6 +70,7 @@ function populateWorldWithExamples(world) {
         world.addMorph(WindowMorph(gameMorph, 'Asteroids!'));
         apps.asteroids.initialize();
         gameMorph.runAsteroidsGame();
+        gameMorph.owner().collapse();
     }
     
     // Sample icon morph with a fisheye effect 'on'
@@ -86,7 +87,8 @@ function populateWorldWithExamples(world) {
     // Sample weather morph
     if (Config.showWeather && Config.showNetworkExamples) {
         // Maybe the icons should have rectangular images (unlike here)
-        new WeatherWidget().openIn(world, pt(785, 50));
+        var weather = new WeatherWidget().openIn(world, pt(785, 65));
+        world.topSubmorph().rotateBy(-0.2);
     }
 
     if (Config.showStocks && Config.showNetworkExamples) {
@@ -96,6 +98,8 @@ function populateWorldWithExamples(world) {
     }
 
     if (Config.show3DLogo) world.addMorph(WindowMorph(Sun3DMorph(pt(570, 100).extent(pt(200, 200))), 'Sun 3D Logo'));
+
+    if (Config.showTester) new WidgetTester().openIn(world, pt(835, 450));
 
     if (Config.showInnerWorld) {
         
@@ -114,6 +118,7 @@ function populateWorldWithExamples(world) {
                 if (!lm1.myWorld.csMorph) {
                     var csm = CanvasScapeMorph(Rectangle(20,50,800,300));
                     lm1.myWorld.csMorph = lm1.myWorld.addMorph(WindowMorph(csm, 'CanvasScape'));
+                    csm.owner().collapse();
                 }
             }
 
@@ -313,7 +318,6 @@ function populateWorldWithExamples(world) {
             store.openIn(Config.webStoreInMain ? WorldMorph.current() : devWorld.myWorld, pt(460, 120));
         }
 
-        if (Config.showTester) new WidgetTester().openIn(devWorld.myWorld, pt(135, 480));
     }
 
     return world;
