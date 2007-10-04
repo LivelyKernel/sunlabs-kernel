@@ -55,8 +55,10 @@ var WebStore = Class.extend(Model);
 Object.extend(WebStore, {
     defaultStore: null,
     onCurrentLocation: function() {
-        return new WebStore(location.hostname, 
-            location.pathname.substring(0, location.pathname.lastIndexOf('index.xhtml')));
+        var path = location.pathname.substring(0, location.pathname.lastIndexOf('index.xhtml'));
+	if (path == "") 
+		path = "/";
+        return new WebStore(location.hostname, path);
     }
 
 });
