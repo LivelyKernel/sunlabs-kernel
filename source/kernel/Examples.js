@@ -2377,7 +2377,6 @@ Object.extend(WeatherWidget.prototype, {
         case "San Francisco, California":
             this.getWeather("6568");
 //          this.getWeather("stanford", "US", "CA"); // "USCA0050"  6568 -- San Francisco International (SFO)
-            // bbc's USA cities: http://www.bbc.co.uk/cgi-perl/weather/search/new_search.pl?search_query=USA&x=0&y=0
             break;
         case "Tampere, Finland":
             this.getWeather("4974");
@@ -2483,10 +2482,6 @@ Object.extend(WeatherWidget.prototype, {
     },
 
     getWeather: function(citycode) {
-//    getWeather: function(city, country, state) {
-//        this.feed = new Feed("http://weatherforecastmap.com/" + country + "/" + city + "/index.html");
-//        this.feed.request(this, 'getWeatherDesc', "getTemperature", "getWind", "getPressure", 
-//                          "getVisibility", "getHumidity", "getUV", "getDate");
         this.feed = new Feed("http://feeds.bbc.co.uk/weather/feeds/rss/obs/world/" + citycode + ".xml");
         this.feed.request(this, 'getWeatherDesc', "getTemperature", "getWind", "getGusts", 
                           "getDewPoint", "getHumidity", "getVisibility");
@@ -3826,7 +3821,6 @@ Object.extend(MessengerWidget.prototype, {
                 method: 'get',
                 
                 onSuccess: function(transport) {
-//                    console.log("response: " + parent.id +"\n" + transport.responseText);
                     parent.setChatText(parent.id + ": " + parent.getIMText()); // add the current line immediately
                     parent.setIMText(""); // yes yes.. so its a little laggy to add the current line and delete it...
                     parent.textpanel.setScrollPosition(1);//this.textpanel.innerMorph().bounds().height);
