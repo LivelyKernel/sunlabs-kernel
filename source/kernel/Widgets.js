@@ -2562,7 +2562,7 @@ Object.extend(HandMorph.prototype, {
 
     shadowOffset: pt(5,5),
     handleOnCapture: true,
-    applyDropShadowFilter: false,
+    applyDropShadowFilter: !!Config.enableDropShadow,
 
     initialize: function(local) {
         HandMorph.superClass.initialize.call(this, pt(5,5).extent(pt(10,10)), "rect");
@@ -2763,6 +2763,9 @@ Object.extend(HandMorph.prototype, {
         while (this.hasSubmorphs()) { // drop in same z-order as in hand
             var m = this.submorphs.firstChild;
             receiver.addMorph(m); // this removes it from hand
+	    if (this.applyDropShadowFilter) {
+		m.setAttributeNS(null, "filter", "none");
+	    }
             // DI: May need to be updated for collaboration...
             // m.updateBackendFields('origin'); 
 
