@@ -153,7 +153,7 @@ Object.extend(Class, {
         var constr = this.create();
         
         if (base) {
-            constr.superClass = base.prototype;
+            constr.superclass = base.prototype;
             Object.extend(constr.prototype, base.prototype);
         }
 
@@ -237,10 +237,11 @@ Function.callStack = function() {
     }
     
     return result;
-}
+};
 
-Function.prototype.inspect = function() {
-    /*
+Object.extend(Function.prototype, {
+    inspect: function() {
+	/*
     if (this.category) {
         var name = this.category.$propname(this);
 
@@ -248,45 +249,46 @@ Function.prototype.inspect = function() {
         return name;
     }
     */
-    return this.toString().substring(8, 88);
-};
+	return this.toString().substring(8, 88);
+    },
 
-Function.prototype.functionNames = function(filter) {
-    var functionNames = [];
+    functionNames: function(filter) {
+	var functionNames = [];
+	
+	for (var name in this.prototype) { 
+            try {
+		if (this.prototype[name] instanceof Function) 
+		    if (!filter || filter(name))
+			functionNames.push(name); 
+            } catch (er) {
+		// FF can throw an exception here ...
+            }
+	}
+	
+	return functionNames;
+    },
 
-    for (var name in this.prototype) { 
-        try {
-            if (this.prototype[name] instanceof Function) 
-		if (!filter || filter(name))
-		    functionNames.push(name); 
-        } catch (er) {
-            // FF can throw an exception here ...
-        }
+    localFunctionNames: function() {
+	var sup;
+	
+	if (!this.superclass) {
+            sup = (this === Object) ? null : Object; 
+	} else {
+            sup = this.superclass.constructor;
+	}
+	
+	try {
+            var superNames = (sup == null) ? [] : sup.functionNames();
+	} catch (e) {
+            var superNames = [];
+	}
+	
+	return this.functionNames(function(name) {
+            return !superNames.include(name) || this.prototype[name] !== sup.prototype[name];
+	}.bind(this));
+	
     }
-    
-    return functionNames;
-};
-
-Function.prototype.localFunctionNames = function() {
-    var sup;
-    
-    if (!this.superClass) {
-        sup = (this === Object) ? null : Object; 
-    } else {
-        sup = this.superClass.constructor;
-    }
-    
-    try {
-        var superNames = (sup == null) ? [] : sup.functionNames();
-    } catch (e) {
-        var superNames = [];
-    }
-    
-    return this.functionNames(function(name) {
-        return !superNames.include(name) || this.prototype[name] !== sup.prototype[name];
-    }.bind(this));
-
-};
+});
 
 Function.globalScope = window;
 
@@ -299,8 +301,8 @@ Function.methodString = function(className, methodName) {
 };
 
 Function.prototype.mixInto = function(targetFun) {
-    if (this.superClass) {
-        this.superClass.constructor.mixInto(targetFun);
+    if (this.superclass) {
+        this.superclass.constructor.mixInto(targetFun);
     }
     Object.extend(targetFun.prototype, this.prototype);
   
@@ -358,16 +360,6 @@ Object.extend(Function.prototype, {
 
 });
 
-/**
- * Extensions to class Object
- */  
-
-Object.extend(Object.prototype, {
-    evalInThis: function(str) {
-        // eval the string str in the context of this object
-        return eval(str);
-    }
-});
 
 /**
  * Extensions to class String
@@ -492,9 +484,9 @@ Object.category(HostClass, "core", function() { return {
 
         // this could be a field but why not: rhino magic
         if (constr.__defineGetter__) 
-            constr.__defineGetter__('superClass', function() { return constr.prototype.__proto__; });
+            constr.__defineGetter__('superclass', function() { return constr.prototype.__proto__; });
         else
-            constr.superClass = proto;
+            constr.superclass = proto;
         constr.name = name;
         return constr;
     }
@@ -771,9 +763,7 @@ console.log("Rectangle");
  * @class Color: Fully portable support for RGB colors
  */
 
-Color = Class.create(); 
-
-Object.extend(Color.prototype, {
+Color = Class.create({ 
 
     initialize: function(r, g, b) {
         this.r = r;
@@ -1167,7 +1157,6 @@ Object.extend(Event, {
     }),
     
     KEY_SPACEBAR: 32,
-    KEY_ENTER: 13,
     
     Safari: {
         KEY_LEFT: 63234,
@@ -1256,7 +1245,7 @@ Object.extend(Event.prototype, {
     },
     
     capitalizedType: function() {
-        return Event.capitalizer[this.type] || this.type;
+        return Event.capitalizer.get(this.type) || this.type;
     },
     
     setButtonPressedAndPriorPoint: function(buttonPressed, priorPoint) {
@@ -1305,11 +1294,8 @@ Object.extend(document, {
  * In this particular implementation, graphics primitives are
  * mapped onto various SVG objects and attributes.
  */
-
-DisplayObject = Class.create();
-// a mixin
-
-Object.extend(DisplayObject.prototype, {
+DisplayObject = Class.create({
+    // a mixin
 
     setType: function(type)  {
         this.setAttributeNS(Namespace.LIVELY, "type", type);
@@ -1452,9 +1438,7 @@ Object.extend(DisplayObject.prototype, {
  */ 
 
 // Note: Shape is a mixin
-Shape = Class.extend(DisplayObject);
-
-Object.extend(Shape.prototype, {
+Shape = Class.create(DisplayObject, {
 
     shouldIgnorePointerEvents: false,
 
@@ -2079,8 +2063,9 @@ Object.extend(MouseHandlerForDragging.prototype, {
     handleMouseEvent: function(evt, targetMorph) {
         var capType = evt.capitalizedType();
         var handler = targetMorph['on' + capType];
-        // console.log('target for ' + evt.type + 'Action is ' + handler + ' target ' + targetMorph.inspect());
+        /* console.log('target for ' + evt.type + 'Action is ' + handler + ' target ' + targetMorph.inspect()); */
         if (capType == "MouseDown") evt.hand.setMouseFocus(targetMorph);
+	if (handler == null) console.log("bah, null handler on " + capType);
         handler.call(targetMorph, evt);
         if (capType == "MouseUp") {
             // if focus changed, then don't cancel it
@@ -3417,9 +3402,7 @@ Object.extend(Morph.prototype, {
  * This class supports the stepping functionality defined above 
  */ 
 
-StepHandler = Class.create();
-
-Object.extend(StepHandler.prototype, {
+StepHandler = Class.create({
 
     initialize: function(owner, stepTime) {
         this.owner = owner;
@@ -3597,16 +3580,7 @@ Object.extend(Morph.prototype, {
  * @class Exporter: Implementation class for morph serialization
  */
 
-var Exporter = Class.create();
-Object.extend(Exporter, {
-
-    nodeToString: function(node) {
-        return node ? new XMLSerializer().serializeToString(node) : null;
-    }
-
-});
-
-Object.extend(Exporter.prototype, {
+var Exporter = Class.create({
     rootMorph: null,
     
     initialize: function(rootMorph) {
@@ -3624,6 +3598,14 @@ Object.extend(Exporter.prototype, {
             this.rootMorph.removeChild(modelNode);
         }
         return result;
+    }
+
+});
+
+Object.extend(Exporter, {
+
+    nodeToString: function(node) {
+        return node ? new XMLSerializer().serializeToString(node) : null;
     }
 
 });
@@ -3847,9 +3829,7 @@ Object.extend(Morph.prototype, {
 // plug mechanism to get or set model values and to respond to model changes.
 // these are documented in Morph.getModelValue, setModelValue, and updateView
 
-Model = Class.create();
-
-Object.extend(Model.prototype, {
+Model = Class.create({
 
     initialize: function(dep) { 
         // Broadcasts an update message to all dependents when a value changes.
@@ -3942,7 +3922,7 @@ Object.category(SimpleModel.prototype,  "core", function() {
     return {
 
         initialize: function(dep /*, variables... */) {
-            SimpleModel.superClass.initialize.call(this, dep);
+            SimpleModel.superclass.initialize.call(this, dep);
             var variables = $A(arguments);
             variables.shift();
             for (var i = 0; i < variables.length; i++) {

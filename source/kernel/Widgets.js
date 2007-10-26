@@ -44,7 +44,7 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
     // A ButtonMorph is the simplest widget
     // It read and writes the boolean variable, this.model[this.propertyName]
     initialize: function(initialBounds) {
-        ButtonMorph.superClass.initialize.call(this, initialBounds, "rect");
+        ButtonMorph.superclass.initialize.call(this, initialBounds, "rect");
         
         var model = new SimpleModel(this, "Value");
         // this default self connection may get overwritten by, eg, connectModel()...
@@ -58,14 +58,14 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
     },
 
     initializeTransientState: function(initialBounds) {
-        ButtonMorph.superClass.initializeTransientState.call(this, initialBounds);
+        ButtonMorph.superclass.initializeTransientState.call(this, initialBounds);
         // FIXME make persistent
         this.baseColor = this.defaultFill;
         this.linkToStyles(['button']);
     },
 
     restorePersistentState: function(importer) {
-        ButtonMorph.superClass.restorePersistentState.call(this, importer);
+        ButtonMorph.superclass.restorePersistentState.call(this, importer);
         this.changeAppearanceFor(this.getModelValue('getValue', false));
     },
 
@@ -113,7 +113,7 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
     },
 
     applyStyle: function(spec) {
-        ButtonMorph.superClass.applyStyle.call(this,spec);
+        ButtonMorph.superclass.applyStyle.call(this,spec);
         this.changeAppearanceFor(this.getValue());
     },
 
@@ -144,7 +144,7 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
 
     onKeyDown: function(evt) {
         switch (evt.sanitizedKeyCode()) {
-        case Event.KEY_ENTER:
+        case Event.KEY_RETURN:
         case Event.KEY_SPACEBAR:
             this.changeAppearanceFor(true);
             evt.stop();
@@ -156,7 +156,7 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
     onKeyUp: function(evt) {
         var newValue = this.isToggle() ? !this.getValue() : false;
         switch (evt.sanitizedKeyCode()) {
-        case Event.KEY_ENTER:
+        case Event.KEY_RETURN:
         case Event.KEY_SPACEBAR:
             this.changeAppearanceFor(newValue);
             this.setValue(newValue);
@@ -180,7 +180,7 @@ Object.extend(ImageMorph.prototype, {
     defaultBorderWidth: 0,
    
     initialize: function(viewPort, url) {
-        ImageMorph.superClass.initialize.call(this, viewPort, "rect");
+        ImageMorph.superclass.initialize.call(this, viewPort, "rect");
         this.url = url;
         this.dim = viewPort.extent();
         if (url) { 
@@ -189,7 +189,7 @@ Object.extend(ImageMorph.prototype, {
     },
 
     restoreFromElement: function(element, importer) /*:Boolean*/ {
-        if (TextMorph.superClass.restoreFromElement.call(this, element, importer)) return true;
+        if (TextMorph.superclass.restoreFromElement.call(this, element, importer)) return true;
 
         var type = DisplayObject.prototype.getType.call(element);
 
@@ -272,7 +272,7 @@ Object.extend(ImageButtonMorph.prototype, {
         this.image = ImageMorph(Rectangle(0, 0, initialBounds.width, initialBounds.height), normalImageHref);
         this.normalImageHref = normalImageHref;
         this.activatedImageHref = activatedImageHref;
-        ImageButtonMorph.superClass.initialize.call(this, initialBounds);
+        ImageButtonMorph.superclass.initialize.call(this, initialBounds);
         this.addMorph(this.image);
         this.image.handlesMouseDown = function() { return true; }
         this.image.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
@@ -295,7 +295,7 @@ IconMorph = HostClass.create('IconMorph', ImageMorph);
 Object.extend(IconMorph.prototype, {
 
     initialize: function(viewPort, url, name, targetUrl) {
-        IconMorph.superClass.initialize.call(this, viewPort, url);
+        IconMorph.superclass.initialize.call(this, viewPort, url);
         this.label = new TextMorph(Rectangle(viewPort.width, viewPort.height/3, 100, 30), name).beLabel();
         this.target = targetUrl;
         this.label.setFill(Color.white);
@@ -329,7 +329,7 @@ Object.extend(ClipMorph.prototype, {
     defaultBorderWidth: 0,
 
     initialize: function(initialBounds) {
-        ClipMorph.superClass.initialize.call(this, initialBounds, "rect");
+        ClipMorph.superclass.initialize.call(this, initialBounds, "rect");
     
         // A clipMorph is like a window through which its submorphs are seen
         // Its bounds are strictly limited by its shape
@@ -388,7 +388,7 @@ Object.extend(TitleBarMorph.prototype, {
         this.windowMorph = windowMorph;
         const bh = this.barHeight;
         const spacing = this.controlSpacing;
-        TitleBarMorph.superClass.initialize.call(this, Rectangle(0, isExternal? - bh : 0, 
+        TitleBarMorph.superclass.initialize.call(this, Rectangle(0, isExternal? - bh : 0, 
                                                  windowWidth, bh), "rect");
         this.linkToStyles(['titleBar']);
         this.ignoreEvents();
@@ -440,7 +440,7 @@ Object.extend(TitleBarMorph.prototype, {
     },
 
     restorePersistentState: function(importer) {
-	TitleBarMorph.superClass.restorePersistentState.call(this, importer);
+	TitleBarMorph.superclass.restorePersistentState.call(this, importer);
 	this.closeButton = this.getNamedMorph('closeButton');
 	this.menuButton = this.getNamedMorph('menuButton');
 	this.collapseButton = this.getNamedMorph('collapseButton');
@@ -485,7 +485,7 @@ Object.extend(TitleTabMorph.prototype, {
         this.windowMorph = windowMorph;
         const bh = this.barHeight;
         const spacing = this.controlSpacing;
-        TitleBarMorph.superClass.initialize.call(this, Rectangle(0, isExternal? - bh : 0, 
+        TitleBarMorph.superclass.initialize.call(this, Rectangle(0, isExternal? - bh : 0, 
                                                  windowWidth, bh), "rect");
         this.linkToStyles(['titleBar']);
         this.ignoreEvents();
@@ -544,7 +544,7 @@ Object.extend(WindowControlMorph.prototype, {
     defaultBorderWidth: 0,
 
     initialize: function(rect, inset, color, target, action, helpText) {
-        WindowControlMorph.superClass.initialize.call(this, rect.insetBy(inset), 'ellipse');
+        WindowControlMorph.superclass.initialize.call(this, rect.insetBy(inset), 'ellipse');
         this.setFill(RadialGradient.makeCenteredGradient(color.lighter(2), color));
         this.target = target;
         this.action = action;
@@ -626,7 +626,7 @@ Object.extend(WindowMorph.prototype, {
         var titleHeight = titleBar.bounds().height;
 
         bounds.height += titleHeight;
-        WindowMorph.superClass.initialize.call(this, location ? rect(location, bounds.extent()) : bounds, 'rect');
+        WindowMorph.superclass.initialize.call(this, location ? rect(location, bounds.extent()) : bounds, 'rect');
         this.setNamedMorph("targetMorph", targetMorph);
         this.setNamedMorph("titleBar", titleBar);
         this.contentOffset = pt(0, titleHeight);
@@ -638,7 +638,7 @@ Object.extend(WindowMorph.prototype, {
 
 
     restorePersistentState: function(importer) {
-	WindowMorph.superClass.restorePersistentState.call(this, importer);
+	WindowMorph.superclass.restorePersistentState.call(this, importer);
 	this.targetMorph = this.getNamedMorph('targetMorph');
 	this.titleBar = this.getNamedMorph('titleBar');
 	this.contentOffset = pt(0, this.titleBar.bounds().height);
@@ -692,7 +692,7 @@ Object.extend(WindowMorph.prototype, {
     morphToGrabOrReceive: function(evt, droppingMorph, checkForDnD) {
         // If this window is doesn't need to come forward, then respond normally
         if (!this.needsToComeForward(evt) || droppingMorph != null) {
-            return WindowMorph.superClass.morphToGrabOrReceive.call(this, evt, droppingMorph, checkForDnD)
+            return WindowMorph.superclass.morphToGrabOrReceive.call(this, evt, droppingMorph, checkForDnD)
         }
         // Otherwise, hold mouse focus until mouseUp brings it to the top
         return this;
@@ -713,7 +713,7 @@ Object.extend(WindowMorph.prototype, {
     onMouseDown: function(evt) { },
 
     onMouseMove: function(evt) {
-        if (!evt.mouseButtonPressed) WindowMorph.superClass.onMouseMove.call(this, evt);
+        if (!evt.mouseButtonPressed) WindowMorph.superclass.onMouseMove.call(this, evt);
     },    
 
     onMouseUp: function(evt) {
@@ -727,7 +727,7 @@ Object.extend(WindowMorph.prototype, {
 
     mouseEvent: function(evt, hasFocus) {
         if (!this.needsToComeForward(evt)) {
-            return WindowMorph.superClass.mouseEvent.call(this, evt, hasFocus)
+            return WindowMorph.superclass.mouseEvent.call(this, evt, hasFocus)
         }
         return this.mouseHandler.handleMouseEvent(evt, this); 
     },
@@ -800,7 +800,7 @@ Object.extend(TabbedPanelMorph.prototype, {
         // With windows, you collapse them to their title bars, with tabbed panels, you
         // click their tab and they retreat to the edge of the screen like a file folder.
         this.sideName = sideName ? sideName : "south";
-        TabbedPanelMorph.superClass.initialize.call(this, targetMorph, headline, location);
+        TabbedPanelMorph.superclass.initialize.call(this, targetMorph, headline, location);
         this.setFill(null);
         this.setBorderColor(null);
         this.newToTheWorld = true;
@@ -859,7 +859,7 @@ Object.extend(HandleMorph.prototype, {
         "Shift+drag to change width ", 
 
     initialize: function(location, shapeType, hand, targetMorph, partName) {
-        HandleMorph.superClass.initialize.call(this, location.asRectangle().expandBy(5), shapeType);
+        HandleMorph.superclass.initialize.call(this, location.asRectangle().expandBy(5), shapeType);
         this.targetMorph = targetMorph;
         this.partName = partName; // may be a name like "topRight" or a vertex index
         this.initialScale = null;
@@ -969,7 +969,7 @@ Object.extend(HandleMorph.prototype, {
     },
     
     inspect: function() {
-        return HandleMorph.superClass.inspect.call(this) + " on " + Object.inspect(this.targetMorph);
+        return HandleMorph.superclass.inspect.call(this) + " on " + Object.inspect(this.targetMorph);
     },
     
     scaleFor: function(scaleFactor) {
@@ -996,7 +996,7 @@ Object.extend(SelectionMorph.prototype, {
     defaulFill: Color.secondary.blue,
 
     initialize: function(viewPort, defaultworldOrNull) {
-        SelectionMorph.superClass.initialize.call(this, viewPort, "rect");
+        SelectionMorph.superclass.initialize.call(this, viewPort, "rect");
         this.originalPoint = viewPort.topLeft();
         this.reshapeName = "bottomRight";
         this.selectedMorphs = [];
@@ -1018,7 +1018,7 @@ Object.extend(SelectionMorph.prototype, {
             this.setBounds(this.originalPoint.asRectangle())
         } else { this.reshapeName = partName; }
 
-        SelectionMorph.superClass.reshape.call(this, this.reshapeName, newPoint, handle, lastCall);
+        SelectionMorph.superclass.reshape.call(this, this.reshapeName, newPoint, handle, lastCall);
         this.selectedMorphs = [];
         this.owner().submorphs.each(function(m) {
             if (m !== this && this.bounds().containsRect(m.bounds())) this.selectedMorphs.push(m);
@@ -1030,7 +1030,7 @@ Object.extend(SelectionMorph.prototype, {
     },
 
     morphMenu: function(evt) { 
-        var menu = SelectionMorph.superClass.morphMenu.call(this,evt);
+        var menu = SelectionMorph.superclass.morphMenu.call(this,evt);
         menu.removeItemNamed("inspect");
         menu.removeItemNamed("XML");
         return menu;
@@ -1046,7 +1046,7 @@ Object.extend(SelectionMorph.prototype, {
             this.myWorld = this.world();
         } 
         this.myWorld.currentSelection = null;
-        SelectionMorph.superClass.remove.call(this);
+        SelectionMorph.superclass.remove.call(this);
     },
     
     copyToHand: function(hand) { 
@@ -1055,7 +1055,7 @@ Object.extend(SelectionMorph.prototype, {
     
     setBorderWidth: function(width) { 
         if (this.selectedMorphs.length==0) {
-            SelectionMorph.superClass.setBorderWidth.call(this,width);
+            SelectionMorph.superclass.setBorderWidth.call(this,width);
         } else { 
             this.selectedMorphs.invoke('setBorderWidth', width);
             for ( var i = 0; i < this.selectedMorphs.length; i++ ) {
@@ -1068,7 +1068,7 @@ Object.extend(SelectionMorph.prototype, {
     
     setFill: function(color) { 
         if (this.selectedMorphs.length==0) {
-            SelectionMorph.superClass.setFill.call(this,color);
+            SelectionMorph.superclass.setFill.call(this,color);
         } else {
             this.selectedMorphs.invoke('setFill', color);
             for ( var i = 0; i < this.selectedMorphs.length; i++ ) {
@@ -1081,7 +1081,7 @@ Object.extend(SelectionMorph.prototype, {
     
     setBorderColor: function(color) { 
         if (this.selectedMorphs.length==0) {
-            SelectionMorph.superClass.setBorderColor.call(this,color);
+            SelectionMorph.superclass.setBorderColor.call(this,color);
         } else {
             this.selectedMorphs.invoke('setBorderColor', color);
             for ( var i = 0; i < this.selectedMorphs.length; i++ ) {
@@ -1094,7 +1094,7 @@ Object.extend(SelectionMorph.prototype, {
     
     setFillOpacity: function(op) { 
         if (this.selectedMorphs.length==0) {
-            SelectionMorph.superClass.setFillOpacity.call(this,op);
+            SelectionMorph.superclass.setFillOpacity.call(this,op);
         } else { 
             this.selectedMorphs.invoke('setFillOpacity', op);
             for ( var i = 0; i < this.selectedMorphs.length; i++ ) {
@@ -1107,7 +1107,7 @@ Object.extend(SelectionMorph.prototype, {
     
     setStrokeOpacity: function(op) { 
         if (this.selectedMorphs.length==0) {
-            SelectionMorph.superClass.setStrokeOpacity.call(this,op);
+            SelectionMorph.superclass.setStrokeOpacity.call(this,op);
         } else { 
             this.selectedMorphs.invoke('setStrokeOpacity', op);
             for ( var i = 0; i < this.selectedMorphs.length; i++ ) {
@@ -1124,7 +1124,7 @@ Object.extend(SelectionMorph.prototype, {
         for ( var i = 0; i < this.selectedMorphs.length; i++ ) {
             this.addMorph(this.selectedMorphs[i]);
         }
-        SelectionMorph.superClass.setRotation.call(this,theta);
+        SelectionMorph.superclass.setRotation.call(this,theta);
         for ( var i = 0; i < this.selectedMorphs.length; i++ ) {
             this.world().addMorph(this.selectedMorphs[i]);
         }
@@ -1136,7 +1136,7 @@ Object.extend(SelectionMorph.prototype, {
         for ( var i = 0; i < this.selectedMorphs.length; i++ ) {
             this.addMorph(this.selectedMorphs[i]);
         }
-        SelectionMorph.superClass.setScale.call(this,scale);
+        SelectionMorph.superclass.setScale.call(this,scale);
         for ( var i = 0; i < this.selectedMorphs.length; i++ ) {
             this.world().addMorph(this.selectedMorphs[i]);
         }
@@ -1162,7 +1162,7 @@ PanelMorph = HostClass.create('PanelMorph', Morph);
 Object.extend(PanelMorph.prototype, {
 
     initialize: function(extent/*:Point*/) {
-        PanelMorph.superClass.initialize.call(this, pt(0, 0).extent(extent), 'rect');
+        PanelMorph.superclass.initialize.call(this, pt(0, 0).extent(extent), 'rect');
         this.lastNavigable = null;
     },
 
@@ -1203,7 +1203,7 @@ Object.extend(PanelMorph.prototype, {
             this.lastNavigable = m;
         }
 
-        return PanelMorph.superClass.addMorphFrontOrBack.call(this, m, front);
+        return PanelMorph.superclass.addMorphFrontOrBack.call(this, m, front);
     },
 
     updateView: function(aspect, controller) {
@@ -1259,7 +1259,7 @@ Object.extend(CheapListMorph.prototype, {
         // multiline paragraphs, though some effort is made to use a similar interface.
     
         var listText = itemList ? itemList.join("\n") : "";
-        CheapListMorph.superClass.initialize.call(this, initialBounds, listText);
+        CheapListMorph.superclass.initialize.call(this, initialBounds, listText);
         // this default self connection may get overwritten by, eg, connectModel()...
         var model = new SimpleModel(null, "List", "Selection");
         this.modelPlug = this.addChildElement(model.makePlug());
@@ -1272,7 +1272,7 @@ Object.extend(CheapListMorph.prototype, {
     },
 
     restorePersistentState: function(importer) {
-        CheapListMorph.superClass.restorePersistentState.call(this, importer);
+        CheapListMorph.superclass.restorePersistentState.call(this, importer);
         this.itemList = this.textString.split('\n');
         this.setModelValue('setList', this.itemList);
     },
@@ -1349,7 +1349,7 @@ Object.extend(CheapListMorph.prototype, {
     drawSelection: function() {
         if (this.hasNullSelection()) { // Null sel in a list is blank
             this.undrawSelection();
-        } else CheapListMorph.superClass.drawSelection.call(this); 
+        } else CheapListMorph.superclass.drawSelection.call(this); 
     },
 
     selectLineAt: function(charIx) {  
@@ -1367,7 +1367,7 @@ Object.extend(CheapListMorph.prototype, {
     
     lineRect: function(r) { //Menu selection displays full width
         var bounds = this.shape.bounds();
-        return CheapListMorph.superClass.lineRect.call(this, Rectangle(bounds.x+2, r.y, bounds.width-4, r.height)); 
+        return CheapListMorph.superclass.lineRect.call(this, Rectangle(bounds.x+2, r.y, bounds.width-4, r.height)); 
     },
     
     updateList: function(newList) {
@@ -1523,7 +1523,7 @@ Object.extend(MenuMorph.prototype, {
 
     compose: function(location) { 
         var itemNames = this.items.map(function (item) { return item[0] });
-        MenuMorph.superClass.initialize.call(this, location.extent(pt(200, 200)), itemNames);
+        MenuMorph.superclass.initialize.call(this, location.extent(pt(200, 200)), itemNames);
         this.setWrapStyle(WrapStyle.SHRINK);  
         this.fitText(); // first layout is wasted!
         // styling
@@ -1563,7 +1563,7 @@ Object.extend(SliderMorph.prototype, {
     baseColor: Color.primary.blue, // KP: stopgap fix for serialization??
     
     initialize: function(initialBounds, scaleIfAny) {
-        SliderMorph.superClass.initialize.call(this, initialBounds, "rect");
+        SliderMorph.superclass.initialize.call(this, initialBounds, "rect");
         var model = new SimpleModel(null, "Value", "Extent");
         // this default self connection may get overwritten by, eg, connectModel()...
         this.modelPlug = this.addChildElement(model.makePlug());
@@ -1578,7 +1578,7 @@ Object.extend(SliderMorph.prototype, {
     },
     
     restorePersistentState: function(importer) {
-        SliderMorph.superClass.restorePersistentState.call(this, importer);
+        SliderMorph.superclass.restorePersistentState.call(this, importer);
         this.slider = this.getNamedMorph('slider');
         if (!this.slider) {
             console.warn('no slider in %s, %s', this, this.textContent);
@@ -1597,13 +1597,13 @@ Object.extend(SliderMorph.prototype, {
     applyStyle: function(spec) {
         this.baseColor = Color.primary.blue;
         this.fillType = "simple";
-        SliderMorph.superClass.applyStyle.call(this, spec);
+        SliderMorph.superclass.applyStyle.call(this, spec);
         // need to call adjust to update graphics, but only after slider exists
         if (this.slider) this.adjustForNewBounds(); 
     },
     
     adjustForNewBounds: function() {
-        SliderMorph.superClass.adjustForNewBounds.call(this);
+        SliderMorph.superclass.adjustForNewBounds.call(this);
 
         // This method adjusts the slider for changes in value as well as geometry
         var val = this.getValue();
@@ -1677,7 +1677,7 @@ Object.extend(SliderMorph.prototype, {
     onMouseMove: function(evt) {
         // Overriden so won't drag me if mouse pressed
         if (evt.mouseButtonPressed) return
-        return SliderMorph.superClass.onMouseMove.call(this, evt);
+        return SliderMorph.superclass.onMouseMove.call(this, evt);
     },
     
     clipValue: function(val) { 
@@ -1749,7 +1749,7 @@ Object.extend(ScrollPane.prototype, {
     scrollBarWidth: 14,
 
     initialize: function(morphToClip, initialBounds) {
-        ScrollPane.superClass.initialize.call(this, initialBounds, "rect");
+        ScrollPane.superclass.initialize.call(this, initialBounds, "rect");
     
         var bnds = this.shape.bounds();
         var clipR = bnds.withWidth(bnds.width - this.scrollBarWidth+1).insetBy(1);
@@ -1844,7 +1844,7 @@ Object.extend(ColorPickerMorph.prototype, {
     defaultBorderColor: Color.black,
 
     initialize: function(initialBounds, targetMorph, setFillName, popup) {
-        ColorPickerMorph.superClass.initialize.call(this, initialBounds, "rect");
+        ColorPickerMorph.superclass.initialize.call(this, initialBounds, "rect");
         this.targetMorph = targetMorph;
         this.setFillFunctionName = setFillName; // name like "setBorderColor"
         if (targetMorph != null) this.connectModel({model: targetMorph, setColor: setFillName});
@@ -1938,12 +1938,12 @@ PasteUpMorph = HostClass.create('PasteUpMorph', Morph);
 Object.extend(PasteUpMorph.prototype, {
 
     initialize: function(bounds, shapeType) {
-        return PasteUpMorph.superClass.initialize.call(this, bounds, shapeType);
+        return PasteUpMorph.superclass.initialize.call(this, bounds, shapeType);
     },
     
     mouseEvent: function(evt, hasFocus) {
         if (evt.type == "mousedown" && this.onMouseDown(evt)) return; 
-        PasteUpMorph.superClass.mouseEvent.call(this, evt, hasFocus); 
+        PasteUpMorph.superclass.mouseEvent.call(this, evt, hasFocus); 
     },
 
     onMouseDown: function(evt) {  //default behavior is to grab a submorph
@@ -2075,7 +2075,7 @@ Object.extend(WorldMorph.prototype, {
             this.addChildElement(background);
         }
             
-        WorldMorph.superClass.initialize.call(this, bounds, "rect");
+        WorldMorph.superclass.initialize.call(this, bounds, "rect");
 
         this.hands = [];
         this.displayThemes = this.defaultThemes;
@@ -2139,10 +2139,12 @@ Object.extend(WorldMorph.prototype, {
     },
 
     morphMenu: function(evt) { 
-        var menu = WorldMorph.superClass.morphMenu.call(this,evt);
+        var menu = WorldMorph.superclass.morphMenu.call(this,evt);
         menu.keepOnlyItemsNamed(["inspect", "style"]);
         menu.addItem([(Config.suppressBalloonHelp ? "enable balloon help" : "disable balloon help"),
                      this.toggleBalloonHelp]);
+        menu.addItem([(HandMorph.prototype.applyDropShadowFilter ? "disable " : "enable ") + "drop shadow (if supported)",
+		      function () { HandMorph.prototype.applyDropShadowFilter = !HandMorph.prototype.applyDropShadowFilter}]);
         menu.addLine();
         menu.addItem(["new object...", this.addMorphs.curry(evt)]);
         menu.addLine();
@@ -2515,9 +2517,7 @@ Object.extend(WorldMorph.prototype, {
 
 // HandMorph could be its own event listener but FF doesn't like it when
 // an svg element is registered as a handler
-DomEventHandler = Class.create();
-
-Object.extend(DomEventHandler.prototype, {
+DomEventHandler = Class.create({
     
     initialize: function (hand) {
         this.hand = hand;
@@ -2565,7 +2565,7 @@ Object.extend(HandMorph.prototype, {
     applyDropShadowFilter: !!Config.enableDropShadow,
 
     initialize: function(local) {
-        HandMorph.superClass.initialize.call(this, pt(5,5).extent(pt(10,10)), "rect");
+        HandMorph.superclass.initialize.call(this, pt(5,5).extent(pt(10,10)), "rect");
     
         this.setShape(PolygonShape([pt(0,0),pt(9,5), pt(5,9), pt(0,0)], 
                      (local ? Color.blue : Color.red), 1, Color.black));
@@ -2855,12 +2855,12 @@ Object.extend(HandMorph.prototype, {
         // account for the extra extent of the drop shadow
         // FIXME drop shadow ...
         if (this.shadowMorph)
-            return HandMorph.superClass.bounds.call(this).expandBy(this.shadowOffset.x);
-        else return HandMorph.superClass.bounds.call(this); 
+            return HandMorph.superclass.bounds.call(this).expandBy(this.shadowOffset.x);
+        else return HandMorph.superclass.bounds.call(this); 
     },
     
     inspect: function() { 
-        var superString = HandMorph.superClass.inspect.call(this);
+        var superString = HandMorph.superclass.inspect.call(this);
         var extraString = ", local=%1,id=%2".format(this.isLocal, this.id);
         if (!this.hasSubmorphs()) return superString + ", an empty hand" + extraString;
         return "%1, a hand carrying %2%3".format(superString, this.topSubmorph(), extraString);
@@ -2894,7 +2894,7 @@ Object.extend(LinkMorph.prototype, {
             bounds = bounds.asRectangle().expandBy(25);
         }
     
-        LinkMorph.superClass.initialize.call(this, bounds, "ellipse");
+        LinkMorph.superclass.initialize.call(this, bounds, "ellipse");
 
         // Make me look a bit like a world
         this.setFill(RadialGradient.makeCenteredGradient(Color.green, Color.blue));

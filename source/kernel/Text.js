@@ -121,43 +121,7 @@ Object.extend(TextWord.prototype, {
  * @class WordChunk
  * This 'class' represents a chunk of text which might be printable or might be whitespace
  */ 
-
-WordChunk = Class.create();
-
-Object.extend(WordChunk, {
-
-    // create a chunk representing printable text
-    createWord: function(offset, length) {
-        var w = new WordChunk(offset, length);
-        return w;
-    },
-
-    // create a chunk representing whitespace (typically space characters)
-    createWhite: function(offset, length) {
-        var w = this.createWord(offset, length);
-        w.isWhite = true;
-        return w;
-    },
-
-    // create a chunk representing a newline
-    createNewLine: function(offset) {
-        var w = this.createWord(offset, 1);
-        w.isWhite = true;
-        w.isNewLine = true;
-        return w;
-    },
-
-    // create a chunk representing a tab
-    createTab: function(offset) {
-        var w = this.createWord(offset, 1);
-        w.isWhite = true;
-        w.isTab = true;
-        return w;
-    }
-
-});
-
-Object.extend(WordChunk.prototype, {
+WordChunk = Class.create({
 
     isWhite: false,
     isNewLine: false,
@@ -234,14 +198,47 @@ Object.extend(WordChunk.prototype, {
     
 });
 
+
+Object.extend(WordChunk, {
+
+    // create a chunk representing printable text
+    createWord: function(offset, length) {
+        var w = new WordChunk(offset, length);
+        return w;
+    },
+
+    // create a chunk representing whitespace (typically space characters)
+    createWhite: function(offset, length) {
+        var w = this.createWord(offset, length);
+        w.isWhite = true;
+        return w;
+    },
+
+    // create a chunk representing a newline
+    createNewLine: function(offset) {
+        var w = this.createWord(offset, 1);
+        w.isWhite = true;
+        w.isNewLine = true;
+        return w;
+    },
+
+    // create a chunk representing a tab
+    createTab: function(offset) {
+        var w = this.createWord(offset, 1);
+        w.isWhite = true;
+        w.isTab = true;
+        return w;
+    }
+
+});
+
+
 /**
  * @class TextLine
  * This 'class' renders lines composed of words and whitespace
  */ 
 
-var TextLine = Class.create();
-
-Object.extend(TextLine.prototype, {
+var TextLine = Class.create({
 
     // create a new line
     initialize: function(textString, startIndex, topLeft, font, chunkSkeleton) {
@@ -747,7 +744,7 @@ Object.extend(TextMorph.prototype, {
     maxSafeSize: 4000, 
 
     initializeTransientState: function(initialBounds) {
-        TextMorph.superClass.initializeTransientState.call(this, initialBounds);
+        TextMorph.superclass.initializeTransientState.call(this, initialBounds);
         // this.textBox = null;
         this.selectionRange = [0,-1]; // null or a pair of indices into textString
         this.selectionPivot = null;  // index of hit at onmousedown
@@ -761,7 +758,7 @@ Object.extend(TextMorph.prototype, {
 
     initializePersistentState: function(initialBounds, shapeType) {
         // this.textBox = null;
-        TextMorph.superClass.initializePersistentState.call(this, initialBounds, shapeType);
+        TextMorph.superclass.initializePersistentState.call(this, initialBounds, shapeType);
         // this.selectionElement = this.addChildElement(NodeFactory.create('use').withHref("#TextSelectionStyle"));
 
         // the selection element is persistent although its contents are not
@@ -779,7 +776,7 @@ Object.extend(TextMorph.prototype, {
     },
 
     restorePersistentState: function(importer) {
-        TextMorph.superClass.restorePersistentState.call(this, importer);
+        TextMorph.superclass.restorePersistentState.call(this, importer);
         this.wrap = this.getAttributeNS(Namespace.LIVELY, "wrap");
         var inset = this.getAttributeNS(Namespace.LIVELY, "inset");
         if (inset) {
@@ -788,7 +785,7 @@ Object.extend(TextMorph.prototype, {
     },
 
     restoreFromElement: function(element, importer) /*:Boolean*/ {
-        if (TextMorph.superClass.restoreFromElement.call(this, element, importer)) return true;
+        if (TextMorph.superclass.restoreFromElement.call(this, element, importer)) return true;
 
         var type = DisplayObject.prototype.getType.call(element);
     
@@ -814,7 +811,7 @@ Object.extend(TextMorph.prototype, {
     },
 
     initialize: function(rect, textString) {
-        TextMorph.superClass.initialize.call(this, rect, "rect");
+        TextMorph.superclass.initialize.call(this, rect, "rect");
 
         this.textString = textString || "";
 
@@ -836,7 +833,7 @@ Object.extend(TextMorph.prototype, {
         this.textBox = null;
         this.fitText(); // adjust bounds or text for fit
     
-        return TextMorph.superClass.bounds.call(this); 
+        return TextMorph.superclass.bounds.call(this); 
     },
     
     copy: function() {
@@ -851,7 +848,7 @@ Object.extend(TextMorph.prototype, {
 
     changed: function() {
         this.bounds(); // will force new bounds if layout changed
-        TextMorph.superClass.changed.call(this);
+        TextMorph.superclass.changed.call(this);
     },
     
     setTextColor: function(color) {
@@ -897,7 +894,7 @@ Object.extend(TextMorph.prototype, {
     beInputLine: function() {
         this.setWrapStyle(WrapStyle.NONE);
         this.onKeyPress = function(evt) {
-            if (evt.sanitizedKeyCode() == Event.KEY_ENTER) {
+            if (evt.sanitizedKeyCode() == Event.KEY_RETURN) {
                 this.saveContents(this.textString);
                 return true;
             } else {
@@ -914,7 +911,7 @@ Object.extend(TextMorph.prototype, {
     // of the TextMorph via popup menu
     morphMenu: function(evt) { 
 
-        var menu = TextMorph.superClass.morphMenu.call(this, evt);
+        var menu = TextMorph.superclass.morphMenu.call(this, evt);
 
         // Add a descriptive separator line
         menu.addItem(['----- text functions -----']);
@@ -1188,7 +1185,7 @@ Object.extend(TextMorph.prototype, {
 
     onMouseMove: function(evt) {  
         if (!this.isSelecting) { 
-            return TextMorph.superClass.onMouseMove.call(this, evt);
+            return TextMorph.superclass.onMouseMove.call(this, evt);
         }
         this.extendSelection(evt);
     },
@@ -1277,12 +1274,12 @@ Object.extend(TextMorph.prototype, {
     },
     
     onFocus: function(hand) {
-        TextMorph.superClass.onFocus.call(this, hand);
+        TextMorph.superclass.onFocus.call(this, hand);
         this.drawSelection();
     },
 
     onBlur: function(hand) {
-        TextMorph.superClass.onBlur.call(this, hand);
+        TextMorph.superclass.onBlur.call(this, hand);
         if (!this.showsSelectionWithoutFocus()) this.undrawSelection();
     },
 
@@ -1485,7 +1482,7 @@ Object.category(TextMorph.prototype, "accessing", function() {
     
     evalInContext: function(str) {    
         // Evaluate the string argument in a context which may be supplied by the modelPlug
-        return this.getModelValue('doitContext', this).evalInThis(str);
+        return eval(str, this.getModelValue('doitContext', this));
     },
     
     addOrRemoveBrackets: function(bracketIndex) {
@@ -1650,7 +1647,7 @@ PrintMorph = HostClass.create('PrintMorph', TextMorph);
 Object.extend(PrintMorph.prototype, {
 
     initialize: function(initialBounds, textString) {
-        return PrintMorph.superClass.initialize.call(this, initialBounds, textString);
+        return PrintMorph.superclass.initialize.call(this, initialBounds, textString);
     }, 
 
     updateView: function(aspect, controller) {
@@ -1709,7 +1706,7 @@ Object.extend(TestTextMorph.prototype, {
 
     onMouseMove: function(evt) {  
         if (!this.isSelecting) { 
-            return TextMorph.superClass.onMouseMove.call(this, evt);
+            return TextMorph.superclass.onMouseMove.call(this, evt);
         }
         this.track(evt);
     },

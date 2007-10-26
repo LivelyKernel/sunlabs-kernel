@@ -8,14 +8,18 @@
 
 <defs>
 
- <filter id="DropShadowFilter">
-   <feGaussianBlur in="SourceAlpha" stdDeviation="1" result="MyBlur"/>
-   <feOffset in="MyBlur" dx="3" dy="3" result="FinalBlur"/>
-   <feMerge>
-     <feMergeNode in="FinalBlur"/>
-     <feMergeNode in="SourceGraphic"/>
-   </feMerge>
- </filter>
+
+<filter id="DropShadowFilter" filterUnits="userSpaceOnUse">
+  <feGaussianBlur in="SourceAlpha" result="blurOut" stdDeviation="4" />
+  <feOffset in="blurOut" result="Shadow" dx="5" dy="5"/> 
+<!--  <feComposite in="SourceGraphics" in2="Shadow" operator="atop"> -->
+<feMerge>
+    <feMergeNode in="Shadow"/> 
+    <feMergeNode in="SourceGraphic"/> 
+</feMerge>  
+
+</filter>
+
 
 <!-- from http://svgicons.sourceforge.net -->
 

@@ -41,7 +41,7 @@ Object.extend(NetRequest.prototype, {
 
     initialize: function(url, options) {
         this.requestNetworkAccess();
-        NetRequest.superClass.initialize.call(this, this.rewriteURL(url), options);
+        NetRequest.superclass.initialize.call(this, this.rewriteURL(url), options);
     },
 
     rewriteURL: function(url) {
@@ -74,94 +74,95 @@ Object.extend(NetRequest.prototype, {
         }
     },
 
-    // explicitly override prototype.js's verb simulation over post
-    request: function(url) {
-        this.url = url;
-        this.method = this.options.method;
-        var params = Object.clone(this.options.parameters);
-
-        this.parameters = params;
-
-        if (params = Hash.toQueryString(params)) {
-            // when GET, append parameters to URL
-            if (this.method == 'get') {
-                this.url += (this.url.include('?') ? '&' : '?') + params;
-            } else if (/Konqueror|Safari|KHTML/.test(navigator.userAgent)) {
-                params += '&_=';
-            }
-        }
-	
-	try {
-            if (this.options.onCreate) this.options.onCreate(this.transport);
-	    
-            Ajax.Responders.dispatch('onCreate', this, this.transport);
-	    
-	    
-            this.transport.open(this.method.toUpperCase(), this.url, this.options.asynchronous);
-	    
-            if (this.options.asynchronous) {
-		setTimeout(function() { this.respondToReadyState(1) }.bind(this).logErrors('Network Timer'), 10);
-            }
-	    
-            this.transport.onreadystatechange = this.onStateChange.bind(this).logErrors('Network Request Handler');
-	    
-            this.setRequestHeaders();
-	    
-            this.body = /put|post/.test(this.method) ? (this.options.body || this.options.postBody || params) : null;
-	    
-            this.transport.send(this.body);
-	    
-            /* Force Firefox to handle ready state 4 for synchronous requests */
-            if (!this.options.asynchronous && this.transport.overrideMimeType) {
-		this.onStateChange();
-            }
-	} catch (e) {
-	    this.dispatchException(e);
-	}
-
-    }.logErrors('request'),
-    
-    // Overridden for debugging 
-    setRequestHeaders: function() {
-        var headers = {
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-Prototype-Version': Prototype.Version,
-            'X-Test-UniqueId': Config.random,
-            'Accept': 'text/javascript, text/html, application/xml, text/xml, */*'
-        };
-
-        if (this.method == 'post') {
-            headers['Content-type'] = this.options.contentType +
-            (this.options.encoding ? '; charset=' + this.options.encoding : '');
-    
-            /* Force "Connection: close" for older Mozilla browsers to work
-             * around a bug where XMLHttpRequest sends an incorrect
-             * Content-length header. See Mozilla Bugzilla #246651.
-             */
-            if (this.transport.overrideMimeType &&
-                (navigator.userAgent.match(/Gecko\/(\d{4})/) || [0,2005])[1] < 2005)
-                headers['Connection'] = 'close';
-        }
-
-        // user-defined headers
-        if (typeof this.options.requestHeaders == 'object') {
-            var extras = this.options.requestHeaders;
-    
-            if (typeof extras.push == 'function') {
-                for (var i = 0, length = extras.length; i < length; i += 2) {
-                    headers[extras[i]] = extras[i+1];
-                }
-            } else {
-                $H(extras).each(function(pair) { headers[pair.key] = pair.value });
-            }
-        }
-
-        for (var name in headers) {
-            // Avoid inheriting state, e.g. functions
-            if (!headers.hasOwnProperty(name)) continue;
-            this.transport.setRequestHeader(name, headers[name]);
-        }
+    // literally copied but override prototype.js's verb simulation over post
+  request: function(url) {
+    this.url = url;
+    this.method = this.options.method;
+    var params = Object.clone(this.options.parameters);
+      
+      /* remove simulation over post
+    if (!['get', 'post'].include(this.method)) {
+      // simulate other verbs over post
+      params['_method'] = this.method;
+      this.method = 'post';
     }
+      */
+    
+    this.parameters = params;
+
+    if (params = Object.toQueryString(params)) {
+      // when GET, append parameters to URL
+      if (this.method == 'get')
+        this.url += (this.url.include('?') ? '&' : '?') + params;
+      else if (/Konqueror|Safari|KHTML/.test(navigator.userAgent))
+        params += '&_=';
+    }
+      
+    try {
+      var response = new Ajax.Response(this);
+      if (this.options.onCreate) this.options.onCreate(response);
+      Ajax.Responders.dispatch('onCreate', this, response);
+    
+      this.transport.open(this.method.toUpperCase(), this.url, 
+        this.options.asynchronous);
+
+      if (this.options.asynchronous) this.respondToReadyState.bind(this).defer(1);
+      
+      this.transport.onreadystatechange = this.onStateChange.bind(this);
+      this.setRequestHeaders();
+
+	// this.body = this.method == 'post' ? (this.options.postBody || params) : null;
+      this.body = /put|post/.test(this.method) ? (this.options.body || this.options.postBody || params) : null;
+      
+      this.transport.send(this.body);
+
+      /* Force Firefox to handle ready state 4 for synchronous requests */
+      if (!this.options.asynchronous && this.transport.overrideMimeType)
+        this.onStateChange();
+        
+    }
+    catch (e) {
+      this.dispatchException(e);
+    }
+  }.logErrors("request"),
+
+
+    // Overridden for debugging 
+  setRequestHeaders: function() {
+    var headers = {
+      'X-Requested-With': 'XMLHttpRequest',
+      'X-Prototype-Version': Prototype.Version,
+      'Accept': 'text/javascript, text/html, application/xml, text/xml, */*'
+    };
+
+    if (this.method == 'post') {
+      headers['Content-type'] = this.options.contentType +
+        (this.options.encoding ? '; charset=' + this.options.encoding : '');
+
+      /* Force "Connection: close" for older Mozilla browsers to work
+       * around a bug where XMLHttpRequest sends an incorrect
+       * Content-length header. See Mozilla Bugzilla #246651.
+       */
+      if (this.transport.overrideMimeType &&
+          (navigator.userAgent.match(/Gecko\/(\d{4})/) || [0,2005])[1] < 2005)
+            headers['Connection'] = 'close';
+    }
+
+    // user-defined headers
+    if (typeof this.options.requestHeaders == 'object') {
+      var extras = this.options.requestHeaders;
+
+      if (Object.isFunction(extras.push))
+        for (var i = 0, length = extras.length; i < length; i += 2)
+          headers[extras[i]] = extras[i+1];
+      else
+        $H(extras).each(function(pair) { headers[pair.key] = pair.value });
+    }
+
+    for (var name in headers)
+      this.transport.setRequestHeader(name, headers[name]);
+  },
+
     
 });
 
@@ -171,9 +172,7 @@ Ajax.Responders.register(NetRequest.prototype.logger);
  * @class FeedChannel
  */ 
 
-var FeedChannel = Class.create();
-
-Object.extend(FeedChannel.prototype, {
+var FeedChannel = Class.create({
 
     become: function() {
         this.items = Query.evaluate(this, 'item');
@@ -192,9 +191,7 @@ Object.extend(FeedChannel.prototype, {
  * @class FeedItem
  */ 
 
-var FeedItem = Class.create();
-
-Object.extend(FeedItem.prototype, {
+var FeedItem = Class.create({
 
     become: function() {
         this.title = Query.evaluate(this, 'title')[0].textContent;
@@ -209,10 +206,7 @@ Object.extend(FeedItem.prototype, {
  */
 // FIXME something clever, maybe an external library?
 
-var Feed = Class.create();
-
-Object.extend(Feed.prototype, {
-    
+var Feed = Class.create({
     dump: false,
     
     initialize: function(url) {

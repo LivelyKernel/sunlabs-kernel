@@ -28,7 +28,7 @@ WidgetTester = Class.extend(Model);
 Object.extend(WidgetTester.prototype, {
 
     initialize: function() { 
-        WidgetTester.superClass.initialize.call(this);
+        WidgetTester.superclass.initialize.call(this);
     },
 
     openIn: function(world, location) {
@@ -114,7 +114,7 @@ Object.extend(ClockMorph.prototype, {
     defaultBorderWidth: 2,
 
     initialize: function(position, radius) {
-        ClockMorph.superClass.initialize.call(this, position.asRectangle().expandBy(radius), "ellipse");
+        ClockMorph.superclass.initialize.call(this, position.asRectangle().expandBy(radius), "ellipse");
         this.openForDragAndDrop = false;
         this.linkToStyles(['clock']);
         this.makeNewFace();
@@ -175,9 +175,7 @@ Object.extend(ClockMorph.prototype, {
  * @class Pen
  */
   
-Pen = Class.create();
-
-Object.extend(Pen.prototype, {
+Pen = Class.create({
 
     initialize: function(loc) {
         this.location = (loc !== undefined) ? loc : WorldMorph.current().bounds().center();
@@ -333,7 +331,7 @@ Object.extend(DoodleMorph.prototype, {
     imagepath: "Resources/doodle/",
 
     initialize: function(rect) {
-        DoodleMorph.superClass.initialize.call(this, rect, "rect");
+        DoodleMorph.superclass.initialize.call(this, rect, "rect");
         this.drawingColor = Color.red;
         this.lineWidth = 2.0;
         this.colorvalue = true;
@@ -440,7 +438,7 @@ Object.extend(DoodleMorph.prototype, {
 
     // Add menu items for creating rectangles and ellipses
     morphMenu: function(evt) {
-        var menu = DoodleMorph.superClass.morphMenu.call(this, evt);
+        var menu = DoodleMorph.superclass.morphMenu.call(this, evt);
         menu.addLine();
         menu.addItem(["add rectangle", this, 'addRect']);
         menu.addItem(["add ellipse",   this, 'addCircle']);
@@ -824,9 +822,7 @@ apps.threedee = function() {
  * WireObject instance constructor
  *============================================================================*/
 
-WireObject = Class.create();
-
-Object.extend(WireObject.prototype, {
+WireObject = Class.create({
     // WireObject constructor: create the wireframe object
     initialize: function(hereX, hereY, hereZ) {
 
@@ -982,7 +978,7 @@ Object.extend(Sun3DMorph.prototype, {
     
     initialize: function(rect) {
 
-        Sun3DMorph.superClass.initialize.call(this, rect, "rect");
+        Sun3DMorph.superclass.initialize.call(this, rect, "rect");
 
         this.shape.setFillOpacity(0.2);        
 
@@ -1056,9 +1052,8 @@ var gameHeight = 300;
   rotation. It also can detemine if two objects collide.
 ************************************************************************************************/
 
-AsteroidsSprite = Class.create();
+AsteroidsSprite = Class.create({
 
-Object.extend(AsteroidsSprite.prototype, {
     /* boolean */ active: false,    // Active flag.
     /* double */  angle: 0,         // Current angle of rotation.
     /* double */  deltaAngle:  0,   // Amount to change the rotation angle.
@@ -2274,7 +2269,7 @@ Object.extend(GameMorph.prototype, {
     timeoutID: null,
     
     initialize: function(rect) {
-        GameMorph.superClass.initialize.call(this, rect, "rect");
+        GameMorph.superclass.initialize.call(this, rect, "rect");
         // Set black background color for the game
         this.setFill(Color.black);
         return this;
@@ -2317,7 +2312,7 @@ Object.extend(GameMorph.prototype, {
             console.log('shutting down the game');
             window.clearTimeout(this.timeoutID);
         }
-        GameMorph.superClass.shutdown.call(this);
+        GameMorph.superclass.shutdown.call(this);
     }
 
 });
@@ -2355,7 +2350,7 @@ Object.extend(WeatherWidget.prototype, {
     imagepath: "Resources/weather/",
     
     initialize: function() { 
-        WeatherWidget.superClass.initialize.call(this);
+        WeatherWidget.superclass.initialize.call(this);
         // Fetch weather upon starting the widget
         this.getWeather("6568"); // San Francisco International (SFO) as default
     },
@@ -2502,7 +2497,7 @@ StockWidget = Class.extend(Model);
 Object.extend(StockWidget.prototype, {
     
     initialize: function() { 
-        StockWidget.superClass.initialize.call(this);
+        StockWidget.superclass.initialize.call(this);
         this.imageurl = null;
         this.feed = null;
         return this;
@@ -2545,7 +2540,7 @@ Object.extend(StockWidget.prototype, {
     
     setStockIndex: function(item, v) { 
         this.listItem = item; 
-        var entry = this.config[this.listItem];
+        var entry = this.config.get(this.listItem);
         this.imageurl = entry.image;
         this.changed('getIndexChartURL');
         this.feed = new Feed(this.makeURL(entry.ticker));
@@ -2623,7 +2618,7 @@ Object.extend(StockWidget.prototype, {
         },
 
         panel.shutdown = function() {
-            PanelMorph.superClass.shutdown.call(this);
+            PanelMorph.superclass.shutdown.call(this);
             console.log('shutting down the stock widget');
             model.timer && window.clearInterval(model.timer);
         }
@@ -2763,7 +2758,7 @@ Object.extend(MapFrameMorph.prototype, {
 
     initialize: function( initialBounds, online) { 
         pd("MapFrameMorph",2);
-        MapFrameMorph.superClass.initialize.call(this,initialBounds,"rectangle");
+        MapFrameMorph.superclass.initialize.call(this,initialBounds,"rectangle");
         this.online = online;
         this.topLeft = this.bounds().topLeft();
         this.bottomRight = this.bounds().bottomRight();
@@ -2841,7 +2836,7 @@ MapModel = Class.extend(Model);
 Object.extend(MapModel.prototype, {
 
     initialize: function(frame) {
-        MapModel.superClass.initialize.call(this, frame);
+        MapModel.superclass.initialize.call(this, frame);
         this.frame = frame;
     },
 
@@ -2916,7 +2911,7 @@ MapMorph = HostClass.create('MapMorph', Morph);
 Object.extend(MapMorph.prototype, {
     initialize: function( initialBounds, online) { 
       pd("MapMorph",2);
-      MapMorph.superClass.initialize.call(this,initialBounds,"rect");
+      MapMorph.superclass.initialize.call(this,initialBounds,"rect");
 
       this.setFill(Color.blue.lighter());
       this.setBorderWidth(0);
@@ -2964,7 +2959,7 @@ Object.extend(MapMorph.prototype, {
     }, 
   
     copy: function() {
-        var newMap = MapMorph.superClass.copy.call(this);
+        var newMap = MapMorph.superclass.copy.call(this);
         newMap.removeAllMorphs();
         return newMap; 
     },
@@ -3716,7 +3711,7 @@ Object.extend(MessengerWidget.prototype, {
     imagepath: "Resources/IM/",
 
     initialize: function() { 
-        MessengerWidget.superClass.initialize.call(this);
+        MessengerWidget.superclass.initialize.call(this);
 //        this.id = Math.round(Math.random()*2147483647); // TODO: use Config.random for requests?
         this.id = Config.random;
         this.text = "";
@@ -3922,7 +3917,7 @@ MiniMapMorph = HostClass.create('MiniMapMorph', Morph);
 Object.extend(MiniMapMorph.prototype, {
 
     initialize: function(rect) {
-        MiniMapMorph.superClass.initialize.call(this, rect, "rect");
+        MiniMapMorph.superclass.initialize.call(this, rect, "rect");
         console.log("minimap init"); 
         this.setFill(Color.black); 
         this.x = rect.topLeft().x;
@@ -3969,7 +3964,7 @@ CanvasScapeMorph = HostClass.create('CanvasScapeMorph', ClipMorph);
 Object.extend(CanvasScapeMorph.prototype, {
     
     initialize: function(rect) {
-        CanvasScapeMorph.superClass.initialize.call(this, rect, "rect");
+        CanvasScapeMorph.superclass.initialize.call(this, rect, "rect");
         console.log("init"); 
         this.setFill(Color.veryLightGray);
         this.initParameters();
@@ -4576,7 +4571,7 @@ Object.extend(CanvasScapeMorph.prototype, {
     },
 
     morphMenu: function(evt) {
-        var menu = CanvasScapeMorph.superClass.morphMenu.call(this, evt);
+        var menu = CanvasScapeMorph.superclass.morphMenu.call(this, evt);
         menu.addLine();
         menu.addItem(["Stop game",  this, 'stopGame']);
         menu.addItem(["Start easy game",  this, 'setDifficulty', 'easy']);
@@ -4605,7 +4600,7 @@ Object.extend(EngineMorph.prototype, {
 
     initialize: function(fullRect,type) {
         // A lively model by Dan Ingalls - 9/25/2007
-        EngineMorph.superClass.initialize.call(this, fullRect, type);
+        EngineMorph.superclass.initialize.call(this, fullRect, type);
         this.setFill(LinearGradient.makeGradient(Color.gray, Color.darkGray, LinearGradient.NorthSouth));
         this.makeLayout();
         this.running = true;

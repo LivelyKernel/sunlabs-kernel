@@ -25,7 +25,7 @@ SimpleBrowser = Class.extend(Model);
 
 Object.extend(SimpleBrowser.prototype, {
 
-    initialize: function() { SimpleBrowser.superClass.initialize.call(this); },
+    initialize: function() { SimpleBrowser.superclass.initialize.call(this); },
 
     getClassList: function() { return Class.listClassNames(Global).filter(function(n) { return !n.startsWith('SVG')}).sort(); },
 
@@ -96,7 +96,7 @@ SimpleInspector = Class.extend(Model);
 Object.extend(SimpleInspector.prototype, {
 
     initialize: function(targetMorph) {
-        SimpleInspector.superClass.initialize.call(this);
+        SimpleInspector.superclass.initialize.call(this);
         this.inspectee = targetMorph;
     },
 
@@ -111,7 +111,7 @@ Object.extend(SimpleInspector.prototype, {
         return Object.inspect(this.selectedItem()).withNiceDecimals();
     },
 
-    setPropText: function(txt, v) { this.inspectee[this.propName] = this.inspectee.evalInThis(txt); },
+    setPropText: function(txt, v) { this.inspectee[this.propName] = eval(this, this.inspectee); },
 
     selectedItem: function() { return this.inspectee[this.propName]; },
 
@@ -170,7 +170,7 @@ StylePanel = Class.extend(Model);
 Object.extend(StylePanel.prototype, {
 
     initialize: function(targetMorph) {
-        StylePanel.superClass.initialize.call(this);
+        StylePanel.superclass.initialize.call(this);
         this.targetMorph = targetMorph;
         this.originalSpec = targetMorph.makeStyleSpec();
         for (var p in this.originalSpec) this[p] = this.originalSpec[p];

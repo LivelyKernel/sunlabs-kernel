@@ -16,9 +16,7 @@
  * @class Resource
  */ 
 
-Resource = Class.create();
-
-Object.extend(Resource.prototype, {
+Resource = Class.create({
 
     initialize: function(href) {
         this.href = href;
@@ -66,7 +64,7 @@ Object.extend(WebStore, {
 Object.extend(WebStore.prototype, {
 
     initialize: function(host, path) {
-        WebStore.superClass.initialize.call(this);
+        WebStore.superclass.initialize.call(this);
         this.host = host;
         this.path = path;
 
