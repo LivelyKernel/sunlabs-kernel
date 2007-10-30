@@ -586,8 +586,6 @@ function pt(x, y) {
 console.log("Point");
 
 
-
-
 /**
  * @class Rectangle
  */
@@ -1023,20 +1021,13 @@ Object.extend(StipplePattern, {
  * Implements support for object rotation, scaling, etc.
  */
 
-function Transform() {
-    return Canvas.createSVGTransform();
+function Transform(matrix) {
+    this.matrix = matrix || Canvas.createSVGMatrix();
+    return this;
 }
 
-Transform.prototype = Canvas.createSVGTransform().__proto__;
-Transform.prototype.constructor = Transform;
 
 Object.extend(Transform, {
- 
-    fromMatrix: function(matrix) {
-        var tr = Transform();
-        tr.setMatrix(matrix);
-        return tr;
-    },
 
     /**
      * createSimilitude: a similitude is a combination of translation rotation and scale.
@@ -1048,7 +1039,7 @@ Object.extend(Transform, {
         // console.log('similitude delta is ' + Object.inspect(delta));
         var matrix = Canvas.createSVGMatrix();
         matrix = matrix.translate(delta.x, delta.y).rotate(angleInRadians.toDegrees()).scale(scale);
-        return Transform.fromMatrix(matrix);
+        return new Transform(matrix);
     }.logErrors('createSimilitude')
 
 });
@@ -1073,9 +1064,7 @@ Object.extend(Transform.prototype, {
     },
 
     copy: function() {
-        var tr = Transform();
-        tr.setMatrix(this.matrix);
-        return tr;
+        return new Transform(this.matrix);
     },
 
     toAttributeValue: function() {
@@ -1422,7 +1411,8 @@ DisplayObject = Class.create({
     },
 
     retrieveTransform: function() {
-        return this.transform.baseVal.consolidate() || Transform();// identity if no transform specified
+	var impl = this.transform.baseVal.consolidate();
+	return new Transform(impl ? impl.matrix : null); // identity if no transform specified
     }
     
 });
@@ -3495,7 +3485,7 @@ Object.extend(Morph.prototype, {
     innerBounds: function() { return this.shape.bounds() },
 
     cumulativeTransform: function() {
-        return Transform.fromMatrix(this.canvas().getTransformToElement(this));
+        return new Transform(this.canvas().getTransformToElement(this));
     },
     
     /** 
@@ -3528,7 +3518,6 @@ Object.extend(Morph.prototype, {
     // map world point to local coordinates
     localize: function(pt) {
         if (pt == null) console.log('null pt');   
-        if (pt.matrixTransform == null) console.log('null pt.matrixTransform');   
         if (this.canvas() == null) {
 	    console.log('null this.canvas()');   
 	    return pt;
@@ -3546,7 +3535,7 @@ Object.extend(Morph.prototype, {
     },
 
     transformForNewOwner: function(newOwner) {
-        return Transform.fromMatrix(this.getTransformToElement(newOwner));
+        return new Transform(this.getTransformToElement(newOwner));
     },
     
     changed: function() {
