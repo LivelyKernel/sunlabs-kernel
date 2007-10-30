@@ -269,9 +269,9 @@ Object.extend(WebStore.prototype, {
     
     buildView: function(extent) {
         var panel = PanelMorph.makePanedPanel(extent, [
-            ['leftPane', ListPane, Rectangle(0, 0, 0.5, 0.6)],
-            ['rightPane', ListPane, Rectangle(0.5, 0, 0.5, 0.6)],
-            ['bottomPane', TextPane, Rectangle(0, 0.6, 1, 0.4)]
+            ['leftPane', ListPane, new Rectangle(0, 0, 0.5, 0.6)],
+            ['rightPane', ListPane, new Rectangle(0.5, 0, 0.5, 0.6)],
+            ['bottomPane', TextPane, new Rectangle(0, 0.6, 1, 0.4)]
         ]);
         var m = panel.getNamedMorph("leftPane");
         m.connectModel({model: this, getList: "getDirectoryList", setSelection: "setCurrentDirectory", 

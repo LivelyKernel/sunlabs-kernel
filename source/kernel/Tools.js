@@ -55,9 +55,9 @@ Object.extend(SimpleBrowser.prototype, {
 
     buildView: function(extent) {
         var panel = PanelMorph.makePanedPanel(extent, [
-            ['leftPane', ListPane, Rectangle(0, 0, 0.5, 0.6)],
-            ['rightPane', ListPane, Rectangle(0.5, 0, 0.5, 0.6)],
-            ['bottomPane', TextPane, Rectangle(0, 0.6, 1, 0.4)]
+            ['leftPane', ListPane, new Rectangle(0, 0, 0.5, 0.6)],
+            ['rightPane', ListPane, new Rectangle(0.5, 0, 0.5, 0.6)],
+            ['bottomPane', TextPane, new Rectangle(0, 0.6, 1, 0.4)]
         ]);
         var m = panel.getNamedMorph('leftPane');
         m.connectModel({model: this, getList: "getClassList", setSelection: "setClassName"});
@@ -131,9 +131,9 @@ Object.extend(SimpleInspector.prototype, {
 
     buildView: function(rect) {
         var panel = PanelMorph.makePanedPanel(rect.extent(), [
-            ['leftPane', ListPane, Rectangle(0, 0, 0.5, 0.6)],
-            ['rightPane', TextPane, Rectangle(0.5, 0, 0.5, 0.6)],
-            ['bottomPane', TextPane, Rectangle(0, 0.6, 1, 0.4)]
+            ['leftPane', ListPane, new Rectangle(0, 0, 0.5, 0.6)],
+            ['rightPane', TextPane, new Rectangle(0.5, 0, 0.5, 0.6)],
+            ['bottomPane', TextPane, new Rectangle(0, 0.6, 1, 0.4)]
         ]);
         var m = panel.getNamedMorph('leftPane');
         m.connectModel({model: this, getList: "getPropList", setSelection: "setPropName"});
@@ -275,64 +275,64 @@ Object.extend(StylePanel.prototype, {
         var m;
         var y = 10;
 
-        panel.addMorph(TextMorph(Rectangle(50, y, 100, 20), "Border Width").beLabel());
-        panel.addMorph(m = PrintMorph(Rectangle(150, y, 40, 20)));
+        panel.addMorph(TextMorph(new Rectangle(50, y, 100, 20), "Border Width").beLabel());
+        panel.addMorph(m = PrintMorph(new Rectangle(150, y, 40, 20)));
         m.connectModel({model: this, getValue: "getBorderWidth", setValue: "setBorderWidth"});
-        panel.addMorph(m = SliderMorph(Rectangle(200, y, 100, 20), 10.0));
+        panel.addMorph(m = SliderMorph(new Rectangle(200, y, 100, 20), 10.0));
         m.connectModel({model: this, getValue: "getBorderWidth", setValue: "setBorderWidth"});
         y += 30;
 
-        panel.addMorph(TextMorph(Rectangle(50, y, 100, 20), 'Border Color').beLabel());
-        panel.addMorph(m = ColorPickerMorph(Rectangle(250, y, 50, 30)));
+        panel.addMorph(TextMorph(new Rectangle(50, y, 100, 20), 'Border Color').beLabel());
+        panel.addMorph(m = ColorPickerMorph(new Rectangle(250, y, 50, 30)));
         m.connectModel({model: this, setColor: "setBorderColor"});
         y += 40;
 
         if (this.targetMorph.shape.roundEdgesBy) {
-            panel.addMorph(TextMorph(Rectangle(50, y, 100, 20), 'Round Corners').beLabel());
-            panel.addMorph(m = PrintMorph(Rectangle(150, y, 40, 20)));
+            panel.addMorph(TextMorph(new Rectangle(50, y, 100, 20), 'Round Corners').beLabel());
+            panel.addMorph(m = PrintMorph(new Rectangle(150, y, 40, 20)));
             m.connectModel({model: this, getValue: "getRounding", setValue: "setRounding"});
-            panel.addMorph(m = SliderMorph(Rectangle(200, y, 100, 20), 50.0));
+            panel.addMorph(m = SliderMorph(new Rectangle(200, y, 100, 20), 50.0));
             m.connectModel({model: this, getValue: "getRounding", setValue: "setRounding"});
             y += 30;
         }
 
-        panel.addMorph(m = CheapListMorph(Rectangle(50, y, 100, 50),[]));
+        panel.addMorph(m = CheapListMorph(new Rectangle(50, y, 100, 50),[]));
         m.connectModel({model: this, getList: "getFillTypes", getSelection: "getFillType", setSelection: "setFillType"});
-        panel.addMorph(m = CheapListMorph(Rectangle(160, y, 75, 60),[]));
+        panel.addMorph(m = CheapListMorph(new Rectangle(160, y, 75, 60),[]));
         m.connectModel({model: this, getList: "getFillDirs", getSelection: "getFillDir", setSelection: "setFillDir"});
-        panel.addMorph(m = ColorPickerMorph(Rectangle(250, y, 50, 30)));
+        panel.addMorph(m = ColorPickerMorph(new Rectangle(250, y, 50, 30)));
         m.connectModel({model: this, setColor: "setColor1"});
-        panel.addMorph(m = ColorPickerMorph(Rectangle(250, y+40, 50, 30)));
+        panel.addMorph(m = ColorPickerMorph(new Rectangle(250, y+40, 50, 30)));
         m.connectModel({model: this, setColor: "setColor2"});
         y += 80;
 
-        panel.addMorph(TextMorph(Rectangle(50, y, 90, 20), 'Fill Opacity').beLabel());
-        panel.addMorph(m = PrintMorph(Rectangle(150, y, 40, 20)));
+        panel.addMorph(TextMorph(new Rectangle(50, y, 90, 20), 'Fill Opacity').beLabel());
+        panel.addMorph(m = PrintMorph(new Rectangle(150, y, 40, 20)));
         m.connectModel({model: this, getValue: "getFillOpacity", setValue: "setFillOpacity"});
-        panel.addMorph(m = SliderMorph(Rectangle(200, y, 100, 20), 1.0));
+        panel.addMorph(m = SliderMorph(new Rectangle(200, y, 100, 20), 1.0));
         m.connectModel({model: this, getValue: "getFillOpacity", setValue: "setFillOpacity"});
         y += 30;
 
-        panel.addMorph(TextMorph(Rectangle(50, y, 90, 20), 'Stroke Opacity').beLabel());
-        panel.addMorph(m = PrintMorph(Rectangle(150, y, 40, 20)));
+        panel.addMorph(TextMorph(new Rectangle(50, y, 90, 20), 'Stroke Opacity').beLabel());
+        panel.addMorph(m = PrintMorph(new Rectangle(150, y, 40, 20)));
         m.connectModel({model: this, getValue: "getStrokeOpacity", setValue: "setStrokeOpacity"});
-        panel.addMorph(m = SliderMorph(Rectangle(200, y, 100, 20), 1.0));
+        panel.addMorph(m = SliderMorph(new Rectangle(200, y, 100, 20), 1.0));
         m.connectModel({model: this, getValue: "getStrokeOpacity", setValue: "setStrokeOpacity"});
         y += 30;
 
         if (this.targetMorph.setTextColor) {
-            panel.addMorph(TextMorph(Rectangle(50, y, 100, 20), "Text Color").beLabel());
-            panel.addMorph(m = ColorPickerMorph(Rectangle(250, y, 50, 30)));
+            panel.addMorph(TextMorph(new Rectangle(50, y, 100, 20), "Text Color").beLabel());
+            panel.addMorph(m = ColorPickerMorph(new Rectangle(250, y, 50, 30)));
             m.connectModel({model: this, setColor: "setTextColor"});
             y += 40;
 
-            panel.addMorph(TextMorph(Rectangle(50, y, 100, 20), 'Font Family').beLabel());
-            panel.addMorph(m = TextMorph(Rectangle(150, y, 150, 20)));
+            panel.addMorph(TextMorph(new Rectangle(50, y, 100, 20), 'Font Family').beLabel());
+            panel.addMorph(m = TextMorph(new Rectangle(150, y, 150, 20)));
             m.connectModel({model: this, getText: "getFontFamily", setText: "setFontFamily"});
             y += 30;
 
-            panel.addMorph(TextMorph(Rectangle(50, y, 100, 20), 'Font Size').beLabel());
-            panel.addMorph(m = TextMorph(Rectangle(150, y, 50, 20)));
+            panel.addMorph(TextMorph(new Rectangle(50, y, 100, 20), 'Font Size').beLabel());
+            panel.addMorph(m = TextMorph(new Rectangle(150, y, 50, 20)));
             m.connectModel({model: this, getText: "getFontSize", setText: "setFontSize"});
             y += 30;
         }

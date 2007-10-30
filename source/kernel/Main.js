@@ -53,13 +53,13 @@ function populateWorldWithExamples(world) {
 
     if (Config.showClock) {
         widget = ClockMorph(pt(60, 60), 50);
-        // clockWidget.addClipRect(Rectangle(20,20,80,80));
+        // clockWidget.addClipRect(new Rectangle(20,20,80,80));
         world.addMorph(widget);
         widget.startSteppingScripts();
     }
     /*
     if (Config.showClipMorph) {
-        world.addMorph(widget = ClipMorph(Rectangle(600, 300, 150, 150)));
+        world.addMorph(widget = ClipMorph(new Rectangle(600, 300, 150, 150)));
         widget.setFill(Color.green.lighter());
     }
     */
@@ -76,8 +76,8 @@ function populateWorldWithExamples(world) {
     // Sample icon morph with a fisheye effect 'on'
     if (Config.showIcon) {
         // maybe the icons should have a rectangle shaped images (unlike here)
-        // var icon = ImageMorph(Rectangle(30, 330, 80, 50), "http://logos.sun.com/images/SunSample.gif");
-        var icon = ImageMorph(Rectangle(60, 580, 100, 45));
+        // var icon = ImageMorph(new Rectangle(30, 330, 80, 50), "http://logos.sun.com/images/SunSample.gif");
+        var icon = ImageMorph(new Rectangle(60, 580, 100, 45));
 
         icon.loadGraphics('#SunLogo', 0.15);
         icon.toggleFisheye();    
@@ -106,7 +106,7 @@ function populateWorldWithExamples(world) {
         var lm1 = LinkMorph(null, pt(60, 460));
         world.addMorph(lm1);
 
-        var widgetTextMorph = TextMorph(Rectangle(90, 440, 100, 25),
+        var widgetTextMorph = TextMorph(new Rectangle(90, 440, 100, 25),
                                         "More complex sample widgets");
 
         widgetTextMorph.shape.roundEdgesBy(10);
@@ -116,7 +116,7 @@ function populateWorldWithExamples(world) {
 
             if (Config.showCanvasScape) {
                 if (!lm1.myWorld.csMorph) {
-                    var csm = CanvasScapeMorph(Rectangle(20,50,800,300));
+                    var csm = CanvasScapeMorph(new Rectangle(20,50,800,300));
                     lm1.myWorld.csMorph = lm1.myWorld.addMorph(WindowMorph(csm, 'CanvasScape'));
                     csm.owner().collapse();
                 }
@@ -173,7 +173,7 @@ function populateWorldWithExamples(world) {
             "Point=e&latitude_e6=61500000&longitude_e6=-3191200000&zm=8000&w=" +
             width + "&h=" + height + "&cc=US&min_priority=2";
             
-            lm1.myWorld.addMorphBack(WindowMorph(ImageMorph(Rectangle(50, 10, width, height), url), 'Tampere'));
+            lm1.myWorld.addMorphBack(WindowMorph(ImageMorph(new Rectangle(50, 10, width, height), url), 'Tampere'));
         }
 
 
@@ -185,8 +185,7 @@ function populateWorldWithExamples(world) {
     if (Config.showSlideWorld) { // Make a slide for "turning web programming upside down"
         var lm2 = LinkMorph(null, pt(60, 400));
 
-        var samplesTextMorph = TextMorph(Rectangle(90, 380, 100, 25),
-                                         "Simple example morphs");
+        var samplesTextMorph = TextMorph(new Rectangle(90, 380, 100, 25), "Simple example morphs");
 
         samplesTextMorph.shape.roundEdgesBy(10);
         world.addMorph(samplesTextMorph);
@@ -209,7 +208,7 @@ function populateWorldWithExamples(world) {
             loc = loc.addXY(0,33);
             lm2.myWorld.addMorph(txt); 
         }
-    
+	
         world.addMorph(lm2); 
 
         if (Config.showStar) {  // Make a star
@@ -289,7 +288,7 @@ function populateWorldWithExamples(world) {
         var devWorld = LinkMorph(null, pt(60, 520));
         world.addMorph(devWorld);
 
-        var developerTextMorph = TextMorph(Rectangle(90, 500, 100, 25),
+        var developerTextMorph = TextMorph(new Rectangle(90, 500, 100, 25),
                                            "Development Tools");
 
         developerTextMorph.shape.roundEdgesBy(10);
@@ -341,7 +340,7 @@ function main() {
         var colors = Color.wheelHsb(10,0,1,1);
         var m;
         for (var i=0; i<colors.length; i++) {
-            world.addMorph(m = Morph(Rectangle(i*40, 0, 35, 35), "rect"));
+            world.addMorph(m = Morph(new Rectangle(i*40, 0, 35, 35), "rect"));
             m.setFill(colors[i]);
             console.log(colors[i].toString());
         };

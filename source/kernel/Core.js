@@ -22,11 +22,11 @@ var Global = this;
 var Canvas = document.getElementById("canvas"); // singleton for now
 
 Object.extend(Canvas, {
-
+    
     // Canvas bounds
     bounds: function() {
-        return Rectangle(this.x.baseVal.value, this.y.baseVal.value, 
-                         this.width.baseVal.value, this.height.baseVal.value);
+        return new Rectangle(this.x.baseVal.value, this.y.baseVal.value, 
+			     this.width.baseVal.value, this.height.baseVal.value);
     },
         
 });
@@ -542,8 +542,8 @@ Object.extend(Point.prototype, function() { return {
         return pt(x1 + (t * x21) , y1 + (t * y21)); 
     },
     
-    asRectangle: function() { return Rectangle(this.x, this.y, 0, 0); },
-    extent: function(ext) { return Rectangle(this.x, this.y, ext.x, ext.y); },
+    asRectangle: function() { return new Rectangle(this.x, this.y, 0, 0); },
+    extent: function(ext) { return new Rectangle(this.x, this.y, ext.x, ext.y); },
 
     inspect: function() { // KP: toString not overridable :(
         return "pt(%1,%2)".format(this.x.roundTo(0.01), this.y.roundTo(0.01)); 
@@ -572,32 +572,40 @@ pt = Point;
 
 console.log("Point");
 
+
+
+
 /**
  * @class Rectangle
  */
+Rectangle = Class.create({
 
-Rectangle = function(x, y, w, h) { 
-    var r = Canvas.createSVGRect();
-    r.x = x; 
-    r.y = y; 
-    r.width = w; 
-    r.height = h;
-    return r;
-};
+    initialize: function(x, y, w, h) {
+	this.x = x;
+	this.y = y;
+	this.width = w;
+	this.height = h;
+	return this;
+    },
 
-Rectangle.prototype = Canvas.createSVGRect().__proto__;
-Rectangle.prototype.constructor = Rectangle;
-
-Object.category(Rectangle.prototype, 'core', function() { return {
-    clone: function() { with (this) { return Rectangle(x, y, width, height); } },
+    implementation: function() {
+	var r = Canvas.createSVGRect();
+	r.x = this.x;
+	r.y = this.y;
+	r.width = this.width;
+	r.height = this.height;
+	return r;
+    },
+    
+    clone: function() { with (this) { return new Rectangle(x, y, width, height); } },
     maxX: function() { return this.x + this.width; },
     maxY: function() { return this.y + this.height; },
-    withWidth: function(w) { return Rectangle(this.x, this.y, w, this.height)},
-    withHeight: function(h) { return Rectangle(this.x, this.y, this.width, h)},
-    withX: function(x) { return Rectangle(x, this.y, this.width, this.height)},
-    withY: function(y) { return Rectangle(this.x, y, this.width, this.height)},
+    withWidth: function(w) { return new Rectangle(this.x, this.y, w, this.height)},
+    withHeight: function(h) { return new Rectangle(this.x, this.y, this.width, h)},
+    withX: function(x) { return new Rectangle(x, this.y, this.width, this.height)},
+    withY: function(y) { return new Rectangle(this.x, y, this.width, this.height)},
     extent: function() { return Point(this.width,this.height); },
-    withExtent: function(ext) { return Rectangle(this.x, this.y, ext.x, ext.y); },
+    withExtent: function(ext) { return new Rectangle(this.x, this.y, ext.x, ext.y); },
     center: function() { return Point(this.x+(this.width/2),this.y+(this.height/2))},
     //Control point readers and writers
     topLeft: function() { return Point(this.x, this.y)},
@@ -612,11 +620,11 @@ Object.category(Rectangle.prototype, 'core', function() { return {
     withTopRight: function(p) { return Rectangle.fromAny(p, this.bottomLeft()) },
     withBottomRight: function(p) { return Rectangle.fromAny(p, this.topLeft()) },
     withBottomLeft: function(p) { return Rectangle.fromAny(p, this.topRight()) },
-    withLeftCenter: function(p) { return Rectangle(p.x, this.y, this.width + (this.x - p.x), this.height)},
-    withRightCenter: function(p) { return Rectangle(this.x, this.y, p.x - this.x, this.height)},
-    withTopCenter: function(p) { return Rectangle(this.x, p.y, this.width, this.height + (this.y - p.y))},
-    withBottomCenter: function(p) { return Rectangle(this.x, this.y, this.width, p.y - this.y)}
-}});
+    withLeftCenter: function(p) { return new Rectangle(p.x, this.y, this.width + (this.x - p.x), this.height)},
+    withRightCenter: function(p) { return new Rectangle(this.x, this.y, p.x - this.x, this.height)},
+    withTopCenter: function(p) { return new Rectangle(this.x, p.y, this.width, this.height + (this.y - p.y))},
+    withBottomCenter: function(p) { return new Rectangle(this.x, this.y, this.width, p.y - this.y)}
+});
 
 Object.extend(Rectangle.prototype, {
 
@@ -652,19 +660,19 @@ Object.extend(Rectangle.prototype, {
     },
 
     translatedBy: function(d) {
-        return Rectangle(this.x+d.x, this.y+d.y, this.width, this.height); 
+        return new Rectangle(this.x+d.x, this.y+d.y, this.width, this.height); 
     },
     
     scaleByRect: function(r) { // r is a relative rect, as a pane spec in a window
-        return Rectangle(this.x + (r.x*this.width), this.y + (r.y*this.height), r.width*this.width, r.height*this.height); 
+        return new Rectangle(this.x + (r.x*this.width), this.y + (r.y*this.height), r.width*this.width, r.height*this.height); 
     },
     
     insetBy: function(d) {
-        return Rectangle(this.x+d, this.y+d, this.width-(d*2), this.height-(d*2)) 
+        return new Rectangle(this.x+d, this.y+d, this.width-(d*2), this.height-(d*2)) 
     },
 
     insetByPt: function(p) {
-        return Rectangle(this.x+p.x, this.y+p.y, this.width-(p.x*2), this.height-(p.y*2)) 
+        return new Rectangle(this.x+p.x, this.y+p.y, this.width-(p.x*2), this.height-(p.y*2)) 
     },
     
     expandBy: function(delta) { return this.insetBy(0-delta) }
@@ -725,6 +733,7 @@ Object.category(Rectangle.prototype, 'part naming', function() { return {
     inspect: function() { // KP: toString -> inspect
         return "rect(%1,%2)".format(this.topLeft(), this.bottomRight());
     }
+
     
 }});
 
@@ -750,7 +759,7 @@ Object.category(Rectangle, 'factories',  function() { return {
 
 // Shorthand for creating rectangle objects
 function rect(location, corner) {
-    return Rectangle(location.x, location.y, corner.x - location.x, corner.y - location.y);
+    return new Rectangle(location.x, location.y, corner.x - location.x, corner.y - location.y);
 };
  
 console.log("Rectangle");
@@ -1543,7 +1552,7 @@ Object.extend(RectShape.prototype, {
         var y = this.y.baseVal.value;
         var width = this.width.baseVal.value;
         var height = this.height.baseVal.value;
-        return Rectangle(x, y, width, height);
+        return new Rectangle(x, y, width, height);
     },
     
     containsPoint: function(p) {
@@ -1626,7 +1635,7 @@ Object.extend(EllipseShape.prototype, {
         var h = this.ry.baseVal.value * 2; 
         var x = this.cx.baseVal.value - this.rx.baseVal.value;
         var y = this.cy.baseVal.value - this.ry.baseVal.value;
-        return Rectangle(x, y, w, h);
+        return new Rectangle(x, y, w, h);
     }, 
     
     controlPointNear: function(p) {
@@ -2128,7 +2137,7 @@ Object.extend(Morph.prototype, {
     nextNavigableSibling: null, // keyboard navigation
     
     initialize: function(initialBounds /*:Rectangle*/, shapeType/*:String*/) {
-        // console.log('initializing morph %s %s', initialBounds, shapeType);
+        //console.log('initializing morph %s %s', initialBounds, shapeType);
         this.pvtSetTransform(Transform.createSimilitude(this.defaultOrigin(initialBounds, shapeType), 0, 1.0));
         this.pickId();
         this.initializePersistentState(initialBounds, shapeType);
@@ -3710,7 +3719,7 @@ Object.extend(Morph.prototype, {
         
         var extent = pt(500, 300);
         var panel = PanelMorph(extent);
-        var r = Rectangle(0, 0, extent.x, extent.y);
+        var r = new Rectangle(0, 0, extent.x, extent.y);
         var pane = panel.setNamedMorph("pane", TextPane(r, xml.truncate(TextMorph.prototype.maxSafeSize)));
         var txtMorph = pane.innerMorph();
         txtMorph.xml = xml;
@@ -3817,7 +3826,7 @@ Object.extend(Morph.prototype, {
  */ 
 
 // A typical model/view relationship is set up in the following manner:
-//        panel.addMorph(m = ListPane(Rectangle(200,0,200,150)));
+//        panel.addMorph(m = ListPane(new Rectangle(200,0,200,150)));
 //        m.connectModel({model: this, getList: "getMethodList", setSelection: "setMethodName"});
 // The "plug" object passed to connectModel() points to the model, and converts from
 // view-specific messages like getList() and setSelection() to model-specific messages

@@ -269,7 +269,7 @@ ImageButtonMorph = HostClass.create('ImageButtonMorph', ButtonMorph);
 Object.extend(ImageButtonMorph.prototype, {
 
     initialize: function(initialBounds, normalImageHref, activatedImageHref) {
-        this.image = ImageMorph(Rectangle(0, 0, initialBounds.width, initialBounds.height), normalImageHref);
+        this.image = ImageMorph(new Rectangle(0, 0, initialBounds.width, initialBounds.height), normalImageHref);
         this.normalImageHref = normalImageHref;
         this.activatedImageHref = activatedImageHref;
         ImageButtonMorph.superclass.initialize.call(this, initialBounds);
@@ -296,7 +296,7 @@ Object.extend(IconMorph.prototype, {
 
     initialize: function(viewPort, url, name, targetUrl) {
         IconMorph.superclass.initialize.call(this, viewPort, url);
-        this.label = new TextMorph(Rectangle(viewPort.width, viewPort.height/3, 100, 30), name).beLabel();
+        this.label = new TextMorph(new Rectangle(viewPort.width, viewPort.height/3, 100, 30), name).beLabel();
         this.target = targetUrl;
         this.label.setFill(Color.white);
         this.addMorph(this.label);
@@ -388,12 +388,12 @@ Object.extend(TitleBarMorph.prototype, {
         this.windowMorph = windowMorph;
         const bh = this.barHeight;
         const spacing = this.controlSpacing;
-        TitleBarMorph.superclass.initialize.call(this, Rectangle(0, isExternal? - bh : 0, 
+        TitleBarMorph.superclass.initialize.call(this, new Rectangle(0, isExternal? - bh : 0, 
                                                  windowWidth, bh), "rect");
         this.linkToStyles(['titleBar']);
         this.ignoreEvents();
 
-        var cell = Rectangle(0, 0, bh, bh);
+        var cell = new Rectangle(0, 0, bh, bh);
         var closeButton = WindowControlMorph(cell, spacing, Color.primary.orange, windowMorph, 
             function() { this.initiateShutdown(); }, "Close");
         this.setNamedMorph('closeButton', closeButton);
@@ -428,7 +428,7 @@ Object.extend(TitleBarMorph.prototype, {
             label = headline;
         } else { // String
             var width = headline.length * 8; // wild guess headlineString.length * 2 *  font.getCharWidth(' ') + 2;
-            label = TextMorph(Rectangle(0, 0, width, bh), headline).beLabel();
+            label = TextMorph(new Rectangle(0, 0, width, bh), headline).beLabel();
             label.shape.roundEdgesBy(8);
         }
 
@@ -485,12 +485,12 @@ Object.extend(TitleTabMorph.prototype, {
         this.windowMorph = windowMorph;
         const bh = this.barHeight;
         const spacing = this.controlSpacing;
-        TitleBarMorph.superclass.initialize.call(this, Rectangle(0, isExternal? - bh : 0, 
+        TitleBarMorph.superclass.initialize.call(this, new Rectangle(0, isExternal? - bh : 0, 
                                                  windowWidth, bh), "rect");
         this.linkToStyles(['titleBar']);
         this.ignoreEvents();
 
-        var cell = Rectangle(0, 0, bh, bh);
+        var cell = new Rectangle(0, 0, bh, bh);
         var menuButton = WindowControlMorph(cell, spacing, Color.primary.blue, windowMorph, 
             function(evt) { windowMorph.showTargetMorphMenu(evt); }, "Menu");
         this.addMorph(menuButton);
@@ -507,7 +507,7 @@ Object.extend(TitleTabMorph.prototype, {
         } else { // String
             var width = headline.length * 8;
             // wild guess headlineString.length * 2 *  font.getCharWidth(' ') + 2; 
-            label = TextMorph(Rectangle(0, 0, width, bh), headline).beLabel();
+            label = TextMorph(new Rectangle(0, 0, width, bh), headline).beLabel();
         }
         var topY = this.shape.bounds().y;
         label.align(label.bounds().topLeft(), cell.topRight());
@@ -1011,7 +1011,7 @@ Object.extend(SelectionMorph.prototype, {
         // Initial selection might actually move in another direction than toward bottomRight
         // This code watches that and changes the control point if so
         if (this.initialSelection) {
-            var selRect = Rectangle.fromAny(pt(0,0), newPoint);
+            var selRect = new Rectangle.fromAny(pt(0,0), newPoint);
             if (selRect.width*selRect.height > 30) {
                 this.reshapeName = selRect.partNameNearest(Rectangle.corners, newPoint);
             }
@@ -1223,7 +1223,7 @@ Object.extend(PanelMorph, {
     makePanedPanel: function(extent, paneSpecs) {
         // Generalized constructor for paned window panels
         // paneSpec is an array of arrays of the form...
-        //     ['leftPane', ListPane, Rectangle(0, 0, 0.5, 0.6)],
+        //     ['leftPane', ListPane, new Rectangle(0, 0, 0.5, 0.6)],
         // See example calls in, eg, SimpleBrowser.buildView() for how to use this
         var panel = PanelMorph(extent);
         panel.setFill(Color.primary.blue.lighter().lighter());
@@ -1367,7 +1367,7 @@ Object.extend(CheapListMorph.prototype, {
     
     lineRect: function(r) { //Menu selection displays full width
         var bounds = this.shape.bounds();
-        return CheapListMorph.superclass.lineRect.call(this, Rectangle(bounds.x+2, r.y, bounds.width-4, r.height)); 
+        return CheapListMorph.superclass.lineRect.call(this, new Rectangle(bounds.x+2, r.y, bounds.width-4, r.height)); 
     },
     
     updateList: function(newList) {
@@ -1501,7 +1501,7 @@ Object.extend(MenuMorph.prototype, {
         this.compose(location);
         world.addMorph(this);
         if (captionIfAny) { // Still under construction
-            var label = new TextMorph(Rectangle(0, 0, 200, 20), captionIfAny);
+            var label = new TextMorph(new Rectangle(0, 0, 200, 20), captionIfAny);
             label.setWrapStyle(WrapStyle.SHRINK);  label.fitText();
             label.shape.roundEdgesBy(4);
             label.shape.setFillOpacity(0.75);
@@ -1568,7 +1568,7 @@ Object.extend(SliderMorph.prototype, {
         // this default self connection may get overwritten by, eg, connectModel()...
         this.modelPlug = this.addChildElement(model.makePlug());
         this.scale = (scaleIfAny == null) ? 1.0 : scaleIfAny;
-        var slider = Morph(Rectangle(0, 0, 8, 8), "rect");
+        var slider = Morph(new Rectangle(0, 0, 8, 8), "rect");
         slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});
         this.setNamedMorph("slider", slider);
         this.linkToStyles(['slider']);
@@ -1867,7 +1867,7 @@ Object.extend(ColorPickerMorph.prototype, {
         for (var x = 0; x < r.width; x+=dd) {
             for (var y = 0; y < r.height; y+=dd) { // lightest down to neutral
                 var patchFill = this.colorMap(x, y, rh2, this.colorWheel(r.width + 1)).toString();
-                var element = RectShape(Rectangle(x + r.x, y + r.y, dd, dd), patchFill, 0, null);
+                var element = RectShape(new Rectangle(x + r.x, y + r.y, dd, dd), patchFill, 0, null);
                 // element.setAttributeNS("fill", this.colorMap(x, rh2, rh2, this.colorWheel(r.width + 1)).toString());
                 this.addChildElement(element);
             }
@@ -2898,7 +2898,7 @@ Object.extend(LinkMorph.prototype, {
 
         // Make me look a bit like a world
         this.setFill(RadialGradient.makeCenteredGradient(Color.green, Color.blue));
-        [Rectangle(0.15,0,0.7,1), Rectangle(0.35,0,0.3,1), Rectangle(0,0.3,1,0.4)].each( function(each) {
+        [new Rectangle(0.15,0,0.7,1), new Rectangle(0.35,0,0.3,1), new Rectangle(0,0.3,1,0.4)].each( function(each) {
             // Make longitude / latitude lines
             var lineMorph = Morph(bounds.scaleByRect(each), "ellipse");
             lineMorph.setFill(null); lineMorph.setBorderWidth(1); lineMorph.setBorderColor(Color.black);
@@ -2968,7 +2968,7 @@ Object.extend(LinkMorph.prototype, {
             if (newWorld.thumbnail) {
                 newWorld.thumbnail.remove();
             }
-            newWorld.thumbnail = Morph(Rectangle(0, 0, canvas.bounds().width*scale, canvas.bounds().height*scale), "rect");
+            newWorld.thumbnail = Morph(new Rectangle(0, 0, canvas.bounds().width*scale, canvas.bounds().height*scale), "rect");
             newWorld.addMorph(newWorld.thumbnail);
             newWorld.thumbnail.setScale(scale);
             newWorld.thumbnail.addMorph(oldWorld);
