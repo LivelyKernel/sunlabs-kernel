@@ -98,12 +98,12 @@ Object.extend(TextWord.prototype, {
     // string representation
     toString: function() {
         return "textString: (" + this.textString + ")" +
-               " substr: (" + this.textString,substring(this.startIndex, this.stopIndex) + ")" +
-               " startIndex: " + this.startIndex +
-               " stopIndex: " + this.stopIndex +
-               " topLeft: " + this.topLeft.inspect() +
-               " textContent: " + this.textContent +
-               " didLineBreak: " + this.didLineBreak;
+            " substr: (" + this.textString.substring(this.startIndex, this.stopIndex) + ")" +
+            " startIndex: " + this.startIndex +
+            " stopIndex: " + this.stopIndex +
+            " topLeft: " + Object.inspect(this.topLeft) +
+            " textContent: " + this.textContent +
+            " didLineBreak: " + this.didLineBreak;
     },
 
     // log debugging information to the console
@@ -518,7 +518,7 @@ var TextLine = Class.create({
         var lString = "textString: (" + this.textString + ")" +
             " startIndex: " + this.startIndex +
             " overallStopIndex: " + this.overallStopIndex +
-            " topLeft: " + this.topLeft.inspect() +
+            " topLeft: " + Object.inspect(this.topLeft) +
             " spaceWidth: " + this.spaceWidth + 
             " hasComposed: " + this.hasComposed;
         return lString;
@@ -876,7 +876,7 @@ Object.extend(TextMorph.prototype, {
             delete this.inset;
         } else {
             this.inset = ext;
-            this.setAttributeNS(Namespace.LIVELY, "inset", ext.inspect());
+            this.setAttributeNS(Namespace.LIVELY, "inset", ext);
         }
     },
 
@@ -1694,7 +1694,7 @@ Object.extend(TestTextMorph.prototype, {
         var py = localP.y - 2;
         var hit = this.textBox.hit(px, py);
         var charIx = this.charOfPoint(localP);
-        console.log('localP = ' + localP.inspect() + ' hit = ' + hit + ' charOfPoint = ' + charIx);  // display the index for the mouse point
+        console.log('localP = ' + Object.inspect(localP) + ' hit = ' + hit + ' charOfPoint = ' + charIx);  // display the index for the mouse point
         var jRect = this.ensureTextBox().getBounds(hit);
         if (jRect == null) {
             console.log("text box failure in drawSelection"); 

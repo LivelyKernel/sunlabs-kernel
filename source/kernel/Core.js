@@ -501,29 +501,26 @@ Object.category(HostClass, "core", function() { return {
  * @class Point: 2d points
  */
 
-Point = function(x,y) {
-    var p = Canvas.createSVGPoint();
-    p.x = x;
-    p.y = y;
-    return p;
-};
+Point = Class.create({
 
-Point.prototype = Canvas.createSVGPoint().__proto__;
-Point.prototype.constructor = Point;
-
-Object.extend(Point.prototype, function() { return {
-    addPt: function(p) { return Point(this.x + p.x, this.y + p.y); },
-    addXY: function(dx,dy) { return Point(this.x + dx, this.y + dy); },
-    midPt: function(p) { return Point((this.x + p.x)/2, (this.y + p.y)/2); },
-    subPt: function(p) { return Point(this.x - p.x, this.y - p.y); },
-    negated: function() { return Point(-this.x, -this.y); },
-    scaleBy: function(scale) { return Point(this.x*scale,this.y*scale); },
+    initialize: function(x, y) {
+	this.x = x;
+	this.y = y;
+	return this;
+    },
+    
+    addPt: function(p) { return new Point(this.x + p.x, this.y + p.y); },
+    addXY: function(dx,dy) { return new Point(this.x + dx, this.y + dy); },
+    midPt: function(p) { return new Point((this.x + p.x)/2, (this.y + p.y)/2); },
+    subPt: function(p) { return new Point(this.x - p.x, this.y - p.y); },
+    negated: function() { return new Point(-this.x, -this.y); },
+    scaleBy: function(scale) { return new Point(this.x*scale,this.y*scale); },
     lessPt: function(p) { return this.x < p.x && this.y < p.y; },
     leqPt: function(p) { return this.x <= p.x && this.y <= p.y; },
     eqPt: function(p) { return this.x == p.x && this.y == p.y; },
-    minPt: function(p) { return Point(Math.min(this.x,p.x), Math.min(this.y,p.y)); },
-    maxPt: function(p) { return Point(Math.max(this.x,p.x), Math.max(this.y,p.y)); },
-    roundTo: function(quantum) { return Point(this.x.roundTo(quantum), this.y.roundTo(quantum)); },
+    minPt: function(p) { return new Point(Math.min(this.x,p.x), Math.min(this.y,p.y)); },
+    maxPt: function(p) { return new Point(Math.max(this.x,p.x), Math.max(this.y,p.y)); },
+    roundTo: function(quantum) { return new Point(this.x.roundTo(quantum), this.y.roundTo(quantum)); },
 
     dist: function(p) { 
         var dx = this.x - p.x;
@@ -545,30 +542,46 @@ Object.extend(Point.prototype, function() { return {
     asRectangle: function() { return new Rectangle(this.x, this.y, 0, 0); },
     extent: function(ext) { return new Rectangle(this.x, this.y, ext.x, ext.y); },
 
-    inspect: function() { // KP: toString not overridable :(
+    toString: function() {
         return "pt(%1,%2)".format(this.x.roundTo(0.01), this.y.roundTo(0.01)); 
     },
-    
+
+    matrixTransform: function(matrix) {
+	// TODO? replace with a js impl?
+	var impl = Canvas.createSVGPoint(); 
+	impl.x = this.x;
+	impl.y = this.y;
+	return Point.ensure(impl.matrixTransform(matrix));
+    },
 
     // Polar coordinates...
     r: function() { return this.dist(pt(0,0)); },
     theta: function() { return Math.atan2(this.y,this.x); },
 
-    clone: function() { with (this) { return Point(x, y); }}
-}}());
+    clone: function() { with (this) { return new Point(x, y); }}
+});
 
 Object.extend(Point, {
     parse: function(string) { // reverse of inspect
         var array = string.substring(3, string.length - 1).split(',');
-        return Point(array[0], array[1]);
+        return new Point(array[0], array[1]);
     },
     
-    polar: function(r, theta) {return Point(r*Math.cos(theta), r*Math.sin(theta)); },
-    random: function(scalePt) { return Point(scalePt.x.randomSmallerInteger(), scalePt.y.randomSmallerInteger()); }
+    ensure: function(duck) { // make sure we have a Lively point
+	if (duck instanceof Point) 
+	    return duck;
+	else 
+	    return new Point(duck.x, duck.y);
+    },
+    
+    polar: function(r, theta) { return new Point(r*Math.cos(theta), r*Math.sin(theta)); },
+    random: function(scalePt) { return new Point(scalePt.x.randomSmallerInteger(), scalePt.y.randomSmallerInteger()); }
 });
    
 // Shorthand for creating point objects
-pt = Point;
+function pt(x, y) { 
+    return new Point(x, y);
+}
 
 console.log("Point");
 
@@ -604,18 +617,18 @@ Rectangle = Class.create({
     withHeight: function(h) { return new Rectangle(this.x, this.y, this.width, h)},
     withX: function(x) { return new Rectangle(x, this.y, this.width, this.height)},
     withY: function(y) { return new Rectangle(this.x, y, this.width, this.height)},
-    extent: function() { return Point(this.width,this.height); },
+    extent: function() { return new Point(this.width,this.height); },
     withExtent: function(ext) { return new Rectangle(this.x, this.y, ext.x, ext.y); },
-    center: function() { return Point(this.x+(this.width/2),this.y+(this.height/2))},
+    center: function() { return new Point(this.x+(this.width/2),this.y+(this.height/2))},
     //Control point readers and writers
-    topLeft: function() { return Point(this.x, this.y)},
-    topRight: function() { return Point(this.maxX(), this.y)},
-    bottomRight: function() { return Point(this.maxX(), this.maxY())},
-    bottomLeft: function() { return Point(this.x, this.maxY())},
-    leftCenter: function() { return Point(this.x, this.center().y)},
-    rightCenter: function() { return Point(this.maxX(), this.center().y)},
-    topCenter: function() { return Point(this.center().x, this.y)},
-    bottomCenter: function() { return Point(this.center().x, this.maxY())},
+    topLeft: function() { return new Point(this.x, this.y)},
+    topRight: function() { return new Point(this.maxX(), this.y)},
+    bottomRight: function() { return new Point(this.maxX(), this.maxY())},
+    bottomLeft: function() { return new Point(this.x, this.maxY())},
+    leftCenter: function() { return new Point(this.x, this.center().y)},
+    rightCenter: function() { return new Point(this.maxX(), this.center().y)},
+    topCenter: function() { return new Point(this.center().x, this.y)},
+    bottomCenter: function() { return new Point(this.center().x, this.maxY())},
     withTopLeft: function(p) { return Rectangle.fromAny(p, this.bottomRight()) },
     withTopRight: function(p) { return Rectangle.fromAny(p, this.bottomLeft()) },
     withBottomRight: function(p) { return Rectangle.fromAny(p, this.topLeft()) },
@@ -730,7 +743,7 @@ Object.category(Rectangle.prototype, 'part naming', function() { return {
         return path;
     },
 
-    inspect: function() { // KP: toString -> inspect
+    toString: function() { 
         return "rect(%1,%2)".format(this.topLeft(), this.bottomRight());
     }
 
@@ -1032,7 +1045,7 @@ Object.extend(Transform, {
      * @param [float] scale
      */
     createSimilitude: function(delta, angleInRadians, scale) {
-        // console.log('similitude delta is ' + delta.inspect());
+        // console.log('similitude delta is ' + Object.inspect(delta));
         var matrix = Canvas.createSVGMatrix();
         matrix = matrix.translate(delta.x, delta.y).rotate(angleInRadians.toDegrees()).scale(scale);
         return Transform.fromMatrix(matrix);
@@ -1093,7 +1106,7 @@ Object.extend(Transform.prototype, {
         p = r.topRight().matrixTransform(this.matrix);
         min = min.minPt(p);
         max = max.maxPt(p);
-    
+	
         p = r.bottomRight().matrixTransform(this.matrix);
         min = min.minPt(p);
         max = max.maxPt(p);
@@ -1264,7 +1277,7 @@ Object.extend(Event.prototype, {
     },
         
     inspect: function() {
-        return "Event(%1%2)".format(this.type, this.mousePoint ? "," + this.mousePoint.inspect() : "");
+        return "Event(%1%2)".format(this.type, this.mousePoint ? "," + this.mousePoint : "");
     },
 
     stop: function() {
@@ -1401,7 +1414,7 @@ DisplayObject = Class.create({
         list.appendItem(this.rotation);
         list.appendItem(this.scale);
         if (false &&  !(transformable instanceof HandMorph))
-        console.log('setting on ' + transformable.inspect() + " now " + transformable.transform);
+        console.log('setting on ' + Object.inspect(transformable) + " now " + transformable.transform);
         //console.log('list is now ' + Transform.printSVGTransformList(list));
         */
         // KP: Safari needs the attribute instead of the programmatic thing
@@ -1452,7 +1465,7 @@ Shape = Class.create(DisplayObject, {
     shouldIgnorePointerEvents: false,
 
     inspect: function() {
-        return 'a Shape(%1,%2)'.format(this.getType(), this.bounds().inspect());
+        return 'a Shape(%1,%2)'.format(this.getType(), this.bounds());
     },
 
     getType: function() { 
@@ -1673,7 +1686,7 @@ Object.extend(PolygonShape.prototype, {
     vertices: function() {
         var array = [];
         for (var i = 0; i < this.points.numberOfItems; i++) {
-            array.push(this.points.getItem(i));
+            array.push(Point.ensure(this.points.getItem(i)));
         }
         return array;
     },
@@ -2689,7 +2702,7 @@ Object.extend(Morph.prototype, {
 
         return this;
 
-        // console.log('removed ' + this.inspect());
+        // console.log('removed ' + Object.inspect(this));
         // this.owner = null; 
     },
     
@@ -3143,7 +3156,7 @@ Object.extend(Morph.prototype, {
         var menu = this.morphMenu(evt);
         // if (evt.mouseButtonPressed) evt.hand.setMouseFocus(menu);
         // evt.hand.setMouseFocus(menu);
-        menu.openIn(this.world(), evt.mousePoint, false, this.inspect().truncate()); 
+        menu.openIn(this.world(), evt.mousePoint, false, Object.inspect(this).truncate()); 
     },
 
     morphMenu: function(evt) { 
@@ -3207,7 +3220,7 @@ Object.extend(Morph.prototype, {
     },
 
     windowTitle: function() {
-        return this.inspect().truncate(); // Default response, overridden by containers
+        return Object.inspect(this).truncate(); // Default response, overridden by containers
     },
 
     toggleDnD: function(loc) {
@@ -3244,7 +3257,7 @@ Object.extend(Morph.prototype, {
 
     showOwnerChain: function(evt) {
         var items = this.ownerChain().reverse().map(
-            function(each) { return [each.inspect().truncate(), each, "showMorphMenu", evt]; }
+            function(each) { return [Object.inspect(each).truncate(), each, "showMorphMenu", evt]; }
         );
         MenuMorph(items, this).openIn(this.world(), evt.mousePoint, false, "Top item is topmost");
     },
@@ -3498,7 +3511,7 @@ Object.extend(Morph.prototype, {
     // map owner point to local coordinates
     relativize: function(pt) { 
         if (!this.owner()) 
-	    throw new Error('no owner; call me after adding to a morph? ' + this.inspect());
+	    throw new Error('no owner; call me after adding to a morph? ' + Object.inspect(this));
 	try {
             return pt.matrixTransform(this.owner().getTransformToElement(this)); 
 	} catch (er) {
@@ -3543,7 +3556,7 @@ Object.extend(Morph.prototype, {
     layoutChanged: function() {
         // ???
         // if (!(this instanceof HandMorph) )
-        // console.log('change of layout on ' + this.inspect());
+        // console.log('change of layout on ' + Object.inspect(this));
         this.applyTransform(this.getTransform());
         this.fullBounds = null;
         // this.bounds(); 

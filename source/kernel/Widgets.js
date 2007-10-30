@@ -1906,7 +1906,7 @@ Object.extend(ColorPickerMorph.prototype, {
             var rh2 = r.height/2;
             var wheel = this.colorWheel(r.width+1);
             var relp = r.constrainPt(this.localize(evt.mousePoint).addXY(-2,-2));
-            // console.log('mp = ' + this.localize(evt.mousePoint).inspect() + ' / relp = ' + relp.inspect());
+            // console.log('mp = ' + Object.inspect(this.localize(evt.mousePoint)) + ' / relp = ' + Object.inspect(relp));
             var selectedColor = this.colorMap(relp.x,relp.y,rh2,wheel);
             this.setModelValue('setColor', selectedColor);
         } 
@@ -2102,7 +2102,7 @@ Object.extend(WorldMorph.prototype, {
         this.parentNode.removeChild(this);
         return this;
 
-        // console.log('removed ' + this.inspect());
+        // console.log('removed ' + Object.inspect(this));
         // this.owner = null; 
     },
 
@@ -2713,7 +2713,7 @@ Object.extend(HandMorph.prototype, {
                 console.log('dropping %s on %s', m, receiver);
                 this.dropMorphsOn(receiver);
             } else {
-                // console.log('hand dispatching event ' + event.type + ' to owner '+ this.owner().inspect());
+                // console.log('hand dispatching event ' + event.type + ' to owner '+ Object.inspect(this.owner()));
                 // This will tell the world to send the event to the right morph
                 // We do not dispatch mouseup the same way -- only if focus gets set on mousedown
                 if (evt.type == "mousedown") this.owner().mouseEvent(evt, false);
