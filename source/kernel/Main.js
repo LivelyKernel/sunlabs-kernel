@@ -175,7 +175,6 @@ function populateWorldWithExamples(world) {
             lm1.myWorld.addMorphBack(WindowMorph(ImageMorph(new Rectangle(50, 10, width, height), url), 'Tampere'));
         }
 
-
         if (Config.showDoodle) lm1.myWorld.addMorph(WindowMorph(DoodleMorph(pt(560, 380).extent(pt(300, 300))), 'Doodle Morph'));
 
         if (Config.showMessenger && Config.showNetworkExamples) new MessengerWidget().openIn(lm1.myWorld, pt(875, 375));
@@ -207,7 +206,7 @@ function populateWorldWithExamples(world) {
             loc = loc.addXY(0,33);
             lm2.myWorld.addMorph(txt); 
         }
-	
+
         world.addMorph(lm2); 
 
         if (Config.showStar) {  // Make a star
@@ -323,7 +322,6 @@ function populateWorldWithExamples(world) {
 
 function main() {
 
-
     // Create an empty world
     var world = WorldMorph(Canvas);
     WorldMorph.setCurrent(world);
@@ -342,8 +340,8 @@ function main() {
             world.addMorph(m = Morph(new Rectangle(i*40, 0, 35, 35), "rect"));
             m.setFill(colors[i]);
             console.log(colors[i].toString());
-        };
-     }
+        }
+    }
 }
 
 // the delay here is a workaround to give FF 2.0 the time to update

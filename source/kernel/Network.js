@@ -49,12 +49,12 @@ Object.extend(NetRequest.prototype, {
             var splitter = new RegExp("http://([^/:]*)(:[0-9]+)?(/.*)");
             var urlMatch = url.match(splitter);
             var proxyMatch = Config.proxyURL.match(splitter);
-	    var portMatch = urlMatch[2];
-	    if (portMatch) portMatch = "/" + portMatch.substring(1);  // replace ":" with "
-	    else portMatch = "";
+            var portMatch = urlMatch[2];
+            if (portMatch) portMatch = "/" + portMatch.substring(1);  // replace ":" with "
+            else portMatch = "";
             if (urlMatch && proxyMatch && (proxyMatch[1] != urlMatch[1] || proxyMatch[2] != urlMatch[2])) {
                 var result = Config.proxyURL + urlMatch[1]  + portMatch + urlMatch[3];
-	    	//console.warn("url match " + urlMatch + " on " + url + " to " + result);
+                // console.warn("url match " + urlMatch + " on " + url + " to " + result);
                 return result;
             }
         } 
@@ -63,107 +63,109 @@ Object.extend(NetRequest.prototype, {
     
     requestNetworkAccess: function() {
         if (window.location.protocol == "file:"  && window["netscape"]) {       
-	    try {
-		netscape.security.PrivilegeManager.enablePrivilege("UniversalBrowserRead");
-		console.log("requested browser read privilege");
-		return true;
-	    } catch (er) {
-		console.log("no privilege granted: " + er);
-		return false;
-	    }
+            try {
+                netscape.security.PrivilegeManager.enablePrivilege("UniversalBrowserRead");
+                console.log("requested browser read privilege");
+                return true;
+            } catch (er) {
+                console.log("no privilege granted: " + er);
+                return false;
+            }
         }
     },
 
     // literally copied but override prototype.js's verb simulation over post
-  request: function(url) {
-    this.url = url;
-    this.method = this.options.method;
-    var params = Object.clone(this.options.parameters);
+    request: function(url) {
+        this.url = url;
+        this.method = this.options.method;
+        var params = Object.clone(this.options.parameters);
       
-      /* remove simulation over post
-    if (!['get', 'post'].include(this.method)) {
-      // simulate other verbs over post
-      params['_method'] = this.method;
-      this.method = 'post';
-    }
-      */
-    
-    this.parameters = params;
+        /* remove simulation over post
+        if (!['get', 'post'].include(this.method)) {
+            // simulate other verbs over post
+            params['_method'] = this.method;
+            this.method = 'post';
+        }
+        */
 
-    if (params = Object.toQueryString(params)) {
-      // when GET, append parameters to URL
-      if (this.method == 'get')
-        this.url += (this.url.include('?') ? '&' : '?') + params;
-      else if (/Konqueror|Safari|KHTML/.test(navigator.userAgent))
-        params += '&_=';
-    }
-      
-    try {
-      var response = new Ajax.Response(this);
-      if (this.options.onCreate) this.options.onCreate(response);
-      Ajax.Responders.dispatch('onCreate', this, response);
-    
-      this.transport.open(this.method.toUpperCase(), this.url, 
-        this.options.asynchronous);
+        this.parameters = params;
 
-      if (this.options.asynchronous) this.respondToReadyState.bind(this).defer(1);
-      
-      this.transport.onreadystatechange = this.onStateChange.bind(this);
-      this.setRequestHeaders();
+        if (params = Object.toQueryString(params)) {
+            // when GET, append parameters to URL
+            if (this.method == 'get') {
+                this.url += (this.url.include('?') ? '&' : '?') + params;
+            } else if (/Konqueror|Safari|KHTML/.test(navigator.userAgent)) {
+                params += '&_=';
+            }
+        }
 
-	// this.body = this.method == 'post' ? (this.options.postBody || params) : null;
-      this.body = /put|post/.test(this.method) ? (this.options.body || this.options.postBody || params) : null;
-      
-      this.transport.send(this.body);
+        try {
+            var response = new Ajax.Response(this);
+             if (this.options.onCreate) this.options.onCreate(response);
+            Ajax.Responders.dispatch('onCreate', this, response);
 
-      /* Force Firefox to handle ready state 4 for synchronous requests */
-      if (!this.options.asynchronous && this.transport.overrideMimeType)
-        this.onStateChange();
-        
-    }
-    catch (e) {
-      this.dispatchException(e);
-    }
-  }.logErrors("request"),
+            this.transport.open(this.method.toUpperCase(), this.url, 
+                                this.options.asynchronous);
 
+            if (this.options.asynchronous) this.respondToReadyState.bind(this).defer(1);
+
+            this.transport.onreadystatechange = this.onStateChange.bind(this);
+            this.setRequestHeaders();
+
+            // this.body = this.method == 'post' ? (this.options.postBody || params) : null;
+            this.body = /put|post/.test(this.method) ? (this.options.body || this.options.postBody || params) : null;
+
+            this.transport.send(this.body);
+
+            /* Force Firefox to handle ready state 4 for synchronous requests */
+            if (!this.options.asynchronous && this.transport.overrideMimeType) {
+                this.onStateChange();
+            }
+        } catch (e) {
+            this.dispatchException(e);
+        }
+    }.logErrors("request"),
 
     // Overridden for debugging 
-  setRequestHeaders: function() {
-    var headers = {
-      'X-Requested-With': 'XMLHttpRequest',
-      'X-Prototype-Version': Prototype.Version,
-      'Accept': 'text/javascript, text/html, application/xml, text/xml, */*'
-    };
+    setRequestHeaders: function() {
+        var headers = {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-Prototype-Version': Prototype.Version,
+            'Accept': 'text/javascript, text/html, application/xml, text/xml, */*'
+        };
 
-    if (this.method == 'post') {
-      headers['Content-type'] = this.options.contentType +
-        (this.options.encoding ? '; charset=' + this.options.encoding : '');
+        if (this.method == 'post') {
+            headers['Content-type'] = this.options.contentType +
+                (this.options.encoding ? '; charset=' + this.options.encoding : '');
 
-      /* Force "Connection: close" for older Mozilla browsers to work
-       * around a bug where XMLHttpRequest sends an incorrect
-       * Content-length header. See Mozilla Bugzilla #246651.
-       */
-      if (this.transport.overrideMimeType &&
-          (navigator.userAgent.match(/Gecko\/(\d{4})/) || [0,2005])[1] < 2005)
-            headers['Connection'] = 'close';
-    }
+            /* Force "Connection: close" for older Mozilla browsers to work
+             * around a bug where XMLHttpRequest sends an incorrect
+             * Content-length header. See Mozilla Bugzilla #246651.
+             */
+            if (this.transport.overrideMimeType &&
+                (navigator.userAgent.match(/Gecko\/(\d{4})/) || [0,2005])[1] < 2005)
+                headers['Connection'] = 'close';
+        }
 
-    // user-defined headers
-    if (typeof this.options.requestHeaders == 'object') {
-      var extras = this.options.requestHeaders;
+        // user-defined headers
+        if (typeof this.options.requestHeaders == 'object') {
+            var extras = this.options.requestHeaders;
 
-      if (Object.isFunction(extras.push))
-        for (var i = 0, length = extras.length; i < length; i += 2)
-          headers[extras[i]] = extras[i+1];
-      else
-        $H(extras).each(function(pair) { headers[pair.key] = pair.value });
-    }
+            if (Object.isFunction(extras.push)) {
+                for (var i = 0, length = extras.length; i < length; i += 2) {
+                    headers[extras[i]] = extras[i+1];
+                }
+            } else {
+               $H(extras).each(function(pair) { headers[pair.key] = pair.value });
+            }
+        }
 
-    for (var name in headers)
-      this.transport.setRequestHeader(name, headers[name]);
-  },
+        for (var name in headers) {
+            this.transport.setRequestHeader(name, headers[name]);
+        }
 
-    
+    },
+
 });
 
 Ajax.Responders.register(NetRequest.prototype.logger);

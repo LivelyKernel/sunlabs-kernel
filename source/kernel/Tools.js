@@ -385,7 +385,7 @@ Object.profiler = function (object, service) {
                 msTime = new Date().getTime();
                 var result = tallyFunc.originalFunction.apply(this, arguments); 
                 tallyFunc.ticks += (new Date().getTime() - msTime);
-               return result;
+                return result;
             }
             
             // Attach tallies, and the original function, then replace the original

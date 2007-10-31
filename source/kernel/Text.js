@@ -198,7 +198,6 @@ WordChunk = Class.create({
     
 });
 
-
 Object.extend(WordChunk, {
 
     // create a chunk representing printable text
@@ -231,7 +230,6 @@ Object.extend(WordChunk, {
     }
 
 });
-
 
 /**
  * @class TextLine

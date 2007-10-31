@@ -54,8 +54,7 @@ Object.extend(WebStore, {
     defaultStore: null,
     onCurrentLocation: function() {
         var path = location.pathname.substring(0, location.pathname.lastIndexOf('index.xhtml'));
-	if (path == "") 
-		path = "/";
+        if (path == "") path = "/";
         return new WebStore(location.hostname, path);
     }
 
@@ -132,7 +131,6 @@ Object.extend(WebStore.prototype, {
         new NetRequest(url, options);
     },
 
-
     deleteResource: function(url, modelVariable) {
         // retrieve the the contents of the url and save in the indicated model variable
         console.log('deleting url ' + url);
@@ -142,10 +140,10 @@ Object.extend(WebStore.prototype, {
             contentType: 'text/xml',
     
             onSuccess: function(transport) {
-		// FIXME: the content may indicate that we failed to delete!
-                //store[modelVariable] = transport.status;
+                // FIXME: the content may indicate that we failed to delete!
+                // store[modelVariable] = transport.status;
                 store.changed("get" + modelVariable);
-		console.log('success deleting:  ' + (transport.responseXML || transport.responseText));
+                console.log('success deleting:  ' + (transport.responseXML || transport.responseText));
             },
     
             onFailure: function(transport) {
@@ -156,7 +154,6 @@ Object.extend(WebStore.prototype, {
 
         new NetRequest(url, options);
     },
-
 
     // FIXME handle object argument
     propfind: function(url, depth, xpQueryString, modelVariable, resultType) {
@@ -278,21 +275,20 @@ Object.extend(WebStore.prototype, {
             getSelection: "getCurrentDirectory"});
         m = panel.getNamedMorph("rightPane");
         m.connectModel({model: this, getList: "getCurrentDirectoryContents", setSelection: "setCurrentResource"});
-	var oldpress = m.innerMorph().onKeyPress;
-	m.innerMorph().onKeyPress = function(evt) {
-	    if (evt.keyCode == Event.KEY_BACKSPACE) { // Replace the selection after checking for type-ahead
-		var result = this.world().confirm("delete file " + this.itemList[this.selectedLineNo()]);
-		evt.stop();
-		if (result) {
-		    model.deleteResource(this.itemList[this.selectedLineNo()], "CurrentDirectoryContents");
-		}
-	    } else oldpress.call(this, evt);
-	};
-	
+        var oldpress = m.innerMorph().onKeyPress;
+        m.innerMorph().onKeyPress = function(evt) {
+            if (evt.keyCode == Event.KEY_BACKSPACE) { // Replace the selection after checking for type-ahead
+                var result = this.world().confirm("delete file " + this.itemList[this.selectedLineNo()]);
+                evt.stop();
+                if (result) {
+                    model.deleteResource(this.itemList[this.selectedLineNo()], "CurrentDirectoryContents");
+                }
+            } else oldpress.call(this, evt);
+        };
 
         m = panel.getNamedMorph("bottomPane");
         m.connectModel({model: this, getText: "getCurrentResourceContents", setText: "setCurrentResourceContents"});
-	
+
         var model = this;
         
         m.innerMorph().processCommandKeys = function(key) {
@@ -311,8 +307,7 @@ Object.extend(WebStore.prototype, {
         }
         return panel;
     },
-    
-    
+        
     openIn: function(world, loc) {
         if (!loc) loc = world.bounds().center();
         console.log('opening web store at %s', loc);
@@ -325,3 +320,4 @@ Object.extend(WebStore.prototype, {
 });  
 
 console.log('loaded Storage.js');
+

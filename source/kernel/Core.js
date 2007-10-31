@@ -1306,7 +1306,6 @@ Object.extend(document, {
 DisplayObject = Class.create({     // FIXME: remove the (this.rawNode||this) business
     // a mixin
 
-
     rawNode: null, // set by subclasses
 
     setType: function(type)  {
@@ -2012,7 +2011,6 @@ Object.extend(Morph, {
     newMorphId: function() {
         return ++Morph.morphCounter;
     },
-
 
     // this function creates an advice function that ensures that the mutation is properly recorded
     onChange: function(fieldName) {
