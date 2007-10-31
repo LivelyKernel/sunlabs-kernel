@@ -418,10 +418,10 @@ Object.extend(TitleBarMorph.prototype, {
         var collapseButton = WindowControlMorph(cell, spacing, Color.primary.yellow, windowMorph, 
             function() { this.toggleCollapse(); }, "Collapse");
         this.setNamedMorph('collapseButton', collapseButton);
-	
+
         // var font = Font.forFamily(TextMorph.prototype.fontFamily, TextMorph.prototype.fontSize);
-	
-	var label;
+
+        var label;
         if (headline instanceof TextMorph) {
             label = headline;
         } else { // String
@@ -433,21 +433,20 @@ Object.extend(TitleBarMorph.prototype, {
         label.align(label.bounds().topCenter(), this.shape.bounds().topCenter().addXY(0,1));
         label.ignoreEvents();
         this.setNamedMorph('label', label);
-	
+
         return this;
     },
 
     restorePersistentState: function(importer) {
-	TitleBarMorph.superclass.restorePersistentState.call(this, importer);
-	this.closeButton = this.getNamedMorph('closeButton');
-	this.menuButton = this.getNamedMorph('menuButton');
-	this.collapseButton = this.getNamedMorph('collapseButton');
-	this.label = this.getNamedMorph('label');
-	if (DisplayObject.prototype.getType.call(this.parentNode) == "WindowMorph") {
-	    this.closeButton.target = this.menuButton.target = this.collapseButton.target = this.parentNode;
-	}
+        TitleBarMorph.superclass.restorePersistentState.call(this, importer);
+        this.closeButton = this.getNamedMorph('closeButton');
+        this.menuButton = this.getNamedMorph('menuButton');
+        this.collapseButton = this.getNamedMorph('collapseButton');
+        this.label = this.getNamedMorph('label');
+        if (DisplayObject.prototype.getType.call(this.parentNode) == "WindowMorph") {
+            this.closeButton.target = this.menuButton.target = this.collapseButton.target = this.parentNode;
+        }
     },
-    
 
     acceptsDropping: function(morph) {
         //console.log('accept drop from %s of %s, %s', this, morph, morph instanceof WindowControlMorph);
@@ -634,12 +633,11 @@ Object.extend(WindowMorph.prototype, {
         return this;
     },
 
-
     restorePersistentState: function(importer) {
-	WindowMorph.superclass.restorePersistentState.call(this, importer);
-	this.targetMorph = this.getNamedMorph('targetMorph');
-	this.titleBar = this.getNamedMorph('titleBar');
-	this.contentOffset = pt(0, this.titleBar.bounds().height);
+        WindowMorph.superclass.restorePersistentState.call(this, importer);
+        this.targetMorph = this.getNamedMorph('targetMorph');
+        this.titleBar = this.getNamedMorph('titleBar');
+        this.contentOffset = pt(0, this.titleBar.bounds().height);
     },
     
     makeTitleBar: function(headline, width) {
@@ -871,8 +869,8 @@ Object.extend(HandleMorph.prototype, {
         if (HandleMorph.helpCounter < 20) {
             HandleMorph.helpCounter++;
             this.help = TextMorph(evt.mousePoint.extent(pt(200, 20)), 
-				  this.shape.getType() == "rect" ? this.controlHelpText : this.circleHelpText);
-	    
+                this.shape.getType() == "rect" ? this.controlHelpText : this.circleHelpText);
+    
             // trying to relay mouse events to the WindowControlMorph
             this.help.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
             // some eye candy for the help
@@ -2059,7 +2057,7 @@ Object.extend(WorldMorph.prototype, {
         var bounds = canvas.bounds();
         // sometimes bounds has zero dimensions (when reloading thes same page, timing issues?
         // in Firefox bounds may be 1x1 size?? maybe everything should be run from onload or sth?
-	this.itsCanvas = canvas; 
+        this.itsCanvas = canvas; 
         if (bounds.width < 2) {
             bounds.width = 1280;
         }
@@ -2090,9 +2088,8 @@ Object.extend(WorldMorph.prototype, {
     },
 
     canvas: function() {
-	return this.itsCanvas;
+        return this.itsCanvas;
     },
-
 
     remove: function() {
         if (!this.parentNode) return null;  // already removed
@@ -2142,7 +2139,7 @@ Object.extend(WorldMorph.prototype, {
         menu.addItem([(Config.suppressBalloonHelp ? "enable balloon help" : "disable balloon help"),
                      this.toggleBalloonHelp]);
         menu.addItem([(HandMorph.prototype.applyDropShadowFilter ? "disable " : "enable ") + "drop shadow (if supported)",
-		      function () { HandMorph.prototype.applyDropShadowFilter = !HandMorph.prototype.applyDropShadowFilter}]);
+            function () { HandMorph.prototype.applyDropShadowFilter = !HandMorph.prototype.applyDropShadowFilter}]);
         menu.addLine();
         menu.addItem(["new object...", this.addMorphs.curry(evt)]);
         menu.addLine();
@@ -2503,8 +2500,8 @@ Object.extend(WorldMorph.prototype, {
     },
 
     confirm: function(message) {
-	// FIXME replace with a native solution
-	return window.confirm(message);
+        // FIXME replace with a native solution
+        return window.confirm(message);
     }
 
 });
@@ -2566,7 +2563,7 @@ Object.extend(HandMorph.prototype, {
         HandMorph.superclass.initialize.call(this, pt(5,5).extent(pt(10,10)), "rect");
     
         this.setShape(new PolygonShape([pt(0,0),pt(9,5), pt(5,9), pt(0,0)], 
-				       (local ? Color.blue : Color.red), 1, Color.black));
+                      (local ? Color.blue : Color.red), 1, Color.black));
         this.shape.disablePointerEvents();
     
         this.replaceChild(this.submorphs, this.shape.rawNode);
@@ -2761,9 +2758,9 @@ Object.extend(HandMorph.prototype, {
         while (this.hasSubmorphs()) { // drop in same z-order as in hand
             var m = this.submorphs.firstChild;
             receiver.addMorph(m); // this removes it from hand
-	    if (this.applyDropShadowFilter) {
-		m.setAttributeNS(null, "filter", "none");
-	    }
+            if (this.applyDropShadowFilter) {
+                m.setAttributeNS(null, "filter", "none");
+            }
             // DI: May need to be updated for collaboration...
             // m.updateBackendFields('origin'); 
 
@@ -2958,7 +2955,7 @@ Object.extend(LinkMorph.prototype, {
         newWorld.onEnter(); 
         carriedMorphs.each(function(m) {
             newWorld.firstHand().addMorph(m);
-	    m.resumeAllSuspendedScripts();
+            m.resumeAllSuspendedScripts();
         });
 
         if (Config.showThumbnail) {
