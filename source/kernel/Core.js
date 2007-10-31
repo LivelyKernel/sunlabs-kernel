@@ -334,8 +334,8 @@ Object.extend(Function.prototype, {
             try {
                 return proceed.apply(this, args); 
             } catch (er) {
-                if (prefix) console.warn("%s.%s(%s): err: %s", this, prefix, args,  er);
-                else console.warn("%s", er);
+                if (prefix) console.warn("%s.%s(%s): err: %s %s", this, prefix, args,  er, er.stack || "");
+                else console.warn("%s %s", er, er.stack || "");
                 throw er;
             }
         }
@@ -546,12 +546,9 @@ Point = Class.create({
         return "pt(%1,%2)".format(this.x.roundTo(0.01), this.y.roundTo(0.01)); 
     },
 
-    matrixTransform: function(matrix) {
-	// TODO? replace with a js impl?
-	var impl = Canvas.createSVGPoint(); 
-	impl.x = this.x;
-	impl.y = this.y;
-	return Point.ensure(impl.matrixTransform(matrix));
+    matrixTransform: function(mx) {
+	return new Point(mx.a * this.x + mx.c * this.y + mx.e,
+			 mx.b * this.x + mx.d * this.y + mx.f);
     },
 
     // Polar coordinates...
@@ -728,7 +725,7 @@ Object.category(Rectangle.prototype, 'part naming', function() { return {
     },
 
     toPath: function() {
-        var path = PathShape();
+        var path = new PathShape();
     
         with (this) {
             path.moveTo(x, y);
@@ -1305,17 +1302,20 @@ Object.extend(document, {
  * In this particular implementation, graphics primitives are
  * mapped onto various SVG objects and attributes.
  */
-DisplayObject = Class.create({
+DisplayObject = Class.create({     // FIXME: remove the (this.rawNode||this) business
     // a mixin
 
+
+    rawNode: null, // set by subclasses
+
     setType: function(type)  {
-        this.setAttributeNS(Namespace.LIVELY, "type", type);
+        (this.rawNode || this).setAttributeNS(Namespace.LIVELY, "type", type);
         return this;
     },
 
     getType: function()  {
         try {
-            return this.getAttributeNS(Namespace.LIVELY, "type");
+            return (this.rawNode || this).getAttributeNS(Namespace.LIVELY, "type");
         } catch (er) {
             console.log('in getType this is %s caller is %s', this, arguments.callee.caller);
             throw er;
@@ -1323,68 +1323,69 @@ DisplayObject = Class.create({
     },
 
     withHref: function(localURl) {
-        this.setAttributeNS(Namespace.XLINK, "href", localURl);
+        (this.rawNode || this).setAttributeNS(Namespace.XLINK, "href", localURl);
         return this;
     },
 
     copy: function() { 
-        return this.cloneNode(true); 
+	// FIXME
+        return (this.rawNode || this).cloneNode(true); 
     },
 
     /**
      * @param [String] string the string specification of the fill attribute.
      */
     setFill: function(string) {
-        this.setAttributeNS(null, "fill", string == null ? "none" : string);
+        (this.rawNode||this).setAttributeNS(null, "fill", string == null ? "none" : string);
     },
     
     getFill: function() {
-        return this.getAttributeNS(null, "fill");
+        return (this.rawNode||this).getAttributeNS(null, "fill");
     },
     
     setStroke: function(paint) {
         //console.log('new color ' + color);
-        this.setAttributeNS(null, "stroke", paint == null ? "none" : paint.toString());
+        (this.rawNode||this).setAttributeNS(null, "stroke", paint == null ? "none" : paint.toString());
     },
     
     getStroke: function() {
-        return this.getAttributeNS(null, "stroke");
+        return (this.rawNode||this).getAttributeNS(null, "stroke");
     },
     
     setStrokeWidth: function(width) {
-        this.setAttributeNS(null, "stroke-width", width);
+        (this.rawNode||this).setAttributeNS(null, "stroke-width", width);
     },
 
     getStrokeWidth: function() {
         // FIXME stroke-width can have units
-        return parseFloat(this.getAttributeNS(null, "stroke-width"));
+        return parseFloat((this.rawNode||this).getAttributeNS(null, "stroke-width"));
     },
  
     setFillOpacity: function(alpha) {
         //    console.log('opacity ' + alpha);
-        this.setAttributeNS(null, "fill-opacity", alpha);
+        (this.rawNode||this).setAttributeNS(null, "fill-opacity", alpha);
     },
 
     getFillOpacity: function(alpha) {
-        this.getAttributeNS(null, "fill-opacity");
+        (this.rawNode||this).getAttributeNS(null, "fill-opacity");
     },
 
     setStrokeOpacity: function(alpha) {
-        this.setAttributeNS(null, "stroke-opacity", alpha);
+        (this.rawNode||this).setAttributeNS(null, "stroke-opacity", alpha);
     },
 
     getStrokeOpacity: function(alpha) {
-        this.getAttributeNS(null, "stroke-opacity");
+        (this.rawNode||this).getAttributeNS(null, "stroke-opacity");
     },
 
     setLineJoin: function(joinType) {
         if (!joinType) throw new Error('undefined joinType');
-        this.setAttributeNS(null, 'stroke-linejoin', joinType);
+        (this.rawNode||this).setAttributeNS(null, 'stroke-linejoin', joinType);
     },
 
     setLineCap: function(capType) {
         if (!capType) throw new Error('undefined capType');
-        this.setAttributeNS(null, 'stroke-linecap', capType);
+        (this.rawNode||this).setAttributeNS(null, 'stroke-linecap', capType);
     },
 
     setBounds: function(bounds) { 
@@ -1392,7 +1393,7 @@ DisplayObject = Class.create({
     },
 
     disablePointerEvents: function() {
-        this.setAttributeNS(null, "pointer-events", "none");
+        (this.rawNode||this).setAttributeNS(null, "pointer-events", "none");
     },
 
     applyTransform: function(transform) {
@@ -1407,7 +1408,8 @@ DisplayObject = Class.create({
         //console.log('list is now ' + Transform.printSVGTransformList(list));
         */
         // KP: Safari needs the attribute instead of the programmatic thing
-        this.setAttributeNS(null, 'transform', transform.toAttributeValue());
+	// KP: FIXME remove when wrapper transformation is complete
+        (this.rawNode || this).setAttributeNS(null, 'transform', transform.toAttributeValue());
     },
 
     retrieveTransform: function() {
@@ -1450,20 +1452,25 @@ DisplayObject = Class.create({
  */ 
 
 // Note: Shape is a mixin
-Shape = Class.create(DisplayObject, {
+var Shape = Class.create(DisplayObject, {
 
     shouldIgnorePointerEvents: false,
+
 
     inspect: function() {
         return 'a Shape(%1,%2)'.format(this.getType(), this.bounds());
     },
 
+    toString: function() {
+	return this.inspect();
+    },
+
     getType: function() { 
-        return this.tagName; 
+        return this.rawNode.tagName; 
     },
     
-    init: function(fill, strokeWidth, stroke) {
-        this.setType(this.tagName); // debuggability
+    initialize: function(fill, strokeWidth, stroke) {
+        this.setType(this.rawNode.tagName); // debuggability
         
         if (this.shouldIgnorePointerEvents)
             this.disablePointerEvents();
@@ -1521,22 +1528,23 @@ Object.extend(Shape, {
 /**
  * @class RectShape: Rectangle shape
  */ 
+var RectShape = Class.create(Shape, {
 
-// RectShape is synonymous with SVGRectElement but hides the SVG nomenclature
-RectShape = HostClass.fromElementType('rect', false);
-Shape.mixInto(RectShape);
-
-Object.extend(RectShape.prototype, {
-
-    initialize: function(r, color, borderWidth, borderColor) {
+    initialize: function($super, r, color, borderWidth, borderColor) {
         //this.setAttributeNS(Namespace.XLINK, "href", "#ProtoRect");
+	this.rawNode = NodeFactory.create("rect");
         this.setBounds(r);
-        this.init(color, borderWidth, borderColor);
+	$super(color, borderWidth, borderColor);
         return this;
     },
 
+
+    copy: function() {
+	return new RectShape(this.bounds(), this.getFill(), this.getStrokeWidth(), this.getStroke());
+    },
+
     setBounds: function(r) {
-        with (this) {
+        with (this.rawNode) {
             setAttributeNS(null, "x", r.x);
             setAttributeNS(null, "y", r.y);
             setAttributeNS(null, "width", Math.max(0, r.width));
@@ -1551,20 +1559,20 @@ Object.extend(RectShape.prototype, {
     },
     
     bounds: function() {
-        var x = this.x.baseVal.value;
-        var y = this.y.baseVal.value;
-        var width = this.width.baseVal.value;
-        var height = this.height.baseVal.value;
+        var x = this.rawNode.x.baseVal.value;
+        var y = this.rawNode.y.baseVal.value;
+        var width = this.rawNode.width.baseVal.value;
+            var height = this.rawNode.height.baseVal.value;
         return new Rectangle(x, y, width, height);
     },
     
     containsPoint: function(p) {
-        var x = this.x.baseVal.value;
-        var width = this.width.baseVal.value;
+        var x = this.rawNode.x.baseVal.value;
+        var width = this.rawNode.width.baseVal.value;
         if (!(x <= p.x && p.x <= x + width))
             return false;
-        var y = this.y.baseVal.value;
-        var height = this.height.baseVal.value;
+        var y = this.rawNode.y.baseVal.value;
+        var height = this.rawNode.height.baseVal.value;
         return y <= p.y && p.y <= y + height;
     },
     
@@ -1587,12 +1595,12 @@ Object.extend(RectShape.prototype, {
     },
     
     getEdgeRounding: function() {
-        return this.getAttributeNS(null, "rx");
+        return this.rawNode.getAttributeNS(null, "rx");
     },
     
     roundEdgesBy: function(r) {
-        this.setAttributeNS(null, "rx", r);
-        this.setAttributeNS(null, "ry", r);
+        this.rawNode.setAttributeNS(null, "rx", r);
+        this.rawNode.setAttributeNS(null, "ry", r);
         return this;
     }
 
@@ -1601,20 +1609,21 @@ Object.extend(RectShape.prototype, {
 /**
  * @class EllipseShape
  */ 
+var EllipseShape = Class.create(Shape, {
 
-EllipseShape = HostClass.fromElementType('ellipse', false);
-Shape.mixInto(EllipseShape);
-
-Object.extend(EllipseShape.prototype, {
-
-    initialize: function(r, color, borderWidth, borderColor) {
+    initialize: function($super, r, color, borderWidth, borderColor) {
+	this.rawNode = NodeFactory.create("ellipse");
         this.setBounds(r);
-        this.init(color, borderWidth, borderColor);
+        $super(color, borderWidth, borderColor);
         return this;
+    },
+    
+    copy: function() {
+	return new EllipseShape(this.bounds(), this.getFill(), this.getStrokeWidth(), this.getStroke());
     },
 
     setBounds: function(r) {
-        with (this) {
+        with (this.rawNode) {
             setAttributeNS(null, "cx", r.x + r.width/2);
             setAttributeNS(null, "cy", r.y + r.height/2);
             setAttributeNS(null, "rx", r.width/2);
@@ -1625,19 +1634,19 @@ Object.extend(EllipseShape.prototype, {
     
     // For ellipses, test if x*x + y*y < r*r
     containsPoint: function(p) {
-        var w = this.rx.baseVal.value * 2;
-        var h = this.ry.baseVal.value * 2;
-        var c = pt(this.cx.baseVal.value, this.cy.baseVal.value);
+        var w = this.rawNode.rx.baseVal.value * 2;
+        var h = this.rawNode.ry.baseVal.value * 2;
+        var c = pt(this.rawNode.cx.baseVal.value, this.rawNode.cy.baseVal.value);
         var dx = Math.abs(p.x - c.x);
         var dy = Math.abs(p.y - c.y)*w/h;
         return (dx*dx + dy*dy) <= (w*w/4) ; 
     },
     
     bounds: function() {
-        var w = this.rx.baseVal.value * 2;
-        var h = this.ry.baseVal.value * 2; 
-        var x = this.cx.baseVal.value - this.rx.baseVal.value;
-        var y = this.cy.baseVal.value - this.ry.baseVal.value;
+        var w = this.rawNode.rx.baseVal.value * 2;
+        var h = this.rawNode.ry.baseVal.value * 2; 
+        var x = this.rawNode.cx.baseVal.value - this.rawNode.rx.baseVal.value;
+        var y = this.rawNode.cy.baseVal.value - this.rawNode.ry.baseVal.value;
         return new Rectangle(x, y, w, h);
     }, 
     
@@ -1656,34 +1665,36 @@ Object.extend(EllipseShape.prototype, {
  * @class PolygonShape
  */ 
 
-PolygonShape = HostClass.fromElementType('polygon', false);
-Shape.mixInto(PolygonShape);
+var PolygonShape = Class.create(Shape, {
 
-Object.extend(PolygonShape.prototype, { 
-
-    initialize: function(vertlist, color, borderWidth, borderColor) {
+    initialize: function($super, vertlist, color, borderWidth, borderColor) {
+	this.rawNode = NodeFactory.create("polygon");
         this.setVertices(vertlist);
-        this.init(color, borderWidth, borderColor);
+        $super(color, borderWidth, borderColor);
         return this;
+    },
+
+    copy: function() {
+	return new PolygonShape(this.vertices(), this.getFill(), this.getStrokeWidth(), this.getStroke());
     },
     
     setVertices: function(vertlist) {
-        this.points.clear();
-        this.setAttributeNS(null, "points", vertlist.map(function (p) { return p.x + "," + p.y }).join(' '));
+        this.rawNode.points.clear();
+        this.rawNode.setAttributeNS(null, "points", vertlist.map(function (p) { return p.x + "," + p.y }).join(' '));
         // vertlist.forEach( function(p) {  this.points.appendItem(p); }, this);
     },
 
     vertices: function() {
         var array = [];
-        for (var i = 0; i < this.points.numberOfItems; i++) {
-            array.push(Point.ensure(this.points.getItem(i)));
+        for (var i = 0; i < this.rawNode.points.numberOfItems; i++) {
+            array.push(Point.ensure(this.rawNode.points.getItem(i)));
         }
         return array;
     },
 
     inspect: function() {
         var pts = this.vertices();
-        return this.tagName + "[" + pts.invoke('inspect').join(";") + "]";
+        return this.rawNode.tagName + "[" + pts.invoke('inspect').join(";") + "]";
     },
 
     bounds: function() {
@@ -1691,15 +1702,6 @@ Object.extend(PolygonShape.prototype, {
         var vertices = this.vertices();
         console.assert(vertices.length > 0, "PolygonShape.prototype.bounds");
         return Rectangle.unionPts(vertices);
-    },
-
-    oldcopy: function() { 
-        var newShape = this.cloneNode(true); 
-        if (newShape.points.numberOfItems != this.points.numberOfItems) {
-            // ARGH, Safari doesn't clone polygons properly???
-            newShape.setVertices(this.vertices());
-        }
-        return newShape;
     },
 
     reshape: function(partName, newPoint, handle, lastCall) {
@@ -1817,16 +1819,17 @@ Object.extend(PolygonShape.prototype, {
 /**
  * @class PolylineShape
  */ 
-
-PolylineShape = HostClass.fromElementType('polyline', false);
-Shape.mixInto(PolylineShape);
-
-Object.extend(PolylineShape.prototype, {
-
-    initialize: function(vertlist, borderWidth, borderColor) {
+var PolylineShape = Class.create(Shape, {
+    
+    initialize: function($super, vertlist, borderWidth, borderColor) {
+	this.rawNode = NodeFactory.create("polyline");
         this.setVertices(vertlist);
-        this.init(null, borderWidth, borderColor);
+        $super(null, borderWidth, borderColor);
         return this;
+    },
+    
+    copy: function() {
+	return new PolylineShape(this.vertices(), this.getFill(), this.getStrokeWidth(), this.getStroke());
     },
 
     containsPoint: function(p) {
@@ -1854,14 +1857,12 @@ Object.extend(PolylineShape.prototype, {
 /**
  * @class PathShape
  */ 
-
-PathShape = HostClass.fromElementType('path', false);
-Shape.mixInto(PathShape);
-
-Object.extend(PathShape.prototype, {
+var PathShape = Class.create(Shape, {
     
-    initialize: function(vertlist, color, borderWidth, borderColor) {
-        this.init(color, borderWidth, borderColor);
+    initialize: function($super, vertlist, color, borderWidth, borderColor) {
+	this.rawNode = NodeFactory.create("path");
+	
+        $super(color, borderWidth, borderColor);
         if (vertlist) this.setVertices(vertlist);
         return this;
     },
@@ -1890,7 +1891,7 @@ Object.extend(PathShape.prototype, {
 
         var d = vertlist.map(map2svg).join('');
         // console.log("d=" + d);
-        this.setAttributeNS(null, "d", d);
+        this.rawNode.setAttributeNS(null, "d", d);
         this.verticesList = vertlist;
         delete this.cachedBounds;
         // Function.callStack().map(function(x,i) {console.log(i + ") " + x)});
@@ -1901,57 +1902,27 @@ Object.extend(PathShape.prototype, {
     },
     
     moveTo: function(x, y) {
-        this.pathSegList.appendItem(this.createSVGPathSegMovetoAbs(x, y));
+        this.rawNode.pathSegList.appendItem(this.rawNode.createSVGPathSegMovetoAbs(x, y));
     },
     
     curveTo: function(x, y) {
-        this.pathSegList.appendItem(this.createSVGPathSegCurvetoQuadraticSmoothAbs(x, y));
+        this.rawNode.pathSegList.appendItem(this.rawNode.createSVGPathSegCurvetoQuadraticSmoothAbs(x, y));
     },
 
     lineTo: function(x, y) {
-        this.pathSegList.appendItem(this.createSVGPathSegLinetoAbs(x, y));
+        this.rawNode.pathSegList.appendItem(this.rawNode.createSVGPathSegLinetoAbs(x, y));
     },
 
     close: function() {
-        this.pathSegList.appendItem(this.createSVGPathSegClosePath());
+        this.rawNode.pathSegList.appendItem(this.rawNode.createSVGPathSegClosePath());
     },
 
     containsPoint: function(p) {
         return false; // FIXME
     },
     
-    oldcopy: function() { 
-        var newShape = this.cloneNode(true); 
-        if (newShape.pathSegList.numberOfItems != this.pathSegList.numberOfItems) {
-            // ARGH, Safari doesn't clone lists properly???
-            for (var i = 0; i < this.pathSegList.numberOfItems; i++) {
-                // How annoying, no way of cloning path segments
-                var seg = this.pathSegList.getItem(i);
-                switch (seg.pathSegType) {
-                case seg.PATHSEG_MOVETO_ABS:
-                    newShape.moveTo(seg.x, seg.y);
-                    break;
-                case seg.PATHSEG_LINETO_ABS:
-                    newShape.lineTo(seg.x, seg.y);
-                    break;
-                case seg.PATHSEG_CURVETO_QUADRATIC_SMOOTH_ABS:
-                    newShape.curveTo(seg.x, seg.y);
-                    break;
-                case seg.PATHSEG_CLOSEPATH:
-                    newShape.close();
-                    break;
-                default:
-                    console.log('cannot deal with ' + seg.pathSegType);
-                }
-            }
-        }
-        return newShape;
-    },
-
     copy: function() { 
-        var newShape = this.cloneNode(true); 
-        newShape.setVertices(this.vertices());
-        return newShape;
+	return new PathShape(this.vertices(), this.getFill(), this.getStrokeWidth(), this.getStroke());
     },
 
     bounds: function() {
@@ -1977,7 +1948,8 @@ DisplayObjectList = function(type) {
 
 DisplayObjectList.become = function(obj, type) {
     obj.__proto__ = DisplayObjectList.prototype;
-    obj.setType(type);
+    obj.setAttributeNS(Namespace.LIVELY, "type", type);
+    //obj.setType(type);
     return obj;
 };
 
@@ -1997,12 +1969,15 @@ Object.extend(DisplayObjectList.prototype, {
     },
 
     push: function(element) {
-        this.appendChild(element);
+	// FIXME remove the alternative
+        this.appendChild(element.rawNode || element);
     },
 
     remove: function(element) {
-        if (element.parentNode === this) {
-            this.removeChild(element);
+        if ((element.rawNode||element).parentNode === this) {
+	    // FIXME remove the alternative
+	    
+            this.removeChild(element.rawNode || element);
             return true;
         }
         return false;
@@ -2027,7 +2002,9 @@ Object.extend(Morph, {
     
     makeMorph: function(constr) {
         var element = HostClass.becomeInstance(NodeFactory.create("g"), constr);
-        element.setType(constr.name);
+        element.setAttributeNS(Namespace.LIVELY, "type", constr.name);
+	
+        // element.setType(constr.name);
         return element;
     },
     
@@ -2135,7 +2112,6 @@ Object.extend(Morph.prototype, {
     openForDragAndDrop: true, // Submorphs can be extracted from or dropped into me
     mouseHandler: MouseHandlerForDragging.prototype, //a MouseHandler for mouse sensitivity, etc
     stepHandler: null, //a stepHandler for time-varying morphs and animation 
-    drawBounds: false,
 
     nextNavigableSibling: null, // keyboard navigation
     
@@ -2145,7 +2121,6 @@ Object.extend(Morph.prototype, {
         this.pickId();
         this.initializePersistentState(initialBounds, shapeType);
         this.initializeTransientState(initialBounds);
-        if (this.drawBounds) this.updateBoundsElement();
 	this.disableBrowserHandlers();
     },
 
@@ -2158,7 +2133,6 @@ Object.extend(Morph.prototype, {
         this.restorePersistentState(importer);    
         this.initializeTransientState(null);
 
-        if (this.drawBounds) this.updateBoundsElement();
 	this.disableBrowserHandlers();
 	
         if (this.activeScripts) {
@@ -2217,9 +2191,9 @@ Object.extend(Morph.prototype, {
                     case "radialGradient": // FIXME gradients can be used on strokes too
                         var newFillId = "fill_" + this.id;
                         if (this.shape) {
-                            var myFill = this.shape.getAttributeNS(null, 'fill');
+                            var myFill = this.shape.rawNode.getAttributeNS(null, 'fill');
                             if (myFill) {
-                                this.shape.setAttributeNS(null, 'fill', 'url(#' + newFillId + ')');
+                                this.shape.rawNode.setAttributeNS(null, 'fill', 'url(#' + newFillId + ')');
                                 this.fill = def;
                             } else {
                                 console.warn('myFill undefined on %s', this);
@@ -2291,17 +2265,17 @@ Object.extend(Morph.prototype, {
         // a rect shape by default, will change later
         switch (shapeType) {
         case "ellipse":
-            this.shape = EllipseShape(initialBounds.translatedBy(this.origin.negated()), 
-                         this.defaultFill, this.defaultBorderWidth, this.defaultBorderColor);
+            this.shape = new EllipseShape(initialBounds.translatedBy(this.origin.negated()), 
+					  this.defaultFill, this.defaultBorderWidth, this.defaultBorderColor);
             break;
         default:
             // polygons and polylines are set explicitly later
-            this.shape = RectShape(initialBounds.translatedBy(this.origin.negated()), 
-            this.defaultFill, this.defaultBorderWidth, this.defaultBorderColor);
+            this.shape = new RectShape(initialBounds.translatedBy(this.origin.negated()), 
+				       this.defaultFill, this.defaultBorderWidth, this.defaultBorderColor);
             break;
         }
     
-        this.addChildElement(this.shape);
+        this.addChildElement(this.shape.rawNode);
 
         // this.created = false; // exists on server now
     
@@ -2457,7 +2431,9 @@ Object.extend(Morph.prototype, {
     }.wrap(Morph.onLayoutChange('shape')),
     
     setShape: function(newShape) {
-        this.replaceChild(newShape, this.shape);
+	if (!newShape.rawNode)
+	    console.log('newShape is ' + newShape + ' ' + (new Error()).stack);
+        this.replaceChild(newShape.rawNode, this.shape.rawNode);
         this.shape = newShape;
         //this.layoutChanged(); 
         if (this.clipPath) {
@@ -2465,7 +2441,7 @@ Object.extend(Morph.prototype, {
             this.clipToShape();
         }
         this.adjustForNewBounds();
-    }.wrap(Morph.onLayoutChange('shape')),
+    }.wrap(Morph.onLayoutChange('shape')).logErrors('setShape'),
 
     reshape: function(partName, newPoint, handle, lastCall) {
         this.shape.reshape(partName,newPoint,handle,lastCall); 
@@ -2525,26 +2501,6 @@ Object.extend(Morph.prototype, {
         if (this.owner() == null) return this.fullContainsPoint(p);
     
         return this.fullContainsPoint(this.owner().localize(p)); 
-    },
-    
-    updateBoundsElement: function() {
-    
-        var newElement = RectShape(this.fullBounds, null, 1, Color.blue);
-        newElement.disablePointerEvents();
-    
-        if (!this.canvas())
-            return null;
-            
-        if (!this.boundsElement) {
-            this.canvas().appendChild(newElement);
-        } else {
-            this.canvas().replaceChild(newElement, this.boundsElement);
-        }
-
-        this.boundsElement = newElement;
-    
-        return this.boundsElement;
-        // this.submorphs.forEach(function(m) { m.updateBoundsElement() });
     },
     
     addChildElement: function(m) {
@@ -2734,7 +2690,6 @@ Object.extend(Morph.prototype, {
         this.rotation = other.rotation;
         this.scale = other.scale;
         this.fullBounds = other.fullBounds;
-        if (this.drawBounds) this.updateBoundsElement();
     
         this.openForDragAndDrop = other.openForDragAndDrop;
     
@@ -3063,8 +3018,8 @@ Object.extend(Morph.prototype, {
     
     adjustFocusHalo: function() {
         this.focusHalo.removeAll();
-        var shape = RectShape(this.shape.bounds().insetBy(-2), null, this.focusHaloBorderWidth, this.focusedBorderColor);
-        this.focusHalo.push(shape);
+        var shape = new RectShape(this.shape.bounds().insetBy(-2), null, this.focusHaloBorderWidth, this.focusedBorderColor);
+        this.focusHalo.push(shape.rawNode);
     },
 
     addFocusHalo: function() {
@@ -3476,7 +3431,6 @@ Object.extend(Morph.prototype, {
             this.fullBounds = this.fullBounds.expandBy(3); 
         }
         
-        if (this.drawBounds) this.updateBoundsElement();
     
         return this.fullBounds; 
     },
@@ -3575,7 +3529,7 @@ Object.extend(Morph.prototype, {
 
     clipToPath: function(path) {
         var clipPath = NodeFactory.create('clipPath');
-        clipPath.appendChild(path);
+        clipPath.appendChild(path.rawNode);
         clipPath.setAttributeNS(null, "shape-rendering", "optimizeSpeed");
         var ref = this.assign('clipPath', clipPath);
         this.setAttributeNS(null, "clip-path", ref);
@@ -3738,7 +3692,7 @@ Object.extend(Morph, {
         // Note this works for simple lines (2 vertices) and general polylines
         var line = Morph(verts[0].asRectangle(), "rect");
         var vertices = Shape.translateVerticesBy(verts, verts[0].negated());
-        line.setShape(PolylineShape(vertices, lineWidth, lineColor));
+        line.setShape(new PolylineShape(vertices, lineWidth, lineColor));
         return line; 
     },
 
@@ -3754,7 +3708,7 @@ Object.extend(Morph, {
     makePolygon: function(verts, lineWidth, lineColor, fill) {
         // make a polygon with its origin at the starting vertex
         poly = Morph(pt(0,0).asRectangle(), "rect");
-        poly.setShape(PolygonShape(verts, fill, lineWidth, lineColor));
+        poly.setShape(new PolygonShape(verts, fill, lineWidth, lineColor));
         return poly; 
     }
 });
@@ -3918,68 +3872,63 @@ Object.extend(Model, {
  * @class SimpleModel
  */ 
 
-SimpleModel = Class.extend(Model);
-
-Object.category(SimpleModel.prototype,  "core", function() { 
+SimpleModel = Class.create(Model, {
     
-    function getter(varName) {
+    getter: function(varName) {
         return "get" + varName;
-    }
+    },
     
-    function setter(varName) {
+    setter: function(varName) {
         return "set" + varName;
-    }
+    },
 
-    return {
-
-        initialize: function(dep /*, variables... */) {
-            SimpleModel.superclass.initialize.call(this, dep);
-            var variables = $A(arguments);
-            variables.shift();
-            for (var i = 0; i < variables.length; i++) {
-                this.addVariable(variables[i], null);
-            }
-        },
-
-        addVariable: function(varName, initialValue) {
-            // functional programming is fun!
-            this[varName] = initialValue;
-            this[getter(varName)] = function(name) { return function() { return this[name]; } } (varName); // let name = varName ()
-            this[setter(varName)] = function(name) { return function(newValue, v) { this[name] = newValue; 
-                                                     this.changed(getter(name), v); }} (varName);
-        },
-
-        makePlug: function() {
-            var model = this;
-            var spec = { };
-            this.variables().forEach(function(v) { spec[getter(v)] = model[getter(v)]; spec[setter(v)] = model[setter(v)]; });
-            spec.model = model;
-            return Model.makePlugNode(spec);
-        },
-
-        variables: function() {
-            return Object.properties(this).filter(function(name) { return name != 'dependents'});
-        },
-
-        toMarkup: function(doc) {
-            if (!doc) doc = document;
-            var modelEl = doc.createElementNS(Namespace.LIVELY, "model");
-            var vars = this.variables();
-            for (var i = 0; i < vars.length; i++) {
-                var varEl = modelEl.appendChild(doc.createElementNS(Namespace.LIVELY, "variable"));
-                var name = vars[i];
-                varEl.setAttributeNS(Namespace.LIVELY, "name", name);
-                varEl.appendChild(doc.createTextNode(Object.toJSON(this[name])));
-            }
-            for (var i = 0; i < this.dependents.length; i++) {
-                var depEl = modelEl.appendChild(doc.createElementNS(Namespace.LIVELY, "dependent"));
-                depEl.setAttributeNS(Namespace.LIVELY, "ref", this.dependents[i].id);
-            }
-            return modelEl;
+    initialize: function($super, dep /*, variables... */) {
+        $super(dep);
+        var variables = $A(arguments);
+        variables.shift();
+        for (var i = 0; i < variables.length; i++) {
+            this.addVariable(variables[i], null);
         }
+    },
+    
+    addVariable: function(varName, initialValue) {
+        // functional programming is fun!
+        this[varName] = initialValue;
+        this[this.getter(varName)] = function(name) { return function() { return this[name]; } } (varName); // let name = varName ()
+        this[this.setter(varName)] = function(name) { return function(newValue, v) { this[name] = newValue; 
+										     this.changed(this.getter(name), v); }} (varName);
+    },
+    
+    makePlug: function() {
+        var model = this;
+        var spec = { };
+        this.variables().forEach(function(v) { spec[this.getter(v)] = model[this.getter(v)]; spec[this.setter(v)] = model[this.setter(v)]; }.bind(this));
+        spec.model = model;
+        return Model.makePlugNode(spec);
+    },
+    
+    variables: function() {
+        return Object.properties(this).filter(function(name) { return name != 'dependents'});
+    },
+    
+    toMarkup: function(doc) {
+        if (!doc) doc = document;
+        var modelEl = doc.createElementNS(Namespace.LIVELY, "model");
+        var vars = this.variables();
+        for (var i = 0; i < vars.length; i++) {
+            var varEl = modelEl.appendChild(doc.createElementNS(Namespace.LIVELY, "variable"));
+            var name = vars[i];
+            varEl.setAttributeNS(Namespace.LIVELY, "name", name);
+            varEl.appendChild(doc.createTextNode(Object.toJSON(this[name])));
+        }
+        for (var i = 0; i < this.dependents.length; i++) {
+            var depEl = modelEl.appendChild(doc.createElementNS(Namespace.LIVELY, "dependent"));
+            depEl.setAttributeNS(Namespace.LIVELY, "ref", this.dependents[i].id);
+        }
+        return modelEl;
     }
-
 });
+
 
 console.log('loaded Core.js');
 

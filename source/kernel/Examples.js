@@ -27,10 +27,6 @@ WidgetTester = Class.extend(Model);
 
 Object.extend(WidgetTester.prototype, {
 
-    initialize: function() { 
-        WidgetTester.superclass.initialize.call(this);
-    },
-
     openIn: function(world, location) {
         var view = this.buildView(pt(300, 220));
         world.addMorphAt(view, location);
@@ -122,6 +118,7 @@ Object.extend(ClockMorph.prototype, {
     },
 
     makeNewFace: function() {
+
         var bnds = this.shape.bounds();
         var radius = bnds.width/2;
         var labels = [];
@@ -208,9 +205,9 @@ Pen = Class.create({
         var verts = Shape.translateVerticesBy(this.vertices, this.startingLocation.negated());
     
         if (this.fillColor) 
-            morph.setShape(PolygonShape(verts, this.fillColor, this.penWidth, this.penColor));
+            morph.setShape(new PolygonShape(verts, this.fillColor, this.penWidth, this.penColor));
         else 
-            morph.setShape(PolylineShape(verts, this.penWidth, this.penColor));
+            morph.setShape(new PolylineShape(verts, this.penWidth, this.penColor));
     
         WorldMorph.current().addMorph(morph); 
     
@@ -450,7 +447,7 @@ Object.extend(DoodleMorph.prototype, {
         morph.setFill(null);
         morph.setBorderWidth(this.lineWidth);
         morph.setBorderColor(this.drawingColor);
-        morph.setShape(PolylineShape([pt(0,20),pt(60,0)], this.lineWidth, this.drawingColor));
+        morph.setShape(new PolylineShape([pt(0,20),pt(60,0)], this.lineWidth, this.drawingColor));
         this.addMorph(morph);
 
         this.newPos += 25;
@@ -934,7 +931,7 @@ WireObject = Class.create({
         var U = 0;
     
         for (var i = 0; i < 8; i++) { 
-            var shape = PolygonShape([pt(this.vx[U],this.vy[U])], Color.primary.blue, 2, Color.black);
+            var shape = new PolygonShape([pt(this.vx[U],this.vy[U])], Color.primary.blue, 2, Color.black);
             shape.setLineJoin(Shape.LineJoins.ROUND);
             morphArray[i].setShape(shape);
             // shape.setFill(new Color(0xAA, 0, 0xCC)); // Approximate Sun purple color
@@ -986,7 +983,7 @@ Object.extend(Sun3DMorph.prototype, {
         this.morphArray = [];
         for (var i = 0; i < 8; i++) {
             this.morphArray[i] = Morph(pt(10,10).asRectangle());
-            this.morphArray[i].setShape(PolylineShape([pt(0,0)], 2, Color.red));
+            this.morphArray[i].setShape(new PolylineShape([pt(0,0)], 2, Color.red));
             this.addMorph(this.morphArray[i]);
         }
 
@@ -1071,7 +1068,7 @@ AsteroidsSprite = Class.create({
 
     initialize: function(vertices) {
         this.shape = vertices;
-        this.sprite = PolygonShape([], Color.black, 1, Color.yellow);
+        this.sprite = new PolygonShape([], Color.black, 1, Color.yellow);
     },
     
     // Methods:
@@ -4259,14 +4256,14 @@ Object.extend(CanvasScapeMorph.prototype, {
             if (drawobject) {
                 morppi = Morph(pt(0,0).asRectangle(),"rect"); // polygon
                 morppi.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseUp: "onMouseUp"});
-                morppi.setShape(PolygonShape([pt(tl[0],tl[1]),pt(tr[0],tr[1]),pt(br[0],br[1]),pt(bl[0],bl[1])],
-                                Color.blue,1,Color.black));
+                morppi.setShape(new PolygonShape([pt(tl[0],tl[1]),pt(tr[0],tr[1]),pt(br[0],br[1]),pt(bl[0],bl[1])],
+						 Color.blue,1,Color.black));
                 this.addMorph(morppi);
             } else {
                 morppi = Morph(pt(0,0).asRectangle(),"rect"); // polygon
                 morppi.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseUp: "onMouseUp"});
-                morppi.setShape(PolygonShape([pt(tl[0],tl[1]),pt(tr[0],tr[1]),pt(br[0],br[1]),pt(bl[0],bl[1])],
-                                this.color,1,Color.black));
+                morppi.setShape(new PolygonShape([pt(tl[0],tl[1]),pt(tr[0],tr[1]),pt(br[0],br[1]),pt(bl[0],bl[1])],
+						 this.color,1,Color.black));
                 this.addMorph(morppi);
             }
             

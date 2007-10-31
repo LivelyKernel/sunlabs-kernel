@@ -53,7 +53,6 @@ function populateWorldWithExamples(world) {
 
     if (Config.showClock) {
         widget = ClockMorph(pt(60, 60), 50);
-        // clockWidget.addClipRect(new Rectangle(20,20,80,80));
         world.addMorph(widget);
         widget.startSteppingScripts();
     }
@@ -144,7 +143,7 @@ function populateWorldWithExamples(world) {
                 // bezier blob
                 var shape1 = [pt(0,0), pt(50,0), pt(50,50), pt(0,50), pt(0,0)];
                 var widget = Morph(pt(100,100).asRectangle(),"rect");
-                widget.setShape(PathShape(shape1, Color.red, 3, Color.black));
+                widget.setShape(new PathShape(shape1, Color.red, 3, Color.black));
                 lm1.myWorld.addMorph(widget);
                 widget = Morph(pt(250,50).asRectangle(),"rect");
 
@@ -158,7 +157,7 @@ function populateWorldWithExamples(world) {
                     shape2[i].radius = 10; shape2[i].type = "arc";
                 }
 
-                widget.setShape(PathShape(shape2, Color.green, 2, Color.red));
+                widget.setShape(new PathShape(shape2, Color.green, 2, Color.red));
                 lm1.myWorld.addMorph(widget);
             }    
         

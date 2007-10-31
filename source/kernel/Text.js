@@ -1102,17 +1102,17 @@ Object.extend(TextMorph.prototype, {
         }
     
         if (this.lineNo(r2) == this.lineNo(r1)) {
-            this.selectionElement.push(RectShape(r1.union(r2)).roundEdgesBy(4));
+            this.selectionElement.push(new RectShape(r1.union(r2)).roundEdgesBy(4));
         } else { // Selection is on two or more lines
             var localBounds = this.shape.bounds();
             r1 = r1.withBottomRight(pt(localBounds.maxX() - this.inset.x, r1.maxY()));
             r2 = r2.withBottomLeft(pt(localBounds.x + this.inset.x, r2.maxY()));
-            this.selectionElement.push(RectShape(r1).roundEdgesBy(4));
-            this.selectionElement.push(RectShape(r2).roundEdgesBy(4));
+            this.selectionElement.push(new RectShape(r1).roundEdgesBy(4));
+            this.selectionElement.push(new RectShape(r2).roundEdgesBy(4));
         
             if (this.lineNo(r2) != this.lineNo(r1) + 1) {
                 // Selection spans 3 or more lines; fill the block between top and bottom lines
-                this.selectionElement.push(RectShape(Rectangle.fromAny(r1.bottomRight(), r2.topLeft())).roundEdgesBy(4)); 
+                this.selectionElement.push(new RectShape(Rectangle.fromAny(r1.bottomRight(), r2.topLeft())).roundEdgesBy(4)); 
             }
         }
     

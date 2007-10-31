@@ -365,8 +365,6 @@ Object.extend(ClipMorph.prototype, {
             this.fullBounds = this.fullBounds.expandBy(3); 
         }
         
-        if (this.drawBounds) this.updateBoundsElement();
-    
         return this.fullBounds; 
     }
     
@@ -1867,9 +1865,9 @@ Object.extend(ColorPickerMorph.prototype, {
         for (var x = 0; x < r.width; x+=dd) {
             for (var y = 0; y < r.height; y+=dd) { // lightest down to neutral
                 var patchFill = this.colorMap(x, y, rh2, this.colorWheel(r.width + 1)).toString();
-                var element = RectShape(new Rectangle(x + r.x, y + r.y, dd, dd), patchFill, 0, null);
+                var element = new RectShape(new Rectangle(x + r.x, y + r.y, dd, dd), patchFill, 0, null);
                 // element.setAttributeNS("fill", this.colorMap(x, rh2, rh2, this.colorWheel(r.width + 1)).toString());
-                this.addChildElement(element);
+                this.addChildElement(element.rawNode);
             }
         }
     },
@@ -2567,12 +2565,12 @@ Object.extend(HandMorph.prototype, {
     initialize: function(local) {
         HandMorph.superclass.initialize.call(this, pt(5,5).extent(pt(10,10)), "rect");
     
-        this.setShape(PolygonShape([pt(0,0),pt(9,5), pt(5,9), pt(0,0)], 
-                     (local ? Color.blue : Color.red), 1, Color.black));
+        this.setShape(new PolygonShape([pt(0,0),pt(9,5), pt(5,9), pt(0,0)], 
+				       (local ? Color.blue : Color.red), 1, Color.black));
         this.shape.disablePointerEvents();
     
-        this.replaceChild(this.submorphs, this.shape);
-        this.appendChild(this.shape); // make sure submorphs are render first, then the hand shape 
+        this.replaceChild(this.submorphs, this.shape.rawNode);
+        this.appendChild(this.shape.rawNode); // make sure submorphs are render first, then the hand shape 
 
         this.isLocal = local;
         this.setFill(local? Color.primary.blue : Color.primary.green); 
