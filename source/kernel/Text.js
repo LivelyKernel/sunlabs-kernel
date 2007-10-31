@@ -761,7 +761,7 @@ Object.extend(TextMorph.prototype, {
 
         // the selection element is persistent although its contents are not
         // generic <g> element with 1-3 rectangles inside
-        this.selectionElement = this.addChildElement(DisplayObjectList('Selection'));
+        this.selectionElement = this.addChildElement(NodeList.withType('Selection'));
         this.selectionElement.setAttributeNS(null, "fill", this.selectionColor);
         //this.selectionElement.setAttributeNS(null, "fill", "url(#SelectionGradient)");
         this.selectionElement.setAttributeNS(null, "stroke-width", 0);
@@ -798,7 +798,7 @@ Object.extend(TextMorph.prototype, {
         case 'Selection':
             // that's ok, it's actually transient 
             // remove all chidren b/c they're really transient
-            this.selectionElement = DisplayObjectList.become(element, type);
+            this.selectionElement = NodeList.become(element, type);
             //console.log('processing selection %s', element);
             this.undrawSelection();
             return true;
@@ -1062,7 +1062,7 @@ Object.extend(TextMorph.prototype, {
     },
     
     undrawSelection: function() {
-        this.selectionElement.removeAll();
+        NodeList.clear(this.selectionElement);
     },
 
     // FIXME (Safari draws its own selection)
@@ -1100,17 +1100,17 @@ Object.extend(TextMorph.prototype, {
         }
     
         if (this.lineNo(r2) == this.lineNo(r1)) {
-            this.selectionElement.push(new RectShape(r1.union(r2)).roundEdgesBy(4));
+            NodeList.push(this.selectionElement, new RectShape(r1.union(r2)).roundEdgesBy(4));
         } else { // Selection is on two or more lines
             var localBounds = this.shape.bounds();
             r1 = r1.withBottomRight(pt(localBounds.maxX() - this.inset.x, r1.maxY()));
             r2 = r2.withBottomLeft(pt(localBounds.x + this.inset.x, r2.maxY()));
-            this.selectionElement.push(new RectShape(r1).roundEdgesBy(4));
-            this.selectionElement.push(new RectShape(r2).roundEdgesBy(4));
+            NodeList.push(this.selectionElement, new RectShape(r1).roundEdgesBy(4));
+            NodeList.push(this.selectionElement, new RectShape(r2).roundEdgesBy(4));
         
             if (this.lineNo(r2) != this.lineNo(r1) + 1) {
                 // Selection spans 3 or more lines; fill the block between top and bottom lines
-                this.selectionElement.push(new RectShape(Rectangle.fromAny(r1.bottomRight(), r2.topLeft())).roundEdgesBy(4)); 
+                NodeList.push(this.selectionElement, new RectShape(Rectangle.fromAny(r1.bottomRight(), r2.topLeft())).roundEdgesBy(4)); 
             }
         }
     

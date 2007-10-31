@@ -1859,7 +1859,6 @@ var PathShape = Class.create(Shape, {
     
     initialize: function($super, vertlist, color, borderWidth, borderColor) {
         this.rawNode = NodeFactory.create("path");
-
         $super(color, borderWidth, borderColor);
         if (vertlist) this.setVertices(vertlist);
         return this;
@@ -1940,42 +1939,55 @@ var PathShape = Class.create(Shape, {
 
 });
 
-DisplayObjectList = function(type) {
-    return DisplayObjectList.become(NodeFactory.create('g'), type);
-};
 
-DisplayObjectList.become = function(obj, type) {
-    obj.__proto__ = DisplayObjectList.prototype;
-    obj.setAttributeNS(Namespace.LIVELY, "type", type);
-    //obj.setType(type);
-    return obj;
-};
 
-DisplayObjectList.prototype = Object.derive(NodeFactory.getPrototype('g'));
+function NodeList() {}
 
-Object.extend(DisplayObjectList.prototype, Enumerable);
-Object.extend(DisplayObjectList.prototype, {
-    
-    removeAll: function() {
-        while (this.firstChild) this.removeChild(this.firstChild);
+Object.extend(NodeList, {
+    // FIXME these implementations are rather lame
+    toArray: function(target) {
+	var array = [];
+	for (var m = target.lastChild; m != null; m = m.previousSibling) 
+	    array.push(m);
+	return array;
     },
     
-    _each: function(iterator) {
-        for (var m = this.lastChild; m != null; m = m.previousSibling) {
-            iterator(m);
-        }
+    invoke: function(target, method) {
+	var args = $A(arguments).slice(2);
+        var array = NodeList.toArray(target);
+	return array.map(function(value) { return value[method].apply(value, args); });
     },
-
-    push: function(element) {
+    
+    each: function(target, iterator, context) {
+	return NodeList.toArray(target).each(iterator, context);
+    },
+    
+    any: function(target, iterator, context) {
+	return NodeList.toArray(target).any(iterator, context);
+    },
+    
+    withType: function(type) {
+	return NodeList.become(NodeFactory.create('g'), type);
+    },
+    
+    become: function(node, type) {
+    	node.setAttributeNS(Namespace.LIVELY, "type", type);
+	return node;
+    },
+    
+   clear: function(list) {
+        while (list.firstChild) list.removeChild(list.firstChild);
+    },
+    
+    push: function(list, element) {
         // FIXME remove the alternative
-        this.appendChild(element.rawNode || element);
+        list.appendChild(element.rawNode || element);
     },
 
-    remove: function(element) {
-        if ((element.rawNode||element).parentNode === this) {
+    remove: function(list, element) {
+        if ((element.rawNode||element).parentNode === list) {
             // FIXME remove the alternative
-    
-            this.removeChild(element.rawNode || element);
+            list.removeChild(element.rawNode || element);
             return true;
         }
         return false;
@@ -2247,9 +2259,9 @@ Object.extend(Morph.prototype, {
         
         switch (type) {
         case 'Submorphs':
-            this.submorphs = DisplayObjectList.become(element, type);
+            this.submorphs = NodeList.become(element, type);
             //console.log('recursing into children of %s', this);
-            this.submorphs.each(function(m) { importer.importFromNode(m); });
+            NodeList.each(this.submorphs, function(m) { importer.importFromNode(m); });
             return true;
         case 'FocusHalo':
             return true;
@@ -2263,20 +2275,18 @@ Object.extend(Morph.prototype, {
         switch (shapeType) {
         case "ellipse":
             this.shape = new EllipseShape(initialBounds.translatedBy(this.origin.negated()), 
-                this.defaultFill, this.defaultBorderWidth, this.defaultBorderColor);
+					  this.defaultFill, this.defaultBorderWidth, this.defaultBorderColor);
             break;
         default:
             // polygons and polylines are set explicitly later
             this.shape = new RectShape(initialBounds.translatedBy(this.origin.negated()), 
-                this.defaultFill, this.defaultBorderWidth, this.defaultBorderColor);
+				       this.defaultFill, this.defaultBorderWidth, this.defaultBorderColor);
             break;
         }
     
         this.addChildElement(this.shape.rawNode);
 
-        // this.created = false; // exists on server now
-    
-        this.submorphs = DisplayObjectList('Submorphs');
+        this.submorphs = NodeList.withType('Submorphs');
         this.appendChild(this.submorphs);
     
         return this;
@@ -2610,7 +2620,7 @@ Object.extend(Morph.prototype, {
     domAddMorph: function(m, isFront) {
         if (isFront) {
             // the last one, so drawn last, so front
-            this.submorphs.push(m);
+            NodeList.push(this.submorphs, m);
         } else {
             this.submorphs.insertBefore(m, this.submorphs.firstChild);
         }
@@ -2622,7 +2632,7 @@ Object.extend(Morph.prototype, {
             return null;
         }
         
-        this.submorphs.remove(m);
+        NodeList.remove(this.submorphs, m);
         m.setHasKeyboardFocus(false);
 
         // KP: layoutChanged() ??
@@ -2630,7 +2640,7 @@ Object.extend(Morph.prototype, {
     },
     
     removeAllMorphs: function() {
-        this.submorphs.removeAll();
+        NodeList.clear(this.submorphs);
         this.layoutChanged(); 
     },
     
@@ -2654,7 +2664,7 @@ Object.extend(Morph.prototype, {
     withAllSubmorphsDo: function(func, argOrNull) {
         // Call the supplied function on me and all of my subMorphs by recursion.
         func.call(this, argOrNull);
-        this.submorphs.invoke('withAllSubmorphsDo', func, argOrNull);
+        NodeList.invoke(this.submorphs, 'withAllSubmorphsDo', func, argOrNull);
     },
     
     topSubmorph: function() {
@@ -2710,7 +2720,7 @@ Object.extend(Morph.prototype, {
         }
 
         if (other.hasSubmorphs()) { // deep copy of submorphs
-            other.submorphs.each((function(m) { this.domAddMorph(m.copy(), false) }).bind(this));
+            NodeList.each(other.submorphs, function(m) { this.domAddMorph(m.copy(), false) }.bind(this));
         }
         
         if (other.stepHandler != null) { 
@@ -2922,8 +2932,8 @@ Object.extend(Morph.prototype, {
 
         if (this.hasSubmorphs()) {
             //If any submorph handles it (ie returns true), then return
-            if (this.submorphs.any(function(m) { return m.mouseEvent(evt, false)}))
-            return true;
+            if (NodeList.any(this.submorphs, (function(m) { return m.mouseEvent(evt, false)})))
+		return true;
         }
 
         if (this.mouseHandler == null) 
@@ -3016,14 +3026,14 @@ Object.extend(Morph.prototype, {
     },
     
     adjustFocusHalo: function() {
-        this.focusHalo.removeAll();
+        NodeList.clear(this.focusHalo);
         var shape = new RectShape(this.shape.bounds().insetBy(-2), null, this.focusHaloBorderWidth, this.focusedBorderColor);
-        this.focusHalo.push(shape.rawNode);
+        NodeList.push(this.focusHalo, shape.rawNode);
     },
 
     addFocusHalo: function() {
         if (this.focusHalo) return false;
-        this.focusHalo = this.addChildElement(DisplayObjectList('FocusHalo'));
+        this.focusHalo = this.addChildElement(NodeList.withType('FocusHalo'));
         this.focusHalo.setStrokeOpacity(0.3);
         this.focusHalo.setLineJoin(Shape.LineJoins.ROUND);
         this.adjustFocusHalo();
@@ -3229,10 +3239,10 @@ Object.extend(Morph.prototype, {
         // First check all the submorphs, front first
         if (this.hasSubmorphs()) {
             var hit = null;
-            this.submorphs.each(function(m) { 
+            NodeList.each(this.submorphs, (function(m) { 
                 hit = m.morphToGrabOrReceive(evt, droppingMorph, checkForDnD); 
                 if (hit != null) throw $break; 
-            });
+            }));
             if (hit != null) return hit;  // hit a submorph
         }
 
@@ -3419,8 +3429,8 @@ Object.extend(Morph.prototype, {
 
         if (this.hasSubmorphs()) { 
             var subBounds = null; // KP: added = null
-            this.submorphs.each(function(m) { 
-            subBounds = subBounds == null ? m.bounds() : subBounds.union(m.bounds()); });
+            NodeList.each(this.submorphs, function(m) { 
+		subBounds = subBounds == null ? m.bounds() : subBounds.union(m.bounds()); });
             // could be simpler when no rotation...
             this.fullBounds = this.fullBounds.union(tfm.transformRectToRect(subBounds));
         } 

@@ -193,7 +193,7 @@ function populateWorldWithExamples(world) {
 
         // KP: note that element deletion interferes with iteration, so
         // we make an array first and then remove 
-        lm2.myWorld.submorphs.toArray().each(function(m) { 
+        NodeList.toArray(lm2.myWorld.submorphs).each(function(m) { 
             if (m instanceof LinkMorph) return;
             m.remove(); 
         });
