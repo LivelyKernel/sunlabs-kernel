@@ -178,7 +178,7 @@ function populateWorldWithExamples(world) {
 
         if (Config.showDoodle) lm1.myWorld.addMorph(WindowMorph(DoodleMorph(pt(560, 380).extent(pt(300, 300))), 'Doodle Morph'));
         
-        if (Config.showVideo) { new PlayerMorph().openIn(lm1.myWorld, pt(50, 50)); }
+        // if (Config.showVideo) { new PlayerMorph().openIn(lm1.myWorld, pt(50, 50)); }
 
         if (Config.showMessenger && Config.showNetworkExamples) new MessengerWidget().openIn(lm1.myWorld, pt(875, 375));
     }
