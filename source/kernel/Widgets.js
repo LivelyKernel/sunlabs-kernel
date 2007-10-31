@@ -2993,7 +2993,7 @@ Object.extend(LinkMorph.prototype, {
         // Create only one help balloon at a time
         if (this.help) return;
         
-        this.help = TextMorph(evt.mousePoint.extent(pt(260, 20)), this.helpText);
+        this.help = TextMorph(evt.mousePoint.addXY(10, 10).extent(pt(260, 20)), this.helpText);
         // trying to relay mouse events to the WindowControlMorph
         this.help.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
         
