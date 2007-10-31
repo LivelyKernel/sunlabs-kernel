@@ -4739,5 +4739,152 @@ Object.extend(EngineMorph.prototype, {
 
 });
 
+
+/*
+ * PlayerMorph is the end-user interface for showing the animation
+ */ 
+
+PlayerMorph = HostClass.create('PlayerMorph', Morph);
+
+Object.extend(PlayerMorph.prototype, {
+
+    initialize: function() {
+        var rect = Rectangle(0, 0, 330, 260);
+        PlayerMorph.superclass.initialize.call(this, rect, "rect");
+        this.setFill(LinearGradient.makeGradient(Color.white, Color.primary.blue, LinearGradient.NorthSouth));
+        this.animation = AnimMorph(Rectangle(-160, -120, 320, 240), "Resources/Anim/Frame", 469, ".jpg");
+        this.addMorph(this.animation);
+    },
+    
+    start: function() {
+        this.animation.play = true;
+    },
+    
+    stop: function() {
+        this.animation.play = false;
+    },
+    
+    openIn: function(world, location) {
+        world.addMorphAt(WindowMorph(this, 'AnimationMorph'), location);
+        this.startStepping();
+    },
+    
+    startStepping: function() {
+        this.animation.startStepping(100,'nextFrame'); 
+    }
+    
+});
+
+
+/*
+ * Animation Morph is the animation "engine" that loads the frames for the animation
+ */
+  
+AnimMorph = HostClass.create('AnimMorph', Morph);
+
+Object.extend(AnimMorph.prototype, {
+
+    initialize: function(rect, frameURL, numberOfFrames, type /* String (.jpg, .gif etc)*/) {
+        AnimMorph.superclass.initialize.call(this, rect);
+        this.setFill(Color.black);
+        this.dim = rect.extent();
+        this.play = false;
+        this.data = new Array();
+        this.frame = 0;
+        this.play = false;
+
+        for ( var i = 1; i <= numberOfFrames; i++ ) {
+            var index = i;
+            // so far using animations with less than 4 digits
+            if ( i < 10 ) {
+                index = "000" + i;
+            } else if ( index < 100 ) {
+                index = "00" + i;
+            } else if ( index < 1000 ) {
+                index = "0" + i;
+            }
+            this.data.push(frameURL + index + type);
+        }
+        
+        this.status = Morph(this.bounds().center().subPt(pt(50,50)).extent(pt(100,100)), "ellipse");
+//        m.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseUp: "onMouseUp"});
+        this.status.handlesMouseDown = function() {
+            return true;
+        }
+        this.status.onMouseDown = function (evt) {
+            this.owner().play = true;
+            this.remove();
+        }
+        this.addMorph(this.status);
+        this.status.setFill(Color.white);
+        this.status.setFillOpacity(0.7);
+        this.status.setBorderWidth(0);
+        this.status.addMorph( k = Morph(pt(0,0).asRectangle()) );
+        k.setShape(PolylineShape([pt(-20,-20),pt(30,0),pt(-20,20), pt(-20,-20)], 1, Color.blue));
+        k.setFill(Color.blue.lighter());
+        k.relayMouseEvents(this.status, {onMouseDown: "onMouseDown", onMouseUp: "onMouseUp"});
+    },
+    
+    loadURL: function(url) {
+        if (this.image && this.image.tagName != 'image') {
+            this.removeChild(this.image);
+            this.image = null;            
+        }
+
+        if (!this.image) {
+            var image = this.image = NodeFactory.create("image", { x: this.bounds().topLeft().subPt(this.bounds().center()).x, y: this.bounds().topLeft().subPt(this.bounds().center()).y, width: this.dim.x, height: this.dim.y});
+            image.setType('Image');
+            this.addChildElement(image);
+        }
+        
+        this.image.withHref(url);
+    },
+
+    reload: function() {
+        if (this.url) {
+            this.loadURL(this.url);
+        }
+    },
+            
+    nextFrame: function() {
+        if (this.play) {
+            this.showNext();
+        } 
+    },
+    
+    showNext: function() {
+        this.frame++;
+        if (this.frame == this.data.length) {
+            this.frame = 0;
+            this.play = false;
+            this.addMorph(this.status);
+        }
+        this.url = this.data[this.frame];
+        this.reload();
+    },
+
+    handlesMouseDown: function() {
+        return true;
+    },
+    
+    // should we make a better control panel for the animation with mouseover and mouseout?
+    onMouseOver: function(evt) {
+//        console.log("mouse over");
+    },
+    
+    onMouseOut: function(evt) {
+//        console.log("mouse out");
+    },
+    
+    onMouseDown: function(evt) {
+        if ( this.play ) {
+            this.play = false;
+            this.addMorph(this.status);
+        } 
+    }
+
+});
+
+
 console.log('loaded Examples.js');
 
