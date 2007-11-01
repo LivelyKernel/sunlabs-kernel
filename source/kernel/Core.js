@@ -39,7 +39,6 @@ window.onerror = function(message, url, code) {
     console.log('in %s: %s, code %s', url, message, code);
 };
 
-
 Namespace =  {
     SVG : Canvas.getAttribute("xmlns"),
     LIVELY : Prototype.Browser.WebKit ? null : Canvas.getAttribute("xmlns:lively"), // Safari XMLSerializer seems to do weird things w/namespaces
@@ -118,8 +117,8 @@ var NodeFactory = {
 
     prototypes: new Hash(), // elementName -> prototype
 
-    // Somethimes object.constructor.prototype doesn't work for host objects b/c the actuall hidden object.__proto__
-    // doesn't have its .constructor property set to the right value or the constructor doesn't have it's .prototype
+    // Sometimes object.constructor.prototype doesn't work for host objects b/c the actually hidden object.__proto__
+    // doesn't have its .constructor property set to the right value or the constructor doesn't have its .prototype
     // value set
     getPrototype: function(elementName) { // remember prototypes
         var proto = this.prototypes[elementName];
@@ -743,7 +742,6 @@ Object.category(Rectangle.prototype, 'part naming', function() { return {
         return "rect(%1,%2)".format(this.topLeft(), this.bottomRight());
     }
 
-    
 }});
 
 Object.category(Rectangle, 'factories',  function() { return {
@@ -1023,7 +1021,6 @@ function Transform(matrix) {
     this.matrix = matrix || Canvas.createSVGMatrix();
     return this;
 }
-
 
 Object.extend(Transform, {
 
@@ -1527,6 +1524,7 @@ Object.extend(Shape, {
 /**
  * @class RectShape: Rectangle shape
  */ 
+
 var RectShape = Class.create(Shape, {
 
     initialize: function($super, r, color, borderWidth, borderColor) {
@@ -1607,6 +1605,7 @@ var RectShape = Class.create(Shape, {
 /**
  * @class EllipseShape
  */ 
+
 var EllipseShape = Class.create(Shape, {
 
     initialize: function($super, r, color, borderWidth, borderColor) {
@@ -1817,6 +1816,7 @@ var PolygonShape = Class.create(Shape, {
 /**
  * @class PolylineShape
  */ 
+
 var PolylineShape = Class.create(Shape, {
     
     initialize: function($super, vertlist, borderWidth, borderColor) {
@@ -1855,6 +1855,7 @@ var PolylineShape = Class.create(Shape, {
 /**
  * @class PathShape
  */ 
+
 var PathShape = Class.create(Shape, {
     
     initialize: function($super, vertlist, color, borderWidth, borderColor) {
@@ -1938,8 +1939,6 @@ var PathShape = Class.create(Shape, {
     controlPointNear: PolygonShape.prototype.controlPointNear
 
 });
-
-
 
 function NodeList() {}
 
