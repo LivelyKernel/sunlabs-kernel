@@ -2112,14 +2112,14 @@ Object.extend(Morph.prototype, {
 
     fishEye: false,        // defines if fisheye effect is used
     fisheyeScale: 1.0,     // set the default scaling to 1.0
-    fisheyeGrowth: 1.0,    // upto fisheyeGrowth size bigger (1.0 = double size)
+    fisheyeGrowth: 1.0,    // up to fisheyeGrowth size bigger (1.0 = double size)
     fisheyeProximity: 0.5, // where to react wrt/ size (how close we need to be)
 
     clipPath: null, // KP: should every morph should have one of those?
     keyboardHandler: null, //a KeyboardHandler for keyboard repsonse, etc
     openForDragAndDrop: true, // Submorphs can be extracted from or dropped into me
     mouseHandler: MouseHandlerForDragging.prototype, //a MouseHandler for mouse sensitivity, etc
-    stepHandler: null, //a stepHandler for time-varying morphs and animation 
+    stepHandler: null, // a stepHandler for time-varying morphs and animation 
 
     nextNavigableSibling: null, // keyboard navigation
     
@@ -3229,7 +3229,7 @@ Object.extend(Morph.prototype, {
     },
 
     morphToGrabOrReceive: function(evt, droppingMorph, checkForDnD) {
-        // If checkForDnD is false, return the morph to receive this mosue event (or null)
+        // If checkForDnD is false, return the morph to receive this mouse event (or null)
         // If checkForDnD is true, return the morph to grab from a mouse down event (or null)
         // If droppingMorph is not null, then check that this is a willing recipient (else null)
 
