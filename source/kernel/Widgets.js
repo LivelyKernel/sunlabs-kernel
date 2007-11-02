@@ -102,10 +102,10 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
         var base = value ? this.baseColor : this.baseColor.darker();
         switch (this.fillType) {
         case "linear gradient" :
-            this.setFill(LinearGradient.makeGradient(base, base.lighter(), LinearGradient.SouthNorth));
+            this.setFill(new LinearGradient(base, base.lighter(), LinearGradient.SouthNorth));
             break;
         case "radial gradient" :
-            this.setFill(RadialGradient.makeCenteredGradient(base.lighter(), base));
+            this.setFill(new RadialGradient(base.lighter(), base));
             break;
         default:
             this.setFill(base);
@@ -542,7 +542,7 @@ Object.extend(WindowControlMorph.prototype, {
 
     initialize: function(rect, inset, color, target, action, helpText) {
         WindowControlMorph.superclass.initialize.call(this, rect.insetBy(inset), 'ellipse');
-        this.setFill(RadialGradient.makeCenteredGradient(color.lighter(2), color));
+        this.setFill(new RadialGradient(color.lighter(2), color));
         this.target = target;
         this.action = action;
         this.color = color;
@@ -558,14 +558,14 @@ Object.extend(WindowControlMorph.prototype, {
     },
 
     onMouseOver: function(evt) {
-        this.setFill(RadialGradient.makeCenteredGradient(Color.white, this.color));
+        this.setFill(new RadialGradient(Color.white, this.color));
         if (this.helpText && !this.helpOpen) {
             this.showHelp(evt);
         }
     },
     
     onMouseOut: function(evt) {
-        this.setFill(RadialGradient.makeCenteredGradient(this.color.lighter(2), this.color));
+        this.setFill(new RadialGradient(this.color.lighter(2), this.color));
         this.hideHelp();
     },
     
@@ -1016,7 +1016,7 @@ Object.extend(SelectionMorph.prototype, {
 
         SelectionMorph.superclass.reshape.call(this, this.reshapeName, newPoint, handle, lastCall);
         this.selectedMorphs = [];
-        this.owner().submorphs.each(function(m) {
+        NodeList.each(this.owner().submorphs, function(m) {
             if (m !== this && this.bounds().containsRect(m.bounds())) this.selectedMorphs.push(m);
         }.bind(this));
         this.selectedMorphs.reverse();
@@ -1620,8 +1620,8 @@ Object.extend(SliderMorph.prototype, {
     
         if (this.fillType == "linear gradient") {
             var direction = this.vertical() ? LinearGradient.EastWest : LinearGradient.NorthSouth;
-            this.setFill(LinearGradient.makeGradient(this.baseColor.lighter(2), this.baseColor, direction));
-            this.slider.setFill(LinearGradient.makeGradient(this.baseColor.lighter(), this.baseColor.darker(), direction));
+            this.setFill(new LinearGradient(this.baseColor.lighter(2), this.baseColor, direction));
+            this.slider.setFill(new LinearGradient(this.baseColor.lighter(), this.baseColor.darker(), direction));
         } else {
             this.setFill(this.baseColor);
             this.slider.setFill(this.baseColor.darker());
@@ -2014,7 +2014,7 @@ Object.extend(WorldMorph.prototype, {
             widgetPanel: { borderColor: Color.red, borderWidth: 2, rounding: 0,
                            fill: Color.blue.lighter(), opacity: 1},
             clock:       { borderColor: Color.black, borderWidth: 1,
-                           fill: RadialGradient.makeCenteredGradient(Color.yellow.lighter(2), Color.yellow) },
+                           fill: new RadialGradient(Color.yellow.lighter(2), Color.yellow) },
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue}
         },
 
@@ -2022,7 +2022,7 @@ Object.extend(WorldMorph.prototype, {
             styleName: 'lively',
             window:      { rounding: 8 },
             titleBar:    { rounding: 8, borderWidth: 2, bordercolor: Color.black,
-                           fill: LinearGradient.makeGradient(Color.primary.blue, Color.primary.blue.lighter(3))},
+                           fill: new LinearGradient(Color.primary.blue, Color.primary.blue.lighter(3))},
             panel:       {  },
             slider:      { borderColor: Color.black, borderWidth: 1, 
                            baseColor: Color.primary.blue, fillType: "linear gradient"},
@@ -2031,7 +2031,7 @@ Object.extend(WorldMorph.prototype, {
             widgetPanel: { borderColor: Color.blue, borderWidth: 4, rounding: 16,
                            fill: Color.blue.lighter(), opacity: 0.4},
             clock:       { borderColor: Color.black, borderWidth: 1,
-                           fill: RadialGradient.makeCenteredGradient(Color.primary.blue.lighter(2), Color.primary.blue.lighter()) },
+                           fill: new RadialGradient(Color.primary.blue.lighter(2), Color.primary.blue.lighter()) },
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue}
         },
 
@@ -2039,7 +2039,7 @@ Object.extend(WorldMorph.prototype, {
             styleName: 'turquoise',
             window:      { rounding: 8},
             titleBar:    { rounding: 8, borderWidth: 2, bordercolor: Color.black,
-                           fill: LinearGradient.makeGradient(Color.turquoise, Color.turquoise.lighter(3))},
+                           fill: new LinearGradient(Color.turquoise, Color.turquoise.lighter(3))},
             panel:       {  },
             slider:      { borderColor: Color.black, borderWidth: 1, 
                            baseColor: Color.turquoise, fillType: "linear gradient"},
@@ -2048,7 +2048,7 @@ Object.extend(WorldMorph.prototype, {
             widgetPanel: { borderColor: Color.neutral.gray.darker(), borderWidth: 4,
                            fill: Color.turquoise.lighter(3), rounding: 16},
             clock:       { borderColor: Color.black, borderWidth: 1,
-                           fill: RadialGradient.makeCenteredGradient(Color.turquoise.lighter(2), Color.turquoise) },
+                           fill: new RadialGradient(Color.turquoise.lighter(2), Color.turquoise) },
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue}
         }
     },
@@ -2892,7 +2892,7 @@ Object.extend(LinkMorph.prototype, {
         LinkMorph.superclass.initialize.call(this, bounds, "ellipse");
 
         // Make me look a bit like a world
-        this.setFill(RadialGradient.makeCenteredGradient(Color.green, Color.blue));
+        this.setFill(new RadialGradient(Color.green, Color.blue));
         [new Rectangle(0.15,0,0.7,1), new Rectangle(0.35,0,0.3,1), new Rectangle(0,0.3,1,0.4)].each( function(each) {
             // Make longitude / latitude lines
             var lineMorph = Morph(bounds.scaleByRect(each), "ellipse");
@@ -2907,7 +2907,7 @@ Object.extend(LinkMorph.prototype, {
         if (!otherWorld) {
             otherWorld = WorldMorph(Canvas);
             var pathBack = LinkMorph(WorldMorph.current(), bounds);
-            pathBack.setFill(RadialGradient.makeCenteredGradient(Color.orange, Color.red.darker()));
+            pathBack.setFill(new RadialGradient(Color.orange, Color.red.darker()));
             otherWorld.addMorph(pathBack);
         } 
         this.myWorld = otherWorld;

@@ -2422,7 +2422,7 @@ Object.extend(WeatherWidget.prototype, {
         var panel = PanelMorph(pt(250, 260));
         panel.setBorderWidth(2);
         //panel.setBorderColor(Color.blue);
-        panel.setFill(LinearGradient.makeGradient(Color.white, Color.primary.blue, LinearGradient.WestEast));
+        panel.setFill(new LinearGradient(Color.white, Color.primary.blue, LinearGradient.WestEast));
         // TODO: add rounding to all the elements (panel, window & titlebar)
         // or make the titlebar round depending on the window
         var m; 
@@ -2569,7 +2569,7 @@ Object.extend(StockWidget.prototype, {
         var panel = PanelMorph(extent);
         
         // panel.setFill(StipplePattern.create(Color.primary.blue.lighter(), 1, Color.gray.lighter(), 1));
-        panel.setFill(LinearGradient.makeGradient(Color.white, Color.primary.blue.lighter(), LinearGradient.EastWest));
+        panel.setFill(new LinearGradient(Color.white, Color.primary.blue.lighter(), LinearGradient.EastWest));
         panel.setBorderWidth(2);
         //panel.setBorderColor(Color.blue);
         //var url = "http://www.nasdaq.com/aspxcontent/NasdaqRSS.aspx?data=quotes&symbol=stock"
@@ -3739,7 +3739,7 @@ Object.extend(MessengerWidget.prototype, {
     buildView: function() {
         var panel = PanelMorph(pt(300, 255));
         panel.setBorderWidth(2);
-        panel.setFill(LinearGradient.makeGradient(Color.white, Color.primary.blue.lighter(), LinearGradient.EastWest));
+        panel.setFill(new LinearGradient(Color.white, Color.primary.blue.lighter(), LinearGradient.EastWest));
         var m = null;
         panel.addMorph(this.textpanel = TextPane(new Rectangle(10, 10, 280, 180), " ")).connectModel({model: this, getText: "getChatText", setText: "setChatText"});
 //        m.innerMorph().autoAccept = true;
@@ -3755,7 +3755,7 @@ Object.extend(MessengerWidget.prototype, {
         
         this.initpanel = PanelMorph(pt(300, 255));
         panel.addMorph(this.initpanel);
-        this.initpanel.setFill(LinearGradient.makeGradient(Color.white, Color.primary.blue, LinearGradient.NorthSouth));
+        this.initpanel.setFill(new LinearGradient(Color.white, Color.primary.blue, LinearGradient.NorthSouth));
         this.initpanel.addMorph(this.nickName = TextMorph(new Rectangle(10, 10, 220, 20), "<please enter your nickname>"));//.connectModel({model: this, getText: "getIMText", setText: "setIMText"});
         this.initpanel.addMorph(b = ButtonMorph(new Rectangle(240,10,50,20)));
         b.onMouseUp = function(evt) {
@@ -4598,7 +4598,7 @@ Object.extend(EngineMorph.prototype, {
     initialize: function(fullRect,type) {
         // A lively model by Dan Ingalls - 9/25/2007
         EngineMorph.superclass.initialize.call(this, fullRect, type);
-        this.setFill(LinearGradient.makeGradient(Color.gray, Color.darkGray, LinearGradient.NorthSouth));
+        this.setFill(new LinearGradient(Color.gray, Color.darkGray, LinearGradient.NorthSouth));
         this.makeLayout();
         this.running = true;
     },
@@ -4751,7 +4751,7 @@ Object.extend(PlayerMorph.prototype, {
     initialize: function() {
         var rect = Rectangle(0, 0, 330, 260);
         PlayerMorph.superclass.initialize.call(this, rect, "rect");
-        this.setFill(LinearGradient.makeGradient(Color.white, Color.primary.blue, LinearGradient.NorthSouth));
+        this.setFill(new LinearGradient(Color.white, Color.primary.blue, LinearGradient.NorthSouth));
         this.animation = AnimMorph(Rectangle(-160, -120, 320, 240), "Resources/Anim/Frame", 469, ".jpg");
         this.addMorph(this.animation);
     },

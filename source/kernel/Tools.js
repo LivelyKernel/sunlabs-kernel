@@ -214,11 +214,11 @@ Object.extend(StylePanel.prototype, {
     
         if (this.fillType == 'linear gradient') {
             if (this.fillDir == null) this.fillDir = 'NorthSouth';
-            this.targetMorph.setFill(LinearGradient.makeGradient(this.color1, this.color2, LinearGradient[this.fillDir]));
+            this.targetMorph.setFill(new LinearGradient(this.color1, this.color2, LinearGradient[this.fillDir]));
         }
     
         if (this.fillType == 'radial gradient')
-            this.targetMorph.setFill(RadialGradient.makeCenteredGradient(this.color1, this.color2));
+            this.targetMorph.setFill(new RadialGradient(this.color1, this.color2));
     },
      
     getFillOpacity: function() { return this.fillOpacity; },

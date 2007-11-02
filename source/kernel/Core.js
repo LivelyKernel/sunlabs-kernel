@@ -927,88 +927,120 @@ console.log("Color");
 // Gradient colors, stipple patterns and coordinate transformatins
 // ===========================================================================
 
+Gradient = Class.create({
+    addStop: function(offset, color) {
+        this.rawNode.appendChild(NodeFactory.create("stop", {offset: offset, "stop-color": color}));
+        return this;
+    }.logErrors('addStop'),
+
+    toString: function() {
+	return this.rawNode ? this.rawNode.tagName : "Gradient?";
+    }
+    
+});
+
+
 /**
  * @class LinearGradient (NOTE: PORTING-SENSITIVE CODE)
  */
 
 // note that Colors and Gradients are similar
-LinearGradient = HostClass.fromElementType('linearGradient', true);
+LinearGradient = Class.create(Gradient, {
+    initialize: function(/*args*/) {
+	switch (arguments.length) {
+	case 1:
+	    this.rawNode = arguments[0].cloneNode(true);
+	    return this;
+	case 2:
+	case 3:
+	    var stopColor1 = arguments[0];
+	    var stopColor2 = arguments[1];
+	    var vector = arguments.length == 3 ? arguments[2] : LinearGradient.NorthSouth;
+            this.rawNode = NodeFactory.create("linearGradient",
+					      {x1: vector.x, y1: vector.y, 
+					       x2: vector.maxX(), y2: vector.maxY()}); 
+	    this.addStop(0, stopColor1).addStop(1, stopColor2);
+	    return this;
+	default:
+	    throw new Error("whoops, args %s", $A(arguments));
+	}
+    },
+    
+    copy: function() {
+	return new LinearGradient(this.rawNode);
+    }
+
+    
+});
 
 Object.extend(LinearGradient, {
     NorthSouth: rect(pt(0, 0), pt(0, 1)),
     SouthNorth: rect(pt(0, 1), pt(0, 0)),
     EastWest:   rect(pt(0, 0), pt(1, 0)),
     WestEast:   rect(pt(1, 0), pt(0, 0)),
-    
-    create: function(vector) {
-        if (vector === undefined) 
-            vector = LinearGradient.NorthSouth;
-
-        return LinearGradient({x1: vector.x, y1: vector.y, x2: vector.maxX(), y2: vector.maxY()}); 
-    },
-    
-    makeGradient: function(stopColor1, stopColor2, vector) {
-        return LinearGradient.create(vector).addStop(0, stopColor1).addStop(1, stopColor2);
-    }
-    
 });
 
-Object.extend(LinearGradient.prototype, { 
-    addStop: function(offset, color) {
-        this.appendChild(NodeFactory.create("stop", {offset: offset, "stop-color": color}));
-        return this;
-    }
-});
 
 /**
  * @class RadialGradient (NOTE: PORTING-SENSITIVE CODE)
  */
 
-RadialGradient = HostClass.fromElementType('radialGradient', true);
-
-Object.extend(RadialGradient, {
-
-    create: function(c, r, f) {
-        var elt = RadialGradient({cx: c.x, cy: c.y, r: r});
-        // elt.setAttributeNS(null, 'gradientUnits', 'userSpaceOnUse');
-        // elt.setAttributeNS(null, "cx", c.x);
-        // elt.setAttributeNS(null, "cy", c.y);
-        // elt.setAttributeNS(null, "r", r);
-        if (f !== undefined) {
-            elt.setAttributeNS(null, "fx", f.x);
-            elt.setAttributeNS(null, "fy", f.y);
-        }
+RadialGradient = Class.create(Gradient, {
     
-        return elt;
+    initialize: function(/*args*/) {
+	switch (arguments.length) {
+	case 1:
+	    this.rawNode = arguments[0].cloneNode(true);
+	    return this;
+	case 2:
+	    var stopColor1 = arguments[0];
+	    var stopColor2 = arguments[1];
+	    var c = pt(0.5, 0.5);
+	    var r = 0.4;
+	    this.rawNode = NodeFactory.create("radialGradient", {cx: c.x, cy: c.y, r: r});
+	    this.addStop(0, stopColor1);
+	    this.addStop(1, stopColor2);
+	    return this;
+	default:
+	    throw new Error("whoops, args %s", $A(arguments));
+	}
     },
 
-    makeGradient: function(stopColor1, stopColor2) {
-        return RadialGradient.create(pt(0,0), 1).addStop(0, stopColor1).addStop(1, stopColor2);
-    },
-
-    makeCenteredGradient: function(stopColor1, stopColor2) {
-        // FIXME revisit the meaning of the arguments
-        return RadialGradient.create(pt(0.5, 0.5), 0.4).addStop(0, stopColor1).addStop(1, stopColor2);
+    copy: function() {
+	return new RadialGradient(this.rawNode);
     }
-
+    
 });
 
-Object.extend(RadialGradient.prototype, { 
-    addStop: LinearGradient.prototype.addStop
-});
 
 /**
  * @class StipplePattern (NOTE: PORTING-SENSITIVE CODE)
  */
 
-StipplePattern = HostClass.fromElementType('pattern', true);
+StipplePattern = Class.create({
 
-Object.extend(StipplePattern, { 
-    create: function(color1, h1, color2, h2) {
-        var elt = StipplePattern({patternUnits: 'userSpaceOnUse', x: 0, y: 0, width: 100, height: h1 + h2});
-        elt.appendChild(NodeFactory.create('rect', {x: 0, y: 0,  width: 100, height: h1,      fill: color1}));
-        elt.appendChild(NodeFactory.create('rect', {x: 0, y: h1, width: 100, height: h1 + h2, fill: color2}));
-        return elt;
+    initialize: function(/*args*/) {
+	switch (arguments.length) {
+	case 1:
+	    this.rawNode = arguments[0].cloneNode(true);
+	    return this;
+	case 4:
+	    var color1 = arguments[0];
+	    var h1 = arguments[1];
+	    var color2 = arguments[2];
+	    var h2 = arguments[4];
+            this.rawNode = NodeFactory.create("pattern", 
+					      {patternUnits: 'userSpaceOnUse', x: 0, y: 0, width: 100, height: h1 + h2});
+            this.rawNode.appendChild(NodeFactory.create('rect', {x: 0, y: 0,  width: 100, height: h1,      fill: color1}));
+            this.rawNode.appendChild(NodeFactory.create('rect', {x: 0, y: h1, width: 100, height: h1 + h2, fill: color2}));
+	    return this;
+	default:
+	    throw new Error("whoops, args %s", $A(arguments));
+	}
+    },
+    
+    copy: function() {
+	return new StipplePattern(this.rawNode);
     }
 });
 
@@ -2315,29 +2347,35 @@ Object.extend(Morph.prototype, {
     
     setFill: function(fill) {
         // console.log('setting %s on %s', fill, this);
-        if (fill == null) {
-            this.assign('fill', null);
-            this.shape.setFill("none");
-        } else if (fill instanceof Color) {
-            this.assign('fill', null);
-            this.shape.setFill(fill.toString());
-        } else {
-            var ref = this.assign('fill', fill);
-            this.shape.setFill(ref);
-        }
+	var old = this.fill;
+	this.fill = fill;
+	if (old instanceof Gradient) {
+	    var parent = old.rawNode.parentNode;
+	    if (parent)
+		parent.removeChild(old.rawNode);
+	}
+	if (fill == null) {
+	    this.shape.setFill(null);
+	} else if (fill instanceof Color) {
+	    this.shape.setFill(fill.toString());
+	} else if (fill instanceof Gradient || fill instanceof StipplePattern) {
+	    var id = fill.rawNode.getAttribute("id");
+	    var newId = "gradient_" + this.id;
+	    if (newId != id) {
+		this.fill = fill.copy(); 
+		this.fill.rawNode.setAttribute("id", newId);
+	    }
+            if (!this.defs) {
+		this.defs = NodeFactory.create("defs");
+		this.addChildElement(this.defs);
+            }
+	    this.shape.setFill("url(#" + newId + ")");
+	    this.defs.appendChild(this.fill.rawNode);
+	}
     }.wrap(Morph.onChange('shape')),
 
     getFill: function() {
-        var fill = this.shape.getFill();
-        if (fill == "none") return null;
-        var match = fill.match("url\\(#(.*)\\)");
-        if (match) {
-            var def = document.getElementById(match[1]);
-            // console.log('found url %s def %s', match[1], def);
-            return def;
-        } else {
-            return Color.parse(fill);
-        }
+	return this.fill; 
     }.logErrors('getFill'),
     
     setBorderColor: function(newColor) { this.shape.setStroke(newColor); }.wrap(Morph.onChange('shape')),
