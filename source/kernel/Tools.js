@@ -21,11 +21,9 @@
  * @class SimpleBrowser: A simple JavaScript class browser
  */
    
-SimpleBrowser = Class.extend(Model);
+SimpleBrowser = Class.create(Model, {
 
-Object.extend(SimpleBrowser.prototype, {
-
-    initialize: function() { SimpleBrowser.superclass.initialize.call(this); },
+    initialize: function($super) { $super(); },
 
     getClassList: function() { return Class.listClassNames(Global).filter(function(n) { return !n.startsWith('SVG')}).sort(); },
 
@@ -49,7 +47,7 @@ Object.extend(SimpleBrowser.prototype, {
     setMethodString: function(newDef) { eval(newDef); },
 
     openIn: function(world, location) {
-        world.addMorphAt(WindowMorph(this.buildView(pt(400,300)), 'JavaScript Code Browser'), location);
+        world.addMorphAt(new WindowMorph(this.buildView(pt(400,300)), 'JavaScript Code Browser'), location);
         this.changed('getClassList')
     },
 
@@ -91,12 +89,10 @@ Object.extend(SimpleBrowser.prototype, {
  * @class SimpleInspector: A simple JavaScript object (instance) inspector
  */
    
-SimpleInspector = Class.extend(Model);
+SimpleInspector = Class.create(Model, {
 
-Object.extend(SimpleInspector.prototype, {
-
-    initialize: function(targetMorph) {
-        SimpleInspector.superclass.initialize.call(this);
+    initialize: function($super, targetMorph) {
+        $super();
         this.inspectee = targetMorph;
     },
 
@@ -152,7 +148,7 @@ Object.extend(SimpleInspector.prototype, {
             new SimpleInspector(thisModel.selectedItem()).openIn(WorldMorph.current())}])
             return menu; 
         }
-        return WindowMorph(panel, 'Inspector');
+        return new WindowMorph(panel, 'Inspector');
     }
 
 });
@@ -165,12 +161,10 @@ Object.extend(SimpleInspector.prototype, {
  * @class StylePanel: Interactive style editor for morphs 
  */
    
-StylePanel = Class.extend(Model);
+StylePanel = Class.create(Model, {
 
-Object.extend(StylePanel.prototype, {
-
-    initialize: function(targetMorph) {
-        StylePanel.superclass.initialize.call(this);
+    initialize: function($super, targetMorph) {
+        $super();
         this.targetMorph = targetMorph;
         this.originalSpec = targetMorph.makeStyleSpec();
         for (var p in this.originalSpec) this[p] = this.originalSpec[p];
@@ -259,7 +253,7 @@ Object.extend(StylePanel.prototype, {
 
     openIn: function(world, location) {
         var rect = (location || pt(50,50)).extent(pt(340,100));
-        world.addMorph(WindowMorph(this.buildView(rect), 'Style Panel'));
+        world.addMorph(new WindowMorph(this.buildView(rect), 'Style Panel'));
         this.changed('all')
     },
 
@@ -269,70 +263,70 @@ Object.extend(StylePanel.prototype, {
 
     buildView: function(rect) {
         var panelExtent = rect.extent();
-        var panel = PanelMorph(panelExtent, "rect");
+        var panel = new PanelMorph(panelExtent, "rect");
         panel.setFill(Color.primary.blue.lighter().lighter());
         panel.setBorderWidth(2);
         var m;
         var y = 10;
 
-        panel.addMorph(TextMorph(new Rectangle(50, y, 100, 20), "Border Width").beLabel());
-        panel.addMorph(m = PrintMorph(new Rectangle(150, y, 40, 20)));
+        panel.addMorph(new TextMorph(new Rectangle(50, y, 100, 20), "Border Width").beLabel());
+        panel.addMorph(m = new PrintMorph(new Rectangle(150, y, 40, 20)));
         m.connectModel({model: this, getValue: "getBorderWidth", setValue: "setBorderWidth"});
-        panel.addMorph(m = SliderMorph(new Rectangle(200, y, 100, 20), 10.0));
+        panel.addMorph(m =  new SliderMorph(new Rectangle(200, y, 100, 20), 10.0));
         m.connectModel({model: this, getValue: "getBorderWidth", setValue: "setBorderWidth"});
         y += 30;
 
-        panel.addMorph(TextMorph(new Rectangle(50, y, 100, 20), 'Border Color').beLabel());
-        panel.addMorph(m = ColorPickerMorph(new Rectangle(250, y, 50, 30)));
+        panel.addMorph(new TextMorph(new Rectangle(50, y, 100, 20), 'Border Color').beLabel());
+        panel.addMorph(m = new ColorPickerMorph(new Rectangle(250, y, 50, 30)));
         m.connectModel({model: this, setColor: "setBorderColor"});
         y += 40;
 
         if (this.targetMorph.shape.roundEdgesBy) {
-            panel.addMorph(TextMorph(new Rectangle(50, y, 100, 20), 'Round Corners').beLabel());
-            panel.addMorph(m = PrintMorph(new Rectangle(150, y, 40, 20)));
+            panel.addMorph(new TextMorph(new Rectangle(50, y, 100, 20), 'Round Corners').beLabel());
+            panel.addMorph(m = new PrintMorph(new Rectangle(150, y, 40, 20)));
             m.connectModel({model: this, getValue: "getRounding", setValue: "setRounding"});
-            panel.addMorph(m = SliderMorph(new Rectangle(200, y, 100, 20), 50.0));
+            panel.addMorph(m = new SliderMorph(new Rectangle(200, y, 100, 20), 50.0));
             m.connectModel({model: this, getValue: "getRounding", setValue: "setRounding"});
             y += 30;
         }
 
-        panel.addMorph(m = CheapListMorph(new Rectangle(50, y, 100, 50),[]));
+        panel.addMorph(m = new CheapListMorph(new Rectangle(50, y, 100, 50),[]));
         m.connectModel({model: this, getList: "getFillTypes", getSelection: "getFillType", setSelection: "setFillType"});
-        panel.addMorph(m = CheapListMorph(new Rectangle(160, y, 75, 60),[]));
+        panel.addMorph(m = new CheapListMorph(new Rectangle(160, y, 75, 60),[]));
         m.connectModel({model: this, getList: "getFillDirs", getSelection: "getFillDir", setSelection: "setFillDir"});
-        panel.addMorph(m = ColorPickerMorph(new Rectangle(250, y, 50, 30)));
+        panel.addMorph(m = new ColorPickerMorph(new Rectangle(250, y, 50, 30)));
         m.connectModel({model: this, setColor: "setColor1"});
-        panel.addMorph(m = ColorPickerMorph(new Rectangle(250, y+40, 50, 30)));
+        panel.addMorph(m = new ColorPickerMorph(new Rectangle(250, y+40, 50, 30)));
         m.connectModel({model: this, setColor: "setColor2"});
         y += 80;
 
-        panel.addMorph(TextMorph(new Rectangle(50, y, 90, 20), 'Fill Opacity').beLabel());
-        panel.addMorph(m = PrintMorph(new Rectangle(150, y, 40, 20)));
+        panel.addMorph(new TextMorph(new Rectangle(50, y, 90, 20), 'Fill Opacity').beLabel());
+        panel.addMorph(m = new PrintMorph(new Rectangle(150, y, 40, 20)));
         m.connectModel({model: this, getValue: "getFillOpacity", setValue: "setFillOpacity"});
-        panel.addMorph(m = SliderMorph(new Rectangle(200, y, 100, 20), 1.0));
+        panel.addMorph(m = new SliderMorph(new Rectangle(200, y, 100, 20), 1.0));
         m.connectModel({model: this, getValue: "getFillOpacity", setValue: "setFillOpacity"});
         y += 30;
 
-        panel.addMorph(TextMorph(new Rectangle(50, y, 90, 20), 'Stroke Opacity').beLabel());
-        panel.addMorph(m = PrintMorph(new Rectangle(150, y, 40, 20)));
+        panel.addMorph(new TextMorph(new Rectangle(50, y, 90, 20), 'Stroke Opacity').beLabel());
+        panel.addMorph(m = new PrintMorph(new Rectangle(150, y, 40, 20)));
         m.connectModel({model: this, getValue: "getStrokeOpacity", setValue: "setStrokeOpacity"});
-        panel.addMorph(m = SliderMorph(new Rectangle(200, y, 100, 20), 1.0));
+        panel.addMorph(m = new SliderMorph(new Rectangle(200, y, 100, 20), 1.0));
         m.connectModel({model: this, getValue: "getStrokeOpacity", setValue: "setStrokeOpacity"});
         y += 30;
 
         if (this.targetMorph.setTextColor) {
-            panel.addMorph(TextMorph(new Rectangle(50, y, 100, 20), "Text Color").beLabel());
-            panel.addMorph(m = ColorPickerMorph(new Rectangle(250, y, 50, 30)));
+            panel.addMorph(new TextMorph(new Rectangle(50, y, 100, 20), "Text Color").beLabel());
+            panel.addMorph(m = new ColorPickerMorph(new Rectangle(250, y, 50, 30)));
             m.connectModel({model: this, setColor: "setTextColor"});
             y += 40;
 
-            panel.addMorph(TextMorph(new Rectangle(50, y, 100, 20), 'Font Family').beLabel());
-            panel.addMorph(m = TextMorph(new Rectangle(150, y, 150, 20)));
+            panel.addMorph(new TextMorph(new Rectangle(50, y, 100, 20), 'Font Family').beLabel());
+            panel.addMorph(m = new TextMorph(new Rectangle(150, y, 150, 20)));
             m.connectModel({model: this, getText: "getFontFamily", setText: "setFontFamily"});
             y += 30;
 
-            panel.addMorph(TextMorph(new Rectangle(50, y, 100, 20), 'Font Size').beLabel());
-            panel.addMorph(m = TextMorph(new Rectangle(150, y, 50, 20)));
+            panel.addMorph(new TextMorph(new Rectangle(50, y, 100, 20), 'Font Size').beLabel());
+            panel.addMorph(m = new TextMorph(new Rectangle(150, y, 50, 20)));
             m.connectModel({model: this, getText: "getFontSize", setText: "setFontSize"});
             y += 30;
         }
@@ -405,14 +399,14 @@ Object.profiler = function (object, service) {
 
 function showStatsViewer(profilee,title) {
     Object.profiler(profilee, "start");
-    var m = ButtonMorph(WorldMorph.current().bounds().topCenter().addXY(0,20).extent(pt(150, 20)));
+    var m = new ButtonMorph(WorldMorph.current().bounds().topCenter().addXY(0,20).extent(pt(150, 20)));
     m.connectModel({model: m, getValue: "getThisValue", setValue: "setThisValue"});
     m.getThisValue = function() { return this.onState; };
     m.setThisValue = function(newValue) {
         this.onState = newValue;
         if (newValue == false) { // on mouseup...
             if (this.statsMorph == null) {
-                this.statsMorph = TextMorph(this.bounds().bottomLeft().extent(pt(250,20)), "no text");
+                this.statsMorph = new TextMorph(this.bounds().bottomLeft().extent(pt(250,20)), "no text");
                 WorldMorph.current().addMorph(this.statsMorph); 
             }
             var tallies = Object.profiler(profilee, "tallies");
@@ -437,7 +431,7 @@ function showStatsViewer(profilee,title) {
     }
     
     WorldMorph.current().addMorph(m);
-    var t = TextMorph(pt(0,0).extent(m.bounds().extent()), 'Display and reset stats').beLabel();
+    var t = new TextMorph(pt(0,0).extent(m.bounds().extent()), 'Display and reset stats').beLabel();
     m.addMorph(t);
 };
 

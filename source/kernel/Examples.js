@@ -23,9 +23,7 @@
  * such as buttons, sliders, etc.  
  */
 
-WidgetTester = Class.extend(Model);
-
-Object.extend(WidgetTester.prototype, {
+WidgetTester = Class.create(Model, {
 
     openIn: function(world, location) {
         var view = this.buildView(pt(300, 220));
@@ -34,7 +32,7 @@ Object.extend(WidgetTester.prototype, {
     },
     
     buildView: function(extent) {
-        var panel = PanelMorph(extent);
+        var panel = new PanelMorph(extent);
         // Make a fancy panel.  Note: Transparency does not
         // work with gradients or stipple patterns yet!
         panel.linkToStyles(['widgetPanel']);
@@ -43,48 +41,48 @@ Object.extend(WidgetTester.prototype, {
         var m; 
 
         // Two simple buttons, one toggles...
-        panel.addMorph(m = ButtonMorph(new Rectangle(20,20,50,20)));
+        panel.addMorph(m = new ButtonMorph(new Rectangle(20,20,50,20)));
         m.connectModel({model: model, getValue: "getB1Value", setValue: "setB1Value"});
-        panel.addMorph(m = ButtonMorph(new Rectangle(20,50,50,20)));
+        panel.addMorph(m = new ButtonMorph(new Rectangle(20,50,50,20)));
         m.connectModel({model: model, getValue: "getB1Value", setValue: "setB1Value"});
         m.setToggle(true);
 
         // Two buttons sharing same value...
-        panel.addMorph(m = ButtonMorph(new Rectangle(80,20,50,20)));
+        panel.addMorph(m = new ButtonMorph(new Rectangle(80,20,50,20)));
         m.connectModel({model: model, getValue: "getB2Value", setValue: "setB2Value"});
-        panel.addMorph(m = ButtonMorph(new Rectangle(80,50,50,20)));
+        panel.addMorph(m = new ButtonMorph(new Rectangle(80,50,50,20)));
         m.connectModel({model: model, getValue: "getB2Value", setValue: "setB2Value"});
 
         // Two lists sharing same selection...
-        panel.addMorph(m = CheapListMorph(new Rectangle(20,80,50,20),["one","two","three"]));
+        panel.addMorph(m = new CheapListMorph(new Rectangle(20,80,50,20),["one","two","three"]));
         m.connectModel({model: model, getSelection: "getListItem", setSelection: "setListItem"});
-        panel.addMorph(m = CheapListMorph(new Rectangle(80,80,50,20),["one","two","three"]));
+        panel.addMorph(m = new CheapListMorph(new Rectangle(80,80,50,20),["one","two","three"]));
         m.connectModel({model: model, getSelection: "getListItem", setSelection: "setListItem"});
 
         // Three text views sharing same text...
-        panel.addMorph(m = TextMorph(new Rectangle(140,20,140,20),"Hello World"));
+        panel.addMorph(m = new TextMorph(new Rectangle(140,20,140,20),"Hello World"));
         m.connectModel({model: model, getText: "getText", setText: "setText", setSelection: "setTextSel"});
-        panel.addMorph(m = TextMorph(new Rectangle(140,50,140,20),"Hello World"));
+        panel.addMorph(m = new TextMorph(new Rectangle(140,50,140,20),"Hello World"));
         m.connectModel({model: model, getText: "getText", setText: "setText", setSelection: "setTextSel"});
-        panel.addMorph(m = TextMorph(new Rectangle(140,80,140,20),"Hello World"));
+        panel.addMorph(m = new TextMorph(new Rectangle(140,80,140,20),"Hello World"));
         m.connectModel({model: model, getText: "getText", setText: "setText", setSelection: "setTextSel"});
         m.autoAccept = true;
-        panel.addMorph(m = TextMorph(new Rectangle(140,110,140,20),"selection"));
+        panel.addMorph(m = new TextMorph(new Rectangle(140,110,140,20),"selection"));
         m.connectModel({model: model, getText: "getTextSel"});
         model.SharedText = "Hello World";
 
         // Two linked print views sharing the same value
-        panel.addMorph(m = PrintMorph(new Rectangle(20,140,100,20),"3+4"));
+        panel.addMorph(m = new PrintMorph(new Rectangle(20,140,100,20),"3+4"));
         m.connectModel({model: model, getValue: "getPrintValue", setValue: "setPrintValue"});
-        panel.addMorph(m = PrintMorph(new Rectangle(20,170,100,20),"3+4"));
+        panel.addMorph(m = new PrintMorph(new Rectangle(20,170,100,20),"3+4"));
         m.connectModel({model: model, getValue: "getPrintValue", setValue: "setPrintValue"});
 
         // Slider linked to print view, with another for slider width
-        panel.addMorph(m = PrintMorph(new Rectangle(140,140,80,20),"0.5"));
+        panel.addMorph(m = new PrintMorph(new Rectangle(140,140,80,20),"0.5"));
         m.connectModel({model: model, getValue: "getSliderValue", setValue: "setSliderValue"});
-        panel.addMorph(m = PrintMorph(new Rectangle(230,140,50,20),"0.1"));
+        panel.addMorph(m = new PrintMorph(new Rectangle(230,140,50,20),"0.1"));
         m.connectModel({model: model, setValue: "setSliderExtent"});
-        panel.addMorph(m = SliderMorph(new Rectangle(140,170,140,20)));
+        panel.addMorph(m = new SliderMorph(new Rectangle(140,170,140,20)));
         m.connectModel({model: model, getValue: "getSliderValue", setValue: "setSliderValue", getExtent: "getSliderExtent"});
 
         model.SliderValue = 0.2;
@@ -103,14 +101,12 @@ Object.extend(WidgetTester.prototype, {
  * @class ClockMorph
  */
 
-ClockMorph = HostClass.create('ClockMorph', Morph);
-
-Object.extend(ClockMorph.prototype, {
+var ClockMorph = Class.create(Morph, {
 
     defaultBorderWidth: 2,
 
-    initialize: function(position, radius) {
-        ClockMorph.superclass.initialize.call(this, position.asRectangle().expandBy(radius), "ellipse");
+    initialize: function($super, position, radius) {
+        $super(position.asRectangle().expandBy(radius), "ellipse");
         this.openForDragAndDrop = false;
         this.linkToStyles(['clock']);
         this.makeNewFace();
@@ -127,7 +123,7 @@ Object.extend(ClockMorph.prototype, {
 
         for (var i = 0; i < 12; i++) {
             var labelPosition = bnds.center().addPt(Point.polar(radius*0.85,((i-3)/12)*Math.PI*2)).addXY(labelSize, 0);
-            var label = TextMorph(pt(0,0).extent(pt(labelSize*3,labelSize)), 
+            var label = new TextMorph(pt(0,0).extent(pt(labelSize*3,labelSize)), 
             // (i>0 ? i : 12) + "");  // English numerals
             ['XII','I','II','III','IV','V','VI','VII','VIII','IX','X','XI'][i]); // Roman
             label.setWrapStyle(WrapStyle.SHRINK);
@@ -201,7 +197,7 @@ Pen = Class.create({
     },
     
     drawLines: function() {
-        var morph = Morph(this.startingLocation.asRectangle(), "rect");
+        var morph = new Morph(this.startingLocation.asRectangle(), "rect");
         var verts = Shape.translateVerticesBy(this.vertices, this.startingLocation.negated());
     
         if (this.fillColor) 
@@ -287,7 +283,7 @@ Pen = Class.create({
 
 // The menu-driven filled Hilbert curve demo
 Pen.hilbertFun = function(world) {
-    var logoMenu = MenuMorph([]);
+    var logoMenu = new MenuMorph([]);
 
     for (var i=0; i<=5; i++) {
         logoMenu.addItem([i.toString(), logoMenu, "makeLogo", i]);
@@ -319,16 +315,14 @@ Pen.script = ["P = new Pen();",
  * @class DoodleMorph
  */
 
-DoodleMorph = HostClass.create('DoodleMorph', ClipMorph);
-
-Object.extend(DoodleMorph.prototype, {
+var DoodleMorph = Class.create(ClipMorph, {
 
     defaultBorderWidth: 0,
     defaultFill: Color.veryLightGray,
     imagepath: "Resources/doodle/",
 
-    initialize: function(rect) {
-        DoodleMorph.superclass.initialize.call(this, rect, "rect");
+    initialize: function($super, rect) {
+        $super(rect, "rect");
         this.drawingColor = Color.red;
         this.lineWidth = 2.0;
         this.colorvalue = true;
@@ -422,11 +416,11 @@ Object.extend(DoodleMorph.prototype, {
     makeSelection: function(evt) { 
         if (this.currentSelection != null) this.currentSelection.removeOnlyIt();
         if ( !evt.hand.mouseButtonPressed ) return;
-        var m = SelectionMorph(this.localize(evt.mousePoint).extent(pt(5,5)), this);
-        m.shape.setAttributeNS(null, "stroke-dasharray", "3,2");
+        var m = new SelectionMorph(this.localize(evt.mousePoint).extent(pt(5,5)), this);
+        m.shape.rawNode.setAttributeNS(null, "stroke-dasharray", "3,2");
         this.addMorph(m);
         this.currentSelection = m;
-        var handle = HandleMorph(evt.mousePoint, "rect", evt.hand, m, "bottomRight");
+        var handle = new HandleMorph(evt.mousePoint, "rect", evt.hand, m, "bottomRight");
         m.addMorph(handle);
         handle.setBounds(handle.bounds().center().asRectangle());
 //        if (evt.hand.mouseFocus instanceof HandleMorph) evt.hand.mouseFocus.remove();
@@ -434,8 +428,8 @@ Object.extend(DoodleMorph.prototype, {
     },    
 
     // Add menu items for creating rectangles and ellipses
-    morphMenu: function(evt) {
-        var menu = DoodleMorph.superclass.morphMenu.call(this, evt);
+    morphMenu: function($super, evt) {
+        var menu = $super(evt);
         menu.addLine();
         menu.addItem(["add rectangle", this, 'addRect']);
         menu.addItem(["add ellipse",   this, 'addCircle']);
@@ -443,7 +437,7 @@ Object.extend(DoodleMorph.prototype, {
     },
 
     addLine: function() {
-        var morph = Morph(new Rectangle(this.newPos * 2, this.newPos, 60, 20), 'rect');
+        var morph = new Morph(new Rectangle(this.newPos * 2, this.newPos, 60, 20), 'rect');
         morph.setFill(null);
         morph.setBorderWidth(this.lineWidth);
         morph.setBorderColor(this.drawingColor);
@@ -455,7 +449,7 @@ Object.extend(DoodleMorph.prototype, {
     },
 
     addRect: function() {
-        var morph = Morph(new Rectangle(this.newPos * 2, this.newPos, 60, 20), 'rect');
+        var morph = new Morph(new Rectangle(this.newPos * 2, this.newPos, 60, 20), 'rect');
         morph.setFill(this.fillColor);
         morph.setBorderWidth(this.lineWidth);
         morph.setBorderColor(this.drawingColor);
@@ -466,7 +460,7 @@ Object.extend(DoodleMorph.prototype, {
     },
     
     addCirc: function() {
-        var morph = Morph(new Rectangle(this.newPos * 2, this.newPos, 60, 20), 'ellipse');
+        var morph = new Morph(new Rectangle(this.newPos * 2, this.newPos, 60, 20), 'ellipse');
         morph.setFill(this.fillColor);
         morph.setBorderWidth(this.lineWidth);
         morph.setBorderColor(this.drawingColor);
@@ -491,7 +485,7 @@ Object.extend(DoodleMorph.prototype, {
         }
   
         if ( this.colorvalue ) {
-            this.colorMorph = Morph(new Rectangle(0, 0, 100, 110));
+            this.colorMorph = new Morph(new Rectangle(0, 0, 100, 110));
             this.colorMorph.shape.roundEdgesBy(10);
             this.colorMorph.setFill(Color.white);
             this.colorMorph.shape.setFillOpacity(.7);
@@ -502,22 +496,22 @@ Object.extend(DoodleMorph.prototype, {
             m.shape.roundEdgesBy(10);
             m.shape.setFillOpacity(0);
             this.colorMorph.addMorph(m);
-            m = TextMorph(new Rectangle(-45, 0, 80, 20), "Fill color");
+            m = new TextMorph(new Rectangle(-45, 0, 80, 20), "Fill color");
             m.relayMouseEvents(this.colorMorph, {onMouseDown: "onMouseDown", onMouseUp: "onMouseUp"});
             m.setBorderWidth(0);
             m.shape.roundEdgesBy(10);
             m.shape.setFillOpacity(0);
             this.colorMorph.addMorph(m);
 
-            this.colorpicker = ColorPickerMorph(new Rectangle(-45, -30, 50, 30));
+            this.colorpicker = new ColorPickerMorph(new Rectangle(-45, -30, 50, 30));
             this.colorMorph.addMorph(this.colorpicker);
-            this.fillpicker = ColorPickerMorph(new Rectangle(-45, 20, 50, 30));
+            this.fillpicker = new ColorPickerMorph(new Rectangle(-45, 20, 50, 30));
             this.colorMorph.addMorph(this.fillpicker);
 
-            this.colorMorph.borderRect = Morph(new Rectangle(15, -30, 30, 30), 'ellipse');
+            this.colorMorph.borderRect = new Morph(new Rectangle(15, -30, 30, 30), 'ellipse');
             this.colorMorph.borderRect.setFill(this.drawingColor);
             this.colorMorph.addMorph(this.colorMorph.borderRect);
-            this.colorMorph.fillRect = Morph(new Rectangle(15, 20, 30, 30), 'ellipse');
+            this.colorMorph.fillRect = new Morph(new Rectangle(15, 20, 30, 30), 'ellipse');
             this.colorMorph.fillRect.setFill(this.fillColor);
             this.colorMorph.addMorph(this.colorMorph.fillRect);
 
@@ -563,7 +557,7 @@ Object.extend(DoodleMorph.prototype, {
         ];
         if ( !this.borderMenuOpen ) {
             this.borderMenuOpen = true;
-            (this.borders = MenuMorph(items, this)).openIn(this.world(), this.worldPoint(this.widthbutton.bounds().topRight()), true);
+            (this.borders = new MenuMorph(items, this)).openIn(this.world(), this.worldPoint(this.widthbutton.bounds().topRight()), true);
         } else {
             this.borders.remove();
             this.borderMenuOpen = false;
@@ -967,22 +961,21 @@ WireObject = Class.create({
  * @class Sun3DMorph
  */
   
-Sun3DMorph = HostClass.create('Sun3DMorph', ClipMorph);
+Sun3DMorph = Class.create(ClipMorph, {
 
-Object.extend(Sun3DMorph.prototype, {
 
     defaultFill: Color.veryLightGray,
     
-    initialize: function(rect) {
+    initialize: function($super, rect) {
 
-        Sun3DMorph.superclass.initialize.call(this, rect, "rect");
+        $super(rect, "rect");
 
         this.shape.setFillOpacity(0.2);        
 
         // Create a bunch of polyline objects for drawing the Sun U's 
         this.morphArray = [];
         for (var i = 0; i < 8; i++) {
-            this.morphArray[i] = Morph(pt(10,10).asRectangle());
+            this.morphArray[i] = new Morph(pt(10,10).asRectangle());
             this.morphArray[i].setShape(new PolylineShape([pt(0,0)], 2, Color.red));
             this.addMorph(this.morphArray[i]);
         }
@@ -1131,7 +1124,7 @@ AsteroidsSprite = Class.create({
                 morph.setPosition(verts[0]);
                 morph.setShape(sprite);
             } else {
-                morph = Morph(verts[0].extent(pt(20, 20)), "rect");
+                morph = new Morph(verts[0].extent(pt(20, 20)), "rect");
                 morph.setShape(sprite);
                 gameMorph.addMorph(morph);
             }
@@ -1379,7 +1372,7 @@ AsteroidsSprite = Class.create({
     for (var i = 0; i < numStars; i++) {
         stars[i] = pt((Math.random() * gameWidth), (Math.random() * gameHeight));
 
-        var m = Morph(stars[i].extent(pt(1, 1)), "rect");
+        var m = new Morph(stars[i].extent(pt(1, 1)), "rect");
         m.setFill(Color.yellow);
         m.setBorderColor(Color.yellow);
         gameMorph.addMorph(m);
@@ -1389,7 +1382,7 @@ AsteroidsSprite = Class.create({
   function showTextStrings() {
   
     if (!text_score) {
-        text_score = TextMorph(new Rectangle(10, 0, 100, fontHeight), "Score: " + score);
+        text_score = new TextMorph(new Rectangle(10, 0, 100, fontHeight), "Score: " + score);
         text_score.setFill(Color.black);
         text_score.setTextColor(Color.yellow);
         gameMorph.addMorph(text_score);
@@ -1398,7 +1391,7 @@ AsteroidsSprite = Class.create({
     }
 
     if (!text_ships) {
-        text_ships = TextMorph(new Rectangle(10, gameHeight-fontHeight-6, 100, fontHeight), "Ships: " + shipsLeft);
+        text_ships = new TextMorph(new Rectangle(10, gameHeight-fontHeight-6, 100, fontHeight), "Ships: " + shipsLeft);
         text_ships.setFill(Color.black);
         text_ships.setTextColor(Color.yellow);
         gameMorph.addMorph(text_ships);
@@ -1407,7 +1400,7 @@ AsteroidsSprite = Class.create({
     }
 
     if (!text_high) {
-        text_high = TextMorph(new Rectangle(gameWidth-120, 0, 100, fontHeight), "High: " + highScore);
+        text_high = new TextMorph(new Rectangle(gameWidth-120, 0, 100, fontHeight), "High: " + highScore);
         text_high.setFill(Color.black);
         text_high.setTextColor(Color.yellow);
         gameMorph.addMorph(text_high);
@@ -1417,14 +1410,14 @@ AsteroidsSprite = Class.create({
 
     if (!playing) {
       if (!text_name) {
-          text_name = TextMorph(new Rectangle(gameWidth / 2 - 140, gameHeight / 2 - 36, 280, 16), "A S T E R O I D S ! Copyright 1998 by Mike Hall");
+          text_name = new TextMorph(new Rectangle(gameWidth / 2 - 140, gameHeight / 2 - 36, 280, 16), "A S T E R O I D S ! Copyright 1998 by Mike Hall");
           text_name.setFill(Color.black);
           text_name.setTextColor(Color.yellow);
           gameMorph.addMorph(text_name);
       }
       
       if (!text_info) {
-          text_info = TextMorph(new Rectangle(gameWidth / 2 - 100, gameHeight / 2, 200, 16), "Game Over: Press S to start");
+          text_info = new TextMorph(new Rectangle(gameWidth / 2 - 100, gameHeight / 2, 200, 16), "Game Over: Press S to start");
           text_info.setFill(Color.black);
           text_info.setTextColor(Color.yellow);
           gameMorph.addMorph(text_info);
@@ -1442,9 +1435,12 @@ AsteroidsSprite = Class.create({
     }
   }
 
-var GameMorph = HostClass.create('GameMorph', ClipMorph);
 
-var USE_FUNCTIONAL_DELAY = false;
+var USE_FUNCTIONAL_DELAY = false;    
+
+var GameMorph = Class.create(ClipMorph, {});
+
+
 
 GameMorph.prototype.runAsteroidsGame = function() {
 
@@ -1501,7 +1497,7 @@ GameMorph.prototype.runAsteroidsGame = function() {
 
     // If the game is collapsed, use a longer delay to reduce CPU usage
     var oldDelay = DELAY;
-    DELAY = this.owner().isCollapsed() ? LONGDELAY : SHORTDELAY;
+    DELAY = this.owner.isCollapsed() ? LONGDELAY : SHORTDELAY;
     if (oldDelay != DELAY) console.log("Changing timer from %s to %s for Asteroids", oldDelay, DELAY);
     
     // Set new timer delay for the game
@@ -2261,12 +2257,11 @@ GameMorph.prototype.runAsteroidsGame = function() {
     return true;
   }
 
-Object.extend(GameMorph.prototype, {
+GameMorph.addMethods({
     
-    timeoutID: null,
-    
-    initialize: function(rect) {
-        GameMorph.superclass.initialize.call(this, rect, "rect");
+    initialize: function($super, rect) {
+        $super(rect, "rect");
+	this.timeoutID = null;
         // Set black background color for the game
         this.setFill(Color.black);
         return this;
@@ -2304,18 +2299,18 @@ Object.extend(GameMorph.prototype, {
         return true; 
     },
 
-    shutdown: function() {
+    shutdown: function($super) {
         if (this.timeoutID) {
             console.log('shutting down the game');
             window.clearTimeout(this.timeoutID);
         }
-        GameMorph.superclass.shutdown.call(this);
+        $super();
     }
 
 });
 
     function makeGameMorph(rect) {
-        gameMorph = GameMorph(rect); 
+        gameMorph = new GameMorph(rect); 
         return gameMorph;
     }
 
@@ -2340,20 +2335,18 @@ Object.extend(GameMorph.prototype, {
  
 // We should consider using other weather service.
 // These images are of low quality
-WeatherWidget = Class.extend(Model);
-
-Object.extend(WeatherWidget.prototype, {
+WeatherWidget = Class.create(Model, {
 
     imagepath: "Resources/weather/",
     
-    initialize: function() { 
-        WeatherWidget.superclass.initialize.call(this);
+    initialize: function($super) { 
+	$super();
         // Fetch weather upon starting the widget
         this.getWeather("6568"); // San Francisco International (SFO) as default
     },
     
     openIn: function(world, location) {
-        world.addMorphAt(WindowMorph(this.buildView(), 'Weather Widget'), location);
+        world.addMorphAt(new WindowMorph(this.buildView(), 'Weather Widget'), location);
     },
     
     getListItem: function() {
@@ -2419,7 +2412,7 @@ Object.extend(WeatherWidget.prototype, {
     getImageURL: function()    { return this.imageurl; },
     
     buildView: function() {
-        var panel = PanelMorph(pt(250, 260));
+        var panel = new PanelMorph(pt(250, 260));
         panel.setBorderWidth(2);
         //panel.setBorderColor(Color.blue);
         panel.setFill(new LinearGradient(Color.white, Color.primary.blue, LinearGradient.WestEast));
@@ -2427,46 +2420,46 @@ Object.extend(WeatherWidget.prototype, {
         // or make the titlebar round depending on the window
         var m; 
 
-        panel.addMorph(m = ImageMorph(new Rectangle(10,20,25,20), this.imagepath + "city.png"));
+        panel.addMorph(m = new ImageMorph(new Rectangle(10,20,25,20), this.imagepath + "city.png"));
         m.setFill(null);
-        panel.addMorph(m = ImageMorph(new Rectangle(10,55,25,20), this.imagepath + "weather.png"));
+        panel.addMorph(m = new ImageMorph(new Rectangle(10,55,25,20), this.imagepath + "weather.png"));
         m.setFill(null);
-        panel.addMorph(m = ImageMorph(new Rectangle(10,80,20,20), this.imagepath + "temperature.png"));
+        panel.addMorph(m = new ImageMorph(new Rectangle(10,80,20,20), this.imagepath + "temperature.png"));
         m.setFill(null);
-        panel.addMorph(m = ImageMorph(new Rectangle(10,105,20,20), this.imagepath + "wind.png"));
+        panel.addMorph(m = new ImageMorph(new Rectangle(10,105,20,20), this.imagepath + "wind.png"));
         m.setFill(null);
-        panel.addMorph(m = ImageMorph(new Rectangle(10,130,20,20), this.imagepath + "wind_dir.png"));
+        panel.addMorph(m = new ImageMorph(new Rectangle(10,130,20,20), this.imagepath + "wind_dir.png"));
         m.setFill(null);
-        panel.addMorph(m = ImageMorph(new Rectangle(10,155,20,20), this.imagepath + "barometer.png"));
+        panel.addMorph(m = new ImageMorph(new Rectangle(10,155,20,20), this.imagepath + "barometer.png"));
         m.setFill(null);
-        panel.addMorph(m = ImageMorph(new Rectangle(10,180,20,20), this.imagepath + "humidity.png"));
+        panel.addMorph(m = new ImageMorph(new Rectangle(10,180,20,20), this.imagepath + "humidity.png"));
         m.setFill(null);
-        panel.addMorph(m = ImageMorph(new Rectangle(10,205,20,20), this.imagepath + "visibility.png"));
+        panel.addMorph(m = new ImageMorph(new Rectangle(10,205,20,20), this.imagepath + "visibility.png"));
         m.setFill(null);
 
-        panel.addMorph(m = CheapListMorph(new Rectangle(40,3,200,20),["San Francisco, California", "Tampere, Finland", "London, United Kingdom"]));
+        panel.addMorph(m = new CheapListMorph(new Rectangle(40,3,200,20),["San Francisco, California", "Tampere, Finland", "London, United Kingdom"]));
         m.connectModel({model: this, getSelection: "getListItem", setSelection: "setListItem"});
         m.selectLineAt(0); // Select the first item by default
 
         // build the textfields for the weather panel
         var m;
-        panel.addMorph(m = TextMorph(new Rectangle(40,55, 200,20), "---")).connectModel({model: this, getText: "getWeatherDesc"});
+        panel.addMorph(m = new TextMorph(new Rectangle(40,55, 200,20), "---")).connectModel({model: this, getText: "getWeatherDesc"});
         m.takesKeyboardFocus = function() {return false;};
-        panel.addMorph(m = TextMorph(new Rectangle(40,80, 200,20), "---")).connectModel({model: this, getText: "getTemperature"});
+        panel.addMorph(m = new TextMorph(new Rectangle(40,80, 200,20), "---")).connectModel({model: this, getText: "getTemperature"});
         m.takesKeyboardFocus = function() {return false;};
-        panel.addMorph(m = TextMorph(new Rectangle(40,105, 200,20), "---")).connectModel({model: this, getText: "getWind"});
+        panel.addMorph(m = new TextMorph(new Rectangle(40,105, 200,20), "---")).connectModel({model: this, getText: "getWind"});
         m.takesKeyboardFocus = function() {return false;};
-        panel.addMorph(m = TextMorph(new Rectangle(40,130, 200,20), "---")).connectModel({model: this, getText: "getGusts"});
+        panel.addMorph(m = new TextMorph(new Rectangle(40,130, 200,20), "---")).connectModel({model: this, getText: "getGusts"});
         m.takesKeyboardFocus = function() {return false;};
-        panel.addMorph(m = TextMorph(new Rectangle(40,155, 200,20), "---")).connectModel({model: this, getText: "getDewPoint"});
+        panel.addMorph(m = new TextMorph(new Rectangle(40,155, 200,20), "---")).connectModel({model: this, getText: "getDewPoint"});
         m.takesKeyboardFocus = function() {return false;};
-        panel.addMorph(m = TextMorph(new Rectangle(40,180, 200,20), "---")).connectModel({model: this, getText: "getHumidity"});
+        panel.addMorph(m = new TextMorph(new Rectangle(40,180, 200,20), "---")).connectModel({model: this, getText: "getHumidity"});
         m.takesKeyboardFocus = function() {return false;};
-        panel.addMorph(m = TextMorph(new Rectangle(40,205, 200,20), "---")).connectModel({model: this, getText: "getVisibility"});
+        panel.addMorph(m = new TextMorph(new Rectangle(40,205, 200,20), "---")).connectModel({model: this, getText: "getVisibility"});
         m.takesKeyboardFocus = function() {return false;};
 //        panel.addMorph(TextMorph(new Rectangle(80,230, 200,20), "---")).connectModel({model: this, getText: "getDate"});
     
-        var image = panel.addMorph(ImageMorph(new Rectangle(40,230,100,20)));
+        var image = panel.addMorph(new ImageMorph(new Rectangle(40,230,100,20)));
         image.connectModel({model: this, getURL: "getImageURL"});
         image.setFill(null);
         this.changed('getImageURL');
@@ -2489,12 +2482,10 @@ Object.extend(WeatherWidget.prototype, {
  * @class StockWidget
  */
 
-StockWidget = Class.extend(Model);
-
-Object.extend(StockWidget.prototype, {
+StockWidget = Class.create(Model, {
     
-    initialize: function() { 
-        StockWidget.superclass.initialize.call(this);
+    initialize: function($super) { 
+	$super();
         this.imageurl = null;
         this.feed = null;
         return this;
@@ -2502,7 +2493,7 @@ Object.extend(StockWidget.prototype, {
     
     openIn: function(world, location) {
         var view = this.buildView((pt(580, 460)));
-        this.windowMorph = WindowMorph(view, 'Stock Widget');
+        this.windowMorph = new WindowMorph(view, 'Stock Widget');
         world.addMorphAt(this.windowMorph, location);
         this.setStockIndex('DOW JONES');
         return view;
@@ -2566,7 +2557,7 @@ Object.extend(StockWidget.prototype, {
     },
 
     buildView: function(extent) {
-        var panel = PanelMorph(extent);
+        var panel = new PanelMorph(extent);
         
         // panel.setFill(StipplePattern.create(Color.primary.blue.lighter(), 1, Color.gray.lighter(), 1));
         panel.setFill(new LinearGradient(Color.white, Color.primary.blue.lighter(), LinearGradient.EastWest));
@@ -2575,23 +2566,23 @@ Object.extend(StockWidget.prototype, {
         //var url = "http://www.nasdaq.com/aspxcontent/NasdaqRSS.aspx?data=quotes&symbol=stock"
 
         // Marketwatch/Bigcharts logo
-        var m = panel.addMorph(ImageMorph(new Rectangle(20, 10, 135, 68), "http://b.mktw.net/images/logo/frontpage.gif" ));
+        var m = panel.addMorph(new ImageMorph(new Rectangle(20, 10, 135, 68), "http://b.mktw.net/images/logo/frontpage.gif" ));
         
         // Dow Jones chart
-        var image = ImageMorph(new Rectangle(160, 10, 175, 160), "http://bigcharts.marketwatch.com/charts/gqplus/fpDJIA-narrow.gqplus?167");
+        var image = new ImageMorph(new Rectangle(160, 10, 175, 160), "http://bigcharts.marketwatch.com/charts/gqplus/fpDJIA-narrow.gqplus?167");
         panel.leftChartImage = image;
         m = panel.addMorph(image);
         m.setFill(Color.white);
         
         // NASDAQ chart
-        image = ImageMorph(new Rectangle(360, 10, 175, 160), "http://bigcharts.marketwatch.com/charts/gqplus/fpNASDAQ-narrow.gqplus?167");
+        image = new ImageMorph(new Rectangle(360, 10, 175, 160), "http://bigcharts.marketwatch.com/charts/gqplus/fpNASDAQ-narrow.gqplus?167");
         panel.rightChartImage = image;
         m = panel.addMorph(image);
         m.setFill(Color.white);
         // m.connectModel({model: this, getURL: "getIndexChartURL"});
 
         // Newsfeed selector
-        m = panel.addMorph(CheapListMorph(new Rectangle(20, 180, 90, 20), this.config.keys()));
+        m = panel.addMorph(new CheapListMorph(new Rectangle(20, 180, 90, 20), this.config.keys()));
         m.connectModel({model: this, getSelection: "getStockIndex", setSelection: "setStockIndex"});
 
         // Newsfeed panel
@@ -2600,10 +2591,10 @@ Object.extend(StockWidget.prototype, {
 
         // Company-specific stock quotes
         //this.dataList = panel.addMorph(CheapListMorph(new Rectangle(20,300,130,40), this.dataArray));
-        m = panel.addMorph(TextMorph(new Rectangle(160, 340, 410, 20), "")).connectModel({model: this, getText: 'getQuotes'});
+        m = panel.addMorph(new TextMorph(new Rectangle(160, 340, 410, 20), "")).connectModel({model: this, getText: 'getQuotes'});
 
         // Company selector for stock quotes
-        m = panel.addMorph(CheapListMorph(new Rectangle(20, 340, 120, 40), ["JAVA", "NOK", "GOOG", "QQQQ"]));
+        m = panel.addMorph(new CheapListMorph(new Rectangle(20, 340, 120, 40), ["JAVA", "NOK", "GOOG", "QQQQ"]));
         m.connectModel({model: this, getSelection: "getCompany", setSelection: "setCompany"});
         this.setCompany('JAVA');
         var model = this;
@@ -2614,8 +2605,8 @@ Object.extend(StockWidget.prototype, {
             this.rightChartImage.reload(); 
         },
 
-        panel.shutdown = function() {
-            PanelMorph.superclass.shutdown.call(this);
+        panel.shutdown = function($super) {
+	    $super();
             console.log('shutting down the stock widget');
             model.timer && window.clearInterval(model.timer);
         }
@@ -2747,21 +2738,20 @@ online parameter tells should the application load the maps from google
 Mapframe has menu which can be accessed by Ctrl+MouseClick in frame area
 */
 
-MapFrameMorph = HostClass.create('MapFrameMorph', Morph);
+var MapFrameMorph = Class.create(Morph, {
 
-Object.extend(MapFrameMorph.prototype, {
     defaultBorderWidth: 5,
     defaultFill: new Color(0.5,0.5,0.5,0.8),
 
-    initialize: function( initialBounds, online) { 
+    initialize: function($super, initialBounds, online) { 
         pd("MapFrameMorph",2);
-        MapFrameMorph.superclass.initialize.call(this,initialBounds,"rectangle");
+        $super(initialBounds,"rectangle");
         this.online = online;
         this.topLeft = this.bounds().topLeft();
         this.bottomRight = this.bounds().bottomRight();
 
         var clipInset = 23;
-        this.mapclip = ClipMorph(pt(0, 0).extent(initialBounds.extent()).insetBy(clipInset));
+        this.mapclip = new ClipMorph(pt(0, 0).extent(initialBounds.extent()).insetBy(clipInset));
 
         this.map = new MapMorph(new Rectangle(0, 0, 5*TileSize.x, 5*TileSize.y), this.online);
         this.map.hasFrame = true;
@@ -2772,7 +2762,7 @@ Object.extend(MapFrameMorph.prototype, {
 
         const iconSize = 40;
         var r = new Rectangle(0, 0, iconSize/2, initialBounds.height - iconSize - 10);
-        this.leftbutton = ImageButtonMorph(r, IMAGEFOLDER + "buttonleft.PNG", 
+        this.leftbutton = new ImageButtonMorph(r, IMAGEFOLDER + "buttonleft.PNG", 
                                           IMAGEFOLDER + "buttonleftdown.PNG");
         this.leftbutton.align(this.leftbutton.bounds().rightCenter(), 
                               this.mapclip.bounds().leftCenter().addXY(-clipInset, 0));
@@ -2790,29 +2780,29 @@ Object.extend(MapFrameMorph.prototype, {
         this.addMorph(this.rightbutton);
 
         r = new Rectangle(this.topLeft.x + 25,this.topLeft.y-20,this.bottomRight.x-this.topLeft.x-52,20);
-        this.upbutton =  ImageButtonMorph(r, IMAGEFOLDER + "buttonup.PNG",IMAGEFOLDER + "buttonupdown.PNG");
+        this.upbutton =  new ImageButtonMorph(r, IMAGEFOLDER + "buttonup.PNG",IMAGEFOLDER + "buttonupdown.PNG");
         this.upbutton.connectModel({model: this.mapmodel, setValue: "goUp", getValue: "isStepping"});
         this.upbutton.setToggle(true);
         this.addMorph(this.upbutton);
 
         r = new Rectangle(this.topLeft.x + 25,this.bottomRight.y,this.bottomRight.x-this.topLeft.x-52,20);
-        this.downbutton = ImageButtonMorph(r, IMAGEFOLDER + "buttondown.PNG", IMAGEFOLDER + "buttondowndown.PNG");
+        this.downbutton = new ImageButtonMorph(r, IMAGEFOLDER + "buttondown.PNG", IMAGEFOLDER + "buttondowndown.PNG");
         this.downbutton.connectModel({model: this.mapmodel, setValue: "goDown", getValue: "isStepping"});
         this.downbutton.setToggle(true);
         this.addMorph(this.downbutton);
 
         r = new Rectangle(0, 0, iconSize, iconSize);
-        this.zinbutton = ImageButtonMorph(r, IMAGEFOLDER + "zoom.PNG",IMAGEFOLDER + "zoomdown.PNG");
+        this.zinbutton = new ImageButtonMorph(r, IMAGEFOLDER + "zoom.PNG",IMAGEFOLDER + "zoomdown.PNG");
         this.zinbutton.align(this.zinbutton.bounds().topLeft(), this.bounds().topLeft());
         this.zinbutton.connectModel({model: this.mapmodel, setValue: "setZoomIn"});
         this.addMorph(this.zinbutton);
 
-        this.zoutbutton = ImageButtonMorph(r, IMAGEFOLDER + "zoomout.PNG", IMAGEFOLDER + "zoomoutdown.PNG");
+        this.zoutbutton = new ImageButtonMorph(r, IMAGEFOLDER + "zoomout.PNG", IMAGEFOLDER + "zoomoutdown.PNG");
         this.zoutbutton.align(this.zoutbutton.bounds().bottomRight(), this.bounds().bottomRight());
         this.zoutbutton.connectModel({model: this.mapmodel, setValue: "setZoomOut"}); 
         this.addMorph(this.zoutbutton);
 
-        this.maptypebutton = ImageButtonMorph(r, IMAGEFOLDER + "maptype.PNG", IMAGEFOLDER + "maptype2.PNG");
+        this.maptypebutton = new ImageButtonMorph(r, IMAGEFOLDER + "maptype.PNG", IMAGEFOLDER + "maptype2.PNG");
         this.maptypebutton.align(this.maptypebutton.bounds().bottomLeft(), this.bounds().bottomLeft());
         this.maptypebutton.connectModel({model: this.mapmodel, setValue: "setMapType", getValue: "isSatelliteView"});
         this.maptypebutton.setToggle(true);
@@ -2828,12 +2818,11 @@ Object.extend(MapFrameMorph.prototype, {
  * @class MapModel
  */
 
-MapModel = Class.extend(Model);
+    MapModel = Class.create(Model, {
 
-Object.extend(MapModel.prototype, {
 
-    initialize: function(frame) {
-        MapModel.superclass.initialize.call(this, frame);
+    initialize: function($super, frame) {
+        $super(frame);
         this.frame = frame;
     },
 
@@ -2903,12 +2892,11 @@ Object.extend(MapModel.prototype, {
  * May have mapmarkers as submorphs
  */
 
-MapMorph = HostClass.create('MapMorph', Morph);
+MapMorph = Class.create(Morph, {
 
-Object.extend(MapMorph.prototype, {
-    initialize: function( initialBounds, online) { 
+    initialize: function($super, initialBounds, online) { 
       pd("MapMorph",2);
-      MapMorph.superclass.initialize.call(this,initialBounds,"rect");
+	$super(initialBounds,"rect");
 
       this.setFill(Color.blue.lighter());
       this.setBorderWidth(0);
@@ -2955,8 +2943,8 @@ Object.extend(MapMorph.prototype, {
       return this;
     }, 
   
-    copy: function() {
-        var newMap = MapMorph.superclass.copy.call(this);
+    copy: function($super) {
+        var newMap = $super();
         newMap.removeAllMorphs();
         return newMap; 
     },
@@ -3634,7 +3622,7 @@ Object.extend(BouncingSpheres, {
             var cy = BouncingSpheres.getRand(r,  canvasHeight - r);
             //console.log([r, cx, cy]);
     
-            var aShape  = Morph(new Rectangle(cx - r, cy - r, 2*r, 2*r), "ellipse");
+            var aShape  = new Morph(new Rectangle(cx - r, cy - r, 2*r, 2*r), "ellipse");
             aShape.setFill(BouncingSpheres.randColor(true));
             aShape.setBorderColor(BouncingSpheres.randColor(true));
             aShape.setFillOpacity(BouncingSpheres.getRand(0, 1));
@@ -3701,14 +3689,12 @@ Object.extend(BouncingSpheres, {
  * Placeholder for an instant messenger widget (to be completed) 
  */
  
-MessengerWidget = Class.extend(Model);
-
-Object.extend(MessengerWidget.prototype, {
+MessengerWidget = Class.create(Model, {
 
     imagepath: "Resources/IM/",
 
-    initialize: function() { 
-        MessengerWidget.superclass.initialize.call(this);
+    initialize: function($super) { 
+        $super();
 //        this.id = Math.round(Math.random()*2147483647); // TODO: use Config.random for requests?
         this.id = Config.random;
         this.text = "";
@@ -3733,19 +3719,19 @@ Object.extend(MessengerWidget.prototype, {
     },
     
     openIn: function(world, location) {
-        world.addMorphAt(WindowMorph(this.buildView(), 'Instant Messenger'), location);
+        world.addMorphAt(new WindowMorph(this.buildView(), 'Instant Messenger'), location);
     },
     
     buildView: function() {
-        var panel = PanelMorph(pt(300, 255));
+        var panel = new PanelMorph(pt(300, 255));
         panel.setBorderWidth(2);
         panel.setFill(new LinearGradient(Color.white, Color.primary.blue.lighter(), LinearGradient.EastWest));
         var m = null;
-        panel.addMorph(this.textpanel = TextPane(new Rectangle(10, 10, 280, 180), " ")).connectModel({model: this, getText: "getChatText", setText: "setChatText"});
+        panel.addMorph(this.textpanel = new TextPane(new Rectangle(10, 10, 280, 180), " ")).connectModel({model: this, getText: "getChatText", setText: "setChatText"});
 //        m.innerMorph().autoAccept = true;
-        panel.addMorph(m = TextMorph(new Rectangle(10, 210, 220, 50), "<enter text here>")).connectModel({model: this, getText: "getIMText", setText: "setIMText"});
+        panel.addMorph(m = new TextMorph(new Rectangle(10, 210, 220, 50), "<enter text here>")).connectModel({model: this, getText: "getIMText", setText: "setIMText"});
         m.autoAccept = true;
-        panel.addMorph(m = ImageButtonMorph(new Rectangle(240, 200,  50,  50), 
+        panel.addMorph(m = new ImageButtonMorph(new Rectangle(240, 200,  50,  50), 
         this.imagepath + "Talk.PNG", this.imagepath + "Talk_down.PNG")).connectModel({model: this, setValue: "send"});
         // disable the 2 set value calls for the button
         m.onMouseUp = function(evt) {
@@ -3753,17 +3739,17 @@ Object.extend(MessengerWidget.prototype, {
             this.changeAppearanceFor(newValue); 
         };
         
-        this.initpanel = PanelMorph(pt(300, 255));
+        this.initpanel = new PanelMorph(pt(300, 255));
         panel.addMorph(this.initpanel);
         this.initpanel.setFill(new LinearGradient(Color.white, Color.primary.blue, LinearGradient.NorthSouth));
-        this.initpanel.addMorph(this.nickName = TextMorph(new Rectangle(10, 10, 220, 20), "<please enter your nickname>"));//.connectModel({model: this, getText: "getIMText", setText: "setIMText"});
-        this.initpanel.addMorph(b = ButtonMorph(new Rectangle(240,10,50,20)));
+        this.initpanel.addMorph(this.nickName = new TextMorph(new Rectangle(10, 10, 220, 20), "<please enter your nickname>"));//.connectModel({model: this, getText: "getIMText", setText: "setIMText"});
+        this.initpanel.addMorph(b = new ButtonMorph(new Rectangle(240,10,50,20)));
         b.onMouseUp = function(evt) {
             var newValue = this.isToggle() ? !this.getValue() : false;
             this.changeAppearanceFor(newValue); 
         };
         b.connectModel({model: this, setValue: "setNick"});
-        this.initpanel.addMorph(m = TextMorph(new Rectangle(250, 10, 30, 20), "GO"));
+        this.initpanel.addMorph(m = new TextMorph(new Rectangle(250, 10, 30, 20), "GO"));
         m.relayMouseEvents(b, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
         m.shape.setFillOpacity(0);
         m.setBorderWidth(0);
@@ -3909,12 +3895,10 @@ Object.extend(MessengerWidget.prototype, {
  * @class MiniMapMorph: The "radar view" for the game
  */
 
-MiniMapMorph = HostClass.create('MiniMapMorph', Morph);
-
-Object.extend(MiniMapMorph.prototype, {
-
-    initialize: function(rect) {
-        MiniMapMorph.superclass.initialize.call(this, rect, "rect");
+var MiniMapMorph = Class.create(Morph, {
+    
+    initialize: function($super, rect) {
+        $super(rect, "rect");
         console.log("minimap init"); 
         this.setFill(Color.black); 
         this.x = rect.topLeft().x;
@@ -3936,11 +3920,11 @@ Object.extend(MiniMapMorph.prototype, {
         //console.log("location " + this.pLoc.x + " " + this.pLoc.y);
         if (this.player) {
           this.removeMorph(this.player)
-          this.player = Morph(new Rectangle(xloc -3, yloc -3, 6, 6),"ellipse");   
+          this.player = new Morph(new Rectangle(xloc -3, yloc -3, 6, 6),"ellipse");   
           this.player.setFill(Color.blue);
           this.addMorph(this.player);
         } else {
-          this.player = Morph(new Rectangle(xloc -3, yloc -3, 6, 6),"ellipse");   
+          this.player = new Morph(new Rectangle(xloc -3, yloc -3, 6, 6),"ellipse");   
           this.player.setFill(Color.blue);
           this.addMorph(this.player);
         }
@@ -3956,12 +3940,10 @@ Object.extend(MiniMapMorph.prototype, {
  * @class CanvasScapeMorph
  */
 
-CanvasScapeMorph = HostClass.create('CanvasScapeMorph', ClipMorph);
-
-Object.extend(CanvasScapeMorph.prototype, {
+var CanvasScapeMorph = Class.create(ClipMorph,{
     
-    initialize: function(rect) {
-        CanvasScapeMorph.superclass.initialize.call(this, rect, "rect");
+    initialize: function($super, rect) {
+        $super(rect, "rect");
         console.log("init"); 
         this.setFill(Color.veryLightGray);
         this.initParameters();
@@ -4039,10 +4021,10 @@ Object.extend(CanvasScapeMorph.prototype, {
         if (!this.difficulty) this.difficulty = "medium";
       
         this.gameon = false;
-        this.sky = ImageMorph(new Rectangle(0,20,4800,150), "Resources/canvasscape/sky2.jpg");
+        this.sky = new ImageMorph(new Rectangle(0,20,4800,150), "Resources/canvasscape/sky2.jpg");
         this.sky.setHasKeyboardFocus = function(newSetting) { return newSetting;
-        this.owner().setHasKeyboardFocus( true); };
-        this.sky.takesKeyboardFocus = function() { this.owner().setHasKeyboardFocus( true);};
+        this.owner.setHasKeyboardFocus( true); };
+        this.sky.takesKeyboardFocus = function() { this.owner.setHasKeyboardFocus( true);};
         this.sky.onKeyUp = function(evt) {console.log("skyonup")}; 
         this.sky.onKeyDown = function(evt) {console.log("skyondown")};
         this.sky.relayMouseEvents(this, {onKeyDown: "onKeyDown", onKeyUp: "onKeyUp", setHasKeyboardFocus: "setHasKeyboardFocus", takesKeyboardFocus: "takesKeyboardFocus"});
@@ -4062,7 +4044,7 @@ Object.extend(CanvasScapeMorph.prototype, {
         this.jumpCycle=0;
         this.color = Color.red;
         this.note = "";
-        this.map = MiniMapMorph(new Rectangle(5,25,8*this.arena.length,8*this.arena[0].length));
+        this.map = new MiniMapMorph(new Rectangle(5,25,8*this.arena.length,8*this.arena[0].length));
         this.morphArray =[];
         console.log("initParameters completed");
     },
@@ -4184,14 +4166,14 @@ Object.extend(CanvasScapeMorph.prototype, {
         this.morphArray = [];
         this.sky.setPosition(pt( -this.playerDir/(2*this.pi)*2400, 0));
         
-        morppi = TextMorph(new Rectangle(0,0,800,20));
+        morppi = new TextMorph(new Rectangle(0,0,800,20));
         morppi.setTextString(this.level+ ". Blue walls found " + this.found + " / " + this.maxobjects + ". Time left: " + this.timeleft + ". Time passed: " + this.timepassed);
         morppi.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseUp: "onMouseUp"});
         this.addMorph(morppi);
         this.morphArray.push(morppi);
         
         if (this.note != "") {
-            morppi = TextMorph(new Rectangle(0,280,800,20));
+            morppi = new TextMorph(new Rectangle(0,280,800,20));
             morppi.setTextString(this.note);
             morppi.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseUp: "onMouseUp"});
             this.addMorph(morppi);
@@ -4254,13 +4236,13 @@ Object.extend(CanvasScapeMorph.prototype, {
             }
 
             if (drawobject) {
-                morppi = Morph(pt(0,0).asRectangle(),"rect"); // polygon
+                morppi = new Morph(pt(0,0).asRectangle(),"rect"); // polygon
                 morppi.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseUp: "onMouseUp"});
                 morppi.setShape(new PolygonShape([pt(tl[0],tl[1]),pt(tr[0],tr[1]),pt(br[0],br[1]),pt(bl[0],bl[1])],
 						 Color.blue,1,Color.black));
                 this.addMorph(morppi);
             } else {
-                morppi = Morph(pt(0,0).asRectangle(),"rect"); // polygon
+                morppi = new Morph(pt(0,0).asRectangle(),"rect"); // polygon
                 morppi.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseUp: "onMouseUp"});
                 morppi.setShape(new PolygonShape([pt(tl[0],tl[1]),pt(tr[0],tr[1]),pt(br[0],br[1]),pt(bl[0],bl[1])],
 						 this.color,1,Color.black));
@@ -4371,14 +4353,14 @@ Object.extend(CanvasScapeMorph.prototype, {
             for (var j=0; j<this.arena[i].length; j++) {
                 if (this.arena[i][j] && this.arena[i][j] != 2) {
                     if (this.difficulty != "hard") {
-                        morppi = Morph(new Rectangle( i*8,  j*8, 8, 8),"rect");   
+                        morppi = new Morph(new Rectangle( i*8,  j*8, 8, 8),"rect");   
                         morppi.setFill(this.color);
                         this.map.addMorph(morppi);
                     }
                 } 
                 if (this.arena[i][j] == 2 && this.difficulty == "easy") {
                     //this.color = Color.red;
-                    morppi = Morph(new Rectangle( i*8,  j*8, 8, 8),"rect");   
+                    morppi = new Morph(new Rectangle( i*8,  j*8, 8, 8),"rect");   
                     morppi.setFill(Color.red);
                     this.map.addMorph(morppi);
                 }
@@ -4545,7 +4527,7 @@ Object.extend(CanvasScapeMorph.prototype, {
     startGame: function(){
         if (this.map) this.map.remove();
         this.initGame();
-        this.map = MiniMapMorph(new Rectangle(5,25,8*this.arena.length,8*this.arena[0].length)); 
+        this.map = new MiniMapMorph(new Rectangle(5,25,8*this.arena.length,8*this.arena[0].length)); 
         this.initUnderMap();
         this.addMorph(this.map);
         this.note="";
@@ -4567,8 +4549,8 @@ Object.extend(CanvasScapeMorph.prototype, {
         this.startGame();
     },
 
-    morphMenu: function(evt) {
-        var menu = CanvasScapeMorph.superclass.morphMenu.call(this, evt);
+    morphMenu: function($super, evt) {
+        var menu = $super(evt);
         menu.addLine();
         menu.addItem(["Stop game",  this, 'stopGame']);
         menu.addItem(["Start easy game",  this, 'setDifficulty', 'easy']);
@@ -4583,27 +4565,28 @@ Object.extend(CanvasScapeMorph.prototype, {
 // ===========================================================================
 
 makeEngine = function() {
-    var engine = EngineMorph(new Rectangle(0, 0, 400, 600), "rectangle");
+
+    var engine = new EngineMorph(new Rectangle(0, 0, 400, 600));
     // KP: add the top morph to the world first, to make firefox happy
-    WorldMorph.current().addMorphAt(WindowMorph(engine, 'A Lively Engine'), pt(250, 5));
+    WorldMorph.current().addMorphAt(new WindowMorph(engine, 'A Lively Engine'), pt(250, 5));
     engine.openAllToDnD();  // have a little fun...
     engine.makeCylinders(1); 
     engine.startSteppingScripts();
 }
 
-EngineMorph = HostClass.create('EngineMorph', Morph);
+var EngineMorph = Class.create(Morph, {
 
-Object.extend(EngineMorph.prototype, {
-
-    initialize: function(fullRect,type) {
+    initialize: function($super, fullRect) {
         // A lively model by Dan Ingalls - 9/25/2007
-        EngineMorph.superclass.initialize.call(this, fullRect, type);
+        $super(fullRect, "rect");
         this.setFill(new LinearGradient(Color.gray, Color.darkGray, LinearGradient.NorthSouth));
         this.makeLayout();
         this.running = true;
     },
 
     makeLayout: function() {
+	console.log("making layout " + this);
+
         var bnds = this.innerBounds().withHeight(this.innerBounds().width);
         var center = bnds.center();
         this.stroke = bnds.height*0.14;
@@ -4614,26 +4597,29 @@ Object.extend(EngineMorph.prototype, {
         this.crank.addMorph(this.crankPin);
         this.crankAngle = 0;  // goes up to 4*pi, while rotation wraps at 2*pi
         this.angleStep = Math.PI/8;
+	
 
-        var menu = MenuMorph([]);
+        var menu = new MenuMorph([]);
+
         for (var i=1; i<=9; i++) menu.addItem([i.toString(), this, 'makeCylinders', i]);
         menu.openIn(this, pt(80,440), true, "Number of cylinders"); 
 
-        menu = MenuMorph([
+        menu = new MenuMorph([
             ["sequential", this, 'setAlternateTiming', false],
             ["alternate", this, 'setAlternateTiming', true]
         ]);
         menu.openIn(this, pt(300,440), true, "Ignition timing"); 
 
-        menu = MenuMorph([
+	
+        menu = new MenuMorph([
             ["run", this, 'setRunning', true],
             ["stop", this, 'setRunning', false],
             ["step", this, 'doStep'],
             ["rebuild", this, 'rebuild']
         ]);
         menu.openIn(this, pt(315,515), true, "Operating State"); 
-
-        var label = TextMorph(new Rectangle(0, 0, 100, 20), "The Radial Engine").beLabel();
+	
+        var label = new TextMorph(new Rectangle(0, 0, 100, 20), "The Radial Engine").beLabel();
         label.setFontSize(20);  this.addMorph(label);
         label.align(label.bounds().topCenter(), bnds.bottomCenter().addXY(0, -20));
     },
@@ -4658,7 +4644,7 @@ Object.extend(EngineMorph.prototype, {
         cylinder.setPosition(cr.topLeft().addXY(0, -dHead));
         var pistonBW = 2;
         var pistonDx = (cylinder.getBorderWidth() + pistonBW) / 2;
-        var piston = Morph(cr.insetByPt(pt(pistonDx, (cr.height-this.stroke)/2)), "rectangle");
+        var piston = new Morph(cr.insetByPt(pt(pistonDx, (cr.height-this.stroke)/2)), "rectangle");
         piston.setFill(Color.darkGray);
         piston.setBorderWidth(pistonBW);
         cylinder.addMorph(piston);
@@ -4744,15 +4730,13 @@ Object.extend(EngineMorph.prototype, {
  * PlayerMorph is the end-user interface for showing the animation
  */ 
 
-PlayerMorph = HostClass.create('PlayerMorph', Morph);
+var PlayerMorph = Class.create(Morph,  {
 
-Object.extend(PlayerMorph.prototype, {
-
-    initialize: function() {
+    initialize: function($super) {
         var rect = Rectangle(0, 0, 330, 260);
-        PlayerMorph.superclass.initialize.call(this, rect, "rect");
+        $super(rect, "rect");
         this.setFill(new LinearGradient(Color.white, Color.primary.blue, LinearGradient.NorthSouth));
-        this.animation = AnimMorph(Rectangle(-160, -120, 320, 240), "Resources/Anim/Frame", 469, ".jpg");
+        this.animation = new AnimMorph(Rectangle(-160, -120, 320, 240), "Resources/Anim/Frame", 469, ".jpg");
         this.addMorph(this.animation);
     },
     
@@ -4765,7 +4749,7 @@ Object.extend(PlayerMorph.prototype, {
     },
     
     openIn: function(world, location) {
-        world.addMorphAt(WindowMorph(this, 'AnimationMorph'), location);
+        world.addMorphAt(new WindowMorph(this, 'AnimationMorph'), location);
         this.startStepping();
     },
     
@@ -4780,12 +4764,10 @@ Object.extend(PlayerMorph.prototype, {
  * Animation Morph is the animation "engine" that loads the frames for the animation
  */
   
-AnimMorph = HostClass.create('AnimMorph', Morph);
-
-Object.extend(AnimMorph.prototype, {
-
-    initialize: function(rect, frameURL, numberOfFrames, type /* String (.jpg, .gif etc)*/) {
-        AnimMorph.superclass.initialize.call(this, rect);
+var AnimMorph = Class.create(Morph, {
+    
+    initialize: function($super, rect, frameURL, numberOfFrames, type /* String (.jpg, .gif etc)*/) {
+        $super(rect);
         this.setFill(Color.black);
         this.dim = rect.extent();
         this.play = false;
@@ -4806,20 +4788,20 @@ Object.extend(AnimMorph.prototype, {
             this.data.push(frameURL + index + type);
         }
         
-        this.status = Morph(this.bounds().center().subPt(pt(50,50)).extent(pt(100,100)), "ellipse");
+        this.status = new Morph(this.bounds().center().subPt(pt(50,50)).extent(pt(100,100)), "ellipse");
 //        m.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseUp: "onMouseUp"});
         this.status.handlesMouseDown = function() {
             return true;
         }
         this.status.onMouseDown = function (evt) {
-            this.owner().play = true;
+            this.owner.play = true;
             this.remove();
         }
         this.addMorph(this.status);
         this.status.setFill(Color.white);
         this.status.setFillOpacity(0.7);
         this.status.setBorderWidth(0);
-        this.status.addMorph( k = Morph(pt(0,0).asRectangle()) );
+        this.status.addMorph( k = new Morph(pt(0,0).asRectangle()) );
         k.setShape(PolylineShape([pt(-20,-20),pt(30,0),pt(-20,20), pt(-20,-20)], 1, Color.blue));
         k.setFill(Color.blue.lighter());
         k.relayMouseEvents(this.status, {onMouseDown: "onMouseDown", onMouseUp: "onMouseUp"});

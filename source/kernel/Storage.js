@@ -48,22 +48,18 @@ Resource = Class.create({
  * @class WebStore: Network-based storage
  */ 
 
-var WebStore = Class.extend(Model);
+var WebStore = Class.create(Model, {
 
-Object.extend(WebStore, {
     defaultStore: null,
     onCurrentLocation: function() {
         var path = location.pathname.substring(0, location.pathname.lastIndexOf('index.xhtml'));
         if (path == "") path = "/";
         return new WebStore(location.hostname, path);
-    }
+    },
 
-});
 
-Object.extend(WebStore.prototype, {
-
-    initialize: function(host, path) {
-        WebStore.superclass.initialize.call(this);
+    initialize: function($super, host, path) {
+	$super();
         this.host = host;
         this.path = path;
 
@@ -178,7 +174,7 @@ Object.extend(WebStore.prototype, {
                     store[modelVariable] = result;
                 } else { 
                     store[modelVariable] = result.map(function(r) { 
-                        HostClass.becomeInstance(r, resultType); 
+                        // HostClass.becomeInstance(r, resultType); 
                         r.become(); 
                         return r;
                    })
@@ -312,7 +308,7 @@ Object.extend(WebStore.prototype, {
         if (!loc) loc = world.bounds().center();
         console.log('opening web store at %s', loc);
         var panel = this.buildView(pt(400, 300));
-        world.addMorphAt(WindowMorph(panel, "Directory Browser on " + this.host), loc);
+        world.addMorphAt(new WindowMorph(panel, "Directory Browser on " + this.host), loc);
         // this.addCredentialDialog(panel);
         this.changed('getDirectoryList');
     }

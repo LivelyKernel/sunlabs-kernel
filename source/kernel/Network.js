@@ -20,9 +20,7 @@
  * @class NetRequest
  */ 
 
-var NetRequest = Class.extend(Ajax.Request);
-
-Object.extend(NetRequest.prototype, {
+var NetRequest = Class.create(Ajax.Request, {
 
     logger: {
         onComplete: function(request, transport, json) {
@@ -39,9 +37,9 @@ Object.extend(NetRequest.prototype, {
 
     },
 
-    initialize: function(url, options) {
+    initialize: function($super, url, options) {
         this.requestNetworkAccess();
-        NetRequest.superclass.initialize.call(this, this.rewriteURL(url), options);
+        $super(this.rewriteURL(url), options);
     },
 
     rewriteURL: function(url) {
@@ -164,7 +162,7 @@ Object.extend(NetRequest.prototype, {
             this.transport.setRequestHeader(name, headers[name]);
         }
 
-    },
+    }
 
 });
 
@@ -176,15 +174,15 @@ Ajax.Responders.register(NetRequest.prototype.logger);
 
 var FeedChannel = Class.create({
 
-    become: function() {
-        this.items = Query.evaluate(this, 'item');
+    initialize: function(rawData) {
+        this.items = [];
+	var results = Query.evaluate(rawData, 'item');
     
-        for (var i = 0; i < this.items.length; i++) {
-            HostClass.becomeInstance(this.items[i], FeedItem);
-            this.items[i].become();
+        for (var i = 0; i < results.length; i++) {
+	    this.items.push(new FeedItem(results[i]));
         }
     
-        this.title = (Query.evaluate(this, 'title', 'none'))[0].textContent;
+        this.title = (Query.evaluate(rawData, 'title', 'none'))[0].textContent;
     }
 
 });
@@ -195,9 +193,9 @@ var FeedChannel = Class.create({
 
 var FeedItem = Class.create({
 
-    become: function() {
-        this.title = Query.evaluate(this, 'title')[0].textContent;
-        this.description = Query.evaluate(this, 'description')[0].textContent;
+    initialize: function(rawData) {
+        this.title = Query.evaluate(rawData, 'title')[0].textContent;
+        this.description = Query.evaluate(rawData, 'description')[0].textContent;
         // console.log('created item %s=%s', this.title, this.description);
     }
     
@@ -263,11 +261,10 @@ var Feed = Class.create({
            return;
         }
 
-        this.channels = this.query('/rss/channel', result);
-    
-        for (var i = 0; i < this.channels.length; i++) {
-            HostClass.becomeInstance(this.channels[i], FeedChannel);
-            this.channels[i].become();
+        var results = this.query('/rss/channel', result);
+	this.channels = [];
+        for (var i = 0; i < results.length; i++) {
+	    this.channels.push(new FeedChannel(results[i]));
         }
     },
 
@@ -289,7 +286,7 @@ var Feed = Class.create({
 
     buildView: function() {
         var extent = pt(500, 200);
-        var panel = PanelMorph(extent, "rect");
+        var panel = new PanelMorph(extent, "rect");
         panel.addMorph = panel.addMorph.logCalls('addMorph');
         panel.setFill(Color.blue.lighter().lighter());
         panel.setBorderWidth(2);
@@ -313,9 +310,9 @@ var Feed = Class.create({
 
     openIn: function(world, location) {
         var panel = this.buildView();
-        var title = TextMorph(new Rectangle(0, 0, 150, 15), 'RSS feed                    ').beLabel();
+        var title = new TextMorph(new Rectangle(0, 0, 150, 15), 'RSS feed                    ').beLabel();
         title.connectModel({model: panel.model, getText: 'getChannelTitle'});
-        var window = world.addMorphAt(WindowMorph(panel, title), location);
+        var window = world.addMorphAt(new WindowMorph(panel, title), location);
         this.request(panel.model, "getItemList", 'getChannelTitle');
         return window;
     }

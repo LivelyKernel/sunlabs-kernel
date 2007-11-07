@@ -46,7 +46,9 @@ var Class = {
       parent = properties.shift();
 
     function klass() {
-      this.initialize.apply(this, arguments);
+	if (this === window || this == null) 
+	    console.log("whoops in " + this + "," + arguments.callee.caller.caller.caller.caller);
+	this.initialize.apply(this, arguments);
     }
 
     Object.extend(klass, Class.Methods);
@@ -81,7 +83,7 @@ Class.Methods = {
       if (ancestor && Object.isFunction(value) &&
           value.argumentNames().first() == "$super") {
         var method = value, value = Object.extend((function(m) {
-          return function() { return ancestor[m].apply(this, arguments) };
+            return function() { try { return ancestor[m].apply(this, arguments) } catch(e) { console.log("problem with ancestor " + ancestor + "method " + m); throw e;} };
         })(property).wrap(method), {
           valueOf:  function() { return method },
           toString: function() { return method.toString() }

@@ -16,27 +16,15 @@
  * @class TextWord
  * This 'class' renders single words
  */ 
-var TextWord = HostClass.fromElementType('tspan', false);
-
-Object.extend(TextWord, {
-
-    become: function(node) {
-        var elt = HostClass.becomeInstance(node, TextWord);
-        elt.fontInfo = Font.forFamily(elt.getFontFamily(), elt.getFontSize());
-        // FIXME
-        return elt;
-    }
-
-});
-
-Object.extend(TextWord.prototype, {
-
+var TextWord = Class.create(TextCompatibilityTrait, {
+    
     initialize: function(textString, startIndex, topLeft, font) {
+	this.rawNode = NodeFactory.create("tspan");
         this.textString = textString;
         this.startIndex = startIndex;
         this.stopIndex = textString.length - 1;
         this.topLeft = topLeft;
-        this.textContent = this.textString.substring(this.startIndex);
+        this.rawNode.textContent = this.textString.substring(this.startIndex);
         this.fontInfo = font;
         this.setX(topLeft.x);
         this.setY(topLeft.y + font.getSize());
@@ -86,13 +74,13 @@ Object.extend(TextWord.prototype, {
         if (result)
             return result;
         console.warn('TextWord.getBounds(%s) undefined, string "%s" extents %s', 
-                     elementIndex, this.textContent, this.extentTableToString());
+                     elementIndex, this.rawNode.textContent, this.extentTableToString());
         return pt(0,0).asRectangle();
     },
 
     // keep a copy of the substring we were working on (do we really need this? - kam)
     adjustAfterComposition: function() {
-        this.textContent = this.textString.substring(this.startIndex, this.stopIndex + 1); // XXX
+        this.rawNode.textContent = this.textString.substring(this.startIndex, this.stopIndex + 1); // XXX
     },
 
     // string representation
@@ -102,7 +90,7 @@ Object.extend(TextWord.prototype, {
             " startIndex: " + this.startIndex +
             " stopIndex: " + this.stopIndex +
             " topLeft: " + Object.inspect(this.topLeft) +
-            " textContent: " + this.textContent +
+            " textContent: " + this.rawNode.textContent +
             " didLineBreak: " + this.didLineBreak;
     },
 
@@ -115,6 +103,18 @@ Object.extend(TextWord.prototype, {
         console.log(lString);
     }
     
+});
+
+
+Object.extend(TextWord, {
+
+    become: function(node) {
+        var elt = HostClass.becomeInstance(node, TextWord);
+        elt.fontInfo = Font.forFamily(elt.getFontFamily(), elt.getFontSize());
+        // FIXME
+        return elt;
+    }
+
 });
 
 /**
@@ -336,7 +336,7 @@ var TextLine = Class.create({
                     c.bounds.width = (this.topLeft.x + compositionWidth) - c.bounds.x;
                     runningStartIndex = c.start + c.length;
                     c.wasComposed = true;
-                    if (lastWord) lastWord.setAttributeNS(Namespace.LIVELY, "nl", "true"); // little helper for serialization
+                    if (lastWord) lastWord.rawNode.setAttributeNS(Namespace.LIVELY, "nl", "true"); // little helper for serialization
                     break;
                 }
                 if (c.isTab) {
@@ -344,16 +344,16 @@ var TextLine = Class.create({
                     c.bounds.width = Math.floor((tabXBoundary + this.tabWidth) / this.tabWidth) * this.tabWidth - tabXBoundary;
                 } else {
                     c.bounds.width = spaceIncrement * c.length;
-                    if (lastWord) lastWord.setAttributeNS(Namespace.LIVELY, "trail", c.length); // little helper for serialization
+                    if (lastWord) lastWord.rawNode.setAttributeNS(Namespace.LIVELY, "trail", c.length); // little helper for serialization
                     else leadingSpaces = c.length;
                 }
                 runningStartIndex = c.start + c.length;
             } else {
-                c.word = TextWord(this.textString, c.start, pt(mostRecentBounds.maxX(), this.topLeft.y), this.font);
+                c.word = new TextWord(this.textString, c.start, pt(mostRecentBounds.maxX(), this.topLeft.y), this.font);
                 lastWord = c.word;
 
                 if (leadingSpaces) { 
-                    lastWord.setAttributeNS(Namespace.LIVELY, "lead", leadingSpaces);
+                    lastWord.rawNode.setAttributeNS(Namespace.LIVELY, "lead", leadingSpaces);
                     leadingSpaces = 0;
                 }
                 c.word.compose(compositionWidth - (mostRecentBounds.maxX() - this.topLeft.x), c.length - 1);
@@ -461,7 +461,7 @@ var TextLine = Class.create({
     render: function(renderer) {
         for (var i = 0; i < this.chunks.length; i++) {
             if (this.chunks[i].word != null && this.chunks[i].render) {
-                renderer.appendChild(this.chunks[i].word);
+                renderer.rawNode.appendChild(this.chunks[i].word.rawNode);
             }
         }
     },
@@ -540,30 +540,16 @@ var TextLine = Class.create({
  * @class TextBox
  */ 
 
-var TextBox = HostClass.fromElementType('text', false);
-
-Object.extend(TextBox.prototype, DisplayObject.prototype);
-
-Object.extend(TextBox, {
-
-    become: function(node) {
-        var elt = HostClass.becomeInstance(node, TextBox);
-        var lineHeight = parseFloat(elt.getAttributeNS(Namespace.LIVELY, "line-height"));
-        var font = Font.forFamily(elt.getFontFamily(), elt.getFontSize());
-        elt.initialize(elt.recoverTextContent(), lineHeight, elt.getTextColor(), font);
-        return elt;
-    }
-
-});
-
-Object.extend(TextBox.prototype, {
+var TextBox = Class.create(DisplayObject, {
+    
     eventHandler: { handleEvent: function(evt) { console.log('got event %s on %s', evt, evt.target); }},
 
     initialize: function(textString, lineHeight, textColor, font) {
+	this.rawNode = NodeFactory.create("text");
         this.textString = textString;//: String
         this.lineHeight = lineHeight;//: float
-        this.setAttributeNS(Namespace.LIVELY, "line-height", lineHeight); // serialization helper, FIXME?
-        this.setAttributeNS(null, "kerning", 0);
+        this.rawNode.setAttributeNS(Namespace.LIVELY, "line-height", lineHeight); // serialization helper, FIXME?
+        this.rawNode.setAttributeNS(null, "kerning", 0);
         this.setTextColor(textColor);
         this.setType("TextBox");
         this.fontInfo = font;
@@ -579,10 +565,10 @@ Object.extend(TextBox.prototype, {
 
         var content = "";
         
-        for (var child = this.firstChild; child != null; child = child.nextSibling) {
+        for (var child = this.rawNode.firstChild; child != null; child = child.nextSibling) {
             if (child.tagName == 'tspan')  {
-                var word = TextWord.become(child);
-                var lead = parseInt(word.getAttributeNS(Namespace.LIVELY, "lead"));
+                var word =  new TextWord(child);
+                var lead = parseInt(word.rawNode.getAttributeNS(Namespace.LIVELY, "lead"));
                 if (lead) {
                     var spaces = "";
                     for (var j = 0; j < lead; j++) 
@@ -590,9 +576,9 @@ Object.extend(TextBox.prototype, {
                     content += spaces;
                 }
 
-                content += word.textContent; 
+                content += word.rawNode.textContent; 
 
-                var trail = parseInt(word.getAttributeNS(Namespace.LIVELY, "trail"));
+                var trail = parseInt(word.rawNode.getAttributeNS(Namespace.LIVELY, "trail"));
                 if (trail) {
                     var spaces = "";
                     for (var j = 0; j < trail; j++) {
@@ -601,7 +587,7 @@ Object.extend(TextBox.prototype, {
                     content += spaces;
                 }
 
-                if (word.getAttributeNS(Namespace.LIVELY, "nl") == "true") {
+                if (word.rawNode.getAttributeNS(Namespace.LIVELY, "nl") == "true") {
                     content += "\n";
                 }
 
@@ -704,10 +690,23 @@ Object.extend(TextBox.prototype, {
     },
     
     destroy: function() {
-        if (this.parentNode) {
+        if (this.rawNode.parentNode) {
             //console.log('destroying %s', this.textString);
-            this.parentNode.removeChild(this);
+            this.rawNode.parentNode.removeChild(this.rawNode);
         }
+    }
+
+});
+
+
+Object.extend(TextBox, {
+
+    become: function(node) {
+        var elt = HostClass.becomeInstance(node, TextBox);
+        var lineHeight = parseFloat(elt.getAttributeNS(Namespace.LIVELY, "line-height"));
+        var font = Font.forFamily(elt.getFontFamily(), elt.getFontSize());
+        elt.initialize(elt.recoverTextContent(), lineHeight, elt.getTextColor(), font);
+        return elt;
     }
 
 });
@@ -716,7 +715,6 @@ Object.extend(TextBox.prototype, {
  * @class TextMorph
  */ 
 
-TextMorph = HostClass.create('TextMorph', Morph);
 
 // TextMorph attributes and initialization functions
 
@@ -727,7 +725,7 @@ var WrapStyle = {
 };
 
 // TextMorph attributes and basic functions
-Object.extend(TextMorph.prototype, {
+var TextMorph = Class.create(Morph, {
 
     // these are prototype variables
     fontSize:   Config.defaultFontSize   || 12,
@@ -741,8 +739,8 @@ Object.extend(TextMorph.prototype, {
     wrap: WrapStyle.NORMAL,
     maxSafeSize: 4000, 
 
-    initializeTransientState: function(initialBounds) {
-        TextMorph.superclass.initializeTransientState.call(this, initialBounds);
+    initializeTransientState: function($super, initialBounds) {
+        $super(initialBounds);
         // this.textBox = null;
         this.selectionRange = [0,-1]; // null or a pair of indices into textString
         this.selectionPivot = null;  // index of hit at onmousedown
@@ -754,9 +752,9 @@ Object.extend(TextMorph.prototype, {
         // note selection is transient
     },
 
-    initializePersistentState: function(initialBounds, shapeType) {
+    initializePersistentState: function($super, initialBounds, shapeType) {
         // this.textBox = null;
-        TextMorph.superclass.initializePersistentState.call(this, initialBounds, shapeType);
+        $super(initialBounds, shapeType);
         // this.selectionElement = this.addChildElement(NodeFactory.create('use').withHref("#TextSelectionStyle"));
 
         // the selection element is persistent although its contents are not
@@ -766,24 +764,24 @@ Object.extend(TextMorph.prototype, {
         //this.selectionElement.setAttributeNS(null, "fill", "url(#SelectionGradient)");
         this.selectionElement.setAttributeNS(null, "stroke-width", 0);
         this.font = Font.forFamily(this.fontFamily, this.fontSize);
-        this.setAttributeNS(Namespace.LIVELY, "wrap", this.wrap);
+        this.rawNode.setAttributeNS(Namespace.LIVELY, "wrap", this.wrap);
         // KP: set attributes on the text elt, not on the morph, so that we can retrieve it
         this.setFill(this.defaultBackgroundColor);
         this.setBorderWidth(this.defaultBorderWidth);
         this.setBorderColor(this.defaultBorderColor);
     },
 
-    restorePersistentState: function(importer) {
-        TextMorph.superclass.restorePersistentState.call(this, importer);
-        this.wrap = this.getAttributeNS(Namespace.LIVELY, "wrap");
-        var inset = this.getAttributeNS(Namespace.LIVELY, "inset");
+    restorePersistentState: function($super, importer) {
+        $super(importer);
+        this.wrap = this.rawNode.getAttributeNS(Namespace.LIVELY, "wrap");
+        var inset = this.rawNode.getAttributeNS(Namespace.LIVELY, "inset");
         if (inset) {
             this.inset = Point.parse(inset);
         }
     },
 
-    restoreFromElement: function(element, importer) /*:Boolean*/ {
-        if (TextMorph.superclass.restoreFromElement.call(this, element, importer)) return true;
+    restoreFromElement: function($super, element, importer) /*:Boolean*/ {
+        if ($super(element, importer)) return true;
 
         var type = DisplayObject.prototype.getType.call(element);
     
@@ -808,8 +806,8 @@ Object.extend(TextMorph.prototype, {
         }
     },
 
-    initialize: function(rect, textString) {
-        TextMorph.superclass.initialize.call(this, rect, "rect");
+    initialize: function($super, rect, textString) {
+        $super(rect, "rect");
 
         this.textString = textString || "";
 
@@ -824,18 +822,18 @@ Object.extend(TextMorph.prototype, {
         return bounds.topLeft(); 
     },
     
-    bounds: function() {
+    bounds: function($super) {
         if (this.fullBounds != null) return this.fullBounds;
         if (this.textBox) this.textBox.destroy();
 
         this.textBox = null;
         this.fitText(); // adjust bounds or text for fit
     
-        return TextMorph.superclass.bounds.call(this); 
+        return $super();
     },
     
     copy: function() {
-        var copy = TextMorph(this.bounds(), this.textString);
+        var copy = new TextMorph(this.bounds(), this.textString);
         copy.morphCopyFrom(this);
         copy.setFontFamilyAndSize(this.fontFamily,this.fontSize);
         copy.setTextColor(this.getTextColor());
@@ -844,9 +842,9 @@ Object.extend(TextMorph.prototype, {
         return copy; 
     },
 
-    changed: function() {
+    changed: function($super) {
         this.bounds(); // will force new bounds if layout changed
-        TextMorph.superclass.changed.call(this);
+        $super();
     },
     
     setTextColor: function(color) {
@@ -865,7 +863,7 @@ Object.extend(TextMorph.prototype, {
             delete this.wrap;
         } else {
             this.wrap = style;
-            this.setAttributeNS(Namespace.LIVELY, "wrap", style);
+            this.rawNode.setAttributeNS(Namespace.LIVELY, "wrap", style);
         }
     },
 
@@ -874,7 +872,7 @@ Object.extend(TextMorph.prototype, {
             delete this.inset;
         } else {
             this.inset = ext;
-            this.setAttributeNS(Namespace.LIVELY, "inset", ext);
+            this.rawNode.setAttributeNS(Namespace.LIVELY, "inset", ext);
         }
     },
 
@@ -907,9 +905,9 @@ Object.extend(TextMorph.prototype, {
     // Since command keys do not work on all browsers,
     // make it possible to evaluate the contents
     // of the TextMorph via popup menu
-    morphMenu: function(evt) { 
+    morphMenu: function($super, evt) { 
 
-        var menu = TextMorph.superclass.morphMenu.call(this, evt);
+        var menu = $super(evt);
 
         // Add a descriptive separator line
         menu.addItem(['----- text functions -----']);
@@ -932,13 +930,9 @@ Object.extend(TextMorph.prototype, {
         }]);
     
         return menu;
-    }
+    },
 
-});
-
-// TextMorph composition functions
-Object.extend(TextMorph.prototype, {
-    
+    // TextMorph composition functions
     textTopLeft: function() { 
         return this.shape.bounds().topLeft().addPt(this.inset); 
     },
@@ -955,10 +949,11 @@ Object.extend(TextMorph.prototype, {
         if (this.ensureTextString() == null) return null;
         
         if (this.textBox == null) {
-            var textBox = this.textBox = TextBox(this.textString, this.lineHeight(), this.textColor, this.font);
+            var textBox = this.textBox = 
+		new TextBox(this.textString, this.lineHeight(), this.textColor, this.font);
             var topLeft = this.textTopLeft();
             textBox.renderText(topLeft, this.compositionWidth());
-            this.addChildElement(this.textBox);
+            this.addChildElement(this.textBox.rawNode);
         }
         
         return this.textBox; 
@@ -983,7 +978,8 @@ Object.extend(TextMorph.prototype, {
     fitHeight: function() { //Returns true iff height changes
         // Wrap text to bounds width, and set height from total text height
         if (this.ensureTextBox() == null) { 
-            if (this.TextString != null) console.log("textbox error in fitHeight: " + this.textString.truncate() + "..."); 
+            if (this.textString != null) 
+		console.log("textbox error in fitHeight: " + this.textString.truncate() + "..."); 
             return; 
         }
         
@@ -1012,7 +1008,8 @@ Object.extend(TextMorph.prototype, {
         // Set morph bounds based on max text width and height
         var composer = this.ensureTextBox();
         if (!composer) {
-            if (this.textString != null) console.log("fitWidth failure on TextBox.ensureTextBox: " + this.textString.truncate() + "..."); 
+            if (this.textString != null) 
+		console.log("fitWidth failure on TextBox.ensureTextBox: " + this.textString.truncate() + "..."); 
             return;
         }
         
@@ -1020,7 +1017,8 @@ Object.extend(TextMorph.prototype, {
         if (jRect == null) { 
             console.log("fitWidth failure on TextBox.getBounds"); 
             var minH = this.lineHeight();
-            with (this.shape) { setBounds(bounds().withHeight(minH)) };
+	    var s = this.shape;
+	    s.setBounds(s.bounds().withHeight(s.minH));
             return; 
         }
     
@@ -1067,7 +1065,6 @@ Object.extend(TextMorph.prototype, {
 
     // FIXME (Safari draws its own selection)
     drawSelection: function() { // should really be called buildSelection now
-    
         if (!this.showsSelectionWithoutFocus() && this.takesKeyboardFocus() && !this.hasKeyboardFocus) {
             return;
         }
@@ -1094,7 +1091,7 @@ Object.extend(TextMorph.prototype, {
         } else {
             jRect = this.textBox.getBounds(this.selectionRange[1]);
             if (jRect == null) return;
-        
+            
             var r2 = this.lineRect(jRect);
             r2 = r2.translatedBy(pt(r2.width - 1, 0)).withWidth(1); 
         }
@@ -1159,13 +1156,9 @@ Object.extend(TextMorph.prototype, {
             return Math.min(charIx + 1, len);
         }
         return charIx;
-    }
+    },
     
-}); 
- 
-// TextMorph mouse event functions 
-Object.extend(TextMorph.prototype, {
-
+    // TextMorph mouse event functions 
     handlesMouseDown: function(evt) {
         // Do selecting if click is in selectable area
         if (evt.altKey) return false;
@@ -1181,9 +1174,9 @@ Object.extend(TextMorph.prototype, {
         return true; 
     },
 
-    onMouseMove: function(evt) {  
+    onMouseMove: function($super, evt) {  
         if (!this.isSelecting) { 
-            return TextMorph.superclass.onMouseMove.call(this, evt);
+            return $super(evt);
         }
         this.extendSelection(evt);
     },
@@ -1205,13 +1198,10 @@ Object.extend(TextMorph.prototype, {
         
         this.setModelSelection(this.selectionString());
         this.drawSelection(); 
-    }
+    },
     
-});
+    // TextMorph text selection functions
 
-// TextMorph text selection functions
-Object.extend(TextMorph.prototype, { 
-    
     startSelection: function(charIx) {  
         // We hit a character, so start a selection...
         // console.log('start selection @' + charIx);
@@ -1254,12 +1244,10 @@ Object.extend(TextMorph.prototype, {
         this.selectionRange = (ext >= piv) ? [piv,ext-1] : [ext,piv-1];
         this.setModelSelection(this.selectionString());
         this.drawSelection(); 
-    }
+    },
 
-});
 
-// TextMorph keyboard event functions
-Object.extend(TextMorph.prototype, {
+    // TextMorph keyboard event functions
 
     takesKeyboardFocus: function() { 
         // unlike, eg, cheapMenus
@@ -1271,13 +1259,13 @@ Object.extend(TextMorph.prototype, {
         return newSetting;
     },
     
-    onFocus: function(hand) {
-        TextMorph.superclass.onFocus.call(this, hand);
+    onFocus: function($super, hand) {
+        $super(hand);
         this.drawSelection();
     },
 
-    onBlur: function(hand) {
-        TextMorph.superclass.onBlur.call(this, hand);
+    onBlur: function($super, hand) {
+        $super(hand);
         if (!this.showsSelectionWithoutFocus()) this.undrawSelection();
     },
 
@@ -1548,8 +1536,8 @@ Object.category(TextMorph.prototype, "accessing", function() {
     
     resetScrollPane: function() {
         // Need a cleaner way to do this ;-)
-        if (this.owner() instanceof ClipMorph && this.owner().owner() instanceof ScrollPane) {
-           this.owner().owner().scrollToTop();
+        if (this.owner instanceof ClipMorph && this.owner.owner instanceof ScrollPane) {
+           this.owner.owner.scrollToTop();
         }
     },
     
@@ -1640,12 +1628,11 @@ Object.extend(TextMorph, {
  * to a string using toString(), and from a string using eval()
  */ 
 
-PrintMorph = HostClass.create('PrintMorph', TextMorph);
+PrintMorph = Class.create(TextMorph, {
 
-Object.extend(PrintMorph.prototype, {
 
-    initialize: function(initialBounds, textString) {
-        return PrintMorph.superclass.initialize.call(this, initialBounds, textString);
+    initialize: function($super, initialBounds, textString) {
+        return $super(initialBounds, textString);
     }, 
 
     updateView: function(aspect, controller) {
@@ -1665,9 +1652,7 @@ Object.extend(PrintMorph.prototype, {
 
 });
 
-TestTextMorph = HostClass.create('TestTextMorph', TextMorph);
-
-Object.extend(TestTextMorph.prototype, {
+var TestTextMorph = Class.create(TextMorph, {
     
     //    All this does is create a rectangle at mouseDown, and then
     //    while the mouse moves, it prints the index of the nearest character,
@@ -1675,7 +1660,7 @@ Object.extend(TestTextMorph.prototype, {
 
     onMouseDown: function(evt) {
         this.isSelecting = true;
-        this.boundsMorph = Morph(pt(0,0).asRectangle(), "rect");
+        this.boundsMorph = new Morph(pt(0,0).asRectangle(), "rect");
         this.boundsMorph.setFill(null);
         this.boundsMorph.setBorderColor(Color.red);
         this.addMorph(this.boundsMorph);
@@ -1702,9 +1687,9 @@ Object.extend(TestTextMorph.prototype, {
         this.boundsMorph.setBounds(jRect);  // show the bounds for that character
     },
 
-    onMouseMove: function(evt) {  
+    onMouseMove: function($super, evt) {  
         if (!this.isSelecting) { 
-            return TextMorph.superclass.onMouseMove.call(this, evt);
+            return $super(evt);
         }
         this.track(evt);
     },

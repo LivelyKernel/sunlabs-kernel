@@ -29,9 +29,8 @@
  * @class ButtonMorph: Simple buttons
  */ 
 
-ButtonMorph = HostClass.create('ButtonMorph', Morph);
 
-Object.category(ButtonMorph.prototype, "core", function() { return {
+var ButtonMorph = Class.create(Morph, {
 
     focusHaloBorderWidth: 3, // override the default
     defaultBorderWidth: 0.3,
@@ -43,8 +42,8 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
 
     // A ButtonMorph is the simplest widget
     // It read and writes the boolean variable, this.model[this.propertyName]
-    initialize: function(initialBounds) {
-        ButtonMorph.superclass.initialize.call(this, initialBounds, "rect");
+    initialize: function($super, initialBounds) {
+        $super(initialBounds, "rect");
         
         var model = new SimpleModel(this, "Value");
         // this default self connection may get overwritten by, eg, connectModel()...
@@ -57,25 +56,25 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
         return this;
     },
 
-    initializeTransientState: function(initialBounds) {
-        ButtonMorph.superclass.initializeTransientState.call(this, initialBounds);
+    initializeTransientState: function($super, initialBounds) {
+        $super(initialBounds);
         // FIXME make persistent
         this.baseColor = this.defaultFill;
         this.linkToStyles(['button']);
     },
 
-    restorePersistentState: function(importer) {
-        ButtonMorph.superclass.restorePersistentState.call(this, importer);
+    restorePersistentState: function($super, importer) {
+        $super(importer);
         this.changeAppearanceFor(this.getModelValue('getValue', false));
     },
 
     // KP: FIXME general way of declaring properties mapping to attributes
     setToggle: function(flag) {
-        this.setAttributeNS(Namespace.LIVELY, "toggle", !!flag);
+        this.rawNode.setAttributeNS(Namespace.LIVELY, "toggle", !!flag);
     },
 
     isToggle: function() {
-        var value = this.getAttributeNS(Namespace.LIVELY, "toggle");
+        var value = this.rawNode.getAttributeNS(Namespace.LIVELY, "toggle");
         if (value && value == 'true') return true;
         else return false;
     },
@@ -112,8 +111,8 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
         }
     },
 
-    applyStyle: function(spec) {
-        ButtonMorph.superclass.applyStyle.call(this,spec);
+    applyStyle: function($super, spec) {
+        $super(spec);
         this.changeAppearanceFor(this.getValue());
     },
 
@@ -166,21 +165,19 @@ Object.category(ButtonMorph.prototype, "core", function() { return {
         return false;
     }
 
-}});
+});
 
 /**
  * @class ImageMorph: Simple images
  */
 
-ImageMorph = HostClass.create('ImageMorph', Morph);
-
-Object.extend(ImageMorph.prototype, {
+var ImageMorph = Class.create(Morph, {
     
     defaultFill: Color.blue.lighter(),
     defaultBorderWidth: 0,
    
-    initialize: function(viewPort, url) {
-        ImageMorph.superclass.initialize.call(this, viewPort, "rect");
+    initialize: function($super, viewPort, url) {
+        $super(viewPort, "rect");
         this.url = url;
         this.dim = viewPort.extent();
         if (url) { 
@@ -188,8 +185,8 @@ Object.extend(ImageMorph.prototype, {
         }
     },
 
-    restoreFromElement: function(element, importer) /*:Boolean*/ {
-        if (TextMorph.superclass.restoreFromElement.call(this, element, importer)) return true;
+    restoreFromElement: function($super,element, importer) /*:Boolean*/ {
+        if ($super(element, importer)) return true;
 
         var type = DisplayObject.prototype.getType.call(element);
 
@@ -219,10 +216,12 @@ Object.extend(ImageMorph.prototype, {
         }
 
         this.setFill(null);
-        var image = this.image = NodeFactory.create("use").withHref(localURL);
-        image.setType('Image');
+        var image = this.image = NodeFactory.create("use");
+	image.setAttributeNS(Namespace.XLINK, "href", localURL);
+        image.setAttributeNS(Namespace.LIVELY, "type", 'Image');
         if (scale) {
-            image.applyTransform(Transform.createSimilitude(pt(0, 0), 0, scale));
+            image.setAttributeNS(null, "transform", 
+				 Transform.createSimilitude(pt(0, 0), 0, scale).toAttributeValue());
         }
         this.addChildElement(image);
 
@@ -236,11 +235,10 @@ Object.extend(ImageMorph.prototype, {
 
         if (!this.image) {
             var image = this.image = NodeFactory.create("image", { width: this.dim.x, height: this.dim.y});
-            image.setType('Image');
+            image.setAttributeNS(Namespace.LIVELY, "type", 'Image');
             this.addChildElement(image);
         }
-
-        this.image.withHref(url);
+	this.image.setAttributeNS(Namespace.XLINK, "href", url);
     },
 
     reload: function() {
@@ -264,15 +262,14 @@ Object.extend(ImageMorph.prototype, {
  * @class ImageButtonMorph: Buttons with images
  */ 
 
-ImageButtonMorph = HostClass.create('ImageButtonMorph', ButtonMorph);
+var ImageButtonMorph = Class.create(ButtonMorph, {
 
-Object.extend(ImageButtonMorph.prototype, {
 
-    initialize: function(initialBounds, normalImageHref, activatedImageHref) {
-        this.image = ImageMorph(new Rectangle(0, 0, initialBounds.width, initialBounds.height), normalImageHref);
+    initialize: function($super, initialBounds, normalImageHref, activatedImageHref) {
+        this.image = new ImageMorph(new Rectangle(0, 0, initialBounds.width, initialBounds.height), normalImageHref);
         this.normalImageHref = normalImageHref;
         this.activatedImageHref = activatedImageHref;
-        ImageButtonMorph.superclass.initialize.call(this, initialBounds);
+        $super(initialBounds);
         this.addMorph(this.image);
         this.image.handlesMouseDown = function() { return true; }
         this.image.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
@@ -290,12 +287,10 @@ Object.extend(ImageButtonMorph.prototype, {
  * @class IconMorph: Simple icons
  */
 
-IconMorph = HostClass.create('IconMorph', ImageMorph);
+var IconMorph = Class.create(ImageMorph, {
 
-Object.extend(IconMorph.prototype, {
-
-    initialize: function(viewPort, url, name, targetUrl) {
-        IconMorph.superclass.initialize.call(this, viewPort, url);
+    initialize: function($super, viewPort, url, name, targetUrl) {
+        $super(viewPort, url);
         this.label = new TextMorph(new Rectangle(viewPort.width, viewPort.height/3, 100, 30), name).beLabel();
         this.target = targetUrl;
         this.label.setFill(Color.white);
@@ -321,15 +316,13 @@ Object.extend(IconMorph.prototype, {
 /**
  * @class ClipMorph: A clipping window/view
  */
-ClipMorph = HostClass.create('ClipMorph', Morph);
-
-Object.extend(ClipMorph.prototype, {
+var ClipMorph = Class.create(Morph, {
 
     defaultFill: null,
     defaultBorderWidth: 0,
 
-    initialize: function(initialBounds) {
-        ClipMorph.superclass.initialize.call(this, initialBounds, "rect");
+    initialize: function($super, initialBounds) {
+        $super(initialBounds, "rect");
     
         // A clipMorph is like a window through which its submorphs are seen
         // Its bounds are strictly limited by its shape
@@ -373,26 +366,23 @@ Object.extend(ClipMorph.prototype, {
 /**
  * @class TitleBarMorph: Title bars for Window morphs
  */
-  
-TitleBarMorph = HostClass.create('TitleBarMorph', Morph);
+var TitleBarMorph = Class.create(Morph, {
 
-Object.extend(TitleBarMorph.prototype, {
     // prototype variables
     barHeight: 22,
     controlSpacing: 3,
     defaultBorderWidth: 0.5,
 
-    initialize: function(headline, windowWidth, windowMorph, isExternal) {
+    initialize: function($super, headline, windowWidth, windowMorph, isExternal) {
         this.windowMorph = windowMorph;
         const bh = this.barHeight;
         const spacing = this.controlSpacing;
-        TitleBarMorph.superclass.initialize.call(this, new Rectangle(0, isExternal? - bh : 0, 
-                                                 windowWidth, bh), "rect");
+        $super(new Rectangle(0, isExternal? - bh : 0, windowWidth, bh), "rect");
         this.linkToStyles(['titleBar']);
         this.ignoreEvents();
 
         var cell = new Rectangle(0, 0, bh, bh);
-        var closeButton = WindowControlMorph(cell, spacing, Color.primary.orange, windowMorph, 
+        var closeButton = new WindowControlMorph(cell, spacing, Color.primary.orange, windowMorph, 
             function() { this.initiateShutdown(); }, "Close");
         this.setNamedMorph('closeButton', closeButton);
 
@@ -403,7 +393,7 @@ Object.extend(TitleBarMorph.prototype, {
         // closeButton.addChildElement(sign);
 
         cell = cell.translatedBy(pt(bh - spacing, 0));
-        var menuButton = WindowControlMorph(cell, spacing, Color.primary.blue, windowMorph, 
+        var menuButton = new WindowControlMorph(cell, spacing, Color.primary.blue, windowMorph, 
             function(evt) { windowMorph.showTargetMorphMenu(evt); }, "Menu");
         this.setNamedMorph('menuButton', menuButton);
 
@@ -415,7 +405,7 @@ Object.extend(TitleBarMorph.prototype, {
         */
         
         cell = cell.translatedBy(pt(bh - spacing, 0));
-        var collapseButton = WindowControlMorph(cell, spacing, Color.primary.yellow, windowMorph, 
+        var collapseButton = new WindowControlMorph(cell, spacing, Color.primary.yellow, windowMorph, 
             function() { this.toggleCollapse(); }, "Collapse");
         this.setNamedMorph('collapseButton', collapseButton);
 
@@ -426,7 +416,7 @@ Object.extend(TitleBarMorph.prototype, {
             label = headline;
         } else { // String
             var width = headline.length * 8; // wild guess headlineString.length * 2 *  font.getCharWidth(' ') + 2;
-            label = TextMorph(new Rectangle(0, 0, width, bh), headline).beLabel();
+            label = new TextMorph(new Rectangle(0, 0, width, bh), headline).beLabel();
             label.shape.roundEdgesBy(8);
         }
 
@@ -437,14 +427,14 @@ Object.extend(TitleBarMorph.prototype, {
         return this;
     },
 
-    restorePersistentState: function(importer) {
-        TitleBarMorph.superclass.restorePersistentState.call(this, importer);
+    restorePersistentState: function($super, importer) {
+        $super(importer);
         this.closeButton = this.getNamedMorph('closeButton');
         this.menuButton = this.getNamedMorph('menuButton');
         this.collapseButton = this.getNamedMorph('collapseButton');
         this.label = this.getNamedMorph('label');
-        if (DisplayObject.prototype.getType.call(this.parentNode) == "WindowMorph") {
-            this.closeButton.target = this.menuButton.target = this.collapseButton.target = this.parentNode;
+        if (DisplayObject.prototype.getType.call(this.rawNode.parentNode) == "WindowMorph") {
+            this.closeButton.target = this.menuButton.target = this.collapseButton.target = this.rawNode.parentNode;
         }
     },
 
@@ -474,27 +464,24 @@ Object.extend(TitleBarMorph.prototype, {
  * @class TitleTabMorph: Title bars for Window morphs
  */
   
-TitleTabMorph = HostClass.create('TitleTabMorph', TitleBarMorph);
+var TitleTabMorph = Class.create(Morph, {
 
-Object.extend(TitleTabMorph.prototype, {
-
-    initialize: function(headline, windowWidth, windowMorph, isExternal) {
+    initialize: function($super, headline, windowWidth, windowMorph, isExternal) {
         this.windowMorph = windowMorph;
         const bh = this.barHeight;
         const spacing = this.controlSpacing;
-        TitleBarMorph.superclass.initialize.call(this, new Rectangle(0, isExternal? - bh : 0, 
-                                                 windowWidth, bh), "rect");
+        $super(new Rectangle(0, isExternal? - bh : 0, windowWidth, bh), "rect");
         this.linkToStyles(['titleBar']);
         this.ignoreEvents();
 
         var cell = new Rectangle(0, 0, bh, bh);
-        var menuButton = WindowControlMorph(cell, spacing, Color.primary.blue, windowMorph, 
+        var menuButton = new WindowControlMorph(cell, spacing, Color.primary.blue, windowMorph, 
             function(evt) { windowMorph.showTargetMorphMenu(evt); }, "Menu");
         this.addMorph(menuButton);
         
         // Collapse button is retained only while we get things going...
         cell = cell.translatedBy(pt(bh - spacing, 0));
-        var collapseButton = WindowControlMorph(cell, spacing, Color.primary.yellow, windowMorph, 
+        var collapseButton = new WindowControlMorph(cell, spacing, Color.primary.yellow, windowMorph, 
             function() { this.toggleCollapse(); }, "Collapse");
         this.addMorph(collapseButton);
 
@@ -504,7 +491,7 @@ Object.extend(TitleTabMorph.prototype, {
         } else { // String
             var width = headline.length * 8;
             // wild guess headlineString.length * 2 *  font.getCharWidth(' ') + 2; 
-            label = TextMorph(new Rectangle(0, 0, width, bh), headline).beLabel();
+            label = new TextMorph(new Rectangle(0, 0, width, bh), headline).beLabel();
         }
         var topY = this.shape.bounds().y;
         label.align(label.bounds().topLeft(), cell.topRight());
@@ -534,14 +521,12 @@ Object.extend(TitleTabMorph.prototype, {
  * Transient?
  */ 
 
-WindowControlMorph = HostClass.create('WindowControlMorph', Morph);
-
-Object.extend(WindowControlMorph.prototype, {
+var WindowControlMorph = Class.create(Morph, {
 
     defaultBorderWidth: 0,
 
-    initialize: function(rect, inset, color, target, action, helpText) {
-        WindowControlMorph.superclass.initialize.call(this, rect.insetBy(inset), 'ellipse');
+    initialize: function($super, rect, inset, color, target, action, helpText) {
+        $super(rect.insetBy(inset), 'ellipse');
         this.setFill(new RadialGradient(color.lighter(2), color));
         this.target = target;
         this.action = action;
@@ -583,7 +568,7 @@ Object.extend(WindowControlMorph.prototype, {
         this.helpOpen = true;
         // FIXME: The size of the balloon should be calculated based on string size
         if ( !this.help ) {
-            this.help = TextMorph(evt.mousePoint.extent(pt(80, 20)), this.helpText);
+            this.help = new TextMorph(evt.mousePoint.extent(pt(80, 20)), this.helpText);
             this.help.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
             // some eye candy for the help
             this.help.shape.roundEdgesBy(15);
@@ -609,21 +594,19 @@ Object.extend(WindowControlMorph.prototype, {
 /**
  * @class WindowMorph: Full-fledged windows with title bar, etc.
  */
-WindowMorph = HostClass.create('WindowMorph', Morph);
-
-Object.extend(WindowMorph.prototype, {
+var WindowMorph = Class.create(Morph, {
 
     state: "expanded",
     titleBar: null,
     targetMorph: null,
     
-    initialize: function(targetMorph, headline, location) {
+    initialize: function($super, targetMorph, headline, location) {
         var bounds = targetMorph.bounds().clone();
         var titleBar = this.makeTitleBar(headline, bounds.width);
         var titleHeight = titleBar.bounds().height;
 
         bounds.height += titleHeight;
-        WindowMorph.superclass.initialize.call(this, location ? rect(location, bounds.extent()) : bounds, 'rect');
+        $super(location ? rect(location, bounds.extent()) : bounds, 'rect');
         this.setNamedMorph("targetMorph", targetMorph);
         this.setNamedMorph("titleBar", titleBar);
         this.contentOffset = pt(0, titleHeight);
@@ -633,8 +616,8 @@ Object.extend(WindowMorph.prototype, {
         return this;
     },
 
-    restorePersistentState: function(importer) {
-        WindowMorph.superclass.restorePersistentState.call(this, importer);
+    restorePersistentState: function($super, importer) {
+        $super(importer);
         this.targetMorph = this.getNamedMorph('targetMorph');
         this.titleBar = this.getNamedMorph('titleBar');
         this.contentOffset = pt(0, this.titleBar.bounds().height);
@@ -642,7 +625,7 @@ Object.extend(WindowMorph.prototype, {
     
     makeTitleBar: function(headline, width) {
         // Overridden in TabbedPanelMorph
-        return TitleBarMorph(headline, width, this, false);
+        return new TitleBarMorph(headline, width, this, false);
     },
 
     windowContent: function() { return this.targetMorph; },
@@ -657,7 +640,7 @@ Object.extend(WindowMorph.prototype, {
         if (this.isCollapsed()) return;
         this.expandedTransform = this.getTransform();
         this.tbTransform = this.titleBar.getTransform();
-        var owner = this.owner();
+        var owner = this.owner;
         var titleTransform = this.titleBar.cumulativeTransform();
         owner.addMorph(this.titleBar);
         this.titleBar.setTransform(this.collapsedTransform ? this.collapsedTransform : this.expandedTransform);
@@ -671,7 +654,7 @@ Object.extend(WindowMorph.prototype, {
     expand: function() {
         if (!this.isCollapsed()) return;
         this.collapsedTransform = this.titleBar.getTransform();
-        var owner = this.titleBar.owner();
+        var owner = this.titleBar.owner;
         this.takeHighlight();
         owner.addMorph(this);
         this.setTransform(this.expandedTransform);        
@@ -685,17 +668,17 @@ Object.extend(WindowMorph.prototype, {
     isCollapsed: function() { return this.state == "collapsed"; },
 
     //Following methods promote windows on first click----------------
-    morphToGrabOrReceive: function(evt, droppingMorph, checkForDnD) {
+    morphToGrabOrReceive: function($super, evt, droppingMorph, checkForDnD) {
         // If this window is doesn't need to come forward, then respond normally
         if (!this.needsToComeForward(evt) || droppingMorph != null) {
-            return WindowMorph.superclass.morphToGrabOrReceive.call(this, evt, droppingMorph, checkForDnD)
+            return $super(evt, droppingMorph, checkForDnD)
         }
         // Otherwise, hold mouse focus until mouseUp brings it to the top
         return this;
     },
 
     needsToComeForward: function(evt) {
-        if (this.owner() !== this.world()) return true; // weird case -- not directly in world
+        if (this.owner !== this.world()) return true; // weird case -- not directly in world
         if (!this.fullContainsWorldPoint(evt.mousePoint)) return false;  // not clicked in me
         if (this === this.world().topSubmorph()) return false;  // already on top
         if (this.isCollapsed()) return false;  // collapsed labels OK from below
@@ -708,8 +691,8 @@ Object.extend(WindowMorph.prototype, {
 
     onMouseDown: function(evt) { },
 
-    onMouseMove: function(evt) {
-        if (!evt.mouseButtonPressed) WindowMorph.superclass.onMouseMove.call(this, evt);
+    onMouseMove: function($super, evt) {
+        if (!evt.mouseButtonPressed) $super(evt);
     },    
 
     onMouseUp: function(evt) {
@@ -721,9 +704,9 @@ Object.extend(WindowMorph.prototype, {
         return true;
     },
 
-    mouseEvent: function(evt, hasFocus) {
+    mouseEvent: function($super, evt, hasFocus) {
         if (!this.needsToComeForward(evt)) {
-            return WindowMorph.superclass.mouseEvent.call(this, evt, hasFocus)
+            return $super(evt, hasFocus)
         }
         return this.mouseHandler.handleMouseEvent(evt, this); 
     },
@@ -786,17 +769,16 @@ Object.extend(WindowMorph.prototype, {
  * @class TabbedPanelMorph: Alternative to windows for off-screen content
  */
   
-TabbedPanelMorph = HostClass.create('TabbedPanelMorph', WindowMorph);
+var TabbedPanelMorph = Class.create(WindowMorph, {
 
-Object.extend(TabbedPanelMorph.prototype, {
 
-    initialize: function(targetMorph, headline, location, sideName) {
+    initialize: function($super, targetMorph, headline, location, sideName) {
         // A TabbedPanelMorph is pretty much like a WindowMorph, in that it is intended to 
         // be a container for applications that may frequently want to be put out of the way.
         // With windows, you collapse them to their title bars, with tabbed panels, you
         // click their tab and they retreat to the edge of the screen like a file folder.
         this.sideName = sideName ? sideName : "south";
-        TabbedPanelMorph.superclass.initialize.call(this, targetMorph, headline, location);
+        $super(targetMorph, headline, location);
         this.setFill(null);
         this.setBorderColor(null);
         this.newToTheWorld = true;
@@ -816,7 +798,7 @@ Object.extend(TabbedPanelMorph.prototype, {
     },
 
     makeTitleBar: function(headline, width) {
-        return TitleTabMorph(headline, width, this, false);
+        return new TitleTabMorph(headline, width, this, false);
     }
 
 });
@@ -832,14 +814,8 @@ Object.extend(TabbedPanelMorph.prototype, {
  * object, e.g., to resize, re-scale, or rotate it.  
  */ 
 
-HandleMorph = HostClass.create('HandleMorph', Morph);
+var HandleMorph = Class.create(Morph, {
 
-Object.extend(HandleMorph, {
-    // Counter for displaying balloon help only a certain number of times
-    helpCounter: 0,
-});
-
-Object.extend(HandleMorph.prototype, {
 
     defaultFill: null,
     defaultBorderColor: Color.blue,
@@ -854,8 +830,8 @@ Object.extend(HandleMorph.prototype, {
         "Cmd+shift+drag to scale the object \n" + 
         "Shift+drag to change width ", 
 
-    initialize: function(location, shapeType, hand, targetMorph, partName) {
-        HandleMorph.superclass.initialize.call(this, location.asRectangle().expandBy(5), shapeType);
+    initialize: function($super, location, shapeType, hand, targetMorph, partName) {
+        $super(location.asRectangle().expandBy(5), shapeType);
         this.targetMorph = targetMorph;
         this.partName = partName; // may be a name like "topRight" or a vertex index
         this.initialScale = null;
@@ -868,7 +844,7 @@ Object.extend(HandleMorph.prototype, {
         // Show the balloon help only if it hasn't been shown too many times already
         if (HandleMorph.helpCounter < 20) {
             HandleMorph.helpCounter++;
-            this.help = TextMorph(evt.mousePoint.extent(pt(200, 20)), 
+            this.help = new TextMorph(evt.mousePoint.extent(pt(200, 20)), 
                 this.shape.getType() == "rect" ? this.controlHelpText : this.circleHelpText);
     
             // trying to relay mouse events to the WindowControlMorph
@@ -920,7 +896,7 @@ Object.extend(HandleMorph.prototype, {
         }
     
         // Mouse down: edit targetMorph
-        this.align(this.bounds().center(), this.owner().localize(evt.mousePoint));
+        this.align(this.bounds().center(), this.owner.localize(evt.mousePoint));
 
         var p0 = evt.hand.lastMouseDownPoint; // in world coords
         var p1 = evt.mousePoint;
@@ -928,7 +904,7 @@ Object.extend(HandleMorph.prototype, {
         if (!this.initialRotation) this.initialRotation = this.targetMorph.getRotation();
         if (evt.altKey) {
             // ctrl-drag for rotation (unshifted) and scale (shifted)
-            var ctr = this.targetMorph.owner().worldPoint(this.targetMorph.origin);  //origin for rotation and scaling
+            var ctr = this.targetMorph.owner.worldPoint(this.targetMorph.origin);  //origin for rotation and scaling
             var v1 = p1.subPt(ctr); //vector from origin
             var v0 = p0.subPt(ctr); //vector from origin at mousedown
             
@@ -951,7 +927,7 @@ Object.extend(HandleMorph.prototype, {
                   // scale the whole window instead of reframing
                   // DI:  Note this should reframe windows, with proportional layout of the interior frames
                   // this code is all copied -- should be factored or, better, removed
-                  var ctr = this.targetMorph.owner().worldPoint(this.targetMorph.origin);
+                  var ctr = this.targetMorph.owner.worldPoint(this.targetMorph.origin);
                   var v1 = p1.subPt(ctr); //vector from origin
                   var v0 = p0.subPt(ctr); //vector from origin at mousedown
                   var ratio = v1.r() / v0.r();
@@ -964,8 +940,8 @@ Object.extend(HandleMorph.prototype, {
         }
     },
     
-    inspect: function() {
-        return HandleMorph.superclass.inspect.call(this) + " on " + Object.inspect(this.targetMorph);
+    inspect: function($super) {
+        return $super() + " on " + Object.inspect(this.targetMorph);
     },
     
     scaleFor: function(scaleFactor) {
@@ -977,22 +953,27 @@ Object.extend(HandleMorph.prototype, {
     
 });
 
+Object.extend(HandleMorph, {
+    // Counter for displaying balloon help only a certain number of times
+    helpCounter: 0
+});
+
+
+
 /**
  * @class SelectionMorph: The selection "tray" object that
  * allows multiple objects to be moved and otherwise manipulated
  * simultaneously. 
  */
 
-SelectionMorph = HostClass.create('SelectionMorph', Morph);
-
-Object.extend(SelectionMorph.prototype, {
+var SelectionMorph = Class.create(Morph, {
     
     defaultBorderWidth: 1,
     defaultBorderColor: Color.blue,
     defaulFill: Color.secondary.blue,
 
-    initialize: function(viewPort, defaultworldOrNull) {
-        SelectionMorph.superclass.initialize.call(this, viewPort, "rect");
+    initialize: function($super, viewPort, defaultworldOrNull) {
+        $super(viewPort, "rect");
         this.originalPoint = viewPort.topLeft();
         this.reshapeName = "bottomRight";
         this.selectedMorphs = [];
@@ -1003,7 +984,7 @@ Object.extend(SelectionMorph.prototype, {
         return this;
     },
     
-    reshape: function(partName, newPoint, handle, lastCall) {
+    reshape: function($super, partName, newPoint, handle, lastCall) {
         // Initial selection might actually move in another direction than toward bottomRight
         // This code watches that and changes the control point if so
         if (this.initialSelection) {
@@ -1014,9 +995,9 @@ Object.extend(SelectionMorph.prototype, {
             this.setBounds(this.originalPoint.asRectangle())
         } else { this.reshapeName = partName; }
 
-        SelectionMorph.superclass.reshape.call(this, this.reshapeName, newPoint, handle, lastCall);
+        $super(this.reshapeName, newPoint, handle, lastCall);
         this.selectedMorphs = [];
-        NodeList.each(this.owner().submorphs, function(m) {
+        this.owner.submorphs.each(function(m) {
             if (m !== this && this.bounds().containsRect(m.bounds())) this.selectedMorphs.push(m);
         }.bind(this));
         this.selectedMorphs.reverse();
@@ -1025,8 +1006,8 @@ Object.extend(SelectionMorph.prototype, {
         if (lastCall && this.selectedMorphs.length == 0) this.remove();
     },
 
-    morphMenu: function(evt) { 
-        var menu = SelectionMorph.superclass.morphMenu.call(this,evt);
+    morphMenu: function($super, evt) { 
+        var menu = $super(evt);
         menu.removeItemNamed("inspect");
         menu.removeItemNamed("XML");
         return menu;
@@ -1042,16 +1023,16 @@ Object.extend(SelectionMorph.prototype, {
             this.myWorld = this.world();
         } 
         this.myWorld.currentSelection = null;
-        SelectionMorph.superclass.remove.call(this);
+        SelectionMorph.superclass.prototype.remove.call(this);
     },
     
     copyToHand: function(hand) { 
         this.selectedMorphs.invoke('copyToHand', hand);
     },
     
-    setBorderWidth: function(width) { 
-        if (this.selectedMorphs.length==0) {
-            SelectionMorph.superclass.setBorderWidth.call(this,width);
+    setBorderWidth: function($super, width) { 
+        if (this.selectedMorphs.length == 0) {
+            $super(width);
         } else { 
             this.selectedMorphs.invoke('setBorderWidth', width);
             for ( var i = 0; i < this.selectedMorphs.length; i++ ) {
@@ -1062,9 +1043,9 @@ Object.extend(SelectionMorph.prototype, {
         }
     },
     
-    setFill: function(color) { 
+    setFill: function($super, color) { 
         if (this.selectedMorphs.length==0) {
-            SelectionMorph.superclass.setFill.call(this,color);
+            $super(color);
         } else {
             this.selectedMorphs.invoke('setFill', color);
             for ( var i = 0; i < this.selectedMorphs.length; i++ ) {
@@ -1075,9 +1056,9 @@ Object.extend(SelectionMorph.prototype, {
         }
     },
     
-    setBorderColor: function(color) { 
+    setBorderColor: function($super, color) { 
         if (this.selectedMorphs.length==0) {
-            SelectionMorph.superclass.setBorderColor.call(this,color);
+            $super(color);
         } else {
             this.selectedMorphs.invoke('setBorderColor', color);
             for ( var i = 0; i < this.selectedMorphs.length; i++ ) {
@@ -1088,9 +1069,9 @@ Object.extend(SelectionMorph.prototype, {
         }
     },
     
-    setFillOpacity: function(op) { 
+    setFillOpacity: function($super, op) { 
         if (this.selectedMorphs.length==0) {
-            SelectionMorph.superclass.setFillOpacity.call(this,op);
+            $super(op);
         } else { 
             this.selectedMorphs.invoke('setFillOpacity', op);
             for ( var i = 0; i < this.selectedMorphs.length; i++ ) {
@@ -1101,9 +1082,9 @@ Object.extend(SelectionMorph.prototype, {
         }
     },
     
-    setStrokeOpacity: function(op) { 
+    setStrokeOpacity: function($super, op) { 
         if (this.selectedMorphs.length==0) {
-            SelectionMorph.superclass.setStrokeOpacity.call(this,op);
+            $super(op);
         } else { 
             this.selectedMorphs.invoke('setStrokeOpacity', op);
             for ( var i = 0; i < this.selectedMorphs.length; i++ ) {
@@ -1116,11 +1097,11 @@ Object.extend(SelectionMorph.prototype, {
 
     // TODO: there MUST be a better way to do this
     // there "might" be some performance issues with this :)
-    setRotation: function(theta) {
+    setRotation: function($super, theta) {
         for ( var i = 0; i < this.selectedMorphs.length; i++ ) {
             this.addMorph(this.selectedMorphs[i]);
         }
-        SelectionMorph.superclass.setRotation.call(this,theta);
+        $super(theta);
         for ( var i = 0; i < this.selectedMorphs.length; i++ ) {
             this.world().addMorph(this.selectedMorphs[i]);
         }
@@ -1128,18 +1109,19 @@ Object.extend(SelectionMorph.prototype, {
     
 // TODO: there MUST be a better way to do this.. but it works without a sweat
 // there "might" be some performance issues with this :)
-    setScale: function(scale) {
-        for ( var i = 0; i < this.selectedMorphs.length; i++ ) {
+    setScale: function($super, scale) {
+	console.log('ok');
+        for (var i = 0; i < this.selectedMorphs.length; i++ ) {
             this.addMorph(this.selectedMorphs[i]);
         }
-        SelectionMorph.superclass.setScale.call(this,scale);
-        for ( var i = 0; i < this.selectedMorphs.length; i++ ) {
+        $super(scale);
+        for (var i = 0; i < this.selectedMorphs.length; i++ ) {
             this.world().addMorph(this.selectedMorphs[i]);
         }
     },
     
     okToBeGrabbedBy: function(evt) {
-        this.selectedMorphs.forEach( function(m) { evt.hand.addMorph(m); } );
+        this.selectedMorphs.each( function(m) { evt.hand.addMorph(m); } );
         return this;
     }
     
@@ -1153,12 +1135,10 @@ Object.extend(SelectionMorph.prototype, {
  * @class PanelMorph
  */
 
-PanelMorph = HostClass.create('PanelMorph', Morph);
+var PanelMorph = Class.create(Morph, {
 
-Object.extend(PanelMorph.prototype, {
-
-    initialize: function(extent/*:Point*/) {
-        PanelMorph.superclass.initialize.call(this, pt(0, 0).extent(extent), 'rect');
+    initialize: function($super, extent/*:Point*/) {
+        $super(pt(0, 0).extent(extent), 'rect');
         this.lastNavigable = null;
     },
 
@@ -1193,13 +1173,13 @@ Object.extend(PanelMorph.prototype, {
         } 
     },
 
-    addMorphFrontOrBack: function(m, front) {
+    addMorphFrontOrBack: function($super, m, front) {
         if (m.takesKeyboardFocus()) {
             if (this.lastNavigable) this.lastNavigable.nextNavigableSibling = m;
             this.lastNavigable = m;
         }
 
-        return PanelMorph.superclass.addMorphFrontOrBack.call(this, m, front);
+        return $super(m, front);
     },
 
     updateView: function(aspect, controller) {
@@ -1221,7 +1201,7 @@ Object.extend(PanelMorph, {
         // paneSpec is an array of arrays of the form...
         //     ['leftPane', ListPane, new Rectangle(0, 0, 0.5, 0.6)],
         // See example calls in, eg, SimpleBrowser.buildView() for how to use this
-        var panel = PanelMorph(extent);
+        var panel = new PanelMorph(extent);
         panel.setFill(Color.primary.blue.lighter().lighter());
         panel.setBorderWidth(2);
 
@@ -1229,7 +1209,7 @@ Object.extend(PanelMorph, {
             var paneName = spec[0];
             var paneConstructor = spec[1];
             var paneRect = pt(0,0).extent(extent).scaleByRect(spec[2]);
-            panel.setNamedMorph(paneName, paneConstructor(paneRect));
+            panel.setNamedMorph(paneName, new paneConstructor(paneRect));
         });
 
         return panel;
@@ -1241,21 +1221,18 @@ Object.extend(PanelMorph, {
  * @class CheapListMorph
  */ 
 
-CheapListMorph = HostClass.create('CheapListMorph', TextMorph);
-
-Object.extend(CheapListMorph.prototype, {
+var CheapListMorph = Class.create(TextMorph, {
     
     defaultBorderColor: Color.black,
     wrap: WrapStyle.NONE,
 
-    initialize: function(initialBounds, itemList) {
+    initialize: function($super, initialBounds, itemList) {
         // itemList is an array of strings
         // Note:  A proper ListMorph is a list of independent submorphs
         // CheapListMorphs simply leverage Textmorph's ability to display
         // multiline paragraphs, though some effort is made to use a similar interface.
-    
         var listText = itemList ? itemList.join("\n") : "";
-        CheapListMorph.superclass.initialize.call(this, initialBounds, listText);
+        $super(initialBounds, listText);
         // this default self connection may get overwritten by, eg, connectModel()...
         var model = new SimpleModel(null, "List", "Selection");
         this.modelPlug = this.addChildElement(model.makePlug());
@@ -1267,8 +1244,8 @@ Object.extend(CheapListMorph.prototype, {
         return this;
     },
 
-    restorePersistentState: function(importer) {
-        CheapListMorph.superclass.restorePersistentState.call(this, importer);
+    restorePersistentState: function($super, importer) {
+        $super(importer);
         this.itemList = this.textString.split('\n');
         this.setModelValue('setList', this.itemList);
     },
@@ -1342,10 +1319,10 @@ Object.extend(CheapListMorph.prototype, {
         return true;  // Overridden in, eg, Lists
     },
 
-    drawSelection: function() {
+    drawSelection: function($super) {
         if (this.hasNullSelection()) { // Null sel in a list is blank
             this.undrawSelection();
-        } else CheapListMorph.superclass.drawSelection.call(this); 
+        } else $super();
     },
 
     selectLineAt: function(charIx) {  
@@ -1361,9 +1338,9 @@ Object.extend(CheapListMorph.prototype, {
         return [i1, i2];
     },
     
-    lineRect: function(r) { //Menu selection displays full width
+    lineRect: function($super, r) { //Menu selection displays full width
         var bounds = this.shape.bounds();
-        return CheapListMorph.superclass.lineRect.call(this, new Rectangle(bounds.x+2, r.y, bounds.width-4, r.height)); 
+        return $super(new Rectangle(bounds.x + 2, r.y, bounds.width - 4, r.height)); 
     },
     
     updateList: function(newList) {
@@ -1423,15 +1400,13 @@ Object.extend(CheapListMorph.prototype, {
  * @class MenuMorph
  */ 
 
-MenuMorph = HostClass.create('MenuMorph', CheapListMorph);
-
-Object.extend(MenuMorph.prototype, {
+var MenuMorph = Class.create(CheapListMorph, {
 
     defaultBorderColor: Color.blue,
     defaultBorderWidth: 0.5,
     defaultFill: Color.blue.lighter(5),
 
-    initialize: function(items, targetMorph, lines) {
+    initialize: function($super, items, targetMorph, lines) {
         // items is an array of menuItems, each of which is an array of the form
         // [itemName, target, functionName, parameterIfAny]
         // At mouseUp, the call is of the form
@@ -1451,7 +1426,7 @@ Object.extend(MenuMorph.prototype, {
         this.items = items;
         this.targetMorph = targetMorph;
         this.lines = lines ? lines : [];
-        console.log('what, font is %s in %s', this.font, this);
+        //console.log('what, font is %s in %s', this.font, this);
         //this.layoutChanged();
         return this;
     },
@@ -1494,11 +1469,14 @@ Object.extend(MenuMorph.prototype, {
         // mouseFocus should be set immediately before or after this call
         this.stayUp = remainOnScreen; // set true to keep on screen
         this.caption = captionIfAny;  // Not yet implemented
+
         this.compose(location);
+	
         world.addMorph(this);
         if (captionIfAny) { // Still under construction
             var label = new TextMorph(new Rectangle(0, 0, 200, 20), captionIfAny);
-            label.setWrapStyle(WrapStyle.SHRINK);  label.fitText();
+            label.setWrapStyle(WrapStyle.SHRINK);  
+	    label.fitText();
             label.shape.roundEdgesBy(4);
             label.shape.setFillOpacity(0.75);
             label.align(label.bounds().bottomCenter(), this.shape.bounds().topCenter());
@@ -1508,7 +1486,7 @@ Object.extend(MenuMorph.prototype, {
         var menuRect = this.bounds();  //includes caption if any
         // Intersect with world bounds to get visible region.  Note we need shape.bounds,
         // since world.bounds() would include stick-outs, including this menu!
-        var visibleRect = menuRect.intersection(this.owner().shape.bounds()); 
+        var visibleRect = menuRect.intersection(this.owner.shape.bounds()); 
         var delta = visibleRect.topLeft().subPt(menuRect.topLeft());  // delta to fix topLeft off screen
         delta = delta.addPt(visibleRect.bottomRight().subPt(menuRect.bottomRight()));  // same for bottomRight
         if (delta.dist(pt(0,0)) > 1) this.moveBy(delta);  // move if significant
@@ -1519,7 +1497,9 @@ Object.extend(MenuMorph.prototype, {
 
     compose: function(location) { 
         var itemNames = this.items.map(function (item) { return item[0] });
-        MenuMorph.superclass.initialize.call(this, location.extent(pt(200, 200)), itemNames);
+	
+        CheapListMorph.prototype.initialize.call(this, location.extent(pt(200, 200)), itemNames);
+	
         this.setWrapStyle(WrapStyle.SHRINK);  
         this.fitText(); // first layout is wasted!
         // styling
@@ -1552,19 +1532,17 @@ Object.extend(MenuMorph.prototype, {
  * @class SliderMorph
  */ 
 
-SliderMorph = HostClass.create('SliderMorph', Morph);
-
-Object.extend(SliderMorph.prototype, {
+var SliderMorph = Class.create(Morph, {
 
     baseColor: Color.primary.blue, // KP: stopgap fix for serialization??
     
-    initialize: function(initialBounds, scaleIfAny) {
-        SliderMorph.superclass.initialize.call(this, initialBounds, "rect");
+    initialize: function($super, initialBounds, scaleIfAny) {
+        $super(initialBounds, "rect");
         var model = new SimpleModel(null, "Value", "Extent");
         // this default self connection may get overwritten by, eg, connectModel()...
         this.modelPlug = this.addChildElement(model.makePlug());
         this.scale = (scaleIfAny == null) ? 1.0 : scaleIfAny;
-        var slider = Morph(new Rectangle(0, 0, 8, 8), "rect");
+        var slider = new Morph(new Rectangle(0, 0, 8, 8), "rect");
         slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});
         this.setNamedMorph("slider", slider);
         this.linkToStyles(['slider']);
@@ -1573,8 +1551,8 @@ Object.extend(SliderMorph.prototype, {
         return this;
     },
     
-    restorePersistentState: function(importer) {
-        SliderMorph.superclass.restorePersistentState.call(this, importer);
+    restorePersistentState: function($super, importer) {
+        $super(importer);
         this.slider = this.getNamedMorph('slider');
         if (!this.slider) {
             console.warn('no slider in %s, %s', this, this.textContent);
@@ -1590,16 +1568,16 @@ Object.extend(SliderMorph.prototype, {
         return bnds.height > bnds.width; 
     },
     
-    applyStyle: function(spec) {
+    applyStyle: function($super, spec) {
         this.baseColor = Color.primary.blue;
         this.fillType = "simple";
-        SliderMorph.superclass.applyStyle.call(this, spec);
+        $super(spec);
         // need to call adjust to update graphics, but only after slider exists
         if (this.slider) this.adjustForNewBounds(); 
     },
     
-    adjustForNewBounds: function() {
-        SliderMorph.superclass.adjustForNewBounds.call(this);
+    adjustForNewBounds: function($super) {
+        $super();
 
         // This method adjusts the slider for changes in value as well as geometry
         var val = this.getValue();
@@ -1670,10 +1648,10 @@ Object.extend(SliderMorph.prototype, {
         this.adjustForNewBounds(); 
     },
     
-    onMouseMove: function(evt) {
+    onMouseMove: function($super, evt) {
         // Overriden so won't drag me if mouse pressed
         if (evt.mouseButtonPressed) return
-        return SliderMorph.superclass.onMouseMove.call(this, evt);
+        return $super(evt);
     },
     
     clipValue: function(val) { 
@@ -1736,29 +1714,27 @@ Object.extend(SliderMorph.prototype, {
  * @class ScrollPane
  */ 
 
-ScrollPane = HostClass.create('ScrollPane', Morph);
-
-Object.extend(ScrollPane.prototype, {
+var ScrollPane = Class.create(Morph, {
 
     defaultBorderWidth: 2,
     defaultFill: null,
     scrollBarWidth: 14,
 
-    initialize: function(morphToClip, initialBounds) {
-        ScrollPane.superclass.initialize.call(this, initialBounds, "rect");
+    initialize: function($super, morphToClip, initialBounds) {
+        $super(initialBounds, "rect");
     
         var bnds = this.shape.bounds();
         var clipR = bnds.withWidth(bnds.width - this.scrollBarWidth+1).insetBy(1);
         morphToClip.shape.setBounds(clipR); // FIXME what if the targetmorph should be bigger than the clipmorph?
         // Make a clipMorph with the content (morphToClip) embedded in it
-        var clipMorph = this.setNamedMorph('clipMorph', ClipMorph(clipR));    
+        var clipMorph = this.setNamedMorph('clipMorph', new ClipMorph(clipR));    
         clipMorph.shape.setFill(morphToClip.shape.getFill());
         morphToClip.setBorderWidth(0);
         morphToClip.setPosition(clipR.topLeft());
         clipMorph.addMorph(morphToClip);
     
         // Add a scrollbar
-        var scrollBar = this.setNamedMorph('scrollBar', SliderMorph(bnds.withTopLeft(clipR.topRight())));
+        var scrollBar = this.setNamedMorph("scrollBar", new SliderMorph(bnds.withTopLeft(clipR.topRight())));
         scrollBar.connectModel({model: this, getValue: "getScrollPosition", setValue: "setScrollPosition", 
                                 getExtent: "getVisibleExtent"});
 
@@ -1768,7 +1744,7 @@ Object.extend(ScrollPane.prototype, {
     },
     
     innerMorph: function() {
-        return this.clipMorph.submorphs.firstChild;
+        return this.clipMorph.submorphs.first();
     },
 
     connectModel: function(plugSpec) { // connection is mapped to innerMorph
@@ -1804,7 +1780,7 @@ Object.extend(ScrollPane.prototype, {
  */ 
 
 function ListPane(initialBounds) {
-    return ScrollPane(CheapListMorph(initialBounds,["-----"]), initialBounds); 
+    return new ScrollPane(new CheapListMorph(initialBounds,["-----"]), initialBounds); 
 };
 
 /**
@@ -1812,7 +1788,7 @@ function ListPane(initialBounds) {
  */ 
 
 function TextPane(initialBounds, defaultText) {
-    return ScrollPane(TextMorph(initialBounds, defaultText), initialBounds); 
+    return new ScrollPane(new TextMorph(initialBounds, defaultText), initialBounds); 
 };
 
 /**
@@ -1820,7 +1796,7 @@ function TextPane(initialBounds, defaultText) {
  */ 
 
 function PrintPane(initialBounds, defaultText) {
-    return ScrollPane(PrintMorph(initialBounds, defaultText), initialBounds); 
+    return new ScrollPane(new PrintMorph(initialBounds, defaultText), initialBounds); 
 };
 
 // ===========================================================================
@@ -1831,16 +1807,14 @@ function PrintPane(initialBounds, defaultText) {
  * @class ColorPickerMorph
  */ 
 
-ColorPickerMorph = HostClass.create('ColorPickerMorph', Morph);
-
-Object.extend(ColorPickerMorph.prototype, {
+var ColorPickerMorph = Class.create(Morph, {
 
     defaultFill: null,
     defaultBorderWidth: 1, 
     defaultBorderColor: Color.black,
 
-    initialize: function(initialBounds, targetMorph, setFillName, popup) {
-        ColorPickerMorph.superclass.initialize.call(this, initialBounds, "rect");
+    initialize: function($super, initialBounds, targetMorph, setFillName, popup) {
+        $super(initialBounds, "rect");
         this.targetMorph = targetMorph;
         this.setFillFunctionName = setFillName; // name like "setBorderColor"
         if (targetMorph != null) this.connectModel({model: targetMorph, setColor: setFillName});
@@ -1928,26 +1902,28 @@ Object.extend(ColorPickerMorph.prototype, {
  * PasteUp morphs are used for layouts,
  * most notably for the world and, eg, palettes
  */ 
+var PasteUpMorph = Class.create(Morph, {
 
-PasteUpMorph = HostClass.create('PasteUpMorph', Morph);
-
-Object.extend(PasteUpMorph.prototype, {
-
-    initialize: function(bounds, shapeType) {
-        return PasteUpMorph.superclass.initialize.call(this, bounds, shapeType);
+    initialize: function($super, bounds, shapeType) {
+        return $super(bounds, shapeType);
     },
     
-    mouseEvent: function(evt, hasFocus) {
+    mouseEvent: function($super, evt, hasFocus) {
         if (evt.type == "mousedown" && this.onMouseDown(evt)) return; 
-        PasteUpMorph.superclass.mouseEvent.call(this, evt, hasFocus); 
+        $super(evt, hasFocus); 
     },
 
     onMouseDown: function(evt) {  //default behavior is to grab a submorph
         var m = this.morphToReceiveEvent(evt);
-        if (m == null) { this.makeSelection(evt); return true; }
-        if (!evt.altKey) {
-            if (m == this.world()) { this.makeSelection(evt); return true; }
-            if (m.handlesMouseDown(evt)) return false;
+        if (m == null) { 
+	    this.makeSelection(evt); 
+	    return true; 
+	} else if (!evt.altKey) {
+            if (m == this.world()) { 
+		this.makeSelection(evt); 
+		return true; 
+	    } else if (m.handlesMouseDown(evt)) 
+		return false;
         }
         evt.hand.grabMorph(m, evt);
         return true; 
@@ -1960,10 +1936,10 @@ Object.extend(PasteUpMorph.prototype, {
 
     makeSelection: function(evt) {  //default behavior is to grab a submorph
         if (this.world().currentSelection != null) this.world().currentSelection.removeOnlyIt();
-        var m = SelectionMorph(evt.mousePoint.extent(pt(0,0)));
+        var m = new SelectionMorph(evt.mousePoint.extent(pt(0,0)));
         this.world().addMorph(m);
         this.world().currentSelection = m;
-        var handle = HandleMorph(pt(0,0), "rect", evt.hand, m, "bottomRight");
+        var handle = new HandleMorph(pt(0,0), "rect", evt.hand, m, "bottomRight");
         m.addMorph(handle);
         handle.setBounds(handle.bounds().center().asRectangle());
         m.setBounds(evt.mousePoint.asRectangle()); // prevent handle from making bounds any larger
@@ -1978,25 +1954,7 @@ Object.extend(PasteUpMorph.prototype, {
  */ 
 // KP: WorldMorph isn't really a widget
 
-WorldMorph = HostClass.create('WorldMorph', PasteUpMorph);
-
-Object.extend(WorldMorph, {
-    
-    worldCount: 0,
-
-    currentWorld: null,
-    
-    current: function() {
-        return WorldMorph.currentWorld;
-    },
-
-    setCurrent: function(newWorld) {
-        WorldMorph.currentWorld = newWorld;
-    }
-
-});
-
-Object.extend(WorldMorph.prototype, {
+var WorldMorph = Class.create(PasteUpMorph, {
 
     defaultFill: Color.primary.blue,
     // Default themes for the theme manager    
@@ -2053,8 +2011,10 @@ Object.extend(WorldMorph.prototype, {
         }
     },
 
-    initialize: function(canvas, backgroundImageId) {
-        var bounds = canvas.bounds();
+    initialize: function($super, canvas, backgroundImageId) {
+        var bounds = 
+	    new Rectangle(canvas.x.baseVal.value, canvas.y.baseVal.value, 
+			  canvas.width.baseVal.value, canvas.height.baseVal.value);
         // sometimes bounds has zero dimensions (when reloading thes same page, timing issues?
         // in Firefox bounds may be 1x1 size?? maybe everything should be run from onload or sth?
         this.itsCanvas = canvas; 
@@ -2067,11 +2027,12 @@ Object.extend(WorldMorph.prototype, {
         }
 
         if (backgroundImageId) {
-            var background = NodeFactory.create("use").withHref(backgroundImageId);
+            var background = NodeFactory.create("use");
+            background.setAttributeNS(Namespace.XLINK, "href", backgroundImageId);
             this.addChildElement(background);
         }
             
-        WorldMorph.superclass.initialize.call(this, bounds, "rect");
+        $super(bounds, "rect");
 
         this.hands = [];
         this.displayThemes = this.defaultThemes;
@@ -2092,9 +2053,9 @@ Object.extend(WorldMorph.prototype, {
     },
 
     remove: function() {
-        if (!this.parentNode) return null;  // already removed
+        if (!this.rawNode.parentNode) return null;  // already removed
         this.stopStepping();
-        this.parentNode.removeChild(this);
+        this.rawNode.parentNode.removeChild(this.rawNode);
         return this;
 
         // console.log('removed ' + Object.inspect(this));
@@ -2103,38 +2064,38 @@ Object.extend(WorldMorph.prototype, {
 
     displayWorldOn: function(canvas) {
         this.remove();
-        canvas.appendChild(this);
-        this.addHand(HandMorph(true));
+        canvas.appendChild(this.rawNode);
+        this.addHand(new HandMorph(true));
     },
     
     addHand: function(hand) {
         this.hands.push(hand);
-        hand.ownerWorld = this;
+        hand.owner = this;
         hand.registerForEvents(this);
         hand.registerForEvents(hand);
         hand.layoutChanged();
     
-        Event.keyboardEvents.forEach(function(each) {
+        Event.keyboardEvents.each(function(each) {
             document.documentElement.addEventListener(each, hand.handler, false);
         });
         
-        this.parentNode.appendChild(hand);
+        this.rawNode.parentNode.appendChild(hand.rawNode);
     },
     
     removeHand: function(hand) {
-        this.parentNode.removeChild(hand);
+        this.rawNode.parentNode.removeChild(hand.rawNode);
         hand.unregisterForEvents(this);
         hand.unregisterForEvents(hand);
 
-        Event.keyboardEvents.forEach(function(each) {
+        Event.keyboardEvents.each(function(each) {
             document.documentElement.removeEventListener(each, hand.handler, false);
         });
 
         this.hands.splice(this.hands.indexOf(hand), 1);
     },
 
-    morphMenu: function(evt) { 
-        var menu = WorldMorph.superclass.morphMenu.call(this,evt);
+    morphMenu: function($super, evt) { 
+        var menu = $super(evt);
         menu.keepOnlyItemsNamed(["inspect", "style"]);
         menu.addItem([(Config.suppressBalloonHelp ? "enable balloon help" : "disable balloon help"),
                      this.toggleBalloonHelp]);
@@ -2170,7 +2131,7 @@ Object.extend(WorldMorph.prototype, {
         var themeNames = Object.properties(themes);
         var items = themeNames.map(
             function(each) { return [each, target, "setDisplayTheme", themes[each]]; });
-        var menu = MenuMorph(items, this);
+        var menu = new MenuMorph(items, this);
         menu.openIn(this.world(), evt.mousePoint);
     },
   
@@ -2375,24 +2336,24 @@ Object.extend(WorldMorph.prototype, {
      * override b/c of parent treatement
      */
     relativize: function(pt) { 
-        return pt.matrixTransform(this.parentNode.getTransformToElement(this)); 
+        return pt.matrixTransform(this.rawNode.parentNode.getTransformToElement(this.rawNode)); 
     },
     
     addMorphs: function(evt) {
         console.log("mouse point == %s", evt.mousePoint);
         var world = this.world();
         var items = [
-            ["New subworld (LinkMorph)", function(evt) { world.addMorph(LinkMorph(null, evt.mousePoint));}],
+            ["New subworld (LinkMorph)", function(evt) { world.addMorph(new LinkMorph(null, evt.mousePoint));}],
             ["Line", function(evt) { world.addMorph(Morph.makeLine([evt.mousePoint, evt.mousePoint.addXY(60, 30)], 2, Color.black));}],
-            ["Rectangle", function(evt) { world.addMorph(Morph(evt.mousePoint.extent(pt(60, 30)), "rect"));}],
-            ["Ellipse", function(evt) { world.addMorph(Morph(evt.mousePoint.extent(pt(50, 50)), "ellipse"));}],
-            ["TextMorph", function(evt) { world.addMorph(TextMorph(evt.mousePoint.extent(pt(120, 10)), "This is a TextMorph"));}],
+            ["Rectangle", function(evt) { world.addMorph(new Morph(evt.mousePoint.extent(pt(60, 30)), "rect"));}],
+            ["Ellipse", function(evt) { world.addMorph(new Morph(evt.mousePoint.extent(pt(50, 50)), "ellipse"));}],
+            ["TextMorph", function(evt) { world.addMorph(new TextMorph(evt.mousePoint.extent(pt(120, 10)), "This is a TextMorph"));}],
             ["Class Browser", function(evt) { new SimpleBrowser().openIn(world, evt.mousePoint); }]
         ];
         if (this.isLoadedFromNetwork()) { 
             items.push(["File Browser", function(evt) { WebStore.onCurrentLocation().openIn(world, evt.mousePoint) }])
         }
-        MenuMorph(items, this).openIn(this.world(), evt.mousePoint);
+        new MenuMorph(items, this).openIn(this.world(), evt.mousePoint);
     },
 
     isLoadedFromNetwork: function() {
@@ -2489,7 +2450,7 @@ Object.extend(WorldMorph.prototype, {
         var fill = this.getFill();
         this.setFill(Color.black); // poor man's modal dialog
 
-        var menu = MenuMorph([["OK", function() { this.setFill(fill)}]], this);
+        var menu = new MenuMorph([["OK", function() { this.setFill(fill)}]], this);
         // menu.setFontSize(20);
         menu.openIn(this, this.bounds().center(), false, message); 
     }.logErrors('alert'),
@@ -2505,6 +2466,23 @@ Object.extend(WorldMorph.prototype, {
     }
 
 });
+
+
+Object.extend(WorldMorph, {    
+    worldCount: 0,
+    
+    currentWorld: null,
+    
+    current: function() {
+        return WorldMorph.currentWorld;
+    },
+
+    setCurrent: function(newWorld) {
+        WorldMorph.currentWorld = newWorld;
+    }
+    
+});
+
 
 /**
  * @class DomEventHandler
@@ -2528,7 +2506,7 @@ DomEventHandler = Class.create({
         case "mousemove":
         case "mousedown":
         case "mouseup":
-            this.hand.handleMouseEvent(evt);
+	    this.hand.handleMouseEvent(evt);
             // evt.preventDefault();
             break;
         case "keydown":
@@ -2551,23 +2529,21 @@ DomEventHandler = Class.create({
  * simultaneously, we do not want to use the default system cursor.   
  */ 
 
-HandMorph = HostClass.create('HandMorph', Morph);
-
-Object.extend(HandMorph.prototype, {
+HandMorph = Class.create(Morph, {
 
     shadowOffset: pt(5,5),
     handleOnCapture: true,
     applyDropShadowFilter: !!Config.enableDropShadow,
 
-    initialize: function(local) {
-        HandMorph.superclass.initialize.call(this, pt(5,5).extent(pt(10,10)), "rect");
+    initialize: function($super, local) {
+        $super(pt(5,5).extent(pt(10,10)), "rect");
     
         this.setShape(new PolygonShape([pt(0,0),pt(9,5), pt(5,9), pt(0,0)], 
                       (local ? Color.blue : Color.red), 1, Color.black));
         this.shape.disablePointerEvents();
     
-        this.replaceChild(this.submorphs, this.shape.rawNode);
-        this.appendChild(this.shape.rawNode); // make sure submorphs are render first, then the hand shape 
+        this.rawNode.replaceChild(this.rawSubnodes, this.shape.rawNode);
+        this.rawNode.appendChild(this.shape.rawNode); // make sure submorphs are render first, then the hand shape 
 
         this.isLocal = local;
         this.setFill(local? Color.primary.blue : Color.primary.green); 
@@ -2593,21 +2569,21 @@ Object.extend(HandMorph.prototype, {
         this.priorPoint = null;
 
         this.handler = new DomEventHandler(this);
-        this.ownerWorld = null;
+        this.owner = null;
 
         return this;
     },
     
     registerForEvents: function(morph) {
         var self = this;
-        Event.basicInputEvents.forEach(function(name) { 
-            morph.addEventListener(name, self.handler, self.handleOnCapture)});
+        Event.basicInputEvents.each(function(name) { 
+            morph.rawNode.addEventListener(name, self.handler, self.handleOnCapture)});
     },
     
     unregisterForEvents: function(morph) {
         var self = this; 
-        Event.basicInputEvents.forEach(function(name) { 
-            morph.removeEventListener(name, self.handler, self.handleOnCapture)});
+        Event.basicInputEvents.each(function(name) { 
+            morph.rawNode.removeEventListener(name, self.handler, self.handleOnCapture)});
     },
     
     setMouseFocus: function(morphOrNull) {
@@ -2632,12 +2608,8 @@ Object.extend(HandMorph.prototype, {
         }
     },
     
-    owner: function() {
-        return this.ownerWorld;
-    },
-
     world: function() {
-        return this.ownerWorld;
+        return this.owner;
     },
 
     handleMouseEvent: function(evt) { 
@@ -2658,8 +2630,8 @@ Object.extend(HandMorph.prototype, {
             if (this.mouseFocus) { // if mouseFocus is set, events go to that morph
                 this.mouseFocus.mouseEvent(evt, true);
             } else {
-                if (this.owner()) {
-                    var receiver = this.owner().morphToReceiveEvent(evt);
+                if (this.owner) {
+                    var receiver = this.owner.morphToReceiveEvent(evt);
                     if (receiver !== this.mouseOverMorph) {
 
                         // if over a new morph, send onMouseOut, onMouseOver
@@ -2671,7 +2643,7 @@ Object.extend(HandMorph.prototype, {
 
                         // Note if onMouseOver sets focus, it will get onMouseMove
                         if (this.mouseFocus) this.mouseFocus.mouseEvent(evt, true);
-                        else if (!evt.hand.hasSubmorphs()) this.owner().mouseEvent(evt, false); 
+                        else if (!evt.hand.hasSubmorphs()) this.owner.mouseEvent(evt, false); 
                     }
                 } 
             }
@@ -2702,16 +2674,16 @@ Object.extend(HandMorph.prototype, {
             if (this.hasSubmorphs() && (evt.type == "mousedown" || this.hasMovedSignificantly)) {
                 // If laden, then drop on mouse up or down
                 var m = this.topSubmorph();
-                var receiver = this.owner().morphToGrabOrReceiveDroppingMorph(evt, m);
+                var receiver = this.owner.morphToGrabOrReceiveDroppingMorph(evt, m);
                 // For now, failed drops go to world; later maybe put them back?
                 if (receiver == null) receiver = this.world();
-                console.log('dropping %s on %s', m, receiver);
+                console.log("dropping %s on %s", m, receiver);
                 this.dropMorphsOn(receiver);
             } else {
                 // console.log('hand dispatching event ' + event.type + ' to owner '+ Object.inspect(this.owner()));
                 // This will tell the world to send the event to the right morph
                 // We do not dispatch mouseup the same way -- only if focus gets set on mousedown
-                if (evt.type == "mousedown") this.owner().mouseEvent(evt, false);
+                if (evt.type == "mousedown") this.owner.mouseEvent(evt, false);
             }
             if (evt.type == "mousedown") {
                 this.lastMouseDownPoint = evt.mousePoint;
@@ -2735,7 +2707,7 @@ Object.extend(HandMorph.prototype, {
         grabbedMorph = grabbedMorph.okToBeGrabbedBy(evt);
         if (!grabbedMorph) return;
 
-        if (grabbedMorph.owner() && !grabbedMorph.owner().openForDragAndDrop) return;
+        if (grabbedMorph.owner && !grabbedMorph.owner.openForDragAndDrop) return;
 
         if (this.keyboardFocus && grabbedMorph !== this.keyboardFocus) {
             this.keyboardFocus.relinquishKeyboardFocus(this);
@@ -2743,11 +2715,11 @@ Object.extend(HandMorph.prototype, {
         // console.log('grabbing %s', grabbedMorph);
         // Save info for cancelling grab or drop [also need indexInOwner?]
         // But for now we simply drop on world, so this isn't needed
-        this.grabInfo = [grabbedMorph.owner(), grabbedMorph.position()];
+        this.grabInfo = [grabbedMorph.owner, grabbedMorph.position()];
         // console.log('grabbed %s', grabbedMorph);
         this.addMorph(grabbedMorph);
         if (this.applyDropShadowFilter) {
-            grabbedMorph.setAttributeNS(null, "filter", "url(#DropShadowFilter)");
+            grabbedMorph.rawNode.setAttributeNS(null, "filter", "url(#DropShadowFilter)");
         }
         // grabbedMorph.updateOwner(); 
         this.changed(); //for drop shadow
@@ -2756,10 +2728,10 @@ Object.extend(HandMorph.prototype, {
     dropMorphsOn: function (receiver) {
         if (receiver !== this.world()) this.unbundleCarriedSelection();
         while (this.hasSubmorphs()) { // drop in same z-order as in hand
-            var m = this.submorphs.firstChild;
+            var m = this.submorphs.first();
             receiver.addMorph(m); // this removes it from hand
             if (this.applyDropShadowFilter) {
-                m.setAttributeNS(null, "filter", "none");
+                m.rawNode.setAttributeNS(null, "filter", "none");
             }
             // DI: May need to be updated for collaboration...
             // m.updateBackendFields('origin'); 
@@ -2836,7 +2808,7 @@ Object.extend(HandMorph.prototype, {
         }
 
         // manual bubbling up b/c the event won't bubble by itself    
-        for (var responder = this.keyboardFocus; responder != null; responder = responder.owner()) {
+        for (var responder = this.keyboardFocus; responder != null; responder = responder.owner) {
             if (responder.takesKeyboardFocus()) {
                 var handler = responder["on" + evt.capitalizedType()];
                 if (handler) {
@@ -2846,16 +2818,16 @@ Object.extend(HandMorph.prototype, {
         } 
     },
 
-    bounds: function() {
+    bounds: function($super) {
         // account for the extra extent of the drop shadow
         // FIXME drop shadow ...
         if (this.shadowMorph)
-            return HandMorph.superclass.bounds.call(this).expandBy(this.shadowOffset.x);
-        else return HandMorph.superclass.bounds.call(this); 
+            return $super().expandBy(this.shadowOffset.x);
+        else return $super();
     },
     
-    inspect: function() { 
-        var superString = HandMorph.superclass.inspect.call(this);
+    inspect: function($super) { 
+        var superString = $super();
         var extraString = ", local=%1,id=%2".format(this.isLocal, this.id);
         if (!this.hasSubmorphs()) return superString + ", an empty hand" + extraString;
         return "%1, a hand carrying %2%3".format(superString, this.topSubmorph(), extraString);
@@ -2869,9 +2841,7 @@ Object.extend(HandMorph.prototype, {
  */ 
 // KP: LinkMorph isn't really a widget
 
-LinkMorph = HostClass.create('LinkMorph', Morph);
-
-Object.extend(LinkMorph.prototype, {
+LinkMorph = Class.create(Morph, {
 
     defaultFill: Color.black,
     defaultBorderColor: Color.black,
@@ -2879,9 +2849,9 @@ Object.extend(LinkMorph.prototype, {
               "Use menu 'grab' to move me.  Drag objects\n" +
               "onto me to transport objects between worlds.",
     
-    initialize: function(otherWorld /*, rest*/) {
-        // In a scripter, type: world.addMorph(LinkMorph(null))
-        var bounds = arguments[1];
+    initialize: function($super, otherWorld /*, rest*/) {
+        // In a scripter, type: world.addMorph(new LinkMorph(null))
+        var bounds = arguments[2];
     
         if (!bounds) {
             bounds = WorldMorph.current().bounds().bottomLeft().addXY(330,-250).asRectangle().expandBy(25);
@@ -2889,13 +2859,13 @@ Object.extend(LinkMorph.prototype, {
             bounds = bounds.asRectangle().expandBy(25);
         }
     
-        LinkMorph.superclass.initialize.call(this, bounds, "ellipse");
+        $super(bounds, "ellipse");
 
         // Make me look a bit like a world
         this.setFill(new RadialGradient(Color.green, Color.blue));
         [new Rectangle(0.15,0,0.7,1), new Rectangle(0.35,0,0.3,1), new Rectangle(0,0.3,1,0.4)].each( function(each) {
             // Make longitude / latitude lines
-            var lineMorph = Morph(bounds.scaleByRect(each), "ellipse");
+            var lineMorph = new Morph(bounds.scaleByRect(each), "ellipse");
             lineMorph.setFill(null); lineMorph.setBorderWidth(1); lineMorph.setBorderColor(Color.black);
             lineMorph.align(lineMorph.bounds().center(),this.shape.bounds().center());
             lineMorph.ignoreEvents();
@@ -2905,8 +2875,8 @@ Object.extend(LinkMorph.prototype, {
         this.suppressHandles = true;
 
         if (!otherWorld) {
-            otherWorld = WorldMorph(Canvas);
-            var pathBack = LinkMorph(WorldMorph.current(), bounds);
+            otherWorld = new WorldMorph(Canvas);
+            var pathBack = new LinkMorph(WorldMorph.current(), bounds);
             pathBack.setFill(new RadialGradient(Color.orange, Color.red.darker()));
             otherWorld.addMorph(pathBack);
         } 
@@ -2940,6 +2910,9 @@ Object.extend(LinkMorph.prototype, {
         });
         
         var canvas = WorldMorph.current().canvas();
+	var canvasBounds =  
+	    new Rectangle(canvas.x.baseVal.value, canvas.y.baseVal.value, 
+			  canvas.width.baseVal.value, canvas.height.baseVal.value);
         var oldWorld = WorldMorph.current();
         oldWorld.remove();
         
@@ -2963,7 +2936,7 @@ Object.extend(LinkMorph.prototype, {
             if (newWorld.thumbnail) {
                 newWorld.thumbnail.remove();
             }
-            newWorld.thumbnail = Morph(new Rectangle(0, 0, canvas.bounds().width*scale, canvas.bounds().height*scale), "rect");
+            newWorld.thumbnail = new Morph(new Rectangle(0, 0, canvasBounds.width*scale, canvasBounds.height*scale), "rect");
             newWorld.addMorph(newWorld.thumbnail);
             newWorld.thumbnail.setScale(scale);
             newWorld.thumbnail.addMorph(oldWorld);
@@ -2985,12 +2958,12 @@ Object.extend(LinkMorph.prototype, {
     
     showHelp: function(evt) {
         if (Config.suppressBalloonHelp) return;  // DI: maybe settable in window menu?
-        if (this.owner() instanceof HandMorph) return;
+        if (this.owner instanceof HandMorph) return;
         
         // Create only one help balloon at a time
         if (this.help) return;
         
-        this.help = TextMorph(evt.mousePoint.addXY(10, 10).extent(pt(260, 20)), this.helpText);
+        this.help = new TextMorph(evt.mousePoint.addXY(10, 10).extent(pt(260, 20)), this.helpText);
         // trying to relay mouse events to the WindowControlMorph
         this.help.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
         
