@@ -60,7 +60,7 @@ var NetRequest = Class.create(Ajax.Request, {
     },
     
     requestNetworkAccess: function() {
-        if (window.location.protocol == "file:"  && window["netscape"]) {       
+        if (window.location.protocol == "file:"  && Prototype.Browser.Gecko) {       
             try {
                 netscape.security.PrivilegeManager.enablePrivilege("UniversalBrowserRead");
                 console.log("requested browser read privilege");

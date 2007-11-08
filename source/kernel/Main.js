@@ -26,24 +26,28 @@ Config.showTextSamples = true;
 Config.random = Math.round(Math.random()*2147483647);
 
 // More complex demos
-Config.showClipMorph = !Config.skipMostExamples;
-Config.show3DLogo = !Config.skipMostExamples;
-Config.showAsteroids = !Config.skipMostExamples;
-Config.showEngine = !Config.skipMostExamples;
-Config.showIcon = !Config.skipMostExamples;
-Config.showWeather = !Config.skipMostExamples;
-Config.showMessenger = !Config.skipMostExamples;
-Config.showStocks = !Config.skipMostExamples;
-Config.showCanvasScape = !Config.skipMostExamples;
-Config.showRSSReader = !Config.skipMostExamples;
-Config.showDoodle = !Config.skipMostExamples;
-Config.showWebStore = !Config.skipMostExamples;
-Config.showVideo = !Config.skipMostExamples;
+Object.extend(Config, {
+    showClipMorph: !Config.skipMostExamples,
+    show3DLogo: !Config.skipMostExamples,
+    showAsteroids: !Config.skipMostExamples,
+    showEngine: !Config.skipMostExamples,
+    showIcon: !Config.skipMostExamples,
+    showWeather: !Config.skipMostExamples,
+    showMessenger: !Config.skipMostExamples,
+    showStocks: !Config.skipMostExamples,
+    showCanvasScape: !Config.skipMostExamples,
+    showRSSReader: !Config.skipMostExamples,
+    showDoodle: !Config.skipMostExamples,
+    showWebStore: !Config.skipMostExamples,
+    showVideo: !Config.skipMostExamples,
+    // Worlds
+    showInnerWorld: true, //!Config.skipMostExamples;
+    showSlideWorld: true, //!Config.skipMostExamples;
+    showDeveloperWorld: true //!Config.skipMostExamples;
 
-// Worlds
-Config.showInnerWorld = true; //!Config.skipMostExamples;
-Config.showSlideWorld = true; //!Config.skipMostExamples;
-Config.showDeveloperWorld = true; //!Config.skipMostExamples;
+});
+
+
 
 // Class browser visibility can be overridden with Config.browserAnyway
 Config.showBrowser = !Config.skipMostExamples || Config.browserAnyway;

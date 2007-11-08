@@ -39,6 +39,7 @@ var ButtonMorph = Class.create(Morph, {
     defaultEdgeRoundingRadius: 4,
 
     baseColor: Color.neutral.gray, // KP: stopgap fix for serialization??
+    type: "ButtonMorph",
 
     // A ButtonMorph is the simplest widget
     // It read and writes the boolean variable, this.model[this.propertyName]
@@ -170,11 +171,11 @@ var ButtonMorph = Class.create(Morph, {
 /**
  * @class ImageMorph: Simple images
  */
-
 var ImageMorph = Class.create(Morph, {
     
     defaultFill: Color.blue.lighter(),
     defaultBorderWidth: 0,
+    type: "ImageMorph",
    
     initialize: function($super, viewPort, url) {
         $super(viewPort, "rect");
@@ -185,10 +186,10 @@ var ImageMorph = Class.create(Morph, {
         }
     },
 
-    restoreFromElement: function($super,element, importer) /*:Boolean*/ {
+    restoreFromElement: function($super, element, importer) /*:Boolean*/ {
         if ($super(element, importer)) return true;
 
-        var type = DisplayObject.prototype.getType.call(element);
+        var type = Visual.prototype.getType.call(element);
 
         switch (type) {
         case 'Image':
@@ -261,10 +262,9 @@ var ImageMorph = Class.create(Morph, {
 /**
  * @class ImageButtonMorph: Buttons with images
  */ 
-
 var ImageButtonMorph = Class.create(ButtonMorph, {
-
-
+    type: "ImageButtonMorph",
+    
     initialize: function($super, initialBounds, normalImageHref, activatedImageHref) {
         this.image = new ImageMorph(new Rectangle(0, 0, initialBounds.width, initialBounds.height), normalImageHref);
         this.normalImageHref = normalImageHref;
@@ -288,6 +288,8 @@ var ImageButtonMorph = Class.create(ButtonMorph, {
  */
 
 var IconMorph = Class.create(ImageMorph, {
+
+    type: "IconMorph",
 
     initialize: function($super, viewPort, url, name, targetUrl) {
         $super(viewPort, url);
@@ -320,6 +322,7 @@ var ClipMorph = Class.create(Morph, {
 
     defaultFill: null,
     defaultBorderWidth: 0,
+    type: "ClipMorph",
 
     initialize: function($super, initialBounds) {
         $super(initialBounds, "rect");
@@ -372,6 +375,7 @@ var TitleBarMorph = Class.create(Morph, {
     barHeight: 22,
     controlSpacing: 3,
     defaultBorderWidth: 0.5,
+    type: "TitleBarMorph",
 
     initialize: function($super, headline, windowWidth, windowMorph, isExternal) {
         this.windowMorph = windowMorph;
@@ -433,7 +437,7 @@ var TitleBarMorph = Class.create(Morph, {
         this.menuButton = this.getNamedMorph('menuButton');
         this.collapseButton = this.getNamedMorph('collapseButton');
         this.label = this.getNamedMorph('label');
-        if (DisplayObject.prototype.getType.call(this.rawNode.parentNode) == "WindowMorph") {
+        if (Visual.prototype.getType.call(this.rawNode.parentNode) == "WindowMorph") {
             this.closeButton.target = this.menuButton.target = this.collapseButton.target = this.rawNode.parentNode;
         }
     },
@@ -465,7 +469,9 @@ var TitleBarMorph = Class.create(Morph, {
  */
   
 var TitleTabMorph = Class.create(Morph, {
-
+    
+    type: "TitleTabMorph",
+    
     initialize: function($super, headline, windowWidth, windowMorph, isExternal) {
         this.windowMorph = windowMorph;
         const bh = this.barHeight;
@@ -524,6 +530,8 @@ var TitleTabMorph = Class.create(Morph, {
 var WindowControlMorph = Class.create(Morph, {
 
     defaultBorderWidth: 0,
+    type: "WindowControlMorph",
+    
 
     initialize: function($super, rect, inset, color, target, action, helpText) {
         $super(rect.insetBy(inset), 'ellipse');
@@ -599,6 +607,7 @@ var WindowMorph = Class.create(Morph, {
     state: "expanded",
     titleBar: null,
     targetMorph: null,
+    type: "WindowMorph",
     
     initialize: function($super, targetMorph, headline, location) {
         var bounds = targetMorph.bounds().clone();
@@ -770,7 +779,7 @@ var WindowMorph = Class.create(Morph, {
  */
   
 var TabbedPanelMorph = Class.create(WindowMorph, {
-
+    type: "TabbedPanelMorph",
 
     initialize: function($super, targetMorph, headline, location, sideName) {
         // A TabbedPanelMorph is pretty much like a WindowMorph, in that it is intended to 
@@ -820,6 +829,7 @@ var HandleMorph = Class.create(Morph, {
     defaultFill: null,
     defaultBorderColor: Color.blue,
     defaultBorderWidth: 1,
+    type: "HandleMorph",
 
     controlHelpText: "Drag to resize this object\n" + 
         "Alt+drag to rotate the object \n" +
@@ -971,6 +981,7 @@ var SelectionMorph = Class.create(Morph, {
     defaultBorderWidth: 1,
     defaultBorderColor: Color.blue,
     defaulFill: Color.secondary.blue,
+    type: "SelectionMorph",
 
     initialize: function($super, viewPort, defaultworldOrNull) {
         $super(viewPort, "rect");
@@ -1137,6 +1148,8 @@ var SelectionMorph = Class.create(Morph, {
 
 var PanelMorph = Class.create(Morph, {
 
+    type: "PanelMorph",
+    
     initialize: function($super, extent/*:Point*/) {
         $super(pt(0, 0).extent(extent), 'rect');
         this.lastNavigable = null;
@@ -1225,7 +1238,8 @@ var CheapListMorph = Class.create(TextMorph, {
     
     defaultBorderColor: Color.black,
     wrap: WrapStyle.NONE,
-
+    type: "CheapListMorph",
+    
     initialize: function($super, initialBounds, itemList) {
         // itemList is an array of strings
         // Note:  A proper ListMorph is a list of independent submorphs
@@ -1380,7 +1394,7 @@ var CheapListMorph = Class.create(TextMorph, {
                 return selection; //debugging
             }
         }
-    },//.logCalls('updateView'),
+    },
 
     getList: function() {
         if (this.modelPlug) return this.getModelValue('getList', ["-----"]);
@@ -1405,6 +1419,7 @@ var MenuMorph = Class.create(CheapListMorph, {
     defaultBorderColor: Color.blue,
     defaultBorderWidth: 0.5,
     defaultFill: Color.blue.lighter(5),
+    type: "MenuMorph",
 
     initialize: function($super, items, targetMorph, lines) {
         // items is an array of menuItems, each of which is an array of the form
@@ -1904,6 +1919,8 @@ var ColorPickerMorph = Class.create(Morph, {
  */ 
 var PasteUpMorph = Class.create(Morph, {
 
+    type: "PasteUpMorph",
+
     initialize: function($super, bounds, shapeType) {
         return $super(bounds, shapeType);
     },
@@ -1955,7 +1972,8 @@ var PasteUpMorph = Class.create(Morph, {
 // KP: WorldMorph isn't really a widget
 
 var WorldMorph = Class.create(PasteUpMorph, {
-
+    
+    type: "WorldMorph",
     defaultFill: Color.primary.blue,
     // Default themes for the theme manager    
     defaultThemes: {
@@ -2012,9 +2030,8 @@ var WorldMorph = Class.create(PasteUpMorph, {
     },
 
     initialize: function($super, canvas, backgroundImageId) {
-        var bounds = 
-	    new Rectangle(canvas.x.baseVal.value, canvas.y.baseVal.value, 
-			  canvas.width.baseVal.value, canvas.height.baseVal.value);
+        var bounds = Rectangle.fromElement(canvas);
+
         // sometimes bounds has zero dimensions (when reloading thes same page, timing issues?
         // in Firefox bounds may be 1x1 size?? maybe everything should be run from onload or sth?
         this.itsCanvas = canvas; 
@@ -2534,6 +2551,7 @@ HandMorph = Class.create(Morph, {
     shadowOffset: pt(5,5),
     handleOnCapture: true,
     applyDropShadowFilter: !!Config.enableDropShadow,
+    type: "HandMorph",
 
     initialize: function($super, local) {
         $super(pt(5,5).extent(pt(10,10)), "rect");
@@ -2826,7 +2844,7 @@ HandMorph = Class.create(Morph, {
         else return $super();
     },
     
-    inspect: function($super) { 
+    toString: function($super) { 
         var superString = $super();
         var extraString = ", local=%1,id=%2".format(this.isLocal, this.id);
         if (!this.hasSubmorphs()) return superString + ", an empty hand" + extraString;
@@ -2910,9 +2928,6 @@ LinkMorph = Class.create(Morph, {
         });
         
         var canvas = WorldMorph.current().canvas();
-	var canvasBounds =  
-	    new Rectangle(canvas.x.baseVal.value, canvas.y.baseVal.value, 
-			  canvas.width.baseVal.value, canvas.height.baseVal.value);
         var oldWorld = WorldMorph.current();
         oldWorld.remove();
         
@@ -2936,7 +2951,7 @@ LinkMorph = Class.create(Morph, {
             if (newWorld.thumbnail) {
                 newWorld.thumbnail.remove();
             }
-            newWorld.thumbnail = new Morph(new Rectangle(0, 0, canvasBounds.width*scale, canvasBounds.height*scale), "rect");
+            newWorld.thumbnail = new Morph(Rectangle.fromElement(canvas), "rect");
             newWorld.addMorph(newWorld.thumbnail);
             newWorld.thumbnail.setScale(scale);
             newWorld.thumbnail.addMorph(oldWorld);

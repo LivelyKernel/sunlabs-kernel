@@ -21,19 +21,6 @@ var Global = this;
 
 var Canvas = document.getElementById("canvas"); // singleton for now
 
-/*
-
-Object.extend(Canvas, {
-    
-    // Canvas bounds
-    bounds: function() {
-        return new Rectangle(this.x.baseVal.value, this.y.baseVal.value, 
-                   this.width.baseVal.value, this.height.baseVal.value);
-    }
-        
-});
-*/
-
 var Font = window.parent.Font;
 
 window.parent.console.platformConsole = console;
@@ -684,7 +671,14 @@ Object.category(Rectangle, 'factories',  function() { return {
         }
     
         return rect(min, max); 
+    },
+
+
+    fromElement: function(element) {
+        return new Rectangle(element.x.baseVal.value, element.y.baseVal.value, 
+			     element.width.baseVal.value, element.height.baseVal.value);
     }
+
 
 }});
 
@@ -1249,14 +1243,13 @@ Object.extend(document, {
 // ===========================================================================
 
 /**
- * @class DisplayObject (NOTE: PORTING-SENSITIVE CODE)
+ * @class Visual (NOTE: PORTING-SENSITIVE CODE)
  * This class serves as an interface between our JavaScript
  * graphics classes and the underlying graphics implementation.
  * In this particular implementation, graphics primitives are
  * mapped onto various SVG objects and attributes.
  */
-DisplayObject = Class.create({     // FIXME: remove the (this.rawNode||this) business
-    // a mixin
+Visual = Class.create({   
 
     rawNode: null, // set by subclasses
 
@@ -1374,8 +1367,11 @@ DisplayObject = Class.create({     // FIXME: remove the (this.rawNode||this) bus
 
         this.rawNode.addEventListener("dragstart", disabler, true);
         this.rawNode.addEventListener("selectstart", disabler, true);
-    }
+    },
 
+    inspect: function() {
+	return this.toString();
+    }
     
 });
 
@@ -1408,18 +1404,15 @@ DisplayObject = Class.create({     // FIXME: remove the (this.rawNode||this) bus
  * @class Shape
  */ 
 
-// Note: Shape is a mixin
-var Shape = Class.create(DisplayObject, {
+
+var Shape = Class.create(Visual, {
 
     shouldIgnorePointerEvents: false,
 
-    inspect: function() {
+    toString: function() {
         return 'a Shape(%1,%2)'.format(this.getType(), this.bounds());
     },
 
-    toString: function() {
-        return this.inspect();
-    },
 
     getType: function() { 
         return this.rawNode.tagName; 
@@ -1649,7 +1642,7 @@ var PolygonShape = Class.create(Shape, {
         return array;
     },
 
-    inspect: function() {
+    toString: function() {
         var pts = this.vertices();
         return this.rawNode.tagName + "[" + pts.invoke('inspect').join(";") + "]";
     },
@@ -1804,7 +1797,6 @@ var PolylineShape = Class.create(Shape, {
     // poorman's traits :)
     bounds: PolygonShape.prototype.bounds,
     vertices: PolygonShape.prototype.vertices,
-    inspect: PolygonShape.prototype.inspect,
     setVertices: PolygonShape.prototype.setVertices,
     reshape: PolygonShape.prototype.reshape,
     controlPointNear: PolygonShape.prototype.controlPointNear,
@@ -1891,7 +1883,6 @@ var PathShape = Class.create(Shape, {
     },
 
     // poorman's traits :)
-    inspect: PolygonShape.prototype.inspect,
     containsPoint: PolygonShape.prototype.containsPoint,
     controlPointNear: PolygonShape.prototype.controlPointNear,
     possibleHandleForControlPoint: PolygonShape.prototype.possibleHandleForControlPoint,
@@ -1900,9 +1891,7 @@ var PathShape = Class.create(Shape, {
 
 });
 
-function NodeList() {}
-
-Object.extend(NodeList, {
+var NodeList = {
     // FIXME these implementations are rather lame
     toArray: function(target) {
 	var array = [];
@@ -1919,10 +1908,6 @@ Object.extend(NodeList, {
     
     each: function(target, iterator, context) {
 	return NodeList.toArray(target).each(iterator, context);
-    },
-    
-    any: function(target, iterator, context) {
-	return NodeList.toArray(target).any(iterator, context);
     },
     
     withType: function(type) {
@@ -1948,15 +1933,15 @@ Object.extend(NodeList, {
     },
 
     remove: function(list, element) {
-        if (element.parentNode === list) {
+        if (element.rawNode.parentNode === list) {
             // FIXME remove the alternative
-            list.removeChild(element);
+            list.removeChild(element.rawNode);
             return true;
         }
         return false;
     }
     
-});
+}
 
 // ===========================================================================
 // Morph functionality
@@ -1998,7 +1983,7 @@ MouseHandlerForDragging = Class.create({
  * @class Morph
  */ 
 
-Morph = Class.create(DisplayObject, {
+Morph = Class.create(Visual, {
 
 
     // prototype vars
@@ -2019,6 +2004,7 @@ Morph = Class.create(DisplayObject, {
     openForDragAndDrop: true, // Submorphs can be extracted from or dropped into me
     mouseHandler: MouseHandlerForDragging.prototype, //a MouseHandler for mouse sensitivity, etc
     stepHandler: null, // a stepHandler for time-varying morphs and animation 
+    type: "Morph", // debugging etc
 
     nextNavigableSibling: null, // keyboard navigation
     
@@ -2028,7 +2014,7 @@ Morph = Class.create(DisplayObject, {
 	this.submorphs = [];
 	this.rawSubnodes = null;
 	this.owner = null;
-	this.rawNode.setAttributeNS(Namespace.LIVELY, "type", this.constructor.name);
+	this.setType(this.type);
         this.pvtSetTransform(Transform.createSimilitude(this.defaultOrigin(initialBounds, shapeType), 0, 1.0));
         this.pickId();
         this.initializePersistentState(initialBounds, shapeType);
@@ -2123,8 +2109,8 @@ Morph = Class.create(DisplayObject, {
                 // let it be
             } 
             default: {
-                if (DisplayObject.prototype.getType.call(node)) {
-                    if (/FocusHalo/.test(DisplayObject.prototype.getType.call(node))) { //don't restore
+                if (Visual.prototype.getType.call(node)) {
+                    if (/FocusHalo/.test(Visual.prototype.getType.call(node))) { //don't restore
                         this.rawNode.removeChild(node);
                     } else {
                         this.restoreFromElement(node, importer);
@@ -2172,17 +2158,22 @@ Morph = Class.create(DisplayObject, {
         
         return false;
     },
+    
+    relativizeBounds: function(rect) {
+	return rect.translatedBy(this.origin.negated());
+    },
+    
 
     initializePersistentState: function(initialBounds /*:Rectangle*/, shapeType/*:String*/) {
         // a rect shape by default, will change later
         switch (shapeType) {
         case "ellipse":
-            this.shape = new EllipseShape(initialBounds.translatedBy(this.origin.negated()), 
+            this.shape = new EllipseShape(this.relativizeBounds(initialBounds),
 					  this.defaultFill, this.defaultBorderWidth, this.defaultBorderColor);
             break;
         default:
             // polygons and polylines are set explicitly later
-            this.shape = new RectShape(initialBounds.translatedBy(this.origin.negated()), 
+            this.shape = new RectShape(this.relativizeBounds(initialBounds),
 				       this.defaultFill, this.defaultBorderWidth, this.defaultBorderColor);
             break;
         }
@@ -2217,16 +2208,6 @@ Morph = Class.create(DisplayObject, {
 
 Object.extend(Morph, {
     
-    /*
-    makeMorph: function(constr) {
-        var element = HostClass.becomeInstance(NodeFactory.create("g"), constr);
-        element.setAttributeNS(Namespace.LIVELY, "type", constr.name);
-
-        // element.setType(constr.name);
-        return element;
-    }.logErrors('makeMorph'),
-    
-*/
     morphCounter: 0,
 
     newMorphId: function() {
@@ -2335,8 +2316,8 @@ Morph.addMethods({
         spec.borderColor = this.getBorderColor();
         spec.fill = this.getFill();
         spec.fillType = "simple";
-        if ((spec.fill) instanceof LinearGradient) spec.fillType = "linear gradient";
-        if ((spec.fill) instanceof RadialGradient) spec.fillType = "radial gradient";
+        if (spec.fill instanceof LinearGradient) spec.fillType = "linear gradient";
+        if (spec.fill instanceof RadialGradient) spec.fillType = "radial gradient";
         if (this.baseColor) spec.baseColor = this.baseColor;
         if (this.fillType) spec.fillType = this.fillType;
         if (this.shape.getEdgeRounding) spec.rounding = + this.shape.getEdgeRounding();
@@ -2542,7 +2523,7 @@ Morph.addMethods({
     addMorphBack: function(morph) { return this.addMorphFrontOrBack(morph, false) },
     
     addMorphFrontOrBack: function(m, front) {
-        console.assert(m instanceof Morph, "not an instance:" + m);
+        console.assert(m instanceof Morph, "not an instance");
 
         if (m.owner) {
             var tfm = m.transformForNewOwner(this);
@@ -2569,6 +2550,7 @@ Morph.addMethods({
             NodeList.push(this.rawSubnodes, m);
 	    this.submorphs.push(m);
         } else {
+	    // back of the display list -> front visually
 	    NodeList.pushFront(this.rawSubnodes, m);
 	    this.submorphs.splice(0, 0, m);
         }
@@ -2583,7 +2565,11 @@ Morph.addMethods({
 	}
 	    
         NodeList.remove(this.rawSubnodes, m);
-	this.submorphs.splice(this.submorphs.indexOf(m), 1);
+	var spliced = this.submorphs.splice(index, 1);
+	if (spliced instanceof Array) spliced = spliced[0];
+	if (m !== spliced) {
+	    console.log("invariant violated removing %s, spliced %s", m, spliced);
+	}
 	m.owner = null;
         m.setHasKeyboardFocus(false);
         return m;
@@ -2609,7 +2595,7 @@ Morph.addMethods({
         return this;
 
         // console.log('removed ' + Object.inspect(this));
-        // this.owner = null; 
+
     },
     
     withAllSubmorphsDo: function(func, argOrNull) {
@@ -2619,6 +2605,7 @@ Morph.addMethods({
     },
     
     topSubmorph: function() {
+	// the morph on top is the last one in the list
         return this.submorphs.last();
     },
 
@@ -2678,7 +2665,7 @@ Morph.addMethods({
         }
 
         if (other.activeScripts != null) { 
-            for (var i=0; i<other.activeScripts.length; i++) {
+            for (var i = 0; i < other.activeScripts.length; i++) {
                 var a = other.activeScripts[i];
                 // Copy all reflexive scripts (messages to self)
                 if (a.actor === other) {
@@ -2711,6 +2698,7 @@ Morph.addMethods({
     world: function() {
         return this.owner ? this.owner.world() : null;
     },
+    
     toString: function() {
         // A replacement for toString() which can't be overridden in
         // some cases.  Invoked by Object.inspect.
@@ -2719,10 +2707,6 @@ Morph.addMethods({
 	} catch (e) {
 	    return "Morph?";
 	}
-    },
-
-    inspect: function() {
-	return this.toString();
     },
 
     toJSON: function() {
@@ -2971,7 +2955,6 @@ Morph.addMethods({
 
     removeFocusHalo: function() {
         if (!this.focusHalo) return false;
-        
         this.rawNode.removeChild(this.focusHalo);
         this.focusHalo = null;
         return true;
@@ -3560,8 +3543,8 @@ var Importer = Class.create({
 
     importFromNode: function(node) {
         ///console.log('making morph from %s %s', node, node.getAttributeNS(Namespace.LIVELY, "type"));
-        // call reflectively b/c 'this' is not a DisplayObject yet. 
-        var morphTypeName = DisplayObject.prototype.getType.call(node); 
+        // call reflectively b/c 'this' is not a Visual yet. 
+        var morphTypeName = Visual.prototype.getType.call(node); 
         //console.log('have morph %s', morphTypeName);
 
         if (!morphTypeName || !window[morphTypeName]) {

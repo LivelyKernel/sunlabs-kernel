@@ -540,7 +540,7 @@ var TextLine = Class.create({
  * @class TextBox
  */ 
 
-var TextBox = Class.create(DisplayObject, {
+var TextBox = Class.create(Visual, {
     
     eventHandler: { handleEvent: function(evt) { console.log('got event %s on %s', evt, evt.target); }},
 
@@ -711,12 +711,6 @@ Object.extend(TextBox, {
 
 });
 
-/**
- * @class TextMorph
- */ 
-
-
-// TextMorph attributes and initialization functions
 
 var WrapStyle = { 
     NORMAL: "wrap", // fits text to bounds width using word wrap and sets height
@@ -724,7 +718,9 @@ var WrapStyle = {
     SHRINK: "shrinkWrap" // sets both width and height based on line breaks only
 };
 
-// TextMorph attributes and basic functions
+/**
+ * @class TextMorph
+ */ 
 var TextMorph = Class.create(Morph, {
 
     // these are prototype variables
@@ -771,6 +767,15 @@ var TextMorph = Class.create(Morph, {
         this.setBorderColor(this.defaultBorderColor);
     },
 
+
+  // FIXME: this bizarre "fix" helps Opera layout 
+    relativizeBounds: function($super, rect) {
+	if (!Prototype.Browser.Opera) return $super(rect);
+        return rect.clone();
+	//return rect.translatedBy(this.origin.negated());
+    },
+    
+
     restorePersistentState: function($super, importer) {
         $super(importer);
         this.wrap = this.rawNode.getAttributeNS(Namespace.LIVELY, "wrap");
@@ -783,7 +788,7 @@ var TextMorph = Class.create(Morph, {
     restoreFromElement: function($super, element, importer) /*:Boolean*/ {
         if ($super(element, importer)) return true;
 
-        var type = DisplayObject.prototype.getType.call(element);
+        var type = Visual.prototype.getType.call(element);
     
         switch (type) {
         case 'TextBox':
@@ -807,9 +812,8 @@ var TextMorph = Class.create(Morph, {
     },
 
     initialize: function($super, rect, textString) {
-        $super(rect, "rect");
-
         this.textString = textString || "";
+        $super(rect, "rect");
 
         // KP: note layoutChanged will be called on addition to the tree
         // DI: ... and yet this seems necessary!
@@ -1068,7 +1072,7 @@ var TextMorph = Class.create(Morph, {
         if (!this.showsSelectionWithoutFocus() && this.takesKeyboardFocus() && !this.hasKeyboardFocus) {
             return;
         }
-
+	
         this.undrawSelection();
 
         if (this.selectionRange[0] > this.textString.length - 1) { // null sel at end
@@ -1107,7 +1111,8 @@ var TextMorph = Class.create(Morph, {
         
             if (this.lineNo(r2) != this.lineNo(r1) + 1) {
                 // Selection spans 3 or more lines; fill the block between top and bottom lines
-                NodeList.push(this.selectionElement, new RectShape(Rectangle.fromAny(r1.bottomRight(), r2.topLeft())).roundEdgesBy(4)); 
+                NodeList.push(this.selectionElement, 
+			      new RectShape(Rectangle.fromAny(r1.bottomRight(), r2.topLeft())).roundEdgesBy(4)); 
             }
         }
     
@@ -1677,13 +1682,13 @@ var TestTextMorph = Class.create(TextMorph, {
         var py = localP.y - 2;
         var hit = this.textBox.hit(px, py);
         var charIx = this.charOfPoint(localP);
-        console.log('localP = ' + Object.inspect(localP) + ' hit = ' + hit + ' charOfPoint = ' + charIx);  // display the index for the mouse point
+        console.log('localP = ' + localP + ' hit = ' + hit + ' charOfPoint = ' + charIx);  // display the index for the mouse point
         var jRect = this.ensureTextBox().getBounds(hit);
         if (jRect == null) {
             console.log("text box failure in drawSelection"); 
             return; 
         }
-        console.log('rect = ' + jRect. inspect());
+        console.log('rect = ' + jRect);
         this.boundsMorph.setBounds(jRect);  // show the bounds for that character
     },
 
