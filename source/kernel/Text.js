@@ -1436,10 +1436,9 @@ var TextMorph = Class.create(Morph, {
 });
 
 // TextMorph accessor functions
-Object.category(TextMorph.prototype, "accessing", function() {
+TextMorph.addMethods({
 
-    // private (non overridable)
-    function pvtUpdateTextString(morph, replacement) {
+    pvtUpdateTextString: function(morph, replacement) {
         // KP: FIXME: doesn't this potentially change the selection
         /*
         if (replacement.length < 100 && this.textString == replacement)
@@ -1456,11 +1455,8 @@ Object.category(TextMorph.prototype, "accessing", function() {
         morph.textBox = null;
         morph.layoutChanged(); 
         morph.changed();
-    }
+    },
 
-    // public:
-    return {
-    
     saveContents: function(contentString) {    
         if (this.modelPlug == null) {
             eval(contentString); 
@@ -1531,11 +1527,11 @@ Object.category(TextMorph.prototype, "accessing", function() {
     
     setTextString: function(replacement) {
         if (this.autoAccept) this.setModelText(replacement);
-        pvtUpdateTextString(this, replacement); 
+        this.pvtUpdateTextString(this, replacement); 
     },
     
     updateTextString: function(newStr) {
-        pvtUpdateTextString(this, newStr);
+        this.pvtUpdateTextString(this, newStr);
         this.resetScrollPane(); 
     },
     
@@ -1568,7 +1564,7 @@ Object.category(TextMorph.prototype, "accessing", function() {
         if (this.modelPlug) this.setModelValue('setSelection', newSelection);  // call the model's value accessor
     }
     
-}});
+});
 
 // TextMorph word selection functions for the text editor
 // FIXME: put these somewhere else?

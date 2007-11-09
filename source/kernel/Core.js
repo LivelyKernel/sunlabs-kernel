@@ -165,30 +165,6 @@ Object.extend(Class, {
  * Extensions to class Object
  */  
 
-/**
- * @class Category
- * Support for Smalltalk-style method categories 
- */  
-
-Category = function() {};
-
-Object.extend(Object, {
-
-    // true prototypal inheritance like in, say, Self
-    derive: function(parent, initializer) {
-        var result = initializer || {};
-        result.__proto__ = parent;
-        return result;
-    },
-
-    category: function(target, description, scopefun) {
-        scopefun.description = description;
-        scopefun.__proto__ = Category;
-        Object.extend(target, scopefun.call(target));
-        return scopefun;
-    }
-    
-});
 
 Object.properties = function(object, predicate) {
     var a = [];
@@ -216,14 +192,6 @@ Function.callStack = function() {
 
 Object.extend(Function.prototype, {
     inspect: function() {
-        /*
-        if (this.category) {
-            var name = this.category.$propname(this);
-
-        if (name) 
-            return name;
-        }
-        */
         return this.toString().substring(8, 88);
     },
 
@@ -381,7 +349,7 @@ Object.extend(String.prototype, {
  * Extensions to class Number
  */  
 
-Object.category(Number.prototype, 'extensions', function() { return {
+Object.extend(Number.prototype, {
     
     // random integer in 0 .. n-1
     randomSmallerInteger: function() {
@@ -400,7 +368,7 @@ Object.category(Number.prototype, 'extensions', function() { return {
         return this/180 * Math.PI; 
     }
 
-}});
+});
 
 // ===========================================================================
 // Graphics foundations
@@ -598,10 +566,10 @@ Rectangle.addMethods({
 
 });
 
-Object.category(Rectangle, 'statics', function () { return {
+Object.extend(Rectangle, {
     corners: ["topLeft","topRight","bottomRight","bottomLeft"], 
     sides: ["leftCenter","rightCenter","topCenter","bottomCenter"]
-}});
+});
 
 Rectangle.addMethods({
 
@@ -655,7 +623,7 @@ Rectangle.addMethods({
 
 });
 
-Object.category(Rectangle, 'factories',  function() { return {
+Object.extend(Rectangle, {
 
     fromAny: function(ptA, ptB) {
         return rect(ptA.minPt(ptB), ptA.maxPt(ptB));
@@ -680,7 +648,7 @@ Object.category(Rectangle, 'factories',  function() { return {
     }
 
 
-}});
+});
 
 // Shorthand for creating rectangle objects
 function rect(location, corner) {
@@ -728,7 +696,7 @@ Color = Class.create({
     
 });
 
-Object.category(Color, 'core', function() { return {
+Object.extend(Color, {
 
     black: new Color(0,0,0),
     white: new Color(1,1,1),
@@ -799,7 +767,7 @@ Object.category(Color, 'core', function() { return {
         return new Color(r/255, g/255, b/255);
     }
     
-}});
+});
 
 Object.extend(Color, {
     darkGray: Color.gray.darker(),
