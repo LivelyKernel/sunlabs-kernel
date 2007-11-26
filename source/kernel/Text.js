@@ -12,10 +12,21 @@
  * Text.js.  Text-related functionality.
  */
 
+
+var WrapStyle = { 
+    NORMAL: "wrap", // fits text to bounds width using word wrap and sets height
+    NONE: "noWrap", // simply sets height based on line breaks only
+    SHRINK: "shrinkWrap" // sets both width and height based on line breaks only
+};
+
 /**
  * @class TextWord
  * This 'class' renders single words
  */ 
+
+var TextMorph = (function() {
+
+// auxiliary objects
 var TextWord = Class.create(TextCompatibilityTrait, {
     
     initialize: function(textString, startIndex, topLeft, font) {
@@ -539,7 +550,7 @@ var TextLine = Class.create({
 /**
  * @class TextBox
  */ 
-
+    // KP: should this be folded into TextMorph now?
 var TextBox = Class.create(Visual, {
     
     eventHandler: { handleEvent: function(evt) { console.log('got event %s on %s', evt, evt.target); }},
@@ -712,11 +723,6 @@ Object.extend(TextBox, {
 });
 
 
-var WrapStyle = { 
-    NORMAL: "wrap", // fits text to bounds width using word wrap and sets height
-    NONE: "noWrap", // simply sets height based on line breaks only
-    SHRINK: "shrinkWrap" // sets both width and height based on line breaks only
-};
 
 /**
  * @class TextMorph
@@ -734,6 +740,7 @@ var TextMorph = Class.create(Morph, {
     inset: pt(6,4), // remember this shouldn't be modified unless every morph should get the value 
     wrap: WrapStyle.NORMAL,
     maxSafeSize: 4000, 
+    type: "TextMorph",
 
     initializeTransientState: function($super, initialBounds) {
         $super(initialBounds);
@@ -894,7 +901,7 @@ var TextMorph = Class.create(Morph, {
     beInputLine: function() {
         this.setWrapStyle(WrapStyle.NONE);
         this.onKeyPress = function(evt) {
-            if (evt.sanitizedKeyCode() == Event.KEY_RETURN) {
+            if (Event.sanitizedKeyCode(evt) == Event.KEY_RETURN) {
                 this.saveContents(this.textString);
                 return true;
             } else {
@@ -1279,7 +1286,7 @@ var TextMorph = Class.create(Morph, {
         
         var before = this.textString.substring(0, this.selectionRange[0]); 
         
-        switch (evt.sanitizedKeyCode()) {
+        switch (Event.sanitizedKeyCode(evt)) {
         case Event.KEY_LEFT: {
             // forget the existing selection
             this.setNullSelectionAt(Math.max(before.length - 1, 0));
@@ -1701,6 +1708,7 @@ var TestTextMorph = Class.create(TextMorph, {
     }
 
 });
-
+    return TextMorph;
+})();
 console.log('loaded Text.js');
 

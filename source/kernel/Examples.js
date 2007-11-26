@@ -104,6 +104,7 @@ WidgetTester = Class.create(Model, {
 var ClockMorph = Class.create(Morph, {
 
     defaultBorderWidth: 2,
+    type: "ClockMorph",
 
     initialize: function($super, position, radius) {
         $super(position.asRectangle().expandBy(radius), "ellipse");

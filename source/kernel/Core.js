@@ -1067,125 +1067,111 @@ Object.extend(CharSet, {
  * from the web browser.  
  */
 
-Object.extend(Event, {
+(function() {
+    var capitalizer = $H({ mouseup: 'MouseUp', mousedown: 'MouseDown', mousemove: 'MouseMove', 
+        mouseover: 'MouseOver', mouseout: 'MouseOut', 
+        keydown: 'KeyDown', keypress: 'KeyPress', keyup: 'KeyUp'
+	});
 
-    basicMouseEvents: ["mousedown", "mouseup", "mousemove"],
-    extendedMouseEvents: [ "mouseover", "mouseout"],
+    Event.basicMouseEvents =  ["mousedown", "mouseup", "mousemove"];
+    Event.extendedMouseEvents = [ "mouseover", "mouseout"];
+	
+    Event.keyboardEvents = ["keypress", "keyup", "keydown"];
+    Event.basicInputEvents = Event.basicMouseEvents.concat(Event.keyboardEvents);
 
-    keyboardEvents: ["keypress", "keyup", "keydown"],
-    
-    capitalizer: $H({ mouseup: 'MouseUp', mousedown: 'MouseDown', mousemove: 'MouseMove', 
-                      mouseover: 'MouseOver', mouseout: 'MouseOut', 
-                      keydown: 'KeyDown', keypress: 'KeyPress', keyup: 'KeyUp'
-    }),
-    
-    KEY_SPACEBAR: 32,
-    
-    Safari: {
-        KEY_LEFT: 63234,
-        KEY_UP: 63232,
-        KEY_RIGHT: 63235,
-        KEY_DOWN: 63233,
-        KEY_DELETE: 63272,
-        KEY_END: 63275,
-        KEY_HOME: 63273,
-        KEY_PAGE_UP: 63276,
-        KEY_PAGE_DOWN: 63277
-    },
-    
-    makeSyntheticMouseEvent: function() {
-        var evt = document.createEvent("MouseEvents");
-        // cf. http://developer.mozilla.org/en/docs/DOM:document.createEvent
-        evt.initMouseEvent("mousemove", true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
-        return evt;
-    }
-    
-});
+    var mouseEvents = Event.basicMouseEvents.concat(Event.extendedMouseEvents);
 
-Object.extend(Event, { 
-    basicInputEvents: Event.basicMouseEvents.concat(Event.keyboardEvents),
-    mouseEvents: Event.basicMouseEvents.concat(Event.extendedMouseEvents)
-});
-
-Object.extend(Event.prototype, {
-
-    isMouse:  function() {
+    function isMouse(event) {
+        return mouseEvents.include(event.type);
+    };
+    
+    function isKeyboard(event) {
         // return this instanceof MouseEvent;
-        return Event.mouseEvents.include(this.type);
-    },
+        return Event.keyboardEvents.include(event.type);
+    };
 
-    isKeyboard:  function() {
-        // return this instanceof MouseEvent;
-        return Event.keyboardEvents.include(this.type);
-    },
+    Object.extend(Event, {
+	
+	KEY_SPACEBAR: 32,
+	
+	Safari: {
+            KEY_LEFT: 63234,
+            KEY_UP: 63232,
+            KEY_RIGHT: 63235,
+            KEY_DOWN: 63233,
+            KEY_DELETE: 63272,
+            KEY_END: 63275,
+            KEY_HOME: 63273,
+            KEY_PAGE_UP: 63276,
+            KEY_PAGE_DOWN: 63277
+	},
+	
+	makeSyntheticMouseEvent: function() {
+            var evt = document.createEvent("MouseEvents");
+            // cf. http://developer.mozilla.org/en/docs/DOM:document.createEvent
+            evt.initMouseEvent("mousemove", true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+            return Event.init(evt);
+	},
+	
+	capitalizedType: function(evt) {
+            return capitalizer.get(evt.type) || evt.type;
+	},
 
-    clientPoint: function() {
-        return pt(this.clientX, this.clientX);
-    },
+	setButtonPressedAndPriorPoint: function(evt, buttonPressed, priorPoint) {
+            evt.mouseButtonPressed = buttonPressed;
+            // if moving or releasing, priorPoint will get found by prior morph
+            evt.priorPoint = priorPoint; 
+	},
 
-    init: function() {
-        if (this.isMouse()) {
-            // note that FF doesn't doesnt calculate offsetLeft/offsetTop early enough we don't precompute these values
-            // assume the parent node of Canvas has the same bounds as Canvas
-            this.mousePoint = pt(this.pageX - (Canvas.parentNode.offsetLeft || 0), this.pageY - (Canvas.parentNode.offsetTop || 0) - 3);
-
-            //this.mousePoint = pt(this.clientX, this.clientY  - 3);
-            this.priorPoint = this.mousePoint; 
-            // Safari somehow gets the x and y coords so we add them here to Firefox too --PR
-            // console.log("InitMouseOver fix for Firefox evt.x=%s evt.clientX", this.x, this.clientX);
-            if (this.x == null && this.y == null) {
-                this.x = this.mousePoint.x;
-                this.y = this.mousePoint.y;
-            }    
-        } 
-        this.hand = null;
-
-        // use this.timeStamp
-        // this.msTime = (new Date()).getTime();
-        this.mouseButtonPressed = false;
-        
-    
-        return this;
-    },
-
-    sanitizedKeyCode: function() {
-        // if (this.type != 'keypress')
-        // return;
-        with (Event.Safari) {
-            switch (this.keyCode) {
-            case KEY_LEFT: return Event.KEY_LEFT;
-            case KEY_UP: return Event.KEY_UP;
-            case KEY_RIGHT: return Event.KEY_RIGHT;
-            case KEY_DOWN: return Event.KEY_DOWN;
-            case KEY_DELETE: return Event.KEY_DELETE;
-            case KEY_END: return Event.KEY_END;
-            case KEY_HOME: return Event.KEY_HOME;
-            case KEY_PAGE_UP: return Event.KEY_PAGE_UP;
-            case KEY_PAGE_DOWN: return Event.KEY_PAGE_DOWN;
+	sanitizedKeyCode: function(evt) {
+            // if (this.type != 'keypress')
+            // return;
+            with (Event.Safari) {
+		switch (evt.keyCode) {
+		case KEY_LEFT: return Event.KEY_LEFT;
+		case KEY_UP: return Event.KEY_UP;
+		case KEY_RIGHT: return Event.KEY_RIGHT;
+		case KEY_DOWN: return Event.KEY_DOWN;
+		case KEY_DELETE: return Event.KEY_DELETE;
+		case KEY_END: return Event.KEY_END;
+		case KEY_HOME: return Event.KEY_HOME;
+		case KEY_PAGE_UP: return Event.KEY_PAGE_UP;
+		case KEY_PAGE_DOWN: return Event.KEY_PAGE_DOWN;
+		}
             }
-        }
-        return this.keyCode;
-    },
-    
-    capitalizedType: function() {
-        return Event.capitalizer.get(this.type) || this.type;
-    },
-    
-    setButtonPressedAndPriorPoint: function(buttonPressed, priorPoint) {
-        this.mouseButtonPressed = buttonPressed;
-        // if moving or releasing, priorPoint will get found by prior morph
-        this.priorPoint = priorPoint; 
-    },
-        
-    inspect: function() {
-        return "Event(%1%2)".format(this.type, this.mousePoint ? "," + this.mousePoint : "");
-    },
+            return evt.keyCode;
+	},
+	
+	init: function(event) {
+	    if (!Event.prototype) { // I.E. doesn't have it.
+		Object.extend(event, methods);
+	    }
 
-    stop: function() {
-        Event.stop(this);
-    }
-        
-});
+            if (isMouse(event)) {
+		// note that FF doesn't doesnt calculate offsetLeft/offsetTop early enough we don't precompute these values
+		// assume the parent node of Canvas has the same bounds as Canvas
+		event.mousePoint = pt(event.pageX - (Canvas.parentNode.offsetLeft || 0), 
+				      event.pageY - (Canvas.parentNode.offsetTop  || 0) - 3);
+		
+		//event.mousePoint = pt(event.clientX, event.clientY  - 3);
+		event.priorPoint = event.mousePoint; 
+		// Safari somehow gets the x and y coords so we add them here to Firefox too --PR
+		// console.log("InitMouseOver fix for Firefox evt.x=%s evt.clientX", event.x, event.clientX);
+		if (event.x == null && event.y == null) {
+                    event.x = event.mousePoint.x;
+                    event.y = event.mousePoint.y;
+		}    
+            } 
+            event.hand = null;
+	    
+            // use event.timeStamp
+            // event.msTime = (new Date()).getTime();
+            event.mouseButtonPressed = false;
+            return event;
+	}
+	
+    });
+})();
 
 Object.extend(window.parent, {
     onbeforeunload: function(evt) { console.log('window got unload event %s', evt); },
@@ -1928,7 +1914,7 @@ MouseHandlerForDragging = Class.create({
     },
 
     handleMouseEvent: function(evt, targetMorph) {
-        var capType = evt.capitalizedType();
+        var capType = Event.capitalizedType(evt);
         var handler = targetMorph['on' + capType];
         if (capType == "MouseDown") evt.hand.setMouseFocus(targetMorph);
         if (handler == null) console.log("bah, null handler on " + capType);
@@ -2673,7 +2659,7 @@ Morph.addMethods({
 	try {
             return "%1(#%2,%3)".format(this.getType(), this.id, this.shape);
 	} catch (e) {
-	    return "Morph?";
+	    return "Morph?[" + e + "]";
 	}
     },
 
@@ -2834,9 +2820,19 @@ Morph.addMethods({
 
         if (this.hasSubmorphs()) {
             //If any submorph handles it (ie returns true), then return
-	    // TODO avoid reverse
-            if (this.submorphs.reverse().any((function(m) { return m.mouseEvent(evt, false)})))
-		return true;
+	    if (Event.capitalizedType(evt) == "MouseDown") 
+		// console.log("!!!%s examining on %s, display list", this, Event.capitalizedType(evt), this.submorphs.reverse());
+	    for (var i = this.submorphs.length - 1; i --; i >= 0) {
+	    //for (var i = 0; i < this.submorphs.length; i ++) {
+		if (Event.capitalizedType(evt) == "MouseDown") 
+		    //console.log("examining %s: %s", this.submorphs[i]);
+		var wasHandled = this.submorphs[i].mouseEvent(evt, false);
+		
+		if (wasHandled) {
+		    // if (evt.type == "mousedown") console.log("success with " + this.submorphs[i]);
+		    return true;
+		}
+	    }
         }
 
         if (this.mouseHandler == null) 
@@ -2961,8 +2957,7 @@ MouseHandlerForRelay = Class.create({
     },
     
     handleMouseEvent: function(evt, appendage) {
-        // console.log("this.eventSpec[this.adapter[evt.type]] = " + this.eventSpec["on" + evt.capitalizedType()]);
-        var capType = evt.capitalizedType();
+        var capType = Event.capitalizedType(evt);
         var targetHandler = this.target[this.eventSpec['on' + capType]];
         if (targetHandler == null) return true; //FixMe: should this be false?
         if (capType == "MouseDown") evt.hand.setMouseFocus(appendage);
@@ -3140,12 +3135,10 @@ Morph.addMethods({
 
         // First check all the submorphs, front first
         if (this.hasSubmorphs()) {
-            var hit = null;
-            this.submorphs.each(function(m) { 
-                hit = m.morphToGrabOrReceive(evt, droppingMorph, checkForDnD); 
-                if (hit != null) throw $break; 
-            });
-            if (hit != null) return hit;  // hit a submorph
+	    for (var i = this.submorphs.length - 1; i--; i >= 0) {
+                var hit = this.submorphs[i].morphToGrabOrReceive(evt, droppingMorph, checkForDnD); 
+                if (hit != null) return hit;  // hit a submorph
+            }
         }
 
         // Check if it's really in this morph (not just fullBounds)

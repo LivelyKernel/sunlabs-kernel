@@ -143,7 +143,7 @@ var ButtonMorph = Class.create(Morph, {
     },
 
     onKeyDown: function(evt) {
-        switch (evt.sanitizedKeyCode()) {
+        switch (Event.sanitizedKeyCode(evt)) {
         case Event.KEY_RETURN:
         case Event.KEY_SPACEBAR:
             this.changeAppearanceFor(true);
@@ -155,7 +155,7 @@ var ButtonMorph = Class.create(Morph, {
 
     onKeyUp: function(evt) {
         var newValue = this.isToggle() ? !this.getValue() : false;
-        switch (evt.sanitizedKeyCode()) {
+        switch (Event.sanitizedKeyCode(evt)) {
         case Event.KEY_RETURN:
         case Event.KEY_SPACEBAR:
             this.changeAppearanceFor(newValue);
@@ -624,6 +624,12 @@ var WindowMorph = Class.create(Morph, {
         this.closeAllToDnD();
         return this;
     },
+
+    toString: function($super) {
+	var label = this.titleBar.getNamedMorph("label");
+	return $super() + (label ? ": " + label.textString : ""); 
+    },
+
 
     restorePersistentState: function($super, importer) {
         $super(importer);
@@ -1165,7 +1171,7 @@ var PanelMorph = Class.create(Morph, {
     },    
     
     onKeyPress: function(evt) {
-        switch (evt.sanitizedKeyCode()) {
+        switch (Event.sanitizedKeyCode(evt)) {
         case Event.KEY_TAB: { 
             this.focusOnNext(evt);
             evt.stop();
@@ -1269,7 +1275,7 @@ var CheapListMorph = Class.create(TextMorph, {
     },
 
     onKeyPress: function(evt) {
-        switch (evt.sanitizedKeyCode()) {
+        switch (Event.sanitizedKeyCode(evt)) {
         case Event.KEY_UP: {
             var lineNo = this.selectedLineNo();
             if (lineNo > 0) {
@@ -1705,13 +1711,13 @@ var SliderMorph = Class.create(Morph, {
     onKeyPress: function(evt) {
         var delta = 0;
         if (this.vertical()) {
-            switch (evt.sanitizedKeyCode()) {
+            switch (Event.sanitizedKeyCode(evt)) {
             case Event.KEY_DOWN: delta = 1; break;
             case Event.KEY_UP:  delta = -1; break;
             default: return false;
             } 
         } else {
-            switch (evt.sanitizedKeyCode()) {
+            switch (Event.sanitizedKeyCode(evt)) {
             case Event.KEY_RIGHT: delta = 1;  break;    
             case Event.KEY_LEFT:  delta = -1; break;
             default: return false;
@@ -2516,7 +2522,7 @@ DomEventHandler = Class.create({
     
     handleEvent: function(evt) {
         evt.hand = this.hand;
-        evt.init();
+        Event.init(evt);
         // console.log('original target ' + evt.target);
 
         switch(evt.type) {
@@ -2569,7 +2575,7 @@ HandMorph = Class.create(Morph, {
         this.keyboardFocus = null;
         this.mouseFocus = null;
         this.mouseOverMorph = null;
-        this.lastMouseEvent = Event.makeSyntheticMouseEvent().init();
+        this.lastMouseEvent = Event.makeSyntheticMouseEvent();
         this.lastMouseDownPoint = pt(0,0);
         this.hasMovedSignificantly = false;
         this.grabInfo = null;
@@ -2632,7 +2638,7 @@ HandMorph = Class.create(Morph, {
 
     handleMouseEvent: function(evt) { 
         evt.hand = this; // extra copy needed for entry from HandRemoteControl
-        evt.setButtonPressedAndPriorPoint(this.mouseButtonPressed, this.lastMouseEvent.mousePoint);
+        Event.setButtonPressedAndPriorPoint(evt, this.mouseButtonPressed, this.lastMouseEvent.mousePoint);
     
         //-------------
         // mouse move
@@ -2680,7 +2686,7 @@ HandMorph = Class.create(Morph, {
         
         this.mouseButtonPressed = (evt.type == "mousedown"); 
         this.setBorderWidth(this.mouseButtonPressed ? 3 : 1);
-        evt.setButtonPressedAndPriorPoint(this.mouseButtonPressed, this.lastMouseEvent.mousePoint);
+        Event.setButtonPressedAndPriorPoint(evt, this.mouseButtonPressed, this.lastMouseEvent.mousePoint);
     
         if (this.mouseFocus != null) {
             if (this.mouseButtonPressed) {
@@ -2773,7 +2779,7 @@ HandMorph = Class.create(Morph, {
     },
 
     moveTopMorph: function(evt) {
-        switch (evt.sanitizedKeyCode()) {
+        switch (Event.sanitizedKeyCode(evt)) {
         case Event.KEY_LEFT:
             this.topSubmorph().moveBy(pt(-10,0));
             evt.stop();
@@ -2828,7 +2834,7 @@ HandMorph = Class.create(Morph, {
         // manual bubbling up b/c the event won't bubble by itself    
         for (var responder = this.keyboardFocus; responder != null; responder = responder.owner) {
             if (responder.takesKeyboardFocus()) {
-                var handler = responder["on" + evt.capitalizedType()];
+                var handler = responder["on" + Event.capitalizedType(evt)];
                 if (handler) {
                     if (handler.call(responder, evt)) break; // event consumed?
                 }
@@ -2866,6 +2872,7 @@ LinkMorph = Class.create(Morph, {
     helpText: "Click here to enter or leave a subworld.\n" +
               "Use menu 'grab' to move me.  Drag objects\n" +
               "onto me to transport objects between worlds.",
+    type: "LinkMorph",
     
     initialize: function($super, otherWorld /*, rest*/) {
         // In a scripter, type: world.addMorph(new LinkMorph(null))
