@@ -12,7 +12,7 @@
 
 <div>  
 <svg id="canvas"
-     width="100%" height="500"  
+     width="100%" height="100%"  
      xmlns="http://www.w3.org/2000/svg" 
      xmlns:lively="http://www.experimentalstuff.com/Lively"
      xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -22,6 +22,12 @@
      zoomAndPan="disable">
 
 <defs id="Defaults">
+<script> 
+if (Prototype.Browser.Opera) {
+   // Opera has issues with the height=100% setting, so we'll give it a reasonable value
+   document.getElementById("canvas").setAttribute("height", "500"); 
+}
+</script>
 <script type="text/ecmascript" xlink:href="defaultconfig.js"/>
 <script type="text/ecmascript" xlink:href="localconfig.js"/> <!-- ignored if file not there -->
 <script type="text/ecmascript" xlink:href="Core.js"/>

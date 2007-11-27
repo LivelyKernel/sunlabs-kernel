@@ -122,7 +122,7 @@ function populateWorldWithExamples(world) {
             if (Config.showCanvasScape) {
                 if (!lm1.myWorld.csMorph) {
                     var csm = new CanvasScapeMorph(new Rectangle(20,50,800,300));
-                    lm1.myWorld.csMorph = lm1.myWorld.addMorph(WindowMorph(csm, 'CanvasScape'));
+                    lm1.myWorld.csMorph = lm1.myWorld.addMorph(new WindowMorph(csm, 'CanvasScape'));
                     csm.owner.collapse();
                 }
             }

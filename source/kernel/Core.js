@@ -2513,8 +2513,10 @@ Morph.addMethods({
     removeMorph: function(m) {
         var index = this.submorphs.indexOf(m);
 	if (index < 0) {
-	    if (m.owner === this || m.rawNode.parentNode === this.rawSubnodes)
-		console.log("invariants violated while removing %s", m);
+	    if (m.owner === this) 
+		console.log("%s is its own owner?", m);
+	    if (m.rawNode.parentNode === this.rawSubnodes)
+		console.log("invariant violated: %s", m);
 	    return null;
 	}
 	    
@@ -3575,7 +3577,7 @@ Morph.addMethods( {
         var pane = panel.setNamedMorph("pane", TextPane(r, xml.truncate(TextMorph.prototype.maxSafeSize)));
         var txtMorph = pane.innerMorph();
         txtMorph.xml = xml;
-        this.world().addMorph(WindowMorph(panel, "XML dump", this.bounds().topLeft().addPt(pt(5,0))));
+        this.world().addMorph(new WindowMorph(panel, "XML dump", this.bounds().topLeft().addPt(pt(5,0))));
     }
     
 });

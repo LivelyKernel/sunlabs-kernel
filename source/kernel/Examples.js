@@ -3728,7 +3728,7 @@ MessengerWidget = Class.create(Model, {
         panel.setBorderWidth(2);
         panel.setFill(new LinearGradient(Color.white, Color.primary.blue.lighter(), LinearGradient.EastWest));
         var m = null;
-        panel.addMorph(this.textpanel = new TextPane(new Rectangle(10, 10, 280, 180), " ")).connectModel({model: this, getText: "getChatText", setText: "setChatText"});
+        panel.addMorph(this.textpanel = TextPane(new Rectangle(10, 10, 280, 180), " ")).connectModel({model: this, getText: "getChatText", setText: "setChatText"});
 //        m.innerMorph().autoAccept = true;
         panel.addMorph(m = new TextMorph(new Rectangle(10, 210, 220, 50), "<enter text here>")).connectModel({model: this, getText: "getIMText", setText: "setIMText"});
         m.autoAccept = true;

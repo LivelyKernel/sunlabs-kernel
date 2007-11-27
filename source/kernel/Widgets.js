@@ -986,7 +986,7 @@ var SelectionMorph = Class.create(Morph, {
     
     defaultBorderWidth: 1,
     defaultBorderColor: Color.blue,
-    defaulFill: Color.secondary.blue,
+    defaultFill: Color.secondary.blue,
     type: "SelectionMorph",
 
     initialize: function($super, viewPort, defaultworldOrNull) {
@@ -2762,7 +2762,7 @@ HandMorph = Class.create(Morph, {
             // DI: May need to be updated for collaboration...
             // m.updateBackendFields('origin'); 
 
-            // FIXME - folowing stmt is a workaround for the fact that if the targetMorph gets
+            // FIXME - following stmt is a workaround for the fact that if the targetMorph gets
             // dragged, its rotation value set in degrees rather than radians, and this
             // may foul things up later if .rotation is read rather than .getRotation
             // Remove this stmt after it gets fixed.
