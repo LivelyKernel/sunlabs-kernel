@@ -2558,6 +2558,7 @@ HandMorph = Class.create(Morph, {
     handleOnCapture: true,
     applyDropShadowFilter: !!Config.enableDropShadow,
     type: "HandMorph",
+    logDnD: false,
 
     initialize: function($super, local) {
         $super(pt(5,5).extent(pt(10,10)), "rect");
@@ -2701,7 +2702,6 @@ HandMorph = Class.create(Morph, {
                 var receiver = this.owner.morphToGrabOrReceiveDroppingMorph(evt, m);
                 // For now, failed drops go to world; later maybe put them back?
                 if (receiver == null) receiver = this.world();
-                console.log("dropping %s on %s", m, receiver);
                 this.dropMorphsOn(receiver);
             } else {
                 // console.log('hand dispatching event ' + event.type + ' to owner '+ Object.inspect(this.owner()));
@@ -2740,7 +2740,7 @@ HandMorph = Class.create(Morph, {
         // Save info for cancelling grab or drop [also need indexInOwner?]
         // But for now we simply drop on world, so this isn't needed
         this.grabInfo = [grabbedMorph.owner, grabbedMorph.position()];
-        // console.log('grabbed %s', grabbedMorph);
+        if (this.logDnD) console.log('grabbing %s order %s', grabbedMorph, this.world().submorphs);
         this.addMorph(grabbedMorph);
         if (this.applyDropShadowFilter) {
             grabbedMorph.rawNode.setAttributeNS(null, "filter", "url(#DropShadowFilter)");
@@ -2749,11 +2749,13 @@ HandMorph = Class.create(Morph, {
         this.changed(); //for drop shadow
     },
     
-    dropMorphsOn: function (receiver) {
+    dropMorphsOn: function(receiver) {
         if (receiver !== this.world()) this.unbundleCarriedSelection();
         while (this.hasSubmorphs()) { // drop in same z-order as in hand
             var m = this.submorphs.first();
             receiver.addMorph(m); // this removes it from hand
+            if (this.logDnD) console.log("dropping %s on %s order %s", m, receiver, this.world().submorphs);
+	    
             if (this.applyDropShadowFilter) {
                 m.rawNode.setAttributeNS(null, "filter", "none");
             }

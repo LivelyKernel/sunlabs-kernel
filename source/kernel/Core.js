@@ -2658,6 +2658,7 @@ Morph.addMethods({
         // some cases.  Invoked by Object.inspect.
 	try {
             return "%1(#%2,%3)".format(this.getType(), this.id, this.shape);
+	    //return "%1(#%2)".format(this.getType(), this.id);
 	} catch (e) {
 	    return "Morph?[" + e + "]";
 	}
@@ -2820,18 +2821,9 @@ Morph.addMethods({
 
         if (this.hasSubmorphs()) {
             //If any submorph handles it (ie returns true), then return
-	    if (Event.capitalizedType(evt) == "MouseDown") 
-		// console.log("!!!%s examining on %s, display list", this, Event.capitalizedType(evt), this.submorphs.reverse());
-	    for (var i = this.submorphs.length - 1; i --; i >= 0) {
-	    //for (var i = 0; i < this.submorphs.length; i ++) {
-		if (Event.capitalizedType(evt) == "MouseDown") 
-		    //console.log("examining %s: %s", this.submorphs[i]);
-		var wasHandled = this.submorphs[i].mouseEvent(evt, false);
-		
-		if (wasHandled) {
-		    // if (evt.type == "mousedown") console.log("success with " + this.submorphs[i]);
+	    for (var i = this.submorphs.length - 1; i >= 0; i--) {
+		if (this.submorphs[i].mouseEvent(evt, false)) 
 		    return true;
-		}
 	    }
         }
 
@@ -3135,7 +3127,7 @@ Morph.addMethods({
 
         // First check all the submorphs, front first
         if (this.hasSubmorphs()) {
-	    for (var i = this.submorphs.length - 1; i--; i >= 0) {
+	    for (var i = this.submorphs.length - 1; i >= 0; i--) {
                 var hit = this.submorphs[i].morphToGrabOrReceive(evt, droppingMorph, checkForDnD); 
                 if (hit != null) return hit;  // hit a submorph
             }
