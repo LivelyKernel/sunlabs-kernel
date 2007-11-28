@@ -121,7 +121,7 @@ function populateWorldWithExamples(world) {
 
             if (Config.showCanvasScape) {
                 if (!lm1.myWorld.csMorph) {
-                    var csm = new CanvasScapeMorph(new Rectangle(20,50,800,300));
+                    var csm = new apps.canvascape.CanvasScapeMorph(new Rectangle(20,50,800,300));
                     lm1.myWorld.csMorph = lm1.myWorld.addMorph(new WindowMorph(csm, 'CanvasScape'));
                     csm.owner.collapse();
                 }
@@ -130,7 +130,7 @@ function populateWorldWithExamples(world) {
             if (Config.showMap) {
                 if (!lm1.myWorld.mapMorph) {
                     var tile = apps.maps.tileExtent;
-                    var map = apps.maps.MapFrameMorph(new Rectangle(0, 0, 2*tile.x, 2*tile.y), true);
+                    var map = new apps.maps.MapFrameMorph(new Rectangle(0, 0, 2*tile.x, 2*tile.y), true);
                     map.setScale(0.7);
                     map.setPosition(pt(160, 250));
                     lm1.myWorld.addMorph(map);

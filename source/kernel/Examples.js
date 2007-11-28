@@ -2962,8 +2962,13 @@ MapMorph = Class.create(Morph, {
                         oldImg.parentNode.removeChild(oldImg);
                     }
     
-                    var img = NodeFactory.create("image", 
-                    {x: -TileSize.x + ix*TileSize.x, y: -TileSize.y + iy*TileSize.y, width: 256, height: 256}).withHref(this.images[iy][ix]);
+                    var img = NodeFactory.create("image", { 
+			x: -TileSize.x + ix * TileSize.x, 
+			y: -TileSize.y + iy * TileSize.y, 
+			width: 256, 
+			height: 256
+		    });
+		    img.setAttributeNS(Namespace.XLINK, "href", this.images[iy][ix]);
                     img.setAttribute("id", imgId);
                     this.addChildElement(img);
                 }
@@ -3885,6 +3890,8 @@ MessengerWidget = Class.create(Model, {
     
 });
 
+apps.canvascape = function() { // module function
+
 // ===========================================================================
 // The CanvasScape 3D Maze Walker Example
 // ===========================================================================
@@ -4561,6 +4568,10 @@ var CanvasScapeMorph = Class.create(ClipMorph,{
     }
 });
 
+   // module exports
+    return { CanvasScapeMorph: CanvasScapeMorph };
+
+}(); // end canvascape
 // ===========================================================================
 // The Morphic Radial Engine Demo
 // ===========================================================================
@@ -4819,8 +4830,7 @@ var AnimMorph = Class.create(Morph, {
             image.setType('Image');
             this.addChildElement(image);
         }
-        
-        this.image.withHref(url);
+        this.image.setAttributeNS(Namespace.XLINK, "href", url);
     },
 
     reload: function() {

@@ -404,13 +404,6 @@ var TitleBarMorph = (function() {
             function(evt) { windowMorph.showTargetMorphMenu(evt); }, "Menu");
         this.setNamedMorph('menuButton', menuButton);
 
-        // uncomment for extra icon fun
-        /*
-        sign = NodeFactory.create("use").withHref("#GearIcon");
-        sign.setAttributeNS(null, 'transform', 'translate(-10, -10) scale(0.040)');
-        menuButton.addChildElement(sign);
-        */
-        
         cell = cell.translatedBy(pt(barHeight - controlSpacing, 0));
         var collapseButton = new WindowControlMorph(cell, controlSpacing, Color.primary.yellow, windowMorph, 
             function() { this.toggleCollapse(); }, "Collapse");
