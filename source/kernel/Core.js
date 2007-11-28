@@ -31,15 +31,15 @@ window.onerror = function(message, url, code) {
 
 Namespace =  {
     SVG : Canvas.getAttribute("xmlns"),
-    LIVELY : Prototype.Browser.WebKit ? null : "http://www.experimentalstuff.com/Lively", // Canvas.getAttribute("xmlns:lively"), // Safari XMLSerializer seems to do weird things w/namespaces
-    XLINK : "http://www.w3.org/1999/xlink", //Canvas.getAttribute("xmlns:xlink"),
+    LIVELY : Prototype.Browser.WebKit ? null : Canvas.getAttribute("xmlns:lively"), // Safari XMLSerializer seems to do weird things w/namespaces
+    XLINK : Canvas.getAttribute("xmlns:xlink"),
     DAV : "DAV", //Canvas.getAttribute("xmlns:D"),
     XHTML: document.documentElement.getAttribute("xmlns") 
 };
 
 
-var Loader = Class.create();
-Object.extend(Loader, {
+
+var Loader = {
 
     loadScript: function(ns, url) {
         var script = NodeFactory.createNS(Namespace.XHTML, "script");
@@ -61,7 +61,7 @@ Object.extend(Loader, {
         document.documentElement.appendChild(adoptedNode);
     }
     
-});
+};
 
 // SVG/DOM bindings 
 
@@ -69,8 +69,7 @@ Object.extend(Loader, {
  * @class Query
  */
 
-var Query = Class.create();
-Object.extend(Query, {
+var Query = {
 
     resolver: function(prefix) {
         console.log('prefix %s value %s', prefix, Namespace[prefix]);
@@ -91,7 +90,7 @@ Object.extend(Query, {
         return found;
     }
 
-});
+};
 
 var NodeFactory = {
     createNS: function(ns, name, attributes) {
@@ -104,19 +103,6 @@ var NodeFactory = {
     
     create: function(name, attributes) {
         return this.createNS(Namespace.SVG, name, attributes);
-    },
-
-    prototypes: new Hash(), // elementName -> prototype
-
-    // Sometimes object.constructor.prototype doesn't work for host objects b/c the actually hidden object.__proto__
-    // doesn't have its .constructor property set to the right value or the constructor doesn't have its .prototype
-    // value set
-    getPrototype: function(elementName) { // remember prototypes
-        var proto = this.prototypes[elementName];
-        if (!proto) {
-            this.prototypes[elementName] = proto = this.create(elementName).__proto__;
-        }
-        return proto;
     }
     
 };
@@ -1070,16 +1056,15 @@ Object.extend(CharSet, {
 (function() {
     var capitalizer = $H({ mouseup: 'MouseUp', mousedown: 'MouseDown', mousemove: 'MouseMove', 
         mouseover: 'MouseOver', mouseout: 'MouseOut', 
-        keydown: 'KeyDown', keypress: 'KeyPress', keyup: 'KeyUp'
-	});
+        keydown: 'KeyDown', keypress: 'KeyPress', keyup: 'KeyUp' });
 
-    Event.basicMouseEvents =  ["mousedown", "mouseup", "mousemove"];
-    Event.extendedMouseEvents = [ "mouseover", "mouseout"];
+    var basicMouseEvents =  ["mousedown", "mouseup", "mousemove"];
+    var extendedMouseEvents = [ "mouseover", "mouseout"];
+    var mouseEvents = basicMouseEvents.concat(extendedMouseEvents);
 	
     Event.keyboardEvents = ["keypress", "keyup", "keydown"];
-    Event.basicInputEvents = Event.basicMouseEvents.concat(Event.keyboardEvents);
+    Event.basicInputEvents = basicMouseEvents.concat(Event.keyboardEvents);
 
-    var mouseEvents = Event.basicMouseEvents.concat(Event.extendedMouseEvents);
 
     function isMouse(event) {
         return mouseEvents.include(event.type);
@@ -1329,20 +1314,6 @@ Visual = Class.create({
     
 });
 
-/*
-// Setting up web browser behavior to fit our needs, e.g., prevent the browser
-// from interpreting mouse drags on behalf of us.
-(function() {
-
-
-    Object.extend(Object.extend(NodeFactory.getPrototype('g'), DisplayObject.prototype), {
-    });
-    
-    Object.extend(NodeFactory.getPrototype('use'), DisplayObject.prototype);
-    Object.extend(NodeFactory.getPrototype('image'), DisplayObject.prototype);
-
-})();
-*/
 
 // ===========================================================================
 // Shape functionality
@@ -1600,7 +1571,7 @@ var PolygonShape = Class.create(Shape, {
 
     toString: function() {
         var pts = this.vertices();
-        return this.rawNode.tagName + "[" + pts.invoke('inspect').join(";") + "]";
+        return this.rawNode.tagName + pts;
     },
 
     bounds: function() {
@@ -2515,8 +2486,8 @@ Morph.addMethods({
     removeMorph: function(m) {
         var index = this.submorphs.indexOf(m);
 	if (index < 0) {
-	    if (m.owner === this) 
-		console.log("%s is its own owner?", m);
+	    if (m.owner !== this) 
+		console.log("%s has owner %s that is not %s?", m, m.owner, this);
 	    if (m.rawNode.parentNode === this.rawSubnodes)
 		console.log("invariant violated: %s", m);
 	    return null;
@@ -2664,6 +2635,7 @@ Morph.addMethods({
             return "%1(#%2,%3)".format(this.getType(), this.id, this.shape);
 	    //return "%1(#%2)".format(this.getType(), this.id);
 	} catch (e) {
+	    console.log("toString failed on " + [this.id, this.getType()]);
 	    return "Morph?[" + e + "]";
 	}
     },
@@ -3354,9 +3326,8 @@ Morph.addMethods({
     // map owner point to local coordinates
     relativize: function(pt) { 
         if (!this.owner) { 
-            throw new Error('no owner; call me after adding to a morph? ' + Object.inspect(this));
+            throw new Error('no owner; call me after adding to a morph? ' + this);
         }
-
         try {
             return pt.matrixTransform(this.owner.rawNode.getTransformToElement(this.rawNode)); 
         } catch (er) {

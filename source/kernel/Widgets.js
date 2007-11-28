@@ -198,7 +198,8 @@ var ImageMorph = Class.create(Morph, {
                 // this brittle and annoying piece of code is a workaround around the likely brokenness
                 // of Safari's XMLSerializer's handling of namespaces
                 this.removeChild(image);
-                this.dim = pt(parseInt(image.getAttribute("width")), parseInt(image.getAttribute("height")));
+                this.dim = pt(parseInt(image.getAttribute("width")), 
+			      parseInt(image.getAttribute("height")));
                 var href = image.getAttributeNS(null /* "xlink"*/, "href");
                 this.loadURL(href);
             } else {
@@ -369,24 +370,26 @@ var ClipMorph = Class.create(Morph, {
 /**
  * @class TitleBarMorph: Title bars for Window morphs
  */
-var TitleBarMorph = Class.create(Morph, {
+var TitleBarMorph = (function() { 
+
+    // "class" private variables
+    var controlSpacing = 3;
+    var barHeight = 22;
+    
+    return Class.create(Morph, {
 
     // prototype variables
-    barHeight: 22,
-    controlSpacing: 3,
     defaultBorderWidth: 0.5,
     type: "TitleBarMorph",
 
     initialize: function($super, headline, windowWidth, windowMorph, isExternal) {
         this.windowMorph = windowMorph;
-        const bh = this.barHeight;
-        const spacing = this.controlSpacing;
-        $super(new Rectangle(0, isExternal? - bh : 0, windowWidth, bh), "rect");
+        $super(new Rectangle(0, isExternal? - barHeight : 0, windowWidth, barHeight), "rect");
         this.linkToStyles(['titleBar']);
         this.ignoreEvents();
 
-        var cell = new Rectangle(0, 0, bh, bh);
-        var closeButton = new WindowControlMorph(cell, spacing, Color.primary.orange, windowMorph, 
+        var cell = new Rectangle(0, 0, barHeight, barHeight);
+        var closeButton = new WindowControlMorph(cell, controlSpacing, Color.primary.orange, windowMorph, 
             function() { this.initiateShutdown(); }, "Close");
         this.setNamedMorph('closeButton', closeButton);
 
@@ -396,8 +399,8 @@ var TitleBarMorph = Class.create(Morph, {
         // sign.applyTransform(Transform.createSimilitude(pt(-9, -9), 0, 0.035));
         // closeButton.addChildElement(sign);
 
-        cell = cell.translatedBy(pt(bh - spacing, 0));
-        var menuButton = new WindowControlMorph(cell, spacing, Color.primary.blue, windowMorph, 
+        cell = cell.translatedBy(pt(barHeight - controlSpacing, 0));
+        var menuButton = new WindowControlMorph(cell, controlSpacing, Color.primary.blue, windowMorph, 
             function(evt) { windowMorph.showTargetMorphMenu(evt); }, "Menu");
         this.setNamedMorph('menuButton', menuButton);
 
@@ -408,8 +411,8 @@ var TitleBarMorph = Class.create(Morph, {
         menuButton.addChildElement(sign);
         */
         
-        cell = cell.translatedBy(pt(bh - spacing, 0));
-        var collapseButton = new WindowControlMorph(cell, spacing, Color.primary.yellow, windowMorph, 
+        cell = cell.translatedBy(pt(barHeight - controlSpacing, 0));
+        var collapseButton = new WindowControlMorph(cell, controlSpacing, Color.primary.yellow, windowMorph, 
             function() { this.toggleCollapse(); }, "Collapse");
         this.setNamedMorph('collapseButton', collapseButton);
 
@@ -420,7 +423,7 @@ var TitleBarMorph = Class.create(Morph, {
             label = headline;
         } else { // String
             var width = headline.length * 8; // wild guess headlineString.length * 2 *  font.getCharWidth(' ') + 2;
-            label = new TextMorph(new Rectangle(0, 0, width, bh), headline).beLabel();
+            label = new TextMorph(new Rectangle(0, 0, width, barHeight), headline).beLabel();
             label.shape.roundEdgesBy(8);
         }
 
@@ -461,8 +464,8 @@ var TitleBarMorph = Class.create(Morph, {
     okToDuplicate: function(evt) {
         return false;
     }
-
-});
+	
+})})();
 
 /**
  * @class TitleTabMorph: Title bars for Window morphs
@@ -474,8 +477,8 @@ var TitleTabMorph = Class.create(Morph, {
     
     initialize: function($super, headline, windowWidth, windowMorph, isExternal) {
         this.windowMorph = windowMorph;
-        const bh = this.barHeight;
-        const spacing = this.controlSpacing;
+        const bh = 0;//this.barHeight;
+        const spacing = 0;// this.controlSpacing;
         $super(new Rectangle(0, isExternal? - bh : 0, windowWidth, bh), "rect");
         this.linkToStyles(['titleBar']);
         this.ignoreEvents();
@@ -829,8 +832,12 @@ var TabbedPanelMorph = Class.create(WindowMorph, {
  * object, e.g., to resize, re-scale, or rotate it.  
  */ 
 
-var HandleMorph = Class.create(Morph, {
+var HandleMorph = (function () {
 
+    // Counter for displaying balloon help only a certain number of times
+    var helpCounter = 0;
+
+    return Class.create(Morph, {
 
     defaultFill: null,
     defaultBorderColor: Color.blue,
@@ -858,8 +865,8 @@ var HandleMorph = Class.create(Morph, {
     showHelp: function(evt) {
         if (Config.suppressBalloonHelp) return;  // DI: maybe settable in window menu?
         // Show the balloon help only if it hasn't been shown too many times already
-        if (HandleMorph.helpCounter < 20) {
-            HandleMorph.helpCounter++;
+        if (helpCounter < 20) {
+            helpCounter++;
             this.help = new TextMorph(evt.mousePoint.extent(pt(200, 20)), 
                 this.shape.getType() == "rect" ? this.controlHelpText : this.circleHelpText);
     
@@ -967,13 +974,7 @@ var HandleMorph = Class.create(Morph, {
         }, scaleFactor);
     }
     
-});
-
-Object.extend(HandleMorph, {
-    // Counter for displaying balloon help only a certain number of times
-    helpCounter: 0
-});
-
+})})();
 
 
 /**
@@ -2552,13 +2553,18 @@ DomEventHandler = Class.create({
  * simultaneously, we do not want to use the default system cursor.   
  */ 
 
-HandMorph = Class.create(Morph, {
+var HandMorph = (function() { 
+    
+    // private variables
+    var shadowOffset = pt(5,5);
+    var handleOnCapture = true;
+    var logDnD = false;
 
-    shadowOffset: pt(5,5),
-    handleOnCapture: true,
+    return Class.create(Morph, {
+
     applyDropShadowFilter: !!Config.enableDropShadow,
     type: "HandMorph",
-    logDnD: false,
+
 
     initialize: function($super, local) {
         $super(pt(5,5).extent(pt(10,10)), "rect");
@@ -2602,13 +2608,13 @@ HandMorph = Class.create(Morph, {
     registerForEvents: function(morph) {
         var self = this;
         Event.basicInputEvents.each(function(name) { 
-            morph.rawNode.addEventListener(name, self.handler, self.handleOnCapture)});
+            morph.rawNode.addEventListener(name, self.handler, handleOnCapture)});
     },
     
     unregisterForEvents: function(morph) {
         var self = this; 
         Event.basicInputEvents.each(function(name) { 
-            morph.rawNode.removeEventListener(name, self.handler, self.handleOnCapture)});
+            morph.rawNode.removeEventListener(name, self.handler, handleOnCapture)});
     },
     
     setMouseFocus: function(morphOrNull) {
@@ -2740,7 +2746,7 @@ HandMorph = Class.create(Morph, {
         // Save info for cancelling grab or drop [also need indexInOwner?]
         // But for now we simply drop on world, so this isn't needed
         this.grabInfo = [grabbedMorph.owner, grabbedMorph.position()];
-        if (this.logDnD) console.log('grabbing %s order %s', grabbedMorph, this.world().submorphs);
+        if (logDnD) console.log('%s grabbing %s', this, grabbedMorph);
         this.addMorph(grabbedMorph);
         if (this.applyDropShadowFilter) {
             grabbedMorph.rawNode.setAttributeNS(null, "filter", "url(#DropShadowFilter)");
@@ -2754,7 +2760,7 @@ HandMorph = Class.create(Morph, {
         while (this.hasSubmorphs()) { // drop in same z-order as in hand
             var m = this.submorphs.first();
             receiver.addMorph(m); // this removes it from hand
-            if (this.logDnD) console.log("dropping %s on %s order %s", m, receiver, this.world().submorphs);
+            if (logDnD) console.log("%s dropping %s on %s", this, m, receiver);
 	    
             if (this.applyDropShadowFilter) {
                 m.rawNode.setAttributeNS(null, "filter", "none");
@@ -2848,7 +2854,7 @@ HandMorph = Class.create(Morph, {
         // account for the extra extent of the drop shadow
         // FIXME drop shadow ...
         if (this.shadowMorph)
-            return $super().expandBy(this.shadowOffset.x);
+            return $super().expandBy(shadowOffset.x);
         else return $super();
     },
     
@@ -2859,8 +2865,8 @@ HandMorph = Class.create(Morph, {
         return "%1, a hand carrying %2%3".format(superString, this.topSubmorph(), extraString);
     }
     
-});
-
+    })})();
+	     
 /**
  * @class LinkMorph
  * LinkMorph implements a two-way hyperlink between two Morphic worlds
@@ -2932,18 +2938,19 @@ LinkMorph = Class.create(Morph, {
         }
         this.hideHelp();
         this.myWorld.changed();
-        WorldMorph.current().onExit();    
+        var oldWorld = WorldMorph.current();
+        oldWorld.onExit();    
 
         // remove old hands
-        WorldMorph.current().hands.clone().each(function(hand) { 
-            WorldMorph.current().removeHand(hand);
+        oldWorld.hands.clone().each(function(hand) { 
+            oldWorld.removeHand(hand);
         });
         
-        var canvas = WorldMorph.current().canvas();
-        var oldWorld = WorldMorph.current();
+        var canvas = oldWorld.canvas();
+	
         oldWorld.remove();
         
-        console.log('left world %s', oldWorld);
+        console.log('left world %s through %s', oldWorld, this);
         // Canvas.appendChild(this.myWorld);
     
         // display world first, then add hand, order is important!
