@@ -1443,7 +1443,9 @@ var RectShape = Class.create(Shape, {
     },
 
     copy: function() {
-        return new RectShape(this.bounds(), this.getFill(), this.getStrokeWidth(), this.getStroke());
+        var rect = new RectShape(this.bounds(), this.getFill(), this.getStrokeWidth(), this.getStroke());
+        rect.roundEdgesBy(this.getEdgeRounding());
+        return rect;
     },
 
     setBounds: function(r) {
