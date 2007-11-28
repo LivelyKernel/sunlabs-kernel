@@ -1736,7 +1736,7 @@ var PolylineShape = Class.create(Shape, {
     },
     
     copy: function() {
-        return new PolylineShape(this.vertices(), this.getFill(), this.getStrokeWidth(), this.getStroke());
+        return new PolylineShape(this.vertices(), this.getStrokeWidth(), this.getStroke());
     },
 
     containsPoint: function(p) {
