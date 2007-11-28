@@ -2093,7 +2093,7 @@ var WorldMorph = Class.create(PasteUpMorph, {
         hand.layoutChanged();
     
         Event.keyboardEvents.each(function(each) {
-            document.documentElement.addEventListener(each, hand.handler, false);
+            document.documentElement.addEventListener(each, hand, false);
         });
         
         this.rawNode.parentNode.appendChild(hand.rawNode);
@@ -2105,7 +2105,7 @@ var WorldMorph = Class.create(PasteUpMorph, {
         hand.unregisterForEvents(hand);
 
         Event.keyboardEvents.each(function(each) {
-            document.documentElement.removeEventListener(each, hand.handler, false);
+            document.documentElement.removeEventListener(each, hand, false);
         });
 
         this.hands.splice(this.hands.indexOf(hand), 1);
@@ -2502,44 +2502,6 @@ Object.extend(WorldMorph, {
 
 
 /**
- * @class DomEventHandler
- */ 
-
-// HandMorph could be its own event listener but FF doesn't like it when
-// an svg element is registered as a handler
-DomEventHandler = Class.create({
-    
-    initialize: function (hand) {
-        this.hand = hand;
-        return this;
-    },
-    
-    handleEvent: function(evt) {
-        evt.hand = this.hand;
-        Event.init(evt);
-        // console.log('original target ' + evt.target);
-
-        switch(evt.type) {
-        case "mousemove":
-        case "mousedown":
-        case "mouseup":
-	    this.hand.handleMouseEvent(evt);
-            // evt.preventDefault();
-            break;
-        case "keydown":
-        case "keypress": 
-        case "keyup":
-            this.hand.handleKeyboardEvent(evt);
-            break;
-        default:
-            console.log("unknown event type " + evt.type);
-        }
-        evt.stopPropagation();
-    }.logErrors('Event Handler')
-    
-});
-
-/**
  * @class HandMorph
  * Defines the little triangle that represents the user's cursor.
  * Since there may be multiple users manipulating a Morphic world
@@ -2591,8 +2553,6 @@ var HandMorph = (function() {
 
         this.userInitials = null; 
         this.priorPoint = null;
-
-        this.handler = new DomEventHandler(this);
         this.owner = null;
 
         return this;
@@ -2601,13 +2561,13 @@ var HandMorph = (function() {
     registerForEvents: function(morph) {
         var self = this;
         Event.basicInputEvents.each(function(name) { 
-            morph.rawNode.addEventListener(name, self.handler, handleOnCapture)});
+            morph.rawNode.addEventListener(name, self, handleOnCapture)});
     },
     
     unregisterForEvents: function(morph) {
         var self = this; 
         Event.basicInputEvents.each(function(name) { 
-            morph.rawNode.removeEventListener(name, self.handler, handleOnCapture)});
+            morph.rawNode.removeEventListener(name, self, handleOnCapture)});
     },
     
     setMouseFocus: function(morphOrNull) {
@@ -2635,6 +2595,31 @@ var HandMorph = (function() {
     world: function() {
         return this.owner;
     },
+
+	// this is the DOM Event callback
+    handleEvent: function(evt) {
+        evt.hand = this.hand;
+        Event.init(evt);
+        // console.log('original target ' + evt.target);
+
+        switch(evt.type) {
+        case "mousemove":
+        case "mousedown":
+        case "mouseup":
+	    this.handleMouseEvent(evt);
+            // evt.preventDefault();
+            break;
+        case "keydown":
+        case "keypress": 
+        case "keyup":
+            this.handleKeyboardEvent(evt);
+            break;
+        default:
+            console.log("unknown event type " + evt.type);
+        }
+        evt.stopPropagation();
+    }.logErrors('Event Handler'),
+
 
     handleMouseEvent: function(evt) { 
         evt.hand = this; // extra copy needed for entry from HandRemoteControl
