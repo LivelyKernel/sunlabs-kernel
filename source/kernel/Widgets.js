@@ -2876,12 +2876,15 @@ LinkMorph = Class.create(Morph, {
               "onto me to transport objects between worlds.",
     type: "LinkMorph",
     
-    initialize: function($super, otherWorld /*, rest*/) {
+    initialize: function($super, otherWorld, initialPosition) {
         // In a scripter, type: world.addMorph(new LinkMorph(null))
-        var bounds = arguments[2];
-    
+        var bounds = initialPosition;
+
+        // Note: Initial position can be specified either as a rectangle or point.
+        // If no position is specified, place the icon in the lower left corner
+        // of the screen.
         if (!bounds) {
-            bounds = WorldMorph.current().bounds().bottomLeft().addXY(330,-250).asRectangle().expandBy(25);
+            bounds = WorldMorph.current().bounds().bottomLeft().addXY(50, -50).asRectangle().expandBy(25);
         } else if (bounds instanceof Point) {
             bounds = bounds.asRectangle().expandBy(25);
         }
