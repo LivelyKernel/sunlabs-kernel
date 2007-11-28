@@ -31,12 +31,13 @@ window.onerror = function(message, url, code) {
 
 Namespace =  {
     SVG : Canvas.getAttribute("xmlns"),
-    LIVELY : Prototype.Browser.WebKit ? null : Canvas.getAttribute("xmlns:lively"), // Safari XMLSerializer seems to do weird things w/namespaces
-    XLINK : Canvas.getAttribute("xmlns:xlink"),
+    // Safari XMLSerializer seems to do weird things w/namespaces
+    // Opera apparently doesn't understand Canvas.getAttribute("foo:bar")
+    LIVELY : Prototype.Browser.WebKit ? null : "http://www.experimentalstuff.com/Lively", // Canvas.getAttribute("xmlns:lively"), 
+    XLINK : "http://www.w3.org/1999/xlink", //Canvas.getAttribute("xmlns:xlink"),
     DAV : "DAV", //Canvas.getAttribute("xmlns:D"),
     XHTML: document.documentElement.getAttribute("xmlns") 
 };
-
 
 
 var Loader = {

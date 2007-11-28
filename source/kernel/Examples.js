@@ -2595,9 +2595,9 @@ StockWidget = Class.create(Model, {
         m = panel.addMorph(new TextMorph(new Rectangle(160, 340, 410, 20), "")).connectModel({model: this, getText: 'getQuotes'});
 
         // Company selector for stock quotes
-        m = panel.addMorph(new CheapListMorph(new Rectangle(20, 340, 120, 40), ["JAVA", "NOK", "GOOG", "QQQQ"]));
+        m = panel.addMorph(new CheapListMorph(new Rectangle(20, 340, 120, 40), ["JAVAD", "NOK", "GOOG", "QQQQ"]));
         m.connectModel({model: this, getSelection: "getCompany", setSelection: "setCompany"});
-        this.setCompany('JAVA');
+        this.setCompany("JAVAD");
         var model = this;
         
         panel.refresh = function() {
