@@ -744,7 +744,7 @@ var TextMorph = Class.create(Morph, {
 
     initializeTransientState: function($super, initialBounds) {
         $super(initialBounds);
-        // this.textBox = null;
+        //this.textBox = null;
         this.selectionRange = [0,-1]; // null or a pair of indices into textString
         this.selectionPivot = null;  // index of hit at onmousedown
         this.priorSelection = [0,-1];  // for double-clicks
@@ -850,6 +850,9 @@ var TextMorph = Class.create(Morph, {
         copy.setTextColor(this.getTextColor());
         // FIXME what about all the other stuff ...
         copy.selectionRange = copy.selectionRange.slice(0);
+        // AT: Inset must be copied!
+        // However, there are other attributes still missing
+        copy.inset = this.inset;
         return copy; 
     },
 
