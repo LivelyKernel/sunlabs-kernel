@@ -152,7 +152,6 @@ Object.extend(Class, {
  * Extensions to class Object
  */  
 
-
 Object.properties = function(object, predicate) {
     var a = [];
     for (var name in object) {  
@@ -295,6 +294,7 @@ Object.extend(Function.prototype, {
  */  
 
 Object.extend(String.prototype, {
+
     withNiceDecimals: function() {
         // JS can't print nice decimals
         var dotIx = this.indexOf('.');
@@ -631,7 +631,7 @@ Object.extend(Rectangle, {
 
     fromElement: function(element) {
         return new Rectangle(element.x.baseVal.value, element.y.baseVal.value, 
-			     element.width.baseVal.value, element.height.baseVal.value);
+                             element.width.baseVal.value, element.height.baseVal.value);
     }
 
 
@@ -801,17 +801,17 @@ console.log("Color");
 // ===========================================================================
 
 Gradient = Class.create({
+
     addStop: function(offset, color) {
         this.rawNode.appendChild(NodeFactory.create("stop", {offset: offset, "stop-color": color}));
         return this;
     },
 
     toString: function() {
-	return this.rawNode ? this.rawNode.tagName : "Gradient?";
+        return this.rawNode ? this.rawNode.tagName : "Gradient?";
     }
     
 });
-
 
 /**
  * @class LinearGradient (NOTE: PORTING-SENSITIVE CODE)
@@ -819,28 +819,29 @@ Gradient = Class.create({
 
 // note that Colors and Gradients are similar
 LinearGradient = Class.create(Gradient, {
+
     initialize: function(/*args*/) {
-	switch (arguments.length) {
-	case 1:
-	    this.rawNode = arguments[0].cloneNode(true);
-	    return this;
-	case 2:
-	case 3:
-	    var stopColor1 = arguments[0];
-	    var stopColor2 = arguments[1];
-	    var vector = arguments.length == 3 ? arguments[2] : LinearGradient.NorthSouth;
+        switch (arguments.length) {
+        case 1:
+            this.rawNode = arguments[0].cloneNode(true);
+            return this;
+        case 2:
+        case 3:
+            var stopColor1 = arguments[0];
+            var stopColor2 = arguments[1];
+            var vector = arguments.length == 3 ? arguments[2] : LinearGradient.NorthSouth;
             this.rawNode = NodeFactory.create("linearGradient",
-					      {x1: vector.x, y1: vector.y, 
-					       x2: vector.maxX(), y2: vector.maxY()}); 
-	    this.addStop(0, stopColor1).addStop(1, stopColor2);
-	    return this;
-	default:
-	    throw new Error("whoops, args %s", $A(arguments));
-	}
+                               {x1: vector.x, y1: vector.y, 
+                                x2: vector.maxX(), y2: vector.maxY()}); 
+            this.addStop(0, stopColor1).addStop(1, stopColor2);
+            return this;
+        default:
+            throw new Error("whoops, args %s", $A(arguments));
+        }
     },
     
     copy: function() {
-	return new LinearGradient(this.rawNode);
+        return new LinearGradient(this.rawNode);
     }
     
 });
@@ -852,7 +853,6 @@ Object.extend(LinearGradient, {
     WestEast:   rect(pt(1, 0), pt(0, 0))
 });
 
-
 /**
  * @class RadialGradient (NOTE: PORTING-SENSITIVE CODE)
  */
@@ -860,30 +860,29 @@ Object.extend(LinearGradient, {
 RadialGradient = Class.create(Gradient, {
     
     initialize: function(/*args*/) {
-	switch (arguments.length) {
-	case 1:
-	    this.rawNode = arguments[0].cloneNode(true);
-	    return this;
-	case 2:
-	    var stopColor1 = arguments[0];
-	    var stopColor2 = arguments[1];
-	    var c = pt(0.5, 0.5);
-	    var r = 0.4;
-	    this.rawNode = NodeFactory.create("radialGradient", {cx: c.x, cy: c.y, r: r});
-	    this.addStop(0, stopColor1);
-	    this.addStop(1, stopColor2);
-	    return this;
-	default:
-	    throw new Error("whoops, args %s", $A(arguments));
-	}
+        switch (arguments.length) {
+        case 1:
+            this.rawNode = arguments[0].cloneNode(true);
+            return this;
+        case 2:
+            var stopColor1 = arguments[0];
+            var stopColor2 = arguments[1];
+            var c = pt(0.5, 0.5);
+            var r = 0.4;
+            this.rawNode = NodeFactory.create("radialGradient", {cx: c.x, cy: c.y, r: r});
+            this.addStop(0, stopColor1);
+            this.addStop(1, stopColor2);
+            return this;
+        default:
+            throw new Error("whoops, args %s", $A(arguments));
+        }
     },
 
     copy: function() {
-	return new RadialGradient(this.rawNode);
+        return new RadialGradient(this.rawNode);
     }
     
 });
-
 
 /**
  * @class StipplePattern (NOTE: PORTING-SENSITIVE CODE)
@@ -892,28 +891,29 @@ RadialGradient = Class.create(Gradient, {
 StipplePattern = Class.create({
 
     initialize: function(/*args*/) {
-	switch (arguments.length) {
-	case 1:
-	    this.rawNode = arguments[0].cloneNode(true);
-	    return this;
-	case 4:
-	    var color1 = arguments[0];
-	    var h1 = arguments[1];
-	    var color2 = arguments[2];
-	    var h2 = arguments[4];
+        switch (arguments.length) {
+        case 1:
+            this.rawNode = arguments[0].cloneNode(true);
+            return this;
+        case 4:
+            var color1 = arguments[0];
+            var h1 = arguments[1];
+            var color2 = arguments[2];
+            var h2 = arguments[4];
             this.rawNode = NodeFactory.create("pattern", 
-					      {patternUnits: 'userSpaceOnUse', x: 0, y: 0, width: 100, height: h1 + h2});
+                {patternUnits: 'userSpaceOnUse', x: 0, y: 0, width: 100, height: h1 + h2});
             this.rawNode.appendChild(NodeFactory.create('rect', {x: 0, y: 0,  width: 100, height: h1,      fill: color1}));
             this.rawNode.appendChild(NodeFactory.create('rect', {x: 0, y: h1, width: 100, height: h1 + h2, fill: color2}));
-	    return this;
-	default:
-	    throw new Error("whoops, args %s", $A(arguments));
-	}
+            return this;
+        default:
+            throw new Error("whoops, args %s", $A(arguments));
+        }
     },
     
     copy: function() {
-	return new StipplePattern(this.rawNode);
+        return new StipplePattern(this.rawNode);
     }
+
 });
 
 /**
@@ -924,8 +924,8 @@ StipplePattern = Class.create({
 var Transform = Class.create({
     
     initialize: function(matrix) {
-	this.matrix = matrix || Canvas.createSVGMatrix();
-	return this;
+        this.matrix = matrix || Canvas.createSVGMatrix();
+        return this;
     },
     
     getTranslation: function() {
@@ -1062,10 +1062,9 @@ Object.extend(CharSet, {
     var basicMouseEvents =  ["mousedown", "mouseup", "mousemove"];
     var extendedMouseEvents = [ "mouseover", "mouseout"];
     var mouseEvents = basicMouseEvents.concat(extendedMouseEvents);
-	
+
     Event.keyboardEvents = ["keypress", "keyup", "keydown"];
     Event.basicInputEvents = basicMouseEvents.concat(Event.keyboardEvents);
-
 
     function isMouse(event) {
         return mouseEvents.include(event.type);
@@ -1077,10 +1076,10 @@ Object.extend(CharSet, {
     };
 
     Object.extend(Event, {
-	
-	KEY_SPACEBAR: 32,
-	
-	Safari: {
+    
+        KEY_SPACEBAR: 32,
+    
+        Safari: {
             KEY_LEFT: 63234,
             KEY_UP: 63232,
             KEY_RIGHT: 63235,
@@ -1090,73 +1089,74 @@ Object.extend(CharSet, {
             KEY_HOME: 63273,
             KEY_PAGE_UP: 63276,
             KEY_PAGE_DOWN: 63277
-	},
-	
-	makeSyntheticMouseEvent: function() {
+        },
+    
+        makeSyntheticMouseEvent: function() {
             var evt = document.createEvent("MouseEvents");
             // cf. http://developer.mozilla.org/en/docs/DOM:document.createEvent
             evt.initMouseEvent("mousemove", true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
             return Event.init(evt);
-	},
-	
-	capitalizedType: function(evt) {
+        },
+    
+        capitalizedType: function(evt) {
             return capitalizer.get(evt.type) || evt.type;
-	},
-
-	setButtonPressedAndPriorPoint: function(evt, buttonPressed, priorPoint) {
+        },
+    
+        setButtonPressedAndPriorPoint: function(evt, buttonPressed, priorPoint) {
             evt.mouseButtonPressed = buttonPressed;
             // if moving or releasing, priorPoint will get found by prior morph
             evt.priorPoint = priorPoint; 
-	},
-
-	sanitizedKeyCode: function(evt) {
+        },
+    
+        sanitizedKeyCode: function(evt) {
             // if (this.type != 'keypress')
             // return;
             with (Event.Safari) {
-		switch (evt.keyCode) {
-		case KEY_LEFT: return Event.KEY_LEFT;
-		case KEY_UP: return Event.KEY_UP;
-		case KEY_RIGHT: return Event.KEY_RIGHT;
-		case KEY_DOWN: return Event.KEY_DOWN;
-		case KEY_DELETE: return Event.KEY_DELETE;
-		case KEY_END: return Event.KEY_END;
-		case KEY_HOME: return Event.KEY_HOME;
-		case KEY_PAGE_UP: return Event.KEY_PAGE_UP;
-		case KEY_PAGE_DOWN: return Event.KEY_PAGE_DOWN;
-		}
+                switch (evt.keyCode) {
+                case KEY_LEFT: return Event.KEY_LEFT;
+                case KEY_UP: return Event.KEY_UP;
+                case KEY_RIGHT: return Event.KEY_RIGHT;
+                case KEY_DOWN: return Event.KEY_DOWN;
+                case KEY_DELETE: return Event.KEY_DELETE;
+                case KEY_END: return Event.KEY_END;
+                case KEY_HOME: return Event.KEY_HOME;
+                case KEY_PAGE_UP: return Event.KEY_PAGE_UP;
+                case KEY_PAGE_DOWN: return Event.KEY_PAGE_DOWN;
+                }
             }
             return evt.keyCode;
-	},
-	
-	init: function(event) {
-	    if (!Event.prototype) { // I.E. doesn't have it.
-		Object.extend(event, methods);
-	    }
-
+        },
+    
+        init: function(event) {
+            if (!Event.prototype) { // I.E. doesn't have it.
+                Object.extend(event, methods);
+            }
+    
             if (isMouse(event)) {
-		// note that FF doesn't doesnt calculate offsetLeft/offsetTop early enough we don't precompute these values
-		// assume the parent node of Canvas has the same bounds as Canvas
-		event.mousePoint = pt(event.pageX - (Canvas.parentNode.offsetLeft || 0), 
-				      event.pageY - (Canvas.parentNode.offsetTop  || 0) - 3);
-		
-		//event.mousePoint = pt(event.clientX, event.clientY  - 3);
-		event.priorPoint = event.mousePoint; 
-		// Safari somehow gets the x and y coords so we add them here to Firefox too --PR
-		// console.log("InitMouseOver fix for Firefox evt.x=%s evt.clientX", event.x, event.clientX);
-		if (event.x == null && event.y == null) {
+                // note that FF doesn't doesnt calculate offsetLeft/offsetTop early enough we don't precompute these values
+                // assume the parent node of Canvas has the same bounds as Canvas
+                event.mousePoint = pt(event.pageX - (Canvas.parentNode.offsetLeft || 0), 
+                                      event.pageY - (Canvas.parentNode.offsetTop  || 0) - 3);
+    
+                //event.mousePoint = pt(event.clientX, event.clientY  - 3);
+                event.priorPoint = event.mousePoint; 
+                // Safari somehow gets the x and y coords so we add them here to Firefox too --PR
+                // console.log("InitMouseOver fix for Firefox evt.x=%s evt.clientX", event.x, event.clientX);
+                if (event.x == null && event.y == null) {
                     event.x = event.mousePoint.x;
                     event.y = event.mousePoint.y;
-		}    
+                }    
             } 
             event.hand = null;
-	    
+        
             // use event.timeStamp
             // event.msTime = (new Date()).getTime();
             event.mouseButtonPressed = false;
             return event;
-	}
-	
+        }
+    
     });
+
 })();
 
 Object.extend(window.parent, {
@@ -1303,18 +1303,17 @@ Visual = Class.create({
     },
 
     disableBrowserHandlers: function() {
-	var disabler = { handleEvent: function(evt) { evt.preventDefault(); return false ;}};
+        var disabler = { handleEvent: function(evt) { evt.preventDefault(); return false ;}};
 
         this.rawNode.addEventListener("dragstart", disabler, true);
         this.rawNode.addEventListener("selectstart", disabler, true);
     },
 
     inspect: function() {
-	return this.toString();
+        return this.toString();
     }
     
 });
-
 
 // ===========================================================================
 // Shape functionality
@@ -1330,7 +1329,6 @@ Visual = Class.create({
  * @class Shape
  */ 
 
-
 var Shape = Class.create(Visual, {
 
     shouldIgnorePointerEvents: false,
@@ -1338,7 +1336,6 @@ var Shape = Class.create(Visual, {
     toString: function() {
         return 'a Shape(%1,%2)'.format(this.getType(), this.bounds());
     },
-
 
     getType: function() { 
         return this.rawNode.tagName; 
@@ -1822,32 +1819,33 @@ var PathShape = Class.create(Shape, {
 var NodeList = {
     // FIXME these implementations are rather lame
     toArray: function(target) {
-	var array = [];
-	for (var m = target.lastChild; m != null; m = m.previousSibling) 
-	    array.push(m);
-	return array;
+        var array = [];
+        for (var m = target.lastChild; m != null; m = m.previousSibling) { 
+            array.push(m);
+        }
+        return array;
     },
     
     invoke: function(target, method) {
-	var args = $A(arguments).slice(2);
+        var args = $A(arguments).slice(2);
         var array = NodeList.toArray(target);
-	return array.map(function(value) { return value[method].apply(value, args); });
+        return array.map(function(value) { return value[method].apply(value, args); });
     },
     
     each: function(target, iterator, context) {
-	return NodeList.toArray(target).each(iterator, context);
+        return NodeList.toArray(target).each(iterator, context);
     },
     
     withType: function(type) {
-	return NodeList.become(NodeFactory.create('g'), type);
+        return NodeList.become(NodeFactory.create('g'), type);
     },
     
     become: function(node, type) {
-    	node.setAttributeNS(Namespace.LIVELY, "type", type);
-	return node;
+        node.setAttributeNS(Namespace.LIVELY, "type", type);
+        return node;
     },
     
-   clear: function(list) {
+    clear: function(list) {
         while (list.firstChild) list.removeChild(list.firstChild);
     },
     
@@ -1878,9 +1876,10 @@ var NodeList = {
 // Every graphical object in our system is a morph.
 // For further information about morphs, read the documentation. 
 
+/**
+ * @class MouseHandlerForDragging
+ */ 
 
-
-// Morph event handling 
 MouseHandlerForDragging = Class.create({
     
     initialize: function() {
@@ -1895,8 +1894,9 @@ MouseHandlerForDragging = Class.create({
         handler.call(targetMorph, evt);
         if (capType == "MouseUp") {
             // if focus changed, then don't cancel it
-            if (evt.hand.mouseFocus === targetMorph) 
-		evt.hand.setMouseFocus(null);
+            if (evt.hand.mouseFocus === targetMorph) { 
+                evt.hand.setMouseFocus(null);
+            }
         }
         return true; 
     },
@@ -1904,15 +1904,14 @@ MouseHandlerForDragging = Class.create({
     handlesMouseDown: function(evt) { 
         return false;
     }
-});
 
+});
 
 /**
  * @class Morph
  */ 
 
 Morph = Class.create(Visual, {
-
 
     // prototype vars
     defaultFill: Color.primary.green,
@@ -1938,11 +1937,11 @@ Morph = Class.create(Visual, {
     
     initialize: function(initialBounds /*:Rectangle*/, shapeType/*:String*/) {
         //console.log('initializing morph %s %s', initialBounds, shapeType);
-	this.rawNode = NodeFactory.create("g");
-	this.submorphs = [];
-	this.rawSubnodes = null;
-	this.owner = null;
-	this.setType(this.type);
+        this.rawNode = NodeFactory.create("g");
+        this.submorphs = [];
+        this.rawSubnodes = null;
+        this.owner = null;
+        this.setType(this.type);
         this.pvtSetTransform(Transform.createSimilitude(this.defaultOrigin(initialBounds, shapeType), 0, 1.0));
         this.pickId();
         this.initializePersistentState(initialBounds, shapeType);
@@ -2088,21 +2087,20 @@ Morph = Class.create(Visual, {
     },
     
     relativizeBounds: function(rect) {
-	return rect.translatedBy(this.origin.negated());
+        return rect.translatedBy(this.origin.negated());
     },
-    
 
     initializePersistentState: function(initialBounds /*:Rectangle*/, shapeType/*:String*/) {
         // a rect shape by default, will change later
         switch (shapeType) {
         case "ellipse":
             this.shape = new EllipseShape(this.relativizeBounds(initialBounds),
-					  this.defaultFill, this.defaultBorderWidth, this.defaultBorderColor);
+                this.defaultFill, this.defaultBorderWidth, this.defaultBorderColor);
             break;
         default:
             // polygons and polylines are set explicitly later
             this.shape = new RectShape(this.relativizeBounds(initialBounds),
-				       this.defaultFill, this.defaultBorderWidth, this.defaultBorderColor);
+                this.defaultFill, this.defaultBorderWidth, this.defaultBorderColor);
             break;
         }
     
@@ -2132,7 +2130,6 @@ Morph = Class.create(Visual, {
     }
 
 });
-
 
 Object.extend(Morph, {
     
@@ -2172,35 +2169,34 @@ Morph.addMethods({
     
     setFill: function(fill) {
         // console.log('setting %s on %s', fill, this);
-	var old = this.fill;
-	this.fill = fill;
-	if (old instanceof Gradient) {
-	    var parent = old.rawNode.parentNode;
-	    if (parent)
-		parent.removeChild(old.rawNode);
-	}
-	if (fill == null) {
-	    this.shape.setFill(null);
-	} else if (fill instanceof Color) {
-	    this.shape.setFill(fill.toString());
-	} else if (fill instanceof Gradient || fill instanceof StipplePattern) {
-	    var id = fill.rawNode.getAttribute("id");
-	    var newId = "gradient_" + this.id;
-	    if (newId != id) {
-		this.fill = fill.copy(); 
-		this.fill.rawNode.setAttribute("id", newId);
-	    }
-            if (!this.defs) {
-		this.defs = NodeFactory.create("defs");
-		this.addChildElement(this.defs);
+        var old = this.fill;
+        this.fill = fill;
+        if (old instanceof Gradient) {
+            var parent = old.rawNode.parentNode;
+            if (parent) parent.removeChild(old.rawNode);
+        }
+        if (fill == null) {
+            this.shape.setFill(null);
+        } else if (fill instanceof Color) {
+            this.shape.setFill(fill.toString());
+        } else if (fill instanceof Gradient || fill instanceof StipplePattern) {
+            var id = fill.rawNode.getAttribute("id");
+            var newId = "gradient_" + this.id;
+            if (newId != id) {
+                this.fill = fill.copy(); 
+                this.fill.rawNode.setAttribute("id", newId);
             }
-	    this.shape.setFill("url(#" + newId + ")");
-	    this.defs.appendChild(this.fill.rawNode);
-	}
+            if (!this.defs) {
+                this.defs = NodeFactory.create("defs");
+                this.addChildElement(this.defs);
+            }
+            this.shape.setFill("url(#" + newId + ")");
+            this.defs.appendChild(this.fill.rawNode);
+        }
     }.wrap(Morph.onChange('shape')),
 
     getFill: function() {
-	return this.fill; 
+        return this.fill; 
     },
     
     setBorderColor: function(newColor) { this.shape.setStroke(newColor); }.wrap(Morph.onChange('shape')),
@@ -2421,7 +2417,7 @@ Morph.addMethods({
     },
 
     getNamedMorph: function(name) {
-	return this.submorphs.detect(function(m) { return m.rawNode.getAttributeNS(Namespace.LIVELY, "property") == name; });
+        return this.submorphs.detect(function(m) { return m.rawNode.getAttributeNS(Namespace.LIVELY, "property") == name; });
     },
 
     setNamedMorph: function(name, morph) {
@@ -2464,7 +2460,7 @@ Morph.addMethods({
             //console.log('no owner ' + m.inspect());
         }
     
-	m.owner = this;
+        m.owner = this;
         this.domAddMorph(m, front);
         m.changed();
         m.layoutChanged();
@@ -2476,38 +2472,39 @@ Morph.addMethods({
         if (isFront) {
             // the last one, so drawn last, so front
             NodeList.push(this.rawSubnodes, m);
-	    this.submorphs.push(m);
+            this.submorphs.push(m);
         } else {
-	    // back of the display list -> front visually
-	    NodeList.pushFront(this.rawSubnodes, m);
-	    this.submorphs.splice(0, 0, m);
+            // back of the display list -> front visually
+            NodeList.pushFront(this.rawSubnodes, m);
+            this.submorphs.splice(0, 0, m);
         }
     },
     
     removeMorph: function(m) {
         var index = this.submorphs.indexOf(m);
-	if (index < 0) {
-	    if (m.owner !== this) 
-		console.log("%s has owner %s that is not %s?", m, m.owner, this);
-	    if (m.rawNode.parentNode === this.rawSubnodes)
-		console.log("invariant violated: %s", m);
-	    return null;
-	}
-	    
+        if (index < 0) {
+            if (m.owner !== this) { 
+                console.log("%s has owner %s that is not %s?", m, m.owner, this);
+            }
+            if (m.rawNode.parentNode === this.rawSubnodes)
+            console.log("invariant violated: %s", m);
+            return null;
+        }
+    
         NodeList.remove(this.rawSubnodes, m);
-	var spliced = this.submorphs.splice(index, 1);
-	if (spliced instanceof Array) spliced = spliced[0];
-	if (m !== spliced) {
-	    console.log("invariant violated removing %s, spliced %s", m, spliced);
-	}
-	m.owner = null;
+        var spliced = this.submorphs.splice(index, 1);
+        if (spliced instanceof Array) spliced = spliced[0];
+        if (m !== spliced) {
+            console.log("invariant violated removing %s, spliced %s", m, spliced);
+        }
+        m.owner = null;
         m.setHasKeyboardFocus(false);
         return m;
     },
     
     removeAllMorphs: function() {
         NodeList.clear(this.rawSubnodes);
-	this.submorphs.clear();
+        this.submorphs.clear();
         this.layoutChanged(); 
     },
     
@@ -2535,7 +2532,7 @@ Morph.addMethods({
     },
     
     topSubmorph: function() {
-	// the morph on top is the last one in the list
+        // the morph on top is the last one in the list
         return this.submorphs.last();
     },
 
@@ -2632,17 +2629,17 @@ Morph.addMethods({
     toString: function() {
         // A replacement for toString() which can't be overridden in
         // some cases.  Invoked by Object.inspect.
-	try {
+        try {
             return "%1(#%2,%3)".format(this.getType(), this.id, this.shape);
-	    //return "%1(#%2)".format(this.getType(), this.id);
-	} catch (e) {
-	    console.log("toString failed on " + [this.id, this.getType()]);
-	    return "Morph?[" + e + "]";
-	}
+            //return "%1(#%2)".format(this.getType(), this.id);
+        } catch (e) {
+            console.log("toString failed on " + [this.id, this.getType()]);
+            return "Morph?[" + e + "]";
+        }
     },
 
     toJSON: function() {
-	return undefined;
+        return undefined;
     },
 
     // Morph coordinate transformation functions
@@ -2797,11 +2794,10 @@ Morph.addMethods({
         if (!this.fullContainsWorldPoint(evt.priorPoint)) return false;
 
         if (this.hasSubmorphs()) {
-            //If any submorph handles it (ie returns true), then return
-	    for (var i = this.submorphs.length - 1; i >= 0; i--) {
-		if (this.submorphs[i].mouseEvent(evt, false)) 
-		    return true;
-	    }
+            // If any submorph handles it (ie returns true), then return
+            for (var i = this.submorphs.length - 1; i >= 0; i--) {
+                if (this.submorphs[i].mouseEvent(evt, false)) return true;
+            }
         }
 
         if (this.mouseHandler == null) 
@@ -2833,9 +2829,9 @@ Morph.addMethods({
     onMouseDown: function(evt) { }, //default behavior
     
     onMouseMove: function(evt) { //default behavior
-        if (this.owner && evt.mouseButtonPressed && this.owner.openForDragAndDrop) 
-	    this.moveBy(evt.mousePoint.subPt(evt.priorPoint));
-        //else this.checkForControlPointNear(evt);
+        if (this.owner && evt.mouseButtonPressed && this.owner.openForDragAndDrop) { 
+           this.moveBy(evt.mousePoint.subPt(evt.priorPoint));
+        } // else this.checkForControlPointNear(evt);
         if (!evt.mouseButtonPressed) this.checkForControlPointNear(evt);
     },
     
@@ -2896,7 +2892,7 @@ Morph.addMethods({
     adjustFocusHalo: function() {
         NodeList.clear(this.focusHalo);
         var shape = new RectShape(this.shape.bounds().insetBy(-2), null, 
-	    this.focusHaloBorderWidth, this.focusedBorderColor);
+            this.focusHaloBorderWidth, this.focusedBorderColor);
         NodeList.push(this.focusHalo, shape);
     },
 
@@ -2904,7 +2900,7 @@ Morph.addMethods({
         if (this.focusHalo) return false;
         this.focusHalo = this.addChildElement(NodeList.withType('FocusHalo'));
         this.focusHalo.setAttributeNS(null, "stroke-opacity", 0.3);
-	this.focusHalo.setAttributeNS(null, 'stroke-linejoin', Shape.LineJoins.ROUND);
+        this.focusHalo.setAttributeNS(null, 'stroke-linejoin', Shape.LineJoins.ROUND);
         this.adjustFocusHalo();
         return true;
     }
@@ -2913,7 +2909,6 @@ Morph.addMethods({
 
 /**
  * @class MouseHandlerForRelay
- * This class supports the morph event handling features defined above
  */ 
 
 MouseHandlerForRelay = Class.create({
@@ -3104,7 +3099,7 @@ Morph.addMethods({
 
         // First check all the submorphs, front first
         if (this.hasSubmorphs()) {
-	    for (var i = this.submorphs.length - 1; i >= 0; i--) {
+            for (var i = this.submorphs.length - 1; i >= 0; i--) {
                 var hit = this.submorphs[i].morphToGrabOrReceive(evt, droppingMorph, checkForDnD); 
                 if (hit != null) return hit;  // hit a submorph
             }
@@ -3294,7 +3289,8 @@ Morph.addMethods({
         if (this.hasSubmorphs()) { 
             var subBounds = null; // KP: added = null
             this.submorphs.each(function(m) { 
-		subBounds = subBounds == null ? m.bounds() : subBounds.union(m.bounds()); });
+                subBounds = subBounds == null ? m.bounds() : subBounds.union(m.bounds()); }
+            );
             // could be simpler when no rotation...
             this.fullBounds = this.fullBounds.union(tfm.transformRectToRect(subBounds));
         } 
@@ -3836,14 +3832,13 @@ var PasteUpMorph = Class.create(Morph, {
     onMouseDown: function(evt) {  //default behavior is to grab a submorph
         var m = this.morphToReceiveEvent(evt);
         if (m == null) { 
-	    this.makeSelection(evt); 
-	    return true; 
-	} else if (!evt.altKey) {
+            this.makeSelection(evt); 
+            return true; 
+        } else if (!evt.altKey) {
             if (m == this.world()) { 
-		this.makeSelection(evt); 
-		return true; 
-	    } else if (m.handlesMouseDown(evt)) 
-		return false;
+                this.makeSelection(evt); 
+                return true; 
+            } else if (m.handlesMouseDown(evt)) return false;
         }
         evt.hand.grabMorph(m, evt);
         return true; 
@@ -4387,7 +4382,6 @@ var WorldMorph = Class.create(PasteUpMorph, {
 
 });
 
-
 Object.extend(WorldMorph, {    
     worldCount: 0,
     
@@ -4402,7 +4396,6 @@ Object.extend(WorldMorph, {
     }
     
 });
-
 
 /**
  * @class HandMorph
@@ -4422,7 +4415,6 @@ var HandMorph = function() {
 
     applyDropShadowFilter: !!Config.enableDropShadow,
     type: "HandMorph",
-
 
     initialize: function($super, local) {
         $super(pt(5,5).extent(pt(10,10)), "rect");
@@ -4499,7 +4491,7 @@ var HandMorph = function() {
         return this.owner;
     },
 
-	// this is the DOM Event callback
+    // this is the DOM Event callback
     handleEvent: function(evt) {
         evt.hand = this.hand;
         Event.init(evt);
@@ -4509,7 +4501,7 @@ var HandMorph = function() {
         case "mousemove":
         case "mousedown":
         case "mouseup":
-	    this.handleMouseEvent(evt);
+            this.handleMouseEvent(evt);
             // evt.preventDefault();
             break;
         case "keydown":
@@ -4522,7 +4514,6 @@ var HandMorph = function() {
         }
         evt.stopPropagation();
     }.logErrors('Event Handler'),
-
 
     handleMouseEvent: function(evt) { 
         evt.hand = this; // extra copy needed for entry from HandRemoteControl
@@ -4642,7 +4633,7 @@ var HandMorph = function() {
             var m = this.submorphs.first();
             receiver.addMorph(m); // this removes it from hand
             if (logDnD) console.log("%s dropping %s on %s", this, m, receiver);
-	    
+    
             if (this.applyDropShadowFilter) {
                 m.rawNode.setAttributeNS(null, "filter", "none");
             }
@@ -4748,7 +4739,6 @@ var HandMorph = function() {
     
 })}();
 
-
 /**
  * @class LinkMorph
  * LinkMorph implements a two-way hyperlink between two Morphic worlds
@@ -4827,7 +4817,7 @@ LinkMorph = Class.create(Morph, {
         });
         
         var canvas = oldWorld.canvas();
-	
+
         oldWorld.remove();
         
         console.log('left world %s through %s', oldWorld, this);
