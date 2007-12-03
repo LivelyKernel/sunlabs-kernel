@@ -168,12 +168,18 @@ Object.properties = function(object, predicate) {
 
 Function.callStack = function() {
     var result = [];
-
     for (var caller = arguments.callee.caller; caller != null; caller = caller.caller) {
         result.push(Object.inspect(caller));
     }
-    
     return result;
+};
+
+Function.showStack = function() {
+    var stack = [];
+    for (var caller = arguments.callee.caller; caller != null; caller = caller.caller) {
+        stack.push(caller);
+    }
+    stack.map(function(x,i) {console.log(i + ") " + Object.inspect(x))});
 };
 
 Object.extend(Function.prototype, {
@@ -1928,6 +1934,7 @@ Morph = Class.create(Visual, {
 
     clipPath: null, // KP: should every morph should have one of those?
     keyboardHandler: null, //a KeyboardHandler for keyboard repsonse, etc
+    layoutHandler: null, //a LayoutHandler for special response to setExtent, etc
     openForDragAndDrop: true, // Submorphs can be extracted from or dropped into me
     mouseHandler: MouseHandlerForDragging.prototype, //a MouseHandler for mouse sensitivity, etc
     stepHandler: null, // a stepHandler for time-varying morphs and animation 
@@ -2339,6 +2346,12 @@ Morph.addMethods({
         }
         this.adjustForNewBounds();
     }.wrap(Morph.onLayoutChange('shape')),
+
+    setExtent: function(newExtent) {
+        this.setBounds(this.getPosition().extent(newExtent));
+    },
+
+    getExtent: function(newRect) { return this.shape.bounds().extent() },
 
     // override to respond to reshape events    
     adjustForNewBounds: function() {
@@ -2993,8 +3006,8 @@ Morph.addMethods({
             [((this.openForDragAndDrop) ? "close DnD" : "open DnD"), this.toggleDnD.curry(evt.mousePoint)],
             ["show Lively markup", this.addSvgInspector.curry(this)],
             ["publish shrink-wrapped as...", function() { 
-                WorldMorph.current().makeShrinkWrappedWorldWith(this, WorldMorph.current().prompt('publish as')) }
-            ]
+                WorldMorph.current().makeShrinkWrappedWorldWith(this, WorldMorph.current().prompt('publish as')) }],
+            ["show stack", Function.showStack.curry()]
         ];
         var menu = new MenuMorph(items, this); 
         if (!this.okToDuplicate()) menu.removeItemNamed("duplicate");
@@ -3382,7 +3395,11 @@ Morph.addMethods({
         // consider relating to this.changed()
     },
 
-    position: function() {
+    position: function() { // Deprecated -- use getPosition
+        return this.shape.bounds().topLeft().addPt(this.origin); 
+    },
+    
+    getPosition: function() {
         return this.shape.bounds().topLeft().addPt(this.origin); 
     },
     
