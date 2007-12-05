@@ -927,7 +927,7 @@ var TextMorph = Class.create(Morph, {
         menu.addItem(['----- text functions -----']);
 
         menu.addItem(["accept changes", function() { this.saveContents(this.textString) }]);
-        menu.addItem(["evaluate as JavaScript code", function() { this.evalInContext(this.textString) }]);
+        menu.addItem(["evaluate as JavaScript code", function() { this.boundEval(this.textString) }]);
 
         menu.addItem(["evaluate as Lively markup", function() { 
             var importer = new Importer();
@@ -1398,7 +1398,7 @@ var TextMorph = Class.create(Morph, {
         }
     
         case "d": {
-            this.evalInContext(this.selectionString()); 
+            this.boundEval(this.selectionString()); 
             return true; 
         }
         
@@ -1406,7 +1406,7 @@ var TextMorph = Class.create(Morph, {
             var strToEval = this.selectionString();
             this.setNullSelectionAt(this.selectionRange[1] + 1);
             console.log('selection = ' + strToEval);
-            this.replaceSelectionWith(" " + this.evalInContext(strToEval).toString());
+            this.replaceSelectionWith(" " + this.boundEval(strToEval).toString());
             return true; 
         }
         
@@ -1477,11 +1477,10 @@ TextMorph.addMethods({
         }
     },
     
-    evalInContext: function(str) {    
-        // Evaluate the string argument in a context which may be supplied by the modelPlug
+    boundEval: function(str) {    
+        // Evaluate the string argument in a context in which "this" may be supplied by the modelPlug
 	var ctx = this.getModelValue('doitContext', this);
-	console.log("eval context is " + ctx);
-        return eval(str, this.getModelValue('doitContext', this));
+	return (function() { return eval(str) }.bind(ctx))();
     },
     
     addOrRemoveBrackets: function(bracketIndex) {
