@@ -145,7 +145,7 @@ SimpleInspector = Class.create(Model, {
             if (thisModel.selectedItem() == null) return menu;
             menu.addLine();
             menu.addItem(['inspect selection', function() {
-            new SimpleInspector(thisModel.selectedItem()).openIn(WorldMorph.current())}])
+		new SimpleInspector(thisModel.selectedItem()).openIn(WorldMorph.current())}])
             return menu; 
         }
         return new WindowMorph(panel, 'Inspector');

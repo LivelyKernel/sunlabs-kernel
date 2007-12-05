@@ -1479,6 +1479,8 @@ TextMorph.addMethods({
     
     evalInContext: function(str) {    
         // Evaluate the string argument in a context which may be supplied by the modelPlug
+	var ctx = this.getModelValue('doitContext', this);
+	console.log("eval context is " + ctx);
         return eval(str, this.getModelValue('doitContext', this));
     },
     

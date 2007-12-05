@@ -235,21 +235,6 @@ Function.methodString = function(className, methodName) {
     return className + ".prototype." + methodName + " = " + code; 
 };
 
-Function.prototype.mixInto = function(targetFun) {
-    if (this.superclass) {
-        this.superclass.constructor.mixInto(targetFun);
-    }
-    Object.extend(targetFun.prototype, this.prototype);
-  
-/*
-    for (var name in this.prototype) {
-        if (this.prototype[name] instanceof Function) {
-            targetFun.prototype[name] = this.prototype[name];
-        }
-    }
-*/
-
-};
 
 if (Prototype.Browser.WebKit) { 
     Error.prototype.inspect = function() {
@@ -1370,6 +1355,7 @@ var Shape = Class.create(Visual, {
     toPath: function() {
         throw new Error('unimplemented');
     }
+    
    
 });
 
@@ -1409,13 +1395,19 @@ Object.extend(Shape, {
 
 var RectShape = Class.create(Shape, {
 
-    initialize: function($super, r, color, borderWidth, borderColor) {
-        //this.setAttributeNS(Namespace.XLINK, "href", "#ProtoRect");
-        this.rawNode = NodeFactory.create("rect");
-        this.setBounds(r);
+    initialize: function($super, rectOrRawNode, color, borderWidth, borderColor) {
+	if (rectOrRawNode instanceof Node) {
+            this.rawNode = rectOrRawNode;
+	} else {
+	    this.rawNode = NodeFactory.create("rect");
+	    try {
+		this.setBounds(rectOrRawNode);
+	    } catch (er) { console.log("err : " + err + " in " + arguments); }
+	}
         $super(color, borderWidth, borderColor);
         return this;
     },
+
 
     copy: function() {
         var rect = new RectShape(this.bounds(), this.getFill(), this.getStrokeWidth(), this.getStroke());
@@ -1432,6 +1424,7 @@ var RectShape = Class.create(Shape, {
         }
         return this;
     },
+
     
     toPath: function() {
         // FIXME account for rounded edges
@@ -1492,9 +1485,13 @@ var RectShape = Class.create(Shape, {
 
 var EllipseShape = Class.create(Shape, {
 
-    initialize: function($super, r, color, borderWidth, borderColor) {
-        this.rawNode = NodeFactory.create("ellipse");
-        this.setBounds(r);
+    initialize: function($super, rectOrRawNode, color, borderWidth, borderColor) {
+	if (rectOrRawNode instanceof Node) {
+            this.rawNode = rectOrRawNode;
+	} else {
+	    this.rawNode = NodeFactory.create("ellipse");
+            this.setBounds(rectOrRawNode);
+	}
         $super(color, borderWidth, borderColor);
         return this;
     },
@@ -1548,9 +1545,13 @@ var EllipseShape = Class.create(Shape, {
 
 var PolygonShape = Class.create(Shape, {
 
-    initialize: function($super, vertlist, color, borderWidth, borderColor) {
-        this.rawNode = NodeFactory.create("polygon");
-        this.setVertices(vertlist);
+    initialize: function($super, vertlistOrRawNode, color, borderWidth, borderColor) {
+ 	if (vertlistOrRawNode instanceof Node) {
+            this.rawNode = vertlistOrRawNode;
+	} else {
+	    this.rawNode = NodeFactory.create("polygon");
+	    this.setVertices(vertlistOrRawNode);
+	}
         $super(color, borderWidth, borderColor);
         return this;
     },
@@ -1575,7 +1576,7 @@ var PolygonShape = Class.create(Shape, {
 
     toString: function() {
         var pts = this.vertices();
-        return this.rawNode.tagName + pts;
+        return this.rawNode.tagName + "[" + pts + "]";
     },
 
     bounds: function() {
@@ -1703,9 +1704,13 @@ var PolygonShape = Class.create(Shape, {
 
 var PolylineShape = Class.create(Shape, {
     
-    initialize: function($super, vertlist, borderWidth, borderColor) {
-        this.rawNode = NodeFactory.create("polyline");
-        this.setVertices(vertlist);
+    initialize: function($super, vertlistOrRawNode, borderWidth, borderColor) {
+ 	if (vertlistOrRawNode instanceof Node) {
+            this.rawNode = vertlistOrRawNode;
+	} else {
+	    this.rawNode = NodeFactory.create("polyline");
+            this.setVertices(vertlistOrRawNode);
+	}
         $super(null, borderWidth, borderColor);
         return this;
     },
@@ -1913,6 +1918,123 @@ MouseHandlerForDragging = Class.create({
 
 });
 
+
+
+/**
+ * @class Exporter: Implementation class for morph serialization
+ */
+
+var Exporter = Class.create({
+    rootMorph: null,
+    
+    initialize: function(rootMorph) {
+        this.rootMorph = rootMorph;
+    },
+    
+    serialize: function() {
+        // model is inserted as part of the root morph.
+        var modelNode = (this.rootMorph.getModel() || { toMarkup: function() { return null; }}).toMarkup();
+        if (modelNode) {
+            this.rootMorph.rawNode.addChildElement(modelNode);
+        }
+        var result = Exporter.nodeToString(this.rootMorph.rawNode);
+        if (modelNode) {
+            this.rootMorph.rawNode.removeChild(modelNode);
+        }
+        return result;
+    }
+
+});
+
+Object.extend(Exporter, {
+    nodeToString: function(node) {
+        return node ? new XMLSerializer().serializeToString(node) : null;
+    }
+});
+
+/**
+ * @class Importer: Implementation class for morph de-serialization
+ */
+
+var Importer = Class.create({
+
+    morphMap: null,
+    
+    initialize: function() {
+        this.morphMap = new Hash();
+    },
+    
+    addMapping: function(oldId, newMorph) {
+        this.morphMap["" + oldId] = newMorph; // force strings just in case
+    },
+    
+    lookupMorph: function(oldId) {
+        var result = this.morphMap["" + oldId];
+        if (!result) console.log('no mapping found for oldId %s', oldId);
+        return result;
+    },
+
+    importFromNode: function(rawNode) {
+        ///console.log('making morph from %s %s', node, node.getAttributeNS(Namespace.LIVELY, "type"));
+        // call reflectively b/c 'this' is not a Visual yet. 
+        var morphTypeName = rawNode.getAttributeNS(Namespace.LIVELY, "type");
+	
+        if (!morphTypeName || !Global[morphTypeName]) {
+            throw new Error('node %1 (parent %2) cannot be a morph of %3'.format(rawNode.tagName, 
+										 rawNode.parentNode, 
+										 morphTypeName));
+        }
+	return new Global[morphTypeName](this, rawNode);
+    },
+    
+    importFromString: function(string) {
+        return this.importFromNode(this.parse(string));
+    },
+
+    parse: function(string) {
+        var parser = new DOMParser();
+        var xml = parser.parseFromString('<?xml version="1.0" standalone="no"?> ' + string, "text/xml");
+        return document.adoptNode(xml.documentElement);
+    },
+
+    importModelFrom: function(ptree) {
+        //console.log('restoring model from markup %s', string);
+        //var ptree = this.parse(string);
+        var model = new SimpleModel(null);
+        
+        for (var node = ptree.firstChild; node != null; node = node.nextSibling) {
+            switch (node.tagName) {
+            case "dependent":
+                var oldId = node.getAttribute('ref');
+                var dependent = this.lookupMorph(oldId);
+                if (!dependent)  {
+                    console.warn('dep %s not found', oldId);
+                    continue; 
+                }
+                dependent.modelPlug.model = model;
+                model.addDependent(dependent);
+                break;
+            case "variable":
+                var name = node.getAttribute('name');
+                var value = node.textContent;
+                if (value) {
+                    value = value.evalJSON();
+                }
+                model.addVariable(name, value);
+                //var value = node.getAttribute('value');
+                //variables.push(name);
+                break;
+            default:
+                console.log('got unexpected node %s %s', node.tagName, node); 
+            }
+        }
+
+        console.log('restored model %s', model);
+        return model;
+    }
+    
+});
+
 /**
  * @class Morph
  */ 
@@ -1942,41 +2064,45 @@ Morph = Class.create(Visual, {
 
     nextNavigableSibling: null, // keyboard navigation
     
-    initialize: function(initialBounds /*:Rectangle*/, shapeType/*:String*/) {
+    initialize: function(/*...*/) {
         //console.log('initializing morph %s %s', initialBounds, shapeType);
-        this.rawNode = NodeFactory.create("g");
         this.submorphs = [];
         this.rawSubnodes = null;
         this.owner = null;
-        this.setType(this.type);
-        this.pvtSetTransform(Transform.createSimilitude(this.defaultOrigin(initialBounds, shapeType), 0, 1.0));
-        this.pickId();
-        this.initializePersistentState(initialBounds, shapeType);
-        this.initializeTransientState(initialBounds);
-        this.disableBrowserHandlers();
-    },
 
-    reinitialize: function(importer/*:Importer*/) { // called when restoring from external representation (markup)
-        this.pvtSetTransform(this.retrieveTransform());
-        var prevId = this.pickId();
-        if (importer) { 
+	if (arguments[0] instanceof Importer) { // called when restoring from external representation (markup)
+	    var importer = arguments[0];
+	    this.rawNode = arguments[1];
+            this.setType(this.type); // this.type is actually a prototype var
+	    console.log("restoring " + this.type + " raw node " + this.rawNode);
+
+            this.pvtSetTransform(this.retrieveTransform());
+            var prevId = this.pickId();
             importer.addMapping(prevId, this); 
-        }
-        this.restorePersistentState(importer);    
-        this.initializeTransientState(null);
+            this.restorePersistentState(importer);    
+            this.initializeTransientState(null);
+            if (this.activeScripts) {
+		console.log('started stepping %s', this);
+		this.startSteppingScripts();
+            }
+ 	} else {
+	    var initialBounds = arguments[0];//Rectangle
+	    var shapeType = arguments[1]; //String
+            this.rawNode = NodeFactory.create("g");
+            this.setType(this.type); // this.type is actually a prototype var
 
+            this.pvtSetTransform(Transform.createSimilitude(this.defaultOrigin(initialBounds, shapeType), 0, 1.0));
+            this.pickId();
+            this.initializePersistentState(initialBounds, shapeType);
+            this.initializeTransientState(initialBounds);
+	}
         this.disableBrowserHandlers();
-
-        if (this.activeScripts) {
-            console.log('started stepping %s', this);
-            this.startSteppingScripts();
-        }
     },
-    
+
     restorePersistentState: function(importer) {
         //  wade through the children
         var children = [];
-        for (var desc = this.firstChild; desc != null; desc = desc.nextSibling) {
+        for (var desc = this.rawNode.firstChild; desc != null; desc = desc.nextSibling) {
             children.push(desc);
         }
         var modelNode = null;
@@ -2071,20 +2197,30 @@ Morph = Class.create(Visual, {
             return;
         }
         
-        if (/ellipse|rect|polyline|polygon/.test(element.tagName)) {
-            //HostClass.becomeInstance(element, Shape.classForTag(element.tagName));
-            //console.log('made element %s, ' + element, element);
-            this.shape = element;
-            return true;
-        }
-
+	switch (element.tagName) {
+	case "ellipse":
+	    this.shape = new EllipseShape(element);
+	    return true;
+	case "rect":
+	    this.shape = new RectShape(element);
+	    return true;
+	case "polyline":
+	    this.shape = new PolylineShape(element);
+	    return true;
+	case "polygon":
+	    this.shape = new PolygonShape(element);
+	    return true;
+	}
+	
         var type = element.getAttributeNS(Namespace.LIVELY, 'type');
         
         switch (type) {
         case 'Submorphs':
             this.rawSubnodes = NodeList.become(element, type);
-            //console.log('recursing into children of %s', this);
-            NodeList.each(this.rawSubnodes, function(m) { importer.importFromNode(m); });
+
+            NodeList.each(this.rawSubnodes, 
+			  function(m) { this.submorphs.push(importer.importFromNode(m)); }.bind(this));
+	    console.log('recursed into children of %s ang got', this,  this.submorphs);
             return true;
         case 'FocusHalo':
             return true;
@@ -2096,7 +2232,7 @@ Morph = Class.create(Visual, {
     relativizeBounds: function(rect) {
         return rect.translatedBy(this.origin.negated());
     },
-
+    
     initializePersistentState: function(initialBounds /*:Rectangle*/, shapeType/*:String*/) {
         // a rect shape by default, will change later
         switch (shapeType) {
@@ -3423,129 +3559,6 @@ Morph.addMethods({
 
     clipToShape: function() {
         this.clipToPath(this.shape.toPath());
-    }
-    
-});
-
-/**
- * @class Exporter: Implementation class for morph serialization
- */
-
-var Exporter = Class.create({
-    rootMorph: null,
-    
-    initialize: function(rootMorph) {
-        this.rootMorph = rootMorph;
-    },
-    
-    serialize: function() {
-        // model is inserted as part of the root morph.
-        var modelNode = (this.rootMorph.getModel() || { toMarkup: function() { return null; }}).toMarkup();
-        if (modelNode) {
-            this.rootMorph.addChildElement(modelNode);
-        }
-        var result = Exporter.nodeToString(this.rootMorph);
-        if (modelNode) {
-            this.rootMorph.removeChild(modelNode);
-        }
-        return result;
-    }
-
-});
-
-Object.extend(Exporter, {
-
-    nodeToString: function(node) {
-        return node ? new XMLSerializer().serializeToString(node) : null;
-    }
-
-});
-
-/**
- * @class Importer: Implementation class for morph de-serialization
- */
-
-var Importer = Class.create({
-
-    morphMap: null,
-    
-    initialize: function() {
-        this.morphMap = new Hash();
-    },
-    
-    addMapping: function(oldId, newMorph) {
-        this.morphMap["" + oldId] = newMorph; // force strings just in case
-    },
-    
-    lookupMorph: function(oldId) {
-        var result = this.morphMap["" + oldId];
-        if (!result) console.log('no mapping found for oldId %s', oldId);
-        return result;
-    },
-
-    importFromNode: function(node) {
-        ///console.log('making morph from %s %s', node, node.getAttributeNS(Namespace.LIVELY, "type"));
-        // call reflectively b/c 'this' is not a Visual yet. 
-        var morphTypeName = Visual.prototype.getType.call(node); 
-        //console.log('have morph %s', morphTypeName);
-
-        if (!morphTypeName || !window[morphTypeName]) {
-            throw new Error('node %1 (parent %2) cannot be a morph of %3'.format(node.tagName, node.parentNode, morphTypeName));
-        }
-
-        // HostClass.becomeInstance(node, window[morphTypeName]);
-        if (!node.reinitialize) {
-            console.log('why no reinit in %s', Exporter.nodeToString(node)); 
-        }
-
-        node.reinitialize(this);
-        return node; 
-    },
-    
-    importFromString: function(string) {
-        return this.importFromNode(this.parse(string), this);
-    },
-
-    parse: function(string) {
-        var parser = new DOMParser();
-        var xml = parser.parseFromString('<?xml version="1.0" standalone="no"?> ' + string, "text/xml");
-        return document.adoptNode(xml.documentElement);
-    },
-
-    importModelFrom: function(ptree) {
-        //console.log('restoring model from markup %s', string);
-        //var ptree = this.parse(string);
-        var model = new SimpleModel(null);
-        
-        for (var node = ptree.firstChild; node != null; node = node.nextSibling) {
-            switch (node.tagName) {
-            case "dependent":
-                var oldId = node.getAttribute('ref');
-                var dependent = this.lookupMorph(oldId);
-                if (!dependent)  {
-                    console.warn('dep %s not found', oldId);
-                    continue; 
-                }
-                dependent.modelPlug.model = model;
-                model.addDependent(dependent);
-                break;
-            case "variable":
-                var name = node.getAttribute('name');
-                var value = node.textContent;
-                if (value) {
-                    value = value.evalJSON();
-                }
-                model.addVariable(name, value);
-                //var value = node.getAttribute('value');
-                //variables.push(name);
-                break;
-            default:
-                console.log('got unexpected node %s %s', node.tagName, node); 
-            }
-        }
-
-        console.log('restored model %s', model);
-        return model;
     }
     
 });
