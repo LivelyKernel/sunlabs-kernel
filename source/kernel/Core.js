@@ -1294,10 +1294,8 @@ Visual = Class.create({
     },
 
     disableBrowserHandlers: function() {
-        var disabler = { handleEvent: function(evt) { evt.preventDefault(); return false ;}};
-
-        this.rawNode.addEventListener("dragstart", disabler, true);
-        this.rawNode.addEventListener("selectstart", disabler, true);
+        this.rawNode.addEventListener("dragstart", Visual.BrowserHandlerDisabler, true);
+        this.rawNode.addEventListener("selectstart", Visual.BrowserHandlerDisabler, true);
     },
 
     inspect: function() {
@@ -1305,6 +1303,16 @@ Visual = Class.create({
     }
     
 });
+
+Visual.BrowserHandlerDisabler = { 
+    handleEvent: function(evt) { 
+	evt.preventDefault(); 
+	return false;
+    }
+};
+
+
+
 
 // ===========================================================================
 // Shape functionality
@@ -1400,9 +1408,7 @@ var RectShape = Class.create(Shape, {
             this.rawNode = rectOrRawNode;
 	} else {
 	    this.rawNode = NodeFactory.create("rect");
-	    try {
-		this.setBounds(rectOrRawNode);
-	    } catch (er) { console.log("err : " + err + " in " + arguments); }
+	    this.setBounds(rectOrRawNode);
 	}
         $super(color, borderWidth, borderColor);
         return this;
@@ -2069,7 +2075,7 @@ Morph = Class.create(Visual, {
         this.submorphs = [];
         this.rawSubnodes = null;
         this.owner = null;
-
+	
 	if (arguments[0] instanceof Importer) { // called when restoring from external representation (markup)
 	    var importer = arguments[0];
 	    this.rawNode = arguments[1];
@@ -2078,6 +2084,7 @@ Morph = Class.create(Visual, {
 
             this.pvtSetTransform(this.retrieveTransform());
             var prevId = this.pickId();
+	    this.prevId = prevId; // for debugging FIXME remove later!
             importer.addMapping(prevId, this); 
             this.restorePersistentState(importer);    
             this.initializeTransientState(null);
@@ -2219,8 +2226,12 @@ Morph = Class.create(Visual, {
             this.rawSubnodes = NodeList.become(element, type);
 
             NodeList.each(this.rawSubnodes, 
-			  function(m) { this.submorphs.push(importer.importFromNode(m)); }.bind(this));
-	    console.log('recursed into children of %s ang got', this,  this.submorphs);
+			  function(node) { 
+			      var morph = importer.importFromNode(node);
+			      this.submorphs.push(morph); 
+			      morph.owner = this;
+			  }.bind(this));
+	    console.log('recursed into children of %s and got', this,  this.submorphs);
             return true;
         case 'FocusHalo':
             return true;
@@ -2246,11 +2257,12 @@ Morph = Class.create(Visual, {
                 this.defaultFill, this.defaultBorderWidth, this.defaultBorderColor);
             break;
         }
-    
-        this.addChildElement(this.shape.rawNode);
 
         this.rawSubnodes = NodeList.withType('Submorphs');
         this.rawNode.appendChild(this.rawSubnodes);
+	
+        this.addChildElement(this.shape.rawNode);
+
     
         return this;
     },
@@ -2520,6 +2532,7 @@ Morph.addMethods({
     },
     
     addChildElement: function(node) {
+	if (this.rawSubnodes == null) console.log("%s not fully inited on addChildElement", this);
         return this.rawNode.insertBefore(node, this.rawSubnodes);
     },
     
@@ -2917,7 +2930,7 @@ Morph.addMethods({
 Morph.addMethods({
     
     // KP: equivalent of the DOM capture phase
-    mouseEvent: function(evt, hasFocus) {
+    captureMouseEvent: function(evt, hasFocus) {
     // Dispatch this event to the frontmost receptive morph that contains it
     // Note boolean return for event consumption has not been QA'd
     
@@ -2940,16 +2953,17 @@ Morph.addMethods({
 
         if (hasFocus) return this.mouseHandler.handleMouseEvent(evt, this);
 
-        if (!this.fullContainsWorldPoint(evt.priorPoint)) return false;
+        if (!this.fullContainsWorldPoint(evt.priorPoint)) 
+	    return false;
 
         if (this.hasSubmorphs()) {
             // If any submorph handles it (ie returns true), then return
             for (var i = this.submorphs.length - 1; i >= 0; i--) {
-                if (this.submorphs[i].mouseEvent(evt, false)) return true;
+                if (this.submorphs[i].captureMouseEvent(evt, false)) return true;
             }
         }
 
-        if (this.mouseHandler == null) 
+        if (this.mouseHandler == null)
             return false;
 
         if (!this.shape.containsPoint(this.localize(evt.priorPoint))) 
@@ -3244,14 +3258,13 @@ Morph.addMethods({
         // If checkForDnD is true, return the morph to grab from a mouse down event (or null)
         // If droppingMorph is not null, then check that this is a willing recipient (else null)
 
+
         if (!this.fullContainsWorldPoint(evt.mousePoint)) return null;  // not contained anywhere
 
         // First check all the submorphs, front first
-        if (this.hasSubmorphs()) {
-            for (var i = this.submorphs.length - 1; i >= 0; i--) {
-                var hit = this.submorphs[i].morphToGrabOrReceive(evt, droppingMorph, checkForDnD); 
-                if (hit != null) return hit;  // hit a submorph
-            }
+        for (var i = this.submorphs.length - 1; i >= 0; i--) {
+            var hit = this.submorphs[i].morphToGrabOrReceive(evt, droppingMorph, checkForDnD); 
+            if (hit != null) return hit;  // hit a submorph
         }
 
         // Check if it's really in this morph (not just fullBounds)
@@ -3854,7 +3867,7 @@ var PasteUpMorph = Class.create(Morph, {
         return $super(bounds, shapeType);
     },
     
-    mouseEvent: function($super, evt, hasFocus) {
+    captureMouseEvent: function($super, evt, hasFocus) {
         if (evt.type == "mousedown" && this.onMouseDown(evt)) return; 
         $super(evt, hasFocus); 
     },
@@ -4561,7 +4574,7 @@ var HandMorph = function() {
             }
                 
             if (this.mouseFocus) { // if mouseFocus is set, events go to that morph
-                this.mouseFocus.mouseEvent(evt, true);
+                this.mouseFocus.captureMouseEvent(evt, true);
             } else {
                 if (this.owner) {
                     var receiver = this.owner.morphToReceiveEvent(evt);
@@ -4575,8 +4588,8 @@ var HandMorph = function() {
                         if (!receiver || !receiver.canvas()) return;  // prevent errors after world-switch
 
                         // Note if onMouseOver sets focus, it will get onMouseMove
-                        if (this.mouseFocus) this.mouseFocus.mouseEvent(evt, true);
-                        else if (!evt.hand.hasSubmorphs()) this.owner.mouseEvent(evt, false); 
+                        if (this.mouseFocus) this.mouseFocus.captureMouseEvent(evt, true);
+                        else if (!evt.hand.hasSubmorphs()) this.owner.captureMouseEvent(evt, false); 
                     }
                 } 
             }
@@ -4599,10 +4612,10 @@ var HandMorph = function() {
     
         if (this.mouseFocus != null) {
             if (this.mouseButtonPressed) {
-                this.mouseFocus.mouseEvent(evt, true);
+                this.mouseFocus.captureMouseEvent(evt, true);
                 this.lastMouseDownPoint = evt.mousePoint; 
             }
-            else this.mouseFocus.mouseEvent(evt, true); 
+            else this.mouseFocus.captureMouseEvent(evt, true); 
         } else {
             if (this.hasSubmorphs() && (evt.type == "mousedown" || this.hasMovedSignificantly)) {
                 // If laden, then drop on mouse up or down
@@ -4615,7 +4628,7 @@ var HandMorph = function() {
                 // console.log('hand dispatching event ' + event.type + ' to owner '+ Object.inspect(this.owner()));
                 // This will tell the world to send the event to the right morph
                 // We do not dispatch mouseup the same way -- only if focus gets set on mousedown
-                if (evt.type == "mousedown") this.owner.mouseEvent(evt, false);
+                if (evt.type == "mousedown") this.owner.captureMouseEvent(evt, false);
             }
             if (evt.type == "mousedown") {
                 this.lastMouseDownPoint = evt.mousePoint;

@@ -715,7 +715,7 @@ var WindowMorph = Class.create(Morph, {
         return true;
     },
 
-    mouseEvent: function($super, evt, hasFocus) {
+    captureMouseEvent: function($super, evt, hasFocus) {
         if (!this.needsToComeForward(evt)) {
             return $super(evt, hasFocus)
         }
