@@ -189,7 +189,7 @@ var ImageMorph = Class.create(Morph, {
     restoreFromElement: function($super, element, importer) /*:Boolean*/ {
         if ($super(element, importer)) return true;
 
-        var type = Visual.prototype.getType.call(element);
+        var type = element.getAttributeNS(Namespace.LIVELY, "type");
 
         switch (type) {
         case 'Image':

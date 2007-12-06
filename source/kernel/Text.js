@@ -30,15 +30,25 @@ var TextMorph = (function() {
 var TextWord = Class.create(TextCompatibilityTrait, {
     
     initialize: function(textString, startIndex, topLeft, font) {
-	this.rawNode = NodeFactory.create("tspan");
-        this.textString = textString;
-        this.startIndex = startIndex;
-        this.stopIndex = textString.length - 1;
-        this.topLeft = topLeft;
-        this.rawNode.textContent = this.textString.substring(this.startIndex);
-        this.fontInfo = font;
-        this.setX(topLeft.x);
-        this.setY(topLeft.y + font.getSize());
+	if (arguments[0] instanceof Importer) {
+	    
+	    this.rawNode = arguments[1];
+            this.fontInfo = Font.forFamily(this.getFontFamily(), this.getFontSize());
+	    this.textString = this.rawNode.textContent;
+            // FIXME
+	    
+	} else {
+	    this.rawNode = NodeFactory.create("tspan");
+            this.textString = textString;
+            this.startIndex = startIndex;
+            this.stopIndex = textString.length - 1;
+            this.topLeft = topLeft;
+            this.rawNode.textContent = textString.substring(this.startIndex);
+            this.fontInfo = font;
+            this.setX(topLeft.x);
+            this.setY(topLeft.y + font.getSize());
+
+	}
         this.didLineBreak = false;
         return this;
     },
@@ -116,17 +126,6 @@ var TextWord = Class.create(TextCompatibilityTrait, {
     
 });
 
-
-Object.extend(TextWord, {
-
-    become: function(node) {
-        var elt = HostClass.becomeInstance(node, TextWord);
-        elt.fontInfo = Font.forFamily(elt.getFontFamily(), elt.getFontSize());
-        // FIXME
-        return elt;
-    }
-
-});
 
 /**
  * @class WordChunk
@@ -551,34 +550,45 @@ var TextLine = Class.create({
  * @class TextBox
  */ 
     // KP: should this be folded into TextMorph now?
-var TextBox = Class.create(Visual, {
-    
-    eventHandler: { handleEvent: function(evt) { console.log('got event %s on %s', evt, evt.target); }},
+var TextBox = Class.create(Visual, TextCompatibilityTrait, {
 
+    tabWidth: 4,
+    tabsAsSpaces: true,
+    
     initialize: function(textString, lineHeight, textColor, font) {
-	this.rawNode = NodeFactory.create("text");
-        this.textString = textString;//: String
-        this.lineHeight = lineHeight;//: float
-        this.rawNode.setAttributeNS(Namespace.LIVELY, "line-height", lineHeight); // serialization helper, FIXME?
-        this.rawNode.setAttributeNS(null, "kerning", 0);
-        this.setTextColor(textColor);
+	if (arguments[0] instanceof Importer) {
+	    this.rawNode = arguments[1];
+	    console.log("recovering text box from %s %s", this.rawNode, this.rawNode.textContent);
+	    this.textString = this.recoverTextContent(arguments[0]);
+            this.lineHeight = parseFloat(this.rawNode.getAttributeNS(Namespace.LIVELY, "line-height"));
+	    this.fontInfo = Font.forFamily(this.getFontFamily(), this.getFontSize());
+	    
+	} else {
+	    this.rawNode = NodeFactory.create("text");
+            this.rawNode.setAttributeNS(Namespace.LIVELY, "line-height", lineHeight); // serialization helper, FIXME?
+            this.rawNode.setAttributeNS(null, "kerning", 0);
+	    
+	    this.textString = textString;//: String
+            this.lineHeight = lineHeight;//: float
+            this.setTextColor(textColor);
+            this.fontInfo = font;
+	    font.applyTo(this);
+	}
+	
+
         this.setType("TextBox");
-        this.fontInfo = font;
-        font.applyTo(this);
 
         this.lines = null;//: TextLine[]
         this.lineNumberHint = 0;
-        this.tabWidth = 4;
-        this.tabsAsSpaces = true;
     },
 
-    recoverTextContent: function() {
+    recoverTextContent: function(importer) {
 
         var content = "";
         
         for (var child = this.rawNode.firstChild; child != null; child = child.nextSibling) {
             if (child.tagName == 'tspan')  {
-                var word =  new TextWord(child);
+                var word = new TextWord(importer, child);
                 var lead = parseInt(word.rawNode.getAttributeNS(Namespace.LIVELY, "lead"));
                 if (lead) {
                     var spaces = "";
@@ -709,21 +719,6 @@ var TextBox = Class.create(Visual, {
 
 });
 
-
-Object.extend(TextBox, {
-
-    become: function(node) {
-        var elt = HostClass.becomeInstance(node, TextBox);
-        var lineHeight = parseFloat(elt.getAttributeNS(Namespace.LIVELY, "line-height"));
-        var font = Font.forFamily(elt.getFontFamily(), elt.getFontSize());
-        elt.initialize(elt.recoverTextContent(), lineHeight, elt.getTextColor(), font);
-        return elt;
-    }
-
-});
-
-
-
 /**
  * @class TextMorph
  */ 
@@ -773,15 +768,15 @@ var TextMorph = Class.create(Morph, {
         this.setBorderWidth(this.defaultBorderWidth);
         this.setBorderColor(this.defaultBorderColor);
     },
-
-
+    
+    /*
   // FIXME: this bizarre "fix" helps Opera layout 
     relativizeBounds: function($super, rect) {
 	if (!Prototype.Browser.Opera) return $super(rect);
         return rect.clone();
 	//return rect.translatedBy(this.origin.negated());
     },
-    
+    */
 
     restorePersistentState: function($super, importer) {
         $super(importer);
@@ -795,12 +790,13 @@ var TextMorph = Class.create(Morph, {
     restoreFromElement: function($super, element, importer) /*:Boolean*/ {
         if ($super(element, importer)) return true;
 
-        var type = Visual.prototype.getType.call(element);
-    
+	var type = element.getAttributeNS(Namespace.LIVELY, "type");
+	
         switch (type) {
         case 'TextBox':
-            this.textBox = TextBox.become(element); // FIXME
-            // console.log('found textbox %s %s', this.textBox, this.textBox && this.textBox.textString);
+	    console.log("processing text box ", element);
+            this.textBox = new TextBox(importer, element); // FIXME
+            console.log('found textbox %s %s', this.textBox, this.textBox && this.textBox.textString);
             this.textString = this.textBox.textString;
             this.font = this.textBox.fontInfo;
             this.textColor = this.textBox.getTextColor();
@@ -809,23 +805,25 @@ var TextMorph = Class.create(Morph, {
             // that's ok, it's actually transient 
             // remove all chidren b/c they're really transient
             this.selectionElement = NodeList.become(element, type);
-            //console.log('processing selection %s', element);
+            console.log('processing selection %s', element);
             this.undrawSelection();
             return true;
         default:
-            console.log('unknown type %s', type);
+            console.log('unknown type %s, element %s', type, element);
             return false;
         }
     },
 
     initialize: function($super, rect, textString) {
-        this.textString = textString || "";
-        $super(rect, "rect");
-
-        // KP: note layoutChanged will be called on addition to the tree
-        // DI: ... and yet this seems necessary!
-        this.layoutChanged();
-
+	if (arguments[1] instanceof Importer) { // called when restoring from external representation (markup)
+	    $super(arguments[1], arguments[2]); // arguments[2] is rawNode
+	} else {
+	    this.textString = textString || "";
+            $super(rect, "rect");
+            // KP: note layoutChanged will be called on addition to the tree
+            // DI: ... and yet this seems necessary!
+            this.layoutChanged();
+	}
         return this;
     },
 

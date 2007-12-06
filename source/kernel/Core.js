@@ -1191,7 +1191,7 @@ Visual = Class.create({
 
     getType: function()  {
         try {
-            return this.rawNode ? this.rawNode.getAttributeNS(Namespace.LIVELY, "type") : "Unknown";
+            return this.rawNode ? this.rawNode.getAttributeNS(Namespace.LIVELY, "type") : "UnknownType";
         } catch (er) {
             console.log('in getType this is %s caller is %s', this, arguments.callee.caller);
             throw er;
@@ -1339,6 +1339,7 @@ var Shape = Class.create(Visual, {
     getType: function() { 
         return this.rawNode.tagName; 
     },
+    
     
     initialize: function(fill, strokeWidth, stroke) {
         this.setType(this.rawNode.tagName); // debuggability
@@ -2076,34 +2077,36 @@ Morph = Class.create(Visual, {
         this.rawSubnodes = null;
         this.owner = null;
 	
+	var initialBounds;
+	
 	if (arguments[0] instanceof Importer) { // called when restoring from external representation (markup)
+	    initialBounds = null;
 	    var importer = arguments[0];
 	    this.rawNode = arguments[1];
             this.setType(this.type); // this.type is actually a prototype var
 	    console.log("restoring " + this.type + " raw node " + this.rawNode);
-
             this.pvtSetTransform(this.retrieveTransform());
             var prevId = this.pickId();
 	    this.prevId = prevId; // for debugging FIXME remove later!
             importer.addMapping(prevId, this); 
             this.restorePersistentState(importer);    
-            this.initializeTransientState(null);
-            if (this.activeScripts) {
-		console.log('started stepping %s', this);
-		this.startSteppingScripts();
-            }
  	} else {
-	    var initialBounds = arguments[0];//Rectangle
+	    initialBounds = arguments[0];//Rectangle
 	    var shapeType = arguments[1]; //String
             this.rawNode = NodeFactory.create("g");
             this.setType(this.type); // this.type is actually a prototype var
-
             this.pvtSetTransform(Transform.createSimilitude(this.defaultOrigin(initialBounds, shapeType), 0, 1.0));
             this.pickId();
             this.initializePersistentState(initialBounds, shapeType);
-            this.initializeTransientState(initialBounds);
 	}
-        this.disableBrowserHandlers();
+
+	this.initializeTransientState(initialBounds);
+        this.disableBrowserHandlers();        
+	if (this.activeScripts) {
+	    console.log('started stepping %s', this);
+	    this.startSteppingScripts();
+        }
+	
     },
 
     restorePersistentState: function(importer) {
@@ -2176,8 +2179,9 @@ Morph = Class.create(Visual, {
                 // let it be
             } 
             default: {
-                if (Visual.prototype.getType.call(node)) {
-                    if (/FocusHalo/.test(Visual.prototype.getType.call(node))) { //don't restore
+		var type = node.getAttributeNS(Namespace.LIVELY, "type");
+                if (type) {
+                    if (/FocusHalo/.test(type)) { //don't restore
                         this.rawNode.removeChild(node);
                     } else {
                         this.restoreFromElement(node, importer);
@@ -2249,20 +2253,19 @@ Morph = Class.create(Visual, {
         switch (shapeType) {
         case "ellipse":
             this.shape = new EllipseShape(this.relativizeBounds(initialBounds),
-                this.defaultFill, this.defaultBorderWidth, this.defaultBorderColor);
+					  this.defaultFill, this.defaultBorderWidth, this.defaultBorderColor);
             break;
         default:
             // polygons and polylines are set explicitly later
             this.shape = new RectShape(this.relativizeBounds(initialBounds),
-                this.defaultFill, this.defaultBorderWidth, this.defaultBorderColor);
+				       this.defaultFill, this.defaultBorderWidth, this.defaultBorderColor);
             break;
         }
 
-        this.rawSubnodes = NodeList.withType('Submorphs');
+        this.rawSubnodes = NodeList.withType("Submorphs");
         this.rawNode.appendChild(this.rawSubnodes);
 	
         this.addChildElement(this.shape.rawNode);
-
     
         return this;
     },
