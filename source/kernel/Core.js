@@ -1942,7 +1942,9 @@ var Exporter = Class.create({
         // model is inserted as part of the root morph.
         var modelNode = (this.rootMorph.getModel() || { toMarkup: function() { return null; }}).toMarkup();
         if (modelNode) {
-            this.rootMorph.rawNode.addChildElement(modelNode);
+	    try {
+		this.rootMorph.addChildElement(modelNode);
+	    } catch (er) { console.log("got problem, rawNode %s, modelNode %s", this.rootMorph.rawNode, modelNode); }
         }
         var result = Exporter.nodeToString(this.rootMorph.rawNode);
         if (modelNode) {
@@ -2235,7 +2237,7 @@ Morph = Class.create(Visual, {
 			      this.submorphs.push(morph); 
 			      morph.owner = this;
 			  }.bind(this));
-	    console.log('recursed into children of %s and got', this,  this.submorphs);
+	    // console.log('recursed into children of %s and got', this,  this.submorphs);
             return true;
         case 'FocusHalo':
             return true;
@@ -3826,7 +3828,7 @@ SimpleModel = Class.create(Model, {
     },
     
     toMarkup: function(doc) {
-        if (!doc) doc = document;
+        doc = doc || document;
         var modelEl = doc.createElementNS(Namespace.LIVELY, "model");
         var vars = this.variables();
         for (var i = 0; i < vars.length; i++) {
@@ -3839,6 +3841,7 @@ SimpleModel = Class.create(Model, {
             var depEl = modelEl.appendChild(doc.createElementNS(Namespace.LIVELY, "dependent"));
             depEl.setAttributeNS(Namespace.LIVELY, "ref", this.dependents[i].id);
         }
+	console.log("produced markup " + modelEl);
         return modelEl;
     }
 });

@@ -794,9 +794,8 @@ var TextMorph = Class.create(Morph, {
 	
         switch (type) {
         case 'TextBox':
-	    console.log("processing text box ", element);
             this.textBox = new TextBox(importer, element); // FIXME
-            console.log('found textbox %s %s', this.textBox, this.textBox && this.textBox.textString);
+            //console.log('found textbox %s %s', this.textBox, this.textBox && this.textBox.textString);
             this.textString = this.textBox.textString;
             this.font = this.textBox.fontInfo;
             this.textColor = this.textBox.getTextColor();
@@ -805,7 +804,7 @@ var TextMorph = Class.create(Morph, {
             // that's ok, it's actually transient 
             // remove all chidren b/c they're really transient
             this.selectionElement = NodeList.become(element, type);
-            console.log('processing selection %s', element);
+            //console.log('processing selection %s', element);
             this.undrawSelection();
             return true;
         default:
