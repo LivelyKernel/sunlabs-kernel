@@ -2537,7 +2537,7 @@ Morph.addMethods({
     },
     
     addChildElement: function(node) {
-	if (this.rawSubnodes == null) console.log("%s not fully inited on addChildElement", this);
+	if (this.rawSubnodes == null) console.log("%s not fully inited on addChildElement(%s)", this, node);
         return this.rawNode.insertBefore(node, this.rawSubnodes);
     },
     

@@ -558,7 +558,7 @@ var TextBox = Class.create(Visual, TextCompatibilityTrait, {
     initialize: function(textString, lineHeight, textColor, font) {
 	if (arguments[0] instanceof Importer) {
 	    this.rawNode = arguments[1];
-	    console.log("recovering text box from %s %s", this.rawNode, this.rawNode.textContent);
+	    //console.log("recovering text box from %s %s", this.rawNode, this.rawNode.textContent);
 	    this.textString = this.recoverTextContent(arguments[0]);
             this.lineHeight = parseFloat(this.rawNode.getAttributeNS(Namespace.LIVELY, "line-height"));
 	    this.fontInfo = Font.forFamily(this.getFontFamily(), this.getFontSize());
@@ -678,11 +678,13 @@ var TextBox = Class.create(Visual, TextCompatibilityTrait, {
     lineNumberForIndex: function(stringIndex) {
         // Could use a binary search, but instead we check same as last time,
         // then next line after, and finally a linear search.
-        if (this.lineNumberHint < this.lines.length && this.lines[this.lineNumberHint].containsThisIndex(stringIndex))
+        if (this.lineNumberHint < this.lines.length 
+	    && this.lines[this.lineNumberHint].containsThisIndex(stringIndex))
             return this.lineNumberHint;  // Same line as last time
 
         this.lineNumberHint++;  // Try next one down (dominant use pattern)
-        if (this.lineNumberHint < this.lines.length && this.lines[this.lineNumberHint].containsThisIndex(stringIndex))
+        if (this.lineNumberHint < this.lines.length 
+	    && this.lines[this.lineNumberHint].containsThisIndex(stringIndex))
             return this.lineNumberHint;  // Next line after last time
 
         for (var i = 0; i < this.lines.length; i++) {  // Do it the hard way
@@ -1641,7 +1643,11 @@ PrintMorph = Class.create(TextMorph, {
 
 
     initialize: function($super, initialBounds, textString) {
-        return $super(initialBounds, textString);
+	if (arguments[1] instanceof Importer) {
+	    return $super(arguments[1], arguments[2]);
+	} else {
+            return $super(initialBounds, textString);
+	}
     }, 
 
     updateView: function(aspect, controller) {

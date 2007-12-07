@@ -1568,13 +1568,12 @@ var MenuMorph = Class.create(CheapListMorph, {
 
 var SliderMorph = Class.create(Morph, {
 
-    baseColor: Color.primary.blue, // KP: stopgap fix for serialization??
+    type: "SliderMorph",
     
     initialize: function($super, initialBounds, scaleIfAny) {
 	if (arguments[1] instanceof Importer) { // called when restoring from external representation (markup)
 	    $super(arguments[1], arguments[2]); // arguments[2] is rawNode
 	} else {
-	    
             $super(initialBounds, "rect");
             var model = new SimpleModel(null, "Value", "Extent");
             // this default self connection may get overwritten by, eg, connectModel()...
@@ -1583,19 +1582,27 @@ var SliderMorph = Class.create(Morph, {
             var slider = new Morph(new Rectangle(0, 0, 8, 8), "rect");
             slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});
             this.setNamedMorph("slider", slider);
-            this.linkToStyles(['slider']);
+            // this.linkToStyles(['slider']);
             this.adjustForNewBounds(); 
 	}
         return this;
     },
-    
+
+    initializeTransientState: function($super, initialBounds) {
+        $super(initialBounds);
+        // FIXME make persistent ?
+        this.linkToStyles(['slider']);
+    },
+
     restorePersistentState: function($super, importer) {
         $super(importer);
         this.slider = this.getNamedMorph('slider');
+	console.log("SliderMorph restored slider %s", this.slider);
         if (!this.slider) {
             console.warn('no slider in %s, %s', this, this.textContent);
            return;
         }
+
         this.slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});
         this.scale = 1.0; // FIXME restore from markup
         //this.adjustForNewBounds();
@@ -1757,6 +1764,7 @@ var ScrollPane = Class.create(Morph, {
     defaultBorderWidth: 2,
     defaultFill: null,
     scrollBarWidth: 14,
+    type: "ScrollPane",
 
     initialize: function($super, morphToClip, initialBounds) {
 	if (arguments[1] instanceof Importer) { // called when restoring from external representation (markup)
@@ -1765,7 +1773,7 @@ var ScrollPane = Class.create(Morph, {
 	} 
 	
         $super(initialBounds, "rect");
-    
+	
         var bnds = this.shape.bounds();
         var clipR = bnds.withWidth(bnds.width - this.scrollBarWidth+1).insetBy(1);
         morphToClip.shape.setBounds(clipR); // FIXME what if the targetmorph should be bigger than the clipmorph?
@@ -1855,6 +1863,7 @@ var ColorPickerMorph = Class.create(Morph, {
     defaultFill: null,
     defaultBorderWidth: 1, 
     defaultBorderColor: Color.black,
+    type: "ColorPickerMorph",
 
     initialize: function($super, initialBounds, targetMorph, setFillName, popup) {
         $super(initialBounds, "rect");
