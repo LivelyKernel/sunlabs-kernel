@@ -443,6 +443,7 @@ console.log("Point");
 /**
  * @class Rectangle
  */
+
 Rectangle = Class.create({
 
     initialize: function(x, y, w, h) {
@@ -791,6 +792,10 @@ console.log("Color");
 // Gradient colors, stipple patterns and coordinate transformatins
 // ===========================================================================
 
+/**
+ * @class Gradient (NOTE: PORTING-SENSITIVE CODE)
+ */
+
 Gradient = Class.create({
 
     addStop: function(offset, color) {
@@ -910,6 +915,8 @@ StipplePattern = Class.create({
 /**
  * @class Transform (NOTE: PORTING-SENSITIVE CODE)
  * Implements support for object rotation, scaling, etc.
+ * This code is dependent on SVG transformation matrices.
+ * See: http://www.w3.org/TR/2003/REC-SVG11-20030114/coords.html#InterfaceSVGMatrix 
  */
 
 var Transform = Class.create({
@@ -1040,9 +1047,10 @@ Object.extend(CharSet, {
 // ===========================================================================
 
 /**
- * @class Event: extensions to class Event (NOTE: PORTING-SENSITIVE CODE)
+ * @class Event: extensions to DOM class Event (NOTE: PORTING-SENSITIVE CODE)
  * The code below extends the default Event class behavior inherited
- * from the web browser.  
+ * from the web browser.  For a detailed description of the Event class,
+ * refer to, e.g., David Flanagan's book (JavaScript: The Definitive Guide) 
  */
 
 (function() {
@@ -1305,14 +1313,13 @@ Visual = Class.create({
 });
 
 Visual.BrowserHandlerDisabler = { 
+
     handleEvent: function(evt) { 
-	evt.preventDefault(); 
-	return false;
+        evt.preventDefault(); 
+        return false;
     }
+
 };
-
-
-
 
 // ===========================================================================
 // Shape functionality
@@ -1405,16 +1412,15 @@ Object.extend(Shape, {
 var RectShape = Class.create(Shape, {
 
     initialize: function($super, rectOrRawNode, color, borderWidth, borderColor) {
-	if (rectOrRawNode instanceof Node) {
+        if (rectOrRawNode instanceof Node) {
             this.rawNode = rectOrRawNode;
-	} else {
-	    this.rawNode = NodeFactory.create("rect");
-	    this.setBounds(rectOrRawNode);
-	}
+        } else {
+            this.rawNode = NodeFactory.create("rect");
+            this.setBounds(rectOrRawNode);
+        }
         $super(color, borderWidth, borderColor);
         return this;
     },
-
 
     copy: function() {
         var rect = new RectShape(this.bounds(), this.getFill(), this.getStrokeWidth(), this.getStroke());
@@ -1431,7 +1437,6 @@ var RectShape = Class.create(Shape, {
         }
         return this;
     },
-
     
     toPath: function() {
         // FIXME account for rounded edges
@@ -1493,12 +1498,12 @@ var RectShape = Class.create(Shape, {
 var EllipseShape = Class.create(Shape, {
 
     initialize: function($super, rectOrRawNode, color, borderWidth, borderColor) {
-	if (rectOrRawNode instanceof Node) {
+        if (rectOrRawNode instanceof Node) {
             this.rawNode = rectOrRawNode;
-	} else {
-	    this.rawNode = NodeFactory.create("ellipse");
+        } else {
+            this.rawNode = NodeFactory.create("ellipse");
             this.setBounds(rectOrRawNode);
-	}
+        }
         $super(color, borderWidth, borderColor);
         return this;
     },
@@ -1553,12 +1558,12 @@ var EllipseShape = Class.create(Shape, {
 var PolygonShape = Class.create(Shape, {
 
     initialize: function($super, vertlistOrRawNode, color, borderWidth, borderColor) {
- 	if (vertlistOrRawNode instanceof Node) {
+        if (vertlistOrRawNode instanceof Node) {
             this.rawNode = vertlistOrRawNode;
-	} else {
-	    this.rawNode = NodeFactory.create("polygon");
-	    this.setVertices(vertlistOrRawNode);
-	}
+        } else {
+            this.rawNode = NodeFactory.create("polygon");
+            this.setVertices(vertlistOrRawNode);
+        }
         $super(color, borderWidth, borderColor);
         return this;
     },
@@ -1712,12 +1717,12 @@ var PolygonShape = Class.create(Shape, {
 var PolylineShape = Class.create(Shape, {
     
     initialize: function($super, vertlistOrRawNode, borderWidth, borderColor) {
- 	if (vertlistOrRawNode instanceof Node) {
+        if (vertlistOrRawNode instanceof Node) {
             this.rawNode = vertlistOrRawNode;
-	} else {
-	    this.rawNode = NodeFactory.create("polyline");
+        } else {
+            this.rawNode = NodeFactory.create("polyline");
             this.setVertices(vertlistOrRawNode);
-	}
+        }
         $super(null, borderWidth, borderColor);
         return this;
     },
@@ -1891,11 +1896,8 @@ var NodeList = {
 // Morph functionality
 // ===========================================================================
 
-// Every graphical object in our system is a morph.
-// For further information about morphs, read the documentation. 
-
 /**
- * @class MouseHandlerForDragging
+ * @class MouseHandlerForDragging: Mouse event handling for dragging
  */ 
 
 MouseHandlerForDragging = Class.create({
@@ -1942,9 +1944,9 @@ var Exporter = Class.create({
         // model is inserted as part of the root morph.
         var modelNode = (this.rootMorph.getModel() || { toMarkup: function() { return null; }}).toMarkup();
         if (modelNode) {
-	    try {
-		this.rootMorph.addChildElement(modelNode);
-	    } catch (er) { console.log("got problem, rawNode %s, modelNode %s", this.rootMorph.rawNode, modelNode); }
+            try {
+                this.rootMorph.addChildElement(modelNode);
+            } catch (er) { console.log("got problem, rawNode %s, modelNode %s", this.rootMorph.rawNode, modelNode); }
         }
         var result = Exporter.nodeToString(this.rootMorph.rawNode);
         if (modelNode) {
@@ -1956,9 +1958,11 @@ var Exporter = Class.create({
 });
 
 Object.extend(Exporter, {
+
     nodeToString: function(node) {
         return node ? new XMLSerializer().serializeToString(node) : null;
     }
+
 });
 
 /**
@@ -1987,13 +1991,13 @@ var Importer = Class.create({
         ///console.log('making morph from %s %s', node, node.getAttributeNS(Namespace.LIVELY, "type"));
         // call reflectively b/c 'this' is not a Visual yet. 
         var morphTypeName = rawNode.getAttributeNS(Namespace.LIVELY, "type");
-	
+
         if (!morphTypeName || !Global[morphTypeName]) {
-            throw new Error('node %1 (parent %2) cannot be a morph of %3'.format(rawNode.tagName, 
-										 rawNode.parentNode, 
-										 morphTypeName));
+            throw new Error('node %1 (parent %2) cannot be a morph of %3'.format(
+                            rawNode.tagName, rawNode.parentNode, morphTypeName));
         }
-	return new Global[morphTypeName](this, rawNode);
+
+        return new Global[morphTypeName](this, rawNode);
     },
     
     importFromString: function(string) {
@@ -2045,7 +2049,9 @@ var Importer = Class.create({
 });
 
 /**
- * @class Morph
+ * @class Morph: Every graphical object in our system is a morph.
+ * Class Morph implements the common functionality inherited by 
+ * all the morphs. 
  */ 
 
 Morph = Class.create(Visual, {
@@ -2078,37 +2084,38 @@ Morph = Class.create(Visual, {
         this.submorphs = [];
         this.rawSubnodes = null;
         this.owner = null;
-	
-	var initialBounds;
-	
-	if (arguments[0] instanceof Importer) { // called when restoring from external representation (markup)
-	    initialBounds = null;
-	    var importer = arguments[0];
-	    this.rawNode = arguments[1];
+
+        var initialBounds;
+
+        if (arguments[0] instanceof Importer) { // called when restoring from external representation (markup)
+            initialBounds = null;
+            var importer = arguments[0];
+            this.rawNode = arguments[1];
             this.setType(this.type); // this.type is actually a prototype var
-	    console.log("restoring " + this.type + " raw node " + this.rawNode);
+            console.log("restoring " + this.type + " raw node " + this.rawNode);
             this.pvtSetTransform(this.retrieveTransform());
             var prevId = this.pickId();
-	    this.prevId = prevId; // for debugging FIXME remove later!
+            this.prevId = prevId; // for debugging FIXME remove later!
             importer.addMapping(prevId, this); 
             this.restorePersistentState(importer);    
- 	} else {
-	    initialBounds = arguments[0];//Rectangle
-	    var shapeType = arguments[1]; //String
+        } else {
+            initialBounds = arguments[0];//Rectangle
+            var shapeType = arguments[1]; //String
             this.rawNode = NodeFactory.create("g");
             this.setType(this.type); // this.type is actually a prototype var
             this.pvtSetTransform(Transform.createSimilitude(this.defaultOrigin(initialBounds, shapeType), 0, 1.0));
             this.pickId();
             this.initializePersistentState(initialBounds, shapeType);
-	}
-
-	this.initializeTransientState(initialBounds);
-        this.disableBrowserHandlers();        
-	if (this.activeScripts) {
-	    console.log('started stepping %s', this);
-	    this.startSteppingScripts();
         }
-	
+
+        this.initializeTransientState(initialBounds);
+        this.disableBrowserHandlers();        
+
+        if (this.activeScripts) {
+            console.log('started stepping %s', this);
+            this.startSteppingScripts();
+        }
+
     },
 
     restorePersistentState: function(importer) {
@@ -2181,7 +2188,7 @@ Morph = Class.create(Visual, {
                 // let it be
             } 
             default: {
-		var type = node.getAttributeNS(Namespace.LIVELY, "type");
+                var type = node.getAttributeNS(Namespace.LIVELY, "type");
                 if (type) {
                     if (/FocusHalo/.test(type)) { //don't restore
                         this.rawNode.removeChild(node);
@@ -2210,21 +2217,21 @@ Morph = Class.create(Visual, {
             return;
         }
         
-	switch (element.tagName) {
-	case "ellipse":
-	    this.shape = new EllipseShape(element);
-	    return true;
-	case "rect":
-	    this.shape = new RectShape(element);
-	    return true;
-	case "polyline":
-	    this.shape = new PolylineShape(element);
-	    return true;
-	case "polygon":
-	    this.shape = new PolygonShape(element);
-	    return true;
-	}
-	
+        switch (element.tagName) {
+        case "ellipse":
+            this.shape = new EllipseShape(element);
+            return true;
+        case "rect":
+            this.shape = new RectShape(element);
+            return true;
+        case "polyline":
+            this.shape = new PolylineShape(element);
+            return true;
+        case "polygon":
+            this.shape = new PolygonShape(element);
+            return true;
+        }
+
         var type = element.getAttributeNS(Namespace.LIVELY, 'type');
         
         switch (type) {
@@ -2232,12 +2239,12 @@ Morph = Class.create(Visual, {
             this.rawSubnodes = NodeList.become(element, type);
 
             NodeList.each(this.rawSubnodes, 
-			  function(node) { 
-			      var morph = importer.importFromNode(node);
-			      this.submorphs.push(morph); 
-			      morph.owner = this;
-			  }.bind(this));
-	    // console.log('recursed into children of %s and got', this,  this.submorphs);
+                function(node) { 
+                    var morph = importer.importFromNode(node);
+                    this.submorphs.push(morph); 
+                    morph.owner = this;
+                }.bind(this));
+            // console.log('recursed into children of %s and got', this,  this.submorphs);
             return true;
         case 'FocusHalo':
             return true;
@@ -2255,18 +2262,18 @@ Morph = Class.create(Visual, {
         switch (shapeType) {
         case "ellipse":
             this.shape = new EllipseShape(this.relativizeBounds(initialBounds),
-					  this.defaultFill, this.defaultBorderWidth, this.defaultBorderColor);
+                this.defaultFill, this.defaultBorderWidth, this.defaultBorderColor);
             break;
         default:
             // polygons and polylines are set explicitly later
             this.shape = new RectShape(this.relativizeBounds(initialBounds),
-				       this.defaultFill, this.defaultBorderWidth, this.defaultBorderColor);
+                this.defaultFill, this.defaultBorderWidth, this.defaultBorderColor);
             break;
         }
 
         this.rawSubnodes = NodeList.withType("Submorphs");
         this.rawNode.appendChild(this.rawSubnodes);
-	
+
         this.addChildElement(this.shape.rawNode);
     
         return this;
@@ -2291,6 +2298,7 @@ Morph = Class.create(Visual, {
 
 });
 
+// Functions for change management
 Object.extend(Morph, {
     
     morphCounter: 0,
@@ -2537,7 +2545,7 @@ Morph.addMethods({
     },
     
     addChildElement: function(node) {
-	if (this.rawSubnodes == null) console.log("%s not fully inited on addChildElement(%s)", this, node);
+        if (this.rawSubnodes == null) console.log("%s not fully inited on addChildElement(%s)", this, node);
         return this.rawNode.insertBefore(node, this.rawSubnodes);
     },
     
@@ -2958,8 +2966,7 @@ Morph.addMethods({
 
         if (hasFocus) return this.mouseHandler.handleMouseEvent(evt, this);
 
-        if (!this.fullContainsWorldPoint(evt.priorPoint)) 
-	    return false;
+        if (!this.fullContainsWorldPoint(evt.priorPoint)) return false;
 
         if (this.hasSubmorphs()) {
             // If any submorph handles it (ie returns true), then return
@@ -3841,30 +3848,31 @@ SimpleModel = Class.create(Model, {
             var depEl = modelEl.appendChild(doc.createElementNS(Namespace.LIVELY, "dependent"));
             depEl.setAttributeNS(Namespace.LIVELY, "ref", this.dependents[i].id);
         }
-	console.log("produced markup " + modelEl);
+        console.log("produced markup " + modelEl);
         return modelEl;
     }
 });
-
 
 // ===========================================================================
 // World-related widgets
 // ===========================================================================
 
 // A unique characteristics of the Morphic graphics system is that
-// all objects can live in a "world" that is shared between different
-// objects and even different users.  A world can contain a large number
-// of different applications/widgets, much like in an operating system
-// a folder can contain a lot of files.  Worlds can be linked to each
-// other using LinkMorphs.  As a consequence, the entire system can
-// contain a large number of worlds, each of which contains a large
-// number of simultaneously running applications. 
+// all the objects (morphs) live in a "world" that is shared between 
+// different objects and even between different users.  A world can
+// contain a large number of different applications/widgets, much like
+// in an operating system a folder can contain a lot of files.  Worlds
+// can be linked to each other using LinkMorphs.  As a consequence,
+// the entire system can contain a large number of worlds, each of
+// which contains a large number of simultaneously running applications
+// and widgets. 
 
 /**
  * @class PasteUpMorph
  * PasteUp morphs are used for layouts,
  * most notably for the world and, eg, palettes
  */ 
+
 var PasteUpMorph = Class.create(Morph, {
 
     type: "PasteUpMorph",
@@ -3914,9 +3922,8 @@ var PasteUpMorph = Class.create(Morph, {
 });
 
 /**
- * @class WorldMorph: A Morphic world
+ * @class WorldMorph: A Morphic world (a visual container of other morphs)
  */ 
-// KP: WorldMorph isn't really a widget
 
 var WorldMorph = Class.create(PasteUpMorph, {
     
@@ -4792,6 +4799,7 @@ var HandMorph = function() {
  * @class LinkMorph
  * LinkMorph implements a two-way hyperlink between two Morphic worlds
  */ 
+
 LinkMorph = Class.create(Morph, {
 
     defaultFill: Color.black,
