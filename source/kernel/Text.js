@@ -12,7 +12,6 @@
  * Text.js.  Text-related functionality.
  */
 
-
 var WrapStyle = { 
     NORMAL: "wrap", // fits text to bounds width using word wrap and sets height
     NONE: "noWrap", // simply sets height based on line breaks only
@@ -30,15 +29,13 @@ var TextMorph = (function() {
 var TextWord = Class.create(TextCompatibilityTrait, {
     
     initialize: function(textString, startIndex, topLeft, font) {
-	if (arguments[0] instanceof Importer) {
-	    
-	    this.rawNode = arguments[1];
+        if (arguments[0] instanceof Importer) {
+            this.rawNode = arguments[1];
             this.fontInfo = Font.forFamily(this.getFontFamily(), this.getFontSize());
-	    this.textString = this.rawNode.textContent;
+            this.textString = this.rawNode.textContent;
             // FIXME
-	    
-	} else {
-	    this.rawNode = NodeFactory.create("tspan");
+        } else {
+            this.rawNode = NodeFactory.create("tspan");
             this.textString = textString;
             this.startIndex = startIndex;
             this.stopIndex = textString.length - 1;
@@ -47,8 +44,7 @@ var TextWord = Class.create(TextCompatibilityTrait, {
             this.fontInfo = font;
             this.setX(topLeft.x);
             this.setY(topLeft.y + font.getSize());
-
-	}
+        }
         this.didLineBreak = false;
         return this;
     },
@@ -549,32 +545,31 @@ var TextLine = Class.create({
 /**
  * @class TextBox
  */ 
-    // KP: should this be folded into TextMorph now?
+
+// KP: should this be folded into TextMorph now?
 var TextBox = Class.create(Visual, TextCompatibilityTrait, {
 
     tabWidth: 4,
     tabsAsSpaces: true,
     
     initialize: function(textString, lineHeight, textColor, font) {
-	if (arguments[0] instanceof Importer) {
-	    this.rawNode = arguments[1];
-	    //console.log("recovering text box from %s %s", this.rawNode, this.rawNode.textContent);
-	    this.textString = this.recoverTextContent(arguments[0]);
+        if (arguments[0] instanceof Importer) {
+            this.rawNode = arguments[1];
+            // console.log("recovering text box from %s %s", this.rawNode, this.rawNode.textContent);
+            this.textString = this.recoverTextContent(arguments[0]);
             this.lineHeight = parseFloat(this.rawNode.getAttributeNS(Namespace.LIVELY, "line-height"));
-	    this.fontInfo = Font.forFamily(this.getFontFamily(), this.getFontSize());
-	    
-	} else {
-	    this.rawNode = NodeFactory.create("text");
+            this.fontInfo = Font.forFamily(this.getFontFamily(), this.getFontSize());
+        } else {
+            this.rawNode = NodeFactory.create("text");
             this.rawNode.setAttributeNS(Namespace.LIVELY, "line-height", lineHeight); // serialization helper, FIXME?
             this.rawNode.setAttributeNS(null, "kerning", 0);
-	    
-	    this.textString = textString;//: String
+    
+            this.textString = textString;//: String
             this.lineHeight = lineHeight;//: float
             this.setTextColor(textColor);
             this.fontInfo = font;
-	    font.applyTo(this);
-	}
-	
+            font.applyTo(this);
+        }
 
         this.setType("TextBox");
 
@@ -678,13 +673,13 @@ var TextBox = Class.create(Visual, TextCompatibilityTrait, {
     lineNumberForIndex: function(stringIndex) {
         // Could use a binary search, but instead we check same as last time,
         // then next line after, and finally a linear search.
-        if (this.lineNumberHint < this.lines.length 
-	    && this.lines[this.lineNumberHint].containsThisIndex(stringIndex))
+        if (this.lineNumberHint < this.lines.length && 
+            this.lines[this.lineNumberHint].containsThisIndex(stringIndex))
             return this.lineNumberHint;  // Same line as last time
 
         this.lineNumberHint++;  // Try next one down (dominant use pattern)
-        if (this.lineNumberHint < this.lines.length 
-	    && this.lines[this.lineNumberHint].containsThisIndex(stringIndex))
+        if (this.lineNumberHint < this.lines.length &&
+            this.lines[this.lineNumberHint].containsThisIndex(stringIndex))
             return this.lineNumberHint;  // Next line after last time
 
         for (var i = 0; i < this.lines.length; i++) {  // Do it the hard way
@@ -724,6 +719,7 @@ var TextBox = Class.create(Visual, TextCompatibilityTrait, {
 /**
  * @class TextMorph
  */ 
+
 var TextMorph = Class.create(Morph, {
 
     // these are prototype variables
@@ -774,9 +770,9 @@ var TextMorph = Class.create(Morph, {
     /*
   // FIXME: this bizarre "fix" helps Opera layout 
     relativizeBounds: function($super, rect) {
-	if (!Prototype.Browser.Opera) return $super(rect);
+        if (!Prototype.Browser.Opera) return $super(rect);
         return rect.clone();
-	//return rect.translatedBy(this.origin.negated());
+        //return rect.translatedBy(this.origin.negated());
     },
     */
 
@@ -792,8 +788,8 @@ var TextMorph = Class.create(Morph, {
     restoreFromElement: function($super, element, importer) /*:Boolean*/ {
         if ($super(element, importer)) return true;
 
-	var type = element.getAttributeNS(Namespace.LIVELY, "type");
-	
+        var type = element.getAttributeNS(Namespace.LIVELY, "type");
+
         switch (type) {
         case 'TextBox':
             this.textBox = new TextBox(importer, element); // FIXME
@@ -816,15 +812,15 @@ var TextMorph = Class.create(Morph, {
     },
 
     initialize: function($super, rect, textString) {
-	if (arguments[1] instanceof Importer) { // called when restoring from external representation (markup)
-	    $super(arguments[1], arguments[2]); // arguments[2] is rawNode
-	} else {
-	    this.textString = textString || "";
+        if (arguments[1] instanceof Importer) { // called when restoring from external representation (markup)
+            $super(arguments[1], arguments[2]); // arguments[2] is rawNode
+        } else {
+            this.textString = textString || "";
             $super(rect, "rect");
             // KP: note layoutChanged will be called on addition to the tree
             // DI: ... and yet this seems necessary!
             this.layoutChanged();
-	}
+        }
         return this;
     },
 
@@ -963,7 +959,7 @@ var TextMorph = Class.create(Morph, {
         
         if (this.textBox == null) {
             var textBox = this.textBox = 
-		new TextBox(this.textString, this.lineHeight(), this.textColor, this.font);
+                new TextBox(this.textString, this.lineHeight(), this.textColor, this.font);
             var topLeft = this.textTopLeft();
             textBox.renderText(topLeft, this.compositionWidth());
             this.addChildElement(this.textBox.rawNode);
@@ -992,7 +988,7 @@ var TextMorph = Class.create(Morph, {
         // Wrap text to bounds width, and set height from total text height
         if (this.ensureTextBox() == null) { 
             if (this.textString != null) 
-		console.log("textbox error in fitHeight: " + this.textString.truncate() + "..."); 
+                console.log("textbox error in fitHeight: " + this.textString.truncate() + "..."); 
             return; 
         }
         
@@ -1022,7 +1018,7 @@ var TextMorph = Class.create(Morph, {
         var composer = this.ensureTextBox();
         if (!composer) {
             if (this.textString != null) 
-		console.log("fitWidth failure on TextBox.ensureTextBox: " + this.textString.truncate() + "..."); 
+                console.log("fitWidth failure on TextBox.ensureTextBox: " + this.textString.truncate() + "..."); 
             return;
         }
         
@@ -1030,8 +1026,8 @@ var TextMorph = Class.create(Morph, {
         if (jRect == null) { 
             console.log("fitWidth failure on TextBox.getBounds"); 
             var minH = this.lineHeight();
-	    var s = this.shape;
-	    s.setBounds(s.bounds().withHeight(s.minH));
+            var s = this.shape;
+            s.setBounds(s.bounds().withHeight(s.minH));
             return; 
         }
     
@@ -1081,7 +1077,7 @@ var TextMorph = Class.create(Morph, {
         if (!this.showsSelectionWithoutFocus() && this.takesKeyboardFocus() && !this.hasKeyboardFocus) {
             return;
         }
-	
+
         this.undrawSelection();
 
         if (this.selectionRange[0] > this.textString.length - 1) { // null sel at end
@@ -1121,7 +1117,7 @@ var TextMorph = Class.create(Morph, {
             if (this.lineNo(r2) != this.lineNo(r1) + 1) {
                 // Selection spans 3 or more lines; fill the block between top and bottom lines
                 NodeList.push(this.selectionElement, 
-			      new RectShape(Rectangle.fromAny(r1.bottomRight(), r2.topLeft())).roundEdgesBy(4)); 
+                    new RectShape(Rectangle.fromAny(r1.bottomRight(), r2.topLeft())).roundEdgesBy(4)); 
             }
         }
     
@@ -1260,9 +1256,7 @@ var TextMorph = Class.create(Morph, {
         this.drawSelection(); 
     },
 
-
     // TextMorph keyboard event functions
-
     takesKeyboardFocus: function() { 
         // unlike, eg, cheapMenus
         return true; 
@@ -1478,8 +1472,8 @@ TextMorph.addMethods({
     
     boundEval: function(str) {    
         // Evaluate the string argument in a context in which "this" may be supplied by the modelPlug
-	var ctx = this.getModelValue('doitContext', this);
-	return (function() { return eval(str) }.bind(ctx))();
+        var ctx = this.getModelValue('doitContext', this);
+        return (function() { return eval(str) }.bind(ctx))();
     },
     
     addOrRemoveBrackets: function(bracketIndex) {
@@ -1641,13 +1635,12 @@ Object.extend(TextMorph, {
 
 PrintMorph = Class.create(TextMorph, {
 
-
     initialize: function($super, initialBounds, textString) {
-	if (arguments[1] instanceof Importer) {
-	    return $super(arguments[1], arguments[2]);
-	} else {
+        if (arguments[1] instanceof Importer) {
+            return $super(arguments[1], arguments[2]);
+        } else {
             return $super(initialBounds, textString);
-	}
+        }
     }, 
 
     updateView: function(aspect, controller) {
@@ -1667,11 +1660,12 @@ PrintMorph = Class.create(TextMorph, {
 
 });
 
+// A class for testing TextMorph behavior
 var TestTextMorph = Class.create(TextMorph, {
     
-    //    All this does is create a rectangle at mouseDown, and then
-    //    while the mouse moves, it prints the index of the nearest character,
-    //    and adjusts the rectangle to display the bounds for that index.
+    // All this does is create a rectangle at mouseDown, and then
+    // while the mouse moves, it prints the index of the nearest character,
+    // and adjusts the rectangle to display the bounds for that index.
 
     onMouseDown: function(evt) {
         this.isSelecting = true;
@@ -1717,5 +1711,6 @@ var TestTextMorph = Class.create(TextMorph, {
 });
     return TextMorph;
 })();
+
 console.log('loaded Text.js');
 
