@@ -28,8 +28,6 @@
 /**
  * @class ButtonMorph: Simple buttons
  */ 
-
-
 var ButtonMorph = Class.create(Morph, {
 
     focusHaloBorderWidth: 3, // override the default
@@ -44,21 +42,20 @@ var ButtonMorph = Class.create(Morph, {
     // A ButtonMorph is the simplest widget
     // It read and writes the boolean variable, this.model[this.propertyName]
     initialize: function($super, initialBounds) {
-	if (arguments[1] instanceof Importer) { // called when restoring from external representation (markup)
-	    $super(arguments[1], arguments[2]); // arguments[2] is rawNode
-	} else {
-	    
+        if (arguments[1] instanceof Importer) { // called when restoring from external representation (markup)
+            $super(arguments[1], arguments[2]); // arguments[2] is rawNode
+        } else {    
             $super(initialBounds, "rect");
             
             var model = new SimpleModel(this, "Value");
             // this default self connection may get overwritten by, eg, connectModel()...
             this.modelPlug = this.addChildElement(model.makePlug());
-	    
+    
             // Styling
             this.setModelValue('setValue', false);
             this.changeAppearanceFor(false);
-	    this.setToggle(false); // if true each push toggles the model state 
-	}
+            this.setToggle(false); // if true each push toggles the model state 
+        }
 
         return this;
     },
@@ -205,7 +202,7 @@ var ImageMorph = Class.create(Morph, {
                 // of Safari's XMLSerializer's handling of namespaces
                 this.removeChild(image);
                 this.dim = pt(parseInt(image.getAttribute("width")), 
-			      parseInt(image.getAttribute("height")));
+                              parseInt(image.getAttribute("height")));
                 var href = image.getAttributeNS(null /* "xlink"*/, "href");
                 this.loadURL(href);
             } else {
@@ -225,11 +222,11 @@ var ImageMorph = Class.create(Morph, {
 
         this.setFill(null);
         var image = this.image = NodeFactory.create("use");
-	image.setAttributeNS(Namespace.XLINK, "href", localURL);
+        image.setAttributeNS(Namespace.XLINK, "href", localURL);
         image.setAttributeNS(Namespace.LIVELY, "type", 'Image');
         if (scale) {
             image.setAttributeNS(null, "transform", 
-				 Transform.createSimilitude(pt(0, 0), 0, scale).toAttributeValue());
+                Transform.createSimilitude(pt(0, 0), 0, scale).toAttributeValue());
         }
         this.addChildElement(image);
 
@@ -246,7 +243,8 @@ var ImageMorph = Class.create(Morph, {
             image.setAttributeNS(Namespace.LIVELY, "type", 'Image');
             this.addChildElement(image);
         }
-	this.image.setAttributeNS(Namespace.XLINK, "href", url);
+
+        this.image.setAttributeNS(Namespace.XLINK, "href", url);
     },
 
     reload: function() {
@@ -293,7 +291,6 @@ var ImageButtonMorph = Class.create(ButtonMorph, {
 /**
  * @class IconMorph: Simple icons
  */
-
 var IconMorph = Class.create(ImageMorph, {
 
     type: "IconMorph",
@@ -332,11 +329,11 @@ var ClipMorph = Class.create(Morph, {
     type: "ClipMorph",
 
     initialize: function($super, initialBounds) {
-	if (arguments[1] instanceof Importer) { // called when restoring from external representation (markup)
-	    $super(arguments[1], arguments[2]); // arguments[2] is rawNode
-	} else {
+        if (arguments[1] instanceof Importer) { // called when restoring from external representation (markup)
+            $super(arguments[1], arguments[2]); // arguments[2] is rawNode
+        } else {
             $super(initialBounds, "rect");
-	}
+        }
     
         // A clipMorph is like a window through which its submorphs are seen
         // Its bounds are strictly limited by its shape
@@ -467,13 +464,12 @@ var TitleBarMorph = (function() {
     okToDuplicate: function(evt) {
         return false;
     }
-	
+
 })})();
 
 /**
- * @class TitleTabMorph: Title bars for Window morphs
+ * @class TitleTabMorph: Title bars for tabbed window morphs
  */
-  
 var TitleTabMorph = Class.create(Morph, {
     
     type: "TitleTabMorph",
@@ -530,14 +526,11 @@ var TitleTabMorph = Class.create(Morph, {
 
 /**
  * @class WindowControlMorph: Event handling for Window morphs
- * Transient?
  */ 
-
 var WindowControlMorph = Class.create(Morph, {
 
     defaultBorderWidth: 0,
     type: "WindowControlMorph",
-    
 
     initialize: function($super, rect, inset, color, target, action, helpText) {
         $super(rect.insetBy(inset), 'ellipse');
@@ -606,7 +599,7 @@ var WindowControlMorph = Class.create(Morph, {
 });
 
 /**
- * @class WindowMorph: Full-fledged windows with title bar, etc.
+ * @class WindowMorph: Full-fledged windows with title bar, menus, etc.
  */
 var WindowMorph = Class.create(Morph, {
 
@@ -632,10 +625,9 @@ var WindowMorph = Class.create(Morph, {
     },
 
     toString: function($super) {
-	var label = this.titleBar.getNamedMorph("label");
-	return $super() + (label ? ": " + label.textString : ""); 
+        var label = this.titleBar.getNamedMorph("label");
+        return $super() + (label ? ": " + label.textString : ""); 
     },
-
 
     restorePersistentState: function($super, importer) {
         $super(importer);
@@ -688,7 +680,7 @@ var WindowMorph = Class.create(Morph, {
 
     isCollapsed: function() { return this.state == "collapsed"; },
 
-    //Following methods promote windows on first click----------------
+    // Following methods promote windows on first click----------------
     morphToGrabOrReceive: function($super, evt, droppingMorph, checkForDnD) {
         // If this window is doesn't need to come forward, then respond normally
         if (!this.needsToComeForward(evt) || droppingMorph != null) {
@@ -789,7 +781,6 @@ var WindowMorph = Class.create(Morph, {
 /**
  * @class TabbedPanelMorph: Alternative to windows for off-screen content
  */
-  
 var TabbedPanelMorph = Class.create(WindowMorph, {
     type: "TabbedPanelMorph",
 
@@ -834,7 +825,6 @@ var TabbedPanelMorph = Class.create(WindowMorph, {
  * whenever there is a chance to manipulate the shape of the current
  * object, e.g., to resize, re-scale, or rotate it.  
  */ 
-
 var HandleMorph = (function () {
 
     // Counter for displaying balloon help only a certain number of times
@@ -979,13 +969,11 @@ var HandleMorph = (function () {
     
 })})();
 
-
 /**
  * @class SelectionMorph: The selection "tray" object that
  * allows multiple objects to be moved and otherwise manipulated
  * simultaneously. 
  */
-
 var SelectionMorph = Class.create(Morph, {
     
     defaultBorderWidth: 1,
@@ -1131,7 +1119,7 @@ var SelectionMorph = Class.create(Morph, {
 // TODO: there MUST be a better way to do this.. but it works without a sweat
 // there "might" be some performance issues with this :)
     setScale: function($super, scale) {
-	console.log('ok');
+        console.log('ok');
         for (var i = 0; i < this.selectedMorphs.length; i++ ) {
             this.addMorph(this.selectedMorphs[i]);
         }
@@ -1155,17 +1143,16 @@ var SelectionMorph = Class.create(Morph, {
 /**
  * @class PanelMorph
  */
-
 var PanelMorph = Class.create(Morph, {
 
     type: "PanelMorph",
     
     initialize: function($super, extent/*:Point*/) {
-	if (arguments[1] instanceof Importer) { // called when restoring from external representation (markup)
-	    $super(arguments[1], arguments[2]); // arguments[2] is rawNode
-	} else {
+        if (arguments[1] instanceof Importer) { // called when restoring from external representation (markup)
+            $super(arguments[1], arguments[2]); // arguments[2] is rawNode
+        } else {
             $super(pt(0, 0).extent(extent), 'rect');
-	}
+        }
         this.lastNavigable = null;
     },
 
@@ -1247,7 +1234,6 @@ Object.extend(PanelMorph, {
 /**
  * @class CheapListMorph
  */ 
-
 var CheapListMorph = Class.create(TextMorph, {
     
     defaultBorderColor: Color.black,
@@ -1260,17 +1246,18 @@ var CheapListMorph = Class.create(TextMorph, {
         // CheapListMorphs simply leverage Textmorph's ability to display
         // multiline paragraphs, though some effort is made to use a similar interface.
 
-	if (arguments[1] instanceof Importer) { // called when restoring from external representation (markup)
-	    $super(arguments[1], arguments[2]); // arguments[2] is rawNode
-	} else {
+        if (arguments[1] instanceof Importer) { // called when restoring from external representation (markup)
+            $super(arguments[1], arguments[2]); // arguments[2] is rawNode
+        } else {
             var listText = itemList ? itemList.join("\n") : "";
             $super(initialBounds, listText);
-	    this.itemList = itemList;
+            this.itemList = itemList;
             // this default self connection may get overwritten by, eg, connectModel()...
             var model = new SimpleModel(null, "List", "Selection");
             this.modelPlug = this.addChildElement(model.makePlug());
             this.setModelValue('setList', itemList);
-	}
+        }
+
         //console.log('model now %s', this.modelPlug.model);
         if (!this.font) alert('wha, null font in %1'.format(this));
         this.layoutChanged();
@@ -1430,9 +1417,8 @@ var CheapListMorph = Class.create(TextMorph, {
 });
 
 /**
- * @class MenuMorph
+ * @class MenuMorph: Popup menus
  */ 
-
 var MenuMorph = Class.create(CheapListMorph, {
 
     defaultBorderColor: Color.blue,
@@ -1505,12 +1491,12 @@ var MenuMorph = Class.create(CheapListMorph, {
         this.caption = captionIfAny;  // Not yet implemented
 
         this.compose(location);
-	
+
         world.addMorph(this);
         if (captionIfAny) { // Still under construction
             var label = new TextMorph(new Rectangle(0, 0, 200, 20), captionIfAny);
             label.setWrapStyle(WrapStyle.SHRINK);  
-	    label.fitText();
+            label.fitText();
             label.shape.roundEdgesBy(4);
             label.shape.setFillOpacity(0.75);
             label.align(label.bounds().bottomCenter(), this.shape.bounds().topCenter());
@@ -1531,9 +1517,9 @@ var MenuMorph = Class.create(CheapListMorph, {
 
     compose: function(location) { 
         var itemNames = this.items.map(function (item) { return item[0] });
-	
+
         CheapListMorph.prototype.initialize.call(this, location.extent(pt(200, 200)), itemNames);
-	
+
         this.setWrapStyle(WrapStyle.SHRINK);  
         this.fitText(); // first layout is wasted!
         // styling
@@ -1563,17 +1549,16 @@ var MenuMorph = Class.create(CheapListMorph, {
 });
 
 /**
- * @class SliderMorph
+ * @class SliderMorph: Slider/scroll control
  */ 
-
 var SliderMorph = Class.create(Morph, {
 
     type: "SliderMorph",
     
     initialize: function($super, initialBounds, scaleIfAny) {
-	if (arguments[1] instanceof Importer) { // called when restoring from external representation (markup)
-	    $super(arguments[1], arguments[2]); // arguments[2] is rawNode
-	} else {
+        if (arguments[1] instanceof Importer) { // called when restoring from external representation (markup)
+            $super(arguments[1], arguments[2]); // arguments[2] is rawNode
+        } else {
             $super(initialBounds, "rect");
             var model = new SimpleModel(null, "Value", "Extent");
             // this default self connection may get overwritten by, eg, connectModel()...
@@ -1584,7 +1569,7 @@ var SliderMorph = Class.create(Morph, {
             this.setNamedMorph("slider", slider);
             // this.linkToStyles(['slider']);
             this.adjustForNewBounds(); 
-	}
+        }
         return this;
     },
 
@@ -1597,7 +1582,7 @@ var SliderMorph = Class.create(Morph, {
     restorePersistentState: function($super, importer) {
         $super(importer);
         this.slider = this.getNamedMorph('slider');
-	console.log("SliderMorph restored slider %s", this.slider);
+        console.log("SliderMorph restored slider %s", this.slider);
         if (!this.slider) {
             console.warn('no slider in %s, %s', this, this.textContent);
            return;
@@ -1758,7 +1743,6 @@ var SliderMorph = Class.create(Morph, {
 /**
  * @class ScrollPane
  */ 
-
 var ScrollPane = Class.create(Morph, {
 
     defaultBorderWidth: 2,
@@ -1767,13 +1751,13 @@ var ScrollPane = Class.create(Morph, {
     type: "ScrollPane",
 
     initialize: function($super, morphToClip, initialBounds) {
-	if (arguments[1] instanceof Importer) { // called when restoring from external representation (markup)
-	    $super(arguments[1], arguments[2]); // arguments[2] is rawNode
-	    return this;
-	} 
-	
+        if (arguments[1] instanceof Importer) { // called when restoring from external representation (markup)
+            $super(arguments[1], arguments[2]); // arguments[2] is rawNode
+            return this;
+        } 
+
         $super(initialBounds, "rect");
-	
+
         var bnds = this.shape.bounds();
         var clipR = bnds.withWidth(bnds.width - this.scrollBarWidth+1).insetBy(1);
         morphToClip.shape.setBounds(clipR); // FIXME what if the targetmorph should be bigger than the clipmorph?
@@ -1829,7 +1813,6 @@ var ScrollPane = Class.create(Morph, {
 /**
  * @class ListPane
  */ 
-
 function ListPane(initialBounds) {
     return new ScrollPane(new CheapListMorph(initialBounds,["-----"]), initialBounds); 
 };
@@ -1837,7 +1820,6 @@ function ListPane(initialBounds) {
 /**
  * @class TextPane
  */ 
-
 function TextPane(initialBounds, defaultText) {
     return new ScrollPane(new TextMorph(initialBounds, defaultText), initialBounds); 
 };
@@ -1845,7 +1827,6 @@ function TextPane(initialBounds, defaultText) {
 /**
  * @class PrintPane
  */ 
-
 function PrintPane(initialBounds, defaultText) {
     return new ScrollPane(new PrintMorph(initialBounds, defaultText), initialBounds); 
 };
@@ -1857,7 +1838,6 @@ function PrintPane(initialBounds, defaultText) {
 /**
  * @class ColorPickerMorph
  */ 
-
 var ColorPickerMorph = Class.create(Morph, {
 
     defaultFill: null,
@@ -1935,8 +1915,6 @@ var ColorPickerMorph = Class.create(Morph, {
     }
     
 });
-
-	     
 
 console.log('loaded Widgets.js');
 
