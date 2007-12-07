@@ -18,14 +18,13 @@ var WrapStyle = {
     SHRINK: "shrinkWrap" // sets both width and height based on line breaks only
 };
 
+
+var TextMorph = (function() {
+
 /**
  * @class TextWord
  * This 'class' renders single words
  */ 
-
-var TextMorph = (function() {
-
-// auxiliary objects
 var TextWord = Class.create(TextCompatibilityTrait, {
     
     initialize: function(textString, startIndex, topLeft, font) {
@@ -464,10 +463,10 @@ var TextLine = Class.create({
     },
 
     // render each word contained in the line
-    render: function(renderer) {
+    render: function(rawTextNode) {
         for (var i = 0; i < this.chunks.length; i++) {
             if (this.chunks[i].word != null && this.chunks[i].render) {
-                renderer.rawNode.appendChild(this.chunks[i].word.rawNode);
+                rawTextNode.appendChild(this.chunks[i].word.rawNode);
             }
         }
     },
@@ -542,179 +541,6 @@ var TextLine = Class.create({
     
 });
 
-/**
- * @class TextBox
- */ 
-
-// KP: should this be folded into TextMorph now?
-var TextBox = Class.create(Visual, TextCompatibilityTrait, {
-
-    tabWidth: 4,
-    tabsAsSpaces: true,
-    
-    initialize: function(textString, lineHeight, textColor, font) {
-        if (arguments[0] instanceof Importer) {
-            this.rawNode = arguments[1];
-            // console.log("recovering text box from %s %s", this.rawNode, this.rawNode.textContent);
-            this.textString = this.recoverTextContent(arguments[0]);
-            this.lineHeight = parseFloat(this.rawNode.getAttributeNS(Namespace.LIVELY, "line-height"));
-            this.fontInfo = Font.forFamily(this.getFontFamily(), this.getFontSize());
-        } else {
-            this.rawNode = NodeFactory.create("text");
-            this.rawNode.setAttributeNS(Namespace.LIVELY, "line-height", lineHeight); // serialization helper, FIXME?
-            this.rawNode.setAttributeNS(null, "kerning", 0);
-    
-            this.textString = textString;//: String
-            this.lineHeight = lineHeight;//: float
-            this.setTextColor(textColor);
-            this.fontInfo = font;
-            font.applyTo(this);
-        }
-
-        this.setType("TextBox");
-
-        this.lines = null;//: TextLine[]
-        this.lineNumberHint = 0;
-    },
-
-    recoverTextContent: function(importer) {
-
-        var content = "";
-        
-        for (var child = this.rawNode.firstChild; child != null; child = child.nextSibling) {
-            if (child.tagName == 'tspan')  {
-                var word = new TextWord(importer, child);
-                var lead = parseInt(word.rawNode.getAttributeNS(Namespace.LIVELY, "lead"));
-                if (lead) {
-                    var spaces = "";
-                    for (var j = 0; j < lead; j++) 
-                        spaces += ' ';
-                    content += spaces;
-                }
-
-                content += word.rawNode.textContent; 
-
-                var trail = parseInt(word.rawNode.getAttributeNS(Namespace.LIVELY, "trail"));
-                if (trail) {
-                    var spaces = "";
-                    for (var j = 0; j < trail; j++) {
-                        spaces += ' ';
-                    }
-                    content += spaces;
-                }
-
-                if (word.rawNode.getAttributeNS(Namespace.LIVELY, "nl") == "true") {
-                    content += "\n";
-                }
-
-            }
-        }
-        return content;
-    },
-
-    setTextColor: function(textColor) {
-        this.setFill(textColor);
-    },
-
-    getTextColor: function() {
-        return Color.parse(this.getFill());
-    },
-
-    setTabWidth: function(width, asSpaces) {
-        this.tabWidth = width;
-        this.tabsAsSpaces = asSpaces;
-    },
-    
-    // compose the lines if necessary and then render them
-    renderText: function(topLeft, compositionWidth) {
-        if (this.lines == null) { 
-            this.lines = this.composeLines(topLeft, compositionWidth, this.fontInfo);
-        }
-        for (var i = 0; i < this.lines.length; i++) {
-            this.lines[i].render(this);
-        }
-    },
-    
-    // compose all of the lines in the text
-    composeLines: function(initialTopLeft, compositionWidth, font) {
-        var lines = [];
-        var startIndex = 0;
-        var stopIndex = this.textString.length - 1;
-        var topLeft = initialTopLeft.clone();
-        var chunkSkeleton;
-
-        while (startIndex <= stopIndex) {
-            var line = new TextLine(this.textString, startIndex, topLeft, font, chunkSkeleton);
-            line.setTabWidth(this.tabWidth, this.tabsAsSpaces);
-            line.compose(compositionWidth);
-            line.adjustAfterComposition();
-            lines.push(line);
-            startIndex = line.getNextStartIndex();
-            topLeft = topLeft.addXY(0, this.lineHeight);
-            // this is an optimization that keeps us from having to re-scan the string on each line
-            chunkSkeleton = line.cloneChunkSkeleton(startIndex);
-        }
-        return lines;
-    },
-    
-    // return the bounding rectangle for the i-th character in textString
-    getBounds: function(stringIndex) {
-        var line = this.lineForIndex(stringIndex);
-        return line == null ? null : line.getBounds(stringIndex); 
-    },
-
-    // return the index of the character whose bounds include pt(x,y), else -1
-    hit: function(x, y) {
-        var line = this.lineForY(y);
-        return line == null ? -1 : line.indexForX(x); 
-    },
-
-    // find what line contains the index 'stringIndex'
-    lineNumberForIndex: function(stringIndex) {
-        // Could use a binary search, but instead we check same as last time,
-        // then next line after, and finally a linear search.
-        if (this.lineNumberHint < this.lines.length && 
-            this.lines[this.lineNumberHint].containsThisIndex(stringIndex))
-            return this.lineNumberHint;  // Same line as last time
-
-        this.lineNumberHint++;  // Try next one down (dominant use pattern)
-        if (this.lineNumberHint < this.lines.length &&
-            this.lines[this.lineNumberHint].containsThisIndex(stringIndex))
-            return this.lineNumberHint;  // Next line after last time
-
-        for (var i = 0; i < this.lines.length; i++) {  // Do it the hard way
-            if (this.lines[i].containsThisIndex(stringIndex)) { this.lineNumberHint = i; return i; }
-        }
-        return -1; 
-    },
-
-    lineForIndex: function(stringIndex) {
-        return this.lines[this.lineNumberForIndex(stringIndex)];
-    },
-
-    // find what line contains the y value in character metric space
-    lineForY: function(y) {
-        if (this.lines.length < 1 || y < this.lines[0].getTopY()) return null;
-    
-        for (var i = 0; i < this.lines.length; i++) {
-            line = this.lines[i];
-            if (y < this.lines[i].getTopY() + this.lineHeight) {
-                // console.log('hit line ' + i + ' for y ' + y + ' slice ' + line.startIndex + "," + line.stopIndex);
-                return line; 
-            }
-        }
-    
-        return null; 
-    },
-    
-    destroy: function() {
-        if (this.rawNode.parentNode) {
-            //console.log('destroying %s', this.textString);
-            this.rawNode.parentNode.removeChild(this.rawNode);
-        }
-    }
-
-});
 
 /**
  * @class TextMorph
@@ -734,10 +560,12 @@ var TextMorph = Class.create(Morph, {
     wrap: WrapStyle.NORMAL,
     maxSafeSize: 4000, 
     type: "TextMorph",
+    tabWidth: 4,
+    tabsAsSpaces: true,
+
 
     initializeTransientState: function($super, initialBounds) {
         $super(initialBounds);
-        //this.textBox = null;
         this.selectionRange = [0,-1]; // null or a pair of indices into textString
         this.selectionPivot = null;  // index of hit at onmousedown
         this.priorSelection = [0,-1];  // for double-clicks
@@ -746,10 +574,11 @@ var TextMorph = Class.create(Morph, {
         this.isSelecting = false; // true if last onmousedown was in character area (hit>0)
         this.acceptInput = true; // whether it accepts changes to text KP: change: interactive changes
         // note selection is transient
+        this.lines = null;//: TextLine[]
+        this.lineNumberHint = 0;
     },
 
     initializePersistentState: function($super, initialBounds, shapeType) {
-        // this.textBox = null;
         $super(initialBounds, shapeType);
         // this.selectionElement = this.addChildElement(NodeFactory.create('use').withHref("#TextSelectionStyle"));
 
@@ -792,12 +621,15 @@ var TextMorph = Class.create(Morph, {
 
         switch (type) {
         case 'TextBox':
-            this.textBox = new TextBox(importer, element); // FIXME
-            //console.log('found textbox %s %s', this.textBox, this.textBox && this.textBox.textString);
-            this.textString = this.textBox.textString;
-            this.font = this.textBox.fontInfo;
-            this.textColor = this.textBox.getTextColor();
-            return true;
+	    this.rawTextNode = element;	    
+	    this.textString = this.recoverTextContent(importer, element);
+	    var fontFamily = this.rawTextNode.getAttributeNS(null, "font-family");
+	    var fontSize = this.rawTextNode.getAttributeNS(null, "font-size");
+	    
+            this.font = Font.forFamily(fontFamily, fontSize);
+            this.textColor = Color.parse(this.rawTextNode.getAttributeNS(null, "fill"));
+	    return true;
+	    
         case 'Selection':
             // that's ok, it's actually transient 
             // remove all chidren b/c they're really transient
@@ -824,15 +656,60 @@ var TextMorph = Class.create(Morph, {
         return this;
     },
 
+
+    recoverTextContent: function(importer, rawNode) {
+
+        var content = "";
+        
+        for (var child = rawNode.firstChild; child != null; child = child.nextSibling) {
+            if (child.tagName == 'tspan')  {
+                var word = new TextWord(importer, child);
+                var lead = parseInt(word.rawNode.getAttributeNS(Namespace.LIVELY, "lead"));
+                if (lead) {
+                    var spaces = "";
+                    for (var j = 0; j < lead; j++) 
+                        spaces += ' ';
+                    content += spaces;
+                }
+
+                content += word.rawNode.textContent; 
+
+                var trail = parseInt(word.rawNode.getAttributeNS(Namespace.LIVELY, "trail"));
+                if (trail) {
+                    var spaces = "";
+                    for (var j = 0; j < trail; j++) {
+                        spaces += ' ';
+                    }
+                    content += spaces;
+                }
+
+                if (word.rawNode.getAttributeNS(Namespace.LIVELY, "nl") == "true") {
+                    content += "\n";
+                }
+
+            }
+        }
+        return content;
+    },
+
+
+    destroyRawTextNode: function() {
+	if (this.rawTextNode) {
+	    this.rawTextNode.parentNode.removeChild(this.rawTextNode);
+	    this.lines = null;
+	    this.lineNumberHint = 0;
+	    this.rawTextNode = null;
+	}
+    },
+
+
     defaultOrigin: function(bounds) { 
         return bounds.topLeft(); 
     },
     
     bounds: function($super) {
         if (this.fullBounds != null) return this.fullBounds;
-        if (this.textBox) this.textBox.destroy();
-
-        this.textBox = null;
+        this.destroyRawTextNode();
         this.fitText(); // adjust bounds or text for fit
     
         return $super();
@@ -858,9 +735,6 @@ var TextMorph = Class.create(Morph, {
     
     setTextColor: function(color) {
         this.textColor = color;
-        if (this.textBox) {
-            this.textBox.setTextColor(color);
-        }
     },
     
     getTextColor: function() {
@@ -954,25 +828,125 @@ var TextMorph = Class.create(Morph, {
         return this.getFontSize() + 2; // for now
     },
 
-    ensureTextBox: function() { // created on demand and cached
-        if (this.ensureTextString() == null) return null;
+    ensureRendered: function() { // created on demand and cached
+        if (this.ensureTextString() == null)
+	    return null;
         
-        if (this.textBox == null) {
-            var textBox = this.textBox = 
-                new TextBox(this.textString, this.lineHeight(), this.textColor, this.font);
+        if (this.rawTextNode == null) {
+
+            this.rawTextNode = NodeFactory.create("text");
+	    this.rawTextNode.setAttributeNS(Namespace.LIVELY, "type", "TextBox");
+            this.rawTextNode.setAttributeNS(null, "kerning", 0);
+	    
+	    this.rawTextNode.setAttributeNS(null, "fill", this.textColor);
+	    this.rawTextNode.setAttributeNS(null, "font-size", this.font.getSize());
+	    this.rawTextNode.setAttributeNS(null, "font-family", this.font.getFamily());
+
             var topLeft = this.textTopLeft();
-            textBox.renderText(topLeft, this.compositionWidth());
-            this.addChildElement(this.textBox.rawNode);
+
+            this.renderText(topLeft, this.compositionWidth());
+	    // console.log("rendering lines [%s] to %s", this.lines, this.textString);
+            this.addChildElement(this.rawTextNode);
         }
-        
-        return this.textBox; 
+        return this.rawTextNode; 
     },
     
     ensureTextString: function() { 
         // may be overrridden
         return this.textString; 
     }, 
+
+    // return the bounding rectangle for the index-th character in textString    
+    getCharBounds: function(index) {
+	this.ensureRendered();
+	if (this.lines) {
+            var line = this.lineForIndex(index);
+            return line == null ? null : line.getBounds(index); 
+	} else
+	    return null;
+    },
+
+    // compose the lines if necessary and then render them
+    renderText: function(topLeft, compositionWidth) {
+        if (this.lines == null) { 
+            this.lines = this.composeLines(topLeft, compositionWidth, this.font);
+        } 
+        for (var i = 0; i < this.lines.length; i++) {
+            this.lines[i].render(this.rawTextNode);
+        }
+    },
     
+    // compose all of the lines in the text
+    composeLines: function(initialTopLeft, compositionWidth, font) {
+        var lines = [];
+        var startIndex = 0;
+        var stopIndex = this.textString.length - 1;
+        var topLeft = initialTopLeft.clone();
+        var chunkSkeleton;
+
+        while (startIndex <= stopIndex) {
+            var line = new TextLine(this.textString, startIndex, topLeft, font, chunkSkeleton);
+            line.setTabWidth(this.tabWidth, this.tabsAsSpaces);
+            line.compose(compositionWidth);
+            line.adjustAfterComposition();
+            lines.push(line);
+            startIndex = line.getNextStartIndex();
+            topLeft = topLeft.addXY(0, this.lineHeight());
+            // this is an optimization that keeps us from having to re-scan the string on each line
+            chunkSkeleton = line.cloneChunkSkeleton(startIndex);
+        }
+        return lines;
+    },
+
+    // find what line contains the index 'stringIndex'
+    lineNumberForIndex: function(stringIndex) {
+        // Could use a binary search, but instead we check same as last time,
+        // then next line after, and finally a linear search.
+	console.assert(this.lines != null, "null lines in " + this + "," + (new Error()).stack);
+        if (this.lineNumberHint < this.lines.length && 
+            this.lines[this.lineNumberHint].containsThisIndex(stringIndex))
+            return this.lineNumberHint;  // Same line as last time
+
+        this.lineNumberHint++;  // Try next one down (dominant use pattern)
+        if (this.lineNumberHint < this.lines.length &&
+            this.lines[this.lineNumberHint].containsThisIndex(stringIndex))
+            return this.lineNumberHint;  // Next line after last time
+
+        for (var i = 0; i < this.lines.length; i++) {  // Do it the hard way
+            if (this.lines[i].containsThisIndex(stringIndex)) { this.lineNumberHint = i; return i; }
+        }
+        return -1; 
+    },
+
+    lineForIndex: function(stringIndex) {
+        return this.lines[this.lineNumberForIndex(stringIndex)];
+    },
+
+    // find what line contains the y value in character metric space
+    lineForY: function(y) {
+        if (this.lines.length < 1 || y < this.lines[0].getTopY()) return null;
+    
+        for (var i = 0; i < this.lines.length; i++) {
+            line = this.lines[i];
+            if (y < this.lines[i].getTopY() + this.lineHeight()) {
+		// console.log('hit line ' + i + ' for y ' + y + ' slice ' + line.startIndex + "," + line.stopIndex);
+                return line; 
+            }
+        }
+    
+        return null; 
+    },
+    
+    hit: function(x, y) {
+        var line = this.lineForY(y);
+        return line == null ? -1 : line.indexForX(x); 
+    },
+
+    setTabWidth: function(width, asSpaces) {
+        this.tabWidth = width;
+        this.tabsAsSpaces = asSpaces;
+    },
+
     compositionWidth: function() {
         if (this.wrap === WrapStyle.NORMAL) return this.shape.bounds().width - (2*this.inset.x);
         else return 9999; // Huh??
@@ -986,13 +960,7 @@ var TextMorph = Class.create(Morph, {
 
     fitHeight: function() { //Returns true iff height changes
         // Wrap text to bounds width, and set height from total text height
-        if (this.ensureTextBox() == null) { 
-            if (this.textString != null) 
-                console.log("textbox error in fitHeight: " + this.textString.truncate() + "..."); 
-            return; 
-        }
-        
-        var jRect = this.textBox.getBounds(this.textString.length - 1);
+        var jRect = this.getCharBounds(this.textString.length - 1);
     
         if (jRect == null) { 
             console.log("char bounds is null"); 
@@ -1015,16 +983,10 @@ var TextMorph = Class.create(Morph, {
 
     fitWidth: function() {
         // Set morph bounds based on max text width and height
-        var composer = this.ensureTextBox();
-        if (!composer) {
-            if (this.textString != null) 
-                console.log("fitWidth failure on TextBox.ensureTextBox: " + this.textString.truncate() + "..."); 
-            return;
-        }
         
-        var jRect = composer.getBounds(0);
+        var jRect = this.getCharBounds(0);
         if (jRect == null) { 
-            console.log("fitWidth failure on TextBox.getBounds"); 
+            console.log("fitWidth failure on TextMorph.getCharBounds");
             var minH = this.lineHeight();
             var s = this.shape;
             s.setBounds(s.bounds().withHeight(s.minH));
@@ -1043,7 +1005,7 @@ var TextMorph = Class.create(Morph, {
         for (var i = 0; i <= iMax; i++) {
             var c = this.textString[Math.min(i+1, iMax)];
             if (i == iMax || c == "\n" || c == "\r") {
-                jRect = composer.getBounds(i);
+                jRect = this.getCharBounds(i);
                 if (jRect == null) { console.log("null bounds at char " + i); return false; }
                 if (jRect.width < 100) { // line break character gets extended to comp width
                     maxX = Math.max(maxX,jRect.maxX());
@@ -1080,13 +1042,14 @@ var TextMorph = Class.create(Morph, {
 
         this.undrawSelection();
 
+	var jRect;
         if (this.selectionRange[0] > this.textString.length - 1) { // null sel at end
-            var jRect = this.ensureTextBox().getBounds(this.selectionRange[0]-1);
+            jRect = this.getCharBounds(this.selectionRange[0]-1);
             if (jRect) {
                 jRect = jRect.translatedBy(pt(jRect.width,0));
             }
         } else {
-            var jRect = this.ensureTextBox().getBounds(this.selectionRange[0]);
+            jRect = this.getCharBounds(this.selectionRange[0]);
         }
         
         if (jRect == null) {
@@ -1098,7 +1061,7 @@ var TextMorph = Class.create(Morph, {
         if (this.hasNullSelection()) {
             var r2 = r1.translatedBy(pt(-1,0)); 
         } else {
-            jRect = this.textBox.getBounds(this.selectionRange[1]);
+            jRect = this.getCharBounds(this.selectionRange[1]);
             if (jRect == null) return;
             
             var r2 = this.lineRect(jRect);
@@ -1149,19 +1112,19 @@ var TextMorph = Class.create(Morph, {
         var px = Math.max(localP.x, tl.x); // ensure no returns of 0 left of bounds
         var px = Math.min(px, this.innerBounds().maxX()-1); // nor right of bounds
         var py = localP.y - 2;
-        var hit = this.textBox.hit(px, py);
-        var charIx = this.textBox.hit(px, py);
+        var hit = this.hit(px, py);
+        var charIx = this.hit(px, py);
         var len = this.textString.length;
     
         // hit(x,y) returns -1 above and below box -- return 1st char or past last
         if (charIx < 0) return py < tl.y ? 0 : len;
   
-        if (charIx == 0 && this.textBox.getBounds(len-1).topRight().lessPt(localP))
+        if (charIx == 0 && this.getCharBounds(len-1).topRight().lessPt(localP))
         return len;
 
         // It's a normal character hit
         // People tend to click on gaps rather than character centers...
-        var cRect = this.textBox.getBounds(charIx);
+        var cRect = this.getCharBounds(charIx);
         if (cRect != null && px > cRect.center().x) {
             return Math.min(charIx + 1, len);
         }
@@ -1296,22 +1259,22 @@ var TextMorph = Class.create(Morph, {
             return;
         }
         case Event.KEY_UP: {
-            var lineNo = this.textBox.lineNumberForIndex(before.length);
-            var line = this.textBox.lines[lineNo];
+            var lineNo = this.lineNumberForIndex(before.length);
+            var line = this.lines[lineNo];
             if (lineNo > 0) {
                 var lineIndex = before.length  - line.startIndex;
-                var newLine = this.textBox.lines[lineNo - 1];
+                var newLine = this.lines[lineNo - 1];
                 this.setNullSelectionAt(Math.min(newLine.startIndex + lineIndex, newLine.getStopIndex()));
             }
             evt.stop();
             return;
         }
         case Event.KEY_DOWN: {
-            var lineNo = this.textBox.lineNumberForIndex(before.length);
-            var line = this.textBox.lines[lineNo];
-            if (lineNo < this.textBox.lines.length - 1) {
+            var lineNo = this.lineNumberForIndex(before.length);
+            var line = this.lines[lineNo];
+            if (lineNo < this.lines.length - 1) {
                 var lineIndex = before.length  - line.startIndex;
-                var newLine = this.textBox.lines[lineNo + 1];
+                var newLine = this.lines[lineNo + 1];
                 this.setNullSelectionAt(Math.min(newLine.startIndex + lineIndex, newLine.getStopIndex()));
             }
             evt.stop();
@@ -1441,7 +1404,7 @@ var TextMorph = Class.create(Morph, {
 // TextMorph accessor functions
 TextMorph.addMethods({
 
-    pvtUpdateTextString: function(morph, replacement) {
+    pvtUpdateTextString: function(replacement) {
         // KP: FIXME: doesn't this potentially change the selection
         /*
         if (replacement.length < 100 && this.textString == replacement)
@@ -1449,15 +1412,13 @@ TextMorph.addMethods({
         return;
         */
         // introducing new variable, simple one-level undo
-        morph.undoTextString = morph.textString;
-        morph.textString = replacement;
-        morph.recordChange('textString');
+        this.undoTextString = this.textString;
+        this.textString = replacement;
+        this.recordChange('textString');
     
-        if (morph.textBox) morph.textBox.destroy();
-
-        morph.textBox = null;
-        morph.layoutChanged(); 
-        morph.changed();
+	this.destroyRawTextNode();
+        this.layoutChanged(); 
+        this.changed();
     },
 
     saveContents: function(contentString) {    
@@ -1531,11 +1492,11 @@ TextMorph.addMethods({
     
     setTextString: function(replacement) {
         if (this.autoAccept) this.setModelText(replacement);
-        this.pvtUpdateTextString(this, replacement); 
+        this.pvtUpdateTextString(replacement); 
     },
     
     updateTextString: function(newStr) {
-        this.pvtUpdateTextString(this, newStr);
+        this.pvtUpdateTextString(newStr);
         this.resetScrollPane(); 
     },
     
@@ -1684,10 +1645,10 @@ var TestTextMorph = Class.create(TextMorph, {
         var px = Math.max(localP.x, tl.x); // ensure no returns of 0 left of bounds
         var px = Math.min(px, this.innerBounds().maxX());
         var py = localP.y - 2;
-        var hit = this.textBox.hit(px, py);
+        var hit = this.hit(px, py);
         var charIx = this.charOfPoint(localP);
         console.log('localP = ' + localP + ' hit = ' + hit + ' charOfPoint = ' + charIx);  // display the index for the mouse point
-        var jRect = this.ensureTextBox().getBounds(hit);
+        var jRect = this.getCharBounds(hit);
         if (jRect == null) {
             console.log("text box failure in drawSelection"); 
             return; 

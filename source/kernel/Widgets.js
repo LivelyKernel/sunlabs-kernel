@@ -213,13 +213,13 @@ var ImageMorph = Class.create(Morph, {
             return false;
         }
     },
-
+    
     loadGraphics: function(localURL, scale) {
         if (this.image && this.image.tagName == 'image') {
             this.removeChild(this.image);
             this.image = null;
         }
-
+	
         this.setFill(null);
         var image = this.image = NodeFactory.create("use");
         image.setAttributeNS(Namespace.XLINK, "href", localURL);
@@ -1332,7 +1332,7 @@ var CheapListMorph = Class.create(TextMorph, {
     },
     
     selectedLineNo: function() { // Return the item index for the current selection
-        return this.lineNo(this.ensureTextBox().getBounds(this.selectionRange[0]));
+        return this.lineNo(this.getCharBounds(this.selectionRange[0]));
     },
     
     showsSelectionWithoutFocus: function() { 
