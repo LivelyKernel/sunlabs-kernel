@@ -47,8 +47,6 @@ Object.extend(Config, {
 
 });
 
-
-
 // Class browser visibility can be overridden with Config.browserAnyway
 Config.showBrowser = !Config.skipMostExamples || Config.browserAnyway;
 
@@ -68,6 +66,7 @@ function populateWorldWithExamples(world) {
         widget.setFill(Color.green.lighter());
     }
     */
+
     if (Config.showEngine) makeEngine();
     
     if (Config.showAsteroids) {
@@ -112,7 +111,7 @@ function populateWorldWithExamples(world) {
         world.addMorph(lm1);
 
         var widgetTextMorph = 
-	    new TextMorph(new Rectangle(90, 440, 100, 25), "More complex sample widgets");
+            new TextMorph(new Rectangle(90, 440, 100, 25), "More complex sample widgets");
 
         widgetTextMorph.shape.roundEdgesBy(10);
         world.addMorph(widgetTextMorph);
@@ -295,7 +294,7 @@ function populateWorldWithExamples(world) {
         world.addMorph(devWorld);
 
         var developerTextMorph = 
-	    new TextMorph(new Rectangle(90, 500, 100, 25), "Development Tools");
+            new TextMorph(new Rectangle(90, 500, 100, 25), "Development Tools");
 
         developerTextMorph.shape.roundEdgesBy(10);
         world.addMorph(developerTextMorph);

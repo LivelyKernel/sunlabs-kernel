@@ -169,17 +169,17 @@ var NetRequest = Class.create(Ajax.Request, {
 Ajax.Responders.register(NetRequest.prototype.logger);
 
 /**
- * @class FeedChannel
+ * @class FeedChannel: RSS feed channel
  */ 
 
 var FeedChannel = Class.create({
 
     initialize: function(rawData) {
         this.items = [];
-	var results = Query.evaluate(rawData, 'item');
+        var results = Query.evaluate(rawData, 'item');
     
         for (var i = 0; i < results.length; i++) {
-	    this.items.push(new FeedItem(results[i]));
+            this.items.push(new FeedItem(results[i]));
         }
     
         this.title = (Query.evaluate(rawData, 'title', 'none'))[0].textContent;
@@ -188,7 +188,7 @@ var FeedChannel = Class.create({
 });
 
 /**
- * @class FeedItem
+ * @class FeedItem: An individual RSS feed item
  */ 
 
 var FeedItem = Class.create({
@@ -262,10 +262,11 @@ var Feed = Class.create({
         }
 
         var results = this.query('/rss/channel', result);
-	this.channels = [];
+        this.channels = [];
         for (var i = 0; i < results.length; i++) {
-	    this.channels.push(new FeedChannel(results[i]));
+            this.channels.push(new FeedChannel(results[i]));
         }
+
     },
 
     items: function() {

@@ -861,27 +861,27 @@ WireObject = Class.create({
             if (angleX != 0) {
                 var nry = ry;
                 ry = rapidCos(ry, angleX) -
-                    rapidSin(rz, angleX);
+                     rapidSin(rz, angleX);
                 rz = rapidSin(nry, angleX) +
-                    rapidCos(rz, angleX);
+                     rapidCos(rz, angleX);
             }
             
             // Rotate around Y axis
             if (angleY != 0) {
                 var nrx = rx;
                 rx = rapidCos(rx, angleY) -
-                    rapidSin(rz, angleY);
+                     rapidSin(rz, angleY);
                 rz = rapidSin(nrx, angleY) +
-                    rapidCos(rz, angleY);
+                     rapidCos(rz, angleY);
             }
     
             // Rotate around Z axis
             if (angleZ != 0) {
                 var nrx = rx;
                 rx = rapidCos(rx, angleZ) -
-                    rapidSin(ry, angleZ);
+                     rapidSin(ry, angleZ);
                 ry = rapidSin(nrx, angleZ) +
-                    rapidCos(ry, angleZ);
+                     rapidCos(ry, angleZ);
             }
             
             this.px[i] = rx;
@@ -963,7 +963,6 @@ WireObject = Class.create({
  */
   
 Sun3DMorph = Class.create(ClipMorph, {
-
 
     defaultFill: Color.veryLightGray,
     
@@ -1441,8 +1440,6 @@ var USE_FUNCTIONAL_DELAY = false;
 
 var GameMorph = Class.create(ClipMorph, {});
 
-
-
 GameMorph.prototype.runAsteroidsGame = function() {
 
     // This is the main loop.
@@ -1505,6 +1502,7 @@ GameMorph.prototype.runAsteroidsGame = function() {
     if (this.timeoutID) window.clearTimeout(this.timeoutID);
     if (!this.timerCallback) this.timerCallback = arguments.callee.bind(this).logErrors('Asteroid Timer');
     this.timeoutID = USE_FUNCTIONAL_DELAY ? this.timerCallback.delay(DELAY/1000) : window.setTimeout(this.timerCallback, DELAY);
+
 };
 
   function loadSounds() {
@@ -2262,7 +2260,7 @@ GameMorph.addMethods({
     
     initialize: function($super, rect) {
         $super(rect, "rect");
-	this.timeoutID = null;
+        this.timeoutID = null;
         // Set black background color for the game
         this.setFill(Color.black);
         return this;
@@ -2341,7 +2339,7 @@ WeatherWidget = Class.create(Model, {
     imagepath: "Resources/weather/",
     
     initialize: function($super) { 
-	$super();
+        $super();
         // Fetch weather upon starting the widget
         this.getWeather("6568"); // San Francisco International (SFO) as default
     },
@@ -2486,7 +2484,7 @@ WeatherWidget = Class.create(Model, {
 StockWidget = Class.create(Model, {
     
     initialize: function($super) { 
-	$super();
+        $super();
         this.imageurl = null;
         this.feed = null;
         return this;
@@ -2607,7 +2605,7 @@ StockWidget = Class.create(Model, {
         },
 
         panel.shutdown = function($super) {
-	    $super();
+            $super();
             console.log('shutting down the stock widget');
             model.timer && window.clearInterval(model.timer);
         }
@@ -2689,7 +2687,6 @@ SATELLITESURL[1] = "";
 SATELLITESURL[2] = "";
 
 var TileSize = pt(256, 256);
-
 
 /**
  * @class ZoomLevel
@@ -2821,7 +2818,6 @@ var MapFrameMorph = Class.create(Morph, {
 
     MapModel = Class.create(Model, {
 
-
     initialize: function($super, frame) {
         $super(frame);
         this.frame = frame;
@@ -2897,7 +2893,7 @@ MapMorph = Class.create(Morph, {
 
     initialize: function($super, initialBounds, online) { 
       pd("MapMorph",2);
-	$super(initialBounds,"rect");
+      $super(initialBounds,"rect");
 
       this.setFill(Color.blue.lighter());
       this.setBorderWidth(0);
@@ -2963,12 +2959,12 @@ MapMorph = Class.create(Morph, {
                     }
     
                     var img = NodeFactory.create("image", { 
-			x: -TileSize.x + ix * TileSize.x, 
-			y: -TileSize.y + iy * TileSize.y, 
-			width: 256, 
-			height: 256
-		    });
-		    img.setAttributeNS(Namespace.XLINK, "href", this.images[iy][ix]);
+                        x: -TileSize.x + ix * TileSize.x, 
+                        y: -TileSize.y + iy * TileSize.y, 
+                        width: 256, 
+                        height: 256
+                    });
+                    img.setAttributeNS(Namespace.XLINK, "href", this.images[iy][ix]);
                     img.setAttribute("id", imgId);
                     this.addChildElement(img);
                 }
@@ -2979,7 +2975,7 @@ MapMorph = Class.create(Morph, {
     }, 
   
   /*
-  This function updates mapmovement and it also adds menu to mapframe
+  This function updates map movement and it also adds menu to mapframe
   */
   okToBeGrabbedBy: function(evt) {
     console.log("coords" + evt.mousePoint + " center " + this.bounds().center()+ " in wc " +this.worldPoint(this.bounds().center()));
@@ -2991,10 +2987,12 @@ MapMorph = Class.create(Morph, {
       //pd("handlesMouseDown", 2);
       return true;
   },
+
   onMouseDown: function(evt){
       //console.log("coords" + evt.mousePoint + " center " + this.bounds().center()+ " in wc " +this.worldPoint(this.bounds().center()));
     this.startpoint = evt.mousePoint; //this line is here only bacause this morph does not listen mousedown events
   },
+
   onMouseUp: function(evt) { 
     //Sometimes map pops up from the framework... FIXME
     if (evt.mousePoint && this.startpoint){
@@ -3945,7 +3943,7 @@ var MiniMapMorph = Class.create(Morph, {
 });
 
 /**
- * @class CanvasScapeMorph
+ * @class CanvasScapeMorph: The Canvas Game Morph
  */
 
 var CanvasScapeMorph = Class.create(ClipMorph,{
@@ -4247,13 +4245,13 @@ var CanvasScapeMorph = Class.create(ClipMorph,{
                 morppi = new Morph(pt(0,0).asRectangle(),"rect"); // polygon
                 morppi.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseUp: "onMouseUp"});
                 morppi.setShape(new PolygonShape([pt(tl[0],tl[1]),pt(tr[0],tr[1]),pt(br[0],br[1]),pt(bl[0],bl[1])],
-						 Color.blue,1,Color.black));
+                                                 Color.blue,1,Color.black));
                 this.addMorph(morppi);
             } else {
                 morppi = new Morph(pt(0,0).asRectangle(),"rect"); // polygon
                 morppi.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseUp: "onMouseUp"});
                 morppi.setShape(new PolygonShape([pt(tl[0],tl[1]),pt(tr[0],tr[1]),pt(br[0],br[1]),pt(bl[0],bl[1])],
-						 this.color,1,Color.black));
+                                                 this.color,1,Color.black));
                 this.addMorph(morppi);
             }
             
@@ -4572,12 +4570,12 @@ var CanvasScapeMorph = Class.create(ClipMorph,{
     return { CanvasScapeMorph: CanvasScapeMorph };
 
 }(); // end canvascape
+
 // ===========================================================================
 // The Morphic Radial Engine Demo
 // ===========================================================================
 
 makeEngine = function() {
-
     var engine = new EngineMorph(new Rectangle(0, 0, 400, 600));
     // KP: add the top morph to the world first, to make firefox happy
     WorldMorph.current().addMorphAt(new WindowMorph(engine, 'A Lively Engine'), pt(250, 5));
@@ -4585,6 +4583,10 @@ makeEngine = function() {
     engine.makeCylinders(1); 
     engine.startSteppingScripts();
 }
+
+/**
+ * @class EngineMorph: The Radial Engine demo
+ */ 
 
 var EngineMorph = Class.create(Morph, {
 
@@ -4597,7 +4599,7 @@ var EngineMorph = Class.create(Morph, {
     },
 
     makeLayout: function() {
-	console.log("making layout " + this);
+        console.log("making layout " + this);
 
         var bnds = this.innerBounds().withHeight(this.innerBounds().width);
         var center = bnds.center();
@@ -4609,7 +4611,6 @@ var EngineMorph = Class.create(Morph, {
         this.crank.addMorph(this.crankPin);
         this.crankAngle = 0;  // goes up to 4*pi, while rotation wraps at 2*pi
         this.angleStep = Math.PI/8;
-	
 
         var menu = new MenuMorph([]);
 
@@ -4622,7 +4623,6 @@ var EngineMorph = Class.create(Morph, {
         ]);
         menu.openIn(this, pt(300,440), true, "Ignition timing"); 
 
-	
         menu = new MenuMorph([
             ["run", this, 'setRunning', true],
             ["stop", this, 'setRunning', false],
@@ -4630,7 +4630,7 @@ var EngineMorph = Class.create(Morph, {
             ["rebuild", this, 'rebuild']
         ]);
         menu.openIn(this, pt(315,515), true, "Operating State"); 
-	
+
         var label = new TextMorph(new Rectangle(0, 0, 100, 20), "The Radial Engine").beLabel();
         label.setFontSize(20);  this.addMorph(label);
         label.align(label.bounds().topCenter(), bnds.bottomCenter().addXY(0, -20));
@@ -4738,6 +4738,10 @@ var EngineMorph = Class.create(Morph, {
 });
 
 
+// ===========================================================================
+// Video Player Demo
+// ===========================================================================
+
 /*
  * PlayerMorph is the end-user interface for showing the animation
  */ 
@@ -4770,7 +4774,6 @@ var PlayerMorph = Class.create(Morph,  {
     }
     
 });
-
 
 /*
  * Animation Morph is the animation "engine" that loads the frames for the animation
@@ -4877,7 +4880,6 @@ var AnimMorph = Class.create(Morph, {
     }
 
 });
-
 
 console.log('loaded Examples.js');
 

@@ -45,21 +45,21 @@ Resource = Class.create({
 });
 
 /**
- * @class WebStore: Network-based storage
+ * @class WebStore: Network-based storage (WebDAV)
  */ 
 
 var WebStore = Class.create(Model, {
 
     defaultStore: null,
+
     onCurrentLocation: function() {
         var path = location.pathname.substring(0, location.pathname.lastIndexOf('index.xhtml'));
         if (path == "") path = "/";
         return new WebStore(location.hostname, path);
     },
 
-
     initialize: function($super, host, path) {
-	$super();
+        $super();
         this.host = host;
         this.path = path;
 
@@ -168,9 +168,9 @@ var WebStore = Class.create(Model, {
     
             onSuccess: function(transport) {
                 console.log('propfind received %s', 
-			    Exporter.nodeToString(transport.responseXML) || transport.responseText);
-		if (!transport.responseXML) 
-		    return; // FIXME: report problem
+                    Exporter.nodeToString(transport.responseXML) || transport.responseText);
+                if (!transport.responseXML) return; // FIXME: report problem
+
                 var result = Query.evaluate(transport.responseXML.documentElement, xpQueryString);
                 if (!resultType) { 
                     store[modelVariable] = result;

@@ -145,7 +145,7 @@ SimpleInspector = Class.create(Model, {
             if (thisModel.selectedItem() == null) return menu;
             menu.addLine();
             menu.addItem(['inspect selection', function() {
-		new SimpleInspector(thisModel.selectedItem()).openIn(WorldMorph.current())}])
+                new SimpleInspector(thisModel.selectedItem()).openIn(WorldMorph.current())}])
             return menu; 
         }
         return new WindowMorph(panel, 'Inspector');
@@ -437,6 +437,7 @@ function showStatsViewer(profilee,title) {
 
 // Inspection tools, called interactively
 Object.extend(console, {
+
     morphs: function(morph) {
         var array = [];
         (morph || WorldMorph.current()).submorphs.each(function(m) { array.push(m) });
