@@ -616,20 +616,18 @@ var TextMorph = Class.create(Morph, {
 
     restoreFromElement: function($super, element, importer) /*:Boolean*/ {
         if ($super(element, importer)) return true;
-
+	
         var type = element.getAttributeNS(Namespace.LIVELY, "type");
 
         switch (type) {
-        case 'TextBox':
+        case "TextBox":
 	    this.rawTextNode = element;	    
 	    this.textString = this.recoverTextContent(importer, element);
-	    var fontFamily = this.rawTextNode.getAttributeNS(null, "font-family");
-	    var fontSize = this.rawTextNode.getAttributeNS(null, "font-size");
-	    
+	    var fontFamily = element.getAttributeNS(null, "font-family");
+	    var fontSize = element.getAttributeNS(null, "font-size");
             this.font = Font.forFamily(fontFamily, fontSize);
-            this.textColor = Color.parse(this.rawTextNode.getAttributeNS(null, "fill"));
+            this.textColor = Color.parse(element.getAttributeNS(null, "fill"));
 	    return true;
-	    
         case 'Selection':
             // that's ok, it's actually transient 
             // remove all chidren b/c they're really transient
@@ -692,15 +690,6 @@ var TextMorph = Class.create(Morph, {
         return content;
     },
 
-
-    destroyRawTextNode: function() {
-	if (this.rawTextNode) {
-	    this.rawTextNode.parentNode.removeChild(this.rawTextNode);
-	    this.lines = null;
-	    this.lineNumberHint = 0;
-	    this.rawTextNode = null;
-	}
-    },
 
 
     defaultOrigin: function(bounds) { 
@@ -834,22 +823,30 @@ var TextMorph = Class.create(Morph, {
         
         if (this.rawTextNode == null) {
 
-            this.rawTextNode = NodeFactory.create("text");
-	    this.rawTextNode.setAttributeNS(Namespace.LIVELY, "type", "TextBox");
-            this.rawTextNode.setAttributeNS(null, "kerning", 0);
-	    
-	    this.rawTextNode.setAttributeNS(null, "fill", this.textColor);
-	    this.rawTextNode.setAttributeNS(null, "font-size", this.font.getSize());
-	    this.rawTextNode.setAttributeNS(null, "font-family", this.font.getFamily());
+            var node  = NodeFactory.create("text", { "kerning": 0 });
+	    node.setAttributeNS(Namespace.LIVELY, "type", "TextBox");
 
-            var topLeft = this.textTopLeft();
+	    node.setAttributeNS(null, "fill", this.textColor);
+	    node.setAttributeNS(null, "font-size", this.font.getSize());
+	    node.setAttributeNS(null, "font-family", this.font.getFamily());
 
-            this.renderText(topLeft, this.compositionWidth());
-	    // console.log("rendering lines [%s] to %s", this.lines, this.textString);
-            this.addChildElement(this.rawTextNode);
+            this.rawTextNode = this.addChildElement(node);
+
+            this.renderText(this.textTopLeft(), this.compositionWidth());
+
         }
         return this.rawTextNode; 
     },
+
+    destroyRawTextNode: function() {
+	if (this.rawTextNode) {
+	    this.rawTextNode.parentNode.removeChild(this.rawTextNode);
+	    this.lines = null;
+	    this.lineNumberHint = 0;
+	    this.rawTextNode = null;
+	}
+    },
+
     
     ensureTextString: function() { 
         // may be overrridden

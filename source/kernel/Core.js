@@ -209,9 +209,9 @@ Object.extend(Function.prototype, {
         if (!this.superclass) {
             sup = (this === Object) ? null : Object; 
         } else {
-            sup = this.superclass.constructor;
+            sup = this.superclass;
         }
-
+	
         try {
             var superNames = (sup == null) ? [] : sup.functionNames();
         } catch (e) {
