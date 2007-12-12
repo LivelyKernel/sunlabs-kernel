@@ -316,7 +316,7 @@ function populateWorldWithExamples(world) {
             if (location.protocol == 'file:') {
                 store = new WebStore('localhost', '/~kappa/'); // TODO: hardcoded
             } else {
-                store = WebStore.onCurrentLocation();
+                store = WebStore.prototype.onCurrentLocation();
             }
             WebStore.defaultStore = store;
             store.openIn(Config.webStoreInMain ? WorldMorph.current() : devWorld.myWorld, pt(460, 120));

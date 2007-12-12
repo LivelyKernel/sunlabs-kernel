@@ -16,14 +16,10 @@
  * @class Resource
  */ 
 
-Resource = Class.create({
+var Resource = Class.create({
 
-    initialize: function(href) {
-        this.href = href;
-    },
-
-    become: function() {
-        this.href = Query.evaluate(this, 'D:href')[0].textContent;
+    initialize: function(rawNode) {
+        this.href = Query.evaluate(rawNode, 'D:href')[0].textContent;
     },
 
     toString: function() {
@@ -176,9 +172,7 @@ var WebStore = Class.create(Model, {
                     store[modelVariable] = result;
                 } else { 
                     store[modelVariable] = result.map(function(r) { 
-                        // HostClass.becomeInstance(r, resultType); 
-                        r.become(); 
-                        return r;
+			return new Resource(r);
                    })
                 }
                 store.changed("get" + modelVariable);

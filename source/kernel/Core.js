@@ -1986,7 +1986,7 @@ var Importer = Class.create({
         if (!result) console.log('no mapping found for oldId %s', oldId);
         return result;
     },
-
+    
     importFromNode: function(rawNode) {
         ///console.log('making morph from %s %s', node, node.getAttributeNS(Namespace.LIVELY, "type"));
         // call reflectively b/c 'this' is not a Visual yet. 
@@ -1996,8 +1996,11 @@ var Importer = Class.create({
             throw new Error('node %1 (parent %2) cannot be a morph of %3'.format(
                             rawNode.tagName, rawNode.parentNode, morphTypeName));
         }
-
-        return new Global[morphTypeName](this, rawNode);
+	try {
+            return new Global[morphTypeName](this, rawNode);
+	} catch (er) {
+	    console.log("problem instantiating type %s", morphTypeName);
+	}
     },
     
     importFromString: function(string) {
@@ -3168,7 +3171,7 @@ Morph.addMethods({
             [((this.openForDragAndDrop) ? "close DnD" : "open DnD"), this.toggleDnD.curry(evt.mousePoint)],
             ["show Lively markup", this.addSvgInspector.curry(this)],
             ["publish shrink-wrapped as...", function() { 
-                WorldMorph.current().makeShrinkWrappedWorldWith(this, WorldMorph.current().prompt('publish as')) }],
+                WorldMorph.current().makeShrinkWrappedWorldWith([this], WorldMorph.current().prompt('publish as')) }],
             ["show stack", Function.showStack.curry()]
         ];
         var menu = new MenuMorph(items, this); 
@@ -4364,9 +4367,15 @@ var WorldMorph = Class.create(PasteUpMorph, {
         var preamble = newDoc.createElementNS(Namespace.SVG, "script");
         preamble.appendChild(newDoc.createCDATASection("Config.skipAllExamples = true"));
         mainDefs.insertBefore(preamble, mainScript);
-        var newurl = url.substring(0, url.lastIndexOf('/') + 1) + "/" + filename;
-        var container = newDoc.createElementNS(Namespace.SVG, 'g');
+        var newurl = url.substring(0, url.lastIndexOf('/') + 1) + filename;
+	var previous = newDoc.getElementById("ShrinkWrapped");
+	if (previous) {
+	    previous.parentNode.removeChild(previous);
+	}
 
+        var container = newDoc.createElementNS(Namespace.SVG, 'g');
+	
+	// console.log("morphs %s", morphs);
         morphs.each(function(morph) {
 
             var model = morph.getModel();
@@ -4375,7 +4384,7 @@ var WorldMorph = Class.create(PasteUpMorph, {
             if (model) { 
                 modelNode = morph.addChildElement(model.toMarkup(newDoc));
             }
-            container.appendChild(newDoc.importNode(morph, true));
+            container.appendChild(newDoc.importNode(morph.rawNode, true));
             if (modelNode) {
                 modelNode.parentNode.removeChild(modelNode);
             }
@@ -4397,7 +4406,7 @@ var WorldMorph = Class.create(PasteUpMorph, {
                 failed = false;
             },
             onFailure: function(transport) {
-                this.alert('failed saving world at url %s', newurl);
+                this.alert('failed saving world at url ' + newurl);
                 failed = true;
             }
         });
@@ -4406,14 +4415,18 @@ var WorldMorph = Class.create(PasteUpMorph, {
     addMorphsFrom: function(id) {
         var container = document.getElementById(id);
         if (!container) return null;
-        var morphs = [];
+        var rawNodes = [];
         for (var node = container.firstChild; node != null; node = node.nextSibling) {
             if (node.tagName != 'g') continue;
-            morphs.push(node);
+            rawNodes.push(node);
         }
-
+	
         var importer = new Importer();
-        morphs.each(function(m) { this.addMorph(importer.importFromNode(m)) }.bind(this));
+        var morphs = rawNodes.map(function(node) { 
+	    var morph = importer.importFromNode(node);
+	    this.addMorph(morph);
+	    return morph;
+	}.bind(this));
         return morphs;
     },
 
@@ -4811,6 +4824,12 @@ LinkMorph = Class.create(Morph, {
     
     initialize: function($super, otherWorld, initialPosition) {
         // In a scripter, type: world.addMorph(new LinkMorph(null))
+	if (arguments[1] instanceof Importer) {
+            $super(arguments[1], arguments[2]); // arguments[2] is rawNode
+	    // FIXME ?
+	    return;
+	}
+
         var bounds = initialPosition;
 
         // Note: Initial position can be specified either as a rectangle or point.
