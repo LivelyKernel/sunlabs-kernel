@@ -158,7 +158,7 @@ WordChunk = Class.create({
 
     // clone a chunk only copying minimal information
     cloneSkeleton: function() {
-        var c = WordChunk.createWord(this.start, this.length);
+        var c = new WordChunk(this.start, this.length);
         c.isWhite = this.isWhite;
         c.isNewLine = this.isNewLine;
         c.isTab = this.isTab;
@@ -199,41 +199,31 @@ WordChunk = Class.create({
             lString = label + ": " + lString;
         }
         console.log(lString);
-    }
-    
-});
-
-Object.extend(WordChunk, {
-
-    // create a chunk representing printable text
-    createWord: function(offset, length) {
-        var w = new WordChunk(offset, length);
-        return w;
     },
+
 
     // create a chunk representing whitespace (typically space characters)
-    createWhite: function(offset, length) {
-        var w = this.createWord(offset, length);
-        w.isWhite = true;
-        return w;
+    asWhite: function() {
+	this.isWhite = true;
+	return this;
     },
 
-    // create a chunk representing a newline
-    createNewLine: function(offset) {
-        var w = this.createWord(offset, 1);
-        w.isWhite = true;
-        w.isNewLine = true;
-        return w;
+    // create a chunk representing a newline   
+    asNewLine: function() {
+	this.isWhite = true;
+	this.isNewLine = true;
+	this.length = 1;
+	return this;
     },
 
     // create a chunk representing a tab
-    createTab: function(offset) {
-        var w = this.createWord(offset, 1);
-        w.isWhite = true;
-        w.isTab = true;
-        return w;
+    asTab: function() {
+        this.isWhite = true;
+        this.isTab = true;
+	this.length = 1;
+        return this;
     }
-
+    
 });
 
 /**
@@ -297,16 +287,16 @@ var TextLine = Class.create({
             chunkSize = 1; // default is one character long
             if (this.isWhiteSpace(wString[offset])) {
                 if (this.isNewLine(wString[offset])) {
-                    pieces.push(WordChunk.createNewLine(offset));
+                    pieces.push(new WordChunk(offset).asNewLine());
                 } else if (wString[offset] == '\t') {
-                   pieces.push(WordChunk.createTab(offset));
+                    pieces.push(new WordChunk(offset).asTab());
                 } else {
                     chunkSize = this.chunkFromSpace(wString, offset);
-                    pieces.push(WordChunk.createWhite(offset, chunkSize));
+                    pieces.push(new WordChunk(offset, chunkSize).asWhite());
                 }
            } else {
                chunkSize = this.chunkFromWord(wString, offset);
-               pieces.push(WordChunk.createWord(offset, chunkSize));
+               pieces.push(new WordChunk(offset, chunkSize));
            }
            offset += chunkSize;
         }
@@ -614,31 +604,53 @@ var TextMorph = Class.create(Morph, {
         }
     },
 
-    restoreFromElement: function($super, element, importer) /*:Boolean*/ {
-        if ($super(element, importer)) return true;
-	
-        var type = element.getAttributeNS(Namespace.LIVELY, "type");
+    restoreText: function(importer, rawTextNode) {
+	this.rawTextNode = rawTextNode;	    
 
+        var content = [];
+        for (var child = rawTextNode.firstChild; child != null; child = child.nextSibling) {
+            if (child.tagName == 'tspan')  {
+                var word = new TextWord(importer, child);
+                var lead = parseInt(word.rawNode.getAttributeNS(Namespace.LIVELY, "lead"));
+                if (lead) {
+                    for (var j = 0; j < lead; j++) 
+			content.push(" ");
+                }
+		
+                content.push(word.rawNode.textContent); 
+		
+                var trail = parseInt(word.rawNode.getAttributeNS(Namespace.LIVELY, "trail"));
+                if (trail) {
+                    for (var j = 0; j < trail; j++) 
+                        content.push(" ");
+                }
+		
+                if (word.rawNode.getAttributeNS(Namespace.LIVELY, "nl") == "true") {
+                    content.push("\n");
+                }
+            }
+        }
+	this.textString = content.join("");
+
+
+	var fontFamily = rawTextNode.getAttributeNS(null, "font-family");
+	var fontSize = rawTextNode.getAttributeNS(null, "font-size");
+        this.font = Font.forFamily(fontFamily, fontSize);
+        this.textColor = Color.parse(rawTextNode.getAttributeNS(null, "fill"));
+    },
+
+    restoreContainer: function($super, element, type, importer) /*:Boolean*/ {
+        if ($super(element, type, importer)) return true;
         switch (type) {
-        case "TextBox":
-	    this.rawTextNode = element;	    
-	    this.textString = this.recoverTextContent(importer, element);
-	    var fontFamily = element.getAttributeNS(null, "font-family");
-	    var fontSize = element.getAttributeNS(null, "font-size");
-            this.font = Font.forFamily(fontFamily, fontSize);
-            this.textColor = Color.parse(element.getAttributeNS(null, "fill"));
-	    return true;
         case 'Selection':
             // that's ok, it's actually transient 
             // remove all chidren b/c they're really transient
             this.selectionElement = NodeList.become(element, type);
-            //console.log('processing selection %s', element);
+            // console.log('processing selection %s', element);
             this.undrawSelection();
             return true;
-        default:
-            console.log('unknown type %s, element %s', type, element);
-            return false;
         }
+	return false;
     },
 
     initialize: function($super, rect, textString) {
@@ -657,37 +669,6 @@ var TextMorph = Class.create(Morph, {
 
     recoverTextContent: function(importer, rawNode) {
 
-        var content = "";
-        
-        for (var child = rawNode.firstChild; child != null; child = child.nextSibling) {
-            if (child.tagName == 'tspan')  {
-                var word = new TextWord(importer, child);
-                var lead = parseInt(word.rawNode.getAttributeNS(Namespace.LIVELY, "lead"));
-                if (lead) {
-                    var spaces = "";
-                    for (var j = 0; j < lead; j++) 
-                        spaces += ' ';
-                    content += spaces;
-                }
-
-                content += word.rawNode.textContent; 
-
-                var trail = parseInt(word.rawNode.getAttributeNS(Namespace.LIVELY, "trail"));
-                if (trail) {
-                    var spaces = "";
-                    for (var j = 0; j < trail; j++) {
-                        spaces += ' ';
-                    }
-                    content += spaces;
-                }
-
-                if (word.rawNode.getAttributeNS(Namespace.LIVELY, "nl") == "true") {
-                    content += "\n";
-                }
-
-            }
-        }
-        return content;
     },
 
 

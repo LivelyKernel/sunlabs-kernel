@@ -189,10 +189,9 @@ var ImageMorph = Class.create(Morph, {
         }
     },
 
-    restoreFromElement: function($super, element, importer) /*:Boolean*/ {
-        if ($super(element, importer)) return true;
-
-        var type = element.getAttributeNS(Namespace.LIVELY, "type");
+    
+    restoreContainerFIXME: function($super, element, type, importer) /*:Boolean*/ {
+        if ($super(element, type, importer)) return true;
 
         switch (type) {
         case 'Image':
@@ -213,6 +212,7 @@ var ImageMorph = Class.create(Morph, {
             return false;
         }
     },
+
     
     loadGraphics: function(localURL, scale) {
         if (this.image && this.image.tagName == 'image') {

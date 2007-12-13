@@ -1999,7 +1999,7 @@ var Importer = Class.create({
 	try {
             return new Global[morphTypeName](this, rawNode);
 	} catch (er) {
-	    console.log("problem instantiating type %s", morphTypeName);
+	    console.log("problem instantiating type %s tag %s", morphTypeName, rawNode.tagName);
 	}
     },
     
@@ -2095,11 +2095,12 @@ Morph = Class.create(Visual, {
             var importer = arguments[0];
             this.rawNode = arguments[1];
             this.setType(this.type); // this.type is actually a prototype var
-            console.log("restoring " + this.type + " raw node " + this.rawNode);
+            // console.log("restoring " + this.type + " raw node " + this.rawNode);
             this.pvtSetTransform(this.retrieveTransform());
             var prevId = this.pickId();
             this.prevId = prevId; // for debugging FIXME remove later!
             importer.addMapping(prevId, this); 
+	    this.restoreFromSubnodes(importer);
             this.restorePersistentState(importer);    
         } else {
             initialBounds = arguments[0];//Rectangle
@@ -2122,6 +2123,14 @@ Morph = Class.create(Visual, {
     },
 
     restorePersistentState: function(importer) {
+	return; // override in subclasses
+    },
+
+    restoreText: function(importer, node) {
+	throw new Error(this + " does not support text");
+    },
+
+    restoreFromSubnodes: function(importer) {
         //  wade through the children
         var children = [];
         for (var desc = this.rawNode.firstChild; desc != null; desc = desc.nextSibling) {
@@ -2132,24 +2141,21 @@ Morph = Class.create(Visual, {
         for (var i = 0; i < children.length; i++) {
             var node = children[i];
             switch (node.tagName) {
-            case "action": {
-                var a = node.textContent.evalJSON();
-                console.info("starting stepping %s based on %s", this, node.textContent);
-                this.startStepping(a.stepTime, a.scriptName, a.argIfAny);
-                break;
-            }
-            case "model": {
-                if (modelNode) console.warn("%s already has modelNode %s", this, modelNode);
-                modelNode = node;
-                // postpone hooking up model until all the morphs are reconstructed
-                console.info("found modelNode %s", Exporter.nodeToString(node));
-                break;
-            } 
-            case "modelPlug": {
-                this.modelPlug = this.addChildElement(Model.becomePlugNode(node));
-                console.info("%s reconstructed plug %s", this, this.modelPlug);
-                break;
-            } 
+            case "ellipse":
+		this.shape = new EllipseShape(node);
+		break;
+            case "rect":
+		this.shape = new RectShape(node);
+		break;
+            case "polyline":
+		this.shape = new PolylineShape(node);
+		break;
+            case "polygon":
+		this.shape = new PolygonShape(node);
+		break;
+	    case "text": // this shouldn't be triggered in non-TextMorphs
+		this.restoreText(importer, node);
+		break;
             case "defs": { // FIXME FIXME, this is painfully ad hoc!
                 if (this.defs) console.warn('%s already has defs %s', this, this.defs);
                 this.defs = node;
@@ -2190,15 +2196,34 @@ Morph = Class.create(Visual, {
                 break;
                 // let it be
             } 
-            default: {
+            case "g": {
                 var type = node.getAttributeNS(Namespace.LIVELY, "type");
-                if (type) {
-                    if (/FocusHalo/.test(type)) { //don't restore
-                        this.rawNode.removeChild(node);
-                    } else {
-                        this.restoreFromElement(node, importer);
-                    }   
-                } else if (node.nodeName == '#text') {
+		if (!this.restoreContainer(node, type, importer)) {
+                    console.log("unknown container %s of type %s", node, type);
+		}
+		break;
+	    }
+		// nodes from the Lively namespace
+            case "action": {
+                var a = node.textContent.evalJSON();
+                console.info("starting stepping %s based on %s", this, node.textContent);
+                this.startStepping(a.stepTime, a.scriptName, a.argIfAny);
+                break;
+            }
+            case "model": {
+                if (modelNode) console.warn("%s already has modelNode %s", this, modelNode);
+                modelNode = node;
+                // postpone hooking up model until all the morphs are reconstructed
+                console.info("found modelNode %s", Exporter.nodeToString(node));
+                break;
+            } 
+            case "modelPlug": {
+                this.modelPlug = this.addChildElement(Model.becomePlugNode(node));
+                console.info("%s reconstructed plug %s", this, this.modelPlug);
+                break;
+            } 
+	    default: {
+		if (node.nodeName == '#text') {
                     console.log('text tag name %s', node.tagName);
                     // whitespace, ignore
                 } else {
@@ -2207,53 +2232,33 @@ Morph = Class.create(Visual, {
             }
             }
         } // end for
-
+	
         if (modelNode) {
             var model = importer.importModelFrom(modelNode);
             this.rawNode.removeChild(modelNode); // currently modelNode is not permanently stored 
         }
     },
     
-    restoreFromElement: function(element/*:Element*/, importer/*Importer*/)/*:Boolean*/ {
-        if (!element || !element.tagName) {
-            console.log('undefined element %s %s', element, element && element.tagName);
-            return;
-        }
-        
-        switch (element.tagName) {
-        case "ellipse":
-            this.shape = new EllipseShape(element);
-            return true;
-        case "rect":
-            this.shape = new RectShape(element);
-            return true;
-        case "polyline":
-            this.shape = new PolylineShape(element);
-            return true;
-        case "polygon":
-            this.shape = new PolygonShape(element);
-            return true;
-        }
-
-        var type = element.getAttributeNS(Namespace.LIVELY, 'type');
-        
+    restoreContainer: function(element/*:Element*/, type /*:String*/, importer/*Importer*/)/*:Boolean*/ {
         switch (type) {
-        case 'Submorphs':
+        case "Submorphs":
             this.rawSubnodes = NodeList.become(element, type);
-
+	    
             NodeList.each(this.rawSubnodes, 
-                function(node) { 
-                    var morph = importer.importFromNode(node);
-                    this.submorphs.push(morph); 
-                    morph.owner = this;
-                }.bind(this));
+			  function(node) { 
+			      var morph = importer.importFromNode(node);
+			      this.submorphs.push(morph); 
+			      morph.owner = this;
+			  }.bind(this));
             // console.log('recursed into children of %s and got', this,  this.submorphs);
             return true;
-        case 'FocusHalo':
+        case "FocusHalo":
+	    this.rawNode.removeChild(element);
             return true;
+	default:
+	    return false;
         }
         
-        return false;
     },
     
     relativizeBounds: function(rect) {
