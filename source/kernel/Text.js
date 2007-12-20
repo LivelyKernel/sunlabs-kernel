@@ -18,7 +18,6 @@ var WrapStyle = {
     SHRINK: "shrinkWrap" // sets both width and height based on line breaks only
 };
 
-
 var TextMorph = (function() {
 
 /**
@@ -121,7 +120,6 @@ var TextWord = Class.create(TextCompatibilityTrait, {
     
 });
 
-
 /**
  * @class WordChunk
  * This 'class' represents a chunk of text which might be printable or might be whitespace
@@ -201,26 +199,25 @@ WordChunk = Class.create({
         console.log(lString);
     },
 
-
     // create a chunk representing whitespace (typically space characters)
     asWhite: function() {
-	this.isWhite = true;
-	return this;
+        this.isWhite = true;
+        return this;
     },
 
     // create a chunk representing a newline   
     asNewLine: function() {
-	this.isWhite = true;
-	this.isNewLine = true;
-	this.length = 1;
-	return this;
+        this.isWhite = true;
+        this.isNewLine = true;
+        this.length = 1;
+        return this;
     },
 
     // create a chunk representing a tab
     asTab: function() {
         this.isWhite = true;
         this.isTab = true;
-	this.length = 1;
+        this.length = 1;
         return this;
     }
     
@@ -230,7 +227,6 @@ WordChunk = Class.create({
  * @class TextLine
  * This 'class' renders lines composed of words and whitespace
  */ 
-
 var TextLine = Class.create({
 
     // create a new line
@@ -531,11 +527,9 @@ var TextLine = Class.create({
     
 });
 
-
 /**
  * @class TextMorph
  */ 
-
 var TextMorph = Class.create(Morph, {
 
     // these are prototype variables
@@ -552,7 +546,6 @@ var TextMorph = Class.create(Morph, {
     type: "TextMorph",
     tabWidth: 4,
     tabsAsSpaces: true,
-
 
     initializeTransientState: function($super, initialBounds) {
         $super(initialBounds);
@@ -587,7 +580,7 @@ var TextMorph = Class.create(Morph, {
     },
     
     /*
-  // FIXME: this bizarre "fix" helps Opera layout 
+    // FIXME: this bizarre "fix" helps Opera layout 
     relativizeBounds: function($super, rect) {
         if (!Prototype.Browser.Opera) return $super(rect);
         return rect.clone();
@@ -605,7 +598,7 @@ var TextMorph = Class.create(Morph, {
     },
 
     restoreText: function(importer, rawTextNode) {
-	this.rawTextNode = rawTextNode;	    
+        this.rawTextNode = rawTextNode;    
 
         var content = [];
         for (var child = rawTextNode.firstChild; child != null; child = child.nextSibling) {
@@ -613,28 +606,26 @@ var TextMorph = Class.create(Morph, {
                 var word = new TextWord(importer, child);
                 var lead = parseInt(word.rawNode.getAttributeNS(Namespace.LIVELY, "lead"));
                 if (lead) {
-                    for (var j = 0; j < lead; j++) 
-			content.push(" ");
+                    for (var j = 0; j < lead; j++) content.push(" ");
                 }
-		
+
                 content.push(word.rawNode.textContent); 
-		
+
                 var trail = parseInt(word.rawNode.getAttributeNS(Namespace.LIVELY, "trail"));
                 if (trail) {
                     for (var j = 0; j < trail; j++) 
                         content.push(" ");
                 }
-		
+
                 if (word.rawNode.getAttributeNS(Namespace.LIVELY, "nl") == "true") {
                     content.push("\n");
                 }
             }
         }
-	this.textString = content.join("");
+        this.textString = content.join("");
 
-
-	var fontFamily = rawTextNode.getAttributeNS(null, "font-family");
-	var fontSize = rawTextNode.getAttributeNS(null, "font-size");
+        var fontFamily = rawTextNode.getAttributeNS(null, "font-family");
+        var fontSize = rawTextNode.getAttributeNS(null, "font-size");
         this.font = Font.forFamily(fontFamily, fontSize);
         this.textColor = Color.parse(rawTextNode.getAttributeNS(null, "fill"));
     },
@@ -650,7 +641,7 @@ var TextMorph = Class.create(Morph, {
             this.undrawSelection();
             return true;
         }
-	return false;
+        return false;
     },
 
     initialize: function($super, rect, textString) {
@@ -666,12 +657,9 @@ var TextMorph = Class.create(Morph, {
         return this;
     },
 
-
     recoverTextContent: function(importer, rawNode) {
 
     },
-
-
 
     defaultOrigin: function(bounds) { 
         return bounds.topLeft(); 
@@ -799,17 +787,16 @@ var TextMorph = Class.create(Morph, {
     },
 
     ensureRendered: function() { // created on demand and cached
-        if (this.ensureTextString() == null)
-	    return null;
+        if (this.ensureTextString() == null) return null;
         
         if (this.rawTextNode == null) {
 
             var node  = NodeFactory.create("text", { "kerning": 0 });
-	    node.setAttributeNS(Namespace.LIVELY, "type", "TextBox");
+            node.setAttributeNS(Namespace.LIVELY, "type", "TextBox");
 
-	    node.setAttributeNS(null, "fill", this.textColor);
-	    node.setAttributeNS(null, "font-size", this.font.getSize());
-	    node.setAttributeNS(null, "font-family", this.font.getFamily());
+            node.setAttributeNS(null, "fill", this.textColor);
+            node.setAttributeNS(null, "font-size", this.font.getSize());
+            node.setAttributeNS(null, "font-family", this.font.getFamily());
 
             this.rawTextNode = this.addChildElement(node);
 
@@ -820,15 +807,14 @@ var TextMorph = Class.create(Morph, {
     },
 
     destroyRawTextNode: function() {
-	if (this.rawTextNode) {
-	    this.rawTextNode.parentNode.removeChild(this.rawTextNode);
-	    this.lines = null;
-	    this.lineNumberHint = 0;
-	    this.rawTextNode = null;
-	}
+        if (this.rawTextNode) {
+            this.rawTextNode.parentNode.removeChild(this.rawTextNode);
+            this.lines = null;
+            this.lineNumberHint = 0;
+            this.rawTextNode = null;
+        }
     },
 
-    
     ensureTextString: function() { 
         // may be overrridden
         return this.textString; 
@@ -836,12 +822,11 @@ var TextMorph = Class.create(Morph, {
 
     // return the bounding rectangle for the index-th character in textString    
     getCharBounds: function(index) {
-	this.ensureRendered();
-	if (this.lines) {
+        this.ensureRendered();
+        if (this.lines) {
             var line = this.lineForIndex(index);
             return line == null ? null : line.getBounds(index); 
-	} else
-	    return null;
+        } else return null;
     },
 
     // compose the lines if necessary and then render them
@@ -880,7 +865,7 @@ var TextMorph = Class.create(Morph, {
     lineNumberForIndex: function(stringIndex) {
         // Could use a binary search, but instead we check same as last time,
         // then next line after, and finally a linear search.
-	console.assert(this.lines != null, "null lines in " + this + "," + (new Error()).stack);
+        console.assert(this.lines != null, "null lines in " + this + "," + (new Error()).stack);
         if (this.lineNumberHint < this.lines.length && 
             this.lines[this.lineNumberHint].containsThisIndex(stringIndex))
             return this.lineNumberHint;  // Same line as last time
@@ -907,7 +892,7 @@ var TextMorph = Class.create(Morph, {
         for (var i = 0; i < this.lines.length; i++) {
             line = this.lines[i];
             if (y < this.lines[i].getTopY() + this.lineHeight()) {
-		// console.log('hit line ' + i + ' for y ' + y + ' slice ' + line.startIndex + "," + line.stopIndex);
+                // console.log('hit line ' + i + ' for y ' + y + ' slice ' + line.startIndex + "," + line.stopIndex);
                 return line; 
             }
         }
@@ -1020,7 +1005,7 @@ var TextMorph = Class.create(Morph, {
 
         this.undrawSelection();
 
-	var jRect;
+        var jRect;
         if (this.selectionRange[0] > this.textString.length - 1) { // null sel at end
             jRect = this.getCharBounds(this.selectionRange[0]-1);
             if (jRect) {
@@ -1394,7 +1379,7 @@ TextMorph.addMethods({
         this.textString = replacement;
         this.recordChange('textString');
     
-	this.destroyRawTextNode();
+        this.destroyRawTextNode();
         this.layoutChanged(); 
         this.changed();
     },
