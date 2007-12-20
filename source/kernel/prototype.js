@@ -14,7 +14,8 @@ var Prototype = {
     Opera:  !!window.opera,
     WebKit: navigator.userAgent.indexOf('AppleWebKit/') > -1,
     Gecko:  navigator.userAgent.indexOf('Gecko') > -1 && navigator.userAgent.indexOf('KHTML') == -1,
-    MobileSafari: !!navigator.userAgent.match(/Apple.*Mobile.*Safari/)
+    MobileSafari: !!navigator.userAgent.match(/Apple.*Mobile.*Safari/),
+    Rhino:  navigator.userAgent.indexOf('Rhino') > -1
   },
 
   BrowserFeatures: {
@@ -35,7 +36,7 @@ var Prototype = {
 if (Prototype.Browser.MobileSafari)
   Prototype.BrowserFeatures.SpecificElementExtensions = false;
 
-if (Prototype.Browser.WebKit)
+if (Prototype.Browser.WebKit || navigator.userAgent.indexOf("Rhino") > -1)
   Prototype.BrowserFeatures.XPath = false;
 
 /* Based on Alex Arnell's inheritance implementation. */
@@ -2660,6 +2661,7 @@ Element.addMethods = function(methods) {
   Element.cache = { };
 };
 
+if (!Prototype.Browser.Rhino) 
 document.viewport = {
   getDimensions: function() {
     var dimensions = { };
@@ -3656,6 +3658,7 @@ Form.EventObserver = Class.create(Abstract.EventObserver, {
 });
 if (!window.Event) var Event = { };
 
+if (!Prototype.Browser.Rhino)
 Object.extend(Event, {
   KEY_BACKSPACE: 8,
   KEY_TAB:       9,
@@ -3685,7 +3688,9 @@ Object.extend(Event, {
   }
 });
 
+if (!Prototype.Browser.Rhino) {
 Event.Methods = (function() {
+
   if (Prototype.Browser.IE) {
     function isButton(event, code) {
       return event.button == ({ 0: 1, 1: 4, 2: 2 })[code];
@@ -3926,6 +3931,7 @@ Object.extend(document, {
   observe:       Element.Methods.observe.methodize(),
   stopObserving: Element.Methods.stopObserving.methodize()
 });
+}// if !Rhino
 
 (function() {
   /* Support for the DOMContentLoaded event is based on work by Dan Webb,
@@ -4080,7 +4086,7 @@ var Position = {
 };
 
 /*--------------------------------------------------------------------------*/
-
+if (!Prototype.Browser.Rhino) {
 if (!document.getElementsByClassName) document.getElementsByClassName = function(instanceMethods){
   function iter(name) {
     return name.blank() ? null : "[contains(concat(' ', @class, ' '), ' " + name + " ')]";
@@ -4152,3 +4158,4 @@ Object.extend(Element.ClassNames.prototype, Enumerable);
 /*--------------------------------------------------------------------------*/
 
 Element.addMethods();
+}// if !Rhino

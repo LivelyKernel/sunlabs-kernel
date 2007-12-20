@@ -49,8 +49,9 @@ var ButtonMorph = Class.create(Morph, {
             
             var model = new SimpleModel(this, "Value");
             // this default self connection may get overwritten by, eg, connectModel()...
-            this.modelPlug = this.addChildElement(model.makePlug());
-    
+            this.modelPlug = model.makePlug();
+	    this.addChildElement(this.modelPlug.rawNode);
+
             // Styling
             this.setModelValue('setValue', false);
             this.changeAppearanceFor(false);
@@ -146,7 +147,7 @@ var ButtonMorph = Class.create(Morph, {
     },
 
     onKeyDown: function(evt) {
-        switch (Event.sanitizedKeyCode(evt)) {
+        switch (evt.sanitizedKeyCode()) {
         case Event.KEY_RETURN:
         case Event.KEY_SPACEBAR:
             this.changeAppearanceFor(true);
@@ -158,7 +159,7 @@ var ButtonMorph = Class.create(Morph, {
 
     onKeyUp: function(evt) {
         var newValue = this.isToggle() ? !this.getValue() : false;
-        switch (Event.sanitizedKeyCode(evt)) {
+        switch (evt.sanitizedKeyCode()) {
         case Event.KEY_RETURN:
         case Event.KEY_SPACEBAR:
             this.changeAppearanceFor(newValue);
@@ -200,8 +201,8 @@ var ImageMorph = Class.create(Morph, {
                 // this brittle and annoying piece of code is a workaround around the likely brokenness
                 // of Safari's XMLSerializer's handling of namespaces
                 this.removeChild(image);
-                this.dim = pt(parseInt(image.getAttribute("width")), 
-                              parseInt(image.getAttribute("height")));
+                this.dim = pt(parseInt(image.getAttributeNS(null, "width")), 
+                              parseInt(image.getAttributeNS(null, "height")));
                 var href = image.getAttributeNS(null /* "xlink"*/, "href");
                 this.loadURL(href);
             } else {
@@ -476,8 +477,8 @@ var TitleTabMorph = Class.create(Morph, {
     
     initialize: function($super, headline, windowWidth, windowMorph, isExternal) {
         this.windowMorph = windowMorph;
-        const bh = 0;//this.barHeight;
-        const spacing = 0;// this.controlSpacing;
+        var  bh = 0;//this.barHeight;
+        var spacing = 0;// this.controlSpacing;
         $super(new Rectangle(0, isExternal? - bh : 0, windowWidth, bh), "rect");
         this.linkToStyles(['titleBar']);
         this.ignoreEvents();
@@ -568,7 +569,7 @@ var WindowControlMorph = Class.create(Morph, {
     
     checkForControlPointNear: function() { return false; },
     
-    okToBeGrabbedBy: function() { return this.isDesignMode() ? this : null; },
+    okToBeGrabbedBy: function() { return null; },
     
     showHelp: function(evt) {
         if (Config.suppressBalloonHelp) return;  // DI: maybe settable in window menu?
@@ -1166,7 +1167,7 @@ var PanelMorph = Class.create(Morph, {
     },    
     
     onKeyPress: function(evt) {
-        switch (Event.sanitizedKeyCode(evt)) {
+        switch (evt.sanitizedKeyCode()) {
         case Event.KEY_TAB: { 
             this.focusOnNext(evt);
             evt.stop();
@@ -1254,7 +1255,8 @@ var CheapListMorph = Class.create(TextMorph, {
             this.itemList = itemList;
             // this default self connection may get overwritten by, eg, connectModel()...
             var model = new SimpleModel(null, "List", "Selection");
-            this.modelPlug = this.addChildElement(model.makePlug());
+            this.modelPlug = model.makePlug();
+	    this.addChildElement(this.modelPlug.rawNode);
             this.setModelValue('setList', itemList);
         }
 
@@ -1275,7 +1277,7 @@ var CheapListMorph = Class.create(TextMorph, {
     },
 
     onKeyPress: function(evt) {
-        switch (Event.sanitizedKeyCode(evt)) {
+        switch (evt.sanitizedKeyCode()) {
         case Event.KEY_UP: {
             var lineNo = this.selectedLineNo();
             if (lineNo > 0) {
@@ -1562,7 +1564,9 @@ var SliderMorph = Class.create(Morph, {
             $super(initialBounds, "rect");
             var model = new SimpleModel(null, "Value", "Extent");
             // this default self connection may get overwritten by, eg, connectModel()...
-            this.modelPlug = this.addChildElement(model.makePlug());
+            this.modelPlug = model.makePlug();
+	    this.addChildElement(this.modelPlug.rawNode);
+
             this.scale = (scaleIfAny == null) ? 1.0 : scaleIfAny;
             var slider = new Morph(new Rectangle(0, 0, 8, 8), "rect");
             slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});
@@ -1720,13 +1724,13 @@ var SliderMorph = Class.create(Morph, {
     onKeyPress: function(evt) {
         var delta = 0;
         if (this.vertical()) {
-            switch (Event.sanitizedKeyCode(evt)) {
+            switch (evt.sanitizedKeyCode()) {
             case Event.KEY_DOWN: delta = 1; break;
             case Event.KEY_UP:  delta = -1; break;
             default: return false;
             } 
         } else {
-            switch (Event.sanitizedKeyCode(evt)) {
+            switch (evt.sanitizedKeyCode()) {
             case Event.KEY_RIGHT: delta = 1;  break;    
             case Event.KEY_LEFT:  delta = -1; break;
             default: return false;

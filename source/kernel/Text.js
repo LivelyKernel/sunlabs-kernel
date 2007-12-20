@@ -736,14 +736,14 @@ var TextMorph = Class.create(Morph, {
         // morph.isAccepting = false;
         this.ignoreEvents();
         this.layoutChanged();
-        this.okToBeGrabbedBy = function(evt) { this.isDesignMode() ? this : null; }
+        this.okToBeGrabbedBy = function(evt) {  return null; }
         return this;
     },
 
     beInputLine: function() {
         this.setWrapStyle(WrapStyle.NONE);
         this.onKeyPress = function(evt) {
-            if (Event.sanitizedKeyCode(evt) == Event.KEY_RETURN) {
+            if (evt.sanitizedKeyCode() == Event.KEY_RETURN) {
                 this.saveContents(this.textString);
                 return true;
             } else {
@@ -751,7 +751,7 @@ var TextMorph = Class.create(Morph, {
             }
         };
 
-        this.okToBeGrabbedBy = function(evt) { this.isDesignMode() ? this : null; }
+        this.okToBeGrabbedBy = function(evt) { return null; }
         return this;
     },
 
@@ -1223,7 +1223,7 @@ var TextMorph = Class.create(Morph, {
         
         var before = this.textString.substring(0, this.selectionRange[0]); 
         
-        switch (Event.sanitizedKeyCode(evt)) {
+        switch (evt.sanitizedKeyCode()) {
         case Event.KEY_LEFT: {
             // forget the existing selection
             this.setNullSelectionAt(Math.max(before.length - 1, 0));

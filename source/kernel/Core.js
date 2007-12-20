@@ -21,8 +21,6 @@ var Global = this;
 
 var Canvas = document.getElementById("canvas"); // singleton for now
 
-var Font = window.parent.Font;
-
 window.parent.console.platformConsole = console;
 var console = window.parent.console;
 window.onerror = function(message, url, code) {
@@ -30,7 +28,7 @@ window.onerror = function(message, url, code) {
 };
 
 Namespace =  {
-    SVG : Canvas.getAttribute("xmlns"),
+    SVG : "http://www.w3.org/2000/svg", // Canvas.getAttribute("xmlns"),
     // Safari XMLSerializer seems to do weird things w/namespaces
     // Opera apparently doesn't understand Canvas.getAttribute("foo:bar")
     LIVELY : Prototype.Browser.WebKit ? null : "http://www.experimentalstuff.com/Lively", // Canvas.getAttribute("xmlns:lively"), 
@@ -104,6 +102,7 @@ var NodeFactory = {
     
     create: function(name, attributes) {
         return this.createNS(Namespace.SVG, name, attributes);
+        //return this.createNS(null, name, attributes);
     }
     
 };
@@ -495,7 +494,9 @@ Rectangle = Class.create({
 Rectangle.addMethods({
 
     containsPoint: function(p) {
+	
         return this.x <= p.x && p.x <= this.x + this.width && this.y<= p.y && p.y <= this.y + this.height;
+
     },
 
     containsRect: function(r) {
@@ -1053,7 +1054,104 @@ Object.extend(CharSet, {
  * refer to, e.g., David Flanagan's book (JavaScript: The Definitive Guide) 
  */
 
-(function() {
+
+var Event = (function() {
+    var tmp = Event; // note we're rebinding the name Event to point to a different class 
+    var Event = Class.create({
+	initialize: function(rawEvent) {
+	    this.rawEvent = rawEvent;
+	    this.type = rawEvent.type;
+	    this.keyCode = rawEvent.keyCode;
+	    this.charCode = rawEvent.charCode;
+	    this.altKey = rawEvent.altKey;
+	    this.shiftKey = rawEvent.shiftKey;
+
+            if (isMouse(rawEvent)) {
+		var x = rawEvent.pageX || rawEvent.clientX;
+		var y = rawEvent.pageY || rawEvent.clientY;
+		
+                // note that FF doesn't doesnt calculate offsetLeft/offsetTop early enough we don't precompute these values
+                // assume the parent node of Canvas has the same bounds as Canvas
+
+                this.mousePoint = pt(x - (Canvas.parentNode.offsetLeft || 0), 
+                                     y - (Canvas.parentNode.offsetTop  || 0) - 3);
+		// console.log("mouse point " + this.mousePoint);
+                //event.mousePoint = pt(event.clientX, event.clientY  - 3);
+                this.priorPoint = this.mousePoint; 
+                // Safari somehow gets the x and y coords so we add them here to Firefox too --PR
+                // console.log("InitMouseOver fix for Firefox evt.x=%s evt.clientX", event.x, event.clientX);
+                this.x = x;
+                this.y = y;
+		
+            } 
+            this.hand = null;
+        
+            // use event.timeStamp
+            // event.msTime = (new Date()).getTime();
+            this.mouseButtonPressed = false;
+	},
+
+	stopPropagation: function() {
+	    this.rawEvent.stopPropagation();
+	},
+	preventDefault: function() {
+	    this.rawEvent.preventDefault();
+	},
+	stop: function() {
+	    this.preventDefault();
+	    this.stopPropagation();
+	},
+        setButtonPressedAndPriorPoint: function(buttonPressed, priorPoint) {
+            this.mouseButtonPressed = buttonPressed;
+            // if moving or releasing, priorPoint will get found by prior morph
+            this.priorPoint = priorPoint; 
+        },
+
+        sanitizedKeyCode: function() {
+            // if (this.type != 'keypress')
+            // return;
+            with (Event.Safari) {
+                switch (this.rawEvent.keyCode) {
+                case KEY_LEFT: return Event.KEY_LEFT;
+                case KEY_UP: return Event.KEY_UP;
+                case KEY_RIGHT: return Event.KEY_RIGHT;
+                case KEY_DOWN: return Event.KEY_DOWN;
+                case KEY_DELETE: return Event.KEY_DELETE;
+                case KEY_END: return Event.KEY_END;
+                case KEY_HOME: return Event.KEY_HOME;
+                case KEY_PAGE_UP: return Event.KEY_PAGE_UP;
+                case KEY_PAGE_DOWN: return Event.KEY_PAGE_DOWN;
+                }
+            }
+            return this.rawEvent.keyCode;
+        },
+    
+        capitalizedType: function() {
+            return capitalizer.get(this.type) || this.type;
+        }
+
+    });
+    Event.rawEvent = tmp;
+    Event.extend = function () {} // dummy function to fool prototype.js
+
+
+    Object.extend(Event, {
+	KEY_BACKSPACE: 8,
+	KEY_TAB:       9,
+	KEY_RETURN:   13,
+	KEY_ESC:      27,
+	KEY_LEFT:     37,
+	KEY_UP:       38,
+	KEY_RIGHT:    39,
+	KEY_DOWN:     40,
+	KEY_DELETE:   46,
+	KEY_HOME:     36,
+	KEY_END:      35,
+	KEY_PAGEUP:   33,
+	KEY_PAGEDOWN: 34,
+	KEY_INSERT:   45
+    });
+
     var capitalizer = $H({ mouseup: 'MouseUp', mousedown: 'MouseDown', mousemove: 'MouseMove', 
         mouseover: 'MouseOver', mouseout: 'MouseOut', 
         keydown: 'KeyDown', keypress: 'KeyPress', keyup: 'KeyUp' });
@@ -1091,71 +1189,17 @@ Object.extend(CharSet, {
         },
     
         makeSyntheticMouseEvent: function() {
+	    //if (Prototype.Browser.Rhino) 
+	    return null;
             var evt = document.createEvent("MouseEvents");
             // cf. http://developer.mozilla.org/en/docs/DOM:document.createEvent
             evt.initMouseEvent("mousemove", true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
-            return Event.init(evt);
+            return new Event(evt);
         },
     
-        capitalizedType: function(evt) {
-            return capitalizer.get(evt.type) || evt.type;
-        },
-    
-        setButtonPressedAndPriorPoint: function(evt, buttonPressed, priorPoint) {
-            evt.mouseButtonPressed = buttonPressed;
-            // if moving or releasing, priorPoint will get found by prior morph
-            evt.priorPoint = priorPoint; 
-        },
-    
-        sanitizedKeyCode: function(evt) {
-            // if (this.type != 'keypress')
-            // return;
-            with (Event.Safari) {
-                switch (evt.keyCode) {
-                case KEY_LEFT: return Event.KEY_LEFT;
-                case KEY_UP: return Event.KEY_UP;
-                case KEY_RIGHT: return Event.KEY_RIGHT;
-                case KEY_DOWN: return Event.KEY_DOWN;
-                case KEY_DELETE: return Event.KEY_DELETE;
-                case KEY_END: return Event.KEY_END;
-                case KEY_HOME: return Event.KEY_HOME;
-                case KEY_PAGE_UP: return Event.KEY_PAGE_UP;
-                case KEY_PAGE_DOWN: return Event.KEY_PAGE_DOWN;
-                }
-            }
-            return evt.keyCode;
-        },
-    
-        init: function(event) {
-            if (!Event.prototype) { // I.E. doesn't have it.
-                Object.extend(event, methods);
-            }
-    
-            if (isMouse(event)) {
-                // note that FF doesn't doesnt calculate offsetLeft/offsetTop early enough we don't precompute these values
-                // assume the parent node of Canvas has the same bounds as Canvas
-                event.mousePoint = pt(event.pageX - (Canvas.parentNode.offsetLeft || 0), 
-                                      event.pageY - (Canvas.parentNode.offsetTop  || 0) - 3);
-    
-                //event.mousePoint = pt(event.clientX, event.clientY  - 3);
-                event.priorPoint = event.mousePoint; 
-                // Safari somehow gets the x and y coords so we add them here to Firefox too --PR
-                // console.log("InitMouseOver fix for Firefox evt.x=%s evt.clientX", event.x, event.clientX);
-                if (event.x == null && event.y == null) {
-                    event.x = event.mousePoint.x;
-                    event.y = event.mousePoint.y;
-                }    
-            } 
-            event.hand = null;
-        
-            // use event.timeStamp
-            // event.msTime = (new Date()).getTime();
-            event.mouseButtonPressed = false;
-            return event;
-        }
     
     });
-
+    return Event;
 })();
 
 Object.extend(window.parent, {
@@ -1164,6 +1208,7 @@ Object.extend(window.parent, {
     onfocus: function(evt) { /*console.log('window got focus event %s', evt);*/ }
 });
 
+if (!Prototype.Browser.Rhino)
 Object.extend(document, {
     oncontextmenu: function(evt) { 
         var targetMorph = evt.target.parentNode; // target is probably shape (change me if pointer-events changes for shapes)
@@ -1293,7 +1338,7 @@ Visual = Class.create({
         */
         // KP: Safari needs the attribute instead of the programmatic thing
         // KP: FIXME remove when wrapper transformation is complete
-        this.rawNode.setAttributeNS(null, 'transform', transform.toAttributeValue());
+        this.rawNode.setAttributeNS(null, "transform", transform.toAttributeValue());
     },
 
     retrieveTransform: function() {
@@ -1501,7 +1546,7 @@ var EllipseShape = Class.create(Shape, {
         if (rectOrRawNode instanceof Node) {
             this.rawNode = rectOrRawNode;
         } else {
-            this.rawNode = NodeFactory.create("ellipse");
+	    this.rawNode = NodeFactory.create("ellipse");
             this.setBounds(rectOrRawNode);
         }
         $super(color, borderWidth, borderColor);
@@ -1533,6 +1578,8 @@ var EllipseShape = Class.create(Shape, {
     },
     
     bounds: function() {
+	//console.log("rawNode " + this.rawNode);
+	// for (var prop in this.rawNode) console.log("prop " + prop + " = " + this.rawNode[prop]);
         var w = this.rawNode.rx.baseVal.value * 2;
         var h = this.rawNode.ry.baseVal.value * 2; 
         var x = this.rawNode.cx.baseVal.value - this.rawNode.rx.baseVal.value;
@@ -1557,6 +1604,8 @@ var EllipseShape = Class.create(Shape, {
 
 var PolygonShape = Class.create(Shape, {
 
+    shouldCacheVertices: false,
+    
     initialize: function($super, vertlistOrRawNode, color, borderWidth, borderColor) {
         if (vertlistOrRawNode instanceof Node) {
             this.rawNode = vertlistOrRawNode;
@@ -1573,12 +1622,17 @@ var PolygonShape = Class.create(Shape, {
     },
     
     setVertices: function(vertlist) {
-        this.rawNode.points.clear();
+	if (this.rawNode.points)
+            this.rawNode.points.clear();
         this.rawNode.setAttributeNS(null, "points", vertlist.map(function (p) { return p.x + "," + p.y }).join(' '));
+	if (this.shouldCacheVertices)
+	    this.cachedVertices = vertlist.clone();
         // vertlist.forEach( function(p) {  this.points.appendItem(p); }, this);
     },
 
     vertices: function() {
+	if (this.shouldCacheVertices && this.cachedVertices) 
+	    return this.cachedVertices;
         var array = [];
         for (var i = 0; i < this.rawNode.points.numberOfItems; i++) {
             array.push(Point.ensure(this.rawNode.points.getItem(i)));
@@ -1594,7 +1648,10 @@ var PolygonShape = Class.create(Shape, {
     bounds: function() {
         // FIXME very quick and dirty, consider caching or iterating over this.points
         var vertices = this.vertices();
-        console.assert(vertices.length > 0, "PolygonShape.prototype.bounds");
+	// Opera has been known not to update the SVGPolygonShape.points property to reflect the SVG points attribute
+        console.assert(vertices.length > 0, 
+		       "PolygonShape.bounds: vertices has zero length, " + this.rawNode.points 
+		       + " vs " + this.rawNode.getAttributeNS(null, "points"));
         return Rectangle.unionPts(vertices);
     },
 
@@ -1907,7 +1964,7 @@ MouseHandlerForDragging = Class.create({
     },
 
     handleMouseEvent: function(evt, targetMorph) {
-        var capType = Event.capitalizedType(evt);
+        var capType = evt.capitalizedType();
         var handler = targetMorph['on' + capType];
         if (capType == "MouseDown") evt.hand.setMouseFocus(targetMorph);
         if (handler == null) console.log("bah, null handler on " + capType);
@@ -2020,8 +2077,9 @@ var Importer = Class.create({
         
         for (var node = ptree.firstChild; node != null; node = node.nextSibling) {
             switch (node.tagName) {
+	    case "a0:dependent": // Firefox cheat
             case "dependent":
-                var oldId = node.getAttribute('ref');
+                var oldId = node.getAttributeNS(Namespace.LIVELY, "ref");
                 var dependent = this.lookupMorph(oldId);
                 if (!dependent)  {
                     console.warn('dep %s not found', oldId);
@@ -2030,8 +2088,9 @@ var Importer = Class.create({
                 dependent.modelPlug.model = model;
                 model.addDependent(dependent);
                 break;
+	    case "a0:variable": // Firefox cheat
             case "variable":
-                var name = node.getAttribute('name');
+                var name = node.getAttributeNS(Namespace.LIVELY, "name");
                 var value = node.textContent;
                 if (value) {
                     value = value.evalJSON();
@@ -2130,6 +2189,46 @@ Morph = Class.create(Visual, {
 	throw new Error(this + " does not support text");
     },
 
+    restoreDefs: function(node) {
+	// FIXME FIXME, this is painfully ad hoc!
+        if (this.defs) console.warn('%s already has defs %s', this, this.defs);
+        this.defs = node;
+        for (var def = node.firstChild; def != null; def = def.nextSibling) {
+            switch (def.tagName) {
+            case "clipPath":
+                var newPathId = "clipPath_" + this.id;
+                var myClipPath = this.rawNode.getAttributeNS(null, 'clip-path');
+                if (myClipPath) {
+                    this.rawNode.setAttributeNS(null, 'clip-path', 'url(#'  + newPathId + ')');
+                    this.clipPath = def;
+                } else { 
+                    console.log('myClip is undefined on %s', this); 
+                }
+                def.setAttribute('id', newPathId);
+                console.log('assigned new id %s', def.getAttribute('id'));
+                break;
+            case "linearGradient":
+            case "radialGradient": // FIXME gradients can be used on strokes too
+                var newFillId = "fill_" + this.id;
+                if (this.shape) {
+                    var myFill = this.shape.rawNode.getAttributeNS(null, 'fill');
+                    if (myFill) {
+                        this.shape.rawNode.setAttributeNS(null, 'fill', 'url(#' + newFillId + ')');
+                        this.fill = def;
+                    } else {
+                        console.warn('myFill undefined on %s', this);
+                    }
+                } else {
+                    console.warn('ouch, cant set fill %s yet, no shape...', newFillId);
+                }
+                def.setAttribute('id', newFillId);
+                break;
+            default:
+                console.warn('unknown def %s', def);
+            }
+        }
+    },
+
     restoreFromSubnodes: function(importer) {
         //  wade through the children
         var children = [];
@@ -2153,49 +2252,12 @@ Morph = Class.create(Visual, {
             case "polygon":
 		this.shape = new PolygonShape(node);
 		break;
+            case "defs": 
+                this.restoreDefs(node);
+		break;
 	    case "text": // this shouldn't be triggered in non-TextMorphs
 		this.restoreText(importer, node);
 		break;
-            case "defs": { // FIXME FIXME, this is painfully ad hoc!
-                if (this.defs) console.warn('%s already has defs %s', this, this.defs);
-                this.defs = node;
-                for (var def = node.firstChild; def != null; def = def.nextSibling) {
-                    switch (def.tagName) {
-                    case "clipPath":
-                        var newPathId = "clipPath_" + this.id;
-                        var myClipPath = this.rawNode.getAttributeNS(null, 'clip-path');
-                        if (myClipPath) {
-                            this.rawNode.setAttributeNS(null, 'clip-path', 'url(#'  + newPathId + ')');
-                            this.clipPath = def;
-                        } else { 
-                            console.log('myClip is undefined on %s', this); 
-                        }
-                        def.setAttribute('id', newPathId);
-                        console.log('assigned new id %s', def.getAttribute('id'));
-                        break;
-                    case "linearGradient":
-                    case "radialGradient": // FIXME gradients can be used on strokes too
-                        var newFillId = "fill_" + this.id;
-                        if (this.shape) {
-                            var myFill = this.shape.rawNode.getAttributeNS(null, 'fill');
-                            if (myFill) {
-                                this.shape.rawNode.setAttributeNS(null, 'fill', 'url(#' + newFillId + ')');
-                                this.fill = def;
-                            } else {
-                                console.warn('myFill undefined on %s', this);
-                            }
-                        } else {
-                            console.warn('ouch, cant set fill %s yet, no shape...', newFillId);
-                        }
-                        def.setAttribute('id', newFillId);
-                        break;
-                    default:
-                        console.warn('unknown def %s', def);
-                    }
-                }
-                break;
-                // let it be
-            } 
             case "g": {
                 var type = node.getAttributeNS(Namespace.LIVELY, "type");
 		if (!this.restoreContainer(node, type, importer)) {
@@ -2204,12 +2266,14 @@ Morph = Class.create(Visual, {
 		break;
 	    }
 		// nodes from the Lively namespace
+	    case "a0:action": // Firefox cheat
             case "action": {
                 var a = node.textContent.evalJSON();
                 console.info("starting stepping %s based on %s", this, node.textContent);
                 this.startStepping(a.stepTime, a.scriptName, a.argIfAny);
                 break;
             }
+	    case "a0:model": // Firefox cheat
             case "model": {
                 if (modelNode) console.warn("%s already has modelNode %s", this, modelNode);
                 modelNode = node;
@@ -2217,6 +2281,7 @@ Morph = Class.create(Visual, {
                 console.info("found modelNode %s", Exporter.nodeToString(node));
                 break;
             } 
+	    case "a0:modelPlug": // Firefox cheat
             case "modelPlug": {
                 this.modelPlug = this.addChildElement(Model.becomePlugNode(node));
                 console.info("%s reconstructed plug %s", this, this.modelPlug);
@@ -2974,7 +3039,7 @@ Morph.addMethods({
 
         if (hasFocus) return this.mouseHandler.handleMouseEvent(evt, this);
 
-        if (!this.fullContainsWorldPoint(evt.priorPoint)) return false;
+	if (!evt.priorPoint || !this.fullContainsWorldPoint(evt.priorPoint)) return false;
 
         if (this.hasSubmorphs()) {
             // If any submorph handles it (ie returns true), then return
@@ -2985,8 +3050,9 @@ Morph.addMethods({
 
         if (this.mouseHandler == null)
             return false;
+	
 
-        if (!this.shape.containsPoint(this.localize(evt.priorPoint))) 
+        if (!evt.priorPoint || !this.shape.containsPoint(this.localize(evt.priorPoint))) 
             return false;
 
         return this.mouseHandler.handleMouseEvent(evt, this); 
@@ -3023,16 +3089,6 @@ Morph.addMethods({
     onMouseOver: function(evt) { }, //default behavior
 
     onMouseOut: function(evt) { }, //default behavior
-
-    designMode: false,
-    
-    setDesignMode: function(flag) {
-        return this.designMode = flag; // shadowing a prototype field
-    },
-    
-    isDesignMode: function() {
-        return this.designMode; // note prototype field
-    },
 
     takesKeyboardFocus: function() { 
         return false; 
@@ -3104,7 +3160,7 @@ MouseHandlerForRelay = Class.create({
     },
     
     handleMouseEvent: function(evt, appendage) {
-        var capType = Event.capitalizedType(evt);
+        var capType = evt.capitalizedType();
         var targetHandler = this.target[this.eventSpec['on' + capType]];
         if (targetHandler == null) return true; //FixMe: should this be false?
         if (capType == "MouseDown") evt.hand.setMouseFocus(appendage);
@@ -3650,9 +3706,11 @@ Morph.addMethods({
     connectModel: function(plugSpec) {
         // connector makes this view pluggable to different models, as in
         // {model: someModel, getList: "getItemList", setSelection: "chooseItem"}
-        var newPlug = Model.makePlugNode(plugSpec);
-        if (this.modelPlug) this.rawNode.replaceChild(newPlug, this.modelPlug);
-        else this.addChildElement(newPlug);
+        var newPlug = Model.makePlug(plugSpec);
+        if (this.modelPlug) 
+	    this.rawNode.replaceChild(newPlug.rawNode, this.modelPlug.rawNode);
+        else 
+	    this.addChildElement(newPlug.rawNode);
         this.modelPlug = newPlug;
         if (plugSpec.model.addDependent) { // for mvc-style updating
             plugSpec.model.addDependent(this);
@@ -3768,33 +3826,35 @@ Model = Class.create({
 });
 
 Object.extend(Model, {
-    makePlugNode: function(spec) {
-        var node = NodeFactory.createNS(Namespace.LIVELY, "modelPlug");
+    makePlug: function(spec) {
+	var plug = {};
+        plug.rawNode = NodeFactory.createNS(Namespace.LIVELY, "modelPlug");
         var props = Object.properties(spec);
         for (var i = 0; i < props.length; i++) {
             var prop = props[i];
-            node[prop] = spec[prop];
+            plug[prop] = spec[prop];
             if (prop != 'model') {
-                var acc = node.appendChild(NodeFactory.createNS(Namespace.LIVELY, "accessor"));
+                var acc = plug.rawNode.appendChild(NodeFactory.createNS(Namespace.LIVELY, "accessor"));
                 acc.setAttributeNS(Namespace.LIVELY, "formal", prop);
                 acc.setAttributeNS(Namespace.LIVELY, "actual", spec[prop]);
             }
         }
-        node.inspect = function() {
+        plug.toString = function() {
             return Exporter.nodeToString(this);
         }
-        return node;
+        return plug;
     },
 
     becomePlugNode: function(node) {
+	var plug = { rawNode: node};
         for (var acc = node.firstChild; acc != null;  acc = acc.nextSibling) {
             if (acc.tagName != 'accessor') continue;
-            node[acc.getAttribute('formal')] = acc.getAttribute('actual');
+            plug[acc.getAttributeNS(Namespace.LIVELY, "formal")] = acc.getAttributeNS(Namespace.LIVELY, "actual");
         }
-        node.inspect = function() {
+        plug.inspect = function() {
             return Exporter.nodeToString(this);
         }
-        return node;
+        return plug;
     }
     
 });
@@ -3835,7 +3895,7 @@ SimpleModel = Class.create(Model, {
         var spec = { };
         this.variables().each(function(v) { spec[this.getter(v)] = model[this.getter(v)]; spec[this.setter(v)] = model[this.setter(v)]; }.bind(this));
         spec.model = model;
-        return Model.makePlugNode(spec);
+        return Model.makePlug(spec);
     },
     
     variables: function() {
@@ -4566,12 +4626,13 @@ var HandMorph = function() {
     },
 
     // this is the DOM Event callback
-    handleEvent: function(evt) {
-        evt.hand = this.hand;
-        Event.init(evt);
+    handleEvent: function(rawEvt) {
+	var evt = new Event(rawEvt);
+        evt.hand = this;
+        
         // console.log('original target ' + evt.target);
 
-        switch(evt.type) {
+        switch (evt.type) {
         case "mousemove":
         case "mousedown":
         case "mouseup":
@@ -4590,8 +4651,7 @@ var HandMorph = function() {
     }.logErrors('Event Handler'),
 
     handleMouseEvent: function(evt) { 
-        evt.hand = this; // extra copy needed for entry from HandRemoteControl
-        Event.setButtonPressedAndPriorPoint(evt, this.mouseButtonPressed, this.lastMouseEvent.mousePoint);
+        evt.setButtonPressedAndPriorPoint(this.mouseButtonPressed, this.lastMouseEvent ? this.lastMouseEvent.mousePoint : null);
     
         //-------------
         // mouse move
@@ -4639,7 +4699,7 @@ var HandMorph = function() {
         
         this.mouseButtonPressed = (evt.type == "mousedown"); 
         this.setBorderWidth(this.mouseButtonPressed ? 3 : 1);
-        Event.setButtonPressedAndPriorPoint(evt, this.mouseButtonPressed, this.lastMouseEvent.mousePoint);
+        evt.setButtonPressedAndPriorPoint(this.mouseButtonPressed, this.lastMouseEvent ? this.lastMouseEvent.mousePoint : null);
     
         if (this.mouseFocus != null) {
             if (this.mouseButtonPressed) {
@@ -4733,7 +4793,7 @@ var HandMorph = function() {
     },
 
     moveTopMorph: function(evt) {
-        switch (Event.sanitizedKeyCode(evt)) {
+        switch (evt.sanitizedKeyCode()) {
         case Event.KEY_LEFT:
             this.topSubmorph().moveBy(pt(-10,0));
             evt.stop();
@@ -4779,7 +4839,6 @@ var HandMorph = function() {
     },
 
     handleKeyboardEvent: function(evt) { 
-        evt.hand = this; // KP: just to be sure
         if (this.hasSubmorphs())  {
             if (evt.type == 'keydown' && this.moveTopMorph(evt)) return;
             else if (evt.type == 'keypress' && this.transformTopMorph(evt)) return;
@@ -4788,9 +4847,10 @@ var HandMorph = function() {
         // manual bubbling up b/c the event won't bubble by itself    
         for (var responder = this.keyboardFocus; responder != null; responder = responder.owner) {
             if (responder.takesKeyboardFocus()) {
-                var handler = responder["on" + Event.capitalizedType(evt)];
+                var handler = responder["on" + evt.capitalizedType()];
                 if (handler) {
-                    if (handler.call(responder, evt)) break; // event consumed?
+                    if (handler.call(responder, evt)) 
+			break; // event consumed?
                 }
             }
         } 
@@ -4917,7 +4977,7 @@ LinkMorph = Class.create(Morph, {
         });
 
         if (Config.showThumbnail) {
-            const scale = 0.1;
+            var scale = 0.1;
             if (newWorld.thumbnail) {
                 newWorld.thumbnail.remove();
             }

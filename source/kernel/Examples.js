@@ -334,7 +334,7 @@ var DoodleMorph = Class.create(ClipMorph, {
         this.currentMorph = null;
         this.start = null;
 
-        const iconSize = 40;
+        var iconSize = 40;
         var r = new Rectangle(0, 0, iconSize, iconSize);
         this.linebutton = new ImageButtonMorph(r, this.imagepath + "line.png", this.imagepath + "line_down.png");
         var r = new Rectangle(0, iconSize, iconSize, iconSize);
@@ -2758,7 +2758,7 @@ var MapFrameMorph = Class.create(Morph, {
 
         this.mapmodel = new MapModel(this);
 
-        const iconSize = 40;
+        var iconSize = 40;
         var r = new Rectangle(0, 0, iconSize/2, initialBounds.height - iconSize - 10);
         this.leftbutton = new ImageButtonMorph(r, IMAGEFOLDER + "buttonleft.PNG", 
                                           IMAGEFOLDER + "buttonleftdown.PNG");
