@@ -2966,7 +2966,7 @@ MapMorph = Class.create(Morph, {
                     });
                     img.setAttributeNS(Namespace.XLINK, "href", this.images[iy][ix]);
                     img.setAttribute("id", imgId);
-                    this.addChildElement(img);
+                    this.addNonMorph(img);
                 }
             }
        }
@@ -4831,7 +4831,7 @@ var AnimMorph = Class.create(Morph, {
         if (!this.image) {
             var image = this.image = NodeFactory.create("image", { x: this.bounds().topLeft().subPt(this.bounds().center()).x, y: this.bounds().topLeft().subPt(this.bounds().center()).y, width: this.dim.x, height: this.dim.y});
             image.setType('Image');
-            this.addChildElement(image);
+            this.addNonMorph(image);
         }
         this.image.setAttributeNS(Namespace.XLINK, "href", url);
     },

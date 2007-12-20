@@ -2000,7 +2000,7 @@ var Exporter = Class.create({
         var modelNode = (this.rootMorph.getModel() || { toMarkup: function() { return null; }}).toMarkup();
         if (modelNode) {
             try {
-                this.rootMorph.addChildElement(modelNode);
+                this.rootMorph.addNonMorph(modelNode);
             } catch (er) { console.log("got problem, rawNode %s, modelNode %s", this.rootMorph.rawNode, modelNode); }
         }
         var result = Exporter.nodeToString(this.rootMorph.rawNode);
@@ -2054,9 +2054,9 @@ var Importer = Class.create({
 
         try {
             return new Global[morphTypeName](this, rawNode);
-        } catch (er) {
-            console.log("problem instantiating type %s tag %s", morphTypeName, rawNode.tagName);
-        }
+	} catch (er) {
+	    console.log("problem instantiating type %s tag %s: %s", morphTypeName, rawNode.tagName, er);
+	}
     },
     
     importFromString: function(string) {
@@ -2070,7 +2070,7 @@ var Importer = Class.create({
     },
 
     importModelFrom: function(ptree) {
-        //console.log('restoring model from markup %s', string);
+        console.log('restoring model from markup %s', string);
         //var ptree = this.parse(string);
         var model = new SimpleModel(null);
         
@@ -2282,7 +2282,8 @@ Morph = Class.create(Visual, {
             } 
             case "a0:modelPlug": // Firefox cheat
             case "modelPlug": {
-                this.modelPlug = this.addChildElement(Model.becomePlugNode(node));
+                this.modelPlug = Model.becomePlugNode(node);
+		this.addNonMorph(this.modelPlug.rawNode);
                 console.info("%s reconstructed plug %s", this, this.modelPlug);
                 break;
             } 
@@ -2345,7 +2346,7 @@ Morph = Class.create(Visual, {
         this.rawSubnodes = NodeList.withType("Submorphs");
         this.rawNode.appendChild(this.rawSubnodes);
 
-        this.addChildElement(this.shape.rawNode);
+        this.addNonMorph(this.shape.rawNode);
     
         return this;
     },
@@ -2427,7 +2428,7 @@ Morph.addMethods({
             }
             if (!this.defs) {
                 this.defs = NodeFactory.create("defs");
-                this.addChildElement(this.defs);
+                this.addNonMorph(this.defs);
             }
             this.shape.setFill("url(#" + newId + ")");
             this.defs.appendChild(this.fill.rawNode);
@@ -2615,8 +2616,8 @@ Morph.addMethods({
         return this.fullContainsPoint(this.owner.localize(p)); 
     },
     
-    addChildElement: function(node) {
-        if (this.rawSubnodes == null) console.log("%s not fully inited on addChildElement(%s)", this, node);
+    addNonMorph: function(node) {
+        if (this.rawSubnodes == null) console.log("%s not fully inited on addNonMorph(%s)", this, node);
         return this.rawNode.insertBefore(node, this.rawSubnodes);
     },
     
@@ -2626,7 +2627,7 @@ Morph.addMethods({
         
         if (!this.defs && element) { // lazily create the field
             this.defs = NodeFactory.create('defs');
-            this.addChildElement(this.defs);
+            this.addNonMorph(this.defs);
         }
         
         if (old) {
@@ -3131,7 +3132,7 @@ Morph.addMethods({
 
     addFocusHalo: function() {
         if (this.focusHalo) return false;
-        this.focusHalo = this.addChildElement(NodeList.withType('FocusHalo'));
+        this.focusHalo = this.addNonMorph(NodeList.withType('FocusHalo'));
         this.focusHalo.setAttributeNS(null, "stroke-opacity", 0.3);
         this.focusHalo.setAttributeNS(null, 'stroke-linejoin', Shape.LineJoins.ROUND);
         this.adjustFocusHalo();
@@ -3413,7 +3414,7 @@ Morph.addMethods({
         console.log('added script ' + action.scriptName + ": " + action);
         var actionCode = NodeFactory.createNS(Namespace.LIVELY, "action");
         actionCode.appendChild(document.createCDATASection(Object.toJSON(action)));
-        this.addChildElement(actionCode);
+        this.addNonMorph(actionCode);
     },
     
     startSteppingFunction: function(stepTime, func) {
@@ -3700,11 +3701,10 @@ Morph.addMethods({
         // connector makes this view pluggable to different models, as in
         // {model: someModel, getList: "getItemList", setSelection: "chooseItem"}
         var newPlug = Model.makePlug(plugSpec);
-        if (this.modelPlug) { 
-            this.rawNode.replaceChild(newPlug.rawNode, this.modelPlug.rawNode);
-        } else { 
-            this.addChildElement(newPlug.rawNode);
-        }
+        if (this.modelPlug) 
+	    this.rawNode.replaceChild(newPlug.rawNode, this.modelPlug.rawNode);
+        else 
+	    this.addNonMorph(newPlug.rawNode);
         this.modelPlug = newPlug;
         if (plugSpec.model.addDependent) { // for mvc-style updating
             plugSpec.model.addDependent(this);
@@ -3819,10 +3819,19 @@ Model = Class.create({
 
 });
 
+var ModelPlug = Class.create({
+    rawNode: null,
+    initialize: function(rawNode) {
+	this.rawNode = rawNode;
+    },
+    toString: function() {
+        return Exporter.nodeToString(this.rawNode);
+    }
+});
+
 Object.extend(Model, {
     makePlug: function(spec) {
-        var plug = {};
-        plug.rawNode = NodeFactory.createNS(Namespace.LIVELY, "modelPlug");
+	var plug = new ModelPlug(NodeFactory.createNS(Namespace.LIVELY, "modelPlug"));
         var props = Object.properties(spec);
         for (var i = 0; i < props.length; i++) {
             var prop = props[i];
@@ -3833,20 +3842,14 @@ Object.extend(Model, {
                 acc.setAttributeNS(Namespace.LIVELY, "actual", spec[prop]);
             }
         }
-        plug.toString = function() {
-            return Exporter.nodeToString(this);
-        }
         return plug;
     },
 
     becomePlugNode: function(node) {
-        var plug = { rawNode: node};
+	var plug = new ModelPlug(node);
         for (var acc = node.firstChild; acc != null;  acc = acc.nextSibling) {
             if (acc.tagName != 'accessor') continue;
             plug[acc.getAttributeNS(Namespace.LIVELY, "formal")] = acc.getAttributeNS(Namespace.LIVELY, "actual");
-        }
-        plug.inspect = function() {
-            return Exporter.nodeToString(this);
         }
         return plug;
     }
@@ -4062,7 +4065,7 @@ var WorldMorph = Class.create(PasteUpMorph, {
         if (backgroundImageId) {
             var background = NodeFactory.create("use");
             background.setAttributeNS(Namespace.XLINK, "href", backgroundImageId);
-            this.addChildElement(background);
+            this.addNonMorph(background);
         }
             
         $super(bounds, "rect");
@@ -4441,7 +4444,7 @@ var WorldMorph = Class.create(PasteUpMorph, {
             console.log('processing morph %s model %s', morph, model);
             var modelNode = null;
             if (model) { 
-                modelNode = morph.addChildElement(model.toMarkup(newDoc));
+                modelNode = morph.addNonMorph(model.toMarkup(newDoc));
             }
             container.appendChild(newDoc.importNode(morph.rawNode, true));
             if (modelNode) {

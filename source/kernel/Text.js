@@ -563,11 +563,11 @@ var TextMorph = Class.create(Morph, {
 
     initializePersistentState: function($super, initialBounds, shapeType) {
         $super(initialBounds, shapeType);
-        // this.selectionElement = this.addChildElement(NodeFactory.create('use').withHref("#TextSelectionStyle"));
+        // this.selectionElement = this.addNonMorph(NodeFactory.create('use').withHref("#TextSelectionStyle"));
 
         // the selection element is persistent although its contents are not
         // generic <g> element with 1-3 rectangles inside
-        this.selectionElement = this.addChildElement(NodeList.withType('Selection'));
+        this.selectionElement = this.addNonMorph(NodeList.withType('Selection'));
         this.selectionElement.setAttributeNS(null, "fill", this.selectionColor);
         //this.selectionElement.setAttributeNS(null, "fill", "url(#SelectionGradient)");
         this.selectionElement.setAttributeNS(null, "stroke-width", 0);
@@ -792,13 +792,12 @@ var TextMorph = Class.create(Morph, {
         if (this.rawTextNode == null) {
 
             var node  = NodeFactory.create("text", { "kerning": 0 });
-            node.setAttributeNS(Namespace.LIVELY, "type", "TextBox");
 
             node.setAttributeNS(null, "fill", this.textColor);
             node.setAttributeNS(null, "font-size", this.font.getSize());
             node.setAttributeNS(null, "font-family", this.font.getFamily());
 
-            this.rawTextNode = this.addChildElement(node);
+            this.rawTextNode = this.addNonMorph(node);
 
             this.renderText(this.textTopLeft(), this.compositionWidth());
 
@@ -1048,7 +1047,7 @@ var TextMorph = Class.create(Morph, {
         }
     
         // console.log('add selection ' + this.selectionElement.childNodes);
-        // this.addChildElement(this.selectionElement);
+        // this.addNonMorph(this.selectionElement);
     },
     
     lineNo: function(r) { //Returns the line number of a given rectangle

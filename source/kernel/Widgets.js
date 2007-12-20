@@ -50,7 +50,7 @@ var ButtonMorph = Class.create(Morph, {
             var model = new SimpleModel(this, "Value");
             // this default self connection may get overwritten by, eg, connectModel()...
             this.modelPlug = model.makePlug();
-            this.addChildElement(this.modelPlug.rawNode);
+	    this.addNonMorph(this.modelPlug.rawNode);
 
             // Styling
             this.setModelValue('setValue', false);
@@ -227,7 +227,7 @@ var ImageMorph = Class.create(Morph, {
             image.setAttributeNS(null, "transform", 
                 Transform.createSimilitude(pt(0, 0), 0, scale).toAttributeValue());
         }
-        this.addChildElement(image);
+        this.addNonMorph(image);
 
     },
 
@@ -240,7 +240,7 @@ var ImageMorph = Class.create(Morph, {
         if (!this.image) {
             var image = this.image = NodeFactory.create("image", { width: this.dim.x, height: this.dim.y});
             image.setAttributeNS(Namespace.LIVELY, "type", 'Image');
-            this.addChildElement(image);
+            this.addNonMorph(image);
         }
 
         this.image.setAttributeNS(Namespace.XLINK, "href", url);
@@ -403,7 +403,7 @@ var TitleBarMorph = (function() {
         // var sign = NodeFactory.create("use").withHref("#CloseIcon");
 
         // sign.applyTransform(Transform.createSimilitude(pt(-9, -9), 0, 0.035));
-        // closeButton.addChildElement(sign);
+        // closeButton.addNonMorph(sign);
 
         cell = cell.translatedBy(pt(barHeight - controlSpacing, 0));
         var menuButton = new WindowControlMorph(cell, controlSpacing, Color.primary.blue, windowMorph, 
@@ -1254,7 +1254,7 @@ var CheapListMorph = Class.create(TextMorph, {
             // this default self connection may get overwritten by, eg, connectModel()...
             var model = new SimpleModel(null, "List", "Selection");
             this.modelPlug = model.makePlug();
-            this.addChildElement(this.modelPlug.rawNode);
+	    this.addNonMorph(this.modelPlug.rawNode);
             this.setModelValue('setList', itemList);
         }
 
@@ -1563,7 +1563,7 @@ var SliderMorph = Class.create(Morph, {
             var model = new SimpleModel(null, "Value", "Extent");
             // this default self connection may get overwritten by, eg, connectModel()...
             this.modelPlug = model.makePlug();
-            this.addChildElement(this.modelPlug.rawNode);
+	    this.addNonMorph(this.modelPlug.rawNode);
 
             this.scale = (scaleIfAny == null) ? 1.0 : scaleIfAny;
             var slider = new Morph(new Rectangle(0, 0, 8, 8), "rect");
@@ -1873,7 +1873,7 @@ var ColorPickerMorph = Class.create(Morph, {
                 var patchFill = this.colorMap(x, y, rh2, this.colorWheel(r.width + 1)).toString();
                 var element = new RectShape(new Rectangle(x + r.x, y + r.y, dd, dd), patchFill, 0, null);
                 // element.setAttributeNS("fill", this.colorMap(x, rh2, rh2, this.colorWheel(r.width + 1)).toString());
-                this.addChildElement(element.rawNode);
+                this.addNonMorph(element.rawNode);
             }
         }
     },
