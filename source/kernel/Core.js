@@ -37,7 +37,6 @@ Namespace =  {
     XHTML: document.documentElement.getAttribute("xmlns") 
 };
 
-
 var Loader = {
 
     loadScript: function(ns, url) {
@@ -210,7 +209,7 @@ Object.extend(Function.prototype, {
         } else {
             sup = this.superclass;
         }
-	
+
         try {
             var superNames = (sup == null) ? [] : sup.functionNames();
         } catch (e) {
@@ -233,7 +232,6 @@ Function.methodString = function(className, methodName) {
     if (className == "Global" || methodName == "constructor") return code;
     return className + ".prototype." + methodName + " = " + code; 
 };
-
 
 if (Prototype.Browser.WebKit) { 
     Error.prototype.inspect = function() {
@@ -494,9 +492,7 @@ Rectangle = Class.create({
 Rectangle.addMethods({
 
     containsPoint: function(p) {
-	
         return this.x <= p.x && p.x <= this.x + this.width && this.y<= p.y && p.y <= this.y + this.height;
-
     },
 
     containsRect: function(r) {
@@ -1054,53 +1050,55 @@ Object.extend(CharSet, {
  * refer to, e.g., David Flanagan's book (JavaScript: The Definitive Guide) 
  */
 
-
 var Event = (function() {
     var tmp = Event; // note we're rebinding the name Event to point to a different class 
     var Event = Class.create({
-	initialize: function(rawEvent) {
-	    this.rawEvent = rawEvent;
-	    this.type = rawEvent.type;
-	    this.keyCode = rawEvent.keyCode;
-	    this.charCode = rawEvent.charCode;
-	    this.altKey = rawEvent.altKey;
-	    this.shiftKey = rawEvent.shiftKey;
+
+        initialize: function(rawEvent) {
+            this.rawEvent = rawEvent;
+            this.type = rawEvent.type;
+            this.keyCode = rawEvent.keyCode;
+            this.charCode = rawEvent.charCode;
+            this.altKey = rawEvent.altKey;
+            this.shiftKey = rawEvent.shiftKey;
 
             if (isMouse(rawEvent)) {
-		var x = rawEvent.pageX || rawEvent.clientX;
-		var y = rawEvent.pageY || rawEvent.clientY;
-		
+                var x = rawEvent.pageX || rawEvent.clientX;
+                var y = rawEvent.pageY || rawEvent.clientY;
+
                 // note that FF doesn't doesnt calculate offsetLeft/offsetTop early enough we don't precompute these values
                 // assume the parent node of Canvas has the same bounds as Canvas
-
                 this.mousePoint = pt(x - (Canvas.parentNode.offsetLeft || 0), 
                                      y - (Canvas.parentNode.offsetTop  || 0) - 3);
-		// console.log("mouse point " + this.mousePoint);
+                // console.log("mouse point " + this.mousePoint);
                 //event.mousePoint = pt(event.clientX, event.clientY  - 3);
                 this.priorPoint = this.mousePoint; 
                 // Safari somehow gets the x and y coords so we add them here to Firefox too --PR
                 // console.log("InitMouseOver fix for Firefox evt.x=%s evt.clientX", event.x, event.clientX);
                 this.x = x;
                 this.y = y;
-		
+
             } 
             this.hand = null;
         
             // use event.timeStamp
             // event.msTime = (new Date()).getTime();
             this.mouseButtonPressed = false;
-	},
+        },
 
-	stopPropagation: function() {
-	    this.rawEvent.stopPropagation();
-	},
-	preventDefault: function() {
-	    this.rawEvent.preventDefault();
-	},
-	stop: function() {
-	    this.preventDefault();
-	    this.stopPropagation();
-	},
+        stopPropagation: function() {
+            this.rawEvent.stopPropagation();
+        },
+
+        preventDefault: function() {
+            this.rawEvent.preventDefault();
+        },
+
+        stop: function() {
+            this.preventDefault();
+            this.stopPropagation();
+        },
+
         setButtonPressedAndPriorPoint: function(buttonPressed, priorPoint) {
             this.mouseButtonPressed = buttonPressed;
             // if moving or releasing, priorPoint will get found by prior morph
@@ -1131,25 +1129,25 @@ var Event = (function() {
         }
 
     });
+
     Event.rawEvent = tmp;
     Event.extend = function () {} // dummy function to fool prototype.js
 
-
     Object.extend(Event, {
-	KEY_BACKSPACE: 8,
-	KEY_TAB:       9,
-	KEY_RETURN:   13,
-	KEY_ESC:      27,
-	KEY_LEFT:     37,
-	KEY_UP:       38,
-	KEY_RIGHT:    39,
-	KEY_DOWN:     40,
-	KEY_DELETE:   46,
-	KEY_HOME:     36,
-	KEY_END:      35,
-	KEY_PAGEUP:   33,
-	KEY_PAGEDOWN: 34,
-	KEY_INSERT:   45
+        KEY_BACKSPACE: 8,
+        KEY_TAB:       9,
+        KEY_RETURN:   13,
+        KEY_ESC:      27,
+        KEY_LEFT:     37,
+        KEY_UP:       38,
+        KEY_RIGHT:    39,
+        KEY_DOWN:     40,
+        KEY_DELETE:   46,
+        KEY_HOME:     36,
+        KEY_END:      35,
+        KEY_PAGEUP:   33,
+        KEY_PAGEDOWN: 34,
+        KEY_INSERT:   45
     });
 
     var capitalizer = $H({ mouseup: 'MouseUp', mousedown: 'MouseDown', mousemove: 'MouseMove', 
@@ -1189,8 +1187,8 @@ var Event = (function() {
         },
     
         makeSyntheticMouseEvent: function() {
-	    //if (Prototype.Browser.Rhino) 
-	    return null;
+            //if (Prototype.Browser.Rhino) 
+            return null;
             var evt = document.createEvent("MouseEvents");
             // cf. http://developer.mozilla.org/en/docs/DOM:document.createEvent
             evt.initMouseEvent("mousemove", true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
@@ -1416,7 +1414,6 @@ var Shape = Class.create(Visual, {
     toPath: function() {
         throw new Error('unimplemented');
     }
-    
    
 });
 
@@ -1546,7 +1543,7 @@ var EllipseShape = Class.create(Shape, {
         if (rectOrRawNode instanceof Node) {
             this.rawNode = rectOrRawNode;
         } else {
-	    this.rawNode = NodeFactory.create("ellipse");
+            this.rawNode = NodeFactory.create("ellipse");
             this.setBounds(rectOrRawNode);
         }
         $super(color, borderWidth, borderColor);
@@ -1578,8 +1575,8 @@ var EllipseShape = Class.create(Shape, {
     },
     
     bounds: function() {
-	//console.log("rawNode " + this.rawNode);
-	// for (var prop in this.rawNode) console.log("prop " + prop + " = " + this.rawNode[prop]);
+        //console.log("rawNode " + this.rawNode);
+        // for (var prop in this.rawNode) console.log("prop " + prop + " = " + this.rawNode[prop]);
         var w = this.rawNode.rx.baseVal.value * 2;
         var h = this.rawNode.ry.baseVal.value * 2; 
         var x = this.rawNode.cx.baseVal.value - this.rawNode.rx.baseVal.value;
@@ -1622,17 +1619,20 @@ var PolygonShape = Class.create(Shape, {
     },
     
     setVertices: function(vertlist) {
-	if (this.rawNode.points)
+        if (this.rawNode.points) {
             this.rawNode.points.clear();
+        }
         this.rawNode.setAttributeNS(null, "points", vertlist.map(function (p) { return p.x + "," + p.y }).join(' '));
-	if (this.shouldCacheVertices)
-	    this.cachedVertices = vertlist.clone();
+        if (this.shouldCacheVertices) {
+            this.cachedVertices = vertlist.clone();
+        }
         // vertlist.forEach( function(p) {  this.points.appendItem(p); }, this);
     },
 
     vertices: function() {
-	if (this.shouldCacheVertices && this.cachedVertices) 
-	    return this.cachedVertices;
+        if (this.shouldCacheVertices && this.cachedVertices) { 
+            return this.cachedVertices;
+        }
         var array = [];
         for (var i = 0; i < this.rawNode.points.numberOfItems; i++) {
             array.push(Point.ensure(this.rawNode.points.getItem(i)));
@@ -1648,10 +1648,10 @@ var PolygonShape = Class.create(Shape, {
     bounds: function() {
         // FIXME very quick and dirty, consider caching or iterating over this.points
         var vertices = this.vertices();
-	// Opera has been known not to update the SVGPolygonShape.points property to reflect the SVG points attribute
+        // Opera has been known not to update the SVGPolygonShape.points property to reflect the SVG points attribute
         console.assert(vertices.length > 0, 
-		       "PolygonShape.bounds: vertices has zero length, " + this.rawNode.points 
-		       + " vs " + this.rawNode.getAttributeNS(null, "points"));
+               "PolygonShape.bounds: vertices has zero length, " + this.rawNode.points 
+               + " vs " + this.rawNode.getAttributeNS(null, "points"));
         return Rectangle.unionPts(vertices);
     },
 
@@ -1984,8 +1984,6 @@ MouseHandlerForDragging = Class.create({
 
 });
 
-
-
 /**
  * @class Exporter: Implementation class for morph serialization
  */
@@ -2053,11 +2051,12 @@ var Importer = Class.create({
             throw new Error('node %1 (parent %2) cannot be a morph of %3'.format(
                             rawNode.tagName, rawNode.parentNode, morphTypeName));
         }
-	try {
+
+        try {
             return new Global[morphTypeName](this, rawNode);
-	} catch (er) {
-	    console.log("problem instantiating type %s tag %s", morphTypeName, rawNode.tagName);
-	}
+        } catch (er) {
+            console.log("problem instantiating type %s tag %s", morphTypeName, rawNode.tagName);
+        }
     },
     
     importFromString: function(string) {
@@ -2077,7 +2076,7 @@ var Importer = Class.create({
         
         for (var node = ptree.firstChild; node != null; node = node.nextSibling) {
             switch (node.tagName) {
-	    case "a0:dependent": // Firefox cheat
+            case "a0:dependent": // Firefox cheat
             case "dependent":
                 var oldId = node.getAttributeNS(Namespace.LIVELY, "ref");
                 var dependent = this.lookupMorph(oldId);
@@ -2088,7 +2087,7 @@ var Importer = Class.create({
                 dependent.modelPlug.model = model;
                 model.addDependent(dependent);
                 break;
-	    case "a0:variable": // Firefox cheat
+            case "a0:variable": // Firefox cheat
             case "variable":
                 var name = node.getAttributeNS(Namespace.LIVELY, "name");
                 var value = node.textContent;
@@ -2159,7 +2158,7 @@ Morph = Class.create(Visual, {
             var prevId = this.pickId();
             this.prevId = prevId; // for debugging FIXME remove later!
             importer.addMapping(prevId, this); 
-	    this.restoreFromSubnodes(importer);
+            this.restoreFromSubnodes(importer);
             this.restorePersistentState(importer);    
         } else {
             initialBounds = arguments[0];//Rectangle
@@ -2182,15 +2181,15 @@ Morph = Class.create(Visual, {
     },
 
     restorePersistentState: function(importer) {
-	return; // override in subclasses
+        return; // override in subclasses
     },
 
     restoreText: function(importer, node) {
-	throw new Error(this + " does not support text");
+        throw new Error(this + " does not support text");
     },
 
     restoreDefs: function(node) {
-	// FIXME FIXME, this is painfully ad hoc!
+        // FIXME FIXME, this is painfully ad hoc!
         if (this.defs) console.warn('%s already has defs %s', this, this.defs);
         this.defs = node;
         for (var def = node.firstChild; def != null; def = def.nextSibling) {
@@ -2241,39 +2240,39 @@ Morph = Class.create(Visual, {
             var node = children[i];
             switch (node.tagName) {
             case "ellipse":
-		this.shape = new EllipseShape(node);
-		break;
+                this.shape = new EllipseShape(node);
+                break;
             case "rect":
-		this.shape = new RectShape(node);
-		break;
+                this.shape = new RectShape(node);
+                break;
             case "polyline":
-		this.shape = new PolylineShape(node);
-		break;
+                this.shape = new PolylineShape(node);
+                break;
             case "polygon":
-		this.shape = new PolygonShape(node);
-		break;
+                this.shape = new PolygonShape(node);
+                break;
             case "defs": 
                 this.restoreDefs(node);
-		break;
-	    case "text": // this shouldn't be triggered in non-TextMorphs
-		this.restoreText(importer, node);
-		break;
+                break;
+            case "text": // this shouldn't be triggered in non-TextMorphs
+                this.restoreText(importer, node);
+                break;
             case "g": {
                 var type = node.getAttributeNS(Namespace.LIVELY, "type");
-		if (!this.restoreContainer(node, type, importer)) {
+                if (!this.restoreContainer(node, type, importer)) {
                     console.log("unknown container %s of type %s", node, type);
-		}
-		break;
-	    }
-		// nodes from the Lively namespace
-	    case "a0:action": // Firefox cheat
+                }
+                break;
+            }
+            // nodes from the Lively namespace
+            case "a0:action": // Firefox cheat
             case "action": {
                 var a = node.textContent.evalJSON();
                 console.info("starting stepping %s based on %s", this, node.textContent);
                 this.startStepping(a.stepTime, a.scriptName, a.argIfAny);
                 break;
             }
-	    case "a0:model": // Firefox cheat
+            case "a0:model": // Firefox cheat
             case "model": {
                 if (modelNode) console.warn("%s already has modelNode %s", this, modelNode);
                 modelNode = node;
@@ -2281,14 +2280,14 @@ Morph = Class.create(Visual, {
                 console.info("found modelNode %s", Exporter.nodeToString(node));
                 break;
             } 
-	    case "a0:modelPlug": // Firefox cheat
+            case "a0:modelPlug": // Firefox cheat
             case "modelPlug": {
                 this.modelPlug = this.addChildElement(Model.becomePlugNode(node));
                 console.info("%s reconstructed plug %s", this, this.modelPlug);
                 break;
             } 
-	    default: {
-		if (node.nodeName == '#text') {
+            default: {
+                if (node.nodeName == '#text') {
                     console.log('text tag name %s', node.tagName);
                     // whitespace, ignore
                 } else {
@@ -2297,7 +2296,7 @@ Morph = Class.create(Visual, {
             }
             }
         } // end for
-	
+
         if (modelNode) {
             var model = importer.importModelFrom(modelNode);
             this.rawNode.removeChild(modelNode); // currently modelNode is not permanently stored 
@@ -2308,20 +2307,19 @@ Morph = Class.create(Visual, {
         switch (type) {
         case "Submorphs":
             this.rawSubnodes = NodeList.become(element, type);
-	    
-            NodeList.each(this.rawSubnodes, 
-			  function(node) { 
-			      var morph = importer.importFromNode(node);
-			      this.submorphs.push(morph); 
-			      morph.owner = this;
-			  }.bind(this));
+    
+            NodeList.each(this.rawSubnodes, function(node) { 
+                var morph = importer.importFromNode(node);
+                this.submorphs.push(morph); 
+                morph.owner = this;
+            }.bind(this));
             // console.log('recursed into children of %s and got', this,  this.submorphs);
             return true;
         case "FocusHalo":
-	    this.rawNode.removeChild(element);
+            this.rawNode.removeChild(element);
             return true;
-	default:
-	    return false;
+        default:
+            return false;
         }
         
     },
@@ -2768,9 +2766,6 @@ Morph.addMethods({
         this.owner.removeMorph(this);
 
         return this;
-
-        // console.log('removed ' + Object.inspect(this));
-
     },
     
     withAllSubmorphsDo: function(func, argOrNull) {
@@ -3039,7 +3034,7 @@ Morph.addMethods({
 
         if (hasFocus) return this.mouseHandler.handleMouseEvent(evt, this);
 
-	if (!evt.priorPoint || !this.fullContainsWorldPoint(evt.priorPoint)) return false;
+        if (!evt.priorPoint || !this.fullContainsWorldPoint(evt.priorPoint)) return false;
 
         if (this.hasSubmorphs()) {
             // If any submorph handles it (ie returns true), then return
@@ -3050,7 +3045,6 @@ Morph.addMethods({
 
         if (this.mouseHandler == null)
             return false;
-	
 
         if (!evt.priorPoint || !this.shape.containsPoint(this.localize(evt.priorPoint))) 
             return false;
@@ -3334,8 +3328,7 @@ Morph.addMethods({
         // If checkForDnD is true, return the morph to grab from a mouse down event (or null)
         // If droppingMorph is not null, then check that this is a willing recipient (else null)
 
-
-        if (!this.fullContainsWorldPoint(evt.mousePoint)) return null;  // not contained anywhere
+        if (!this.fullContainsWorldPoint(evt.mousePoint)) return null; // not contained anywhere
 
         // First check all the submorphs, front first
         for (var i = this.submorphs.length - 1; i >= 0; i--) {
@@ -3671,7 +3664,7 @@ Morph.addMethods( {
     
 });
 
-// Morph convenience functions
+// Morph factory methods for creating simple morphs easily
 Object.extend(Morph, {
 
     makeLine: function(verts, lineWidth, lineColor) {
@@ -3707,10 +3700,11 @@ Morph.addMethods({
         // connector makes this view pluggable to different models, as in
         // {model: someModel, getList: "getItemList", setSelection: "chooseItem"}
         var newPlug = Model.makePlug(plugSpec);
-        if (this.modelPlug) 
-	    this.rawNode.replaceChild(newPlug.rawNode, this.modelPlug.rawNode);
-        else 
-	    this.addChildElement(newPlug.rawNode);
+        if (this.modelPlug) { 
+            this.rawNode.replaceChild(newPlug.rawNode, this.modelPlug.rawNode);
+        } else { 
+            this.addChildElement(newPlug.rawNode);
+        }
         this.modelPlug = newPlug;
         if (plugSpec.model.addDependent) { // for mvc-style updating
             plugSpec.model.addDependent(this);
@@ -3827,7 +3821,7 @@ Model = Class.create({
 
 Object.extend(Model, {
     makePlug: function(spec) {
-	var plug = {};
+        var plug = {};
         plug.rawNode = NodeFactory.createNS(Namespace.LIVELY, "modelPlug");
         var props = Object.properties(spec);
         for (var i = 0; i < props.length; i++) {
@@ -3846,7 +3840,7 @@ Object.extend(Model, {
     },
 
     becomePlugNode: function(node) {
-	var plug = { rawNode: node};
+        var plug = { rawNode: node};
         for (var acc = node.firstChild; acc != null;  acc = acc.nextSibling) {
             if (acc.tagName != 'accessor') continue;
             plug[acc.getAttributeNS(Namespace.LIVELY, "formal")] = acc.getAttributeNS(Namespace.LIVELY, "actual");
@@ -4433,14 +4427,14 @@ var WorldMorph = Class.create(PasteUpMorph, {
         preamble.appendChild(newDoc.createCDATASection("Config.skipAllExamples = true"));
         mainDefs.insertBefore(preamble, mainScript);
         var newurl = url.substring(0, url.lastIndexOf('/') + 1) + filename;
-	var previous = newDoc.getElementById("ShrinkWrapped");
-	if (previous) {
-	    previous.parentNode.removeChild(previous);
-	}
+        var previous = newDoc.getElementById("ShrinkWrapped");
+        if (previous) {
+            previous.parentNode.removeChild(previous);
+        }
 
         var container = newDoc.createElementNS(Namespace.SVG, 'g');
-	
-	// console.log("morphs %s", morphs);
+
+        // console.log("morphs %s", morphs);
         morphs.each(function(morph) {
 
             var model = morph.getModel();
@@ -4485,13 +4479,13 @@ var WorldMorph = Class.create(PasteUpMorph, {
             if (node.tagName != 'g') continue;
             rawNodes.push(node);
         }
-	
+
         var importer = new Importer();
         var morphs = rawNodes.map(function(node) { 
-	    var morph = importer.importFromNode(node);
-	    this.addMorph(morph);
-	    return morph;
-	}.bind(this));
+            var morph = importer.importFromNode(node);
+            this.addMorph(morph);
+            return morph;
+        }.bind(this));
         return morphs;
     },
 
@@ -4627,7 +4621,7 @@ var HandMorph = function() {
 
     // this is the DOM Event callback
     handleEvent: function(rawEvt) {
-	var evt = new Event(rawEvt);
+        var evt = new Event(rawEvt);
         evt.hand = this;
         
         // console.log('original target ' + evt.target);
@@ -4850,7 +4844,7 @@ var HandMorph = function() {
                 var handler = responder["on" + evt.capitalizedType()];
                 if (handler) {
                     if (handler.call(responder, evt)) 
-			break; // event consumed?
+                        break; // event consumed?
                 }
             }
         } 
@@ -4889,11 +4883,11 @@ LinkMorph = Class.create(Morph, {
     
     initialize: function($super, otherWorld, initialPosition) {
         // In a scripter, type: world.addMorph(new LinkMorph(null))
-	if (arguments[1] instanceof Importer) {
+        if (arguments[1] instanceof Importer) {
             $super(arguments[1], arguments[2]); // arguments[2] is rawNode
-	    // FIXME ?
-	    return;
-	}
+            // FIXME ?
+            return;
+        }
 
         var bounds = initialPosition;
 
