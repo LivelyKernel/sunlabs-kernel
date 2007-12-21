@@ -172,8 +172,8 @@ var WebStore = Class.create(Model, {
                     store[modelVariable] = result;
                 } else { 
                     store[modelVariable] = result.map(function(r) { 
-			return new Resource(r);
-                   })
+                        return new Resource(r);
+                    })
                 }
                 store.changed("get" + modelVariable);
             }.logErrors('onSuccess')
