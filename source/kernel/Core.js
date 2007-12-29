@@ -173,16 +173,34 @@ Function.callStack = function() {
 };
 
 Function.showStack = function() {
-    var stack = [];
-    for (var caller = arguments.callee.caller; caller != null; caller = caller.caller) {
-        stack.push(caller);
+    var theStack = Function.callStack();
+    theStack.shift();  // drop this item
+    theStack.map(function(x,i) {console.log(i + ") " + x)});
+};
+
+Function.putNamesOnMethods = function() {
+    // Adds a classAndMethodName property to methods of most "classes"
+    var classNames = Class.listClassNames(Global).filter(function(n) { return !n.startsWith('SVG')});
+    for(var ci= 0; ci<classNames.length; ci++) {
+	var cName = classNames[ci];
+	if(cName != 'Global' && cName != 'Object') {
+	    var theClass = Global[cName];
+	    var methodNames = theClass.localFunctionNames();
+	    for(var mi = 0; mi<methodNames.length; mi++) {
+		var mName = methodNames[mi];
+		theClass.prototype[mName].classAndMethodName = cName + '.' + mName;
+	    }
+	}
     }
-    stack.map(function(x,i) {console.log(i + ") " + Object.inspect(x))});
 };
 
 Object.extend(Function.prototype, {
     inspect: function() {
-        return this.toString().substring(8, 88);
+        var methodName = this.classAndMethodName ? this.classAndMethodName : "unnamedFunction";
+	var methodBody = this.toString();
+	// First 80 chars of code, without 'function'
+	methodBody = methodBody.substring(8, 88) + (methodBody.length>88 ? '...' : '');
+ 	return methodName + methodBody;
     },
 
     functionNames: function(filter) {

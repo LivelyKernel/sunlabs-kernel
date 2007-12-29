@@ -47,6 +47,9 @@ Object.extend(Config, {
 
 });
 
+// Name the methods for showStack
+if(Config. debugExtras) Function.putNamesOnMethods();  
+
 // Class browser visibility can be overridden with Config.browserAnyway
 Config.showBrowser = !Config.skipMostExamples || Config.browserAnyway;
 
