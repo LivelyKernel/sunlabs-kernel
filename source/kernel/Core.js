@@ -172,28 +172,6 @@ Function.callStack = function() {
     return result;
 };
 
-Function.showStack = function() {
-    var theStack = Function.callStack();
-    theStack.shift();  // drop this item
-    theStack.map(function(x,i) {console.log(i + ") " + x)});
-};
-
-Function.putNamesOnMethods = function() {
-    // Adds a classAndMethodName property to methods of most "classes"
-    var classNames = Class.listClassNames(Global).filter(function(n) { return !n.startsWith('SVG')});
-    for(var ci= 0; ci<classNames.length; ci++) {
-	var cName = classNames[ci];
-	if(cName != 'Global' && cName != 'Object') {
-	    var theClass = Global[cName];
-	    var methodNames = theClass.localFunctionNames();
-	    for(var mi = 0; mi<methodNames.length; mi++) {
-		var mName = methodNames[mi];
-		theClass.prototype[mName].classAndMethodName = cName + '.' + mName;
-	    }
-	}
-    }
-};
-
 Object.extend(Function.prototype, {
     inspect: function() {
         var methodName = this.classAndMethodName ? this.classAndMethodName : "unnamedFunction";
@@ -4317,7 +4295,10 @@ var WorldMorph = Class.create(PasteUpMorph, {
             var schedNode = list.pop();  // [time, action] -- now removed
             var action = schedNode[1];
             var func = action.actor[action.scriptName];
-            func.call(action.actor, action.argIfAny);
+
+	    DebuggingStack = [];  // Reset at each tick event
+            try { func.call(action.actor, action.argIfAny); }
+		catch(er) { Function.showStack(); };
             // Note: if error in script above, it won't get rescheduled below (this is good)
 
             if (action.stepTime > 0) {
@@ -4647,6 +4628,8 @@ var HandMorph = function() {
         
         // console.log('original target ' + evt.target);
 
+	DebuggingStack = [];  // Reset at each input event
+	try {
         switch (evt.type) {
         case "mousemove":
         case "mousedown":
@@ -4662,6 +4645,7 @@ var HandMorph = function() {
         default:
             console.log("unknown event type " + evt.type);
         }
+	} catch(er) { Function.showStack(); };
         evt.stopPropagation();
     }.logErrors('Event Handler'),
 
