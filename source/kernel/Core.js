@@ -606,7 +606,8 @@ Object.extend(Rectangle, {
         var min = points[0];
         var max = points[0];
     
-        for (var i = 0; i < points.length; i++) {
+        // AT: Loop starts from 1 intentionally
+        for (var i = 1; i < points.length; i++) {
             min = min.minPt(points[i]);
             max = max.maxPt(points[i]); 
         }
