@@ -111,7 +111,7 @@
 <script type="text/ecmascript" xlink:href="defaultconfig.js"/>
 <script type="text/ecmascript" xlink:href="rhino-compat.js"/> <!-- for now included unconditionally -->
 <script type="text/ecmascript" xlink:href="prototype.js"/>
-<script type="text/ecmascript" xlink:href="localconfig.js"/> <!-- ignored if file not there -->
+<script type="text/ecmascript" ><![CDATA[Config.skipMostExamples = true ; ]]></script>
 <script type="text/ecmascript" xlink:href="Core.js"/>
 <script type="text/ecmascript" xlink:href="svgtext-compat.js"/>
 <script type="text/ecmascript" xlink:href="Text.js"/>

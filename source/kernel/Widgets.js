@@ -653,7 +653,6 @@ var WindowMorph = Class.create(Morph, {
         this.expandedTransform = this.getTransform();
         this.tbTransform = this.titleBar.getTransform();
         var owner = this.owner;
-        var titleTransform = this.titleBar.cumulativeTransform();
         owner.addMorph(this.titleBar);
         this.titleBar.setTransform(this.collapsedTransform ? this.collapsedTransform : this.expandedTransform);
         this.titleBar.setRotation(this.titleBar.getRotation());  // see comment in HandMorph

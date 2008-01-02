@@ -927,15 +927,13 @@ var Transform = Class.create({
 
     // only for similitudes
     getRotation: function() { // in degrees
-        with (this.matrix) {
-            return Math.atan2(b, a).toDegrees();
-        }
+	return Math.atan2(this.matrix.b, this.matrix.a).toDegrees();
     },
 
     getScale: function() {
-        with (this.matrix) {
-            return Math.sqrt(a * a + b * b);
-        }
+	var a = this.matrix.a;
+	var b = this.matrix.b;
+        return Math.sqrt(a * a + b * b);
     },
 
     copy: function() {
@@ -958,7 +956,7 @@ var Transform = Class.create({
         return attr;
     },
 
-    inspect: function() {
+    toString: function() {
         return this.toAttributeValue();
     },
 
@@ -1096,6 +1094,10 @@ var Event = (function() {
             this.preventDefault();
             this.stopPropagation();
         },
+	
+	toString: function() {
+	    return this.type + "[" + this.rawEvent + (this.mousePoint ?  "@" + this.mousePoint : "") +  "]";
+	},
 
         setButtonPressedAndPriorPoint: function(buttonPressed, priorPoint) {
             this.mouseButtonPressed = buttonPressed;
@@ -2537,8 +2539,8 @@ Morph.addMethods({
         if (!newShape.rawNode) {
             console.log('newShape is ' + newShape + ' ' + (new Error()).stack);
         }
+	this.rawNode.replaceChild(newShape.rawNode, this.shape.rawNode);
 
-        this.rawNode.replaceChild(newShape.rawNode, this.shape.rawNode);
         this.shape = newShape;
         //this.layoutChanged(); 
         if (this.clipPath) {
@@ -2706,14 +2708,14 @@ Morph.addMethods({
         }
     
         m.owner = this;
-        this.domAddMorph(m, front);
+        this.internalAddMorph(m, front);
         m.changed();
         m.layoutChanged();
         this.layoutChanged();
         return m;
     },
     
-    domAddMorph: function(m, isFront) {
+    internalAddMorph: function(m, isFront) {
         if (isFront) {
             // the last one, so drawn last, so front
             NodeList.push(this.rawSubnodes, m);
@@ -2826,7 +2828,7 @@ Morph.addMethods({
         }
 
         if (other.hasSubmorphs()) { // deep copy of submorphs
-            other.submorphs.each(function(m) { this.domAddMorph(m.copy(), false) }.bind(this));
+            other.submorphs.each(function(m) { this.internalAddMorph(m.copy(), false) }.bind(this));
         }
         
         if (other.stepHandler != null) { 
@@ -3179,8 +3181,6 @@ Morph.addMethods({
         if (handle == null) return false;
         this.addMorph(handle);  // after which it should get converted appropriately here
         handle.showHelp(evt);
-        // Don't scale -- the code below makes the handle excessively large!
-        // handle.scaleFor(this.cumulativeTransform().getScale());
         if (evt.hand.mouseFocus instanceof HandleMorph) evt.hand.mouseFocus.remove();
         evt.hand.setMouseFocus(handle);
         return true; 
@@ -3536,10 +3536,6 @@ Morph.addMethods({
     // innerBounds returns the bounds of this morph only, and in local coordinates
     innerBounds: function() { return this.shape.bounds() },
 
-    cumulativeTransform: function() {
-        return new Transform(this.canvas().getTransformToElement(this.rawNode));
-    },
-    
     /** 
      * mapping coordinates in the hierarchy
      * @return [Point]
@@ -3548,6 +3544,7 @@ Morph.addMethods({
     // map local point to world coordinates
     worldPoint: function(pt) { 
         return pt.matrixTransform(this.rawNode.getTransformToElement(this.canvas())); 
+	// return pt.matrixTransform(this.rawNode.getCTM());
     },
 
     // map owner point to local coordinates
@@ -3590,7 +3587,8 @@ Morph.addMethods({
     transformForNewOwner: function(newOwner) {
         return new Transform(this.rawNode.getTransformToElement(newOwner.rawNode));
     },
-    
+
+
     changed: function() {
         // (this.owner || this).invalidRect(this.bounds());
     },
@@ -4656,7 +4654,8 @@ var HandMorph = function() {
 
     handleMouseEvent: function(evt) { 
         evt.setButtonPressedAndPriorPoint(this.mouseButtonPressed, this.lastMouseEvent ? this.lastMouseEvent.mousePoint : null);
-    
+
+
         //-------------
         // mouse move
         //-------------
@@ -4684,7 +4683,7 @@ var HandMorph = function() {
 
                         // Note if onMouseOver sets focus, it will get onMouseMove
                         if (this.mouseFocus) this.mouseFocus.captureMouseEvent(evt, true);
-                        else if (!evt.hand.hasSubmorphs()) this.owner.captureMouseEvent(evt, false); 
+			else if (!evt.hand.hasSubmorphs()) this.owner.captureMouseEvent(evt, false); 
                     }
                 } 
             }
@@ -4700,7 +4699,7 @@ var HandMorph = function() {
             console.log("mouseButton event includes a move!");
             this.moveBy(evt.mousePoint.subPt(this.position())); 
         }
-        
+
         this.mouseButtonPressed = (evt.type == "mousedown"); 
         this.setBorderWidth(this.mouseButtonPressed ? 3 : 1);
         evt.setButtonPressedAndPriorPoint(this.mouseButtonPressed, this.lastMouseEvent ? this.lastMouseEvent.mousePoint : null);
@@ -4724,13 +4723,14 @@ var HandMorph = function() {
                 // This will tell the world to send the event to the right morph
                 // We do not dispatch mouseup the same way -- only if focus gets set on mousedown
                 if (evt.type == "mousedown") this.owner.captureMouseEvent(evt, false);
-            }
-            if (evt.type == "mousedown") {
+	    }
+	    if (evt.type == "mousedown") {
                 this.lastMouseDownPoint = evt.mousePoint;
                 this.hasMovedSignificantly = false; 
-            }
+	    }
         }
         this.lastMouseEvent = evt; 
+
     },
 
     grabMorph: function(grabbedMorph, evt) { 
