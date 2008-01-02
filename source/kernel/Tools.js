@@ -351,7 +351,7 @@ StylePanel = Class.create(Model, {
 // ===========================================================================
 
 /**
- * Dan's JavaScript profiler
+ * Dan's JavaScript profiler & debugger
  */
   
 Object.profiler = function (object, service) {
@@ -436,27 +436,26 @@ function showStatsViewer(profilee,title) {
 };
 
 Function.showStack = function() {
-    if(Config.debugExtras) {
-	for(var i=0; i<DebuggingStack.length; i++) {
-	    var args = DebuggingStack[i];
-	    var header = Object.inspect(args.callee.originalFunction);
-	    console.log(i.toString() + ") " + header);
-	    var k = header.indexOf('(');
-	    header = header.substring(k+1,999);  // ')' or 'zort)' or 'zort,baz)', etc
-	    for(var j=0; j<args.length; j++) {
-		k = header.indexOf(')');
-		var k2 = header.indexOf(',');
-		if(k2 >= 0) k = Math.min(k,k2);
-		argName = header.substring(0,k)
-		header = header.substring(k+2,999);
-		console.log(argName + ': ' + Object.inspect(args[j]));
-	    }
-	}
-    }
-    else {
-	var theStack = Function.callStack();
-	theStack.shift();  // drop this item
-	theStack.map(function(x,i) {console.log(i + ") " + x)});
+    if (Config.debugExtras) {
+        for (var i=0; i<DebuggingStack.length; i++) {
+            var args = DebuggingStack[i];
+            var header = Object.inspect(args.callee.originalFunction);
+            console.log(i.toString() + ") " + header);
+            var k = header.indexOf('(');
+            header = header.substring(k+1,999);  // ')' or 'zort)' or 'zort,baz)', etc
+            for (var j=0; j<args.length; j++) {
+                k = header.indexOf(')');
+                var k2 = header.indexOf(',');
+                if (k2 >= 0) k = Math.min(k,k2);
+                argName = header.substring(0,k)
+                header = header.substring(k+2,999);
+                console.log(argName + ': ' + Object.inspect(args[j]));
+            }
+        }
+    } else {
+        var theStack = Function.callStack();
+        theStack.shift();  // drop this item
+        theStack.map(function(x,i) {console.log(i + ") " + x)});
     }
 };
 
@@ -464,19 +463,19 @@ Function.installStackTracers = function() {
     // Adds stack tracing to methods of most "classes"
     console.log("installing stack tracers");
     var classNames = Class.listClassNames(Global).filter(function(n) { return !n.startsWith('SVG')});
-    for(var ci= 0; ci<classNames.length; ci++) {
-	var cName = classNames[ci];
-	if(cName != 'Global' && cName != 'Object') {
-	    var theClass = Global[cName];
-	    var methodNames = theClass.localFunctionNames();
-	    for(var mi = 0; mi<methodNames.length; mi++) {
-		var mName = methodNames[mi];
-		var originalMethod = theClass.prototype[mName]; 
-		originalMethod.classAndMethodName = cName + '.' + mName;  // Attach name to method
-		// Now replace each method with a wrapper function that records calls on DebuggingStack
-		theClass.prototype[mName] = originalMethod.stackWrapper();
-	    }
-	}
+    for (var ci= 0; ci<classNames.length; ci++) {
+        var cName = classNames[ci];
+        if (cName != 'Global' && cName != 'Object') {
+            var theClass = Global[cName];
+            var methodNames = theClass.localFunctionNames();
+            for (var mi = 0; mi<methodNames.length; mi++) {
+                var mName = methodNames[mi];
+                var originalMethod = theClass.prototype[mName]; 
+                originalMethod.classAndMethodName = cName + '.' + mName;  // Attach name to method
+                // Now replace each method with a wrapper function that records calls on DebuggingStack
+                theClass.prototype[mName] = originalMethod.stackWrapper();
+            }
+        }
     }
 };
 
@@ -485,10 +484,11 @@ Function.prototype.stackWrapper = function () {
     // Make a proxy method (traceFunc) that calls the original method after pushing 'arguments' on DebuggingStack
     // Normally, it will pop it off before returning, but ***check interaction with try/catch
     var traceFunc = function () {
-	DebuggingStack.push(arguments);  // Push the arguments object on the stack ...
-	var result = traceFunc.originalFunction.apply(this, arguments); 
-	DebuggingStack.pop();            // ... and then pop them off before returning
-	return result; };
+        DebuggingStack.push(arguments);  // Push the arguments object on the stack ...
+        var result = traceFunc.originalFunction.apply(this, arguments); 
+        DebuggingStack.pop();            // ... and then pop them off before returning
+        return result; 
+    };
     traceFunc.originalFunction = this;  // Attach this (the original function) to the tracing proxy
     return traceFunc;
 }; 

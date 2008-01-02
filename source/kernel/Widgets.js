@@ -50,7 +50,7 @@ var ButtonMorph = Class.create(Morph, {
             var model = new SimpleModel(this, "Value");
             // this default self connection may get overwritten by, eg, connectModel()...
             this.modelPlug = model.makePlug();
-	    this.addNonMorph(this.modelPlug.rawNode);
+            this.addNonMorph(this.modelPlug.rawNode);
 
             // Styling
             this.setModelValue('setValue', false);
@@ -1254,7 +1254,7 @@ var CheapListMorph = Class.create(TextMorph, {
             // this default self connection may get overwritten by, eg, connectModel()...
             var model = new SimpleModel(null, "List", "Selection");
             this.modelPlug = model.makePlug();
-	    this.addNonMorph(this.modelPlug.rawNode);
+            this.addNonMorph(this.modelPlug.rawNode);
             this.setModelValue('setList', itemList);
         }
 
@@ -1563,7 +1563,7 @@ var SliderMorph = Class.create(Morph, {
             var model = new SimpleModel(null, "Value", "Extent");
             // this default self connection may get overwritten by, eg, connectModel()...
             this.modelPlug = model.makePlug();
-	    this.addNonMorph(this.modelPlug.rawNode);
+            this.addNonMorph(this.modelPlug.rawNode);
 
             this.scale = (scaleIfAny == null) ? 1.0 : scaleIfAny;
             var slider = new Morph(new Rectangle(0, 0, 8, 8), "rect");

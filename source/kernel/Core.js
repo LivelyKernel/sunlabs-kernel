@@ -173,12 +173,13 @@ Function.callStack = function() {
 };
 
 Object.extend(Function.prototype, {
+
     inspect: function() {
         var methodName = this.classAndMethodName ? this.classAndMethodName : "unnamedFunction";
-	var methodBody = this.toString();
-	// First 80 chars of code, without 'function'
-	methodBody = methodBody.substring(8, 88) + (methodBody.length>88 ? '...' : '');
- 	return methodName + methodBody;
+        var methodBody = this.toString();
+        // First 80 chars of code, without 'function'
+        methodBody = methodBody.substring(8, 88) + (methodBody.length>88 ? '...' : '');
+        return methodName + methodBody;
     },
 
     functionNames: function(filter) {
@@ -2050,9 +2051,9 @@ var Importer = Class.create({
 
         try {
             return new Global[morphTypeName](this, rawNode);
-	} catch (er) {
-	    console.log("problem instantiating type %s tag %s: %s", morphTypeName, rawNode.tagName, er);
-	}
+        } catch (er) {
+            console.log("problem instantiating type %s tag %s: %s", morphTypeName, rawNode.tagName, er);
+        }
     },
     
     importFromString: function(string) {
@@ -2279,7 +2280,7 @@ Morph = Class.create(Visual, {
             case "a0:modelPlug": // Firefox cheat
             case "modelPlug": {
                 this.modelPlug = Model.becomePlugNode(node);
-		this.addNonMorph(this.modelPlug.rawNode);
+                this.addNonMorph(this.modelPlug.rawNode);
                 console.info("%s reconstructed plug %s", this, this.modelPlug);
                 break;
             } 
@@ -3697,10 +3698,11 @@ Morph.addMethods({
         // connector makes this view pluggable to different models, as in
         // {model: someModel, getList: "getItemList", setSelection: "chooseItem"}
         var newPlug = Model.makePlug(plugSpec);
-        if (this.modelPlug) 
-	    this.rawNode.replaceChild(newPlug.rawNode, this.modelPlug.rawNode);
-        else 
-	    this.addNonMorph(newPlug.rawNode);
+        if (this.modelPlug) { 
+            this.rawNode.replaceChild(newPlug.rawNode, this.modelPlug.rawNode);
+        } else { 
+            this.addNonMorph(newPlug.rawNode);
+        }
         this.modelPlug = newPlug;
         if (plugSpec.model.addDependent) { // for mvc-style updating
             plugSpec.model.addDependent(this);
@@ -3818,7 +3820,7 @@ Model = Class.create({
 var ModelPlug = Class.create({
     rawNode: null,
     initialize: function(rawNode) {
-	this.rawNode = rawNode;
+        this.rawNode = rawNode;
     },
     toString: function() {
         return Exporter.nodeToString(this.rawNode);
@@ -3827,7 +3829,7 @@ var ModelPlug = Class.create({
 
 Object.extend(Model, {
     makePlug: function(spec) {
-	var plug = new ModelPlug(NodeFactory.createNS(Namespace.LIVELY, "modelPlug"));
+        var plug = new ModelPlug(NodeFactory.createNS(Namespace.LIVELY, "modelPlug"));
         var props = Object.properties(spec);
         for (var i = 0; i < props.length; i++) {
             var prop = props[i];
@@ -3842,7 +3844,7 @@ Object.extend(Model, {
     },
 
     becomePlugNode: function(node) {
-	var plug = new ModelPlug(node);
+        var plug = new ModelPlug(node);
         for (var acc = node.firstChild; acc != null;  acc = acc.nextSibling) {
             if (acc.tagName != 'accessor') continue;
             plug[acc.getAttributeNS(Namespace.LIVELY, "formal")] = acc.getAttributeNS(Namespace.LIVELY, "actual");
@@ -4296,9 +4298,9 @@ var WorldMorph = Class.create(PasteUpMorph, {
             var action = schedNode[1];
             var func = action.actor[action.scriptName];
 
-	    DebuggingStack = [];  // Reset at each tick event
+            DebuggingStack = [];  // Reset at each tick event
             try { func.call(action.actor, action.argIfAny); }
-		catch(er) { Function.showStack(); };
+            catch(er) { Function.showStack(); };
             // Note: if error in script above, it won't get rescheduled below (this is good)
 
             if (action.stepTime > 0) {
@@ -4628,24 +4630,26 @@ var HandMorph = function() {
         
         // console.log('original target ' + evt.target);
 
-	DebuggingStack = [];  // Reset at each input event
-	try {
-        switch (evt.type) {
-        case "mousemove":
-        case "mousedown":
-        case "mouseup":
-            this.handleMouseEvent(evt);
-            // evt.preventDefault();
-            break;
-        case "keydown":
-        case "keypress": 
-        case "keyup":
-            this.handleKeyboardEvent(evt);
-            break;
-        default:
-            console.log("unknown event type " + evt.type);
-        }
-	} catch(er) { Function.showStack(); };
+        DebuggingStack = [];  // Reset at each input event
+        try {
+            switch (evt.type) {
+            case "mousemove":
+            case "mousedown":
+            case "mouseup":
+                this.handleMouseEvent(evt);
+                // evt.preventDefault();
+                break;
+            case "keydown":
+            case "keypress": 
+            case "keyup":
+                this.handleKeyboardEvent(evt);
+                break;
+            default:
+                console.log("unknown event type " + evt.type);
+            }
+        } catch(er) { 
+            Function.showStack(); 
+        };
         evt.stopPropagation();
     }.logErrors('Event Handler'),
 
