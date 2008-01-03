@@ -250,6 +250,7 @@ Object.extend(Function.prototype, {
             } catch (er) {
                 if (prefix) console.warn("%s.%s(%s): err: %s %s", this, prefix, args,  er, er.stack || "");
                 else console.warn("%s %s", er, er.stack || "");
+		Function.showStack();
                 throw er;
             }
         }
@@ -1815,10 +1816,17 @@ var PolylineShape = Class.create(Shape, {
 
 var PathShape = Class.create(Shape, {
     
-    initialize: function($super, vertlist, color, borderWidth, borderColor) {
-        this.rawNode = NodeFactory.create("path");
-        $super(color, borderWidth, borderColor);
-        if (vertlist) this.setVertices(vertlist);
+    initialize: function($super, vertlistOrRawNode, color, borderWidth, borderColor) {
+        if (vertlistOrRawNode instanceof Node) {
+            this.rawNode = vertlistOrRawNode;
+            $super();
+        } else {
+            this.rawNode = NodeFactory.create("path");
+	    $super(color, borderWidth, borderColor);
+	    try {
+		if (vertlistOrRawNode) this.setVertices(vertlistOrRawNode);
+	    } catch (er) { console.log("vertlistOrRawNode" + vertlistOrRawNode); } 
+        }
         return this;
     },
     
@@ -2137,6 +2145,8 @@ Morph = Class.create(Visual, {
     mouseHandler: MouseHandlerForDragging.prototype, //a MouseHandler for mouse sensitivity, etc
     stepHandler: null, // a stepHandler for time-varying morphs and animation 
     type: "Morph", // debugging etc
+    noShallowCopyProperties: ['rawNode', 'rawSubnodes', 'shape', 'submorphs', 'stepHandler'],
+
 
     nextNavigableSibling: null, // keyboard navigation
     
@@ -2797,34 +2807,33 @@ Morph.addMethods({
         return copy.morphCopyFrom(this); 
     },
     
-    // KP: FIXME clone non morphs... but how
-    morphCopyFrom: function(other/*:Morph*/) { //:Morph
 
-        // for (var p in other) {this[p] = other[p]; } // shallow copy by default
-        // KP: was an iteration but has to be by hand b/c of inheriting from SVGGElement
+    morphCopyFrom: function(other/*:Morph*/) { //:Morph
+	
+        for (var p in other) {
+	    if (!(other[p] instanceof Function) 
+		&& other.hasOwnProperty(p) 
+		&& !this.noShallowCopyProperties.include(p)) {
+		this[p] = other[p]; 
+	    }
+	}  // shallow copy by default
         this.setShape(other.shape.copy());    
-        this.origin = other.origin;
-        this.rotation = other.rotation;
-        this.scale = other.scale;
-        this.fullBounds = other.fullBounds;
-    
-        this.openForDragAndDrop = other.openForDragAndDrop;
+        //this.origin = other.origin;
+        //this.rotation = other.rotation;
+        //this.scale = other.scale;
+        //this.fullBounds = other.fullBounds;
+	
+        //this.openForDragAndDrop = other.openForDragAndDrop;
     
         // if (other.myId) this.myId = this.world).register(this);
         if (other.cachedTransform) { 
             this.cachedTransform = other.cachedTransform.copy();
-        }
-    
-        //this.cachedTransform = null;
+        } 
     
         if (other.clipPath) {
-            // console.log('other clipPath is ' + other.clipPath);
-            // var clipPath = other.clipPath.cloneNode(true);
-            // this.installClipPath(clipPath, Morph.newClipName());
-        
-            // Safari didn't clone properly the <path> contained in the <clipPath>,
-            // so the following will work instead.
-            this.clipToPath(other.clipPath.firstChild.copy());
+            console.log('other clipPath is ' + other.clipPath);
+	    this.clipToShape();
+	    console.log("copy: optimistically assuming that other (%s) is clipped to shape", other);
         }
 
         if (other.hasSubmorphs()) { // deep copy of submorphs
@@ -3226,7 +3235,7 @@ Morph.addMethods({
             ["show Lively markup", this.addSvgInspector.curry(this)],
             ["publish shrink-wrapped as...", function() { 
                 WorldMorph.current().makeShrinkWrappedWorldWith([this], WorldMorph.current().prompt('publish as')) }],
-            ["show stack", Function.showStack.curry()]
+            ["show stack", Function.showStack]
         ];
         var menu = new MenuMorph(items, this); 
         if (!this.okToDuplicate()) menu.removeItemNamed("duplicate");
@@ -3544,7 +3553,6 @@ Morph.addMethods({
     // map local point to world coordinates
     worldPoint: function(pt) { 
         return pt.matrixTransform(this.rawNode.getTransformToElement(this.canvas())); 
-	// return pt.matrixTransform(this.rawNode.getCTM());
     },
 
     // map owner point to local coordinates
@@ -3628,9 +3636,9 @@ Morph.addMethods({
 // Morph clipping functions
 Morph.addMethods({
 
-    clipToPath: function(path) {
+    clipToPath: function(pathShape) {
         var clipPath = NodeFactory.create('clipPath');
-        clipPath.appendChild(path.rawNode);
+        clipPath.appendChild(pathShape.rawNode);
         clipPath.setAttributeNS(null, "shape-rendering", "optimizeSpeed");
         var ref = this.assign('clipPath', clipPath);
         this.rawNode.setAttributeNS(null, "clip-path", ref);
@@ -4298,9 +4306,15 @@ var WorldMorph = Class.create(PasteUpMorph, {
             var func = action.actor[action.scriptName];
 
             DebuggingStack = [];  // Reset at each tick event
-            try { func.call(action.actor, action.argIfAny); }
-            catch(er) { Function.showStack(); };
-            // Note: if error in script above, it won't get rescheduled below (this is good)
+	    try {
+		func.call(action.actor, action.argIfAny);
+	    } catch (er) {
+		console.warn("error on actor %s: %s, callback: %s", action.actor, er, func);
+		Function.showStack();
+		continue;
+		// Note: if error in script above, it won't get rescheduled below (this is good)
+	    }
+
 
             if (action.stepTime > 0) {
                 var nextTime = msTime + action.stepTime;
@@ -4630,30 +4644,28 @@ var HandMorph = function() {
         // console.log('original target ' + evt.target);
 
         DebuggingStack = [];  // Reset at each input event
-        try {
-            switch (evt.type) {
-            case "mousemove":
-            case "mousedown":
-            case "mouseup":
-                this.handleMouseEvent(evt);
-                // evt.preventDefault();
-                break;
-            case "keydown":
-            case "keypress": 
-            case "keyup":
-                this.handleKeyboardEvent(evt);
-                break;
-            default:
-                console.log("unknown event type " + evt.type);
-            }
-        } catch(er) { 
-            Function.showStack(); 
-        };
+	
+        switch (evt.type) {
+        case "mousemove":
+        case "mousedown":
+        case "mouseup":
+            this.handleMouseEvent(evt);
+            // evt.preventDefault();
+            break;
+        case "keydown":
+        case "keypress": 
+        case "keyup":
+            this.handleKeyboardEvent(evt);
+            break;
+        default:
+            console.log("unknown event type " + evt.type);
+        }
         evt.stopPropagation();
     }.logErrors('Event Handler'),
 
     handleMouseEvent: function(evt) { 
-        evt.setButtonPressedAndPriorPoint(this.mouseButtonPressed, this.lastMouseEvent ? this.lastMouseEvent.mousePoint : null);
+        evt.setButtonPressedAndPriorPoint(this.mouseButtonPressed, 
+					  this.lastMouseEvent ? this.lastMouseEvent.mousePoint : null);
 
 
         //-------------

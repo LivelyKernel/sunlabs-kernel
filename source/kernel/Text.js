@@ -546,6 +546,8 @@ var TextMorph = Class.create(Morph, {
     type: "TextMorph",
     tabWidth: 4,
     tabsAsSpaces: true,
+    noShallowCopyProperties: Morph.prototype.noShallowCopyProperties.concat(['rawTextNode']),
+
 
     initializeTransientState: function($super, initialBounds) {
         $super(initialBounds);
@@ -579,15 +581,6 @@ var TextMorph = Class.create(Morph, {
         this.setBorderColor(this.defaultBorderColor);
     },
     
-    /*
-    // FIXME: this bizarre "fix" helps Opera layout 
-    relativizeBounds: function($super, rect) {
-        if (!Prototype.Browser.Opera) return $super(rect);
-        return rect.clone();
-        //return rect.translatedBy(this.origin.negated());
-    },
-    */
-
     restorePersistentState: function($super, importer) {
         $super(importer);
         this.wrap = this.rawNode.getAttributeNS(Namespace.LIVELY, "wrap");
@@ -676,13 +669,13 @@ var TextMorph = Class.create(Morph, {
     copy: function() {
         var copy = new TextMorph(this.bounds(), this.textString);
         copy.morphCopyFrom(this);
-        copy.setFontFamilyAndSize(this.fontFamily,this.fontSize);
-        copy.setTextColor(this.getTextColor());
+        copy.setFontFamilyAndSize(this.fontFamily, this.fontSize);
+	    //        copy.setTextColor(this.getTextColor());
         // FIXME what about all the other stuff ...
         copy.selectionRange = copy.selectionRange.slice(0);
         // AT: Inset must be copied!
         // However, there are other attributes still missing
-        copy.inset = this.inset;
+        copy.inset = this.inset.clone();
         return copy; 
     },
 
