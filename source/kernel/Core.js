@@ -250,7 +250,7 @@ Object.extend(Function.prototype, {
             } catch (er) {
                 if (prefix) console.warn("%s.%s(%s): err: %s %s", this, prefix, args,  er, er.stack || "");
                 else console.warn("%s %s", er, er.stack || "");
-		Function.showStack();
+                Function.showStack();
                 throw er;
             }
         }
@@ -928,12 +928,12 @@ var Transform = Class.create({
 
     // only for similitudes
     getRotation: function() { // in degrees
-	return Math.atan2(this.matrix.b, this.matrix.a).toDegrees();
+        return Math.atan2(this.matrix.b, this.matrix.a).toDegrees();
     },
 
     getScale: function() {
-	var a = this.matrix.a;
-	var b = this.matrix.b;
+        var a = this.matrix.a;
+        var b = this.matrix.b;
         return Math.sqrt(a * a + b * b);
     },
 
@@ -1095,10 +1095,10 @@ var Event = (function() {
             this.preventDefault();
             this.stopPropagation();
         },
-	
-	toString: function() {
-	    return this.type + "[" + this.rawEvent + (this.mousePoint ?  "@" + this.mousePoint : "") +  "]";
-	},
+
+        toString: function() {
+            return this.type + "[" + this.rawEvent + (this.mousePoint ?  "@" + this.mousePoint : "") +  "]";
+        },
 
         setButtonPressedAndPriorPoint: function(buttonPressed, priorPoint) {
             this.mouseButtonPressed = buttonPressed;
@@ -1822,10 +1822,10 @@ var PathShape = Class.create(Shape, {
             $super();
         } else {
             this.rawNode = NodeFactory.create("path");
-	    $super(color, borderWidth, borderColor);
-	    try {
-		if (vertlistOrRawNode) this.setVertices(vertlistOrRawNode);
-	    } catch (er) { console.log("vertlistOrRawNode" + vertlistOrRawNode); } 
+            $super(color, borderWidth, borderColor);
+            try {
+                if (vertlistOrRawNode) this.setVertices(vertlistOrRawNode);
+            } catch (er) { console.log("vertlistOrRawNode" + vertlistOrRawNode); } 
         }
         return this;
     },
@@ -2549,7 +2549,7 @@ Morph.addMethods({
         if (!newShape.rawNode) {
             console.log('newShape is ' + newShape + ' ' + (new Error()).stack);
         }
-	this.rawNode.replaceChild(newShape.rawNode, this.shape.rawNode);
+        this.rawNode.replaceChild(newShape.rawNode, this.shape.rawNode);
 
         this.shape = newShape;
         //this.layoutChanged(); 
@@ -2809,20 +2809,21 @@ Morph.addMethods({
     
 
     morphCopyFrom: function(other/*:Morph*/) { //:Morph
-	
+
         for (var p in other) {
-	    if (!(other[p] instanceof Function) 
-		&& other.hasOwnProperty(p) 
-		&& !this.noShallowCopyProperties.include(p)) {
-		this[p] = other[p]; 
-	    }
-	}  // shallow copy by default
+            if (!(other[p] instanceof Function) 
+                && other.hasOwnProperty(p) 
+                && !this.noShallowCopyProperties.include(p)) {
+                    this[p] = other[p]; 
+            }
+        }  // shallow copy by default
+
         this.setShape(other.shape.copy());    
         //this.origin = other.origin;
         //this.rotation = other.rotation;
         //this.scale = other.scale;
         //this.fullBounds = other.fullBounds;
-	
+
         //this.openForDragAndDrop = other.openForDragAndDrop;
     
         // if (other.myId) this.myId = this.world).register(this);
@@ -2832,8 +2833,8 @@ Morph.addMethods({
     
         if (other.clipPath) {
             console.log('other clipPath is ' + other.clipPath);
-	    this.clipToShape();
-	    console.log("copy: optimistically assuming that other (%s) is clipped to shape", other);
+            this.clipToShape();
+            console.log("copy: optimistically assuming that other (%s) is clipped to shape", other);
         }
 
         if (other.hasSubmorphs()) { // deep copy of submorphs
@@ -4306,15 +4307,14 @@ var WorldMorph = Class.create(PasteUpMorph, {
             var func = action.actor[action.scriptName];
 
             DebuggingStack = [];  // Reset at each tick event
-	    try {
-		func.call(action.actor, action.argIfAny);
-	    } catch (er) {
-		console.warn("error on actor %s: %s, callback: %s", action.actor, er, func);
-		Function.showStack();
-		continue;
-		// Note: if error in script above, it won't get rescheduled below (this is good)
-	    }
-
+            try {
+                func.call(action.actor, action.argIfAny);
+            } catch (er) {
+                console.warn("error on actor %s: %s, callback: %s", action.actor, er, func);
+                Function.showStack();
+                continue;
+                // Note: if error in script above, it won't get rescheduled below (this is good)
+            }
 
             if (action.stepTime > 0) {
                 var nextTime = msTime + action.stepTime;
@@ -4644,7 +4644,7 @@ var HandMorph = function() {
         // console.log('original target ' + evt.target);
 
         DebuggingStack = [];  // Reset at each input event
-	
+
         switch (evt.type) {
         case "mousemove":
         case "mousedown":
@@ -4665,8 +4665,7 @@ var HandMorph = function() {
 
     handleMouseEvent: function(evt) { 
         evt.setButtonPressedAndPriorPoint(this.mouseButtonPressed, 
-					  this.lastMouseEvent ? this.lastMouseEvent.mousePoint : null);
-
+            this.lastMouseEvent ? this.lastMouseEvent.mousePoint : null);
 
         //-------------
         // mouse move
@@ -4695,7 +4694,7 @@ var HandMorph = function() {
 
                         // Note if onMouseOver sets focus, it will get onMouseMove
                         if (this.mouseFocus) this.mouseFocus.captureMouseEvent(evt, true);
-			else if (!evt.hand.hasSubmorphs()) this.owner.captureMouseEvent(evt, false); 
+                        else if (!evt.hand.hasSubmorphs()) this.owner.captureMouseEvent(evt, false); 
                     }
                 } 
             }
@@ -4735,11 +4734,11 @@ var HandMorph = function() {
                 // This will tell the world to send the event to the right morph
                 // We do not dispatch mouseup the same way -- only if focus gets set on mousedown
                 if (evt.type == "mousedown") this.owner.captureMouseEvent(evt, false);
-	    }
-	    if (evt.type == "mousedown") {
+            }
+            if (evt.type == "mousedown") {
                 this.lastMouseDownPoint = evt.mousePoint;
                 this.hasMovedSignificantly = false; 
-	    }
+            }
         }
         this.lastMouseEvent = evt; 
 
