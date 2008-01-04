@@ -435,6 +435,14 @@ function showStatsViewer(profilee,title) {
     m.addMorph(t);
 };
 
+Function.callStack = function() {
+    var result = [];
+    for (var c = arguments.callee.caller; c != null; c = c.caller) {
+        result.push(Object.inspect(c));
+    }
+    return result;
+};
+
 Function.showStack = function() {
     if (Config.debugExtras) {
         for (var i=0; i<DebuggingStack.length; i++) {

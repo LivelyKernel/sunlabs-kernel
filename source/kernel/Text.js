@@ -24,28 +24,29 @@ var TextMorph = (function() {
  * @class TextWord
  * This 'class' renders single words
  */ 
-var TextWord = Class.create(TextCompatibilityTrait, {
+var TextWord = TextCompatibilityTrait.subclass("TextWord", {
+
+    deserialize: function(importer, rawNode) {
+        this.rawNode = rawNode;
+        this.fontInfo = Font.forFamily(this.getFontFamily(), this.getFontSize());
+        this.textString = this.rawNode.textContent;
+	this.didLineBreak = false;
+    },
     
     initialize: function(textString, startIndex, topLeft, font) {
-        if (arguments[0] instanceof Importer) {
-            this.rawNode = arguments[1];
-            this.fontInfo = Font.forFamily(this.getFontFamily(), this.getFontSize());
-            this.textString = this.rawNode.textContent;
-            // FIXME
-        } else {
-            this.rawNode = NodeFactory.create("tspan");
-            this.textString = textString;
-            this.startIndex = startIndex;
-            this.stopIndex = textString.length - 1;
-            this.topLeft = topLeft;
-            this.rawNode.textContent = textString.substring(this.startIndex);
-            this.fontInfo = font;
-            this.setX(topLeft.x);
-            this.setY(topLeft.y + font.getSize());
-        }
+        this.rawNode = NodeFactory.create("tspan");
+        this.textString = textString;
+        this.startIndex = startIndex;
+        this.stopIndex = textString.length - 1;
+        this.topLeft = topLeft;
+        this.rawNode.textContent = textString.substring(this.startIndex);
+        this.fontInfo = font;
+        this.setX(topLeft.x);
+        this.setY(topLeft.y + font.getSize());
         this.didLineBreak = false;
         return this;
     },
+    
 
     // compose a word within compositionWidth, stopping if the width or string width is exceeded
     // compositionWidth is in the same units as character metrics
@@ -530,7 +531,7 @@ var TextLine = Class.create({
 /**
  * @class TextMorph
  */ 
-var TextMorph = Class.create(Morph, {
+var TextMorph = Morph.subclass("TextMorph", {
 
     // these are prototype variables
     fontSize:   Config.defaultFontSize   || 12,
@@ -543,10 +544,9 @@ var TextMorph = Class.create(Morph, {
     inset: pt(6,4), // remember this shouldn't be modified unless every morph should get the value 
     wrap: WrapStyle.NORMAL,
     maxSafeSize: 4000, 
-    type: "TextMorph",
     tabWidth: 4,
     tabsAsSpaces: true,
-    noShallowCopyProperties: Morph.prototype.noShallowCopyProperties.concat(['rawTextNode']),
+    noShallowCopyProperties: Morph.prototype.noShallowCopyProperties.concat(['rawTextNode', 'lines']),
 
 
     initializeTransientState: function($super, initialBounds) {
@@ -565,20 +565,24 @@ var TextMorph = Class.create(Morph, {
 
     initializePersistentState: function($super, initialBounds, shapeType) {
         $super(initialBounds, shapeType);
-        // this.selectionElement = this.addNonMorph(NodeFactory.create('use').withHref("#TextSelectionStyle"));
+
+	this.rawTextNode = null;
 
         // the selection element is persistent although its contents are not
         // generic <g> element with 1-3 rectangles inside
-        this.selectionElement = this.addNonMorph(NodeList.withType('Selection'));
-        this.selectionElement.setAttributeNS(null, "fill", this.selectionColor);
-        //this.selectionElement.setAttributeNS(null, "fill", "url(#SelectionGradient)");
-        this.selectionElement.setAttributeNS(null, "stroke-width", 0);
+        this.rawSelectionNode = this.addNonMorph(NodeList.withType('Selection'));
+        this.rawSelectionNode.setAttributeNS(null, "fill", this.selectionColor);
+        this.rawSelectionNode.setAttributeNS(null, "stroke-width", 0);
         this.font = Font.forFamily(this.fontFamily, this.fontSize);
+	
+
+
         this.rawNode.setAttributeNS(Namespace.LIVELY, "wrap", this.wrap);
         // KP: set attributes on the text elt, not on the morph, so that we can retrieve it
         this.setFill(this.defaultBackgroundColor);
         this.setBorderWidth(this.defaultBorderWidth);
         this.setBorderColor(this.defaultBorderColor);
+	
     },
     
     restorePersistentState: function($super, importer) {
@@ -629,7 +633,7 @@ var TextMorph = Class.create(Morph, {
         case 'Selection':
             // that's ok, it's actually transient 
             // remove all chidren b/c they're really transient
-            this.selectionElement = NodeList.become(element, type);
+            this.rawSelectionNode = NodeList.become(element, type);
             // console.log('processing selection %s', element);
             this.undrawSelection();
             return true;
@@ -638,20 +642,12 @@ var TextMorph = Class.create(Morph, {
     },
 
     initialize: function($super, rect, textString) {
-        if (arguments[1] instanceof Importer) { // called when restoring from external representation (markup)
-            $super(arguments[1], arguments[2]); // arguments[2] is rawNode
-        } else {
-            this.textString = textString || "";
-            $super(rect, "rect");
-            // KP: note layoutChanged will be called on addition to the tree
-            // DI: ... and yet this seems necessary!
-            this.layoutChanged();
-        }
+        this.textString = textString || "";
+        $super(rect, "rect");
+        // KP: note layoutChanged will be called on addition to the tree
+        // DI: ... and yet this seems necessary!
+        this.layoutChanged();
         return this;
-    },
-
-    recoverTextContent: function(importer, rawNode) {
-
     },
 
     defaultOrigin: function(bounds) { 
@@ -666,19 +662,6 @@ var TextMorph = Class.create(Morph, {
         return $super();
     },
     
-    copy: function() {
-        var copy = new TextMorph(this.bounds(), this.textString);
-        copy.morphCopyFrom(this);
-        copy.setFontFamilyAndSize(this.fontFamily, this.fontSize);
-	    //        copy.setTextColor(this.getTextColor());
-        // FIXME what about all the other stuff ...
-        copy.selectionRange = copy.selectionRange.slice(0);
-        // AT: Inset must be copied!
-        // However, there are other attributes still missing
-        copy.inset = this.inset.clone();
-        return copy; 
-    },
-
     changed: function($super) {
         this.bounds(); // will force new bounds if layout changed
         $super();
@@ -986,7 +969,7 @@ var TextMorph = Class.create(Morph, {
     },
     
     undrawSelection: function() {
-        NodeList.clear(this.selectionElement);
+        NodeList.clear(this.rawSelectionNode);
     },
 
     // FIXME (Safari draws its own selection)
@@ -1024,23 +1007,23 @@ var TextMorph = Class.create(Morph, {
         }
     
         if (this.lineNo(r2) == this.lineNo(r1)) {
-            NodeList.push(this.selectionElement, new RectShape(r1.union(r2)).roundEdgesBy(4));
+            NodeList.push(this.rawSelectionNode, new RectShape(r1.union(r2)).roundEdgesBy(4));
         } else { // Selection is on two or more lines
             var localBounds = this.shape.bounds();
             r1 = r1.withBottomRight(pt(localBounds.maxX() - this.inset.x, r1.maxY()));
             r2 = r2.withBottomLeft(pt(localBounds.x + this.inset.x, r2.maxY()));
-            NodeList.push(this.selectionElement, new RectShape(r1).roundEdgesBy(4));
-            NodeList.push(this.selectionElement, new RectShape(r2).roundEdgesBy(4));
+            NodeList.push(this.rawSelectionNode, new RectShape(r1).roundEdgesBy(4));
+            NodeList.push(this.rawSelectionNode, new RectShape(r2).roundEdgesBy(4));
         
             if (this.lineNo(r2) != this.lineNo(r1) + 1) {
                 // Selection spans 3 or more lines; fill the block between top and bottom lines
-                NodeList.push(this.selectionElement, 
+                NodeList.push(this.rawSelectionNode, 
                     new RectShape(Rectangle.fromAny(r1.bottomRight(), r2.topLeft())).roundEdgesBy(4)); 
             }
         }
     
-        // console.log('add selection ' + this.selectionElement.childNodes);
-        // this.addNonMorph(this.selectionElement);
+        // console.log('add selection ' + this.rawSelectionNode.childNodes);
+        // this.addNonMorph(this.rawSelectionNode);
     },
     
     lineNo: function(r) { //Returns the line number of a given rectangle
@@ -1549,15 +1532,7 @@ Object.extend(TextMorph, {
  * to a string using toString(), and from a string using eval()
  */ 
 
-PrintMorph = Class.create(TextMorph, {
-
-    initialize: function($super, initialBounds, textString) {
-        if (arguments[1] instanceof Importer) {
-            return $super(arguments[1], arguments[2]);
-        } else {
-            return $super(initialBounds, textString);
-        }
-    }, 
+PrintMorph = TextMorph.subclass("PrintMorph", {
 
     updateView: function(aspect, controller) {
         var p = this.modelPlug;

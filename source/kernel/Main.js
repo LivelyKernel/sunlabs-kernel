@@ -11,6 +11,7 @@
 /**
  * Main.js.  System startup and demo loading.
  */
+(function(module) {
 
 // Small demos that will always be shown
 Config.showClock = true;
@@ -59,7 +60,7 @@ function populateWorldWithExamples(world) {
     var widget;
 
     if (Config.showClock) {
-        widget = new ClockMorph(pt(60, 60), 50);
+        widget = new apps.ClockMorph(pt(60, 60), 50);
         world.addMorph(widget);
         widget.startSteppingScripts();
     }
@@ -71,7 +72,7 @@ function populateWorldWithExamples(world) {
     }
     */
 
-    if (Config.showEngine) makeEngine();
+    if (Config.showEngine) apps.makeEngine();
     
     if (Config.showAsteroids) {
         var gameMorph = apps.asteroids.makeGameMorph(pt(500, 360).extent(pt(600, 300)));
@@ -105,9 +106,9 @@ function populateWorldWithExamples(world) {
         stockWidget.startSteppingRefreshCharts(panel);
     }
 
-    if (Config.show3DLogo) world.addMorph(new WindowMorph(new Sun3DMorph(pt(570, 100).extent(pt(200, 200))), 'Sun 3D Logo'));
+    if (Config.show3DLogo) world.addMorph(new WindowMorph(new apps.Sun3DMorph(pt(570, 100).extent(pt(200, 200))), 'Sun 3D Logo'));
 
-    if (Config.showTester) new WidgetTester().openIn(world, pt(835, 450));
+    if (Config.showTester) new apps.WidgetTester().openIn(world, pt(835, 450));
 
     if (Config.showInnerWorld) {
         
@@ -184,11 +185,11 @@ function populateWorldWithExamples(world) {
             lm1.myWorld.addMorphBack(new WindowMorph(new ImageMorph(new Rectangle(50, 10, width, height), url), 'Tampere'));
         }
 
-        if (Config.showDoodle) lm1.myWorld.addMorph(new WindowMorph(new DoodleMorph(pt(560, 380).extent(pt(300, 300))), 'Doodle Morph'));
+        if (Config.showDoodle) lm1.myWorld.addMorph(new WindowMorph(new apps.DoodleMorph(pt(560, 380).extent(pt(300, 300))), 'Doodle Morph'));
         
         // if (Config.showVideo) { new PlayerMorph().openIn(lm1.myWorld, pt(50, 50)); }
 
-        if (Config.showMessenger && Config.showNetworkExamples) new MessengerWidget().openIn(lm1.myWorld, pt(875, 375));
+        if (Config.showMessenger && Config.showNetworkExamples) new apps.MessengerWidget().openIn(lm1.myWorld, pt(875, 375));
     }
     
     if (Config.showSlideWorld) { // Make a slide for "turning web programming upside down"
@@ -275,7 +276,7 @@ function populateWorldWithExamples(world) {
             lm2.myWorld.addMorph(widget);
             widget.setPosition(loc.addPt(dx));
             loc = loc.addPt(dy);    
-      
+	    
             // Create sample text widgets
             if (Config.showTextSamples) {
                 widget = new TextMorph(loc.extent(pt(100,50)),"Big Text"); // big text
@@ -305,12 +306,12 @@ function populateWorldWithExamples(world) {
 
         if (Config.showBrowser) new SimpleBrowser().openIn(devWorld.myWorld, pt(20,20));
 
-        if (Config.showHilbertFun) Pen.hilbertFun(devWorld.myWorld);
+        if (Config.showHilbertFun) apps.Pen.hilbertFun(devWorld.myWorld);
 
         // Sample executable script pane
         if (Config.showPenScript) {
-            if (Config.showTestText) widget = new TestTextMorph(pt(50,30).extent(pt(250,50)),Pen.script);
-            else widget = new TextMorph(pt(50,30).extent(pt(250,50)), Pen.script);
+            if (Config.showTestText) widget = new TestTextMorph(pt(50,30).extent(pt(250,50)),apps.Pen.script);
+            else widget = new TextMorph(pt(50,30).extent(pt(250,50)), apps.Pen.script);
             widget.align(widget.bounds().bottomRight(), world.bounds().topRight().addPt(pt(-150,100))); 
             devWorld.myWorld.addMorph(widget);
         }
@@ -350,8 +351,8 @@ function main() {
         for (var i=0; i<colors.length; i++) {
             world.addMorph(m = new Morph(new Rectangle(i*40, 0, 35, 35), "rect"));
             m.setFill(colors[i]);
-            console.log(colors[i].toString());
         }
+	console.log(colors.invoke('toString'));
     }
 }
 
@@ -359,7 +360,9 @@ function main() {
 // the DOM to reflect the geometry of objects on the screen, which is
 // needed to figure out font geometry. Apparently the update happens
 // after control returns to the caller of JS
-main.delay(0.05);
+main.logCompletion("main").delay(0.05);
 
-console.log('loaded Main.js');
+
+}.logCompletion("Main.js"))();
+
 

@@ -47,8 +47,6 @@ var Class = {
       parent = properties.shift();
 
     function klass() {
-	if (this === window || this == null) 
-	    console.log("whoops in " + this + "," + arguments.callee.caller.caller.caller.caller);
 	this.initialize.apply(this, arguments);
     }
 

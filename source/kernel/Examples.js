@@ -13,6 +13,9 @@
  * that will be included in the system when it starts. 
  */
 
+
+var apps = {};
+(function(scope) {
 // ===========================================================================
 // Widget (panel) Tester Demo
 // ===========================================================================
@@ -23,7 +26,7 @@
  * such as buttons, sliders, etc.  
  */
 
-WidgetTester = Class.create(Model, {
+scope.WidgetTester = Class.create(Model, {
 
     openIn: function(world, location) {
         var view = this.buildView(pt(300, 220));
@@ -101,10 +104,9 @@ WidgetTester = Class.create(Model, {
  * @class ClockMorph
  */
 
-var ClockMorph = Class.create(Morph, {
+Morph.subclass(scope, "ClockMorph", {
 
     defaultBorderWidth: 2,
-    type: "ClockMorph",
 
     initialize: function($super, position, radius) {
         $super(position.asRectangle().expandBy(radius), "ellipse");
@@ -142,6 +144,8 @@ var ClockMorph = Class.create(Morph, {
         this.changed(); 
     },
     
+
+
     reshape: function(a,b,c,d) { /*no reshaping*/ },
     
     startSteppingScripts: function() {
@@ -157,7 +161,7 @@ var ClockMorph = Class.create(Morph, {
         this.getNamedMorph('hours').setRotation(hour/12*2*Math.PI);
         this.getNamedMorph('minutes').setRotation(minute/60*2*Math.PI);
         this.getNamedMorph('seconds').setRotation(second/60*2*Math.PI); 
-    }
+    }.logErrors('setHands')
     
 });
 
@@ -169,7 +173,7 @@ var ClockMorph = Class.create(Morph, {
  * @class Pen
  */
   
-Pen = Class.create({
+scope.Pen = Class.create({
 
     initialize: function(loc) {
         this.location = (loc !== undefined) ? loc : WorldMorph.current().bounds().center();
@@ -283,7 +287,7 @@ Pen = Class.create({
 });
 
 // The menu-driven filled Hilbert curve demo
-Pen.hilbertFun = function(world) {
+scope.Pen.hilbertFun = function(world) {
     var logoMenu = new MenuMorph([]);
 
     for (var i=0; i<=5; i++) {
@@ -293,7 +297,7 @@ Pen.hilbertFun = function(world) {
     logoMenu.makeLogo = function(order) {
         if (this.morphs) for (var i=0; i<4; i++) this.morphs[i].remove();
         if (i=0) { this.morphs == null; return; }
-        var P = new Pen();
+        var P = new scope.Pen();
         this.morphs = P.filberts(order,5);
     };
 
@@ -301,7 +305,7 @@ Pen.hilbertFun = function(world) {
 }
 
 // The default script for the Pen/Hilbert demo
-Pen.script = ["P = new Pen();",
+scope.Pen.script = ["P = new apps.Pen();",
 "P.setPenColor(Color.red);",
 "for (var i=1; i<=40; i++)",
 "	{ P.go(2*i); P.turn(89); };",
@@ -316,7 +320,7 @@ Pen.script = ["P = new Pen();",
  * @class DoodleMorph
  */
 
-var DoodleMorph = Class.create(ClipMorph, {
+ClipMorph.subclass(scope, "DoodleMorph", {
 
     defaultBorderWidth: 0,
     defaultFill: Color.veryLightGray,
@@ -585,8 +589,6 @@ var DoodleMorph = Class.create(ClipMorph, {
     }
 });
 
-// Namespace for applications
-var apps = {};
 
 // ===========================================================================
 // The 3D Rotation Example
@@ -598,7 +600,7 @@ var apps = {};
  * and a Java version written in 1998.
  *============================================================================*/
 
-apps.threedee = function() {
+scope.threedee = function() {
 
     // Rapid sin and cos functions inherited from the original
     // C program.  Note that you must supply a multiplier in 
@@ -962,7 +964,7 @@ WireObject = Class.create({
  * @class Sun3DMorph
  */
   
-Sun3DMorph = Class.create(ClipMorph, {
+ClipMorph.subclass(scope, "Sun3DMorph", {
 
     defaultFill: Color.veryLightGray,
     
@@ -980,7 +982,7 @@ Sun3DMorph = Class.create(ClipMorph, {
             this.addMorph(this.morphArray[i]);
         }
 
-        this.wireObject = new apps.threedee.WireObject(0,  0, -6000);
+        this.wireObject = new scope.threedee.WireObject(0,  0, -6000);
         this.wireObject.paint(this.morphArray, 0, 0, 0);
 
         return this;
@@ -1026,7 +1028,7 @@ Sun3DMorph = Class.create(ClipMorph, {
 
 *****************************************************************************/
 
-apps.asteroids = function() {
+scope.asteroids = function() {
 
 // The game instance
 var gameMorph = null;
@@ -1438,9 +1440,9 @@ AsteroidsSprite = Class.create({
 
 var USE_FUNCTIONAL_DELAY = false;    
 
-var GameMorph = Class.create(ClipMorph, {});
-
-GameMorph.prototype.runAsteroidsGame = function() {
+var GameMorph = ClipMorph.subclass("GameMorph", {
+    
+    runAsteroidsGame: function() {
 
     // This is the main loop.
     
@@ -1503,7 +1505,8 @@ GameMorph.prototype.runAsteroidsGame = function() {
     if (!this.timerCallback) this.timerCallback = arguments.callee.bind(this).logErrors('Asteroid Timer');
     this.timeoutID = USE_FUNCTIONAL_DELAY ? this.timerCallback.delay(DELAY/1000) : window.setTimeout(this.timerCallback, DELAY);
 
-};
+    }
+});
 
   function loadSounds() {
 
@@ -2660,7 +2663,7 @@ StockWidget = Class.create(Model, {
 // The Map Widget Example
 // ===========================================================================
 
-apps.maps = function() {
+scope.maps = function() {
 
 // 6 is largest as a system print, lower numbers are debugprints
 // 6 is to be used if user must be notified lower levels to developer use
@@ -2736,7 +2739,7 @@ online parameter tells should the application load the maps from google
 Mapframe has menu which can be accessed by Ctrl+MouseClick in frame area
 */
 
-var MapFrameMorph = Class.create(Morph, {
+var MapFrameMorph = Morph.subclass("MapFrameMorph", {
 
     defaultBorderWidth: 5,
     defaultFill: new Color(0.5,0.5,0.5,0.8),
@@ -2889,7 +2892,7 @@ var MapFrameMorph = Class.create(Morph, {
  * May have mapmarkers as submorphs
  */
 
-MapMorph = Class.create(Morph, {
+var MapMorph = Morph.subclass("MapMorph", {
 
     initialize: function($super, initialBounds, online) { 
       pd("MapMorph",2);
@@ -3693,7 +3696,7 @@ Object.extend(BouncingSpheres, {
  * Placeholder for an instant messenger widget (to be completed) 
  */
  
-MessengerWidget = Class.create(Model, {
+scope.MessengerWidget = Class.create(Model, {
 
     imagepath: "Resources/IM/",
 
@@ -3888,7 +3891,7 @@ MessengerWidget = Class.create(Model, {
     
 });
 
-apps.canvascape = function() { // module function
+scope.canvascape = function() { // module function
 
 // ===========================================================================
 // The CanvasScape 3D Maze Walker Example
@@ -3901,7 +3904,7 @@ apps.canvascape = function() { // module function
  * @class MiniMapMorph: The "radar view" for the game
  */
 
-var MiniMapMorph = Class.create(Morph, {
+var MiniMapMorph = Morph.subclass("MiniMapMorph", {
     
     initialize: function($super, rect) {
         $super(rect, "rect");
@@ -3946,7 +3949,7 @@ var MiniMapMorph = Class.create(Morph, {
  * @class CanvasScapeMorph: The Canvas Game Morph
  */
 
-var CanvasScapeMorph = Class.create(ClipMorph,{
+scope.CanvasScapeMorph = ClipMorph.subclass("CanvasScapeMorph", {
     
     initialize: function($super, rect) {
         $super(rect, "rect");
@@ -4567,7 +4570,7 @@ var CanvasScapeMorph = Class.create(ClipMorph,{
 });
 
    // module exports
-    return { CanvasScapeMorph: CanvasScapeMorph };
+    return { CanvasScapeMorph: scope.CanvasScapeMorph };
 
 }(); // end canvascape
 
@@ -4575,8 +4578,8 @@ var CanvasScapeMorph = Class.create(ClipMorph,{
 // The Morphic Radial Engine Demo
 // ===========================================================================
 
-makeEngine = function() {
-    var engine = new EngineMorph(new Rectangle(0, 0, 400, 600));
+scope.makeEngine = function() {
+    var engine = new scope.EngineMorph(new Rectangle(0, 0, 400, 600));
     // KP: add the top morph to the world first, to make firefox happy
     WorldMorph.current().addMorphAt(new WindowMorph(engine, 'A Lively Engine'), pt(250, 5));
     engine.openAllToDnD();  // have a little fun...
@@ -4588,7 +4591,7 @@ makeEngine = function() {
  * @class EngineMorph: The Radial Engine demo
  */ 
 
-var EngineMorph = Class.create(Morph, {
+Morph.subclass(scope, "EngineMorph", {
 
     initialize: function($super, fullRect) {
         // A lively model by Dan Ingalls - 9/25/2007
@@ -4746,7 +4749,7 @@ var EngineMorph = Class.create(Morph, {
  * PlayerMorph is the end-user interface for showing the animation
  */ 
 
-var PlayerMorph = Class.create(Morph,  {
+var PlayerMorph = Morph.subclass("PlayerMorph",  {
 
     initialize: function($super) {
         var rect = Rectangle(0, 0, 330, 260);
@@ -4779,7 +4782,7 @@ var PlayerMorph = Class.create(Morph,  {
  * Animation Morph is the animation "engine" that loads the frames for the animation
  */
   
-var AnimMorph = Class.create(Morph, {
+var AnimMorph = Morph.subclass("AnimMorph", {
     
     initialize: function($super, rect, frameURL, numberOfFrames, type /* String (.jpg, .gif etc)*/) {
         $super(rect);
@@ -4881,5 +4884,6 @@ var AnimMorph = Class.create(Morph, {
 
 });
 
-console.log('loaded Examples.js');
+}).logCompletion("Examples.js")(apps);
+
 

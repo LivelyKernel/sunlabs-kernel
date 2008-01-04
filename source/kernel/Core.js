@@ -164,13 +164,6 @@ Object.properties = function(object, predicate) {
  * Extensions to class Function
  */  
 
-Function.callStack = function() {
-    var result = [];
-    for (var caller = arguments.callee.caller; caller != null; caller = caller.caller) {
-        result.push(Object.inspect(caller));
-    }
-    return result;
-};
 
 Object.extend(Function.prototype, {
 
@@ -217,7 +210,53 @@ Object.extend(Function.prototype, {
             return !superNames.include(name) || this.prototype[name] !== sup.prototype[name];
         }.bind(this));
 
+    },
+
+    subclass: function(/*,... */) {
+	var properties = $A(arguments);
+	var scope = Global;
+	if (typeof properties[0]  != 'string') { // primitive string required
+	    scope = properties.shift();
+	}
+	var name = properties.shift();
+
+	
+	function klass() {
+	    if (arguments[0] instanceof Importer) {
+		this.deserialize.apply(this, arguments);
+	    } else if (arguments[0] === Cloner) {
+		this.copyFrom.call(this, arguments[1]);
+	    } else {
+		this.initialize.apply(this, arguments);
+	    }
+	}
+	
+	Object.extend(klass, Class.Methods);
+	klass.superclass = this;
+	klass.subclasses = [];
+	
+	var subclass = function() { };
+	subclass.prototype = this.prototype;
+	klass.prototype = new subclass;
+	this.subclasses.push(klass);
+	
+	for (var i = 0; i < properties.length; i++) {
+	    klass.addMethods(properties[i] instanceof Function ? (properties[i])() : properties[i]);
+	}
+	
+	if (!klass.prototype.initialize)
+	    klass.prototype.initialize = Prototype.emptyFunction;
+	
+	klass.prototype.constructor = klass;
+	
+	
+	// KP: .name would be better but js ignores .name on anonymous functions
+	klass.prototype.constructor.type = name;
+	klass.prototype.constructor.scope = scope;
+	scope[name] = klass;
+	return klass;
     }
+
 });
 
 Function.globalScope = window;
@@ -257,6 +296,25 @@ Object.extend(Function.prototype, {
 
         return this.wrap(advice);
     },
+
+
+    logCompletion: function(module) {
+        var advice = function(proceed) {
+            var args = $A(arguments); args.shift(); 
+	    try {
+		var result = proceed.apply(this, args);
+	    } catch (er) {
+                console.warn('failed to load %s: %s', module, er);
+		Function.showStack();
+		throw er;
+	    }
+            console.log('completed %s', module);
+            return result;
+        }
+    
+        return this.wrap(advice);
+    },
+    
     
     logCalls: function(name, isUrgent) {
         var advice = function(proceed) {
@@ -1992,6 +2050,8 @@ MouseHandlerForDragging = Class.create({
 
 });
 
+var Cloner = {}; // a marker for cloning
+
 /**
  * @class Exporter: Implementation class for morph serialization
  */
@@ -2027,6 +2087,7 @@ Object.extend(Exporter, {
     }
 
 });
+
 
 /**
  * @class Importer: Implementation class for morph de-serialization
@@ -2123,7 +2184,7 @@ var Importer = Class.create({
  * all the morphs. 
  */ 
 
-Morph = Class.create(Visual, {
+Morph = Visual.subclass("Morph", {
 
     // prototype vars
     defaultFill: Color.primary.green,
@@ -2144,51 +2205,128 @@ Morph = Class.create(Visual, {
     openForDragAndDrop: true, // Submorphs can be extracted from or dropped into me
     mouseHandler: MouseHandlerForDragging.prototype, //a MouseHandler for mouse sensitivity, etc
     stepHandler: null, // a stepHandler for time-varying morphs and animation 
-    type: "Morph", // debugging etc
-    noShallowCopyProperties: ['rawNode', 'rawSubnodes', 'shape', 'submorphs', 'stepHandler'],
-
+    noShallowCopyProperties: ['id', 'rawNode', 'rawSubnodes', 'shape', 'submorphs', 'stepHandler'],
 
     nextNavigableSibling: null, // keyboard navigation
-    
-    initialize: function(/*...*/) {
+
+
+    initialize: function(initialBounds, shapeType) {
         //console.log('initializing morph %s %s', initialBounds, shapeType);
         this.submorphs = [];
         this.rawSubnodes = null;
         this.owner = null;
 
-        var initialBounds;
+        this.rawNode = NodeFactory.create("g");
 
-        if (arguments[0] instanceof Importer) { // called when restoring from external representation (markup)
-            initialBounds = null;
-            var importer = arguments[0];
-            this.rawNode = arguments[1];
-            this.setType(this.type); // this.type is actually a prototype var
-            // console.log("restoring " + this.type + " raw node " + this.rawNode);
-            this.pvtSetTransform(this.retrieveTransform());
-            var prevId = this.pickId();
-            this.prevId = prevId; // for debugging FIXME remove later!
-            importer.addMapping(prevId, this); 
-            this.restoreFromSubnodes(importer);
-            this.restorePersistentState(importer);    
-        } else {
-            initialBounds = arguments[0];//Rectangle
-            var shapeType = arguments[1]; //String
-            this.rawNode = NodeFactory.create("g");
-            this.setType(this.type); // this.type is actually a prototype var
-            this.pvtSetTransform(Transform.createSimilitude(this.defaultOrigin(initialBounds, shapeType), 0, 1.0));
-            this.pickId();
-            this.initializePersistentState(initialBounds, shapeType);
-        }
+        this.setType(this.constructor.type); // this.type is actually a prototype var
+        this.pvtSetTransform(Transform.createSimilitude(this.defaultOrigin(initialBounds, shapeType), 0, 1.0));
+        this.pickId();
+        this.initializePersistentState(initialBounds, shapeType);
 
         this.initializeTransientState(initialBounds);
         this.disableBrowserHandlers();        
-
         if (this.activeScripts) {
             console.log('started stepping %s', this);
             this.startSteppingScripts();
         }
 
     },
+
+    deserialize: function(importer, rawNode) {
+	this.submorphs = [];
+        this.rawSubnodes = null;
+        this.owner = null;
+
+        this.setType(this.constructor.type);
+        // console.log("restoring " + this.constructor.type + " raw node " + this.rawNode);
+        this.pvtSetTransform(this.retrieveTransform());
+        var prevId = this.pickId();
+        this.prevId = prevId; // for debugging FIXME remove later!
+
+        importer.addMapping(prevId, this); 
+        this.restoreFromSubnodes(importer);
+        this.restorePersistentState(importer);    
+
+        this.initializeTransientState(null);
+        this.disableBrowserHandlers();        
+
+        if (this.activeScripts) {
+            console.log('started stepping %s', this);
+            this.startSteppingScripts();
+        }
+    },
+
+    copyFrom: function(other) {
+        this.rawNode = NodeFactory.create("g");
+
+	this.submorphs = [];
+	this.rawSubnodes = null;
+        this.owner = null;
+
+        this.setType(this.constructor.type);
+        this.pvtSetTransform(other.retrieveTransform());
+	this.initializePersistentState(pt(0,0).asRectangle(), "rect");
+        var prevId = this.pickId();
+	
+        this.initializeTransientState(null);
+
+        for (var p in other) {
+            if (!(other[p] instanceof Function) 
+                && other.hasOwnProperty(p) 
+                && !this.noShallowCopyProperties.include(p)) {
+                this[p] = other[p]; 
+            }
+        }  // shallow copy by default
+	
+        this.setShape(other.shape.copy());    
+        if (other.cachedTransform) { 
+            this.cachedTransform = other.cachedTransform.copy();
+        } 
+	
+        if (other.clipPath) {
+            console.log('other clipPath is ' + other.clipPath);
+            this.clipToShape();
+            console.log("copy: optimistically assuming that other (%s) is clipped to shape", other);
+        }
+	
+        if (other.hasSubmorphs()) { // deep copy of submorphs
+            other.submorphs.each(function(m) { 
+		var copy = m.copy();
+		this.internalAddMorph(copy, false);
+		var propname = m.rawNode.getAttributeNS(Namespace.LIVELY, "property");
+		if (propname) {
+		    this[propname] = copy;
+		    copy.rawNode.setAttributeNS(Namespace.LIVELY, "property", propname);
+		}
+	    }.bind(this));
+        }
+        
+        if (other.stepHandler != null) { 
+            this.stepHandler = other.stepHandler.copyForOwner(this);
+        }
+	
+        if (other.activeScripts != null) { 
+            for (var i = 0; i < other.activeScripts.length; i++) {
+                var a = other.activeScripts[i];
+                // Copy all reflexive scripts (messages to self)
+                if (a.actor === other) {
+                    this.startStepping(a.stepTime, a.scriptName, a.argIfAny);
+                    // Note -- may want to startStepping other as well so they are sync'd
+                }
+            }
+        } 
+
+        this.layoutChanged();
+
+        this.disableBrowserHandlers();        
+        if (this.activeScripts) {
+            console.log('started stepping %s', this);
+            this.startSteppingScripts();
+        }
+	
+        return this; 
+    },
+
 
     restorePersistentState: function(importer) {
         return; // override in subclasses
@@ -2335,21 +2473,17 @@ Morph = Class.create(Visual, {
         
     },
     
-    relativizeBounds: function(rect) {
-        return rect.translatedBy(this.origin.negated());
-    },
-    
     initializePersistentState: function(initialBounds /*:Rectangle*/, shapeType/*:String*/) {
         // a rect shape by default, will change later
         switch (shapeType) {
         case "ellipse":
-            this.shape = new EllipseShape(this.relativizeBounds(initialBounds),
-                this.defaultFill, this.defaultBorderWidth, this.defaultBorderColor);
+            this.shape = new EllipseShape(initialBounds.translatedBy(this.origin.negated()),
+					  this.defaultFill, this.defaultBorderWidth, this.defaultBorderColor);
             break;
         default:
             // polygons and polylines are set explicitly later
-            this.shape = new RectShape(this.relativizeBounds(initialBounds),
-                this.defaultFill, this.defaultBorderWidth, this.defaultBorderColor);
+            this.shape = new RectShape(initialBounds.translatedBy(this.origin.negated()),
+				       this.defaultFill, this.defaultBorderWidth, this.defaultBorderColor);
             break;
         }
 
@@ -2416,6 +2550,7 @@ Object.extend(Morph, {
 
 // Functions for manipulating the visual attributes of Morphs
 Morph.addMethods({
+
     
     setFill: function(fill) {
         // console.log('setting %s on %s', fill, this);
@@ -2443,27 +2578,27 @@ Morph.addMethods({
             this.shape.setFill("url(#" + newId + ")");
             this.defs.appendChild(this.fill.rawNode);
         }
-    }.wrap(Morph.onChange('shape')),
-
+    },//.wrap(Morph.onChange('shape'),
+    
     getFill: function() {
         return this.fill; 
     },
     
-    setBorderColor: function(newColor) { this.shape.setStroke(newColor); }.wrap(Morph.onChange('shape')),
+    setBorderColor: function(newColor) { this.shape.setStroke(newColor); },//.wrap(Morph.onChange('shape')),
 
     getBorderColor: function() {
         return Color.parse(this.shape.getStroke());
     },
 
-    setBorderWidth: function(newWidth) { this.shape.setStrokeWidth(newWidth); }.wrap(Morph.onChange('shape')),
+    setBorderWidth: function(newWidth) { this.shape.setStrokeWidth(newWidth); },//.wrap(Morph.onChange('shape')),
 
     getBorderWidth: function() {
         return this.shape.getStrokeWidth(); 
     },
 
-    setFillOpacity: function(op) { this.shape.setFillOpacity(op); }.wrap(Morph.onChange('shape')),
+    setFillOpacity: function(op) { this.shape.setFillOpacity(op); },//.wrap(Morph.onChange('shape')),
 
-    setStrokeOpacity: function(op) { this.shape.setStrokeOpacity(op); }.wrap(Morph.onChange('shape')),
+    setStrokeOpacity: function(op) { this.shape.setStrokeOpacity(op); },//.wrap(Morph.onChange('shape')),
 
     applyStyle: function(spec) {
         // Adjust all visual attributes specified in the style spec
@@ -2551,6 +2686,7 @@ Morph.addMethods({
         }
         this.rawNode.replaceChild(newShape.rawNode, this.shape.rawNode);
 
+
         this.shape = newShape;
         //this.layoutChanged(); 
         if (this.clipPath) {
@@ -2588,7 +2724,7 @@ Morph.addMethods({
             this.clipToShape();
         }
         this.adjustForNewBounds();
-    }.wrap(Morph.onLayoutChange('shape')),
+    },//.wrap(Morph.onLayoutChange('shape')),
 
     setExtent: function(newExtent) {
         this.setBounds(this.getPosition().extent(newExtent));
@@ -2803,61 +2939,8 @@ Morph.addMethods({
     okToDuplicate: function() { return true; },  // default is OK
     
     copy: function() {
-        var copy = new Morph(this.bounds(), "rect"); 
-        return copy.morphCopyFrom(this); 
-    },
-    
-
-    morphCopyFrom: function(other/*:Morph*/) { //:Morph
-
-        for (var p in other) {
-            if (!(other[p] instanceof Function) 
-                && other.hasOwnProperty(p) 
-                && !this.noShallowCopyProperties.include(p)) {
-                    this[p] = other[p]; 
-            }
-        }  // shallow copy by default
-
-        this.setShape(other.shape.copy());    
-        //this.origin = other.origin;
-        //this.rotation = other.rotation;
-        //this.scale = other.scale;
-        //this.fullBounds = other.fullBounds;
-
-        //this.openForDragAndDrop = other.openForDragAndDrop;
-    
-        // if (other.myId) this.myId = this.world).register(this);
-        if (other.cachedTransform) { 
-            this.cachedTransform = other.cachedTransform.copy();
-        } 
-    
-        if (other.clipPath) {
-            console.log('other clipPath is ' + other.clipPath);
-            this.clipToShape();
-            console.log("copy: optimistically assuming that other (%s) is clipped to shape", other);
-        }
-
-        if (other.hasSubmorphs()) { // deep copy of submorphs
-            other.submorphs.each(function(m) { this.internalAddMorph(m.copy(), false) }.bind(this));
-        }
-        
-        if (other.stepHandler != null) { 
-            this.stepHandler = other.stepHandler.copyForOwner(this);
-        }
-
-        if (other.activeScripts != null) { 
-            for (var i = 0; i < other.activeScripts.length; i++) {
-                var a = other.activeScripts[i];
-                // Copy all reflexive scripts (messages to self)
-                if (a.actor === other) {
-                    this.startStepping(a.stepTime, a.scriptName, a.argIfAny);
-                    // Note -- may want to startStepping other as well so they are sync'd
-                }
-            }
-        } 
-
-        this.layoutChanged();
-        return this; 
+	//console.log("get type "  + this.constructor.type + " from " + this);
+	return new this.constructor.scope[this.constructor.type](Cloner, this);
     }
 
 });
@@ -3944,9 +4027,7 @@ SimpleModel = Class.create(Model, {
  * most notably for the world and, eg, palettes
  */ 
 
-var PasteUpMorph = Class.create(Morph, {
-
-    type: "PasteUpMorph",
+var PasteUpMorph = Morph.subclass("PasteUpMorph", {
 
     initialize: function($super, bounds, shapeType) {
         return $super(bounds, shapeType);
@@ -3996,9 +4077,8 @@ var PasteUpMorph = Class.create(Morph, {
  * @class WorldMorph: A Morphic world (a visual container of other morphs)
  */ 
 
-var WorldMorph = Class.create(PasteUpMorph, {
+var WorldMorph = PasteUpMorph.subclass("WorldMorph", {
     
-    type: "WorldMorph",
     defaultFill: Color.primary.blue,
     // Default themes for the theme manager    
     defaultThemes: {
@@ -4307,14 +4387,18 @@ var WorldMorph = Class.create(PasteUpMorph, {
             var func = action.actor[action.scriptName];
 
             DebuggingStack = [];  // Reset at each tick event
-            try {
-                func.call(action.actor, action.argIfAny);
-            } catch (er) {
-                console.warn("error on actor %s: %s, callback: %s", action.actor, er, func);
-                Function.showStack();
-                continue;
-                // Note: if error in script above, it won't get rescheduled below (this is good)
-            }
+	    if (func) {
+		try {
+                    func.call(action.actor, action.argIfAny);
+		} catch (er) {
+                    console.warn("error on actor %s: %s", action.actor, er);
+                    Function.showStack();
+                    continue;
+                    // Note: if error in script above, it won't get rescheduled below (this is good)
+		}
+	    } else {
+		console.warn("no callback on actor %s", action.actor);
+	    }
 
             if (action.stepTime > 0) {
                 var nextTime = msTime + action.stepTime;
@@ -4549,17 +4633,16 @@ Object.extend(WorldMorph, {
  * simultaneously, we do not want to use the default system cursor.   
  */ 
 
-var HandMorph = function() { 
-    
+var HandMorph = Morph.subclass("HandMorph", function() {
     // private variables
     var shadowOffset = pt(5,5);
     var handleOnCapture = true;
     var logDnD = false;
+    
+    return {
 
-    return Class.create(Morph, {
 
     applyDropShadowFilter: !!Config.enableDropShadow,
-    type: "HandMorph",
 
     initialize: function($super, local) {
         $super(pt(5,5).extent(pt(10,10)), "rect");
@@ -4661,7 +4744,7 @@ var HandMorph = function() {
             console.log("unknown event type " + evt.type);
         }
         evt.stopPropagation();
-    }.logErrors('Event Handler'),
+    },//.logErrors('Event Handler'),
 
     handleMouseEvent: function(evt) { 
         evt.setButtonPressedAndPriorPoint(this.mouseButtonPressed, 
@@ -4886,30 +4969,24 @@ var HandMorph = function() {
         return "%1, a hand carrying %2%3".format(superString, this.topSubmorph(), extraString);
     }
     
-})}();
+    }});
+
 
 /**
  * @class LinkMorph
  * LinkMorph implements a two-way hyperlink between two Morphic worlds
  */ 
 
-LinkMorph = Class.create(Morph, {
+LinkMorph = Morph.subclass("LinkMorph", {
 
     defaultFill: Color.black,
     defaultBorderColor: Color.black,
     helpText: "Click here to enter or leave a subworld.\n" +
               "Use menu 'grab' to move me.  Drag objects\n" +
               "onto me to transport objects between worlds.",
-    type: "LinkMorph",
     
     initialize: function($super, otherWorld, initialPosition) {
         // In a scripter, type: world.addMorph(new LinkMorph(null))
-        if (arguments[1] instanceof Importer) {
-            $super(arguments[1], arguments[2]); // arguments[2] is rawNode
-            // FIXME ?
-            return;
-        }
-
         var bounds = initialPosition;
 
         // Note: Initial position can be specified either as a rectangle or point.
