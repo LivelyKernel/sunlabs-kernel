@@ -47,7 +47,7 @@ var ButtonMorph = Morph.subclass("ButtonMorph", {
         // this default self connection may get overwritten by, eg, connectModel()...
         this.modelPlug = model.makePlug();
         this.addNonMorph(this.modelPlug.rawNode);
-	
+
         // Styling
         this.setModelValue('setValue', false);
         this.changeAppearanceFor(false);
@@ -317,8 +317,8 @@ var ClipMorph = Morph.subclass("ClipMorph", {
     defaultBorderWidth: 0,
 
     deserialize: function($super, importer, rawNode) {
-	$super(importer, rawNode);
-	this.clipToShape();
+        $super(importer, rawNode);
+        this.clipToShape();
     },
 
     initialize: function($super, initialBounds) {
@@ -1234,8 +1234,8 @@ var CheapListMorph = TextMorph.subclass("CheapListMorph", {
     },
 
     deserialize: function($super, importer, rawNode) {
-	$super(importer, rawNode);
-	this.layoutChanged();
+        $super(importer, rawNode);
+        this.layoutChanged();
     },
 
     restorePersistentState: function($super, importer) {
@@ -1532,7 +1532,7 @@ var SliderMorph = Morph.subclass("SliderMorph", {
         // this default self connection may get overwritten by, eg, connectModel()...
         this.modelPlug = model.makePlug();
         this.addNonMorph(this.modelPlug.rawNode);
-	
+
         this.scale = (scaleIfAny == null) ? 1.0 : scaleIfAny;
         var slider = new Morph(new Rectangle(0, 0, 8, 8), "rect");
         slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});

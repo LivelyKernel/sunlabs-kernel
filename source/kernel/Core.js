@@ -213,48 +213,47 @@ Object.extend(Function.prototype, {
     },
 
     subclass: function(/*,... */) {
-	var properties = $A(arguments);
-	var scope = Global;
-	if (typeof properties[0]  != 'string') { // primitive string required
-	    scope = properties.shift();
-	}
-	var name = properties.shift();
+        var properties = $A(arguments);
+        var scope = Global;
+        if (typeof properties[0]  != 'string') { // primitive string required
+            scope = properties.shift();
+        }
+        var name = properties.shift();
 
-	
-	function klass() {
-	    if (arguments[0] instanceof Importer) {
-		this.deserialize.apply(this, arguments);
-	    } else if (arguments[0] === Cloner) {
-		this.copyFrom.call(this, arguments[1]);
-	    } else {
-		this.initialize.apply(this, arguments);
-	    }
-	}
-	
-	Object.extend(klass, Class.Methods);
-	klass.superclass = this;
-	klass.subclasses = [];
-	
-	var subclass = function() { };
-	subclass.prototype = this.prototype;
-	klass.prototype = new subclass;
-	this.subclasses.push(klass);
-	
-	for (var i = 0; i < properties.length; i++) {
-	    klass.addMethods(properties[i] instanceof Function ? (properties[i])() : properties[i]);
-	}
-	
-	if (!klass.prototype.initialize)
-	    klass.prototype.initialize = Prototype.emptyFunction;
-	
-	klass.prototype.constructor = klass;
-	
-	
-	// KP: .name would be better but js ignores .name on anonymous functions
-	klass.prototype.constructor.type = name;
-	klass.prototype.constructor.scope = scope;
-	scope[name] = klass;
-	return klass;
+        function klass() {
+            if (arguments[0] instanceof Importer) {
+                this.deserialize.apply(this, arguments);
+            } else if (arguments[0] === Cloner) {
+                this.copyFrom.call(this, arguments[1]);
+            } else {
+                this.initialize.apply(this, arguments);
+            }
+        }
+
+        Object.extend(klass, Class.Methods);
+        klass.superclass = this;
+        klass.subclasses = [];
+
+        var subclass = function() { };
+        subclass.prototype = this.prototype;
+        klass.prototype = new subclass;
+        this.subclasses.push(klass);
+
+        for (var i = 0; i < properties.length; i++) {
+            klass.addMethods(properties[i] instanceof Function ? (properties[i])() : properties[i]);
+        }
+
+        if (!klass.prototype.initialize) {
+            klass.prototype.initialize = Prototype.emptyFunction;
+        }
+
+        klass.prototype.constructor = klass;
+
+        // KP: .name would be better but js ignores .name on anonymous functions
+        klass.prototype.constructor.type = name;
+        klass.prototype.constructor.scope = scope;
+        scope[name] = klass;
+        return klass;
     }
 
 });
@@ -297,25 +296,23 @@ Object.extend(Function.prototype, {
         return this.wrap(advice);
     },
 
-
     logCompletion: function(module) {
         var advice = function(proceed) {
             var args = $A(arguments); args.shift(); 
-	    try {
-		var result = proceed.apply(this, args);
-	    } catch (er) {
+            try {
+                var result = proceed.apply(this, args);
+            } catch (er) {
                 console.warn('failed to load %s: %s', module, er);
-		Function.showStack();
-		throw er;
-	    }
+                Function.showStack();
+                throw er;
+            }
             console.log('completed %s', module);
             return result;
         }
     
         return this.wrap(advice);
     },
-    
-    
+
     logCalls: function(name, isUrgent) {
         var advice = function(proceed) {
             var args = $A(arguments); args.shift(); 
@@ -2233,7 +2230,7 @@ Morph = Visual.subclass("Morph", {
     },
 
     deserialize: function(importer, rawNode) {
-	this.submorphs = [];
+        this.submorphs = [];
         this.rawSubnodes = null;
         this.owner = null;
 
@@ -2254,20 +2251,21 @@ Morph = Visual.subclass("Morph", {
             console.log('started stepping %s', this);
             this.startSteppingScripts();
         }
+
     },
 
     copyFrom: function(other) {
         this.rawNode = NodeFactory.create("g");
 
-	this.submorphs = [];
-	this.rawSubnodes = null;
+        this.submorphs = [];
+        this.rawSubnodes = null;
         this.owner = null;
 
         this.setType(this.constructor.type);
         this.pvtSetTransform(other.retrieveTransform());
-	this.initializePersistentState(pt(0,0).asRectangle(), "rect");
+        this.initializePersistentState(pt(0,0).asRectangle(), "rect");
         var prevId = this.pickId();
-	
+
         this.initializeTransientState(null);
 
         for (var p in other) {
@@ -2277,34 +2275,34 @@ Morph = Visual.subclass("Morph", {
                 this[p] = other[p]; 
             }
         }  // shallow copy by default
-	
+
         this.setShape(other.shape.copy());    
         if (other.cachedTransform) { 
             this.cachedTransform = other.cachedTransform.copy();
         } 
-	
+
         if (other.clipPath) {
             console.log('other clipPath is ' + other.clipPath);
             this.clipToShape();
             console.log("copy: optimistically assuming that other (%s) is clipped to shape", other);
         }
-	
+
         if (other.hasSubmorphs()) { // deep copy of submorphs
             other.submorphs.each(function(m) { 
-		var copy = m.copy();
-		this.internalAddMorph(copy, false);
-		var propname = m.rawNode.getAttributeNS(Namespace.LIVELY, "property");
-		if (propname) {
-		    this[propname] = copy;
-		    copy.rawNode.setAttributeNS(Namespace.LIVELY, "property", propname);
-		}
-	    }.bind(this));
+                var copy = m.copy();
+                this.internalAddMorph(copy, false);
+                var propname = m.rawNode.getAttributeNS(Namespace.LIVELY, "property");
+                if (propname) {
+                    this[propname] = copy;
+                    copy.rawNode.setAttributeNS(Namespace.LIVELY, "property", propname);
+                }
+            }.bind(this));
         }
         
         if (other.stepHandler != null) { 
             this.stepHandler = other.stepHandler.copyForOwner(this);
         }
-	
+
         if (other.activeScripts != null) { 
             for (var i = 0; i < other.activeScripts.length; i++) {
                 var a = other.activeScripts[i];
@@ -2323,10 +2321,9 @@ Morph = Visual.subclass("Morph", {
             console.log('started stepping %s', this);
             this.startSteppingScripts();
         }
-	
+
         return this; 
     },
-
 
     restorePersistentState: function(importer) {
         return; // override in subclasses
@@ -2478,12 +2475,12 @@ Morph = Visual.subclass("Morph", {
         switch (shapeType) {
         case "ellipse":
             this.shape = new EllipseShape(initialBounds.translatedBy(this.origin.negated()),
-					  this.defaultFill, this.defaultBorderWidth, this.defaultBorderColor);
+                this.defaultFill, this.defaultBorderWidth, this.defaultBorderColor);
             break;
         default:
             // polygons and polylines are set explicitly later
             this.shape = new RectShape(initialBounds.translatedBy(this.origin.negated()),
-				       this.defaultFill, this.defaultBorderWidth, this.defaultBorderColor);
+                this.defaultFill, this.defaultBorderWidth, this.defaultBorderColor);
             break;
         }
 
@@ -2939,8 +2936,8 @@ Morph.addMethods({
     okToDuplicate: function() { return true; },  // default is OK
     
     copy: function() {
-	//console.log("get type "  + this.constructor.type + " from " + this);
-	return new this.constructor.scope[this.constructor.type](Cloner, this);
+        //console.log("get type "  + this.constructor.type + " from " + this);
+        return new this.constructor.scope[this.constructor.type](Cloner, this);
     }
 
 });
@@ -4387,18 +4384,18 @@ var WorldMorph = PasteUpMorph.subclass("WorldMorph", {
             var func = action.actor[action.scriptName];
 
             DebuggingStack = [];  // Reset at each tick event
-	    if (func) {
-		try {
+            if (func) {
+                try {
                     func.call(action.actor, action.argIfAny);
-		} catch (er) {
+                } catch (er) {
                     console.warn("error on actor %s: %s", action.actor, er);
                     Function.showStack();
                     continue;
                     // Note: if error in script above, it won't get rescheduled below (this is good)
-		}
-	    } else {
-		console.warn("no callback on actor %s", action.actor);
-	    }
+                }
+            } else {
+                console.warn("no callback on actor %s", action.actor);
+            }
 
             if (action.stepTime > 0) {
                 var nextTime = msTime + action.stepTime;

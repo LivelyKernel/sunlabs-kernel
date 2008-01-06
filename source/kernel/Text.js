@@ -30,7 +30,7 @@ var TextWord = TextCompatibilityTrait.subclass("TextWord", {
         this.rawNode = rawNode;
         this.fontInfo = Font.forFamily(this.getFontFamily(), this.getFontSize());
         this.textString = this.rawNode.textContent;
-	this.didLineBreak = false;
+        this.didLineBreak = false;
     },
     
     initialize: function(textString, startIndex, topLeft, font) {
@@ -566,7 +566,7 @@ var TextMorph = Morph.subclass("TextMorph", {
     initializePersistentState: function($super, initialBounds, shapeType) {
         $super(initialBounds, shapeType);
 
-	this.rawTextNode = null;
+        this.rawTextNode = null;
 
         // the selection element is persistent although its contents are not
         // generic <g> element with 1-3 rectangles inside
@@ -574,15 +574,12 @@ var TextMorph = Morph.subclass("TextMorph", {
         this.rawSelectionNode.setAttributeNS(null, "fill", this.selectionColor);
         this.rawSelectionNode.setAttributeNS(null, "stroke-width", 0);
         this.font = Font.forFamily(this.fontFamily, this.fontSize);
-	
-
 
         this.rawNode.setAttributeNS(Namespace.LIVELY, "wrap", this.wrap);
         // KP: set attributes on the text elt, not on the morph, so that we can retrieve it
         this.setFill(this.defaultBackgroundColor);
         this.setBorderWidth(this.defaultBorderWidth);
         this.setBorderColor(this.defaultBorderColor);
-	
     },
     
     restorePersistentState: function($super, importer) {

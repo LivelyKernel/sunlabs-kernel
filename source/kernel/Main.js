@@ -276,7 +276,7 @@ function populateWorldWithExamples(world) {
             lm2.myWorld.addMorph(widget);
             widget.setPosition(loc.addPt(dx));
             loc = loc.addPt(dy);    
-	    
+    
             // Create sample text widgets
             if (Config.showTextSamples) {
                 widget = new TextMorph(loc.extent(pt(100,50)),"Big Text"); // big text
@@ -352,7 +352,7 @@ function main() {
             world.addMorph(m = new Morph(new Rectangle(i*40, 0, 35, 35), "rect"));
             m.setFill(colors[i]);
         }
-	console.log(colors.invoke('toString'));
+        console.log(colors.invoke('toString'));
     }
 }
 
@@ -362,7 +362,5 @@ function main() {
 // after control returns to the caller of JS
 main.logCompletion("main").delay(0.05);
 
-
 }.logCompletion("Main.js"))();
-
 
