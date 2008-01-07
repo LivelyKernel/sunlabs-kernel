@@ -1124,13 +1124,13 @@ var SelectionMorph = Morph.subclass("SelectionMorph", {
 /**
  * @class PanelMorph
  */
-var PanelMorph = Morph.subclass("PanelMorph", {
+Morph.subclass("PanelMorph", {
 
     initialize: function($super, extent/*:Point*/) {
         $super(pt(0, 0).extent(extent), 'rect');
         this.lastNavigable = null;
     },
-    
+
     takesKeyboardFocus: function() {
         return true;
     },

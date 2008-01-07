@@ -222,7 +222,7 @@ Object.extend(Function.prototype, {
 	
 	
 	function klass() {
-	    if (Global.Importer && (arguments[0] instanceof Importer)) { // check for the existence of Importer
+	    if (Global.Importer && (arguments[0] instanceof Importer)) { // check for the existence of Importer, which may not be defined very early on
 		this.deserialize.apply(this, arguments);
 	    } else if (arguments[0] === Cloner) {
 		this.copyFrom.call(this, arguments[1]);
@@ -1269,7 +1269,7 @@ Object.extend(document, {
  * In this particular implementation, graphics primitives are
  * mapped onto various SVG objects and attributes.
  */
-Visual = Class.create({   
+Object.subclass('Visual', {   
 
     rawNode: null, // set by subclasses
 
@@ -1388,7 +1388,11 @@ Visual = Class.create({
     },
 
     inspect: function() {
-        return this.toString();
+	try {
+            return this.toString();
+	} catch (er) {
+	    return "{inspect error " + er + "}"
+	}
     }
     
 });
@@ -1416,7 +1420,7 @@ Visual.BrowserHandlerDisabler = {
  * @class Shape
  */ 
 
-var Shape = Class.create(Visual, {
+Visual.subclass('Shape', {
 
     shouldIgnorePointerEvents: false,
 
@@ -1427,7 +1431,6 @@ var Shape = Class.create(Visual, {
     getType: function() { 
         return this.rawNode.tagName; 
     },
-    
     
     initialize: function(fill, strokeWidth, stroke) {
         this.setType(this.rawNode.tagName); // debuggability
@@ -1489,17 +1492,17 @@ Object.extend(Shape, {
  * @class RectShape: Rectangle shape
  */ 
 
-var RectShape = Class.create(Shape, {
+Shape.subclass('RectShape', {
 
-    initialize: function($super, rectOrRawNode, color, borderWidth, borderColor) {
-        if (rectOrRawNode instanceof Node) {
-            this.rawNode = rectOrRawNode;
-        } else {
-            this.rawNode = NodeFactory.create("rect");
-            this.setBounds(rectOrRawNode);
-        }
+    initialize: function($super, rect, color, borderWidth, borderColor) {
+        this.rawNode = NodeFactory.create("rect");
+        this.setBounds(rect);
         $super(color, borderWidth, borderColor);
         return this;
+    },
+
+    deserialize: function(importer, rawNode) {
+	this.rawNode = rawNode;
     },
 
     copy: function() {
@@ -1575,17 +1578,16 @@ var RectShape = Class.create(Shape, {
  * @class EllipseShape
  */ 
 
-var EllipseShape = Class.create(Shape, {
+Shape.subclass('EllipseShape', {
 
-    initialize: function($super, rectOrRawNode, color, borderWidth, borderColor) {
-        if (rectOrRawNode instanceof Node) {
-            this.rawNode = rectOrRawNode;
-        } else {
-            this.rawNode = NodeFactory.create("ellipse");
-            this.setBounds(rectOrRawNode);
-        }
+    initialize: function($super, rect, color, borderWidth, borderColor) {
+        this.rawNode = NodeFactory.create("ellipse");
+        this.setBounds(rect);
         $super(color, borderWidth, borderColor);
-        return this;
+    },
+
+    deserialize: function(importer, rawNode) {
+	this.rawNode = rawNode;
     },
     
     copy: function() {
@@ -1593,12 +1595,11 @@ var EllipseShape = Class.create(Shape, {
     },
 
     setBounds: function(r) {
-        with (this.rawNode) {
-            setAttributeNS(null, "cx", r.x + r.width/2);
-            setAttributeNS(null, "cy", r.y + r.height/2);
-            setAttributeNS(null, "rx", r.width/2);
-            setAttributeNS(null, "ry", r.height/2);
-        }
+	var n = this.rawNode;
+        n.setAttributeNS(null, "cx", r.x + r.width/2);
+        n.setAttributeNS(null, "cy", r.y + r.height/2);
+        n.setAttributeNS(null, "rx", r.width/2);
+        n.setAttributeNS(null, "ry", r.height/2);
         return this;
     },
     
@@ -1637,26 +1638,32 @@ var EllipseShape = Class.create(Shape, {
  * @class PolygonShape
  */ 
 
-var PolygonShape = Class.create(Shape, {
+Shape.subclass('PolygonShape', {
 
     shouldCacheVertices: false,
     
-    initialize: function($super, vertlistOrRawNode, color, borderWidth, borderColor) {
-        if (vertlistOrRawNode instanceof Node) {
-            this.rawNode = vertlistOrRawNode;
-        } else {
-            this.rawNode = NodeFactory.create("polygon");
-            this.setVertices(vertlistOrRawNode);
-        }
+    initialize: function($super, vertlist, color, borderWidth, borderColor) {
+        this.rawNode = NodeFactory.create("polygon");
+        this.setVertices(vertlist);
         $super(color, borderWidth, borderColor);
+	if (this.shouldCacheVertices) 
+	    this.cachedVertices = null;
         return this;
     },
+
+    deserialize: function(importer, rawNode) {
+	this.rawNode = rawNode;
+	if (this.shouldCacheVertices) 
+	    this.cachedVertices = this.vertices();
+    },
+
 
     copy: function() {
         return new PolygonShape(this.vertices(), this.getFill(), this.getStrokeWidth(), this.getStroke());
     },
     
     setVertices: function(vertlist) {
+	///console.log("vertlist is " + vertlist + " for " + Function.showStack());
         if (this.rawNode.points) {
             this.rawNode.points.clear();
         }
@@ -1809,17 +1816,16 @@ var PolygonShape = Class.create(Shape, {
  * @class PolylineShape
  */ 
 
-var PolylineShape = Class.create(Shape, {
-    
-    initialize: function($super, vertlistOrRawNode, borderWidth, borderColor) {
-        if (vertlistOrRawNode instanceof Node) {
-            this.rawNode = vertlistOrRawNode;
-        } else {
-            this.rawNode = NodeFactory.create("polyline");
-            this.setVertices(vertlistOrRawNode);
-        }
+Shape.subclass('PolylineShape', {
+
+    initialize: function($super, vertlist, borderWidth, borderColor) {
+        this.rawNode = NodeFactory.create("polyline");
+        this.setVertices(vertlist);
         $super(null, borderWidth, borderColor);
-        return this;
+    },
+
+    deserialize: function(importer, rawNode) {
+	this.rawNode = rawNode;
     },
     
     copy: function() {
@@ -2029,7 +2035,11 @@ MouseHandlerForDragging = Class.create({
 
 });
 
-var Cloner = {}; // a marker for cloning
+var Cloner = {
+    toString: function() { 
+	return "Cloner"; 
+    }
+}; // a marker for cloning
 
 /**
  * @class Exporter: Implementation class for morph serialization
@@ -2075,6 +2085,10 @@ Object.extend(Exporter, {
 var Importer = Class.create({
 
     morphMap: null,
+
+    toString: function() {
+	return "Importer";
+    },
     
     initialize: function() {
         this.morphMap = new Hash();
@@ -2104,6 +2118,7 @@ var Importer = Class.create({
             return new Global[morphTypeName](this, rawNode);
         } catch (er) {
             console.log("problem instantiating type %s tag %s: %s", morphTypeName, rawNode.tagName, er);
+	    return null;
         }
     },
     
@@ -2118,8 +2133,6 @@ var Importer = Class.create({
     },
 
     importModelFrom: function(ptree) {
-        console.log('restoring model from markup %s', string);
-        //var ptree = this.parse(string);
         var model = new SimpleModel(null);
         
         for (var node = ptree.firstChild; node != null; node = node.nextSibling) {
@@ -2212,22 +2225,25 @@ Morph = Visual.subclass("Morph", {
     },
 
     deserialize: function(importer, rawNode) {
+	this.rawNode = rawNode;
+	
         this.submorphs = [];
         this.rawSubnodes = null;
         this.owner = null;
 
         this.setType(this.constructor.type);
-        // console.log("restoring " + this.constructor.type + " raw node " + this.rawNode);
         this.pvtSetTransform(this.retrieveTransform());
         var prevId = this.pickId();
         this.prevId = prevId; // for debugging FIXME remove later!
-
         importer.addMapping(prevId, this); 
+
         this.restoreFromSubnodes(importer);
         this.restorePersistentState(importer);    
 
         this.initializeTransientState(null);
+
         this.disableBrowserHandlers();        
+
 
         if (this.activeScripts) {
             console.log('started stepping %s', this);
@@ -2374,16 +2390,16 @@ Morph = Visual.subclass("Morph", {
             var node = children[i];
             switch (node.tagName) {
             case "ellipse":
-                this.shape = new EllipseShape(node);
+                this.shape = new EllipseShape(importer, node);
                 break;
             case "rect":
-                this.shape = new RectShape(node);
+                this.shape = new RectShape(importer, node);
                 break;
             case "polyline":
-                this.shape = new PolylineShape(node);
+                this.shape = new PolylineShape(importer, node);
                 break;
             case "polygon":
-                this.shape = new PolygonShape(node);
+                this.shape = new PolygonShape(importer, node);
                 break;
             case "defs": 
                 this.restoreDefs(node);
@@ -2402,8 +2418,9 @@ Morph = Visual.subclass("Morph", {
             case "a0:action": // Firefox cheat
             case "action": {
                 var a = node.textContent.evalJSON();
-                console.info("starting stepping %s based on %s", this, node.textContent);
-                this.startStepping(a.stepTime, a.scriptName, a.argIfAny);
+                // console.info("starting stepping %s based on %s", this, node.textContent);
+		this.addActiveScript(a);
+                // this.startStepping(a.stepTime, a.scriptName, a.argIfAny);
                 break;
             }
             case "a0:model": // Firefox cheat
@@ -2431,12 +2448,12 @@ Morph = Visual.subclass("Morph", {
             }
             }
         } // end for
-
+	
         if (modelNode) {
             var model = importer.importModelFrom(modelNode);
             this.rawNode.removeChild(modelNode); // currently modelNode is not permanently stored 
         }
-    },
+    },//.logErrors('restoreFromSubnodes'),
     
     restoreContainer: function(element/*:Element*/, type /*:String*/, importer/*Importer*/)/*:Boolean*/ {
         switch (type) {
@@ -4635,15 +4652,15 @@ var HandMorph = Morph.subclass("HandMorph", function() {
     initialize: function($super, local) {
         $super(pt(5,5).extent(pt(10,10)), "rect");
     
-        this.setShape(new PolygonShape([pt(0,0),pt(9,5), pt(5,9), pt(0,0)], 
-                      (local ? Color.blue : Color.red), 1, Color.black));
+        this.setShape(new PolygonShape([pt(0,0), pt(9,5), pt(5,9), pt(0,0)], 
+				       (local ? Color.blue : Color.red), 1, Color.black));
         this.shape.disablePointerEvents();
     
         this.rawNode.replaceChild(this.rawSubnodes, this.shape.rawNode);
         this.rawNode.appendChild(this.shape.rawNode); // make sure submorphs are render first, then the hand shape 
 
         this.isLocal = local;
-        this.setFill(local? Color.primary.blue : Color.primary.green); 
+        this.setFill(local ? Color.primary.blue : Color.primary.green); 
 
         this.keyboardFocus = null;
         this.mouseFocus = null;
@@ -4711,9 +4728,7 @@ var HandMorph = Morph.subclass("HandMorph", function() {
     handleEvent: function(rawEvt) {
         var evt = new Event(rawEvt);
         evt.hand = this;
-        
-        // console.log('original target ' + evt.target);
-
+     
         DebuggingStack = [];  // Reset at each input event
 
         switch (evt.type) {

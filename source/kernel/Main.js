@@ -108,7 +108,7 @@ function populateWorldWithExamples(world) {
 
     if (Config.show3DLogo) world.addMorph(new WindowMorph(new apps.Sun3DMorph(pt(570, 100).extent(pt(200, 200))), 'Sun 3D Logo'));
 
-    if (Config.showTester) new apps.WidgetTester().openIn(world, pt(835, 450));
+    if (Config.showTester) new WidgetTester().openIn(world, pt(835, 450));
 
     if (Config.showInnerWorld) {
         

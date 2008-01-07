@@ -26,7 +26,7 @@ var apps = {};
  * such as buttons, sliders, etc.  
  */
 
-scope.WidgetTester = Class.create(Model, {
+Global.WidgetTester = Class.create(Model, {
 
     openIn: function(world, location) {
         var view = this.buildView(pt(300, 220));
@@ -107,10 +107,10 @@ scope.WidgetTester = Class.create(Model, {
 Morph.subclass(Global, "ClockMorph", {
 
     defaultBorderWidth: 2,
+    openForDragAndDrop: false,
 
     initialize: function($super, position, radius) {
         $super(position.asRectangle().expandBy(radius), "ellipse");
-        this.openForDragAndDrop = false;
         this.linkToStyles(['clock']);
         this.makeNewFace();
         return this;
