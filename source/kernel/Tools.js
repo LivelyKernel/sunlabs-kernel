@@ -23,9 +23,20 @@
    
 SimpleBrowser = Class.create(Model, {
 
-    initialize: function($super) { $super(); },
+    
+    initialize: function($super) { 
+	$super(); 
+	this.scopeSearchPath = [Global];
+    },
 
-    getClassList: function() { return Class.listClassNames(Global).filter(function(n) { return !n.startsWith('SVG')}).sort(); },
+    getClassList: function() { 
+	var list = [];
+	for (var i = 0; i < this.scopeSearchPath.length; i++) {
+	    var p = this.scopeSearchPath[i];
+	    list = list.concat(Class.listClassNames(p).filter(function(n) { return !n.startsWith('SVG')}).sort());
+	}
+	return list;
+    },
 
     setClassName: function(n) { this.className = n; this.changed("getMethodList"); },
 

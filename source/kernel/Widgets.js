@@ -1532,7 +1532,7 @@ var SliderMorph = Morph.subclass("SliderMorph", {
         // this default self connection may get overwritten by, eg, connectModel()...
         this.modelPlug = model.makePlug();
         this.addNonMorph(this.modelPlug.rawNode);
-
+	
         this.scale = (scaleIfAny == null) ? 1.0 : scaleIfAny;
         var slider = new Morph(new Rectangle(0, 0, 8, 8), "rect");
         slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});
@@ -1594,7 +1594,7 @@ var SliderMorph = Morph.subclass("SliderMorph", {
         }
     
         this.slider.setBounds(bnds.topLeft().addPt(topLeft).extent(sliderExt)); 
-    
+
         if (this.fillType == "linear gradient") {
             var direction = this.vertical() ? LinearGradient.EastWest : LinearGradient.NorthSouth;
             this.setFill(new LinearGradient(this.baseColor.lighter(2), this.baseColor, direction));
@@ -1620,6 +1620,7 @@ var SliderMorph = Morph.subclass("SliderMorph", {
         var ext = this.getExtent();
         var elevPix = Math.max(ext*bnds.height,6); // thickness of elevator in pixels
     
+
         if (this.vertical()) { // more vertical...
             var newValue = p.y / (bnds.height-elevPix); 
         } else { // more horizontal...
@@ -1638,8 +1639,8 @@ var SliderMorph = Morph.subclass("SliderMorph", {
         this.requestKeyboardFocus(evt.hand);
         var inc = this.getExtent();
         var newValue = this.getValue();
-        var delta = this.localize(evt.mousePoint).subPt(this.slider.bounds().center());
 
+        var delta = this.localize(evt.mousePoint).subPt(this.slider.bounds().center());
         if (this.vertical() ? delta.y > 0 : delta.x > 0) newValue += inc;
         else newValue -= inc;
     
@@ -1649,7 +1650,7 @@ var SliderMorph = Morph.subclass("SliderMorph", {
     
     onMouseMove: function($super, evt) {
         // Overriden so won't drag me if mouse pressed
-        if (evt.mouseButtonPressed) return
+        if (evt.mouseButtonPressed) return;
         return $super(evt);
     },
     

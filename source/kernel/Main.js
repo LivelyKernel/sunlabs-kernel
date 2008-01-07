@@ -60,7 +60,7 @@ function populateWorldWithExamples(world) {
     var widget;
 
     if (Config.showClock) {
-        widget = new apps.ClockMorph(pt(60, 60), 50);
+        widget = new ClockMorph(pt(60, 60), 50);
         world.addMorph(widget);
         widget.startSteppingScripts();
     }

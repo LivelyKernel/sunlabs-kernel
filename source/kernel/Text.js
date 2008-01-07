@@ -12,19 +12,14 @@
  * Text.js.  Text-related functionality.
  */
 
-var WrapStyle = { 
-    NORMAL: "wrap", // fits text to bounds width using word wrap and sets height
-    NONE: "noWrap", // simply sets height based on line breaks only
-    SHRINK: "shrinkWrap" // sets both width and height based on line breaks only
-};
 
-var TextMorph = (function() {
+(function(scope) {
 
 /**
  * @class TextWord
  * This 'class' renders single words
  */ 
-var TextWord = TextCompatibilityTrait.subclass("TextWord", {
+TextCompatibilityTrait.subclass("TextWord", {
 
     deserialize: function(importer, rawNode) {
         this.rawNode = rawNode;
@@ -528,10 +523,16 @@ var TextLine = Class.create({
     
 });
 
+scope.WrapStyle = { 
+    NORMAL: "wrap", // fits text to bounds width using word wrap and sets height
+    NONE: "noWrap", // simply sets height based on line breaks only
+    SHRINK: "shrinkWrap" // sets both width and height based on line breaks only
+};
+
 /**
  * @class TextMorph
  */ 
-var TextMorph = Morph.subclass("TextMorph", {
+scope.TextMorph = Morph.subclass("TextMorph", {
 
     // these are prototype variables
     fontSize:   Config.defaultFontSize   || 12,
@@ -1597,8 +1598,7 @@ var TestTextMorph = Class.create(TextMorph, {
     }
 
 });
-    return TextMorph;
-})();
+})(Global);
 
 console.log('loaded Text.js');
 

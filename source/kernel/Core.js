@@ -211,52 +211,54 @@ Object.extend(Function.prototype, {
         }.bind(this));
 
     },
-
+    
     subclass: function(/*,... */) {
-        var properties = $A(arguments);
-        var scope = Global;
-        if (typeof properties[0]  != 'string') { // primitive string required
-            scope = properties.shift();
-        }
-        var name = properties.shift();
-
-        function klass() {
-            if (arguments[0] instanceof Importer) {
-                this.deserialize.apply(this, arguments);
-            } else if (arguments[0] === Cloner) {
-                this.copyFrom.call(this, arguments[1]);
-            } else {
-                this.initialize.apply(this, arguments);
-            }
-        }
-
-        Object.extend(klass, Class.Methods);
-        klass.superclass = this;
-        klass.subclasses = [];
-
-        var subclass = function() { };
-        subclass.prototype = this.prototype;
-        klass.prototype = new subclass;
-        this.subclasses.push(klass);
-
-        for (var i = 0; i < properties.length; i++) {
-            klass.addMethods(properties[i] instanceof Function ? (properties[i])() : properties[i]);
-        }
-
-        if (!klass.prototype.initialize) {
-            klass.prototype.initialize = Prototype.emptyFunction;
-        }
-
-        klass.prototype.constructor = klass;
-
-        // KP: .name would be better but js ignores .name on anonymous functions
-        klass.prototype.constructor.type = name;
-        klass.prototype.constructor.scope = scope;
-        scope[name] = klass;
-        return klass;
+	var properties = $A(arguments);
+	var scope = Global;
+	if (typeof properties[0]  != 'string') { // primitive string required
+	    scope = properties.shift();
+	}
+	var name = properties.shift();
+	
+	
+	function klass() {
+	    if (Global.Importer && (arguments[0] instanceof Importer)) { // check for the existence of Importer
+		this.deserialize.apply(this, arguments);
+	    } else if (arguments[0] === Cloner) {
+		this.copyFrom.call(this, arguments[1]);
+	    } else {
+		this.initialize.apply(this, arguments);
+	    }
+	}
+	
+	Object.extend(klass, Class.Methods);
+	klass.superclass = this;
+	klass.subclasses = [];
+	
+	var subclass = function() { };
+	subclass.prototype = this.prototype;
+	klass.prototype = new subclass;
+	this.subclasses.push(klass);
+	
+	for (var i = 0; i < properties.length; i++) {
+	    klass.addMethods(properties[i] instanceof Function ? (properties[i])() : properties[i]);
+	}
+	
+	if (!klass.prototype.initialize)
+	    klass.prototype.initialize = Prototype.emptyFunction;
+	
+	klass.prototype.constructor = klass;
+	
+	
+	// KP: .name would be better but js ignores .name on anonymous functions
+	klass.prototype.constructor.type = name;
+	klass.prototype.constructor.scope = scope;
+	scope[name] = klass;
+	return klass;
     }
-
+    
 });
+Object.subclasses = [];
 
 Function.globalScope = window;
 
@@ -406,7 +408,7 @@ Object.extend(Number.prototype, {
  * @class Point: 2d points
  */
 
-Point = Class.create({
+Object.subclass("Point", {
 
     initialize: function(x, y) {
         this.x = x;
@@ -460,7 +462,7 @@ Point = Class.create({
     r: function() { return this.dist(pt(0,0)); },
     theta: function() { return Math.atan2(this.y,this.x); },
 
-    clone: function() { with (this) { return new Point(x, y); }}
+    clone: function() { return new Point(this.x, this.y); }
 });
 
 Object.extend(Point, {
@@ -494,7 +496,7 @@ console.log("Point");
  * @class Rectangle
  */
 
-Rectangle = Class.create({
+Object.subclass("Rectangle", {
 
     initialize: function(x, y, w, h) {
         this.x = x;
@@ -504,16 +506,7 @@ Rectangle = Class.create({
         return this;
     },
 
-    implementation: function() {
-        var r = Canvas.createSVGRect();
-        r.x = this.x;
-        r.y = this.y;
-        r.width = this.width;
-        r.height = this.height;
-        return r;
-    },
-    
-    clone: function() { with (this) { return new Rectangle(x, y, width, height); } },
+    clone: function() { return new Rectangle(this.x, this.y, this.width, this.height);  },
     maxX: function() { return this.x + this.width; },
     maxY: function() { return this.y + this.height; },
     withWidth: function(w) { return new Rectangle(this.x, this.y, w, this.height)},
@@ -695,7 +688,7 @@ console.log("Rectangle");
  * @class Color: Fully portable support for RGB colors
  */
 
-Color = Class.create({ 
+Object.subclass("Color", { 
 
     initialize: function(r, g, b) {
         this.r = r;
@@ -847,7 +840,7 @@ console.log("Color");
  * @class Gradient (NOTE: PORTING-SENSITIVE CODE)
  */
 
-Gradient = Class.create({
+Object.subclass("Gradient", {
 
     addStop: function(offset, color) {
         this.rawNode.appendChild(NodeFactory.create("stop", {offset: offset, "stop-color": color}));
@@ -856,7 +849,16 @@ Gradient = Class.create({
 
     toString: function() {
         return this.rawNode ? this.rawNode.tagName : "Gradient?";
-    }
+    },
+
+    deserialize: function(importer, rawNode) {
+        this.rawNode = rawNode.cloneNode(true);
+    },
+
+    copyFrom: function(other) {
+	this.rawNode = other.rawNode.cloneNode(true);
+    },
+
     
 });
 
@@ -865,30 +867,20 @@ Gradient = Class.create({
  */
 
 // note that Colors and Gradients are similar
-LinearGradient = Class.create(Gradient, {
-
-    initialize: function(/*args*/) {
-        switch (arguments.length) {
-        case 1:
-            this.rawNode = arguments[0].cloneNode(true);
-            return this;
-        case 2:
-        case 3:
-            var stopColor1 = arguments[0];
-            var stopColor2 = arguments[1];
-            var vector = arguments.length == 3 ? arguments[2] : LinearGradient.NorthSouth;
-            this.rawNode = NodeFactory.create("linearGradient",
-                               {x1: vector.x, y1: vector.y, 
-                                x2: vector.maxX(), y2: vector.maxY()}); 
-            this.addStop(0, stopColor1).addStop(1, stopColor2);
-            return this;
-        default:
-            throw new Error("whoops, args %s", $A(arguments));
-        }
-    },
+Gradient.subclass("LinearGradient", {
     
+    initialize: function($super, stopColor1, stopColor2, vector) {
+	$super();
+        vector = vector || LinearGradient.NorthSouth;
+        this.rawNode = NodeFactory.create("linearGradient",
+					  {x1: vector.x, y1: vector.y, 
+					   x2: vector.maxX(), y2: vector.maxY()}); 
+        this.addStop(0, stopColor1).addStop(1, stopColor2);
+        return this;
+    },
+
     copy: function() {
-        return new LinearGradient(this.rawNode);
+        return new LinearGradient(Cloner, this);
     }
     
 });
@@ -903,30 +895,20 @@ Object.extend(LinearGradient, {
 /**
  * @class RadialGradient (NOTE: PORTING-SENSITIVE CODE)
  */
-
-RadialGradient = Class.create(Gradient, {
+Gradient.subclass("RadialGradient", {
     
-    initialize: function(/*args*/) {
-        switch (arguments.length) {
-        case 1:
-            this.rawNode = arguments[0].cloneNode(true);
-            return this;
-        case 2:
-            var stopColor1 = arguments[0];
-            var stopColor2 = arguments[1];
-            var c = pt(0.5, 0.5);
-            var r = 0.4;
-            this.rawNode = NodeFactory.create("radialGradient", {cx: c.x, cy: c.y, r: r});
-            this.addStop(0, stopColor1);
-            this.addStop(1, stopColor2);
-            return this;
-        default:
-            throw new Error("whoops, args %s", $A(arguments));
-        }
+    initialize: function($super, stopColor1, stopColor2) {
+	$super();
+        var c = pt(0.5, 0.5);
+        var r = 0.4;
+        this.rawNode = NodeFactory.create("radialGradient", {cx: c.x, cy: c.y, r: r});
+        this.addStop(0, stopColor1);
+        this.addStop(1, stopColor2);
+        return this;
     },
 
     copy: function() {
-        return new RadialGradient(this.rawNode);
+        return new RadialGradient(Cloner, this);
     }
     
 });
@@ -2267,12 +2249,19 @@ Morph = Visual.subclass("Morph", {
         var prevId = this.pickId();
 
         this.initializeTransientState(null);
+	
 
         for (var p in other) {
             if (!(other[p] instanceof Function) 
                 && other.hasOwnProperty(p) 
                 && !this.noShallowCopyProperties.include(p)) {
-                this[p] = other[p]; 
+                this[p] = other[p];
+		if (this[p] instanceof Morph && this[p].owner === other) {
+		    // an instance field points to a submorph, so copy
+		    // should point to a copy of the submorph
+		}
+
+		
             }
         }  // shallow copy by default
 
@@ -2721,7 +2710,7 @@ Morph.addMethods({
             this.clipToShape();
         }
         this.adjustForNewBounds();
-    },//.wrap(Morph.onLayoutChange('shape')),
+    }.wrap(Morph.onLayoutChange('shape')),
 
     setExtent: function(newExtent) {
         this.setBounds(this.getPosition().extent(newExtent));
@@ -3102,6 +3091,7 @@ Morph.addMethods({
 Morph.addMethods({
     
     // KP: equivalent of the DOM capture phase
+    // KP: hasFocus is true if the receiver is the hands's focus (?)
     captureMouseEvent: function(evt, hasFocus) {
     // Dispatch this event to the frontmost receptive morph that contains it
     // Note boolean return for event consumption has not been QA'd
@@ -3123,7 +3113,8 @@ Morph.addMethods({
             }
         }
 
-        if (hasFocus) return this.mouseHandler.handleMouseEvent(evt, this);
+        if (hasFocus) 
+	    return this.mouseHandler.handleMouseEvent(evt, this);
 
         if (!evt.priorPoint || !this.fullContainsWorldPoint(evt.priorPoint)) return false;
 
@@ -4691,7 +4682,7 @@ var HandMorph = Morph.subclass("HandMorph", function() {
     },
     
     setMouseFocus: function(morphOrNull) {
-        // console.log('setMouseFocus: ' + Object.inspect(morphOrNull));
+        // console.log('setMouseFocus: ' + morphOrNull);
         this.mouseFocus = morphOrNull; 
     },
     
@@ -4741,7 +4732,7 @@ var HandMorph = Morph.subclass("HandMorph", function() {
             console.log("unknown event type " + evt.type);
         }
         evt.stopPropagation();
-    },//.logErrors('Event Handler'),
+    }.logErrors('Event Handler'),
 
     handleMouseEvent: function(evt) { 
         evt.setButtonPressedAndPriorPoint(this.mouseButtonPressed, 

@@ -104,7 +104,7 @@ scope.WidgetTester = Class.create(Model, {
  * @class ClockMorph
  */
 
-Morph.subclass(scope, "ClockMorph", {
+Morph.subclass(Global, "ClockMorph", {
 
     defaultBorderWidth: 2,
 
@@ -161,7 +161,7 @@ Morph.subclass(scope, "ClockMorph", {
         this.getNamedMorph('hours').setRotation(hour/12*2*Math.PI);
         this.getNamedMorph('minutes').setRotation(minute/60*2*Math.PI);
         this.getNamedMorph('seconds').setRotation(second/60*2*Math.PI); 
-    }.logErrors('setHands')
+    },
     
 });
 
