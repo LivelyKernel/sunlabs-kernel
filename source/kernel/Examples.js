@@ -2130,7 +2130,7 @@ var GameMorph = ClipMorph.subclass("GameMorph", {
 
   function keyDown(event) {
 
-    var key = event.keyCode || event.charCode;
+      var key = event.getKeyCode() || event.charCode;
 
     // Check if any cursor keys have been pressed and set flags.
 
@@ -2238,7 +2238,7 @@ var GameMorph = ClipMorph.subclass("GameMorph", {
 
   function keyUp(event) {
 
-    var key = event.keyCode || event.charCode;
+      var key = event.getKeyCode() || event.charCode;
 
     // Check if any cursor keys where released and set flags.
 
@@ -2288,7 +2288,7 @@ GameMorph.addMethods({
 
     onKeyDown: function(evt) { 
         keyDown(evt);
-        if (evt.keyCode == Event.KEY_ESC) {
+        if (evt.getKeyCode() == Event.KEY_ESC) {
             this.relinquishKeyboardFocus(this.world().firstHand());
         }
         evt.stop();
@@ -4424,9 +4424,8 @@ scope.CanvasScapeMorph = ClipMorph.subclass("CanvasScapeMorph", {
     },
 
     keyDown: function(event) {
-        event = event || window.event;
 
-        var key = event.keyCode || event.charCode;
+        var key = event.getKeyCode() || event.charCode;
       
         // Check if any cursor keys have been pressed and set flags.      
         if (key == Event.KEY_LEFT)
@@ -4437,15 +4436,13 @@ scope.CanvasScapeMorph = ClipMorph.subclass("CanvasScapeMorph", {
             this.changeKey(38, 1);
         else if (key == Event.KEY_DOWN)
             this.changeKey(40, 1);
-        else if (event.keyCode == Event.KEY_SPACEBAR) { 
+        else if (event.getKeyCode() == Event.KEY_SPACEBAR) { 
             this.startGame();
         }
     },
       
     keyUp: function(event) {
-        event = event || window.event;
-    
-        var key = event.keyCode || event.charCode;
+        var key = event.getKeyCode() || event.charCode;
     
         // Check if any cursor keys have been pressed and set flags.
         if (key == Event.KEY_LEFT)

@@ -705,7 +705,7 @@ scope.TextMorph = Morph.subclass("TextMorph", {
     beInputLine: function() {
         this.setWrapStyle(WrapStyle.NONE);
         this.onKeyPress = function(evt) {
-            if (evt.sanitizedKeyCode() == Event.KEY_RETURN) {
+            if (evt.getKeyCode() == Event.KEY_RETURN) {
                 this.saveContents(this.textString);
                 return true;
             } else {
@@ -1070,7 +1070,7 @@ scope.TextMorph = Morph.subclass("TextMorph", {
     // TextMorph mouse event functions 
     handlesMouseDown: function(evt) {
         // Do selecting if click is in selectable area
-        if (evt.altKey) return false;
+        if (evt.isAltDown()) return false;
         return this.shape.bounds().insetByPt(this.inset).containsPoint(this.localize(evt.mousePoint)); 
     },
 
@@ -1181,7 +1181,7 @@ scope.TextMorph = Morph.subclass("TextMorph", {
         
         var before = this.textString.substring(0, this.selectionRange[0]); 
         
-        switch (evt.sanitizedKeyCode()) {
+        switch (evt.getKeyCode()) {
         case Event.KEY_LEFT: {
             // forget the existing selection
             this.setNullSelectionAt(Math.max(before.length - 1, 0));
@@ -1230,8 +1230,8 @@ scope.TextMorph = Morph.subclass("TextMorph", {
         }
 
         // have to process commands in keydown...
-        if (evt.altKey) {
-            var replacement = (String.fromCharCode(evt.keyCode)).toLowerCase();
+        if (evt.isAltDown()) {
+            var replacement = (String.fromCharCode(evt.getKeyCode())).toLowerCase();
             if (this.processCommandKeys(replacement)) evt.stop();
         }
     },
@@ -1240,13 +1240,13 @@ scope.TextMorph = Morph.subclass("TextMorph", {
         if (!this.acceptInput) return;
 
         // cleanup: separate BS logic, diddle selection range and use replaceSelectionWith()
-        if (evt.altKey && navigator.platform =="Win32") {
+        if (evt.isAltDown() && navigator.platform =="Win32") {
             //AltGr pressed
             var replacement = (String.fromCharCode(evt.charCode)).toLowerCase();
             this.processCommandKeys(replacement);
             evt.stop();
         }
-        if (evt.keyCode == Event.KEY_BACKSPACE) { // Replace the selection after checking for type-ahead
+        if (evt.getKeyCode() == Event.KEY_BACKSPACE) { // Replace the selection after checking for type-ahead
             var before = this.textString.substring(0, this.selectionRange[this.hasNullSelection() ? 1 : 0]); 
             var after = this.textString.substring(this.selectionRange[1] + 1, this.textString.length);
 
@@ -1254,7 +1254,7 @@ scope.TextMorph = Morph.subclass("TextMorph", {
             this.setNullSelectionAt(before.length); 
             evt.stop(); // do not use for browser navigation
             return;
-        } else if (!evt.altKey) {
+        } else if (!evt.isAltDown()) {
             if (evt.charCode && evt.charCode < 63200) { // account for Safari's keypress codes 
                 var replacement = String.fromCharCode(evt.charCode);
                 this.replaceSelectionWith(replacement); 

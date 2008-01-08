@@ -283,6 +283,8 @@ if (Prototype.Browser.WebKit) {
 Object.extend(Function.prototype, {
     
     logErrors: function(prefix) {
+	if (Config.ignoreAdvice) 
+	    return this;
         var advice = function (proceed/*,args*/) {
             var args = $A(arguments); args.shift(); 
             try {
@@ -299,7 +301,9 @@ Object.extend(Function.prototype, {
     },
 
     logCompletion: function(module) {
-        var advice = function(proceed) {
+	if (Config.ignoreAdvice) 
+	    return this;
+	var advice = function(proceed) {
             var args = $A(arguments); args.shift(); 
             try {
                 var result = proceed.apply(this, args);
@@ -316,6 +320,8 @@ Object.extend(Function.prototype, {
     },
 
     logCalls: function(name, isUrgent) {
+	if (Config.ignoreAdvice) 
+	    return this;
         var advice = function(proceed) {
             var args = $A(arguments); args.shift(); 
             var result = proceed.apply(this, args);
@@ -1086,15 +1092,12 @@ Object.extend(CharSet, {
 
 var Event = (function() {
     var tmp = Event; // note we're rebinding the name Event to point to a different class 
-    var Event = Class.create({
+    var Event = Object.subclass('Event', {
 
         initialize: function(rawEvent) {
             this.rawEvent = rawEvent;
             this.type = rawEvent.type;
-            this.keyCode = rawEvent.keyCode;
             this.charCode = rawEvent.charCode;
-            this.altKey = rawEvent.altKey;
-            this.shiftKey = rawEvent.shiftKey;
 
             if (isMouse(rawEvent)) {
                 var x = rawEvent.pageX || rawEvent.clientX;
@@ -1132,6 +1135,18 @@ var Event = (function() {
             this.preventDefault();
             this.stopPropagation();
         },
+	
+	isAltDown: function() {
+	    return this.rawEvent.altKey;
+	},
+
+	isShiftDown: function() {
+	    return this.rawEvent.shiftKey;
+	},
+	
+	isCmdDown: function() {
+	    return this.rawEvent.cmdKey;
+	},
 
         toString: function() {
             return this.type + "[" + this.rawEvent + (this.mousePoint ?  "@" + this.mousePoint : "") +  "]";
@@ -1142,8 +1157,8 @@ var Event = (function() {
             // if moving or releasing, priorPoint will get found by prior morph
             this.priorPoint = priorPoint; 
         },
-
-        sanitizedKeyCode: function() {
+	
+        getKeyCode: function() {
             // if (this.type != 'keypress')
             // return;
             with (Event.Safari) {
@@ -1161,7 +1176,7 @@ var Event = (function() {
             }
             return this.rawEvent.keyCode;
         },
-    
+	
         capitalizedType: function() {
             return capitalizer.get(this.type) || this.type;
         }
@@ -1205,7 +1220,7 @@ var Event = (function() {
     
     function isKeyboard(event) {
         // return this instanceof MouseEvent;
-        return Event.keyboardEvents.include(event.type);
+        return Event.keyboardEvents.include(event.rawEvent.type);
     };
 
     Object.extend(Event, {
@@ -1222,18 +1237,8 @@ var Event = (function() {
             KEY_HOME: 63273,
             KEY_PAGE_UP: 63276,
             KEY_PAGE_DOWN: 63277
-        },
-    
-        makeSyntheticMouseEvent: function() {
-            //if (Prototype.Browser.Rhino) 
-            return null;
-            var evt = document.createEvent("MouseEvents");
-            // cf. http://developer.mozilla.org/en/docs/DOM:document.createEvent
-            evt.initMouseEvent("mousemove", true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
-            return new Event(evt);
-        },
-    
-    
+        }
+        
     });
     return Event;
 })();
@@ -3164,7 +3169,7 @@ Morph.addMethods({
     },
 
     handlesMouseDown: function(evt) {
-        if (this.mouseHandler == null || evt.altKey) return false;  //default behavior
+        if (this.mouseHandler == null || evt.isAltDown()) return false;  //default behavior
         return this.mouseHandler.handlesMouseDown(); 
     },
 
@@ -3446,7 +3451,7 @@ Morph.addMethods({
 
         // On grabs, can't pick up the world or morphs that handle mousedown
         // DI:  I think the world is adequately checked for now elsewhere
-        // else return (!evt.altKey && this === this.world()) ? null : this; 
+        // else return (!evt.isAltDown() && this === this.world()) ? null : this; 
         else return this; 
     },
     
@@ -4048,7 +4053,7 @@ var PasteUpMorph = Morph.subclass("PasteUpMorph", {
         if (m == null) { 
             this.makeSelection(evt); 
             return true; 
-        } else if (!evt.altKey) {
+        } else if (!evt.isAltDown()) {
             if (m == this.world()) { 
                 this.makeSelection(evt); 
                 return true; 
@@ -4665,7 +4670,7 @@ var HandMorph = Morph.subclass("HandMorph", function() {
         this.keyboardFocus = null;
         this.mouseFocus = null;
         this.mouseOverMorph = null;
-        this.lastMouseEvent = Event.makeSyntheticMouseEvent();
+        this.lastMouseEvent = null;
         this.lastMouseDownPoint = pt(0,0);
         this.hasMovedSignificantly = false;
         this.grabInfo = null;
@@ -4831,12 +4836,12 @@ var HandMorph = Morph.subclass("HandMorph", function() {
     },
 
     grabMorph: function(grabbedMorph, evt) { 
-        if (evt.shiftKey && !(grabbedMorph instanceof LinkMorph)) {
+        if (evt.isShiftDown() && !(grabbedMorph instanceof LinkMorph)) {
             if (!grabbedMorph.okToDuplicate()) return;
             grabbedMorph.copyToHand(this);
             return;
         }
-        if (evt.altKey) {
+        if (evt.isAltDown()) {
             grabbedMorph.showMorphMenu(evt);
             return;
         }
@@ -4894,7 +4899,7 @@ var HandMorph = Morph.subclass("HandMorph", function() {
     },
 
     moveTopMorph: function(evt) {
-        switch (evt.sanitizedKeyCode()) {
+        switch (evt.getKeyCode()) {
         case Event.KEY_LEFT:
             this.topSubmorph().moveBy(pt(-10,0));
             evt.stop();

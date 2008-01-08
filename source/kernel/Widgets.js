@@ -78,7 +78,7 @@ var ButtonMorph = Morph.subclass("ButtonMorph", {
         else return false;
     },
 
-    handlesMouseDown: function(evt) { return !evt.altKey; },
+    handlesMouseDown: function(evt) { return !evt.isAltDown(); },
     
     onMouseDown: function(evt) {
         this.requestKeyboardFocus(evt.hand);
@@ -141,7 +141,7 @@ var ButtonMorph = Morph.subclass("ButtonMorph", {
     },
 
     onKeyDown: function(evt) {
-        switch (evt.sanitizedKeyCode()) {
+        switch (evt.getKeyCode()) {
         case Event.KEY_RETURN:
         case Event.KEY_SPACEBAR:
             this.changeAppearanceFor(true);
@@ -153,7 +153,7 @@ var ButtonMorph = Morph.subclass("ButtonMorph", {
 
     onKeyUp: function(evt) {
         var newValue = this.isToggle() ? !this.getValue() : false;
-        switch (evt.sanitizedKeyCode()) {
+        switch (evt.getKeyCode()) {
         case Event.KEY_RETURN:
         case Event.KEY_SPACEBAR:
             this.changeAppearanceFor(newValue);
@@ -872,7 +872,7 @@ var HandleMorph = (function () {
     },
     
     onMouseUp: function(evt) {
-        if (!evt.shiftKey && !evt.altKey && !evt.cmdKey &&
+        if (!evt.isShiftDown() && !evt.isAltDown() && !evt.isCmdDown() &&
             // these hack tests should be replaced by receiver tests
             !(this.targetMorph.getType() == "WindowMorph" || this.targetMorph.getType() == "TitleBarMorph")) {
                 // last call for, eg, vertex deletion
@@ -900,13 +900,13 @@ var HandleMorph = (function () {
         var p1 = evt.mousePoint;
         if (!this.initialScale) this.initialScale = this.targetMorph.getScale();
         if (!this.initialRotation) this.initialRotation = this.targetMorph.getRotation();
-        if (evt.altKey) {
+        if (evt.isAltDown()) {
             // ctrl-drag for rotation (unshifted) and scale (shifted)
             var ctr = this.targetMorph.owner.worldPoint(this.targetMorph.origin);  //origin for rotation and scaling
             var v1 = p1.subPt(ctr); //vector from origin
             var v0 = p0.subPt(ctr); //vector from origin at mousedown
             
-            if (evt.shiftKey) {
+            if (evt.isShiftDown()) {
                 var ratio = v1.r() / v0.r();
                 ratio = Math.max(0.1,Math.min(10,ratio));
                 // console.log('set scale to ' + this.initialScale + ' times ' +  ratio);
@@ -917,7 +917,7 @@ var HandleMorph = (function () {
         } else {    // normal drag for reshape (unshifted) and borderWidth (shifted)
             var d = p1.dist(p0); //dist from mousedown
         
-            if (evt.shiftKey) {
+            if (evt.isShiftDown()) {
                 this.targetMorph.setBorderWidth(Math.max(0, Math.floor(d/3)/2), true);
             } else { 
                 // these hack tests should be replaced by receiver tests
@@ -1141,7 +1141,7 @@ Morph.subclass("PanelMorph", {
     },    
     
     onKeyPress: function(evt) {
-        switch (evt.sanitizedKeyCode()) {
+        switch (evt.getKeyCode()) {
         case Event.KEY_TAB: { 
             this.focusOnNext(evt);
             evt.stop();
@@ -1249,7 +1249,7 @@ var CheapListMorph = TextMorph.subclass("CheapListMorph", {
     },
 
     onKeyPress: function(evt) {
-        switch (evt.sanitizedKeyCode()) {
+        switch (evt.getKeyCode()) {
         case Event.KEY_UP: {
             var lineNo = this.selectedLineNo();
             if (lineNo > 0) {
@@ -1633,8 +1633,7 @@ var SliderMorph = Morph.subclass("SliderMorph", {
 
     sliderReleased: function(evt, slider) { },
     
-    handlesMouseDown: function(evt) { return !evt.altKey; },
-    
+    handlesMouseDown: function(evt) { return !evt.isAltDown(); },
     onMouseDown: function(evt) {
         this.requestKeyboardFocus(evt.hand);
         var inc = this.getExtent();
@@ -1688,15 +1687,16 @@ var SliderMorph = Morph.subclass("SliderMorph", {
     },
 
     onKeyPress: function(evt) {
+	console.log("keypress %s", evt);
         var delta = 0;
         if (this.vertical()) {
-            switch (evt.sanitizedKeyCode()) {
+            switch (evt.getKeyCode()) {
             case Event.KEY_DOWN: delta = 1; break;
             case Event.KEY_UP:  delta = -1; break;
             default: return false;
             } 
         } else {
-            switch (evt.sanitizedKeyCode()) {
+            switch (evt.getKeyCode()) {
             case Event.KEY_RIGHT: delta = 1;  break;    
             case Event.KEY_LEFT:  delta = -1; break;
             default: return false;
@@ -1852,7 +1852,7 @@ var ColorPickerMorph = Morph.subclass("ColorPickerMorph", {
     },
 
     handlesMouseDown: function(evt) { 
-        return !evt.altKey;
+        return !evt.isAltDown();
     },
 
     onMouseDown: function(evt) {

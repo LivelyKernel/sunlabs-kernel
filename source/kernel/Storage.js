@@ -269,7 +269,7 @@ var WebStore = Class.create(Model, {
         m.connectModel({model: this, getList: "getCurrentDirectoryContents", setSelection: "setCurrentResource"});
         var oldpress = m.innerMorph().onKeyPress;
         m.innerMorph().onKeyPress = function(evt) {
-            if (evt.keyCode == Event.KEY_BACKSPACE) { // Replace the selection after checking for type-ahead
+            if (evt.getKeyCode() == Event.KEY_BACKSPACE) { // Replace the selection after checking for type-ahead
                 var result = this.world().confirm("delete file " + this.itemList[this.selectedLineNo()]);
                 evt.stop();
                 if (result) {
