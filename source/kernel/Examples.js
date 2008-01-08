@@ -4745,48 +4745,22 @@ Morph.subclass(scope, "EngineMorph", {
 // ===========================================================================
 
 /*
- * PlayerMorph is the end-user interface for showing the animation
- */ 
-
-var PlayerMorph = Morph.subclass("PlayerMorph",  {
-
-    initialize: function($super) {
-        var rect = Rectangle(0, 0, 330, 260);
-        $super(rect, "rect");
-        this.setFill(new LinearGradient(Color.white, Color.primary.blue, LinearGradient.NorthSouth));
-        this.animation = new AnimMorph(Rectangle(-160, -120, 320, 240), "Resources/Anim/Frame", 469, ".jpg");
-        this.addMorph(this.animation);
-    },
-    
-    start: function() {
-        this.animation.play = true;
-    },
-    
-    stop: function() {
-        this.animation.play = false;
-    },
-    
-    openIn: function(world, location) {
-        world.addMorphAt(new WindowMorph(this, 'AnimationMorph'), location);
-        this.startStepping();
-    },
-    
-    startStepping: function() {
-        this.animation.startStepping(100,'nextFrame'); 
-    }
-    
-});
-
-/*
  * Animation Morph is the animation "engine" that loads the frames for the animation
  */
   
 var AnimMorph = Morph.subclass("AnimMorph", {
     
-    initialize: function($super, rect, frameURL, numberOfFrames, type /* String (.jpg, .gif etc)*/) {
-        $super(rect);
-        this.setFill(Color.black);
+    initialize: function($super, rect) {  
+
+//	    var rect = new Rectangle(0, 0, 320, 240); 
+        $super(rect, "rect");
         this.dim = rect.extent();
+	},
+
+	startup: function(frameURL, numberOfFrames, frameType) {
+
+		this.setFill(Color.black);
+
         this.play = false;
         this.data = new Array();
         this.frame = 0;
@@ -4802,11 +4776,10 @@ var AnimMorph = Morph.subclass("AnimMorph", {
             } else if ( index < 1000 ) {
                 index = "0" + i;
             }
-            this.data.push(frameURL + index + type);
+            this.data.push(frameURL + index + frameType);
         }
         
         this.status = new Morph(this.bounds().center().subPt(pt(50,50)).extent(pt(100,100)), "ellipse");
-//        m.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseUp: "onMouseUp"});
         this.status.handlesMouseDown = function() {
             return true;
         }
@@ -4819,7 +4792,7 @@ var AnimMorph = Morph.subclass("AnimMorph", {
         this.status.setFillOpacity(0.7);
         this.status.setBorderWidth(0);
         this.status.addMorph( k = new Morph(pt(0,0).asRectangle()) );
-        k.setShape(PolylineShape([pt(-20,-20),pt(30,0),pt(-20,20), pt(-20,-20)], 1, Color.blue));
+        k.setShape(new PolylineShape([pt(-20,-20),pt(30,0),pt(-20,20), pt(-20,-20)], 1, Color.blue));
         k.setFill(Color.blue.lighter());
         k.relayMouseEvents(this.status, {onMouseDown: "onMouseDown", onMouseUp: "onMouseUp"});
     },
@@ -4831,8 +4804,7 @@ var AnimMorph = Morph.subclass("AnimMorph", {
         }
 
         if (!this.image) {
-            var image = this.image = NodeFactory.create("image", { x: this.bounds().topLeft().subPt(this.bounds().center()).x, y: this.bounds().topLeft().subPt(this.bounds().center()).y, width: this.dim.x, height: this.dim.y});
-            image.setType('Image');
+            var image = this.image = NodeFactory.create("image", { x: 0, y: 0, width: this.dim.x, height: this.dim.y});
             this.addNonMorph(image);
         }
         this.image.setAttributeNS(Namespace.XLINK, "href", url);
@@ -4845,12 +4817,14 @@ var AnimMorph = Morph.subclass("AnimMorph", {
     },
             
     nextFrame: function() {
+
         if (this.play) {
             this.showNext();
         } 
     },
     
     showNext: function() {
+
         this.frame++;
         if (this.frame == this.data.length) {
             this.frame = 0;
@@ -4867,20 +4841,59 @@ var AnimMorph = Morph.subclass("AnimMorph", {
     
     // should we make a better control panel for the animation with mouseover and mouseout?
     onMouseOver: function(evt) {
-//        console.log("mouse over");
+       // console.log("mouse over");
     },
     
     onMouseOut: function(evt) {
-//        console.log("mouse out");
+       // console.log("mouse out");
     },
     
     onMouseDown: function(evt) {
+
         if ( this.play ) {
             this.play = false;
             this.addMorph(this.status);
         } 
     }
 
+});
+
+/*
+ * PlayerMorph is the end-user interface for showing the animation
+ */ 
+
+var PlayerMorph = Morph.subclass("PlayerMorph",  {
+
+    initialize: function($super) {
+
+        var rect = new Rectangle(0, 0, 330, 260);
+        $super(rect, "rect");
+        this.setFill(new LinearGradient(Color.white, Color.primary.blue, LinearGradient.NorthSouth));
+
+        this.animation = new AnimMorph(rect);
+		this.animation.startup("Resources/Anim/Frame", 469, ".jpg"); 
+
+        this.addMorph(this.animation);
+    },
+    
+    start: function() {
+        this.animation.play = true;
+    },
+    
+    stop: function() {
+        this.animation.play = false;
+    },
+    
+    openIn: function(world, location) {
+
+        world.addMorphAt(new WindowMorph(this, 'AnimationMorph'), location);
+
+        this.startStepping();
+    },
+    
+    startStepping: function() {
+        this.animation.startStepping(100,"nextFrame"); 
+    }    
 });
 
 }).logCompletion("Examples.js")(apps);
