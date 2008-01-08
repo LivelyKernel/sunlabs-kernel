@@ -234,10 +234,11 @@ Object.extend(Function.prototype, {
 		    valueOf:  function() { return method },
 		    toString: function() { return method.toString() }
 		});
+		value.classAndMethodName = "superWrapper";
 	    }
 	    this.prototype[property] = value;
 	    if (Object.isFunction(value)) {
-		if (value.classAndMethodName) {
+		if (value.classAndMethodName && value.classAndMethodName != "superWrapper") {
 		    //
 		    console.log("class " + this.prototype.constructor.type 
 				+ " borrowed " + value.classAndMethodName);
@@ -258,7 +259,6 @@ Object.extend(Function.prototype, {
 	    scope = properties.shift();
 	}
 	var name = properties.shift();
-	
 	
 	function klass() {
 	    if (Global.Importer && (arguments[0] instanceof Importer)) { // check for the existence of Importer, which may not be defined very early on
@@ -335,8 +335,10 @@ Object.extend(Function.prototype, {
                 throw er;
             }
         }
+	advice.classAndMethodName = "$logErrorsAdvice";
 	var result = this.wrap(advice);
 	result.originalMethod = this;
+	result.classAndMethodName = "$logErrorsWrapper";
 	return result;
     },
 
@@ -355,7 +357,10 @@ Object.extend(Function.prototype, {
             console.log('completed %s', module);
             return result;
         }
+	advice.classAndMethodName = "$logCompletionAdvice::" + module;
+	
 	var result = this.wrap(advice);
+	result.classAndMethodName = "$logCompletionWrapper::" + module;
 	result.originalMethod = this;
 	return result;
     },
@@ -373,8 +378,11 @@ Object.extend(Function.prototype, {
             }
            return result;
         }
+	advice.classAndMethodName = "$logCallsAdvice::" + name;
+	
 	var result = this.wrap(advice);
 	result.originalMethod = this;
+	result.classAndMethodName = "$logCallsWrapper::" + name;
 	return result;
     },
 
@@ -5209,6 +5217,20 @@ LinkMorph = Morph.subclass("LinkMorph", {
     
     setHelpText: function ( newText ) {
         this.helpText = newText;
+    }
+
+});
+
+
+Object.subclass('CharacterInfo', {
+
+    initialize: function(width, height) {
+        this.width = width;
+        this.height = height;
+    },
+
+    toString: function() {
+        return this.width + "x" + this.height;
     }
 
 });

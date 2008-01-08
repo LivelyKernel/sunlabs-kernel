@@ -15,11 +15,79 @@
 
 (function(scope) {
 
+
+Object.subclass('Font', {
+
+    initialize: function(family/*:String*/, size/*:Integer*/){
+        this.family = family;
+        this.size = size;
+        this.extents = this.computeExtents(family, size);
+    },
+
+    // svgtext-compat overrides 
+    computeExtents: function(family, size) {
+	return [];
+    },
+
+    getSize: function() {
+        return this.size;
+    },
+    
+    getFamily: function() {
+        return this.family;
+    },
+
+    toString: function() {
+        return this.family + " " + this.getSize();
+    },
+
+    getCharInfo: function(charString) {
+        var code = charString.charCodeAt(0);
+        return this.extents[code];
+    },
+
+    getCharWidth: function(charString) {
+        var code = charString.charCodeAt(0);
+        return this.extents[code] ? this.extents[code].width : -1;
+    },
+
+    getCharHeight: function(charString) {
+        var code = charString.charCodeAt(0);
+        return this.extents[code] ? this.extents[code].height : -1;
+    },
+
+    applyTo: function(element) {
+        element.rawNode.setAttributeNS(null, "font-size", this.getSize());
+        element.rawNode.setAttributeNS(null, "font-family", this.getFamily());
+    }
+
+});
+
+Object.extend(Font, {
+    cache: {},
+    
+    forFamily: function(familyName, size) {
+	var key  = familyName + ":" + size;
+	var entry = Font.cache[key];
+	if (!entry) {
+            try {
+		entry = new Font(familyName, size);
+            } catch(er) {
+		console.log("%s when looking for %s:%s", er, familyName, size);
+		return null;
+        }
+            Font.cache[key] = entry;
+	}
+	return entry;
+    }
+});
+
+
 /**
  * @class TextWord
  * This 'class' renders single words
  */ 
-TextCompatibilityTrait.subclass("TextWord", {
+Object.subclass("TextWord", {
 
     deserialize: function(importer, rawNode) {
         this.rawNode = rawNode;
@@ -41,7 +109,58 @@ TextCompatibilityTrait.subclass("TextWord", {
         this.didLineBreak = false;
         return this;
     },
+
+
+    naiveGetX: function() {
+        // not this won't work if the attribute is not explicitly set etc
+        return parseInt(this.rawNode.getAttribute("x"));
+    },
     
+    naiveGetY: function() {
+        // not this won't work if the attribute is not explicitly set etc
+        return parseInt(this.rawNode.getAttribute("y"));
+    },
+
+
+    setX: function(newValue /*:float*/) {
+        var oldValue = this.naiveGetX();
+        if (oldValue != newValue) { // FIXME: maybe just recalc the offset
+            this.extentTable = null;
+        }
+        this.rawNode.setAttributeNS(null, "x", newValue.toString());
+    },
+    
+    setY: function(newValue /*:float*/) {
+        var oldValue = this.naiveGetY();
+        if (oldValue != newValue) { // FIXME: maybe just recalc the offset
+            this.extentTable = null;
+        }
+        this.rawNode.setAttributeNS(null, "y", newValue.toString());
+    },
+
+    getFontFamily: function() {
+        for (var node = this.rawNode; node && (/text|tspan/).test(node.tagName); node = node.parentNode) {
+            var result = node.getAttribute("font-family");
+            if (result) return result;
+        }
+        return null; // ???
+    },
+
+
+    getFontSize: function() {
+        for (var node = this.rawNode; node && (/text|tspan/).test(node.tagName); node = node.parentNode) {
+            var result = node.getAttribute("font-size");
+            if (result) return parseInt(result);
+        }
+        return 0; // Should we return a default size?
+    },
+    
+    // overriden by svgtext-compat
+    getExtentOfChar: function(position) {
+	console.log("inspecting " + position + " in " + this.rawNode.textContent + " func " + this.rawNode.getExtentOfChar);
+	var r = this.rawNode.getExtentOfChar(position); // an svg rectangle
+	return new Rectangle(r.x, r.y, r.width, r.height);
+    },
 
     // compose a word within compositionWidth, stopping if the width or string width is exceeded
     // compositionWidth is in the same units as character metrics
