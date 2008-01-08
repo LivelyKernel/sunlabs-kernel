@@ -211,6 +211,45 @@ Object.extend(Function.prototype, {
         }.bind(this));
 
     },
+
+    // modified Class.Methods.addMethods from prototype.js
+    addMethods: function(source) {
+	var ancestor = this.superclass && this.superclass.prototype;
+	
+	for (var property in source) {
+	    var value = source[property];
+	    if (ancestor && Object.isFunction(value) &&
+		value.argumentNames().first() == "$super") {
+		var method = value;
+		var value = Object.extend((function(m) {
+		    return function() { 
+			try { 
+			    return ancestor[m].apply(this, arguments) 
+			} catch (e) { 
+			    console.log("problem with ancestor " + ancestor + "method " + m); 
+			    throw e;
+			} 
+		    };
+		})(property).wrap(method), {
+		    valueOf:  function() { return method },
+		    toString: function() { return method.toString() }
+		});
+	    }
+	    this.prototype[property] = value;
+	    if (Object.isFunction(value)) {
+		if (value.classAndMethodName) {
+		    //
+		    console.log("class " + this.prototype.constructor.type 
+				+ " borrowed " + value.classAndMethodName);
+		}
+		value.classAndMethodName = this.prototype.constructor.type + "." + property;
+		if (!this.prototype.constructor.type)
+		    console.log("named " + value.classAndMethodName);
+	    }
+	}
+	
+	return this;
+    },
     
     subclass: function(/*,... */) {
 	var properties = $A(arguments);
@@ -231,7 +270,7 @@ Object.extend(Function.prototype, {
 	    }
 	}
 	
-	Object.extend(klass, Class.Methods);
+	// Object.extend(klass, Class.Methods);
 	klass.superclass = this;
 	klass.subclasses = [];
 	
@@ -239,6 +278,12 @@ Object.extend(Function.prototype, {
 	subclass.prototype = this.prototype;
 	klass.prototype = new subclass;
 	this.subclasses.push(klass);
+
+
+	klass.prototype.constructor = klass;
+	// KP: .name would be better but js ignores .name on anonymous functions
+	klass.prototype.constructor.type = name;
+	klass.prototype.constructor.scope = scope;
 	
 	for (var i = 0; i < properties.length; i++) {
 	    klass.addMethods(properties[i] instanceof Function ? (properties[i])() : properties[i]);
@@ -247,12 +292,6 @@ Object.extend(Function.prototype, {
 	if (!klass.prototype.initialize)
 	    klass.prototype.initialize = Prototype.emptyFunction;
 	
-	klass.prototype.constructor = klass;
-	
-	
-	// KP: .name would be better but js ignores .name on anonymous functions
-	klass.prototype.constructor.type = name;
-	klass.prototype.constructor.scope = scope;
 	scope[name] = klass;
 	return klass;
     }
@@ -274,7 +313,7 @@ if (Prototype.Browser.WebKit) {
     Error.prototype.inspect = function() {
         return this.name + " in " + this.sourceURL + ":" + this.line + ": " + this.message;
     }
-} else { // mozilla
+} else if (!Prototype.Browser.Rhino) { // mozilla
     Error.prototype.inspect = function() {
         return this.name + " in " + this.fileName + ":" + this.lineNumber + ": " + this.message;
     }
@@ -1920,7 +1959,6 @@ var PathShape = Class.create(Shape, {
         this.rawNode.setAttributeNS(null, "d", d);
         this.verticesList = vertlist;
         delete this.cachedBounds;
-        // Function.callStack().map(function(x,i) {console.log(i + ") " + x)});
     },
     
     vertices: function() {

@@ -446,14 +446,6 @@ function showStatsViewer(profilee,title) {
     m.addMorph(t);
 };
 
-Function.callStack = function() {
-    var result = [];
-    for (var c = arguments.callee.caller; c != null; c = c.caller) {
-        result.push(Object.inspect(c));
-    }
-    return result;
-};
-
 Function.showStack = function() {
     if (Config.debugExtras) {
         for (var i=0; i<DebuggingStack.length; i++) {
@@ -472,9 +464,9 @@ Function.showStack = function() {
             }
         }
     } else {
-        var theStack = Function.callStack();
-        theStack.shift();  // drop this item
-        theStack.map(function(x,i) {console.log(i + ") " + x)});
+	for (var c = arguments.callee.caller, i = 0; c != null; c = c.caller, i++) {
+	    console.log(i + ") " + Object.inspect(c));
+	}
     }
 };
 
@@ -490,7 +482,8 @@ Function.installStackTracers = function() {
             for (var mi = 0; mi<methodNames.length; mi++) {
                 var mName = methodNames[mi];
                 var originalMethod = theClass.prototype[mName]; 
-                originalMethod.classAndMethodName = cName + '.' + mName;  // Attach name to method
+		if (!originalMethod.classAndMethodName) // already added 
+                    originalMethod.classAndMethodName = cName + '.' + mName;  // Attach name to method
                 // Now replace each method with a wrapper function that records calls on DebuggingStack
                 theClass.prototype[mName] = originalMethod.stackWrapper();
             }
