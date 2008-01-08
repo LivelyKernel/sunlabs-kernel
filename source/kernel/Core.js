@@ -296,8 +296,9 @@ Object.extend(Function.prototype, {
                 throw er;
             }
         }
-
-        return this.wrap(advice);
+	var result = this.wrap(advice);
+	result.originalMethod = this;
+	return result;
     },
 
     logCompletion: function(module) {
@@ -315,8 +316,9 @@ Object.extend(Function.prototype, {
             console.log('completed %s', module);
             return result;
         }
-    
-        return this.wrap(advice);
+	var result = this.wrap(advice);
+	result.originalMethod = this;
+	return result;
     },
 
     logCalls: function(name, isUrgent) {
@@ -332,9 +334,22 @@ Object.extend(Function.prototype, {
             }
            return result;
         }
-    
-        return this.wrap(advice);
+	var result = this.wrap(advice);
+	result.originalMethod = this;
+	return result;
+    },
+
+    traceCalls: function(stack) {
+	var advice = function(proceed) {
+	    var args = $A(arguments); args.shift();
+	    stack.push(args);
+	    var result = proceed.apply(this, args);
+	    stack.pop();
+	    return result;
+	};
+	return this.wrap(advice);
     }
+
 
 });
 
@@ -2060,6 +2075,24 @@ var Exporter = Class.create({
     serialize: function() {
         // model is inserted as part of the root morph.
         var modelNode = (this.rootMorph.getModel() || { toMarkup: function() { return null; }}).toMarkup();
+	var fieldDescs = [];
+
+	// introspect all the fields
+	this.rootMorph.withAllSubmorphsDo(function() {
+	    for (var prop in this) {
+		if (prop == 'owner') // we'll deal manually
+		    continue;
+		var m = this[prop];
+		if (m instanceof Morph) {
+		    var desc = NodeFactory.createNS(Namespace.LIVELY, "field");
+		    desc.setAttributeNS(Namespace.LIVELY, "name", prop);
+		    desc.setAttributeNS(Namespace.LIVELY, "ref", m.id);
+		    this.addNonMorph(desc);
+		    fieldDescs.push(desc);
+		}
+	    }
+	});
+    
         if (modelNode) {
             try {
                 this.rootMorph.addNonMorph(modelNode);
@@ -2069,6 +2102,10 @@ var Exporter = Class.create({
         if (modelNode) {
             this.rootMorph.rawNode.removeChild(modelNode);
         }
+	// now remove all the serialization-related nodes
+	for (var i = 0; i < fieldDescs.length; i++) {
+	    fieldDescs[i].parentNode.removeChild(fieldDescs[i]);
+	}
         return result;
     }
 
@@ -2122,7 +2159,7 @@ var Importer = Class.create({
         try {
             return new Global[morphTypeName](this, rawNode);
         } catch (er) {
-            console.log("problem instantiating type %s tag %s: %s", morphTypeName, rawNode.tagName, er);
+            console.log("problem instantiating type %s from node %s: %s", morphTypeName, rawNode.tagName, er);
 	    return null;
         }
     },
@@ -2387,8 +2424,20 @@ Morph = Visual.subclass("Morph", {
         //  wade through the children
         var children = [];
         for (var desc = this.rawNode.firstChild; desc != null; desc = desc.nextSibling) {
-            children.push(desc);
+            var type = desc.getAttributeNS(Namespace.LIVELY, "type");
+	    // depth first traversal
+	    if (type == "Submorphs") {
+		this.rawSubnodes = NodeList.become(desc, type);
+		NodeList.each(this.rawSubnodes, function(node) { 
+                    var morph = importer.importFromNode(node);
+                    this.submorphs.push(morph); 
+                    morph.owner = this;
+		}.bind(this));
+	    } else {
+		children.push(desc);
+	    }
         }
+
         var modelNode = null;
 
         for (var i = 0; i < children.length; i++) {
@@ -2443,6 +2492,22 @@ Morph = Visual.subclass("Morph", {
                 console.info("%s reconstructed plug %s", this, this.modelPlug);
                 break;
             } 
+	    case "field": {
+		console.log("found field " + Exporter.nodeToString(node));
+		var name = node.getAttributeNS(Namespace.LIVELY, "name");
+		var ref = node.getAttributeNS(Namespace.LIVELY, "ref");
+		if (name) {
+		    var found = this[name] = importer.lookupMorph(ref);
+		    if (!found) {
+			console.warn("no field found for ref " + ref);
+		    } else {
+			node.parentNode.removeChild(node);
+			console.log("found " + name + "=" + found);
+		    }
+		}
+		break;
+	    }
+
             default: {
                 if (node.nodeName == '#text') {
                     console.log('text tag name %s', node.tagName);
@@ -2462,16 +2527,6 @@ Morph = Visual.subclass("Morph", {
     
     restoreContainer: function(element/*:Element*/, type /*:String*/, importer/*Importer*/)/*:Boolean*/ {
         switch (type) {
-        case "Submorphs":
-            this.rawSubnodes = NodeList.become(element, type);
-    
-            NodeList.each(this.rawSubnodes, function(node) { 
-                var morph = importer.importFromNode(node);
-                this.submorphs.push(morph); 
-                morph.owner = this;
-            }.bind(this));
-            // console.log('recursed into children of %s and got', this,  this.submorphs);
-            return true;
         case "FocusHalo":
             this.rawNode.removeChild(element);
             return true;
@@ -2815,19 +2870,6 @@ Morph.addMethods({
     query: function(xpathQuery, defaultValue) {
         // run a query against this morph
         return Query.evaluate(xpathQuery, this.rawNode, defaultValue);
-    },
-
-    getNamedMorph: function(name) {
-        return this.submorphs.detect(function(m) { return m.rawNode.getAttributeNS(Namespace.LIVELY, "property") == name; });
-    },
-
-    setNamedMorph: function(name, morph) {
-        if (this[name]) {
-            console.warn('morph named %s already exists? %s', name, this[name]);
-        }
-        morph.rawNode.setAttributeNS(Namespace.LIVELY, "property", name); 
-        this[name] = morph;
-        return this.addMorph(morph);
     }
 
 });
@@ -3755,7 +3797,7 @@ Morph.addMethods( {
         var extent = pt(500, 300);
         var panel = new PanelMorph(extent);
         var r = new Rectangle(0, 0, extent.x, extent.y);
-        var pane = panel.setNamedMorph("pane", TextPane(r, xml.truncate(TextMorph.prototype.maxSafeSize)));
+        var pane = panel.pane = panel.addMorph(TextPane(r, xml.truncate(TextMorph.prototype.maxSafeSize)));
         var txtMorph = pane.innerMorph();
         txtMorph.xml = xml;
         this.world().addMorph(new WindowMorph(panel, "XML dump", this.bounds().topLeft().addPt(pt(5,0))));

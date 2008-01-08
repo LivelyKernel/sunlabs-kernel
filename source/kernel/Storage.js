@@ -262,10 +262,10 @@ var WebStore = Class.create(Model, {
             ['rightPane', ListPane, new Rectangle(0.5, 0, 0.5, 0.6)],
             ['bottomPane', TextPane, new Rectangle(0, 0.6, 1, 0.4)]
         ]);
-        var m = panel.getNamedMorph("leftPane");
+        var m = panel.leftPane;
         m.connectModel({model: this, getList: "getDirectoryList", setSelection: "setCurrentDirectory", 
             getSelection: "getCurrentDirectory"});
-        m = panel.getNamedMorph("rightPane");
+        m = panel.rightPane;
         m.connectModel({model: this, getList: "getCurrentDirectoryContents", setSelection: "setCurrentResource"});
         var oldpress = m.innerMorph().onKeyPress;
         m.innerMorph().onKeyPress = function(evt) {
@@ -278,7 +278,7 @@ var WebStore = Class.create(Model, {
             } else oldpress.call(this, evt);
         };
 
-        m = panel.getNamedMorph("bottomPane");
+        m = panel.bottomPane;
         m.connectModel({model: this, getText: "getCurrentResourceContents", setText: "setCurrentResourceContents"});
 
         var model = this;

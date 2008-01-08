@@ -136,9 +136,9 @@ Morph.subclass(Global, "ClockMorph", {
             this.addMorph(label);
         }
     
-        this.setNamedMorph("hours", Morph.makeLine([pt(0,0),pt(0,-radius*0.5)],4,Color.blue));
-        this.setNamedMorph("minutes", Morph.makeLine([pt(0,0),pt(0,-radius*0.7)],3,Color.blue));
-        this.setNamedMorph("seconds", Morph.makeLine([pt(0,0),pt(0,-radius*0.75)],2,Color.red));
+        this.hours = this.addMorph(Morph.makeLine([pt(0,0),pt(0,-radius*0.5)],4,Color.blue));
+        this.minutes = this.addMorph(Morph.makeLine([pt(0,0),pt(0,-radius*0.7)],3,Color.blue));
+        this.seconds = this.addMorph(Morph.makeLine([pt(0,0),pt(0,-radius*0.75)],2,Color.red));
     
         this.setHands();
         this.changed(); 
@@ -158,9 +158,9 @@ Morph.subclass(Global, "ClockMorph", {
         var second = currentDate.getSeconds();
         var minute = currentDate.getMinutes() + second/60;
         var hour = currentDate.getHours() + minute/60;
-        this.getNamedMorph('hours').setRotation(hour/12*2*Math.PI);
-        this.getNamedMorph('minutes').setRotation(minute/60*2*Math.PI);
-        this.getNamedMorph('seconds').setRotation(second/60*2*Math.PI); 
+        this.hours.setRotation(hour/12*2*Math.PI);
+        this.minutes.setRotation(minute/60*2*Math.PI);
+        this.seconds.setRotation(second/60*2*Math.PI); 
     },
     
 });
@@ -2496,6 +2496,7 @@ StockWidget = Class.create(Model, {
     openIn: function(world, location) {
         var view = this.buildView((pt(580, 460)));
         this.windowMorph = new WindowMorph(view, 'Stock Widget');
+	
         world.addMorphAt(this.windowMorph, location);
         this.setStockIndex('DOW JONES');
         return view;
@@ -2560,12 +2561,13 @@ StockWidget = Class.create(Model, {
 
     buildView: function(extent) {
         var panel = new PanelMorph(extent);
-        
+	
         // panel.setFill(StipplePattern.create(Color.primary.blue.lighter(), 1, Color.gray.lighter(), 1));
         panel.setFill(new LinearGradient(Color.white, Color.primary.blue.lighter(), LinearGradient.EastWest));
+
         panel.setBorderWidth(2);
+
         //panel.setBorderColor(Color.blue);
-        //var url = "http://www.nasdaq.com/aspxcontent/NasdaqRSS.aspx?data=quotes&symbol=stock"
 
         // Marketwatch/Bigcharts logo
         var m = panel.addMorph(new ImageMorph(new Rectangle(20, 10, 135, 68), "http://b.mktw.net/images/logo/frontpage.gif" ));
@@ -2575,20 +2577,21 @@ StockWidget = Class.create(Model, {
         panel.leftChartImage = image;
         m = panel.addMorph(image);
         m.setFill(Color.white);
-        
+
         // NASDAQ chart
         image = new ImageMorph(new Rectangle(360, 10, 175, 160), "http://bigcharts.marketwatch.com/charts/gqplus/fpNASDAQ-narrow.gqplus?167");
         panel.rightChartImage = image;
         m = panel.addMorph(image);
         m.setFill(Color.white);
         // m.connectModel({model: this, getURL: "getIndexChartURL"});
-
+	
         // Newsfeed selector
         m = panel.addMorph(new CheapListMorph(new Rectangle(20, 180, 90, 20), this.config.keys()));
         m.connectModel({model: this, getSelection: "getStockIndex", setSelection: "setStockIndex"});
 
         // Newsfeed panel
         m = panel.addMorph(ListPane(new Rectangle(160, 180, 410, 150)));
+	
         m.connectModel({model: this, getList: "getNewsHeaders"});
 
         // Company-specific stock quotes
@@ -2600,7 +2603,7 @@ StockWidget = Class.create(Model, {
         m.connectModel({model: this, getSelection: "getCompany", setSelection: "setCompany"});
         this.setCompany("JAVAD");
         var model = this;
-        
+	
         panel.refresh = function() {
            // console.log("Refreshing charts...");
             this.leftChartImage.reload(); 
@@ -2612,7 +2615,6 @@ StockWidget = Class.create(Model, {
             console.log('shutting down the stock widget');
             model.timer && window.clearInterval(model.timer);
         }
-        
         return panel;
     },
 

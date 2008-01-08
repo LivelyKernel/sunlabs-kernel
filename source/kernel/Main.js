@@ -105,7 +105,7 @@ function populateWorldWithExamples(world) {
         var panel = stockWidget.openIn(world, pt(350, 500));
         stockWidget.startSteppingRefreshCharts(panel);
     }
-
+    
     if (Config.show3DLogo) world.addMorph(new WindowMorph(new apps.Sun3DMorph(pt(570, 100).extent(pt(200, 200))), 'Sun 3D Logo'));
 
     if (Config.showTester) new WidgetTester().openIn(world, pt(835, 450));

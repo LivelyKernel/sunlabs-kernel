@@ -386,8 +386,7 @@ var TitleBarMorph = (function() {
         var cell = new Rectangle(0, 0, barHeight, barHeight);
         var closeButton = new WindowControlMorph(cell, controlSpacing, Color.primary.orange, windowMorph, 
             function() { this.initiateShutdown(); }, "Close");
-        this.setNamedMorph('closeButton', closeButton);
-
+        this.closeButton =  this.addMorph(closeButton);
         // FIXME this should be simpler
         // var sign = NodeFactory.create("use").withHref("#CloseIcon");
 
@@ -397,12 +396,12 @@ var TitleBarMorph = (function() {
         cell = cell.translatedBy(pt(barHeight - controlSpacing, 0));
         var menuButton = new WindowControlMorph(cell, controlSpacing, Color.primary.blue, windowMorph, 
             function(evt) { windowMorph.showTargetMorphMenu(evt); }, "Menu");
-        this.setNamedMorph('menuButton', menuButton);
+        this.menuButton = this.addMorph(menuButton);
 
         cell = cell.translatedBy(pt(barHeight - controlSpacing, 0));
         var collapseButton = new WindowControlMorph(cell, controlSpacing, Color.primary.yellow, windowMorph, 
             function() { this.toggleCollapse(); }, "Collapse");
-        this.setNamedMorph('collapseButton', collapseButton);
+        this.collapseButton = this.addMorph(collapseButton);
 
         // var font = Font.forFamily(TextMorph.prototype.fontFamily, TextMorph.prototype.fontSize);
 
@@ -417,17 +416,13 @@ var TitleBarMorph = (function() {
 
         label.align(label.bounds().topCenter(), this.shape.bounds().topCenter().addXY(0,1));
         label.ignoreEvents();
-        this.setNamedMorph('label', label);
+        this.label = this.addMorph(label);
 
         return this;
     },
 
     restorePersistentState: function($super, importer) {
         $super(importer);
-        this.closeButton = this.getNamedMorph('closeButton');
-        this.menuButton = this.getNamedMorph('menuButton');
-        this.collapseButton = this.getNamedMorph('collapseButton');
-        this.label = this.getNamedMorph('label');
         if (Visual.prototype.getType.call(this.rawNode.parentNode) == "WindowMorph") {
             this.closeButton.target = this.menuButton.target = this.collapseButton.target = this.rawNode.parentNode;
         }
@@ -600,8 +595,8 @@ var WindowMorph = Morph.subclass("WindowMorph", {
 
         bounds.height += titleHeight;
         $super(location ? rect(location, bounds.extent()) : bounds, 'rect');
-        this.setNamedMorph("targetMorph", targetMorph);
-        this.setNamedMorph("titleBar", titleBar);
+        this.targetMorph = this.addMorph(targetMorph);
+        this.titleBar =  this.addMorph(titleBar);
         this.contentOffset = pt(0, titleHeight);
         targetMorph.setPosition(this.contentOffset);
         this.linkToStyles(['window']);
@@ -610,14 +605,14 @@ var WindowMorph = Morph.subclass("WindowMorph", {
     },
 
     toString: function($super) {
-        var label = this.titleBar && this.titleBar.getNamedMorph("label");
+        var label = this.titleBar && this.titleBar.label;
         return $super() + (label ? ": " + label.textString : ""); 
     },
 
     restorePersistentState: function($super, importer) {
         $super(importer);
-        this.targetMorph = this.getNamedMorph('targetMorph');
-        this.titleBar = this.getNamedMorph('titleBar');
+        this.targetMorph = this.targetMorph;
+        this.titleBar = this.titleBar;
         this.contentOffset = pt(0, this.titleBar.bounds().height);
     },
     
@@ -1198,7 +1193,7 @@ Object.extend(PanelMorph, {
             var paneName = spec[0];
             var paneConstructor = spec[1];
             var paneRect = pt(0,0).extent(extent).scaleByRect(spec[2]);
-            panel.setNamedMorph(paneName, new paneConstructor(paneRect));
+            panel[paneName] = panel.addMorph(new paneConstructor(paneRect));
         });
 
         return panel;
@@ -1536,7 +1531,7 @@ var SliderMorph = Morph.subclass("SliderMorph", {
         this.scale = (scaleIfAny == null) ? 1.0 : scaleIfAny;
         var slider = new Morph(new Rectangle(0, 0, 8, 8), "rect");
         slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});
-        this.setNamedMorph("slider", slider);
+        this.slider = this.addMorph(slider);
         // this.linkToStyles(['slider']);
         this.adjustForNewBounds(); 
         return this;
@@ -1550,7 +1545,7 @@ var SliderMorph = Morph.subclass("SliderMorph", {
 
     restorePersistentState: function($super, importer) {
         $super(importer);
-        this.slider = this.getNamedMorph('slider');
+        this.slider = this.slider;
         console.log("SliderMorph restored slider %s", this.slider);
         if (!this.slider) {
             console.warn('no slider in %s, %s', this, this.textContent);
@@ -1721,19 +1716,19 @@ var ScrollPane = Morph.subclass("ScrollPane", {
 
     initialize: function($super, morphToClip, initialBounds) {
         $super(initialBounds, "rect");
-
+	
         var bnds = this.shape.bounds();
         var clipR = bnds.withWidth(bnds.width - this.scrollBarWidth+1).insetBy(1);
         morphToClip.shape.setBounds(clipR); // FIXME what if the targetmorph should be bigger than the clipmorph?
         // Make a clipMorph with the content (morphToClip) embedded in it
-        var clipMorph = this.setNamedMorph('clipMorph', new ClipMorph(clipR));    
+        var clipMorph = this.clipMorph = this.addMorph(new ClipMorph(clipR));    
         clipMorph.shape.setFill(morphToClip.shape.getFill());
         morphToClip.setBorderWidth(0);
         morphToClip.setPosition(clipR.topLeft());
         clipMorph.addMorph(morphToClip);
     
         // Add a scrollbar
-        var scrollBar = this.setNamedMorph("scrollBar", new SliderMorph(bnds.withTopLeft(clipR.topRight())));
+        var scrollBar = this.scrollBar = this.addMorph(new SliderMorph(bnds.withTopLeft(clipR.topRight())));
         scrollBar.connectModel({model: this, getValue: "getScrollPosition", setValue: "setScrollPosition", 
                                 getExtent: "getVisibleExtent"});
 

@@ -68,11 +68,11 @@ SimpleBrowser = Class.create(Model, {
             ['rightPane', ListPane, new Rectangle(0.5, 0, 0.5, 0.6)],
             ['bottomPane', TextPane, new Rectangle(0, 0.6, 1, 0.4)]
         ]);
-        var m = panel.getNamedMorph('leftPane');
+        var m = panel.leftPane;
         m.connectModel({model: this, getList: "getClassList", setSelection: "setClassName"});
-        m = panel.getNamedMorph('rightPane');
+        m = panel.rightPane;
         m.connectModel({model: this, getList: "getMethodList", setSelection: "setMethodName"});
-        m = panel.getNamedMorph('bottomPane');
+        m = panel.bottomPane;
         m.connectModel({model: this, getText: "getMethodString", setText: "setMethodString"});
 
         var thisModel = this;
@@ -130,7 +130,7 @@ SimpleInspector = Class.create(Model, {
         world.addMorph(window);
         this.changed('getPropList');
         // DI: experimental continuous update feature.  It works, but not removed upon close
-        // var rightPane = window.targetMorph.getNamedMorph('rightPane').innerMorph();
+        // var rightPane = window.targetMorph.rightPane.innerMorph();
         // rightPane.startStepping(1000, 'updateView', 'getPropText');
     },
 
@@ -142,11 +142,11 @@ SimpleInspector = Class.create(Model, {
             ['rightPane', TextPane, new Rectangle(0.5, 0, 0.5, 0.6)],
             ['bottomPane', TextPane, new Rectangle(0, 0.6, 1, 0.4)]
         ]);
-        var m = panel.getNamedMorph('leftPane');
+        var m = panel.leftPane;
         m.connectModel({model: this, getList: "getPropList", setSelection: "setPropName"});
-        m = panel.getNamedMorph('rightPane');
+        m = panel.rightPane;
         m.connectModel({model: this, getText: "getPropText", setText: "setPropText", doitContext: "contextForEval"});
-        m = panel.getNamedMorph('bottomPane');
+        m = panel.bottomPane;
         m.connectModel({model: this, doitContext: "contextForEval"});
         m.innerMorph().setTextString("doits here have this === inspectee");
 
