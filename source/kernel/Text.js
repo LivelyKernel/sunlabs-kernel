@@ -193,9 +193,10 @@ Object.subclass("TextWord", {
     // get the bounds of the character pointed to by stringIndex
     // overriden by svgtext-compat
     getBounds: function(stringIndex) { 
+	var result = this.rawNode.getExtentOfChar(stringIndex);
 	console.log("inspecting " + stringIndex + " in " + this.rawNode.textContent 
-		    + " parent " + this.rawNode.parentNode);
-        return this.rawNode.getExtentOfChar(stringIndex);
+		    + " parent " + this.rawNode.parentNode + " result " + result);
+        return result;
     },
 
     // keep a copy of the substring we were working on (do we really need this? - kam)

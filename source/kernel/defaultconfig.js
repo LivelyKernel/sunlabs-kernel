@@ -36,7 +36,7 @@ var Config = {
     showNetworkExamples: true,
 
     // Ignore function logging through the prototype.js wrap mechanism
-    ignoreAdvice: false,
+    ignoreAdvice: false
 
 }
 

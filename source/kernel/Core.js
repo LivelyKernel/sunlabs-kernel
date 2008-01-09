@@ -930,8 +930,7 @@ Object.subclass("Gradient", {
 
     copyFrom: function(other) {
 	this.rawNode = other.rawNode.cloneNode(true);
-    },
-
+    }
     
 });
 

@@ -161,7 +161,7 @@ Morph.subclass(Global, "ClockMorph", {
         this.hours.setRotation(hour/12*2*Math.PI);
         this.minutes.setRotation(minute/60*2*Math.PI);
         this.seconds.setRotation(second/60*2*Math.PI); 
-    },
+    }
     
 });
 
