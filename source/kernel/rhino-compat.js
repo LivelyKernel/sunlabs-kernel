@@ -1,5 +1,5 @@
 /*
- * Copyright © 2006-2007 Sun Microsystems, Inc.
+ * Copyright © 2006-2008 Sun Microsystems, Inc.
  * All rights reserved.  Use is subject to license terms.
  * This distribution may include materials developed by third parties.
  *  
