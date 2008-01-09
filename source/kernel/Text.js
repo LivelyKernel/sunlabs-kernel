@@ -12,9 +12,7 @@
  * Text.js.  Text-related functionality.
  */
 
-
 (function(scope) {
-
 
 Object.subclass('Font', {
 
@@ -26,7 +24,7 @@ Object.subclass('Font', {
 
     // svgtext-compat overrides the following function
     computeExtents: function(family, size) {
-	return [];
+        return [];
     },
 
     getSize: function() {
@@ -64,24 +62,25 @@ Object.subclass('Font', {
 });
 
 Object.extend(Font, {
+
     cache: new Hash(),
     
     forFamily: function(familyName, size) {
-	var key  = familyName + ":" + size;
-	var entry = Font.cache.get(key);
-	if (!entry) {
+        var key  = familyName + ":" + size;
+        var entry = Font.cache.get(key);
+        if (!entry) {
             try {
-		entry = new Font(familyName, size);
+                entry = new Font(familyName, size);
             } catch(er) {
-		console.log("%s when looking for %s:%s", er, familyName, size);
-		return null;
-        }
+                console.log("%s when looking for %s:%s", er, familyName, size);
+                return null;
+            }
             Font.cache.set(key, entry);
-	}
-	return entry;
+        }
+        return entry;
     }
-});
 
+});
 
 /**
  * @class TextWord
@@ -110,7 +109,6 @@ Object.subclass("TextWord", {
         return this;
     },
 
-
     naiveGetX: function() {
         // not this won't work if the attribute is not explicitly set etc
         return parseInt(this.rawNode.getAttribute("x"));
@@ -120,7 +118,6 @@ Object.subclass("TextWord", {
         // not this won't work if the attribute is not explicitly set etc
         return parseInt(this.rawNode.getAttribute("y"));
     },
-
 
     setX: function(newValue /*:float*/) {
         var oldValue = this.naiveGetX();
@@ -145,7 +142,6 @@ Object.subclass("TextWord", {
         }
         return null; // ???
     },
-
 
     getFontSize: function() {
         for (var node = this.rawNode; node && (/text|tspan/).test(node.tagName); node = node.parentNode) {
@@ -193,18 +189,19 @@ Object.subclass("TextWord", {
     // get the bounds of the character pointed to by stringIndex
     // overriden by svgtext-compat
     getBounds: function(stringIndex) { 
-	var result = this.rawNode.getExtentOfChar(stringIndex);
-	console.log("inspecting " + stringIndex + " in " + this.rawNode.textContent 
-		    + " parent " + this.rawNode.parentNode + " result " + result);
+        var result = this.rawNode.getExtentOfChar(stringIndex);
+        console.log("inspecting " + stringIndex + " in " + this.rawNode.textContent 
+            + " parent " + this.rawNode.parentNode + " result " + result);
         return result;
     },
 
     // keep a copy of the substring we were working on (do we really need this? - kam)
     adjustAfterComposition: function() {
-	while (this.rawNode.firstChild)
-	    this.rawNode.removeChild(this.rawNode.firstChild);
-	this.rawNode.appendChild(NodeFactory.createText(this.textString.substring(this.startIndex, 
-										  this.stopIndex + 1))); // XXX
+        while (this.rawNode.firstChild) {
+            this.rawNode.removeChild(this.rawNode.firstChild);
+        }
+        this.rawNode.appendChild(NodeFactory.createText(this.textString.substring(this.startIndex, 
+                                                        this.stopIndex + 1))); // XXX
     },
 
     // string representation
