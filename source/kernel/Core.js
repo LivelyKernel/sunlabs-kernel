@@ -23,6 +23,7 @@ var Canvas = document.getElementById("canvas"); // singleton for now
 
 window.parent.console.platformConsole = console;
 var console = window.parent.console;
+
 window.onerror = function(message, url, code) {
     console.log('in %s: %s, code %s', url, message, code);
 };
@@ -102,6 +103,10 @@ var NodeFactory = {
     create: function(name, attributes) {
         return this.createNS(Namespace.SVG, name, attributes);
         //return this.createNS(null, name, attributes);
+    },
+
+    createText: function(string) {
+	return document.createTextNode(string);
     }
     
 };

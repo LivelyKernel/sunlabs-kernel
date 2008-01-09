@@ -24,7 +24,7 @@ Object.subclass('Font', {
         this.extents = this.computeExtents(family, size);
     },
 
-    // svgtext-compat overrides 
+    // svgtext-compat overrides the following function
     computeExtents: function(family, size) {
 	return [];
     },
@@ -64,11 +64,11 @@ Object.subclass('Font', {
 });
 
 Object.extend(Font, {
-    cache: {},
+    cache: new Hash(),
     
     forFamily: function(familyName, size) {
 	var key  = familyName + ":" + size;
-	var entry = Font.cache[key];
+	var entry = Font.cache.get(key);
 	if (!entry) {
             try {
 		entry = new Font(familyName, size);
@@ -76,7 +76,7 @@ Object.extend(Font, {
 		console.log("%s when looking for %s:%s", er, familyName, size);
 		return null;
         }
-            Font.cache[key] = entry;
+            Font.cache.set(key, entry);
 	}
 	return entry;
     }
@@ -102,7 +102,7 @@ Object.subclass("TextWord", {
         this.startIndex = startIndex;
         this.stopIndex = textString.length - 1;
         this.topLeft = topLeft;
-        this.rawNode.textContent = textString.substring(this.startIndex);
+        this.rawNode.appendChild(NodeFactory.createText(textString.substring(this.startIndex)));
         this.fontInfo = font;
         this.setX(topLeft.x);
         this.setY(topLeft.y + font.getSize());
@@ -155,13 +155,6 @@ Object.subclass("TextWord", {
         return 0; // Should we return a default size?
     },
     
-    // overriden by svgtext-compat
-    getExtentOfChar: function(position) {
-	console.log("inspecting " + position + " in " + this.rawNode.textContent + " func " + this.rawNode.getExtentOfChar);
-	var r = this.rawNode.getExtentOfChar(position); // an svg rectangle
-	return new Rectangle(r.x, r.y, r.width, r.height);
-    },
-
     // compose a word within compositionWidth, stopping if the width or string width is exceeded
     // compositionWidth is in the same units as character metrics
     compose: function(compositionWidth, length) {
@@ -198,19 +191,19 @@ Object.subclass("TextWord", {
     },
     
     // get the bounds of the character pointed to by stringIndex
-    //   return a (0,0),0x0 point if there are no bounds
+    // overriden by svgtext-compat
     getBounds: function(stringIndex) { 
-        var result = this.getExtentOfChar(stringIndex);
-        if (result)
-            return result;
-        console.warn('TextWord.getBounds(%s) undefined, string "%s" extents %s', 
-                     elementIndex, this.rawNode.textContent, this.extentTableToString());
-        return pt(0,0).asRectangle();
+	console.log("inspecting " + stringIndex + " in " + this.rawNode.textContent 
+		    + " parent " + this.rawNode.parentNode);
+        return this.rawNode.getExtentOfChar(stringIndex);
     },
 
     // keep a copy of the substring we were working on (do we really need this? - kam)
     adjustAfterComposition: function() {
-        this.rawNode.textContent = this.textString.substring(this.startIndex, this.stopIndex + 1); // XXX
+	while (this.rawNode.firstChild)
+	    this.rawNode.removeChild(this.rawNode.firstChild);
+	this.rawNode.appendChild(NodeFactory.createText(this.textString.substring(this.startIndex, 
+										  this.stopIndex + 1))); // XXX
     },
 
     // string representation
@@ -219,7 +212,7 @@ Object.subclass("TextWord", {
             " substr: (" + this.textString.substring(this.startIndex, this.stopIndex) + ")" +
             " startIndex: " + this.startIndex +
             " stopIndex: " + this.stopIndex +
-            " topLeft: " + Object.inspect(this.topLeft) +
+            " topLeft: " + this.topLeft +
             " textContent: " + this.rawNode.textContent +
             " didLineBreak: " + this.didLineBreak;
     },
@@ -239,7 +232,7 @@ Object.subclass("TextWord", {
  * @class WordChunk
  * This 'class' represents a chunk of text which might be printable or might be whitespace
  */ 
-WordChunk = Class.create({
+Object.subclass('WordChunk', {
 
     isWhite: false,
     isNewLine: false,
@@ -342,7 +335,7 @@ WordChunk = Class.create({
  * @class TextLine
  * This 'class' renders lines composed of words and whitespace
  */ 
-var TextLine = Class.create({
+Object.subclass('TextLine', {
 
     // create a new line
     initialize: function(textString, startIndex, topLeft, font, chunkSkeleton) {
@@ -1649,7 +1642,7 @@ Object.extend(TextMorph, {
  * to a string using toString(), and from a string using eval()
  */ 
 
-PrintMorph = TextMorph.subclass("PrintMorph", {
+TextMorph.subclass("PrintMorph", {
 
     updateView: function(aspect, controller) {
         var p = this.modelPlug;
@@ -1669,7 +1662,7 @@ PrintMorph = TextMorph.subclass("PrintMorph", {
 });
 
 // A class for testing TextMorph behavior
-var TestTextMorph = Class.create(TextMorph, {
+Object.subclass('TestTextMorph', {
     
     // All this does is create a rectangle at mouseDown, and then
     // while the mouse moves, it prints the index of the nearest character,
