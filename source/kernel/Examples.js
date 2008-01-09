@@ -13,9 +13,10 @@
  * that will be included in the system when it starts. 
  */
 
-
 var apps = {};
+
 (function(scope) {
+
 // ===========================================================================
 // Widget (panel) Tester Demo
 // ===========================================================================
@@ -2496,7 +2497,7 @@ StockWidget = Class.create(Model, {
     openIn: function(world, location) {
         var view = this.buildView((pt(580, 460)));
         this.windowMorph = new WindowMorph(view, 'Stock Widget');
-	
+
         world.addMorphAt(this.windowMorph, location);
         this.setStockIndex('DOW JONES');
         return view;
@@ -2561,7 +2562,7 @@ StockWidget = Class.create(Model, {
 
     buildView: function(extent) {
         var panel = new PanelMorph(extent);
-	
+
         // panel.setFill(StipplePattern.create(Color.primary.blue.lighter(), 1, Color.gray.lighter(), 1));
         panel.setFill(new LinearGradient(Color.white, Color.primary.blue.lighter(), LinearGradient.EastWest));
 
@@ -2584,14 +2585,14 @@ StockWidget = Class.create(Model, {
         m = panel.addMorph(image);
         m.setFill(Color.white);
         // m.connectModel({model: this, getURL: "getIndexChartURL"});
-	
+
         // Newsfeed selector
         m = panel.addMorph(new CheapListMorph(new Rectangle(20, 180, 90, 20), this.config.keys()));
         m.connectModel({model: this, getSelection: "getStockIndex", setSelection: "setStockIndex"});
 
         // Newsfeed panel
         m = panel.addMorph(ListPane(new Rectangle(160, 180, 410, 150)));
-	
+
         m.connectModel({model: this, getList: "getNewsHeaders"});
 
         // Company-specific stock quotes
@@ -2603,7 +2604,7 @@ StockWidget = Class.create(Model, {
         m.connectModel({model: this, getSelection: "getCompany", setSelection: "setCompany"});
         this.setCompany("JAVA");
         var model = this;
-	
+
         panel.refresh = function() {
            // console.log("Refreshing charts...");
             this.leftChartImage.reload(); 
@@ -4745,21 +4746,19 @@ Morph.subclass(scope, "EngineMorph", {
 // ===========================================================================
 
 /*
- * Animation Morph is the animation "engine" that loads the frames for the animation
+ * AnimMorph is the animation "engine" that loads the frames for the animation
  */
   
 var AnimMorph = Morph.subclass("AnimMorph", {
     
     initialize: function($super, rect) {  
-
-//	    var rect = new Rectangle(0, 0, 320, 240); 
         $super(rect, "rect");
         this.dim = rect.extent();
-	},
+    },
 
-	startup: function(frameURL, numberOfFrames, frameType) {
+    startup: function(frameURL, numberOfFrames, frameType) {
 
-		this.setFill(Color.black);
+        this.setFill(Color.black);
 
         this.play = false;
         this.data = new Array();
@@ -4849,7 +4848,6 @@ var AnimMorph = Morph.subclass("AnimMorph", {
     },
     
     onMouseDown: function(evt) {
-
         if ( this.play ) {
             this.play = false;
             this.addMorph(this.status);
@@ -4865,13 +4863,12 @@ var AnimMorph = Morph.subclass("AnimMorph", {
 var PlayerMorph = Morph.subclass("PlayerMorph",  {
 
     initialize: function($super) {
-
         var rect = new Rectangle(0, 0, 330, 260);
         $super(rect, "rect");
         this.setFill(new LinearGradient(Color.white, Color.primary.blue, LinearGradient.NorthSouth));
 
         this.animation = new AnimMorph(rect);
-		this.animation.startup("Resources/Anim/Frame", 469, ".jpg"); 
+        this.animation.startup("Resources/Anim/Frame", 469, ".jpg"); 
 
         this.addMorph(this.animation);
     },
@@ -4885,15 +4882,14 @@ var PlayerMorph = Morph.subclass("PlayerMorph",  {
     },
     
     openIn: function(world, location) {
-
         world.addMorphAt(new WindowMorph(this, 'AnimationMorph'), location);
-
         this.startStepping();
     },
     
     startStepping: function() {
         this.animation.startStepping(100,"nextFrame"); 
     }    
+
 });
 
 }).logCompletion("Examples.js")(apps);
