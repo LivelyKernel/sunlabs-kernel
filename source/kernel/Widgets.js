@@ -455,7 +455,6 @@ var TitleBarMorph = (function() {
  */
 var TitleTabMorph = Morph.subclass("TitleTabMorph", {
     
-    
     initialize: function($super, headline, windowWidth, windowMorph, isExternal) {
         this.windowMorph = windowMorph;
         var  bh = 0;//this.barHeight;
@@ -1527,7 +1526,7 @@ var SliderMorph = Morph.subclass("SliderMorph", {
         // this default self connection may get overwritten by, eg, connectModel()...
         this.modelPlug = model.makePlug();
         this.addNonMorph(this.modelPlug.rawNode);
-	
+
         this.scale = (scaleIfAny == null) ? 1.0 : scaleIfAny;
         var slider = new Morph(new Rectangle(0, 0, 8, 8), "rect");
         slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});
@@ -1682,7 +1681,7 @@ var SliderMorph = Morph.subclass("SliderMorph", {
     },
 
     onKeyPress: function(evt) {
-	console.log("keypress %s", evt);
+        console.log("keypress %s", evt);
         var delta = 0;
         if (this.vertical()) {
             switch (evt.getKeyCode()) {
@@ -1716,7 +1715,7 @@ var ScrollPane = Morph.subclass("ScrollPane", {
 
     initialize: function($super, morphToClip, initialBounds) {
         $super(initialBounds, "rect");
-	
+
         var bnds = this.shape.bounds();
         var clipR = bnds.withWidth(bnds.width - this.scrollBarWidth+1).insetBy(1);
         morphToClip.shape.setBounds(clipR); // FIXME what if the targetmorph should be bigger than the clipmorph?
