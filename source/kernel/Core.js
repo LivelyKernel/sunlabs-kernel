@@ -106,7 +106,7 @@ var NodeFactory = {
     },
 
     createText: function(string) {
-	return document.createTextNode(string);
+        return document.createTextNode(string);
     }
     
 };
@@ -219,89 +219,92 @@ Object.extend(Function.prototype, {
 
     // modified Class.Methods.addMethods from prototype.js
     addMethods: function(source) {
-	var ancestor = this.superclass && this.superclass.prototype;
-	
-	for (var property in source) {
-	    var value = source[property];
-	    if (ancestor && Object.isFunction(value) &&
-		value.argumentNames().first() == "$super") {
-		var method = value;
-		var value = Object.extend((function(m) {
-		    return function() { 
-			try { 
-			    return ancestor[m].apply(this, arguments) 
-			} catch (e) { 
-			    console.log("problem with ancestor " + ancestor + "method " + m); 
-			    throw e;
-			} 
-		    };
-		})(property).wrap(method), {
-		    valueOf:  function() { return method },
-		    toString: function() { return method.toString() }
-		});
-		value.classAndMethodName = "superWrapper";
-	    }
-	    this.prototype[property] = value;
-	    if (Object.isFunction(value)) {
-		if (value.classAndMethodName && value.classAndMethodName != "superWrapper") {
-		    //
-		    console.log("class " + this.prototype.constructor.type 
-				+ " borrowed " + value.classAndMethodName);
-		}
-		value.classAndMethodName = this.prototype.constructor.type + "." + property;
-		if (!this.prototype.constructor.type)
-		    console.log("named " + value.classAndMethodName);
-	    }
-	}
-	
-	return this;
+        var ancestor = this.superclass && this.superclass.prototype;
+
+        for (var property in source) {
+            var value = source[property];
+            if (ancestor && Object.isFunction(value) &&
+                value.argumentNames().first() == "$super") {
+                var method = value;
+                var value = Object.extend((function(m) {
+                    return function() { 
+                        try { 
+                            return ancestor[m].apply(this, arguments) 
+                        } catch (e) { 
+                            console.log("problem with ancestor " + ancestor + "method " + m); 
+                            throw e;
+                        }
+                    };
+                })(property).wrap(method), {
+                    valueOf:  function() { return method },
+                    toString: function() { return method.toString() }
+                });
+                value.classAndMethodName = "superWrapper";
+            }
+
+            this.prototype[property] = value;
+            if (Object.isFunction(value)) {
+                if (value.classAndMethodName && value.classAndMethodName != "superWrapper") {
+                    console.log("class " + this.prototype.constructor.type 
+                        + " borrowed " + value.classAndMethodName);
+                }
+                value.classAndMethodName = this.prototype.constructor.type + "." + property;
+                if (!this.prototype.constructor.type) {
+                    console.log("named " + value.classAndMethodName);
+                }
+            }
+        }
+
+        return this;
     },
     
     subclass: function(/*,... */) {
-	var properties = $A(arguments);
-	var scope = Global;
-	if (typeof properties[0]  != 'string') { // primitive string required
-	    scope = properties.shift();
-	}
-	var name = properties.shift();
-	
-	function klass() {
-	    if (Global.Importer && (arguments[0] instanceof Importer)) { // check for the existence of Importer, which may not be defined very early on
-		this.deserialize.apply(this, arguments);
-	    } else if (arguments[0] === Cloner) {
-		this.copyFrom.call(this, arguments[1]);
-	    } else {
-		this.initialize.apply(this, arguments);
-	    }
-	}
-	
-	// Object.extend(klass, Class.Methods);
-	klass.superclass = this;
-	klass.subclasses = [];
-	
-	var subclass = function() { };
-	subclass.prototype = this.prototype;
-	klass.prototype = new subclass;
-	this.subclasses.push(klass);
+        var properties = $A(arguments);
+        var scope = Global;
+        if (typeof properties[0] != 'string') { // primitive string required
+            scope = properties.shift();
+        }
+        var name = properties.shift();
 
+        function klass() {
+            // check for the existence of Importer, which may not be defined very early on
+            if (Global.Importer && (arguments[0] instanceof Importer)) { 
+                this.deserialize.apply(this, arguments);
+            } else if (arguments[0] === Cloner) {
+                this.copyFrom.call(this, arguments[1]);
+            } else {
+                this.initialize.apply(this, arguments);
+            }
+        }
 
-	klass.prototype.constructor = klass;
-	// KP: .name would be better but js ignores .name on anonymous functions
-	klass.prototype.constructor.type = name;
-	klass.prototype.constructor.scope = scope;
-	
-	for (var i = 0; i < properties.length; i++) {
-	    klass.addMethods(properties[i] instanceof Function ? (properties[i])() : properties[i]);
-	}
-	
-	if (!klass.prototype.initialize)
-	    klass.prototype.initialize = Prototype.emptyFunction;
-	
-	scope[name] = klass;
-	return klass;
+        // Object.extend(klass, Class.Methods);
+        klass.superclass = this;
+        klass.subclasses = [];
+
+        var subclass = function() { };
+        subclass.prototype = this.prototype;
+        klass.prototype = new subclass;
+        this.subclasses.push(klass);
+
+        klass.prototype.constructor = klass;
+        // KP: .name would be better but js ignores .name on anonymous functions
+        klass.prototype.constructor.type = name;
+        klass.prototype.constructor.scope = scope;
+
+        for (var i = 0; i < properties.length; i++) {
+            klass.addMethods(properties[i] instanceof Function ? (properties[i])() : properties[i]);
+        }
+
+        if (!klass.prototype.initialize) {
+            klass.prototype.initialize = Prototype.emptyFunction;
+        }
+
+        scope[name] = klass;
+        return klass;
     }
     
 });
+
 Object.subclasses = [];
 
 Function.globalScope = window;
@@ -318,7 +321,7 @@ if (Prototype.Browser.WebKit) {
     Error.prototype.inspect = function() {
         return this.name + " in " + this.sourceURL + ":" + this.line + ": " + this.message;
     }
-} else if (!Prototype.Browser.Rhino) { // mozilla
+} else if (!Prototype.Browser.Rhino) { // Mozilla
     Error.prototype.inspect = function() {
         return this.name + " in " + this.fileName + ":" + this.lineNumber + ": " + this.message;
     }
@@ -327,8 +330,8 @@ if (Prototype.Browser.WebKit) {
 Object.extend(Function.prototype, {
     
     logErrors: function(prefix) {
-	if (Config.ignoreAdvice) 
-	    return this;
+        if (Config.ignoreAdvice) return this;
+
         var advice = function (proceed/*,args*/) {
             var args = $A(arguments); args.shift(); 
             try {
@@ -340,17 +343,18 @@ Object.extend(Function.prototype, {
                 throw er;
             }
         }
-	advice.classAndMethodName = "$logErrorsAdvice";
-	var result = this.wrap(advice);
-	result.originalMethod = this;
-	result.classAndMethodName = "$logErrorsWrapper";
-	return result;
+
+        advice.classAndMethodName = "$logErrorsAdvice";
+        var result = this.wrap(advice);
+        result.originalMethod = this;
+        result.classAndMethodName = "$logErrorsWrapper";
+        return result;
     },
 
     logCompletion: function(module) {
-	if (Config.ignoreAdvice) 
-	    return this;
-	var advice = function(proceed) {
+        if (Config.ignoreAdvice) return this;
+
+        var advice = function(proceed) {
             var args = $A(arguments); args.shift(); 
             try {
                 var result = proceed.apply(this, args);
@@ -362,17 +366,18 @@ Object.extend(Function.prototype, {
             console.log('completed %s', module);
             return result;
         }
-	advice.classAndMethodName = "$logCompletionAdvice::" + module;
-	
-	var result = this.wrap(advice);
-	result.classAndMethodName = "$logCompletionWrapper::" + module;
-	result.originalMethod = this;
-	return result;
+
+        advice.classAndMethodName = "$logCompletionAdvice::" + module;
+
+        var result = this.wrap(advice);
+        result.classAndMethodName = "$logCompletionWrapper::" + module;
+        result.originalMethod = this;
+        return result;
     },
 
     logCalls: function(name, isUrgent) {
-	if (Config.ignoreAdvice) 
-	    return this;
+        if (Config.ignoreAdvice) return this;
+
         var advice = function(proceed) {
             var args = $A(arguments); args.shift(); 
             var result = proceed.apply(this, args);
@@ -383,25 +388,25 @@ Object.extend(Function.prototype, {
             }
            return result;
         }
-	advice.classAndMethodName = "$logCallsAdvice::" + name;
-	
-	var result = this.wrap(advice);
-	result.originalMethod = this;
-	result.classAndMethodName = "$logCallsWrapper::" + name;
-	return result;
+
+        advice.classAndMethodName = "$logCallsAdvice::" + name;
+
+        var result = this.wrap(advice);
+        result.originalMethod = this;
+        result.classAndMethodName = "$logCallsWrapper::" + name;
+        return result;
     },
 
     traceCalls: function(stack) {
-	var advice = function(proceed) {
-	    var args = $A(arguments); args.shift();
-	    stack.push(args);
-	    var result = proceed.apply(this, args);
-	    stack.pop();
-	    return result;
-	};
-	return this.wrap(advice);
+        var advice = function(proceed) {
+            var args = $A(arguments); args.shift();
+            stack.push(args);
+            var result = proceed.apply(this, args);
+            stack.pop();
+           return result;
+        };
+        return this.wrap(advice);
     }
-
 
 });
 
@@ -929,7 +934,7 @@ Object.subclass("Gradient", {
     },
 
     copyFrom: function(other) {
-	this.rawNode = other.rawNode.cloneNode(true);
+        this.rawNode = other.rawNode.cloneNode(true);
     }
     
 });
@@ -942,11 +947,11 @@ Object.subclass("Gradient", {
 Gradient.subclass("LinearGradient", {
     
     initialize: function($super, stopColor1, stopColor2, vector) {
-	$super();
+        $super();
         vector = vector || LinearGradient.NorthSouth;
         this.rawNode = NodeFactory.create("linearGradient",
-					  {x1: vector.x, y1: vector.y, 
-					   x2: vector.maxX(), y2: vector.maxY()}); 
+                      {x1: vector.x, y1: vector.y, 
+                       x2: vector.maxX(), y2: vector.maxY()}); 
         this.addStop(0, stopColor1).addStop(1, stopColor2);
         return this;
     },
@@ -970,7 +975,7 @@ Object.extend(LinearGradient, {
 Gradient.subclass("RadialGradient", {
     
     initialize: function($super, stopColor1, stopColor2) {
-	$super();
+        $super();
         var c = pt(0.5, 0.5);
         var r = 0.4;
         this.rawNode = NodeFactory.create("radialGradient", {cx: c.x, cy: c.y, r: r});
@@ -1145,6 +1150,19 @@ Object.extend(CharSet, {
     
 });
 
+Object.subclass('CharacterInfo', {
+
+    initialize: function(width, height) {
+        this.width = width;
+        this.height = height;
+    },
+
+    toString: function() {
+        return this.width + "x" + this.height;
+    }
+
+});
+
 // ===========================================================================
 // Event handling foundations
 // ===========================================================================
@@ -1201,18 +1219,18 @@ var Event = (function() {
             this.preventDefault();
             this.stopPropagation();
         },
-	
-	isAltDown: function() {
-	    return this.rawEvent.altKey;
-	},
 
-	isShiftDown: function() {
-	    return this.rawEvent.shiftKey;
-	},
-	
-	isCmdDown: function() {
-	    return this.rawEvent.cmdKey;
-	},
+        isAltDown: function() {
+            return this.rawEvent.altKey;
+        },
+
+        isShiftDown: function() {
+            return this.rawEvent.shiftKey;
+        },
+
+        isCmdDown: function() {
+            return this.rawEvent.cmdKey;
+        },
 
         toString: function() {
             return this.type + "[" + this.rawEvent + (this.mousePoint ?  "@" + this.mousePoint : "") +  "]";
@@ -1223,7 +1241,7 @@ var Event = (function() {
             // if moving or releasing, priorPoint will get found by prior morph
             this.priorPoint = priorPoint; 
         },
-	
+
         getKeyCode: function() {
             // if (this.type != 'keypress')
             // return;
@@ -1242,7 +1260,7 @@ var Event = (function() {
             }
             return this.rawEvent.keyCode;
         },
-	
+
         capitalizedType: function() {
             return capitalizer.get(this.type) || this.type;
         }
@@ -1315,8 +1333,7 @@ Object.extend(window.parent, {
     onfocus: function(evt) { /*console.log('window got focus event %s', evt);*/ }
 });
 
-if (!Prototype.Browser.Rhino)
-Object.extend(document, {
+if (!Prototype.Browser.Rhino) Object.extend(document, {
     oncontextmenu: function(evt) { 
         var targetMorph = evt.target.parentNode; // target is probably shape (change me if pointer-events changes for shapes)
         if ((targetMorph instanceof Morph) && !(targetMorph instanceof WorldMorph)) {
@@ -1459,11 +1476,11 @@ Object.subclass('Visual', {
     },
 
     inspect: function() {
-	try {
+        try {
             return this.toString();
-	} catch (er) {
-	    return "{inspect error " + er + "}"
-	}
+        } catch (er) {
+            return "{inspect error " + er + "}"
+        }
     }
     
 });
@@ -1573,7 +1590,7 @@ Shape.subclass('RectShape', {
     },
 
     deserialize: function(importer, rawNode) {
-	this.rawNode = rawNode;
+        this.rawNode = rawNode;
     },
 
     copy: function() {
@@ -1658,7 +1675,7 @@ Shape.subclass('EllipseShape', {
     },
 
     deserialize: function(importer, rawNode) {
-	this.rawNode = rawNode;
+        this.rawNode = rawNode;
     },
     
     copy: function() {
@@ -1666,7 +1683,7 @@ Shape.subclass('EllipseShape', {
     },
 
     setBounds: function(r) {
-	var n = this.rawNode;
+        var n = this.rawNode;
         n.setAttributeNS(null, "cx", r.x + r.width/2);
         n.setAttributeNS(null, "cy", r.y + r.height/2);
         n.setAttributeNS(null, "rx", r.width/2);
@@ -1717,24 +1734,21 @@ Shape.subclass('PolygonShape', {
         this.rawNode = NodeFactory.create("polygon");
         this.setVertices(vertlist);
         $super(color, borderWidth, borderColor);
-	if (this.shouldCacheVertices) 
-	    this.cachedVertices = null;
+        if (this.shouldCacheVertices) this.cachedVertices = null;
         return this;
     },
 
     deserialize: function(importer, rawNode) {
-	this.rawNode = rawNode;
-	if (this.shouldCacheVertices) 
-	    this.cachedVertices = this.vertices();
+        this.rawNode = rawNode;
+        if (this.shouldCacheVertices) this.cachedVertices = this.vertices();
     },
-
 
     copy: function() {
         return new PolygonShape(this.vertices(), this.getFill(), this.getStrokeWidth(), this.getStroke());
     },
     
     setVertices: function(vertlist) {
-	///console.log("vertlist is " + vertlist + " for " + Function.showStack());
+        ///console.log("vertlist is " + vertlist + " for " + Function.showStack());
         if (this.rawNode.points) {
             this.rawNode.points.clear();
         }
@@ -1896,7 +1910,7 @@ Shape.subclass('PolylineShape', {
     },
 
     deserialize: function(importer, rawNode) {
-	this.rawNode = rawNode;
+        this.rawNode = rawNode;
     },
     
     copy: function() {
@@ -2107,7 +2121,7 @@ MouseHandlerForDragging = Class.create({
 
 var Cloner = {
     toString: function() { 
-	return "Cloner"; 
+        return "Cloner"; 
     }
 }; // a marker for cloning
 
@@ -2125,37 +2139,40 @@ var Exporter = Class.create({
     serialize: function() {
         // model is inserted as part of the root morph.
         var modelNode = (this.rootMorph.getModel() || { toMarkup: function() { return null; }}).toMarkup();
-	var fieldDescs = [];
+        var fieldDescs = [];
 
-	// introspect all the fields
-	this.rootMorph.withAllSubmorphsDo(function() {
-	    for (var prop in this) {
-		if (prop == 'owner') // we'll deal manually
-		    continue;
-		var m = this[prop];
-		if (m instanceof Morph) {
-		    var desc = NodeFactory.createNS(Namespace.LIVELY, "field");
-		    desc.setAttributeNS(Namespace.LIVELY, "name", prop);
-		    desc.setAttributeNS(Namespace.LIVELY, "ref", m.id);
-		    this.addNonMorph(desc);
-		    fieldDescs.push(desc);
-		}
-	    }
-	});
+        // introspect all the fields
+        this.rootMorph.withAllSubmorphsDo(function() {
+            for (var prop in this) {
+                if (prop == 'owner') // we'll deal manually
+                    continue;
+                var m = this[prop];
+                if (m instanceof Morph) {
+                    var desc = NodeFactory.createNS(Namespace.LIVELY, "field");
+                    desc.setAttributeNS(Namespace.LIVELY, "name", prop);
+                    desc.setAttributeNS(Namespace.LIVELY, "ref", m.id);
+                    this.addNonMorph(desc);
+                    fieldDescs.push(desc);
+                }
+            }
+        });
     
         if (modelNode) {
             try {
                 this.rootMorph.addNonMorph(modelNode);
             } catch (er) { console.log("got problem, rawNode %s, modelNode %s", this.rootMorph.rawNode, modelNode); }
         }
+
         var result = Exporter.nodeToString(this.rootMorph.rawNode);
         if (modelNode) {
             this.rootMorph.rawNode.removeChild(modelNode);
         }
-	// now remove all the serialization-related nodes
-	for (var i = 0; i < fieldDescs.length; i++) {
-	    fieldDescs[i].parentNode.removeChild(fieldDescs[i]);
-	}
+
+        // now remove all the serialization-related nodes
+        for (var i = 0; i < fieldDescs.length; i++) {
+            fieldDescs[i].parentNode.removeChild(fieldDescs[i]);
+        }
+
         return result;
     }
 
@@ -2169,7 +2186,6 @@ Object.extend(Exporter, {
 
 });
 
-
 /**
  * @class Importer: Implementation class for morph de-serialization
  */
@@ -2179,7 +2195,7 @@ var Importer = Class.create({
     morphMap: null,
 
     toString: function() {
-	return "Importer";
+        return "Importer";
     },
     
     initialize: function() {
@@ -2210,7 +2226,7 @@ var Importer = Class.create({
             return new Global[morphTypeName](this, rawNode);
         } catch (er) {
             console.log("problem instantiating type %s from node %s: %s", morphTypeName, rawNode.tagName, er);
-	    return null;
+            return null;
         }
     },
     
@@ -2293,7 +2309,6 @@ Morph = Visual.subclass("Morph", {
 
     nextNavigableSibling: null, // keyboard navigation
 
-
     initialize: function(initialBounds, shapeType) {
         //console.log('initializing morph %s %s', initialBounds, shapeType);
         this.submorphs = [];
@@ -2309,16 +2324,16 @@ Morph = Visual.subclass("Morph", {
 
         this.initializeTransientState(initialBounds);
         this.disableBrowserHandlers();        
+
         if (this.activeScripts) {
             console.log('started stepping %s', this);
             this.startSteppingScripts();
         }
-
     },
 
     deserialize: function(importer, rawNode) {
-	this.rawNode = rawNode;
-	
+        this.rawNode = rawNode;
+
         this.submorphs = [];
         this.rawSubnodes = null;
         this.owner = null;
@@ -2357,19 +2372,16 @@ Morph = Visual.subclass("Morph", {
         var prevId = this.pickId();
 
         this.initializeTransientState(null);
-	
 
         for (var p in other) {
             if (!(other[p] instanceof Function) 
                 && other.hasOwnProperty(p) 
                 && !this.noShallowCopyProperties.include(p)) {
                 this[p] = other[p];
-		if (this[p] instanceof Morph && this[p].owner === other) {
-		    // an instance field points to a submorph, so copy
-		    // should point to a copy of the submorph
-		}
-
-		
+                if (this[p] instanceof Morph && this[p].owner === other) {
+                    // an instance field points to a submorph, so copy
+                    // should point to a copy of the submorph
+                }
             }
         }  // shallow copy by default
 
@@ -2475,17 +2487,17 @@ Morph = Visual.subclass("Morph", {
         var children = [];
         for (var desc = this.rawNode.firstChild; desc != null; desc = desc.nextSibling) {
             var type = desc.getAttributeNS(Namespace.LIVELY, "type");
-	    // depth first traversal
-	    if (type == "Submorphs") {
-		this.rawSubnodes = NodeList.become(desc, type);
-		NodeList.each(this.rawSubnodes, function(node) { 
+            // depth first traversal
+            if (type == "Submorphs") {
+                this.rawSubnodes = NodeList.become(desc, type);
+                NodeList.each(this.rawSubnodes, function(node) { 
                     var morph = importer.importFromNode(node);
                     this.submorphs.push(morph); 
                     morph.owner = this;
-		}.bind(this));
-	    } else {
-		children.push(desc);
-	    }
+                }.bind(this));
+            } else {
+                children.push(desc);
+            }
         }
 
         var modelNode = null;
@@ -2523,7 +2535,7 @@ Morph = Visual.subclass("Morph", {
             case "action": {
                 var a = node.textContent.evalJSON();
                 // console.info("starting stepping %s based on %s", this, node.textContent);
-		this.addActiveScript(a);
+                this.addActiveScript(a);
                 // this.startStepping(a.stepTime, a.scriptName, a.argIfAny);
                 break;
             }
@@ -2542,22 +2554,21 @@ Morph = Visual.subclass("Morph", {
                 console.info("%s reconstructed plug %s", this, this.modelPlug);
                 break;
             } 
-	    case "field": {
-		console.log("found field " + Exporter.nodeToString(node));
-		var name = node.getAttributeNS(Namespace.LIVELY, "name");
-		var ref = node.getAttributeNS(Namespace.LIVELY, "ref");
-		if (name) {
-		    var found = this[name] = importer.lookupMorph(ref);
-		    if (!found) {
-			console.warn("no field found for ref " + ref);
-		    } else {
-			node.parentNode.removeChild(node);
-			console.log("found " + name + "=" + found);
-		    }
-		}
-		break;
-	    }
-
+            case "field": {
+                console.log("found field " + Exporter.nodeToString(node));
+                var name = node.getAttributeNS(Namespace.LIVELY, "name");
+                var ref = node.getAttributeNS(Namespace.LIVELY, "ref");
+                if (name) {
+                    var found = this[name] = importer.lookupMorph(ref);
+                    if (!found) {
+                        console.warn("no field found for ref " + ref);
+                    } else {
+                        node.parentNode.removeChild(node);
+                        console.log("found " + name + "=" + found);
+                    }
+                }
+                break;
+            }
             default: {
                 if (node.nodeName == '#text') {
                     console.log('text tag name %s', node.tagName);
@@ -2568,11 +2579,12 @@ Morph = Visual.subclass("Morph", {
             }
             }
         } // end for
-	
+
         if (modelNode) {
             var model = importer.importModelFrom(modelNode);
             this.rawNode.removeChild(modelNode); // currently modelNode is not permanently stored 
         }
+
     },//.logErrors('restoreFromSubnodes'),
     
     restoreContainer: function(element/*:Element*/, type /*:String*/, importer/*Importer*/)/*:Boolean*/ {
@@ -3227,8 +3239,7 @@ Morph.addMethods({
             }
         }
 
-        if (hasFocus) 
-	    return this.mouseHandler.handleMouseEvent(evt, this);
+        if (hasFocus) return this.mouseHandler.handleMouseEvent(evt, this);
 
         if (!evt.priorPoint || !this.fullContainsWorldPoint(evt.priorPoint)) return false;
 
@@ -4750,7 +4761,7 @@ var HandMorph = Morph.subclass("HandMorph", function() {
         $super(pt(5,5).extent(pt(10,10)), "rect");
     
         this.setShape(new PolygonShape([pt(0,0), pt(9,5), pt(5,9), pt(0,0)], 
-				       (local ? Color.blue : Color.red), 1, Color.black));
+                     (local ? Color.blue : Color.red), 1, Color.black));
         this.shape.disablePointerEvents();
     
         this.rawNode.replaceChild(this.rawSubnodes, this.shape.rawNode);
@@ -5221,20 +5232,6 @@ LinkMorph = Morph.subclass("LinkMorph", {
     
     setHelpText: function ( newText ) {
         this.helpText = newText;
-    }
-
-});
-
-
-Object.subclass('CharacterInfo', {
-
-    initialize: function(width, height) {
-        this.width = width;
-        this.height = height;
-    },
-
-    toString: function() {
-        return this.width + "x" + this.height;
     }
 
 });
