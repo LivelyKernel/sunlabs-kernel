@@ -481,10 +481,12 @@ Function.installStackTracers = function() {
             for (var mi = 0; mi < methodNames.length; mi++) {
                 var mName = methodNames[mi];
                 var originalMethod = theClass.prototype[mName]; 
-                if (!originalMethod.declaredClass) // already added 
-                    originalMethod.declaredClass = cName;  
-		if (!originalMethod.methodName) // Attach name to method
-		    originalMethod.methodName = mName;
+                if (!originalMethod.declaredClass) { // already added 
+                    originalMethod.declaredClass = cName;
+                }
+                if (!originalMethod.methodName) { // Attach name to method
+                    originalMethod.methodName = mName;
+                }
                 // Now replace each method with a wrapper function that records calls on DebuggingStack
                 theClass.prototype[mName] = originalMethod.stackWrapper();
             }

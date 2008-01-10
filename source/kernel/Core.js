@@ -180,8 +180,8 @@ Object.extend(Function.prototype, {
     },
 
     qualifiedMethodName: function() {
-	return (this.declaredClass ? this.declaredClass + "." : "")  
-	    + (this.methodName || "anonymous");
+        return (this.declaredClass ? this.declaredClass + "." : "")  
+                + (this.methodName || "anonymous");
     },
 
 
@@ -237,9 +237,9 @@ Object.extend(Function.prototype, {
                             return ancestor[m].apply(this, arguments) 
                         } catch (e) { 
                             console.log("problem with ancestor " + Object.inspect(ancestor) + "." + m 
-					+ "(" + $A(arguments) + ")"
-					+ ":" + e); 
-			    Function.showStack();
+                                        + "(" + $A(arguments) + ")"
+                                        + ":" + e); 
+                            Function.showStack();
                             throw e;
                         }
                     };
@@ -252,18 +252,17 @@ Object.extend(Function.prototype, {
 
             this.prototype[property] = value;
             if (Object.isFunction(value)) {
-		for ( ; value; value = value.originalMethod) {
+                for ( ; value; value = value.originalMethod) {
                     if (value.methodName && value.methodName != "superWrapper") {
-			console.log("class " + this.prototype.constructor.type 
-				    + " borrowed " + value.qualifiedMethodName());
+                        console.log("class " + this.prototype.constructor.type 
+                                    + " borrowed " + value.qualifiedMethodName());
                     }
                     value.declaredClass = this.prototype.constructor.type;
-		    value.methodName = property;
+                    value.methodName = property;
                     if (!this.prototype.constructor.type) {
-			console.log("named " + value.qualifiedMethodName());
+                        console.log("named " + value.qualifiedMethodName());
                     }
-		} 
-
+                }
             }
         }
 
@@ -297,7 +296,7 @@ Object.extend(Function.prototype, {
         subclass.prototype = this.prototype;
         klass.prototype = new subclass;
         this.subclasses.push(klass);
-	
+
         klass.prototype.constructor = klass;
         // KP: .name would be better but js ignores .name on anonymous functions
         klass.prototype.constructor.type = name;
@@ -389,7 +388,8 @@ Object.extend(Function.prototype, {
 
     logCalls: function(isUrgent) {
         if (Config.ignoreAdvice) return this;
-	var original = this;
+
+        var original = this;
         var advice = function(proceed) {
             var args = $A(arguments); args.shift(); 
             var result = proceed.apply(this, args);
@@ -1961,7 +1961,7 @@ Shape.subclass('PathShape', {
         try {
             if (vertlistOrRawNode) this.setVertices(vertlistOrRawNode);
         } catch (er) { console.log("vertlistOrRawNode" + vertlistOrRawNode); } 
-	return this;
+        return this;
     },
     
     deserialize: function(importer, rawNode) {
@@ -3053,11 +3053,11 @@ Morph.addMethods({
     
     copy: function() {
         //console.log("get type "  + this.constructor.type + " from " + this);
-	var scope = this.constructor.scope;
-	if (!scope) {
-	    console.log("didnt find .scope on constructor %s, assuming Global, receiver %s", this.constructor.type, this);
-	    scope = Global;
-	}
+        var scope = this.constructor.scope;
+        if (!scope) {
+            console.log("didnt find .scope on constructor %s, assuming Global, receiver %s", this.constructor.type, this);
+            scope = Global;
+        }
         return new scope[this.constructor.type](Cloner, this);
     }
 
