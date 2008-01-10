@@ -21,7 +21,7 @@
  * @class SimpleBrowser: A simple JavaScript class browser
  */
    
-SimpleBrowser = Class.create(Model, {
+Model.subclass('SimpleBrowser', {
 
     initialize: function($super) { 
         $super(); 
@@ -99,7 +99,7 @@ SimpleBrowser = Class.create(Model, {
  * @class SimpleInspector: A simple JavaScript object (instance) inspector
  */
    
-SimpleInspector = Class.create(Model, {
+Model.subclass('SimpleInspector', {
 
     initialize: function($super, targetMorph) {
         $super();
@@ -171,7 +171,7 @@ SimpleInspector = Class.create(Model, {
  * @class StylePanel: Interactive style editor for morphs 
  */
    
-StylePanel = Class.create(Model, {
+Model.subclass('StylePanel', {
 
     initialize: function($super, targetMorph) {
         $super();
@@ -257,14 +257,14 @@ StylePanel = Class.create(Model, {
     getFontSize: function() { return this.targetMorph.getFontSize().toString(); },
     
     setFontSize: function(fontSize) {
-        this.fontSize = eval(fontSize) ;
+        this.fontSize = eval(fontSize);
         this.targetMorph.setFontSize(this.fontSize);
     },
 
     openIn: function(world, location) {
         var rect = (location || pt(50,50)).extent(pt(340,100));
         world.addMorph(new WindowMorph(this.buildView(rect), 'Style Panel'));
-        this.changed('all')
+        this.changed('all');
     },
 
     open: function(morph) {
@@ -473,16 +473,18 @@ Function.installStackTracers = function() {
     // Adds stack tracing to methods of most "classes"
     console.log("installing stack tracers");
     var classNames = Class.listClassNames(Global).filter(function(n) { return !n.startsWith('SVG')});
-    for (var ci= 0; ci<classNames.length; ci++) {
+    for (var ci= 0; ci < classNames.length; ci++) {
         var cName = classNames[ci];
         if (cName != 'Global' && cName != 'Object') {
             var theClass = Global[cName];
             var methodNames = theClass.localFunctionNames();
-            for (var mi = 0; mi<methodNames.length; mi++) {
+            for (var mi = 0; mi < methodNames.length; mi++) {
                 var mName = methodNames[mi];
                 var originalMethod = theClass.prototype[mName]; 
-                if (!originalMethod.classAndMethodName) // already added 
-                    originalMethod.classAndMethodName = cName + '.' + mName;  // Attach name to method
+                if (!originalMethod.declaredClass) // already added 
+                    originalMethod.declaredClass = cName;  
+		if (!originalMethod.methodName) // Attach name to method
+		    originalMethod.methodName = mName;
                 // Now replace each method with a wrapper function that records calls on DebuggingStack
                 theClass.prototype[mName] = originalMethod.stackWrapper();
             }

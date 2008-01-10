@@ -13,7 +13,7 @@
  * that will be included in the system when it starts. 
  */
 
-var apps = {};
+var apps = Global;// {};
 
 (function(scope) {
 
@@ -27,7 +27,7 @@ var apps = {};
  * such as buttons, sliders, etc.  
  */
 
-Global.WidgetTester = Class.create(Model, {
+Global.WidgetTester = Model.subclass(Global, 'WidgetTester', {
 
     openIn: function(world, location) {
         var view = this.buildView(pt(300, 220));
@@ -107,7 +107,7 @@ Global.WidgetTester = Class.create(Model, {
 
 Morph.subclass(Global, "ClockMorph", {
 
-    defaultBorderWidth: 2,
+    borderWidth: 2,
     openForDragAndDrop: false,
 
     initialize: function($super, position, radius) {
@@ -174,7 +174,7 @@ Morph.subclass(Global, "ClockMorph", {
  * @class Pen
  */
   
-scope.Pen = Class.create({
+Object.subclass(scope, 'Pen', {
 
     initialize: function(loc) {
         this.location = (loc !== undefined) ? loc : WorldMorph.current().bounds().center();
@@ -323,8 +323,8 @@ scope.Pen.script = ["P = new apps.Pen();",
 
 ClipMorph.subclass(scope, "DoodleMorph", {
 
-    defaultBorderWidth: 0,
-    defaultFill: Color.veryLightGray,
+    borderWidth: 0,
+    fill: Color.veryLightGray,
     imagepath: "Resources/doodle/",
 
     initialize: function($super, rect) {
@@ -817,7 +817,7 @@ scope.threedee = function() {
  * WireObject instance constructor
  *============================================================================*/
 
-WireObject = Class.create({
+Object.subclass(scope, 'WireObject', {
     // WireObject constructor: create the wireframe object
     initialize: function(hereX, hereY, hereZ) {
 
@@ -967,7 +967,7 @@ WireObject = Class.create({
   
 ClipMorph.subclass(scope, "Sun3DMorph", {
 
-    defaultFill: Color.veryLightGray,
+    fill: Color.veryLightGray,
     
     initialize: function($super, rect) {
 
@@ -1045,7 +1045,7 @@ var gameHeight = 300;
   rotation. It also can detemine if two objects collide.
 ************************************************************************************************/
 
-AsteroidsSprite = Class.create({
+Object.subclass(scope, 'AsteroidsSprite', {
 
     /* boolean */ active: false,    // Active flag.
     /* double */  angle: 0,         // Current angle of rotation.
@@ -2338,7 +2338,7 @@ GameMorph.addMethods({
  
 // We should consider using other weather service.
 // These images are of low quality
-WeatherWidget = Class.create(Model, {
+Model.subclass(scope, 'WeatherWidget', {
 
     imagepath: "Resources/weather/",
     
@@ -2485,7 +2485,7 @@ WeatherWidget = Class.create(Model, {
  * @class StockWidget
  */
 
-StockWidget = Class.create(Model, {
+Model.subclass('StockWidget', {
     
     initialize: function($super) { 
         $super();
@@ -2744,8 +2744,8 @@ Mapframe has menu which can be accessed by Ctrl+MouseClick in frame area
 
 var MapFrameMorph = Morph.subclass("MapFrameMorph", {
 
-    defaultBorderWidth: 5,
-    defaultFill: new Color(0.5,0.5,0.5,0.8),
+    borderWidth: 5,
+    fill: new Color(0.5,0.5,0.5,0.8),
 
     initialize: function($super, initialBounds, online) { 
         pd("MapFrameMorph",2);
@@ -2822,7 +2822,7 @@ var MapFrameMorph = Morph.subclass("MapFrameMorph", {
  * @class MapModel
  */
 
-    MapModel = Class.create(Model, {
+Model.subclass('MapModel', {
 
     initialize: function($super, frame) {
         $super(frame);
@@ -3617,7 +3617,7 @@ var MapMorph = Morph.subclass("MapMorph", {
  * @class BouncingSpheres
  */
 
-var BouncingSpheres = Class.create();
+Object.subclass('BouncingSpheres');
 
 Object.extend(BouncingSpheres, {
     makeCircleGrid: function (itemCount) {
@@ -3699,7 +3699,7 @@ Object.extend(BouncingSpheres, {
  * Placeholder for an instant messenger widget (to be completed) 
  */
  
-scope.MessengerWidget = Class.create(Model, {
+Model.subclass(scope, 'MessengerWidget', {
 
     imagepath: "Resources/IM/",
 

@@ -173,12 +173,17 @@ Object.properties = function(object, predicate) {
 Object.extend(Function.prototype, {
 
     inspect: function() {
-        var methodName = this.classAndMethodName ? this.classAndMethodName : "unnamedFunction";
         var methodBody = this.toString();
         // First 80 chars of code, without 'function'
         methodBody = methodBody.substring(8, 88) + (methodBody.length>88 ? '...' : '');
-        return methodName + methodBody;
+        return this.qualifiedMethodName() + methodBody;
     },
+
+    qualifiedMethodName: function() {
+	return (this.declaredClass ? this.declaredClass + "." : "")  
+	    + (this.methodName || "anonymous");
+    },
+
 
     functionNames: function(filter) {
         var functionNames = [];
@@ -231,7 +236,10 @@ Object.extend(Function.prototype, {
                         try { 
                             return ancestor[m].apply(this, arguments) 
                         } catch (e) { 
-                            console.log("problem with ancestor " + ancestor + "method " + m); 
+                            console.log("problem with ancestor " + Object.inspect(ancestor) + "." + m 
+					+ "(" + $A(arguments) + ")"
+					+ ":" + e); 
+			    Function.showStack();
                             throw e;
                         }
                     };
@@ -239,19 +247,23 @@ Object.extend(Function.prototype, {
                     valueOf:  function() { return method },
                     toString: function() { return method.toString() }
                 });
-                value.classAndMethodName = "superWrapper";
+                value.methodName = "superWrapper";
             }
 
             this.prototype[property] = value;
             if (Object.isFunction(value)) {
-                if (value.classAndMethodName && value.classAndMethodName != "superWrapper") {
-                    console.log("class " + this.prototype.constructor.type 
-                        + " borrowed " + value.classAndMethodName);
-                }
-                value.classAndMethodName = this.prototype.constructor.type + "." + property;
-                if (!this.prototype.constructor.type) {
-                    console.log("named " + value.classAndMethodName);
-                }
+		for ( ; value; value = value.originalMethod) {
+                    if (value.methodName && value.methodName != "superWrapper") {
+			console.log("class " + this.prototype.constructor.type 
+				    + " borrowed " + value.qualifiedMethodName());
+                    }
+                    value.declaredClass = this.prototype.constructor.type;
+		    value.methodName = property;
+                    if (!this.prototype.constructor.type) {
+			console.log("named " + value.qualifiedMethodName());
+                    }
+		} 
+
             }
         }
 
@@ -285,7 +297,7 @@ Object.extend(Function.prototype, {
         subclass.prototype = this.prototype;
         klass.prototype = new subclass;
         this.subclasses.push(klass);
-
+	
         klass.prototype.constructor = klass;
         // KP: .name would be better but js ignores .name on anonymous functions
         klass.prototype.constructor.type = name;
@@ -344,10 +356,10 @@ Object.extend(Function.prototype, {
             }
         }
 
-        advice.classAndMethodName = "$logErrorsAdvice";
+        advice.methodName = "$logErrorsAdvice";
         var result = this.wrap(advice);
         result.originalMethod = this;
-        result.classAndMethodName = "$logErrorsWrapper";
+        result.methodName = "$logErrorsWrapper";
         return result;
     },
 
@@ -367,33 +379,33 @@ Object.extend(Function.prototype, {
             return result;
         }
 
-        advice.classAndMethodName = "$logCompletionAdvice::" + module;
+        advice.methodName = "$logCompletionAdvice::" + module;
 
         var result = this.wrap(advice);
-        result.classAndMethodName = "$logCompletionWrapper::" + module;
+        result.methodName = "$logCompletionWrapper::" + module;
         result.originalMethod = this;
         return result;
     },
 
-    logCalls: function(name, isUrgent) {
+    logCalls: function(isUrgent) {
         if (Config.ignoreAdvice) return this;
-
+	var original = this;
         var advice = function(proceed) {
             var args = $A(arguments); args.shift(); 
             var result = proceed.apply(this, args);
             if (isUrgent) { 
-                console.warn('%s.%s(%s) -> %s', this, name, args, result); 
+                console.warn('%s(%s) -> %s', original.qualifiedMethodName(), args, result); 
             } else {
-                console.log( '%s.%s(%s) -> %s', this, name, args, result);
+                console.log( '%s(%s) -> %s', original.qualifiedMethodName(), args, result);
             }
            return result;
         }
 
-        advice.classAndMethodName = "$logCallsAdvice::" + name;
+        advice.methodName = "$logCallsAdvice::" + this.qualifiedMethodName();
 
         var result = this.wrap(advice);
         result.originalMethod = this;
-        result.classAndMethodName = "$logCallsWrapper::" + name;
+        result.methodName = "$logCallsWrapper::" + this.qualifiedMethodName();
         return result;
     },
 
@@ -994,7 +1006,7 @@ Gradient.subclass("RadialGradient", {
  * @class StipplePattern (NOTE: PORTING-SENSITIVE CODE)
  */
 
-StipplePattern = Class.create({
+Object.subclass('StipplePattern', {
 
     initialize: function(/*args*/) {
         switch (arguments.length) {
@@ -1029,7 +1041,7 @@ StipplePattern = Class.create({
  * See: http://www.w3.org/TR/2003/REC-SVG11-20030114/coords.html#InterfaceSVGMatrix 
  */
 
-var Transform = Class.create({
+Object.subclass('Transform', {
     
     initialize: function(matrix) {
         this.matrix = matrix || Canvas.createSVGMatrix();
@@ -1124,7 +1136,7 @@ Object.extend(Transform, {
  */  
 
 // KP: there's more then one charset
-CharSet = Class.create();
+Object.subclass('CharSet');
 
 Object.extend(CharSet, {
     lowercase: "abcdefghijklmnopqrstuvwxyz",
@@ -1600,12 +1612,11 @@ Shape.subclass('RectShape', {
     },
 
     setBounds: function(r) {
-        with (this.rawNode) {
-            setAttributeNS(null, "x", r.x);
-            setAttributeNS(null, "y", r.y);
-            setAttributeNS(null, "width", Math.max(0, r.width));
-            setAttributeNS(null, "height", Math.max(0, r.height));
-        }
+        var n = this.rawNode;
+        n.setAttributeNS(null, "x", r.x);
+        n.setAttributeNS(null, "y", r.y);
+        n.setAttributeNS(null, "width", Math.max(0, r.width));
+        n.setAttributeNS(null, "height", Math.max(0, r.height));
         return this;
     },
     
@@ -1942,20 +1953,19 @@ Shape.subclass('PolylineShape', {
  * @class PathShape
  */ 
 
-var PathShape = Class.create(Shape, {
+Shape.subclass('PathShape', {
     
     initialize: function($super, vertlistOrRawNode, color, borderWidth, borderColor) {
-        if (vertlistOrRawNode instanceof Node) {
-            this.rawNode = vertlistOrRawNode;
-            $super();
-        } else {
-            this.rawNode = NodeFactory.create("path");
-            $super(color, borderWidth, borderColor);
-            try {
-                if (vertlistOrRawNode) this.setVertices(vertlistOrRawNode);
-            } catch (er) { console.log("vertlistOrRawNode" + vertlistOrRawNode); } 
-        }
-        return this;
+        this.rawNode = NodeFactory.create("path");
+        $super(color, borderWidth, borderColor);
+        try {
+            if (vertlistOrRawNode) this.setVertices(vertlistOrRawNode);
+        } catch (er) { console.log("vertlistOrRawNode" + vertlistOrRawNode); } 
+	return this;
+    },
+    
+    deserialize: function(importer, rawNode) {
+        this.rawNode = rawNode;
     },
     
     setVertices: function(vertlist) {
@@ -2088,16 +2098,8 @@ var NodeList = {
 // Morph functionality
 // ===========================================================================
 
-/**
- * @class MouseHandlerForDragging: Mouse event handling for dragging
- */ 
-
-MouseHandlerForDragging = Class.create({
+var MouseHandlerForDragging = {
     
-    initialize: function() {
-        throw new Error('singleton, use the prototype');
-    },
-
     handleMouseEvent: function(evt, targetMorph) {
         var capType = evt.capitalizedType();
         var handler = targetMorph['on' + capType];
@@ -2117,7 +2119,7 @@ MouseHandlerForDragging = Class.create({
         return false;
     }
 
-});
+};
 
 var Cloner = {
     toString: function() { 
@@ -2129,7 +2131,7 @@ var Cloner = {
  * @class Exporter: Implementation class for morph serialization
  */
 
-var Exporter = Class.create({
+Object.subclass('Exporter', {
     rootMorph: null,
     
     initialize: function(rootMorph) {
@@ -2190,7 +2192,7 @@ Object.extend(Exporter, {
  * @class Importer: Implementation class for morph de-serialization
  */
 
-var Importer = Class.create({
+Object.subclass('Importer', {
 
     morphMap: null,
 
@@ -2287,9 +2289,9 @@ var Importer = Class.create({
 Morph = Visual.subclass("Morph", {
 
     // prototype vars
-    defaultFill: Color.primary.green,
-    defaultBorderWidth: 1,
-    defaultBorderColor: Color.black,
+    fill: Color.primary.green,
+    borderWidth: 1,
+    borderColor: Color.black,
 
     focusedBorderColor: Color.blue,
     focusHaloBorderWidth: 4,
@@ -2303,7 +2305,7 @@ Morph = Visual.subclass("Morph", {
     keyboardHandler: null, //a KeyboardHandler for keyboard repsonse, etc
     layoutHandler: null, //a LayoutHandler for special response to setExtent, etc
     openForDragAndDrop: true, // Submorphs can be extracted from or dropped into me
-    mouseHandler: MouseHandlerForDragging.prototype, //a MouseHandler for mouse sensitivity, etc
+    mouseHandler: MouseHandlerForDragging, //a MouseHandler for mouse sensitivity, etc
     stepHandler: null, // a stepHandler for time-varying morphs and animation 
     noShallowCopyProperties: ['id', 'rawNode', 'rawSubnodes', 'shape', 'submorphs', 'stepHandler'],
 
@@ -2599,16 +2601,17 @@ Morph = Visual.subclass("Morph", {
     },
     
     initializePersistentState: function(initialBounds /*:Rectangle*/, shapeType/*:String*/) {
+
         // a rect shape by default, will change later
         switch (shapeType) {
         case "ellipse":
             this.shape = new EllipseShape(initialBounds.translatedBy(this.origin.negated()),
-                this.defaultFill, this.defaultBorderWidth, this.defaultBorderColor);
+                this.fill, this.borderWidth, this.borderColor);
             break;
         default:
             // polygons and polylines are set explicitly later
             this.shape = new RectShape(initialBounds.translatedBy(this.origin.negated()),
-                this.defaultFill, this.defaultBorderWidth, this.defaultBorderColor);
+                this.fill, this.borderWidth, this.borderColor);
             break;
         }
 
@@ -2703,7 +2706,7 @@ Morph.addMethods({
             this.shape.setFill("url(#" + newId + ")");
             this.defs.appendChild(this.fill.rawNode);
         }
-    },//.wrap(Morph.onChange('shape'),
+    },
     
     getFill: function() {
         return this.fill; 
@@ -2755,10 +2758,8 @@ Morph.addMethods({
         if (this.baseColor) spec.baseColor = this.baseColor;
         if (this.fillType) spec.fillType = this.fillType;
         if (this.shape.getEdgeRounding) spec.rounding = + this.shape.getEdgeRounding();
-        spec.fillOpacity = this.shape.getFillOpacity();
-        if (!spec.fillOpacity) spec.fillOpacity = 1.0;
-        spec.strokeOpacity = this.shape.getStrokeOpacity();
-        if (!spec.strokeOpacity) spec.strokeOpacity = 1.0;
+        spec.fillOpacity = this.shape.getFillOpacity() || 1.0;
+        spec.strokeOpacity = this.shape.getStrokeOpacity() || 1.0;
         return spec;
     },
 
@@ -3052,7 +3053,12 @@ Morph.addMethods({
     
     copy: function() {
         //console.log("get type "  + this.constructor.type + " from " + this);
-        return new this.constructor.scope[this.constructor.type](Cloner, this);
+	var scope = this.constructor.scope;
+	if (!scope) {
+	    console.log("didnt find .scope on constructor %s, assuming Global, receiver %s", this.constructor.type, this);
+	    scope = Global;
+	}
+        return new scope[this.constructor.type](Cloner, this);
     }
 
 });
@@ -3264,7 +3270,7 @@ Morph.addMethods({
     },
     
     enableEvents: function() {
-        this.mouseHandler = MouseHandlerForDragging.prototype;
+        this.mouseHandler = MouseHandlerForDragging;
     },
 
     relayMouseEvents: function(target, eventSpec) {
@@ -3351,7 +3357,7 @@ Morph.addMethods({
  * @class MouseHandlerForRelay
  */ 
 
-MouseHandlerForRelay = Class.create({
+Object.subclass('MouseHandlerForRelay', {
 
     initialize: function (target, eventSpec) {
         //  Send events to a different target, with different methods
@@ -3673,7 +3679,7 @@ Morph.addMethods({
  * This class supports the stepping functionality defined above 
  */ 
 
-StepHandler = Class.create({
+Object.subclass('StepHandler', {
 
     initialize: function(owner, stepTime) {
         this.owner = owner;
@@ -3979,7 +3985,7 @@ Morph.addMethods({
 // plug mechanism to get or set model values and to respond to model changes.
 // these are documented in Morph.getModelValue, setModelValue, and updateView
 
-Model = Class.create({
+Object.subclass('Model', {
 
     initialize: function(dep) { 
         // Broadcasts an update message to all dependents when a value changes.
@@ -4021,7 +4027,7 @@ Model = Class.create({
 
 });
 
-var ModelPlug = Class.create({
+Object.subclass('ModelPlug', {
     rawNode: null,
     initialize: function(rawNode) {
         this.rawNode = rawNode;
@@ -4062,7 +4068,7 @@ Object.extend(Model, {
  * @class SimpleModel
  */ 
 
-SimpleModel = Class.create(Model, {
+Model.subclass('SimpleModel', {
     
     getter: function(varName) {
         return "get" + varName;
@@ -4192,7 +4198,7 @@ var PasteUpMorph = Morph.subclass("PasteUpMorph", {
 
 var WorldMorph = PasteUpMorph.subclass("WorldMorph", {
     
-    defaultFill: Color.primary.blue,
+    fill: Color.primary.blue,
     // Default themes for the theme manager    
     defaultThemes: {
         primitive: { // Primitive look and feel -- flat fills and no rounding or translucency
@@ -5090,8 +5096,8 @@ var HandMorph = Morph.subclass("HandMorph", function() {
 
 LinkMorph = Morph.subclass("LinkMorph", {
 
-    defaultFill: Color.black,
-    defaultBorderColor: Color.black,
+    fill: Color.black,
+    borderColor: Color.black,
     helpText: "Click here to enter or leave a subworld.\n" +
               "Use menu 'grab' to move me.  Drag objects\n" +
               "onto me to transport objects between worlds.",

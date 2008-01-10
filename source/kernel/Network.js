@@ -172,7 +172,7 @@ Ajax.Responders.register(NetRequest.prototype.logger);
  * @class FeedChannel: RSS feed channel
  */ 
 
-var FeedChannel = Class.create({
+Object.subclass('FeedChannel', {
 
     initialize: function(rawData) {
         this.items = [];
@@ -191,7 +191,7 @@ var FeedChannel = Class.create({
  * @class FeedItem: An individual RSS feed item
  */ 
 
-var FeedItem = Class.create({
+Object.subclass('FeedItem', {
 
     initialize: function(rawData) {
         this.title = Query.evaluate(rawData, 'title')[0].textContent;
@@ -206,7 +206,7 @@ var FeedItem = Class.create({
  */
 // FIXME something clever, maybe an external library?
 
-var Feed = Class.create({
+Object.subclass('Feed', {
     dump: false,
     
     initialize: function(url) {
@@ -288,7 +288,7 @@ var Feed = Class.create({
     buildView: function() {
         var extent = pt(500, 200);
         var panel = new PanelMorph(extent, "rect");
-        panel.addMorph = panel.addMorph.logCalls('addMorph');
+        panel.addMorph = panel.addMorph.logCalls();
         panel.setFill(Color.blue.lighter().lighter());
         panel.setBorderWidth(2);
         var feed = this;

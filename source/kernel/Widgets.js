@@ -31,10 +31,9 @@
 var ButtonMorph = Morph.subclass("ButtonMorph", {
 
     focusHaloBorderWidth: 3, // override the default
-    defaultBorderWidth: 0.3,
-    defaultFill: Color.neutral.gray,
-    defaultBorderColor: Color.neutral.gray,
-    defaultEdgeRoundingRadius: 4,
+    borderWidth: 0.3,
+    fill: Color.neutral.gray,
+    borderColor: Color.neutral.gray,
 
     baseColor: Color.neutral.gray, // KP: stopgap fix for serialization??
 
@@ -58,7 +57,7 @@ var ButtonMorph = Morph.subclass("ButtonMorph", {
     initializeTransientState: function($super, initialBounds) {
         $super(initialBounds);
         // FIXME make persistent
-        this.baseColor = this.defaultFill;
+        this.baseColor = this.fill;
         this.linkToStyles(['button']);
     },
 
@@ -171,8 +170,8 @@ var ButtonMorph = Morph.subclass("ButtonMorph", {
  */
 var ImageMorph = Morph.subclass("ImageMorph", {
     
-    defaultFill: Color.blue.lighter(),
-    defaultBorderWidth: 0,
+    fill: Color.blue.lighter(),
+    borderWidth: 0,
    
     initialize: function($super, viewPort, url) {
         $super(viewPort, "rect");
@@ -313,8 +312,8 @@ var IconMorph = ImageMorph.subclass("IconMorph", {
  */
 var ClipMorph = Morph.subclass("ClipMorph", {
 
-    defaultFill: null,
-    defaultBorderWidth: 0,
+    fill: null,
+    borderWidth: 0,
 
     deserialize: function($super, importer, rawNode) {
         $super(importer, rawNode);
@@ -375,7 +374,7 @@ var TitleBarMorph = (function() {
     return Morph.subclass("TitleBarMorph", {
 
     // prototype variables
-    defaultBorderWidth: 0.5,
+    borderWidth: 0.5,
 
     initialize: function($super, headline, windowWidth, windowMorph, isExternal) {
         this.windowMorph = windowMorph;
@@ -510,7 +509,7 @@ var TitleTabMorph = Morph.subclass("TitleTabMorph", {
  */ 
 var WindowControlMorph = Morph.subclass("WindowControlMorph", {
 
-    defaultBorderWidth: 0,
+    borderWidth: 0,
 
     initialize: function($super, rect, inset, color, target, action, helpText) {
         $super(rect.insetBy(inset), 'ellipse');
@@ -581,7 +580,7 @@ var WindowControlMorph = Morph.subclass("WindowControlMorph", {
 /**
  * @class WindowMorph: Full-fledged windows with title bar, menus, etc.
  */
-var WindowMorph = Morph.subclass("WindowMorph", {
+var WindowMorph = Morph.subclass('WindowMorph', {
 
     state: "expanded",
     titleBar: null,
@@ -809,9 +808,9 @@ var HandleMorph = (function () {
 
     return Morph.subclass("HandleMorph", {
 
-    defaultFill: null,
-    defaultBorderColor: Color.blue,
-    defaultBorderWidth: 1,
+    fill: null,
+    borderColor: Color.blue,
+    borderWidth: 1,
 
     controlHelpText: "Drag to resize this object\n" + 
         "Alt+drag to rotate the object \n" +
@@ -952,9 +951,9 @@ var HandleMorph = (function () {
  */
 var SelectionMorph = Morph.subclass("SelectionMorph", {
     
-    defaultBorderWidth: 1,
-    defaultBorderColor: Color.blue,
-    defaultFill: Color.secondary.blue,
+    borderWidth: 1,
+    borderColor: Color.blue,
+    fill: Color.secondary.blue,
 
     initialize: function($super, viewPort, defaultworldOrNull) {
         $super(viewPort, "rect");
@@ -1205,7 +1204,7 @@ Object.extend(PanelMorph, {
  */ 
 var CheapListMorph = TextMorph.subclass("CheapListMorph", {
     
-    defaultBorderColor: Color.black,
+    borderColor: Color.black,
     wrap: WrapStyle.NONE,
     
     initialize: function($super, initialBounds, itemList) {
@@ -1389,9 +1388,9 @@ var CheapListMorph = TextMorph.subclass("CheapListMorph", {
  */ 
 var MenuMorph = CheapListMorph.subclass("MenuMorph", {
 
-    defaultBorderColor: Color.blue,
-    defaultBorderWidth: 0.5,
-    defaultFill: Color.blue.lighter(5),
+    borderColor: Color.blue,
+    borderWidth: 0.5,
+    fill: Color.blue.lighter(5),
 
     initialize: function($super, items, targetMorph, lines) {
         // items is an array of menuItems, each of which is an array of the form
@@ -1709,8 +1708,8 @@ var SliderMorph = Morph.subclass("SliderMorph", {
  */ 
 var ScrollPane = Morph.subclass("ScrollPane", {
 
-    defaultBorderWidth: 2,
-    defaultFill: null,
+    borderWidth: 2,
+    fill: null,
     scrollBarWidth: 14,
 
     initialize: function($super, morphToClip, initialBounds) {
@@ -1798,9 +1797,9 @@ function PrintPane(initialBounds, defaultText) {
  */ 
 var ColorPickerMorph = Morph.subclass("ColorPickerMorph", {
 
-    defaultFill: null,
-    defaultBorderWidth: 1, 
-    defaultBorderColor: Color.black,
+    fill: null,
+    borderWidth: 1, 
+    borderColor: Color.black,
 
     initialize: function($super, initialBounds, targetMorph, setFillName, popup) {
         $super(initialBounds, "rect");

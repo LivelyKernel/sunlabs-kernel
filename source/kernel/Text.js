@@ -648,9 +648,9 @@ scope.TextMorph = Morph.subclass("TextMorph", {
     fontSize:   Config.defaultFontSize   || 12,
     fontFamily: Config.defaultFontFamily || 'Helvetica',
     textColor: Color.black,
-    defaultBackgroundColor: Color.veryLightGray,
-    defaultBorderWidth: 1,
-    defaultBorderColor: Color.black,
+    backgroundColor: Color.veryLightGray,
+    borderWidth: 1,
+    borderColor: Color.black,
     selectionColor: Color.primary.green,
     inset: pt(6,4), // remember this shouldn't be modified unless every morph should get the value 
     wrap: WrapStyle.NORMAL,
@@ -688,9 +688,9 @@ scope.TextMorph = Morph.subclass("TextMorph", {
 
         this.rawNode.setAttributeNS(Namespace.LIVELY, "wrap", this.wrap);
         // KP: set attributes on the text elt, not on the morph, so that we can retrieve it
-        this.setFill(this.defaultBackgroundColor);
-        this.setBorderWidth(this.defaultBorderWidth);
-        this.setBorderColor(this.defaultBorderColor);
+        this.setFill(this.backgroundColor);
+        this.setBorderWidth(this.borderWidth);
+        this.setBorderColor(this.borderColor);
     },
     
     restorePersistentState: function($super, importer) {

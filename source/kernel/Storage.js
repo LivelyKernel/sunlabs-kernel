@@ -16,7 +16,7 @@
  * @class Resource
  */ 
 
-var Resource = Class.create({
+Object.subclass('Resource', {
 
     initialize: function(rawNode) {
         this.href = Query.evaluate(rawNode, 'D:href')[0].textContent;
@@ -44,7 +44,7 @@ var Resource = Class.create({
  * @class WebStore: Network-based storage (WebDAV)
  */ 
 
-var WebStore = Class.create(Model, {
+Model.subclass('WebStore', {
 
     defaultStore: null,
 
