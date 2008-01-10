@@ -922,6 +922,28 @@ Object.extend(Color, {
 
 console.log("Color");
 
+Object.subclass('Wrapper', {
+    documentation: "A wrapper around a native object, stored as rawNode",
+    
+    deserialize: function(importer, rawNode) {
+        this.rawNode = rawNode.cloneNode(true);
+    },
+    
+    copyFrom: function(other) {
+        this.rawNode = other.rawNode.cloneNode(true);
+    },
+    
+    clone: function() {
+	return new Global[this.constructor.type](Cloner, this);
+    },
+    
+    toString: function() {
+	return "Wrapper[" + this.rawNode + "]";
+    }
+
+});
+
+
 // ===========================================================================
 // Gradient colors, stipple patterns and coordinate transformatins
 // ===========================================================================
@@ -930,7 +952,7 @@ console.log("Color");
  * @class Gradient (NOTE: PORTING-SENSITIVE CODE)
  */
 
-Object.subclass("Gradient", {
+Wrapper.subclass("Gradient", {
 
     addStop: function(offset, color) {
         this.rawNode.appendChild(NodeFactory.create("stop", {offset: offset, "stop-color": color}));
@@ -939,16 +961,8 @@ Object.subclass("Gradient", {
 
     toString: function() {
         return this.rawNode ? this.rawNode.tagName : "Gradient?";
-    },
-
-    deserialize: function(importer, rawNode) {
-        this.rawNode = rawNode.cloneNode(true);
-    },
-
-    copyFrom: function(other) {
-        this.rawNode = other.rawNode.cloneNode(true);
     }
-    
+
 });
 
 /**
@@ -966,11 +980,8 @@ Gradient.subclass("LinearGradient", {
                        x2: vector.maxX(), y2: vector.maxY()}); 
         this.addStop(0, stopColor1).addStop(1, stopColor2);
         return this;
-    },
-
-    copy: function() {
-        return new LinearGradient(Cloner, this);
     }
+
     
 });
 
@@ -994,10 +1005,6 @@ Gradient.subclass("RadialGradient", {
         this.addStop(0, stopColor1);
         this.addStop(1, stopColor2);
         return this;
-    },
-
-    copy: function() {
-        return new RadialGradient(Cloner, this);
     }
     
 });
@@ -1008,44 +1015,34 @@ Gradient.subclass("RadialGradient", {
 
 Object.subclass('StipplePattern', {
 
-    initialize: function(/*args*/) {
-        switch (arguments.length) {
-        case 1:
-            this.rawNode = arguments[0].cloneNode(true);
-            return this;
-        case 4:
-            var color1 = arguments[0];
-            var h1 = arguments[1];
-            var color2 = arguments[2];
-            var h2 = arguments[4];
-            this.rawNode = NodeFactory.create("pattern", 
-                {patternUnits: 'userSpaceOnUse', x: 0, y: 0, width: 100, height: h1 + h2});
-            this.rawNode.appendChild(NodeFactory.create('rect', {x: 0, y: 0,  width: 100, height: h1,      fill: color1}));
-            this.rawNode.appendChild(NodeFactory.create('rect', {x: 0, y: h1, width: 100, height: h1 + h2, fill: color2}));
-            return this;
-        default:
-            throw new Error("whoops, args %s", $A(arguments));
-        }
-    },
-    
-    copy: function() {
-        return new StipplePattern(this.rawNode);
+    initialize: function(color1, h1, color2, h2) {
+        this.rawNode = NodeFactory.create("pattern", 
+					  {patternUnits: 'userSpaceOnUse', x: 0, y: 0, width: 100, height: h1 + h2});
+        this.rawNode.appendChild(NodeFactory.create('rect', {x: 0, y: 0,  width: 100, height: h1,      fill: color1}));
+        this.rawNode.appendChild(NodeFactory.create('rect', {x: 0, y: h1, width: 100, height: h1 + h2, fill: color2}));
+        return this;
     }
+    
 
 });
 
 /**
  * @class Transform (NOTE: PORTING-SENSITIVE CODE)
- * Implements support for object rotation, scaling, etc.
  * This code is dependent on SVG transformation matrices.
  * See: http://www.w3.org/TR/2003/REC-SVG11-20030114/coords.html#InterfaceSVGMatrix 
  */
 
 Object.subclass('Transform', {
+
+    documentation: "Implements support for object rotation, scaling, etc.",
     
     initialize: function(matrix) {
         this.matrix = matrix || Canvas.createSVGMatrix();
         return this;
+    },
+
+    clone: function() {
+	return new Transform(this.matrix);
     },
     
     getTranslation: function() {
@@ -1061,10 +1058,6 @@ Object.subclass('Transform', {
         var a = this.matrix.a;
         var b = this.matrix.b;
         return Math.sqrt(a * a + b * b);
-    },
-
-    copy: function() {
-        return new Transform(this.matrix);
     },
 
     toAttributeValue: function() {
@@ -1364,13 +1357,13 @@ if (!Prototype.Browser.Rhino) Object.extend(document, {
 
 /**
  * @class Visual (NOTE: PORTING-SENSITIVE CODE)
- * This class serves as an interface between our JavaScript
- * graphics classes and the underlying graphics implementation.
  * In this particular implementation, graphics primitives are
  * mapped onto various SVG objects and attributes.
  */
-Object.subclass('Visual', {   
+Wrapper.subclass('Visual', {   
 
+    documentation:  "Interface between our JavaScript graphics classes and the underlying graphics implementation.",
+    
     rawNode: null, // set by subclasses
 
     setType: function(type)  {
@@ -1390,11 +1383,6 @@ Object.subclass('Visual', {
     withHref: function(localURl) {
         this.rawNode.setAttributeNS(Namespace.XLINK, "href", localURl);
         return this;
-    },
-
-    copy: function() { 
-        // FIXME
-        return this.rawNode.cloneNode(true); 
     },
 
     /**
@@ -1547,7 +1535,7 @@ Visual.subclass('Shape', {
         if (stroke !== undefined)
             this.setStroke(stroke);
     },
-    
+
     applyFunction: function(func,arg) { 
         func.call(this, arg); 
     },
@@ -1593,6 +1581,7 @@ Object.extend(Shape, {
  */ 
 
 Shape.subclass('RectShape', {
+    
 
     initialize: function($super, rect, color, borderWidth, borderColor) {
         this.rawNode = NodeFactory.create("rect");
@@ -1603,12 +1592,6 @@ Shape.subclass('RectShape', {
 
     deserialize: function(importer, rawNode) {
         this.rawNode = rawNode;
-    },
-
-    copy: function() {
-        var rect = new RectShape(this.bounds(), this.getFill(), this.getStrokeWidth(), this.getStroke());
-        rect.roundEdgesBy(this.getEdgeRounding());
-        return rect;
     },
 
     setBounds: function(r) {
@@ -1662,12 +1645,14 @@ Shape.subclass('RectShape', {
     },
     
     getEdgeRounding: function() {
-        return this.rawNode.getAttributeNS(null, "rx");
+        return this.rawNode.getAttributeNS(null, "rx") || undefined;
     },
     
     roundEdgesBy: function(r) {
-        this.rawNode.setAttributeNS(null, "rx", r);
-        this.rawNode.setAttributeNS(null, "ry", r);
+	if (r) {
+            this.rawNode.setAttributeNS(null, "rx", r);
+            this.rawNode.setAttributeNS(null, "ry", r);
+	}
         return this;
     }
 
@@ -1689,10 +1674,6 @@ Shape.subclass('EllipseShape', {
         this.rawNode = rawNode;
     },
     
-    copy: function() {
-        return new EllipseShape(this.bounds(), this.getFill(), this.getStrokeWidth(), this.getStroke());
-    },
-
     setBounds: function(r) {
         var n = this.rawNode;
         n.setAttributeNS(null, "cx", r.x + r.width/2);
@@ -1754,10 +1735,6 @@ Shape.subclass('PolygonShape', {
         if (this.shouldCacheVertices) this.cachedVertices = this.vertices();
     },
 
-    copy: function() {
-        return new PolygonShape(this.vertices(), this.getFill(), this.getStrokeWidth(), this.getStroke());
-    },
-    
     setVertices: function(vertlist) {
         ///console.log("vertlist is " + vertlist + " for " + Function.showStack());
         if (this.rawNode.points) {
@@ -1924,10 +1901,6 @@ Shape.subclass('PolylineShape', {
         this.rawNode = rawNode;
     },
     
-    copy: function() {
-        return new PolylineShape(this.vertices(), this.getStrokeWidth(), this.getStroke());
-    },
-
     containsPoint: function(p) {
         var howNear = 6;
         var vertices = this.vertices();
@@ -2021,10 +1994,6 @@ Shape.subclass('PathShape', {
         return false; // FIXME
     },
     
-    copy: function() { 
-        return new PathShape(this.vertices(), this.getFill(), this.getStrokeWidth(), this.getStroke());
-    },
-
     bounds: function() {
         if (!this.cachedBounds) {
             this.cachedBounds = Rectangle.unionPts(this.vertices());
@@ -2387,9 +2356,9 @@ Morph = Visual.subclass("Morph", {
             }
         }  // shallow copy by default
 
-        this.setShape(other.shape.copy());    
+        this.setShape(other.shape.clone());    
         if (other.cachedTransform) { 
-            this.cachedTransform = other.cachedTransform.copy();
+            this.cachedTransform = other.cachedTransform.clone();
         } 
 
         if (other.clipPath) {
@@ -2696,7 +2665,7 @@ Morph.addMethods({
             var id = fill.rawNode.getAttribute("id");
             var newId = "gradient_" + this.id;
             if (newId != id) {
-                this.fill = fill.copy(); 
+                this.fill = fill.clone(); 
                 this.fill.rawNode.setAttribute("id", newId);
             }
             if (!this.defs) {
@@ -2757,7 +2726,7 @@ Morph.addMethods({
         if (spec.fill instanceof RadialGradient) spec.fillType = "radial gradient";
         if (this.baseColor) spec.baseColor = this.baseColor;
         if (this.fillType) spec.fillType = this.fillType;
-        if (this.shape.getEdgeRounding) spec.rounding = + this.shape.getEdgeRounding();
+        if (this.shape.getEdgeRounding) spec.rounding = this.shape.getEdgeRounding() || 0.0;
         spec.fillOpacity = this.shape.getFillOpacity() || 1.0;
         spec.strokeOpacity = this.shape.getStrokeOpacity() || 1.0;
         return spec;
