@@ -36,7 +36,11 @@ var Config = {
     showNetworkExamples: true,
 
     // Ignore function logging through the prototype.js wrap mechanism
-    ignoreAdvice: false
+    ignoreAdvice: false,
+
+    // try to make up font metrics if the SVG API doesn't work
+    fakeFontMetrics: false
+
 
 }
 
