@@ -519,7 +519,9 @@ Object.subclass("Point", {
     midPt: function(p) { return new Point((this.x + p.x)/2, (this.y + p.y)/2); },
     subPt: function(p) { return new Point(this.x - p.x, this.y - p.y); },
     negated: function() { return new Point(-this.x, -this.y); },
+    inverted: function() { return new Point(1.0/this.x, 1.0/this.y); },
     scaleBy: function(scale) { return new Point(this.x*scale,this.y*scale); },
+    scaleByPt: function(scalePt) { return new Point(this.x*scalePt.x,this.y*scalePt.y); },
     lessPt: function(p) { return this.x < p.x && this.y < p.y; },
     leqPt: function(p) { return this.x <= p.x && this.y <= p.y; },
     eqPt: function(p) { return this.x == p.x && this.y == p.y; },
@@ -671,7 +673,19 @@ Rectangle.addMethods({
     },
     
     scaleByRect: function(r) { // r is a relative rect, as a pane spec in a window
-        return new Rectangle(this.x + (r.x*this.width), this.y + (r.y*this.height), r.width*this.width, r.height*this.height); 
+        return new Rectangle (
+		this.x + (r.x*this.width),
+		this.y + (r.y*this.height),
+		r.width*this.width,
+		r.height*this.height ); 
+    },
+    
+    scaleRectIn: function(fullRect) { // return a relative rect for this as a part of fullRect
+        return new Rectangle (
+		(this.x - fullRect.x) / fullRect.width,
+		(this.y - fullRect.y) / fullRect.height,
+		this.width / fullRect.width,
+		this. height / fullRect. height ); 
     },
     
     insetBy: function(d) {
@@ -2629,12 +2643,13 @@ Object.extend(Morph, {
 
     onLayoutChange: function(fieldName) { 
         return function(/* arguments*/) {
-            this.changed();
+            var priorExtent = this.innerBounds().extent();
+	    this.changed();
             var args = $A(arguments);
             var proceed = args.shift();
             var result = proceed.apply(this, args);
             this.recordChange(fieldName);
-            this.layoutChanged();
+            this.layoutChanged(priorExtent);
             this.changed(); 
             return result;
         }
@@ -3773,8 +3788,9 @@ Morph.addMethods({
         this.applyTransform(this.getTransform());
         this.fullBounds = null;
         // this.bounds(); 
-        if (this.owner && this.owner !== this.world())     // May affect owner as well...
-            this.owner.layoutChanged(); 
+        if (this.owner && this.owner !== this.world()) {     // May affect owner as well...
+            if (!Config.layoutTest) this.owner.layoutChanged();
+	}
     },
     
     recordChange: function(fieldName/*:String*/) {  

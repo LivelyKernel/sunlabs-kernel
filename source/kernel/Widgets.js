@@ -737,6 +737,18 @@ var WindowMorph = Morph.subclass('WindowMorph', {
         tm.openIn(WorldMorph.current(), evt.mousePoint, false, this.targetMorph.inspect().truncate()); 
     },
 
+    layoutChanged: function ($super, priorExtent) {
+	$super(priorExtent);
+	if (!Config.layoutTest) return
+	if (!this.titleBar || !this.targetMorph) return
+	var titleHeight = this.titleBar.innerBounds().height;
+	var bnds = this.innerBounds();
+	var newWidth = bnds.extent().x;
+	var newHeight = bnds.extent().y;
+	this.titleBar.setExtent(pt(newWidth, titleHeight));
+	this.targetMorph.setExtent(pt(newWidth, newHeight - titleHeight));
+    },
+
     updateView: function(aspect, controller) {
         var plug = this.modelPlug;
         if (!plug) return;
@@ -916,7 +928,7 @@ var HandleMorph = (function () {
                 this.targetMorph.setBorderWidth(Math.max(0, Math.floor(d/3)/2), true);
             } else { 
                 // these hack tests should be replaced by receiver tests
-                if (!Config.browserLayout  && (this.targetMorph instanceof WindowMorph || this.targetMorph instanceof TitleBarMorph)){
+                if (!Config.layoutTest  && (this.targetMorph instanceof WindowMorph || this.targetMorph instanceof TitleBarMorph)){
                   // scale the whole window instead of reframing
                   // DI:  Note this should reframe windows, with proportional layout of the interior frames
                   // this code is all copied -- should be factored or, better, removed
@@ -1164,6 +1176,22 @@ Morph.subclass("PanelMorph", {
         }
 
         return $super(m, front);
+    },
+
+    layoutChanged: function ($super, priorExtent) {
+	// Compute scales of old submorph extents in priorExtent, then scale up to new extent
+	$super(priorExtent);
+	if (!Config.layoutTest) return;
+	if(!priorExtent) return;
+	var newExtent = this.innerBounds().extent();
+	if(!newExtent) return;
+	var scalePt = newExtent.scaleByPt(priorExtent.inverted());
+	for(var i= 0; i<this.submorphs.length; i++) {
+		var sub = this.submorphs[i];
+		var subBnds = sub.innerBounds();
+		sub.setPosition(sub.getPosition().scaleByPt(scalePt));
+		sub.setExtent(sub.getExtent().scaleByPt(scalePt));
+	}
     },
 
     updateView: function(aspect, controller) {
@@ -1578,7 +1606,10 @@ var SliderMorph = Morph.subclass("SliderMorph", {
     
     adjustForNewBounds: function($super) {
         $super();
-
+	this.adjustSliderParts()
+    },
+    
+    adjustSliderParts: function($super) {
         // This method adjusts the slider for changes in value as well as geometry
         var val = this.getValue();
         var bnds = this.shape.bounds();
@@ -1726,23 +1757,23 @@ var ScrollPane = Morph.subclass("ScrollPane", {
     initialize: function($super, morphToClip, initialBounds) {
         $super(initialBounds, "rect");
 
-        var bnds = this.shape.bounds();
+        var bnds = this.innerBounds();
         var clipR = bnds.withWidth(bnds.width - this.scrollBarWidth+1).insetBy(1);
         morphToClip.shape.setBounds(clipR); // FIXME what if the targetmorph should be bigger than the clipmorph?
         // Make a clipMorph with the content (morphToClip) embedded in it
-        var clipMorph = this.clipMorph = this.addMorph(new ClipMorph(clipR));    
-        clipMorph.shape.setFill(morphToClip.shape.getFill());
+        this.clipMorph = this.addMorph(new ClipMorph(clipR));    
+        this.clipMorph.shape.setFill(morphToClip.shape.getFill());
         morphToClip.setBorderWidth(0);
         morphToClip.setPosition(clipR.topLeft());
-        clipMorph.addMorph(morphToClip);
+        this.clipMorph.addMorph(morphToClip);
     
         // Add a scrollbar
-        var scrollBar = this.scrollBar = this.addMorph(new SliderMorph(bnds.withTopLeft(clipR.topRight())));
-        scrollBar.connectModel({model: this, getValue: "getScrollPosition", setValue: "setScrollPosition", 
+        this.scrollBar = this.addMorph(new SliderMorph(bnds.withTopLeft(clipR.topRight())));
+        this.scrollBar.connectModel({model: this, getValue: "getScrollPosition", setValue: "setScrollPosition", 
                                 getExtent: "getVisibleExtent"});
 
         // suppress handles throughout
-        [this, clipMorph, morphToClip, scrollBar].map(function(m) {m.suppressHandles = true});
+        [this, this.clipMorph, morphToClip, this.scrollBar].map(function(m) {m.suppressHandles = true});
         return this;
     },
     
@@ -1774,8 +1805,21 @@ var ScrollPane = Morph.subclass("ScrollPane", {
     scrollToTop: function() {
         this.setScrollPosition(0);
         this.scrollBar.adjustForNewBounds(); 
-    }
+    },
     
+    layoutChanged: function ($super, priorExtent) {
+	// Compute new bounds for clipMorph and scrollBar
+	$super(priorExtent);
+	if (!Config.layoutTest) return;
+	if(!this.clipMorph || !this.scrollBar) return;
+        var bnds = this.innerBounds();
+        var clipR = bnds.withWidth(bnds.width - this.scrollBarWidth+1).insetBy(1);
+	this.clipMorph.setExtent(clipR.extent());
+	var barBnds = bnds.withTopLeft(clipR.topRight());
+	this.scrollBar.setBounds(barBnds);
+	this.scrollBar.adjustForNewBounds();
+    }
+
 });
 
 /**
