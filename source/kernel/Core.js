@@ -121,8 +121,9 @@ var NodeFactory = {
 
 Object.extend(Class, {
     
+    // KP: obsolete, use Object.isClass
     isClass: function(object) {
-        return (object instanceof Function) &&  object.prototype && (object.functionNames().length > Object.functionNames().length);
+	return (object instanceof Function) &&  object.prototype && (object.functionNames().length > Object.functionNames().length);
     },
 
     methodNameList: function(className) {
@@ -135,7 +136,7 @@ Object.extend(Class, {
 
         for (var name in scope) { 
             try {
-                if (Class.isClass(scope[name])) {
+                if (Object.isClass(scope[name])) {
                     a.push(name); 
                 }
             } catch (er) {
@@ -184,7 +185,6 @@ Object.extend(Function.prototype, {
                 + (this.methodName || "anonymous");
     },
 
-
     functionNames: function(filter) {
         var functionNames = [];
 
@@ -231,29 +231,32 @@ Object.extend(Function.prototype, {
             if (ancestor && Object.isFunction(value) &&
                 value.argumentNames().first() == "$super") {
                 var method = value;
-                var value = Object.extend((function(m) {
+		var advice = (function(m) {
                     return function() { 
                         try { 
                             return ancestor[m].apply(this, arguments) 
                         } catch (e) { 
-                            console.log("problem with ancestor " + Object.inspect(ancestor) + "." + m 
-                                        + "(" + $A(arguments) + ")"
+                            console.log("problem with ancestor " + Object.inspect(ancestor) 
+					+ "." + m + "(" + $A(arguments) + ")"
                                         + ":" + e); 
                             Function.showStack();
                             throw e;
                         }
                     };
-                })(property).wrap(method), {
+                })(property);
+		advice.methodName = "$superAdvice::" + property;
+
+                value = Object.extend(advice.wrap(method), {
                     valueOf:  function() { return method },
-                    toString: function() { return method.toString() }
+                    toString: function() { return method.toString() },
+		    originalFunction: method
                 });
-                value.methodName = "superWrapper";
             }
 
             this.prototype[property] = value;
             if (Object.isFunction(value)) {
-                for ( ; value; value = value.originalMethod) {
-                    if (value.methodName && value.methodName != "superWrapper") {
+                for ( ; value; value = value.originalFunction) {
+                    if (value.methodName) {
                         console.log("class " + this.prototype.constructor.type 
                                     + " borrowed " + value.qualifiedMethodName());
                     }
@@ -269,6 +272,10 @@ Object.extend(Function.prototype, {
         return this;
     },
     
+    isClass: function(object) {
+	return (object instanceof Function) && (object.superclass || object === Object);
+    },
+
     subclass: function(/*,... */) {
         var properties = $A(arguments);
         var scope = Global;
@@ -288,19 +295,18 @@ Object.extend(Function.prototype, {
             }
         }
 
-        // Object.extend(klass, Class.Methods);
         klass.superclass = this;
         klass.subclasses = [];
 
-        var subclass = function() { };
-        subclass.prototype = this.prototype;
-        klass.prototype = new subclass;
+        var protoclass = function() { }; // that's the constructor of the new prototype object
+        protoclass.prototype = this.prototype;
+        klass.prototype = new protoclass();
         this.subclasses.push(klass);
 
         klass.prototype.constructor = klass;
         // KP: .name would be better but js ignores .name on anonymous functions
-        klass.prototype.constructor.type = name;
-        klass.prototype.constructor.scope = scope;
+        klass.type = name;
+        klass.scope = scope;
 
         for (var i = 0; i < properties.length; i++) {
             klass.addMethods(properties[i] instanceof Function ? (properties[i])() : properties[i]);
@@ -357,7 +363,7 @@ Object.extend(Function.prototype, {
 
         advice.methodName = "$logErrorsAdvice";
         var result = this.wrap(advice);
-        result.originalMethod = this;
+        result.originalFunction = this;
         result.methodName = "$logErrorsWrapper";
         return result;
     },
@@ -382,7 +388,7 @@ Object.extend(Function.prototype, {
 
         var result = this.wrap(advice);
         result.methodName = "$logCompletionWrapper::" + module;
-        result.originalMethod = this;
+        result.originalFunction = this;
         return result;
     },
 
@@ -404,7 +410,7 @@ Object.extend(Function.prototype, {
         advice.methodName = "$logCallsAdvice::" + this.qualifiedMethodName();
 
         var result = this.wrap(advice);
-        result.originalMethod = this;
+        result.originalFunction = this;
         result.methodName = "$logCallsWrapper::" + this.qualifiedMethodName();
         return result;
     },
@@ -775,10 +781,11 @@ console.log("Rectangle");
 // ===========================================================================
 
 /**
- * @class Color: Fully portable support for RGB colors
+ * @class Color
  */
-
 Object.subclass("Color", { 
+
+    documentation: "Fully portable support for RGB colors",
 
     initialize: function(r, g, b) {
         this.r = r;
@@ -924,6 +931,29 @@ console.log("Color");
 
 Object.subclass('Wrapper', {
     documentation: "A wrapper around a native object, stored as rawNode",
+
+    getType: function() {
+	for (var ctor = this.constructor; ctor != null; ctor = ctor.originalFunction) {
+	    var type = ctor.type;
+	    if (type) return type;
+	}
+	console.log("no type for " + this.constructor);
+	Function.showStack();
+	return null;
+    },
+
+    getScope: function() {
+	for (var ctor = this.constructor; ctor != null; ctor = ctor.originalFunction) {
+	    var scope = ctor.scope;
+	    if (scope) return scope;
+	}
+	console.log("no scope for " + this.constructor + " tried " + this.originalFunction);
+	//Function.showStack();
+	return Global;
+    },
+
+    
+
     
     deserialize: function(importer, rawNode) {
         this.rawNode = rawNode.cloneNode(true);
@@ -934,11 +964,19 @@ Object.subclass('Wrapper', {
     },
     
     clone: function() {
-	return new Global[this.constructor.type](Cloner, this);
+	return new Global[this.getType()](Cloner, this);
     },
     
     toString: function() {
-	return "Wrapper[" + this.rawNode + "]";
+	return "#<Wrapper:" + this.rawNode + ">";
+    },
+    
+    inspect: function() {
+	try {
+	    return this.toString() + "[" + Exporter.nodeToString(this.rawNode) + "]";
+	} catch (er) {
+	    return "#<inspect error: " + err + ">";
+	}
     }
 
 });
@@ -957,10 +995,6 @@ Wrapper.subclass("Gradient", {
     addStop: function(offset, color) {
         this.rawNode.appendChild(NodeFactory.create("stop", {offset: offset, "stop-color": color}));
         return this;
-    },
-
-    toString: function() {
-        return this.rawNode ? this.rawNode.tagName : "Gradient?";
     }
 
 });
@@ -973,11 +1007,10 @@ Wrapper.subclass("Gradient", {
 Gradient.subclass("LinearGradient", {
     
     initialize: function($super, stopColor1, stopColor2, vector) {
-        $super();
         vector = vector || LinearGradient.NorthSouth;
         this.rawNode = NodeFactory.create("linearGradient",
-                      {x1: vector.x, y1: vector.y, 
-                       x2: vector.maxX(), y2: vector.maxY()}); 
+					  {x1: vector.x, y1: vector.y, 
+					   x2: vector.maxX(), y2: vector.maxY()}); 
         this.addStop(0, stopColor1).addStop(1, stopColor2);
         return this;
     }
@@ -998,7 +1031,6 @@ Object.extend(LinearGradient, {
 Gradient.subclass("RadialGradient", {
     
     initialize: function($super, stopColor1, stopColor2) {
-        $super();
         var c = pt(0.5, 0.5);
         var r = 0.4;
         this.rawNode = NodeFactory.create("radialGradient", {cx: c.x, cy: c.y, r: r});
@@ -1238,7 +1270,7 @@ var Event = (function() {
         },
 
         toString: function() {
-            return this.type + "[" + this.rawEvent + (this.mousePoint ?  "@" + this.mousePoint : "") +  "]";
+            return "#<Event: " + this.type + (this.mousePoint ?  "@" + this.mousePoint : "") +  ">";
         },
 
         setButtonPressedAndPriorPoint: function(buttonPressed, priorPoint) {
@@ -1362,22 +1394,13 @@ if (!Prototype.Browser.Rhino) Object.extend(document, {
  */
 Wrapper.subclass('Visual', {   
 
-    documentation:  "Interface between our JavaScript graphics classes and the underlying graphics implementation.",
+    documentation:  "Interface between Lively Kernel graphics classes and the underlying graphics implementation.",
     
     rawNode: null, // set by subclasses
 
-    setType: function(type)  {
+    setPersistentType: function(type)  {
         this.rawNode.setAttributeNS(Namespace.LIVELY, "type", type);
         return this;
-    },
-
-    getType: function()  {
-        try {
-            return this.rawNode ? this.rawNode.getAttributeNS(Namespace.LIVELY, "type") : "UnknownType";
-        } catch (er) {
-            console.log('in getType this is %s caller is %s', this, arguments.callee.caller);
-            throw er;
-        }
     },
 
     withHref: function(localURl) {
@@ -1473,14 +1496,6 @@ Wrapper.subclass('Visual', {
     disableBrowserHandlers: function() {
         this.rawNode.addEventListener("dragstart", Visual.BrowserHandlerDisabler, true);
         this.rawNode.addEventListener("selectstart", Visual.BrowserHandlerDisabler, true);
-    },
-
-    inspect: function() {
-        try {
-            return this.toString();
-        } catch (er) {
-            return "{inspect error " + er + "}"
-        }
     }
     
 });
@@ -1511,17 +1526,14 @@ Visual.BrowserHandlerDisabler = {
 Visual.subclass('Shape', {
 
     shouldIgnorePointerEvents: false,
+    controlPointProximity: 10,
 
     toString: function() {
         return 'a Shape(%1,%2)'.format(this.getType(), this.bounds());
     },
-
-    getType: function() { 
-        return this.rawNode.tagName; 
-    },
-    
+  
     initialize: function(fill, strokeWidth, stroke) {
-        this.setType(this.rawNode.tagName); // debuggability
+        this.setPersistentType(this.rawNode.tagName); // debuggability
         
         if (this.shouldIgnorePointerEvents)
             this.disablePointerEvents();
@@ -1548,31 +1560,12 @@ Visual.subclass('Shape', {
 
 // Default visual attributes for Shapes
 Object.extend(Shape, {
-    controlPointProximity: 10,
+
     translateVerticesBy: function(vertices, delta) { // utility class method
         return vertices.invoke('addPt', delta); 
     },
     LineJoins: { MITER: "miter", ROUND: "round",  BEVEL: "bevel" },
-    LineCaps:  { BUTT: "butt",   ROUND: "round", SQUARE: "square" },
-    
-    classForTag: function(tagName) {
-
-        switch (tagName) {
-        case "rect":
-        case "rectangle":
-            return RectShape;
-        case "ellipse":
-            return EllipseShape;
-        case "path":
-            return PathShape;
-        case "polygon":
-            return PolygonShape;
-        case "polyline":
-            return PolylineShape;
-        default:
-            return null;
-        }
-    }
+    LineCaps:  { BUTT: "butt",   ROUND: "round", SQUARE: "square" }
 
 });
 
@@ -1633,7 +1626,7 @@ Shape.subclass('RectShape', {
     
     controlPointNear: function(p) {
         var bnds = this.bounds();
-        return bnds.partNameNear(Rectangle.corners, p, Shape.controlPointProximity);
+        return bnds.partNameNear(Rectangle.corners, p, this.controlPointProximity);
     },
     
     possibleHandleForControlPoint: function(targetMorph,mousePoint,hand) {
@@ -1705,7 +1698,7 @@ Shape.subclass('EllipseShape', {
     
     controlPointNear: function(p) {
         var bnds = this.bounds();
-        return bnds.partNameNear(Rectangle.sides, p, Shape.controlPointProximity);
+        return bnds.partNameNear(Rectangle.sides, p, this.controlPointProximity);
     },
     
     reshape: RectShape.prototype.reshape,
@@ -1824,12 +1817,12 @@ Shape.subclass('PolygonShape', {
         var verts = this.vertices();
 
         for (var i = 0; i < verts.length; i++) { // vertices
-            if (verts[i].dist(p) < Shape.controlPointProximity) 
+            if (verts[i].dist(p) < this.controlPointProximity) 
                 return i; 
         }
 
         for (var i = 0; i < verts.length - 1; i++) { // midpoints (for add vertex) return - index
-            if (verts[i].midPt(verts[i + 1]).dist(p) < Shape.controlPointProximity) 
+            if (verts[i].midPt(verts[i + 1]).dist(p) < this.controlPointProximity) 
                 return -(i + 1); 
         }
 
@@ -2166,7 +2159,7 @@ Object.subclass('Importer', {
     morphMap: null,
 
     toString: function() {
-        return "Importer";
+        return "#<Importer>";
     },
     
     initialize: function() {
@@ -2288,7 +2281,7 @@ Morph = Visual.subclass("Morph", {
 
         this.rawNode = NodeFactory.create("g");
 
-        this.setType(this.constructor.type); // this.type is actually a prototype var
+        this.setPersistentType(this.getType()); // this.type is actually a prototype var
         this.pvtSetTransform(Transform.createSimilitude(this.defaultOrigin(initialBounds, shapeType), 0, 1.0));
         this.pickId();
         this.initializePersistentState(initialBounds, shapeType);
@@ -2309,7 +2302,7 @@ Morph = Visual.subclass("Morph", {
         this.rawSubnodes = null;
         this.owner = null;
 
-        this.setType(this.constructor.type);
+        this.setPersistentType(this.getType());
         this.pvtSetTransform(this.retrieveTransform());
         var prevId = this.pickId();
         this.prevId = prevId; // for debugging FIXME remove later!
@@ -2337,7 +2330,7 @@ Morph = Visual.subclass("Morph", {
         this.rawSubnodes = null;
         this.owner = null;
 
-        this.setType(this.constructor.type);
+        this.setPersistentType(this.getType());
         this.pvtSetTransform(other.retrieveTransform());
         this.initializePersistentState(pt(0,0).asRectangle(), "rect");
         var prevId = this.pickId();
@@ -3021,13 +3014,8 @@ Morph.addMethods({
     okToDuplicate: function() { return true; },  // default is OK
     
     copy: function() {
-        //console.log("get type "  + this.constructor.type + " from " + this);
-        var scope = this.constructor.scope;
-        if (!scope) {
-            console.log("didnt find .scope on constructor %s, assuming Global, receiver %s", this.constructor.type, this);
-            scope = Global;
-        }
-        return new scope[this.constructor.type](Cloner, this);
+	var scope = this.getScope();
+        return new scope[this.getType()](Cloner, this);
     }
 
 });
@@ -3054,13 +3042,13 @@ Morph.addMethods({
         // A replacement for toString() which can't be overridden in
         // some cases.  Invoked by Object.inspect.
         try {
-            return "%1(#%2,%3)".format(this.getType(), this.id, this.shape);
-            //return "%1(#%2)".format(this.getType(), this.id);
+            return "%1(#%2,%3)".format(this.getType(), this.id, (this.shape || "").toString());
         } catch (e) {
             console.log("toString failed on " + [this.id, this.getType()]);
-            return "Morph?[" + e + "]";
+            return "#<Morph?{" + e + "}>";
         }
     },
+
 
     toJSON: function() {
         return undefined;
@@ -3549,7 +3537,7 @@ Morph.addMethods({
     },
     
     acceptsDropping: function(morph) { 
-        return this.openForDragAndDrop && morph.getType() != "WindowMorph";
+        return this.openForDragAndDrop && !(morph instanceof WindowMorph);
     }
 
 });
@@ -3690,7 +3678,7 @@ Morph.addMethods({
         var tfm = this.retrieveTransform();
         this.fullBounds = tfm.transformRectToRect(this.shape.bounds());
 
-        if (/polyline|polygon/.test(this.shape.getType())) {
+        if (/PolygonShape|PolylineShape/.test(this.shape.getType())) {
             // double border margin for polylines to account for elbow protrusions
             this.fullBounds.expandBy(this.shape.getStrokeWidth()*2);
         } else {

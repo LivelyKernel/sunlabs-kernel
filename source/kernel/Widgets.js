@@ -343,7 +343,7 @@ var ClipMorph = Morph.subclass("ClipMorph", {
         if (this.fullBounds != null) return this.fullBounds;
         this.fullBounds = this.retrieveTransform().transformRectToRect(this.shape.bounds());
     
-        if (/polyline|polygon/.test(this.shape.getType())) {
+        if (/PolygonShape|PolylineShape/.test(this.shape.getType())) {
             // double border margin for polylines to account for elbow protrusions
             this.fullBounds.expandBy(this.shape.getStrokeWidth()*2);
         } else {
@@ -422,7 +422,7 @@ var TitleBarMorph = (function() {
 
     restorePersistentState: function($super, importer) {
         $super(importer);
-        if (Visual.prototype.getType.call(this.rawNode.parentNode) == "WindowMorph") {
+        if (this.rawNode.parentNode.getAttributeNS(Namespace.LIVELY, "type") == "WindowMorph") {
             this.closeButton.target = this.menuButton.target = this.collapseButton.target = this.rawNode.parentNode;
         }
     },
@@ -836,7 +836,7 @@ var HandleMorph = (function () {
         if (helpCounter < 20) {
             helpCounter++;
             this.help = new TextMorph(evt.mousePoint.extent(pt(200, 20)), 
-                this.shape.getType() == "rect" ? this.controlHelpText : this.circleHelpText);
+                this.shape instanceof RectShape ? this.controlHelpText : this.circleHelpText);
     
             // trying to relay mouse events to the WindowControlMorph
             this.help.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
@@ -867,7 +867,7 @@ var HandleMorph = (function () {
     onMouseUp: function(evt) {
         if (!evt.isShiftDown() && !evt.isAltDown() && !evt.isCmdDown() &&
             // these hack tests should be replaced by receiver tests
-            !(this.targetMorph.getType() == "WindowMorph" || this.targetMorph.getType() == "TitleBarMorph")) {
+            !(this.targetMorph instanceof WindowMorph || this.targetMorph.getType() instanceof TitleBarMorph)) {
                 // last call for, eg, vertex deletion
                 this.targetMorph.reshape(this.partName, this.targetMorph.localize(evt.mousePoint), this, true); 
         }
@@ -914,7 +914,7 @@ var HandleMorph = (function () {
                 this.targetMorph.setBorderWidth(Math.max(0, Math.floor(d/3)/2), true);
             } else { 
                 // these hack tests should be replaced by receiver tests
-                if (this.targetMorph.getType() == "WindowMorph" || this.targetMorph.getType() == "TitleBarMorph"){
+                if (this.targetMorph instanceof WindowMorph || this.targetMorph instanceof TitleBarMorph){
                   // scale the whole window instead of reframing
                   // DI:  Note this should reframe windows, with proportional layout of the interior frames
                   // this code is all copied -- should be factored or, better, removed

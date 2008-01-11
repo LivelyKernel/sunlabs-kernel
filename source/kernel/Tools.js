@@ -447,24 +447,24 @@ function showStatsViewer(profilee,title) {
 
 Function.showStack = function() {
     if (Config.debugExtras) {
-        for (var i=0; i<DebuggingStack.length; i++) {
+        for (var i = 0; i < DebuggingStack.length; i++) {
             var args = DebuggingStack[i];
             var header = Object.inspect(args.callee.originalFunction);
-            console.log(i.toString() + ") " + header);
+            console.log("%s) %s", i, header);
             var k = header.indexOf('(');
-            header = header.substring(k+1,999);  // ')' or 'zort)' or 'zort,baz)', etc
-            for (var j=0; j<args.length; j++) {
+            header = header.substring(k + 1, 999);  // ')' or 'zort)' or 'zort,baz)', etc
+            for (var j = 0; j <args.length; j++) {
                 k = header.indexOf(')');
                 var k2 = header.indexOf(',');
                 if (k2 >= 0) k = Math.min(k,k2);
-                argName = header.substring(0,k)
-                header = header.substring(k+2,999);
-                console.log(argName + ': ' + Object.inspect(args[j]));
+                argName = header.substring(0, k)
+                header = header.substring(k + 2, 999);
+                console.log("%s: %s", argName, Object.inspect(args[j]));
             }
         }
     } else {
         for (var c = arguments.callee.caller, i = 0; c != null; c = c.caller, i++) {
-            console.log(i + ") " + Object.inspect(c));
+            console.log("%s) %s", i, Object.inspect(c));
         }
     }
 };
