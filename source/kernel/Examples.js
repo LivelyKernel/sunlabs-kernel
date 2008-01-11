@@ -4710,7 +4710,12 @@ Morph.subclass(scope, "EngineMorph", {
 
     setRunning: function(trueOrFalse) { this.running = trueOrFalse; },
 
-    nextStep: function() { if (this.running) this.doStep(); },
+    nextStep: function() {
+	if (!this.running) return;
+	// Don't bother stepping if we are in a collapsed window
+	if (this.immediateContainer() && !this.immediateContainer().contentIsVisible()) return;
+	this.doStep();
+    },
 
     doStep: function() {
         this.crankAngle += this.angleStep;

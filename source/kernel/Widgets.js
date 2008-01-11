@@ -657,6 +657,8 @@ var WindowMorph = Morph.subclass('WindowMorph', {
 
     isCollapsed: function() { return this.state == "collapsed"; },
 
+    contentIsVisible: function() { return !this.isCollapsed(); },
+
     // Following methods promote windows on first click----------------
     morphToGrabOrReceive: function($super, evt, droppingMorph, checkForDnD) {
         // If this window is doesn't need to come forward, then respond normally
@@ -914,7 +916,7 @@ var HandleMorph = (function () {
                 this.targetMorph.setBorderWidth(Math.max(0, Math.floor(d/3)/2), true);
             } else { 
                 // these hack tests should be replaced by receiver tests
-                if (this.targetMorph instanceof WindowMorph || this.targetMorph instanceof TitleBarMorph){
+                if (!Config.browserLayout  && (this.targetMorph instanceof WindowMorph || this.targetMorph instanceof TitleBarMorph)){
                   // scale the whole window instead of reframing
                   // DI:  Note this should reframe windows, with proportional layout of the interior frames
                   // this code is all copied -- should be factored or, better, removed
