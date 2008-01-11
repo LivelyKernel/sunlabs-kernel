@@ -123,7 +123,7 @@ Object.extend(Class, {
     
     // KP: obsolete, use Object.isClass
     isClass: function(object) {
-	return (object instanceof Function) &&  object.prototype && (object.functionNames().length > Object.functionNames().length);
+        return (object instanceof Function) &&  object.prototype && (object.functionNames().length > Object.functionNames().length);
     },
 
     methodNameList: function(className) {
@@ -231,25 +231,25 @@ Object.extend(Function.prototype, {
             if (ancestor && Object.isFunction(value) &&
                 value.argumentNames().first() == "$super") {
                 var method = value;
-		var advice = (function(m) {
+                var advice = (function(m) {
                     return function() { 
                         try { 
                             return ancestor[m].apply(this, arguments) 
                         } catch (e) { 
                             console.log("problem with ancestor " + Object.inspect(ancestor) 
-					+ "." + m + "(" + $A(arguments) + ")"
+                                        + "." + m + "(" + $A(arguments) + ")"
                                         + ":" + e); 
                             Function.showStack();
                             throw e;
                         }
                     };
                 })(property);
-		advice.methodName = "$superAdvice::" + property;
+                advice.methodName = "$superAdvice::" + property;
 
                 value = Object.extend(advice.wrap(method), {
                     valueOf:  function() { return method },
                     toString: function() { return method.toString() },
-		    originalFunction: method
+                    originalFunction: method
                 });
             }
 
@@ -273,7 +273,7 @@ Object.extend(Function.prototype, {
     },
     
     isClass: function(object) {
-	return (object instanceof Function) && (object.superclass || object === Object);
+        return (object instanceof Function) && (object.superclass || object === Object);
     },
 
     subclass: function(/*,... */) {
@@ -929,32 +929,33 @@ Object.extend(Color, {
 
 console.log("Color");
 
+// ===========================================================================
+// Gradient colors, stipple patterns and coordinate transformatins
+// ===========================================================================
+
 Object.subclass('Wrapper', {
     documentation: "A wrapper around a native object, stored as rawNode",
 
     getType: function() {
-	for (var ctor = this.constructor; ctor != null; ctor = ctor.originalFunction) {
-	    var type = ctor.type;
-	    if (type) return type;
-	}
-	console.log("no type for " + this.constructor);
-	Function.showStack();
-	return null;
+        for (var ctor = this.constructor; ctor != null; ctor = ctor.originalFunction) {
+            var type = ctor.type;
+           if (type) return type;
+        }
+        console.log("no type for " + this.constructor);
+        Function.showStack();
+        return null;
     },
 
     getScope: function() {
-	for (var ctor = this.constructor; ctor != null; ctor = ctor.originalFunction) {
-	    var scope = ctor.scope;
-	    if (scope) return scope;
-	}
-	console.log("no scope for " + this.constructor + " tried " + this.originalFunction);
-	//Function.showStack();
-	return Global;
+        for (var ctor = this.constructor; ctor != null; ctor = ctor.originalFunction) {
+            var scope = ctor.scope;
+            if (scope) return scope;
+        }
+        console.log("no scope for " + this.constructor + " tried " + this.originalFunction);
+        //Function.showStack();
+        return Global;
     },
 
-    
-
-    
     deserialize: function(importer, rawNode) {
         this.rawNode = rawNode.cloneNode(true);
     },
@@ -964,27 +965,22 @@ Object.subclass('Wrapper', {
     },
     
     clone: function() {
-	return new Global[this.getType()](Cloner, this);
+        return new Global[this.getType()](Cloner, this);
     },
     
     toString: function() {
-	return "#<Wrapper:" + this.rawNode + ">";
+        return "#<Wrapper:" + this.rawNode + ">";
     },
     
     inspect: function() {
-	try {
-	    return this.toString() + "[" + Exporter.nodeToString(this.rawNode) + "]";
-	} catch (er) {
-	    return "#<inspect error: " + err + ">";
-	}
+        try {
+            return this.toString() + "[" + Exporter.nodeToString(this.rawNode) + "]";
+        } catch (er) {
+            return "#<inspect error: " + err + ">";
+        }
     }
 
 });
-
-
-// ===========================================================================
-// Gradient colors, stipple patterns and coordinate transformatins
-// ===========================================================================
 
 /**
  * @class Gradient (NOTE: PORTING-SENSITIVE CODE)
@@ -1009,13 +1005,12 @@ Gradient.subclass("LinearGradient", {
     initialize: function($super, stopColor1, stopColor2, vector) {
         vector = vector || LinearGradient.NorthSouth;
         this.rawNode = NodeFactory.create("linearGradient",
-					  {x1: vector.x, y1: vector.y, 
-					   x2: vector.maxX(), y2: vector.maxY()}); 
+                       {x1: vector.x, y1: vector.y, 
+                        x2: vector.maxX(), y2: vector.maxY()}); 
         this.addStop(0, stopColor1).addStop(1, stopColor2);
         return this;
     }
 
-    
 });
 
 Object.extend(LinearGradient, {
@@ -1049,12 +1044,11 @@ Object.subclass('StipplePattern', {
 
     initialize: function(color1, h1, color2, h2) {
         this.rawNode = NodeFactory.create("pattern", 
-					  {patternUnits: 'userSpaceOnUse', x: 0, y: 0, width: 100, height: h1 + h2});
+                       {patternUnits: 'userSpaceOnUse', x: 0, y: 0, width: 100, height: h1 + h2});
         this.rawNode.appendChild(NodeFactory.create('rect', {x: 0, y: 0,  width: 100, height: h1,      fill: color1}));
         this.rawNode.appendChild(NodeFactory.create('rect', {x: 0, y: h1, width: 100, height: h1 + h2, fill: color2}));
         return this;
     }
-    
 
 });
 
@@ -1074,7 +1068,7 @@ Object.subclass('Transform', {
     },
 
     clone: function() {
-	return new Transform(this.matrix);
+        return new Transform(this.matrix);
     },
     
     getTranslation: function() {
@@ -1642,10 +1636,10 @@ Shape.subclass('RectShape', {
     },
     
     roundEdgesBy: function(r) {
-	if (r) {
+        if (r) {
             this.rawNode.setAttributeNS(null, "rx", r);
             this.rawNode.setAttributeNS(null, "ry", r);
-	}
+        }
         return this;
     }
 
@@ -3014,7 +3008,7 @@ Morph.addMethods({
     okToDuplicate: function() { return true; },  // default is OK
     
     copy: function() {
-	var scope = this.getScope();
+        var scope = this.getScope();
         return new scope[this.getType()](Cloner, this);
     }
 
