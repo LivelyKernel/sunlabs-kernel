@@ -185,11 +185,7 @@
 
 <!-- SLLK markup -->
 <g id="RotatingStar"> <!-- the rotating star as markup -->
-  <g type="Morph" transform="translate(185,407) rotate(110)">
-    <polygon points="19.5 0 40.4509 29.3893 6.02583 18.5456 -15.4508 47.5528 -15.7758 11.4618 -50 6.12303e-15 -15.7758 -11.4618 -15.4508 -47.5528 6.02583 -18.5456 40.4509 -29.3893 19.5 -4.77596e-15 " 
-	     type="polygon" fill="rgb(204,204,0)" stroke-width="1" stroke="rgb(0,0,0)"/>
-    <action><![CDATA[{"scriptName": "rotateBy", "argIfAny": 0.1, "stepTime": 50, "ticks": 0}]]></action>
-    <g type="Submorphs"/></g>
+<g type="Morph" id="1000000" transform="translate(175,322) rotate(35)"><polygon points="19.5 0 40.4509 29.3893 6.02583 18.5456 -15.4508 47.5528 -15.7758 11.4618 -50 0 -15.7758 -11.4618 -15.4508 -47.5528 6.02583 -18.5456 40.4509 -29.3893 19.5 0 " fill="rgb(204,204,0)" stroke-width="1" stroke="rgb(0,0,0)"/><action><![CDATA[{"scriptName": "rotateBy", "argIfAny": 0.1, "stepTime": 60, "ticks": 0}]]></action><g type="Submorphs"/></g>
 </g>
 
 

@@ -224,12 +224,13 @@ function populateWorldWithExamples(world) {
         if (Config.showStar) {  // Make a star
 
             if (Config.loadFromMarkup) {
-                world.addMorphWithContainerId('RotatingStar');
+		var morphs = new Importer().importFromConatiner(document.getElementById("RotatingStar"));
+		morphs.each(function(m) { lm2.myWorld.addMorph(m); });
             } else {
                 var makeStarVertices = function(r,center,startAngle) {
                     var vertices = [];
                     var nVerts = 10;
-                    for (var i=0; i<=nVerts; i++) {
+                    for (var i=0; i <= nVerts; i++) {
                         var a = startAngle + (2*Math.PI/nVerts*i);
                         var p = Point.polar(r,a);
                         if (i%2 == 0) p = p.scaleBy(0.39);

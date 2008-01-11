@@ -1145,6 +1145,8 @@ Object.extend(Transform, {
      */
     createSimilitude: function(delta, angleInRadians, scale) {
         // console.log('similitude delta is ' + Object.inspect(delta));
+	if (angleInRadians === undefined) angleInRadians = 0.0;
+	if (scale === undefined) scale = 1.0;
         var matrix = Canvas.createSVGMatrix();
         matrix = matrix.translate(delta.x, delta.y).rotate(angleInRadians.toDegrees()).scale(scale);
         return new Transform(matrix);
@@ -1534,7 +1536,6 @@ Visual.subclass('Shape', {
     },
   
     initialize: function(fill, strokeWidth, stroke) {
-        this.setPersistentType(this.rawNode.tagName); // debuggability
         
         if (this.shouldIgnorePointerEvents)
             this.disablePointerEvents();
@@ -2168,11 +2169,11 @@ Object.subclass('Importer', {
     },
     
     addMapping: function(oldId, newMorph) {
-        this.morphMap["" + oldId] = newMorph; // force strings just in case
+        this.morphMap.set(oldId.toString(), newMorph); // force strings just in case
     },
     
     lookupMorph: function(oldId) {
-        var result = this.morphMap["" + oldId];
+        var result = this.morphMap.get(oldId.toString());
         if (!result) console.log('no mapping found for oldId %s', oldId);
         return result;
     },
@@ -2191,10 +2192,21 @@ Object.subclass('Importer', {
             return new Global[morphTypeName](this, rawNode);
         } catch (er) {
             console.log("problem instantiating type %s from node %s: %s", morphTypeName, rawNode.tagName, er);
-            return null;
+	    throw er;
         }
     },
     
+    importFromConatiner: function(container) {
+	var morphs = [];
+	for (var node = container.firstChild; node != null; node = node.nextSibling) {
+	    // console.log("found node " + Exporter.nodeToString(node));
+	    if (node.tagName == "g") {
+		morphs.push(this.importFromNode(node));
+	    }
+	}
+	return morphs;
+    },
+
     importFromString: function(string) {
         return this.importFromNode(this.parse(string));
     },
@@ -2273,20 +2285,24 @@ Morph = Visual.subclass("Morph", {
     noShallowCopyProperties: ['id', 'rawNode', 'rawSubnodes', 'shape', 'submorphs', 'stepHandler'],
 
     nextNavigableSibling: null, // keyboard navigation
+    
+    internalInitialize: function(rawNode, transform) {
+	this.rawNode = rawNode;
+	this.submorphs = [];
+        this.rawSubnodes = null;
+        this.owner = null;
+        this.setPersistentType(this.getType());
+	this.pickId();
+    },
+
 
     initialize: function(initialBounds, shapeType) {
         //console.log('initializing morph %s %s', initialBounds, shapeType);
-        this.submorphs = [];
-        this.rawSubnodes = null;
-        this.owner = null;
+        this.internalInitialize(NodeFactory.create("g"));
+	this.pvtSetTransform(Transform.createSimilitude(this.defaultOrigin(initialBounds, shapeType)));
 
-        this.rawNode = NodeFactory.create("g");
-
-        this.setPersistentType(this.getType()); // this.type is actually a prototype var
-        this.pvtSetTransform(Transform.createSimilitude(this.defaultOrigin(initialBounds, shapeType), 0, 1.0));
-        this.pickId();
         this.initializePersistentState(initialBounds, shapeType);
-
+	
         this.initializeTransientState(initialBounds);
         this.disableBrowserHandlers();        
 
@@ -2297,17 +2313,10 @@ Morph = Visual.subclass("Morph", {
     },
 
     deserialize: function(importer, rawNode) {
-        this.rawNode = rawNode;
-
-        this.submorphs = [];
-        this.rawSubnodes = null;
-        this.owner = null;
-
-        this.setPersistentType(this.getType());
-        this.pvtSetTransform(this.retrieveTransform());
-        var prevId = this.pickId();
-        this.prevId = prevId; // for debugging FIXME remove later!
-        importer.addMapping(prevId, this); 
+	// FIXME what if id is not unique?
+        importer.addMapping(rawNode.getAttribute("id"), this); 
+	this.internalInitialize(rawNode);
+	this.pvtSetTransform(this.retrieveTransform());
 
         this.restoreFromSubnodes(importer);
         this.restorePersistentState(importer);    
@@ -2325,16 +2334,10 @@ Morph = Visual.subclass("Morph", {
     },
 
     copyFrom: function(other) {
-        this.rawNode = NodeFactory.create("g");
-
-        this.submorphs = [];
-        this.rawSubnodes = null;
-        this.owner = null;
-
-        this.setPersistentType(this.getType());
-        this.pvtSetTransform(other.retrieveTransform());
+        this.internalInitialize(NodeFactory.create("g"));
+	this.pvtSetTransform(other.retrieveTransform());
+	
         this.initializePersistentState(pt(0,0).asRectangle(), "rect");
-        var prevId = this.pickId();
 
         this.initializeTransientState(null);
 
