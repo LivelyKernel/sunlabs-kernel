@@ -190,8 +190,9 @@ Object.extend(Function.prototype, {
 
         for (var name in this.prototype) { 
             try {
-                if (this.prototype[name] instanceof Function) { 
-                    if (!filter || filter(name)) functionNames.push(name);
+                if ((this.prototype[name] instanceof Function) 
+		    && (!filter || filter(name))) { 
+                    functionNames.push(name);
                 } 
             } catch (er) {
                 // FF can throw an exception here ...
@@ -276,6 +277,7 @@ Object.extend(Function.prototype, {
         return (object instanceof Function) && (object.superclass || object === Object);
     },
 
+    // modified from prototype.js
     subclass: function(/*,... */) {
         var properties = $A(arguments);
         var scope = Global;
@@ -935,6 +937,7 @@ console.log("Color");
 
 Object.subclass('Wrapper', {
     documentation: "A wrapper around a native object, stored as rawNode",
+    rawNode: null,
 
     getType: function() {
         for (var ctor = this.constructor; ctor != null; ctor = ctor.originalFunction) {
@@ -952,7 +955,6 @@ Object.subclass('Wrapper', {
             if (scope) return scope;
         }
         console.log("no scope for " + this.constructor + " tried " + this.originalFunction);
-        //Function.showStack();
         return Global;
     },
 
@@ -965,17 +967,22 @@ Object.subclass('Wrapper', {
     },
     
     clone: function() {
-        return new Global[this.getType()](Cloner, this);
+	var scope = this.getScope();
+        return new scope[this.getType()](Cloner, this);
     },
     
     toString: function() {
-        return "#<Wrapper:" + this.rawNode + ">";
+	try {
+            return "#<" + this.getType() +  ":" + this.rawNode + ">";
+	} catch (err) {
+	    return "#<toString error: " + err + ">";
+	}
     },
     
     inspect: function() {
         try {
             return this.toString() + "[" + Exporter.nodeToString(this.rawNode) + "]";
-        } catch (er) {
+        } catch (err) {
             return "#<inspect error: " + err + ">";
         }
     }
@@ -1060,7 +1067,7 @@ Object.subclass('StipplePattern', {
 
 Object.subclass('Transform', {
 
-    documentation: "Implements support for object rotation, scaling, etc.",
+    documentation: "Support for object rotation, scaling, etc.",
     
     initialize: function(matrix) {
         this.matrix = matrix || Canvas.createSVGMatrix();
@@ -3742,6 +3749,7 @@ Morph.addMethods({
         try {
             return pt.matrixTransform(otherMorph.rawNode.getTransformToElement(this.rawNode));
         } catch (er) {
+	    Function.showStack();
             return pt;
         }
     },
@@ -3978,13 +3986,9 @@ Object.subclass('Model', {
 
 });
 
-Object.subclass('ModelPlug', {
-    rawNode: null,
+Wrapper.subclass('ModelPlug', {
     initialize: function(rawNode) {
         this.rawNode = rawNode;
-    },
-    toString: function() {
-        return Exporter.nodeToString(this.rawNode);
     }
 });
 
@@ -4780,7 +4784,6 @@ var HandMorph = Morph.subclass("HandMorph", function() {
         this.keyboardFocus = morphOrNull; 
         
         if (this.keyboardFocus) {
-            // console.log('focus %s', this.keyboardFocus);
             this.keyboardFocus.onFocus(this);
         }
     },
@@ -5009,7 +5012,6 @@ var HandMorph = Morph.subclass("HandMorph", function() {
             if (evt.type == 'keydown' && this.moveTopMorph(evt)) return;
             else if (evt.type == 'keypress' && this.transformTopMorph(evt)) return;
         }
-
         // manual bubbling up b/c the event won't bubble by itself    
         for (var responder = this.keyboardFocus; responder != null; responder = responder.owner) {
             if (responder.takesKeyboardFocus()) {

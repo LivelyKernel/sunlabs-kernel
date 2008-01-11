@@ -1243,7 +1243,7 @@ var CheapListMorph = TextMorph.subclass("CheapListMorph", {
         return true;
     },
 
-    onKeyPress: function(evt) {
+    onKeyDown: function(evt) {
         switch (evt.getKeyCode()) {
         case Event.KEY_UP: {
             var lineNo = this.selectedLineNo();
@@ -1268,10 +1268,6 @@ var CheapListMorph = TextMorph.subclass("CheapListMorph", {
 
     },
 
-    onKeyDown: function(evt) {
-        // do nothing
-    },
-    
     onMouseDown: function(evt) {
         this.requestKeyboardFocus(evt.hand);
         // this.selectLineAt(this.charOfY(this.localize(evt.mousePoint))); 
@@ -1681,8 +1677,7 @@ var SliderMorph = Morph.subclass("SliderMorph", {
         return newSetting; // no need to remember
     },
 
-    onKeyPress: function(evt) {
-        console.log("keypress %s", evt);
+    onKeyDown: function(evt) {
         var delta = 0;
         if (this.vertical()) {
             switch (evt.getKeyCode()) {
