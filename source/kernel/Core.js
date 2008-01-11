@@ -2298,6 +2298,8 @@ Morph = Visual.subclass("Morph", {
     stepHandler: null, // a stepHandler for time-varying morphs and animation 
     noShallowCopyProperties: ['id', 'rawNode', 'rawSubnodes', 'shape', 'submorphs', 'stepHandler'],
 
+    suppressBalloonHelp: Config.suppressBalloonHelp,
+
     nextNavigableSibling: null, // keyboard navigation
     
     internalInitialize: function(rawNode, transform) {
@@ -4167,11 +4169,12 @@ var PasteUpMorph = Morph.subclass("PasteUpMorph", {
 });
 
 /**
- * @class WorldMorph: A Morphic world (a visual container of other morphs)
+ * @class WorldMorph 
  */ 
 
 var WorldMorph = PasteUpMorph.subclass("WorldMorph", {
     
+    documentation: "A Morphic world (a visual container of other morphs)",
     fill: Color.primary.blue,
     // Default themes for the theme manager    
     defaultThemes: {
@@ -4312,7 +4315,7 @@ var WorldMorph = PasteUpMorph.subclass("WorldMorph", {
     morphMenu: function($super, evt) { 
         var menu = $super(evt);
         menu.keepOnlyItemsNamed(["inspect", "style"]);
-        menu.addItem([(Config.suppressBalloonHelp ? "enable balloon help" : "disable balloon help"),
+        menu.addItem([(Morph.prototype.suppressBalloonHelp ? "enable balloon help" : "disable balloon help"),
                      this.toggleBalloonHelp]);
         menu.addItem([(HandMorph.prototype.applyDropShadowFilter ? "disable " : "enable ") + "drop shadow (if supported)",
             function () { HandMorph.prototype.applyDropShadowFilter = !HandMorph.prototype.applyDropShadowFilter}]);
@@ -4330,7 +4333,7 @@ var WorldMorph = PasteUpMorph.subclass("WorldMorph", {
     },
    
     toggleBalloonHelp: function() {
-        Config.suppressBalloonHelp = !Config.suppressBalloonHelp;
+        Morph.prototype.suppressBalloonHelp = !Morph.prototype.suppressBalloonHelp;
     },
 
     toggleDebugBackground: function() {
@@ -4721,12 +4724,11 @@ Object.extend(WorldMorph, {
 
 /**
  * @class HandMorph
- * Defines the little triangle that represents the user's cursor.
  * Since there may be multiple users manipulating a Morphic world
  * simultaneously, we do not want to use the default system cursor.   
  */ 
 
-var HandMorph = Morph.subclass("HandMorph", function() {
+Morph.subclass("HandMorph", function() {
     // private variables
     var shadowOffset = pt(5,5);
     var handleOnCapture = true;
@@ -4734,7 +4736,7 @@ var HandMorph = Morph.subclass("HandMorph", function() {
     
     return {
 
-
+    documentation: "Defines the little triangle that represents the user's cursor.",
     applyDropShadowFilter: !!Config.enableDropShadow,
 
     initialize: function($super, local) {
@@ -5063,11 +5065,11 @@ var HandMorph = Morph.subclass("HandMorph", function() {
 
 /**
  * @class LinkMorph
- * LinkMorph implements a two-way hyperlink between two Morphic worlds
  */ 
 
-LinkMorph = Morph.subclass("LinkMorph", {
+Morph.subclass("LinkMorph", {
 
+    documentation: "two-way hyperlink between two Lively worlds",
     fill: Color.black,
     borderColor: Color.black,
     helpText: "Click here to enter or leave a subworld.\n" +
@@ -5183,21 +5185,14 @@ LinkMorph = Morph.subclass("LinkMorph", {
     },
     
     showHelp: function(evt) {
-        if (Config.suppressBalloonHelp) return;  // DI: maybe settable in window menu?
+        if (this.suppressBalloonHelp) return;  // DI: maybe settable in window menu?
         if (this.owner instanceof HandMorph) return;
         
         // Create only one help balloon at a time
         if (this.help) return;
         
         this.help = new TextMorph(evt.mousePoint.addXY(10, 10).extent(pt(260, 20)), this.helpText);
-        // trying to relay mouse events to the WindowControlMorph
-        this.help.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
-        
-        // some eye candy for the help
-        this.help.shape.roundEdgesBy(15);
-        this.help.setFill(Color.primary.yellow.lighter(3));
-        this.help.shape.setFillOpacity(.8);
-        this.help.openForDragAndDrop = false; // so it won't interfere with mouseovers
+	this.help.beHelpBalloonFor(this);
         this.world().addMorph(this.help);
     },
     

@@ -530,7 +530,7 @@ var WindowControlMorph = Morph.subclass("WindowControlMorph", {
 
     onMouseOver: function(evt) {
         this.setFill(new RadialGradient(Color.white, this.color));
-        if (this.helpText && !this.helpOpen) {
+        if (this.helpText) {
             this.showHelp(evt);
         }
     },
@@ -550,25 +550,21 @@ var WindowControlMorph = Morph.subclass("WindowControlMorph", {
     okToBeGrabbedBy: function() { return null; },
     
     showHelp: function(evt) {
-        if (Config.suppressBalloonHelp) return;  // DI: maybe settable in window menu?
-        this.helpOpen = true;
+        if (this.suppressBalloonHelp) return;  // DI: maybe settable in window menu?
         // FIXME: The size of the balloon should be calculated based on string size
-        if ( !this.help ) {
+        if (!this.help) {
             this.help = new TextMorph(evt.mousePoint.extent(pt(80, 20)), this.helpText);
-            this.help.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
-            // some eye candy for the help
-            this.help.shape.roundEdgesBy(15);
-            this.help.setFill(Color.primary.yellow.lighter(3));
-            this.help.shape.setFillOpacity(0.8);
-        } else if ( this.help.position() != evt.mousePoint ) {
+	    this.help.beHelpBalloonFor(this);
+
+        } else if (this.help.position() != evt.mousePoint) {
             this.help.setPosition(evt.mousePoint);
         }
-        // trying to relay mouse events to the WindowControlMorph
-        this.world().addMorph(this.help);
+	if (!this.help.owner)
+	    this.world().addMorph(this.help);
     },
     
     hideHelp: function() {
-        if (this.help) {this.help.remove(); this.helpOpen = false;}
+        if (this.help) this.help.remove();
     },
     
     setHelpText: function ( newText ) {
@@ -845,21 +841,14 @@ var HandleMorph = (function () {
     },
 
     showHelp: function(evt) {
-        if (Config.suppressBalloonHelp) return;  // DI: maybe settable in window menu?
+        if (this.suppressBalloonHelp) return;  // DI: maybe settable in window menu?
         // Show the balloon help only if it hasn't been shown too many times already
         if (helpCounter < 20) {
-            helpCounter++;
+            helpCounter ++;
             this.help = new TextMorph(evt.mousePoint.extent(pt(200, 20)), 
-                this.shape instanceof RectShape ? this.controlHelpText : this.circleHelpText);
-    
-            // trying to relay mouse events to the WindowControlMorph
-            this.help.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
-            // some eye candy for the help
-            this.help.shape.roundEdgesBy(15);
-            this.help.setFill(Color.primary.yellow.lighter(3));
-            this.help.shape.setFillOpacity(.8);
-            this.world().addMorph(this.help);
-        }
+				      this.shape instanceof RectShape ? this.controlHelpText : this.circleHelpText);
+            this.help.beHelpBalloonFor(this);
+        } 
     },
     
     hideHelp: function() {
