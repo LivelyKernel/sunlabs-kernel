@@ -1243,6 +1243,10 @@ var CheapListMorph = TextMorph.subclass("CheapListMorph", {
         return true;
     },
 
+    onKeyPress: function(evt) {
+	// nothing
+    },
+
     onKeyDown: function(evt) {
         switch (evt.getKeyCode()) {
         case Event.KEY_UP: {
@@ -1251,7 +1255,7 @@ var CheapListMorph = TextMorph.subclass("CheapListMorph", {
                 this.selectLineAt(this.selectionRange[0] - 2); 
                 this.setSelection(this.itemList[lineNo - 1]); 
             } 
-            evt.stop();
+	    evt.stop();
             break;
         }
     
@@ -1261,9 +1265,15 @@ var CheapListMorph = TextMorph.subclass("CheapListMorph", {
                 this.selectLineAt(this.selectionRange[1] + 2); // skip the '\n' ?
                 this.setSelection(this.itemList[lineNo + 1]); 
             } 
-            evt.stop();
+	    evt.stop();
             break;
         }
+        case Event.KEY_ESC: {
+            this.relinquishKeyboardFocus(this.world().firstHand());
+	    evt.stop();
+            break;
+        }
+	    
         }
 
     },
@@ -1675,6 +1685,10 @@ var SliderMorph = Morph.subclass("SliderMorph", {
     
     setHasKeyboardFocus: function(newSetting) { 
         return newSetting; // no need to remember
+    },
+
+    onKeyPress: function(evt) {
+	// nothing
     },
 
     onKeyDown: function(evt) {
