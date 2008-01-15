@@ -554,13 +554,13 @@ var WindowControlMorph = Morph.subclass("WindowControlMorph", {
         // FIXME: The size of the balloon should be calculated based on string size
         if (!this.help) {
             this.help = new TextMorph(evt.mousePoint.extent(pt(80, 20)), this.helpText);
-	    this.help.beHelpBalloonFor(this);
+            this.help.beHelpBalloonFor(this);
 
         } else if (this.help.position() != evt.mousePoint) {
             this.help.setPosition(evt.mousePoint);
         }
-	if (!this.help.owner)
-	    this.world().addMorph(this.help);
+
+        if (!this.help.owner) this.world().addMorph(this.help);
     },
     
     hideHelp: function() {
@@ -734,15 +734,15 @@ var WindowMorph = Morph.subclass('WindowMorph', {
     },
 
     layoutChanged: function ($super, priorExtent) {
-	$super(priorExtent);
-	if (!Config.layoutTest) return
-	if (!this.titleBar || !this.targetMorph) return
-	var titleHeight = this.titleBar.innerBounds().height;
-	var bnds = this.innerBounds();
-	var newWidth = bnds.extent().x;
-	var newHeight = bnds.extent().y;
-	this.titleBar.setExtent(pt(newWidth, titleHeight));
-	this.targetMorph.setExtent(pt(newWidth, newHeight - titleHeight));
+        $super(priorExtent);
+        if (!Config.layoutTest) return
+        if (!this.titleBar || !this.targetMorph) return
+        var titleHeight = this.titleBar.innerBounds().height;
+        var bnds = this.innerBounds();
+        var newWidth = bnds.extent().x;
+        var newHeight = bnds.extent().y;
+        this.titleBar.setExtent(pt(newWidth, titleHeight));
+        this.targetMorph.setExtent(pt(newWidth, newHeight - titleHeight));
     },
 
     updateView: function(aspect, controller) {
@@ -846,7 +846,7 @@ var HandleMorph = (function () {
         if (helpCounter < 20) {
             helpCounter ++;
             this.help = new TextMorph(evt.mousePoint.extent(pt(200, 20)), 
-				      this.shape instanceof RectShape ? this.controlHelpText : this.circleHelpText);
+                this.shape instanceof RectShape ? this.controlHelpText : this.circleHelpText);
             this.help.beHelpBalloonFor(this);
         } 
     },
@@ -1168,19 +1168,19 @@ Morph.subclass("PanelMorph", {
     },
 
     layoutChanged: function ($super, priorExtent) {
-	// Compute scales of old submorph extents in priorExtent, then scale up to new extent
-	$super(priorExtent);
-	if (!Config.layoutTest) return;
-	if(!priorExtent) return;
-	var newExtent = this.innerBounds().extent();
-	if(!newExtent) return;
-	var scalePt = newExtent.scaleByPt(priorExtent.inverted());
-	for(var i= 0; i<this.submorphs.length; i++) {
-		var sub = this.submorphs[i];
-		var subBnds = sub.innerBounds();
-		sub.setPosition(sub.getPosition().scaleByPt(scalePt));
-		sub.setExtent(sub.getExtent().scaleByPt(scalePt));
-	}
+        // Compute scales of old submorph extents in priorExtent, then scale up to new extent
+        $super(priorExtent);
+        if (!Config.layoutTest) return;
+        if (!priorExtent) return;
+        var newExtent = this.innerBounds().extent();
+        if (!newExtent) return;
+        var scalePt = newExtent.scaleByPt(priorExtent.inverted());
+        for (var i= 0; i<this.submorphs.length; i++) {
+            var sub = this.submorphs[i];
+            var subBnds = sub.innerBounds();
+            sub.setPosition(sub.getPosition().scaleByPt(scalePt));
+            sub.setExtent(sub.getExtent().scaleByPt(scalePt));
+        }
     },
 
     updateView: function(aspect, controller) {
@@ -1261,7 +1261,7 @@ var CheapListMorph = TextMorph.subclass("CheapListMorph", {
     },
 
     onKeyPress: function(evt) {
-	// nothing
+        // nothing
     },
 
     onKeyDown: function(evt) {
@@ -1272,7 +1272,7 @@ var CheapListMorph = TextMorph.subclass("CheapListMorph", {
                 this.selectLineAt(this.selectionRange[0] - 2); 
                 this.setSelection(this.itemList[lineNo - 1]); 
             } 
-	    evt.stop();
+            evt.stop();
             break;
         }
     
@@ -1282,15 +1282,14 @@ var CheapListMorph = TextMorph.subclass("CheapListMorph", {
                 this.selectLineAt(this.selectionRange[1] + 2); // skip the '\n' ?
                 this.setSelection(this.itemList[lineNo + 1]); 
             } 
-	    evt.stop();
+            evt.stop();
             break;
         }
         case Event.KEY_ESC: {
             this.relinquishKeyboardFocus(this.world().firstHand());
-	    evt.stop();
+            evt.stop();
             break;
-        }
-	    
+        }    
         }
 
     },
@@ -1595,7 +1594,7 @@ var SliderMorph = Morph.subclass("SliderMorph", {
     
     adjustForNewBounds: function($super) {
         $super();
-	this.adjustSliderParts()
+        this.adjustSliderParts()
     },
     
     adjustSliderParts: function($super) {
@@ -1708,7 +1707,7 @@ var SliderMorph = Morph.subclass("SliderMorph", {
     },
 
     onKeyPress: function(evt) {
-	// nothing
+        // nothing
     },
 
     onKeyDown: function(evt) {
@@ -1797,16 +1796,16 @@ var ScrollPane = Morph.subclass("ScrollPane", {
     },
     
     layoutChanged: function ($super, priorExtent) {
-	// Compute new bounds for clipMorph and scrollBar
-	$super(priorExtent);
-	if (!Config.layoutTest) return;
-	if(!this.clipMorph || !this.scrollBar) return;
+        // Compute new bounds for clipMorph and scrollBar
+        $super(priorExtent);
+        if (!Config.layoutTest) return;
+        if (!this.clipMorph || !this.scrollBar) return;
         var bnds = this.innerBounds();
         var clipR = bnds.withWidth(bnds.width - this.scrollBarWidth+1).insetBy(1);
-	this.clipMorph.setExtent(clipR.extent());
-	var barBnds = bnds.withTopLeft(clipR.topRight());
-	this.scrollBar.setBounds(barBnds);
-	this.scrollBar.adjustForNewBounds();
+        this.clipMorph.setExtent(clipR.extent());
+        var barBnds = bnds.withTopLeft(clipR.topRight());
+        this.scrollBar.setBounds(barBnds);
+        this.scrollBar.adjustForNewBounds();
     }
 
 });

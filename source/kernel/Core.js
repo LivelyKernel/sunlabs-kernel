@@ -191,7 +191,7 @@ Object.extend(Function.prototype, {
         for (var name in this.prototype) { 
             try {
                 if ((this.prototype[name] instanceof Function) 
-		    && (!filter || filter(name))) { 
+                    && (!filter || filter(name))) { 
                     functionNames.push(name);
                 } 
             } catch (er) {
@@ -674,18 +674,18 @@ Rectangle.addMethods({
     
     scaleByRect: function(r) { // r is a relative rect, as a pane spec in a window
         return new Rectangle (
-		this.x + (r.x*this.width),
-		this.y + (r.y*this.height),
-		r.width*this.width,
-		r.height*this.height ); 
+            this.x + (r.x*this.width),
+            this.y + (r.y*this.height),
+            r.width * this.width,
+            r.height * this.height ); 
     },
     
     scaleRectIn: function(fullRect) { // return a relative rect for this as a part of fullRect
         return new Rectangle (
-		(this.x - fullRect.x) / fullRect.width,
-		(this.y - fullRect.y) / fullRect.height,
-		this.width / fullRect.width,
-		this. height / fullRect. height ); 
+            (this.x - fullRect.x) / fullRect.width,
+            (this.y - fullRect.y) / fullRect.height,
+             this.width  / fullRect.width,
+             this.height / fullRect.height ); 
     },
     
     insetBy: function(d) {
@@ -981,16 +981,16 @@ Object.subclass('Wrapper', {
     },
     
     clone: function() {
-	var scope = this.getScope();
+        var scope = this.getScope();
         return new scope[this.getType()](Cloner, this);
     },
     
     toString: function() {
-	try {
+        try {
             return "#<" + this.getType() +  ":" + this.rawNode + ">";
-	} catch (err) {
-	    return "#<toString error: " + err + ">";
-	}
+        } catch (err) {
+            return "#<toString error: " + err + ">";
+        }
     },
     
     inspect: function() {
@@ -1159,8 +1159,8 @@ Object.extend(Transform, {
      */
     createSimilitude: function(delta, angleInRadians, scale) {
         // console.log('similitude delta is ' + Object.inspect(delta));
-	if (angleInRadians === undefined) angleInRadians = 0.0;
-	if (scale === undefined) scale = 1.0;
+        if (angleInRadians === undefined) angleInRadians = 0.0;
+        if (scale === undefined) scale = 1.0;
         var matrix = Canvas.createSVGMatrix();
         matrix = matrix.translate(delta.x, delta.y).rotate(angleInRadians.toDegrees()).scale(scale);
         return new Transform(matrix);
@@ -2206,19 +2206,19 @@ Object.subclass('Importer', {
             return new Global[morphTypeName](this, rawNode);
         } catch (er) {
             console.log("problem instantiating type %s from node %s: %s", morphTypeName, rawNode.tagName, er);
-	    throw er;
+            throw er;
         }
     },
     
     importFromContainer: function(container) {
-	var morphs = [];
-	for (var node = container.firstChild; node != null; node = node.nextSibling) {
-	    // console.log("found node " + Exporter.nodeToString(node));
-	    if (node.tagName == "g") {
-		morphs.push(this.importFromNode(node));
-	    }
-	}
-	return morphs;
+        var morphs = [];
+        for (var node = container.firstChild; node != null; node = node.nextSibling) {
+            // console.log("found node " + Exporter.nodeToString(node));
+            if (node.tagName == "g") {
+                morphs.push(this.importFromNode(node));
+            }
+        }
+        return morphs;
     },
 
     importFromString: function(string) {
@@ -2303,22 +2303,21 @@ Morph = Visual.subclass("Morph", {
     nextNavigableSibling: null, // keyboard navigation
     
     internalInitialize: function(rawNode, transform) {
-	this.rawNode = rawNode;
-	this.submorphs = [];
+        this.rawNode = rawNode;
+        this.submorphs = [];
         this.rawSubnodes = null;
         this.owner = null;
         this.setPersistentType(this.getType());
-	this.pickId();
+        this.pickId();
     },
-
 
     initialize: function(initialBounds, shapeType) {
         //console.log('initializing morph %s %s', initialBounds, shapeType);
         this.internalInitialize(NodeFactory.create("g"));
-	this.pvtSetTransform(Transform.createSimilitude(this.defaultOrigin(initialBounds, shapeType)));
+        this.pvtSetTransform(Transform.createSimilitude(this.defaultOrigin(initialBounds, shapeType)));
 
         this.initializePersistentState(initialBounds, shapeType);
-	
+
         this.initializeTransientState(initialBounds);
         this.disableBrowserHandlers();        
 
@@ -2329,10 +2328,10 @@ Morph = Visual.subclass("Morph", {
     },
 
     deserialize: function(importer, rawNode) {
-	// FIXME what if id is not unique?
+        // FIXME what if id is not unique?
         importer.addMapping(rawNode.getAttribute("id"), this); 
-	this.internalInitialize(rawNode);
-	this.pvtSetTransform(this.retrieveTransform());
+        this.internalInitialize(rawNode);
+        this.pvtSetTransform(this.retrieveTransform());
 
         this.restoreFromSubnodes(importer);
         this.restorePersistentState(importer);    
@@ -2340,7 +2339,6 @@ Morph = Visual.subclass("Morph", {
         this.initializeTransientState(null);
 
         this.disableBrowserHandlers();        
-
 
         if (this.activeScripts) {
             console.log('started stepping %s', this);
@@ -2351,8 +2349,8 @@ Morph = Visual.subclass("Morph", {
 
     copyFrom: function(other) {
         this.internalInitialize(NodeFactory.create("g"));
-	this.pvtSetTransform(other.retrieveTransform());
-	
+        this.pvtSetTransform(other.retrieveTransform());
+
         this.initializePersistentState(pt(0,0).asRectangle(), "rect");
 
         this.initializeTransientState(null);
@@ -2646,7 +2644,7 @@ Object.extend(Morph, {
     onLayoutChange: function(fieldName) { 
         return function(/* arguments*/) {
             var priorExtent = this.innerBounds().extent();
-	    this.changed();
+            this.changed();
             var args = $A(arguments);
             var proceed = args.shift();
             var result = proceed.apply(this, args);
@@ -3769,7 +3767,7 @@ Morph.addMethods({
         try {
             return pt.matrixTransform(otherMorph.rawNode.getTransformToElement(this.rawNode));
         } catch (er) {
-	    Function.showStack();
+            Function.showStack();
             return pt;
         }
     },
@@ -3792,7 +3790,7 @@ Morph.addMethods({
         // this.bounds(); 
         if (this.owner && this.owner !== this.world()) {     // May affect owner as well...
             if (!Config.layoutTest) this.owner.layoutChanged();
-	}
+        }
     },
     
     recordChange: function(fieldName/*:String*/) {  
@@ -5192,7 +5190,7 @@ Morph.subclass("LinkMorph", {
         if (this.help) return;
         
         this.help = new TextMorph(evt.mousePoint.addXY(10, 10).extent(pt(260, 20)), this.helpText);
-	this.help.beHelpBalloonFor(this);
+        this.help.beHelpBalloonFor(this);
         this.world().addMorph(this.help);
     },
     
