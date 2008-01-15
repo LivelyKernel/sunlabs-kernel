@@ -477,11 +477,13 @@ ClipMorph.subclass(scope, "DoodleMorph", {
     },
     
     setColor: function(val) {
+		console.log("Setting Color");
         this.colorvalue = val;
         if ( !this.colorvalue && this.colorMorph != null ) { // false
             this.colorMorph.remove();
             return;
         }
+
         if ( this.colorMorph != null ) {
             if ( this.colorMorph.position() != this.colorsbutton.bounds().topRight().subPt(pt(0,20)) ) {
                 this.colorMorph.setPosition(this.colorsbutton.bounds().topRight().subPt(pt(0,20)));
@@ -491,33 +493,36 @@ ClipMorph.subclass(scope, "DoodleMorph", {
         }
   
         if ( this.colorvalue ) {
-            this.colorMorph = new Morph(new Rectangle(0, 0, 100, 110));
+
+            this.colorMorph = new Morph(this.colorsbutton.bounds().topRight().subPt(pt(0,20)).extent(pt(110,110)), "rect");
+
             this.colorMorph.shape.roundEdgesBy(10);
             this.colorMorph.setFill(Color.white);
             this.colorMorph.shape.setFillOpacity(.7);
 
-            var m = TextMorph(new Rectangle(-45, -50, 80, 20), "Border color");
-            m.relayMouseEvents(this.colorMorph, {onMouseDown: "onMouseDown", onMouseUp: "onMouseUp"});
-            m.setBorderWidth(0);
-            m.shape.roundEdgesBy(10);
-            m.shape.setFillOpacity(0);
-            this.colorMorph.addMorph(m);
-            m = new TextMorph(new Rectangle(-45, 0, 80, 20), "Fill color");
+            var m = new TextMorph(new Rectangle(10, 5, 80, 20), "Border color");
             m.relayMouseEvents(this.colorMorph, {onMouseDown: "onMouseDown", onMouseUp: "onMouseUp"});
             m.setBorderWidth(0);
             m.shape.roundEdgesBy(10);
             m.shape.setFillOpacity(0);
             this.colorMorph.addMorph(m);
 
-            this.colorpicker = new ColorPickerMorph(new Rectangle(-45, -30, 50, 30));
+            m = new TextMorph(new Rectangle(10, 65, 80, 20), "Fill color");
+            m.relayMouseEvents(this.colorMorph, {onMouseDown: "onMouseDown", onMouseUp: "onMouseUp"});
+            m.setBorderWidth(0);
+            m.shape.roundEdgesBy(10);
+            m.shape.setFillOpacity(0);
+            this.colorMorph.addMorph(m);
+
+            this.colorpicker = new ColorPickerMorph(new Rectangle(10, 25, 40, 20));
             this.colorMorph.addMorph(this.colorpicker);
-            this.fillpicker = new ColorPickerMorph(new Rectangle(-45, 20, 50, 30));
+            this.fillpicker = new ColorPickerMorph(new Rectangle(10, 85, 40, 20));
             this.colorMorph.addMorph(this.fillpicker);
 
-            this.colorMorph.borderRect = new Morph(new Rectangle(15, -30, 30, 30), 'ellipse');
+            this.colorMorph.borderRect = new Morph(new Rectangle(70, 25, 20, 20), 'ellipse');
             this.colorMorph.borderRect.setFill(this.drawingColor);
             this.colorMorph.addMorph(this.colorMorph.borderRect);
-            this.colorMorph.fillRect = new Morph(new Rectangle(15, 20, 30, 30), 'ellipse');
+            this.colorMorph.fillRect = new Morph(new Rectangle(70, 85, 20, 20), 'ellipse');
             this.colorMorph.fillRect.setFill(this.fillColor);
             this.colorMorph.addMorph(this.colorMorph.fillRect);
 
@@ -525,6 +530,9 @@ ClipMorph.subclass(scope, "DoodleMorph", {
             this.addMorph(this.colorMorph);
             this.colorpicker.connectModel({model: this, setColor: "setColoring"});
             this.fillpicker.connectModel({model: this, setColor: "setFillColor"});
+
+            this.colorMorph.setPosition(this.colorsbutton.bounds().topRight().subPt(pt(0,20)));
+
         }
     },
     
@@ -533,6 +541,8 @@ ClipMorph.subclass(scope, "DoodleMorph", {
     },
     
     setColoring: function(color) {
+				console.log("Setting coloring");
+
         this.drawingColor = color;
         this.colorMorph.borderRect.setFill(this.drawingColor);
         if ( this.currentSelection != null ) {
@@ -550,6 +560,7 @@ ClipMorph.subclass(scope, "DoodleMorph", {
     },
 
     setLine: function(value) {
+
         this.line = value;
         var items = [
             ["No borders", this, "setLineWidth", 0],
