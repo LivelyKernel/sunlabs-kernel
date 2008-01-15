@@ -1,5 +1,5 @@
 /*
- * Copyright © 2006-2007 Sun Microsystems, Inc.
+ * Copyright © 2006-2008 Sun Microsystems, Inc.
  * All rights reserved.  Use is subject to license terms.
  * This distribution may include materials developed by third parties.
  *  
@@ -12,12 +12,7 @@
  * @class TutorialMorph
  */
 
-TutorialMorph = HostClass.create('TutorialMorph', Morph);
-
-Object.extend(TutorialMorph.prototype, {
-
-    // Reference to the world 
-    world: null,
+TutorialMorph = Morph.subclass("TutorialMorph", {
 
     // Function to populate the world
     populateWorld: function(world) { 
@@ -31,7 +26,7 @@ Object.extend(TutorialMorph.prototype, {
 
         // Open a map widget
         var tile = apps.maps.tileExtent;
-        var map = apps.maps.MapFrameMorph(new Rectangle(0, 0, 2*tile.x, 2*tile.y), true);
+        var map = new apps.maps.MapFrameMorph(new Rectangle(0, 0, 2*tile.x, 2*tile.y), true);
         map.setScale(0.7);
         map.setPosition(pt(900, 25));
         world.addMorph(map);
@@ -49,7 +44,7 @@ Object.extend(TutorialMorph.prototype, {
     createTutorial: function() {
         
         // Create an empty world
-        world = WorldMorph(Canvas);
+        var world = new WorldMorph(Canvas);
         
         // Set the world current and display it
         WorldMorph.setCurrent(world);
@@ -68,7 +63,7 @@ Object.extend(TutorialMorph.prototype, {
 
 // Instantiate the tutorial
 function main() {
-    TutorialMorph();
+    new TutorialMorph();
 }
 
 main();

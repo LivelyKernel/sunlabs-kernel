@@ -1,5 +1,5 @@
 /*
- * Copyright © 2006-2007 Sun Microsystems, Inc.
+ * Copyright © 2006-2008 Sun Microsystems, Inc.
  * All rights reserved.  Use is subject to license terms.
  * This distribution may include materials developed by third parties.
  *  
@@ -12,18 +12,13 @@
  * @class TutorialMorph
  */
 
-TutorialMorph = HostClass.create('TutorialMorph', Morph);
-
-Object.extend(TutorialMorph.prototype, {
-
-    // Reference to the world 
-    world: null,
+TutorialMorph = Morph.subclass("TutorialMorph", {
 
     // Function to populate the world
     populateWorld: function(world) { 
     
         // Create a sample rectangle       
-        widget = Morph(pt(500, 50).extent(pt(80, 40), "rect"));
+        var widget = new Morph(pt(500, 50).extent(pt(80, 40), "rect"));
         widget.setFill(Color.red);
         world.addMorph(widget);
     },
@@ -32,7 +27,7 @@ Object.extend(TutorialMorph.prototype, {
     createTutorial: function() {
         
         // Create an empty world
-        world = WorldMorph(Canvas);
+        var world = new WorldMorph(Canvas);
         
         // Set the world current and display it
         WorldMorph.setCurrent(world);
@@ -51,7 +46,7 @@ Object.extend(TutorialMorph.prototype, {
 
 // Instantiate the tutorial
 function main() {
-    TutorialMorph();
+    new TutorialMorph();
 }
 
 main();

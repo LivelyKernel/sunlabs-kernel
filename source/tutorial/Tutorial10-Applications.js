@@ -1,5 +1,5 @@
 /*
- * Copyright © 2006-2007 Sun Microsystems, Inc.
+ * Copyright © 2006-2008 Sun Microsystems, Inc.
  * All rights reserved.  Use is subject to license terms.
  * This distribution may include materials developed by third parties.
  *  
@@ -12,12 +12,7 @@
  * @class TutorialMorph
  */
 
-TutorialMorph = HostClass.create('TutorialMorph', Morph);
-
-Object.extend(TutorialMorph.prototype, {
-
-    // Reference to the world 
-    world: null,
+TutorialMorph = Morph.subclass("TutorialMorph", {
 
     // Function to populate the world
     populateWorld: function(world) { 
@@ -26,17 +21,17 @@ Object.extend(TutorialMorph.prototype, {
         // have been defined in Examples.js
 
         // Add a clock
-        var widget = ClockMorph(pt(110, 110), 100);
+        var widget = new ClockMorph(pt(110, 110), 100);
         world.addMorph(widget);
         widget.startSteppingScripts();
 
         // Add a Doodle Morph
-        widget = WindowMorph(DoodleMorph(pt(425, 10).extent(pt(300, 300))), 'Doodle Morph');
+        widget = new WindowMorph(new DoodleMorph(pt(425, 10).extent(pt(300, 300))), 'Doodle Morph');
         world.addMorph(widget);
         
         // Add Asteroids game
         var gameMorph = apps.asteroids.makeGameMorph(pt(150, 90).extent(pt(600, 300)));
-        world.addMorph(WindowMorph(gameMorph, 'Asteroids!'));
+        world.addMorph(new WindowMorph(gameMorph, 'Asteroids!'));
         apps.asteroids.initialize();
         gameMorph.runAsteroidsGame();
         
@@ -46,7 +41,7 @@ Object.extend(TutorialMorph.prototype, {
     createTutorial: function() {
         
         // Create an empty world
-        world = WorldMorph(Canvas);
+        var world = new WorldMorph(Canvas);
         
         // Set the world current and display it
         WorldMorph.setCurrent(world);
@@ -65,7 +60,7 @@ Object.extend(TutorialMorph.prototype, {
 
 // Instantiate the tutorial
 function main() {
-    TutorialMorph();
+    new TutorialMorph();
 }
 
 main();

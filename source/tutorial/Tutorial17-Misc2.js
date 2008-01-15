@@ -1,5 +1,5 @@
 /*
- * Copyright © 2006-2007 Sun Microsystems, Inc.
+ * Copyright © 2006-2008 Sun Microsystems, Inc.
  * All rights reserved.  Use is subject to license terms.
  * This distribution may include materials developed by third parties.
  *  
@@ -12,12 +12,7 @@
  * @class TutorialMorph
  */
 
-TutorialMorph = HostClass.create('TutorialMorph', Morph);
-
-Object.extend(TutorialMorph.prototype, {
-
-    // Reference to the world 
-    world: null,
+TutorialMorph = Morph.subclass("TutorialMorph", {
 
     // Function to populate the world
     populateWorld: function(world) { 
@@ -30,14 +25,14 @@ Object.extend(TutorialMorph.prototype, {
         var dx = pt(120, 0);
  
         // Create a sample rectangle       
-        widget = Morph(loc.extent(widgetExtent), "rect");
+        widget = new Morph(loc.extent(widgetExtent), "rect");
         widget.setFill(colors[0]);
         world.addMorph(widget);
         widget.rotateBy(0.5);
         widget.toggleFisheye();
 
         // Create a sample ellipse
-        widget = Morph(loc.addPt(dx).extent(widgetExtent), "ellipse");
+        widget = new Morph(loc.addPt(dx).extent(widgetExtent), "ellipse");
         widget.setFill(colors[1]);
         world.addMorph(widget);
         widget.startStepping(10, "rotateBy", -0.1);
@@ -50,19 +45,19 @@ Object.extend(TutorialMorph.prototype, {
         
         // Create a sample polygon
         var l2 = loc.addPt(dx);
-        widget = Morph(l2.asRectangle(),"rect");
-        widget.setShape(PolygonShape([pt(0,0),pt(70,0),pt(40,30),pt(0,0)], colors[2],1,Color.black));
+        widget = new Morph(l2.asRectangle(),"rect");
+        widget.setShape(new PolygonShape([pt(0,0),pt(70,0),pt(40,30),pt(0,0)], colors[2],1,Color.black));
         world.addMorph(widget);
         
         // Create sample text widgets
         loc = loc.addPt(dy);    
-        widget = TextMorph(loc.extent(pt(100,50)), "Big Text");
+        widget = new TextMorph(loc.extent(pt(100,50)), "Big Text");
         widget.setFontSize(20);
         widget.setTextColor(Color.blue);
         world.addMorph(widget);
         widget.rotateBy(0.5);
 
-        widget = TextMorph(loc.addPt(dx).extent(pt(140,50)), "Unbordered");
+        widget = new TextMorph(loc.addPt(dx).extent(pt(140,50)), "Unbordered");
         widget.setFontSize(20);  
         widget.setBorderWidth(0);  
         widget.setFill(null);
@@ -73,7 +68,7 @@ Object.extend(TutorialMorph.prototype, {
     createTutorial: function() {
         
         // Create an empty world
-        world = WorldMorph(Canvas);
+        var world = new WorldMorph(Canvas);
         
         // Set the world current and display it
         WorldMorph.setCurrent(world);
@@ -92,7 +87,7 @@ Object.extend(TutorialMorph.prototype, {
 
 // Instantiate the tutorial
 function main() {
-    TutorialMorph();
+    new TutorialMorph();
 }
 
 main();

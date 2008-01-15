@@ -1,5 +1,5 @@
 /*
- * Copyright © 2006-2007 Sun Microsystems, Inc.
+ * Copyright © 2006-2008 Sun Microsystems, Inc.
  * All rights reserved.  Use is subject to license terms.
  * This distribution may include materials developed by third parties.
  *  
@@ -12,12 +12,7 @@
  * @class TutorialMorph
  */
 
-TutorialMorph = HostClass.create('TutorialMorph', Morph);
-
-Object.extend(TutorialMorph.prototype, {
-
-    // Reference to the world 
-    world: null,
+TutorialMorph = Morph.subclass("TutorialMorph", {
 
     // Scripts that we use in the text boxes
     script1: "P = new Pen(); \nP.setPenColor(Color.red); \nfor (var i=1; i<=60; i++) \n   { P.go(2*i); P.turn(59); }; \nP.drawLines(); \n",
@@ -28,17 +23,19 @@ Object.extend(TutorialMorph.prototype, {
     // Function to populate the world
     populateWorld: function(world) { 
     
-        var widget = TextMorph(pt( 50,  30).extent(pt(250, 50)), this.script1);
+        var widget;
+
+        widget = new TextMorph(pt( 50,  30).extent(pt(250, 50)), this.script1);
         world.addMorph(widget);
 
-        var widget = TextMorph(pt(400,  30).extent(pt(250, 50)), this.script2);
+        widget = new TextMorph(pt(400,  30).extent(pt(250, 50)), this.script2);
         world.addMorph(widget);
 
-        var widget = TextMorph(pt( 50, 120).extent(pt(250, 50)), this.script3);
+        widget = new TextMorph(pt( 50, 120).extent(pt(250, 50)), this.script3);
         world.addMorph(widget);
         widget.rotateBy(0.1); // Just for fun...
 
-        var widget = TextMorph(pt(400, 120).extent(pt(250, 50)), this.script4);
+        widget = new TextMorph(pt(400, 120).extent(pt(250, 50)), this.script4);
         world.addMorph(widget);
         widget.rotateBy(0.2); // Just for fun...
         widget.setScale(1.2); // Just for fun...
@@ -49,7 +46,7 @@ Object.extend(TutorialMorph.prototype, {
     createTutorial: function() {
         
         // Create an empty world
-        world = WorldMorph(Canvas);
+        var world = new WorldMorph(Canvas);
         
         // Set the world current and display it
         WorldMorph.setCurrent(world);
@@ -68,7 +65,7 @@ Object.extend(TutorialMorph.prototype, {
 
 // Instantiate the tutorial
 function main() {
-    TutorialMorph();
+    new TutorialMorph();
 }
 
 main();

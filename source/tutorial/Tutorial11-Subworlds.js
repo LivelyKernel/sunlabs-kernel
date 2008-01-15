@@ -1,5 +1,5 @@
 /*
- * Copyright © 2006-2007 Sun Microsystems, Inc.
+ * Copyright © 2006-2008 Sun Microsystems, Inc.
  * All rights reserved.  Use is subject to license terms.
  * This distribution may include materials developed by third parties.
  *  
@@ -12,22 +12,17 @@
  * @class TutorialMorph
  */
 
-TutorialMorph = HostClass.create('TutorialMorph', Morph);
-
-Object.extend(TutorialMorph.prototype, {
-
-    // Reference to the world 
-    world: null,
+TutorialMorph = Morph.subclass("TutorialMorph", {
 
     // Function to populate the world
     populateWorld: function(world) { 
     
         // Add a LinkMorph
-        var link = LinkMorph(null, pt(50, 50));
+        var link = new LinkMorph(null, pt(50, 50));
         world.addMorph(link);
 
         // Add a TextMorph to the main world
-        var text = TextMorph(pt(150, 40).extent(pt(300, 50)), "This is the top-level world");
+        var text = new TextMorph(pt(150, 40).extent(pt(300, 50)), "This is the top-level world");
         text.setFontSize(20);
         text.setTextColor(Color.blue);
         world.addMorph(text);
@@ -40,12 +35,12 @@ Object.extend(TutorialMorph.prototype, {
         var dx = pt(120, 0);
  
         // Create a sample rectangle       
-        widget = Morph(loc.extent(widgetExtent), "rect");
+        widget = new Morph(loc.extent(widgetExtent), "rect");
         widget.setFill(colors[0]);
         world.addMorph(widget);
 
         // Create a sample ellipse
-        widget = Morph(loc.addPt(dx).extent(widgetExtent), "ellipse");
+        widget = new Morph(loc.addPt(dx).extent(widgetExtent), "ellipse");
         widget.setFill(colors[1]);
         world.addMorph(widget);
 
@@ -56,16 +51,16 @@ Object.extend(TutorialMorph.prototype, {
         
         // Create a sample polygon
         var l2 = loc.addPt(dx);
-        widget = Morph(l2.asRectangle(),"rect");
-        widget.setShape(PolygonShape([pt(0,0),pt(70,0),pt(40,30),pt(0,0)], colors[2],1,Color.black));
+        widget = new Morph(l2.asRectangle(),"rect");
+        widget.setShape(new PolygonShape([pt(0,0),pt(70,0),pt(40,30),pt(0,0)], colors[2],1,Color.black));
         world.addMorph(widget);
     
         // Add an ImageMorph to the subworld
-        var image = ImageMorph(pt(140, 60).extent(672/2, 448/2), "../Resources/images/Halloween4.jpg");
+        var image = new ImageMorph(pt(140, 60).extent(672/2, 448/2), "../Resources/images/Halloween4.jpg");
         link.myWorld.addMorph(image); 
 
         // Add a TextMorph
-        var credits = TextMorph(pt(140, 300).extent(pt(400, 300)), 
+        var credits = new TextMorph(pt(140, 300).extent(pt(400, 300)), 
                           "Our Core Team Members (pictured from left to right):\n"
                         + "- Tommi Mikkonen\n" 
                         + "- Krzysztof Palacz\n"
@@ -80,7 +75,7 @@ Object.extend(TutorialMorph.prototype, {
     createTutorial: function() {
         
         // Create an empty world
-        world = WorldMorph(Canvas);
+        var world = new WorldMorph(Canvas);
         
         // Set the world current and display it
         WorldMorph.setCurrent(world);
@@ -99,7 +94,7 @@ Object.extend(TutorialMorph.prototype, {
 
 // Instantiate the tutorial
 function main() {
-    TutorialMorph();
+    new TutorialMorph();
 }
 
 main();

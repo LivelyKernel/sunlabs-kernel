@@ -1,5 +1,5 @@
 /*
- * Copyright © 2006-2007 Sun Microsystems, Inc.
+ * Copyright © 2006-2008 Sun Microsystems, Inc.
  * All rights reserved.  Use is subject to license terms.
  * This distribution may include materials developed by third parties.
  *  
@@ -12,12 +12,7 @@
  * @class TutorialMorph
  */
 
-TutorialMorph = HostClass.create('TutorialMorph', Morph);
-
-Object.extend(TutorialMorph.prototype, {
-
-    // Reference to the world 
-    world: null,
+TutorialMorph = Morph.subclass("TutorialMorph", {
 
     makeStarVertices: function(r,center,startAngle) {
         var vertices = [];
@@ -36,8 +31,8 @@ Object.extend(TutorialMorph.prototype, {
     populateWorld: function(world) { 
 
         // Create a polygon shape that looks like a star
-        var widget = Morph(pt(0,0).asRectangle(), "rect");
-        widget.setShape(PolygonShape(this.makeStarVertices(50,pt(0,0),0), Color.yellow, 1, Color.black));
+        var widget = new Morph(pt(0,0).asRectangle(), "rect");
+        widget.setShape(new PolygonShape(this.makeStarVertices(50,pt(0,0),0), Color.yellow, 1, Color.black));
         widget.setPosition(pt(100, 100));
         world.addMorph(widget);
         
@@ -45,7 +40,7 @@ Object.extend(TutorialMorph.prototype, {
         widget.startStepping(50, "rotateBy", 0.1);
 
         // Add a label to the star
-        var widget2 = TextMorph(pt(10, 10).extent(pt(150, 50)), "I'm using a timer...");
+        var widget2 = new TextMorph(pt(10, 10).extent(pt(150, 50)), "I'm using a timer...");
         widget2.setFontSize(20);
         widget.addMorph(widget2);
 
@@ -56,11 +51,11 @@ Object.extend(TutorialMorph.prototype, {
 
         // Place the second copy on top of the previous one (just for fun...)
         var copy2 = copy.copy();
-        copy2.setPosition(pt(0, 0));
+        // copy2.setPosition(pt(0, 0));
         copy.addMorph(copy2); 
 
         // Add a clock that rotates and moves slowly as it ticks
-        var clock = ClockMorph(pt(100, 300), 50);
+        var clock = new ClockMorph(pt(100, 300), 50);
         world.addMorph(clock);
         clock.startStepping(1000, "rotateBy", 0.1);
         clock.startStepping(1000, "moveBy", pt(10, 0));
@@ -72,7 +67,7 @@ Object.extend(TutorialMorph.prototype, {
     createTutorial: function() {
         
         // Create an empty world
-        world = WorldMorph(Canvas);
+        var world = new WorldMorph(Canvas);
         
         // Set the world current and display it
         WorldMorph.setCurrent(world);
@@ -91,7 +86,7 @@ Object.extend(TutorialMorph.prototype, {
 
 // Instantiate the tutorial
 function main() {
-    TutorialMorph();
+    new TutorialMorph();
 }
 
 main();
