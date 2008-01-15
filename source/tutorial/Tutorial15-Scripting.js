@@ -9,10 +9,10 @@
  */ 
 
 /**
- * @class TutorialMorph
+ * @class TutorialExample
  */
 
-TutorialMorph = Morph.subclass("TutorialMorph", {
+Object.subclass("TutorialExample", {
 
     makeStarVertices: function(r,center,startAngle) {
         var vertices = [];
@@ -86,7 +86,7 @@ TutorialMorph = Morph.subclass("TutorialMorph", {
 
 // Instantiate the tutorial
 function main() {
-    new TutorialMorph();
+    new TutorialExample();
 }
 
 main();

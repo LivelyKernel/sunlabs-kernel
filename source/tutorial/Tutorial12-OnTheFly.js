@@ -9,10 +9,10 @@
  */ 
 
 /**
- * @class TutorialMorph
+ * @class TutorialExample
  */
 
-TutorialMorph = Morph.subclass("TutorialMorph", {
+Object.subclass("TutorialExample", {
 
     // Scripts that we use in the text boxes
     script1: "P = new Pen(); \nP.setPenColor(Color.red); \nfor (var i=1; i<=60; i++) \n   { P.go(2*i); P.turn(59); }; \nP.drawLines(); \n",
@@ -65,7 +65,7 @@ TutorialMorph = Morph.subclass("TutorialMorph", {
 
 // Instantiate the tutorial
 function main() {
-    new TutorialMorph();
+    new TutorialExample();
 }
 
 main();
