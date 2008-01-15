@@ -224,8 +224,8 @@ function populateWorldWithExamples(world) {
         if (Config.showStar) {  // Make a star
 
             if (Config.loadFromMarkup) {
-		var morphs = new Importer().importFromConatiner(document.getElementById("RotatingStar"));
-		morphs.each(function(m) { lm2.myWorld.addMorph(m); });
+                var morphs = new Importer().importFromContainer(document.getElementById("RotatingStar"));
+                morphs.each(function(m) { lm2.myWorld.addMorph(m); });
             } else {
                 var makeStarVertices = function(r,center,startAngle) {
                     var vertices = [];

@@ -676,7 +676,6 @@ scope.TextMorph = Morph.subclass("TextMorph", {
 
     initializePersistentState: function($super, initialBounds, shapeType) {
         $super(initialBounds, shapeType);
-
         this.rawTextNode = null;
 
         // the selection element is persistent although its contents are not
@@ -828,16 +827,15 @@ scope.TextMorph = Morph.subclass("TextMorph", {
     },
 
     beHelpBalloonFor: function(targetMorph) {
-	this.relayMouseEvents(targetMorph, 
-			      {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
+        this.relayMouseEvents(targetMorph, 
+            {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
         // some eye candy for the help
         this.shape.roundEdgesBy(15);
         this.setFill(Color.primary.yellow.lighter(3));
         this.shape.setFillOpacity(.8);
         this.openForDragAndDrop = false; // so it won't interfere with mouseovers
-	return this;
+        return this;
     },
-
 
     // Since command keys do not work on all browsers,
     // make it possible to evaluate the contents

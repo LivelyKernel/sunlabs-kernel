@@ -2210,7 +2210,7 @@ Object.subclass('Importer', {
         }
     },
     
-    importFromConatiner: function(container) {
+    importFromContainer: function(container) {
 	var morphs = [];
 	for (var node = container.firstChild; node != null; node = node.nextSibling) {
 	    // console.log("found node " + Exporter.nodeToString(node));
