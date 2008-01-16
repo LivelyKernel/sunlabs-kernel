@@ -735,9 +735,8 @@ var WindowMorph = Morph.subclass('WindowMorph', {
         tm.openIn(WorldMorph.current(), evt.mousePoint, false, this.targetMorph.inspect().truncate()); 
     },
 
-    layoutChanged: function ($super, priorExtent) {
-        $super(priorExtent);
-        if (!Config.layoutTest) return
+    adjustForNewBounds: function ($super) {
+        $super();
         if (!this.titleBar || !this.targetMorph) return
         var titleHeight = this.titleBar.innerBounds().height;
         var bnds = this.innerBounds();
@@ -745,6 +744,8 @@ var WindowMorph = Morph.subclass('WindowMorph', {
         var newHeight = bnds.extent().y;
         this.titleBar.setExtent(pt(newWidth, titleHeight));
         this.targetMorph.setExtent(pt(newWidth, newHeight - titleHeight));
+        this.titleBar.setPosition(bnds.topLeft());
+        this.targetMorph.setPosition(bnds.topLeft().addXY(0, titleHeight));
     },
 
     updateView: function(aspect, controller) {
@@ -918,20 +919,7 @@ var HandleMorph = (function () {
             if (evt.isShiftDown()) {
                 this.targetMorph.setBorderWidth(Math.max(0, Math.floor(d/3)/2), true);
             } else { 
-                // these hack tests should be replaced by receiver tests
-                if (!Config.layoutTest  && (this.targetMorph instanceof WindowMorph || this.targetMorph instanceof TitleBarMorph)){
-                  // scale the whole window instead of reframing
-                  // DI:  Note this should reframe windows, with proportional layout of the interior frames
-                  // this code is all copied -- should be factored or, better, removed
-                  var ctr = this.targetMorph.owner.worldPoint(this.targetMorph.origin);
-                  var v1 = p1.subPt(ctr); //vector from origin
-                  var v0 = p0.subPt(ctr); //vector from origin at mousedown
-                  var ratio = v1.r() / v0.r();
-                  ratio = Math.max(0.1,Math.min(10,ratio));
-                  this.targetMorph.setScale(this.initialScale*ratio); 
-                } else {
-                  this.targetMorph.reshape(this.partName, this.targetMorph.localize(evt.mousePoint), this, false);
-                }                
+		this.targetMorph.reshape(this.partName, this.targetMorph.localize(evt.mousePoint), this, false);
             } 
         }
     },
@@ -1127,6 +1115,7 @@ Morph.subclass("PanelMorph", {
     initialize: function($super, extent/*:Point*/) {
         $super(pt(0, 0).extent(extent), 'rect');
         this.lastNavigable = null;
+	this.priorExtent = this.innerBounds().extent();
     },
 
     takesKeyboardFocus: function() {
@@ -1169,14 +1158,12 @@ Morph.subclass("PanelMorph", {
         return $super(m, front);
     },
 
-    layoutChanged: function ($super, priorExtent) {
+    adjustForNewBounds: function ($super) {
         // Compute scales of old submorph extents in priorExtent, then scale up to new extent
-        $super(priorExtent);
-        if (!Config.layoutTest) return;
-        if (!priorExtent) return;
+        $super();
         var newExtent = this.innerBounds().extent();
-        if (!newExtent) return;
-        var scalePt = newExtent.scaleByPt(priorExtent.inverted());
+        var scalePt = newExtent.scaleByPt(this.priorExtent.inverted());
+        this.priorExtent = newExtent;
         for (var i= 0; i<this.submorphs.length; i++) {
             var sub = this.submorphs[i];
             var subBnds = sub.innerBounds();
@@ -1772,9 +1759,30 @@ var ScrollPane = Morph.subclass("ScrollPane", {
     },
 
     connectModel: function(plugSpec) { // connection is mapped to innerMorph
-        this.innerMorph().connectModel(plugSpec); 
+        this.innerMorph().connectModel(plugSpec);
+	if(plugSpec.getMenu) this.addMenuButton(plugSpec.getMenu);
     },
     
+    addMenuButton: function(modelMsg) {
+        this.paneMenuMessage = modelMsg;
+	var w = this.scrollBarWidth;
+	this.menuButton = this.addMorph(new Morph(new Rectangle(0, 0, w, w)));
+	    this.menuButton.setFill(Color.white);
+	    this.menuButton.addMorph(Morph.makeLine([pt(2, 2), pt(8,2)], 1, Color.blue));
+	    this.menuButton.addMorph(Morph.makeLine([pt(2, 4), pt(10,4)], 1, Color.blue));
+	    this.menuButton.addMorph(Morph.makeLine([pt(2, 6), pt(6,6)], 1, Color.blue));
+	    this.menuButton.addMorph(Morph.makeLine([pt(2, 8), pt(8,8)], 1, Color.blue));
+	this.menuButton.align(this.menuButton.bounds().topLeft(), this.scrollBar.bounds().topLeft());
+	this.menuButton.relayMouseEvents(this, {onMouseDown: "menuButtonPressed"});
+	//this.scrollBar.setBounds(this.scrollBar.innerBounds().withTopLeft( this.menuButton.bounds().bottomLeft()));
+    },
+
+    menuButtonPressed: function(evt, button) {
+	var menu = this.innerMorph().getModel()[this.paneMenuMessage]();
+        if (!menu) return;
+	menu.openIn(WorldMorph.current(), evt.mousePoint, false); 
+    },
+
     getScrollPosition: function() { 
         var ht = this.innerMorph().bounds().height;
         var slideRoom = ht - this.bounds().height;
@@ -1797,17 +1805,21 @@ var ScrollPane = Morph.subclass("ScrollPane", {
         this.scrollBar.adjustForNewBounds(); 
     },
     
-    layoutChanged: function ($super, priorExtent) {
+    adjustForNewBounds: function ($super) {
         // Compute new bounds for clipMorph and scrollBar
-        $super(priorExtent);
-        if (!Config.layoutTest) return;
+        $super();
         if (!this.clipMorph || !this.scrollBar) return;
         var bnds = this.innerBounds();
         var clipR = bnds.withWidth(bnds.width - this.scrollBarWidth+1).insetBy(1);
-        this.clipMorph.setExtent(clipR.extent());
-        var barBnds = bnds.withTopLeft(clipR.topRight());
-        this.scrollBar.setBounds(barBnds);
-        this.scrollBar.adjustForNewBounds();
+	this.clipMorph.setExtent(clipR.extent());
+	var barBnds = bnds.withTopLeft(clipR.topRight());
+	if(this.menuButton) {
+	    var w = this.scrollBarWidth;
+	    this.menuButton.setPosition(barBnds.topLeft());
+	    //this.menuButton.setBounds(barBnds.topLeft().extent(pt(w, w)));
+	    barBnds = barBnds.withTopLeft(barBnds.topLeft().addXY(0, w));
+	    }
+	this.scrollBar.setBounds(barBnds);
     }
 
 });

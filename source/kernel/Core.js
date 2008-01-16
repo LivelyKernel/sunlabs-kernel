@@ -2823,10 +2823,12 @@ Morph.addMethods({
         this.adjustForNewBounds();
     }.wrap(Morph.onLayoutChange('shape')),
 
-    // DI: ***Note get/setBounds should be deprecated in favor of get/setExtent and get/setPosition
-    // This is so that layout management can move things around without deep layout changes
     setBounds: function(newRect) {
-        var bounds = this.bounds();
+	// DI: ***Note get/setBounds should be deprecated in favor of get/setExtent and get/setPosition
+	// This is so that layout management can move things around without triggering recursive calls
+	// on adjustForNewBounds(q.v.)
+        this.setPosition(newRect.topLeft());
+	// var bounds = this.bounds();
         this.shape.setBounds(this.relativizeRect(newRect)); // FIXME some shapes don't support setFromRect
 
         if (this.clipPath) {
@@ -2842,15 +2844,8 @@ Morph.addMethods({
 
     getExtent: function(newRect) { return this.shape.bounds().extent() },
 
-    // override to respond to reshape events    
-    adjustForNewBounds: function() {
-        if (this.focusHalo) {
-            this.adjustFocusHalo();
-        }
-    },
-    
-    // p is in owner coordinates
     containsPoint: function(p) { 
+	// p is in owner coordinates
         if (!this.bounds().containsPoint(p)) return false;
         return this.shape.containsPoint(this.relativize(p)); 
     },
@@ -2953,7 +2948,7 @@ Morph.addMethods({
         m.owner = this;
         this.internalAddMorph(m, front);
         m.changed();
-        m.layoutChanged();
+        m.layoutChanged();  // DI:  Should not be needed
         this.layoutChanged();
         return m;
     },
@@ -3785,15 +3780,30 @@ Morph.addMethods({
     },
 
     layoutChanged: function() {
-        // ???
-        // if (!(this instanceof HandMorph) )
-        // console.log('change of layout on ' + Object.inspect(this));
-        this.applyTransform(this.getTransform());
+        // layoutChanged() is called whenever the cached fullBounds may have changed
+	// It invalidates the cache, which will be recomputed when bounds() is called
+	// Naturally it must be propagated up its owner chain
+	// Note the difference in meaning from adjustForNewBounds(),
+	this.applyTransform(this.getTransform());  // DI: why is this here?
         this.fullBounds = null;
-        // this.bounds(); 
         if (this.owner && this.owner !== this.world()) {     // May affect owner as well...
-            if (!Config.layoutTest) this.owner.layoutChanged();
+            this.owner.layoutChanged();
         }
+    },
+    
+    adjustForNewBounds: function() {
+        // adjustForNewBounds() is called whenever the innerBounds may have changed in extent
+	//  -- it should really be called adjustForNewExtent --
+	// Depending on the morph and its layoutManager, it may then re-layout its
+	// submorphs and, in the process, propagate the message down to leaf morphs (or not)
+	// Of course a change in innerBounds implies layoutChanged() as well,
+	// but, for now, these are called separately.
+	// NB:  Because some morphs may re-lay themselves out in response to adjustForNewBounds()
+	// adjustForNewBounds() *must never be called from* a layout operation;
+	// The layout process should only move and resize submorphs, but never change the innerBounds
+
+	// If this method is overridden by a subclass, it should call super as well
+	if (this.focusHalo) this.adjustFocusHalo();
     },
     
     recordChange: function(fieldName/*:String*/) {  
@@ -3811,7 +3821,7 @@ Morph.addMethods({
     },
     
     setPosition: function(newPosition) {
-        var delta = newPosition.subPt(this.position());
+        var delta = newPosition.subPt(this.getPosition());
         this.translateBy(delta); 
     }
     

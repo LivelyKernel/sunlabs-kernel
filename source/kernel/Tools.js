@@ -68,25 +68,23 @@ Model.subclass('SimpleBrowser', {
             ['bottomPane', TextPane, new Rectangle(0, 0.6, 1, 0.4)]
         ]);
         var m = panel.leftPane;
-        m.connectModel({model: this, getList: "getClassList", setSelection: "setClassName"});
+        m.connectModel({model: this, getList: "getClassList", setSelection: "setClassName", getMenu: "getClassPaneMenu"});
         m = panel.rightPane;
         m.connectModel({model: this, getList: "getMethodList", setSelection: "setMethodName"});
         m = panel.bottomPane;
         m.connectModel({model: this, getText: "getMethodString", setText: "setMethodString"});
-
-        var thisModel = this;
-        panel.morphMenu = function(evt) { // Offer to open a stats panel
-            var menu = Morph.prototype.morphMenu.call(this, evt);
-            if (thisModel.className == null) return menu;
-            var theClass = Global[thisModel.className];
-            if (theClass.prototype == null) return menu;
-            menu.addLine();
-            menu.addItem(['analyze selection', function() {
-               showStatsViewer(theClass.prototype, thisModel.className + "..."); 
-            }]);
-            return menu; 
-        }
         return panel;
+    },
+
+    getClassPaneMenu: function() {
+	if (this.className == null) return null;
+	var theClass = Global[this.className];
+	if (theClass.prototype == null) return null;
+        var menu = new MenuMorph([
+		['analyze selection', function() {
+               		showStatsViewer(theClass.prototype, this.className + "..."); }]
+		], this); 
+        return menu;
     }
     
 });
