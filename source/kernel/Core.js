@@ -2296,7 +2296,7 @@ Morph = Visual.subclass("Morph", {
     openForDragAndDrop: true, // Submorphs can be extracted from or dropped into me
     mouseHandler: MouseHandlerForDragging, //a MouseHandler for mouse sensitivity, etc
     stepHandler: null, // a stepHandler for time-varying morphs and animation 
-    noShallowCopyProperties: ['id', 'rawNode', 'rawSubnodes', 'shape', 'submorphs', 'stepHandler'],
+    noShallowCopyProperties: ['id', 'rawNode', 'rawSubnodes', 'shape', 'submorphs', 'stepHandler', 'defs'],
 
     suppressBalloonHelp: Config.suppressBalloonHelp,
 
@@ -2373,6 +2373,10 @@ Morph = Visual.subclass("Morph", {
             this.cachedTransform = other.cachedTransform.clone();
         } 
 
+	if (other.defs) {
+	    this.addNonMorph(this.defs = this.restoreDefs(other.defs.cloneNode(true)));
+	}
+
         if (other.clipPath) {
             console.log('other clipPath is ' + other.clipPath);
             this.clipToShape();
@@ -2428,7 +2432,6 @@ Morph = Visual.subclass("Morph", {
     restoreDefs: function(node) {
         // FIXME FIXME, this is painfully ad hoc!
         if (this.defs) console.warn('%s already has defs %s', this, this.defs);
-        this.defs = node;
         for (var def = node.firstChild; def != null; def = def.nextSibling) {
             switch (def.tagName) {
             case "clipPath":
@@ -2463,6 +2466,7 @@ Morph = Visual.subclass("Morph", {
                 console.warn('unknown def %s', def);
             }
         }
+        return node;
     },
 
     restoreFromSubnodes: function(importer) {
@@ -2501,7 +2505,7 @@ Morph = Visual.subclass("Morph", {
                 this.shape = new PolygonShape(importer, node);
                 break;
             case "defs": 
-                this.restoreDefs(node);
+                this.defs = this.restoreDefs(node);
                 break;
             case "text": // this shouldn't be triggered in non-TextMorphs
                 this.restoreText(importer, node);
