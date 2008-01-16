@@ -2341,10 +2341,9 @@ Morph = Visual.subclass("Morph", {
         this.disableBrowserHandlers();        
 
         if (this.activeScripts) {
-	    this.activeScripts.each(function(a) { WorldMorph.current().startStepping(a); });
+            this.activeScripts.each(function(a) { WorldMorph.current().startStepping(a); });
             this.startSteppingScripts();
             // console.info("in deserialize: started stepping %s on [%s]", this, this.activeScripts.map(function(a) { return Object.toJSON(a)}));
-	    
         }
 
     },
@@ -2518,10 +2517,10 @@ Morph = Visual.subclass("Morph", {
             case "a0:action": // Firefox cheat
             case "action": {
                 var a = node.textContent.evalJSON();
-		a.actor = this;
-		if (!this.activeScripts) this.activeScripts = [a];
-		else this.activeScripts.push(a);
-		console.log('deserialized script ' + Object.toJSON(a));
+                a.actor = this;
+                if (!this.activeScripts) this.activeScripts = [a];
+                else this.activeScripts.push(a);
+                console.log('deserialized script ' + Object.toJSON(a));
                 break;
             }
             case "a0:model": // Firefox cheat
@@ -2824,11 +2823,11 @@ Morph.addMethods({
     }.wrap(Morph.onLayoutChange('shape')),
 
     setBounds: function(newRect) {
-	// DI: ***Note get/setBounds should be deprecated in favor of get/setExtent and get/setPosition
-	// This is so that layout management can move things around without triggering recursive calls
-	// on adjustForNewBounds(q.v.)
+        // DI: ***Note get/setBounds should be deprecated in favor of get/setExtent and get/setPosition
+        // This is so that layout management can move things around without triggering recursive calls
+        // on adjustForNewBounds(q.v.)
         this.setPosition(newRect.topLeft());
-	// var bounds = this.bounds();
+        // var bounds = this.bounds();
         this.shape.setBounds(this.relativizeRect(newRect)); // FIXME some shapes don't support setFromRect
 
         if (this.clipPath) {
@@ -2845,7 +2844,7 @@ Morph.addMethods({
     getExtent: function(newRect) { return this.shape.bounds().extent() },
 
     containsPoint: function(p) { 
-	// p is in owner coordinates
+        // p is in owner coordinates
         if (!this.bounds().containsPoint(p)) return false;
         return this.shape.containsPoint(this.relativize(p)); 
     },
@@ -3782,10 +3781,10 @@ Morph.addMethods({
 
     layoutChanged: function() {
         // layoutChanged() is called whenever the cached fullBounds may have changed
-	// It invalidates the cache, which will be recomputed when bounds() is called
-	// Naturally it must be propagated up its owner chain
-	// Note the difference in meaning from adjustForNewBounds(),
-	this.applyTransform(this.getTransform());  // DI: why is this here?
+        // It invalidates the cache, which will be recomputed when bounds() is called
+        // Naturally it must be propagated up its owner chain
+        // Note the difference in meaning from adjustForNewBounds(),
+        this.applyTransform(this.getTransform());  // DI: why is this here?
         this.fullBounds = null;
         if (this.owner && this.owner !== this.world()) {     // May affect owner as well...
             this.owner.layoutChanged();
@@ -3794,17 +3793,17 @@ Morph.addMethods({
     
     adjustForNewBounds: function() {
         // adjustForNewBounds() is called whenever the innerBounds may have changed in extent
-	//  -- it should really be called adjustForNewExtent --
-	// Depending on the morph and its layoutManager, it may then re-layout its
-	// submorphs and, in the process, propagate the message down to leaf morphs (or not)
-	// Of course a change in innerBounds implies layoutChanged() as well,
-	// but, for now, these are called separately.
-	// NB:  Because some morphs may re-lay themselves out in response to adjustForNewBounds()
-	// adjustForNewBounds() *must never be called from* a layout operation;
-	// The layout process should only move and resize submorphs, but never change the innerBounds
+        //  -- it should really be called adjustForNewExtent --
+        // Depending on the morph and its layoutManager, it may then re-layout its
+        // submorphs and, in the process, propagate the message down to leaf morphs (or not)
+        // Of course a change in innerBounds implies layoutChanged() as well,
+        // but, for now, these are called separately.
+        // NB:  Because some morphs may re-lay themselves out in response to adjustForNewBounds()
+        // adjustForNewBounds() *must never be called from* a layout operation;
+        // The layout process should only move and resize submorphs, but never change the innerBounds
 
-	// If this method is overridden by a subclass, it should call super as well
-	if (this.focusHalo) this.adjustFocusHalo();
+        // If this method is overridden by a subclass, it should call super as well
+        if (this.focusHalo) this.adjustFocusHalo();
     },
     
     recordChange: function(fieldName/*:String*/) {  
@@ -4608,10 +4607,11 @@ var WorldMorph = PasteUpMorph.subclass("WorldMorph", {
             console.log('null filename, not publishing %s', morphs);
            return;
         }
-	if (!filename.endsWith(".xhtml")) {
-	    filename += ".xhtml";
-	    console.log("changed filename to " + filename);
-	}
+
+        if (!filename.endsWith(".xhtml")) {
+            filename += ".xhtml";
+           console.log("changed filename to " + filename);
+        }
 
         console.log('morphs is %s', morphs);
 
@@ -4931,8 +4931,6 @@ Morph.subclass("HandMorph", function() {
             }
         }
         this.lastMouseEvent = evt; 
-	    
-
     },
 
     grabMorph: function(grabbedMorph, evt) { 
@@ -5137,13 +5135,13 @@ Morph.subclass("LinkMorph", {
 
     morphMenu: function($super, evt) { 
         var menu = $super(evt);
-	var world = this.world();
+        var world = this.world();
         menu.addItem(["publish linked world as ... ", function() { 
             world.makeShrinkWrappedWorldWith(this.myWorld.submorphs, 
-					     world.prompt("world file (.xhtml)"));}]);
+                      world.prompt("world file (.xhtml)"));}
+        ]);
         return menu;
     },
-
 
     enterMyWorld: function(evt) { // needs vars for oldWorld, newWorld
         carriedMorphs = [];
@@ -5173,30 +5171,29 @@ Morph.subclass("LinkMorph", {
     
         // display world first, then add hand, order is important!
         var newWorld = this.myWorld;
-	if (newWorld.owner) {
-	    console.log("new world had an owner, removing");
-	    newWorld.remove();
-	}
+        if (newWorld.owner) {
+            console.log("new world had an owner, removing");
+            newWorld.remove();
+        }
         WorldMorph.setCurrent(newWorld);
 
         newWorld.displayWorldOn(canvas); 
 
-	
         newWorld.onEnter(); 
 
         carriedMorphs.each(function(m) {
             newWorld.firstHand().addMorph(m);
             m.resumeAllSuspendedScripts();
         });
-	
+
         if (Config.showThumbnail) {
             var scale = 0.1;
             if (newWorld.thumbnail) {
-		console.log("disposing of a thumbnail");
+                console.log("disposing of a thumbnail");
                 newWorld.thumbnail.remove();
             }
             newWorld.thumbnail = new Morph(Rectangle.fromElement(canvas), "rect");
-	    newWorld.thumbnail.setPosition(this.bounds().bottomRight());
+            newWorld.thumbnail.setPosition(this.bounds().bottomRight());
             newWorld.addMorph(newWorld.thumbnail);
             newWorld.thumbnail.setScale(scale);
             newWorld.thumbnail.addMorph(oldWorld);

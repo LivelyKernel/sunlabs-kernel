@@ -477,7 +477,7 @@ ClipMorph.subclass(scope, "DoodleMorph", {
     },
     
     setColor: function(val) {
-		console.log("Setting Color");
+        console.log("Setting Color");
         this.colorvalue = val;
         if ( !this.colorvalue && this.colorMorph != null ) { // false
             this.colorMorph.remove();
@@ -541,7 +541,7 @@ ClipMorph.subclass(scope, "DoodleMorph", {
     },
     
     setColoring: function(color) {
-				console.log("Setting coloring");
+        console.log("Setting coloring");
 
         this.drawingColor = color;
         this.colorMorph.borderRect.setFill(this.drawingColor);
@@ -1004,9 +1004,10 @@ ClipMorph.subclass(scope, "Sun3DMorph", {
 
         var angleY = -evt.mousePoint.x;
         var angleX = -evt.mousePoint.y;
-	if (this.wireObject)
+        if (this.wireObject) {
             this.wireObject.paint(this.morphArray, angleX, angleY, 0);
-    
+        }
+
         return true;
     }
 

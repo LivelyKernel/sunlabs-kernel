@@ -77,13 +77,14 @@ Model.subclass('SimpleBrowser', {
     },
 
     getClassPaneMenu: function() {
-	if (this.className == null) return null;
-	var theClass = Global[this.className];
-	if (theClass.prototype == null) return null;
+        if (this.className == null) return null;
+        var theClass = Global[this.className];
+        if (theClass.prototype == null) return null;
         var menu = new MenuMorph([
-		['analyze selection', function() {
-               		showStatsViewer(theClass.prototype, this.className + "..."); }]
-		], this); 
+            ['analyze selection', function() {
+                showStatsViewer(theClass.prototype, this.className + "..."); 
+            }]
+        ], this); 
         return menu;
     }
     
