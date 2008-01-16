@@ -2546,7 +2546,7 @@ Morph = Visual.subclass("Morph", {
                 if (name) {
                     var found = this[name] = importer.lookupMorph(ref);
                     if (!found) {
-                        console.warn("no field found for ref " + ref);
+                        console.warn("no value found for field %s ref %s", name, ref);
                     } else {
                         node.parentNode.removeChild(node);
                         console.log("found " + name + "=" + found);
@@ -3412,7 +3412,7 @@ Morph.addMethods({
             [((this.openForDragAndDrop) ? "close DnD" : "open DnD"), this.toggleDnD.curry(evt.mousePoint)],
             ["show Lively markup", this.addSvgInspector.curry(this)],
             ["publish shrink-wrapped as...", function() { 
-                WorldMorph.current().makeShrinkWrappedWorldWith([this], WorldMorph.current().prompt('publish as')) }],
+                WorldMorph.current().makeShrinkWrappedWorldWith([this], WorldMorph.current().prompt('publish as (.xhtml)')) }],
             ["show stack", Function.showStack]
         ];
         var menu = new MenuMorph(items, this); 
@@ -3601,6 +3601,7 @@ Morph.addMethods({
         this.addNonMorph(actionCode);
     },
     
+
     startSteppingFunction: function(stepTime, func) {
         this.startStepping(stepTime);
         this.stepHandler.setStepFunction(func); 
@@ -4854,6 +4855,7 @@ Morph.subclass("HandMorph", function() {
     }.logErrors('Event Handler'),
 
     handleMouseEvent: function(evt) { 
+
         evt.setButtonPressedAndPriorPoint(this.mouseButtonPressed, 
             this.lastMouseEvent ? this.lastMouseEvent.mousePoint : null);
 
@@ -4874,14 +4876,12 @@ Morph.subclass("HandMorph", function() {
                 if (this.owner) {
                     var receiver = this.owner.morphToReceiveEvent(evt);
                     if (receiver !== this.mouseOverMorph) {
-
                         // if over a new morph, send onMouseOut, onMouseOver
                         if (this.mouseOverMorph) this.mouseOverMorph.onMouseOut(evt);
                         this.mouseOverMorph = receiver;
                         // console.log('msOverMorph set to: ' + Object.inspect(this.mouseOverMorph));
                         if (this.mouseOverMorph) this.mouseOverMorph.onMouseOver(evt);
                         if (!receiver || !receiver.canvas()) return;  // prevent errors after world-switch
-
                         // Note if onMouseOver sets focus, it will get onMouseMove
                         if (this.mouseFocus) this.mouseFocus.captureMouseEvent(evt, true);
                         else if (!evt.hand.hasSubmorphs()) this.owner.captureMouseEvent(evt, false); 
@@ -4931,6 +4931,7 @@ Morph.subclass("HandMorph", function() {
             }
         }
         this.lastMouseEvent = evt; 
+	    
 
     },
 
@@ -5133,6 +5134,16 @@ Morph.subclass("LinkMorph", {
         this.enterMyWorld(evt); 
         return null; 
     },
+
+    morphMenu: function($super, evt) { 
+        var menu = $super(evt);
+	var world = this.world();
+        menu.addItem(["publish linked world as ... ", function() { 
+            world.makeShrinkWrappedWorldWith(this.myWorld.submorphs, 
+					     world.prompt("world file (.xhtml)"));}]);
+        return menu;
+    },
+
 
     enterMyWorld: function(evt) { // needs vars for oldWorld, newWorld
         carriedMorphs = [];

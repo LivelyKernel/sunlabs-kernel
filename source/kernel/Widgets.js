@@ -365,7 +365,7 @@ var ClipMorph = Morph.subclass("ClipMorph", {
 });
 
 /**
- * @class TitleBarMorph: Title bars for Window morphs
+ * @class TitleBarMorph
  */
 var TitleBarMorph = (function() { 
 
@@ -377,10 +377,11 @@ var TitleBarMorph = (function() {
 
     // prototype variables
     borderWidth: 0.5,
+    documentation: "Title bar for WindowMorphs",
 
     initialize: function($super, headline, windowWidth, windowMorph, isExternal) {
-        this.windowMorph = windowMorph;
         $super(new Rectangle(0, isExternal? - barHeight : 0, windowWidth, barHeight), "rect");
+        this.windowMorph = windowMorph;
         this.linkToStyles(['titleBar']);
         this.ignoreEvents();
 
@@ -422,12 +423,17 @@ var TitleBarMorph = (function() {
         return this;
     },
 
-    restorePersistentState: function($super, importer) {
-        $super(importer);
+    deserialize: function($super, importer, rawNode) {
+	$super(importer, rawNode);
         if (this.rawNode.parentNode.getAttributeNS(Namespace.LIVELY, "type") == "WindowMorph") {
-            this.closeButton.target = this.menuButton.target = this.collapseButton.target = this.rawNode.parentNode;
+            this.closeButton.targetMorph = this.menuButton.targetMorph = this.collapseButton.targetMorph 
+		= this.windowMorph.targetMorph;
         }
+        this.linkToStyles(['titleBar']);
+        this.ignoreEvents();
+	this.label.ignoreEvents();
     },
+
 
     acceptsDropping: function(morph) {
         //console.log('accept drop from %s of %s, %s', this, morph, morph instanceof WindowControlMorph);
@@ -507,27 +513,41 @@ var TitleTabMorph = Morph.subclass("TitleTabMorph", {
 });
 
 /**
- * @class WindowControlMorph: Event handling for Window morphs
+ * @class WindowControlMorph
  */ 
 var WindowControlMorph = Morph.subclass("WindowControlMorph", {
 
     borderWidth: 0,
+    documentation: "Event handling for Window morphs",
 
-    initialize: function($super, rect, inset, color, target, action, helpText) {
+    initialize: function($super, rect, inset, color, targetMorph, action, helpText) {
         $super(rect.insetBy(inset), 'ellipse');
         this.setFill(new RadialGradient(color.lighter(2), color));
-        this.target = target;
+        this.targetMorph = targetMorph;
+	this.color = color;
+	// serialization helper there's no easy way to extract the base color from a radial gradient
+	this.rawNode.setAttributeNS(Namespace.LIVELY, "base-color", color.toString());
         this.action = action;
-        this.color = color;
         this.helpText = helpText; // string to be displayed when mouse is brought over the icon
         return this;
     },
+
+    restorePersistentState: function($super, importer) {
+	$super(importer);
+	// FIXME errors
+	this.color = Color.parse(this.rawNode.getAttributeNS(Namespace.LIVELY, "base-color"));
+    },
+    
 
     handlesMouseDown: function() { return true; },
 
     onMouseDown: function(evt) {
         this.hideHelp();
-        return this.action.call(this.target, evt);
+	if (!this.action) {
+	    console.warn("%s has no action?", this);
+	    return;
+	}
+        return this.action.call(this.targetMorph, evt);
     },
 
     onMouseOver: function(evt) {
@@ -540,6 +560,7 @@ var WindowControlMorph = Morph.subclass("WindowControlMorph", {
     onMouseOut: function(evt) {
         this.setFill(new RadialGradient(this.color.lighter(2), this.color));
         this.hideHelp();
+	
     },
     
     onMouseMove: function(evt) {
@@ -578,7 +599,7 @@ var WindowControlMorph = Morph.subclass("WindowControlMorph", {
 /**
  * @class WindowMorph: Full-fledged windows with title bar, menus, etc.
  */
-var WindowMorph = Morph.subclass('WindowMorph', {
+Morph.subclass('WindowMorph', {
 
     state: "expanded",
     titleBar: null,
@@ -599,6 +620,13 @@ var WindowMorph = Morph.subclass('WindowMorph', {
         this.closeAllToDnD();
         return this;
     },
+
+    deserialize: function($super, importer, rawNode) {
+	$super(importer, rawNode);
+	this.titleBar.windowMorph = this;
+	this.closeAllToDnD();
+    },
+
 
     toString: function($super) {
         var label = this.titleBar && this.titleBar.label;

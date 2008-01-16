@@ -1004,7 +1004,8 @@ ClipMorph.subclass(scope, "Sun3DMorph", {
 
         var angleY = -evt.mousePoint.x;
         var angleX = -evt.mousePoint.y;
-        this.wireObject.paint(this.morphArray, angleX, angleY, 0);
+	if (this.wireObject)
+            this.wireObject.paint(this.morphArray, angleX, angleY, 0);
     
         return true;
     }

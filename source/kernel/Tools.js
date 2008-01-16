@@ -42,8 +42,8 @@ Model.subclass('SimpleBrowser', {
     getMethodList: function() {
         if (this.className == null) return [];
         else {
-            if (this.className == 'Global') return Global.constructor.functionNames().without(this.className);
-            else return Global[this.className].localFunctionNames();
+            if (this.className == 'Global') return Global.constructor.functionNames().without(this.className).sort();
+            else return Global[this.className].localFunctionNames().sort();
         }
     },
 
