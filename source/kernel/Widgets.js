@@ -259,7 +259,9 @@ var ImageMorph = Morph.subclass("ImageMorph", {
  * @class ImageButtonMorph: Buttons with images
  */ 
 var ImageButtonMorph = ButtonMorph.subclass("ImageButtonMorph", {
-    
+
+    focusHaloBorderWidth: 0,
+
     initialize: function($super, initialBounds, normalImageHref, activatedImageHref) {
         this.image = new ImageMorph(new Rectangle(0, 0, initialBounds.width, initialBounds.height), normalImageHref);
         this.normalImageHref = normalImageHref;
@@ -1914,6 +1916,65 @@ var ColorPickerMorph = Morph.subclass("ColorPickerMorph", {
     }
     
 });
+
+Morph.subclass('XenoMorph', {
+    
+    borderWidth: 2,
+    fill: Color.gray.lighter(),
+
+    initialize: function($super, bounds, url) { 
+	$super(bounds, "rect"); 
+	this.foRawNode = NodeFactory.createNS(Namespace.SVG, "foreignObject", 
+					      {x: bounds.x, y: bounds.y, 
+					       width: bounds.width, height: bounds.height });
+	
+	var body = this.foRawNode.appendChild(NodeFactory.createNS(Namespace.XHTML, "body"));
+	body.appendChild(document.createTextNode("no content"));
+        new NetRequest(url, {
+            method: 'get',
+            //contentType: 'text/xml',
+            contentType: 'text/xml',
+	    
+            onSuccess: function(transport) {
+	        console.log('transmission dump %s', 
+			    transport.responseXML ? Exporter.nodeToString(transport.responseXML) : transport.responseText);
+		var node;
+		if (!transport.responseXML) {
+		    var parser = new DOMParser();
+		    var xhtml = parser.parseFromString(transport.responseText, "text/xml");
+		    node = xhtml.getElementsByTagName("body")[0];
+		} else {
+		    node = transport.responseXML.documentElement;
+		}
+		var parent = body.parentNode;
+		parent.removeChild(body);
+		parent.appendChild(document.adoptNode(node));
+		
+            }.logErrors('Success Handler for XenoMorph ' + url)
+        });
+	
+
+	this.foRawNode.appendChild(body);
+	this.addNonMorph(this.foRawNode);
+    },
+
+    adjustForNewBounds: function($super) {
+	$super();
+	var bounds = this.shape.bounds();
+	this.foRawNode.setAttributeNS(null, "width", bounds.width);
+	this.foRawNode.setAttributeNS(null, "height", bounds.height);
+    },
+    
+    
+    test: function(url) {
+	url = url || "http://livelykernel.sunlabs.com/test.xhtml";
+	var xeno = new XenoMorph(pt(0, 0).extent(pt(400,200)), url);
+        WorldMorph.current().addMorphAt(new WindowMorph(xeno, url), pt(50,50));
+    }
+    
+
+});
+
 
 console.log('loaded Widgets.js');
 

@@ -329,6 +329,9 @@ function populateWorldWithExamples(world) {
         }
 
     }
+    if (Config.showXenoMorph)
+	XenoMorph.prototype.test();//"http://livelykernel.sunlabs.com/index.html");//"http://www.opera.com");
+
 
     return world;
 }

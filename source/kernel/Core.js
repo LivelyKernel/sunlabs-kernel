@@ -3377,6 +3377,7 @@ Morph.addMethods({
     // A chance to preempt (by returning null) the default action of grabbing me
     // or to otherwise prepare for being grabbed
     // or find a parent to grab instead
+    // KP: FIXME rename to reflect that function can have side effects?
     okToBeGrabbedBy: function(evt) {
         if (evt.hand.mode == "menu") {
             evt.hand.mode = "normal";
@@ -4579,7 +4580,7 @@ var WorldMorph = PasteUpMorph.subclass("WorldMorph", {
             ["Class Browser", function(evt) { new SimpleBrowser().openIn(world, evt.mousePoint); }]
         ];
         if (this.isLoadedFromNetwork()) { 
-            items.push(["File Browser", function(evt) { WebStore.onCurrentLocation().openIn(world, evt.mousePoint) }])
+            items.push(["File Browser", function(evt) { WebStore.prototype.onCurrentLocation().openIn(world, evt.mousePoint) }])
         }
         new MenuMorph(items, this).openIn(this.world(), evt.mousePoint);
     },
@@ -5119,7 +5120,6 @@ Morph.subclass("LinkMorph", {
 
     enterMyWorld: function(evt) { // needs vars for oldWorld, newWorld
         carriedMorphs = [];
-
         // Save, and suspend stepping of, any carried morphs
         evt.hand.unbundleCarriedSelection();
         while (evt.hand.hasSubmorphs()) {
@@ -5132,7 +5132,6 @@ Morph.subclass("LinkMorph", {
         this.myWorld.changed();
         var oldWorld = WorldMorph.current();
         oldWorld.onExit();    
-
         // remove old hands
         oldWorld.hands.clone().each(function(hand) { 
             oldWorld.removeHand(hand);
@@ -5147,22 +5146,30 @@ Morph.subclass("LinkMorph", {
     
         // display world first, then add hand, order is important!
         var newWorld = this.myWorld;
+	if (newWorld.owner) {
+	    console.log("new world had an owner, removing");
+	    newWorld.remove();
+	}
         WorldMorph.setCurrent(newWorld);
 
         newWorld.displayWorldOn(canvas); 
 
+	
         newWorld.onEnter(); 
+
         carriedMorphs.each(function(m) {
             newWorld.firstHand().addMorph(m);
             m.resumeAllSuspendedScripts();
         });
-
+	
         if (Config.showThumbnail) {
             var scale = 0.1;
             if (newWorld.thumbnail) {
+		console.log("disposing of a thumbnail");
                 newWorld.thumbnail.remove();
             }
             newWorld.thumbnail = new Morph(Rectangle.fromElement(canvas), "rect");
+	    newWorld.thumbnail.setPosition(this.bounds().bottomRight());
             newWorld.addMorph(newWorld.thumbnail);
             newWorld.thumbnail.setScale(scale);
             newWorld.thumbnail.addMorph(oldWorld);
