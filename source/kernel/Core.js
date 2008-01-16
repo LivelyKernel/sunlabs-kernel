@@ -2320,11 +2320,12 @@ Morph = Visual.subclass("Morph", {
 
         this.initializeTransientState(initialBounds);
         this.disableBrowserHandlers();        
-
+	/*
         if (this.activeScripts) {
             console.log('started stepping %s', this);
             this.startSteppingScripts();
         }
+      */
     },
 
     deserialize: function(importer, rawNode) {
@@ -2342,7 +2343,7 @@ Morph = Visual.subclass("Morph", {
 
         if (this.activeScripts) {
             this.activeScripts.each(function(a) { WorldMorph.current().startStepping(a); });
-            this.startSteppingScripts();
+            // this.startSteppingScripts();
             // console.info("in deserialize: started stepping %s on [%s]", this, this.activeScripts.map(function(a) { return Object.toJSON(a)}));
         }
 
@@ -2403,6 +2404,7 @@ Morph = Visual.subclass("Morph", {
             for (var i = 0; i < other.activeScripts.length; i++) {
                 var a = other.activeScripts[i];
                 // Copy all reflexive scripts (messages to self)
+		console.log("processing " + Object.toJSON(a) + " reflexive? " + (a.actor === other ? true : a.actor));
                 if (a.actor === other) {
                     this.startStepping(a.stepTime, a.scriptName, a.argIfAny);
                     // Note -- may want to startStepping other as well so they are sync'd
@@ -2412,10 +2414,12 @@ Morph = Visual.subclass("Morph", {
 
         this.layoutChanged();
 
-        this.disableBrowserHandlers();        
+        this.disableBrowserHandlers(); 
         if (this.activeScripts) {
             console.log('started stepping %s', this);
-            this.startSteppingScripts();
+            this.activeScripts.each(function(a) { WorldMorph.current().startStepping(a); });
+	    
+            //this.startSteppingScripts();
         }
 
         return this; 
@@ -4589,7 +4593,7 @@ var WorldMorph = PasteUpMorph.subclass("WorldMorph", {
         var world = this.world();
         var items = [
             ["New subworld (LinkMorph)", function(evt) { world.addMorph(new LinkMorph(null, evt.mousePoint));}],
-            ["Line", function(evt) { world.addMorph(Morph.makeLine([evt.mousePoint, evt.mousePoint.addXY(60, 30)], 2, Color.black));}],
+            ["Line", function(evt) { var p = evt.mousePoint; world.addMorph(Morph.makeLine([p, p.addXY(60, 30)], 2, Color.black));}],
             ["Rectangle", function(evt) { world.addMorph(new Morph(evt.mousePoint.extent(pt(60, 30)), "rect"));}],
             ["Ellipse", function(evt) { world.addMorph(new Morph(evt.mousePoint.extent(pt(50, 50)), "ellipse"));}],
             ["TextMorph", function(evt) { world.addMorph(new TextMorph(evt.mousePoint.extent(pt(120, 10)), "This is a TextMorph"));}],
