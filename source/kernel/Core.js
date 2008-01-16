@@ -2341,8 +2341,10 @@ Morph = Visual.subclass("Morph", {
         this.disableBrowserHandlers();        
 
         if (this.activeScripts) {
-            console.log('started stepping %s', this);
+	    this.activeScripts.each(function(a) { WorldMorph.current().startStepping(a); });
             this.startSteppingScripts();
+            // console.info("in deserialize: started stepping %s on [%s]", this, this.activeScripts.map(function(a) { return Object.toJSON(a)}));
+	    
         }
 
     },
@@ -2516,9 +2518,10 @@ Morph = Visual.subclass("Morph", {
             case "a0:action": // Firefox cheat
             case "action": {
                 var a = node.textContent.evalJSON();
-                // console.info("starting stepping %s based on %s", this, node.textContent);
-                this.addActiveScript(a);
-                // this.startStepping(a.stepTime, a.scriptName, a.argIfAny);
+		a.actor = this;
+		if (!this.activeScripts) this.activeScripts = [a];
+		else this.activeScripts.push(a);
+		console.log('deserialized script ' + Object.toJSON(a));
                 break;
             }
             case "a0:model": // Firefox cheat
@@ -3598,7 +3601,6 @@ Morph.addMethods({
         // Every morph carries a list of currently active actions (alarms and repetitive scripts)
         if (!this.activeScripts) this.activeScripts = [action];
         else this.activeScripts.push(action);
-        console.log('added script ' + action.scriptName + ": " + action);
         var actionCode = NodeFactory.createNS(Namespace.LIVELY, "action");
         actionCode.appendChild(document.createCDATASection(Object.toJSON(action)));
         this.addNonMorph(actionCode);
@@ -4326,7 +4328,7 @@ var WorldMorph = PasteUpMorph.subclass("WorldMorph", {
                       this.toggleDebugBackground]);
         menu.addLine();
         menu.addItem(["publish world as ... ", function() { 
-            this.makeShrinkWrappedWorldWith(this.submorphs, this.prompt('world file'));}]);
+            this.makeShrinkWrappedWorldWith(this.submorphs, this.prompt("world file (.xhtml)"));}]);
         menu.addItem(["restart system", this.restart]);
         return menu;
     },
@@ -4595,6 +4597,10 @@ var WorldMorph = PasteUpMorph.subclass("WorldMorph", {
             console.log('null filename, not publishing %s', morphs);
            return;
         }
+	if (!filename.endsWith(".xhtml")) {
+	    filename += ".xhtml";
+	    console.log("changed filename to " + filename);
+	}
 
         console.log('morphs is %s', morphs);
 

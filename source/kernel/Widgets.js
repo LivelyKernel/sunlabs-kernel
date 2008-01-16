@@ -1965,7 +1965,6 @@ Morph.subclass('XenoMorph', {
 	this.foRawNode.setAttributeNS(null, "height", bounds.height);
     },
     
-    
     test: function(url) {
 	url = url || "http://livelykernel.sunlabs.com/test.xhtml";
 	var xeno = new XenoMorph(pt(0, 0).extent(pt(400,200)), url);
