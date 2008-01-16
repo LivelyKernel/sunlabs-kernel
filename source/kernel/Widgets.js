@@ -424,16 +424,15 @@ var TitleBarMorph = (function() {
     },
 
     deserialize: function($super, importer, rawNode) {
-	$super(importer, rawNode);
+        $super(importer, rawNode);
         if (this.rawNode.parentNode.getAttributeNS(Namespace.LIVELY, "type") == "WindowMorph") {
-            this.closeButton.targetMorph = this.menuButton.targetMorph = this.collapseButton.targetMorph 
-		= this.windowMorph.targetMorph;
+            this.closeButton.targetMorph = this.menuButton.targetMorph 
+            = this.collapseButton.targetMorph = this.windowMorph.targetMorph;
         }
         this.linkToStyles(['titleBar']);
         this.ignoreEvents();
-	this.label.ignoreEvents();
+        this.label.ignoreEvents();
     },
-
 
     acceptsDropping: function(morph) {
         //console.log('accept drop from %s of %s, %s', this, morph, morph instanceof WindowControlMorph);
@@ -524,29 +523,28 @@ var WindowControlMorph = Morph.subclass("WindowControlMorph", {
         $super(rect.insetBy(inset), 'ellipse');
         this.setFill(new RadialGradient(color.lighter(2), color));
         this.targetMorph = targetMorph;
-	this.color = color;
-	// serialization helper there's no easy way to extract the base color from a radial gradient
-	this.rawNode.setAttributeNS(Namespace.LIVELY, "base-color", color.toString());
+        this.color = color;
+        // serialization helper there's no easy way to extract the base color from a radial gradient
+        this.rawNode.setAttributeNS(Namespace.LIVELY, "base-color", color.toString());
         this.action = action;
         this.helpText = helpText; // string to be displayed when mouse is brought over the icon
         return this;
     },
 
     restorePersistentState: function($super, importer) {
-	$super(importer);
-	// FIXME errors
-	this.color = Color.parse(this.rawNode.getAttributeNS(Namespace.LIVELY, "base-color"));
+        $super(importer);
+        // FIXME errors
+        this.color = Color.parse(this.rawNode.getAttributeNS(Namespace.LIVELY, "base-color"));
     },
-    
 
     handlesMouseDown: function() { return true; },
 
     onMouseDown: function(evt) {
         this.hideHelp();
-	if (!this.action) {
-	    console.warn("%s has no action?", this);
-	    return;
-	}
+        if (!this.action) {
+            console.warn("%s has no action?", this);
+            return;
+        }
         return this.action.call(this.targetMorph, evt);
     },
 
@@ -560,7 +558,6 @@ var WindowControlMorph = Morph.subclass("WindowControlMorph", {
     onMouseOut: function(evt) {
         this.setFill(new RadialGradient(this.color.lighter(2), this.color));
         this.hideHelp();
-	
     },
     
     onMouseMove: function(evt) {
@@ -622,11 +619,10 @@ Morph.subclass('WindowMorph', {
     },
 
     deserialize: function($super, importer, rawNode) {
-	$super(importer, rawNode);
-	this.titleBar.windowMorph = this;
-	this.closeAllToDnD();
+        $super(importer, rawNode);
+        this.titleBar.windowMorph = this;
+        this.closeAllToDnD();
     },
-
 
     toString: function($super) {
         var label = this.titleBar && this.titleBar.label;
@@ -947,7 +943,7 @@ var HandleMorph = (function () {
             if (evt.isShiftDown()) {
                 this.targetMorph.setBorderWidth(Math.max(0, Math.floor(d/3)/2), true);
             } else { 
-		this.targetMorph.reshape(this.partName, this.targetMorph.localize(evt.mousePoint), this, false);
+                this.targetMorph.reshape(this.partName, this.targetMorph.localize(evt.mousePoint), this, false);
             } 
         }
     },
@@ -1143,7 +1139,7 @@ Morph.subclass("PanelMorph", {
     initialize: function($super, extent/*:Point*/) {
         $super(pt(0, 0).extent(extent), 'rect');
         this.lastNavigable = null;
-	this.priorExtent = this.innerBounds().extent();
+        this.priorExtent = this.innerBounds().extent();
     },
 
     takesKeyboardFocus: function() {
@@ -1788,27 +1784,27 @@ var ScrollPane = Morph.subclass("ScrollPane", {
 
     connectModel: function(plugSpec) { // connection is mapped to innerMorph
         this.innerMorph().connectModel(plugSpec);
-	if(plugSpec.getMenu) this.addMenuButton(plugSpec.getMenu);
+        if(plugSpec.getMenu) this.addMenuButton(plugSpec.getMenu);
     },
     
     addMenuButton: function(modelMsg) {
         this.paneMenuMessage = modelMsg;
-	var w = this.scrollBarWidth;
-	this.menuButton = this.addMorph(new Morph(new Rectangle(0, 0, w, w)));
-	    this.menuButton.setFill(Color.white);
-	    this.menuButton.addMorph(Morph.makeLine([pt(2, 2), pt(8,2)], 1, Color.blue));
-	    this.menuButton.addMorph(Morph.makeLine([pt(2, 4), pt(10,4)], 1, Color.blue));
-	    this.menuButton.addMorph(Morph.makeLine([pt(2, 6), pt(6,6)], 1, Color.blue));
-	    this.menuButton.addMorph(Morph.makeLine([pt(2, 8), pt(8,8)], 1, Color.blue));
-	this.menuButton.align(this.menuButton.bounds().topLeft(), this.scrollBar.bounds().topLeft());
-	this.menuButton.relayMouseEvents(this, {onMouseDown: "menuButtonPressed"});
-	//this.scrollBar.setBounds(this.scrollBar.innerBounds().withTopLeft( this.menuButton.bounds().bottomLeft()));
+        var w = this.scrollBarWidth;
+        this.menuButton = this.addMorph(new Morph(new Rectangle(0, 0, w, w)));
+        this.menuButton.setFill(Color.white);
+        this.menuButton.addMorph(Morph.makeLine([pt(2, 2), pt(8,2)], 1, Color.blue));
+        this.menuButton.addMorph(Morph.makeLine([pt(2, 4), pt(10,4)], 1, Color.blue));
+        this.menuButton.addMorph(Morph.makeLine([pt(2, 6), pt(6,6)], 1, Color.blue));
+        this.menuButton.addMorph(Morph.makeLine([pt(2, 8), pt(8,8)], 1, Color.blue));
+        this.menuButton.align(this.menuButton.bounds().topLeft(), this.scrollBar.bounds().topLeft());
+        this.menuButton.relayMouseEvents(this, {onMouseDown: "menuButtonPressed"});
+        //this.scrollBar.setBounds(this.scrollBar.innerBounds().withTopLeft( this.menuButton.bounds().bottomLeft()));
     },
 
     menuButtonPressed: function(evt, button) {
-	var menu = this.innerMorph().getModel()[this.paneMenuMessage]();
+        var menu = this.innerMorph().getModel()[this.paneMenuMessage]();
         if (!menu) return;
-	menu.openIn(WorldMorph.current(), evt.mousePoint, false); 
+        menu.openIn(WorldMorph.current(), evt.mousePoint, false); 
     },
 
     getScrollPosition: function() { 
@@ -1839,15 +1835,15 @@ var ScrollPane = Morph.subclass("ScrollPane", {
         if (!this.clipMorph || !this.scrollBar) return;
         var bnds = this.innerBounds();
         var clipR = bnds.withWidth(bnds.width - this.scrollBarWidth+1).insetBy(1);
-	this.clipMorph.setExtent(clipR.extent());
-	var barBnds = bnds.withTopLeft(clipR.topRight());
-	if(this.menuButton) {
-	    var w = this.scrollBarWidth;
-	    this.menuButton.setPosition(barBnds.topLeft());
-	    //this.menuButton.setBounds(barBnds.topLeft().extent(pt(w, w)));
-	    barBnds = barBnds.withTopLeft(barBnds.topLeft().addXY(0, w));
-	    }
-	this.scrollBar.setBounds(barBnds);
+        this.clipMorph.setExtent(clipR.extent());
+        var barBnds = bnds.withTopLeft(clipR.topRight());
+        if (this.menuButton) {
+            var w = this.scrollBarWidth;
+            this.menuButton.setPosition(barBnds.topLeft());
+            //this.menuButton.setBounds(barBnds.topLeft().extent(pt(w, w)));
+            barBnds = barBnds.withTopLeft(barBnds.topLeft().addXY(0, w));
+        }
+        this.scrollBar.setBounds(barBnds);
     }
 
 });
@@ -1957,63 +1953,64 @@ var ColorPickerMorph = Morph.subclass("ColorPickerMorph", {
     
 });
 
+/**
+ * @class XenoMorph
+ */ 
 Morph.subclass('XenoMorph', {
     
     borderWidth: 2,
     fill: Color.gray.lighter(),
 
     initialize: function($super, bounds, url) { 
-	$super(bounds, "rect"); 
-	this.foRawNode = NodeFactory.createNS(Namespace.SVG, "foreignObject", 
-					      {x: bounds.x, y: bounds.y, 
-					       width: bounds.width, height: bounds.height });
-	
-	var body = this.foRawNode.appendChild(NodeFactory.createNS(Namespace.XHTML, "body"));
-	body.appendChild(document.createTextNode("no content"));
+        $super(bounds, "rect"); 
+        this.foRawNode = NodeFactory.createNS(Namespace.SVG, "foreignObject", 
+                             {x: bounds.x, y: bounds.y, 
+                              width: bounds.width,
+                              height: bounds.height });
+
+        var body = this.foRawNode.appendChild(NodeFactory.createNS(Namespace.XHTML, "body"));
+        body.appendChild(document.createTextNode("no content"));
         new NetRequest(url, {
             method: 'get',
             //contentType: 'text/xml',
             contentType: 'text/xml',
-	    
+    
             onSuccess: function(transport) {
-	        console.log('transmission dump %s', 
-			    transport.responseXML ? Exporter.nodeToString(transport.responseXML) : transport.responseText);
-		var node;
-		if (!transport.responseXML) {
-		    var parser = new DOMParser();
-		    var xhtml = parser.parseFromString(transport.responseText, "text/xml");
-		    node = xhtml.getElementsByTagName("body")[0];
-		} else {
-		    node = transport.responseXML.documentElement;
-		}
-		var parent = body.parentNode;
-		parent.removeChild(body);
-		parent.appendChild(document.adoptNode(node));
-		
+                console.log('transmission dump %s', 
+                    transport.responseXML ? Exporter.nodeToString(transport.responseXML) : transport.responseText);
+                var node;
+                if (!transport.responseXML) {
+                    var parser = new DOMParser();
+                    var xhtml = parser.parseFromString(transport.responseText, "text/xml");
+                    node = xhtml.getElementsByTagName("body")[0];
+                } else {
+                    node = transport.responseXML.documentElement;
+                }
+                var parent = body.parentNode;
+                parent.removeChild(body);
+                parent.appendChild(document.adoptNode(node));
+
             }.logErrors('Success Handler for XenoMorph ' + url)
         });
-	
 
-	this.foRawNode.appendChild(body);
-	this.addNonMorph(this.foRawNode);
+        this.foRawNode.appendChild(body);
+        this.addNonMorph(this.foRawNode);
     },
 
     adjustForNewBounds: function($super) {
-	$super();
-	var bounds = this.shape.bounds();
-	this.foRawNode.setAttributeNS(null, "width", bounds.width);
-	this.foRawNode.setAttributeNS(null, "height", bounds.height);
+        $super();
+        var bounds = this.shape.bounds();
+        this.foRawNode.setAttributeNS(null, "width", bounds.width);
+        this.foRawNode.setAttributeNS(null, "height", bounds.height);
     },
     
     test: function(url) {
-	url = url || "http://livelykernel.sunlabs.com/test.xhtml";
-	var xeno = new XenoMorph(pt(0, 0).extent(pt(400,200)), url);
+        url = url || "http://livelykernel.sunlabs.com/test.xhtml";
+        var xeno = new XenoMorph(pt(0, 0).extent(pt(400,200)), url);
         WorldMorph.current().addMorphAt(new WindowMorph(xeno, url), pt(50,50));
     }
-    
 
 });
-
 
 console.log('loaded Widgets.js');
 
