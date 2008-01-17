@@ -2831,11 +2831,21 @@ Morph.addMethods({
     }.wrap(Morph.onLayoutChange('shape')),
 
     setBounds: function(newRect) {
-        // DI: ***Note get/setBounds should be deprecated in favor of get/setExtent and get/setPosition
-        // This is so that layout management can move things around without triggering recursive calls
-        // on adjustForNewBounds(q.v.)
+        // DI: Note get/setBounds should be deprecated in favor of get/setExtent and get/setPosition
+        // This is so that layout management can move things around without triggering redundant or
+	// recursive calls on adjustForNewBounds(q.v.)
+
+	// All calls on morph.setBounds should be converted to two calls as above (or just one if,
+	// eg, only the extent or position is changing).
+
+	// Of course setBounds remains entirely valid as a message to the *shape* object and, 
+	// in fact, shape.setBounds() will have to be called from both setPosition and setExtent
+	// but adjustForNewBounds will only need to be called from setExtent.
+
+	// Finally, there is an argument for calling layoutChanged from setPosition and setExtent,
+	// since the caller must do it otherwise.  This would simplify things overall.
+
         this.setPosition(newRect.topLeft());
-        // var bounds = this.bounds();
         this.shape.setBounds(this.relativizeRect(newRect)); // FIXME some shapes don't support setFromRect
 
         if (this.clipPath) {
@@ -3790,8 +3800,9 @@ Morph.addMethods({
     layoutChanged: function() {
         // layoutChanged() is called whenever the cached fullBounds may have changed
         // It invalidates the cache, which will be recomputed when bounds() is called
-        // Naturally it must be propagated up its owner chain
-        // Note the difference in meaning from adjustForNewBounds(),
+        // Naturally it must be propagated up its owner chain.
+        // Note the difference in meaning from adjustForNewBounds()
+
         this.applyTransform(this.getTransform());  // DI: why is this here?
         this.fullBounds = null;
         if (this.owner && this.owner !== this.world()) {     // May affect owner as well...
