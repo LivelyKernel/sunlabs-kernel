@@ -3255,7 +3255,7 @@ Morph.addMethods({
     },
 
     relayMouseEvents: function(target, eventSpec) {
-        this.mouseHandler = new MouseHandlerForRelay(target, eventSpec); 
+	this.mouseHandler = new MouseHandlerForRelay(target, eventSpec); 
     },
 
     handlesMouseDown: function(evt) {
@@ -3350,10 +3350,10 @@ Object.subclass('MouseHandlerForRelay', {
     handleMouseEvent: function(evt, appendage) {
         var capType = evt.capitalizedType();
         var targetHandler = this.target[this.eventSpec['on' + capType]];
+        if (capType == "MouseUp") evt.hand.setMouseFocus(null); // NB: must precede any return
         if (targetHandler == null) return true; //FixMe: should this be false?
         if (capType == "MouseDown") evt.hand.setMouseFocus(appendage);
         targetHandler.call(this.target, evt, appendage);
-        if (capType == "MouseUp") evt.hand.setMouseFocus(null);
         return true; 
     },
     

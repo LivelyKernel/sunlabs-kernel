@@ -1793,22 +1793,24 @@ var ScrollPane = Morph.subclass("ScrollPane", {
         this.menuButton = this.addMorph(new Morph(new Rectangle(0, 0, w, w)));
             this.menuButton.setFill(Color.white);
             // Make it look like 4 tiny lines of text (doesn't work yet...)
-	    // /*
+	    var p0 = this.menuButton.innerBounds().topLeft().addXY(2, 2);
 	    for (var i=1; i<=4; i++) {
-		var line = Morph.makeLine([pt(2, i*2), pt([8, 4, 6, 8][i-1], i*2)], 1, Color.black);
+		var line = Morph.makeLine([pt(0, i*2), pt([6, 2, 4, 6][i-1], i*2)], 1, Color.black);
+		line.translateBy(p0);
 		this.menuButton.addMorph(line);
 		line.ignoreEvents();
 	    }
-	   //  */
         this.menuButton.setPosition(this.scrollBar.getPosition());
+	if(this.scrollBar) this.menuButton.setFill(this.scrollBar.getFill());
         this.menuButton.relayMouseEvents(this, {onMouseDown: "menuButtonPressed"});
 	this.scrollBar.setBounds(this.scrollBar.bounds().withTopLeft(
 		this.scrollBar.bounds().topLeft().addXY(0, w)));
     },
 
     menuButtonPressed: function(evt, button) {
+	evt.hand.setMouseFocus(null);
         var menu = this.innerMorph().getModel()[this.paneMenuMessage]();
-        if (!menu) return;
+	if (!menu) return;
         menu.openIn(WorldMorph.current(), evt.mousePoint, false); 
     },
 
