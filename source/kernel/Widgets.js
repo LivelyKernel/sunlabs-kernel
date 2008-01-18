@@ -391,7 +391,6 @@ var TitleBarMorph = (function() {
         this.closeButton =  this.addMorph(closeButton);
         // FIXME this should be simpler
         // var sign = NodeFactory.create("use").withHref("#CloseIcon");
-
         // sign.applyTransform(Transform.createSimilitude(pt(-9, -9), 0, 0.035));
         // closeButton.addNonMorph(sign);
 
@@ -448,6 +447,21 @@ var TitleBarMorph = (function() {
         var oldTop = WorldMorph.current().topSubmorph();
         if (oldTop instanceof WindowMorph) oldTop.titleBar.highlight(false);
         return this.windowMorph.isCollapsed() ? this : this.windowMorph;
+    },
+
+    adjustForNewBounds: function($super) {
+	this.shape.setBounds(this.innerBounds().withHeight(barHeight));
+	$super();
+        var loc = this.relativize(this.getPosition().addXY(3, 3));
+	var l0 = loc;
+	var dx = pt(barHeight - controlSpacing, 0);
+        if (this.closeButton) { this.closeButton.setPosition(loc);  loc = loc.addPt(dx); }
+        if (this.menuButton) { this.menuButton.setPosition(loc);  loc = loc.addPt(dx); }
+        if (this.collapseButton) { this.collapseButton.setPosition(loc);  loc = loc.addPt(dx); }
+	if (this.label) {
+		this.label.align(this.label.bounds().topCenter(),
+			this.innerBounds().topCenter().addXY(0, 1).addPt(l0.midPt(loc).subPt(l0)));
+	}
     },
 
     okToDuplicate: function(evt) {
@@ -657,6 +671,7 @@ Morph.subclass('WindowMorph', {
         owner.addMorph(this.titleBar);
         this.titleBar.setTransform(this.collapsedTransform ? this.collapsedTransform : this.expandedTransform);
         this.titleBar.setRotation(this.titleBar.getRotation());  // see comment in HandMorph
+	if (this.titleBar.collapsedExtent) this.titleBar.setExtent(this.titleBar.collapsedExtent);
         this.titleBar.enableEvents();
         this.titleBar.highlight(false);
         this.remove();
@@ -666,13 +681,16 @@ Morph.subclass('WindowMorph', {
     expand: function() {
         if (!this.isCollapsed()) return;
         this.collapsedTransform = this.titleBar.getTransform();
+        this.titleBar.collapsedExtent = this.titleBar.innerBounds().extent();
         var owner = this.titleBar.owner;
         this.takeHighlight();
         owner.addMorph(this);
         this.setTransform(this.expandedTransform);        
-        this.titleBar.remove();
+        // this.titleBar.remove();  //next statement removes it from prior owner
         this.addMorph(this.titleBar);
         this.titleBar.setTransform(this.tbTransform)
+        this.titleBar.setExtent(pt(this.innerBounds().width, this.titleBar.innerBounds().height));
+        this.titleBar.setPosition(this.innerBounds().topLeft());
         this.titleBar.ignoreEvents();
         this.state = "expanded";
     },
@@ -1225,7 +1243,7 @@ Object.extend(PanelMorph, {
             var paneRect = pt(0,0).extent(extent).scaleByRect(spec[2]);
             panel[paneName] = panel.addMorph(new paneConstructor(paneRect));
         });
-
+	panel.suppressHandles = true;
         return panel;
     }
 
