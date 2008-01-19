@@ -385,7 +385,8 @@ var TitleBarMorph = (function() {
         this.linkToStyles(['titleBar']);
         this.ignoreEvents();
 
-        var cell = new Rectangle(0, 0, barHeight, barHeight);
+        // Note: Layout of submorphs happens in adjustForNewBounds (q.v.)
+	var cell = new Rectangle(0, 0, barHeight, barHeight);
         var closeButton = new WindowControlMorph(cell, controlSpacing, Color.primary.orange, windowMorph, 
             function() { this.initiateShutdown(); }, "Close");
         this.closeButton =  this.addMorph(closeButton);
@@ -394,12 +395,10 @@ var TitleBarMorph = (function() {
         // sign.applyTransform(Transform.createSimilitude(pt(-9, -9), 0, 0.035));
         // closeButton.addNonMorph(sign);
 
-        cell = cell.translatedBy(pt(barHeight - controlSpacing, 0));
         var menuButton = new WindowControlMorph(cell, controlSpacing, Color.primary.blue, windowMorph, 
             function(evt) { windowMorph.showTargetMorphMenu(evt); }, "Menu");
         this.menuButton = this.addMorph(menuButton);
 
-        cell = cell.translatedBy(pt(barHeight - controlSpacing, 0));
         var collapseButton = new WindowControlMorph(cell, controlSpacing, Color.primary.yellow, windowMorph, 
             function() { this.toggleCollapse(); }, "Collapse");
         this.collapseButton = this.addMorph(collapseButton);
@@ -415,10 +414,10 @@ var TitleBarMorph = (function() {
             label.shape.roundEdgesBy(8);
         }
 
-        label.align(label.bounds().topCenter(), this.shape.bounds().topCenter().addXY(0,1));
         label.ignoreEvents();
         this.label = this.addMorph(label);
 
+	this.adjustForNewBounds();  // This will align the buttons and label properly
         return this;
     },
 
@@ -452,7 +451,7 @@ var TitleBarMorph = (function() {
     adjustForNewBounds: function($super) {
 	this.shape.setBounds(this.innerBounds().withHeight(barHeight));
 	$super();
-        var loc = this.relativize(this.getPosition().addXY(3, 3));
+        var loc = this.innerBounds().topLeft().addXY(3, 3);
 	var l0 = loc;
 	var dx = pt(barHeight - controlSpacing, 0);
         if (this.closeButton) { this.closeButton.setPosition(loc);  loc = loc.addPt(dx); }
@@ -625,7 +624,7 @@ Morph.subclass('WindowMorph', {
         $super(location ? rect(location, bounds.extent()) : bounds, 'rect');
         this.targetMorph = this.addMorph(targetMorph);
         this.titleBar =  this.addMorph(titleBar);
-        this.contentOffset = pt(0, titleHeight);
+	this.contentOffset = pt(0, titleHeight);
         targetMorph.setPosition(this.contentOffset);
         this.linkToStyles(['window']);
         this.closeAllToDnD();
