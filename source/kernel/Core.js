@@ -3430,11 +3430,17 @@ Morph.addMethods({
             ["show Lively markup", this.addSvgInspector.curry(this)],
             ["publish shrink-wrapped as...", function() { 
                 WorldMorph.current().makeShrinkWrappedWorldWith([this], WorldMorph.current().prompt('publish as (.xhtml)')) }],
-            ["show stack", Function.showStack]
+            ["test tracing (in console)", this.testTracing.curry()]
         ];
         var menu = new MenuMorph(items, this); 
         if (!this.okToDuplicate()) menu.removeItemNamed("duplicate");
         return menu;
+    },
+
+    testTracing: function() {
+        console.log("LogAllCalls = true; tracing begins...");
+	LogAllCalls = true;
+        this.adjustForNewBounds();
     },
 
     putMeInAWindow: function(loc) {
@@ -4513,6 +4519,8 @@ var WorldMorph = PasteUpMorph.subclass("WorldMorph", {
             var func = action.actor[action.scriptName];
 
             DebuggingStack = [];  // Reset at each tick event
+	    LogAllCalls = false;
+
             if (func) {
                 try {
                     func.call(action.actor, action.argIfAny);
@@ -4854,6 +4862,7 @@ Morph.subclass("HandMorph", function() {
         evt.hand = this;
      
         DebuggingStack = [];  // Reset at each input event
+	LogAllCalls = false;
 
         switch (evt.type) {
         case "mousemove":

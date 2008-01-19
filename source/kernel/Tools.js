@@ -494,12 +494,20 @@ Function.installStackTracers = function() {
 };
 
 var DebuggingStack = [];
+var LogAllCalls = false;
 Function.prototype.stackWrapper = function () {
     // Make a proxy method (traceFunc) that calls the original method after pushing 'arguments' on DebuggingStack
     // Normally, it will pop it off before returning, but ***check interaction with try/catch
     var traceFunc = function () {
         DebuggingStack.push(arguments);  // Push the arguments object on the stack ...
-        var result = traceFunc.originalFunction.apply(this, arguments); 
+// /*
+        if (LogAllCalls) {
+		var indent = "";
+		for (var i=0; i<DebuggingStack.length; i++) indent = indent + "-";
+		console.log(DebuggingStack.length.toString() + indent + traceFunc.originalFunction.declaredClass + '.' + traceFunc.originalFunction.methodName);
+	};
+// */
+	var result = traceFunc.originalFunction.apply(this, arguments); 
         DebuggingStack.pop();            // ... and then pop them off before returning
         return result; 
     };
