@@ -4615,7 +4615,8 @@ var WorldMorph = PasteUpMorph.subclass("WorldMorph", {
             ["Rectangle", function(evt) { world.addMorph(new Morph(evt.mousePoint.extent(pt(60, 30)), "rect"));}],
             ["Ellipse", function(evt) { world.addMorph(new Morph(evt.mousePoint.extent(pt(50, 50)), "ellipse"));}],
             ["TextMorph", function(evt) { world.addMorph(new TextMorph(evt.mousePoint.extent(pt(120, 10)), "This is a TextMorph"));}],
-            ["Class Browser", function(evt) { new SimpleBrowser().openIn(world, evt.mousePoint); }]
+            ["Class Browser", function(evt) { new SimpleBrowser().openIn(world, evt.mousePoint); }],
+            ["Object Hierarchy Browser", function(evt) { new ObjectBrowser().openIn(world, evt.mousePoint); }]
         ];
         if (this.isLoadedFromNetwork()) { 
             items.push(["File Browser", function(evt) { WebStore.prototype.onCurrentLocation().openIn(world, evt.mousePoint) }])

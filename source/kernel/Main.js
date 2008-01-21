@@ -306,7 +306,10 @@ function populateWorldWithExamples(world) {
         developerTextMorph.shape.roundEdgesBy(10);
         world.addMorph(developerTextMorph);
 
-        if (Config.showBrowser) new SimpleBrowser().openIn(devWorld.myWorld, pt(20,20));
+        if (Config.showBrowser) {
+            new SimpleBrowser().openIn(devWorld.myWorld, pt(20, 20));
+            new ObjectBrowser().openIn(devWorld.myWorld, pt(50, 100));
+        }
 
         if (Config.showHilbertFun) apps.Pen.hilbertFun(devWorld.myWorld);
 

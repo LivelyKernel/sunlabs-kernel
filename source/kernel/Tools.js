@@ -91,6 +91,98 @@ Model.subclass('SimpleBrowser', {
 });
 
 // ===========================================================================
+// Object Hierarchy Browser
+// ===========================================================================
+
+/**
+ * @class ObjectBrowser: A JavaScript object hierarchy browser
+ */
+
+Model.subclass('ObjectBrowser', {
+
+    initialize: function($super) {
+        $super();
+        this.nameToView   = ""; // Current name ("node") that we are viewing
+        this.fullPath     = ""; // The full pathname of the object
+        this.objectToView = Global; // Start by viewing the Global namespace
+        return this;
+    },
+
+    getObjectList: function() {
+        var list = [];
+        for (var name in this.objectToView) list = list.concat(name);
+        list.sort();
+
+        // The topmost row in the object list serves as the "up" operation.
+        // It also contains the full path name of the current object. 
+        var path = (this.fullPath != "") ? this.fullPath : "Global";
+        list.unshift(".. [" + path + "]"); // Add the "up" operation to the list
+        return list;
+    },
+
+    setObjectName: function(n) {
+        if (!n) return;
+
+        // Check if we are moving up in the object hierarchy
+        if (n.substring(0, 2) == "..") {
+            var index = this.fullPath.lastIndexOf(".");
+            if (index != -1) {
+                this.fullPath     = this.fullPath.substring(0, index);
+                this.objectToView = eval(this.fullPath);
+            } else {
+                this.fullPath     = "";
+                this.objectToView = Global;
+            }
+            this.nameToView = "";
+            this.changed("getObjectList");
+            return;
+        }
+
+        // Check if we are "double-clicking" or choosing another item
+        if (n != this.nameToView) {
+            // Choosing another item: Get the value of the selected item
+            this.nameToView = n;
+            this.changed("getObjectValue");
+        } else {
+            // Double-clicking: Browse child
+            if (this.fullPath != "") this.fullPath += ".";
+            this.fullPath += this.nameToView;
+            this.objectToView = eval(this.fullPath);
+            if (!this.objectToView) this.objectToView = Global;
+            this.nameToView = "";
+            this.changed("getObjectList");
+        }
+    },
+
+    getObjectValue: function() {
+        if (!this.objectToView || !this.nameToView || this.nameToView == "") return "(no data)";
+        return this.objectToView[this.nameToView].toString();
+    },
+
+    setObjectValue: function(newDef) { eval(newDef); },
+
+    openIn: function(world, location) {
+        world.addMorphAt(new WindowMorph(this.buildView(pt(400, 300)), 'Object Hierarchy Browser'), location);
+        this.changed('getObjectList');
+    },
+
+    buildView: function(extent) {
+        var panel = PanelMorph.makePanedPanel(extent, [
+            ['topPane', ListPane, new Rectangle(0, 0, 1, 0.5)],
+            ['bottomPane', TextPane, new Rectangle(0, 0.5, 1, 0.5)]
+        ]);
+
+        var m = panel.topPane;
+        m.connectModel({model: this, getList: "getObjectList", setSelection: "setObjectName"});
+        m = panel.bottomPane;
+        m.connectModel({model: this, getText: "getObjectValue", setText: "setObjectValue"});
+
+        return panel;
+    }
+
+});
+
+// ===========================================================================
 // Object Inspector
 // ===========================================================================
 
