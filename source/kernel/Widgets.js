@@ -386,7 +386,7 @@ var TitleBarMorph = (function() {
         this.ignoreEvents();
 
         // Note: Layout of submorphs happens in adjustForNewBounds (q.v.)
-	var cell = new Rectangle(0, 0, barHeight, barHeight);
+        var cell = new Rectangle(0, 0, barHeight, barHeight);
         var closeButton = new WindowControlMorph(cell, controlSpacing, Color.primary.orange, windowMorph, 
             function() { this.initiateShutdown(); }, "Close");
         this.closeButton =  this.addMorph(closeButton);
@@ -417,7 +417,7 @@ var TitleBarMorph = (function() {
         label.ignoreEvents();
         this.label = this.addMorph(label);
 
-	this.adjustForNewBounds();  // This will align the buttons and label properly
+        this.adjustForNewBounds();  // This will align the buttons and label properly
         return this;
     },
 
@@ -449,18 +449,18 @@ var TitleBarMorph = (function() {
     },
 
     adjustForNewBounds: function($super) {
-	this.shape.setBounds(this.innerBounds().withHeight(barHeight));
-	$super();
+        this.shape.setBounds(this.innerBounds().withHeight(barHeight));
+        $super();
         var loc = this.innerBounds().topLeft().addXY(3, 3);
-	var l0 = loc;
-	var dx = pt(barHeight - controlSpacing, 0);
+        var l0 = loc;
+        var dx = pt(barHeight - controlSpacing, 0);
         if (this.closeButton) { this.closeButton.setPosition(loc);  loc = loc.addPt(dx); }
         if (this.menuButton) { this.menuButton.setPosition(loc);  loc = loc.addPt(dx); }
         if (this.collapseButton) { this.collapseButton.setPosition(loc);  loc = loc.addPt(dx); }
-	if (this.label) {
-		this.label.align(this.label.bounds().topCenter(),
-			this.innerBounds().topCenter().addXY(0, 1).addPt(l0.midPt(loc).subPt(l0)));
-	}
+        if (this.label) {
+            this.label.align(this.label.bounds().topCenter(),
+            this.innerBounds().topCenter().addXY(0, 1).addPt(l0.midPt(loc).subPt(l0)));
+        }
     },
 
     okToDuplicate: function(evt) {
@@ -624,7 +624,7 @@ Morph.subclass('WindowMorph', {
         $super(location ? rect(location, bounds.extent()) : bounds, 'rect');
         this.targetMorph = this.addMorph(targetMorph);
         this.titleBar =  this.addMorph(titleBar);
-	this.contentOffset = pt(0, titleHeight);
+        this.contentOffset = pt(0, titleHeight);
         targetMorph.setPosition(this.contentOffset);
         this.linkToStyles(['window']);
         this.closeAllToDnD();
@@ -670,7 +670,7 @@ Morph.subclass('WindowMorph', {
         owner.addMorph(this.titleBar);
         this.titleBar.setTransform(this.collapsedTransform ? this.collapsedTransform : this.expandedTransform);
         this.titleBar.setRotation(this.titleBar.getRotation());  // see comment in HandMorph
-	if (this.titleBar.collapsedExtent) this.titleBar.setExtent(this.titleBar.collapsedExtent);
+        if (this.titleBar.collapsedExtent) this.titleBar.setExtent(this.titleBar.collapsedExtent);
         this.titleBar.enableEvents();
         this.titleBar.highlight(false);
         this.remove();
@@ -1242,7 +1242,7 @@ Object.extend(PanelMorph, {
             var paneRect = pt(0,0).extent(extent).scaleByRect(spec[2]);
             panel[paneName] = panel.addMorph(new paneConstructor(paneRect));
         });
-	panel.suppressHandles = true;
+        panel.suppressHandles = true;
         return panel;
     }
 
@@ -1801,33 +1801,33 @@ var ScrollPane = Morph.subclass("ScrollPane", {
 
     connectModel: function(plugSpec) { // connection is mapped to innerMorph
         this.innerMorph().connectModel(plugSpec);
-        if(plugSpec.getMenu) this.addMenuButton(plugSpec.getMenu);
+        if (plugSpec.getMenu) this.addMenuButton(plugSpec.getMenu);
     },
     
     addMenuButton: function(modelMsg) {
         this.paneMenuMessage = modelMsg;
         var w = this.scrollBarWidth;
         this.menuButton = this.addMorph(new Morph(new Rectangle(0, 0, w, w)));
-            this.menuButton.setFill(Color.white);
-            // Make it look like 4 tiny lines of text (doesn't work yet...)
-	    var p0 = this.menuButton.innerBounds().topLeft().addXY(2, 2);
-	    for (var i=1; i<=4; i++) {
-		var line = Morph.makeLine([pt(0, i*2), pt([6, 2, 4, 6][i-1], i*2)], 1, Color.black);
-		line.translateBy(p0);
-		this.menuButton.addMorph(line);
-		line.ignoreEvents();
-	    }
+        this.menuButton.setFill(Color.white);
+        // Make it look like 4 tiny lines of text (doesn't work yet...)
+        var p0 = this.menuButton.innerBounds().topLeft().addXY(2, 2);
+        for (var i=1; i<=4; i++) {
+            var line = Morph.makeLine([pt(0, i*2), pt([6, 2, 4, 6][i-1], i*2)], 1, Color.black);
+            line.translateBy(p0);
+            this.menuButton.addMorph(line);
+            line.ignoreEvents();
+        }
         this.menuButton.setPosition(this.scrollBar.getPosition());
-	if(this.scrollBar) this.menuButton.setFill(this.scrollBar.getFill());
+        if (this.scrollBar) this.menuButton.setFill(this.scrollBar.getFill());
         this.menuButton.relayMouseEvents(this, {onMouseDown: "menuButtonPressed"});
-	this.scrollBar.setBounds(this.scrollBar.bounds().withTopLeft(
-		this.scrollBar.bounds().topLeft().addXY(0, w)));
+        this.scrollBar.setBounds(this.scrollBar.bounds().withTopLeft(
+        this.scrollBar.bounds().topLeft().addXY(0, w)));
     },
 
     menuButtonPressed: function(evt, button) {
-	evt.hand.setMouseFocus(null);
+        evt.hand.setMouseFocus(null);
         var menu = this.innerMorph().getModel()[this.paneMenuMessage]();
-	if (!menu) return;
+        if (!menu) return;
         menu.openIn(WorldMorph.current(), evt.mousePoint, false); 
     },
 

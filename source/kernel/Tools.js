@@ -500,14 +500,14 @@ Function.prototype.stackWrapper = function () {
     // Normally, it will pop it off before returning, but ***check interaction with try/catch
     var traceFunc = function () {
         DebuggingStack.push(arguments);  // Push the arguments object on the stack ...
-// /*
+
         if (LogAllCalls) {
-		var indent = "";
-		for (var i=0; i<DebuggingStack.length; i++) indent = indent + "-";
-		console.log(DebuggingStack.length.toString() + indent + traceFunc.originalFunction.declaredClass + '.' + traceFunc.originalFunction.methodName);
-	};
-// */
-	var result = traceFunc.originalFunction.apply(this, arguments); 
+            var indent = "";
+            for (var i=0; i<DebuggingStack.length; i++) indent = indent + "-";
+            console.log(DebuggingStack.length.toString() + indent + traceFunc.originalFunction.declaredClass + '.' + traceFunc.originalFunction.methodName);
+        };
+
+        var result = traceFunc.originalFunction.apply(this, arguments); 
         DebuggingStack.pop();            // ... and then pop them off before returning
         return result; 
     };

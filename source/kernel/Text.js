@@ -19,7 +19,7 @@ Object.subclass('Font', {
     initialize: function(family/*:String*/, size/*:Integer*/){
         this.family = family;
         this.size = size;
-	this.extents = null;
+        this.extents = null;
         // this.extents = this.computeExtents(family, size);
     },
 
@@ -42,22 +42,19 @@ Object.subclass('Font', {
 
     getCharInfo: function(charString) {
         var code = charString.charCodeAt(0);
-	if (!this.extents)
-	    this.extents = this.computeExtents(this.family, this.size);
+        if (!this.extents) this.extents = this.computeExtents(this.family, this.size);
         return this.extents[code];
     },
 
     getCharWidth: function(charString) {
         var code = charString.charCodeAt(0);
-	if (!this.extents)
-	    this.extents = this.computeExtents(this.family, this.size);
+        if (!this.extents) this.extents = this.computeExtents(this.family, this.size);
         return this.extents[code] ? this.extents[code].width : -1;
     },
 
     getCharHeight: function(charString) {
         var code = charString.charCodeAt(0)
-	if (!this.extents)
-	    this.extents = this.computeExtents(this.family, this.size);
+        if (!this.extents) this.extents = this.computeExtents(this.family, this.size);
         return this.extents[code] ? this.extents[code].height : -1;
     },
 
@@ -665,7 +662,6 @@ scope.TextMorph = Morph.subclass("TextMorph", {
     tabWidth: 4,
     tabsAsSpaces: true,
     noShallowCopyProperties: Morph.prototype.noShallowCopyProperties.concat(['rawTextNode', 'lines']),
-
 
     initializeTransientState: function($super, initialBounds) {
         $super(initialBounds);

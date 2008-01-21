@@ -2320,12 +2320,12 @@ Morph = Visual.subclass("Morph", {
 
         this.initializeTransientState(initialBounds);
         this.disableBrowserHandlers();        
-	/*
+/*
         if (this.activeScripts) {
             console.log('started stepping %s', this);
             this.startSteppingScripts();
         }
-      */
+*/
     },
 
     deserialize: function(importer, rawNode) {
@@ -2374,9 +2374,9 @@ Morph = Visual.subclass("Morph", {
             this.cachedTransform = other.cachedTransform.clone();
         } 
 
-	if (other.defs) {
-	    this.addNonMorph(this.defs = this.restoreDefs(other.defs.cloneNode(true)));
-	}
+        if (other.defs) {
+            this.addNonMorph(this.defs = this.restoreDefs(other.defs.cloneNode(true)));
+        }
 
         if (other.clipPath) {
             console.log('other clipPath is ' + other.clipPath);
@@ -2404,7 +2404,7 @@ Morph = Visual.subclass("Morph", {
             for (var i = 0; i < other.activeScripts.length; i++) {
                 var a = other.activeScripts[i];
                 // Copy all reflexive scripts (messages to self)
-		console.log("processing " + Object.toJSON(a) + " reflexive? " + (a.actor === other ? true : a.actor));
+                console.log("processing " + Object.toJSON(a) + " reflexive? " + (a.actor === other ? true : a.actor));
                 if (a.actor === other) {
                     this.startStepping(a.stepTime, a.scriptName, a.argIfAny);
                     // Note -- may want to startStepping other as well so they are sync'd
@@ -2418,8 +2418,8 @@ Morph = Visual.subclass("Morph", {
         if (this.activeScripts) {
             console.log('started stepping %s', this);
             this.activeScripts.each(function(a) { WorldMorph.current().startStepping(a); });
-	    
-            //this.startSteppingScripts();
+
+            // this.startSteppingScripts();
         }
 
         return this; 
@@ -2669,7 +2669,6 @@ Object.extend(Morph, {
 
 // Functions for manipulating the visual attributes of Morphs
 Morph.addMethods({
-
     
     setFill: function(fill) {
         // console.log('setting %s on %s', fill, this);
@@ -2833,17 +2832,17 @@ Morph.addMethods({
     setBounds: function(newRect) {
         // DI: Note get/setBounds should be deprecated in favor of get/setExtent and get/setPosition
         // This is so that layout management can move things around without triggering redundant or
-	// recursive calls on adjustForNewBounds(q.v.)
+        // recursive calls on adjustForNewBounds(q.v.)
 
-	// All calls on morph.setBounds should be converted to two calls as above (or just one if,
-	// eg, only the extent or position is changing).
+        // All calls on morph.setBounds should be converted to two calls as above (or just one if,
+        // eg, only the extent or position is changing).
 
-	// Of course setBounds remains entirely valid as a message to the *shape* object and, 
-	// in fact, shape.setBounds() will have to be called from both setPosition and setExtent
-	// but adjustForNewBounds will only need to be called from setExtent.
+        // Of course setBounds remains entirely valid as a message to the *shape* object and, 
+        // in fact, shape.setBounds() will have to be called from both setPosition and setExtent
+        // but adjustForNewBounds will only need to be called from setExtent.
 
-	// Finally, there is an argument for calling layoutChanged from setPosition and setExtent,
-	// since the caller must do it otherwise.  This would simplify things overall.
+        // Finally, there is an argument for calling layoutChanged from setPosition and setExtent,
+        // since the caller must do it otherwise.  This would simplify things overall.
 
         this.setPosition(newRect.topLeft());
         this.shape.setBounds(this.relativizeRect(newRect)); // FIXME some shapes don't support setFromRect
@@ -3265,7 +3264,7 @@ Morph.addMethods({
     },
 
     relayMouseEvents: function(target, eventSpec) {
-	this.mouseHandler = new MouseHandlerForRelay(target, eventSpec); 
+        this.mouseHandler = new MouseHandlerForRelay(target, eventSpec); 
     },
 
     handlesMouseDown: function(evt) {
@@ -3439,7 +3438,7 @@ Morph.addMethods({
 
     testTracing: function() {
         console.log("LogAllCalls = true; tracing begins...");
-	LogAllCalls = true;
+        LogAllCalls = true;
         this.adjustForNewBounds();
     },
 
@@ -4519,7 +4518,7 @@ var WorldMorph = PasteUpMorph.subclass("WorldMorph", {
             var func = action.actor[action.scriptName];
 
             DebuggingStack = [];  // Reset at each tick event
-	    LogAllCalls = false;
+            LogAllCalls = false;
 
             if (func) {
                 try {
@@ -4862,7 +4861,7 @@ Morph.subclass("HandMorph", function() {
         evt.hand = this;
      
         DebuggingStack = [];  // Reset at each input event
-	LogAllCalls = false;
+        LogAllCalls = false;
 
         switch (evt.type) {
         case "mousemove":
