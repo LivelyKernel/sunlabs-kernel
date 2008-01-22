@@ -595,8 +595,8 @@ Function.prototype.stackWrapper = function () {
 
         if (LogAllCalls) {
             var indent = "";
-            for (var i=0; i<DebuggingStack.length; i++) indent = indent + "-";
-            console.log(DebuggingStack.length.toString() + indent + traceFunc.originalFunction.declaredClass + '.' + traceFunc.originalFunction.methodName);
+            for (var i = 0; i < DebuggingStack.length; i++) indent += "-";
+            console.log(DebuggingStack.length.toString() + indent + traceFunc.originalFunction.qualifiedMethodName());
         };
 
         var result = traceFunc.originalFunction.apply(this, arguments); 

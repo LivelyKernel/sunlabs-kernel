@@ -17,12 +17,123 @@
 // Namespaces and core DOM bindings
 // ===========================================================================
 
-var Global = this;
+var Global = window;
 
 var Canvas = document.getElementById("canvas"); // singleton for now
 
-window.parent.console.platformConsole = console;
-var console = window.parent.console;
+
+Object.extend(String.prototype, {
+
+    format: function() {
+	return this.formatFromArray($A(arguments));
+    },
+
+
+    // adapted from firebug lite
+    formatFromArray: function(objects) {
+	
+	function appendText(object, string) {
+	    return "" + object;
+	}
+	
+	function appendObject(object, string) {
+	    return "" + object;
+	}
+	
+	function appendInteger(value, string) {
+	    return value.toString();
+	}
+	
+	function appendFloat(value, string) {
+	    return value.toString()
+	}
+	
+        var appenderMap = {s: appendText, d: appendInteger, i: appendInteger, f: appendFloat}; 
+	var reg = /((^%|[^\\]%)(\d+)?(\.)([a-zA-Z]))|((^%|[^\\]%)([a-zA-Z]))/; 
+
+
+	function parseFormat(fmt) {
+	    
+            var parts = [];
+	    
+            for (var m = reg.exec(fmt); m; m = reg.exec(fmt)) {
+		var type = m[8] ? m[8] : m[5];
+		var appender = type in appenderMap ? appenderMap[type] : appendObject;
+		var precision = m[3] ? parseInt(m[3]) : (m[4] == "." ? -1 : 0);
+		
+		parts.push(fmt.substr(0, m[0][0] == "%" ? m.index : m.index + 1));
+		parts.push({appender: appender, precision: precision});
+		
+		fmt = fmt.substr(m.index+m[0].length);
+            }
+	    
+            parts.push(fmt.toString());
+	    
+            return parts;
+	};
+	
+	
+	var parts = parseFormat(this);
+	var str = "";
+	var objIndex = 0;
+	
+	
+	for (var i = 0; i < parts.length; ++i) {
+	    var part = parts[i];
+	    if (part && typeof(part) == "object") {
+		var object = objects[objIndex++];
+		str += (part.appender || appendText)(object, str);
+	    } else
+		str += appendText(part, str);
+	}
+	return str;
+    }
+});
+
+// console handline
+(function() { 
+    
+    var platformConsole = window.console || window.parent.console; 
+    if (!platformConsole) {
+	alert('no console! console output disabled');
+	platformConsole = { log: function(msg) { } } // do nothing as a last resort
+    }
+    
+    if (platformConsole.warn && platformConsole.info && platformConsole.assert) {
+	// it's a Firebug/Firebug lite console, it does all we want, so no extra work necessary
+	window.console = platformConsole;
+    } else {
+	// rebind to something that has all the calls
+	window.console = {
+
+	    consumers: [ platformConsole ],
+	    
+	    warn: function() {
+		var args = $A(arguments);
+		var rcv = args.shift();
+		this.consumers.invoke('log', "Warn: " + rcv.formatFromArray(args));
+	    },
+	    
+	    info: function() {
+		var args = $A(arguments);
+		var rcv = args.shift();
+		this.consumers.invoke('log', "Info: " + rcv.formatFromArray(args));
+	    },
+	    
+	    log: function() {
+		var args = $A(arguments);
+		var rcv = args.shift();
+		this.consumers.invoke('log', rcv.formatFromArray(args));
+	    },
+	    
+	    assert: function(expr, msg) {
+		if (!expr) this.log("assert failed:" + msg);
+	    }
+	}
+    }
+    
+})(); 
+
 
 window.onerror = function(message, url, code) {
     console.log('in %s: %s, code %s', url, message, code);
@@ -123,7 +234,9 @@ Object.extend(Class, {
     
     // KP: obsolete, use Object.isClass
     isClass: function(object) {
-        return (object instanceof Function) &&  object.prototype && (object.functionNames().length > Object.functionNames().length);
+        return (object instanceof Function) 
+	    && object.prototype 
+	    && (object.functionNames().length > Object.functionNames().length);
     },
 
     methodNameList: function(className) {
@@ -456,22 +569,11 @@ Object.extend(String.prototype, {
         }
 
         return ss.substr(0,len);
-    },
-
-    // very simple format mechanism, maybe extend with precision and such
-    format: function(/*, exprs*/) {
-        var str = this;
-
-        for (var i = 0; i < arguments.length; i++) {
-            var a = arguments[i];
-            var object = (a instanceof String || typeof(a) == 'string') ? a : Object.inspect(a); // avoid quotes
-            str = str.replace(new RegExp("%" + (i + 1), "g"), object);
-        }
-
-        return str;
     }
 
+
 });
+
 
 /**
  * Extensions to class Number
@@ -550,7 +652,7 @@ Object.subclass("Point", {
     extent: function(ext) { return new Rectangle(this.x, this.y, ext.x, ext.y); },
 
     toString: function() {
-        return "pt(%1,%2)".format(this.x.roundTo(0.01), this.y.roundTo(0.01)); 
+        return "pt(%f,%f)".format(this.x.roundTo(0.01), this.y.roundTo(0.01)); 
     },
 
     matrixTransform: function(mx) {
@@ -752,7 +854,7 @@ Rectangle.addMethods({
     },
 
     toString: function() { 
-        return "rect(%1,%2)".format(this.topLeft(), this.bottomRight());
+        return "rect(%s,%s)".format(this.topLeft(), this.bottomRight());
     }
 
 });
@@ -1546,7 +1648,7 @@ Visual.subclass('Shape', {
     controlPointProximity: 10,
 
     toString: function() {
-        return 'a Shape(%1,%2)'.format(this.getType(), this.bounds());
+        return "a Shape(%s,%s)".format(this.getType(), this.bounds());
     },
   
     initialize: function(fill, strokeWidth, stroke) {
@@ -2198,10 +2300,10 @@ Object.subclass('Importer', {
         var morphTypeName = rawNode.getAttributeNS(Namespace.LIVELY, "type");
 
         if (!morphTypeName || !Global[morphTypeName]) {
-            throw new Error('node %1 (parent %2) cannot be a morph of %3'.format(
-                            rawNode.tagName, rawNode.parentNode, morphTypeName));
+            throw new Error("node %s (parent %s) cannot be a morph of %s".format(rawNode.tagName, 
+										 rawNode.parentNode, morphTypeName));
         }
-
+	
         try {
             return new Global[morphTypeName](this, rawNode);
         } catch (er) {
@@ -2296,7 +2398,7 @@ Morph = Visual.subclass("Morph", {
     openForDragAndDrop: true, // Submorphs can be extracted from or dropped into me
     mouseHandler: MouseHandlerForDragging, //a MouseHandler for mouse sensitivity, etc
     stepHandler: null, // a stepHandler for time-varying morphs and animation 
-    noShallowCopyProperties: ['id', 'rawNode', 'rawSubnodes', 'shape', 'submorphs', 'stepHandler', 'defs'],
+    noShallowCopyProperties: ['id', 'rawNode', 'rawSubnodes', 'shape', 'submorphs', 'stepHandler', 'defs', 'activeScripts'],
 
     suppressBalloonHelp: Config.suppressBalloonHelp,
 
@@ -2320,12 +2422,6 @@ Morph = Visual.subclass("Morph", {
 
         this.initializeTransientState(initialBounds);
         this.disableBrowserHandlers();        
-/*
-        if (this.activeScripts) {
-            console.log('started stepping %s', this);
-            this.startSteppingScripts();
-        }
-*/
     },
 
     deserialize: function(importer, rawNode) {
@@ -2342,9 +2438,8 @@ Morph = Visual.subclass("Morph", {
         this.disableBrowserHandlers();        
 
         if (this.activeScripts) {
-            this.activeScripts.each(function(a) { WorldMorph.current().startStepping(a); });
+            this.activeScripts.invoke('start', WorldMorph.current());
             // this.startSteppingScripts();
-            // console.info("in deserialize: started stepping %s on [%s]", this, this.activeScripts.map(function(a) { return Object.toJSON(a)}));
         }
 
     },
@@ -2416,10 +2511,8 @@ Morph = Visual.subclass("Morph", {
 
         this.disableBrowserHandlers(); 
         if (this.activeScripts) {
-            console.log('started stepping %s', this);
-            this.activeScripts.each(function(a) { WorldMorph.current().startStepping(a); });
-
-            // this.startSteppingScripts();
+            this.activeScripts.invoke('start', WorldMorph.current());
+            //this.startSteppingScripts();
         }
 
         return this; 
@@ -2524,11 +2617,11 @@ Morph = Visual.subclass("Morph", {
             // nodes from the Lively namespace
             case "a0:action": // Firefox cheat
             case "action": {
-                var a = node.textContent.evalJSON();
+                var a = new PeriodicTask(importer, node);
                 a.actor = this;
-                if (!this.activeScripts) this.activeScripts = [a];
-                else this.activeScripts.push(a);
-                console.log('deserialized script ' + Object.toJSON(a));
+		this.addActiveScript(a);
+                console.log('deserialized script ' + a);
+		// don't start the action until morph fully constructed
                 break;
             }
             case "a0:model": // Firefox cheat
@@ -3075,9 +3168,9 @@ Morph.addMethods({
         // A replacement for toString() which can't be overridden in
         // some cases.  Invoked by Object.inspect.
         try {
-            return "%1(#%2,%3)".format(this.getType(), this.id, (this.shape || "").toString());
+            return "%s(#%s,%s)".format(this.getType(), this.id, (this.shape || "").toString());
         } catch (e) {
-            console.log("toString failed on " + [this.id, this.getType()]);
+            console.log("toString failed on %s", [this.id, this.getType()]);
             return "#<Morph?{" + e + "}>";
         }
     },
@@ -3524,7 +3617,7 @@ Morph.addMethods({
         // KP: is the following necessary?
         this.owner.addMorph(copy); // set up owner the original parent so that it can be reparented to this: 
         hand.addMorph(copy);  
-        copy.withAllSubmorphsDo(function() { this.startStepping(null); }, null);
+//        copy.withAllSubmorphsDo(function() { this.startStepping(null); }, null);
     },
 
     morphToGrabOrReceiveDroppingMorph: function(evt, droppingMorph) {
@@ -3582,6 +3675,51 @@ Morph.addMethods({
 
 });
 
+Wrapper.subclass('PeriodicTask', {
+
+    documentation: "Description of a periodic action",
+
+    initialize: function($super, actor, scriptName, argIfAny, stepTime) {
+	$super();
+	this.actor = actor;
+	this.rawNode = NodeFactory.createNS(Namespace.LIVELY, "action");
+	this.scriptName = scriptName;
+	this.argIfAny = argIfAny;
+	this.stepTime = stepTime;
+	this.ticks = 0;
+	var code = document.createCDATASection(this.toJSON());
+	this.rawNode.appendChild(code);
+    },
+
+    deserialize: function($super, importer, rawNode) {
+	$super(importer, rawNode);
+	this.rawNode = rawNode;
+	var init = rawNode.textContent.evalJSON();
+	Object.extend(this, init);
+    },
+
+    toJSON: function() {
+	return Object.toJSON({scriptName: this.scriptName, 
+			      argIfAny: this.argIfAny, 
+			      stepTime: this.stepTime, 
+			      ticks: this.ticks });
+    },
+
+    toString: function() {
+	return "#<PeriodicTask["+ this.actor + this.toJSON() + "]>";
+    },
+
+    stop: function(world) {
+	world.stopSteppingFor(this);
+    },
+
+    start: function(world) {
+	console.log("started stepping task %s", this);
+	world.startSteppingFor(this);
+    }
+
+});
+
 // Morph stepping/timer functions
 Morph.addMethods({
 
@@ -3589,10 +3727,7 @@ Morph.addMethods({
     
     stopSteppingScripts: function() {
         if (this.activeScripts) {
-            var world = WorldMorph.current();
-            for (var i=0; i<this.activeScripts.length; i++) {
-                world.stopStepping(this.activeScripts[i]);
-            }
+	    this.activeScripts.invoke('stop', this.world());
             this.activeScripts = null;
         }
     },
@@ -3603,35 +3738,34 @@ Morph.addMethods({
             this.stopStepping();
             if (this.stepHandler == null) this.stepHandler = new StepHandler(this,stepTime);
             if (stepTime != null) this.stepHandler.stepTime = stepTime;
-            WorldMorph.current().startStepping(this); 
+            this.world().startSteppingFor(this); 
             return; 
         }
-
         // New code schedules an action
-        var action = { actor: this, scriptName: scriptName, argIfAny: argIfAny,
-                       stepTime: stepTime, ticks: 0 };
+        var action = new PeriodicTask(this, scriptName, argIfAny, stepTime);
         this.addActiveScript(action);
-        WorldMorph.current().startStepping(action); 
+	action.start(this.world());
     },
     
     addActiveScript: function(action) {
         // Every morph carries a list of currently active actions (alarms and repetitive scripts)
         if (!this.activeScripts) this.activeScripts = [action];
         else this.activeScripts.push(action);
-        var actionCode = NodeFactory.createNS(Namespace.LIVELY, "action");
-        actionCode.appendChild(document.createCDATASection(Object.toJSON(action)));
-        this.addNonMorph(actionCode);
+	if (!action.rawNode.parentNode)
+            this.addNonMorph(action.rawNode);
+	// if we're deserializing the rawNode may already be in the markup
+	
     },
     
-
     startSteppingFunction: function(stepTime, func) {
         this.startStepping(stepTime);
         this.stepHandler.setStepFunction(func); 
     },
     
     stopStepping: function() {
+	if (this instanceof ClockMorph) Function.showStack();
         if (this.world()) {
-            this.world().stopStepping(this);
+            this.world().stopSteppingFor(this);
         } // else: can happen if removing a morph whose parent is not in the world
     },
 
@@ -3650,7 +3784,7 @@ Morph.addMethods({
         var world = WorldMorph.current();
         this.withAllSubmorphsDo( function() {
             if (this.suspendedScripts) {
-                for (var i=0; i<this.suspendedScripts.length; i++) world.startStepping(this.suspendedScripts[i]);
+		this.suspendedScripts.invoke('start', world);
                 this.suspendedScripts = null;
             }
         });
@@ -4031,13 +4165,13 @@ Object.subclass('Model', {
     },
 
     toString: function() {
-        return "#<Model:%1>".format(this.dependents);
+        return "#<Model:%s>".format(this.dependents);
     },
 
     inspect: function() {
         var hash = new Hash(this);
         delete hash.dependents;
-        return "#<Model:%1>".format(Object.toJSON(hash));
+        return "#<Model:%s>".format(Object.toJSON(hash));
     }
 
 });
@@ -4207,10 +4341,11 @@ var PasteUpMorph = Morph.subclass("PasteUpMorph", {
  * @class WorldMorph 
  */ 
 
-var WorldMorph = PasteUpMorph.subclass("WorldMorph", {
+PasteUpMorph.subclass("WorldMorph", {
     
     documentation: "A Morphic world (a visual container of other morphs)",
     fill: Color.primary.blue,
+    defaultExtent: pt(1280, 1024),
     // Default themes for the theme manager    
     defaultThemes: {
         primitive: { // Primitive look and feel -- flat fills and no rounding or translucency
@@ -4272,11 +4407,11 @@ var WorldMorph = PasteUpMorph.subclass("WorldMorph", {
         // in Firefox bounds may be 1x1 size?? maybe everything should be run from onload or sth?
         this.itsCanvas = canvas; 
         if (bounds.width < 2) {
-            bounds.width = 1280;
+            bounds.width = defaultExtent.width;
         }
 
         if (bounds.height < 2) {
-            bounds.height = 1024;
+            bounds.height = defaultExtent.height;
         }
 
         if (backgroundImageId) {
@@ -4436,7 +4571,7 @@ var WorldMorph = PasteUpMorph.subclass("WorldMorph", {
 //  automatically, whereas stopSteppingScripts is.  We know you won't forget to 
 //  turn your gadgets on, but we're more concerned to turn them off when you're done.
 
-    startStepping: function(morphOrAction) {
+    startSteppingFor: function(morphOrAction) {
         if (morphOrAction.scriptName == null) {
             // Old code for ticking morphs
             var ix = this.stepList.indexOf(morphOrAction);
@@ -4448,11 +4583,11 @@ var WorldMorph = PasteUpMorph.subclass("WorldMorph", {
         var action = morphOrAction;
 
         // New code for stepping schedulableActions
-        this.stopStepping(action, true);  // maybe replacing arg or stepTime
+        this.stopSteppingFor(action, true);  // maybe replacing arg or stepTime
         this.scheduleAction(new Date().getTime(), action);
     },
     
-    stopStepping: function(morphOrAction, fromStart) {
+    stopSteppingFor: function(morphOrAction, fromStart) {
         if (morphOrAction == null || morphOrAction.scriptName == null) {
             // Old code for ticking morphs
             var ix = this.stepList.indexOf(morphOrAction);
@@ -5097,11 +5232,11 @@ Morph.subclass("HandMorph", function() {
     
     toString: function($super) { 
         var superString = $super();
-        var extraString = ", local=%1,id=%2".format(this.isLocal, this.id);
+        var extraString = ", local=%s,id=%s".format(this.isLocal, this.id);
         if (!this.hasSubmorphs()) return superString + ", an empty hand" + extraString;
-        return "%1, a hand carrying %2%3".format(superString, this.topSubmorph(), extraString);
+        return "%s, a hand carrying %s%s".format(superString, this.topSubmorph(), extraString);
     }
-    
+	
     }});
 
 

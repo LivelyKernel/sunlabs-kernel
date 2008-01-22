@@ -1421,7 +1421,7 @@ scope.TextMorph = Morph.subclass("TextMorph", {
             var strToEval = this.selectionString();
             this.setNullSelectionAt(this.selectionRange[1] + 1);
             console.log('selection = ' + strToEval);
-            this.replaceSelectionWith(" " + this.boundEval(strToEval).toString());
+            this.replaceSelectionWith(" " + this.boundEval(strToEval));
             return true; 
         }
         

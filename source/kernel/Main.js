@@ -60,6 +60,13 @@ function populateWorldWithExamples(world) {
 
     var widget;
 
+    if (Config.showLivelyConsole) {
+	var txt = new TextMorph(pt(0,0).extent(400, 400), "");
+	world.addMorphAt(new WindowMorph(txt, "console"), pt(40, 40)); 
+	console.consumers.push({ log: function(msg) { txt.setTextString(txt.textString + msg + "\n"); }});
+    }
+
+
     if (Config.showClock) {
         widget = new ClockMorph(pt(60, 60), 50);
         world.addMorph(widget);

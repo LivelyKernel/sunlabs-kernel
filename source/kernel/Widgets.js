@@ -1270,7 +1270,7 @@ var CheapListMorph = TextMorph.subclass("CheapListMorph", {
         this.addNonMorph(this.modelPlug.rawNode);
         this.setModelValue('setList', itemList);
         //console.log('model now %s', this.modelPlug.model);
-        if (!this.font) alert('wha, null font in %1'.format(this));
+        if (!this.font) alert("wha, null font in %s".format(this));
         this.layoutChanged();
         return this;
     },

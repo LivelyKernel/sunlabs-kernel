@@ -95,7 +95,7 @@ Model.subclass('WebStore', {
 
     saveAs: function(name, content) {
         console.log('saving content %s', content);
-        this.save("http://%1/%2/%3".format(this.host, this.path, name), content, "LastWriteStatus");
+        this.save("http://%s/%s/%s".format(this.host, this.path, name), content, "LastWriteStatus");
     },
 
     save: function(url, content, modelVariable) {
@@ -159,12 +159,12 @@ Model.subclass('WebStore', {
             requestHeaders: { "Depth": depth },
     
             onFailure: function(transport) {
-                WorldMorph.current().alert('%1: failure %2 url %3'.format(transport, transport.status, url));
+                WorldMorph.current().alert("%s: failure %s url %s".format(transport, transport.status, url));
             },
     
             onSuccess: function(transport) {
                 console.log('propfind received %s', 
-                    Exporter.nodeToString(transport.responseXML) || transport.responseText);
+			    Exporter.nodeToString(transport.responseXML) || transport.responseText);
                 if (!transport.responseXML) return; // FIXME: report problem
 
                 var result = Query.evaluate(transport.responseXML.documentElement, xpQueryString);
@@ -241,11 +241,11 @@ Model.subclass('WebStore', {
     
     currentResourceURL: function() {
         if (!this.CurrentResource) return "http://" + this.host;
-        else return "http://%1%2%3".format(this.host, this.CurrentResource.startsWith('/') ? "": "/", this.CurrentResource);
+        else return "http://%s%s%s".format(this.host, this.CurrentResource.startsWith('/') ? "": "/", this.CurrentResource);
     },
 
     currentDirectoryURL: function() {
-        return "http://%1%2%3".format(this.host, this.CurrentDirectory.startsWith('/') ? "": "/", this.CurrentDirectory);
+        return "http://%s%s%s".format(this.host, this.CurrentDirectory.startsWith('/') ? "": "/", this.CurrentDirectory);
     },
     
     getCurrentResourceContents: function() {
