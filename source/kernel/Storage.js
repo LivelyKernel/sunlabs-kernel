@@ -164,7 +164,7 @@ Model.subclass('WebStore', {
     
             onSuccess: function(transport) {
                 console.log('propfind received %s', 
-			    Exporter.nodeToString(transport.responseXML) || transport.responseText);
+                    Exporter.nodeToString(transport.responseXML) || transport.responseText);
                 if (!transport.responseXML) return; // FIXME: report problem
 
                 var result = Query.evaluate(transport.responseXML.documentElement, xpQueryString);

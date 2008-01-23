@@ -14,6 +14,9 @@
 
 (function(scope) {
 
+/**
+ * @class Font
+ */ 
 Object.subclass('Font', {
 
     initialize: function(family/*:String*/, size/*:Integer*/){
@@ -1652,7 +1655,6 @@ Object.extend(TextMorph, {
  * A PrintMorph is just like a TextMorph, except it converts its model value
  * to a string using toString(), and from a string using eval()
  */ 
-
 TextMorph.subclass("PrintMorph", {
 
     updateView: function(aspect, controller) {

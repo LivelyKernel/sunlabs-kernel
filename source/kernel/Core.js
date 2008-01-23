@@ -13,131 +13,131 @@
  * as well as the core Morphic graphics framework. 
  */
 
-// ===========================================================================
-// Namespaces and core DOM bindings
-// ===========================================================================
-
 var Global = window;
 
 var Canvas = document.getElementById("canvas"); // singleton for now
 
+// ===========================================================================
+// Error/warning console
+// ===========================================================================
 
 Object.extend(String.prototype, {
 
     format: function() {
-	return this.formatFromArray($A(arguments));
+        return this.formatFromArray($A(arguments));
     },
-
 
     // adapted from firebug lite
     formatFromArray: function(objects) {
-	
-	function appendText(object, string) {
-	    return "" + object;
-	}
-	
-	function appendObject(object, string) {
-	    return "" + object;
-	}
-	
-	function appendInteger(value, string) {
-	    return value.toString();
-	}
-	
-	function appendFloat(value, string) {
-	    return value.toString()
-	}
-	
+
+        function appendText(object, string) {
+            return "" + object;
+        }
+
+        function appendObject(object, string) {
+            return "" + object;
+        }
+
+        function appendInteger(value, string) {
+            return value.toString();
+        }
+
+        function appendFloat(value, string) {
+            return value.toString()
+        }
+
         var appenderMap = {s: appendText, d: appendInteger, i: appendInteger, f: appendFloat}; 
-	var reg = /((^%|[^\\]%)(\d+)?(\.)([a-zA-Z]))|((^%|[^\\]%)([a-zA-Z]))/; 
+        var reg = /((^%|[^\\]%)(\d+)?(\.)([a-zA-Z]))|((^%|[^\\]%)([a-zA-Z]))/; 
 
-
-	function parseFormat(fmt) {
-	    
+        function parseFormat(fmt) {
+    
             var parts = [];
-	    
+    
             for (var m = reg.exec(fmt); m; m = reg.exec(fmt)) {
-		var type = m[8] ? m[8] : m[5];
-		var appender = type in appenderMap ? appenderMap[type] : appendObject;
-		var precision = m[3] ? parseInt(m[3]) : (m[4] == "." ? -1 : 0);
-		
-		parts.push(fmt.substr(0, m[0][0] == "%" ? m.index : m.index + 1));
-		parts.push({appender: appender, precision: precision});
-		
-		fmt = fmt.substr(m.index+m[0].length);
+                var type = m[8] ? m[8] : m[5];
+                var appender = type in appenderMap ? appenderMap[type] : appendObject;
+                var precision = m[3] ? parseInt(m[3]) : (m[4] == "." ? -1 : 0);
+
+                parts.push(fmt.substr(0, m[0][0] == "%" ? m.index : m.index + 1));
+                parts.push({appender: appender, precision: precision});
+
+                fmt = fmt.substr(m.index+m[0].length);
             }
-	    
+    
             parts.push(fmt.toString());
-	    
+    
             return parts;
-	};
-	
-	
-	var parts = parseFormat(this);
-	var str = "";
-	var objIndex = 0;
-	
-	
-	for (var i = 0; i < parts.length; ++i) {
-	    var part = parts[i];
-	    if (part && typeof(part) == "object") {
-		var object = objects[objIndex++];
-		str += (part.appender || appendText)(object, str);
-	    } else
-		str += appendText(part, str);
-	}
-	return str;
+        };
+
+        var parts = parseFormat(this);
+        var str = "";
+        var objIndex = 0;
+
+        for (var i = 0; i < parts.length; ++i) {
+            var part = parts[i];
+            if (part && typeof(part) == "object") {
+                var object = objects[objIndex++];
+                str += (part.appender || appendText)(object, str);
+            } else {
+                str += appendText(part, str);
+            }
+        }
+        return str;
     }
+
 });
 
-// console handline
+// console handling
 (function() { 
     
     var platformConsole = window.console || window.parent.console; 
     if (!platformConsole) {
-	alert('no console! console output disabled');
-	platformConsole = { log: function(msg) { } } // do nothing as a last resort
+        alert('no console! console output disabled');
+        platformConsole = { log: function(msg) { } } // do nothing as a last resort
     }
     
     if (platformConsole.warn && platformConsole.info && platformConsole.assert) {
-	// it's a Firebug/Firebug lite console, it does all we want, so no extra work necessary
-	window.console = platformConsole;
+        // it's a Firebug/Firebug lite console, it does all we want, so no extra work necessary
+        window.console = platformConsole;
     } else {
-	// rebind to something that has all the calls
-	window.console = {
+        // rebind to something that has all the calls
+        window.console = {
 
-	    consumers: [ platformConsole ],
-	    
-	    warn: function() {
-		var args = $A(arguments);
-		var rcv = args.shift();
-		this.consumers.invoke('log', "Warn: " + rcv.formatFromArray(args));
-	    },
-	    
-	    info: function() {
-		var args = $A(arguments);
-		var rcv = args.shift();
-		this.consumers.invoke('log', "Info: " + rcv.formatFromArray(args));
-	    },
-	    
-	    log: function() {
-		var args = $A(arguments);
-		var rcv = args.shift();
-		this.consumers.invoke('log', rcv.formatFromArray(args));
-	    },
-	    
-	    assert: function(expr, msg) {
-		if (!expr) this.log("assert failed:" + msg);
-	    }
-	}
+            consumers: [ platformConsole ],
+    
+            warn: function() {
+                var args = $A(arguments);
+                var rcv = args.shift();
+                this.consumers.invoke('log', "Warn: " + rcv.formatFromArray(args));
+            },
+
+            info: function() {
+                var args = $A(arguments);
+                var rcv = args.shift();
+                this.consumers.invoke('log', "Info: " + rcv.formatFromArray(args));
+            },
+    
+            log: function() {
+                var args = $A(arguments);
+                var rcv = args.shift();
+                this.consumers.invoke('log', rcv.formatFromArray(args));
+            },
+    
+            assert: function(expr, msg) {
+                if (!expr) this.log("assert failed:" + msg);
+            }
+        }
     }
     
 })(); 
 
-
 window.onerror = function(message, url, code) {
     console.log('in %s: %s, code %s', url, message, code);
 };
+
+// ===========================================================================
+// Namespaces and core DOM bindings
+// ===========================================================================
 
 Namespace =  {
     SVG : "http://www.w3.org/2000/svg", // Canvas.getAttribute("xmlns"),
@@ -175,10 +175,6 @@ var Loader = {
 
 // SVG/DOM bindings 
 
-/**
- * @class Query
- */
-
 var Query = {
 
     resolver: function(prefix) {
@@ -203,6 +199,7 @@ var Query = {
 };
 
 var NodeFactory = {
+
     createNS: function(ns, name, attributes) {
         var element = document.createElementNS(ns, name);
         if (attributes) {
@@ -235,8 +232,8 @@ Object.extend(Class, {
     // KP: obsolete, use Object.isClass
     isClass: function(object) {
         return (object instanceof Function) 
-	    && object.prototype 
-	    && (object.functionNames().length > Object.functionNames().length);
+            && object.prototype 
+            && (object.functionNames().length > Object.functionNames().length);
     },
 
     methodNameList: function(className) {
@@ -282,7 +279,6 @@ Object.properties = function(object, predicate) {
 /**
  * Extensions to class Function
  */  
-
 
 Object.extend(Function.prototype, {
 
@@ -573,7 +569,6 @@ Object.extend(String.prototype, {
 
 
 });
-
 
 /**
  * Extensions to class Number
@@ -884,7 +879,6 @@ Object.extend(Rectangle, {
                              element.width.baseVal.value, element.height.baseVal.value);
     }
 
-
 });
 
 // Shorthand for creating rectangle objects
@@ -901,6 +895,7 @@ console.log("Rectangle");
 /**
  * @class Color
  */
+
 Object.subclass("Color", { 
 
     documentation: "Fully portable support for RGB colors",
@@ -1051,7 +1046,12 @@ console.log("Color");
 // Gradient colors, stipple patterns and coordinate transformatins
 // ===========================================================================
 
+/**
+ * @class Wrapper: A wrapper around a native object
+ */
+
 Object.subclass('Wrapper', {
+
     documentation: "A wrapper around a native object, stored as rawNode",
     rawNode: null,
 
@@ -1146,6 +1146,7 @@ Object.extend(LinearGradient, {
 /**
  * @class RadialGradient (NOTE: PORTING-SENSITIVE CODE)
  */
+
 Gradient.subclass("RadialGradient", {
     
     initialize: function($super, stopColor1, stopColor2) {
@@ -1305,6 +1306,10 @@ Object.extend(CharSet, {
     }
     
 });
+
+/**
+ * @class CharacterInfo
+ */
 
 Object.subclass('CharacterInfo', {
 
@@ -1692,7 +1697,6 @@ Object.extend(Shape, {
  */ 
 
 Shape.subclass('RectShape', {
-    
 
     initialize: function($super, rect, color, borderWidth, borderColor) {
         this.rawNode = NodeFactory.create("rect");
@@ -2201,12 +2205,12 @@ var MouseHandlerForDragging = {
 
 };
 
-
 /**
  * @class Exporter: Implementation class for morph serialization
  */
 
 Object.subclass('Exporter', {
+
     rootMorph: null,
     
     initialize: function(rootMorph) {
@@ -2263,8 +2267,12 @@ Object.extend(Exporter, {
 
 });
 
+/**
+ * @class Copier
+ */
 
 Object.subclass('Copier', {
+
     morphMap: null,
 
     toString: function() { 
@@ -2288,30 +2296,30 @@ Object.subclass('Copier', {
 }); 
 
 Copier.marker = Object.extend(new Copier(), {
-    addMapping: function() {
-    },
+    
+    addMapping: function() { },
+
     lookupMorph: function() { 
-	return null; 
+        return null; 
     }
+
 });
 
 /**
- * @class Importer
+ * @class Importer: Implementation class for morph de-serialization
  */
 
 Copier.subclass('Importer', {
 
     documentation: "Implementation class for morph de-serialization",
 
-
     toString: function() {
         return "#<Importer>";
     },
 
     initialize: function($super) {
-	$super();
+        $super();
     },
-    
     
     importFromNode: function(rawNode) {
         ///console.log('making morph from %s %s', node, node.getAttributeNS(Namespace.LIVELY, "type"));
@@ -2320,9 +2328,9 @@ Copier.subclass('Importer', {
 
         if (!morphTypeName || !Global[morphTypeName]) {
             throw new Error("node %s (parent %s) cannot be a morph of %s".format(rawNode.tagName, 
-										 rawNode.parentNode, morphTypeName));
+                            rawNode.parentNode, morphTypeName));
         }
-	
+
         try {
             return new Global[morphTypeName](this, rawNode);
         } catch (er) {
@@ -2474,7 +2482,7 @@ Morph = Visual.subclass("Morph", {
         if (other.hasSubmorphs()) { // deep copy of submorphs
             other.submorphs.each(function(m) { 
                 var copy = m.copy(copier);
-		copier.addMapping(m.id, copy);
+                copier.addMapping(m.id, copy);
                 this.internalAddMorph(copy, false);
             }.bind(this));
         }
@@ -2485,19 +2493,18 @@ Morph = Visual.subclass("Morph", {
                 && !this.noShallowCopyProperties.include(p)) {
                 this[p] = other[p];
                 if (this[p] instanceof Morph && p !== 'owner') {
-		    var replacement = copier.lookupMorph(other[p].id);
-		    console.log("found replacement " + replacement + " for field " + p);
-		    if (replacement) {
-			this[p] = replacement;
-		    }
+                    var replacement = copier.lookupMorph(other[p].id);
+                    console.log("found replacement " + replacement + " for field " + p);
+                    if (replacement) {
+                        this[p] = replacement;
+                    }
                     // an instance field points to a submorph, so copy
                     // should point to a copy of the submorph
                 } else if (this[p] instanceof Model) {
-		    this[p] = this[p].copy(copier);
-
-		}
+                    this[p] = this[p].copy(copier);
+                }
             }
-        }  // shallow copy by default
+        } // shallow copy by default
 
         this.setShape(other.shape.copy());    
         if (other.cachedTransform) { 
@@ -2513,7 +2520,6 @@ Morph = Visual.subclass("Morph", {
             this.clipToShape();
             console.log("copy: optimistically assuming that other (%s) is clipped to shape", other);
         }
-	
         
         if (other.stepHandler != null) { 
             this.stepHandler = other.stepHandler.copyForOwner(this);
@@ -2638,9 +2644,9 @@ Morph = Visual.subclass("Morph", {
             case "action": {
                 var a = new SchedulableAction(importer, node);
                 a.actor = this;
-		this.addActiveScript(a);
+                this.addActiveScript(a);
                 console.log('deserialized script ' + a);
-		// don't start the action until morph fully constructed
+                // don't start the action until morph fully constructed
                 break;
             }
             case "a0:model": // Firefox cheat
@@ -3684,48 +3690,52 @@ Morph.addMethods({
 
 });
 
+/**
+ * @class SchedulableAction
+ */ 
+
 Wrapper.subclass('SchedulableAction', {
 
     documentation: "Description of a periodic action",
 
     initialize: function($super, actor, scriptName, argIfAny, stepTime) {
-	$super();
-	this.actor = actor;
-	this.rawNode = NodeFactory.createNS(Namespace.LIVELY, "action");
-	this.scriptName = scriptName;
-	this.argIfAny = argIfAny;
-	this.stepTime = stepTime;
-	this.ticks = 0;
-	var code = document.createCDATASection(this.toJSON());
-	this.rawNode.appendChild(code);
+        $super();
+        this.actor = actor;
+        this.rawNode = NodeFactory.createNS(Namespace.LIVELY, "action");
+        this.scriptName = scriptName;
+        this.argIfAny = argIfAny;
+        this.stepTime = stepTime;
+        this.ticks = 0;
+        var code = document.createCDATASection(this.toJSON());
+        this.rawNode.appendChild(code);
     },
 
     deserialize: function($super, importer, rawNode) {
-	$super(importer, rawNode);
-	this.rawNode = rawNode;
-	var init = rawNode.textContent.evalJSON();
-	Object.extend(this, init);
+        $super(importer, rawNode);
+        this.rawNode = rawNode;
+        var init = rawNode.textContent.evalJSON();
+        Object.extend(this, init);
     },
 
     toJSON: function() {
-	// do not try to to convert actor to JSON
-	return Object.toJSON({scriptName: this.scriptName, 
-			      argIfAny: this.argIfAny, 
-			      stepTime: this.stepTime, 
-			      ticks: this.ticks });
+        // do not try to to convert actor to JSON
+        return Object.toJSON({scriptName: this.scriptName, 
+                argIfAny: this.argIfAny, 
+                stepTime: this.stepTime, 
+                ticks: this.ticks });
     },
 
     toString: function() {
-	return "#<SchedulableAction["+ this.actor + this.toJSON() + "]>";
+        return "#<SchedulableAction["+ this.actor + this.toJSON() + "]>";
     },
 
     stop: function(world) {
-	world.stopSteppingFor(this);
+        world.stopSteppingFor(this);
     },
 
     start: function(world) {
-	console.log("started stepping task %s", this);
-	world.startSteppingFor(this);
+        console.log("started stepping task %s", this);
+        world.startSteppingFor(this);
     }
 
 });
@@ -3737,7 +3747,7 @@ Morph.addMethods({
     
     stopSteppingScripts: function() {
         if (this.activeScripts) {
-	    this.activeScripts.invoke('stop', this.world());
+            this.activeScripts.invoke('stop', this.world());
             this.activeScripts = null;
         }
     },
@@ -3754,18 +3764,18 @@ Morph.addMethods({
         // New code schedules an action
         var action = new SchedulableAction(this, scriptName, argIfAny, stepTime);
         this.addActiveScript(action);
-	action.start(this.world());
-	return action;
+        action.start(this.world());
+        return action;
     },
     
     addActiveScript: function(action) {
         // Every morph carries a list of currently active actions (alarms and repetitive scripts)
         if (!this.activeScripts) this.activeScripts = [action];
         else this.activeScripts.push(action);
-	if (!action.rawNode.parentNode)
+        if (!action.rawNode.parentNode) {
             this.addNonMorph(action.rawNode);
-	// if we're deserializing the rawNode may already be in the markup
-	
+        }
+        // if we're deserializing the rawNode may already be in the markup
     },
     
     startSteppingFunction: function(stepTime, func) {
@@ -3774,7 +3784,7 @@ Morph.addMethods({
     },
     
     stopStepping: function() {
-	if (this instanceof ClockMorph) Function.showStack();
+        if (this instanceof ClockMorph) Function.showStack();
         if (this.world()) {
             this.world().stopSteppingFor(this);
         } // else: can happen if removing a morph whose parent is not in the world
@@ -3795,7 +3805,7 @@ Morph.addMethods({
         var world = WorldMorph.current();
         this.withAllSubmorphsDo( function() {
             if (this.suspendedScripts) {
-		this.suspendedScripts.invoke('start', world);
+                this.suspendedScripts.invoke('start', world);
                 this.suspendedScripts = null;
             }
         });
@@ -4188,11 +4198,15 @@ Object.subclass('Model', {
 
     // test?
     copyFrom: function(copier, other) {
-	this.dependents = [];
-	other.dependents.each(function(dep) { this.dependents.push(copier.lookupMorph(dep.id)) });
+        this.dependents = [];
+        other.dependents.each(function(dep) { this.dependents.push(copier.lookupMorph(dep.id)) });
     }
 
 });
+
+/**
+ * @class ModelPlug
+ */ 
 
 Wrapper.subclass('ModelPlug', {
     initialize: function(rawNode) {
@@ -4201,6 +4215,7 @@ Wrapper.subclass('ModelPlug', {
 });
 
 Object.extend(Model, {
+
     makePlug: function(spec) {
         var plug = new ModelPlug(NodeFactory.createNS(Namespace.LIVELY, "modelPlug"));
         var props = Object.properties(spec);
@@ -4425,11 +4440,11 @@ PasteUpMorph.subclass("WorldMorph", {
         // in Firefox bounds may be 1x1 size?? maybe everything should be run from onload or sth?
         this.itsCanvas = canvas; 
         if (bounds.width < 2) {
-            bounds.width = defaultExtent.width;
+            bounds.width = this.defaultExtent.width;
         }
 
         if (bounds.height < 2) {
-            bounds.height = defaultExtent.height;
+            bounds.height = this.defaultExtent.height;
         }
 
         if (backgroundImageId) {
@@ -5255,12 +5270,12 @@ Morph.subclass("HandMorph", function() {
         if (!this.hasSubmorphs()) return superString + ", an empty hand" + extraString;
         return "%s, a hand carrying %s%s".format(superString, this.topSubmorph(), extraString);
     }
-	
-    }});
+    
+}});
 
 
 /**
- * @class LinkMorph
+ * @class LinkMorph: A two-way hyperlink between two Lively worlds
  */ 
 
 Morph.subclass("LinkMorph", {

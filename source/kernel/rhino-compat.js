@@ -17,11 +17,11 @@ window.parent = window;
 window.console = { 
 
     log: function(/*...*/) { 
-	var msg = "";
+        var msg = "";
         for (var i = 0; i < arguments.length; i++) {
-	    msg += arguments[i].toString();
+            msg += arguments[i].toString();
         } 
-	System.err.println(msg);
+        System.err.println(msg);
     }
 
 };
