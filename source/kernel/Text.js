@@ -274,7 +274,7 @@ Object.subclass('WordChunk', {
     },
 
     // fully clone a chunk (see warnings)
-    clone: function(src) {
+    copy: function(src) {
         var c = cloneSkeleton; // KP: does this work? cloneSkeleton seems undefined here, maybe this.cloneSkeleton()?
         c.render = this.render;
         c.bounds = this.bounds; // BEWARE - not cloned
@@ -578,7 +578,7 @@ Object.subclass('TextLine', {
                 var c = tc.cloneSkeleton();
                 // probably don't need this opmization now that we demand load extents
                 //if (tc.bounds != null)
-                //  c.bounds = tc.bounds.clone();
+                //  c.bounds = tc.bounds.copy();
                 nc.push(c);
             } else if (tc.start < sIndex && (tc.start + tc.length) > sIndex) {
                 // this chunk has been broken up by a word wrap
@@ -940,7 +940,7 @@ scope.TextMorph = Morph.subclass("TextMorph", {
         var lines = [];
         var startIndex = 0;
         var stopIndex = this.textString.length - 1;
-        var topLeft = initialTopLeft.clone();
+        var topLeft = initialTopLeft.copy();
         var chunkSkeleton;
 
         while (startIndex <= stopIndex) {

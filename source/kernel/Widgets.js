@@ -616,7 +616,7 @@ Morph.subclass('WindowMorph', {
     targetMorph: null,
     
     initialize: function($super, targetMorph, headline, location) {
-        var bounds = targetMorph.bounds().clone();
+        var bounds = targetMorph.bounds().copy();
         var titleBar = this.makeTitleBar(headline, bounds.width);
         var titleHeight = titleBar.bounds().height;
 

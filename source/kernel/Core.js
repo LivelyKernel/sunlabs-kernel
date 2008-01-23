@@ -403,8 +403,8 @@ Object.extend(Function.prototype, {
             // check for the existence of Importer, which may not be defined very early on
             if (Global.Importer && (arguments[0] instanceof Importer)) { 
                 this.deserialize.apply(this, arguments);
-            } else if (arguments[0] === Cloner) {
-                this.copyFrom.call(this, arguments[1]);
+            } else if (Global.Copier && (arguments[0] instanceof Copier)) {
+                this.copyFrom.apply(this, arguments);
             } else {
                 this.initialize.apply(this, arguments);
             }
@@ -664,7 +664,7 @@ Object.subclass("Point", {
     r: function() { return this.dist(pt(0,0)); },
     theta: function() { return Math.atan2(this.y,this.x); },
 
-    clone: function() { return new Point(this.x, this.y); }
+    copy: function() { return new Point(this.x, this.y); }
 });
 
 Object.extend(Point, {
@@ -708,7 +708,7 @@ Object.subclass("Rectangle", {
         return this;
     },
 
-    clone: function() { return new Rectangle(this.x, this.y, this.width, this.height);  },
+    copy: function() { return new Rectangle(this.x, this.y, this.width, this.height);  },
     maxX: function() { return this.x + this.width; },
     maxY: function() { return this.y + this.height; },
     withWidth: function(w) { return new Rectangle(this.x, this.y, w, this.height)},
@@ -1078,13 +1078,13 @@ Object.subclass('Wrapper', {
         this.rawNode = rawNode.cloneNode(true);
     },
     
-    copyFrom: function(other) {
+    copyFrom: function(copier, other) {
         this.rawNode = other.rawNode.cloneNode(true);
     },
     
-    clone: function() {
+    copy: function(copier) {
         var scope = this.getScope();
-        return new scope[this.getType()](Cloner, this);
+        return new scope[this.getType()](copier || Copier.marker, this);
     },
     
     toString: function() {
@@ -1163,7 +1163,7 @@ Gradient.subclass("RadialGradient", {
  * @class StipplePattern (NOTE: PORTING-SENSITIVE CODE)
  */
 
-Object.subclass('StipplePattern', {
+Wrapper.subclass('StipplePattern', {
 
     initialize: function(color1, h1, color2, h2) {
         this.rawNode = NodeFactory.create("pattern", 
@@ -1190,7 +1190,7 @@ Object.subclass('Transform', {
         return this;
     },
 
-    clone: function() {
+    copy: function() {
         return new Transform(this.matrix);
     },
     
@@ -1853,7 +1853,7 @@ Shape.subclass('PolygonShape', {
         }
         this.rawNode.setAttributeNS(null, "points", vertlist.map(function (p) { return p.x + "," + p.y }).join(' '));
         if (this.shouldCacheVertices) {
-            this.cachedVertices = vertlist.clone();
+            this.cachedVertices = vertlist.copy();
         }
         // vertlist.forEach( function(p) {  this.points.appendItem(p); }, this);
     },
@@ -2201,11 +2201,6 @@ var MouseHandlerForDragging = {
 
 };
 
-var Cloner = {
-    toString: function() { 
-        return "Cloner"; 
-    }
-}; // a marker for cloning
 
 /**
  * @class Exporter: Implementation class for morph serialization
@@ -2268,22 +2263,18 @@ Object.extend(Exporter, {
 
 });
 
-/**
- * @class Importer: Implementation class for morph de-serialization
- */
 
-Object.subclass('Importer', {
-
+Object.subclass('Copier', {
     morphMap: null,
 
-    toString: function() {
-        return "#<Importer>";
+    toString: function() { 
+        return "#<Copier>"; 
     },
-    
+
     initialize: function() {
         this.morphMap = new Hash();
     },
-    
+
     addMapping: function(oldId, newMorph) {
         this.morphMap.set(oldId.toString(), newMorph); // force strings just in case
     },
@@ -2292,7 +2283,35 @@ Object.subclass('Importer', {
         var result = this.morphMap.get(oldId.toString());
         if (!result) console.log('no mapping found for oldId %s', oldId);
         return result;
+    }
+    
+}); 
+
+Copier.marker = Object.extend(new Copier(), {
+    addMapping: function() {
     },
+    lookupMorph: function() { 
+	return null; 
+    }
+});
+
+/**
+ * @class Importer
+ */
+
+Copier.subclass('Importer', {
+
+    documentation: "Implementation class for morph de-serialization",
+
+
+    toString: function() {
+        return "#<Importer>";
+    },
+
+    initialize: function($super) {
+	$super();
+    },
+    
     
     importFromNode: function(rawNode) {
         ///console.log('making morph from %s %s', node, node.getAttributeNS(Namespace.LIVELY, "type"));
@@ -2444,7 +2463,7 @@ Morph = Visual.subclass("Morph", {
 
     },
 
-    copyFrom: function(other) {
+    copyFrom: function(copier, other) {
         this.internalInitialize(NodeFactory.create("g"));
         this.pvtSetTransform(other.retrieveTransform());
 
@@ -2452,21 +2471,37 @@ Morph = Visual.subclass("Morph", {
 
         this.initializeTransientState(null);
 
+        if (other.hasSubmorphs()) { // deep copy of submorphs
+            other.submorphs.each(function(m) { 
+                var copy = m.copy(copier);
+		copier.addMapping(m.id, copy);
+                this.internalAddMorph(copy, false);
+            }.bind(this));
+        }
+
         for (var p in other) {
             if (!(other[p] instanceof Function) 
                 && other.hasOwnProperty(p) 
                 && !this.noShallowCopyProperties.include(p)) {
                 this[p] = other[p];
-                if (this[p] instanceof Morph && this[p].owner === other) {
+                if (this[p] instanceof Morph && p !== 'owner') {
+		    var replacement = copier.lookupMorph(other[p].id);
+		    console.log("found replacement " + replacement + " for field " + p);
+		    if (replacement) {
+			this[p] = replacement;
+		    }
                     // an instance field points to a submorph, so copy
                     // should point to a copy of the submorph
-                }
+                } else if (this[p] instanceof Model) {
+		    this[p] = this[p].copy(copier);
+
+		}
             }
         }  // shallow copy by default
 
-        this.setShape(other.shape.clone());    
+        this.setShape(other.shape.copy());    
         if (other.cachedTransform) { 
-            this.cachedTransform = other.cachedTransform.clone();
+            this.cachedTransform = other.cachedTransform.copy();
         } 
 
         if (other.defs) {
@@ -2478,18 +2513,7 @@ Morph = Visual.subclass("Morph", {
             this.clipToShape();
             console.log("copy: optimistically assuming that other (%s) is clipped to shape", other);
         }
-
-        if (other.hasSubmorphs()) { // deep copy of submorphs
-            other.submorphs.each(function(m) { 
-                var copy = m.copy();
-                this.internalAddMorph(copy, false);
-                var propname = m.rawNode.getAttributeNS(Namespace.LIVELY, "property");
-                if (propname) {
-                    this[propname] = copy;
-                    copy.rawNode.setAttributeNS(Namespace.LIVELY, "property", propname);
-                }
-            }.bind(this));
-        }
+	
         
         if (other.stepHandler != null) { 
             this.stepHandler = other.stepHandler.copyForOwner(this);
@@ -2499,7 +2523,6 @@ Morph = Visual.subclass("Morph", {
             for (var i = 0; i < other.activeScripts.length; i++) {
                 var a = other.activeScripts[i];
                 // Copy all reflexive scripts (messages to self)
-                console.log("processing " + Object.toJSON(a) + " reflexive? " + (a.actor === other ? true : a.actor));
                 if (a.actor === other) {
                     this.startStepping(a.stepTime, a.scriptName, a.argIfAny);
                     // Note -- may want to startStepping other as well so they are sync'd
@@ -2510,10 +2533,6 @@ Morph = Visual.subclass("Morph", {
         this.layoutChanged();
 
         this.disableBrowserHandlers(); 
-        if (this.activeScripts) {
-            this.activeScripts.invoke('start', WorldMorph.current());
-            //this.startSteppingScripts();
-        }
 
         return this; 
     },
@@ -2617,7 +2636,7 @@ Morph = Visual.subclass("Morph", {
             // nodes from the Lively namespace
             case "a0:action": // Firefox cheat
             case "action": {
-                var a = new PeriodicTask(importer, node);
+                var a = new SchedulableAction(importer, node);
                 a.actor = this;
 		this.addActiveScript(a);
                 console.log('deserialized script ' + a);
@@ -2775,11 +2794,11 @@ Morph.addMethods({
             this.shape.setFill(null);
         } else if (fill instanceof Color) {
             this.shape.setFill(fill.toString());
-        } else if (fill instanceof Gradient || fill instanceof StipplePattern) {
+        } else if (fill instanceof Wrapper) { 
             var id = fill.rawNode.getAttribute("id");
             var newId = "gradient_" + this.id;
             if (newId != id) {
-                this.fill = fill.clone(); 
+                this.fill = fill.copy(); 
                 this.fill.rawNode.setAttribute("id", newId);
             }
             if (!this.defs) {
@@ -3130,20 +3149,10 @@ Morph.addMethods({
     // morph gets an opportunity to shut down when WindowMorph closes 
     shutdown: function() {
         this.remove();
-    }
-    
-});
+    },
 
-// Morph copying functions
-Morph.addMethods({
-    
     okToDuplicate: function() { return true; },  // default is OK
     
-    copy: function() {
-        var scope = this.getScope();
-        return new scope[this.getType()](Cloner, this);
-    }
-
 });
 
 // Morph bindings to its parent, world, canvas, etc.
@@ -3612,7 +3621,7 @@ Morph.addMethods({
     },
 
     copyToHand: function(hand) {
-        var copy = this.copy();
+        var copy = this.copy(new Copier());
         console.log('copied %s', copy);
         // KP: is the following necessary?
         this.owner.addMorph(copy); // set up owner the original parent so that it can be reparented to this: 
@@ -3675,7 +3684,7 @@ Morph.addMethods({
 
 });
 
-Wrapper.subclass('PeriodicTask', {
+Wrapper.subclass('SchedulableAction', {
 
     documentation: "Description of a periodic action",
 
@@ -3699,6 +3708,7 @@ Wrapper.subclass('PeriodicTask', {
     },
 
     toJSON: function() {
+	// do not try to to convert actor to JSON
 	return Object.toJSON({scriptName: this.scriptName, 
 			      argIfAny: this.argIfAny, 
 			      stepTime: this.stepTime, 
@@ -3706,7 +3716,7 @@ Wrapper.subclass('PeriodicTask', {
     },
 
     toString: function() {
-	return "#<PeriodicTask["+ this.actor + this.toJSON() + "]>";
+	return "#<SchedulableAction["+ this.actor + this.toJSON() + "]>";
     },
 
     stop: function(world) {
@@ -3742,9 +3752,10 @@ Morph.addMethods({
             return; 
         }
         // New code schedules an action
-        var action = new PeriodicTask(this, scriptName, argIfAny, stepTime);
+        var action = new SchedulableAction(this, scriptName, argIfAny, stepTime);
         this.addActiveScript(action);
 	action.start(this.world());
+	return action;
     },
     
     addActiveScript: function(action) {
@@ -4172,6 +4183,13 @@ Object.subclass('Model', {
         var hash = new Hash(this);
         delete hash.dependents;
         return "#<Model:%s>".format(Object.toJSON(hash));
+    },
+
+
+    // test?
+    copyFrom: function(copier, other) {
+	this.dependents = [];
+	other.dependents.each(function(dep) { this.dependents.push(copier.lookupMorph(dep.id)) });
     }
 
 });
@@ -4647,7 +4665,7 @@ PasteUpMorph.subclass("WorldMorph", {
         // still be dealt with on world changes, day changes, save and load.
         var list = this.scheduledActions;  // shorthand
         var timeStarted = msTime;  // for tallying script overheads
-        while (list.length>0 && list[list.length-1][0] <= msTime) {
+        while (list.length > 0 && list[list.length - 1][0] <= msTime) {
             var schedNode = list.pop();  // [time, action] -- now removed
             var action = schedNode[1];
             var func = action.actor[action.scriptName];
@@ -4718,6 +4736,7 @@ PasteUpMorph.subclass("WorldMorph", {
 
     scheduleAction: function(msTime, action) { 
         // Insert a SchedulableAction into the scheduledActions queue
+
         var list = this.scheduledActions;  // shorthand
         for (var i=list.length-1; i>=0; i--) {
             var schedNode = list[i];

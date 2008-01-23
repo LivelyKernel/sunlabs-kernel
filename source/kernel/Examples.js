@@ -2090,11 +2090,11 @@ var GameMorph = ClipMorph.subclass("GameMorph", {
         
       explosions[explosionIndex].active = true;
       explosions[explosionIndex].shape = [];
-      explosions[explosionIndex].shape.push(s.shape[i].clone());
+      explosions[explosionIndex].shape.push(s.shape[i].copy());
       j = i + 1;
       if (j >= sverts.length)
         j -= sverts.length;
-      explosions[explosionIndex].shape.push(s.shape[j].clone());
+      explosions[explosionIndex].shape.push(s.shape[j].copy());
       explosions[explosionIndex].angle = s.angle;
       explosions[explosionIndex].deltaAngle = (Math.random() * 2 * Math.PI - Math.PI) / 15;
       explosions[explosionIndex].currentX = s.currentX;
