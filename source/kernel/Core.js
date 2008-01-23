@@ -4440,11 +4440,11 @@ PasteUpMorph.subclass("WorldMorph", {
         // in Firefox bounds may be 1x1 size?? maybe everything should be run from onload or sth?
         this.itsCanvas = canvas; 
         if (bounds.width < 2) {
-            bounds.width = this.defaultExtent.width;
+            bounds.width = this.defaultExtent.x;
         }
 
         if (bounds.height < 2) {
-            bounds.height = this.defaultExtent.height;
+            bounds.height = this.defaultExtent.y;
         }
 
         if (backgroundImageId) {
