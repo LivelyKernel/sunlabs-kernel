@@ -650,9 +650,11 @@ Object.subclass("Point", {
         return "pt(%f,%f)".format(this.x.roundTo(0.01), this.y.roundTo(0.01)); 
     },
 
-    matrixTransform: function(mx) {
-        return new Point(mx.a * this.x + mx.c * this.y + mx.e,
-                         mx.b * this.x + mx.d * this.y + mx.f);
+    matrixTransform: function(mx, acc) {
+	if (!acc) acc = pt(0, 0); // if no accumulator passed, allocate a fresh one
+        acc.x = mx.a * this.x + mx.c * this.y + mx.e;
+        acc.y = mx.b * this.x + mx.d * this.y + mx.f;
+	return acc;
     },
 
     // Polar coordinates...
@@ -1176,38 +1178,54 @@ Wrapper.subclass('StipplePattern', {
 
 });
 
-/**
- * @class Transform (NOTE: PORTING-SENSITIVE CODE)
- * This code is dependent on SVG transformation matrices.
- * See: http://www.w3.org/TR/2003/REC-SVG11-20030114/coords.html#InterfaceSVGMatrix 
- */
 
-Object.subclass('Transform', {
+Object.subclass('Similitude', {
 
     documentation: "Support for object rotation, scaling, etc.",
+    useDOM: !!Config.transformUsesDOM, // KP: new Webkit versions can use dom
     
-    initialize: function(matrix) {
-        this.matrix = matrix || Canvas.createSVGMatrix();
-        return this;
+    /**
+     * createSimilitude: a similitude is a combination of translation rotation and scale.
+     * one could argue that Similitude is a superclass of Transform, not subclass.
+     * @param [Point] delta
+     * @param [float] angleInRadians
+     * @param [float] scale
+     */
+    initialize: function(delta, angleInRadians, scale) {
+        if (angleInRadians === undefined) angleInRadians = 0.0;
+        if (scale === undefined) scale = 1.0;
+	if (false) {
+            var matrix = Canvas.createSVGMatrix();
+            matrix = matrix.translate(delta.x, delta.y).rotate(angleInRadians.toDegrees()).scale(scale);
+	    this.a = matrix.a;
+	    this.b = matrix.b;
+	    this.c = matrix.c;
+	    this.d = matrix.d;
+	    this.e = matrix.e;
+	    this.f = matrix.f;
+	} else { // calculate natively
+	    this.a = scale * Math.cos(angleInRadians);
+	    this.b = scale * Math.sin(angleInRadians);
+	    this.c = scale * - Math.sin(angleInRadians);
+	    this.d = scale * Math.cos(angleInRadians);
+	    this.e =  delta.x;
+	    this.f =  delta.y;
+	}
     },
 
-    copy: function() {
-        return new Transform(this.matrix);
-    },
-    
-    getTranslation: function() {
-        return pt(this.matrix.e, this.matrix.f);
-    },
 
-    // only for similitudes
     getRotation: function() { // in degrees
-        return Math.atan2(this.matrix.b, this.matrix.a).toDegrees();
+        return Math.atan2(this.b, this.a).toDegrees();
     },
 
     getScale: function() {
-        var a = this.matrix.a;
-        var b = this.matrix.b;
+        var a = this.a;
+        var b = this.b;
         return Math.sqrt(a * a + b * b);
+    },
+
+    getTranslation: function() {
+        return pt(this.e, this.f);
     },
 
     toAttributeValue: function() {
@@ -1226,50 +1244,91 @@ Object.subclass('Transform', {
         return attr;
     },
 
+    applyTo: function(rawNode) {
+	if (this.useDOM) {
+            var list = rawNode.transform.baseVal;
+	    var viewport = (rawNode.nearestViewportElement || Canvas);
+	    if (!this.translation) this.translation = viewport.createSVGTransform();
+	    this.translation.setTranslate(this.e, this.f);
+            list.initialize(this.translation);
+	    if (this.b || this.c) {
+		if (!this.rotation) this.rotation = viewport.createSVGTransform();
+		this.rotation.setRotate(this.getRotation(), 0, 0);
+		list.appendItem(this.rotation);
+	    }
+	    if (this.a != 1.0 || this.d != 1.0) {
+		if (!this.scaling) this.scaling = viewport.createSVGTransform();
+		var scale = this.getScale();
+		this.scaling.setScale(scale, scale);
+		list.appendItem(this.scaling);
+	    }
+	} else {
+	    rawNode.setAttributeNS(null, "transform", this.toAttributeValue());
+	}
+    },
+
     toString: function() {
         return this.toAttributeValue();
     },
 
+    transformPoint: function(p, acc) {
+	return p.matrixTransform(this, acc);
+    },
+
     transformRectToRect: function(r) {
-        var p = r.topLeft().matrixTransform(this.matrix);
+        var p = this.transformPoint(r.topLeft());
         var min = p;
         var max = p;
     
-        p = r.topRight().matrixTransform(this.matrix);
+        this.transformPoint(r.topRight(), p);
         min = min.minPt(p);
         max = max.maxPt(p);
 
-        p = r.bottomRight().matrixTransform(this.matrix);
+        this.transformPoint(r.bottomRight(), p);
         min = min.minPt(p);
         max = max.maxPt(p);
     
-        p = r.bottomLeft().matrixTransform(this.matrix);
+        this.transformPoint(r.bottomLeft(), p);
         min = min.minPt(p);
         max = max.maxPt(p);
     
         return rect(min, max);
+    },
+
+    copy: function() {
+        return new Transform(this);
     }
+    
+
+});
+
+
+/**
+ * @class Transform (NOTE: PORTING-SENSITIVE CODE)
+ * This code is dependent on SVG transformation matrices.
+ * See: http://www.w3.org/TR/2003/REC-SVG11-20030114/coords.html#InterfaceSVGMatrix 
+ */
+
+Similitude.subclass('Transform', {
+
+    initialize: function(duck) { // matrix is a duck with a,b,c,d,e,f, could be an SVG matrix or a Lively Transform
+	// note: doesn't call $super
+	if (duck) {
+	    this.a = duck.a;
+	    this.b = duck.b;
+	    this.c = duck.c;
+	    this.d = duck.d;
+	    this.e = duck.e;
+	    this.f = duck.f;
+	} else {
+	    this.a = this.d = 1.0;
+	    this.b = this.c = this.e = this.f = 0.0;
+	}
+    }
+
     
 });
 
-Object.extend(Transform, {
-
-    /**
-     * createSimilitude: a similitude is a combination of translation rotation and scale.
-     * @param [Point] delta
-     * @param [float] angleInRadians
-     * @param [float] scale
-     */
-    createSimilitude: function(delta, angleInRadians, scale) {
-        // console.log('similitude delta is ' + Object.inspect(delta));
-        if (angleInRadians === undefined) angleInRadians = 0.0;
-        if (scale === undefined) scale = 1.0;
-        var matrix = Canvas.createSVGMatrix();
-        matrix = matrix.translate(delta.x, delta.y).rotate(angleInRadians.toDegrees()).scale(scale);
-        return new Transform(matrix);
-    }
-
-});
 
 // ===========================================================================
 // Character sets
@@ -1347,11 +1406,12 @@ var Event = (function() {
             if (isMouse(rawEvent)) {
                 var x = rawEvent.pageX || rawEvent.clientX;
                 var y = rawEvent.pageY || rawEvent.clientY;
+		var topElement = (rawEvent.target.nearestViewportElement || Canvas).parentNode;
 
                 // note that FF doesn't doesnt calculate offsetLeft/offsetTop early enough we don't precompute these values
                 // assume the parent node of Canvas has the same bounds as Canvas
-                this.mousePoint = pt(x - (Canvas.parentNode.offsetLeft || 0), 
-                                     y - (Canvas.parentNode.offsetTop  || 0) - 3);
+                this.mousePoint = pt(x - (topElement.offsetLeft || 0), 
+                                     y - (topElement.offsetTop  || 0) - 3);
                 // console.log("mouse point " + this.mousePoint);
                 //event.mousePoint = pt(event.clientX, event.clientY  - 3);
                 this.priorPoint = this.mousePoint; 
@@ -1499,8 +1559,9 @@ if (!Prototype.Browser.Rhino) Object.extend(document, {
         var targetMorph = evt.target.parentNode; // target is probably shape (change me if pointer-events changes for shapes)
         if ((targetMorph instanceof Morph) && !(targetMorph instanceof WorldMorph)) {
             evt.preventDefault();
-            evt.mousePoint = pt(evt.pageX - (Canvas.parentNode.offsetLeft || 0), 
-                                evt.pageY - (Canvas.parentNode.offsetTop  || 0) - 3);
+	    var topElement = (evt.target.nearestViewportElement || Canvas).parentNode;
+            evt.mousePoint = pt(evt.pageX - (topElement.offsetLeft || 0), 
+                                evt.pageY - (topElement.offsetTop  || 0) - 3);
             // evt.mousePoint = pt(evt.clientX, evt.clientY);
             targetMorph.showMorphMenu(evt); 
         } // else get the system context menu
@@ -1596,25 +1657,9 @@ Wrapper.subclass('Visual', {
         this.rawNode.setAttributeNS(null, "pointer-events", "none");
     },
 
-    applyTransform: function(transform) {
-        /*
-        var list = transform.baseVal;
-        // console.log('list was ' + Transform.printSVGTransformList(list));
-        list.initialize(this.translation);
-        list.appendItem(this.rotation);
-        list.appendItem(this.scale);
-        if (false &&  !(transformable instanceof HandMorph))
-        console.log('setting on ' + Object.inspect(transformable) + " now " + transformable.transform);
-        //console.log('list is now ' + Transform.printSVGTransformList(list));
-        */
-        // KP: Safari needs the attribute instead of the programmatic thing
-        // KP: FIXME remove when wrapper transformation is complete
-        this.rawNode.setAttributeNS(null, "transform", transform.toAttributeValue());
-    },
-
     retrieveTransform: function() {
         var impl = this.rawNode.transform.baseVal.consolidate();
-        return new Transform(impl ? impl.matrix : null); // identity if no transform specified
+	return new Transform(impl ? impl.matrix : null); // identity if no transform specified
     },
 
     disableBrowserHandlers: function() {
@@ -1651,6 +1696,7 @@ Visual.subclass('Shape', {
 
     shouldIgnorePointerEvents: false,
     controlPointProximity: 10,
+    hasElbowProtrusions: false,
 
     toString: function() {
         return "a Shape(%s,%s)".format(this.getType(), this.bounds());
@@ -1836,6 +1882,7 @@ Shape.subclass('EllipseShape', {
 Shape.subclass('PolygonShape', {
 
     shouldCacheVertices: false,
+    hasElbowProtrusions: true,
     
     initialize: function($super, vertlist, color, borderWidth, borderColor) {
         this.rawNode = NodeFactory.create("polygon");
@@ -2006,6 +2053,8 @@ Shape.subclass('PolygonShape', {
 
 Shape.subclass('PolylineShape', {
 
+    hasElbowProtrusions: true,
+    
     initialize: function($super, vertlist, borderWidth, borderColor) {
         this.rawNode = NodeFactory.create("polyline");
         this.setVertices(vertlist);
@@ -2042,6 +2091,8 @@ Shape.subclass('PolylineShape', {
  */ 
 
 Shape.subclass('PathShape', {
+
+    hasElbowProtrusions: true,
     
     initialize: function($super, vertlistOrRawNode, color, borderWidth, borderColor) {
         this.rawNode = NodeFactory.create("path");
@@ -2443,7 +2494,7 @@ Morph = Visual.subclass("Morph", {
     initialize: function(initialBounds, shapeType) {
         //console.log('initializing morph %s %s', initialBounds, shapeType);
         this.internalInitialize(NodeFactory.create("g"));
-        this.pvtSetTransform(Transform.createSimilitude(this.defaultOrigin(initialBounds, shapeType)));
+        this.pvtSetTransform(new Similitude(this.defaultOrigin(initialBounds, shapeType)));
 
         this.initializePersistentState(initialBounds, shapeType);
 
@@ -3157,7 +3208,7 @@ Morph.addMethods({
         this.remove();
     },
 
-    okToDuplicate: function() { return true; },  // default is OK
+    okToDuplicate: function() { return true; }  // default is OK
     
 });
 
@@ -3201,7 +3252,7 @@ Morph.addMethods({
     getTransform: function() {
         if (this.cachedTransform == null) { 
             // we need to include fisheyeScaling to the transformation
-            this.cachedTransform = Transform.createSimilitude(this.origin, this.rotation, this.scale * this.fisheyeScale);
+            this.cachedTransform = new Similitude(this.origin, this.rotation, this.scale * this.fisheyeScale);
         }
         return this.cachedTransform;
     },
@@ -3212,7 +3263,7 @@ Morph.addMethods({
         this.scale = tfm.getScale();
         // we must make sure the Morph keeps its original size (wrt/fisheyeScale)
         this.scale = this.scale/this.fisheyeScale;
-        this.cachedTransform = tfm; //Transform.createSimilitude(this.origin, this.rotation, this.scale);
+        this.cachedTransform = tfm; //new Similitude(this.origin, this.rotation, this.scale);
     },
     
     setTransform: function(tfm) { this.pvtSetTransform(tfm); }.wrap(Morph.onLayoutChange('transform')),
@@ -3225,7 +3276,7 @@ Morph.addMethods({
         // this.layoutChanged();
         // Only position has changed; not extent.  Thus no internal layout is needed
         // This should become a new transformChanged() method
-        this.applyTransform(this.getTransform());
+	this.getTransform().applyTo(this.rawNode);
         if (this.fullBounds != null) this.fullBounds = this.fullBounds.translatedBy(delta);
         // DI: I don't think this can affect owner.  It may increase fullbounds
         //     due to stickouts, but not the bounds for layout...
@@ -3627,6 +3678,7 @@ Morph.addMethods({
     },
 
     copyToHand: function(hand) {
+	//LogAllCalls = true;
         var copy = this.copy(new Copier());
         console.log('copied %s', copy);
         // KP: is the following necessary?
@@ -3784,7 +3836,6 @@ Morph.addMethods({
     },
     
     stopStepping: function() {
-        if (this instanceof ClockMorph) Function.showStack();
         if (this.world()) {
             this.world().stopSteppingFor(this);
         } // else: can happen if removing a morph whose parent is not in the world
@@ -3873,7 +3924,7 @@ Morph.addMethods({
         var tfm = this.retrieveTransform();
         this.fullBounds = tfm.transformRectToRect(this.shape.bounds());
 
-        if (/PolygonShape|PolylineShape/.test(this.shape.getType())) {
+        if (this.shape.hasElbowProtrusions) {
             // double border margin for polylines to account for elbow protrusions
             this.fullBounds.expandBy(this.shape.getStrokeWidth()*2);
         } else {
@@ -3963,7 +4014,8 @@ Morph.addMethods({
         // Naturally it must be propagated up its owner chain.
         // Note the difference in meaning from adjustForNewBounds()
 
-        this.applyTransform(this.getTransform());  // DI: why is this here?
+	
+        this.getTransform().applyTo(this.rawNode);  // DI: why is this here?
         this.fullBounds = null;
         if (this.owner && this.owner !== this.world()) {     // May affect owner as well...
             this.owner.layoutChanged();

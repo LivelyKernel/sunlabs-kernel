@@ -216,8 +216,7 @@ var ImageMorph = Morph.subclass("ImageMorph", {
         image.setAttributeNS(Namespace.XLINK, "href", localURL);
         image.setAttributeNS(Namespace.LIVELY, "type", 'Image');
         if (scale) {
-            image.setAttributeNS(null, "transform", 
-                Transform.createSimilitude(pt(0, 0), 0, scale).toAttributeValue());
+            new Similitude(pt(0, 0), 0, scale).applyTo(image);
         }
         this.addNonMorph(image);
 
@@ -392,7 +391,7 @@ var TitleBarMorph = (function() {
         this.closeButton =  this.addMorph(closeButton);
         // FIXME this should be simpler
         // var sign = NodeFactory.create("use").withHref("#CloseIcon");
-        // sign.applyTransform(Transform.createSimilitude(pt(-9, -9), 0, 0.035));
+        // new Similitude(pt(-9, -9), 0, 0.035).applyTo(sign);
         // closeButton.addNonMorph(sign);
 
         var menuButton = new WindowControlMorph(cell, controlSpacing, Color.primary.blue, windowMorph, 

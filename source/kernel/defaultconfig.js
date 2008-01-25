@@ -39,7 +39,10 @@ var Config = {
     ignoreAdvice: false,
 
     // try to make up font metrics if the SVG API doesn't work
-    fakeFontMetrics: false
+    fakeFontMetrics: false,
+
+    // newer versions of WebKit implement proper SVGTransform API, potentially better performance
+    transformUsesDOM: false 
 
 
 }

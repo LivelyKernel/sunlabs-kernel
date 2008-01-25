@@ -537,9 +537,10 @@ function showStatsViewer(profilee,title) {
 };
 
 Function.showStack = function() {
+    var stack = DebuggingStack;
     if (Config.debugExtras) {
-        for (var i = 0; i < DebuggingStack.length; i++) {
-            var args = DebuggingStack[i];
+        for (var i = 0; i < stack.length; i++) {
+            var args = stack[i];
             var header = Object.inspect(args.callee.originalFunction);
             console.log("%s) %s", i, header);
             var k = header.indexOf('(');
@@ -560,7 +561,8 @@ Function.showStack = function() {
     }
 };
 
-Function.installStackTracers = function() {
+var LogAllCalls = false;
+Function.installStackTracers = function(debugStack) {
     // Adds stack tracing to methods of most "classes"
     console.log("installing stack tracers");
     var classNames = Class.listClassNames(Global).filter(function(n) { return !n.startsWith('SVG')});
@@ -578,29 +580,27 @@ Function.installStackTracers = function() {
                 if (!originalMethod.methodName) { // Attach name to method
                     originalMethod.methodName = mName;
                 }
-                // Now replace each method with a wrapper function that records calls on DebuggingStack
-                theClass.prototype[mName] = originalMethod.stackWrapper();
+                // Now replace each method with a wrapper function that records calls on debugStack
+                theClass.prototype[mName] = originalMethod.stackWrapper(debugStack);
             }
         }
     }
 };
 
-var DebuggingStack = [];
-var LogAllCalls = false;
-Function.prototype.stackWrapper = function () {
-    // Make a proxy method (traceFunc) that calls the original method after pushing 'arguments' on DebuggingStack
+Function.prototype.stackWrapper = function (argStack) {
+    // Make a proxy method (traceFunc) that calls the original method after pushing 'arguments' on stack
     // Normally, it will pop it off before returning, but ***check interaction with try/catch
     var traceFunc = function () {
-        DebuggingStack.push(arguments);  // Push the arguments object on the stack ...
-
+        argStack.push(arguments);  // Push the arguments object on the stack ...
+	
         if (LogAllCalls) {
             var indent = "";
-            for (var i = 0; i < DebuggingStack.length; i++) indent += "-";
-            console.log(DebuggingStack.length.toString() + indent + traceFunc.originalFunction.qualifiedMethodName());
-        };
-
+            for (var i = 0; i < argStack.length; i++) indent += "-";
+            console.log(argStack.length + "" + indent + traceFunc.originalFunction.qualifiedMethodName());
+        }
+	
         var result = traceFunc.originalFunction.apply(this, arguments); 
-        DebuggingStack.pop();            // ... and then pop them off before returning
+        argStack.pop();            // ... and then pop them off before returning
         return result; 
     };
     traceFunc.originalFunction = this;  // Attach this (the original function) to the tracing proxy
