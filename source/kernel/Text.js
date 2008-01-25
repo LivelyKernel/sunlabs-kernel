@@ -664,7 +664,7 @@ scope.TextMorph = Morph.subclass("TextMorph", {
     maxSafeSize: 4000, 
     tabWidth: 4,
     tabsAsSpaces: true,
-    noShallowCopyProperties: Morph.prototype.noShallowCopyProperties.concat(['rawTextNode', 'lines']),
+    noShallowCopyProperties: Morph.prototype.noShallowCopyProperties.concat(['rawTextNode', 'rawSelectionNode', 'lines']),
 
     initializeTransientState: function($super, initialBounds) {
         $super(initialBounds);
