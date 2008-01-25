@@ -1443,7 +1443,7 @@ var Event = (function() {
 		    // so much for multiple worlds on one page
 		return Canvas;
 	    } else {
-		return this.rawEvent.target.nearestViewportElement;
+		return this.rawEvent.currentTarget.nearestViewportElement;
 	    }
 	},
 
@@ -1579,7 +1579,7 @@ if (!Prototype.Browser.Rhino) Object.extend(document, {
         var targetMorph = evt.target.parentNode; // target is probably shape (change me if pointer-events changes for shapes)
         if ((targetMorph instanceof Morph) && !(targetMorph instanceof WorldMorph)) {
             evt.preventDefault();
-	    var topElement = (evt.target.nearestViewportElement || Canvas).parentNode;
+	    var topElement = (evt.currentTarget.nearestViewportElement || Canvas).parentNode;
             evt.mousePoint = pt(evt.pageX - (topElement.offsetLeft || 0), 
                                 evt.pageY - (topElement.offsetTop  || 0) - 3);
             // evt.mousePoint = pt(evt.clientX, evt.clientY);

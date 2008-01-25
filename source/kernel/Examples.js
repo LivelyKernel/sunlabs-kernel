@@ -2621,7 +2621,7 @@ Model.subclass('StockWidget', {
            // console.log("Refreshing charts...");
             this.leftChartImage.reload(); 
             this.rightChartImage.reload(); 
-        },
+        };
 	
 	var $super = panel.shutdown.bind(panel);
         panel.shutdown = function() {
