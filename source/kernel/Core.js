@@ -622,8 +622,18 @@ Object.subclass("Point", {
     lessPt: function(p) { return this.x < p.x && this.y < p.y; },
     leqPt: function(p) { return this.x <= p.x && this.y <= p.y; },
     eqPt: function(p) { return this.x == p.x && this.y == p.y; },
-    minPt: function(p) { return new Point(Math.min(this.x,p.x), Math.min(this.y,p.y)); },
-    maxPt: function(p) { return new Point(Math.max(this.x,p.x), Math.max(this.y,p.y)); },
+    minPt: function(p, acc) { 
+	if (!acc) acc = new Point(0, 0); 
+	acc.x = Math.min(this.x,p.x); 
+	acc.y = Math.min(this.y,p.y);  
+	return acc;
+    },
+    maxPt: function(p, acc) { 
+	if (!acc) acc = new Point(0, 0);
+	acc.x = Math.max(this.x,p.x);
+	acc.y = Math.max(this.y,p.y); 
+	return acc;
+    },
     roundTo: function(quantum) { return new Point(this.x.roundTo(quantum), this.y.roundTo(quantum)); },
 
     dist: function(p) { 
@@ -1277,20 +1287,20 @@ Object.subclass('Similitude', {
 
     transformRectToRect: function(r) {
         var p = this.transformPoint(r.topLeft());
-        var min = p;
-        var max = p;
+        var min = p.copy();
+        var max = p.copy();
     
-        this.transformPoint(r.topRight(), p);
-        min = min.minPt(p);
-        max = max.maxPt(p);
+        p = this.transformPoint(r.topRight(), p);
+        min = min.minPt(p, min);
+        max = max.maxPt(p, max);
 
-        this.transformPoint(r.bottomRight(), p);
-        min = min.minPt(p);
-        max = max.maxPt(p);
+        p = this.transformPoint(r.bottomRight(), p);
+        min = min.minPt(p, min);
+        max = max.maxPt(p, max);
     
-        this.transformPoint(r.bottomLeft(), p);
-        min = min.minPt(p);
-        max = max.maxPt(p);
+        p = this.transformPoint(r.bottomLeft(), p);
+        min = min.minPt(p, min);
+        max = max.maxPt(p, max);
     
         return rect(min, max);
     },
@@ -1406,8 +1416,8 @@ var Event = (function() {
             if (isMouse(rawEvent)) {
                 var x = rawEvent.pageX || rawEvent.clientX;
                 var y = rawEvent.pageY || rawEvent.clientY;
-		var topElement = (rawEvent.target.nearestViewportElement || Canvas).parentNode;
-
+		var topElement = this.canvas().parentNode;
+		
                 // note that FF doesn't doesnt calculate offsetLeft/offsetTop early enough we don't precompute these values
                 // assume the parent node of Canvas has the same bounds as Canvas
                 this.mousePoint = pt(x - (topElement.offsetLeft || 0), 
@@ -1427,6 +1437,16 @@ var Event = (function() {
             // event.msTime = (new Date()).getTime();
             this.mouseButtonPressed = false;
         },
+
+	canvas: function() {
+	    if (Prototype.Browser.Gecko) {
+		    // so much for multiple worlds on one page
+		return Canvas;
+	    } else {
+		return this.rawEvent.target.nearestViewportElement;
+	    }
+	},
+
 
         stopPropagation: function() {
             this.rawEvent.stopPropagation();

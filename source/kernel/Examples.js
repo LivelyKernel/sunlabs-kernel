@@ -2622,8 +2622,9 @@ Model.subclass('StockWidget', {
             this.leftChartImage.reload(); 
             this.rightChartImage.reload(); 
         },
-
-        panel.shutdown = function($super) {
+	
+	var $super = panel.shutdown.bind(panel);
+        panel.shutdown = function() {
             $super();
             console.log('shutting down the stock widget');
             model.timer && window.clearInterval(model.timer);
