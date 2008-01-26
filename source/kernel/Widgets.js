@@ -342,9 +342,9 @@ var ClipMorph = Morph.subclass("ClipMorph", {
 
     bounds: function() {
         if (this.fullBounds != null) return this.fullBounds;
-        this.fullBounds = this.retrieveTransform().transformRectToRect(this.shape.bounds());
+        this.fullBounds = this.getLocalTransform().transformRectToRect(this.shape.bounds());
     
-        if (/PolygonShape|PolylineShape/.test(this.shape.getType())) {
+        if (this.shape.hasElbowProtrusions) {
             // double border margin for polylines to account for elbow protrusions
             this.fullBounds.expandBy(this.shape.getStrokeWidth()*2);
         } else {

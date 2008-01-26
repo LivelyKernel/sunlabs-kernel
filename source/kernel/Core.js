@@ -1207,12 +1207,7 @@ Object.subclass('Similitude', {
 	if (false) {
             var matrix = Canvas.createSVGMatrix();
             matrix = matrix.translate(delta.x, delta.y).rotate(angleInRadians.toDegrees()).scale(scale);
-	    this.a = matrix.a;
-	    this.b = matrix.b;
-	    this.c = matrix.c;
-	    this.d = matrix.d;
-	    this.e = matrix.e;
-	    this.f = matrix.f;
+	    this.fromMatrix(matrix);
 	} else { // calculate natively
 	    this.a = scale * Math.cos(angleInRadians);
 	    this.b = scale * Math.sin(angleInRadians);
@@ -1307,9 +1302,42 @@ Object.subclass('Similitude', {
 
     copy: function() {
         return new Transform(this);
-    }
+    },
     
+    toMatrix: function() {
+	var mx = Canvas.createSVGMatrix();
+	mx.a = this.a;
+	mx.b = this.b;
+	mx.c = this.c;
+	mx.d = this.d;
+	mx.e = this.e;
+	mx.f = this.f;
+	return mx;
+    },
 
+    fromMatrix: function(mx) {
+	this.a = mx.a;
+	this.b = mx.b;
+	this.c = mx.c;
+	this.d = mx.d;
+	this.e = mx.e;
+	this.f = mx.f;
+    },
+
+
+    preConcatenate: function(t) {
+	if (true) {
+	    this.fromMatrix(t.toMatrix().multiply(this.toMatrix()));
+	} else { // KP: something's wrong here
+	    this.a =  t.a * this.a + t.c * this.b;
+	    this.b =  t.b * this.a + t.d * this.b;
+	    this.c =  t.a * this.c + t.c * this.d;
+	    this.d =  t.b * this.c + t.d * this.d;
+	    this.e =  t.a * this.e + t.c * this.f  + t.e;
+	    this.f =  t.b * this.e + t.d * this.f  + t.f;
+	}
+	return this;
+    }
 });
 
 
@@ -1324,21 +1352,23 @@ Similitude.subclass('Transform', {
     initialize: function(duck) { // matrix is a duck with a,b,c,d,e,f, could be an SVG matrix or a Lively Transform
 	// note: doesn't call $super
 	if (duck) {
-	    this.a = duck.a;
-	    this.b = duck.b;
-	    this.c = duck.c;
-	    this.d = duck.d;
-	    this.e = duck.e;
-	    this.f = duck.f;
+	    this.fromMatrix(duck);
 	} else {
 	    this.a = this.d = 1.0;
 	    this.b = this.c = this.e = this.f = 0.0;
 	}
+    },
+    
+    createInverse: function() {
+	return new Transform(this.toMatrix().inverse());
     }
-
     
 });
 
+Object.extend(Transform, {
+    
+    
+});
 
 // ===========================================================================
 // Character sets
@@ -1677,15 +1707,16 @@ Wrapper.subclass('Visual', {
         this.rawNode.setAttributeNS(null, "pointer-events", "none");
     },
 
-    retrieveTransform: function() {
-        var impl = this.rawNode.transform.baseVal.consolidate();
-	return new Transform(impl ? impl.matrix : null); // identity if no transform specified
-    },
-
     disableBrowserHandlers: function() {
         this.rawNode.addEventListener("dragstart", Visual.BrowserHandlerDisabler, true);
         this.rawNode.addEventListener("selectstart", Visual.BrowserHandlerDisabler, true);
+    },
+
+    getLocalTransform: function() {
+        var impl = this.rawNode.transform.baseVal.consolidate();
+	return new Transform(impl ? impl.matrix : null); // identity if no transform specified
     }
+
     
 });
 
@@ -2526,7 +2557,7 @@ Morph = Visual.subclass("Morph", {
         // FIXME what if id is not unique?
         importer.addMapping(rawNode.getAttribute("id"), this); 
         this.internalInitialize(rawNode);
-        this.pvtSetTransform(this.retrieveTransform());
+        this.pvtSetTransform(this.getLocalTransform());
 
         this.restoreFromSubnodes(importer);
         this.restorePersistentState(importer);    
@@ -2544,7 +2575,7 @@ Morph = Visual.subclass("Morph", {
 
     copyFrom: function(copier, other) {
         this.internalInitialize(NodeFactory.create("g"));
-        this.pvtSetTransform(other.retrieveTransform());
+        this.pvtSetTransform(this.getLocalTransform());
 
         this.initializePersistentState(pt(0,0).asRectangle(), "rect");
 
@@ -3239,7 +3270,7 @@ Morph.addMethods({
         try {
             var world = this.world();
             return world && world.canvas();
-            // return this.ownerSVGElement;
+            // return this.rawNode.ownerSVGElement;
         } catch (er) {
             console.log("no ownerSVG ? %s, %s", this, er.stack);
             return null;
@@ -3287,6 +3318,29 @@ Morph.addMethods({
     },
     
     setTransform: function(tfm) { this.pvtSetTransform(tfm); }.wrap(Morph.onLayoutChange('transform')),
+
+    transformToMorph: function(other) {
+	// getTransformToElement has issues on some platforms
+	if (true) return this.rawNode.getTransformToElement(other.rawNode);
+	// not quite workin
+
+	var tfm = this.getGlobalTransform();
+	var inv = other.getGlobalTransform().createInverse();
+	// console.log("global: " + tfm + " inverse " + inv);
+	tfm.preConcatenate(inv);
+	//console.log("transforming " + this + " to " + tfm);
+	return tfm;
+    },
+
+    getGlobalTransform: function() {
+	var globalTransform = new Transform();
+	var world = this.world();
+	for (var morph = this; morph != world; morph = morph.owner) {
+	    globalTransform.preConcatenate(morph.getTransform());
+	}
+	return globalTransform;
+    },
+
     
     translateBy: function(delta) {
         this.changed();
@@ -3941,7 +3995,7 @@ Morph.addMethods({
     bounds: function() {
         if (this.fullBounds != null) return this.fullBounds;
 
-        var tfm = this.retrieveTransform();
+        var tfm = this.getLocalTransform();
         this.fullBounds = tfm.transformRectToRect(this.shape.bounds());
 
         if (this.shape.hasElbowProtrusions) {
@@ -3978,7 +4032,7 @@ Morph.addMethods({
 
     // map local point to world coordinates
     worldPoint: function(pt) { 
-        return pt.matrixTransform(this.rawNode.getTransformToElement(this.canvas())); 
+        return pt.matrixTransform(this.transformToMorph(this.world())); 
     },
 
     // map owner point to local coordinates
@@ -3987,7 +4041,7 @@ Morph.addMethods({
             throw new Error('no owner; call me after adding to a morph? ' + this);
         }
         try {
-            return pt.matrixTransform(this.owner.rawNode.getTransformToElement(this.rawNode)); 
+            return pt.matrixTransform(this.owner.transformToMorph(this)); 
         } catch (er) {
             // console.info("ignoring relativize wrt/%s", this);
             return pt;
@@ -4006,13 +4060,13 @@ Morph.addMethods({
             console.log('null this.canvas()');   
             return pt;
         }
-        return pt.matrixTransform(this.canvas().getTransformToElement(this.rawNode));
+        return pt.matrixTransform(this.world().transformToMorph(this));
     },
     
     // map local point to owner coordinates
     localizePointFrom: function(pt, otherMorph) {   
         try {
-            return pt.matrixTransform(otherMorph.rawNode.getTransformToElement(this.rawNode));
+            return pt.matrixTransform(otherMorph.transformToMorph(this));
         } catch (er) {
             Function.showStack();
             return pt;
@@ -4020,7 +4074,7 @@ Morph.addMethods({
     },
 
     transformForNewOwner: function(newOwner) {
-        return new Transform(this.rawNode.getTransformToElement(newOwner.rawNode));
+        return new Transform(this.transformToMorph(newOwner));
     },
 
 
@@ -4844,7 +4898,8 @@ PasteUpMorph.subclass("WorldMorph", {
      * override b/c of parent treatement
      */
     relativize: function(pt) { 
-        return pt.matrixTransform(this.rawNode.parentNode.getTransformToElement(this.rawNode)); 
+	return pt;
+	//return pt.matrixTransform(this.rawNode.parentNode.getTransformToElement(this.rawNode)); 
     },
     
     addMorphs: function(evt) {
