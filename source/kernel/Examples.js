@@ -2622,8 +2622,8 @@ Model.subclass('StockWidget', {
             this.leftChartImage.reload(); 
             this.rightChartImage.reload(); 
         };
-	
-	var $super = panel.shutdown.bind(panel);
+
+        var $super = panel.shutdown.bind(panel);
         panel.shutdown = function() {
             $super();
             console.log('shutting down the stock widget');
@@ -4911,5 +4911,4 @@ var PlayerMorph = Morph.subclass("PlayerMorph",  {
 });
 
 }).logCompletion("Examples.js")(apps);
-
 

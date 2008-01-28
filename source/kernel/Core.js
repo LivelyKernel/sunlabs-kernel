@@ -622,18 +622,21 @@ Object.subclass("Point", {
     lessPt: function(p) { return this.x < p.x && this.y < p.y; },
     leqPt: function(p) { return this.x <= p.x && this.y <= p.y; },
     eqPt: function(p) { return this.x == p.x && this.y == p.y; },
+
     minPt: function(p, acc) { 
-	if (!acc) acc = new Point(0, 0); 
-	acc.x = Math.min(this.x,p.x); 
-	acc.y = Math.min(this.y,p.y);  
-	return acc;
+        if (!acc) acc = new Point(0, 0); 
+        acc.x = Math.min(this.x, p.x); 
+        acc.y = Math.min(this.y, p.y);  
+        return acc;
     },
+
     maxPt: function(p, acc) { 
-	if (!acc) acc = new Point(0, 0);
-	acc.x = Math.max(this.x,p.x);
-	acc.y = Math.max(this.y,p.y); 
-	return acc;
+        if (!acc) acc = new Point(0, 0);
+        acc.x = Math.max(this.x, p.x);
+        acc.y = Math.max(this.y, p.y); 
+        return acc;
     },
+
     roundTo: function(quantum) { return new Point(this.x.roundTo(quantum), this.y.roundTo(quantum)); },
 
     dist: function(p) { 
@@ -661,10 +664,10 @@ Object.subclass("Point", {
     },
 
     matrixTransform: function(mx, acc) {
-	if (!acc) acc = pt(0, 0); // if no accumulator passed, allocate a fresh one
+        if (!acc) acc = pt(0, 0); // if no accumulator passed, allocate a fresh one
         acc.x = mx.a * this.x + mx.c * this.y + mx.e;
         acc.y = mx.b * this.x + mx.d * this.y + mx.f;
-	return acc;
+        return acc;
     },
 
     // Polar coordinates...
@@ -1188,6 +1191,9 @@ Wrapper.subclass('StipplePattern', {
 
 });
 
+/**
+ * @class Similitude (NOTE: PORTING-SENSITIVE CODE)
+ */
 
 Object.subclass('Similitude', {
 
@@ -1204,20 +1210,19 @@ Object.subclass('Similitude', {
     initialize: function(delta, angleInRadians, scale) {
         if (angleInRadians === undefined) angleInRadians = 0.0;
         if (scale === undefined) scale = 1.0;
-	if (false) {
+        if (false) {
             var matrix = Canvas.createSVGMatrix();
             matrix = matrix.translate(delta.x, delta.y).rotate(angleInRadians.toDegrees()).scale(scale);
-	    this.fromMatrix(matrix);
-	} else { // calculate natively
-	    this.a = scale * Math.cos(angleInRadians);
-	    this.b = scale * Math.sin(angleInRadians);
-	    this.c = scale * - Math.sin(angleInRadians);
-	    this.d = scale * Math.cos(angleInRadians);
-	    this.e =  delta.x;
-	    this.f =  delta.y;
-	}
+            this.fromMatrix(matrix);
+        } else { // calculate natively
+            this.a = scale * Math.cos(angleInRadians);
+            this.b = scale * Math.sin(angleInRadians);
+            this.c = scale * - Math.sin(angleInRadians);
+            this.d = scale * Math.cos(angleInRadians);
+            this.e =  delta.x;
+            this.f =  delta.y;
+        }
     },
-
 
     getRotation: function() { // in degrees
         return Math.atan2(this.b, this.a).toDegrees();
@@ -1250,26 +1255,26 @@ Object.subclass('Similitude', {
     },
 
     applyTo: function(rawNode) {
-	if (this.useDOM) {
+        if (this.useDOM) {
             var list = rawNode.transform.baseVal;
-	    var viewport = (rawNode.nearestViewportElement || Canvas);
-	    if (!this.translation) this.translation = viewport.createSVGTransform();
-	    this.translation.setTranslate(this.e, this.f);
+            var viewport = (rawNode.nearestViewportElement || Canvas);
+            if (!this.translation) this.translation = viewport.createSVGTransform();
+            this.translation.setTranslate(this.e, this.f);
             list.initialize(this.translation);
-	    if (this.b || this.c) {
-		if (!this.rotation) this.rotation = viewport.createSVGTransform();
-		this.rotation.setRotate(this.getRotation(), 0, 0);
-		list.appendItem(this.rotation);
-	    }
-	    if (this.a != 1.0 || this.d != 1.0) {
-		if (!this.scaling) this.scaling = viewport.createSVGTransform();
-		var scale = this.getScale();
-		this.scaling.setScale(scale, scale);
-		list.appendItem(this.scaling);
-	    }
-	} else {
-	    rawNode.setAttributeNS(null, "transform", this.toAttributeValue());
-	}
+            if (this.b || this.c) {
+                if (!this.rotation) this.rotation = viewport.createSVGTransform();
+                this.rotation.setRotate(this.getRotation(), 0, 0);
+                list.appendItem(this.rotation);
+            }
+            if (this.a != 1.0 || this.d != 1.0) {
+                if (!this.scaling) this.scaling = viewport.createSVGTransform();
+                var scale = this.getScale();
+                this.scaling.setScale(scale, scale);
+                list.appendItem(this.scaling);
+            }
+        } else {
+            rawNode.setAttributeNS(null, "transform", this.toAttributeValue());
+        }
     },
 
     toString: function() {
@@ -1277,7 +1282,7 @@ Object.subclass('Similitude', {
     },
 
     transformPoint: function(p, acc) {
-	return p.matrixTransform(this, acc);
+        return p.matrixTransform(this, acc);
     },
 
     transformRectToRect: function(r) {
@@ -1305,41 +1310,40 @@ Object.subclass('Similitude', {
     },
     
     toMatrix: function() {
-	var mx = Canvas.createSVGMatrix();
-	mx.a = this.a;
-	mx.b = this.b;
-	mx.c = this.c;
-	mx.d = this.d;
-	mx.e = this.e;
-	mx.f = this.f;
-	return mx;
+        var mx = Canvas.createSVGMatrix();
+        mx.a = this.a;
+        mx.b = this.b;
+        mx.c = this.c;
+        mx.d = this.d;
+        mx.e = this.e;
+        mx.f = this.f;
+        return mx;
     },
 
     fromMatrix: function(mx) {
-	this.a = mx.a;
-	this.b = mx.b;
-	this.c = mx.c;
-	this.d = mx.d;
-	this.e = mx.e;
-	this.f = mx.f;
+        this.a = mx.a;
+        this.b = mx.b;
+        this.c = mx.c;
+        this.d = mx.d;
+        this.e = mx.e;
+        this.f = mx.f;
     },
 
-
     preConcatenate: function(t) {
-	if (true) {
-	    this.fromMatrix(t.toMatrix().multiply(this.toMatrix()));
-	} else { // KP: something's wrong here
-	    this.a =  t.a * this.a + t.c * this.b;
-	    this.b =  t.b * this.a + t.d * this.b;
-	    this.c =  t.a * this.c + t.c * this.d;
-	    this.d =  t.b * this.c + t.d * this.d;
-	    this.e =  t.a * this.e + t.c * this.f  + t.e;
-	    this.f =  t.b * this.e + t.d * this.f  + t.f;
-	}
-	return this;
+        if (true) {
+            this.fromMatrix(t.toMatrix().multiply(this.toMatrix()));
+        } else { // KP: something's wrong here
+            this.a =  t.a * this.a + t.c * this.b;
+            this.b =  t.b * this.a + t.d * this.b;
+            this.c =  t.a * this.c + t.c * this.d;
+            this.d =  t.b * this.c + t.d * this.d;
+            this.e =  t.a * this.e + t.c * this.f  + t.e;
+            this.f =  t.b * this.e + t.d * this.f  + t.f;
+        }
+        return this;
     }
-});
 
+});
 
 /**
  * @class Transform (NOTE: PORTING-SENSITIVE CODE)
@@ -1350,23 +1354,18 @@ Object.subclass('Similitude', {
 Similitude.subclass('Transform', {
 
     initialize: function(duck) { // matrix is a duck with a,b,c,d,e,f, could be an SVG matrix or a Lively Transform
-	// note: doesn't call $super
-	if (duck) {
-	    this.fromMatrix(duck);
-	} else {
-	    this.a = this.d = 1.0;
-	    this.b = this.c = this.e = this.f = 0.0;
-	}
+        // note: doesn't call $super
+        if (duck) {
+            this.fromMatrix(duck);
+        } else {
+            this.a = this.d = 1.0;
+            this.b = this.c = this.e = this.f = 0.0;
+        }
     },
     
     createInverse: function() {
-	return new Transform(this.toMatrix().inverse());
+        return new Transform(this.toMatrix().inverse());
     }
-    
-});
-
-Object.extend(Transform, {
-    
     
 });
 
@@ -1446,8 +1445,8 @@ var Event = (function() {
             if (isMouse(rawEvent)) {
                 var x = rawEvent.pageX || rawEvent.clientX;
                 var y = rawEvent.pageY || rawEvent.clientY;
-		var topElement = this.canvas().parentNode;
-		
+                var topElement = this.canvas().parentNode;
+
                 // note that FF doesn't doesnt calculate offsetLeft/offsetTop early enough we don't precompute these values
                 // assume the parent node of Canvas has the same bounds as Canvas
                 this.mousePoint = pt(x - (topElement.offsetLeft || 0), 
@@ -1468,15 +1467,14 @@ var Event = (function() {
             this.mouseButtonPressed = false;
         },
 
-	canvas: function() {
-	    if (Prototype.Browser.Gecko) {
-		    // so much for multiple worlds on one page
-		return Canvas;
-	    } else {
-		return this.rawEvent.currentTarget.nearestViewportElement;
-	    }
-	},
-
+        canvas: function() {
+            if (Prototype.Browser.Gecko) {
+                // so much for multiple worlds on one page
+                return Canvas;
+            } else {
+                return this.rawEvent.currentTarget.nearestViewportElement;
+            }
+        },
 
         stopPropagation: function() {
             this.rawEvent.stopPropagation();
@@ -1609,7 +1607,7 @@ if (!Prototype.Browser.Rhino) Object.extend(document, {
         var targetMorph = evt.target.parentNode; // target is probably shape (change me if pointer-events changes for shapes)
         if ((targetMorph instanceof Morph) && !(targetMorph instanceof WorldMorph)) {
             evt.preventDefault();
-	    var topElement = (evt.currentTarget.nearestViewportElement || Canvas).parentNode;
+            var topElement = (evt.currentTarget.nearestViewportElement || Canvas).parentNode;
             evt.mousePoint = pt(evt.pageX - (topElement.offsetLeft || 0), 
                                 evt.pageY - (topElement.offsetTop  || 0) - 3);
             // evt.mousePoint = pt(evt.clientX, evt.clientY);
@@ -1714,10 +1712,9 @@ Wrapper.subclass('Visual', {
 
     getLocalTransform: function() {
         var impl = this.rawNode.transform.baseVal.consolidate();
-	return new Transform(impl ? impl.matrix : null); // identity if no transform specified
+        return new Transform(impl ? impl.matrix : null); // identity if no transform specified
     }
 
-    
 });
 
 Visual.BrowserHandlerDisabler = { 
@@ -3320,28 +3317,27 @@ Morph.addMethods({
     setTransform: function(tfm) { this.pvtSetTransform(tfm); }.wrap(Morph.onLayoutChange('transform')),
 
     transformToMorph: function(other) {
-	// getTransformToElement has issues on some platforms
-	if (true) return this.rawNode.getTransformToElement(other.rawNode);
-	// not quite workin
+        // getTransformToElement has issues on some platforms
+        if (true) return this.rawNode.getTransformToElement(other.rawNode);
 
-	var tfm = this.getGlobalTransform();
-	var inv = other.getGlobalTransform().createInverse();
-	// console.log("global: " + tfm + " inverse " + inv);
-	tfm.preConcatenate(inv);
-	//console.log("transforming " + this + " to " + tfm);
-	return tfm;
+        // not quite working yet
+        var tfm = this.getGlobalTransform();
+        var inv = other.getGlobalTransform().createInverse();
+        // console.log("global: " + tfm + " inverse " + inv);
+        tfm.preConcatenate(inv);
+        //console.log("transforming " + this + " to " + tfm);
+        return tfm;
     },
 
     getGlobalTransform: function() {
-	var globalTransform = new Transform();
-	var world = this.world();
-	for (var morph = this; morph != world; morph = morph.owner) {
-	    globalTransform.preConcatenate(morph.getTransform());
-	}
-	return globalTransform;
+        var globalTransform = new Transform();
+        var world = this.world();
+        for (var morph = this; morph != world; morph = morph.owner) {
+            globalTransform.preConcatenate(morph.getTransform());
+        }
+        return globalTransform;
     },
 
-    
     translateBy: function(delta) {
         this.changed();
         this.origin = this.origin.addPt(delta);
@@ -3350,7 +3346,7 @@ Morph.addMethods({
         // this.layoutChanged();
         // Only position has changed; not extent.  Thus no internal layout is needed
         // This should become a new transformChanged() method
-	this.getTransform().applyTo(this.rawNode);
+        this.getTransform().applyTo(this.rawNode);
         if (this.fullBounds != null) this.fullBounds = this.fullBounds.translatedBy(delta);
         // DI: I don't think this can affect owner.  It may increase fullbounds
         //     due to stickouts, but not the bounds for layout...
@@ -3752,13 +3748,13 @@ Morph.addMethods({
     },
 
     copyToHand: function(hand) {
-	//LogAllCalls = true;
+        // LogAllCalls = true;
         var copy = this.copy(new Copier());
         console.log('copied %s', copy);
         // KP: is the following necessary?
         this.owner.addMorph(copy); // set up owner the original parent so that it can be reparented to this: 
         hand.addMorph(copy);  
-//        copy.withAllSubmorphsDo(function() { this.startStepping(null); }, null);
+        // copy.withAllSubmorphsDo(function() { this.startStepping(null); }, null);
     },
 
     morphToGrabOrReceiveDroppingMorph: function(evt, droppingMorph) {
@@ -4087,8 +4083,6 @@ Morph.addMethods({
         // It invalidates the cache, which will be recomputed when bounds() is called
         // Naturally it must be propagated up its owner chain.
         // Note the difference in meaning from adjustForNewBounds()
-
-	
         this.getTransform().applyTo(this.rawNode);  // DI: why is this here?
         this.fullBounds = null;
         if (this.owner && this.owner !== this.world()) {     // May affect owner as well...
@@ -4320,7 +4314,6 @@ Object.subclass('Model', {
         delete hash.dependents;
         return "#<Model:%s>".format(Object.toJSON(hash));
     },
-
 
     // test?
     copyFrom: function(copier, other) {
@@ -4898,8 +4891,8 @@ PasteUpMorph.subclass("WorldMorph", {
      * override b/c of parent treatement
      */
     relativize: function(pt) { 
-	return pt;
-	//return pt.matrixTransform(this.rawNode.parentNode.getTransformToElement(this.rawNode)); 
+        return pt;
+        //return pt.matrixTransform(this.rawNode.parentNode.getTransformToElement(this.rawNode)); 
     },
     
     addMorphs: function(evt) {
@@ -5399,7 +5392,6 @@ Morph.subclass("HandMorph", function() {
     }
     
 }});
-
 
 /**
  * @class LinkMorph: A two-way hyperlink between two Lively worlds
