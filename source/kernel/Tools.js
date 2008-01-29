@@ -521,7 +521,7 @@ function showStatsViewer(profilee,title) {
                 statsArray.push([tallies[field], ticks[field], field]);
             }
 
-            statsArray.sort(function(a,b) {return b[0]-a[0];});
+            statsArray.sort(function(a,b) {return b[1]-a[1];});
             var statsText = "";
             if (title) statsText += title + "\n";
             statsText += "tallies : ticks : methodName\n";
@@ -536,76 +536,96 @@ function showStatsViewer(profilee,title) {
     m.addMorph(t);
 };
 
-Function.showStack = function() {
-    var stack = DebuggingStack;
-    if (Config.debugExtras) {
-        for (var i = 0; i < stack.length; i++) {
-            var args = stack[i];
-            var header = Object.inspect(args.callee.originalFunction);
-            console.log("%s) %s", i, header);
-            var k = header.indexOf('(');
-            header = header.substring(k + 1, 999);  // ')' or 'zort)' or 'zort,baz)', etc
-            for (var j = 0; j <args.length; j++) {
-                k = header.indexOf(')');
-                var k2 = header.indexOf(',');
-                if (k2 >= 0) k = Math.min(k,k2);
-                argName = header.substring(0, k)
-                header = header.substring(k + 2, 999);
-                console.log("%s: %s", argName, Object.inspect(args[j]));
-            }
-        }
-    } else {
-        for (var c = arguments.callee.caller, i = 0; c != null; c = c.caller, i++) {
-            console.log("%s) %s", i, Object.inspect(c));
-        }
-    }
-};
+(function() {
 
-var LogAllCalls = false;
-Function.installStackTracers = function(debugStack) {
-    // Adds stack tracing to methods of most "classes"
-    console.log("installing stack tracers");
-    var classNames = Class.listClassNames(Global).filter(function(n) { return !n.startsWith('SVG')});
-    for (var ci= 0; ci < classNames.length; ci++) {
-        var cName = classNames[ci];
-        if (cName != 'Global' && cName != 'Object') {
-            var theClass = Global[cName];
-            var methodNames = theClass.localFunctionNames();
-            for (var mi = 0; mi < methodNames.length; mi++) {
-                var mName = methodNames[mi];
-                var originalMethod = theClass.prototype[mName]; 
-                if (!originalMethod.declaredClass) { // already added 
-                    originalMethod.declaredClass = cName;
-                }
-                if (!originalMethod.methodName) { // Attach name to method
-                    originalMethod.methodName = mName;
-                }
-                // Now replace each method with a wrapper function that records calls on debugStack
-                theClass.prototype[mName] = originalMethod.stackWrapper(debugStack);
-            }
-        }
-    }
-};
+    var debuggingStack = [];
+    
+    Object.extend(Function, {
+	
+	showStack: function() {
+	    var stack = debuggingStack;
+	    if (Config.debugExtras) {
+		for (var i = 0; i < stack.length; i++) {
+		    var args = stack[i];
+		    var header = Object.inspect(args.callee.originalFunction);
+		    console.log("%s) %s", i, header);
+		    var k = header.indexOf('(');
+		    header = header.substring(k + 1, 999);  // ')' or 'zort)' or 'zort,baz)', etc
+		    for (var j = 0; j <args.length; j++) {
+			k = header.indexOf(')');
+			var k2 = header.indexOf(',');
+			if (k2 >= 0) k = Math.min(k,k2);
+			argName = header.substring(0, k)
+			header = header.substring(k + 2, 999);
+			console.log("%s: %s", argName, Object.inspect(args[j]));
+		    }
+		}
+	    } else {
+		for (var c = arguments.callee.caller, i = 0; c != null; c = c.caller, i++) {
+		    console.log("%s) %s", i, Object.inspect(c));
+		}
+	    }
+	},
+	
+	resetDebuggingStack: function() {
+	    debuggingStack.clear();
+	    Function.prototype.shouldTrace = false;
+	},
+	
+	installStackTracers: function(debugStack) {
+	    // Adds stack tracing to methods of most "classes"
+	    console.log("installing stack tracers");
+	    var classNames = Class.listClassNames(Global).filter(function(n) { return !n.startsWith('SVG')});
+	    for (var ci= 0; ci < classNames.length; ci++) {
+		var cName = classNames[ci];
+		if (cName != 'Global' && cName != 'Object') {
+		    var theClass = Global[cName];
+		    var methodNames = theClass.localFunctionNames();
+		    for (var mi = 0; mi < methodNames.length; mi++) {
+			var mName = methodNames[mi];
+			var originalMethod = theClass.prototype[mName]; 
+			if (!originalMethod.declaredClass) { // already added 
+			    originalMethod.declaredClass = cName;
+			}
+			if (!originalMethod.methodName) { // Attach name to method
+			    originalMethod.methodName = mName;
+			}
+			// Now replace each method with a wrapper function that records calls on debugStack
+			theClass.prototype[mName] = originalMethod.stackWrapper(debugStack);
+		    }
+		}
+	    }
+	}
+    });
+    
+    Object.extend(Function.prototype, {
+	
+	shouldTrace: false, // turn on the prototype value to get tracing globally. Turn off individually for "hidden" functions.
+	
+	stackWrapper: function () {
+	    // Make a proxy method (traceFunc) that calls the original method after pushing 'arguments' on stack
+	    // Normally, it will pop it off before returning, but ***check interaction with try/catch
+	    var traceFunc = function () {
+		debuggingStack.push(arguments);  // Push the arguments object on the stack ...
+		var originalFunction = arguments.callee.originalFunction;
+		
+		if (/*originalFunction.*/ Function.prototype.shouldTrace) {
+		    var indent = "";
+		    for (var i = 0; i < debuggingStack.length; i++) indent += "-";
+		    console.log(debuggingStack.length + "" + indent + originalFunction.qualifiedMethodName());
+		}
+		
+		var result = originalFunction.apply(this, arguments); 
+		debuggingStack.pop();            // ... and then pop them off before returning
+		return result; 
+	    };
+	    traceFunc.originalFunction = this;  // Attach this (the original function) to the tracing proxy
+	    return traceFunc;
+	}
+    });
+    
+})(); // end scoping function
 
-Function.prototype.stackWrapper = function (argStack) {
-    // Make a proxy method (traceFunc) that calls the original method after pushing 'arguments' on stack
-    // Normally, it will pop it off before returning, but ***check interaction with try/catch
-    var traceFunc = function () {
-        argStack.push(arguments);  // Push the arguments object on the stack ...
-	
-        if (LogAllCalls) {
-            var indent = "";
-            for (var i = 0; i < argStack.length; i++) indent += "-";
-            console.log(argStack.length + "" + indent + traceFunc.originalFunction.qualifiedMethodName());
-        }
-	
-        var result = traceFunc.originalFunction.apply(this, arguments); 
-        argStack.pop();            // ... and then pop them off before returning
-        return result; 
-    };
-    traceFunc.originalFunction = this;  // Attach this (the original function) to the tracing proxy
-    return traceFunc;
-}; 
 
 // Inspection tools, called interactively
 Object.extend(console, {

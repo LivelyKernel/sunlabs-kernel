@@ -1062,7 +1062,7 @@ console.log("Color");
 // ===========================================================================
 
 /**
- * @class Wrapper: A wrapper around a native object
+ * @class Wrapper
  */
 
 Object.subclass('Wrapper', {
@@ -1540,6 +1540,7 @@ var Event = (function() {
     Event.extend = function () {} // dummy function to fool prototype.js
 
     Object.extend(Event, {
+	// copied from prototype.js:
         KEY_BACKSPACE: 8,
         KEY_TAB:       9,
         KEY_RETURN:   13,
@@ -1553,7 +1554,22 @@ var Event = (function() {
         KEY_END:      35,
         KEY_PAGEUP:   33,
         KEY_PAGEDOWN: 34,
-        KEY_INSERT:   45
+        KEY_INSERT:   45,
+	
+	// not in prototype.js:
+	KEY_SPACEBAR: 32,
+        Safari: {
+            KEY_LEFT: 63234,
+            KEY_UP: 63232,
+            KEY_RIGHT: 63235,
+            KEY_DOWN: 63233,
+            KEY_DELETE: 63272,
+            KEY_END: 63275,
+            KEY_HOME: 63273,
+            KEY_PAGE_UP: 63276,
+            KEY_PAGE_DOWN: 63277
+        }
+	
     });
 
     var capitalizer = $H({ mouseup: 'MouseUp', mousedown: 'MouseDown', mousemove: 'MouseMove', 
@@ -1576,23 +1592,6 @@ var Event = (function() {
         return Event.keyboardEvents.include(event.rawEvent.type);
     };
 
-    Object.extend(Event, {
-    
-        KEY_SPACEBAR: 32,
-    
-        Safari: {
-            KEY_LEFT: 63234,
-            KEY_UP: 63232,
-            KEY_RIGHT: 63235,
-            KEY_DOWN: 63233,
-            KEY_DELETE: 63272,
-            KEY_END: 63275,
-            KEY_HOME: 63273,
-            KEY_PAGE_UP: 63276,
-            KEY_PAGE_DOWN: 63277
-        }
-        
-    });
     return Event;
 })();
 
@@ -1605,7 +1604,8 @@ Object.extend(window.parent, {
 if (!Prototype.Browser.Rhino) Object.extend(document, {
     oncontextmenu: function(evt) { 
         var targetMorph = evt.target.parentNode; // target is probably shape (change me if pointer-events changes for shapes)
-        if ((targetMorph instanceof Morph) && !(targetMorph instanceof WorldMorph)) {
+        if ((targetMorph instanceof Morph) 
+	    && !(targetMorph instanceof WorldMorph)) {
             evt.preventDefault();
             var topElement = (evt.currentTarget.nearestViewportElement || Canvas).parentNode;
             evt.mousePoint = pt(evt.pageX - (topElement.offsetLeft || 0), 
@@ -1787,10 +1787,12 @@ Object.extend(Shape, {
 });
 
 /**
- * @class RectShape: Rectangle shape
+ * @class RectShape
  */ 
 
 Shape.subclass('RectShape', {
+
+    documentation: "Rectangle shape",
 
     initialize: function($super, rect, color, borderWidth, borderColor) {
         this.rawNode = NodeFactory.create("rect");
@@ -2405,7 +2407,7 @@ Copier.marker = Object.extend(new Copier(), {
 });
 
 /**
- * @class Importer: Implementation class for morph de-serialization
+ * @class Importer
  */
 
 Copier.subclass('Importer', {
@@ -2498,14 +2500,15 @@ Copier.subclass('Importer', {
 });
 
 /**
- * @class Morph: Every graphical object in our system is a morph.
- * Class Morph implements the common functionality inherited by 
+ * @class Morph
+ * Implements the common functionality inherited by 
  * all the morphs. 
  */ 
 
 Morph = Visual.subclass("Morph", {
 
     // prototype vars
+    documentation: "Base class for every graphical, manipulatable object in the system", 
     fill: Color.primary.green,
     borderWidth: 1,
     borderColor: Color.black,
@@ -3666,8 +3669,8 @@ Morph.addMethods({
     },
 
     testTracing: function() {
-        console.log("LogAllCalls = true; tracing begins...");
-        LogAllCalls = true;
+        console.log("Function.prototype.shouldTrace = true; tracing begins...");
+        Function.prototype.shouldTrace = true;
         this.adjustForNewBounds();
     },
 
@@ -3748,7 +3751,7 @@ Morph.addMethods({
     },
 
     copyToHand: function(hand) {
-        // LogAllCalls = true;
+        Function.prototype.shouldTrace = true;
         var copy = this.copy(new Copier());
         console.log('copied %s', copy);
         // KP: is the following necessary?
@@ -4804,8 +4807,7 @@ PasteUpMorph.subclass("WorldMorph", {
             var action = schedNode[1];
             var func = action.actor[action.scriptName];
 
-            DebuggingStack = [];  // Reset at each tick event
-            LogAllCalls = false;
+            Function.resetDebuggingStack();  // Reset at each tick event
 
             if (func) {
                 try {
@@ -5150,8 +5152,7 @@ Morph.subclass("HandMorph", function() {
         var evt = new Event(rawEvt);
         evt.hand = this;
      
-        DebuggingStack = [];  // Reset at each input event
-        LogAllCalls = false;
+        Function.resetDebuggingStack();
 
         switch (evt.type) {
         case "mousemove":

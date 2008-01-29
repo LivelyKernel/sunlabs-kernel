@@ -49,9 +49,7 @@ Object.extend(Config, {
 });
 
 // Name the methods for showStack
-var DebuggingStack= [];  
-//var LogAllCalls = false;  // DI: should be put in a better place than global
-if (Config.debugExtras && Function.installStackTracers) Function.installStackTracers(DebuggingStack);  
+if (Config.debugExtras && Function.installStackTracers) Function.installStackTracers();  
 
 // Class browser visibility can be overridden with Config.browserAnyway
 Config.showBrowser = !Config.skipMostExamples || Config.browserAnyway;

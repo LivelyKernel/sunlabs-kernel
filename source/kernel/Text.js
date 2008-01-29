@@ -61,9 +61,9 @@ Object.subclass('Font', {
         return this.extents[code] ? this.extents[code].height : -1;
     },
 
-    applyTo: function(element) {
-        element.rawNode.setAttributeNS(null, "font-size", this.getSize());
-        element.rawNode.setAttributeNS(null, "font-family", this.getFamily());
+    applyTo: function(rawNode) {
+        rawNode.setAttributeNS(null, "font-size", this.getSize());
+        rawNode.setAttributeNS(null, "font-family", this.getFamily());
     }
 
 });
@@ -276,16 +276,6 @@ Object.subclass('WordChunk', {
         return c;
     },
 
-    // fully clone a chunk (see warnings)
-    copy: function(src) {
-        var c = cloneSkeleton; // KP: does this work? cloneSkeleton seems undefined here, maybe this.cloneSkeleton()?
-        c.render = this.render;
-        c.bounds = this.bounds; // BEWARE - not cloned
-        c.wasComposed = this.wasComposed;
-        c.word = this.word;     // BEWARE - not cloned
-        return c;
-    },
-
     // string representation
     toString: function() {
         var lString = "Chunk start: " + this.start +
@@ -336,10 +326,12 @@ Object.subclass('WordChunk', {
     
 });
 
+
 /**
  * @class TextLine
  * This 'class' renders lines composed of words and whitespace
  */ 
+
 Object.subclass('TextLine', {
 
     // create a new line
@@ -358,12 +350,12 @@ Object.subclass('TextLine', {
 
     // is the character 'c' what we consider to be whitespace? (private)
     isWhiteSpace: function(c) {
-        return (c == ' ' || c == '\t' || c == '\r' || c == '\n');
+	return (c == ' ' || c == '\t' || c == '\r' || c == '\n');
     },
-
+    
     // is the character 'c' what we consider to be a newline? (private)
     isNewLine: function(c) {
-        return (c == '\r' || c == '\n');
+	return (c == '\r' || c == '\n');
     },
 
     // we found a word so figure out where the chunk extends to (private)
@@ -412,22 +404,16 @@ Object.subclass('TextLine', {
         return pieces;
     },
 
-    // do a chunkFromString on the string contained in the textString instance variable
-    wordDecomposition: function(offset) {
-        var chunks = this.chunkFromString(this.textString, offset);
-        return chunks;
-    },
-
     // compose a line of text, breaking it appropriately at compositionWidth
     compose: function(compositionWidth) {
         var runningStartIndex = this.startIndex;
         var mostRecentBounds = this.topLeft.asRectangle();
         var lastWord = null;
         var leadingSpaces = 0;
-
+	
         // a way to optimize out repeated scanning
         if (this.chunks == null) {
-            this.chunks = this.wordDecomposition(this.startIndex);
+            this.chunks = this.chunkFromString(this.textString, this.startIndex);
         }
     
         for (var i = 0; i < this.chunks.length; i++) {
@@ -453,20 +439,20 @@ Object.subclass('TextLine', {
                 }
                 runningStartIndex = c.start + c.length;
             } else {
-                c.word = new TextWord(this.textString, c.start, pt(mostRecentBounds.maxX(), this.topLeft.y), this.font);
-                lastWord = c.word;
-
+		lastWord = new TextWord(this.textString, c.start, pt(mostRecentBounds.maxX(), this.topLeft.y), this.font);
+                c.word = lastWord;
+		
                 if (leadingSpaces) { 
                     lastWord.rawNode.setAttributeNS(Namespace.LIVELY, "lead", leadingSpaces);
                     leadingSpaces = 0;
                 }
-                c.word.compose(compositionWidth - (mostRecentBounds.maxX() - this.topLeft.x), c.length - 1);
-                c.bounds = c.word.getBounds(c.start).union(c.word.getBounds(c.start + c.length - 1));
-                if (c.word.getLineBrokeOnCompose()) {
+                lastWord.compose(compositionWidth - (mostRecentBounds.maxX() - this.topLeft.x), c.length - 1);
+                c.bounds = lastWord.getBounds(c.start).union(lastWord.getBounds(c.start + c.length - 1));
+                if (lastWord.getLineBrokeOnCompose()) {
                     if (i == 0) {
                         // XXX in the future, another chunk needs to be inserted in the array at this point
                         //     otherwise the bounds will be messed up - kam
-                        runningStartIndex = c.word.getStopIndex() + 1;
+                        runningStartIndex = lastWord.getStopIndex() + 1;
                     } else {
                         // Back up to re-render this word and abort rendering
                         c.render = false;
@@ -682,14 +668,16 @@ scope.TextMorph = Morph.subclass("TextMorph", {
 
     initializePersistentState: function($super, initialBounds, shapeType) {
         $super(initialBounds, shapeType);
-        this.rawTextNode = null;
 
         // the selection element is persistent although its contents are not
         // generic <g> element with 1-3 rectangles inside
         this.rawSelectionNode = this.addNonMorph(NodeList.withType('Selection'));
         this.rawSelectionNode.setAttributeNS(null, "fill", this.selectionColor);
         this.rawSelectionNode.setAttributeNS(null, "stroke-width", 0);
-        this.font = Font.forFamily(this.fontFamily, this.fontSize);
+
+        this.rawTextNode = NodeFactory.create("text", { "kerning": 0 });
+        this.addNonMorph(this.rawTextNode);
+	this.resetRendering();
 
         this.rawNode.setAttributeNS(Namespace.LIVELY, "wrap", this.wrap);
         // KP: set attributes on the text elt, not on the morph, so that we can retrieve it
@@ -733,7 +721,7 @@ scope.TextMorph = Morph.subclass("TextMorph", {
             }
         }
         this.textString = content.join("");
-
+	
         var fontFamily = rawTextNode.getAttributeNS(null, "font-family");
         var fontSize = rawTextNode.getAttributeNS(null, "font-size");
         this.font = Font.forFamily(fontFamily, fontSize);
@@ -769,7 +757,7 @@ scope.TextMorph = Morph.subclass("TextMorph", {
     
     bounds: function($super) {
         if (this.fullBounds != null) return this.fullBounds;
-        this.destroyRawTextNode();
+        this.resetRendering();
         this.fitText(); // adjust bounds or text for fit
     
         return $super();
@@ -889,29 +877,21 @@ scope.TextMorph = Morph.subclass("TextMorph", {
     ensureRendered: function() { // created on demand and cached
         if (this.ensureTextString() == null) return null;
         
-        if (this.rawTextNode == null) {
-
-            var node  = NodeFactory.create("text", { "kerning": 0 });
-
-            node.setAttributeNS(null, "fill", this.textColor);
-            node.setAttributeNS(null, "font-size", this.font.getSize());
-            node.setAttributeNS(null, "font-family", this.font.getFamily());
-
-            this.rawTextNode = this.addNonMorph(node);
-
+	if (!this.rawTextNode.firstChild)
             this.renderText(this.textTopLeft(), this.compositionWidth());
-
-        }
+	
         return this.rawTextNode; 
     },
 
-    destroyRawTextNode: function() {
-        if (this.rawTextNode) {
-            this.rawTextNode.parentNode.removeChild(this.rawTextNode);
-            this.lines = null;
-            this.lineNumberHint = 0;
-            this.rawTextNode = null;
-        }
+    resetRendering: function() {
+        while (this.rawTextNode.firstChild) {
+	    this.rawTextNode.removeChild(this.rawTextNode.firstChild);
+	}
+        this.rawTextNode.setAttributeNS(null, "fill", this.textColor);
+        this.font = Font.forFamily(this.fontFamily, this.fontSize);
+	this.font.applyTo(this.rawTextNode);
+        this.lines = null;
+        this.lineNumberHint = 0;
     },
 
     ensureTextString: function() { 
@@ -924,7 +904,8 @@ scope.TextMorph = Morph.subclass("TextMorph", {
         this.ensureRendered();
         if (this.lines) {
             var line = this.lineForIndex(index);
-            return line == null ? null : line.getBounds(index); 
+	    // KP: note copy to avoid inadvertent modifications
+            return line == null ? null : line.getBounds(index).copy(); 
         } else return null;
     },
 
@@ -944,7 +925,7 @@ scope.TextMorph = Morph.subclass("TextMorph", {
         var startIndex = 0;
         var stopIndex = this.textString.length - 1;
         var topLeft = initialTopLeft.copy();
-        var chunkSkeleton;
+        var chunkSkeleton = null;
 
         while (startIndex <= stopIndex) {
             var line = new TextLine(this.textString, startIndex, topLeft, font, chunkSkeleton);
@@ -995,7 +976,6 @@ scope.TextMorph = Morph.subclass("TextMorph", {
                 return line; 
             }
         }
-    
         return null; 
     },
     
@@ -1083,7 +1063,7 @@ scope.TextMorph = Morph.subclass("TextMorph", {
         // DI: This should just say, eg, this.shape.setBottomRight(bottomRight);
         if (this.wrap === WrapStyle.NONE)
             with (this.shape) { setBounds(bounds().withHeight(bottomRight.y - bounds().y))};
-
+	
         if (this.wrap === WrapStyle.SHRINK)
             with (this.shape) { setBounds(bounds().withBottomRight(bottomRight))};
     },
@@ -1478,7 +1458,7 @@ TextMorph.addMethods({
         this.textString = replacement;
         this.recordChange('textString');
     
-        this.destroyRawTextNode();
+        this.resetRendering();
         this.layoutChanged(); 
         this.changed();
     },
@@ -1527,12 +1507,6 @@ TextMorph.addMethods({
     
     getFontFamily: function() {
         return this.font.getFamily();
-    },
-    
-    setFontFamilyAndSize: function(familyName, newSize) {
-        // Avoids creating an extra font
-        this.fontFamily = familyName;
-        this.setFontSize(newSize);
     },
     
     setFontFamily: function(familyName) {
