@@ -118,12 +118,12 @@ Object.subclass("TextWord", {
 
     naiveGetX: function() {
         // not this won't work if the attribute is not explicitly set etc
-        return parseInt(this.rawNode.getAttribute("x"));
+        return Converter.parseCoordinate(this.rawNode.getAttribute("x"));
     },
     
     naiveGetY: function() {
         // not this won't work if the attribute is not explicitly set etc
-        return parseInt(this.rawNode.getAttribute("y"));
+        return Converter.parseCoordinate(this.rawNode.getAttribute("y"));
     },
 
     setX: function(newValue /*:float*/) {
@@ -153,7 +153,7 @@ Object.subclass("TextWord", {
     getFontSize: function() {
         for (var node = this.rawNode; node && (/text|tspan/).test(node.tagName); node = node.parentNode) {
             var result = node.getAttribute("font-size");
-            if (result) return parseInt(result);
+            if (result) return Converter.parseLength(result);
         }
         return 0; // Should we return a default size?
     },
@@ -702,14 +702,14 @@ scope.TextMorph = Morph.subclass("TextMorph", {
         for (var child = rawTextNode.firstChild; child != null; child = child.nextSibling) {
             if (child.tagName == 'tspan')  {
                 var word = new TextWord(importer, child);
-                var lead = parseInt(word.rawNode.getAttributeNS(Namespace.LIVELY, "lead"));
+                var lead = Converter.parseLength(word.rawNode.getAttributeNS(Namespace.LIVELY, "lead"));
                 if (lead) {
                     for (var j = 0; j < lead; j++) content.push(" ");
                 }
 
                 content.push(word.rawNode.textContent); 
 
-                var trail = parseInt(word.rawNode.getAttributeNS(Namespace.LIVELY, "trail"));
+                var trail = Converter.parseLength(word.rawNode.getAttributeNS(Namespace.LIVELY, "trail"));
                 if (trail) {
                     for (var j = 0; j < trail; j++) 
                         content.push(" ");
@@ -722,9 +722,9 @@ scope.TextMorph = Morph.subclass("TextMorph", {
         }
         this.textString = content.join("");
 	
-        var fontFamily = rawTextNode.getAttributeNS(null, "font-family");
-        var fontSize = rawTextNode.getAttributeNS(null, "font-size");
-        this.font = Font.forFamily(fontFamily, fontSize);
+        this.fontFamily = rawTextNode.getAttributeNS(null, "font-family");
+        this.fontSize = Converter.parseLength(rawTextNode.getAttributeNS(null, "font-size"));
+        this.font = Font.forFamily(this.fontFamily, this.fontSize);
         this.textColor = Color.parse(rawTextNode.getAttributeNS(null, "fill"));
     },
 
@@ -1521,7 +1521,7 @@ TextMorph.addMethods({
     setFontSize: function(newSize) {
         this.fontSize = newSize;
         this.font = Font.forFamily(this.fontFamily, newSize);
-        this.inset = pt(newSize/2+2, newSize/3);
+	this.setInset(pt(newSize/2+2, newSize/3));
         this.layoutChanged();
         this.changed();
     },

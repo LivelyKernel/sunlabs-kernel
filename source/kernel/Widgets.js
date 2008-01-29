@@ -192,8 +192,8 @@ var ImageMorph = Morph.subclass("ImageMorph", {
                 // this brittle and annoying piece of code is a workaround around the likely brokenness
                 // of Safari's XMLSerializer's handling of namespaces
                 this.removeChild(image);
-                this.dim = pt(parseInt(image.getAttributeNS(null, "width")), 
-                              parseInt(image.getAttributeNS(null, "height")));
+                this.dim = pt(Converter.parseLength(image.getAttributeNS(null, "width")), 
+                              Converter.parseLength(image.getAttributeNS(null, "height")));
                 var href = image.getAttributeNS(null /* "xlink"*/, "href");
                 this.loadURL(href);
             } else {

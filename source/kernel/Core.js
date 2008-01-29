@@ -567,8 +567,23 @@ Object.extend(String.prototype, {
         return ss.substr(0,len);
     }
 
-
 });
+
+Converter = {
+    parseLength: function(string) {
+	// convert into system coords (pt?)
+	// FIXME: handle units
+	return parseFloat(string);
+    },
+
+    parseCoordinate: function(string) {
+	// convert into system coords (pt?)
+	// FIXME: handle units
+	return parseFloat(string);
+    }
+};
+
+
 
 /**
  * Extensions to class Number
@@ -681,7 +696,7 @@ Object.extend(Point, {
 
     parse: function(string) { // reverse of inspect
         var array = string.substring(3, string.length - 1).split(',');
-        return new Point(array[0], array[1]);
+        return new Point(Converter.parseCoordinate(array[0]), Converter.parseCoordinate(array[1]));
     },
     
     ensure: function(duck) { // make sure we have a Lively point
@@ -1667,7 +1682,7 @@ Wrapper.subclass('Visual', {
 
     getStrokeWidth: function() {
         // FIXME stroke-width can have units
-        return parseFloat(this.rawNode.getAttributeNS(null, "stroke-width"));
+        return Converter.parseLength(this.rawNode.getAttributeNS(null, "stroke-width"));
     },
  
     setFillOpacity: function(alpha) {
