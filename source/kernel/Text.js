@@ -350,12 +350,12 @@ Object.subclass('TextLine', {
 
     // is the character 'c' what we consider to be whitespace? (private)
     isWhiteSpace: function(c) {
-	return (c == ' ' || c == '\t' || c == '\r' || c == '\n');
+        return (c == ' ' || c == '\t' || c == '\r' || c == '\n');
     },
     
     // is the character 'c' what we consider to be a newline? (private)
     isNewLine: function(c) {
-	return (c == '\r' || c == '\n');
+        return (c == '\r' || c == '\n');
     },
 
     // we found a word so figure out where the chunk extends to (private)
@@ -410,7 +410,7 @@ Object.subclass('TextLine', {
         var mostRecentBounds = this.topLeft.asRectangle();
         var lastWord = null;
         var leadingSpaces = 0;
-	
+
         // a way to optimize out repeated scanning
         if (this.chunks == null) {
             this.chunks = this.chunkFromString(this.textString, this.startIndex);
@@ -439,9 +439,9 @@ Object.subclass('TextLine', {
                 }
                 runningStartIndex = c.start + c.length;
             } else {
-		lastWord = new TextWord(this.textString, c.start, pt(mostRecentBounds.maxX(), this.topLeft.y), this.font);
+                lastWord = new TextWord(this.textString, c.start, pt(mostRecentBounds.maxX(), this.topLeft.y), this.font);
                 c.word = lastWord;
-		
+
                 if (leadingSpaces) { 
                     lastWord.rawNode.setAttributeNS(Namespace.LIVELY, "lead", leadingSpaces);
                     leadingSpaces = 0;
@@ -677,7 +677,7 @@ scope.TextMorph = Morph.subclass("TextMorph", {
 
         this.rawTextNode = NodeFactory.create("text", { "kerning": 0 });
         this.addNonMorph(this.rawTextNode);
-	this.resetRendering();
+        this.resetRendering();
 
         this.rawNode.setAttributeNS(Namespace.LIVELY, "wrap", this.wrap);
         // KP: set attributes on the text elt, not on the morph, so that we can retrieve it
@@ -721,7 +721,7 @@ scope.TextMorph = Morph.subclass("TextMorph", {
             }
         }
         this.textString = content.join("");
-	
+
         this.fontFamily = rawTextNode.getAttributeNS(null, "font-family");
         this.fontSize = Converter.parseLength(rawTextNode.getAttributeNS(null, "font-size"));
         this.font = Font.forFamily(this.fontFamily, this.fontSize);
@@ -877,19 +877,20 @@ scope.TextMorph = Morph.subclass("TextMorph", {
     ensureRendered: function() { // created on demand and cached
         if (this.ensureTextString() == null) return null;
         
-	if (!this.rawTextNode.firstChild)
+        if (!this.rawTextNode.firstChild) {
             this.renderText(this.textTopLeft(), this.compositionWidth());
-	
+        }
+
         return this.rawTextNode; 
     },
 
     resetRendering: function() {
         while (this.rawTextNode.firstChild) {
-	    this.rawTextNode.removeChild(this.rawTextNode.firstChild);
-	}
+            this.rawTextNode.removeChild(this.rawTextNode.firstChild);
+        }
         this.rawTextNode.setAttributeNS(null, "fill", this.textColor);
         this.font = Font.forFamily(this.fontFamily, this.fontSize);
-	this.font.applyTo(this.rawTextNode);
+        this.font.applyTo(this.rawTextNode);
         this.lines = null;
         this.lineNumberHint = 0;
     },
@@ -904,7 +905,7 @@ scope.TextMorph = Morph.subclass("TextMorph", {
         this.ensureRendered();
         if (this.lines) {
             var line = this.lineForIndex(index);
-	    // KP: note copy to avoid inadvertent modifications
+            // KP: note copy to avoid inadvertent modifications
             return line == null ? null : line.getBounds(index).copy(); 
         } else return null;
     },
@@ -1061,11 +1062,13 @@ scope.TextMorph = Morph.subclass("TextMorph", {
         var bottomRight = this.inset.addXY(maxX,maxY);
 
         // DI: This should just say, eg, this.shape.setBottomRight(bottomRight);
-        if (this.wrap === WrapStyle.NONE)
+        if (this.wrap === WrapStyle.NONE) {
             with (this.shape) { setBounds(bounds().withHeight(bottomRight.y - bounds().y))};
-	
-        if (this.wrap === WrapStyle.SHRINK)
+        }
+
+        if (this.wrap === WrapStyle.SHRINK) {
             with (this.shape) { setBounds(bounds().withBottomRight(bottomRight))};
+        }
     },
 
     showsSelectionWithoutFocus: function() { 
@@ -1521,7 +1524,7 @@ TextMorph.addMethods({
     setFontSize: function(newSize) {
         this.fontSize = newSize;
         this.font = Font.forFamily(this.fontFamily, newSize);
-	this.setInset(pt(newSize/2+2, newSize/3));
+        this.setInset(pt(newSize/2+2, newSize/3));
         this.layoutChanged();
         this.changed();
     },

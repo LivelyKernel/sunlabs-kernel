@@ -569,22 +569,6 @@ Object.extend(String.prototype, {
 
 });
 
-Converter = {
-    parseLength: function(string) {
-	// convert into system coords (pt?)
-	// FIXME: handle units
-	return parseFloat(string);
-    },
-
-    parseCoordinate: function(string) {
-	// convert into system coords (pt?)
-	// FIXME: handle units
-	return parseFloat(string);
-    }
-};
-
-
-
 /**
  * Extensions to class Number
  */  
@@ -609,6 +593,26 @@ Object.extend(Number.prototype, {
     }
 
 });
+
+/**
+ * @class Converter
+ */
+
+Converter = {
+
+    parseLength: function(string) {
+        // convert into system coords (pt?)
+        // FIXME: handle units
+        return parseFloat(string);
+    },
+
+    parseCoordinate: function(string) {
+        // convert into system coords (pt?)
+        // FIXME: handle units
+        return parseFloat(string);
+    }
+
+};
 
 // ===========================================================================
 // Graphics foundations
@@ -1555,7 +1559,7 @@ var Event = (function() {
     Event.extend = function () {} // dummy function to fool prototype.js
 
     Object.extend(Event, {
-	// copied from prototype.js:
+        // copied from prototype.js:
         KEY_BACKSPACE: 8,
         KEY_TAB:       9,
         KEY_RETURN:   13,
@@ -1570,9 +1574,10 @@ var Event = (function() {
         KEY_PAGEUP:   33,
         KEY_PAGEDOWN: 34,
         KEY_INSERT:   45,
-	
-	// not in prototype.js:
-	KEY_SPACEBAR: 32,
+
+        // not in prototype.js:
+        KEY_SPACEBAR: 32,
+
         Safari: {
             KEY_LEFT: 63234,
             KEY_UP: 63232,
@@ -1584,7 +1589,7 @@ var Event = (function() {
             KEY_PAGE_UP: 63276,
             KEY_PAGE_DOWN: 63277
         }
-	
+
     });
 
     var capitalizer = $H({ mouseup: 'MouseUp', mousedown: 'MouseDown', mousemove: 'MouseMove', 
@@ -1620,7 +1625,7 @@ if (!Prototype.Browser.Rhino) Object.extend(document, {
     oncontextmenu: function(evt) { 
         var targetMorph = evt.target.parentNode; // target is probably shape (change me if pointer-events changes for shapes)
         if ((targetMorph instanceof Morph) 
-	    && !(targetMorph instanceof WorldMorph)) {
+            && !(targetMorph instanceof WorldMorph)) {
             evt.preventDefault();
             var topElement = (evt.currentTarget.nearestViewportElement || Canvas).parentNode;
             evt.mousePoint = pt(evt.pageX - (topElement.offsetLeft || 0), 
