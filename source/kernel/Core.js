@@ -89,6 +89,40 @@ Object.extend(String.prototype, {
 
 // console handling
 (function() { 
+    // from firebug lite
+    function escapeHTML(value) {
+	return value;
+	function replaceChars(ch) {
+	    switch (ch) {
+            case "<":
+		return "&lt;";
+            case ">":
+		return "&gt;";
+            case "&":
+		return "&amp;";
+            case "'":
+		return "&#39;";
+            case '"':
+		return "&quot;";
+	    }
+	    return "?";
+	}
+	return String(value).replace(/[<>&"']/g, replaceChars); // " ])
+    }
+    
+    function LogWindow() {
+	this.win = (function() { 
+	    var win = window.open("", "log", "scrollbars,width=900,height=300"); 
+	    win.title = "Lively Kernel Log";
+	    win.document.write("<pre>"); 
+	    return win; 
+	})();
+	
+	this.log = function(msg) {
+	    if (!this.win) return;
+	    this.win.document.writeln(escapeHTML(msg));
+	}
+    };
     
     var platformConsole = window.console || window.parent.console; 
     if (!platformConsole) {
@@ -103,7 +137,7 @@ Object.extend(String.prototype, {
         // rebind to something that has all the calls
         window.console = {
 
-            consumers: [ platformConsole ],
+            consumers: [ platformConsole], // new LogWindow() ],
     
             warn: function() {
                 var args = $A(arguments);
@@ -2545,7 +2579,7 @@ Morph = Visual.subclass("Morph", {
     openForDragAndDrop: true, // Submorphs can be extracted from or dropped into me
     mouseHandler: MouseHandlerForDragging, //a MouseHandler for mouse sensitivity, etc
     stepHandler: null, // a stepHandler for time-varying morphs and animation 
-    noShallowCopyProperties: ['id', 'rawNode', 'rawSubnodes', 'shape', 'submorphs', 'stepHandler', 'defs', 'activeScripts'],
+    noShallowCopyProperties: ['id', 'rawNode', 'rawSubnodes', 'shape', 'submorphs', 'stepHandler', 'defs', 'activeScripts', 'nextNavigableSibling'],
 
     suppressBalloonHelp: Config.suppressBalloonHelp,
 
@@ -2632,7 +2666,8 @@ Morph = Visual.subclass("Morph", {
         } 
 
         if (other.defs) {
-            this.addNonMorph(this.defs = this.restoreDefs(other.defs.cloneNode(true)));
+	    this.restoreDefs(other.defs);
+            this.addNonMorph(this.defs);
         }
 
         if (other.clipPath) {
@@ -2673,42 +2708,48 @@ Morph = Visual.subclass("Morph", {
 
     restoreDefs: function(node) {
         // FIXME FIXME, this is painfully ad hoc!
-        if (this.defs) console.warn('%s already has defs %s', this, this.defs);
+        if (!this.defs) 
+	    this.defs = node.cloneNode(false);
+
         for (var def = node.firstChild; def != null; def = def.nextSibling) {
+	    var newDef = def.cloneNode(true);
             switch (def.tagName) {
             case "clipPath":
                 var newPathId = "clipPath_" + this.id;
                 var myClipPath = this.rawNode.getAttributeNS(null, 'clip-path');
                 if (myClipPath) {
                     this.rawNode.setAttributeNS(null, 'clip-path', 'url(#'  + newPathId + ')');
-                    this.clipPath = def;
+                    this.clipPath = newDef;
                 } else { 
                     console.log('myClip is undefined on %s', this); 
                 }
-                def.setAttribute('id', newPathId);
-                console.log('assigned new id %s', def.getAttribute('id'));
+                newDef.setAttribute('id', newPathId);
+                //console.log('assigned new id %s', newDef.getAttribute('id'));
+		this.defs.appendChild(newDef);
                 break;
             case "linearGradient":
             case "radialGradient": // FIXME gradients can be used on strokes too
-                var newFillId = "fill_" + this.id;
+                var newFillId = "gradient_" + this.id;
+                newDef.setAttribute('id', newFillId);
+		// console.log("made def " + Exporter.nodeToString(newDef));
                 if (this.shape) {
                     var myFill = this.shape.rawNode.getAttributeNS(null, 'fill');
                     if (myFill) {
                         this.shape.rawNode.setAttributeNS(null, 'fill', 'url(#' + newFillId + ')');
-                        this.fill = def;
+                        this.fill = newDef;
                     } else {
                         console.warn('myFill undefined on %s', this);
                     }
                 } else {
                     console.warn('ouch, cant set fill %s yet, no shape...', newFillId);
                 }
-                def.setAttribute('id', newFillId);
+		this.defs.appendChild(newDef);
                 break;
             default:
-                console.warn('unknown def %s', def);
+                console.warn('unknown def %s', newDef);
             }
         }
-        return node;
+	this.addNonMorph(this.defs);
     },
 
     restoreFromSubnodes: function(importer) {
@@ -2747,7 +2788,9 @@ Morph = Visual.subclass("Morph", {
                 this.shape = new PolygonShape(importer, node);
                 break;
             case "defs": 
-                this.defs = this.restoreDefs(node);
+		node.parentNode.removeChild(node);
+                this.restoreDefs(node);
+		this.addNonMorph(this.defs);
                 break;
             case "text": // this shouldn't be triggered in non-TextMorphs
                 this.restoreText(importer, node);
@@ -5499,7 +5542,6 @@ Morph.subclass("LinkMorph", {
         oldWorld.remove();
         
         console.log('left world %s through %s', oldWorld, this);
-        // Canvas.appendChild(this.myWorld);
     
         // display world first, then add hand, order is important!
         var newWorld = this.myWorld;
