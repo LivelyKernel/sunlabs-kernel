@@ -541,71 +541,15 @@
      style="opacity:1.0000000;fill:url(#linearGradient11147);fill-opacity:1.0000000;fill-rule:evenodd;stroke:none;stroke-width:0.25000000pt;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1.0000000;"
      d="M 829.65625,-0.50000025 C 1031.4017,557.04606 845.39092,808.53061 580.62500,960.50000 L 825.75000,960.50000 C 904.33533,619.24414 1060.6764,323.51245 1073.2812,-0.50000025 L 829.65625,-0.50000025 z "
      id="path4930" />
-<!--
-  <rect
-     style="fill:url(#linearGradient1158);fill-opacity:1.0000000;fill-rule:evenodd;stroke:none;stroke-width:1.2641267;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4.0000000;stroke-dashoffset:0.0000000;stroke-opacity:0.53846157"
-     id="rect1157"
-     width="1280.0000"
-     height="960.00000"
-     x="1.5987212e-14"
-     y="1.1352537e-07" />
-
-  <path
-     style="opacity:1.0000000;fill:url(#linearGradient1811);fill-opacity:1.0;fill-rule:evenodd;stroke:none;stroke-width:0.25000000pt;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1.0000000;"
-     d="M 998.64315,0.12143725 C 1178.5884,346.48963 979.64602,613.84975 763.74942,960.21179 L 227.12670,959.99461 C 651.81793,559.41702 1097.6512,512.65965 1135.4391,-0.15054875 L 998.64315,0.12143725 z "
-     />
-  <path
-     style="opacity:1.0000000;fill:url(#linearGradient3061);fill-opacity:1.0;fill-rule:evenodd;stroke:none;stroke-width:0.25000000pt;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1.0000000;"
-     d="M 1191.6322,-0.054393750 L 1279.5057,0.026825250 C 1202.3723,340.29241 1121.0153,603.28417 1279.6757,959.65988 L 1062.2333,960.08122 C 884.53364,723.31105 1118.8925,258.68414 1191.6322,-0.054393750 z "
-     />
--->
-<!--
-  <rect
-     style="stroke:none;fill:none;fill-opacity:0.35159817;opacity:1.0000000;fill-rule:nonzero;stroke-opacity:1.0000000;stroke-linejoin:round;"
-     width="176.62337"
-     height="177.46243"
-     x="876.94055"
-     y="614.13489"
-     />
-  <path 
-     style="opacity:1.0000000;fill:url(#linearGradient1357);fill-opacity:1.0;fill-rule:nonzero;stroke:none;stroke-width:1.2500000;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4.0000000;stroke-dashoffset:0.0000000;stroke-opacity:1.0000000;"
-     d="M -1.0449995,-4.9737992e-14 L -1.0449995,509.30198 C 628.20728,497.68494 637.42476,319.15544 1281.0450,311.40751 L 1281.0450,-4.9737992e-14 L -1.0449995,-4.9737992e-14 z "
-     />
--->
-
 
 </g>
-
-
-<!--
-<rect id="ProtoRect" width="100"/> 
-
-<g id="TextSelectionStyle" morphic:type="Selection" fill="rgb(0,255,0)" stroke-width="0">  </g> 
-
-<filter id="DropShadowFilter" filterUnits="userSpaceOnUse" x="0" y="0" width="200" height="120">
-      <feGaussianBlur in="SourceAlpha" stdDeviation="4" result="blur"/>
-      <feOffset in="blur" dx="4" dy="4" result="offsetBlur"/>
-      <feSpecularLighting in="blur" surfaceScale="5" specularConstant=".75" 
-                          specularExponent="20" lighting-color="#bbbbbb"  
-                          result="specOut">
-        <fePointLight x="-5000" y="-10000" z="20000"/>
-      </feSpecularLighting>
-      <feComposite in="specOut" in2="SourceAlpha" operator="in" result="specOut"/>
-      <feComposite in="SourceGraphic" in2="specOut" operator="arithmetic" 
-                   k1="0" k2="1" k3="1" k4="0" result="litPaint"/>
-      <feMerge>
-        <feMergeNode in="offsetBlur"/>
-        <feMergeNode in="litPaint"/>
-      </feMerge>
-    </filter>
--->
 
 <script type="text/ecmascript" xlink:href="../prototype.js"/>
 <script type="text/ecmascript" xlink:href="../defaultconfig.js"/>
 <script type="text/ecmascript" xlink:href="../localconfig.js"/> <!-- ignored if file not there -->
 <script type="text/ecmascript" xlink:href="../Core.js"/>
 <script type="text/ecmascript" xlink:href="../Text.js"/>
-<script type="text/ecmascript" xlink:href="../svgtext-compat.js"/>
+<script type="text/ecmascript" xlink:href="svgtext-compat.js"/>
 <script type="text/ecmascript" xlink:href="../Widgets.js"/>
 <script type="text/ecmascript" xlink:href="../Tools.js"/>
 <script type="text/ecmascript" xlink:href="../Network.js"/>
@@ -614,7 +558,5 @@
 <script type="text/ecmascript" xlink:href="Tutorial03-Composing.js"/>
 </defs>
 
-<!--
--->
 </svg>
 
