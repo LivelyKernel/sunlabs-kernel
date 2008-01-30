@@ -1208,7 +1208,7 @@ Morph.subclass("PanelMorph", {
             var sub = this.submorphs[i];
             var subBnds = sub.innerBounds();
             sub.setPosition(sub.getPosition().scaleByPt(scalePt));
-            sub.setExtent(sub.getExtent().scaleByPt(scalePt));
+	    sub.setExtent(sub.getExtent().scaleByPt(scalePt));
         }
     },
 
@@ -1630,7 +1630,7 @@ var SliderMorph = Morph.subclass("SliderMorph", {
         // This method adjusts the slider for changes in value as well as geometry
         var val = this.getValue();
         var bnds = this.shape.bounds();
-        var ext = this.getExtent();
+        var ext = this.getSliderExtent();
     
         if (this.vertical()) { // more vertical...
             var elevPix = Math.max(ext*bnds.height,8); // thickness of elevator in pixels
@@ -1666,7 +1666,7 @@ var SliderMorph = Morph.subclass("SliderMorph", {
     
         var p = this.localize(evt.mousePoint).subPt(this.hitPoint);
         var bnds = this.shape.bounds();
-        var ext = this.getExtent();
+        var ext = this.getSliderExtent();
         var elevPix = Math.max(ext*bnds.height,6); // thickness of elevator in pixels
     
 
@@ -1685,7 +1685,7 @@ var SliderMorph = Morph.subclass("SliderMorph", {
     handlesMouseDown: function(evt) { return !evt.isAltDown(); },
     onMouseDown: function(evt) {
         this.requestKeyboardFocus(evt.hand);
-        var inc = this.getExtent();
+        var inc = this.getSliderExtent();
         var newValue = this.getValue();
 
         var delta = this.localize(evt.mousePoint).subPt(this.slider.bounds().center());
@@ -1709,7 +1709,7 @@ var SliderMorph = Morph.subclass("SliderMorph", {
     updateView: function(aspect, controller) {
         var p = this.modelPlug;
         if (p) {
-            if (aspect == p.getValue || aspect == p.getExtent || aspect == 'all') this.adjustForNewBounds();
+            if (aspect == p.getValue || aspect == p.getSliderExtent || aspect == 'all') this.adjustForNewBounds();
             return;
         }
     },
@@ -1722,8 +1722,8 @@ var SliderMorph = Morph.subclass("SliderMorph", {
         if (this.modelPlug) this.setModelValue('setValue', value * this.scale);
     },
 
-    getExtent: function() {
-        if (this.modelPlug) return this.getModelValue('getExtent',(0.0));
+    getSliderExtent: function() {
+        if (this.modelPlug) return this.getModelValue('getSliderExtent',(0.0));
     },
 
     takesKeyboardFocus: function() { 
@@ -1755,7 +1755,7 @@ var SliderMorph = Morph.subclass("SliderMorph", {
             }    
         }
         this.adjustForNewBounds();
-        this.setValue(this.clipValue(this.getValue() + delta * this.getExtent()));
+        this.setValue(this.clipValue(this.getValue() + delta * this.getSliderExtent()));
         evt.stop();
         return true;
     }
@@ -1787,7 +1787,7 @@ var ScrollPane = Morph.subclass("ScrollPane", {
         // Add a scrollbar
         this.scrollBar = this.addMorph(new SliderMorph(bnds.withTopLeft(clipR.topRight())));
         this.scrollBar.connectModel({model: this, getValue: "getScrollPosition", setValue: "setScrollPosition", 
-                                getExtent: "getVisibleExtent"});
+                                getSliderExtent: "getVisibleExtent"});
 
         // suppress handles throughout
         [this, this.clipMorph, morphToClip, this.scrollBar].map(function(m) {m.suppressHandles = true});

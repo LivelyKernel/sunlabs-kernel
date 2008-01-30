@@ -2464,7 +2464,7 @@ Copier.subclass('Importer', {
         var morphs = [];
         for (var node = container.firstChild; node != null; node = node.nextSibling) {
             // console.log("found node " + Exporter.nodeToString(node));
-            if (node.tagName == "g") {
+            if (node.localName == "g") {
                 morphs.push(this.importFromNode(node));
             }
         }
@@ -2485,8 +2485,7 @@ Copier.subclass('Importer', {
         var model = new SimpleModel(null);
         
         for (var node = ptree.firstChild; node != null; node = node.nextSibling) {
-            switch (node.tagName) {
-            case "a0:dependent": // Firefox cheat
+            switch (node.localName) {
             case "dependent":
                 var oldId = node.getAttributeNS(Namespace.LIVELY, "ref");
                 var dependent = this.lookupMorph(oldId);
@@ -2497,7 +2496,6 @@ Copier.subclass('Importer', {
                 dependent.modelPlug.model = model;
                 model.addDependent(dependent);
                 break;
-            case "a0:variable": // Firefox cheat
             case "variable":
                 var name = node.getAttributeNS(Namespace.LIVELY, "name");
                 var value = node.textContent;
@@ -2735,7 +2733,7 @@ Morph = Visual.subclass("Morph", {
 
         for (var i = 0; i < children.length; i++) {
             var node = children[i];
-            switch (node.tagName) {
+            switch (node.localName) {
             case "ellipse":
                 this.shape = new EllipseShape(importer, node);
                 break;
@@ -2762,7 +2760,6 @@ Morph = Visual.subclass("Morph", {
                 break;
             }
             // nodes from the Lively namespace
-            case "a0:action": // Firefox cheat
             case "action": {
                 var a = new SchedulableAction(importer, node);
                 a.actor = this;
@@ -2771,7 +2768,6 @@ Morph = Visual.subclass("Morph", {
                 // don't start the action until morph fully constructed
                 break;
             }
-            case "a0:model": // Firefox cheat
             case "model": {
                 if (modelNode) console.warn("%s already has modelNode %s", this, modelNode);
                 modelNode = node;
@@ -2779,7 +2775,6 @@ Morph = Visual.subclass("Morph", {
                 console.info("found modelNode %s", Exporter.nodeToString(node));
                 break;
             } 
-            case "a0:modelPlug": // Firefox cheat
             case "modelPlug": {
                 this.modelPlug = Model.becomePlugNode(node);
                 this.addNonMorph(this.modelPlug.rawNode);
@@ -2817,7 +2812,7 @@ Morph = Visual.subclass("Morph", {
             this.rawNode.removeChild(modelNode); // currently modelNode is not permanently stored 
         }
 
-    },//.logErrors('restoreFromSubnodes'),
+    },
     
     restoreContainer: function(element/*:Element*/, type /*:String*/, importer/*Importer*/)/*:Boolean*/ {
         switch (type) {
@@ -2827,7 +2822,6 @@ Morph = Visual.subclass("Morph", {
         default:
             return false;
         }
-        
     },
     
     initializePersistentState: function(initialBounds /*:Rectangle*/, shapeType/*:String*/) {
@@ -3771,7 +3765,7 @@ Morph.addMethods({
     },
 
     copyToHand: function(hand) {
-        Function.prototype.shouldTrace = true;
+        // Function.prototype.shouldTrace = true;
         var copy = this.copy(new Copier());
         console.log('copied %s', copy);
         // KP: is the following necessary?
@@ -4376,7 +4370,7 @@ Object.extend(Model, {
     becomePlugNode: function(node) {
         var plug = new ModelPlug(node);
         for (var acc = node.firstChild; acc != null;  acc = acc.nextSibling) {
-            if (acc.tagName != 'accessor') continue;
+            if (acc.localName != 'accessor') continue;
             plug[acc.getAttributeNS(Namespace.LIVELY, "formal")] = acc.getAttributeNS(Namespace.LIVELY, "actual");
         }
         return plug;
@@ -4936,8 +4930,9 @@ PasteUpMorph.subclass("WorldMorph", {
     },
 
     isLoadedFromNetwork: function() {
-        // TODO this is not foolproof
-        return window.location.protocol == "http:";
+        // TODO this is not foolproof. Note, batik doesn't have window.location
+	
+        return window.location ? window.location.protocol == "http:" : false;
     },
 
     makeShrinkWrappedWorldWith: function(morphs, filename) {
@@ -5027,7 +5022,7 @@ PasteUpMorph.subclass("WorldMorph", {
         if (!container) return null;
         var rawNodes = [];
         for (var node = container.firstChild; node != null; node = node.nextSibling) {
-            if (node.tagName != 'g') continue;
+            if (node.localName != 'g') continue;
             rawNodes.push(node);
         }
 
