@@ -1208,7 +1208,7 @@ Morph.subclass("PanelMorph", {
             var sub = this.submorphs[i];
             var subBnds = sub.innerBounds();
             sub.setPosition(sub.getPosition().scaleByPt(scalePt));
-	    sub.setExtent(sub.getExtent().scaleByPt(scalePt));
+            sub.setExtent(sub.getExtent().scaleByPt(scalePt));
         }
     },
 

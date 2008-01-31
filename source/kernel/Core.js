@@ -89,39 +89,42 @@ Object.extend(String.prototype, {
 
 // console handling
 (function() { 
+
     // from firebug lite
     function escapeHTML(value) {
-	return value;
-	function replaceChars(ch) {
-	    switch (ch) {
+        return value;
+
+        function replaceChars(ch) {
+            switch (ch) {
             case "<":
-		return "&lt;";
+                return "&lt;";
             case ">":
-		return "&gt;";
+                return "&gt;";
             case "&":
-		return "&amp;";
+                return "&amp;";
             case "'":
-		return "&#39;";
+                return "&#39;";
             case '"':
-		return "&quot;";
-	    }
-	    return "?";
-	}
-	return String(value).replace(/[<>&"']/g, replaceChars); // " ])
+                return "&quot;";
+            }
+            return "?";
+        }
+
+        return String(value).replace(/[<>&"']/g, replaceChars); // " ])
     }
     
     function LogWindow() {
-	this.win = (function() { 
-	    var win = window.open("", "log", "scrollbars,width=900,height=300"); 
-	    win.title = "Lively Kernel Log";
-	    win.document.write("<pre>"); 
-	    return win; 
-	})();
-	
-	this.log = function(msg) {
-	    if (!this.win) return;
-	    this.win.document.writeln(escapeHTML(msg));
-	}
+        this.win = (function() { 
+            var win = window.open("", "log", "scrollbars,width=900,height=300"); 
+            win.title = "Lively Kernel Log";
+            win.document.write("<pre>"); 
+            return win; 
+        })();
+
+        this.log = function(msg) {
+            if (!this.win) return;
+            this.win.document.writeln(escapeHTML(msg));
+        }
     };
     
     var platformConsole = window.console || window.parent.console; 
@@ -2666,7 +2669,7 @@ Morph = Visual.subclass("Morph", {
         } 
 
         if (other.defs) {
-	    this.restoreDefs(other.defs);
+            this.restoreDefs(other.defs);
             this.addNonMorph(this.defs);
         }
 
@@ -2708,11 +2711,10 @@ Morph = Visual.subclass("Morph", {
 
     restoreDefs: function(node) {
         // FIXME FIXME, this is painfully ad hoc!
-        if (!this.defs) 
-	    this.defs = node.cloneNode(false);
+        if (!this.defs) this.defs = node.cloneNode(false);
 
         for (var def = node.firstChild; def != null; def = def.nextSibling) {
-	    var newDef = def.cloneNode(true);
+            var newDef = def.cloneNode(true);
             switch (def.tagName) {
             case "clipPath":
                 var newPathId = "clipPath_" + this.id;
@@ -2725,13 +2727,13 @@ Morph = Visual.subclass("Morph", {
                 }
                 newDef.setAttribute('id', newPathId);
                 //console.log('assigned new id %s', newDef.getAttribute('id'));
-		this.defs.appendChild(newDef);
+                this.defs.appendChild(newDef);
                 break;
             case "linearGradient":
             case "radialGradient": // FIXME gradients can be used on strokes too
                 var newFillId = "gradient_" + this.id;
                 newDef.setAttribute('id', newFillId);
-		// console.log("made def " + Exporter.nodeToString(newDef));
+                // console.log("made def " + Exporter.nodeToString(newDef));
                 if (this.shape) {
                     var myFill = this.shape.rawNode.getAttributeNS(null, 'fill');
                     if (myFill) {
@@ -2743,13 +2745,13 @@ Morph = Visual.subclass("Morph", {
                 } else {
                     console.warn('ouch, cant set fill %s yet, no shape...', newFillId);
                 }
-		this.defs.appendChild(newDef);
+                this.defs.appendChild(newDef);
                 break;
             default:
                 console.warn('unknown def %s', newDef);
             }
         }
-	this.addNonMorph(this.defs);
+        this.addNonMorph(this.defs);
     },
 
     restoreFromSubnodes: function(importer) {
@@ -2788,9 +2790,9 @@ Morph = Visual.subclass("Morph", {
                 this.shape = new PolygonShape(importer, node);
                 break;
             case "defs": 
-		node.parentNode.removeChild(node);
+                node.parentNode.removeChild(node);
                 this.restoreDefs(node);
-		this.addNonMorph(this.defs);
+                this.addNonMorph(this.defs);
                 break;
             case "text": // this shouldn't be triggered in non-TextMorphs
                 this.restoreText(importer, node);
@@ -4974,7 +4976,6 @@ PasteUpMorph.subclass("WorldMorph", {
 
     isLoadedFromNetwork: function() {
         // TODO this is not foolproof. Note, batik doesn't have window.location
-	
         return window.location ? window.location.protocol == "http:" : false;
     },
 
