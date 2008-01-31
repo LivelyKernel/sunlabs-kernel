@@ -1175,7 +1175,7 @@ Object.subclass('Wrapper', {
     },
 
     toMarkupString: function() {
-	return Exporter.nodeToString(this.rawNode);
+        return Exporter.nodeToString(this.rawNode);
     }
 
 });
@@ -2634,7 +2634,7 @@ Morph = Visual.subclass("Morph", {
         this.initializeTransientState(null);
 
         this.disableBrowserHandlers();        
-	
+
         if (this.activeScripts) {
             this.activeScripts.invoke('start', WorldMorph.current());
             // this.startSteppingScripts();
@@ -2683,8 +2683,7 @@ Morph = Visual.subclass("Morph", {
         } 
 
         if (other.defs) {
-	    this.restoreDefs(other.defs);
-
+            this.restoreDefs(other.defs);
         }
 
         if (other.clipPath) {
@@ -2718,9 +2717,8 @@ Morph = Visual.subclass("Morph", {
     },
 
     restorePersistentState: function(importer) {
-	var shouldDisable = this.rawNode.getAttributeNS(Namespace.LIVELY, "disable-mouse-events");
-	if (shouldDisable)
-	    this.ignoreEvents();
+        var shouldDisable = this.rawNode.getAttributeNS(Namespace.LIVELY, "disable-mouse-events");
+        if (shouldDisable) this.ignoreEvents();
         return; // override in subclasses
     },
 
@@ -2730,9 +2728,10 @@ Morph = Visual.subclass("Morph", {
 
     restoreDefs: function(node) {
         // FIXME FIXME, this is painfully ad hoc!
-        if (!this.defs) 
-	    this.defs = node.cloneNode(false);
-	// else console.log("preexisting defs " + Exporter.nodeToString(this.defs));
+        if (!this.defs) { 
+            this.defs = node.cloneNode(false);
+        }
+        // else console.log("preexisting defs " + Exporter.nodeToString(this.defs));
         for (var def = node.firstChild; def != null; def = def.nextSibling) {
             var newDef = def.cloneNode(true);
             switch (def.tagName) {
@@ -2758,8 +2757,8 @@ Morph = Visual.subclass("Morph", {
                     if (myFill) {
                         this.shape.rawNode.setAttributeNS(null, 'fill', 'url(#' + newFillId + ')');
                         this.fill = (def.tagName == "radialGradient" ? 
-				     new RadialGradient(Importer.marker, newDef) : new LinearGradient(Importer.marker, newDef));
-			// console.log("recreated fill " + this.fill.toMarkupString() + " for " + this);
+                            new RadialGradient(Importer.marker, newDef) : new LinearGradient(Importer.marker, newDef));
+                        // console.log("recreated fill " + this.fill.toMarkupString() + " for " + this);
                     } else {
                         console.warn('myFill undefined on %s', this);
                     }
@@ -2895,12 +2894,12 @@ Morph = Visual.subclass("Morph", {
         switch (shapeType) {
         case "ellipse":
             this.shape = new EllipseShape(initialBounds.translatedBy(this.origin.negated()),
-					  this.fill, this.borderWidth, this.borderColor);
+                             this.fill, this.borderWidth, this.borderColor);
             break;
         default:
             // polygons and polylines are set explicitly later
             this.shape = new RectShape(initialBounds.translatedBy(this.origin.negated()),
-				       this.fill, this.borderWidth, this.borderColor);
+                             this.fill, this.borderWidth, this.borderColor);
             break;
         }
 
@@ -2920,7 +2919,7 @@ Morph = Visual.subclass("Morph", {
     },
 
     id: function() {
-	return this.rawNode.getAttribute("id");
+        return this.rawNode.getAttribute("id");
     },
 
     // setup various things 
@@ -3421,13 +3420,13 @@ Morph.addMethods({
 
     transformToMorph: function(other) {
         // getTransformToElement has issues on some platforms
-	if (Prototype.Browser.Gecko && (other instanceof WorldMorph)) {
-	    // remove this hack when we move to calculating transforms ourselves 
-	    return this.getGlobalTransform();
-	}
+        if (Prototype.Browser.Gecko && (other instanceof WorldMorph)) {
+            // remove this hack when we move to calculating transforms ourselves 
+            return this.getGlobalTransform();
+        }
         
-	if (true) return this.rawNode.getTransformToElement(other.rawNode);
-	
+        if (true) return this.rawNode.getTransformToElement(other.rawNode);
+
         // not quite working yet
         var tfm = this.getGlobalTransform();
         var inv = other.getGlobalTransform().createInverse();
@@ -3594,12 +3593,12 @@ Morph.addMethods({
 
     ignoreEvents: function() { // will not respond nor get focus
         this.mouseHandler = null;
-	this.rawNode.setAttributeNS(Namespace.LIVELY, "disable-mouse-events", "true");
+        this.rawNode.setAttributeNS(Namespace.LIVELY, "disable-mouse-events", "true");
     },
     
     enableEvents: function() {
         this.mouseHandler = MouseHandlerForDragging;
-	this.rawNode.removeAttributeNS(Namespace.LIVELY, "disable-mouse-events");
+        this.rawNode.removeAttributeNS(Namespace.LIVELY, "disable-mouse-events");
     },
 
     relayMouseEvents: function(target, eventSpec) {
@@ -5551,13 +5550,13 @@ Morph.subclass("LinkMorph", {
     },
     
     initializeTransientState: function() {
-	this.openForDragAndDrop = false;
-	this.suppressHandles = true;
+        this.openForDragAndDrop = false;
+        this.suppressHandles = true;
     },
     
     restorePersistentState: function($super, importer) {
-	$super(importer);
-	if (!this.myWorld) this.myWorld = WorldMorph.current(); // a link to the current world: a reasonable default?
+        $super(importer);
+        if (!this.myWorld) this.myWorld = WorldMorph.current(); // a link to the current world: a reasonable default?
     },
 
     okToBeGrabbedBy: function(evt) {
@@ -5569,8 +5568,8 @@ Morph.subclass("LinkMorph", {
         var menu = $super(evt);
         var world = this.world();
         menu.addItem(["publish linked world as ... ", 
-		      function() { world.makeShrinkWrappedWorldWith(this.myWorld.submorphs, 
-								    world.prompt("world file (.xhtml)"));}]);
+            function() { world.makeShrinkWrappedWorldWith(this.myWorld.submorphs, 
+                             world.prompt("world file (.xhtml)"));}]);
         return menu;
     },
 

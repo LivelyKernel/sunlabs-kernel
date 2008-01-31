@@ -458,10 +458,10 @@ var TitleBarMorph = (function() {
         if (this.collapseButton) { this.collapseButton.setPosition(loc);  loc = loc.addPt(dx); }
         if (this.label) {
             this.label.align(this.label.bounds().topCenter(),
-            	this.innerBounds().topCenter().addXY(0, 1));
-	    if(this.label.bounds().topLeft().x < loc.x) {
-            	this.label.align(this.label.bounds().topLeft(), loc.addXY(0,-2));
-	    }
+            this.innerBounds().topCenter().addXY(0, 1));
+            if (this.label.bounds().topLeft().x < loc.x) {
+                this.label.align(this.label.bounds().topLeft(), loc.addXY(0,-2));
+            }
         }
     },
 
@@ -1594,7 +1594,7 @@ var SliderMorph = Morph.subclass("SliderMorph", {
     initializeTransientState: function($super, initialBounds) {
         $super(initialBounds);
         // FIXME make persistent ?
-	this.linkToStyles(['slider']);
+        this.linkToStyles(['slider']);
     },
 
     restorePersistentState: function($super, importer) {
@@ -1610,7 +1610,6 @@ var SliderMorph = Morph.subclass("SliderMorph", {
         this.scale = 1.0; // FIXME restore from markup
         //this.adjustForNewBounds();
     },
-
 
     vertical: function() {
         var bnds = this.shape.bounds();
