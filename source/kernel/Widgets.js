@@ -458,7 +458,10 @@ var TitleBarMorph = (function() {
         if (this.collapseButton) { this.collapseButton.setPosition(loc);  loc = loc.addPt(dx); }
         if (this.label) {
             this.label.align(this.label.bounds().topCenter(),
-            this.innerBounds().topCenter().addXY(0, 1).addPt(l0.midPt(loc).subPt(l0)));
+            	this.innerBounds().topCenter().addXY(0, 1));
+	    if(this.label.bounds().topLeft().x < loc.x) {
+            	this.label.align(this.label.bounds().topLeft(), loc.addXY(0,-2));
+	    }
         }
     },
 
