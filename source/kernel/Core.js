@@ -1168,10 +1168,14 @@ Object.subclass('Wrapper', {
     
     inspect: function() {
         try {
-            return this.toString() + "[" + Exporter.nodeToString(this.rawNode) + "]";
+            return this.toString() + "[" + this.toMarkupString() + "]";
         } catch (err) {
             return "#<inspect error: " + err + ">";
         }
+    },
+
+    toMarkupString: function() {
+	return Exporter.nodeToString(this.rawNode);
     }
 
 });
@@ -2389,7 +2393,7 @@ Object.subclass('Exporter', {
                 if (m instanceof Morph) {
                     var desc = NodeFactory.createNS(Namespace.LIVELY, "field");
                     desc.setAttributeNS(Namespace.LIVELY, "name", prop);
-                    desc.setAttributeNS(Namespace.LIVELY, "ref", m.id);
+                    desc.setAttributeNS(Namespace.LIVELY, "ref", m.id());
                     this.addNonMorph(desc);
                     fieldDescs.push(desc);
                 }
@@ -2402,7 +2406,7 @@ Object.subclass('Exporter', {
             } catch (er) { console.log("got problem, rawNode %s, modelNode %s", this.rootMorph.rawNode, modelNode); }
         }
 
-        var result = Exporter.nodeToString(this.rootMorph.rawNode);
+        var result = this.rootMorph.toMarkupString();
         if (modelNode) {
             this.rootMorph.rawNode.removeChild(modelNode);
         }
@@ -2554,6 +2558,16 @@ Copier.subclass('Importer', {
     
 });
 
+Importer.marker = Object.extend(new Importer(), {
+    
+    addMapping: function() { },
+
+    lookupMorph: function() { 
+        return null; 
+    }
+
+});
+
 /**
  * @class Morph
  * Implements the common functionality inherited by 
@@ -2620,7 +2634,7 @@ Morph = Visual.subclass("Morph", {
         this.initializeTransientState(null);
 
         this.disableBrowserHandlers();        
-
+	
         if (this.activeScripts) {
             this.activeScripts.invoke('start', WorldMorph.current());
             // this.startSteppingScripts();
@@ -2634,12 +2648,12 @@ Morph = Visual.subclass("Morph", {
 
         this.initializePersistentState(pt(0,0).asRectangle(), "rect");
 
-        this.initializeTransientState(null);
+
 
         if (other.hasSubmorphs()) { // deep copy of submorphs
             other.submorphs.each(function(m) { 
                 var copy = m.copy(copier);
-                copier.addMapping(m.id, copy);
+                copier.addMapping(m.id(), copy);
                 this.internalAddMorph(copy, false);
             }.bind(this));
         }
@@ -2650,7 +2664,7 @@ Morph = Visual.subclass("Morph", {
                 && !this.noShallowCopyProperties.include(p)) {
                 this[p] = other[p];
                 if (this[p] instanceof Morph && p !== 'owner') {
-                    var replacement = copier.lookupMorph(other[p].id);
+                    var replacement = copier.lookupMorph(other[p].id());
                     console.log("found replacement " + replacement + " for field " + p);
                     if (replacement) {
                         this[p] = replacement;
@@ -2669,8 +2683,8 @@ Morph = Visual.subclass("Morph", {
         } 
 
         if (other.defs) {
-            this.restoreDefs(other.defs);
-            this.addNonMorph(this.defs);
+	    this.restoreDefs(other.defs);
+
         }
 
         if (other.clipPath) {
@@ -2682,6 +2696,8 @@ Morph = Visual.subclass("Morph", {
         if (other.stepHandler != null) { 
             this.stepHandler = other.stepHandler.copyForOwner(this);
         }
+
+        this.initializeTransientState(null);
 
         if (other.activeScripts != null) { 
             for (var i = 0; i < other.activeScripts.length; i++) {
@@ -2702,6 +2718,9 @@ Morph = Visual.subclass("Morph", {
     },
 
     restorePersistentState: function(importer) {
+	var shouldDisable = this.rawNode.getAttributeNS(Namespace.LIVELY, "disable-mouse-events");
+	if (shouldDisable)
+	    this.ignoreEvents();
         return; // override in subclasses
     },
 
@@ -2711,13 +2730,14 @@ Morph = Visual.subclass("Morph", {
 
     restoreDefs: function(node) {
         // FIXME FIXME, this is painfully ad hoc!
-        if (!this.defs) this.defs = node.cloneNode(false);
-
+        if (!this.defs) 
+	    this.defs = node.cloneNode(false);
+	// else console.log("preexisting defs " + Exporter.nodeToString(this.defs));
         for (var def = node.firstChild; def != null; def = def.nextSibling) {
             var newDef = def.cloneNode(true);
             switch (def.tagName) {
             case "clipPath":
-                var newPathId = "clipPath_" + this.id;
+                var newPathId = "clipPath_" + this.id();
                 var myClipPath = this.rawNode.getAttributeNS(null, 'clip-path');
                 if (myClipPath) {
                     this.rawNode.setAttributeNS(null, 'clip-path', 'url(#'  + newPathId + ')');
@@ -2731,14 +2751,15 @@ Morph = Visual.subclass("Morph", {
                 break;
             case "linearGradient":
             case "radialGradient": // FIXME gradients can be used on strokes too
-                var newFillId = "gradient_" + this.id;
+                var newFillId = "gradient_" + this.id();
                 newDef.setAttribute('id', newFillId);
-                // console.log("made def " + Exporter.nodeToString(newDef));
                 if (this.shape) {
                     var myFill = this.shape.rawNode.getAttributeNS(null, 'fill');
                     if (myFill) {
                         this.shape.rawNode.setAttributeNS(null, 'fill', 'url(#' + newFillId + ')');
-                        this.fill = newDef;
+                        this.fill = (def.tagName == "radialGradient" ? 
+				     new RadialGradient(Importer.marker, newDef) : new LinearGradient(Importer.marker, newDef));
+			// console.log("recreated fill " + this.fill.toMarkupString() + " for " + this);
                     } else {
                         console.warn('myFill undefined on %s', this);
                     }
@@ -2792,7 +2813,6 @@ Morph = Visual.subclass("Morph", {
             case "defs": 
                 node.parentNode.removeChild(node);
                 this.restoreDefs(node);
-                this.addNonMorph(this.defs);
                 break;
             case "text": // this shouldn't be triggered in non-TextMorphs
                 this.restoreText(importer, node);
@@ -2875,12 +2895,12 @@ Morph = Visual.subclass("Morph", {
         switch (shapeType) {
         case "ellipse":
             this.shape = new EllipseShape(initialBounds.translatedBy(this.origin.negated()),
-                this.fill, this.borderWidth, this.borderColor);
+					  this.fill, this.borderWidth, this.borderColor);
             break;
         default:
             // polygons and polylines are set explicitly later
             this.shape = new RectShape(initialBounds.translatedBy(this.origin.negated()),
-                this.fill, this.borderWidth, this.borderColor);
+				       this.fill, this.borderWidth, this.borderColor);
             break;
         }
 
@@ -2894,9 +2914,13 @@ Morph = Visual.subclass("Morph", {
     
     pickId: function() {
         var previous = this.rawNode.getAttribute("id"); // this can happen when deserializing
-        this.id = Morph.newMorphId();
-        this.rawNode.setAttribute("id", this.id); // this may happen automatically anyway by setting the id property
+        var id = Morph.newMorphId(); // XXX remove
+        this.rawNode.setAttribute("id", id); // this may happen automatically anyway by setting the id property
         return previous;
+    },
+
+    id: function() {
+	return this.rawNode.getAttribute("id");
     },
 
     // setup various things 
@@ -2963,7 +2987,7 @@ Morph.addMethods({
             this.shape.setFill(fill.toString());
         } else if (fill instanceof Wrapper) { 
             var id = fill.rawNode.getAttribute("id");
-            var newId = "gradient_" + this.id;
+            var newId = "gradient_" + this.id();
             if (newId != id) {
                 this.fill = fill.copy(); 
                 this.fill.rawNode.setAttribute("id", newId);
@@ -2973,7 +2997,7 @@ Morph.addMethods({
                 this.addNonMorph(this.defs);
             }
             this.shape.setFill("url(#" + newId + ")");
-            this.defs.appendChild(this.fill.rawNode);
+            this.defs.appendChild(this.fill.rawNode); // append?
         }
     },
     
@@ -3196,7 +3220,7 @@ Morph.addMethods({
                 this[fieldname] = element = element.cloneNode(true);
             }
     
-            id = fieldname + '_' + this.id;
+            id = fieldname + '_' + this.id();
             element.setAttribute("id", id);
             this.defs.appendChild(element);
     
@@ -3344,10 +3368,27 @@ Morph.addMethods({
         // A replacement for toString() which can't be overridden in
         // some cases.  Invoked by Object.inspect.
         try {
-            return "%s(#%s,%s)".format(this.getType(), this.id, (this.shape || "").toString());
+            return "%s(#%s,%s)".format(this.getType(), this.id(), (this.shape || "").toString());
         } catch (e) {
-            console.log("toString failed on %s", [this.id, this.getType()]);
+            console.log("toString failed on %s", [this.id(), this.getType()]);
             return "#<Morph?{" + e + "}>";
+        }
+    },
+
+
+    inspect: function() {
+        try {
+            return this.toString();
+        } catch (err) {
+            return "#<inspect error: " + err + ">";
+        }
+    },
+
+    extendedInspect: function() {
+        try {
+            return this.toString() + "[" + this.toMarkupString() + "]";
+        } catch (err) {
+            return "#<inspect error: " + err + ">";
         }
     },
 
@@ -3380,8 +3421,13 @@ Morph.addMethods({
 
     transformToMorph: function(other) {
         // getTransformToElement has issues on some platforms
-        if (true) return this.rawNode.getTransformToElement(other.rawNode);
-
+	if (Prototype.Browser.Gecko && (other instanceof WorldMorph)) {
+	    // remove this hack when we move to calculating transforms ourselves 
+	    return this.getGlobalTransform();
+	}
+        
+	if (true) return this.rawNode.getTransformToElement(other.rawNode);
+	
         // not quite working yet
         var tfm = this.getGlobalTransform();
         var inv = other.getGlobalTransform().createInverse();
@@ -3548,10 +3594,12 @@ Morph.addMethods({
 
     ignoreEvents: function() { // will not respond nor get focus
         this.mouseHandler = null;
+	this.rawNode.setAttributeNS(Namespace.LIVELY, "disable-mouse-events", "true");
     },
     
     enableEvents: function() {
         this.mouseHandler = MouseHandlerForDragging;
+	this.rawNode.removeAttributeNS(Namespace.LIVELY, "disable-mouse-events");
     },
 
     relayMouseEvents: function(target, eventSpec) {
@@ -4380,7 +4428,7 @@ Object.subclass('Model', {
     // test?
     copyFrom: function(copier, other) {
         this.dependents = [];
-        other.dependents.each(function(dep) { this.dependents.push(copier.lookupMorph(dep.id)) });
+        other.dependents.each(function(dep) { this.dependents.push(copier.lookupMorph(dep.id())) });
     }
 
 });
@@ -4478,7 +4526,7 @@ Model.subclass('SimpleModel', {
         }
         for (var i = 0; i < this.dependents.length; i++) {
             var depEl = modelEl.appendChild(doc.createElementNS(Namespace.LIVELY, "dependent"));
-            depEl.setAttributeNS(Namespace.LIVELY, "ref", this.dependents[i].id);
+            depEl.setAttributeNS(Namespace.LIVELY, "ref", this.dependents[i].id());
         }
         console.log("produced markup " + modelEl);
         return modelEl;
@@ -5446,7 +5494,7 @@ Morph.subclass("HandMorph", function() {
     
     toString: function($super) { 
         var superString = $super();
-        var extraString = ", local=%s,id=%s".format(this.isLocal, this.id);
+        var extraString = ", local=%s,id=%s".format(this.isLocal, this.id());
         if (!this.hasSubmorphs()) return superString + ", an empty hand" + extraString;
         return "%s, a hand carrying %s%s".format(superString, this.topSubmorph(), extraString);
     }
@@ -5491,8 +5539,6 @@ Morph.subclass("LinkMorph", {
             lineMorph.ignoreEvents();
             this.addMorph(lineMorph);
         }.bind(this));
-        this.openForDragAndDrop = false;
-        this.suppressHandles = true;
 
         if (!otherWorld) {
             otherWorld = new WorldMorph(Canvas);
@@ -5504,6 +5550,16 @@ Morph.subclass("LinkMorph", {
         return this;
     },
     
+    initializeTransientState: function() {
+	this.openForDragAndDrop = false;
+	this.suppressHandles = true;
+    },
+    
+    restorePersistentState: function($super, importer) {
+	$super(importer);
+	if (!this.myWorld) this.myWorld = WorldMorph.current(); // a link to the current world: a reasonable default?
+    },
+
     okToBeGrabbedBy: function(evt) {
         this.enterMyWorld(evt); 
         return null; 
@@ -5512,10 +5568,9 @@ Morph.subclass("LinkMorph", {
     morphMenu: function($super, evt) { 
         var menu = $super(evt);
         var world = this.world();
-        menu.addItem(["publish linked world as ... ", function() { 
-            world.makeShrinkWrappedWorldWith(this.myWorld.submorphs, 
-                      world.prompt("world file (.xhtml)"));}
-        ]);
+        menu.addItem(["publish linked world as ... ", 
+		      function() { world.makeShrinkWrappedWorldWith(this.myWorld.submorphs, 
+								    world.prompt("world file (.xhtml)"));}]);
         return menu;
     },
 

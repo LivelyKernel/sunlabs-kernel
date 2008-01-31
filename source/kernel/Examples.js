@@ -2971,7 +2971,7 @@ var MapMorph = Morph.subclass("MapMorph", {
             for (var ix = 0; ix < 5; ix ++) {
                 if (this.images[iy][ix]) {
                     // pd("adding image " + this.images[this.iy][this.ix] + " ix " + this.ix + " iy " + this.iy,2);
-                    var imgId = "mapFragment_" + this.id + "_" + iy + "_" + ix;
+                    var imgId = "mapFragment_" + this.id() + "_" + iy + "_" + ix;
                     var oldImg = document.getElementById(imgId);
                     if (oldImg) {
                         oldImg.parentNode.removeChild(oldImg);

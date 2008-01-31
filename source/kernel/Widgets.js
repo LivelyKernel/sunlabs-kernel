@@ -1594,13 +1594,13 @@ var SliderMorph = Morph.subclass("SliderMorph", {
     initializeTransientState: function($super, initialBounds) {
         $super(initialBounds);
         // FIXME make persistent ?
-        this.linkToStyles(['slider']);
+	this.linkToStyles(['slider']);
     },
 
     restorePersistentState: function($super, importer) {
         $super(importer);
         this.slider = this.slider;
-        console.log("SliderMorph restored slider %s", this.slider);
+        //console.log("SliderMorph restored slider %s", this.slider);
         if (!this.slider) {
             console.warn('no slider in %s, %s', this, this.textContent);
            return;
@@ -1610,6 +1610,7 @@ var SliderMorph = Morph.subclass("SliderMorph", {
         this.scale = 1.0; // FIXME restore from markup
         //this.adjustForNewBounds();
     },
+
 
     vertical: function() {
         var bnds = this.shape.bounds();
