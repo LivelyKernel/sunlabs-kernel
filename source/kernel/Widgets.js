@@ -594,7 +594,6 @@ var WindowControlMorph = Morph.subclass("WindowControlMorph", {
         } else if (this.help.position() != evt.mousePoint) {
             this.help.setPosition(evt.mousePoint);
         }
-
         if (!this.help.owner) this.world().addMorph(this.help);
     },
     
@@ -894,6 +893,7 @@ var HandleMorph = (function () {
             this.help = new TextMorph(evt.mousePoint.extent(pt(200, 20)), 
                 this.shape instanceof RectShape ? this.controlHelpText : this.circleHelpText);
             this.help.beHelpBalloonFor(this);
+            if (!this.help.owner) this.world().addMorph(this.help);
         } 
     },
     
