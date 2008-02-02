@@ -205,7 +205,7 @@ Model.subclass('SimpleInspector', {
 
     getPropText: function() {
         if (this.selectedItem() == null) return "-----";
-        return Object.inspect(this.selectedItem()).withNiceDecimals();
+        return Object.inspect(this.selectedItem()).withDecimalPrecision(2);
     },
 
     setPropText: function(txt, v) { this.inspectee[this.propName] = eval(this, this.inspectee); },

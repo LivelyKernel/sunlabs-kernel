@@ -17,6 +17,7 @@ var Global = window;
 
 var Canvas = document.getElementById("canvas"); // singleton for now
 
+
 // ===========================================================================
 // Error/warning console
 // ===========================================================================
@@ -37,13 +38,14 @@ Object.extend(String.prototype, {
         function appendObject(object, string) {
             return "" + object;
         }
-
+	
         function appendInteger(value, string) {
             return value.toString();
         }
 
-        function appendFloat(value, string) {
-            return value.toString()
+        function appendFloat(value, string, precision) {
+	    if (precision > -1) return value.toFixed(precision);
+            else return value.toString();
         }
 
         var appenderMap = {s: appendText, d: appendInteger, i: appendInteger, f: appendFloat}; 
@@ -54,10 +56,9 @@ Object.extend(String.prototype, {
             var parts = [];
     
             for (var m = reg.exec(fmt); m; m = reg.exec(fmt)) {
-                var type = m[8] ? m[8] : m[5];
+                var type = m[8] || m[5];
                 var appender = type in appenderMap ? appenderMap[type] : appendObject;
                 var precision = m[3] ? parseInt(m[3]) : (m[4] == "." ? -1 : 0);
-
                 parts.push(fmt.substr(0, m[0][0] == "%" ? m.index : m.index + 1));
                 parts.push({appender: appender, precision: precision});
 
@@ -77,7 +78,7 @@ Object.extend(String.prototype, {
             var part = parts[i];
             if (part && typeof(part) == "object") {
                 var object = objects[objIndex++];
-                str += (part.appender || appendText)(object, str);
+                str += (part.appender || appendText)(object, str, part.precision);
             } else {
                 str += appendText(part, str);
             }
@@ -177,13 +178,10 @@ window.onerror = function(message, url, code) {
 // ===========================================================================
 
 Namespace =  {
-    SVG : "http://www.w3.org/2000/svg", // Canvas.getAttribute("xmlns"),
-    // Safari XMLSerializer seems to do weird things w/namespaces
-    // Opera apparently doesn't understand Canvas.getAttribute("foo:bar")
-    LIVELY : Prototype.Browser.WebKit ? null : "http://www.experimentalstuff.com/Lively", // Canvas.getAttribute("xmlns:lively"), 
-    XLINK : "http://www.w3.org/1999/xlink", //Canvas.getAttribute("xmlns:xlink"),
-    DAV : "DAV", //Canvas.getAttribute("xmlns:D"),
-    XHTML: document.documentElement.getAttribute("xmlns") 
+    SVG : "http://www.w3.org/2000/svg", 
+    LIVELY : UserAgent.usableNamespacesInSerializer ? "http://www.experimentalstuff.com/Lively"  : null, 
+    XLINK : "http://www.w3.org/1999/xlink", 
+    XHTML: "http://www.w3.org/1999/xhtml"
 };
 
 var Loader = {
@@ -486,7 +484,7 @@ if (Prototype.Browser.WebKit) {
     Error.prototype.inspect = function() {
         return this.name + " in " + this.sourceURL + ":" + this.line + ": " + this.message;
     }
-} else if (!Prototype.Browser.Rhino) { // Mozilla
+} else if (UserAgent.canExtendBrowserObjects) { // Mozilla
     Error.prototype.inspect = function() {
         return this.name + " in " + this.fileName + ":" + this.lineNumber + ": " + this.message;
     }
@@ -583,7 +581,8 @@ Object.extend(Function.prototype, {
 Object.extend(String.prototype, {
 
     withNiceDecimals: function() {
-        // JS can't print nice decimals
+	
+        // JS can't print nice decimals  // KP: I think it can be convinced, see below
         var dotIx = this.indexOf('.');
         // return unchanged unless all digits with exactly one dot
         if (dotIx < 0 || this.indexOf('.', dotIx+1) >= 0) return this;
@@ -602,6 +601,11 @@ Object.extend(String.prototype, {
         }
 
         return ss.substr(0,len);
+    },
+
+    withDecimalPrecision: function(precision) {
+	var floatValue = parseFloat(this);
+	return isNaN(floatValue) ? this : floatValue.toFixed(precision);
     }
 
 });
@@ -716,7 +720,7 @@ Object.subclass("Point", {
     extent: function(ext) { return new Rectangle(this.x, this.y, ext.x, ext.y); },
 
     toString: function() {
-        return "pt(%f,%f)".format(this.x.roundTo(0.01), this.y.roundTo(0.01)); 
+        return "pt(%1.f,%1.f)".format(this.x, this.y);
     },
 
     matrixTransform: function(mx, acc) {
@@ -1258,8 +1262,9 @@ Wrapper.subclass('StipplePattern', {
 Object.subclass('Similitude', {
 
     documentation: "Support for object rotation, scaling, etc.",
-    useDOM: !!Config.transformUsesDOM, // KP: new Webkit versions can use dom
-    
+    translation: null, // may be set by instances to a component SVGTransform
+    rotation: null, // may be set by instances to a component SVGTransform
+    scaling: null, // may be set by instances to a component SVGTransform
     /**
      * createSimilitude: a similitude is a combination of translation rotation and scale.
      * one could argue that Similitude is a superclass of Transform, not subclass.
@@ -1315,9 +1320,9 @@ Object.subclass('Similitude', {
     },
 
     applyTo: function(rawNode) {
-        if (this.useDOM) {
+        if (Config.useTransformAPI) {
             var list = rawNode.transform.baseVal;
-            var viewport = (rawNode.nearestViewportElement || Canvas);
+            var viewport = (UserAgent.usableNearestViewportElement ? rawNode.nearestViewportElement : Canvas);
             if (!this.translation) this.translation = viewport.createSVGTransform();
             this.translation.setTranslate(this.e, this.f);
             list.initialize(this.translation);
@@ -1390,9 +1395,11 @@ Object.subclass('Similitude', {
     },
 
     preConcatenate: function(t) {
-        if (true) {
-            this.fromMatrix(t.toMatrix().multiply(this.toMatrix()));
+        if (false) {
+            this.fromMatrix(this.toMatrix().multiply(t.toMatrix()));
         } else { // KP: something's wrong here
+	    t = this;
+
             this.a =  t.a * this.a + t.c * this.b;
             this.b =  t.b * this.a + t.d * this.b;
             this.c =  t.a * this.c + t.c * this.d;
@@ -1528,7 +1535,7 @@ var Event = (function() {
         },
 
         canvas: function() {
-            if (Prototype.Browser.Gecko) {
+            if (!UserAgent.usableNearestViewportElement) {
                 // so much for multiple worlds on one page
                 return Canvas;
             } else {
@@ -1662,7 +1669,7 @@ Object.extend(window.parent, {
     onfocus: function(evt) { /*console.log('window got focus event %s', evt);*/ }
 });
 
-if (!Prototype.Browser.Rhino) Object.extend(document, {
+if (UserAgent.canExtendBrowserObjects) Object.extend(document, {
     oncontextmenu: function(evt) { 
         var targetMorph = evt.target.parentNode; // target is probably shape (change me if pointer-events changes for shapes)
         if ((targetMorph instanceof Morph) 
@@ -2596,7 +2603,7 @@ Morph = Visual.subclass("Morph", {
     openForDragAndDrop: true, // Submorphs can be extracted from or dropped into me
     mouseHandler: MouseHandlerForDragging, //a MouseHandler for mouse sensitivity, etc
     stepHandler: null, // a stepHandler for time-varying morphs and animation 
-    noShallowCopyProperties: ['id', 'rawNode', 'rawSubnodes', 'shape', 'submorphs', 'stepHandler', 'defs', 'activeScripts', 'nextNavigableSibling', 'focusHalo'],
+    noShallowCopyProperties: ['id', 'rawNode', 'rawSubnodes', 'shape', 'submorphs', 'stepHandler', 'defs', 'activeScripts', 'nextNavigableSibling', 'focusHalo', 'fullBounds'],
 
     suppressBalloonHelp: Config.suppressBalloonHelp,
 
@@ -2678,10 +2685,11 @@ Morph = Visual.subclass("Morph", {
         } // shallow copy by default
 
         this.setShape(other.shape.copy());    
+	this.origin = other.origin.copy();
         if (other.cachedTransform) { 
             this.cachedTransform = other.cachedTransform.copy();
         } 
-
+	
         if (other.defs) {
             this.restoreDefs(other.defs);
         }
@@ -3420,13 +3428,7 @@ Morph.addMethods({
 
     transformToMorph: function(other) {
         // getTransformToElement has issues on some platforms
-        if (Prototype.Browser.Gecko && (other instanceof WorldMorph)) {
-            // remove this hack when we move to calculating transforms ourselves 
-            return this.getGlobalTransform();
-        }
-        
-        if (true) return this.rawNode.getTransformToElement(other.rawNode);
-
+        if (Config.useGetTransformToElement) return this.rawNode.getTransformToElement(other.rawNode);
         // not quite working yet
         var tfm = this.getGlobalTransform();
         var inv = other.getGlobalTransform().createInverse();
@@ -3439,9 +3441,13 @@ Morph.addMethods({
     getGlobalTransform: function() {
         var globalTransform = new Transform();
         var world = this.world();
+	// var trace = [];
         for (var morph = this; morph != world; morph = morph.owner) {
             globalTransform.preConcatenate(morph.getTransform());
+	    //trace.push(globalTransform.copy());
+
         }
+	//console.log("global transform trace [" + trace + "] for " + this);
         return globalTransform;
     },
 
@@ -3553,7 +3559,6 @@ Morph.addMethods({
     captureMouseEvent: function(evt, hasFocus) {
     // Dispatch this event to the frontmost receptive morph that contains it
     // Note boolean return for event consumption has not been QA'd
-    
         // if we're using the fisheye... 
         if (this.fishEye) {
             // get the distance to the middle of the morph and check if we're 
@@ -3767,7 +3772,7 @@ Morph.addMethods({
             ["show Lively markup", this.addSvgInspector.curry(this)],
             ["publish shrink-wrapped as...", function() { 
                 WorldMorph.current().makeShrinkWrappedWorldWith([this], WorldMorph.current().prompt('publish as (.xhtml)')) }],
-            ["test tracing (in console)", this.testTracing.curry()]
+            ["test tracing (in console)", this.testTracing]
         ];
         var menu = new MenuMorph(items, this); 
         if (!this.okToDuplicate()) menu.removeItemNamed("duplicate");
@@ -3928,7 +3933,8 @@ Morph.addMethods({
 Wrapper.subclass('SchedulableAction', {
 
     documentation: "Description of a periodic action",
-
+    beVerbose: false,
+    
     initialize: function($super, actor, scriptName, argIfAny, stepTime) {
         $super();
         this.actor = actor;
@@ -3961,11 +3967,12 @@ Wrapper.subclass('SchedulableAction', {
     },
 
     stop: function(world) {
+        if (this.beVerbose) console.log("stopped stepping task %s", this);
         world.stopSteppingFor(this);
     },
 
     start: function(world) {
-        console.log("started stepping task %s", this);
+        if (this.beVerbose) console.log("started stepping task %s", this);
         world.startSteppingFor(this);
     }
 
@@ -3977,8 +3984,9 @@ Morph.addMethods({
     startSteppingScripts: function() { }, // May be overridden to start stepping scripts
     
     stopSteppingScripts: function() {
+	var world = this.world();
         if (this.activeScripts) {
-            this.activeScripts.invoke('stop', this.world());
+            this.activeScripts.invoke('stop', world);
             this.activeScripts = null;
         }
     },
@@ -4032,10 +4040,11 @@ Morph.addMethods({
     },
 
     resumeAllSuspendedScripts: function() {
-        var world = WorldMorph.current();
+        var world = this.world();
         this.withAllSubmorphsDo( function() {
             if (this.suspendedScripts) {
                 this.suspendedScripts.invoke('start', world);
+		this.activeScripts = this.suspendedScripts;
                 this.suspendedScripts = null;
             }
         });
@@ -4173,13 +4182,17 @@ Morph.addMethods({
         try {
             return pt.matrixTransform(otherMorph.transformToMorph(this));
         } catch (er) {
-            Function.showStack();
+            // Function.showStack();
+//	    console.log("problem " + er + " on " + this + " other " + otherMorph);
             return pt;
         }
     },
 
     transformForNewOwner: function(newOwner) {
-        return new Transform(this.transformToMorph(newOwner));
+	// var old = this.getTransform().copy();
+        var t = new Transform(this.transformToMorph(newOwner));
+	// console.log("made new transform " + t + " old " + old + " new Owner " + newOwner.getTransform());
+	return t;
     },
 
 
@@ -5592,9 +5605,12 @@ Morph.subclass("LinkMorph", {
             oldWorld.removeHand(hand);
         });
         
-        var canvas = oldWorld.canvas();
+	if (Config.suspendScriptsOnWorldExit) {
+	    oldWorld.suspendAllActiveScripts();
+	}
 
-        oldWorld.remove();
+        var canvas = oldWorld.canvas();
+        oldWorld.remove(); // some SVG calls may stop working after this point in the old world.
         
         console.log('left world %s through %s', oldWorld, this);
     
@@ -5604,11 +5620,16 @@ Morph.subclass("LinkMorph", {
             console.log("new world had an owner, removing");
             newWorld.remove();
         }
+
         WorldMorph.setCurrent(newWorld);
+	    
 
         newWorld.displayWorldOn(canvas); 
 
         newWorld.onEnter(); 
+
+	if (Config.suspendScriptsOnWorldEntry) 
+	    newWorld.resumeAllSuspendedScripts();
 
         carriedMorphs.each(function(m) {
             newWorld.firstHand().addMorph(m);

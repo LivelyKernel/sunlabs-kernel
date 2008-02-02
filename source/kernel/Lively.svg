@@ -108,10 +108,10 @@
 
 
 
-<script type="text/ecmascript" xlink:href="defaultconfig.js"/>
 <script type="text/ecmascript" xlink:href="rhino-compat.js"/> <!-- for now included unconditionally -->
+<script type="text/ecmascript" xlink:href="defaultconfig.js"/>
 <script type="text/ecmascript" xlink:href="prototype.js"/>
-<script type="text/ecmascript" ><![CDATA[Config.skipMostExamples = true ; Config.showNetworkExamples = false; Config.ignoreAdvice = true; Config.fakeFontMetrics = true]]></script>
+<script type="text/ecmascript" ><![CDATA[Config.skipMostExamples = true ;  Config.ignoreAdvice = true]]></script>
 <script type="text/ecmascript" xlink:href="Core.js"/>
 <script type="text/ecmascript" xlink:href="Text.js"/>
 <script type="text/ecmascript" xlink:href="svgtext-compat.js"/>

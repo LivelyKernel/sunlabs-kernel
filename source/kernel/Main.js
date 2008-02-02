@@ -349,6 +349,7 @@ function main() {
 
     // Create an empty world
     var world = new WorldMorph(Canvas);
+    Global.FirstWorld = world;
     WorldMorph.setCurrent(world);
     world.displayWorldOn(Canvas);
     console.log('made world ');

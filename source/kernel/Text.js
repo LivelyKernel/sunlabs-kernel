@@ -1642,7 +1642,7 @@ TextMorph.subclass("PrintMorph", {
     },
     
     getModelText: function() {
-        return Object.inspect(this.getModelValue('getValue', null)).withNiceDecimals();  
+        return Object.inspect(this.getModelValue('getValue', null)).withDecimalPrecision(2);  
     },
     
     setModelText: function(newText) {

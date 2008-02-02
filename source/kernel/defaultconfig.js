@@ -11,6 +11,37 @@
 /**
  * defaultconfig.js.  System default configuration.
  */
+
+var UserAgent = (function() {
+
+
+    var webKitVersion = window.navigator 
+	&& parseInt((navigator.userAgent.match(/.*AppleWebKit\/(\d+).*/)  || [null, null]) [1]);
+    var isRhino = !window.navigator || window.navigator.userAgent.indexOf("Rhino") > -1;
+    var isMozilla = window.navigator && window.navigator.userAgent.indexOf("Mozilla") > -1;
+    // determines UA capabilities
+    return {
+	// newer versions of WebKit implement proper SVGTransform API, potentially better performance
+	usableTransformAPI: webKitVersion >= 525,
+	usableDropShadow: webKitVersion >= 525,
+	canExtendBrowserObjects: !isRhino, // Error, document
+	usableNearestViewportElement: !isRhino && !isMozilla,
+	// Safari XMLSerializer seems to do weird things w/namespaces
+	usableNamespacesInSerializer: !isNaN(webKitVersion),
+	
+	usableXmlHttpRequest: !isRhino,
+	
+	usableHTMLEnvironment: !isRhino,
+	
+	webKitVersion: webKitVersion,
+	
+	isRhino: isRhino
+	
+    };
+})();
+
+
+// Determines runtime behavior based on UA capabilities and user choices (override in localconfig.js)
 var Config = {
 
     // Allows easy object duplication using the Shift key
@@ -33,17 +64,23 @@ var Config = {
     showThumbnail: false,
     
     // Enables/disables network-dependent demos
-    showNetworkExamples: true,
+    showNetworkExamples: UserAgent.usableXmlHttpRequest,
 
     // Ignore function logging through the prototype.js wrap mechanism
     ignoreAdvice: false,
 
     // try to make up font metrics if the SVG API doesn't work
-    fakeFontMetrics: false,
+    fakeFontMetrics: !UserAgent.usableHTMLEnvironment,
 
-    // newer versions of WebKit implement proper SVGTransform API, potentially better performance
-    transformUsesDOM: false 
+    useTransformAPI: UserAgent.usableTransformAPI, 
+    
+    useDropShadow: UserAgent.usableDropShadow,
 
+    useGetTransformToElement: true,
+
+
+    // we haven't decided on the behavior yet, but let's be brave!
+    suspendScriptsOnWorldExit: true
 
 }
 
