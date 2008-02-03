@@ -1349,7 +1349,7 @@ scope.TextMorph = Morph.subclass("TextMorph", {
         if (!this.acceptInput) return;
 
         // cleanup: separate BS logic, diddle selection range and use replaceSelectionWith()
-        if (evt.isAltDown() && navigator.platform =="Win32") {
+        if (evt.isAltDown() && UserAgent.isWindows) {
             //AltGr pressed
             var replacement = (String.fromCharCode(evt.charCode)).toLowerCase();
             this.processCommandKeys(replacement);

@@ -15,19 +15,18 @@
 var UserAgent = (function() {
 
 
-    var webKitVersion = window.navigator 
-	&& parseInt((navigator.userAgent.match(/.*AppleWebKit\/(\d+).*/)  || [null, null]) [1]);
+    var webKitVersion = window.navigator && navigator.userAgent.match(/.*AppleWebKit\/(\d+).*/)[1];
     var isRhino = !window.navigator || window.navigator.userAgent.indexOf("Rhino") > -1;
     var isMozilla = window.navigator && window.navigator.userAgent.indexOf("Mozilla") > -1;
     // determines UA capabilities
     return {
 	// newer versions of WebKit implement proper SVGTransform API, potentially better performance
-	usableTransformAPI: webKitVersion >= 525,
-	usableDropShadow: webKitVersion >= 525,
+	usableTransformAPI: parseInt(webKitVersion) >= 525,
+	usableDropShadow: parseInt(webKitVersion) >= 525,
 	canExtendBrowserObjects: !isRhino, // Error, document
 	usableNearestViewportElement: !isRhino && !isMozilla,
 	// Safari XMLSerializer seems to do weird things w/namespaces
-	usableNamespacesInSerializer: !isNaN(webKitVersion),
+	usableNamespacesInSerializer: !webKitVersion,
 	
 	usableXmlHttpRequest: !isRhino,
 	
@@ -35,7 +34,11 @@ var UserAgent = (function() {
 	
 	webKitVersion: webKitVersion,
 	
-	isRhino: isRhino
+	isRhino: isRhino,
+	
+	isMozilla: isMozilla,
+
+	isWindows: (window.navigator && window.navigator.platform == "Win32")
 	
     };
 })();

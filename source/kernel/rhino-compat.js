@@ -8,10 +8,6 @@
  * other countries.
  */ 
 
-var navigator = {
-    userAgent: "Gecko;Rhino"
-};
-
 window.parent = window;
 
 window.console = { 

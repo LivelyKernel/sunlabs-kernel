@@ -60,7 +60,7 @@ var NetRequest = Class.create(Ajax.Request, {
     },
     
     requestNetworkAccess: function() {
-        if (window.location.protocol == "file:"  && Prototype.Browser.Gecko) {       
+        if (window.location.protocol == "file:"  && UserAgent.isMozilla) {       
             try {
                 netscape.security.PrivilegeManager.enablePrivilege("UniversalBrowserRead");
                 console.log("requested browser read privilege");
@@ -128,7 +128,6 @@ var NetRequest = Class.create(Ajax.Request, {
     setRequestHeaders: function() {
         var headers = {
             'X-Requested-With': 'XMLHttpRequest',
-            'X-Prototype-Version': Prototype.Version,
             'Accept': 'text/javascript, text/html, application/xml, text/xml, */*'
         };
 

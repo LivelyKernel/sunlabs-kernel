@@ -12,31 +12,14 @@ var Prototype = {
   Browser: {
     IE:     !!(window.attachEvent && !window.opera),
     Opera:  !!window.opera,
-    WebKit: navigator.userAgent.indexOf('AppleWebKit/') > -1,
-    Gecko:  navigator.userAgent.indexOf('Gecko') > -1 && navigator.userAgent.indexOf('KHTML') == -1,
-    MobileSafari: !!navigator.userAgent.match(/Apple.*Mobile.*Safari/)
   },
 
-  BrowserFeatures: {
-    XPath: !!document.evaluate,
-    ElementExtensions: !!window.HTMLElement,
-    SpecificElementExtensions:
-      document.createElement('div').__proto__ !==
-       document.createElement('form').__proto__
-  },
-
-  ScriptFragment: '<script[^>]*>([\\S\\s]*?)<\/script>',
   JSONFilter: /^\/\*-secure-([\s\S]*)\*\/\s*$/,
 
   emptyFunction: function() { },
   K: function(x) { return x }
 };
 
-if (Prototype.Browser.MobileSafari)
-  Prototype.BrowserFeatures.SpecificElementExtensions = false;
-
-if (Prototype.Browser.WebKit)
-  Prototype.BrowserFeatures.XPath = false;
 
 /* Based on Alex Arnell's inheritance implementation. */
 var Class = {
@@ -94,7 +77,6 @@ Class.Methods = {
   }
 };
 
-var Abstract = { };
 
 Object.extend = function(destination, source) {
   for (var property in source)
@@ -139,10 +121,6 @@ Object.extend(Object, {
 
   toQueryString: function(object) {
     return $H(object).toQueryString();
-  },
-
-  toHTML: function(object) {
-    return object && object.toHTML ? object.toHTML() : String.interpret(object);
   },
 
   keys: function(object) {
@@ -203,13 +181,6 @@ Object.extend(Function.prototype, {
     var __method = this, args = $A(arguments), object = args.shift();
     return function() {
       return __method.apply(object, args.concat($A(arguments)));
-    }
-  },
-
-  bindAsEventListener: function() {
-    var __method = this, args = $A(arguments), object = args.shift();
-    return function(event) {
-      return __method.apply(object, [event || window.event].concat(args));
     }
   },
 
@@ -337,40 +308,6 @@ Object.extend(String.prototype, {
     return this.replace(/^\s+/, '').replace(/\s+$/, '');
   },
 
-  stripTags: function() {
-    return this.replace(/<\/?[^>]+>/gi, '');
-  },
-
-  stripScripts: function() {
-    return this.replace(new RegExp(Prototype.ScriptFragment, 'img'), '');
-  },
-
-  extractScripts: function() {
-    var matchAll = new RegExp(Prototype.ScriptFragment, 'img');
-    var matchOne = new RegExp(Prototype.ScriptFragment, 'im');
-    return (this.match(matchAll) || []).map(function(scriptTag) {
-      return (scriptTag.match(matchOne) || ['', ''])[1];
-    });
-  },
-
-  evalScripts: function() {
-    return this.extractScripts().map(function(script) { return eval(script) });
-  },
-
-  escapeHTML: function() {
-    var self = arguments.callee;
-    self.text.data = this;
-    return self.div.innerHTML;
-  },
-
-  unescapeHTML: function() {
-    var div = new Element('div');
-    div.innerHTML = this.stripTags();
-    return div.childNodes[0] ? (div.childNodes.length > 1 ?
-      $A(div.childNodes).inject('', function(memo, node) { return memo+node.nodeValue }) :
-      div.childNodes[0].nodeValue) : '';
-  },
-
   toQueryParams: function(separator) {
     var match = this.strip().match(/([^?#]*)(#.*)?$/);
     if (!match) return { };
@@ -435,8 +372,8 @@ Object.extend(String.prototype, {
       var character = String.specialChar[match[0]];
       return character ? character : '\\u00' + match[0].charCodeAt().toPaddedString(2, 16);
     });
-    if (useDoubleQuotes) return '"' + escapedString.replace(/"/g, '\\"') + '"';
-    return "'" + escapedString.replace(/'/g, '\\\'') + "'";
+    if (useDoubleQuotes) return '"' + escapedString.replace(/"/g, '\\"') + '"'; // " Emacs bug avoidance comment
+    return "'" + escapedString.replace(/'/g, '\\\'') + "'";                     //"  Emacs bug avoidance comment
   },
 
   toJSON: function() {
@@ -448,7 +385,7 @@ Object.extend(String.prototype, {
   },
 
   isJSON: function() {
-    var str = this.replace(/\\./g, '@').replace(/"[^"\\\n\r]*"/g, '');
+    var str = this.replace(/\\./g, '@').replace(/"[^"\\\n\r]*"/g, '');           // " Emacs bug avoidance comment
     return (/^[,:{}\[\]0-9.\-+Eaeflnr-u \n\r\t]*$/).test(str);
   },
 
@@ -483,15 +420,6 @@ Object.extend(String.prototype, {
 
   interpolate: function(object, pattern) {
     return new Template(this, pattern).evaluate(object);
-  }
-});
-
-if (Prototype.Browser.WebKit || Prototype.Browser.IE) Object.extend(String.prototype, {
-  escapeHTML: function() {
-    return this.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  },
-  unescapeHTML: function() {
-    return this.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>');
   }
 });
 
@@ -764,17 +692,6 @@ function $A(iterable) {
   var length = iterable.length, results = new Array(length);
   while (length--) results[length] = iterable[length];
   return results;
-}
-
-if (Prototype.Browser.WebKit) {
-  function $A(iterable) {
-    if (!iterable) return [];
-    if (!(Object.isFunction(iterable) && iterable == '[object NodeList]') &&
-        iterable.toArray) return iterable.toArray();
-    var length = iterable.length, results = new Array(length);
-    while (length--) results[length] = iterable[length];
-    return results;
-  }
 }
 
 Array.from = $A;
@@ -1417,47 +1334,6 @@ Ajax.Updater = Class.create(Ajax.Request, {
     if (this.success()) {
       if (this.onComplete) this.onComplete.bind(this).defer();
     }
-  }
-});
-
-Ajax.PeriodicalUpdater = Class.create(Ajax.Base, {
-  initialize: function($super, container, url, options) {
-    $super(options);
-    this.onComplete = this.options.onComplete;
-
-    this.frequency = (this.options.frequency || 2);
-    this.decay = (this.options.decay || 1);
-
-    this.updater = { };
-    this.container = container;
-    this.url = url;
-
-    this.start();
-  },
-
-  start: function() {
-    this.options.onComplete = this.updateComplete.bind(this);
-    this.onTimerEvent();
-  },
-
-  stop: function() {
-    this.updater.options.onComplete = undefined;
-    clearTimeout(this.timer);
-    (this.onComplete || Prototype.emptyFunction).apply(this, arguments);
-  },
-
-  updateComplete: function(response) {
-    if (this.options.decay) {
-      this.decay = (response.responseText == this.lastText ?
-        this.decay * this.options.decay : 1);
-
-      this.lastText = response.responseText;
-    }
-    this.timer = this.onTimerEvent.bind(this).delay(this.decay * this.frequency);
-  },
-
-  onTimerEvent: function() {
-    this.updater = new Ajax.Updater(this.container, this.url, this.options);
   }
 });
 

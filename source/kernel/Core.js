@@ -315,6 +315,8 @@ Object.properties = function(object, predicate) {
  * Extensions to class Function
  */  
 
+Function.empty = function() {};
+
 Object.extend(Function.prototype, {
 
     inspect: function() {
@@ -459,7 +461,7 @@ Object.extend(Function.prototype, {
         }
 
         if (!klass.prototype.initialize) {
-            klass.prototype.initialize = Prototype.emptyFunction;
+            klass.prototype.initialize = Function.empty;
         }
 
         scope[name] = klass;
@@ -480,13 +482,15 @@ Function.methodString = function(className, methodName) {
     return className + ".prototype." + methodName + " = " + code; 
 };
 
-if (Prototype.Browser.WebKit) { 
-    Error.prototype.inspect = function() {
-        return this.name + " in " + this.sourceURL + ":" + this.line + ": " + this.message;
-    }
-} else if (UserAgent.canExtendBrowserObjects) { // Mozilla
-    Error.prototype.inspect = function() {
-        return this.name + " in " + this.fileName + ":" + this.lineNumber + ": " + this.message;
+if (UserAgent.canExtendBrowserObjects) { // Mozilla
+    if (UserAgent.webKitVersion) { 
+	Error.prototype.inspect = function() {
+            return this.name + " in " + this.sourceURL + ":" + this.line + ": " + this.message;
+	}
+    } else {
+	Error.prototype.inspect = function() {
+            return this.name + " in " + this.fileName + ":" + this.lineNumber + ": " + this.message;
+	}
     }
 }
 
@@ -5622,13 +5626,12 @@ Morph.subclass("LinkMorph", {
         }
 
         WorldMorph.setCurrent(newWorld);
-	    
 
         newWorld.displayWorldOn(canvas); 
 
         newWorld.onEnter(); 
 
-	if (Config.suspendScriptsOnWorldEntry) 
+	if (Config.suspendScriptsOnWorldExit) 
 	    newWorld.resumeAllSuspendedScripts();
 
         carriedMorphs.each(function(m) {
@@ -5687,6 +5690,7 @@ Morph.subclass("LinkMorph", {
     }
 
 });
+
 
 console.log('loaded Core.js');
 
