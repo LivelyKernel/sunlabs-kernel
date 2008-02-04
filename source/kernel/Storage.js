@@ -311,5 +311,48 @@ Model.subclass('WebStore', {
 
 });  
 
+
+var Storage = {
+
+    // synchronous store of XML
+    storeData: function(url, content) {
+	var success;
+	new NetRequest(url, { 
+            method: 'put',
+            asynchronous: false,
+            body: content,
+            onSuccess: function(transport) {
+                success = true;
+            },
+            onFailure: function(transport) {
+                success = false;
+            }
+	});
+	return success;
+    },
+
+    // synchronous retrieve of XML
+    retrieveData: function(url) {
+	var result;
+        new NetRequest(url, { 
+            method: 'get',
+            asynchronous: false,
+            
+            onSuccess: function(transport) {
+                result = transport.responseXML;
+		console.log("success");
+            }.logErrors('onSuccess'),
+            
+            onFailure: function(transport) {
+		result = null;
+            }
+            
+        });
+	return result;
+    }
+
+};
+
+
 console.log('loaded Storage.js');
 

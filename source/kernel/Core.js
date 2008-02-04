@@ -5055,23 +5055,12 @@ PasteUpMorph.subclass("WorldMorph", {
 
         console.log('morphs is %s', morphs);
 
-        var newDoc = null;
-        var url = window.location.toString();
-        new NetRequest(url, { 
-            method: 'get',
-            asynchronous: false,
-        
-            onSuccess: function(transport) {
-                newDoc = transport.responseXML;
-            }.logErrors('onSuccess'),
-            
-            onFailure: function(transport) {
-                WorldMorph.current().alert('problem accessing ' + url);
-            }
-            
-        });
-
-        if (!newDoc) return;
+	var url = window.location.toString();
+        var newDoc = Storage.retrieveData(url);
+	if (!newDoc) {
+	    WorldMorph.current().alert('problem accessing ' + url);
+	    return;
+	}
 
         console.log('got source %s url %s', newDoc, url);
         var mainDefs = newDoc.getElementById('Defaults');
@@ -5107,21 +5096,9 @@ PasteUpMorph.subclass("WorldMorph", {
         mainDefs.appendChild(container);
 
         var content = Exporter.nodeToString(newDoc);
-        console.info('writing new file ' + content);
-        var failed = true;
-
-        new NetRequest(newurl, { 
-            method: 'put',
-            asynchronous: false,
-            body: content,
-            onSuccess: function(transport) {
-                failed = false;
-            },
-            onFailure: function(transport) {
-                this.alert('failed saving world at url ' + newurl);
-                failed = true;
-            }
-        });
+        var success = Storage.storeData(newurl, content);
+        if (!success)
+	    this.alert('failed saving world at url ' + newurl);
     },
 
     addMorphsFrom: function(id) {

@@ -68,26 +68,29 @@ Object.subclass('Font', {
 
 });
 
-Object.extend(Font, {
+(function() {
+    var cache = {};
 
-    cache: new Hash(),
-    
-    forFamily: function(familyName, size) {
-        var key  = familyName + ":" + size;
-        var entry = Font.cache.get(key);
-        if (!entry) {
-            try {
-                entry = new Font(familyName, size);
-            } catch(er) {
-                console.log("%s when looking for %s:%s", er, familyName, size);
-                return null;
+    Object.extend(Font, {
+	
+	forFamily: function(familyName, size) {
+            var key  = familyName + ":" + size;
+            var entry = cache[key];
+            if (!entry) {
+		try {
+                    entry = new Font(familyName, size);
+		} catch(er) {
+                    console.log("%s when looking for %s:%s", er, familyName, size);
+                    return null;
+		}
+		cache[key] = entry;
             }
-            Font.cache.set(key, entry);
-        }
-        return entry;
-    }
-
-});
+            return entry;
+	}
+	
+    });
+    
+})();
 
 /**
  * @class TextWord
