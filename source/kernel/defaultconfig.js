@@ -14,10 +14,15 @@
 
 var UserAgent = (function() {
 
+    var webKitVersion = function() {
+	if (!window.navigator) return null;
+	var match = navigator.userAgent.match(/.*AppleWebKit\/(\d+).*/) 
+	return match && match[1];
+    };
 
-    var webKitVersion = window.navigator && navigator.userAgent.match(/.*AppleWebKit\/(\d+).*/)[1];
     var isRhino = !window.navigator || window.navigator.userAgent.indexOf("Rhino") > -1;
     var isMozilla = window.navigator && window.navigator.userAgent.indexOf("Mozilla") > -1;
+
     // determines UA capabilities
     return {
 	// newer versions of WebKit implement proper SVGTransform API, potentially better performance
@@ -72,7 +77,10 @@ var Config = {
     // Ignore function logging through the prototype.js wrap mechanism
     ignoreAdvice: false,
 
-    // try to make up font metrics if the SVG API doesn't work
+    // derive font metrics from (X)HTML
+    fontMetricsFromHTML: UserAgent.usableHTMLEnvironment,
+
+    // try to make up font metrics entirely (can be overriden to use the native SVG API, which rarely works)
     fakeFontMetrics: !UserAgent.usableHTMLEnvironment,
 
     useTransformAPI: UserAgent.usableTransformAPI, 
@@ -80,7 +88,6 @@ var Config = {
     useDropShadow: UserAgent.usableDropShadow,
 
     useGetTransformToElement: true,
-
 
     // we haven't decided on the behavior yet, but let's be brave!
     suspendScriptsOnWorldExit: true

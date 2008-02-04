@@ -5,6 +5,7 @@
  *  For details, see the Prototype web site: http://www.prototypejs.org/
  *
  *--------------------------------------------------------------------------*/
+// Note this version is heavily trimmed from its original form.
 
 var Prototype = {
   Version: '1.6.0_rc1',
@@ -290,11 +291,6 @@ Object.extend(String.prototype, {
       if (--count < 0) return match[0];
       return replacement(match);
     });
-  },
-
-  scan: function(pattern, iterator) {
-    this.gsub(pattern, iterator);
-    return String(this);
   },
 
   truncate: function(length, truncation) {
@@ -804,12 +800,6 @@ if (!Array.prototype.lastIndexOf) Array.prototype.lastIndexOf = function(item, i
 
 Array.prototype.toArray = Array.prototype.clone;
 
-function $w(string) {
-  if (!Object.isString(string)) return [];
-  string = string.strip();
-  return string ? string.split(/\s+/) : [];
-}
-
 if (Prototype.Browser.Opera){
   Array.prototype.concat = function() {
     var array = [];
@@ -826,19 +816,6 @@ if (Prototype.Browser.Opera){
   };
 }
 Object.extend(Number.prototype, {
-  toColorPart: function() {
-    return this.toPaddedString(2, 16);
-  },
-
-  succ: function() {
-    return this + 1;
-  },
-
-  times: function(iterator) {
-    $R(0, this, true).each(iterator);
-    return this;
-  },
-
   toPaddedString: function(length, radix) {
     var string = this.toString(radix || 10);
     return '0'.times(length - string.length) + string;
@@ -849,9 +826,6 @@ Object.extend(Number.prototype, {
   }
 });
 
-$w('abs round ceil floor').each(function(method){
-  Number.prototype[method] = Math[method].methodize();
-});
 function $H(object) {
   return new Hash(object);
 };
@@ -971,33 +945,6 @@ var Hash = Class.create(Enumerable, (function() {
 })());
 
 Hash.from = $H;
-var ObjectRange = Class.create(Enumerable, {
-  initialize: function(start, end, exclusive) {
-    this.start = start;
-    this.end = end;
-    this.exclusive = exclusive;
-  },
-
-  _each: function(iterator) {
-    var value = this.start;
-    while (this.include(value)) {
-      iterator(value);
-      value = value.succ();
-    }
-  },
-
-  include: function(value) {
-    if (value < this.start)
-      return false;
-    if (this.exclusive)
-      return value < this.end;
-    return value <= this.end;
-  }
-});
-
-var $R = function(start, end, exclusive) {
-  return new ObjectRange(start, end, exclusive);
-};
 
 var Ajax = {
   getTransport: function() {

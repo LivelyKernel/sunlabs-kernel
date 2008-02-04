@@ -610,8 +610,7 @@ function showStatsViewer(profilee,title) {
                 var originalFunction = arguments.callee.originalFunction;
 
                 if (/*originalFunction.*/ Function.prototype.shouldTrace) {
-                    var indent = "";
-                    for (var i = 0; i < debuggingStack.length; i++) indent += "-";
+                    var indent = "-".times(debuggingStack.length);
                     console.log(debuggingStack.length + "" + indent + originalFunction.qualifiedMethodName());
                 }
 
