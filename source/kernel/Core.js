@@ -1399,7 +1399,7 @@ Object.subclass('Similitude', {
     },
 
     preConcatenate: function(t) {
-        if (false) {
+        if (true) {
             this.fromMatrix(this.toMatrix().multiply(t.toMatrix()));
         } else { // KP: something's wrong here
 	    t = this;
@@ -3449,7 +3449,6 @@ Morph.addMethods({
         for (var morph = this; morph != world; morph = morph.owner) {
             globalTransform.preConcatenate(morph.getTransform());
 	    //trace.push(globalTransform.copy());
-
         }
 	//console.log("global transform trace [" + trace + "] for " + this);
         return globalTransform;
@@ -4174,8 +4173,8 @@ Morph.addMethods({
     // map world point to local coordinates
     localize: function(pt) {
         if (pt == null) console.log('null pt');   
-        if (this.canvas() == null) {
-            console.log('null this.canvas()');   
+        if (this.world() == null) {
+            console.log('null this.world()');   
             return pt;
         }
         return pt.matrixTransform(this.world().transformToMorph(this));
@@ -4187,7 +4186,7 @@ Morph.addMethods({
             return pt.matrixTransform(otherMorph.transformToMorph(this));
         } catch (er) {
             // Function.showStack();
-//	    console.log("problem " + er + " on " + this + " other " + otherMorph);
+	    console.log("problem " + er + " on " + this + " other " + otherMorph);
             return pt;
         }
     },
