@@ -4598,6 +4598,7 @@ Morph.subclass(scope, "EngineMorph", {
         this.setFill(new LinearGradient(Color.gray, Color.darkGray, LinearGradient.NorthSouth));
         this.makeLayout();
         this.running = true;
+	this.normalSpeed = 100
     },
 
     makeLayout: function() {
@@ -4625,18 +4626,26 @@ Morph.subclass(scope, "EngineMorph", {
         ]);
         menu.openIn(this, pt(300,440), true, "Ignition timing"); 
 
-        menu = new MenuMorph([
-            ["run", this, 'setRunning', true],
-            ["stop", this, 'setRunning', false],
-            ["step", this, 'doStep'],
-            ["rebuild", this, 'rebuild']
-        ]);
-        menu.openIn(this, pt(315,515), true, "Operating State"); 
+        // this.addRunMenu(); // This will get called from startSteppingScripts
 
         var label = new TextMorph(new Rectangle(0, 0, 100, 20), "The Radial Engine").beLabel();
         label.setFontSize(20);  this.addMorph(label);
         label.align(label.bounds().topCenter(), bnds.bottomCenter().addXY(0, -20));
     },
+
+    addRunMenu: function() {
+        if (this.runMenu) this.runMenu.remove();
+        this.runMenu = new MenuMorph([
+            (this.running ? ["stop", this, 'setRunning', false]
+			: ["run", this, 'setRunning', true]),
+            ["step", this, 'doStep'],
+            // DI: deprecated...  ["rebuild", this, 'rebuild'],
+            (this.stepTime == this.normalSpeed ? ["full speed", this, 'setStepTime', 1]
+				: ["normal speed", this, 'setStepTime', this.normalSpeed])
+        ]);
+        this.runMenu.openIn(this, pt(315,515), true, "Operating State");
+    },
+
 
     makeCylinders: function(nCylinders) {
         // Build cylinder-piston assembly with center or rotation at crank center
@@ -4707,7 +4716,10 @@ Morph.subclass(scope, "EngineMorph", {
         if (Math.abs(phase-2*pi) < this.angleStep/2) cyl.setFill(Color.yellow);  // ignition
     },
 
-    setRunning: function(trueOrFalse) { this.running = trueOrFalse; },
+    setRunning: function(trueOrFalse) {
+	this.running = trueOrFalse;
+	this.addRunMenu();
+    },
 
     nextStep: function() {
         if (!this.running) return;
@@ -4734,13 +4746,22 @@ Morph.subclass(scope, "EngineMorph", {
         this.makeCylinders(this.cylinders.length);
     },
 
+/*	DI: Deprecated
     rebuild: function() {
         this.removeAllMorphs();
         this.makeLayout();
         this.makeCylinders(this.cylinders.length);
     },
+*/
 
-    startSteppingScripts: function() { this.startStepping(100,'nextStep'); }
+    setStepTime: function(ms) {
+        this.stepTime = ms;
+	this.addRunMenu();
+	this. stopSteppingScripts();
+	this.startStepping(ms,'nextStep');
+    },
+
+    startSteppingScripts: function() { this.setStepTime(100); }
 
 });
 
