@@ -1996,8 +1996,8 @@ Morph.subclass('XenoMorph', {
 
         var body = this.foRawNode.appendChild(NodeFactory.createNS(Namespace.XHTML, "body"));
         body.appendChild(document.createTextNode("no content"));
-        new NetRequest(url, {
-            method: 'get',
+        new NetRequest({
+
             //contentType: 'text/xml',
             contentType: 'text/xml',
     
@@ -2017,7 +2017,7 @@ Morph.subclass('XenoMorph', {
                 parent.appendChild(document.adoptNode(node));
 
             }.logErrors('Success Handler for XenoMorph ' + url)
-        });
+        }).get(url);
 
         this.foRawNode.appendChild(body);
         this.addNonMorph(this.foRawNode);

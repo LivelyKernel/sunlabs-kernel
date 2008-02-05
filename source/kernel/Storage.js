@@ -76,7 +76,6 @@ Model.subclass('WebStore', {
         // retrieve the the contents of the url and save in the indicated model variable
         var store = this;
         var options =  {
-            method: 'GET',
             contentType: 'text/xml',
 
             onSuccess: function(transport) {
@@ -92,7 +91,7 @@ Model.subclass('WebStore', {
             // FIXME: on exception
         };
 	
-        new NetRequest(url, options);
+        new NetRequest(options).get(url);
     },
     
     saveAs: function(name, content) {
@@ -122,7 +121,7 @@ Model.subclass('WebStore', {
     
         };
 
-        new NetRequest(url, options);
+        new NetRequest(options).put(url);
     },
 
     deleteResource: function(url, modelVariable) {
@@ -146,7 +145,7 @@ Model.subclass('WebStore', {
     
         };
 
-        new NetRequest(url, options);
+        new NetRequest(options).remove(url);
     },
 
     // FIXME handle object argument
@@ -181,7 +180,7 @@ Model.subclass('WebStore', {
             }.logErrors('onSuccess')
         };
         
-        new NetRequest(url, options);
+        new NetRequest(options).propfind(url);
     },
     
     getDirectoryList: function() {
@@ -323,39 +322,16 @@ var Storage = {
 
     // synchronous store of XML
     storeData: function(url, content) {
-	var success;
-	new NetRequest(url, { 
-            method: 'put',
-            asynchronous: false,
-            body: content,
-            onSuccess: function(transport) {
-                success = true;
-            },
-            onFailure: function(transport) {
-                success = false;
-            }
-	});
-	return success;
+	var req = new NetRequest().sync();
+	var result = req.put(url, content);
+	return result.status >= 200 && result.status < 300;
     },
 
     // synchronous retrieve of XML
     retrieveData: function(url) {
-	var result;
-        new NetRequest(url, { 
-            method: 'get',
-            asynchronous: false,
-            
-            onSuccess: function(transport) {
-                result = transport.responseXML;
-		console.log("success");
-            }.logErrors('onSuccess'),
-            
-            onFailure: function(transport) {
-		result = null;
-            }
-            
-        });
-	return result;
+	var req = new NetRequest().sync(); 
+        var result = req.get(url);
+	return result && result.responseXML;
     }
 
 };

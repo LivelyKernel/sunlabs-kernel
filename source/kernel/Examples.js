@@ -2635,7 +2635,7 @@ Model.subclass('StockWidget', {
     getQuotes: function() {
         return this.formatQuote(this.lastQuote);
     },
-
+    
     startSteppingRefreshCharts: function(panel) {
         panel.startStepping(60000, 'refresh');
         //this.timer = setInterval(this.refreshCharts.bind(this).curry(panel).logErrors('Stock Refresh'), 30000);
@@ -2644,8 +2644,7 @@ Model.subclass('StockWidget', {
     getUrl: function(url, params) {
         var model = this;
 
-        new NetRequest(url, {
-            method: 'get',
+        new NetRequest({
             contentType: 'text/html', 
             parameters: params || {},
             onSuccess: function(transport) {
@@ -2653,8 +2652,7 @@ Model.subclass('StockWidget', {
                 model.lastQuote = result.split(',');
                 model.changed('getQuotes');
             }
-
-        });
+        }).get(url);
 
     },
   
@@ -3727,18 +3725,12 @@ Model.subclass(scope, 'MessengerWidget', {
 //        console.log("address == " + this.server + "foreground.html?login=IM");
         var id = this.id;
         var parent = this;
-        new NetRequest(this.server + "foreground.html?login=IM", { 
-            method: 'get',
-            
-            onSuccess: function(transport) {
-//                console.log("accessing database: " + id +"\n" + transport.responseText);
-            },
-            
+        new NetRequest({ 
             onFailure: function(transport) {
                 console.log(transport.responseText);
             }
 
-        });
+        }).get(this.server + "foreground.html?login=IM");
     },
     
     openIn: function(world, location) {
@@ -3818,16 +3810,13 @@ Model.subclass(scope, 'MessengerWidget', {
         var parent = this;
         if ( this.text != null && this.text != "" ) {
             var url = this.server + "foreground.html?action=updatemany&key." + this.id + "=" + this.text.replace(/=/g, "");
-            new NetRequest(url, { 
-                method: 'get',
-                
+            new NetRequest({ 
                 onSuccess: function(transport) {
                     parent.setChatText(parent.id + ": " + parent.getIMText()); // add the current line immediately
                     parent.setIMText(""); // yes yes.. so its a little laggy to add the current line and delete it...
                     parent.textpanel.setScrollPosition(1);//this.textpanel.innerMorph().bounds().height);
                 }
-                
-            });
+            }).get(url);
         }
         
 //        this.load();
@@ -3835,9 +3824,7 @@ Model.subclass(scope, 'MessengerWidget', {
     
     load: function() {
         var parent = this;
-        new NetRequest(this.server + "background.html", { 
-            method: 'get',
-            
+        new NetRequest({ 
             onSuccess: function(transport) {
                 // what crap is coming with the response?? function something something..
                 // console.log(transport.responseText);
@@ -3854,8 +3841,7 @@ Model.subclass(scope, 'MessengerWidget', {
                 // start polling for new events
                 parent.load();
             }
-                        
-        });
+        }).get(this.server + "background.html");
 
     },
     
