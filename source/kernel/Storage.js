@@ -41,12 +41,13 @@ Object.subclass('Resource', {
 });
 
 /**
- * @class WebStore: Network-based storage (WebDAV)
+ * @class WebStore
  */ 
 
 Model.subclass('WebStore', {
 
     defaultStore: null,
+    documentation: "Network-based storage (WebDAV)",
 
     onCurrentLocation: function() {
         var path = location.pathname.substring(0, location.pathname.lastIndexOf('index.xhtml'));
@@ -58,6 +59,7 @@ Model.subclass('WebStore', {
         $super();
         this.host = host;
         this.path = path;
+	this.protocol = "http"; // can be something else...
 
         this.DirectoryList = [ path ];
         this.CurrentDirectory = null;
@@ -67,8 +69,9 @@ Model.subclass('WebStore', {
         this.lastWriteStatus = 0;
     },
 
-    // basic protocol methods:
+    
 
+    // basic protocol methods:
     fetch: function(url, modelVariable) {
         // retrieve the the contents of the url and save in the indicated model variable
         var store = this;
@@ -80,24 +83,23 @@ Model.subclass('WebStore', {
                 store[modelVariable] = transport.responseText;
                 store.changed("get" + modelVariable);
             },
-    
+	    
             onFailure: function(transport) {
                 WorldMorph.current().alert('failed fetching url ' + url);
                 store[modelVariable] = "resource unavailable";
                 store.changed("get" + modelVariable);
             }
             // FIXME: on exception
-
         };
-
+	
         new NetRequest(url, options);
     },
-
+    
     saveAs: function(name, content) {
         console.log('saving content %s', content);
         this.save("http://%s/%s/%s".format(this.host, this.path, name), content, "LastWriteStatus");
     },
-
+    
     save: function(url, content, modelVariable) {
         // retrieve the the contents of the url and save in the indicated model variable
         console.log('saving url ' + url);
@@ -113,7 +115,7 @@ Model.subclass('WebStore', {
             },
     
             onFailure: function(transport) {
-                WorldMorph.current().alert('failed saving with response ' + transport.responseText);
+                WorldMorph.current().alert("failed saving with response " + transport.responseText);
                 //store[modelVariable] = transport.status;
                 //store.changed(modelVariable);
             }
@@ -130,7 +132,7 @@ Model.subclass('WebStore', {
         var options =  {
             method: 'DELETE',
             contentType: 'text/xml',
-    
+	    
             onSuccess: function(transport) {
                 // FIXME: the content may indicate that we failed to delete!
                 // store[modelVariable] = transport.status;
@@ -164,16 +166,16 @@ Model.subclass('WebStore', {
     
             onSuccess: function(transport) {
                 console.log('propfind received %s', 
-                    Exporter.nodeToString(transport.responseXML) || transport.responseText);
+			    Exporter.nodeToString(transport.responseXML) || transport.responseText);
                 if (!transport.responseXML) return; // FIXME: report problem
-
+		
                 var result = Query.evaluate(transport.responseXML.documentElement, xpQueryString);
                 if (!resultType) { 
                     store[modelVariable] = result;
                 } else { 
                     store[modelVariable] = result.map(function(r) { 
                         return new Resource(r);
-                    })
+                    });
                 }
                 store.changed("get" + modelVariable);
             }.logErrors('onSuccess')
@@ -189,7 +191,7 @@ Model.subclass('WebStore', {
     getCurrentDirectory: function() {
         return this.CurrentDirectory;
     },
-
+    
     setCurrentDirectory: function(name) {
         if (!name) return;
 
@@ -205,7 +207,7 @@ Model.subclass('WebStore', {
     
         this.CurrentDirectory = name;
         this.changed('getCurrentDirectory');
-
+	
         console.log('host %s, dir %s name %s', this.host, this.CurrentDirectory, name);
         // initialize getting the contents
         this.propfind(this.currentDirectoryURL(), 1, "/D:multistatus/D:response", "CurrentDirectoryContents", Resource);
@@ -232,7 +234,7 @@ Model.subclass('WebStore', {
             } else {
                 this.CurrentResource = name;
                 console.log('current resource set to %s', this.CurrentResource);
-
+		
                 // initialize getting the resource contents
                 this.fetch(this.currentResourceURL(), "CurrentResourceContents");
             }
@@ -241,11 +243,15 @@ Model.subclass('WebStore', {
     
     currentResourceURL: function() {
         if (!this.CurrentResource) return "http://" + this.host;
-        else return "http://%s%s%s".format(this.host, this.CurrentResource.startsWith('/') ? "": "/", this.CurrentResource);
+        else return "http://%s%s%s".format(this.host, 
+					   this.CurrentResource.startsWith('/') ? "": "/", 
+					   this.CurrentResource);
     },
-
+    
     currentDirectoryURL: function() {
-        return "http://%s%s%s".format(this.host, this.CurrentDirectory.startsWith('/') ? "": "/", this.CurrentDirectory);
+        return "http://%s%s%s".format(this.host, 
+				      this.CurrentDirectory.startsWith('/') ? "": "/", 
+				      this.CurrentDirectory);
     },
     
     getCurrentResourceContents: function() {
@@ -264,16 +270,17 @@ Model.subclass('WebStore', {
         ]);
         var m = panel.leftPane;
         m.connectModel({model: this, getList: "getDirectoryList", setSelection: "setCurrentDirectory", 
-            getSelection: "getCurrentDirectory"});
+			getSelection: "getCurrentDirectory"});
         m = panel.rightPane;
         m.connectModel({model: this, getList: "getCurrentDirectoryContents", setSelection: "setCurrentResource"});
         var oldpress = m.innerMorph().onKeyPress;
         m.innerMorph().onKeyPress = function(evt) {
             if (evt.getKeyCode() == Event.KEY_BACKSPACE) { // Replace the selection after checking for type-ahead
-                var result = this.world().confirm("delete file " + this.itemList[this.selectedLineNo()]);
+                var result = this.world().confirm("delete resource " + this.itemList[this.selectedLineNo()]);
                 evt.stop();
                 if (result) {
-                    model.deleteResource(this.itemList[this.selectedLineNo()], "CurrentDirectoryContents");
+                    model.deleteResource(this.itemList[this.selectedLineNo()], 
+					 "CurrentDirectoryContents");
                 }
             } else oldpress.call(this, evt);
         };

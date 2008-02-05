@@ -41,26 +41,33 @@ var NetRequest = Class.create(Ajax.Request, {
         this.requestNetworkAccess();
         $super(this.rewriteURL(url), options);
     },
+    
 
-    rewriteURL: function(url) {
-        if (Config.proxyURL) {
-            var splitter = new RegExp("http://([^/:]*)(:[0-9]+)?(/.*)");
-            var urlMatch = url.match(splitter);
-            var proxyMatch = Config.proxyURL.match(splitter);
-            var portMatch = urlMatch[2];
-            if (portMatch) portMatch = "/" + portMatch.substring(1);  // replace ":" with "
-            else portMatch = "";
-            if (urlMatch && proxyMatch && (proxyMatch[1] != urlMatch[1] || proxyMatch[2] != urlMatch[2])) {
-                var result = Config.proxyURL + urlMatch[1]  + portMatch + urlMatch[3];
-                // console.warn("url match " + urlMatch + " on " + url + " to " + result);
-                return result;
-            }
-        } 
-        return url;
-    },
+    rewriteURL: (function() {
+	var urlSplitter = new RegExp("http://([^/:]*)(:[0-9]+)?(/.*)");
+	return function(url) {
+            if (Config.proxyURL) {
+		var urlMatch = url.match(urlSplitter);
+		if (!urlMatch) {
+		    console.warn("malformed URL %s?", url);
+		    return url;
+		}
+		var proxyMatch = Config.proxyURL.match(urlSplitter);
+		var portMatch = urlMatch[2];
+		if (portMatch) portMatch = "/" + portMatch.substring(1);  // replace ":" with "
+		else portMatch = "";
+		if (urlMatch && proxyMatch && (proxyMatch[1] != urlMatch[1] || proxyMatch[2] != urlMatch[2])) {
+                    var result = Config.proxyURL + urlMatch[1]  + portMatch + urlMatch[3];
+                    // console.warn("url match " + urlMatch + " on " + url + " to " + result);
+                    return result;
+		}
+            } 
+            return url;
+	}
+    })(),
     
     requestNetworkAccess: function() {
-        if (window.location.protocol == "file:"  && UserAgent.isMozilla) {       
+        if (window.location.protocol == "file:"  && Global.netscape) {       
             try {
                 netscape.security.PrivilegeManager.enablePrivilege("UniversalBrowserRead");
                 console.log("requested browser read privilege");

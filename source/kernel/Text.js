@@ -17,7 +17,7 @@
 /**
  * @class Font
  */ 
-Object.subclass('Font', {
+Object.subclass(Global, 'Font', {
 
     initialize: function(family/*:String*/, size/*:Integer*/){
         this.family = family;
@@ -96,7 +96,7 @@ Object.subclass('Font', {
  * @class TextWord
  * This 'class' renders single words
  */ 
-Object.subclass("TextWord", {
+Object.subclass(Global, 'TextWord', {
 
     deserialize: function(importer, rawNode) {
         this.rawNode = rawNode;
@@ -629,7 +629,7 @@ Object.subclass('TextLine', {
     
 });
 
-scope.WrapStyle = { 
+Global.WrapStyle = { 
     NORMAL: "wrap", // fits text to bounds width using word wrap and sets height
     NONE: "noWrap", // simply sets height based on line breaks only
     SHRINK: "shrinkWrap" // sets both width and height based on line breaks only
@@ -638,7 +638,7 @@ scope.WrapStyle = {
 /**
  * @class TextMorph
  */ 
-scope.TextMorph = Morph.subclass("TextMorph", {
+TextMorph = Morph.subclass(Global, "TextMorph", {
 
     // these are prototype variables
     fontSize:   Config.defaultFontSize   || 12,
@@ -1635,7 +1635,7 @@ Object.extend(TextMorph, {
  * A PrintMorph is just like a TextMorph, except it converts its model value
  * to a string using toString(), and from a string using eval()
  */ 
-TextMorph.subclass("PrintMorph", {
+TextMorph.subclass(Global, 'PrintMorph', {
 
     updateView: function(aspect, controller) {
         var p = this.modelPlug;
@@ -1703,7 +1703,7 @@ Object.subclass('TestTextMorph', {
     }
 
 });
-})(Global);
+})({});
 
 console.log('loaded Text.js');
 
