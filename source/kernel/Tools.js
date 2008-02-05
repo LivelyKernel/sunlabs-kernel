@@ -145,8 +145,12 @@ Model.subclass('ObjectBrowser', {
             this.changed("getObjectValue");
         } else {
             // Double-clicking: Browse child
-            if (this.fullPath != "") this.fullPath += ".";
-            this.fullPath += this.nameToView;
+	    if ((this.objectToView instanceof Array) && !isNaN(parseInt(n))) {
+		this.fullPath += "[" + n + "]";
+	    } else {
+		if (this.fullPath != "") this.fullPath += ".";
+		this.fullPath += this.nameToView;
+	    }
             this.objectToView = eval(this.fullPath);
             if (!this.objectToView) this.objectToView = Global;
             this.nameToView = "";
@@ -181,6 +185,10 @@ Model.subclass('ObjectBrowser', {
     }
 
 });
+
+
+
+
 
 // ===========================================================================
 // Object Inspector
@@ -249,7 +257,7 @@ Model.subclass('SimpleInspector', {
                 new SimpleInspector(thisModel.selectedItem()).openIn(WorldMorph.current())}])
             return menu; 
         }
-        return new WindowMorph(panel, 'Inspector');
+        return new WindowMorph(panel, 'Inspector (%s)'.format(this).truncate(50));
     }
 
 });
