@@ -5045,7 +5045,7 @@ PasteUpMorph.subclass("WorldMorph", {
 		var m = world.addMorph(new ClockMorph(evt.mousePoint, 50));
 		m.startSteppingScripts(); }],
             ["FrameRateMorph", function(evt) {
-		var m = world.addMorph(new FrameRateMorph(evt.mousePoint.extent(pt(150, 10)), "FrameRateMorph"));
+		var m = world.addMorph(new FrameRateMorph(evt.mousePoint.extent(pt(160, 10)), "FrameRateMorph"));
 		m.startSteppingScripts(); }]
         ];
         if (this.isLoadedFromNetwork()) { 

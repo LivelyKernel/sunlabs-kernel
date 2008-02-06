@@ -660,19 +660,30 @@ TextMorph.subclass('FrameRateMorph', {
 
     initialize: function($super, rect, textString) {
         $super(rect, textString);
-        this.tallySinceTick = 0;
-	this.lastTick = new Date().getSeconds();
+	this.reset(new Date());
+    },
+
+    reset: function(date) {
+        this.lastTick = date.getSeconds();
+	this.lastMS = date.getMilliseconds();
+        this.stepsSinceTick = 0;
+	this.maxLatency = 0;
     },
 
     nextStep: function() {
-        this.tallySinceTick ++;
-	var nowTick = new Date().getSeconds();
+	var date = new Date();
+        this.stepsSinceTick ++;
+	var nowMS = date.getMilliseconds();
+	this.maxLatency = Math.max(this.maxLatency, nowMS - this.lastMS);
+	this.lastMS = nowMS;
+	var nowTick = date.getSeconds();
 	if (nowTick != this.lastTick) {
 	    this.lastTick = nowTick;
-	    var ms = (1000 / Math.max(this.tallySinceTick,1)).roundTo(1);
-	    this.setTextString(this.tallySinceTick.toString() + " frames/sec (" + ms.toString() + "ms)");
-	    this.tallySinceTick = 0;
+	    var ms = (1000 / Math.max(this. stepsSinceTick,1)).roundTo(1);
+	    this.setTextString(this. stepsSinceTick.toString() + " frames/sec (" + ms.toString() + "ms avg),\nmax latency " + this.maxLatency.toString() + " ms.");
+	    this.reset(date);
 	}
+	
     },
 
     startSteppingScripts: function() { this.startStepping(1,'nextStep'); }
