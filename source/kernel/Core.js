@@ -5029,7 +5029,13 @@ PasteUpMorph.subclass("WorldMorph", {
             ["Ellipse", function(evt) { world.addMorph(new Morph(evt.mousePoint.extent(pt(50, 50)), "ellipse"));}],
             ["TextMorph", function(evt) { world.addMorph(new TextMorph(evt.mousePoint.extent(pt(120, 10)), "This is a TextMorph"));}],
             ["Class Browser", function(evt) { new SimpleBrowser().openIn(world, evt.mousePoint); }],
-            ["Object Hierarchy Browser", function(evt) { new ObjectBrowser().openIn(world, evt.mousePoint); }]
+            ["Object Hierarchy Browser", function(evt) { new ObjectBrowser().openIn(world, evt.mousePoint); }],
+            ["Clock", function(evt) {
+		var m = world.addMorph(new ClockMorph(evt.mousePoint, 50));
+		m.startSteppingScripts(); }],
+            ["FrameRateMorph", function(evt) {
+		var m = world.addMorph(new FrameRateMorph(evt.mousePoint.extent(pt(150, 10)), "FrameRateMorph"));
+		m.startSteppingScripts(); }]
         ];
         if (this.isLoadedFromNetwork()) { 
             items.push(["File Browser", function(evt) { WebStore.prototype.onCurrentLocation().openIn(world, evt.mousePoint) }])

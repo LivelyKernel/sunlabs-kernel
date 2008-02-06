@@ -4626,7 +4626,7 @@ Morph.subclass(scope, "EngineMorph", {
         ]);
         menu.openIn(this, pt(300,440), true, "Ignition timing"); 
 
-        // this.addRunMenu(); // This will get called from startSteppingScripts
+        this.addRunMenu();
 
         var label = new TextMorph(new Rectangle(0, 0, 100, 20), "The Radial Engine").beLabel();
         label.setFontSize(20);  this.addMorph(label);
@@ -4639,11 +4639,11 @@ Morph.subclass(scope, "EngineMorph", {
             (this.running ? ["stop", this, 'setRunning', false]
 			: ["run", this, 'setRunning', true]),
             ["step", this, 'doStep'],
-            // DI: deprecated...  ["rebuild", this, 'rebuild'],
-            (this.stepTime == this.normalSpeed ? ["full speed", this, 'setStepTime', 1]
-				: ["normal speed", this, 'setStepTime', this.normalSpeed])
+            ["rebuild", this, 'rebuild'],
+            (this.stepTime == this.normalSpeed ? ["fast", this, 'setStepTime', 1]
+				: ["slow", this, 'setStepTime', this.normalSpeed])
         ]);
-        this.runMenu.openIn(this, pt(315,515), true, "Operating State");
+        this.runMenu.openIn(this, pt(310,515), true, "Operating State");
     },
 
 
@@ -4746,13 +4746,11 @@ Morph.subclass(scope, "EngineMorph", {
         this.makeCylinders(this.cylinders.length);
     },
 
-/*	DI: Deprecated
     rebuild: function() {
         this.removeAllMorphs();
         this.makeLayout();
         this.makeCylinders(this.cylinders.length);
     },
-*/
 
     setStepTime: function(ms) {
         this.stepTime = ms;

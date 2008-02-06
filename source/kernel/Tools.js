@@ -648,5 +648,36 @@ Object.extend(console, {
 
 });
 
+// ===========================================================================
+// FrameRateMorph
+// ===========================================================================
+  
+/**
+ * @class FrameRateMorph: Handy Morphic Benchmark
+ */
+   
+TextMorph.subclass('FrameRateMorph', {
+
+    initialize: function($super, rect, textString) {
+        $super(rect, textString);
+        this.tallySinceTick = 0;
+	this.lastTick = new Date().getSeconds();
+    },
+
+    nextStep: function() {
+        this.tallySinceTick ++;
+	var nowTick = new Date().getSeconds();
+	if (nowTick != this.lastTick) {
+	    this.lastTick = nowTick;
+	    var ms = (1000 / Math.max(this.tallySinceTick,1)).roundTo(1);
+	    this.setTextString(this.tallySinceTick.toString() + " frames/sec (" + ms.toString() + "ms)");
+	    this.tallySinceTick = 0;
+	}
+    },
+
+    startSteppingScripts: function() { this.startStepping(1,'nextStep'); }
+
+});
+
 console.log('loaded Tools.js');
 
