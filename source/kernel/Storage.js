@@ -48,7 +48,7 @@ Model.subclass('WebStore', {
 
     defaultStore: null,
     documentation: "Network-based storage (WebDAV)",
-
+    
     onCurrentLocation: function() {
         var path = location.pathname.substring(0, location.pathname.lastIndexOf('index.xhtml'));
         if (path == "") path = "/";
@@ -76,8 +76,6 @@ Model.subclass('WebStore', {
         // retrieve the the contents of the url and save in the indicated model variable
         var store = this;
         var options =  {
-            contentType: 'text/xml',
-
             onSuccess: function(transport) {
                 store[modelVariable] = transport.responseText;
                 store.changed("get" + modelVariable);
@@ -104,24 +102,18 @@ Model.subclass('WebStore', {
         console.log('saving url ' + url);
         var store = this;
         var options =  {
-            method: 'PUT',
-            body: content,
-            contentType: 'text/xml',
-    
             onSuccess: function(transport) {
                 store[modelVariable] = transport.status;
                 store.changed("get" + modelVariable);
             },
-    
             onFailure: function(transport) {
                 WorldMorph.current().alert("failed saving with response " + transport.responseText);
                 //store[modelVariable] = transport.status;
                 //store.changed(modelVariable);
             }
-    
         };
 
-        new NetRequest(options).put(url);
+        new NetRequest(options).put(url, content);
     },
 
     deleteResource: function(url, modelVariable) {
@@ -129,10 +121,7 @@ Model.subclass('WebStore', {
         console.log('deleting url ' + url);
         var store = this;
         var options =  {
-            method: 'DELETE',
-            contentType: 'text/xml',
-	    
-            onSuccess: function(transport) {
+	    onSuccess: function(transport) {
                 // FIXME: the content may indicate that we failed to delete!
                 // store[modelVariable] = transport.status;
                 store.changed("get" + modelVariable);
@@ -152,10 +141,9 @@ Model.subclass('WebStore', {
     propfind: function(url, depth, xpQueryString, modelVariable, resultType) {
         // find the properties given the url and save the results of the indicated query into the model variable
         if (depth != 0 && depth != 1) depth = 'infinity';
-
+	
         var store = this;
         var options = {
-            method: 'PROPFIND', 
             contentType: 'text/xml',
             requestHeaders: { "Depth": depth },
     

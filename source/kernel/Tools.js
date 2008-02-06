@@ -100,11 +100,11 @@ Model.subclass('SimpleBrowser', {
 
 Model.subclass('ObjectBrowser', {
 
-    initialize: function($super) {
+    initialize: function($super, objectToView) {
         $super();
         this.nameToView   = ""; // Current name ("node") that we are viewing
         this.fullPath     = ""; // The full pathname of the object
-        this.objectToView = Global; // Start by viewing the Global namespace
+        this.objectToView = objectToView || Global; // Start by viewing the Global namespace if no argument
         return this;
     },
 
@@ -257,7 +257,7 @@ Model.subclass('SimpleInspector', {
                 new SimpleInspector(thisModel.selectedItem()).openIn(WorldMorph.current())}])
             return menu; 
         }
-        return new WindowMorph(panel, 'Inspector (%s)'.format(this).truncate(50));
+        return new WindowMorph(panel, 'Inspector (%s)'.format(this.inspectee).truncate(50));
     }
 
 });

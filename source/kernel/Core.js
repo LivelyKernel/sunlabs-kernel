@@ -1645,10 +1645,10 @@ var Event = (function() {
     });
 
     var capitalizer = $H({ mouseup: 'MouseUp', mousedown: 'MouseDown', mousemove: 'MouseMove', 
-        mouseover: 'MouseOver', mouseout: 'MouseOut', 
+        mouseover: 'MouseOver', mouseout: 'MouseOut', mousewheel: 'MouseWheel',
         keydown: 'KeyDown', keypress: 'KeyPress', keyup: 'KeyUp' });
 
-    var basicMouseEvents =  ["mousedown", "mouseup", "mousemove"];
+    var basicMouseEvents =  ["mousedown", "mouseup", "mousemove", "mousewheel"];
     var extendedMouseEvents = [ "mouseover", "mouseout"];
     var mouseEvents = basicMouseEvents.concat(extendedMouseEvents);
 
@@ -2659,13 +2659,13 @@ Morph = Visual.subclass("Morph", {
 
         this.initializePersistentState(pt(0,0).asRectangle(), "rect");
 
-
-
         if (other.hasSubmorphs()) { // deep copy of submorphs
             other.submorphs.each(function(m) { 
                 var copy = m.copy(copier);
                 copier.addMapping(m.id(), copy);
-                this.internalAddMorph(copy, false);
+		this.addMorph(copy);
+                //this.internalAddMorph(copy, false);
+		
             }.bind(this));
         }
 
@@ -2674,7 +2674,7 @@ Morph = Visual.subclass("Morph", {
                 && other.hasOwnProperty(p) 
                 && !this.noShallowCopyProperties.include(p)) {
                 this[p] = other[p];
-                if (this[p] instanceof Morph && p !== 'owner') {
+                if (this[p] instanceof Morph && p != "owner") {
                     var replacement = copier.lookupMorph(other[p].id());
                     console.log("found replacement " + replacement + " for field " + p);
                     if (replacement) {
@@ -2924,7 +2924,7 @@ Morph = Visual.subclass("Morph", {
     },
     
     pickId: function() {
-        var previous = this.rawNode.getAttribute("id"); // this can happen when deserializing
+        var previous = this.id(); // this can happen when deserializing
         var id = Morph.newMorphId(); // XXX remove
         this.rawNode.setAttribute("id", id); // this may happen automatically anyway by setting the id property
         return previous;
@@ -3578,10 +3578,11 @@ Morph.addMethods({
                 this.setFisheyeScale(1.0)
             }
         }
-
+	
         if (hasFocus) return this.mouseHandler.handleMouseEvent(evt, this);
 
         if (!evt.priorPoint || !this.fullContainsWorldPoint(evt.priorPoint)) return false;
+	
 
         if (this.hasSubmorphs()) {
             // If any submorph handles it (ie returns true), then return
@@ -3632,6 +3633,8 @@ Morph.addMethods({
     onMouseOver: function(evt) { }, //default behavior
 
     onMouseOut: function(evt) { }, //default behavior
+
+    onMouseWheel: function(evt) { }, // default behavior
 
     takesKeyboardFocus: function() { 
         return false; 
@@ -3760,6 +3763,7 @@ Morph.addMethods({
             ["duplicate", this.copyToHand.curry(evt.hand)],
             ["remove", this.remove],
             ["inspect", function() { new SimpleInspector(this).open()}],
+//	    ["browse hierarchy", function() { new ObjectBrowser(this).openIn(this.world(), evt.mousePoint) }],
             ["style", function() { new StylePanel(this).open()}],
             ["drill", this.showOwnerChain.curry(evt)],
             ["grab", this.pickMeUp.curry(evt)],
@@ -3866,7 +3870,11 @@ Morph.addMethods({
 
     copyToHand: function(hand) {
         // Function.prototype.shouldTrace = true;
+	var tfm = this.getGlobalTransform();
         var copy = this.copy(new Copier());
+	// when copying submorphs, make sure that the submorph that become a top-level morph 
+	// reappears in the same location.
+	copy.setTransform(tfm);
         console.log('copied %s', copy);
         // KP: is the following necessary?
         this.owner.addMorph(copy); // set up owner the original parent so that it can be reparented to this: 
@@ -3882,13 +3890,14 @@ Morph.addMethods({
         // If checkForDnD is false, return the morph to receive this mouse event (or null)
         // If checkForDnD is true, return the morph to grab from a mouse down event (or null)
         // If droppingMorph is not null, then check that this is a willing recipient (else null)
-
+	
         if (!this.fullContainsWorldPoint(evt.mousePoint)) return null; // not contained anywhere
-
         // First check all the submorphs, front first
         for (var i = this.submorphs.length - 1; i >= 0; i--) {
             var hit = this.submorphs[i].morphToGrabOrReceive(evt, droppingMorph, checkForDnD); 
-            if (hit != null) return hit;  // hit a submorph
+            if (hit != null) { 
+		return hit;  // hit a submorph
+	    }
         }
 
         // Check if it's really in this morph (not just fullBounds)
@@ -3896,16 +3905,18 @@ Morph.addMethods({
 
         // If no DnD check, then we have a hit (unless no handler in which case a miss)
         if (!checkForDnD) return this.mouseHandler ? this : null;
-
+	
         // On drops, check that this is a willing recipient
         if (droppingMorph != null) {
-            return this.acceptsDropping(droppingMorph) ? this : null;
-        }
-
+	    return this.acceptsDropping(droppingMorph) ? this : null;
+	} else {
+	
         // On grabs, can't pick up the world or morphs that handle mousedown
         // DI:  I think the world is adequately checked for now elsewhere
         // else return (!evt.isAltDown() && this === this.world()) ? null : this; 
-        else return this; 
+	    return this;
+	}
+
     },
     
     morphToReceiveEvent: function(evt) {
@@ -5263,6 +5274,7 @@ Morph.subclass("HandMorph", function() {
         case "mousemove":
         case "mousedown":
         case "mouseup":
+	case "mousewheel":
             this.handleMouseEvent(evt);
             // evt.preventDefault();
             break;
@@ -5308,7 +5320,9 @@ Morph.subclass("HandMorph", function() {
                         // Note if onMouseOver sets focus, it will get onMouseMove
                         if (this.mouseFocus) this.mouseFocus.captureMouseEvent(evt, true);
                         else if (!evt.hand.hasSubmorphs()) this.owner.captureMouseEvent(evt, false); 
-                    }
+                    } else {
+			if (receiver) receiver.onMouseWheel(evt);
+		    }
                 } 
             }
             this.lastMouseEvent = evt;
@@ -5320,7 +5334,6 @@ Morph.subclass("HandMorph", function() {
         //-------------------
         if (!evt.mousePoint.eqPt(this.position())) { // Only happens in some OSes
             // and when window wake-up click hits a morph
-            console.log("mouseButton event includes a move!");
             this.moveBy(evt.mousePoint.subPt(this.position())); 
         }
 
@@ -5328,7 +5341,7 @@ Morph.subclass("HandMorph", function() {
         this.setBorderWidth(this.mouseButtonPressed ? 3 : 1);
         evt.setButtonPressedAndPriorPoint(this.mouseButtonPressed, this.lastMouseEvent ? this.lastMouseEvent.mousePoint : null);
     
-        if (this.mouseFocus != null) {
+	if (this.mouseFocus != null) {
             if (this.mouseButtonPressed) {
                 this.mouseFocus.captureMouseEvent(evt, true);
                 this.lastMouseDownPoint = evt.mousePoint; 
@@ -5343,7 +5356,7 @@ Morph.subclass("HandMorph", function() {
                 if (receiver == null) receiver = this.world();
                 this.dropMorphsOn(receiver);
             } else {
-                // console.log('hand dispatching event ' + event.type + ' to owner '+ Object.inspect(this.owner()));
+                // console.log("hand dispatching event %s to owner %s", evt, this.owner);
                 // This will tell the world to send the event to the right morph
                 // We do not dispatch mouseup the same way -- only if focus gets set on mousedown
                 if (evt.type == "mousedown") this.owner.captureMouseEvent(evt, false);

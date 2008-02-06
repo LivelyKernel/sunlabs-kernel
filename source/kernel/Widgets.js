@@ -1845,7 +1845,7 @@ var ScrollPane = Morph.subclass("ScrollPane", {
         this.innerMorph().setPosition(pt(this.innerMorph().position().x, -slideRoom*scrollPos)); 
         this.scrollBar.adjustForNewBounds();
     },
-    
+
     getVisibleExtent: function(scrollPos) {
         return Math.min(1, this.bounds().height / Math.max(10, this.innerMorph().bounds().height)); 
     },
