@@ -187,8 +187,8 @@ Namespace =  {
 var Loader = {
 
     loadScript: function(ns, url) {
-        var script = NodeFactory.createNS(Namespace.XHTML, "script");
-        script.setAttributeNS(Namespace.XHTML, "src", url);
+        var script = NodeFactory.createNS(ns, "script");
+        script.setAttributeNS(ns, "src", url);
         document.documentElement.appendChild(script);
         //document.documentElement.removeChild(script);
     },
@@ -201,7 +201,7 @@ var Loader = {
         } catch (e) {
             // FF can fail here
             console.log('failed to insert iframe contents: %e', e);
-           return;
+            return;
         }
         document.documentElement.appendChild(adoptedNode);
     }
@@ -238,7 +238,10 @@ var NodeFactory = {
     createNS: function(ns, name, attributes) {
         var element = document.createElementNS(ns, name);
         if (attributes) {
-            $H(attributes).each(function(pair) { element.setAttributeNS(null, pair[0], pair[1].toString()); });
+	    for (var name in attributes) {
+		if (!attributes.hasOwnProperty(name)) continue;
+		element.setAttributeNS(null, name, attributes[name]);
+	    }
         }
         return element;
     },
@@ -1506,11 +1509,17 @@ Object.subclass('CharacterInfo', {
 
 var Event = (function() {
     var tmp = Event; // note we're rebinding the name Event to point to a different class 
-    var Event = Object.subclass('Event', {
 
+    var capitalizer = { mouseup: 'MouseUp', mousedown: 'MouseDown', mousemove: 'MouseMove', 
+        mouseover: 'MouseOver', mouseout: 'MouseOut', mousewheel: 'MouseWheel',
+        keydown: 'KeyDown', keypress: 'KeyPress', keyup: 'KeyUp' };
+    
+    
+    var Event = Object.subclass('Event', {
+	
         initialize: function(rawEvent) {
             this.rawEvent = rawEvent;
-            this.type = rawEvent.type;
+            this.type = capitalizer[rawEvent.type] || rawEvent.type;
             this.charCode = rawEvent.charCode;
 
             if (isMouse(rawEvent)) {
@@ -1581,10 +1590,12 @@ var Event = (function() {
             // if moving or releasing, priorPoint will get found by prior morph
             this.priorPoint = priorPoint; 
         },
+	
+	handlerName: function() {
+	    return "on" + this.type;
+	},
 
         getKeyCode: function() {
-            // if (this.type != 'keypress')
-            // return;
             with (Event.Safari) {
                 switch (this.rawEvent.keyCode) {
                 case KEY_LEFT: return Event.KEY_LEFT;
@@ -1599,10 +1610,6 @@ var Event = (function() {
                 }
             }
             return this.rawEvent.keyCode;
-        },
-
-        capitalizedType: function() {
-            return capitalizer.get(this.type) || this.type;
         }
 
     });
@@ -1644,10 +1651,6 @@ var Event = (function() {
 
     });
 
-    var capitalizer = $H({ mouseup: 'MouseUp', mousedown: 'MouseDown', mousemove: 'MouseMove', 
-        mouseover: 'MouseOver', mouseout: 'MouseOut', mousewheel: 'MouseWheel',
-        keydown: 'KeyDown', keypress: 'KeyPress', keyup: 'KeyUp' });
-
     var basicMouseEvents =  ["mousedown", "mouseup", "mousemove", "mousewheel"];
     var extendedMouseEvents = [ "mouseover", "mouseout"];
     var mouseEvents = basicMouseEvents.concat(extendedMouseEvents);
@@ -1655,15 +1658,10 @@ var Event = (function() {
     Event.keyboardEvents = ["keypress", "keyup", "keydown"];
     Event.basicInputEvents = basicMouseEvents.concat(Event.keyboardEvents);
 
-    function isMouse(event) {
-        return mouseEvents.include(event.type);
+    function isMouse(rawEvent) {
+        return mouseEvents.include(rawEvent.type);
     };
     
-    function isKeyboard(event) {
-        // return this instanceof MouseEvent;
-        return Event.keyboardEvents.include(event.rawEvent.type);
-    };
-
     return Event;
 })();
 
@@ -1826,6 +1824,7 @@ Visual.subclass('Shape', {
         
         if (this.shouldIgnorePointerEvents)
             this.disablePointerEvents();
+	// this.disableBrowserHandlers();
 
         if (fill !== undefined)
             this.setFill(fill);
@@ -1835,6 +1834,7 @@ Visual.subclass('Shape', {
         
         if (stroke !== undefined)
             this.setStroke(stroke);
+	
     },
 
     applyFunction: function(func,arg) { 
@@ -2358,12 +2358,12 @@ var NodeList = {
 var MouseHandlerForDragging = {
     
     handleMouseEvent: function(evt, targetMorph) {
-        var capType = evt.capitalizedType();
-        var handler = targetMorph['on' + capType];
-        if (capType == "MouseDown") evt.hand.setMouseFocus(targetMorph);
-        if (handler == null) console.log("bah, null handler on " + capType);
+	
+        var handler = targetMorph[evt.handlerName()];
+        if (evt.type == "MouseDown") evt.hand.setMouseFocus(targetMorph);
+        if (handler == null) console.log("bah, null handler on " + evt.type);
         handler.call(targetMorph, evt);
-        if (capType == "MouseUp") {
+        if (evt.type == "MouseUp") {
             // if focus changed, then don't cancel it
             if (evt.hand.mouseFocus === targetMorph) { 
                 evt.hand.setMouseFocus(null);
@@ -3706,11 +3706,10 @@ Object.subclass('MouseHandlerForRelay', {
     },
     
     handleMouseEvent: function(evt, appendage) {
-        var capType = evt.capitalizedType();
-        var targetHandler = this.target[this.eventSpec['on' + capType]];
-        if (capType == "MouseUp") evt.hand.setMouseFocus(null); // NB: must precede any return
+        var targetHandler = this.target[this.eventSpec[evt.handlerName()]];
+        if (evt.type == "MouseUp") evt.hand.setMouseFocus(null); // NB: must precede any return
         if (targetHandler == null) return true; //FixMe: should this be false?
-        if (capType == "MouseDown") evt.hand.setMouseFocus(appendage);
+        if (evt.type == "MouseDown") evt.hand.setMouseFocus(appendage);
         targetHandler.call(this.target, evt, appendage);
         return true; 
     },
@@ -3872,8 +3871,8 @@ Morph.addMethods({
         // Function.prototype.shouldTrace = true;
 	var tfm = this.getGlobalTransform();
         var copy = this.copy(new Copier());
-	// when copying submorphs, make sure that the submorph that become a top-level morph 
-	// reappears in the same location.
+	// when copying submorphs, make sure that the submorph that becomes a top-level morph 
+	// reappears in the same location as its original.
 	copy.setTransform(tfm);
         console.log('copied %s', copy);
         // KP: is the following necessary?
@@ -4586,7 +4585,7 @@ var PasteUpMorph = Morph.subclass("PasteUpMorph", {
     },
     
     captureMouseEvent: function($super, evt, hasFocus) {
-        if (evt.type == "mousedown" && this.onMouseDown(evt)) return; 
+        if (evt.type == "MouseDown" && this.onMouseDown(evt)) return; 
         $super(evt, hasFocus); 
     },
 
@@ -5267,20 +5266,19 @@ Morph.subclass("HandMorph", function() {
     handleEvent: function(rawEvt) {
         var evt = new Event(rawEvt);
         evt.hand = this;
-     
+	
         Function.resetDebuggingStack();
-
         switch (evt.type) {
-        case "mousemove":
-        case "mousedown":
-        case "mouseup":
-	case "mousewheel":
+        case "MouseMove":
+        case "MouseDown":
+        case "MouseUp":
+	case "MouseWheel":
             this.handleMouseEvent(evt);
             // evt.preventDefault();
             break;
-        case "keydown":
-        case "keypress": 
-        case "keyup":
+        case "KeyDown":
+        case "KeyPress": 
+        case "KeyUp":
             this.handleKeyboardEvent(evt);
             break;
         default:
@@ -5297,7 +5295,7 @@ Morph.subclass("HandMorph", function() {
         //-------------
         // mouse move
         //-------------
-        if (evt.type == "mousemove") { // it is just a move
+        if (evt.type == "MouseMove") { // it is just a move
             this.setPosition(evt.mousePoint);
             this.recordChange('origin');
              
@@ -5337,7 +5335,7 @@ Morph.subclass("HandMorph", function() {
             this.moveBy(evt.mousePoint.subPt(this.position())); 
         }
 
-        this.mouseButtonPressed = (evt.type == "mousedown"); 
+        this.mouseButtonPressed = (evt.type == "MouseDown"); 
         this.setBorderWidth(this.mouseButtonPressed ? 3 : 1);
         evt.setButtonPressedAndPriorPoint(this.mouseButtonPressed, this.lastMouseEvent ? this.lastMouseEvent.mousePoint : null);
     
@@ -5348,7 +5346,7 @@ Morph.subclass("HandMorph", function() {
             }
             else this.mouseFocus.captureMouseEvent(evt, true); 
         } else {
-            if (this.hasSubmorphs() && (evt.type == "mousedown" || this.hasMovedSignificantly)) {
+            if (this.hasSubmorphs() && (evt.type == "MouseDown" || this.hasMovedSignificantly)) {
                 // If laden, then drop on mouse up or down
                 var m = this.topSubmorph();
                 var receiver = this.owner.morphToGrabOrReceiveDroppingMorph(evt, m);
@@ -5359,9 +5357,9 @@ Morph.subclass("HandMorph", function() {
                 // console.log("hand dispatching event %s to owner %s", evt, this.owner);
                 // This will tell the world to send the event to the right morph
                 // We do not dispatch mouseup the same way -- only if focus gets set on mousedown
-                if (evt.type == "mousedown") this.owner.captureMouseEvent(evt, false);
+                if (evt.type == "MouseDown") this.owner.captureMouseEvent(evt, false);
             }
-            if (evt.type == "mousedown") {
+            if (evt.type == "MouseDown") {
                 this.lastMouseDownPoint = evt.mousePoint;
                 this.hasMovedSignificantly = false; 
             }
@@ -5480,13 +5478,13 @@ Morph.subclass("HandMorph", function() {
 
     handleKeyboardEvent: function(evt) { 
         if (this.hasSubmorphs())  {
-            if (evt.type == 'keydown' && this.moveTopMorph(evt)) return;
-            else if (evt.type == 'keypress' && this.transformTopMorph(evt)) return;
+            if (evt.type == "KeyDown" && this.moveTopMorph(evt)) return;
+            else if (evt.type == "KeyPress" && this.transformTopMorph(evt)) return;
         }
         // manual bubbling up b/c the event won't bubble by itself    
         for (var responder = this.keyboardFocus; responder != null; responder = responder.owner) {
             if (responder.takesKeyboardFocus()) {
-                var handler = responder["on" + evt.capitalizedType()];
+                var handler = responder[evt.handlerName()];
                 if (handler) {
                     if (handler.call(responder, evt)) 
                         break; // event consumed?

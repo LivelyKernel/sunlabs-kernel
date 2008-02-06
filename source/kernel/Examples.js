@@ -2520,7 +2520,7 @@ Model.subclass('StockWidget', {
     },
 
     // FIXME: The image links here are no longer necessary.  Remove later.
-    config: $H({
+    config: {
     "DOW JONES": { 
         ticker: 'DJX:.DJI', 
         image: "http://bigcharts.marketwatch.com/charts/gqplus/fpDJIA-narrow.gqplus?167" },
@@ -2536,7 +2536,7 @@ Model.subclass('StockWidget', {
     "S&P INX": { 
         ticker: 'SP:.INX',
         image: "http://stockcharts.com/charts/historical/images/SPX1960t.png" }
-    }),
+    },
        
     getStockIndex: function() { 
         return this.listItem; 
@@ -2544,7 +2544,7 @@ Model.subclass('StockWidget', {
     
     setStockIndex: function(item, v) { 
         this.listItem = item; 
-        var entry = this.config.get(this.listItem);
+        var entry = this.config[this.listItem];
         this.imageurl = entry.image;
         this.changed('getIndexChartURL');
         this.feed = new Feed(this.makeURL(entry.ticker));
@@ -2599,7 +2599,7 @@ Model.subclass('StockWidget', {
         // m.connectModel({model: this, getURL: "getIndexChartURL"});
 
         // Newsfeed selector
-        m = panel.addMorph(new CheapListMorph(new Rectangle(20, 180, 90, 20), this.config.keys()));
+        m = panel.addMorph(new CheapListMorph(new Rectangle(20, 180, 90, 20), Object.keys(this.config)));
         m.connectModel({model: this, getSelection: "getStockIndex", setSelection: "setStockIndex"});
 
         // Newsfeed panel

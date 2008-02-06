@@ -120,7 +120,10 @@ var NetRequest = (function() {
 			headers[extras[i]] = extras[i+1];
                     }
 		} else {
-		    $H(extras).each(function(pair) { headers[pair.key] = pair.value });
+		    for (var name in extras) {
+			if (!extras.hasOwnProperty(name)) continue;
+			headers[name] = extras[name];
+		    }
 		}
             }
 	    
