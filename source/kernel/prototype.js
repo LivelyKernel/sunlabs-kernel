@@ -12,7 +12,7 @@ var Prototype = {
 
   Browser: {
     IE:     !!(window.attachEvent && !window.opera),
-    Opera:  !!window.opera,
+    Opera:  !!window.opera
   },
 
   JSONFilter: /^\/\*-secure-([\s\S]*)\*\/\s*$/,
