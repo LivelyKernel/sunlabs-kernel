@@ -3869,15 +3869,13 @@ Morph.addMethods({
 
     copyToHand: function(hand) {
         // Function.prototype.shouldTrace = true;
-	var tfm = this.getGlobalTransform();
         var copy = this.copy(new Copier());
 	// when copying submorphs, make sure that the submorph that becomes a top-level morph 
 	// reappears in the same location as its original.
-	copy.setTransform(tfm);
         console.log('copied %s', copy);
-        // KP: is the following necessary?
-        this.owner.addMorph(copy); // set up owner the original parent so that it can be reparented to this: 
-        hand.addMorph(copy);  
+	copy.owner = null; // so following addMorph will just leave the tfm alone
+        this.owner.addMorph(copy); // set up owner as the original parent so that...        
+	hand.addMorph(copy);  // ... it will be properly transformed by this addMorph()
         // copy.withAllSubmorphsDo(function() { this.startStepping(null); }, null);
     },
 

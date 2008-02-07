@@ -359,15 +359,6 @@ function main() {
     if (Config.skipAllExamples) return;
     else populateWorldWithExamples(world);
 
-    if (false) { // Display a color swatch
-        var colors = Color.wheelHsb(10,0,1,1);
-        var m;
-        for (var i=0; i<colors.length; i++) {
-            world.addMorph(m = new Morph(new Rectangle(i*40, 0, 35, 35), "rect"));
-            m.setFill(colors[i]);
-        }
-        console.log(colors.invoke('toString'));
-    }
 }
 
 // the delay here is a workaround to give FF 2.0 the time to update
