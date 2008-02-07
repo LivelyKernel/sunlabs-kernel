@@ -602,6 +602,70 @@ ClipMorph.subclass(scope, "DoodleMorph", {
 });
 
 
+
+Morph.subclass('SquiggleMorph', {
+
+    drawingColor: Color.red,
+    drawingHandColor: Color.yellow,
+
+    initialize: function($super, rect) {
+	$super(rect, "rect");
+        // The squiggle that we are creating currently
+        this.currentMorph = null;
+        this.start = null;
+	this.savedHandColor = null;
+        return this;
+    },
+    
+    onMouseDown: function(evt) {
+        if (!this.currentMorph) {
+            this.start = this.localize(evt.mousePoint);
+            this.currentMorph = this.addMorph(new Morph(this.start.asRectangle(), "rect"));
+            // TODO: relaying events stops from moving morphs after drawing them..
+//            this.currentMorph.relayMouseEvents(this, {onMouseMove: "onMouseMove"});
+
+            // 'solution' 1: we disable the drawn morph and enable morphs only 
+            // when selection tool is in use
+	    /*
+            if (!this.value) {
+                this.currentMorph.ignoreEvents();
+            }
+            */ 
+            this.currentMorph.setShape(new PolylineShape([pt(0,0)], 2, this.drawingColor));
+	    this.savedHandColor = evt.hand.getFill();
+            evt.hand.setFill(this.drawingHandColor);
+        } else {
+            this.onMouseUp(evt);
+        }
+    },
+
+    onMouseMove: function(evt) {
+        if (this.currentMorph) {
+            var verts = this.currentMorph.shape.vertices();
+            var pt = this.localize(evt.mousePoint.subPt(this.start));
+            if (verts.length > 0 && !verts[verts.length - 1].eqPt(pt)) {
+                verts.push(pt);
+                this.currentMorph.shape.setVertices(verts);
+            }
+        } else {
+            this.checkForControlPointNear(evt);
+        }
+    },
+
+    onMouseUp: function(evt) {
+        this.currentMorph = null;
+        this.start = null;
+        evt.hand.setFill(this.savedHandColor);
+    },
+
+    handlesMouseDown: function() { 
+	return true; 
+    }
+        
+});
+
+
+
 // ===========================================================================
 // The 3D Rotation Example
 // ===========================================================================

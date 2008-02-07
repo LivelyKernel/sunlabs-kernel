@@ -3791,7 +3791,8 @@ Morph.addMethods({
             [((this.openForDragAndDrop) ? "close DnD" : "open DnD"), this.toggleDnD.curry(evt.mousePoint)],
             ["show Lively markup", this.addSvgInspector.curry(this)],
             ["publish shrink-wrapped as...", function() { 
-                WorldMorph.current().makeShrinkWrappedWorldWith([this], WorldMorph.current().prompt('publish as (.xhtml)')) }],
+                this.world().makeShrinkWrappedWorldWith([this], 
+							this.world().prompt('publish as (.xhtml)')); }],
             ["test tracing (in console)", this.testTracing]
         ];
         var menu = new MenuMorph(items, this); 
@@ -4801,7 +4802,7 @@ PasteUpMorph.subclass("WorldMorph", {
         menu.addLine();
         menu.addItem(["publish world as ... ", function() { 
             var msg = this.shrinkWrapToFile(this.prompt("world file (.xhtml)"));
-	    if (msg) WorldMorph.current().alert(msg);
+	    if (msg) this.world().alert(msg);
 	}]);
         menu.addItem(["restart system", this.restart]);
         return menu;
@@ -5058,6 +5059,7 @@ PasteUpMorph.subclass("WorldMorph", {
             ["TextMorph", function(evt) { world.addMorph(new TextMorph(evt.mousePoint.extent(pt(120, 10)), "This is a TextMorph"));}],
             ["Class Browser", function(evt) { new SimpleBrowser().openIn(world, evt.mousePoint); }],
             ["Object Hierarchy Browser", function(evt) { new ObjectBrowser().openIn(world, evt.mousePoint); }],
+	    
             ["Clock", function(evt) {
 		var m = world.addMorph(new ClockMorph(evt.mousePoint, 50));
 		m.startSteppingScripts(); }],
@@ -5079,24 +5081,24 @@ PasteUpMorph.subclass("WorldMorph", {
     shrinkWrapToFile: function(filename) {
         if (filename == null) {
             console.log('null filename, not publishing %s', morphs);
-           return null;
+            return null;
         }
 
         if (!filename.endsWith(".xhtml")) {
             filename += ".xhtml";
-           console.log("changed filename to " + filename);
+            console.log("changed filename to " + filename);
         }
 
 	var url = window.location.toString();
-        var newDoc = Storage.retrieveData(url);
-	if (!newDoc) {
-	    return 'problem accessing ' + url;
+        var req = new NetRequest().beSynchronous(); 
+        var result = req.get(url);
+
+	if (result.status < 200 && result.status >= 300) {
+	    return "failure retrieving  " + newurl + ", status " + result.status;
 	}
+	var newDoc = result.responseXML;
+
         var mainDefs = newDoc.getElementById('Defaults');
-        var mainScript = newDoc.getElementById('Main');
-        var preamble = newDoc.createElementNS(Namespace.SVG, "script");
-        preamble.appendChild(newDoc.createCDATASection("Config.skipAllExamples = true"));
-        mainDefs.insertBefore(preamble, mainScript);
         var newurl = url.substring(0, url.lastIndexOf('/') + 1) + filename;
         var previous = newDoc.getElementById("ShrinkWrapped");
         if (previous) {
@@ -5112,12 +5114,12 @@ PasteUpMorph.subclass("WorldMorph", {
 	// FIXME: note no model handling
         var content = Exporter.nodeToString(newDoc);
 
-	var req = new NetRequest().sync();
+	var req = new NetRequest().beSynchronous();
 	var result = req.put(newurl, content);
 	if (result.status >= 200 && result.status < 300)
-	    return null;
+	    return "success publishing world at " + newurl + ", status " + result.status;
 	else
-	    return "failed saving world at url " + newurl + ": " + result.status;
+	    return "failure publishing world at " + newurl + ", status " + result.status;
     },
     
     makeShrinkWrappedWorldWith: function(morphs, filename) {
@@ -5142,16 +5144,11 @@ PasteUpMorph.subclass("WorldMorph", {
 
         console.log('got source %s url %s', newDoc, url);
         var mainDefs = newDoc.getElementById('Defaults');
-        var mainScript = newDoc.getElementById('Main');
-        var preamble = newDoc.createElementNS(Namespace.SVG, "script");
-        preamble.appendChild(newDoc.createCDATASection("Config.skipAllExamples = true"));
-        mainDefs.insertBefore(preamble, mainScript);
         var newurl = url.substring(0, url.lastIndexOf('/') + 1) + filename;
         var previous = newDoc.getElementById("ShrinkWrapped");
         if (previous) {
             previous.parentNode.removeChild(previous);
         }
-
 
         var container = newDoc.createElementNS(Namespace.SVG, 'g');
 
@@ -5647,11 +5644,10 @@ Morph.subclass("LinkMorph", {
 
     morphMenu: function($super, evt) { 
         var menu = $super(evt);
-        var world = this.world();
         menu.addItem(["publish linked world as ... ", 
 		      function() { 
-			  var msg = this.myWorld.shrinkWrapToFile(world.prompt("world file (.xhtml)"));
-			  if (msg) world.alert(msg);
+			  var msg = this.myWorld.shrinkWrapToFile(this.world().prompt("world file (.xhtml)"));
+			  if (msg) this.world().alert(msg);
 		      }]);
         return menu;
     },

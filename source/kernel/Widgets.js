@@ -442,7 +442,7 @@ var TitleBarMorph = (function() {
     },
 
     okToBeGrabbedBy: function(evt) {
-        var oldTop = WorldMorph.current().topSubmorph();
+        var oldTop = this.world().topSubmorph();
         if (oldTop instanceof WindowMorph) oldTop.titleBar.highlight(false);
         return this.windowMorph.isCollapsed() ? this : this.windowMorph;
     },
@@ -1830,7 +1830,7 @@ var ScrollPane = Morph.subclass("ScrollPane", {
         evt.hand.setMouseFocus(null);
         var menu = this.innerMorph().getModel()[this.paneMenuMessage]();
         if (!menu) return;
-        menu.openIn(WorldMorph.current(), evt.mousePoint, false); 
+        menu.openIn(this.world(), evt.mousePoint, false); 
     },
 
     getScrollPosition: function() { 

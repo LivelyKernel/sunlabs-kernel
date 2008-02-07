@@ -141,16 +141,34 @@ var NetRequest = (function() {
 	    this.options = options || {};
 	},
 	
-	sync: function() {
-	    this.options.asynchronous = false;
+	beSynchronous: function(flag) {
+	    if (flag === undefined) flag = true;
+	    this.options.asynchronous = !flag;
+	    return this;
+	},
+
+	evalJS: function(flag) {
+	    if (flag === undefined) flag = true;
+	    this.options.evalJS = flag ? "force" : false;
 	    return this;
 	},
 
 	get: function(url) {
 	    this.options.method = 'get';
+	    if (!url.startsWith('http')) {
+		var array = window.location.toString().split('/');
+		array.splice(-1); // remove the last segment
+		console.log('array ' + array);
+		url = array.join('/');
+	    }
+
 	    var req = new BaseRequest(this.rewriteURL(url), this.options);
 	    return req.transport;
 	},
+
+	
+	
+
 	
 	put: function(url, content) {
 	    this.options.method = 'put';

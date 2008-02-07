@@ -38,7 +38,8 @@ Object.extend(Config, {
     showStocks: !Config.skipMostExamples,
     showCanvasScape: !Config.skipMostExamples,
     showRSSReader: !Config.skipMostExamples,
-    showDoodle: !Config.skipMostExamples,
+    showDoodle: false, //!Config.skipMostExamples,
+    showSquiggle: !Config.skipMostExamples,
     showWebStore: !Config.skipMostExamples,
     showVideo: !Config.skipMostExamples,
     // Worlds
@@ -191,6 +192,8 @@ function populateWorldWithExamples(world) {
         }
 
         if (Config.showDoodle) lm1.myWorld.addMorph(new WindowMorph(new apps.DoodleMorph(pt(560, 380).extent(pt(300, 300))), 'Doodle Morph'));
+
+	if (Config.showSquiggle) lm1.myWorld.addMorph(new WindowMorph(new apps.SquiggleMorph(pt(560, 380).extent(pt(300, 300))), 'Squiggle Morph'));
         
         if (Config.showVideo) { new PlayerMorph().openIn(lm1.myWorld, pt(50, 20)); }
 
@@ -369,13 +372,12 @@ function main() {
 
     WorldMorph.setCurrent(world);
     world.displayWorldOn(Canvas);
-    console.log('made world ');
-    world.addMorphsFrom("ShrinkWrapped");
+    console.log('made world');
 
     // Populate the world with sample objects, widgets and applications
-    if (Config.skipAllExamples) return;
+    if (container || Config.skipAllExamples) return; // don't populate if we loaded up stuff from a container
     else populateWorldWithExamples(world);
-
+    
 }
 
 // the delay here is a workaround to give FF 2.0 the time to update

@@ -310,15 +310,13 @@ var Storage = {
 
     // synchronous store of XML
     storeData: function(url, content) {
-	var req = new NetRequest().sync();
-	var result = req.put(url, content);
+	var result = new NetRequest().beSynchronous().put(url, content);
 	return result.status >= 200 && result.status < 300;
     },
 
     // synchronous retrieve of XML
     retrieveData: function(url) {
-	var req = new NetRequest().sync(); 
-        var result = req.get(url);
+	var result = new NetRequest().beSynchronous().get(url); 
 	return result && result.responseXML;
     }
 
