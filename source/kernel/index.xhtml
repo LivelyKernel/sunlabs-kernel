@@ -1,17 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html debug="true" xmlns="http://www.w3.org/1999/xhtml">
-  <head>
-    <title>Sun Labs Lively Kernel</title>
-  </head>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head> <title>Sun Labs Lively Kernel</title> </head>
+
 <body topmargin="0" leftmargin="0">
-  <!-- these scripts need the xhtml context -->
-
-<!-- uncomment the following to use the firebug lite console -->
-<!-- <script src="firebug/firebug.js"/> -->
-  <script src="prototype.js"/>  
-
+  <!-- uncomment the following to use the firebug lite console -->
+  <!-- <script src="firebug/firebug.js"/> -->
+  
 <div>  
   <svg id="canvas"
        width="100%" height="100%"
@@ -19,17 +17,11 @@
      xmlns:lively="http://www.experimentalstuff.com/Lively"
      xmlns:xlink="http://www.w3.org/1999/xlink"
      xmlns:xhtml="http://www.w3.org/1999/xhtml"
-     xmlns:D="DAV"
      xml:space="preserve"
      zoomAndPan="disable">
 
 <defs id="Defaults">
-<script type="text/ecmascript"> 
-if (Prototype.Browser.Opera) {
-   // Opera has issues with the height=100% setting, so we'll give it a reasonable value
-   document.getElementById("canvas").setAttribute("height", "800px"); 
-}
-</script>
+<script type="text/ecmascript" xlink:href="prototype.js" />
 <script type="text/ecmascript" xlink:href="defaultconfig.js"/>
 <script type="text/ecmascript" xlink:href="localconfig.js"/> <!-- ignored if file not there -->
 <script type="text/ecmascript" xlink:href="Core.js"/>

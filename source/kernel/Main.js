@@ -346,10 +346,27 @@ function populateWorldWithExamples(world) {
 }
 
 function main() {
+    var world = null;
+    var container = document.getElementById("ShrinkWrapped");
+    if (container) {
+	console.log("found container");
+	var importer = new Importer();
+	var morphs = importer.importFromContainer(container);
+	if (morphs[0]) {
+	    if (morphs[0] instanceof WorldMorph) {
+		world = morphs[0];
+		world.itsCanvas = Canvas;
+	    } else {
+		console.log("unexpected morphs " + morphs);
+	    }
+        }
+	importer.startScripts(world);
+    }  else {
+	// Create an empty world
+	var world = new WorldMorph(Canvas);
+	console.log("created empty world");
+    }
 
-    // Create an empty world
-    var world = new WorldMorph(Canvas);
-    Global.FirstWorld = world;
     WorldMorph.setCurrent(world);
     world.displayWorldOn(Canvas);
     console.log('made world ');

@@ -16,7 +16,10 @@
 var Global = window;
 
 var Canvas = document.getElementById("canvas"); // singleton for now
-
+if (Prototype.Browser.Opera) {
+   // Opera has issues with the height=100% setting, so we'll give it a reasonable value
+   Canvas.setAttribute("height", "800px"); 
+}
 
 // ===========================================================================
 // Error/warning console
@@ -2492,6 +2495,17 @@ Copier.subclass('Importer', {
 
     initialize: function($super) {
         $super();
+	this.scripts = [];
+    },
+
+    addScripts: function(array) {
+	if (array)
+	    this.scripts = this.scripts.concat(array); 
+    },
+
+    startScripts: function(world) {
+	console.log("start scripts %s in %s", this.scripts, world);
+	this.scripts.each(function(s) { s.start(world); });
     },
     
     importFromNode: function(rawNode) {
@@ -2505,9 +2519,10 @@ Copier.subclass('Importer', {
         }
 
         try {
-            return new Global[morphTypeName](this, rawNode);
-        } catch (er) {
-            console.log("problem instantiating type %s from node %s: %s", morphTypeName, rawNode.tagName, er);
+	    return new Global[morphTypeName](this, rawNode);
+	} catch (er) {
+            console.log("problem instantiating type %s from node %s: %s", 
+			morphTypeName, Exporter.nodeToString(rawNode), er);
             throw er;
         }
     },
@@ -2516,9 +2531,8 @@ Copier.subclass('Importer', {
         var morphs = [];
         for (var node = container.firstChild; node != null; node = node.nextSibling) {
             // console.log("found node " + Exporter.nodeToString(node));
-            if (node.localName == "g") {
-                morphs.push(this.importFromNode(node));
-            }
+            if (node.localName != "g")  continue;
+            morphs.push(this.importFromNode(node));
         }
         return morphs;
     },
@@ -2575,7 +2589,9 @@ Importer.marker = Object.extend(new Importer(), {
 
     lookupMorph: function() { 
         return null; 
-    }
+    },
+    
+    addScripts: function() {}
 
 });
 
@@ -2645,12 +2661,10 @@ Morph = Visual.subclass("Morph", {
         this.initializeTransientState(null);
 
         this.disableBrowserHandlers();        
-
-        if (this.activeScripts) {
-            this.activeScripts.invoke('start', WorldMorph.current());
-            // this.startSteppingScripts();
-        }
-
+	
+	// collect scripts
+	if (this.activeScripts) 
+	    importer.addScripts(this.activeScripts);
     },
 
     copyFrom: function(copier, other) {
@@ -4707,10 +4721,14 @@ PasteUpMorph.subclass("WorldMorph", {
             
         $super(bounds, "rect");
 
+    },
+
+    initializeTransientState: function($super, initialBounds) {
+	$super(initialBounds);
         this.hands = [];
         this.displayThemes = this.defaultThemes;
         this.setDisplayTheme(this.displayThemes['lively']);
-
+	
         this.stepList = [];  // an array of morphs to be ticked
         this.scheduledActions = [];  // an array of schedulableActions to be evaluated
         this.lastStepTime = (new Date()).getTime();
@@ -4782,7 +4800,9 @@ PasteUpMorph.subclass("WorldMorph", {
                       this.toggleDebugBackground]);
         menu.addLine();
         menu.addItem(["publish world as ... ", function() { 
-            this.makeShrinkWrappedWorldWith(this.submorphs, this.prompt("world file (.xhtml)"));}]);
+            var msg = this.shrinkWrapToFile(this.prompt("world file (.xhtml)"));
+	    if (msg) WorldMorph.current().alert(msg);
+	}]);
         menu.addItem(["restart system", this.restart]);
         return menu;
     },
@@ -5056,6 +5076,50 @@ PasteUpMorph.subclass("WorldMorph", {
         return window.location ? window.location.protocol == "http:" : false;
     },
 
+    shrinkWrapToFile: function(filename) {
+        if (filename == null) {
+            console.log('null filename, not publishing %s', morphs);
+           return null;
+        }
+
+        if (!filename.endsWith(".xhtml")) {
+            filename += ".xhtml";
+           console.log("changed filename to " + filename);
+        }
+
+	var url = window.location.toString();
+        var newDoc = Storage.retrieveData(url);
+	if (!newDoc) {
+	    return 'problem accessing ' + url;
+	}
+        var mainDefs = newDoc.getElementById('Defaults');
+        var mainScript = newDoc.getElementById('Main');
+        var preamble = newDoc.createElementNS(Namespace.SVG, "script");
+        preamble.appendChild(newDoc.createCDATASection("Config.skipAllExamples = true"));
+        mainDefs.insertBefore(preamble, mainScript);
+        var newurl = url.substring(0, url.lastIndexOf('/') + 1) + filename;
+        var previous = newDoc.getElementById("ShrinkWrapped");
+        if (previous) {
+            previous.parentNode.removeChild(previous);
+        }
+        var container = newDoc.createElementNS(Namespace.SVG, "g");
+	
+	container.setAttribute("id", "ShrinkWrapped");
+        mainDefs.appendChild(container);
+	
+	container.appendChild(newDoc.importNode(this.rawNode, true));
+
+	// FIXME: note no model handling
+        var content = Exporter.nodeToString(newDoc);
+
+	var req = new NetRequest().sync();
+	var result = req.put(newurl, content);
+	if (result.status >= 200 && result.status < 300)
+	    return null;
+	else
+	    return "failed saving world at url " + newurl + ": " + result.status;
+    },
+    
     makeShrinkWrappedWorldWith: function(morphs, filename) {
         if (filename == null) {
             console.log('null filename, not publishing %s', morphs);
@@ -5088,6 +5152,7 @@ PasteUpMorph.subclass("WorldMorph", {
             previous.parentNode.removeChild(previous);
         }
 
+
         var container = newDoc.createElementNS(Namespace.SVG, 'g');
 
         // console.log("morphs %s", morphs);
@@ -5108,6 +5173,7 @@ PasteUpMorph.subclass("WorldMorph", {
 
         container.setAttribute("id", "ShrinkWrapped");
         mainDefs.appendChild(container);
+
 
         var content = Exporter.nodeToString(newDoc);
         var success = Storage.storeData(newurl, content);
@@ -5133,13 +5199,20 @@ PasteUpMorph.subclass("WorldMorph", {
         return morphs;
     },
 
+
     alert: function(message) {
         var fill = this.getFill();
         this.setFill(Color.black); // poor man's modal dialog
 
         var menu = new MenuMorph([["OK", function() { this.setFill(fill)}]], this);
-        // menu.setFontSize(20);
+	var oldMouseUp = menu.onMouseUp;
+	menu.onMouseUp = function(evt) { 
+	    if (!this.stayUp) this.world().setFill(fill); // cleanup
+	    oldMouseUp.apply(this, arguments);
+	};
+
         menu.openIn(this, this.bounds().center(), false, message); 
+	menu.scaleBy(2.5);
     }.logErrors('alert'),
 
     prompt: function(message) {
@@ -5576,8 +5649,10 @@ Morph.subclass("LinkMorph", {
         var menu = $super(evt);
         var world = this.world();
         menu.addItem(["publish linked world as ... ", 
-            function() { world.makeShrinkWrappedWorldWith(this.myWorld.submorphs, 
-                             world.prompt("world file (.xhtml)"));}]);
+		      function() { 
+			  var msg = this.myWorld.shrinkWrapToFile(world.prompt("world file (.xhtml)"));
+			  if (msg) world.alert(msg);
+		      }]);
         return menu;
     },
 

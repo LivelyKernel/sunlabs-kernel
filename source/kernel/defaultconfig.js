@@ -75,7 +75,8 @@ var Config = {
     showNetworkExamples: UserAgent.usableXmlHttpRequest,
 
     // Ignore function logging through the prototype.js wrap mechanism
-    ignoreAdvice: false,
+    // rhino will give more useful exception info 
+    ignoreAdvice: UserAgent.isRhino,
 
     // derive font metrics from (X)HTML
     fontMetricsFromHTML: UserAgent.usableHTMLEnvironment,
