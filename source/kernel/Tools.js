@@ -102,8 +102,8 @@ Model.subclass('ObjectBrowser', {
 
     initialize: function($super, objectToView) {
         $super();
+        this.fullPath     = ""; // The full pathname of the object (string)
         this.nameToView   = ""; // Current name ("node") that we are viewing
-        this.fullPath     = ""; // The full pathname of the object
         this.objectToView = objectToView || Global; // Start by viewing the Global namespace if no argument
         return this;
     },
@@ -114,9 +114,14 @@ Model.subclass('ObjectBrowser', {
         list.sort();
 
         // The topmost row in the object list serves as the "up" operation.
-        // It also contains the full path name of the current object. 
-        var path = (this.fullPath != "") ? this.fullPath : "Global";
-        list.unshift(".. [" + path + "]"); // Add the "up" operation to the list
+        list.unshift("..");
+
+        if (this.panel) {
+            var nameMorph = this.panel.namePane;
+            var path = (this.fullPath != "") ? this.fullPath : "Global";
+            nameMorph.setTextString(path);
+        }
+
         return list;
     },
 
@@ -145,14 +150,15 @@ Model.subclass('ObjectBrowser', {
             this.changed("getObjectValue");
         } else {
             // Double-clicking: Browse child
-	    if ((this.objectToView instanceof Array) && !isNaN(parseInt(n))) {
-		this.fullPath += "[" + n + "]";
-	    } else {
-		if (this.fullPath != "") this.fullPath += ".";
-		this.fullPath += this.nameToView;
-	    }
+            if (this.fullPath != "") this.fullPath += ".";
+
+            if ((this.objectToView instanceof Array) && !isNaN(parseInt(n))) {
+                this.fullPath += "[" + n + "]";
+            } else {
+                this.fullPath += this.nameToView;
+            }
             this.objectToView = eval(this.fullPath);
-            if (!this.objectToView) this.objectToView = Global;
+            // if (!this.objectToView) this.objectToView = Global;
             this.nameToView = "";
             this.changed("getObjectList");
         }
@@ -172,9 +178,12 @@ Model.subclass('ObjectBrowser', {
 
     buildView: function(extent) {
         var panel = PanelMorph.makePanedPanel(extent, [
-            ['topPane', ListPane, new Rectangle(0, 0, 1, 0.5)],
+            ['namePane', TextMorph, new Rectangle(0, 0, 1, 0.07)],
+            ['topPane', ListPane, new Rectangle(0, 0.07, 1, 0.5)],
             ['bottomPane', TextPane, new Rectangle(0, 0.5, 1, 0.5)]
         ]);
+
+        this.panel = panel;
 
         var m = panel.topPane;
         m.connectModel({model: this, getList: "getObjectList", setSelection: "setObjectName"});
@@ -185,10 +194,6 @@ Model.subclass('ObjectBrowser', {
     }
 
 });
-
-
-
-
 
 // ===========================================================================
 // Object Inspector
@@ -660,30 +665,29 @@ TextMorph.subclass('FrameRateMorph', {
 
     initialize: function($super, rect, textString) {
         $super(rect, textString);
-	this.reset(new Date());
+        this.reset(new Date());
     },
 
     reset: function(date) {
         this.lastTick = date.getSeconds();
-	this.lastMS = date.getMilliseconds();
+        this.lastMS = date.getMilliseconds();
         this.stepsSinceTick = 0;
-	this.maxLatency = 0;
+        this.maxLatency = 0;
     },
 
     nextStep: function() {
-	var date = new Date();
+        var date = new Date();
         this.stepsSinceTick ++;
-	var nowMS = date.getMilliseconds();
-	this.maxLatency = Math.max(this.maxLatency, nowMS - this.lastMS);
-	this.lastMS = nowMS;
-	var nowTick = date.getSeconds();
-	if (nowTick != this.lastTick) {
-	    this.lastTick = nowTick;
-	    var ms = (1000 / Math.max(this. stepsSinceTick,1)).roundTo(1);
-	    this.setTextString(this. stepsSinceTick.toString() + " frames/sec (" + ms.toString() + "ms avg),\nmax latency " + this.maxLatency.toString() + " ms.");
-	    this.reset(date);
-	}
-	
+        var nowMS = date.getMilliseconds();
+        this.maxLatency = Math.max(this.maxLatency, nowMS - this.lastMS);
+        this.lastMS = nowMS;
+        var nowTick = date.getSeconds();
+        if (nowTick != this.lastTick) {
+            this.lastTick = nowTick;
+            var ms = (1000 / Math.max(this. stepsSinceTick,1)).roundTo(1);
+            this.setTextString(this. stepsSinceTick.toString() + " frames/sec (" + ms.toString() + "ms avg),\nmax latency " + this.maxLatency.toString() + " ms.");
+            this.reset(date);
+        }
     },
 
     startSteppingScripts: function() { this.startStepping(1,'nextStep'); }
