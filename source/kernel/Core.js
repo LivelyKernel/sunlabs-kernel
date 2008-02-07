@@ -2676,7 +2676,8 @@ Morph = Visual.subclass("Morph", {
         if (other.hasSubmorphs()) { // deep copy of submorphs
             other.submorphs.each(function(m) { 
                 var copy = m.copy(copier);
-                copier.addMapping(m.id(), copy);
+		copier.addMapping(m.id(), copy);
+                copy.owner = null;  // Makes correct transfer of transform in next addMorph
 		this.addMorph(copy);
                 //this.internalAddMorph(copy, false);
 		

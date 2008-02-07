@@ -4646,7 +4646,6 @@ scope.makeEngine = function() {
     // KP: add the top morph to the world first, to make firefox happy
     WorldMorph.current().addMorphAt(new WindowMorph(engine, 'A Lively Engine'), pt(250, 5));
     engine.openAllToDnD();  // have a little fun...
-    engine.makeCylinders(1); 
     engine.startSteppingScripts();
 }
 
@@ -4660,27 +4659,35 @@ Morph.subclass(scope, "EngineMorph", {
         // A lively model by Dan Ingalls - 9/25/2007
         $super(fullRect, "rect");
         this.setFill(new LinearGradient(Color.gray, Color.darkGray, LinearGradient.NorthSouth));
-        this.makeLayout();
+        this.makeLayout(1, false);
         this.running = true;
-	this.normalSpeed = 100
     },
 
-    makeLayout: function() {
+    makeLayout: function(nCylinders, alternating) {
+	// FYI, here's the declarative structure...
+	//	Engine
+	//		Crank
+	//			CrankPin
+	//		ConnectingRod
+	//		Cylinder (may be many)
+	//			Piston
+	//				WristPin
         console.log("making layout " + this);
 
         var bnds = this.innerBounds().withHeight(this.innerBounds().width);
         var center = bnds.center();
         this.stroke = bnds.height*0.14;
-        this.alternateTiming = false;
+	this.normalSpeed = 100
         this.crank = Morph.makeCircle(center, this.stroke*0.8, 4, Color.black, Color.gray);
         this.addMorph(this.crank);
         this.crankPin = Morph.makeCircle(pt(0, -this.stroke/2), this.stroke*0.25, 0, null, Color.black);
         this.crank.addMorph(this.crankPin);
         this.crankAngle = 0;  // goes up to 4*pi, while rotation wraps at 2*pi
         this.angleStep = Math.PI/8;
+        this.alternateTiming = alternating;
+        this.makeCylinders(nCylinders);
 
         var menu = new MenuMorph([]);
-
         for (var i=1; i<=9; i++) menu.addItem([i.toString(), this, 'makeCylinders', i]);
         menu.openIn(this, pt(80,440), true, "Number of cylinders"); 
 
@@ -4712,7 +4719,7 @@ Morph.subclass(scope, "EngineMorph", {
 
 
     makeCylinders: function(nCylinders) {
-        // Build cylinder-piston assembly with center or rotation at crank center
+        // Build cylinder-piston assembly with center of rotation at crank center
         this.crankAngle = 0;
         this.crank.setRotation(this.crankAngle);
         var bnds = this.innerBounds().withHeight(this.innerBounds().width);
@@ -4728,7 +4735,7 @@ Morph.subclass(scope, "EngineMorph", {
         ];
         cylVerts = Shape.translateVerticesBy(cylVerts, this.crank.bounds().center().negated());
         var cylinder = Morph.makePolygon(cylVerts, 4, Color.black, Color.gray);
-        cylinder.setPosition(cr.topLeft().addXY(0, -dHead));
+	cylinder.setPosition(cr.topLeft().addXY(0, -dHead));
         var pistonBW = 2;
         var pistonDx = (cylinder.getBorderWidth() + pistonBW) / 2;
         var piston = new Morph(cr.insetByPt(pt(pistonDx, (cr.height-this.stroke)/2)), "rectangle");
@@ -4742,7 +4749,7 @@ Morph.subclass(scope, "EngineMorph", {
         if (this.cylinders) this.cylinders.each( // remove any previous assemblies
             function(each) { each.connectingRod.remove(); each.remove(); } 
         );
-        this.cylinders = [];
+        this.cylinders = []; // Note this is an array that points to various submorphs
         for (var i=0; i<nCylinders; i++) {
             var cyl = cylinder.copy();
             this.addMorph(cyl)
@@ -4752,14 +4759,14 @@ Morph.subclass(scope, "EngineMorph", {
             cyl.piston = cyl.topSubmorph();
             cyl.piston.topPos = cyl.innerBounds().topLeft().addXY(pistonDx, dHead);
             cyl.wristPin = cyl.piston.topSubmorph();
-            this.movePiston(cyl);
             this.cylinders.push(cyl);
-            cyl.connectingRod = Morph.makeLine(
-                [this.localizePointFrom(cyl.wristPin.bounds().center(), cyl.piston),
-                this.localizePointFrom(this.crankPin.bounds().center(), this.crank)],
-                cr.width*0.15, Color.gray.darker(2) 
+            // Note: cyl.connectingRod points to a morph that is not a submorph
+	    cyl.connectingRod = Morph.makeLine(
+		[pt(10, 10), pt(10, 10)],  // Real endpoints get set in 
+		cr.width*0.15, Color.gray.darker(2) 
             );
             this.addMorph(cyl.connectingRod) 
+            this.movePiston(cyl);
         };
     },
 
@@ -4769,8 +4776,8 @@ Morph.subclass(scope, "EngineMorph", {
         if (phase < 0) phase += pi*4;
         var dy = (Math.cos(phase) - 1) * this.stroke/2;
         cyl.piston.setPosition(cyl.piston.topPos.addXY(0, -dy));
-        var cycle = Math.floor(phase / pi);
-        var frac = phase / pi - cycle;  // fractional part of cycle used to mix colors
+        var cycle = Math.floor(phase / pi);  // Change color based on cycle
+        var frac = phase / pi - cycle;  // Change shading based on fractional part of cycle (wow ;-)
         switch (cycle) {
             case 0: cyl.setFill(Color.blue.lighter());  break;  // intake
             case 1: cyl.setFill(Color.blue.mixedWith(Color.blue.lighter(), frac));  break;  // compression
@@ -4799,8 +4806,9 @@ Morph.subclass(scope, "EngineMorph", {
         this.cylinders.each(function(cyl) {
             this.movePiston(cyl);  // Move the pistons
             cyl.connectingRod.setVertices(  // Relocate the connecting rods
-                [cyl.connectingRod.localizePointFrom(cyl.wristPin.bounds().center(), cyl.piston),
-                cyl.connectingRod.localizePointFrom(this.crankPin.bounds().center(), this.crank)] );
+		[cyl.connectingRod.localizePointFrom(cyl.wristPin.bounds().center(), cyl.piston),
+                cyl.connectingRod.localizePointFrom(this.crankPin.bounds().center(), this.crank)]
+		);
         }.bind(this) );
     },
 
@@ -4812,14 +4820,13 @@ Morph.subclass(scope, "EngineMorph", {
 
     rebuild: function() {
         this.removeAllMorphs();
-        this.makeLayout();
-        this.makeCylinders(this.cylinders.length);
+        this.makeLayout(this.cylinders.length, this.alternateTiming);
     },
 
     setStepTime: function(ms) {
         this.stepTime = ms;
 	this.addRunMenu();
-	this. stopSteppingScripts();
+	this.stopSteppingScripts();
 	this.startStepping(ms,'nextStep');
     },
 
