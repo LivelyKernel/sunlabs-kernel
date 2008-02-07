@@ -20,7 +20,7 @@ Config.showHilbertFun = true;
 Config.showPenScript = true;
 Config.showTester = true;
 Config.showBitmap = false;
-Config.showMap = true;
+Config.showMap = !Config.skipMostExamples;
 Config.showSampleMorphs = true;
 Config.showTextSamples = true;
 // Config.random is used as the ID for the messenger morph for each user
