@@ -193,7 +193,7 @@ function populateWorldWithExamples(world) {
 
         if (Config.showDoodle) lm1.myWorld.addMorph(new WindowMorph(new apps.DoodleMorph(pt(560, 380).extent(pt(300, 300))), 'Doodle Morph'));
 
-	if (Config.showSquiggle) lm1.myWorld.addMorph(new WindowMorph(new apps.SquiggleMorph(pt(560, 380).extent(pt(300, 300))), 'Squiggle Morph'));
+        if (Config.showSquiggle) lm1.myWorld.addMorph(new WindowMorph(new apps.SquiggleMorph(pt(560, 380).extent(pt(300, 300))), 'Squiggle Morph'));
         
         if (Config.showVideo) { new PlayerMorph().openIn(lm1.myWorld, pt(50, 20)); }
 
@@ -352,22 +352,22 @@ function main() {
     var world = null;
     var container = document.getElementById("ShrinkWrapped");
     if (container) {
-	console.log("found container");
-	var importer = new Importer();
-	var morphs = importer.importFromContainer(container);
-	if (morphs[0]) {
-	    if (morphs[0] instanceof WorldMorph) {
-		world = morphs[0];
-		world.itsCanvas = Canvas;
-	    } else {
-		console.log("unexpected morphs " + morphs);
-	    }
+        console.log("found container");
+        var importer = new Importer();
+        var morphs = importer.importFromContainer(container);
+        if (morphs[0]) {
+            if (morphs[0] instanceof WorldMorph) {
+                world = morphs[0];
+                world.itsCanvas = Canvas;
+            } else {
+                console.log("unexpected morphs " + morphs);
+            }
         }
-	importer.startScripts(world);
-    }  else {
-	// Create an empty world
-	var world = new WorldMorph(Canvas);
-	console.log("created empty world");
+        importer.startScripts(world);
+    } else {
+        // Create an empty world
+        var world = new WorldMorph(Canvas);
+        console.log("created empty world");
     }
 
     WorldMorph.setCurrent(world);
