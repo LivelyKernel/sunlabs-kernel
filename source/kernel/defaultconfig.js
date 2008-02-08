@@ -15,9 +15,9 @@
 var UserAgent = (function() {
 
     var webKitVersion = function() {
-	if (!window.navigator) return null;
-	var match = navigator.userAgent.match(/.*AppleWebKit\/(\d+).*/) 
-	return match && match[1];
+        if (!window.navigator) return null;
+        var match = navigator.userAgent.match(/.*AppleWebKit\/(\d+).*/) 
+        return match && match[1];
     };
 
     var isRhino = !window.navigator || window.navigator.userAgent.indexOf("Rhino") > -1;
@@ -25,27 +25,27 @@ var UserAgent = (function() {
 
     // determines UA capabilities
     return {
-	// newer versions of WebKit implement proper SVGTransform API, potentially better performance
-	usableTransformAPI: parseInt(webKitVersion) >= 525,
-	usableDropShadow: parseInt(webKitVersion) >= 525,
-	canExtendBrowserObjects: !isRhino, // Error, document
-	usableNearestViewportElement: !isRhino && !isMozilla,
-	// Safari XMLSerializer seems to do weird things w/namespaces
-	usableNamespacesInSerializer: !webKitVersion,
-	
-	usableXmlHttpRequest: !isRhino,
-	
-	usableHTMLEnvironment: !isRhino,
-	
-	webKitVersion: webKitVersion,
-	
-	isRhino: isRhino,
-	
-	isMozilla: isMozilla,
+        // newer versions of WebKit implement proper SVGTransform API, potentially better performance
+        usableTransformAPI: parseInt(webKitVersion) >= 525,
+        usableDropShadow: parseInt(webKitVersion) >= 525,
+        canExtendBrowserObjects: !isRhino, // Error, document
+        usableNearestViewportElement: !isRhino && !isMozilla,
+        // Safari XMLSerializer seems to do weird things w/namespaces
+        usableNamespacesInSerializer: !webKitVersion,
 
-	isWindows: (window.navigator && window.navigator.platform == "Win32")
-	
+        usableXmlHttpRequest: !isRhino,
+
+        usableHTMLEnvironment: !isRhino,
+
+        webKitVersion: webKitVersion,
+
+        isRhino: isRhino,
+
+        isMozilla: isMozilla,
+
+        isWindows: (window.navigator && window.navigator.platform == "Win32")
     };
+
 })();
 
 
@@ -90,9 +90,11 @@ var Config = {
 
     useGetTransformToElement: true,
 
-    // we haven't decided on the behavior yet, but let's be brave!
+    // We haven't decided on the behavior yet, but let's be brave!
+    // This option suspends all the scripts in a world as soon as
+    // the user moves to another world.  This should really be a
+    // world-specific option.
     suspendScriptsOnWorldExit: true
 
 }
-
 
