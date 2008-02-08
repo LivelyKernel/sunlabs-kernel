@@ -72,22 +72,22 @@ Object.subclass(Global, 'Font', {
     var cache = {};
 
     Object.extend(Font, {
-	
-	forFamily: function(familyName, size) {
+
+        forFamily: function(familyName, size) {
             var key  = familyName + ":" + size;
             var entry = cache[key];
             if (!entry) {
-		try {
+                try {
                     entry = new Font(familyName, size);
-		} catch(er) {
+                } catch(er) {
                     console.log("%s when looking for %s:%s", er, familyName, size);
                     return null;
-		}
-		cache[key] = entry;
+                }
+                cache[key] = entry;
             }
             return entry;
-	}
-	
+        }
+
     });
     
 })();
@@ -853,7 +853,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
             console.log('evaluating markup ' + txt);
             var morph = importer.importFromString(txt);
             WorldMorph.current().addMorph(morph);
-	    importer.startScripts(WorldMorph.current());
+            importer.startScripts(WorldMorph.current());
         }]);
     
         menu.addItem(["save as ...", function() { 
@@ -1296,24 +1296,26 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
         
         switch (evt.getKeyCode()) {
         case Event.KEY_LEFT: {
-	    // forget the existing selection
-	    var wordRange = TextMorph.selectWord(this.textString, this.selectionRange[0]);
-	    if (evt.isShiftDown() && (wordRange[0] != before.length)) {
-		// move by a whole word if we're not at the beginning of it
-		this.setNullSelectionAt(Math.max(0, wordRange[0]));
-	    } else 
-		this.setNullSelectionAt(Math.max(before.length - 1, 0));
-	    evt.stop();
-	    return;
-	} 
-	case Event.KEY_RIGHT: {
-	    // forget the existing selection
-	    var wordRange = TextMorph.selectWord(this.textString, this.selectionRange[0]);
-	    if (evt.isShiftDown() && (wordRange[1] != before.length - 1)) {
-		// move by a whole word if we're not at the end of it.
-		this.setNullSelectionAt(Math.min(this.textString.length, wordRange[1] + 1));
-	    } else 
-		this.setNullSelectionAt(Math.min(before.length + 1, this.textString.length));
+            // forget the existing selection
+            var wordRange = TextMorph.selectWord(this.textString, this.selectionRange[0]);
+            if (evt.isShiftDown() && (wordRange[0] != before.length)) {
+                // move by a whole word if we're not at the beginning of it
+                this.setNullSelectionAt(Math.max(0, wordRange[0]));
+            } else { 
+                this.setNullSelectionAt(Math.max(before.length - 1, 0));
+            }
+            evt.stop();
+            return;
+        } 
+        case Event.KEY_RIGHT: {
+            // forget the existing selection
+            var wordRange = TextMorph.selectWord(this.textString, this.selectionRange[0]);
+            if (evt.isShiftDown() && (wordRange[1] != before.length - 1)) {
+                // move by a whole word if we're not at the end of it.
+                this.setNullSelectionAt(Math.min(this.textString.length, wordRange[1] + 1));
+            } else { 
+                this.setNullSelectionAt(Math.min(before.length + 1, this.textString.length));
+            }
             evt.stop();
             return;
         }

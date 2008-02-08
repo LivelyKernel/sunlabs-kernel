@@ -59,7 +59,7 @@ Model.subclass('WebStore', {
         $super();
         this.host = host;
         this.path = path;
-	this.protocol = "http"; // can be something else...
+        this.protocol = "http"; // can be something else...
 
         this.DirectoryList = [ path ];
         this.CurrentDirectory = null;
@@ -68,8 +68,6 @@ Model.subclass('WebStore', {
         this.CurrentResourceContents = "";
         this.lastWriteStatus = 0;
     },
-
-    
 
     // basic protocol methods:
     fetch: function(url, modelVariable) {
@@ -80,7 +78,7 @@ Model.subclass('WebStore', {
                 store[modelVariable] = transport.responseText;
                 store.changed("get" + modelVariable);
             },
-	    
+    
             onFailure: function(transport) {
                 WorldMorph.current().alert('failed fetching url ' + url);
                 store[modelVariable] = "resource unavailable";
@@ -88,7 +86,7 @@ Model.subclass('WebStore', {
             }
             // FIXME: on exception
         };
-	
+
         new NetRequest(options).get(url);
     },
     
@@ -121,7 +119,7 @@ Model.subclass('WebStore', {
         console.log('deleting url ' + url);
         var store = this;
         var options =  {
-	    onSuccess: function(transport) {
+            onSuccess: function(transport) {
                 // FIXME: the content may indicate that we failed to delete!
                 // store[modelVariable] = transport.status;
                 store.changed("get" + modelVariable);
@@ -141,7 +139,7 @@ Model.subclass('WebStore', {
     propfind: function(url, depth, xpQueryString, modelVariable, resultType) {
         // find the properties given the url and save the results of the indicated query into the model variable
         if (depth != 0 && depth != 1) depth = 'infinity';
-	
+
         var store = this;
         var options = {
             contentType: 'text/xml',
@@ -153,9 +151,9 @@ Model.subclass('WebStore', {
     
             onSuccess: function(transport) {
                 console.log('propfind received %s', 
-			    Exporter.nodeToString(transport.responseXML) || transport.responseText);
+                    Exporter.nodeToString(transport.responseXML) || transport.responseText);
                 if (!transport.responseXML) return; // FIXME: report problem
-		
+
                 var result = Query.evaluate(transport.responseXML.documentElement, xpQueryString);
                 if (!resultType) { 
                     store[modelVariable] = result;
@@ -194,7 +192,7 @@ Model.subclass('WebStore', {
     
         this.CurrentDirectory = name;
         this.changed('getCurrentDirectory');
-	
+
         console.log('host %s, dir %s name %s', this.host, this.CurrentDirectory, name);
         // initialize getting the contents
         this.propfind(this.currentDirectoryURL(), 1, "/D:multistatus/D:response", "CurrentDirectoryContents", Resource);
@@ -221,7 +219,7 @@ Model.subclass('WebStore', {
             } else {
                 this.CurrentResource = name;
                 console.log('current resource set to %s', this.CurrentResource);
-		
+
                 // initialize getting the resource contents
                 this.fetch(this.currentResourceURL(), "CurrentResourceContents");
             }
@@ -231,14 +229,14 @@ Model.subclass('WebStore', {
     currentResourceURL: function() {
         if (!this.CurrentResource) return "http://" + this.host;
         else return "http://%s%s%s".format(this.host, 
-					   this.CurrentResource.startsWith('/') ? "": "/", 
-					   this.CurrentResource);
+                    this.CurrentResource.startsWith('/') ? "": "/", 
+                    this.CurrentResource);
     },
     
     currentDirectoryURL: function() {
         return "http://%s%s%s".format(this.host, 
-				      this.CurrentDirectory.startsWith('/') ? "": "/", 
-				      this.CurrentDirectory);
+                    this.CurrentDirectory.startsWith('/') ? "": "/", 
+                    this.CurrentDirectory);
     },
     
     getCurrentResourceContents: function() {
@@ -256,8 +254,9 @@ Model.subclass('WebStore', {
             ['bottomPane', TextPane, new Rectangle(0, 0.6, 1, 0.4)]
         ]);
         var m = panel.leftPane;
-        m.connectModel({model: this, getList: "getDirectoryList", setSelection: "setCurrentDirectory", 
-			getSelection: "getCurrentDirectory"});
+        m.connectModel({model: this, getList: "getDirectoryList",
+                       setSelection: "setCurrentDirectory", 
+                       getSelection: "getCurrentDirectory"});
         m = panel.rightPane;
         m.connectModel({model: this, getList: "getCurrentDirectoryContents", setSelection: "setCurrentResource"});
         var oldpress = m.innerMorph().onKeyPress;
@@ -267,7 +266,7 @@ Model.subclass('WebStore', {
                 evt.stop();
                 if (result) {
                     model.deleteResource(this.itemList[this.selectedLineNo()], 
-					 "CurrentDirectoryContents");
+                                         "CurrentDirectoryContents");
                 }
             } else oldpress.call(this, evt);
         };
@@ -305,23 +304,21 @@ Model.subclass('WebStore', {
 
 });  
 
-
 var Storage = {
 
     // synchronous store of XML
     storeData: function(url, content) {
-	var result = new NetRequest().beSynchronous().put(url, content);
-	return result.status >= 200 && result.status < 300;
+        var result = new NetRequest().beSynchronous().put(url, content);
+        return result.status >= 200 && result.status < 300;
     },
 
     // synchronous retrieve of XML
     retrieveData: function(url) {
-	var result = new NetRequest().beSynchronous().get(url); 
-	return result && result.responseXML;
+        var result = new NetRequest().beSynchronous().get(url); 
+        return result && result.responseXML;
     }
 
 };
-
 
 console.log('loaded Storage.js');
 
