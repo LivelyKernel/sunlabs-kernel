@@ -309,16 +309,16 @@ scope.Pen.hilbertFun = function(world) {
 scope.Pen.script = ["P = new apps.Pen();",
 "P.setPenColor(Color.red);",
 "for (var i=1; i<=40; i++)",
-"	{ P.go(2*i); P.turn(89); };",
+"    { P.go(2*i); P.turn(89); };",
 "P.drawLines();",
 ""].join("\n");
 
 // ===========================================================================
-// The Doodle Draw Example
+// The Doodle & Squiggle Draw Examples
 // ===========================================================================
 
 /**
- * @class DoodleMorph
+ * @class DoodleMorph: A simple drawing program
  */
 
 ClipMorph.subclass(scope, "DoodleMorph", {
@@ -601,7 +601,9 @@ ClipMorph.subclass(scope, "DoodleMorph", {
     }
 });
 
-
+/**
+ * @class SquiggleMorph: An even simpler drawing program
+ */
 
 Morph.subclass('SquiggleMorph', {
 
@@ -609,11 +611,11 @@ Morph.subclass('SquiggleMorph', {
     drawingHandColor: Color.yellow,
 
     initialize: function($super, rect) {
-	$super(rect, "rect");
+        $super(rect, "rect");
         // The squiggle that we are creating currently
         this.currentMorph = null;
         this.start = null;
-	this.savedHandColor = null;
+        this.savedHandColor = null;
         return this;
     },
     
@@ -622,17 +624,17 @@ Morph.subclass('SquiggleMorph', {
             this.start = this.localize(evt.mousePoint);
             this.currentMorph = this.addMorph(new Morph(this.start.asRectangle(), "rect"));
             // TODO: relaying events stops from moving morphs after drawing them..
-//            this.currentMorph.relayMouseEvents(this, {onMouseMove: "onMouseMove"});
+            // this.currentMorph.relayMouseEvents(this, {onMouseMove: "onMouseMove"});
 
             // 'solution' 1: we disable the drawn morph and enable morphs only 
             // when selection tool is in use
-	    /*
+            /*
             if (!this.value) {
                 this.currentMorph.ignoreEvents();
             }
             */ 
             this.currentMorph.setShape(new PolylineShape([pt(0,0)], 2, this.drawingColor));
-	    this.savedHandColor = evt.hand.getFill();
+            this.savedHandColor = evt.hand.getFill();
             evt.hand.setFill(this.drawingHandColor);
         } else {
             this.onMouseUp(evt);
@@ -659,12 +661,10 @@ Morph.subclass('SquiggleMorph', {
     },
 
     handlesMouseDown: function() { 
-	return true; 
+        return true; 
     }
         
 });
-
-
 
 // ===========================================================================
 // The 3D Rotation Example
@@ -4664,20 +4664,20 @@ Morph.subclass(scope, "EngineMorph", {
     },
 
     makeLayout: function(nCylinders, alternating) {
-	// FYI, here's the declarative structure...
-	//	Engine
-	//		Crank
-	//			CrankPin
-	//		ConnectingRod
-	//		Cylinder (may be many)
-	//			Piston
-	//				WristPin
+        // FYI, here's the declarative structure...
+        //    Engine
+        //        Crank
+        //            CrankPin
+        //        ConnectingRod
+        //        Cylinder (may be many)
+        //            Piston
+        //                WristPin
         console.log("making layout " + this);
 
         var bnds = this.innerBounds().withHeight(this.innerBounds().width);
         var center = bnds.center();
         this.stroke = bnds.height*0.14;
-	this.normalSpeed = 100
+        this.normalSpeed = 100
         this.crank = Morph.makeCircle(center, this.stroke*0.8, 4, Color.black, Color.gray);
         this.addMorph(this.crank);
         this.crankPin = Morph.makeCircle(pt(0, -this.stroke/2), this.stroke*0.25, 0, null, Color.black);
@@ -4708,15 +4708,14 @@ Morph.subclass(scope, "EngineMorph", {
         if (this.runMenu) this.runMenu.remove();
         this.runMenu = new MenuMorph([
             (this.running ? ["stop", this, 'setRunning', false]
-			: ["run", this, 'setRunning', true]),
+                          : ["run", this, 'setRunning', true]),
             ["step", this, 'doStep'],
             ["rebuild", this, 'rebuild'],
             (this.stepTime == this.normalSpeed ? ["fast", this, 'setStepTime', 1]
-				: ["slow", this, 'setStepTime', this.normalSpeed])
+                                               : ["slow", this, 'setStepTime', this.normalSpeed])
         ]);
         this.runMenu.openIn(this, pt(310,515), true, "Operating State");
     },
-
 
     makeCylinders: function(nCylinders) {
         // Build cylinder-piston assembly with center of rotation at crank center
@@ -4735,7 +4734,7 @@ Morph.subclass(scope, "EngineMorph", {
         ];
         cylVerts = Shape.translateVerticesBy(cylVerts, this.crank.bounds().center().negated());
         var cylinder = Morph.makePolygon(cylVerts, 4, Color.black, Color.gray);
-	cylinder.setPosition(cr.topLeft().addXY(0, -dHead));
+        cylinder.setPosition(cr.topLeft().addXY(0, -dHead));
         var pistonBW = 2;
         var pistonDx = (cylinder.getBorderWidth() + pistonBW) / 2;
         var piston = new Morph(cr.insetByPt(pt(pistonDx, (cr.height-this.stroke)/2)), "rectangle");
@@ -4761,9 +4760,9 @@ Morph.subclass(scope, "EngineMorph", {
             cyl.wristPin = cyl.piston.topSubmorph();
             this.cylinders.push(cyl);
             // Note: cyl.connectingRod points to a morph that is not a submorph
-	    cyl.connectingRod = Morph.makeLine(
-		[pt(10, 10), pt(10, 10)],  // Real endpoints get set in 
-		cr.width*0.15, Color.gray.darker(2) 
+            cyl.connectingRod = Morph.makeLine(
+                [pt(10, 10), pt(10, 10)],  // Real endpoints get set in 
+                cr.width*0.15, Color.gray.darker(2) 
             );
             this.addMorph(cyl.connectingRod) 
             this.movePiston(cyl);
@@ -4788,8 +4787,8 @@ Morph.subclass(scope, "EngineMorph", {
     },
 
     setRunning: function(trueOrFalse) {
-	this.running = trueOrFalse;
-	this.addRunMenu();
+        this.running = trueOrFalse;
+        this.addRunMenu();
     },
 
     nextStep: function() {
@@ -4806,9 +4805,9 @@ Morph.subclass(scope, "EngineMorph", {
         this.cylinders.each(function(cyl) {
             this.movePiston(cyl);  // Move the pistons
             cyl.connectingRod.setVertices(  // Relocate the connecting rods
-		[cyl.connectingRod.localizePointFrom(cyl.wristPin.bounds().center(), cyl.piston),
+                [cyl.connectingRod.localizePointFrom(cyl.wristPin.bounds().center(), cyl.piston),
                 cyl.connectingRod.localizePointFrom(this.crankPin.bounds().center(), this.crank)]
-		);
+            );
         }.bind(this) );
     },
 
@@ -4825,15 +4824,14 @@ Morph.subclass(scope, "EngineMorph", {
 
     setStepTime: function(ms) {
         this.stepTime = ms;
-	this.addRunMenu();
-	this.stopSteppingScripts();
-	this.startStepping(ms,'nextStep');
+        this.addRunMenu();
+        this.stopSteppingScripts();
+        this.startStepping(ms,'nextStep');
     },
 
     startSteppingScripts: function() { this.setStepTime(this.normalSpeed); }
 
 });
-
 
 // ===========================================================================
 // Video Player Demo
