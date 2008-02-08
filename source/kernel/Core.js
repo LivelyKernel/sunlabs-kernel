@@ -41,13 +41,13 @@ Object.extend(String.prototype, {
         function appendObject(object, string) {
             return "" + object;
         }
-	
+
         function appendInteger(value, string) {
             return value.toString();
         }
 
         function appendFloat(value, string, precision) {
-	    if (precision > -1) return value.toFixed(precision);
+            if (precision > -1) return value.toFixed(precision);
             else return value.toString();
         }
 
@@ -241,10 +241,10 @@ var NodeFactory = {
     createNS: function(ns, name, attributes) {
         var element = document.createElementNS(ns, name);
         if (attributes) {
-	    for (var name in attributes) {
-		if (!attributes.hasOwnProperty(name)) continue;
-		element.setAttributeNS(null, name, attributes[name]);
-	    }
+            for (var name in attributes) {
+                if (!attributes.hasOwnProperty(name)) continue;
+                element.setAttributeNS(null, name, attributes[name]);
+            }
         }
         return element;
     },
@@ -490,13 +490,13 @@ Function.methodString = function(className, methodName) {
 
 if (UserAgent.canExtendBrowserObjects) { // Mozilla
     if (UserAgent.webKitVersion) { 
-	Error.prototype.inspect = function() {
+        Error.prototype.inspect = function() {
             return this.name + " in " + this.sourceURL + ":" + this.line + ": " + this.message;
-	}
+        }
     } else {
-	Error.prototype.inspect = function() {
+        Error.prototype.inspect = function() {
             return this.name + " in " + this.fileName + ":" + this.lineNumber + ": " + this.message;
-	}
+        }
     }
 }
 
@@ -591,7 +591,7 @@ Object.extend(Function.prototype, {
 Object.extend(String.prototype, {
 
     withNiceDecimals: function() {
-	
+
         // JS can't print nice decimals  // KP: I think it can be convinced, see below
         var dotIx = this.indexOf('.');
         // return unchanged unless all digits with exactly one dot
@@ -614,8 +614,8 @@ Object.extend(String.prototype, {
     },
 
     withDecimalPrecision: function(precision) {
-	var floatValue = parseFloat(this);
-	return isNaN(floatValue) ? this : floatValue.toFixed(precision);
+        var floatValue = parseFloat(this);
+        return isNaN(floatValue) ? this : floatValue.toFixed(precision);
     }
 
 });
@@ -1408,7 +1408,7 @@ Object.subclass('Similitude', {
         if (true) {
             this.fromMatrix(this.toMatrix().multiply(t.toMatrix()));
         } else { // KP: something's wrong here
-	    t = this;
+            t = this;
 
             this.a =  t.a * this.a + t.c * this.b;
             this.b =  t.b * this.a + t.d * this.b;
@@ -1519,7 +1519,7 @@ var Event = (function() {
     
     
     var Event = Object.subclass('Event', {
-	
+
         initialize: function(rawEvent) {
             this.rawEvent = rawEvent;
             this.type = capitalizer[rawEvent.type] || rawEvent.type;
@@ -1593,10 +1593,10 @@ var Event = (function() {
             // if moving or releasing, priorPoint will get found by prior morph
             this.priorPoint = priorPoint; 
         },
-	
-	handlerName: function() {
-	    return "on" + this.type;
-	},
+
+        handlerName: function() {
+            return "on" + this.type;
+        },
 
         getKeyCode: function() {
             with (Event.Safari) {
@@ -1827,7 +1827,7 @@ Visual.subclass('Shape', {
         
         if (this.shouldIgnorePointerEvents)
             this.disablePointerEvents();
-	// this.disableBrowserHandlers();
+            // this.disableBrowserHandlers();
 
         if (fill !== undefined)
             this.setFill(fill);
@@ -1837,7 +1837,7 @@ Visual.subclass('Shape', {
         
         if (stroke !== undefined)
             this.setStroke(stroke);
-	
+
     },
 
     applyFunction: function(func,arg) { 
@@ -2361,7 +2361,7 @@ var NodeList = {
 var MouseHandlerForDragging = {
     
     handleMouseEvent: function(evt, targetMorph) {
-	
+
         var handler = targetMorph[evt.handlerName()];
         if (evt.type == "MouseDown") evt.hand.setMouseFocus(targetMorph);
         if (handler == null) console.log("bah, null handler on " + evt.type);
@@ -2495,17 +2495,16 @@ Copier.subclass('Importer', {
 
     initialize: function($super) {
         $super();
-	this.scripts = [];
+        this.scripts = [];
     },
 
     addScripts: function(array) {
-	if (array)
-	    this.scripts = this.scripts.concat(array); 
+        if (array) this.scripts = this.scripts.concat(array); 
     },
 
     startScripts: function(world) {
-	console.log("start scripts %s in %s", this.scripts, world);
-	this.scripts.each(function(s) { s.start(world); });
+        console.log("start scripts %s in %s", this.scripts, world);
+        this.scripts.each(function(s) { s.start(world); });
     },
     
     importFromNode: function(rawNode) {
@@ -2519,10 +2518,10 @@ Copier.subclass('Importer', {
         }
 
         try {
-	    return new Global[morphTypeName](this, rawNode);
-	} catch (er) {
+            return new Global[morphTypeName](this, rawNode);
+        } catch (er) {
             console.log("problem instantiating type %s from node %s: %s", 
-			morphTypeName, Exporter.nodeToString(rawNode), er);
+                        morphTypeName, Exporter.nodeToString(rawNode), er);
             throw er;
         }
     },
@@ -2661,10 +2660,9 @@ Morph = Visual.subclass("Morph", {
         this.initializeTransientState(null);
 
         this.disableBrowserHandlers();        
-	
-	// collect scripts
-	if (this.activeScripts) 
-	    importer.addScripts(this.activeScripts);
+
+        // collect scripts
+        if (this.activeScripts) importer.addScripts(this.activeScripts);
     },
 
     copyFrom: function(copier, other) {
@@ -2676,11 +2674,10 @@ Morph = Visual.subclass("Morph", {
         if (other.hasSubmorphs()) { // deep copy of submorphs
             other.submorphs.each(function(m) { 
                 var copy = m.copy(copier);
-		copier.addMapping(m.id(), copy);
+                copier.addMapping(m.id(), copy);
                 copy.owner = null;  // Makes correct transfer of transform in next addMorph
-		this.addMorph(copy);
+                this.addMorph(copy);
                 //this.internalAddMorph(copy, false);
-		
             }.bind(this));
         }
 
@@ -2704,11 +2701,12 @@ Morph = Visual.subclass("Morph", {
         } // shallow copy by default
 
         this.setShape(other.shape.copy());    
-	this.origin = other.origin.copy();
+        this.origin = other.origin.copy();
+
         if (other.cachedTransform) { 
             this.cachedTransform = other.cachedTransform.copy();
         } 
-	
+
         if (other.defs) {
             this.restoreDefs(other.defs);
         }
@@ -3460,12 +3458,12 @@ Morph.addMethods({
     getGlobalTransform: function() {
         var globalTransform = new Transform();
         var world = this.world();
-	// var trace = [];
+        // var trace = [];
         for (var morph = this; morph != world; morph = morph.owner) {
             globalTransform.preConcatenate(morph.getTransform());
-	    //trace.push(globalTransform.copy());
+            // trace.push(globalTransform.copy());
         }
-	//console.log("global transform trace [" + trace + "] for " + this);
+        // console.log("global transform trace [" + trace + "] for " + this);
         return globalTransform;
     },
 
@@ -3593,11 +3591,10 @@ Morph.addMethods({
                 this.setFisheyeScale(1.0)
             }
         }
-	
+
         if (hasFocus) return this.mouseHandler.handleMouseEvent(evt, this);
 
         if (!evt.priorPoint || !this.fullContainsWorldPoint(evt.priorPoint)) return false;
-	
 
         if (this.hasSubmorphs()) {
             // If any submorph handles it (ie returns true), then return
@@ -3777,7 +3774,7 @@ Morph.addMethods({
             ["duplicate", this.copyToHand.curry(evt.hand)],
             ["remove", this.remove],
             ["inspect", function() { new SimpleInspector(this).open()}],
-//	    ["browse hierarchy", function() { new ObjectBrowser(this).openIn(this.world(), evt.mousePoint) }],
+//            ["browse hierarchy", function() { new ObjectBrowser(this).openIn(this.world(), evt.mousePoint) }],
             ["style", function() { new StylePanel(this).open()}],
             ["drill", this.showOwnerChain.curry(evt)],
             ["grab", this.pickMeUp.curry(evt)],
@@ -3793,7 +3790,7 @@ Morph.addMethods({
             ["show Lively markup", this.addSvgInspector.curry(this)],
             ["publish shrink-wrapped as...", function() { 
                 this.world().makeShrinkWrappedWorldWith([this], 
-							this.world().prompt('publish as (.xhtml)')); }],
+                    this.world().prompt('publish as (.xhtml)')); }],
             ["test tracing (in console)", this.testTracing]
         ];
         var menu = new MenuMorph(items, this); 
@@ -3886,12 +3883,12 @@ Morph.addMethods({
     copyToHand: function(hand) {
         // Function.prototype.shouldTrace = true;
         var copy = this.copy(new Copier());
-	// when copying submorphs, make sure that the submorph that becomes a top-level morph 
-	// reappears in the same location as its original.
+        // when copying submorphs, make sure that the submorph that becomes a top-level morph 
+        // reappears in the same location as its original.
         console.log('copied %s', copy);
-	copy.owner = null; // so following addMorph will just leave the tfm alone
+        copy.owner = null; // so following addMorph will just leave the tfm alone
         this.owner.addMorph(copy); // set up owner as the original parent so that...        
-	hand.addMorph(copy);  // ... it will be properly transformed by this addMorph()
+        hand.addMorph(copy);  // ... it will be properly transformed by this addMorph()
         // copy.withAllSubmorphsDo(function() { this.startStepping(null); }, null);
     },
 
@@ -3903,14 +3900,14 @@ Morph.addMethods({
         // If checkForDnD is false, return the morph to receive this mouse event (or null)
         // If checkForDnD is true, return the morph to grab from a mouse down event (or null)
         // If droppingMorph is not null, then check that this is a willing recipient (else null)
-	
+
         if (!this.fullContainsWorldPoint(evt.mousePoint)) return null; // not contained anywhere
         // First check all the submorphs, front first
         for (var i = this.submorphs.length - 1; i >= 0; i--) {
             var hit = this.submorphs[i].morphToGrabOrReceive(evt, droppingMorph, checkForDnD); 
             if (hit != null) { 
-		return hit;  // hit a submorph
-	    }
+                return hit;  // hit a submorph
+            }
         }
 
         // Check if it's really in this morph (not just fullBounds)
@@ -3918,17 +3915,16 @@ Morph.addMethods({
 
         // If no DnD check, then we have a hit (unless no handler in which case a miss)
         if (!checkForDnD) return this.mouseHandler ? this : null;
-	
+
         // On drops, check that this is a willing recipient
         if (droppingMorph != null) {
-	    return this.acceptsDropping(droppingMorph) ? this : null;
-	} else {
-	
-        // On grabs, can't pick up the world or morphs that handle mousedown
-        // DI:  I think the world is adequately checked for now elsewhere
-        // else return (!evt.isAltDown() && this === this.world()) ? null : this; 
-	    return this;
-	}
+            return this.acceptsDropping(droppingMorph) ? this : null;
+        } else {
+            // On grabs, can't pick up the world or morphs that handle mousedown
+            // DI:  I think the world is adequately checked for now elsewhere
+            // else return (!evt.isAltDown() && this === this.world()) ? null : this; 
+            return this;
+        }
 
     },
     
@@ -4011,7 +4007,7 @@ Morph.addMethods({
     startSteppingScripts: function() { }, // May be overridden to start stepping scripts
     
     stopSteppingScripts: function() {
-	var world = this.world();
+        var world = this.world();
         if (this.activeScripts) {
             this.activeScripts.invoke('stop', world);
             this.activeScripts = null;
@@ -4071,7 +4067,7 @@ Morph.addMethods({
         this.withAllSubmorphsDo( function() {
             if (this.suspendedScripts) {
                 this.suspendedScripts.invoke('start', world);
-		this.activeScripts = this.suspendedScripts;
+                this.activeScripts = this.suspendedScripts;
                 this.suspendedScripts = null;
             }
         });
@@ -4210,18 +4206,17 @@ Morph.addMethods({
             return pt.matrixTransform(otherMorph.transformToMorph(this));
         } catch (er) {
             // Function.showStack();
-	    console.log("problem " + er + " on " + this + " other " + otherMorph);
+            console.log("problem " + er + " on " + this + " other " + otherMorph);
             return pt;
         }
     },
 
     transformForNewOwner: function(newOwner) {
-	// var old = this.getTransform().copy();
+        // var old = this.getTransform().copy();
         var t = new Transform(this.transformToMorph(newOwner));
-	// console.log("made new transform " + t + " old " + old + " new Owner " + newOwner.getTransform());
-	return t;
+        // console.log("made new transform " + t + " old " + old + " new Owner " + newOwner.getTransform());
+        return t;
     },
-
 
     changed: function() {
         // (this.owner || this).invalidRect(this.bounds());
@@ -4639,7 +4634,7 @@ var PasteUpMorph = Morph.subclass("PasteUpMorph", {
 });
 
 /**
- * @class WorldMorph 
+ * @class WorldMorph: a Morphic world (visual container of other morphs) 
  */ 
 
 PasteUpMorph.subclass("WorldMorph", {
@@ -4726,11 +4721,11 @@ PasteUpMorph.subclass("WorldMorph", {
     },
 
     initializeTransientState: function($super, initialBounds) {
-	$super(initialBounds);
+        $super(initialBounds);
         this.hands = [];
         this.displayThemes = this.defaultThemes;
         this.setDisplayTheme(this.displayThemes['lively']);
-	
+
         this.stepList = [];  // an array of morphs to be ticked
         this.scheduledActions = [];  // an array of schedulableActions to be evaluated
         this.lastStepTime = (new Date()).getTime();
@@ -4803,8 +4798,8 @@ PasteUpMorph.subclass("WorldMorph", {
         menu.addLine();
         menu.addItem(["publish world as ... ", function() { 
             var msg = this.shrinkWrapToFile(this.prompt("world file (.xhtml)"));
-	    if (msg) this.world().alert(msg);
-	}]);
+            if (msg) this.world().alert(msg);
+        }]);
         menu.addItem(["restart system", this.restart]);
         return menu;
     },
@@ -5059,14 +5054,13 @@ PasteUpMorph.subclass("WorldMorph", {
             ["Ellipse", function(evt) { world.addMorph(new Morph(evt.mousePoint.extent(pt(50, 50)), "ellipse"));}],
             ["TextMorph", function(evt) { world.addMorph(new TextMorph(evt.mousePoint.extent(pt(120, 10)), "This is a TextMorph"));}],
             ["Class Browser", function(evt) { new SimpleBrowser().openIn(world, evt.mousePoint); }],
-            ["Object Hierarchy Browser", function(evt) { new ObjectBrowser().openIn(world, evt.mousePoint); }],
-	    
+            ["Object Hierarchy Browser", function(evt) { new ObjectBrowser().openIn(world, evt.mousePoint); }],    
             ["Clock", function(evt) {
-		var m = world.addMorph(new ClockMorph(evt.mousePoint, 50));
-		m.startSteppingScripts(); }],
+                var m = world.addMorph(new ClockMorph(evt.mousePoint, 50));
+                m.startSteppingScripts(); }],
             ["FrameRateMorph", function(evt) {
-		var m = world.addMorph(new FrameRateMorph(evt.mousePoint.extent(pt(160, 10)), "FrameRateMorph"));
-		m.startSteppingScripts(); }]
+                var m = world.addMorph(new FrameRateMorph(evt.mousePoint.extent(pt(160, 10)), "FrameRateMorph"));
+                m.startSteppingScripts(); }]
         ];
         if (this.isLoadedFromNetwork()) { 
             items.push(["File Browser", function(evt) { WebStore.prototype.onCurrentLocation().openIn(world, evt.mousePoint) }])
@@ -5090,14 +5084,14 @@ PasteUpMorph.subclass("WorldMorph", {
             console.log("changed filename to " + filename);
         }
 
-	var url = window.location.toString();
+        var url = window.location.toString();
         var req = new NetRequest().beSynchronous(); 
         var result = req.get(url);
 
-	if (result.status < 200 && result.status >= 300) {
-	    return "failure retrieving  " + newurl + ", status " + result.status;
-	}
-	var newDoc = result.responseXML;
+        if (result.status < 200 && result.status >= 300) {
+            return "failure retrieving  " + newurl + ", status " + result.status;
+        }
+        var newDoc = result.responseXML;
 
         var mainDefs = newDoc.getElementById('Defaults');
         var newurl = url.substring(0, url.lastIndexOf('/') + 1) + filename;
@@ -5106,21 +5100,22 @@ PasteUpMorph.subclass("WorldMorph", {
             previous.parentNode.removeChild(previous);
         }
         var container = newDoc.createElementNS(Namespace.SVG, "g");
-	
-	container.setAttribute("id", "ShrinkWrapped");
-        mainDefs.appendChild(container);
-	
-	container.appendChild(newDoc.importNode(this.rawNode, true));
 
-	// FIXME: note no model handling
+        container.setAttribute("id", "ShrinkWrapped");
+        mainDefs.appendChild(container);
+
+        container.appendChild(newDoc.importNode(this.rawNode, true));
+
+        // FIXME: note no model handling
         var content = Exporter.nodeToString(newDoc);
 
-	var req = new NetRequest().beSynchronous();
-	var result = req.put(newurl, content);
-	if (result.status >= 200 && result.status < 300)
-	    return "success publishing world at " + newurl + ", status " + result.status;
-	else
-	    return "failure publishing world at " + newurl + ", status " + result.status;
+        var req = new NetRequest().beSynchronous();
+        var result = req.put(newurl, content);
+        if (result.status >= 200 && result.status < 300) {
+            return "success publishing world at " + newurl + ", status " + result.status;
+        } else {
+            return "failure publishing world at " + newurl + ", status " + result.status;
+        }
     },
     
     makeShrinkWrappedWorldWith: function(morphs, filename) {
@@ -5136,12 +5131,12 @@ PasteUpMorph.subclass("WorldMorph", {
 
         console.log('morphs is %s', morphs);
 
-	var url = window.location.toString();
+        var url = window.location.toString();
         var newDoc = Storage.retrieveData(url);
-	if (!newDoc) {
-	    WorldMorph.current().alert('problem accessing ' + url);
-	    return;
-	}
+        if (!newDoc) {
+            WorldMorph.current().alert('problem accessing ' + url);
+            return;
+        }
 
         console.log('got source %s url %s', newDoc, url);
         var mainDefs = newDoc.getElementById('Defaults');
@@ -5172,11 +5167,11 @@ PasteUpMorph.subclass("WorldMorph", {
         container.setAttribute("id", "ShrinkWrapped");
         mainDefs.appendChild(container);
 
-
         var content = Exporter.nodeToString(newDoc);
         var success = Storage.storeData(newurl, content);
-        if (!success)
-	    this.alert('failed saving world at url ' + newurl);
+        if (!success) {
+            this.alert('failed saving world at url ' + newurl);
+        }
     },
 
     addMorphsFrom: function(id) {
@@ -5197,20 +5192,19 @@ PasteUpMorph.subclass("WorldMorph", {
         return morphs;
     },
 
-
     alert: function(message) {
         var fill = this.getFill();
         this.setFill(Color.black); // poor man's modal dialog
 
         var menu = new MenuMorph([["OK", function() { this.setFill(fill)}]], this);
-	var oldMouseUp = menu.onMouseUp;
-	menu.onMouseUp = function(evt) { 
-	    if (!this.stayUp) this.world().setFill(fill); // cleanup
-	    oldMouseUp.apply(this, arguments);
-	};
+        var oldMouseUp = menu.onMouseUp;
+        menu.onMouseUp = function(evt) { 
+            if (!this.stayUp) this.world().setFill(fill); // cleanup
+            oldMouseUp.apply(this, arguments);
+        };
 
         menu.openIn(this, this.bounds().center(), false, message); 
-	menu.scaleBy(2.5);
+        menu.scaleBy(2.5);
     }.logErrors('alert'),
 
     prompt: function(message) {
@@ -5335,13 +5329,13 @@ Morph.subclass("HandMorph", function() {
     handleEvent: function(rawEvt) {
         var evt = new Event(rawEvt);
         evt.hand = this;
-	
+
         Function.resetDebuggingStack();
         switch (evt.type) {
         case "MouseMove":
         case "MouseDown":
         case "MouseUp":
-	case "MouseWheel":
+        case "MouseWheel":
             this.handleMouseEvent(evt);
             // evt.preventDefault();
             break;
@@ -5388,8 +5382,8 @@ Morph.subclass("HandMorph", function() {
                         if (this.mouseFocus) this.mouseFocus.captureMouseEvent(evt, true);
                         else if (!evt.hand.hasSubmorphs()) this.owner.captureMouseEvent(evt, false); 
                     } else {
-			if (receiver) receiver.onMouseWheel(evt);
-		    }
+                        if (receiver) receiver.onMouseWheel(evt);
+                    }
                 } 
             }
             this.lastMouseEvent = evt;
@@ -5408,7 +5402,7 @@ Morph.subclass("HandMorph", function() {
         this.setBorderWidth(this.mouseButtonPressed ? 3 : 1);
         evt.setButtonPressedAndPriorPoint(this.mouseButtonPressed, this.lastMouseEvent ? this.lastMouseEvent.mousePoint : null);
     
-	if (this.mouseFocus != null) {
+        if (this.mouseFocus != null) {
             if (this.mouseButtonPressed) {
                 this.mouseFocus.captureMouseEvent(evt, true);
                 this.lastMouseDownPoint = evt.mousePoint; 
@@ -5646,10 +5640,10 @@ Morph.subclass("LinkMorph", {
     morphMenu: function($super, evt) { 
         var menu = $super(evt);
         menu.addItem(["publish linked world as ... ", 
-		      function() { 
-			  var msg = this.myWorld.shrinkWrapToFile(this.world().prompt("world file (.xhtml)"));
-			  if (msg) this.world().alert(msg);
-		      }]);
+            function() { 
+                var msg = this.myWorld.shrinkWrapToFile(this.world().prompt("world file (.xhtml)"));
+                if (msg) this.world().alert(msg);
+            }]);
         return menu;
     },
 
@@ -5672,9 +5666,9 @@ Morph.subclass("LinkMorph", {
             oldWorld.removeHand(hand);
         });
         
-	if (Config.suspendScriptsOnWorldExit) {
-	    oldWorld.suspendAllActiveScripts();
-	}
+        if (Config.suspendScriptsOnWorldExit) {
+            oldWorld.suspendAllActiveScripts();
+        }
 
         var canvas = oldWorld.canvas();
         oldWorld.remove(); // some SVG calls may stop working after this point in the old world.
@@ -5694,8 +5688,9 @@ Morph.subclass("LinkMorph", {
 
         newWorld.onEnter(); 
 
-	if (Config.suspendScriptsOnWorldExit) 
-	    newWorld.resumeAllSuspendedScripts();
+        if (Config.suspendScriptsOnWorldExit) { 
+            newWorld.resumeAllSuspendedScripts();
+        }
 
         carriedMorphs.each(function(m) {
             newWorld.firstHand().addMorph(m);
