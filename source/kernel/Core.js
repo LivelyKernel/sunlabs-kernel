@@ -189,9 +189,9 @@ Namespace =  {
 
 var Loader = {
 
-    loadScript: function(ns, url) {
-        var script = NodeFactory.createNS(ns, "script");
-        script.setAttributeNS(ns, "src", url);
+    loadScript: function(url) {
+        var script = NodeFactory.createNS(Namespace.XHTML, "script");
+        script.setAttributeNS(Namespace.XHTML, "src", url);
         document.documentElement.appendChild(script);
         //document.documentElement.removeChild(script);
     },
@@ -2339,10 +2339,6 @@ var NodeList = {
         list.appendChild(element.rawNode);
     },
 
-    pushFront: function(list, element) {
-        list.insertBefore(element.rawNode, list.firstChild);
-    },
-
     remove: function(list, element) {
         if (element.rawNode.parentNode === list) {
             // FIXME remove the alternative
@@ -2622,7 +2618,7 @@ Morph = Visual.subclass("Morph", {
     openForDragAndDrop: true, // Submorphs can be extracted from or dropped into me
     mouseHandler: MouseHandlerForDragging, //a MouseHandler for mouse sensitivity, etc
     stepHandler: null, // a stepHandler for time-varying morphs and animation 
-    noShallowCopyProperties: ['id', 'rawNode', 'rawSubnodes', 'shape', 'submorphs', 'stepHandler', 'defs', 'activeScripts', 'nextNavigableSibling', 'focusHalo', 'fullBounds'],
+    noShallowCopyProperties: ['id', 'rawNode', 'shape', 'submorphs', 'stepHandler', 'defs', 'activeScripts', 'nextNavigableSibling', 'focusHalo', 'fullBounds'],
 
     suppressBalloonHelp: Config.suppressBalloonHelp,
 
@@ -2631,7 +2627,6 @@ Morph = Visual.subclass("Morph", {
     internalInitialize: function(rawNode, transform) {
         this.rawNode = rawNode;
         this.submorphs = [];
-        this.rawSubnodes = null;
         this.owner = null;
         this.setPersistentType(this.getType());
         this.pickId();
@@ -2805,13 +2800,10 @@ Morph = Visual.subclass("Morph", {
         for (var desc = this.rawNode.firstChild; desc != null; desc = desc.nextSibling) {
             var type = desc.getAttributeNS(Namespace.LIVELY, "type");
             // depth first traversal
-            if (type == "Submorphs") {
-                this.rawSubnodes = NodeList.become(desc, type);
-                NodeList.each(this.rawSubnodes, function(node) { 
-                    var morph = importer.importFromNode(node);
-                    this.submorphs.push(morph); 
-                    morph.owner = this;
-                }.bind(this));
+	    if (type && type != "Selection" && type != "FocusHalo") { // FIXME remove the conditiona
+                var morph = importer.importFromNode(desc);
+                this.submorphs.push(morph); 
+                morph.owner = this;
             } else {
                 children.push(desc);
             }
@@ -2927,18 +2919,14 @@ Morph = Visual.subclass("Morph", {
                              this.fill, this.borderWidth, this.borderColor);
             break;
         }
-
-        this.rawSubnodes = NodeList.withType("Submorphs");
-        this.rawNode.appendChild(this.rawSubnodes);
-
-        this.addNonMorph(this.shape.rawNode);
+	this.rawNode.appendChild(this.shape.rawNode);
     
         return this;
     },
     
     pickId: function() {
         var previous = this.id(); // this can happen when deserializing
-        var id = Morph.newMorphId(); // XXX remove
+        var id = this.newMorphId(); 
         this.rawNode.setAttribute("id", id); // this may happen automatically anyway by setting the id property
         return previous;
     },
@@ -2955,19 +2943,20 @@ Morph = Visual.subclass("Morph", {
     
         // this.created = false; // exists on server now
         // some of this stuff may become persistent
-    }
+    },
 
+    newMorphId: (function() {
+	var morphCounter = 0;
+	return function() {
+	    return ++ morphCounter;
+	}
+    })()
+    
 });
 
 // Functions for change management
 Object.extend(Morph, {
     
-    morphCounter: 0,
-
-    newMorphId: function() {
-        return ++Morph.morphCounter;
-    },
-
     // this function creates an advice function that ensures that the mutation is properly recorded
     onChange: function(fieldName) {
         return function(proceed, newValue) {
@@ -3127,9 +3116,8 @@ Morph.addMethods({
         if (!newShape.rawNode) {
             console.log('newShape is ' + newShape + ' ' + (new Error()).stack);
         }
+	// console.log("siblings " + [this.rawNode.lastChild, this.rawNode.firstChild, this.shape.rawNode.previousSibling, this.shape.rawNode.nextSibling]);
         this.rawNode.replaceChild(newShape.rawNode, this.shape.rawNode);
-
-
         this.shape = newShape;
         //this.layoutChanged(); 
         if (this.clipPath) {
@@ -3211,8 +3199,7 @@ Morph.addMethods({
     },
     
     addNonMorph: function(node) {
-        if (this.rawSubnodes == null) console.log("%s not fully inited on addNonMorph(%s)", this, node);
-        return this.rawNode.insertBefore(node, this.rawSubnodes);
+	return this.rawNode.insertBefore(node, this.shape.rawNode.nextSibling);
     },
     
     // assign an element to a field and update the <defs> if necessary
@@ -3297,15 +3284,15 @@ Morph.addMethods({
     },
     
     internalAddMorph: function(m, isFront) {
-        if (isFront) {
-            // the last one, so drawn last, so front
-            NodeList.push(this.rawSubnodes, m);
+	var insertionPt = this.submorphs.length == 0 ? this.shape.rawNode.nextSibling :
+	    isFront ? this.submorphs.last().rawNode.nextSibling : this.submorphs.first().rawNode;
+        // the last one, so drawn last, so front
+	this.rawNode.insertBefore(m.rawNode, insertionPt);
+
+	if (isFront)
             this.submorphs.push(m);
-        } else {
-            // back of the display list -> front visually
-            NodeList.pushFront(this.rawSubnodes, m);
-            this.submorphs.splice(0, 0, m);
-        }
+	else
+            this.submorphs.unshift(m);
     },
     
     removeMorph: function(m) {
@@ -3314,12 +3301,10 @@ Morph.addMethods({
             if (m.owner !== this) { 
                 console.log("%s has owner %s that is not %s?", m, m.owner, this);
             }
-            if (m.rawNode.parentNode === this.rawSubnodes)
-            console.log("invariant violated: %s", m);
             return null;
         }
-    
-        NodeList.remove(this.rawSubnodes, m);
+	
+        m.removeRawNode();
         var spliced = this.submorphs.splice(index, 1);
         if (spliced instanceof Array) spliced = spliced[0];
         if (m !== spliced) {
@@ -3330,8 +3315,16 @@ Morph.addMethods({
         return m;
     },
     
+    removeRawNode: function() {
+	var parent = this.rawNode.parentNode;
+	if (parent) {
+	    parent.removeChild(this.rawNode);
+	}
+    },
+
+
     removeAllMorphs: function() {
-        NodeList.clear(this.rawSubnodes);
+	this.submorphs.invoke('removeRawNode');
         this.submorphs.clear();
         this.layoutChanged(); 
     },
@@ -5258,9 +5251,6 @@ Morph.subclass("HandMorph", function() {
                      (local ? Color.blue : Color.red), 1, Color.black));
         this.shape.disablePointerEvents();
     
-        this.rawNode.replaceChild(this.rawSubnodes, this.shape.rawNode);
-        this.rawNode.appendChild(this.shape.rawNode); // make sure submorphs are render first, then the hand shape 
-
         this.isLocal = local;
         this.setFill(local ? Color.primary.blue : Color.primary.green); 
 
@@ -5563,7 +5553,22 @@ Morph.subclass("HandMorph", function() {
             return $super().expandBy(shadowOffset.x);
         else return $super();
     },
-    
+
+    internalAddMorph: function(m, isFront) {
+	// override
+	var insertionPt = this.submorphs.length == 0 ? this.shape.rawNode :
+	    isFront ? this.submorphs.last().rawNode : this.submorphs.first().rawNode;
+        // the last one, so drawn last, so front
+	
+	this.rawNode.insertBefore(m.rawNode, insertionPt);
+
+	if (isFront)
+            this.submorphs.push(m);
+	else
+            this.submorphs.unshift(m);
+    },
+
+	
     toString: function($super) { 
         var superString = $super();
         var extraString = ", local=%s,id=%s".format(this.isLocal, this.id());

@@ -330,7 +330,7 @@ function populateWorldWithExamples(world) {
 
         if (Config.showWebStore) {
             var store;
-            if (location.protocol == 'file:') {
+            if (!window.location|| location.protocol == 'file:') {
                 store = new WebStore('localhost', '/~kappa/'); // TODO: hardcoded
             } else {
                 store = WebStore.prototype.onCurrentLocation();
@@ -372,7 +372,6 @@ function main() {
 
     WorldMorph.setCurrent(world);
     world.displayWorldOn(Canvas);
-    console.log('made world');
 
     // Populate the world with sample objects, widgets and applications
     if (container || Config.skipAllExamples) return; // don't populate if we loaded up stuff from a container

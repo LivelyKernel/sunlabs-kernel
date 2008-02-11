@@ -158,14 +158,14 @@ var NetRequest = (function() {
             if (!url.startsWith('http')) {
                 var array = window.location.toString().split('/');
                 array.splice(-1); // remove the last segment
-                console.log('array ' + array);
+                // console.log('array ' + array);
                 url = array.join('/');
-             }
-
-             var req = new BaseRequest(this.rewriteURL(url), this.options);
-             return req.transport;
+            }
+	    
+            var req = new BaseRequest(this.rewriteURL(url), this.options);
+            return req.transport;
         },
-
+	
         put: function(url, content) {
             this.options.method = 'put';
             this.options.body = content;
@@ -220,7 +220,12 @@ var NetRequest = (function() {
                     return false;
                 }
             }
-        }
+        },
+
+
+	loadScript: function(url) {
+
+	}
     });
     
     return NetRequest;

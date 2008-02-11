@@ -672,14 +672,14 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
     initializePersistentState: function($super, initialBounds, shapeType) {
         $super(initialBounds, shapeType);
 
-        // the selection element is persistent although its contents are not
+        this.rawTextNode = this.addNonMorph(NodeFactory.create("text", { "kerning": 0 }));
+        
+	// the selection element is persistent although its contents are not
         // generic <g> element with 1-3 rectangles inside
         this.rawSelectionNode = this.addNonMorph(NodeList.withType('Selection'));
         this.rawSelectionNode.setAttributeNS(null, "fill", this.selectionColor);
         this.rawSelectionNode.setAttributeNS(null, "stroke-width", 0);
-
-        this.rawTextNode = NodeFactory.create("text", { "kerning": 0 });
-        this.addNonMorph(this.rawTextNode);
+	
         this.resetRendering();
 
         this.rawNode.setAttributeNS(Namespace.LIVELY, "wrap", this.wrap);

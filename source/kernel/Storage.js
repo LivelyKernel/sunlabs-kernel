@@ -253,11 +253,10 @@ Model.subclass('WebStore', {
             ['rightPane', ListPane, new Rectangle(0.5, 0, 0.5, 0.6)],
             ['bottomPane', TextPane, new Rectangle(0, 0.6, 1, 0.4)]
         ]);
-        var m = panel.leftPane;
-        m.connectModel({model: this, getList: "getDirectoryList",
-                       setSelection: "setCurrentDirectory", 
-                       getSelection: "getCurrentDirectory"});
-        m = panel.rightPane;
+        panel.leftPane.connectModel({model: this, getList: "getDirectoryList",
+				     setSelection: "setCurrentDirectory", 
+				     getSelection: "getCurrentDirectory"});
+        var m = panel.rightPane;
         m.connectModel({model: this, getList: "getCurrentDirectoryContents", setSelection: "setCurrentResource"});
         var oldpress = m.innerMorph().onKeyPress;
         m.innerMorph().onKeyPress = function(evt) {
