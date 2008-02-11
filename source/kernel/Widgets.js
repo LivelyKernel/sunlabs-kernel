@@ -387,7 +387,7 @@ var TitleBarMorph = (function() {
         // Note: Layout of submorphs happens in adjustForNewBounds (q.v.)
         var cell = new Rectangle(0, 0, barHeight, barHeight);
         var closeButton = new WindowControlMorph(cell, controlSpacing, Color.primary.orange, windowMorph, 
-            function() { this.initiateShutdown(); }, "Close");
+            "initiateShutdown", "Close");
         this.closeButton =  this.addMorph(closeButton);
         // FIXME this should be simpler
         // var sign = NodeFactory.create("use").withHref("#CloseIcon");
@@ -395,14 +395,12 @@ var TitleBarMorph = (function() {
         // closeButton.addNonMorph(sign);
 
         var menuButton = new WindowControlMorph(cell, controlSpacing, Color.primary.blue, windowMorph, 
-            function(evt) { windowMorph.showTargetMorphMenu(evt); }, "Menu");
+            "showTargetMorphMenu", "Menu");
         this.menuButton = this.addMorph(menuButton);
 
         var collapseButton = new WindowControlMorph(cell, controlSpacing, Color.primary.yellow, windowMorph, 
-            function() { this.toggleCollapse(); }, "Collapse");
+	    "toggleCollapse", "Collapse");
         this.collapseButton = this.addMorph(collapseButton);
-
-        // var font = Font.forFamily(TextMorph.prototype.fontFamily, TextMorph.prototype.fontSize);
 
         var label;
         if (headline instanceof TextMorph) {
@@ -423,8 +421,9 @@ var TitleBarMorph = (function() {
     deserialize: function($super, importer, rawNode) {
         $super(importer, rawNode);
         if (this.rawNode.parentNode.getAttributeNS(Namespace.LIVELY, "type") == "WindowMorph") {
-            this.closeButton.targetMorph = this.menuButton.targetMorph 
-            = this.collapseButton.targetMorph = this.windowMorph.targetMorph;
+            this.closeButton.action.actor    = this.windowMorph;
+	    this.menuButton.action.actor     = this.windowMorph;
+	    this.collapseButton.action.actor = this.windowMorph;
         }
         this.linkToStyles(['titleBar']);
         this.ignoreEvents();
@@ -534,14 +533,16 @@ var WindowControlMorph = Morph.subclass("WindowControlMorph", {
     borderWidth: 0,
     documentation: "Event handling for Window morphs",
 
-    initialize: function($super, rect, inset, color, targetMorph, action, helpText) {
+    initialize: function($super, rect, inset, color, targetMorph, actionScript, helpText) {
         $super(rect.insetBy(inset), 'ellipse');
         this.setFill(new RadialGradient(color.lighter(2), color));
         this.targetMorph = targetMorph;
         this.color = color;
         // serialization helper there's no easy way to extract the base color from a radial gradient
         this.rawNode.setAttributeNS(Namespace.LIVELY, "base-color", color.toString());
-        this.action = action;
+	// FIXME should be a superclass(?) of SchedulableAction
+        this.action = new SchedulableAction(targetMorph, actionScript, null, 0);
+	this.addNonMorph(this.action.rawNode);
         this.helpText = helpText; // string to be displayed when mouse is brought over the icon
         return this;
     },
@@ -560,14 +561,13 @@ var WindowControlMorph = Morph.subclass("WindowControlMorph", {
             console.warn("%s has no action?", this);
             return;
         }
-        return this.action.call(this.targetMorph, evt);
+	this.action.argIfAny = evt;
+        return this.action.exec();
     },
 
     onMouseOver: function(evt) {
         this.setFill(new RadialGradient(Color.white, this.color));
-        if (this.helpText) {
-            this.showHelp(evt);
-        }
+        this.helpText && this.showHelp(evt);
     },
     
     onMouseOut: function(evt) {

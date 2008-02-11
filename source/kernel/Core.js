@@ -2844,8 +2844,13 @@ Morph = Visual.subclass("Morph", {
             case "action": {
                 var a = new SchedulableAction(importer, node);
                 a.actor = this;
-                this.addActiveScript(a);
-                console.log('deserialized script ' + a);
+		// FIXME: remove this ugly special case!
+		if (Global.WindowControlMorph && this instanceof WindowControlMorph) {
+		    this.action = a; // window ctrl morphs know don't have periodic scripts but a click action instead
+		} else {
+                    this.addActiveScript(a);
+                    console.log('deserialized script ' + a);
+		}
                 // don't start the action until morph fully constructed
                 break;
             }
@@ -3116,8 +3121,8 @@ Morph.addMethods({
         if (!newShape.rawNode) {
             console.log('newShape is ' + newShape + ' ' + (new Error()).stack);
         }
-	// console.log("siblings " + [this.rawNode.lastChild, this.rawNode.firstChild, this.shape.rawNode.previousSibling, this.shape.rawNode.nextSibling]);
-        this.rawNode.replaceChild(newShape.rawNode, this.shape.rawNode);
+        
+	this.rawNode.replaceChild(newShape.rawNode, this.shape.rawNode);
         this.shape = newShape;
         //this.layoutChanged(); 
         if (this.clipPath) {
@@ -3959,8 +3964,7 @@ Wrapper.subclass('SchedulableAction', {
         this.argIfAny = argIfAny;
         this.stepTime = stepTime;
         this.ticks = 0;
-        var code = document.createCDATASection(this.toJSON());
-        this.rawNode.appendChild(code);
+        this.rawNode.appendChild(document.createCDATASection(this.toJSON()));
     },
 
     deserialize: function($super, importer, rawNode) {
@@ -3973,25 +3977,38 @@ Wrapper.subclass('SchedulableAction', {
     toJSON: function() {
         // do not try to to convert actor to JSON
         return Object.toJSON({scriptName: this.scriptName, 
-                argIfAny: this.argIfAny, 
-                stepTime: this.stepTime, 
-                ticks: this.ticks });
+			      argIfAny: this.argIfAny, 
+			      stepTime: this.stepTime, 
+			      ticks: this.ticks });
     },
 
     toString: function() {
         return "#<SchedulableAction["+ this.actor + this.toJSON() + "]>";
     },
-
+    
     stop: function(world) {
         if (this.beVerbose) console.log("stopped stepping task %s", this);
         world.stopSteppingFor(this);
     },
-
+    
     start: function(world) {
         if (this.beVerbose) console.log("started stepping task %s", this);
         world.startSteppingFor(this);
+    },
+    
+    exec: function() {
+	if (!this.actor) {
+	    console.warn("no actor on script %s", this);
+	    return null;
+	}
+        var func = this.actor[this.scriptName];
+        if (func) {
+            return func.call(this.actor, this.argIfAny);
+        } else {
+            console.warn("no callback on actor %s", this.actor);
+	    return null;
+        }
     }
-
 });
 
 // Morph stepping/timer functions
@@ -4945,22 +4962,16 @@ PasteUpMorph.subclass("WorldMorph", {
         while (list.length > 0 && list[list.length - 1][0] <= msTime) {
             var schedNode = list.pop();  // [time, action] -- now removed
             var action = schedNode[1];
-            var func = action.actor[action.scriptName];
-
             Function.resetDebuggingStack();  // Reset at each tick event
-
-            if (func) {
-                try {
-                    func.call(action.actor, action.argIfAny);
-                } catch (er) {
-                    console.warn("error on actor %s: %s", action.actor, er);
-                    Function.showStack();
-                    continue;
-                    // Note: if error in script above, it won't get rescheduled below (this is good)
-                }
-            } else {
-                console.warn("no callback on actor %s", action.actor);
+            try {
+                action.exec();
+            } catch (er) {
+                console.warn("error on actor %s: %s", action.actor, er);
+                Function.showStack();
+		continue;
             }
+            // Note: if error in script above, it won't get rescheduled below (this is good)
+	    
 
             if (action.stepTime > 0) {
                 var nextTime = msTime + action.stepTime;
