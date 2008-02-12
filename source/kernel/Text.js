@@ -543,7 +543,7 @@ Object.subclass('TextLine', {
 
     // forward this on to all of the words (do we need this? - kam)
     adjustAfterComposition: function() {
-        for (i = 0; i < this.chunks.length; i++) {
+        for (var i = 0; i < this.chunks.length; i++) {
             if (this.chunks[i].word != null) {
                 this.chunks[i].word.adjustAfterComposition();
             }
@@ -596,7 +596,7 @@ Object.subclass('TextLine', {
     // log debugging information to the console
     logChunks: function(label) {
         if (this.chunks) {
-            for (i = 0; i < this.chunks.length; i++) {
+            for (var i = 0; i < this.chunks.length; i++) {
                 this.chunks[i].log(label + ": TextLine");
             }
         } else {
@@ -1389,7 +1389,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
     },
     
     processCommandKeys: function(key) {  //: Boolean (was the command processed?)
-        console.log('command ' + key);
+        // console.log('command ' + key);
 
         switch (key) {
         case "s": {
@@ -1415,15 +1415,24 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
         }
     
         case "d": {
-            this.boundEval(this.selectionString()); 
+	    try {
+		this.boundEval(this.selectionString());
+	    } catch (e) {
+		this.world().alert("exception " + e);
+	    }
             return true; 
         }
         
         case "p": {
             var strToEval = this.selectionString();
             this.setNullSelectionAt(this.selectionRange[1] + 1);
-            console.log('selection = ' + strToEval);
-            this.replaceSelectionWith(" " + this.boundEval(strToEval));
+            // console.log('selection = ' + strToEval);
+	    try {
+		var result = this.boundEval(strToEval);
+	    } catch (e) {
+		this.world().alert("exception " + e);
+	    }
+            this.replaceSelectionWith(" " + result);
             return true; 
         }
         
@@ -1716,7 +1725,6 @@ Object.subclass('TestTextMorph', {
     }
 
 });
-})({});
 
-console.log('loaded Text.js');
+}).logCompletion("Text.js")({});
 

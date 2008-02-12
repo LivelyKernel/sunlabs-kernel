@@ -602,13 +602,14 @@ ClipMorph.subclass(scope, "DoodleMorph", {
 });
 
 /**
- * @class SquiggleMorph: An even simpler drawing program
+ * @class SquiggleMorph
  */
 
 Morph.subclass('SquiggleMorph', {
 
     drawingColor: Color.red,
     drawingHandColor: Color.yellow,
+    documentation: "An even simpler drawing program",
 
     initialize: function($super, rect) {
         $super(rect, "rect");
@@ -616,6 +617,7 @@ Morph.subclass('SquiggleMorph', {
         this.currentMorph = null;
         this.start = null;
         this.savedHandColor = null;
+        this.setFill(new LinearGradient(Color.white, Color.primary.blue.lighter(), LinearGradient.EastWest));
         return this;
     },
     

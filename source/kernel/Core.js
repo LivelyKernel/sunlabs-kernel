@@ -189,9 +189,11 @@ Namespace =  {
 
 var Loader = {
 
-    loadScript: function(url) {
-        var script = NodeFactory.createNS(Namespace.XHTML, "script");
-        script.setAttributeNS(Namespace.XHTML, "src", url);
+    loadScript: function(ns, url) {
+	ns = ns || Namespace.XHTML;
+        var script = NodeFactory.createNS(ns, "script");
+	var srcAttr = ns === Namespace.XHTML ? "src" : "href";
+        script.setAttributeNS(ns === Namespace.XHTML ? ns : Namespace.XLINK, scrAttr, url);
         document.documentElement.appendChild(script);
         //document.documentElement.removeChild(script);
     },
@@ -2435,7 +2437,55 @@ Object.extend(Exporter, {
 
     nodeToString: function(node) {
         return node ? new XMLSerializer().serializeToString(node) : null;
-    }
+    },
+
+    shrinkWrapToFile: function(morphs, filename) {
+        if (filename == null) {
+            console.log('null filename, not publishing %s', morphs);
+            return null;
+        }
+	
+        if (!filename.endsWith(".xhtml")) {
+            filename += ".xhtml";
+            console.log("changed filename to " + filename);
+        }
+	
+        var url = window.location.toString();
+        var req = new NetRequest().beSynchronous(); 
+        var result = req.get(url);
+	
+        if (result.status < 200 && result.status >= 300) {
+            return "failure retrieving  " + newurl + ", status " + result.status;
+        }
+        var newDoc = result.responseXML;
+	
+        var canvas = newDoc.getElementById('canvas');
+        var newurl = url.substring(0, url.lastIndexOf('/') + 1) + filename;
+        var previous = newDoc.getElementById("ShrinkWrapped");
+        if (previous) {
+            previous.parentNode.removeChild(previous);
+        }
+        var container = canvas.appendChild(newDoc.createElementNS(Namespace.SVG, "defs"));
+	
+        container.setAttribute("id", "ShrinkWrapped");
+	
+	for (var i = 0; i < morphs.length; i++ ) {
+            container.appendChild(newDoc.importNode(morphs[i].rawNode, true));
+	}
+	
+        // FIXME: note no model handling
+        var content = Exporter.nodeToString(newDoc);
+
+        var req = new NetRequest().beSynchronous();
+        var result = req.put(newurl, content);
+        if (result.status >= 200 && result.status < 300) {
+            return "success publishing world at " + newurl + ", status " + result.status;
+        } else {
+            return "failure publishing world at " + newurl + ", status " + result.status;
+        }
+    },
+    
+
 
 });
 
@@ -3276,9 +3326,7 @@ Morph.addMethods({
             // FIXME transform is out of date
             // morph.setTransform(tfm); 
             // m.layoutChanged(); 
-        } else {
-            //console.log('no owner ' + m.inspect());
-        }
+        } 
     
         m.owner = this;
         this.internalAddMorph(m, front);
@@ -3326,7 +3374,6 @@ Morph.addMethods({
 	    parent.removeChild(this.rawNode);
 	}
     },
-
 
     removeAllMorphs: function() {
 	this.submorphs.invoke('removeRawNode');
@@ -3787,8 +3834,7 @@ Morph.addMethods({
             [((this.openForDragAndDrop) ? "close DnD" : "open DnD"), this.toggleDnD.curry(evt.mousePoint)],
             ["show Lively markup", this.addSvgInspector.curry(this)],
             ["publish shrink-wrapped as...", function() { 
-                this.world().makeShrinkWrappedWorldWith([this], 
-                    this.world().prompt('publish as (.xhtml)')); }],
+                Exporter.shrinkWrapToFile([this], this.world().prompt('publish as (.xhtml)')); }],
             ["test tracing (in console)", this.testTracing]
         ];
         var menu = new MenuMorph(items, this); 
@@ -4653,7 +4699,7 @@ PasteUpMorph.subclass("WorldMorph", {
     fill: Color.primary.blue,
     defaultExtent: pt(1280, 1024),
     // Default themes for the theme manager    
-    defaultThemes: {
+    displayThemes: {
         primitive: { // Primitive look and feel -- flat fills and no rounding or translucency
             styleName:   'primitive',
             window:      { rounding: 0 },
@@ -4733,7 +4779,6 @@ PasteUpMorph.subclass("WorldMorph", {
     initializeTransientState: function($super, initialBounds) {
         $super(initialBounds);
         this.hands = [];
-        this.displayThemes = this.defaultThemes;
         this.setDisplayTheme(this.displayThemes['lively']);
 
         this.stepList = [];  // an array of morphs to be ticked
@@ -4755,9 +4800,6 @@ PasteUpMorph.subclass("WorldMorph", {
         this.stopStepping();
         this.rawNode.parentNode.removeChild(this.rawNode);
         return this;
-
-        // console.log('removed ' + Object.inspect(this));
-        // this.owner = null; 
     },
 
     displayWorldOn: function(canvas) {
@@ -4807,7 +4849,7 @@ PasteUpMorph.subclass("WorldMorph", {
                       this.toggleDebugBackground]);
         menu.addLine();
         menu.addItem(["publish world as ... ", function() { 
-            var msg = this.shrinkWrapToFile(this.prompt("world file (.xhtml)"));
+            var msg = Exporter.shrinkWrapToFile([this], this.prompt("world file (.xhtml)"));
             if (msg) this.world().alert(msg);
         }]);
         menu.addItem(["restart system", this.restart]);
@@ -5075,125 +5117,6 @@ PasteUpMorph.subclass("WorldMorph", {
     isLoadedFromNetwork: function() {
         // TODO this is not foolproof. Note, batik doesn't have window.location
         return window.location ? window.location.protocol == "http:" : false;
-    },
-
-    shrinkWrapToFile: function(filename) {
-        if (filename == null) {
-            console.log('null filename, not publishing %s', morphs);
-            return null;
-        }
-
-        if (!filename.endsWith(".xhtml")) {
-            filename += ".xhtml";
-            console.log("changed filename to " + filename);
-        }
-
-        var url = window.location.toString();
-        var req = new NetRequest().beSynchronous(); 
-        var result = req.get(url);
-
-        if (result.status < 200 && result.status >= 300) {
-            return "failure retrieving  " + newurl + ", status " + result.status;
-        }
-        var newDoc = result.responseXML;
-
-        var mainDefs = newDoc.getElementById('Defaults');
-        var newurl = url.substring(0, url.lastIndexOf('/') + 1) + filename;
-        var previous = newDoc.getElementById("ShrinkWrapped");
-        if (previous) {
-            previous.parentNode.removeChild(previous);
-        }
-        var container = newDoc.createElementNS(Namespace.SVG, "g");
-
-        container.setAttribute("id", "ShrinkWrapped");
-        mainDefs.appendChild(container);
-
-        container.appendChild(newDoc.importNode(this.rawNode, true));
-
-        // FIXME: note no model handling
-        var content = Exporter.nodeToString(newDoc);
-
-        var req = new NetRequest().beSynchronous();
-        var result = req.put(newurl, content);
-        if (result.status >= 200 && result.status < 300) {
-            return "success publishing world at " + newurl + ", status " + result.status;
-        } else {
-            return "failure publishing world at " + newurl + ", status " + result.status;
-        }
-    },
-    
-    makeShrinkWrappedWorldWith: function(morphs, filename) {
-        if (filename == null) {
-            console.log('null filename, not publishing %s', morphs);
-           return;
-        }
-
-        if (!filename.endsWith(".xhtml")) {
-            filename += ".xhtml";
-           console.log("changed filename to " + filename);
-        }
-
-        console.log('morphs is %s', morphs);
-
-        var url = window.location.toString();
-        var newDoc = Storage.retrieveData(url);
-        if (!newDoc) {
-            WorldMorph.current().alert('problem accessing ' + url);
-            return;
-        }
-
-        console.log('got source %s url %s', newDoc, url);
-        var mainDefs = newDoc.getElementById('Defaults');
-        var newurl = url.substring(0, url.lastIndexOf('/') + 1) + filename;
-        var previous = newDoc.getElementById("ShrinkWrapped");
-        if (previous) {
-            previous.parentNode.removeChild(previous);
-        }
-
-        var container = newDoc.createElementNS(Namespace.SVG, 'g');
-
-        // console.log("morphs %s", morphs);
-        morphs.each(function(morph) {
-
-            var model = morph.getModel();
-            console.log('processing morph %s model %s', morph, model);
-            var modelNode = null;
-            if (model) { 
-                modelNode = morph.addNonMorph(model.toMarkup(newDoc));
-            }
-            container.appendChild(newDoc.importNode(morph.rawNode, true));
-            if (modelNode) {
-                modelNode.parentNode.removeChild(modelNode);
-            }
-            container.appendChild(newDoc.createTextNode('\n\n'));
-        });
-
-        container.setAttribute("id", "ShrinkWrapped");
-        mainDefs.appendChild(container);
-
-        var content = Exporter.nodeToString(newDoc);
-        var success = Storage.storeData(newurl, content);
-        if (!success) {
-            this.alert('failed saving world at url ' + newurl);
-        }
-    },
-
-    addMorphsFrom: function(id) {
-        var container = document.getElementById(id);
-        if (!container) return null;
-        var rawNodes = [];
-        for (var node = container.firstChild; node != null; node = node.nextSibling) {
-            if (node.localName != 'g') continue;
-            rawNodes.push(node);
-        }
-
-        var importer = new Importer();
-        var morphs = rawNodes.map(function(node) { 
-            var morph = importer.importFromNode(node);
-            this.addMorph(morph);
-            return morph;
-        }.bind(this));
-        return morphs;
     },
 
     alert: function(message) {
@@ -5578,7 +5501,6 @@ Morph.subclass("HandMorph", function() {
 	else
             this.submorphs.unshift(m);
     },
-
 	
     toString: function($super) { 
         var superString = $super();
@@ -5657,7 +5579,7 @@ Morph.subclass("LinkMorph", {
         var menu = $super(evt);
         menu.addItem(["publish linked world as ... ", 
             function() { 
-                var msg = this.myWorld.shrinkWrapToFile(this.world().prompt("world file (.xhtml)"));
+                var msg = Exporter.shrinkWrapToFile([this], this.world().prompt("world file (.xhtml)"));
                 if (msg) this.world().alert(msg);
             }]);
         return menu;

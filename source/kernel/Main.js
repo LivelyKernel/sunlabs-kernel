@@ -344,7 +344,6 @@ function populateWorldWithExamples(world) {
     if (Config.showXenoMorph) {
         XenoMorph.prototype.test(); //"http://livelykernel.sunlabs.com/index.html");//"http://www.opera.com");
     }
-
     return world;
 }
 
@@ -359,14 +358,21 @@ function main() {
             if (morphs[0] instanceof WorldMorph) {
                 world = morphs[0];
                 world.itsCanvas = Canvas;
+		if (morphs.length > 1) {
+		    console.log("more than one top level morph following a WorldMorph, ignoring remaining morphs");
+		}
             } else {
-                console.log("unexpected morphs " + morphs);
+		// no world, create one and add all the shrinkwrapped morphs to it.
+		world = new WorldMorph(Canvas);
+		for (var i = 0; i < morphs.length; i++ ) {
+		    world.addMorph(morphs[i]);
+		}
             }
         }
         importer.startScripts(world);
     } else {
         // Create an empty world
-        var world = new WorldMorph(Canvas);
+        world = new WorldMorph(Canvas);
         console.log("created empty world");
     }
 

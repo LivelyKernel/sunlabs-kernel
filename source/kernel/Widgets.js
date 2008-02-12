@@ -26,10 +26,11 @@
 // ===========================================================================
 
 /**
- * @class ButtonMorph: Simple buttons
+ * @class ButtonMorph
  */ 
 var ButtonMorph = Morph.subclass("ButtonMorph", {
-
+    
+    documentation: "Simple button",
     focusHaloBorderWidth: 3, // override the default
     borderWidth: 0.3,
     fill: Color.neutral.gray,
@@ -166,12 +167,13 @@ var ButtonMorph = Morph.subclass("ButtonMorph", {
 });
 
 /**
- * @class ImageMorph: Simple images
+ * @class ImageMorph
  */
 var ImageMorph = Morph.subclass("ImageMorph", {
     
     fill: Color.blue.lighter(),
     borderWidth: 0,
+    documentation: "Container for images",
    
     initialize: function($super, viewPort, url) {
         $super(viewPort, "rect");
@@ -184,7 +186,7 @@ var ImageMorph = Morph.subclass("ImageMorph", {
     
     restoreContainerFIXME: function($super, element, type, importer) /*:Boolean*/ {
         if ($super(element, type, importer)) return true;
-
+	
         switch (type) {
         case 'Image':
             var image = element;
@@ -219,7 +221,6 @@ var ImageMorph = Morph.subclass("ImageMorph", {
             new Similitude(pt(0, 0), 0, scale).applyTo(image);
         }
         this.addNonMorph(image);
-
     },
 
     loadURL: function(url) {
@@ -227,7 +228,7 @@ var ImageMorph = Morph.subclass("ImageMorph", {
             this.removeChild(this.image);
             this.image = null;
         }
-
+	
         if (!this.image) {
             var image = this.image = NodeFactory.create("image", { width: this.dim.x, height: this.dim.y});
             image.setAttributeNS(Namespace.LIVELY, "type", 'Image');
@@ -243,7 +244,7 @@ var ImageMorph = Morph.subclass("ImageMorph", {
             this.loadURL(this.url);
         }
     },
-
+    
     updateView: function(aspect, controller) {
         var p = this.modelPlug;
         if (!p) return;
@@ -573,11 +574,6 @@ var WindowControlMorph = Morph.subclass("WindowControlMorph", {
     onMouseOut: function(evt) {
         this.setFill(new RadialGradient(this.color.lighter(2), this.color));
         this.hideHelp();
-    },
-    
-    onMouseMove: function(evt) {
-        // really want onMouseLeave
-        //console.log('got event %s', evt);
     },
     
     checkForControlPointNear: function() { return false; },
