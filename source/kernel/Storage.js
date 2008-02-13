@@ -91,7 +91,7 @@ Model.subclass('WebStore', {
     
     saveAs: function(name, content) {
         console.log('saving content %s', content);
-        this.save("%s://%s/%s/%s".format(this.protocol, this.host, this.path, name), content, "LastWriteStatus");
+        this.save("%s://%s%s%s".format(this.protocol, this.host, this.path, name), content, "LastWriteStatus");
     },
     
     save: function(url, content, optModelVariable) {
