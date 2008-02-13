@@ -11,7 +11,7 @@
      xml:space="preserve"
      zoomAndPan="disable"
      >
-<defs id="Defaults">
+<defs>
 
 
 <filter id="DropShadowFilter" filterUnits="userSpaceOnUse">

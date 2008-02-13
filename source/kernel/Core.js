@@ -236,9 +236,28 @@ var Loader = {
             return;
         }
         document.documentElement.appendChild(adoptedNode);
-    }
+    },
+
+    isLoadedFromNetwork: (function() {
+        // TODO this is not foolproof. Note, batik doesn't have window.location
+        return window.location ? window.location.protocol.startsWith("http") : false;
+    })(),
     
+    
+    baseURL: (function() {
+	var segments = window.location.toString().split('/');
+	segments.splice(-1); // remove the last segment, incl query
+        return segments.join('/');
+    })()
 };
+
+Loader.proxyURL = (function() {
+    if (Loader.isLoadedFromNetwork && !Config.proxyURL) 
+	return Loader.baseURL + "/proxy/"; // a default
+    else
+	return Config.proxyURL;
+})();
+    
 
 // SVG/DOM bindings 
 
@@ -3737,7 +3756,7 @@ Morph.addMethods({
     },
 
     addFocusHalo: function() {
-        if (this.focusHalo) return false;
+        if (this.focusHalo || this.focusHaloBorderWidth <= 0) return false;
         this.focusHalo = this.addNonMorph(NodeList.withType('FocusHalo'));
         this.focusHalo.setAttributeNS(null, "stroke-opacity", 0.3);
         this.focusHalo.setAttributeNS(null, 'stroke-linejoin', Shape.LineJoins.ROUND);
@@ -5106,16 +5125,12 @@ PasteUpMorph.subclass("WorldMorph", {
                 var m = world.addMorph(new FrameRateMorph(evt.mousePoint.extent(pt(160, 10)), "FrameRateMorph"));
                 m.startSteppingScripts(); }]
         ];
-        if (this.isLoadedFromNetwork()) { 
+        if (Loader.isLoadedFromNetwork()) { 
             items.push(["File Browser", function(evt) { WebStore.prototype.onCurrentLocation().openIn(world, evt.mousePoint) }])
         }
         new MenuMorph(items, this).openIn(this.world(), evt.mousePoint);
     },
 
-    isLoadedFromNetwork: function() {
-        // TODO this is not foolproof. Note, batik doesn't have window.location
-        return window.location ? window.location.protocol == "http:" : false;
-    },
 
     alert: function(format) {
         var fill = this.getFill();

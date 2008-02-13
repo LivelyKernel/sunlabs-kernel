@@ -156,12 +156,8 @@ var NetRequest = (function() {
         get: function(url) {
             this.options.method = 'get';
             if (!url.startsWith('http')) {
-                var array = window.location.toString().split('/');
-                array.splice(-1); // remove the last segment
-                // console.log('array ' + array);
-                url = array.join('/');
+                url = Loader.baseURL;
             }
-	    
             var req = new BaseRequest(this.rewriteURL(url), this.options);
             return req.transport;
         },
@@ -189,19 +185,18 @@ var NetRequest = (function() {
         rewriteURL: (function() {
             var urlSplitter = new RegExp("http://([^/:]*)(:[0-9]+)?(/.*)");
             return function(url) {
-                if (Config.proxyURL) {
+                if (Loader.proxyURL) {
                     var urlMatch = url.match(urlSplitter);
                     if (!urlMatch) {
                         console.warn("malformed URL %s?", url);
                         return url;
                     }
-                    var proxyMatch = Config.proxyURL.match(urlSplitter);
+                    var proxyMatch = Loader.proxyURL.match(urlSplitter);
                     var portMatch = urlMatch[2];
                     if (portMatch) portMatch = "/" + portMatch.substring(1);  // replace ":" with "
                     else portMatch = "";
                     if (urlMatch && proxyMatch && (proxyMatch[1] != urlMatch[1] || proxyMatch[2] != urlMatch[2])) {
-                        var result = Config.proxyURL + urlMatch[1]  + portMatch + urlMatch[3];
-                        // console.warn("url match " + urlMatch + " on " + url + " to " + result);
+                        var result = Loader.proxyURL + urlMatch[1]  + portMatch + urlMatch[3];
                         return result;
                     }
                 } 
@@ -220,12 +215,8 @@ var NetRequest = (function() {
                     return false;
                 }
             }
-        },
+        }
 
-
-	loadScript: function(url) {
-
-	}
     });
     
     return NetRequest;

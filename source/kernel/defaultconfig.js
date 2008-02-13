@@ -59,7 +59,7 @@ var Config = {
     useNewScheduler: true,
     
     // URL that acts as a proxy for network operations 
-    // Config.proxyURL = 'http://www.hanaalliance.org/jsl/proxy/';
+    proxyURL: null,
 
     // Quickly enabling/disabling most demos
     skipMostExamples: false,
