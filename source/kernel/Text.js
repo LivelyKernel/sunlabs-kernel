@@ -629,6 +629,65 @@ Object.subclass('TextLine', {
     
 });
 
+// in the future, support multiple locales
+var Locale = {
+
+    charSet: CharSet,
+    //KP: note that this depends heavily on the language, esp if it's a programming language
+    selectWord: function(str, i1) { // Selection caret before char i1
+        var i2 = i1 - 1;
+        
+        if (i1 > 0) { // look left for o backets
+            var i = this.charSet.leftBrackets.indexOf(str[i1-1]);
+
+            if (str[i1 - 1] == "*" && (i1-2 < 0 || str[i1-2] != "/")) 
+                i = -1; // spl check for /*
+
+            if (i >= 0) {
+                var i2 = this.matchBrackets(str, this.charSet.leftBrackets[i], this.charSet.rightBrackets[i], i1 - 1, 1);
+                return [i1, i2 - 1]; 
+            } 
+        }
+        
+        if (i1 < str.length) { // look right for close brackets
+            var i = this.charSet.rightBrackets.indexOf(str[i1]);
+            
+            if (str[i1]== "*" && (i1+1 >= str.length || str[i1+1] != "/")) 
+                i = -1; // spl check for */
+
+            if (i >= 0) {
+                i1 = this.matchBrackets(str, this.charSet.rightBrackets[i], this.charSet.leftBrackets[i],i1,-1);
+                return [i1+1, i2]; 
+            } 
+        }
+        
+        while (i1-1 >= 0 && this.charSet.alphaNum.include(str[i1 - 1])) 
+            i1 --;
+    
+        while (i2+1 < str.length && this.charSet.alphaNum.include(str[i2 + 1])) 
+            i2 ++;
+    
+        return [i1, i2]; 
+    },
+
+    matchBrackets: function(str, chin, chout, start, dir) { 
+        var i = start;
+        var depth = 1;
+    
+        while ((dir < 0) ? i - 1 >= 0 : i + 1 < str.length ) {
+            i += dir;
+            
+            if (str[i] == chin && chin != chout) depth++;
+            if (str[i] == chout) depth--;
+            if (depth == 0) return i; 
+        }
+        
+        return i; 
+    }
+    
+};
+
+
 Global.WrapStyle = { 
     NORMAL: "wrap", // fits text to bounds width using word wrap and sets height
     NONE: "noWrap", // simply sets height based on line breaks only
@@ -654,6 +713,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
     tabWidth: 4,
     tabsAsSpaces: true,
     noShallowCopyProperties: Morph.prototype.noShallowCopyProperties.concat(['rawTextNode', 'rawSelectionNode', 'lines']),
+    locale: Locale,
 
     initializeTransientState: function($super, initialBounds) {
         $super(initialBounds);
@@ -1215,7 +1275,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
         if (this.selectionRange[0] == 0 || this.selectionRange[0] == this.textString.length) {
             this.setSelectionRange(0, this.textString.length); 
         } else {
-            this.selectionRange = TextMorph.selectWord(this.textString, this.selectionRange[0]);
+            this.selectionRange = this.locale.selectWord(this.textString, this.selectionRange[0]);
         }
         
         this.setModelSelection(this.selectionString());
@@ -1297,7 +1357,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
         switch (evt.getKeyCode()) {
         case Event.KEY_LEFT: {
             // forget the existing selection
-            var wordRange = TextMorph.selectWord(this.textString, this.selectionRange[0]);
+            var wordRange = this.locale.selectWord(this.textString, this.selectionRange[0]);
             if (evt.isShiftDown() && (wordRange[0] != before.length)) {
                 // move by a whole word if we're not at the beginning of it
                 this.setNullSelectionAt(Math.max(0, wordRange[0]));
@@ -1309,7 +1369,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
         } 
         case Event.KEY_RIGHT: {
             // forget the existing selection
-            var wordRange = TextMorph.selectWord(this.textString, this.selectionRange[0]);
+            var wordRange = this.locale.selectWord(this.textString, this.selectionRange[0]);
             if (evt.isShiftDown() && (wordRange[1] != before.length - 1)) {
                 // move by a whole word if we're not at the end of it.
                 this.setNullSelectionAt(Math.min(this.textString.length, wordRange[1] + 1));
@@ -1595,62 +1655,6 @@ TextMorph.addMethods({
     
 });
 
-// TextMorph word selection functions for the text editor
-// FIXME: put these somewhere else?
-Object.extend(TextMorph, {
-
-    selectWord: function(str, i1) { // Selection caret before char i1
-        var i2 = i1 - 1;
-        
-        if (i1 > 0) { // look left for o backets
-            var i = CharSet.leftBrackets.indexOf(str[i1-1]);
-
-            if (str[i1 - 1] == "*" && (i1-2 < 0 || str[i1-2] != "/")) 
-                i = -1; // spl check for /*
-
-            if (i >= 0) {
-                var i2 = TextMorph.matchBrackets(str, CharSet.leftBrackets[i], CharSet.rightBrackets[i], i1 - 1, 1);
-                return [i1, i2 - 1]; 
-            } 
-        }
-        
-        if (i1 < str.length) { // look right for close brackets
-            var i = CharSet.rightBrackets.indexOf(str[i1]);
-            
-            if (str[i1]== "*" && (i1+1 >= str.length || str[i1+1] != "/")) 
-                i = -1; // spl check for */
-
-            if (i >= 0) {
-                i1 = TextMorph.matchBrackets(str, CharSet.rightBrackets[i], CharSet.leftBrackets[i],i1,-1);
-                return [i1+1, i2]; 
-            } 
-        }
-        
-        while (i1-1 >= 0 && CharSet.alphaNum.include(str[i1 - 1])) 
-            i1 --;
-    
-        while (i2+1 < str.length && CharSet.alphaNum.include(str[i2 + 1])) 
-            i2 ++;
-    
-        return [i1, i2]; 
-    },
-
-    matchBrackets: function(str, chin, chout, start, dir) { 
-        var i = start;
-        var depth = 1;
-    
-        while ((dir < 0) ? i - 1 >= 0 : i + 1 < str.length ) {
-            i += dir;
-            
-            if (str[i] == chin && chin != chout) depth++;
-            if (str[i] == chout) depth--;
-            if (depth == 0) return i; 
-        }
-        
-        return i; 
-    }
-    
-});
 
 /**
  * @class PrintMorph

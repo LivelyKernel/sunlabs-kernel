@@ -20,6 +20,8 @@ if (Prototype.Browser.Opera) {
    // Opera has issues with the height=100% setting, so we'll give it a reasonable value
    Canvas.setAttribute("height", "800px"); 
 }
+// Canvas.parentNode.addEventListener("paste", { handleEvent: function(evt) { console.log("got paste " + evt) }}, true);
+
 
 // ===========================================================================
 // Error/warning console
@@ -175,6 +177,31 @@ Object.extend(String.prototype, {
 window.onerror = function(message, url, code) {
     console.log('in %s: %s, code %s', url, message, code);
 };
+
+(function() { // override config options with options from the query part of the URL
+
+    // may have security implications ...
+    if (!window.location) // Batik can't deal.
+	return;
+
+    var configOverrides = window.location.search.toString().toQueryParams();
+    for (var p in configOverrides) {
+	if (Config.hasOwnProperty(p)) { // can't set unknown properties
+	    // this is surprisingly convoluted in Javascript:
+	    if (Config[p] instanceof Boolean || typeof Config[p] == 'boolean') { 
+		// make sure that "false" becomes false
+		Config[p] = configOverrides[p].toLowerCase() == "true";
+	    } else {
+		Config[p] = configOverrides[p];
+	    }
+	} else {
+	    console.log("ignoring unknown property " + p);
+	}
+    }
+})();    
+
+
+
 
 // ===========================================================================
 // Namespaces and core DOM bindings
@@ -412,8 +439,8 @@ Object.extend(Function.prototype, {
             if (Object.isFunction(value)) {
                 for ( ; value; value = value.originalFunction) {
                     if (value.methodName) {
-                        console.log("class " + this.prototype.constructor.type 
-                                    + " borrowed " + value.qualifiedMethodName());
+                        //console.log("class " + this.prototype.constructor.type 
+			    // + " borrowed " + value.qualifiedMethodName());
                     }
                     value.declaredClass = this.prototype.constructor.type;
                     value.methodName = property;
@@ -434,12 +461,9 @@ Object.extend(Function.prototype, {
     // modified from prototype.js
     subclass: function(/*,... */) {
         var properties = $A(arguments);
-        var scope = Global;
-        if (typeof properties[0] != 'string') { // primitive string required
-            scope = properties.shift();
-        }
+	var scope = (typeof properties[0] == 'string') ? Global : properties.shift(); // primitive string required
         var name = properties.shift();
-
+	
         function klass() {
             // check for the existence of Importer, which may not be defined very early on
             if (Global.Importer && (arguments[0] instanceof Importer)) { 
@@ -1878,10 +1902,6 @@ Shape.subclass('RectShape', {
         return this;
     },
 
-    deserialize: function(importer, rawNode) {
-        this.rawNode = rawNode;
-    },
-
     setBounds: function(r) {
         var n = this.rawNode;
         n.setAttributeNS(null, "x", r.x);
@@ -1958,10 +1978,6 @@ Shape.subclass('EllipseShape', {
         $super(color, borderWidth, borderColor);
     },
 
-    deserialize: function(importer, rawNode) {
-        this.rawNode = rawNode;
-    },
-    
     setBounds: function(r) {
         var n = this.rawNode;
         n.setAttributeNS(null, "cx", r.x + r.width/2);
@@ -2008,38 +2024,25 @@ Shape.subclass('EllipseShape', {
 
 Shape.subclass('PolygonShape', {
 
-    shouldCacheVertices: false,
     hasElbowProtrusions: true,
     
     initialize: function($super, vertlist, color, borderWidth, borderColor) {
         this.rawNode = NodeFactory.create("polygon");
         this.setVertices(vertlist);
         $super(color, borderWidth, borderColor);
-        if (this.shouldCacheVertices) this.cachedVertices = null;
         return this;
     },
 
-    deserialize: function(importer, rawNode) {
-        this.rawNode = rawNode;
-        if (this.shouldCacheVertices) this.cachedVertices = this.vertices();
-    },
-
     setVertices: function(vertlist) {
-        ///console.log("vertlist is " + vertlist + " for " + Function.showStack());
         if (this.rawNode.points) {
             this.rawNode.points.clear();
         }
         this.rawNode.setAttributeNS(null, "points", vertlist.map(function (p) { return p.x + "," + p.y }).join(' '));
-        if (this.shouldCacheVertices) {
-            this.cachedVertices = vertlist.copy();
-        }
+	// FIXME: use DOM instead of attributes for the above
         // vertlist.forEach( function(p) {  this.points.appendItem(p); }, this);
     },
 
     vertices: function() {
-        if (this.shouldCacheVertices && this.cachedVertices) { 
-            return this.cachedVertices;
-        }
         var array = [];
         for (var i = 0; i < this.rawNode.points.numberOfItems; i++) {
             array.push(Point.ensure(this.rawNode.points.getItem(i)));
@@ -2057,8 +2060,8 @@ Shape.subclass('PolygonShape', {
         var vertices = this.vertices();
         // Opera has been known not to update the SVGPolygonShape.points property to reflect the SVG points attribute
         console.assert(vertices.length > 0, 
-               "PolygonShape.bounds: vertices has zero length, " + this.rawNode.points 
-               + " vs " + this.rawNode.getAttributeNS(null, "points"));
+		       "PolygonShape.bounds: vertices has zero length, " + this.rawNode.points 
+		       + " vs " + this.rawNode.getAttributeNS(null, "points"));
         return Rectangle.unionPts(vertices);
     },
 
@@ -2187,10 +2190,6 @@ Shape.subclass('PolylineShape', {
         this.setVertices(vertlist);
         $super(null, borderWidth, borderColor);
     },
-
-    deserialize: function(importer, rawNode) {
-        this.rawNode = rawNode;
-    },
     
     containsPoint: function(p) {
         var howNear = 6;
@@ -2221,12 +2220,10 @@ Shape.subclass('PathShape', {
 
     hasElbowProtrusions: true,
     
-    initialize: function($super, vertlistOrRawNode, color, borderWidth, borderColor) {
+    initialize: function($super, vertlist, color, borderWidth, borderColor) {
         this.rawNode = NodeFactory.create("path");
         $super(color, borderWidth, borderColor);
-        try {
-            if (vertlistOrRawNode) this.setVertices(vertlistOrRawNode);
-        } catch (er) { console.log("vertlistOrRawNode" + vertlistOrRawNode); } 
+        if (vertlist) this.setVertices(vertlist);
         return this;
     },
     
@@ -2566,8 +2563,8 @@ Copier.subclass('Importer', {
         try {
             return new Global[morphTypeName](this, rawNode);
         } catch (er) {
-            console.log("problem instantiating type %s from node %s: %s", 
-                        morphTypeName, Exporter.nodeToString(rawNode), er);
+            console.log("%s instantiating type %s from node %s", er, 
+			morphTypeName, Exporter.nodeToString(rawNode));
             throw er;
         }
     },
@@ -2944,6 +2941,7 @@ Morph = Visual.subclass("Morph", {
         } // end for
 
         if (modelNode) {
+	    console.log("importing model");
             var model = importer.importModelFrom(modelNode);
             this.rawNode.removeChild(modelNode); // currently modelNode is not permanently stored 
         }
@@ -4332,7 +4330,7 @@ Morph.addMethods({
     clipToPath: function(pathShape) {
         var clipPath = NodeFactory.create('clipPath');
         clipPath.appendChild(pathShape.rawNode);
-        clipPath.setAttributeNS(null, "shape-rendering", "optimizeSpeed");
+        // clipPath.setAttributeNS(null, "shape-rendering", "optimizeSpeed");
         var ref = this.assign('clipPath', clipPath);
         this.rawNode.setAttributeNS(null, "clip-path", ref);
     },
@@ -4818,7 +4816,7 @@ PasteUpMorph.subclass("WorldMorph", {
         Event.keyboardEvents.each(function(each) {
             document.documentElement.addEventListener(each, hand, false);
         });
-        
+
         this.rawNode.parentNode.appendChild(hand.rawNode);
     },
     
@@ -5119,18 +5117,19 @@ PasteUpMorph.subclass("WorldMorph", {
         return window.location ? window.location.protocol == "http:" : false;
     },
 
-    alert: function(message) {
+    alert: function(format) {
         var fill = this.getFill();
         this.setFill(Color.black); // poor man's modal dialog
 
         var menu = new MenuMorph([["OK", function() { this.setFill(fill)}]], this);
-        var oldMouseUp = menu.onMouseUp;
-        menu.onMouseUp = function(evt) { 
+        menu.onMouseUp = function(/*...*/) { 
             if (!this.stayUp) this.world().setFill(fill); // cleanup
-            oldMouseUp.apply(this, arguments);
+            MenuMorph.prototype.onMouseUp.apply(this, arguments);
         };
-
-        menu.openIn(this, this.bounds().center(), false, message); 
+	var args = $A(arguments);
+	var fmt = args.shift() || "";
+	
+        menu.openIn(this, this.bounds().center(), false, fmt.formatFromArray(args)); 
         menu.scaleBy(2.5);
     }.logErrors('alert'),
 

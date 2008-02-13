@@ -70,60 +70,65 @@ Model.subclass('WebStore', {
     },
 
     // basic protocol methods:
-    fetch: function(url, modelVariable) {
+    fetch: function(url, optModelVariable) {
         // retrieve the the contents of the url and save in the indicated model variable
         var store = this;
         var options =  {
             onSuccess: function(transport) {
-                store[modelVariable] = transport.responseText;
-                store.changed("get" + modelVariable);
+                store[optModelVariable] = transport.responseText;
+                store.changed("get" + optModelVariable);
             },
     
             onFailure: function(transport) {
                 WorldMorph.current().alert('failed fetching url ' + url);
-                store[modelVariable] = "resource unavailable";
-                store.changed("get" + modelVariable);
+                store[optModelVariable] = "resource unavailable";
+                store.changed("get" + optModelVariable);
             }
             // FIXME: on exception
         };
-
         new NetRequest(options).get(url);
     },
     
     saveAs: function(name, content) {
         console.log('saving content %s', content);
-        this.save("http://%s/%s/%s".format(this.host, this.path, name), content, "LastWriteStatus");
+        this.save("%s://%s/%s/%s".format(this.protocol, this.host, this.path, name), content, "LastWriteStatus");
     },
     
-    save: function(url, content, modelVariable) {
+    save: function(url, content, optModelVariable) {
         // retrieve the the contents of the url and save in the indicated model variable
         console.log('saving url ' + url);
         var store = this;
         var options =  {
             onSuccess: function(transport) {
-                store[modelVariable] = transport.status;
-                store.changed("get" + modelVariable);
+		if (optModelVariable !== undefined) {
+                    store[optModelVariable] = transport.status;
+                    store.changed("get" + optModelVariable);
+		}
             },
             onFailure: function(transport) {
-                WorldMorph.current().alert("failed saving with response " + transport.responseText);
-                //store[modelVariable] = transport.status;
-                //store.changed(modelVariable);
+		if (transport.status == 401) { // reauthenticate
+		    WorldMorph.current().alert("authentication required for PUT %s", url);
+		} else {
+                    WorldMorph.current().alert("%s: failure %s url %s", transport, transport.status, url);
+		}
             }
         };
 
         new NetRequest(options).put(url, content);
     },
 
-    deleteResource: function(url, modelVariable) {
+    deleteResource: function(url, optModelVariable) {
         // retrieve the the contents of the url and save in the indicated model variable
         console.log('deleting url ' + url);
         var store = this;
         var options =  {
             onSuccess: function(transport) {
                 // FIXME: the content may indicate that we failed to delete!
-                // store[modelVariable] = transport.status;
-                store.changed("get" + modelVariable);
-                console.log('success deleting:  ' + (transport.responseXML || transport.responseText));
+                // store[optModelVariable] = transport.status;
+		if (optModelVariable !== undefined) {
+                    store.changed("get" + optModelVariable);
+                    console.log('success deleting:  ' + (transport.responseXML || transport.responseText));
+		}
             },
     
             onFailure: function(transport) {
@@ -136,7 +141,7 @@ Model.subclass('WebStore', {
     },
 
     // FIXME handle object argument
-    propfind: function(url, depth, xpQueryString, modelVariable, resultType) {
+    propfind: function(url, depth, xpQueryString, optModelVariable, resultType) {
         // find the properties given the url and save the results of the indicated query into the model variable
         if (depth != 0 && depth != 1) depth = 'infinity';
 
@@ -146,7 +151,11 @@ Model.subclass('WebStore', {
             requestHeaders: { "Depth": depth },
     
             onFailure: function(transport) {
-                WorldMorph.current().alert("%s: failure %s url %s".format(transport, transport.status, url));
+		if (transport.status == 401) { // reauthenticate
+		    WorldMorph.current().alert("authentication required for PROPFIND %s", url);
+		} else {
+                    WorldMorph.current().alert("%s: failure %s url %s", transport, transport.status, url);
+		}
             },
     
             onSuccess: function(transport) {
@@ -155,14 +164,14 @@ Model.subclass('WebStore', {
                 if (!transport.responseXML) return; // FIXME: report problem
 
                 var result = Query.evaluate(transport.responseXML.documentElement, xpQueryString);
-                if (!resultType) { 
-                    store[modelVariable] = result;
-                } else { 
-                    store[modelVariable] = result.map(function(r) { 
-                        return new Resource(r);
-                    });
-                }
-                store.changed("get" + modelVariable);
+		if (optModelVariable !== undefined) {
+                    if (!resultType) { 
+			store[optModelVariable] = result;
+                    } else { 
+			store[optModelVariable] = result.map(function(r) { return new Resource(r); });
+                    }
+                    store.changed("get" + optModelVariable);
+		}
             }.logErrors('onSuccess')
         };
         
@@ -227,16 +236,17 @@ Model.subclass('WebStore', {
     },
     
     currentResourceURL: function() {
-        if (!this.CurrentResource) return "http://" + this.host;
-        else return "http://%s%s%s".format(this.host, 
+        if (!this.CurrentResource) return this.protocol + "://" + this.host;
+        else return "%s://%s%s%s".format(this.protocol, this.host, 
                     this.CurrentResource.startsWith('/') ? "": "/", 
                     this.CurrentResource);
     },
     
     currentDirectoryURL: function() {
-        return "http://%s%s%s".format(this.host, 
-                    this.CurrentDirectory.startsWith('/') ? "": "/", 
-                    this.CurrentDirectory);
+        return "%s://%s%s%s".format(this.protocol,
+				    this.host, 
+				    this.CurrentDirectory.startsWith('/') ? "": "/", 
+				    this.CurrentDirectory);
     },
     
     getCurrentResourceContents: function() {
@@ -302,22 +312,6 @@ Model.subclass('WebStore', {
     }
 
 });  
-
-var Storage = {
-
-    // synchronous store of XML
-    storeData: function(url, content) {
-        var result = new NetRequest().beSynchronous().put(url, content);
-        return result.status >= 200 && result.status < 300;
-    },
-
-    // synchronous retrieve of XML
-    retrieveData: function(url) {
-        var result = new NetRequest().beSynchronous().get(url); 
-        return result && result.responseXML;
-    }
-
-};
 
 console.log('loaded Storage.js');
 
