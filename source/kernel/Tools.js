@@ -40,9 +40,11 @@ Object.subclass('SourceDatabase', {
 
     scanFiles: function(fnameList) {
 	this.changeList = [];
-	var store = WebStore.defaultStore;
-	if (!store) return console.log('no store to save to');
-	// store.saveAs(WorldMorph.current().prompt('save as ...'), (this.xml || this.textString)); 
+
+	// For now, just try to read one file
+	var store = WebStore.prototype.onCurrentLocation();
+	store.setCurrentResource('~danielingalls/Lively/Tools.js');
+	console.log("text = " + store.getCurrentResourceContents().truncate(300));
     }
 });
 
