@@ -14,13 +14,43 @@
  */
 
 // ===========================================================================
-// Class Browser
+// Source Database
 // ===========================================================================
+Object.subclass('SourceDatabase', {
+	// The Source Database holds a cross-reference of the source code
+	// and the various methods for scanning, saving, and reloading that info
+	//
+	// I anticipate that it will also hold a list of projects, each being a list
+	// of changes. Whether projects will be associated with worlds as in Squeak
+	// or not is not yet clear.  Regardless, at any time, a given project will
+	// be 'current', and will accumulate changes made in its changeList, and
+	// will journal those changes onto a changes file for that project.
+	//
+	// The idea is that, upon startup, the 'image' will consist of the Lively
+	// Kernel base code.  You may then open (or find open) a list of various
+	// Project files in your directory or other directories to which you have access.
+	// You may open any of these in the file browser and read the foreward which,
+	// by convention, will list, eg, author, date, project name, description, etc.
+	// You may further choose to load that project, which will read in all the code,
+	// and prepare the system to record and possibly write out any changes made to 
+	// that project
+    initialize: function() { this.changeList = null; },
 
-/**
- * @class SimpleBrowser: A simple JavaScript class browser
- */
+    isEmpty: function() { return this.changeList == null; },
+
+    scanFiles: function(fnameList) {
+	this.changeList = [];
+	var store = WebStore.defaultStore;
+	if (!store) return console.log('no store to save to');
+	// store.saveAs(WorldMorph.current().prompt('save as ...'), (this.xml || this.textString)); 
+    }
+});
+
+var SourceControl = new SourceDatabase();
    
+// ===========================================================================
+// Class Browser -- A simple browser for Lively Kernel code
+// ===========================================================================
 Model.subclass('SimpleBrowser', {
 
     initialize: function($super) { 
@@ -77,27 +107,26 @@ Model.subclass('SimpleBrowser', {
     },
 
     getClassPaneMenu: function() {
-        if (this.className == null) return null;
-        var theClass = Global[this.className];
-        if (theClass.prototype == null) return null;
-        var menu = new MenuMorph([
-            ['analyze selection', function() {
-                showStatsViewer(theClass.prototype, this.className + "..."); 
-            }]
-        ], this); 
-        return menu;
+        var menu = new MenuMorph([], this); 
+	if (this.className != null) {
+            var theClass = Global[this.className];
+            if (theClass.prototype != null) {
+		menu.addItem(['profile selected class', function() {
+                	showStatsViewer(theClass.prototype, this.className + "..."); }]);
+	    }
+	}
+	if (Loader.isLoadedFromNetwork && SourceControl.isEmpty()) {
+            menu.addItem(['load source links', function() {
+                	SourceControl.scanFiles(['tools.js']); }]);
+	}
+	return menu; 
     }
-    
 });
+
 
 // ===========================================================================
 // Object Hierarchy Browser
 // ===========================================================================
-
-/**
- * @class ObjectBrowser: A JavaScript object hierarchy browser
- */
-
 Model.subclass('ObjectBrowser', {
 
     initialize: function($super, objectToView) {

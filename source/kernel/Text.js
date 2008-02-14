@@ -709,7 +709,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
     selectionColor: Color.primary.green,
     inset: pt(6,4), // remember this shouldn't be modified unless every morph should get the value 
     wrap: WrapStyle.NORMAL,
-    maxSafeSize: 4000, 
+    maxSafeSize: 8000, 
     tabWidth: 4,
     tabsAsSpaces: true,
     noShallowCopyProperties: Morph.prototype.noShallowCopyProperties.concat(['rawTextNode', 'rawSelectionNode', 'lines']),
@@ -1543,7 +1543,7 @@ TextMorph.addMethods({
         */
         // introducing new variable, simple one-level undo
         this.undoTextString = this.textString;
-        this.textString = replacement;
+        this.textString = replacement.truncate(TextMorph.prototype.maxSafeSize);
         this.recordChange('textString');
     
         this.resetRendering();

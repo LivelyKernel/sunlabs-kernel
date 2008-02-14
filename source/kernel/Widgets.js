@@ -1503,7 +1503,8 @@ var MenuMorph = CheapListMorph.subclass("MenuMorph", {
     },
 
     openIn: function(world, location, remainOnScreen, captionIfAny) { 
-        // Note: on a mouseDown invocation (as from a menu button),
+        if(this.items.length == 0) return;
+	// Note: on a mouseDown invocation (as from a menu button),
         // mouseFocus should be set immediately before or after this call
         this.stayUp = remainOnScreen; // set true to keep on screen
         this.caption = captionIfAny;  // Not yet implemented

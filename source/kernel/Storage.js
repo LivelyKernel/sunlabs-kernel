@@ -208,7 +208,13 @@ Model.subclass('WebStore', {
     },
     
     getCurrentDirectoryContents: function() {
-        return (this.CurrentDirectoryContents || []).invoke("name");
+        var fullList = (this.CurrentDirectoryContents || []).invoke("name");
+	var filteredList = [];
+	for (var i=0; i < fullList.length; i++) {
+		var n = fullList[i];
+		if (n.indexOf(".%23") == -1) filteredList.push(n);
+	}
+	return filteredList;
     },
     
     setCurrentResource: function(name) {
@@ -250,7 +256,7 @@ Model.subclass('WebStore', {
     },
     
     getCurrentResourceContents: function() {
-        return (this.CurrentResourceContents || "").truncate(TextMorph.prototype.maxSafeSize);
+        return this.CurrentResourceContents || "";
     },
     
     setCurrentResourceContents: function(contents) {
