@@ -1577,9 +1577,10 @@ var SliderMorph = Morph.subclass("SliderMorph", {
         // this default self connection may get overwritten by, eg, connectModel()...
         this.modelPlug = model.makePlug();
         this.addNonMorph(this.modelPlug.rawNode);
+	this.mss = 8;  // minimum slider size
 
         this.scale = (scaleIfAny == null) ? 1.0 : scaleIfAny;
-        var slider = new Morph(new Rectangle(0, 0, 8, 8), "rect");
+        var slider = new Morph(new Rectangle(0, 0, this.mss, this.mss), "rect");
         slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});
         this.slider = this.addMorph(slider);
         // this.linkToStyles(['slider']);
@@ -1632,11 +1633,11 @@ var SliderMorph = Morph.subclass("SliderMorph", {
         var ext = this.getSliderExtent();
     
         if (this.vertical()) { // more vertical...
-            var elevPix = Math.max(ext*bnds.height,8); // thickness of elevator in pixels
+            var elevPix = Math.max(ext*bnds.height,this.mss); // thickness of elevator in pixels
             var topLeft = pt(0,(bnds.height-elevPix)*val);
             var sliderExt = pt(bnds.width,elevPix); 
         } else { // more horizontal...
-            var elevPix = Math.max(ext*bnds.width,8); // thickness of elevator in pixels
+            var elevPix = Math.max(ext*bnds.width,this.mss); // thickness of elevator in pixels
             var topLeft = pt((bnds.width-elevPix)*val,0);
             var sliderExt = pt(elevPix,bnds.height); 
         }
@@ -1661,17 +1662,17 @@ var SliderMorph = Morph.subclass("SliderMorph", {
     
     sliderMoved: function(evt, slider) {
         if (!evt.mouseButtonPressed) return;
-        // Compute a new value from a new mouse point, and emit it
-    
+
+        // Compute the value from a new mouse point, and emit it
         var p = this.localize(evt.mousePoint).subPt(this.hitPoint);
         var bnds = this.shape.bounds();
         var ext = this.getSliderExtent();
-        var elevPix = Math.max(ext*bnds.height,6); // thickness of elevator in pixels
     
-
         if (this.vertical()) { // more vertical...
+	    var elevPix = Math.max(ext*bnds.height,this.mss); // thickness of elevator in pixels
             var newValue = p.y / (bnds.height-elevPix); 
         } else { // more horizontal...
+	    var elevPix = Math.max(ext*bnds.width,this.mss); // thickness of elevator in pixels
             var newValue = p.x / (bnds.width-elevPix); 
         }
     
@@ -1702,7 +1703,7 @@ var SliderMorph = Morph.subclass("SliderMorph", {
     },
     
     clipValue: function(val) { 
-        return Math.min(1.0,Math.max(0,0,val.roundTo(0.001))); 
+        return Math.min(1.0,Math.max(0,0,val.roundTo(0.0001))); 
     },
 
     updateView: function(aspect, controller) {
@@ -1840,6 +1841,7 @@ var ScrollPane = Morph.subclass("ScrollPane", {
         var slideRoom = ht - this.bounds().height;
         this.innerMorph().setPosition(pt(this.innerMorph().position().x, -slideRoom*scrollPos)); 
         this.scrollBar.adjustForNewBounds();
+	// console.log("setScrollPos  ht = " + ht + ", slideRoom = " + slideRoom + ", scrollPos = " + scrollPos);
     },
 
     getVisibleExtent: function(scrollPos) {

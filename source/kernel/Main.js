@@ -40,7 +40,7 @@ Object.extend(Config, {
     showRSSReader: !Config.skipMostExamples,
     showDoodle: false, //!Config.skipMostExamples,
     showSquiggle: !Config.skipMostExamples,
-    showWebStore: !Config.skipMostExamples,
+    showWebStore: !Config.skipMostExamples || Config.browserAnyway,
     showVideo: !Config.skipMostExamples,
     // Worlds
     showInnerWorld: true, //!Config.skipMostExamples;
@@ -313,12 +313,11 @@ function populateWorldWithExamples(world) {
         developerTextMorph.shape.roundEdgesBy(10);
         world.addMorph(developerTextMorph);
 
-        if (Config.showBrowser) {
-            new SimpleBrowser().openIn(devWorld.myWorld, pt(20, 20));
-            new ObjectBrowser().openIn(devWorld.myWorld, pt(50, 100));
-        }
+        if (Config.showBrowser) new SimpleBrowser().openIn(devWorld.myWorld, pt(20, 20));
 
-        if (Config.showHilbertFun) apps.Pen.hilbertFun(devWorld.myWorld);
+	// DI: The ObjectBrowser takes a long time to start due to its long list
+	// ... so don't show it when skipping most examples -- can always open from world menu
+        if (!Config.skipMostExamples) new ObjectBrowser().openIn(devWorld.myWorld, pt(50, 100));
 
         // Sample executable script pane
         if (Config.showPenScript) {
@@ -327,6 +326,8 @@ function populateWorldWithExamples(world) {
             widget.align(widget.bounds().bottomRight(), world.bounds().topRight().addPt(pt(-150,100))); 
             devWorld.myWorld.addMorph(widget);
         }
+
+        if (Config.showHilbertFun) apps.Pen.hilbertFun(devWorld.myWorld, widget.bounds().bottomLeft().addXY(180,80));
 
         if (Config.showWebStore) {
             var store;

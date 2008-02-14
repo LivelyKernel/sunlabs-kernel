@@ -650,19 +650,13 @@ Object.extend(console, {
     $: function(id) {
         return document.getElementById(id.toString());
     }
-
 });
 
 // ===========================================================================
 // FrameRateMorph
 // ===========================================================================
-  
-/**
- * @class FrameRateMorph: Handy Morphic Benchmark
- */
-   
+ 
 TextMorph.subclass('FrameRateMorph', {
-
     initialize: function($super, rect, textString) {
         $super(rect, textString);
         this.reset(new Date());
@@ -694,5 +688,63 @@ TextMorph.subclass('FrameRateMorph', {
 
 });
 
-console.log('loaded Tools.js');
+// ===========================================================================
+// FileParser
+// ===========================================================================
+ 
+Object.subclass('FileParser', {
+    initialize: function() {
+	// Note this is not a real parse.  The first goal is simply to identify
+	// source code ranges of interesting editable chunks such as method definitions
+	this.commentLine = "\/\/$";
+	this.varLine = "[\s]*var\s$";
+	this.funcDef = "[\s]*[\w]+\.prototype\.[\w]+\s\=\sfunction{...";
+    },
+
+    parseFile: function(fname) {
+	//Note without copying by slice, we get an object where .length is a function	this.str = application.readFileAsString(fname).slice(0);
+	this.ptr = 0;
+	println("string length = " + this.str.length);
+	for(var i=1; i<=150; i++) {
+		var line = this.peekLine(this.str,this.ptr);
+		println("i="+i+" ptr="+this.ptr+" len="+line.length+": " + line);		if(this.processComment(this.str,this.ptr,line)) {}
+		else if(this.processVarStmt(this.str,this.ptr,line)) {}
+		else if(this.processFuncDef(this.str,this.ptr,line)) {}
+		else if(this.processMethodDef(this.str,this.ptr,line)) {}
+		else if(this.processSemicolon(this.str,this.ptr,line)) {}		else if(this.processBlankLine(this.str,this.ptr,line)) {}		else { println("other: "+ line); this.ptr += line.length; }
+		 }
+	println("done");
+    },
+
+    processComment: function(str,ptr,line) {
+	if(line.match(/^[\s]*\/\//) == null) return false;
+	println("comment: "+ line);
+	this.ptr += line.length;  return true;
+    },
+    processVarStmt: function(str,ptr,line) {
+	if(line.match(/^[\s]*var\s/) == null) return false;
+	println("var stmt: "+ line);
+	this.ptr += line.length;  return true;
+    },
+    processFuncDef: function(str,ptr,line) {
+	var match = line.match(/^[\s]*function[\s]+([\w]+)/);	if(match == null) return false;
+	var funcName = match[1];	var def = this.peekBody(str,ptr);	println("function match: " + "function " + funcName);	println("function def: " + def);
+	this.ptr += def.length;  return true;
+    },
+    processMethodDef: function(str,ptr,line) {
+	var match = line.match(/^[\s]*([\w]+)\.prototype\.([\w]+)[\s]*\=[\s]*function\W/);	if(match == null) return false;
+	var className = match[1];	var methodName = match[2];	var def = this.peekBody(str,ptr);	println("method match: " + className + ".prototype." + methodName);	println("method def: " + def);	this.ptr += def.length;  return true;
+    },
+    processSemicolon: function(str,ptr,line) {	if(line.match(/^[\s]*;[\s]*$/) == null) return false;	println("semicolon");	this.ptr += line.length; return true;
+    },
+    processBlankLine: function(str,ptr,line) {	if(line.match(/^[\s]*$/) == null) return false;	println("blank line");	this.ptr += line.length; return true;
+    },
+    peekLine: function(str,ptr) {	// Peeks ahead to next line-end, returning the line with cr and/or lf	var p2 = ptr;	var c = str[p2];	while(p2 < str.length && (c != "\n" && c != "\r")) {p2++; c = str[p2]; }	if (p2 == str.length) return str.substring(ptr,p2); // EOF	if (p2+1 == str.length) return str.substring(ptr,p2+1); // EOF at lf or cr	if (c == "\n" && str[p2+1] == "\r") return str.substring(ptr,p2+2); // ends w/ lfcr	if (c == "\r" && str[p2+1] == "\n") return str.substring(ptr,p2+2); // ends w/ crlf	 // ends w/ cr or lf alone	return str.substring(ptr,p2+1);
+    },
+    peekBody: function(str,ptr) {	// Like peekLine, but scans to closing curly bracket	var p2 = ptr;	var c = str[p2];	// Scan up to opening brace	while(p2 < str.length && c != "{") {p2++; c = str[p2]; }	var bc = 1; // set brace count to 1	// Scan until brace count drops to zero	while(p2 < str.length && bc > 0) {		p2++; c = str[p2];		if(c == "{") bc++;		if(c == "}") bc--;}	var endLine = this.peekLine(str,p2+1);	return str.substring(ptr,p2+endLine.length);
+    },
+    parseLine: function(str,ptr) {
+	println("parseLine()");
+    }
+});console.log('loaded Tools.js');
 

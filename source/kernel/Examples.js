@@ -288,7 +288,7 @@ Object.subclass(scope, 'Pen', {
 });
 
 // The menu-driven filled Hilbert curve demo
-scope.Pen.hilbertFun = function(world) {
+scope.Pen.hilbertFun = function(world, loc) {
     var logoMenu = new MenuMorph([]);
 
     for (var i=0; i<=5; i++) {
@@ -302,7 +302,7 @@ scope.Pen.hilbertFun = function(world) {
         this.morphs = P.filberts(order,5);
     };
 
-    logoMenu.openIn(world, pt(380, 380), true, "Hilbert Fun");
+    logoMenu.openIn(world, loc, true, "Hilbert Fun");
 }
 
 // The default script for the Pen/Hilbert demo
