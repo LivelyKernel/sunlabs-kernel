@@ -5593,7 +5593,7 @@ Morph.subclass("LinkMorph", {
         var menu = $super(evt);
         menu.addItem(["publish linked world as ... ", 
             function() { 
-                var msg = Exporter.shrinkWrapToFile([this], this.world().prompt("world file (.xhtml)"));
+                var msg = Exporter.shrinkWrapToFile([this.myWorld], this.world().prompt("world file (.xhtml)"));
                 if (msg) this.world().alert(msg);
             }]);
         return menu;
