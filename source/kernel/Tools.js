@@ -34,8 +34,9 @@ Object.subclass('SourceDatabase', {
 	// You may further choose to load that project, which will read in all the code,
 	// and prepare the system to record and possibly write out any changes made to 
 	// that project
-    initialize: function() { this.changeList = null; },
 
+    initialize: function() { this.changeList = null; },
+    
     isEmpty: function() { return this.changeList == null; },
 
     scanFiles: function(fnameList) {
@@ -43,9 +44,30 @@ Object.subclass('SourceDatabase', {
 
 	// For now, just try to read one file
 	var store = WebStore.prototype.onCurrentLocation();
-	store.setCurrentResource('~danielingalls/Lively/Tools.js');
-	console.log("text = " + store.getCurrentResourceContents().truncate(300));
-    }
+	console.log('getCurrentDirectory = ' + store.getCurrentDirectory());
+        this.connectModel({model: store, getText: "getCurrentResourceContents"});
+	store.setCurrentResource('/~danielingalls/Lively/Tools.js');
+	console.log('resource is now set');
+    },
+
+    updateView: function(aspect, controller) {
+	console.log('updateView with aspect = ' + aspect);
+        var p = this.modelPlug;
+        if (p && aspect == p.getText) this.scanFileText(p.model);
+    },
+
+    scanFileText: function(webStore) {
+	console.log('loaded file named: ' + webStore.currentResourceURL());
+	console.log('contents begin...\n' + this.getModelValue('getText', "-----").truncate(200));
+	WorldMorph.current().notify("scan source files successful", pt(200, 200));
+    },
+
+    // View trait borrowed from Morph...
+    connectModel: Morph.prototype.connectModel,
+    getModel: Morph.prototype.getModel,
+    getModelValue: Morph.prototype.getModelValue,
+    setModelValue: Morph.prototype.setModelValue,
+    addNonMorph: function(ignored) {}
 });
 
 var SourceControl = new SourceDatabase();
@@ -118,8 +140,8 @@ Model.subclass('SimpleBrowser', {
 	    }
 	}
 	if (Loader.isLoadedFromNetwork && SourceControl.isEmpty()) {
-            menu.addItem(['load source links', function() {
-                	SourceControl.scanFiles(['tools.js']); }]);
+            menu.addItem(['scan source files', function() {
+                	SourceControl.scanFiles(['Tools.js']); }]);
 	}
 	return menu; 
     }
