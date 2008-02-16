@@ -44,9 +44,10 @@ Object.subclass('SourceDatabase', {
 
 	// For now, just try to read one file
 	var store = WebStore.prototype.onCurrentLocation();
+	store.localName = 'Tools.js';
 	console.log('getCurrentDirectory = ' + store.getCurrentDirectory());
         this.connectModel({model: store, getText: "getCurrentResourceContents"});
-	store.setCurrentResource(store.path + 'Tools.js');
+	store.setCurrentResource(store.path + store.localName);
 	console.log('resource is now set to ' + store.CurrentResource);
     },
 
@@ -59,7 +60,8 @@ Object.subclass('SourceDatabase', {
     scanFileText: function(webStore) {
 	console.log('loaded file named: ' + webStore.currentResourceURL());
 	console.log('contents begin...\n' + this.getModelValue('getText', "-----").truncate(200));
-	WorldMorph.current().notify("scan source files successful", pt(200, 200));
+	WorldMorph.current().notify("see console for scan results", pt(200, 200));
+	new FileParser().parseFile(this.getModel.localName,this.getModelValue('getText', "-----"));
     },
 
     // View trait borrowed from Morph...
@@ -754,88 +756,93 @@ Object.subclass('FileParser', {
 	this.funcDef = "[\s]*[\w]+\.prototype\.[\w]+\s\=\sfunction{...";
     },
     
-    parseFile: function(fname) {
-	//Note without copying by slice, we get an object where .length is a function
-	this.str = application.readFileAsString(fname).slice(0);
+    parseFile: function(fname,fstr) {
+	this.verbose = false;
+	this.fileName = fname;
+	this.str = fstr;
+	var len = this.str.length;
 	this.ptr = 0;
-	console.log("string length = " + this.str.length);
-	for (var i = 1; i <= 150; i++) {
-	    var line = this.peekLine(this.str, this.ptr);
-	    console.log("i="+i+" ptr="+this.ptr+" len="+line.length+": " + line);		
-	    if (this.processComment(this.str,this.ptr,line)) {}
-	    else if (this.processVarStmt(this.str,this.ptr,line)) {
-	    } else if (this.processFuncDef(this.str,this.ptr,line)) {
-	    } else if (this.processMethodDef(this.str,this.ptr,line)) {
-	    } else if (this.processSemicolon(this.str,this.ptr,line)) {
-	    } else if (this.processBlankLine(this.str,this.ptr,line)) {
-	    } else { 
-		console.log("other: "+ line); 
-		this.ptr += line.length; 
+	this.lineNo = 0;
+	if (this.verbose) console.log("Parsing " + this.fileName + ", length = " + len);
+	while (this.ptr < len) {
+	    var line = this.nextLine(this.str);
+	    if (this.verbose) console.log("lineNo=" + this.lineNo + " ptr=" + this.ptr + line);		
+	    if (this.processComment(line)) {
+	    } else if (this.processClassDef(line)) {
+	    } else if (this.processMethodDef(line)) {
+	    } else if (this.processSemicolon(line)) {
+	    } else if (this.processBlankLine(line)) {
+	    } else { if (this.verbose) console.log("other: "+ line); 
 	    }
 	}
-	console.log("done");
+	if (this.verbose) console.log("done");
     },
     
-    processComment: function(str, ptr, line) {
-	if (line.match(/^[\s]*\/\//) == null) return false;
-	console.log("comment: "+ line);
-	this.ptr += line.length;  return true;
-    },
-    processVarStmt: function(str, ptr, line) {
-	if (line.match(/^[\s]*var\s/) == null) return false;
-	console.log("var stmt: "+ line);
-	this.ptr += line.length;  return true;
-    },
-    processFuncDef: function(str, ptr, line) {
-	var match = line.match(/^[\s]*function[\s]+([\w]+)/);	
-	if (match == null) return false;
-	var funcName = match[1];
-	var def = this.peekBody(str,ptr);
-	console.log("function match: " + "function " + funcName);
-	console.log("function def: " + def);
-	this.ptr += def.length;  
-	return true;
-    },
-    processMethodDef: function(str, ptr, line) {
-	var match = line.match(/^[\s]*([\w]+)\.prototype\.([\w]+)[\s]*\=[\s]*function\W/);
-	if (match == null) return false;
-	var className = match[1];
-	var methodName = match[2];
-	var def = this.peekBody(str,ptr);
-	console.log("method match: " + className + ".prototype." + methodName);
-	console.log("method def: " + def);
-	this.ptr += def.length;  
-	return true;
-    },
-    
-    processSemicolon: function(str, ptr, line) {
-	if (line.match(/^[\s]*;[\s]*$/) == null) return false;
-	console.log("semicolon");
-	this.ptr += line.length; 
-	return true;
-    },
-
-    processBlankLine: function(str, ptr, line) {
-	if (line.match(/^[\s]*$/) == null) return false;
-	console.log("blank line");
-	this.ptr += line.length; 
-	return true;
-    },
-
-    peekLine: function(str, ptr) {
-	// Peeks ahead to next line-end, returning the line with cr and/or lf
-	var p2 = ptr;
-	var c = str[p2];
-	while (p2 < str.length && (c != "\n" && c != "\r")) {
-	    p2++; 
-	    c = str[p2]; 
+    processComment: function(line) {
+	if (line.match(/^[\s]*\/\//) ) {
+		if (this.verbose) console.log("comment: "+ line);
+		return true; }
+	if (line.match(/^[\s]*\/\*/) ) {
+		if (this.verbose) console.log("long comment: "+ line);
+		do { line = this.nextLine(this.str) }
+		while ( !line.match(/^[\s]*\*\//) );
+		if (this.verbose) console.log("..." + line);
+		return true;
 	}
-	if (p2 == str.length) return str.substring(ptr,p2); // EOF
-	if (p2+1 == str.length) return str.substring(ptr,p2+1); // EOF at lf or cr
-	if (c == "\n" && str[p2+1] == "\r") return str.substring(ptr,p2+2); // ends w/ lfcr
-	if (c == "\r" && str[p2+1] == "\n") return str.substring(ptr,p2+2); // ends w/ crlf
+	return false;
+    },
+    processClassDef: function(line) {
+	var match = line.match(/^[\s]*([\w]+)\.subclass\([\'\"]([\w]+)[\'\"]/);
+	if (match == null) return false;
+	if (this.verbose) console.log(match.toString());
+	var sup = match[1];
+	this.currentClass = match[2];
+	console.log("subclass definition: " + sup + "." + this.currentClass);
+	// Need to scan any comments and blank lines, then store source code range
+	// to be saved as *definition and browsable by browser
+	return true;
+    },
+    processMethodDef: function(line) {
+	var match = line.match(/^[\s]*([\w]+)\:/);
+	if (match == null) return false;
+	var methodName = match[1];
+	console.log("method def: " + this.currentClass + "." + methodName);
+	// Need to check for close curly bracket and then
+	// save as source range for this method.
+	// If no close curly, then need to scan for close matching curly
+	return true;
+    },
+    
+    processSemicolon: function(line) {
+	if (line.match(/^[\s]*;[\s]*$/) == null) return false;
+	if (this.verbose) console.log("semicolon");
+	return true;
+    },
+
+    processBlankLine: function(line) {
+	if (line.match(/^[\s]*$/) == null) return false;
+	if (this.verbose) console.log("blank line");
+	return true;
+    },
+
+    nextLine: function(s) {
+	// Peeks ahead to next line-end, returning the line with cr and/or lf
+	if (this.currentLine) this.ptr += this.currentLine.length;
+	this.lineNo ++;
+	var len = s.length;
+	var p1 = this.ptr;
+	var p2 = p1;
+	var c = s[p2];
+	while (p2 < len && (c != "\n" && c != "\r")) {
+	    p2++; 
+	    c = s[p2]; 
+	}
+	if (p2 == len) return s.substring(p1,p2); // EOF
+	if (p2+1 == len) return s.substring(p1,p2+1); // EOF at lf or cr
+	if (c == "\n" && s[p2+1] == "\r") return this.currentLine = s.substring(p1,p2+2); // ends w/ lfcr
+	if (c == "\r" && s[p2+1] == "\n") return this.currentLine = s.substring(p1,p2+2); // ends w/ crlf
 	 // ends w/ cr or lf alone
-	return str.substring(ptr,p2+1);
+	return this.currentLine = s.substring(p1,p2+1);
     },
     
     peekBody: function(str, ptr) {
