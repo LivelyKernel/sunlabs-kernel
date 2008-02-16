@@ -42,31 +42,32 @@ Object.subclass('SourceDatabase', {
     
     isEmpty: function() { return this.changeList == null; },
 
-    scanKernelFiles: function() {
+    scanKernelFiles: function(list) {
 	this.changeList = [];
-	var fileList = ["Core.js", "Text.js", "svgtext-compat.js", "Network.js", "Widgets.js", "Storage.js", "Tools.js", "Examples.js", "Main.js"];
-	fileList = ["Tools.js"];
-
-	// For now, just read one file, then do them all
-	// Later do overlapping I/O where we fetch next file while we process the previous
+	this.fileList = list;
 	var webStore = WebStore.prototype.onCurrentLocation();
-	for (var i=0; i < fileList.length; i++) {
-		webStore.localName = fileList[i];
-		console.log('getCurrentDirectory = ' + webStore.getCurrentDirectory());
-        	this.connectModel({model: webStore, getText: "getCurrentResourceContents"});
-		webStore.setCurrentResource(webStore.path + webStore.localName);
-		console.log("Reading " + webStore.localName + "...");
-	}
+        this.connectModel({model: webStore, getText: "getCurrentResourceContents"});
+	this.readNextFile(webStore, 0);
+    },
+
+    readNextFile: function (webStore, index) {
+	this.fileListIndex = index;
+	webStore.localName = this.fileList[index];
+	webStore.setCurrentResource(webStore.path + webStore.localName);
+	console.log("Reading " + webStore.localName + "...");
     },
 
     updateView: function(aspect, controller) {
         var p = this.modelPlug;
         if (p && aspect == p.getText) {
 		var webStore = this.getModel();
-		console.log("Parsing " + webStore.localName + "...");
 		var fileName = webStore.localName;
-		var fullText = webStore.getCurrentResourceContents();
+		var fullText = webStore.getCurrentResourceContents().slice(0); // Do we need to copy here??
 		this.cachedFullText[fileName] = fullText;
+		if (this.fileListIndex < this.fileList.length-1) {
+			this.readNextFile(webStore, this.fileListIndex+1);
+		}
+		console.log("Parsing " + fileName + "...");
 		new FileParser().parseFile(fileName, fullText, this);
 	}
     },
@@ -151,7 +152,7 @@ Model.subclass('SimpleBrowser', {
 	}
 	if (Loader.isLoadedFromNetwork && SourceControl.isEmpty()) {
             menu.addItem(['scan source files', function() {
-                	SourceControl.scanKernelFiles(); }]);
+                	SourceControl.scanKernelFiles(["Text.js", "Tools.js"]); }]);
 	}
 	return menu; 
     }
