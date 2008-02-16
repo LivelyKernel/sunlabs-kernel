@@ -35,34 +35,42 @@ Object.subclass('SourceDatabase', {
 	// and prepare the system to record and possibly write out any changes made to 
 	// that project
 
-    initialize: function() { this.changeList = null; },
+    initialize: function() {
+	this.changeList = null;
+	this.cachedFullText = {};
+    },
     
     isEmpty: function() { return this.changeList == null; },
 
-    scanFiles: function(fnameList) {
+    scanKernelFiles: function() {
 	this.changeList = [];
+	var fileList = ["Core.js", "Text.js", "svgtext-compat.js", "Network.js", "Widgets.js", "Storage.js", "Tools.js", "Examples.js", "Main.js"];
+	fileList = ["Tools.js"];
 
-	// For now, just try to read one file
-	var store = WebStore.prototype.onCurrentLocation();
-	store.localName = 'Tools.js';
-	console.log('getCurrentDirectory = ' + store.getCurrentDirectory());
-        this.connectModel({model: store, getText: "getCurrentResourceContents"});
-	store.setCurrentResource(store.path + store.localName);
-	console.log('resource is now set to ' + store.CurrentResource);
+	// For now, just read one file, then do them all
+	// Later do overlapping I/O where we fetch next file while we process the previous
+	var webStore = WebStore.prototype.onCurrentLocation();
+	for (var i=0; i < fileList.length; i++) {
+		webStore.localName = fileList[i];
+		console.log('getCurrentDirectory = ' + webStore.getCurrentDirectory());
+        	this.connectModel({model: webStore, getText: "getCurrentResourceContents"});
+		webStore.setCurrentResource(webStore.path + webStore.localName);
+		console.log("Reading " + webStore.localName + "...");
+	}
     },
 
     updateView: function(aspect, controller) {
-	console.log('updateView with aspect = ' + aspect);
         var p = this.modelPlug;
-        if (p && aspect == p.getText) this.scanFileText(p.model);
+        if (p && aspect == p.getText) {
+		var webStore = this.getModel();
+		console.log("Parsing " + webStore.localName + "...");
+		var fileName = webStore.localName;
+		var fullText = webStore.getCurrentResourceContents();
+		this.cachedFullText[fileName] = fullText;
+		new FileParser().parseFile(fileName, fullText, this);
+	}
     },
 
-    scanFileText: function(webStore) {
-	console.log('loaded file named: ' + webStore.currentResourceURL());
-	console.log('contents begin...\n' + this.getModelValue('getText', "-----").truncate(200));
-	WorldMorph.current().notify("see console for scan results", pt(200, 200));
-	new FileParser().parseFile(this.getModel.localName,this.getModelValue('getText', "-----"));
-    },
 
     // View trait borrowed from Morph...
     connectModel: Morph.prototype.connectModel,
@@ -143,7 +151,7 @@ Model.subclass('SimpleBrowser', {
 	}
 	if (Loader.isLoadedFromNetwork && SourceControl.isEmpty()) {
             menu.addItem(['scan source files', function() {
-                	SourceControl.scanFiles(['Tools.js']); }]);
+                	SourceControl.scanKernelFiles(); }]);
 	}
 	return menu; 
     }
@@ -756,7 +764,7 @@ Object.subclass('FileParser', {
 	this.funcDef = "[\s]*[\w]+\.prototype\.[\w]+\s\=\sfunction{...";
     },
     
-    parseFile: function(fname,fstr) {
+    parseFile: function(fname, fstr, sourceDB) {
 	this.verbose = false;
 	this.fileName = fname;
 	this.str = fstr;
