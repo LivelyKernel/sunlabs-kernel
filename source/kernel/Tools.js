@@ -16,7 +16,7 @@
 // ===========================================================================
 // Source Database
 // ===========================================================================
-Object.subclass('SourceDatabase', {
+TextMorph.subclass('SourceDatabase', {
 	// The Source Database holds a cross-reference of the source code
 	// and the various methods for scanning, saving, and reloading that info
 	//
@@ -34,17 +34,16 @@ Object.subclass('SourceDatabase', {
 	// You may further choose to load that project, which will read in all the code,
 	// and prepare the system to record and possibly write out any changes made to 
 	// that project
-
-    initialize: function() {
-	this.changeList = null;
-	this.cachedFullText = {};
+    initialize: function($super, rect) {	$super(rect, "Source Scanner");
     },
-    
+
     isEmpty: function() { return this.changeList == null; },
 
     scanKernelFiles: function(list) {
+	this.cachedFullText = {};
 	this.changeList = [];
 	this.fileList = list;
+	this.fileList = ["Tools.js", "Text.js"];  // *override here for test*
 	var webStore = WebStore.prototype.onCurrentLocation();
         this.connectModel({model: webStore, getText: "getCurrentResourceContents"});
 	this.readNextFile(webStore, 0);
@@ -53,36 +52,35 @@ Object.subclass('SourceDatabase', {
     readNextFile: function (webStore, index) {
 	this.fileListIndex = index;
 	webStore.localName = this.fileList[index];
+	this.setTextString("Scanning " + webStore.localName + "...");
 	webStore.setCurrentResource(webStore.path + webStore.localName);
 	console.log("Reading " + webStore.localName + "...");
     },
 
     updateView: function(aspect, controller) {
         var p = this.modelPlug;
-        if (p && aspect == p.getText) {
+        var doneReading = false;
+	if (p && aspect == p.getText) {
 		var webStore = this.getModel();
 		var fileName = webStore.localName;
 		var fullText = webStore.getCurrentResourceContents().slice(0); // Do we need to copy here??
 		this.cachedFullText[fileName] = fullText;
 		if (this.fileListIndex < this.fileList.length-1) {
 			this.readNextFile(webStore, this.fileListIndex+1);
+		} else { doneReading = true;
 		}
 		console.log("Parsing " + fileName + "...");
 		new FileParser().parseFile(fileName, fullText, this);
 	}
-    },
-
-
-    // View trait borrowed from Morph...
-    connectModel: Morph.prototype.connectModel,
-    getModel: Morph.prototype.getModel,
-    getModelValue: Morph.prototype.getModelValue,
-    setModelValue: Morph.prototype.setModelValue,
-    addNonMorph: function(ignored) {}
+	if (doneReading) {
+		this.getModel().removeDependent(this);
+		this.remove();
+	}
+    }
 });
+var SourceControl = null;
 
-var SourceControl = new SourceDatabase();
-   
+
 // ===========================================================================
 // Class Browser -- A simple browser for Lively Kernel code
 // ===========================================================================
@@ -150,13 +148,17 @@ Model.subclass('SimpleBrowser', {
                 	showStatsViewer(theClass.prototype, this.className + "..."); }]);
 	    }
 	}
-	if (Loader.isLoadedFromNetwork && SourceControl.isEmpty()) {
+	if (Loader.isLoadedFromNetwork && SourceControl == null) {
             menu.addItem(['scan source files', function() {
-                	SourceControl.scanKernelFiles(["Text.js", "Tools.js"]); }]);
+                	SourceControl = new SourceDatabase(new Rectangle(100, 100, 200, 50));
+			WorldMorph.current().addMorph(SourceControl);
+			WorldMorph.current().firstHand().setMouseFocus(null);
+			SourceControl.scanKernelFiles(["Text.js", "Tools.js"]); }]);
 	}
 	return menu; 
     }
 });
+   
 
 
 // ===========================================================================
@@ -757,13 +759,11 @@ TextMorph.subclass('FrameRateMorph', {
 // ===========================================================================
  
 Object.subclass('FileParser', {
-    initialize: function() {
-	// Note this is not a real parse.  The first goal is simply to identify
-	// source code ranges of interesting editable chunks such as method definitions
-	this.commentLine = "\/\/$";
-	this.varLine = "[\s]*var\s$";
-	this.funcDef = "[\s]*[\w]+\.prototype\.[\w]+\s\=\sfunction{...";
-    },
+	// First of all, this is not a real parser ;-)
+	// It simply looks for class headers, and method headers,
+	// and everything in between gets put with the preceding header
+	// There are hundreds of ways this can fail,
+	// but, heh-heh, it works 99 percent of the time ;-)
     
     parseFile: function(fname, fstr, sourceDB) {
 	this.verbose = false;
@@ -779,7 +779,6 @@ Object.subclass('FileParser', {
 	    if (this.processComment(line)) {
 	    } else if (this.processClassDef(line)) {
 	    } else if (this.processMethodDef(line)) {
-	    } else if (this.processSemicolon(line)) {
 	    } else if (this.processBlankLine(line)) {
 	    } else { if (this.verbose) console.log("other: "+ line); 
 	    }
@@ -822,12 +821,6 @@ Object.subclass('FileParser', {
 	return true;
     },
     
-    processSemicolon: function(line) {
-	if (line.match(/^[\s]*;[\s]*$/) == null) return false;
-	if (this.verbose) console.log("semicolon");
-	return true;
-    },
-
     processBlankLine: function(line) {
 	if (line.match(/^[\s]*$/) == null) return false;
 	if (this.verbose) console.log("blank line");
@@ -836,6 +829,8 @@ Object.subclass('FileParser', {
 
     nextLine: function(s) {
 	// Peeks ahead to next line-end, returning the line with cr and/or lf
+	// I'm sure this could be *much* simpler, either by use of regex's
+	// or just by knowing what line-ending is used
 	if (this.currentLine) this.ptr += this.currentLine.length;
 	this.lineNo ++;
 	var len = s.length;
@@ -852,31 +847,8 @@ Object.subclass('FileParser', {
 	if (c == "\r" && s[p2+1] == "\n") return this.currentLine = s.substring(p1,p2+2); // ends w/ crlf
 	 // ends w/ cr or lf alone
 	return this.currentLine = s.substring(p1,p2+1);
-    },
-    
-    peekBody: function(str, ptr) {
-	// Like peekLine, but scans to closing curly bracket
-	var p2 = ptr;
-	var c = str[p2];
-	// Scan up to opening brace
-	while (p2 < str.length && c != "{") {
-	    p2++; 
-	    c = str[p2]; 
-	}
-	var bc = 1; // set brace count to 1
-	// Scan until brace count drops to zero
-	while (p2 < str.length && bc > 0) {
-	    p2++; c = str[p2];
-	    if (c == "{") bc++;
-	    if (c == "}") bc--;
-	}
-	var endLine = this.peekLine(str,p2+1);
-	return str.substring(ptr,p2+endLine.length);
-    },
-
-    parseLine: function(str,ptr) {
-	console.log("parseLine()");
     }
+    
 });
 
 console.log('loaded Tools.js');

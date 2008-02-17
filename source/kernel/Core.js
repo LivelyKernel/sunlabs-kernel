@@ -3863,6 +3863,7 @@ Morph.addMethods({
         console.log("Function.prototype.shouldTrace = true; tracing begins...");
         Function.prototype.shouldTrace = true;
         this.adjustForNewBounds();
+        Function.prototype.shouldTrace = false;
     },
 
     putMeInAWindow: function(loc) {
