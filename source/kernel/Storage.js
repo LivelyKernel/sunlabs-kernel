@@ -55,6 +55,7 @@ Model.subclass('WebStore', {
         return new WebStore(location.hostname, path);
     },
 
+    // FIXME a single argument that is like location (protocol, hostname, port, pathname, hash, search)
     initialize: function($super, host, path) {
         $super();
         this.host = host;
@@ -86,7 +87,7 @@ Model.subclass('WebStore', {
             }
             // FIXME: on exception
         };
-        new NetRequest(options).get(url);
+        new NetRequest(options).evalJS(false).get(url);
     },
     
     saveAs: function(name, content) {
