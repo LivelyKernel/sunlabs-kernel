@@ -1519,7 +1519,7 @@ Object.subclass(scope, 'AsteroidsSprite', {
 
 var USE_FUNCTIONAL_DELAY = false;    
 
-var GameMorph = ClipMorph.subclass("GameMorph", {
+ClipMorph.subclass("GameMorph", {
     
     runAsteroidsGame: function() {
 
@@ -2819,7 +2819,7 @@ online parameter tells should the application load the maps from google
 Mapframe has menu which can be accessed by Ctrl+MouseClick in frame area
 */
 
-var MapFrameMorph = Morph.subclass("MapFrameMorph", {
+Morph.subclass("MapFrameMorph", {
 
     borderWidth: 5,
     fill: new Color(0.5,0.5,0.5,0.8),
@@ -2972,7 +2972,7 @@ Model.subclass('MapModel', {
  * May have mapmarkers as submorphs
  */
 
-var MapMorph = Morph.subclass("MapMorph", {
+Morph.subclass("MapMorph", {
 
     initialize: function($super, initialBounds, online) { 
       pd("MapMorph",2);
@@ -3972,7 +3972,7 @@ scope.canvascape = function() { // module function
  * @class MiniMapMorph: The "radar view" for the game
  */
 
-var MiniMapMorph = Morph.subclass("MiniMapMorph", {
+Morph.subclass("MiniMapMorph", {
     
     initialize: function($super, rect) {
         $super(rect, "rect");
@@ -4017,7 +4017,7 @@ var MiniMapMorph = Morph.subclass("MiniMapMorph", {
  * @class CanvasScapeMorph: The Canvas Game Morph
  */
 
-scope.CanvasScapeMorph = ClipMorph.subclass("CanvasScapeMorph", {
+ClipMorph.subclass("CanvasScapeMorph", {
     
     initialize: function($super, rect) {
         $super(rect, "rect");
@@ -4843,7 +4843,7 @@ Morph.subclass(scope, "EngineMorph", {
  * AnimMorph is the animation "engine" that loads the frames for the animation
  */
   
-var AnimMorph = Morph.subclass("AnimMorph", {
+Morph.subclass("AnimMorph", {
     
     initialize: function($super, rect) {  
         $super(rect, "rect");
@@ -4954,7 +4954,7 @@ var AnimMorph = Morph.subclass("AnimMorph", {
  * PlayerMorph is the end-user interface for showing the animation
  */ 
 
-var PlayerMorph = Morph.subclass("PlayerMorph",  {
+Morph.subclass("PlayerMorph",  {
 
     initialize: function($super) {
         var rect = new Rectangle(0, 0, 330, 260);
