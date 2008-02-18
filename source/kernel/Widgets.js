@@ -35,7 +35,7 @@ Morph.subclass("ButtonMorph", {
     borderWidth: 0.3,
     fill: Color.neutral.gray,
     borderColor: Color.neutral.gray,
-
+    label: null,
     baseColor: Color.neutral.gray, // KP: stopgap fix for serialization??
 
     // A ButtonMorph is the simplest widget
@@ -162,6 +162,15 @@ Morph.subclass("ButtonMorph", {
             return true;
         }
         return false;
+    },
+
+    addLabel: function(txt) {
+	this.label && this.label.remove();
+	// FIXME remove random values
+	var l = this.label = new TextMorph(new Rectangle(0, 0, 50, 20), txt).beLabel();
+	l.align(l.bounds().center(), this.innerBounds().center());
+	this.addMorph(l);
+	return this;
     }
 
 });
@@ -1458,11 +1467,11 @@ CheapListMorph.subclass("MenuMorph", {
         //     menu.addItem(nextItem);  // May be several of these
         //     menu.addLine();          // interspersed with these
         //     menu.openIn(world,location,stayUp,captionIfAny);
-
+	
+	// KP: noe that the $super is not called ... should be called at some point
         this.items = items;
-        this.targetMorph = targetMorph;
-        this.lines = lines ? lines : [];
-        //console.log('what, font is %s in %s', this.font, this);
+        this.targetMorph = targetMorph || this;
+        this.lines = lines || [];
         //this.layoutChanged();
         return this;
     },
@@ -2031,6 +2040,66 @@ Morph.subclass('XenoMorph', {
         url = url || "http://livelykernel.sunlabs.com/test.xhtml";
         var xeno = new XenoMorph(pt(0, 0).extent(pt(400,200)), url);
         WorldMorph.current().addMorphAt(new WindowMorph(xeno, url), pt(50,50));
+    }
+
+});
+
+
+Model.subclass('PromptDialog', {
+
+
+    // new PromptDialog().openIn(world, world.bounds().center(), "input text:", function(suppliedText) { ... });
+    
+    openIn: function(world, location, message, callback) {
+        var view = this.buildView(message, callback);
+        world.addMorphAt(view, location);
+	world.hands[0].setMouseFocus(view.inputLine);
+	world.hands[0].setKeyboardFocus(view.inputLine);
+        return view;
+    },
+    
+    buildView: function(message, callback) {
+	var extent = pt(300, 130);
+        var panel = new PanelMorph(extent);
+        panel.linkToStyles(['widgetPanel']);
+        var model = new SimpleModel(null, 'Text', 'OKValue', 'CancelValue');
+
+	model.setCancelValue = function(value) {
+	    if (value)  {
+		panel.owner && panel.remove();
+		callback && callback.call(Global, null);
+	    }
+	}
+
+	model.setOKValue = function(value) {
+	    if (value)  {
+		panel.owner && panel.remove();
+		callback && callback.call(Global, this.Text);
+	    }
+	}
+
+        panel.connectModel({model: model});
+	
+	var inset = 10;
+	var r = new Rectangle(inset, inset, extent.x - 2*inset, 30);
+	var label = panel.addMorph(new TextMorph(r, message).beLabel());
+
+	r = new Rectangle(r.x, r.maxY() + inset, r.width, r.height);
+
+	panel.inputLine = panel.addMorph(new TextMorph(r, "").beInputLine());
+	
+	panel.inputLine.connectModel({model: model, getText: "getText", setText: "setText"});
+	
+	var indent = extent.x - 2*70 - 3*inset;
+	r = new Rectangle(r.x + indent, r.maxY() + inset, 70, 30);
+	var okButton = panel.addMorph(new ButtonMorph(r)).addLabel("OK");
+
+	okButton.connectModel({model: model, setValue: "setOKValue"});
+        r = new Rectangle(r.maxX() + inset, r.y, 70, 30);
+	var cancelButton = panel.addMorph(new ButtonMorph(r)).addLabel("Cancel");
+        cancelButton.connectModel({model: model, setValue: "setCancelValue"});
+	
+        return panel;
     }
 
 });

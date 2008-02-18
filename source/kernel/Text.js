@@ -869,7 +869,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
     },
 
     beInputLine: function() {
-        this.setWrapStyle(WrapStyle.NONE);
+        //this.setWrapStyle(WrapStyle.NONE);
         this.onKeyPress = function(evt) {
             if (evt.getKeyCode() == Event.KEY_RETURN) {
                 this.saveContents(this.textString);
@@ -878,7 +878,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
                 return TextMorph.prototype.onKeyPress.call(this, evt);
             }
         };
-
+	this.autoAccept = true;
         this.okToBeGrabbedBy = function(evt) { return null; }
         return this;
     },
@@ -918,7 +918,13 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
     
         menu.addItem(["save as ...", function() { 
             var store = WebStore.defaultStore;
-            if (store) store.saveAs(WorldMorph.current().prompt('save as ...'), (this.xml || this.textString)); 
+	    
+            if (store) 
+		WorldMorph.current().prompt("save as...", function(filename) {
+		    if (filename) {
+			store.saveAs(filename, this.xml || this.textString);
+		    }
+		}.bind(this))
             else console.log('no store to save to');
         }]);
     
@@ -1178,18 +1184,18 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
         }
     
         if (this.lineNo(r2) == this.lineNo(r1)) {
-            NodeList.push(this.rawSelectionNode, new RectShape(r1.union(r2)).roundEdgesBy(4));
+            this.rawSelectionNode.appendChild(new RectShape(r1.union(r2)).roundEdgesBy(4).rawNode);
         } else { // Selection is on two or more lines
             var localBounds = this.shape.bounds();
             r1 = r1.withBottomRight(pt(localBounds.maxX() - this.inset.x, r1.maxY()));
             r2 = r2.withBottomLeft(pt(localBounds.x + this.inset.x, r2.maxY()));
-            NodeList.push(this.rawSelectionNode, new RectShape(r1).roundEdgesBy(4));
-            NodeList.push(this.rawSelectionNode, new RectShape(r2).roundEdgesBy(4));
+            this.rawSelectionNode.appendChild(new RectShape(r1).roundEdgesBy(4).rawNode);
+            this.rawSelectionNode.appendChild(new RectShape(r2).roundEdgesBy(4).rawNode);
         
             if (this.lineNo(r2) != this.lineNo(r1) + 1) {
                 // Selection spans 3 or more lines; fill the block between top and bottom lines
-                NodeList.push(this.rawSelectionNode, 
-                    new RectShape(Rectangle.fromAny(r1.bottomRight(), r2.topLeft())).roundEdgesBy(4)); 
+                this.rawSelectionNode.appendChild(
+                    new RectShape(Rectangle.fromAny(r1.bottomRight(), r2.topLeft())).roundEdgesBy(4).rawNode); 
             }
         }
     

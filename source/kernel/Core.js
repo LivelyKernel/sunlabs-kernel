@@ -2325,23 +2325,6 @@ Shape.subclass('PathShape', {
 
 var NodeList = {
     // FIXME these implementations are rather lame
-    toArray: function(target) {
-        var array = [];
-        for (var m = target.lastChild; m != null; m = m.previousSibling) { 
-            array.push(m);
-        }
-        return array;
-    },
-    
-    invoke: function(target, method) {
-        var args = $A(arguments).slice(2);
-        var array = NodeList.toArray(target);
-        return array.map(function(value) { return value[method].apply(value, args); });
-    },
-    
-    each: function(target, iterator, context) {
-        return NodeList.toArray(target).each(iterator, context);
-    },
     
     withType: function(type) {
         return NodeList.become(NodeFactory.create('g'), type);
@@ -2354,21 +2337,8 @@ var NodeList = {
     
     clear: function(list) {
         while (list.firstChild) list.removeChild(list.firstChild);
-    },
-    
-    push: function(list, element) {
-        // FIXME remove the alternative
-        list.appendChild(element.rawNode);
-    },
-
-    remove: function(list, element) {
-        if (element.rawNode.parentNode === list) {
-            // FIXME remove the alternative
-            list.removeChild(element.rawNode);
-            return true;
-        }
-        return false;
     }
+    
     
 }
 
@@ -3756,7 +3726,7 @@ Morph.addMethods({
         NodeList.clear(this.focusHalo);
         var shape = new RectShape(this.shape.bounds().insetBy(-2), null, 
             this.focusHaloBorderWidth, this.focusedBorderColor);
-        NodeList.push(this.focusHalo, shape);
+        this.focusHalo.appendChild(shape.rawNode);
     },
 
     addFocusHalo: function() {
@@ -3855,7 +3825,8 @@ Morph.addMethods({
             [((this.openForDragAndDrop) ? "close DnD" : "open DnD"), this.toggleDnD.curry(evt.mousePoint)],
             ["show Lively markup", this.addSvgInspector.curry(this)],
             ["publish shrink-wrapped as...", function() { 
-                Exporter.shrinkWrapToFile([this], this.world().prompt('publish as (.xhtml)')); }],
+		this.world().prompt('publish as (.xhtml)', 
+				    function(filename) { if (filename) Exporter.shrinkWrapToFile([this], filename)}.bind(this))}], 
             ["test tracing (in console)", this.testTracing]
         ];
         var menu = new MenuMorph(items, this); 
@@ -4871,9 +4842,13 @@ PasteUpMorph.subclass("WorldMorph", {
                       this.toggleDebugBackground]);
         menu.addLine();
         menu.addItem(["publish world as ... ", function() { 
-            var msg = Exporter.shrinkWrapToFile([this], this.prompt("world file (.xhtml)"));
-            if (msg) this.world().alert(msg);
-        }]);
+	    this.prompt("world file (.xhtml)", function(filename) { 
+		if (!filename) return;
+		var msg = Exporter.shrinkWrapToFile([this], filename);
+		console.log("publish got msg " + msg);
+		if (msg) this.world().alert(msg);
+	    }.bind(this));
+	}]);
         menu.addItem(["restart system", this.restart]);
         return menu;
     },
@@ -5141,7 +5116,7 @@ PasteUpMorph.subclass("WorldMorph", {
         var fill = this.getFill();
         this.setFill(Color.black); // poor man's modal dialog
 
-        var menu = new MenuMorph([["OK", function() { this.setFill(fill)}]], this);
+        var menu = new MenuMorph([["OK", function() { console.log("this is " + this) ; this.world().setFill(fill); this.remove() }]]);
         menu.onMouseUp = function(/*...*/) { 
             if (!this.stayUp) this.world().setFill(fill); // cleanup
             MenuMorph.prototype.onMouseUp.apply(this, arguments);
@@ -5149,13 +5124,14 @@ PasteUpMorph.subclass("WorldMorph", {
 	var args = $A(arguments);
 	var fmt = args.shift() || "";
 	
-        menu.openIn(this, this.bounds().center(), false, fmt.formatFromArray(args)); 
+        menu.openIn(this, this.bounds().center(), true, fmt.formatFromArray(args)); 
         menu.scaleBy(2.5);
     }.logErrors('alert'),
 
-    prompt: function(message) {
-        // FIXME replace with a native solution
-        return window.prompt(message);
+    prompt: function(message, callback) {
+	new PromptDialog().openIn(this, this.hands[0].lastMouseDownPoint, message, callback);
+        // var result = window.prompt(message);
+	//callback.call(receiver, result);
     },
 
     confirm: function(message) {
@@ -5598,8 +5574,12 @@ Morph.subclass("LinkMorph", {
         var menu = $super(evt);
         menu.addItem(["publish linked world as ... ", 
             function() { 
-                var msg = Exporter.shrinkWrapToFile([this.myWorld], this.world().prompt("world file (.xhtml)"));
-                if (msg) this.world().alert(msg);
+		this.world().prompt("world file (.xhtml)", 
+				    function(filename) {
+					if (!filename) return;
+					var msg = Exporter.shrinkWrapToFile([this.myWorld], filename);
+					if (msg) linkMorph.world().alert(msg);
+				    }.bind(this));
             }]);
         return menu;
     },
