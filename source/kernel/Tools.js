@@ -817,6 +817,7 @@ Object.subclass('FileParser', {
 	    } else if (this.verbose) { console.log("other: "+ line); 
 	    }
 	}
+	this.processCurrentDef();
 	if (this.verbose) console.log("done");
     },
     scanComment: function(line) {
@@ -865,6 +866,7 @@ Object.subclass('FileParser', {
 		this.sourceDB.methodDictFor(this.currentClassName)[def.name] =
 			{fileName: this.fileName, startPos: def.startPos, endPos: this.ptr-1};
 	}
+	this.currentDef = null;
     },
     scanBlankLine: function(line) {
 	if (line.match(/^[\s]*$/) == null) return false;

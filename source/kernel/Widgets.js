@@ -28,7 +28,7 @@
 /**
  * @class ButtonMorph
  */ 
-var ButtonMorph = Morph.subclass("ButtonMorph", {
+Morph.subclass("ButtonMorph", {
     
     documentation: "Simple button",
     focusHaloBorderWidth: 3, // override the default
@@ -169,7 +169,7 @@ var ButtonMorph = Morph.subclass("ButtonMorph", {
 /**
  * @class ImageMorph
  */
-var ImageMorph = Morph.subclass("ImageMorph", {
+Morph.subclass("ImageMorph", {
     
     fill: Color.blue.lighter(),
     borderWidth: 0,
@@ -258,7 +258,7 @@ var ImageMorph = Morph.subclass("ImageMorph", {
 /**
  * @class ImageButtonMorph: Buttons with images
  */ 
-var ImageButtonMorph = ButtonMorph.subclass("ImageButtonMorph", {
+ButtonMorph.subclass("ImageButtonMorph", {
 
     focusHaloBorderWidth: 0,
 
@@ -283,7 +283,7 @@ var ImageButtonMorph = ButtonMorph.subclass("ImageButtonMorph", {
 /**
  * @class IconMorph: Simple icons
  */
-var IconMorph = ImageMorph.subclass("IconMorph", {
+ImageMorph.subclass("IconMorph", {
 
     initialize: function($super, viewPort, url, name, targetUrl) {
         $super(viewPort, url);
@@ -312,7 +312,7 @@ var IconMorph = ImageMorph.subclass("IconMorph", {
 /**
  * @class ClipMorph: A clipping window/view
  */
-var ClipMorph = Morph.subclass("ClipMorph", {
+Morph.subclass("ClipMorph", {
 
     fill: null,
     borderWidth: 0,
@@ -809,7 +809,7 @@ Morph.subclass('WindowMorph', {
 /**
  * @class TabbedPanelMorph: Alternative to windows for off-screen content
  */
-var TabbedPanelMorph = WindowMorph.subclass("TabbedPanelMorph", {
+WindowMorph.subclass("TabbedPanelMorph", {
 
     initialize: function($super, targetMorph, headline, location, sideName) {
         // A TabbedPanelMorph is pretty much like a WindowMorph, in that it is intended to 
@@ -976,12 +976,10 @@ var HandleMorph = (function () {
     
 })})();
 
-/**
- * @class SelectionMorph: The selection "tray" object that
- * allows multiple objects to be moved and otherwise manipulated
- * simultaneously. 
- */
-var SelectionMorph = Morph.subclass("SelectionMorph", {
+Morph.subclass("SelectionMorph", {
+	// @class SelectionMorph: The selection "tray" object that
+	// allows multiple objects to be moved and otherwise manipulated
+	// simultaneously. 
     
     borderWidth: 1,
     borderColor: Color.blue,
@@ -1249,7 +1247,7 @@ Object.extend(PanelMorph, {
 /**
  * @class CheapListMorph
  */ 
-var CheapListMorph = TextMorph.subclass("CheapListMorph", {
+TextMorph.subclass("CheapListMorph", {
     
     borderColor: Color.black,
     wrap: WrapStyle.NONE,
@@ -1438,7 +1436,7 @@ var CheapListMorph = TextMorph.subclass("CheapListMorph", {
 /**
  * @class MenuMorph: Popup menus
  */ 
-var MenuMorph = CheapListMorph.subclass("MenuMorph", {
+CheapListMorph.subclass("MenuMorph", {
 
     borderColor: Color.blue,
     borderWidth: 0.5,
@@ -1570,7 +1568,7 @@ var MenuMorph = CheapListMorph.subclass("MenuMorph", {
 /**
  * @class SliderMorph: Slider/scroll control
  */ 
-var SliderMorph = Morph.subclass("SliderMorph", {
+Morph.subclass("SliderMorph", {
 
     initialize: function($super, initialBounds, scaleIfAny) {
         $super(initialBounds, "rect");
@@ -1766,7 +1764,7 @@ var SliderMorph = Morph.subclass("SliderMorph", {
 /**
  * @class ScrollPane
  */ 
-var ScrollPane = Morph.subclass("ScrollPane", {
+Morph.subclass("ScrollPane", {
 
     borderWidth: 2,
     fill: null,
@@ -1901,7 +1899,7 @@ function PrintPane(initialBounds, defaultText) {
 /**
  * @class ColorPickerMorph
  */ 
-var ColorPickerMorph = Morph.subclass("ColorPickerMorph", {
+Morph.subclass("ColorPickerMorph", {
 
     fill: null,
     borderWidth: 1, 
