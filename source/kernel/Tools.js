@@ -13,72 +13,6 @@
  * object inspector, style editor, and profiling and debugging capabilities.  
  */
 
-// ===========================================================================
-// Source Database
-// ===========================================================================
-TextMorph.subclass('SourceDatabase', {
-	// The Source Database holds a cross-reference of the source code
-	// and the various methods for scanning, saving, and reloading that info
-	//
-	// I anticipate that it will also hold a list of projects, each being a list
-	// of changes. Whether projects will be associated with worlds as in Squeak
-	// or not is not yet clear.  Regardless, at any time, a given project will
-	// be 'current', and will accumulate changes made in its changeList, and
-	// will journal those changes onto a changes file for that project.
-	//
-	// The idea is that, upon startup, the 'image' will consist of the Lively
-	// Kernel base code.  You may then open (or find open) a list of various
-	// Project files in your directory or other directories to which you have access.
-	// You may open any of these in the file browser and read the foreward which,
-	// by convention, will list, eg, author, date, project name, description, etc.
-	// You may further choose to load that project, which will read in all the code,
-	// and prepare the system to record and possibly write out any changes made to 
-	// that project
-    initialize: function($super, rect) {	$super(rect, "Source Scanner");
-    },
-
-    isEmpty: function() { return this.changeList == null; },
-
-    scanKernelFiles: function(list) {
-	this.cachedFullText = {};
-	this.changeList = [];
-	this.fileList = list;
-	this.fileList = ["Tools.js", "Text.js"];  // *override here for test*
-	var webStore = WebStore.prototype.onCurrentLocation();
-        this.connectModel({model: webStore, getText: "getCurrentResourceContents"});
-	this.readNextFile(webStore, 0);
-    },
-
-    readNextFile: function (webStore, index) {
-	this.fileListIndex = index;
-	webStore.localName = this.fileList[index];
-	this.setTextString("Scanning " + webStore.localName + "...");
-	webStore.setCurrentResource(webStore.path + webStore.localName);
-	console.log("Reading " + webStore.localName + "...");
-    },
-
-    updateView: function(aspect, controller) {
-        var p = this.modelPlug;
-        var doneReading = false;
-	if (p && aspect == p.getText) {
-		var webStore = this.getModel();
-		var fileName = webStore.localName;
-		var fullText = webStore.getCurrentResourceContents().slice(0); // Do we need to copy here??
-		this.cachedFullText[fileName] = fullText;
-		if (this.fileListIndex < this.fileList.length-1) {
-			this.readNextFile(webStore, this.fileListIndex+1);
-		} else { doneReading = true;
-		}
-		console.log("Parsing " + fileName + "...");
-		new FileParser().parseFile(fileName, fullText, this);
-	}
-	if (doneReading) {
-		this.getModel().removeDependent(this);
-		this.remove();
-	}
-    }
-});
-var SourceControl = null;
 
 
 // ===========================================================================
@@ -104,10 +38,12 @@ Model.subclass('SimpleBrowser', {
 
     getMethodList: function() {
         if (this.className == null) return [];
-        else {
-            if (this.className == 'Global') return Global.constructor.functionNames().without(this.className).sort();
-            else return Global[this.className].localFunctionNames().sort();
-        }
+	var sorted = (this.className == 'Global')
+		? Global.constructor.functionNames().without(this.className).sort()
+		: Global[this.className].localFunctionNames().sort();
+	var defStr = "*definition";
+	var defRef = SourceControl && SourceControl.getSourceInClassForMethod(this.className, defStr);
+	return defRef ? [defStr].concat(sorted) : sorted;
     },
 
     setMethodName: function(n) { this.methodName = n; this.changed("getMethodString"); },
@@ -126,9 +62,9 @@ Model.subclass('SimpleBrowser', {
 
     buildView: function(extent) {
         var panel = PanelMorph.makePanedPanel(extent, [
-            ['leftPane', ListPane, new Rectangle(0, 0, 0.5, 0.6)],
-            ['rightPane', ListPane, new Rectangle(0.5, 0, 0.5, 0.6)],
-            ['bottomPane', TextPane, new Rectangle(0, 0.6, 1, 0.4)]
+            ['leftPane', ListPane, new Rectangle(0, 0, 0.5, 0.5)],
+            ['rightPane', ListPane, new Rectangle(0.5, 0, 0.5, 0.5)],
+            ['bottomPane', TextPane, new Rectangle(0, 0.5, 1, 0.5)]
         ]);
         var m = panel.leftPane;
         m.connectModel({model: this, getList: "getClassList", setSelection: "setClassName", getMenu: "getClassPaneMenu"});
@@ -153,7 +89,7 @@ Model.subclass('SimpleBrowser', {
                 	SourceControl = new SourceDatabase(new Rectangle(100, 100, 200, 50));
 			WorldMorph.current().addMorph(SourceControl);
 			WorldMorph.current().firstHand().setMouseFocus(null);
-			SourceControl.scanKernelFiles(["Text.js", "Tools.js"]); }]);
+			SourceControl.scanKernelFiles(["Core.js", "Text.js", "Widgets.js", "Tools.js", "Examples.js", "Network.js", "Storage.js"]); }]);
 	}
 	return menu; 
     }
@@ -754,6 +690,95 @@ TextMorph.subclass('FrameRateMorph', {
 
 });
 
+
+// ===========================================================================
+// Source Database
+// ===========================================================================
+TextMorph.subclass('SourceDatabase', {
+	// The Source Database holds a cross-reference of the source code
+	// and the various methods for scanning, saving, and reloading that info
+	//
+	// I anticipate that it will also hold a list of projects, each being a list
+	// of changes. Whether projects will be associated with worlds as in Squeak
+	// or not is not yet clear.  Regardless, at any time, a given project will
+	// be 'current', and will accumulate changes made in its changeList, and
+	// will journal those changes onto a changes file for that project.
+	//
+	// The idea is that, upon startup, the 'image' will consist of the Lively
+	// Kernel base code.  You may then open (or find open) a list of various
+	// Project files in your directory or other directories to which you have access.
+	// You may open any of these in the file browser and read the foreward which,
+	// by convention, will list, eg, author, date, project name, description, etc.
+	// You may further choose to load that project, which will read in all the code,
+	// and prepare the system to record and possibly write out any changes made to 
+	// that project
+    initialize: function($super, rect) {	$super(rect, "Source Scanner");
+	this.methodDicts = {};
+	this.cachedFullText = {};
+    },
+
+    isEmpty: function() { return this.changeList == null; },
+
+    methodDictFor: function(className) {
+	if (!this.methodDicts[className]) this.methodDicts[className] = {}; 
+	return this.methodDicts[className];
+    },
+
+    getSourceInClassForMethod: function(className, methodName) {
+	var methodDict = this.methodDictFor(className);
+	var descriptor = methodDict[methodName];
+	if (!descriptor) return null;
+	var fullText = this.cachedFullText[descriptor.fileName];
+	if (!fullText) return null;
+	return fullText.substring(descriptor.startPos, descriptor.endPos);
+    },
+
+    setDescriptorInClassForMethod: function(className, methodName, descriptor) {
+	var methodDict = this.methodDictFor(className);
+	methodDict[methodName] = descriptor;
+    },
+
+    scanKernelFiles: function(list) {
+	this.cachedFullText = {};
+	this.changeList = [];
+	this.fileList = list;
+	var webStore = WebStore.prototype.onCurrentLocation();
+        this.connectModel({model: webStore, getText: "getCurrentResourceContents"});
+	this.readNextFile(webStore, 0);
+    },
+
+    readNextFile: function (webStore, index) {
+	this.fileListIndex = index;
+	webStore.localName = this.fileList[index];
+	this.setTextString("Scanning " + webStore.localName + "...");
+	webStore.setCurrentResource(webStore.path + webStore.localName);
+	console.log("Reading " + webStore.localName + "...");
+    },
+
+    updateView: function(aspect, controller) {
+        var p = this.modelPlug;
+        var doneReading = false;
+	if (p && aspect == p.getText) {
+		var webStore = this.getModel();
+		var fileName = webStore.localName;
+		var fullText = webStore.getCurrentResourceContents();
+		this.cachedFullText[fileName] = fullText;
+		if (this.fileListIndex < this.fileList.length-1) {
+			this.readNextFile(webStore, this.fileListIndex+1);
+		} else { doneReading = true;
+		}
+		console.log("Parsing " + fileName + "...");
+		new FileParser().parseFile(fileName, fullText, this);
+	}
+	if (doneReading) {
+		this.getModel().removeDependent(this);
+		this.remove();
+	}
+    }
+});
+var SourceControl = null;
+
+
 // ===========================================================================
 // FileParser
 // ===========================================================================
@@ -764,34 +789,42 @@ Object.subclass('FileParser', {
 	// and everything in between gets put with the preceding header
 	// There are hundreds of ways this can fail,
 	// but, heh-heh, it works 99 percent of the time ;-)
+
+	// Yet to do...
+	// Do a better job of trimming code chunks
+	// Scan method bodies for <ident>. or ident( and build dict of senders
+	// Figure out what to do for various global functions and other unmatched code.
+	// Note probably best is ChangeList view of file sequence
+	// ...so, parseFile should probably also build that as well wile it scans
+	//	the view would just be a list of items <lineNo>: <1st 40 chars>...
     
-    parseFile: function(fname, fstr, sourceDB) {
+    parseFile: function(fname, fstr, db) {
 	this.verbose = false;
 	this.fileName = fname;
 	this.str = fstr;
 	var len = this.str.length;
+	this.sourceDB = db;
 	this.ptr = 0;
 	this.lineNo = 0;
 	if (this.verbose) console.log("Parsing " + this.fileName + ", length = " + len);
 	while (this.ptr < len) {
 	    var line = this.nextLine(this.str);
 	    if (this.verbose) console.log("lineNo=" + this.lineNo + " ptr=" + this.ptr + line);		
-	    if (this.processComment(line)) {
-	    } else if (this.processClassDef(line)) {
-	    } else if (this.processMethodDef(line)) {
-	    } else if (this.processBlankLine(line)) {
-	    } else { if (this.verbose) console.log("other: "+ line); 
+	    if (this.scanComment(line)) {
+	    } else if (this.scanClassDef(line)) {
+	    } else if (this.scanMethodDef(line)) {
+	    } else if (this.scanBlankLine(line)) {
+	    } else if (this.verbose) { console.log("other: "+ line); 
 	    }
 	}
 	if (this.verbose) console.log("done");
     },
-    
-    processComment: function(line) {
+    scanComment: function(line) {
 	if (line.match(/^[\s]*\/\//) ) {
 		if (this.verbose) console.log("comment: "+ line);
 		return true; }
 	if (line.match(/^[\s]*\/\*/) ) {
-		if (this.verbose) console.log("long comment: "+ line);
+		if (this.verbose) console.log("long comment: "+ line + "...");
 		do { line = this.nextLine(this.str) }
 		while ( !line.match(/^[\s]*\*\//) );
 		if (this.verbose) console.log("..." + line);
@@ -799,34 +832,45 @@ Object.subclass('FileParser', {
 	}
 	return false;
     },
-    processClassDef: function(line) {
+    scanClassDef: function(line) {
 	var match = line.match(/^[\s]*([\w]+)\.subclass\([\'\"]([\w]+)[\'\"]/);
-	if (match == null) return false;
-	if (this.verbose) console.log(match.toString());
-	var sup = match[1];
-	this.currentClass = match[2];
-	console.log("subclass definition: " + sup + "." + this.currentClass);
-	// Need to scan any comments and blank lines, then store source code range
-	// to be saved as *definition and browsable by browser
+	if (match == null) {
+		var match = line.match(/^[\s]*([\w]+)\.subclass\(Global\,[\s]*[\'\"]([\w]+)[\'\"]/);
+	}	
+	if (match == null)  return false;
+	this.processCurrentDef();
+	console.log("Class def: " + match[1] + "." + match[2]);
+	this.currentDef = {type: "classDef", name: match[2], startPos: this.ptr};
 	return true;
     },
-    processMethodDef: function(line) {
+    scanMethodDef: function(line) {
 	var match = line.match(/^[\s]*([\w]+)\:/);
 	if (match == null) return false;
-	var methodName = match[1];
-	console.log("method def: " + this.currentClass + "." + methodName);
-	// Need to check for close curly bracket and then
-	// save as source range for this method.
-	// If no close curly, then need to scan for close matching curly
+	this.processCurrentDef();
+	console.log("Method def: " + this.currentClassName + "." + match[1]);
+	this.currentDef = {type: "methodDef", name: match[1], startPos: this.ptr};
 	return true;
     },
-    
-    processBlankLine: function(line) {
+    processCurrentDef: function() {
+	// this.ptr now points at a new code section.
+	// Terminate the currently open definition and process accordingly
+	// We will want to do a better job of finding where it ends
+	var def = this.currentDef;
+	if (def == null) return;
+	if (def.type == "classDef") {
+		this.currentClassName = def.name;
+		this.sourceDB.methodDictFor(this.currentClassName)["*definition"] =
+			{fileName: this.fileName, startPos: def.startPos, endPos: this.ptr-1};
+	} else if (def.type == "methodDef") {
+		this.sourceDB.methodDictFor(this.currentClassName)[def.name] =
+			{fileName: this.fileName, startPos: def.startPos, endPos: this.ptr-1};
+	}
+    },
+    scanBlankLine: function(line) {
 	if (line.match(/^[\s]*$/) == null) return false;
 	if (this.verbose) console.log("blank line");
 	return true;
     },
-
     nextLine: function(s) {
 	// Peeks ahead to next line-end, returning the line with cr and/or lf
 	// I'm sure this could be *much* simpler, either by use of regex's

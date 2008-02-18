@@ -526,7 +526,11 @@ Object.subclasses = [];
 Function.globalScope = window;
 
 Function.methodString = function(className, methodName) {
-    var func = (className == "Global") ? Function.globalScope[methodName] : Function.globalScope[className].prototype[methodName];
+    if (SourceControl != null) var source = SourceControl.getSourceInClassForMethod(className, methodName);
+    if (source) return source;
+    var func = (className == "Global")
+	? Function.globalScope[methodName]
+	: Function.globalScope[className].prototype[methodName];
     if (func == null) return "no code";
     var code = func.toString();
     if (className == "Global" || methodName == "constructor") return code;
