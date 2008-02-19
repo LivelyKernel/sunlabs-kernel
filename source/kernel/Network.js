@@ -15,7 +15,6 @@
  * most of the necessary networking functionality is 
  * inherited from the browser.  
  */
-
 Object.subclass('Location', {
     
     initialize: (function() { 
@@ -49,12 +48,12 @@ Object.subclass('Location', {
 
     fullPath: function() {
 	return this.path + (this.search || "") + (this.hash || "");
+    },
+
+    isDirectory: function() {
+	return this.fullPath().endsWith('/');
     }
-
-
 });
-
-
 
 /**
  * @class NetRequest
@@ -175,6 +174,8 @@ var NetRequest = (function() {
     });
     
     var NetRequest = Object.subclass('NetRequest', {
+	
+	proxy: Loader.proxyURL ? new Location(Loader.proxyURL) : null,
 
         initialize: function(options) {
             this.requestNetworkAccess();
@@ -223,14 +224,13 @@ var NetRequest = (function() {
         },
 
         rewriteURL: function(url) {
-            if (Loader.proxyURL) {
-		var proxyLoc = new Location(Loader.proxyURL);
+            if (this.proxy) {
 		var loc = new Location(url);
-		if (proxyLoc.hostname != loc.hostname) { // FIXME port and protocol?
-		    return Loader.proxyURL + loc.hostname + "/" + loc.fullPath();
-		} else 
-                    return url;
-            }
+		if (this.proxy.hostname != loc.hostname) { // FIXME port and protocol?
+		    return this.proxy + loc.hostname + "/" + loc.fullPath();
+		}
+	    }
+            return url;
 	},
 
         requestNetworkAccess: function() {

@@ -2044,60 +2044,120 @@ Morph.subclass('XenoMorph', {
 
 });
 
-
-Model.subclass('PromptDialog', {
-
-
-    // new PromptDialog().openIn(world, world.bounds().center(), "input text:", function(suppliedText) { ... });
+SimpleModel.subclass('ConfirmDialog', {
     
-    openIn: function(world, location, message, callback) {
-        var view = this.buildView(message, callback);
+    initialize: function($super, message, callback) {
+	$super(null, 'Yes', 'No');
+	this.message = message;
+	this.callback = callback;
+    },
+    
+    
+    openIn: function(world, location) {
+        var view = this.buildView(this.message, this.callback);
         world.addMorphAt(view, location);
 	world.hands[0].setMouseFocus(view.inputLine);
 	world.hands[0].setKeyboardFocus(view.inputLine);
         return view;
     },
     
-    buildView: function(message, callback) {
-	var extent = pt(300, 130);
+    buildView: function() {
+	var extent = pt(300, 90);
         var panel = new PanelMorph(extent);
         panel.linkToStyles(['widgetPanel']);
-        var model = new SimpleModel(null, 'Text', 'OKValue', 'CancelValue');
-
-	model.setCancelValue = function(value) {
+	
+	this.setNo = function(value) {
 	    if (value)  {
 		panel.owner && panel.remove();
-		callback && callback.call(Global, null);
+		this.callback && this.callback.call(Global, false);
 	    }
 	}
 
-	model.setOKValue = function(value) {
+	this.setYes = function(value) {
 	    if (value)  {
 		panel.owner && panel.remove();
-		callback && callback.call(Global, this.Text);
+		this.callback && this.callback.call(Global, true);
 	    }
 	}
 
-        panel.connectModel({model: model});
+        panel.connectModel({model: this});
 	
 	var inset = 10;
 	var r = new Rectangle(inset, inset, extent.x - 2*inset, 30);
-	var label = panel.addMorph(new TextMorph(r, message).beLabel());
+	var label = panel.addMorph(new TextMorph(r, this.message).beLabel());
+
+
+	var indent = extent.x - 2*70 - 3*inset;
+	r = new Rectangle(r.x + indent, r.maxY() + inset, 70, 30);
+	var yesButton = panel.addMorph(new ButtonMorph(r)).addLabel("Yes");
+
+	yesButton.connectModel({model: this, setValue: "setYes"});
+        r = new Rectangle(r.maxX() + inset, r.y, 70, 30);
+	var noButton = panel.addMorph(new ButtonMorph(r)).addLabel("No");
+        noButton.connectModel({model: this, setValue: "setNo"});
+        return panel;
+    }
+
+});
+
+
+
+SimpleModel.subclass('PromptDialog', {
+    
+    initialize: function($super, message, callback) {
+	$super(null, 'Text', 'OKValue', 'CancelValue');
+	this.message = message;
+	this.callback = callback;
+    },
+    
+    
+    openIn: function(world, location) {
+        var view = this.buildView(this.message, this.callback);
+        world.addMorphAt(view, location);
+	world.hands[0].setMouseFocus(view.inputLine);
+	world.hands[0].setKeyboardFocus(view.inputLine);
+        return view;
+    },
+    
+    buildView: function() {
+	var extent = pt(300, 130);
+        var panel = new PanelMorph(extent);
+        panel.linkToStyles(['widgetPanel']);
+	
+	this.setCancelValue = function(value) {
+	    if (value)  {
+		panel.owner && panel.remove();
+		this.callback && this.callback.call(Global, null);
+	    }
+	}
+
+	this.setOKValue = function(value) {
+	    if (value)  {
+		panel.owner && panel.remove();
+		this.callback && this.callback.call(Global, this.Text);
+	    }
+	}
+
+        panel.connectModel({model: this});
+	
+	var inset = 10;
+	var r = new Rectangle(inset, inset, extent.x - 2*inset, 30);
+	var label = panel.addMorph(new TextMorph(r, this.message).beLabel());
 
 	r = new Rectangle(r.x, r.maxY() + inset, r.width, r.height);
 
 	panel.inputLine = panel.addMorph(new TextMorph(r, "").beInputLine());
 	
-	panel.inputLine.connectModel({model: model, getText: "getText", setText: "setText"});
+	panel.inputLine.connectModel({model: this, getText: "getText", setText: "setText"});
 	
 	var indent = extent.x - 2*70 - 3*inset;
 	r = new Rectangle(r.x + indent, r.maxY() + inset, 70, 30);
 	var okButton = panel.addMorph(new ButtonMorph(r)).addLabel("OK");
 
-	okButton.connectModel({model: model, setValue: "setOKValue"});
+	okButton.connectModel({model: this, setValue: "setOKValue"});
         r = new Rectangle(r.maxX() + inset, r.y, 70, 30);
 	var cancelButton = panel.addMorph(new ButtonMorph(r)).addLabel("Cancel");
-        cancelButton.connectModel({model: model, setValue: "setCancelValue"});
+        cancelButton.connectModel({model: this, setValue: "setCancelValue"});
 	
         return panel;
     }

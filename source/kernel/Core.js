@@ -214,6 +214,8 @@ Namespace =  {
     XHTML: "http://www.w3.org/1999/xhtml"
 };
 
+
+
 var Loader = {
 
     loadScript: function(ns, url) {
@@ -5129,14 +5131,11 @@ PasteUpMorph.subclass("WorldMorph", {
     }.logErrors('alert'),
 
     prompt: function(message, callback) {
-	new PromptDialog().openIn(this, this.hands[0].lastMouseDownPoint, message, callback);
-        // var result = window.prompt(message);
-	//callback.call(receiver, result);
+	new PromptDialog(message, callback).openIn(this, this.hands[0].lastMouseDownPoint);
     },
 
-    confirm: function(message) {
-        // FIXME replace with a native solution
-        return window.confirm(message);
+    confirm: function(message, callback) {
+	new ConfirmDialog(message, callback).openIn(this, this.hands[0].lastMouseDownPoint);
     }
 
 });

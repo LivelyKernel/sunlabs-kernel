@@ -21,7 +21,6 @@ Object.subclass('Resource', {
     initialize: function(base, href) {
 	this.base = base;
         this.href = href; 
-	// console.log("created [" + [base, href] + "]");
     },
 
     toString: function() {
@@ -30,11 +29,7 @@ Object.subclass('Resource', {
     
     name: function() {
         return decodeURIComponent(this.href);
-    },
-
-    isDirectory: function() {
-	return this.href.endsWith('/');
-    },
+    }
 
 
 });
@@ -234,6 +229,7 @@ Model.subclass('WebStore', {
                 this.CurrentDirectoryContents = [];
                 this.changed('getCurrentDirectoryContents');
             } else {
+
                 this.CurrentResource = name;
                 console.log('current resource set to %s', this.CurrentResource);
 
@@ -279,12 +275,15 @@ Model.subclass('WebStore', {
         var oldpress = m.innerMorph().onKeyPress;
         m.innerMorph().onKeyPress = function(evt) {
             if (evt.getKeyCode() == Event.KEY_BACKSPACE) { // Replace the selection after checking for type-ahead
-                var result = this.world().confirm("delete resource " + this.itemList[this.selectedLineNo()]);
+		var toDelete  = this.itemList[this.selectedLineNo()];
+                var result = this.world().confirm("delete resource " + toDelete,
+		    function(result) {
+			if (result) {
+			    model.deleteResource(toDelete, "CurrentDirectoryContents");
+			    
+			} else console.log("cancelled deletion of " + toDelete);
+		    });
                 evt.stop();
-                if (result) {
-                    model.deleteResource(this.itemList[this.selectedLineNo()], 
-                                         "CurrentDirectoryContents");
-                }
             } else oldpress.call(this, evt);
         };
 
