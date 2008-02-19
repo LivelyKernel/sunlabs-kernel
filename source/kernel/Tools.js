@@ -742,7 +742,7 @@ TextMorph.subclass('SourceDatabase', {
 	this.cachedFullText = {};
 	this.changeList = [];
 	this.fileList = list;
-	var webStore = WebStore.prototype.onCurrentLocation();
+	var webStore = new WebStore();
         this.connectModel({model: webStore, getText: "getCurrentResourceContents"});
 	this.readNextFile(webStore, 0);
     },

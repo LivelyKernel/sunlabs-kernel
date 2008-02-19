@@ -27,7 +27,7 @@ Object.subclass('Resource', {
     },
     
     name: function() {
-        return this.href;
+        return decodeURIComponent(this.href);
         /*
         var segments = this.href.split('/');
         if (this.href.endsWith('/')) {
@@ -46,18 +46,17 @@ Object.subclass('Resource', {
 
 Model.subclass('WebStore', {
 
-    defaultStore: null,
     documentation: "Network-based storage (WebDAV)",
     
-    onCurrentLocation: function() {
-        var path = location.pathname.substring(0, location.pathname.lastIndexOf('index.xhtml'));
-        if (path == "") path = "/";
-        return new WebStore(location.hostname, path);
-    },
-
     // FIXME a single argument that is like location (protocol, hostname, port, pathname, hash, search)
     initialize: function($super, host, path) {
         $super();
+	if (arguments.length == 1) { // if called with no arguments
+            path = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('index.xhtml'));
+            if (path == "") path = "/";
+	    host = window.location.hostname;
+	}
+
         this.host = host;
         this.path = path;
         this.protocol = "http"; // can be something else...
@@ -131,13 +130,12 @@ Model.subclass('WebStore', {
                     console.log('success deleting:  ' + (transport.responseXML || transport.responseText));
 		}
             },
-    
+	    
             onFailure: function(transport) {
                 WorldMorph.current().alert('failed deleting with response ' + transport.responseText);
             }
     
         };
-
         new NetRequest(options).remove(url);
     },
 
@@ -190,16 +188,17 @@ Model.subclass('WebStore', {
     setCurrentDirectory: function(name) {
         if (!name) return;
 
-        // add the parent of the current directory to the DirectoryList if it's not there?
         var segments = name.split("/");
-        segments.splice(segments.length - 2, 2);
+        segments.splice(-2);
         var parent = segments.join("/") + "/";
-        if (this.DirectoryList.indexOf(parent) < 0)  {
-            // a hack to add the parent dir to enable navigation, just in case.
-            this.DirectoryList.push(parent);
-            this.changed('getDirectoryList'); // this may set CurrentDirectory to null so assign to it later here
-        }
-    
+	
+        // add the parent of the current directory to the DirectoryList if it's not there?	
+	if (this.DirectoryList.indexOf(parent) < 0)  {
+	    // a hack to add the parent dir to enable navigation, just in case.
+	    this.DirectoryList.push(parent);
+	    this.changed('getDirectoryList'); // this may set CurrentDirectory to null so assign to it later here
+	}
+
         this.CurrentDirectory = name;
         this.changed('getCurrentDirectory');
 
@@ -210,12 +209,17 @@ Model.subclass('WebStore', {
     
     getCurrentDirectoryContents: function() {
         var fullList = (this.CurrentDirectoryContents || []).invoke("name");
-	var filteredList = [];
-	for (var i=0; i < fullList.length; i++) {
-		var n = fullList[i];
-		if (n.indexOf(".%23") == -1) filteredList.push(n);
+	var first = [];
+	var last = [];
+	// little reorg to show the more relevant stuff first.
+	for (var i = 0; i < fullList.length; i++) {
+	    var n = fullList[i];
+	    if (n.indexOf(".#") == -1) 
+		first.push(n);
+	    else 
+		last.push(n);
 	}
-	return filteredList;
+	return first.concat(last);
     },
     
     setCurrentResource: function(name) {
@@ -223,12 +227,13 @@ Model.subclass('WebStore', {
             console.log('name is %s', name);
             if (name.endsWith('/')) { // directory, enter it!
                 // only entries with trailing slash i.e., directories
-                this.DirectoryList = 
-                    this.getCurrentDirectoryContents().filter(function(res) { return res.endsWith('/')});
-                this.changed("getDirectoryList");
                 this.CurrentDirectory = name;
                 this.changed('getCurrentDirectory');
                 console.log('entering directory %s now', this.CurrentDirectory);
+
+                this.DirectoryList = 
+                    this.getCurrentDirectoryContents().filter(function(res) { return res.endsWith('/')});
+		this.changed("getDirectoryList");
                 this.CurrentResource = null;
                 this.CurrentDirectoryContents = [];
                 this.changed('getCurrentDirectoryContents');

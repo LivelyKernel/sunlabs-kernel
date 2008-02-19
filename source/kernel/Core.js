@@ -5106,7 +5106,7 @@ PasteUpMorph.subclass("WorldMorph", {
                 m.startSteppingScripts(); }]
         ];
         if (Loader.isLoadedFromNetwork) { 
-            items.push(["File Browser", function(evt) { WebStore.prototype.onCurrentLocation().openIn(world, evt.mousePoint) }])
+            items.push(["File Browser", function(evt) { new WebStore().openIn(world, evt.mousePoint) }])
         }
         new MenuMorph(items, this).openIn(this.world(), evt.mousePoint);
     },

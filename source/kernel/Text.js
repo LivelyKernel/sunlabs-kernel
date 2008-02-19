@@ -917,7 +917,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
         }]);
     
         menu.addItem(["save as ...", function() { 
-            var store = WebStore.defaultStore;
+            var store = new WebStore();
 	    
             if (store) 
 		WorldMorph.current().prompt("save as...", function(filename) {

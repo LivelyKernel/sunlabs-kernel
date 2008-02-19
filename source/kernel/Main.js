@@ -330,13 +330,7 @@ function populateWorldWithExamples(world) {
         if (Config.showHilbertFun) apps.Pen.hilbertFun(devWorld.myWorld, widget.bounds().bottomLeft().addXY(180,80));
 
         if (Config.showWebStore) {
-            var store;
-            if (!window.location|| location.protocol == 'file:') {
-                store = new WebStore('localhost', '/~kappa/'); // TODO: hardcoded
-            } else {
-                store = WebStore.prototype.onCurrentLocation();
-            }
-            WebStore.defaultStore = store;
+            var store = new WebStore();
             store.openIn(Config.webStoreInMain ? WorldMorph.current() : devWorld.myWorld, pt(460, 120));
         }
 
