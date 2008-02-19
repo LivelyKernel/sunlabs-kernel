@@ -16,6 +16,46 @@
  * inherited from the browser.  
  */
 
+Object.subclass('Location', {
+    
+    initialize: (function() { 
+	var urlSplitter = new RegExp('(http|https|file)://([^/:]*)(:[0-9]+)?(/.*)');
+	var pathSplitter = new RegExp("([^\\?#]*)(\\?[^#]*)?(#.*)?");
+	
+	return function(url) {
+	    console.log('got url ' + url);
+	    var result = url.match(urlSplitter);
+	    this.protocol = result[1]; 
+	    if (!result[1]) throw new Error("bad url " + url + ", " + result);
+	    this.hostname = result[2];
+	    if (result[3]) 
+		this.port = parseInt(result[3].substring(1));
+	    
+	    var fullpath = result[4];
+	    result = fullpath.match(pathSplitter);
+	    this.path = result[1];
+	    this.search = result[2];
+	    this.hash = result[3];
+	}
+    })(),
+    
+    inspect: function() {
+	return Object.toJSON(this);
+    },
+    
+    toString: function() {
+	return this.protocol + "://" + this.hostname + (this.port ? ":" + this.port : "") + this.fullPath();
+    },
+
+    fullPath: function() {
+	return this.path + (this.search || "") + (this.hash || "");
+    }
+
+
+});
+
+
+
 /**
  * @class NetRequest
  */ 
@@ -182,27 +222,16 @@ var NetRequest = (function() {
             return req.transport;
         },
 
-        rewriteURL: (function() {
-            var urlSplitter = new RegExp("http://([^/:]*)(:[0-9]+)?(/.*)");
-            return function(url) {
-                if (Loader.proxyURL) {
-                    var urlMatch = url.match(urlSplitter);
-                    if (!urlMatch) {
-                        console.warn("malformed URL %s?", url);
-                        return url;
-                    }
-                    var proxyMatch = Loader.proxyURL.match(urlSplitter);
-                    var portMatch = urlMatch[2];
-                    if (portMatch) portMatch = "/" + portMatch.substring(1);  // replace ":" with "
-                    else portMatch = "";
-                    if (urlMatch && proxyMatch && (proxyMatch[1] != urlMatch[1] || proxyMatch[2] != urlMatch[2])) {
-                        var result = Loader.proxyURL + urlMatch[1]  + portMatch + urlMatch[3];
-                        return result;
-                    }
-                } 
-                return url;
+        rewriteURL: function(url) {
+            if (Loader.proxyURL) {
+		var proxyLoc = new Location(Loader.proxyURL);
+		var loc = new Location(url);
+		if (proxyLoc.hostname != loc.hostname) { // FIXME port and protocol?
+		    return Loader.proxyURL + loc.hostname + "/" + loc.fullPath();
+		} else 
+                    return url;
             }
-        })(),
+	},
 
         requestNetworkAccess: function() {
             if (Global.netscape && window.location.protocol == "file:") {       

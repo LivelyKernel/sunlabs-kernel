@@ -12,14 +12,16 @@
  * Storage.js.  Storage system implementation.
  */
 
+
 /**
  * @class Resource
  */ 
-
 Object.subclass('Resource', {
-
-    initialize: function(rawNode) {
-        this.href = Query.evaluate(rawNode, 'D:href')[0].textContent;
+    
+    initialize: function(base, href) {
+	this.base = base;
+        this.href = href; 
+	// console.log("created [" + [base, href] + "]");
     },
 
     toString: function() {
@@ -28,15 +30,12 @@ Object.subclass('Resource', {
     
     name: function() {
         return decodeURIComponent(this.href);
-        /*
-        var segments = this.href.split('/');
-        if (this.href.endsWith('/')) {
-            return segments.splice(segments.length - 2, 2).join('/');
-        } else {
-            return segments[segments.length -1];
-        }
-        */
-    }
+    },
+
+    isDirectory: function() {
+	return this.href.endsWith('/');
+    },
+
 
 });
 
@@ -140,7 +139,8 @@ Model.subclass('WebStore', {
     },
 
     // FIXME handle object argument
-    propfind: function(url, depth, xpQueryString, optModelVariable, resultType) {
+    // FIXME this doesn't abstract over the actual properties (only href is extracte)
+    propfind: function(url, depth, xpQueryString, optModelVariable) {
         // find the properties given the url and save the results of the indicated query into the model variable
         if (depth != 0 && depth != 1) depth = 'infinity';
 
@@ -158,20 +158,16 @@ Model.subclass('WebStore', {
             },
     
             onSuccess: function(transport) {
-                console.log('propfind received %s', 
-                    Exporter.nodeToString(transport.responseXML) || transport.responseText);
-                if (!transport.responseXML) return; // FIXME: report problem
-
+                console.log('propfind received %s', Exporter.nodeToString(transport.responseXML));
                 var result = Query.evaluate(transport.responseXML.documentElement, xpQueryString);
 		if (optModelVariable !== undefined) {
-                    if (!resultType) { 
-			store[optModelVariable] = result;
-                    } else { 
-			store[optModelVariable] = result.map(function(r) { return new Resource(r); });
-                    }
+		    store[optModelVariable] = result.map(function(raw) { 
+			var href = Query.evaluate(raw, "D:href")[0].textContent;
+			return new Resource(url, href); 
+		    });
                     store.changed("get" + optModelVariable);
 		}
-            }.logErrors('onSuccess')
+            }
         };
         
         new NetRequest(options).propfind(url);
@@ -204,7 +200,7 @@ Model.subclass('WebStore', {
 
         console.log('host %s, dir %s name %s', this.host, this.CurrentDirectory, name);
         // initialize getting the contents
-        this.propfind(this.currentDirectoryURL(), 1, "/D:multistatus/D:response", "CurrentDirectoryContents", Resource);
+        this.propfind(this.currentDirectoryURL(), 1, "/D:multistatus/D:response", "CurrentDirectoryContents");
     },
     
     getCurrentDirectoryContents: function() {
