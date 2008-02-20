@@ -1860,6 +1860,11 @@ Morph.subclass("ScrollPane", {
         this.setScrollPosition(0);
         this.scrollBar.adjustForNewBounds(); 
     },
+
+    scrollToBottom: function() {
+        this.setScrollPosition(1);
+        this.scrollBar.adjustForNewBounds(); 
+    },
     
     adjustForNewBounds: function ($super) {
         // Compute new bounds for clipMorph and scrollBar
@@ -2162,6 +2167,44 @@ SimpleModel.subclass('PromptDialog', {
         return panel;
     }
 
+});
+
+
+Model.subclass('ConsoleWidget', {
+    initialize: function($super, capacity) {
+	$super(null);
+	this.capacity = capacity;
+	this.messageBuffer = [];
+	Global.console.consumers.push(this);
+	return this;
+    },
+    
+    buildView: function(ext) {
+	this.messagePane = ListPane(new Rectangle(0, 0, ext.x, ext.y));
+	this.messagePane.connectModel({model: this, getList: "getRecentMessages"});
+	this.messagePane.innerMorph().focusHaloBorderWidth = 0;
+	this.messagePane.remove = function() {
+	    ScrollPane.prototype.remove.call(this);
+	    var index = window.console.consumers.indexOf(this);
+	    if (index >= 0)
+		window.console.consumers.splice(index);
+	}
+	return this.messagePane;
+    },
+    
+    getRecentMessages: function() {
+	return this.messageBuffer;
+    },
+
+    log: function(message) {
+	if (this.messageBuffer.length == this.capacity) {
+	    this.messageBuffer.unshift();
+	}
+	this.messageBuffer.push(message);
+	this.changed('getRecentMessages');
+	this.messagePane.scrollToBottom();
+    }
+    
 });
 
 console.log('loaded Widgets.js');

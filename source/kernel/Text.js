@@ -912,19 +912,17 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
             var txt = this.xml || this.textString;
             console.log('evaluating markup ' + txt);
             var morph = importer.importFromString(txt);
-            WorldMorph.current().addMorph(morph);
-            importer.startScripts(WorldMorph.current());
+            this.world().addMorph(morph);
+            importer.startScripts(this.world());
         }]);
-    
+	
         menu.addItem(["save as ...", function() { 
             var store = new WebStore();
 	    
             if (store) 
-		WorldMorph.current().prompt("save as...", function(filename) {
-		    if (filename) {
-			store.saveAs(filename, this.xml || this.textString);
-		    }
-		}.bind(this))
+		this.world().prompt("save as...", function(filename) {
+		    filename && store.saveAs(filename, this.xml || this.textString);
+		}.bind(this));
             else console.log('no store to save to');
         }]);
     

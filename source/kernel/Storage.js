@@ -271,7 +271,7 @@ Model.subclass('WebStore', {
         var menu = new MenuMorph([], this); 
 	if (this.CurrentResource) {
 	    var resource = this.CurrentResource;
-	    menu.addItem(['edit in separate window', function() {
+	    menu.addItem(['edit in separate window', function(evt) {
 		var textEdit = TextPane(new Rectangle(0, 0, 500, 200), "Fetching " + resource + "...").innerMorph();
 		var webStore = new WebStore();
 		
@@ -295,7 +295,7 @@ Model.subclass('WebStore', {
 
 		webStore.setCurrentResource(resource);
 		var world = WorldMorph.current();
-		world.addMorphAt(new WindowMorph(textEdit, resource), world.firstHand().lastMouseDownPoint);
+		world.addMorphAt(new WindowMorph(textEdit, resource), evt.mousePoint);
 
 
 	    }]);

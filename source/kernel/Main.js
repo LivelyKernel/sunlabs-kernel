@@ -56,14 +56,9 @@ if (Config.debugExtras && Function.installStackTracers) Function.installStackTra
 Config.showBrowser = !Config.skipMostExamples || Config.browserAnyway;
 
 function populateWorldWithExamples(world) {
-
+    
     var widget;
-
-    if (Config.showLivelyConsole) {
-        var txt = new TextMorph(pt(0,0).extent(400, 400), "");
-        world.addMorphAt(new WindowMorph(txt, "console"), pt(40, 40)); 
-        console.consumers.push({ log: function(msg) { txt.setTextString(txt.textString + msg + "\n"); }});
-    }
+    
 
     if (Config.showClock) {
         widget = new ClockMorph(pt(60, 60), 50);
@@ -334,6 +329,12 @@ function populateWorldWithExamples(world) {
             store.openIn(Config.webStoreInMain ? WorldMorph.current() : devWorld.myWorld, pt(460, 120));
         }
 
+    }
+
+    if (Config.showLivelyConsole  && window.console.consumers) {
+	world.addMorphAt(new WindowMorph((new ConsoleWidget(100)).buildView(pt(world.viewport().width, 100)), 
+					 "Console"),  
+			 new Point(0, world.viewport().height - 150));
     }
 
     if (Config.showXenoMorph) {

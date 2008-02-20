@@ -94,7 +94,10 @@ var Config = {
     // This option suspends all the scripts in a world as soon as
     // the user moves to another world.  This should really be a
     // world-specific option.
-    suspendScriptsOnWorldExit: true
+    suspendScriptsOnWorldExit: true,
+
+    // open up our console
+    showLivelyConsole: false
 
 }
 

@@ -5103,6 +5103,11 @@ PasteUpMorph.subclass("WorldMorph", {
             ["Clock", function(evt) {
                 var m = world.addMorph(new ClockMorph(evt.mousePoint, 50));
                 m.startSteppingScripts(); }],
+
+	    ["Console", function(evt) {
+		world.addMorphAt(new WindowMorph(new ConsoleWidget(100).buildView(pt(800, 100)), "Console"),  
+				 evt.mousePoint);
+	    }],
             ["FrameRateMorph", function(evt) {
                 var m = world.addMorph(new FrameRateMorph(evt.mousePoint.extent(pt(160, 10)), "FrameRateMorph"));
                 m.startSteppingScripts(); }]
@@ -5122,7 +5127,7 @@ PasteUpMorph.subclass("WorldMorph", {
         var fill = this.getFill();
         this.setFill(Color.black); // poor man's modal dialog
 
-        var menu = new MenuMorph([["OK", function() { console.log("this is " + this) ; this.world().setFill(fill); this.remove() }]]);
+        var menu = new MenuMorph([["OK", function() { this.world().setFill(fill); this.remove() }]]);
         menu.onMouseUp = function(/*...*/) { 
             if (!this.stayUp) this.world().setFill(fill); // cleanup
             MenuMorph.prototype.onMouseUp.apply(this, arguments);
