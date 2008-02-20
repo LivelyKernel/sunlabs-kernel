@@ -85,7 +85,7 @@ Model.subclass('SimpleBrowser', {
 	    }
 	}
 	if (Loader.isLoadedFromNetwork && SourceControl == null) {
-            menu.addItem(['scan source files', function() {
+            menu.addItem(['load source files', function() {
                 	SourceControl = new SourceDatabase(new Rectangle(100, 100, 200, 50));
 			WorldMorph.current().addMorph(SourceControl);
 			WorldMorph.current().firstHand().setMouseFocus(null);
@@ -800,6 +800,9 @@ Object.subclass('FileParser', {
 	//	the view would just be a list of items <lineNo>: <1st 40 chars>...
     
     parseFile: function(fname, fstr, db) {
+	// Scans the file and returns changeList -- a list of informal divisions of the file
+	// It should be the case that these, in order, exactly contain all the text of the file
+	// Note that if db, a SourceDatabase, is supplied, it will be loaded during the scan
 	this.verbose = false;
 	this.fileName = fname;
 	this.str = fstr;
@@ -807,6 +810,7 @@ Object.subclass('FileParser', {
 	this.sourceDB = db;
 	this.ptr = 0;
 	this.lineNo = 0;
+	this.changeList = [];
 	if (this.verbose) console.log("Parsing " + this.fileName + ", length = " + len);
 	while (this.ptr < len) {
 	    var line = this.nextLine(this.str);
@@ -819,7 +823,8 @@ Object.subclass('FileParser', {
 	    }
 	}
 	this.processCurrentDef();
-	if (this.verbose) console.log("done");
+	console.log(this.filename + " scanned; " + this.changeList.length + " patches identified.");
+	return this.changeList;
     },
     scanComment: function(line) {
 	if (line.match(/^[\s]*\/\//) ) {
@@ -842,7 +847,7 @@ Object.subclass('FileParser', {
 	if (match == null)  return false;
 	this.processCurrentDef();
 	console.log("Class def: " + match[1] + "." + match[2]);
-	this.currentDef = {type: "classDef", name: match[2], startPos: this.ptr};
+	this.currentDef = {type: "classDef", name: match[2], startPos: this.ptr, lineNo: this.lineNo};
 	return true;
     },
     scanMethodDef: function(line) {
@@ -850,7 +855,7 @@ Object.subclass('FileParser', {
 	if (match == null) return false;
 	this.processCurrentDef();
 	console.log("Method def: " + this.currentClassName + "." + match[1]);
-	this.currentDef = {type: "methodDef", name: match[1], startPos: this.ptr};
+	this.currentDef = {type: "methodDef", name: match[1], startPos: this.ptr, lineNo: this.lineNo};
 	return true;
     },
     processCurrentDef: function() {
@@ -861,12 +866,13 @@ Object.subclass('FileParser', {
 	if (def == null) return;
 	if (def.type == "classDef") {
 		this.currentClassName = def.name;
-		this.sourceDB.methodDictFor(this.currentClassName)["*definition"] =
+		if(this.sourceDB) this.sourceDB.methodDictFor(this.currentClassName)["*definition"] =
 			{fileName: this.fileName, startPos: def.startPos, endPos: this.ptr-1};
 	} else if (def.type == "methodDef") {
-		this.sourceDB.methodDictFor(this.currentClassName)[def.name] =
+		if(this.sourceDB) this.sourceDB.methodDictFor(this.currentClassName)[def.name] =
 			{fileName: this.fileName, startPos: def.startPos, endPos: this.ptr-1};
 	}
+	this.changeList.push(this.currentDef);
 	this.currentDef = null;
     },
     scanBlankLine: function(line) {
@@ -897,6 +903,57 @@ Object.subclass('FileParser', {
     }
     
 });
+
+// ===========================================================================
+// ChangeList Browser
+// ===========================================================================
+
+Model.subclass('ChangeListBrowser', {
+
+    initialize: function($super, fn, contents, changes) {
+        $super();
+        this.fileName = fn;
+        this.fileContents = contents;
+        this.patchList = changes;
+    },
+
+    getChangeList: function() { return this.changeList; },
+
+    setPatchString: function(n, v) { this.patchName = n; this.changed("getPatchText", v) },
+
+    getPatchText: function() {
+        if (this.selectedItem() == null) return "-----";
+        return Object.inspect(this.selectedItem()).withDecimalPrecision(2);
+    },
+
+    setPatchText: function(txt, v) { this.inspectee[this.propName] = eval(this, this.inspectee); },
+
+    selectedItem: function() { return this.inspectee[this.propName]; },
+
+    openIn: function(world, location) {
+        var rect = (location || pt(50,50)).extent(pt(400,250));
+        var window = this.buildView(rect);
+        world.addMorph(window);
+        this.changed('getChangeList');
+    },
+
+    open: function() { return this.openIn(WorldMorph.current()); },
+
+    buildView: function(rect) {
+        var panel = PanelMorph.makePanedPanel(rect.extent(), [
+            ['topPane', ListPane, new Rectangle(0, 0, 1, 0.5)],
+            ['bottomPane', TextPane, new Rectangle(0, 0.5, 1, 1)]
+        ]);
+        var m = panel.topPane;
+        m.connectModel({model: this, getList: "getPatchList", setSelection: "setPatchString"});
+        m = panel.bottomPane;
+        m.connectModel({model: this, getText: "getPatchText", setText: "setPatchText"});
+
+       return new WindowMorph(panel, 'ChangeList for ' + this.fileName);
+    }
+
+});
+
 
 console.log('loaded Tools.js');
 

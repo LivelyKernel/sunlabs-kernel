@@ -348,6 +348,21 @@ Model.subclass('WebStore', {
         return panel;
     },
         
+    getFileMenu: function() {
+	var menu = new MenuMorph([], this); 
+	var fileName = this.CurrentResource;
+	if (fileName) {
+	    var contents = this.getCurrentResourceContents();
+	    console.log("fileName = " + fileName + "; contents.length = " + contents.length);
+            if (contents && contents.length > 0) {
+		menu.addItem(['open a changeList browser', function(evt) {
+                	var changeList = new FileParser(fileName, contents);
+			new ChangeListBrowser(fileName, contents, changeList).openIn(this.world(), evt.mousePoint); }]);
+	    }
+	}
+	return menu; 
+    },
+
     openIn: function(world, loc) {
         if (!loc) loc = world.bounds().center();
         console.log('opening web store at %s', loc);
