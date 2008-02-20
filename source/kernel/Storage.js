@@ -260,6 +260,44 @@ Model.subclass('WebStore', {
     setCurrentResourceContents: function(contents) {
         console.log('TODO: set contents to %s', contents);
     },
+
+    getResourceMenu: function() {
+        var menu = new MenuMorph([], this); 
+	if (this.CurrentResource) {
+	    var resource = this.CurrentResource;
+	    menu.addItem(['edit in separate window', function() {
+		var textEdit = TextPane(new Rectangle(0, 0, 500, 200), "Fetching " + resource + "...").innerMorph();
+		var webStore = new WebStore();
+		
+		textEdit.connectModel({model: webStore, getText: "getCurrentResourceContents"});
+
+		textEdit.processCommandKeys = function(key) {
+		    if (key == 's') {
+			if (webStore.CurrentResourceContents.length > TextMorph.prototype.maxSafeSize) {
+			    this.world().alert("not saving file, size " + webStore.CurrentResourceContents.length 
+					       + " > " + TextMorph.prototype.maxSafeSize + ", too large");
+			} else {
+			    webStore.CurrentResourceContents = this.textString;
+			    webStore.save(webStore.currentResourceURL(), this.textString, "LastWriteStatus");
+			}
+			return true;
+		    } else {
+			return TextMorph.prototype.processCommandKeys.call(this, key);
+		    }
+		}
+
+		webStore.setCurrentResource(resource);
+		var world = WorldMorph.current();
+		world.addMorphAt(new WindowMorph(textEdit, resource), world.firstHand().lastMouseDownPoint);
+
+
+	    }]);
+		
+	}
+	return menu; 
+    },
+
+
     
     buildView: function(extent) {
         var panel = PanelMorph.makePanedPanel(extent, [
@@ -271,7 +309,8 @@ Model.subclass('WebStore', {
 				     setSelection: "setCurrentDirectory", 
 				     getSelection: "getCurrentDirectory"});
         var m = panel.rightPane;
-        m.connectModel({model: this, getList: "getCurrentDirectoryContents", setSelection: "setCurrentResource"});
+        m.connectModel({model: this, getList: "getCurrentDirectoryContents", setSelection: "setCurrentResource", 
+			getMenu: "getResourceMenu"});
         var oldpress = m.innerMorph().onKeyPress;
         m.innerMorph().onKeyPress = function(evt) {
             if (evt.getKeyCode() == Event.KEY_BACKSPACE) { // Replace the selection after checking for type-ahead

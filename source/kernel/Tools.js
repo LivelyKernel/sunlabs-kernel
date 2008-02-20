@@ -712,7 +712,8 @@ TextMorph.subclass('SourceDatabase', {
 	// You may further choose to load that project, which will read in all the code,
 	// and prepare the system to record and possibly write out any changes made to 
 	// that project
-    initialize: function($super, rect) {	$super(rect, "Source Scanner");
+    initialize: function($super, rect) {
+	$super(rect, "Source Scanner");
 	this.methodDicts = {};
 	this.cachedFullText = {};
     },

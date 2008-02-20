@@ -22,7 +22,7 @@ Object.subclass('Location', {
 	var pathSplitter = new RegExp("([^\\?#]*)(\\?[^#]*)?(#.*)?");
 	
 	return function(url) {
-	    console.log('got url ' + url);
+	    //console.log('got url ' + url);
 	    var result = url.match(urlSplitter);
 	    this.protocol = result[1]; 
 	    if (!result[1]) throw new Error("bad url " + url + ", " + result);
