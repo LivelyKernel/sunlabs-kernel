@@ -5112,7 +5112,11 @@ PasteUpMorph.subclass("WorldMorph", {
         }
         new MenuMorph(items, this).openIn(this.world(), evt.mousePoint);
     },
-
+    
+    viewport: function() {
+	var vp = this.itsCanvas.viewport;
+	return new Rectangle(vp.x, vp.y, vp.width, vp.height);
+    },
 
     alert: function(format) {
         var fill = this.getFill();
@@ -5126,7 +5130,7 @@ PasteUpMorph.subclass("WorldMorph", {
 	var args = $A(arguments);
 	var fmt = args.shift() || "";
 	
-        menu.openIn(this, this.bounds().center(), true, fmt.formatFromArray(args)); 
+        menu.openIn(this, this.viewport().center(), true, fmt.formatFromArray(args)); 
         menu.scaleBy(2.5);
     }.logErrors('alert'),
 

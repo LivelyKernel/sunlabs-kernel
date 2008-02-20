@@ -121,7 +121,7 @@ Model.subclass('WebStore', {
                 // store[optModelVariable] = transport.status;
 		if (optModelVariable !== undefined) {
                     store.changed("get" + optModelVariable);
-                    console.log('success deleting:  ' + (transport.responseXML || transport.responseText));
+                    console.log('success deleting ' + url);
 		}
             },
 	    
@@ -145,10 +145,11 @@ Model.subclass('WebStore', {
             requestHeaders: { "Depth": depth },
     
             onFailure: function(transport) {
+		var world = WorldMorph.current();
 		if (transport.status == 401) { // reauthenticate
-		    WorldMorph.current().alert("authentication required for PROPFIND %s", url);
+		    world.alert("authentication required for PROPFIND %s", url);
 		} else {
-                    WorldMorph.current().alert("%s: failure %s url %s", transport, transport.status, url);
+                    world.alert("%s: failure %s url %s", transport, transport.status, url);
 		}
             },
     
@@ -239,11 +240,16 @@ Model.subclass('WebStore', {
         }
     },
     
-    currentResourceURL: function() {
-        if (!this.CurrentResource) return this.protocol + "://" + this.host;
+    
+    resourceURL: function(resource) {
+        if (!resource) return this.protocol + "://" + this.host;
         else return "%s://%s%s%s".format(this.protocol, this.host, 
-                    this.CurrentResource.startsWith('/') ? "": "/", 
-                    this.CurrentResource);
+					 resource.startsWith('/') ? "": "/", 
+					 resource);
+    },
+    
+    currentResourceURL: function() {
+	return this.resourceURL(this.CurrentResource);
     },
     
     currentDirectoryURL: function() {
@@ -258,7 +264,7 @@ Model.subclass('WebStore', {
     },
     
     setCurrentResourceContents: function(contents) {
-        console.log('TODO: set contents to %s', contents);
+	this.CurrentResourceContents = contents;
     },
 
     getResourceMenu: function() {
@@ -270,6 +276,7 @@ Model.subclass('WebStore', {
 		var webStore = new WebStore();
 		
 		textEdit.connectModel({model: webStore, getText: "getCurrentResourceContents"});
+		//textEdit.owner.setBorderWidth(2);
 
 		textEdit.processCommandKeys = function(key) {
 		    if (key == 's') {
@@ -315,11 +322,11 @@ Model.subclass('WebStore', {
         m.innerMorph().onKeyPress = function(evt) {
             if (evt.getKeyCode() == Event.KEY_BACKSPACE) { // Replace the selection after checking for type-ahead
 		var toDelete  = this.itemList[this.selectedLineNo()];
-                var result = this.world().confirm("delete resource " + toDelete,
+                var result = this.world().confirm("delete resource " + model.resourceURL(toDelete),
 		    function(result) {
 			if (result) {
-			    model.deleteResource(toDelete, "CurrentDirectoryContents");
-			    
+			    model.deleteResource(model.resourceURL(toDelete), "CurrentDirectoryContents");
+			    model.setCurrentDirectory(model.setCurrentDirectory());
 			} else console.log("cancelled deletion of " + toDelete);
 		    });
                 evt.stop();
@@ -337,7 +344,7 @@ Model.subclass('WebStore', {
                     this.world().alert("not saving file, size " + model.CurrentResourceContents.length 
                         + " > " + TextMorph.prototype.maxSafeSize + ", too large");
                 } else {
-                    model.CurrentResourceContents = this.textString;
+                    model.setCurrentResourceContents(this.textString);
                     model.save(model.currentResourceURL(), this.textString, "LastWriteStatus");
                 }
                 return true;
