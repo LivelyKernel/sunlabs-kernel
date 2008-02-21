@@ -2176,22 +2176,48 @@ Model.subclass('ConsoleWidget', {
 	this.capacity = capacity;
 	this.messageBuffer = [];
 	Global.console.consumers.push(this);
+	this.ctx = {};
 	return this;
     },
     
     buildView: function(ext) {
-	this.messagePane = ListPane(new Rectangle(0, 0, ext.x, ext.y));
-	this.messagePane.connectModel({model: this, getList: "getRecentMessages"});
-	this.messagePane.innerMorph().focusHaloBorderWidth = 0;
-	this.messagePane.remove = function() {
+	var panel = new PanelMorph(ext);
+	var evalHeight = 15;
+	var messagePane = ListPane(new Rectangle(0, 0, ext.x, ext.y - evalHeight));
+	messagePane.connectModel({model: this, getList: "getRecentMessages"});
+	messagePane.innerMorph().focusHaloBorderWidth = 0;
+	messagePane.remove = function() {
 	    ScrollPane.prototype.remove.call(this);
 	    var index = window.console.consumers.indexOf(this);
 	    if (index >= 0)
 		window.console.consumers.splice(index);
 	}
-	return this.messagePane;
+	messagePane.innerMorph().updateList = function(list) {
+	    CheapListMorph.prototype.updateList.call(this, list);
+	    messagePane.scrollToBottom();
+	};
+
+	panel.addMorph(messagePane);
+	var line = panel.addMorph(new TextMorph(new Rectangle(0, ext.y - evalHeight, ext.x, evalHeight), " ")).beInputLine();
+	line.connectModel({model: this, setText: "evalCommand", getText: "getLastCommand"});
+	
+	return panel;
     },
     
+    getLastCommand: function() {
+	return ""; // the last command is null (this clears the command line after an eval)
+    },
+
+    evalCommand: function(text) {
+	if (!text) return;
+	try {
+	    this.log((function() { return eval(text) }).bind(this.ctx)());
+	    this.changed('getLastCommand');
+	} catch (er) {
+	    console.log("Evaluation error: "  + er);
+	}
+    },
+
     getRecentMessages: function() {
 	return this.messageBuffer;
     },
@@ -2202,7 +2228,6 @@ Model.subclass('ConsoleWidget', {
 	}
 	this.messageBuffer.push(message);
 	this.changed('getRecentMessages');
-	this.messagePane.scrollToBottom();
     }
     
 });

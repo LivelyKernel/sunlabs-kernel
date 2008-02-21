@@ -370,7 +370,7 @@ Object.subclass('Feed', {
 
     buildView: function() {
         var extent = pt(500, 200);
-        var panel = new PanelMorph(extent, "rect");
+        var panel = new PanelMorph(extent);
         panel.addMorph = panel.addMorph.logCalls();
         panel.setFill(Color.blue.lighter().lighter());
         panel.setBorderWidth(2);

@@ -878,7 +878,6 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
                 return TextMorph.prototype.onKeyPress.call(this, evt);
             }
         };
-	this.autoAccept = true;
         this.okToBeGrabbedBy = function(evt) { return null; }
         return this;
     },
@@ -1071,6 +1070,8 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
 
     fitHeight: function() { //Returns true iff height changes
         // Wrap text to bounds width, and set height from total text height
+	if (this.textString.length <= 0) 
+	    return;
         var jRect = this.getCharBounds(this.textString.length - 1);
     
         if (jRect == null) { 
@@ -1147,7 +1148,6 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
         NodeList.clear(this.rawSelectionNode);
     },
 
-    // FIXME (Safari draws its own selection)
     drawSelection: function() { // should really be called buildSelection now
         if (!this.showsSelectionWithoutFocus() && this.takesKeyboardFocus() && !this.hasKeyboardFocus) {
             return;
@@ -1166,7 +1166,8 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
         }
         
         if (jRect == null) {
-            console.log("text box failure in drawSelection index = " + this.selectionRange[0]); 
+	    if (this.textString.length > 0)
+		console.log("text box failure in drawSelection index = " + this.selectionRange[0]); 
             return;
         }
     

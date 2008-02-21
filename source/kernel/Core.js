@@ -163,7 +163,7 @@ Object.extend(String.prototype, {
             log: function() {
                 var args = $A(arguments);
                 var rcv = args.shift();
-                this.consumers.invoke('log', rcv.formatFromArray(args));
+                this.consumers.invoke('log', String(rcv).formatFromArray(args));
             },
     
             assert: function(expr, msg) {
