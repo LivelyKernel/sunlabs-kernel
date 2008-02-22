@@ -332,9 +332,10 @@ function populateWorldWithExamples(world) {
     }
 
     if (Config.showLivelyConsole  && window.console.consumers) {
-	world.addMorphAt(new WindowMorph((new ConsoleWidget(100)).buildView(pt(world.viewport().width, 100)), 
+	world.addMorphAt(new WindowMorph((new ConsoleWidget(140)).buildView(pt(world.viewport().width, 160)), 
 					 "Console"),  
-			 new Point(0, world.viewport().height - 150));
+			 new Point(0, world.viewport().height - 190));
+	
     }
 
     if (Config.showXenoMorph) {

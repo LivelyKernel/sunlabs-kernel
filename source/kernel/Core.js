@@ -151,13 +151,13 @@ Object.extend(String.prototype, {
             warn: function() {
                 var args = $A(arguments);
                 var rcv = args.shift();
-                this.consumers.invoke('log', "Warn: " + rcv.formatFromArray(args));
+                this.consumers.invoke('log', "Warn: " + String(rcv).formatFromArray(args));
             },
 
             info: function() {
                 var args = $A(arguments);
                 var rcv = args.shift();
-                this.consumers.invoke('log', "Info: " + rcv.formatFromArray(args));
+                this.consumers.invoke('log', "Info: " + String(rcv).formatFromArray(args));
             },
     
             log: function() {
@@ -1574,7 +1574,7 @@ var Event = (function() {
         initialize: function(rawEvent) {
             this.rawEvent = rawEvent;
             this.type = capitalizer[rawEvent.type] || rawEvent.type;
-            this.charCode = rawEvent.charCode;
+            //this.charCode = rawEvent.charCode;
 
             if (isMouse(rawEvent)) {
                 var x = rawEvent.pageX || rawEvent.clientX;
@@ -1636,7 +1636,8 @@ var Event = (function() {
         },
 
         toString: function() {
-            return "#<Event: " + this.type + (this.mousePoint ?  "@" + this.mousePoint : "") +  ">";
+	    return "#<Event:%s%s%s>".format(this.type, this.mousePoint ?  "@" + this.mousePoint : "",
+					    this.getKeyCode() || "");
         },
 
         setButtonPressedAndPriorPoint: function(buttonPressed, priorPoint) {
@@ -1664,7 +1665,12 @@ var Event = (function() {
                 }
             }
             return this.rawEvent.keyCode;
-        }
+        },
+
+	getKeyChar: function() {
+	    var id = this.rawEvent.charCode || this.getKeyCode();
+	    return id ? String.fromCharCode(id) : null;
+	}
 
     });
 
@@ -5445,7 +5451,7 @@ Morph.subclass("HandMorph", function() {
 
     transformTopMorph: function(evt) {
         var m = this.topSubmorph();
-        switch (String.fromCharCode(evt.charCode)) {
+        switch (evt.getKeyChar()) {
         case '>':
             m.setScale(m.getScale()*1.1);
             evt.stop();

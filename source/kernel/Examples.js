@@ -2209,7 +2209,7 @@ ClipMorph.subclass("GameMorph", {
 
   function keyDown(event) {
 
-      var key = event.getKeyCode() || event.charCode;
+      var key = event.getKeyCode() || event.rawEvent.charCode;
 
     // Check if any cursor keys have been pressed and set flags.
 
@@ -2317,7 +2317,7 @@ ClipMorph.subclass("GameMorph", {
 
   function keyUp(event) {
 
-      var key = event.getKeyCode() || event.charCode;
+      var key = event.getKeyCode() || event.rawEvent.charCode;
 
     // Check if any cursor keys where released and set flags.
 
@@ -4493,7 +4493,7 @@ ClipMorph.subclass("CanvasScapeMorph", {
 
     keyDown: function(event) {
 
-        var key = event.getKeyCode() || event.charCode;
+        var key = event.getKeyCode() || event.rawEvent.charCode;
       
         // Check if any cursor keys have been pressed and set flags.      
         if (key == Event.KEY_LEFT)
@@ -4510,7 +4510,7 @@ ClipMorph.subclass("CanvasScapeMorph", {
     },
       
     keyUp: function(event) {
-        var key = event.getKeyCode() || event.charCode;
+        var key = event.getKeyCode() || event.rawEvent.charCode;
     
         // Check if any cursor keys have been pressed and set flags.
         if (key == Event.KEY_LEFT)

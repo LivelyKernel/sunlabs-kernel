@@ -870,13 +870,21 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
 
     beInputLine: function() {
         //this.setWrapStyle(WrapStyle.NONE);
-        this.onKeyPress = function(evt) {
-            if (evt.getKeyCode() == Event.KEY_RETURN) {
-                this.saveContents(this.textString);
-                return true;
-            } else {
-                return TextMorph.prototype.onKeyPress.call(this, evt);
-            }
+        this.onKeyDown = function(evt) {
+	    switch (evt.getKeyCode()) {
+	    case Event.KEY_DOWN: // hook up to history?
+		evt.stop();
+		return true;
+	    case Event.KEY_UP:  // hook up to history
+		evt.stop();
+		return true;
+	    case Event.KEY_RETURN:
+		this.saveContents(this.textString);
+		evt.stop();
+		return true;
+	    default:
+		return TextMorph.prototype.onKeyDown.call(this, evt);
+	    }
         };
         this.okToBeGrabbedBy = function(evt) { return null; }
         return this;
@@ -1035,7 +1043,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
 
     // find what line contains the y value in character metric space
     lineForY: function(y) {
-        if (this.lines.length < 1 || y < this.lines[0].getTopY()) return null;
+        if (!this.lines || this.lines.length < 1 || y < this.lines[0].getTopY()) return null;
     
         for (var i = 0; i < this.lines.length; i++) {
             line = this.lines[i];
@@ -1432,7 +1440,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
         // cleanup: separate BS logic, diddle selection range and use replaceSelectionWith()
         if (evt.isAltDown() && UserAgent.isWindows) {
             //AltGr pressed
-            var replacement = (String.fromCharCode(evt.charCode)).toLowerCase();
+            var replacement = evt.getKeyChar().toLowerCase();
             this.processCommandKeys(replacement);
             evt.stop();
         }
@@ -1445,11 +1453,8 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
             evt.stop(); // do not use for browser navigation
             return;
         } else if (!evt.isAltDown()) {
-            if (evt.charCode && evt.charCode < 63200) { // account for Safari's keypress codes 
-                var replacement = String.fromCharCode(evt.charCode);
-                this.replaceSelectionWith(replacement); 
-                evt.stop(); // done
-            }
+            this.replaceSelectionWith(evt.getKeyChar()); 
+            evt.stop(); // done
         }
     },
     
