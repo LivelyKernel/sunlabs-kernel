@@ -2692,6 +2692,7 @@ Morph = Visual.subclass("Morph", {
     },
 
     deserialize: function(importer, rawNode) {
+
         // FIXME what if id is not unique?
         importer.addMapping(rawNode.getAttribute("id"), this); 
         this.internalInitialize(rawNode);

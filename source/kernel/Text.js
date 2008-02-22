@@ -861,7 +861,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
         this.setBorderWidth(0);
         this.setFill(null);
         this.setWrapStyle(WrapStyle.SHRINK);
-        // morph.isAccepting = false;
+        // this.isAccepting = false;
         this.ignoreEvents();
         this.layoutChanged();
         this.okToBeGrabbedBy = function(evt) {  return null; }
@@ -886,8 +886,17 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
 		return TextMorph.prototype.onKeyDown.call(this, evt);
 	    }
         };
-        this.okToBeGrabbedBy = function(evt) { return null; }
-        return this;
+        this.okToBeGrabbedBy = function(evt) { return null; };
+	this.updateView = function(aspect, controller) {
+	    TextMorph.prototype.updateView.call(this, aspect, controller);
+	    // select the whole thing
+	    if (this.modelPlug) {
+		if (aspect == this.modelPlug.getText  || aspect == 'all') {
+		    this.setSelectionRange(0, this.textString.length); 
+		}
+	    }
+	};
+	return this;
     },
 
     beHelpBalloonFor: function(targetMorph) {
@@ -1429,7 +1438,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
 
         // have to process commands in keydown...
         if (evt.isAltDown()) {
-            var replacement = (String.fromCharCode(evt.getKeyCode())).toLowerCase();
+            var replacement = evt.getKeyChar().toLowerCase();
             if (this.processCommandKeys(replacement)) evt.stop();
         }
     },
@@ -1644,8 +1653,9 @@ TextMorph.addMethods({
     updateView: function(aspect, controller) {
         var p = this.modelPlug;
         if (p) {
-            if (aspect == p.getText  || aspect == 'all') this.updateTextString(this.getModelText());
-
+            if (aspect == p.getText  || aspect == 'all') {
+		this.updateTextString(this.getModelText());
+	    }
             // if (aspect == p.getSelection) this.searchForMatch(this.getModelSelection());
             return;
         }

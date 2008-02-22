@@ -164,7 +164,7 @@ Morph.subclass("ButtonMorph", {
         return false;
     },
 
-    addLabel: function(txt) {
+    setLabel: function(txt) {
 	this.label && this.label.remove();
 	// FIXME remove random values
 	var l = this.label = new TextMorph(new Rectangle(0, 0, 50, 20), txt).beLabel();
@@ -752,6 +752,7 @@ Morph.subclass('WindowMorph', {
         this.takeHighlight();
         return this; 
     },
+
 
     takeHighlight: function() {
         // I've been clicked on.  unhighlight old top, and highlight me
@@ -2049,24 +2050,30 @@ Morph.subclass('XenoMorph', {
 
 });
 
-SimpleModel.subclass('ConfirmDialog', {
+SimpleModel.subclass('Dialog', {
+
+    inset: 10,
+
+
+});
+
+Dialog.subclass('ConfirmDialog', {
     
     initialize: function($super, message, callback) {
-	$super(null, 'Yes', 'No');
-	this.message = message;
-	this.callback = callback;
+	$super(null, 'Yes', 'No', 'Message');
+	this.setMessage(message);
+	this.callback = callback || function(result) { console.log("Confirmed? " + result) };
     },
     
-    
     openIn: function(world, location) {
-        var view = this.buildView(this.message, this.callback);
+        var view = this.buildView(this.getMessage());
         world.addMorphAt(view, location);
-	world.hands[0].setMouseFocus(view.inputLine);
-	world.hands[0].setKeyboardFocus(view.inputLine);
+	world.firstHand().setMouseFocus(view.inputLine);
+	world.firstHand().setKeyboardFocus(view.inputLine);
         return view;
     },
     
-    buildView: function() {
+    buildView: function(message) {
 	var extent = pt(300, 90);
         var panel = new PanelMorph(extent);
         panel.linkToStyles(['widgetPanel']);
@@ -2074,31 +2081,27 @@ SimpleModel.subclass('ConfirmDialog', {
 	this.setNo = function(value) {
 	    if (value)  {
 		panel.owner && panel.remove();
-		this.callback && this.callback.call(Global, false);
+		this.callback.call(Global, false);
 	    }
 	}
 
 	this.setYes = function(value) {
 	    if (value)  {
 		panel.owner && panel.remove();
-		this.callback && this.callback.call(Global, true);
+		this.callback.call(Global, true);
 	    }
 	}
 
-        panel.connectModel({model: this});
+	var r = new Rectangle(this.inset, this.inset, extent.x - 2*this.inset, 30);
+	var label = panel.addMorph(new TextMorph(r, message).beLabel());
+
+    	var indent = extent.x - 2*70 - 3*this.inset;
+	r = new Rectangle(r.x + indent, r.maxY() + this.inset, 70, 30);
+	var yesButton = panel.addMorph(new ButtonMorph(r)).setLabel("Yes");
 	
-	var inset = 10;
-	var r = new Rectangle(inset, inset, extent.x - 2*inset, 30);
-	var label = panel.addMorph(new TextMorph(r, this.message).beLabel());
-
-
-	var indent = extent.x - 2*70 - 3*inset;
-	r = new Rectangle(r.x + indent, r.maxY() + inset, 70, 30);
-	var yesButton = panel.addMorph(new ButtonMorph(r)).addLabel("Yes");
-
 	yesButton.connectModel({model: this, setValue: "setYes"});
-        r = new Rectangle(r.maxX() + inset, r.y, 70, 30);
-	var noButton = panel.addMorph(new ButtonMorph(r)).addLabel("No");
+        r = new Rectangle(r.maxX() + this.inset, r.y, 70, 30);
+	var noButton = panel.addMorph(new ButtonMorph(r)).setLabel("No");
         noButton.connectModel({model: this, setValue: "setNo"});
         return panel;
     }
@@ -2107,24 +2110,23 @@ SimpleModel.subclass('ConfirmDialog', {
 
 
 
-SimpleModel.subclass('PromptDialog', {
+Dialog.subclass('PromptDialog', {
     
     initialize: function($super, message, callback) {
-	$super(null, 'Text', 'OKValue', 'CancelValue');
-	this.message = message;
-	this.callback = callback;
+	$super(null, 'Input', 'OKValue', 'CancelValue', 'Message');
+	this.setMessage(message);
+	this.callback = callback || function(result) { console.log("Input: " + result) };
     },
     
-    
     openIn: function(world, location) {
-        var view = this.buildView(this.message, this.callback);
+        var view = this.buildView(this.getMessage());
         world.addMorphAt(view, location);
-	world.hands[0].setMouseFocus(view.inputLine);
-	world.hands[0].setKeyboardFocus(view.inputLine);
+	world.firstHand().setMouseFocus(view.inputLine);
+	world.firstHand().setKeyboardFocus(view.inputLine);
         return view;
     },
     
-    buildView: function() {
+    buildView: function(message) {
 	var extent = pt(300, 130);
         var panel = new PanelMorph(extent);
         panel.linkToStyles(['widgetPanel']);
@@ -2132,36 +2134,34 @@ SimpleModel.subclass('PromptDialog', {
 	this.setCancelValue = function(value) {
 	    if (value)  {
 		panel.owner && panel.remove();
-		this.callback && this.callback.call(Global, null);
+		this.callback.call(Global, null);
 	    }
 	}
 
 	this.setOKValue = function(value) {
 	    if (value)  {
 		panel.owner && panel.remove();
-		this.callback && this.callback.call(Global, this.Text);
+		this.callback.call(Global, this.getInput());
 	    }
 	}
 
-        panel.connectModel({model: this});
-	
-	var inset = 10;
-	var r = new Rectangle(inset, inset, extent.x - 2*inset, 30);
-	var label = panel.addMorph(new TextMorph(r, this.message).beLabel());
+	var r = new Rectangle(this.inset, this.inset, extent.x - 2*this.inset, 30);
+	var label = panel.addMorph(new TextMorph(r, message).beLabel());
 
-	r = new Rectangle(r.x, r.maxY() + inset, r.width, r.height);
+	r = new Rectangle(r.x, r.maxY() + this.inset, r.width, r.height);
 
 	panel.inputLine = panel.addMorph(new TextMorph(r, "").beInputLine());
+	panel.inputLine.autoAccept = true;
 	
-	panel.inputLine.connectModel({model: this, getText: "getText", setText: "setText"});
+	panel.inputLine.connectModel({model: this, getText: "getInput", setText: "setInput"});
 	
-	var indent = extent.x - 2*70 - 3*inset;
-	r = new Rectangle(r.x + indent, r.maxY() + inset, 70, 30);
-	var okButton = panel.addMorph(new ButtonMorph(r)).addLabel("OK");
+	var indent = extent.x - 2*70 - 3*this.inset;
+	r = new Rectangle(r.x + indent, r.maxY() + this.inset, 70, 30);
+	var okButton = panel.addMorph(new ButtonMorph(r)).setLabel("OK");
 
 	okButton.connectModel({model: this, setValue: "setOKValue"});
-        r = new Rectangle(r.maxX() + inset, r.y, 70, 30);
-	var cancelButton = panel.addMorph(new ButtonMorph(r)).addLabel("Cancel");
+        r = new Rectangle(r.maxX() + this.inset, r.y, 70, 30);
+	var cancelButton = panel.addMorph(new ButtonMorph(r)).setLabel("Cancel");
         cancelButton.connectModel({model: this, setValue: "setCancelValue"});
 	
         return panel;
@@ -2177,33 +2177,35 @@ Model.subclass('ConsoleWidget', {
 	this.messageBuffer = [];
 	this.commandBuffer = [];
 	Global.console.consumers.push(this);
-	this.ctx = {};
+	this.ctx = { // conveniences
+	    W: function() { return WorldMorph.current() }
+	};
 	return this;
     },
     
-    buildView: function(ext) {
-	var panel = new PanelMorph(ext);
-	var evalHeight = 15;
-	var messagePane = ListPane(new Rectangle(0, 0, ext.x, ext.y - evalHeight));
-	messagePane.connectModel({model: this, getList: "getRecentMessages"});
-	messagePane.innerMorph().focusHaloBorderWidth = 0;
-	messagePane.innerMorph().updateList = function(list) {
-	    CheapListMorph.prototype.updateList.call(this, list);
-	    messagePane.scrollToBottom();
-	};
+    buildView: function(extent) {
+	var panel = PanelMorph.makePanedPanel(extent, [
+            ['messagePane', ListPane, new Rectangle(0, 0, 1, 0.8)],
+            ['commandLine', TextMorph, new Rectangle(0, 0.8, 1, 0.2)]
+        ]);
 	
-	messagePane.remove = function() {
+	var m = panel.messagePane;
+	m.connectModel({model: this, getList: "getRecentMessages"});
+	m.innerMorph().focusHaloBorderWidth = 0;
+	m.innerMorph().updateList = function(list) {
+	    CheapListMorph.prototype.updateList.call(this, list);
+	    panel.messagePane.scrollToBottom();
+	};
+	m.remove = function() {
 	    ScrollPane.prototype.remove.call(this);
 	    var index = window.console.consumers.indexOf(this);
 	    if (index >= 0)
 		window.console.consumers.splice(index);
 	};
 	
-
-	panel.addMorph(messagePane);
-	var line = panel.addMorph(new TextMorph(new Rectangle(0, ext.y - evalHeight, ext.x, evalHeight), " ")).beInputLine();
-	line.connectModel({model: this, setText: "evalCommand", getText: "getLastCommand"});
-	
+	m = panel.commandLine;
+	m.beInputLine();
+	m.connectModel({model: this, setText: "evalCommand", getText: "getLastCommand" });
 	return panel;
     },
     

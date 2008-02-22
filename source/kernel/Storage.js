@@ -321,7 +321,9 @@ Model.subclass('WebStore', {
         var oldpress = m.innerMorph().onKeyPress;
         m.innerMorph().onKeyPress = function(evt) {
             if (evt.getKeyCode() == Event.KEY_BACKSPACE) { // Replace the selection after checking for type-ahead
+		
 		var toDelete  = this.itemList[this.selectedLineNo()];
+		var toDelete2 = this.getSelection();
                 var result = this.world().confirm("delete resource " + model.resourceURL(toDelete),
 		    function(result) {
 			if (result) {
