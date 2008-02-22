@@ -2199,17 +2199,10 @@ ClipMorph.subclass("GameMorph", {
 /*
  * The game morph and event handlers
  */
-  /* Keycodes */
-
-  var KEY_S = 83; // Start
-  var KEY_M = 77; // Mute
-  var KEY_D = 68; // Detail
-  var KEY_P = 80; // Pause
-  var KEY_H = 72; // Hyperspace
 
   function keyDown(event) {
 
-      var key = event.getKeyCode() || event.rawEvent.charCode;
+      var key = event.getKeyCode();
 
     // Check if any cursor keys have been pressed and set flags.
 
@@ -2244,9 +2237,10 @@ ClipMorph.subclass("GameMorph", {
       photonCounter[photonIndex] = Math.min(gameWidth, gameHeight) / MIN_ROCK_SIZE;
     }
 
+      key = event.getKeyChar().toUpperCase();
     // 'H' key: warp ship into hyperspace by moving to a random location and starting counter.
 
-    if (key == KEY_H && ship.active && hyperCounter <= 0) {
+    if (key == "H" && ship.active && hyperCounter <= 0) {
       ship.currentX = Math.random() * gameWidth;
       ship.currentX = Math.random() * gameHeight;
       hyperCounter = HYPER_COUNT;
@@ -2256,7 +2250,7 @@ ClipMorph.subclass("GameMorph", {
 
     // 'P' key: toggle pause mode and start or stop any active looping sound clips.
 
-    if (key == KEY_P) {
+    if (key == "P") {
       if (paused) {
 //        if (sound && missilePlaying)
 //          missileSound.loop();
@@ -2278,7 +2272,7 @@ ClipMorph.subclass("GameMorph", {
 
     // 'M' key: toggle sound on or off and stop any looping sound clips.
 
-    if (key == KEY_M && loaded) {
+    if (key == "M" && loaded) {
 /*
       if (sound) {
         crashSound.stop();
@@ -2303,13 +2297,13 @@ ClipMorph.subclass("GameMorph", {
 
     // 'D' key: toggle graphics detail on or off.
 
-    if (key == KEY_D) {
+    if (key == "D") {
       detail = !detail;
     }
 
     // 'S' key: start the game, if not already in progress.
 
-    if (key == KEY_S && loaded && !playing)
+    if (key == "S" && loaded && !playing)
       initGame();
 
     return true;
@@ -2317,7 +2311,7 @@ ClipMorph.subclass("GameMorph", {
 
   function keyUp(event) {
 
-      var key = event.getKeyCode() || event.rawEvent.charCode;
+      var key = event.getKeyCode();
 
     // Check if any cursor keys where released and set flags.
 
@@ -4493,7 +4487,7 @@ ClipMorph.subclass("CanvasScapeMorph", {
 
     keyDown: function(event) {
 
-        var key = event.getKeyCode() || event.rawEvent.charCode;
+        var key = event.getKeyCode();
       
         // Check if any cursor keys have been pressed and set flags.      
         if (key == Event.KEY_LEFT)
@@ -4510,7 +4504,7 @@ ClipMorph.subclass("CanvasScapeMorph", {
     },
       
     keyUp: function(event) {
-        var key = event.getKeyCode() || event.rawEvent.charCode;
+        var key = event.getKeyCode();
     
         // Check if any cursor keys have been pressed and set flags.
         if (key == Event.KEY_LEFT)
