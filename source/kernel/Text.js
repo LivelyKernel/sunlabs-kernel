@@ -872,10 +872,14 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
         //this.setWrapStyle(WrapStyle.NONE);
         this.onKeyDown = function(evt) {
 	    switch (evt.getKeyCode()) {
-	    case Event.KEY_DOWN: // hook up to history?
+	    case Event.KEY_DOWN: 
+		this.setTextString(this.getModelValue("getNextHistoryEntry", ""));
+		this.setNullSelectionAt(this.textString.length);
 		evt.stop();
 		return true;
-	    case Event.KEY_UP:  // hook up to history
+	    case Event.KEY_UP: 
+		this.setTextString(this.getModelValue("getPreviousHistoryEntry", ""));
+		this.setNullSelectionAt(this.textString.length);
 		evt.stop();
 		return true;
 	    case Event.KEY_RETURN:
@@ -934,12 +938,9 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
 	
         menu.addItem(["save as ...", function() { 
             var store = new WebStore();
-	    
-            if (store) 
-		this.world().prompt("save as...", function(filename) {
-		    filename && store.saveAs(filename, this.xml || this.textString);
-		}.bind(this));
-            else console.log('no store to save to');
+	    this.world().prompt("save as...", function(filename) {
+		filename && store.saveAs(filename, this.xml || this.textString);
+	    }.bind(this));
         }]);
     
         return menu;

@@ -111,6 +111,13 @@ function populateWorldWithExamples(world) {
 
     if (Config.showTester) new WidgetTester().openIn(world, pt(835, 450));
 
+    if (Config.showLivelyConsole  && window.console.consumers) {
+	world.addMorphAt(new WindowMorph((new ConsoleWidget(80)).buildView(pt(world.viewport().width, 160)), 
+					 "Console"),  
+			 new Point(0, world.viewport().height - 190));
+	
+    }
+
     if (Config.showInnerWorld) {
         
         var lm1 = new LinkMorph(null, pt(60, 460));
@@ -325,18 +332,12 @@ function populateWorldWithExamples(world) {
         if (Config.showHilbertFun) apps.Pen.hilbertFun(devWorld.myWorld, widget.bounds().bottomLeft().addXY(180,80));
 
         if (Config.showWebStore) {
-            var store = new WebStore();
+            var store = new FileBrowser();
             store.openIn(Config.webStoreInMain ? WorldMorph.current() : devWorld.myWorld, pt(460, 120));
         }
 
     }
 
-    if (Config.showLivelyConsole  && window.console.consumers) {
-	world.addMorphAt(new WindowMorph((new ConsoleWidget(140)).buildView(pt(world.viewport().width, 160)), 
-					 "Console"),  
-			 new Point(0, world.viewport().height - 190));
-	
-    }
 
     if (Config.showXenoMorph) {
         XenoMorph.prototype.test(); //"http://livelykernel.sunlabs.com/index.html");//"http://www.opera.com");

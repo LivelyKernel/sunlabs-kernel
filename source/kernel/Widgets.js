@@ -2051,9 +2051,7 @@ Morph.subclass('XenoMorph', {
 });
 
 SimpleModel.subclass('Dialog', {
-
     inset: 10,
-
 
 });
 
@@ -2175,7 +2173,8 @@ Model.subclass('ConsoleWidget', {
 	$super(null);
 	this.capacity = capacity;
 	this.messageBuffer = [];
-	this.commandBuffer = [];
+	this.commandBuffer = [""];
+	this.commandCursor = 0;
 	Global.console.consumers.push(this);
 	this.ctx = { // conveniences
 	    W: function() { return WorldMorph.current() }
@@ -2196,21 +2195,36 @@ Model.subclass('ConsoleWidget', {
 	    CheapListMorph.prototype.updateList.call(this, list);
 	    panel.messagePane.scrollToBottom();
 	};
-	m.remove = function() {
-	    ScrollPane.prototype.remove.call(this);
-	    var index = window.console.consumers.indexOf(this);
+	var self = this;
+	panel.shutdown = function() {
+	    PanelMorph.prototype.shutdown.call(this);
+	    var index = window.console.consumers.indexOf(self);
 	    if (index >= 0)
 		window.console.consumers.splice(index);
 	};
 	
 	m = panel.commandLine;
 	m.beInputLine();
-	m.connectModel({model: this, setText: "evalCommand", getText: "getLastCommand" });
+	m.connectModel({model: this, setText: "evalCommand", getText: "getCurrentCommand", 
+			getPreviousHistoryEntry: "getPreviousHistoryEntry",
+			getNextHistoryEntry: "getNextHistoryEntry"});
 	return panel;
     },
     
-    getLastCommand: function() {
-	return ""; // the last command is null (this clears the command line after an eval)
+    // history autodecrements/increments 
+    getPreviousHistoryEntry: function() {
+	this.commandCursor = this.commandCursor > 0 ? this.commandCursor - 1 : this.commandBuffer.length - 1;
+	return this.commandBuffer[this.commandCursor];
+    },
+    
+    getNextHistoryEntry: function() {
+	this.commandCursor = this.commandCursor < this.commandBuffer.length - 1 ? this.commandCursor + 1 : 0;
+	return this.commandBuffer[this.commandCursor];
+
+    },
+    
+    getCurrentCommand: function() {
+	return ""; // the last command is empty (this clears the command line after an eval)
     },
 
     evalCommand: function(text) {
@@ -2219,9 +2233,10 @@ Model.subclass('ConsoleWidget', {
 	if (this.commandBuffer.length > 100) {
 	    this.commandBuffer.unshift();
 	}
+	this.commandCursor = this.commandBuffer.length - 1;
 	try {
 	    this.log(Object.inspect((function() { return eval(text) }).bind(this.ctx)()));
-	    this.changed('getLastCommand');
+	    this.changed('getCurrentCommand');
 	} catch (er) {
 	    console.log("Evaluation error: "  + er);
 	}
