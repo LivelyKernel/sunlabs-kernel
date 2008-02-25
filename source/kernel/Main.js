@@ -112,9 +112,8 @@ function populateWorldWithExamples(world) {
     if (Config.showTester) new WidgetTester().openIn(world, pt(835, 450));
 
     if (Config.showLivelyConsole  && window.console.consumers) {
-	world.addMorphAt(new WindowMorph((new ConsoleWidget(80)).buildView(pt(world.viewport().width, 160)), 
-					 "Console"),  
-			 new Point(0, world.viewport().height - 190));
+	world.addFramedMorph(new ConsoleWidget(80).buildView(pt(world.viewport().width, 160)), "Console",  
+			     new Point(0, world.viewport().height - 190));
 	
     }
 

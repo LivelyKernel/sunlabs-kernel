@@ -5113,8 +5113,7 @@ PasteUpMorph.subclass("WorldMorph", {
                 m.startSteppingScripts(); }],
 
 	    ["Console", function(evt) {
-		world.addMorphAt(new WindowMorph(new ConsoleWidget(100).buildView(pt(800, 100)), "Console"),  
-				 evt.mousePoint);
+		world.addFramedMorph(new ConsoleWidget(100).buildView(pt(800, 100)), "Console", evt);
 	    }],
             ["FrameRateMorph", function(evt) {
                 var m = world.addMorph(new FrameRateMorph(evt.mousePoint.extent(pt(160, 10)), "FrameRateMorph"));
@@ -5153,6 +5152,10 @@ PasteUpMorph.subclass("WorldMorph", {
 
     confirm: function(message, callback) {
 	new ConfirmDialog(message, callback).openIn(this, this.hands[0].lastMouseDownPoint);
+    },
+
+    addFramedMorph: function(morph, title, loc) {
+	this.addMorphAt(new WindowMorph(morph, title), loc);
     }
 
 });

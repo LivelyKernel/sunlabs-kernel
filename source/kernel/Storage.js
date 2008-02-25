@@ -351,7 +351,7 @@ WebStore.subclass('FileBrowser', {
 		}
 		
 		webStore.setCurrentResource(fileName);
-		this.world().addMorphAt(new WindowMorph(textEdit, fileName), evt.mousePoint);
+		this.world().addFramedMorph(textEdit, fileName, evt.mousePoint);
 	    }]);
 	    
 	    items.push(["get WebDAV info", function(evt) {
@@ -366,7 +366,7 @@ WebStore.subclass('FileBrowser', {
 		};
 		infoPane.innerMorph().connectModel({model: store, getText: "getProperties"});
 		store.propfind(store.resourceURL(fileName), 1, "/D:multistatus/D:response", "Properties");
-		this.world().addMorphAt(new WindowMorph(infoPane, fileName), evt.mousePoint);
+		this.world().addFramedMorph(infoPane, fileName, evt.mousePoint);
 		
 	    }]);
 	}
@@ -377,7 +377,7 @@ WebStore.subclass('FileBrowser', {
         if (!loc) loc = world.bounds().center();
         console.log('opening web store at %s', loc);
         var panel = this.buildView(pt(400, 300));
-        world.addMorphAt(new WindowMorph(panel, "Directory Browser on " + this.host), loc);
+        world.addFramedMorph(panel, "Directory Browser on " + this.host, loc);
         // this.addCredentialDialog(panel);
         this.changed('getDirectoryList');
     }

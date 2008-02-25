@@ -416,7 +416,7 @@ Object.subclass('Feed', {
         var panel = this.buildView();
         var title = new TextMorph(new Rectangle(0, 0, 150, 15), 'RSS feed                    ').beLabel();
         title.connectModel({model: panel.model, getText: 'getChannelTitle'});
-        var window = world.addMorphAt(new WindowMorph(panel, title), location);
+        var window = world.addFramedMorph(panel, title, location);
         this.request(panel.model, "getItemList", 'getChannelTitle');
         return window;
     }

@@ -56,7 +56,7 @@ Model.subclass('SimpleBrowser', {
     setMethodString: function(newDef) { eval(newDef); },
 
     openIn: function(world, location) {
-        world.addMorphAt(new WindowMorph(this.buildView(pt(400,300)), 'JavaScript Code Browser'), location);
+        world.addFramedMorph(this.buildView(pt(400,300)), 'JavaScript Code Browser', location);
         this.changed('getClassList')
     },
 
@@ -174,8 +174,8 @@ Model.subclass('ObjectBrowser', {
     setObjectValue: function(newDef) { eval(newDef); },
 
     openIn: function(world, location) {
-        world.addMorphAt(new WindowMorph(this.buildView(pt(400, 300)), 'Object Hierarchy Browser'), location);
-        this.changed('getObjectList');
+        world.addFramedMorph(this.buildView(pt(400, 300)), 'Object Hierarchy Browser', location);
+	this.changed('getObjectList');
     },
 
     buildView: function(extent) {

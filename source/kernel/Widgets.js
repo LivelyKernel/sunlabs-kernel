@@ -2046,7 +2046,7 @@ Morph.subclass('XenoMorph', {
     test: function(url) {
         url = url || "http://livelykernel.sunlabs.com/test.xhtml";
         var xeno = new XenoMorph(pt(0, 0).extent(pt(400,200)), url);
-        WorldMorph.current().addMorphAt(new WindowMorph(xeno, url), pt(50,50));
+        WorldMorph.current().addFramedMorph(xeno, url, pt(50,50));
     }
 
 });

@@ -30,9 +30,7 @@ var apps = Global;// {};
 Global.WidgetTester = Model.subclass(Global, 'WidgetTester', {
 
     openIn: function(world, location) {
-        var view = this.buildView(pt(300, 220));
-        world.addMorphAt(view, location);
-        return view;
+        return world.addMorphAt(this.buildView(pt(300, 220)), location);
     },
     
     buildView: function(extent) {
@@ -2421,7 +2419,7 @@ Model.subclass(scope, 'WeatherWidget', {
     },
     
     openIn: function(world, location) {
-        world.addMorphAt(new WindowMorph(this.buildView(), 'Weather Widget'), location);
+        world.addFramedMorph(this.buildView(), 'Weather Widget', location);
     },
     
     getListItem: function() {
@@ -2568,9 +2566,7 @@ Model.subclass('StockWidget', {
     
     openIn: function(world, location) {
         var view = this.buildView((pt(580, 460)));
-        this.windowMorph = new WindowMorph(view, 'Stock Widget');
-
-        world.addMorphAt(this.windowMorph, location);
+        this.windowMorph = world.addFramedMorph(view, 'Stock Widget', location);
         this.setStockIndex('DOW JONES');
         return view;
     },
@@ -3794,7 +3790,7 @@ Model.subclass(scope, 'MessengerWidget', {
     },
     
     openIn: function(world, location) {
-        world.addMorphAt(new WindowMorph(this.buildView(), 'Instant Messenger'), location);
+        return world.addFramedMorph(this.buildView(), 'Instant Messenger', location);
     },
     
     buildView: function() {
@@ -4640,7 +4636,7 @@ ClipMorph.subclass("CanvasScapeMorph", {
 scope.makeEngine = function() {
     var engine = new scope.EngineMorph(new Rectangle(0, 0, 400, 600));
     // KP: add the top morph to the world first, to make firefox happy
-    WorldMorph.current().addMorphAt(new WindowMorph(engine, 'A Lively Engine'), pt(250, 5));
+    WorldMorph.current().addFramedMorph(engine, 'A Lively Engine', pt(250, 5));
     engine.openAllToDnD();  // have a little fun...
     engine.startSteppingScripts();
 }
@@ -4970,7 +4966,7 @@ Morph.subclass("PlayerMorph",  {
     },
     
     openIn: function(world, location) {
-        world.addMorphAt(new WindowMorph(this, 'AnimationMorph'), location);
+        world.addFramedMorph(this, 'AnimationMorph', location);
         this.startStepping();
     },
     
