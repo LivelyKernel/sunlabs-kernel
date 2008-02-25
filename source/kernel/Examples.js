@@ -2461,9 +2461,9 @@ Model.subclass(scope, 'WeatherWidget', {
             // we got a new value asynchronously
             this.previousResult = this.feed.channels[0];
             //this.weatherDataArr = this.previousResult.items[0].description.split(",");
-            var text = this.previousResult.items[0].description;
+            var text = this.previousResult.items[0].description();
             var arr = text.split(",");
-            var topic = this.previousResult.items[0].title;
+            var topic = this.previousResult.items[0].title();
             var weather = topic.substring(topic.indexOf("."), topic.indexOf("GMT:")+4).replace(/^\s+|\s+$/g, '');
             this.weatherDataArr[0] = weather[0].toUpperCase() + weather.substr(1);
             this.weatherDataArr[1] = arr[0].replace(/^\s+|\s+$/g, '');

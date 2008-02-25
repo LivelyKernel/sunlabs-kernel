@@ -16,19 +16,15 @@
 /**
  * @class Resource
  */ 
-Object.subclass('Resource', {
+Wrapper.subclass('Resource', {
     
     initialize: function(base, raw) {
+        this.rawNode = raw; 
 	this.base = base;
-        this.content = raw; 
-    },
-
-    toString: function() {
-        return Exporter.nodeToString(this.content);
     },
     
     name: function() {
-        return decodeURIComponent(Query.evaluate(this.content, "D:href")[0].textContent);
+        return decodeURIComponent(Query.evaluate(this.rawNode, "D:href")[0].textContent);
     }
 
 });
@@ -322,24 +318,22 @@ WebStore.subclass('FileBrowser', {
     },
         
     getFileMenu: function() {
-	var menu = new MenuMorph([], this); 
+	var items = [];
 	var fileName = this.CurrentResource;
 	if (fileName) {
 	    var contents = this.getCurrentResourceContents();
 	    console.log("fileName = " + fileName + "; contents.length = " + contents.length);
             if (contents && contents.length > 0) {
-		menu.addItem(['open a changeList browser', function(evt) {
-                	var changeList = new FileParser(fileName, contents);
-			new ChangeListBrowser(fileName, contents, changeList).openIn(this.world(), evt.mousePoint); }]);
+		items.push(['open a changeList browser', function(evt) {
+                    var changeList = new FileParser(fileName, contents);
+		    new ChangeListBrowser(fileName, contents, changeList).openIn(this.world(), evt.mousePoint); }]);
 	    }
-	    var fileName = this.CurrentResource;
-
-	    menu.addItem(['edit in separate window', function(evt) {
+	    
+	    items.push(['edit in separate window', function(evt) {
 		var textEdit = TextPane(new Rectangle(0, 0, 500, 200), "Fetching " + fileName + "...").innerMorph();
 		var webStore = new WebStore();
 		
 		textEdit.connectModel({model: webStore, getText: "getCurrentResourceContents"});
-		//textEdit.owner.setBorderWidth(2);
 
 		textEdit.processCommandKeys = function(key) {
 		    if (key == 's') {
@@ -355,26 +349,28 @@ WebStore.subclass('FileBrowser', {
 			return TextMorph.prototype.processCommandKeys.call(this, key);
 		    }
 		}
-
+		
 		webStore.setCurrentResource(fileName);
-		WorldMorph.current().addMorphAt(new WindowMorph(textEdit, fileName), evt.mousePoint);
+		this.world().addMorphAt(new WindowMorph(textEdit, fileName), evt.mousePoint);
 	    }]);
 	    
-	    menu.addItem(["get WebDAV info", function(evt) {
+	    items.push(["get WebDAV info", function(evt) {
 		var infoPane = TextPane(new Rectangle(0, 0, 500, 200), "");
+		infoPane.innerMorph().acceptInput = false;
 		var store = new WebStore();
-		store.Properties = "Fetching properties " + fileName + "...";
 		store.getProperties = function() {
-		    return this.Properties.toString();
+		    if (this.Properties instanceof Array) 
+			return this.Properties[0].toMarkupString();
+		    else
+			return "fetching properties for " + fileName;
 		};
-		infoPane.innerMorph().connectModel({model:  store, getText: "getProperties"});
-		store.propfind(store.resourceURL(this.CurrentResource), 1, "/D:multistatus/D:response", "Properties");
-		WorldMorph.current().addMorphAt(new WindowMorph(infoPane, fileName), evt.mousePoint);
+		infoPane.innerMorph().connectModel({model: store, getText: "getProperties"});
+		store.propfind(store.resourceURL(fileName), 1, "/D:multistatus/D:response", "Properties");
+		this.world().addMorphAt(new WindowMorph(infoPane, fileName), evt.mousePoint);
 		
 	    }]);
-		
-	    return menu; 
 	}
+	return items; 
     },
 
     openIn: function(world, loc) {

@@ -1834,8 +1834,9 @@ Morph.subclass("ScrollPane", {
 
     menuButtonPressed: function(evt, button) {
         evt.hand.setMouseFocus(null);
-        var menu = this.innerMorph().getModel()[this.paneMenuMessage]();
-        if (!menu) return;
+        var items = this.innerMorph().getModel()[this.paneMenuMessage]();
+        if (!items || items.length <= 0) return;
+	var menu = new MenuMorph(items, this);
         menu.openIn(this.world(), evt.mousePoint, false); 
     },
 

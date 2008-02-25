@@ -266,17 +266,21 @@ var NetRequest = (function() {
  * @class FeedChannel: RSS feed channel
  */ 
 
-Object.subclass('FeedChannel', {
-
-    initialize: function(rawData) {
+Wrapper.subclass('FeedChannel', {
+    
+    
+    initialize: function(rawNode) {
+	this.rawNode = rawNode;
         this.items = [];
-        var results = Query.evaluate(rawData, 'item');
+        var results = Query.evaluate(rawNode, 'item');
     
         for (var i = 0; i < results.length; i++) {
             this.items.push(new FeedItem(results[i]));
         }
-    
-        this.title = (Query.evaluate(rawData, 'title', 'none'))[0].textContent;
+    },
+
+    title: function() {
+        return Query.evaluate(this.rawNode, 'title', 'none')[0].textContent;
     }
 
 });
@@ -285,12 +289,18 @@ Object.subclass('FeedChannel', {
  * @class FeedItem: An individual RSS feed item
  */ 
 
-Object.subclass('FeedItem', {
+Wrapper.subclass('FeedItem', {
 
-    initialize: function(rawData) {
-        this.title = Query.evaluate(rawData, 'title')[0].textContent;
-        this.description = Query.evaluate(rawData, 'description')[0].textContent;
-        // console.log('created item %s=%s', this.title, this.description);
+    initialize: function(rawNode) {
+	this.rawNode = rawNode;
+    },
+    
+    title: function() {
+	return Query.evaluate(this.rawNode, 'title')[0].textContent;
+    },
+
+    description: function() {
+	return Query.evaluate(this.rawNode, 'description')[0].textContent;
     }
     
 });
@@ -363,15 +373,15 @@ Object.subclass('Feed', {
     },
 
     items: function() {
-        return this.channels[0].items.pluck('title');
+        return this.channels[0].items.invoke('title');
     },
     
     getEntry: function(title) {
         var items = this.channels[0].items;
     
         for (var i = 0; i < items.length; i++) {
-            if (items[i].title == title) {
-                return items[i].description;
+            if (items[i].title() == title) {
+                return items[i].description();
             }
         }
         
@@ -389,7 +399,7 @@ Object.subclass('Feed', {
             getItemList:     function()      { return feed.items() },
             setItemTitle:    function(title) { this.itemTitle = title; this.changed("getEntry"); },
             getEntry:        function()      { return feed.getEntry(this.itemTitle) },
-            getChannelTitle: function()      { return "RSS feed from " + feed.channels[0].title; }
+            getChannelTitle: function()      { return "RSS feed from " + feed.channels[0].title(); }
         });
 
         // View layout

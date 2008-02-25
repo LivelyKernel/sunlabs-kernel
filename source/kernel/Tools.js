@@ -76,22 +76,22 @@ Model.subclass('SimpleBrowser', {
     },
 
     getClassPaneMenu: function() {
-        var menu = new MenuMorph([], this); 
+        var items = [];
 	if (this.className != null) {
             var theClass = Global[this.className];
             if (theClass.prototype != null) {
-		menu.addItem(['profile selected class', function() {
-                	showStatsViewer(theClass.prototype, this.className + "..."); }]);
+		items.push(['profile selected class', function() {
+                    showStatsViewer(theClass.prototype, this.className + "..."); }]);
 	    }
 	}
 	if (Loader.isLoadedFromNetwork && SourceControl == null) {
-            menu.addItem(['load source files', function() {
-                	SourceControl = new SourceDatabase(new Rectangle(100, 100, 200, 50));
-			WorldMorph.current().addMorph(SourceControl);
-			WorldMorph.current().firstHand().setMouseFocus(null);
-			SourceControl.scanKernelFiles(["Core.js", "Text.js", "Widgets.js", "Tools.js", "Examples.js", "Network.js", "Storage.js"]); }]);
+            items.push(['load source files', function() {
+                SourceControl = new SourceDatabase(new Rectangle(100, 100, 200, 50));
+		this.world().addMorph(SourceControl);
+		this.world().firstHand().setMouseFocus(null);
+		SourceControl.scanKernelFiles(["Core.js", "Text.js", "Widgets.js", "Tools.js", "Examples.js", "Network.js", "Storage.js"]); }]);
 	}
-	return menu; 
+	return items; 
     }
 });
    
