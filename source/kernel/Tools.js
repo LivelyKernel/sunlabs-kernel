@@ -557,8 +557,12 @@ function showStatsViewer(profilee,title) {
     
     Object.extend(Function, {
 
-        showStack: function() {
-            var stack = debuggingStack;
+	cloneStack: function() {
+	    return [].concat(debuggingStack);
+	},
+
+        showStack: function(stack) {
+            stack = stack || debuggingStack;
             if (Config.debugExtras) {
                 for (var i = 0; i < stack.length; i++) {
                     var args = stack[i];

@@ -939,7 +939,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
         menu.addItem(["save as ...", function() { 
             var store = new WebStore();
 	    this.world().prompt("save as...", function(filename) {
-		filename && store.saveAs(filename, this.xml || this.textString);
+		filename && store.save(filename, this.xml || this.textString);
 	    }.bind(this));
         }]);
     

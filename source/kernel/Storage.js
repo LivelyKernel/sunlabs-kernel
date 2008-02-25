@@ -18,19 +18,18 @@
  */ 
 Object.subclass('Resource', {
     
-    initialize: function(base, href) {
+    initialize: function(base, raw) {
 	this.base = base;
-        this.href = href; 
+        this.content = raw; 
     },
 
     toString: function() {
-        return this.href;
+        return Exporter.nodeToString(this.content);
     },
     
     name: function() {
-        return decodeURIComponent(this.href);
+        return decodeURIComponent(Query.evaluate(this.content, "D:href")[0].textContent);
     }
-
 
 });
 
@@ -61,7 +60,8 @@ Model.subclass('WebStore', {
     },
 
     // basic protocol methods:
-    fetch: function(url, optModelVariable) {
+    fetch: function(filename, optModelVariable) {
+	var url = this.resourceURL(filename);
         // retrieve the the contents of the url and save in the indicated model variable
         var options =  {
             onSuccess: function(transport) {
@@ -79,12 +79,8 @@ Model.subclass('WebStore', {
         new NetRequest(options).evalJS(false).get(url);
     },
     
-    saveAs: function(name, content) {
-        // console.log('saving content %s', content);
-        this.save("%s://%s%s%s".format(this.protocol, this.host, this.path, name), content);
-    },
-    
-    save: function(url, content, optModelVariable) {
+    save: function(filename, content, optModelVariable) {
+	var url = this.resourceURL(filename);
         // retrieve the the contents of the url and save in the indicated model variable
         console.log('saving url ' + url);
         var options =  {
@@ -106,7 +102,8 @@ Model.subclass('WebStore', {
         new NetRequest(options).put(url, content);
     },
 
-    deleteResource: function(url, optModelVariable) {
+    deleteResource: function(filename, optModelVariable) {
+	var url = this.resourceURL(filename);
         // retrieve the the contents of the url and save in the indicated model variable
         console.log('deleting url ' + url);
         var options =  {
@@ -150,8 +147,7 @@ Model.subclass('WebStore', {
                 var result = Query.evaluate(transport.responseXML.documentElement, xpQueryString);
 		if (optModelVariable !== undefined) {
 		    this[optModelVariable] = result.map(function(raw) { 
-			var href = Query.evaluate(raw, "D:href")[0].textContent;
-			return new Resource(url, href); 
+			return new Resource(url, raw); 
 		    });
                     this.changed("get" + optModelVariable);
 		}
@@ -174,10 +170,10 @@ Model.subclass('WebStore', {
         if (!name) 
 	    return;
         this.CurrentResource = name;
-        console.log('current resource set to %s', this.CurrentResource);
+        console.log("current resource set to %s", name);
 	
         // initialize getting the resource contents
-        this.fetch(this.currentResourceURL(), "CurrentResourceContents");
+        this.fetch(this.CurrentResource, "CurrentResourceContents");
     },
 
     resourceURL: function(resource) {
@@ -185,16 +181,14 @@ Model.subclass('WebStore', {
         else return "%s://%s%s%s".format(this.protocol, this.host, 
 					 resource.startsWith('/') ? "": "/", 
 					 resource);
-    },
-    
-    currentResourceURL: function() {
-	return this.resourceURL(this.CurrentResource);
     }
 
 });
 
 
 WebStore.subclass('FileBrowser', {
+
+    documentation: "A model for a paned file browser",
 
     initialize: function($super, host, path) {
 	$super(host, path);
@@ -276,45 +270,6 @@ WebStore.subclass('FileBrowser', {
 				    this.CurrentDirectory);
     },
     
-    getResourceMenu: function() {
-        var menu = new MenuMorph([], this); 
-	if (this.CurrentResource) {
-	    var resource = this.CurrentResource;
-	    menu.addItem(['edit in separate window', function(evt) {
-		var textEdit = TextPane(new Rectangle(0, 0, 500, 200), "Fetching " + resource + "...").innerMorph();
-		var webStore = new WebStore();
-		
-		textEdit.connectModel({model: webStore, getText: "getCurrentResourceContents"});
-		//textEdit.owner.setBorderWidth(2);
-
-		textEdit.processCommandKeys = function(key) {
-		    if (key == 's') {
-			if (webStore.CurrentResourceContents.length > TextMorph.prototype.maxSafeSize) {
-			    this.world().alert("not saving file, size " + webStore.CurrentResourceContents.length 
-					       + " > " + TextMorph.prototype.maxSafeSize + ", too large");
-			} else {
-			    webStore.CurrentResourceContents = this.textString;
-			    webStore.save(webStore.currentResourceURL(), this.textString, "LastWriteStatus");
-			}
-			return true;
-		    } else {
-			return TextMorph.prototype.processCommandKeys.call(this, key);
-		    }
-		}
-
-		webStore.setCurrentResource(resource);
-		var world = WorldMorph.current();
-		world.addMorphAt(new WindowMorph(textEdit, resource), evt.mousePoint);
-
-
-	    }]);
-		
-	}
-	return menu; 
-    },
-
-
-    
     buildView: function(extent) {
         var panel = PanelMorph.makePanedPanel(extent, [
             ['leftPane', ListPane, new Rectangle(0, 0, 0.5, 0.6)],
@@ -327,7 +282,7 @@ WebStore.subclass('FileBrowser', {
 				     getSelection: "getCurrentDirectory"});
         var m = panel.rightPane;
         m.connectModel({model: this, getList: "getCurrentDirectoryContents", setSelection: "setCurrentResource", 
-			getMenu: "getResourceMenu"});
+			getMenu: "getFileMenu"});
         var oldpress = m.innerMorph().onKeyPress;
         m.innerMorph().onKeyPress = function(evt) {
             if (evt.getKeyCode() == Event.KEY_BACKSPACE) { // Replace the selection after checking for type-ahead
@@ -336,7 +291,7 @@ WebStore.subclass('FileBrowser', {
                 var result = this.world().confirm("delete resource " + model.resourceURL(toDelete),
 		    function(result) {
 			if (result) {
-			    model.deleteResource(model.resourceURL(toDelete), "CurrentDirectoryContents");
+			    model.deleteResource(toDelete, "CurrentDirectoryContents");
 			    model.setCurrentDirectory(model.setCurrentDirectory());
 			} else console.log("cancelled deletion of " + toDelete);
 		    });
@@ -356,7 +311,7 @@ WebStore.subclass('FileBrowser', {
                         + " > " + TextMorph.prototype.maxSafeSize + ", too large");
                 } else {
                     model.setCurrentResourceContents(this.textString);
-                    model.save(model.currentResourceURL(), this.textString, "LastWriteStatus");
+                    model.save(model.CurrentResource, this.textString, "LastWriteStatus");
                 }
                 return true;
             } else {
@@ -377,8 +332,49 @@ WebStore.subclass('FileBrowser', {
                 	var changeList = new FileParser(fileName, contents);
 			new ChangeListBrowser(fileName, contents, changeList).openIn(this.world(), evt.mousePoint); }]);
 	    }
+	    var fileName = this.CurrentResource;
+
+	    menu.addItem(['edit in separate window', function(evt) {
+		var textEdit = TextPane(new Rectangle(0, 0, 500, 200), "Fetching " + fileName + "...").innerMorph();
+		var webStore = new WebStore();
+		
+		textEdit.connectModel({model: webStore, getText: "getCurrentResourceContents"});
+		//textEdit.owner.setBorderWidth(2);
+
+		textEdit.processCommandKeys = function(key) {
+		    if (key == 's') {
+			if (webStore.CurrentResourceContents.length > TextMorph.prototype.maxSafeSize) {
+			    this.world().alert("not saving file, size " + webStore.CurrentResourceContents.length 
+					       + " > " + TextMorph.prototype.maxSafeSize + ", too large");
+			} else {
+			    webStore.CurrentResourceContents = this.textString;
+			    webStore.save(webStore.CurrentResource, this.textString, "LastWriteStatus");
+			}
+			return true;
+		    } else {
+			return TextMorph.prototype.processCommandKeys.call(this, key);
+		    }
+		}
+
+		webStore.setCurrentResource(fileName);
+		WorldMorph.current().addMorphAt(new WindowMorph(textEdit, fileName), evt.mousePoint);
+	    }]);
+	    
+	    menu.addItem(["get WebDAV info", function(evt) {
+		var infoPane = TextPane(new Rectangle(0, 0, 500, 200), "");
+		var store = new WebStore();
+		store.Properties = "Fetching properties " + fileName + "...";
+		store.getProperties = function() {
+		    return this.Properties.toString();
+		};
+		infoPane.innerMorph().connectModel({model:  store, getText: "getProperties"});
+		store.propfind(store.resourceURL(this.CurrentResource), 1, "/D:multistatus/D:response", "Properties");
+		WorldMorph.current().addMorphAt(new WindowMorph(infoPane, fileName), evt.mousePoint);
+		
+	    }]);
+		
+	    return menu; 
 	}
-	return menu; 
     },
 
     openIn: function(world, loc) {

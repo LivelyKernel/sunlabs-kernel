@@ -71,12 +71,22 @@ var NetRequest = (function() {
 
         onException: function(request, exception) {
             console.warn("%s %s: exception %s", request.method, request.url, exception);
+	    if (e.originalStack) { 
+		console.log("captured stack:");
+		Function.showStack(e.originalStack);
+	    }
         }
 
     };
     Ajax.Responders.register(logger);
     
     var BaseRequest = Class.create(Ajax.Request, {
+	
+	dispatchException: function($super, e) {
+	    e.originalStack = Function.cloneStack();
+	    //Function.showStack(e.originalStack);
+	    $super(e);
+	},
 
         // literally copied but override prototype.js's verb simulation over post
         request: function(url) {
