@@ -1060,7 +1060,8 @@ Object.subclass("Color", {
     },
     
     toString: function() {
-        with (this) { return "rgb(" + [r, g, b].map(function(x) { return Math.floor(x*255.99); }).join() + ")"; }
+	function floor(x) { return Math.floor(x*255.99) };
+        return "rgb(" + floor(this.r) + "," + floor(this.g) + "," + floor(this.b) + ")";
     }
     
 });
