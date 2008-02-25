@@ -1267,8 +1267,10 @@ TextMorph.subclass("CheapListMorph", {
         // Note:  A proper ListMorph is a list of independent submorphs
         // CheapListMorphs simply leverage Textmorph's ability to display
         // multiline paragraphs, though some effort is made to use a similar interface.
+	// Bug: currently selection doesn't work right if items have leading spaces
         var listText = itemList ? itemList.join("\n") : "";
         $super(initialBounds, listText);
+	this.maxSafeSize = 10000;  // override max for subsequent updates
         this.itemList = itemList;
         // this default self connection may get overwritten by, eg, connectModel()...
         var model = new SimpleModel(null, "List", "Selection");
@@ -1332,7 +1334,6 @@ TextMorph.subclass("CheapListMorph", {
 
     onMouseDown: function(evt) {
         this.requestKeyboardFocus(evt.hand);
-        // this.selectLineAt(this.charOfY(this.localize(evt.mousePoint))); 
         this.onMouseMove(evt); 
     },
 

@@ -816,6 +816,7 @@ Object.subclass('FileParser', {
 	this.lineNo = 0;
 	this.changeList = [];
 	if (this.verbose) console.log("Parsing " + this.fileName + ", length = " + len);
+	this.currentDef = {type: "Header", name: fname, startPos: 0, lineNo: 1};
 	while (this.ptr < len) {
 	    var line = this.nextLine(this.str);
 	    if (this.verbose) console.log("lineNo=" + this.lineNo + " ptr=" + this.ptr + line);		
@@ -827,7 +828,7 @@ Object.subclass('FileParser', {
 	    }
 	}
 	this.processCurrentDef();
-	console.log(this.filename + " scanned; " + this.changeList.length + " patches identified.");
+	console.log(this.fileName + " scanned; " + this.changeList.length + " patches identified.");
 	return this.changeList;
     },
     scanComment: function(line) {
@@ -850,7 +851,7 @@ Object.subclass('FileParser', {
 	}	
 	if (match == null)  return false;
 	this.processCurrentDef();
-	console.log("Class def: " + match[1] + "." + match[2]);
+	if (this.verbose) console.log("Class def: " + match[1] + "." + match[2]);
 	this.currentDef = {type: "classDef", name: match[2], startPos: this.ptr, lineNo: this.lineNo};
 	return true;
     },
@@ -858,7 +859,7 @@ Object.subclass('FileParser', {
 	var match = line.match(/^[\s]*([\w]+)\:/);
 	if (match == null) return false;
 	this.processCurrentDef();
-	console.log("Method def: " + this.currentClassName + "." + match[1]);
+	if (this.verbose) console.log("Method def: " + this.currentClassName + "." + match[1]);
 	this.currentDef = {type: "methodDef", name: match[1], startPos: this.ptr, lineNo: this.lineNo};
 	return true;
     },
@@ -868,6 +869,7 @@ Object.subclass('FileParser', {
 	// We will want to do a better job of finding where it ends
 	var def = this.currentDef;
 	if (def == null) return;
+	def.endPos = this.ptr-1;
 	if (def.type == "classDef") {
 		this.currentClassName = def.name;
 		if(this.sourceDB) this.sourceDB.methodDictFor(this.currentClassName)["*definition"] =
@@ -913,32 +915,65 @@ Object.subclass('FileParser', {
 // ===========================================================================
 
 Model.subclass('ChangeListBrowser', {
+	// The ChangeListBrowser views a list of patches in a JavaScript (or other) file.
+	// The patches taken all together entirely capture all the test in the file
+	// The quality of the fileParser determines how well the file patches correspond
+	// to meaningful JavaScript entities.  A changeList accumulated from method defs
+	// during a development session should be completely well-formed in this regard.
 
     initialize: function($super, fn, contents, changes) {
         $super();
         this.fileName = fn;
         this.fileContents = contents;
-        this.patchList = changes;
+        this.changeList = changes;
     },
 
-    getChangeList: function() { return this.changeList; },
-
-    setPatchString: function(n, v) { this.patchName = n; this.changed("getPatchText", v) },
-
-    getPatchText: function() {
-        if (this.selectedItem() == null) return "-----";
-        return Object.inspect(this.selectedItem()).withDecimalPrecision(2);
+    getChangeBanners: function() {
+	return this.changeList.map( function(each) { return this.bannerOfItem(each); }.bind(this));
     },
 
-    setPatchText: function(txt, v) { this.inspectee[this.propName] = eval(this, this.inspectee); },
+    setChangeSelection: function(n, v) { this.changeBanner = n; this.changed("getChangeItemText", v) },
 
-    selectedItem: function() { return this.inspectee[this.propName]; },
+    selectedItem: function() {
+	if (this.changeBanner == null) return null;
+	var i2 = this.changeBanner.indexOf(":");
+	var lineNo = this.changeBanner.substring(0, i2);
+	lineNo = new Number(lineNo);
+	for (var i=0; i < this.changeList.length; i++) {
+		var item = this.changeList[i];
+		if (item.lineNo == lineNo) return item;
+	}
+	return null;
+    },
+
+    getChangeItemText: function() {
+        var item = this.selectedItem();
+	if (item == null) return "-----";
+        return this.fulTextOfItem(item);
+    },
+
+    fulTextOfItem: function(item) {
+	return this.fileContents.substring(item.startPos, item.endPos);
+    },
+
+    bannerOfItem: function(item) { // For now banners are just line numbers
+        var lineStr = item.lineNo.toString();
+	// following pad makes line nunmbers line up, but breaks list selection
+	// var pad = "          ".substring(0,2*(4-lineStr.length));
+	var firstLine = this.fileContents.substring(item.startPos, item.startPos + 40);
+	var end = firstLine.indexOf("\n");
+	if (end >= 0) firstLine = firstLine.substring(0,end);
+	end = firstLine.indexOf(":");
+	if (end >= 0) firstLine = firstLine.substring(0,end+1);
+	return lineStr + ": " + firstLine;    },
+
+    setChangeItemText: function(txt, v) { this.inspectee[this.propName] = eval(this, this.inspectee); },
 
     openIn: function(world, location) {
         var rect = (location || pt(50,50)).extent(pt(400,250));
         var window = this.buildView(rect);
         world.addMorph(window);
-        this.changed('getChangeList');
+        this.changed('getChangeBanners');
     },
 
     open: function() { return this.openIn(WorldMorph.current()); },
@@ -949,9 +984,9 @@ Model.subclass('ChangeListBrowser', {
             ['bottomPane', TextPane, new Rectangle(0, 0.5, 1, 1)]
         ]);
         var m = panel.topPane;
-        m.connectModel({model: this, getList: "getPatchList", setSelection: "setPatchString"});
+        m.connectModel({model: this, getList: "getChangeBanners", setSelection: "setChangeSelection"});
         m = panel.bottomPane;
-        m.connectModel({model: this, getText: "getPatchText", setText: "setPatchText"});
+        m.connectModel({model: this, getText: "getChangeItemText", setText: "setChangeItemText"});
 
        return new WindowMorph(panel, 'ChangeList for ' + this.fileName);
     }
