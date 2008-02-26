@@ -79,7 +79,7 @@ WidgetModel.subclass('SimpleBrowser', {
             var theClass = Global[this.className];
             if (theClass.prototype != null) {
 		items.push(['profile selected class', function() {
-                    showStatsViewer(theClass.prototype, this.className + "..."); }]);
+                    showStatsViewer(theClass.prototype, this.className + "..."); }.bind(this)]);
 	    }
 	}
 	if (Loader.isLoadedFromNetwork && SourceControl == null) {

@@ -559,20 +559,17 @@ Object.subclass('TextLine', {
         }
     },
 
-    // clone the important parts of the chunks we have found to avoid re-scanning
     cloneChunkSkeleton: function(sIndex) {
+	// clone the important parts of the chunks we have found to avoid re-scanning
+	// DI: changed to share (not clone) chunks beyond this line
         if (this.chunks == null) return null;
     
         var nc = [];
         for (var i = 0; i < this.chunks.length; i++) {
             var tc = this.chunks[i];
-            if (tc.start >= sIndex) {
-                var c = tc.cloneSkeleton();
-                // probably don't need this opmization now that we demand load extents
-                //if (tc.bounds != null)
-                //  c.bounds = tc.bounds.copy();
-                nc.push(c);
-            } else if (tc.start < sIndex && (tc.start + tc.length) > sIndex) {
+            if (tc.start > sIndex) nc.push(tc);
+            else if (tc.start == sIndex) nc.push(tc.cloneSkeleton());
+            else if (tc.start < sIndex && (tc.start + tc.length) > sIndex) {
                 // this chunk has been broken up by a word wrap
                 var c = tc.cloneSkeleton();
                 c.length -= sIndex - c.start;
@@ -709,7 +706,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
     selectionColor: Color.primary.green,
     inset: pt(6,4), // remember this shouldn't be modified unless every morph should get the value 
     wrap: WrapStyle.NORMAL,
-    maxSafeSize: 5000, 
+    maxSafeSize: 8000, 
     tabWidth: 4,
     tabsAsSpaces: true,
     noShallowCopyProperties: Morph.prototype.noShallowCopyProperties.concat(['rawTextNode', 'rawSelectionNode', 'lines']),

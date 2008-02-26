@@ -327,7 +327,7 @@ WebStore.subclass('FileBrowser', {
 	    console.log("fileName = " + fileName + "; contents.length = " + contents.length);
             if (contents && contents.length > 0) {
 		items.push(['open a changeList browser', function(evt) {
-                    var changeList = new FileParser(fileName, contents);
+                    var changeList = new FileParser().parseFile(fileName, contents);
 		    new ChangeListBrowser(fileName, contents, changeList).openIn(this.world(), evt.mousePoint); 
 		}]);
 	    }

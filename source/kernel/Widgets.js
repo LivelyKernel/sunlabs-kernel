@@ -1275,7 +1275,7 @@ TextMorph.subclass("CheapListMorph", {
 	// Bug: currently selection doesn't work right if items have leading spaces
         var listText = itemList ? itemList.join("\n") : "";
         $super(initialBounds, listText);
-	this.maxSafeSize = 10000;  // override max for subsequent updates
+	this.maxSafeSize = 20000;  // override max for subsequent updates
         this.itemList = itemList;
         // this default self connection may get overwritten by, eg, connectModel()...
         var model = new SimpleModel(null, "List", "Selection");
