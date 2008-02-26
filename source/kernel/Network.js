@@ -338,7 +338,7 @@ WidgetModel.subclass('Feed', {
                     feed.processResult(null);
                     return;
                 }
-
+		
                 var result = transport.responseXML.documentElement;
 
                 if (feed.dump) console.log('transmission dump %s', Exporter.nodeToString(transport.responseXML));

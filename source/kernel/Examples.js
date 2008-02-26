@@ -2611,7 +2611,7 @@ WidgetModel.subclass('StockWidget', {
     },
     
     getNewsHeaders: function() {
-        return this.feed.channels[0].items.pluck('title');
+        return this.feed.items().invoke('title');
     },
 
     getIndexChartURL: function() { 
