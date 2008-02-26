@@ -559,37 +559,33 @@ Object.subclass('TextLine', {
         }
     },
 
-    cloneChunkSkeleton: function(sIndex) {  // Say it 3 times fast -- better than "BitBlt" ;-)
-	// clone the important parts of the chunks we have found to avoid re-scanning
-	// DI: changed to share (not clone) chunks beyond this line
-	// DI: later copy only local chunks to this.chunks
-	// DI: later terminate the loop at end of local chunks, and use splice to return remaining chunks
+    cloneChunkSkeleton: function(sIndex) {  // Say it 3 times fast (better than "BitBlt" ;-)
+	// Copy only the relevant chunks to this.chunks
+	// Return the remaining chunks which may include an extra in case of split lines
+	// DI: Note I rewrote this (much faster) without really knowing the details
         if (this.chunks == null) return null;
     
-        var nc = [];
-        var lastChunkForThisLine = 0;
-	for (var i = 0; i < this.chunks.length; i++) {
+        var extra = null;
+        var localChunkCount = 0;
+	for (var i = 0; i < this.chunks.length; i++) {  // Step through this line, break at end
             var tc = this.chunks[i];
             if (tc.start < sIndex) {
-		lastChunkForThisLine = i;
+		localChunkCount++;
 		if ((tc.start + tc.length) > sIndex) {
 	                // this chunk has been broken up by a word wrap
-	                var c = tc.cloneSkeleton();
-	                c.length -= sIndex - c.start;
-	                c.start = sIndex;
-	                nc.push(c);
+	                extra = tc.cloneSkeleton();
+	                extra.length -= sIndex - extra.start;
+	                extra.start = sIndex;
 		}
             }
-            else if (tc.start == sIndex) nc.push(tc.cloneSkeleton());
-            else nc.push(tc); // here tc.start > sIndex
+            else if (tc.start == sIndex) extra = tc.cloneSkeleton();
+            else break;
         }
-        this.chunks = this.chunks.slice(0, lastChunkForThisLine+1);
-	return nc;
-    },
-
-    // accessor function
-    setChunkSkeleton: function(c) {
-        this.chunks = c;
+	var remainingChunks = this.chunks;
+        this.chunks = this.chunks.slice(0, localChunkCount);  // Make copy of chunks local to this line
+	if (!extra) remainingChunks.splice(0, localChunkCount+1); // Drop local chunks from big list
+	else remainingChunks.splice(0, localChunkCount+1, extra); // ... adding clone or split at line-end
+	return remainingChunks;
     },
 
     // accessor function
