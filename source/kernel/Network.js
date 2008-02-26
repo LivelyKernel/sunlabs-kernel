@@ -272,7 +272,7 @@ Wrapper.subclass('FeedChannel', {
     initialize: function(rawNode) {
 	this.rawNode = rawNode;
         this.items = [];
-        var results = Query.evaluate(rawNode, 'item');
+        var results = this.queryNode('item');
     
         for (var i = 0; i < results.length; i++) {
             this.items.push(new FeedItem(results[i]));
@@ -280,7 +280,7 @@ Wrapper.subclass('FeedChannel', {
     },
 
     title: function() {
-        return Query.evaluate(this.rawNode, 'title', 'none')[0].textContent;
+        return this.queryNode('title', 'none')[0].textContent;
     }
 
 });
@@ -296,11 +296,11 @@ Wrapper.subclass('FeedItem', {
     },
     
     title: function() {
-	return Query.evaluate(this.rawNode, 'title')[0].textContent;
+	return this.queryNode('title')[0].textContent;
     },
 
     description: function() {
-	return Query.evaluate(this.rawNode, 'description')[0].textContent;
+	return this.queryNode('description')[0].textContent;
     }
     
 });
@@ -310,18 +310,15 @@ Wrapper.subclass('FeedItem', {
  */
 // FIXME something clever, maybe an external library?
 
-Object.subclass('Feed', {
+Model.subclass('Feed', {
     dump: false,
     
-    initialize: function(url) {
+    initialize: function($super, url) {
+	$super(null);
         this.url = url;
         this.channels = null;
     },
     
-    query: function(xpQuery, target) {
-        return Query.evaluate(target ? target : this.result, xpQuery);
-    },
-
     request: function(model /*, ... model variables*/) {
         // console.log('in request on %s', this.url);
 
@@ -329,7 +326,7 @@ Object.subclass('Feed', {
         var modelVariables = $A(arguments);
         modelVariables.shift();
         var hourAgo = new Date((new Date()).getTime() - 1000*60*60);
-
+	
         new NetRequest({
             requestHeaders: { "If-Modified-Since": hourAgo.toString()  },
             contentType: 'text/xml',
@@ -364,60 +361,82 @@ Object.subclass('Feed', {
            return;
         }
 
-        var results = this.query('/rss/channel', result);
+        var results = Query.evaluate(result, '/rss/channel');
         this.channels = [];
         for (var i = 0; i < results.length; i++) {
             this.channels.push(new FeedChannel(results[i]));
         }
-
     },
 
     items: function() {
-        return this.channels[0].items.invoke('title');
+        return this.channels[0].items;
     },
     
     getEntry: function(title) {
-        var items = this.channels[0].items;
-    
+        var items = this.items();
         for (var i = 0; i < items.length; i++) {
             if (items[i].title() == title) {
                 return items[i].description();
             }
         }
-        
         return "";
+    },
+    
+    getItemList: function() { 
+	return this.items().invoke('title');
+    },
+
+    setItemTitle: function(title) { 
+	this.itemTitle = title; 
+	this.changed("getCurrentEntry"); 
+    },
+    getCurrentEntry: function() { 
+	return this.getEntry(this.itemTitle) 
+    },
+    getChannelTitle: function() { 
+	return "RSS feed from " + this.channels[0].title(); 
     },
 
     buildView: function() {
         var extent = pt(500, 200);
         var panel = new PanelMorph(extent);
-        panel.addMorph = panel.addMorph.logCalls();
+	panel.addMorph = panel.addMorph.logCalls();
         panel.setFill(Color.blue.lighter().lighter());
         panel.setBorderWidth(2);
         var feed = this;
-        panel.model = Object.extend(new Model(), {
-            getItemList:     function()      { return feed.items() },
-            setItemTitle:    function(title) { this.itemTitle = title; this.changed("getEntry"); },
-            getEntry:        function()      { return feed.getEntry(this.itemTitle) },
-            getChannelTitle: function()      { return "RSS feed from " + feed.channels[0].title(); }
-        });
 
         // View layout
-        var localRect = pt(0,0).extent(extent);
+        var localRect = extent.extentAsRectangle();
         var m = panel.addMorph(ListPane(localRect.withBottomRight(localRect.bottomCenter())));
-
-        m.connectModel({model: panel.model, getList: "getItemList", setSelection: "setItemTitle"});
+	
+        m.connectModel({model: this, getList: "getItemList", setSelection: "setItemTitle", getMenu: "getItemMenu"});
         m = panel.addMorph(PrintPane(localRect.withTopLeft(localRect.topCenter())));
-        m.connectModel({model: panel.model, getValue: "getEntry"});
+        m.connectModel({model: this, getValue: "getCurrentEntry"});
         return panel;
+    },
+
+    getItemMenu: function() {
+	var feed = this;
+	return [
+	    ["get XML source", function(evt) {
+		var item = null; 
+		var index = this.innerMorph().selectedLineNo();
+		var item = feed.items()[index];
+		var txt = item ? item.toMarkupString() : "?";
+		var infoPane = TextPane(new Rectangle(0, 0, 500, 200), txt);
+		infoPane.innerMorph().acceptInput = false;
+		this.world().addFramedMorph(infoPane, "XML source for " + item.title(), evt.mousePoint);
+	    } ]
+	];
+
     },
 
     openIn: function(world, location) {
         var panel = this.buildView();
         var title = new TextMorph(new Rectangle(0, 0, 150, 15), 'RSS feed                    ').beLabel();
-        title.connectModel({model: panel.model, getText: 'getChannelTitle'});
+        title.connectModel({model: this, getText: 'getChannelTitle'});
         var window = world.addFramedMorph(panel, title, location);
-        this.request(panel.model, "getItemList", 'getChannelTitle');
+        this.request(this, "getItemList", 'getChannelTitle');
         return window;
     }
     

@@ -325,8 +325,8 @@ ClipMorph.subclass(scope, "DoodleMorph", {
     fill: Color.veryLightGray,
     imagepath: "Resources/doodle/",
 
-    initialize: function($super, rect) {
-        $super(rect, "rect");
+    initialize: function($super, extent) {
+        $super(extent.asRectangle(), "rect");
         this.drawingColor = Color.red;
         this.lineWidth = 2.0;
         this.colorvalue = true;
@@ -609,8 +609,8 @@ Morph.subclass('SquiggleMorph', {
     drawingHandColor: Color.yellow,
     documentation: "An even simpler drawing program",
 
-    initialize: function($super, rect) {
-        $super(rect, "rect");
+    initialize: function($super, ext) {
+        $super(pt(0,0).extent(ext), "rect");
         // The squiggle that we are creating currently
         this.currentMorph = null;
         this.start = null;
@@ -2408,18 +2408,16 @@ GameMorph.addMethods({
  
 // We should consider using other weather service.
 // These images are of low quality
-Model.subclass(scope, 'WeatherWidget', {
+WidgetModel.subclass(scope, 'WeatherWidget', {
 
     imagepath: "Resources/weather/",
+    defaultViewTitle: "Weather widget",
+    openTriggerVariable: null,
     
     initialize: function($super) { 
         $super();
         // Fetch weather upon starting the widget
         this.getWeather("6568"); // San Francisco International (SFO) as default
-    },
-    
-    openIn: function(world, location) {
-        world.addFramedMorph(this.buildView(), 'Weather Widget', location);
     },
     
     getListItem: function() {
@@ -2555,8 +2553,12 @@ Model.subclass(scope, 'WeatherWidget', {
  * @class StockWidget
  */
 
-Model.subclass('StockWidget', {
-    
+WidgetModel.subclass('StockWidget', {
+
+    defaultViewTitle: 'Stock Widget',
+    defaultViewExtent: pt(580, 460),
+    openTriggerVariable: null,
+
     initialize: function($super) { 
         $super();
         this.imageurl = null;
@@ -2564,10 +2566,10 @@ Model.subclass('StockWidget', {
         return this;
     },
     
-    openIn: function(world, location) {
-        var view = this.buildView((pt(580, 460)));
-        this.windowMorph = world.addFramedMorph(view, 'Stock Widget', location);
+    openIn: function($super, world, location) {
+	var view = $super(world, location);
         this.setStockIndex('DOW JONES');
+        this.startSteppingRefreshCharts(view.targetMorph);
         return view;
     },
 
@@ -2694,7 +2696,6 @@ Model.subclass('StockWidget', {
     
     startSteppingRefreshCharts: function(panel) {
         panel.startStepping(60000, 'refresh');
-        //this.timer = setInterval(this.refreshCharts.bind(this).curry(panel).logErrors('Stock Refresh'), 30000);
     },
 
     getUrl: function(url, params) {
@@ -2822,8 +2823,8 @@ Morph.subclass("MapFrameMorph", {
         this.bottomRight = this.bounds().bottomRight();
 
         var clipInset = 23;
-        this.mapclip = new ClipMorph(pt(0, 0).extent(initialBounds.extent()).insetBy(clipInset));
-
+        this.mapclip = new ClipMorph(initialBounds.extent().extentAsRectangle().insetBy(clipInset));
+	
         this.map = new MapMorph(new Rectangle(0, 0, 5*TileSize.x, 5*TileSize.y), this.online);
         this.map.hasFrame = true;
         this.mapclip.addMorph(this.map);

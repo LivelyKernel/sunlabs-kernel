@@ -21,6 +21,11 @@
 //  See the comments in Model, and the Model protocol in Morph (getModelValue(), etc)
 //  The Inspector and Browser are fairly simple examples of this architecture in use.
 
+
+
+
+
+
 // ===========================================================================
 // Simple widgets
 // ===========================================================================
@@ -1160,7 +1165,7 @@ Morph.subclass("SelectionMorph", {
 Morph.subclass("PanelMorph", {
 
     initialize: function($super, extent/*:Point*/) {
-        $super(pt(0, 0).extent(extent), 'rect');
+        $super(extent.extentAsRectangle(), 'rect');
         this.lastNavigable = null;
         this.priorExtent = this.innerBounds().extent();
     },
@@ -2046,7 +2051,7 @@ Morph.subclass('XenoMorph', {
     
     test: function(url) {
         url = url || "http://livelykernel.sunlabs.com/test.xhtml";
-        var xeno = new XenoMorph(pt(0, 0).extent(pt(400,200)), url);
+        var xeno = new XenoMorph(pt(400,200).extentAsRectangle(), url);
         WorldMorph.current().addFramedMorph(xeno, url, pt(50,50));
     }
 
@@ -2166,11 +2171,54 @@ Dialog.subclass('PromptDialog', {
 	
         return panel;
     }
-
 });
 
 
-Model.subclass('ConsoleWidget', {
+
+Model.subclass('WidgetModel', {
+    defaultViewExtent: pt(400, 300),
+    defaultViewTitle: "Widget",
+    defaultViewPosition: pt(50, 50),
+    openTriggerVariable: 'all',
+    documentation: "Convenience base class for widget models",
+    
+    viewTitle: function() {
+	return this.defaultViewTitle;
+    },
+
+    buildView: function(extent) {
+	throw new Error("override me");
+    },
+
+    initialViewPosition: function(world, hint) {
+	return hint || this.defaultViewPosition;
+    },
+
+    initialViewExtent: function(world, hint) {
+	return hint || this.defaultViewExtent;
+    },
+    
+    openIn: function(world, loc) {
+        var win = 
+	    world.addFramedMorph(this.buildView(this.initialViewExtent(world)), 
+				 this.viewTitle(), 
+				 this.initialViewPosition(world, loc));
+	if (this.openTriggerVariable)
+            this.changed(this.openTriggerVariable);
+	return win;
+    },
+
+    open: function() {
+	return this.openIn(world);
+    }
+    
+
+});
+
+WidgetModel.subclass('ConsoleWidget', {
+
+    defaultViewTitle: "Console",
+    
     initialize: function($super, capacity) {
 	$super(null);
 	this.capacity = capacity;
@@ -2182,6 +2230,14 @@ Model.subclass('ConsoleWidget', {
 	    W: function() { return WorldMorph.current() }
 	};
 	return this;
+    },
+    
+    initialViewPosition: function(world, hint) {
+	return hint || pt(0, world.viewport().y - 200);
+    },
+
+    initialViewExtent: function(world, hint) {
+	return hint || pt(vorld.viewport().width, 160); 
     },
     
     buildView: function(extent) {
@@ -2222,7 +2278,6 @@ Model.subclass('ConsoleWidget', {
     getNextHistoryEntry: function() {
 	this.commandCursor = this.commandCursor < this.commandBuffer.length - 1 ? this.commandCursor + 1 : 0;
 	return this.commandBuffer[this.commandCursor];
-
     },
     
     getCurrentCommand: function() {
@@ -2243,7 +2298,7 @@ Model.subclass('ConsoleWidget', {
 	    console.log("Evaluation error: "  + er);
 	}
     },
-
+    
     getRecentMessages: function() {
 	return this.messageBuffer;
     },
@@ -2257,6 +2312,7 @@ Model.subclass('ConsoleWidget', {
     }
     
 });
+
 
 console.log('loaded Widgets.js');
 

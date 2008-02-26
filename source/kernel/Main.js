@@ -103,8 +103,7 @@ function populateWorldWithExamples(world) {
 
     if (Config.showStocks && Config.showNetworkExamples) {
         var stockWidget = new StockWidget();
-        var panel = stockWidget.openIn(world, pt(350, 500));
-        stockWidget.startSteppingRefreshCharts(panel);
+        stockWidget.openIn(world, pt(350, 500));
     }
     
     if (Config.show3DLogo) world.addMorph(new WindowMorph(new apps.Sun3DMorph(pt(570, 100).extent(pt(200, 200))), 'Sun 3D Logo'));
@@ -112,9 +111,7 @@ function populateWorldWithExamples(world) {
     if (Config.showTester) new WidgetTester().openIn(world, pt(835, 450));
 
     if (Config.showLivelyConsole  && window.console.consumers) {
-	world.addFramedMorph(new ConsoleWidget(80).buildView(pt(world.viewport().width, 160)), "Console",  
-			     new Point(0, world.viewport().height - 190));
-	
+	new ConsoleWidget(80).openIn(world, pt(0, world.viewport().height - 190));
     }
 
     if (Config.showInnerWorld) {
@@ -191,12 +188,12 @@ function populateWorldWithExamples(world) {
             
             lm1.myWorld.addMorphBack(new WindowMorph(new ImageMorph(new Rectangle(50, 10, width, height), url), 'Tampere'));
         }
-
-        if (Config.showDoodle) lm1.myWorld.addMorph(new WindowMorph(new apps.DoodleMorph(pt(560, 380).extent(pt(300, 300))), 'Doodle Morph'));
-
-        if (Config.showSquiggle) lm1.myWorld.addMorph(new WindowMorph(new apps.SquiggleMorph(pt(560, 380).extent(pt(300, 300))), 'Squiggle Morph'));
+	
+        if (Config.showDoodle) lm1.myWorld.addFramedMorph(new apps.DoodleMorph(pt(300, 300)), 'Doodle Morph', pt(560, 380));
+	
+        if (Config.showSquiggle) lm1.myWorld.addFramedMorph(new apps.SquiggleMorph(pt(300, 300)), 'Squiggle Morph', pt(560, 380));
         
-        if (Config.showVideo) { new PlayerMorph().openIn(lm1.myWorld, pt(50, 20)); }
+        if (Config.showVideo) { lm1.myWorld.addFramedMorph(new PlayerMorph(), "Player", pt(50, 20)); }
 
         if (Config.showMessenger && Config.showNetworkExamples) new apps.MessengerWidget().openIn(lm1.myWorld, pt(875, 375));
     }

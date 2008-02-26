@@ -18,7 +18,10 @@
 // ===========================================================================
 // Class Browser -- A simple browser for Lively Kernel code
 // ===========================================================================
-Model.subclass('SimpleBrowser', {
+WidgetModel.subclass('SimpleBrowser', {
+
+    openTriggerVariable: 'getChangeList',
+    defaultViewTitle: "Javascript Code Browser",
 
     initialize: function($super) { 
         $super(); 
@@ -54,11 +57,6 @@ Model.subclass('SimpleBrowser', {
     },
 
     setMethodString: function(newDef) { eval(newDef); },
-
-    openIn: function(world, location) {
-        world.addFramedMorph(this.buildView(pt(400,300)), 'JavaScript Code Browser', location);
-        this.changed('getClassList')
-    },
 
     buildView: function(extent) {
         var panel = PanelMorph.makePanedPanel(extent, [
@@ -100,7 +98,11 @@ Model.subclass('SimpleBrowser', {
 // ===========================================================================
 // Object Hierarchy Browser
 // ===========================================================================
-Model.subclass('ObjectBrowser', {
+WidgetModel.subclass('ObjectBrowser', {
+
+    defaultViewTitle: "Object Hierarchy Browser",
+    openTriggerVariable: 'getObjectList',
+
 
     initialize: function($super, objectToView) {
         $super();
@@ -173,11 +175,6 @@ Model.subclass('ObjectBrowser', {
 
     setObjectValue: function(newDef) { eval(newDef); },
 
-    openIn: function(world, location) {
-        world.addFramedMorph(this.buildView(pt(400, 300)), 'Object Hierarchy Browser', location);
-	this.changed('getObjectList');
-    },
-
     buildView: function(extent) {
         var panel = PanelMorph.makePanedPanel(extent, [
             ['namePane', TextMorph, new Rectangle(0, 0, 1, 0.07)],
@@ -207,6 +204,9 @@ Model.subclass('ObjectBrowser', {
    
 Model.subclass('SimpleInspector', {
 
+    defaultViewExtent: pt(400,250),
+    openTriggerVariable: 'getPropList',
+    
     initialize: function($super, targetMorph) {
         $super();
         this.inspectee = targetMorph;
@@ -229,20 +229,21 @@ Model.subclass('SimpleInspector', {
 
     contextForEval: function() { return this.inspectee; },
 
+    viewTitle: function() {
+	return 'Inspector (%s)'.format(this.inspectee).truncate(50);
+    },
+
+	
+    /*
     openIn: function(world, location) {
-        var rect = (location || pt(50,50)).extent(pt(400,250));
-        var window = this.buildView(rect);
-        world.addMorph(window);
-        this.changed('getPropList');
         // DI: experimental continuous update feature.  It works, but not removed upon close
         // var rightPane = window.targetMorph.rightPane.innerMorph();
         // rightPane.startStepping(1000, 'updateView', 'getPropText');
     },
+*/
 
-    open: function() { return this.openIn(WorldMorph.current()); },
-
-    buildView: function(rect) {
-        var panel = PanelMorph.makePanedPanel(rect.extent(), [
+    buildView: function(extent) {
+        var panel = PanelMorph.makePanedPanel(extent, [
             ['leftPane', ListPane, new Rectangle(0, 0, 0.5, 0.6)],
             ['rightPane', TextPane, new Rectangle(0.5, 0, 0.5, 0.6)],
             ['bottomPane', TextPane, new Rectangle(0, 0.6, 1, 0.4)]
@@ -264,7 +265,8 @@ Model.subclass('SimpleInspector', {
                 new SimpleInspector(thisModel.selectedItem()).openIn(WorldMorph.current())}])
             return menu; 
         }
-        return new WindowMorph(panel, 'Inspector (%s)'.format(this.inspectee).truncate(50));
+	return panel;
+
     }
 
 });
@@ -277,7 +279,10 @@ Model.subclass('SimpleInspector', {
  * @class StylePanel: Interactive style editor for morphs 
  */
    
-Model.subclass('StylePanel', {
+WidgetModel.subclass('StylePanel', {
+
+    defaultViewExtent: pt(340,100),
+    defaultViewTitle: "Style Panel",
 
     initialize: function($super, targetMorph) {
         $super();
@@ -367,19 +372,8 @@ Model.subclass('StylePanel', {
         this.targetMorph.setFontSize(this.fontSize);
     },
 
-    openIn: function(world, location) {
-        var rect = (location || pt(50,50)).extent(pt(340,100));
-        world.addMorph(new WindowMorph(this.buildView(rect), 'Style Panel'));
-        this.changed('all');
-    },
-
-    open: function(morph) {
-        return this.openIn(WorldMorph.current());
-    },
-
-    buildView: function(rect) {
-        var panelExtent = rect.extent();
-        var panel = new PanelMorph(panelExtent, "rect");
+    buildView: function(extent) {
+        var panel = new PanelMorph(extent, "rect");
         panel.setFill(Color.primary.blue.lighter().lighter());
         panel.setBorderWidth(2);
         var m;
@@ -453,7 +447,7 @@ Model.subclass('StylePanel', {
         panel.morphMenu = function(evt) { 
             var menu = Morph.prototype.morphMenu.call(this,evt);
             menu.addLine();
-            menu.addItem(['inspect model', new SimpleInspector(panel.getModel()), "openIn", this.world()])
+            menu.addItem(['inspect model', new SimpleInspector(panel.getModel()), "openIn", this.world()]);
             return menu;
         }
 
@@ -547,7 +541,7 @@ function showStatsViewer(profilee,title) {
     }
     
     WorldMorph.current().addMorph(m);
-    var t = new TextMorph(pt(0,0).extent(m.bounds().extent()), 'Display and reset stats').beLabel();
+    var t = new TextMorph(m.bounds().extent().extentAsRectangle(), 'Display and reset stats').beLabel();
     m.addMorph(t);
 };
 
@@ -914,12 +908,15 @@ Object.subclass('FileParser', {
 // ChangeList Browser
 // ===========================================================================
 
-Model.subclass('ChangeListBrowser', {
+WidgetModel.subclass('ChangeListBrowser', {
 	// The ChangeListBrowser views a list of patches in a JavaScript (or other) file.
 	// The patches taken all together entirely capture all the test in the file
 	// The quality of the fileParser determines how well the file patches correspond
 	// to meaningful JavaScript entities.  A changeList accumulated from method defs
 	// during a development session should be completely well-formed in this regard.
+    
+    defaultViewExtent: pt(400,250),
+    openTriggerVariable: 'getChangeBanners',
 
     initialize: function($super, fn, contents, changes) {
         $super();
@@ -969,26 +966,20 @@ Model.subclass('ChangeListBrowser', {
 
     setChangeItemText: function(txt, v) { this.inspectee[this.propName] = eval(this, this.inspectee); },
 
-    openIn: function(world, location) {
-        var rect = (location || pt(50,50)).extent(pt(400,250));
-        var window = this.buildView(rect);
-        world.addMorph(window);
-        this.changed('getChangeBanners');
+    viewTitle: function() {
+	return "Change list for " + this.fileName;
     },
-
-    open: function() { return this.openIn(WorldMorph.current()); },
-
-    buildView: function(rect) {
-        var panel = PanelMorph.makePanedPanel(rect.extent(), [
+    
+    buildView: function(extent) {
+        var panel = PanelMorph.makePanedPanel(extent, [
             ['topPane', ListPane, new Rectangle(0, 0, 1, 0.5)],
             ['bottomPane', TextPane, new Rectangle(0, 0.5, 1, 1)]
         ]);
         var m = panel.topPane;
         m.connectModel({model: this, getList: "getChangeBanners", setSelection: "setChangeSelection"});
         m = panel.bottomPane;
-        m.connectModel({model: this, getText: "getChangeItemText", setText: "setChangeItemText"});
-
-       return new WindowMorph(panel, 'ChangeList for ' + this.fileName);
+	m.connectModel({model: this, getText: "getChangeItemText", setText: "setChangeItemText"});
+	return panel;
     }
 
 });

@@ -779,6 +779,7 @@ Object.subclass("Point", {
     
     asRectangle: function() { return new Rectangle(this.x, this.y, 0, 0); },
     extent: function(ext) { return new Rectangle(this.x, this.y, ext.x, ext.y); },
+    extentAsRectangle: function() { return new Rectangle(0, 0, this.x, this.y) },
 
     toString: function() {
         return "pt(%1.f,%1.f)".format(this.x, this.y);
@@ -1242,6 +1243,10 @@ Object.subclass('Wrapper', {
 
     toMarkupString: function() {
         return Exporter.nodeToString(this.rawNode);
+    },
+
+    queryNode: function(queryString, defaultValue) {
+        return Query.evaluate(this.rawNode, queryString, defaultValue);
     }
 
 });
@@ -3293,13 +3298,7 @@ Morph.addMethods({
     
             return "url(#" + id + ")";
         } else return null;
-    },
-
-    query: function(xpathQuery, defaultValue) {
-        // run a query against this morph
-        return Query.evaluate(xpathQuery, this.rawNode, defaultValue);
     }
-
 });
 
 // Submorph management functions
@@ -3819,7 +3818,7 @@ Morph.addMethods({
         var items = [
             ["duplicate", this.copyToHand.curry(evt.hand)],
             ["remove", this.remove],
-            ["inspect", function() { new SimpleInspector(this).open()}],
+            ["inspect", function(evt) { new SimpleInspector(this).openIn(this.world(), evt.mousePoint)}],
 //            ["browse hierarchy", function() { new ObjectBrowser(this).openIn(this.world(), evt.mousePoint) }],
             ["style", function() { new StylePanel(this).open()}],
             ["drill", this.showOwnerChain.curry(evt)],
@@ -5113,7 +5112,7 @@ PasteUpMorph.subclass("WorldMorph", {
                 m.startSteppingScripts(); }],
 
 	    ["Console", function(evt) {
-		world.addFramedMorph(new ConsoleWidget(100).buildView(pt(800, 100)), "Console", evt);
+		world.addFramedMorph(new ConsoleWidget(100).buildView(pt(800, 100)), "Console", evt.mousePoint);
 	    }],
             ["FrameRateMorph", function(evt) {
                 var m = world.addMorph(new FrameRateMorph(evt.mousePoint.extent(pt(160, 10)), "FrameRateMorph"));
@@ -5155,7 +5154,7 @@ PasteUpMorph.subclass("WorldMorph", {
     },
 
     addFramedMorph: function(morph, title, loc) {
-	this.addMorphAt(new WindowMorph(morph, title), loc);
+	return this.addMorphAt(new WindowMorph(morph, title), loc);
     }
 
 });
@@ -5699,7 +5698,7 @@ Morph.subclass("LinkMorph", {
         }
     },
     
-    setHelpText: function ( newText ) {
+    setHelpText: function(newText) {
         this.helpText = newText;
     }
 

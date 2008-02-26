@@ -18,13 +18,15 @@
  */ 
 Wrapper.subclass('Resource', {
     
+    documentation: "Wrapper around information returned from WebDAV's PROPFIND",
+    
     initialize: function(base, raw) {
         this.rawNode = raw; 
 	this.base = base;
     },
     
     name: function() {
-        return decodeURIComponent(Query.evaluate(this.rawNode, "D:href")[0].textContent);
+        return decodeURIComponent(this.queryNode("D:href")[0].textContent);
     }
 
 });
@@ -325,8 +327,8 @@ WebStore.subclass('FileBrowser', {
 	    console.log("fileName = " + fileName + "; contents.length = " + contents.length);
             if (contents && contents.length > 0) {
 		items.push(['open a changeList browser', function(evt) {
-                	var changeList = new FileParser().parseFile(fileName, contents)
-			new ChangeListBrowser(fileName, contents, changeList).openIn(this.world(), evt.mousePoint);
+                    var changeList = new FileParser(fileName, contents);
+		    new ChangeListBrowser(fileName, contents, changeList).openIn(this.world(), evt.mousePoint); 
 		}]);
 	    }
 	    
@@ -335,7 +337,7 @@ WebStore.subclass('FileBrowser', {
 		var webStore = new WebStore();
 		
 		textEdit.connectModel({model: webStore, getText: "getCurrentResourceContents"});
-
+		
 		textEdit.processCommandKeys = function(key) {
 		    if (key == 's') {
 			if (webStore.CurrentResourceContents.length > TextMorph.prototype.maxSafeSize) {
