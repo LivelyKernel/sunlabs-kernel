@@ -2236,7 +2236,7 @@ WidgetModel.subclass('ConsoleWidget', {
     },
 
     initialViewExtent: function(world, hint) {
-	return hint || pt(vorld.viewport().width, 160); 
+	return hint || pt(world.viewport().width, 160); 
     },
     
     buildView: function(extent) {

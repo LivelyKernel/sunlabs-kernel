@@ -23,6 +23,7 @@ Object.subclass('URL', {
 	    var urlString = arguments[0];
 	    //console.log('got urlString ' + urlString);
 	    var result = urlString.match(URL.splitter);
+	    if (!result) throw new Error("malformed URL string " + urlString);
 	    this.protocol = result[1]; 
 	    if (!result[1]) 
 		throw new Error("bad url " + urlString + ", " + result);
@@ -40,7 +41,7 @@ Object.subclass('URL', {
 	    this.protocol = spec.protocol || "http";
 	    this.port = spec.port;
 	    this.hostname = spec.hostname;
-	    this.path = spec.path;
+	    this.path = spec.path || "";
 	    if (spec.search !== undefined) this.search = spec.search;
 	    if (spec.hash !== undefined) this.hash = spec.hash;
 	}
@@ -68,8 +69,22 @@ Object.subclass('URL', {
 	return p.substring(0, p.lastIndexOf('/') + 1);
     },
 
+    filename: function() {
+	var p = this.fullPath();
+	return p.substring(p.lastIndexOf('/') + 1);
+    },
+
     dirnameURL: function() {
-	return new URL({ protocol: this.protocol, port: this.port, hostname: this.hostname, path: this.dirname() });
+	return this.withPath(this.dirname());
+    },
+
+    withPath: function(path) { 
+	// FIXME handle hash&search?
+	return new URL({protocol: this.protocol, port: this.port, hostname: this.hostname, path: path });
+    },
+
+    withFilename: function(filename) {
+	return new URL({protocol: this.protocol, port: this.port, hostname: this.hostname, path: this.dirname() + filename });
     }
     
 });
@@ -230,8 +245,8 @@ var NetRequest = (function() {
 
         get: function(url) {
             this.options.method = 'get';
-            if (!url.startsWith('http')) {
-                url = Loader.baseURL;
+            if (!url.toString().startsWith('http')) {
+                url = new URL(Loader.baseURL);
             }
             var req = new BaseRequest(this.rewriteURL(url), this.options);
             return req.transport;

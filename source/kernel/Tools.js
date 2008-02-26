@@ -232,7 +232,6 @@ Model.subclass('SimpleInspector', {
     viewTitle: function() {
 	return 'Inspector (%s)'.format(this.inspectee).truncate(50);
     },
-
 	
     /*
     openIn: function(world, location) {
@@ -261,8 +260,8 @@ Model.subclass('SimpleInspector', {
             var menu = Morph.prototype.morphMenu.call(this, evt);
             if (thisModel.selectedItem() == null) return menu;
             menu.addLine();
-            menu.addItem(['inspect selection', function() {
-                new SimpleInspector(thisModel.selectedItem()).openIn(WorldMorph.current())}])
+            menu.addItem(['inspect selection', function() { 
+		new SimpleInspector(thisModel.selectedItem()).open()}])
             return menu; 
         }
 	return panel;
@@ -750,8 +749,9 @@ TextMorph.subclass('SourceDatabase', {
 	this.fileListIndex = index;
 	webStore.localName = this.fileList[index];
 	this.setTextString("Scanning " + webStore.localName + "...");
-	webStore.setCurrentResource(webStore.path + webStore.localName);
-	console.log("Reading " + webStore.localName + "...");
+	var fullName = webStore.baseUrl.withFilename(webStore.localName).fullPath();
+	console.log("Reading ..." + fullName);
+	webStore.setCurrentResource(fullName);
     },
 
     updateView: function(aspect, controller) {

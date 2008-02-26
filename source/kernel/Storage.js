@@ -27,6 +27,10 @@ Wrapper.subclass('Resource', {
     
     name: function() {
         return decodeURIComponent(this.queryNode("D:href")[0].textContent);
+    },
+    
+    properties: function() {
+	return this.queryNode("D:propstat").pluck('textContent').join('\n');
     }
 
 });
@@ -40,18 +44,12 @@ Model.subclass('WebStore', {
     documentation: "Network-based storage (WebDAV)",
     
     // FIXME a single argument that is like location (protocol, hostname, port, pathname, hash, search)
-    initialize: function($super, host, path) {
+    initialize: function($super, baseUrl) {
         $super();
-	if (host === undefined && path === undefined) { // if called with no arguments
-	    var localUrl = new URL(window.location.toString());
-            path = localUrl.dirname();
-	    host = localUrl.hostname;
+	if (baseUrl === undefined) { // if called with no arguments, get the base URL of the location
+	    baseUrl = new URL(window.location.toString()).dirnameURL();
 	}
-	
-        this.host = host;
-        this.path = path;
-        this.protocol = "http"; // can be something else...
-	
+	this.baseUrl = baseUrl;
         this.CurrentResource =  null;
         this.CurrentResourceContents = "";
 	this.world = WorldMorph.current();
@@ -175,10 +173,7 @@ Model.subclass('WebStore', {
     },
 
     resourceURL: function(resource) {
-        if (!resource) return this.protocol + "://" + this.host;
-        else return "%s://%s%s%s".format(this.protocol, this.host, 
-					 resource.startsWith('/') ? "": "/", 
-					 resource);
+        return this.baseUrl.withPath(resource).toString();
     }
 
 });
@@ -190,7 +185,7 @@ WebStore.subclass('FileBrowser', {
 
     initialize: function($super, host, path) {
 	$super(host, path);
-        this.DirectoryList = [ this.path ];
+        this.DirectoryList = [ this.baseUrl.path ];
         this.CurrentDirectory = null;
         this.CurrentDirectoryContents = null; // :Resource[]
         this.LastWriteStatus = 0;
@@ -221,7 +216,7 @@ WebStore.subclass('FileBrowser', {
         this.CurrentDirectory = name;
         this.changed('getCurrentDirectory');
 
-        console.log('host %s, dir %s name %s', this.host, this.CurrentDirectory, name);
+        console.log('host %s, dir %s name %s', this.baseUrl.hostname, this.CurrentDirectory, name);
         // initialize getting the contents
         this.propfind(this.currentDirectoryURL(), 1, "/D:multistatus/D:response", "CurrentDirectoryContents");
     },
@@ -262,10 +257,13 @@ WebStore.subclass('FileBrowser', {
     },
 		
     currentDirectoryURL: function() {
-        return "%s://%s%s%s".format(this.protocol,
-				    this.host, 
+	return this.baseUrl.withPath(this.CurrentDirectory);
+	/*
+        return "%s://%s%s%s".format(this.baseUrl.protocol,
+				    this.baseUrl.hostname, 
 				    this.CurrentDirectory.startsWith('/') ? "": "/", 
 				    this.CurrentDirectory);
+*/
     },
     
     buildView: function(extent) {
@@ -352,7 +350,6 @@ WebStore.subclass('FileBrowser', {
 			return TextMorph.prototype.processCommandKeys.call(this, key);
 		    }
 		}
-		
 		webStore.setCurrentResource(fileName);
 		this.world().addFramedMorph(textEdit, fileName, evt.mousePoint);
 	    }]);
@@ -362,9 +359,10 @@ WebStore.subclass('FileBrowser', {
 		infoPane.innerMorph().acceptInput = false;
 		var store = new WebStore();
 		store.getProperties = function() {
-		    if (this.Properties instanceof Array) 
+		    if (this.Properties instanceof Array) {
+			//return this.Properties[0].properties();
 			return this.Properties[0].toMarkupString();
-		    else
+		    } else
 			return "fetching properties for " + fileName;
 		};
 		infoPane.innerMorph().connectModel({model: store, getText: "getProperties"});
@@ -380,7 +378,7 @@ WebStore.subclass('FileBrowser', {
         if (!loc) loc = world.bounds().center();
         console.log('opening web store at %s', loc);
         var panel = this.buildView(pt(400, 300));
-        world.addFramedMorph(panel, "Directory Browser on " + this.host, loc);
+        world.addFramedMorph(panel, "Directory Browser on " + this.baseUrl.hostname, loc);
         // this.addCredentialDialog(panel);
         this.changed('getDirectoryList');
     }
