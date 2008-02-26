@@ -310,8 +310,10 @@ Wrapper.subclass('FeedItem', {
  */
 // FIXME something clever, maybe an external library?
 
-Model.subclass('Feed', {
+WidgetModel.subclass('Feed', {
     dump: false,
+    defaultViewExtent: pt(500, 200),
+    openTriggerVariable: null,
     
     initialize: function($super, url) {
 	$super(null);
@@ -397,8 +399,7 @@ Model.subclass('Feed', {
 	return "RSS feed from " + this.channels[0].title(); 
     },
 
-    buildView: function() {
-        var extent = pt(500, 200);
+    buildView: function(extent) {
         var panel = new PanelMorph(extent);
 	panel.addMorph = panel.addMorph.logCalls();
         panel.setFill(Color.blue.lighter().lighter());
@@ -430,14 +431,17 @@ Model.subclass('Feed', {
 	];
 
     },
-
-    openIn: function(world, location) {
-        var panel = this.buildView();
-        var title = new TextMorph(new Rectangle(0, 0, 150, 15), 'RSS feed                    ').beLabel();
-        title.connectModel({model: this, getText: 'getChannelTitle'});
-        var window = world.addFramedMorph(panel, title, location);
+    
+    viewTitle: function() {
+	var title = new TextMorph(new Rectangle(0, 0, 150, 15), 'RSS feed                    ').beLabel();
+	title.connectModel({model: this, getText: 'getChannelTitle'});
+	return title;
+    },
+    
+    openIn: function($super, world, location) {
+	var win = $super(world, location);
         this.request(this, "getItemList", 'getChannelTitle');
-        return window;
+        return win;
     }
     
 });

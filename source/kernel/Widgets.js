@@ -2182,7 +2182,7 @@ Model.subclass('WidgetModel', {
     openTriggerVariable: 'all',
     documentation: "Convenience base class for widget models",
     
-    viewTitle: function() {
+    viewTitle: function() { // a string or a TextMorph
 	return this.defaultViewTitle;
     },
 
