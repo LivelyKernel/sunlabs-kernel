@@ -2208,10 +2208,9 @@ Model.subclass('WidgetModel', {
 	return win;
     },
 
-    open: function() {
-	return this.openIn(world);
+    open: function() { // call interactively
+	return this.openIn(WorldMorph.current());
     }
-    
 
 });
 
