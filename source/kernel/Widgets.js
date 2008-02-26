@@ -1273,6 +1273,7 @@ TextMorph.subclass("CheapListMorph", {
         // CheapListMorphs simply leverage Textmorph's ability to display
         // multiline paragraphs, though some effort is made to use a similar interface.
 	// Bug: currently selection doesn't work right if items have leading spaces
+	itemList = this.sanitizedList(itemList);
         var listText = itemList ? itemList.join("\n") : "";
         $super(initialBounds, listText);
 	this.maxSafeSize = 20000;  // override max for subsequent updates
@@ -1282,10 +1283,12 @@ TextMorph.subclass("CheapListMorph", {
         this.modelPlug = model.makePlug();
         this.addNonMorph(this.modelPlug.rawNode);
         this.setModelValue('setList', itemList);
-        //console.log('model now %s', this.modelPlug.model);
-        if (!this.font) alert("wha, null font in %s".format(this));
         this.layoutChanged();
         return this;
+    },
+
+    sanitizedList: function(list) { // make sure entries with new lines don't confuse the list
+	return list && list.invoke('replace', /\n/g, " ");
     },
 
     deserialize: function($super, importer, rawNode) {
@@ -1397,6 +1400,7 @@ TextMorph.subclass("CheapListMorph", {
     },
     
     updateList: function(newList) {
+	newList = this.sanitizedList(newList);
         var priorItem = this.getSelection();
         this.itemList = newList;
         var listText = (newList == null) ? "" : newList.join("\n");
@@ -2225,9 +2229,7 @@ WidgetModel.subclass('ConsoleWidget', {
 	this.commandBuffer = [""];
 	this.commandCursor = 0;
 	Global.console.consumers.push(this);
-	this.ctx = { // conveniences
-	    W: function() { return WorldMorph.current() }
-	};
+	this.ctx = { };
 	return this;
     },
     
@@ -2290,8 +2292,44 @@ WidgetModel.subclass('ConsoleWidget', {
 	    this.commandBuffer.unshift();
 	}
 	this.commandCursor = this.commandBuffer.length - 1;
+	var self = this;
 	try {
-	    this.log(Object.inspect((function() { return eval(text) }).bind(this.ctx)()));
+
+	    var result = (function() { 
+		// interactive functions. make them available through doitContext ?
+		function $w() { 
+		    // current world
+		    return WorldMorph.current(); 
+		}
+		function $h() {  
+		    // history
+		    for (var i = self.commandBuffer.length - 1; i > 0; i--) {
+			self.log(i + ") " + self.commandBuffer[i]);
+		    }
+		}
+		function $m(morph) {
+		    // morphs
+		    var array = [];
+		    (morph || WorldMorph.current()).submorphs.each(function(m) { array.push(m) });
+		    return array;
+		}
+		function $i(id) {
+		    return document.getElementById(id.toString());
+		}
+		function $f(id) {
+		    // format node by id
+		    return Exporter.nodeToString($i(id));
+		}
+		function $c() {
+		    // clear buffer
+		    self.messageBuffer = [];
+		    self.changed('getRecentMessages');
+		}
+		return eval(text); 
+	    }).bind(this.ctx)();
+
+	    if (result !== undefined)
+		this.log(Object.inspect(result));
 	    this.changed('getCurrentCommand');
 	} catch (er) {
 	    console.log("Evaluation error: "  + er);

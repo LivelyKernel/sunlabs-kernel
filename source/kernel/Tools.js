@@ -637,20 +637,6 @@ function showStatsViewer(profilee,title) {
     
 })(); // end scoping function
 
-// Inspection tools, called interactively
-Object.extend(console, {
-
-    morphs: function(morph) {
-        var array = [];
-        (morph || WorldMorph.current()).submorphs.each(function(m) { array.push(m) });
-        return array;
-    },
-
-    $: function(id) {
-        return document.getElementById(id.toString());
-    }
-});
-
 // ===========================================================================
 // FrameRateMorph
 // ===========================================================================
