@@ -20,7 +20,7 @@
 // ===========================================================================
 WidgetModel.subclass('SimpleBrowser', {
 
-    openTriggerVariable: 'getChangeList',
+    openTriggerVariable: 'getClassList',
     defaultViewTitle: "Javascript Code Browser",
 
     initialize: function($super) { 

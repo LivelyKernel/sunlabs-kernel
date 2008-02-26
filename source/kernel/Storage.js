@@ -43,9 +43,9 @@ Model.subclass('WebStore', {
     initialize: function($super, host, path) {
         $super();
 	if (host === undefined && path === undefined) { // if called with no arguments
-            path = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('index.xhtml'));
-            if (path == "") path = "/";
-	    host = window.location.hostname;
+	    var localUrl = new URL(window.location.toString());
+            path = localUrl.dirname();
+	    host = localUrl.hostname;
 	}
 	
         this.host = host;

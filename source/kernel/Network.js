@@ -15,28 +15,36 @@
  * most of the necessary networking functionality is 
  * inherited from the browser.  
  */
-Object.subclass('Location', {
+
+Object.subclass('URL', {
     
-    initialize: (function() { 
-	var urlSplitter = new RegExp('(http|https|file)://([^/:]*)(:[0-9]+)?(/.*)');
-	var pathSplitter = new RegExp("([^\\?#]*)(\\?[^#]*)?(#.*)?");
-	
-	return function(url) {
-	    //console.log('got url ' + url);
-	    var result = url.match(urlSplitter);
+    initialize: function(/*...*/) {
+	if (arguments[0] instanceof String || typeof arguments[0] == 'string') {
+	    var urlString = arguments[0];
+	    //console.log('got urlString ' + urlString);
+	    var result = urlString.match(URL.splitter);
 	    this.protocol = result[1]; 
-	    if (!result[1]) throw new Error("bad url " + url + ", " + result);
+	    if (!result[1]) 
+		throw new Error("bad url " + urlString + ", " + result);
 	    this.hostname = result[2];
 	    if (result[3]) 
 		this.port = parseInt(result[3].substring(1));
 	    
 	    var fullpath = result[4];
-	    result = fullpath.match(pathSplitter);
+	    result = fullpath.match(URL.pathSplitter);
 	    this.path = result[1];
 	    this.search = result[2];
 	    this.hash = result[3];
+	} else {
+	    var spec = arguments[0];
+	    this.protocol = spec.protocol || "http";
+	    this.port = spec.port;
+	    this.hostname = spec.hostname;
+	    this.path = spec.path;
+	    if (spec.search !== undefined) this.search = spec.search;
+	    if (spec.hash !== undefined) this.hash = spec.hash;
 	}
-    })(),
+    },
     
     inspect: function() {
 	return Object.toJSON(this);
@@ -49,10 +57,26 @@ Object.subclass('Location', {
     fullPath: function() {
 	return this.path + (this.search || "") + (this.hash || "");
     },
-
+    
     isDirectory: function() {
 	return this.fullPath().endsWith('/');
+    },
+    
+    // POSIX style
+    dirname: function() {
+	var p = this.fullPath();
+	return p.substring(0, p.lastIndexOf('/') + 1);
+    },
+
+    dirnameURL: function() {
+	return new URL({ protocol: this.protocol, port: this.port, hostname: this.hostname, path: this.dirname() });
     }
+    
+});
+
+Object.extend(URL, {
+    splitter: new RegExp('(http|https|file)://([^/:]*)(:[0-9]+)?(/.*)'),
+    pathSplitter: new RegExp("([^\\?#]*)(\\?[^#]*)?(#.*)?")
 });
 
 /**
@@ -185,7 +209,7 @@ var NetRequest = (function() {
     
     var NetRequest = Object.subclass('NetRequest', {
 	
-	proxy: Loader.proxyURL ? new Location(Loader.proxyURL) : null,
+	proxy: Loader.proxyURL ? new URL(Loader.proxyURL) : null,
 
         initialize: function(options) {
             this.requestNetworkAccess();
@@ -235,7 +259,7 @@ var NetRequest = (function() {
 
         rewriteURL: function(url) {
             if (this.proxy) {
-		var loc = new Location(url);
+		var loc = new URL(url);
 		if (this.proxy.hostname != loc.hostname) { // FIXME port and protocol?
 		    return this.proxy + loc.hostname + "/" + loc.fullPath();
 		}
@@ -255,20 +279,19 @@ var NetRequest = (function() {
                 }
             }
         }
-
     });
     
     return NetRequest;
 
 })();
 
+
 /**
  * @class FeedChannel: RSS feed channel
  */ 
 
 Wrapper.subclass('FeedChannel', {
-    
-    
+
     initialize: function(rawNode) {
 	this.rawNode = rawNode;
         this.items = [];
@@ -282,7 +305,7 @@ Wrapper.subclass('FeedChannel', {
     title: function() {
         return this.queryNode('title', 'none')[0].textContent;
     }
-
+    
 });
 
 /**
@@ -296,7 +319,7 @@ Wrapper.subclass('FeedItem', {
     },
     
     title: function() {
-	return this.queryNode('title')[0].textContent;
+	return this.queryNode('title', 'none')[0].textContent;
     },
 
     description: function() {
@@ -304,6 +327,7 @@ Wrapper.subclass('FeedItem', {
     }
     
 });
+
 
 /**
  * @class Feed: RSS feed reader
@@ -323,8 +347,6 @@ WidgetModel.subclass('Feed', {
     
     request: function(model /*, ... model variables*/) {
         // console.log('in request on %s', this.url);
-
-        var feed = this;
         var modelVariables = $A(arguments);
         modelVariables.shift();
         var hourAgo = new Date((new Date()).getTime() - 1000*60*60);
@@ -335,21 +357,18 @@ WidgetModel.subclass('Feed', {
 
             onSuccess: function(transport) {
                 if (!transport.responseXML) {
-                    feed.processResult(null);
+                    this.processResult(null);
                     return;
                 }
-		
                 var result = transport.responseXML.documentElement;
-
-                if (feed.dump) console.log('transmission dump %s', Exporter.nodeToString(transport.responseXML));
-
-                feed.processResult(result);
-                console.log('%s changing %s', feed, modelVariables);
-
+                if (this.dump) 
+		    console.log('transmission dump %s', Exporter.nodeToString(transport.responseXML));
+                this.processResult(result);
+		
                 for (var i = 0; i < modelVariables.length; i++) {
                     model.changed(modelVariables[i]);
                 }
-            }.logErrors('Success Handler for ' + feed)
+            }.bind(this).logErrors('Success Handler for ' + this)
         }).get(this.url);
     },
 
@@ -360,18 +379,17 @@ WidgetModel.subclass('Feed', {
     processResult: function(result) {
         if (!result) {
             console.log('no results for %s', this);
-           return;
+            return;
         }
-
         var results = Query.evaluate(result, '/rss/channel');
         this.channels = [];
         for (var i = 0; i < results.length; i++) {
             this.channels.push(new FeedChannel(results[i]));
         }
     },
-
-    items: function() {
-        return this.channels[0].items;
+    
+    items: function(index) {
+        return this.channels[index || 0].items;
     },
     
     getEntry: function(title) {
@@ -392,11 +410,13 @@ WidgetModel.subclass('Feed', {
 	this.itemTitle = title; 
 	this.changed("getCurrentEntry"); 
     },
+    
     getCurrentEntry: function() { 
-	return this.getEntry(this.itemTitle) 
+	return this.getEntry(this.itemTitle);
     },
-    getChannelTitle: function() { 
-	return "RSS feed from " + this.channels[0].title(); 
+
+    getChannelTitle: function(index) { 
+	return "RSS feed from " + this.channels[index || 0].title(); 
     },
 
     buildView: function(extent) {
@@ -415,10 +435,10 @@ WidgetModel.subclass('Feed', {
         m.connectModel({model: this, getValue: "getCurrentEntry"});
         return panel;
     },
-
+    
     getItemMenu: function() {
 	var feed = this;
-	return [
+	return [ 
 	    ["get XML source", function(evt) {
 		var item = null; 
 		var index = this.innerMorph().selectedLineNo();
@@ -427,9 +447,8 @@ WidgetModel.subclass('Feed', {
 		var infoPane = TextPane(new Rectangle(0, 0, 500, 200), txt);
 		infoPane.innerMorph().acceptInput = false;
 		this.world().addFramedMorph(infoPane, "XML source for " + item.title(), evt.mousePoint);
-	    } ]
+	    }]
 	];
-
     },
     
     viewTitle: function() {
