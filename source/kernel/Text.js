@@ -559,25 +559,32 @@ Object.subclass('TextLine', {
         }
     },
 
-    cloneChunkSkeleton: function(sIndex) {
+    cloneChunkSkeleton: function(sIndex) {  // Say it 3 times fast -- better than "BitBlt" ;-)
 	// clone the important parts of the chunks we have found to avoid re-scanning
 	// DI: changed to share (not clone) chunks beyond this line
+	// DI: later copy only local chunks to this.chunks
+	// DI: later terminate the loop at end of local chunks, and use splice to return remaining chunks
         if (this.chunks == null) return null;
     
         var nc = [];
-        for (var i = 0; i < this.chunks.length; i++) {
+        var lastChunkForThisLine = 0;
+	for (var i = 0; i < this.chunks.length; i++) {
             var tc = this.chunks[i];
-            if (tc.start > sIndex) nc.push(tc);
-            else if (tc.start == sIndex) nc.push(tc.cloneSkeleton());
-            else if (tc.start < sIndex && (tc.start + tc.length) > sIndex) {
-                // this chunk has been broken up by a word wrap
-                var c = tc.cloneSkeleton();
-                c.length -= sIndex - c.start;
-                c.start = sIndex;
-                nc.push(c);
+            if (tc.start < sIndex) {
+		lastChunkForThisLine = i;
+		if ((tc.start + tc.length) > sIndex) {
+	                // this chunk has been broken up by a word wrap
+	                var c = tc.cloneSkeleton();
+	                c.length -= sIndex - c.start;
+	                c.start = sIndex;
+	                nc.push(c);
+		}
             }
+            else if (tc.start == sIndex) nc.push(tc.cloneSkeleton());
+            else nc.push(tc); // here tc.start > sIndex
         }
-        return nc;
+        this.chunks = this.chunks.slice(0, lastChunkForThisLine+1);
+	return nc;
     },
 
     // accessor function
