@@ -3094,21 +3094,26 @@ Morph.addMethods({
     setFillOpacity: function(op) { this.shape.setFillOpacity(op); },//.wrap(Morph.onChange('shape')),
 
     setStrokeOpacity: function(op) { this.shape.setStrokeOpacity(op); },//.wrap(Morph.onChange('shape')),
+    
+    applyStyleSpec: function(spec) { // no default actions, note: use reflection instead?
+        if (spec.borderWidth !== undefined) this.setBorderWidth(spec.borderWidth);
+        if (spec.borderColor !== undefined) this.setBorderColor(spec.borderColor);
+        if (spec.fill !== undefined) this.setFill(spec.fill);
+        if (spec.opacity !== undefined) {
+            this.setFillOpacity(spec.opacity);
+            this.setStrokeOpacity(spec.opacity); 
+        }
+	if (spec.fillOpacity !== undefined) this.setFillOpacity(spec.fillOpacity);
+        if (spec.strokeOpacity !== undefined) this.setStrokeOpacity(spec.strokeOpacity);
+    },
 
     applyStyle: function(spec) {
+	this.applyStyleSpec(spec);
         // Adjust all visual attributes specified in the style spec
-        if (spec.borderWidth) this.setBorderWidth(spec.borderWidth);
-        if (spec.borderColor) this.setBorderColor(spec.borderColor);
         if (this.shape.roundEdgesBy) { 
             this.shape.roundEdgesBy(spec.rounding ? spec.rounding : 0);
         }
-        if (spec.fill) this.setFill(spec.fill);
-        if (spec.opacity) {
-                this.setFillOpacity(spec.opacity);
-                this.setStrokeOpacity(spec.opacity); 
-        }
-        if (spec.fillOpacity) this.setFillOpacity(spec.fillOpacity);
-        if (spec.strokeOpacity) this.setStrokeOpacity(spec.strokeOpacity);
+
         this.fillType = spec.fillType ? spec.fillType : "simple";
         this.baseColor = spec.baseColor ? spec.baseColor : Color.gray;
     },
@@ -3395,12 +3400,19 @@ Morph.addMethods({
         return this;
     },
     
-    withAllSubmorphsDo: function(func, argOrNull) {
-        // Call the supplied function on me and all of my subMorphs by recursion.
-        func.call(this, argOrNull);
-        this.submorphs.invoke('withAllSubmorphsDo', func, argOrNull);
+    applyToAllSubmorphs: function(func, argumentArray) {
+	func.apply(this, argumentArray);
+	this.submorphs.invoke('withAllSubmorphsDo', func, argumentArray);
     },
     
+    withAllSubmorphsDo: function(func, rest) {
+	// Call the supplied function on me and all of my subMorphs by recursion.
+	var args = $A(arguments);
+	args.shift();
+	func.apply(this, args);
+	this.submorphs.invoke('withAllSubmorphsDo', func, args);
+    },
+
     topSubmorph: function() {
         // the morph on top is the last one in the list
         return this.submorphs.last();
@@ -5557,7 +5569,7 @@ Morph.subclass("LinkMorph", {
         [new Rectangle(0.15,0,0.7,1), new Rectangle(0.35,0,0.3,1), new Rectangle(0,0.3,1,0.4)].each( function(each) {
             // Make longitude / latitude lines
             var lineMorph = new Morph(bounds.scaleByRect(each), "ellipse");
-            lineMorph.setFill(null); lineMorph.setBorderWidth(1); lineMorph.setBorderColor(Color.black);
+	    lineMorph.applyStyleSpec({ fill: null, borderWidth: 1, borderColor: Color.black});
             lineMorph.align(lineMorph.bounds().center(),this.shape.bounds().center());
             lineMorph.ignoreEvents();
             this.addMorph(lineMorph);

@@ -1062,64 +1062,39 @@ Morph.subclass("SelectionMorph", {
         if (this.selectedMorphs.length == 0) {
             $super(width);
         } else { 
-            this.selectedMorphs.invoke('setBorderWidth', width);
-            for ( var i = 0; i < this.selectedMorphs.length; i++ ) {
-                if (this.selectedMorphs[i].hasSubmorphs()) {
-                    this.selectedMorphs[i].withAllSubmorphsDo(function() {this.setBorderWidth(width)}, null);
-                }
-            }
+	    this.selectedMorphs.invoke('withAllSubmorphsDo', function() { this.setBorderWidth(width)});
         }
     },
     
     setFill: function($super, color) { 
-        if (this.selectedMorphs.length==0) {
+        if (this.selectedMorphs.length == 0) {
             $super(color);
         } else {
-            this.selectedMorphs.invoke('setFill', color);
-            for ( var i = 0; i < this.selectedMorphs.length; i++ ) {
-                if (this.selectedMorphs[i].hasSubmorphs()) {
-                    this.selectedMorphs[i].withAllSubmorphsDo(function() {this.setFill(color)}, null);
-                }
-            }
+	    this.selectedMorphs.invoke('withAllSubmorphsDo', function() { this.setFill(color)});
         }
     },
     
     setBorderColor: function($super, color) { 
-        if (this.selectedMorphs.length==0) {
+        if (this.selectedMorphs.length == 0) {
             $super(color);
         } else {
-            this.selectedMorphs.invoke('setBorderColor', color);
-            for ( var i = 0; i < this.selectedMorphs.length; i++ ) {
-                if (this.selectedMorphs[i].hasSubmorphs()) {
-                    this.selectedMorphs[i].withAllSubmorphsDo(function() {this.setBorderColor(color)}, null);
-                }
-            }
+            this.selectedMorphs.invoke('withAllSubmorphsDo', function() { this.setBorderColor(color)});
         }
     },
     
     setFillOpacity: function($super, op) { 
-        if (this.selectedMorphs.length==0) {
+        if (this.selectedMorphs.length == 0) {
             $super(op);
         } else { 
-            this.selectedMorphs.invoke('setFillOpacity', op);
-            for ( var i = 0; i < this.selectedMorphs.length; i++ ) {
-                if (this.selectedMorphs[i].hasSubmorphs()) {
-                    this.selectedMorphs[i].withAllSubmorphsDo(function() {this.setFillOpacity(op)}, null);
-                }
-            }
+            this.selectedMorphs.invoke('withAllSubmorphsDo', function() { this.setFillOpacity(op)});
         }
     },
     
     setStrokeOpacity: function($super, op) { 
-        if (this.selectedMorphs.length==0) {
+        if (this.selectedMorphs.length == 0) {
             $super(op);
-        } else { 
-            this.selectedMorphs.invoke('setStrokeOpacity', op);
-            for ( var i = 0; i < this.selectedMorphs.length; i++ ) {
-                if (this.selectedMorphs[i].hasSubmorphs()) {
-                    this.selectedMorphs[i].withAllSubmorphsDo(function() {this.setStrokeOpacity(op)}, null);
-                }
-            }
+	} else {
+	    this.selectedMorphs.invoke('callOnAllSubmorphs', function() { this.setStrokeOpacity(op)});
         }
     },
 
