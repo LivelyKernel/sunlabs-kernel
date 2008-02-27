@@ -16,17 +16,18 @@ Morph.subclass('PackageMorph', {
     documentation: "Visual representation for a serialized morph",
     borderWidth: 3,
     borderColor: Color.black,
-    fill: Color.red,
+    fill: Color.primary.orange,
     openForDragAndDrop: false,
     
     initialize: function($super, targetMorph) {
 	var size = 40;
 	$super(pt(size, size).extentAsRectangle(), "rect");
         var exporter = new Exporter(targetMorph);
-	var delta = this.borderWidth/2;
-	this.addMorph(Morph.makeLine([pt(delta, size/2), pt(size - delta, size/2)], 3, Color.blue)).ignoreEvents();
-	this.addMorph(Morph.makeLine([pt(size/2, delta), pt(size/2, size - delta)], 3, Color.blue)).ignoreEvents();
 	this.serializedMorph = exporter.serialize();
+	var delta = this.borderWidth/2;
+	this.addMorph(Morph.makeLine([pt(delta, size/2), pt(size - delta, size/2)], 3, Color.black)).ignoreEvents();
+	this.addMorph(Morph.makeLine([pt(size/2, delta), pt(size/2, size - delta)], 3, Color.black)).ignoreEvents();
+
     },
     
     openIn: function(world, loc) {

@@ -3847,7 +3847,7 @@ Morph.addMethods({
             [((this.openForDragAndDrop) ? "close DnD" : "open DnD"), this.toggleDnD.curry(evt.mousePoint)],
             ["show Lively markup", this.addSvgInspector.curry(this)],
 	    ["shrink-wrap", function(evt) { 
-		new PackageMorph(this).openIn(this.world(), evt.mousePoint); this.remove()}.bind(this) ],
+		new PackageMorph(this).openIn(this.world(), this.bounds().topLeft()); this.remove()}.bind(this) ],
             ["publish shrink-wrapped ...", function() { 
 		this.world().prompt('publish as (.xhtml)', 
 				    function(filename) { if (filename) Exporter.shrinkWrapToFile([this], filename)}.bind(this))}], 
@@ -4368,7 +4368,7 @@ Morph.addMethods( {
     addSvgInspector: function() {
         var exporter = new Exporter(this);
         var xml = exporter.serialize();
-        console.log('%s serialized to %s', this, xml);        
+        // console.log('%s serialized to %s', this, xml);        
         
         var extent = pt(500, 300);
         var panel = new PanelMorph(extent);
