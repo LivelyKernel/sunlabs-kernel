@@ -3672,11 +3672,13 @@ Morph.addMethods({
     ignoreEvents: function() { // will not respond nor get focus
         this.mouseHandler = null;
         this.rawNode.setAttributeNS(Namespace.LIVELY, "disable-mouse-events", "true");
+	return this;
     },
     
     enableEvents: function() {
         this.mouseHandler = MouseHandlerForDragging;
         this.rawNode.removeAttributeNS(Namespace.LIVELY, "disable-mouse-events");
+	return this;
     },
 
     relayMouseEvents: function(target, eventSpec) {
@@ -3844,7 +3846,9 @@ Morph.addMethods({
             ["-----"],
             [((this.openForDragAndDrop) ? "close DnD" : "open DnD"), this.toggleDnD.curry(evt.mousePoint)],
             ["show Lively markup", this.addSvgInspector.curry(this)],
-            ["publish shrink-wrapped as...", function() { 
+	    ["shrink-wrap", function(evt) { 
+		new PackageMorph(this).openIn(this.world(), evt.mousePoint); this.remove()}.bind(this) ],
+            ["publish shrink-wrapped ...", function() { 
 		this.world().prompt('publish as (.xhtml)', 
 				    function(filename) { if (filename) Exporter.shrinkWrapToFile([this], filename)}.bind(this))}], 
             ["test tracing (in console)", this.testTracing]
@@ -5567,9 +5571,8 @@ Morph.subclass("LinkMorph", {
         [new Rectangle(0.15,0,0.7,1), new Rectangle(0.35,0,0.3,1), new Rectangle(0,0.3,1,0.4)].each( function(each) {
             // Make longitude / latitude lines
             var lineMorph = new Morph(bounds.scaleByRect(each), "ellipse");
-	    lineMorph.applyStyleSpec({fill: null, borderWidth: 1, borderColor: Color.black});
+	    lineMorph.applyStyleSpec({fill: null, borderWidth: 1, borderColor: Color.black}).ignoreEvents();
             lineMorph.align(lineMorph.bounds().center(),this.shape.bounds().center());
-            lineMorph.ignoreEvents();
             this.addMorph(lineMorph);
         }.bind(this));
 

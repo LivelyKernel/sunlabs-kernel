@@ -856,11 +856,9 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
     },
 
     beLabel: function() {
-        this.setBorderWidth(0);
-        this.setFill(null);
+	this.applyStyleSpec({borderWidth: 0, fill: null}).ignoreEvents();
         this.setWrapStyle(WrapStyle.SHRINK);
         // this.isAccepting = false;
-        this.ignoreEvents();
         this.layoutChanged();
         this.okToBeGrabbedBy = function(evt) {  return null; }
         return this;

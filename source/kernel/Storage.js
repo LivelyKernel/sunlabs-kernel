@@ -12,6 +12,59 @@
  * Storage.js.  Storage system implementation.
  */
 
+Morph.subclass('PackageMorph', {
+    documentation: "Visual representation for a serialized morph",
+    borderWidth: 3,
+    borderColor: Color.black,
+    fill: Color.red,
+    openForDragAndDrop: false,
+    
+    initialize: function($super, targetMorph) {
+	var size = 40;
+	$super(pt(size, size).extentAsRectangle(), "rect");
+        var exporter = new Exporter(targetMorph);
+	var delta = this.borderWidth/2;
+	this.addMorph(Morph.makeLine([pt(delta, size/2), pt(size - delta, size/2)], 3, Color.blue)).ignoreEvents();
+	this.addMorph(Morph.makeLine([pt(size/2, delta), pt(size/2, size - delta)], 3, Color.blue)).ignoreEvents();
+	this.serializedMorph = exporter.serialize();
+    },
+    
+    openIn: function(world, loc) {
+        world.addMorphAt(this, loc || world.firstHand().lastMouseDownPoint);
+    },
+    
+    morphMenu: function($super, evt) { 
+        var menu = $super(evt);
+        menu.replaceItemNamed("shrink-wrap", ["unwrap", function(evt) { 
+	    this.unwrapAt(this.getPosition()); 
+	    this.remove();
+	}.bind(this)]);
+	menu.replaceItemNamed("show Lively markup", ["show packaged Lively markup", function(evt) {
+	    var extent = pt(500, 300);
+            var panel = new PanelMorph(extent);
+            var r = new Rectangle(0, 0, extent.x, extent.y);
+            var pane = panel.addMorph(TextPane(r, ""));
+	    pane.innerMorph().setTextString(this.serializedMorph.truncate(pane.innerMorph().maxSafeSize));
+            this.world().addMorph(new WindowMorph(panel, "XML dump", this.bounds().topLeft().addPt(pt(5,0))));
+	}.bind(this)]);
+	// FIXME replace 'publish shrink-wrapped as'
+        return menu;
+    },
+
+
+    unwrapAt: function(loc) {
+	if (!this.serializedMorph) {
+	    console.log("no morph to unwrap");
+	    return;
+	}
+	var importer = new Importer();
+	var targetMorph = importer.importFromString(this.serializedMorph);
+	this.world().addMorphAt(targetMorph, loc);
+	importer.startScripts(this.world());
+    }
+
+});
+
 
 /**
  * @class Resource
