@@ -129,7 +129,7 @@ Morph.subclass(Global, "ClockMorph", {
             // (i>0 ? i : 12) + "");  // English numerals
             ['XII','I','II','III','IV','V','VI','VII','VIII','IX','X','XI'][i]); // Roman
             label.setWrapStyle(WrapStyle.SHRINK);
-	    label.applyStyleSpec({ borderWidth: 0, fill: null});
+	    label.applyStyle({ borderWidth: 0, fill: null});
             label.setFontSize(fontSize);    label.setInset(pt(0,0));        
             label.align(label.bounds().center(), labelPosition.addXY(-1,1));
             this.addMorph(label);
@@ -442,7 +442,7 @@ ClipMorph.subclass(scope, "DoodleMorph", {
 
     addLine: function() {
         var morph = new Morph(new Rectangle(this.newPos * 2, this.newPos, 60, 20), 'rect');
-	morph.applyStyleSpec({fill: null, borderWidth: this.lineWidth, borderColor: this.drawingColor});
+	morph.applyStyle({fill: null, borderWidth: this.lineWidth, borderColor: this.drawingColor});
         morph.setShape(new PolylineShape([pt(0,20),pt(60,0)], this.lineWidth, this.drawingColor));
         this.addMorph(morph);
 
@@ -452,7 +452,7 @@ ClipMorph.subclass(scope, "DoodleMorph", {
 
     addRect: function() {
         var morph = new Morph(new Rectangle(this.newPos * 2, this.newPos, 60, 20), 'rect');
-	morph.applyStyleSpec({fill: this.fillColor, borderWidth: this.lineWidth, borderColor: this.drawingColor});
+	morph.applyStyle({fill: this.fillColor, borderWidth: this.lineWidth, borderColor: this.drawingColor});
         this.addMorph(morph);
 	
         this.newPos += 25;
@@ -461,7 +461,7 @@ ClipMorph.subclass(scope, "DoodleMorph", {
     
     addCirc: function() {
         var morph = new Morph(new Rectangle(this.newPos * 2, this.newPos, 60, 20), 'ellipse');
-	morph.applyStyleSpec({fill: this.fillColor, borderWidth: this.lineWidth, borderColor: this.drawingColor});
+	morph.applyStyle({fill: this.fillColor, borderWidth: this.lineWidth, borderColor: this.drawingColor});
         this.addMorph(morph);
 
         this.newPos += 25;
@@ -486,16 +486,16 @@ ClipMorph.subclass(scope, "DoodleMorph", {
   
         if (this.colorvalue) {
             this.colorMorph = new Morph(this.colorsbutton.bounds().topRight().subPt(pt(0,20)).extent(pt(110,110)), "rect");
-            this.colorMorph.applyStyleSpec({fill: Color.white, fillOpacity: .7, borderRadius: 10});
+            this.colorMorph.applyStyle({fill: Color.white, fillOpacity: .7, borderRadius: 10});
 
             var m = new TextMorph(new Rectangle(10, 5, 80, 20), "Border color");
             m.relayMouseEvents(this.colorMorph, {onMouseDown: "onMouseDown", onMouseUp: "onMouseUp"});
-	    m.applyStyleSpec({borderWidth: 0, fillOpacity: 0, borderRadius: 10});
+	    m.applyStyle({borderWidth: 0, fillOpacity: 0, borderRadius: 10});
             this.colorMorph.addMorph(m);
 
             m = new TextMorph(new Rectangle(10, 65, 80, 20), "Fill color");
             m.relayMouseEvents(this.colorMorph, {onMouseDown: "onMouseDown", onMouseUp: "onMouseUp"});
-	    m.applyStyleSpec({borderWidth: 0, fillOpacity: 0, borderRadius: 10});
+	    m.applyStyle({borderWidth: 0, fillOpacity: 0, borderRadius: 10});
             this.colorMorph.addMorph(m);
 
             this.colorpicker = new ColorPickerMorph(new Rectangle(10, 25, 40, 20));
@@ -1439,7 +1439,7 @@ Object.subclass(scope, 'AsteroidsSprite', {
         stars[i] = pt((Math.random() * gameWidth), (Math.random() * gameHeight));
 
         var m = new Morph(stars[i].extent(pt(1, 1)), "rect");
-        m.applyStyleSpec({fill: Color.yellow, borderColor: Color.yellow});
+        m.applyStyle({fill: Color.yellow, borderColor: Color.yellow});
         gameMorph.addMorph(m);
     }
   }
@@ -2619,7 +2619,7 @@ WidgetModel.subclass('StockWidget', {
     buildView: function(extent) {
         var panel = new PanelMorph(extent);
 	var gradient = new LinearGradient(Color.white, Color.primary.blue.lighter(), LinearGradient.EastWest);
-        panel.applyStyleSpec({fill: gradient, borderWidth: 2});
+        panel.applyStyle({fill: gradient, borderWidth: 2});
 
         //panel.setBorderColor(Color.blue);
 
@@ -3775,7 +3775,7 @@ Model.subclass(scope, 'MessengerWidget', {
     buildView: function(extent) {
         var panel = new PanelMorph(extent);
 	var gradient = new LinearGradient(Color.white, Color.primary.blue.lighter(), LinearGradient.EastWest); 
-	panel.applyStyleSpec({fill: gradient, borderWidth: 2});
+	panel.applyStyle({fill: gradient, borderWidth: 2});
         this.textpanel = panel.addMorph(TextPane(new Rectangle(10, 10, 280, 180), " "));
 	this.textpanel.connectModel({model: this, getText: "getChatText", setText: "setChatText"});
 	// m.innerMorph().autoAccept = true;
@@ -3806,7 +3806,7 @@ Model.subclass(scope, 'MessengerWidget', {
         b.connectModel({model: this, setValue: "setNick"});
         m = this.initpanel.addMorph(new TextMorph(new Rectangle(250, 10, 30, 20), "GO"));
         m.relayMouseEvents(b, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
-	m.applyStyleSpec({fillOpacity: 0, borderWidth: 0});
+	m.applyStyle({fillOpacity: 0, borderWidth: 0});
         
         return panel;
     },
@@ -4712,7 +4712,7 @@ Morph.subclass(scope, "EngineMorph", {
         var pistonBW = 2;
         var pistonDx = (cylinder.getBorderWidth() + pistonBW) / 2;
         var piston = new Morph(cr.insetByPt(pt(pistonDx, (cr.height-this.stroke)/2)), "rectangle");
-	piston.applyStyleSpec({fill: Color.darkGray, borderWidth: pistonBW});
+	piston.applyStyle({fill: Color.darkGray, borderWidth: pistonBW});
         cylinder.addMorph(piston);
         var wristPin = Morph.makeCircle(piston.innerBounds().center(), cr.width*0.1, 0, null, Color.black);
         piston.addMorph(wristPin);

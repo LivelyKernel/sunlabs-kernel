@@ -744,7 +744,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
 
         this.rawNode.setAttributeNS(Namespace.LIVELY, "wrap", this.wrap);
         // KP: set attributes on the text elt, not on the morph, so that we can retrieve it
-	this.applyStyleSpec({fill: this.backgroundColor, borderWidth: this.borderWidth, borderColor: this.borderColor});
+	this.applyStyle({fill: this.backgroundColor, borderWidth: this.borderWidth, borderColor: this.borderColor});
     },
     
     restorePersistentState: function($super, importer) {
@@ -856,7 +856,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
     },
 
     beLabel: function() {
-	this.applyStyleSpec({borderWidth: 0, fill: null}).ignoreEvents();
+	this.applyStyle({borderWidth: 0, fill: null}).ignoreEvents();
         this.setWrapStyle(WrapStyle.SHRINK);
         // this.isAccepting = false;
         this.layoutChanged();
@@ -903,7 +903,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
         this.relayMouseEvents(targetMorph, 
             {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
         // some eye candy for the help
-	this.applyStyleSpec({borderRadius: 15, fill: Color.primary.yellow.lighter(3), fillOpacity: .8});
+	this.applyStyle({borderRadius: 15, fill: Color.primary.yellow.lighter(3), fillOpacity: .8});
         this.openForDragAndDrop = false; // so it won't interfere with mouseovers
         return this;
     },
@@ -1705,7 +1705,7 @@ Object.subclass('TestTextMorph', {
     onMouseDown: function(evt) {
         this.isSelecting = true;
         this.boundsMorph = new Morph(pt(0,0).asRectangle(), "rect");
-	this.boundsMorph.applyStyleSpec({fill: null, borderColor: Color.red});
+	this.boundsMorph.applyStyle({fill: null, borderColor: Color.red});
         this.addMorph(this.boundsMorph);
         this.requestKeyboardFocus(evt.hand);
         this.track(evt);

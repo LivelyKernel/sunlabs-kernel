@@ -37,11 +37,12 @@ Morph.subclass("ButtonMorph", {
     fill: Color.neutral.gray,
     borderColor: Color.neutral.gray,
     label: null,
-    baseColor: Color.neutral.gray, // KP: stopgap fix for serialization??
 
     // A ButtonMorph is the simplest widget
     // It read and writes the boolean variable, this.model[this.propertyName]
     initialize: function($super, initialBounds) {
+	this.baseFill = null; 
+	
         $super(initialBounds, "rect");
         
         var model = new SimpleModel(this, "Value");
@@ -58,14 +59,19 @@ Morph.subclass("ButtonMorph", {
 
     initializeTransientState: function($super, initialBounds) {
         $super(initialBounds);
-        // FIXME make persistent
-        this.baseColor = this.fill;
         this.linkToStyles(['button']);
     },
 
     restorePersistentState: function($super, importer) {
         $super(importer);
         this.changeAppearanceFor(this.getModelValue('getValue', false));
+    },
+
+    getBaseColor: function() {
+	if (this.fill instanceof Color) return this.fill;
+	else if (this.fill instanceof LinearGradient) return this.fill.stopColor(0);
+	else if (this.fill instanceof RadialGradient) return this.fill.stopColor(1);
+	else throw new Error('cannot handle fill ' + this.fill);
     },
 
     // KP: FIXME general way of declaring properties mapping to attributes
@@ -98,21 +104,21 @@ Morph.subclass("ButtonMorph", {
     },
     
     changeAppearanceFor: function(value) {
-        var base = value ? this.baseColor : this.baseColor.darker();
-        switch (this.fillType) {
-        case "linear gradient" :
+	var delta = value ? 1 : 0;
+	if (this.baseFill instanceof LinearGradient) {
+	    var base = this.baseFill.stopColor(0).lighter(delta);
             this.setFill(new LinearGradient(base, base.lighter(), LinearGradient.SouthNorth));
-            break;
-        case "radial gradient" :
+	} else if (this.baseFill instanceof RadialGradient) {
+	    var base = this.baseFill.stopColor(0).lighter(delta);
             this.setFill(new RadialGradient(base.lighter(), base));
-            break;
-        default:
-            this.setFill(base);
-        }
+	} else if (this.baseFill instanceof Color) {
+            this.setFill(this.baseFill.lighter(delta)); 
+        } else throw new Error('unsupported fill type ' + this.baseFill);
     },
-
+    
     applyStyle: function($super, spec) {
         $super(spec);
+	this.baseFill = this.fill; // we may change appearance depending on the value
         this.changeAppearanceFor(this.getValue());
     },
 
@@ -1506,7 +1512,7 @@ CheapListMorph.subclass("MenuMorph", {
             var label = new TextMorph(new Rectangle(0, 0, 200, 20), captionIfAny);
             label.setWrapStyle(WrapStyle.SHRINK);  
             label.fitText();
-            label.applyStyleSpec({borderRadius: 4, fillOpacity: 0.75});
+            label.applyStyle({borderRadius: 4, fillOpacity: 0.75});
             label.align(label.bounds().bottomCenter(), this.shape.bounds().topCenter());
             this.addMorph(label);
         }
@@ -1533,7 +1539,7 @@ CheapListMorph.subclass("MenuMorph", {
         // styling
         this.textColor = Color.blue;
         //this.setFill(StipplePattern.create(Color.white, 3, Color.blue.lighter(5), 1));
-	this.applyStyleSpec({borderRadius: 6, fillOpacity: 0.75});
+	this.applyStyle({borderRadius: 6, fillOpacity: 0.75});
     },
 
     onMouseUp: function(evt) {
@@ -1604,8 +1610,6 @@ Morph.subclass("SliderMorph", {
     },
     
     applyStyle: function($super, spec) {
-        this.baseColor = Color.primary.blue;
-        this.fillType = "simple";
         $super(spec);
         // need to call adjust to update graphics, but only after slider exists
         if (this.slider) this.adjustForNewBounds(); 
@@ -1634,13 +1638,14 @@ Morph.subclass("SliderMorph", {
     
         this.slider.setBounds(bnds.topLeft().addPt(topLeft).extent(sliderExt)); 
 
-        if (this.fillType == "linear gradient") {
+        if (this.fill instanceof LinearGradient) {
             var direction = this.vertical() ? LinearGradient.EastWest : LinearGradient.NorthSouth;
-            this.setFill(new LinearGradient(this.baseColor.lighter(2), this.baseColor, direction));
-            this.slider.setFill(new LinearGradient(this.baseColor.lighter(), this.baseColor.darker(), direction));
+	    var baseColor = this.fill.stopColor(1);
+            this.setFill(this.fill);
+            this.slider.setFill(new LinearGradient(baseColor.lighter(), baseColor.darker(), direction));
         } else {
-            this.setFill(this.baseColor);
-            this.slider.setFill(this.baseColor.darker());
+            this.setFill(this.fill);
+            this.slider.setFill(this.fill.darker());
         }
     },
     
@@ -2201,6 +2206,7 @@ WidgetModel.subclass('ConsoleWidget', {
 	this.commandCursor = 0;
 	Global.console.consumers.push(this);
 	this.ctx = { };
+	this.ans = undefined; // last computed value
 	return this;
     },
     
@@ -2264,9 +2270,10 @@ WidgetModel.subclass('ConsoleWidget', {
 	}
 	this.commandCursor = this.commandBuffer.length - 1;
 	var self = this;
-	try {
+	var ans = this.ans;
 
-	    var result = (function() { 
+	try {
+	    ans = (function() { 
 		// interactive functions. make them available through doitContext ?
 		function $w() { 
 		    // current world
@@ -2287,20 +2294,30 @@ WidgetModel.subclass('ConsoleWidget', {
 		function $i(id) {
 		    return document.getElementById(id.toString());
 		}
+
+		function $x(node) {
+		    return Exporter.nodeToString(node);
+		}
+		
 		function $f(id) {
 		    // format node by id
-		    return Exporter.nodeToString($i(id));
+		    return $x($i(id));
 		}
 		function $c() {
 		    // clear buffer
 		    self.messageBuffer = [];
 		    self.changed('getRecentMessages');
 		}
-		return eval(text); 
+		function $p(obj) {
+		    return Object.properties(obj);
+		}
+		return eval(text);
 	    }).bind(this.ctx)();
-
-	    if (result !== undefined)
-		this.log(Object.inspect(result));
+	    
+	    if (ans !== undefined) {
+		this.ans = ans;
+		this.log(ans && ans.toString());
+	    }
 	    this.changed('getCurrentCommand');
 	} catch (er) {
 	    console.log("Evaluation error: "  + er);

@@ -447,7 +447,7 @@ WidgetModel.subclass('Feed', {
 
     buildView: function(extent) {
         var panel = new PanelMorph(extent);
-	panel.applyStyleSpec({fill: Color.blue.lighter(2), borderWidth: 2});
+	panel.applyStyle({fill: Color.blue.lighter(2), borderWidth: 2});
 	
         var rect = extent.extentAsRectangle();
         var m = panel.addMorph(ListPane(rect.withBottomRight(rect.bottomCenter())));

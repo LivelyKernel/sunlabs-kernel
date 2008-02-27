@@ -202,7 +202,7 @@ WidgetModel.subclass('ObjectBrowser', {
  * @class SimpleInspector: A simple JavaScript object (instance) inspector
  */
    
-Model.subclass('SimpleInspector', {
+WidgetModel.subclass('SimpleInspector', {
 
     defaultViewExtent: pt(400,250),
     openTriggerVariable: 'getPropList',
@@ -239,7 +239,7 @@ Model.subclass('SimpleInspector', {
         // var rightPane = window.targetMorph.rightPane.innerMorph();
         // rightPane.startStepping(1000, 'updateView', 'getPropText');
     },
-*/
+   */
 
     buildView: function(extent) {
         var panel = PanelMorph.makePanedPanel(extent, [
@@ -373,8 +373,7 @@ WidgetModel.subclass('StylePanel', {
 
     buildView: function(extent) {
         var panel = new PanelMorph(extent, "rect");
-        panel.setFill(Color.primary.blue.lighter().lighter());
-        panel.setBorderWidth(2);
+	panel.applyStyle({fill: Color.primary.blue.lighter(2), borderWidth: 2});
         var m;
         var y = 10;
 

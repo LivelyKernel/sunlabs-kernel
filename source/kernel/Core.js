@@ -212,6 +212,7 @@ Namespace =  {
     LIVELY : UserAgent.usableNamespacesInSerializer ? "http://www.experimentalstuff.com/Lively"  : null, 
     XLINK : "http://www.w3.org/1999/xlink", 
     XHTML: "http://www.w3.org/1999/xhtml"
+    
 };
 
 
@@ -266,25 +267,31 @@ Loader.proxyURL = (function() {
 var Query = {
 
     resolver: function(prefix) {
-        console.log('prefix %s value %s', prefix, Namespace[prefix]);
+	if (prefix == null || prefix == "")
+	    prefix = "SVG";
+	else 
+	    prefix = prefix.toUpperCase();
         return Namespace[prefix];
     },
+    
+    xpe: Global.XPathEvaluator && new XPathEvaluator(),
 
     evaluate: function(aNode, aExpr, defaultValue) {
-        var xpe = new XPathEvaluator();
-        var nsResolver = xpe.createNSResolver(aNode.ownerDocument == null ?
-                         aNode.documentElement : aNode.ownerDocument.documentElement);
-        var result = xpe.evaluate(aExpr, aNode, nsResolver, 0, null);
+        if (!this.xpe) throw new Error("XPath not available");
+	var nsResolver = this.xpe.createNSResolver(aNode.ownerDocument == null ?
+						   aNode.documentElement : aNode.ownerDocument.documentElement); 
+        var result = this.xpe.evaluate(aExpr, aNode, nsResolver, 0, null);
         var found = [];
         var res = null;
         while (res = result.iterateNext()) found.push(res);
         if (defaultValue && found.length == 0) {
-            return [ defaultValue ];
+            return [defaultValue];
         }
         return found;
     }
-
 };
+
+
 
 var NodeFactory = {
 
@@ -1056,6 +1063,8 @@ Object.subclass("Color", {
     },
     
     lighter: function(recursion) { 
+	if (recursion == 0) 
+	    return this;
         var result = this.mixedWith(Color.white, 0.5);
         return recursion > 1 ? result.lighter(recursion - 1) : result;
     },
@@ -1256,11 +1265,31 @@ Object.subclass('Wrapper', {
  */
 
 Wrapper.subclass("Gradient", {
-
+    
+    
     addStop: function(offset, color) {
         this.rawNode.appendChild(NodeFactory.create("stop", {offset: offset, "stop-color": color}));
         return this;
+    },
+
+    rawStopNodes: function() {
+	//return this.queryNode("svg:stop"); 
+	return $A(this.rawNode.childNodes).filter(function(n) { return n.localName == "stop"});
+    },
+
+    stopColor: function(index) {
+	var stops = this.rawStopNodes();
+	if (!stops || !stops[index || 0]) return null;
+	return Color.parse(stops[index || 0].getAttributeNS(null, "stop-color"));
+    },
+
+    offset: function(index) {
+	var stops = this.rawStopNodes();
+	if (!stops || !stops[index || 0]) return null;
+	return Converter.parseLength(stops[index || 0].getAttributeNS(null, "offset"));
     }
+
+    
 
 });
 
@@ -1296,14 +1325,13 @@ Object.extend(LinearGradient, {
 Gradient.subclass("RadialGradient", {
     
     initialize: function($super, stopColor1, stopColor2) {
-        var c = pt(0.5, 0.5);
-        var r = 0.4;
-        this.rawNode = NodeFactory.create("radialGradient", {cx: c.x, cy: c.y, r: r});
+        this.c = pt(0.5, 0.5);
+        this.r = 0.4;
+        this.rawNode = NodeFactory.create("radialGradient", {cx: this.c.x, cy: this.c.y, r: this.r});
         this.addStop(0, stopColor1);
         this.addStop(1, stopColor2);
         return this;
     }
-    
 });
 
 /**
@@ -3095,7 +3123,7 @@ Morph.addMethods({
 
     setStrokeOpacity: function(op) { this.shape.setStrokeOpacity(op); },//.wrap(Morph.onChange('shape')),
     
-    applyStyleSpec: function(spec) { // no default actions, note: use reflection instead?
+    applyStyle: function(spec) { // no default actions, note: use reflection instead?
         if (spec.borderWidth !== undefined) this.setBorderWidth(spec.borderWidth);
         if (spec.borderColor !== undefined) this.setBorderColor(spec.borderColor);
         if (spec.fill !== undefined) this.setFill(spec.fill);
@@ -3111,24 +3139,12 @@ Morph.addMethods({
 	return this;
     },
 
-    applyStyle: function(spec) {
-	this.applyStyleSpec(spec);
-        // Adjust all visual attributes specified in the style spec 
-        this.fillType = spec.fillType ? spec.fillType : "simple"; // KP: this can be inferred from the value of the fill?
-        this.baseColor = spec.baseColor ? spec.baseColor : Color.gray;
-    },
-
     makeStyleSpec: function() {
         // Adjust all visual attributes specified in the style spec
         var spec = { };
         spec.borderWidth = this.getBorderWidth();
         spec.borderColor = this.getBorderColor();
         spec.fill = this.getFill();
-        spec.fillType = "simple";
-        if (spec.fill instanceof LinearGradient) spec.fillType = "linear gradient";
-        if (spec.fill instanceof RadialGradient) spec.fillType = "radial gradient";
-        if (this.baseColor) spec.baseColor = this.baseColor;
-        if (this.fillType) spec.fillType = this.fillType;
         if (this.shape.getBorderRadius) spec.borderRadius = this.shape.getBorderRadius() || 0.0;
         spec.fillOpacity = this.shape.getFillOpacity() || 1.0;
         spec.strokeOpacity = this.shape.getStrokeOpacity() || 1.0;
@@ -3832,7 +3848,6 @@ Morph.addMethods({
         var items = [
             ["remove", this.remove],
             ["inspect", function(evt) { new SimpleInspector(this).openIn(this.world(), evt.mousePoint)}],
-//            ["browse hierarchy", function() { new ObjectBrowser(this).openIn(this.world(), evt.mousePoint) }],
             ["style", function() { new StylePanel(this).open()}],
             ["drill", this.showOwnerChain.curry(evt)],
             ["grab", this.pickMeUp.curry(evt)],
@@ -4396,7 +4411,7 @@ Object.extend(Morph, {
     makeCircle: function(location, radius, lineWidth, lineColor, fill) {
         // make a circle of the given radius with its origin at the center
         var circle = new Morph(location.asRectangle().expandBy(radius), "ellipse")
-	return circle.applyStyleSpec({fill: fill, borderWidth: lineWidth, borderColor: lineColor});
+	return circle.applyStyle({fill: fill, borderWidth: lineWidth, borderColor: lineColor});
     },
 
     makePolygon: function(verts, lineWidth, lineColor, fill) {
@@ -4723,9 +4738,9 @@ PasteUpMorph.subclass("WorldMorph", {
                            fill: Color.neutral.gray.lighter() },
             panel:       {  },
             slider:      { borderColor: Color.black, borderWidth: 1,
-                           baseColor: Color.neutral.gray.lighter() },
+                           fill: Color.neutral.gray.lighter() },
             button:      { borderColor: Color.black, borderWidth: 1, borderRadius: 0,
-                           baseColor: Color.lightGray, fillType: "simple" },
+                           fill: Color.lightGray },
             widgetPanel: { borderColor: Color.red, borderWidth: 2, borderRadius: 0,
                            fill: Color.blue.lighter()},
             clock:       { borderColor: Color.black, borderWidth: 1,
@@ -4740,9 +4755,9 @@ PasteUpMorph.subclass("WorldMorph", {
                            fill: new LinearGradient(Color.primary.blue, Color.primary.blue.lighter(3))},
             panel:       {  },
             slider:      { borderColor: Color.black, borderWidth: 1, 
-                           baseColor: Color.primary.blue, fillType: "linear gradient"},
+			   fill: new LinearGradient(Color.primary.blue.lighter(2), Color.primary.blue)},
             button:      { borderColor: Color.neutral.gray, borderWidth: 0.3, borderRadius: 4,
-                           baseColor:   Color.primary.blue, fillType: "linear gradient" },
+                           fill: new LinearGradient(Color.darkGray, Color.darkGray.lighter(), LinearGradient.SouthNorth) },
             widgetPanel: { borderColor: Color.blue, borderWidth: 4, borderRadius: 16,
                            fill: Color.blue.lighter(), opacity: 0.4},
             clock:       { borderColor: Color.black, borderWidth: 1,
@@ -4757,9 +4772,9 @@ PasteUpMorph.subclass("WorldMorph", {
                            fill: new LinearGradient(Color.turquoise, Color.turquoise.lighter(3))},
             panel:       {  },
             slider:      { borderColor: Color.black, borderWidth: 1, 
-                           baseColor: Color.turquoise, fillType: "linear gradient"},
+			   fill: new LinearGradient(Color.turquoise.lighter(2), Color.turquoise)},
             button:      { borderColor: Color.neutral.gray.darker(), borderWidth: 2, borderRadius: 8,
-                           baseColor: Color.turquoise, fillType: "radial gradient" },
+                           fill: new RadialGradient(Color.turquoise.lighter(), Color.turquoise) },
             widgetPanel: { borderColor: Color.neutral.gray.darker(), borderWidth: 4,
                            fill: Color.turquoise.lighter(3), borderRadius: 16},
             clock:       { borderColor: Color.black, borderWidth: 1,
@@ -5571,7 +5586,7 @@ Morph.subclass("LinkMorph", {
         [new Rectangle(0.15,0,0.7,1), new Rectangle(0.35,0,0.3,1), new Rectangle(0,0.3,1,0.4)].each( function(each) {
             // Make longitude / latitude lines
             var lineMorph = new Morph(bounds.scaleByRect(each), "ellipse");
-	    lineMorph.applyStyleSpec({fill: null, borderWidth: 1, borderColor: Color.black}).ignoreEvents();
+	    lineMorph.applyStyle({fill: null, borderWidth: 1, borderColor: Color.black}).ignoreEvents();
             lineMorph.align(lineMorph.bounds().center(),this.shape.bounds().center());
             this.addMorph(lineMorph);
         }.bind(this));
