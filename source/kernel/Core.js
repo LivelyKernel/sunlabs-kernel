@@ -1989,7 +1989,7 @@ Shape.subclass('RectShape', {
         return new HandleMorph(loc, "rect", hand, targetMorph, partName); 
     },
     
-    getEdgeRounding: function() {
+    getBorderRadius: function() {
         return this.rawNode.getAttributeNS(null, "rx") || undefined;
     },
     
@@ -3105,16 +3105,16 @@ Morph.addMethods({
         }
 	if (spec.fillOpacity !== undefined) this.setFillOpacity(spec.fillOpacity);
         if (spec.strokeOpacity !== undefined) this.setStrokeOpacity(spec.strokeOpacity);
+        if (this.shape.roundEdgesBy && spec.borderRadius !== undefined) { 
+            this.shape.roundEdgesBy(spec.borderRadius);
+        }
+	return this;
     },
 
     applyStyle: function(spec) {
 	this.applyStyleSpec(spec);
-        // Adjust all visual attributes specified in the style spec
-        if (this.shape.roundEdgesBy) { 
-            this.shape.roundEdgesBy(spec.rounding ? spec.rounding : 0);
-        }
-
-        this.fillType = spec.fillType ? spec.fillType : "simple";
+        // Adjust all visual attributes specified in the style spec 
+        this.fillType = spec.fillType ? spec.fillType : "simple"; // KP: this can be inferred from the value of the fill?
         this.baseColor = spec.baseColor ? spec.baseColor : Color.gray;
     },
 
@@ -3129,7 +3129,7 @@ Morph.addMethods({
         if (spec.fill instanceof RadialGradient) spec.fillType = "radial gradient";
         if (this.baseColor) spec.baseColor = this.baseColor;
         if (this.fillType) spec.fillType = this.fillType;
-        if (this.shape.getEdgeRounding) spec.rounding = this.shape.getEdgeRounding() || 0.0;
+        if (this.shape.getBorderRadius) spec.borderRadius = this.shape.getBorderRadius() || 0.0;
         spec.fillOpacity = this.shape.getFillOpacity() || 1.0;
         spec.strokeOpacity = this.shape.getStrokeOpacity() || 1.0;
         return spec;
@@ -4391,10 +4391,7 @@ Object.extend(Morph, {
     makeCircle: function(location, radius, lineWidth, lineColor, fill) {
         // make a circle of the given radius with its origin at the center
         var circle = new Morph(location.asRectangle().expandBy(radius), "ellipse")
-        circle.setBorderWidth(lineWidth);
-        circle.setBorderColor(lineColor);
-        circle.setFill(fill);
-        return circle; 
+	return circle.applyStyleSpec({fill: fill, borderWidth: lineWidth, borderColor: lineColor});
     },
 
     makePolygon: function(verts, lineWidth, lineColor, fill) {
@@ -4716,16 +4713,16 @@ PasteUpMorph.subclass("WorldMorph", {
     displayThemes: {
         primitive: { // Primitive look and feel -- flat fills and no rounding or translucency
             styleName:   'primitive',
-            window:      { rounding: 0 },
-            titleBar:    { rounding: 0, borderWidth: 2, bordercolor: Color.black,
+            window:      { borderRadius: 0 },
+            titleBar:    { borderRadius: 0, borderWidth: 2, bordercolor: Color.black,
                            fill: Color.neutral.gray.lighter() },
             panel:       {  },
             slider:      { borderColor: Color.black, borderWidth: 1,
                            baseColor: Color.neutral.gray.lighter() },
-            button:      { borderColor: Color.black, borderWidth: 1, rounding: 0,
+            button:      { borderColor: Color.black, borderWidth: 1, borderRadius: 0,
                            baseColor: Color.lightGray, fillType: "simple" },
-            widgetPanel: { borderColor: Color.red, borderWidth: 2, rounding: 0,
-                           fill: Color.blue.lighter(), opacity: 1},
+            widgetPanel: { borderColor: Color.red, borderWidth: 2, borderRadius: 0,
+                           fill: Color.blue.lighter()},
             clock:       { borderColor: Color.black, borderWidth: 1,
                            fill: new RadialGradient(Color.yellow.lighter(2), Color.yellow) },
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue}
@@ -4733,15 +4730,15 @@ PasteUpMorph.subclass("WorldMorph", {
 
         lively: { // This is to be the style we like to show for our personality
             styleName: 'lively',
-            window:      { rounding: 8 },
-            titleBar:    { rounding: 8, borderWidth: 2, bordercolor: Color.black,
+            window:      { borderRadius: 8 },
+            titleBar:    { borderRadius: 8, borderWidth: 2, bordercolor: Color.black,
                            fill: new LinearGradient(Color.primary.blue, Color.primary.blue.lighter(3))},
             panel:       {  },
             slider:      { borderColor: Color.black, borderWidth: 1, 
                            baseColor: Color.primary.blue, fillType: "linear gradient"},
-            button:      { borderColor: Color.neutral.gray, borderWidth: 0.3, rounding: 4,
+            button:      { borderColor: Color.neutral.gray, borderWidth: 0.3, borderRadius: 4,
                            baseColor:   Color.primary.blue, fillType: "linear gradient" },
-            widgetPanel: { borderColor: Color.blue, borderWidth: 4, rounding: 16,
+            widgetPanel: { borderColor: Color.blue, borderWidth: 4, borderRadius: 16,
                            fill: Color.blue.lighter(), opacity: 0.4},
             clock:       { borderColor: Color.black, borderWidth: 1,
                            fill: new RadialGradient(Color.primary.blue.lighter(2), Color.primary.blue.lighter()) },
@@ -4750,16 +4747,16 @@ PasteUpMorph.subclass("WorldMorph", {
 
         turquoise: { // Like turquoise, black and silver jewelry, [or other artistic style]
             styleName: 'turquoise',
-            window:      { rounding: 8},
-            titleBar:    { rounding: 8, borderWidth: 2, bordercolor: Color.black,
+            window:      { borderRadius: 8},
+            titleBar:    { borderRadius: 8, borderWidth: 2, bordercolor: Color.black,
                            fill: new LinearGradient(Color.turquoise, Color.turquoise.lighter(3))},
             panel:       {  },
             slider:      { borderColor: Color.black, borderWidth: 1, 
                            baseColor: Color.turquoise, fillType: "linear gradient"},
-            button:      { borderColor: Color.neutral.gray.darker(), borderWidth: 2, rounding: 8,
+            button:      { borderColor: Color.neutral.gray.darker(), borderWidth: 2, borderRadius: 8,
                            baseColor: Color.turquoise, fillType: "radial gradient" },
             widgetPanel: { borderColor: Color.neutral.gray.darker(), borderWidth: 4,
-                           fill: Color.turquoise.lighter(3), rounding: 16},
+                           fill: Color.turquoise.lighter(3), borderRadius: 16},
             clock:       { borderColor: Color.black, borderWidth: 1,
                            fill: new RadialGradient(Color.turquoise.lighter(2), Color.turquoise) },
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue}
@@ -5569,7 +5566,7 @@ Morph.subclass("LinkMorph", {
         [new Rectangle(0.15,0,0.7,1), new Rectangle(0.35,0,0.3,1), new Rectangle(0,0.3,1,0.4)].each( function(each) {
             // Make longitude / latitude lines
             var lineMorph = new Morph(bounds.scaleByRect(each), "ellipse");
-	    lineMorph.applyStyleSpec({ fill: null, borderWidth: 1, borderColor: Color.black});
+	    lineMorph.applyStyleSpec({fill: null, borderWidth: 1, borderColor: Color.black});
             lineMorph.align(lineMorph.bounds().center(),this.shape.bounds().center());
             lineMorph.ignoreEvents();
             this.addMorph(lineMorph);

@@ -1241,6 +1241,7 @@ TextMorph.subclass("CheapListMorph", {
     
     borderColor: Color.black,
     wrap: WrapStyle.NONE,
+    maxSafeSize: 2e4,  // override max for subsequent updates
     
     initialize: function($super, initialBounds, itemList) {
         // itemList is an array of strings
@@ -1251,7 +1252,7 @@ TextMorph.subclass("CheapListMorph", {
 	itemList = this.sanitizedList(itemList);
         var listText = itemList ? itemList.join("\n") : "";
         $super(initialBounds, listText);
-	this.maxSafeSize = 20000;  // override max for subsequent updates
+	
         this.itemList = itemList;
         // this default self connection may get overwritten by, eg, connectModel()...
         var model = new SimpleModel(null, "List", "Selection");
@@ -1509,8 +1510,7 @@ CheapListMorph.subclass("MenuMorph", {
             var label = new TextMorph(new Rectangle(0, 0, 200, 20), captionIfAny);
             label.setWrapStyle(WrapStyle.SHRINK);  
             label.fitText();
-            label.shape.roundEdgesBy(4);
-            label.shape.setFillOpacity(0.75);
+            label.applyStyleSpec({borderRadius: 4, fillOpacity: 0.75});
             label.align(label.bounds().bottomCenter(), this.shape.bounds().topCenter());
             this.addMorph(label);
         }
@@ -1537,12 +1537,12 @@ CheapListMorph.subclass("MenuMorph", {
         // styling
         this.textColor = Color.blue;
         //this.setFill(StipplePattern.create(Color.white, 3, Color.blue.lighter(5), 1));
-        this.shape.roundEdgesBy(6);
-        this.shape.setFillOpacity(0.75);
+	this.applyStyleSpec({borderRadius: 6, fillOpacity: 0.75});
     },
 
     onMouseUp: function(evt) {
-        if (!this.hasNullSelection()) var item = this.items[this.selectedLineNo()];
+	var item = null;
+        if (!this.hasNullSelection()) item = this.items[this.selectedLineNo()];
         this.setNullSelectionAt(0);  // Clean up now, in case the call fails
         if (!this.stayUp) this.remove(); 
 

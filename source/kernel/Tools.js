@@ -303,11 +303,11 @@ WidgetModel.subclass('StylePanel', {
         this.targetMorph.setBorderColor(this.borderColor);
     },
 
-    getRounding: function() { return this.rounding; },
+    getBorderRadius: function() { return this.borderRadius; },
     
-    setRounding: function(r) {
-        this.targetMorph.shape.roundEdgesBy(this.rounding = r.roundTo(1));
-        this.changed('getRounding');
+    setBorderRadius: function(r) {
+        this.targetMorph.shape.roundEdgesBy(this.borderRadius = r.roundTo(1));
+        this.changed('getBorderRadius');
     },
 
     getFillTypes: function() { return ["simple", "linear gradient", "radial gradient", "stipple"]; },
@@ -393,9 +393,9 @@ WidgetModel.subclass('StylePanel', {
         if (this.targetMorph.shape.roundEdgesBy) {
             panel.addMorph(new TextMorph(new Rectangle(50, y, 100, 20), 'Round Corners').beLabel());
             panel.addMorph(m = new PrintMorph(new Rectangle(150, y, 40, 20)));
-            m.connectModel({model: this, getValue: "getRounding", setValue: "setRounding"});
+            m.connectModel({model: this, getValue: "getBorderRadius", setValue: "setBorderRadius"});
             panel.addMorph(m = new SliderMorph(new Rectangle(200, y, 100, 20), 50.0));
-            m.connectModel({model: this, getValue: "getRounding", setValue: "setRounding"});
+            m.connectModel({model: this, getValue: "getBorderRadius", setValue: "setBorderRadius"});
             y += 30;
         }
 

@@ -442,9 +442,7 @@ ClipMorph.subclass(scope, "DoodleMorph", {
 
     addLine: function() {
         var morph = new Morph(new Rectangle(this.newPos * 2, this.newPos, 60, 20), 'rect');
-        morph.setFill(null);
-        morph.setBorderWidth(this.lineWidth);
-        morph.setBorderColor(this.drawingColor);
+	morph.applyStyleSpec({fill: null, borderWidth: this.lineWidth, borderColor: this.drawingColor});
         morph.setShape(new PolylineShape([pt(0,20),pt(60,0)], this.lineWidth, this.drawingColor));
         this.addMorph(morph);
 
@@ -454,20 +452,16 @@ ClipMorph.subclass(scope, "DoodleMorph", {
 
     addRect: function() {
         var morph = new Morph(new Rectangle(this.newPos * 2, this.newPos, 60, 20), 'rect');
-        morph.setFill(this.fillColor);
-        morph.setBorderWidth(this.lineWidth);
-        morph.setBorderColor(this.drawingColor);
+	morph.applyStyleSpec({fill: this.fillColor, borderWidth: this.lineWidth, borderColor: this.drawingColor});
         this.addMorph(morph);
-
+	
         this.newPos += 25;
         if (this.newPos > 125) this.newPos = 25;            
     },
     
     addCirc: function() {
         var morph = new Morph(new Rectangle(this.newPos * 2, this.newPos, 60, 20), 'ellipse');
-        morph.setFill(this.fillColor);
-        morph.setBorderWidth(this.lineWidth);
-        morph.setBorderColor(this.drawingColor);
+	morph.applyStyleSpec({fill: this.fillColor, borderWidth: this.lineWidth, borderColor: this.drawingColor});
         this.addMorph(morph);
 
         this.newPos += 25;
@@ -490,26 +484,18 @@ ClipMorph.subclass(scope, "DoodleMorph", {
             return;
         }
   
-        if ( this.colorvalue ) {
-
+        if (this.colorvalue) {
             this.colorMorph = new Morph(this.colorsbutton.bounds().topRight().subPt(pt(0,20)).extent(pt(110,110)), "rect");
-
-            this.colorMorph.shape.roundEdgesBy(10);
-            this.colorMorph.setFill(Color.white);
-            this.colorMorph.shape.setFillOpacity(.7);
+            this.colorMorph.applyStyleSpec({fill: Color.white, fillOpacity: .7, borderRadius: 10});
 
             var m = new TextMorph(new Rectangle(10, 5, 80, 20), "Border color");
             m.relayMouseEvents(this.colorMorph, {onMouseDown: "onMouseDown", onMouseUp: "onMouseUp"});
-            m.setBorderWidth(0);
-            m.shape.roundEdgesBy(10);
-            m.shape.setFillOpacity(0);
+	    m.applyStyleSpec({borderWidth: 0, fillOpacity: 0, borderRadius: 10});
             this.colorMorph.addMorph(m);
 
             m = new TextMorph(new Rectangle(10, 65, 80, 20), "Fill color");
             m.relayMouseEvents(this.colorMorph, {onMouseDown: "onMouseDown", onMouseUp: "onMouseUp"});
-            m.setBorderWidth(0);
-            m.shape.roundEdgesBy(10);
-            m.shape.setFillOpacity(0);
+	    m.applyStyleSpec({borderWidth: 0, fillOpacity: 0, borderRadius: 10});
             this.colorMorph.addMorph(m);
 
             this.colorpicker = new ColorPickerMorph(new Rectangle(10, 25, 40, 20));
@@ -572,7 +558,8 @@ ClipMorph.subclass(scope, "DoodleMorph", {
         ];
         if ( !this.borderMenuOpen ) {
             this.borderMenuOpen = true;
-            (this.borders = new MenuMorph(items, this)).openIn(this.world(), this.worldPoint(this.widthbutton.bounds().topRight()), true);
+            (this.borders = new MenuMorph(items, this)).openIn(this.world(), 
+							       this.worldPoint(this.widthbutton.bounds().topRight()), true);
         } else {
             this.borders.remove();
             this.borderMenuOpen = false;
@@ -1452,8 +1439,7 @@ Object.subclass(scope, 'AsteroidsSprite', {
         stars[i] = pt((Math.random() * gameWidth), (Math.random() * gameHeight));
 
         var m = new Morph(stars[i].extent(pt(1, 1)), "rect");
-        m.setFill(Color.yellow);
-        m.setBorderColor(Color.yellow);
+        m.applyStyleSpec({fill: Color.yellow, borderColor: Color.yellow});
         gameMorph.addMorph(m);
     }
   }
@@ -4731,8 +4717,7 @@ Morph.subclass(scope, "EngineMorph", {
         var pistonBW = 2;
         var pistonDx = (cylinder.getBorderWidth() + pistonBW) / 2;
         var piston = new Morph(cr.insetByPt(pt(pistonDx, (cr.height-this.stroke)/2)), "rectangle");
-        piston.setFill(Color.darkGray);
-        piston.setBorderWidth(pistonBW);
+	piston.applyStyleSpec({fill: Color.darkGray, borderWidth: pistonBW});
         cylinder.addMorph(piston);
         var wristPin = Morph.makeCircle(piston.innerBounds().center(), cr.width*0.1, 0, null, Color.black);
         piston.addMorph(wristPin);

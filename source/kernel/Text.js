@@ -714,16 +714,16 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
     tabsAsSpaces: true,
     noShallowCopyProperties: Morph.prototype.noShallowCopyProperties.concat(['rawTextNode', 'rawSelectionNode', 'lines']),
     locale: Locale,
-
+    acceptInput: true, // whether it accepts changes to text KP: change: interactive changes
+    autoAccept: false,
+    
     initializeTransientState: function($super, initialBounds) {
         $super(initialBounds);
         this.selectionRange = [0,-1]; // null or a pair of indices into textString
         this.selectionPivot = null;  // index of hit at onmousedown
         this.priorSelection = [0,-1];  // for double-clicks
-        this.autoAccept = false;
         this.hasKeyboardFocus = false;
         this.isSelecting = false; // true if last onmousedown was in character area (hit>0)
-        this.acceptInput = true; // whether it accepts changes to text KP: change: interactive changes
         // note selection is transient
         this.lines = null;//: TextLine[]
         this.lineNumberHint = 0;
@@ -744,9 +744,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
 
         this.rawNode.setAttributeNS(Namespace.LIVELY, "wrap", this.wrap);
         // KP: set attributes on the text elt, not on the morph, so that we can retrieve it
-        this.setFill(this.backgroundColor);
-        this.setBorderWidth(this.borderWidth);
-        this.setBorderColor(this.borderColor);
+	this.applyStyleSpec({fill: this.backgroundColor, borderWidth: this.borderWidth, borderColor: this.borderColor});
     },
     
     restorePersistentState: function($super, importer) {
@@ -907,9 +905,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
         this.relayMouseEvents(targetMorph, 
             {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
         // some eye candy for the help
-        this.shape.roundEdgesBy(15);
-        this.setFill(Color.primary.yellow.lighter(3));
-        this.shape.setFillOpacity(.8);
+	this.applyStyleSpec({borderRadius: 15, fill: Color.primary.yellow.lighter(3), fillOpacity: .8});
         this.openForDragAndDrop = false; // so it won't interfere with mouseovers
         return this;
     },
@@ -1711,8 +1707,7 @@ Object.subclass('TestTextMorph', {
     onMouseDown: function(evt) {
         this.isSelecting = true;
         this.boundsMorph = new Morph(pt(0,0).asRectangle(), "rect");
-        this.boundsMorph.setFill(null);
-        this.boundsMorph.setBorderColor(Color.red);
+	this.boundsMorph.applyStyleSpec({fill: null, borderColor: Color.red});
         this.addMorph(this.boundsMorph);
         this.requestKeyboardFocus(evt.hand);
         this.track(evt);
