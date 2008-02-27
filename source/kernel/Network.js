@@ -334,11 +334,11 @@ Wrapper.subclass('FeedItem', {
     },
     
     title: function() {
-	return this.queryNode('title', 'none')[0].textContent;
+	return this.queryNode('title', "none")[0].textContent;
     },
 
     description: function() {
-	return this.queryNode('description')[0].textContent;
+	return this.queryNode('description', "none")[0].textContent;
     }
     
 });
@@ -350,7 +350,7 @@ Wrapper.subclass('FeedItem', {
 // FIXME something clever, maybe an external library?
 
 WidgetModel.subclass('Feed', {
-    dump: false,
+
     defaultViewExtent: pt(500, 200),
     openTriggerVariable: null,
     
@@ -376,8 +376,6 @@ WidgetModel.subclass('Feed', {
                     return;
                 }
                 var result = transport.responseXML.documentElement;
-                if (this.dump) 
-		    console.log('transmission dump %s', Exporter.nodeToString(transport.responseXML));
                 this.processResult(result);
 		
                 for (var i = 0; i < modelVariables.length; i++) {
@@ -436,18 +434,15 @@ WidgetModel.subclass('Feed', {
 
     buildView: function(extent) {
         var panel = new PanelMorph(extent);
-	panel.addMorph = panel.addMorph.logCalls();
-        panel.setFill(Color.blue.lighter().lighter());
-        panel.setBorderWidth(2);
-        var feed = this;
-
-        // View layout
-        var localRect = extent.extentAsRectangle();
-        var m = panel.addMorph(ListPane(localRect.withBottomRight(localRect.bottomCenter())));
+	panel.applyStyleSpec({fill: Color.blue.lighter(2), borderWidth: 2});
 	
+        var rect = extent.extentAsRectangle();
+        var m = panel.addMorph(ListPane(rect.withBottomRight(rect.bottomCenter())));
         m.connectModel({model: this, getList: "getItemList", setSelection: "setItemTitle", getMenu: "getItemMenu"});
-        m = panel.addMorph(PrintPane(localRect.withTopLeft(localRect.topCenter())));
-        m.connectModel({model: this, getValue: "getCurrentEntry"});
+        
+	m = panel.addMorph(TextPane(rect.withTopLeft(rect.topCenter())));
+	m.innerMorph().acceptInput = false;
+        m.connectModel({model: this, getText: "getCurrentEntry"});
         return panel;
     },
     
@@ -455,7 +450,6 @@ WidgetModel.subclass('Feed', {
 	var feed = this;
 	return [ 
 	    ["get XML source", function(evt) {
-		var item = null; 
 		var index = this.innerMorph().selectedLineNo();
 		var item = feed.items()[index];
 		var txt = item ? item.toMarkupString() : "?";

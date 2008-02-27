@@ -3828,7 +3828,6 @@ Morph.addMethods({
 
     morphMenu: function(evt) { 
         var items = [
-            ["duplicate", this.copyToHand.curry(evt.hand)],
             ["remove", this.remove],
             ["inspect", function(evt) { new SimpleInspector(this).openIn(this.world(), evt.mousePoint)}],
 //            ["browse hierarchy", function() { new ObjectBrowser(this).openIn(this.world(), evt.mousePoint) }],
@@ -3850,8 +3849,9 @@ Morph.addMethods({
 				    function(filename) { if (filename) Exporter.shrinkWrapToFile([this], filename)}.bind(this))}], 
             ["test tracing (in console)", this.testTracing]
         ];
+        if (this.okToDuplicate()) items.unshift(["duplicate", this.copyToHand.curry(evt.hand)]);
         var menu = new MenuMorph(items, this); 
-        if (!this.okToDuplicate()) menu.removeItemNamed("duplicate");
+
         return menu;
     },
 
@@ -3932,8 +3932,9 @@ Morph.addMethods({
     },
 
     showOwnerChain: function(evt) {
-        var items = this.ownerChain().reverse().map(
-            function(each) { return [Object.inspect(each).truncate(), each, "showMorphMenu", evt]; }
+	console.log("chain is " + this.ownerChain());
+        var items = this.ownerChain().map(
+            function(each) { return [Object.inspect(each).truncate(), function() { each.showMorphMenu(evt) }]; }
         );
         new MenuMorph(items, this).openIn(this.world(), evt.mousePoint, false, "Top item is topmost");
     },
@@ -3995,7 +3996,7 @@ Morph.addMethods({
     ownerChain: function() {
         // Return an array of me and all my owners
         // First item is, eg, world; last item is me
-        if (!this.owner) return [];
+        if (!this.owner) return [this];
         var owners = this.owner.ownerChain();
         owners.push(this);
         return owners;
