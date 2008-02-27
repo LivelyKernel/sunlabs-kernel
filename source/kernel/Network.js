@@ -32,10 +32,16 @@ Object.subclass('URL', {
 		this.port = parseInt(result[3].substring(1));
 	    
 	    var fullpath = result[4];
-	    result = fullpath.match(URL.pathSplitter);
-	    this.path = result[1];
-	    this.search = result[2];
-	    this.hash = result[3];
+	    if (fullpath) {
+		result = fullpath.match(URL.pathSplitter);
+		this.path = result[1];
+		this.search = result[2];
+		this.hash = result[3];
+	    } else {
+		this.path = "/";
+		this.search = "";
+		this.hash = "";
+	    }
 	} else {
 	    var spec = arguments[0];
 	    this.protocol = spec.protocol || "http";
@@ -46,6 +52,7 @@ Object.subclass('URL', {
 	    if (spec.hash !== undefined) this.hash = spec.hash;
 	}
     },
+    
     
     inspect: function() {
 	return Object.toJSON(this);
@@ -79,10 +86,14 @@ Object.subclass('URL', {
     },
 
     withPath: function(path) { 
-	// FIXME handle hash&search?
-	return new URL({protocol: this.protocol, port: this.port, hostname: this.hostname, path: path });
+	var result = path.match(URL.pathSplitter);
+	this.path = result[1];
+	this.search = result[2];
+	this.hash = result[3];
+	return new URL({protocol: this.protocol, port: this.port, hostname: this.hostname, path: 
+			result[1], search: result[2], hash: result[3] });
     },
-
+    
     withFilename: function(filename) {
 	return new URL({protocol: this.protocol, port: this.port, hostname: this.hostname, path: this.dirname() + filename });
     }
@@ -90,7 +101,7 @@ Object.subclass('URL', {
 });
 
 Object.extend(URL, {
-    splitter: new RegExp('(http|https|file)://([^/:]*)(:[0-9]+)?(/.*)'),
+    splitter: new RegExp('(http|https|file)://([^/:]*)(:[0-9]+)?(/.*)?'),
     pathSplitter: new RegExp("([^\\?#]*)(\\?[^#]*)?(#.*)?")
 });
 
@@ -274,7 +285,9 @@ var NetRequest = (function() {
 
         rewriteURL: function(url) {
             if (this.proxy) {
-		var loc = new URL(url);
+		//var loc = url instanceof URL ? url : new URL(url);
+		if (!(url instanceof URL)) throw new Error('not a parsed url');
+		var loc = url;
 		if (this.proxy.hostname != loc.hostname) { // FIXME port and protocol?
 		    return this.proxy + loc.hostname + "/" + loc.fullPath();
 		}
@@ -354,9 +367,9 @@ WidgetModel.subclass('Feed', {
     defaultViewExtent: pt(500, 200),
     openTriggerVariable: null,
     
-    initialize: function($super, url) {
+    initialize: function($super, urlString) {
 	$super(null);
-        this.url = url;
+        this.url = new URL(urlString);
         this.channels = null;
     },
     

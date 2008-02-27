@@ -129,9 +129,9 @@ Morph.subclass(Global, "ClockMorph", {
             // (i>0 ? i : 12) + "");  // English numerals
             ['XII','I','II','III','IV','V','VI','VII','VIII','IX','X','XI'][i]); // Roman
             label.setWrapStyle(WrapStyle.SHRINK);
+	    label.applyStyleSpec({ borderWidth: 0, fill: null});
             label.setFontSize(fontSize);    label.setInset(pt(0,0));        
-            label.setBorderWidth(0);        label.setFill(null);
-            label.align(label.bounds().center(),labelPosition.addXY(-1,1));
+            label.align(label.bounds().center(), labelPosition.addXY(-1,1));
             this.addMorph(label);
         }
     
@@ -384,7 +384,7 @@ ClipMorph.subclass(scope, "DoodleMorph", {
         this.addMorph(this.colorsbutton);
 
         this.stylebutton.onMouseUp = function(evt) {
-            var newValue = this.isToggle() ? !this.getValue() : false;
+            var newValue = this.isToggle() ? ! this.getValue() : false;
             this.changeAppearanceFor(newValue); 
         };
         this.stylebutton.connectModel({model: this, setValue: "setStyle"});
@@ -2618,11 +2618,8 @@ WidgetModel.subclass('StockWidget', {
 
     buildView: function(extent) {
         var panel = new PanelMorph(extent);
-
-        // panel.setFill(StipplePattern.create(Color.primary.blue.lighter(), 1, Color.gray.lighter(), 1));
-        panel.setFill(new LinearGradient(Color.white, Color.primary.blue.lighter(), LinearGradient.EastWest));
-
-        panel.setBorderWidth(2);
+	var gradient = new LinearGradient(Color.white, Color.primary.blue.lighter(), LinearGradient.EastWest);
+        panel.applyStyleSpec({fill: gradient, borderWidth: 2});
 
         //panel.setBorderColor(Color.blue);
 
@@ -2684,19 +2681,16 @@ WidgetModel.subclass('StockWidget', {
         panel.startStepping(60000, 'refresh');
     },
 
-    getUrl: function(url, params) {
-        var model = this;
-
+    getUrl: function(urlString, params) {
         new NetRequest({
             contentType: 'text/html', 
             parameters: params || {},
             onSuccess: function(transport) {
                 var result = transport.responseText;
-                model.lastQuote = result.split(',');
-                model.changed('getQuotes');
-            }
-        }).get(url);
-
+                this.lastQuote = result.split(',');
+                this.changed('getQuotes');
+            }.bind(this)
+        }).get(new URL(urlString));
     },
   
     formatQuote: function(arr) {
@@ -3756,6 +3750,7 @@ Object.extend(BouncingSpheres, {
 Model.subclass(scope, 'MessengerWidget', {
 
     imagepath: "Resources/IM/",
+    serverURL: "http://livelykernel.sunlabs.com:8093",
 
     initialize: function($super) { 
         $super();
@@ -3763,34 +3758,34 @@ Model.subclass(scope, 'MessengerWidget', {
         this.id = Config.random;
         this.text = "";
         this.chatroom = "";
-        this.server = "http://livelykernel.sunlabs.com:8093/";
-//        this.server = "http://localhost:8093/";
-//        console.log("address == " + this.server + "foreground.html?login=IM");
+        this.server = new URL(this.serverURL);
         var id = this.id;
         var parent = this;
         new NetRequest({ 
             onFailure: function(transport) {
                 console.log(transport.responseText);
             }
-
-        }).get(this.server + "foreground.html?login=IM");
+        }).get(this.server.withPath("foreground.html?login=IM"));
     },
     
     openIn: function(world, location) {
-        return world.addFramedMorph(this.buildView(), 'Instant Messenger', location);
+        return world.addFramedMorph(this.buildView(pt(300, 255)), 'Instant Messenger', location);
     },
     
-    buildView: function() {
-        var panel = new PanelMorph(pt(300, 255));
-        panel.setBorderWidth(2);
-        panel.setFill(new LinearGradient(Color.white, Color.primary.blue.lighter(), LinearGradient.EastWest));
-        var m = null;
-        panel.addMorph(this.textpanel = TextPane(new Rectangle(10, 10, 280, 180), " ")).connectModel({model: this, getText: "getChatText", setText: "setChatText"});
-//        m.innerMorph().autoAccept = true;
-        panel.addMorph(m = new TextMorph(new Rectangle(10, 210, 220, 50), "<enter text here>")).connectModel({model: this, getText: "getIMText", setText: "setIMText"});
+    buildView: function(extent) {
+        var panel = new PanelMorph(extent);
+	var gradient = new LinearGradient(Color.white, Color.primary.blue.lighter(), LinearGradient.EastWest); 
+	panel.applyStyleSpec({fill: gradient, borderWidth: 2});
+        this.textpanel = panel.addMorph(TextPane(new Rectangle(10, 10, 280, 180), " "));
+	this.textpanel.connectModel({model: this, getText: "getChatText", setText: "setChatText"});
+	// m.innerMorph().autoAccept = true;
+	
+        var m = panel.addMorph(new TextMorph(new Rectangle(10, 210, 220, 50), "<enter text here>"))
+	m.connectModel({model: this, getText: "getIMText", setText: "setIMText"});
         m.autoAccept = true;
-        panel.addMorph(m = new ImageButtonMorph(new Rectangle(240, 200,  50,  50), 
-        this.imagepath + "Talk.PNG", this.imagepath + "Talk_down.PNG")).connectModel({model: this, setValue: "send"});
+        panel.addMorph(new ImageButtonMorph(new Rectangle(240, 200,  50,  50), 
+					    this.imagepath + "Talk.PNG", 
+					    this.imagepath + "Talk_down.PNG")).connectModel({model: this, setValue: "send"});
         // disable the 2 set value calls for the button
         m.onMouseUp = function(evt) {
             var newValue = this.isToggle() ? !this.getValue() : false;
@@ -3800,17 +3795,18 @@ Model.subclass(scope, 'MessengerWidget', {
         this.initpanel = new PanelMorph(pt(300, 255));
         panel.addMorph(this.initpanel);
         this.initpanel.setFill(new LinearGradient(Color.white, Color.primary.blue, LinearGradient.NorthSouth));
-        this.initpanel.addMorph(this.nickName = new TextMorph(new Rectangle(10, 10, 220, 20), "<please enter your nickname>"));//.connectModel({model: this, getText: "getIMText", setText: "setIMText"});
-        this.initpanel.addMorph(b = new ButtonMorph(new Rectangle(240,10,50,20)));
+        this.nickName = this.initpanel.addMorph(new TextMorph(new Rectangle(10, 10, 220, 20), 
+							      "<please enter your nickname>"));
+	//.connectModel({model: this, getText: "getIMText", setText: "setIMText"});
+        var b = this.initpanel.addMorph(new ButtonMorph(new Rectangle(240,10,50,20)));
         b.onMouseUp = function(evt) {
             var newValue = this.isToggle() ? !this.getValue() : false;
             this.changeAppearanceFor(newValue); 
         };
         b.connectModel({model: this, setValue: "setNick"});
-        this.initpanel.addMorph(m = new TextMorph(new Rectangle(250, 10, 30, 20), "GO"));
+        m = this.initpanel.addMorph(new TextMorph(new Rectangle(250, 10, 30, 20), "GO"));
         m.relayMouseEvents(b, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
-        m.shape.setFillOpacity(0);
-        m.setBorderWidth(0);
+	m.applyStyleSpec({fillOpacity: 0, borderWidth: 0});
         
         return panel;
     },
@@ -3852,7 +3848,7 @@ Model.subclass(scope, 'MessengerWidget', {
     send: function() {
         var parent = this;
         if ( this.text != null && this.text != "" ) {
-            var url = this.server + "foreground.html?action=updatemany&key." + this.id + "=" + this.text.replace(/=/g, "");
+            var url = this.server.withPath("foreground.html?action=updatemany&key." + this.id + "=" + this.text.replace(/=/g, ""));
             new NetRequest({ 
                 onSuccess: function(transport) {
                     parent.setChatText(parent.id + ": " + parent.getIMText()); // add the current line immediately
@@ -3861,8 +3857,7 @@ Model.subclass(scope, 'MessengerWidget', {
                 }
             }).get(url);
         }
-        
-//        this.load();
+	//        this.load();
     }, 
     
     load: function() {
@@ -3884,8 +3879,8 @@ Model.subclass(scope, 'MessengerWidget', {
                 // start polling for new events
                 parent.load();
             }
-        }).get(this.server + "background.html");
-
+        }).get(new URL(this.server.withPath("background.html")));
+	
     },
     
     parseResponse: function (response) {
@@ -3893,7 +3888,7 @@ Model.subclass(scope, 'MessengerWidget', {
         var idstring = response.replace(/<!--[^-]*-->/g, "");
         var IDstring = idstring.replace(/^\s+|\s+$/g, '');
         var IDs = IDstring.match(/\w+(?==)/g);
-        if ( !IDs ) {
+        if (!IDs) {
             return;
         }
         for ( var i = 0; i < IDs.length; i++ ) {

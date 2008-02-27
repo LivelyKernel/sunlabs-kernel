@@ -173,7 +173,7 @@ Model.subclass('WebStore', {
     },
 
     resourceURL: function(resource) {
-        return this.baseUrl.withPath(resource).toString();
+        return this.baseUrl.withPath(resource);
     }
 
 });

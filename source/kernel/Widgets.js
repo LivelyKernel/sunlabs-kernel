@@ -22,10 +22,6 @@
 //  The Inspector and Browser are fairly simple examples of this architecture in use.
 
 
-
-
-
-
 // ===========================================================================
 // Simple widgets
 // ===========================================================================
