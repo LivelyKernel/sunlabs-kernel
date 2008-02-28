@@ -19,17 +19,23 @@ Morph.subclass('PackageMorph', {
     fill: Color.primary.orange,
     openForDragAndDrop: false,
     
+    
     initialize: function($super, targetMorph) {
 	var size = 40;
 	$super(pt(size, size).extentAsRectangle(), "rect");
         var exporter = new Exporter(targetMorph);
 	this.serializedMorph = exporter.serialize();
+	this.morphDescription = targetMorph.toString();
 	var delta = this.borderWidth/2;
 	this.addMorph(Morph.makeLine([pt(delta, size/2), pt(size - delta, size/2)], 3, Color.black)).ignoreEvents();
 	this.addMorph(Morph.makeLine([pt(size/2, delta), pt(size/2, size - delta)], 3, Color.black)).ignoreEvents();
 
     },
-    
+
+    getHelpText: function() {
+	return "Packaged morph " + this.morphDescription;
+    },
+
     openIn: function(world, loc) {
         world.addMorphAt(this, loc || world.firstHand().lastMouseDownPoint);
     },

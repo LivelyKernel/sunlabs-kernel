@@ -618,8 +618,8 @@ function showStatsViewer(profilee,title) {
             // Normally, it will pop it off before returning, but ***check interaction with try/catch
             var traceFunc = function () {
                 debuggingStack.push(arguments);  // Push the arguments object on the stack ...
-                var originalFunction = arguments.callee.originalFunction;
-
+                var originalFunction = arguments.callee.originalFunction; 
+		
                 if (/*originalFunction.*/ Function.prototype.shouldTrace) {
                     var indent = "-".times(debuggingStack.length);
                     console.log(debuggingStack.length + "" + indent + originalFunction.qualifiedMethodName());

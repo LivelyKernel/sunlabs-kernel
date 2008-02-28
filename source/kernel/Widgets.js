@@ -554,9 +554,6 @@ var WindowControlMorph = Morph.subclass("WindowControlMorph", {
         $super(rect.insetBy(inset), 'ellipse');
         this.setFill(new RadialGradient(color.lighter(2), color));
         this.targetMorph = targetMorph;
-        this.color = color;
-        // serialization helper there's no easy way to extract the base color from a radial gradient
-        this.rawNode.setAttributeNS(Namespace.LIVELY, "base-color", color.toString());
 	// FIXME should be a superclass(?) of SchedulableAction
         this.action = new SchedulableAction(targetMorph, actionScript, null, 0);
 	this.addNonMorph(this.action.rawNode);
@@ -564,11 +561,6 @@ var WindowControlMorph = Morph.subclass("WindowControlMorph", {
         return this;
     },
 
-    restorePersistentState: function($super, importer) {
-        $super(importer);
-        // FIXME errors
-        this.color = Color.parse(this.rawNode.getAttributeNS(Namespace.LIVELY, "base-color"));
-    },
 
     handlesMouseDown: function() { return true; },
 
@@ -582,41 +574,26 @@ var WindowControlMorph = Morph.subclass("WindowControlMorph", {
         return this.action.exec();
     },
 
-    onMouseOver: function(evt) {
-        this.setFill(new RadialGradient(Color.white, this.color));
-        this.helpText && this.showHelp(evt);
+    onMouseOver: function($super, evt) {
+	var prevColor = this.fill.stopColor(1);
+        this.setFill(new RadialGradient(Color.white, prevColor));
+	$super(evt);
     },
     
-    onMouseOut: function(evt) {
-        this.setFill(new RadialGradient(this.color.lighter(2), this.color));
-        this.hideHelp();
+    onMouseOut: function($super, evt) {
+	var prevColor = this.fill.stopColor(1);
+        this.setFill(new RadialGradient(prevColor.lighter(2), prevColor));
+	$super(evt);
     },
     
     checkForControlPointNear: function() { return false; },
     
     okToBeGrabbedBy: function() { return null; },
     
-    showHelp: function(evt) {
-        if (this.suppressBalloonHelp) return;  // DI: maybe settable in window menu?
-        // FIXME: The size of the balloon should be calculated based on string size
-        if (!this.help) {
-            this.help = new TextMorph(evt.mousePoint.extent(pt(80, 20)), this.helpText);
-            this.help.beHelpBalloonFor(this);
-
-        } else if (this.help.position() != evt.mousePoint) {
-            this.help.setPosition(evt.mousePoint);
-        }
-        if (!this.help.owner) this.world().addMorph(this.help);
-    },
-    
-    hideHelp: function() {
-        if (this.help) this.help.remove();
-    },
-    
-    setHelpText: function ( newText ) {
-        this.helpText = newText;
+    getHelpText: function() {
+	return this.helpText;
     }
-    
+ 
 });
 
 /**
@@ -835,8 +812,7 @@ WindowMorph.subclass("TabbedPanelMorph", {
         // click their tab and they retreat to the edge of the screen like a file folder.
         this.sideName = sideName ? sideName : "south";
         $super(targetMorph, headline, location);
-        this.setFill(null);
-        this.setBorderColor(null);
+	this.applyStyle({fill: null, borderColor: null});
         this.newToTheWorld = true;
         this.setPositions();
         this.moveBy(this.expandedPosition.subPt(this.position()));
@@ -869,13 +845,8 @@ WindowMorph.subclass("TabbedPanelMorph", {
  * whenever there is a chance to manipulate the shape of the current
  * object, e.g., to resize, re-scale, or rotate it.  
  */ 
-var HandleMorph = (function () {
-
-    // Counter for displaying balloon help only a certain number of times
-    var helpCounter = 0;
-
-    return Morph.subclass("HandleMorph", {
-
+Morph.subclass('HandleMorph', {
+    
     fill: null,
     borderColor: Color.blue,
     borderWidth: 1,
@@ -889,6 +860,8 @@ var HandleMorph = (function () {
         "Cmd+shift+drag to scale the object \n" + 
         "Shift+drag to change width ", 
 
+    maxBalloonHelpCount: 5,
+    
     initialize: function($super, location, shapeType, hand, targetMorph, partName) {
         $super(location.asRectangle().expandBy(5), shapeType);
         this.targetMorph = targetMorph;
@@ -897,25 +870,9 @@ var HandleMorph = (function () {
         this.initialRotation = null; 
         return this;
     },
-
-    showHelp: function(evt) {
-        if (this.suppressBalloonHelp) return;  // DI: maybe settable in window menu?
-        // Show the balloon help only if it hasn't been shown too many times already
-        if (helpCounter < 20) {
-            helpCounter ++;
-            this.help = new TextMorph(evt.mousePoint.extent(pt(200, 20)), 
-                this.shape instanceof RectShape ? this.controlHelpText : this.circleHelpText);
-            this.help.beHelpBalloonFor(this);
-            if (!this.help.owner) this.world().addMorph(this.help);
-        } 
-    },
     
-    hideHelp: function() {
-        if (this.help) this.help.remove();
-    },
-    
-    setHelpText: function ( newText ) {
-        this.helpText = newText;
+    getHelpText: function() {
+	return (this.shape instanceof RectShape) ? this.controlHelpText : this.circleHelpText;
     },
 
     okToDuplicate: function(evt) {
@@ -991,7 +948,7 @@ var HandleMorph = (function () {
         }, scaleFactor);
     }
     
-})})();
+});
 
 Morph.subclass("SelectionMorph", {
 	// @class SelectionMorph: The selection "tray" object that

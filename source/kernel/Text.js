@@ -903,7 +903,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
         this.relayMouseEvents(targetMorph, 
             {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
         // some eye candy for the help
-	this.applyStyle({borderRadius: 15, fill: Color.primary.yellow.lighter(3), fillOpacity: .8});
+	this.linkToStyles(['helpText']);
         this.openForDragAndDrop = false; // so it won't interfere with mouseovers
         return this;
     },

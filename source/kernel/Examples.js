@@ -4904,11 +4904,11 @@ Morph.subclass("AnimMorph", {
     },
     
     // should we make a better control panel for the animation with mouseover and mouseout?
-    onMouseOver: function(evt) {
+    onMouseOver: function($super, evt) {
        // console.log("mouse over");
     },
     
-    onMouseOut: function(evt) {
+    onMouseOut: function($super, evt) {
        // console.log("mouse out");
     },
     

@@ -526,6 +526,13 @@ Object.extend(Function.prototype, {
 
         scope[name] = klass;
         return klass;
+    },
+
+
+    getOriginal: function() {
+	var func = this;
+	while (func.originalFunction) func = func.originalFunction;
+	return func;
     }
     
 });
@@ -1203,20 +1210,16 @@ Object.subclass('Wrapper', {
     rawNode: null,
 
     getType: function() {
-        for (var ctor = this.constructor; ctor != null; ctor = ctor.originalFunction) {
-            var type = ctor.type;
-           if (type) return type;
-        }
+	var ctor = this.constructor.getOriginal();
+	if (ctor.type) return ctor.type;
         console.log("no type for " + this.constructor);
         Function.showStack();
         return null;
     },
 
     getScope: function() {
-        for (var ctor = this.constructor; ctor != null; ctor = ctor.originalFunction) {
-            var scope = ctor.scope;
-            if (scope) return scope;
-        }
+        var ctor = this.constructor.getOriginal();
+        if(ctor.scope) return ctor.scope;
         console.log("no scope for " + this.constructor + " tried " + this.originalFunction);
         return Global;
     },
@@ -1256,6 +1259,10 @@ Object.subclass('Wrapper', {
 
     queryNode: function(queryString, defaultValue) {
         return Query.evaluate(this.rawNode, queryString, defaultValue);
+    },
+
+    getPrototype: function() {
+	return this.constructor.getOriginal().prototype;
     }
 
 });
@@ -2702,7 +2709,8 @@ Morph = Visual.subclass("Morph", {
     stepHandler: null, // a stepHandler for time-varying morphs and animation 
     noShallowCopyProperties: ['id', 'rawNode', 'shape', 'submorphs', 'stepHandler', 'defs', 'activeScripts', 'nextNavigableSibling', 'focusHalo', 'fullBounds'],
 
-    suppressBalloonHelp: Config.suppressBalloonHelp,
+    maxBalloonHelpCount: Config.suppressBalloonHelp ? 0 : Infinity,
+    balloonHelpCount: 0,
 
     nextNavigableSibling: null, // keyboard navigation
     
@@ -3637,6 +3645,43 @@ Morph.addMethods({
             }
         }
     }
+});
+    
+Morph.addMethods({     // help handling
+
+    getHelpText: function() { // override to supply help text
+	return null;
+    },
+
+    showHelp: function(evt) {
+	
+	/*
+        if (this.constructor.prototype.balloonHelpCount > this.maxBalloonHelpCount) return false;  // DI: maybe settable in window menu?
+	console.log('count is ' + this.constructor.prototype.balloonHelpCount + " on "  + this.constructor.prototype);
+	this.constructor.prototype.balloonHelpCount ++;
+*/
+	
+        if (this.owner instanceof HandMorph) return false;
+        // Create only one help balloon at a time
+	if (this.helpBalloonMorph && !this.helpBalloonMorph.getPosition().eqPt(evt.mousePoint)) {
+            this.help.setPosition(evt.mousePoint);
+	    return false;
+        } else {
+	    var helpText = this.getHelpText();
+	    if (!helpText) return;
+	    var width = Math.min(helpText.length * 20, 260); // some estimate of width.
+            this.helpBalloonMorph = new TextMorph(evt.mousePoint.addXY(10, 10).extent(pt(width, 20)), helpText);
+            this.world().addMorph(this.helpBalloonMorph.beHelpBalloonFor(this));
+	    return true;
+	}
+    },
+    
+    hideHelp: function() {
+        if (!this.helpBalloonMorph)  
+	    return;
+        this.helpBalloonMorph.remove();
+        delete this.helpBalloonMorph;
+    }
 
 });
 
@@ -3717,9 +3762,13 @@ Morph.addMethods({
     
     onMouseUp: function(evt) { }, //default behavior
 
-    onMouseOver: function(evt) { }, //default behavior
+    onMouseOver: function(evt) { 
+	this.showHelp(evt);
+    }, 
 
-    onMouseOut: function(evt) { }, //default behavior
+    onMouseOut: function(evt) { 
+	this.hideHelp();
+    }, 
 
     onMouseWheel: function(evt) { }, // default behavior
 
@@ -4721,7 +4770,7 @@ var PasteUpMorph = Morph.subclass("PasteUpMorph", {
 });
 
 /**
- * @class WorldMorph: a Morphic world (visual container of other morphs) 
+ * @class WorldMorph
  */ 
 
 PasteUpMorph.subclass("WorldMorph", {
@@ -4736,7 +4785,7 @@ PasteUpMorph.subclass("WorldMorph", {
             window:      { borderRadius: 0 },
             titleBar:    { borderRadius: 0, borderWidth: 2, bordercolor: Color.black,
                            fill: Color.neutral.gray.lighter() },
-            panel:       {  },
+    
             slider:      { borderColor: Color.black, borderWidth: 1,
                            fill: Color.neutral.gray.lighter() },
             button:      { borderColor: Color.black, borderWidth: 1, borderRadius: 0,
@@ -4745,7 +4794,9 @@ PasteUpMorph.subclass("WorldMorph", {
                            fill: Color.blue.lighter()},
             clock:       { borderColor: Color.black, borderWidth: 1,
                            fill: new RadialGradient(Color.yellow.lighter(2), Color.yellow) },
-            link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue}
+	    panel:       {  },
+            link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue},
+	    helpText:    { borderRadius: 15, fill: Color.primary.yellow.lighter(3), fillOpacity: .8}
         },
 
         lively: { // This is to be the style we like to show for our personality
@@ -4753,7 +4804,6 @@ PasteUpMorph.subclass("WorldMorph", {
             window:      { borderRadius: 8 },
             titleBar:    { borderRadius: 8, borderWidth: 2, bordercolor: Color.black,
                            fill: new LinearGradient(Color.primary.blue, Color.primary.blue.lighter(3))},
-            panel:       {  },
             slider:      { borderColor: Color.black, borderWidth: 1, 
 			   fill: new LinearGradient(Color.primary.blue.lighter(2), Color.primary.blue)},
             button:      { borderColor: Color.neutral.gray, borderWidth: 0.3, borderRadius: 4,
@@ -4762,7 +4812,9 @@ PasteUpMorph.subclass("WorldMorph", {
                            fill: Color.blue.lighter(), opacity: 0.4},
             clock:       { borderColor: Color.black, borderWidth: 1,
                            fill: new RadialGradient(Color.primary.blue.lighter(2), Color.primary.blue.lighter()) },
-            link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue}
+	    panel:       {  },
+            link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue},
+	    helpText:    { borderRadius: 15, fill: Color.primary.yellow.lighter(3), fillOpacity: .8}
         },
 
         turquoise: { // Like turquoise, black and silver jewelry, [or other artistic style]
@@ -4770,7 +4822,6 @@ PasteUpMorph.subclass("WorldMorph", {
             window:      { borderRadius: 8},
             titleBar:    { borderRadius: 8, borderWidth: 2, bordercolor: Color.black,
                            fill: new LinearGradient(Color.turquoise, Color.turquoise.lighter(3))},
-            panel:       {  },
             slider:      { borderColor: Color.black, borderWidth: 1, 
 			   fill: new LinearGradient(Color.turquoise.lighter(2), Color.turquoise)},
             button:      { borderColor: Color.neutral.gray.darker(), borderWidth: 2, borderRadius: 8,
@@ -4779,7 +4830,9 @@ PasteUpMorph.subclass("WorldMorph", {
                            fill: Color.turquoise.lighter(3), borderRadius: 16},
             clock:       { borderColor: Color.black, borderWidth: 1,
                            fill: new RadialGradient(Color.turquoise.lighter(2), Color.turquoise) },
-            link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue}
+	    panel:       {  },
+            link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue},
+	    helpText:    { borderRadius: 15, fill: Color.primary.yellow.lighter(3), fillOpacity: .8}
         }
     },
 
@@ -4868,7 +4921,7 @@ PasteUpMorph.subclass("WorldMorph", {
     morphMenu: function($super, evt) { 
         var menu = $super(evt);
         menu.keepOnlyItemsNamed(["inspect", "style"]);
-        menu.addItem([(Morph.prototype.suppressBalloonHelp ? "enable balloon help" : "disable balloon help"),
+        menu.addItem([(Morph.prototype.maxBalloonHelpCount == 0 ? "enable balloon help" : "disable balloon help"),
                      this.toggleBalloonHelp]);
         menu.addItem([(HandMorph.prototype.applyDropShadowFilter ? "disable " : "enable ") + "drop shadow (if supported)",
             function () { HandMorph.prototype.applyDropShadowFilter = !HandMorph.prototype.applyDropShadowFilter}]);
@@ -4892,7 +4945,7 @@ PasteUpMorph.subclass("WorldMorph", {
     },
    
     toggleBalloonHelp: function() {
-        Morph.prototype.suppressBalloonHelp = !Morph.prototype.suppressBalloonHelp;
+        Morph.prototype.maxBalloonHelpCount = Morph.prototype.maxBalloonHelpCount > 0 ? 0 : Infinity;
     },
 
     toggleDebugBackground: function() {
@@ -5695,41 +5748,24 @@ Morph.subclass("LinkMorph", {
 
         if (carriedMorphs.length > 0) newWorld.firstHand().emergingFromWormHole = true; // prevent re-entering
     },
-
-    onMouseOver: function(evt) {
+    
+    onMouseOver: function($super, evt) {
         if (evt.hand.hasSubmorphs()) { // if hand is laden enter world bearing gifts
             if (!evt.hand.emergingFromWormHole) this.enterMyWorld(evt);
-        } else if (this.helpText) this.showHelp(evt);
+        } else {
+	    $super(evt);
+	}
     },
     
     onMouseOut: function(evt) {
         evt.hand.emergingFromWormHole = false;
         this.hideHelp();
     },
-    
-    showHelp: function(evt) {
-        if (this.suppressBalloonHelp) return;  // DI: maybe settable in window menu?
-        if (this.owner instanceof HandMorph) return;
-        
-        // Create only one help balloon at a time
-        if (this.help) return;
-        
-        this.help = new TextMorph(evt.mousePoint.addXY(10, 10).extent(pt(260, 20)), this.helpText);
-        this.help.beHelpBalloonFor(this);
-        this.world().addMorph(this.help);
-    },
-    
-    hideHelp: function() {
-        if (this.help) {
-            this.help.remove();
-            this.help = null;
-        }
-    },
-    
-    setHelpText: function(newText) {
-        this.helpText = newText;
-    }
 
+    getHelpText: function() {
+	return this.helpText;
+    }
+    
 });
 
 
