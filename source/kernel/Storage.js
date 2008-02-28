@@ -18,14 +18,14 @@ Morph.subclass('PackageMorph', {
     borderColor: Color.black,
     fill: Color.primary.orange,
     openForDragAndDrop: false,
-    
+    suppressHandles: true,
     
     initialize: function($super, targetMorph) {
 	var size = 40;
 	$super(pt(size, size).extentAsRectangle(), "rect");
         var exporter = new Exporter(targetMorph);
 	this.serializedMorph = exporter.serialize();
-	this.morphDescription = targetMorph.toString();
+	this.helpText = "Shrink-wrapped " + targetMorph;
 	var delta = this.borderWidth/2;
 	this.addMorph(Morph.makeLine([pt(delta, size/2), pt(size - delta, size/2)], 3, Color.black)).ignoreEvents();
 	this.addMorph(Morph.makeLine([pt(size/2, delta), pt(size/2, size - delta)], 3, Color.black)).ignoreEvents();
@@ -33,7 +33,7 @@ Morph.subclass('PackageMorph', {
     },
 
     getHelpText: function() {
-	return "Packaged morph " + this.morphDescription;
+	return this.helpText;
     },
 
     openIn: function(world, loc) {
@@ -44,20 +44,25 @@ Morph.subclass('PackageMorph', {
         var menu = $super(evt);
         menu.replaceItemNamed("shrink-wrap", ["unwrap", function(evt) { 
 	    this.unwrapAt(this.getPosition()); 
-	    this.remove();
 	}.bind(this)]);
 	menu.replaceItemNamed("show Lively markup", ["show packaged Lively markup", function(evt) {
 	    var extent = pt(500, 300);
-            var panel = new PanelMorph(extent);
-            var r = new Rectangle(0, 0, extent.x, extent.y);
-            var pane = panel.addMorph(TextPane(r, ""));
-	    pane.innerMorph().setTextString(this.serializedMorph.truncate(pane.innerMorph().maxSafeSize));
-            this.world().addMorph(new WindowMorph(panel, "XML dump", this.bounds().topLeft().addPt(pt(5,0))));
+            var pane = TextPane(extent.extentAsRectangle(), "");
+	    pane.innerMorph().setTextString(this.serializedMorph);
+            this.world().addFramedMorph(pane, "XML dump", this.bounds().topLeft().addPt(pt(5, 0)));
 	}.bind(this)]);
-	// FIXME replace 'publish shrink-wrapped as'
+
+	menu.replaceItemNamed("publish shrink-wrapped ...", ["save shrink-wrapped morph as ... ", function() { 
+	    this.world().prompt("save shrink-wrapped morph as (.xhtml)", function(filename) { 
+		if (filename) Exporter.shrinkWrapToFile([this.serializedMorph], filename) }.bind(this))}]);
+	// FIXME replace 'publish shrink-wrapped as' wich publish shrink-wrapped
         return menu;
     },
-
+    
+    okToBeGrabbedBy: function(evt) {
+        this.unwrapAt(evt.mousePoint); 
+        return null; 
+    },
 
     unwrapAt: function(loc) {
 	if (!this.serializedMorph) {
@@ -68,6 +73,7 @@ Morph.subclass('PackageMorph', {
 	var targetMorph = importer.importFromString(this.serializedMorph);
 	this.world().addMorphAt(targetMorph, loc);
 	importer.startScripts(this.world());
+	this.remove();
     }
 
 });
@@ -278,7 +284,8 @@ WebStore.subclass('FileBrowser', {
 
         console.log('host %s, dir %s name %s', this.baseUrl.hostname, this.CurrentDirectory, name);
         // initialize getting the contents
-        this.propfind(this.currentDirectoryURL(), 1, "/D:multistatus/D:response", "CurrentDirectoryContents");
+        this.propfind(this.resourceURL(this.CurrentDirectory), 1, 
+		      "/D:multistatus/D:response", "CurrentDirectoryContents");
     },
     
     getCurrentDirectoryContents: function() {
@@ -316,16 +323,6 @@ WebStore.subclass('FileBrowser', {
 	}
     },
 		
-    currentDirectoryURL: function() {
-	return this.baseUrl.withPath(this.CurrentDirectory);
-	/*
-        return "%s://%s%s%s".format(this.baseUrl.protocol,
-				    this.baseUrl.hostname, 
-				    this.CurrentDirectory.startsWith('/') ? "": "/", 
-				    this.CurrentDirectory);
-*/
-    },
-    
     buildView: function(extent) {
         var panel = PanelMorph.makePanedPanel(extent, [
             ['leftPane', ListPane, new Rectangle(0, 0, 0.5, 0.6)],
@@ -364,7 +361,7 @@ WebStore.subclass('FileBrowser', {
             if (key == 's') {
                 if (model.CurrentResourceContents.length > TextMorph.prototype.maxSafeSize) {
                     this.world().alert("not saving file, size " + model.CurrentResourceContents.length 
-                        + " > " + TextMorph.prototype.maxSafeSize + ", too large");
+				       + " > " + this.maxSafeSize + ", too large");
                 } else {
                     model.setCurrentResourceContents(this.textString);
                     model.save(model.CurrentResource, this.textString, "LastWriteStatus");
@@ -380,27 +377,19 @@ WebStore.subclass('FileBrowser', {
     getFileMenu: function() {
 	var items = [];
 	var fileName = this.CurrentResource;
-	if (fileName) {
-	    var contents = this.getCurrentResourceContents();
-	    console.log("fileName = " + fileName + "; contents.length = " + contents.length);
-            if (contents && contents.length > 0) {
-		items.push(['open a changeList browser', function(evt) {
-                    var changeList = new FileParser().parseFile(fileName, contents);
-		    new ChangeListBrowser(fileName, contents, changeList).openIn(this.world(), evt.mousePoint); 
-		}]);
-	    }
-	    
-	    items.push(['edit in separate window', function(evt) {
-		var textEdit = TextPane(new Rectangle(0, 0, 500, 200), "Fetching " + fileName + "...").innerMorph();
+	if (!fileName) 
+	    return [];
+	var items = [
+	    ['edit in separate window', function(evt) {
+		var textEdit = TextPane(new Rectangle(0, 0, 500, 200), "Fetching " + fileName + "...");
 		var webStore = new WebStore();
 		
-		textEdit.connectModel({model: webStore, getText: "getCurrentResourceContents"});
-		
-		textEdit.processCommandKeys = function(key) {
+		textEdit.innerMorph().connectModel({model: webStore, getText: "getCurrentResourceContents"});
+		textEdit.innerMorph().processCommandKeys = function(key) {
 		    if (key == 's') {
-			if (webStore.CurrentResourceContents.length > TextMorph.prototype.maxSafeSize) {
+			if (webStore.CurrentResourceContents.length > this.maxSafeSize) {
 			    this.world().alert("not saving file, size " + webStore.CurrentResourceContents.length 
-					       + " > " + TextMorph.prototype.maxSafeSize + ", too large");
+					       + " > " + this.maxSafeSize + ", too large");
 			} else {
 			    webStore.CurrentResourceContents = this.textString;
 			    webStore.save(webStore.CurrentResource, this.textString, "LastWriteStatus");
@@ -412,23 +401,29 @@ WebStore.subclass('FileBrowser', {
 		}
 		webStore.setCurrentResource(fileName);
 		this.world().addFramedMorph(textEdit, fileName, evt.mousePoint);
-	    }]);
+	    }],
 	    
-	    items.push(["get WebDAV info", function(evt) {
+	    ["get WebDAV info", function(evt) {
 		var infoPane = TextPane(new Rectangle(0, 0, 500, 200), "");
 		infoPane.innerMorph().acceptInput = false;
 		var store = new WebStore();
 		store.getProperties = function() {
-		    if (this.Properties instanceof Array) {
-			//return this.Properties[0].properties();
-			return this.Properties[0].toMarkupString();
-		    } else
-			return "fetching properties for " + fileName;
+		    return this.Properties instanceof Array ? 
+			this.Properties[0].toMarkupString() : "fetching properties for " + fileName;
 		};
 		infoPane.innerMorph().connectModel({model: store, getText: "getProperties"});
 		store.propfind(store.resourceURL(fileName), 1, "/D:multistatus/D:response", "Properties");
 		this.world().addFramedMorph(infoPane, fileName, evt.mousePoint);
 		
+	    }]
+	];
+	
+	var contents = this.getCurrentResourceContents();
+	console.log("fileName = " + fileName + "; contents.length = " + contents.length);
+        if (contents && contents.length > 0) {
+	    items.unshift(['open a changeList browser', function(evt) {
+                var changeList = new FileParser().parseFile(fileName, contents);
+		new ChangeListBrowser(fileName, contents, changeList).openIn(this.world(), evt.mousePoint); 
 	    }]);
 	}
 	return items; 

@@ -2489,7 +2489,7 @@ Object.extend(Exporter, {
             console.log("changed filename to " + filename);
         }
 	
-        var url = window.location.toString();
+        var url = new URL(window.location.toString());
         var req = new NetRequest().beSynchronous(); 
         var result = req.get(url);
 	
@@ -2499,7 +2499,8 @@ Object.extend(Exporter, {
         var newDoc = result.responseXML;
 	
         var canvas = newDoc.getElementById('canvas');
-        var newurl = url.substring(0, url.lastIndexOf('/') + 1) + filename;
+
+
         var previous = newDoc.getElementById("ShrinkWrapped");
         if (previous) {
             previous.parentNode.removeChild(previous);
@@ -2509,14 +2510,15 @@ Object.extend(Exporter, {
         container.setAttribute("id", "ShrinkWrapped");
 	
 	for (var i = 0; i < morphs.length; i++ ) {
+	    // FIXME use Exporter.serialize()
             container.appendChild(newDoc.importNode(morphs[i].rawNode, true));
 	}
 	
         // FIXME: note no model handling
         var content = Exporter.nodeToString(newDoc);
+        var newurl = url.withFilename(filename);
+        var req = new NetRequest().beSynchronous().put(newurl, content);
 
-        var req = new NetRequest().beSynchronous();
-        var result = req.put(newurl, content);
         if (result.status >= 200 && result.status < 300) {
             return "success publishing world at " + newurl + ", status " + result.status;
         } else {
@@ -3652,7 +3654,7 @@ Morph.addMethods({     // help handling
     getHelpText: function() { // override to supply help text
 	return null;
     },
-
+    
     showHelp: function(evt) {
 	
 	/*
@@ -3910,7 +3912,7 @@ Morph.addMethods({
             ["-----"],
             [((this.openForDragAndDrop) ? "close DnD" : "open DnD"), this.toggleDnD.curry(evt.mousePoint)],
             ["show Lively markup", this.addSvgInspector.curry(this)],
-	    ["shrink-wrap", function(evt) { 
+	    ["shrink-wrap", function(evt) {  // FIXME insert package morph in exactly the same position?
 		new PackageMorph(this).openIn(this.world(), this.bounds().topLeft()); this.remove()}.bind(this) ],
             ["publish shrink-wrapped ...", function() { 
 		this.world().prompt('publish as (.xhtml)', 
@@ -4432,15 +4434,11 @@ Morph.addMethods( {
     addSvgInspector: function() {
         var exporter = new Exporter(this);
         var xml = exporter.serialize();
-        // console.log('%s serialized to %s', this, xml);        
         
         var extent = pt(500, 300);
-        var panel = new PanelMorph(extent);
-        var r = new Rectangle(0, 0, extent.x, extent.y);
-        var pane = panel.pane = panel.addMorph(TextPane(r, xml.truncate(TextMorph.prototype.maxSafeSize)));
-        var txtMorph = pane.innerMorph();
-        txtMorph.xml = xml;
-        this.world().addMorph(new WindowMorph(panel, "XML dump", this.bounds().topLeft().addPt(pt(5,0))));
+        var pane = TextPane(extent.extentAsRectangle(), "");
+	pane.innerMorph().setTextString(xml);
+        this.world().addFramedMorph(pane, "XML dump", this.bounds().topLeft().addPt(pt(5, 0)));
     }
     
 });
@@ -5618,6 +5616,8 @@ Morph.subclass("LinkMorph", {
     helpText: "Click here to enter or leave a subworld.\n" +
               "Use menu 'grab' to move me.  Drag objects\n" +
               "onto me to transport objects between worlds.",
+    openForDragAndDrop: false,
+    suppressHandles: true,
     
     initialize: function($super, otherWorld, initialPosition) {
         // In a scripter, type: world.addMorph(new LinkMorph(null))
@@ -5654,10 +5654,6 @@ Morph.subclass("LinkMorph", {
         return this;
     },
     
-    initializeTransientState: function() {
-        this.openForDragAndDrop = false;
-        this.suppressHandles = true;
-    },
     
     restorePersistentState: function($super, importer) {
         $super(importer);
@@ -5757,9 +5753,9 @@ Morph.subclass("LinkMorph", {
 	}
     },
     
-    onMouseOut: function(evt) {
+    onMouseOut: function($super, evt) {
         evt.hand.emergingFromWormHole = false;
-        this.hideHelp();
+	$super(evt);
     },
 
     getHelpText: function() {

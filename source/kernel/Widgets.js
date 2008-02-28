@@ -64,6 +64,7 @@ Morph.subclass("ButtonMorph", {
 
     restorePersistentState: function($super, importer) {
         $super(importer);
+	this.baseFill = this.fill;
         this.changeAppearanceFor(this.getModelValue('getValue', false));
     },
 
@@ -2196,8 +2197,7 @@ WidgetModel.subclass('ConsoleWidget', {
 		window.console.consumers.splice(index);
 	};
 	
-	m = panel.commandLine;
-	m.beInputLine();
+	m = panel.commandLine.beInputLine();
 	m.connectModel({model: this, setText: "evalCommand", getText: "getCurrentCommand", 
 			getPreviousHistoryEntry: "getPreviousHistoryEntry",
 			getNextHistoryEntry: "getNextHistoryEntry"});
