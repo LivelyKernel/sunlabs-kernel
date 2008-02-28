@@ -2913,15 +2913,14 @@ Morph = Visual.subclass("Morph", {
 		this.clipPath = new ClipPath(Importer.marker, def);
 		this.clipPath.setId(ClipPath.deriveId(this.id()));
                 this.rawNode.setAttributeNS(null, 'clip-path', this.clipPath.uri());
-		this.addDefinitionWrapper(this.clipPath);
+		this.addWrapperToDefs(this.clipPath);
                 break;
             case "linearGradient":
-		this.fill = applyGradient(new LinearGradient(Importer.marker, def), this);
-		this.addDefinitionWrapper(this.fill);
+		this.fill = this.addWrapperToDefs(applyGradient(new LinearGradient(Importer.marker, def), this));
 		break;
             case "radialGradient": // FIXME gradients can be used on strokes too
-		this.fill = applyGradient(new RadialGradient(Importer.marker, def), this);
-		this.addDefinitionWrapper(this.fill);
+		this.fill = this.addWrapperToDefs(applyGradient(new RadialGradient(Importer.marker, def), this));
+		this.addWrapperToDefs(this.fill);
                 break;
             default:
                 console.warn('unknown def %s', def);
@@ -3137,7 +3136,7 @@ Morph.addMethods({
         } else if (fill instanceof Gradient) { 
 	    this.fill = fill.copy();
 	    this.fill.setId(Gradient.deriveId(this.id()));
-	    this.addDefinitionWrapper(this.fill);
+	    this.addWrapperToDefs(this.fill);
 	    attr = this.fill.uri();
         }
         this.shape.setFill(attr);
@@ -3324,7 +3323,7 @@ Morph.addMethods({
 	return this.rawNode.insertBefore(node, this.shape && this.shape.rawNode.nextSibling);
     },
     
-    addDefinitionWrapper: function(wrapper) {
+    addWrapperToDefs: function(wrapper) {
 	if (!this.defs) {
 	    this.defs = this.rawNode.insertBefore(NodeFactory.create("defs"), this.rawNode.firstChild);
 	} 
@@ -3662,7 +3661,7 @@ Morph.addMethods({     // help handling
         if (this.owner instanceof HandMorph) return false;
         // Create only one help balloon at a time
 	if (this.helpBalloonMorph && !this.helpBalloonMorph.getPosition().eqPt(evt.mousePoint)) {
-            this.help.setPosition(evt.mousePoint);
+            this.helpBalloonMorph.setPosition(evt.mousePoint);
 	    return false;
         } else {
 	    var helpText = this.getHelpText();
@@ -4416,7 +4415,7 @@ Morph.addMethods({
         var clip = new ClipPath(shape);
 
 	clip.setId(ClipPath.deriveId(this.id()));
-	this.addDefinitionWrapper(clip);
+	this.addWrapperToDefs(clip);
 	
         this.rawNode.setAttributeNS(null, "clip-path", clip.uri());
 	this.clipPath = clip;
@@ -4877,6 +4876,7 @@ PasteUpMorph.subclass("WorldMorph", {
 
     displayWorldOn: function(canvas) {
         this.remove();
+	this.itsCanvas = canvas;
         canvas.appendChild(this.rawNode);
         this.addHand(new HandMorph(true));
     },
@@ -5599,7 +5599,7 @@ Morph.subclass("HandMorph", function() {
  * @class LinkMorph: A two-way hyperlink between two Lively worlds
  */ 
 
-Morph.subclass("LinkMorph", {
+Morph.subclass('LinkMorph', {
 
     documentation: "two-way hyperlink between two Lively worlds",
     fill: Color.black,
@@ -5658,15 +5658,16 @@ Morph.subclass("LinkMorph", {
 
     morphMenu: function($super, evt) { 
         var menu = $super(evt);
-        menu.addItem(["publish linked world as ... ", 
-            function() { 
-		this.world().prompt("world file (.xhtml)", 
-				    function(filename) {
-					if (!filename) return;
-					var msg = Exporter.shrinkWrapToFile([this.myWorld], filename);
-					if (msg) linkMorph.world().alert(msg);
-				    }.bind(this));
-            }]);
+        menu.addItem(["publish linked world as ... ", function() { 
+	    this.world().prompt("world file (.xhtml)", 
+				function(filename) {
+				    if (!filename) return;
+				    var msg = Exporter.shrinkWrapToFile([this.myWorld], filename);
+				    if (msg) linkMorph.world().alert(msg);
+				}.bind(this));
+        }]);
+	menu.replaceItemNamed("shrink-wrap", ["shrink-wrap linked world", function(evt) {
+	    new PackageMorph(this.myWorld).openIn(this.world(), this.bounds().topLeft()); this.remove()}.bind(this) ]),
         return menu;
     },
 
@@ -5696,7 +5697,7 @@ Morph.subclass("LinkMorph", {
         var canvas = oldWorld.canvas();
         oldWorld.remove(); // some SVG calls may stop working after this point in the old world.
         
-        console.log('left world %s through %s', oldWorld, this);
+        console.log('left world %s through %s canvas %s', oldWorld, this, canvas);
     
         // display world first, then add hand, order is important!
         var newWorld = this.myWorld;

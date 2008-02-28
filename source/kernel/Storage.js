@@ -27,7 +27,7 @@ Morph.subclass('PackageMorph', {
 	$super(pt(size, size).extentAsRectangle(), "rect");
         var exporter = new Exporter(targetMorph);
 	this.serializedMorph = exporter.serialize();
-	this.helpText = "Shrink-wrapped " + targetMorph.getType() + ", click to unwrap";
+	this.helpText = "Shrink-wrapped " + targetMorph.getType();// + ", click to unwrap";
 	this.addMorph(Morph.makeLine([pt(delta, size/2), pt(size - delta, size/2)], 3, Color.black)).ignoreEvents();
 	this.addMorph(Morph.makeLine([pt(size/2, delta), pt(size/2, size - delta)], 3, Color.black)).ignoreEvents();
 
@@ -60,10 +60,12 @@ Morph.subclass('PackageMorph', {
         return menu;
     },
     
+    /*
     okToBeGrabbedBy: function(evt) {
         this.unwrapAt(evt.mousePoint); 
         return null; 
     },
+    */
 
     unwrapAt: function(loc) {
 	if (!this.serializedMorph) {
@@ -72,8 +74,21 @@ Morph.subclass('PackageMorph', {
 	}
 	var importer = new Importer();
 	var targetMorph = importer.importFromString(this.serializedMorph);
-	this.world().addMorphAt(targetMorph, loc);
-	importer.startScripts(this.world());
+	if (targetMorph instanceof WorldMorph) {
+	    this.world().addMorph(new LinkMorph(targetMorph, loc));
+	    for (var i = 0; i < targetMorph.submorphs.length; i++) {
+		var m = targetMorph.submorphs[i];
+		if (m instanceof LinkMorph) { 
+		    // is it so obvious ? should we mark the link world to the external word 		    
+		    m.myWorld = this.world();
+		}
+	    }
+	    importer.startScripts(targetMorph);
+	} else {
+	    this.world().addMorphAt(targetMorph, loc);
+	    importer.startScripts(this.world());
+	}
+
 	this.remove();
     }
 
