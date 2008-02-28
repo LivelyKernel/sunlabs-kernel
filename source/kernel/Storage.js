@@ -27,10 +27,9 @@ Morph.subclass('PackageMorph', {
 	$super(pt(size, size).extentAsRectangle(), "rect");
         var exporter = new Exporter(targetMorph);
 	this.serializedMorph = exporter.serialize();
-	this.helpText = "Shrink-wrapped " + targetMorph.getType();// + ", click to unwrap";
+	this.helpText = "Shrink-wrapped " + targetMorph.getType() + ".\nSelect unwrap from menu to deserialize contents.";
 	this.addMorph(Morph.makeLine([pt(delta, size/2), pt(size - delta, size/2)], 3, Color.black)).ignoreEvents();
 	this.addMorph(Morph.makeLine([pt(size/2, delta), pt(size/2, size - delta)], 3, Color.black)).ignoreEvents();
-
     },
 
     getHelpText: function() {

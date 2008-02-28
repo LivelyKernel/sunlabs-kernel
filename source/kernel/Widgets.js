@@ -1529,13 +1529,15 @@ CheapListMorph.subclass("MenuMorph", {
  */ 
 Morph.subclass("SliderMorph", {
 
+    mss: 8,  // minimum slider size
+
     initialize: function($super, initialBounds, scaleIfAny) {
         $super(initialBounds, "rect");
         var model = new SimpleModel(null, "Value", "Extent");
         // this default self connection may get overwritten by, eg, connectModel()...
         this.modelPlug = new ModelPlug(model.makePlugSpec());
         this.addNonMorph(this.modelPlug.rawNode);
-	this.mss = 8;  // minimum slider size
+
 
         this.scale = (scaleIfAny == null) ? 1.0 : scaleIfAny;
         var slider = new Morph(new Rectangle(0, 0, this.mss, this.mss), "rect");

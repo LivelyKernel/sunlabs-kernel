@@ -2952,6 +2952,7 @@ Morph = Visual.subclass("Morph", {
 	    origDefs.parentNode.removeChild(origDefs);
 
         var modelNode = null;
+	var nodesToRemove = [];
 	
         for (var i = 0; i < children.length; i++) {
             var node = children[i];
@@ -2998,6 +2999,8 @@ Morph = Visual.subclass("Morph", {
             case "model": {
                 if (modelNode) console.warn("%s already has modelNode %s", this, modelNode);
                 modelNode = node;
+		// currently model node is not stored.
+		nodesToRemove.push(node);
                 // postpone hooking up model until all the morphs are reconstructed
                 console.info("found modelNode %s", Exporter.nodeToString(node));
                 break;
@@ -3008,7 +3011,8 @@ Morph = Visual.subclass("Morph", {
                 break;
             } 
             case "field": {
-                console.log("found field " + Exporter.nodeToString(node));
+                //console.log("found field " + Exporter.nodeToString(node));
+		nodesToRemove.push(node);
                 var name = node.getAttributeNS(Namespace.LIVELY, "name");
                 var ref = node.getAttributeNS(Namespace.LIVELY, "ref");
                 if (name) {
@@ -3039,9 +3043,14 @@ Morph = Visual.subclass("Morph", {
 
         if (modelNode) {
 	    console.log("importing model");
-            var model = importer.importModelFrom(modelNode);
-            this.rawNode.removeChild(modelNode); // currently modelNode is not permanently stored 
+            importer.importModelFrom(modelNode);
         }
+
+	for (var i = 0; i < nodesToRemove.length; i++) {
+	    var n = nodesToRemove[i];
+	    n.parentNode.removeChild(n);
+	}
+
     },
     
     restoreContainer: function(element/*:Element*/, type /*:String*/, importer/*Importer*/)/*:Boolean*/ {
