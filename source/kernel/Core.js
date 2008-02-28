@@ -1226,7 +1226,7 @@ Object.subclass('Wrapper', {
     },
 
     deserialize: function(importer, rawNode) {
-        this.rawNode = rawNode.cloneNode(true);
+        this.rawNode = rawNode;
     },
     
     copyFrom: function(copier, other) {
@@ -1236,6 +1236,23 @@ Object.subclass('Wrapper', {
     copy: function(copier) {
         var scope = this.getScope();
         return new scope[this.getType()](copier || Copier.marker, this);
+    },
+
+    id: function() {
+        return this.rawNode.getAttribute("id");
+    },
+
+    setId: function(value) {
+	var prev = this.id();
+        this.rawNode.setAttribute("id", value); // this may happen automatically anyway by setting the id property
+        return prev;
+    },
+
+    removeRawNode: function() {
+	var parent = this.rawNode.parentNode;
+	if (parent) {
+	    parent.removeChild(this.rawNode);
+	}
     },
     
     toString: function() {
@@ -1261,6 +1278,11 @@ Object.subclass('Wrapper', {
     queryNode: function(queryString, defaultValue) {
         return Query.evaluate(this.rawNode, queryString, defaultValue);
     },
+
+    uri: function() {
+	return "url(#" + this.id() + ")";
+    },
+
 
     getPrototype: function() {
 	return this.constructor.getOriginal().prototype;
@@ -1304,9 +1326,14 @@ Wrapper.subclass("Gradient", {
 	return Converter.parseLength(stops[index || 0].getAttributeNS(null, "offset"));
     }
 
-    
-
 });
+
+Object.extend(Gradient, {
+    deriveId: function(ownerId) {
+	return "gradient_" + ownerId;
+    }
+});
+
 
 /**
  * @class LinearGradient (NOTE: PORTING-SENSITIVE CODE)
@@ -1340,9 +1367,9 @@ Object.extend(LinearGradient, {
 Gradient.subclass("RadialGradient", {
     
     initialize: function($super, stopColor1, stopColor2) {
-        this.c = pt(0.5, 0.5);
-        this.r = 0.4;
-        this.rawNode = NodeFactory.create("radialGradient", {cx: this.c.x, cy: this.c.y, r: this.r});
+        var c = pt(0.5, 0.5);
+        var r = 0.4;
+        this.rawNode = NodeFactory.create("radialGradient", {cx: c.x, cy: c.y, r: r});
         this.addStop(0, stopColor1);
         this.addStop(1, stopColor2);
         return this;
@@ -1364,6 +1391,24 @@ Wrapper.subclass('StipplePattern', {
     }
 
 });
+
+
+Wrapper.subclass('ClipPath', {
+    initialize: function(shape) {
+	this.rawNode = NodeFactory.create('clipPath');
+	// Safari used to require a path, not just any shape
+	this.rawNode.appendChild(shape.toPath().rawNode);
+    }
+
+});
+
+
+Object.extend(ClipPath, {
+    deriveId: function(ownerId) {
+	return "clipPath_" + ownerId;
+    }
+});
+
 
 /**
  * @class Similitude (NOTE: PORTING-SENSITIVE CODE)
@@ -1824,7 +1869,13 @@ Wrapper.subclass('Visual', {
      * @param [String] string the string specification of the fill attribute.
      */
     setFill: function(string) {
-        this.rawNode.setAttributeNS(null, "fill", string == null ? "none" : string);
+	if (string) {
+	    if (!string.startsWith) 
+		console.log("what, string is " + string + " .. " + (typeof string));
+	    else if (string.startsWith("uri"))
+		console.log("setting %s on %s", string, this);
+	}
+        this.rawNode.setAttributeNS(null, "fill", string  || "none");
     },
     
     getFill: function() {
@@ -1936,7 +1987,7 @@ Visual.subclass('Shape', {
             // this.disableBrowserHandlers();
 
         if (fill !== undefined)
-            this.setFill(fill);
+            this.setFill(fill && fill.toString());
         
         if (strokeWidth !== undefined)
             this.setStrokeWidth(strokeWidth);
@@ -2000,7 +2051,7 @@ Shape.subclass('RectShape', {
         var x = this.rawNode.x.baseVal.value;
         var y = this.rawNode.y.baseVal.value;
         var width = this.rawNode.width.baseVal.value;
-            var height = this.rawNode.height.baseVal.value;
+        var height = this.rawNode.height.baseVal.value;
         return new Rectangle(x, y, width, height);
     },
     
@@ -2033,7 +2084,7 @@ Shape.subclass('RectShape', {
     },
     
     getBorderRadius: function() {
-        return this.rawNode.getAttributeNS(null, "rx") || undefined;
+        return Converter.parseLength(this.rawNode.getAttributeNS(null, "rx"));
     },
     
     roundEdgesBy: function(r) {
@@ -2079,7 +2130,6 @@ Shape.subclass('EllipseShape', {
     
     bounds: function() {
         //console.log("rawNode " + this.rawNode);
-        // for (var prop in this.rawNode) console.log("prop " + prop + " = " + this.rawNode[prop]);
         var w = this.rawNode.rx.baseVal.value * 2;
         var h = this.rawNode.ry.baseVal.value * 2; 
         var x = this.rawNode.cx.baseVal.value - this.rawNode.rx.baseVal.value;
@@ -2305,10 +2355,6 @@ Shape.subclass('PathShape', {
         $super(color, borderWidth, borderColor);
         if (vertlist) this.setVertices(vertlist);
         return this;
-    },
-    
-    deserialize: function(importer, rawNode) {
-        this.rawNode = rawNode;
     },
     
     setVertices: function(vertlist) {
@@ -2729,7 +2775,7 @@ Morph = Visual.subclass("Morph", {
         this.submorphs = [];
         this.owner = null;
         this.setPersistentType(this.getType());
-        this.pickId();
+	this.setId(this.newMorphId());
     },
 
     initialize: function(initialBounds, shapeType) {
@@ -2847,58 +2893,51 @@ Morph = Visual.subclass("Morph", {
         throw new Error(this + " does not support text");
     },
 
-    restoreDefs: function(node) {
-        // FIXME FIXME, this is painfully ad hoc!
-        if (!this.defs) { 
-            this.defs = node.cloneNode(false);
-        }
-        // else console.log("preexisting defs " + Exporter.nodeToString(this.defs));
-        for (var def = node.firstChild; def != null; def = def.nextSibling) {
-            var newDef = def.cloneNode(true);
+    restoreDefs: function(originalDefs) {
+	for (var def = originalDefs.firstChild; def != null; def = def.nextSibling) {
+	    function applyGradient(wrapper, owner) {
+		wrapper.setId(Gradient.deriveId(owner.id()));
+		if (owner.shape) {
+		    var myFill = owner.shape.getFill();
+                    if (myFill)
+                        owner.shape.setFill(wrapper.uri());
+                    else console.warn('myFill undefined on %s', owner);
+		} else console.warn("cannot set fill %s (yet?), no shape...", wrapper.id());
+		return wrapper;
+	    }
+	    
             switch (def.tagName) {
             case "clipPath":
-                var newPathId = "clipPath_" + this.id();
-                var myClipPath = this.rawNode.getAttributeNS(null, 'clip-path');
-                if (myClipPath) {
-                    this.rawNode.setAttributeNS(null, 'clip-path', 'url(#'  + newPathId + ')');
-                    this.clipPath = newDef;
-                } else { 
-                    console.log('myClip is undefined on %s', this); 
-                }
-                newDef.setAttribute('id', newPathId);
-                //console.log('assigned new id %s', newDef.getAttribute('id'));
-                this.defs.appendChild(newDef);
+                if (!this.rawNode.getAttributeNS(null, 'clip-path'))
+		    console.log('myClip is undefined on %s', this); 
+		this.clipPath = new ClipPath(Importer.marker, def);
+		this.clipPath.setId(ClipPath.deriveId(this.id()));
+                this.rawNode.setAttributeNS(null, 'clip-path', this.clipPath.uri());
+		this.addDefinitionWrapper(this.clipPath);
                 break;
             case "linearGradient":
+		this.fill = applyGradient(new LinearGradient(Importer.marker, def), this);
+		this.addDefinitionWrapper(this.fill);
+		break;
             case "radialGradient": // FIXME gradients can be used on strokes too
-                var newFillId = "gradient_" + this.id();
-                newDef.setAttribute('id', newFillId);
-                if (this.shape) {
-                    var myFill = this.shape.rawNode.getAttributeNS(null, 'fill');
-                    if (myFill) {
-                        this.shape.rawNode.setAttributeNS(null, 'fill', 'url(#' + newFillId + ')');
-                        this.fill = (def.tagName == "radialGradient" ? 
-                            new RadialGradient(Importer.marker, newDef) : new LinearGradient(Importer.marker, newDef));
-                        // console.log("recreated fill " + this.fill.toMarkupString() + " for " + this);
-                    } else {
-                        console.warn('myFill undefined on %s', this);
-                    }
-                } else {
-                    console.warn('ouch, cant set fill %s yet, no shape...', newFillId);
-                }
-                this.defs.appendChild(newDef);
+		this.fill = applyGradient(new RadialGradient(Importer.marker, def), this);
+		this.addDefinitionWrapper(this.fill);
                 break;
             default:
-                console.warn('unknown def %s', newDef);
+                console.warn('unknown def %s', def);
             }
         }
-        this.addNonMorph(this.defs);
     },
 
     restoreFromSubnodes: function(importer) {
         //  wade through the children
         var children = [];
+	var origDefs;
         for (var desc = this.rawNode.firstChild; desc != null; desc = desc.nextSibling) {
+	    if (desc.localName == "defs") {
+		origDefs = desc;
+		continue;
+	    } 
             var type = desc.getAttributeNS(Namespace.LIVELY, "type");
             // depth first traversal
 	    if (type && type != "Selection" && type != "FocusHalo") { // FIXME remove the conditiona
@@ -2909,9 +2948,12 @@ Morph = Visual.subclass("Morph", {
                 children.push(desc);
             }
         }
+	
+	if (origDefs) 
+	    origDefs.parentNode.removeChild(origDefs);
 
         var modelNode = null;
-
+	
         for (var i = 0; i < children.length; i++) {
             var node = children[i];
             switch (node.localName) {
@@ -2928,9 +2970,8 @@ Morph = Visual.subclass("Morph", {
                 this.shape = new PolygonShape(importer, node);
                 break;
             case "defs": 
-                node.parentNode.removeChild(node);
-                this.restoreDefs(node);
-                break;
+		throw new Error();
+		
             case "text": // this shouldn't be triggered in non-TextMorphs
                 this.restoreText(importer, node);
                 break;
@@ -2963,9 +3004,8 @@ Morph = Visual.subclass("Morph", {
                 break;
             } 
             case "modelPlug": {
-                this.modelPlug = Model.becomePlugNode(node);
-                this.addNonMorph(this.modelPlug.rawNode);
-                console.info("%s reconstructed plug %s", this, this.modelPlug);
+                this.modelPlug = new ModelPlug(importer, node);
+                // console.info("%s reconstructed plug %s", this, this.modelPlug);
                 break;
             } 
             case "field": {
@@ -2977,7 +3017,7 @@ Morph = Visual.subclass("Morph", {
                     if (!found) {
                         console.warn("no value found for field %s ref %s", name, ref);
                     } else {
-                        node.parentNode.removeChild(node);
+                        //node.parentNode.removeChild(node);
                         console.log("found " + name + "=" + found);
                     }
                 }
@@ -2994,12 +3034,15 @@ Morph = Visual.subclass("Morph", {
             }
         } // end for
 
+	if (origDefs) { 
+	    this.restoreDefs(origDefs);
+	}
+
         if (modelNode) {
 	    console.log("importing model");
             var model = importer.importModelFrom(modelNode);
             this.rawNode.removeChild(modelNode); // currently modelNode is not permanently stored 
         }
-
     },
     
     restoreContainer: function(element/*:Element*/, type /*:String*/, importer/*Importer*/)/*:Boolean*/ {
@@ -3018,30 +3061,18 @@ Morph = Visual.subclass("Morph", {
         switch (shapeType) {
         case "ellipse":
             this.shape = new EllipseShape(initialBounds.translatedBy(this.origin.negated()),
-                             this.fill, this.borderWidth, this.borderColor);
+					  this.fill, this.borderWidth, this.borderColor);
             break;
         default:
             // polygons and polylines are set explicitly later
             this.shape = new RectShape(initialBounds.translatedBy(this.origin.negated()),
-                             this.fill, this.borderWidth, this.borderColor);
+				       this.fill, this.borderWidth, this.borderColor);
             break;
         }
 	this.rawNode.appendChild(this.shape.rawNode);
-    
         return this;
     },
     
-    pickId: function() {
-        var previous = this.id(); // this can happen when deserializing
-        var id = this.newMorphId(); 
-        this.rawNode.setAttribute("id", id); // this may happen automatically anyway by setting the id property
-        return previous;
-    },
-
-    id: function() {
-        return this.rawNode.getAttribute("id");
-    },
-
     // setup various things 
     initializeTransientState: function(initialBounds) { 
         this.fullBounds = initialBounds; // a Rectangle in owner coordinates
@@ -3094,31 +3125,22 @@ Object.extend(Morph, {
 Morph.addMethods({
     
     setFill: function(fill) {
-        // console.log('setting %s on %s', fill, this);
         var old = this.fill;
         this.fill = fill;
-        if (old instanceof Gradient) {
-            var parent = old.rawNode.parentNode;
-            if (parent) parent.removeChild(old.rawNode);
-        }
+        if (old instanceof Wrapper) 
+	    old.removeRawNode();
+	var attr;
         if (fill == null) {
-            this.shape.setFill(null);
+            attr = "none";
         } else if (fill instanceof Color) {
-            this.shape.setFill(fill.toString());
-        } else if (fill instanceof Wrapper) { 
-            var id = fill.rawNode.getAttribute("id");
-            var newId = "gradient_" + this.id();
-            if (newId != id) {
-                this.fill = fill.copy(); 
-                this.fill.rawNode.setAttribute("id", newId);
-            }
-            if (!this.defs) {
-                this.defs = NodeFactory.create("defs");
-                this.addNonMorph(this.defs);
-            }
-            this.shape.setFill("url(#" + newId + ")");
-            this.defs.appendChild(this.fill.rawNode); // append?
+	    attr = fill.toString();
+        } else if (fill instanceof Gradient) { 
+	    this.fill = fill.copy();
+	    this.fill.setId(Gradient.deriveId(this.id()));
+	    this.addDefinitionWrapper(this.fill);
+	    attr = this.fill.uri();
         }
+        this.shape.setFill(attr);
     },
     
     getFill: function() {
@@ -3299,45 +3321,18 @@ Morph.addMethods({
     },
     
     addNonMorph: function(node) {
-	return this.rawNode.insertBefore(node, this.shape.rawNode.nextSibling);
+	return this.rawNode.insertBefore(node, this.shape && this.shape.rawNode.nextSibling);
     },
     
-    // assign an element to a field and update the <defs> if necessary
-    assign: function(fieldname, element) {
-        var old = this[fieldname];
-        
-        if (!this.defs && element) { // lazily create the field
-            this.defs = NodeFactory.create('defs');
-            this.addNonMorph(this.defs);
-        }
-        
-        if (old) {
-            if (old.parentNode) {
-                if (old.parentNode !== this.defs) {
-                    console.warn('assign to field %s: old value %s is not owned by %s', fieldname, old, this);
-                    return null;
-                }
-                this.defs.removeChild(old);
-            } else {
-                console.warn('assign to field %s: old value %s is orphaned in %s', fieldname, old, this);
-            }
-        }
-        
-        this[fieldname] = element;
-    
-        if (element) {
-            var id = element.getAttribute("id");
-            if (id) {
-                this[fieldname] = element = element.cloneNode(true);
-            }
-    
-            id = fieldname + '_' + this.id();
-            element.setAttribute("id", id);
-            this.defs.appendChild(element);
-    
-            return "url(#" + id + ")";
-        } else return null;
+    addDefinitionWrapper: function(wrapper) {
+	if (!this.defs) {
+	    this.defs = this.rawNode.insertBefore(NodeFactory.create("defs"), this.rawNode.firstChild);
+	} 
+	if (wrapper)
+            this.defs.appendChild(wrapper.rawNode);
+	return wrapper;
     }
+	
 });
 
 // Submorph management functions
@@ -3407,13 +3402,6 @@ Morph.addMethods({
         return m;
     },
     
-    removeRawNode: function() {
-	var parent = this.rawNode.parentNode;
-	if (parent) {
-	    parent.removeChild(this.rawNode);
-	}
-    },
-
     removeAllMorphs: function() {
 	this.submorphs.invoke('removeRawNode');
         this.submorphs.clear();
@@ -4422,16 +4410,21 @@ Morph.addMethods({
 // Morph clipping functions
 Morph.addMethods({
 
-    clipToPath: function(pathShape) {
-        var clipPath = NodeFactory.create('clipPath');
-        clipPath.appendChild(pathShape.rawNode);
-        // clipPath.setAttributeNS(null, "shape-rendering", "optimizeSpeed");
-        var ref = this.assign('clipPath', clipPath);
-        this.rawNode.setAttributeNS(null, "clip-path", ref);
+    clipToPath: function(shape) {
+	if (this.clipPath) this.clipPath.removeRawNode();
+	
+        var clip = new ClipPath(shape);
+
+	clip.setId(ClipPath.deriveId(this.id()));
+	this.addDefinitionWrapper(clip);
+	
+        this.rawNode.setAttributeNS(null, "clip-path", clip.uri());
+	this.clipPath = clip;
+	
     },
 
     clipToShape: function() {
-        this.clipToPath(this.shape.toPath());
+        this.clipToPath(this.shape);
     }
     
 });
@@ -4444,6 +4437,7 @@ Morph.addMethods( {
         var extent = pt(500, 300);
         var pane = newTextPane(extent.extentAsRectangle(), "");
 	pane.innerMorph().setTextString(xml);
+	pane.innerMorph().xml = xml; // FIXME a sneaky way of passing original text.
         this.world().addFramedMorph(pane, "XML dump", this.bounds().topLeft().addPt(pt(5, 0)));
     }
     
@@ -4481,7 +4475,7 @@ Morph.addMethods({
     connectModel: function(plugSpec) {
         // connector makes this view pluggable to different models, as in
         // {model: someModel, getList: "getItemList", setSelection: "chooseItem"}
-        var newPlug = Model.makePlug(plugSpec);
+        var newPlug = new ModelPlug(plugSpec);
         if (this.modelPlug) { 
             this.rawNode.replaceChild(newPlug.rawNode, this.modelPlug.rawNode);
         } else { 
@@ -4612,38 +4606,30 @@ Object.subclass('Model', {
  */ 
 
 Wrapper.subclass('ModelPlug', {
-    initialize: function(rawNode) {
-        this.rawNode = rawNode;
-    }
-});
 
-Object.extend(Model, {
-
-    makePlug: function(spec) {
-        var plug = new ModelPlug(NodeFactory.createNS(Namespace.LIVELY, "modelPlug"));
-        var props = Object.properties(spec);
+    initialize: function(spec) {
+        this.rawNode = NodeFactory.createNS(Namespace.LIVELY, "modelPlug");
+	var props = Object.properties(spec);
         for (var i = 0; i < props.length; i++) {
             var prop = props[i];
-            plug[prop] = spec[prop];
+            this[prop] = spec[prop];
             if (prop != 'model') {
-                var acc = plug.rawNode.appendChild(NodeFactory.createNS(Namespace.LIVELY, "accessor"));
+                var acc = this.rawNode.appendChild(NodeFactory.createNS(Namespace.LIVELY, "accessor"));
                 acc.setAttributeNS(Namespace.LIVELY, "formal", prop);
                 acc.setAttributeNS(Namespace.LIVELY, "actual", spec[prop]);
             }
         }
-        return plug;
     },
 
-    becomePlugNode: function(node) {
-        var plug = new ModelPlug(node);
-        for (var acc = node.firstChild; acc != null;  acc = acc.nextSibling) {
+    deserialize: function($super, importer, rawNode) {
+	$super(importer, rawNode);
+        for (var acc = rawNode.firstChild; acc != null;  acc = acc.nextSibling) {
             if (acc.localName != 'accessor') continue;
-            plug[acc.getAttributeNS(Namespace.LIVELY, "formal")] = acc.getAttributeNS(Namespace.LIVELY, "actual");
+            this[acc.getAttributeNS(Namespace.LIVELY, "formal")] = acc.getAttributeNS(Namespace.LIVELY, "actual");
         }
-        return plug;
     }
-    
 });
+
 
 /**
  * @class SimpleModel
@@ -4676,12 +4662,11 @@ Model.subclass('SimpleModel', {
                                                       this.changed(this.getter(name), v); }} (varName);
     },
     
-    makePlug: function() {
+    makePlugSpec: function() {
         var model = this;
         var spec = { };
         this.variables().each(function(v) { spec[this.getter(v)] = model[this.getter(v)]; spec[this.setter(v)] = model[this.setter(v)]; }.bind(this));
-        spec.model = model;
-        return Model.makePlug(spec);
+        spec.model = this;
     },
     
     variables: function() {
@@ -4975,7 +4960,7 @@ PasteUpMorph.subclass("WorldMorph", {
     },
   
     restart: function() {
-        window.location.reload();
+        window.location && window.location.reload();
     },
 
     defaultOrigin: function(bounds) { 
@@ -5205,7 +5190,7 @@ PasteUpMorph.subclass("WorldMorph", {
                 m.startSteppingScripts(); }]
         ];
         if (Loader.isLoadedFromNetwork) { 
-            items.push(["File Browser", function(evt) { new WebStore().openIn(world, evt.mousePoint) }])
+            items.push(["File Browser", function(evt) { new FileBrowser().openIn(world, evt.mousePoint) }])
         }
         new MenuMorph(items, this).openIn(this.world(), evt.mousePoint);
     },

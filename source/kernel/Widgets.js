@@ -47,7 +47,7 @@ Morph.subclass("ButtonMorph", {
         
         var model = new SimpleModel(this, "Value");
         // this default self connection may get overwritten by, eg, connectModel()...
-        this.modelPlug = model.makePlug();
+        this.modelPlug = new ModelPlug(model.makePlugSpec());
         this.addNonMorph(this.modelPlug.rawNode);
 
         // Styling
@@ -635,8 +635,8 @@ Morph.subclass('WindowMorph', {
 
     restorePersistentState: function($super, importer) {
         $super(importer);
-        this.targetMorph = this.targetMorph;
-        this.titleBar = this.titleBar;
+        //this.targetMorph = this.targetMorph;
+        // this.titleBar = this.titleBar;
         this.contentOffset = pt(0, this.titleBar.bounds().height);
     },
     
@@ -1216,7 +1216,7 @@ TextMorph.subclass("CheapListMorph", {
         this.itemList = itemList;
         // this default self connection may get overwritten by, eg, connectModel()...
         var model = new SimpleModel(null, "List", "Selection");
-        this.modelPlug = model.makePlug();
+        this.modelPlug = new ModelPlug(model.makePlugSpec());
         this.addNonMorph(this.modelPlug.rawNode);
         this.setModelValue('setList', itemList);
         this.layoutChanged();
@@ -1533,7 +1533,7 @@ Morph.subclass("SliderMorph", {
         $super(initialBounds, "rect");
         var model = new SimpleModel(null, "Value", "Extent");
         // this default self connection may get overwritten by, eg, connectModel()...
-        this.modelPlug = model.makePlug();
+        this.modelPlug = new ModelPlug(model.makePlugSpec());
         this.addNonMorph(this.modelPlug.rawNode);
 	this.mss = 8;  // minimum slider size
 
@@ -1554,7 +1554,7 @@ Morph.subclass("SliderMorph", {
 
     restorePersistentState: function($super, importer) {
         $super(importer);
-        this.slider = this.slider;
+        //this.slider = this.slider;
         //console.log("SliderMorph restored slider %s", this.slider);
         if (!this.slider) {
             console.warn('no slider in %s, %s', this, this.textContent);

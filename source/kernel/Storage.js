@@ -19,14 +19,15 @@ Morph.subclass('PackageMorph', {
     fill: Color.primary.orange,
     openForDragAndDrop: false,
     suppressHandles: true,
+    size: 40,
     
     initialize: function($super, targetMorph) {
-	var size = 40;
+	var size = this.size;
+	var delta = this.borderWidth/2;
 	$super(pt(size, size).extentAsRectangle(), "rect");
         var exporter = new Exporter(targetMorph);
 	this.serializedMorph = exporter.serialize();
-	this.helpText = "Shrink-wrapped " + targetMorph;
-	var delta = this.borderWidth/2;
+	this.helpText = "Shrink-wrapped " + targetMorph.getType() + ", click to unwrap";
 	this.addMorph(Morph.makeLine([pt(delta, size/2), pt(size - delta, size/2)], 3, Color.black)).ignoreEvents();
 	this.addMorph(Morph.makeLine([pt(size/2, delta), pt(size/2, size - delta)], 3, Color.black)).ignoreEvents();
 
@@ -49,7 +50,7 @@ Morph.subclass('PackageMorph', {
 	    var extent = pt(500, 300);
             var pane = newTextPane(extent.extentAsRectangle(), "");
 	    pane.innerMorph().setTextString(this.serializedMorph);
-            this.world().addFramedMorph(pane, "XML dump", this.bounds().topLeft().addPt(pt(5, 0)));
+            this.world().addFramedMorph(pane, "XML dump", this.worldPoint(this.bounds().topLeft()).addPt(pt(5, 0)));
 	}.bind(this)]);
 
 	menu.replaceItemNamed("publish shrink-wrapped ...", ["save shrink-wrapped morph as ... ", function() { 
@@ -142,7 +143,7 @@ Model.subclass('WebStore', {
     },
     
     save: function(filename, content, optModelVariable) {
-	var url = this.resourceURL(filename);
+	var url = this.baseUrl.withFilename(filename);
         // retrieve the the contents of the url and save in the indicated model variable
         console.log('saving url ' + url);
         var options =  {
