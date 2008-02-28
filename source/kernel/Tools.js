@@ -60,9 +60,9 @@ WidgetModel.subclass('SimpleBrowser', {
 
     buildView: function(extent) {
         var panel = PanelMorph.makePanedPanel(extent, [
-            ['leftPane', ListPane, new Rectangle(0, 0, 0.5, 0.5)],
-            ['rightPane', ListPane, new Rectangle(0.5, 0, 0.5, 0.5)],
-            ['bottomPane', TextPane, new Rectangle(0, 0.5, 1, 0.5)]
+            ['leftPane', newListPane, new Rectangle(0, 0, 0.5, 0.5)],
+            ['rightPane', newListPane, new Rectangle(0.5, 0, 0.5, 0.5)],
+            ['bottomPane', newTextPane, new Rectangle(0, 0.5, 1, 0.5)]
         ]);
         var m = panel.leftPane;
         m.connectModel({model: this, getList: "getClassList", setSelection: "setClassName", getMenu: "getClassPaneMenu"});
@@ -178,8 +178,8 @@ WidgetModel.subclass('ObjectBrowser', {
     buildView: function(extent) {
         var panel = PanelMorph.makePanedPanel(extent, [
             ['namePane', TextMorph, new Rectangle(0, 0, 1, 0.07)],
-            ['topPane', ListPane, new Rectangle(0, 0.07, 1, 0.5)],
-            ['bottomPane', TextPane, new Rectangle(0, 0.5, 1, 0.5)]
+            ['topPane', newListPane, new Rectangle(0, 0.07, 1, 0.5)],
+            ['bottomPane', newTextPane, new Rectangle(0, 0.5, 1, 0.5)]
         ]);
 
         this.panel = panel;
@@ -243,9 +243,9 @@ WidgetModel.subclass('SimpleInspector', {
 
     buildView: function(extent) {
         var panel = PanelMorph.makePanedPanel(extent, [
-            ['leftPane', ListPane, new Rectangle(0, 0, 0.5, 0.6)],
-            ['rightPane', TextPane, new Rectangle(0.5, 0, 0.5, 0.6)],
-            ['bottomPane', TextPane, new Rectangle(0, 0.6, 1, 0.4)]
+            ['leftPane', newListPane, new Rectangle(0, 0, 0.5, 0.6)],
+            ['rightPane', newTextPane, new Rectangle(0.5, 0, 0.5, 0.6)],
+            ['bottomPane', newTextPane, new Rectangle(0, 0.6, 1, 0.4)]
         ]);
         var m = panel.leftPane;
         m.connectModel({model: this, getList: "getPropList", setSelection: "setPropName"});
@@ -957,8 +957,8 @@ WidgetModel.subclass('ChangeListBrowser', {
     
     buildView: function(extent) {
         var panel = PanelMorph.makePanedPanel(extent, [
-            ['topPane', ListPane, new Rectangle(0, 0, 1, 0.5)],
-            ['bottomPane', TextPane, new Rectangle(0, 0.5, 1, 1)]
+            ['topPane', newListPane, new Rectangle(0, 0, 1, 0.5)],
+            ['bottomPane', newTextPane, new Rectangle(0, 0.5, 1, 1)]
         ]);
         var m = panel.topPane;
         m.connectModel({model: this, getList: "getChangeBanners", setSelection: "setChangeSelection"});

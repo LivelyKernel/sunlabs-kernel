@@ -1176,7 +1176,7 @@ Object.extend(PanelMorph, {
     makePanedPanel: function(extent, paneSpecs) {
         // Generalized constructor for paned window panels
         // paneSpec is an array of arrays of the form...
-        //     ['leftPane', ListPane, new Rectangle(0, 0, 0.5, 0.6)],
+        //     ['leftPane', newListPane, new Rectangle(0, 0, 0.5, 0.6)],
         // See example calls in, eg, SimpleBrowser.buildView() for how to use this
         var panel = new PanelMorph(extent);
         panel.setFill(Color.primary.blue.lighter().lighter());
@@ -1272,8 +1272,12 @@ TextMorph.subclass("CheapListMorph", {
             evt.stop();
             break;
         }    
+	case Event.KEY_SPACEBAR: // FIXME this should be more generally
+	    // avoid paging down
+	    evt.stop();
+	    return true;
         }
-
+	
     },
 
     onMouseDown: function(evt) {
@@ -1831,24 +1835,15 @@ Morph.subclass("ScrollPane", {
 
 });
 
-/**
- * @class ListPane
- */ 
-function ListPane(initialBounds) {
+function newListPane(initialBounds) {
     return new ScrollPane(new CheapListMorph(initialBounds,["-----"]), initialBounds); 
 };
 
-/**
- * @class TextPane
- */ 
-function TextPane(initialBounds, defaultText) {
+function newTextPane(initialBounds, defaultText) {
     return new ScrollPane(new TextMorph(initialBounds, defaultText), initialBounds); 
 };
 
-/**
- * @class PrintPane
- */ 
-function PrintPane(initialBounds, defaultText) {
+function newPrintPane(initialBounds, defaultText) {
     return new ScrollPane(new PrintMorph(initialBounds, defaultText), initialBounds); 
 };
 
@@ -2178,7 +2173,7 @@ WidgetModel.subclass('ConsoleWidget', {
     
     buildView: function(extent) {
 	var panel = PanelMorph.makePanedPanel(extent, [
-            ['messagePane', ListPane, new Rectangle(0, 0, 1, 0.8)],
+            ['messagePane', newListPane, new Rectangle(0, 0, 1, 0.8)],
             ['commandLine', TextMorph, new Rectangle(0, 0.8, 1, 0.2)]
         ]);
 	

@@ -248,6 +248,7 @@ var Loader = {
     
     
     baseURL: (function() {
+	if (!window.location) return ".";
 	var segments = window.location.toString().split('/');
 	segments.splice(-1); // remove the last segment, incl query
         return segments.join('/');
@@ -1281,7 +1282,14 @@ Wrapper.subclass("Gradient", {
 
     rawStopNodes: function() {
 	//return this.queryNode("svg:stop"); 
-	return $A(this.rawNode.childNodes).filter(function(n) { return n.localName == "stop"});
+	var array = [];
+	var subnodes = this.rawNode.childNodes;
+	for (var i = 0; i < subnodes.length; i++) {
+	    var n = subnodes.item(i);
+	    if (n.localName == "stop") 
+		array.push(n);
+	}
+	return array;
     },
 
     stopColor: function(index) {
@@ -4432,11 +4440,9 @@ Morph.addMethods({
 Morph.addMethods( {
     
     addSvgInspector: function() {
-        var exporter = new Exporter(this);
-        var xml = exporter.serialize();
-        
+        var xml = new Exporter(this).serialize();
         var extent = pt(500, 300);
-        var pane = TextPane(extent.extentAsRectangle(), "");
+        var pane = newTextPane(extent.extentAsRectangle(), "");
 	pane.innerMorph().setTextString(xml);
         this.world().addFramedMorph(pane, "XML dump", this.bounds().topLeft().addPt(pt(5, 0)));
     }
@@ -4541,7 +4547,7 @@ Morph.addMethods({
  */ 
 
 // A typical model/view relationship is set up in the following manner:
-//        panel.addMorph(m = ListPane(new Rectangle(200,0,200,150)));
+//        panel.addMorph(m = newListPane(new Rectangle(200,0,200,150)));
 //        m.connectModel({model: this, getList: "getMethodList", setSelection: "setMethodName"});
 // The "plug" object passed to connectModel() points to the model, and converts from
 // view-specific messages like getList() and setSelection() to model-specific messages

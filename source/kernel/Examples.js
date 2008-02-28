@@ -2644,7 +2644,7 @@ WidgetModel.subclass('StockWidget', {
         m.connectModel({model: this, getSelection: "getStockIndex", setSelection: "setStockIndex"});
 
         // Newsfeed panel
-        m = panel.addMorph(ListPane(new Rectangle(160, 180, 410, 150)));
+        m = panel.addMorph(newListPane(new Rectangle(160, 180, 410, 150)));
 
         m.connectModel({model: this, getList: "getNewsHeaders"});
 
@@ -3776,7 +3776,7 @@ Model.subclass(scope, 'MessengerWidget', {
         var panel = new PanelMorph(extent);
 	var gradient = new LinearGradient(Color.white, Color.primary.blue.lighter(), LinearGradient.EastWest); 
 	panel.applyStyle({fill: gradient, borderWidth: 2});
-        this.textpanel = panel.addMorph(TextPane(new Rectangle(10, 10, 280, 180), " "));
+        this.textpanel = panel.addMorph(newTextPane(new Rectangle(10, 10, 280, 180), " "));
 	this.textpanel.connectModel({model: this, getText: "getChatText", setText: "setChatText"});
 	// m.innerMorph().autoAccept = true;
 	

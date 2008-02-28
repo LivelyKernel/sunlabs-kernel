@@ -47,7 +47,7 @@ Morph.subclass('PackageMorph', {
 	}.bind(this)]);
 	menu.replaceItemNamed("show Lively markup", ["show packaged Lively markup", function(evt) {
 	    var extent = pt(500, 300);
-            var pane = TextPane(extent.extentAsRectangle(), "");
+            var pane = newTextPane(extent.extentAsRectangle(), "");
 	    pane.innerMorph().setTextString(this.serializedMorph);
             this.world().addFramedMorph(pane, "XML dump", this.bounds().topLeft().addPt(pt(5, 0)));
 	}.bind(this)]);
@@ -325,9 +325,9 @@ WebStore.subclass('FileBrowser', {
 		
     buildView: function(extent) {
         var panel = PanelMorph.makePanedPanel(extent, [
-            ['leftPane', ListPane, new Rectangle(0, 0, 0.5, 0.6)],
-            ['rightPane', ListPane, new Rectangle(0.5, 0, 0.5, 0.6)],
-            ['bottomPane', TextPane, new Rectangle(0, 0.6, 1, 0.4)]
+            ['leftPane', newListPane, new Rectangle(0, 0, 0.5, 0.6)],
+            ['rightPane', newListPane, new Rectangle(0.5, 0, 0.5, 0.6)],
+            ['bottomPane', newTextPane, new Rectangle(0, 0.6, 1, 0.4)]
         ]);
         panel.leftPane.connectModel({model: this, 
 				     getList: "getDirectoryList",
@@ -381,7 +381,7 @@ WebStore.subclass('FileBrowser', {
 	    return [];
 	var items = [
 	    ['edit in separate window', function(evt) {
-		var textEdit = TextPane(new Rectangle(0, 0, 500, 200), "Fetching " + fileName + "...");
+		var textEdit = newTextPane(new Rectangle(0, 0, 500, 200), "Fetching " + fileName + "...");
 		var webStore = new WebStore();
 		
 		textEdit.innerMorph().connectModel({model: webStore, getText: "getCurrentResourceContents"});
@@ -404,7 +404,7 @@ WebStore.subclass('FileBrowser', {
 	    }],
 	    
 	    ["get WebDAV info", function(evt) {
-		var infoPane = TextPane(new Rectangle(0, 0, 500, 200), "");
+		var infoPane = newTextPane(new Rectangle(0, 0, 500, 200), "");
 		infoPane.innerMorph().acceptInput = false;
 		var store = new WebStore();
 		store.getProperties = function() {

@@ -450,10 +450,10 @@ WidgetModel.subclass('Feed', {
 	panel.applyStyle({fill: Color.blue.lighter(2), borderWidth: 2});
 	
         var rect = extent.extentAsRectangle();
-        var m = panel.addMorph(ListPane(rect.withBottomRight(rect.bottomCenter())));
+        var m = panel.addMorph(newListPane(rect.withBottomRight(rect.bottomCenter())));
         m.connectModel({model: this, getList: "getItemList", setSelection: "setItemTitle", getMenu: "getItemMenu"});
         
-	m = panel.addMorph(TextPane(rect.withTopLeft(rect.topCenter())));
+	m = panel.addMorph(newTextPane(rect.withTopLeft(rect.topCenter())));
 	m.innerMorph().acceptInput = false;
         m.connectModel({model: this, getText: "getCurrentEntry"});
         return panel;
@@ -466,7 +466,7 @@ WidgetModel.subclass('Feed', {
 		var index = this.innerMorph().selectedLineNo();
 		var item = feed.items()[index];
 		var txt = item ? item.toMarkupString() : "?";
-		var infoPane = TextPane(new Rectangle(0, 0, 500, 200), txt);
+		var infoPane = newTextPane(new Rectangle(0, 0, 500, 200), txt);
 		infoPane.innerMorph().acceptInput = false;
 		this.world().addFramedMorph(infoPane, "XML source for " + item.title(), evt.mousePoint);
 	    }]

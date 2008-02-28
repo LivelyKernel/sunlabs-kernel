@@ -115,8 +115,8 @@
 <script type="text/ecmascript" xlink:href="Core.js"/>
 <script type="text/ecmascript" xlink:href="Text.js"/>
 <script type="text/ecmascript" xlink:href="svgtext-compat.js"/>
-<script type="text/ecmascript" xlink:href="Network.js"/>
 <script type="text/ecmascript" xlink:href="Widgets.js"/>
+<script type="text/ecmascript" xlink:href="Network.js"/>
 <script type="text/ecmascript" xlink:href="Storage.js"/>
 <script type="text/ecmascript" xlink:href="Tools.js"/>
 <script type="text/ecmascript" xlink:href="Examples.js"/>

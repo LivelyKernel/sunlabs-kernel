@@ -924,7 +924,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
         menu.addItem(["evaluate as Lively markup", function() { 
             var importer = new Importer();
             var txt = this.xml || this.textString;
-            console.log('evaluating markup ' + txt);
+            // console.log('evaluating markup ' + txt);
             var morph = importer.importFromString(txt);
             this.world().addMorph(morph);
             importer.startScripts(this.world());
