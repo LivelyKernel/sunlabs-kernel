@@ -196,8 +196,10 @@ Morph.subclass("ImageMorph", {
         }
     },
     
-    restoreContainerFIXME: function($super, element, type, importer) /*:Boolean*/ {
-        if ($super(element, type, importer)) return true;
+    // FIXME:
+    restoreFromSubnode: function($super, element, importer) /*:Boolean*/ {
+        if ($super(element, importer)) return true;
+	var type = element.getAttributeNS(Namespace.LIVELY, "type");
         switch (type) {
         case 'Image':
             var image = element;

@@ -2861,9 +2861,9 @@ Morph = Visual.subclass("Morph", {
         if (other.cachedTransform) { 
             this.cachedTransform = other.cachedTransform.copy();
         } 
-
+	
         if (other.defs) {
-            this.restoreDefs(copier, other.defs);
+            this.restoreDefs(copier, other.defs.cloneNode(true));
         }
 
         if (other.clipPath) {
@@ -2984,10 +2984,7 @@ Morph = Visual.subclass("Morph", {
             case "defs": 
 		throw new Error();
             case "g": {
-                var type = node.getAttributeNS(Namespace.LIVELY, "type");
-                if (!this.restoreContainer(node, type, importer)) {
-                    console.log("unknown container %s of type %s", node, type);
-                }
+                this.restoreFromSubnode(importer, node);
                 break;
             }
             // nodes from the Lively namespace
@@ -3064,20 +3061,17 @@ Morph = Visual.subclass("Morph", {
 	if (node.nodeName == '#text') {
             console.log('text tag name %s', node.tagName);
 	    return true;
-	} else {            // whitespace, ignore
-	    console.warn('cannot handle element %s, %s', node.tagName, node.textContent);
-	    return false;
+	} else {        
+	    var type = node.getAttributeNS(Namespace.LIVELY, "type");
+            switch (type) {
+            case "FocusHalo":
+		this.rawNode.removeChild(node);
+		return true;
+            default:
+		console.warn('cannot handle element %s, %s', node.tagName, node.textContent);
+		return false;
+            }
 	}
-    },
-    
-    restoreContainer: function(element/*:Element*/, type /*:String*/, importer/*Importer*/)/*:Boolean*/ {
-        switch (type) {
-        case "FocusHalo":
-            this.rawNode.removeChild(element);
-            return true;
-        default:
-            return false;
-        }
     },
     
     initializePersistentState: function(initialBounds /*:Rectangle*/, shapeType/*:String*/) {

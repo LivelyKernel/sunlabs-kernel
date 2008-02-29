@@ -757,45 +757,41 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
     },
 
     restoreFromSubnode: function($super, importer, node) {
-	if (node.localName != "text") {
-	    return $super(importer, node);
+	if ($super(importer, node)) return true;
+	if (node.localName == "text") {
+            this.rawTextNode = node;   
+            var content = [];
+            for (var child = node.firstChild; child != null; child = child.nextSibling) {
+		if (child.tagName != 'tspan')  
+		    continue;
+		var word = new TextWord(importer, child);
+		var lead = parseInt(word.rawNode.getAttributeNS(Namespace.LIVELY, "lead"));
+		if (lead) content.push(" ".times(lead));
+		content.push(word.rawNode.textContent); 
+		var trail = parseInt(word.rawNode.getAttributeNS(Namespace.LIVELY, "trail"));
+		if (trail) content.push(" ".times(trail));
+		if (word.rawNode.getAttributeNS(Namespace.LIVELY, "nl") == "true")
+                    content.push("\n");
+            }
+            this.textString = content.join("");
+            this.fontFamily = node.getAttributeNS(null, "font-family");
+            this.fontSize = Converter.parseLength(node.getAttributeNS(null, "font-size"));
+            this.font = Font.forFamily(this.fontFamily, this.fontSize);
+            this.textColor = Color.parse(node.getAttributeNS(null, "fill"));
+	    return true;
+	} else {
+	    var type = node.getAttributeNS(Namespace.LIVELY, "type");
+	    switch (type) {
+            case 'Selection':
+		// that's ok, it's actually transient 
+		// remove all chidren b/c they're really transient
+		this.rawSelectionNode = NodeList.become(node, type);
+		// console.log('processing selection %s', node);
+		this.undrawSelection();
+		return true;
+            }
 	}
-        this.rawTextNode = node;   
-	
-        var content = [];
-        for (var child = node.firstChild; child != null; child = child.nextSibling) {
-            if (child.tagName != 'tspan')  
-		continue;
-            var word = new TextWord(importer, child);
-            var lead = parseInt(word.rawNode.getAttributeNS(Namespace.LIVELY, "lead"));
-            if (lead) content.push(" ".times(lead));
-            content.push(word.rawNode.textContent); 
-            var trail = parseInt(word.rawNode.getAttributeNS(Namespace.LIVELY, "trail"));
-            if (trail) content.push(" ".times(trail));
-	    if (word.rawNode.getAttributeNS(Namespace.LIVELY, "nl") == "true")
-                content.push("\n");
-        }
-        this.textString = content.join("");
-
-        this.fontFamily = node.getAttributeNS(null, "font-family");
-        this.fontSize = Converter.parseLength(node.getAttributeNS(null, "font-size"));
-        this.font = Font.forFamily(this.fontFamily, this.fontSize);
-        this.textColor = Color.parse(node.getAttributeNS(null, "fill"));
-	return true;
-    },
-
-    restoreContainer: function($super, element, type, importer) /*:Boolean*/ {
-        if ($super(element, type, importer)) return true;
-        switch (type) {
-        case 'Selection':
-            // that's ok, it's actually transient 
-            // remove all chidren b/c they're really transient
-            this.rawSelectionNode = NodeList.become(element, type);
-            // console.log('processing selection %s', element);
-            this.undrawSelection();
-            return true;
-        }
-        return false;
+	return false;
     },
 
     initialize: function($super, rect, textString) {
