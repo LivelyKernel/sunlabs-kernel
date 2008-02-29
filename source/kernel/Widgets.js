@@ -1195,7 +1195,7 @@ Object.extend(PanelMorph, {
 TextMorph.subclass("CheapListMorph", {
     
     borderColor: Color.black,
-    wrap: WrapStyle.NONE,
+    wrap: WrapStyle.None,
     maxSafeSize: 2e4,  // override max for subsequent updates
     
     initialize: function($super, initialBounds, itemList) {
@@ -1467,9 +1467,9 @@ CheapListMorph.subclass("MenuMorph", {
         world.addMorph(this);
         if (captionIfAny) { // Still under construction
             var label = new TextMorph(new Rectangle(0, 0, 200, 20), captionIfAny);
-            label.setWrapStyle(WrapStyle.SHRINK);  
+	    label.applyStyle({borderRadius: 4, fillOpacity: 0.75, wrapStyle: WrapStyle.Shrink});
             label.fitText();
-            label.applyStyle({borderRadius: 4, fillOpacity: 0.75});
+            
             label.align(label.bounds().bottomCenter(), this.shape.bounds().topCenter());
             this.addMorph(label);
         }
@@ -1490,13 +1490,12 @@ CheapListMorph.subclass("MenuMorph", {
         var itemNames = this.items.map(function (item) { return item[0] });
 
         CheapListMorph.prototype.initialize.call(this, location.extent(pt(200, 200)), itemNames);
-
-        this.setWrapStyle(WrapStyle.SHRINK);  
+	this.applyStyle({borderRadius: 6, fillOpacity: 0.75, wrapStyle: WrapStyle.Shrink});
         this.fitText(); // first layout is wasted!
         // styling
         this.textColor = Color.blue;
         //this.setFill(StipplePattern.create(Color.white, 3, Color.blue.lighter(5), 1));
-	this.applyStyle({borderRadius: 6, fillOpacity: 0.75});
+
     },
 
     onMouseUp: function(evt) {

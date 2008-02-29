@@ -454,7 +454,7 @@ WebStore.subclass('FileBrowser', {
 			this.world().alert('no morphs found in %s', store.CurrentResource);
 			return;
 		    }
-		    var container = doc.getElementById("ShrinkWrapped");
+		    var container = Loader.shrinkWrapContainer(doc);
 		    if (container) {
 			var importer = new Importer();
 			var world = importer.importWorldFromContainer(container, WorldMorph.current());

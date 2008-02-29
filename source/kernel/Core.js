@@ -252,7 +252,23 @@ var Loader = {
 	var segments = window.location.toString().split('/');
 	segments.splice(-1); // remove the last segment, incl query
         return segments.join('/');
-    })()
+    })(),
+
+    shrinkWrapContainer: function(doc) {
+	return (doc || window.document).getElementById("ShrinkWrapped");
+    },
+
+    newShrinkWrapContainer: function(doc) { 
+	// Remove the old container if it's there and make a new one.
+	// this should be more robust
+	if (!doc) doc = window.document;
+        var previous = this.shrinkWrapContainer(doc);
+        if (previous) previous.parentNode.removeChild(previous);
+	var canvas = doc.getElementById("canvas");
+        var container = canvas.appendChild(doc.createElementNS(Namespace.SVG, "defs"));
+	container.setAttribute("id", "ShrinkWrapped");
+	return container;
+    }
 };
 
 Loader.proxyURL = (function() {
@@ -2568,13 +2584,9 @@ Object.extend(Exporter, {
 
     saveWithBootstrapCode: function(node, filename) {
         var newDoc = Exporter.getBaseDocument(filename);
-	
-        var previous = newDoc.getElementById("ShrinkWrapped");
-        if (previous) previous.parentNode.removeChild(previous);
+	// FIXME deal with subdirectories
+	var container = Loader.newShrinkWrapContainer(newDoc);
 
-	var canvas = newDoc.getElementById('canvas');
-        var container = canvas.appendChild(newDoc.createElementNS(Namespace.SVG, "defs"));
-	container.setAttribute("id", "ShrinkWrapped");
 	container.appendChild(newDoc.importNode(node, true));
 	
 	var newurl = new URL(window.location.toString()).withFilename(filename);
@@ -5744,8 +5756,8 @@ Morph.subclass('LinkMorph', {
         var canvas = oldWorld.canvas();
         oldWorld.remove(); // some SVG calls may stop working after this point in the old world.
         
-        console.log('left world %s through %s canvas %s', oldWorld, this, canvas);
-    
+        console.log('left world %s through %s', oldWorld, this);
+	
         // display world first, then add hand, order is important!
         var newWorld = this.myWorld;
         if (newWorld.owner) {

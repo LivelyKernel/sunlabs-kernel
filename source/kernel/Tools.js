@@ -360,7 +360,7 @@ WidgetModel.subclass('StylePanel', {
     getFontFamily: function() { return this.targetMorph.getFontFamily(); },
     
     setFontFamily: function(familyName) {
-        this.familyName = familyName ;
+        this.familyName = familyName;
         this.targetMorph.setFontFamily(familyName);
     },
 

@@ -343,7 +343,7 @@ function populateWorldWithExamples(world) {
 
 function main() {
     var world = null;
-    var container = document.getElementById("ShrinkWrapped");
+    var container = Loader.shrinkWrapContainer();
     if (container) {
         console.log("found container");
         var importer = new Importer();

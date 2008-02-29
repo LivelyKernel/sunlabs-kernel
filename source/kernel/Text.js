@@ -689,9 +689,9 @@ var Locale = {
 
 
 Global.WrapStyle = { 
-    NORMAL: "wrap", // fits text to bounds width using word wrap and sets height
-    NONE: "noWrap", // simply sets height based on line breaks only
-    SHRINK: "shrinkWrap" // sets both width and height based on line breaks only
+    Normal: "Normal",  // fits text to bounds width using word wrap and sets height
+    None: "None", // simply sets height based on line breaks only
+    Shrink: "Shrink" // sets both width and height based on line breaks only
 };
 
 /**
@@ -708,7 +708,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
     borderColor: Color.black,
     selectionColor: Color.primary.green,
     inset: pt(6,4), // remember this shouldn't be modified unless every morph should get the value 
-    wrap: WrapStyle.NORMAL,
+    wrap: WrapStyle.Normal,
     maxSafeSize: 10000, 
     tabWidth: 4,
     tabsAsSpaces: true,
@@ -781,8 +781,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
 	    return true;
 	} else {
 	    var type = node.getAttributeNS(Namespace.LIVELY, "type");
-	    switch (type) {
-            case 'Selection':
+	    if (type == 'Selection') {
 		// that's ok, it's actually transient 
 		// remove all chidren b/c they're really transient
 		this.rawSelectionNode = NodeList.become(node, type);
@@ -828,7 +827,28 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
         return this.textColor;
     },
 
+    applyStyle: function($super, spec) { // no default actions, note: use reflection instead?
+	$super(spec);
+	if (spec.wrapStyle !== undefined) {
+	    if (spec.wrapStyle in WrapStyle) this.setWrapStyle(spec.wrapStyle);
+	    else console.log("unknown wrap style " + spec.wrapStyle);
+	}
+	return this;
+    },
+    
+    makeStyleSpec: function($super, spec) {
+	var spec = $super();
+	if (this.wrap !== TextMorph.prototype.wrap) {
+	    spec.wrapStyle = this.wrap;
+	}
+	return spec;
+    },
+    
     setWrapStyle: function(style) {
+	if (!(style in WrapStyle)) { 
+	    console.log("unknown style " + style); 
+	    return; 
+	}
         if (style === TextMorph.prototype.wrap) {
             delete this.wrap;
         } else {
@@ -847,8 +867,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
     },
 
     beLabel: function() {
-	this.applyStyle({borderWidth: 0, fill: null}).ignoreEvents();
-        this.setWrapStyle(WrapStyle.SHRINK);
+	this.applyStyle({borderWidth: 0, fill: null, wrapStyle: WrapStyle.Shrink}).ignoreEvents();
         // this.isAccepting = false;
         this.layoutChanged();
         this.okToBeGrabbedBy = function(evt) {  return null; }
@@ -856,7 +875,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
     },
 
     beInputLine: function() {
-        //this.setWrapStyle(WrapStyle.NONE);
+        //this.setWrapStyle(WrapStyle.None);
         this.onKeyDown = function(evt) {
 	    switch (evt.getKeyCode()) {
 	    case Event.KEY_DOWN: 
@@ -1061,13 +1080,13 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
     },
 
     compositionWidth: function() {
-        if (this.wrap === WrapStyle.NORMAL) return this.shape.bounds().width - (2*this.inset.x);
+        if (this.wrap === WrapStyle.Normal) return this.shape.bounds().width - (2*this.inset.x);
         else return 9999; // Huh??
     },
 
     // DI: Should rename fitWidth to be composeLineWrap and fitHeight to be composeWordWrap
     fitText: function() { 
-        if (this.wrap === WrapStyle.NORMAL) this.fitHeight();
+        if (this.wrap === WrapStyle.Normal) this.fitHeight();
         else this.fitWidth();
     },
 
@@ -1134,13 +1153,12 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
         var bottomRight = this.inset.addXY(maxX,maxY);
 
         // DI: This should just say, eg, this.shape.setBottomRight(bottomRight);
-        if (this.wrap === WrapStyle.NONE) {
+        if (this.wrap === WrapStyle.None) {
             with (this.shape) { setBounds(bounds().withHeight(bottomRight.y - bounds().y))};
-        }
-
-        if (this.wrap === WrapStyle.SHRINK) {
+        } else if (this.wrap === WrapStyle.Shrink) {
             with (this.shape) { setBounds(bounds().withBottomRight(bottomRight))};
         }
+
     },
 
     showsSelectionWithoutFocus: function() { 
