@@ -235,8 +235,8 @@ var NetRequest = (function() {
     
     var NetRequest = Object.subclass('NetRequest', {
 	
-	proxy: Loader.proxyURL ? new URL(Loader.proxyURL) : null,
-
+	proxy: Loader.proxyURL ? new URL(Loader.proxyURL.endsWith("/") ? Loader.proxyURL : Loader.proxyURL + "/") : null,
+	
         initialize: function(options) {
             this.requestNetworkAccess();
             this.options = options || {};
@@ -259,37 +259,37 @@ var NetRequest = (function() {
             if (!url.toString().startsWith('http')) {
                 url = new URL(Loader.baseURL);
             }
-            var req = new BaseRequest(this.rewriteURL(url), this.options);
+            var req = new BaseRequest(this.rewriteURL(url).toString(), this.options);
             return req.transport;
         },
 	
         put: function(url, content) {
             this.options.method = 'put';
             this.options.body = content;
-            var req = new BaseRequest(this.rewriteURL(url), this.options);
+            var req = new BaseRequest(this.rewriteURL(url).toString(), this.options);
             return req.transport;
         },
 
         remove: function(url) { // delete is a reserved word ...
             this.options.method = 'delete';
-            var req = new BaseRequest(this.rewriteURL(url), this.options);
+            var req = new BaseRequest(this.rewriteURL(url).toString(), this.options);
             return req.transport;
         },
 
         propfind: function(url, content) {
             this.options.method = 'propfind';
             if (content) this.options.body = content;
-            var req = new BaseRequest(this.rewriteURL(url), this.options);
+            var req = new BaseRequest(this.rewriteURL(url).toString(), this.options);
             return req.transport;
         },
 
         rewriteURL: function(url) {
+	    url = url instanceof URL ? url : new URL(url);
             if (this.proxy) {
-		//var loc = url instanceof URL ? url : new URL(url);
-		if (!(url instanceof URL)) throw new Error('not a parsed url');
-		var loc = url;
-		if (this.proxy.hostname != loc.hostname) { // FIXME port and protocol?
-		    return this.proxy + loc.hostname + "/" + loc.fullPath();
+		if (this.proxy.hostname != url.hostname) { // FIXME port and protocol?
+		    url = this.proxy.withFilename(url.hostname + url.fullPath());
+		    console.log("rewrote url " + Object.inspect(url) + " proxy " + this.proxy);
+		    // return this.proxy + url.hostname + "/" + url.fullPath();
 		}
 	    }
             return url;
@@ -308,7 +308,6 @@ var NetRequest = (function() {
             }
         }
     });
-    
     return NetRequest;
 
 })();

@@ -756,37 +756,32 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
         }
     },
 
-    restoreText: function(importer, rawTextNode) {
-        this.rawTextNode = rawTextNode;    
-
+    restoreFromSubnode: function($super, importer, node) {
+	if (node.localName != "text") {
+	    return $super(importer, node);
+	}
+        this.rawTextNode = node;   
+	
         var content = [];
-        for (var child = rawTextNode.firstChild; child != null; child = child.nextSibling) {
-            if (child.tagName == 'tspan')  {
-                var word = new TextWord(importer, child);
-                var lead = Converter.parseLength(word.rawNode.getAttributeNS(Namespace.LIVELY, "lead"));
-                if (lead) {
-                    for (var j = 0; j < lead; j++) content.push(" ");
-                }
-
-                content.push(word.rawNode.textContent); 
-
-                var trail = Converter.parseLength(word.rawNode.getAttributeNS(Namespace.LIVELY, "trail"));
-                if (trail) {
-                    for (var j = 0; j < trail; j++) 
-                        content.push(" ");
-                }
-
-                if (word.rawNode.getAttributeNS(Namespace.LIVELY, "nl") == "true") {
-                    content.push("\n");
-                }
-            }
+        for (var child = node.firstChild; child != null; child = child.nextSibling) {
+            if (child.tagName != 'tspan')  
+		continue;
+            var word = new TextWord(importer, child);
+            var lead = parseInt(word.rawNode.getAttributeNS(Namespace.LIVELY, "lead"));
+            if (lead) content.push(" ".times(lead));
+            content.push(word.rawNode.textContent); 
+            var trail = parseInt(word.rawNode.getAttributeNS(Namespace.LIVELY, "trail"));
+            if (trail) content.push(" ".times(trail));
+	    if (word.rawNode.getAttributeNS(Namespace.LIVELY, "nl") == "true")
+                content.push("\n");
         }
         this.textString = content.join("");
 
-        this.fontFamily = rawTextNode.getAttributeNS(null, "font-family");
-        this.fontSize = Converter.parseLength(rawTextNode.getAttributeNS(null, "font-size"));
+        this.fontFamily = node.getAttributeNS(null, "font-family");
+        this.fontSize = Converter.parseLength(node.getAttributeNS(null, "font-size"));
         this.font = Font.forFamily(this.fontFamily, this.fontSize);
-        this.textColor = Color.parse(rawTextNode.getAttributeNS(null, "fill"));
+        this.textColor = Color.parse(node.getAttributeNS(null, "fill"));
+	return true;
     },
 
     restoreContainer: function($super, element, type, importer) /*:Boolean*/ {
@@ -1382,7 +1377,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
                 this.setNullSelectionAt(Math.max(before.length - 1, 0));
             }
             evt.stop();
-            return;
+            return true;
         } 
         case Event.KEY_RIGHT: {
             // forget the existing selection
@@ -1394,7 +1389,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
                 this.setNullSelectionAt(Math.min(before.length + 1, this.textString.length));
             }
             evt.stop();
-            return;
+            return true;
         }
         case Event.KEY_UP: {
             var lineNo = this.lineNumberForIndex(before.length);
@@ -1405,7 +1400,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
                 this.setNullSelectionAt(Math.min(newLine.startIndex + lineIndex, newLine.getStopIndex()));
             }
             evt.stop();
-            return;
+            return true;
         }
         case Event.KEY_DOWN: {
             var lineNo = this.lineNumberForIndex(before.length);
@@ -1416,50 +1411,65 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
                 this.setNullSelectionAt(Math.min(newLine.startIndex + lineIndex, newLine.getStopIndex()));
             }
             evt.stop();
-            return;
+            return true;
         }
         case Event.KEY_ESC: {
             this.relinquishKeyboardFocus(this.world().firstHand());
-            return;
+            return true;
         }
         case Event.KEY_UP:
         case Event.KEY_DOWN: {
             // do nothing for now
             // don't scroll the page
             evt.stop();
-            return;
+            return true;
         }
         }
 
         // have to process commands in keydown...
         if (evt.isAltDown()) {
-            var replacement = evt.getKeyChar().toLowerCase();
-            if (this.processCommandKeys(replacement)) evt.stop();
+            var command = evt.getKeyChar().toLowerCase();
+            if (this.processCommandKeys(command)) { 
+		evt.stop();
+		return true;
+	    }
         }
+	return false;
     },
     
     onKeyPress: function(evt) {
-        if (!this.acceptInput) return;
-
+        if (!this.acceptInput) return true;
+	
+	switch(evt.getKeyCode()) {
+	case Event.KEY_DOWN:
+	case Event.KEY_LEFT:
+	case Event.KEY_RIGHT:
+	case Event.KEY_UP:
+	    evt.stop();
+	    // already handled by onKeyDown
+	    return true;
+	}
         // cleanup: separate BS logic, diddle selection range and use replaceSelectionWith()
         if (evt.isAltDown() && UserAgent.isWindows) {
             //AltGr pressed
             var replacement = evt.getKeyChar().toLowerCase();
             this.processCommandKeys(replacement);
             evt.stop();
-        }
-        if (evt.getKeyCode() == Event.KEY_BACKSPACE) { // Replace the selection after checking for type-ahead
+	    return true;
+        } else if (evt.getKeyCode() == Event.KEY_BACKSPACE) { // Replace the selection after checking for type-ahead
             var before = this.textString.substring(0, this.selectionRange[this.hasNullSelection() ? 1 : 0]); 
             var after = this.textString.substring(this.selectionRange[1] + 1, this.textString.length);
 
             this.setTextString(before.concat(after));
             this.setNullSelectionAt(before.length); 
             evt.stop(); // do not use for browser navigation
-            return;
+            return true;
         } else if (!evt.isAltDown()) {
             this.replaceSelectionWith(evt.getKeyChar()); 
             evt.stop(); // done
+	    return true;
         }
+	return false;
     },
     
     processCommandKeys: function(key) {  //: Boolean (was the command processed?)

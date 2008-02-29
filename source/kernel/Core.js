@@ -314,6 +314,10 @@ var NodeFactory = {
 
     createText: function(string) {
         return document.createTextNode(string);
+    },
+    
+    createCDATA: function(string) {
+	return document.createCDATASection(string);
     }
     
 };
@@ -2484,11 +2488,10 @@ Object.subclass('Exporter', {
         this.rootMorph = rootMorph;
     },
     
-    serialize: function() {
-        // model is inserted as part of the root morph.
-        var modelNode = (this.rootMorph.getModel() || { toMarkup: function() { return null; }}).toMarkup();
-        var fieldDescs = [];
-
+    extendForSerialization: function() {
+	// decorate with all the extra needed to serialize correctly. Return the additional nodes, to be removed 
+	var helperNodes = [];
+	var rootModel = this.rootMorph.getModel && this.rootMorph.getModel();
         // introspect all the fields
         this.rootMorph.withAllSubmorphsDo(function() {
             for (var prop in this) {
@@ -2496,31 +2499,40 @@ Object.subclass('Exporter', {
                     continue;
                 var m = this[prop];
                 if (m instanceof Morph) {
-                    var desc = NodeFactory.createNS(Namespace.LIVELY, "field");
+		    console.log("serializing field name=" + prop + ",ref=" + m.id());
+                    var desc = this.addNonMorph(NodeFactory.createNS(Namespace.LIVELY, "field"));
+		    var model = m.getModel();
+		    if (model && model !== rootModel) {
+			console.log("loosing nested model " + model);
+		    }
                     desc.setAttributeNS(Namespace.LIVELY, "name", prop);
                     desc.setAttributeNS(Namespace.LIVELY, "ref", m.id());
-                    this.addNonMorph(desc);
-                    fieldDescs.push(desc);
+                    helperNodes.push(desc);
                 }
             }
         });
-    
-        if (modelNode) {
-            try {
-                this.rootMorph.addNonMorph(modelNode);
-            } catch (er) { console.log("got problem, rawNode %s, modelNode %s", this.rootMorph.rawNode, modelNode); }
-        }
+	// not robust, not dealing with models not on this
 
+        var modelNode = rootModel && rootModel.toMarkup();
+        if (modelNode) {
+	    helperNodes.push(modelNode);
+            this.rootMorph.addNonMorph(modelNode);
+        }
+	return helperNodes;
+    },
+
+    removeHelperNodes: function(helperNodes) {
+        for (var i = 0; i < helperNodes.length; i++) {
+	    var n = helperNodes[i];
+            n.parentNode.removeChild(n);
+        }
+    },
+
+    serialize: function() {
+        // model is inserted as part of the root morph.
+	var helperNodes = this.extendForSerialization();
         var result = this.rootMorph.toMarkupString();
-        if (modelNode) {
-            this.rootMorph.rawNode.removeChild(modelNode);
-        }
-
-        // now remove all the serialization-related nodes
-        for (var i = 0; i < fieldDescs.length; i++) {
-            fieldDescs[i].parentNode.removeChild(fieldDescs[i]);
-        }
-
+	this.removeHelperNodes(helperNodes);
         return result;
     }
 
@@ -2532,7 +2544,41 @@ Object.extend(Exporter, {
         return node ? new XMLSerializer().serializeToString(node) : null;
     },
 
-    shrinkWrapToFile: function(morphs, filename) {
+    getBaseDocument: function() {
+        var url = new URL(window.location.toString()); 
+        var req = new NetRequest().beSynchronous(); 
+        var result = req.get(url);
+	
+        if (result.status < 200 && result.status >= 300) {
+            console.log("failure retrieving  " + url + ", status " + result.status);
+	    return null;
+	} else {
+	    return result.responseXML;
+	}
+    },
+
+    saveWithBootstrapCode: function(node, filename) {
+        var newDoc = Exporter.getBaseDocument(filename);
+	
+        var previous = newDoc.getElementById("ShrinkWrapped");
+        if (previous) previous.parentNode.removeChild(previous);
+
+	var canvas = newDoc.getElementById('canvas');
+        var container = canvas.appendChild(newDoc.createElementNS(Namespace.SVG, "defs"));
+	container.setAttribute("id", "ShrinkWrapped");
+	container.appendChild(newDoc.importNode(node, true));
+	
+	var newurl = new URL(window.location.toString()).withFilename(filename);
+        var result = new NetRequest().beSynchronous().put(newurl, Exporter.nodeToString(newDoc));
+	
+        if (result.status >= 200 && result.status < 300) 
+            return "success publishing world at " + newurl + ", status " + result.status;
+	else
+            return "failure publishing world at " + newurl + ", status " + result.status;
+    },
+
+    
+    shrinkWrapToFile: function(morph, filename) {
         if (filename == null) {
             console.log('null filename, not publishing %s', morphs);
             return null;
@@ -2543,43 +2589,12 @@ Object.extend(Exporter, {
             console.log("changed filename to " + filename);
         }
 	
-        var url = new URL(window.location.toString());
-        var req = new NetRequest().beSynchronous(); 
-        var result = req.get(url);
-	
-        if (result.status < 200 && result.status >= 300) {
-            return "failure retrieving  " + newurl + ", status " + result.status;
-        }
-        var newDoc = result.responseXML;
-	
-        var canvas = newDoc.getElementById('canvas');
-
-
-        var previous = newDoc.getElementById("ShrinkWrapped");
-        if (previous) {
-            previous.parentNode.removeChild(previous);
-        }
-        var container = canvas.appendChild(newDoc.createElementNS(Namespace.SVG, "defs"));
-	
-        container.setAttribute("id", "ShrinkWrapped");
-	
-	for (var i = 0; i < morphs.length; i++ ) {
-	    // FIXME use Exporter.serialize()
-            container.appendChild(newDoc.importNode(morphs[i].rawNode, true));
-	}
-	
-        // FIXME: note no model handling
-        var content = Exporter.nodeToString(newDoc);
-        var newurl = url.withFilename(filename);
-        var req = new NetRequest().beSynchronous().put(newurl, content);
-
-        if (result.status >= 200 && result.status < 300) {
-            return "success publishing world at " + newurl + ", status " + result.status;
-        } else {
-            return "failure publishing world at " + newurl + ", status " + result.status;
-        }
-    },
-    
+	var exporter = new Exporter(morph);
+	var helpers = exporter.extendForSerialization();
+	var msg = Exporter.saveWithBootstrapCode(morph.rawNode, filename);
+	exporter.removeHelperNodes(helpers);
+	return msg;
+    }
 
 
 });
@@ -2726,12 +2741,10 @@ Copier.subclass('Importer', {
 Importer.marker = Object.extend(new Importer(), {
     
     addMapping: function() { },
-
     lookupMorph: function() { 
         return null; 
     },
-    
-    addScripts: function() {}
+    addScripts: function() { }
 
 });
 
@@ -2850,7 +2863,7 @@ Morph = Visual.subclass("Morph", {
         } 
 
         if (other.defs) {
-            this.restoreDefs(other.defs);
+            this.restoreDefs(copier, other.defs);
         }
 
         if (other.clipPath) {
@@ -2889,11 +2902,7 @@ Morph = Visual.subclass("Morph", {
         return; // override in subclasses
     },
 
-    restoreText: function(importer, node) {
-        throw new Error(this + " does not support text");
-    },
-
-    restoreDefs: function(originalDefs) {
+    restoreDefs: function(importer, originalDefs) {
 	for (var def = originalDefs.firstChild; def != null; def = def.nextSibling) {
 	    function applyGradient(wrapper, owner) {
 		wrapper.setId(Gradient.deriveId(owner.id()));
@@ -2922,6 +2931,9 @@ Morph = Visual.subclass("Morph", {
 		this.fill = this.addWrapperToDefs(applyGradient(new RadialGradient(Importer.marker, def), this));
 		this.addWrapperToDefs(this.fill);
                 break;
+	    case "g":
+		this.restoreFromSubnode(importer, def);
+		break;
             default:
                 console.warn('unknown def %s', def);
             }
@@ -2952,7 +2964,7 @@ Morph = Visual.subclass("Morph", {
 	    origDefs.parentNode.removeChild(origDefs);
 
         var modelNode = null;
-	var nodesToRemove = [];
+	var helperNodes = [];
 	
         for (var i = 0; i < children.length; i++) {
             var node = children[i];
@@ -2971,10 +2983,6 @@ Morph = Visual.subclass("Morph", {
                 break;
             case "defs": 
 		throw new Error();
-		
-            case "text": // this shouldn't be triggered in non-TextMorphs
-                this.restoreText(importer, node);
-                break;
             case "g": {
                 var type = node.getAttributeNS(Namespace.LIVELY, "type");
                 if (!this.restoreContainer(node, type, importer)) {
@@ -3000,7 +3008,7 @@ Morph = Visual.subclass("Morph", {
                 if (modelNode) console.warn("%s already has modelNode %s", this, modelNode);
                 modelNode = node;
 		// currently model node is not stored.
-		nodesToRemove.push(node);
+		helperNodes.push(node);
                 // postpone hooking up model until all the morphs are reconstructed
                 console.info("found modelNode %s", Exporter.nodeToString(node));
                 break;
@@ -3011,8 +3019,8 @@ Morph = Visual.subclass("Morph", {
                 break;
             } 
             case "field": {
-                //console.log("found field " + Exporter.nodeToString(node));
-		nodesToRemove.push(node);
+                console.log("found field " + Exporter.nodeToString(node));
+		helperNodes.push(node);
                 var name = node.getAttributeNS(Namespace.LIVELY, "name");
                 var ref = node.getAttributeNS(Namespace.LIVELY, "ref");
                 if (name) {
@@ -3031,26 +3039,35 @@ Morph = Visual.subclass("Morph", {
                     console.log('text tag name %s', node.tagName);
                     // whitespace, ignore
                 } else {
-                    console.warn('cannot handle element %s, %s', node.tagName, node.textContent);
+		    this.restoreFromSubnode(importer, node);
                 }
             }
             }
         } // end for
-
+	
 	if (origDefs) { 
-	    this.restoreDefs(origDefs);
+	    this.restoreDefs(importer, origDefs);
 	}
-
+	
         if (modelNode) {
 	    console.log("importing model");
             importer.importModelFrom(modelNode);
         }
 
-	for (var i = 0; i < nodesToRemove.length; i++) {
-	    var n = nodesToRemove[i];
+	for (var i = 0; i < helperNodes.length; i++) {
+	    var n = helperNodes[i];
 	    n.parentNode.removeChild(n);
 	}
-
+    },
+    
+    restoreFromSubnode: function(importer, node) { // return true if the elt was handled
+	if (node.nodeName == '#text') {
+            console.log('text tag name %s', node.tagName);
+	    return true;
+	} else {            // whitespace, ignore
+	    console.warn('cannot handle element %s, %s', node.tagName, node.textContent);
+	    return false;
+	}
     },
     
     restoreContainer: function(element/*:Element*/, type /*:String*/, importer/*Importer*/)/*:Boolean*/ {
@@ -3920,7 +3937,7 @@ Morph.addMethods({
 		new PackageMorph(this).openIn(this.world(), this.bounds().topLeft()); this.remove()}.bind(this) ],
             ["publish shrink-wrapped ...", function() { 
 		this.world().prompt('publish as (.xhtml)', 
-				    function(filename) { if (filename) Exporter.shrinkWrapToFile([this], filename)}.bind(this))}], 
+				    function(filename) { if (filename) Exporter.shrinkWrapToFile(this, filename)}.bind(this))}], 
             ["test tracing (in console)", this.testTracing]
         ];
         if (this.okToDuplicate()) items.unshift(["duplicate", this.copyToHand.curry(evt.hand)]);
@@ -4099,7 +4116,7 @@ Wrapper.subclass('SchedulableAction', {
         this.argIfAny = argIfAny;
         this.stepTime = stepTime;
         this.ticks = 0;
-        this.rawNode.appendChild(document.createCDATASection(this.toJSON()));
+        this.rawNode.appendChild(NodeFactory.createCDATA(this.toJSON()));
     },
 
     deserialize: function($super, importer, rawNode) {
@@ -4933,7 +4950,7 @@ PasteUpMorph.subclass("WorldMorph", {
         menu.addItem(["publish world as ... ", function() { 
 	    this.prompt("world file (.xhtml)", function(filename) { 
 		if (!filename) return;
-		var msg = Exporter.shrinkWrapToFile([this], filename);
+		var msg = Exporter.shrinkWrapToFile(this, filename);
 		console.log("publish got msg " + msg);
 		if (msg) this.world().alert(msg);
 	    }.bind(this));
@@ -5671,8 +5688,8 @@ Morph.subclass('LinkMorph', {
 	    this.world().prompt("world file (.xhtml)", 
 				function(filename) {
 				    if (!filename) return;
-				    var msg = Exporter.shrinkWrapToFile([this.myWorld], filename);
-				    if (msg) linkMorph.world().alert(msg);
+				    var msg = Exporter.shrinkWrapToFile(this.myWorld, filename);
+				    if (msg) this.world().alert(msg);
 				}.bind(this));
         }]);
 	menu.replaceItemNamed("shrink-wrap", ["shrink-wrap linked world", function(evt) {

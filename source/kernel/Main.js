@@ -363,14 +363,16 @@ function main() {
 		}
             }
         }
+	WorldMorph.setCurrent(world);
         importer.startScripts(world);
     } else {
         // Create an empty world
         world = new WorldMorph(Canvas);
+	WorldMorph.setCurrent(world);
         console.log("created empty world");
     }
 
-    WorldMorph.setCurrent(world);
+
     world.displayWorldOn(Canvas);
 
     // Populate the world with sample objects, widgets and applications

@@ -26,7 +26,11 @@ Morph.subclass('PackageMorph', {
 	var delta = this.borderWidth/2;
 	$super(pt(size, size).extentAsRectangle(), "rect");
         var exporter = new Exporter(targetMorph);
-	this.serializedMorph = exporter.serialize();
+	var helpers = exporter.extendForSerialization();
+	if (!this.defs)  
+	    this.defs = this.rawNode.insertBefore(NodeFactory.create("defs"), this.rawNode.firstChild);
+        this.serialized = this.defs.appendChild(targetMorph.rawNode.cloneNode(true));
+	exporter.removeHelperNodes(helpers);
 	this.helpText = "Shrink-wrapped " + targetMorph.getType() + ".\nSelect unwrap from menu to deserialize contents.";
 	this.addMorph(Morph.makeLine([pt(delta, size/2), pt(size - delta, size/2)], 3, Color.black)).ignoreEvents();
 	this.addMorph(Morph.makeLine([pt(size/2, delta), pt(size/2, size - delta)], 3, Color.black)).ignoreEvents();
@@ -35,7 +39,7 @@ Morph.subclass('PackageMorph', {
     getHelpText: function() {
 	return this.helpText;
     },
-
+    
     openIn: function(world, loc) {
         world.addMorphAt(this, loc || world.firstHand().lastMouseDownPoint);
     },
@@ -48,31 +52,23 @@ Morph.subclass('PackageMorph', {
 	menu.replaceItemNamed("show Lively markup", ["show packaged Lively markup", function(evt) {
 	    var extent = pt(500, 300);
             var pane = newTextPane(extent.extentAsRectangle(), "");
-	    pane.innerMorph().setTextString(this.serializedMorph);
+	    pane.innerMorph().setTextString(Exporter.nodeToString(this.serialized));
             this.world().addFramedMorph(pane, "XML dump", this.worldPoint(this.bounds().topLeft()).addPt(pt(5, 0)));
 	}.bind(this)]);
-
+	
 	menu.replaceItemNamed("publish shrink-wrapped ...", ["save shrink-wrapped morph as ... ", function() { 
 	    this.world().prompt("save shrink-wrapped morph as (.xhtml)", function(filename) { 
-		if (filename) Exporter.shrinkWrapToFile([this.serializedMorph], filename) }.bind(this))}]);
-	// FIXME replace 'publish shrink-wrapped as' wich publish shrink-wrapped
+		if (filename) Exporter.shrinkWrapToFile(this.serialized, filename) }.bind(this))}]);
         return menu;
     },
-    
-    /*
-    okToBeGrabbedBy: function(evt) {
-        this.unwrapAt(evt.mousePoint); 
-        return null; 
-    },
-    */
 
     unwrapAt: function(loc) {
-	if (!this.serializedMorph) {
+	if (!this.serialized) {
 	    console.log("no morph to unwrap");
 	    return;
 	}
 	var importer = new Importer();
-	var targetMorph = importer.importFromString(this.serializedMorph);
+	var targetMorph = importer.importFromString(Exporter.nodeToString(this.serialized));
 	if (targetMorph instanceof WorldMorph) {
 	    this.world().addMorph(new LinkMorph(targetMorph, loc));
 	    for (var i = 0; i < targetMorph.submorphs.length; i++) {
@@ -87,9 +83,18 @@ Morph.subclass('PackageMorph', {
 	    this.world().addMorphAt(targetMorph, loc);
 	    importer.startScripts(this.world());
 	}
-
 	this.remove();
+    },
+
+    restoreFromSubnode: function($super, importer, node) {
+	if (!$super(importer, node)) {
+	    if (node.parentNode && node.parentNode.localName == "defs" && node.localName == "g") {
+		this.serialized = node;
+		return true;
+	    } else return false;
+	} else return true;
     }
+
 
 });
 

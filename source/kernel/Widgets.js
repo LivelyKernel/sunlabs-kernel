@@ -49,17 +49,12 @@ Morph.subclass("ButtonMorph", {
         // this default self connection may get overwritten by, eg, connectModel()...
         this.modelPlug = new ModelPlug(model.makePlugSpec());
         this.addNonMorph(this.modelPlug.rawNode);
-
         // Styling
-        this.setModelValue('setValue', false);
+        this.setModelValue('setValue', false);	
+	this.linkToStyles(['button']);
         this.changeAppearanceFor(false);
         this.setToggle(false); // if true each push toggles the model state 
         return this;
-    },
-
-    initializeTransientState: function($super, initialBounds) {
-        $super(initialBounds);
-        this.linkToStyles(['button']);
     },
 
     restorePersistentState: function($super, importer) {
@@ -203,7 +198,6 @@ Morph.subclass("ImageMorph", {
     
     restoreContainerFIXME: function($super, element, type, importer) /*:Boolean*/ {
         if ($super(element, type, importer)) return true;
-	
         switch (type) {
         case 'Image':
             var image = element;
@@ -443,7 +437,6 @@ var TitleBarMorph = (function() {
 	    this.menuButton.action.actor     = this.windowMorph;
 	    this.collapseButton.action.actor = this.windowMorph;
         }
-        this.linkToStyles(['titleBar']);
         this.ignoreEvents();
         this.label.ignoreEvents();
     },
@@ -1543,28 +1536,19 @@ Morph.subclass("SliderMorph", {
         var slider = new Morph(new Rectangle(0, 0, this.mss, this.mss), "rect");
         slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});
         this.slider = this.addMorph(slider);
-        // this.linkToStyles(['slider']);
+        this.linkToStyles(['slider']);
         this.adjustForNewBounds(); 
         return this;
     },
-
-    initializeTransientState: function($super, initialBounds) {
-        $super(initialBounds);
-        // FIXME make persistent ?
-        this.linkToStyles(['slider']);
-    },
-
+    
     restorePersistentState: function($super, importer) {
         $super(importer);
-        //this.slider = this.slider;
-        //console.log("SliderMorph restored slider %s", this.slider);
+	this.scale = 1.0; // FIXME restore from markup
         if (!this.slider) {
             console.warn('no slider in %s, %s', this, this.textContent);
            return;
         }
-
         this.slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});
-        this.scale = 1.0; // FIXME restore from markup
         //this.adjustForNewBounds();
     },
 
