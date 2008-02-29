@@ -2584,7 +2584,7 @@ Object.extend(Exporter, {
 
     saveWithBootstrapCode: function(node, filename) {
         var newDoc = Exporter.getBaseDocument(filename);
-	// FIXME deal with subdirectories
+	// FIXME deal with subdirectories, rewrite the base doc and change xlink:href for scripts
 	var container = Loader.newShrinkWrapContainer(newDoc);
 
 	container.appendChild(newDoc.importNode(node, true));
@@ -2597,7 +2597,6 @@ Object.extend(Exporter, {
 	else
             return "failure publishing world at " + newurl + ", status " + result.status;
     },
-
     
     shrinkWrapNodeToFile: function(node, filename) {
         if (!filename) 
@@ -3221,19 +3220,23 @@ Morph.addMethods({
 
     setStrokeOpacity: function(op) { this.shape.setStrokeOpacity(op); },//.wrap(Morph.onChange('shape')),
     
-    applyStyle: function(spec) { // no default actions, note: use reflection instead?
-        if (spec.borderWidth !== undefined) this.setBorderWidth(spec.borderWidth);
-        if (spec.borderColor !== undefined) this.setBorderColor(spec.borderColor);
-        if (spec.fill !== undefined) this.setFill(spec.fill);
-        if (spec.opacity !== undefined) {
-            this.setFillOpacity(spec.opacity);
-            this.setStrokeOpacity(spec.opacity); 
-        }
-	if (spec.fillOpacity !== undefined) this.setFillOpacity(spec.fillOpacity);
-        if (spec.strokeOpacity !== undefined) this.setStrokeOpacity(spec.strokeOpacity);
-        if (this.shape.roundEdgesBy && spec.borderRadius !== undefined) { 
-            this.shape.roundEdgesBy(spec.borderRadius);
-        }
+    applyStyle: function(specs) { // note: use reflection instead?
+	for (var i = 0; i < arguments.length; i++) {
+	    var spec = arguments[i];
+            if (spec.borderWidth !== undefined) this.setBorderWidth(spec.borderWidth);
+            if (spec.borderColor !== undefined) this.setBorderColor(spec.borderColor);
+            if (spec.fill !== undefined) this.setFill(spec.fill);
+            if (spec.opacity !== undefined) {
+		this.setFillOpacity(spec.opacity);
+		this.setStrokeOpacity(spec.opacity); 
+            }
+	    if (spec.fillOpacity !== undefined) this.setFillOpacity(spec.fillOpacity);
+            if (spec.strokeOpacity !== undefined) this.setStrokeOpacity(spec.strokeOpacity);
+	    
+            if (this.shape.roundEdgesBy && spec.borderRadius !== undefined) { 
+		this.shape.roundEdgesBy(spec.borderRadius);
+            }
+	}
 	return this;
     },
 

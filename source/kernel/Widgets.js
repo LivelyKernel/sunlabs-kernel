@@ -1532,7 +1532,6 @@ Morph.subclass("SliderMorph", {
         this.modelPlug = new ModelPlug(model.makePlugSpec());
         this.addNonMorph(this.modelPlug.rawNode);
 
-
         this.scale = (scaleIfAny == null) ? 1.0 : scaleIfAny;
         var slider = new Morph(new Rectangle(0, 0, this.mss, this.mss), "rect");
         slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});
@@ -1550,9 +1549,8 @@ Morph.subclass("SliderMorph", {
            return;
         }
         this.slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});
-        //this.adjustForNewBounds();
     },
-
+    
     vertical: function() {
         var bnds = this.shape.bounds();
         return bnds.height > bnds.width; 
@@ -2210,7 +2208,7 @@ WidgetModel.subclass('ConsoleWidget', {
 	this.commandCursor = this.commandBuffer.length - 1;
 	var self = this;
 	var ans = this.ans;
-
+	
 	try {
 	    ans = (function() { 
 		// interactive functions. make them available through doitContext ?

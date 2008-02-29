@@ -128,8 +128,8 @@ Morph.subclass(Global, "ClockMorph", {
             var label = new TextMorph(pt(0,0).extent(pt(labelSize*3,labelSize)), 
             // (i>0 ? i : 12) + "");  // English numerals
             ['XII','I','II','III','IV','V','VI','VII','VIII','IX','X','XI'][i]); // Roman
-	    label.applyStyle({borderWidth: 0, fill: null, wrapStyle: WrapStyle.Shrink});
-            label.setFontSize(fontSize);    label.setInset(pt(0,0));        
+	    label.applyStyle({borderWidth: 0, fill: null, wrapStyle: WrapStyle.Shrink, fontSize: fontSize});
+            label.setInset(pt(0,0));        
             label.align(label.bounds().center(), labelPosition.addXY(-1,1));
             this.addMorph(label);
         }
@@ -1434,30 +1434,31 @@ Object.subclass(scope, 'AsteroidsSprite', {
     numStars = Math.floor(gameWidth * gameHeight / 5000);
     stars = []; /* new Point[numStars]; */
 
+    var starStyle = {fill: Color.yellow, borderColor: Color.yellow};
     for (var i = 0; i < numStars; i++) {
         stars[i] = pt((Math.random() * gameWidth), (Math.random() * gameHeight));
 
         var m = new Morph(stars[i].extent(pt(1, 1)), "rect");
-        m.applyStyle({fill: Color.yellow, borderColor: Color.yellow});
+        m.applyStyle(starStyle);
         gameMorph.addMorph(m);
     }
   }
 
+  var textStyle = {fill: Color.black, textColor: Color.yellow};
+
   function showTextStrings() {
-  
+
     if (!text_score) {
         text_score = new TextMorph(new Rectangle(10, 0, 100, fontHeight), "Score: " + score);
-        text_score.setFill(Color.black);
-        text_score.setTextColor(Color.yellow);
+        text_score.applyStyle(textStyle);
         gameMorph.addMorph(text_score);
     } else {
         text_score.setTextString("Score: " + score);
     }
-
+      
     if (!text_ships) {
         text_ships = new TextMorph(new Rectangle(10, gameHeight-fontHeight-6, 100, fontHeight), "Ships: " + shipsLeft);
-        text_ships.setFill(Color.black);
-        text_ships.setTextColor(Color.yellow);
+        text_ships.applyStyle(textStyle);
         gameMorph.addMorph(text_ships);
     } else {
         text_ships.setTextString("Ships: " + shipsLeft);
@@ -1465,8 +1466,7 @@ Object.subclass(scope, 'AsteroidsSprite', {
 
     if (!text_high) {
         text_high = new TextMorph(new Rectangle(gameWidth-120, 0, 100, fontHeight), "High: " + highScore);
-        text_high.setFill(Color.black);
-        text_high.setTextColor(Color.yellow);
+	text_high.applyStyle(textStyle);
         gameMorph.addMorph(text_high);
     } else {
         text_high.setTextString("High: " + highScore);
@@ -1475,15 +1475,13 @@ Object.subclass(scope, 'AsteroidsSprite', {
     if (!playing) {
       if (!text_name) {
           text_name = new TextMorph(new Rectangle(gameWidth / 2 - 140, gameHeight / 2 - 36, 280, 16), "A S T E R O I D S ! Copyright 1998 by Mike Hall");
-          text_name.setFill(Color.black);
-          text_name.setTextColor(Color.yellow);
+	  text_name.applyStyle(textStyle);
           gameMorph.addMorph(text_name);
       }
       
       if (!text_info) {
           text_info = new TextMorph(new Rectangle(gameWidth / 2 - 100, gameHeight / 2, 200, 16), "Game Over: Press S to start");
-          text_info.setFill(Color.black);
-          text_info.setTextColor(Color.yellow);
+	  text_info.applyStyle(textStyle);
           gameMorph.addMorph(text_info);
       }
     } else {

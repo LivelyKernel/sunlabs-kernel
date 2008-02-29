@@ -219,8 +219,7 @@ function populateWorldWithExamples(world) {
     
         for (var i = 0; i < captions.length; i++) { // add boxed text
             var txt = new TextMorph(loc.extent(pt(300,50)), captions[i]);
-            txt.setFontSize(20);
-            txt.setFill(Color.hsb(70*i,0.7,0.8));
+	    txt.applyStyle({fontSize: 20, fill: Color.hsb(70*i,0.7,0.8)});
             loc = loc.addXY(0,33);
             lm2.myWorld.addMorph(txt); 
         }
@@ -287,15 +286,10 @@ function populateWorldWithExamples(world) {
             // Create sample text widgets
             if (Config.showTextSamples) {
                 widget = new TextMorph(loc.extent(pt(100,50)),"Big Text"); // big text
-                widget.setFontSize(20);
-                widget.setTextColor(Color.blue);
-                lm2.myWorld.addMorph(widget);
-
+                lm2.myWorld.addMorph(widget.applyStyle({fontSize: 20, textColor: Color.blue}));
+		
                 widget = new TextMorph(loc.addPt(dx).extent(pt(140,50)),"Unbordered"); // unbordered text
-                widget.setFontSize(20);  
-                widget.setBorderWidth(0);  
-                widget.setFill(null);
-                lm2.myWorld.addMorph(widget); 
+                lm2.myWorld.addMorph(widget.applyStyle({fontSize: 20, borderWidth: 0, fill: null})); 
             }
         }
     }

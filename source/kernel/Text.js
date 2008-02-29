@@ -833,6 +833,13 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
 	    if (spec.wrapStyle in WrapStyle) this.setWrapStyle(spec.wrapStyle);
 	    else console.log("unknown wrap style " + spec.wrapStyle);
 	}
+	if (spec.fontSize !== undefined) {
+	    this.setFontSize(spec.fontSize);
+	}
+	if (spec.textColor !== undefined) {
+	    this.setTextColor(spec.textColor);
+	}
+	
 	return this;
     },
     
@@ -840,6 +847,12 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
 	var spec = $super();
 	if (this.wrap !== TextMorph.prototype.wrap) {
 	    spec.wrapStyle = this.wrap;
+	}
+	if (this.getFontSize() !== TextMorph.prototype.fontSize) {
+	    spec.fontSize = this.getFontSize();
+	}
+	if (this.textColor !== TextMorph.prototype.textColor) {
+	    spec.textColor = this.textColor;
 	}
 	return spec;
     },
@@ -1645,6 +1658,8 @@ TextMorph.addMethods({
     getFontSize: function() { return this.fontSize; },
 
     setFontSize: function(newSize) {
+	if (newSize == this.fontSize && this.font)  // make sure this.font is inited
+	    return;
         this.fontSize = newSize;
         this.font = Font.forFamily(this.fontFamily, newSize);
         this.setInset(pt(newSize/2+2, newSize/3));
