@@ -356,7 +356,7 @@ Object.extend(Class, {
                 // FF can throw an exception here
             }
         }
-
+	
         a.push("Object", "Global"); // a few others of note
 
         // console.log('found array ' + a.sort());
@@ -2486,6 +2486,8 @@ Object.subclass('Exporter', {
     
     initialize: function(rootMorph) {
         this.rootMorph = rootMorph;
+	if (!(rootMorph instanceof Morph)) 
+	    console.log("wierd, root morph is " + rootMorph);
     },
     
     extendForSerialization: function() {
@@ -2530,10 +2532,17 @@ Object.subclass('Exporter', {
 
     serialize: function() {
         // model is inserted as part of the root morph.
-	var helperNodes = this.extendForSerialization();
+	var helpers = this.extendForSerialization();
         var result = this.rootMorph.toMarkupString();
-	this.removeHelperNodes(helperNodes);
+	this.removeHelperNodes(helpers);
         return result;
+    },
+
+    shrinkWrapToFile: function(filename) {
+	var helpers = this.extendForSerialization();
+	var msg = Exporter.shrinkWrapNodeToFile(this.rootMorph.node, filename);
+	exporter.removeHelperNodes(helpers);
+	return msg;
     }
 
 });
@@ -2578,25 +2587,18 @@ Object.extend(Exporter, {
     },
 
     
-    shrinkWrapToFile: function(morph, filename) {
-        if (filename == null) {
-            console.log('null filename, not publishing %s', morphs);
-            return null;
-        }
-	
+    shrinkWrapNodeToFile: function(node, filename) {
+        if (!filename) 
+            return 'no filename, not publishing ' + node;
+	if (!node) 
+	    return "no morph to publish";
+
         if (!filename.endsWith(".xhtml")) {
             filename += ".xhtml";
             console.log("changed filename to " + filename);
         }
-	
-	var exporter = new Exporter(morph);
-	var helpers = exporter.extendForSerialization();
-	var msg = Exporter.saveWithBootstrapCode(morph.rawNode, filename);
-	exporter.removeHelperNodes(helpers);
-	return msg;
+	return Exporter.saveWithBootstrapCode(node, filename);
     }
-
-
 });
 
 /**
@@ -2687,7 +2689,8 @@ Copier.subclass('Importer', {
         for (var node = container.firstChild; node != null; node = node.nextSibling) {
             // console.log("found node " + Exporter.nodeToString(node));
             if (node.localName != "g")  continue;
-            morphs.push(this.importFromNode(node));
+            morphs.push(this.importFromNode(node.ownerDocument === Global.document ? 
+					    node : Global.document.adoptNode(node.cloneNode(true))));
         }
         return morphs;
     },
@@ -2702,9 +2705,33 @@ Copier.subclass('Importer', {
         return document.adoptNode(xml.documentElement);
     },
 
+    importWorldFromContainer: function(container, world) {
+	var morphs = this.importFromContainer(container);
+	if (morphs[0]) {
+            if (morphs[0] instanceof WorldMorph) {
+                world = morphs[0];
+                world.itsCanvas = Canvas;
+		if (morphs.length > 1) {
+		    console.log("more than one top level morph following a WorldMorph, ignoring remaining morphs");
+		}
+            } else {
+		// no world, create one and add all the shrinkwrapped morphs to it.
+		world = world ||new WorldMorph(Canvas);
+		for (var i = 0; i < morphs.length; i++ )
+		    world.addMorph(morphs[i]);
+            }
+	    try {
+		this.startScripts(world);
+	    } catch (er) {
+		console.log("scripts failed: " + er);
+	    }
+        }
+	return world;
+    },
+
+
     importModelFrom: function(ptree) {
         var model = new SimpleModel(null);
-        
         for (var node = ptree.firstChild; node != null; node = node.nextSibling) {
             switch (node.localName) {
             case "dependent":
@@ -3027,7 +3054,7 @@ Morph = Visual.subclass("Morph", {
                         console.warn("no value found for field %s ref %s", name, ref);
                     } else {
                         //node.parentNode.removeChild(node);
-                        console.log("found " + name + "=" + found);
+                        console.log("found " + name + "=" + found + "and assigned to " + this.id());
                     }
                 }
                 break;
@@ -3931,7 +3958,7 @@ Morph.addMethods({
 		new PackageMorph(this).openIn(this.world(), this.bounds().topLeft()); this.remove()}.bind(this) ],
             ["publish shrink-wrapped ...", function() { 
 		this.world().prompt('publish as (.xhtml)', 
-				    function(filename) { if (filename) Exporter.shrinkWrapToFile(this, filename)}.bind(this))}], 
+				    function(filename) { if (filename) new Exporter(this).shrinkWrapToFile(filename)}.bind(this))}], 
             ["test tracing (in console)", this.testTracing]
         ];
         if (this.okToDuplicate()) items.unshift(["duplicate", this.copyToHand.curry(evt.hand)]);
@@ -4944,7 +4971,7 @@ PasteUpMorph.subclass("WorldMorph", {
         menu.addItem(["publish world as ... ", function() { 
 	    this.prompt("world file (.xhtml)", function(filename) { 
 		if (!filename) return;
-		var msg = Exporter.shrinkWrapToFile(this, filename);
+		var msg = new Exporter(this).shrinkWrapToFile(filename);
 		console.log("publish got msg " + msg);
 		if (msg) this.world().alert(msg);
 	    }.bind(this));
@@ -5682,7 +5709,7 @@ Morph.subclass('LinkMorph', {
 	    this.world().prompt("world file (.xhtml)", 
 				function(filename) {
 				    if (!filename) return;
-				    var msg = Exporter.shrinkWrapToFile(this.myWorld, filename);
+				    var msg = new Exporter(this.myWorld).shrinkWrapToFile(filename);
 				    if (msg) this.world().alert(msg);
 				}.bind(this));
         }]);

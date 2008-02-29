@@ -347,32 +347,14 @@ function main() {
     if (container) {
         console.log("found container");
         var importer = new Importer();
-        var morphs = importer.importFromContainer(container);
-        if (morphs[0]) {
-            if (morphs[0] instanceof WorldMorph) {
-                world = morphs[0];
-                world.itsCanvas = Canvas;
-		if (morphs.length > 1) {
-		    console.log("more than one top level morph following a WorldMorph, ignoring remaining morphs");
-		}
-            } else {
-		// no world, create one and add all the shrinkwrapped morphs to it.
-		world = new WorldMorph(Canvas);
-		for (var i = 0; i < morphs.length; i++ ) {
-		    world.addMorph(morphs[i]);
-		}
-            }
-        }
+	world = importer.importWorldFromContainer(container);
 	WorldMorph.setCurrent(world);
-        importer.startScripts(world);
     } else {
         // Create an empty world
         world = new WorldMorph(Canvas);
 	WorldMorph.setCurrent(world);
         console.log("created empty world");
     }
-
-
     world.displayWorldOn(Canvas);
 
     // Populate the world with sample objects, widgets and applications

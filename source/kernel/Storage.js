@@ -58,7 +58,7 @@ Morph.subclass('PackageMorph', {
 	
 	menu.replaceItemNamed("publish shrink-wrapped ...", ["save shrink-wrapped morph as ... ", function() { 
 	    this.world().prompt("save shrink-wrapped morph as (.xhtml)", function(filename) { 
-		if (filename) Exporter.shrinkWrapToFile(this.serialized, filename) }.bind(this))}]);
+		if (filename) Exporter.shrinkWrapNodeToFile(this.serialized, filename) }.bind(this))}]);
         return menu;
     },
 
@@ -438,6 +438,35 @@ WebStore.subclass('FileBrowser', {
 		
 	    }]
 	];
+	if (fileName.endsWith(".xhtml")) {
+	    // FIXME: add loading into a new world
+	    items.push(["load into current world", function(evt) {
+		var store = new WebStore();
+		// FIXME:	// not really an actual morph, more like a non-visual model observer
+		var pseudomorph = new TextMorph(pt(0,0).extentAsRectangle(0, 0), "");
+		pseudomorph.connectModel({model: store, getText: "getCurrentResourceContents"});
+		
+		store.getCurrentResourceContents = function() {
+		    console.log("set CurrentResourceContents to " + this.CurrentResourceContents);
+		    var parser = new DOMParser();
+		    var doc = parser.parseFromString(this.CurrentResourceContents, "text/xml");
+		    if (!doc) { 
+			this.world().alert('no morphs found in %s', store.CurrentResource);
+			return;
+		    }
+		    var container = doc.getElementById("ShrinkWrapped");
+		    if (container) {
+			var importer = new Importer();
+			var world = importer.importWorldFromContainer(container, WorldMorph.current());
+			if (!world)
+			    this.world().alert('no morphs found in %s', store.CurrentResource);
+		    }
+		}
+		store.setCurrentResource(fileName);
+	    }.bind(this)]);
+	} else if (fieldName.endsWith(".js")) {
+	    // FIXME 
+	}
 	
 	var contents = this.getCurrentResourceContents();
 	console.log("fileName = " + fileName + "; contents.length = " + contents.length);

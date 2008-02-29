@@ -125,6 +125,7 @@ var NetRequest = (function() {
 
         onException: function(request, exception) {
             console.warn("%s %s: exception %s", request.method, request.url, exception);
+	    /*???*/Function.showStack();
 	    if (e.originalStack) { 
 		console.log("captured stack:");
 		Function.showStack(e.originalStack);
