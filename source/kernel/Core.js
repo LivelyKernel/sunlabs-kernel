@@ -2511,7 +2511,7 @@ Object.subclass('Exporter', {
                 }
             }
         });
-	// not robust, not dealing with models not on this
+	// not robust, not dealing with models not defined on this
 
         var modelNode = rootModel && rootModel.toMarkup();
         if (modelNode) {
@@ -2904,21 +2904,22 @@ Morph = Visual.subclass("Morph", {
 
     restoreDefs: function(importer, originalDefs) {
 	for (var def = originalDefs.firstChild; def != null; def = def.nextSibling) {
-	    function applyGradient(wrapper, owner) {
-		wrapper.setId(Gradient.deriveId(owner.id()));
+	    function applyGradient(gradient, owner) {
+		gradient.setId(Gradient.deriveId(owner.id()));
 		if (owner.shape) {
 		    var myFill = owner.shape.getFill();
                     if (myFill)
-                        owner.shape.setFill(wrapper.uri());
+                        owner.shape.setFill(gradient.uri());
                     else console.warn('myFill undefined on %s', owner);
-		} else console.warn("cannot set fill %s (yet?), no shape...", wrapper.id());
-		return wrapper;
+		} else console.warn("cannot set fill %s (yet?), no shape...", gradient.id());
+		return gradient;
 	    }
 	    
             switch (def.tagName) {
             case "clipPath":
                 if (!this.rawNode.getAttributeNS(null, 'clip-path'))
 		    console.log('myClip is undefined on %s', this); 
+		if (this.clipPath) throw new Error("how come clipPath is set to " + this.clipPath);
 		this.clipPath = new ClipPath(Importer.marker, def);
 		this.clipPath.setId(ClipPath.deriveId(this.id()));
                 this.rawNode.setAttributeNS(null, 'clip-path', this.clipPath.uri());
@@ -3035,9 +3036,9 @@ Morph = Visual.subclass("Morph", {
                 if (node.nodeName == '#text') {
                     console.log('text tag name %s', node.tagName);
                     // whitespace, ignore
-                } else {
-		    this.restoreFromSubnode(importer, node);
-                }
+                } else if (!this.restoreFromSubnode(importer, node)) {
+		    console.warn('cannot handle node %s, %s', node.tagName, node.textContent);
+		}
             }
             }
         } // end for
@@ -3068,7 +3069,6 @@ Morph = Visual.subclass("Morph", {
 		this.rawNode.removeChild(node);
 		return true;
             default:
-		console.warn('cannot handle element %s, %s', node.tagName, node.textContent);
 		return false;
             }
 	}

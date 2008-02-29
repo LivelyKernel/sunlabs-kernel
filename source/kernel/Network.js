@@ -288,7 +288,7 @@ var NetRequest = (function() {
             if (this.proxy) {
 		if (this.proxy.hostname != url.hostname) { // FIXME port and protocol?
 		    url = this.proxy.withFilename(url.hostname + url.fullPath());
-		    console.log("rewrote url " + Object.inspect(url) + " proxy " + this.proxy);
+		    // console.log("rewrote url " + Object.inspect(url) + " proxy " + this.proxy);
 		    // return this.proxy + url.hostname + "/" + url.fullPath();
 		}
 	    }
