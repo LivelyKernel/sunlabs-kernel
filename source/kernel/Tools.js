@@ -677,6 +677,9 @@ TextMorph.subclass('FrameRateMorph', {
 // Source Database
 // ===========================================================================
 TextMorph.subclass('SourceDatabase', {
+	// Note this should be a model;  It is currently a Morph so that it
+	// can inherit the view protocol necessary to interact with WebStore
+	//
 	// The Source Database holds a cross-reference of the source code
 	// and the various methods for scanning, saving, and reloading that info
 	//
@@ -711,9 +714,16 @@ TextMorph.subclass('SourceDatabase', {
 	var methodDict = this.methodDictFor(className);
 	var descriptor = methodDict[methodName];
 	if (!descriptor) return null;
-	var fullText = this.cachedFullText[descriptor.fileName];
+	var fullText = this.getFullText(descriptor.fileName);
 	if (!fullText) return null;
 	return fullText.substring(descriptor.startPos, descriptor.endPos);
+    },
+
+    getFullText: function(fileName) {
+	var fullText = this.cachedFullText[fileName];
+	if (fullText) return fullText;
+	// Full text not in cache -- retrieve it and enter in cache
+	return null;
     },
 
     setDescriptorInClassForMethod: function(className, methodName, descriptor) {
@@ -795,7 +805,7 @@ Object.subclass('FileParser', {
 	this.lineNo = 0;
 	this.changeList = [];
 	if (this.verbose) console.log("Parsing " + this.fileName + ", length = " + len);
-	this.currentDef = {type: "Header", name: fname, startPos: 0, lineNo: 1};
+	this.currentDef = {type: "preamble", startPos: 0, lineNo: 1};
 	while (this.ptr < len) {
 	    var line = this.nextLine(this.str);
 	    if (this.verbose) console.log("lineNo=" + this.lineNo + " ptr=" + this.ptr + line);		
@@ -806,6 +816,7 @@ Object.subclass('FileParser', {
 	    } else if (this.verbose) { console.log("other: "+ line); 
 	    }
 	}
+	this.ptr = len;
 	this.processCurrentDef();
 	console.log(this.fileName + " scanned; " + this.changeList.length + " patches identified.");
 	return this.changeList;
@@ -847,7 +858,7 @@ Object.subclass('FileParser', {
 	// Terminate the currently open definition and process accordingly
 	// We will want to do a better job of finding where it ends
 	var def = this.currentDef;
-	if (def == null) return;
+	if (this.ptr == 0) return;  // we're bring called at new def; if ptr == 0, there's no preamble
 	def.endPos = this.ptr-1;
 	if (def.type == "classDef") {
 		this.currentClassName = def.name;
@@ -858,6 +869,7 @@ Object.subclass('FileParser', {
 			{fileName: this.fileName, startPos: def.startPos, endPos: this.ptr-1};
 	}
 	this.changeList.push(this.currentDef);
+	// console.log("startPos = " + def.startPos + "; endPos = " + def.endPos);
 	this.currentDef = null;
     },
     scanBlankLine: function(line) {
@@ -867,8 +879,9 @@ Object.subclass('FileParser', {
     },
     nextLine: function(s) {
 	// Peeks ahead to next line-end, returning the line with cr and/or lf
-	// I'm sure this could be *much* simpler, either by use of regex's
+	// I'm sure this could be simpler, either by use of regex's
 	// or just by knowing what line-ending is used
+	// Note p1, p2 are first and last characters of the line (inc ending)
 	if (this.currentLine) this.ptr += this.currentLine.length;
 	this.lineNo ++;
 	var len = s.length;
@@ -879,7 +892,7 @@ Object.subclass('FileParser', {
 	    p2++; 
 	    c = s[p2]; 
 	}
-	if (p2 == len) return s.substring(p1,p2); // EOF
+	if (p2 == len) return s.substring(p1,p2); // EOF; p2 is beyond end
 	if (p2+1 == len) return s.substring(p1,p2+1); // EOF at lf or cr
 	if (c == "\n" && s[p2+1] == "\r") return this.currentLine = s.substring(p1,p2+2); // ends w/ lfcr
 	if (c == "\r" && s[p2+1] == "\n") return this.currentLine = s.substring(p1,p2+2); // ends w/ crlf
@@ -895,10 +908,11 @@ Object.subclass('FileParser', {
 
 WidgetModel.subclass('ChangeListBrowser', {
 	// The ChangeListBrowser views a list of patches in a JavaScript (or other) file.
-	// The patches taken all together entirely capture all the test in the file
+	// The patches taken together entirely capture all the test in the file
 	// The quality of the fileParser determines how well the file patches correspond
 	// to meaningful JavaScript entities.  A changeList accumulated from method defs
-	// during a development session should be completely well-formed in this regard.
+	// during a development session should (;-) be completely well-formed in this regard.
+	// Saving a change in a CLB will only edit the file;  no evaluation is implied
     
     defaultViewExtent: pt(400,250),
     openTriggerVariable: 'getChangeBanners',
@@ -911,6 +925,7 @@ WidgetModel.subclass('ChangeListBrowser', {
     },
 
     getChangeBanners: function() {
+	this.changeBanner = null;
 	return this.changeList.map( function(each) { return this.bannerOfItem(each); }.bind(this));
     },
 
@@ -928,28 +943,42 @@ WidgetModel.subclass('ChangeListBrowser', {
 	return null;
     },
 
+    fulTextOfItem: function(item) {
+	return this.fileContents.substring(item.startPos, item.endPos+1);
+    },
+
+    bannerOfItem: function(item) {
+        var lineStr = item.lineNo.toString();
+	var firstLine = this.fulTextOfItem(item).truncate(40);
+	var end = firstLine.indexOf("\n");
+	if (end >= 0) firstLine = firstLine.substring(0,end);
+	end = firstLine.indexOf(":");
+	if (end >= 0) firstLine = firstLine.substring(0,end+1);
+	return lineStr + ": " + firstLine;
+    },
+
     getChangeItemText: function() {
         var item = this.selectedItem();
 	if (item == null) return "-----";
         return this.fulTextOfItem(item);
     },
 
-    fulTextOfItem: function(item) {
-	return this.fileContents.substring(item.startPos, item.endPos);
+    setChangeItemText: function(newItemText, v) {
+        var item = this.selectedItem();
+	if (item == null) return;
+	var beforeText = this.fileContents.substring(0, item.startPos);
+	var afterText = this.fileContents.substring(item.endPos+1);
+        var cat = beforeText.concat(newItemText, afterText);
+	console.log("Saving " + this.fileName + "; length = " + cat.length);
+	new WebStore().save(this.fileName, cat);
+
+	// Now recreate (slow but sure) list from new contents, as things may have changed
+	var oldSelection = this.changeBanner;
+	this.fileContents = cat;
+	this.changeList = new FileParser().parseFile(this.fileName, cat);
+	this.changed('getChangeBanners');
+	this.setChangeSelection(oldSelection);  // reselect same item in new list (hopefully)
     },
-
-    bannerOfItem: function(item) { // For now banners are just line numbers
-        var lineStr = item.lineNo.toString();
-	// following pad makes line nunmbers line up, but breaks list selection
-	// var pad = "          ".substring(0,2*(4-lineStr.length));
-	var firstLine = this.fileContents.substring(item.startPos, item.startPos + 40);
-	var end = firstLine.indexOf("\n");
-	if (end >= 0) firstLine = firstLine.substring(0,end);
-	end = firstLine.indexOf(":");
-	if (end >= 0) firstLine = firstLine.substring(0,end+1);
-	return lineStr + ": " + firstLine;    },
-
-    setChangeItemText: function(txt, v) { this.inspectee[this.propName] = eval(this, this.inspectee); },
 
     viewTitle: function() {
 	return "Change list for " + this.fileName;

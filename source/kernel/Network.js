@@ -95,7 +95,11 @@ Object.subclass('URL', {
     },
     
     withFilename: function(filename) {
-	return new URL({protocol: this.protocol, port: this.port, hostname: this.hostname, path: this.dirname() + filename });
+	var dirPart = this.dirname();
+	i = filename.indexOf(dirPart);
+	if (i == 0) localname = filename.substring(dirPart.length); // strip off leading directory ref
+	else localname = filename;
+	return new URL({protocol: this.protocol, port: this.port, hostname: this.hostname, path: this.dirname() + localname });
     }
     
 });

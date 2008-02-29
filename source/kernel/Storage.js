@@ -163,6 +163,7 @@ Model.subclass('WebStore', {
     
     save: function(filename, content, optModelVariable) {
 	var url = this.baseUrl.withFilename(filename);
+console.log("baseUrl = " + Object.inspect(this.baseUrl) + "; filename = " + filename);
         // retrieve the the contents of the url and save in the indicated model variable
         console.log('saving url ' + url);
         var options =  {

@@ -709,7 +709,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
     selectionColor: Color.primary.green,
     inset: pt(6,4), // remember this shouldn't be modified unless every morph should get the value 
     wrap: WrapStyle.NORMAL,
-    maxSafeSize: 8000, 
+    maxSafeSize: 10000, 
     tabWidth: 4,
     tabsAsSpaces: true,
     noShallowCopyProperties: Morph.prototype.noShallowCopyProperties.concat(['rawTextNode', 'rawSelectionNode', 'lines']),
