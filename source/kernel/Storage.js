@@ -464,7 +464,7 @@ WebStore.subclass('FileBrowser', {
 		}
 		store.setCurrentResource(fileName);
 	    }.bind(this)]);
-	} else if (fieldName.endsWith(".js")) {
+	} else if (fileName.endsWith(".js")) {
 	    // FIXME 
 	}
 	
