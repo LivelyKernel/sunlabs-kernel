@@ -5293,6 +5293,24 @@ PasteUpMorph.subclass("WorldMorph", {
 	return this.addMorphAt(new WindowMorph(morph, title), loc);
     },
 
+    addMorphFrontOrBack: function($super, m, front) {
+	var oldTop = this.topWindow();
+	var result = $super(m, front);
+	if (!front || !(m instanceof WindowMorph)) return result;
+	// if adding a new window on top, then make it active
+        if (oldTop) oldTop.titleBar.highlight(false);
+	m.takeHighlight();
+  	return result;
+    },
+
+    topWindow: function() {
+	for (var i=this.submorphs.length-1; i>=0; i--) {
+		var sub = this.submorphs[i];
+		if (sub instanceof WindowMorph) return sub;
+	}
+	return null;
+    },
+
     reactiveAddMorph: function(morph, loc) { 	// add morph in response to a user action, make it prominent
 	loc = loc || this.firstHand().lastMouseDownPoint;
 	return this.addMorphAt(morph, loc);

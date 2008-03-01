@@ -513,8 +513,8 @@ WebStore.subclass('FileBrowser', {
 	console.log("fileName = " + fileName + "; contents.length = " + contents.length);
         if (contents && contents.length > 0) {
 	    items.unshift(['open a changeList browser', function(evt) {
-                var changeList = new FileParser().parseFile(fileName, contents);
-		new ChangeListBrowser(fileName, contents, changeList).openIn(this.world(), evt.mousePoint); 
+                var chgList = new FileParser().parseFile(fileName, contents);
+		new ChangeList(fileName, contents, chgList).openIn(this.world()); 
 	    }]);
 	}
 	return items; 

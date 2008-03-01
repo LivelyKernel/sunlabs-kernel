@@ -84,10 +84,11 @@ WidgetModel.subclass('SimpleBrowser', {
 	}
 	if (Loader.isLoadedFromNetwork && SourceControl == null) {
             items.push(['load source files', function() {
-                SourceControl = new SourceDatabase(new Rectangle(100, 100, 200, 50));
-		this.world().addMorph(SourceControl);
-		this.world().firstHand().setMouseFocus(null);
-		SourceControl.scanKernelFiles(["Core.js", "Text.js", "Widgets.js", "Tools.js", "Examples.js", "Network.js", "Storage.js"]); }]);
+                SourceControl = new SourceDatabase();
+		SourceControl.openIn(this.world());
+		this.world().firstHand().setMouseFocus(null);  // DI: Is this necessary ?? ***
+		SourceControl.scanKernelFiles(["Core.js", "Text.js", "Widgets.js", "Tools.js", "Examples.js", "Network.js", "Storage.js"]);
+		}]);
 	}
 	return items; 
     }
@@ -674,106 +675,6 @@ TextMorph.subclass('FrameRateMorph', {
 
 
 // ===========================================================================
-// Source Database
-// ===========================================================================
-TextMorph.subclass('SourceDatabase', {
-	// Note this should be a model;  It is currently a Morph so that it
-	// can inherit the view protocol necessary to interact with WebStore
-	//
-	// The Source Database holds a cross-reference of the source code
-	// and the various methods for scanning, saving, and reloading that info
-	//
-	// I anticipate that it will also hold a list of projects, each being a list
-	// of changes. Whether projects will be associated with worlds as in Squeak
-	// or not is not yet clear.  Regardless, at any time, a given project will
-	// be 'current', and will accumulate changes made in its changeList, and
-	// will journal those changes onto a changes file for that project.
-	//
-	// The idea is that, upon startup, the 'image' will consist of the Lively
-	// Kernel base code.  You may then open (or find open) a list of various
-	// Project files in your directory or other directories to which you have access.
-	// You may open any of these in the file browser and read the foreward which,
-	// by convention, will list, eg, author, date, project name, description, etc.
-	// You may further choose to load that project, which will read in all the code,
-	// and prepare the system to record and possibly write out any changes made to 
-	// that project
-    initialize: function($super, rect) {
-	$super(rect, "Source Scanner");
-	this.methodDicts = {};
-	this.cachedFullText = {};
-    },
-
-    isEmpty: function() { return this.changeList == null; },
-
-    methodDictFor: function(className) {
-	if (!this.methodDicts[className]) this.methodDicts[className] = {}; 
-	return this.methodDicts[className];
-    },
-
-    getSourceInClassForMethod: function(className, methodName) {
-	var methodDict = this.methodDictFor(className);
-	var descriptor = methodDict[methodName];
-	if (!descriptor) return null;
-	var fullText = this.getFullText(descriptor.fileName);
-	if (!fullText) return null;
-	return fullText.substring(descriptor.startPos, descriptor.endPos);
-    },
-
-    getFullText: function(fileName) {
-	var fullText = this.cachedFullText[fileName];
-	if (fullText) return fullText;
-	// Full text not in cache -- retrieve it and enter in cache
-	return null;
-    },
-
-    setDescriptorInClassForMethod: function(className, methodName, descriptor) {
-	var methodDict = this.methodDictFor(className);
-	methodDict[methodName] = descriptor;
-    },
-
-    scanKernelFiles: function(list) {
-	this.cachedFullText = {};
-	this.changeList = [];
-	this.fileList = list;
-	var webStore = new WebStore();
-        this.connectModel({model: webStore, getText: "getCurrentResourceContents"});
-	this.readNextFile(webStore, 0);
-    },
-
-    readNextFile: function (webStore, index) {
-	this.fileListIndex = index;
-	webStore.localName = this.fileList[index];
-	this.setTextString("Scanning " + webStore.localName + "...");
-	var fullName = webStore.baseUrl.withFilename(webStore.localName).fullPath();
-	console.log("Reading ..." + fullName);
-	webStore.setCurrentResource(fullName);
-    },
-
-    updateView: function(aspect, controller) {
-        var p = this.modelPlug;
-        var doneReading = false;
-	if (p && aspect == p.getText) {
-		var webStore = this.getModel();
-		var fileName = webStore.localName;
-		var fullText = webStore.getCurrentResourceContents();
-		this.cachedFullText[fileName] = fullText;
-		if (this.fileListIndex < this.fileList.length-1) {
-			this.readNextFile(webStore, this.fileListIndex+1);
-		} else { doneReading = true;
-		}
-		console.log("Parsing " + fileName + "...");
-		new FileParser().parseFile(fileName, fullText, this);
-	}
-	if (doneReading) {
-		this.getModel().removeDependent(this);
-		this.remove();
-	}
-    }
-});
-var SourceControl = null;
-
-
-// ===========================================================================
 // FileParser
 // ===========================================================================
  
@@ -796,6 +697,7 @@ Object.subclass('FileParser', {
 	// Scans the file and returns changeList -- a list of informal divisions of the file
 	// It should be the case that these, in order, exactly contain all the text of the file
 	// Note that if db, a SourceDatabase, is supplied, it will be loaded during the scan
+	var ms = new Date().getTime();
 	this.verbose = false;
 	this.fileName = fname;
 	this.str = fstr;
@@ -818,7 +720,8 @@ Object.subclass('FileParser', {
 	}
 	this.ptr = len;
 	this.processCurrentDef();
-	console.log(this.fileName + " scanned; " + this.changeList.length + " patches identified.");
+	ms = new Date().getTime() - ms;
+	console.log(this.fileName + " scanned; " + this.changeList.length + " patches identified in " + ms + " ms.");
 	return this.changeList;
     },
     scanComment: function(line) {
@@ -892,8 +795,8 @@ Object.subclass('FileParser', {
 	    p2++; 
 	    c = s[p2]; 
 	}
-	if (p2 == len) return s.substring(p1,p2); // EOF; p2 is beyond end
-	if (p2+1 == len) return s.substring(p1,p2+1); // EOF at lf or cr
+	if (p2 == len) return this.currentLine = s.substring(p1,p2); // EOF; p2 is beyond end
+	if (p2+1 == len) return this.currentLine = s.substring(p1,p2+1); // EOF at lf or cr
 	if (c == "\n" && s[p2+1] == "\r") return this.currentLine = s.substring(p1,p2+2); // ends w/ lfcr
 	if (c == "\r" && s[p2+1] == "\n") return this.currentLine = s.substring(p1,p2+2); // ends w/ crlf
 	 // ends w/ cr or lf alone
@@ -903,10 +806,10 @@ Object.subclass('FileParser', {
 });
 
 // ===========================================================================
-// ChangeList Browser
+// ChangeList
 // ===========================================================================
 
-WidgetModel.subclass('ChangeListBrowser', {
+WidgetModel.subclass('ChangeList', {
 	// The ChangeListBrowser views a list of patches in a JavaScript (or other) file.
 	// The patches taken together entirely capture all the test in the file
 	// The quality of the fileParser determines how well the file patches correspond
@@ -975,9 +878,17 @@ WidgetModel.subclass('ChangeListBrowser', {
 	// Now recreate (slow but sure) list from new contents, as things may have changed
 	var oldSelection = this.changeBanner;
 	this.fileContents = cat;
-	this.changeList = new FileParser().parseFile(this.fileName, cat);
+	this.changeList = new FileParser().parseFile(this.fileName, this.fileContents);
 	this.changed('getChangeBanners');
 	this.setChangeSelection(oldSelection);  // reselect same item in new list (hopefully)
+    },
+
+    loadFileNamed: function (fn, webStore) {
+	if (webStore == null) webStore = new WebStore();
+	this.fileName = fn;
+	this.fileContents = webStore.fetch(this.fileName);
+	this.changeList = new FileParser().parseFile(this.fileName, this.fileContents);
+	this.changed('getChangeBanners');
     },
 
     viewTitle: function() {
@@ -995,8 +906,87 @@ WidgetModel.subclass('ChangeListBrowser', {
 	m.connectModel({model: this, getText: "getChangeItemText", setText: "setChangeItemText"});
 	return panel;
     }
-
 });
+
+
+// ===========================================================================
+// Source Database
+// ===========================================================================
+ChangeList.subclass('SourceDatabase', {
+	// The Source Database holds a cross-reference of the source code
+	// and the various methods for scanning, saving, and reloading that info
+	//
+	// It also holds a list of changes for the current project, and maintains
+	// the associated changes file.  The idea is that whenever changes are made
+	// they update the changeList and its associated file.
+	//
+	// Normally, upon startup, the 'image' will consist of the Lively
+	// Kernel base code.  You may then open (or find open) a list of various
+	// Project files in your directory or other directories to which you have access.
+	// You may open any of these in the file browser and read the foreward which,
+	// by convention, will list, eg, author, date, project name, description, etc.
+	// You may further choose to load that project, which will read in all the code,
+	// and prepare the system to record and possibly write out any changes made to 
+	// that project
+
+    initialize: function($super) {
+	this.methodDicts = {};
+	this.cachedFullText = {};
+        
+        var projectName = 'Changes-di.js';  // Later get this info out of localConfig
+	var contents = this.getFileContents(projectName);
+	var chgList = new FileParser().parseFile(projectName, contents)
+	$super(projectName, contents, chgList);
+    },
+
+    methodDictFor: function(className) {
+	if (!this.methodDicts[className]) this.methodDicts[className] = {}; 
+	return this.methodDicts[className];
+    },
+
+    getSourceInClassForMethod: function(className, methodName) {
+	var methodDict = this.methodDictFor(className);
+	var descriptor = methodDict[methodName];
+	if (!descriptor) return null;
+	var fullText = this.getFullText(descriptor.fileName);
+	if (!fullText) return null;
+	return fullText.substring(descriptor.startPos, descriptor.endPos);
+    },
+
+    getFullText: function(fileName) {
+	var fullText = this.cachedFullText[fileName];
+	if (fullText) return fullText;
+	// Full text not in cache -- retrieve it and enter in cache
+	return null;
+    },
+
+    setDescriptorInClassForMethod: function(className, methodName, descriptor) {
+	var methodDict = this.methodDictFor(className);
+	methodDict[methodName] = descriptor;
+    },
+
+    scanKernelFiles: function(list) { // if(true) return;
+	for (var i=0; i<list.length; i++) {
+		var fileName = list[i];
+		var fullText = this.getFileContents(fileName);
+		new FileParser().parseFile(fileName, fullText, this);
+	}
+    },
+
+    getFileContents: function(fileName) { // convenient helper method
+	var ms = new Date().getTime();
+	var url = new URL(Global.location.toString()).withFilename(fileName);
+	var result = new NetRequest().beSynchronous().evalJS(false).get(url);	var fullText = result.responseText;
+	ms = new Date().getTime()-ms;
+	console.log(this.fileName + " read in " + ms + " ms.");
+	return fullText;
+    },
+
+    viewTitle: function() {
+	return "Source Control for " + this.fileName;
+    }
+});
+var SourceControl = null;
 
 
 console.log('loaded Tools.js');
