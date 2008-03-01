@@ -2556,8 +2556,8 @@ Object.subclass('Exporter', {
 
     shrinkWrapToFile: function(filename) {
 	var helpers = this.extendForSerialization();
-	var msg = Exporter.shrinkWrapNodeToFile(this.rootMorph.node, filename);
-	exporter.removeHelperNodes(helpers);
+	var msg = Exporter.shrinkWrapNodeToFile(this.rootMorph.rawNode, filename);
+	this.removeHelperNodes(helpers);
 	return msg;
     }
 
@@ -2695,16 +2695,6 @@ Copier.subclass('Importer', {
         }
     },
     
-    importFromContainer: function(container) {
-        var morphs = [];
-        for (var node = container.firstChild; node != null; node = node.nextSibling) {
-            // console.log("found node " + Exporter.nodeToString(node));
-            if (node.localName != "g")  continue;
-            morphs.push(this.importFromNode(node.ownerDocument === Global.document ? 
-					    node : Global.document.adoptNode(node.cloneNode(true))));
-        }
-        return morphs;
-    },
 
     importFromString: function(string) {
         return this.importFromNode(this.parse(string));
@@ -2716,10 +2706,22 @@ Copier.subclass('Importer', {
         return document.adoptNode(xml.documentElement);
     },
 
+    importFromContainer: function(container) {
+        var morphs = [];
+        for (var node = container.firstChild; node != null; node = node.nextSibling) {
+	    // console.log("found node " + Exporter.nodeToString(node));
+	    if (node.localName != "g")  continue;
+	    morphs.push(this.importFromNode(node.ownerDocument === Global.document ? 
+					    node : Global.document.adoptNode(node.cloneNode(true))));
+	}
+        return morphs;
+    },
+
+
     importWorldFromContainer: function(container, world) {
 	var morphs = this.importFromContainer(container);
 	if (morphs[0]) {
-            if (morphs[0] instanceof WorldMorph) {
+            if (morphs[0] instanceof WorldMorph && morphs.length == 1) {
                 world = morphs[0];
                 world.itsCanvas = Canvas;
 		if (morphs.length > 1) {
@@ -2727,7 +2729,7 @@ Copier.subclass('Importer', {
 		}
             } else {
 		// no world, create one and add all the shrinkwrapped morphs to it.
-		world = world ||new WorldMorph(Canvas);
+		world = world || new WorldMorph(Canvas);
 		for (var i = 0; i < morphs.length; i++ )
 		    world.addMorph(morphs[i]);
             }
@@ -5230,7 +5232,8 @@ PasteUpMorph.subclass("WorldMorph", {
     },
     
     addMorphs: function(evt) {
-        console.log("mouse point == %s", evt.mousePoint);
+        //console.log("mouse point == %s", evt.mousePoint);
+	// FIXME this boilerplate code should be abstracted somehow.
         var world = this.world();
         var items = [
             ["New subworld (LinkMorph)", function(evt) { world.addMorph(new LinkMorph(null, evt.mousePoint));}],
@@ -5245,7 +5248,7 @@ PasteUpMorph.subclass("WorldMorph", {
                 m.startSteppingScripts(); }],
 
 	    ["Console", function(evt) {
-		world.addFramedMorph(new ConsoleWidget(100).buildView(pt(800, 100)), "Console", evt.mousePoint);
+		world.addFramedMorph(new ConsoleWidget(50).buildView(pt(800, 100)), "Console", evt.mousePoint);
 	    }],
             ["FrameRateMorph", function(evt) {
                 var m = world.addMorph(new FrameRateMorph(evt.mousePoint.extent(pt(160, 10)), "FrameRateMorph"));
@@ -5288,6 +5291,11 @@ PasteUpMorph.subclass("WorldMorph", {
 
     addFramedMorph: function(morph, title, loc) {
 	return this.addMorphAt(new WindowMorph(morph, title), loc);
+    },
+
+    reactiveAddMorph: function(morph, loc) { 	// add morph in response to a user action, make it prominent
+	loc = loc || this.firstHand().lastMouseDownPoint;
+	return this.addMorphAt(morph, loc);
     }
 
 });

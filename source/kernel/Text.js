@@ -839,7 +839,6 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
 	if (spec.textColor !== undefined) {
 	    this.setTextColor(spec.textColor);
 	}
-	
 	return this;
     },
     

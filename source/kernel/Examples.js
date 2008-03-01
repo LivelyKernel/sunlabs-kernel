@@ -141,8 +141,6 @@ Morph.subclass(Global, "ClockMorph", {
         this.setHands();
         this.changed(); 
     },
-    
-
 
     reshape: function(a,b,c,d) { /*no reshaping*/ },
     

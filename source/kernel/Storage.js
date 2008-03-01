@@ -41,7 +41,7 @@ Morph.subclass('PackageMorph', {
     },
     
     openIn: function(world, loc) {
-        world.addMorphAt(this, loc || world.firstHand().lastMouseDownPoint);
+        world.reactiveAddMorph(this);
     },
     
     morphMenu: function($super, evt) { 
@@ -445,25 +445,66 @@ WebStore.subclass('FileBrowser', {
 		// FIXME:	// not really an actual morph, more like a non-visual model observer
 		var pseudomorph = new TextMorph(pt(0,0).extentAsRectangle(0, 0), "");
 		pseudomorph.connectModel({model: store, getText: "getCurrentResourceContents"});
-		
+
+		store.getCurrentResourceContents = function() {
+		    console.log("set CurrentResourceContents to " + this.CurrentResourceContents);
+		    var parser = new DOMParser();
+		    var world = null;
+		    var doc = parser.parseFromString(this.CurrentResourceContents, "text/xml");
+		    if (doc) { 
+			var container = Loader.shrinkWrapContainer(doc);
+			if (container) {
+			    var importer = new Importer();
+			    world = importer.importWorldFromContainer(container, WorldMorph.current());
+			} 
+		    }
+		    if (!world) this.world().alert('no morphs found in %s', store.CurrentResource);
+		}
+		store.setCurrentResource(fileName);
+	    }.bind(this)]);
+
+	    items.push(["load into new linked world", function(evt) {
+		var store = new WebStore();
+		// FIXME:	// not really an actual morph, more like a non-visual model observer
+		var pseudomorph = new TextMorph(pt(0,0).extentAsRectangle(0, 0), "");
+		pseudomorph.connectModel({model: store, getText: "getCurrentResourceContents"});
+
 		store.getCurrentResourceContents = function() {
 		    console.log("set CurrentResourceContents to " + this.CurrentResourceContents);
 		    var parser = new DOMParser();
 		    var doc = parser.parseFromString(this.CurrentResourceContents, "text/xml");
-		    if (!doc) { 
-			this.world().alert('no morphs found in %s', store.CurrentResource);
-			return;
+		    if (doc) { 
+			var container = Loader.shrinkWrapContainer(doc);
+			if (container) {
+			    var importer = new Importer();
+			    var world = new WorldMorph(Canvas);
+			    var morphs = importer.importFromContainer(container, world);
+			    if (morphs.length > 0) {
+				for (var i = 0; i < morphs.length; i++) {
+				    // flatten: 
+				    if (morphs[i] instanceof WorldMorph) {
+					morphs[i].remove();
+					var subs = morphs[i].submorphs;
+					subs.invoke('remove');
+					subs.map(function(m) { world.addMorph(m) });
+				    } else {
+					world.addMorph(morphs[i]);
+				    }
+				}
+				var link = WorldMorph.current().reactiveAddMorph(new LinkMorph(world));
+				var pathBack = world.addMorphAt(new LinkMorph(WorldMorph.current()), link.getPosition());
+				pathBack.setFill(new RadialGradient(Color.orange, Color.red.darker()));				
+
+				return;
+			    } 
+			}
 		    }
-		    var container = Loader.shrinkWrapContainer(doc);
-		    if (container) {
-			var importer = new Importer();
-			var world = importer.importWorldFromContainer(container, WorldMorph.current());
-			if (!world)
-			    this.world().alert('no morphs found in %s', store.CurrentResource);
-		    }
+		    this.world().alert('no morphs found in %s', store.CurrentResource);
 		}
 		store.setCurrentResource(fileName);
 	    }.bind(this)]);
+
+
 	} else if (fileName.endsWith(".js")) {
 	    // FIXME 
 	}
