@@ -1765,31 +1765,22 @@ var Event = (function() {
         },
 
         getKeyCode: function() {
-            with (Event.Safari) {
-                switch (this.rawEvent.keyCode) {
-                case KEY_LEFT: return Event.KEY_LEFT;
-                case KEY_UP: return Event.KEY_UP;
-                case KEY_RIGHT: return Event.KEY_RIGHT;
-                case KEY_DOWN: return Event.KEY_DOWN;
-                case KEY_DELETE: return Event.KEY_DELETE;
-                case KEY_END: return Event.KEY_END;
-                case KEY_HOME: return Event.KEY_HOME;
-                case KEY_PAGE_UP: return Event.KEY_PAGE_UP;
-                case KEY_PAGE_DOWN: return Event.KEY_PAGE_DOWN;
-                }
-            }
             return this.rawEvent.keyCode;
         },
 
 	getKeyChar: function() {
-	    var id = this.rawEvent.charCode || this.getKeyCode();
-	    return id ? String.fromCharCode(id) : null;
+	    if (this.type == "KeyPress") {
+		var id = this.rawEvent.charCode;
+		if (id > 63000) return ""; // Safari sends weird key char codes
+		return id ? String.fromCharCode(id) : "";
+	    } else  {
+		var code = this.rawEvent.which;
+		return code && String.fromCharCode(code);
+	    }
 	}
-
     });
-
+    
     Event.rawEvent = tmp;
-    Event.extend = function () {} // dummy function to fool prototype.js
 
     Object.extend(Event, {
         // copied from prototype.js:
@@ -1809,19 +1800,7 @@ var Event = (function() {
         KEY_INSERT:   45,
 
         // not in prototype.js:
-        KEY_SPACEBAR: 32,
-
-        Safari: {
-            KEY_LEFT: 63234,
-            KEY_UP: 63232,
-            KEY_RIGHT: 63235,
-            KEY_DOWN: 63233,
-            KEY_DELETE: 63272,
-            KEY_END: 63275,
-            KEY_HOME: 63273,
-            KEY_PAGE_UP: 63276,
-            KEY_PAGE_DOWN: 63277
-        }
+        KEY_SPACEBAR: 32
 
     });
 
@@ -5747,7 +5726,7 @@ Morph.subclass('LinkMorph', {
 				}.bind(this));
         }]);
 	menu.replaceItemNamed("shrink-wrap", ["shrink-wrap linked world", function(evt) {
-	    new PackageMorph(this.myWorld).openIn(this.world(), this.bounds().topLeft()); this.remove()}.bind(this) ]),
+	    new PackageMorph(this.myWorld).openIn(this.world(), this.bounds().topLeft()); this.remove()}.bind(this) ]);
         return menu;
     },
 

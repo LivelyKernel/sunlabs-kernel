@@ -1392,7 +1392,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
         if (!this.acceptInput) return;
         
         var before = this.textString.substring(0, this.selectionRange[0]); 
-        
+	
         switch (evt.getKeyCode()) {
         case Event.KEY_LEFT: {
             // forget the existing selection
@@ -1455,34 +1455,28 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
 
         // have to process commands in keydown...
         if (evt.isAltDown()) {
-            var command = evt.getKeyChar().toLowerCase();
+            var command = evt.getKeyChar();
             if (this.processCommandKeys(command)) { 
 		evt.stop();
 		return true;
+	    } else {
+		console.log("unknown command " + command);
 	    }
-        }
+        } 
 	return false;
     },
     
     onKeyPress: function(evt) {
         if (!this.acceptInput) return true;
-	
-	switch(evt.getKeyCode()) {
-	case Event.KEY_DOWN:
-	case Event.KEY_LEFT:
-	case Event.KEY_RIGHT:
-	case Event.KEY_UP:
-	    evt.stop();
-	    // already handled by onKeyDown
-	    return true;
-	}
+
         // cleanup: separate BS logic, diddle selection range and use replaceSelectionWith()
         if (evt.isAltDown() && UserAgent.isWindows) {
             //AltGr pressed
-            var replacement = evt.getKeyChar().toLowerCase();
-            this.processCommandKeys(replacement);
-            evt.stop();
-	    return true;
+            var replacement = evt.getKeyChar();
+            if (this.processCommandKeys(replacement)) {
+		evt.stop();
+		return true;
+	    }
         } else if (evt.getKeyCode() == Event.KEY_BACKSPACE) { // Replace the selection after checking for type-ahead
             var before = this.textString.substring(0, this.selectionRange[this.hasNullSelection() ? 1 : 0]); 
             var after = this.textString.substring(this.selectionRange[1] + 1, this.textString.length);
@@ -1501,7 +1495,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
     
     processCommandKeys: function(key) {  //: Boolean (was the command processed?)
         // console.log('command ' + key);
-
+	if (key) key = key.toLowerCase();
         switch (key) {
         case "s": {
             this.saveContents(this.textString); 
