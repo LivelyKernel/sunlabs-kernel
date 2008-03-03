@@ -853,9 +853,9 @@ Morph.subclass('HandleMorph', {
     circleHelpText: "Drag to reshape the line\n" + 
         "Cmd+drag to rotate the object \n" +
         "Cmd+shift+drag to scale the object \n" + 
-        "Shift+drag to change width ", 
-
-    maxBalloonHelpCount: 5,
+        "Shift+drag to change width ",
+    maxHelpCount: 20,
+    helpCount: 0,
     
     initialize: function($super, location, shapeType, hand, targetMorph, partName) {
         $super(location.asRectangle().expandBy(5), shapeType);
@@ -868,6 +868,14 @@ Morph.subclass('HandleMorph', {
     
     getHelpText: function() {
 	return (this.shape instanceof RectShape) ? this.controlHelpText : this.circleHelpText;
+    },
+    
+    showHelp: function($super, evt) {
+	if (this.helpCount > this.maxHelpCount) return false;
+	var wasShown = $super(evt);
+	if (wasShown) 
+	    HandleMorph.prototype.helpCount ++;
+	return wasShown;
     },
 
     okToDuplicate: function(evt) {

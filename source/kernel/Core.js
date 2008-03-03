@@ -2818,8 +2818,7 @@ Morph = Visual.subclass("Morph", {
     stepHandler: null, // a stepHandler for time-varying morphs and animation 
     noShallowCopyProperties: ['id', 'rawNode', 'shape', 'submorphs', 'stepHandler', 'defs', 'activeScripts', 'nextNavigableSibling', 'focusHalo', 'fullBounds'],
 
-    maxBalloonHelpCount: Config.suppressBalloonHelp ? 0 : Infinity,
-    balloonHelpCount: 0,
+    suppressBalloonHelp: Config.suppressBalloonHelp,
 
     nextNavigableSibling: null, // keyboard navigation
     
@@ -3715,21 +3714,16 @@ Morph.addMethods({     // help handling
     },
     
     showHelp: function(evt) {
+	if (this.suppressBalloonHelp) return false;
+	if (this.owner instanceof HandMorph) return false;
+	var helpText = this.getHelpText();
+	if (!helpText) return false;
 	
-	/*
-        if (this.constructor.prototype.balloonHelpCount > this.maxBalloonHelpCount) return false;  // DI: maybe settable in window menu?
-	console.log('count is ' + this.constructor.prototype.balloonHelpCount + " on "  + this.constructor.prototype);
-	this.constructor.prototype.balloonHelpCount ++;
-*/
-	
-        if (this.owner instanceof HandMorph) return false;
         // Create only one help balloon at a time
 	if (this.helpBalloonMorph && !this.helpBalloonMorph.getPosition().eqPt(evt.mousePoint)) {
             this.helpBalloonMorph.setPosition(evt.mousePoint);
 	    return false;
         } else {
-	    var helpText = this.getHelpText();
-	    if (!helpText) return;
 	    var width = Math.min(helpText.length * 20, 260); // some estimate of width.
             this.helpBalloonMorph = new TextMorph(evt.mousePoint.addXY(10, 10).extent(pt(width, 20)), helpText);
             this.world().addMorph(this.helpBalloonMorph.beHelpBalloonFor(this));
@@ -4501,7 +4495,7 @@ Morph.addMethods( {
         var pane = newTextPane(extent.extentAsRectangle(), "");
 	pane.innerMorph().setTextString(xml);
 	pane.innerMorph().xml = xml; // FIXME a sneaky way of passing original text.
-        this.world().addFramedMorph(pane, "XML dump", this.bounds().topLeft().addPt(pt(5, 0)));
+        this.world().addFramedMorph(pane, "XML dump", this.world().positionForNewMorph(this));
     }
     
 });
@@ -4974,7 +4968,7 @@ PasteUpMorph.subclass("WorldMorph", {
     morphMenu: function($super, evt) { 
         var menu = $super(evt);
         menu.keepOnlyItemsNamed(["inspect", "style"]);
-        menu.addItem([(Morph.prototype.maxBalloonHelpCount == 0 ? "enable balloon help" : "disable balloon help"),
+        menu.addItem([(Morph.prototype.suppressBalloonHelp ? "enable balloon help" : "disable balloon help"),
                      this.toggleBalloonHelp]);
         menu.addItem([(HandMorph.prototype.applyDropShadowFilter ? "disable " : "enable ") + "drop shadow (if supported)",
             function () { HandMorph.prototype.applyDropShadowFilter = !HandMorph.prototype.applyDropShadowFilter}]);
@@ -4998,7 +4992,7 @@ PasteUpMorph.subclass("WorldMorph", {
     },
    
     toggleBalloonHelp: function() {
-        Morph.prototype.maxBalloonHelpCount = Morph.prototype.maxBalloonHelpCount > 0 ? 0 : Infinity;
+        Morph.prototype.suppressBalloonHelp = !Morph.prototype.suppressBalloonHelp;
     },
 
     toggleDebugBackground: function() {
@@ -5305,17 +5299,21 @@ PasteUpMorph.subclass("WorldMorph", {
 
     topWindow: function() {
 	for (var i=this.submorphs.length-1; i>=0; i--) {
-		var sub = this.submorphs[i];
-		if (sub instanceof WindowMorph) return sub;
+	    var sub = this.submorphs[i];
+	    if (sub instanceof WindowMorph) return sub;
 	}
 	return null;
     },
 
-    reactiveAddMorph: function(morph, loc) { 	// add morph in response to a user action, make it prominent
-	loc = loc || this.firstHand().lastMouseDownPoint;
-	return this.addMorphAt(morph, loc);
-    }
+    positionForNewMorph: function(relatedMorph) {
+	// this should be much smarter than the following:
+	return relatedMorph ? relatedMorph.bounds().topLeft().addPt(pt(5, 0)) : this.firstHand().lastMouseDownPoint;
+    },
 
+    reactiveAddMorph: function(morph, relatedMorph) { 	// add morph in response to a user action, make it prominent
+	return this.addMorphAt(morph, this.positionForNewMorph(relatedMorph));
+    }
+    
 });
 
 Object.extend(WorldMorph, {    
@@ -5371,13 +5369,7 @@ Morph.subclass("HandMorph", function() {
         this.mouseButtonPressed = false;
 
         this.keyboardFocus = null; 
-        this.eventListeners = null;
-        this.targetOffset = pt(0,0);
 
-        this.temporaryCursor = null;
-        this.temporaryCursorOffset = pt(0,0);
-
-        this.userInitials = null; 
         this.priorPoint = null;
         this.owner = null;
 

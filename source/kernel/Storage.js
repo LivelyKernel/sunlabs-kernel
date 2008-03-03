@@ -53,7 +53,7 @@ Morph.subclass('PackageMorph', {
 	    var extent = pt(500, 300);
             var pane = newTextPane(extent.extentAsRectangle(), "");
 	    pane.innerMorph().setTextString(Exporter.nodeToString(this.serialized));
-            this.world().addFramedMorph(pane, "XML dump", this.worldPoint(this.bounds().topLeft()).addPt(pt(5, 0)));
+            this.world().addFramedMorph(pane, "XML dump", this.world().positionForNewMorph(this));
 	}.bind(this)]);
 	
 	menu.replaceItemNamed("publish shrink-wrapped ...", ["save shrink-wrapped morph as ... ", function() { 
