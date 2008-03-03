@@ -250,7 +250,7 @@ var Loader = {
     baseURL: (function() {
 	if (!window.location) return ".";
 	var segments = window.location.toString().split('/');
-	segments.splice(-1); // remove the last segment, incl query
+	segments.splice(segments.length - 1, 1); // remove the last segment, incl query
         return segments.join('/');
     })(),
 
@@ -3279,7 +3279,7 @@ Morph.addMethods({
         // Apply all the styles to which I am linked, in order
         if (!this.styleLinks) return;
         
-        for (var i=0; i< this.styleLinks.length; i++) {
+        for (var i = 0; i < this.styleLinks.length; i++) {
             this.applyStyleNamed(this.styleLinks[i]); 
         }
     },

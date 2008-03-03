@@ -290,7 +290,7 @@ WebStore.subclass('FileBrowser', {
         if (!name) return;
 
         var segments = name.split("/");
-        segments.splice(-2);
+        segments.splice(segments.length - 2, 2);
         var parent = segments.join("/") + "/";
 	
         // add the parent of the current directory to the DirectoryList if it's not there?	

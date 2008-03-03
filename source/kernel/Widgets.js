@@ -478,12 +478,14 @@ Morph.subclass("TitleBarMorph", {
 });
 
 /**
- * @class TitleTabMorph: Title bars for tabbed window morphs
+ * @class TitleTabMorph
  */
 var TitleTabMorph = Morph.subclass("TitleTabMorph", {
 
     barHeight: 0,
     controlSpacing: 0,
+    documentation: "Title bar for tabbed window morphs",
+    suppressHandles: true,
     
     initialize: function($super, headline, windowWidth, windowMorph) {
         $super(new Rectangle(0, 0, windowWidth, this.barHeight), "rect");
@@ -502,8 +504,8 @@ var TitleTabMorph = Morph.subclass("TitleTabMorph", {
         var topY = this.shape.bounds().y;
         label.align(label.bounds().topLeft(), pt(0,0));
         this.label = this.addMorph(label);
-        this.shape.setBounds(this.shape.bounds().withTopRight(pt(label.bounds().maxX(), topY)))
-        this.suppressHandles = true;
+        this.shape.setBounds(this.shape.bounds().withTopRight(pt(label.bounds().maxX(), topY)));
+
         return this;
     },
 
