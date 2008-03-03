@@ -388,8 +388,8 @@ Morph.subclass("TitleBarMorph", {
     controlSpacing: 3,
     barHeight: 22,
 
-    initialize: function($super, headline, windowWidth, windowMorph, isExternal) {
-        $super(new Rectangle(0, isExternal? - this.barHeight : 0, windowWidth, this.barHeight), "rect");
+    initialize: function($super, headline, windowWidth, windowMorph) {
+        $super(new Rectangle(0, 0, windowWidth, this.barHeight), "rect");
         this.windowMorph = windowMorph;
         this.linkToStyles(['titleBar']);
         this.ignoreEvents();
@@ -485,8 +485,8 @@ var TitleTabMorph = Morph.subclass("TitleTabMorph", {
     barHeight: 0,
     controlSpacing: 0,
     
-    initialize: function($super, headline, windowWidth, windowMorph, isExternal) {
-        $super(new Rectangle(0, isExternal? - this.barHeight : 0, windowWidth, this.barHeight), "rect");
+    initialize: function($super, headline, windowWidth, windowMorph) {
+        $super(new Rectangle(0, 0, windowWidth, this.barHeight), "rect");
 	this.windowMorph = windowMorph;
         this.linkToStyles(['titleBar']);
         this.ignoreEvents();
@@ -623,7 +623,7 @@ Morph.subclass('WindowMorph', {
     
     makeTitleBar: function(headline, width) {
         // Overridden in TabbedPanelMorph
-        return new TitleBarMorph(headline, width, this, false);
+        return new TitleBarMorph(headline, width, this);
     },
 
     windowContent: function() { return this.targetMorph; },
@@ -811,7 +811,7 @@ WindowMorph.subclass("TabbedPanelMorph", {
     },
 
     makeTitleBar: function(headline, width) {
-        return new TitleTabMorph(headline, width, this, false);
+        return new TitleTabMorph(headline, width, this);
     }
 
 });
