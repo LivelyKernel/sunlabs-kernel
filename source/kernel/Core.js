@@ -3959,7 +3959,7 @@ Morph.addMethods({
             ["reset scaling", this.setScale.curry(1)],
             [((this.fishEye) ? "turn fisheye off" : "turn fisheye on"), this.toggleFisheye],
             ["-----"],
-            ["put me in a window", this.putMeInAWindow.curry(this.position())],
+            ["put me in a window", this.putMeInAWindow.curry(this.position())], 
             ["put me in a tab", this.putMeInATab.curry(this.position())],
             ["put me in the open", this.putMeInTheWorld.curry(this.position())],
             ["-----"],
@@ -3998,7 +3998,7 @@ Morph.addMethods({
         var c = this.immediateContainer();
         var w = this.world();
         var wm = new TabbedPanelMorph(this.windowContent(), this.windowTitle());
-        w.addMorphAt(wm, wm.position());
+        w.addMorphAt(wm, wm.getPosition());
         if (c) c.remove();
     },
 

@@ -380,27 +380,23 @@ Morph.subclass("ClipMorph", {
 /**
  * @class TitleBarMorph
  */
-var TitleBarMorph = (function() { 
-
-    // "class" private variables
-    var controlSpacing = 3;
-    var barHeight = 22;
-    
-    return Morph.subclass("TitleBarMorph", {
+Morph.subclass("TitleBarMorph", {
 
     // prototype variables
     borderWidth: 0.5,
     documentation: "Title bar for WindowMorphs",
+    controlSpacing: 3,
+    barHeight: 22,
 
     initialize: function($super, headline, windowWidth, windowMorph, isExternal) {
-        $super(new Rectangle(0, isExternal? - barHeight : 0, windowWidth, barHeight), "rect");
+        $super(new Rectangle(0, isExternal? - this.barHeight : 0, windowWidth, this.barHeight), "rect");
         this.windowMorph = windowMorph;
         this.linkToStyles(['titleBar']);
         this.ignoreEvents();
 
         // Note: Layout of submorphs happens in adjustForNewBounds (q.v.)
-        var cell = new Rectangle(0, 0, barHeight, barHeight);
-        var closeButton = new WindowControlMorph(cell, controlSpacing, Color.primary.orange, windowMorph, 
+        var cell = new Rectangle(0, 0, this.barHeight, this.barHeight);
+        var closeButton = new WindowControlMorph(cell, this.controlSpacing, Color.primary.orange, windowMorph, 
             "initiateShutdown", "Close");
         this.closeButton =  this.addMorph(closeButton);
         // FIXME this should be simpler
@@ -408,11 +404,11 @@ var TitleBarMorph = (function() {
         // new Similitude(pt(-9, -9), 0, 0.035).applyTo(sign);
         // closeButton.addNonMorph(sign);
 
-        var menuButton = new WindowControlMorph(cell, controlSpacing, Color.primary.blue, windowMorph, 
+        var menuButton = new WindowControlMorph(cell, this.controlSpacing, Color.primary.blue, windowMorph, 
             "showTargetMorphMenu", "Menu");
         this.menuButton = this.addMorph(menuButton);
 
-        var collapseButton = new WindowControlMorph(cell, controlSpacing, Color.primary.yellow, windowMorph, 
+        var collapseButton = new WindowControlMorph(cell, this.controlSpacing, Color.primary.yellow, windowMorph, 
 	    "toggleCollapse", "Collapse");
         this.collapseButton = this.addMorph(collapseButton);
 
@@ -421,11 +417,10 @@ var TitleBarMorph = (function() {
             label = headline;
         } else { // String
             var width = headline.length * 8; // wild guess headlineString.length * 2 *  font.getCharWidth(' ') + 2;
-            label = new TextMorph(new Rectangle(0, 0, width, barHeight), headline).beLabel();
+            label = new TextMorph(new Rectangle(0, 0, width, this.barHeight), headline).beLabel();
             label.shape.roundEdgesBy(8);
         }
 
-        label.ignoreEvents();
         this.label = this.addMorph(label);
 
         this.adjustForNewBounds();  // This will align the buttons and label properly
@@ -449,8 +444,7 @@ var TitleBarMorph = (function() {
     },
 
     highlight: function(trueForLight) {
-        if (trueForLight) this.label.setFill(Color.white);
-        else this.label.setFill(null);
+        this.label.setFill(trueForLight ? Color.white : null);
     },
 
     okToBeGrabbedBy: function(evt) {
@@ -460,11 +454,11 @@ var TitleBarMorph = (function() {
     },
 
     adjustForNewBounds: function($super) {
-        this.shape.setBounds(this.innerBounds().withHeight(barHeight));
+        this.shape.setBounds(this.innerBounds().withHeight(this.barHeight));
         $super();
         var loc = this.innerBounds().topLeft().addXY(3, 3);
         var l0 = loc;
-        var dx = pt(barHeight - controlSpacing, 0);
+        var dx = pt(this.barHeight - this.controlSpacing, 0);
         if (this.closeButton) { this.closeButton.setPosition(loc);  loc = loc.addPt(dx); }
         if (this.menuButton) { this.menuButton.setPosition(loc);  loc = loc.addPt(dx); }
         if (this.collapseButton) { this.collapseButton.setPosition(loc);  loc = loc.addPt(dx); }
@@ -481,31 +475,21 @@ var TitleBarMorph = (function() {
         return false;
     }
 
-})})();
+});
 
 /**
  * @class TitleTabMorph: Title bars for tabbed window morphs
  */
 var TitleTabMorph = Morph.subclass("TitleTabMorph", {
+
+    barHeight: 0,
+    controlSpacing: 0,
     
     initialize: function($super, headline, windowWidth, windowMorph, isExternal) {
-        this.windowMorph = windowMorph;
-        var  bh = 0;//this.barHeight;
-        var spacing = 0;// this.controlSpacing;
-        $super(new Rectangle(0, isExternal? - bh : 0, windowWidth, bh), "rect");
+        $super(new Rectangle(0, isExternal? - this.barHeight : 0, windowWidth, this.barHeight), "rect");
+	this.windowMorph = windowMorph;
         this.linkToStyles(['titleBar']);
         this.ignoreEvents();
-
-        var cell = new Rectangle(0, 0, bh, bh);
-        var menuButton = new WindowControlMorph(cell, spacing, Color.primary.blue, windowMorph, 
-            function(evt) { windowMorph.showTargetMorphMenu(evt); }, "Menu");
-        this.addMorph(menuButton);
-        
-        // Collapse button is retained only while we get things going...
-        cell = cell.translatedBy(pt(bh - spacing, 0));
-        var collapseButton = new WindowControlMorph(cell, spacing, Color.primary.yellow, windowMorph, 
-            function() { this.toggleCollapse(); }, "Collapse");
-        this.addMorph(collapseButton);
 
         var label;
         if (headline instanceof TextMorph) {
@@ -513,11 +497,11 @@ var TitleTabMorph = Morph.subclass("TitleTabMorph", {
         } else { // String
             var width = headline.length * 8;
             // wild guess headlineString.length * 2 *  font.getCharWidth(' ') + 2; 
-            label = new TextMorph(new Rectangle(0, 0, width, bh), headline).beLabel();
+            label = new TextMorph(new Rectangle(0, 0, width, this.barHeight), headline).beLabel();
         }
         var topY = this.shape.bounds().y;
-        label.align(label.bounds().topLeft(), cell.topRight());
-        this.addMorph(label);
+        label.align(label.bounds().topLeft(), pt(0,0));
+        this.label = this.addMorph(label);
         this.shape.setBounds(this.shape.bounds().withTopRight(pt(label.bounds().maxX(), topY)))
         this.suppressHandles = true;
         return this;
@@ -534,7 +518,9 @@ var TitleTabMorph = Morph.subclass("TitleTabMorph", {
 
     onMouseUp: function(evt) {
         this.windowMorph.toggleCollapse();
-    }
+    },
+
+    highlight: TitleBarMorph.prototype.highlight
 
 });
 
@@ -596,7 +582,7 @@ var WindowControlMorph = Morph.subclass("WindowControlMorph", {
  * @class WindowMorph: Full-fledged windows with title bar, menus, etc.
  */
 Morph.subclass('WindowMorph', {
-
+    
     state: "expanded",
     titleBar: null,
     targetMorph: null,
@@ -609,7 +595,7 @@ Morph.subclass('WindowMorph', {
         bounds.height += titleHeight;
         $super(location ? rect(location, bounds.extent()) : bounds, 'rect');
         this.targetMorph = this.addMorph(targetMorph);
-        this.titleBar =  this.addMorph(titleBar);
+        this.titleBar = this.addMorph(titleBar);
         this.contentOffset = pt(0, titleHeight);
         targetMorph.setPosition(this.contentOffset);
         this.linkToStyles(['window']);
@@ -1181,9 +1167,8 @@ Object.extend(PanelMorph, {
         //     ['leftPane', newListPane, new Rectangle(0, 0, 0.5, 0.6)],
         // See example calls in, eg, SimpleBrowser.buildView() for how to use this
         var panel = new PanelMorph(extent);
-        panel.setFill(Color.primary.blue.lighter().lighter());
-        panel.setBorderWidth(2);
-
+	panel.applyStyle({fill: Color.primary.blue.lighter(2), borderWidth: 2});
+	
         paneSpecs.each( function(spec) {
             var paneName = spec[0];
             var paneConstructor = spec[1];
@@ -1400,9 +1385,22 @@ TextMorph.subclass("CheapListMorph", {
  */ 
 CheapListMorph.subclass("MenuMorph", {
 
-    borderColor: Color.blue,
-    borderWidth: 0.5,
-    fill: Color.blue.lighter(5),
+    style: { 
+	borderColor: Color.blue,
+	borderWidth: 0.5,
+	textColor: Color.blue,
+	fill: Color.blue.lighter(5),
+	borderRadius: 6, 
+	fillOpacity: 0.75, 
+	wrapStyle: WrapStyle.Shrink
+    },
+
+    labelStyle: {
+	borderRadius: 4, 
+	fillOpacity: 0.75, 
+	wrapStyle: WrapStyle.Shrink
+    },
+    
 
     initialize: function($super, items, targetMorph, lines) {
         // items is an array of menuItems, each of which is an array of the form
@@ -1474,7 +1472,7 @@ CheapListMorph.subclass("MenuMorph", {
         world.addMorph(this);
         if (captionIfAny) { // Still under construction
             var label = new TextMorph(new Rectangle(0, 0, 200, 20), captionIfAny);
-	    label.applyStyle({borderRadius: 4, fillOpacity: 0.75, wrapStyle: WrapStyle.Shrink});
+	    label.applyStyle(this.labelStyle);
             label.fitText();
             
             label.align(label.bounds().bottomCenter(), this.shape.bounds().topCenter());
@@ -1497,10 +1495,10 @@ CheapListMorph.subclass("MenuMorph", {
         var itemNames = this.items.map(function (item) { return item[0] });
 
         CheapListMorph.prototype.initialize.call(this, location.extent(pt(200, 200)), itemNames);
-	this.applyStyle({borderRadius: 6, fillOpacity: 0.75, wrapStyle: WrapStyle.Shrink});
-        this.fitText(); // first layout is wasted!
         // styling
-        this.textColor = Color.blue;
+	this.applyStyle(this.style);
+        this.fitText(); // first layout is wasted!
+
         //this.setFill(StipplePattern.create(Color.white, 3, Color.blue.lighter(5), 1));
 
     },
