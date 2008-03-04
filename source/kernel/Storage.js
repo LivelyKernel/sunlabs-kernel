@@ -94,8 +94,6 @@ Morph.subclass('PackageMorph', {
 	    } else return false;
 	} else return true;
     }
-
-
 });
 
 
@@ -121,6 +119,21 @@ Wrapper.subclass('Resource', {
 
 });
 
+var FailureNotifier = new Model(null);
+Object.extend(FailureNotifier, {
+    // FIXME use as model, decouple from WebStore
+    reportFailure: function(url, transport) {
+	if (transport.status == 401) {
+	    WorldMorph.current().alert("not authorized to access " + url); // should try to authorize
+	} else {
+	    WorldMorph.current().alert("failure accessing " + url + " code " + transport.status);
+	}
+    }
+    
+});
+
+
+
 /**
  * @class WebStore
  */ 
@@ -128,7 +141,10 @@ Wrapper.subclass('Resource', {
 Model.subclass('WebStore', {
 
     documentation: "Network-based storage (WebDAV)",
-    
+    /* note the async design: setting CurrentResource initiates fetching of CurrentResourceContents.
+       getting the CurrentResourceContents variable may involve processing of the contents if necessary
+     */
+
     // FIXME a single argument that is like location (protocol, hostname, port, pathname, hash, search)
     initialize: function($super, baseUrl) {
         $super();
@@ -138,8 +154,22 @@ Model.subclass('WebStore', {
 	this.baseUrl = baseUrl;
         this.CurrentResource =  null;
         this.CurrentResourceContents = "";
-	this.world = WorldMorph.current();
     },
+
+    
+    autoFetch: function() {
+	var view = new View();
+	view.updateView = function(aspect, controller) {
+	    var plug = this.modelPlug;
+	    if (!plug) return;
+	    if (aspect == plug.getContent || aspect == 'all') {
+		this.getModelValue('getContent', ''); // trigger retrieval
+	    }
+	};
+	view.connectModel({model: this, getContent: "getCurrentResourceContents"});
+	return this;
+    },
+
 
     // basic protocol methods:
     fetch: function(filename, optModelVariable) {
@@ -152,9 +182,9 @@ Model.subclass('WebStore', {
             }.bind(this),
     
             onFailure: function(transport) {
-                this.world.alert('failed fetching url ' + url);
+		FailureNotifier.reportFailure(url, transport);
+		// WorldMorph.current().alert('failed fetching url ' + url);
                 this[optModelVariable] = "resource unavailable";
-                this.changed("get" + optModelVariable);
             }.bind(this)
             // FIXME: on exception
         };
@@ -163,7 +193,6 @@ Model.subclass('WebStore', {
     
     save: function(filename, content, optModelVariable) {
 	var url = this.baseUrl.withFilename(filename);
-console.log("baseUrl = " + Object.inspect(this.baseUrl) + "; filename = " + filename);
         // retrieve the the contents of the url and save in the indicated model variable
         console.log('saving url ' + url);
         var options =  {
@@ -174,11 +203,7 @@ console.log("baseUrl = " + Object.inspect(this.baseUrl) + "; filename = " + file
 		}
             }.bind(this),
             onFailure: function(transport) {
-		if (transport.status == 401) { // reauthenticate
-		    this.world.alert("authentication required for PUT %s", url);
-		} else {
-                    this.world.alert("%s: failure %s url %s", transport, transport.status, url);
-		}
+		FailureNotifier.reportFailure(url, transport);
             }.bind(this)
         };
 
@@ -200,7 +225,7 @@ console.log("baseUrl = " + Object.inspect(this.baseUrl) + "; filename = " + file
             }.bind(this),
 	    
             onFailure: function(transport) {
-                this.world.alert('failed deleting with response ' + transport.responseText);
+                FailureNotifier.reportFailure(url, transport);
             }.bind(this)
     
         };
@@ -218,11 +243,7 @@ console.log("baseUrl = " + Object.inspect(this.baseUrl) + "; filename = " + file
             requestHeaders: { "Depth": depth },
     
             onFailure: function(transport) {
-		if (transport.status == 401) { // reauthenticate
-		    this.world.alert("authentication required for PROPFIND %s", url);
-		} else {
-                    this.world.alert("%s: failure %s url %s", transport, transport.status, url);
-		}
+		FailureNotifier.reportFailure(url, transport);
             }.bind(this),
     
             onSuccess: function(transport) {
@@ -239,7 +260,6 @@ console.log("baseUrl = " + Object.inspect(this.baseUrl) + "; filename = " + file
         
         new NetRequest(options).propfind(url);
     },
-
 
     getCurrentResourceContents: function() {
         return this.CurrentResourceContents || "";
@@ -270,6 +290,7 @@ console.log("baseUrl = " + Object.inspect(this.baseUrl) + "; filename = " + file
         return this.baseUrl.withPath(resource);
     }
 
+    
 });
 
 
@@ -392,8 +413,8 @@ WebStore.subclass('FileBrowser', {
 	    ['edit in separate window', function(evt) {
 		var textEdit = newTextPane(new Rectangle(0, 0, 500, 200), "Fetching " + fileName + "...");
 		var webStore = new WebStore();
-		
-		textEdit.innerMorph().connectModel({model: webStore, getText: "getCurrentResourceContents", 
+		textEdit.innerMorph().connectModel({model: webStore, 
+						    getText: "getCurrentResourceContents", 
 						    setText: "setCurrentResourceContents"});
 		webStore.setCurrentResource(fileName);
 		this.world().addFramedMorph(textEdit, fileName, evt.mousePoint);
@@ -413,14 +434,11 @@ WebStore.subclass('FileBrowser', {
 		
 	    }]
 	];
+
 	if (fileName.endsWith(".xhtml")) {
 	    // FIXME: add loading into a new world
 	    items.push(["load into current world", function(evt) {
-		var store = new WebStore();
-		// FIXME:	// not really an actual morph, more like a non-visual model observer
-		var pseudomorph = new TextMorph(pt(0,0).extentAsRectangle(0, 0), "");
-		pseudomorph.connectModel({model: store, getText: "getCurrentResourceContents"});
-
+		var store = new WebStore().autoFetch();
 		store.getCurrentResourceContents = function() {
 		    console.log("set CurrentResourceContents to " + this.CurrentResourceContents);
 		    var parser = new DOMParser();
@@ -437,16 +455,13 @@ WebStore.subclass('FileBrowser', {
 		}
 		store.setCurrentResource(fileName);
 	    }.bind(this)]);
-
+	    
 	    items.push(["load into new linked world", function(evt) {
-		var store = new WebStore();
-		// FIXME:	// not really an actual morph, more like a non-visual model observer
-		var pseudomorph = new TextMorph(pt(0,0).extentAsRectangle(0, 0), "");
-		pseudomorph.connectModel({model: store, getText: "getCurrentResourceContents"});
-
+		var store = new WebStore().autoFetch();
 		store.getCurrentResourceContents = function() {
 		    console.log("set CurrentResourceContents to " + this.CurrentResourceContents);
 		    var parser = new DOMParser();
+		    var world = null;
 		    var doc = parser.parseFromString(this.CurrentResourceContents, "text/xml");
 		    if (doc) { 
 			var container = Loader.shrinkWrapContainer(doc);
@@ -468,8 +483,7 @@ WebStore.subclass('FileBrowser', {
 				}
 				var link = WorldMorph.current().reactiveAddMorph(new LinkMorph(world));
 				var pathBack = world.addMorphAt(new LinkMorph(WorldMorph.current()), link.getPosition());
-				pathBack.setFill(new RadialGradient(Color.orange, Color.red.darker()));				
-
+				pathBack.setFill(new RadialGradient(Color.orange, Color.red.darker())); 
 				return;
 			    } 
 			}

@@ -4513,18 +4513,17 @@ Object.extend(Morph, {
     }
 });
 
-// Model-specific extensions to class Morph (see Model class definition below)
-Morph.addMethods({
-
+// View trait.
+ViewTrait = {
     connectModel: function(plugSpec) {
-        // connector makes this view pluggable to different models, as in
+	// connector makes this view pluggable to different models, as in
         // {model: someModel, getList: "getItemList", setSelection: "chooseItem"}
         var newPlug = new ModelPlug(plugSpec);
-        if (this.modelPlug) { 
-            this.rawNode.replaceChild(newPlug.rawNode, this.modelPlug.rawNode);
-        } else { 
-            this.addNonMorph(newPlug.rawNode);
-        }
+
+	if (this.persistPlug) { // FIXME: maybe make a part of the decoration process?
+	    this.persistPlug(newPlug);
+	}
+
         this.modelPlug = newPlug;
         if (plugSpec.model.addDependent) { // for mvc-style updating
             plugSpec.model.addDependent(this);
@@ -4571,7 +4570,22 @@ Morph.addMethods({
         // All actual view morphs will override this method with code that
         // checks for their aspect and does something useful in that case.
     }
-    
+};
+
+Object.subclass('View', ViewTrait);
+
+Morph.addMethods(ViewTrait);
+
+// Model-specific extensions to class Morph (see Model class definition below)
+Morph.addMethods({
+    persistPlug: function(newPlug) {
+	if (this.modelPlug) { 
+            this.rawNode.replaceChild(newPlug.rawNode, this.modelPlug.rawNode);
+        } else { 
+            this.addNonMorph(newPlug.rawNode);
+        }
+    }
+
 });
 
 // ===========================================================================
