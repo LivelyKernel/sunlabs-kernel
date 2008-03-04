@@ -1369,6 +1369,16 @@ Gradient.subclass("LinearGradient", {
                         x2: vector.maxX(), y2: vector.maxY()}); 
         this.addStop(0, stopColor1).addStop(1, stopColor2);
         return this;
+    },
+
+    mixedWith: function(color, proportion) {
+	var stops = this.rawStopNodes();
+	var rawNode = NodeFactory.create("linearGradient");
+	var result = new LinearGradient(Importer.marker, rawNode);
+	for (var i = 0; i < stops.length; i++) {
+	    result.addStop(this.offset(i), this.stopColor(i).mixedWith(color, proportion));
+	}
+	return result;
     }
 
 });
@@ -3426,9 +3436,7 @@ Morph.addMethods({
     removeMorph: function(m) {
         var index = this.submorphs.indexOf(m);
         if (index < 0) {
-            if (m.owner !== this) { 
-                console.log("%s has owner %s that is not %s?", m, m.owner, this);
-            }
+            m.owner !== this && console.log("%s has owner %s that is not %s?", m, m.owner, this);
             return null;
         }
 	
@@ -5316,16 +5324,13 @@ Object.extend(WorldMorph, {
  * simultaneously, we do not want to use the default system cursor.   
  */ 
 
-Morph.subclass("HandMorph", function() {
-    // private variables
-    var shadowOffset = pt(5,5);
-    var handleOnCapture = true;
-    var logDnD = false;
+Morph.subclass("HandMorph", {
     
-    return {
-
     documentation: "Defines the little triangle that represents the user's cursor.",
     applyDropShadowFilter: !!Config.enableDropShadow,
+    shadowOffset: pt(5,5),
+    handleOnCapture: true,
+    logDnD: false,
 
     initialize: function($super, local) {
         $super(pt(5,5).extent(pt(10,10)), "rect");
@@ -5358,13 +5363,13 @@ Morph.subclass("HandMorph", function() {
     registerForEvents: function(morph) {
         var self = this;
         Event.basicInputEvents.each(function(name) { 
-            morph.rawNode.addEventListener(name, self, handleOnCapture)});
+            morph.rawNode.addEventListener(name, self, this.handleOnCapture)});
     },
     
     unregisterForEvents: function(morph) {
         var self = this; 
         Event.basicInputEvents.each(function(name) { 
-            morph.rawNode.removeEventListener(name, self, handleOnCapture)});
+            morph.rawNode.removeEventListener(name, self, this.handleOnCapture)});
     },
     
     setMouseFocus: function(morphOrNull) {
@@ -5520,7 +5525,7 @@ Morph.subclass("HandMorph", function() {
         // Save info for cancelling grab or drop [also need indexInOwner?]
         // But for now we simply drop on world, so this isn't needed
         this.grabInfo = [grabbedMorph.owner, grabbedMorph.position()];
-        if (logDnD) console.log('%s grabbing %s', this, grabbedMorph);
+        if (this.logDnD) console.log('%s grabbing %s', this, grabbedMorph);
         this.addMorph(grabbedMorph);
         if (this.applyDropShadowFilter) {
             grabbedMorph.rawNode.setAttributeNS(null, "filter", "url(#DropShadowFilter)");
@@ -5534,7 +5539,7 @@ Morph.subclass("HandMorph", function() {
         while (this.hasSubmorphs()) { // drop in same z-order as in hand
             var m = this.submorphs.first();
             receiver.addMorph(m); // this removes it from hand
-            if (logDnD) console.log("%s dropping %s on %s", this, m, receiver);
+            if (this.logDnD) console.log("%s dropping %s on %s", this, m, receiver);
     
             if (this.applyDropShadowFilter) {
                 m.rawNode.setAttributeNS(null, "filter", "none");
@@ -5627,7 +5632,7 @@ Morph.subclass("HandMorph", function() {
         // account for the extra extent of the drop shadow
         // FIXME drop shadow ...
         if (this.shadowMorph)
-            return $super().expandBy(shadowOffset.x);
+            return $super().expandBy(this.shadowOffset.x);
         else return $super();
     },
 
@@ -5652,7 +5657,7 @@ Morph.subclass("HandMorph", function() {
         return "%s, a hand carrying %s%s".format(superString, this.topSubmorph(), extraString);
     }
     
-}});
+});
 
 /**
  * @class LinkMorph: A two-way hyperlink between two Lively worlds

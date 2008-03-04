@@ -319,6 +319,20 @@ var NetRequest = (function() {
 })();
 
 
+Object.extend(Loader, {
+    syncFetch: function(fileName, evalJS) {
+	var req = new NetRequest();
+	req.evalJS(evalJS);
+	req.beSynchronous();
+	var result = req.get(new URL(Global.location.toString()).withFilename(fileName));
+	return result.responseText;
+    },
+    
+
+});
+
+
+
 /**
  * @class FeedChannel: RSS feed channel
  */ 

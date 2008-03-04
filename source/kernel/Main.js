@@ -228,30 +228,25 @@ function populateWorldWithExamples(world) {
 
         if (Config.showStar) {  // Make a star
 
-            if (Config.loadFromMarkup) {
-                var morphs = new Importer().importFromContainer(document.getElementById("RotatingStar"));
-                morphs.each(function(m) { lm2.myWorld.addMorph(m); });
-            } else {
-                var makeStarVertices = function(r,center,startAngle) {
-                    var vertices = [];
-                    var nVerts = 10;
-                    for (var i=0; i <= nVerts; i++) {
-                        var a = startAngle + (2*Math.PI/nVerts*i);
-                        var p = Point.polar(r,a);
-                        if (i%2 == 0) p = p.scaleBy(0.39);
-                        vertices.push(p.addPt(center)); 
-                    }
-                    return vertices; 
+            var makeStarVertices = function(r,center,startAngle) {
+                var vertices = [];
+                var nVerts = 10;
+                for (var i=0; i <= nVerts; i++) {
+                    var a = startAngle + (2*Math.PI/nVerts*i);
+                    var p = Point.polar(r,a);
+                    if (i%2 == 0) p = p.scaleBy(0.39);
+                    vertices.push(p.addPt(center)); 
                 }
-    
-                widget = Morph.makePolygon(makeStarVertices(50,pt(0,0),0), 1, Color.black, Color.yellow);
-                widget.setPosition(pt(125, 275));
-                lm2.myWorld.addMorph(widget);
+                return vertices; 
+            }
+	    
+            widget = Morph.makePolygon(makeStarVertices(50,pt(0,0),0), 1, Color.black, Color.yellow);
+            widget.setPosition(pt(125, 275));
+            lm2.myWorld.addMorph(widget);
             
-                var spinningStar = !Config.skipMostExamples || Config.spinningStar;
-                if (spinningStar) {  // Make the star spin as a test of stepping
-                    widget.startStepping(60, "rotateBy", 0.1);
-                }
+            var spinningStar = !Config.skipMostExamples || Config.spinningStar;
+            if (spinningStar) {  // Make the star spin as a test of stepping
+                widget.startStepping(60, "rotateBy", 0.1);
             }
         }
 

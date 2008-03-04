@@ -247,6 +247,13 @@ console.log("baseUrl = " + Object.inspect(this.baseUrl) + "; filename = " + file
     
     setCurrentResourceContents: function(contents) {
 	this.CurrentResourceContents = contents;
+	var safeSize = TextMorph.prototype.maxSafeSize;
+        if (contents.length > safeSize) {
+            WorldMorph.current().alert("not saving file, size " + contents.length 
+				       + " > " + safeSize + ", too large");
+        } else {
+	    this.save(this.CurrentResource, contents, "LastWriteStatus");
+        }
     },
 
     setCurrentResource: function(name) {
@@ -357,41 +364,22 @@ WebStore.subclass('FileBrowser', {
         var m = panel.rightPane;
         m.connectModel({model: this, getList: "getCurrentDirectoryContents", setSelection: "setCurrentResource", 
 			getMenu: "getFileMenu"});
-        var oldpress = m.innerMorph().onKeyPress;
         m.innerMorph().onKeyPress = function(evt) {
             if (evt.getKeyCode() == Event.KEY_BACKSPACE) { // Replace the selection after checking for type-ahead
-		
 		var toDelete  = this.itemList[this.selectedLineNo()];
+		var model = this.getModel();
                 var result = this.world().confirm("delete resource " + model.resourceURL(toDelete),
 		    function(result) {
 			if (result) {
-			    model.deleteResource(toDelete, "CurrentDirectoryContents");
-			    model.setCurrentDirectory(model.setCurrentDirectory());
+			    model.deleteResource(toDelete, "CurrentDirectory");
 			} else console.log("cancelled deletion of " + toDelete);
 		    });
                 evt.stop();
-            } else oldpress.call(this, evt);
+            } else CheapListMorph.prototype.onKeyPress.call(this, evt);
         };
 
-        m = panel.bottomPane;
-        m.connectModel({model: this, getText: "getCurrentResourceContents", setText: "setCurrentResourceContents"});
-
-        var model = this;
-        
-        m.innerMorph().processCommandKeys = function(key) {
-            if (key == 's') {
-                if (model.CurrentResourceContents.length > TextMorph.prototype.maxSafeSize) {
-                    this.world().alert("not saving file, size " + model.CurrentResourceContents.length 
-				       + " > " + this.maxSafeSize + ", too large");
-                } else {
-                    model.setCurrentResourceContents(this.textString);
-                    model.save(model.CurrentResource, this.textString, "LastWriteStatus");
-                }
-                return true;
-            } else {
-                return TextMorph.prototype.processCommandKeys.call(this, key);
-            }
-        }
+        panel.bottomPane.connectModel({model: this, 
+				       getText: "getCurrentResourceContents", setText: "setCurrentResourceContents"});
         return panel;
     },
         
@@ -405,21 +393,8 @@ WebStore.subclass('FileBrowser', {
 		var textEdit = newTextPane(new Rectangle(0, 0, 500, 200), "Fetching " + fileName + "...");
 		var webStore = new WebStore();
 		
-		textEdit.innerMorph().connectModel({model: webStore, getText: "getCurrentResourceContents"});
-		textEdit.innerMorph().processCommandKeys = function(key) {
-		    if (key == 's') {
-			if (webStore.CurrentResourceContents.length > this.maxSafeSize) {
-			    this.world().alert("not saving file, size " + webStore.CurrentResourceContents.length 
-					       + " > " + this.maxSafeSize + ", too large");
-			} else {
-			    webStore.CurrentResourceContents = this.textString;
-			    webStore.save(webStore.CurrentResource, this.textString, "LastWriteStatus");
-			}
-			return true;
-		    } else {
-			return TextMorph.prototype.processCommandKeys.call(this, key);
-		    }
-		}
+		textEdit.innerMorph().connectModel({model: webStore, getText: "getCurrentResourceContents", 
+						    setText: "setCurrentResourceContents"});
 		webStore.setCurrentResource(fileName);
 		this.world().addFramedMorph(textEdit, fileName, evt.mousePoint);
 	    }],

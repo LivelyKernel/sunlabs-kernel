@@ -68,7 +68,6 @@ var Config = {
     showCurveExample: false,
     
     // Additional demo configuration options 
-    loadFromMarkup: false,
     showThumbnail: false,
     
     // Enables/disables network-dependent demos

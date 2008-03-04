@@ -1261,11 +1261,12 @@ TextMorph.subclass("CheapListMorph", {
             evt.stop();
             break;
         }    
-	case Event.KEY_SPACEBAR: // FIXME this should be more generally
+	case Event.KEY_SPACEBAR: { // FIXME this should be more generally
 	    // avoid paging down
 	    evt.stop();
 	    return true;
         }
+	}
 	
     },
 
@@ -1594,6 +1595,7 @@ Morph.subclass("SliderMorph", {
         if (this.fill instanceof LinearGradient) {
             var direction = this.vertical() ? LinearGradient.EastWest : LinearGradient.NorthSouth;
 	    var baseColor = this.fill.stopColor(1);
+	    this.fill = new LinearGradient(this.fill.stopColor(0), baseColor, direction);
             this.setFill(this.fill);
             this.slider.setFill(new LinearGradient(baseColor.lighter(), baseColor.darker(), direction));
         } else {

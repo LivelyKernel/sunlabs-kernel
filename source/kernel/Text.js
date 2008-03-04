@@ -1459,9 +1459,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
             if (this.processCommandKeys(command)) { 
 		evt.stop();
 		return true;
-	    } else {
-		console.log("unknown command " + command);
-	    }
+	    } 
         } 
 	return false;
     },

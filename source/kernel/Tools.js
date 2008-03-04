@@ -975,9 +975,8 @@ ChangeList.subclass('SourceDatabase', {
 
     getFileContents: function(fileName) { // convenient helper method
 	var ms = new Date().getTime();
-	var url = new URL(Global.location.toString()).withFilename(fileName);
-	var result = new NetRequest().beSynchronous().evalJS(false).get(url);	var fullText = result.responseText;
-	ms = new Date().getTime()-ms;
+	var fullText = Loader.syncFetch(fileName, false);
+	ms = new Date().getTime() - ms;
 	console.log(this.fileName + " read in " + ms + " ms.");
 	return fullText;
     },
