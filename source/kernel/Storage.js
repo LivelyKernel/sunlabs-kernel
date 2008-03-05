@@ -110,6 +110,7 @@ Wrapper.subclass('Resource', {
     },
     
     name: function() {
+	// FIXME: resolve prefix "D" to something meaningful?
         return decodeURIComponent(this.queryNode("D:href")[0].textContent);
     },
     
@@ -152,7 +153,7 @@ Model.subclass('WebStore', {
 	    baseUrl = new URL(window.location.toString()).dirnameURL();
 	}
 	this.baseUrl = baseUrl;
-        this.CurrentResource =  null;
+        this.CurrentResource = null; // URL
         this.CurrentResourceContents = "";
     },
 
@@ -172,32 +173,28 @@ Model.subclass('WebStore', {
 
 
     // basic protocol methods:
-    fetch: function(filename, optModelVariable) {
-	var url = this.resourceURL(filename);
+    fetch: function(url, modelVariable) {
         // retrieve the the contents of the url and save in the indicated model variable
         var options =  {
             onSuccess: function(transport) {
-                this[optModelVariable] = transport.responseText;
-                this.changed("get" + optModelVariable);
+                this[modelVariable] = transport.responseText;
+                this.changed("get" + modelVariable);
             }.bind(this),
     
             onFailure: function(transport) {
 		FailureNotifier.reportFailure(url, transport);
-		// WorldMorph.current().alert('failed fetching url ' + url);
-                this[optModelVariable] = "resource unavailable";
+                this[modelVariable] = "resource unavailable";
             }.bind(this)
-            // FIXME: on exception
         };
         new NetRequest(options).evalJS(false).get(url);
     },
     
-    save: function(filename, content, optModelVariable) {
-	var url = this.baseUrl.withFilename(filename);
+    save: function(url, content, optModelVariable) {
         // retrieve the the contents of the url and save in the indicated model variable
         console.log('saving url ' + url);
         var options =  {
             onSuccess: function(transport) {
-		if (optModelVariable !== undefined) {
+		if (optModelVariable) {
                     this[optModelVariable] = transport.status;
                     this.changed("get" + optModelVariable);
 		}
@@ -210,15 +207,14 @@ Model.subclass('WebStore', {
         new NetRequest(options).put(url, content);
     },
 
-    deleteResource: function(filename, optModelVariable) {
-	var url = this.resourceURL(filename);
+    deleteResource: function(url, optModelVariable) {
         // retrieve the the contents of the url and save in the indicated model variable
         console.log('deleting url ' + url);
         var options =  {
             onSuccess: function(transport) {
                 // FIXME: the content may indicate that we failed to delete!
                 // this[optModelVariable] = transport.status;
-		if (optModelVariable !== undefined) {
+		if (optModelVariable) {
                     this.changed("get" + optModelVariable);
                     console.log('success deleting ' + url);
 		}
@@ -233,7 +229,6 @@ Model.subclass('WebStore', {
     },
 
     // FIXME handle object argument
-    // FIXME this doesn't abstract over the actual properties (only href is extracte)
     propfind: function(url, depth, xpQueryString, optModelVariable) {
         // find the properties given the url and save the results of the indicated query into the model variable
         if (depth != 0 && depth != 1) depth = 'infinity';
@@ -249,7 +244,7 @@ Model.subclass('WebStore', {
             onSuccess: function(transport) {
                 // console.log('propfind received %s', Exporter.nodeToString(transport.responseXML));
                 var result = Query.evaluate(transport.responseXML.documentElement, xpQueryString);
-		if (optModelVariable !== undefined) {
+		if (optModelVariable) {
 		    this[optModelVariable] = result.map(function(raw) { 
 			return new Resource(url, raw); 
 		    });
@@ -276,11 +271,11 @@ Model.subclass('WebStore', {
         }
     },
 
-    setCurrentResource: function(name) {
-        if (!name) 
+    setCurrentResource: function(fileName) {
+        if (!fileName) 
 	    return;
-        this.CurrentResource = name;
-        console.log("current resource set to %s", name);
+        this.CurrentResource = this.baseUrl.withPath(fileName);
+        console.log("current resource set to %s", this.CurrentResource);
 	
         // initialize getting the resource contents
         this.fetch(this.CurrentResource, "CurrentResourceContents");
@@ -387,9 +382,9 @@ WebStore.subclass('FileBrowser', {
 			getMenu: "getFileMenu"});
         m.innerMorph().onKeyPress = function(evt) {
             if (evt.getKeyCode() == Event.KEY_BACKSPACE) { // Replace the selection after checking for type-ahead
-		var toDelete  = this.itemList[this.selectedLineNo()];
+		var toDelete  = model.resourceURL(this.itemList[this.selectedLineNo()]);
 		var model = this.getModel();
-                var result = this.world().confirm("delete resource " + model.resourceURL(toDelete),
+                var result = this.world().confirm("delete resource " + toDelete, 
 		    function(result) {
 			if (result) {
 			    model.deleteResource(toDelete, "CurrentDirectory");
@@ -400,14 +395,15 @@ WebStore.subclass('FileBrowser', {
         };
 
         panel.bottomPane.connectModel({model: this, 
-				       getText: "getCurrentResourceContents", setText: "setCurrentResourceContents"});
+				       getText: "getCurrentResourceContents", 
+				       setText: "setCurrentResourceContents"});
         return panel;
     },
         
     getFileMenu: function() {
 	var items = [];
-	var fileName = this.CurrentResource;
-	if (!fileName) 
+	var url = this.CurrentResource;
+	if (!url) 
 	    return [];
 	var items = [
 	    ['edit in separate window', function(evt) {
@@ -416,7 +412,7 @@ WebStore.subclass('FileBrowser', {
 		textEdit.innerMorph().connectModel({model: webStore, 
 						    getText: "getCurrentResourceContents", 
 						    setText: "setCurrentResourceContents"});
-		webStore.setCurrentResource(fileName);
+		webStore.fetch(url, "CurrentResourceContents");
 		this.world().addFramedMorph(textEdit, fileName, evt.mousePoint);
 	    }],
 	    

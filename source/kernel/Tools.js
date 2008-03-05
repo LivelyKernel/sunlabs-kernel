@@ -873,7 +873,7 @@ WidgetModel.subclass('ChangeList', {
 	var afterText = this.fileContents.substring(item.endPos+1);
         var cat = beforeText.concat(newItemText, afterText);
 	console.log("Saving " + this.fileName + "; length = " + cat.length);
-	new WebStore().save(this.fileName, cat);
+	new WebStore().save(new URL(window.location.toString).withFilename(this.fileName), cat);
 
 	// Now recreate (slow but sure) list from new contents, as things may have changed
 	var oldSelection = this.changeBanner;
@@ -883,10 +883,9 @@ WidgetModel.subclass('ChangeList', {
 	this.setChangeSelection(oldSelection);  // reselect same item in new list (hopefully)
     },
 
-    loadFileNamed: function (fn, webStore) {
-	if (webStore == null) webStore = new WebStore();
+    loadFileNamed: function (fn) {
 	this.fileName = fn;
-	this.fileContents = webStore.fetch(this.fileName);
+	this.fileContents = Loader.syncFetch(this.fileName, false);
 	this.changeList = new FileParser().parseFile(this.fileName, this.fileContents);
 	this.changed('getChangeBanners');
     },

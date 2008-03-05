@@ -30,7 +30,7 @@ Object.subclass('Serializer', {
     	    return serial;
 	this.count ++;
 	serial =  this.count;
-	// println('registering ' + object + ' at ' + serial);
+	// console.log('registering ' + object + ' at ' + serial);
 	this.serialMap.set(object, serial);
 	return serial;
     },
@@ -38,7 +38,6 @@ Object.subclass('Serializer', {
     toJSONProp: function(value, name) {
 	if (value instanceof Object)
 	    value = value.valueOf(); // convert to primitive if possible
-	
 	if (name == 'constructor') // special case, it should't be there
 	    return;
 	
@@ -50,7 +49,7 @@ Object.subclass('Serializer', {
 	    var ref = this.get(value);
 	    if (ref) {
 		return { ref: ref};
-		// println('ref of ' + name + ' is '  + ref  + ', entry ' + entry.toJSONString());
+		// console.log('ref of ' + name + ' is '  + ref  + ', entry ' + entry.toJSONString());
 	    } else if (value) {
 	    	if (value.writeReplace) {
 		    return this.toJSONObject(value.writeReplace());
@@ -108,7 +107,7 @@ Object.subclass('Serializer', {
 		    //				continue;
 		}
 	    	var entry = this.toJSONProp(obj[i]);
-	    	// println(' array element ' + obj[i] + ' entry ' + entry);
+	    	// console.log(' array element ' + obj[i] + ' entry ' + entry);
 	    	if (entry)
 		    slots.push(entry);
 	    }
@@ -167,7 +166,7 @@ Object.subclass('RemoteRef', {
     },
 
     readExternal: function(deser, data) {
-	//println('RemoteRef got data ' + data + "(" + (data || null).toJSONString() + ")");
+	//console.log('RemoteRef got data ' + data + "(" + (data || null).toJSONString() + ")");
 	return new RemoteRef(data.slots.id.string);
     }
 });
@@ -191,7 +190,7 @@ Object.subclass('Deserializer', {
     extractValue: function(slot, debug) {
 	var value = null;
 	if (slot.hasOwnProperty('number')) {
-    	    // println('value is ' + slot.number.toString());
+    	    // console.log('value is ' + slot.number.toString());
 	    return slot.number;
 	} else if (slot.string) {
 	    return slot.string;
@@ -200,10 +199,10 @@ Object.subclass('Deserializer', {
 	} else if (slot['type']) {
     	    // check class first
 	    return this.fromJSON(slot, debug);
-	    // println('got slot value ' + value);
+	    // console.log('got slot value ' + value);
 	} else if (slot.ref) {
 	    return this.get(slot.ref.valueOf());
-	    // println(' looked up ref ' + slot.ref.valueOf()); // + " to " + value);
+	    // console.log(' looked up ref ' + slot.ref.valueOf()); // + " to " + value);
 	} 
 	return null;
     },
@@ -230,7 +229,7 @@ Object.subclass('Deserializer', {
 	    ref = parsedJSON.ref.valueOf();
 	    if (this.get(ref)) {
 	    	var result = this.get(ref);
-	    	if (debug) println('retrieved def  ' + result + " with ref " + ref);
+	    	debug && console.log('retrieved def  ' + result + " with ref " + ref);
 	    	return result;
 	    }
 	} else {
@@ -241,14 +240,12 @@ Object.subclass('Deserializer', {
 	if (type == "Array") {
 	    object = [];
 	    this.put(ref, object);
-	    if (parsedJSON.slots) {
+	    if (parsedJSON.slots) 
 		for (var i = 0; i <  parsedJSON.slots.length; i++) {
 		    object.push(this.extractValue(parsedJSON.slots[i], debug));	
 		}
-	    }
 	} else if (type) {
 	    object = {};
-	    // xml -> string -> function
 	    // FIXME: ensure no funny business in the value of 'type'
 	    if (this.setPrototype) {
 		var constr = eval(type.toString());

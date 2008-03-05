@@ -243,9 +243,12 @@ var NetRequest = (function() {
 	
 	proxy: Loader.proxyURL ? new URL(Loader.proxyURL.endsWith("/") ? Loader.proxyURL : Loader.proxyURL + "/") : null,
 	
-        initialize: function(options) {
+        initialize: function() {
             this.requestNetworkAccess();
-            this.options = options || {};
+	    if (arguments[0] instanceof Function) 
+		this.options = { onSuccess: arguments[0] };
+	    else 
+		this.options = arguments[0] || {};
         },
 
         beSynchronous: function(flag) {
@@ -326,9 +329,7 @@ Object.extend(Loader, {
 	req.beSynchronous();
 	var result = req.get(new URL(Global.location.toString()).withFilename(fileName));
 	return result.responseText;
-    },
-    
-
+    }
 });
 
 

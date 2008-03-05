@@ -3844,12 +3844,10 @@ Model.subclass(scope, 'MessengerWidget', {
         var parent = this;
         if ( this.text != null && this.text != "" ) {
             var url = this.server.withPath("foreground.html?action=updatemany&key." + this.id + "=" + this.text.replace(/=/g, ""));
-            new NetRequest({ 
-                onSuccess: function(transport) {
-                    parent.setChatText(parent.id + ": " + parent.getIMText()); // add the current line immediately
-                    parent.setIMText(""); // yes yes.. so its a little laggy to add the current line and delete it...
-                    parent.textpanel.setScrollPosition(1);//this.textpanel.innerMorph().bounds().height);
-                }
+            new NetRequest(function(transport) {
+                parent.setChatText(parent.id + ": " + parent.getIMText()); // add the current line immediately
+                parent.setIMText(""); // yes yes.. so its a little laggy to add the current line and delete it...
+                parent.textpanel.setScrollPosition(1);//this.textpanel.innerMorph().bounds().height);
             }).get(url);
         }
 	//        this.load();
@@ -3857,23 +3855,21 @@ Model.subclass(scope, 'MessengerWidget', {
     
     load: function() {
         var parent = this;
-        new NetRequest({ 
-            onSuccess: function(transport) {
-                // what crap is coming with the response?? function something something..
-                // console.log(transport.responseText);
-                try {
-                    var end = transport.responseText.indexOf("function");
-                    if ( end == -1 ) {
-                        var text = transport.responseText.substr(0);
-                    } else {
-                        var text = transport.responseText.substring(0, end);
-                    }
-                    parent.parseResponse(text);
-                    parent.textpanel.setScrollPosition(1);
-                } catch (e) { console.log('got error %s', e); }
-                // start polling for new events
-                parent.load();
-            }
+        new NetRequest(function(transport) {
+            // what crap is coming with the response?? function something something..
+            // console.log(transport.responseText);
+            try {
+                var end = transport.responseText.indexOf("function");
+                if ( end == -1 ) {
+                    var text = transport.responseText.substr(0);
+                } else {
+                    var text = transport.responseText.substring(0, end);
+                }
+                parent.parseResponse(text);
+                parent.textpanel.setScrollPosition(1);
+            } catch (e) { console.log('got error %s', e); }
+            // start polling for new events
+            parent.load();
         }).get(new URL(this.server.withPath("background.html")));
 	
     },
