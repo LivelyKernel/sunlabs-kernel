@@ -298,9 +298,8 @@ WebStore.subclass('FileBrowser', {
         this.changed('getCurrentDirectory');
 
         console.log('host %s, dir %s name %s', this.baseUrl.hostname, this.CurrentDirectory, name);
-        // initialize getting the contents
-        this.propfind(this.resourceURL(this.CurrentDirectory), 1, 
-		      "/D:multistatus/D:response", "CurrentDirectoryContents");
+        // initialize getting the content
+        this.propfind(this.resourceURL(this.CurrentDirectory), 1);
     },
     
     getCurrentDirectoryContents: function() {
@@ -376,33 +375,33 @@ WebStore.subclass('FileBrowser', {
 	var url = this.CurrentResource;
 	if (!url) 
 	    return [];
+	var fileName = url.toString();
 	var items = [
 	    ['edit in separate window', function(evt) {
-		var textEdit = newTextPane(new Rectangle(0, 0, 500, 200), "Fetching " + fileName + "...");
+		var textEdit = newTextPane(new Rectangle(0, 0, 500, 200), "Fetching " + url + "...");
 		var webStore = new WebStore();
 		textEdit.innerMorph().connectModel({model: webStore, 
 						    getText: "getCurrentResourceContents", 
 						    setText: "setCurrentResourceContents"});
 		webStore.fetch(url);
-		this.world().addFramedMorph(textEdit, fileName, evt.mousePoint);
+		this.world().addFramedMorph(textEdit, url.toString(), evt.mousePoint);
 	    }],
 	    
 	    ["get WebDAV info", function(evt) {
 		var infoPane = newTextPane(new Rectangle(0, 0, 500, 200), "");
 		infoPane.innerMorph().acceptInput = false;
 		var store = new WebStore();
-		store.getProperties = function() {
+		store.getPropfindResults = function() {
 		    return this.Properties instanceof Array ? 
-			this.Properties[0].toMarkupString() : "fetching properties for " + fileName;
+			this.Properties[0].toMarkupString() : "fetching properties for " + url;
 		};
 		infoPane.innerMorph().connectModel({model: store, getText: "getProperties"});
-		store.propfind(store.resourceURL(fileName), 1, "/D:multistatus/D:response", "Properties");
+		store.propfind(url, 1, "/D:multistatus/D:response");
 		this.world().addFramedMorph(infoPane, fileName, evt.mousePoint);
-		
 	    }]
 	];
-
-	if (fileName.endsWith(".xhtml")) {
+	
+	if (url.toString().endsWith(".xhtml")) {
 	    // FIXME: add loading into a new world
 	    items.push(["load into current world", function(evt) {
 		var store = new WebStore().autoFetch();
@@ -420,7 +419,7 @@ WebStore.subclass('FileBrowser', {
 		    }
 		    if (!world) this.world().alert('no morphs found in %s', store.CurrentResource);
 		}
-		store.setCurrentResource(fileName);
+		store.setCurrentResource(url);
 	    }.bind(this)]);
 	    
 	    items.push(["load into new linked world", function(evt) {
@@ -457,7 +456,7 @@ WebStore.subclass('FileBrowser', {
 		    }
 		    this.world().alert('no morphs found in %s', store.CurrentResource);
 		}
-		store.setCurrentResource(fileName);
+		store.setCurrentResource(url);
 	    }.bind(this)]);
 
 
