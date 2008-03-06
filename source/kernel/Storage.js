@@ -419,7 +419,7 @@ WebStore.subclass('FileBrowser', {
 		    }
 		    if (!world) this.world().alert('no morphs found in %s', store.CurrentResource);
 		}
-		store.setCurrentResource(url);
+		store.setCurrentResource(url.fullPath());
 	    }.bind(this)]);
 	    
 	    items.push(["load into new linked world", function(evt) {
@@ -456,7 +456,7 @@ WebStore.subclass('FileBrowser', {
 		    }
 		    this.world().alert('no morphs found in %s', store.CurrentResource);
 		}
-		store.setCurrentResource(url);
+		store.setCurrentResource(url.fullPath());
 	    }.bind(this)]);
 
 
