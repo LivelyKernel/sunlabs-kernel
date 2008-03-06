@@ -100,6 +100,11 @@ Object.subclass('URL', {
 	if (i == 0) localname = filename.substring(dirPart.length); // strip off leading directory ref
 	else localname = filename;
 	return new URL({protocol: this.protocol, port: this.port, hostname: this.hostname, path: this.dirname() + localname });
+    },
+
+    withQuery: function(record) {
+	return new URL({protocol: this.protocol, port: this.port, hostname: this.hostname, path: this.path,
+			search: "?" + $H(record).toQueryString(), hash: this.hash});
     }
     
 });
@@ -109,230 +114,161 @@ Object.extend(URL, {
     pathSplitter: new RegExp("([^\\?#]*)(\\?[^#]*)?(#.*)?")
 });
 
-/**
- * @class NetRequest
- */ 
+View.subclass('NetRequest', {
 
-var NetRequest = (function() {
-    var logger = {
-        onComplete: function(request, transport, json) {
-            if (transport.status.toString().startsWith('2')) {
-                console.info("%s %s: status %s", request.method, request.url, transport.status);
-            } else {
-                console.warn("%s %s: status %s", request.method, request.url, transport.status);
-            }
-        },
+    Unsent: 0,
+    Opened: 1,
+    HeadersReceived: 2,
+    Loading: 3,
+    Done: 4,
 
-        onException: function(request, exception) {
-            console.warn("%s %s: exception %s", request.method, request.url, exception);
-	    /*???*/Function.showStack();
-	    if (e.originalStack) { 
-		console.log("captured stack:");
-		Function.showStack(e.originalStack);
+    proxy: Loader.proxyURL ? new URL(Loader.proxyURL.endsWith("/") ? Loader.proxyURL : Loader.proxyURL + "/") : null,
+
+    rewriteURL: function(url) {
+	url = url instanceof URL ? url : new URL(url);
+        if (this.proxy) {
+	    if (this.proxy.hostname != url.hostname) { // FIXME port and protocol?
+		url = this.proxy.withFilename(url.hostname + url.fullPath());
+		//console.log("rewrote url " + Object.inspect(url) + " proxy " + this.proxy);
+		// return this.proxy + url.hostname + "/" + url.fullPath();
 	    }
-        }
+	}
+        return url;
+    },
 
-    };
-    Ajax.Responders.register(logger);
     
-    var BaseRequest = Class.create(Ajax.Request, {
-	
-	dispatchException: function($super, e) {
-	    e.originalStack = Function.cloneStack();
-	    //Function.showStack(e.originalStack);
-	    $super(e);
-	},
+    initialize: function($super) {
+	$super(null);
+	this.transport = new XMLHttpRequest();
+	this.requestNetworkAccess();
+	this.transport.onreadystatechange = this.onReadyStateChange.bind(this);
+	this.isSync = false;
+	this.requestHeaders = new Hash();
+    },
 
-        // literally copied but override prototype.js's verb simulation over post
-        request: function(url) {
-            this.url = url;
-            this.method = this.options.method;
-            var params = Object.clone(this.options.parameters);
-    
-            /* remove simulation over post
-              if (!['get', 'post'].include(this.method)) {
-               // simulate other verbs over post
-               params['_method'] = this.method;
-               this.method = 'post';
-               }
-            */
-    
-            this.parameters = params;
-    
-            if (params = Object.toQueryString(params)) {
-                // when GET, append parameters to URL
-                if (this.method == 'get') {
-                    this.url += (this.url.include('?') ? '&' : '?') + params;
-                } else if (/Konqueror|Safari|KHTML/.test(navigator.userAgent)) {
-                    params += '&_=';
-                }
-            }
-    
+    requestNetworkAccess: function() {
+        if (Global.netscape && window.location.protocol == "file:") {       
             try {
-                var response = new Ajax.Response(this);
-                if (this.options.onCreate) this.options.onCreate(response);
-                Ajax.Responders.dispatch('onCreate', this, response);
-
-                this.transport.open(this.method.toUpperCase(), this.url, 
-                                    this.options.asynchronous);
-
-                if (this.options.asynchronous) this.respondToReadyState.bind(this).defer(1);
-
-                this.transport.onreadystatechange = this.onStateChange.bind(this);
-                this.setRequestHeaders();
-
-                // this.body = this.method == 'post' ? (this.options.postBody || params) : null;
-                this.body = /put|post/.test(this.method) ? (this.options.body || this.options.postBody || params) : null;
-
-                this.transport.send(this.body);
-
-                /* Force Firefox to handle ready state 4 for synchronous requests */
-                if (!this.options.asynchronous && this.transport.overrideMimeType) {
-                    this.onStateChange();
-                }
-            } catch (e) {
-                this.dispatchException(e);
-            }
-        }.logErrors("request"),
-
-        // Overridden for debugging 
-        setRequestHeaders: function() {
-            var headers = {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'text/javascript, text/html, application/xml, text/xml, */*'
-            };
-    
-            if (this.method == 'post') {
-                headers['Content-type'] = this.options.contentType +
-                    (this.options.encoding ? '; charset=' + this.options.encoding : '');
-
-                /* Force "Connection: close" for older Mozilla browsers to work
-                 * around a bug where XMLHttpRequest sends an incorrect
-                 * Content-length header. See Mozilla Bugzilla #246651.
-                 */
-                if (this.transport.overrideMimeType &&
-                    (navigator.userAgent.match(/Gecko\/(\d{4})/) || [0,2005])[1] < 2005)
-                    headers['Connection'] = 'close';
-                }
-    
-            // user-defined headers
-            if (typeof this.options.requestHeaders == 'object') {
-                var extras = this.options.requestHeaders;
-
-                if (Object.isFunction(extras.push)) {
-                    for (var i = 0, length = extras.length; i < length; i += 2) {
-                        headers[extras[i]] = extras[i+1];
-                    }
-                } else {
-                    for (var name in extras) {
-                        if (!extras.hasOwnProperty(name)) continue;
-                        headers[name] = extras[name];
-                    }
-                }
-            }
-    
-            for (var name in headers) {
-                this.transport.setRequestHeader(name, headers[name]);
-            }    
-        }
-
-    });
-    
-
-    var NetRequest = Object.subclass('NetRequest', {
-	
-	proxy: Loader.proxyURL ? new URL(Loader.proxyURL.endsWith("/") ? Loader.proxyURL : Loader.proxyURL + "/") : null,
-	
-        initialize: function() {
-            this.requestNetworkAccess();
-	    if (arguments[0] instanceof Function) 
-		this.options = { onSuccess: arguments[0] };
-	    else 
-		this.options = arguments[0] || {};
-        },
-
-        beSynchronous: function(flag) {
-            if (flag === undefined) flag = true;
-            this.options.asynchronous = !flag;
-            return this;
-        },
-
-        evalJS: function(flag) {
-            if (flag === undefined) flag = true;
-            this.options.evalJS = flag ? "force" : false;
-            return this;
-        },
-
-        get: function(url) {
-            this.options.method = 'get';
-            if (!url.toString().startsWith('http')) {
-                url = new URL(Loader.baseURL);
-            }
-            var req = new BaseRequest(this.rewriteURL(url).toString(), this.options);
-            return req.transport;
-        },
-	
-        put: function(url, content) {
-            this.options.method = 'put';
-            this.options.body = content;
-            var req = new BaseRequest(this.rewriteURL(url).toString(), this.options);
-            return req.transport;
-        },
-
-        remove: function(url) { // delete is a reserved word ...
-            this.options.method = 'delete';
-            var req = new BaseRequest(this.rewriteURL(url).toString(), this.options);
-            return req.transport;
-        },
-
-        propfind: function(url, content) {
-            this.options.method = 'propfind';
-            if (content) this.options.body = content;
-            var req = new BaseRequest(this.rewriteURL(url).toString(), this.options);
-            return req.transport;
-        },
-
-        rewriteURL: function(url) {
-	    url = url instanceof URL ? url : new URL(url);
-            if (this.proxy) {
-		if (this.proxy.hostname != url.hostname) { // FIXME port and protocol?
-		    url = this.proxy.withFilename(url.hostname + url.fullPath());
-		    //console.log("rewrote url " + Object.inspect(url) + " proxy " + this.proxy);
-		    // return this.proxy + url.hostname + "/" + url.fullPath();
-		}
-	    }
-            return url;
-	},
-
-        requestNetworkAccess: function() {
-            if (Global.netscape && window.location.protocol == "file:") {       
-                try {
-                    netscape.security.PrivilegeManager.enablePrivilege("UniversalBrowserRead");
-                    console.log("requested browser read privilege");
-                    return true;
-                } catch (er) {
-                    console.log("no privilege granted: " + er);
-                    return false;
-                }
+                netscape.security.PrivilegeManager.enablePrivilege("UniversalBrowserRead");
+                console.log("requested browser read privilege");
+                return true;
+            } catch (er) {
+                console.log("no privilege granted: " + er);
+                return false;
             }
         }
-    });
-    return NetRequest;
+    },
 
-})();
+    selfconnect: function() {
+	var model = new SimpleModel(null, 'Status', 'ResponseXML', 'ResponseText');
+	// no ready state
+	this.connectModel({model: model, setStatus: 'setStatus', 
+			   setResponseXML: 'setResponseXML', 
+			   setResponseText: 'setResponseText'});
+	return this;
+    },
 
+    beSynchronous: function() {
+	this.isSync = true;
+	return this;
+    },
+    
+    onReadyStateChange: function() {
+	this.setModelValue('setReadyState', this.getReadyState());
+	if (this.getReadyState() === this.Done) {
+	    this.setModelValue('setStatus', this.getStatus());
+	    if (this.transport.responseText) 
+		this.setModelValue('setResponseText', this.getResponseText());
+	    if (this.transport.responseXML) 
+		this.setModelValue('setResponseXML', this.getResponseXML());
+	    this.disconnectModel(); // autodisconnect?
+	}
+    },
 
-Object.extend(Loader, {
-    syncFetch: function(fileName, evalJS) {
-	var req = new NetRequest();
-	req.evalJS(evalJS);
-	req.beSynchronous();
-	var result = req.get(new URL(Global.location.toString()).withFilename(fileName));
-	return result.responseText;
+    setRequestHeaders: function(record) {
+        $H(record).each(function(pair) { this.requestHeaders.set(pair.key, pair.value) }.bind(this));
+    },
+    
+    setContentType: function(string) {
+	// valid before send but after open?
+	this.requestHeaders.set("Content-Type", string);
+    },
+
+    getReadyState: function() {
+	return this.transport.readyState;
+    },
+
+    getResponseText: function() {
+	return this.transport.responseText || "";
+    },
+    
+    getResponseXML: function() {
+	return this.transport.responseXML || "";
+    },
+
+    getStatus: function() {
+	return this.transport.status;
+    },
+
+    updateView: function(aspect, controller) {
+	// console.log("update view on aspect " + aspect);
+	// nothing, does not result to model changes (yet?)
+	// should it result to setting the url by fetching it?
+    },
+    
+    request: function(method, url, content) {
+	this.url = url;
+	this.transport.open(method.toUpperCase(), url.toString(), !this.isSync);
+	this.requestHeaders.each(function(p) { 
+	    try {
+		this.transport.setRequestHeader(p.key, p.value);
+	    } catch (er) { console.log('failed to set ' + [p.key, p.value] + ":" + er) }
+	}.bind(this));
+
+	this.transport.send(content || undefined);
+	return this;
+    },
+
+    get: function(url) {
+	return this.request("GET", this.rewriteURL(url), null);
+    },
+
+    put: function(url, content) {
+	return this.request("PUT", this.rewriteURL(url), content);
+    },
+
+    propfind: function(url, content) {
+	return this.request("PROPFIND", this.rewriteURL(url), content);
+    },
+
+    del: function(url) {
+	return this.request("DELETE", this.rewriteURL(url));
+    },
+
+    test: function() {
+	var request = new NetRequest().selfconnect();
+	var v = new View();
+	v.updateView = function(aspect, controller) { 
+	    if (aspect == this.modelPlug.getResult)
+		console.log("got result " + this.getModelValue("getResult", ""));
+	}
+	v.connectModel({model: request.getModel(), getResult: "getResponseText"});
+	request.get(new URL(location.toString()));
+
+	request = new NetRequest(true);
+	console.log("2) result " + request.get(new URL(location.toString())).beSynchronous().getModelValue('getResponseText', ""));
+
     }
+
 });
 
-
+Object.extend(Loader, {
+    syncFetch: function(fileName) {
+	var req = new NetRequest().selfconnect().beSynchronous();
+	req.get(new URL(Global.location.toString()).withFilename(fileName));
+	return req.getResponseText();
+    }
+});
 
 /**
  * @class FeedChannel: RSS feed channel
@@ -393,49 +329,37 @@ WidgetModel.subclass('Feed', {
         this.channels = null;
     },
     
-    request: function(model /*, ... model variables*/) {
-        // console.log('in request on %s', this.url);
-        var modelVariables = $A(arguments);
-        modelVariables.shift();
+    request: function() {
         var hourAgo = new Date((new Date()).getTime() - 1000*60*60);
+	var req = new NetRequest();
 	
-        new NetRequest({
-            requestHeaders: { "If-Modified-Since": hourAgo.toString()  },
-            contentType: 'text/xml',
-
-            onSuccess: function(transport) {
-                if (!transport.responseXML) {
-                    this.processResult(null);
-                    return;
-                }
-                var result = transport.responseXML.documentElement;
-                this.processResult(result);
-		
-                for (var i = 0; i < modelVariables.length; i++) {
-                    model.changed(modelVariables[i]);
-                }
-            }.bind(this).logErrors('Success Handler for ' + this)
-        }).get(this.url);
+	req.setContentType('text/xml');
+	req.setRequestHeaders({ "If-Modified-Since": hourAgo.toString() });
+	req.connectModel({model: this, setResponseXML: "setNextFeed" });
+	req.get(this.url);
     },
 
     toString: function() {
         return "#<Feed: " + this.url + ">";
     },
     
-    processResult: function(result) {
-        if (!result) {
-            console.log('no results for %s', this);
-            return;
-        }
-        var results = Query.evaluate(result, '/rss/channel');
+    setNextFeed: function(responseXML) {
+        var results = Query.evaluate(responseXML.documentElement, '/rss/channel');
         this.channels = [];
         for (var i = 0; i < results.length; i++) {
             this.channels.push(new FeedChannel(results[i]));
         }
+	this.changed('getChannels');
+	this.changed('getItemList');
+	this.changed('getChannelTitle');
     },
-    
+
     items: function(index) {
         return this.channels[index || 0].items;
+    },
+
+    getChannels: function() {
+	return this.channels;
     },
     
     getEntry: function(title) {

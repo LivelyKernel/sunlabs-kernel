@@ -2397,14 +2397,57 @@ WidgetModel.subclass(scope, 'WeatherWidget', {
     
     initialize: function($super) { 
         $super();
+	this.weatherDesc = "";
+	this.temperature = "";
+	this.wind = "";
+	this.humidity = "";
+	this.dewPoint = "";
+	this.gusts = "";
+	this.visibility = "";
+	var widget = this;
+	this.parser = Object.extend(new View(), {
+	    updateView: function(aspect, controller) {
+		if (this.modelPlug) {
+		    switch (aspect) {
+		    case this.modelPlug.getFeedChannels:
+		    case 'all':
+			this.parse(this.getModelValue('getFeedChannels', null));
+		    }
+		}
+	    },
+	    
+	    parse: function(channels) {
+		if (channels.length <= 0) return;
+		var channel = channels[0];
+		var text = channel.items[0].description();
+		var arr = text.split(",");
+		var topic = channel.items[0].title();
+		var weather = topic.substring(topic.indexOf("."), topic.indexOf("GMT:")+4).replace(/^\s+|\s+$/g, '');
+		widget.weatherDesc = weather[0].toUpperCase() + weather.substr(1);
+		widget.changed('getWeatherDesc');
+		widget.temperature = arr[0].replace(/^\s+|\s+$/g, '');
+		widget.changed('getTemperature');
+		widget.wind = arr[1].replace(/^\s+|\s+$/g, '');
+		widget.changed('getWind');
+		widget.gusts = arr[2].replace(/^\s+|\s+$/g, '');
+		widget.changed('getGusts');
+		widget.dewPoint = arr[3].replace(/^\s+|\s+$/g, '');
+		widget.changed('getDewPoint');
+		widget.humidity = arr[4].replace(/^\s+|\s+$/g, '') + ", " + arr[5].replace(/^\s+|\s+$/g, '');
+		widget.changed('getHumidity');
+		widget.visibility = arr[6].replace(/^\s+|\s+$/g, '');
+		widget.changed('getVisibility');
+            }
+	});
+
         // Fetch weather upon starting the widget
         this.getWeather("6568"); // San Francisco International (SFO) as default
     },
-    
+
     getListItem: function() {
         return this.listItem;            
     },
-    
+
     setListItem: function(item, v) {
         this.listItem = item; 
         this.changed("getListItem", v); 
@@ -2412,62 +2455,34 @@ WidgetModel.subclass(scope, 'WeatherWidget', {
         // initialize UI update
         switch (item) {
         case "San Francisco, California":
-            this.getWeather("6568");
-//          this.getWeather("stanford", "US", "CA"); // "USCA0050"  6568 -- San Francisco International (SFO)
+            this.getWeather("6568"); // "USCA0050"  6568 -- San Francisco International (SFO)
+//          this.getWeather("stanford", "US", "CA"); 
             break;
         case "Tampere, Finland":
-            this.getWeather("4974");
-//          this.getWeather("tampere", "finland"); // "FIXX0031"  or 4974
+            this.getWeather("4974"); // "FIXX0031"  or 4974
+//          this.getWeather("tampere", "finland"); 
             break;
         case "London, United Kingdom":
-            this.getWeather("4583");
-//          this.getWeather("london", "united_kingdom"); // "UKXX0318"  or 4583           
+            this.getWeather("4583"); // "UKXX0318"  or 4583 
+//          this.getWeather("london", "united_kingdom"); 
             break;
         }
     },
 
-    feed: null,
-    weatherDataArr: null,
-    previousResult: null,
-    
-    imageurl: "http://www.bbc.co.uk/weather/images/banners/weather_logo.gif",
-    
-    parseWeatherData: function() {
-        if (this.previousResult != this.feed.channels[0]) {
-            this.weatherDataArr = [];
-            // we got a new value asynchronously
-            this.previousResult = this.feed.channels[0];
-            //this.weatherDataArr = this.previousResult.items[0].description.split(",");
-            var text = this.previousResult.items[0].description();
-            var arr = text.split(",");
-            var topic = this.previousResult.items[0].title();
-            var weather = topic.substring(topic.indexOf("."), topic.indexOf("GMT:")+4).replace(/^\s+|\s+$/g, '');
-            this.weatherDataArr[0] = weather[0].toUpperCase() + weather.substr(1);
-            this.weatherDataArr[1] = arr[0].replace(/^\s+|\s+$/g, '');
-            this.weatherDataArr[2] = arr[1].replace(/^\s+|\s+$/g, '');
-            this.weatherDataArr[3] = arr[2].replace(/^\s+|\s+$/g, '');
-            this.weatherDataArr[4] = arr[3].replace(/^\s+|\s+$/g, '');
-            this.weatherDataArr[5] = arr[4].replace(/^\s+|\s+$/g, '') + ", " + arr[5].replace(/^\s+|\s+$/g, '');
-            this.weatherDataArr[6] = arr[6].replace(/^\s+|\s+$/g, '');
-        }
-        
-        return this.weatherDataArr;
-    },
-
-    getWeatherDesc: function() { return this.parseWeatherData()[0]; },
-    getTemperature: function() { return this.parseWeatherData()[1]; },
-    getWind: function()        { return this.parseWeatherData()[3]; },
-    getHumidity: function()    { return this.parseWeatherData()[4]; },
-    getDewPoint: function()    { return this.parseWeatherData()[5]; },
-    getGusts: function()       { return this.parseWeatherData()[2]; },
-    getVisibility: function()  { return this.parseWeatherData()[6]; },
-    getImageURL: function()    { return this.imageurl; },
+    getWeatherDesc: function() { return this.weatherDesc; },
+    getTemperature: function() { return this.temperature; },
+    getWind: function()        { return this.wind; },
+    getHumidity: function()    { return this.humidity; },
+    getDewPoint: function()    { return this.dewPoint; },
+    getGusts: function()       { return this.gusts; },
+    getVisibility: function()  { return this.visibility; },
+    getImageURL: function()    { return "http://www.bbc.co.uk/weather/images/banners/weather_logo.gif"; },
     
     buildView: function() {
         var panel = new PanelMorph(pt(250, 260));
-        panel.setBorderWidth(2);
+	panel.applyStyle({borderWidth: 2, 
+			  fill: new LinearGradient(Color.white, Color.primary.blue, LinearGradient.WestEast)});
         //panel.setBorderColor(Color.blue);
-        panel.setFill(new LinearGradient(Color.white, Color.primary.blue, LinearGradient.WestEast));
         // TODO: add rounding to all the elements (panel, window & titlebar)
         // or make the titlebar round depending on the window
         var m; 
@@ -2497,7 +2512,9 @@ WidgetModel.subclass(scope, 'WeatherWidget', {
         var m;
         panel.addMorph(m = new TextMorph(new Rectangle(40,55, 200,20), "---")).connectModel({model: this, getText: "getWeatherDesc"});
         m.takesKeyboardFocus = function() {return false;};
+	//m.beLabel();
         panel.addMorph(m = new TextMorph(new Rectangle(40,80, 200,20), "---")).connectModel({model: this, getText: "getTemperature"});
+	//m.beLabel();
         m.takesKeyboardFocus = function() {return false;};
         panel.addMorph(m = new TextMorph(new Rectangle(40,105, 200,20), "---")).connectModel({model: this, getText: "getWind"});
         m.takesKeyboardFocus = function() {return false;};
@@ -2519,10 +2536,12 @@ WidgetModel.subclass(scope, 'WeatherWidget', {
     },
 
     getWeather: function(citycode) {
-        this.feed = new Feed("http://feeds.bbc.co.uk/weather/feeds/rss/obs/world/" + citycode + ".xml");
-        this.feed.request(this, 'getWeatherDesc', "getTemperature", "getWind", "getGusts", 
-                          "getDewPoint", "getHumidity", "getVisibility");
+        var feed = new Feed("http://feeds.bbc.co.uk/weather/feeds/rss/obs/world/" + citycode + ".xml");
+	this.parser.disconnectModel();
+	this.parser.connectModel({model: feed, getFeedChannels: "getChannels"});
+        feed.request();
     }
+    
     
 });
 
@@ -2543,7 +2562,17 @@ WidgetModel.subclass('StockWidget', {
     initialize: function($super) { 
         $super();
         this.imageurl = null;
-        this.feed = null;
+	this.newsHeaders = "";
+	var widget = this;
+	// copies from one another
+	this.copier = Object.extend(new View(), {
+	    updateView: function(aspect, controller) {
+		if (aspect == this.modelPlug.getItemTitles || aspect == 'all') {
+		    widget.setNewsHeaders(this.getModelValue('getItemTitles', ""));
+		}
+	    }
+	});
+	
         return this;
     },
     
@@ -2586,13 +2615,21 @@ WidgetModel.subclass('StockWidget', {
         var entry = this.config[this.listItem];
         this.imageurl = entry.image;
         this.changed('getIndexChartURL');
-        this.feed = new Feed(this.makeURL(entry.ticker));
-        this.feed.request(this, 'getNewsHeaders');
+        
+	var feed = new Feed(this.makeURL(entry.ticker));
+	this.copier.disconnectModel();
+	this.copier.connectModel({model: feed, getItemTitles: "getItemList"});
+        feed.request(this);
         this.changed("getStockIndex", v); 
     },
     
     getNewsHeaders: function() {
-        return this.feed.items().invoke('title');
+        return this.newsHeaders;
+    },
+
+    setNewsHeaders: function(headers) {
+	this.newsHeaders = headers;
+	this.changed('getNewsHeaders');
     },
 
     getIndexChartURL: function() { 
@@ -2606,7 +2643,7 @@ WidgetModel.subclass('StockWidget', {
     setCompany: function(item, v) {
         this.companyListItem = item; 
         console.log('setting item ' + item);
-        this.getUrl("http://download.finance.yahoo.com/d/quotes.csv",
+        this.fetchQuotes("http://download.finance.yahoo.com/d/quotes.csv",
                     { s:item.toLowerCase(), f:'sl1d1t1c1ohgv', e: '.csv'});
         this.changed("getCompany", v); 
     },
@@ -2672,22 +2709,22 @@ WidgetModel.subclass('StockWidget', {
         return this.formatQuote(this.lastQuote);
     },
     
+    setQuotes: function(list) {
+	this.lastQuote = list.split(',');
+	this.changed('getQuotes');
+    },
+
+    fetchQuotes: function(urlString, params) {
+	var req = new NetRequest();
+	req.setContentType("text/html");
+	req.connectModel({model: this, setResponseText: "setQuotes"});
+	req.get(new URL(urlString).withQuery(params));
+    },
+  
     startSteppingRefreshCharts: function(panel) {
         panel.startStepping(60000, 'refresh');
     },
 
-    getUrl: function(urlString, params) {
-        new NetRequest({
-            contentType: 'text/html', 
-            parameters: params || {},
-            onSuccess: function(transport) {
-                var result = transport.responseText;
-                this.lastQuote = result.split(',');
-                this.changed('getQuotes');
-            }.bind(this)
-        }).get(new URL(urlString));
-    },
-  
     formatQuote: function(arr) {
         return "Name: " + arr[0] + "\n" 
             + "Last: " + arr[1]+ "\n"
@@ -3755,12 +3792,12 @@ Model.subclass(scope, 'MessengerWidget', {
         this.chatroom = "";
         this.server = new URL(this.serverURL);
         var id = this.id;
-        var parent = this;
-        new NetRequest({ 
-            onFailure: function(transport) {
-                console.log(transport.responseText);
-            }
-        }).get(this.server.withPath("foreground.html?login=IM"));
+	var req = new NetRequest().connectModel({model: this, setStatus: "setConnectionStatus"});
+        req.get(this.server.withPath("foreground.html?login=IM"));
+    },
+
+    setConnectionStatus: function(status) {
+	if (status >= 300) console.log("communication failure");
     },
     
     openIn: function(world, location) {
@@ -3840,38 +3877,42 @@ Model.subclass(scope, 'MessengerWidget', {
         this.id = this.nick;
     },
     
+    setForegroundResponse: function(text) {
+        this.setChatText(parent.id + ": " + this.getIMText()); // add the current line immediately
+        this.setIMText(""); // yes yes.. so its a little laggy to add the current line and delete it...
+        this.textpanel.setScrollPosition(1);//this.textpanel.innerMorph().bounds().height);
+    },
+    
     send: function() {
         var parent = this;
         if ( this.text != null && this.text != "" ) {
-            var url = this.server.withPath("foreground.html?action=updatemany&key." + this.id + "=" + this.text.replace(/=/g, ""));
-            new NetRequest(function(transport) {
-                parent.setChatText(parent.id + ": " + parent.getIMText()); // add the current line immediately
-                parent.setIMText(""); // yes yes.. so its a little laggy to add the current line and delete it...
-                parent.textpanel.setScrollPosition(1);//this.textpanel.innerMorph().bounds().height);
-            }).get(url);
+            var url = this.server.withPath("foreground.html?action=updatemany&key." 
+		+ this.id + "=" + this.text.replace(/=/g, ""));
+            var req = new NetRequest().connectModel({model: this, setResponseText: "setForegroundResponse"});
+            req.get(url);
         }
 	//        this.load();
     }, 
     
+    setBackgroundResponse: function(response) {
+        try {
+            var end = response.indexOf("function");
+            if (end == -1) {
+                var text = response.substr(0);
+            } else {
+                var text = response.substring(0, end);
+            }
+            this.parseResponse(text);
+            this.textpanel.setScrollPosition(1);
+        } catch (e) { console.log('got error %s', e); }
+        // start polling for new events
+        parent.load();
+    },
+
     load: function() {
-        var parent = this;
-        new NetRequest(function(transport) {
-            // what crap is coming with the response?? function something something..
-            // console.log(transport.responseText);
-            try {
-                var end = transport.responseText.indexOf("function");
-                if ( end == -1 ) {
-                    var text = transport.responseText.substr(0);
-                } else {
-                    var text = transport.responseText.substring(0, end);
-                }
-                parent.parseResponse(text);
-                parent.textpanel.setScrollPosition(1);
-            } catch (e) { console.log('got error %s', e); }
-            // start polling for new events
-            parent.load();
-        }).get(new URL(this.server.withPath("background.html")));
-	
+	var req = new NetRequest();
+	req.connectModel({model: this, setResponseText: "setBackgroundResponse"});
+	req.get(new URL(this.server.withPath("background.html")));
     },
     
     parseResponse: function (response) {

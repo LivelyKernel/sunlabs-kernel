@@ -120,21 +120,6 @@ Wrapper.subclass('Resource', {
 
 });
 
-var FailureNotifier = new Model(null);
-Object.extend(FailureNotifier, {
-    // FIXME use as model, decouple from WebStore
-    reportFailure: function(url, transport) {
-	if (transport.status == 401) {
-	    WorldMorph.current().alert("not authorized to access " + url); // should try to authorize
-	} else {
-	    WorldMorph.current().alert("failure accessing " + url + " code " + transport.status);
-	}
-    }
-    
-});
-
-
-
 /**
  * @class WebStore
  */ 
@@ -155,6 +140,7 @@ Model.subclass('WebStore', {
 	this.baseUrl = baseUrl;
         this.CurrentResource = null; // URL
         this.CurrentResourceContents = "";
+	
     },
 
     
@@ -171,61 +157,62 @@ Model.subclass('WebStore', {
 	return this;
     },
 
+    setRequestStatus: function(status) {
+	// error reporting
+	var url = this.currentRequestURL; // FIXME
+	if (status >= 300) {
+	    if (status == 401) {
+		WorldMorph.current().alert("not authorized to access " + url); // should try to authorize
+	    } else {
+		WorldMorph.current().alert("failure accessing " + url + " code " + status);
+	    }
+	} else 
+	    console.log("last status " + status + " on " + url);
+    },
+
+    assignResourceContents: function(text) {
+	this.CurrentResourceContents = text;
+	this.changed('getCurrentResourceContents');
+    },
+    
 
     // basic protocol methods:
-    fetch: function(url, modelVariable) {
-        // retrieve the the contents of the url and save in the indicated model variable
-        var options =  {
-            onSuccess: function(transport) {
-                this[modelVariable] = transport.responseText;
-                this.changed("get" + modelVariable);
-            }.bind(this),
-    
-            onFailure: function(transport) {
-		FailureNotifier.reportFailure(url, transport);
-                this[modelVariable] = "resource unavailable";
-            }.bind(this)
-        };
-        new NetRequest(options).evalJS(false).get(url);
+    fetch: function(url) {
+	var req = new NetRequest();
+	this.currentRequestURL = url;
+	req.connectModel({model: this, setResponseText: "assignResourceContents", 
+			  setStatus: "setRequestStatus"});
+	req.get(url);
     },
     
-    save: function(url, content, optModelVariable) {
+    save: function(url, content) {
         // retrieve the the contents of the url and save in the indicated model variable
         console.log('saving url ' + url);
-        var options =  {
-            onSuccess: function(transport) {
-		if (optModelVariable) {
-                    this[optModelVariable] = transport.status;
-                    this.changed("get" + optModelVariable);
-		}
-            }.bind(this),
-            onFailure: function(transport) {
-		FailureNotifier.reportFailure(url, transport);
-            }.bind(this)
-        };
-
-        new NetRequest(options).put(url, content);
+	var req = new NetRequest();
+	this.currentRequestURL = url;
+	req.connectModel({model: this, setStatus: "setRequestStatus"});
+	req.put(url, content);
     },
 
-    deleteResource: function(url, optModelVariable) {
+    deleteResource: function(url) {
         // retrieve the the contents of the url and save in the indicated model variable
         console.log('deleting url ' + url);
-        var options =  {
-            onSuccess: function(transport) {
-                // FIXME: the content may indicate that we failed to delete!
-                // this[optModelVariable] = transport.status;
-		if (optModelVariable) {
-                    this.changed("get" + optModelVariable);
-                    console.log('success deleting ' + url);
-		}
-            }.bind(this),
-	    
-            onFailure: function(transport) {
-                FailureNotifier.reportFailure(url, transport);
-            }.bind(this)
-    
-        };
-        new NetRequest(options).remove(url);
+	var req = new NetRequest();
+	this.currentRequestURL = url;
+	req.connectModel({model: this, setStatus: "setRequestStatus"});
+	req.del(url);
+    },
+
+    setPropfindResults: function(doc) {
+	var xpQueryString = "/D:multistatus/D:response"; // FIXME
+	var optModelVariable = "CurrentDirectoryContents"; // FIXME
+	var result = Query.evaluate(doc.documentElement, xpQueryString);
+	if (optModelVariable) {
+	    this[optModelVariable] = result.map(function(raw) { 
+		return new Resource(this.currentRequestURL, raw); 
+	    });
+            this.changed("get" + optModelVariable);
+	}
     },
 
     // FIXME handle object argument
@@ -233,27 +220,12 @@ Model.subclass('WebStore', {
         // find the properties given the url and save the results of the indicated query into the model variable
         if (depth != 0 && depth != 1) depth = 'infinity';
 
-        var options = {
-            contentType: 'text/xml',
-            requestHeaders: { "Depth": depth },
-    
-            onFailure: function(transport) {
-		FailureNotifier.reportFailure(url, transport);
-            }.bind(this),
-    
-            onSuccess: function(transport) {
-                // console.log('propfind received %s', Exporter.nodeToString(transport.responseXML));
-                var result = Query.evaluate(transport.responseXML.documentElement, xpQueryString);
-		if (optModelVariable) {
-		    this[optModelVariable] = result.map(function(raw) { 
-			return new Resource(url, raw); 
-		    });
-                    this.changed("get" + optModelVariable);
-		}
-            }.bind(this)
-        };
-        
-        new NetRequest(options).propfind(url);
+	var req = new NetRequest();
+	this.currentRequestURL = url;
+	req.connectModel({model: this, setStatus: "setRequestStatus", setResponseXML: "setPropfindResults"});
+	req.setContentType('text/xml');
+	req.setRequestHeaders({ "Depth": depth });
+	req.propfind(url, null);
     },
 
     getCurrentResourceContents: function() {
@@ -267,7 +239,7 @@ Model.subclass('WebStore', {
             WorldMorph.current().alert("not saving file, size " + contents.length 
 				       + " > " + safeSize + ", too large");
         } else {
-	    this.save(this.CurrentResource, contents, "LastWriteStatus");
+	    this.save(this.CurrentResource, contents);
         }
     },
 
@@ -278,7 +250,7 @@ Model.subclass('WebStore', {
         console.log("current resource set to %s", this.CurrentResource);
 	
         // initialize getting the resource contents
-        this.fetch(this.CurrentResource, "CurrentResourceContents");
+        this.fetch(this.CurrentResource);
     },
 
     resourceURL: function(resource) {
@@ -298,7 +270,6 @@ WebStore.subclass('FileBrowser', {
         this.DirectoryList = [ this.baseUrl.path ];
         this.CurrentDirectory = null;
         this.CurrentDirectoryContents = null; // :Resource[]
-        this.LastWriteStatus = 0;
     },
     
     getDirectoryList: function() {
@@ -387,7 +358,7 @@ WebStore.subclass('FileBrowser', {
                 var result = this.world().confirm("delete resource " + toDelete, 
 		    function(result) {
 			if (result) {
-			    model.deleteResource(toDelete, "CurrentDirectory");
+			    model.deleteResource(toDelete);
 			} else console.log("cancelled deletion of " + toDelete);
 		    });
                 evt.stop();
@@ -412,7 +383,7 @@ WebStore.subclass('FileBrowser', {
 		textEdit.innerMorph().connectModel({model: webStore, 
 						    getText: "getCurrentResourceContents", 
 						    setText: "setCurrentResourceContents"});
-		webStore.fetch(url, "CurrentResourceContents");
+		webStore.fetch(url);
 		this.world().addFramedMorph(textEdit, fileName, evt.mousePoint);
 	    }],
 	    

@@ -1941,29 +1941,26 @@ Morph.subclass('XenoMorph', {
 
         var body = this.foRawNode.appendChild(NodeFactory.createNS(Namespace.XHTML, "body"));
         body.appendChild(document.createTextNode("no content"));
-        new NetRequest({
 
-            //contentType: 'text/xml',
-            contentType: 'text/xml',
-    
-            onSuccess: function(transport) {
-                console.log('transmission dump %s', 
-                    transport.responseXML ? Exporter.nodeToString(transport.responseXML) : transport.responseText);
-                var node;
-                if (!transport.responseXML) {
-                    var parser = new DOMParser();
-                    var xhtml = parser.parseFromString(transport.responseText, "text/xml");
-                    node = xhtml.getElementsByTagName("body")[0];
-                } else {
-                    node = transport.responseXML.documentElement;
-                }
-                var parent = body.parentNode;
-                parent.removeChild(body);
-                parent.appendChild(document.adoptNode(node));
+	var model = new Model();
+	model.setDocumentText = function(text) {
+	    console.log('transmission dump %s', text);
+	    var parser = new DOMParser();
+            var xhtml = parser.parseFromString(text, "text/xml");
+            var node = xhtml.getElementsByTagName("body")[0];
+            body.parentNode.replaceChild(document.adoptNode(node), body);
+	};
 
-            }.logErrors('Success Handler for XenoMorph ' + url)
-        }).get(url);
-
+	model.setDocument = function(doc) {
+            console.log('transmission dump %s', Exporter.nodeToString(doc));
+	    body.parentNode.replaceChild(document.adoptNode(doc.documentElement), body);
+	};
+	
+	var req = new NetRequest();
+	req.setContentType("text/xml");
+	req.connectModel({model: model, setResponseXML: "setDocument", setResponseText: "setDocumentText"});
+	req.get(url);
+	
         this.foRawNode.appendChild(body);
         this.addNonMorph(this.foRawNode);
     },
@@ -1976,8 +1973,8 @@ Morph.subclass('XenoMorph', {
     },
     
     test: function(url) {
-        url = url || "http://livelykernel.sunlabs.com/test.xhtml";
-        var xeno = new XenoMorph(pt(400,200).extentAsRectangle(), url);
+        url = url || Loader.baseURL + "/index.xhtml";
+        var xeno = new XenoMorph(pt(400,200).extentAsRectangle(), new URL(url));
         WorldMorph.current().addFramedMorph(xeno, url, pt(50,50));
     }
 

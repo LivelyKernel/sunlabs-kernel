@@ -2560,14 +2560,14 @@ Object.extend(Exporter, {
 
     getBaseDocument: function() {
         var url = new URL(window.location.toString()); 
-        var req = new NetRequest().beSynchronous(); 
-        var result = req.get(url);
+        var req = new NetRequest().beSynchronous().selfconnect();
+        req.get(url);
 	
-        if (result.status < 200 && result.status >= 300) {
+        if (req.getStatus() < 200 && result.getStatus() >= 300) {
             console.log("failure retrieving  " + url + ", status " + result.status);
 	    return null;
 	} else {
-	    return result.responseXML;
+	    return req.getResponseXML();
 	}
     },
 
@@ -2579,12 +2579,14 @@ Object.extend(Exporter, {
 	container.appendChild(newDoc.importNode(node, true));
 	
 	var newurl = new URL(window.location.toString()).withFilename(filename);
-        var result = new NetRequest().beSynchronous().put(newurl, Exporter.nodeToString(newDoc));
+	var req = new NetRequest().beSynchronous().selfconnect();
+        req.put(newurl, Exporter.nodeToString(newDoc));
 	
-        if (result.status >= 200 && result.status < 300) 
-            return "success publishing world at " + newurl + ", status " + result.status;
+	var status = req.getStatus();
+        if (status >= 200 && status < 300) 
+            return "success publishing world at " + newurl + ", status " + status;
 	else
-            return "failure publishing world at " + newurl + ", status " + result.status;
+            return "failure publishing world at " + newurl + ", status " + status;
     },
     
     shrinkWrapNodeToFile: function(node, filename) {
@@ -4527,6 +4529,14 @@ ViewTrait = {
         this.modelPlug = newPlug;
         if (plugSpec.model.addDependent) { // for mvc-style updating
             plugSpec.model.addDependent(this);
+        } 
+	return this;
+    },
+
+    disconnectModel: function() {
+	var model = this.modelPlug && this.modelPlug.model;
+        if (model && model.removeDependent) { // for mvc-style updating
+            model.removeDependent(this);
         } 
     },
 
