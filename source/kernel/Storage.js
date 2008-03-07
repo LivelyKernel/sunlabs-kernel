@@ -143,19 +143,6 @@ Model.subclass('WebStore', {
 	
     },
     
-    autoFetch: function() {
-	var view = new View();
-	view.updateView = function(aspect, controller) {
-	    var plug = this.modelPlug;
-	    if (!plug) return;
-	    if (aspect == plug.getContent || aspect == 'all') {
-		this.getModelValue('getContent', ''); // trigger retrieval
-	    }
-	};
-	view.connectModel({model: this, getContent: "getCurrentResourceContents"});
-	return this;
-    },
-
     setRequestStatus: function(status) {
 	// error reporting
 	var url = this.currentRequestURL; // FIXME
@@ -192,31 +179,6 @@ Model.subclass('WebStore', {
 	req.put(url, content);
     },
 
-    
-    setPropfindResults: function(doc) {
-	var xpQueryString = "/D:multistatus/D:response"; // FIXME
-	var optModelVariable = "CurrentDirectoryContents"; // FIXME
-	var result = Query.evaluate(doc.documentElement, xpQueryString);
-	if (optModelVariable) {
-	    this[optModelVariable] = result.map(function(raw) { 
-		return new Resource(this.currentRequestURL, raw); 
-	    });
-            this.changed("get" + optModelVariable);
-	}
-    },
-
-    // FIXME handle object argument
-    propfind: function(url, depth, xpQueryString, optModelVariable) {
-        // find the properties given the url and save the results of the indicated query into the model variable
-        if (depth != 0 && depth != 1) depth = 'infinity';
-
-	var req = new NetRequest({model: this, setStatus: "setRequestStatus", setResponseXML: "setPropfindResults"});
-	this.currentRequestURL = url;
-	req.setContentType('text/xml');
-	req.setRequestHeaders({ "Depth": depth });
-	req.propfind(url, null);
-    },
-
     getCurrentResourceContents: function() {
         return this.CurrentResourceContents || "";
     },
@@ -231,7 +193,6 @@ Model.subclass('WebStore', {
 	    this.save(this.CurrentResource, contents);
         }
     },
-
 
     setCurrentResource: function(fileName) { // model
         if (!fileName) 
@@ -288,10 +249,25 @@ WebStore.subclass('FileBrowser', {
         this.changed('getCurrentDirectory');
 
         console.log('host %s, dir %s name %s', this.baseUrl.hostname, this.CurrentDirectory, name);
+	var req = new NetRequest({model: this, setResponseXML: "setCurrentDirectoryContents", 
+	    setStatus: "setRequestStatus"});
         // initialize getting the content
-        this.propfind(this.resourceURL(this.CurrentDirectory), 1);
+	req.propfind(this.resourceURL(this.CurrentDirectory), 1);
+	console.log("finding properties for " + this.resourceURL(this.CurrentDirectory));
+	
     },
     
+    setCurrentDirectoryContents: function(doc) {
+	console.log("processing results ");
+	var result = Query.evaluate(doc.documentElement, "/D:multistatus/D:response");
+
+	this.CurrentDirectoryContents = result.map(function(raw) { 
+	    return new Resource(this.currentRequestURL, raw); 
+	}.bind(this));
+	this.changed('getCurrentDirectoryContents');
+    },
+
+
     getCurrentDirectoryContents: function() {
         var fullList = (this.CurrentDirectoryContents || []).invoke("name");
 	var first = [];
@@ -363,7 +339,56 @@ WebStore.subclass('FileBrowser', {
 				       setText: "setCurrentResourceContents"});
         return panel;
     },
-        
+
+    setLoadResult: function(doc) {
+	var container = Loader.shrinkWrapContainer(doc);
+	var world = null;
+	if (container) {
+	    var importer = new Importer();
+	    world = importer.importWorldFromContainer(container, WorldMorph.current());
+	} 
+	if (!world) this.world().alert('no morphs found in %s', this.CurrentResource); // FIXME not CurrentResource
+    },
+
+    setLoadInSubworldResult: function(doc) {
+	var container = Loader.shrinkWrapContainer(doc);
+	if (container) {
+	    var importer = new Importer();
+	    var world = new WorldMorph(Canvas);
+	    var morphs = importer.importFromContainer(container, world);
+	    if (morphs.length > 0) {
+		for (var i = 0; i < morphs.length; i++) {
+		    // flatten: 
+		    if (morphs[i] instanceof WorldMorph) {
+			morphs[i].remove();
+			var subs = morphs[i].submorphs;
+			subs.invoke('remove');
+			subs.map(function(m) { world.addMorph(m) });
+		    } else {
+			world.addMorph(morphs[i]);
+		    }
+		}
+		var link = WorldMorph.current().reactiveAddMorph(new LinkMorph(world));
+		var pathBack = world.addMorphAt(new LinkMorph(WorldMorph.current()), link.getPosition());
+		pathBack.setFill(new RadialGradient(Color.orange, Color.red.darker())); 
+		return;
+	    } 
+	}
+	this.world().alert('no morphs found in %s', store.CurrentResource);
+    },
+
+    getCurrentResourcePropertiesAsText: function() {
+	return this.Properties instanceof Array ? 
+	    this.Properties[0].toMarkupString() : "fetching properties " ;
+    },
+
+    setCurrentResourceProperties: function(doc) {
+	var xpQueryString = "/D:multistatus/D:response"; // FIXME
+	var result = Query.evaluate(doc.documentElement, xpQueryString);
+	this.Properties = result.map(function(raw) { return new Resource(this.currentRequestURL, raw); });
+	this.changed('getCurrentResourcePropertiesAsText');
+    },
+
     getFileMenu: function() {
 	var items = [];
 	var url = this.CurrentResource;
@@ -384,75 +409,26 @@ WebStore.subclass('FileBrowser', {
 	    ["get WebDAV info", function(evt) {
 		var infoPane = newTextPane(new Rectangle(0, 0, 500, 200), "");
 		infoPane.innerMorph().acceptInput = false;
-		var store = new WebStore();
-		store.getPropfindResults = function() {
-		    return this.Properties instanceof Array ? 
-			this.Properties[0].toMarkupString() : "fetching properties for " + url;
-		};
-		infoPane.innerMorph().connectModel({model: store, getText: "getProperties"});
-		store.propfind(url, 1, "/D:multistatus/D:response");
+		infoPane.innerMorph().connectModel({model: this, getText: "getCurrentResourcePropertiesAsText"});
+		
+		var req = new NetRequest({model: this, 
+		    setResponseXML: "setCurrentResourceProperties", setStatus: "setRequestStatus"});
+		req.propfind(url, 1);
 		this.world().addFramedMorph(infoPane, fileName, evt.mousePoint);
 	    }]
 	];
 	
-	if (url.toString().endsWith(".xhtml")) {
+	if (url.filename().endsWith(".xhtml")) {
 	    // FIXME: add loading into a new world
 	    items.push(["load into current world", function(evt) {
-		var store = new WebStore().autoFetch();
-		store.getCurrentResourceContents = function() {
-		    console.log("set CurrentResourceContents to " + this.CurrentResourceContents);
-		    var parser = new DOMParser();
-		    var world = null;
-		    var doc = parser.parseFromString(this.CurrentResourceContents, "text/xml");
-		    if (doc) { 
-			var container = Loader.shrinkWrapContainer(doc);
-			if (container) {
-			    var importer = new Importer();
-			    world = importer.importWorldFromContainer(container, WorldMorph.current());
-			} 
-		    }
-		    if (!world) this.world().alert('no morphs found in %s', store.CurrentResource);
-		}
-		store.setCurrentResource(url.fullPath());
+		new NetRequest({model: this, setResponseXML: "setLoadResult", 
+				setStatus: "setRequestStatus"}).get(url);
 	    }.bind(this)]);
 	    
 	    items.push(["load into new linked world", function(evt) {
-		var store = new WebStore().autoFetch();
-		store.getCurrentResourceContents = function() {
-		    console.log("set CurrentResourceContents to " + this.CurrentResourceContents);
-		    var parser = new DOMParser();
-		    var world = null;
-		    var doc = parser.parseFromString(this.CurrentResourceContents, "text/xml");
-		    if (doc) { 
-			var container = Loader.shrinkWrapContainer(doc);
-			if (container) {
-			    var importer = new Importer();
-			    var world = new WorldMorph(Canvas);
-			    var morphs = importer.importFromContainer(container, world);
-			    if (morphs.length > 0) {
-				for (var i = 0; i < morphs.length; i++) {
-				    // flatten: 
-				    if (morphs[i] instanceof WorldMorph) {
-					morphs[i].remove();
-					var subs = morphs[i].submorphs;
-					subs.invoke('remove');
-					subs.map(function(m) { world.addMorph(m) });
-				    } else {
-					world.addMorph(morphs[i]);
-				    }
-				}
-				var link = WorldMorph.current().reactiveAddMorph(new LinkMorph(world));
-				var pathBack = world.addMorphAt(new LinkMorph(WorldMorph.current()), link.getPosition());
-				pathBack.setFill(new RadialGradient(Color.orange, Color.red.darker())); 
-				return;
-			    } 
-			}
-		    }
-		    this.world().alert('no morphs found in %s', store.CurrentResource);
-		}
-		store.setCurrentResource(url.fullPath());
+		new NetRequest({model: this, setResponseXML: "setLoadInSubworldResult",
+				setStatus: "setRequestStatus"}).get(url);
 	    }.bind(this)]);
-
 
 	} else if (fileName.endsWith(".js")) {
 	    // FIXME 

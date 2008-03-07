@@ -229,7 +229,11 @@ View.subclass('NetRequest', {
 	return this.request("PUT", this.rewriteURL(url), content);
     },
     
-    propfind: function(url, content) {
+    propfind: function(url, depth, content) {
+	this.setContentType("text/xml"); // complain if it's set to something else?
+	if (depth != 0 && depth != 1)
+	    depth = "infinity";
+	this.setRequestHeaders({ "Depth" : depth });
 	return this.request("PROPFIND", this.rewriteURL(url), content);
     },
     
