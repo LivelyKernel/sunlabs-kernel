@@ -18,7 +18,7 @@
 
 Object.subclass('URL', {
     
-    initialize: function(/*...*/) {
+    initialize: function(/*...*/) { // same field names as window.location
 	if (arguments[0] instanceof String || typeof arguments[0] == 'string') {
 	    var urlString = arguments[0];
 	    //console.log('got urlString ' + urlString);
@@ -42,7 +42,7 @@ Object.subclass('URL', {
 		this.search = "";
 		this.hash = "";
 	    }
-	} else {
+	} else { // spec is either an URL or window.location
 	    var spec = arguments[0];
 	    this.protocol = spec.protocol || "http";
 	    this.port = spec.port;
@@ -137,14 +137,16 @@ View.subclass('NetRequest', {
         return url;
     },
 
-    
-    initialize: function($super) {
+    initialize: function($super, modelPlug) {
 	$super(null);
 	this.transport = new XMLHttpRequest();
 	this.requestNetworkAccess();
 	this.transport.onreadystatechange = this.onReadyStateChange.bind(this);
 	this.isSync = false;
 	this.requestHeaders = new Hash();
+	if (modelPlug)
+	    this.connectModel(modelPlug);
+	
     },
 
     requestNetworkAccess: function() {
@@ -160,16 +162,7 @@ View.subclass('NetRequest', {
         }
     },
 
-    selfconnect: function() {
-	var model = new SimpleModel(null, 'Status', 'ResponseXML', 'ResponseText');
-	// no ready state
-	this.connectModel({model: model, setStatus: 'setStatus', 
-			   setResponseXML: 'setResponseXML', 
-			   setResponseText: 'setResponseText'});
-	return this;
-    },
-
-    beSynchronous: function() {
+    beSync: function() {
 	this.isSync = true;
 	return this;
     },
@@ -223,11 +216,11 @@ View.subclass('NetRequest', {
 	this.requestHeaders.each(function(p) { 
 	    this.transport.setRequestHeader(p.key, p.value);
 	}.bind(this));
-
+	
 	this.transport.send(content || undefined);
 	return this;
     },
-
+    
     get: function(url) {
 	return this.request("GET", this.rewriteURL(url), null);
     },
@@ -235,38 +228,31 @@ View.subclass('NetRequest', {
     put: function(url, content) {
 	return this.request("PUT", this.rewriteURL(url), content);
     },
-
+    
     propfind: function(url, content) {
 	return this.request("PROPFIND", this.rewriteURL(url), content);
     },
-
+    
     del: function(url) {
 	return this.request("DELETE", this.rewriteURL(url));
     },
 
     test: function() {
-	var request = new NetRequest().selfconnect();
+	var model = new SimpleModel(null, "Result");
+	var request = new NetRequest({model: model, setResult: "setResponseText"});
 	var v = new View();
 	v.updateView = function(aspect, controller) { 
 	    if (aspect == this.modelPlug.getResult)
 		console.log("got result " + this.getModelValue("getResult", ""));
 	}
-	v.connectModel({model: request.getModel(), getResult: "getResponseText"});
+	v.connectModel({model: model, getResult: "getResponseText"});
 	request.get(URL.source);
-
+	
 	request = new NetRequest(true);
 	console.log("2) result " 
-		    + request.get(URL.source).beSynchronous().getModelValue('getResponseText', ""));
+		    + request.get(URL.source).beSync().getModelValue('getResponseText', ""));
     }
 
-});
-
-Object.extend(Loader, {
-    syncFetch: function(fileName) {
-	var req = new NetRequest().selfconnect().beSynchronous();
-	req.get(URL.source.withFilename(fileName));
-	return req.getResponseText();
-    }
 });
 
 /**
@@ -330,11 +316,9 @@ WidgetModel.subclass('Feed', {
     
     request: function() {
         var hourAgo = new Date((new Date()).getTime() - 1000*60*60);
-	var req = new NetRequest();
-	
+	var req = new NetRequest({model: this, setResponseXML: "setNextFeed"});
 	req.setContentType('text/xml');
 	req.setRequestHeaders({ "If-Modified-Since": hourAgo.toString() });
-	req.connectModel({model: this, setResponseXML: "setNextFeed" });
 	req.get(this.url);
     },
 

@@ -135,14 +135,13 @@ Model.subclass('WebStore', {
     initialize: function($super, baseUrl) {
         $super();
 	if (baseUrl === undefined) { // if called with no arguments, get the base URL of the location
-	    baseUrl = new URL(window.location.toString()).dirnameURL();
+	    baseUrl = new URL(Global.location.toString()).dirnameURL();
 	}
 	this.baseUrl = baseUrl;
         this.CurrentResource = null; // URL
         this.CurrentResourceContents = "";
 	
     },
-
     
     autoFetch: function() {
 	var view = new View();
@@ -178,31 +177,22 @@ Model.subclass('WebStore', {
 
     // basic protocol methods:
     fetch: function(url) {
-	var req = new NetRequest();
-	this.currentRequestURL = url;
-	req.connectModel({model: this, setResponseText: "assignResourceContents", 
-			  setStatus: "setRequestStatus"});
+	var req = new NetRequest({model: this, 
+	    setResponseText: "assignResourceContents", 
+	    setStatus: "setRequestStatus"});
+	this.CurrentResource =  this.currentRequestURL = url;
 	req.get(url);
     },
     
     save: function(url, content) {
         // retrieve the the contents of the url and save in the indicated model variable
         console.log('saving url ' + url);
-	var req = new NetRequest();
+	var req = new NetRequest({model: this, setStatus: "setRequestStatus"});
 	this.currentRequestURL = url;
-	req.connectModel({model: this, setStatus: "setRequestStatus"});
 	req.put(url, content);
     },
 
-    deleteResource: function(url) {
-        // retrieve the the contents of the url and save in the indicated model variable
-        console.log('deleting url ' + url);
-	var req = new NetRequest();
-	this.currentRequestURL = url;
-	req.connectModel({model: this, setStatus: "setRequestStatus"});
-	req.del(url);
-    },
-
+    
     setPropfindResults: function(doc) {
 	var xpQueryString = "/D:multistatus/D:response"; // FIXME
 	var optModelVariable = "CurrentDirectoryContents"; // FIXME
@@ -220,9 +210,8 @@ Model.subclass('WebStore', {
         // find the properties given the url and save the results of the indicated query into the model variable
         if (depth != 0 && depth != 1) depth = 'infinity';
 
-	var req = new NetRequest();
+	var req = new NetRequest({model: this, setStatus: "setRequestStatus", setResponseXML: "setPropfindResults"});
 	this.currentRequestURL = url;
-	req.connectModel({model: this, setStatus: "setRequestStatus", setResponseXML: "setPropfindResults"});
 	req.setContentType('text/xml');
 	req.setRequestHeaders({ "Depth": depth });
 	req.propfind(url, null);
@@ -243,7 +232,8 @@ Model.subclass('WebStore', {
         }
     },
 
-    setCurrentResource: function(fileName) {
+
+    setCurrentResource: function(fileName) { // model
         if (!fileName) 
 	    return;
         this.CurrentResource = this.baseUrl.withPath(fileName);
@@ -352,12 +342,16 @@ WebStore.subclass('FileBrowser', {
 			getMenu: "getFileMenu"});
         m.innerMorph().onKeyPress = function(evt) {
             if (evt.getKeyCode() == Event.KEY_BACKSPACE) { // Replace the selection after checking for type-ahead
-		var toDelete  = model.resourceURL(this.itemList[this.selectedLineNo()]);
 		var model = this.getModel();
+		var toDelete  = model.resourceURL(this.itemList[this.selectedLineNo()]);
                 var result = this.world().confirm("delete resource " + toDelete, 
 		    function(result) {
 			if (result) {
-			    model.deleteResource(toDelete);
+			    var handler = new SimpleModel(null, 'Status');
+			    handler.setRequestStatus = function(status) {
+				console.log("delete "  + toDelete + " status " + status);
+			    }
+			    new NetRequest({model: handler, setStatus: "setRequestStatus"}).del(toDelete);
 			} else console.log("cancelled deletion of " + toDelete);
 		    });
                 evt.stop();

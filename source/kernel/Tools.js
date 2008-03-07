@@ -885,7 +885,7 @@ WidgetModel.subclass('ChangeList', {
 
     loadFileNamed: function (fn) {
 	this.fileName = fn;
-	this.fileContents = Loader.syncFetch(this.fileName);
+	this.fileContents = new NetRequest().beSync().get(URL.source.withFilename(this.fileName)).getResponseText();
 	this.changeList = new FileParser().parseFile(this.fileName, this.fileContents);
 	this.changed('getChangeBanners');
     },
@@ -974,7 +974,7 @@ ChangeList.subclass('SourceDatabase', {
 
     getFileContents: function(fileName) { // convenient helper method
 	var ms = new Date().getTime();
-	var fullText = Loader.syncFetch(fileName);
+	var fullText = new NetRequest().beSync().get(URL.source.withFilename(fileName)).getResponseText();
 	ms = new Date().getTime() - ms;
 	console.log(this.fileName + " read in " + ms + " ms.");
 	return fullText;

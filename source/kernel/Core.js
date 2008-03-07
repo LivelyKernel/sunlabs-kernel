@@ -2560,7 +2560,7 @@ Object.extend(Exporter, {
 
     getBaseDocument: function() {
         var url = new URL(window.location.toString()); 
-        var req = new NetRequest().beSynchronous().selfconnect();
+        var req = new NetRequest().beSync();
         req.get(url);
 	
         if (req.getStatus() < 200 && result.getStatus() >= 300) {
@@ -2579,7 +2579,7 @@ Object.extend(Exporter, {
 	container.appendChild(newDoc.importNode(node, true));
 	
 	var newurl = new URL(window.location.toString()).withFilename(filename);
-	var req = new NetRequest().beSynchronous().selfconnect();
+	var req = new NetRequest().beSync();
         req.put(newurl, Exporter.nodeToString(newDoc));
 	
 	var status = req.getStatus();

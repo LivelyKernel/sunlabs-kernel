@@ -2715,9 +2715,8 @@ WidgetModel.subclass('StockWidget', {
     },
 
     fetchQuotes: function(urlString, params) {
-	var req = new NetRequest();
+	var req = new NetRequest({model: this, setResponseText: "setQuotes"});
 	req.setContentType("text/html");
-	req.connectModel({model: this, setResponseText: "setQuotes"});
 	req.get(new URL(urlString).withQuery(params));
     },
   
@@ -3792,12 +3791,12 @@ Model.subclass(scope, 'MessengerWidget', {
         this.chatroom = "";
         this.server = new URL(this.serverURL);
         var id = this.id;
-	var req = new NetRequest().connectModel({model: this, setStatus: "setConnectionStatus"});
+	var req = new NetRequest({model: this, setStatus: "setConnectionStatus"});
         req.get(this.server.withPath("foreground.html?login=IM"));
     },
 
     setConnectionStatus: function(status) {
-	if (status >= 300) console.log("communication failure");
+	if (status >= 300) console.log("communication failure, status " + status);
     },
     
     openIn: function(world, location) {
@@ -3888,7 +3887,7 @@ Model.subclass(scope, 'MessengerWidget', {
         if ( this.text != null && this.text != "" ) {
             var url = this.server.withPath("foreground.html?action=updatemany&key." 
 		+ this.id + "=" + this.text.replace(/=/g, ""));
-            var req = new NetRequest().connectModel({model: this, setResponseText: "setForegroundResponse"});
+            var req = new NetRequest({model: this, setResponseText: "setForegroundResponse"});
             req.get(url);
         }
 	//        this.load();
@@ -3910,8 +3909,7 @@ Model.subclass(scope, 'MessengerWidget', {
     },
 
     load: function() {
-	var req = new NetRequest();
-	req.connectModel({model: this, setResponseText: "setBackgroundResponse"});
+	var req = new NetRequest({model: this, setResponseText: "setBackgroundResponse"});
 	req.get(new URL(this.server.withPath("background.html")));
     },
     

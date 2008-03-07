@@ -1956,9 +1956,8 @@ Morph.subclass('XenoMorph', {
 	    body.parentNode.replaceChild(document.adoptNode(doc.documentElement), body);
 	};
 	
-	var req = new NetRequest();
+	var req = new NetRequest({model: model, setResponseXML: "setDocument", setResponseText: "setDocumentText"});
 	req.setContentType("text/xml");
-	req.connectModel({model: model, setResponseXML: "setDocument", setResponseText: "setDocumentText"});
 	req.get(url);
 	
         this.foRawNode.appendChild(body);
