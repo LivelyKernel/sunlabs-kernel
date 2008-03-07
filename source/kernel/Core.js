@@ -4560,7 +4560,7 @@ ViewTrait = {
         return func.call(plug.model); 
     },
 
-    setModelValue: function(functionName, newValue, view) {
+    setModelValue: function(functionName, newValue) {
         // functionName is a view-specific message, such as "setSelection"
         // The model plug then provides a reference to the model, as well as
         // the specific model accessor for the aspect being viewed, say "chooseItem"
@@ -4573,7 +4573,7 @@ ViewTrait = {
         if (plug == null || plug.model == null || functionName == null) return;
         var func = plug.model[plug[functionName]];
         if (func == null) return;
-        func.call(plug.model, newValue, view); 
+        func.call(plug.model, newValue, this); 
     },
 
     updateView: function(aspect, controller) {
