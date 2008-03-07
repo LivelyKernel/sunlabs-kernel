@@ -99,7 +99,7 @@ var Config = {
     showLivelyConsole: false,
 
     // disable caching of webstore requests
-    noWebStoreCaching: false
+    suppressWebStoreCaching: false
 
 }
 

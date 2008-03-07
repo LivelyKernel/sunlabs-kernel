@@ -164,7 +164,7 @@ Model.subclass('WebStore', {
 	var req = new NetRequest({model: this, 
 	    setResponseText: "setCurrentResourceContents", 
 	    setStatus: "setRequestStatus", setRequest: "setRequest" });
-	if (Config.noWebStoreCaching)
+	if (Config.suppressWebStoreCaching)
 	    req.setRequestHeaders({"Cache-Control": "no-cache"});
 	this.CurrentResource =  this.currentRequestURL = url;
 	req.get(url);
