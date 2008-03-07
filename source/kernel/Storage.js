@@ -383,9 +383,8 @@ WebStore.subclass('FileBrowser', {
     },
 
     setCurrentResourceProperties: function(doc) {
-	var xpQueryString = "/D:multistatus/D:response"; // FIXME
-	var result = Query.evaluate(doc.documentElement, xpQueryString);
-	this.Properties = result.map(function(raw) { return new Resource(this.currentRequestURL, raw); });
+	var result = Query.evaluate(doc.documentElement, "/D:multistatus/D:response"); 
+	this.Properties = result.map(function(raw) { return new Resource(this.currentRequestURL, raw); }.bind(this));
 	this.changed('getCurrentResourcePropertiesAsText');
     },
 
@@ -395,6 +394,7 @@ WebStore.subclass('FileBrowser', {
 	if (!url) 
 	    return [];
 	var fileName = url.toString();
+	var model = this;
 	var items = [
 	    ['edit in separate window', function(evt) {
 		var textEdit = newTextPane(new Rectangle(0, 0, 500, 200), "Fetching " + url + "...");
@@ -409,9 +409,9 @@ WebStore.subclass('FileBrowser', {
 	    ["get WebDAV info", function(evt) {
 		var infoPane = newTextPane(new Rectangle(0, 0, 500, 200), "");
 		infoPane.innerMorph().acceptInput = false;
-		infoPane.innerMorph().connectModel({model: this, getText: "getCurrentResourcePropertiesAsText"});
+		infoPane.innerMorph().connectModel({model: model, getText: "getCurrentResourcePropertiesAsText"});
 		
-		var req = new NetRequest({model: this, 
+		var req = new NetRequest({model: model, 
 		    setResponseXML: "setCurrentResourceProperties", setStatus: "setRequestStatus"});
 		req.propfind(url, 1);
 		this.world().addFramedMorph(infoPane, fileName, evt.mousePoint);
@@ -421,14 +421,14 @@ WebStore.subclass('FileBrowser', {
 	if (url.filename().endsWith(".xhtml")) {
 	    // FIXME: add loading into a new world
 	    items.push(["load into current world", function(evt) {
-		new NetRequest({model: this, setResponseXML: "setLoadResult", 
+		new NetRequest({model: model, setResponseXML: "setLoadResult", 
 				setStatus: "setRequestStatus"}).get(url);
-	    }.bind(this)]);
+	    }]);
 	    
 	    items.push(["load into new linked world", function(evt) {
-		new NetRequest({model: this, setResponseXML: "setLoadInSubworldResult",
+		new NetRequest({model: model, setResponseXML: "setLoadInSubworldResult",
 				setStatus: "setRequestStatus"}).get(url);
-	    }.bind(this)]);
+	    }]);
 
 	} else if (fileName.endsWith(".js")) {
 	    // FIXME 

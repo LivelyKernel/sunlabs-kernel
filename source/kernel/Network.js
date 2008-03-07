@@ -170,6 +170,7 @@ View.subclass('NetRequest', {
     onReadyStateChange: function() {
 	this.setModelValue('setReadyState', this.getReadyState());
 	if (this.getReadyState() === this.Done) {
+	    // console.log("done with " + this.method + " " + this.url + " status " + this.getStatus());
 	    this.setModelValue('setStatus', this.getStatus());
 	    if (this.transport.responseText) 
 		this.setModelValue('setResponseText', this.getResponseText());
@@ -212,7 +213,8 @@ View.subclass('NetRequest', {
     
     request: function(method, url, content) {
 	this.url = url;
-	this.transport.open(method.toUpperCase(), url.toString(), !this.isSync);
+	this.method = method.toUpperCase();
+	this.transport.open(this.method, url.toString(), !this.isSync);
 	this.requestHeaders.each(function(p) { 
 	    this.transport.setRequestHeader(p.key, p.value);
 	}.bind(this));

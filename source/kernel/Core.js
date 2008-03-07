@@ -4526,7 +4526,11 @@ ViewTrait = {
 	    this.persistPlug(newPlug);
 	}
 
+	if (!(plugSpec.model instanceof Model)) 
+	    console.log("model " + plugSpec.model +  " is not a Model");
+	
         this.modelPlug = newPlug;
+
         if (plugSpec.model.addDependent) { // for mvc-style updating
             plugSpec.model.addDependent(this);
         } 
