@@ -123,6 +123,8 @@ View.subclass('NetRequest', {
     Loading: 3,
     Done: 4,
 
+    documentation: "a view that writes the contents of an http request into the model",
+
     proxy: Loader.proxyURL ? new URL(Loader.proxyURL.endsWith("/") ? Loader.proxyURL : Loader.proxyURL + "/") : null,
 
     rewriteURL: function(url) {
@@ -202,7 +204,7 @@ View.subclass('NetRequest', {
     },
 
     getStatus: function() {
-	return this.transport.status;
+	return [this.method, this.url, this.transport.status];
     },
 
     updateView: function(aspect, controller) {
@@ -242,6 +244,11 @@ View.subclass('NetRequest', {
     del: function(url) {
 	return this.request("DELETE", this.rewriteURL(url));
     },
+    
+    toString: function() {
+	return "#<NetRequest{"+ this.method + " " + this.url + "}>";
+    },
+
 
     test: function() {
 	var model = new SimpleModel(null, "Result");

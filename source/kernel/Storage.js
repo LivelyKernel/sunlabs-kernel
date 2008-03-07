@@ -143,30 +143,27 @@ Model.subclass('WebStore', {
 	
     },
     
-    setRequestStatus: function(status) {
+
+    setRequestStatus: function(statusInfo) {
 	// error reporting
-	var url = this.currentRequestURL; // FIXME
+	var method = statusInfo[0];
+	var url = statusInfo[1];
+	var status = statusInfo[2];
 	if (status >= 300) {
 	    if (status == 401) {
-		WorldMorph.current().alert("not authorized to access " + url); // should try to authorize
+		WorldMorph.current().alert("not authorized to access " + method + " " + url); // should try to authorize
 	    } else {
-		WorldMorph.current().alert("failure accessing " + url + " code " + status);
+		WorldMorph.current().alert("failure to " + method + " "  + url + " code " + status);
 	    }
 	} else 
-	    console.log("last status " + status + " on " + url);
+	    console.log("status " + status + " on " + method + " " + url);
     },
-
-    assignResourceContents: function(text) {
-	this.CurrentResourceContents = text;
-	this.changed('getCurrentResourceContents');
-    },
-    
 
     // basic protocol methods:
     fetch: function(url) {
 	var req = new NetRequest({model: this, 
-	    setResponseText: "assignResourceContents", 
-	    setStatus: "setRequestStatus"});
+	    setResponseText: "setCurrentResourceContents", 
+	    setStatus: "setRequestStatus", setRequest: "setRequest" });
 	this.CurrentResource =  this.currentRequestURL = url;
 	req.get(url);
     },
@@ -183,15 +180,18 @@ Model.subclass('WebStore', {
         return this.CurrentResourceContents || "";
     },
     
-    setCurrentResourceContents: function(contents) {
+    setCurrentResourceContents: function(contents, view) {
 	this.CurrentResourceContents = contents;
-	var safeSize = TextMorph.prototype.maxSafeSize;
-        if (contents.length > safeSize) {
-            WorldMorph.current().alert("not saving file, size " + contents.length 
-				       + " > " + safeSize + ", too large");
-        } else {
-	    this.save(this.CurrentResource, contents);
-        }
+	if (view instanceof Morph) { // setting from the GUI (should be reworked?)
+	    var safeSize = TextMorph.prototype.maxSafeSize;
+            if (contents.length > safeSize) {
+		WorldMorph.current().alert("not saving file, size " + contents.length 
+					   + " > " + safeSize + ", too large");
+            } else {
+		this.save(this.CurrentResource, contents);
+            }
+	} 
+	this.changed('getCurrentResourceContents', view);
     },
 
     setCurrentResource: function(fileName) { // model
