@@ -96,7 +96,10 @@ var Config = {
     suspendScriptsOnWorldExit: true,
 
     // open up our console
-    showLivelyConsole: false
+    showLivelyConsole: false,
+
+    // disable caching of webstore requests
+    noWebStoreCaching: false
 
 }
 

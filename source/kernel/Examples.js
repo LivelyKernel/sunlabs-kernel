@@ -119,18 +119,16 @@ Morph.subclass(Global, "ClockMorph", {
 
         var bnds = this.shape.bounds();
         var radius = bnds.width/2;
-        var labels = [];
-        var fontSize = Math.max(Math.floor(0.04 * (bnds.width + bnds.height)),2);
-        var labelSize = fontSize; // room to center with default inset
+        var labelSize = Math.max(Math.floor(0.04 * (bnds.width + bnds.height)),2); // room to center with default inset
 
         for (var i = 0; i < 12; i++) {
             var labelPosition = bnds.center().addPt(Point.polar(radius*0.85,((i-3)/12)*Math.PI*2)).addXY(labelSize, 0);
-            var label = new TextMorph(pt(0,0).extent(pt(labelSize*3,labelSize)), 
-            // (i>0 ? i : 12) + "");  // English numerals
-            ['XII','I','II','III','IV','V','VI','VII','VIII','IX','X','XI'][i]); // Roman
-	    label.applyStyle({borderWidth: 0, fill: null, wrapStyle: WrapStyle.Shrink, fontSize: fontSize});
+            var label = new TextMorph((pt(labelSize*3, labelSize).extentAsRectangle()), 
+		// (i>0 ? i : 12) + "");  // English numerals
+		['XII','I','II','III','IV','V','VI','VII','VIII','IX','X','XI'][i]); // Roman
+	    label.applyStyle({borderWidth: 0, fill: null, wrapStyle: WrapStyle.Shrink, fontSize: labelSize});
             label.setInset(pt(0,0));        
-            label.align(label.bounds().center(), labelPosition.addXY(-1,1));
+            label.align(label.bounds().center(), labelPosition.addXY(-1, 1));
             this.addMorph(label);
         }
     
@@ -922,28 +920,22 @@ Object.subclass(scope, 'WireObject', {
             // Rotate around X axis
             if (angleX != 0) {
                 var nry = ry;
-                ry = rapidCos(ry, angleX) -
-                     rapidSin(rz, angleX);
-                rz = rapidSin(nry, angleX) +
-                     rapidCos(rz, angleX);
+                ry = rapidCos(ry, angleX) - rapidSin(rz, angleX);
+                rz = rapidSin(nry, angleX) + rapidCos(rz, angleX);
             }
             
             // Rotate around Y axis
             if (angleY != 0) {
                 var nrx = rx;
-                rx = rapidCos(rx, angleY) -
-                     rapidSin(rz, angleY);
-                rz = rapidSin(nrx, angleY) +
-                     rapidCos(rz, angleY);
+                rx = rapidCos(rx, angleY) - rapidSin(rz, angleY);
+                rz = rapidSin(nrx, angleY) + rapidCos(rz, angleY);
             }
     
             // Rotate around Z axis
             if (angleZ != 0) {
                 var nrx = rx;
-                rx = rapidCos(rx, angleZ) -
-                     rapidSin(ry, angleZ);
-                ry = rapidSin(nrx, angleZ) +
-                     rapidCos(ry, angleZ);
+                rx = rapidCos(rx, angleZ) - rapidSin(ry, angleZ);
+                ry = rapidSin(nrx, angleZ) + rapidCos(ry, angleZ);
             }
             
             this.px[i] = rx;
