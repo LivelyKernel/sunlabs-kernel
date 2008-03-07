@@ -723,7 +723,7 @@ Morph.subclass('WindowMorph', {
 
     takeHighlight: function() {
         // I've been clicked on.  unhighlight old top, and highlight me
-	var oldTop = this.world().topWindow();
+	var oldTop = WorldMorph.current().topWindow();
         if (oldTop) oldTop.titleBar.highlight(false);
         this.titleBar.highlight(true);
     },
