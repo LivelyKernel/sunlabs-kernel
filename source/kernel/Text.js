@@ -954,9 +954,10 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
         }]);
 	
         menu.addItem(["save as ...", function() { 
-            var store = new WebStore();
 	    this.world().prompt("save as...", function(filename) {
-		filename && store.save(filename, this.xml || this.textString);
+		if (!filename) return;
+		new NetRequest().put(new URL.source.withFilename(filename), 
+				     this.xml || this.textString);
 	    }.bind(this));
         }]);
     

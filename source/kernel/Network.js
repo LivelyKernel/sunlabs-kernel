@@ -111,7 +111,8 @@ Object.subclass('URL', {
 
 Object.extend(URL, {
     splitter: new RegExp('(http|https|file)://([^/:]*)(:[0-9]+)?(/.*)?'),
-    pathSplitter: new RegExp("([^\\?#]*)(\\?[^#]*)?(#.*)?")
+    pathSplitter: new RegExp("([^\\?#]*)(\\?[^#]*)?(#.*)?"),
+    source: new URL(Global.location)
 });
 
 View.subclass('NetRequest', {
@@ -220,9 +221,7 @@ View.subclass('NetRequest', {
 	this.url = url;
 	this.transport.open(method.toUpperCase(), url.toString(), !this.isSync);
 	this.requestHeaders.each(function(p) { 
-	    try {
-		this.transport.setRequestHeader(p.key, p.value);
-	    } catch (er) { console.log('failed to set ' + [p.key, p.value] + ":" + er) }
+	    this.transport.setRequestHeader(p.key, p.value);
 	}.bind(this));
 
 	this.transport.send(content || undefined);
@@ -253,11 +252,11 @@ View.subclass('NetRequest', {
 		console.log("got result " + this.getModelValue("getResult", ""));
 	}
 	v.connectModel({model: request.getModel(), getResult: "getResponseText"});
-	request.get(new URL(location.toString()));
+	request.get(URL.source);
 
 	request = new NetRequest(true);
-	console.log("2) result " + request.get(new URL(location.toString())).beSynchronous().getModelValue('getResponseText', ""));
-
+	console.log("2) result " 
+		    + request.get(URL.source).beSynchronous().getModelValue('getResponseText', ""));
     }
 
 });
@@ -265,7 +264,7 @@ View.subclass('NetRequest', {
 Object.extend(Loader, {
     syncFetch: function(fileName) {
 	var req = new NetRequest().selfconnect().beSynchronous();
-	req.get(new URL(Global.location.toString()).withFilename(fileName));
+	req.get(URL.source.withFilename(fileName));
 	return req.getResponseText();
     }
 });
