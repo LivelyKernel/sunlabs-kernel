@@ -166,7 +166,7 @@ Model.subclass('WebStore', {
 	    setStatus: "setRequestStatus", setRequest: "setRequest" });
 	if (Config.suppressWebStoreCaching)
 	    req.setRequestHeaders({"Cache-Control": "no-cache"});
-	this.CurrentResource =  this.currentRequestURL = url;
+	this.CurrentResource = url;
 	req.get(url);
     },
     
@@ -174,7 +174,6 @@ Model.subclass('WebStore', {
         // retrieve the the contents of the url and save in the indicated model variable
         console.log('saving url ' + url);
 	var req = new NetRequest({model: this, setStatus: "setRequestStatus"});
-	this.currentRequestURL = url;
 	req.put(url, content);
     },
 
@@ -264,7 +263,7 @@ WebStore.subclass('FileBrowser', {
 	var result = Query.evaluate(doc.documentElement, "/D:multistatus/D:response");
 
 	this.CurrentDirectoryContents = result.map(function(raw) { 
-	    return new Resource(this.currentRequestURL, raw); 
+	    return new Resource(null, raw); 
 	}.bind(this));
 	this.changed('getCurrentDirectoryContents');
     },
@@ -349,7 +348,8 @@ WebStore.subclass('FileBrowser', {
 	    var importer = new Importer();
 	    world = importer.importWorldFromContainer(container, WorldMorph.current());
 	} 
-	if (!world) this.world().alert('no morphs found in %s', this.CurrentResource); // FIXME not CurrentResource
+	if (!world) 
+	    WorldMorph.current().alert('no morphs found in %s', this.CurrentResource); // FIXME not CurrentResource
     },
 
     setLoadInSubworldResult: function(doc) {
@@ -371,12 +371,11 @@ WebStore.subclass('FileBrowser', {
 		    }
 		}
 		var link = WorldMorph.current().reactiveAddMorph(new LinkMorph(world));
-		var pathBack = world.addMorphAt(new LinkMorph(WorldMorph.current()), link.getPosition());
-		pathBack.setFill(new RadialGradient(Color.orange, Color.red.darker())); 
+		link.addPathBack();
 		return;
 	    } 
 	}
-	this.world().alert('no morphs found in %s', store.CurrentResource);
+	WorldMorph.current().alert('no morphs found in %s', store.CurrentResource);
     },
 
     getCurrentResourcePropertiesAsText: function() {
@@ -386,7 +385,7 @@ WebStore.subclass('FileBrowser', {
 
     setCurrentResourceProperties: function(doc) {
 	var result = Query.evaluate(doc.documentElement, "/D:multistatus/D:response"); 
-	this.Properties = result.map(function(raw) { return new Resource(this.currentRequestURL, raw); }.bind(this));
+	this.Properties = result.map(function(raw) { return new Resource(null, raw); }.bind(this));
 	this.changed('getCurrentResourcePropertiesAsText');
     },
 

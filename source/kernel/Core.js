@@ -5728,15 +5728,20 @@ Morph.subclass('LinkMorph', {
         }.bind(this));
 
         if (!otherWorld) {
-            otherWorld = new WorldMorph(Canvas);
-            var pathBack = new LinkMorph(WorldMorph.current(), bounds);
-            pathBack.setFill(new RadialGradient(Color.orange, Color.red.darker()));
-            otherWorld.addMorph(pathBack);
-        } 
-        this.myWorld = otherWorld;
+            this.myWorld = new WorldMorph(Canvas);
+	    this.addPathBack();
+	} else 
+            this.myWorld = otherWorld;
+
         return this;
     },
     
+    addPathBack: function() {
+	var pathBack = new LinkMorph(WorldMorph.current(), this.bounds().center());
+        pathBack.setFill(new RadialGradient(Color.orange, Color.red.darker()));
+        this.myWorld.addMorph(pathBack);
+	return pathBack;
+    },
     
     restorePersistentState: function($super, importer) {
         $super(importer);
