@@ -956,8 +956,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
         menu.addItem(["save as ...", function() { 
 	    this.world().prompt("save as...", function(filename) {
 		if (!filename) return;
-		new NetRequest().put(new URL.source.withFilename(filename), 
-				     this.xml || this.textString);
+		new NetRequest().put(URL.source.withFilename(filename), this.xml || this.textString);
 	    }.bind(this));
         }]);
     

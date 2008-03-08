@@ -47,7 +47,7 @@ Object.subclass('URL', {
 	    this.protocol = spec.protocol || "http";
 	    this.port = spec.port;
 	    this.hostname = spec.hostname;
-	    this.path = spec.path || "";
+	    this.path = spec.pathname || "";
 	    if (spec.search !== undefined) this.search = spec.search;
 	    if (spec.hash !== undefined) this.hash = spec.hash;
 	}
@@ -90,7 +90,7 @@ Object.subclass('URL', {
 	this.path = result[1];
 	this.search = result[2];
 	this.hash = result[3];
-	return new URL({protocol: this.protocol, port: this.port, hostname: this.hostname, path: 
+	return new URL({protocol: this.protocol, port: this.port, hostname: this.hostname, pathname: 
 			result[1], search: result[2], hash: result[3] });
     },
     
@@ -99,11 +99,11 @@ Object.subclass('URL', {
 	i = filename.indexOf(dirPart);
 	if (i == 0) localname = filename.substring(dirPart.length); // strip off leading directory ref
 	else localname = filename;
-	return new URL({protocol: this.protocol, port: this.port, hostname: this.hostname, path: this.dirname() + localname });
+	return new URL({protocol: this.protocol, port: this.port, hostname: this.hostname, pathname: this.dirname() + localname });
     },
 
     withQuery: function(record) {
-	return new URL({protocol: this.protocol, port: this.port, hostname: this.hostname, path: this.path,
+	return new URL({protocol: this.protocol, port: this.port, hostname: this.hostname, pathname: this.path,
 			search: "?" + $H(record).toQueryString(), hash: this.hash});
     }
     
@@ -204,7 +204,7 @@ View.subclass('NetRequest', {
     },
 
     getStatus: function() {
-	return [this.method, this.url, this.transport.status];
+	return { method: this.method, url: this.url, status: this.transport.status};
     },
 
     updateView: function(aspect, controller) {

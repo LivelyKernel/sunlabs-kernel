@@ -146,9 +146,9 @@ Model.subclass('WebStore', {
 
     setRequestStatus: function(statusInfo) {
 	// error reporting
-	var method = statusInfo[0];
-	var url = statusInfo[1];
-	var status = statusInfo[2];
+	var method = statusInfo.method;
+	var url = statusInfo.url;
+	var status = statusInfo.status;
 	if (status >= 300) {
 	    if (status == 401) {
 		WorldMorph.current().alert("not authorized to access " + method + " " + url); // should try to authorize

@@ -2542,12 +2542,18 @@ Object.subclass('Exporter', {
 	this.removeHelperNodes(helpers);
         return result;
     },
-
-    shrinkWrapToFile: function(filename) {
+    
+    shrinkWrapToUrl: function(url) {
 	var helpers = this.extendForSerialization();
-	var msg = Exporter.shrinkWrapNodeToFile(this.rootMorph.rawNode, filename);
+	
+	var newDoc = Exporter.getBaseDocument();
+	// FIXME deal with subdirectories, rewrite the base doc and change xlink:href for scripts
+	var container = Loader.newShrinkWrapContainer(newDoc);
+	container.appendChild(newDoc.importNode(this.rootMorph.rawNode, true));
+	var req = new NetRequest().beSync().put(url, Exporter.nodeToString(newDoc));
 	this.removeHelperNodes(helpers);
-	return msg;
+
+	return req.getStatus();
     }
 
 });
@@ -2559,48 +2565,35 @@ Object.extend(Exporter, {
     },
 
     getBaseDocument: function() {
-        var url = new URL(window.location.toString()); 
         var req = new NetRequest().beSync();
-        req.get(url);
-	
-        if (req.getStatus() < 200 && result.getStatus() >= 300) {
-            console.log("failure retrieving  " + url + ", status " + result.status);
+        req.get(new URL(Global.location.toString()));
+	var status = req.getStatus().status;
+        if (status < 200 && status >= 300) {
+            console.log("failure retrieving  " + URL.source + ", status " + req.getStatus());
 	    return null;
 	} else {
 	    return req.getResponseXML();
 	}
     },
 
-    saveWithBootstrapCode: function(node, filename) {
-        var newDoc = Exporter.getBaseDocument(filename);
-	// FIXME deal with subdirectories, rewrite the base doc and change xlink:href for scripts
-	var container = Loader.newShrinkWrapContainer(newDoc);
-
-	container.appendChild(newDoc.importNode(node, true));
-	
-	var newurl = new URL(window.location.toString()).withFilename(filename);
-	var req = new NetRequest().beSync();
-        req.put(newurl, Exporter.nodeToString(newDoc));
-	
-	var status = req.getStatus();
-        if (status >= 200 && status < 300) 
-            return "success publishing world at " + newurl + ", status " + status;
-	else
-            return "failure publishing world at " + newurl + ", status " + status;
-    },
-    
-    shrinkWrapNodeToFile: function(node, filename) {
-        if (!filename) 
-            return 'no filename, not publishing ' + node;
-	if (!node) 
-	    return "no morph to publish";
-
-        if (!filename.endsWith(".xhtml")) {
-            filename += ".xhtml";
-            console.log("changed filename to " + filename);
-        }
-	return Exporter.saveWithBootstrapCode(node, filename);
+    shrinkWrapToFile: function(morph, filename) {
+	if (!filename) return null;
+	if (!filename.endsWith('.xhtml')) {
+	    filename += ".xhtml";
+	    console.log("changed url to " + filename + " for base " + new URL(window.location.toString()));
+	}
+	var url = new URL(window.location.toString()).withFilename(filename);
+	var status = new Exporter(morph).shrinkWrapToUrl(url);
+        if (status.status >= 200 && status.status < 300) {
+            console.log("success publishing world at " + url + ", status " + status[3]);
+	    return url;
+	} else {
+            WorldMorph.current().alert("failure publishing world at " + url + ", status " + status[3]);
+	}
+	return null;
     }
+
+
 });
 
 /**
@@ -3958,7 +3951,10 @@ Morph.addMethods({
 		new PackageMorph(this).openIn(this.world(), this.bounds().topLeft()); this.remove()}.bind(this) ],
             ["publish shrink-wrapped ...", function() { 
 		this.world().prompt('publish as (.xhtml)', 
-				    function(filename) { if (filename) new Exporter(this).shrinkWrapToFile(filename)}.bind(this))}], 
+				    function(filename) { 
+					var url = Exporter.shrinkWrapToFile(this, filename);
+					if (url) WorldMorph.current().reactiveAddMorph(new ExternalLinkMorph(url));
+				    }.bind(this))}], 
             ["test tracing (in console)", this.testTracing]
         ];
         if (this.okToDuplicate()) items.unshift(["duplicate", this.copyToHand.curry(evt.hand)]);
@@ -4996,10 +4992,8 @@ PasteUpMorph.subclass("WorldMorph", {
         menu.addLine();
         menu.addItem(["publish world as ... ", function() { 
 	    this.prompt("world file (.xhtml)", function(filename) { 
-		if (!filename) return;
-		var msg = new Exporter(this).shrinkWrapToFile(filename);
-		console.log("publish got msg " + msg);
-		if (msg) this.world().alert(msg);
+		var url = Exporter.shrinkWrapToFile(this, filename);
+		if (url) WorldMorph.current().reactiveAddMorph(new ExternalLinkMorph(url));
 	    }.bind(this));
 	}]);
         menu.addItem(["restart system", this.restart]);
@@ -5687,6 +5681,7 @@ Morph.subclass("HandMorph", {
     
 });
 
+
 /**
  * @class LinkMorph: A two-way hyperlink between two Lively worlds
  */ 
@@ -5694,13 +5689,12 @@ Morph.subclass("HandMorph", {
 Morph.subclass('LinkMorph', {
 
     documentation: "two-way hyperlink between two Lively worlds",
-    fill: Color.black,
-    borderColor: Color.black,
     helpText: "Click here to enter or leave a subworld.\n" +
               "Use menu 'grab' to move me.  Drag objects\n" +
               "onto me to transport objects between worlds.",
     openForDragAndDrop: false,
     suppressHandles: true,
+    style: {borderColor: Color.black, fill: new RadialGradient(Color.green, Color.blue)},
     
     initialize: function($super, otherWorld, initialPosition) {
         // In a scripter, type: world.addMorph(new LinkMorph(null))
@@ -5716,9 +5710,9 @@ Morph.subclass('LinkMorph', {
         }
     
         $super(bounds, "ellipse");
-
+	
         // Make me look a bit like a world
-        this.setFill(new RadialGradient(Color.green, Color.blue));
+        this.applyStyle(this.style);
         [new Rectangle(0.15,0,0.7,1), new Rectangle(0.35,0,0.3,1), new Rectangle(0,0.3,1,0.4)].each( function(each) {
             // Make longitude / latitude lines
             var lineMorph = new Morph(bounds.scaleByRect(each), "ellipse");
@@ -5728,7 +5722,7 @@ Morph.subclass('LinkMorph', {
         }.bind(this));
 
         if (!otherWorld) {
-            this.myWorld = new WorldMorph(Canvas);
+            this.myWorld = this.makeNewWorld();
 	    this.addPathBack();
 	} else 
             this.myWorld = otherWorld;
@@ -5736,6 +5730,10 @@ Morph.subclass('LinkMorph', {
         return this;
     },
     
+    makeNewWorld: function() {
+	return new WorldMorph(Canvas);
+    },
+
     addPathBack: function() {
 	var pathBack = new LinkMorph(WorldMorph.current(), this.bounds().center());
         pathBack.setFill(new RadialGradient(Color.orange, Color.red.darker()));
@@ -5758,9 +5756,8 @@ Morph.subclass('LinkMorph', {
         menu.addItem(["publish linked world as ... ", function() { 
 	    this.world().prompt("world file (.xhtml)", 
 				function(filename) {
-				    if (!filename) return;
-				    var msg = new Exporter(this.myWorld).shrinkWrapToFile(filename);
-				    if (msg) this.world().alert(msg);
+				    var url = Exporter.shrinkWrapToFile(this.myWorld, filename);
+				    if (url) WorldMorph.current().reactiveAddMorph(new ExternalLinkMorph(url));
 				}.bind(this));
         }]);
 	menu.replaceItemNamed("shrink-wrap", ["shrink-wrap linked world", function(evt) {
@@ -5851,6 +5848,34 @@ Morph.subclass('LinkMorph', {
 	return this.helpText;
     }
     
+});
+
+LinkMorph.subclass('ExternalLinkMorph', {
+
+    style: {borderColor: Color.black, fill: new RadialGradient(Color.green, Color.yellow)},
+    
+    initialize: function($super, url, position) {
+	$super(null, position || pt(0, 0));
+	this.url = url;
+    },
+
+    makeNewWorld: function() {
+	return null;
+    },
+
+    addPathBack: function() {
+	return null;
+    },
+
+    enterMyWorld: function(evt) {
+	// add a confirmation dialog!
+	Global.location = this.url.toString();
+    },
+
+    getHelpText: function() {
+	return "Click to enter " + this.url;
+    }
+
 });
 
 
