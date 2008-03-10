@@ -754,7 +754,7 @@ Object.subclass('Query',  {
             return [defaultValue];
         }
         return found;
-    }
+    },
 
     findFirst: function(aNode, anExpr) {
         var result = this.xpe.evaluate(anExpr, aNode, this.nsResolver, XPathResult.ANY_TYPE, null);
