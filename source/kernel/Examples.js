@@ -2902,17 +2902,12 @@ Model.subclass('MapModel', {
 
     goTo: function(flag, dx, dy) {
         var map = this.frame.map;
-        console.log('stopped stepping for %s %s', dx, dy);
         if (!flag) {
             map.stopStepping();
+	    console.log('stopped stepping for %s %s', dx, dy);
             map.stepping = false;
         } else {
-            map.startSteppingFunction(100, function(msTime) { 
-                var value = this.getScale()*20;
-                var vector = pt(value*dx, value*dy);
-                this.moveBy(vector); 
-                this.scrollMap(vector);
-            });
+            map.startStepping(100, "scrollingStep", pt(dx, dy));
             map.stepping = true;
         }
     },
@@ -3198,6 +3193,13 @@ Morph.subclass("MapMorph", {
       this.endpoint = null;
       this.changed();
   },
+
+    scrollingStep: function(delta) {
+        var value = this.getScale()*20;
+        var vector = pt(value*delta.x, value*delta.y);
+        this.moveBy(vector); 
+        this.scrollMap(vector);
+    },
   
   addMapMarker: function(url, rect){
       if (rect == null) {rect = new Rectangle(this.shape.bounds.center().x,this.shape.bounds.center().y,16,20);}
@@ -3713,21 +3715,21 @@ Object.extend(BouncingSpheres, {
             WorldMorph.current().addMorph(aShape);
     
             aShape.vector = Point.polar(15, BouncingSpheres.getRand(0, Math.PI *2));
-            aShape.startSteppingFunction(30,function(msTime) {
-
+	    aShape.bounce = function() {
                 // var pt = this.getTranslation();
                 this.translateBy(this.vector);
                 var worldpt = this.origin;
-
+		
                 if ((worldpt.x - this.fullRadius < 0) || (worldpt.x + this.fullRadius > canvasWidth)) {
                     this.vector.x = -this.vector.x;
                 }
-
+		
                 if ((worldpt.y - this.fullRadius < 0) || (worldpt.y + this.fullRadius > canvasHeight)) {
                     this.vector.y = - this.vector.y;
                 }
-
-            });
+	    };
+	    
+            aShape.startStepping(30, "bounce");
             
         }
     },
@@ -4592,25 +4594,27 @@ ClipMorph.subclass("CanvasScapeMorph", {
         this.stopStepping();
     },
 
-    startGame: function(){
+    doUpdate: function() {
+        this.mseconds += 35;
+        if (this.mseconds > 1000) {
+            this.mseconds -= 1000;
+            this.timepassed += 1;
+            this.timeleft -= 1;
+            if (this.timeleft <= 0) this.stopGame();
+        }
+        this.update(); 
+    },
+
+    startGame: function() {
         if (this.map) this.map.remove();
         this.initGame();
         this.map = new MiniMapMorph(new Rectangle(5,25,8*this.arena.length,8*this.arena[0].length)); 
         this.initUnderMap();
         this.addMorph(this.map);
         this.note="";
-        this.startSteppingFunction(35, function(msTime) { 
-            this.mseconds += 35;
-        
-            if (this.mseconds > 1000) {
-                this.mseconds -= 1000;
-                this.timepassed += 1;
-                this.timeleft -= 1;
-                if (this.timeleft <= 0) this.stopGame();
-            }
-            this.update(); 
-        });
+        this.startStepping(35, "doUpdate");
     },
+
 
     setDifficulty: function(dif){
         this.difficulty = dif;
@@ -4970,10 +4974,10 @@ Morph.subclass("PlayerMorph",  {
     
     openIn: function(world, location) {
         world.addFramedMorph(this, 'AnimationMorph', location);
-        this.startStepping();
+        this.startAnimation();
     },
     
-    startStepping: function() {
+    startAnimation: function() {
         this.animation.startStepping(100,"nextFrame"); 
     }    
 

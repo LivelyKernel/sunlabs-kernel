@@ -1304,7 +1304,7 @@ Object.subclass('Wrapper', {
     },
 
     toMarkupString: function() {
-        return Exporter.nodeToString(this.rawNode);
+        return Exporter.stringify(this.rawNode);
     },
 
     queryNode: function(queryString, defaultValue) {
@@ -2546,7 +2546,7 @@ Object.subclass('Exporter', {
 	// FIXME deal with subdirectories, rewrite the base doc and change xlink:href for scripts
 	var container = Loader.newShrinkWrapContainer(newDoc);
 	container.appendChild(newDoc.importNode(this.rootMorph.rawNode, true));
-	var req = new NetRequest().beSync().put(url, Exporter.nodeToString(newDoc));
+	var req = new NetRequest().beSync().put(url, Exporter.stringify(newDoc));
 	this.removeHelperNodes(helpers);
 
 	return req.getStatus();
@@ -2556,7 +2556,7 @@ Object.subclass('Exporter', {
 
 Object.extend(Exporter, {
 
-    nodeToString: function(node) {
+    stringify: function(node) {
         return node ? new XMLSerializer().serializeToString(node) : null;
     },
 
@@ -2670,7 +2670,7 @@ Copier.subclass('Importer', {
             return new Global[morphTypeName](this, rawNode);
         } catch (er) {
             console.log("%s instantiating type %s from node %s", er, 
-			morphTypeName, Exporter.nodeToString(rawNode));
+			morphTypeName, Exporter.stringify(rawNode));
             throw er;
         }
     },
@@ -2689,7 +2689,7 @@ Copier.subclass('Importer', {
     importFromContainer: function(container) {
         var morphs = [];
         for (var node = container.firstChild; node != null; node = node.nextSibling) {
-	    // console.log("found node " + Exporter.nodeToString(node));
+	    // console.log("found node " + Exporter.stringify(node));
 	    if (node.localName != "g")  continue;
 	    morphs.push(this.importFromNode(node.ownerDocument === Global.document ? 
 					    node : Global.document.adoptNode(node.cloneNode(true))));
@@ -2795,8 +2795,7 @@ Morph = Visual.subclass("Morph", {
     layoutHandler: null, //a LayoutHandler for special response to setExtent, etc
     openForDragAndDrop: true, // Submorphs can be extracted from or dropped into me
     mouseHandler: MouseHandlerForDragging, //a MouseHandler for mouse sensitivity, etc
-    stepHandler: null, // a stepHandler for time-varying morphs and animation 
-    noShallowCopyProperties: ['id', 'rawNode', 'shape', 'submorphs', 'stepHandler', 'defs', 'activeScripts', 'nextNavigableSibling', 'focusHalo', 'fullBounds'],
+    noShallowCopyProperties: ['id', 'rawNode', 'shape', 'submorphs', 'defs', 'activeScripts', 'nextNavigableSibling', 'focusHalo', 'fullBounds'],
 
     suppressBalloonHelp: Config.suppressBalloonHelp,
 
@@ -2891,10 +2890,6 @@ Morph = Visual.subclass("Morph", {
             console.log("copy: optimistically assuming that other (%s) is clipped to shape", other);
         }
         
-        if (other.stepHandler != null) { 
-            this.stepHandler = other.stepHandler.copyForOwner(this);
-        }
-
         this.initializeTransientState(null);
 
         if (other.activeScripts != null) { 
@@ -3022,7 +3017,7 @@ Morph = Visual.subclass("Morph", {
 		// currently model node is not stored.
 		helperNodes.push(node);
                 // postpone hooking up model until all the morphs are reconstructed
-                console.info("found modelNode %s", Exporter.nodeToString(node));
+                console.info("found modelNode %s", Exporter.stringify(node));
                 break;
             } 
             case "modelPlug": {
@@ -3031,7 +3026,7 @@ Morph = Visual.subclass("Morph", {
                 break;
             } 
             case "field": {
-                console.log("found field " + Exporter.nodeToString(node));
+                console.log("found field " + Exporter.stringify(node));
 		helperNodes.push(node);
                 var name = node.getAttributeNS(Namespace.LIVELY, "name");
                 var ref = node.getAttributeNS(Namespace.LIVELY, "ref");
@@ -4204,15 +4199,8 @@ Morph.addMethods({
     },
     
     startStepping: function(stepTime, scriptName, argIfAny) {
-        if (!scriptName) {
-            // Old code schedules the morph for stepTime
-            this.stopStepping();
-            if (this.stepHandler == null) this.stepHandler = new StepHandler(this,stepTime);
-            if (stepTime != null) this.stepHandler.stepTime = stepTime;
-            this.world().startSteppingFor(this); 
-            return; 
-        }
-        // New code schedules an action
+        if (!scriptName) 
+	    throw Error("Old code");
         var action = new SchedulableAction(this, scriptName, argIfAny, stepTime);
         this.addActiveScript(action);
         action.start(this.world());
@@ -4230,14 +4218,11 @@ Morph.addMethods({
         // if we're deserializing the rawNode may already be in the markup
     },
     
-    startSteppingFunction: function(stepTime, func) {
-        this.startStepping(stepTime);
-        this.stepHandler.setStepFunction(func); 
-    },
-    
     stopStepping: function() {
-        if (this.world()) {
-            this.world().stopSteppingFor(this);
+	if (this.activeScripts && this.world()) {
+	    for (var i = 0; i < this.activeScripts.length; i++) 
+		this.world().stopSteppingFor(this.activeScripts[i]);
+	    this.activeScripts = null;
         } // else: can happen if removing a morph whose parent is not in the world
     },
 
@@ -4261,56 +4246,6 @@ Morph.addMethods({
                 this.suspendedScripts = null;
             }
         });
-    },
-
-    // The following methods are deprecated...
-    tick: function(msTime) {
-        // returns 0 if step handler not triggered, otherwise the time when the handler should be called next.
-        if (this.stepHandler != null) {
-            this.stepHandler.tick(msTime, this);
-            return this.stepHandler.timeOfNextStep;
-        }
-        return 0;
-    },
-
-    stepActivity: function(msTime) {  // May be overridden
-    }
-    
-});
-
-/**
- * @class StepHandler
- * This class supports the stepping functionality defined above 
- */ 
-
-Object.subclass('StepHandler', {
-
-    initialize: function(owner, stepTime) {
-        this.owner = owner;
-        this.stepTime = stepTime;
-        this.timeOfNextStep = 0;
-        this.stepFunction = this.defaultStepFunction; 
-    },
-    
-    tick: function(msTime, owner) { //: Boolean whether step function was called
-        if (msTime < this.timeOfNextStep) return 0;
-        this.stepFunction.call(this.owner,msTime);  // this.owner.stepActivity(msTime);
-        return this.timeOfNextStep = msTime + this.stepTime;
-    },
-
-    // Note stepFunctions are written to be evaluate in the context of the morph itself
-    defaultStepFunction: function(msTime) { 
-        this.stepActivity(msTime); 
-    },
-
-    setStepFunction: function(func) { 
-        this.stepFunction = func; 
-    },
-    
-    copyForOwner: function(copyOwner) {
-        var copy = new StepHandler(copyOwner, this.stepTime)
-        copy.stepFunction = this.stepFunction; 
-        return copy; 
     }
     
 });
@@ -4933,7 +4868,6 @@ PasteUpMorph.subclass("WorldMorph", {
         this.hands = [];
         this.setDisplayTheme(this.displayThemes['lively']);
 
-        this.stepList = [];  // an array of morphs to be ticked
         this.scheduledActions = [];  // an array of schedulableActions to be evaluated
         this.lastStepTime = (new Date()).getTime();
         this.mainLoopFunc = this.doOneCycle.bind(this).logErrors('Main Loop');
@@ -5075,52 +5009,36 @@ PasteUpMorph.subclass("WorldMorph", {
 //  The message startSteppingScripts can be sent to morphs when they are placed in the world.
 //  It is intended that this may be overridden to start any required stepping.
 //  The message stopSteppingScripts will be sent when morphs are removed from the world.
-//  In this case the activeScripts array of the morph is used to determine exactly what
+    //  In this case the activeScripts array of the morph is used to determine exactly what
 //  scripts need to be unscheduled.  Note that startSteppingScripts is not sent
-//  automatically, whereas stopSteppingScripts is.  We know you won't forget to 
+    //  automatically, whereas stopSteppingScripts is.  We know you won't forget to 
 //  turn your gadgets on, but we're more concerned to turn them off when you're done.
 
-    startSteppingFor: function(morphOrAction) {
-        if (morphOrAction.scriptName == null) {
-            // Old code for ticking morphs
-            var ix = this.stepList.indexOf(morphOrAction);
-            if (ix < 0) this.stepList.push(morphOrAction); 
-            if (!this.mainLoop) this.kickstartMainLoop();
-            return;
-        }
-
-        var action = morphOrAction;
-
+    startSteppingFor: function(action) {
+        if (!action.scriptName)
+	    throw new Error("old code");
         // New code for stepping schedulableActions
         this.stopSteppingFor(action, true);  // maybe replacing arg or stepTime
         this.scheduleAction(new Date().getTime(), action);
     },
     
-    stopSteppingFor: function(morphOrAction, fromStart) {
-        if (morphOrAction == null || morphOrAction.scriptName == null) {
-            // Old code for ticking morphs
-            var ix = this.stepList.indexOf(morphOrAction);
-            if (ix >= 0) this.stepList.splice(ix, 1);
-            return;
-        }
-
-        var action = morphOrAction;
-
-        // New code for deleting actions from the scheduledActions list
+    stopSteppingFor: function(action, fromStart) {
         // fromStart means it is just getting rid of a previous one if there,
         // but not an error if not found
         var list = this.scheduledActions;  // shorthand
-        for (var i=0; i<list.length; i++) {
+        for (var i = 0; i < list.length; i++) {
             var actn = list[i][1];
             if (actn === action) {
                 list.splice(i, 1);
                 return; 
             }
         }
-
         // Never found that action to remove.  Note this is not an error if called
         // from startStepping just to get rid of previous version
-        if (!fromStart) console.log('failed to stopStepping ' + action.scriptName);
+        if (!fromStart) {
+	    Function.showStack();
+	    console.log('failed to stopStepping ' + action);
+	}
     },
     
     inspectScheduledActions: function () {
@@ -5132,17 +5050,6 @@ PasteUpMorph.subclass("WorldMorph", {
     doOneCycle: function (world) {
         // Process scheduled scripts
 
-        // Old ticking scripts...
-        var msTime = new Date().getTime();
-        var timeOfNextStep = Infinity;
-        for (var i = 0; i < this.stepList.length; i++) {
-            var time = this.stepList[i].tick(msTime);
-            if (time > 0) { 
-                timeOfNextStep = Math.min(time, timeOfNextStep);
-            }
-        }
-
-        // New scheduled scripts...
         // Run through the scheduledActions queue, executing those whose time has come
         // and rescheduling those that have a repeatRate
         // Note that actions with error will not get rescheduled
@@ -5154,6 +5061,8 @@ PasteUpMorph.subclass("WorldMorph", {
         // and until their day is come, they carry a msTime > a day
         // That way they won't interfere with daily scheduling, but they can
         // still be dealt with on world changes, day changes, save and load.
+	var msTime = new Date().getTime();
+	var timeOfNextStep = Infinity;
         var list = this.scheduledActions;  // shorthand
         var timeStarted = msTime;  // for tallying script overheads
         while (list.length > 0 && list[list.length - 1][0] <= msTime) {
@@ -5195,7 +5104,6 @@ PasteUpMorph.subclass("WorldMorph", {
                 action.ticks *= 0.9 // 10-sec decaying moving window
             }
             if (Config.showSchedulerStats && secondsNow % 10 == 0) {
-                console.log('Old Scheduler length = ' + this.stepList.length);
                 console.log('New Scheduler length = ' + this.scheduledActions.length);
                 console.log('Script timings...');  // approx ms per second per script
                 for (var p in tallies) console.log(p + ': ' + (tallies[p]/10).toString());

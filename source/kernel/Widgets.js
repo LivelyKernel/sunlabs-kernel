@@ -1957,7 +1957,7 @@ Morph.subclass('XenoMorph', {
 	};
 
 	model.setDocument = function(doc) {
-            console.log('transmission dump %s', Exporter.nodeToString(doc));
+            console.log('transmission dump %s', Exporter.stringify(doc));
 	    body.parentNode.replaceChild(document.adoptNode(doc.documentElement), body);
 	};
 	
@@ -2242,7 +2242,7 @@ WidgetModel.subclass('ConsoleWidget', {
 		}
 
 		function $x(node) {
-		    return Exporter.nodeToString(node);
+		    return Exporter.stringify(node);
 		}
 		
 		function $f(id) {

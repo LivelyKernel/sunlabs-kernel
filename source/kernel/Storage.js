@@ -52,7 +52,7 @@ Morph.subclass('PackageMorph', {
 	menu.replaceItemNamed("show Lively markup", ["show packaged Lively markup", function(evt) {
 	    var extent = pt(500, 300);
             var pane = newTextPane(extent.extentAsRectangle(), "");
-	    pane.innerMorph().setTextString(Exporter.nodeToString(this.serialized));
+	    pane.innerMorph().setTextString(Exporter.stringify(this.serialized));
             this.world().addFramedMorph(pane, "XML dump", this.world().positionForNewMorph(this));
 	}.bind(this)]);
 	
@@ -68,7 +68,7 @@ Morph.subclass('PackageMorph', {
 	    return;
 	}
 	var importer = new Importer();
-	var targetMorph = importer.importFromString(Exporter.nodeToString(this.serialized));
+	var targetMorph = importer.importFromString(Exporter.stringify(this.serialized));
 	if (targetMorph instanceof WorldMorph) {
 	    this.world().addMorph(new LinkMorph(targetMorph, loc));
 	    for (var i = 0; i < targetMorph.submorphs.length; i++) {
@@ -115,7 +115,7 @@ Wrapper.subclass('Resource', {
 	
 	var result = this.query.findFirst(this.rawNode, "D:href");
 	if (!result) {
-	    console.log("query failed " + Exporter.nodeToString(this.rawNode));
+	    console.log("query failed " + Exporter.stringify(this.rawNode));
 	    return "?"
 	} else 
 	    return decodeURIComponent(result.textContent);
@@ -323,6 +323,7 @@ WebStore.subclass('FileBrowser', {
 				     getMenu: "getDirectoryMenu",
 				     setSelection: "setCurrentDirectory", 
 				     getSelection: "getCurrentDirectory"});
+
         var m = panel.rightPane;
         m.connectModel({model: this, getList: "getCurrentDirectoryContents", setSelection: "setCurrentResource", 
 			getMenu: "getFileMenu"});
@@ -330,16 +331,11 @@ WebStore.subclass('FileBrowser', {
             if (evt.getKeyCode() == Event.KEY_BACKSPACE) { // Replace the selection after checking for type-ahead
 		var model = this.getModel();
 		var toDelete  = model.resourceURL(this.itemList[this.selectedLineNo()]);
-                var result = this.world().confirm("delete resource " + toDelete, 
-		    function(result) {
-			if (result) {
-			    var handler = new SimpleModel(null, 'Status');
-			    handler.setRequestStatus = function(status) {
-				console.log("delete "  + toDelete + " status " + status);
-			    }
-			    new NetRequest({model: handler, setStatus: "setRequestStatus"}).del(toDelete);
-			} else console.log("cancelled deletion of " + toDelete);
-		    });
+                this.world().confirm("delete resource " + toDelete, function(result) {
+		    if (result) {
+			new NetRequest({model: model, setStatus: "setRequestStatus"}).del(toDelete);
+		    } else console.log("cancelled deletion of " + toDelete);
+		});
                 evt.stop();
             } else CheapListMorph.prototype.onKeyPress.call(this, evt);
         };
