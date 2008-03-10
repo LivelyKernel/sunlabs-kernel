@@ -232,13 +232,17 @@ View.subclass('NetRequest', {
     put: function(url, content) {
 	return this.request("PUT", this.rewriteURL(url), content);
     },
-    
+
     propfind: function(url, depth, content) {
 	this.setContentType("text/xml"); // complain if it's set to something else?
 	if (depth != 0 && depth != 1)
 	    depth = "infinity";
 	this.setRequestHeaders({ "Depth" : depth });
 	return this.request("PROPFIND", this.rewriteURL(url), content);
+    },
+
+    mkcol: function(url, content) {
+	return this.request("MKCOL", this.rewriteURL(url), content);
     },
     
     del: function(url) {
@@ -340,7 +344,8 @@ WidgetModel.subclass('Feed', {
     },
     
     setNextFeed: function(responseXML) {
-        var results = Query.evaluate(responseXML.documentElement, '/rss/channel');
+	var elt = responseXML.documentElement;
+        var results = new Query(elt).evaluate(elt, '/rss/channel');
         this.channels = [];
         for (var i = 0; i < results.length; i++) {
             this.channels.push(new FeedChannel(results[i]));

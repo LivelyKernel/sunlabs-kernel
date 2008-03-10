@@ -279,36 +279,6 @@ Loader.proxyURL = (function() {
 })();
     
 
-// SVG/DOM bindings 
-
-var Query = {
-
-    resolver: function(prefix) {
-	if (prefix == null || prefix == "")
-	    prefix = "SVG";
-	else 
-	    prefix = prefix.toUpperCase();
-        return Namespace[prefix];
-    },
-    
-    xpe: Global.XPathEvaluator && new XPathEvaluator(),
-
-    evaluate: function(aNode, aExpr, defaultValue) {
-        if (!this.xpe) throw new Error("XPath not available");
-	var nsResolver = this.xpe.createNSResolver(aNode.ownerDocument == null ?
-						   aNode.documentElement : aNode.ownerDocument.documentElement); 
-        var result = this.xpe.evaluate(aExpr, aNode, nsResolver, 0, null);
-        var found = [];
-        var res = null;
-        while (res = result.iterateNext()) found.push(res);
-        if (defaultValue && found.length == 0) {
-            return [defaultValue];
-        }
-        return found;
-    }
-};
-
-
 
 var NodeFactory = {
 
@@ -750,6 +720,50 @@ Converter = {
     }
 
 };
+
+
+
+// SVG/DOM bindings 
+
+
+Object.subclass('Query',  {
+    
+    xpe: Global.XPathEvaluator && new XPathEvaluator(),
+
+    initialize: function(aNode) {
+	if (!this.xpe) throw new Error("XPath not available");
+	var contextNode = aNode.ownerDocument == null ? 
+	    aNode.documentElement : aNode.ownerDocument.documentElement; 
+	this.nsResolver = this.xpe.createNSResolver(contextNode);
+    },
+
+    resolver: function(prefix) {
+	if (prefix == null || prefix == "")
+	    prefix = "SVG";
+	else 
+	    prefix = prefix.toUpperCase();
+        return Namespace[prefix];
+    },
+    
+    evaluate: function(aNode, anExpr, defaultValue) {
+        var result = this.xpe.evaluate(anExpr, aNode, this.nsResolver, XPathResult.ANY_TYPE, null);
+        var found = [];
+        var res = null;
+        while (res = result.iterateNext()) found.push(res);
+        if (defaultValue && found.length == 0) {
+            return [defaultValue];
+        }
+        return found;
+    }
+
+    findFirst: function(aNode, anExpr) {
+        var result = this.xpe.evaluate(anExpr, aNode, this.nsResolver, XPathResult.ANY_TYPE, null);
+        return result.iterateNext();
+    }
+
+});
+
+
 
 // ===========================================================================
 // Graphics foundations
@@ -1296,7 +1310,7 @@ Object.subclass('Wrapper', {
     },
 
     queryNode: function(queryString, defaultValue) {
-        return Query.evaluate(this.rawNode, queryString, defaultValue);
+        return new Query(this.rawNode).evaluate(this.rawNode, queryString, defaultValue);
     },
 
     uri: function() {
@@ -2500,26 +2514,9 @@ Object.subclass('Exporter', {
 	var helperNodes = [];
 	var rootModel = this.rootMorph.getModel && this.rootMorph.getModel();
         // introspect all the fields
-        this.rootMorph.withAllSubmorphsDo(function() {
-            for (var prop in this) {
-                if (prop == 'owner') // we'll deal manually
-                    continue;
-                var m = this[prop];
-                if (m instanceof Morph) {
-		    console.log("serializing field name=" + prop + ",ref=" + m.id());
-                    var desc = this.addNonMorph(NodeFactory.createNS(Namespace.LIVELY, "field"));
-		    var model = m.getModel();
-		    if (model && model !== rootModel) {
-			console.log("loosing nested model " + model);
-		    }
-                    desc.setAttributeNS(Namespace.LIVELY, "name", prop);
-                    desc.setAttributeNS(Namespace.LIVELY, "ref", m.id());
-                    helperNodes.push(desc);
-                }
-            }
-        });
-	// not robust, not dealing with models not defined on this
+        this.rootMorph.withAllSubmorphsDo(function() { this.prepareForSerialization(helperNodes, rootModel)});
 
+	// not robust, not dealing with models not defined on this
         var modelNode = rootModel && rootModel.toMarkup();
         if (modelNode) {
 	    helperNodes.push(modelNode);
@@ -3015,13 +3012,8 @@ Morph = Visual.subclass("Morph", {
             case "action": {
                 var a = new SchedulableAction(importer, node);
                 a.actor = this;
-		// FIXME: remove this ugly special case!
-		if (Global.WindowControlMorph && this instanceof WindowControlMorph) {
-		    this.action = a; // window ctrl morphs know don't have periodic scripts but a click action instead
-		} else {
-                    this.addActiveScript(a);
-                    console.log('deserialized script ' + a);
-		}
+                this.addActiveScript(a);
+                // console.log('deserialized script ' + a);
                 // don't start the action until morph fully constructed
                 break;
             }
@@ -3123,6 +3115,25 @@ Morph = Visual.subclass("Morph", {
     
         // this.created = false; // exists on server now
         // some of this stuff may become persistent
+    },
+    
+    prepareForSerialization: function(extraNodes, rootModel) {
+        for (var prop in this) {
+            if (prop == 'owner') // we'll deal manually
+                continue;
+            var m = this[prop];
+            if (m instanceof Morph) {
+		console.log("serializing field name=" + prop + ",ref=" + m.id());
+                var desc = this.addNonMorph(NodeFactory.createNS(Namespace.LIVELY, "field"));
+		var model = m.getModel();
+		if (model && model !== rootModel) {
+		    console.log("losing nested model " + model);
+		}
+                desc.setAttributeNS(Namespace.LIVELY, "name", prop);
+                desc.setAttributeNS(Namespace.LIVELY, "ref", m.id());
+                extraNodes.push(desc);
+            }
+        }
     },
 
     newMorphId: (function() {
@@ -4216,6 +4227,7 @@ Morph.addMethods({
         if (!action.rawNode.parentNode) {
             this.addNonMorph(action.rawNode);
         }
+	return this;
         // if we're deserializing the rawNode may already be in the markup
     },
     

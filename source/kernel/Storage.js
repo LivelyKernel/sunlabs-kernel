@@ -104,18 +104,25 @@ Wrapper.subclass('Resource', {
     
     documentation: "Wrapper around information returned from WebDAV's PROPFIND",
     
-    initialize: function(base, raw) {
+    initialize: function(query, raw) {
         this.rawNode = raw; 
-	this.base = base;
+	this.query = query;
     },
     
     name: function() {
 	// FIXME: resolve prefix "D" to something meaningful?
-        return decodeURIComponent(this.queryNode("D:href")[0].textContent);
+        //return decodeURIComponent(this.queryNode("D:href")[0].textContent)
+	
+	var result = this.query.findFirst(this.rawNode, "D:href");
+	if (!result) {
+	    console.log("query failed " + Exporter.nodeToString(this.rawNode));
+	    return "?"
+	} else 
+	    return decodeURIComponent(result.textContent);
     },
     
     properties: function() {
-	return this.queryNode("D:propstat").pluck('textContent').join('\n');
+	return this.query.evaluate(this.rawNode, "D:propstat").pluck('textContent').join('\n');
     }
 
 });
@@ -260,10 +267,11 @@ WebStore.subclass('FileBrowser', {
     
     setCurrentDirectoryContents: function(doc) {
 	console.log("processing results ");
-	var result = Query.evaluate(doc.documentElement, "/D:multistatus/D:response");
+	var query = new Query(doc.documentElement);
+	var result = query.evaluate(doc.documentElement, "/D:multistatus/D:response");
 
 	this.CurrentDirectoryContents = result.map(function(raw) { 
-	    return new Resource(null, raw); 
+	    return new Resource(query, raw); 
 	}.bind(this));
 	this.changed('getCurrentDirectoryContents');
     },
@@ -312,6 +320,7 @@ WebStore.subclass('FileBrowser', {
         ]);
         panel.leftPane.connectModel({model: this, 
 				     getList: "getDirectoryList",
+				     getMenu: "getDirectoryMenu",
 				     setSelection: "setCurrentDirectory", 
 				     getSelection: "getCurrentDirectory"});
         var m = panel.rightPane;
@@ -384,9 +393,31 @@ WebStore.subclass('FileBrowser', {
     },
 
     setCurrentResourceProperties: function(doc) {
-	var result = Query.evaluate(doc.documentElement, "/D:multistatus/D:response"); 
-	this.Properties = result.map(function(raw) { return new Resource(null, raw); }.bind(this));
+	var query = new Query(doc.documentElement);
+	var result = query.evaluate(doc.documentElement, "/D:multistatus/D:response"); 
+	this.Properties = result.map(function(raw) { return new Resource(query, raw); }.bind(this));
 	this.changed('getCurrentResourcePropertiesAsText');
+    },
+
+
+    getDirectoryMenu: function() {
+	var model = this;
+	return [
+	    ["make subdirectory", function(evt) {
+		// FIXME: dialog for name
+		var dirname = model.getCurrentDirectory();
+		if (!dirname) 
+		    return;
+		this.world().prompt("new directory name", function(response) {
+		    if (!response) return;
+		    console.log("current dir is " + dirname);
+		    var req = new NetRequest().connectModel({model: model, setStatus: "setRequestStatus"});
+		    var url = (new URL(model.resourceURL(dirname)).withPath(dirname + response));
+		    req.mkcol(url);
+		});
+	    }]
+	];
+	
     },
 
     getFileMenu: function() {

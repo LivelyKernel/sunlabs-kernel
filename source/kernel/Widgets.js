@@ -576,6 +576,11 @@ var WindowControlMorph = Morph.subclass("WindowControlMorph", {
     
     getHelpText: function() {
 	return this.helpText;
+    },
+
+    // note that we override a method that normally adds ticking scripts
+    addActiveScript: function(action) {
+	this.action = action;
     }
  
 });
