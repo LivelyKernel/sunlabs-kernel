@@ -745,15 +745,13 @@ Object.subclass('Query',  {
         return Namespace[prefix];
     },
     
-    evaluate: function(aNode, anExpr, defaultValue) {
+    evaluate: function(aNode, anExpr, accumulator) {
         var result = this.xpe.evaluate(anExpr, aNode, this.nsResolver, XPathResult.ANY_TYPE, null);
-        var found = [];
+	if (!accumulator)
+	    accumulator = [];
         var res = null;
-        while (res = result.iterateNext()) found.push(res);
-        if (defaultValue && found.length == 0) {
-            return [defaultValue];
-        }
-        return found;
+        while (res = result.iterateNext()) accumulator.push(res);
+        return accumulator;
     },
 
     findFirst: function(aNode, anExpr) {
@@ -1310,7 +1308,8 @@ Object.subclass('Wrapper', {
     },
 
     queryNode: function(queryString, defaultValue) {
-        return new Query(this.rawNode).evaluate(this.rawNode, queryString, defaultValue);
+	var result = new Query(this.rawNode).evaluate(this.rawNode, queryString, []);
+        return result.length == 0 ? defaultValue : result;
     },
 
     uri: function() {

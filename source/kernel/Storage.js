@@ -106,7 +106,7 @@ Wrapper.subclass('Resource', {
     
     initialize: function(query, raw) {
         this.rawNode = raw; 
-	this.query = query;
+	this.query = query; // we capture the query to preserve NS resolution context
     },
     
     name: function() {
@@ -122,7 +122,7 @@ Wrapper.subclass('Resource', {
     },
     
     properties: function() {
-	return this.query.evaluate(this.rawNode, "D:propstat").pluck('textContent').join('\n');
+	return this.query.evaluate(this.rawNode, "D:propstat", []).pluck('textContent').join('\n');
     }
 
 });
@@ -268,7 +268,7 @@ WebStore.subclass('FileBrowser', {
     setCurrentDirectoryContents: function(doc) {
 	console.log("processing results ");
 	var query = new Query(doc.documentElement);
-	var result = query.evaluate(doc.documentElement, "/D:multistatus/D:response");
+	var result = query.evaluate(doc.documentElement, "/D:multistatus/D:response", []);
 
 	this.CurrentDirectoryContents = result.map(function(raw) { 
 	    return new Resource(query, raw); 
@@ -394,7 +394,7 @@ WebStore.subclass('FileBrowser', {
 
     setCurrentResourceProperties: function(doc) {
 	var query = new Query(doc.documentElement);
-	var result = query.evaluate(doc.documentElement, "/D:multistatus/D:response"); 
+	var result = query.evaluate(doc.documentElement, "/D:multistatus/D:response", []); 
 	this.Properties = result.map(function(raw) { return new Resource(query, raw); }.bind(this));
 	this.changed('getCurrentResourcePropertiesAsText');
     },

@@ -345,7 +345,7 @@ WidgetModel.subclass('Feed', {
     
     setNextFeed: function(responseXML) {
 	var elt = responseXML.documentElement;
-        var results = new Query(elt).evaluate(elt, '/rss/channel');
+        var results = new Query(elt).evaluate(elt, '/rss/channel', []);
         this.channels = [];
         for (var i = 0; i < results.length; i++) {
             this.channels.push(new FeedChannel(results[i]));
