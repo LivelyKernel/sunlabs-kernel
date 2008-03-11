@@ -2381,97 +2381,102 @@ GameMorph.addMethods({
  
 // We should consider using other weather service.
 // These images are of low quality
-WidgetModel.subclass(scope, 'WeatherWidget', {
+Widget.subclass(scope, 'WeatherWidget', {
 
     imagepath: "Resources/weather/",
     defaultViewTitle: "Weather widget",
     openTriggerVariable: null,
+    defaultViewExtent: pt(250, 260),
     
     initialize: function($super) { 
         $super();
-	this.weatherDesc = "";
-	this.temperature = "";
-	this.wind = "";
-	this.humidity = "";
-	this.dewPoint = "";
-	this.gusts = "";
-	this.visibility = "";
-	var widget = this;
-	this.parser = Object.extend(new View(), {
-	    updateView: function(aspect, controller) {
-		if (this.modelPlug) {
-		    switch (aspect) {
-		    case this.modelPlug.getFeedChannels:
-		    case 'all':
-			this.parse(this.getModelValue('getFeedChannels', null));
-		    }
-		}
-	    },
-	    
-	    parse: function(channels) {
-		if (channels.length <= 0) return;
-		var channel = channels[0];
-		var text = channel.items[0].description();
-		var arr = text.split(",");
-		var topic = channel.items[0].title();
-		var weather = topic.substring(topic.indexOf("."), topic.indexOf("GMT:")+4).replace(/^\s+|\s+$/g, '');
-		widget.weatherDesc = weather[0].toUpperCase() + weather.substr(1);
-		widget.changed('getWeatherDesc');
-		widget.temperature = arr[0].replace(/^\s+|\s+$/g, '');
-		widget.changed('getTemperature');
-		widget.wind = arr[1].replace(/^\s+|\s+$/g, '');
-		widget.changed('getWind');
-		widget.gusts = arr[2].replace(/^\s+|\s+$/g, '');
-		widget.changed('getGusts');
-		widget.dewPoint = arr[3].replace(/^\s+|\s+$/g, '');
-		widget.changed('getDewPoint');
-		widget.humidity = arr[4].replace(/^\s+|\s+$/g, '') + ", " + arr[5].replace(/^\s+|\s+$/g, '');
-		widget.changed('getHumidity');
-		widget.visibility = arr[6].replace(/^\s+|\s+$/g, '');
-		widget.changed('getVisibility');
-            }
-	});
 
+	var model = new SimpleModel(null, "RawWeatherFeed", "WeatherChannels", 
+	    "WeatherURL", "WeatherDesc", "City", "ImageURL",
+	    "Temperature", "Wind", "Humidity", "DewPoint", "Gusts", "Visibility");
+
+	model.setImageURL("http://www.bbc.co.uk/weather/images/banners/weather_logo.gif");
+
+	this.connectModel({model: model, 
+			   getFeedChannels: "getWeatherChannels", 
+			   getLocale: "getCity", 
+			   setURL: "setWeatherURL",
+			   setWeatherDesc: "setWeatherDesc",
+			   setTemperature: "setTemperature",
+			   setWind: "setWind",
+			   setGusts: "setGusts",
+			   setDewPoint: "setDewPoint",
+			   setHumidity: "setHumidity",
+			   setVisibility: "setVisibility"});
+	
+	var feed = new Feed();
+	feed.connectModel({model: model, 
+			   setRawFeedContents: "setRawWeatherFeed", 
+			   getRawFeedContents: "getRawWeatherFeed", 
+			   setFeedChannels: "setWeatherChannels", 
+			   getURL: "getWeatherURL" });
+	
         // Fetch weather upon starting the widget
-        this.getWeather("6568"); // San Francisco International (SFO) as default
+	this.setModelValue("setURL", this.makeWeatherURL("6568"));// San Francisco International (SFO) as default
+    },
+    
+    updateView: function(aspect, controller) {
+	if (this.modelPlug) {
+	    // console.log(this + ".updateView/" + aspect);
+	    switch (aspect) {
+	    case this.modelPlug.getFeedChannels:
+		this.parseChannels(this.getModelValue('getFeedChannels', null));
+		break;
+	    case this.modelPlug.getLocale:
+		this.updateLocale(this.getModelValue('getLocale', null));
+		break;
+	    }
+	}
+    },
+    
+    parseChannels: function(channels) {
+	if (channels.length <= 0) return;
+	var channel = channels[0];
+	var text = channel.items[0].description();
+	var arr = text.split(",");
+	var topic = channel.items[0].title();
+	var weather = topic.substring(topic.indexOf("."), topic.indexOf("GMT:")+4).replace(/^\s+|\s+$/g, '');
+	this.setModelValue("setWeatherDesc", weather[0].toUpperCase() + weather.substr(1));
+	this.setModelValue("setTemperature", arr[0].replace(/^\s+|\s+$/g, ''));
+	this.setModelValue("setWind", arr[1].replace(/^\s+|\s+$/g, ''));
+	this.setModelValue("setGusts", arr[2].replace(/^\s+|\s+$/g, ''));
+	this.setModelValue("setDewPoint", arr[3].replace(/^\s+|\s+$/g, ''));
+	this.setModelValue("setHumidity",arr[4].replace(/^\s+|\s+$/g, '') + ", " + arr[5].replace(/^\s+|\s+$/g, ''));
+	this.setModelValue("setVisibility", arr[6].replace(/^\s+|\s+$/g, ''));
     },
 
-    getListItem: function() {
-        return this.listItem;            
-    },
-
-    setListItem: function(item, v) {
-        this.listItem = item; 
-        this.changed("getListItem", v); 
-        
+    updateLocale: function(item) {
+	var citycode = null;
         // initialize UI update
         switch (item) {
         case "San Francisco, California":
-            this.getWeather("6568"); // "USCA0050"  6568 -- San Francisco International (SFO)
-//          this.getWeather("stanford", "US", "CA"); 
+            citycode = "6568"; // "USCA0050"  6568 -- San Francisco International (SFO)
             break;
         case "Tampere, Finland":
-            this.getWeather("4974"); // "FIXX0031"  or 4974
-//          this.getWeather("tampere", "finland"); 
+            citycode = "4974"; // "FIXX0031"  or 4974
             break;
         case "London, United Kingdom":
-            this.getWeather("4583"); // "UKXX0318"  or 4583 
-//          this.getWeather("london", "united_kingdom"); 
+            citycode = "4583"; // "UKXX0318"  or 4583 
             break;
         }
+	if (citycode) {
+	    //console.log("setURL " + this.makeWeatherURL(citycode));
+	    this.setModelValue("setURL", this.makeWeatherURL(citycode));
+	}
     },
 
-    getWeatherDesc: function() { return this.weatherDesc; },
-    getTemperature: function() { return this.temperature; },
-    getWind: function()        { return this.wind; },
-    getHumidity: function()    { return this.humidity; },
-    getDewPoint: function()    { return this.dewPoint; },
-    getGusts: function()       { return this.gusts; },
-    getVisibility: function()  { return this.visibility; },
-    getImageURL: function()    { return "http://www.bbc.co.uk/weather/images/banners/weather_logo.gif"; },
+    makeWeatherURL: function(citycode) {
+	return new URL("http://feeds.bbc.co.uk/weather/feeds/rss/obs/world/" + citycode + ".xml");
+    },
     
-    buildView: function() {
-        var panel = new PanelMorph(pt(250, 260));
+    buildView: function(extent) {
+	var model = this.getModel();
+        var panel = new PanelMorph(extent);
 	panel.applyStyle({borderWidth: 2, 
 			  fill: new LinearGradient(Color.white, Color.primary.blue, LinearGradient.WestEast)});
         //panel.setBorderColor(Color.blue);
@@ -2495,45 +2500,49 @@ WidgetModel.subclass(scope, 'WeatherWidget', {
         m.setFill(null);
         panel.addMorph(m = new ImageMorph(new Rectangle(10,205,20,20), this.imagepath + "visibility.png"));
         m.setFill(null);
-
-        panel.addMorph(m = new CheapListMorph(new Rectangle(40,3,200,20),["San Francisco, California", "Tampere, Finland", "London, United Kingdom"]));
-        m.connectModel({model: this, getSelection: "getListItem", setSelection: "setListItem"});
+	
+        m = panel.addMorph(new CheapListMorph(new Rectangle(40,3,200,20),["San Francisco, California", "Tampere, Finland", "London, United Kingdom"]));
+        m.connectModel({model: model, getSelection: "getCity", setSelection: "setCity"});
         m.selectLineAt(0); // Select the first item by default
 
         // build the textfields for the weather panel
-        var m;
-        panel.addMorph(m = new TextMorph(new Rectangle(40,55, 200,20), "---")).connectModel({model: this, getText: "getWeatherDesc"});
+        m = panel.addMorph(new TextMorph(new Rectangle(40,55, 200,20), "---"));
+	m.connectModel({model: model, getText: "getWeatherDesc"});
         m.takesKeyboardFocus = function() {return false;};
 	//m.beLabel();
-        panel.addMorph(m = new TextMorph(new Rectangle(40,80, 200,20), "---")).connectModel({model: this, getText: "getTemperature"});
+
+        m = panel.addMorph(new TextMorph(new Rectangle(40,80, 200,20), "---"));
+	m.connectModel({model: model, getText: "getTemperature"});
 	//m.beLabel();
         m.takesKeyboardFocus = function() {return false;};
-        panel.addMorph(m = new TextMorph(new Rectangle(40,105, 200,20), "---")).connectModel({model: this, getText: "getWind"});
+	
+        m = panel.addMorph(new TextMorph(new Rectangle(40,105, 200,20), "---"));
+	m.connectModel({model: model, getText: "getWind"});
         m.takesKeyboardFocus = function() {return false;};
-        panel.addMorph(m = new TextMorph(new Rectangle(40,130, 200,20), "---")).connectModel({model: this, getText: "getGusts"});
+
+        m = panel.addMorph(new TextMorph(new Rectangle(40,130, 200,20), "---"));
+	m.connectModel({model: model, getText: "getGusts"});
         m.takesKeyboardFocus = function() {return false;};
-        panel.addMorph(m = new TextMorph(new Rectangle(40,155, 200,20), "---")).connectModel({model: this, getText: "getDewPoint"});
+	
+        m = panel.addMorph(new TextMorph(new Rectangle(40,155, 200,20), "---"));
+	m.connectModel({model: model, getText: "getDewPoint"});
         m.takesKeyboardFocus = function() {return false;};
-        panel.addMorph(m = new TextMorph(new Rectangle(40,180, 200,20), "---")).connectModel({model: this, getText: "getHumidity"});
+	
+        m = panel.addMorph(new TextMorph(new Rectangle(40,180, 200,20), "---"));
+	m.connectModel({model: model, getText: "getHumidity"});
         m.takesKeyboardFocus = function() {return false;};
-        panel.addMorph(m = new TextMorph(new Rectangle(40,205, 200,20), "---")).connectModel({model: this, getText: "getVisibility"});
+	
+        m = panel.addMorph(new TextMorph(new Rectangle(40,205, 200,20), "---"));
+	m.connectModel({model: model, getText: "getVisibility"});
         m.takesKeyboardFocus = function() {return false;};
+	
 //        panel.addMorph(TextMorph(new Rectangle(80,230, 200,20), "---")).connectModel({model: this, getText: "getDate"});
     
         var image = panel.addMorph(new ImageMorph(new Rectangle(40,230,100,20)));
-        image.connectModel({model: this, getURL: "getImageURL"});
+        image.connectModel({model: model, getURL: "getImageURL"});
         image.setFill(null);
-        this.changed('getImageURL');
         return panel;
-    },
-
-    getWeather: function(citycode) {
-        var feed = new Feed("http://feeds.bbc.co.uk/weather/feeds/rss/obs/world/" + citycode + ".xml");
-	this.parser.disconnectModel();
-	this.parser.connectModel({model: feed, getFeedChannels: "getChannels"});
-        feed.request();
     }
-    
     
 });
 
@@ -2545,7 +2554,7 @@ WidgetModel.subclass(scope, 'WeatherWidget', {
  * @class StockWidget
  */
 
-WidgetModel.subclass('StockWidget', {
+Widget.subclass('StockWidget', {
 
     defaultViewTitle: 'Stock Widget',
     defaultViewExtent: pt(580, 460),
@@ -2553,30 +2562,64 @@ WidgetModel.subclass('StockWidget', {
 
     initialize: function($super) { 
         $super();
-        this.imageurl = null;
-	this.newsHeaders = "";
-	var widget = this;
-	// copies from one another
-	this.copier = Object.extend(new View(), {
-	    updateView: function(aspect, controller) {
-		if (aspect == this.modelPlug.getItemTitles || aspect == 'all') {
-		    widget.setNewsHeaders(this.getModelValue('getItemTitles', ""));
-		}
-	    }
-	});
-	
-        return this;
+	var model = new SimpleModel(null, "NewsHeaders", "NewsURL", "StockIndex", "Quote",
+	    "IndexChartURL", "RawQuote", "Company", "RawNewsFeed", "NewsChannels");
+	this.connectModel({model: model, 
+			   getStockIndex: "getStockIndex", 
+			   // setIndexChartURL: "setIndexChartURL",
+			   getCompany: "getCompany", 
+			   getRawQuote: "getRawQuote",
+			   setQuote: "setQuote",
+			   setURL: "setNewsURL",
+			   setNewsHeaders: "setNewsHeaders",
+			   getNewsChannels: "getNewsChannels"});
+
+	var feed = new Feed();
+
+	feed.connectModel({model: model, 
+			   setRawFeedContents: "setRawNewsFeed", 
+			   getRawFeedContents: "getRawNewsFeed", 
+			   setFeedChannels: "setNewsChannels", 
+			   // setURL: "setNewsURL",
+			   getURL: "getNewsURL" });
+
+
+	this.setModelValue("setCompany", "JAVA");
     },
-    
+
+    updateView: function(aspect, controller) {
+	switch (aspect) {
+	case this.modelPlug.getStockIndex:
+	    var item = this.getModelValue("getStockIndex");
+            var entry = this.config[item];
+	    //	    this.setModelValue("setIndexChartURL", entry.image);
+	    this.setModelValue("setURL", this.makeNewsURL(entry.ticker));
+	    break;
+	case this.modelPlug.getCompany:
+	    this.requestQuote(this.getModelValue("getCompany"), "setRawQuote");
+	    break;
+	case this.modelPlug.getRawQuote:
+	    var fmtQuote = this.formatQuote(this.getModelValue('getRawQuote', "").split(','));
+	    this.setModelValue('setQuote', fmtQuote);
+	    break;
+	case this.modelPlug.getNewsChannels:
+	    var channels = this.getModelValue('getNewsChannels');
+	    this.setModelValue('setNewsHeaders', this.extractNewsHeaders(channels));
+	    break;
+	}
+    },
+
     openIn: function($super, world, location) {
 	var view = $super(world, location);
-        this.setStockIndex('DOW JONES');
         this.startSteppingRefreshCharts(view.targetMorph);
         return view;
     },
 
-    makeURL: function(ticker) {
-        return "http://finance.google.com/finance?morenews=10&rating=1&q=INDEX" + ticker + "&output=rss";
+    makeNewsURL: function(ticker) {
+        return new URL("http://finance.google.com/finance").withQuery({morenews: "10", 
+								       rating: "1", 
+								       q: "INDEX" + ticker, 
+								       output: "rss"});
     },
 
     // FIXME: The image links here are no longer necessary.  Remove later.
@@ -2598,66 +2641,36 @@ WidgetModel.subclass('StockWidget', {
         image: "http://stockcharts.com/charts/historical/images/SPX1960t.png" }
     },
        
-    getStockIndex: function() { 
-        return this.listItem; 
+    requestQuote: function(company, destVariable) {
+        console.log('requesting quote for ' + company);
+        var url = new URL("http://download.finance.yahoo.com/d/quotes.csv").withQuery({ s:company.toLowerCase(), f:'sl1d1t1c1ohgv', e: '.csv'});	
+	var req = new NetRequest({model: this.getModel(), setResponseText: destVariable});
+	req.setContentType("text/html");
+	req.get(url);
     },
     
-    setStockIndex: function(item, v) { 
-        this.listItem = item; 
-        var entry = this.config[this.listItem];
-        this.imageurl = entry.image;
-        this.changed('getIndexChartURL');
-        
-	var feed = new Feed(this.makeURL(entry.ticker));
-	this.copier.disconnectModel();
-	this.copier.connectModel({model: feed, getItemTitles: "getItemList"});
-        feed.request(this);
-        this.changed("getStockIndex", v); 
-    },
-    
-    getNewsHeaders: function() {
-        return this.newsHeaders;
-    },
-
-    setNewsHeaders: function(headers) {
-	this.newsHeaders = headers;
-	this.changed('getNewsHeaders');
-    },
-
-    getIndexChartURL: function() { 
-        return this.imageurl; 
-    },
-    
-    getCompany: function() { 
-        return this.companyListItem; 
-    },
-
-    setCompany: function(item, v) {
-        this.companyListItem = item; 
-        console.log('setting item ' + item);
-        this.fetchQuotes("http://download.finance.yahoo.com/d/quotes.csv",
-                    { s:item.toLowerCase(), f:'sl1d1t1c1ohgv', e: '.csv'});
-        this.changed("getCompany", v); 
-    },
-
     buildView: function(extent) {
         var panel = new PanelMorph(extent);
+	var model = this.getModel();
 	var gradient = new LinearGradient(Color.white, Color.primary.blue.lighter(), LinearGradient.EastWest);
         panel.applyStyle({fill: gradient, borderWidth: 2});
 
         //panel.setBorderColor(Color.blue);
 
         // Marketwatch/Bigcharts logo
-        var m = panel.addMorph(new ImageMorph(new Rectangle(20, 10, 135, 68), "http://b.mktw.net/images/logo/frontpage.gif" ));
+        var m = panel.addMorph(new ImageMorph(new Rectangle(20, 10, 135, 68), 
+	    "http://b.mktw.net/images/logo/frontpage.gif" ));
         
         // Dow Jones chart
-        var image = new ImageMorph(new Rectangle(160, 10, 175, 160), "http://bigcharts.marketwatch.com/charts/gqplus/fpDJIA-narrow.gqplus?167");
+        var image = new ImageMorph(new Rectangle(160, 10, 175, 160), 
+	    "http://bigcharts.marketwatch.com/charts/gqplus/fpDJIA-narrow.gqplus?167");
         panel.leftChartImage = image;
         m = panel.addMorph(image);
         m.setFill(Color.white);
 
         // NASDAQ chart
-        image = new ImageMorph(new Rectangle(360, 10, 175, 160), "http://bigcharts.marketwatch.com/charts/gqplus/fpNASDAQ-narrow.gqplus?167");
+        image = new ImageMorph(new Rectangle(360, 10, 175, 160), 
+			       "http://bigcharts.marketwatch.com/charts/gqplus/fpNASDAQ-narrow.gqplus?167");
         panel.rightChartImage = image;
         m = panel.addMorph(image);
         m.setFill(Color.white);
@@ -2665,22 +2678,24 @@ WidgetModel.subclass('StockWidget', {
 
         // Newsfeed selector
         m = panel.addMorph(new CheapListMorph(new Rectangle(20, 180, 90, 20), Object.keys(this.config)));
-        m.connectModel({model: this, getSelection: "getStockIndex", setSelection: "setStockIndex"});
+        m.connectModel({model: model, getSelection: "getStockIndex", setSelection: "setStockIndex"});
+	m.setModelValue("setSelection", 'DOW JONES');
+
 
         // Newsfeed panel
         m = panel.addMorph(newListPane(new Rectangle(160, 180, 410, 150)));
-
-        m.connectModel({model: this, getList: "getNewsHeaders"});
+        m.connectModel({model: model, getList: "getNewsHeaders"});
 
         // Company-specific stock quotes
         //this.dataList = panel.addMorph(CheapListMorph(new Rectangle(20,300,130,40), this.dataArray));
-        m = panel.addMorph(new TextMorph(new Rectangle(160, 340, 410, 20), "")).connectModel({model: this, getText: 'getQuotes'});
-
+        m = panel.addMorph(new TextMorph(new Rectangle(160, 340, 410, 20), ""));
+	m.connectModel({model: model, getText: "getQuote"});
+	
         // Company selector for stock quotes
         m = panel.addMorph(new CheapListMorph(new Rectangle(20, 340, 120, 40), ["JAVA", "NOK", "GOOG", "QQQQ"]));
-        m.connectModel({model: this, getSelection: "getCompany", setSelection: "setCompany"});
-        this.setCompany("JAVA");
-        var model = this;
+        m.connectModel({model: model, getSelection: "getCompany", setSelection: "setCompany"});
+	m.setModelValue("setSelection", "JAVA");
+
 
         panel.refresh = function() {
            // console.log("Refreshing charts...");
@@ -2688,48 +2703,34 @@ WidgetModel.subclass('StockWidget', {
             this.rightChartImage.reload(); 
         };
 
-        var $super = panel.shutdown.bind(panel);
-        panel.shutdown = function() {
-            $super();
-            console.log('shutting down the stock widget');
-            model.timer && window.clearInterval(model.timer);
-        }
         return panel;
     },
 
-    getQuotes: function() {
-        return this.formatQuote(this.lastQuote);
-    },
-    
-    setQuotes: function(list) {
-	this.lastQuote = list.split(',');
-	this.changed('getQuotes');
-    },
-
-    fetchQuotes: function(urlString, params) {
-	var req = new NetRequest({model: this, setResponseText: "setQuotes"});
-	req.setContentType("text/html");
-	req.get(new URL(urlString).withQuery(params));
-    },
-  
     startSteppingRefreshCharts: function(panel) {
         panel.startStepping(60000, 'refresh');
     },
 
     formatQuote: function(arr) {
+	function trim(str) {
+	    if (!str) return null;
+            return str.toString().strip().replace(/[\s]{2,}/,' ');
+	}
+	
         return "Name: " + arr[0] + "\n" 
             + "Last: " + arr[1]+ "\n"
             + "Change: " + arr[4]+ "\n"
             + "Open: " + arr[5]+ "\n"
             + "High: " + arr[6]+ "\n"
             + "Low: " + arr[7]+ "\n"
-            + "Volume: " + this.trim(arr[8]);
+            + "Volume: " + trim(arr[8]);
     },
-  
-    trim: function(str) {
-        if (!str) return null;
-        return str.toString().strip().replace(/[\s]{2,}/,' ');
+
+    extractNewsHeaders: function(channels) {
+	if (!channels || !channels[0])
+	    return [];
+	return channels[0].items.invoke('title');
     }
+    
 
 });
 

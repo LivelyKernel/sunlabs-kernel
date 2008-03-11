@@ -53,7 +53,6 @@ Object.subclass('URL', {
 	}
     },
     
-    
     inspect: function() {
 	return Object.toJSON(this);
     },
@@ -99,7 +98,8 @@ Object.subclass('URL', {
 	i = filename.indexOf(dirPart);
 	if (i == 0) localname = filename.substring(dirPart.length); // strip off leading directory ref
 	else localname = filename;
-	return new URL({protocol: this.protocol, port: this.port, hostname: this.hostname, pathname: this.dirname() + localname });
+	return new URL({protocol: this.protocol, port: this.port, 
+			hostname: this.hostname, pathname: this.dirname() + localname});
     },
 
     withQuery: function(record) {
@@ -314,13 +314,55 @@ Wrapper.subclass('FeedItem', {
     
 });
 
+View.subclass('Feed', {
+    documentation: "populates model with feed results", // FIXME
+
+    toString: function() {
+	return "#<Feed>";
+    },
+    
+    updateView: function(aspect, source) { // model vars: getURL, getRawFeedContents, setRawFeedContents, setFeedChannels
+        var p = this.modelPlug;
+	if (!p) return;
+	
+	if (aspect == p.getURL || aspect == 'all') {
+	    var url = this.getModelValue('getURL');
+	    this.request(url, p.setRawFeedContents);
+        } else if (aspect == p.getRawFeedContents) {
+	    var elt = this.getModelValue('getRawFeedContents');
+	    this.setModelValue('setFeedChannels', this.parseChannels(elt));
+	} else {
+	    //console.log(this + " does not respond to " + aspect);
+	}
+    },
+    
+    request: function(url, destVariable) {
+        var hourAgo = new Date((new Date()).getTime() - 1000*60*60);
+	var req = new NetRequest({model: this.getModel(), setResponseXML: destVariable});
+	req.setContentType('text/xml');
+	req.setRequestHeaders({ "If-Modified-Since": hourAgo.toString() });
+	req.get(url);
+    },
+
+    parseChannels: function(elt) {
+	var results = new Query(elt).evaluate(elt, '/rss/channel', []);
+        var channels = [];
+        for (var i = 0; i < results.length; i++) {
+	    channels.push(new FeedChannel(results[i]));
+        }
+	return channels;
+    }
+
+});
+
+
 
 /**
  * @class Feed: RSS feed reader
  */
 // FIXME something clever, maybe an external library?
 
-WidgetModel.subclass('Feed', {
+Widget.subclass('FeedWidget', {
 
     defaultViewExtent: pt(500, 200),
     openTriggerVariable: null,
@@ -328,29 +370,24 @@ WidgetModel.subclass('Feed', {
     initialize: function($super, urlString) {
 	$super(null);
         this.url = new URL(urlString);
-        this.channels = null;
+	var model = new SimpleModel(null, 'URL');
+	this.connectModel({model: model});
     },
     
-    request: function() {
-        var hourAgo = new Date((new Date()).getTime() - 1000*60*60);
-	var req = new NetRequest({model: this, setResponseXML: "setNextFeed"});
-	req.setContentType('text/xml');
-	req.setRequestHeaders({ "If-Modified-Since": hourAgo.toString() });
-	req.get(this.url);
-    },
-
     toString: function() {
-        return "#<Feed: " + this.url + ">";
+        return "#<FeedWidget: " + this.url + ">";
     },
     
-    setNextFeed: function(responseXML) {
+    setRawFeedContents: function(responseXML) {
 	var elt = responseXML.documentElement;
         var results = new Query(elt).evaluate(elt, '/rss/channel', []);
-        this.channels = [];
+        var channels = [];
         for (var i = 0; i < results.length; i++) {
             this.channels.push(new FeedChannel(results[i]));
         }
-	this.changed('getChannels');
+	this.setModelValue('setChannels', channels);
+	
+
 	this.changed('getItemList');
 	this.changed('getChannelTitle');
     },
@@ -393,14 +430,16 @@ WidgetModel.subclass('Feed', {
     buildView: function(extent) {
         var panel = new PanelMorph(extent);
 	panel.applyStyle({fill: Color.blue.lighter(2), borderWidth: 2});
+
+	var model = this.getModel();
 	
         var rect = extent.extentAsRectangle();
         var m = panel.addMorph(newListPane(rect.withBottomRight(rect.bottomCenter())));
-        m.connectModel({model: this, getList: "getItemList", setSelection: "setItemTitle", getMenu: "getItemMenu"});
+        m.connectModel({model: model, getList: "getItemList", setSelection: "setItemTitle", getMenu: "getItemMenu"});
         
 	m = panel.addMorph(newTextPane(rect.withTopLeft(rect.topCenter())));
 	m.innerMorph().acceptInput = false;
-        m.connectModel({model: this, getText: "getCurrentEntry"});
+        m.connectModel({model: model, getText: "getCurrentEntry"});
         return panel;
     },
     
@@ -426,7 +465,7 @@ WidgetModel.subclass('Feed', {
     
     openIn: function($super, world, location) {
 	var win = $super(world, location);
-        this.request(this, "getItemList", 'getChannelTitle');
+        this.request();
         return win;
     }
     

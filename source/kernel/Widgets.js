@@ -2141,6 +2141,48 @@ Model.subclass('WidgetModel', {
 
 });
 
+
+
+View.subclass('Widget', { // FIXME remove code duplication
+    defaultViewExtent: pt(400, 300),
+    defaultViewTitle: "Widget",
+    defaultViewPosition: pt(50, 50),
+    openTriggerVariable: 'all',
+    documentation: "Nonvisual component of a widget",
+    
+    viewTitle: function() { // a string or a TextMorph
+	return this.defaultViewTitle;
+    },
+
+    buildView: function(extent) {
+	throw new Error("override me");
+    },
+
+    initialViewPosition: function(world, hint) {
+	return hint || this.defaultViewPosition;
+    },
+
+    initialViewExtent: function(world, hint) {
+	return hint || this.defaultViewExtent;
+    },
+    
+    openIn: function(world, loc) {
+        var win = 
+	    world.addFramedMorph(this.buildView(this.initialViewExtent(world)), 
+				 this.viewTitle(), 
+				 this.initialViewPosition(world, loc));
+	if (this.openTriggerVariable)
+            this.changed(this.openTriggerVariable);
+	return win;
+    },
+
+    open: function() { // call interactively
+	return this.openIn(WorldMorph.current());
+    }
+
+});
+
+
 WidgetModel.subclass('ConsoleWidget', {
 
     defaultViewTitle: "Console",

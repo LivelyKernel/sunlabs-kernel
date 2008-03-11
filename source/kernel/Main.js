@@ -148,7 +148,7 @@ function populateWorldWithExamples(world) {
 
             if (!lm1.myWorld.rssReader && Config.showRSSReader && Config.showNetworkExamples) {
                 console.log('initializing RSS reader');
-                lm1.myWorld.rssReader = new Feed("http://www.news.com/2547-1_3-0-5.xml").openIn(lm1.myWorld, pt(725, 120));
+                lm1.myWorld.rssReader = new FeedWidget("http://www.news.com/2547-1_3-0-5.xml").openIn(lm1.myWorld, pt(725, 120));
             }
 
             // Add sample curve stuff

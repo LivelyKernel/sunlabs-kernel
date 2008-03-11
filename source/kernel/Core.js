@@ -4469,7 +4469,7 @@ ViewTrait = {
 	}
 
 	if (!(plugSpec.model instanceof Model)) 
-	    console.log("model " + plugSpec.model +  " is not a Model");
+	    console.log("model " + plugSpec.model +  " is not a Model for " + this);
 	
         this.modelPlug = newPlug;
 
