@@ -2388,47 +2388,45 @@ Widget.subclass(scope, 'WeatherWidget', {
     defaultViewExtent: pt(250, 260),
     
     initialize: function($super) { 
-        $super();
-
+	
 	var model = new SimpleModel(null, "RawWeatherFeed", "WeatherChannels", 
 	    "WeatherURL", "WeatherDesc", "City", "ImageURL",
 	    "Temperature", "Wind", "Humidity", "DewPoint", "Gusts", "Visibility");
 
 	model.setImageURL("http://www.bbc.co.uk/weather/images/banners/weather_logo.gif");
-
-	this.connectModel({model: model, 
-			   getFeedChannels: "getWeatherChannels", 
-			   setURL: "setWeatherURL",
-			   getLocale: "getCity", 
-			   setWeatherDesc: "setWeatherDesc",
-			   setTemperature: "setTemperature",
-			   setWind: "setWind",
-			   setGusts: "setGusts",
-			   setDewPoint: "setDewPoint",
-			   setHumidity: "setHumidity",
-			   setVisibility: "setVisibility"});
+	
+	$super({model: model, 
+		getFeedChannels: "getWeatherChannels", 
+		setURL: "setWeatherURL",
+		getLocale: "getCity", 
+		setWeatherDesc: "setWeatherDesc",
+		setTemperature: "setTemperature",
+		setWind: "setWind",
+		setGusts: "setGusts",
+		setDewPoint: "setDewPoint",
+		setHumidity: "setHumidity",
+		setVisibility: "setVisibility"});
 	
 	var feed = new Feed({model: model, 
 	    setRawFeedContents: "setRawWeatherFeed", getRawFeedContents: "getRawWeatherFeed", 
 	    setFeedChannels: "setWeatherChannels", 
 	    getURL: "getWeatherURL" });
 	
-        // Fetch weather upon starting the widget
-
     },
     
     updateView: function(aspect, controller) {
-	if (this.modelPlug) {
-	    // console.log(this + ".updateView/" + aspect);
-	    switch (aspect) {
-	    case this.modelPlug.getFeedChannels:
-		this.parseChannels(this.getModelValue('getFeedChannels', null));
-		break;
-	    case this.modelPlug.getLocale:
-		this.updateLocale(this.getModelValue('getLocale', null));
-		break;
-	    }
+	var p = this.modelPlug;
+	if (!p) return;
+	// console.log(this + ".updateView/" + aspect);
+	switch (aspect) {
+	case p.getFeedChannels:
+	    this.parseChannels(this.getModelValue('getFeedChannels', null));
+	    break;
+	case p.getLocale:
+	    this.updateLocale(this.getModelValue('getLocale', null));
+	    break;
 	}
+	
     },
     
     parseChannels: function(channels) {
@@ -2559,18 +2557,17 @@ Widget.subclass('StockWidget', {
     defaultViewExtent: pt(580, 460),
 
     initialize: function($super) { 
-        $super();
 	var model = new SimpleModel(null, "NewsHeaders", "NewsURL", "StockIndex", "Quote",
 	    "IndexChartURL", "RawQuote", "Company", "RawNewsFeed", "NewsChannels");
-	this.connectModel({model: model, 
-			   getStockIndex: "getStockIndex", 
-			   getCompany: "getCompany", 
-			   getRawQuote: "getRawQuote",
-			   setQuote: "setQuote",
-			   setURL: "setNewsURL",
-			   setNewsHeaders: "setNewsHeaders",
-			   getNewsChannels: "getNewsChannels"});
-
+	$super({model: model, 
+		getStockIndex: "getStockIndex", 
+		getCompany: "getCompany", 
+		getRawQuote: "getRawQuote",
+		setQuote: "setQuote",
+		setURL: "setNewsURL",
+		setNewsHeaders: "setNewsHeaders",
+		getNewsChannels: "getNewsChannels"});
+	
 	var feed = new Feed({model: model, 
 	    setRawFeedContents: "setRawNewsFeed", getRawFeedContents: "getRawNewsFeed", 
 	    setFeedChannels: "setNewsChannels", 

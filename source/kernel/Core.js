@@ -4529,7 +4529,22 @@ ViewTrait = {
     }
 };
 
-Object.subclass('View', ViewTrait);
+Object.subclass('View', ViewTrait, {
+    
+    initialize: function(modelPlug) {
+	if (modelPlug)
+	    this.connectModel(modelPlug);
+    },
+    
+    getType: function() { // convenience
+	return this.constructor.getOriginal().type;
+    },
+    
+    toString: function() {
+	return "#<" + this.getType() + ">";
+    }
+
+});
 
 Morph.addMethods(ViewTrait);
 
