@@ -263,10 +263,6 @@ Model.subclass('FileBrowser', {
 	return this.CurrentResource;
     },
 
-
-    setCurrentResource: function(fileName) { // model
-    },
-
     resourceURL: function(resource) {
         return this.baseUrl.withPath(resource);
     },
