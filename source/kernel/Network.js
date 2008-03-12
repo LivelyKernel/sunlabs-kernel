@@ -140,15 +140,12 @@ View.subclass('NetRequest', {
     },
 
     initialize: function($super, modelPlug) {
-	$super(null);
 	this.transport = new XMLHttpRequest();
 	this.requestNetworkAccess();
 	this.transport.onreadystatechange = this.onReadyStateChange.bind(this);
 	this.isSync = false;
 	this.requestHeaders = new Hash();
-	if (modelPlug)
-	    this.connectModel(modelPlug);
-	
+	$super(modelPlug)
     },
 
     requestNetworkAccess: function() {
@@ -317,11 +314,6 @@ Wrapper.subclass('FeedItem', {
 View.subclass('Feed', {
     documentation: "populates model with feed results", // FIXME
 
-    initialize: function($super, modelPlug) {
-	$super();
-	if (modelPlug) this.connectModel(modelPlug);
-    },
-
     toString: function() {
 	return "#<Feed>";
     },
@@ -373,17 +365,16 @@ Widget.subclass('FeedWidget', {
     defaultViewExtent: pt(500, 200),
     
     initialize: function($super, urlString) {
-	$super();
 	var model = new SimpleModel(null, "FeedURL", "RawFeed",
 	    "ItemList", "ChannelTitle", "SelectedItemContent", "SelectedItemTitle", "FeedChannels", "ItemMenu");
 
-	this.connectModel({model: model, 
-			   getFeedChannels: "getFeedChannels", 
-			   setURL: "setFeedURL",
-			   setItemList: "setItemList",
-			   setChannelTitle: "setChannelTitle", 
-			   getSelectedItemTitle: "getSelectedItemTitle", 
-			   setSelectedItemContent: "setSelectedItemContent"});
+	$super({model: model, 
+		getFeedChannels: "getFeedChannels", 
+		setURL: "setFeedURL",
+		setItemList: "setItemList",
+		setChannelTitle: "setChannelTitle", 
+		getSelectedItemTitle: "getSelectedItemTitle", 
+		setSelectedItemContent: "setSelectedItemContent"});
 	var feed = new Feed({model: model, 
 	    setRawFeedContents: "setRawFeed", getRawFeedContents: "getRawFeed", 
 	    setFeedChannels: "setFeedChannels",
@@ -444,7 +435,7 @@ Widget.subclass('FeedWidget', {
     buildView: function(extent) {
         var panel = new PanelMorph(extent);
 	panel.applyStyle({fill: Color.blue.lighter(2), borderWidth: 2});
-
+	
 	var model = this.getModel();
 	
         var rect = extent.extentAsRectangle();

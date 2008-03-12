@@ -127,29 +127,84 @@ Wrapper.subclass('Resource', {
 
 });
 
-/**
- * @class WebStore
- */ 
+View.subclass('WebFile', { 
+    documentation: "Read/Write file",
+    outlets: ["Content", "-URL"],
+    
+    url: function() {
+	return this.getModelValue('getURL');
+    },
 
-Model.subclass('WebStore', {
+    initialize: function($super, plug) {
+	$super(plug);
+	// kickstart it to start fetching.
+	this.updateView(this.modelPlug.getURL, this);
+    },
 
-    documentation: "Network-based storage (WebDAV)",
-    /* note the async design: setting CurrentResource initiates fetching of CurrentResourceContents.
-       getting the CurrentResourceContents variable may involve processing of the contents if necessary
-     */
-
-    // FIXME a single argument that is like location (protocol, hostname, port, pathname, hash, search)
-    initialize: function($super, baseUrl) {
-        $super();
-	if (baseUrl === undefined) { // if called with no arguments, get the base URL of the location
-	    baseUrl = new URL(Global.location.toString()).dirnameURL();
+    updateView: function(aspect, source) {
+	var p = this.modelPlug;
+	if (!p) return;
+	switch (aspect) {
+	case p.getURL:
+	    this.fetchFile(this.url());
+	    // initiated here, contents will be saved later.
+	    break;
+	case p.getContent:
+	    this.saveFile(this.url(), this.getModelValue('getContent'));
+	    break;
 	}
-	this.baseUrl = baseUrl;
-        this.CurrentResource = null; // URL
-        this.CurrentResourceContents = "";
-	
+    },
+
+    fetchFile: function(url) {
+	var req = new NetRequest({model: this,  // this is not a model
+	    setResponseText: "setFileContent", 
+	    setStatus: "setRequestStatus"});
+	if (Config.suppressWebStoreCaching)
+	    req.setRequestHeaders({"Cache-Control": "no-cache"});
+	req.get(url);
     },
     
+    setFileContent: function(responseText) {
+	this.setModelValue("setContent", responseText);
+    },
+
+    saveFile: function(url, content) {
+	var req = new NetRequest({model: this, setStatus: "setRequestStatus"});
+	req.put(url, content);
+    },
+
+    setRequestStatus: function(statusInfo) {
+	// error reporting
+	var method = statusInfo.method;
+	var url = statusInfo.url;
+	var status = statusInfo.status;
+	if (status >= 300) {
+	    if (status == 401) {
+		WorldMorph.current().alert("not authorized to access " + method + " " + url); // should try to authorize
+	    } else {
+		WorldMorph.current().alert("failure to " + method + " "  + url + " code " + status);
+	    }
+	} else 
+	    console.log("status " + status + " on " + method + " " + url);
+    }
+    
+});
+
+
+Model.subclass('FileBrowser', {
+
+    documentation: "A model for a paned file browser",
+
+    initialize: function($super, host, path) {
+        $super();
+	this.baseUrl = new URL(Global.location.toString()).dirnameURL();
+        this.CurrentResource = null; // URL
+        this.CurrentResourceContents = "";
+        this.DirectoryList = [ this.baseUrl.path ];
+        this.CurrentDirectory = null;
+        this.CurrentDirectoryContents = null; // :Resource[]
+    },
+
 
     setRequestStatus: function(statusInfo) {
 	// error reporting
@@ -202,34 +257,20 @@ Model.subclass('WebStore', {
 	this.changed('getCurrentResourceContents', view);
     },
 
+    
+    // to be used by WebFile only
+    accessCurrentResource: function() {
+	return this.CurrentResource;
+    },
+
+
     setCurrentResource: function(fileName) { // model
-        if (!fileName) 
-	    return;
-        this.CurrentResource = this.baseUrl.withPath(fileName);
-        console.log("current resource set to %s", this.CurrentResource);
-	
-        // initialize getting the resource contents
-        this.fetch(this.CurrentResource);
     },
 
     resourceURL: function(resource) {
         return this.baseUrl.withPath(resource);
-    }
-
-    
-});
-
-
-WebStore.subclass('FileBrowser', {
-
-    documentation: "A model for a paned file browser",
-
-    initialize: function($super, host, path) {
-	$super(host, path);
-        this.DirectoryList = [ this.baseUrl.path ];
-        this.CurrentDirectory = null;
-        this.CurrentDirectoryContents = null; // :Resource[]
     },
+
     
     getDirectoryList: function() {
         return this.DirectoryList;
@@ -291,8 +332,8 @@ WebStore.subclass('FileBrowser', {
 	}
 	return first.concat(last);
     },
-
-    setCurrentResource: function($super, name) {
+    
+    setCurrentResource: function(name) {
         if (!name) 
 	    return;
         if (name.endsWith('/')) { // directory, enter it!
@@ -308,7 +349,10 @@ WebStore.subclass('FileBrowser', {
             this.CurrentDirectoryContents = [];
             this.changed('getCurrentDirectoryContents');
         } else {
-	    $super(name);
+            this.CurrentResource = this.baseUrl.withPath(name);
+            console.log("current resource set to %s", this.CurrentResource);
+            // initialize getting the resource contents
+            this.fetch(this.CurrentResource);
 	}
     },
 		
@@ -416,6 +460,7 @@ WebStore.subclass('FileBrowser', {
 	
     },
 
+
     getFileMenu: function() {
 	var items = [];
 	var url = this.CurrentResource;
@@ -426,11 +471,11 @@ WebStore.subclass('FileBrowser', {
 	var items = [
 	    ['edit in separate window', function(evt) {
 		var textEdit = newTextPane(new Rectangle(0, 0, 500, 200), "Fetching " + url + "...");
-		var webStore = new WebStore();
-		textEdit.innerMorph().connectModel({model: webStore, 
+		new WebFile({model: model, getURL: "accessCurrentResource", 
+			     setContent: "setCurrentResourceContents", getContent: "getCurrentResourceContents"});
+		textEdit.innerMorph().connectModel({model: model, 
 						    getText: "getCurrentResourceContents", 
 						    setText: "setCurrentResourceContents"});
-		webStore.fetch(url);
 		this.world().addFramedMorph(textEdit, url.toString(), evt.mousePoint);
 	    }],
 	    
