@@ -16,11 +16,11 @@
 var Global = window;
 
 var Canvas = document.getElementById("canvas"); // singleton for now
-if (Prototype.Browser.Opera) {
-   // Opera has issues with the height=100% setting, so we'll give it a reasonable value
-   Canvas.setAttribute("height", "800px"); 
+
+if (Canvas.height && Canvas.height.baseVal && Canvas.height.baseVal.value < 100) {
+    // a forced value, some browsers have problems with height=100%
+    Canvas.setAttribute("height", "800");
 }
-// Canvas.parentNode.addEventListener("paste", { handleEvent: function(evt) { console.log("got paste " + evt) }}, true);
 
 
 // ===========================================================================

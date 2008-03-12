@@ -317,6 +317,11 @@ Wrapper.subclass('FeedItem', {
 View.subclass('Feed', {
     documentation: "populates model with feed results", // FIXME
 
+    initialize: function($super, modelPlug) {
+	$super();
+	if (modelPlug) this.connectModel(modelPlug);
+    },
+
     toString: function() {
 	return "#<Feed>";
     },
@@ -324,15 +329,16 @@ View.subclass('Feed', {
     updateView: function(aspect, source) { // model vars: getURL, getRawFeedContents, setRawFeedContents, setFeedChannels
         var p = this.modelPlug;
 	if (!p) return;
-	
-	if (aspect == p.getURL || aspect == 'all') {
+	switch (aspect) {
+	case p.getURL:
 	    var url = this.getModelValue('getURL');
 	    this.request(url, p.setRawFeedContents);
-        } else if (aspect == p.getRawFeedContents) {
+	    break;
+        case p.getRawFeedContents:
 	    var elt = this.getModelValue('getRawFeedContents');
+	    var ch = this.parseChannels(elt);
 	    this.setModelValue('setFeedChannels', this.parseChannels(elt));
-	} else {
-	    //console.log(this + " does not respond to " + aspect);
+	    break;
 	}
     },
     
@@ -365,43 +371,64 @@ View.subclass('Feed', {
 Widget.subclass('FeedWidget', {
 
     defaultViewExtent: pt(500, 200),
-    openTriggerVariable: null,
     
     initialize: function($super, urlString) {
-	$super(null);
-        this.url = new URL(urlString);
-	var model = new SimpleModel(null, 'URL');
-	this.connectModel({model: model});
+	$super();
+	var model = new SimpleModel(null, "FeedURL", "RawFeed",
+	    "ItemList", "ChannelTitle", "SelectedItemContent", "SelectedItemTitle", "FeedChannels", "ItemMenu");
+
+	this.connectModel({model: model, 
+			   getFeedChannels: "getFeedChannels", 
+			   setURL: "setFeedURL",
+			   setItemList: "setItemList",
+			   setChannelTitle: "setChannelTitle", 
+			   getSelectedItemTitle: "getSelectedItemTitle", 
+			   setSelectedItemContent: "setSelectedItemContent"});
+	var feed = new Feed({model: model, 
+	    setRawFeedContents: "setRawFeed", getRawFeedContents: "getRawFeed", 
+	    setFeedChannels: "setFeedChannels",
+	    getURL: "getFeedURL"});
+	this.channels = null;
+	this.setModelValue('setURL', new URL(urlString));
+
+	var widget = this; 
+	model.ItemMenu = [ 
+	    ["get XML source", function(evt) {
+		var index = this.innerMorph().selectedLineNo();
+		var item = widget.channels[0].items[index]; // FIXME model-view dependency
+		var txt = item ? item.toMarkupString() : "?";
+		var infoPane = newTextPane(new Rectangle(0, 0, 500, 200), txt);
+		infoPane.innerMorph().acceptInput = false;
+		this.world().addFramedMorph(infoPane, "XML source for " + item.title(), evt.mousePoint);
+	    }]
+	];
     },
     
     toString: function() {
-        return "#<FeedWidget: " + this.url + ">";
+        return "#<FeedWidget>";
+    },
+
+    updateView: function(aspect, controller) {
+	var p = this.modelPlug;
+	if (!p) return;
+	switch (aspect) {
+	case this.modelPlug.getFeedChannels: 
+	    this.channels = this.getModelValue("getFeedChannels");
+	    this.setModelValue("setItemList",  this.extractItemList(this.channels));
+	    this.setModelValue("setChannelTitle", "RSS feed from " +  this.channels[0].title());
+	    break;
+	case this.modelPlug.getSelectedItemTitle:
+	    this.setModelValue("setSelectedItemContent",  this.getEntry(this.getModelValue("getSelectedItemTitle")));
+	    break;
+	}
     },
     
-    setRawFeedContents: function(responseXML) {
-	var elt = responseXML.documentElement;
-        var results = new Query(elt).evaluate(elt, '/rss/channel', []);
-        var channels = [];
-        for (var i = 0; i < results.length; i++) {
-            this.channels.push(new FeedChannel(results[i]));
-        }
-	this.setModelValue('setChannels', channels);
-	
-
-	this.changed('getItemList');
-	this.changed('getChannelTitle');
+    extractItemList: function(channels) {
+	return channels[0].items.invoke('title');
     },
 
-    items: function(index) {
-        return this.channels[index || 0].items;
-    },
-
-    getChannels: function() {
-	return this.channels;
-    },
-    
     getEntry: function(title) {
-        var items = this.items();
+        var items = this.channels[0].items;
         for (var i = 0; i < items.length; i++) {
             if (items[i].title() == title) {
                 return items[i].description();
@@ -410,21 +437,8 @@ Widget.subclass('FeedWidget', {
         return "";
     },
     
-    getItemList: function() { 
-	return this.items().invoke('title');
-    },
-
-    setItemTitle: function(title) { 
-	this.itemTitle = title; 
-	this.changed("getCurrentEntry"); 
-    },
-    
-    getCurrentEntry: function() { 
-	return this.getEntry(this.itemTitle);
-    },
-
-    getChannelTitle: function(index) { 
-	return "RSS feed from " + this.channels[index || 0].title(); 
+    getSelectedItemDescription: function() { 
+	return this.getEntry(this.getModelValue("getSelectedItemTitle"));
     },
 
     buildView: function(extent) {
@@ -435,38 +449,19 @@ Widget.subclass('FeedWidget', {
 	
         var rect = extent.extentAsRectangle();
         var m = panel.addMorph(newListPane(rect.withBottomRight(rect.bottomCenter())));
-        m.connectModel({model: model, getList: "getItemList", setSelection: "setItemTitle", getMenu: "getItemMenu"});
-        
+        m.connectModel({model: model, getList: "getItemList", 
+			setSelection: "setSelectedItemTitle", getMenu: "getItemMenu"});
 	m = panel.addMorph(newTextPane(rect.withTopLeft(rect.topCenter())));
 	m.innerMorph().acceptInput = false;
-        m.connectModel({model: model, getText: "getCurrentEntry"});
+        m.connectModel({model: model, getText: "getSelectedItemContent"});
         return panel;
     },
     
-    getItemMenu: function() {
-	var feed = this;
-	return [ 
-	    ["get XML source", function(evt) {
-		var index = this.innerMorph().selectedLineNo();
-		var item = feed.items()[index];
-		var txt = item ? item.toMarkupString() : "?";
-		var infoPane = newTextPane(new Rectangle(0, 0, 500, 200), txt);
-		infoPane.innerMorph().acceptInput = false;
-		this.world().addFramedMorph(infoPane, "XML source for " + item.title(), evt.mousePoint);
-	    }]
-	];
-    },
     
     viewTitle: function() {
 	var title = new TextMorph(new Rectangle(0, 0, 150, 15), 'RSS feed                    ').beLabel();
-	title.connectModel({model: this, getText: 'getChannelTitle'});
+	title.connectModel({model: this.getModel(), getText: 'getChannelTitle'});
 	return title;
-    },
-    
-    openIn: function($super, world, location) {
-	var win = $super(world, location);
-        this.request();
-        return win;
     }
     
 });

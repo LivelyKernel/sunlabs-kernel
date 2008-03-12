@@ -2101,7 +2101,7 @@ Dialog.subclass('PromptDialog', {
 });
 
 
-
+// most likely deprecated, should use Widget, which is a view.
 Model.subclass('WidgetModel', {
     defaultViewExtent: pt(400, 300),
     defaultViewTitle: "Widget",
@@ -2147,7 +2147,6 @@ View.subclass('Widget', { // FIXME remove code duplication
     defaultViewExtent: pt(400, 300),
     defaultViewTitle: "Widget",
     defaultViewPosition: pt(50, 50),
-    openTriggerVariable: 'all',
     documentation: "Nonvisual component of a widget",
     
     viewTitle: function() { // a string or a TextMorph
@@ -2171,8 +2170,6 @@ View.subclass('Widget', { // FIXME remove code duplication
 	    world.addFramedMorph(this.buildView(this.initialViewExtent(world)), 
 				 this.viewTitle(), 
 				 this.initialViewPosition(world, loc));
-	if (this.openTriggerVariable)
-            this.changed(this.openTriggerVariable);
 	return win;
     },
 

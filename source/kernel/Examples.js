@@ -2385,7 +2385,6 @@ Widget.subclass(scope, 'WeatherWidget', {
 
     imagepath: "Resources/weather/",
     defaultViewTitle: "Weather widget",
-    openTriggerVariable: null,
     defaultViewExtent: pt(250, 260),
     
     initialize: function($super) { 
@@ -2399,8 +2398,8 @@ Widget.subclass(scope, 'WeatherWidget', {
 
 	this.connectModel({model: model, 
 			   getFeedChannels: "getWeatherChannels", 
-			   getLocale: "getCity", 
 			   setURL: "setWeatherURL",
+			   getLocale: "getCity", 
 			   setWeatherDesc: "setWeatherDesc",
 			   setTemperature: "setTemperature",
 			   setWind: "setWind",
@@ -2409,12 +2408,10 @@ Widget.subclass(scope, 'WeatherWidget', {
 			   setHumidity: "setHumidity",
 			   setVisibility: "setVisibility"});
 	
-	var feed = new Feed();
-	feed.connectModel({model: model, 
-			   setRawFeedContents: "setRawWeatherFeed", 
-			   getRawFeedContents: "getRawWeatherFeed", 
-			   setFeedChannels: "setWeatherChannels", 
-			   getURL: "getWeatherURL" });
+	var feed = new Feed({model: model, 
+	    setRawFeedContents: "setRawWeatherFeed", getRawFeedContents: "getRawWeatherFeed", 
+	    setFeedChannels: "setWeatherChannels", 
+	    getURL: "getWeatherURL" });
 	
         // Fetch weather upon starting the widget
 	this.setModelValue("setURL", this.makeWeatherURL("6568"));// San Francisco International (SFO) as default
@@ -2558,7 +2555,6 @@ Widget.subclass('StockWidget', {
 
     defaultViewTitle: 'Stock Widget',
     defaultViewExtent: pt(580, 460),
-    openTriggerVariable: null,
 
     initialize: function($super) { 
         $super();
@@ -2566,7 +2562,6 @@ Widget.subclass('StockWidget', {
 	    "IndexChartURL", "RawQuote", "Company", "RawNewsFeed", "NewsChannels");
 	this.connectModel({model: model, 
 			   getStockIndex: "getStockIndex", 
-			   // setIndexChartURL: "setIndexChartURL",
 			   getCompany: "getCompany", 
 			   getRawQuote: "getRawQuote",
 			   setQuote: "setQuote",
@@ -2574,15 +2569,10 @@ Widget.subclass('StockWidget', {
 			   setNewsHeaders: "setNewsHeaders",
 			   getNewsChannels: "getNewsChannels"});
 
-	var feed = new Feed();
-
-	feed.connectModel({model: model, 
-			   setRawFeedContents: "setRawNewsFeed", 
-			   getRawFeedContents: "getRawNewsFeed", 
-			   setFeedChannels: "setNewsChannels", 
-			   // setURL: "setNewsURL",
-			   getURL: "getNewsURL" });
-
+	var feed = new Feed({model: model, 
+	    setRawFeedContents: "setRawNewsFeed", getRawFeedContents: "getRawNewsFeed", 
+	    setFeedChannels: "setNewsChannels", 
+	    getURL: "getNewsURL" });
 
 	this.setModelValue("setCompany", "JAVA");
     },
