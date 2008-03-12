@@ -4469,10 +4469,11 @@ ViewTrait = {
 	}
 
 	if (!(plugSpec.model instanceof Model)) 
-	    console.log("model " + plugSpec.model +  " is not a Model for " + this);
-	
-        this.modelPlug = newPlug;
+	    console.log("model " + plugSpec.model +  " is not a Model, view " + this);
 
+
+        this.modelPlug = newPlug;
+	
         if (plugSpec.model.addDependent) { // for mvc-style updating
             plugSpec.model.addDependent(this);
         } 

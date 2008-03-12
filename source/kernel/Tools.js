@@ -203,35 +203,62 @@ WidgetModel.subclass('ObjectBrowser', {
  * @class SimpleInspector: A simple JavaScript object (instance) inspector
  */
    
-WidgetModel.subclass('SimpleInspector', {
+Widget.subclass('SimpleInspector', {
 
     defaultViewExtent: pt(400,250),
-    openTriggerVariable: 'getPropList',
-    
+
     initialize: function($super, targetMorph) {
         $super();
-        this.inspectee = targetMorph;
+	var model = new SimpleModel(null, "PropList", "PropName", "PropText", "Inspectee", "EvalInput");
+	this.connectModel({model: model, 
+			   setPropList: "setPropList", 
+			   setPropName: "setPropName", getPropName: "getPropName",
+			   setPropText: "setPropText",
+			   getEvalInput: "getEvalInput",
+			   getInspectee: "getInspectee" });
+	model.setInspectee(targetMorph);
     },
 
-    getPropList: function() { return Object.properties(this.inspectee); },
-
-    setPropName: function(n, v) { this.propName = n; this.changed("getPropText", v) },
-
-    getPropList: function() { return Object.properties(this.inspectee); },
-
-    getPropText: function() {
-        if (this.selectedItem() == null) return "-----";
-        return Object.inspect(this.selectedItem()).withDecimalPrecision(2);
+    updateView: function(aspect, source) {
+	var p = this.modelPlug;
+	if (!p) return;
+	switch (aspect) {
+	case p.getInspectee:
+	    this.setModelValue("setPropList", Object.properties(this.inspectee()));
+	    break;
+	case p.getPropName:
+	    var prop = this.selectedItem();
+	    if (!prop) {
+		this.setModelValue("setPropText", "----");
+	    } else {
+		this.setModelValue("setPropText", Object.inspect(prop).withDecimalPrecision(2));
+	    }
+	    break;
+	case p.getEvalInput:
+	    var target = this.inspectee();
+	    var propName = this.getModelValue("getPropName");
+	    if (propName) {
+		var input = this.getModelValue("getEvalInput");
+		var result = eval(input, target);
+		target[propName] = result;
+		this.setModelValue("setPropText", result);
+	    }
+	    break;
+	}
     },
+    
 
-    setPropText: function(txt, v) { this.inspectee[this.propName] = eval(this, this.inspectee); },
-
-    selectedItem: function() { return this.inspectee[this.propName]; },
-
-    contextForEval: function() { return this.inspectee; },
+    inspectee: function() {
+	return this.getModelValue("getInspectee");
+    },
+    
+    selectedItem: function() {
+	var target = this.inspectee();
+	return target ? target[this.getModelValue("getPropName")] : undefined;
+    },
 
     viewTitle: function() {
-	return 'Inspector (%s)'.format(this.inspectee).truncate(50);
+	return 'Inspector (%s)'.format(this.inspectee()).truncate(50);
     },
 	
     /*
@@ -248,23 +275,30 @@ WidgetModel.subclass('SimpleInspector', {
             ['rightPane', newTextPane, new Rectangle(0.5, 0, 0.5, 0.6)],
             ['bottomPane', newTextPane, new Rectangle(0, 0.6, 1, 0.4)]
         ]);
-        var m = panel.leftPane;
-        m.connectModel({model: this, getList: "getPropList", setSelection: "setPropName"});
-        m = panel.rightPane;
-        m.connectModel({model: this, getText: "getPropText", setText: "setPropText", doitContext: "contextForEval"});
-        m = panel.bottomPane;
-        m.connectModel({model: this, doitContext: "contextForEval"});
+
+	var model = this.getModel();
+	
+        panel.leftPane.connectModel({model: model, 
+				     getList: "getPropList", setSelection: "setPropName"});
+	
+        panel.rightPane.connectModel({model: model, 
+				      getText: "getPropText", setText: "setEvalInput", doitContext: "getInspectee"});
+
+        var m = panel.bottomPane;
+	m.connectModel({model: model, doitContext: "getInspectee"});
         m.innerMorph().setTextString("doits here have this === inspectee");
 
-        var thisModel = this;
+	var widget = this;
         panel.morphMenu = function(evt) { // offer to inspect the current selection
             var menu = Morph.prototype.morphMenu.call(this, evt);
-            if (thisModel.selectedItem() == null) return menu;
+	    if (!widget.selectedItem()) return menu;
             menu.addLine();
             menu.addItem(['inspect selection', function() { 
-		new SimpleInspector(thisModel.selectedItem()).open()}])
+		new SimpleInspector(widget.selectedItem()).open()}])
             return menu; 
         }
+	// kickstart the dependencies
+	model.setInspectee(model.getInspectee());
 	return panel;
 
     }

@@ -111,7 +111,7 @@ function populateWorldWithExamples(world) {
     if (Config.showTester) new WidgetTester().openIn(world, pt(835, 450));
 
     if (Config.showLivelyConsole  && window.console.consumers) {
-	new ConsoleWidget(50).openIn(world, pt(0, world.viewport().height - 190));
+	new ConsoleWidget(50).openIn(world, pt(0, world.viewport().height - 210));
     }
 
     if (Config.showInnerWorld) {

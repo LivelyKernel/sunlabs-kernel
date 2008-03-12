@@ -2414,7 +2414,7 @@ Widget.subclass(scope, 'WeatherWidget', {
 	    getURL: "getWeatherURL" });
 	
         // Fetch weather upon starting the widget
-	this.setModelValue("setURL", this.makeWeatherURL("6568"));// San Francisco International (SFO) as default
+
     },
     
     updateView: function(aspect, controller) {
@@ -2538,6 +2538,8 @@ Widget.subclass(scope, 'WeatherWidget', {
         var image = panel.addMorph(new ImageMorph(new Rectangle(40,230,100,20)));
         image.connectModel({model: model, getURL: "getImageURL"});
         image.setFill(null);
+    
+	this.updateLocale("San Francisco, California");
         return panel;
     }
     
@@ -2573,26 +2575,27 @@ Widget.subclass('StockWidget', {
 	    setRawFeedContents: "setRawNewsFeed", getRawFeedContents: "getRawNewsFeed", 
 	    setFeedChannels: "setNewsChannels", 
 	    getURL: "getNewsURL" });
-
-	this.setModelValue("setCompany", "JAVA");
+	model.setCompany("JAVA");
     },
 
     updateView: function(aspect, controller) {
+	var p = this.modelPlug;
+	if (!p) return;
 	switch (aspect) {
-	case this.modelPlug.getStockIndex:
+	case p.getStockIndex:
 	    var item = this.getModelValue("getStockIndex");
             var entry = this.config[item];
 	    //	    this.setModelValue("setIndexChartURL", entry.image);
 	    this.setModelValue("setURL", this.makeNewsURL(entry.ticker));
 	    break;
-	case this.modelPlug.getCompany:
+	case p.getCompany:
 	    this.requestQuote(this.getModelValue("getCompany"), "setRawQuote");
 	    break;
-	case this.modelPlug.getRawQuote:
+	case p.getRawQuote:
 	    var fmtQuote = this.formatQuote(this.getModelValue('getRawQuote', "").split(','));
 	    this.setModelValue('setQuote', fmtQuote);
 	    break;
-	case this.modelPlug.getNewsChannels:
+	case p.getNewsChannels:
 	    var channels = this.getModelValue('getNewsChannels');
 	    this.setModelValue('setNewsHeaders', this.extractNewsHeaders(channels));
 	    break;

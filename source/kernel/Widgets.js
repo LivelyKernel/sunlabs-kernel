@@ -1758,6 +1758,18 @@ Morph.subclass("ScrollPane", {
         if (plugSpec.getMenu) this.addMenuButton(plugSpec.getMenu);
     },
     
+    disconnectModel: function() {
+	this.innerMorph().disconnectModel();
+    },
+    
+    getModel: function() {
+	return this.innerMorph().getModel();
+    },
+
+    updateView: function(aspect, source) {
+	return this.innerMorph().updateView(aspect, source);
+    },
+
     addMenuButton: function(modelMsg) {
         this.paneMenuMessage = modelMsg;
         var w = this.scrollBarWidth;
