@@ -12,7 +12,7 @@
  * Tools.js.  This file defines various tools such as the class browser,
  * object inspector, style editor, and profiling and debugging capabilities.  
  */
-
+(function(module) {
 
 
 // ===========================================================================
@@ -1018,8 +1018,9 @@ ChangeList.subclass('SourceDatabase', {
 	return "Source Control for " + this.fileName;
     }
 });
-var SourceControl = null;
 
+module.SourceControl = null;
 
-console.log('loaded Tools.js');
+}).logCompletion("Tools.js")(Global);
+
 
