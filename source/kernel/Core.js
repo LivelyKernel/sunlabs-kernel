@@ -3691,7 +3691,26 @@ Morph.addMethods({
                 this.changed();
             }
         }
+    },
+
+    // Experimental radial "black hole" scrolling feature
+    // See Sun Labs Technical Report SMLI TR-99-74, March 1999
+    // TODO: This is NOT a reversible, "form-preserving" implementation yet
+    // Fix later.
+    moveRadially: function(towardsPoint, howMuch) {
+        var position = this.getPosition();
+        var relativePt = position.subPt(towardsPoint);
+        var distance = towardsPoint.dist(position);
+        var theta = Math.atan2(relativePt.y, relativePt.x);
+        distance += howMuch;
+        var newX = distance * Math.cos(theta);
+        var newY = distance * Math.sin(theta);
+        this.setPosition(towardsPoint.addPt(pt(newX,newY)));
+        if (distance < 5) this.setScale(0);
+        else if (distance < 200) this.setScale(distance/200);
+        else if (this.getScale() != 1) this.setScale(1);
     }
+
 });
     
 Morph.addMethods({     // help handling
@@ -5266,7 +5285,7 @@ PasteUpMorph.subclass("WorldMorph", {
     reactiveAddMorph: function(morph, relatedMorph) { 	// add morph in response to a user action, make it prominent
 	return this.addMorphAt(morph, this.positionForNewMorph(relatedMorph));
     }
-    
+
 });
 
 Object.extend(WorldMorph, {    
@@ -5532,6 +5551,9 @@ Morph.subclass("HandMorph", {
     },
 
     moveTopMorph: function(evt) {
+        var world = WorldMorph.current();
+        var towardsPoint = pt(400, 300); // world.bounds().center();
+
         switch (evt.getKeyCode()) {
         case Event.KEY_LEFT:
             this.topSubmorph().moveBy(pt(-10,0));
@@ -5550,7 +5572,26 @@ Morph.subclass("HandMorph", {
             this.topSubmorph().moveBy(pt(0, 10));
             evt.stop();
             return true;
+
+        // xxxxxx Experimental radial scrolling feature xxxxxx
+        case Event.KEY_PAGEUP:
+            for (var i = 0; i < world.submorphs.length; i++) {
+                var morph = world.submorphs[i];
+                morph.moveRadially(towardsPoint, 10);
+            }
+            this.moveRadially(towardsPoint, 10);            
+            evt.stop();
+            return true;
+        case Event.KEY_PAGEDOWN:
+            for (var i = 0; i < world.submorphs.length; i++) {
+                var morph = world.submorphs[i];
+                morph.moveRadially(towardsPoint, -10);
+            }
+            this.moveRadially(towardsPoint, -10);            
+            evt.stop();
+            return true;
         }
+        
         return false;
     },
 
