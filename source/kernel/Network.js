@@ -95,10 +95,16 @@ Object.subclass('URL', {
     
     withFilename: function(filename) {
 	var dirPart = this.dirname();
-	i = filename.indexOf(dirPart);
-	if (i == 0) localname = filename.substring(dirPart.length); // strip off leading directory ref
-	else localname = filename;
-	return new URL({protocol: this.protocol, port: this.port, 
+	var i = filename.indexOf(dirPart);
+	var localname = filename;
+	if (i >= 0) localname = filename.substring(i + dirPart.length); // strip off leading directory ref
+	var proto = this.protocol;
+	if(proto.endsWith(":")) { // Deal with extra colon on protocol part
+		console.log("bad protocol = " + proto);
+		proto = proto.substring(0,proto.length-1);
+		console.log("fixed protocol = " + proto);
+	}
+	return new URL({protocol: proto, port: this.port, 
 			hostname: this.hostname, pathname: this.dirname() + localname});
     },
 
