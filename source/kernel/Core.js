@@ -4468,9 +4468,8 @@ ViewTrait = {
 	    this.persistPlug(newPlug);
 	}
 
-	if (!(plugSpec.model instanceof Model)) 
+	if (!(plugSpec.model instanceof Model) && !this.checkModel(plugSpec))
 	    console.log("model " + plugSpec.model +  " is not a Model, view " + this);
-
 
         this.modelPlug = newPlug;
 	
@@ -4478,6 +4477,16 @@ ViewTrait = {
             plugSpec.model.addDependent(this);
         } 
 	return this;
+    },
+
+    checkModel: function(plugSpec) {
+	// For non-models, check that all supplied handler methods can be found
+	for (var modelMsg in plugSpec) {
+	    if ((modelMsg != 'model') && !(plugSpec.model[plugSpec[modelMsg]] instanceof Function)) {
+		console.log("Supplied method name, " + plugSpec[modelMsg] + " does not resolve to a function.");
+		return false; }
+	}
+	return true;
     },
 
     disconnectModel: function() {
