@@ -8,6 +8,8 @@
  * other countries.
  */ 
 
+var Application;
+
 /**
  * Main.js.  System startup and demo loading.
  */
@@ -126,6 +128,8 @@ function populateWorldWithExamples(world) {
         world.addMorph(widgetTextMorph);
 
         lm1.myWorld.onEnter = function() {
+
+            PIM = new WebPIM().openIn(lm1.myWorld, pt(110, 110));
 
             if (Config.showCanvasScape) {
                 if (!lm1.myWorld.csMorph) {
