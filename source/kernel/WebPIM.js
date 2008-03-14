@@ -210,6 +210,16 @@ SelectorItem.subclass('SelectorFolder', {
         }
 
         return tally;
+    },
+    
+    // Returns true if any of the items in the folder or its subfolders
+    // contains items that were found during the latest search operation
+    containsFoundItems: function() {
+        for (var i = 0; i < this.items.length; i++) {
+            var item = this.items[i];
+            if (item.found) return true;
+            if (item.isFolder() && item.containsFoundItems()) return true;
+        }
     }
 
 });
@@ -401,15 +411,39 @@ ImageMorph.subclass("CaptionImageMorph", {
         var imageName = null;
 
         // TODO: We should avoid reloading the same images/URLs all over again
+
+        // Note: Folder icon color changes based on folder state
+        // (empty/non-empty, open/closed, or whether the folder
+        // contains found items or not)
         
         var imageName = null;
         if (model instanceof SelectorFolder) {
-            if (model.isOpen()) 
-                 imageName = PIM_RSC + "Icon_Folder_Opened.PNG";
-            else imageName = PIM_RSC + "Icon_Folder_Closed.PNG";
-        } else        
-        if (model instanceof SelectorNote) {
-            imageName = PIM_RSC + "Icon_Note.PNG";
+            if (model.isOpen()) { 
+                if (model.isEmptyFolder()) {
+                    imageName = PIM_RSC + "Icon_Folder_Opened_Empty.PNG";
+                } else {
+                    if (PIM && PIM.selectorView.searchMode && model.containsFoundItems()) {
+                        imageName = PIM_RSC + "Icon_Folder_Opened_Found.PNG";
+                    } else {
+                        imageName = PIM_RSC + "Icon_Folder_Opened.PNG";
+                    }                
+                }
+            }
+            else {
+                if (model.isEmptyFolder()) {
+                    imageName = PIM_RSC + "Icon_Folder_Closed_Empty.PNG";
+                } else {
+                    if (PIM && PIM.selectorView.searchMode && model.containsFoundItems()) {
+                        imageName = PIM_RSC + "Icon_Folder_Closed_Found.PNG";
+                    } else {
+                        imageName = PIM_RSC + "Icon_Folder_Closed.PNG";
+                    }
+                }
+            }
+        } else {        
+            if (model instanceof SelectorNote) {
+                imageName = PIM_RSC + "Icon_Note.PNG";
+            }
         }
 
         $super(initialBounds, imageName);
