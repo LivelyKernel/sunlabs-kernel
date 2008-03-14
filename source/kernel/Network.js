@@ -58,7 +58,7 @@ Object.subclass('URL', {
     },
     
     toString: function() {
-	return this.protocol + "://" + this.hostname + (this.port ? ":" + this.port : "") + this.fullPath();
+	return this.protocol + "//" + this.hostname + (this.port ? ":" + this.port : "") + this.fullPath();
     },
 
     fullPath: function() {
@@ -72,12 +72,14 @@ Object.subclass('URL', {
     // POSIX style
     dirname: function() {
 	var p = this.fullPath();
-	return p.substring(0, p.lastIndexOf('/') + 1);
+	var slash = p.endsWith('/') ? p.lastIndexOf('/', p.length - 2) : p.lastIndexOf('/');
+	return p.substring(0, slash + 1);
     },
 
     filename: function() {
 	var p = this.fullPath();
-	return p.substring(p.lastIndexOf('/') + 1);
+	var slash = p.endsWith('/') ? p.lastIndexOf('/', p.length - 2) : p.lastIndexOf('/');
+	return p.substring(slash + 1);
     },
 
     dirnameURL: function() {
@@ -94,18 +96,11 @@ Object.subclass('URL', {
     },
     
     withFilename: function(filename) {
-	var dirPart = this.dirname();
-	var i = filename.indexOf(dirPart);
-	var localname = filename;
-	if (i >= 0) localname = filename.substring(i + dirPart.length); // strip off leading directory ref
-	var proto = this.protocol;
-	if(proto.endsWith(":")) { // Deal with extra colon on protocol part
-		console.log("bad protocol = " + proto);
-		proto = proto.substring(0,proto.length-1);
-		console.log("fixed protocol = " + proto);
-	}
-	return new URL({protocol: proto, port: this.port, 
-			hostname: this.hostname, pathname: this.dirname() + localname});
+	if (filename == "./" || filename == ".") // a bit of normalization, not foolproof
+	    filename = "";
+	var dirPart = this.isDirectory() ? this.fullPath() : this.dirname();
+	return new URL({protocol: this.protocol, port: this.port, 
+			hostname: this.hostname, pathname: dirPart + filename});
     },
 
     withQuery: function(record) {
@@ -116,7 +111,7 @@ Object.subclass('URL', {
 });
 
 Object.extend(URL, {
-    splitter: new RegExp('(http|https|file)://([^/:]*)(:[0-9]+)?(/.*)?'),
+    splitter: new RegExp('(http:|https:|file:)//([^/:]*)(:[0-9]+)?(/.*)?'),
     pathSplitter: new RegExp("([^\\?#]*)(\\?[^#]*)?(#.*)?"),
     source: new URL(Global.location)
 });
@@ -217,15 +212,21 @@ View.subclass('NetRequest', {
     },
     
     request: function(method, url, content) {
-	this.url = url;
-	this.method = method.toUpperCase();
-	this.transport.open(this.method, url.toString(), !this.isSync);
-	this.requestHeaders.each(function(p) { 
-	    this.transport.setRequestHeader(p.key, p.value);
-	}.bind(this));
-	
-	this.transport.send(content || undefined);
-	return this;
+	try {
+	    this.url = url;
+	    this.method = method.toUpperCase();
+	    this.transport.open(this.method, url.toString(), !this.isSync);
+	    this.requestHeaders.each(function(p) { 
+		this.transport.setRequestHeader(p.key, p.value);
+	    }.bind(this));
+	    this.transport.send(content || undefined);
+	    return this;
+	} catch (er) {
+	    var status = this.getStatus();
+	    status.exception = er;
+	    this.setModelValue("setStatus", status);
+	    throw er;
+	}
     },
     
     get: function(url) {
