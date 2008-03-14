@@ -1465,7 +1465,6 @@ Object.subclass('WebPIM', {
             alert("Application not initialized yet.  Unable to read data from web server.");
             return;
         }
-        var app = PIM;
 
         // Data on our web server is stored as a large key-value store.
         // We read the data into a Hash object for preprocessing.
@@ -1479,12 +1478,12 @@ Object.subclass('WebPIM', {
         // Find the root object
         var value = hash.get("root");
         if (value) {
-            var rootObject = app.unserializeValue(hash, value, BASE_ID-1, app);
-            app.items = rootObject.items;
+            var rootObject = PIM.unserializeValue(hash, value, BASE_ID-1, PIM);
+            PIM.items = rootObject.items;
         }
         else alert("Root object not found on the web server");
 
-        app.selectorView.updateView();
+        PIM.selectorView.updateView();
     },
 
     unserializeValue: function(hash, value, id, parent) {
@@ -1577,7 +1576,7 @@ Object.subclass('WebPIM', {
     generateFolderContents: function(target, objectToView, nameToView, fullPath, recursion) {
 
         // Avoid memory overflow / excessive recursion
-        if (objectToView == null || objectToView.length > 300 || recursion > 5) return;
+        if (objectToView == null || recursion > 5) return;
 
         // Avoid analyzing the Global namespace more than once
         if (recursion > 0 && (objectToView == Global || fullPath == "")) return;
