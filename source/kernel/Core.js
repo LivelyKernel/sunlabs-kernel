@@ -3644,7 +3644,7 @@ Morph.addMethods({
     },
     
     rotateBy: function(delta) {
-        this.setRotation(this.getRotation()+delta);
+	this.setRotation(this.getRotation()+delta);
     },
 
     scaleBy: function(delta) {
@@ -5071,7 +5071,13 @@ PasteUpMorph.subclass("WorldMorph", {
     stopSteppingFor: function(action, fromStart) {
         // fromStart means it is just getting rid of a previous one if there,
         // but not an error if not found
-        var list = this.scheduledActions;  // shorthand
+
+        if (this.currentScript === action) {
+		// Not in queue; just prevent it from being rescheduled
+		this.currentScript = null;
+		return;
+	}
+	var list = this.scheduledActions;  // shorthand
         for (var i = 0; i < list.length; i++) {
             var actn = list[i][1];
             if (actn === action) {
@@ -5114,21 +5120,24 @@ PasteUpMorph.subclass("WorldMorph", {
         while (list.length > 0 && list[list.length - 1][0] <= msTime) {
             var schedNode = list.pop();  // [time, action] -- now removed
             var action = schedNode[1];
+            this.currentScript = action; // so visible from stopStepping
             Function.resetDebuggingStack();  // Reset at each tick event
-            try {
+	    try {
                 action.exec();
             } catch (er) {
                 console.warn("error on actor %s: %s", action.actor, er);
                 Function.showStack();
+		timeStarted = new Date().getTime();
 		continue;
             }
             // Note: if error in script above, it won't get rescheduled below (this is good)
 	    
-
-            if (action.stepTime > 0) {
+            // Note: stopStepping may set currentScript to null so it won't get rescheduled
+            if (this.currentScript && action.stepTime > 0) {
                 var nextTime = msTime + action.stepTime;
                 this.scheduleAction(nextTime, action)
             }
+            this.currentScript = null;
 
             var timeNow = new Date().getTime();
             var ticks = timeNow - timeStarted;
