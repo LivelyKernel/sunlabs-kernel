@@ -276,6 +276,30 @@ View.subclass('NetRequest', {
 
 });
 
+
+NetRequestReporterTrait = {
+    setRequestStatus: function(statusInfo) { 
+	// error reporting
+	var method = statusInfo.method;
+	var url = statusInfo.url;
+	var status = statusInfo.status;
+	if (status.exception) {
+	    WorldMorph.current().alert("exception " + status.exception + " accessing " + method + " " + url);
+	} else if (status >= 300) {
+	    if (status == 401) {
+		WorldMorph.current().alert("not authorized to access " + method + " " + url); 
+		// should try to authorize
+	    } else {
+		WorldMorph.current().alert("failure to " + method + " "  + url + " code " + status);
+	    }
+	} else 
+	    console.log("status " + status + " on " + method + " " + url);
+    }
+};
+
+// convenience base class with built in handling of errors
+Object.subclass('NetRequestReporter', NetRequestReporterTrait);
+
 /**
  * @class FeedChannel: RSS feed channel
  */ 

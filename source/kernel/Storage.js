@@ -142,7 +142,63 @@ Wrapper.subclass('Resource', {
 
 });
 
-View.subclass('WebFile', { 
+
+NetRequestReporter.subclass('LoadHandler', {
+    initialize: function(url) {
+	this.url = url;
+    },
+
+    loadWorldInSubworld: function(responseText) {
+	var container = Loader.shrinkWrapContainer(doc);
+	if (container) {
+	    var importer = new Importer();
+	    var world = new WorldMorph(Canvas);
+	    var morphs = importer.importFromContainer(container, world);
+	    if (morphs.length > 0) {
+		for (var i = 0; i < morphs.length; i++) {
+		    // flatten: 
+		    if (morphs[i] instanceof WorldMorph) {
+			morphs[i].remove();
+			var subs = morphs[i].submorphs;
+			subs.invoke('remove');
+			subs.map(function(m) { world.addMorph(m) });
+		    } else {
+			world.addMorph(morphs[i]);
+		    }
+		}
+		var link = WorldMorph.current().reactiveAddMorph(new LinkMorph(world));
+		link.addPathBack();
+		return;
+	    } 
+	}
+	WorldMorph.current().alert('no morphs found in ' + this.url); 
+    },
+
+    loadWorldContents: function(doc) {
+	var container = Loader.shrinkWrapContainer(doc);
+	var world = null;
+	if (container) {
+	    var importer = new Importer();
+	    world = importer.importWorldFromContainer(container, WorldMorph.current());
+	} 
+	if (!world) 
+	    WorldMorph.current().alert('no morphs found in %s', this.url);
+    },
+
+
+    loadJavascript: function(responseText) {
+	console.log("evaluating " + responseText);
+	try {
+	    eval(responseText);
+	} catch (er) {
+	    WorldMorph.current().alert("eval got error " + er);
+	}
+    }
+    
+});
+
+
+View.subclass('WebFile', NetRequestReporterTrait, { 
     documentation: "Read/Write file",
     outlets: ["Content", "-URL"],
     
@@ -173,53 +229,40 @@ View.subclass('WebFile', {
     fetchFile: function(url) {
 	var req = new NetRequest({model: this,  // this is not a full model
 	    setResponseText: "pvtSetFileContent", 
-	    setStatus: "pvtSetRequestStatus"});
+	    setStatus: "setRequestStatus"});
 	if (Config.suppressWebStoreCaching)
 	    req.setRequestHeaders({"Cache-Control": "no-cache"});
 	req.get(url);
     },
 
     saveFile: function(url, content) {
-	var req = new NetRequest({model: this, setStatus: "pvtSetRequestStatus"});
+	var req = new NetRequest({model: this, setStatus: "setRequestStatus"});
 	req.put(url, content);
     },
 
     pvtSetFileContent: function(responseText) {
 	this.setModelValue("setContent", responseText);
-    },
-
-    pvtSetRequestStatus: function(statusInfo) {
-	// error reporting
-	var method = statusInfo.method;
-	var url = statusInfo.url;
-	var status = statusInfo.status;
-	if (status >= 300) {
-	    if (status == 401) {
-		WorldMorph.current().alert("not authorized to access " + method + " " + url); 
-		// should try to authorize
-	    } else {
-		WorldMorph.current().alert("failure to " + method + " "  + url + " code " + status);
-	    }
-	} else 
-	    console.log("status " + status + " on " + method + " " + url);
     }
     
 });
 
-Widget.subclass('FileBrowser', {
+
+
+Widget.subclass('FileBrowser', NetRequestReporterTrait, {
 
     initialize: function(baseUrl) {
 	if (!baseUrl) baseUrl = URL.source.dirnameURL();
 	var model = new SimpleModel(null, 
-	    "RootNode", //: URL
+	    "RootNode", //: URL, constant
 	    "SelectedSuperNode", //:URL
 	    "SelectedSubNode",  // :Resource
-	    "SelectedSuperNodeName", "SelectedSubNodeName",
-	    "SelectedSubNodeContents",
-	    "SelectedSubNodeProperties",
-	    "SuperNodeList",  //:URL[] ?
-	    "SubNodeList",   // :Resource[] ?
-	    "SuperNodeNameList", "SubNodeNameList",
+	    "SelectedSuperNodeName", "SelectedSubNodeName", //:String
+	    "SelectedSubNodeContents", //:String
+	    "SelectedSubNodeProperties", //:String
+	    "SuperNodeList",  //:URL[]
+	    "SubNodeList",   // :Resource[]
+	    "SuperNodeNameList", // :String[]
+	    "SubNodeNameList", // :String[]
 	    "SuperNodeListMenu", "SubNodeListMenu");
 	
 	// this got a bit out of hand
@@ -235,9 +278,7 @@ Widget.subclass('FileBrowser', {
 			   getSelectedSubNodeContents: "getSelectedSubNodeContents", setSelectedSubNodeContents: "setSelectedSubNodeContents", 
 			   getSubNodeListMenu: "getSubNodeListMenu",
 			   getSuperNodeListMenu: "getSuperNodeListMenu",
-			   getRootNode: "getRootNode", 
-			   setLoadInSubworldResult: "setLoadInSubworldResult",
-			   setLoadResult: "setLoadResult"
+			   getRootNode: "getRootNode"
 			  });
 	model.setRootNode(baseUrl);
 	model.setSuperNodeList([baseUrl]);
@@ -300,17 +341,23 @@ Widget.subclass('FileBrowser', {
 	    if (url.filename().endsWith(".xhtml")) {
 		// FIXME: add loading into a new world
 		items.push(["load into current world", function(evt) {
-		    new NetRequest({model: model, setResponseXML: "setLoadResult", 
+		    var loader = new LoadHandler(url);
+		    new NetRequest({model: loader, setResponseXML: "loadWorldContents", 
 				    setStatus: "setRequestStatus"}).get(url);
 		}]);
 		
 		items.push(["load into new linked world", function(evt) {
-		    new NetRequest({model: model, setResponseXML: "setLoadInSubworldResult",
+		    var loader = new LoadHandler(url);
+		    new NetRequest({model: loader, setResponseXML: "loadWorldInSubworld",
 				    setStatus: "setRequestStatus"}).get(url);
 		}]);
 		
 	    } else if (fileName.endsWith(".js")) {
-		// FIXME 
+		items.push(["evaluate as Javascript", function(evt) {
+		    var loader = new LoadHandler(url);
+		    new NetRequest({model: loader, setResponseText: "loadJavascript",
+				    setStatus: "setRequestStatus"}).get(url);
+		}]);
 	    }
 	    
 	    var contents = this.getSelectedSubNodeContents();
@@ -326,24 +373,6 @@ Widget.subclass('FileBrowser', {
 
     },
 
-    pvtSetRequestStatus: function(statusInfo) { // FIXME copypaste
-	// error reporting
-	var method = statusInfo.method;
-	var url = statusInfo.url;
-	var status = statusInfo.status;
-	if (status.exception) {
-	    WorldMorph.current().alert("exception " + status.exception + " accessing " + method + " " + url);
-	} else if (status >= 300) {
-	    if (status == 401) {
-		WorldMorph.current().alert("not authorized to access " + method + " " + url); 
-		// should try to authorize
-	    } else {
-		WorldMorph.current().alert("failure to " + method + " "  + url + " code " + status);
-	    }
-	} else 
-	    console.log("status " + status + " on " + method + " " + url);
-    },
-    
     getSelectedSubNodeResource: function() {
 	var result = this.getModelValue("getSelectedSubNode");
 	result && (result instanceof URL) || console.log(result + " not instanceof URL");
@@ -358,6 +387,15 @@ Widget.subclass('FileBrowser', {
     getSelectedSuperNodeUrl: function() {
 	return this.getModelValue("getSelectedSuperNode");
     },
+
+    clearSubNodes: function() {
+	this.setModelValue("setSubNodeList", []);
+	this.setModelValue("setSubNodeNameList", []);
+	this.setSelectedSubNodeResource(null);
+	this.setModelValue("setSelectedSubNodeName", null);
+	this.setModelValue("setSelectedSubNodeContents", "");
+    },
+
 
     updateView: function(aspect, source) {
 	var p = this.modelPlug;
@@ -383,11 +421,7 @@ Widget.subclass('FileBrowser', {
 		//this.setModelValue("setSelectedSuperNodeName", newUrl.filename());
 		this.fetchDirectory(newUrl);
 	    } else {
-		this.setModelValue("setSubNodeList", []);
-		this.setModelValue("setSubNodeNameList", []);
-		this.setSelectedSubNodeResource(null);
-		this.setModelValue("setSelectedSubNodeName", null);
-		this.setModelValue("setSelectedSubNodeContents", "");
+		this.clearSubNodes();
 		console.log('selected non-directory on the left');
 	    }
 	    break;
@@ -409,12 +443,10 @@ Widget.subclass('FileBrowser', {
 		this.setModelValue("setSelectedSuperNode", newUrl);
 		this.setModelValue("setSelectedSuperNodeName", fileName);
 		if (fileName == "..") {
-		    this.setModelValue("setSubNodeList", []);
-		    this.setModelValue("setSubNodeNameList", []);
-		    this.setSelectedSubNodeResource(null);
-		    this.setModelValue("setSelectedSubNodeName", null);
-		    this.setModelValue("setSelectedSubNodeContents", "");
-		} else this.fetchDirectory(newUrl);
+		    this.clearSubNodes();
+		} else {
+		    this.fetchDirectory(newUrl);
+		}
 	    }
 	    break;
 	case p.setSelectedSubNodeContents:
@@ -425,7 +457,7 @@ Widget.subclass('FileBrowser', {
 
     fetchDirectory: function(url) {
 	var req = new NetRequest({model: this, setResponseXML: "setSelectedSuperNodeProperties", 
-	    setStatus: "pvtSetRequestStatus"});
+	    setStatus: "setRequestStatus"});
         // initialize getting the content
 	var dirUrl = this.getSelectedSuperNodeUrl();
 	req.propfind(dirUrl, 1);
@@ -455,7 +487,7 @@ Widget.subclass('FileBrowser', {
     fetchFile: function(url) { // copied from WebFile
 	var req = new NetRequest({model: this,  // this is not a full model
 	    setResponseText: "pvtSetFileContent", 
-	    setStatus: "pvtSetRequestStatus"});
+	    setStatus: "setRequestStatus"});
 	if (Config.suppressWebStoreCaching)
 	    req.setRequestHeaders({"Cache-Control": "no-cache"});
 	req.get(url);
@@ -487,43 +519,6 @@ Widget.subclass('FileBrowser', {
     },
 
 
-    setLoadResult: function(doc) {
-	var container = Loader.shrinkWrapContainer(doc);
-	var world = null;
-	if (container) {
-	    var importer = new Importer();
-	    world = importer.importWorldFromContainer(container, WorldMorph.current());
-	} 
-	if (!world) 
-	    WorldMorph.current().alert('no morphs found in %s', this.getModelValue("getSelectedSubNode")); 
-    },
-
-    setLoadInSubworldResult: function(doc) {
-	var container = Loader.shrinkWrapContainer(doc);
-	if (container) {
-	    var importer = new Importer();
-	    var world = new WorldMorph(Canvas);
-	    var morphs = importer.importFromContainer(container, world);
-	    if (morphs.length > 0) {
-		for (var i = 0; i < morphs.length; i++) {
-		    // flatten: 
-		    if (morphs[i] instanceof WorldMorph) {
-			morphs[i].remove();
-			var subs = morphs[i].submorphs;
-			subs.invoke('remove');
-			subs.map(function(m) { world.addMorph(m) });
-		    } else {
-			world.addMorph(morphs[i]);
-		    }
-		}
-		var link = WorldMorph.current().reactiveAddMorph(new LinkMorph(world));
-		link.addPathBack();
-		return;
-	    } 
-	}
-	WorldMorph.current().alert('no morphs found in %s', this.getModelValue("getSelectedSubNode")); 
-    },
-
 
 
 
@@ -551,7 +546,7 @@ Widget.subclass('FileBrowser', {
 		var toDelete  = model.resourceURL(this.itemList[this.selectedLineNo()]);
                 this.world().confirm("delete resource " + toDelete, function(result) {
 		    if (result) {
-			new NetRequest({model: model, setStatus: "pvtSetRequestStatus"}).del(toDelete);
+			new NetRequest({model: model, setStatus: "setRequestStatus"}).del(toDelete);
 		    } else console.log("cancelled deletion of " + toDelete);
 		});
                 evt.stop();
