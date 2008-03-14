@@ -263,7 +263,8 @@ Widget.subclass('FileBrowser', NetRequestReporterTrait, {
 	    "SubNodeList",   // :Resource[]
 	    "SuperNodeNameList", // :String[]
 	    "SubNodeNameList", // :String[]
-	    "SuperNodeListMenu", "SubNodeListMenu");
+	    "SuperNodeListMenu", "SubNodeListMenu",
+	    "SubNodeDeletionRequest", "SubNodeDeletionConfirmation");
 	
 	// this got a bit out of hand
 	this.connectModel({model: model, 
@@ -278,6 +279,8 @@ Widget.subclass('FileBrowser', NetRequestReporterTrait, {
 			   getSelectedSubNodeContents: "getSelectedSubNodeContents", setSelectedSubNodeContents: "setSelectedSubNodeContents", 
 			   getSubNodeListMenu: "getSubNodeListMenu",
 			   getSuperNodeListMenu: "getSuperNodeListMenu",
+			   setSubNodeDeletionConfirmation: "setSubNodeDeletionConfirmation",
+			   getSubNodeDeletionRequest: "getSubNodeDeletionRequest",
 			   getRootNode: "getRootNode"
 			  });
 	model.setRootNode(baseUrl);
@@ -375,7 +378,7 @@ Widget.subclass('FileBrowser', NetRequestReporterTrait, {
     
     getSelectedSubNodeResource: function() {
 	var result = this.getModelValue("getSelectedSubNode");
-	result && (result instanceof URL) || console.log(result + " not instanceof URL");
+	result && (result instanceof Resource) || console.log(result + " not instanceof Resource");
 	return result;
     },
     
@@ -395,7 +398,6 @@ Widget.subclass('FileBrowser', NetRequestReporterTrait, {
 	this.setModelValue("setSelectedSubNodeName", null);
 	this.setModelValue("setSelectedSubNodeContents", "");
     },
-
 
     updateView: function(aspect, source) {
 	var p = this.modelPlug;
@@ -421,8 +423,8 @@ Widget.subclass('FileBrowser', NetRequestReporterTrait, {
 		//this.setModelValue("setSelectedSuperNodeName", newUrl.filename());
 		this.fetchDirectory(newUrl);
 	    } else {
-		this.clearSubNodes();
-		console.log('selected non-directory on the left');
+		//this.clearSubNodes();
+		console.log("selected non-directory " + newUrl + " on the left");
 	    }
 	    break;
 	    
@@ -431,7 +433,6 @@ Widget.subclass('FileBrowser', NetRequestReporterTrait, {
 	    var fileName = this.getModelValue("getSelectedSubNodeName");
 	    if (!fileName) break;
 	    var newUrl = fileName == ".." ? dirUrl : dirUrl.withFilename(fileName);
-	    console.log("selected subnode " + newUrl);
 	    if (!newUrl.isDirectory()) {
 		// locate Resource based on the fileName;
 		var res = this.getModelValue("getSubNodeList", []).detect(function(r) { return r.shortName() == fileName});
@@ -451,6 +452,9 @@ Widget.subclass('FileBrowser', NetRequestReporterTrait, {
 	    break;
 	case p.setSelectedSubNodeContents:
 	    alert('should save ' + this.getSelectedSubNodeResource());
+	    break;
+	case p.getSubNodeDeletionRequest:
+	    this.deleteResource(this.getSelectedSubNodeResource());
 	    break;
 	}
     },
@@ -511,11 +515,25 @@ Widget.subclass('FileBrowser', NetRequestReporterTrait, {
 	return first.concat(last);
     },
 
-    
-    // deprecated!
-    resourceURL: function(resource) {
-	var dirUrl = this.getSelectedSuperNodeUrl() || this.getModelValue("getRootNode");  // if not set, pick the base url?
-        return dirUrl.withFilename(resource);// FIXME 
+    deleteResource: function(resource) {
+	var model = this.getModel();
+	if (resource.toURL().isDirectory()) {
+	    WorldMorph.current().alert("will not erase directory " + resource.toURL());
+	    model.setSubNodeDeletionConfirmation(false);
+	}
+	
+        WorldMorph.current().confirm("delete resource " + resource.toURL(), function(result) {
+	    if (result) {
+		var eraser = { 
+		    setRequestStatus: function(status) { 
+			if (status.status < 300) 
+			    model.setSubNodeDeletionConfirmation(true);
+			NetRequestReporterTrait.setRequestStatus.call(this, status);
+		    }
+		};
+		new NetRequest({model: eraser, setStatus: "setRequestStatus"}).del(resource.toURL());
+	    } else console.log("cancelled deletion of " + resource.toURL());
+	});
     },
 
 
@@ -534,21 +552,11 @@ Widget.subclass('FileBrowser', NetRequestReporterTrait, {
 
         var m = panel.rightPane;
         m.connectModel({model: model, getList: "getSubNodeNameList", setSelection: "setSelectedSubNodeName", 
+			getDeletionConfirmation: "getSubNodeDeletionConfirmation",
+			setDeletionRequest: "setSubNodeDeletionRequest",
 			getMenu: "getSubNodeListMenu"});
-        
-	m.innerMorph().onKeyPress = function(evt) {
-            if (evt.getKeyCode() == Event.KEY_BACKSPACE) { // Replace the selection after checking for type-ahead
-		evt.stop(); // stop no matter what
-		var resource = model.getSelectedSubNode();
-                this.world().confirm("delete resource " + resource.toURL(), function(result) {
-		    if (result) {
-			new NetRequest({model: model, setStatus: "setRequestStatus"}).del(resource.toURL());
-		    } else console.log("cancelled deletion of " + resource.toURL());
-		});
-
-            } else CheapListMorph.prototype.onKeyPress.call(this, evt);
-        };
-
+	
+	
         panel.bottomPane.connectModel({model: model, 
 				       getText: "getSelectedSubNodeContents", 
 				       setText: "setSelectedSubNodeContents"});
@@ -561,7 +569,7 @@ Widget.subclass('FileBrowser', NetRequestReporterTrait, {
 
     viewTitle: function() {
 	var title = new PrintMorph(new Rectangle(0, 0, 150, 15), 'File Browser').beLabel();
-	title.formatValue = function(value) { return String(value) };
+	title.formatValue = function(value) { return String(value) }; // don't inspect URLs, just toString() them.
 	title.connectModel({model: this.getModel(), getValue: "getSelectedSuperNode"});
 	return title;
     }
