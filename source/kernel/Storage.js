@@ -370,9 +370,9 @@ Widget.subclass('FileBrowser', NetRequestReporterTrait, {
 	    }
 	    return items; 
 	};
-
+	
     },
-
+    
     getSelectedSubNodeResource: function() {
 	var result = this.getModelValue("getSelectedSubNode");
 	result && (result instanceof URL) || console.log(result + " not instanceof URL");
@@ -519,9 +519,6 @@ Widget.subclass('FileBrowser', NetRequestReporterTrait, {
     },
 
 
-
-
-
     buildView: function(extent) {
         var panel = PanelMorph.makePanedPanel(extent, [
             ['leftPane', newListPane, new Rectangle(0, 0, 0.5, 0.6)],
@@ -538,18 +535,17 @@ Widget.subclass('FileBrowser', NetRequestReporterTrait, {
         var m = panel.rightPane;
         m.connectModel({model: model, getList: "getSubNodeNameList", setSelection: "setSelectedSubNodeName", 
 			getMenu: "getSubNodeListMenu"});
-	m.updateView = m.updateView.logCalls();
         
 	m.innerMorph().onKeyPress = function(evt) {
             if (evt.getKeyCode() == Event.KEY_BACKSPACE) { // Replace the selection after checking for type-ahead
-		var model = this.getModel();
-		var toDelete  = model.resourceURL(this.itemList[this.selectedLineNo()]);
-                this.world().confirm("delete resource " + toDelete, function(result) {
+		evt.stop(); // stop no matter what
+		var resource = model.getSelectedSubNode();
+                this.world().confirm("delete resource " + resource.toURL(), function(result) {
 		    if (result) {
-			new NetRequest({model: model, setStatus: "setRequestStatus"}).del(toDelete);
-		    } else console.log("cancelled deletion of " + toDelete);
+			new NetRequest({model: model, setStatus: "setRequestStatus"}).del(resource.toURL());
+		    } else console.log("cancelled deletion of " + resource.toURL());
 		});
-                evt.stop();
+
             } else CheapListMorph.prototype.onKeyPress.call(this, evt);
         };
 
