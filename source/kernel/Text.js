@@ -1708,6 +1708,7 @@ TextMorph.addMethods({
  * to a string using toString(), and from a string using eval()
  */ 
 TextMorph.subclass(Global, 'PrintMorph', {
+    
 
     updateView: function(aspect, controller) {
         var p = this.modelPlug;
@@ -1715,9 +1716,14 @@ TextMorph.subclass(Global, 'PrintMorph', {
             if (aspect == p.getValue || aspect == 'all') this.updateTextString(this.getModelText());
         }
     },
+
+    // overridable
+    formatValue: function(value) {
+	return Object.inspect(value).withDecimalPrecision(2);
+    },
     
     getModelText: function() {
-        return Object.inspect(this.getModelValue('getValue', null)).withDecimalPrecision(2);  
+        return this.formatValue(this.getModelValue('getValue', null));
     },
     
     setModelText: function(newText) {
