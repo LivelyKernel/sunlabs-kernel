@@ -45,7 +45,7 @@ Morph.subclass("ButtonMorph", {
 	
         $super(initialBounds, "rect");
         
-        var model = new SimpleModel(this, "Value");
+        var model = new SimpleModel("Value");
         // this default self connection may get overwritten by, eg, connectModel()...
         this.modelPlug = new ModelPlug(model.makePlugSpec());
         this.addNonMorph(this.modelPlug.rawNode);
@@ -1209,7 +1209,7 @@ TextMorph.subclass("CheapListMorph", {
 	
         this.itemList = itemList;
         // this default self connection may get overwritten by, eg, connectModel()...
-        var model = new SimpleModel(null, "List", "Selection");
+        var model = new SimpleModel("List", "Selection");
         this.modelPlug = new ModelPlug(model.makePlugSpec());
         this.addNonMorph(this.modelPlug.rawNode);
         this.setModelValue('setList', itemList);
@@ -1557,7 +1557,7 @@ Morph.subclass("SliderMorph", {
 
     initialize: function($super, initialBounds, scaleIfAny) {
         $super(initialBounds, "rect");
-        var model = new SimpleModel(null, "Value", "Extent");
+        var model = new SimpleModel("Value", "Extent");
         // this default self connection may get overwritten by, eg, connectModel()...
         this.modelPlug = new ModelPlug(model.makePlugSpec());
         this.addNonMorph(this.modelPlug.rawNode);
@@ -2182,9 +2182,10 @@ View.subclass('Widget', { // FIXME remove code duplication
 	return this.defaultViewTitle;
     },
 
-    buildView: function(extent) {
+    buildView: function(extent, model) {
 	throw new Error("override me");
     },
+
 
     initialViewPosition: function(world, hint) {
 	return hint || this.defaultViewPosition;
@@ -2196,7 +2197,7 @@ View.subclass('Widget', { // FIXME remove code duplication
     
     openIn: function(world, loc) {
         var win = 
-	    world.addFramedMorph(this.buildView(this.initialViewExtent(world)), 
+	    world.addFramedMorph(this.buildView(this.initialViewExtent(world), this.getModel()), 
 				 this.viewTitle(), 
 				 this.initialViewPosition(world, loc));
 	return win;

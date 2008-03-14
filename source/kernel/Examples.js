@@ -38,7 +38,7 @@ Global.WidgetTester = Model.subclass(Global, 'WidgetTester', {
         // Make a fancy panel.  Note: Transparency does not
         // work with gradients or stipple patterns yet!
         panel.linkToStyles(['widgetPanel']);
-        var model = new SimpleModel(null, 'Text', 'TextSel', 'ListItem', 'PrintValue', 'B1Value', 'B2Value', 'SliderValue', 'SliderExtent');
+        var model = new SimpleModel('Text', 'TextSel', 'ListItem', 'PrintValue', 'B1Value', 'B2Value', 'SliderValue', 'SliderExtent');
         panel.connectModel({model: model});
         var m; 
 
@@ -2389,7 +2389,7 @@ Widget.subclass(scope, 'WeatherWidget', {
     
     initialize: function($super) { 
 	
-	var model = new SimpleModel(null, "RawWeatherFeed", "WeatherChannels", 
+	var model = new SimpleModel("RawWeatherFeed", "WeatherChannels", 
 	    "WeatherURL", "WeatherDesc", "City", "ImageURL",
 	    "Temperature", "Wind", "Humidity", "DewPoint", "Gusts", "Visibility");
 
@@ -2557,7 +2557,7 @@ Widget.subclass('StockWidget', {
     defaultViewExtent: pt(580, 460),
 
     initialize: function($super) { 
-	var model = new SimpleModel(null, "NewsHeaders", "NewsURL", "StockIndex", "Quote",
+	var model = new SimpleModel("NewsHeaders", "NewsURL", "StockIndex", "Quote",
 	    "IndexChartURL", "RawQuote", "Company", "RawNewsFeed", "NewsChannels");
 	$super({model: model, 
 		getStockIndex: "getStockIndex", 
@@ -2638,9 +2638,8 @@ Widget.subclass('StockWidget', {
 	req.get(url);
     },
     
-    buildView: function(extent) {
+    buildView: function(extent, model) {
         var panel = new PanelMorph(extent);
-	var model = this.getModel();
 	var gradient = new LinearGradient(Color.white, Color.primary.blue.lighter(), LinearGradient.EastWest);
         panel.applyStyle({fill: gradient, borderWidth: 2});
 

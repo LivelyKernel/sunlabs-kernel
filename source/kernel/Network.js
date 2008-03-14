@@ -259,7 +259,7 @@ View.subclass('NetRequest', {
 
 
     test: function() {
-	var model = new SimpleModel(null, "Result");
+	var model = new SimpleModel("Result");
 	var request = new NetRequest({model: model, setResult: "setResponseText"});
 	var v = new View();
 	v.updateView = function(aspect, controller) { 
@@ -396,7 +396,7 @@ Widget.subclass('FeedWidget', {
     defaultViewExtent: pt(500, 200),
     
     initialize: function($super, urlString) {
-	var model = new SimpleModel(null, "FeedURL", "RawFeed",
+	var model = new SimpleModel("FeedURL", "RawFeed",
 	    "ItemList", "ChannelTitle", "SelectedItemContent", "SelectedItemTitle", "FeedChannels", "ItemMenu");
 
 	$super({model: model, 
@@ -426,10 +426,6 @@ Widget.subclass('FeedWidget', {
 	];
     },
     
-    toString: function() {
-        return "#<FeedWidget>";
-    },
-
     updateView: function(aspect, controller) {
 	var p = this.modelPlug;
 	if (!p) return;
@@ -463,11 +459,9 @@ Widget.subclass('FeedWidget', {
 	return this.getEntry(this.getModelValue("getSelectedItemTitle"));
     },
 
-    buildView: function(extent) {
+    buildView: function(extent, model) {
         var panel = new PanelMorph(extent);
 	panel.applyStyle({fill: Color.blue.lighter(2), borderWidth: 2});
-	
-	var model = this.getModel();
 	
         var rect = extent.extentAsRectangle();
         var m = panel.addMorph(newListPane(rect.withBottomRight(rect.bottomCenter())));

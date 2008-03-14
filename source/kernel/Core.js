@@ -2724,7 +2724,7 @@ Copier.subclass('Importer', {
 
 
     importModelFrom: function(ptree) {
-        var model = new SimpleModel(null);
+        var model = new SimpleModel();
         for (var node = ptree.firstChild; node != null; node = node.nextSibling) {
             switch (node.localName) {
             case "dependent":
@@ -3477,11 +3477,13 @@ Morph.addMethods({
     },
     
     withAllSubmorphsDo: function(func, rest) {
-	// Call the supplied function on me and all of my subMorphs by recursion.
+	// Call the supplied function on me and all of my submorphs by recursion.
 	var args = $A(arguments);
 	args.shift();
 	func.apply(this, args);
-	this.submorphs.invoke('withAllSubmorphsDo', func, args);
+	for (var i = 0; i < this.submorphs.length; i++) {
+	    this.submorphs[i].withAllSubmorphsDo(func, rest);
+	}
     },
 
     topSubmorph: function() {
@@ -4703,8 +4705,8 @@ Model.subclass('SimpleModel', {
         return "set" + varName;
     },
 
-    initialize: function($super, dep /*, variables... */) {
-        $super(dep);
+    initialize: function($super /*, variables... */) {
+        $super(null);
         var variables = $A(arguments);
         variables.shift();
         for (var i = 0; i < variables.length; i++) {

@@ -209,7 +209,7 @@ Widget.subclass('SimpleInspector', {
 
     initialize: function($super, targetMorph) {
         $super();
-	var model = new SimpleModel(null, "PropList", "PropName", "PropText", "Inspectee", "EvalInput");
+	var model = new SimpleModel("PropList", "PropName", "PropText", "Inspectee", "EvalInput");
 	this.connectModel({model: model, 
 			   setPropList: "setPropList", 
 			   setPropName: "setPropName", getPropName: "getPropName",
@@ -269,15 +269,13 @@ Widget.subclass('SimpleInspector', {
     },
    */
 
-    buildView: function(extent) {
+    buildView: function(extent, model) {
         var panel = PanelMorph.makePanedPanel(extent, [
             ['leftPane', newListPane, new Rectangle(0, 0, 0.5, 0.6)],
             ['rightPane', newTextPane, new Rectangle(0.5, 0, 0.5, 0.6)],
             ['bottomPane', newTextPane, new Rectangle(0, 0.6, 1, 0.4)]
         ]);
 
-	var model = this.getModel();
-	
         panel.leftPane.connectModel({model: model, 
 				     getList: "getPropList", setSelection: "setPropName"});
 	

@@ -255,8 +255,7 @@ Widget.subclass('FileBrowser', NetRequestReporterTrait, {
 
     initialize: function(baseUrl) {
 	if (!baseUrl) baseUrl = URL.source.dirnameURL();
-	var model = new SimpleModel(null, 
-	    "RootNode", //: URL, constant
+	var model = new SimpleModel("RootNode", //: URL, constant
 	    "SelectedSuperNode", //:URL
 	    "SelectedSubNode",  // :Resource
 	    "SelectedSuperNodeName", "SelectedSubNodeName", //:String
@@ -541,13 +540,12 @@ Widget.subclass('FileBrowser', NetRequestReporterTrait, {
     },
 
 
-    buildView: function(extent) {
+    buildView: function(extent, model) {
         var panel = PanelMorph.makePanedPanel(extent, [
             ['leftPane', newListPane, new Rectangle(0, 0, 0.5, 0.6)],
             ['rightPane', newListPane, new Rectangle(0.5, 0, 0.5, 0.6)],
             ['bottomPane', newTextPane, new Rectangle(0, 0.6, 1, 0.4)]
         ]);
-	var model = this.getModel();
         panel.leftPane.connectModel({model: model,
 				     getList: "getSuperNodeNameList",
 				     getMenu: "getSuperNodeListMenu",
