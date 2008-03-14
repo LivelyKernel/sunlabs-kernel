@@ -1251,7 +1251,14 @@ TextMorph.subclass("CheapListMorph", {
             evt.stop();
             break;
         }
-    
+	case Event.KEY_BACKSPACE: {
+	    // request deletion by setting a deletion request in the model
+	    // if model is subsequently updated with a "setDeletionConfirmation"
+	    // the selected item will be removed from the view.
+	    this.setModelValue("setDeletionRequest", this.itemList[this.selectedLineNo()]);
+	    evt.stop();
+	    break;
+	}
         case Event.KEY_DOWN: {
             var lineNo = this.selectedLineNo();
             if (lineNo < this.itemList.length - 1) {
@@ -1370,6 +1377,16 @@ TextMorph.subclass("CheapListMorph", {
                 var selection = this.getSelection();
                 this.setSelectionToMatch(selection);
                 return selection; //debugging
+
+	    case this.modelPlug.getDeletionConfirmation: //someone broadcast a deletion
+		if (this.getModelValue("getDeletionConfirmation") == true) {
+		    // update self to reflect that model changed
+		    var index = this.selectedLineNo();
+		    var list = this.getList();
+		    list.splice(index, 1);
+		    this.updateList(list);
+		} 
+		return null;
             }
         }
     },
