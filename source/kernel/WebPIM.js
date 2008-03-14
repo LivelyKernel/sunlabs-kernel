@@ -188,10 +188,15 @@ SelectorItem.subclass('SelectorFolder', {
     getContents: function() {
         var result = null;
         var localItems = this.items.length;
-        var totalNumberOfItems = this.totalNumberOfItems();
-        if (localItems == totalNumberOfItems)
-             result = "[ folder with " + localItems + " items ]";
-        else result = "[ folder with " + localItems + " items (" + totalNumberOfItems + " including subfolders) ]";
+        if (localItems == 0) {
+             result = "[ empty folder ]";
+        } else {
+            var totalNumberOfItems = this.calculateStatistics();
+            if (localItems == totalNumberOfItems)
+                 result = "[ folder with " + localItems + " items, " + this.textSize + " characters ]";
+            else result = "[ folder with " + localItems + " items, " + totalNumberOfItems + " including subfolders, "
+                        + this.textSize + " characters total ]";
+        }
         if (this.contents) result += "\n\n" + this.contents;
         return result;
     },
@@ -200,13 +205,22 @@ SelectorItem.subclass('SelectorFolder', {
         return;    
     },
 
-    // Calculate total number of items in this folder and all its subfolders
-    totalNumberOfItems: function() {
+    // Calculate total number of items in this folder and all its subfolders.
+    // During calculation, also count the total amount of text in all the items.
+    // The total number of characters is returns in variable called 'textSize'.
+    calculateStatistics: function() {
         var tally = this.items.length;
+        this.textSize = 0;
 
         for (var i = 0; i < this.items.length; i++) {
             var item = this.items[i];
-            if (item.isFolder()) tally += item.totalNumberOfItems(); 
+            this.textSize += item.getCaption().length;
+            if (item.isFolder()) {
+                tally += item.calculateStatistics();
+                this.textSize += item.textSize;
+            } else {
+                this.textSize += item.getContents().length;
+            } 
         }
 
         return tally;
@@ -1179,7 +1193,7 @@ Object.subclass('WebPIM', {
     },
 
     openIn: function(world, location) {
-        var window = new WindowMorph(this.buildView(pt(800, 600)), 'WebPIM version 0.5');
+        var window = new WindowMorph(this.buildView(pt(800, 600)), 'WebPIM version 0.6');
         // var window = this.buildView(pt(800, 600)); // Without an enclosing window
         world.addMorphAt(window, location);
 
@@ -1218,7 +1232,7 @@ Object.subclass('WebPIM', {
         +  '(when nothing is selected), or under the currently selected item.\n\n'
         + 'When you use the search features, the found items are highlighted '
         +  'with red color in the selector.\n\n'
-        + 'The storage features have not been implemented yet.'
+        + 'The storage features are not available yet.'
         );
 
         // Make serialization operations available in the Window menu
@@ -1610,7 +1624,7 @@ Object.subclass('WebPIM', {
     generateFolderContents: function(target, objectToView, nameToView, fullPath, recursion) {
 
         // Avoid memory overflow / excessive recursion
-        if (objectToView == null || recursion > 5) return;
+        if (objectToView == null || recursion > 4) return;
 
         // Avoid analyzing the Global namespace more than once
         if (recursion > 0 && (objectToView == Global || fullPath == "")) return;
@@ -1683,7 +1697,7 @@ Object.subclass('WebPIM', {
                 } else {
                     text = object.toString();
                     // Clip large amounts of text to conserve memory
-                    if (text.length > 512) text = text.substring(0, 512) + "\n\n... (more) ...";
+                    // if (text.length > 512) text = text.substring(0, 512) + "\n\n... (more) ...";
                 }
 
                 // In Lively, classes are actually JavaScript functions.
