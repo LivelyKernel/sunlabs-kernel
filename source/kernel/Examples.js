@@ -2582,7 +2582,6 @@ Widget.subclass('StockWidget', {
 	case p.getStockIndex:
 	    var item = this.getModelValue("getStockIndex");
             var entry = this.config[item];
-	    //	    this.setModelValue("setIndexChartURL", entry.image);
 	    this.setModelValue("setURL", this.makeNewsURL(entry.ticker));
 	    break;
 	case p.getCompany:

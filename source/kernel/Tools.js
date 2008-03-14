@@ -907,8 +907,8 @@ WidgetModel.subclass('ChangeList', {
 	var afterText = this.fileContents.substring(item.endPos+1);
         var cat = beforeText.concat(newItemText, afterText);
 	console.log("Saving " + this.fileName + "; length = " + cat.length);
-	new NetRequest().put(URL.source.withFilename(this.fileName), cat);
-
+	var reporter = { setStatus: function(s) { console.log("saving " + [s.status, s.method, s.url]); }}
+	new NetRequest({model: reporter, setStatus: "setStatus"}).put(new URL(this.fileName), cat);
 	// Now recreate (slow but sure) list from new contents, as things may have changed
 	var oldSelection = this.changeBanner;
 	this.fileContents = cat;

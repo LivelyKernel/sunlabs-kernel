@@ -12,6 +12,10 @@
  * Storage.js.  Storage system implementation.
  */
 
+(function(module) {
+
+
+
 Morph.subclass('PackageMorph', {
     documentation: "Visual representation for a serialized morph",
     borderWidth: 3,
@@ -104,9 +108,10 @@ Wrapper.subclass('Resource', {
     
     documentation: "Wrapper around information returned from WebDAV's PROPFIND",
     
-    initialize: function(query, raw) {
+    initialize: function(query, raw, baseUrl) {
         this.rawNode = raw; 
 	this.query = query; // we capture the query to preserve NS resolution context
+	this.baseUrl = baseUrl;
     },
     
     name: function() {
@@ -119,6 +124,16 @@ Wrapper.subclass('Resource', {
 	    return "?"
 	} else 
 	    return decodeURIComponent(result.textContent);
+    },
+
+    toURL: function() {
+	return this.baseUrl.withPath(this.name());
+    },
+
+    shortName: function() {
+	var n = this.name();
+	var slash = n.endsWith('/') ? n.lastIndexOf('/', n.length - 2) : n.lastIndexOf('/');
+	return n.substring(slash + 1);
     },
     
     properties: function() {
@@ -156,31 +171,32 @@ View.subclass('WebFile', {
     },
 
     fetchFile: function(url) {
-	var req = new NetRequest({model: this,  // this is not a model
-	    setResponseText: "setFileContent", 
-	    setStatus: "setRequestStatus"});
+	var req = new NetRequest({model: this,  // this is not a full model
+	    setResponseText: "pvtSetFileContent", 
+	    setStatus: "pvtSetRequestStatus"});
 	if (Config.suppressWebStoreCaching)
 	    req.setRequestHeaders({"Cache-Control": "no-cache"});
 	req.get(url);
     },
-    
-    setFileContent: function(responseText) {
-	this.setModelValue("setContent", responseText);
-    },
 
     saveFile: function(url, content) {
-	var req = new NetRequest({model: this, setStatus: "setRequestStatus"});
+	var req = new NetRequest({model: this, setStatus: "pvtSetRequestStatus"});
 	req.put(url, content);
     },
 
-    setRequestStatus: function(statusInfo) {
+    pvtSetFileContent: function(responseText) {
+	this.setModelValue("setContent", responseText);
+    },
+
+    pvtSetRequestStatus: function(statusInfo) {
 	// error reporting
 	var method = statusInfo.method;
 	var url = statusInfo.url;
 	var status = statusInfo.status;
 	if (status >= 300) {
 	    if (status == 401) {
-		WorldMorph.current().alert("not authorized to access " + method + " " + url); // should try to authorize
+		WorldMorph.current().alert("not authorized to access " + method + " " + url); 
+		// should try to authorize
 	    } else {
 		WorldMorph.current().alert("failure to " + method + " "  + url + " code " + status);
 	    }
@@ -190,201 +206,286 @@ View.subclass('WebFile', {
     
 });
 
+Widget.subclass('FileBrowser', {
 
-Model.subclass('FileBrowser', {
+    initialize: function(baseUrl) {
+	if (!baseUrl) baseUrl = URL.source.dirnameURL();
+	var model = new SimpleModel(null, 
+	    "RootNode", //: URL
+	    "SelectedSuperNode", //:URL
+	    "SelectedSubNode",  // :Resource
+	    "SelectedSuperNodeName", "SelectedSubNodeName",
+	    "SelectedSubNodeContents",
+	    "SelectedSubNodeProperties",
+	    "SuperNodeList",  //:URL[] ?
+	    "SubNodeList",   // :Resource[] ?
+	    "SuperNodeNameList", "SubNodeNameList",
+	    "SuperNodeListMenu", "SubNodeListMenu");
+	
+	// this got a bit out of hand
+	this.connectModel({model: model, 
+			   getSelectedSuperNodeName: "getSelectedSuperNodeName", setSelectedSuperNodeName: "setSelectedSuperNodeName",
+			   setSelectedSuperNode: "setSelectedSuperNode", getSelectedSuperNode: "getSelectedSuperNode",
+			   getSubNodeList: "getSubNodeList", setSubNodeList: "setSubNodeList", 
+			   getSubNodeNameList: "getSubNodeNameList", setSubNodeNameList: "setSubNodeNameList",
+			   getSuperNodeList: "getSuperNodeList", setSuperNodeList: "setSuperNodeList", 
+			   getSuperNodeNameList: "getSuperNodeNameList", setSuperNodeNameList: "setSuperNodeNameList", 
+			   getSelectedSubNodeName: "getSelectedSubNodeName", 
+			   getSelectedSubNode: "getSelectedSubNode", setSelectedSubNode: "setSelectedSubNode",
+			   getSelectedSubNodeContents: "getSelectedSubNodeContents", setSelectedSubNodeContents: "setSelectedSubNodeContents", 
+			   getSubNodeListMenu: "getSubNodeListMenu",
+			   getSuperNodeListMenu: "getSuperNodeListMenu",
+			   getRootNode: "getRootNode", 
+			   setLoadInSubworldResult: "setLoadInSubworldResult",
+			   setLoadResult: "setLoadResult"
+			  });
+	model.setRootNode(baseUrl);
+	model.setSuperNodeList([baseUrl]);
+	model.setSuperNodeNameList(["./"]);
 
-    documentation: "A model for a paned file browser",
+	model.getSuperNodeListMenu =  function() { // cheating: non stereotypical model
+	    var model = this;
+	    return [
+		["make subdirectory", function(evt) {
+		    var selected = model.getSelectedSuperNode();
+		    if (!selected) 
+			return;
+		    var dir = selected.dirnameURL();
+		    this.world().prompt("new directory name", function(response) {
+			if (!response) return;
+			var newdir = dir.withFilename(response);
+			console.log("current dir is " + newdir);
+			var req = new NetRequest().connectModel({model: model, setStatus: "setRequestStatus"});
+			req.mkcol(newdir);
+			// FIXME: reload subnodes
+		    });
+		}]
+	    ];
+	};
 
-    initialize: function($super, host, path) {
-        $super();
-	this.baseUrl = new URL(Global.location.toString()).dirnameURL();
-        this.CurrentResource = null; // URL
-        this.CurrentResourceContents = "";
-        this.DirectoryList = [ this.baseUrl.path ];
-        this.CurrentDirectory = null;
-        this.CurrentDirectoryContents = null; // :Resource[]
+	model.getSelectedSubNodeURL = function() { // cheating: non stereotypical model
+	    return this.SelectedSubNode && this.SelectedSubNode.toURL();
+	};
+
+	model.getSubNodeListMenu =  function() { // cheating: non stereotypical model
+	    var items = [];
+	    var url = this.getSelectedSubNodeURL();
+	    if (!url) 
+		return [];
+	    var fileName = url.toString();
+	    var model = this;
+	    var items = [
+		['edit in separate window', function(evt) {
+		    var textEdit = newTextPane(new Rectangle(0, 0, 500, 200), "Fetching " + url + "...");
+		    new WebFile({model: model, getURL: "getSelectedSubNodeURL", // FIXME: url vs resource 
+				 setContent: "setSelectedSubNodeContents", getContent: "getSelectedSubNodeContents"});
+		    textEdit.innerMorph().connectModel({model: model, 
+							getText: "getSelectedSubNodeContents", 
+							setText: "setSelectedSubNodeContents"});
+		    this.world().addFramedMorph(textEdit, url.toString(), evt.mousePoint);
+		}],
+		
+		["get WebDAV info", function(evt) {
+		    var infoPane = newTextPane(new Rectangle(0, 0, 500, 200), "");
+		    infoPane.innerMorph().acceptInput = false;
+		    infoPane.innerMorph().connectModel({model: model, getText: "getSelectedSubNodeProperties"});
+		    
+		    var req = new NetRequest({model: model, 
+			setResponseText: "setSelectedSubNodeProperties", setStatus: "setRequestStatus"});
+		    req.propfind(url, 1);
+		    this.world().addFramedMorph(infoPane, fileName, evt.mousePoint);
+		}]
+	    ];
+	    
+	    if (url.filename().endsWith(".xhtml")) {
+		// FIXME: add loading into a new world
+		items.push(["load into current world", function(evt) {
+		    new NetRequest({model: model, setResponseXML: "setLoadResult", 
+				    setStatus: "setRequestStatus"}).get(url);
+		}]);
+		
+		items.push(["load into new linked world", function(evt) {
+		    new NetRequest({model: model, setResponseXML: "setLoadInSubworldResult",
+				    setStatus: "setRequestStatus"}).get(url);
+		}]);
+		
+	    } else if (fileName.endsWith(".js")) {
+		// FIXME 
+	    }
+	    
+	    var contents = this.getSelectedSubNodeContents();
+	    console.log("fileName = " + fileName + "; contents.length = " + contents.length);
+            if (contents && contents.length > 0) {
+		items.unshift(['open a changeList browser', function(evt) {
+                    var chgList = new FileParser().parseFile(fileName, contents);
+		    new ChangeList(fileName, contents, chgList).openIn(this.world()); 
+		}]);
+	    }
+	    return items; 
+	};
+
     },
 
-
-    setRequestStatus: function(statusInfo) {
+    pvtSetRequestStatus: function(statusInfo) { // FIXME copypaste
 	// error reporting
 	var method = statusInfo.method;
 	var url = statusInfo.url;
 	var status = statusInfo.status;
-	if (status >= 300) {
+	if (status.exception) {
+	    WorldMorph.current().alert("exception " + status.exception + " accessing " + method + " " + url);
+	} else if (status >= 300) {
 	    if (status == 401) {
-		WorldMorph.current().alert("not authorized to access " + method + " " + url); // should try to authorize
+		WorldMorph.current().alert("not authorized to access " + method + " " + url); 
+		// should try to authorize
 	    } else {
 		WorldMorph.current().alert("failure to " + method + " "  + url + " code " + status);
 	    }
 	} else 
 	    console.log("status " + status + " on " + method + " " + url);
     },
+    
+    getSelectedSubNodeResource: function() {
+	var result = this.getModelValue("getSelectedSubNode");
+	result && (result instanceof URL) || console.log(result + " not instanceof URL");
+	return result;
+    },
+    
+    setSelectedSubNodeResource: function(resource) {
+	resource && (resource instanceof Resource) || console.log(resource + " not instanceof Resource");
+	this.setModelValue("setSelectedSubNode", resource);
+    },
+    
+    getSelectedSuperNodeUrl: function() {
+	return this.getModelValue("getSelectedSuperNode");
+    },
 
-    // basic protocol methods:
-    fetch: function(url) {
-	var req = new NetRequest({model: this, 
-	    setResponseText: "setCurrentResourceContents", 
-	    setStatus: "setRequestStatus", setRequest: "setRequest" });
+    updateView: function(aspect, source) {
+	var p = this.modelPlug;
+	if (!p) return;
+	switch (aspect) {
+	case p.getSelectedSuperNodeName:
+	    var dirname = this.getModelValue("getSelectedSuperNodeName");
+	    if (!dirname) break;
+	    if (dirname == "..") alert("should go up from " + this.getSelectedSuperNodeUrl());
+	    var newUrl = dirname == ".." ? 
+		this.getSelectedSuperNodeUrl().dirnameURL() : 
+		(dirname == "./" ? 
+		 this.getModelValue("getRootNode") :
+		 this.getModelValue("getSuperNodeList", []).detect(function(url) { return url.filename() == dirname}));
+	    
+	    if (!newUrl) { 
+		console.log("didn't find " + dirname + " in " + this.getModelValue("getSuperNodeList")); 
+		break;
+	    }
+	    
+	    if (newUrl.isDirectory()) {
+		this.setModelValue("setSelectedSuperNode", newUrl);
+		//this.setModelValue("setSelectedSuperNodeName", newUrl.filename());
+		this.fetchDirectory(newUrl);
+	    } else {
+		this.setModelValue("setSubNodeList", []);
+		this.setModelValue("setSubNodeNameList", []);
+		this.setSelectedSubNodeResource(null);
+		this.setModelValue("setSelectedSubNodeName", null);
+		this.setModelValue("setSelectedSubNodeContents", "");
+		console.log('selected non-directory on the left');
+	    }
+	    break;
+	    
+	case p.getSelectedSubNodeName:
+	    var dirUrl = this.getSelectedSuperNodeUrl();
+	    var fileName = this.getModelValue("getSelectedSubNodeName");
+	    if (!fileName) break;
+	    var newUrl = fileName == ".." ? dirUrl : dirUrl.withFilename(fileName);
+	    console.log("selected subnode " + newUrl);
+	    if (!newUrl.isDirectory()) {
+		// locate Resource based on the fileName;
+		var res = this.getModelValue("getSubNodeList", []).detect(function(r) { return r.shortName() == fileName});
+		this.setSelectedSubNodeResource(res); 
+		res && this.fetchFile(res.toURL());
+	    } else {
+		this.setModelValue("setSuperNodeList", this.getModelValue("getSubNodeList").invoke("toURL"));
+		this.setModelValue("setSuperNodeNameList", this.getModelValue("getSubNodeNameList"));
+		this.setModelValue("setSelectedSuperNode", newUrl);
+		this.setModelValue("setSelectedSuperNodeName", fileName);
+		if (fileName == "..") {
+		    this.setModelValue("setSubNodeList", []);
+		    this.setModelValue("setSubNodeNameList", []);
+		    this.setSelectedSubNodeResource(null);
+		    this.setModelValue("setSelectedSubNodeName", null);
+		    this.setModelValue("setSelectedSubNodeContents", "");
+		} else this.fetchDirectory(newUrl);
+	    }
+	    break;
+	case p.setSelectedSubNodeContents:
+	    alert('should save ' + this.getSelectedSubNodeResource());
+	    break;
+	}
+    },
+
+    fetchDirectory: function(url) {
+	var req = new NetRequest({model: this, setResponseXML: "setSelectedSuperNodeProperties", 
+	    setStatus: "pvtSetRequestStatus"});
+        // initialize getting the content
+	var dirUrl = this.getSelectedSuperNodeUrl();
+	req.propfind(dirUrl, 1);
+	console.log("finding properties for " + dirUrl);
+    },
+    
+    setSelectedSuperNodeProperties: function(responseXML) {
+	var query = new Query(responseXML.documentElement);
+	var result = query.evaluate(responseXML.documentElement, "/D:multistatus/D:response", []);
+	var baseUrl = this.getModelValue("getRootNode");
+	var files = result.map(function(raw) { return new Resource(query, raw, baseUrl); });
+	files = this.arrangeFiles(files);
+	this.setModelValue("setSubNodeList", files);
+	var dirURLString = this.getSelectedSuperNodeUrl().toString();
+	// FIXME: this may depend too much on correct normalization, which we don't quite do.
+	
+	var fileNames = files.map(function(r) { 
+	    if (r.toURL().toString() == dirURLString)
+		return "..";
+	    else return  r.shortName(); 
+
+	});
+	this.setModelValue("setSubNodeNameList", fileNames);
+    },
+
+
+    fetchFile: function(url) { // copied from WebFile
+	var req = new NetRequest({model: this,  // this is not a full model
+	    setResponseText: "pvtSetFileContent", 
+	    setStatus: "pvtSetRequestStatus"});
 	if (Config.suppressWebStoreCaching)
 	    req.setRequestHeaders({"Cache-Control": "no-cache"});
-	this.CurrentResource = url;
 	req.get(url);
     },
-    
-    save: function(url, content) {
-        // retrieve the the contents of the url and save in the indicated model variable
-        console.log('saving url ' + url);
-	var req = new NetRequest({model: this, setStatus: "setRequestStatus"});
-	req.put(url, content);
+
+    pvtSetFileContent: function(content) {
+	this.setModelValue("setSelectedSubNodeContents", content);
     },
 
-    getCurrentResourceContents: function() {
-        return this.CurrentResourceContents || "";
-    },
-    
-    setCurrentResourceContents: function(contents, view) {
-	this.CurrentResourceContents = contents;
-	if (view instanceof Morph) { // setting from the GUI (should be reworked?)
-	    var safeSize = TextMorph.prototype.maxSafeSize;
-            if (contents.length > safeSize) {
-		WorldMorph.current().alert("not saving file, size " + contents.length 
-					   + " > " + safeSize + ", too large");
-            } else {
-		this.save(this.CurrentResource, contents);
-            }
-	} 
-	this.changed('getCurrentResourceContents', view);
-    },
-
-    
-    // to be used by WebFile only
-    accessCurrentResource: function() {
-	return this.CurrentResource;
-    },
-
-    resourceURL: function(resource) {
-        return this.baseUrl.withPath(resource);
-    },
-
-    
-    getDirectoryList: function() {
-        return this.DirectoryList;
-    },
-
-    getCurrentDirectory: function() {
-        return this.CurrentDirectory;
-    },
-    
-    setCurrentDirectory: function(name) {
-        if (!name) return;
-
-        var segments = name.split("/");
-        segments.splice(segments.length - 2, 2);
-        var parent = segments.join("/") + "/";
-	
-        // add the parent of the current directory to the DirectoryList if it's not there?	
-	if (this.DirectoryList.indexOf(parent) < 0)  {
-	    // a hack to add the parent dir to enable navigation, just in case.
-	    this.DirectoryList.push(parent);
-	    this.changed('getDirectoryList'); // this may set CurrentDirectory to null so assign to it later here
-	}
-
-        this.CurrentDirectory = name;
-        this.changed('getCurrentDirectory');
-
-        console.log('host %s, dir %s name %s', this.baseUrl.hostname, this.CurrentDirectory, name);
-	var req = new NetRequest({model: this, setResponseXML: "setCurrentDirectoryContents", 
-	    setStatus: "setRequestStatus"});
-        // initialize getting the content
-	req.propfind(this.resourceURL(this.CurrentDirectory), 1);
-	console.log("finding properties for " + this.resourceURL(this.CurrentDirectory));
-	
-    },
-    
-    setCurrentDirectoryContents: function(doc) {
-	console.log("processing results ");
-	var query = new Query(doc.documentElement);
-	var result = query.evaluate(doc.documentElement, "/D:multistatus/D:response", []);
-
-	this.CurrentDirectoryContents = result.map(function(raw) { 
-	    return new Resource(query, raw); 
-	}.bind(this));
-	this.changed('getCurrentDirectoryContents');
-    },
-
-
-    getCurrentDirectoryContents: function() {
-        var fullList = (this.CurrentDirectoryContents || []).invoke("name");
+    arrangeFiles: function(fullList) {
 	var first = [];
 	var last = [];
 	// little reorg to show the more relevant stuff first.
 	for (var i = 0; i < fullList.length; i++) {
 	    var n = fullList[i];
-	    if (n.indexOf(".#") == -1) 
+	    if (n.name().indexOf(".#") == -1) 
 		first.push(n);
 	    else 
 		last.push(n);
 	}
 	return first.concat(last);
     },
+
     
-    setCurrentResource: function(name) {
-        if (!name) 
-	    return;
-        if (name.endsWith('/')) { // directory, enter it!
-            // only entries with trailing slash i.e., directories
-            this.CurrentDirectory = name;
-            this.changed('getCurrentDirectory');
-            console.log('entering directory %s now', this.CurrentDirectory);
-	    
-            this.DirectoryList = 
-                this.getCurrentDirectoryContents().filter(function(res) { return res.endsWith('/')});
-	    this.changed("getDirectoryList");
-            this.CurrentResource = null;
-            this.CurrentDirectoryContents = [];
-            this.changed('getCurrentDirectoryContents');
-        } else {
-            this.CurrentResource = this.baseUrl.withPath(name);
-            console.log("current resource set to %s", this.CurrentResource);
-            // initialize getting the resource contents
-            this.fetch(this.CurrentResource);
-	}
+    // deprecated!
+    resourceURL: function(resource) {
+	var dirUrl = this.getSelectedSuperNodeUrl() || this.getModelValue("getRootNode");  // if not set, pick the base url?
+        return dirUrl.withFilename(resource);// FIXME 
     },
-		
-    buildView: function(extent) {
-        var panel = PanelMorph.makePanedPanel(extent, [
-            ['leftPane', newListPane, new Rectangle(0, 0, 0.5, 0.6)],
-            ['rightPane', newListPane, new Rectangle(0.5, 0, 0.5, 0.6)],
-            ['bottomPane', newTextPane, new Rectangle(0, 0.6, 1, 0.4)]
-        ]);
-        panel.leftPane.connectModel({model: this, 
-				     getList: "getDirectoryList",
-				     getMenu: "getDirectoryMenu",
-				     setSelection: "setCurrentDirectory", 
-				     getSelection: "getCurrentDirectory"});
 
-        var m = panel.rightPane;
-        m.connectModel({model: this, getList: "getCurrentDirectoryContents", setSelection: "setCurrentResource", 
-			getMenu: "getFileMenu"});
-        m.innerMorph().onKeyPress = function(evt) {
-            if (evt.getKeyCode() == Event.KEY_BACKSPACE) { // Replace the selection after checking for type-ahead
-		var model = this.getModel();
-		var toDelete  = model.resourceURL(this.itemList[this.selectedLineNo()]);
-                this.world().confirm("delete resource " + toDelete, function(result) {
-		    if (result) {
-			new NetRequest({model: model, setStatus: "setRequestStatus"}).del(toDelete);
-		    } else console.log("cancelled deletion of " + toDelete);
-		});
-                evt.stop();
-            } else CheapListMorph.prototype.onKeyPress.call(this, evt);
-        };
-
-        panel.bottomPane.connectModel({model: this, 
-				       getText: "getCurrentResourceContents", 
-				       setText: "setCurrentResourceContents"});
-        return panel;
-    },
 
     setLoadResult: function(doc) {
 	var container = Loader.shrinkWrapContainer(doc);
@@ -394,7 +495,7 @@ Model.subclass('FileBrowser', {
 	    world = importer.importWorldFromContainer(container, WorldMorph.current());
 	} 
 	if (!world) 
-	    WorldMorph.current().alert('no morphs found in %s', this.CurrentResource); // FIXME not CurrentResource
+	    WorldMorph.current().alert('no morphs found in %s', this.getModelValue("getSelectedSubNode")); 
     },
 
     setLoadInSubworldResult: function(doc) {
@@ -420,110 +521,62 @@ Model.subclass('FileBrowser', {
 		return;
 	    } 
 	}
-	WorldMorph.current().alert('no morphs found in %s', store.CurrentResource);
-    },
-
-    getCurrentResourcePropertiesAsText: function() {
-	return this.Properties instanceof Array ? 
-	    this.Properties[0].toMarkupString() : "fetching properties " ;
-    },
-
-    setCurrentResourceProperties: function(doc) {
-	var query = new Query(doc.documentElement);
-	var result = query.evaluate(doc.documentElement, "/D:multistatus/D:response", []); 
-	this.Properties = result.map(function(raw) { return new Resource(query, raw); }.bind(this));
-	this.changed('getCurrentResourcePropertiesAsText');
+	WorldMorph.current().alert('no morphs found in %s', this.getModelValue("getSelectedSubNode")); 
     },
 
 
-    getDirectoryMenu: function() {
-	var model = this;
-	return [
-	    ["make subdirectory", function(evt) {
-		// FIXME: dialog for name
-		var dirname = model.getCurrentDirectory();
-		if (!dirname) 
-		    return;
-		this.world().prompt("new directory name", function(response) {
-		    if (!response) return;
-		    console.log("current dir is " + dirname);
-		    var req = new NetRequest().connectModel({model: model, setStatus: "setRequestStatus"});
-		    var url = (new URL(model.resourceURL(dirname)).withPath(dirname + response));
-		    req.mkcol(url);
+
+
+    buildView: function(extent) {
+        var panel = PanelMorph.makePanedPanel(extent, [
+            ['leftPane', newListPane, new Rectangle(0, 0, 0.5, 0.6)],
+            ['rightPane', newListPane, new Rectangle(0.5, 0, 0.5, 0.6)],
+            ['bottomPane', newTextPane, new Rectangle(0, 0.6, 1, 0.4)]
+        ]);
+	var model = this.getModel();
+        panel.leftPane.connectModel({model: model,
+				     getList: "getSuperNodeNameList",
+				     getMenu: "getSuperNodeListMenu",
+				     setSelection: "setSelectedSuperNodeName", 
+				     getSelection: "getSelectedSuperNodeName"});
+
+        var m = panel.rightPane;
+        m.connectModel({model: model, getList: "getSubNodeNameList", setSelection: "setSelectedSubNodeName", 
+			getMenu: "getSubNodeListMenu"});
+	m.updateView = m.updateView.logCalls();
+        
+	m.innerMorph().onKeyPress = function(evt) {
+            if (evt.getKeyCode() == Event.KEY_BACKSPACE) { // Replace the selection after checking for type-ahead
+		var model = this.getModel();
+		var toDelete  = model.resourceURL(this.itemList[this.selectedLineNo()]);
+                this.world().confirm("delete resource " + toDelete, function(result) {
+		    if (result) {
+			new NetRequest({model: model, setStatus: "pvtSetRequestStatus"}).del(toDelete);
+		    } else console.log("cancelled deletion of " + toDelete);
 		});
-	    }]
-	];
+                evt.stop();
+            } else CheapListMorph.prototype.onKeyPress.call(this, evt);
+        };
+
+        panel.bottomPane.connectModel({model: model, 
+				       getText: "getSelectedSubNodeContents", 
+				       setText: "setSelectedSubNodeContents"});
 	
+	// kickstart
+	var im = panel.leftPane.innerMorph();
+	im.updateView(im.modelPlug.getList, im);
+        return panel;
     },
 
-
-    getFileMenu: function() {
-	var items = [];
-	var url = this.CurrentResource;
-	if (!url) 
-	    return [];
-	var fileName = url.toString();
-	var model = this;
-	var items = [
-	    ['edit in separate window', function(evt) {
-		var textEdit = newTextPane(new Rectangle(0, 0, 500, 200), "Fetching " + url + "...");
-		new WebFile({model: model, getURL: "accessCurrentResource", 
-			     setContent: "setCurrentResourceContents", getContent: "getCurrentResourceContents"});
-		textEdit.innerMorph().connectModel({model: model, 
-						    getText: "getCurrentResourceContents", 
-						    setText: "setCurrentResourceContents"});
-		this.world().addFramedMorph(textEdit, url.toString(), evt.mousePoint);
-	    }],
-	    
-	    ["get WebDAV info", function(evt) {
-		var infoPane = newTextPane(new Rectangle(0, 0, 500, 200), "");
-		infoPane.innerMorph().acceptInput = false;
-		infoPane.innerMorph().connectModel({model: model, getText: "getCurrentResourcePropertiesAsText"});
-		
-		var req = new NetRequest({model: model, 
-		    setResponseXML: "setCurrentResourceProperties", setStatus: "setRequestStatus"});
-		req.propfind(url, 1);
-		this.world().addFramedMorph(infoPane, fileName, evt.mousePoint);
-	    }]
-	];
-	
-	if (url.filename().endsWith(".xhtml")) {
-	    // FIXME: add loading into a new world
-	    items.push(["load into current world", function(evt) {
-		new NetRequest({model: model, setResponseXML: "setLoadResult", 
-				setStatus: "setRequestStatus"}).get(url);
-	    }]);
-	    
-	    items.push(["load into new linked world", function(evt) {
-		new NetRequest({model: model, setResponseXML: "setLoadInSubworldResult",
-				setStatus: "setRequestStatus"}).get(url);
-	    }]);
-
-	} else if (fileName.endsWith(".js")) {
-	    // FIXME 
-	}
-	
-	var contents = this.getCurrentResourceContents();
-	console.log("fileName = " + fileName + "; contents.length = " + contents.length);
-        if (contents && contents.length > 0) {
-	    items.unshift(['open a changeList browser', function(evt) {
-                var chgList = new FileParser().parseFile(fileName, contents);
-		new ChangeList(fileName, contents, chgList).openIn(this.world()); 
-	    }]);
-	}
-	return items; 
-    },
-
-    openIn: function(world, loc) {
-        if (!loc) loc = world.bounds().center();
-        console.log('opening web store at %s', loc);
-        var panel = this.buildView(pt(400, 300));
-        world.addFramedMorph(panel, "Directory Browser on " + this.baseUrl.hostname, loc);
-        // this.addCredentialDialog(panel);
-        this.changed('getDirectoryList');
+    viewTitle: function() {
+	var title = new PrintMorph(new Rectangle(0, 0, 150, 15), 'File Browser').beLabel();
+	title.formatValue = function(value) { return String(value) };
+	title.connectModel({model: this.getModel(), getValue: "getSelectedSuperNode"});
+	return title;
     }
 
-});  
+});
 
-console.log('loaded Storage.js');
+
+}.logCompletion('Storage.js'))();
 
