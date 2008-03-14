@@ -130,6 +130,10 @@ Wrapper.subclass('Resource', {
 	return this.baseUrl.withPath(this.name());
     },
 
+    toString: function() {
+	return "#<" + this.getType() + "," + this.toURL() + ">";
+    },
+
     shortName: function() {
 	var n = this.name();
 	var slash = n.endsWith('/') ? n.lastIndexOf('/', n.length - 2) : n.lastIndexOf('/');
@@ -187,7 +191,6 @@ NetRequestReporter.subclass('LoadHandler', {
 
 
     loadJavascript: function(responseText) {
-	console.log("evaluating " + responseText);
 	try {
 	    eval(responseText);
 	} catch (er) {
@@ -298,7 +301,7 @@ Widget.subclass('FileBrowser', NetRequestReporterTrait, {
 		    this.world().prompt("new directory name", function(response) {
 			if (!response) return;
 			var newdir = dir.withFilename(response);
-			console.log("current dir is " + newdir);
+			//console.log("current dir is " + newdir);
 			var req = new NetRequest().connectModel({model: model, setStatus: "setRequestStatus"});
 			req.mkcol(newdir);
 			// FIXME: reload subnodes
@@ -450,8 +453,10 @@ Widget.subclass('FileBrowser', NetRequestReporterTrait, {
 		}
 	    }
 	    break;
-	case p.setSelectedSubNodeContents:
-	    alert('should save ' + this.getSelectedSubNodeResource());
+	case p.getSelectedSubNodeContents:
+	    var req = new NetRequest({model: this, setStatus: "setRequestStatus"});
+            // initialize getting the content
+	    req.put(this.getSelectedSubNodeResource().toURL(), this.getModelValue("getSelectedSubNodeContents"));
 	    break;
 	case p.getSubNodeDeletionRequest:
 	    this.deleteResource(this.getSelectedSubNodeResource());
@@ -465,7 +470,6 @@ Widget.subclass('FileBrowser', NetRequestReporterTrait, {
         // initialize getting the content
 	var dirUrl = this.getSelectedSuperNodeUrl();
 	req.propfind(dirUrl, 1);
-	console.log("finding properties for " + dirUrl);
     },
     
     setSelectedSuperNodeProperties: function(responseXML) {
