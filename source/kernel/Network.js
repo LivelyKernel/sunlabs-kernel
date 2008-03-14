@@ -255,23 +255,6 @@ View.subclass('NetRequest', {
     
     toString: function() {
 	return "#<NetRequest{"+ this.method + " " + this.url + "}>";
-    },
-
-
-    test: function() {
-	var model = new SimpleModel("Result");
-	var request = new NetRequest({model: model, setResult: "setResponseText"});
-	var v = new View();
-	v.updateView = function(aspect, controller) { 
-	    if (aspect == this.modelPlug.getResult)
-		console.log("got result " + this.getModelValue("getResult", ""));
-	}
-	v.connectModel({model: model, getResult: "getResponseText"});
-	request.get(URL.source);
-	
-	request = new NetRequest(true);
-	console.log("2) result " 
-		    + request.get(URL.source).beSync().getModelValue('getResponseText', ""));
     }
 
 });
