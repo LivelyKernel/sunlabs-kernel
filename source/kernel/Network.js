@@ -88,9 +88,7 @@ Object.subclass('URL', {
 
     withPath: function(path) { 
 	var result = path.match(URL.pathSplitter);
-	this.path = result[1];
-	this.search = result[2];
-	this.hash = result[3];
+	if (!result) return null;
 	return new URL({protocol: this.protocol, port: this.port, hostname: this.hostname, pathname: 
 			result[1], search: result[2], hash: result[3] });
     },
