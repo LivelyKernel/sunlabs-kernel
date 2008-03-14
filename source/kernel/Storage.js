@@ -256,13 +256,14 @@ Widget.subclass('FileBrowser', NetRequestReporterTrait, {
     initialize: function(baseUrl) {
 	if (!baseUrl) baseUrl = URL.source.dirnameURL();
 	var model = new SimpleModel("RootNode", //: URL, constant
+	    "TopNode", //:URL the node whose contents are viewed in the left pane
 	    "SelectedSuperNode", //:URL
-	    "SelectedSubNode",  // :Resource
+	    "SelectedSubNode",  // :URL
 	    "SelectedSuperNodeName", "SelectedSubNodeName", //:String
 	    "SelectedSubNodeContents", //:String
 	    "SelectedSubNodeProperties", //:String
 	    "SuperNodeList",  //:URL[]
-	    "SubNodeList",   // :Resource[]
+	    "SubNodeList",   // :URL[]
 	    "SuperNodeNameList", // :String[]
 	    "SubNodeNameList", // :String[]
 	    "SuperNodeListMenu", "SubNodeListMenu",
@@ -283,12 +284,14 @@ Widget.subclass('FileBrowser', NetRequestReporterTrait, {
 			   getSuperNodeListMenu: "getSuperNodeListMenu",
 			   setSubNodeDeletionConfirmation: "setSubNodeDeletionConfirmation",
 			   getSubNodeDeletionRequest: "getSubNodeDeletionRequest",
+			   getTopNode: "getTopNode", setTopNode: "setTopNode",
 			   getRootNode: "getRootNode"
 			  });
 	model.setRootNode(baseUrl);
 	model.setSuperNodeList([baseUrl]);
 	model.setSuperNodeNameList(["./"]);
-
+	model.setTopNode(baseUrl);
+	
 	model.getSuperNodeListMenu =  function() { // cheating: non stereotypical model
 	    var model = this;
 	    return [
@@ -309,13 +312,9 @@ Widget.subclass('FileBrowser', NetRequestReporterTrait, {
 	    ];
 	};
 
-	model.getSelectedSubNodeURL = function() { // cheating: non stereotypical model
-	    return this.SelectedSubNode && this.SelectedSubNode.toURL();
-	};
-
 	model.getSubNodeListMenu =  function() { // cheating: non stereotypical model
 	    var items = [];
-	    var url = this.getSelectedSubNodeURL();
+	    var url = this.getSelectedSubNode();
 	    if (!url) 
 		return [];
 	    var fileName = url.toString();
@@ -378,25 +377,30 @@ Widget.subclass('FileBrowser', NetRequestReporterTrait, {
 	
     },
     
-    getSelectedSubNodeResource: function() {
+    getSelectedSubNode: function() {
 	var result = this.getModelValue("getSelectedSubNode");
-	result && (result instanceof Resource) || console.log(result + " not instanceof Resource");
+	result && (result instanceof URL) || console.log(result + " not instanceof URL");
 	return result;
     },
     
-    setSelectedSubNodeResource: function(resource) {
-	resource && (resource instanceof Resource) || console.log(resource + " not instanceof Resource");
-	this.setModelValue("setSelectedSubNode", resource);
+    setSelectedSubNode: function(url) {
+	url && (url instanceof URL) || console.log(url + " not instanceof URL");
+	this.setModelValue("setSelectedSubNode", url);
     },
     
-    getSelectedSuperNodeUrl: function() {
+    getSelectedSuperNode: function() {
 	return this.getModelValue("getSelectedSuperNode");
+    },
+
+    setSelectedSuperNode: function(url) {
+	console.log("setting selected supernode to " + url);
+	return this.setModelValue("setSelectedSuperNode", url);
     },
 
     clearSubNodes: function() {
 	this.setModelValue("setSubNodeList", []);
 	this.setModelValue("setSubNodeNameList", []);
-	this.setSelectedSubNodeResource(null);
+	this.setSelectedSubNode(null);
 	this.setModelValue("setSelectedSubNodeName", null);
 	this.setModelValue("setSelectedSubNodeContents", "");
     },
@@ -413,119 +417,111 @@ Widget.subclass('FileBrowser', NetRequestReporterTrait, {
 	case p.getSelectedSuperNodeName:
 	    var dirname = this.getModelValue("getSelectedSuperNodeName");
 	    if (!dirname) break;
+	    var newUrl;
 	    if (dirname == "..") { 
-		var newUrl = this.getSelectedSuperNodeUrl().dirnameURL();
-		// FIXME: if we are at root, do nothing
-		// copy left pane to right pane 
-		this.setModelValue("setSubNodeList", this.getModelValue("getSuperNodeList")); // FIXME not typesafe 
-		this.setModelValue("setSubNodeNameList", this.getModelValue("getSuperNodeNameList"));
-		this.setModelValue("setSelectedSubNodeName", this.getModelValue("getSelectedSuperNodeName"));
-		
-		// this.setModelValue("setSelectedSuperNode", null);
-		// we shouldn't do the following but if we don't, get back here and keep climbing the hierarchy (FIXME
-		this.setModelValue("setSelectedSuperNodeName", null);
-		// fill left pane with the contents of the supernode
-		this.fetchDirectoryIntoLeft(newUrl);
-		break;
-		alert("should go up from " + this.getSelectedSuperNodeUrl());
-	    }
-	    var newUrl = dirname == "./" ? 
-		this.getRootNode() :
-		this.getModelValue("getSuperNodeList", []).detect(function(url) { return url.filename() == dirname});
-	    
-	    if (!newUrl) { 
-		console.log("didn't find " + dirname + " in " + this.getModelValue("getSuperNodeList")); 
-		break;
-	    }
-	    
-	    if (newUrl.isDirectory()) {
-		this.setModelValue("setSelectedSuperNode", newUrl);
-		this.fetchDirectory(newUrl);
+		if (this.getModelValue("getTopNode") != this.getRootNode().toString()) {
+		    
+		    newUrl = this.getModelValue("getTopNode").dirnameURL(); //this.getSelectedSuperNode().dirnameURL();
+		    this.setModelValue("setTopNode", newUrl); 
+		    console.log("walking up to " + newUrl);
+					    
+		    // copy left pane to right pane 
+		    this.setModelValue("setSubNodeList", this.getModelValue("getSuperNodeList")); 
+		    this.setModelValue("setSubNodeNameList", this.getModelValue("getSuperNodeNameList"));
+		    //this.setModelValue("setSelectedSubNodeName", this.getModelValue("getSelectedSuperNodeName"));
+		    this.setSelectedSuperNode(null);
+		    
+		    this.fetchDirectory(newUrl, "fetchSuperNodes");
+		} else {
+		    console.log("do nothing");
+		    //: we are at root, do nothing
+		}
 	    } else {
-		//this.clearSubNodes();
-		// FIXME just display the content below anyway
-		console.log("selected non-directory " + newUrl + " on the left");
+		newUrl = dirname == "./" ? this.getRootNode() : this.getModelValue("getTopNode").withFilename(dirname);
+		// this.getModelValue("getSuperNodeList", []).detect(function(url) { return url.filename() == dirname});
+		this.setSelectedSuperNode(newUrl);
+		if (newUrl.isDirectory()) {
+		    console.log("fetching directory " + newUrl);
+		    this.fetchDirectory(newUrl, "fetchSubNodes");
+		} else {
+		    //this.clearSubNodes();
+		    // FIXME just display the content below anyway
+		    console.log("selected non-directory " + newUrl + " on the left");
+		}
 	    }
 	    break;
 	    
 	case p.getSelectedSubNodeName:
-	    var dirUrl = this.getSelectedSuperNodeUrl();
 	    var fileName = this.getModelValue("getSelectedSubNodeName");
 	    if (!fileName) break;
+	    var dirUrl = this.getSelectedSuperNode();
+	    console.log("dir url " + dirUrl);
 	    var newUrl = fileName == ".." ? dirUrl : dirUrl.withFilename(fileName);
 	    if (newUrl.isDirectory()) {
-		this.setModelValue("setSuperNodeList", this.getModelValue("getSubNodeList").invoke("toURL"));
+		this.setModelValue("setTopNode", dirUrl);
+		this.setModelValue("setSuperNodeList", this.getModelValue("getSubNodeList"));
 		this.setModelValue("setSuperNodeNameList", this.getModelValue("getSubNodeNameList"));
-		this.setModelValue("setSelectedSuperNode", newUrl);
-		this.setModelValue("setSelectedSuperNodeName", fileName);
+		this.setSelectedSuperNode(newUrl);
+		// this.setModelValue("setSelectedSuperNodeName", fileName);
 		if (fileName == "..") {
 		    this.clearSubNodes();
 		} else {
-		    this.fetchDirectory(); // FIXME arg?
+		    this.fetchDirectory(newUrl, "fetchSubNodes"); 
 		}
 	    } else {
-		// locate Resource based on the fileName;
-		var res = this.getModelValue("getSubNodeList", []).detect(function(r) { return r.shortName() == fileName});
-		this.setSelectedSubNodeResource(res); 
-		res && this.fetchFile(res.toURL());
+		this.setSelectedSubNode(newUrl);
+		this.fetchFile(newUrl);
 	    } 
 	    break;
 	case p.getSelectedSubNodeContents:
 	    var req = new NetRequest({model: this, setStatus: "setRequestStatus"});
             // initialize getting the content
-	    req.put(this.getSelectedSubNodeResource().toURL(), this.getModelValue("getSelectedSubNodeContents"));
+	    req.put(this.getSelectedSubNode(), this.getModelValue("getSelectedSubNodeContents"));
 	    break;
 	case p.getSubNodeDeletionRequest:
-	    this.deleteResource(this.getSelectedSubNodeResource());
+	    this.deleteResource(this.getSelectedSubNode());
 	    break;
 	}
     },
-
-    fetchDirectory: function(url) {
-	var req = new NetRequest({model: this, setResponseXML: "setSelectedSuperNodeProperties", 
-	    setStatus: "setRequestStatus"});
-        // initialize getting the content
-	var dirUrl = this.getSelectedSuperNodeUrl();
-	req.propfind(dirUrl, 1);
-    },
-
-    fetchDirectoryIntoLeft: function(url) { // FIXME merge
-	var req = new NetRequest({model: this, setResponseXML: "setSelectedSuperNodeContents", 
-	    setStatus: "setRequestStatus"});
+    
+    fetchDirectory: function(url, callback) {
+	var req = new NetRequest({model: this, setResponseXML: callback, setStatus: "setRequestStatus"});
         // initialize getting the content
 	req.propfind(url, 1);
     },
 
-    
-    setSelectedSuperNodeProperties: function(responseXML) {
+    fetchSubNodes: function(responseXML) {
 	var query = new Query(responseXML.documentElement);
 	var result = query.evaluate(responseXML.documentElement, "/D:multistatus/D:response", []);
+	var dirURLString = this.getSelectedSuperNode().toString();
 	var baseUrl = this.getRootNode();
-	var files = result.map(function(raw) { return new Resource(query, raw, baseUrl); });
+
+	var files = result.map(function(raw) { return new Resource(query, raw, baseUrl).toURL(); });
 	files = this.arrangeFiles(files);
 	this.setModelValue("setSubNodeList", files);
-	var dirURLString = this.getSelectedSuperNodeUrl().toString();
+
 	// FIXME: this may depend too much on correct normalization, which we don't quite do.
-	
-	var fileNames = files.map(function(r) { 
-	    if (r.toURL().toString() == dirURLString)
+	var fileNames = files.map(function(u) { 
+	    if (u.toString() == dirURLString) // FIXME URL comparison?
 		return "..";
-	    else return  r.shortName(); 
+	    else return  u.filename(); 
 
 	});
 	this.setModelValue("setSubNodeNameList", fileNames);
     },
 
-
-    setSelectedSuperNodeContents: function(responseXML) { // FIXME merge
+    fetchSuperNodes: function(responseXML) { // FIXME merge
 	var query = new Query(responseXML.documentElement);
 	var result = query.evaluate(responseXML.documentElement, "/D:multistatus/D:response", []);
+	var dirURLString = this.getModelValue("getTopNode", "").toString();
+
+	console.log("in supernode contents, dirURLString " + dirURLString);
 	var baseUrl = this.getRootNode();
 	var files = result.map(function(raw) { return new Resource(query, raw, baseUrl).toURL(); });
+	files = this.arrangeFiles(files);
 	this.setModelValue("setSuperNodeList", files);
-	var dirURLString = this.getSelectedSuperNodeUrl().toString();
+
 	// FIXME: this may depend too much on correct normalization, which we don't quite do.
-	
 	var fileNames = files.map(function(r) { 
 	    if (r.toString() == dirURLString)
 		return "..";
@@ -557,9 +553,9 @@ Widget.subclass('FileBrowser', NetRequestReporterTrait, {
 	// little reorg to show the more relevant stuff first.
 	for (var i = 0; i < fullList.length; i++) {
 	    var n = fullList[i];
-	    if (n.name().endsWith('/')) {
+	    if (n.filename().endsWith('/')) {
 		dirs.push(n);
-	    } else if (n.name().indexOf(".#") == -1) {
+	    } else if (n.filename().indexOf(".#") == -1) {
 		second.push(n);
 	    } else {
 		last.push(n);
@@ -568,14 +564,14 @@ Widget.subclass('FileBrowser', NetRequestReporterTrait, {
 	return dirs.concat(second).concat(last);
     },
 
-    deleteResource: function(resource) {
+    deleteResource: function(url) {
 	var model = this.getModel();
-	if (resource.toURL().isDirectory()) {
-	    WorldMorph.current().alert("will not erase directory " + resource.toURL());
+	if (url.isDirectory()) {
+	    WorldMorph.current().alert("will not erase directory " + url);
 	    model.setSubNodeDeletionConfirmation(false);
 	}
 	
-        WorldMorph.current().confirm("delete resource " + resource.toURL(), function(result) {
+        WorldMorph.current().confirm("delete resource " + url, function(result) {
 	    if (result) {
 		var eraser = { 
 		    setRequestStatus: function(status) { 
@@ -584,8 +580,8 @@ Widget.subclass('FileBrowser', NetRequestReporterTrait, {
 			NetRequestReporterTrait.setRequestStatus.call(this, status);
 		    }
 		};
-		new NetRequest({model: eraser, setStatus: "setRequestStatus"}).del(resource.toURL());
-	    } else console.log("cancelled deletion of " + resource.toURL());
+		new NetRequest({model: eraser, setStatus: "setRequestStatus"}).del(url);
+	    } else console.log("cancelled deletion of " + url);
 	});
     },
 
@@ -622,7 +618,9 @@ Widget.subclass('FileBrowser', NetRequestReporterTrait, {
     viewTitle: function() {
 	var title = new PrintMorph(new Rectangle(0, 0, 150, 15), 'File Browser').beLabel();
 	title.formatValue = function(value) { return String(value) }; // don't inspect URLs, just toString() them.
-	title.connectModel({model: this.getModel(), getValue: "getSelectedSuperNode"});
+	title.connectModel({model: this.getModel(), getValue: "getTopNode"});
+	// kickstart
+	title.updateView(title.modelPlug.getValue);
 	return title;
     }
 
