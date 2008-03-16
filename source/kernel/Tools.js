@@ -82,10 +82,12 @@ WidgetModel.subclass('SimpleBrowser', {
                     showStatsViewer(theClass.prototype, this.className + "..."); }.bind(this)]);
 	    }
 	}
-	if (Loader.isLoadedFromNetwork && SourceControl == null) {
+	if (Loader.isLoadedFromNetwork) {
             items.push(['load source files', function() {
-                SourceControl = new SourceDatabase();
-		SourceControl.openIn(this.world());
+                if (! SourceControl) {
+			SourceControl = new SourceDatabase();
+			SourceControl.openIn(this.world());
+		}
 		this.world().firstHand().setMouseFocus(null);  // DI: Is this necessary ?? ***
 		SourceControl.scanKernelFiles(["Core.js", "Text.js", "Widgets.js", "Tools.js", "Examples.js", "Network.js", "Storage.js"]);
 		}]);
@@ -735,20 +737,24 @@ Object.subclass('FileParser', {
 	this.str = fstr;
 	var len = this.str.length;
 	this.sourceDB = db;
+	this.localReferences = {};
+	this.localVars = {};
+	this.reservedWords = {};
 	this.ptr = 0;
 	this.lineNo = 0;
 	this.changeList = [];
 	if (this.verbose) console.log("Parsing " + this.fileName + ", length = " + len);
 	this.currentDef = {type: "preamble", startPos: 0, lineNo: 1};
-	while (this.ptr < len) {
-	    var line = this.nextLine(this.str);
+	this.lines = fstr.split("\n");
+
+	while (this.lineNo < this.lines.length) {
+	    var line = this.nextLine();
 	    if (this.verbose) console.log("lineNo=" + this.lineNo + " ptr=" + this.ptr + line);		
 	    if (this.scanComment(line)) {
 	    } else if (this.scanClassDef(line)) {
 	    } else if (this.scanMethodDef(line)) {
 	    } else if (this.scanBlankLine(line)) {
-	    } else if (this.verbose) { console.log("other: "+ line); 
-	    }
+	    } else this.scanOtherLine(line)
 	}
 	this.ptr = len;
 	this.processCurrentDef();
@@ -761,8 +767,16 @@ Object.subclass('FileParser', {
 		if (this.verbose) console.log("comment: "+ line);
 		return true; }
 	if (line.match(/^[\s]*\/\*/) ) {
+		// Note that /* and matching */ must be first non-blank chars on a line
+		var n = this.lineNo;
 		if (this.verbose) console.log("long comment: "+ line + "...");
-		do { line = this.nextLine(this.str) }
+		do {
+			if(this.lineNo >= this.lines.length) {
+				console.log("Unfound end of long comment beginning at line " + n);
+			break;
+			}
+			line = this.nextLine(this.str)
+		}
 		while ( !line.match(/^[\s]*\*\//) );
 		if (this.verbose) console.log("..." + line);
 		return true;
@@ -770,6 +784,7 @@ Object.subclass('FileParser', {
 	return false;
     },
     scanClassDef: function(line) {
+	// *** Need to catch Object.extend both Foo and Foo.prototype ***
 	var match = line.match(/^[\s]*([\w]+)\.subclass\([\'\"]([\w]+)[\'\"]/);
 	if (match == null) {
 		var match = line.match(/^[\s]*([\w]+)\.subclass\(Global\,[\s]*[\'\"]([\w]+)[\'\"]/);
@@ -800,39 +815,51 @@ Object.subclass('FileParser', {
 		if(this.sourceDB) this.sourceDB.methodDictFor(this.currentClassName)["*definition"] =
 			{fileName: this.fileName, startPos: def.startPos, endPos: this.ptr-1};
 	} else if (def.type == "methodDef") {
-		if(this.sourceDB) this.sourceDB.methodDictFor(this.currentClassName)[def.name] =
-			{fileName: this.fileName, startPos: def.startPos, endPos: this.ptr-1};
+		if(this.sourceDB) {
+			this.sourceDB.methodDictFor(this.currentClassName)[def.name] =
+			    {fileName: this.fileName, startPos: def.startPos, endPos: this.ptr-1};
+			this.sourceDB.mergeReferencesFor(this.currentClassName, def.name, this.localReferences, this.localVars);
+		}
 	}
 	this.changeList.push(this.currentDef);
 	// console.log("startPos = " + def.startPos + "; endPos = " + def.endPos);
 	this.currentDef = null;
+	this.localReferences = {};
+	this.localVars = {};
     },
     scanBlankLine: function(line) {
 	if (line.match(/^[\s]*$/) == null) return false;
 	if (this.verbose) console.log("blank line");
 	return true;
     },
-    nextLine: function(s) {
-	// Peeks ahead to next line-end, returning the line with cr and/or lf
-	// I'm sure this could be simpler, either by use of regex's
-	// or just by knowing what line-ending is used
-	// Note p1, p2 are first and last characters of the line (inc ending)
-	if (this.currentLine) this.ptr += this.currentLine.length;
-	this.lineNo ++;
-	var len = s.length;
-	var p1 = this.ptr;
-	var p2 = p1;
-	var c = s[p2];
-	while (p2 < len && (c != "\n" && c != "\r")) {
-	    p2++; 
-	    c = s[p2]; 
+    scanOtherLine: function(line) {
+	// Should mostly be code body lines
+	if (this.verbose) console.log("other: "+ line); 
+	if (this.sourceDB) this.scanLineForReferences(line);
+	return true;
+    },
+    scanLineForReferences: function(line) {
+	// Extract all identifiers from code body
+	var lineWithoutComment = line.split(/\/\//)[0];
+	var ids = lineWithoutComment.split(/\W(?:\W|\d)*/);
+	// Add identifiers to localVars or localReferences
+	var varDef = false;
+	for (var i = 0; i < ids.length; i++) {
+		var id = ids[i];
+		if (varDef) {  // Add to localVars if preceded by 'var'
+			this.localVars[id] = true;
+			varDef = false;
+		} else if (id == 'var') {  // Set flag for var declaration
+			varDef = true;
+		} else this.localReferences[id] = null;  // Else add to refs -- Better way?
 	}
-	if (p2 == len) return this.currentLine = s.substring(p1,p2); // EOF; p2 is beyond end
-	if (p2+1 == len) return this.currentLine = s.substring(p1,p2+1); // EOF at lf or cr
-	if (c == "\n" && s[p2+1] == "\r") return this.currentLine = s.substring(p1,p2+2); // ends w/ lfcr
-	if (c == "\r" && s[p2+1] == "\n") return this.currentLine = s.substring(p1,p2+2); // ends w/ crlf
-	 // ends w/ cr or lf alone
-	return this.currentLine = s.substring(p1,p2+1);
+    },
+    nextLine: function(s) {
+	if (this.currentLine) this.ptr += this.currentLine.length+1;
+	if (this.lineNo < this.lines.length) this.currentLine = this.lines[this.lineNo];
+	else this.currentLine = '';
+	this.lineNo++;
+	return this.currentLine;
     }
     
 });
@@ -962,18 +989,20 @@ ChangeList.subclass('SourceDatabase', {
     initialize: function($super) {
 	this.methodDicts = {};
 	this.cachedFullText = {};
+	this.reservedWords = {};
+	var rws = ['super', 'this', 'for', 'while', 'do', 'length', 'return', 'if', 'else', 'null', 'false', 'true', 'new', 'console', 'log'];
+	for (var i=0; i<rws.length; i++) this.reservedWords[rws[i]] = true;
+	this.crossReference = {};  // A Dict[id] -> [methodStrings...]
         
         var projectName = 'Changes-di.js';  // Later get this info out of localConfig
 	var contents = this.getFileContents(projectName);
 	var chgList = new FileParser().parseFile(projectName, contents)
 	$super(projectName, contents, chgList);
     },
-
     methodDictFor: function(className) {
 	if (!this.methodDicts[className]) this.methodDicts[className] = {}; 
 	return this.methodDicts[className];
     },
-
     getSourceInClassForMethod: function(className, methodName) {
 	var methodDict = this.methodDictFor(className);
 	var descriptor = methodDict[methodName];
@@ -982,35 +1011,55 @@ ChangeList.subclass('SourceDatabase', {
 	if (!fullText) return null;
 	return fullText.substring(descriptor.startPos, descriptor.endPos);
     },
-
     getFullText: function(fileName) {
 	var fullText = this.cachedFullText[fileName];
 	if (fullText) return fullText;
 	// Full text not in cache -- retrieve it and enter in cache
 	return null;
     },
-
     setDescriptorInClassForMethod: function(className, methodName, descriptor) {
 	var methodDict = this.methodDictFor(className);
 	methodDict[methodName] = descriptor;
     },
-
-    scanKernelFiles: function(list) { // if(true) return;
-	for (var i=0; i<list.length; i++) {
-		var fileName = list[i];
-		var fullText = this.getFileContents(fileName);
-		new FileParser().parseFile(fileName, fullText, this);
+    mergeReferencesFor: function(className, methodName, localRefs, localVars) {
+	if (!className || !methodName) return;
+	var methodString = className.concat('>>', methodName);
+	for (var id in localRefs) {
+		if (!localVars[id] && !this.reservedWords[id]) {
+			var allRefs = this.crossReference[id];
+			if (!allRefs) {
+				allRefs = [];
+				this.crossReference[id] = allRefs;
+			}
+			allRefs.push(methodString);
+		}
 	}
     },
-
-    getFileContents: function(fileName) { // convenient helper method
+    dumpCrossReference: function() { // if(true) return;
+	for (var id in this.crossReference) {
+		var refs = this.crossReference[id];
+		if (!refs) console.log(id + " -- no refs.");
+		else if (refs.length < 6) { console.log(id + " -- " + refs); }
+		else console.log(id + " -- " + refs.length + " refs.");
+	}
+    },
+    scanKernelFiles: function(list) { // if(true) return;
+	for (var i=0; i<list.length; i++) {
+		var fName = list[i];
+		// if (fName != 'Tools.js') continue;  // *** remove this ***
+		var fullText = this.getFileContents(fName);
+		this.cachedFullText[fName] = fullText;
+		new FileParser().parseFile(fName, fullText, this);
+	}
+	// this.dumpCrossReference();
+    },
+    getFileContents: function(fName) { // convenient helper method
 	var ms = new Date().getTime();
-	var fullText = new NetRequest().beSync().get(URL.source.withFilename(fileName)).getResponseText();
+	var fullText = new NetRequest().beSync().get(URL.source.withFilename(fName)).getResponseText();
 	ms = new Date().getTime() - ms;
-	console.log(this.fileName + " read in " + ms + " ms.");
+	console.log(fName + " read in " + ms + " ms.");
 	return fullText;
     },
-
     viewTitle: function() {
 	return "Source Control for " + this.fileName;
     }
