@@ -2548,27 +2548,23 @@ Widget.subclass(scope, 'WeatherWidget', {
  * @class StockWidget
  */
 
-Widget.subclass('StockWidget', {
+Widget.subclass('StockWidget', NetRequestReporterTrait, {
 
     defaultViewTitle: 'Stock Widget',
     defaultViewExtent: pt(580, 460),
 
     initialize: function($super) { 
 	var model = new SimpleModel("NewsHeaders", "NewsURL", "StockIndex", "Quote",
-	    "IndexChartURL", "RawQuote", "Company", "RawNewsFeed", "NewsChannels");
+	    "IndexChartURL", "Company", "RawNewsFeed", "NewsChannels");
 	$super({model: model, 
 		getStockIndex: "getStockIndex", 
 		getCompany: "getCompany", 
-		getRawQuote: "getRawQuote",
 		setQuote: "setQuote",
 		setURL: "setNewsURL",
 		setNewsHeaders: "setNewsHeaders",
 		getNewsChannels: "getNewsChannels"});
 	
-	var feed = new Feed({model: model, 
-	    setRawFeedContents: "setRawNewsFeed", getRawFeedContents: "getRawNewsFeed", 
-	    setFeedChannels: "setNewsChannels", 
-	    getURL: "getNewsURL" });
+	var feed = new Feed({model: model, setFeedChannels: "setNewsChannels", getURL: "getNewsURL" });
 	model.setCompany("JAVA");
     },
 
@@ -2582,11 +2578,7 @@ Widget.subclass('StockWidget', {
 	    this.setModelValue("setURL", this.makeNewsURL(entry.ticker));
 	    break;
 	case p.getCompany:
-	    this.requestQuote(this.getModelValue("getCompany"), "setRawQuote");
-	    break;
-	case p.getRawQuote:
-	    var fmtQuote = this.formatQuote(this.getModelValue('getRawQuote', "").split(','));
-	    this.setModelValue('setQuote', fmtQuote);
+	    this.requestQuote(this.getModelValue("getCompany"));
 	    break;
 	case p.getNewsChannels:
 	    var channels = this.getModelValue('getNewsChannels');
@@ -2630,7 +2622,7 @@ Widget.subclass('StockWidget', {
     requestQuote: function(company, destVariable) {
         console.log('requesting quote for ' + company);
         var url = new URL("http://download.finance.yahoo.com/d/quotes.csv").withQuery({ s:company.toLowerCase(), f:'sl1d1t1c1ohgv', e: '.csv'});	
-	var req = new NetRequest({model: this.getModel(), setResponseText: destVariable});
+	var req = new NetRequest({model: this, setStatus: "setRequestStatus", setResponseText: "formatQuote"});
 	req.setContentType("text/html");
 	req.get(url);
     },
@@ -2694,20 +2686,24 @@ Widget.subclass('StockWidget', {
     startSteppingRefreshCharts: function(panel) {
         panel.startStepping(60000, 'refresh');
     },
-
-    formatQuote: function(arr) {
+    
+    formatQuote: function(responseText) {
 	function trim(str) {
 	    if (!str) return null;
             return str.toString().strip().replace(/[\s]{2,}/,' ');
 	}
 	
-        return "Name: " + arr[0] + "\n" 
+	var arr = responseText.split(',');
+
+        var fmtQuote = "Name: " + arr[0] + "\n" 
             + "Last: " + arr[1]+ "\n"
             + "Change: " + arr[4]+ "\n"
             + "Open: " + arr[5]+ "\n"
             + "High: " + arr[6]+ "\n"
             + "Low: " + arr[7]+ "\n"
             + "Volume: " + trim(arr[8]);
+	
+	this.setModelValue('setQuote', fmtQuote);
     },
 
     extractNewsHeaders: function(channels) {
