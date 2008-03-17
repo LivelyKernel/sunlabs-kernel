@@ -1476,19 +1476,38 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
 		return true;
 	    }
         } else if (evt.getKeyCode() == Event.KEY_BACKSPACE) { // Replace the selection after checking for type-ahead
-            var before = this.textString.substring(0, this.selectionRange[this.hasNullSelection() ? 1 : 0]); 
-            var after = this.textString.substring(this.selectionRange[1] + 1, this.textString.length);
-
-            this.setTextString(before.concat(after));
-            this.setNullSelectionAt(before.length); 
+            if (this.hasNullSelection()) this.selectionRange[0] = Math.max(-1, this.selectionRange[0]-1);
+            this. replaceSelectionfromKeyboard(""); 
             evt.stop(); // do not use for browser navigation
             return true;
         } else if (!evt.isAltDown()) {
-            this.replaceSelectionWith(evt.getKeyChar()); 
+            this. replaceSelectionfromKeyboard(evt.getKeyChar()); 
             evt.stop(); // done
 	    return true;
         }
 	return false;
+    },
+    
+    replaceSelectionfromKeyboard: function(replacement) {
+	// This special version of replaceSelectionWith carries out the replacement
+	// but postpones the necessary composition for some time (200 ms) later.
+	// Thus, if there is further keyboard input pending, it can get handled also
+	// without composition until there is an adequate pause.
+	// Note: If other events happen when composition has been postponed,
+	//    and this can be tested by if(this.delayedComposition),
+	//    then a call to composeAfterEdits() must be forced before handling them.
+
+        if (!this.acceptInput) return;
+        var before = this.textString.substring(0,this.selectionRange[0]); 
+        var after = this.textString.substring(this.selectionRange[1]+1,this.textString.length);
+	this.setTextString(before.concat(replacement,after), true);  // 2nd arg = true means delay composition
+
+	// Here we recompute the selectionIndex, but don't compute the selection object
+	var selectionIndex = before.length + replacement.length;
+	this.selectionRange = [selectionIndex, selectionIndex-1];
+
+	if(!this.delayedComposition) this.delayedComposition = new SchedulableAction(this, "composeAfterEdits", null, 0);
+	this.world().scheduleForLater(this.delayedComposition, 200, true); // will override a prior request
     },
     
     processCommandKeys: function(key) {  //: Boolean (was the command processed?)
@@ -1577,23 +1596,26 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
 // TextMorph accessor functions
 TextMorph.addMethods({
 
-    pvtUpdateTextString: function(replacement) {
-        // KP: FIXME: doesn't this potentially change the selection
-        /*
-        if (replacement.length < 100 && this.textString == replacement)
-        // avoid long comparisons
-        return;
-        */
-        // introducing new variable, simple one-level undo
+    pvtUpdateTextString: function(replacement, delayComposition) {
+	// introducing new variable, simple one-level undo
+	// DI: Would be nice to recognize consecutive keystrokes as one replacement
+	//     so undo would undo back to the replacement not just last char typed
         this.undoTextString = this.textString;
+
+	// DI: Might want to put the maxSafeSize test in clients
         this.textString = replacement.truncate(this.maxSafeSize);
         this.recordChange('textString');
-    
+        if (!delayComposition) this.composeAfterEdits();  // Typein wants lazy composition
+    },
+
+    composeAfterEdits: function() {
         this.resetRendering();
         this.layoutChanged(); 
         this.changed();
+        this.drawSelection(); // some callers of pvtUpdate above may call setSelection again
+	this.delayedComposition = null;
     },
-
+    
     saveContents: function(contentString) {    
         if (this.modelPlug == null) {
             eval(contentString); 
@@ -1659,9 +1681,9 @@ TextMorph.addMethods({
         this.changed();
     },
     
-    setTextString: function(replacement) {
+    setTextString: function(replacement, delayComposition) {
         if (this.autoAccept) this.setModelText(replacement);
-        this.pvtUpdateTextString(replacement); 
+        this.pvtUpdateTextString(replacement, delayComposition); 
     },
     
     updateTextString: function(newStr) {

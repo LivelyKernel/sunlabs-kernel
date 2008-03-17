@@ -5083,6 +5083,11 @@ PasteUpMorph.subclass("WorldMorph", {
     //  automatically, whereas stopSteppingScripts is.  We know you won't forget to 
 //  turn your gadgets on, but we're more concerned to turn them off when you're done.
 
+    scheduleForLater: function(action, delayInMs, removePrior) {
+        if (removePrior) this.stopSteppingFor(action, true);  // unschedule earlier
+        this.scheduleAction(new Date().getTime() + delayInMs, action);
+    },
+    
     startSteppingFor: function(action) {
         if (!action.scriptName)
 	    throw new Error("old code");
@@ -5091,9 +5096,10 @@ PasteUpMorph.subclass("WorldMorph", {
         this.scheduleAction(new Date().getTime(), action);
     },
     
-    stopSteppingFor: function(action, fromStart) {
+    stopSteppingFor: function(action, fromStart) { // should be renamed to unschedule()
         // fromStart means it is just getting rid of a previous one if there,
-        // but not an error if not found
+        // so not an error if not found
+	// DI FIXME: This only removes the first one found (alarms may be multiply scheduled)
 
         if (this.currentScript === action) {
 		// Not in queue; just prevent it from being rescheduled
