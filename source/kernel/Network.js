@@ -329,32 +329,27 @@ Wrapper.subclass('FeedItem', {
     
 });
 
-View.subclass('Feed', {
+View.subclass('Feed', NetRequestReporterTrait, {
     documentation: "populates model with feed results", // FIXME
 
-    toString: function() {
-	return "#<Feed>";
-    },
-    
-    updateView: function(aspect, source) { // model vars: getURL, getRawFeedContents, setRawFeedContents, setFeedChannels
+    updateView: function(aspect, source) { // model vars: getURL, setFeedChannels
         var p = this.modelPlug;
 	if (!p) return;
 	switch (aspect) {
 	case p.getURL:
 	    var url = this.getModelValue('getURL');
-	    this.request(url, p.setRawFeedContents);
-	    break;
-        case p.getRawFeedContents:
-	    var elt = this.getModelValue('getRawFeedContents');
-	    var ch = this.parseChannels(elt);
-	    this.setModelValue('setFeedChannels', this.parseChannels(elt));
+	    this.request(url);
 	    break;
 	}
     },
     
-    request: function(url, destVariable) {
+    setRawFeedContents: function(responseXML) {
+	this.setModelValue('setFeedChannels', this.parseChannels(responseXML));
+    },
+    
+    request: function(url) {
         var hourAgo = new Date((new Date()).getTime() - 1000*60*60);
-	var req = new NetRequest({model: this.getModel(), setResponseXML: destVariable});
+	var req = new NetRequest({model: this, setResponseXML: "setRawFeedContents", setStatus: "setRequestStatus"});
 	req.setContentType('text/xml');
 	req.setRequestHeaders({ "If-Modified-Since": hourAgo.toString() });
 	req.get(url);
@@ -383,7 +378,7 @@ Widget.subclass('FeedWidget', {
     defaultViewExtent: pt(500, 200),
     
     initialize: function($super, urlString) {
-	var model = new SimpleModel("FeedURL", "RawFeed",
+	var model = new SimpleModel("FeedURL", 
 	    "ItemList", "ChannelTitle", "SelectedItemContent", "SelectedItemTitle", "FeedChannels", "ItemMenu");
 
 	$super({model: model, 
@@ -394,7 +389,6 @@ Widget.subclass('FeedWidget', {
 		getSelectedItemTitle: "getSelectedItemTitle", 
 		setSelectedItemContent: "setSelectedItemContent"});
 	var feed = new Feed({model: model, 
-	    setRawFeedContents: "setRawFeed", getRawFeedContents: "getRawFeed", 
 	    setFeedChannels: "setFeedChannels",
 	    getURL: "getFeedURL"});
 	this.channels = null;

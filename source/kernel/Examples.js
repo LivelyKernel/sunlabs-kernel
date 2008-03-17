@@ -2389,7 +2389,7 @@ Widget.subclass(scope, 'WeatherWidget', {
     
     initialize: function($super) { 
 	
-	var model = new SimpleModel("RawWeatherFeed", "WeatherChannels", 
+	var model = new SimpleModel("WeatherChannels", 
 	    "WeatherURL", "WeatherDesc", "City", "ImageURL",
 	    "Temperature", "Wind", "Humidity", "DewPoint", "Gusts", "Visibility");
 
@@ -2407,10 +2407,7 @@ Widget.subclass(scope, 'WeatherWidget', {
 		setHumidity: "setHumidity",
 		setVisibility: "setVisibility"});
 	
-	var feed = new Feed({model: model, 
-	    setRawFeedContents: "setRawWeatherFeed", getRawFeedContents: "getRawWeatherFeed", 
-	    setFeedChannels: "setWeatherChannels", 
-	    getURL: "getWeatherURL" });
+	var feed = new Feed({model: model, setFeedChannels: "setWeatherChannels", getURL: "getWeatherURL" });
 	
     },
     
