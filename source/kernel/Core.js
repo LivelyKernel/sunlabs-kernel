@@ -3695,22 +3695,45 @@ Morph.addMethods({
         }
     },
 
-    // Experimental radial "black hole" scrolling feature
-    // See Sun Labs Technical Report SMLI TR-99-74, March 1999
-    // TODO: This is NOT a reversible, "form-preserving" implementation yet
-    // Fix later.
+    // Experimental radial "black hole" scrolling feature: When
+    // an object comes close enough to the "event horizon" (specified
+    // by 'towardsPoint'), the object is zoomed into the black hole.
+    // Negative 'howMuch' values are used to "collapse" the display, 
+    // while positive values expand and restore the display back to its 
+    // original state.  For further information, see  
+    // Sun Labs Technical Report SMLI TR-99-74, March 1999.
     moveRadially: function(towardsPoint, howMuch) {
         var position = this.getPosition();
         var relativePt = position.subPt(towardsPoint);
         var distance = towardsPoint.dist(position);
-        var theta = Math.atan2(relativePt.y, relativePt.x);
-        distance += howMuch;
-        var newX = distance * Math.cos(theta);
-        var newY = distance * Math.sin(theta);
-        this.setPosition(towardsPoint.addPt(pt(newX,newY)));
-        if (distance < 5) this.setScale(0);
-        else if (distance < 200) this.setScale(distance/200);
-        else if (this.getScale() != 1) this.setScale(1);
+        if (!this.inBlackHole) this.inBlackHole = 0;
+
+        // The object disappears entirely when it is less than 5 pixels away
+        // The 'inBlackHole' counter keeps track of how many levels deep
+        // the object is in the black hole, allowing the display to be
+        // restored correctly.
+        if (distance <= 5) {
+            if (howMuch < 0) {
+                this.inBlackHole++;
+                this.setScale(0);
+            } else {
+                this.inBlackHole--;            
+            }
+        } 
+        
+        if (this.inBlackHole == 0) {
+            // Start shrinking the object when it is closer than 200 pixels away
+            if (distance > 5 && distance < 200) this.setScale(distance/200);
+            else if (distance >= 200 && this.getScale() != 1) this.setScale(1);
+
+            // Calculate new location for the object
+            var theta = Math.atan2(relativePt.y, relativePt.x);
+            var newDistance = distance + howMuch;
+            if (newDistance < 0) newDistance = 1;    
+            var newX = newDistance * Math.cos(theta);
+            var newY = newDistance * Math.sin(theta);
+            this.setPosition(towardsPoint.addPt(pt(newX,newY)));
+        }
     }
 
 });
@@ -5563,7 +5586,10 @@ Morph.subclass("HandMorph", {
 
     moveTopMorph: function(evt) {
         var world = WorldMorph.current();
-        var towardsPoint = pt(400, 300); // world.bounds().center();
+
+        // Display height is returned incorrectly by many web browsers.
+        // We use an absolute Y-value instead. 
+        var towardsPoint = pt(world.bounds().center().x, 350);
 
         switch (evt.getKeyCode()) {
         case Event.KEY_LEFT:
@@ -5584,8 +5610,10 @@ Morph.subclass("HandMorph", {
             evt.stop();
             return true;
 
-        // xxxxxx Experimental radial scrolling feature xxxxxx
+        // Experimental radial scrolling feature
+        // Read the comments near method Morph.moveRadially()
         case Event.KEY_PAGEUP:
+        case 65: // The "A" key
             for (var i = 0; i < world.submorphs.length; i++) {
                 var morph = world.submorphs[i];
                 morph.moveRadially(towardsPoint, 10);
@@ -5594,6 +5622,7 @@ Morph.subclass("HandMorph", {
             evt.stop();
             return true;
         case Event.KEY_PAGEDOWN:
+        case 90: // The "Z" key
             for (var i = 0; i < world.submorphs.length; i++) {
                 var morph = world.submorphs[i];
                 morph.moveRadially(towardsPoint, -10);
