@@ -1240,10 +1240,10 @@ Object.subclass('WebPIM', {
             var menu = Morph.prototype.morphMenu.call(this, evt);
             menu.addLine();
             menu.addItem(['load data from web server', function() {
-                PIM.unserializeDataFromWebServer(),
+                PIM.unserializeDataFromWebServer();
             }]);
             menu.addItem(['save data to web server', function() {
-                PIM.serializeDataToWebServer(),
+                PIM.serializeDataToWebServer();
             }]);
             menu.addItem(['generate sample PIM data', function() {
                 PIM.items = null; // Allow garbage collection
