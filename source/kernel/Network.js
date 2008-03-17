@@ -34,11 +34,11 @@ Object.subclass('URL', {
 	    var fullpath = result[4];
 	    if (fullpath) {
 		result = fullpath.match(URL.pathSplitter);
-		this.path = result[1];
+		this.pathname = result[1];
 		this.search = result[2];
 		this.hash = result[3];
 	    } else {
-		this.path = "/";
+		this.pathname = "/";
 		this.search = "";
 		this.hash = "";
 	    }
@@ -47,7 +47,7 @@ Object.subclass('URL', {
 	    this.protocol = spec.protocol || "http";
 	    this.port = spec.port;
 	    this.hostname = spec.hostname;
-	    this.path = spec.pathname || "";
+	    this.pathname = spec.pathname || "";
 	    if (spec.search !== undefined) this.search = spec.search;
 	    if (spec.hash !== undefined) this.hash = spec.hash;
 	}
@@ -62,11 +62,11 @@ Object.subclass('URL', {
     },
 
     fullPath: function() {
-	return this.path + (this.search || "") + (this.hash || "");
+	return this.pathname + (this.search || "") + (this.hash || "");
     },
     
-    isDirectory: function() {
-	return this.fullPath().endsWith('/');
+    isLeaf: function() {
+	return !this.fullPath().endsWith('/');
     },
     
     // POSIX style
@@ -82,7 +82,7 @@ Object.subclass('URL', {
 	return p.substring(slash + 1);
     },
 
-    dirnameURL: function() {
+    getParent: function() {
 	return this.withPath(this.dirname());
     },
 
@@ -96,14 +96,20 @@ Object.subclass('URL', {
     withFilename: function(filename) {
 	if (filename == "./" || filename == ".") // a bit of normalization, not foolproof
 	    filename = "";
-	var dirPart = this.isDirectory() ? this.fullPath() : this.dirname();
+	var dirPart = this.isLeaf() ? this.dirname() : this.fullPath();
 	return new URL({protocol: this.protocol, port: this.port, 
 			hostname: this.hostname, pathname: dirPart + filename});
     },
 
     withQuery: function(record) {
-	return new URL({protocol: this.protocol, port: this.port, hostname: this.hostname, pathname: this.path,
+	return new URL({protocol: this.protocol, port: this.port, hostname: this.hostname, pathname: this.pathname,
 			search: "?" + $H(record).toQueryString(), hash: this.hash});
+    },
+
+    eq: function(url) {
+	if (!url) return false;
+	else return url.protocol == this.protocol && url.port == this.port && url.hostname == this.hostname
+	    && url.pathname == this.pathname && url.search == this.search && url.hash == this.hash;
     }
     
 });

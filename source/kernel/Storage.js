@@ -203,347 +203,78 @@ NetRequestReporter.subclass('LoadHandler', {
 
 View.subclass('WebFile', NetRequestReporterTrait, { 
     documentation: "Read/Write file",
-    outlets: ["Content", "-URL"],
     
-    url: function() {
-	return this.getModelValue('getURL');
+    getFile: function() {
+	return this.getModelValue('getFile');
     },
 
     initialize: function($super, plug) {
 	$super(plug);
-	// kickstart it to start fetching.
-	this.updateView(this.modelPlug.getURL, this);
+	this.lastFile = null;
+    },
+
+    toString: function() {
+	return "#<" + this.getType() + "," + this.getFile() + ">";
+    },
+
+    startFetchingFile: function() {
+	this.updateView(this.modelPlug.getFile, this);
     },
 
     updateView: function(aspect, source) {
 	var p = this.modelPlug;
 	if (!p) return;
 	switch (aspect) {
-	case p.getURL:
-	    this.fetchFile(this.url());
-	    // initiated here, contents will be saved later.
+	case p.getFile:
+	    var file = this.getFile();
+	    if (file)
+		this.fetchContent(file);
 	    break;
 	case p.getContent:
-	    this.saveFile(this.url(), this.getModelValue('getContent'));
+	    var file = this.lastFile; // this.getFile();
+	    console.log("trying to save " + file + " source " + source);
+	    if (file)
+		this.saveFileContent(file, this.getModelValue('getContent'));
 	    break;
 	}
     },
-
-    fetchFile: function(url) {
-	var req = new NetRequest({model: this,  // this is not a full model
-	    setResponseText: "pvtSetFileContent", 
-	    setStatus: "setRequestStatus"});
-	if (Config.suppressWebStoreCaching)
-	    req.setRequestHeaders({"Cache-Control": "no-cache"});
-	req.get(url);
+    
+    
+    fetchContent: function(url) {
+	this.lastFile = url; // FIXME, should be connected to a variable
+	if (url.isLeaf()) {
+	    var req = new NetRequest({model: this,  // this is not a full model
+		setResponseText: "pvtSetFileContent", 
+		setStatus: "setRequestStatus"});
+	    if (Config.suppressWebStoreCaching)
+		req.setRequestHeaders({"Cache-Control": "no-cache"});
+	    req.get(url);
+	} else {
+	    var req = new NetRequest({model: this, setResponseXML: "pvtSetDirectoryContent", 
+		setStatus: "setRequestStatus"});
+            // initialize getting the content
+	    req.propfind(url, 1);
+	}
     },
 
-    saveFile: function(url, content) {
+
+    pvtSetDirectoryContent: function(responseXML) {
+	var query = new Query(responseXML.documentElement);
+	var result = query.evaluate(responseXML.documentElement, "/D:multistatus/D:response", []);
+	var baseUrl = this.getModelValue("getRootNode");
+	
+	var files = result.map(function(raw) { return new Resource(query, raw, baseUrl).toURL(); });
+	files = this.arrangeFiles(files);
+	this.setModelValue("setDirectoryList", files);
+    },
+
+    saveFileContent: function(url, content) {
 	var req = new NetRequest({model: this, setStatus: "setRequestStatus"});
 	req.put(url, content);
     },
 
     pvtSetFileContent: function(responseText) {
 	this.setModelValue("setContent", responseText);
-    }
-    
-});
-
-
-
-Widget.subclass('FileBrowser', NetRequestReporterTrait, {
-
-    initialize: function(baseUrl) {
-	if (!baseUrl) baseUrl = URL.source.dirnameURL();
-	var model = new SimpleModel("RootNode", //: URL, constant
-	    "TopNode", //:URL the node whose contents are viewed in the left pane
-	    "SelectedSuperNode", //:URL
-	    "SelectedSubNode",  // :URL
-	    "SelectedSuperNodeName", "SelectedSubNodeName", //:String
-	    "SelectedSubNodeContents", //:String
-	    "SelectedSubNodeProperties", //:String
-	    "SuperNodeList",  //:URL[]
-	    "SubNodeList",   // :URL[]
-	    "SuperNodeNameList", // :String[]
-	    "SubNodeNameList", // :String[]
-	    "SuperNodeListMenu", "SubNodeListMenu",
-	    "SubNodeDeletionRequest", "SubNodeDeletionConfirmation");
-	
-	// this got a bit out of hand
-	this.connectModel({model: model, 
-			   getSelectedSuperNodeName: "getSelectedSuperNodeName", setSelectedSuperNodeName: "setSelectedSuperNodeName",
-			   setSelectedSuperNode: "setSelectedSuperNode", getSelectedSuperNode: "getSelectedSuperNode",
-			   getSubNodeList: "getSubNodeList", setSubNodeList: "setSubNodeList", 
-			   getSubNodeNameList: "getSubNodeNameList", setSubNodeNameList: "setSubNodeNameList",
-			   getSuperNodeList: "getSuperNodeList", setSuperNodeList: "setSuperNodeList", 
-			   getSuperNodeNameList: "getSuperNodeNameList", setSuperNodeNameList: "setSuperNodeNameList", 
-			   getSelectedSubNodeName: "getSelectedSubNodeName", 
-			   getSelectedSubNode: "getSelectedSubNode", setSelectedSubNode: "setSelectedSubNode",
-			   getSelectedSubNodeContents: "getSelectedSubNodeContents", setSelectedSubNodeContents: "setSelectedSubNodeContents", 
-			   getSubNodeListMenu: "getSubNodeListMenu",
-			   getSuperNodeListMenu: "getSuperNodeListMenu",
-			   setSubNodeDeletionConfirmation: "setSubNodeDeletionConfirmation",
-			   getSubNodeDeletionRequest: "getSubNodeDeletionRequest",
-			   getTopNode: "getTopNode", setTopNode: "setTopNode",
-			   getRootNode: "getRootNode"
-			  });
-	model.setRootNode(baseUrl);
-	model.setSuperNodeList([baseUrl]);
-	model.setSuperNodeNameList(["./"]);
-	model.setTopNode(baseUrl);
-	
-	model.getSuperNodeListMenu =  function() { // cheating: non stereotypical model
-	    var model = this;
-	    return [
-		["make subdirectory", function(evt) {
-		    var selected = model.getSelectedSuperNode();
-		    if (!selected) 
-			return;
-		    var dir = selected.dirnameURL();
-		    this.world().prompt("new directory name", function(response) {
-			if (!response) return;
-			var newdir = dir.withFilename(response);
-			//console.log("current dir is " + newdir);
-			var req = new NetRequest().connectModel({model: model, setStatus: "setRequestStatus"});
-			req.mkcol(newdir);
-			// FIXME: reload subnodes
-		    });
-		}]
-	    ];
-	};
-
-	model.getSubNodeListMenu =  function() { // cheating: non stereotypical model
-	    var items = [];
-	    var url = this.getSelectedSubNode();
-	    if (!url) 
-		return [];
-	    var fileName = url.toString();
-	    var model = this;
-	    var items = [
-		['edit in separate window', function(evt) {
-		    var textEdit = newTextPane(new Rectangle(0, 0, 500, 200), "Fetching " + url + "...");
-		    new WebFile({model: model, getURL: "getSelectedSubNodeURL", // FIXME: url vs resource 
-				 setContent: "setSelectedSubNodeContents", getContent: "getSelectedSubNodeContents"});
-		    textEdit.innerMorph().connectModel({model: model, 
-							getText: "getSelectedSubNodeContents", 
-							setText: "setSelectedSubNodeContents"});
-		    this.world().addFramedMorph(textEdit, url.toString(), evt.mousePoint);
-		}],
-		
-		["get WebDAV info", function(evt) {
-		    var infoPane = newTextPane(new Rectangle(0, 0, 500, 200), "");
-		    infoPane.innerMorph().acceptInput = false;
-		    infoPane.innerMorph().connectModel({model: model, getText: "getSelectedSubNodeProperties"});
-		    
-		    var req = new NetRequest({model: model, 
-			setResponseText: "setSelectedSubNodeProperties", setStatus: "setRequestStatus"});
-		    req.propfind(url, 1);
-		    this.world().addFramedMorph(infoPane, fileName, evt.mousePoint);
-		}]
-	    ];
-	    
-	    if (url.filename().endsWith(".xhtml")) {
-		// FIXME: add loading into a new world
-		items.push(["load into current world", function(evt) {
-		    var loader = new LoadHandler(url);
-		    new NetRequest({model: loader, setResponseXML: "loadWorldContents", 
-				    setStatus: "setRequestStatus"}).get(url);
-		}]);
-		
-		items.push(["load into new linked world", function(evt) {
-		    var loader = new LoadHandler(url);
-		    new NetRequest({model: loader, setResponseXML: "loadWorldInSubworld",
-				    setStatus: "setRequestStatus"}).get(url);
-		}]);
-		
-	    } else if (fileName.endsWith(".js")) {
-		items.push(["evaluate as Javascript", function(evt) {
-		    var loader = new LoadHandler(url);
-		    new NetRequest({model: loader, setResponseText: "loadJavascript",
-				    setStatus: "setRequestStatus"}).get(url);
-		}]);
-	    }
-	    
-	    var contents = this.getSelectedSubNodeContents();
-	    console.log("fileName = " + fileName + "; contents.length = " + contents.length);
-            if (contents && contents.length > 0) {
-		items.unshift(['open a changeList browser', function(evt) {
-                    var chgList = new FileParser().parseFile(fileName, contents);
-		    new ChangeList(fileName, contents, chgList).openIn(this.world()); 
-		}]);
-	    }
-	    return items; 
-	};
-	
-    },
-    
-    getSelectedSubNode: function() {
-	var result = this.getModelValue("getSelectedSubNode");
-	result && (result instanceof URL) || console.log(result + " not instanceof URL");
-	return result;
-    },
-    
-    setSelectedSubNode: function(url) {
-	url && (url instanceof URL) || console.log(url + " not instanceof URL");
-	this.setModelValue("setSelectedSubNode", url);
-    },
-    
-    getSelectedSuperNode: function() {
-	return this.getModelValue("getSelectedSuperNode");
-    },
-
-    setSelectedSuperNode: function(url) {
-	console.log("setting selected supernode to " + url);
-	return this.setModelValue("setSelectedSuperNode", url);
-    },
-
-    clearSubNodes: function() {
-	this.setModelValue("setSubNodeList", []);
-	this.setModelValue("setSubNodeNameList", []);
-	this.setSelectedSubNode(null);
-	this.setModelValue("setSelectedSubNodeName", null);
-	this.setModelValue("setSelectedSubNodeContents", "");
-    },
-
-    getRootNode: function() {
-	return this.getModelValue("getRootNode");
-    },
-    
-
-    updateView: function(aspect, source) {
-	var p = this.modelPlug;
-	if (!p) return;
-	switch (aspect) {
-	case p.getSelectedSuperNodeName:
-	    var dirname = this.getModelValue("getSelectedSuperNodeName");
-	    if (!dirname) break;
-	    var newUrl;
-	    if (dirname == "..") { 
-		if (this.getModelValue("getTopNode") != this.getRootNode().toString()) {
-		    
-		    newUrl = this.getModelValue("getTopNode").dirnameURL(); //this.getSelectedSuperNode().dirnameURL();
-		    this.setModelValue("setTopNode", newUrl); 
-		    console.log("walking up to " + newUrl);
-					    
-		    // copy left pane to right pane 
-		    this.setModelValue("setSubNodeList", this.getModelValue("getSuperNodeList")); 
-		    this.setModelValue("setSubNodeNameList", this.getModelValue("getSuperNodeNameList"));
-		    //this.setModelValue("setSelectedSubNodeName", this.getModelValue("getSelectedSuperNodeName"));
-		    this.setSelectedSuperNode(null);
-		    
-		    this.fetchDirectory(newUrl, "fetchSuperNodes");
-		} else {
-		    console.log("do nothing");
-		    //: we are at root, do nothing
-		}
-	    } else {
-		newUrl = dirname == "./" ? this.getRootNode() : this.getModelValue("getTopNode").withFilename(dirname);
-		// this.getModelValue("getSuperNodeList", []).detect(function(url) { return url.filename() == dirname});
-		this.setSelectedSuperNode(newUrl);
-		if (newUrl.isDirectory()) {
-		    console.log("fetching directory " + newUrl);
-		    this.fetchDirectory(newUrl, "fetchSubNodes");
-		} else {
-		    //this.clearSubNodes();
-		    // FIXME just display the content below anyway
-		    console.log("selected non-directory " + newUrl + " on the left");
-		}
-	    }
-	    break;
-	    
-	case p.getSelectedSubNodeName:
-	    var fileName = this.getModelValue("getSelectedSubNodeName");
-	    if (!fileName) break;
-	    var dirUrl = this.getSelectedSuperNode();
-	    console.log("dir url " + dirUrl);
-	    var newUrl = fileName == ".." ? dirUrl : dirUrl.withFilename(fileName);
-	    if (newUrl.isDirectory()) {
-		this.setModelValue("setTopNode", dirUrl);
-		this.setModelValue("setSuperNodeList", this.getModelValue("getSubNodeList"));
-		this.setModelValue("setSuperNodeNameList", this.getModelValue("getSubNodeNameList"));
-		this.setSelectedSuperNode(newUrl);
-		// this.setModelValue("setSelectedSuperNodeName", fileName);
-		if (fileName == "..") {
-		    this.clearSubNodes();
-		} else {
-		    this.fetchDirectory(newUrl, "fetchSubNodes"); 
-		}
-	    } else {
-		this.setSelectedSubNode(newUrl);
-		this.fetchFile(newUrl);
-	    } 
-	    break;
-	case p.getSelectedSubNodeContents:
-	    var req = new NetRequest({model: this, setStatus: "setRequestStatus"});
-            // initialize getting the content
-	    req.put(this.getSelectedSubNode(), this.getModelValue("getSelectedSubNodeContents"));
-	    break;
-	case p.getSubNodeDeletionRequest:
-	    this.deleteResource(this.getSelectedSubNode());
-	    break;
-	}
-    },
-    
-    fetchDirectory: function(url, callback) {
-	var req = new NetRequest({model: this, setResponseXML: callback, setStatus: "setRequestStatus"});
-        // initialize getting the content
-	req.propfind(url, 1);
-    },
-
-    fetchSubNodes: function(responseXML) {
-	var query = new Query(responseXML.documentElement);
-	var result = query.evaluate(responseXML.documentElement, "/D:multistatus/D:response", []);
-	var dirURLString = this.getSelectedSuperNode().toString();
-	var baseUrl = this.getRootNode();
-
-	var files = result.map(function(raw) { return new Resource(query, raw, baseUrl).toURL(); });
-	files = this.arrangeFiles(files);
-	this.setModelValue("setSubNodeList", files);
-
-	// FIXME: this may depend too much on correct normalization, which we don't quite do.
-	var fileNames = files.map(function(u) { 
-	    if (u.toString() == dirURLString) // FIXME URL comparison?
-		return "..";
-	    else return  u.filename(); 
-
-	});
-	this.setModelValue("setSubNodeNameList", fileNames);
-    },
-
-    fetchSuperNodes: function(responseXML) { // FIXME merge
-	var query = new Query(responseXML.documentElement);
-	var result = query.evaluate(responseXML.documentElement, "/D:multistatus/D:response", []);
-	var dirURLString = this.getModelValue("getTopNode", "").toString();
-
-	console.log("in supernode contents, dirURLString " + dirURLString);
-	var baseUrl = this.getRootNode();
-	var files = result.map(function(raw) { return new Resource(query, raw, baseUrl).toURL(); });
-	files = this.arrangeFiles(files);
-	this.setModelValue("setSuperNodeList", files);
-
-	// FIXME: this may depend too much on correct normalization, which we don't quite do.
-	var fileNames = files.map(function(r) { 
-	    if (r.toString() == dirURLString)
-		return "..";
-	    else return  r.filename(); 
-
-	});
-	
-	this.setModelValue("setSuperNodeNameList", fileNames);
-    },
-
-
-    fetchFile: function(url) { // copied from WebFile
-	var req = new NetRequest({model: this,  // this is not a full model
-	    setResponseText: "pvtSetFileContent", 
-	    setStatus: "setRequestStatus"});
-	if (Config.suppressWebStoreCaching)
-	    req.setRequestHeaders({"Cache-Control": "no-cache"});
-	req.get(url);
-    },
-
-    pvtSetFileContent: function(content) {
-	this.setModelValue("setSelectedSubNodeContents", content);
     },
 
     arrangeFiles: function(fullList) {
@@ -562,30 +293,198 @@ Widget.subclass('FileBrowser', NetRequestReporterTrait, {
 	    }
 	}
 	return dirs.concat(second).concat(last);
-    },
+    }
+    
+});
 
-    deleteResource: function(url) {
-	var model = this.getModel();
-	if (url.isDirectory()) {
-	    WorldMorph.current().alert("will not erase directory " + url);
-	    model.setSubNodeDeletionConfirmation(false);
-	}
+
+
+Widget.subclass('TwoPaneBrowser', {
+
+    initialize: function(baseUrl) {
+	if (!baseUrl) baseUrl = URL.source.getParent();
+	var model = new SimpleModel("RootNode", //: URL, constant
+	    "TopNode", //:URL the node whose contents are viewed in the left pane
+	    "SelectedUpperNode", //:URL
+	    "SelectedLowerNode",  // :URL
+	    "SelectedUpperNodeName", "SelectedLowerNodeName", //:String
+	    "SelectedUpperNodeContents", //:String
+	    "SelectedLowerNodeContents", // : String
+	    "SelectedLowerNodeProperties", //:String
+	    "UpperNodeList",  //:URL[]
+	    "LowerNodeList",   // :URL[]
+	    "UpperNodeNameList", // :String[]
+	    "LowerNodeNameList", // :String[]
+	    "UpperNodeListMenu", "LowerNodeListMenu",
+	    "LowerNodeDeletionRequest", "LowerNodeDeletionConfirmation");
 	
-        WorldMorph.current().confirm("delete resource " + url, function(result) {
-	    if (result) {
-		var eraser = { 
-		    setRequestStatus: function(status) { 
-			if (status.status < 300) 
-			    model.setSubNodeDeletionConfirmation(true);
-			NetRequestReporterTrait.setRequestStatus.call(this, status);
-		    }
-		};
-		new NetRequest({model: eraser, setStatus: "setRequestStatus"}).del(url);
-	    } else console.log("cancelled deletion of " + url);
-	});
+	// this got a bit out of hand
+	this.connectModel({model: model, 
+			   
+			   getLowerNodeList: "getLowerNodeList", setLowerNodeList: "setLowerNodeList", 
+			   getUpperNodeList: "getUpperNodeList", setUpperNodeList: "setUpperNodeList", 
+			   
+			   getLowerNodeNameList: "getLowerNodeNameList", setLowerNodeNameList: "setLowerNodeNameList",
+			   getUpperNodeNameList: "getUpperNodeNameList", setUpperNodeNameList: "setUpperNodeNameList", 
+			   
+			   getSelectedLowerNodeName: "getSelectedLowerNodeName", 
+			   getSelectedLowerNode: "getSelectedLowerNode", setSelectedLowerNode: "setSelectedLowerNode",
+			   
+			   getSelectedUpperNodeName: "getSelectedUpperNodeName", setSelectedUpperNodeName: "setSelectedUpperNodeName",
+			   getSelectedUpperNode: "getSelectedUpperNode", setSelectedUpperNode: "setSelectedUpperNode",
+			   
+			   
+			   getLowerNodeListMenu: "getLowerNodeListMenu",
+			   getUpperNodeListMenu: "getUpperNodeListMenu",
+			   setLowerNodeDeletionConfirmation: "setLowerNodeDeletionConfirmation",
+			   getLowerNodeDeletionRequest: "getLowerNodeDeletionRequest",
+			   getTopNode: "getTopNode", setTopNode: "setTopNode",
+			   getRootNode: "getRootNode"
+			  });
+	model.setRootNode(baseUrl);
+	model.setUpperNodeList([baseUrl]);
+	model.setUpperNodeNameList([this.SELFLINK]);
+	model.setTopNode(baseUrl);
+
+	this.lowerFetcher = new WebFile({model: model, 
+					 getRootNode: "getRootNode",
+					 getContent: "getSelectedLowerNodeContents",
+					 setContent: "setSelectedLowerNodeContents",
+					 setDirectoryList: "setLowerNodeList"});
+	
+	this.upperFetcher = new WebFile({model: model, 
+					 getRootNode: "getRootNode", 
+					 getContent: "getSelectedUpperNodeContents",
+					 setContent: "setSelectedUpperNodeContents",
+					 setDirectoryList: "setUpperNodeList"});
+
     },
 
+    UPLINK: "<up>",
+    SELFLINK: "<top>",
+    
+    getSelectedLowerNode: function() {
+	return this.getModelValue("getSelectedLowerNode");
+    },
+    
+    setSelectedLowerNode: function(url) {
+	this.setModelValue("setSelectedLowerNode", url);
+    },
+    
+    getSelectedUpperNode: function() {
+	return this.getModelValue("getSelectedUpperNode");
+    },
 
+    setSelectedUpperNode: function(url) {
+	console.log("setting selected supernode to " + url);
+	return this.setModelValue("setSelectedUpperNode", url);
+    },
+
+    clearLowerNodes: function() {
+	this.setModelValue("setLowerNodeList", []);
+	this.setModelValue("setLowerNodeNameList", []);
+	this.setSelectedLowerNode(null);
+	this.setModelValue("setSelectedLowerNodeName", null);
+	this.setModelValue("setSelectedLowerNodeContents", "");
+    },
+
+    getRootNode: function() {
+	return this.getModelValue("getRootNode");
+    },
+    
+    getTopNode: function() {
+	return this.getModelValue("getTopNode");
+    },
+
+    handleUpperNodeSelection: function(upperName) {
+	if (!upperName) return;
+	if (upperName == this.UPLINK) { 
+	    if (this.getTopNode().eq(this.getRootNode())) {
+		// console.log("we are at root, do nothing");
+		return;
+	    } else {
+		var newTop = this.getTopNode().getParent(); 
+		this.setModelValue("setTopNode", newTop); 
+		console.log("walking up to " + newTop);
+		
+		// copy left pane to right pane 
+		this.setModelValue("setLowerNodeList", this.getModelValue("getUpperNodeList")); 
+		this.setModelValue("setLowerNodeNameList", this.getModelValue("getUpperNodeNameList"));
+		this.setModelValue("setSelectedLowerNodeName", upperName);
+		this.setSelectedUpperNode(null);
+		this.upperFetcher.fetchContent(newTop);
+	    } 
+	} else {
+	    var newUpper = upperName == this.SELFLINK ? 
+		this.getRootNode() : this.getTopNode().withFilename(upperName);
+	    this.setSelectedUpperNode(newUpper);
+	    this.lowerFetcher.fetchContent(newUpper);
+	}
+    },
+
+    handleLowerNameSelection: function(lowerName) {
+	if (!lowerName) return;
+	var selectedUpper = this.getSelectedUpperNode();
+	var newNode = (lowerName == this.UPLINK) ? selectedUpper : selectedUpper.withFilename(lowerName);
+	if (newNode.isLeaf()) {
+	    this.setSelectedLowerNode(newNode);
+	} else {
+	    this.setModelValue("setTopNode", selectedUpper);
+	    this.setModelValue("setUpperNodeList", this.getModelValue("getLowerNodeList"));
+	    this.setModelValue("setUpperNodeNameList", this.getModelValue("getLowerNodeNameList"));
+	    this.setModelValue("setSelectedUpperNodeName", lowerName); // 
+
+	    this.setSelectedUpperNode(newNode);
+	    this.setSelectedLowerNode(null);
+	    if (lowerName == this.UPLINK) {
+		this.clearLowerNodes();
+		return;
+	    } 
+	} 
+	this.lowerFetcher.fetchContent(newNode);
+
+    },
+
+    nodesToNames: function(nodes, parent) {
+	var UPLINK = this.UPLINK;
+	// FIXME: this may depend too much on correct normalization, which we don't quite do.
+	return nodes.map(function(node) { return node.eq(parent) ?  UPLINK : node.filename()});
+    },
+
+    updateView: function(aspect, source) {
+	var p = this.modelPlug;
+	if (!p) return;
+	switch (aspect) {
+	case p.getSelectedUpperNodeName:
+	    this.handleUpperNodeSelection(this.getModelValue("getSelectedUpperNodeName"));
+	    break;
+
+	case p.getSelectedLowerNodeName:
+	    this.handleLowerNameSelection(this.getModelValue("getSelectedLowerNodeName"));
+	    break;
+	    
+	case p.getLowerNodeList: 
+	    this.setModelValue("setLowerNodeNameList", 
+			       this.nodesToNames(this.getModelValue("getLowerNodeList"), 
+						 this.getSelectedUpperNode()));
+	    break;
+	    
+	case p.getUpperNodeList: 
+	    this.setModelValue("setUpperNodeNameList", 
+			       this.nodesToNames(this.getModelValue("getUpperNodeList"), 
+						 this.getTopNode()));
+	    break;
+
+	case p.getLowerNodeDeletionRequest:
+	    this.removeNode(this.getSelectedLowerNode());
+	    break;
+	}
+    },
+
+    removeNode: function(node) {
+	console.log("implement remove node?");
+    },
+    
     buildView: function(extent, model) {
         var panel = PanelMorph.makePanedPanel(extent, [
             ['leftPane', newListPane, new Rectangle(0, 0, 0.5, 0.6)],
@@ -593,21 +492,21 @@ Widget.subclass('FileBrowser', NetRequestReporterTrait, {
             ['bottomPane', newTextPane, new Rectangle(0, 0.6, 1, 0.4)]
         ]);
         panel.leftPane.connectModel({model: model,
-				     getList: "getSuperNodeNameList",
-				     getMenu: "getSuperNodeListMenu",
-				     setSelection: "setSelectedSuperNodeName", 
-				     getSelection: "getSelectedSuperNodeName"});
+				     getList: "getUpperNodeNameList",
+				     getMenu: "getUpperNodeListMenu",
+				     setSelection: "setSelectedUpperNodeName", 
+				     getSelection: "getSelectedUpperNodeName"});
 
         var m = panel.rightPane;
-        m.connectModel({model: model, getList: "getSubNodeNameList", setSelection: "setSelectedSubNodeName", 
-			getDeletionConfirmation: "getSubNodeDeletionConfirmation",
-			setDeletionRequest: "setSubNodeDeletionRequest",
-			getMenu: "getSubNodeListMenu"});
+        m.connectModel({model: model, getList: "getLowerNodeNameList", setSelection: "setSelectedLowerNodeName", 
+			getDeletionConfirmation: "getLowerNodeDeletionConfirmation",
+			setDeletionRequest: "setLowerNodeDeletionRequest",
+			getMenu: "getLowerNodeListMenu"});
 	
 	
         panel.bottomPane.connectModel({model: model, 
-				       getText: "getSelectedSubNodeContents", 
-				       setText: "setSelectedSubNodeContents"});
+				       getText: "getSelectedLowerNodeContents", 
+				       setText: "setSelectedLowerNodeContents"});
 	
 	// kickstart
 	var im = panel.leftPane.innerMorph();
@@ -616,7 +515,7 @@ Widget.subclass('FileBrowser', NetRequestReporterTrait, {
     },
 
     viewTitle: function() {
-	var title = new PrintMorph(new Rectangle(0, 0, 150, 15), 'File Browser').beLabel();
+	var title = new PrintMorph(new Rectangle(0, 0, 150, 15), 'Browser ').beLabel();
 	title.formatValue = function(value) { return String(value) }; // don't inspect URLs, just toString() them.
 	title.connectModel({model: this.getModel(), getValue: "getTopNode"});
 	// kickstart
@@ -625,6 +524,126 @@ Widget.subclass('FileBrowser', NetRequestReporterTrait, {
     }
 
 });
+
+TwoPaneBrowser.subclass('FileBrowser', {
+
+    initialize: function($super, baseUrl) {
+	$super(baseUrl);
+	var model = this.getModel();
+	model.getUpperNodeListMenu =  function() { // cheating: non stereotypical model
+	    var model = this;
+	    return [
+		["make subdirectory", function(evt) {
+		    var selected = model.getSelectedUpperNode();
+		    if (!selected) 
+			return;
+		    var dir = selected.getParent();
+		    this.world().prompt("new directory name", function(response) {
+			if (!response) return;
+			var newdir = dir.withFilename(response);
+			//console.log("current dir is " + newdir);
+			var req = new NetRequest().connectModel({model: model, setStatus: "setRequestStatus"});
+			req.mkcol(newdir);
+			// FIXME: reload subnodes
+		    });
+		}]
+	    ];
+	};
+
+	model.getLowerNodeListMenu =  function() { // cheating: non stereotypical model
+	    var items = [];
+	    var url = this.getSelectedLowerNode();
+	    if (!url) 
+		return [];
+	    var fileName = url.toString();
+	    var model = this;
+	    var items = [
+		['edit in separate window', function(evt) {
+		    var textEdit = newTextPane(new Rectangle(0, 0, 500, 200), "Fetching " + url + "...");
+		    var webfile = new WebFile({model: model, 
+			getFile: "getSelectedLowerNode", 
+			setContent: "setSelectedLowerNodeContents",
+			getContent: "getSelectedLowerNodeContents"
+			});
+		    webfile.startFetchingFile();
+		    textEdit.innerMorph().connectModel({model: model, 
+							getText: "getSelectedLowerNodeContents", 
+							setText: "setSelectedLowerNodeContents"});
+		    this.world().addFramedMorph(textEdit, url.toString(), evt.mousePoint);
+		}],
+		
+		["get WebDAV info", function(evt) {
+		    var infoPane = newTextPane(new Rectangle(0, 0, 500, 200), "");
+		    infoPane.innerMorph().acceptInput = false;
+		    infoPane.innerMorph().connectModel({model: model, getText: "getSelectedLowerNodeProperties"});
+		    
+		    var req = new NetRequest({model: model, 
+			setResponseText: "setSelectedLowerNodeProperties", setStatus: "setRequestStatus"});
+		    req.propfind(url, 1);
+		    this.world().addFramedMorph(infoPane, url.toString(), evt.mousePoint);
+		}]
+	    ];
+	    
+	    if (url.filename().endsWith(".xhtml")) {
+		// FIXME: add loading into a new world
+		items.push(["load into current world", function(evt) {
+		    var loader = new LoadHandler(url);
+		    new NetRequest({model: loader, setResponseXML: "loadWorldContents", 
+				    setStatus: "setRequestStatus"}).get(url);
+		}]);
+		
+		items.push(["load into new linked world", function(evt) {
+		    var loader = new LoadHandler(url);
+		    new NetRequest({model: loader, setResponseXML: "loadWorldInSubworld",
+				    setStatus: "setRequestStatus"}).get(url);
+		}]);
+		
+	    } else if (url.toString().endsWith(".js")) {
+		items.push(["evaluate as Javascript", function(evt) {
+		    var loader = new LoadHandler(url);
+		    new NetRequest({model: loader, setResponseText: "loadJavascript",
+				    setStatus: "setRequestStatus"}).get(url);
+		}]);
+	    }
+	    
+	    var contents = this.getSelectedLowerNodeContents();
+	    var fileName = url.toString();
+	    console.log("fileName = " + fileName + "; contents.length = " + contents.length);
+            if (contents && contents.length > 0) {
+		items.unshift(['open a changeList browser', function(evt) {
+                    var chgList = new FileParser().parseFile(fileName, contents);
+		    new ChangeList(fileName, contents, chgList).openIn(this.world()); 
+		}]);
+	    }
+	    return items; 
+	};
+
+    },
+
+    removeNode: function(url) {
+	var model = this.getModel();
+	if (!url.isLeaf()) {
+	    WorldMorph.current().alert("will not erase directory " + url);
+	    model.setLowerNodeDeletionConfirmation(false);
+	    return;
+	}
+	
+        WorldMorph.current().confirm("delete resource " + url, function(result) {
+	    if (result) {
+		var eraser = { 
+		    setRequestStatus: function(status) { 
+			if (status.status < 300) 
+			    model.setLowerNodeDeletionConfirmation(true);
+			NetRequestReporterTrait.setRequestStatus.call(this, status);
+		    }
+		};
+		new NetRequest({model: eraser, setStatus: "setRequestStatus"}).del(url);
+	    } else console.log("cancelled removal of " + url);
+	});
+    }
+	
+});
+
 
 
 }.logCompletion('Storage.js'))();

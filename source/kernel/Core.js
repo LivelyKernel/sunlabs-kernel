@@ -4569,7 +4569,7 @@ ViewTrait = {
         if (plug == null || plug.model == null || functionName == null) return;
         var func = plug.model[plug[functionName]];
         if (func == null) return;
-        func.call(plug.model, newValue, this); 
+        func.call(plug.model, newValue, this);
     },
 
     updateView: function(aspect, controller) {
