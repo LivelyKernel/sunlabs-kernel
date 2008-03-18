@@ -2674,20 +2674,17 @@ Copier.subclass('Importer', {
         return morphs;
     },
 
-
     importWorldFromContainer: function(container, world) {
 	var morphs = this.importFromContainer(container);
 	if (morphs[0]) {
             if (morphs[0] instanceof WorldMorph && morphs.length == 1) {
                 world = morphs[0];
                 world.itsCanvas = Canvas;
-		if (morphs.length > 1) {
-		    console.log("more than one top level morph following a WorldMorph, ignoring remaining morphs");
-		}
+		(morphs.length > 1) && console.log("more than one top level morph following a WorldMorph, ignoring remaining morphs");
             } else {
 		// no world, create one and add all the shrinkwrapped morphs to it.
 		world = world || new WorldMorph(Canvas);
-		for (var i = 0; i < morphs.length; i++ )
+		for (var i = 0; i < morphs.length; i++)
 		    world.addMorph(morphs[i]);
             }
 	    try {
@@ -2721,8 +2718,6 @@ Copier.subclass('Importer', {
                     value = value.evalJSON();
                 }
                 model.addVariable(name, value);
-                //var value = node.getAttribute('value');
-                //variables.push(name);
                 break;
             default:
                 console.log('got unexpected node %s %s', node.tagName, node); 
@@ -2751,7 +2746,7 @@ Importer.marker = Object.extend(new Importer(), {
  * all the morphs. 
  */ 
 
-Morph = Visual.subclass("Morph", {
+Visual.subclass("Morph", {
 
     // prototype vars
     documentation: "Base class for every graphical, manipulatable object in the system", 
@@ -3089,6 +3084,13 @@ Morph = Visual.subclass("Morph", {
     },
     
     prepareForSerialization: function(extraNodes, rootModel) {
+	
+	if (this.modelPlug) { 
+	    var plug = this.modelPlug.persist();
+            this.addNonMorph(plug);
+	    extraNodes.push(plug);
+        }
+	
         for (var prop in this) {
             if (prop == 'owner') // we'll deal manually
                 continue;
@@ -4485,10 +4487,6 @@ ViewTrait = {
         // {model: someModel, getList: "getItemList", setSelection: "chooseItem"}
         var newPlug = new ModelPlug(plugSpec);
 
-	if (this.persistPlug) { // FIXME: maybe make a part of the decoration process?
-	    this.persistPlug(newPlug);
-	}
-
 	if (!(plugSpec.model instanceof Model) && !this.checkModel(plugSpec))
 	    console.log("model " + plugSpec.model +  " is not a Model, view " + this);
 
@@ -4578,17 +4576,6 @@ Object.subclass('View', ViewTrait, {
 
 Morph.addMethods(ViewTrait);
 
-// Model-specific extensions to class Morph (see Model class definition below)
-Morph.addMethods({
-    persistPlug: function(newPlug) {
-	if (this.modelPlug) { 
-            this.rawNode.replaceChild(newPlug.rawNode, this.modelPlug.rawNode);
-        } else { 
-            this.addNonMorph(newPlug.rawNode);
-        }
-    }
-
-});
 
 // ===========================================================================
 // MVC model support
@@ -4665,20 +4652,31 @@ Object.subclass('Model', {
  * @class ModelPlug
  */ 
 
-Wrapper.subclass('ModelPlug', {
+Object.subclass('ModelPlug', {
 
     initialize: function(spec) {
-        this.rawNode = NodeFactory.createNS(Namespace.LIVELY, "modelPlug");
 	var props = Object.properties(spec);
         for (var i = 0; i < props.length; i++) {
-            var prop = props[i];
+	    var prop = props[i];
             this[prop] = spec[prop];
-            if (prop != 'model') {
-                var acc = this.rawNode.appendChild(NodeFactory.createNS(Namespace.LIVELY, "accessor"));
+	}
+    },
+    
+    persist: function() {
+	var props = Object.properties(this);
+	var rawNode = NodeFactory.createNS(Namespace.LIVELY, "modelPlug");
+	for (var i = 0; i < props.length; i++) {
+	    var prop = props[i];
+	    switch (prop) {
+	    case 'model':
+		break;
+	    default:
+                var acc = rawNode.appendChild(NodeFactory.createNS(Namespace.LIVELY, "accessor"));
                 acc.setAttributeNS(Namespace.LIVELY, "formal", prop);
-                acc.setAttributeNS(Namespace.LIVELY, "actual", spec[prop]);
+                acc.setAttributeNS(Namespace.LIVELY, "actual", this[prop]);
             }
         }
+	return rawNode;
     },
 
     deserialize: function($super, importer, rawNode) {
