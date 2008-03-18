@@ -152,7 +152,7 @@ NetRequestReporter.subclass('LoadHandler', {
 	this.url = url;
     },
 
-    loadWorldInSubworld: function(responseText) {
+    loadWorldInSubworld: function(doc) {
 	var container = Loader.shrinkWrapContainer(doc);
 	if (container) {
 	    var importer = new Importer();
