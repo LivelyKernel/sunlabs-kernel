@@ -328,7 +328,14 @@ function populateWorldWithExamples(world) {
             var browser = new DOMBrowser();
 	    console.log('showing DOMBrowser!');
             browser.openIn(Config.webStoreInMain ? WorldMorph.current() : devWorld.myWorld, pt(260, 120));
+
 	}
+	if (Config.showTwoPaneObjectBrowser) {
+            var browser = new TwoPaneObjectBrowser();
+	    console.log('showing TwoPaneBrowser!');
+            browser.openIn(Config.webStoreInMain ? WorldMorph.current() : devWorld.myWorld, pt(160, 150));
+	}
+
 
     }
 

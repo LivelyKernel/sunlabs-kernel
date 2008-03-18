@@ -82,7 +82,7 @@ Object.subclass('URL', {
 	return p.substring(slash + 1);
     },
 
-    getParent: function() {
+    getDirectory: function() {
 	return this.withPath(this.dirname());
     },
 

@@ -299,19 +299,19 @@ View.subclass('WebFile', NetRequestReporterTrait, {
 
 
 
-Widget.subclass('TwoPaneBrowser', {
+Widget.subclass('TwoPaneBrowser', { // move to Widgets.js sometime
 
     initialize: function(rootNode, lowerFetcher, upperFetcher) {
-	var model = new SimpleModel("RootNode", //: URL, constant
-	    "TopNode", //:URL the node whose contents are viewed in the left pane
-	    "SelectedUpperNode", //:URL
-	    "SelectedLowerNode",  // :URL
+	var model = new SimpleModel("RootNode", //: Node, constant
+	    "TopNode", //:Node the node whose contents are viewed in the left pane
+	    "SelectedUpperNode", //:Node
+	    "SelectedLowerNode",  // :Node
 	    "SelectedUpperNodeName", "SelectedLowerNodeName", //:String
 	    "SelectedUpperNodeContents", //:String
 	    "SelectedLowerNodeContents", // : String
 	    "SelectedLowerNodeProperties", //:String
-	    "UpperNodeList",  //:URL[]
-	    "LowerNodeList",   // :URL[]
+	    "UpperNodeList",  //:Node[]
+	    "LowerNodeList",   // :Node[]
 	    "UpperNodeNameList", // :String[]
 	    "LowerNodeNameList", // :String[]
 	    "UpperNodeListMenu", "LowerNodeListMenu",
@@ -405,7 +405,7 @@ Widget.subclass('TwoPaneBrowser', {
 		// console.log("we are at root, do nothing");
 		return;
 	    } else {
-		var newTop = this.retrieveParentNode(this.getTopNode());//.getParent(); 
+		var newTop = this.retrieveParentNode(this.getTopNode());
 		this.setModelValue("setTopNode", newTop); 
 		console.log("walking up to " + newTop);
 		
@@ -523,11 +523,10 @@ Widget.subclass('TwoPaneBrowser', {
 });
 
 
-
 TwoPaneBrowser.subclass('FileBrowser', {
 
     initialize: function($super, rootNode) {
-	if (!rootNode) rootNode = URL.source.getParent();
+	if (!rootNode) rootNode = URL.source.getDirectory();
 	$super(rootNode, new WebFile(), new WebFile());
 	var model = this.getModel();
 	model.getUpperNodeListMenu =  function() { // cheating: non stereotypical model
@@ -644,7 +643,7 @@ TwoPaneBrowser.subclass('FileBrowser', {
 
 
     retrieveParentNode: function(node) {
-	return node.getParent();
+	return node.getDirectory();
     },
 
     nodesToNames: function(nodes, parent) {
@@ -715,14 +714,11 @@ View.subclass('DOMFetcher', {
 });
 
 
-
-
 TwoPaneBrowser.subclass('DOMBrowser', {
 
     // indexed by Node.nodeType
     nodeTypes: [ "", "Node", "Attribute", "Text", "CData", "EntityReference", "Entity", "ProcessingInstruction", 
 		 "Comment", "Document", "DocumentType", "DocumentFragment", "Notation"],
-
 
     initialize: function($super) {
 	$super(document.documentElement, new DOMFetcher(), new DOMFetcher());
@@ -759,6 +755,83 @@ TwoPaneBrowser.subclass('DOMBrowser', {
 	    return parentNode;
 	else 
 	    return parentNode && parentNode.childNodes.item(index);
+    },
+
+    nodeEqual: function(n1, n2) {
+	return n1 === n2;
+    }
+    
+});
+
+
+// move elsewhere
+View.subclass('ObjectFetcher', {
+
+    initialize: function($super, plug) {
+	$super(plug);
+	this.lastNode = null;
+    },
+
+    updateView: function(aspect, source) { // setContent, getContent, getFile
+	var p = this.modelPlug;
+	if (!p) return;
+	switch (aspect) {
+	case p.getContent:
+	    var file = this.lastNode; // this.getFile();
+	    console.log("!not saving " + file + " source " + source);
+	    break;
+	}
+    },
+    
+    fetchContent: function(node) {
+	console.log("fetching " + node);
+	this.lastNode = node; // FIXME, should be connected to a variable
+	console.log("properties are " + Object.properties(node));
+	var values = Object.properties(node).map(function(name) { return node[name]; });
+	this.setModelValue("setDirectoryList", values);
+	this.setModelValue("setContent", Object.inspect(node));
+    }
+
+});
+
+
+
+TwoPaneBrowser.subclass('TwoPaneObjectBrowser', {
+    // clearly not quite finished
+
+    // indexed by Node.nodeType
+    nodeTypes: [ "", "Node", "Attribute", "Text", "CData", "EntityReference", "Entity", "ProcessingInstruction", 
+		 "Comment", "Document", "DocumentType", "DocumentFragment", "Notation"],
+
+    initialize: function($super) {
+	$super(WorldMorph.current(), new ObjectFetcher(), new ObjectFetcher());
+    },
+
+    nodesToNames: function(nodes, parent) {
+	var props = Object.properties(parent);
+	var names = [];
+	// FIXME! ouch quadratic
+	for (var i = 0; i < nodes.length; i++) 
+	    for (var j = 0; j < props.length; j++) {
+		if (parent[props[j]] === nodes[i] && nodes[i])
+		    names[i] = props[j];
+	    }
+	names.unshift(this.UPLINK);
+	
+	return names;
+    },
+
+
+    retrieveParentNode: function(node) {
+	return this.getRootNode(); // ???
+    },
+
+    isLeafNode: function(node) {
+	return Object.properties(node).length == 0;
+    },
+
+    deriveChildNode: function(parentNode, childName)  {
+	return parentNode[childName];
     },
 
     nodeEqual: function(n1, n2) {
