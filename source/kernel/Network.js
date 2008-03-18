@@ -343,6 +343,14 @@ View.subclass('Feed', NetRequestReporterTrait, {
 	}
     },
     
+    deserialize: function() {
+    },
+
+    kickstart: function() {
+	if (this.modelPlug)
+	    this.updateView(this.modelPlug.getURL, this);
+    },
+    
     setRawFeedContents: function(responseXML) {
 	this.setModelValue('setFeedChannels', this.parseChannels(responseXML));
     },
@@ -378,23 +386,36 @@ Widget.subclass('FeedWidget', {
     defaultViewExtent: pt(500, 200),
     
     initialize: function($super, urlString) {
-	var model = new SimpleModel("FeedURL", 
-	    "ItemList", "ChannelTitle", "SelectedItemContent", "SelectedItemTitle", "FeedChannels", "ItemMenu");
+	var model = new SimpleModel("FeedURL", "ItemList", "ChannelTitle", "SelectedItemContent", "SelectedItemTitle", 
+	    "ItemMenu");
 
 	$super({model: model, 
-		getFeedChannels: "getFeedChannels", 
-		setURL: "setFeedURL",
+		setURL: "setFeedURL", getURL: "getFeedURL",
 		setItemList: "setItemList",
 		setChannelTitle: "setChannelTitle", 
 		getSelectedItemTitle: "getSelectedItemTitle", 
 		setSelectedItemContent: "setSelectedItemContent"});
-	var feed = new Feed({model: model, 
-	    setFeedChannels: "setFeedChannels",
-	    getURL: "getFeedURL"});
-	this.channels = null;
-	this.setModelValue('setURL', new URL(urlString));
 
+	this.setModelValue("setURL", urlString);
+	this.initializeTransientState();
+    },
+
+    deserialize: function($super, importer, model) {
+	$super(importer, model);
+	this.initializeTransientState();
+    },
+
+    getURL: function() {
+	return new URL(this.getModelValue("getURL"));
+    },
+    
+    initializeTransientState: function() {
+	this.channels = null;
+	var feed = new Feed({model: this, setFeedChannels: "pvtSetFeedChannels", getURL: "getURL"});
+	feed.kickstart();
+	
 	var widget = this; 
+	var model = this.getModel();
 	model.ItemMenu = [ 
 	    ["get XML source", function(evt) {
 		var index = this.innerMorph().selectedLineNo();
@@ -406,18 +427,24 @@ Widget.subclass('FeedWidget', {
 	    }]
 	];
     },
+
+
+    pvtSetFeedChannels: function(channels) {
+	this.channels = channels;
+	this.setModelValue("setItemList",  this.extractItemList(this.channels));
+	this.setModelValue("setChannelTitle", "RSS feed from " +  this.channels[0].title());
+    },
     
     updateView: function(aspect, controller) {
 	var p = this.modelPlug;
 	if (!p) return;
 	switch (aspect) {
-	case this.modelPlug.getFeedChannels: 
-	    this.channels = this.getModelValue("getFeedChannels");
-	    this.setModelValue("setItemList",  this.extractItemList(this.channels));
-	    this.setModelValue("setChannelTitle", "RSS feed from " +  this.channels[0].title());
-	    break;
 	case this.modelPlug.getSelectedItemTitle:
-	    this.setModelValue("setSelectedItemContent",  this.getEntry(this.getModelValue("getSelectedItemTitle")));
+	    var title = this.getModelValue("getSelectedItemTitle");
+	    if (title) {
+		var entry = this.getEntry(title);
+		this.setModelValue("setSelectedItemContent", entry);
+	    }
 	    break;
 	}
     },

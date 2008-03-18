@@ -108,7 +108,7 @@ function populateWorldWithExamples(world) {
         stockWidget.openIn(world, pt(350, 500));
     }
     
-    if (Config.show3DLogo) world.addMorph(new WindowMorph(new apps.Sun3DMorph(pt(570, 100).extent(pt(200, 200))), 'Sun 3D Logo'));
+    if (Config.show3DLogo) world.addMorph(new WindowMorph(new Sun3DMorph(pt(570, 100).extent(pt(200, 200))), 'Sun 3D Logo'));
 
     if (Config.showTester) new WidgetTester().openIn(world, pt(835, 450));
 
@@ -133,7 +133,7 @@ function populateWorldWithExamples(world) {
 
             if (Config.showCanvasScape) {
                 if (!lm1.myWorld.csMorph) {
-                    var csm = new apps.canvascape.CanvasScapeMorph(new Rectangle(20,50,800,300));
+                    var csm = new CanvasScapeMorph(new Rectangle(20,50,800,300));
                     lm1.myWorld.csMorph = lm1.myWorld.addMorph(new WindowMorph(csm, 'CanvasScape'));
                     csm.owner.collapse();
                 }
@@ -142,7 +142,7 @@ function populateWorldWithExamples(world) {
             if (Config.showMap) {
                 if (!lm1.myWorld.mapMorph) {
                     var tile = apps.maps.tileExtent;
-                    var map = new apps.maps.MapFrameMorph(new Rectangle(0, 0, 2*tile.x, 2*tile.y), true);
+                    var map = new MapFrameMorph(new Rectangle(0, 0, 2*tile.x, 2*tile.y), true);
                     map.setScale(0.7);
                     map.setPosition(pt(160, 250));
                     lm1.myWorld.addMorph(map);
@@ -193,13 +193,13 @@ function populateWorldWithExamples(world) {
             lm1.myWorld.addMorphBack(new WindowMorph(new ImageMorph(new Rectangle(50, 10, width, height), url), 'Tampere'));
         }
 	
-        if (Config.showDoodle) lm1.myWorld.addFramedMorph(new apps.DoodleMorph(pt(300, 300)), 'Doodle Morph', pt(560, 380));
+        if (Config.showDoodle) lm1.myWorld.addFramedMorph(new DoodleMorph(pt(300, 300)), 'Doodle Morph', pt(560, 380));
 	
-        if (Config.showSquiggle) lm1.myWorld.addFramedMorph(new apps.SquiggleMorph(pt(300, 300)), 'Squiggle Morph', pt(560, 380));
+        if (Config.showSquiggle) lm1.myWorld.addFramedMorph(new SquiggleMorph(pt(300, 300)), 'Squiggle Morph', pt(560, 380));
         
         if (Config.showVideo) { lm1.myWorld.addFramedMorph(new PlayerMorph(), "Player", pt(50, 20)); }
 
-        if (Config.showMessenger && Config.showNetworkExamples) new apps.MessengerWidget().openIn(lm1.myWorld, pt(875, 375));
+        if (Config.showMessenger && Config.showNetworkExamples) new MessengerWidget().openIn(lm1.myWorld, pt(875, 375));
     }
     
     if (Config.showSlideWorld) { // Make a slide for "turning web programming upside down"
@@ -312,13 +312,13 @@ function populateWorldWithExamples(world) {
 
         // Sample executable script pane
         if (Config.showPenScript) {
-            if (Config.showTestText) widget = new TestTextMorph(pt(50,30).extent(pt(250,50)),apps.Pen.script);
-            else widget = new TextMorph(pt(50,30).extent(pt(250,50)), apps.Pen.script);
+            if (Config.showTestText) widget = new TestTextMorph(pt(50,30).extent(pt(250,50)), Pen.script);
+            else widget = new TextMorph(pt(50,30).extent(pt(250,50)), Pen.script);
             widget.align(widget.bounds().bottomRight(), world.bounds().topRight().addPt(pt(-150,100))); 
             devWorld.myWorld.addMorph(widget);
         }
 
-        if (Config.showHilbertFun) apps.Pen.hilbertFun(devWorld.myWorld, widget.bounds().bottomLeft().addXY(180,80));
+        if (Config.showHilbertFun) Pen.hilbertFun(devWorld.myWorld, widget.bounds().bottomLeft().addXY(180,80));
 
         if (Config.showWebStore) {
             var store = new FileBrowser();

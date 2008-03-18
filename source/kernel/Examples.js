@@ -13,7 +13,6 @@
  * that will be included in the system when it starts. 
  */
 
-var apps = Global;// {};
 
 (function(scope) {
 
@@ -27,7 +26,7 @@ var apps = Global;// {};
  * such as buttons, sliders, etc.  
  */
 
-Global.WidgetTester = Model.subclass(Global, 'WidgetTester', {
+Model.subclass('WidgetTester', {
 
     openIn: function(world, location) {
         return world.addMorphAt(this.buildView(pt(300, 220)), location);
@@ -103,7 +102,7 @@ Global.WidgetTester = Model.subclass(Global, 'WidgetTester', {
  * @class ClockMorph
  */
 
-Morph.subclass(Global, "ClockMorph", {
+Morph.subclass("ClockMorph", {
 
     borderWidth: 2,
     openForDragAndDrop: false,
@@ -167,7 +166,7 @@ Morph.subclass(Global, "ClockMorph", {
  * @class Pen
  */
   
-Object.subclass(scope, 'Pen', {
+Object.subclass('Pen', {
 
     initialize: function(loc) {
         this.location = (loc !== undefined) ? loc : WorldMorph.current().bounds().center();
@@ -281,7 +280,7 @@ Object.subclass(scope, 'Pen', {
 });
 
 // The menu-driven filled Hilbert curve demo
-scope.Pen.hilbertFun = function(world, loc) {
+Pen.hilbertFun = function(world, loc) {
     var logoMenu = new MenuMorph([]);
 
     for (var i=0; i<=5; i++) {
@@ -291,7 +290,7 @@ scope.Pen.hilbertFun = function(world, loc) {
     logoMenu.makeLogo = function(order) {
         if (this.morphs) for (var i=0; i<4; i++) this.morphs[i].remove();
         if (i=0) { this.morphs == null; return; }
-        var P = new scope.Pen();
+        var P = new Pen();
         this.morphs = P.filberts(order,5);
     };
 
@@ -299,7 +298,7 @@ scope.Pen.hilbertFun = function(world, loc) {
 }
 
 // The default script for the Pen/Hilbert demo
-scope.Pen.script = ["P = new apps.Pen();",
+Pen.script = ["P = new Pen();",
 "P.setPenColor(Color.red);",
 "for (var i=1; i<=40; i++)",
 "    { P.go(2*i); P.turn(89); };",
@@ -314,7 +313,7 @@ scope.Pen.script = ["P = new apps.Pen();",
  * @class DoodleMorph: A simple drawing program
  */
 
-ClipMorph.subclass(scope, "DoodleMorph", {
+ClipMorph.subclass("DoodleMorph", {
 
     borderWidth: 0,
     fill: Color.veryLightGray,
@@ -648,6 +647,8 @@ Morph.subclass('SquiggleMorph', {
         
 });
 
+var apps = scope.apps = {};
+
 // ===========================================================================
 // The 3D Rotation Example
 // ===========================================================================
@@ -658,7 +659,7 @@ Morph.subclass('SquiggleMorph', {
  * and a Java version written in 1998.
  *============================================================================*/
 
-scope.threedee = function() {
+apps.threedee = function() {
 
     // Rapid sin and cos functions inherited from the original
     // C program.  Note that you must supply a multiplier in 
@@ -874,7 +875,7 @@ scope.threedee = function() {
  * WireObject instance constructor
  *============================================================================*/
 
-Object.subclass(scope, 'WireObject', {
+Object.subclass('WireObject', {
     // WireObject constructor: create the wireframe object
     initialize: function(hereX, hereY, hereZ) {
 
@@ -1016,7 +1017,7 @@ Object.subclass(scope, 'WireObject', {
  * @class Sun3DMorph
  */
   
-ClipMorph.subclass(scope, "Sun3DMorph", {
+ClipMorph.subclass("Sun3DMorph", {
 
     fill: Color.veryLightGray,
     
@@ -1034,7 +1035,7 @@ ClipMorph.subclass(scope, "Sun3DMorph", {
             this.addMorph(this.morphArray[i]);
         }
 
-        this.wireObject = new scope.threedee.WireObject(0,  0, -6000);
+        this.wireObject = new apps.threedee.WireObject(0,  0, -6000);
         this.wireObject.paint(this.morphArray, 0, 0, 0);
 
         return this;
@@ -1082,7 +1083,7 @@ ClipMorph.subclass(scope, "Sun3DMorph", {
 
 *****************************************************************************/
 
-scope.asteroids = function() {
+apps.asteroids = function() {
 
 // The game instance
 var gameMorph = null;
@@ -1098,7 +1099,7 @@ var gameHeight = 300;
   rotation. It also can detemine if two objects collide.
 ************************************************************************************************/
 
-Object.subclass(scope, 'AsteroidsSprite', {
+Object.subclass('AsteroidsSprite', {
 
     /* boolean */ active: false,    // Active flag.
     /* double */  angle: 0,         // Current angle of rotation.
@@ -2381,7 +2382,7 @@ GameMorph.addMethods({
  
 // We should consider using other weather service.
 // These images are of low quality
-Widget.subclass(scope, 'WeatherWidget', {
+Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
 
     imagepath: "Resources/weather/",
     defaultViewTitle: "Weather widget",
@@ -2389,15 +2390,12 @@ Widget.subclass(scope, 'WeatherWidget', {
     
     initialize: function($super) { 
 	
-	var model = new SimpleModel("WeatherChannels", 
-	    "WeatherURL", "WeatherDesc", "City", "ImageURL",
+	var model = new SimpleModel("WeatherDesc", "City", "ImageURL",
 	    "Temperature", "Wind", "Humidity", "DewPoint", "Gusts", "Visibility");
-
+	
 	model.setImageURL("http://www.bbc.co.uk/weather/images/banners/weather_logo.gif");
 	
 	$super({model: model, 
-		getFeedChannels: "getWeatherChannels", 
-		setURL: "setWeatherURL",
 		getLocale: "getCity", 
 		setWeatherDesc: "setWeatherDesc",
 		setTemperature: "setTemperature",
@@ -2407,18 +2405,13 @@ Widget.subclass(scope, 'WeatherWidget', {
 		setHumidity: "setHumidity",
 		setVisibility: "setVisibility"});
 	
-	var feed = new Feed({model: model, setFeedChannels: "setWeatherChannels", getURL: "getWeatherURL" });
-	
+	this.feed = new Feed({model: this, setFeedChannels: "parseChannels", setStatus: "setRequestStatus"});
     },
     
     updateView: function(aspect, controller) {
 	var p = this.modelPlug;
 	if (!p) return;
-	// console.log(this + ".updateView/" + aspect);
 	switch (aspect) {
-	case p.getFeedChannels:
-	    this.parseChannels(this.getModelValue('getFeedChannels', null));
-	    break;
 	case p.getLocale:
 	    this.updateLocale(this.getModelValue('getLocale', null));
 	    break;
@@ -2457,14 +2450,11 @@ Widget.subclass(scope, 'WeatherWidget', {
             break;
         }
 	if (citycode) {
-	    //console.log("setURL " + this.makeWeatherURL(citycode));
-	    this.setModelValue("setURL", this.makeWeatherURL(citycode));
+	    var url = new URL("http://feeds.bbc.co.uk/weather/feeds/rss/obs/world/" + citycode + ".xml");
+	    this.feed.request(url);
 	}
     },
 
-    makeWeatherURL: function(citycode) {
-	return new URL("http://feeds.bbc.co.uk/weather/feeds/rss/obs/world/" + citycode + ".xml");
-    },
     
     buildView: function(extent) {
 	var model = this.getModel();
@@ -2554,20 +2544,19 @@ Widget.subclass('StockWidget', NetRequestReporterTrait, {
     defaultViewExtent: pt(580, 460),
 
     initialize: function($super) { 
-	var model = new SimpleModel("NewsHeaders", "NewsURL", "StockIndex", "Quote",
-	    "IndexChartURL", "Company", "RawNewsFeed", "NewsChannels");
+	var model = new SimpleModel("NewsHeaders", "NewsURL", "StockIndex", "Quote", "IndexChartURL", "Company");
 	$super({model: model, 
 		getStockIndex: "getStockIndex", 
 		getCompany: "getCompany", 
 		setQuote: "setQuote",
-		setURL: "setNewsURL",
-		setNewsHeaders: "setNewsHeaders",
-		getNewsChannels: "getNewsChannels"});
+		setNewsURL: "setNewsURL",
+		setNewsHeaders: "setNewsHeaders"});
 	
-	var feed = new Feed({model: model, setFeedChannels: "setNewsChannels", getURL: "getNewsURL" });
+	this.feed = new Feed({model: this, setFeedChannels: "extractNewsHeaders", setStatus: "setRequestStatus"});
 	model.setCompany("JAVA");
     },
-
+    
+    
     updateView: function(aspect, controller) {
 	var p = this.modelPlug;
 	if (!p) return;
@@ -2575,14 +2564,10 @@ Widget.subclass('StockWidget', NetRequestReporterTrait, {
 	case p.getStockIndex:
 	    var item = this.getModelValue("getStockIndex");
             var entry = this.config[item];
-	    this.setModelValue("setURL", this.makeNewsURL(entry.ticker));
+	    this.feed.request(this.makeNewsURL(entry.ticker));
 	    break;
 	case p.getCompany:
 	    this.requestQuote(this.getModelValue("getCompany"));
-	    break;
-	case p.getNewsChannels:
-	    var channels = this.getModelValue('getNewsChannels');
-	    this.setModelValue('setNewsHeaders', this.extractNewsHeaders(channels));
 	    break;
 	}
     },
@@ -2707,9 +2692,12 @@ Widget.subclass('StockWidget', NetRequestReporterTrait, {
     },
 
     extractNewsHeaders: function(channels) {
+	var result = null;
 	if (!channels || !channels[0])
-	    return [];
-	return channels[0].items.invoke('title');
+	    result = [];
+	else 
+	    result = channels[0].items.invoke('title');
+	this.setModelValue('setNewsHeaders', result);
     }
     
 
@@ -2719,7 +2707,7 @@ Widget.subclass('StockWidget', NetRequestReporterTrait, {
 // The Map Widget Example
 // ===========================================================================
 
-scope.maps = function() {
+apps.maps = function() {
 
 // 6 is largest as a system print, lower numbers are debugprints
 // 6 is to be used if user must be notified lower levels to developer use
@@ -3754,7 +3742,7 @@ Object.extend(BouncingSpheres, {
  * Placeholder for an instant messenger widget (to be completed) 
  */
  
-Model.subclass(scope, 'MessengerWidget', {
+Model.subclass('MessengerWidget', {
 
     imagepath: "Resources/IM/",
     serverURL: "http://livelykernel.sunlabs.com:8093",
@@ -3937,7 +3925,7 @@ Model.subclass(scope, 'MessengerWidget', {
     
 });
 
-scope.canvascape = function() { // module function
+apps.canvascape = function() { // module function
 
 // ===========================================================================
 // The CanvasScape 3D Maze Walker Example
@@ -4615,7 +4603,7 @@ ClipMorph.subclass("CanvasScapeMorph", {
 });
 
    // module exports
-    return { CanvasScapeMorph: scope.CanvasScapeMorph };
+    return { CanvasScapeMorph: apps.CanvasScapeMorph };
 
 }(); // end canvascape
 
@@ -4623,8 +4611,8 @@ ClipMorph.subclass("CanvasScapeMorph", {
 // The Morphic Radial Engine Demo
 // ===========================================================================
 
-scope.makeEngine = function() {
-    var engine = new scope.EngineMorph(new Rectangle(0, 0, 400, 600));
+    apps.makeEngine = function() {
+    var engine = new EngineMorph(new Rectangle(0, 0, 400, 600));
     // KP: add the top morph to the world first, to make firefox happy
     WorldMorph.current().addFramedMorph(engine, 'A Lively Engine', pt(250, 5));
     engine.openAllToDnD();  // have a little fun...
@@ -4635,7 +4623,7 @@ scope.makeEngine = function() {
  * @class EngineMorph: The Radial Engine demo
  */ 
 
-Morph.subclass(scope, "EngineMorph", {
+Morph.subclass("EngineMorph", {
 
     initialize: function($super, fullRect) {
         // A lively model by Dan Ingalls - 9/25/2007
@@ -4968,5 +4956,5 @@ Morph.subclass("PlayerMorph",  {
 
 
 
-}).logCompletion("Examples.js")(apps);
+}).logCompletion("Examples.js")(Global);
 

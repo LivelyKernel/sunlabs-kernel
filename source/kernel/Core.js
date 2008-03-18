@@ -8,7 +8,7 @@
  * other countries.
  */ 
 
-/**
+ /**
  * Core.js.  This file contains the core system definition
  * as well as the core Morphic graphics framework. 
  */
@@ -28,148 +28,148 @@ if (Canvas.height && Canvas.height.baseVal && Canvas.height.baseVal.value < 100)
 // ===========================================================================
 
 Object.extend(String.prototype, {
-
+    
     format: function() {
-        return this.formatFromArray($A(arguments));
+	return this.formatFromArray($A(arguments));
     },
-
+    
     // adapted from firebug lite
     formatFromArray: function(objects) {
-
-        function appendText(object, string) {
-            return "" + object;
-        }
-
-        function appendObject(object, string) {
-            return "" + object;
-        }
-
-        function appendInteger(value, string) {
-            return value.toString();
-        }
-
-        function appendFloat(value, string, precision) {
-            if (precision > -1) return value.toFixed(precision);
-            else return value.toString();
-        }
-
-        var appenderMap = {s: appendText, d: appendInteger, i: appendInteger, f: appendFloat}; 
-        var reg = /((^%|[^\\]%)(\d+)?(\.)([a-zA-Z]))|((^%|[^\\]%)([a-zA-Z]))/; 
-
-        function parseFormat(fmt) {
-    
-            var parts = [];
-    
-            for (var m = reg.exec(fmt); m; m = reg.exec(fmt)) {
-                var type = m[8] || m[5];
-                var appender = type in appenderMap ? appenderMap[type] : appendObject;
-                var precision = m[3] ? parseInt(m[3]) : (m[4] == "." ? -1 : 0);
-                parts.push(fmt.substr(0, m[0][0] == "%" ? m.index : m.index + 1));
-                parts.push({appender: appender, precision: precision});
-
-                fmt = fmt.substr(m.index+m[0].length);
-            }
-    
-            parts.push(fmt.toString());
-    
-            return parts;
-        };
-
-        var parts = parseFormat(this);
-        var str = "";
-        var objIndex = 0;
-
-        for (var i = 0; i < parts.length; ++i) {
-            var part = parts[i];
-            if (part && typeof(part) == "object") {
-                var object = objects[objIndex++];
-                str += (part.appender || appendText)(object, str, part.precision);
-            } else {
-                str += appendText(part, str);
-            }
-        }
-        return str;
+	
+	function appendText(object, string) {
+	    return "" + object;
+	}
+	
+	function appendObject(object, string) {
+	    return "" + object;
+	}
+	
+	function appendInteger(value, string) {
+	    return value.toString();
+	}
+	
+	function appendFloat(value, string, precision) {
+	    if (precision > -1) return value.toFixed(precision);
+	    else return value.toString();
+	}
+	
+	var appenderMap = {s: appendText, d: appendInteger, i: appendInteger, f: appendFloat}; 
+	var reg = /((^%|[^\\]%)(\d+)?(\.)([a-zA-Z]))|((^%|[^\\]%)([a-zA-Z]))/; 
+	
+	function parseFormat(fmt) {
+	    
+	    var parts = [];
+	    
+	    for (var m = reg.exec(fmt); m; m = reg.exec(fmt)) {
+		var type = m[8] || m[5];
+		var appender = type in appenderMap ? appenderMap[type] : appendObject;
+		var precision = m[3] ? parseInt(m[3]) : (m[4] == "." ? -1 : 0);
+		parts.push(fmt.substr(0, m[0][0] == "%" ? m.index : m.index + 1));
+		parts.push({appender: appender, precision: precision});
+		
+		fmt = fmt.substr(m.index+m[0].length);
+	    }
+	    
+	    parts.push(fmt.toString());
+	    
+	    return parts;
+	};
+	
+	var parts = parseFormat(this);
+	var str = "";
+	var objIndex = 0;
+	
+	for (var i = 0; i < parts.length; ++i) {
+	    var part = parts[i];
+	    if (part && typeof(part) == "object") {
+		var object = objects[objIndex++];
+		str += (part.appender || appendText)(object, str, part.precision);
+	    } else {
+		str += appendText(part, str);
+	    }
+	}
+	return str;
     }
-
+    
 });
 
 // console handling
 (function() { 
-
+    
     // from firebug lite
     function escapeHTML(value) {
-        return value;
-
-        function replaceChars(ch) {
-            switch (ch) {
-            case "<":
-                return "&lt;";
-            case ">":
-                return "&gt;";
-            case "&":
-                return "&amp;";
-            case "'":
-                return "&#39;";
-            case '"':
-                return "&quot;";
-            }
-            return "?";
-        }
-
-        return String(value).replace(/[<>&"']/g, replaceChars); // " ])
+	return value;
+	
+	function replaceChars(ch) {
+	    switch (ch) {
+	    case "<":
+		return "&lt;";
+	    case ">":
+		return "&gt;";
+	    case "&":
+		return "&amp;";
+	    case "'":
+		return "&#39;";
+	    case '"':
+		return "&quot;";
+	    }
+	    return "?";
+	}
+	
+	return String(value).replace(/[<>&"']/g, replaceChars); // " ])
     }
     
     function LogWindow() {
-        this.win = (function() { 
-            var win = window.open("", "log", "scrollbars,width=900,height=300"); 
-            win.title = "Lively Kernel Log";
-            win.document.write("<pre>"); 
-            return win; 
-        })();
-
-        this.log = function(msg) {
-            if (!this.win) return;
-            this.win.document.writeln(escapeHTML(msg));
-        }
+	this.win = (function() { 
+	    var win = window.open("", "log", "scrollbars,width=900,height=300"); 
+	    win.title = "Lively Kernel Log";
+	    win.document.write("<pre>"); 
+	    return win; 
+	})();
+	
+	this.log = function(msg) {
+	    if (!this.win) return;
+	    this.win.document.writeln(escapeHTML(msg));
+	}
     };
     
     var platformConsole = window.console || window.parent.console; 
     if (!platformConsole) {
-        alert('no console! console output disabled');
-        platformConsole = { log: function(msg) { } } // do nothing as a last resort
+	alert('no console! console output disabled');
+	platformConsole = { log: function(msg) { } } // do nothing as a last resort
     }
     
     if (platformConsole.warn && platformConsole.info && platformConsole.assert) {
-        // it's a Firebug/Firebug lite console, it does all we want, so no extra work necessary
-        window.console = platformConsole;
+	// it's a Firebug/Firebug lite console, it does all we want, so no extra work necessary
+	window.console = platformConsole;
     } else {
-        // rebind to something that has all the calls
-        window.console = {
-
-            consumers: [ platformConsole], // new LogWindow() ],
-    
-            warn: function() {
-                var args = $A(arguments);
-                var rcv = args.shift();
-                this.consumers.invoke('log', "Warn: " + String(rcv).formatFromArray(args));
-            },
-
-            info: function() {
-                var args = $A(arguments);
-                var rcv = args.shift();
-                this.consumers.invoke('log', "Info: " + String(rcv).formatFromArray(args));
-            },
-    
-            log: function() {
-                var args = $A(arguments);
-                var rcv = args.shift();
-                this.consumers.invoke('log', String(rcv).formatFromArray(args));
-            },
-    
-            assert: function(expr, msg) {
-                if (!expr) this.log("assert failed:" + msg);
-            }
-        }
+	// rebind to something that has all the calls
+	window.console = {
+	    
+	    consumers: [ platformConsole], // new LogWindow() ],
+	    
+	    warn: function() {
+		var args = $A(arguments);
+		var rcv = args.shift();
+		this.consumers.invoke('log', "Warn: " + String(rcv).formatFromArray(args));
+	    },
+	    
+	    info: function() {
+		var args = $A(arguments);
+		var rcv = args.shift();
+		 this.consumers.invoke('log', "Info: " + String(rcv).formatFromArray(args));
+	    },
+	    
+	    log: function() {
+		var args = $A(arguments);
+		var rcv = args.shift();
+		this.consumers.invoke('log', String(rcv).formatFromArray(args));
+	    },
+	    
+	    assert: function(expr, msg) {
+		if (!expr) this.log("assert failed:" + msg);
+	    }
+	}
     }
     
 })(); 
@@ -212,7 +212,7 @@ Namespace =  {
     LIVELY : UserAgent.usableNamespacesInSerializer ? "http://www.experimentalstuff.com/Lively"  : null, 
     XLINK : "http://www.w3.org/1999/xlink", 
     XHTML: "http://www.w3.org/1999/xhtml"
-    
+
 };
 
 
@@ -221,37 +221,37 @@ var Loader = {
 
     loadScript: function(ns, url) {
 	ns = ns || Namespace.XHTML;
-        var script = NodeFactory.createNS(ns, "script");
+	var script = NodeFactory.createNS(ns, "script");
 	var srcAttr = ns === Namespace.XHTML ? "src" : "href";
-        script.setAttributeNS(ns === Namespace.XHTML ? ns : Namespace.XLINK, scrAttr, url);
-        document.documentElement.appendChild(script);
-        //document.documentElement.removeChild(script);
+	script.setAttributeNS(ns === Namespace.XHTML ? ns : Namespace.XLINK, scrAttr, url);
+	document.documentElement.appendChild(script);
+	//document.documentElement.removeChild(script);
     },
-    
+
     insertContents: function(iframe) {
-        var node = iframe.contentDocument.documentElement;
-        var adoptedNode = null;
-        try {
-            adoptedNode = document.adoptNode(node);
-        } catch (e) {
-            // FF can fail here
-            console.log('failed to insert iframe contents: %e', e);
-            return;
-        }
-        document.documentElement.appendChild(adoptedNode);
+	var node = iframe.contentDocument.documentElement;
+	var adoptedNode = null;
+	try {
+	    adoptedNode = document.adoptNode(node);
+	} catch (e) {
+	    // FF can fail here
+	    console.log('failed to insert iframe contents: %e', e);
+	    return;
+	}
+	document.documentElement.appendChild(adoptedNode);
     },
 
     isLoadedFromNetwork: (function() {
-        // TODO this is not foolproof. Note, batik doesn't have window.location
-        return window.location ? window.location.protocol.startsWith("http") : false;
+	// TODO this is not foolproof. Note, batik doesn't have window.location
+	return window.location ? window.location.protocol.startsWith("http") : false;
     })(),
-    
-    
+
+
     baseURL: (function() {
 	if (!window.location) return ".";
 	var segments = window.location.toString().split('/');
 	segments.splice(segments.length - 1, 1); // remove the last segment, incl query
-        return segments.join('/');
+	return segments.join('/');
     })(),
 
     shrinkWrapContainer: function(doc) {
@@ -262,10 +262,10 @@ var Loader = {
 	// Remove the old container if it's there and make a new one.
 	// this should be more robust
 	if (!doc) doc = window.document;
-        var previous = this.shrinkWrapContainer(doc);
-        if (previous) previous.parentNode.removeChild(previous);
+	var previous = this.shrinkWrapContainer(doc);
+	if (previous) previous.parentNode.removeChild(previous);
 	var canvas = doc.getElementById("canvas");
-        var container = canvas.appendChild(doc.createElementNS(Namespace.SVG, "defs"));
+	var container = canvas.appendChild(doc.createElementNS(Namespace.SVG, "defs"));
 	container.setAttribute("id", "ShrinkWrapped");
 	return container;
     }
@@ -277,35 +277,43 @@ Loader.proxyURL = (function() {
     else
 	return Config.proxyURL;
 })();
-    
+
 
 
 var NodeFactory = {
 
     createNS: function(ns, name, attributes) {
-        var element = document.createElementNS(ns, name);
-        if (attributes) {
-            for (var name in attributes) {
-                if (!attributes.hasOwnProperty(name)) continue;
-                element.setAttributeNS(null, name, attributes[name]);
-            }
-        }
-        return element;
+	var element = document.createElementNS(ns, name);
+	if (attributes) {
+	    for (var name in attributes) {
+		if (!attributes.hasOwnProperty(name)) continue;
+		element.setAttributeNS(ns, name, attributes[name]);
+	    }
+	}
+	return element;
     },
-    
+
     create: function(name, attributes) {
-        return this.createNS(Namespace.SVG, name, attributes);
-        //return this.createNS(null, name, attributes);
+	var element = document.createElementNS(Namespace.SVG, name);
+	if (attributes) {
+	    for (var name in attributes) {
+		if (!attributes.hasOwnProperty(name)) continue;
+		element.setAttributeNS(null, name, attributes[name]);
+	    }
+	}
+	return element;
+	//return this.createNS(Namespace.SVG, name, attributes);
+
     },
 
     createText: function(string) {
-        return document.createTextNode(string);
+	return document.createTextNode(string);
     },
-    
+
     createCDATA: function(string) {
 	return document.createCDATASection(string);
     }
-    
+
 };
 
 // ===========================================================================
@@ -313,210 +321,221 @@ var NodeFactory = {
 // ===========================================================================
 
 /**
- * Extensions to class Class
- */  
+  * Extensions to class Class
+  */  
 
 Object.extend(Class, {
-    
+
     // KP: obsolete, use Object.isClass
     isClass: function(object) {
-        return (object instanceof Function) 
-            && object.prototype 
-            && (object.functionNames().length > Object.functionNames().length);
+	return (object instanceof Function) 
+	    && object.prototype 
+	    && (object.functionNames().length > Object.functionNames().length);
     },
 
     methodNameList: function(className) {
-        if (className != "Global") return this.globalScope[className].localFunctionNames();
-        return Global.functionNames().copyWithoutAll(this.globalScope.classNames()); 
+	if (className != "Global") return this.globalScope[className].localFunctionNames();
+	return Global.functionNames().copyWithoutAll(this.globalScope.classNames()); 
     },
-    
+
     listClassNames: function(scope) {
-        var a = [];
+	var a = [];
 
-        for (var name in scope) { 
-            try {
-                if (Object.isClass(scope[name])) {
-                    a.push(name); 
-                }
-            } catch (er) {
-                // FF can throw an exception here
-            }
-        }
-	
-        a.push("Object", "Global"); // a few others of note
+	for (var name in scope) { 
+	    try {
+		if (Object.isClass(scope[name])) {
+		    a.push(name); 
+		}
+	    } catch (er) {
+		// FF can throw an exception here
+	    }
+	}
 
-        // console.log('found array ' + a.sort());
-        return a;
+	a.push("Object", "Global"); // a few others of note
+
+	// console.log('found array ' + a.sort());
+	return a;
     }
-    
+
 });
 
 /**
- * Extensions to class Object
- */  
+  * Extensions to class Object
+  */  
 
 Object.properties = function(object, predicate) {
     var a = [];
     for (var name in object) {  
-        if (!(object[name] instanceof Function) && (predicate ? predicate(object) : true)) {
-            a.push(name);
-        }
+	if (!(object[name] instanceof Function) && (predicate ? predicate(object) : true)) {
+	    a.push(name);
+	}
     } 
     return a;
 };
 
+Object.ownProperties = function(object) {
+    var a = [];
+    for (var name in object) {  
+	if (!(object[name] instanceof Function) && object.hasOwnProperty(name)) {
+	    a.push(name);
+	}
+    } 
+    return a;
+};
+
+
 /**
- * Extensions to class Function
- */  
+  * Extensions to class Function
+  */  
 
 Function.empty = function() {};
 
 Object.extend(Function.prototype, {
 
     inspect: function() {
-        var methodBody = this.toString();
-        // First 80 chars of code, without 'function'
-        methodBody = methodBody.substring(8, 88) + (methodBody.length>88 ? '...' : '');
-        return this.qualifiedMethodName() + methodBody;
+	var methodBody = this.toString();
+	// First 80 chars of code, without 'function'
+	methodBody = methodBody.substring(8, 88) + (methodBody.length>88 ? '...' : '');
+	return this.qualifiedMethodName() + methodBody;
     },
 
     qualifiedMethodName: function() {
-        return (this.declaredClass ? this.declaredClass + "." : "")  
-                + (this.methodName || "anonymous");
+	return (this.declaredClass ? this.declaredClass + "." : "")  
+	    + (this.methodName || "anonymous");
     },
 
     functionNames: function(filter) {
-        var functionNames = [];
+	var functionNames = [];
 
-        for (var name in this.prototype) { 
-            try {
-                if ((this.prototype[name] instanceof Function) 
-                    && (!filter || filter(name))) { 
-                    functionNames.push(name);
-                } 
-            } catch (er) {
-                // FF can throw an exception here ...
-            }
-        }
+	for (var name in this.prototype) { 
+	    try {
+		if ((this.prototype[name] instanceof Function) 
+		    && (!filter || filter(name))) { 
+		    functionNames.push(name);
+		} 
+	    } catch (er) {
+		// FF can throw an exception here ...
+	    }
+	}
 
-        return functionNames;
+	return functionNames;
     },
 
     localFunctionNames: function() {
-        var sup;
+	var sup;
 
-        if (!this.superclass) {
-            sup = (this === Object) ? null : Object; 
-        } else {
-            sup = this.superclass;
-        }
+	if (!this.superclass) {
+	    sup = (this === Object) ? null : Object; 
+	} else {
+	    sup = this.superclass;
+	}
 
-        try {
-            var superNames = (sup == null) ? [] : sup.functionNames();
-        } catch (e) {
-            var superNames = [];
-        }
+	try {
+	    var superNames = (sup == null) ? [] : sup.functionNames();
+	} catch (e) {
+	    var superNames = [];
+	}
 
-        return this.functionNames(function(name) {
-            return !superNames.include(name) || this.prototype[name] !== sup.prototype[name];
-        }.bind(this));
+	return this.functionNames(function(name) {
+	    return !superNames.include(name) || this.prototype[name] !== sup.prototype[name];
+	}.bind(this));
 
     },
 
     // modified Class.Methods.addMethods from prototype.js
     addMethods: function(source) {
-        var ancestor = this.superclass && this.superclass.prototype;
+	var ancestor = this.superclass && this.superclass.prototype;
 
-        for (var property in source) {
-            var value = source[property];
-            if (ancestor && Object.isFunction(value) &&
-                value.argumentNames().first() == "$super") {
-                var method = value;
-                var advice = (function(m) {
-                    return function() { 
-                        try { 
-                            return ancestor[m].apply(this, arguments) 
-                        } catch (e) { 
-                            console.log("problem with ancestor " + Object.inspect(ancestor) 
-                                        + "." + m + "(" + $A(arguments) + ")"
-                                        + ":" + e); 
-                            Function.showStack();
-                            throw e;
-                        }
-                    };
-                })(property);
-                advice.methodName = "$superAdvice::" + property;
+	for (var property in source) {
+	    var value = source[property];
+	    if (ancestor && Object.isFunction(value) &&
+		value.argumentNames().first() == "$super") {
+		var method = value;
+		var advice = (function(m) {
+		    return function() { 
+			try { 
+			    return ancestor[m].apply(this, arguments) 
+			} catch (e) { 
+			    console.log("problem with ancestor " + Object.inspect(ancestor) 
+					+ "." + m + "(" + $A(arguments) + ")"
+					+ ":" + e); 
+			    Function.showStack();
+			    throw e;
+			}
+		    };
+		})(property);
+		advice.methodName = "$superAdvice::" + property;
 
-                value = Object.extend(advice.wrap(method), {
-                    valueOf:  function() { return method },
-                    toString: function() { return method.toString() },
-                    originalFunction: method
-                });
-            }
+		value = Object.extend(advice.wrap(method), {
+		    valueOf:  function() { return method },
+		    toString: function() { return method.toString() },
+		    originalFunction: method
+		});
+	    }
 
-            this.prototype[property] = value;
-            if (Object.isFunction(value)) {
-                for ( ; value; value = value.originalFunction) {
-                    if (value.methodName) {
-                        //console.log("class " + this.prototype.constructor.type 
-			    // + " borrowed " + value.qualifiedMethodName());
-                    }
-                    value.declaredClass = this.prototype.constructor.type;
-                    value.methodName = property;
-                    if (!this.prototype.constructor.type) {
-                        console.log("named " + value.qualifiedMethodName());
-                    }
-                }
-            }
-        }
+	    this.prototype[property] = value;
+	    if (Object.isFunction(value)) {
+		for ( ; value; value = value.originalFunction) {
+		    if (value.methodName) {
+			//console.log("class " + this.prototype.constructor.type 
+			// + " borrowed " + value.qualifiedMethodName());
+		    }
+		    value.declaredClass = this.prototype.constructor.type;
+		    value.methodName = property;
+		    if (!this.prototype.constructor.type) {
+			console.log("named " + value.qualifiedMethodName());
+		    }
+		}
+	    }
+	}
 
-        return this;
+	return this;
     },
-    
+
     isClass: function(object) {
-        return (object instanceof Function) && (object.superclass || object === Object);
+	return (object instanceof Function) && (object.superclass || object === Object);
     },
 
     // modified from prototype.js
     subclass: function(/*,... */) {
-        var properties = $A(arguments);
+	var properties = $A(arguments);
 	var scope = (typeof properties[0] == 'string') ? Global : properties.shift(); // primitive string required
-        var name = properties.shift();
-	
-        function klass() {
-            // check for the existence of Importer, which may not be defined very early on
-            if (Global.Importer && (arguments[0] instanceof Importer)) { 
-                this.deserialize.apply(this, arguments);
-            } else if (Global.Copier && (arguments[0] instanceof Copier)) {
-                this.copyFrom.apply(this, arguments);
-            } else {
-                this.initialize.apply(this, arguments);
-            }
-        }
+	var name = properties.shift();
 
-        klass.superclass = this;
-        klass.subclasses = [];
+	function klass() {
+	    // check for the existence of Importer, which may not be defined very early on
+	    if (Global.Importer && (arguments[0] instanceof Importer)) { 
+		this.deserialize.apply(this, arguments);
+	    } else if (Global.Copier && (arguments[0] instanceof Copier)) {
+		this.copyFrom.apply(this, arguments);
+	    } else {
+		this.initialize.apply(this, arguments);
+	    }
+	}
 
-        var protoclass = function() { }; // that's the constructor of the new prototype object
-        protoclass.prototype = this.prototype;
-        klass.prototype = new protoclass();
-        this.subclasses.push(klass);
+	klass.superclass = this;
+	klass.subclasses = [];
 
-        klass.prototype.constructor = klass;
-        // KP: .name would be better but js ignores .name on anonymous functions
-        klass.type = name;
-        klass.scope = scope;
+	var protoclass = function() { }; // that's the constructor of the new prototype object
+	protoclass.prototype = this.prototype;
+	klass.prototype = new protoclass();
+	this.subclasses.push(klass);
 
-        for (var i = 0; i < properties.length; i++) {
-            klass.addMethods(properties[i] instanceof Function ? (properties[i])() : properties[i]);
-        }
+	klass.prototype.constructor = klass;
+	// KP: .name would be better but js ignores .name on anonymous functions
+	klass.type = name;
+	klass.scope = scope;
 
-        if (!klass.prototype.initialize) {
-            klass.prototype.initialize = Function.empty;
-        }
+	for (var i = 0; i < properties.length; i++) {
+	    klass.addMethods(properties[i] instanceof Function ? (properties[i])() : properties[i]);
+	}
 
-        scope[name] = klass;
-        return klass;
+	if (!klass.prototype.initialize) {
+	    klass.prototype.initialize = Function.empty;
+	}
+
+	scope[name] = klass;
+	return klass;
     },
 
 
@@ -525,7 +544,7 @@ Object.extend(Function.prototype, {
 	while (func.originalFunction) func = func.originalFunction;
 	return func;
     }
-    
+
 });
 
 Object.subclasses = [];
@@ -546,154 +565,152 @@ Function.methodString = function(className, methodName) {
 
 if (UserAgent.canExtendBrowserObjects) { // Mozilla
     if (UserAgent.webKitVersion) { 
-        Error.prototype.inspect = function() {
-            return this.name + " in " + this.sourceURL + ":" + this.line + ": " + this.message;
-        }
+	Error.prototype.inspect = function() {
+	    return this.name + " in " + this.sourceURL + ":" + this.line + ": " + this.message;
+	}
     } else {
-        Error.prototype.inspect = function() {
-            return this.name + " in " + this.fileName + ":" + this.lineNumber + ": " + this.message;
-        }
+	Error.prototype.inspect = function() {
+	    return this.name + " in " + this.fileName + ":" + this.lineNumber + ": " + this.message;
+	}
     }
 }
 
 Object.extend(Function.prototype, {
     
     logErrors: function(prefix) {
-        if (Config.ignoreAdvice) return this;
-
-        var advice = function (proceed/*,args*/) {
-            var args = $A(arguments); args.shift(); 
-            try {
-                return proceed.apply(this, args); 
-            } catch (er) {
-                if (prefix) console.warn("%s.%s(%s): err: %s %s", this, prefix, args,  er, er.stack || "");
-                else console.warn("%s %s", er, er.stack || "");
-                Function.showStack();
-                throw er;
-            }
-        }
-
-        advice.methodName = "$logErrorsAdvice";
-        var result = this.wrap(advice);
-        result.originalFunction = this;
-        result.methodName = "$logErrorsWrapper";
-        return result;
+	if (Config.ignoreAdvice) return this;
+	
+	var advice = function (proceed/*,args*/) {
+	    var args = $A(arguments); args.shift(); 
+	    try {
+		return proceed.apply(this, args); 
+	    } catch (er) {
+		if (prefix) console.warn("%s.%s(%s): err: %s %s", this, prefix, args,  er, er.stack || "");
+		else console.warn("%s %s", er, er.stack || "");
+		Function.showStack();
+		throw er;
+	    }
+	}
+	
+	advice.methodName = "$logErrorsAdvice";
+	var result = this.wrap(advice);
+	result.originalFunction = this;
+	result.methodName = "$logErrorsWrapper";
+	return result;
     },
-
+    
     logCompletion: function(module) {
-        if (Config.ignoreAdvice) return this;
+	if (Config.ignoreAdvice) return this;
+	
+	var advice = function(proceed) {
+	    var args = $A(arguments); args.shift(); 
+	    try {
+		var result = proceed.apply(this, args);
+	    } catch (er) {
+		console.warn('failed to load %s: %s', module, er);
+		Function.showStack();
+		throw er;
+	    }
+	    console.log('completed %s', module);
+	    return result;
+	}
+	
+	advice.methodName = "$logCompletionAdvice::" + module;
 
-        var advice = function(proceed) {
-            var args = $A(arguments); args.shift(); 
-            try {
-                var result = proceed.apply(this, args);
-            } catch (er) {
-                console.warn('failed to load %s: %s', module, er);
-                Function.showStack();
-                throw er;
-            }
-            console.log('completed %s', module);
-            return result;
-        }
-
-        advice.methodName = "$logCompletionAdvice::" + module;
-
-        var result = this.wrap(advice);
-        result.methodName = "$logCompletionWrapper::" + module;
-        result.originalFunction = this;
-        return result;
+	var result = this.wrap(advice);
+	result.methodName = "$logCompletionWrapper::" + module;
+	result.originalFunction = this;
+	return result;
     },
 
     logCalls: function(isUrgent) {
-        if (Config.ignoreAdvice) return this;
+	if (Config.ignoreAdvice) return this;
 
-        var original = this;
-        var advice = function(proceed) {
-            var args = $A(arguments); args.shift(); 
-            var result = proceed.apply(this, args);
-            if (isUrgent) { 
-                console.warn('%s(%s) -> %s', original.qualifiedMethodName(), args, result); 
-            } else {
-                console.log( '%s(%s) -> %s', original.qualifiedMethodName(), args, result);
-            }
-           return result;
-        }
+	var original = this;
+	var advice = function(proceed) {
+	    var args = $A(arguments); args.shift(); 
+	    var result = proceed.apply(this, args);
+	    if (isUrgent) { 
+		console.warn('%s(%s) -> %s', original.qualifiedMethodName(), args, result); 
+	    } else {
+		console.log( '%s(%s) -> %s', original.qualifiedMethodName(), args, result);
+	    }
+	    return result;
+	}
 
-        advice.methodName = "$logCallsAdvice::" + this.qualifiedMethodName();
+	advice.methodName = "$logCallsAdvice::" + this.qualifiedMethodName();
 
-        var result = this.wrap(advice);
-        result.originalFunction = this;
-        result.methodName = "$logCallsWrapper::" + this.qualifiedMethodName();
-        return result;
+	var result = this.wrap(advice);
+	result.originalFunction = this;
+	result.methodName = "$logCallsWrapper::" + this.qualifiedMethodName();
+	return result;
     },
-
-    traceCalls: function(stack) {
-        var advice = function(proceed) {
-            var args = $A(arguments); args.shift();
-            stack.push(args);
-            var result = proceed.apply(this, args);
-            stack.pop();
-           return result;
-        };
-        return this.wrap(advice);
-    }
-
-});
-
-/**
- * Extensions to class String
- */  
-
-Object.extend(String.prototype, {
-
-    withDecimalPrecision: function(precision) {
-        var floatValue = parseFloat(this);
-        return isNaN(floatValue) ? this : floatValue.toFixed(precision);
-    }
-
-});
-
-/**
- * Extensions to class Number
- */  
-
-Object.extend(Number.prototype, {
     
+    traceCalls: function(stack) {
+	var advice = function(proceed) {
+	    var args = $A(arguments); args.shift();
+	    stack.push(args);
+	    var result = proceed.apply(this, args);
+	    stack.pop();
+	    return result;
+	};
+	return this.wrap(advice);
+    }
+    
+});
+
+/**
+  * Extensions to class String
+  */  
+Object.extend(String.prototype, {
+    
+    withDecimalPrecision: function(precision) {
+	var floatValue = parseFloat(this);
+	return isNaN(floatValue) ? this : floatValue.toFixed(precision);
+    }
+
+});
+
+/**
+  * Extensions to class Number
+  */  
+Object.extend(Number.prototype, {
+
     // random integer in 0 .. n-1
     randomSmallerInteger: function() {
-        return Math.floor(Math.random()*this); 
+	return Math.floor(Math.random()*this); 
     },
     
     roundTo: function(quantum) {
-        return Math.round(this/quantum)*quantum; 
+	return Math.round(this/quantum)*quantum; 
     },
     
     toDegrees: function() { 
-        return (this*180/Math.PI) % 360; 
+	return (this*180/Math.PI) % 360; 
     },
-    
+
     toRadians: function() { 
-        return this/180 * Math.PI; 
+	return this/180 * Math.PI; 
     }
 
 });
 
 /**
- * @class Converter
- */
+  * @class Converter
+  */
 
 Converter = {
 
     parseLength: function(string) {
-        // convert into system coords (pt?)
-        // FIXME: handle units
-        return parseFloat(string);
+	// convert into system coords (pt?)
+	// FIXME: handle units
+	return parseFloat(string);
     },
 
     parseCoordinate: function(string) {
-        // convert into system coords (pt?)
-        // FIXME: handle units
-        return parseFloat(string);
+	// convert into system coords (pt?)
+	// FIXME: handle units
+	return parseFloat(string);
     }
 
 };
@@ -704,7 +721,7 @@ Converter = {
 
 
 Object.subclass('Query',  {
-    
+
     xpe: Global.XPathEvaluator && new XPathEvaluator(),
 
     initialize: function(aNode) {
@@ -719,21 +736,21 @@ Object.subclass('Query',  {
 	    prefix = "SVG";
 	else 
 	    prefix = prefix.toUpperCase();
-        return Namespace[prefix];
+	return Namespace[prefix];
     },
-    
+
     evaluate: function(aNode, anExpr, accumulator) {
-        var result = this.xpe.evaluate(anExpr, aNode, this.nsResolver, XPathResult.ANY_TYPE, null);
+	var result = this.xpe.evaluate(anExpr, aNode, this.nsResolver, XPathResult.ANY_TYPE, null);
 	if (!accumulator)
 	    accumulator = [];
-        var res = null;
-        while (res = result.iterateNext()) accumulator.push(res);
-        return accumulator;
+	var res = null;
+	while (res = result.iterateNext()) accumulator.push(res);
+	return accumulator;
     },
 
     findFirst: function(aNode, anExpr) {
-        var result = this.xpe.evaluate(anExpr, aNode, this.nsResolver, XPathResult.ANY_TYPE, null);
-        return result.iterateNext();
+	var result = this.xpe.evaluate(anExpr, aNode, this.nsResolver, XPathResult.ANY_TYPE, null);
+	return result.iterateNext();
     }
 
 });
@@ -745,17 +762,17 @@ Object.subclass('Query',  {
 // ===========================================================================
 
 /**
- * @class Point: 2d points
- */
+  * @class Point: 2d points
+  */
 
 Object.subclass("Point", {
 
     initialize: function(x, y) {
-        this.x = x;
-        this.y = y;
-        return this;
+	this.x = x;
+	this.y = y;
+	return this;
     },
-    
+
     addPt: function(p) { return new Point(this.x + p.x, this.y + p.y); },
     addXY: function(dx,dy) { return new Point(this.x + dx, this.y + dy); },
     midPt: function(p) { return new Point((this.x + p.x)/2, (this.y + p.y)/2); },
@@ -769,51 +786,51 @@ Object.subclass("Point", {
     eqPt: function(p) { return this.x == p.x && this.y == p.y; },
 
     minPt: function(p, acc) { 
-        if (!acc) acc = new Point(0, 0); 
-        acc.x = Math.min(this.x, p.x); 
-        acc.y = Math.min(this.y, p.y);  
-        return acc;
+	if (!acc) acc = new Point(0, 0); 
+	acc.x = Math.min(this.x, p.x); 
+	acc.y = Math.min(this.y, p.y);  
+	return acc;
     },
 
     maxPt: function(p, acc) { 
-        if (!acc) acc = new Point(0, 0);
-        acc.x = Math.max(this.x, p.x);
-        acc.y = Math.max(this.y, p.y); 
-        return acc;
+	if (!acc) acc = new Point(0, 0);
+	acc.x = Math.max(this.x, p.x);
+	acc.y = Math.max(this.y, p.y); 
+	return acc;
     },
 
     roundTo: function(quantum) { return new Point(this.x.roundTo(quantum), this.y.roundTo(quantum)); },
 
     dist: function(p) { 
-        var dx = this.x - p.x;
-        var dy = this.y - p.y;
-        return Math.sqrt(dx*dx + dy*dy); 
+	var dx = this.x - p.x;
+	var dy = this.y - p.y;
+	return Math.sqrt(dx*dx + dy*dy); 
     },
 
     nearestPointOnLineBetween: function(p1, p2) { // fasten seat belts...
-        if (p1.x == p2.x) return pt(p1.x, this.y);
-        if (p1.y == p2.y) return pt(this.x, p1.y);
-        var x1 = p1.x;
-        var y1 = p1.y;
-        var x21 = p2.x - x1;
-        var y21 = p2.y - y1;
-        var t = (((this.y - y1) / x21) + ((this.x - x1) / y21)) / ((x21 / y21) + (y21 / x21));
-        return pt(x1 + (t * x21) , y1 + (t * y21)); 
+	if (p1.x == p2.x) return pt(p1.x, this.y);
+	if (p1.y == p2.y) return pt(this.x, p1.y);
+	var x1 = p1.x;
+	var y1 = p1.y;
+	var x21 = p2.x - x1;
+	var y21 = p2.y - y1;
+	var t = (((this.y - y1) / x21) + ((this.x - x1) / y21)) / ((x21 / y21) + (y21 / x21));
+	return pt(x1 + (t * x21) , y1 + (t * y21)); 
     },
-    
+
     asRectangle: function() { return new Rectangle(this.x, this.y, 0, 0); },
     extent: function(ext) { return new Rectangle(this.x, this.y, ext.x, ext.y); },
     extentAsRectangle: function() { return new Rectangle(0, 0, this.x, this.y) },
 
     toString: function() {
-        return "pt(%1.f,%1.f)".format(this.x, this.y);
+	return "pt(%1.f,%1.f)".format(this.x, this.y);
     },
 
     matrixTransform: function(mx, acc) {
-        if (!acc) acc = pt(0, 0); // if no accumulator passed, allocate a fresh one
-        acc.x = mx.a * this.x + mx.c * this.y + mx.e;
-        acc.y = mx.b * this.x + mx.d * this.y + mx.f;
-        return acc;
+	if (!acc) acc = pt(0, 0); // if no accumulator passed, allocate a fresh one
+	acc.x = mx.a * this.x + mx.c * this.y + mx.e;
+	acc.y = mx.b * this.x + mx.d * this.y + mx.f;
+	return acc;
     },
 
     // Polar coordinates...
@@ -826,23 +843,23 @@ Object.subclass("Point", {
 Object.extend(Point, {
 
     parse: function(string) { // reverse of inspect
-        var array = string.substring(3, string.length - 1).split(',');
-        return new Point(Converter.parseCoordinate(array[0]), Converter.parseCoordinate(array[1]));
+	var array = string.substring(3, string.length - 1).split(',');
+	return new Point(Converter.parseCoordinate(array[0]), Converter.parseCoordinate(array[1]));
     },
-    
+
     ensure: function(duck) { // make sure we have a Lively point
-        if (duck instanceof Point) { 
-            return duck;
-        } else { 
-            return new Point(duck.x, duck.y);
-        }
+	if (duck instanceof Point) { 
+	    return duck;
+	} else { 
+	    return new Point(duck.x, duck.y);
+	}
     },
-    
+
     polar: function(r, theta) { return new Point(r*Math.cos(theta), r*Math.sin(theta)); },
     random: function(scalePt) { return new Point(scalePt.x.randomSmallerInteger(), scalePt.y.randomSmallerInteger()); }
 
 });
-   
+
 // Shorthand for creating point objects
 function pt(x, y) { 
     return new Point(x, y);
@@ -851,17 +868,17 @@ function pt(x, y) {
 console.log("Point");
 
 /**
- * @class Rectangle
- */
+  * @class Rectangle
+  */
 
 Object.subclass("Rectangle", {
 
     initialize: function(x, y, w, h) {
-        this.x = x;
-        this.y = y;
-        this.width = w;
-        this.height = h;
-        return this;
+	this.x = x;
+	this.y = y;
+	this.width = w;
+	this.height = h;
+	return this;
     },
 
     copy: function() { return new Rectangle(this.x, this.y, this.width, this.height);  },
@@ -896,64 +913,64 @@ Object.subclass("Rectangle", {
 Rectangle.addMethods({
 
     containsPoint: function(p) {
-        return this.x <= p.x && p.x <= this.x + this.width && this.y<= p.y && p.y <= this.y + this.height;
+	return this.x <= p.x && p.x <= this.x + this.width && this.y<= p.y && p.y <= this.y + this.height;
     },
 
     containsRect: function(r) {
-        return this.x <= r.x && this.y<= r.y && r.maxX()<=this.maxX() && r.maxY()<=this.maxY();
+	return this.x <= r.x && this.y<= r.y && r.maxX()<=this.maxX() && r.maxY()<=this.maxY();
     },
 
     constrainPt: function(pt) { return pt.maxPt(this.topLeft()).minPt(this.bottomRight()); },
 
     intersection: function(r) {
-        return rect(this.topLeft().maxPt(r.topLeft()),this.bottomRight().minPt(r.bottomRight())); 
+	return rect(this.topLeft().maxPt(r.topLeft()),this.bottomRight().minPt(r.bottomRight())); 
     },
 
     union: function(r) {
-        return rect(this.topLeft().minPt(r.topLeft()),this.bottomRight().maxPt(r.bottomRight())); 
+	return rect(this.topLeft().minPt(r.topLeft()),this.bottomRight().maxPt(r.bottomRight())); 
     },
 
     isNonEmpty: function(rect) { return this.topLeft().lessPt(this.bottomRight())},
 
     dist: function(r) { // dist between two rects
-        var p1 = this.closestPointToPt(r.center()); 
-        var p2 = r.closestPointToPt(p1);  
-        return p1.dist(p2); 
+	var p1 = this.closestPointToPt(r.center()); 
+	var p2 = r.closestPointToPt(p1);  
+	return p1.dist(p2); 
     },
 
     closestPointToPt: function(p) { // Assume p lies outside me; return a point on my perimeter
-        return pt(Math.min(Math.max(this.x, p.x), this.maxX()),
-                  Math.min(Math.max(this.y, p.y), this.maxY())); 
+	return pt(Math.min(Math.max(this.x, p.x), this.maxX()),
+		  Math.min(Math.max(this.y, p.y), this.maxY())); 
     },
 
     translatedBy: function(d) {
-        return new Rectangle(this.x+d.x, this.y+d.y, this.width, this.height); 
+	return new Rectangle(this.x+d.x, this.y+d.y, this.width, this.height); 
     },
-    
+
     scaleByRect: function(r) { // r is a relative rect, as a pane spec in a window
-        return new Rectangle (
-            this.x + (r.x*this.width),
-            this.y + (r.y*this.height),
-            r.width * this.width,
-            r.height * this.height ); 
+	return new Rectangle (
+	    this.x + (r.x*this.width),
+	    this.y + (r.y*this.height),
+	    r.width * this.width,
+	    r.height * this.height ); 
     },
-    
+
     scaleRectIn: function(fullRect) { // return a relative rect for this as a part of fullRect
-        return new Rectangle (
-            (this.x - fullRect.x) / fullRect.width,
-            (this.y - fullRect.y) / fullRect.height,
-             this.width  / fullRect.width,
-             this.height / fullRect.height ); 
+	return new Rectangle (
+	    (this.x - fullRect.x) / fullRect.width,
+	    (this.y - fullRect.y) / fullRect.height,
+	    this.width  / fullRect.width,
+	    this.height / fullRect.height ); 
     },
-    
+
     insetBy: function(d) {
-        return new Rectangle(this.x+d, this.y+d, this.width-(d*2), this.height-(d*2)) 
+	return new Rectangle(this.x+d, this.y+d, this.width-(d*2), this.height-(d*2)) 
     },
 
     insetByPt: function(p) {
-        return new Rectangle(this.x+p.x, this.y+p.y, this.width-(p.x*2), this.height-(p.y*2)) 
+	return new Rectangle(this.x+p.x, this.y+p.y, this.width-(p.x*2), this.height-(p.y*2)) 
     },
-    
+
     expandBy: function(delta) { return this.insetBy(0-delta) }
 
 });
@@ -966,51 +983,51 @@ Object.extend(Rectangle, {
 Rectangle.addMethods({
 
     partNamed: function(partName) { 
-        return this[partName].call(this); 
+	return this[partName].call(this); 
     },
-    
+
     withPartNamed: function(partName,newValue) {
-        return this[this.setterName(partName)].call(this,newValue); 
+	return this[this.setterName(partName)].call(this,newValue); 
     },
-    
+
     setterName: function(partName) {
-        return "with" + partName.substring(0,1).toUpperCase() + partName.substring(1); 
+	return "with" + partName.substring(0,1).toUpperCase() + partName.substring(1); 
     },
-    
+
     partNameNear: function(partNames,p,dist) { 
-        var partName = this.partNameNearest(partNames,p);
-        return (p.dist(this.partNamed(partName)) < dist) ? partName : null; 
+	var partName = this.partNameNearest(partNames,p);
+	return (p.dist(this.partNamed(partName)) < dist) ? partName : null; 
     },
-    
+
     partNameNearest: function(partNames, p) { 
-        var dist = 1.0e99;
-        var partName = partNames[0];
-        
-        for (var i=0; i<partNames.length; i++) { 
-            var partName = partNames[i];
-            var pDist = p.dist(this.partNamed(partName));
-            if (pDist < dist) {var nearest = partName; dist = pDist} 
-        }
-        
-        return nearest; 
+	var dist = 1.0e99;
+	var partName = partNames[0];
+
+	for (var i=0; i<partNames.length; i++) { 
+	    var partName = partNames[i];
+	    var pDist = p.dist(this.partNamed(partName));
+	    if (pDist < dist) {var nearest = partName; dist = pDist} 
+	}
+
+	return nearest; 
     },
 
     toPath: function() {
-        var path = new PathShape();
-    
-        with (this) {
-            path.moveTo(x, y);
-            path.lineTo(x + width, y); 
-            path.lineTo(x + width, y + height);
-            path.lineTo(x,         y + height);
-            path.close(); 
-        }
-        
-        return path;
+	var path = new PathShape();
+
+	with (this) {
+	    path.moveTo(x, y);
+	    path.lineTo(x + width, y); 
+	    path.lineTo(x + width, y + height);
+	    path.lineTo(x,         y + height);
+	    path.close(); 
+	}
+
+	return path;
     },
 
     toString: function() { 
-        return "rect(%s,%s)".format(this.topLeft(), this.bottomRight());
+	return "rect(%s,%s)".format(this.topLeft(), this.bottomRight());
     }
 
 });
@@ -1018,26 +1035,26 @@ Rectangle.addMethods({
 Object.extend(Rectangle, {
 
     fromAny: function(ptA, ptB) {
-        return rect(ptA.minPt(ptB), ptA.maxPt(ptB));
+	return rect(ptA.minPt(ptB), ptA.maxPt(ptB));
     },
-    
+
     unionPts: function(points) {
-        var min = points[0];
-        var max = points[0];
-    
-        // AT: Loop starts from 1 intentionally
-        for (var i = 1; i < points.length; i++) {
-            min = min.minPt(points[i]);
-            max = max.maxPt(points[i]); 
-        }
-    
-        return rect(min, max); 
+	var min = points[0];
+	var max = points[0];
+
+	// AT: Loop starts from 1 intentionally
+	for (var i = 1; i < points.length; i++) {
+	    min = min.minPt(points[i]);
+	    max = max.maxPt(points[i]); 
+	}
+
+	return rect(min, max); 
     },
 
 
     fromElement: function(element) {
-        return new Rectangle(element.x.baseVal.value, element.y.baseVal.value, 
-                             element.width.baseVal.value, element.height.baseVal.value);
+	return new Rectangle(element.x.baseVal.value, element.y.baseVal.value, 
+			     element.width.baseVal.value, element.height.baseVal.value);
     }
 
 });
@@ -1046,7 +1063,7 @@ Object.extend(Rectangle, {
 function rect(location, corner) {
     return new Rectangle(location.x, location.y, corner.x - location.x, corner.y - location.y);
 };
- 
+
 console.log("Rectangle");
 
 // ===========================================================================
@@ -1054,43 +1071,43 @@ console.log("Rectangle");
 // ===========================================================================
 
 /**
- * @class Color
- */
+  * @class Color
+  */
 
 Object.subclass("Color", { 
 
     documentation: "Fully portable support for RGB colors",
 
     initialize: function(r, g, b) {
-        this.r = r;
-        this.g = g;
-        this.b = b;
+	this.r = r;
+	this.g = g;
+	this.b = b;
     },
-    
+
     // Mix with another color -- 1.0 is all this, 0.0 is all other
     mixedWith: function(other, proportion) { 
-        var p = proportion;
-        var q = 1.0 - p;
-        return new Color(this.r*p + other.r*q, this.g*p + other.g*q, this.b*p + other.b*q); 
+	var p = proportion;
+	var q = 1.0 - p;
+	return new Color(this.r*p + other.r*q, this.g*p + other.g*q, this.b*p + other.b*q); 
     },
-    
+
     darker: function(recursion) { 
-        var result = this.mixedWith(Color.black, 0.5);
-        return recursion > 1  ? result.darker(recursion - 1) : result;
+	var result = this.mixedWith(Color.black, 0.5);
+	return recursion > 1  ? result.darker(recursion - 1) : result;
     },
-    
+
     lighter: function(recursion) { 
 	if (recursion == 0) 
 	    return this;
-        var result = this.mixedWith(Color.white, 0.5);
-        return recursion > 1 ? result.lighter(recursion - 1) : result;
+	var result = this.mixedWith(Color.white, 0.5);
+	return recursion > 1 ? result.lighter(recursion - 1) : result;
     },
-    
+
     toString: function() {
 	function floor(x) { return Math.floor(x*255.99) };
-        return "rgb(" + floor(this.r) + "," + floor(this.g) + "," + floor(this.b) + ")";
+	return "rgb(" + floor(this.r) + "," + floor(this.g) + "," + floor(this.b) + ")";
     }
-    
+
 });
 
 Object.extend(Color, {
@@ -1106,64 +1123,64 @@ Object.extend(Color, {
     magenta: new Color(1,0,1),
 
     random: function() {
-        return new Color(Math.random(),Math.random(),Math.random()); 
+	return new Color(Math.random(),Math.random(),Math.random()); 
     },
 
     hsb: function(hue,sat,brt) {
-        var s = sat;
-        var b = brt;
-        // zero saturation yields gray with the given brightness
-        if (sat == 0) return new Color(b,b,b);
-        var h = hue % 360;
-        var h60 = h / 60;
-        var i = Math.floor(h60); // integer part of hue
-        var f = h60 - i; // fractional part of hue
-        var p = (1.0 - s) * b;
-        var q = (1.0 - (s * f)) * b;
-        var t = (1.0 - (s * (1.0 - f))) * b;
+	var s = sat;
+	var b = brt;
+	// zero saturation yields gray with the given brightness
+	if (sat == 0) return new Color(b,b,b);
+	var h = hue % 360;
+	var h60 = h / 60;
+	var i = Math.floor(h60); // integer part of hue
+	var f = h60 - i; // fractional part of hue
+	var p = (1.0 - s) * b;
+	var q = (1.0 - (s * f)) * b;
+	var t = (1.0 - (s * (1.0 - f))) * b;
 
-        switch (i) {
-        case 0:  return new Color(b,t,p);
-        case 1:  return new Color(q,b,p);
-        case 2:  return new Color(p,b,t);
-        case 3:  return new Color(p,q,b);
-        case 4:  return new Color(t,p,b);
-        case 5:  return new Color(b,p,q);
-        default: return new Color(0,0,0); 
-        } 
+	switch (i) {
+	case 0:  return new Color(b,t,p);
+	case 1:  return new Color(q,b,p);
+	case 2:  return new Color(p,b,t);
+	case 3:  return new Color(p,q,b);
+	case 4:  return new Color(t,p,b);
+	case 5:  return new Color(b,p,q);
+	default: return new Color(0,0,0); 
+	} 
     },
-    
+
     wheel: function(n) { 
-        return Color.wheelHsb(n,0.0,0.9,0.7); 
+	return Color.wheelHsb(n,0.0,0.9,0.7); 
     },
-    
+
     // Return an array of n colors of varying hue
     wheelHsb: function(n,hue,sat,brt) {
-        var a = new Array(n);
-        var step = 360.0 / (Math.max(n,1));
-    
-        for (var i = 0; i < n; i++) 
-            a[i] = Color.hsb(hue + i*step, sat, brt);
+	var a = new Array(n);
+	var step = 360.0 / (Math.max(n,1));
 
-        return a; 
+	for (var i = 0; i < n; i++) 
+	    a[i] = Color.hsb(hue + i*step, sat, brt);
+
+	return a; 
     },
-    
+
     parse: function(str) {
-        if (!str || str == "none") return null;
+	if (!str || str == "none") return null;
 
-        // FIXME this should be much more refined
-        var match = str.match("rgb\\((\\d+),(\\d+),(\\d+)\\)");
-        if (match) { 
-            return Color.rgb(parseInt(match[1]), parseInt(match[2]), parseInt(match[3]));
-        } else { 
-            throw new Error('color ' + str + ' unsupported');
-        }
+	// FIXME this should be much more refined
+	var match = str.match("rgb\\((\\d+),(\\d+),(\\d+)\\)");
+	if (match) { 
+	    return Color.rgb(parseInt(match[1]), parseInt(match[2]), parseInt(match[3]));
+	} else { 
+	    throw new Error('color ' + str + ' unsupported');
+	}
     },
-    
+
     rgb: function(r, g, b) {
-        return new Color(r/255, g/255, b/255);
+	return new Color(r/255, g/255, b/255);
     }
-    
+
 });
 
 Object.extend(Color, {
@@ -1171,35 +1188,35 @@ Object.extend(Color, {
     lightGray: Color.gray.lighter(),
     veryLightGray: Color.gray.lighter().lighter(),
     turquoise: Color.rgb(0, 240, 255),
-//    brown: Color.rgb(182, 67, 0),
-//    red: Color.rgb(255, 0, 0),
+    //    brown: Color.rgb(182, 67, 0),
+    //    red: Color.rgb(255, 0, 0),
     orange: Color.rgb(255, 153, 0),
-//    yellow: Color.rgb(204, 255, 0),
-//    limeGreen: Color.rgb(51, 255, 0),
-//    green: Color.rgb(0, 255, 102),
-//    cyan: Color.rgb(0, 255, 255),
-//    blue: Color.rgb(0, 102, 255),
-//    purple: Color.rgb(131, 0, 201),
-//    magenta: Color.rgb(204, 0, 255),
-//    pink: Color.rgb(255, 30, 153),
+    //    yellow: Color.rgb(204, 255, 0),
+    //    limeGreen: Color.rgb(51, 255, 0),
+    //    green: Color.rgb(0, 255, 102),
+    //    cyan: Color.rgb(0, 255, 255),
+    //    blue: Color.rgb(0, 102, 255),
+    //    purple: Color.rgb(131, 0, 201),
+    //    magenta: Color.rgb(204, 0, 255),
+    //    pink: Color.rgb(255, 30, 153),
     primary: {
-        // Sun palette
-        blue: Color.rgb(0x53, 0x82, 0xA1),
-        orange: Color.rgb(0xef, 0x6f, 0x00),
-        green: Color.rgb(0xb2, 0xbc, 00),
-        yellow: Color.rgb(0xff, 0xc7, 0x26)
+	// Sun palette
+	blue: Color.rgb(0x53, 0x82, 0xA1),
+	orange: Color.rgb(0xef, 0x6f, 0x00),
+	green: Color.rgb(0xb2, 0xbc, 00),
+	yellow: Color.rgb(0xff, 0xc7, 0x26)
     },
 
     secondary: {
-        blue: Color.rgb(0x35, 0x55, 0x6b),
-        orange: Color.rgb(0xc0, 0x66, 0x00),
-        green: Color.rgb(0x7f, 0x79, 0x00),
-        yellow: Color.rgb(0xc6, 0x92, 0x00)
+	blue: Color.rgb(0x35, 0x55, 0x6b),
+	orange: Color.rgb(0xc0, 0x66, 0x00),
+	green: Color.rgb(0x7f, 0x79, 0x00),
+	yellow: Color.rgb(0xc6, 0x92, 0x00)
     },
 
     neutral: {
-        lightGray: Color.rgb(0xbd, 0xbe, 0xc0),
-        gray: Color.rgb(0x80, 0x72, 0x77)
+	lightGray: Color.rgb(0xbd, 0xbe, 0xc0),
+	gray: Color.rgb(0x80, 0x72, 0x77)
     }
 
 });
@@ -1211,8 +1228,8 @@ console.log("Color");
 // ===========================================================================
 
 /**
- * @class Wrapper
- */
+  * @class Wrapper
+  */
 
 Object.subclass('Wrapper', {
 
@@ -1222,39 +1239,39 @@ Object.subclass('Wrapper', {
     getType: function() {
 	var ctor = this.constructor.getOriginal();
 	if (ctor.type) return ctor.type;
-        console.log("no type for " + this.constructor);
-        Function.showStack();
-        return null;
+	console.log("no type for " + this.constructor);
+	Function.showStack();
+	return null;
     },
 
     getScope: function() {
-        var ctor = this.constructor.getOriginal();
-        if(ctor.scope) return ctor.scope;
-        console.log("no scope for " + this.constructor + " tried " + this.originalFunction);
-        return Global;
+	var ctor = this.constructor.getOriginal();
+	if(ctor.scope) return ctor.scope;
+	console.log("no scope for " + this.constructor + " tried " + this.originalFunction);
+	return Global;
     },
 
     deserialize: function(importer, rawNode) {
-        this.rawNode = rawNode;
+	this.rawNode = rawNode;
     },
-    
+
     copyFrom: function(copier, other) {
-        this.rawNode = other.rawNode.cloneNode(true);
+	this.rawNode = other.rawNode.cloneNode(true);
     },
-    
+
     copy: function(copier) {
-        var scope = this.getScope();
-        return new scope[this.getType()](copier || Copier.marker, this);
+	var scope = this.getScope();
+	return new scope[this.getType()](copier || Copier.marker, this);
     },
 
     id: function() {
-        return this.rawNode.getAttribute("id");
+	return this.rawNode.getAttribute("id");
     },
 
     setId: function(value) {
 	var prev = this.id();
-        this.rawNode.setAttribute("id", value); // this may happen automatically anyway by setting the id property
-        return prev;
+	this.rawNode.setAttribute("id", value); // this may happen automatically anyway by setting the id property
+	return prev;
     },
 
     removeRawNode: function() {
@@ -1263,30 +1280,30 @@ Object.subclass('Wrapper', {
 	    parent.removeChild(this.rawNode);
 	}
     },
-    
+
     toString: function() {
-        try {
-            return "#<" + this.getType() +  ":" + this.rawNode + ">";
-        } catch (err) {
-            return "#<toString error: " + err + ">";
-        }
+	try {
+	    return "#<" + this.getType() +  ":" + this.rawNode + ">";
+	} catch (err) {
+	    return "#<toString error: " + err + ">";
+	}
     },
-    
+
     inspect: function() {
-        try {
-            return this.toString() + "[" + this.toMarkupString() + "]";
-        } catch (err) {
-            return "#<inspect error: " + err + ">";
-        }
+	try {
+	    return this.toString() + "[" + this.toMarkupString() + "]";
+	} catch (err) {
+	    return "#<inspect error: " + err + ">";
+	}
     },
 
     toMarkupString: function() {
-        return Exporter.stringify(this.rawNode);
+	return Exporter.stringify(this.rawNode);
     },
 
     queryNode: function(queryString, defaultValue) {
 	var result = new Query(this.rawNode).evaluate(this.rawNode, queryString, []);
-        return result.length == 0 ? defaultValue : result;
+	return result.length == 0 ? defaultValue : result;
     },
 
     uri: function() {
@@ -1301,15 +1318,15 @@ Object.subclass('Wrapper', {
 });
 
 /**
- * @class Gradient (NOTE: PORTING-SENSITIVE CODE)
- */
+  * @class Gradient (NOTE: PORTING-SENSITIVE CODE)
+  */
 
 Wrapper.subclass("Gradient", {
-    
-    
+
+
     addStop: function(offset, color) {
-        this.rawNode.appendChild(NodeFactory.create("stop", {offset: offset, "stop-color": color}));
-        return this;
+	this.rawNode.appendChild(NodeFactory.create("stop", {offset: offset, "stop-color": color}));
+	return this;
     },
 
     rawStopNodes: function() {
@@ -1346,19 +1363,19 @@ Object.extend(Gradient, {
 
 
 /**
- * @class LinearGradient (NOTE: PORTING-SENSITIVE CODE)
- */
+  * @class LinearGradient (NOTE: PORTING-SENSITIVE CODE)
+  */
 
 // note that Colors and Gradients are similar
 Gradient.subclass("LinearGradient", {
-    
+
     initialize: function($super, stopColor1, stopColor2, vector) {
-        vector = vector || LinearGradient.NorthSouth;
-        this.rawNode = NodeFactory.create("linearGradient",
-                       {x1: vector.x, y1: vector.y, 
-                        x2: vector.maxX(), y2: vector.maxY()}); 
-        this.addStop(0, stopColor1).addStop(1, stopColor2);
-        return this;
+	vector = vector || LinearGradient.NorthSouth;
+	this.rawNode = NodeFactory.create("linearGradient",
+					  {x1: vector.x, y1: vector.y, 
+					   x2: vector.maxX(), y2: vector.maxY()}); 
+	this.addStop(0, stopColor1).addStop(1, stopColor2);
+	return this;
     },
 
     mixedWith: function(color, proportion) {
@@ -1381,33 +1398,33 @@ Object.extend(LinearGradient, {
 });
 
 /**
- * @class RadialGradient (NOTE: PORTING-SENSITIVE CODE)
- */
+  * @class RadialGradient (NOTE: PORTING-SENSITIVE CODE)
+  */
 
 Gradient.subclass("RadialGradient", {
-    
+
     initialize: function($super, stopColor1, stopColor2) {
-        var c = pt(0.5, 0.5);
-        var r = 0.4;
-        this.rawNode = NodeFactory.create("radialGradient", {cx: c.x, cy: c.y, r: r});
-        this.addStop(0, stopColor1);
-        this.addStop(1, stopColor2);
-        return this;
+	var c = pt(0.5, 0.5);
+	var r = 0.4;
+	this.rawNode = NodeFactory.create("radialGradient", {cx: c.x, cy: c.y, r: r});
+	this.addStop(0, stopColor1);
+	this.addStop(1, stopColor2);
+	return this;
     }
 });
 
 /**
- * @class StipplePattern (NOTE: PORTING-SENSITIVE CODE)
- */
+  * @class StipplePattern (NOTE: PORTING-SENSITIVE CODE)
+  */
 
 Wrapper.subclass('StipplePattern', {
 
     initialize: function(color1, h1, color2, h2) {
-        this.rawNode = NodeFactory.create("pattern", 
-                       {patternUnits: 'userSpaceOnUse', x: 0, y: 0, width: 100, height: h1 + h2});
-        this.rawNode.appendChild(NodeFactory.create('rect', {x: 0, y: 0,  width: 100, height: h1,      fill: color1}));
-        this.rawNode.appendChild(NodeFactory.create('rect', {x: 0, y: h1, width: 100, height: h1 + h2, fill: color2}));
-        return this;
+	this.rawNode = NodeFactory.create("pattern", 
+					  {patternUnits: 'userSpaceOnUse', x: 0, y: 0, width: 100, height: h1 + h2});
+	this.rawNode.appendChild(NodeFactory.create('rect', {x: 0, y: 0,  width: 100, height: h1,      fill: color1}));
+	this.rawNode.appendChild(NodeFactory.create('rect', {x: 0, y: h1, width: 100, height: h1 + h2, fill: color2}));
+	return this;
     }
 
 });
@@ -1431,8 +1448,8 @@ Object.extend(ClipPath, {
 
 
 /**
- * @class Similitude (NOTE: PORTING-SENSITIVE CODE)
- */
+  * @class Similitude (NOTE: PORTING-SENSITIVE CODE)
+  */
 
 Object.subclass('Similitude', {
 
@@ -1441,174 +1458,174 @@ Object.subclass('Similitude', {
     rotation: null, // may be set by instances to a component SVGTransform
     scaling: null, // may be set by instances to a component SVGTransform
     /**
-     * createSimilitude: a similitude is a combination of translation rotation and scale.
-     * one could argue that Similitude is a superclass of Transform, not subclass.
-     * @param [Point] delta
-     * @param [float] angleInRadians
-     * @param [float] scale
-     */
+      * createSimilitude: a similitude is a combination of translation rotation and scale.
+      * one could argue that Similitude is a superclass of Transform, not subclass.
+      * @param [Point] delta
+      * @param [float] angleInRadians
+      * @param [float] scale
+      */
     initialize: function(delta, angleInRadians, scale) {
-        if (angleInRadians === undefined) angleInRadians = 0.0;
-        if (scale === undefined) scale = 1.0;
-        if (false) {
-            var matrix = Canvas.createSVGMatrix();
-            matrix = matrix.translate(delta.x, delta.y).rotate(angleInRadians.toDegrees()).scale(scale);
-            this.fromMatrix(matrix);
-        } else { // calculate natively
-            this.a = scale * Math.cos(angleInRadians);
-            this.b = scale * Math.sin(angleInRadians);
-            this.c = scale * - Math.sin(angleInRadians);
-            this.d = scale * Math.cos(angleInRadians);
-            this.e =  delta.x;
-            this.f =  delta.y;
-        }
+	if (angleInRadians === undefined) angleInRadians = 0.0;
+	if (scale === undefined) scale = 1.0;
+	if (false) {
+	    var matrix = Canvas.createSVGMatrix();
+	    matrix = matrix.translate(delta.x, delta.y).rotate(angleInRadians.toDegrees()).scale(scale);
+	    this.fromMatrix(matrix);
+	} else { // calculate natively
+	    this.a = scale * Math.cos(angleInRadians);
+	    this.b = scale * Math.sin(angleInRadians);
+	    this.c = scale * - Math.sin(angleInRadians);
+	    this.d = scale * Math.cos(angleInRadians);
+	    this.e =  delta.x;
+	    this.f =  delta.y;
+	}
     },
 
     getRotation: function() { // in degrees
-        return Math.atan2(this.b, this.a).toDegrees();
+	return Math.atan2(this.b, this.a).toDegrees();
     },
 
     getScale: function() {
-        var a = this.a;
-        var b = this.b;
-        return Math.sqrt(a * a + b * b);
+	var a = this.a;
+	var b = this.b;
+	return Math.sqrt(a * a + b * b);
     },
 
     getTranslation: function() {
-        return pt(this.e, this.f);
+	return pt(this.e, this.f);
     },
 
     toAttributeValue: function() {
-        var delta = this.getTranslation();
-        var attr = "translate(" + delta.x + "," + delta.y +")";
-        var theta = this.getRotation();
+	var delta = this.getTranslation();
+	var attr = "translate(" + delta.x + "," + delta.y +")";
+	var theta = this.getRotation();
 
-        if (theta != 0.0)
-            attr += " rotate(" + this.getRotation()  +")"; // in degrees
+	if (theta != 0.0)
+	    attr += " rotate(" + this.getRotation()  +")"; // in degrees
 
-        var factor = this.getScale();
-    
-        if (factor != 1.0) 
-            attr += " scale(" + this.getScale() + ")";
-    
-        return attr;
+	var factor = this.getScale();
+
+	if (factor != 1.0) 
+	    attr += " scale(" + this.getScale() + ")";
+
+	return attr;
     },
 
     applyTo: function(rawNode) {
-        if (Config.useTransformAPI) {
-            var list = rawNode.transform.baseVal;
-            var viewport = (UserAgent.usableNearestViewportElement ? rawNode.nearestViewportElement : Canvas);
-            if (!this.translation) this.translation = viewport.createSVGTransform();
-            this.translation.setTranslate(this.e, this.f);
-            list.initialize(this.translation);
-            if (this.b || this.c) {
-                if (!this.rotation) this.rotation = viewport.createSVGTransform();
-                this.rotation.setRotate(this.getRotation(), 0, 0);
-                list.appendItem(this.rotation);
-            }
-            if (this.a != 1.0 || this.d != 1.0) {
-                if (!this.scaling) this.scaling = viewport.createSVGTransform();
-                var scale = this.getScale();
-                this.scaling.setScale(scale, scale);
-                list.appendItem(this.scaling);
-            }
-        } else {
-            rawNode.setAttributeNS(null, "transform", this.toAttributeValue());
-        }
+	if (Config.useTransformAPI) {
+	    var list = rawNode.transform.baseVal;
+	    var viewport = (UserAgent.usableNearestViewportElement ? rawNode.nearestViewportElement : Canvas);
+	    if (!this.translation) this.translation = viewport.createSVGTransform();
+	    this.translation.setTranslate(this.e, this.f);
+	    list.initialize(this.translation);
+	    if (this.b || this.c) {
+		if (!this.rotation) this.rotation = viewport.createSVGTransform();
+		this.rotation.setRotate(this.getRotation(), 0, 0);
+		list.appendItem(this.rotation);
+	    }
+	    if (this.a != 1.0 || this.d != 1.0) {
+		if (!this.scaling) this.scaling = viewport.createSVGTransform();
+		var scale = this.getScale();
+		this.scaling.setScale(scale, scale);
+		list.appendItem(this.scaling);
+	    }
+	} else {
+	    rawNode.setAttributeNS(null, "transform", this.toAttributeValue());
+	}
     },
 
     toString: function() {
-        return this.toAttributeValue();
+	return this.toAttributeValue();
     },
 
     transformPoint: function(p, acc) {
-        return p.matrixTransform(this, acc);
+	return p.matrixTransform(this, acc);
     },
 
     transformRectToRect: function(r) {
-        var p = this.transformPoint(r.topLeft());
-        var min = p.copy();
-        var max = p.copy();
-    
-        p = this.transformPoint(r.topRight(), p);
-        min = min.minPt(p, min);
-        max = max.maxPt(p, max);
+	var p = this.transformPoint(r.topLeft());
+	var min = p.copy();
+	var max = p.copy();
 
-        p = this.transformPoint(r.bottomRight(), p);
-        min = min.minPt(p, min);
-        max = max.maxPt(p, max);
-    
-        p = this.transformPoint(r.bottomLeft(), p);
-        min = min.minPt(p, min);
-        max = max.maxPt(p, max);
-    
-        return rect(min, max);
+	p = this.transformPoint(r.topRight(), p);
+	min = min.minPt(p, min);
+	max = max.maxPt(p, max);
+
+	p = this.transformPoint(r.bottomRight(), p);
+	min = min.minPt(p, min);
+	max = max.maxPt(p, max);
+
+	p = this.transformPoint(r.bottomLeft(), p);
+	min = min.minPt(p, min);
+	max = max.maxPt(p, max);
+
+	return rect(min, max);
     },
 
     copy: function() {
-        return new Transform(this);
+	return new Transform(this);
     },
-    
+
     toMatrix: function() {
-        var mx = Canvas.createSVGMatrix();
-        mx.a = this.a;
-        mx.b = this.b;
-        mx.c = this.c;
-        mx.d = this.d;
-        mx.e = this.e;
-        mx.f = this.f;
-        return mx;
+	var mx = Canvas.createSVGMatrix();
+	mx.a = this.a;
+	mx.b = this.b;
+	mx.c = this.c;
+	mx.d = this.d;
+	mx.e = this.e;
+	mx.f = this.f;
+	return mx;
     },
 
     fromMatrix: function(mx) {
-        this.a = mx.a;
-        this.b = mx.b;
-        this.c = mx.c;
-        this.d = mx.d;
-        this.e = mx.e;
-        this.f = mx.f;
+	this.a = mx.a;
+	this.b = mx.b;
+	this.c = mx.c;
+	this.d = mx.d;
+	this.e = mx.e;
+	this.f = mx.f;
     },
 
     preConcatenate: function(t) {
-        if (true) {
-            this.fromMatrix(this.toMatrix().multiply(t.toMatrix()));
-        } else { // KP: something's wrong here
-            t = this;
+	if (true) {
+	    this.fromMatrix(this.toMatrix().multiply(t.toMatrix()));
+	} else { // KP: something's wrong here
+	    t = this;
 
-            this.a =  t.a * this.a + t.c * this.b;
-            this.b =  t.b * this.a + t.d * this.b;
-            this.c =  t.a * this.c + t.c * this.d;
-            this.d =  t.b * this.c + t.d * this.d;
-            this.e =  t.a * this.e + t.c * this.f  + t.e;
-            this.f =  t.b * this.e + t.d * this.f  + t.f;
-        }
-        return this;
+	    this.a =  t.a * this.a + t.c * this.b;
+	    this.b =  t.b * this.a + t.d * this.b;
+	    this.c =  t.a * this.c + t.c * this.d;
+	    this.d =  t.b * this.c + t.d * this.d;
+	    this.e =  t.a * this.e + t.c * this.f  + t.e;
+	    this.f =  t.b * this.e + t.d * this.f  + t.f;
+	}
+	return this;
     }
 
 });
 
 /**
- * @class Transform (NOTE: PORTING-SENSITIVE CODE)
- * This code is dependent on SVG transformation matrices.
- * See: http://www.w3.org/TR/2003/REC-SVG11-20030114/coords.html#InterfaceSVGMatrix 
- */
+  * @class Transform (NOTE: PORTING-SENSITIVE CODE)
+  * This code is dependent on SVG transformation matrices.
+  * See: http://www.w3.org/TR/2003/REC-SVG11-20030114/coords.html#InterfaceSVGMatrix 
+  */
 
 Similitude.subclass('Transform', {
 
     initialize: function(duck) { // matrix is a duck with a,b,c,d,e,f, could be an SVG matrix or a Lively Transform
-        // note: doesn't call $super
-        if (duck) {
-            this.fromMatrix(duck);
-        } else {
-            this.a = this.d = 1.0;
-            this.b = this.c = this.e = this.f = 0.0;
-        }
+	// note: doesn't call $super
+	if (duck) {
+	    this.fromMatrix(duck);
+	} else {
+	    this.a = this.d = 1.0;
+	    this.b = this.c = this.e = this.f = 0.0;
+	}
     },
-    
+
     createInverse: function() {
-        return new Transform(this.toMatrix().inverse());
+	return new Transform(this.toMatrix().inverse());
     }
-    
+
 });
 
 // ===========================================================================
@@ -1616,9 +1633,9 @@ Similitude.subclass('Transform', {
 // ===========================================================================
 
 /**
- * @class CharSet (NOTE: PORTING-SENSITIVE CODE)
- * Currently, support for character sets is rather limited... 
- */  
+  * @class CharSet (NOTE: PORTING-SENSITIVE CODE)
+  * Currently, support for character sets is rather limited... 
+  */  
 
 // KP: there's more then one charset
 Object.subclass('CharSet');
@@ -1640,26 +1657,26 @@ Object.extend(CharSet, {
     charsAsTyped: CharSet.uppercase + CharSet.nonAlpha,
     charsUnshifted: CharSet.lowercase + CharSet.nonAlpha,
     charsShifted: CharSet.uppercase + CharSet.shiftedNonAlpha,
-    
+
     nonBlank: function(cc) {  
-        return " \n\r\t".include(cc) == false;
+	return " \n\r\t".include(cc) == false;
     }
-    
+
 });
 
 /**
- * @class CharacterInfo
- */
+  * @class CharacterInfo
+  */
 
 Object.subclass('CharacterInfo', {
 
     initialize: function(width, height) {
-        this.width = width;
-        this.height = height;
+	this.width = width;
+	this.height = height;
     },
 
     toString: function() {
-        return this.width + "x" + this.height;
+	return this.width + "x" + this.height;
     }
 
 });
@@ -1669,104 +1686,104 @@ Object.subclass('CharacterInfo', {
 // ===========================================================================
 
 /**
- * @class Event: extensions to DOM class Event (NOTE: PORTING-SENSITIVE CODE)
- * The code below extends the default Event class behavior inherited
- * from the web browser.  For a detailed description of the Event class,
- * refer to, e.g., David Flanagan's book (JavaScript: The Definitive Guide) 
- */
+  * @class Event: extensions to DOM class Event (NOTE: PORTING-SENSITIVE CODE)
+  * The code below extends the default Event class behavior inherited
+  * from the web browser.  For a detailed description of the Event class,
+  * refer to, e.g., David Flanagan's book (JavaScript: The Definitive Guide) 
+  */
 
 var Event = (function() {
     var tmp = Event; // note we're rebinding the name Event to point to a different class 
 
     var capitalizer = { mouseup: 'MouseUp', mousedown: 'MouseDown', mousemove: 'MouseMove', 
-        mouseover: 'MouseOver', mouseout: 'MouseOut', mousewheel: 'MouseWheel',
-        keydown: 'KeyDown', keypress: 'KeyPress', keyup: 'KeyUp' };
-    
-    
+	mouseover: 'MouseOver', mouseout: 'MouseOut', mousewheel: 'MouseWheel',
+	keydown: 'KeyDown', keypress: 'KeyPress', keyup: 'KeyUp' };
+
+
     var Event = Object.subclass('Event', {
 
-        initialize: function(rawEvent) {
-            this.rawEvent = rawEvent;
-            this.type = capitalizer[rawEvent.type] || rawEvent.type;
-            //this.charCode = rawEvent.charCode;
+	initialize: function(rawEvent) {
+	    this.rawEvent = rawEvent;
+	    this.type = capitalizer[rawEvent.type] || rawEvent.type;
+	    //this.charCode = rawEvent.charCode;
 
-            if (isMouse(rawEvent)) {
-                var x = rawEvent.pageX || rawEvent.clientX;
-                var y = rawEvent.pageY || rawEvent.clientY;
-                var topElement = this.canvas().parentNode;
+	    if (isMouse(rawEvent)) {
+		var x = rawEvent.pageX || rawEvent.clientX;
+		var y = rawEvent.pageY || rawEvent.clientY;
+		var topElement = this.canvas().parentNode;
 
-                // note that FF doesn't doesnt calculate offsetLeft/offsetTop early enough we don't precompute these values
-                // assume the parent node of Canvas has the same bounds as Canvas
-                this.mousePoint = pt(x - (topElement.offsetLeft || 0), 
-                                     y - (topElement.offsetTop  || 0) - 3);
-                // console.log("mouse point " + this.mousePoint);
-                //event.mousePoint = pt(event.clientX, event.clientY  - 3);
-                this.priorPoint = this.mousePoint; 
-                // Safari somehow gets the x and y coords so we add them here to Firefox too --PR
-                // console.log("InitMouseOver fix for Firefox evt.x=%s evt.clientX", event.x, event.clientX);
-                this.x = x;
-                this.y = y;
+		// note that FF doesn't doesnt calculate offsetLeft/offsetTop early enough we don't precompute these values
+		// assume the parent node of Canvas has the same bounds as Canvas
+		this.mousePoint = pt(x - (topElement.offsetLeft || 0), 
+				     y - (topElement.offsetTop  || 0) - 3);
+		// console.log("mouse point " + this.mousePoint);
+		//event.mousePoint = pt(event.clientX, event.clientY  - 3);
+		this.priorPoint = this.mousePoint; 
+		// Safari somehow gets the x and y coords so we add them here to Firefox too --PR
+		// console.log("InitMouseOver fix for Firefox evt.x=%s evt.clientX", event.x, event.clientX);
+		this.x = x;
+		this.y = y;
 
-            } 
-            this.hand = null;
-        
-            // use event.timeStamp
-            // event.msTime = (new Date()).getTime();
-            this.mouseButtonPressed = false;
-        },
+	    } 
+	    this.hand = null;
 
-        canvas: function() {
-            if (!UserAgent.usableNearestViewportElement) {
-                // so much for multiple worlds on one page
-                return Canvas;
-            } else {
-                return this.rawEvent.currentTarget.nearestViewportElement;
-            }
-        },
+	    // use event.timeStamp
+	    // event.msTime = (new Date()).getTime();
+	    this.mouseButtonPressed = false;
+	},
 
-        stopPropagation: function() {
-            this.rawEvent.stopPropagation();
-        },
+	canvas: function() {
+	    if (!UserAgent.usableNearestViewportElement) {
+		// so much for multiple worlds on one page
+		return Canvas;
+	    } else {
+		return this.rawEvent.currentTarget.nearestViewportElement;
+	    }
+	},
 
-        preventDefault: function() {
-            this.rawEvent.preventDefault();
-        },
+	stopPropagation: function() {
+	    this.rawEvent.stopPropagation();
+	},
 
-        stop: function() {
-            this.preventDefault();
-            this.stopPropagation();
-        },
+	preventDefault: function() {
+	    this.rawEvent.preventDefault();
+	},
 
-        isAltDown: function() {
-            return this.rawEvent.altKey;
-        },
+	stop: function() {
+	    this.preventDefault();
+	    this.stopPropagation();
+	},
 
-        isShiftDown: function() {
-            return this.rawEvent.shiftKey;
-        },
+	isAltDown: function() {
+	    return this.rawEvent.altKey;
+	},
 
-        isCmdDown: function() {
-            return this.rawEvent.cmdKey;
-        },
+	isShiftDown: function() {
+	    return this.rawEvent.shiftKey;
+	},
 
-        toString: function() {
+	isCmdDown: function() {
+	    return this.rawEvent.cmdKey;
+	},
+
+	toString: function() {
 	    return "#<Event:%s%s%s>".format(this.type, this.mousePoint ?  "@" + this.mousePoint : "",
 					    this.getKeyCode() || "");
-        },
+	},
 
-        setButtonPressedAndPriorPoint: function(buttonPressed, priorPoint) {
-            this.mouseButtonPressed = buttonPressed;
-            // if moving or releasing, priorPoint will get found by prior morph
-            this.priorPoint = priorPoint; 
-        },
+	setButtonPressedAndPriorPoint: function(buttonPressed, priorPoint) {
+	    this.mouseButtonPressed = buttonPressed;
+	    // if moving or releasing, priorPoint will get found by prior morph
+	    this.priorPoint = priorPoint; 
+	},
 
-        handlerName: function() {
-            return "on" + this.type;
-        },
+	handlerName: function() {
+	    return "on" + this.type;
+	},
 
-        getKeyCode: function() {
-            return this.rawEvent.keyCode;
-        },
+	getKeyCode: function() {
+	    return this.rawEvent.keyCode;
+	},
 
 	getKeyChar: function() {
 	    if (this.type == "KeyPress") {
@@ -1779,28 +1796,28 @@ var Event = (function() {
 	    }
 	}
     });
-    
+
     Event.rawEvent = tmp;
 
     Object.extend(Event, {
-        // copied from prototype.js:
-        KEY_BACKSPACE: 8,
-        KEY_TAB:       9,
-        KEY_RETURN:   13,
-        KEY_ESC:      27,
-        KEY_LEFT:     37,
-        KEY_UP:       38,
-        KEY_RIGHT:    39,
-        KEY_DOWN:     40,
-        KEY_DELETE:   46,
-        KEY_HOME:     36,
-        KEY_END:      35,
-        KEY_PAGEUP:   33,
-        KEY_PAGEDOWN: 34,
-        KEY_INSERT:   45,
+	// copied from prototype.js:
+	KEY_BACKSPACE: 8,
+	KEY_TAB:       9,
+	KEY_RETURN:   13,
+	KEY_ESC:      27,
+	KEY_LEFT:     37,
+	KEY_UP:       38,
+	KEY_RIGHT:    39,
+	KEY_DOWN:     40,
+	KEY_DELETE:   46,
+	KEY_HOME:     36,
+	KEY_END:      35,
+	KEY_PAGEUP:   33,
+	KEY_PAGEDOWN: 34,
+	KEY_INSERT:   45,
 
-        // not in prototype.js:
-        KEY_SPACEBAR: 32
+	// not in prototype.js:
+	KEY_SPACEBAR: 32
 
     });
 
@@ -1812,9 +1829,9 @@ var Event = (function() {
     Event.basicInputEvents = basicMouseEvents.concat(Event.keyboardEvents);
 
     function isMouse(rawEvent) {
-        return mouseEvents.include(rawEvent.type);
+	return mouseEvents.include(rawEvent.type);
     };
-    
+
     return Event;
 })();
 
@@ -1826,16 +1843,16 @@ Object.extend(window.parent, {
 
 if (UserAgent.canExtendBrowserObjects) Object.extend(document, {
     oncontextmenu: function(evt) { 
-        var targetMorph = evt.target.parentNode; // target is probably shape (change me if pointer-events changes for shapes)
-        if ((targetMorph instanceof Morph) 
-            && !(targetMorph instanceof WorldMorph)) {
-            evt.preventDefault();
-            var topElement = (evt.currentTarget.nearestViewportElement || Canvas).parentNode;
-            evt.mousePoint = pt(evt.pageX - (topElement.offsetLeft || 0), 
-                                evt.pageY - (topElement.offsetTop  || 0) - 3);
-            // evt.mousePoint = pt(evt.clientX, evt.clientY);
-            targetMorph.showMorphMenu(evt); 
-        } // else get the system context menu
+	var targetMorph = evt.target.parentNode; // target is probably shape (change me if pointer-events changes for shapes)
+	if ((targetMorph instanceof Morph) 
+	    && !(targetMorph instanceof WorldMorph)) {
+	    evt.preventDefault();
+	    var topElement = (evt.currentTarget.nearestViewportElement || Canvas).parentNode;
+	    evt.mousePoint = pt(evt.pageX - (topElement.offsetLeft || 0), 
+				evt.pageY - (topElement.offsetTop  || 0) - 3);
+	    // evt.mousePoint = pt(evt.clientX, evt.clientY);
+	    targetMorph.showMorphMenu(evt); 
+	} // else get the system context menu
     }.logErrors('Context Menu Handler')
 });
 
@@ -1844,29 +1861,29 @@ if (UserAgent.canExtendBrowserObjects) Object.extend(document, {
 // ===========================================================================
 
 /**
- * @class Visual (NOTE: PORTING-SENSITIVE CODE)
- * In this particular implementation, graphics primitives are
- * mapped onto various SVG objects and attributes.
- */
+  * @class Visual (NOTE: PORTING-SENSITIVE CODE)
+  * In this particular implementation, graphics primitives are
+  * mapped onto various SVG objects and attributes.
+  */
 Wrapper.subclass('Visual', {   
 
     documentation:  "Interface between Lively Kernel graphics classes and the underlying graphics implementation.",
-    
+
     rawNode: null, // set by subclasses
 
     setPersistentType: function(type)  {
-        this.rawNode.setAttributeNS(Namespace.LIVELY, "type", type);
-        return this;
+	this.rawNode.setAttributeNS(Namespace.LIVELY, "type", type);
+	return this;
     },
 
     withHref: function(localURl) {
-        this.rawNode.setAttributeNS(Namespace.XLINK, "href", localURl);
-        return this;
+	this.rawNode.setAttributeNS(Namespace.XLINK, "href", localURl);
+	return this;
     },
 
     /**
-     * @param [String] string the string specification of the fill attribute.
-     */
+      * @param [String] string the string specification of the fill attribute.
+      */
     setFill: function(string) {
 	if (string) {
 	    if (!string.startsWith) 
@@ -1874,74 +1891,74 @@ Wrapper.subclass('Visual', {
 	    else if (string.startsWith("uri"))
 		console.log("setting %s on %s", string, this);
 	}
-        this.rawNode.setAttributeNS(null, "fill", string  || "none");
+	this.rawNode.setAttributeNS(null, "fill", string  || "none");
     },
-    
+
     getFill: function() {
-        return this.rawNode.getAttributeNS(null, "fill");
+	return this.rawNode.getAttributeNS(null, "fill");
     },
-    
+
     setStroke: function(paint) {
-        //console.log('new color ' + color);
-        this.rawNode.setAttributeNS(null, "stroke", paint == null ? "none" : paint.toString());
+	//console.log('new color ' + color);
+	this.rawNode.setAttributeNS(null, "stroke", paint == null ? "none" : paint.toString());
     },
-    
+
     getStroke: function() {
-        return this.rawNode.getAttributeNS(null, "stroke");
+	return this.rawNode.getAttributeNS(null, "stroke");
     },
-    
+
     setStrokeWidth: function(width) {
-        this.rawNode.setAttributeNS(null, "stroke-width", width);
+	this.rawNode.setAttributeNS(null, "stroke-width", width);
     },
 
     getStrokeWidth: function() {
-        // FIXME stroke-width can have units
-        return Converter.parseLength(this.rawNode.getAttributeNS(null, "stroke-width"));
+	// FIXME stroke-width can have units
+	return Converter.parseLength(this.rawNode.getAttributeNS(null, "stroke-width"));
     },
- 
+
     setFillOpacity: function(alpha) {
-        //    console.log('opacity ' + alpha);
-        this.rawNode.setAttributeNS(null, "fill-opacity", alpha);
+	//    console.log('opacity ' + alpha);
+	this.rawNode.setAttributeNS(null, "fill-opacity", alpha);
     },
 
     getFillOpacity: function(alpha) {
-        this.rawNode.getAttributeNS(null, "fill-opacity");
+	this.rawNode.getAttributeNS(null, "fill-opacity");
     },
 
     setStrokeOpacity: function(alpha) {
-        this.rawNode.setAttributeNS(null, "stroke-opacity", alpha);
+	this.rawNode.setAttributeNS(null, "stroke-opacity", alpha);
     },
 
     getStrokeOpacity: function(alpha) {
-        this.rawNode.getAttributeNS(null, "stroke-opacity");
+	this.rawNode.getAttributeNS(null, "stroke-opacity");
     },
 
     setLineJoin: function(joinType) {
-        if (!joinType) throw new Error('undefined joinType');
-        this.rawNode.setAttributeNS(null, 'stroke-linejoin', joinType);
+	if (!joinType) throw new Error('undefined joinType');
+	this.rawNode.setAttributeNS(null, 'stroke-linejoin', joinType);
     },
 
     setLineCap: function(capType) {
-        if (!capType) throw new Error('undefined capType');
-        this.rawNode.setAttributeNS(null, 'stroke-linecap', capType);
+	if (!capType) throw new Error('undefined capType');
+	this.rawNode.setAttributeNS(null, 'stroke-linecap', capType);
     },
 
     setBounds: function(bounds) { 
-        throw new Error('setBounds unsupported on type ' + this.type());
+	throw new Error('setBounds unsupported on type ' + this.type());
     },
 
     disablePointerEvents: function() {
-        this.rawNode.setAttributeNS(null, "pointer-events", "none");
+	this.rawNode.setAttributeNS(null, "pointer-events", "none");
     },
 
     disableBrowserHandlers: function() {
-        this.rawNode.addEventListener("dragstart", Visual.BrowserHandlerDisabler, true);
-        this.rawNode.addEventListener("selectstart", Visual.BrowserHandlerDisabler, true);
+	this.rawNode.addEventListener("dragstart", Visual.BrowserHandlerDisabler, true);
+	this.rawNode.addEventListener("selectstart", Visual.BrowserHandlerDisabler, true);
     },
 
     getLocalTransform: function() {
-        var impl = this.rawNode.transform.baseVal.consolidate();
-        return new Transform(impl ? impl.matrix : null); // identity if no transform specified
+	var impl = this.rawNode.transform.baseVal.consolidate();
+	return new Transform(impl ? impl.matrix : null); // identity if no transform specified
     }
 
 });
@@ -1949,8 +1966,8 @@ Wrapper.subclass('Visual', {
 Visual.BrowserHandlerDisabler = { 
 
     handleEvent: function(evt) { 
-        evt.preventDefault(); 
-        return false;
+	evt.preventDefault(); 
+	return false;
     }
 
 };
@@ -1966,8 +1983,8 @@ Visual.BrowserHandlerDisabler = {
 // in a fully portable fashion.
 
 /**
- * @class Shape
- */ 
+  * @class Shape
+  */ 
 
 Visual.subclass('Shape', {
 
@@ -1976,41 +1993,41 @@ Visual.subclass('Shape', {
     hasElbowProtrusions: false,
 
     toString: function() {
-        return "a Shape(%s,%s)".format(this.getType(), this.bounds());
+	return "a Shape(%s,%s)".format(this.getType(), this.bounds());
     },
-  
-    initialize: function(fill, strokeWidth, stroke) {
-        
-        if (this.shouldIgnorePointerEvents)
-            this.disablePointerEvents();
-            // this.disableBrowserHandlers();
 
-        if (fill !== undefined)
-            this.setFill(fill && fill.toString());
-        
-        if (strokeWidth !== undefined)
-            this.setStrokeWidth(strokeWidth);
-        
-        if (stroke !== undefined)
-            this.setStroke(stroke);
+    initialize: function(fill, strokeWidth, stroke) {
+
+	if (this.shouldIgnorePointerEvents)
+	    this.disablePointerEvents();
+	// this.disableBrowserHandlers();
+
+	if (fill !== undefined)
+	    this.setFill(fill && fill.toString());
+
+	if (strokeWidth !== undefined)
+	    this.setStrokeWidth(strokeWidth);
+
+	if (stroke !== undefined)
+	    this.setStroke(stroke);
 
     },
 
     applyFunction: function(func,arg) { 
-        func.call(this, arg); 
+	func.call(this, arg); 
     },
-    
+
     toPath: function() {
-        throw new Error('unimplemented');
+	throw new Error('unimplemented');
     }
-   
+
 });
 
 // Default visual attributes for Shapes
 Object.extend(Shape, {
 
     translateVerticesBy: function(vertices, delta) { // utility class method
-        return vertices.invoke('addPt', delta); 
+	return vertices.invoke('addPt', delta); 
     },
     LineJoins: { MITER: "miter", ROUND: "round",  BEVEL: "bevel" },
     LineCaps:  { BUTT: "butt",   ROUND: "round", SQUARE: "square" }
@@ -2018,129 +2035,129 @@ Object.extend(Shape, {
 });
 
 /**
- * @class RectShape
- */ 
+  * @class RectShape
+  */ 
 
 Shape.subclass('RectShape', {
 
     documentation: "Rectangle shape",
 
     initialize: function($super, rect, color, borderWidth, borderColor) {
-        this.rawNode = NodeFactory.create("rect");
-        this.setBounds(rect);
-        $super(color, borderWidth, borderColor);
-        return this;
+	this.rawNode = NodeFactory.create("rect");
+	this.setBounds(rect);
+	$super(color, borderWidth, borderColor);
+	return this;
     },
 
     setBounds: function(r) {
-        var n = this.rawNode;
-        n.setAttributeNS(null, "x", r.x);
-        n.setAttributeNS(null, "y", r.y);
-        n.setAttributeNS(null, "width", Math.max(0, r.width));
-        n.setAttributeNS(null, "height", Math.max(0, r.height));
-        return this;
+	var n = this.rawNode;
+	n.setAttributeNS(null, "x", r.x);
+	n.setAttributeNS(null, "y", r.y);
+	n.setAttributeNS(null, "width", Math.max(0, r.width));
+	n.setAttributeNS(null, "height", Math.max(0, r.height));
+	return this;
     },
-    
+
     toPath: function() {
-        // FIXME account for rounded edges
-        return this.bounds().toPath();
+	// FIXME account for rounded edges
+	return this.bounds().toPath();
     },
-    
+
     bounds: function() {
-        var x = this.rawNode.x.baseVal.value;
-        var y = this.rawNode.y.baseVal.value;
-        var width = this.rawNode.width.baseVal.value;
-        var height = this.rawNode.height.baseVal.value;
-        return new Rectangle(x, y, width, height);
+	var x = this.rawNode.x.baseVal.value;
+	var y = this.rawNode.y.baseVal.value;
+	var width = this.rawNode.width.baseVal.value;
+	var height = this.rawNode.height.baseVal.value;
+	return new Rectangle(x, y, width, height);
     },
-    
+
     containsPoint: function(p) {
-        var x = this.rawNode.x.baseVal.value;
-        var width = this.rawNode.width.baseVal.value;
-        if (!(x <= p.x && p.x <= x + width))
-            return false;
-        var y = this.rawNode.y.baseVal.value;
-        var height = this.rawNode.height.baseVal.value;
-        return y <= p.y && p.y <= y + height;
+	var x = this.rawNode.x.baseVal.value;
+	var width = this.rawNode.width.baseVal.value;
+	if (!(x <= p.x && p.x <= x + width))
+	    return false;
+	var y = this.rawNode.y.baseVal.value;
+	var height = this.rawNode.height.baseVal.value;
+	return y <= p.y && p.y <= y + height;
     },
-    
+
     reshape: function(partName,newPoint, ignored1, ignored2) {
-        var r = this.bounds().withPartNamed(partName, newPoint);
-        this.setBounds(r);
+	var r = this.bounds().withPartNamed(partName, newPoint);
+	this.setBounds(r);
     },
-    
+
     controlPointNear: function(p) {
-        var bnds = this.bounds();
-        return bnds.partNameNear(Rectangle.corners, p, this.controlPointProximity);
+	var bnds = this.bounds();
+	return bnds.partNameNear(Rectangle.corners, p, this.controlPointProximity);
     },
-    
+
     possibleHandleForControlPoint: function(targetMorph,mousePoint,hand) {
-        var partName = this.controlPointNear(mousePoint);
-        if (partName == null) 
-            return null;
-        var loc = this.bounds().partNamed(partName);
-        return new HandleMorph(loc, "rect", hand, targetMorph, partName); 
+	var partName = this.controlPointNear(mousePoint);
+	if (partName == null) 
+	    return null;
+	var loc = this.bounds().partNamed(partName);
+	return new HandleMorph(loc, "rect", hand, targetMorph, partName); 
     },
-    
+
     getBorderRadius: function() {
-        return Converter.parseLength(this.rawNode.getAttributeNS(null, "rx"));
+	return Converter.parseLength(this.rawNode.getAttributeNS(null, "rx"));
     },
-    
+
     roundEdgesBy: function(r) {
-        if (r) {
-            this.rawNode.setAttributeNS(null, "rx", r);
-            this.rawNode.setAttributeNS(null, "ry", r);
-        }
-        return this;
+	if (r) {
+	    this.rawNode.setAttributeNS(null, "rx", r);
+	    this.rawNode.setAttributeNS(null, "ry", r);
+	}
+	return this;
     }
 
 });
 
 /**
- * @class EllipseShape
- */ 
+  * @class EllipseShape
+  */ 
 
 Shape.subclass('EllipseShape', {
 
     initialize: function($super, rect, color, borderWidth, borderColor) {
-        this.rawNode = NodeFactory.create("ellipse");
-        this.setBounds(rect);
-        $super(color, borderWidth, borderColor);
+	this.rawNode = NodeFactory.create("ellipse");
+	this.setBounds(rect);
+	$super(color, borderWidth, borderColor);
     },
 
     setBounds: function(r) {
-        var n = this.rawNode;
-        n.setAttributeNS(null, "cx", r.x + r.width/2);
-        n.setAttributeNS(null, "cy", r.y + r.height/2);
-        n.setAttributeNS(null, "rx", r.width/2);
-        n.setAttributeNS(null, "ry", r.height/2);
-        return this;
+	var n = this.rawNode;
+	n.setAttributeNS(null, "cx", r.x + r.width/2);
+	n.setAttributeNS(null, "cy", r.y + r.height/2);
+	n.setAttributeNS(null, "rx", r.width/2);
+	n.setAttributeNS(null, "ry", r.height/2);
+	return this;
     },
-    
+
     // For ellipses, test if x*x + y*y < r*r
     containsPoint: function(p) {
-        var w = this.rawNode.rx.baseVal.value * 2;
-        var h = this.rawNode.ry.baseVal.value * 2;
-        var c = pt(this.rawNode.cx.baseVal.value, this.rawNode.cy.baseVal.value);
-        var dx = Math.abs(p.x - c.x);
-        var dy = Math.abs(p.y - c.y)*w/h;
-        return (dx*dx + dy*dy) <= (w*w/4) ; 
+	var w = this.rawNode.rx.baseVal.value * 2;
+	var h = this.rawNode.ry.baseVal.value * 2;
+	var c = pt(this.rawNode.cx.baseVal.value, this.rawNode.cy.baseVal.value);
+	var dx = Math.abs(p.x - c.x);
+	var dy = Math.abs(p.y - c.y)*w/h;
+	return (dx*dx + dy*dy) <= (w*w/4) ; 
     },
-    
+
     bounds: function() {
-        //console.log("rawNode " + this.rawNode);
-        var w = this.rawNode.rx.baseVal.value * 2;
-        var h = this.rawNode.ry.baseVal.value * 2; 
-        var x = this.rawNode.cx.baseVal.value - this.rawNode.rx.baseVal.value;
-        var y = this.rawNode.cy.baseVal.value - this.rawNode.ry.baseVal.value;
-        return new Rectangle(x, y, w, h);
+	//console.log("rawNode " + this.rawNode);
+	var w = this.rawNode.rx.baseVal.value * 2;
+	var h = this.rawNode.ry.baseVal.value * 2; 
+	var x = this.rawNode.cx.baseVal.value - this.rawNode.rx.baseVal.value;
+	var y = this.rawNode.cy.baseVal.value - this.rawNode.ry.baseVal.value;
+	return new Rectangle(x, y, w, h);
     }, 
-    
+
     controlPointNear: function(p) {
-        var bnds = this.bounds();
-        return bnds.partNameNear(Rectangle.sides, p, this.controlPointProximity);
+	var bnds = this.bounds();
+	return bnds.partNameNear(Rectangle.sides, p, this.controlPointProximity);
     },
-    
+
     reshape: RectShape.prototype.reshape,
 
     possibleHandleForControlPoint: RectShape.prototype.possibleHandleForControlPoint
@@ -2148,189 +2165,189 @@ Shape.subclass('EllipseShape', {
 });
 
 /**
- * @class PolygonShape
- */ 
+  * @class PolygonShape
+  */ 
 
 Shape.subclass('PolygonShape', {
 
     hasElbowProtrusions: true,
-    
+
     initialize: function($super, vertlist, color, borderWidth, borderColor) {
-        this.rawNode = NodeFactory.create("polygon");
-        this.setVertices(vertlist);
-        $super(color, borderWidth, borderColor);
-        return this;
+	this.rawNode = NodeFactory.create("polygon");
+	this.setVertices(vertlist);
+	$super(color, borderWidth, borderColor);
+	return this;
     },
 
     setVertices: function(vertlist) {
-        if (this.rawNode.points) {
-            this.rawNode.points.clear();
-        }
-        this.rawNode.setAttributeNS(null, "points", vertlist.map(function (p) { return p.x + "," + p.y }).join(' '));
+	if (this.rawNode.points) {
+	    this.rawNode.points.clear();
+	}
+	this.rawNode.setAttributeNS(null, "points", vertlist.map(function (p) { return p.x + "," + p.y }).join(' '));
 	// FIXME: use DOM instead of attributes for the above
-        // vertlist.forEach( function(p) {  this.points.appendItem(p); }, this);
+	// vertlist.forEach( function(p) {  this.points.appendItem(p); }, this);
     },
 
     vertices: function() {
-        var array = [];
-        for (var i = 0; i < this.rawNode.points.numberOfItems; i++) {
-            array.push(Point.ensure(this.rawNode.points.getItem(i)));
-        }
-        return array;
+	var array = [];
+	for (var i = 0; i < this.rawNode.points.numberOfItems; i++) {
+	    array.push(Point.ensure(this.rawNode.points.getItem(i)));
+	}
+	return array;
     },
 
     toString: function() {
-        var pts = this.vertices();
-        return this.rawNode.tagName + "[" + pts + "]";
+	var pts = this.vertices();
+	return this.rawNode.tagName + "[" + pts + "]";
     },
 
     bounds: function() {
-        // FIXME very quick and dirty, consider caching or iterating over this.points
-        var vertices = this.vertices();
-        // Opera has been known not to update the SVGPolygonShape.points property to reflect the SVG points attribute
-        console.assert(vertices.length > 0, 
+	// FIXME very quick and dirty, consider caching or iterating over this.points
+	var vertices = this.vertices();
+	// Opera has been known not to update the SVGPolygonShape.points property to reflect the SVG points attribute
+	console.assert(vertices.length > 0, 
 		       "PolygonShape.bounds: vertices has zero length, " + this.rawNode.points 
 		       + " vs " + this.rawNode.getAttributeNS(null, "points"));
-        return Rectangle.unionPts(vertices);
+	return Rectangle.unionPts(vertices);
     },
 
     reshape: function(partName, newPoint, handle, lastCall) {
-        var ix = partName; // better name -- it's an index into vertices
-        var verts = this.vertices();  // less verbose
-        if (ix < 0) { // negative means insert a vertex
-            ix = -partName;
-            handle.partName = ix; 
-            handle.type = "rect"; // become a regular handle
-            verts.splice(ix, 0, newPoint);
-            this.setVertices(verts);
-            return; 
-        }
-        var closed = verts[0].eqPt(verts[verts.length - 1]);
-        if (closed && ix == 0) {  // and we're changing the shared point (will always be the first)
-            verts[0] = newPoint;  // then change them both
-            verts[verts.length - 1] = newPoint; 
-        } else {
-            verts[ix] = newPoint;
-        }
-        handle.setBorderColor(Color.blue);
-        var howClose = 6;
-        if (verts.length > 2) {
-            // if vertex being moved is close to an adjacent vertex, make handle show it (red)
-            // and if its the last call (mouse up), then merge this with the other vertex
-            if (ix > 0 && verts[ix - 1].dist(newPoint) < howClose) {
-                if (lastCall) { 
-                    verts.splice(ix, 1); if (closed) verts[0] = verts[verts.length - 1]; 
-                } else {
-                    handle.setBorderColor(Color.red);
-                } 
-            }
-                
-            if (ix < verts.length - 1 && verts[ix + 1].dist(newPoint)<howClose) {
-                if (lastCall) { 
-                    verts.splice(ix, 1); 
-                
-                    if (closed) { 
-                        verts[verts.length - 1] = verts[0];
-                    }
- 
-                } else {
-                    handle.setBorderColor(Color.red);
-                } 
-            }
-        }
-        this.setVertices(verts); 
+	var ix = partName; // better name -- it's an index into vertices
+	var verts = this.vertices();  // less verbose
+	if (ix < 0) { // negative means insert a vertex
+	    ix = -partName;
+	    handle.partName = ix; 
+	    handle.type = "rect"; // become a regular handle
+	    verts.splice(ix, 0, newPoint);
+	    this.setVertices(verts);
+	    return; 
+	}
+	var closed = verts[0].eqPt(verts[verts.length - 1]);
+	if (closed && ix == 0) {  // and we're changing the shared point (will always be the first)
+	    verts[0] = newPoint;  // then change them both
+	    verts[verts.length - 1] = newPoint; 
+	} else {
+	    verts[ix] = newPoint;
+	}
+	handle.setBorderColor(Color.blue);
+	var howClose = 6;
+	if (verts.length > 2) {
+	    // if vertex being moved is close to an adjacent vertex, make handle show it (red)
+	    // and if its the last call (mouse up), then merge this with the other vertex
+	    if (ix > 0 && verts[ix - 1].dist(newPoint) < howClose) {
+		if (lastCall) { 
+		    verts.splice(ix, 1); if (closed) verts[0] = verts[verts.length - 1]; 
+		} else {
+		    handle.setBorderColor(Color.red);
+		} 
+	    }
+
+	    if (ix < verts.length - 1 && verts[ix + 1].dist(newPoint)<howClose) {
+		if (lastCall) { 
+		    verts.splice(ix, 1); 
+
+		    if (closed) { 
+			verts[verts.length - 1] = verts[0];
+		    }
+
+		} else {
+		    handle.setBorderColor(Color.red);
+		} 
+	    }
+	}
+	this.setVertices(verts); 
     },
-    
+
     controlPointNear: function(p) {
-        var verts = this.vertices();
+	var verts = this.vertices();
 
-        for (var i = 0; i < verts.length; i++) { // vertices
-            if (verts[i].dist(p) < this.controlPointProximity) 
-                return i; 
-        }
+	for (var i = 0; i < verts.length; i++) { // vertices
+	    if (verts[i].dist(p) < this.controlPointProximity) 
+		return i; 
+	}
 
-        for (var i = 0; i < verts.length - 1; i++) { // midpoints (for add vertex) return - index
-            if (verts[i].midPt(verts[i + 1]).dist(p) < this.controlPointProximity) 
-                return -(i + 1); 
-        }
+	for (var i = 0; i < verts.length - 1; i++) { // midpoints (for add vertex) return - index
+	    if (verts[i].midPt(verts[i + 1]).dist(p) < this.controlPointProximity) 
+		return -(i + 1); 
+	}
 
-        return null; 
+	return null; 
     },
-    
+
     // borrowed from http://local.wasp.uwa.edu.au/~pbourke/geometry/insidepoly/
     containsPoint: function(p) {
-        var counter = 0;
-        var vertices = this.vertices();
-        var p1 = vertices[0];
-        for (var i = 1; i <= vertices.length; i++) {
-            var p2 = vertices[i % vertices.length];
-            if (p.y > Math.min(p1.y, p2.y)) {
-                if (p.y <= Math.max(p1.y, p2.y)) {
-                    if (p.x <= Math.max(p1.x, p2.x)) {
-                        if (p1.y != p2.y) {
-                            var xinters = (p.y-p1.y)*(p2.x-p1.x)/(p2.y-p1.y)+p1.x;
-                            if (p1.x == p2.x || p.x <= xinters)
-                                counter ++;
-                        }
-                    }
-                }
-            }
-            p1 = p2;
-        }
-        
-        if (counter % 2 == 0) {
-            return false;
-        } else {
-            return true;
-        }
+	var counter = 0;
+	var vertices = this.vertices();
+	var p1 = vertices[0];
+	for (var i = 1; i <= vertices.length; i++) {
+	    var p2 = vertices[i % vertices.length];
+	    if (p.y > Math.min(p1.y, p2.y)) {
+		if (p.y <= Math.max(p1.y, p2.y)) {
+		    if (p.x <= Math.max(p1.x, p2.x)) {
+			if (p1.y != p2.y) {
+			    var xinters = (p.y-p1.y)*(p2.x-p1.x)/(p2.y-p1.y)+p1.x;
+			    if (p1.x == p2.x || p.x <= xinters)
+				counter ++;
+			}
+		    }
+		}
+	    }
+	    p1 = p2;
+	}
+
+	if (counter % 2 == 0) {
+	    return false;
+	} else {
+	    return true;
+	}
     },
 
     possibleHandleForControlPoint: function(targetMorph, mousePoint, hand) {
-        var partName = this.controlPointNear(mousePoint);
+	var partName = this.controlPointNear(mousePoint);
 
-        if (partName == null) 
-            return null;
+	if (partName == null) 
+	    return null;
 
-        var vertices = this.vertices();
+	var vertices = this.vertices();
 
-        if (partName >= 0) { 
-            var loc = vertices[partName]; 
-            var shape = "rect"; 
-        } else { 
-            var loc = vertices[-partName].midPt(vertices[-partName-1]); 
-            var shape = "ellipse"; 
-        } 
+	if (partName >= 0) { 
+	    var loc = vertices[partName]; 
+	    var shape = "rect"; 
+	} else { 
+	    var loc = vertices[-partName].midPt(vertices[-partName-1]); 
+	    var shape = "ellipse"; 
+	} 
 
-        return new HandleMorph(loc, shape, hand, targetMorph, partName); 
+	return new HandleMorph(loc, shape, hand, targetMorph, partName); 
     }
 
 });
 
 /**
- * @class PolylineShape
- */ 
+  * @class PolylineShape
+  */ 
 
 Shape.subclass('PolylineShape', {
 
     hasElbowProtrusions: true,
-    
+
     initialize: function($super, vertlist, borderWidth, borderColor) {
-        this.rawNode = NodeFactory.create("polyline");
-        this.setVertices(vertlist);
-        $super(null, borderWidth, borderColor);
+	this.rawNode = NodeFactory.create("polyline");
+	this.setVertices(vertlist);
+	$super(null, borderWidth, borderColor);
     },
-    
+
     containsPoint: function(p) {
-        var howNear = 6;
-        var vertices = this.vertices();
-        for (var i = 1; i < vertices.length; i++) {
-            var pNear = p.nearestPointOnLineBetween(vertices[i-1], vertices[i]);
-            if (pNear.dist(p) < howNear) 
-                return true; 
-        }
-        return false; 
+	var howNear = 6;
+	var vertices = this.vertices();
+	for (var i = 1; i < vertices.length; i++) {
+	    var pNear = p.nearestPointOnLineBetween(vertices[i-1], vertices[i]);
+	    if (pNear.dist(p) < howNear) 
+		return true; 
+	}
+	return false; 
     },
-    
+
     // poorman's traits :)
     bounds: PolygonShape.prototype.bounds,
     vertices: PolygonShape.prototype.vertices,
@@ -2342,78 +2359,78 @@ Shape.subclass('PolylineShape', {
 });
 
 /**
- * @class PathShape
- */ 
+  * @class PathShape
+  */ 
 
 Shape.subclass('PathShape', {
 
     hasElbowProtrusions: true,
-    
-    initialize: function($super, vertlist, color, borderWidth, borderColor) {
-        this.rawNode = NodeFactory.create("path");
-        $super(color, borderWidth, borderColor);
-        if (vertlist) this.setVertices(vertlist);
-        return this;
-    },
-    
-    setVertices: function(vertlist) {
-        // emit SVG path symbol based on point attributes
-        // p==point, i=array index
-        function map2svg(p,i) {
-            var code;
-            if (i==0 || p.type && p.type=="move") {
-                code = "M";
-            } else if (p.type && p.type=="line") {
-                code = "L";
-            } else if (p.type && p.type=="arc" && p.radius) {
-                code = "A" + (p.radius.x || p.radius) + "," +
-                    (p.radius.y || p.radius) + " " + (p.angle || "0") +
-                    " " + (p.mode || "0,1") + " ";
-            } else if (p.type && p.type=="curve" && p.control) {
-               // keep control points relative so translation works
-               code = "Q" + (p.x+p.control.x) + "," + (p.y+p.control.y) + " ";
-            } else {
-               code = "T";  // default - bezier curve with implied control pts
-            }
-            return code + p.x + "," + p.y;
-        }
 
-        var d = vertlist.map(map2svg).join('');
-        // console.log("d=" + d);
-        this.rawNode.setAttributeNS(null, "d", d);
-        this.verticesList = vertlist;
-        delete this.cachedBounds;
+    initialize: function($super, vertlist, color, borderWidth, borderColor) {
+	this.rawNode = NodeFactory.create("path");
+	$super(color, borderWidth, borderColor);
+	if (vertlist) this.setVertices(vertlist);
+	return this;
     },
-    
+
+    setVertices: function(vertlist) {
+	// emit SVG path symbol based on point attributes
+	// p==point, i=array index
+	function map2svg(p,i) {
+	    var code;
+	    if (i==0 || p.type && p.type=="move") {
+		code = "M";
+	    } else if (p.type && p.type=="line") {
+		code = "L";
+	    } else if (p.type && p.type=="arc" && p.radius) {
+		code = "A" + (p.radius.x || p.radius) + "," +
+		    (p.radius.y || p.radius) + " " + (p.angle || "0") +
+		    " " + (p.mode || "0,1") + " ";
+	    } else if (p.type && p.type=="curve" && p.control) {
+		// keep control points relative so translation works
+		code = "Q" + (p.x+p.control.x) + "," + (p.y+p.control.y) + " ";
+	    } else {
+		code = "T";  // default - bezier curve with implied control pts
+	    }
+	    return code + p.x + "," + p.y;
+	}
+
+	var d = vertlist.map(map2svg).join('');
+	// console.log("d=" + d);
+	this.rawNode.setAttributeNS(null, "d", d);
+	this.verticesList = vertlist;
+	delete this.cachedBounds;
+    },
+
     vertices: function() {
-        return this.verticesList;
+	return this.verticesList;
     },
-    
+
     moveTo: function(x, y) {
-        this.rawNode.pathSegList.appendItem(this.rawNode.createSVGPathSegMovetoAbs(x, y));
+	this.rawNode.pathSegList.appendItem(this.rawNode.createSVGPathSegMovetoAbs(x, y));
     },
-    
+
     curveTo: function(x, y) {
-        this.rawNode.pathSegList.appendItem(this.rawNode.createSVGPathSegCurvetoQuadraticSmoothAbs(x, y));
+	this.rawNode.pathSegList.appendItem(this.rawNode.createSVGPathSegCurvetoQuadraticSmoothAbs(x, y));
     },
 
     lineTo: function(x, y) {
-        this.rawNode.pathSegList.appendItem(this.rawNode.createSVGPathSegLinetoAbs(x, y));
+	this.rawNode.pathSegList.appendItem(this.rawNode.createSVGPathSegLinetoAbs(x, y));
     },
 
     close: function() {
-        this.rawNode.pathSegList.appendItem(this.rawNode.createSVGPathSegClosePath());
+	this.rawNode.pathSegList.appendItem(this.rawNode.createSVGPathSegClosePath());
     },
 
     containsPoint: function(p) {
-        return false; // FIXME
+	return false; // FIXME
     },
-    
+
     bounds: function() {
-        if (!this.cachedBounds) {
-            this.cachedBounds = Rectangle.unionPts(this.vertices());
-        }
-        return this.cachedBounds;
+	if (!this.cachedBounds) {
+	    this.cachedBounds = Rectangle.unionPts(this.vertices());
+	}
+	return this.cachedBounds;
     },
 
     // poorman's traits :)
@@ -2427,21 +2444,21 @@ Shape.subclass('PathShape', {
 
 var NodeList = {
     // FIXME these implementations are rather lame
-    
+
     withType: function(type) {
-        return NodeList.become(NodeFactory.create('g'), type);
+	return NodeList.become(NodeFactory.create('g'), type);
     },
-    
+
     become: function(node, type) {
-        node.setAttributeNS(Namespace.LIVELY, "type", type);
-        return node;
+	node.setAttributeNS(Namespace.LIVELY, "type", type);
+	return node;
     },
-    
+
     clear: function(list) {
-        while (list.firstChild) list.removeChild(list.firstChild);
+	while (list.firstChild) list.removeChild(list.firstChild);
     }
-    
-    
+
+
 }
 
 // ===========================================================================
@@ -2449,83 +2466,81 @@ var NodeList = {
 // ===========================================================================
 
 var MouseHandlerForDragging = {
-    
+
     handleMouseEvent: function(evt, targetMorph) {
 
-        var handler = targetMorph[evt.handlerName()];
-        if (evt.type == "MouseDown") evt.hand.setMouseFocus(targetMorph);
-        if (handler == null) console.log("bah, null handler on " + evt.type);
-        handler.call(targetMorph, evt);
-        if (evt.type == "MouseUp") {
-            // if focus changed, then don't cancel it
-            if (evt.hand.mouseFocus === targetMorph) { 
-                evt.hand.setMouseFocus(null);
-            }
-        }
-        return true; 
+	var handler = targetMorph[evt.handlerName()];
+	if (evt.type == "MouseDown") evt.hand.setMouseFocus(targetMorph);
+	if (handler == null) console.log("bah, null handler on " + evt.type);
+	handler.call(targetMorph, evt);
+	if (evt.type == "MouseUp") {
+	    // if focus changed, then don't cancel it
+	    if (evt.hand.mouseFocus === targetMorph) { 
+		evt.hand.setMouseFocus(null);
+	    }
+	}
+	return true; 
     },
-    
+
     handlesMouseDown: function(evt) { 
-        return false;
+	return false;
     }
 
 };
 
 /**
- * @class Exporter: Implementation class for morph serialization
- */
+  * @class Exporter: Implementation class for morph serialization
+  */
 
 Object.subclass('Exporter', {
 
     rootMorph: null,
-    
+
     initialize: function(rootMorph) {
-        this.rootMorph = rootMorph;
+	this.rootMorph = rootMorph;
 	if (!(rootMorph instanceof Morph)) 
 	    console.log("wierd, root morph is " + rootMorph);
     },
-    
+
     extendForSerialization: function() {
 	// decorate with all the extra needed to serialize correctly. Return the additional nodes, to be removed 
 	var helperNodes = [];
-	var rootModel = this.rootMorph.getModel && this.rootMorph.getModel();
-	
+	var simpleModels = []; // models are identified by their index in this array
 
 
-        this.rootMorph.withAllSubmorphsDo(function() { 
-	    this.prepareForSerialization(helperNodes, rootModel);
+	this.rootMorph.withAllSubmorphsDo(function() { 
+	    this.prepareForSerialization(helperNodes, simpleModels);
+	    // some formatting
 	    var nl = NodeFactory.createText("\n");
 	    this.rawNode.parentNode.insertBefore(nl, this.rawNode);
 	    helperNodes.push(nl);
 	});
 
-	// not robust, not dealing with models not defined on this
-        var modelNode = rootModel && rootModel.toMarkup();
-        if (modelNode) {
-	    helperNodes.push(modelNode);
-            this.rootMorph.addNonMorph(modelNode);
-        }
+
+	for (var i = 0; i < simpleModels.length; i++) {
+
+	}
 	return helperNodes;
     },
 
     removeHelperNodes: function(helperNodes) {
-        for (var i = 0; i < helperNodes.length; i++) {
+	for (var i = 0; i < helperNodes.length; i++) {
 	    var n = helperNodes[i];
-            n.parentNode.removeChild(n);
-        }
+	    n.parentNode.removeChild(n);
+	}
     },
 
     serialize: function() {
-        // model is inserted as part of the root morph.
+	// model is inserted as part of the root morph.
 	var helpers = this.extendForSerialization();
-        var result = this.rootMorph.toMarkupString();
+	var result = this.rootMorph.toMarkupString();
 	this.removeHelperNodes(helpers);
-        return result;
+	return result;
     },
-    
+
     shrinkWrapToUrl: function(url) {
 	var helpers = this.extendForSerialization();
-	
+
 	var newDoc = Exporter.getBaseDocument();
 	// FIXME deal with subdirectories, rewrite the base doc and change xlink:href for scripts
 	var container = Loader.newShrinkWrapContainer(newDoc);
@@ -2541,15 +2556,15 @@ Object.subclass('Exporter', {
 Object.extend(Exporter, {
 
     stringify: function(node) {
-        return node ? new XMLSerializer().serializeToString(node) : null;
+	return node ? new XMLSerializer().serializeToString(node) : null;
     },
 
     getBaseDocument: function() {
-        var req = new NetRequest().beSync();
-        req.get(new URL(Global.location.toString()));
+	var req = new NetRequest().beSync();
+	req.get(new URL(Global.location.toString()));
 	var status = req.getStatus().status;
-        if (status < 200 && status >= 300) {
-            console.log("failure retrieving  " + URL.source + ", status " + req.getStatus());
+	if (status < 200 && status >= 300) {
+	    console.log("failure retrieving  " + URL.source + ", status " + req.getStatus());
 	    return null;
 	} else {
 	    return req.getResponseXML();
@@ -2564,11 +2579,11 @@ Object.extend(Exporter, {
 	}
 	var url = new URL(window.location.toString()).withFilename(filename);
 	var status = new Exporter(morph).shrinkWrapToUrl(url);
-        if (status.status >= 200 && status.status < 300) {
-            console.log("success publishing world at " + url + ", status " + status[3]);
+	if (status.status >= 200 && status.status < 300) {
+	    console.log("success publishing world at " + url + ", status " + status[3]);
 	    return url;
 	} else {
-            WorldMorph.current().alert("failure publishing world at " + url + ", status " + status[3]);
+	    WorldMorph.current().alert("failure publishing world at " + url + ", status " + status[3]);
 	}
 	return null;
     }
@@ -2577,181 +2592,202 @@ Object.extend(Exporter, {
 });
 
 /**
- * @class Copier
- */
+  * @class Copier
+  */
 
 Object.subclass('Copier', {
 
     morphMap: null,
 
     toString: function() { 
-        return "#<Copier>"; 
+	return "#<Copier>"; 
     },
 
     initialize: function() {
-        this.morphMap = new Hash();
+	this.morphMap = new Hash();
     },
 
     addMapping: function(oldId, newMorph) {
-        this.morphMap.set(oldId.toString(), newMorph); // force strings just in case
+	this.morphMap.set(oldId.toString(), newMorph); // force strings just in case
     },
-    
+
     lookupMorph: function(oldId) {
-        var result = this.morphMap.get(oldId.toString());
-        if (!result) console.log('no mapping found for oldId %s', oldId);
-        return result;
+	var result = this.morphMap.get(oldId.toString());
+	if (!result) console.log('no mapping found for oldId %s', oldId);
+	return result;
     }
-    
+
 }); 
 
 Copier.marker = Object.extend(new Copier(), {
-    
+
     addMapping: function() { },
 
     lookupMorph: function() { 
-        return null; 
+	return null; 
     }
 
 });
 
 /**
- * @class Importer
- */
+  * @class Importer
+  */
 
 Copier.subclass('Importer', {
 
     documentation: "Implementation class for morph de-serialization",
 
     toString: function() {
-        return "#<Importer>";
+	return "#<Importer>";
     },
 
     initialize: function($super) {
-        $super();
-        this.scripts = [];
+	$super();
+	this.scripts = [];
     },
 
     addScripts: function(array) {
-        if (array) this.scripts = this.scripts.concat(array); 
+	if (array) this.scripts = this.scripts.concat(array); 
     },
 
     startScripts: function(world) {
-        console.log("start scripts %s in %s", this.scripts, world);
-        this.scripts.each(function(s) { s.start(world); });
+	console.log("start scripts %s in %s", this.scripts, world);
+	this.scripts.each(function(s) { s.start(world); });
     },
-    
+
     importFromNode: function(rawNode) {
-        ///console.log('making morph from %s %s', node, node.getAttributeNS(Namespace.LIVELY, "type"));
-        // call reflectively b/c 'this' is not a Visual yet. 
-        var morphTypeName = rawNode.getAttributeNS(Namespace.LIVELY, "type");
+	///console.log('making morph from %s %s', node, node.getAttributeNS(Namespace.LIVELY, "type"));
+	// call reflectively b/c 'this' is not a Visual yet. 
+	var morphTypeName = rawNode.getAttributeNS(Namespace.LIVELY, "type");
 
-        if (!morphTypeName || !Global[morphTypeName]) {
-            throw new Error("node %s (parent %s) cannot be a morph of %s".format(rawNode.tagName, 
-                            rawNode.parentNode, morphTypeName));
-        }
+	if (!morphTypeName || !Global[morphTypeName]) {
+	    throw new Error("node %s (parent %s) cannot be a morph of %s".format(rawNode.tagName, 
+										 rawNode.parentNode, morphTypeName));
+	}
 
-        try {
-            return new Global[morphTypeName](this, rawNode);
-        } catch (er) {
-            console.log("%s instantiating type %s from node %s", er, 
+	try {
+	    return new Global[morphTypeName](this, rawNode);
+	} catch (er) {
+	    console.log("%s instantiating type %s from node %s", er, 
 			morphTypeName, Exporter.stringify(rawNode));
-            throw er;
-        }
+	    throw er;
+	}
     },
-    
+
 
     importFromString: function(string) {
-        return this.importFromNode(this.parse(string));
+	return this.importFromNode(this.parse(string));
     },
 
     parse: function(string) {
-        var parser = new DOMParser();
-        var xml = parser.parseFromString('<?xml version="1.0" standalone="no"?> ' + string, "text/xml");
-        return document.adoptNode(xml.documentElement);
+	var parser = new DOMParser();
+	var xml = parser.parseFromString('<?xml version="1.0" standalone="no"?> ' + string, "text/xml");
+	return document.adoptNode(xml.documentElement);
     },
 
     importFromContainer: function(container) {
-        var morphs = [];
-        for (var node = container.firstChild; node != null; node = node.nextSibling) {
+	var morphs = [];
+	for (var node = container.firstChild; node != null; node = node.nextSibling) {
 	    // console.log("found node " + Exporter.stringify(node));
 	    if (node.localName != "g")  continue;
 	    morphs.push(this.importFromNode(node.ownerDocument === Global.document ? 
 					    node : Global.document.adoptNode(node.cloneNode(true))));
 	}
-        return morphs;
+	return morphs;
     },
 
     importWorldFromContainer: function(container, world) {
 	var morphs = this.importFromContainer(container);
 	if (morphs[0]) {
-            if (morphs[0] instanceof WorldMorph && morphs.length == 1) {
-                world = morphs[0];
-                world.itsCanvas = Canvas;
+	    if (morphs[0] instanceof WorldMorph && morphs.length == 1) {
+		world = morphs[0];
+		world.itsCanvas = Canvas;
 		(morphs.length > 1) && console.log("more than one top level morph following a WorldMorph, ignoring remaining morphs");
-            } else {
+	    } else {
 		// no world, create one and add all the shrinkwrapped morphs to it.
 		world = world || new WorldMorph(Canvas);
 		for (var i = 0; i < morphs.length; i++)
 		    world.addMorph(morphs[i]);
-            }
+	    }
 	    try {
 		this.startScripts(world);
 	    } catch (er) {
 		console.log("scripts failed: " + er);
 	    }
-        }
+	}
 	return world;
     },
 
-
-    importModelFrom: function(ptree) {
-        var model = new SimpleModel();
-        for (var node = ptree.firstChild; node != null; node = node.nextSibling) {
-            switch (node.localName) {
-            case "dependent":
-                var oldId = node.getAttributeNS(Namespace.LIVELY, "ref");
-                var dependent = this.lookupMorph(oldId);
-                if (!dependent)  {
-                    console.warn('dep %s not found', oldId);
-                    continue; 
-                }
-                dependent.modelPlug.model = model;
-                model.addDependent(dependent);
-                break;
-            case "variable":
-                var name = node.getAttributeNS(Namespace.LIVELY, "name");
-                var value = node.textContent;
-                if (value) {
-                    value = value.evalJSON();
-                }
-                model.addVariable(name, value);
-                break;
-            default:
-                console.log('got unexpected node %s %s', node.tagName, node); 
-            }
-        }
-
-        console.log('restored model %s', model);
-        return model;
-    }
     
+    importModelFrom: function(ptree) {
+	var model = new SimpleModel();
+	var dependentViews = [];
+	for (var node = ptree.firstChild; node != null; node = node.nextSibling) {
+	    switch (node.localName) {
+	    case "dependent":
+		var oldId = node.getAttributeNS(Namespace.LIVELY, "ref");
+		var dependent = this.lookupMorph(oldId);
+		if (!dependent)  {
+		    console.warn('dep %s not found', oldId);
+		    continue; 
+		}
+		dependent.modelPlug.model = model;
+		model.addDependent(dependent);
+		break;
+
+	    case "dependentView":
+		dependentViews.push(node);
+		break;
+		
+	    case "variable":
+		var name = node.getAttributeNS(Namespace.LIVELY, "name");
+		var value = node.textContent;
+		if (value) {
+		    value = value.evalJSON();
+		}
+		model.addVariable(name, value);
+		break;
+	    default:
+		console.log('got unexpected node %s %s', node.tagName, node); 
+	    }
+	}
+	
+	for (var i = 0; i < dependentViews.length; i++) {
+	    var dep = dependentViews[i];
+	    var type = dep.getAttributeNS(Namespace.LIVELY, "type");
+	    if (type && Global[type]) {
+		var plug = new ModelPlug(this, dep.firstChild);
+		plug.model = model;
+		try {
+		    var dependent = new Global[type](this, plug);
+		    console.log("deserialized dependent " + dependent + " with model " + model);
+		} catch (er) {
+		    alert("problem instantiating " + type);
+		}
+	    }
+	}
+	
+	console.log('restored model %s', model);
+	return model;
+    }
+
 });
 
 Importer.marker = Object.extend(new Importer(), {
-    
+
     addMapping: function() { },
     lookupMorph: function() { 
-        return null; 
+	return null; 
     },
     addScripts: function() { }
 
 });
 
 /**
- * @class Morph
- * Implements the common functionality inherited by 
- * all the morphs. 
- */ 
+  * @class Morph
+  * Implements the common functionality inherited by 
+  * all the morphs. 
+  */ 
 
 Visual.subclass("Morph", {
 
@@ -2779,120 +2815,120 @@ Visual.subclass("Morph", {
     suppressBalloonHelp: Config.suppressBalloonHelp,
 
     nextNavigableSibling: null, // keyboard navigation
-    
+
     internalInitialize: function(rawNode, transform) {
-        this.rawNode = rawNode;
-        this.submorphs = [];
-        this.owner = null;
-        this.setPersistentType(this.getType());
+	this.rawNode = rawNode;
+	this.submorphs = [];
+	this.owner = null;
+	this.setPersistentType(this.getType());
 	this.setId(this.newMorphId());
     },
 
     initialize: function(initialBounds, shapeType) {
-        //console.log('initializing morph %s %s', initialBounds, shapeType);
-        this.internalInitialize(NodeFactory.create("g"));
-        this.pvtSetTransform(new Similitude(this.defaultOrigin(initialBounds, shapeType)));
+	//console.log('initializing morph %s %s', initialBounds, shapeType);
+	this.internalInitialize(NodeFactory.create("g"));
+	this.pvtSetTransform(new Similitude(this.defaultOrigin(initialBounds, shapeType)));
 
-        this.initializePersistentState(initialBounds, shapeType);
+	this.initializePersistentState(initialBounds, shapeType);
 
-        this.initializeTransientState(initialBounds);
-        this.disableBrowserHandlers();        
+	this.initializeTransientState(initialBounds);
+	this.disableBrowserHandlers();        
     },
 
     deserialize: function(importer, rawNode) {
 
-        // FIXME what if id is not unique?
-        importer.addMapping(rawNode.getAttribute("id"), this); 
-        this.internalInitialize(rawNode);
-        this.pvtSetTransform(this.getLocalTransform());
+	// FIXME what if id is not unique?
+	importer.addMapping(rawNode.getAttribute("id"), this); 
+	this.internalInitialize(rawNode);
+	this.pvtSetTransform(this.getLocalTransform());
 
-        this.restoreFromSubnodes(importer);
-        this.restorePersistentState(importer);    
+	this.restoreFromSubnodes(importer);
+	this.restorePersistentState(importer);    
 
-        this.initializeTransientState(null);
+	this.initializeTransientState(null);
 
-        this.disableBrowserHandlers();        
+	this.disableBrowserHandlers();        
 
-        // collect scripts
-        if (this.activeScripts) importer.addScripts(this.activeScripts);
+	// collect scripts
+	if (this.activeScripts) importer.addScripts(this.activeScripts);
     },
 
     copyFrom: function(copier, other) {
-        this.internalInitialize(NodeFactory.create("g"));
-        this.pvtSetTransform(this.getLocalTransform());
+	this.internalInitialize(NodeFactory.create("g"));
+	this.pvtSetTransform(this.getLocalTransform());
 
-        this.initializePersistentState(pt(0,0).asRectangle(), "rect");
+	this.initializePersistentState(pt(0,0).asRectangle(), "rect");
 
-        if (other.hasSubmorphs()) { // deep copy of submorphs
-            other.submorphs.each(function(m) { 
-                var copy = m.copy(copier);
-                copier.addMapping(m.id(), copy);
-                copy.owner = null;  // Makes correct transfer of transform in next addMorph
-                this.addMorph(copy);
-                //this.internalAddMorph(copy, false);
-            }.bind(this));
-        }
+	if (other.hasSubmorphs()) { // deep copy of submorphs
+	    other.submorphs.each(function(m) { 
+		var copy = m.copy(copier);
+		copier.addMapping(m.id(), copy);
+		copy.owner = null;  // Makes correct transfer of transform in next addMorph
+		this.addMorph(copy);
+		//this.internalAddMorph(copy, false);
+	    }.bind(this));
+	}
 
-        for (var p in other) {
-            if (!(other[p] instanceof Function) 
-                && other.hasOwnProperty(p) 
-                && !this.noShallowCopyProperties.include(p)) {
-                this[p] = other[p];
-                if (this[p] instanceof Morph && p != "owner") {
-                    var replacement = copier.lookupMorph(other[p].id());
-                    console.log("found replacement " + replacement + " for field " + p);
-                    if (replacement) {
-                        this[p] = replacement;
-                    }
-                    // an instance field points to a submorph, so copy
-                    // should point to a copy of the submorph
-                } else if (this[p] instanceof Model) {
-                    this[p] = this[p].copy(copier);
-                }
-            }
-        } // shallow copy by default
+	for (var p in other) {
+	    if (!(other[p] instanceof Function) 
+		&& other.hasOwnProperty(p) 
+		&& !this.noShallowCopyProperties.include(p)) {
+		this[p] = other[p];
+		if (this[p] instanceof Morph && p != "owner") {
+		    var replacement = copier.lookupMorph(other[p].id());
+		    // console.log("found replacement " + replacement + " for field " + p);
+		    if (replacement) {
+			this[p] = replacement;
+		    }
+		    // an instance field points to a submorph, so copy
+		    // should point to a copy of the submorph
+		} else if (this[p] instanceof Model) {
+		    this[p] = this[p].copy(copier);
+		}
+	    }
+	} // shallow copy by default
 
-        this.setShape(other.shape.copy());    
-        this.origin = other.origin.copy();
+	this.setShape(other.shape.copy());    
+	this.origin = other.origin.copy();
 
-        if (other.cachedTransform) { 
-            this.cachedTransform = other.cachedTransform.copy();
-        } 
-	
-        if (other.defs) {
-            this.restoreDefs(copier, other.defs.cloneNode(true));
-        }
+	if (other.cachedTransform) { 
+	    this.cachedTransform = other.cachedTransform.copy();
+	} 
 
-        if (other.clipPath) {
-            console.log('other clipPath is ' + other.clipPath);
-            this.clipToShape();
-            console.log("copy: optimistically assuming that other (%s) is clipped to shape", other);
-        }
-        
-        this.initializeTransientState(null);
+	if (other.defs) {
+	    this.restoreDefs(copier, other.defs.cloneNode(true));
+	}
 
-        if (other.activeScripts != null) { 
-            for (var i = 0; i < other.activeScripts.length; i++) {
-                var a = other.activeScripts[i];
-                // Copy all reflexive scripts (messages to self)
-                if (a.actor === other) {
-                    this.startStepping(a.stepTime, a.scriptName, a.argIfAny);
-                    // Note -- may want to startStepping other as well so they are sync'd
-                }
-            }
-        } 
+	if (other.clipPath) {
+	    console.log('other clipPath is ' + other.clipPath);
+	    this.clipToShape();
+	    console.log("copy: optimistically assuming that other (%s) is clipped to shape", other);
+	}
 
-        this.layoutChanged();
+	this.initializeTransientState(null);
 
-        this.disableBrowserHandlers(); 
+	if (other.activeScripts != null) { 
+	    for (var i = 0; i < other.activeScripts.length; i++) {
+		var a = other.activeScripts[i];
+		// Copy all reflexive scripts (messages to self)
+		if (a.actor === other) {
+		    this.startStepping(a.stepTime, a.scriptName, a.argIfAny);
+		    // Note -- may want to startStepping other as well so they are sync'd
+		}
+	    }
+	} 
 
-        return this; 
+	this.layoutChanged();
+
+	this.disableBrowserHandlers(); 
+
+	return this; 
     },
 
     restorePersistentState: function(importer) {
-        var shouldDisable = this.rawNode.getAttributeNS(Namespace.LIVELY, "disable-mouse-events");
-        if (shouldDisable) this.ignoreEvents();
-        return; // override in subclasses
+	var shouldDisable = this.rawNode.getAttributeNS(Namespace.LIVELY, "disable-mouse-events");
+	if (shouldDisable) this.ignoreEvents();
+	return; // override in subclasses
     },
 
     restoreDefs: function(importer, originalDefs) {
@@ -2901,221 +2937,231 @@ Visual.subclass("Morph", {
 		gradient.setId(Gradient.deriveId(owner.id()));
 		if (owner.shape) {
 		    var myFill = owner.shape.getFill();
-                    if (myFill)
-                        owner.shape.setFill(gradient.uri());
-                    else console.warn('myFill undefined on %s', owner);
+		    if (myFill)
+			owner.shape.setFill(gradient.uri());
+		    else console.warn('myFill undefined on %s', owner);
 		} else console.warn("cannot set fill %s (yet?), no shape...", gradient.id());
 		return gradient;
 	    }
-	    
-            switch (def.tagName) {
-            case "clipPath":
-                if (!this.rawNode.getAttributeNS(null, 'clip-path'))
+
+	    switch (def.tagName) {
+	    case "clipPath":
+		if (!this.rawNode.getAttributeNS(null, 'clip-path'))
 		    console.log('myClip is undefined on %s', this); 
 		if (this.clipPath) throw new Error("how come clipPath is set to " + this.clipPath);
 		this.clipPath = new ClipPath(Importer.marker, def);
 		this.clipPath.setId(ClipPath.deriveId(this.id()));
-                this.rawNode.setAttributeNS(null, 'clip-path', this.clipPath.uri());
+		this.rawNode.setAttributeNS(null, 'clip-path', this.clipPath.uri());
 		this.addWrapperToDefs(this.clipPath);
-                break;
-            case "linearGradient":
+		break;
+	    case "linearGradient":
 		this.fill = this.addWrapperToDefs(applyGradient(new LinearGradient(Importer.marker, def), this));
 		break;
-            case "radialGradient": // FIXME gradients can be used on strokes too
+	    case "radialGradient": // FIXME gradients can be used on strokes too
 		this.fill = this.addWrapperToDefs(applyGradient(new RadialGradient(Importer.marker, def), this));
 		this.addWrapperToDefs(this.fill);
-                break;
+		break;
 	    case "g":
 		this.restoreFromSubnode(importer, def);
 		break;
-            default:
-                console.warn('unknown def %s', def);
-            }
-        }
+	    default:
+		console.warn('unknown def %s', def);
+	    }
+	}
     },
 
     restoreFromSubnodes: function(importer) {
-        //  wade through the children
-        var children = [];
+	//  wade through the children
+	var children = [];
 	var origDefs;
-        for (var desc = this.rawNode.firstChild; desc != null; desc = desc.nextSibling) {
+	for (var desc = this.rawNode.firstChild; desc != null; desc = desc.nextSibling) {
 	    if (desc.nodeType == Node.TEXT_NODE || desc.nodeType == Node.COMMENT_NODE)
 		continue; // ignore whitespace and maybe other things
 	    if (desc.localName == "defs") {
 		origDefs = desc;
 		continue;
 	    } 
-            var type = desc.getAttributeNS(Namespace.LIVELY, "type");
-            // depth first traversal
+	    var type = desc.getAttributeNS(Namespace.LIVELY, "type");
+	    // depth first traversal
 	    if (type && type != "Selection" && type != "FocusHalo") { // FIXME remove the conditiona
-                var morph = importer.importFromNode(desc);
-                this.submorphs.push(morph); 
-                morph.owner = this;
-            } else {
-                children.push(desc);
-            }
-        }
-	
+		var morph = importer.importFromNode(desc);
+		this.submorphs.push(morph); 
+		morph.owner = this;
+	    } else {
+		children.push(desc);
+	    }
+	}
+
 	if (origDefs) 
 	    origDefs.parentNode.removeChild(origDefs);
 
-        var modelNode = null;
+	var modelNode = null;
 	var helperNodes = [];
-	
-        for (var i = 0; i < children.length; i++) {
-            var node = children[i];
-            switch (node.localName) {
-            case "ellipse":
-                this.shape = new EllipseShape(importer, node);
-                break;
-            case "rect":
-                this.shape = new RectShape(importer, node);
-                break;
-            case "polyline":
-                this.shape = new PolylineShape(importer, node);
-                break;
-            case "polygon":
-                this.shape = new PolygonShape(importer, node);
-                break;
-            case "defs": 
+
+	for (var i = 0; i < children.length; i++) {
+	    var node = children[i];
+	    switch (node.localName) {
+	    case "ellipse":
+		this.shape = new EllipseShape(importer, node);
+		break;
+	    case "rect":
+		this.shape = new RectShape(importer, node);
+		break;
+	    case "polyline":
+		this.shape = new PolylineShape(importer, node);
+		break;
+	    case "polygon":
+		this.shape = new PolygonShape(importer, node);
+		break;
+	    case "defs": 
 		throw new Error();
-            case "g": {
-                this.restoreFromSubnode(importer, node);
-                break;
-            }
-            // nodes from the Lively namespace
-            case "action": {
-                var a = new SchedulableAction(importer, node);
-                a.actor = this;
-                this.addActiveScript(a);
-                // console.log('deserialized script ' + a);
-                // don't start the action until morph fully constructed
-                break;
-            }
-            case "model": {
-                if (modelNode) console.warn("%s already has modelNode %s", this, modelNode);
-                modelNode = node;
+	    case "g": {
+		this.restoreFromSubnode(importer, node);
+		break;
+	    }
+		// nodes from the Lively namespace
+	    case "action": {
+		var a = new SchedulableAction(importer, node);
+		a.actor = this;
+		this.addActiveScript(a);
+		// console.log('deserialized script ' + a);
+		// don't start the action until morph fully constructed
+		break;
+	    }
+	    case "model": {
+		if (modelNode) console.warn("%s already has modelNode %s", this, modelNode);
+		modelNode = node;
 		// currently model node is not stored.
 		helperNodes.push(node);
-                // postpone hooking up model until all the morphs are reconstructed
-                console.info("found modelNode %s", Exporter.stringify(node));
-                break;
-            } 
-            case "modelPlug": {
-                this.modelPlug = new ModelPlug(importer, node);
+		// postpone hooking up model until all the morphs are reconstructed
+		console.info("found modelNode %s", Exporter.stringify(node));
+		break;
+	    } 
+	    case "modelPlug": {
+		this.modelPlug = new ModelPlug(importer, node);
 		helperNodes.push(node);
-                // console.info("%s reconstructed plug %s", this, this.modelPlug);
-                break;
-            } 
-            case "field": {
-                console.log("found field " + Exporter.stringify(node));
+		// console.info("%s reconstructed plug %s", this, this.modelPlug);
+		break;
+	    } 
+	    case "field": {
+		// console.log("found field " + Exporter.stringify(node));
 		helperNodes.push(node);
-                var name = node.getAttributeNS(Namespace.LIVELY, "name");
-                var ref = node.getAttributeNS(Namespace.LIVELY, "ref");
-                if (name) {
-                    var found = this[name] = importer.lookupMorph(ref);
-                    if (!found) {
-                        console.warn("no value found for field %s ref %s", name, ref);
-                    } else {
-                        //node.parentNode.removeChild(node);
-                        console.log("found " + name + "=" + found + "and assigned to " + this.id());
-                    }
-                }
-                break;
-            }
-            default: {
-                if (node.nodeName == '#text') {
-                    console.log('text tag name %s', node.tagName);
-                    // whitespace, ignore
-                } else if (!this.restoreFromSubnode(importer, node)) {
+		var name = node.getAttributeNS(Namespace.LIVELY, "name");
+		var ref = node.getAttributeNS(Namespace.LIVELY, "ref");
+		if (name) {
+		    var found = this[name] = importer.lookupMorph(ref);
+		    if (!found) {
+			console.warn("no value found for field %s ref %s", name, ref);
+		    } else {
+			//node.parentNode.removeChild(node);
+			// console.log("found " + name + "=" + found + "and assigned to " + this.id());
+		    }
+		}
+		break;
+	    }
+	    default: {
+		if (node.nodeName == '#text') {
+		    console.log('text tag name %s', node.tagName);
+		    // whitespace, ignore
+		} else if (!this.restoreFromSubnode(importer, node)) {
 		    console.warn('cannot handle node %s, %s', node.tagName, node.textContent);
 		}
-            }
-            }
-        } // end for
-	
+	    }
+	    }
+	} // end for
+
 	if (origDefs) { 
 	    this.restoreDefs(importer, origDefs);
 	}
-	
-        if (modelNode) {
+
+	if (modelNode) {
 	    console.log("importing model");
-            importer.importModelFrom(modelNode);
-        }
+	    importer.importModelFrom(modelNode);
+	}
 
 	for (var i = 0; i < helperNodes.length; i++) {
 	    var n = helperNodes[i];
 	    n.parentNode.removeChild(n);
 	}
     },
-    
+
     restoreFromSubnode: function(importer, node) { // return true if the elt was handled
 	if (node.nodeName == '#text') {
-            console.log('text tag name %s', node.tagName);
+	    console.log('text tag name %s', node.tagName);
 	    return true;
 	} else {        
 	    var type = node.getAttributeNS(Namespace.LIVELY, "type");
-            switch (type) {
-            case "FocusHalo":
+	    switch (type) {
+	    case "FocusHalo":
 		this.rawNode.removeChild(node);
 		return true;
-            default:
+	    default:
 		return false;
-            }
+	    }
 	}
     },
-    
+
     initializePersistentState: function(initialBounds /*:Rectangle*/, shapeType/*:String*/) {
 
-        // a rect shape by default, will change later
-        switch (shapeType) {
-        case "ellipse":
-            this.shape = new EllipseShape(initialBounds.translatedBy(this.origin.negated()),
+	// a rect shape by default, will change later
+	switch (shapeType) {
+	case "ellipse":
+	    this.shape = new EllipseShape(initialBounds.translatedBy(this.origin.negated()),
 					  this.fill, this.borderWidth, this.borderColor);
-            break;
-        default:
-            // polygons and polylines are set explicitly later
-            this.shape = new RectShape(initialBounds.translatedBy(this.origin.negated()),
+	    break;
+	default:
+	    // polygons and polylines are set explicitly later
+	    this.shape = new RectShape(initialBounds.translatedBy(this.origin.negated()),
 				       this.fill, this.borderWidth, this.borderColor);
-            break;
-        }
+	    break;
+	}
 	this.rawNode.appendChild(this.shape.rawNode);
-        return this;
+	return this;
     },
-    
+
     // setup various things 
     initializeTransientState: function(initialBounds) { 
-        this.fullBounds = initialBounds; // a Rectangle in owner coordinates
-        // this includes the shape as well as any submorphs
-        // cached here and lazily computed by bounds(); invalidated by layoutChanged()
-    
-        // this.created = false; // exists on server now
-        // some of this stuff may become persistent
+	this.fullBounds = initialBounds; // a Rectangle in owner coordinates
+	// this includes the shape as well as any submorphs
+	// cached here and lazily computed by bounds(); invalidated by layoutChanged()
+
+	// this.created = false; // exists on server now
+	// some of this stuff may become persistent
     },
-    
-    prepareForSerialization: function(extraNodes, rootModel) {
-	if (this.modelPlug) { 
-	    if (this.modelPlug.model === rootModel) {
-		var plug = this.modelPlug.persist();
-		this.addNonMorph(plug);
-		extraNodes.push(plug);
-	    } else {
-		console.log("losing nested model " + this.modelPlug);
+
+
+    pvtSerializeModel: function(extraNodes, simpleModels) {
+	var model = this.getModel();
+	if (!(model instanceof SimpleModel)) 
+	    return;
+
+	var index = simpleModels.indexOf(model);
+	if (index < 0) { // not seen before, serialize model
+	    
+	    index = simpleModels.length;
+	    console.log("serializing model " + index);
+	    var modelNode = model.toMarkup(index);
+	    simpleModels.push(model);
+	    modelNode.setAttribute("id", "model_" + index); 
+	    
+	    extraNodes.push(this.addNonMorph(modelNode));
+	}
+	extraNodes.push(this.addNonMorph(this.getModelPlug().persist(index)));
+
+    },
+
+    prepareForSerialization: function(extraNodes, simpleModels) {
+	this.pvtSerializeModel(extraNodes, simpleModels);
+	for (var prop in this) {
+	    var m = this[prop];
+	    if (m instanceof Morph) {
+		if (m === this.owner) 
+		    continue; // we'll deal manually
+		// console.log("serializing field name=" + prop + ",ref=" + m.id());
+		var desc = NodeFactory.createNS(Namespace.LIVELY, "field", {name: prop, ref: m.id()});
+		extraNodes.push(this.addNonMorph(desc));
 	    }
-        }
-	
-        for (var prop in this) {
-            if (prop == 'owner') // we'll deal manually
-                continue;
-            var m = this[prop];
-            if (m instanceof Morph) {
-		console.log("serializing field name=" + prop + ",ref=" + m.id());
-                var desc = this.addNonMorph(NodeFactory.createNS(Namespace.LIVELY, "field"));
-                desc.setAttributeNS(Namespace.LIVELY, "name", prop);
-                desc.setAttributeNS(Namespace.LIVELY, "ref", m.id());
-                extraNodes.push(desc);
-            }
-        }
+	}
     },
 
     newMorphId: (function() {
@@ -3124,346 +3170,346 @@ Visual.subclass("Morph", {
 	    return ++ morphCounter;
 	}
     })()
-    
+
 });
 
 // Functions for change management
 Object.extend(Morph, {
-    
+
     // this function creates an advice function that ensures that the mutation is properly recorded
     onChange: function(fieldName) {
-        return function(proceed, newValue) {
-            var result = proceed(newValue);
-            this.recordChange(fieldName);
-            this.changed(); 
-            return result;
-        }
+	return function(proceed, newValue) {
+	    var result = proceed(newValue);
+	    this.recordChange(fieldName);
+	    this.changed(); 
+	    return result;
+	}
     },
 
     onLayoutChange: function(fieldName) { 
-        return function(/* arguments*/) {
-            var priorExtent = this.innerBounds().extent();
-            this.changed();
-            var args = $A(arguments);
-            var proceed = args.shift();
-            var result = proceed.apply(this, args);
-            this.recordChange(fieldName);
-            this.layoutChanged(priorExtent);
-            this.changed(); 
-            return result;
-        }
+	return function(/* arguments*/) {
+	    var priorExtent = this.innerBounds().extent();
+	    this.changed();
+	    var args = $A(arguments);
+	    var proceed = args.shift();
+	    var result = proceed.apply(this, args);
+	    this.recordChange(fieldName);
+	    this.layoutChanged(priorExtent);
+	    this.changed(); 
+	    return result;
+	}
     }
 
 });
 
 // Functions for manipulating the visual attributes of Morphs
 Morph.addMethods({
-    
+
     setFill: function(fill) {
-        var old = this.fill;
-        this.fill = fill;
-        if (old instanceof Wrapper) 
+	var old = this.fill;
+	this.fill = fill;
+	if (old instanceof Wrapper) 
 	    old.removeRawNode();
 	var attr;
-        if (fill == null) {
-            attr = "none";
-        } else if (fill instanceof Color) {
+	if (fill == null) {
+	    attr = "none";
+	} else if (fill instanceof Color) {
 	    attr = fill.toString();
-        } else if (fill instanceof Gradient) { 
+	} else if (fill instanceof Gradient) { 
 	    this.fill = fill.copy();
 	    this.fill.setId(Gradient.deriveId(this.id()));
 	    this.addWrapperToDefs(this.fill);
 	    attr = this.fill.uri();
-        }
-        this.shape.setFill(attr);
+	}
+	this.shape.setFill(attr);
     },
-    
+
     getFill: function() {
-        return this.fill; 
+	return this.fill; 
     },
-    
+
     setBorderColor: function(newColor) { this.shape.setStroke(newColor); },//.wrap(Morph.onChange('shape')),
 
     getBorderColor: function() {
-        return Color.parse(this.shape.getStroke());
+	return Color.parse(this.shape.getStroke());
     },
 
     setBorderWidth: function(newWidth) { this.shape.setStrokeWidth(newWidth); },//.wrap(Morph.onChange('shape')),
 
     getBorderWidth: function() {
-        return this.shape.getStrokeWidth(); 
+	return this.shape.getStrokeWidth(); 
     },
 
     setFillOpacity: function(op) { this.shape.setFillOpacity(op); },//.wrap(Morph.onChange('shape')),
 
     setStrokeOpacity: function(op) { this.shape.setStrokeOpacity(op); },//.wrap(Morph.onChange('shape')),
-    
+
     applyStyle: function(specs) { // note: use reflection instead?
 	for (var i = 0; i < arguments.length; i++) {
 	    var spec = arguments[i];
-            if (spec.borderWidth !== undefined) this.setBorderWidth(spec.borderWidth);
-            if (spec.borderColor !== undefined) this.setBorderColor(spec.borderColor);
-            if (spec.fill !== undefined) this.setFill(spec.fill);
-            if (spec.opacity !== undefined) {
+	    if (spec.borderWidth !== undefined) this.setBorderWidth(spec.borderWidth);
+	    if (spec.borderColor !== undefined) this.setBorderColor(spec.borderColor);
+	    if (spec.fill !== undefined) this.setFill(spec.fill);
+	    if (spec.opacity !== undefined) {
 		this.setFillOpacity(spec.opacity);
 		this.setStrokeOpacity(spec.opacity); 
-            }
+	    }
 	    if (spec.fillOpacity !== undefined) this.setFillOpacity(spec.fillOpacity);
-            if (spec.strokeOpacity !== undefined) this.setStrokeOpacity(spec.strokeOpacity);
-	    
-            if (this.shape.roundEdgesBy && spec.borderRadius !== undefined) { 
+	    if (spec.strokeOpacity !== undefined) this.setStrokeOpacity(spec.strokeOpacity);
+
+	    if (this.shape.roundEdgesBy && spec.borderRadius !== undefined) { 
 		this.shape.roundEdgesBy(spec.borderRadius);
-            }
+	    }
 	}
 	return this;
     },
 
     makeStyleSpec: function() {
-        // Adjust all visual attributes specified in the style spec
-        var spec = { };
-        spec.borderWidth = this.getBorderWidth();
-        spec.borderColor = this.getBorderColor();
-        spec.fill = this.getFill();
-        if (this.shape.getBorderRadius) spec.borderRadius = this.shape.getBorderRadius() || 0.0;
-        spec.fillOpacity = this.shape.getFillOpacity() || 1.0;
-        spec.strokeOpacity = this.shape.getStrokeOpacity() || 1.0;
-        return spec;
+	// Adjust all visual attributes specified in the style spec
+	var spec = { };
+	spec.borderWidth = this.getBorderWidth();
+	spec.borderColor = this.getBorderColor();
+	spec.fill = this.getFill();
+	if (this.shape.getBorderRadius) spec.borderRadius = this.shape.getBorderRadius() || 0.0;
+	spec.fillOpacity = this.shape.getFillOpacity() || 1.0;
+	spec.strokeOpacity = this.shape.getStrokeOpacity() || 1.0;
+	return spec;
     },
 
     applyStyleNamed: function(name) {
-        this.applyStyle(this.styleNamed(name));
+	this.applyStyle(this.styleNamed(name));
     },
 
     styleNamed: function(name) {
-        // Look the name up in the Morph tree, else in current world
-        if (this.displayTheme) return this.displayTheme[name];
-        if (this.owner) return this.owner.styleNamed(name);
-        return WorldMorph.current().styleNamed(name);
+	// Look the name up in the Morph tree, else in current world
+	if (this.displayTheme) return this.displayTheme[name];
+	if (this.owner) return this.owner.styleNamed(name);
+	return WorldMorph.current().styleNamed(name);
     },
 
     linkToStyles: function(arrayOfNames) {
-        // Record the links for later updates, and apply them now
-        this.styleLinks = arrayOfNames;
-        this.applyLinkedStyles();
+	// Record the links for later updates, and apply them now
+	this.styleLinks = arrayOfNames;
+	this.applyLinkedStyles();
     },
 
     respondToChangingStyleNamed: function(name) {
-        // (re)Apply my linked styles if name refers to one of them
-        if (this.styleLinks && this.styleLinks.include(name)) this.applyLinkedStyles();
+	// (re)Apply my linked styles if name refers to one of them
+	if (this.styleLinks && this.styleLinks.include(name)) this.applyLinkedStyles();
     },
 
     applyLinkedStyles: function() {
-        // Apply all the styles to which I am linked, in order
-        if (!this.styleLinks) return;
-        
-        for (var i = 0; i < this.styleLinks.length; i++) {
-            this.applyStyleNamed(this.styleLinks[i]); 
-        }
+	// Apply all the styles to which I am linked, in order
+	if (!this.styleLinks) return;
+
+	for (var i = 0; i < this.styleLinks.length; i++) {
+	    this.applyStyleNamed(this.styleLinks[i]); 
+	}
     },
 
     // NOTE:  The following four methods should all be factored into a single bit of reshaping logic
     applyFunctionToShape: function() {  // my kingdom for a Smalltalk block!
-        var args = $A(arguments);
-        var func = args.shift();
-        func.apply(this.shape, args);
-        if (this.clipPath) {
-            console.log('clipped to new shape ' + this.shape);
-            this.clipToShape();
-        }
-        this.adjustForNewBounds();
+	var args = $A(arguments);
+	var func = args.shift();
+	func.apply(this.shape, args);
+	if (this.clipPath) {
+	    console.log('clipped to new shape ' + this.shape);
+	    this.clipToShape();
+	}
+	this.adjustForNewBounds();
     }.wrap(Morph.onLayoutChange('shape')),
-    
+
     setShape: function(newShape) {
-        if (!newShape.rawNode) {
-            console.log('newShape is ' + newShape + ' ' + (new Error()).stack);
-        }
-        
+	if (!newShape.rawNode) {
+	    console.log('newShape is ' + newShape + ' ' + (new Error()).stack);
+	}
+
 	this.rawNode.replaceChild(newShape.rawNode, this.shape.rawNode);
-        this.shape = newShape;
-        //this.layoutChanged(); 
-        if (this.clipPath) {
-            console.log('clipped to new shape ' + this.shape);
-            this.clipToShape();
-        }
-        this.adjustForNewBounds();
+	this.shape = newShape;
+	//this.layoutChanged(); 
+	if (this.clipPath) {
+	    console.log('clipped to new shape ' + this.shape);
+	    this.clipToShape();
+	}
+	this.adjustForNewBounds();
     }.wrap(Morph.onLayoutChange('shape')),
 
     reshape: function(partName, newPoint, handle, lastCall) {
-        this.shape.reshape(partName,newPoint,handle,lastCall); 
-    
-        // FIXME: consider converting polyline to polygon when vertices merge.
-        if (this.clipPath) {
-            console.log('clipped to new shape ' + this.shape);
-            this.clipToShape();
-        }
-        this.adjustForNewBounds();
+	this.shape.reshape(partName,newPoint,handle,lastCall); 
+
+	// FIXME: consider converting polyline to polygon when vertices merge.
+	if (this.clipPath) {
+	    console.log('clipped to new shape ' + this.shape);
+	    this.clipToShape();
+	}
+	this.adjustForNewBounds();
     }.wrap(Morph.onLayoutChange('shape')),
-    
+
     setVertices: function(newVerts) {
-        // particular to polygons
-        this.shape.setVertices(newVerts);
-        this.adjustForNewBounds();
+	// particular to polygons
+	this.shape.setVertices(newVerts);
+	this.adjustForNewBounds();
     }.wrap(Morph.onLayoutChange('shape')),
 
     setBounds: function(newRect) {
-        // DI: Note get/setBounds should be deprecated in favor of get/setExtent and get/setPosition
-        // This is so that layout management can move things around without triggering redundant or
-        // recursive calls on adjustForNewBounds(q.v.)
+	// DI: Note get/setBounds should be deprecated in favor of get/setExtent and get/setPosition
+	// This is so that layout management can move things around without triggering redundant or
+	// recursive calls on adjustForNewBounds(q.v.)
 
-        // All calls on morph.setBounds should be converted to two calls as above (or just one if,
-        // eg, only the extent or position is changing).
+	// All calls on morph.setBounds should be converted to two calls as above (or just one if,
+	// eg, only the extent or position is changing).
 
-        // Of course setBounds remains entirely valid as a message to the *shape* object and, 
-        // in fact, shape.setBounds() will have to be called from both setPosition and setExtent
-        // but adjustForNewBounds will only need to be called from setExtent.
+	// Of course setBounds remains entirely valid as a message to the *shape* object and, 
+	// in fact, shape.setBounds() will have to be called from both setPosition and setExtent
+	// but adjustForNewBounds will only need to be called from setExtent.
 
-        // Finally, there is an argument for calling layoutChanged from setPosition and setExtent,
-        // since the caller must do it otherwise.  This would simplify things overall.
+	// Finally, there is an argument for calling layoutChanged from setPosition and setExtent,
+	// since the caller must do it otherwise.  This would simplify things overall.
 
-        this.setPosition(newRect.topLeft());
-        this.shape.setBounds(this.relativizeRect(newRect)); // FIXME some shapes don't support setFromRect
+	this.setPosition(newRect.topLeft());
+	this.shape.setBounds(this.relativizeRect(newRect)); // FIXME some shapes don't support setFromRect
 
-        if (this.clipPath) {
-            console.log('clipped to new shape ' + this.shape);
-            this.clipToShape();
-        }
-        this.adjustForNewBounds();
+	if (this.clipPath) {
+	    console.log('clipped to new shape ' + this.shape);
+	    this.clipToShape();
+	}
+	this.adjustForNewBounds();
     }.wrap(Morph.onLayoutChange('shape')),
 
     setExtent: function(newExtent) {
-        this.setBounds(this.getPosition().extent(newExtent));
+	this.setBounds(this.getPosition().extent(newExtent));
     },
 
     getExtent: function(newRect) { return this.shape.bounds().extent() },
 
     containsPoint: function(p) { 
-        // p is in owner coordinates
-        if (!this.bounds().containsPoint(p)) return false;
-        return this.shape.containsPoint(this.relativize(p)); 
+	// p is in owner coordinates
+	if (!this.bounds().containsPoint(p)) return false;
+	return this.shape.containsPoint(this.relativize(p)); 
     },
-    
+
     containsWorldPoint: function(p) { // p is in world coordinates
-        if (this.owner == null) return this.containsPoint(p);
-        return this.containsPoint(this.owner.localize(p)); 
+	if (this.owner == null) return this.containsPoint(p);
+	return this.containsPoint(this.owner.localize(p)); 
     },
 
     fullContainsPoint: function(p) { // p is in owner coordinates
-        return this.bounds().containsPoint(p); 
+	return this.bounds().containsPoint(p); 
     },
 
     fullContainsWorldPoint: function(p) { // p is in world coordinates
-        // unimplemented in firefox:
-        // return canvas.checkEnclosure(this, rect(p,p));
-        if (this.owner == null) return this.fullContainsPoint(p);
-    
-        return this.fullContainsPoint(this.owner.localize(p)); 
+	// unimplemented in firefox:
+	// return canvas.checkEnclosure(this, rect(p,p));
+	if (this.owner == null) return this.fullContainsPoint(p);
+
+	return this.fullContainsPoint(this.owner.localize(p)); 
     },
-    
+
     addNonMorph: function(node) {
 	return this.rawNode.insertBefore(node, this.shape && this.shape.rawNode.nextSibling);
     },
-    
+
     addWrapperToDefs: function(wrapper) {
 	if (!this.defs) {
 	    this.defs = this.rawNode.insertBefore(NodeFactory.create("defs"), this.rawNode.firstChild);
 	} 
 	if (wrapper)
-            this.defs.appendChild(wrapper.rawNode);
+	    this.defs.appendChild(wrapper.rawNode);
 	return wrapper;
     }
-	
+
 });
 
 // Submorph management functions
 Morph.addMethods({ 
-    
+
     addMorph: function(morph) { return this.addMorphFrontOrBack(morph, true) },
-    
+
     addMorphAt: function(morph, position) {
-        var morph = this.addMorphFrontOrBack(morph, true);
-        morph.setPosition(position);
-        return morph;
+	var morph = this.addMorphFrontOrBack(morph, true);
+	morph.setPosition(position);
+	return morph;
     },
 
     addMorphFront: function(morph) { return this.addMorphFrontOrBack(morph, true) },
-    
-    addMorphBack: function(morph) { return this.addMorphFrontOrBack(morph, false) },
-    
-    addMorphFrontOrBack: function(m, front) {
-        console.assert(m instanceof Morph, "not an instance");
 
-        if (m.owner) {
-            var tfm = m.transformForNewOwner(this);
-            m.owner.removeMorph(m); // KP: note not m.remove(), we don't want to stop stepping behavior
-            m.setTransform(tfm); 
-            // FIXME transform is out of date
-            // morph.setTransform(tfm); 
-            // m.layoutChanged(); 
-        } 
-    
-        m.owner = this;
-        this.internalAddMorph(m, front);
-        m.changed();
-        m.layoutChanged();  // DI:  Should not be needed
-        this.layoutChanged();
-        return m;
+    addMorphBack: function(morph) { return this.addMorphFrontOrBack(morph, false) },
+
+    addMorphFrontOrBack: function(m, front) {
+	console.assert(m instanceof Morph, "not an instance");
+
+	if (m.owner) {
+	    var tfm = m.transformForNewOwner(this);
+	    m.owner.removeMorph(m); // KP: note not m.remove(), we don't want to stop stepping behavior
+	    m.setTransform(tfm); 
+	    // FIXME transform is out of date
+	    // morph.setTransform(tfm); 
+	    // m.layoutChanged(); 
+	} 
+
+	m.owner = this;
+	this.internalAddMorph(m, front);
+	m.changed();
+	m.layoutChanged();  // DI:  Should not be needed
+	this.layoutChanged();
+	return m;
     },
-    
+
     internalAddMorph: function(m, isFront) {
 	var insertionPt = this.submorphs.length == 0 ? this.shape.rawNode.nextSibling :
 	    isFront ? this.submorphs.last().rawNode.nextSibling : this.submorphs.first().rawNode;
-        // the last one, so drawn last, so front
+	// the last one, so drawn last, so front
 	this.rawNode.insertBefore(m.rawNode, insertionPt);
 
 	if (isFront)
-            this.submorphs.push(m);
+	    this.submorphs.push(m);
 	else
-            this.submorphs.unshift(m);
+	    this.submorphs.unshift(m);
     },
-    
+
     removeMorph: function(m) {
-        var index = this.submorphs.indexOf(m);
-        if (index < 0) {
-            m.owner !== this && console.log("%s has owner %s that is not %s?", m, m.owner, this);
-            return null;
-        }
-	
-        m.removeRawNode();
-        var spliced = this.submorphs.splice(index, 1);
-        if (spliced instanceof Array) spliced = spliced[0];
-        if (m !== spliced) {
-            console.log("invariant violated removing %s, spliced %s", m, spliced);
-        }
-        m.owner = null;
-        m.setHasKeyboardFocus(false);
-        return m;
+	var index = this.submorphs.indexOf(m);
+	if (index < 0) {
+	    m.owner !== this && console.log("%s has owner %s that is not %s?", m, m.owner, this);
+	    return null;
+	}
+
+	m.removeRawNode();
+	var spliced = this.submorphs.splice(index, 1);
+	if (spliced instanceof Array) spliced = spliced[0];
+	if (m !== spliced) {
+	    console.log("invariant violated removing %s, spliced %s", m, spliced);
+	}
+	m.owner = null;
+	m.setHasKeyboardFocus(false);
+	return m;
     },
-    
+
     removeAllMorphs: function() {
 	this.submorphs.invoke('removeRawNode');
-        this.submorphs.clear();
-        this.layoutChanged(); 
+	this.submorphs.clear();
+	this.layoutChanged(); 
     },
-    
+
     hasSubmorphs: function() {
-        return this.submorphs.length != 0;
+	return this.submorphs.length != 0;
     },
-    
+
     remove: function() {
-        if (!this.owner) return null;  // already removed
+	if (!this.owner) return null;  // already removed
 
-        this.stopStepping();
-        this.stopSteppingScripts();
-        this.owner.removeMorph(this);
+	this.stopStepping();
+	this.stopSteppingScripts();
+	this.owner.removeMorph(this);
 
-        return this;
+	return this;
     },
-    
+
     applyToAllSubmorphs: function(func, argumentArray) {
 	func.apply(this, argumentArray);
 	this.submorphs.invoke('withAllSubmorphsDo', func, argumentArray);
     },
-    
+
     withAllSubmorphsDo: function(func, rest) {
 	// Call the supplied function on me and all of my submorphs by recursion.
 	var args = $A(arguments);
@@ -3475,212 +3521,212 @@ Morph.addMethods({
     },
 
     topSubmorph: function() {
-        // the morph on top is the last one in the list
-        return this.submorphs.last();
+	// the morph on top is the last one in the list
+	return this.submorphs.last();
     },
 
     // morph gets an opportunity to shut down when WindowMorph closes 
     shutdown: function() {
-        this.remove();
+	this.remove();
     },
 
     okToDuplicate: function() { return true; }  // default is OK
-    
+
 });
 
 // Morph bindings to its parent, world, canvas, etc.
 Morph.addMethods({
-    
+
     canvas: function() {
-        try {
-            var world = this.world();
-            return world && world.canvas();
-            // return this.rawNode.ownerSVGElement;
-        } catch (er) {
-            console.log("no ownerSVG ? %s, %s", this, er.stack);
-            return null;
-        }
+	try {
+	    var world = this.world();
+	    return world && world.canvas();
+	    // return this.rawNode.ownerSVGElement;
+	} catch (er) {
+	    console.log("no ownerSVG ? %s, %s", this, er.stack);
+	    return null;
+	}
     },
 
     world: function() {
-        return this.owner ? this.owner.world() : null;
+	return this.owner ? this.owner.world() : null;
     },
-    
+
     toString: function() {
-        // A replacement for toString() which can't be overridden in
-        // some cases.  Invoked by Object.inspect.
-        try {
-            return "%s(#%s,%s)".format(this.getType(), this.id(), (this.shape || "").toString());
-        } catch (e) {
-            console.log("toString failed on %s", [this.id(), this.getType()]);
-            return "#<Morph?{" + e + "}>";
-        }
+	// A replacement for toString() which can't be overridden in
+	// some cases.  Invoked by Object.inspect.
+	try {
+	    return "%s(#%s,%s)".format(this.getType(), this.id(), (this.shape || "").toString());
+	} catch (e) {
+	    console.log("toString failed on %s", [this.id(), this.getType()]);
+	    return "#<Morph?{" + e + "}>";
+	}
     },
 
 
     inspect: function() {
-        try {
-            return this.toString();
-        } catch (err) {
-            return "#<inspect error: " + err + ">";
-        }
+	try {
+	    return this.toString();
+	} catch (err) {
+	    return "#<inspect error: " + err + ">";
+	}
     },
 
     extendedInspect: function() {
-        try {
-            return this.toString() + "[" + this.toMarkupString() + "]";
-        } catch (err) {
-            return "#<inspect error: " + err + ">";
-        }
+	try {
+	    return this.toString() + "[" + this.toMarkupString() + "]";
+	} catch (err) {
+	    return "#<inspect error: " + err + ">";
+	}
     },
 
 
     toJSON: function() {
-        return undefined;
+	return undefined;
     },
 
     // Morph coordinate transformation functions
-    
+
     // SVG has transform so renamed to getTransform()
     getTransform: function() {
-        if (this.cachedTransform == null) { 
-            // we need to include fisheyeScaling to the transformation
-            this.cachedTransform = new Similitude(this.origin, this.rotation, this.scale * this.fisheyeScale);
-        }
-        return this.cachedTransform;
+	if (this.cachedTransform == null) { 
+	    // we need to include fisheyeScaling to the transformation
+	    this.cachedTransform = new Similitude(this.origin, this.rotation, this.scale * this.fisheyeScale);
+	}
+	return this.cachedTransform;
     },
 
     pvtSetTransform: function(tfm) {
-        this.origin = tfm.getTranslation();
-        this.rotation = tfm.getRotation();
-        this.scale = tfm.getScale();
-        // we must make sure the Morph keeps its original size (wrt/fisheyeScale)
-        this.scale = this.scale/this.fisheyeScale;
-        this.cachedTransform = tfm; //new Similitude(this.origin, this.rotation, this.scale);
+	this.origin = tfm.getTranslation();
+	this.rotation = tfm.getRotation();
+	this.scale = tfm.getScale();
+	// we must make sure the Morph keeps its original size (wrt/fisheyeScale)
+	this.scale = this.scale/this.fisheyeScale;
+	this.cachedTransform = tfm; //new Similitude(this.origin, this.rotation, this.scale);
     },
-    
+
     setTransform: function(tfm) { this.pvtSetTransform(tfm); }.wrap(Morph.onLayoutChange('transform')),
 
     transformToMorph: function(other) {
-        // getTransformToElement has issues on some platforms
-        if (Config.useGetTransformToElement) return this.rawNode.getTransformToElement(other.rawNode);
-        // not quite working yet
-        var tfm = this.getGlobalTransform();
-        var inv = other.getGlobalTransform().createInverse();
-        // console.log("global: " + tfm + " inverse " + inv);
-        tfm.preConcatenate(inv);
-        //console.log("transforming " + this + " to " + tfm);
-        return tfm;
+	// getTransformToElement has issues on some platforms
+	if (Config.useGetTransformToElement) return this.rawNode.getTransformToElement(other.rawNode);
+	// not quite working yet
+	var tfm = this.getGlobalTransform();
+	var inv = other.getGlobalTransform().createInverse();
+	// console.log("global: " + tfm + " inverse " + inv);
+	tfm.preConcatenate(inv);
+	//console.log("transforming " + this + " to " + tfm);
+	return tfm;
     },
 
     getGlobalTransform: function() {
-        var globalTransform = new Transform();
-        var world = this.world();
-        // var trace = [];
-        for (var morph = this; morph != world; morph = morph.owner) {
-            globalTransform.preConcatenate(morph.getTransform());
-            // trace.push(globalTransform.copy());
-        }
-        // console.log("global transform trace [" + trace + "] for " + this);
-        return globalTransform;
+	var globalTransform = new Transform();
+	var world = this.world();
+	// var trace = [];
+	for (var morph = this; morph != world; morph = morph.owner) {
+	    globalTransform.preConcatenate(morph.getTransform());
+	    // trace.push(globalTransform.copy());
+	}
+	// console.log("global transform trace [" + trace + "] for " + this);
+	return globalTransform;
     },
 
     translateBy: function(delta) {
-        this.changed();
-        this.origin = this.origin.addPt(delta);
-        this.cachedTransform = null;
-        this.recordChange('origin');
-        // this.layoutChanged();
-        // Only position has changed; not extent.  Thus no internal layout is needed
-        // This should become a new transformChanged() method
-        this.getTransform().applyTo(this.rawNode);
-        if (this.fullBounds != null) this.fullBounds = this.fullBounds.translatedBy(delta);
-        // DI: I don't think this can affect owner.  It may increase fullbounds
-        //     due to stickouts, but not the bounds for layout...
-        if (this.owner && this.owner !== this.world()) this.owner.layoutChanged(); 
-        this.changed(); 
+	this.changed();
+	this.origin = this.origin.addPt(delta);
+	this.cachedTransform = null;
+	this.recordChange('origin');
+	// this.layoutChanged();
+	// Only position has changed; not extent.  Thus no internal layout is needed
+	// This should become a new transformChanged() method
+	this.getTransform().applyTo(this.rawNode);
+	if (this.fullBounds != null) this.fullBounds = this.fullBounds.translatedBy(delta);
+	// DI: I don't think this can affect owner.  It may increase fullbounds
+	//     due to stickouts, but not the bounds for layout...
+	if (this.owner && this.owner !== this.world()) this.owner.layoutChanged(); 
+	this.changed(); 
     },
 
     setRotation: function(theta) { // in radians
-        this.rotation = theta;
-        this.cachedTransform = null;
+	this.rotation = theta;
+	this.cachedTransform = null;
     }.wrap(Morph.onLayoutChange('rotation')),
-    
+
     setScale: function(scale/*:float*/) {
-        this.scale = scale;
-        this.cachedTransform = null;
+	this.scale = scale;
+	this.cachedTransform = null;
     }.wrap(Morph.onLayoutChange('scale')),
-    
+
     defaultOrigin: function(bounds, shapeType) { 
-        return (shapeType == "rect" || shapeType == "rectangle") ? bounds.topLeft() : bounds.center(); 
+	return (shapeType == "rect" || shapeType == "rectangle") ? bounds.topLeft() : bounds.center(); 
     },
-    
+
     getTranslation: function() { 
-        return this.getTransform().getTranslation(); 
+	return this.getTransform().getTranslation(); 
     },
-    
+
     getRotation: function() { 
-        return this.getTransform().getRotation().toRadians(); 
+	return this.getTransform().getRotation().toRadians(); 
     },
-    
+
     getScale: function() { 
-        return this.getTransform().getScale(); 
+	return this.getTransform().getScale(); 
     },
-    
+
     moveBy: function(delta) {
-        this.translateBy(delta);
+	this.translateBy(delta);
     },
-    
+
     rotateBy: function(delta) {
 	this.setRotation(this.getRotation()+delta);
     },
 
     scaleBy: function(delta) {
-        this.setScale(this.getScale()*delta);
+	this.setScale(this.getScale()*delta);
     },
-    
+
     throb: function() {
-        this.scaleBy(this.getScale() <= 1 ? 2 : 0.9);
+	this.scaleBy(this.getScale() <= 1 ? 2 : 0.9);
     },
-    
+
     align: function(p1, p2) {
-        this.translateBy(p2.subPt(p1)); 
+	this.translateBy(p2.subPt(p1)); 
     },
-    
+
     // toggle fisheye effect on/off
     toggleFisheye: function() {
-        // if fisheye is true, we need to scale the morph to original size
-        if (this.fishEye) {
-            this.scale = this.getScale()/this.fisheyeScale;
-            this.setFisheyeScale(1.0);
-            this.changed();
-        }
+	// if fisheye is true, we need to scale the morph to original size
+	if (this.fishEye) {
+	    this.scale = this.getScale()/this.fisheyeScale;
+	    this.setFisheyeScale(1.0);
+	    this.changed();
+	}
 
-        // toggle fisheye
-        this.fishEye = !this.fishEye;
+	// toggle fisheye
+	this.fishEye = !this.fishEye;
     },
-    
+
     // sets the scaling factor for the fisheye between 1..fisheyeGrowth
     setFisheyeScale: function (newScale) {
-        // take the original centerpoint
-        var p = this.bounds().center();
+	// take the original centerpoint
+	var p = this.bounds().center();
 
-        this.fisheyeScale = newScale;
-        this.cachedTransform = null;
-        this.layoutChanged();  
-        this.changed();
+	this.fisheyeScale = newScale;
+	this.cachedTransform = null;
+	this.layoutChanged();  
+	this.changed();
 
-        // if the fisheye was on move the fisheye'd morph by the difference between 
-        // original center point and the new center point divided by 2
-        if (this.fishEye) {
-            // (new.center - orig.center)/2
-            var k = this.bounds().center().subPt(p).scaleBy(.5).negated();
-            if (!pt(0,0).eqPt(k)) {
-                this.setPosition(this.position().addPt(k));
-                this.layoutChanged();  
-                this.changed();
-            }
-        }
+	// if the fisheye was on move the fisheye'd morph by the difference between 
+	// original center point and the new center point divided by 2
+	if (this.fishEye) {
+	    // (new.center - orig.center)/2
+	    var k = this.bounds().center().subPt(p).scaleBy(.5).negated();
+	    if (!pt(0,0).eqPt(k)) {
+		this.setPosition(this.position().addPt(k));
+		this.layoutChanged();  
+		this.changed();
+	    }
+	}
     },
 
     // Experimental radial "black hole" scrolling feature: When
@@ -3691,149 +3737,149 @@ Morph.addMethods({
     // original state.  For further information, see  
     // Sun Labs Technical Report SMLI TR-99-74, March 1999.
     moveRadially: function(towardsPoint, howMuch) {
-        var position = this.getPosition();
-        var relativePt = position.subPt(towardsPoint);
-        var distance = towardsPoint.dist(position);
-        if (!this.inBlackHole) this.inBlackHole = 0;
+	var position = this.getPosition();
+	var relativePt = position.subPt(towardsPoint);
+	var distance = towardsPoint.dist(position);
+	if (!this.inBlackHole) this.inBlackHole = 0;
 
-        // The object disappears entirely when it is less than 5 pixels away
-        // The 'inBlackHole' counter keeps track of how many levels deep
-        // the object is in the black hole, allowing the display to be
-        // restored correctly.
-        if (distance <= 5) {
-            if (howMuch < 0) {
-                this.inBlackHole++;
-                this.setScale(0);
-            } else {
-                this.inBlackHole--;            
-            }
-        } 
-        
-        if (this.inBlackHole == 0) {
-            // Start shrinking the object when it is closer than 200 pixels away
-            if (distance > 5 && distance < 200) this.setScale(distance/200);
-            else if (distance >= 200 && this.getScale() != 1) this.setScale(1);
+	// The object disappears entirely when it is less than 5 pixels away
+	// The 'inBlackHole' counter keeps track of how many levels deep
+	// the object is in the black hole, allowing the display to be
+	// restored correctly.
+	if (distance <= 5) {
+	    if (howMuch < 0) {
+		this.inBlackHole++;
+		this.setScale(0);
+	    } else {
+		this.inBlackHole--;            
+	    }
+	} 
 
-            // Calculate new location for the object
-            var theta = Math.atan2(relativePt.y, relativePt.x);
-            var newDistance = distance + howMuch;
-            if (newDistance < 0) newDistance = 1;    
-            var newX = newDistance * Math.cos(theta);
-            var newY = newDistance * Math.sin(theta);
-            this.setPosition(towardsPoint.addPt(pt(newX,newY)));
-        }
+	if (this.inBlackHole == 0) {
+	    // Start shrinking the object when it is closer than 200 pixels away
+	    if (distance > 5 && distance < 200) this.setScale(distance/200);
+	    else if (distance >= 200 && this.getScale() != 1) this.setScale(1);
+
+	    // Calculate new location for the object
+	    var theta = Math.atan2(relativePt.y, relativePt.x);
+	    var newDistance = distance + howMuch;
+	    if (newDistance < 0) newDistance = 1;    
+	    var newX = newDistance * Math.cos(theta);
+	    var newY = newDistance * Math.sin(theta);
+	    this.setPosition(towardsPoint.addPt(pt(newX,newY)));
+	}
     }
 
 });
-    
+
 Morph.addMethods({     // help handling
 
     getHelpText: function() { // override to supply help text
 	return null;
     },
-    
+
     showHelp: function(evt) {
 	if (this.suppressBalloonHelp) return false;
 	if (this.owner instanceof HandMorph) return false;
 	var helpText = this.getHelpText();
 	if (!helpText) return false;
-	
-        // Create only one help balloon at a time
+
+	// Create only one help balloon at a time
 	if (this.helpBalloonMorph && !this.helpBalloonMorph.getPosition().eqPt(evt.mousePoint)) {
-            this.helpBalloonMorph.setPosition(evt.mousePoint);
+	    this.helpBalloonMorph.setPosition(evt.mousePoint);
 	    return false;
-        } else {
+	} else {
 	    var width = Math.min(helpText.length * 20, 260); // some estimate of width.
-            this.helpBalloonMorph = new TextMorph(evt.mousePoint.addXY(10, 10).extent(pt(width, 20)), helpText);
-            this.world().addMorph(this.helpBalloonMorph.beHelpBalloonFor(this));
+	    this.helpBalloonMorph = new TextMorph(evt.mousePoint.addXY(10, 10).extent(pt(width, 20)), helpText);
+	    this.world().addMorph(this.helpBalloonMorph.beHelpBalloonFor(this));
 	    return true;
 	}
     },
-    
+
     hideHelp: function() {
-        if (!this.helpBalloonMorph)  
+	if (!this.helpBalloonMorph)  
 	    return;
-        this.helpBalloonMorph.remove();
-        delete this.helpBalloonMorph;
+	this.helpBalloonMorph.remove();
+	delete this.helpBalloonMorph;
     }
 
 });
 
 // Morph mouse event handling functions
 Morph.addMethods({
-    
+
     // KP: equivalent of the DOM capture phase
     // KP: hasFocus is true if the receiver is the hands's focus (?)
     captureMouseEvent: function(evt, hasFocus) {
-    // Dispatch this event to the frontmost receptive morph that contains it
-    // Note boolean return for event consumption has not been QA'd
-        // if we're using the fisheye... 
-        if (this.fishEye) {
-            // get the distance to the middle of the morph and check if we're 
-            // close enough to start the fisheye
-            var size = Math.max(this.bounds().width, this.bounds().height);
-            
-            var dist = evt.mousePoint.dist(this.bounds().center()) / this.fisheyeProximity;
-            if (dist <= size) {
-                // the fisheye factor is between 1..fisheyeGrowth
-                this.setFisheyeScale(1 + this.fisheyeGrowth * Math.abs(dist/size - 1));
-            } else {
-                // just a precaution to make sure fisheye scaling isn't 
-                // affecting its surrounding any more
-                this.setFisheyeScale(1.0)
-            }
-        }
+	// Dispatch this event to the frontmost receptive morph that contains it
+	// Note boolean return for event consumption has not been QA'd
+	// if we're using the fisheye... 
+	if (this.fishEye) {
+	    // get the distance to the middle of the morph and check if we're 
+	    // close enough to start the fisheye
+	    var size = Math.max(this.bounds().width, this.bounds().height);
 
-        if (hasFocus) return this.mouseHandler.handleMouseEvent(evt, this);
+	    var dist = evt.mousePoint.dist(this.bounds().center()) / this.fisheyeProximity;
+	    if (dist <= size) {
+		// the fisheye factor is between 1..fisheyeGrowth
+		this.setFisheyeScale(1 + this.fisheyeGrowth * Math.abs(dist/size - 1));
+	    } else {
+		// just a precaution to make sure fisheye scaling isn't 
+		// affecting its surrounding any more
+		this.setFisheyeScale(1.0)
+	    }
+	}
 
-        if (!evt.priorPoint || !this.fullContainsWorldPoint(evt.priorPoint)) return false;
+	if (hasFocus) return this.mouseHandler.handleMouseEvent(evt, this);
 
-        if (this.hasSubmorphs()) {
-            // If any submorph handles it (ie returns true), then return
-            for (var i = this.submorphs.length - 1; i >= 0; i--) {
-                if (this.submorphs[i].captureMouseEvent(evt, false)) return true;
-            }
-        }
+	if (!evt.priorPoint || !this.fullContainsWorldPoint(evt.priorPoint)) return false;
 
-        if (this.mouseHandler == null)
-            return false;
+	if (this.hasSubmorphs()) {
+	    // If any submorph handles it (ie returns true), then return
+	    for (var i = this.submorphs.length - 1; i >= 0; i--) {
+		if (this.submorphs[i].captureMouseEvent(evt, false)) return true;
+	    }
+	}
 
-        if (!evt.priorPoint || !this.shape.containsPoint(this.localize(evt.priorPoint))) 
-            return false;
+	if (this.mouseHandler == null)
+	    return false;
 
-        return this.mouseHandler.handleMouseEvent(evt, this); 
+	if (!evt.priorPoint || !this.shape.containsPoint(this.localize(evt.priorPoint))) 
+	    return false;
+
+	return this.mouseHandler.handleMouseEvent(evt, this); 
     },
 
     ignoreEvents: function() { // will not respond nor get focus
-        this.mouseHandler = null;
-        this.rawNode.setAttributeNS(Namespace.LIVELY, "disable-mouse-events", "true");
+	this.mouseHandler = null;
+	this.rawNode.setAttributeNS(Namespace.LIVELY, "disable-mouse-events", "true");
 	return this;
     },
-    
+
     enableEvents: function() {
-        this.mouseHandler = MouseHandlerForDragging;
-        this.rawNode.removeAttributeNS(Namespace.LIVELY, "disable-mouse-events");
+	this.mouseHandler = MouseHandlerForDragging;
+	this.rawNode.removeAttributeNS(Namespace.LIVELY, "disable-mouse-events");
 	return this;
     },
 
     relayMouseEvents: function(target, eventSpec) {
-        this.mouseHandler = new MouseHandlerForRelay(target, eventSpec); 
+	this.mouseHandler = new MouseHandlerForRelay(target, eventSpec); 
     },
 
     handlesMouseDown: function(evt) {
-        if (this.mouseHandler == null || evt.isAltDown()) return false;  //default behavior
-        return this.mouseHandler.handlesMouseDown(); 
+	if (this.mouseHandler == null || evt.isAltDown()) return false;  //default behavior
+	return this.mouseHandler.handlesMouseDown(); 
     },
 
     onMouseDown: function(evt) { }, //default behavior
-    
+
     onMouseMove: function(evt) { //default behavior
-        if (this.owner && evt.mouseButtonPressed && this.owner.openForDragAndDrop) { 
-           this.moveBy(evt.mousePoint.subPt(evt.priorPoint));
-        } // else this.checkForControlPointNear(evt);
-        if (!evt.mouseButtonPressed) this.checkForControlPointNear(evt);
+	if (this.owner && evt.mouseButtonPressed && this.owner.openForDragAndDrop) { 
+	    this.moveBy(evt.mousePoint.subPt(evt.priorPoint));
+	} // else this.checkForControlPointNear(evt);
+	if (!evt.mouseButtonPressed) this.checkForControlPointNear(evt);
     },
-    
+
     onMouseUp: function(evt) { }, //default behavior
 
     onMouseOver: function(evt) { 
@@ -3847,85 +3893,85 @@ Morph.addMethods({
     onMouseWheel: function(evt) { }, // default behavior
 
     takesKeyboardFocus: function() { 
-        return false; 
+	return false; 
     },
 
     setHasKeyboardFocus: function(newSetting) { 
-        return false; // no matter what, say no
+	return false; // no matter what, say no
     },
-    
+
     requestKeyboardFocus: function(hand) {
-        if (this.takesKeyboardFocus()) {
-            if (this.setHasKeyboardFocus(true)) {
-                hand.setKeyboardFocus(this);
-                return true;
-            }
-        }
-        return false;
+	if (this.takesKeyboardFocus()) {
+	    if (this.setHasKeyboardFocus(true)) {
+		hand.setKeyboardFocus(this);
+		return true;
+	    }
+	}
+	return false;
     },
 
     relinquishKeyboardFocus: function(hand) {
-        hand.setKeyboardFocus(null);
-        return this.setHasKeyboardFocus(false); 
+	hand.setKeyboardFocus(null);
+	return this.setHasKeyboardFocus(false); 
     },
-    
+
     onFocus: function(hand) {
-        this.addFocusHalo();
+	this.addFocusHalo();
     },
 
     onBlur: function(hand) {
-        this.removeFocusHalo();
+	this.removeFocusHalo();
     },
 
     removeFocusHalo: function() {
-        if (!this.focusHalo) return false;
-        this.rawNode.removeChild(this.focusHalo);
-        this.focusHalo = null;
-        return true;
+	if (!this.focusHalo) return false;
+	this.rawNode.removeChild(this.focusHalo);
+	this.focusHalo = null;
+	return true;
     },
-    
+
     adjustFocusHalo: function() {
-        NodeList.clear(this.focusHalo);
-        var shape = new RectShape(this.shape.bounds().insetBy(-2), null, 
-            this.focusHaloBorderWidth, this.focusedBorderColor);
-        this.focusHalo.appendChild(shape.rawNode);
+	NodeList.clear(this.focusHalo);
+	var shape = new RectShape(this.shape.bounds().insetBy(-2), null, 
+	    this.focusHaloBorderWidth, this.focusedBorderColor);
+	this.focusHalo.appendChild(shape.rawNode);
     },
 
     addFocusHalo: function() {
-        if (this.focusHalo || this.focusHaloBorderWidth <= 0) return false;
-        this.focusHalo = this.addNonMorph(NodeList.withType('FocusHalo'));
-        this.focusHalo.setAttributeNS(null, "stroke-opacity", 0.3);
-        this.focusHalo.setAttributeNS(null, 'stroke-linejoin', Shape.LineJoins.ROUND);
-        this.adjustFocusHalo();
-        return true;
+	if (this.focusHalo || this.focusHaloBorderWidth <= 0) return false;
+	this.focusHalo = this.addNonMorph(NodeList.withType('FocusHalo'));
+	this.focusHalo.setAttributeNS(null, "stroke-opacity", 0.3);
+	this.focusHalo.setAttributeNS(null, 'stroke-linejoin', Shape.LineJoins.ROUND);
+	this.adjustFocusHalo();
+	return true;
     }
-    
+
 });
 
 /**
- * @class MouseHandlerForRelay
- */ 
+  * @class MouseHandlerForRelay
+  */ 
 
 Object.subclass('MouseHandlerForRelay', {
 
     initialize: function (target, eventSpec) {
-        //  Send events to a different target, with different methods
-        //    Ex: box.relayMouseEvents(box.owner, {onMouseUp: "boxReleased", onMouseDown: "boxPressed"})
-        this.target = target;
-        this.eventSpec = eventSpec;
+	//  Send events to a different target, with different methods
+	//    Ex: box.relayMouseEvents(box.owner, {onMouseUp: "boxReleased", onMouseDown: "boxPressed"})
+	this.target = target;
+	this.eventSpec = eventSpec;
     },
-    
+
     handleMouseEvent: function(evt, appendage) {
-        var targetHandler = this.target[this.eventSpec[evt.handlerName()]];
-        if (evt.type == "MouseUp") evt.hand.setMouseFocus(null); // NB: must precede any return
-        if (targetHandler == null) return true; //FixMe: should this be false?
-        if (evt.type == "MouseDown") evt.hand.setMouseFocus(appendage);
-        targetHandler.call(this.target, evt, appendage);
-        return true; 
+	var targetHandler = this.target[this.eventSpec[evt.handlerName()]];
+	if (evt.type == "MouseUp") evt.hand.setMouseFocus(null); // NB: must precede any return
+	if (targetHandler == null) return true; //FixMe: should this be false?
+	if (evt.type == "MouseDown") evt.hand.setMouseFocus(appendage);
+	targetHandler.call(this.target, evt, appendage);
+	return true; 
     },
-    
+
     handlesMouseDown: function(evt) { 
-        return true; 
+	return true; 
     }
 
 });
@@ -3934,16 +3980,16 @@ Object.subclass('MouseHandlerForRelay', {
 Morph.addMethods({
 
     checkForControlPointNear: function(evt) {
-        // console.log('checking %s', this);
-        if (this.suppressHandles) return false; // disabled
-        if (this.owner == null) return false; // can't reshape the world
-        var handle = this.shape.possibleHandleForControlPoint(this, this.localize(evt.mousePoint), evt.hand);
-        if (handle == null) return false;
-        this.addMorph(handle);  // after which it should get converted appropriately here
-        handle.showHelp(evt);
-        if (evt.hand.mouseFocus instanceof HandleMorph) evt.hand.mouseFocus.remove();
-        evt.hand.setMouseFocus(handle);
-        return true; 
+	// console.log('checking %s', this);
+	if (this.suppressHandles) return false; // disabled
+	if (this.owner == null) return false; // can't reshape the world
+	var handle = this.shape.possibleHandleForControlPoint(this, this.localize(evt.mousePoint), evt.hand);
+	if (handle == null) return false;
+	this.addMorph(handle);  // after which it should get converted appropriately here
+	handle.showHelp(evt);
+	if (evt.hand.mouseFocus instanceof HandleMorph) evt.hand.mouseFocus.remove();
+	evt.hand.setMouseFocus(handle);
+	return true; 
     },
 
     // A chance to preempt (by returning null) the default action of grabbing me
@@ -3951,269 +3997,269 @@ Morph.addMethods({
     // or find a parent to grab instead
     // KP: FIXME rename to reflect that function can have side effects?
     okToBeGrabbedBy: function(evt) {
-        if (evt.hand.mode == "menu") {
-            evt.hand.mode = "normal";
-            this.showMorphMenu(evt);
-            return null; 
-        } 
-        
-        return this; 
+	if (evt.hand.mode == "menu") {
+	    evt.hand.mode = "normal";
+	    this.showMorphMenu(evt);
+	    return null; 
+	} 
+
+	return this; 
     },
 
     showMorphMenu: function(evt) { 
-        var menu = this.morphMenu(evt);
-        // if (evt.mouseButtonPressed) evt.hand.setMouseFocus(menu);
-        // evt.hand.setMouseFocus(menu);
-        menu.openIn(this.world(), evt.mousePoint, false, Object.inspect(this).truncate()); 
+	var menu = this.morphMenu(evt);
+	// if (evt.mouseButtonPressed) evt.hand.setMouseFocus(menu);
+	// evt.hand.setMouseFocus(menu);
+	menu.openIn(this.world(), evt.mousePoint, false, Object.inspect(this).truncate()); 
     },
 
     morphMenu: function(evt) { 
-        var items = [
-            ["remove", this.remove],
-            ["inspect", function(evt) { new SimpleInspector(this).openIn(this.world(), evt.mousePoint)}],
-            ["style", function() { new StylePanel(this).open()}],
-            ["drill", this.showOwnerChain.curry(evt)],
-            ["grab", this.pickMeUp.curry(evt)],
-            ["reset rotation", this.setRotation.curry(0)],
-            ["reset scaling", this.setScale.curry(1)],
-            [((this.fishEye) ? "turn fisheye off" : "turn fisheye on"), this.toggleFisheye],
-            ["-----"],
-            ["put me in a window", this.putMeInAWindow.curry(this.position())], 
-            ["put me in a tab", this.putMeInATab.curry(this.position())],
-            ["put me in the open", this.putMeInTheWorld.curry(this.position())],
-            ["-----"],
-            [((this.openForDragAndDrop) ? "close DnD" : "open DnD"), this.toggleDnD.curry(evt.mousePoint)],
-            ["show Lively markup", this.addSvgInspector.curry(this)],
+	var items = [
+	    ["remove", this.remove],
+	    ["inspect", function(evt) { new SimpleInspector(this).openIn(this.world(), evt.mousePoint)}],
+	    ["style", function() { new StylePanel(this).open()}],
+	    ["drill", this.showOwnerChain.curry(evt)],
+	    ["grab", this.pickMeUp.curry(evt)],
+	    ["reset rotation", this.setRotation.curry(0)],
+	    ["reset scaling", this.setScale.curry(1)],
+	    [((this.fishEye) ? "turn fisheye off" : "turn fisheye on"), this.toggleFisheye],
+	    ["-----"],
+	    ["put me in a window", this.putMeInAWindow.curry(this.position())], 
+	    ["put me in a tab", this.putMeInATab.curry(this.position())],
+	    ["put me in the open", this.putMeInTheWorld.curry(this.position())],
+	    ["-----"],
+	    [((this.openForDragAndDrop) ? "close DnD" : "open DnD"), this.toggleDnD.curry(evt.mousePoint)],
+	    ["show Lively markup", this.addSvgInspector.curry(this)],
 	    ["shrink-wrap", function(evt) {  // FIXME insert package morph in exactly the same position?
 		new PackageMorph(this).openIn(this.world(), this.bounds().topLeft()); this.remove()}.bind(this) ],
-            ["publish shrink-wrapped ...", function() { 
+	    ["publish shrink-wrapped ...", function() { 
 		this.world().prompt('publish as (.xhtml)', 
 				    function(filename) { 
 					var url = Exporter.shrinkWrapToFile(this, filename);
 					if (url) WorldMorph.current().reactiveAddMorph(new ExternalLinkMorph(url));
 				    }.bind(this))}], 
-            ["test tracing (in console)", this.testTracing]
-        ];
-        if (this.okToDuplicate()) items.unshift(["duplicate", this.copyToHand.curry(evt.hand)]);
-        var menu = new MenuMorph(items, this); 
+	    ["test tracing (in console)", this.testTracing]
+	];
+	if (this.okToDuplicate()) items.unshift(["duplicate", this.copyToHand.curry(evt.hand)]);
+	var menu = new MenuMorph(items, this); 
 
-        return menu;
+	return menu;
     },
 
     testTracing: function() {
-        console.log("Function.prototype.shouldTrace = true; tracing begins...");
-        Function.prototype.shouldTrace = true;
-        this.adjustForNewBounds();
-        Function.prototype.shouldTrace = false;
+	console.log("Function.prototype.shouldTrace = true; tracing begins...");
+	Function.prototype.shouldTrace = true;
+	this.adjustForNewBounds();
+	Function.prototype.shouldTrace = false;
     },
 
     putMeInAWindow: function(loc) {
-        var c = this.immediateContainer();
-        var w = this.world();
-        var wm = new WindowMorph(this.windowContent(), this.windowTitle());
-        // Position it so the content stays in place
-        w.addMorphAt(wm, loc.subPt(wm.contentOffset));
-        if (c) c.remove();
+	var c = this.immediateContainer();
+	var w = this.world();
+	var wm = new WindowMorph(this.windowContent(), this.windowTitle());
+	// Position it so the content stays in place
+	w.addMorphAt(wm, loc.subPt(wm.contentOffset));
+	if (c) c.remove();
     },
 
     putMeInATab: function(loc) {
-        var c = this.immediateContainer();
-        var w = this.world();
-        var wm = new TabbedPanelMorph(this.windowContent(), this.windowTitle());
-        w.addMorphAt(wm, wm.getPosition());
-        if (c) c.remove();
+	var c = this.immediateContainer();
+	var w = this.world();
+	var wm = new TabbedPanelMorph(this.windowContent(), this.windowTitle());
+	w.addMorphAt(wm, wm.getPosition());
+	if (c) c.remove();
     },
 
     putMeInTheWorld: function(loc) {
-        var c = this.immediateContainer();
-        var loc = c ? c.position().addPt(c.contentOffset) : this.position();
-        this.world().addMorphAt(this, loc);
-        if (c) c.remove();
+	var c = this.immediateContainer();
+	var loc = c ? c.position().addPt(c.contentOffset) : this.position();
+	this.world().addMorphAt(this, loc);
+	if (c) c.remove();
     },
 
     immediateContainer: function() { // Containers override to return themselves
-        if (this.owner) return this.owner.immediateContainer();
-        else return null;
+	if (this.owner) return this.owner.immediateContainer();
+	else return null;
     },
 
     windowContent: function() {
-        return this; // Default response, overridden by containers
+	return this; // Default response, overridden by containers
     },
 
     windowTitle: function() {
-        return Object.inspect(this).truncate(); // Default response, overridden by containers
+	return Object.inspect(this).truncate(); // Default response, overridden by containers
     },
 
     toggleDnD: function(loc) {
-        this.openForDragAndDrop = !this.openForDragAndDrop;
+	this.openForDragAndDrop = !this.openForDragAndDrop;
     },
 
     openDnD: function(loc) {
-        this.openForDragAndDrop = true;
+	this.openForDragAndDrop = true;
     },
 
     closeDnD: function(loc) {
-        this.openForDragAndDrop = false;
+	this.openForDragAndDrop = false;
     },
 
     closeAllToDnD: function(loc) {
-        // Close this and all submorphs to drag and drop
-        this.withAllSubmorphsDo( function() { this.closeDnD(); });
+	// Close this and all submorphs to drag and drop
+	this.withAllSubmorphsDo( function() { this.closeDnD(); });
     },
 
     openAllToDnD: function(loc) {
-        // Close this and all submorphs to drag and drop
-        this.withAllSubmorphsDo( function() { this.openDnD(); });
+	// Close this and all submorphs to drag and drop
+	this.withAllSubmorphsDo( function() { this.openDnD(); });
     },
 
     pickMeUp: function(evt) {
-        var offset = evt.hand.position().subPt(evt.hand.lastMouseDownPoint);
-        this.moveBy(offset);
-        evt.hand.addMorph(this);
+	var offset = evt.hand.position().subPt(evt.hand.lastMouseDownPoint);
+	this.moveBy(offset);
+	evt.hand.addMorph(this);
     },
 
     notify: function(msg, loc) {
-        new MenuMorph([["OK", 0, "toString"]], this).openIn(this.world(), loc, false, msg); 
+	new MenuMorph([["OK", 0, "toString"]], this).openIn(this.world(), loc, false, msg); 
     },
 
     showOwnerChain: function(evt) {
 	console.log("chain is " + this.ownerChain());
-        var items = this.ownerChain().map(
-            function(each) { return [Object.inspect(each).truncate(), function() { each.showMorphMenu(evt) }]; }
-        );
-        new MenuMorph(items, this).openIn(this.world(), evt.mousePoint, false, "Top item is topmost");
+	var items = this.ownerChain().map(
+	    function(each) { return [Object.inspect(each).truncate(), function() { each.showMorphMenu(evt) }]; }
+	);
+	new MenuMorph(items, this).openIn(this.world(), evt.mousePoint, false, "Top item is topmost");
     },
 
     copyToHand: function(hand) {
-        // Function.prototype.shouldTrace = true;
-        var copy = this.copy(new Copier());
-        // when copying submorphs, make sure that the submorph that becomes a top-level morph 
-        // reappears in the same location as its original.
-        console.log('copied %s', copy);
-        copy.owner = null; // so following addMorph will just leave the tfm alone
-        this.owner.addMorph(copy); // set up owner as the original parent so that...        
-        hand.addMorph(copy);  // ... it will be properly transformed by this addMorph()
-        // copy.withAllSubmorphsDo(function() { this.startStepping(null); }, null);
+	// Function.prototype.shouldTrace = true;
+	var copy = this.copy(new Copier());
+	// when copying submorphs, make sure that the submorph that becomes a top-level morph 
+	// reappears in the same location as its original.
+	console.log('copied %s', copy);
+	copy.owner = null; // so following addMorph will just leave the tfm alone
+	this.owner.addMorph(copy); // set up owner as the original parent so that...        
+	hand.addMorph(copy);  // ... it will be properly transformed by this addMorph()
+	// copy.withAllSubmorphsDo(function() { this.startStepping(null); }, null);
     },
 
     morphToGrabOrReceiveDroppingMorph: function(evt, droppingMorph) {
-        return this.morphToGrabOrReceive(evt, droppingMorph, true);
+	return this.morphToGrabOrReceive(evt, droppingMorph, true);
     },
 
     morphToGrabOrReceive: function(evt, droppingMorph, checkForDnD) {
-        // If checkForDnD is false, return the morph to receive this mouse event (or null)
-        // If checkForDnD is true, return the morph to grab from a mouse down event (or null)
-        // If droppingMorph is not null, then check that this is a willing recipient (else null)
+	// If checkForDnD is false, return the morph to receive this mouse event (or null)
+	// If checkForDnD is true, return the morph to grab from a mouse down event (or null)
+	// If droppingMorph is not null, then check that this is a willing recipient (else null)
 
-        if (!this.fullContainsWorldPoint(evt.mousePoint)) return null; // not contained anywhere
-        // First check all the submorphs, front first
-        for (var i = this.submorphs.length - 1; i >= 0; i--) {
-            var hit = this.submorphs[i].morphToGrabOrReceive(evt, droppingMorph, checkForDnD); 
-            if (hit != null) { 
-                return hit;  // hit a submorph
-            }
-        }
+	if (!this.fullContainsWorldPoint(evt.mousePoint)) return null; // not contained anywhere
+	// First check all the submorphs, front first
+	for (var i = this.submorphs.length - 1; i >= 0; i--) {
+	    var hit = this.submorphs[i].morphToGrabOrReceive(evt, droppingMorph, checkForDnD); 
+	    if (hit != null) { 
+		return hit;  // hit a submorph
+	    }
+	}
 
-        // Check if it's really in this morph (not just fullBounds)
-        if (!this.containsWorldPoint(evt.mousePoint)) return null;
+	// Check if it's really in this morph (not just fullBounds)
+	if (!this.containsWorldPoint(evt.mousePoint)) return null;
 
-        // If no DnD check, then we have a hit (unless no handler in which case a miss)
-        if (!checkForDnD) return this.mouseHandler ? this : null;
+	// If no DnD check, then we have a hit (unless no handler in which case a miss)
+	if (!checkForDnD) return this.mouseHandler ? this : null;
 
-        // On drops, check that this is a willing recipient
-        if (droppingMorph != null) {
-            return this.acceptsDropping(droppingMorph) ? this : null;
-        } else {
-            // On grabs, can't pick up the world or morphs that handle mousedown
-            // DI:  I think the world is adequately checked for now elsewhere
-            // else return (!evt.isAltDown() && this === this.world()) ? null : this; 
-            return this;
-        }
+	// On drops, check that this is a willing recipient
+	if (droppingMorph != null) {
+	    return this.acceptsDropping(droppingMorph) ? this : null;
+	} else {
+	    // On grabs, can't pick up the world or morphs that handle mousedown
+	    // DI:  I think the world is adequately checked for now elsewhere
+	    // else return (!evt.isAltDown() && this === this.world()) ? null : this; 
+	    return this;
+	}
 
     },
-    
+
     morphToReceiveEvent: function(evt) {
-        // This should replace morphToGrabOrReceive... in Hand where events
-        // must be displatched to morphs that are closed to DnD
-        return this.morphToGrabOrReceive(evt, null, false);
+	// This should replace morphToGrabOrReceive... in Hand where events
+	// must be displatched to morphs that are closed to DnD
+	return this.morphToGrabOrReceive(evt, null, false);
     },
 
     ownerChain: function() {
-        // Return an array of me and all my owners
-        // First item is, eg, world; last item is me
-        if (!this.owner) return [this];
-        var owners = this.owner.ownerChain();
-        owners.push(this);
-        return owners;
+	// Return an array of me and all my owners
+	// First item is, eg, world; last item is me
+	if (!this.owner) return [this];
+	var owners = this.owner.ownerChain();
+	owners.push(this);
+	return owners;
     },
-    
+
     acceptsDropping: function(morph) { 
-        return this.openForDragAndDrop && !(morph instanceof WindowMorph);
+	return this.openForDragAndDrop && !(morph instanceof WindowMorph);
     }
 
 });
 
 /**
- * @class SchedulableAction
- */ 
+  * @class SchedulableAction
+  */ 
 
 Wrapper.subclass('SchedulableAction', {
 
     documentation: "Description of a periodic action",
     beVerbose: false,
-    
+
     initialize: function($super, actor, scriptName, argIfAny, stepTime) {
-        $super();
-        this.actor = actor;
-        this.rawNode = NodeFactory.createNS(Namespace.LIVELY, "action");
-        this.scriptName = scriptName;
-        this.argIfAny = argIfAny;
-        this.stepTime = stepTime;
-        this.ticks = 0;
-        this.rawNode.appendChild(NodeFactory.createCDATA(this.toJSON()));
+	$super();
+	this.actor = actor;
+	this.rawNode = NodeFactory.createNS(Namespace.LIVELY, "action");
+	this.scriptName = scriptName;
+	this.argIfAny = argIfAny;
+	this.stepTime = stepTime;
+	this.ticks = 0;
+	this.rawNode.appendChild(NodeFactory.createCDATA(this.toJSON()));
     },
 
     deserialize: function($super, importer, rawNode) {
-        $super(importer, rawNode);
-        this.rawNode = rawNode;
-        var init = rawNode.textContent.evalJSON();
-        Object.extend(this, init);
+	$super(importer, rawNode);
+	this.rawNode = rawNode;
+	var init = rawNode.textContent.evalJSON();
+	Object.extend(this, init);
     },
 
     toJSON: function() {
-        // do not try to to convert actor to JSON
-        return Object.toJSON({scriptName: this.scriptName, 
+	// do not try to to convert actor to JSON
+	return Object.toJSON({scriptName: this.scriptName, 
 			      argIfAny: this.argIfAny, 
 			      stepTime: this.stepTime, 
 			      ticks: this.ticks });
     },
 
     toString: function() {
-        return "#<SchedulableAction["+ this.actor + this.toJSON() + "]>";
+	return "#<SchedulableAction["+ this.actor + this.toJSON() + "]>";
     },
-    
+
     stop: function(world) {
-        if (this.beVerbose) console.log("stopped stepping task %s", this);
-        world.stopSteppingFor(this);
+	if (this.beVerbose) console.log("stopped stepping task %s", this);
+	world.stopSteppingFor(this);
     },
-    
+
     start: function(world) {
-        if (this.beVerbose) console.log("started stepping task %s", this);
-        world.startSteppingFor(this);
+	if (this.beVerbose) console.log("started stepping task %s", this);
+	world.startSteppingFor(this);
     },
-    
+
     exec: function() {
 	if (!this.actor) {
 	    console.warn("no actor on script %s", this);
 	    return null;
 	}
-        var func = this.actor[this.scriptName];
-        if (func) {
-            return func.call(this.actor, this.argIfAny);
-        } else {
-            console.warn("no callback on actor %s", this.actor);
+	var func = this.actor[this.scriptName];
+	if (func) {
+	    return func.call(this.actor, this.argIfAny);
+	} else {
+	    console.warn("no callback on actor %s", this.actor);
 	    return null;
-        }
+	}
     }
 });
 
@@ -4221,210 +4267,210 @@ Wrapper.subclass('SchedulableAction', {
 Morph.addMethods({
 
     startSteppingScripts: function() { }, // May be overridden to start stepping scripts
-    
+
     stopSteppingScripts: function() {
-        var world = this.world();
-        if (this.activeScripts) {
-            this.activeScripts.invoke('stop', world);
-            this.activeScripts = null;
-        }
+	var world = this.world();
+	if (this.activeScripts) {
+	    this.activeScripts.invoke('stop', world);
+	    this.activeScripts = null;
+	}
     },
-    
+
     startStepping: function(stepTime, scriptName, argIfAny) {
-        if (!scriptName) 
+	if (!scriptName) 
 	    throw Error("Old code");
-        var action = new SchedulableAction(this, scriptName, argIfAny, stepTime);
-        this.addActiveScript(action);
-        action.start(this.world());
-        return action;
+	var action = new SchedulableAction(this, scriptName, argIfAny, stepTime);
+	this.addActiveScript(action);
+	action.start(this.world());
+	return action;
     },
-    
+
     addActiveScript: function(action) {
-        // Every morph carries a list of currently active actions (alarms and repetitive scripts)
-        if (!this.activeScripts) this.activeScripts = [action];
-        else this.activeScripts.push(action);
-        if (!action.rawNode.parentNode) {
-            this.addNonMorph(action.rawNode);
-        }
+	// Every morph carries a list of currently active actions (alarms and repetitive scripts)
+	if (!this.activeScripts) this.activeScripts = [action];
+	else this.activeScripts.push(action);
+	if (!action.rawNode.parentNode) {
+	    this.addNonMorph(action.rawNode);
+	}
 	return this;
-        // if we're deserializing the rawNode may already be in the markup
+	// if we're deserializing the rawNode may already be in the markup
     },
-    
+
     stopStepping: function() {
 	if (this.activeScripts && this.world()) {
 	    for (var i = 0; i < this.activeScripts.length; i++) 
 		this.world().stopSteppingFor(this.activeScripts[i]);
 	    this.activeScripts = null;
-        } // else: can happen if removing a morph whose parent is not in the world
+	} // else: can happen if removing a morph whose parent is not in the world
     },
 
     suspendAllActiveScripts: function() {
-        this.withAllSubmorphsDo( function() { this.suspendActiveScripts(); });
+	this.withAllSubmorphsDo( function() { this.suspendActiveScripts(); });
     },
 
     suspendActiveScripts: function() {
-        if (this.activeScripts) { 
-            this.suspendedScripts = this.activeScripts.clone();
-            this.stopSteppingScripts();
-        }
+	if (this.activeScripts) { 
+	    this.suspendedScripts = this.activeScripts.clone();
+	    this.stopSteppingScripts();
+	}
     },
 
     resumeAllSuspendedScripts: function() {
-        var world = this.world();
-        this.withAllSubmorphsDo( function() {
-            if (this.suspendedScripts) {
-                this.suspendedScripts.invoke('start', world);
-                this.activeScripts = this.suspendedScripts;
-                this.suspendedScripts = null;
-            }
-        });
+	var world = this.world();
+	this.withAllSubmorphsDo( function() {
+	    if (this.suspendedScripts) {
+		this.suspendedScripts.invoke('start', world);
+		this.activeScripts = this.suspendedScripts;
+		this.suspendedScripts = null;
+	    }
+	});
     }
-    
+
 });
 
 // Morph bounds, coordinates, moving and damage reporting functions
 Morph.addMethods({ 
-    
+
     // bounds returns the full bounding box in owner coordinates of this morph and all its submorphs
     bounds: function() {
-        if (this.fullBounds != null) return this.fullBounds;
+	if (this.fullBounds != null) return this.fullBounds;
 
-        var tfm = this.getLocalTransform();
-        this.fullBounds = tfm.transformRectToRect(this.shape.bounds());
+	var tfm = this.getLocalTransform();
+	this.fullBounds = tfm.transformRectToRect(this.shape.bounds());
 
-        if (this.shape.hasElbowProtrusions) {
-            // double border margin for polylines to account for elbow protrusions
-            this.fullBounds.expandBy(this.shape.getStrokeWidth()*2);
-        } else {
-            this.fullBounds.expandBy(this.shape.getStrokeWidth());
-        }
+	if (this.shape.hasElbowProtrusions) {
+	    // double border margin for polylines to account for elbow protrusions
+	    this.fullBounds.expandBy(this.shape.getStrokeWidth()*2);
+	} else {
+	    this.fullBounds.expandBy(this.shape.getStrokeWidth());
+	}
 
-        if (this.hasSubmorphs()) { 
-            var subBounds = null; // KP: added = null
-            this.submorphs.each(function(m) { 
-                subBounds = subBounds == null ? m.bounds() : subBounds.union(m.bounds()); }
-            );
-            // could be simpler when no rotation...
-            this.fullBounds = this.fullBounds.union(tfm.transformRectToRect(subBounds));
-        } 
+	if (this.hasSubmorphs()) { 
+	    var subBounds = null; // KP: added = null
+	    this.submorphs.each(function(m) { 
+		subBounds = subBounds == null ? m.bounds() : subBounds.union(m.bounds()); }
+			       );
+	    // could be simpler when no rotation...
+	    this.fullBounds = this.fullBounds.union(tfm.transformRectToRect(subBounds));
+	} 
 
-        if (this.fullBounds.width < 3 || this.fullBounds.height < 3) {
-            // Prevent Horiz or vert lines from being ungrabable
-            this.fullBounds = this.fullBounds.expandBy(3); 
-        }
+	if (this.fullBounds.width < 3 || this.fullBounds.height < 3) {
+	    // Prevent Horiz or vert lines from being ungrabable
+	    this.fullBounds = this.fullBounds.expandBy(3); 
+	}
 
-        return this.fullBounds; 
+	return this.fullBounds; 
     },
-    
+
     // innerBounds returns the bounds of this morph only, and in local coordinates
     innerBounds: function() { return this.shape.bounds() },
 
     /** 
-     * mapping coordinates in the hierarchy
-     * @return [Point]
-     */
+      * mapping coordinates in the hierarchy
+      * @return [Point]
+      */
 
     // map local point to world coordinates
     worldPoint: function(pt) { 
-        return pt.matrixTransform(this.transformToMorph(this.world())); 
+	return pt.matrixTransform(this.transformToMorph(this.world())); 
     },
 
     // map owner point to local coordinates
     relativize: function(pt) { 
-        if (!this.owner) { 
-            throw new Error('no owner; call me after adding to a morph? ' + this);
-        }
-        try {
-            return pt.matrixTransform(this.owner.transformToMorph(this)); 
-        } catch (er) {
-            // console.info("ignoring relativize wrt/%s", this);
-            return pt;
-        }
+	if (!this.owner) { 
+	    throw new Error('no owner; call me after adding to a morph? ' + this);
+	}
+	try {
+	    return pt.matrixTransform(this.owner.transformToMorph(this)); 
+	} catch (er) {
+	    // console.info("ignoring relativize wrt/%s", this);
+	    return pt;
+	}
     },
 
     // map owner rectangle to local coordinates
     relativizeRect: function(r) { 
-        return rect(this.relativize(r.topLeft()), this.relativize(r.bottomRight()));
+	return rect(this.relativize(r.topLeft()), this.relativize(r.bottomRight()));
     },
-    
+
     // map world point to local coordinates
     localize: function(pt) {
-        if (pt == null) console.log('null pt');   
-        if (this.world() == null) {
-            console.log('null this.world()');   
-            return pt;
-        }
-        return pt.matrixTransform(this.world().transformToMorph(this));
+	if (pt == null) console.log('null pt');   
+	if (this.world() == null) {
+	    console.log('null this.world()');   
+	    return pt;
+	}
+	return pt.matrixTransform(this.world().transformToMorph(this));
     },
-    
+
     // map local point to owner coordinates
     localizePointFrom: function(pt, otherMorph) {   
-        try {
-            return pt.matrixTransform(otherMorph.transformToMorph(this));
-        } catch (er) {
-            // Function.showStack();
-            console.log("problem " + er + " on " + this + " other " + otherMorph);
-            return pt;
-        }
+	try {
+	    return pt.matrixTransform(otherMorph.transformToMorph(this));
+	} catch (er) {
+	    // Function.showStack();
+	    console.log("problem " + er + " on " + this + " other " + otherMorph);
+	    return pt;
+	}
     },
 
     transformForNewOwner: function(newOwner) {
-        // var old = this.getTransform().copy();
-        var t = new Transform(this.transformToMorph(newOwner));
-        // console.log("made new transform " + t + " old " + old + " new Owner " + newOwner.getTransform());
-        return t;
+	// var old = this.getTransform().copy();
+	var t = new Transform(this.transformToMorph(newOwner));
+	// console.log("made new transform " + t + " old " + old + " new Owner " + newOwner.getTransform());
+	return t;
     },
 
     changed: function() {
-        // (this.owner || this).invalidRect(this.bounds());
+	// (this.owner || this).invalidRect(this.bounds());
     },
 
     layoutChanged: function() {
-        // layoutChanged() is called whenever the cached fullBounds may have changed
-        // It invalidates the cache, which will be recomputed when bounds() is called
-        // Naturally it must be propagated up its owner chain.
-        // Note the difference in meaning from adjustForNewBounds()
-        this.getTransform().applyTo(this.rawNode);  // DI: why is this here?
-        this.fullBounds = null;
-        if (this.owner && this.owner !== this.world()) {     // May affect owner as well...
-            this.owner.layoutChanged();
-        }
+	// layoutChanged() is called whenever the cached fullBounds may have changed
+	// It invalidates the cache, which will be recomputed when bounds() is called
+	// Naturally it must be propagated up its owner chain.
+	// Note the difference in meaning from adjustForNewBounds()
+	this.getTransform().applyTo(this.rawNode);  // DI: why is this here?
+	this.fullBounds = null;
+	if (this.owner && this.owner !== this.world()) {     // May affect owner as well...
+	    this.owner.layoutChanged();
+	}
     },
-    
-    adjustForNewBounds: function() {
-        // adjustForNewBounds() is called whenever the innerBounds may have changed in extent
-        //  -- it should really be called adjustForNewExtent --
-        // Depending on the morph and its layoutManager, it may then re-layout its
-        // submorphs and, in the process, propagate the message down to leaf morphs (or not)
-        // Of course a change in innerBounds implies layoutChanged() as well,
-        // but, for now, these are called separately.
-        // NB:  Because some morphs may re-lay themselves out in response to adjustForNewBounds()
-        // adjustForNewBounds() *must never be called from* a layout operation;
-        // The layout process should only move and resize submorphs, but never change the innerBounds
 
-        // If this method is overridden by a subclass, it should call super as well
-        if (this.focusHalo) this.adjustFocusHalo();
+    adjustForNewBounds: function() {
+	// adjustForNewBounds() is called whenever the innerBounds may have changed in extent
+	//  -- it should really be called adjustForNewExtent --
+	// Depending on the morph and its layoutManager, it may then re-layout its
+	// submorphs and, in the process, propagate the message down to leaf morphs (or not)
+	// Of course a change in innerBounds implies layoutChanged() as well,
+	// but, for now, these are called separately.
+	// NB:  Because some morphs may re-lay themselves out in response to adjustForNewBounds()
+	// adjustForNewBounds() *must never be called from* a layout operation;
+	// The layout process should only move and resize submorphs, but never change the innerBounds
+
+	// If this method is overridden by a subclass, it should call super as well
+	if (this.focusHalo) this.adjustFocusHalo();
     },
-    
+
     recordChange: function(fieldName/*:String*/) {  
-        // Update sever or change log or something
-        return;
-        // consider relating to this.changed()
+	// Update sever or change log or something
+	return;
+	// consider relating to this.changed()
     },
 
     position: function() { // Deprecated -- use getPosition
-        return this.shape.bounds().topLeft().addPt(this.origin); 
+	return this.shape.bounds().topLeft().addPt(this.origin); 
     },
-    
+
     getPosition: function() {
-        return this.shape.bounds().topLeft().addPt(this.origin); 
+	return this.shape.bounds().topLeft().addPt(this.origin); 
     },
-    
+
     setPosition: function(newPosition) {
-        var delta = newPosition.subPt(this.getPosition());
-        this.translateBy(delta); 
+	var delta = newPosition.subPt(this.getPosition());
+	this.translateBy(delta); 
     }
-    
+
 });
 
 // Morph clipping functions
@@ -4432,78 +4478,78 @@ Morph.addMethods({
 
     clipToPath: function(shape) {
 	if (this.clipPath) this.clipPath.removeRawNode();
-	
-        var clip = new ClipPath(shape);
+
+	var clip = new ClipPath(shape);
 
 	clip.setId(ClipPath.deriveId(this.id()));
 	this.addWrapperToDefs(clip);
-	
-        this.rawNode.setAttributeNS(null, "clip-path", clip.uri());
+
+	this.rawNode.setAttributeNS(null, "clip-path", clip.uri());
 	this.clipPath = clip;
-	
+
     },
 
     clipToShape: function() {
-        this.clipToPath(this.shape);
+	this.clipToPath(this.shape);
     }
-    
+
 });
 
 // SVG inspector for Morphs
 Morph.addMethods( {
-    
+
     addSvgInspector: function() {
-        var xml = new Exporter(this).serialize();
-        var extent = pt(500, 300);
-        var pane = newTextPane(extent.extentAsRectangle(), "");
+	var xml = new Exporter(this).serialize();
+	var extent = pt(500, 300);
+	var pane = newTextPane(extent.extentAsRectangle(), "");
 	pane.innerMorph().setTextString(xml);
 	pane.innerMorph().xml = xml; // FIXME a sneaky way of passing original text.
-        this.world().addFramedMorph(pane, "XML dump", this.world().positionForNewMorph(this));
+	this.world().addFramedMorph(pane, "XML dump", this.world().positionForNewMorph(this));
     }
-    
+
 });
 
 // Morph factory methods for creating simple morphs easily
 Object.extend(Morph, {
 
     makeLine: function(verts, lineWidth, lineColor) {
-        // make a line with its origin at the first vertex
-        // Note this works for simple lines (2 vertices) and general polylines
-        var line = new Morph(verts[0].asRectangle(), "rect");
-        var vertices = Shape.translateVerticesBy(verts, verts[0].negated());
-        line.setShape(new PolylineShape(vertices, lineWidth, lineColor));
-        return line; 
+	// make a line with its origin at the first vertex
+	// Note this works for simple lines (2 vertices) and general polylines
+	var line = new Morph(verts[0].asRectangle(), "rect");
+	var vertices = Shape.translateVerticesBy(verts, verts[0].negated());
+	line.setShape(new PolylineShape(vertices, lineWidth, lineColor));
+	return line; 
     },
 
     makeCircle: function(location, radius, lineWidth, lineColor, fill) {
-        // make a circle of the given radius with its origin at the center
-        var circle = new Morph(location.asRectangle().expandBy(radius), "ellipse")
+	// make a circle of the given radius with its origin at the center
+	var circle = new Morph(location.asRectangle().expandBy(radius), "ellipse")
 	return circle.applyStyle({fill: fill, borderWidth: lineWidth, borderColor: lineColor});
     },
 
     makePolygon: function(verts, lineWidth, lineColor, fill) {
-        // make a polygon with its origin at the starting vertex
-        var poly = new Morph(pt(0,0).asRectangle(), "rect");
-        poly.setShape(new PolygonShape(verts, fill, lineWidth, lineColor));
-        return poly; 
+	// make a polygon with its origin at the starting vertex
+	var poly = new Morph(pt(0,0).asRectangle(), "rect");
+	poly.setShape(new PolygonShape(verts, fill, lineWidth, lineColor));
+	return poly; 
     }
 });
 
-// View trait.
+// View trait
 ViewTrait = {
     connectModel: function(plugSpec) {
 	// connector makes this view pluggable to different models, as in
-        // {model: someModel, getList: "getItemList", setSelection: "chooseItem"}
-        var newPlug = new ModelPlug(plugSpec);
-
+	// {model: someModel, getList: "getItemList", setSelection: "chooseItem"}
+	var newPlug = (plugSpec instanceof ModelPlug) ? plugSpec : new ModelPlug(plugSpec);
+	
 	if (!(plugSpec.model instanceof Model) && !this.checkModel(plugSpec))
 	    console.log("model " + plugSpec.model +  " is not a Model, view " + this);
 
-        this.modelPlug = newPlug;
-	
-        if (plugSpec.model.addDependent) { // for mvc-style updating
-            plugSpec.model.addDependent(this);
-        } 
+	this.modelPlug = newPlug;
+
+	if (plugSpec.model.addDependent) { // for mvc-style updating
+	    plugSpec.model.addDependent(this);
+	} 
 	return this;
     },
 
@@ -4519,64 +4565,68 @@ ViewTrait = {
 
     disconnectModel: function() {
 	var model = this.modelPlug && this.modelPlug.model;
-        if (model && model.removeDependent) { // for mvc-style updating
-            model.removeDependent(this);
-        } 
+	if (model && model.removeDependent) { // for mvc-style updating
+	    model.removeDependent(this);
+	} 
     },
 
     getModel: function() {
-        return this.modelPlug && this.modelPlug.model;
+	return this.modelPlug && this.modelPlug.model;
+    },
+    
+    getModelPlug: function() { //overriden by ScrollPanes
+	return this.modelPlug;
     },
 
     getModelValue: function(functionName, defaultValue) {
-        // functionName is a view-specific message, such as "getList"
-        // The model plug then provides a reference to the model, as well as
-        // the specific model accessor for the aspect being viewed, say "getItemList"
-        // Failure at any stage will return the default value.
-        var plug = this.modelPlug;
-        if (plug == null || plug.model == null || functionName == null) return defaultValue;
-        var func = plug.model[plug[functionName]];
-        if (func == null) return defaultValue;
-        return func.call(plug.model); 
+	// functionName is a view-specific message, such as "getList"
+	// The model plug then provides a reference to the model, as well as
+	// the specific model accessor for the aspect being viewed, say "getItemList"
+	// Failure at any stage will return the default value.
+	var plug = this.getModelPlug();
+	if (plug == null || plug.model == null || functionName == null) return defaultValue;
+	var func = plug.model[plug[functionName]];
+	if (func == null) return defaultValue;
+	return func.call(plug.model); 
     },
 
     setModelValue: function(functionName, newValue) {
-        // functionName is a view-specific message, such as "setSelection"
-        // The model plug then provides a reference to the model, as well as
-        // the specific model accessor for the aspect being viewed, say "chooseItem"
-        // Failure at any stage is tolerated without error.
-        // Successful sets to the model supply not only the newValue, but also
-        // a reference to this view.  This allows the model's changed() method
-        // to skip this view when broadcasting updateView(), and thus avoid
-        // needless computation for a view that is already up to date.
-        var plug = this.modelPlug;
-        if (plug == null || plug.model == null || functionName == null) return;
-        var func = plug.model[plug[functionName]];
-        if (func == null) return;
-        func.call(plug.model, newValue, this);
+	// functionName is a view-specific message, such as "setSelection"
+	// The model plug then provides a reference to the model, as well as
+	// the specific model accessor for the aspect being viewed, say "chooseItem"
+	// Failure at any stage is tolerated without error.
+	// Successful sets to the model supply not only the newValue, but also
+	// a reference to this view.  This allows the model's changed() method
+	// to skip this view when broadcasting updateView(), and thus avoid
+	// needless computation for a view that is already up to date.
+	var plug = this.getModelPlug();
+	if (plug == null || plug.model == null || functionName == null) return;
+	var func = plug.model[plug[functionName]];
+	if (func == null) return;
+	func.call(plug.model, newValue, this);
     },
 
     updateView: function(aspect, controller) {
-        // This method is sent in response to logic within the model executing
-        //     this.changed(aspect, source)
-        // The aspect used is the name of the get-message for the aspect
-        // that needs to be updated in the view (and presumably redisplayed)
-        // All actual view morphs will override this method with code that
-        // checks for their aspect and does something useful in that case.
+	// This method is sent in response to logic within the model executing
+	//     this.changed(aspect, source)
+	// The aspect used is the name of the get-message for the aspect
+	// that needs to be updated in the view (and presumably redisplayed)
+	// All actual view morphs will override this method with code that
+	// checks for their aspect and does something useful in that case.
     }
 };
 
 Object.subclass('View', ViewTrait, {
-    
+
     initialize: function(modelPlug) {
 	if (modelPlug)
 	    this.connectModel(modelPlug);
     },
-    
+
     getType: function() { // convenience
 	return this.constructor.getOriginal().type;
     },
-    
+
     toString: function() {
 	return "#<" + this.getType() + ">";
     }
@@ -4591,10 +4641,10 @@ Morph.addMethods(ViewTrait);
 // ===========================================================================
 
 /**
- * @class Model
- * An MVC style model class that allows changes to be automatically
- * propagated to multiple listeners/subscribers/dependents. 
- */ 
+  * @class Model
+  * An MVC style model class that allows changes to be automatically
+  * propagated to multiple listeners/subscribers/dependents. 
+  */ 
 
 // A typical model/view relationship is set up in the following manner:
 //        panel.addMorph(m = newListPane(new Rectangle(200,0,200,150)));
@@ -4612,150 +4662,157 @@ Morph.addMethods(ViewTrait);
 Object.subclass('Model', {
 
     initialize: function(dep) { 
-        // Broadcasts an update message to all dependents when a value changes.
-        this.dependents = (dep != null) ? [dep] : [];
+	// Broadcasts an update message to all dependents when a value changes.
+	this.dependents = (dep != null) ? [dep] : [];
     },
 
     addDependent: function (dep) { 
-        this.dependents.push(dep); 
+	this.dependents.push(dep); 
     },
 
     removeDependent: function (dep) {
-        var ix = this.dependents.indexOf(dep);
-        if (ix < 0) return;
-        this.dependents.splice(ix, 1); 
+	var ix = this.dependents.indexOf(dep);
+	if (ix < 0) return;
+	this.dependents.splice(ix, 1); 
     },
 
     changed: function(varName, source) {
-        // Broadcast the message "updateView" to all dependents
-        // If source (a dependent) is given, we skip it (already updated)
-        // If varName is not given, then null will be the aspect of the updateView()
-        //console.log('changed ' + varName);
-        for (var i = 0; i < this.dependents.length; i++) {
-            if (source !== this.dependents[i]) {
-                //console.log('updating %s for name %s', this.dependents[i], varName);
-                this.dependents[i].updateView(varName, source);
-            } 
-        } 
+	// Broadcast the message "updateView" to all dependents
+	// If source (a dependent) is given, we skip it (already updated)
+	// If varName is not given, then null will be the aspect of the updateView()
+	//console.log('changed ' + varName);
+	for (var i = 0; i < this.dependents.length; i++) {
+	    if (source !== this.dependents[i]) {
+		//console.log('updating %s for name %s', this.dependents[i], varName);
+		this.dependents[i].updateView(varName, source);
+	    } 
+	} 
     },
 
     toString: function() {
-        return "#<Model:%s>".format(this.dependents);
+	return "#<Model:%s>".format(this.dependents);
     },
 
     inspect: function() {
-        var hash = new Hash(this);
-        delete hash.dependents;
-        return "#<Model:%s>".format(Object.toJSON(hash));
+	var hash = new Hash(this);
+	delete hash.dependents;
+	return "#<Model:%s>".format(Object.toJSON(hash));
     },
 
     // test?
     copyFrom: function(copier, other) {
-        this.dependents = [];
-        other.dependents.each(function(dep) { this.dependents.push(copier.lookupMorph(dep.id())) });
+	this.dependents = [];
+	other.dependents.each(function(dep) { this.dependents.push(copier.lookupMorph(dep.id())) });
     }
 
 });
 
 /**
- * @class ModelPlug
- */ 
+  * @class ModelPlug
+  */ 
 
 Wrapper.subclass('ModelPlug', {
 
     initialize: function(spec) {
-	var props = Object.properties(spec);
-        for (var i = 0; i < props.length; i++) {
-	    var prop = props[i];
-            this[prop] = spec[prop];
-	}
-    },
-    
-    persist: function() {
-	var props = Object.properties(this);
-	var rawNode = NodeFactory.createNS(Namespace.LIVELY, "modelPlug");
+	var props = Object.ownProperties(spec);
 	for (var i = 0; i < props.length; i++) {
 	    var prop = props[i];
+	    this[prop] = spec[prop];
+	}
+    },
+
+    persist: function(modelId) {
+	var props = Object.ownProperties(this);
+	var rawNode = NodeFactory.createNS(Namespace.LIVELY, "modelPlug", {model: modelId});
+	for (var i = 0; i < props.length; i++) {
+	    var prop = props[i];
+	    
 	    switch (prop) {
 	    case 'model':
 	    case 'rawNode':
 		break;
 	    default:
-                var acc = rawNode.appendChild(NodeFactory.createNS(Namespace.LIVELY, "accessor"));
-                acc.setAttributeNS(Namespace.LIVELY, "formal", prop);
-                acc.setAttributeNS(Namespace.LIVELY, "actual", this[prop]);
-            }
-        }
+		rawNode.appendChild(NodeFactory.createNS(Namespace.LIVELY, "accessor", {formal: prop, actual: this[prop]}));
+	    }
+	}
 	return rawNode;
     },
 
     deserialize: function(importer, rawNode) {
-        for (var acc = rawNode.firstChild; acc != null;  acc = acc.nextSibling) {
-            if (acc.localName != 'accessor') continue;
-            this[acc.getAttributeNS(Namespace.LIVELY, "formal")] = acc.getAttributeNS(Namespace.LIVELY, "actual");
-        }
+	for (var acc = rawNode.firstChild; acc != null;  acc = acc.nextSibling) {
+	    if (acc.localName != 'accessor') continue;
+	    this[acc.getAttributeNS(Namespace.LIVELY, "formal")] = acc.getAttributeNS(Namespace.LIVELY, "actual");
+	}
     }
 });
 
 
 /**
- * @class SimpleModel
- */ 
+  * @class SimpleModel
+  */ 
 
 Model.subclass('SimpleModel', {
-    
+
     getter: function(varName) {
-        return "get" + varName;
+	return "get" + varName;
     },
-    
+
     setter: function(varName) {
-        return "set" + varName;
+	return "set" + varName;
     },
 
     initialize: function($super /*, variables... */) {
-        $super(null);
-        var variables = $A(arguments);
-        variables.shift();
-        for (var i = 0; i < variables.length; i++) {
-            this.addVariable(variables[i], null);
-        }
+	$super(null);
+	var variables = $A(arguments);
+	variables.shift();
+	for (var i = 0; i < variables.length; i++) {
+	    this.addVariable(variables[i], null);
+	}
     },
-    
+
     addVariable: function(varName, initialValue) {
-        // functional programming is fun!
-        this[varName] = initialValue;
-        this[this.getter(varName)] = function(name) { return function() { return this[name]; } } (varName); // let name = varName ()
-        this[this.setter(varName)] = function(name) { return function(newValue, v) { this[name] = newValue; 
-                                                      this.changed(this.getter(name), v); }} (varName);
+	// functional programming is fun!
+	this[varName] = initialValue;
+	this[this.getter(varName)] = function(name) { return function() { return this[name]; } } (varName); // let name = varName ()
+	this[this.setter(varName)] = function(name) { return function(newValue, v) { this[name] = newValue; 
+										     this.changed(this.getter(name), v); }} (varName);
     },
-    
+
     makePlugSpec: function() {
-        var model = this;
-        var spec = { };
-        this.variables().each(function(v) { spec[this.getter(v)] = model[this.getter(v)]; spec[this.setter(v)] = model[this.setter(v)]; }.bind(this));
-        spec.model = this;
+	var model = this;
+	var spec = { };
+	this.variables().each(function(v) { spec[this.getter(v)] = model[this.getter(v)]; spec[this.setter(v)] = model[this.setter(v)]; }.bind(this));
+	spec.model = this;
     },
-    
+
     variables: function() {
-        return Object.properties(this).filter(function(name) { return name != 'dependents'});
+	return Object.ownProperties(this).filter(function(name) { return name != 'dependents'});
     },
-    
-    toMarkup: function(doc) {
-        doc = doc || document;
-        var modelEl = doc.createElementNS(Namespace.LIVELY, "model");
-        var vars = this.variables();
-        for (var i = 0; i < vars.length; i++) {
-            var varEl = modelEl.appendChild(doc.createElementNS(Namespace.LIVELY, "variable"));
-            var name = vars[i];
-            varEl.setAttributeNS(Namespace.LIVELY, "name", name);
-            varEl.appendChild(doc.createTextNode(Object.toJSON(this[name])));
+
+    toMarkup: function(index) {
+	var element = NodeFactory.createNS(Namespace.LIVELY, "model");
+	var vars = this.variables();
+	for (var i = 0; i < vars.length; i++) {
+	    var name = vars[i];
+	    var varEl = element.appendChild(NodeFactory.createNS(Namespace.LIVELY, "variable", {name: name}));
+	    varEl.appendChild(NodeFactory.createText(Object.toJSON(this[name])));
+	}
+	for (var i = 0; i < this.dependents.length; i++) {	    
+	    var dependent = this.dependents[i];
+	    console.log("model dependent " + dependent);
+	    if (dependent instanceof Morph) {
+		element.appendChild(NodeFactory.createNS(Namespace.LIVELY, "dependent", {ref: dependent.id()}));
+	    } else if (dependent instanceof View) { // stateless view, will be recreated from type
+		var viewElement = element.appendChild(NodeFactory.createNS(Namespace.LIVELY, "dependentView", 
+		    { type: dependent.getType()}));
+		var plug = dependent.modelPlug && dependent.modelPlug.persist(index || 0);
+		if (plug) viewElement.appendChild(plug);
+	    } else {
+		console.log("cant handle dependent " + dependent);
+	    }
         }
-        for (var i = 0; i < this.dependents.length; i++) {
-            var depEl = modelEl.appendChild(doc.createElementNS(Namespace.LIVELY, "dependent"));
-            depEl.setAttributeNS(Namespace.LIVELY, "ref", this.dependents[i].id());
-        }
-        console.log("produced markup " + modelEl);
-        return modelEl;
+        console.log("produced markup " + element);
+        return element;
     }
 });
 
@@ -4841,7 +4898,7 @@ PasteUpMorph.subclass("WorldMorph", {
             window:      { borderRadius: 0 },
             titleBar:    { borderRadius: 0, borderWidth: 2, bordercolor: Color.black,
                            fill: Color.neutral.gray.lighter() },
-    
+	    
             slider:      { borderColor: Color.black, borderWidth: 1,
                            fill: Color.neutral.gray.lighter() },
             button:      { borderColor: Color.black, borderWidth: 1, borderRadius: 0,
@@ -4911,7 +4968,7 @@ PasteUpMorph.subclass("WorldMorph", {
             background.setAttributeNS(Namespace.XLINK, "href", backgroundImageId);
             this.addNonMorph(background);
         }
-            
+        
         $super(bounds, "rect");
 
     },
@@ -4954,7 +5011,7 @@ PasteUpMorph.subclass("WorldMorph", {
         hand.registerForEvents(this);
         hand.registerForEvents(hand);
         hand.layoutChanged();
-    
+	
         Event.keyboardEvents.each(function(each) {
             document.documentElement.addEventListener(each, hand, false);
         });
@@ -4978,9 +5035,9 @@ PasteUpMorph.subclass("WorldMorph", {
         var menu = $super(evt);
         menu.keepOnlyItemsNamed(["inspect", "style"]);
         menu.addItem([(Morph.prototype.suppressBalloonHelp ? "enable balloon help" : "disable balloon help"),
-                     this.toggleBalloonHelp]);
+                      this.toggleBalloonHelp]);
         menu.addItem([(HandMorph.prototype.applyDropShadowFilter ? "disable " : "enable ") + "drop shadow (if supported)",
-            function () { HandMorph.prototype.applyDropShadowFilter = !HandMorph.prototype.applyDropShadowFilter}]);
+		      function () { HandMorph.prototype.applyDropShadowFilter = !HandMorph.prototype.applyDropShadowFilter}]);
         menu.addLine();
         menu.addItem(["new object...", this.addMorphs.curry(evt)]);
         menu.addLine();
@@ -4997,7 +5054,7 @@ PasteUpMorph.subclass("WorldMorph", {
         menu.addItem(["restart system", this.restart]);
         return menu;
     },
-   
+    
     toggleBalloonHelp: function() {
         Morph.prototype.suppressBalloonHelp = !Morph.prototype.suppressBalloonHelp;
     },
@@ -5012,18 +5069,18 @@ PasteUpMorph.subclass("WorldMorph", {
     chooseDisplayTheme: function(evt) { 
         var themes = this.displayThemes;
         var target = this; // trouble with function scope
-        var themeNames = Object.properties(themes);
+        var themeNames = Object.ownProperties(themes);
         var items = themeNames.map(
             function(each) { return [each, target, "setDisplayTheme", themes[each]]; });
         var menu = new MenuMorph(items, this);
         menu.openIn(this.world(), evt.mousePoint);
     },
-  
+    
     setDisplayTheme: function(styleDict) { 
         this.displayTheme = styleDict;
         this.withAllSubmorphsDo( function() { this.applyLinkedStyles(); });
     },
-  
+    
     restart: function() {
         window.location && window.location.reload();
     },
@@ -5043,29 +5100,29 @@ PasteUpMorph.subclass("WorldMorph", {
     moveBy: function(delta) { // don't try to move the world
     },
     
-//  *** The new truth about ticking scripts ***
-//  A morph may have any number of active scripts
-//  Each is activated by a call such as
-//      this.startStepping(50, "rotateBy", 0.1);
-//  Note that stepTime is in milliseconds, as are all lower-level methods
-//  The arguments are: stepTime, scriptName, argIfAny
-//  This in turn will create a SchedulableAction of the form
-//  { actor: aMorph, scriptName: "rotateBy", argIfAny: 0.1, stepTime: 50, ticks: 0 }
-//  and this action will be both added to an array, activeScripts in the morph,
-//  and it will be added to the world's scheduledActions list, which is an array of
-//  tuples of the form [msTimeToRun, action]
-//  The ticks field is used to tally ticks spent in each schedulableAction --
-//  It is incremented on every execution, and it is multiplied by 0.9 every second
-//  Thus giving a crude 10-second average of milliseconds spent in this script
-//  every 10 seconds.  The result is divided by 10 in the printouts.
-//
-//  The message startSteppingScripts can be sent to morphs when they are placed in the world.
-//  It is intended that this may be overridden to start any required stepping.
-//  The message stopSteppingScripts will be sent when morphs are removed from the world.
+    //  *** The new truth about ticking scripts ***
+    //  A morph may have any number of active scripts
+    //  Each is activated by a call such as
+    //      this.startStepping(50, "rotateBy", 0.1);
+    //  Note that stepTime is in milliseconds, as are all lower-level methods
+    //  The arguments are: stepTime, scriptName, argIfAny
+    //  This in turn will create a SchedulableAction of the form
+    //  { actor: aMorph, scriptName: "rotateBy", argIfAny: 0.1, stepTime: 50, ticks: 0 }
+    //  and this action will be both added to an array, activeScripts in the morph,
+    //  and it will be added to the world's scheduledActions list, which is an array of
+    //  tuples of the form [msTimeToRun, action]
+    //  The ticks field is used to tally ticks spent in each schedulableAction --
+    //  It is incremented on every execution, and it is multiplied by 0.9 every second
+    //  Thus giving a crude 10-second average of milliseconds spent in this script
+    //  every 10 seconds.  The result is divided by 10 in the printouts.
+    //
+    //  The message startSteppingScripts can be sent to morphs when they are placed in the world.
+    //  It is intended that this may be overridden to start any required stepping.
+    //  The message stopSteppingScripts will be sent when morphs are removed from the world.
     //  In this case the activeScripts array of the morph is used to determine exactly what
-//  scripts need to be unscheduled.  Note that startSteppingScripts is not sent
+    //  scripts need to be unscheduled.  Note that startSteppingScripts is not sent
     //  automatically, whereas stopSteppingScripts is.  We know you won't forget to 
-//  turn your gadgets on, but we're more concerned to turn them off when you're done.
+    //  turn your gadgets on, but we're more concerned to turn them off when you're done.
 
     scheduleForLater: function(action, delayInMs, removePrior) {
         if (removePrior) this.stopSteppingFor(action, true);  // unschedule earlier
@@ -5086,9 +5143,9 @@ PasteUpMorph.subclass("WorldMorph", {
 	// DI FIXME: This only removes the first one found (alarms may be multiply scheduled)
 
         if (this.currentScript === action) {
-		// Not in queue; just prevent it from being rescheduled
-		this.currentScript = null;
-		return;
+	    // Not in queue; just prevent it from being rescheduled
+	    this.currentScript = null;
+	    return;
 	}
 	var list = this.scheduledActions;  // shorthand
         for (var i = 0; i < list.length; i++) {
@@ -5343,11 +5400,11 @@ Morph.subclass("HandMorph", {
 
     initialize: function($super, local) {
         $super(pt(5,5).extent(pt(10,10)), "rect");
-    
+	
         this.setShape(new PolygonShape([pt(0,0), pt(9,5), pt(5,9), pt(0,0)], 
-                     (local ? Color.blue : Color.red), 1, Color.black));
+				       (local ? Color.blue : Color.red), 1, Color.black));
         this.shape.disablePointerEvents();
-    
+	
         this.isLocal = local;
         this.setFill(local ? Color.primary.blue : Color.primary.green); 
 
@@ -5434,7 +5491,7 @@ Morph.subclass("HandMorph", {
     handleMouseEvent: function(evt) { 
 
         evt.setButtonPressedAndPriorPoint(this.mouseButtonPressed, 
-            this.lastMouseEvent ? this.lastMouseEvent.mousePoint : null);
+					  this.lastMouseEvent ? this.lastMouseEvent.mousePoint : null);
 
         //-------------
         // mouse move
@@ -5442,11 +5499,11 @@ Morph.subclass("HandMorph", {
         if (evt.type == "MouseMove") { // it is just a move
             this.setPosition(evt.mousePoint);
             this.recordChange('origin');
-             
+            
             if (evt.mousePoint.dist(this.lastMouseDownPoint) > 10) { 
                 this.hasMovedSignificantly = true;
             }
-                
+            
             if (this.mouseFocus) { // if mouseFocus is set, events go to that morph
                 this.mouseFocus.captureMouseEvent(evt, true);
             } else {
@@ -5470,7 +5527,7 @@ Morph.subclass("HandMorph", {
             this.lastMouseEvent = evt;
             return;
         }
-    
+	
         //-------------------
         // mouse up or down
         //-------------------
@@ -5482,7 +5539,7 @@ Morph.subclass("HandMorph", {
         this.mouseButtonPressed = (evt.type == "MouseDown"); 
         this.setBorderWidth(this.mouseButtonPressed ? 3 : 1);
         evt.setButtonPressedAndPriorPoint(this.mouseButtonPressed, this.lastMouseEvent ? this.lastMouseEvent.mousePoint : null);
-    
+	
         if (this.mouseFocus != null) {
             if (this.mouseButtonPressed) {
                 this.mouseFocus.captureMouseEvent(evt, true);
@@ -5549,7 +5606,7 @@ Morph.subclass("HandMorph", {
             var m = this.submorphs.first();
             receiver.addMorph(m); // this removes it from hand
             if (this.logDnD) console.log("%s dropping %s on %s", this, m, receiver);
-    
+	    
             if (this.applyDropShadowFilter) {
                 m.rawNode.setAttributeNS(null, "filter", "none");
             }
@@ -5600,8 +5657,8 @@ Morph.subclass("HandMorph", {
             evt.stop();
             return true;
 
-        // Experimental radial scrolling feature
-        // Read the comments near method Morph.moveRadially()
+            // Experimental radial scrolling feature
+            // Read the comments near method Morph.moveRadially()
         case Event.KEY_PAGEUP:
         case 65: // The "A" key
             for (var i = 0; i < world.submorphs.length; i++) {
@@ -5686,7 +5743,7 @@ Morph.subclass("HandMorph", {
 	else
             this.submorphs.unshift(m);
     },
-	
+    
     toString: function($super) { 
         var superString = $super();
         var extraString = ", local=%s,id=%s".format(this.isLocal, this.id());
@@ -5705,8 +5762,8 @@ Morph.subclass('LinkMorph', {
 
     documentation: "two-way hyperlink between two Lively worlds",
     helpText: "Click here to enter or leave a subworld.\n" +
-              "Use menu 'grab' to move me.  Drag objects\n" +
-              "onto me to transport objects between worlds.",
+        "Use menu 'grab' to move me.  Drag objects\n" +
+        "onto me to transport objects between worlds.",
     openForDragAndDrop: false,
     suppressHandles: true,
     style: {borderColor: Color.black, fill: new RadialGradient(Color.green, Color.blue)},
@@ -5723,7 +5780,7 @@ Morph.subclass('LinkMorph', {
         } else if (bounds instanceof Point) {
             bounds = bounds.asRectangle().expandBy(25);
         }
-    
+	
         $super(bounds, "ellipse");
 	
         // Make me look a bit like a world
@@ -5893,7 +5950,7 @@ LinkMorph.subclass('ExternalLinkMorph', {
 	// add a confirmation dialog!
 	
     },
-
+    
     getHelpText: function() {
 	return "Click to enter " + this.url;
     }

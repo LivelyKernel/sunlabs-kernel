@@ -1780,6 +1780,10 @@ Morph.subclass("ScrollPane", {
 	return this.innerMorph().getModel();
     },
 
+    getModelPlug: function() {
+	return this.innerMorph().getModelPlug();
+    },
+
     updateView: function(aspect, source) {
 	return this.innerMorph().updateView(aspect, source);
     },
@@ -2183,7 +2187,6 @@ View.subclass('Widget', { // FIXME remove code duplication
 	throw new Error("override me");
     },
 
-
     initialViewPosition: function(world, hint) {
 	return hint || this.defaultViewPosition;
     },
@@ -2202,8 +2205,12 @@ View.subclass('Widget', { // FIXME remove code duplication
 
     open: function() { // call interactively
 	return this.openIn(WorldMorph.current());
-    }
+    },
 
+    deserialize: function(importer, modelPlug) {
+	this.connectModel(modelPlug);
+    }
+    
 });
 
 

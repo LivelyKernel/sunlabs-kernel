@@ -799,10 +799,6 @@ View.subclass('ObjectFetcher', {
 TwoPaneBrowser.subclass('TwoPaneObjectBrowser', {
     // clearly not quite finished
 
-    // indexed by Node.nodeType
-    nodeTypes: [ "", "Node", "Attribute", "Text", "CData", "EntityReference", "Entity", "ProcessingInstruction", 
-		 "Comment", "Document", "DocumentType", "DocumentFragment", "Notation"],
-
     initialize: function($super) {
 	$super(WorldMorph.current(), new ObjectFetcher(), new ObjectFetcher());
     },
