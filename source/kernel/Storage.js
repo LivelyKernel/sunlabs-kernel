@@ -1,5 +1,5 @@
 /*
- * Copyright © 2006-2008 Sun Microsystems, Inc.
+ * Copyright Â© 2006-2008 Sun Microsystems, Inc.
  * All rights reserved.  Use is subject to license terms.
  * This distribution may include materials developed by third parties.
  *  
@@ -221,7 +221,7 @@ View.subclass('WebFile', NetRequestReporterTrait, {
 	this.updateView(this.modelPlug.getFile, this);
     },
 
-    updateView: function(aspect, source) {
+    updateView: function(aspect, source) { // setContent, getContent, getFile
 	var p = this.modelPlug;
 	if (!p) return;
 	switch (aspect) {
@@ -232,7 +232,7 @@ View.subclass('WebFile', NetRequestReporterTrait, {
 	    break;
 	case p.getContent:
 	    var file = this.lastFile; // this.getFile();
-	    console.log("trying to save " + file + " source " + source);
+	    console.log("saving " + file + " source " + source);
 	    if (file)
 		this.saveFileContent(file, this.getModelValue('getContent'));
 	    break;
@@ -301,8 +301,7 @@ View.subclass('WebFile', NetRequestReporterTrait, {
 
 Widget.subclass('TwoPaneBrowser', {
 
-    initialize: function(baseUrl) {
-	if (!baseUrl) baseUrl = URL.source.getParent();
+    initialize: function(rootNode, lowerFetcher, upperFetcher) {
 	var model = new SimpleModel("RootNode", //: URL, constant
 	    "TopNode", //:URL the node whose contents are viewed in the left pane
 	    "SelectedUpperNode", //:URL
@@ -341,22 +340,24 @@ Widget.subclass('TwoPaneBrowser', {
 			   getTopNode: "getTopNode", setTopNode: "setTopNode",
 			   getRootNode: "getRootNode"
 			  });
-	model.setRootNode(baseUrl);
-	model.setUpperNodeList([baseUrl]);
+	model.setRootNode(rootNode);
+	model.setUpperNodeList([rootNode]);
 	model.setUpperNodeNameList([this.SELFLINK]);
-	model.setTopNode(baseUrl);
+	model.setTopNode(rootNode);
 
-	this.lowerFetcher = new WebFile({model: model, 
-					 getRootNode: "getRootNode",
-					 getContent: "getSelectedLowerNodeContents",
-					 setContent: "setSelectedLowerNodeContents",
-					 setDirectoryList: "setLowerNodeList"});
-	
-	this.upperFetcher = new WebFile({model: model, 
-					 getRootNode: "getRootNode", 
-					 getContent: "getSelectedUpperNodeContents",
-					 setContent: "setSelectedUpperNodeContents",
-					 setDirectoryList: "setUpperNodeList"});
+	this.lowerFetcher = lowerFetcher;
+	lowerFetcher.connectModel({model: model, 
+				   getRootNode: "getRootNode",
+				   getContent: "getSelectedLowerNodeContents",
+				   setContent: "setSelectedLowerNodeContents",
+				   setDirectoryList: "setLowerNodeList"});
+
+	this.upperFetcher = upperFetcher;
+	upperFetcher.connectModel({model: model, 
+				   getRootNode: "getRootNode", 
+				   getContent: "getSelectedUpperNodeContents",
+				   setContent: "setSelectedUpperNodeContents",
+				   setDirectoryList: "setUpperNodeList"});
 
     },
 
@@ -368,6 +369,7 @@ Widget.subclass('TwoPaneBrowser', {
     },
     
     setSelectedLowerNode: function(url) {
+	console.log("setting selected lower to " + url);
 	this.setModelValue("setSelectedLowerNode", url);
     },
     
@@ -376,7 +378,7 @@ Widget.subclass('TwoPaneBrowser', {
     },
 
     setSelectedUpperNode: function(url) {
-	console.log("setting selected supernode to " + url);
+	console.log("setting selected upper to " + url);
 	return this.setModelValue("setSelectedUpperNode", url);
     },
 
@@ -399,11 +401,11 @@ Widget.subclass('TwoPaneBrowser', {
     handleUpperNodeSelection: function(upperName) {
 	if (!upperName) return;
 	if (upperName == this.UPLINK) { 
-	    if (this.getTopNode().eq(this.getRootNode())) {
+	    if (this.nodeEqual(this.getTopNode(), this.getRootNode())) {
 		// console.log("we are at root, do nothing");
 		return;
 	    } else {
-		var newTop = this.getTopNode().getParent(); 
+		var newTop = this.retrieveParentNode(this.getTopNode());//.getParent(); 
 		this.setModelValue("setTopNode", newTop); 
 		console.log("walking up to " + newTop);
 		
@@ -416,7 +418,7 @@ Widget.subclass('TwoPaneBrowser', {
 	    } 
 	} else {
 	    var newUpper = upperName == this.SELFLINK ? 
-		this.getRootNode() : this.getTopNode().withFilename(upperName);
+		this.getRootNode() : this.deriveChildNode(this.getTopNode(), upperName);
 	    this.setSelectedUpperNode(newUpper);
 	    this.lowerFetcher.fetchContent(newUpper);
 	}
@@ -425,15 +427,15 @@ Widget.subclass('TwoPaneBrowser', {
     handleLowerNameSelection: function(lowerName) {
 	if (!lowerName) return;
 	var selectedUpper = this.getSelectedUpperNode();
-	var newNode = (lowerName == this.UPLINK) ? selectedUpper : selectedUpper.withFilename(lowerName);
-	if (newNode.isLeaf()) {
+	var newNode = (lowerName == this.UPLINK) ? selectedUpper : this.deriveChildNode(selectedUpper, lowerName);
+	if (this.isLeafNode(newNode)) {
 	    this.setSelectedLowerNode(newNode);
 	} else {
 	    this.setModelValue("setTopNode", selectedUpper);
 	    this.setModelValue("setUpperNodeList", this.getModelValue("getLowerNodeList"));
 	    this.setModelValue("setUpperNodeNameList", this.getModelValue("getLowerNodeNameList"));
 	    this.setModelValue("setSelectedUpperNodeName", lowerName); // 
-
+	    
 	    this.setSelectedUpperNode(newNode);
 	    this.setSelectedLowerNode(null);
 	    if (lowerName == this.UPLINK) {
@@ -445,11 +447,6 @@ Widget.subclass('TwoPaneBrowser', {
 
     },
 
-    nodesToNames: function(nodes, parent) {
-	var UPLINK = this.UPLINK;
-	// FIXME: this may depend too much on correct normalization, which we don't quite do.
-	return nodes.map(function(node) { return node.eq(parent) ?  UPLINK : node.filename()});
-    },
 
     updateView: function(aspect, source) {
 	var p = this.modelPlug;
@@ -525,10 +522,13 @@ Widget.subclass('TwoPaneBrowser', {
 
 });
 
+
+
 TwoPaneBrowser.subclass('FileBrowser', {
 
-    initialize: function($super, baseUrl) {
-	$super(baseUrl);
+    initialize: function($super, rootNode) {
+	if (!rootNode) rootNode = URL.source.getParent();
+	$super(rootNode, new WebFile(), new WebFile());
 	var model = this.getModel();
 	model.getUpperNodeListMenu =  function() { // cheating: non stereotypical model
 	    var model = this;
@@ -640,8 +640,131 @@ TwoPaneBrowser.subclass('FileBrowser', {
 		new NetRequest({model: eraser, setStatus: "setRequestStatus"}).del(url);
 	    } else console.log("cancelled removal of " + url);
 	});
+    },
+
+
+    retrieveParentNode: function(node) {
+	return node.getParent();
+    },
+
+    nodesToNames: function(nodes, parent) {
+	var UPLINK = this.UPLINK;
+	// FIXME: this may depend too much on correct normalization, which we don't quite do.
+	return nodes.map(function(node) { return node.eq(parent) ?  UPLINK : node.filename()});
+    },
+
+    isLeafNode: function(node) {
+	return node.isLeaf();
+    },
+    
+    deriveChildNode: function(parentNode, childName)  {
+	return parentNode.withFilename(childName);
+    },
+
+    nodeEqual: function(n1, n2) {
+	return n1.eq(n2);
     }
+
 	
+});
+
+
+View.subclass('DOMFetcher', {
+
+    initialize: function($super, plug) {
+	$super(plug);
+	this.lastNode = null;
+    },
+
+    updateView: function(aspect, source) { // setContent, getContent, getFile
+	var p = this.modelPlug;
+	if (!p) return;
+	switch (aspect) {
+	case p.getContent:
+	    var file = this.lastNode; // this.getFile();
+	    console.log("!not saving " + file + " source " + source);
+	    break;
+	}
+    },
+    
+    fetchContent: function(node) {
+	console.log("fetching " + node);
+	this.lastNode = node; // FIXME, should be connected to a variable
+	var nodes = [];
+	for (var n = node.firstChild; n != null; n = n.nextSibling)
+	    nodes.push(n);
+	this.setModelValue("setDirectoryList", nodes);
+	
+	var info;
+	if (node.nodeType !== Node.ELEMENT_NODE) {
+	    info = node.textContent;
+	} else {
+	    info = "tagName=" + node.tagName;
+	    
+	    if (node.attributes) {
+		var attributes = [];
+		for (var i = 0; i < node.attributes.length; i++)  {
+		    var a = node.attributes[i];
+		    info += "\n" + a.name + "=" + a.value;
+		}
+	    }
+	}
+	this.setModelValue("setContent", info);
+    }
+
+});
+
+
+
+
+TwoPaneBrowser.subclass('DOMBrowser', {
+
+    // indexed by Node.nodeType
+    nodeTypes: [ "", "Node", "Attribute", "Text", "CData", "EntityReference", "Entity", "ProcessingInstruction", 
+		 "Comment", "Document", "DocumentType", "DocumentFragment", "Notation"],
+
+
+    initialize: function($super) {
+	$super(document.documentElement, new DOMFetcher(), new DOMFetcher());
+    },
+
+    nodesToNames: function(nodes, parent) {
+	// FIXME: this may depend too much on correct normalization, which we don't quite do.
+	var result = [];
+	function printNode(n) {
+	    var id = n.getAttribute && n.getAttribute("id");
+	    var t = n.getAttribute && n.getAttributeNS(Namespace.LIVELY, "type");
+	    return (n.nodeType == Node.ELEMENT_NODE ? n.tagName : DOMBrowser.prototype.nodeTypes[n.nodeType]) 
+		+ (id ? ":" + id : "") + (t ? ":" + t : "");
+	}
+	
+	for (var i = 0; i < nodes.length; i++) {
+	    result[i] = String(i) + ":" + printNode(nodes[i]);
+	}
+	result.unshift(this.UPLINK);
+	return result;
+    },
+
+    retrieveParentNode: function(node) {
+	return node.parentNode;
+    },
+
+    isLeafNode: function(node) {
+	return node.firstChild == null;
+    },
+
+    deriveChildNode: function(parentNode, childName)  {
+	var index = parseInt(childName.substring(0, childName.indexOf(':')));
+	if (isNaN(index))
+	    return parentNode;
+	else 
+	    return parentNode && parentNode.childNodes.item(index);
+    },
+
+    nodeEqual: function(n1, n2) {
+	return n1 === n2;
+    }
+    
 });
 
 

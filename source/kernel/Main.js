@@ -324,6 +324,11 @@ function populateWorldWithExamples(world) {
             var store = new FileBrowser();
             store.openIn(Config.webStoreInMain ? WorldMorph.current() : devWorld.myWorld, pt(460, 120));
         }
+	if (Config.showDOMBrowser) {
+            var browser = new DOMBrowser();
+	    console.log('showing DOMBrowser!');
+            browser.openIn(Config.webStoreInMain ? WorldMorph.current() : devWorld.myWorld, pt(260, 120));
+	}
 
     }
 
