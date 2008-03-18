@@ -193,9 +193,10 @@ SelectorItem.subclass('SelectorFolder', {
         } else {
             var totalNumberOfItems = this.calculateStatistics();
             if (localItems == totalNumberOfItems)
-                 result = "[ folder with " + localItems + " items, " + this.textSize + " characters ]";
+                 result = "[ folder with " + localItems + " items, " + this.totalCharacters + " characters ]";
             else result = "[ folder with " + localItems + " items, " + totalNumberOfItems + " including subfolders, "
-                        + this.textSize + " characters total ]";
+                        + this.totalCharacters + " characters total ]";
+            if (PIM && PIM.selectorView.searchMode) result += "\n[ " + this.totalFoundItems + " items match the search filter ]";
         }
         if (this.contents) result += "\n\n" + this.contents;
         return result;
@@ -206,21 +207,26 @@ SelectorItem.subclass('SelectorFolder', {
     },
 
     // Calculate total number of items in this folder and all its subfolders.
-    // During calculation, also count the total amount of text in all the items.
-    // The total number of characters is returns in variable called 'textSize'.
+    // During calculation, also count the total amount of text in all the items,
+    // as well as the total number of items matching the latest search key.
     calculateStatistics: function() {
         var tally = this.items.length;
-        this.textSize = 0;
+        this.totalCharacters = 0;
+        this.totalFoundItems = 0;
 
         for (var i = 0; i < this.items.length; i++) {
             var item = this.items[i];
-            this.textSize += item.getCaption().length;
+            this.totalCharacters += item.getCaption().length;
+            
+            if (item.isFound()) this.totalFoundItems++;
+
             if (item.isFolder()) {
                 tally += item.calculateStatistics();
-                this.textSize += item.textSize;
+                this.totalCharacters += item.totalCharacters;
+                this.totalFoundItems += item.totalFoundItems;
             } else {
-                this.textSize += item.getContents().length;
-            } 
+                this.totalCharacters += item.getContents().length;
+            }
         }
 
         return tally;
