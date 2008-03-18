@@ -326,7 +326,7 @@ Widget.subclass('TwoPaneBrowser', { // move to Widgets.js sometime
 			   getLowerNodeNameList: "getLowerNodeNameList", setLowerNodeNameList: "setLowerNodeNameList",
 			   getUpperNodeNameList: "getUpperNodeNameList", setUpperNodeNameList: "setUpperNodeNameList", 
 			   
-			   getSelectedLowerNodeName: "getSelectedLowerNodeName", 
+			   getSelectedLowerNodeName: "getSelectedLowerNodeName",  setSelectedLowerNodeName: "setSelectedLowerNodeName",
 			   getSelectedLowerNode: "getSelectedLowerNode", setSelectedLowerNode: "setSelectedLowerNode",
 			   
 			   getSelectedUpperNodeName: "getSelectedUpperNodeName", setSelectedUpperNodeName: "setSelectedUpperNodeName",
