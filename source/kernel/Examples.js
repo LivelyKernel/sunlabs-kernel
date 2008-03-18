@@ -4863,7 +4863,8 @@ Morph.subclass("AnimMorph", {
         this.status.setFill(Color.white);
         this.status.setFillOpacity(0.7);
         this.status.setBorderWidth(0);
-        this.status.addMorph( k = new Morph(pt(0,0).asRectangle()) );
+	var k = new Morph(pt(0,0).asRectangle());
+        this.status.addMorph(k);
         k.setShape(new PolylineShape([pt(-20,-20),pt(30,0),pt(-20,20), pt(-20,-20)], 1, Color.blue));
         k.setFill(Color.blue.lighter());
         k.relayMouseEvents(this.status, {onMouseDown: "onMouseDown", onMouseUp: "onMouseUp"});
