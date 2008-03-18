@@ -513,7 +513,7 @@ Widget.subclass('TwoPaneBrowser', { // move to Widgets.js sometime
 
     viewTitle: function() {
 	var title = new PrintMorph(new Rectangle(0, 0, 150, 15), 'Browser ').beLabel();
-	title.formatValue = function(value) { return String(value) }; // don't inspect URLs, just toString() them.
+	title.formatValue = function(value) { return String(value).truncate(50) }; // don't inspect URLs, just toString() them.
 	title.connectModel({model: this.getModel(), getValue: "getTopNode"});
 	// kickstart
 	title.updateView(title.modelPlug.getValue);

@@ -2489,8 +2489,15 @@ Object.subclass('Exporter', {
 	// decorate with all the extra needed to serialize correctly. Return the additional nodes, to be removed 
 	var helperNodes = [];
 	var rootModel = this.rootMorph.getModel && this.rootMorph.getModel();
-        // introspect all the fields
-        this.rootMorph.withAllSubmorphsDo(function() { this.prepareForSerialization(helperNodes, rootModel)});
+	
+
+
+        this.rootMorph.withAllSubmorphsDo(function() { 
+	    this.prepareForSerialization(helperNodes, rootModel);
+	    var nl = NodeFactory.createText("\n");
+	    this.rawNode.parentNode.insertBefore(nl, this.rawNode);
+	    helperNodes.push(nl);
+	});
 
 	// not robust, not dealing with models not defined on this
         var modelNode = rootModel && rootModel.toMarkup();
@@ -2932,6 +2939,8 @@ Visual.subclass("Morph", {
         var children = [];
 	var origDefs;
         for (var desc = this.rawNode.firstChild; desc != null; desc = desc.nextSibling) {
+	    if (desc.nodeType == Node.TEXT_NODE || desc.nodeType == Node.COMMENT_NODE)
+		continue; // ignore whitespace and maybe other things
 	    if (desc.localName == "defs") {
 		origDefs = desc;
 		continue;
@@ -2994,6 +3003,7 @@ Visual.subclass("Morph", {
             } 
             case "modelPlug": {
                 this.modelPlug = new ModelPlug(importer, node);
+		helperNodes.push(node);
                 // console.info("%s reconstructed plug %s", this, this.modelPlug);
                 break;
             } 
@@ -3084,11 +3094,14 @@ Visual.subclass("Morph", {
     },
     
     prepareForSerialization: function(extraNodes, rootModel) {
-	
 	if (this.modelPlug) { 
-	    var plug = this.modelPlug.persist();
-            this.addNonMorph(plug);
-	    extraNodes.push(plug);
+	    if (this.modelPlug.model === rootModel) {
+		var plug = this.modelPlug.persist();
+		this.addNonMorph(plug);
+		extraNodes.push(plug);
+	    } else {
+		console.log("losing nested model " + this.modelPlug);
+	    }
         }
 	
         for (var prop in this) {
@@ -3098,10 +3111,6 @@ Visual.subclass("Morph", {
             if (m instanceof Morph) {
 		console.log("serializing field name=" + prop + ",ref=" + m.id());
                 var desc = this.addNonMorph(NodeFactory.createNS(Namespace.LIVELY, "field"));
-		var model = m.getModel();
-		if (model && model !== rootModel) {
-		    console.log("losing nested model " + model);
-		}
                 desc.setAttributeNS(Namespace.LIVELY, "name", prop);
                 desc.setAttributeNS(Namespace.LIVELY, "ref", m.id());
                 extraNodes.push(desc);
@@ -4652,7 +4661,7 @@ Object.subclass('Model', {
  * @class ModelPlug
  */ 
 
-Object.subclass('ModelPlug', {
+Wrapper.subclass('ModelPlug', {
 
     initialize: function(spec) {
 	var props = Object.properties(spec);
@@ -4669,6 +4678,7 @@ Object.subclass('ModelPlug', {
 	    var prop = props[i];
 	    switch (prop) {
 	    case 'model':
+	    case 'rawNode':
 		break;
 	    default:
                 var acc = rawNode.appendChild(NodeFactory.createNS(Namespace.LIVELY, "accessor"));
@@ -4679,8 +4689,7 @@ Object.subclass('ModelPlug', {
 	return rawNode;
     },
 
-    deserialize: function($super, importer, rawNode) {
-	$super(importer, rawNode);
+    deserialize: function(importer, rawNode) {
         for (var acc = rawNode.firstChild; acc != null;  acc = acc.nextSibling) {
             if (acc.localName != 'accessor') continue;
             this[acc.getAttributeNS(Namespace.LIVELY, "formal")] = acc.getAttributeNS(Namespace.LIVELY, "actual");
