@@ -727,7 +727,7 @@ Morph.subclass('WindowMorph', {
 
     takeHighlight: function() {
         // I've been clicked on.  unhighlight old top, and highlight me
-	var oldTop = WorldMorph.current().topWindow();
+	var oldTop = this.world().topWindow();
         if (oldTop) oldTop.titleBar.highlight(false);
         this.titleBar.highlight(true);
     },
@@ -751,7 +751,7 @@ Morph.subclass('WindowMorph', {
         tm.replaceItemNamed("reset scaling", ["reset scaling", this, 'setScale', 1]);
         tm.removeItemNamed("duplicate");
         tm.removeItemNamed("turn fisheye on");
-        tm.openIn(WorldMorph.current(), evt.mousePoint, false, this.targetMorph.inspect().truncate()); 
+        tm.openIn(this.world(), evt.mousePoint, false, this.targetMorph.inspect().truncate()); 
     },
 
     adjustForNewBounds: function ($super) {
