@@ -1475,7 +1475,8 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
 		evt.stop();
 		return true;
 	    }
-        } else if (evt.getKeyCode() == Event.KEY_BACKSPACE) { // Replace the selection after checking for type-ahead
+        } else if (evt.getKeyCode() == Event.KEY_BACKSPACE) {
+	    // Backspace deletes current selection or prev character
             if (this.hasNullSelection()) this.selectionRange[0] = Math.max(-1, this.selectionRange[0]-1);
             this. replaceSelectionfromKeyboard(""); 
             evt.stop(); // do not use for browser navigation
@@ -1502,12 +1503,17 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
         var after = this.textString.substring(this.selectionRange[1]+1,this.textString.length);
 	this.setTextString(before.concat(replacement,after), true);  // 2nd arg = true means delay composition
 
-	// Here we recompute the selectionIndex, but don't compute the selection object
+	// Here we recompute the selectionRange, but don't compute the selection object yet
 	var selectionIndex = before.length + replacement.length;
 	this.selectionRange = [selectionIndex, selectionIndex-1];
 
-	if(!this.delayedComposition) this.delayedComposition = new SchedulableAction(this, "composeAfterEdits", null, 0);
-	this.world().scheduleForLater(this.delayedComposition, 200, true); // will override a prior request
+	// Bundle display of typing unless suppressed for reliablity or response in small text
+	if (Config.showAllTyping  || (Config.showMostTyping && this.textString.length<1000)) {
+	    this.composeAfterEdits();
+	} else {
+	    if(!this.delayedComposition) this.delayedComposition = new SchedulableAction(this, "composeAfterEdits", null, 0);
+	    this.world().scheduleForLater(this.delayedComposition, 200, true); // will override a prior request
+	}
     },
     
     processCommandKeys: function(key) {  //: Boolean (was the command processed?)
