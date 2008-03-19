@@ -62,7 +62,7 @@ Morph.subclass('PackageMorph', {
 	
 	menu.replaceItemNamed("publish shrink-wrapped ...", ["save shrink-wrapped morph as ... ", function() { 
 	    this.world().prompt("save shrink-wrapped morph as (.xhtml)", function(filename) { 
-		if (filename) Exporter.shrinkWrapNodeToFile(this.serialized, filename) }.bind(this))}]);
+		if (filename) Exporter.saveDocumentToFile(Exporter.shrinkWrapNode(this.serialized), filename) }.bind(this))}]);
         return menu;
     },
 
@@ -73,6 +73,7 @@ Morph.subclass('PackageMorph', {
 	}
 	var importer = new Importer();
 	var targetMorph = importer.importFromString(Exporter.stringify(this.serialized));
+	importer.hookupModels();
 	if (targetMorph instanceof WorldMorph) {
 	    this.world().addMorph(new LinkMorph(targetMorph, loc));
 	    for (var i = 0; i < targetMorph.submorphs.length; i++) {
@@ -785,9 +786,9 @@ View.subclass('ObjectFetcher', {
     },
     
     fetchContent: function(node) {
-	console.log("fetching " + node);
+	console.log("fetching properties of " + node);
 	this.lastNode = node; // FIXME, should be connected to a variable
-	console.log("properties are " + Object.properties(node));
+	// console.log("properties are " + Object.properties(node));
 	var values = Object.properties(node).map(function(name) { return node[name]; });
 	this.setModelValue("setDirectoryList", values);
 	this.setModelValue("setContent", Object.inspect(node));

@@ -480,6 +480,7 @@ Widget.subclass('FeedWidget', {
 	var m = panel.addMorph(newTextPane(rect.withTopLeft(rect.topCenter())));
 	m.innerMorph().acceptInput = false;
         m.connectModel({model: model, getText: "getSelectedItemContent"});
+	this.textPane = m; // just to retain
         return panel;
     },
     

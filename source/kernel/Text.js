@@ -950,6 +950,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
             // console.log('evaluating markup ' + txt);
             var morph = importer.importFromString(txt);
             this.world().addMorph(morph);
+	    importer.hookupModels();
             importer.startScripts(this.world());
         }]);
 	

@@ -230,15 +230,7 @@ var Loader = {
 
     insertContents: function(iframe) {
 	var node = iframe.contentDocument.documentElement;
-	var adoptedNode = null;
-	try {
-	    adoptedNode = document.adoptNode(node);
-	} catch (e) {
-	    // FF can fail here
-	    console.log('failed to insert iframe contents: %e', e);
-	    return;
-	}
-	document.documentElement.appendChild(adoptedNode);
+	document.documentElement.appendChild(document.importNode(node, true));
     },
 
     isLoadedFromNetwork: (function() {
@@ -261,7 +253,7 @@ var Loader = {
     newShrinkWrapContainer: function(doc) { 
 	// Remove the old container if it's there and make a new one.
 	// this should be more robust
-	if (!doc) doc = window.document;
+	if (!doc) doc = Global.document;
 	var previous = this.shrinkWrapContainer(doc);
 	if (previous) previous.parentNode.removeChild(previous);
 	var canvas = doc.getElementById("canvas");
@@ -309,6 +301,10 @@ var NodeFactory = {
 
     createText: function(string) {
 	return document.createTextNode(string);
+    },
+    
+    createNL: function(string) {
+	return document.createTextNode("\n");
     },
 
     createCDATA: function(string) {
@@ -415,6 +411,27 @@ Object.ownProperties = function(object) {
 };
 
 
+Object.forEachOwnProperty = function(object, func, context) {
+    for (var name in object) {
+	var value = object[name];
+	if (!(value instanceof Function) && object.hasOwnProperty(name)) {
+	    var result = func.call(context || this, name, value);
+	    //cont && cont.call(context || this, result); 
+	}
+    }
+};
+
+
+// boodman/crockford delegation
+Object.delegate = function(object, properties) {
+    function Delegate(){};
+    Delegate.prototype = object;
+    var d = new Delegate();
+    properties && Object.extend(d, properties);
+    return d; // Object
+};
+
+
 /**
   * Extensions to class Function
   */  
@@ -487,9 +504,8 @@ Object.extend(Function.prototype, {
 			try { 
 			    return ancestor[m].apply(this, arguments) 
 			} catch (e) { 
-			    console.log("problem with ancestor " + Object.inspect(ancestor) 
-					+ "." + m + "(" + $A(arguments) + ")"
-					+ ":" + e); 
+			    console.log("problem with ancestor %s.%s(%s):%s",
+					Object.inspect(ancestor), m, $A(arguments), e);
 			    Function.showStack();
 			    throw e;
 			}
@@ -532,7 +548,7 @@ Object.extend(Function.prototype, {
 	var properties = $A(arguments);
 	var scope = (typeof properties[0] == 'string') ? Global : properties.shift(); // primitive string required
 	var name = properties.shift();
-
+	
 	function klass() {
 	    // check for the existence of Importer, which may not be defined very early on
 	    if (Global.Importer && (arguments[0] instanceof Importer || arguments[0] === Importer.prototype)) { 
@@ -549,6 +565,7 @@ Object.extend(Function.prototype, {
 
 	var protoclass = function() { }; // that's the constructor of the new prototype object
 	protoclass.prototype = this.prototype;
+
 	klass.prototype = new protoclass();
 	this.subclasses.push(klass);
 
@@ -579,6 +596,36 @@ Object.extend(Function.prototype, {
 });
 
 Object.subclasses = [];
+
+// http://www.sitepen.com/blog/2008/03/18/javascript-metaclass-programming/
+Object.freeze = function(object) {
+
+    var constr = object.constructor;
+    var proto = constr.prototype
+    if (constr._privatize) {    // note, doesn't work with addMethods, should be done there
+	constr._privatize = { privates: {}, functions: [] };
+	for (var key in proto) {
+	    var value = proto[key];
+	    if (key.charAt(0) === "_") {
+		constr._privatize.privates[key.slice(1)] = value;
+		delete proto[key];
+	    } else if (Object.isFunction(value)) {
+		constr._privatize.functions.push(key);
+	    }
+	}
+    }
+    var context = Object.delegate(object, constr._privatize.privates);
+    context.$public = object;
+    
+    var fns = constr._privatize.functions;
+    for (var i = 0; i < fns.length; i++) {
+	var fname = fns[i];
+	object[fname] = object[fname].bind(context); // ouch, object-private bindings
+    }
+
+};
+
+
 
 Function.globalScope = window;
 
@@ -2545,8 +2592,10 @@ Object.subclass('Exporter', {
 	var helperNodes = [];
 	var simpleModels = []; // models are identified by their index in this array
 
-
+	var exporter = this;
 	this.rootMorph.withAllSubmorphsDo(function() { 
+	    exporter.verbose && console.log("serializing " + this);
+	    
 	    this.prepareForSerialization(helperNodes, simpleModels);
 	    // some formatting
 	    var nl = NodeFactory.createText("\n");
@@ -2556,7 +2605,7 @@ Object.subclass('Exporter', {
 
 
 	for (var i = 0; i < simpleModels.length; i++) {
-
+	    // ...
 	}
 	return helperNodes;
     },
@@ -2568,26 +2617,14 @@ Object.subclass('Exporter', {
 	}
     },
 
-    serialize: function() {
+    serialize: function(destDocument) {
 	// model is inserted as part of the root morph.
 	var helpers = this.extendForSerialization();
-	var result = this.rootMorph.toMarkupString();
+	var result = destDocument.importNode(this.rootMorph.rawNode, true);
 	this.removeHelperNodes(helpers);
 	return result;
-    },
-
-    shrinkWrapToUrl: function(url) {
-	var helpers = this.extendForSerialization();
-
-	var newDoc = Exporter.getBaseDocument();
-	// FIXME deal with subdirectories, rewrite the base doc and change xlink:href for scripts
-	var container = Loader.newShrinkWrapContainer(newDoc);
-	container.appendChild(newDoc.importNode(this.rootMorph.rawNode, true));
-	var req = new NetRequest().beSync().put(url, Exporter.stringify(newDoc));
-	this.removeHelperNodes(helpers);
-
-	return req.getStatus();
     }
+
 
 });
 
@@ -2598,8 +2635,8 @@ Object.extend(Exporter, {
     },
 
     getBaseDocument: function() {
-	var req = new NetRequest().beSync();
-	req.get(new URL(Global.location.toString()));
+	// FIXME memoize?
+	var req = new NetRequest().beSync().get(URL.source);
 	var status = req.getStatus().status;
 	if (status < 200 && status >= 300) {
 	    console.log("failure retrieving  " + URL.source + ", status " + req.getStatus());
@@ -2609,19 +2646,43 @@ Object.extend(Exporter, {
 	}
     },
 
-    shrinkWrapToFile: function(morph, filename) {
+    shrinkWrapNode: function(node) {
+	var newDoc = Exporter.getBaseDocument();
+	// FIXME deal with subdirectories: rewrite the base doc and change xlink:href for scripts
+	var container = Loader.newShrinkWrapContainer(newDoc);
+	container.appendChild(newDoc.importNode(node, true));
+	return newDoc;
+    },
+
+    shrinkWrapMorph: function(morph) {
+	var newDoc = Exporter.getBaseDocument();
+	var container = Loader.newShrinkWrapContainer(newDoc);
+	container.appendChild(new Exporter(morph).serialize(newDoc));
+	return newDoc;
+    },
+
+    // better place for this?
+    saveDocument: function(doc, url) {
+	var content = Exporter.stringify(doc);
+	var req = new NetRequest().beSync().put(url, content);
+	return req.getStatus();
+    },
+
+    saveDocumentToFile: function(doc, filename) {
 	if (!filename) return null;
 	if (!filename.endsWith('.xhtml')) {
 	    filename += ".xhtml";
-	    console.log("changed url to " + filename + " for base " + new URL(window.location.toString()));
+	    console.log("changed url to " + filename + " for base " + URL.source);
 	}
-	var url = new URL(window.location.toString()).withFilename(filename);
-	var status = new Exporter(morph).shrinkWrapToUrl(url);
+	var url = URL.source.withFilename(filename);
+	
+	var status = Exporter.saveDocument(doc, url);
+
 	if (status.status >= 200 && status.status < 300) {
-	    console.log("success publishing world at " + url + ", status " + status[3]);
+	    console.log("success publishing world at " + url + ", status " + status.status);
 	    return url;
 	} else {
-	    WorldMorph.current().alert("failure publishing world at " + url + ", status " + status[3]);
+	    WorldMorph.current().alert("failure publishing world at " + url + ", status " + status.status);
 	}
 	return null;
     }
@@ -2650,9 +2711,7 @@ Object.subclass('Copier', {
     },
 
     lookupMorph: function(oldId) {
-	var result = this.morphMap.get(oldId.toString());
-	if (!result) console.log('no mapping found for oldId %s', oldId);
-	return result;
+	return this.morphMap.get(oldId.toString());
     }
 
 }); 
@@ -2683,16 +2742,23 @@ Copier.subclass('Importer', {
     initialize: function($super) {
 	$super();
 	this.scripts = [];
+	this.models = [];
     },
 
     addScripts: function(array) {
 	if (array) this.scripts = this.scripts.concat(array); 
     },
 
+    addModel: function(modelNode) {
+	console.info("found modelNode %s", Exporter.stringify(modelNode));
+	this.models.push(modelNode);
+    },
+
     startScripts: function(world) {
-	console.log("start scripts %s in %s", this.scripts, world);
+	this.verbose && console.log("start scripts %s in %s", this.scripts, world);
 	this.scripts.each(function(s) { s.start(world); });
     },
+
 
     importFromNode: function(rawNode) {
 	///console.log('making morph from %s %s', node, LivelyNS.getType(node));
@@ -2748,6 +2814,7 @@ Copier.subclass('Importer', {
 		for (var i = 0; i < morphs.length; i++)
 		    world.addMorph(morphs[i]);
 	    }
+	    this.hookupModels();
 	    try {
 		this.startScripts(world);
 	    } catch (er) {
@@ -2756,12 +2823,17 @@ Copier.subclass('Importer', {
 	}
 	return world;
     },
-
     
-    importModelFrom: function(ptree) {
+    hookupModels: function() {
+	this.models.each(function(node) { this.importModelFrom(node)}.bind(this));
+    },
+    
+    importModelFrom: function(modelNode) {
 	var model = new SimpleModel();
 	var dependentViews = [];
-	for (var node = ptree.firstChild; node != null; node = node.nextSibling) {
+	for (var node = modelNode.firstChild; node != null; node = node.nextSibling) {
+	    if (node.nodeType === Node.TEXT_NODE || node.nodeType === Node.COMMENT_NODE)
+		continue;
 	    switch (node.localName) {
 	    case "dependent":
 		var oldId = LivelyNS.getAttribute(node, "ref");
@@ -2799,7 +2871,7 @@ Copier.subclass('Importer', {
 		plug.model = model;
 		try {
 		    var dependent = new Global[type](this, plug);
-		    console.log("deserialized dependent " + dependent + " with model " + model);
+		    this.verbose && console.log("deserialized dependent " + dependent + " with model " + model);
 		} catch (er) {
 		    alert("problem instantiating " + type);
 		}
@@ -2880,6 +2952,7 @@ Visual.subclass("Morph", {
 
 	// collect scripts
 	if (this.activeScripts) importer.addScripts(this.activeScripts);
+	importer.verbose && console.log("deserialized " + this);
     },
 
     copyFrom: function(copier, other) {
@@ -3063,7 +3136,7 @@ Visual.subclass("Morph", {
 		// currently model node is not stored.
 		helperNodes.push(node);
 		// postpone hooking up model until all the morphs are reconstructed
-		console.info("found modelNode %s", Exporter.stringify(node));
+		importer.addModel(modelNode);
 		break;
 	    } 
 	    case "modelPlug": {
@@ -3089,11 +3162,11 @@ Visual.subclass("Morph", {
 		break;
 	    }
 	    default: {
-		if (node.nodeName == '#text') {
+		if (node.nodeType === Node.TEXT_NODE) {
 		    console.log('text tag name %s', node.tagName);
 		    // whitespace, ignore
 		} else if (!this.restoreFromSubnode(importer, node)) {
-		    console.warn('cannot handle node %s, %s', node.tagName, node.textContent);
+		    console.warn('cannot handle node %s, %s', node.tagName || node.nodeType, node.textContent);
 		}
 	    }
 	    }
@@ -3101,11 +3174,6 @@ Visual.subclass("Morph", {
 
 	if (origDefs) { 
 	    this.restoreDefs(importer, origDefs);
-	}
-
-	if (modelNode) {
-	    console.log("importing model");
-	    importer.importModelFrom(modelNode);
 	}
 
 	for (var i = 0; i < helperNodes.length; i++) {
@@ -3180,13 +3248,14 @@ Visual.subclass("Morph", {
     },
 
     prepareForSerialization: function(extraNodes, simpleModels) {
+	// this is the morph to serialize
 	this.pvtSerializeModel(extraNodes, simpleModels);
 	for (var prop in this) {
 	    var m = this[prop];
 	    if (m instanceof Morph) {
 		if (m === this.owner) 
 		    continue; // we'll deal manually
-		//console.log("serializing field name='%s', ref='%s'", prop, m.id());
+		console.log("serializing field name='%s', ref='%s'", prop, m.id(), m.getType());
 		var desc = LivelyNS.create("field", {name: prop, ref: m.id()});
 		extraNodes.push(this.addNonMorph(desc));
 	    }
@@ -4064,7 +4133,7 @@ Morph.addMethods({
 	    ["publish shrink-wrapped ...", function() { 
 		this.world().prompt('publish as (.xhtml)', 
 				    function(filename) { 
-					var url = Exporter.shrinkWrapToFile(this, filename);
+					var url = Exporter.saveDocumentToFile(Exporter.shrinkWrapMorph(this), filename);
 					if (url) WorldMorph.current().reactiveAddMorph(new ExternalLinkMorph(url));
 				    }.bind(this))}], 
 	    ["test tracing (in console)", this.testTracing]
@@ -4528,7 +4597,7 @@ Morph.addMethods({
 Morph.addMethods( {
 
     addSvgInspector: function() {
-	var xml = new Exporter(this).serialize();
+	var xml = Exporter.stringify(new Exporter(this).serialize());
 	var extent = pt(500, 300);
 	var pane = newTextPane(extent.extentAsRectangle(), "");
 	pane.innerMorph().setTextString(xml);
@@ -4587,24 +4656,27 @@ ViewTrait = {
 	for (var modelMsg in plugSpec) {
 	    if ((modelMsg != 'model') && !(plugSpec.model[plugSpec[modelMsg]] instanceof Function)) {
 		console.log("Supplied method name, " + plugSpec[modelMsg] + " does not resolve to a function.");
-		return false; }
+		return false; 
+	    }
 	}
 	return true;
     },
 
     disconnectModel: function() {
-	var model = this.modelPlug && this.modelPlug.model;
+	var model = this.getModel();
 	if (model && model.removeDependent) { // for mvc-style updating
 	    model.removeDependent(this);
 	} 
     },
 
     getModel: function() {
-	return this.modelPlug && this.modelPlug.model;
+	var plug = this.getModelPlug();
+	return plug && plug.model;
     },
     
-    getModelPlug: function() { //overriden by ScrollPanes
-	return this.modelPlug;
+    getModelPlug: function() { 
+	var plug = this.modelPlug;
+	return (plug && plug.delegate) ?  plug.delegate : plug;
     },
 
     getModelValue: function(functionName, defaultValue) {
@@ -4743,28 +4815,27 @@ Object.subclass('Model', {
 Wrapper.subclass('ModelPlug', {
 
     initialize: function(spec) {
-	var props = Object.ownProperties(spec);
-	for (var i = 0; i < props.length; i++) {
-	    var prop = props[i];
-	    this[prop] = spec[prop];
-	}
+	Object.forEachOwnProperty(spec, function(p) {
+	    this[p] = spec[p];
+	}, this);
     },
 
     persist: function(modelId) {
-	var props = Object.ownProperties(this);
 	var rawNode = LivelyNS.create("modelPlug", {model: modelId});
-	for (var i = 0; i < props.length; i++) {
-	    var prop = props[i];
-	    
+	Object.forEachOwnProperty(this, function(prop, value) {
 	    switch (prop) {
 	    case 'model':
 	    case 'rawNode':
 		break;
 	    default:
-		rawNode.appendChild(LivelyNS.create("accessor", {formal: prop, actual: this[prop]}));
+		rawNode.appendChild(LivelyNS.create("accessor", {formal: prop, actual: value}));
 	    }
-	}
+	}, this);
 	return rawNode;
+    },
+
+    inspect: function() {
+	return Object.toJSON(this);
     },
 
     deserialize: function(importer, rawNode) {
@@ -4825,6 +4896,7 @@ Model.subclass('SimpleModel', {
 	    var name = vars[i];
 	    var varEl = element.appendChild(LivelyNS.create("variable", {name: name}));
 	    varEl.appendChild(NodeFactory.createText(Object.toJSON(this[name])));
+	    element.appendChild(NodeFactory.createNL());
 	}
 	for (var i = 0; i < this.dependents.length; i++) {	    
 	    var dependent = this.dependents[i];
@@ -4839,6 +4911,7 @@ Model.subclass('SimpleModel', {
 	    } else {
 		console.log("cant handle dependent " + dependent);
 	    }
+	    element.appendChild(NodeFactory.createNL());
         }
         console.log("produced markup " + element);
         return element;
@@ -5076,7 +5149,7 @@ PasteUpMorph.subclass("WorldMorph", {
         menu.addLine();
         menu.addItem(["publish world as ... ", function() { 
 	    this.prompt("world file (.xhtml)", function(filename) { 
-		var url = Exporter.shrinkWrapToFile(this, filename);
+		var url = Exporter.saveDocumentToFile(Exporter.shrinkWrapMorph(this), filename);
 		if (url) WorldMorph.current().reactiveAddMorph(new ExternalLinkMorph(url));
 	    }.bind(this));
 	}]);
@@ -5857,7 +5930,7 @@ Morph.subclass('LinkMorph', {
         menu.addItem(["publish linked world as ... ", function() { 
 	    this.world().prompt("world file (.xhtml)", 
 				function(filename) {
-				    var url = Exporter.shrinkWrapToFile(this.myWorld, filename);
+				    var url = Exporter.saveDocumentToFile(Exporter.shrinkWrapMorph(this.myWorld), filename);
 				    if (url) WorldMorph.current().reactiveAddMorph(new ExternalLinkMorph(url));
 				}.bind(this));
         }]);
