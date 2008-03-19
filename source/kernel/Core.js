@@ -283,7 +283,9 @@ Loader.proxyURL = (function() {
 var NodeFactory = {
 
     createNS: function(ns, name, attributes) {
-	var element = document.createElementNS(ns, name);
+	try {
+	    var element = document.createElementNS(ns, name);
+	} catch (er) { console.log("args " + $A(arguments) + " er " + er); }
 	if (attributes) {
 	    for (var name in attributes) {
 		if (!attributes.hasOwnProperty(name)) continue;
@@ -324,7 +326,7 @@ XLinkNS = {
 LivelyNS = {
     
     create: function(name, attributes) {
-	return NodeFactory.createNS(Namespace.LIVELY, attributes);
+	return NodeFactory.createNS(Namespace.LIVELY, name, attributes);
     },
     
     getAttribute: function(node, name) {
@@ -533,9 +535,9 @@ Object.extend(Function.prototype, {
 
 	function klass() {
 	    // check for the existence of Importer, which may not be defined very early on
-	    if (Global.Importer && (arguments[0] instanceof Importer)) { 
+	    if (Global.Importer && (arguments[0] instanceof Importer || arguments[0] === Importer.prototype)) { 
 		this.deserialize.apply(this, arguments);
-	    } else if (Global.Copier && (arguments[0] instanceof Copier)) {
+	    } else if (Global.Copier && (arguments[0] instanceof Copier || arguments[0] === Copier.prototype)) {
 		this.copyFrom.apply(this, arguments);
 	    } else {
 		this.initialize.apply(this, arguments);
@@ -802,6 +804,12 @@ Object.subclass("Point", {
 	return this;
     },
 
+    deserialize: function(importer, string) { // reverse of toString
+	var array = string.substring(3, string.length - 1).split(',');
+	this.x = Converter.parseCoordinate(array[0]);
+	this.y = Converter.parseCoordinate(array[1]);
+    },
+
     addPt: function(p) { return new Point(this.x + p.x, this.y + p.y); },
     addXY: function(dx,dy) { return new Point(this.x + dx, this.y + dy); },
     midPt: function(p) { return new Point((this.x + p.x)/2, (this.y + p.y)/2); },
@@ -856,7 +864,7 @@ Object.subclass("Point", {
     },
 
     toJSON: function() {
-	return Object.toJSON({x: this.x, y: this.y, width: this.width, height: this.height});
+	return Object.toJSON({x: this.x, y: this.y});
     },
     
     inspect: function() {
@@ -879,10 +887,6 @@ Object.subclass("Point", {
 
 Object.extend(Point, {
 
-    parse: function(string) { // reverse of inspect
-	var array = string.substring(3, string.length - 1).split(',');
-	return new Point(Converter.parseCoordinate(array[0]), Converter.parseCoordinate(array[1]));
-    },
 
     ensure: function(duck) { // make sure we have a Lively point
 	if (duck instanceof Point) { 
@@ -1065,7 +1069,12 @@ Rectangle.addMethods({
 
     toString: function() { 
 	return "rect(%s,%s)".format(this.topLeft(), this.bottomRight());
+    },
+
+    inspect: function() {
+	return Object.toJSON(this);
     }
+
 
 });
 
@@ -1143,7 +1152,24 @@ Object.subclass("Color", {
     toString: function() {
 	function floor(x) { return Math.floor(x*255.99) };
 	return "rgb(" + floor(this.r) + "," + floor(this.g) + "," + floor(this.b) + ")";
+    },
+
+
+    deserialize: function(importer, str) {
+	if (!str || str == "none") return null;
+
+	// FIXME this should be much more refined
+	var match = str.match("rgb\\((\\d+),(\\d+),(\\d+)\\)");
+	if (match) { 
+	    this.r = parseInt(match[1])/255;
+	    this.g = parseInt(match[2])/255;
+	    this.b = parseInt(match[3])/255;
+	} else { 
+	    throw new Error('color ' + str + ' unsupported');
+	}
     }
+
+
 
 });
 
@@ -1200,18 +1226,6 @@ Object.extend(Color, {
 	    a[i] = Color.hsb(hue + i*step, sat, brt);
 
 	return a; 
-    },
-
-    parse: function(str) {
-	if (!str || str == "none") return null;
-
-	// FIXME this should be much more refined
-	var match = str.match("rgb\\((\\d+),(\\d+),(\\d+)\\)");
-	if (match) { 
-	    return Color.rgb(parseInt(match[1]), parseInt(match[2]), parseInt(match[3]));
-	} else { 
-	    throw new Error('color ' + str + ' unsupported');
-	}
     },
 
     rgb: function(r, g, b) {
@@ -1381,7 +1395,7 @@ Wrapper.subclass("Gradient", {
     stopColor: function(index) {
 	var stops = this.rawStopNodes();
 	if (!stops || !stops[index || 0]) return null;
-	return Color.parse(stops[index || 0].getAttributeNS(null, "stop-color"));
+	return new Color(Importer.prototype, stops[index || 0].getAttributeNS(null, "stop-color"));
     },
 
     offset: function(index) {
@@ -1418,7 +1432,7 @@ Gradient.subclass("LinearGradient", {
     mixedWith: function(color, proportion) {
 	var stops = this.rawStopNodes();
 	var rawNode = NodeFactory.create("linearGradient");
-	var result = new LinearGradient(Importer.marker, rawNode);
+	var result = new LinearGradient(Importer.prototype, rawNode);
 	for (var i = 0; i < stops.length; i++) {
 	    result.addStop(this.offset(i), this.stopColor(i).mixedWith(color, proportion));
 	}
@@ -2800,16 +2814,6 @@ Copier.subclass('Importer', {
 
 });
 
-Importer.marker = Object.extend(new Importer(), {
-
-    addMapping: function() { },
-    lookupMorph: function() { 
-	return null; 
-    },
-    addScripts: function() { }
-
-});
-
 /**
   * @class Morph
   * Implements the common functionality inherited by 
@@ -2976,16 +2980,16 @@ Visual.subclass("Morph", {
 		if (!this.rawNode.getAttributeNS(null, 'clip-path'))
 		    console.log('myClip is undefined on %s', this); 
 		if (this.clipPath) throw new Error("how come clipPath is set to " + this.clipPath);
-		this.clipPath = new ClipPath(Importer.marker, def);
+		this.clipPath = new ClipPath(Importer.prototype, def);
 		this.clipPath.setId(ClipPath.deriveId(this.id()));
 		this.rawNode.setAttributeNS(null, 'clip-path', this.clipPath.uri());
 		this.addWrapperToDefs(this.clipPath);
 		break;
 	    case "linearGradient":
-		this.fill = this.addWrapperToDefs(applyGradient(new LinearGradient(Importer.marker, def), this));
+		this.fill = this.addWrapperToDefs(applyGradient(new LinearGradient(Importer.prototype, def), this));
 		break;
 	    case "radialGradient": // FIXME gradients can be used on strokes too
-		this.fill = this.addWrapperToDefs(applyGradient(new RadialGradient(Importer.marker, def), this));
+		this.fill = this.addWrapperToDefs(applyGradient(new RadialGradient(Importer.prototype, def), this));
 		this.addWrapperToDefs(this.fill);
 		break;
 	    case "g":
@@ -3184,8 +3188,9 @@ Visual.subclass("Morph", {
 	    if (m instanceof Morph) {
 		if (m === this.owner) 
 		    continue; // we'll deal manually
-		// console.log("serializing field name=" + prop + ",ref=" + m.id());
+		console.log("serializing field name='" + prop + "',ref='" + m.id() + "'");
 		var desc = LivelyNS.create("field", {name: prop, ref: m.id()});
+		console.log("retrieved field " + desc);
 		extraNodes.push(this.addNonMorph(desc));
 	    }
 	}
@@ -3258,7 +3263,7 @@ Morph.addMethods({
     setBorderColor: function(newColor) { this.shape.setStroke(newColor); },//.wrap(Morph.onChange('shape')),
 
     getBorderColor: function() {
-	return Color.parse(this.shape.getStroke());
+	return new Color(Importer.prototype, this.shape.getStroke());
     },
 
     setBorderWidth: function(newWidth) { this.shape.setStrokeWidth(newWidth); },//.wrap(Morph.onChange('shape')),

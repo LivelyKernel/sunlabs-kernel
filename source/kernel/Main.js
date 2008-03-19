@@ -110,7 +110,7 @@ function populateWorldWithExamples(world) {
     
     if (Config.show3DLogo) world.addMorph(new WindowMorph(new Sun3DMorph(pt(570, 100).extent(pt(200, 200))), 'Sun 3D Logo'));
 
-    if (Config.showTester) new WidgetTester().openIn(world, pt(835, 450));
+    if (Config.showTester) new TestWidget().openIn(world, pt(835, 450));
 
     if (Config.showLivelyConsole  && window.console.consumers) {
 	new ConsoleWidget(50).openIn(world, pt(0, world.viewport().height - 210));

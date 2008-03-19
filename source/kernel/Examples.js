@@ -21,12 +21,12 @@
 // ===========================================================================
 
 /**
- * @class WidgetTester
- * This class implements a panel with various sample widgets
- * such as buttons, sliders, etc.  
+ * @class TestWidget
  */
 
-Model.subclass('WidgetTester', {
+Widget.subclass('TestWidget', {
+
+    documentation: "a panel with various sample widgets such as buttons, sliders, etc.",
 
     openIn: function(world, location) {
         return world.addMorphAt(this.buildView(pt(300, 220)), location);

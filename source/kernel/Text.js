@@ -752,7 +752,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
         this.wrap = LivelyNS.getAttribute(this.rawNode, "wrap");
         var inset = LivelyNS.getAttribute(this.rawNode, "inset");
         if (inset) {
-            this.inset = Point.parse(inset);
+            this.inset = new Point(Importer.prototype, inset);
         }
     },
 
@@ -777,7 +777,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
             this.fontFamily = node.getAttributeNS(null, "font-family");
             this.fontSize = Converter.parseLength(node.getAttributeNS(null, "font-size"));
             this.font = Font.forFamily(this.fontFamily, this.fontSize);
-            this.textColor = Color.parse(node.getAttributeNS(null, "fill"));
+            this.textColor = new Color(Importer.prototype, node.getAttributeNS(null, "fill"));
 	    return true;
 	} else {
 	    var type = LivelyNS.getType(node);
