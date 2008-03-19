@@ -443,7 +443,7 @@ Widget.subclass('FeedWidget', {
 	    var title = this.getModelValue("getSelectedItemTitle");
 	    if (title) {
 		var entry = this.getEntry(title);
-		console.log("got entry " + entry);
+		// console.log("got entry " + entry);
 		this.setModelValue("setSelectedItemContent", entry);
 	    }
 	    break;

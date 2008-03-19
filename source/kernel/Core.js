@@ -1168,9 +1168,6 @@ Object.subclass("Color", {
 	    throw new Error('color ' + str + ' unsupported');
 	}
     }
-
-
-
 });
 
 Object.extend(Color, {
@@ -2660,6 +2657,7 @@ Object.subclass('Copier', {
 
 }); 
 
+// 'dummy' copier for simple objects
 Copier.marker = Object.extend(new Copier(), {
 
     addMapping: function() { },
@@ -2699,8 +2697,8 @@ Copier.subclass('Importer', {
     importFromNode: function(rawNode) {
 	///console.log('making morph from %s %s', node, LivelyNS.getType(node));
 	// call reflectively b/c 'this' is not a Visual yet. 
-	var morphTypeName = LivelyNS.getAttribute(rawNode, "type");
-
+	var morphTypeName = LivelyNS.getType(rawNode);
+	
 	if (!morphTypeName || !Global[morphTypeName]) {
 	    throw new Error("node %s (parent %s) cannot be a morph of %s".format(rawNode.tagName, 
 										 rawNode.parentNode, morphTypeName));
@@ -3188,9 +3186,8 @@ Visual.subclass("Morph", {
 	    if (m instanceof Morph) {
 		if (m === this.owner) 
 		    continue; // we'll deal manually
-		console.log("serializing field name='" + prop + "',ref='" + m.id() + "'");
+		//console.log("serializing field name='%s', ref='%s'", prop, m.id());
 		var desc = LivelyNS.create("field", {name: prop, ref: m.id()});
-		console.log("retrieved field " + desc);
 		extraNodes.push(this.addNonMorph(desc));
 	    }
 	}

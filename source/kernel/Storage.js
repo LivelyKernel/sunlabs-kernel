@@ -727,10 +727,11 @@ TwoPaneBrowser.subclass('DOMBrowser', {
     nodesToNames: function(nodes, parent) {
 	// FIXME: this may depend too much on correct normalization, which we don't quite do.
 	var result = [];
+	var nodeTypes = this.nodeTypes;
 	function printNode(n) {
 	    var id = n.getAttribute && n.getAttribute("id");
-	    var t = LivelyNS.getType(n);
-	    return (n.nodeType == Node.ELEMENT_NODE ? n.tagName : DOMBrowser.prototype.nodeTypes[n.nodeType]) 
+	    var t = n.getAttributeNS && LivelyNS.getType(n);
+	    return (n.nodeType == Node.ELEMENT_NODE ? n.tagName : nodeTypes[n.nodeType]) 
 		+ (id ? ":" + id : "") + (t ? ":" + t : "");
 	}
 	
@@ -746,7 +747,7 @@ TwoPaneBrowser.subclass('DOMBrowser', {
     },
 
     isLeafNode: function(node) {
-	return node.firstChild == null;
+	return !node || node.firstChild == null;
     },
 
     deriveChildNode: function(parentNode, childName)  {
