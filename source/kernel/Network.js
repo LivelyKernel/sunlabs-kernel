@@ -330,7 +330,6 @@ Wrapper.subclass('FeedItem', {
 });
 
 View.subclass('Feed', NetRequestReporterTrait, {
-    documentation: "populates model with feed results", // FIXME
 
     updateView: function(aspect, source) { // model vars: getURL, setFeedChannels
         var p = this.modelPlug;
@@ -400,9 +399,10 @@ Widget.subclass('FeedWidget', {
 	this.initializeTransientState();
     },
 
-    deserialize: function($super, importer, model) {
-	$super(importer, model);
+    deserialize: function($super, importer, plug) {
+	$super(importer, plug);
 	this.initializeTransientState();
+	console.log("kickstarting, deps: " + plug.model.dependents);
     },
 
     getURL: function() {
@@ -443,6 +443,7 @@ Widget.subclass('FeedWidget', {
 	    var title = this.getModelValue("getSelectedItemTitle");
 	    if (title) {
 		var entry = this.getEntry(title);
+		console.log("got entry " + entry);
 		this.setModelValue("setSelectedItemContent", entry);
 	    }
 	    break;
@@ -475,7 +476,8 @@ Widget.subclass('FeedWidget', {
         var m = panel.addMorph(newListPane(rect.withBottomRight(rect.bottomCenter())));
         m.connectModel({model: model, getList: "getItemList", 
 			setSelection: "setSelectedItemTitle", getMenu: "getItemMenu"});
-	m = panel.addMorph(newTextPane(rect.withTopLeft(rect.topCenter())));
+
+	var m = panel.addMorph(newTextPane(rect.withTopLeft(rect.topCenter())));
 	m.innerMorph().acceptInput = false;
         m.connectModel({model: model, getText: "getSelectedItemContent"});
         return panel;

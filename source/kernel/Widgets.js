@@ -71,11 +71,11 @@ Morph.subclass("ButtonMorph", {
 
     // KP: FIXME general way of declaring properties mapping to attributes
     setToggle: function(flag) {
-        this.rawNode.setAttributeNS(Namespace.LIVELY, "toggle", !!flag);
+        LivelyNS.setAttribute(this.rawNode, "toggle", !!flag);
     },
 
     isToggle: function() {
-        var value = this.rawNode.getAttributeNS(Namespace.LIVELY, "toggle");
+        var value = LivelyNS.getAttribute(this.rawNode, "toggle");
         if (value && value == 'true') return true;
         else return false;
     },
@@ -198,7 +198,7 @@ Morph.subclass("ImageMorph", {
     // FIXME:
     restoreFromSubnode: function($super, element, importer) /*:Boolean*/ {
         if ($super(element, importer)) return true;
-	var type = element.getAttributeNS(Namespace.LIVELY, "type");
+	var type = LivelyNS.getType(element);
         switch (type) {
         case 'Image':
             var image = element;
@@ -227,8 +227,8 @@ Morph.subclass("ImageMorph", {
 
         this.setFill(null);
         var image = this.image = NodeFactory.create("use");
-        image.setAttributeNS(Namespace.XLINK, "href", localURL);
-        image.setAttributeNS(Namespace.LIVELY, "type", 'Image');
+        XLinkNS.setHref(image, localURL);
+        LivelyNS.setType(image, 'Image');
         if (scale) {
             new Similitude(pt(0, 0), 0, scale).applyTo(image);
         }
@@ -243,11 +243,11 @@ Morph.subclass("ImageMorph", {
 	
         if (!this.image) {
             var image = this.image = NodeFactory.create("image", { width: this.dim.x, height: this.dim.y});
-            image.setAttributeNS(Namespace.LIVELY, "type", 'Image');
+            LivelyNS.setType(image, 'Image');
             this.addNonMorph(image);
         }
 
-        this.image.setAttributeNS(Namespace.XLINK, "href", url);
+        XLinkNS.setHref(this.image, url);
     },
 
     reload: function() {
@@ -428,7 +428,7 @@ Morph.subclass("TitleBarMorph", {
 
     deserialize: function($super, importer, rawNode) {
         $super(importer, rawNode);
-        if (this.rawNode.parentNode.getAttributeNS(Namespace.LIVELY, "type") == "WindowMorph") {
+        if (LivelyNS.getType(this.rawNode.parentNode) == "WindowMorph") {
             this.closeButton.action.actor    = this.windowMorph;
 	    this.menuButton.action.actor     = this.windowMorph;
 	    this.collapseButton.action.actor = this.windowMorph;
@@ -962,7 +962,7 @@ Morph.subclass("SelectionMorph", {
         this.initialSelection = true;
         this.shape.setFillOpacity(0.1);
         this.myWorld = defaultworldOrNull ? defaultworldOrNull : this.world();
-        // this.shape.setAttributeNS(null, "stroke-dasharray", "3,2");
+        // this.oshape.setAttributeNS(null, "stroke-dasharray", "3,2");
         return this;
     },
     

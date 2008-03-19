@@ -729,7 +729,7 @@ TwoPaneBrowser.subclass('DOMBrowser', {
 	var result = [];
 	function printNode(n) {
 	    var id = n.getAttribute && n.getAttribute("id");
-	    var t = n.getAttribute && n.getAttributeNS(Namespace.LIVELY, "type");
+	    var t = LivelyNS.getType(n);
 	    return (n.nodeType == Node.ELEMENT_NODE ? n.tagName : DOMBrowser.prototype.nodeTypes[n.nodeType]) 
 		+ (id ? ":" + id : "") + (t ? ":" + t : "");
 	}

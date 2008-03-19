@@ -23,3 +23,15 @@ Object.extend(String.prototype, {
         return ss.substr(0,len);
     }
 });
+
+
+Object.extend(Class, {
+
+    // KP: obsolete, use Object.isClass
+    isClass: function(object) {
+	return (object instanceof Function) 
+	    && object.prototype 
+	    && (object.functionNames().length > Object.functionNames().length);
+    }
+
+});

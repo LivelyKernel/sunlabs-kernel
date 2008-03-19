@@ -429,7 +429,7 @@ Object.subclass('TextLine', {
                     c.bounds.width = (this.topLeft.x + compositionWidth) - c.bounds.x;
                     runningStartIndex = c.start + c.length;
                     c.wasComposed = true;
-                    if (lastWord) lastWord.rawNode.setAttributeNS(Namespace.LIVELY, "nl", "true"); // little helper for serialization
+                    if (lastWord) LivelyNS.setAttribute(lastWord.rawNode, "nl", "true"); // little helper for serialization
                     break;
                 }
                 if (c.isTab) {
@@ -437,7 +437,7 @@ Object.subclass('TextLine', {
                     c.bounds.width = Math.floor((tabXBoundary + this.tabWidth) / this.tabWidth) * this.tabWidth - tabXBoundary;
                 } else {
                     c.bounds.width = spaceIncrement * c.length;
-                    if (lastWord) lastWord.rawNode.setAttributeNS(Namespace.LIVELY, "trail", c.length); // little helper for serialization
+                    if (lastWord) LivelyNS.setAttribute(lastWord.rawNode, "trail", c.length); // little helper for serialization
                     else leadingSpaces = c.length;
                 }
                 runningStartIndex = c.start + c.length;
@@ -446,7 +446,7 @@ Object.subclass('TextLine', {
                 c.word = lastWord;
 
                 if (leadingSpaces) { 
-                    lastWord.rawNode.setAttributeNS(Namespace.LIVELY, "lead", leadingSpaces);
+                    LivelyNS.setAttribute(lastWord.rawNode, "lead", leadingSpaces);
                     leadingSpaces = 0;
                 }
                 lastWord.compose(compositionWidth - (mostRecentBounds.maxX() - this.topLeft.x), c.length - 1);
@@ -742,15 +742,15 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
 	
         this.resetRendering();
 
-        this.rawNode.setAttributeNS(Namespace.LIVELY, "wrap", this.wrap);
+        LivelyNS.setAttribute(this.rawNode, "wrap", this.wrap);
         // KP: set attributes on the text elt, not on the morph, so that we can retrieve it
 	this.applyStyle({fill: this.backgroundColor, borderWidth: this.borderWidth, borderColor: this.borderColor});
     },
     
     restorePersistentState: function($super, importer) {
         $super(importer);
-        this.wrap = this.rawNode.getAttributeNS(Namespace.LIVELY, "wrap");
-        var inset = this.rawNode.getAttributeNS(Namespace.LIVELY, "inset");
+        this.wrap = LivelyNS.getAttribute(this.rawNode, "wrap");
+        var inset = LivelyNS.getAttribute(this.rawNode, "inset");
         if (inset) {
             this.inset = Point.parse(inset);
         }
@@ -765,12 +765,12 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
 		if (child.tagName != 'tspan')  
 		    continue;
 		var word = new TextWord(importer, child);
-		var lead = parseInt(word.rawNode.getAttributeNS(Namespace.LIVELY, "lead"));
+		var lead = parseInt(LivelyNS.getAttribute(word.rawNode, "lead"));
 		if (lead) content.push(" ".times(lead));
 		content.push(word.rawNode.textContent); 
-		var trail = parseInt(word.rawNode.getAttributeNS(Namespace.LIVELY, "trail"));
+		var trail = parseInt(LivelyNS.getAttribute(word.rawNode, "trail"));
 		if (trail) content.push(" ".times(trail));
-		if (word.rawNode.getAttributeNS(Namespace.LIVELY, "nl") == "true")
+		if (LivelyNS.getAttribute(word.rawNode, "nl") == "true")
                     content.push("\n");
             }
             this.textString = content.join("");
@@ -780,7 +780,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
             this.textColor = Color.parse(node.getAttributeNS(null, "fill"));
 	    return true;
 	} else {
-	    var type = node.getAttributeNS(Namespace.LIVELY, "type");
+	    var type = LivelyNS.getType(node);
 	    if (type == 'Selection') {
 		// that's ok, it's actually transient 
 		// remove all chidren b/c they're really transient
@@ -865,7 +865,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
             delete this.wrap;
         } else {
             this.wrap = style;
-            this.rawNode.setAttributeNS(Namespace.LIVELY, "wrap", style);
+            LivelyNS.setAttribute(this.rawNode, "wrap", style);
         }
     },
 
@@ -874,7 +874,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
             delete this.inset;
         } else {
             this.inset = ext;
-            this.rawNode.setAttributeNS(Namespace.LIVELY, "inset", ext);
+            LivelyNS.setAttribute(this.rawNode, "inset", ext);
         }
     },
 

@@ -294,6 +294,7 @@ var NodeFactory = {
     },
 
     create: function(name, attributes) {
+	//return this.createNS(Namespace.SVG, name, attributes);  // doesn't work
 	var element = document.createElementNS(Namespace.SVG, name);
 	if (attributes) {
 	    for (var name in attributes) {
@@ -302,8 +303,6 @@ var NodeFactory = {
 	    }
 	}
 	return element;
-	//return this.createNS(Namespace.SVG, name, attributes);
-
     },
 
     createText: function(string) {
@@ -316,6 +315,43 @@ var NodeFactory = {
 
 };
 
+XLinkNS = {
+    setHref: function(node, href) {
+	return node.setAttributeNS(Namespace.XLINK, "href", href);
+    }
+};
+
+LivelyNS = {
+    
+    create: function(name, attributes) {
+	return NodeFactory.createNS(Namespace.LIVELY, attributes);
+    },
+    
+    getAttribute: function(node, name) {
+	return node.getAttributeNS(Namespace.LIVELY, name);
+    },
+
+    removeAttribute: function(node, name) {
+	return node.removeAttributeNS(Namespace.LIVELY, name);
+    },
+
+    setAttribute: function(node, name, value) {
+	node.setAttributeNS(Namespace.LIVELY, name, value);
+    },
+
+    getType: function(node) {
+	return node.getAttributeNS(Namespace.LIVELY, "type");
+    },
+    
+    setType: function(node, string) {
+	node.setAttributeNS(Namespace.LIVELY, "type", string);
+    }
+
+};
+
+
+
+
 // ===========================================================================
 // Our extensions to JavaScript base libraries
 // ===========================================================================
@@ -326,18 +362,11 @@ var NodeFactory = {
 
 Object.extend(Class, {
 
-    // KP: obsolete, use Object.isClass
-    isClass: function(object) {
-	return (object instanceof Function) 
-	    && object.prototype 
-	    && (object.functionNames().length > Object.functionNames().length);
-    },
-
     methodNameList: function(className) {
 	if (className != "Global") return this.globalScope[className].localFunctionNames();
 	return Global.functionNames().copyWithoutAll(this.globalScope.classNames()); 
     },
-
+    
     listClassNames: function(scope) {
 	var a = [];
 
@@ -824,6 +853,14 @@ Object.subclass("Point", {
 
     toString: function() {
 	return "pt(%1.f,%1.f)".format(this.x, this.y);
+    },
+
+    toJSON: function() {
+	return Object.toJSON({x: this.x, y: this.y, width: this.width, height: this.height});
+    },
+    
+    inspect: function() {
+	return this.toJSON();
     },
 
     matrixTransform: function(mx, acc) {
@@ -1871,16 +1908,6 @@ Wrapper.subclass('Visual', {
 
     rawNode: null, // set by subclasses
 
-    setPersistentType: function(type)  {
-	this.rawNode.setAttributeNS(Namespace.LIVELY, "type", type);
-	return this;
-    },
-
-    withHref: function(localURl) {
-	this.rawNode.setAttributeNS(Namespace.XLINK, "href", localURl);
-	return this;
-    },
-
     /**
       * @param [String] string the string specification of the fill attribute.
       */
@@ -2450,7 +2477,7 @@ var NodeList = {
     },
 
     become: function(node, type) {
-	node.setAttributeNS(Namespace.LIVELY, "type", type);
+	LivelyNS.setType(node, type);
 	return node;
     },
 
@@ -2656,9 +2683,9 @@ Copier.subclass('Importer', {
     },
 
     importFromNode: function(rawNode) {
-	///console.log('making morph from %s %s', node, node.getAttributeNS(Namespace.LIVELY, "type"));
+	///console.log('making morph from %s %s', node, LivelyNS.getType(node));
 	// call reflectively b/c 'this' is not a Visual yet. 
-	var morphTypeName = rawNode.getAttributeNS(Namespace.LIVELY, "type");
+	var morphTypeName = LivelyNS.getAttribute(rawNode, "type");
 
 	if (!morphTypeName || !Global[morphTypeName]) {
 	    throw new Error("node %s (parent %s) cannot be a morph of %s".format(rawNode.tagName, 
@@ -2725,7 +2752,7 @@ Copier.subclass('Importer', {
 	for (var node = ptree.firstChild; node != null; node = node.nextSibling) {
 	    switch (node.localName) {
 	    case "dependent":
-		var oldId = node.getAttributeNS(Namespace.LIVELY, "ref");
+		var oldId = LivelyNS.getAttribute(node, "ref");
 		var dependent = this.lookupMorph(oldId);
 		if (!dependent)  {
 		    console.warn('dep %s not found', oldId);
@@ -2740,7 +2767,7 @@ Copier.subclass('Importer', {
 		break;
 		
 	    case "variable":
-		var name = node.getAttributeNS(Namespace.LIVELY, "name");
+		var name = LivelyNS.getAttribute(node, "name");
 		var value = node.textContent;
 		if (value) {
 		    value = value.evalJSON();
@@ -2754,7 +2781,7 @@ Copier.subclass('Importer', {
 	
 	for (var i = 0; i < dependentViews.length; i++) {
 	    var dep = dependentViews[i];
-	    var type = dep.getAttributeNS(Namespace.LIVELY, "type");
+	    var type = LivelyNS.getAttribute(dep, "type");
 	    if (type && Global[type]) {
 		var plug = new ModelPlug(this, dep.firstChild);
 		plug.model = model;
@@ -2820,7 +2847,7 @@ Visual.subclass("Morph", {
 	this.rawNode = rawNode;
 	this.submorphs = [];
 	this.owner = null;
-	this.setPersistentType(this.getType());
+	LivelyNS.setType(this.rawNode, this.getType());
 	this.setId(this.newMorphId());
     },
 
@@ -2926,7 +2953,7 @@ Visual.subclass("Morph", {
     },
 
     restorePersistentState: function(importer) {
-	var shouldDisable = this.rawNode.getAttributeNS(Namespace.LIVELY, "disable-mouse-events");
+	var shouldDisable = LivelyNS.getAttribute(this.rawNode, "disable-mouse-events");
 	if (shouldDisable) this.ignoreEvents();
 	return; // override in subclasses
     },
@@ -2981,7 +3008,7 @@ Visual.subclass("Morph", {
 		origDefs = desc;
 		continue;
 	    } 
-	    var type = desc.getAttributeNS(Namespace.LIVELY, "type");
+	    var type = LivelyNS.getAttribute(desc, "type");
 	    // depth first traversal
 	    if (type && type != "Selection" && type != "FocusHalo") { // FIXME remove the conditiona
 		var morph = importer.importFromNode(desc);
@@ -3046,8 +3073,8 @@ Visual.subclass("Morph", {
 	    case "field": {
 		// console.log("found field " + Exporter.stringify(node));
 		helperNodes.push(node);
-		var name = node.getAttributeNS(Namespace.LIVELY, "name");
-		var ref = node.getAttributeNS(Namespace.LIVELY, "ref");
+		var name = LivelyNS.getAttribute(node, "name");
+		var ref = LivelyNS.getAttribute(node, "ref");
 		if (name) {
 		    var found = this[name] = importer.lookupMorph(ref);
 		    if (!found) {
@@ -3090,7 +3117,7 @@ Visual.subclass("Morph", {
 	    console.log('text tag name %s', node.tagName);
 	    return true;
 	} else {        
-	    var type = node.getAttributeNS(Namespace.LIVELY, "type");
+	    var type = LivelyNS.getType(node);
 	    switch (type) {
 	    case "FocusHalo":
 		this.rawNode.removeChild(node);
@@ -3158,7 +3185,7 @@ Visual.subclass("Morph", {
 		if (m === this.owner) 
 		    continue; // we'll deal manually
 		// console.log("serializing field name=" + prop + ",ref=" + m.id());
-		var desc = NodeFactory.createNS(Namespace.LIVELY, "field", {name: prop, ref: m.id()});
+		var desc = LivelyNS.create("field", {name: prop, ref: m.id()});
 		extraNodes.push(this.addNonMorph(desc));
 	    }
 	}
@@ -3852,13 +3879,13 @@ Morph.addMethods({
 
     ignoreEvents: function() { // will not respond nor get focus
 	this.mouseHandler = null;
-	this.rawNode.setAttributeNS(Namespace.LIVELY, "disable-mouse-events", "true");
+	LivelyNS.setAttribute(this.rawNode, "disable-mouse-events", "true");
 	return this;
     },
 
     enableEvents: function() {
 	this.mouseHandler = MouseHandlerForDragging;
-	this.rawNode.removeAttributeNS(Namespace.LIVELY, "disable-mouse-events");
+	LivelyNS.removeAttribute(this.rawNode, "disable-mouse-events");
 	return this;
     },
 
@@ -4211,7 +4238,7 @@ Wrapper.subclass('SchedulableAction', {
     initialize: function($super, actor, scriptName, argIfAny, stepTime) {
 	$super();
 	this.actor = actor;
-	this.rawNode = NodeFactory.createNS(Namespace.LIVELY, "action");
+	this.rawNode = LivelyNS.create("action");
 	this.scriptName = scriptName;
 	this.argIfAny = argIfAny;
 	this.stepTime = stepTime;
@@ -4723,7 +4750,7 @@ Wrapper.subclass('ModelPlug', {
 
     persist: function(modelId) {
 	var props = Object.ownProperties(this);
-	var rawNode = NodeFactory.createNS(Namespace.LIVELY, "modelPlug", {model: modelId});
+	var rawNode = LivelyNS.create("modelPlug", {model: modelId});
 	for (var i = 0; i < props.length; i++) {
 	    var prop = props[i];
 	    
@@ -4732,7 +4759,7 @@ Wrapper.subclass('ModelPlug', {
 	    case 'rawNode':
 		break;
 	    default:
-		rawNode.appendChild(NodeFactory.createNS(Namespace.LIVELY, "accessor", {formal: prop, actual: this[prop]}));
+		rawNode.appendChild(LivelyNS.create("accessor", {formal: prop, actual: this[prop]}));
 	    }
 	}
 	return rawNode;
@@ -4741,7 +4768,7 @@ Wrapper.subclass('ModelPlug', {
     deserialize: function(importer, rawNode) {
 	for (var acc = rawNode.firstChild; acc != null;  acc = acc.nextSibling) {
 	    if (acc.localName != 'accessor') continue;
-	    this[acc.getAttributeNS(Namespace.LIVELY, "formal")] = acc.getAttributeNS(Namespace.LIVELY, "actual");
+	    this[LivelyNS.getAttribute(acc, "formal")] = LivelyNS.getAttribute(acc, "actual");
 	}
     }
 });
@@ -4790,21 +4817,21 @@ Model.subclass('SimpleModel', {
     },
 
     toMarkup: function(index) {
-	var element = NodeFactory.createNS(Namespace.LIVELY, "model");
+	var element = LivelyNS.create("model");
 	var vars = this.variables();
 	for (var i = 0; i < vars.length; i++) {
 	    var name = vars[i];
-	    var varEl = element.appendChild(NodeFactory.createNS(Namespace.LIVELY, "variable", {name: name}));
+	    var varEl = element.appendChild(LivelyNS.create("variable", {name: name}));
 	    varEl.appendChild(NodeFactory.createText(Object.toJSON(this[name])));
 	}
 	for (var i = 0; i < this.dependents.length; i++) {	    
 	    var dependent = this.dependents[i];
 	    console.log("model dependent " + dependent);
 	    if (dependent instanceof Morph) {
-		element.appendChild(NodeFactory.createNS(Namespace.LIVELY, "dependent", {ref: dependent.id()}));
+		element.appendChild(LivelyNS.create("dependent", {ref: dependent.id()}));
 	    } else if (dependent instanceof View) { // stateless view, will be recreated from type
-		var viewElement = element.appendChild(NodeFactory.createNS(Namespace.LIVELY, "dependentView", 
-		    { type: dependent.getType()}));
+		var viewElement = 
+		    element.appendChild(LivelyNS.create("dependentView", { type: dependent.getType()}));
 		var plug = dependent.modelPlug && dependent.modelPlug.persist(index || 0);
 		if (plug) viewElement.appendChild(plug);
 	    } else {
