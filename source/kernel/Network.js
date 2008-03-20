@@ -342,8 +342,7 @@ View.subclass('Feed', NetRequestReporterTrait, {
 	}
     },
     
-    deserialize: function() {
-    },
+    deserialize: function() { },
 
     kickstart: function() {
 	if (this.modelPlug)
@@ -359,6 +358,7 @@ View.subclass('Feed', NetRequestReporterTrait, {
 	var req = new NetRequest({model: this, setResponseXML: "setRawFeedContents", setStatus: "setRequestStatus"});
 	req.setContentType('text/xml');
 	req.setRequestHeaders({ "If-Modified-Since": hourAgo.toString() });
+	console.log("feed requesting " + url);
 	req.get(url);
     },
 
@@ -402,37 +402,48 @@ Widget.subclass('FeedWidget', {
     deserialize: function($super, importer, plug) {
 	$super(importer, plug);
 	this.initializeTransientState();
-	console.log("kickstarting, deps: " + plug.model.dependents);
     },
 
     getURL: function() {
 	return new URL(this.getModelValue("getURL"));
     },
-    
-    initializeTransientState: function() {
-	this.channels = null;
-	var feed = new Feed({model: this, setFeedChannels: "pvtSetFeedChannels", getURL: "getURL"});
-	feed.kickstart();
-	
-	var widget = this; 
-	var model = this.getModel();
-	model.ItemMenu = [ 
-	    ["get XML source", function(evt) {
-		var index = this.innerMorph().selectedLineNo();
-		var item = widget.channels[0].items[index]; // FIXME model-view dependency
-		var txt = item ? item.toMarkupString() : "?";
-		var infoPane = newTextPane(new Rectangle(0, 0, 500, 200), txt);
-		infoPane.innerMorph().acceptInput = false;
-		this.world().addFramedMorph(infoPane, "XML source for " + item.title(), evt.mousePoint);
-	    }]
-	];
+
+    setURL: function(urlString) {
+	var code = this.setModelValue("setURL", urlString);
+	this.feed.kickstart();
     },
 
+    initializeTransientState: function() {
+	this.channels = null;
+	this.getModel().ItemMenu = [["get XML source", this, "makeSourcePane"],
+				    ["Jonathan Schwartz's Blog", this, "setURL", "http://blogs.sun.com/jonathan/feed/entries/rss"],
+				    ["Unofficial Apple blog", this, "setURL", "http://feeds.tuaw.com/weblogsinc/tuaw"],
+				    ["Ajaxian", this, "setURL", "http://feeds.feedburner.com/ajaxian"],
+
+				   ];
+	this.feed = new Feed({model: this, setFeedChannels: "pvtSetFeedChannels", getURL: "getURL"});
+	this.feed.kickstart();
+    },
+
+    toJSON: function() {
+	// no persistent state
+	return undefined;
+    },
+
+    makeSourcePane: function(ignored, evt) {
+	var item = this.getEntry(this.getModelValue("getSelectedItemTitle"));
+	if (!item) return; // complain?
+	var infoPane = newTextPane(new Rectangle(0, 0, 500, 200), item.toMarkupString());
+	infoPane.innerMorph().acceptInput = false;
+	WorldMorph.current().addFramedMorph(infoPane, "XML source for " + item.title(), evt.mousePoint);
+    },
 
     pvtSetFeedChannels: function(channels) {
 	this.channels = channels;
-	this.setModelValue("setItemList",  this.extractItemList(this.channels));
-	this.setModelValue("setChannelTitle", "RSS feed from " +  this.channels[0].title());
+	var items = this.extractItemList(channels);
+	console.log("set items to " + items);
+	this.setModelValue("setItemList",  items);
+	this.setModelValue("setChannelTitle", "RSS feed from " +  channels[0].title());
     },
     
     updateView: function(aspect, controller) {
@@ -444,7 +455,7 @@ Widget.subclass('FeedWidget', {
 	    if (title) {
 		var entry = this.getEntry(title);
 		// console.log("got entry " + entry);
-		this.setModelValue("setSelectedItemContent", entry);
+		this.setModelValue("setSelectedItemContent", entry ? entry.description() : "?");
 	    }
 	    break;
 	}
@@ -458,32 +469,32 @@ Widget.subclass('FeedWidget', {
         var items = this.channels[0].items;
         for (var i = 0; i < items.length; i++) {
             if (items[i].title() == title) {
-                return items[i].description();
+                return items[i];
             }
         }
-        return "";
+	return null;
     },
     
     getSelectedItemDescription: function() { 
-	return this.getEntry(this.getModelValue("getSelectedItemTitle"));
+	var entry = this.getEntry(this.getModelValue("getSelectedItemTitle"));
+	return entry && entry.description();
     },
 
     buildView: function(extent, model) {
         var panel = new PanelMorph(extent);
 	panel.applyStyle({fill: Color.blue.lighter(2), borderWidth: 2});
-	
+
+
         var rect = extent.extentAsRectangle();
         var m = panel.addMorph(newListPane(rect.withBottomRight(rect.bottomCenter())));
         m.connectModel({model: model, getList: "getItemList", 
 			setSelection: "setSelectedItemTitle", getMenu: "getItemMenu"});
-
+	
 	var m = panel.addMorph(newTextPane(rect.withTopLeft(rect.topCenter())));
 	m.innerMorph().acceptInput = false;
         m.connectModel({model: model, getText: "getSelectedItemContent"});
-	this.textPane = m; // just to retain
         return panel;
     },
-    
     
     viewTitle: function() {
 	var title = new TextMorph(new Rectangle(0, 0, 150, 15), 'RSS feed                    ').beLabel();
