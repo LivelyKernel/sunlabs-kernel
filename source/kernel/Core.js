@@ -3253,7 +3253,7 @@ Visual.subclass("Morph", {
 	for (var prop in this) {
 	    var m = this[prop];
 	    if (m instanceof Morph) {
-		if (m === this.owner) 
+		if (prop == 'owner') 
 		    continue; // we'll deal manually
 		console.log("serializing field name='%s', ref='%s'", prop, m.id(), m.getType());
 		var desc = LivelyNS.create("field", {name: prop, ref: m.id()});
@@ -3656,7 +3656,7 @@ Morph.addMethods({
 	try {
 	    return "%s(#%s,%s)".format(this.getType(), this.id(), (this.shape || "").toString());
 	} catch (e) {
-	    console.log("toString failed on %s", [this.id(), this.getType()]);
+	    //console.log("toString failed on %s", [this.id(), this.getType()]);
 	    return "#<Morph?{" + e + "}>";
 	}
     },
@@ -3969,7 +3969,9 @@ Morph.addMethods({
 	return this.mouseHandler.handlesMouseDown(); 
     },
 
-    onMouseDown: function(evt) { }, //default behavior
+    onMouseDown: function(evt) { 
+	this.hideHelp();
+    }, //default behavior
 
     onMouseMove: function(evt) { //default behavior
 	if (this.owner && evt.mouseButtonPressed && this.owner.openForDragAndDrop) { 
@@ -4309,7 +4311,7 @@ Wrapper.subclass('SchedulableAction', {
     initialize: function($super, actor, scriptName, argIfAny, stepTime) {
 	$super();
 	this.actor = actor;
-	this.rawNode = LivelyNS.create("action");
+	this.rawNode = LivelyNS.create("action"); // FIXME stop generating these eagerly
 	this.scriptName = scriptName;
 	this.argIfAny = argIfAny;
 	this.stepTime = stepTime;
@@ -4333,7 +4335,7 @@ Wrapper.subclass('SchedulableAction', {
     },
 
     toString: function() {
-	return "#<SchedulableAction["+ this.actor + this.toJSON() + "]>";
+	return "#<SchedulableAction[script=%s,arg=%s,stepTime=%s]>".format(this.scriptName, this.argIfAny, this.stepTime);
     },
 
     stop: function(world) {
@@ -4701,10 +4703,11 @@ ViewTrait = {
 	// to skip this view when broadcasting updateView(), and thus avoid
 	// needless computation for a view that is already up to date.
 	var plug = this.getModelPlug();
-	if (plug == null || plug.model == null || functionName == null) return;
+	if (plug == null || plug.model == null || functionName == null) return false;
 	var func = plug.model[plug[functionName]];
-	if (func == null) return;
+	if (func == null) return false;
 	func.call(plug.model, newValue, this);
+	return true;
     },
 
     updateView: function(aspect, controller) {
@@ -4949,7 +4952,8 @@ var PasteUpMorph = Morph.subclass("PasteUpMorph", {
         $super(evt, hasFocus); 
     },
 
-    onMouseDown: function(evt) {  //default behavior is to grab a submorph
+    onMouseDown: function($super, evt) {  //default behavior is to grab a submorph
+	$super(evt);
         var m = this.morphToReceiveEvent(evt);
         if (m == null) { 
             this.makeSelection(evt); 
