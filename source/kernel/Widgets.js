@@ -429,6 +429,7 @@ Morph.subclass("TitleBarMorph", {
     deserialize: function($super, importer, rawNode) {
         $super(importer, rawNode);
         if (LivelyNS.getType(this.rawNode.parentNode) == "WindowMorph") {
+	    console.log("patching up to " + this.windowMorph);
             this.closeButton.action.actor    = this.windowMorph;
 	    this.menuButton.action.actor     = this.windowMorph;
 	    this.collapseButton.action.actor = this.windowMorph;
@@ -544,11 +545,10 @@ var WindowControlMorph = Morph.subclass("WindowControlMorph", {
         return this;
     },
 
-
     handlesMouseDown: function() { return true; },
 
-    onMouseDown: function(evt) {
-        this.hideHelp();
+    onMouseDown: function($super, evt) {
+        $super(evt);
         if (!this.action) {
             console.warn("%s has no action?", this);
             return;
@@ -1535,7 +1535,7 @@ CheapListMorph.subclass("MenuMorph", {
         if (item) { // Now execute the menu item...
             if (item[1] instanceof Function) { // alternative style, items ['menu entry', function] pairs
                 item[1].call(this.targetMorph || this, evt);
-            } else {
+	    } else {
                 var func = item[1][item[2]];  // target[functionName]
                 if (func == null) console.log('Could not find function ' + item[2]);
                 // call as target.function(parameterOrNull,event,menuItem)
@@ -1555,9 +1555,9 @@ Morph.subclass("SliderMorph", {
 
     initialize: function($super, initialBounds, scaleIfAny) {
         $super(initialBounds, "rect");
+	// this default self connection may get overwritten by, eg, connectModel()...
         var model = new SimpleModel("Value", "Extent");
-        // this default self connection may get overwritten by, eg, connectModel()...
-        this.modelPlug = new ModelPlug(model.makePlugSpec());
+	this.modelPlug = new ModelPlug(model.makePlugSpec());
         this.scale = (scaleIfAny == null) ? 1.0 : scaleIfAny;
         var slider = new Morph(new Rectangle(0, 0, this.mss, this.mss), "rect");
         slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});
@@ -1598,7 +1598,8 @@ Morph.subclass("SliderMorph", {
         var val = this.getValue();
         var bnds = this.shape.bounds();
         var ext = this.getSliderExtent();
-    
+	console.log("extent is " + ext + ", value " + val + ", model " + this.getModel());
+	
         if (this.vertical()) { // more vertical...
             var elevPix = Math.max(ext*bnds.height,this.mss); // thickness of elevator in pixels
             var topLeft = pt(0,(bnds.height-elevPix)*val);
@@ -1755,14 +1756,22 @@ Morph.subclass("ScrollPane", {
     
         // Add a scrollbar
         this.scrollBar = this.addMorph(new SliderMorph(bnds.withTopLeft(clipR.topRight())));
-        this.scrollBar.connectModel({model: this, getValue: "getScrollPosition", setValue: "setScrollPosition", 
-                                getSliderExtent: "getVisibleExtent"});
-
+        this.scrollBar.connectModel({model: this, 
+				     getValue: "getScrollPosition", setValue: "setScrollPosition", 
+                                     getSliderExtent: "getVisibleExtent"});
+	
         // suppress handles throughout
         [this, this.clipMorph, morphToClip, this.scrollBar].map(function(m) {m.suppressHandles = true});
         return this;
     },
-    
+
+    restorePersistentState: function($super, importer) { // FIXME duplication between here and initialize
+	$super(importer);
+	this.scrollBar && this.scrollBar.connectModel({model: this, 
+						       getValue: "getScrollPosition", setValue: "setScrollPosition", 
+						       getSliderExtent: "getVisibleExtent"});
+    },
+
     innerMorph: function() {
         return this.clipMorph.submorphs.first();
     },
