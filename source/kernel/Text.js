@@ -1074,7 +1074,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
         if (!this.lines || this.lines.length < 1 || y < this.lines[0].getTopY()) return null;
     
         for (var i = 0; i < this.lines.length; i++) {
-            line = this.lines[i];
+            var line = this.lines[i];
             if (y < this.lines[i].getTopY() + this.lineHeight()) {
                 // console.log('hit line ' + i + ' for y ' + y + ' slice ' + line.startIndex + "," + line.stopIndex);
                 return line; 
