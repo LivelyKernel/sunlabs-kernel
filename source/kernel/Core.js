@@ -275,25 +275,21 @@ Loader.proxyURL = (function() {
 var NodeFactory = {
 
     createNS: function(ns, name, attributes) {
-	try {
-	    var element = document.createElementNS(ns, name);
-	} catch (er) { console.log("args " + $A(arguments) + " er " + er); }
-	if (attributes) {
-	    for (var name in attributes) {
-		if (!attributes.hasOwnProperty(name)) continue;
-		element.setAttributeNS(ns, name, attributes[name]);
-	    }
-	}
-	return element;
+	var element = document.createElementNS(ns, name);
+	return NodeFactory.extend(ns, element, attributes);
     },
 
     create: function(name, attributes) {
 	//return this.createNS(Namespace.SVG, name, attributes);  // doesn't work
 	var element = document.createElementNS(Namespace.SVG, name);
+	return NodeFactory.extend(null, element, attributes);
+    },
+
+    extend: function(ns, element, attributes) {
 	if (attributes) {
 	    for (var name in attributes) {
 		if (!attributes.hasOwnProperty(name)) continue;
-		element.setAttributeNS(null, name, attributes[name]);
+		element.setAttributeNS(ns, name, attributes[name]);
 	    }
 	}
 	return element;
