@@ -131,6 +131,9 @@ function populateWorldWithExamples(world) {
 
             PIM = new WebPIM().openIn(lm1.myWorld, pt(110, 110));
 
+            lm1.myWorld.beetleGame = new DungBeetleMorph(pt(10, 10).extent(pt(240, 320)));
+            lm1.myWorld.addMorph(new WindowMorph(lm1.myWorld.beetleGame, 'Dung Beetle')); 
+
             if (Config.showCanvasScape) {
                 if (!lm1.myWorld.csMorph) {
                     var csm = new CanvasScapeMorph(new Rectangle(20,50,800,300));
