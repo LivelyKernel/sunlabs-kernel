@@ -1768,9 +1768,8 @@ Morph.subclass("ScrollPane", {
 	this.scrollBar && this.scrollBar.connectModel({model: this, 
 						       getValue: "getScrollPosition", setValue: "setScrollPosition", 
 						       getSliderExtent: "getVisibleExtent"});
-	if (this.modelPlug && this.modelPlug.getMenu) {
-	    this.addMenuButton();
-	}
+	if (this.menuButton)
+	    this.menuButton.relayMouseEvents(this, {onMouseDown: "menuButtonPressed"});
     },
 
     innerMorph: function() {
@@ -1797,11 +1796,11 @@ Morph.subclass("ScrollPane", {
     updateView: function(aspect, source) {
 	return this.innerMorph().updateView(aspect, source);
     },
-
+    
     addMenuButton: function() {
 	if (this.menuButton) return;
+
         var w = this.scrollBarWidth;
-	
         this.menuButton = this.addMorph(new Morph(new Rectangle(0, 0, w, w)));
         this.menuButton.setFill(Color.white);
         // Make it look like 4 tiny lines of text (doesn't work yet...)
