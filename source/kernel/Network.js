@@ -398,16 +398,17 @@ View.subclass('Feed', NetRequestReporterTrait, {
 Widget.subclass('FeedWidget', {
 
     defaultViewExtent: pt(500, 200),
-    pins: [ "URL", "+ItemList", "+ChannelTitle", "-SelectedItemTitle", "+SelectedItemContent"],
+    pins: [ "URL", "+ItemList", "+ChannelTitle", "-SelectedItemTitle", "+SelectedItemContent", "+Widget"],
     
     initialize: function($super, urlString) {
 	var model = new SimpleModel(["FeedURL", "ItemList", "ChannelTitle", "SelectedItemContent", "SelectedItemTitle", 
-	    "ItemMenu"]);
+	    "ItemMenu", "Widget"]);
 
 	$super({model: model, 
 		setURL: "setFeedURL", getURL: "getFeedURL",
 		setItemList: "setItemList",
 		setChannelTitle: "setChannelTitle", 
+		setWidget: "setWidget",
 		getSelectedItemTitle: "getSelectedItemTitle", 
 		setSelectedItemContent: "setSelectedItemContent"});
 
@@ -431,13 +432,13 @@ Widget.subclass('FeedWidget', {
 
     initializeTransientState: function() {
 	this.channels = null;
-	this.getModel().ItemMenu = [["get XML source", this, "makeSourcePane"],
-				    ["Jonathan Schwartz's Blog", this, "setURL", "http://blogs.sun.com/jonathan/feed/entries/rss"],
-				    ["Unofficial Apple blog", this, "setURL", "http://feeds.tuaw.com/weblogsinc/tuaw"],
-				    ["Ajaxian", this, "setURL", "http://feeds.feedburner.com/ajaxian"],
-
+	this.getModel().ItemMenu = [["get XML source", "makeSourcePane"],
+				    ["Jonathan Schwartz's Blog", "setURL", "http://blogs.sun.com/jonathan/feed/entries/rss"],
+				    ["Unofficial Apple blog", "setURL", "http://feeds.tuaw.com/weblogsinc/tuaw"],
+				    ["Ajaxian", "setURL", "http://feeds.feedburner.com/ajaxian"],
 				   ];
 	this.feed = new Feed({model: this, setFeedChannels: "pvtSetFeedChannels", getURL: "getURL"});
+	this.setModelValue("setWidget", this);
 	this.feed.kickstart();
     },
 
@@ -492,6 +493,8 @@ Widget.subclass('FeedWidget', {
 	return entry && entry.description();
     },
 
+    
+
     buildView: function(extent, model) {
         var panel = new PanelMorph(extent);
 	panel.applyStyle({fill: Color.blue.lighter(2), borderWidth: 2});
@@ -500,7 +503,7 @@ Widget.subclass('FeedWidget', {
         var rect = extent.extentAsRectangle();
         var m = panel.addMorph(newListPane(rect.withBottomRight(rect.bottomCenter())));
         m.connectModel({model: model, getList: "getItemList", 
-			setSelection: "setSelectedItemTitle", getMenu: "getItemMenu"});
+			setSelection: "setSelectedItemTitle", getMenu: "getItemMenu", getMenuTarget: "getWidget"});
 	
 	var m = panel.addMorph(newTextPane(rect.withTopLeft(rect.topCenter())));
 	m.innerMorph().acceptInput = false;
