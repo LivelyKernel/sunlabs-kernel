@@ -530,6 +530,7 @@ TwoPaneBrowser.subclass('FileBrowser', {
 	if (!rootNode) rootNode = URL.source.getDirectory();
 	$super(rootNode, new WebFile(), new WebFile());
 	var model = this.getModel();
+	var browser = this;
 	model.getUpperNodeListMenu =  function() { // cheating: non stereotypical model
 	    var model = this;
 	    return [
@@ -537,7 +538,7 @@ TwoPaneBrowser.subclass('FileBrowser', {
 		    var selected = model.getSelectedUpperNode();
 		    if (!selected) 
 			return;
-		    var dir = selected.getParent();
+		    var dir = browser.retrieveParentNode(selected);
 		    this.world().prompt("new directory name", function(response) {
 			if (!response) return;
 			var newdir = dir.withFilename(response);
