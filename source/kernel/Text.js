@@ -1166,11 +1166,13 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
         // No change in width *** check convergence
         var bottomRight = this.inset.addXY(maxX,maxY);
 
+
         // DI: This should just say, eg, this.shape.setBottomRight(bottomRight);
+	var s = this.shape;
         if (this.wrap === WrapStyle.None) {
-            with (this.shape) { setBounds(bounds().withHeight(bottomRight.y - bounds().y))};
+            s.setBounds(s.bounds().withHeight(bottomRight.y - s.bounds().y));
         } else if (this.wrap === WrapStyle.Shrink) {
-            with (this.shape) { setBounds(bounds().withBottomRight(bottomRight))};
+            s.setBounds(s.bounds().withBottomRight(bottomRight));
         }
 
     },

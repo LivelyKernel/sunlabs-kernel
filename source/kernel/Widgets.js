@@ -186,84 +186,55 @@ Morph.subclass("ImageMorph", {
     
     fill: Color.blue.lighter(),
     borderWidth: 0,
-    documentation: "Container for images",
-   
+    documentation: "Image container",
+    pins: ["-URL"],
+    
     initialize: function($super, viewPort, url) {
         $super(viewPort, "rect");
-        this.url = url;
-        this.dim = viewPort.extent();
-        if (url) { 
-            this.loadURL(url);
-        }
+	this.image = new Image(url, viewPort.width, viewPort.height);
+	if (url) this.addNonMorph(this.image.rawNode); // otherwise we didn't make a rawNode
+    },
+
+    deserialize: function($super, importer, rawNode) {
+	$super(importer, rawNode);
+	console.log("deserialize " + this + [importer, rawNode, Exporter.stringify(this.image.rawNode)]);
     },
     
     // FIXME:
-    restoreFromSubnode: function($super, element, importer) /*:Boolean*/ {
-        if ($super(element, importer)) return true;
-	var type = LivelyNS.getType(element);
-        switch (type) {
-        case 'Image':
-            var image = element;
-            if (image.namespaceURI != Namespace.SVG) {
-                // this brittle and annoying piece of code is a workaround around the likely brokenness
-                // of Safari's XMLSerializer's handling of namespaces
-                this.removeChild(image);
-                this.dim = pt(Converter.parseLength(image.getAttributeNS(null, "width")), 
-                              Converter.parseLength(image.getAttributeNS(null, "height")));
-                var href = image.getAttributeNS(null /* "xlink"*/, "href");
-                this.loadURL(href);
-            } else {
-                this.image = image;
-            }
-            return true;
+    restoreFromSubnode: function($super, importer, node) /*:Boolean*/ {
+        if ($super(importer, node)) return true;
+	switch (node.localName) {
+        case "image":
+	case "use":
+	    this.image = new Image(importer, node);
+	    return true;
         default:
+	    console.log("got unhandled node " + node.localName + ", " + node.namespaceURI + " node " + node);
             return false;
         }
     },
     
-    loadGraphics: function(localURL, scale) {
-        if (this.image && this.image.tagName == 'image') {
-            this.removeChild(this.image);
-            this.image = null;
-        }
-
-        this.setFill(null);
-        var image = this.image = NodeFactory.create("use");
-        XLinkNS.setHref(image, localURL);
-        LivelyNS.setType(image, 'Image');
-        if (scale) {
-            new Similitude(pt(0, 0), 0, scale).applyTo(image);
-        }
-        this.addNonMorph(image);
+    loadGraphics: function(localURL) {
+	this.setFill(null);
+	var node = this.image.loadUse(localURL);
+	node && this.addNonMorph(node);
     },
 
-    loadURL: function(url) {
-        if (this.image && this.image.tagName != 'image') {
-            this.removeChild(this.image);
-            this.image = null;
-        }
-	
-        if (!this.image) {
-            var image = this.image = NodeFactory.create("image", { width: this.dim.x, height: this.dim.y});
-            LivelyNS.setType(image, 'Image');
-            this.addNonMorph(image);
-        }
-
-        XLinkNS.setHref(this.image, url);
+    loadFromURL: function(url) {
+	this.setFill(ImageMorph.prototype.fill);
+	var node = this.image.loadImage(url.toString());
+	node && this.addNonMorph(node);
     },
 
     reload: function() {
-        if (this.url) {
-            this.url = this.url + "?" + new Date();
-            this.loadURL(this.url);
-        }
+	this.image.reload();
     },
     
     updateView: function(aspect, controller) {
         var p = this.modelPlug;
         if (!p) return;
         if (aspect == p.getURL) {
-            this.loadURL(this.getModelValue('getURL', ""));
+            this.loadFromURL(this.getModelValue('getURL', ""));
         }
     }
 
@@ -288,8 +259,7 @@ ButtonMorph.subclass("ImageButtonMorph", {
     
     changeAppearanceFor: function(value) {
         //console.log('changing on %s from %s to %s', value, this.activatedImageHref, this.normalImageHref);
-        if (value) this.image.loadURL(this.activatedImageHref);
-        else this.image.loadURL(this.normalImageHref);
+        this.image.loadFromURL(value ? this.activatedImageHref : this.normalImageHref);
     }
     
 });

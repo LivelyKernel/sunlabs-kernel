@@ -312,6 +312,10 @@ var NodeFactory = {
 XLinkNS = {
     setHref: function(node, href) {
 	return node.setAttributeNS(Namespace.XLINK, "href", href);
+    },
+    
+    getHref: function(node) {
+	return node.getAttributeNS(Namespace.XLINK, "href");
     }
 };
 
@@ -1100,14 +1104,11 @@ Rectangle.addMethods({
 
     toPath: function() {
 	var path = new PathShape();
-
-	with (this) {
-	    path.moveTo(x, y);
-	    path.lineTo(x + width, y); 
-	    path.lineTo(x + width, y + height);
-	    path.lineTo(x,         y + height);
-	    path.close(); 
-	}
+	path.moveTo(this.x, this.y);
+	path.lineTo(this.x + this.width, this.y); 
+	path.lineTo(this.x + this.width, this.y + this.height);
+	path.lineTo(this.x, this.y + this.height);
+	path.close(); 
 
 	return path;
     },
@@ -1368,10 +1369,8 @@ Object.subclass('Wrapper', {
     },
 
     removeRawNode: function() {
-	var parent = this.rawNode.parentNode;
-	if (parent) {
-	    parent.removeChild(this.rawNode);
-	}
+	var parent = this.rawNode && this.rawNode.parentNode;
+	return parent && parent.removeChild(this.rawNode);
     },
 
     toString: function() {
@@ -1532,10 +1531,85 @@ Wrapper.subclass('ClipPath', {
 
 });
 
-
 Object.extend(ClipPath, {
     deriveId: function(ownerId) {
 	return "clipPath_" + ownerId;
+    }
+});
+
+
+Wrapper.subclass('Image', {
+
+    initialize: function(url, width, height) {
+	if (!url) return;
+	if (url.startsWith('#'))
+	    this.loadUse(url);
+	else
+	    this.loadImage(url, width, height);
+    },
+    
+    deserialize: function($super, importer, rawNode) {
+	if (rawNode.namespaceURI != Namespace.SVG) {
+            // this brittle and annoying piece of code is a workaround around the likely brokenness
+            // of Safari's XMLSerializer's handling of namespaces
+            var href = rawNode.getAttributeNS(null /* "xlink"*/, "href");
+	    
+	    // note we're reinitializing ourselves
+	    this.initialize(href, this.getWidth(rawNode), this.getHeight(rawNode));
+	    console.log("reinitializing with href " + href + " node " + Exporter.stringify(rawNode));
+	    
+	} else {
+	    $super(importer, rawNode);
+	}
+    },
+
+    getWidth: function(optArg) {
+	return Converter.parseLength((optArg || this.rawNode).getAttributeNS(null, "width"));
+    },
+
+    getHeight: function(optArg) {
+	return Converter.parseLength((optArg || this.rawNode).getAttributeNS(null, "height"));
+    },
+
+    reload: function() {
+	if (this.rawNode.localName == "image")  {
+	    XLinkNS.setHref(this.rawNode, this.getURL() + "?" + new Date());
+	}
+    },
+
+    getURL: function() {
+	return XLinkNS.getHref(this.rawNode);
+    },
+
+    scaleBy: function(factor) {
+	new Similitude(pt(0, 0), 0, factor).applyTo(this.rawNode);
+    },
+
+    loadUse: function(url) {
+	if (this.rawNode && this.rawNode.localName == "use") {
+	    XLinkNS.setHref(this.rawNode, url);
+	    return null; // no new node;
+	} else {
+	    this.removeRawNode();
+	    this.rawNode = NodeFactory.createNS(Namespace.SVG, "use");
+	    XLinkNS.setHref(this.rawNode, url);
+	    return this.rawNode;
+	}
+    },
+
+    loadImage: function(url, width, height) {
+	if (this.rawNode && this.rawNode.localName == "image") {
+	    XLinkNS.setHref(this.rawNode, url);
+	    return null;
+	} else {
+	    width = width || this.getWidth();
+	    height = height || this.getHeight();
+	    this.rawNode = NodeFactory.create("image");
+	    this.rawNode.setAttributeNS(null, "width", width);
+	    this.rawNode.setAttributeNS(null, "height", height);
+	    XLinkNS.setHref(this.rawNode, url);
+	    return this.rawNode;
+	}
     }
 });
 
@@ -1560,18 +1634,13 @@ Object.subclass('Similitude', {
     initialize: function(delta, angleInRadians, scale) {
 	if (angleInRadians === undefined) angleInRadians = 0.0;
 	if (scale === undefined) scale = 1.0;
-	if (false) {
-	    var matrix = Canvas.createSVGMatrix();
-	    matrix = matrix.translate(delta.x, delta.y).rotate(angleInRadians.toDegrees()).scale(scale);
-	    this.fromMatrix(matrix);
-	} else { // calculate natively
-	    this.a = scale * Math.cos(angleInRadians);
-	    this.b = scale * Math.sin(angleInRadians);
-	    this.c = scale * - Math.sin(angleInRadians);
-	    this.d = scale * Math.cos(angleInRadians);
-	    this.e =  delta.x;
-	    this.f =  delta.y;
-	}
+	this.a = scale * Math.cos(angleInRadians);
+	this.b = scale * Math.sin(angleInRadians);
+	this.c = scale * - Math.sin(angleInRadians);
+	this.d = scale * Math.cos(angleInRadians);
+	this.e =  delta.x;
+	this.f =  delta.y;
+	this.matrix_ = this.toMatrix();
     },
 
     getRotation: function() { // in degrees
@@ -1677,11 +1746,12 @@ Object.subclass('Similitude', {
 	this.d = mx.d;
 	this.e = mx.e;
 	this.f = mx.f;
+	this.matrix_ = this.toMatrix();
     },
 
     preConcatenate: function(t) {
 	if (true) {
-	    this.fromMatrix(this.toMatrix().multiply(t.toMatrix()));
+	    this.fromMatrix(this.matrix_.multiply(t.matrix_));
 	} else { // KP: something's wrong here
 	    t = this;
 
@@ -1712,11 +1782,12 @@ Similitude.subclass('Transform', {
 	} else {
 	    this.a = this.d = 1.0;
 	    this.b = this.c = this.e = this.f = 0.0;
+	    this.matrix_ = this.toMatrix();
 	}
     },
 
     createInverse: function() {
-	return new Transform(this.toMatrix().inverse());
+	return new Transform(this.matrix_.inverse());
     }
 
 });
@@ -3065,7 +3136,6 @@ Visual.subclass("Morph", {
 		break;
 	    case "radialGradient": // FIXME gradients can be used on strokes too
 		this.fill = this.addWrapperToDefs(applyGradient(new RadialGradient(Importer.prototype, def), this));
-		this.addWrapperToDefs(this.fill);
 		break;
 	    case "g":
 		this.restoreFromSubnode(importer, def);
@@ -3121,10 +3191,9 @@ Visual.subclass("Morph", {
 		break;
 	    case "defs": 
 		throw new Error();
-	    case "g": {
+	    case "g":
 		this.restoreFromSubnode(importer, node);
 		break;
-	    }
 		// nodes from the Lively namespace
 	    case "action": {
 		var a = new SchedulableAction(importer, node);
@@ -4223,7 +4292,6 @@ Morph.addMethods({
     },
 
     showOwnerChain: function(evt) {
-	console.log("chain is " + this.ownerChain());
 	var items = this.ownerChain().map(
 	    function(each) { return [Object.inspect(each).truncate(), function() { each.showMorphMenu(evt) }]; });
 	new MenuMorph(items, this).openIn(this.world(), evt.mousePoint, false, "Top item is topmost");
