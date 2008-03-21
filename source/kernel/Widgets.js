@@ -531,7 +531,7 @@ var TitleTabMorph = Morph.subclass("TitleTabMorph", {
 /**
  * @class WindowControlMorph
  */ 
-var WindowControlMorph = Morph.subclass("WindowControlMorph", {
+Morph.subclass("WindowControlMorph", {
 
     borderWidth: 0,
     documentation: "Event handling for Window morphs",
@@ -662,8 +662,8 @@ Morph.subclass('WindowMorph', {
         this.collapsedTransform = this.titleBar.getTransform();
         this.titleBar.collapsedExtent = this.titleBar.innerBounds().extent();
         var owner = this.titleBar.owner;
-        this.takeHighlight();
         owner.addMorph(this);
+        this.takeHighlight();
         this.setTransform(this.expandedTransform);        
         // this.titleBar.remove();  //next statement removes it from prior owner
         this.addMorph(this.titleBar);
@@ -729,7 +729,7 @@ Morph.subclass('WindowMorph', {
 
     takeHighlight: function() {
         // I've been clicked on.  unhighlight old top, and highlight me
-	var oldTop = this.world().topWindow();
+	var oldTop = this.world().topWindow(); 
         if (oldTop) oldTop.titleBar.highlight(false);
         this.titleBar.highlight(true);
     },
@@ -1538,6 +1538,17 @@ CheapListMorph.subclass("MenuMorph", {
         if (item) { // Now execute the menu item...
             if (item[1] instanceof Function) { // alternative style, items ['menu entry', function] pairs
                 item[1].call(this.targetMorph || this, evt);
+	    } else if (item[1] instanceof String || typeof item[1] == 'string') {
+		// another alternative style, send a message to the targetMorph's menu target (presumably a view).
+		var responder = (this.targetMorph || this).getModelValue("getMenuTarget");
+		if (responder)  {
+		    console.log("menu target is " + responder);
+		    var func = responder[item[1]];
+		    if (!func) console.log("didn't find function " + item[1]);
+		    else func.call(responder, item[2], evt, item);
+		} else {
+		    console.log("no menu target, menu target " + this.targetMorph);
+		}
 	    } else {
                 var func = item[1][item[2]];  // target[functionName]
                 if (func == null) console.log('Could not find function ' + item[2]);
@@ -1765,6 +1776,7 @@ Morph.subclass("ScrollPane", {
 	
         // suppress handles throughout
         [this, this.clipMorph, morphToClip, this.scrollBar].map(function(m) {m.suppressHandles = true});
+
         return this;
     },
 
@@ -1773,6 +1785,9 @@ Morph.subclass("ScrollPane", {
 	this.scrollBar && this.scrollBar.connectModel({model: this, 
 						       getValue: "getScrollPosition", setValue: "setScrollPosition", 
 						       getSliderExtent: "getVisibleExtent"});
+	if (this.modelPlug && this.modelPlug.getMenu) {
+	    this.addMenuButton();
+	}
     },
 
     innerMorph: function() {
@@ -1781,7 +1796,7 @@ Morph.subclass("ScrollPane", {
 
     connectModel: function(plugSpec) { // connection is mapped to innerMorph
         this.innerMorph().connectModel(plugSpec);
-        if (plugSpec.getMenu) this.addMenuButton(plugSpec.getMenu);
+        if (plugSpec.getMenu) this.addMenuButton();
     },
     
     disconnectModel: function() {
@@ -1800,29 +1815,32 @@ Morph.subclass("ScrollPane", {
 	return this.innerMorph().updateView(aspect, source);
     },
 
-    addMenuButton: function(modelMsg) {
-        this.paneMenuMessage = modelMsg;
+    addMenuButton: function() {
+	if (this.menuButton) return;
         var w = this.scrollBarWidth;
+	
         this.menuButton = this.addMorph(new Morph(new Rectangle(0, 0, w, w)));
         this.menuButton.setFill(Color.white);
         // Make it look like 4 tiny lines of text (doesn't work yet...)
         var p0 = this.menuButton.innerBounds().topLeft().addXY(2, 2);
-        for (var i=1; i<=4; i++) {
+        for (var i = 1; i <= 4; i++) {
             var line = Morph.makeLine([pt(0, i*2), pt([6, 2, 4, 6][i-1], i*2)], 1, Color.black);
-            line.translateBy(p0);
-            this.menuButton.addMorph(line);
-            line.ignoreEvents();
+	    line.translateBy(p0);
+	    this.menuButton.addMorph(line);
+	    line.ignoreEvents();
         }
-        this.menuButton.setPosition(this.scrollBar.getPosition());
-        if (this.scrollBar) this.menuButton.setFill(this.scrollBar.getFill());
-        this.menuButton.relayMouseEvents(this, {onMouseDown: "menuButtonPressed"});
-        this.scrollBar.setBounds(this.scrollBar.bounds().withTopLeft(
-        this.scrollBar.bounds().topLeft().addXY(0, w)));
+        if (this.scrollBar) {
+	    this.menuButton.setPosition(this.scrollBar.getPosition());
+	    this.menuButton.setFill(this.scrollBar.getFill());
+	    this.scrollBar.setBounds(this.scrollBar.bounds().withTopLeft(
+		this.scrollBar.bounds().topLeft().addXY(0, w)));
+	}
+	this.menuButton.relayMouseEvents(this, {onMouseDown: "menuButtonPressed"});
     },
 
     menuButtonPressed: function(evt, button) {
         evt.hand.setMouseFocus(null);
-        var items = this.innerMorph().getModel()[this.paneMenuMessage]();
+        var items = this.innerMorph().getModelValue("getMenu");
         if (!items || items.length <= 0) return;
 	var menu = new MenuMorph(items, this);
         menu.openIn(this.world(), evt.mousePoint, false); 
