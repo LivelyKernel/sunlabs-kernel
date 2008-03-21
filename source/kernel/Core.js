@@ -2850,12 +2850,18 @@ Copier.subclass('Importer', {
 		
 	    case "variable":
 		var name = LivelyNS.getAttribute(node, "name");
-		var value = node.textContent;
-		if (value) {
-		    value = JSON.unserialize(value);
-		}
-		model.addVariable(name, value);
+		var content = node.firstChild;
+		model.addVariable(name, JSON.unserialize(content.textContent));
 		break;
+
+	    case "dependentVariable":
+		var name = LivelyNS.getAttribute(node, "name");
+		var index = LivelyNS.getAttribute(node, "index");
+		var dep = model.dependents[index];
+		if (!dep) console.log("didnt find depdendentVariable at index " + index);
+		else model.addVariable(name, dep); // FIXME order dependent!
+		break;
+
 	    default:
 		console.log('got unexpected node %s %s', node.tagName, node); 
 	    }
@@ -4883,13 +4889,7 @@ Model.subclass('SimpleModel', {
     toMarkup: function(index) {
 	var element = LivelyNS.create("model");
 	var vars = this.variables();
-	for (var i = 0; i < vars.length; i++) {
-	    var name = vars[i];
-	    var varEl = element.appendChild(LivelyNS.create("variable", {name: name}));
-	    varEl.appendChild(NodeFactory.createText(JSON.serialize(this[name])));
-	    element.appendChild(NodeFactory.createNL());
-	}
-	for (var i = 0; i < this.dependents.length; i++) {	    
+	for (var i = 0; i < this.dependents.length; i++) { // write dependents first so that model variables can refer to it
 	    var dependent = this.dependents[i];
 	    console.log("model dependent " + dependent);
 	    if (dependent instanceof Morph) {
@@ -4904,6 +4904,23 @@ Model.subclass('SimpleModel', {
 	    }
 	    element.appendChild(NodeFactory.createNL());
         }
+	for (var i = 0; i < vars.length; i++) {
+	    var name = vars[i];
+	    var index = this.dependents.indexOf(this[name]);
+	    var varEl;
+	    if (index >= 0) {
+		varEl = LivelyNS.create("dependentVariable", {name: name, index: index});
+		console.log("model dependent " + this[name] + " index " + index);
+	    } else {
+		varEl = LivelyNS.create("variable", {name: name});
+		console.log("trying to serialize " + this[name]);
+		// FIXME check if it's actually serializable
+		varEl.appendChild(NodeFactory.createCDATA(JSON.serialize(this[name])));
+	    }
+	    element.appendChild(varEl);
+	    element.appendChild(NodeFactory.createNL());
+	}
+	    
         console.log("produced markup " + element);
         return element;
     }
