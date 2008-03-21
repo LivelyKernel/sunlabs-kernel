@@ -15,67 +15,7 @@ var Prototype = {
     Opera:  !!window.opera
   },
 
-  JSONFilter: /^\/\*-secure-([\s\S]*)\*\/\s*$/,
-
-  emptyFunction: function() { },
   K: function(x) { return x }
-};
-
-
-/* Based on Alex Arnell's inheritance implementation. */
-var Class = {
-  create: function() {
-    var parent = null, properties = $A(arguments);
-    if (Object.isFunction(properties[0]))
-      parent = properties.shift();
-
-    function klass() {
-	this.initialize.apply(this, arguments);
-    }
-
-    Object.extend(klass, Class.Methods);
-    klass.superclass = parent;
-    klass.subclasses = [];
-
-    if (parent) {
-      var subclass = function() { };
-      subclass.prototype = parent.prototype;
-      klass.prototype = new subclass;
-      parent.subclasses.push(klass);
-    }
-
-    for (var i = 0; i < properties.length; i++)
-      klass.addMethods(properties[i]);
-
-    if (!klass.prototype.initialize)
-      klass.prototype.initialize = Prototype.emptyFunction;
-
-    klass.prototype.constructor = klass;
-
-    return klass;
-  }
-};
-
-Class.Methods = {
-  addMethods: function(source) {
-    var ancestor = this.superclass && this.superclass.prototype;
-
-    for (var property in source) {
-      var value = source[property];
-      if (ancestor && Object.isFunction(value) &&
-          value.argumentNames().first() == "$super") {
-        var method = value, value = Object.extend((function(m) {
-            return function() { try { return ancestor[m].apply(this, arguments) } catch(e) { console.log("problem with ancestor " + ancestor + "method " + m); throw e;} };
-        })(property).wrap(method), {
-          valueOf:  function() { return method },
-          toString: function() { return method.toString() }
-        });
-      }
-      this.prototype[property] = value;
-    }
-
-    return this;
-  }
 };
 
 
@@ -95,29 +35,6 @@ Object.extend(Object, {
       if (e instanceof RangeError) return '...';
       throw e;
     }
-  },
-
-  toJSON: function(object) {
-    var type = typeof object;
-    switch (type) {
-      case 'undefined':
-      case 'function':
-      case 'unknown': return;
-      case 'boolean': return object.toString();
-    }
-
-    if (object === null) return 'null';
-    if (object.toJSON) return object.toJSON();
-    if (Object.isElement(object)) return;
-
-    var results = [];
-    for (var property in object) {
-      var value = Object.toJSON(object[property]);
-      if (value !== undefined)
-        results.push(property.toJSON() + ': ' + value);
-    }
-
-    return '{' + results.join(', ') + '}';
   },
 
   toQueryString: function(object) {
@@ -148,10 +65,6 @@ Object.extend(Object, {
 
   isArray: function(object) {
     return object && object.constructor === Array;
-  },
-
-  isHash: function(object) {
-    return object instanceof Hash;
   },
 
   isFunction: function(object) {
@@ -216,66 +129,12 @@ Object.extend(Function.prototype, {
   }
 });
 
-Function.prototype.defer = Function.prototype.delay.curry(0.01);
-
-Date.prototype.toJSON = function() {
-  return '"' + this.getUTCFullYear() + '-' +
-    (this.getUTCMonth() + 1).toPaddedString(2) + '-' +
-    this.getUTCDate().toPaddedString(2) + 'T' +
-    this.getUTCHours().toPaddedString(2) + ':' +
-    this.getUTCMinutes().toPaddedString(2) + ':' +
-    this.getUTCSeconds().toPaddedString(2) + 'Z"';
-};
 
 RegExp.prototype.match = RegExp.prototype.test;
 
-RegExp.escape = function(str) {
-  return String(str).replace(/([.*+?^=!:${}()|[\]\/\\])/g, '\\$1');
-};
-
 /*--------------------------------------------------------------------------*/
 
-
-Object.extend(String, {
-  interpret: function(value) {
-    return value == null ? '' : String(value);
-  },
-  specialChar: {
-    '\b': '\\b',
-    '\t': '\\t',
-    '\n': '\\n',
-    '\f': '\\f',
-    '\r': '\\r',
-    '\\': '\\\\'
-  }
-});
-
 Object.extend(String.prototype, {
-  gsub: function(pattern, replacement) {
-    var result = '', source = this, match;
-    replacement = arguments.callee.prepareReplacement(replacement);
-
-    while (source.length > 0) {
-      if (match = source.match(pattern)) {
-        result += source.slice(0, match.index);
-        result += String.interpret(replacement(match));
-        source  = source.slice(match.index + match[0].length);
-      } else {
-        result += source, source = '';
-      }
-    }
-    return result;
-  },
-
-  sub: function(pattern, replacement, count) {
-    replacement = this.gsub.prepareReplacement(replacement);
-    count = count === undefined ? 1 : count;
-
-    return this.gsub(pattern, function(match) {
-      if (--count < 0) return match[0];
-      return replacement(match);
-    });
-  },
 
   truncate: function(length, truncation) {
     length = length || 30;
@@ -339,44 +198,6 @@ Object.extend(String.prototype, {
     return this.charAt(0).toUpperCase() + this.substring(1).toLowerCase();
   },
 
-  underscore: function() {
-    return this.gsub(/::/, '/').gsub(/([A-Z]+)([A-Z][a-z])/,'#{1}_#{2}').gsub(/([a-z\d])([A-Z])/,'#{1}_#{2}').gsub(/-/,'_').toLowerCase();
-  },
-
-  dasherize: function() {
-    return this.gsub(/_/,'-');
-  },
-
-  inspect: function(useDoubleQuotes) {
-    var escapedString = this.gsub(/[\x00-\x1f\\]/, function(match) {
-      var character = String.specialChar[match[0]];
-      return character ? character : '\\u00' + match[0].charCodeAt().toPaddedString(2, 16);
-    });
-    if (useDoubleQuotes) return '"' + escapedString.replace(/"/g, '\\"') + '"'; // " Emacs bug avoidance comment
-    return "'" + escapedString.replace(/'/g, '\\\'') + "'";                     //"  Emacs bug avoidance comment
-  },
-
-  toJSON: function() {
-    return this.inspect(true);
-  },
-
-  unfilterJSON: function(filter) {
-    return this.sub(filter || Prototype.JSONFilter, '#{1}');
-  },
-
-  isJSON: function() {
-    var str = this.replace(/\\./g, '@').replace(/"[^"\\\n\r]*"/g, '');           // " Emacs bug avoidance comment
-    return (/^[,:{}\[\]0-9.\-+Eaeflnr-u \n\r\t]*$/).test(str);
-  },
-
-  evalJSON: function(sanitize) {
-    var json = this.unfilterJSON();
-    try {
-      if (!sanitize || json.isJSON()) return eval('(' + json + ')');
-    } catch (e) { }
-    throw new SyntaxError('Badly formed JSON string: ' + this.inspect());
-  },
-
   include: function(pattern) {
     return this.indexOf(pattern) > -1;
   },
@@ -396,55 +217,9 @@ Object.extend(String.prototype, {
 
   blank: function() {
     return /^\s*$/.test(this);
-  },
-
-  interpolate: function(object, pattern) {
-    return new Template(this, pattern).evaluate(object);
   }
+
 });
-
-String.prototype.gsub.prepareReplacement = function(replacement) {
-  if (Object.isFunction(replacement)) return replacement;
-  var template = new Template(replacement);
-  return function(match) { return template.evaluate(match) };
-};
-
-String.prototype.parseQuery = String.prototype.toQueryParams;
-
-
-var Template = Class.create({
-  initialize: function(template, pattern) {
-    this.template = template.toString();
-    this.pattern = pattern || Template.Pattern;
-  },
-
-  evaluate: function(object) {
-    if (Object.isFunction(object.toTemplateReplacements))
-      object = object.toTemplateReplacements();
-
-    return this.template.gsub(this.pattern, function(match) {
-      if (object == null) return '';
-
-      var before = match[1] || '';
-      if (before == '\\') return match[2];
-
-      var ctx = object, expr = match[3];
-      var pattern = /^([^.[]+|\[((?:.*?[^\\])?)\])(\.|\[|$)/, match = pattern.exec(expr);
-      if (match == null) return '';
-
-      while (match != null) {
-        var comp = match[1].startsWith('[') ? match[2].gsub('\\\\]', ']') : match[1];
-        ctx = ctx[comp];
-        if (null == ctx || '' == match[3]) break;
-        expr = expr.substring('[' == match[3] ? match[1].length : match[0].length);
-        match = pattern.exec(expr);
-      }
-
-      return before + String.interpret(ctx);
-    }.bind(this));
-  }
-});
-Template.Pattern = /(^|.|\r|\n)(#\{(.*?)\})/;
 
 var $break = { };
 
@@ -751,16 +526,8 @@ Object.extend(Array.prototype, {
 
   inspect: function() {
     return '[' + this.map(Object.inspect).join(', ') + ']';
-  },
-
-  toJSON: function() {
-    var results = [];
-    this.each(function(object) {
-      var value = Object.toJSON(object);
-      if (value !== undefined) results.push(value);
-    });
-    return '[' + results.join(', ') + ']';
   }
+
 });
 
 // use native browser JS 1.6 implementation if available
@@ -799,134 +566,4 @@ if (Prototype.Browser.Opera){
     return array;
   };
 }
-Object.extend(Number.prototype, {
-  toPaddedString: function(length, radix) {
-    var string = this.toString(radix || 10);
-    return '0'.times(length - string.length) + string;
-  },
-
-  toJSON: function() {
-    return isFinite(this) ? this.toString() : 'null';
-  }
-});
-
-function $H(object) {
-  return new Hash(object);
-};
-
-var Hash = Class.create(Enumerable, (function() {
-  if (function() {
-    var i = 0, Test = function(value) { this.key = value };
-    Test.prototype.key = 'foo';
-    for (var property in new Test('bar')) i++;
-    return i > 1;
-  }()) {
-    function each(iterator) {
-      var cache = [];
-      for (var key in this._object) {
-        var value = this._object[key];
-        if (cache.include(key)) continue;
-        cache.push(key);
-        var pair = [key, value];
-        pair.key = key;
-        pair.value = value;
-        iterator(pair);
-      }
-    }
-  } else {
-    function each(iterator) {
-      for (var key in this._object) {
-        var value = this._object[key], pair = [key, value];
-        pair.key = key;
-        pair.value = value;
-        iterator(pair);
-      }
-    }
-  }
-
-  function toQueryPair(key, value) {
-    if (Object.isUndefined(value)) return key;
-    return key + '=' + encodeURIComponent(String.interpret(value));
-  }
-
-  return {
-    initialize: function(object) {
-      this._object = Object.isHash(object) ? object.toObject() : Object.clone(object);
-    },
-
-    _each: each,
-
-    set: function(key, value) {
-      return this._object[key] = value;
-    },
-
-    get: function(key) {
-      return this._object[key];
-    },
-
-    unset: function(key) {
-      var value = this._object[key];
-      delete this._object[key];
-      return value;
-    },
-
-    toObject: function() {
-      return Object.clone(this._object);
-    },
-
-    keys: function() {
-      return this.pluck('key');
-    },
-
-    values: function() {
-      return this.pluck('value');
-    },
-
-    index: function(value) {
-      var match = this.detect(function(pair) {
-        return pair.value === value;
-      });
-      return match && match.key;
-    },
-
-    merge: function(object) {
-      return this.clone().update(object);
-    },
-
-    update: function(object) {
-      return new Hash(object).inject(this, function(result, pair) {
-        result.set(pair.key, pair.value);
-        return result;
-      });
-    },
-
-    toQueryString: function() {
-      return this.map(function(pair) {
-        var key = encodeURIComponent(pair.key), values = pair.value;
-
-        if (values && typeof values == 'object') {
-          if (Object.isArray(values))
-            return values.map(toQueryPair.curry(key)).join('&');
-        }
-        return toQueryPair(key, values);
-      }).join('&');
-    },
-
-    inspect: function() {
-      return '#<Hash:{' + this.map(function(pair) {
-        return pair.map(Object.inspect).join(': ');
-      }).join(', ') + '}>';
-    },
-
-    toJSON: function() {
-      return Object.toJSON(this.toObject());
-    },
-
-    clone: function() {
-      return new Hash(this);
-    }
-  }
-})());
-
-Hash.from = $H;
 

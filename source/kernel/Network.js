@@ -54,7 +54,7 @@ Object.subclass('URL', {
     },
     
     inspect: function() {
-	return Object.toJSON(this);
+	return JSON.serialize(this);
     },
     
     toString: function() {
@@ -101,9 +101,18 @@ Object.subclass('URL', {
 			hostname: this.hostname, pathname: dirPart + filename});
     },
 
+    toQueryString: function(record) {
+	var results = [];
+	Object.forEachOwnProperty(record, function(p) {
+	    var value = record[p];
+	    results.push(encodeURIComponent(p) + "=" + encodeURIComponent(String(value)));
+	});
+	return results.join('&');
+    },
+
     withQuery: function(record) {
 	return new URL({protocol: this.protocol, port: this.port, hostname: this.hostname, pathname: this.pathname,
-			search: "?" + $H(record).toQueryString(), hash: this.hash});
+			search: "?" + this.toQueryString(record), hash: this.hash});
     },
 
     eq: function(url) {
@@ -111,6 +120,7 @@ Object.subclass('URL', {
 	else return url.protocol == this.protocol && url.port == this.port && url.hostname == this.hostname
 	    && url.pathname == this.pathname && url.search == this.search && url.hash == this.hash;
     }
+    
     
 });
 
@@ -150,7 +160,7 @@ View.subclass('NetRequest', {
 	this.requestNetworkAccess();
 	this.transport.onreadystatechange = this.onReadyStateChange.bind(this);
 	this.isSync = false;
-	this.requestHeaders = new Hash();
+	this.requestHeaders = {};
 	$super(modelPlug)
     },
 
@@ -186,12 +196,14 @@ View.subclass('NetRequest', {
     },
 
     setRequestHeaders: function(record) {
-        $H(record).each(function(pair) { this.requestHeaders.set(pair.key, pair.value) }.bind(this));
+	Object.forEachOwnProperty(record, function(prop) {
+	    this.requestHeaders[prop] = record[prop];
+	}, this);
     },
     
     setContentType: function(string) {
 	// valid before send but after open?
-	this.requestHeaders.set("Content-Type", string);
+	this.requestHeaders["Content-Type"] = string;
     },
 
     getReadyState: function() {
@@ -221,9 +233,9 @@ View.subclass('NetRequest', {
 	    this.url = url;
 	    this.method = method.toUpperCase();
 	    this.transport.open(this.method, url.toString(), !this.isSync);
-	    this.requestHeaders.each(function(p) { 
-		this.transport.setRequestHeader(p.key, p.value);
-	    }.bind(this));
+	    Object.forEachOwnProperty(this.requestHeaders, function(p) {
+		this.transport.setRequestHeader(p, this.requestHeaders[p]);
+	    }, this);
 	    this.transport.send(content || undefined);
 	    return this;
 	} catch (er) {
@@ -429,10 +441,6 @@ Widget.subclass('FeedWidget', {
 	this.feed.kickstart();
     },
 
-    toJSON: function() {
-	// no persistent state
-	return undefined;
-    },
 
     makeSourcePane: function(ignored, evt) {
 	var item = this.getEntry(this.getModelValue("getSelectedItemTitle"));

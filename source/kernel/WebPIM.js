@@ -1412,15 +1412,15 @@ Object.subclass('WebPIM', {
     // is contained in the tree only once.
     checkModelIntegrity: function() {
 
-        var unique = new Hash();
+        var unique = {};
         for (var i = 0; i < PIM.items.length; i++) {
             var item = PIM.items[i];
 
             // Ensure item is truly unique
             var id = item.getId() + "##" + item.getCaption(); // + item.getContents();
-            if (unique.get(id))
+            if (unique[id])
                  alert("Assertion error: item contained in the tree twice: " + id);
-            else unique.set(id, true);
+            else unique[id] = true;
 
             var parent = item.getParent();
             if (parent != this) alert("Assertion error: incorrect parent pointer for: " + id);
@@ -1434,9 +1434,9 @@ Object.subclass('WebPIM', {
             
             // Ensure item is truly unique
             var id = item.getId() + "##" + item.getCaption(); // + item.getContents();
-            if (unique.get(id))
+            if (unique[id])
                  alert("Assertion failure 2: item contained in the tree twice: " + id);
-            else unique.set(id, true);
+            else unique[id] = true;
             
             var parent = item.getParent();
             if (parent != folder) alert("Assertion failure 2: Incorrect parent pointer for: " + id);
@@ -1521,16 +1521,16 @@ Object.subclass('WebPIM', {
         }
 
         // Data on our web server is stored as a large key-value store.
-        // We read the data into a Hash object for preprocessing.
-        var hash = new Hash();
+        // We read the data into a hash object for preprocessing.
+        var hash = {};
         for (var i = 0; i < database.length; i++) {
             var key = database[i][0];
             var value = database[i][1];
-            hash.set(key, value);
+            hash[key] = value;
         }
 
         // Find the root object
-        var value = hash.get("root");
+        var value = hash["root"];
         if (value) {
             var rootObject = PIM.unserializeValue(hash, value, BASE_ID-1, PIM);
             PIM.items = rootObject.items;
@@ -1587,7 +1587,7 @@ Object.subclass('WebPIM', {
                     continue;
                 }
 
-                var subValue = hash.get(subId);
+                var subValue = hash[subId];
                 if (subValue) {
                     var subObject = this.unserializeValue(hash, subValue, subId, result);
                     items.push(subObject);

@@ -350,9 +350,13 @@ LivelyNS = {
 // Our extensions to JavaScript base libraries
 // ===========================================================================
 
+var Class = {};
+
 /**
   * Extensions to class Class
   */  
+
+
 
 Object.extend(Class, {
 
@@ -906,12 +910,10 @@ Object.subclass("Point", {
 	return "pt(%1.f,%1.f)".format(this.x, this.y);
     },
 
-    toJSON: function() {
-	return Object.toJSON({x: this.x, y: this.y});
-    },
+    toJSON: function() { return {x: this.x, y: this.y}; },
     
     inspect: function() {
-	return this.toJSON();
+	return JSON.serialize(this);
     },
 
     matrixTransform: function(mx, acc) {
@@ -1115,7 +1117,7 @@ Rectangle.addMethods({
     },
 
     inspect: function() {
-	return Object.toJSON(this);
+	return JSON.serialize(this);
     }
 
 
@@ -2692,22 +2694,22 @@ Object.extend(Exporter, {
 
 Object.subclass('Copier', {
 
-    morphMap: null,
+    morphMap_: null,
 
     toString: function() { 
 	return "#<Copier>"; 
     },
 
     initialize: function() {
-	this.morphMap = new Hash();
+	this.morphMap_ = [];
     },
 
     addMapping: function(oldId, newMorph) {
-	this.morphMap.set(oldId.toString(), newMorph); // force strings just in case
+	this.morphMap_[Number(oldId)] = newMorph; 
     },
 
     lookupMorph: function(oldId) {
-	return this.morphMap.get(oldId.toString());
+	return this.morphMap_[Number(oldId)];
     }
 
 }); 
@@ -2850,7 +2852,7 @@ Copier.subclass('Importer', {
 		var name = LivelyNS.getAttribute(node, "name");
 		var value = node.textContent;
 		if (value) {
-		    value = value.evalJSON();
+		    value = JSON.unserialize(value);
 		}
 		model.addVariable(name, value);
 		break;
@@ -3675,10 +3677,6 @@ Morph.addMethods({
     },
 
 
-    toJSON: function() {
-	return undefined;
-    },
-
     // Morph coordinate transformation functions
 
     // SVG has transform so renamed to getTransform()
@@ -4312,22 +4310,19 @@ Wrapper.subclass('SchedulableAction', {
 	this.argIfAny = argIfAny;
 	this.stepTime = stepTime;
 	this.ticks = 0;
-	this.rawNode.appendChild(NodeFactory.createCDATA(this.toJSON()));
+	this.rawNode.appendChild(NodeFactory.createCDATA(JSON.serialize(this)));
     },
 
     deserialize: function($super, importer, rawNode) {
 	$super(importer, rawNode);
 	this.rawNode = rawNode;
-	var init = rawNode.textContent.evalJSON();
+	var init = JSON.unserialize(rawNode.textContent);
 	Object.extend(this, init);
     },
 
     toJSON: function() {
 	// do not try to to convert actor to JSON
-	return Object.toJSON({scriptName: this.scriptName, 
-			      argIfAny: this.argIfAny, 
-			      stepTime: this.stepTime, 
-			      ticks: this.ticks });
+	return {scriptName: this.scriptName, argIfAny: this.argIfAny, stepTime: this.stepTime, ticks: this.ticks};
     },
 
     toString: function() {
@@ -4793,12 +4788,6 @@ Object.subclass('Model', {
 	return "#<Model:%s>".format(this.dependents);
     },
 
-    inspect: function() {
-	var hash = new Hash(this);
-	delete hash.dependents;
-	return "#<Model:%s>".format(Object.toJSON(hash));
-    },
-
     // test?
     copyFrom: function(copier, other) {
 	this.dependents = [];
@@ -4834,7 +4823,7 @@ Wrapper.subclass('ModelPlug', {
     },
 
     inspect: function() {
-	return Object.toJSON(this);
+	return JSON.serialize(this);
     },
 
     deserialize: function(importer, rawNode) {
@@ -4897,7 +4886,7 @@ Model.subclass('SimpleModel', {
 	for (var i = 0; i < vars.length; i++) {
 	    var name = vars[i];
 	    var varEl = element.appendChild(LivelyNS.create("variable", {name: name}));
-	    varEl.appendChild(NodeFactory.createText(Object.toJSON(this[name])));
+	    varEl.appendChild(NodeFactory.createText(JSON.serialize(this[name])));
 	    element.appendChild(NodeFactory.createNL());
 	}
 	for (var i = 0; i < this.dependents.length; i++) {	    
