@@ -586,12 +586,13 @@ Morph.subclass("WindowControlMorph", {
  
 });
 
+WindowState = { Expanded: "Expanded", Collapsed: "Collapsed", Shutdown: "Shutdown" };
 /**
  * @class WindowMorph: Full-fledged windows with title bar, menus, etc.
  */
 Morph.subclass('WindowMorph', {
-    
-    state: "expanded",
+
+    state: WindowState.Expanded,
     titleBar: null,
     targetMorph: null,
     
@@ -654,7 +655,7 @@ Morph.subclass('WindowMorph', {
         this.titleBar.enableEvents();
         this.titleBar.highlight(false);
         this.remove();
-        this.state = "collapsed";
+        this.state = WindowState.Collapsed;
     },
     
     expand: function() {
@@ -671,10 +672,10 @@ Morph.subclass('WindowMorph', {
         this.titleBar.setExtent(pt(this.innerBounds().width, this.titleBar.innerBounds().height));
         this.titleBar.setPosition(this.innerBounds().topLeft());
         this.titleBar.ignoreEvents();
-        this.state = "expanded";
+        this.state = WindowState.Expanded;
     },
 
-    isCollapsed: function() { return this.state == "collapsed"; },
+    isCollapsed: function() { return this.state === WindowState.Collapsed; },
 
     contentIsVisible: function() { return !this.isCollapsed(); },
 
@@ -735,14 +736,14 @@ Morph.subclass('WindowMorph', {
     },
     // End of window promotion methods----------------
 
-    isShutdown: function() { return this.state == "shutdown"; },
+    isShutdown: function() { return this.state == WindowState.Shutdown; },
 
     initiateShutdown: function() {
         if (this.isShutdown()) return;
         this.targetMorph.shutdown(); // shutdown may be prevented ...
         if (this.isCollapsed()) this.titleBar.remove();
         else this.remove();
-        this.state = "shutdown"; // no one will ever know...
+        this.state = WindowState.Shutdown; // no one will ever know...
         return true;
     },
     
@@ -758,7 +759,7 @@ Morph.subclass('WindowMorph', {
 
     adjustForNewBounds: function ($super) {
         $super();
-        if (!this.titleBar || !this.targetMorph) return
+        if (!this.titleBar || !this.targetMorph) return;
         var titleHeight = this.titleBar.innerBounds().height;
         var bnds = this.innerBounds();
         var newWidth = bnds.extent().x;
@@ -767,24 +768,6 @@ Morph.subclass('WindowMorph', {
         this.targetMorph.setExtent(pt(newWidth, newHeight - titleHeight));
         this.titleBar.setPosition(bnds.topLeft());
         this.targetMorph.setPosition(bnds.topLeft().addXY(0, titleHeight));
-    },
-
-    updateView: function(aspect, controller) {
-        var plug = this.modelPlug;
-        if (!plug) return;
-        
-        if (aspect == plug.getState) {
-            //this.loadURL(this.getModelValue('getURL', ""));
-            var state = this.getModelValue('getState', "");
-            switch (state) {
-            case "expanded":
-                this.expand();  break;
-            case "collapsed":
-                this.collapse();  break;
-            case "shutdown":
-                this.initiateShutdown();  break;
-            }
-        }
     }
 
 });
