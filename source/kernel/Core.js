@@ -4860,12 +4860,15 @@ Model.subclass('SimpleModel', {
 	return "set" + varName;
     },
 
-    initialize: function($super /*, variables... */) {
+    initialize: function($super, vars) {
 	$super(null);
-	var variables = $A(arguments);
-	variables.shift();
-	for (var i = 0; i < variables.length; i++) {
-	    this.addVariable(variables[i], null);
+	if (vars) {
+	    for (var i = 0; i < vars.length; i++) {
+		var v = vars[i];
+		if (v.startsWith('-') || v.startsWith('+')) 
+		    v = v.slice(1);
+		this.addVariable(v, null);
+	    }
 	}
     },
 
@@ -5453,7 +5456,7 @@ PasteUpMorph.subclass("WorldMorph", {
     },
 
     topWindow: function() {
-	for (var i=this.submorphs.length-1; i>=0; i--) {
+	for (var i= this.submorphs.length - 1; i >= 0; i--) {
 	    var sub = this.submorphs[i];
 	    if (sub instanceof WindowMorph) return sub;
 	}

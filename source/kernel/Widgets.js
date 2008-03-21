@@ -37,6 +37,8 @@ Morph.subclass("ButtonMorph", {
     fill: Color.neutral.gray,
     borderColor: Color.neutral.gray,
     label: null,
+    
+    pins: ["Value"],
 
     // A ButtonMorph is the simplest widget
     // It read and writes the boolean variable, this.model[this.propertyName]
@@ -45,11 +47,11 @@ Morph.subclass("ButtonMorph", {
 	
         $super(initialBounds, "rect");
         
-        var model = new SimpleModel("Value");
+        var model = new SimpleModel(this.pins);
         // this default self connection may get overwritten by, eg, connectModel()...
         this.modelPlug = new ModelPlug(model.makePlugSpec());
         // Styling
-        this.setModelValue('setValue', false);	
+        this.setValue(false);	
 	this.linkToStyles(['button']);
         this.changeAppearanceFor(false);
         this.setToggle(false); // if true each push toggles the model state 
@@ -1195,6 +1197,7 @@ TextMorph.subclass("CheapListMorph", {
     borderColor: Color.black,
     wrap: WrapStyle.None,
     maxSafeSize: 2e4,  // override max for subsequent updates
+    pins: ["List", "Selection", "-DeletionConfirmation", "+DeletionRequest"],
     
     initialize: function($super, initialBounds, itemList) {
         // itemList is an array of strings
@@ -1208,7 +1211,7 @@ TextMorph.subclass("CheapListMorph", {
 	
         this.itemList = itemList;
         // this default self connection may get overwritten by, eg, connectModel()...
-        var model = new SimpleModel("List", "Selection");
+        var model = new SimpleModel(this.pins);
         this.modelPlug = new ModelPlug(model.makePlugSpec());
         this.setModelValue('setList', itemList);
         this.layoutChanged();
@@ -1552,11 +1555,12 @@ CheapListMorph.subclass("MenuMorph", {
 Morph.subclass("SliderMorph", {
 
     mss: 8,  // minimum slider size
+    pins: ["Value", "SliderExtent"],
 
     initialize: function($super, initialBounds, scaleIfAny) {
         $super(initialBounds, "rect");
 	// this default self connection may get overwritten by, eg, connectModel()...
-        var model = new SimpleModel("Value", "Extent");
+        var model = new SimpleModel(this.pins);
 	this.modelPlug = new ModelPlug(model.makePlugSpec());
         this.scale = (scaleIfAny == null) ? 1.0 : scaleIfAny;
         var slider = new Morph(new Rectangle(0, 0, this.mss, this.mss), "rect");
@@ -1598,7 +1602,6 @@ Morph.subclass("SliderMorph", {
         var val = this.getValue();
         var bnds = this.shape.bounds();
         var ext = this.getSliderExtent();
-	console.log("extent is " + ext + ", value " + val + ", model " + this.getModel());
 	
         if (this.vertical()) { // more vertical...
             var elevPix = Math.max(ext*bnds.height,this.mss); // thickness of elevator in pixels
@@ -1896,6 +1899,7 @@ Morph.subclass("ColorPickerMorph", {
     fill: null,
     borderWidth: 1, 
     borderColor: Color.black,
+    pins: ["+Color"],
 
     initialize: function($super, initialBounds, targetMorph, setFillName, popup) {
         $super(initialBounds, "rect");
@@ -2025,13 +2029,12 @@ Morph.subclass('XenoMorph', {
 
 SimpleModel.subclass('Dialog', {
     inset: 10,
-
 });
 
 Dialog.subclass('ConfirmDialog', {
     
     initialize: function($super, message, callback) {
-	$super(null, 'Yes', 'No', 'Message');
+	$super(['Yes', 'No', 'Message']);
 	this.setMessage(message);
 	this.callback = callback || function(result) { console.log("Confirmed? " + result) };
     },
@@ -2084,7 +2087,7 @@ Dialog.subclass('ConfirmDialog', {
 Dialog.subclass('PromptDialog', {
     
     initialize: function($super, message, callback) {
-	$super(null, 'Input', 'OKValue', 'CancelValue', 'Message');
+	$super(['Input', 'OKValue', 'CancelValue', 'Message']);
 	this.setMessage(message);
 	this.callback = callback || function(result) { console.log("Input: " + result) };
     },

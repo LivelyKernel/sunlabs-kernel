@@ -129,6 +129,7 @@ View.subclass('NetRequest', {
     Done: 4,
 
     documentation: "a view that writes the contents of an http request into the model",
+    pins: ["+Status", "+ReadyState", "+ResponseXML", "+ResponseText"],
 
     proxy: Loader.proxyURL ? new URL(Loader.proxyURL.endsWith("/") ? Loader.proxyURL : Loader.proxyURL + "/") : null,
 
@@ -331,6 +332,8 @@ Wrapper.subclass('FeedItem', {
 
 View.subclass('Feed', NetRequestReporterTrait, {
 
+    pins: ["-URL", "+FeedChannels"],
+
     updateView: function(aspect, source) { // model vars: getURL, setFeedChannels
         var p = this.modelPlug;
 	if (!p) return;
@@ -383,10 +386,11 @@ View.subclass('Feed', NetRequestReporterTrait, {
 Widget.subclass('FeedWidget', {
 
     defaultViewExtent: pt(500, 200),
+    pins: [ "URL", "+ItemList", "+ChannelTitle", "-SelectedItemTitle", "+SelectedItemContent"],
     
     initialize: function($super, urlString) {
-	var model = new SimpleModel("FeedURL", "ItemList", "ChannelTitle", "SelectedItemContent", "SelectedItemTitle", 
-	    "ItemMenu");
+	var model = new SimpleModel(["FeedURL", "ItemList", "ChannelTitle", "SelectedItemContent", "SelectedItemTitle", 
+	    "ItemMenu"]);
 
 	$super({model: model, 
 		setURL: "setFeedURL", getURL: "getFeedURL",

@@ -211,7 +211,7 @@ Widget.subclass('SimpleInspector', {
 
     initialize: function($super, targetMorph) {
         $super();
-	var model = new SimpleModel("PropList", "PropName", "PropText", "Inspectee", "EvalInput");
+	var model = new SimpleModel(["PropList", "PropName", "PropText", "Inspectee", "EvalInput"]);
 	this.connectModel({model: model, 
 			   setPropList: "setPropList", 
 			   setPropName: "setPropName", getPropName: "getPropName",

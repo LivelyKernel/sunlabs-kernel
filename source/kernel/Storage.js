@@ -303,7 +303,7 @@ View.subclass('WebFile', NetRequestReporterTrait, {
 Widget.subclass('TwoPaneBrowser', { // move to Widgets.js sometime
 
     initialize: function(rootNode, lowerFetcher, upperFetcher) {
-	var model = new SimpleModel("RootNode", //: Node, constant
+	var model = new SimpleModel(["RootNode", //: Node, constant
 	    "TopNode", //:Node the node whose contents are viewed in the left pane
 	    "SelectedUpperNode", //:Node
 	    "SelectedLowerNode",  // :Node
@@ -316,7 +316,7 @@ Widget.subclass('TwoPaneBrowser', { // move to Widgets.js sometime
 	    "UpperNodeNameList", // :String[]
 	    "LowerNodeNameList", // :String[]
 	    "UpperNodeListMenu", "LowerNodeListMenu",
-	    "LowerNodeDeletionRequest", "LowerNodeDeletionConfirmation");
+	    "LowerNodeDeletionRequest", "LowerNodeDeletionConfirmation"]);
 	
 	// this got a bit out of hand
 	this.connectModel({model: model, 

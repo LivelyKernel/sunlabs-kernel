@@ -37,7 +37,7 @@ Widget.subclass('TestWidget', {
         // Make a fancy panel.  Note: Transparency does not
         // work with gradients or stipple patterns yet!
         panel.linkToStyles(['widgetPanel']);
-        var model = new SimpleModel('Text', 'TextSel', 'ListItem', 'PrintValue', 'B1Value', 'B2Value', 'SliderValue', 'SliderExtent');
+        var model = new SimpleModel(['Text', 'TextSel', 'ListItem', 'PrintValue', 'B1Value', 'B2Value', 'SliderValue', 'SliderExtent']);
         panel.connectModel({model: model});
         var m; 
 
@@ -2390,8 +2390,8 @@ Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
     
     initialize: function($super) { 
 	
-	var model = new SimpleModel("WeatherDesc", "City", "ImageURL",
-	    "Temperature", "Wind", "Humidity", "DewPoint", "Gusts", "Visibility");
+	var model = new SimpleModel(["WeatherDesc", "City", "ImageURL",
+	    "Temperature", "Wind", "Humidity", "DewPoint", "Gusts", "Visibility"]);
 	
 	model.setImageURL("http://www.bbc.co.uk/weather/images/banners/weather_logo.gif");
 	
@@ -2544,7 +2544,7 @@ Widget.subclass('StockWidget', NetRequestReporterTrait, {
     defaultViewExtent: pt(580, 460),
 
     initialize: function($super) { 
-	var model = new SimpleModel("NewsHeaders", "NewsURL", "StockIndex", "Quote", "IndexChartURL", "Company");
+	var model = new SimpleModel(["NewsHeaders", "NewsURL", "StockIndex", "Quote", "IndexChartURL", "Company"]);
 	$super({model: model, 
 		getStockIndex: "getStockIndex", 
 		getCompany: "getCompany", 
