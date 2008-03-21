@@ -888,7 +888,7 @@ WidgetModel.subclass('ChangeList', {
 
     getChangeBanners: function() {
 	this.changeBanner = null;
-	return this.changeList.map( function(each) { return this.bannerOfItem(each); }.bind(this));
+	return this.changeList.map(function(each) { return this.bannerOfItem(each); }, this);
     },
 
     setChangeSelection: function(n, v) { this.changeBanner = n; this.changed("getChangeItemText", v) },

@@ -2754,7 +2754,7 @@ Copier.subclass('Importer', {
 
     startScripts: function(world) {
 	this.verbose && console.log("start scripts %s in %s", this.scripts, world);
-	this.scripts.each(function(s) { s.start(world); });
+	this.scripts.forEach(function(s) { s.start(world); });
     },
 
 
@@ -2823,7 +2823,7 @@ Copier.subclass('Importer', {
     },
     
     hookupModels: function() {
-	this.models.each(function(node) { this.importModelFrom(node)}.bind(this));
+	this.models.forEach(function(node) { this.importModelFrom(node); }, this);
     },
     
     importModelFrom: function(modelNode) {
@@ -2966,13 +2966,13 @@ Visual.subclass("Morph", {
 	this.initializePersistentState(pt(0,0).asRectangle(), "rect");
 
 	if (other.hasSubmorphs()) { // deep copy of submorphs
-	    other.submorphs.each(function(m) { 
+	    other.submorphs.forEach(function(m) { 
 		var copy = m.copy(copier);
 		copier.addMapping(m.id(), copy);
 		copy.owner = null;  // Makes correct transfer of transform in next addMorph
 		this.addMorph(copy);
 		//this.internalAddMorph(copy, false);
-	    }.bind(this));
+	    }, this);
 	}
 
 	for (var p in other) {
@@ -4225,8 +4225,7 @@ Morph.addMethods({
     showOwnerChain: function(evt) {
 	console.log("chain is " + this.ownerChain());
 	var items = this.ownerChain().map(
-	    function(each) { return [Object.inspect(each).truncate(), function() { each.showMorphMenu(evt) }]; }
-	);
+	    function(each) { return [Object.inspect(each).truncate(), function() { each.showMorphMenu(evt) }]; });
 	new MenuMorph(items, this).openIn(this.world(), evt.mousePoint, false, "Top item is topmost");
     },
 
@@ -4444,9 +4443,8 @@ Morph.addMethods({
 
 	if (this.hasSubmorphs()) { 
 	    var subBounds = null; // KP: added = null
-	    this.submorphs.each(function(m) { 
-		subBounds = subBounds == null ? m.bounds() : subBounds.union(m.bounds()); }
-			       );
+	    this.submorphs.forEach(function(m) { 
+		subBounds = subBounds == null ? m.bounds() : subBounds.union(m.bounds()); });
 	    // could be simpler when no rotation...
 	    this.fullBounds = this.fullBounds.union(tfm.transformRectToRect(subBounds));
 	} 
@@ -4797,7 +4795,7 @@ Object.subclass('Model', {
     // test?
     copyFrom: function(copier, other) {
 	this.dependents = [];
-	other.dependents.each(function(dep) { this.dependents.push(copier.lookupMorph(dep.id())) });
+	other.dependents.forEach(function(dep) { this.dependents.push(copier.lookupMorph(dep.id())) }, this);
     }
 
 });
@@ -4878,7 +4876,7 @@ Model.subclass('SimpleModel', {
     makePlugSpec: function() {
 	var model = this;
 	var spec = { };
-	this.variables().each(function(v) { spec[this.getter(v)] = model[this.getter(v)]; spec[this.setter(v)] = model[this.setter(v)]; }.bind(this));
+	this.variables().forEach(function(v) { spec[this.getter(v)] = model[this.getter(v)]; spec[this.setter(v)] = model[this.setter(v)]; }, this);
 	spec.model = this;
     },
 
@@ -5123,8 +5121,8 @@ PasteUpMorph.subclass("WorldMorph", {
         hand.registerForEvents(hand);
         hand.layoutChanged();
 	
-        Event.keyboardEvents.each(function(each) {
-            document.documentElement.addEventListener(each, hand, false);
+        Event.keyboardEvents.forEach(function(each) {
+            document.documentElement.addEventListener(each, hand, hand.handleOnCapture);
         });
 
         this.rawNode.parentNode.appendChild(hand.rawNode);
@@ -5135,8 +5133,8 @@ PasteUpMorph.subclass("WorldMorph", {
         hand.unregisterForEvents(this);
         hand.unregisterForEvents(hand);
 
-        Event.keyboardEvents.each(function(each) {
-            document.documentElement.removeEventListener(each, hand, false);
+        Event.keyboardEvents.forEach(function(each) {
+            document.documentElement.removeEventListener(each, hand, hand.handleOnCapture);
         });
 
         this.hands.splice(this.hands.indexOf(hand), 1);
@@ -5538,15 +5536,13 @@ Morph.subclass("HandMorph", {
     },
     
     registerForEvents: function(morph) {
-        var self = this;
-        Event.basicInputEvents.each(function(name) { 
-            morph.rawNode.addEventListener(name, self, this.handleOnCapture)});
+        Event.basicInputEvents.forEach(function(name) { 
+            morph.rawNode.addEventListener(name, this, this.handleOnCapture);}, this);
     },
     
     unregisterForEvents: function(morph) {
-        var self = this; 
-        Event.basicInputEvents.each(function(name) { 
-            morph.rawNode.removeEventListener(name, self, this.handleOnCapture)});
+        Event.basicInputEvents.forEach(function(name) { 
+            morph.rawNode.removeEventListener(name, this, this.handleOnCapture);}, this);
     },
     
     setMouseFocus: function(morphOrNull) {
@@ -5896,13 +5892,13 @@ Morph.subclass('LinkMorph', {
 	
         // Make me look a bit like a world
         this.applyStyle(this.style);
-        [new Rectangle(0.15,0,0.7,1), new Rectangle(0.35,0,0.3,1), new Rectangle(0,0.3,1,0.4)].each( function(each) {
+        [new Rectangle(0.15,0,0.7,1), new Rectangle(0.35,0,0.3,1), new Rectangle(0,0.3,1,0.4)].forEach(function(each) {
             // Make longitude / latitude lines
             var lineMorph = new Morph(bounds.scaleByRect(each), "ellipse");
 	    lineMorph.applyStyle({fill: null, borderWidth: 1, borderColor: Color.black}).ignoreEvents();
             lineMorph.align(lineMorph.bounds().center(),this.shape.bounds().center());
             this.addMorph(lineMorph);
-        }.bind(this));
+        }, this);
 
         if (!otherWorld) {
             this.myWorld = this.makeNewWorld();
@@ -5963,7 +5959,7 @@ Morph.subclass('LinkMorph', {
         var oldWorld = WorldMorph.current();
         oldWorld.onExit();    
         // remove old hands
-        oldWorld.hands.clone().each(function(hand) { 
+        oldWorld.hands.clone().forEach(function(hand) { 
             oldWorld.removeHand(hand);
         });
         

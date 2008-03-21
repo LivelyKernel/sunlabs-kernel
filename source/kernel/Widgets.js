@@ -866,7 +866,7 @@ Morph.subclass('HandleMorph', {
     onMouseUp: function(evt) {
         if (!evt.isShiftDown() && !evt.isAltDown() && !evt.isCmdDown() &&
             // these hack tests should be replaced by receiver tests
-            !(this.targetMorph instanceof WindowMorph || this.targetMorph.getType() instanceof TitleBarMorph)) {
+            !(this.targetMorph instanceof WindowMorph || this.targetMorph instanceof TitleBarMorph)) {
                 // last call for, eg, vertex deletion
                 this.targetMorph.reshape(this.partName, this.targetMorph.localize(evt.mousePoint), this, true); 
         }
@@ -964,9 +964,9 @@ Morph.subclass("SelectionMorph", {
 
         $super(this.reshapeName, newPoint, handle, lastCall);
         this.selectedMorphs = [];
-        this.owner.submorphs.each(function(m) {
+        this.owner.submorphs.forEach(function(m) {
             if (m !== this && this.bounds().containsRect(m.bounds())) this.selectedMorphs.push(m);
-        }.bind(this));
+        }, this);
         this.selectedMorphs.reverse();
             
         if (lastCall) this.initialSelection = false;
@@ -1160,7 +1160,7 @@ Object.extend(PanelMorph, {
         var panel = new PanelMorph(extent);
 	panel.applyStyle({fill: Color.primary.blue.lighter(2), borderWidth: 2});
 	
-        paneSpecs.each( function(spec) {
+        paneSpecs.forEach(function(spec) {
             var paneName = spec[0];
             var paneConstructor = spec[1];
             var paneRect = pt(0,0).extent(extent).scaleByRect(spec[2]);
@@ -1460,12 +1460,12 @@ CheapListMorph.subclass("MenuMorph", {
     },
 
     removeItemsNamed: function(nameList) {
-        nameList.each(function(n) { this.removeItemNamed(n); }.bind(this));
+        nameList.forEach(function(n) { this.removeItemNamed(n); }, this);
     },
 
     keepOnlyItemsNamed: function(nameList) {
         var rejects = [];
-        this.items.each( function(item) { if (nameList.indexOf(item[0]) < 0) rejects.push(item[0])});
+        this.items.forEach( function(item) { if (nameList.indexOf(item[0]) < 0) rejects.push(item[0])});
         this.removeItemsNamed(rejects);
     },
 
@@ -2319,7 +2319,7 @@ WidgetModel.subclass('ConsoleWidget', {
 		function $m(morph) {
 		    // morphs
 		    var array = [];
-		    (morph || WorldMorph.current()).submorphs.each(function(m) { array.push(m) });
+		    (morph || WorldMorph.current()).submorphs.forEach(function(m) { array.push(m) });
 		    return array;
 		}
 		function $i(id) {
