@@ -88,25 +88,10 @@ WidgetModel.subclass('SimpleBrowser', {
 			SourceControl = new SourceDatabase();
 			SourceControl.openIn(this.world());
 		}
-		this.world().firstHand().setMouseFocus(null);  // DI: Is this necessary ?? ***
-		SourceControl.scanKernelFiles(["defaultconfig.js", "localconfig.js",
+		SourceControl.scanKernelFiles(["prototype.js", "defaultconfig.js", "localconfig.js",
 			"Core.js", "Text.js", "svgtext-compat.js",
 			"Widgets.js", "Network.js", "Storage.js", "Tools.js",
 			"Examples.js", "WebPIM.js"]);
-		}]);
-	}
-	return items; 
-    },
-    getCodePaneMenu: function() {
-        var items = [];
-	if (SourceControl) {
-            items.push(['find all references', function() {
-                this.world().firstHand().setMouseFocus(null);  // DI: Is this necessary ?? ***
-		var refs = SourceControl.searchFor(this.codePaneSelection);
-		if (refs.length > 0) {
-		    var chgList = new FileParser().parseFile(fileName, contents);
-		    new ChangeList(fileName, null, refs).openIn(this.world());
-		} else this.world.inform("No references found for " + this.codePaneSelection);
 		}]);
 	}
 	return items; 
@@ -730,33 +715,26 @@ TextMorph.subclass('FrameRateMorph', {
 // ===========================================================================
  
 Object.subclass('FileParser', {
-	// First of all, this is not a real parser ;-)
+	// The bad new is: this is not a real parser ;-)
 	// It simply looks for class headers, and method headers,
 	// and everything in between gets put with the preceding header
-	// There are hundreds of ways this can fail,
-	// but, heh-heh, it works 99 percent of the time ;-)
+	// The good news is:  it can deal with any file,
+	// and it does something useful 99 percent of the time ;-)
+	// ParseFile() produces an array of SourceCodeDescriptors
+	// If mode == "scan", that's all it does
+	// If mode == "search", it only collects descriptors for code that matches the searchString
+	// If mode == "import", it builds a source code index in SourceControl for use in the browser
 
-	// Yet to do...
-	// Do a better job of trimming code chunks
-	// Scan method bodies for <ident>. or ident( and build dict of senders
-	// Figure out what to do for various global functions and other unmatched code.
-	// Note probably best is ChangeList view of file sequence
-	// ...so, parseFile should probably also build that as well wile it scans
-	//	the view would just be a list of items <lineNo>: <1st 40 chars>...
-    
-    searchFile: function(fname, fstr, db, str) {
-	this.searchString = str;
-	return this.parseFile(fname, fstr, db);
-    },
-    parseFile: function(fname, fstr, db) {
+    parseFile: function(fname, fstr, db, mode, str) {
 	// Scans the file and returns changeList -- a list of informal divisions of the file
 	// It should be the case that these, in order, exactly contain all the text of the file
 	// Note that if db, a SourceDatabase, is supplied, it will be loaded during the scan
 	var ms = new Date().getTime();
 	this.fileName = fname;
-	this.str = fstr;
-	var len = this.str.length;
 	this.sourceDB = db;
+	this.mode = mode;  // one of ["scan", "search", "import"]
+	if (mode == "search") this.searchString = str;
+
 	this.verbose = false;  // fname == "Tools.js";
 	this.ptr = 0;
 	this.lineNo = 0;
@@ -775,7 +753,7 @@ Object.subclass('FileParser', {
 	    } else if (this.scanBlankLine(line)) {
 	    } else this.scanOtherLine(line)
 	}
-	this.ptr = len;
+	this.ptr = fstr.length;
 	this.processCurrentDef();
 	ms = new Date().getTime() - ms;
 	console.log(this.fileName + " scanned; " + this.changeList.length + " patches identified in " + ms + " ms.");
@@ -839,17 +817,20 @@ Object.subclass('FileParser', {
 	if (this.ptr == 0) return;  // we're being called at new def; if ptr == 0, there's no preamble
 	def.endPos = this.ptr-1;
 	var descriptor = new SourceCodeDescriptor (this.sourceDB, this.fileName, def.startPos, def.endPos, def.lineNo, def.type, def.name);
-	if (def.type == "classDef") {
+
+	if (this.mode == "scan") {
+	    this.changeList.push(descriptor);
+	} else if (this.mode == "search") {
+	    if (this.matchStringInDef(this.searchString)) this.changeList.push(descriptor);
+	} else if (this.mode == "import") {
+	    if (def.type == "classDef") {
 		this.currentClassName = def.name;
-		if(this.sourceDB) this.sourceDB.methodDictFor(this.currentClassName)["*definition"] = descriptor;
-	} else if (def.type == "methodDef") {
-		if(this.sourceDB) this.sourceDB.methodDictFor(this.currentClassName)[def.name] = descriptor;
+		this.sourceDB.methodDictFor(this.currentClassName)["*definition"] = descriptor;
+	    } else if (def.type == "methodDef") {
+		this.sourceDB.methodDictFor(this.currentClassName)[def.name] = descriptor;
+	    }
+	    this.changeList.push(descriptor);
 	}
-
-	if (!this.searchString || this.matchStringInDef(this.searchString))
-		this.changeList.push(descriptor);
-
-	// console.log("startPos = " + def.startPos + "; endPos = " + def.endPos);
 	this.currentDef = null;
     },
     scanBlankLine: function(line) {
@@ -922,7 +903,7 @@ WidgetModel.subclass('ChangeList', {
     },
     bannerOfItem: function(item) {
         var lineStr = item.lineNo.toString();
-	var firstLine = item.sourceCode().truncate(40);  // a bit wastefull
+	var firstLine = item.getSourceCode().truncate(40);  // a bit wastefull
 	var end = firstLine.indexOf("\n");
 	if (end >= 0) firstLine = firstLine.substring(0,end);
 	end = firstLine.indexOf(":");
@@ -932,24 +913,18 @@ WidgetModel.subclass('ChangeList', {
     getChangeItemText: function() {
         var item = this.selectedItem();
 	if (item == null) return "-----";
-        return item.sourceCode();
+        return item.getSourceCode();
     },
     getSearchString: function() {
         return this.searchString;
     },
     setChangeItemText: function(newItemText, v) {
-	// This all changes completely -- happens through sourceControl...
         var item = this.selectedItem();
 	if (item == null) return;
-	var beforeText = this.fileContents.substring(0, item.startPos);
-	var afterText = this.fileContents.substring(item.endPos+1);
-        var cat = beforeText.concat(newItemText, afterText);
-	console.log("Saving " + this.fileName + "; length = " + cat.length);
-	new NetRequest({model: new NetRequestReporter(), setStatus: "setRequestStatus"}).put(new URL(this.fileName), cat);
+	item.putSourceCode(newItemText, v.textBeforeChanges)
 	// Now recreate (slow but sure) list from new contents, as things may have changed
 	var oldSelection = this.changeBanner;
-	this.fileContents = cat;
-	this.changeList = new FileParser().parseFile(this.fileName, this.fileContents);
+	this.changeList = item.newChangeList();
 	this.changed('getChangeBanners');
 	this.setChangeSelection(oldSelection);  // reselect same item in new list (hopefully)
     },
@@ -1025,7 +1000,7 @@ ChangeList.subclass('SourceDatabase', {
 	this.cachedFullText = {};
         var projectName = 'Changes-di.js';  // Later get this info out of localConfig
 	var contents = this.getFileContents(projectName);
-	var chgList = new FileParser().parseFile(projectName, contents, this)
+	var chgList = new FileParser().parseFile(projectName, contents, this, "scan")
 	$super(projectName, null, chgList);
     },
     methodDictFor: function(className) {
@@ -1039,12 +1014,6 @@ ChangeList.subclass('SourceDatabase', {
 	var fullText = this.getFullText(descriptor.fileName);
 	if (!fullText) return null;
 	return fullText.substring(descriptor.startIndex, descriptor.stopIndex);
-    },
-    getFullText: function(fileName) {
-	var fullText = this.cachedFullText[fileName];
-	if (fullText) return fullText;
-	// Full text not in cache -- retrieve it and enter in cache
-	return this.getFileContents(fileName);
     },
     setDescriptorInClassForMethod: function(className, methodName, descriptor) {
 	var methodDict = this.methodDictFor(className);
@@ -1065,7 +1034,7 @@ ChangeList.subclass('SourceDatabase', {
 	for (var fName in this.cachedFullText) {
 		if (this.cachedFullText.hasOwnProperty(fName)) {
 			var fullText = this.cachedFullText[fName];
-			var refs = new FileParser().searchFile(fName, fullText, this, str)
+			var refs = new FileParser().parseFile(fName, fullText, this, "search", str)
 			fullList = fullList.concat(refs);
 		}
 	}
@@ -1076,15 +1045,37 @@ ChangeList.subclass('SourceDatabase', {
 		var fName = list[i];
 		var fullText = this.getFileContents(fName);
 		this.cachedFullText[fName] = fullText;
-		new FileParser().parseFile(fName, fullText, this);
+		new FileParser().parseFile(fName, fullText, this, "import");
 	}
     },
-    sourceCodeFromDescriptor: function(desc) {
+    getSourceCodeForDescriptor: function(desc) {
 	var fullText = this.getFullText(desc.fileName);
-	return fullText.substring(desc.startIndex,desc.stopIndex);
+	return fullText.substring(desc.startIndex, desc.stopIndex);
     },
-    viewTitle: function() {
-	return "Source Control for " + this.fileName;
+    putSourceCodeForDescriptor: function(desc, newText, originalText) {
+	if (originalText && originalText != this.getSourceCodeForDescriptor(desc)) {
+		console.log("Original text does not match file; store aborted");
+		return;
+	}
+	var fullText = this.getFullText(desc.fileName);
+	var beforeText = fullText.substring(0, desc.startIndex);
+	var afterText = fullText.substring(desc.stopIndex);
+        var cat = beforeText.concat(newText, afterText);
+	console.log("Saving " + desc.fileName + "...");
+	new NetRequest({model: new NetRequestReporter(), setStatus: "setRequestStatus"}
+			).put(URL.source.withFilename(desc.fileName), cat);
+	this.cachedFullText[desc.fileName] = cat;
+	console.log("... " + cat.length + " bytes saved.");
+    },
+    changeListForFileNamed: function(fName) {
+	var fullText = this.getFullText(fName);
+	return new FileParser().parseFile(fName, fullText, this, "scan");
+    },
+    getFullText: function(fileName) {
+	var fullText = this.cachedFullText[fileName];
+	if (fullText) return fullText;
+	// Full text not in cache -- retrieve it and enter in cache
+	return this.getFileContents(fileName);
     },
     getFileContents: function(fileName) { // convenient helper method
 	var ms = new Date().getTime();
@@ -1113,8 +1104,14 @@ Object.subclass('SourceCodeDescriptor', {
 	this.name = name;
 	return this;
     },
-    sourceCode: function() {
-	return this.sourceControl.sourceCodeFromDescriptor(this);
+    getSourceCode: function() {
+	return this.sourceControl.getSourceCodeForDescriptor(this);
+    },
+    putSourceCode: function(newText, originalText) {
+	return this.sourceControl.putSourceCodeForDescriptor(this, newText, originalText);
+    },
+    newChangeList: function() {
+	return this.sourceControl.changeListForFileNamed(this.fileName);
     }
 });
 

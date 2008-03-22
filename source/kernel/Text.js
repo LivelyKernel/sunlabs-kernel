@@ -1641,7 +1641,8 @@ TextMorph.addMethods({
             this.world().changed(); 
             return; // Hack for browser demo
         } else if (!this.autoAccept) {
-            this.setModelText(contentString); 
+            this.setModelText(contentString);
+	    this.textBeforeChanges = this.textString; 
         }
     },
     
@@ -1722,6 +1723,7 @@ TextMorph.addMethods({
         if (p) {
             if (aspect == p.getText  || aspect == 'all') {
 		this.updateTextString(this.getModelText());
+		this.textBeforeChanges = this.textString;
 	    }
             if (aspect == p.getSelection) {
 		this.searchForFind(this.getModelSelection(), 0);

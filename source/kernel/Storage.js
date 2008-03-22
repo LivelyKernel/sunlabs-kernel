@@ -607,12 +607,10 @@ TwoPaneBrowser.subclass('FileBrowser', {
 		}]);
 	    }
 	    
-	    var contents = this.getSelectedLowerNodeContents();
-	    var fileName = url.filename();
-	    console.log("fileName = " + fileName + "; contents.length = " + contents.length);
-            if (contents && contents.length > 0) {
+	    if (SourceControl) {
+		var fileName = url.filename();
 		items.unshift(['open a changeList browser', function(evt) {
-                    var chgList = new FileParser().parseFile(fileName, contents, SourceControl);
+                    var chgList = SourceControl.changeListForFileNamed(fileName);
 		    new ChangeList(fileName, null, chgList).openIn(this.world()); 
 		}]);
 	    }
