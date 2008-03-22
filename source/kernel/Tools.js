@@ -89,7 +89,24 @@ WidgetModel.subclass('SimpleBrowser', {
 			SourceControl.openIn(this.world());
 		}
 		this.world().firstHand().setMouseFocus(null);  // DI: Is this necessary ?? ***
-		SourceControl.scanKernelFiles(["Core.js", "Text.js", "Widgets.js", "Tools.js", "Examples.js", "Network.js", "Storage.js"]);
+		SourceControl.scanKernelFiles(["defaultconfig.js", "localconfig.js",
+			"Core.js", "Text.js", "svgtext-compat.js",
+			"Widgets.js", "Network.js", "Storage.js", "Tools.js",
+			"Examples.js", "WebPIM.js"]);
+		}]);
+	}
+	return items; 
+    },
+    getCodePaneMenu: function() {
+        var items = [];
+	if (SourceControl) {
+            items.push(['find all references', function() {
+                this.world().firstHand().setMouseFocus(null);  // DI: Is this necessary ?? ***
+		var refs = SourceControl.searchFor(this.codePaneSelection);
+		if (refs.length > 0) {
+		    var chgList = new FileParser().parseFile(fileName, contents);
+		    new ChangeList(fileName, null, refs).openIn(this.world());
+		} else this.world.inform("No references found for " + this.codePaneSelection);
 		}]);
 	}
 	return items; 
@@ -727,19 +744,20 @@ Object.subclass('FileParser', {
 	// ...so, parseFile should probably also build that as well wile it scans
 	//	the view would just be a list of items <lineNo>: <1st 40 chars>...
     
+    searchFile: function(fname, fstr, db, str) {
+	this.searchString = str;
+	return this.parseFile(fname, fstr, db);
+    },
     parseFile: function(fname, fstr, db) {
 	// Scans the file and returns changeList -- a list of informal divisions of the file
 	// It should be the case that these, in order, exactly contain all the text of the file
 	// Note that if db, a SourceDatabase, is supplied, it will be loaded during the scan
 	var ms = new Date().getTime();
-	this.verbose = false;
 	this.fileName = fname;
 	this.str = fstr;
 	var len = this.str.length;
 	this.sourceDB = db;
-	this.localReferences = {};
-	this.localVars = {};
-	this.reservedWords = {};
+	this.verbose = false;  // fname == "Tools.js";
 	this.ptr = 0;
 	this.lineNo = 0;
 	this.changeList = [];
@@ -749,7 +767,8 @@ Object.subclass('FileParser', {
 
 	while (this.lineNo < this.lines.length) {
 	    var line = this.nextLine();
-	    if (this.verbose) console.log("lineNo=" + this.lineNo + " ptr=" + this.ptr + line);		
+	    if (this.verbose) console.log("lineNo=" + this.lineNo + " ptr=" + this.ptr + line);		    if (this.lineNo > 100) this.verbose = false;
+
 	    if (this.scanComment(line)) {
 	    } else if (this.scanClassDef(line)) {
 	    } else if (this.scanMethodDef(line)) {
@@ -764,21 +783,30 @@ Object.subclass('FileParser', {
     },
     scanComment: function(line) {
 	if (line.match(/^[\s]*\/\//) ) {
-		if (this.verbose) console.log("comment: "+ line);
+		if (this.verbose) console.log("// comment: "+ line);
 		return true; }
 	if (line.match(/^[\s]*\/\*/) ) {
+		// Attempt to recognize match on one line...
+		if (line.match(/^[\s]*\/\*[^\*]*\*\//) ) {
+			if (this.verbose) console.log("short /* comment: "+ line);
+			return true; }
 		// Note that /* and matching */ must be first non-blank chars on a line
-		var n = this.lineNo;
-		if (this.verbose) console.log("long comment: "+ line + "...");
+		var saveLineNo = this.lineNo;
+		var saveLine = line;
+		var savePtr = this.ptr;
+		if (this.verbose) console.log("long /* comment: "+ line + "...");
 		do {
 			if(this.lineNo >= this.lines.length) {
-				console.log("Unfound end of long comment beginning at line " + n);
-			break;
+				console.log("Unfound end of long comment beginning at line " + (saveLineNo +1));
+				this.lineNo = saveLineNo;
+				this.currentLine = saveLine;
+				this.ptr = savePtr;
+				return true;
 			}
-			line = this.nextLine(this.str)
+			more = this.nextLine()
 		}
-		while ( !line.match(/^[\s]*\*\//) );
-		if (this.verbose) console.log("..." + line);
+		while ( ! more.match(/^[\s]*\*\//) );
+		if (this.verbose) console.log("..." + more);
 		return true;
 	}
 	return false;
@@ -808,24 +836,21 @@ Object.subclass('FileParser', {
 	// Terminate the currently open definition and process accordingly
 	// We will want to do a better job of finding where it ends
 	var def = this.currentDef;
-	if (this.ptr == 0) return;  // we're bring called at new def; if ptr == 0, there's no preamble
+	if (this.ptr == 0) return;  // we're being called at new def; if ptr == 0, there's no preamble
 	def.endPos = this.ptr-1;
+	var descriptor = new SourceCodeDescriptor (this.sourceDB, this.fileName, def.startPos, def.endPos, def.lineNo, def.type, def.name);
 	if (def.type == "classDef") {
 		this.currentClassName = def.name;
-		if(this.sourceDB) this.sourceDB.methodDictFor(this.currentClassName)["*definition"] =
-			{fileName: this.fileName, startPos: def.startPos, endPos: this.ptr-1};
+		if(this.sourceDB) this.sourceDB.methodDictFor(this.currentClassName)["*definition"] = descriptor;
 	} else if (def.type == "methodDef") {
-		if(this.sourceDB) {
-			this.sourceDB.methodDictFor(this.currentClassName)[def.name] =
-			    {fileName: this.fileName, startPos: def.startPos, endPos: this.ptr-1};
-			this.sourceDB.mergeReferencesFor(this.currentClassName, def.name, this.localReferences, this.localVars);
-		}
+		if(this.sourceDB) this.sourceDB.methodDictFor(this.currentClassName)[def.name] = descriptor;
 	}
-	this.changeList.push(this.currentDef);
+
+	if (!this.searchString || this.matchStringInDef(this.searchString))
+		this.changeList.push(descriptor);
+
 	// console.log("startPos = " + def.startPos + "; endPos = " + def.endPos);
 	this.currentDef = null;
-	this.localReferences = {};
-	this.localVars = {};
     },
     scanBlankLine: function(line) {
 	if (line.match(/^[\s]*$/) == null) return false;
@@ -835,29 +860,19 @@ Object.subclass('FileParser', {
     scanOtherLine: function(line) {
 	// Should mostly be code body lines
 	if (this.verbose) console.log("other: "+ line); 
-	if (this.sourceDB) this.scanLineForReferences(line);
 	return true;
     },
-    scanLineForReferences: function(line) {
-	// Extract all identifiers from code body
-	var lineWithoutComment = line.split(/\/\//)[0];
-	var ids = lineWithoutComment.split(/\W(?:\W|\d)*/);
-	// Add identifiers to localVars or localReferences
-	var varDef = false;
-	for (var i = 0; i < ids.length; i++) {
-		var id = ids[i];
-		if (varDef) {  // Add to localVars if preceded by 'var'
-			this.localVars[id] = true;
-			varDef = false;
-		} else if (id == 'var') {  // Set flag for var declaration
-			varDef = true;
-		} else this.localReferences[id] = null;  // Else add to refs -- Better way?
+    matchStringInDef: function(str) {
+	for (var i=this.currentDef.lineNo-1; i<this.lineNo-1; i++) {
+	    if (this.lines[i].indexOf(str) >=0) return true;
 	}
+	return false;
     },
-    nextLine: function(s) {
-	if (this.currentLine) this.ptr += this.currentLine.length+1;
+    nextLine: function() {
+	if (this.lineNo > 0) this.ptr += (this.currentLine.length+1);
 	if (this.lineNo < this.lines.length) this.currentLine = this.lines[this.lineNo];
-	else this.currentLine = '';
+	    else this.currentLine = '';
+	if (!this.currentLine) this.currentLine = '';  // Split puts nulls instead of zero-length strings!
 	this.lineNo++;
 	return this.currentLine;
     }
@@ -870,33 +885,32 @@ Object.subclass('FileParser', {
 
 WidgetModel.subclass('ChangeList', {
 	// The ChangeListBrowser views a list of patches in a JavaScript (or other) file.
-	// The patches taken together entirely capture all the test in the file
+	// The patches taken together entirely capture all the text in the file
 	// The quality of the fileParser determines how well the file patches correspond
 	// to meaningful JavaScript entities.  A changeList accumulated from method defs
 	// during a development session should (;-) be completely well-formed in this regard.
-	// Saving a change in a CLB will only edit the file;  no evaluation is implied
+	// Saving a change in a ChangeList browser will only edit the file;  no evaluation is implied
     
     defaultViewExtent: pt(400,250),
     openTriggerVariable: 'getChangeBanners',
 
-    initialize: function($super, fn, contents, changes) {
+    initialize: function($super, title, ignored, changes) {
         $super();
-        this.fileName = fn;
-        this.fileContents = contents;
+        this.title = title;
         this.changeList = changes;
     },
-
     getChangeBanners: function() {
 	this.changeBanner = null;
 	return this.changeList.map(function(each) { return this.bannerOfItem(each); }, this);
     },
-
-    setChangeSelection: function(n, v) { this.changeBanner = n; this.changed("getChangeItemText", v) },
-
+    setChangeSelection: function(n, v) {
+	this.changeBanner = n; this.changed("getChangeItemText", v);
+    },
     selectedItem: function() {
 	if (this.changeBanner == null) return null;
-	var i2 = this.changeBanner.indexOf(":");
-	var lineNo = this.changeBanner.substring(0, i2);
+	var i1 = this.changeBanner.indexOf(":");
+	var i2 = this.changeBanner.indexOf(":", i1+1);
+	var lineNo = this.changeBanner.substring(i1+1, i2);
 	lineNo = new Number(lineNo);
 	for (var i=0; i < this.changeList.length; i++) {
 		var item = this.changeList[i];
@@ -904,28 +918,22 @@ WidgetModel.subclass('ChangeList', {
 	}
 	return null;
     },
-
-    fulTextOfItem: function(item) {
-	return this.fileContents.substring(item.startPos, item.endPos+1);
-    },
-
     bannerOfItem: function(item) {
         var lineStr = item.lineNo.toString();
-	var firstLine = this.fulTextOfItem(item).truncate(40);
+	var firstLine = item.sourceCode().truncate(40);  // a bit wastefull
 	var end = firstLine.indexOf("\n");
 	if (end >= 0) firstLine = firstLine.substring(0,end);
 	end = firstLine.indexOf(":");
 	if (end >= 0) firstLine = firstLine.substring(0,end+1);
-	return lineStr + ": " + firstLine;
+	return item.fileName.concat(":", lineStr, ": ", firstLine);
     },
-
     getChangeItemText: function() {
         var item = this.selectedItem();
 	if (item == null) return "-----";
-        return this.fulTextOfItem(item);
+        return item.sourceCode();
     },
-
     setChangeItemText: function(newItemText, v) {
+	// This all changes completely -- happens through sourceControl...
         var item = this.selectedItem();
 	if (item == null) return;
 	var beforeText = this.fileContents.substring(0, item.startPos);
@@ -940,25 +948,16 @@ WidgetModel.subclass('ChangeList', {
 	this.changed('getChangeBanners');
 	this.setChangeSelection(oldSelection);  // reselect same item in new list (hopefully)
     },
-
-    loadFileNamed: function (fn) {
-	this.fileName = fn;
-	this.fileContents = new NetRequest().beSync().get(URL.source.withFilename(this.fileName)).getResponseText();
-	this.changeList = new FileParser().parseFile(this.fileName, this.fileContents);
-	this.changed('getChangeBanners');
-    },
-
     viewTitle: function() {
-	return "Change list for " + this.fileName;
+	return "Change list for " + this.title;
     },
-    
     buildView: function(extent) {
         var panel = PanelMorph.makePanedPanel(extent, [
             ['topPane', newListPane, new Rectangle(0, 0, 1, 0.5)],
             ['bottomPane', newTextPane, new Rectangle(0, 0.5, 1, 1)]
         ]);
         var m = panel.topPane;
-        m.connectModel({model: this, getList: "getChangeBanners", setSelection: "setChangeSelection"});
+        m.connectModel({model: this, getList: "getChangeBanners", setSelection: "setChangeSelection", getMenu: "getListPaneMenu"});
         m = panel.bottomPane;
 	m.connectModel({model: this, getText: "getChangeItemText", setText: "setChangeItemText"});
 	return panel;
@@ -970,34 +969,59 @@ WidgetModel.subclass('ChangeList', {
 // Source Database
 // ===========================================================================
 ChangeList.subclass('SourceDatabase', {
-	// The Source Database holds a cross-reference of the source code
-	// and the various methods for scanning, saving, and reloading that info
+	// SourceDatabase is an interface to the Lively Kernel source code as stored
+	// in a CVS-style repository, ie, as a bunch of text files.
+
+	// First of all, it is capable of scanning all the source files, and breaking
+	// them up into reasonable-sized pieces, hopefully very much like the
+	// actual class defs and method defs in the files.  The partitioning is done
+	// by FileParser and it, in turn, calls setDescriptorInClassForMethod to
+	// store the source code descriptors for these variously recognized pieces.
+
+	// In the process, it caches the full text of some number of these files for
+	// fast access in subsequent queries.
+
+	// One of the fast queries that can be made is to find all references to a
+	// given identifier, including comments or not.  The result of such searches
+	// is presented as a changeList.
+
+	// The other major service provided by SourceDatabase is the ability to 
+	// retrieve and alter pieces of the source code files without invalidating
+	// previously scanned changeList-style records.
+
+	// A sourceCodePiece specifies a file name and version number, as well as a 
+	// start and stop character index.  When a piece of source code is changed,
+	// it will likely invalidate all the other sourceCodePieces that point later
+	// in the file.  However, the SourceDatabase is smart (woo-hoo); it knows
+	// where previous edits have been made, and what effect they would have had
+	// on character ranges of older pieces.  To this end, it maintains an internal
+	// version number for each file, along with a list of the changes made between
+	// each version.
+
+	// With this minor bit of bookkeeping, the SourceDataBase is able to keep
+	// producing source code pieces from old versions of a file without the need
+	// to reread the file.  Moreover, to the extent its cache can keep all the
+	// file contents, it can do ripping-fast scans for cross reference queries.
 	//
-	// It also holds a list of changes for the current project, and maintains
-	// the associated changes file.  The idea is that whenever changes are made
-	// they update the changeList and its associated file.
-	//
-	// Normally, upon startup, the 'image' will consist of the Lively
-	// Kernel base code.  You may then open (or find open) a list of various
-	// Project files in your directory or other directories to which you have access.
-	// You may open any of these in the file browser and read the foreward which,
-	// by convention, will list, eg, author, date, project name, description, etc.
-	// You may further choose to load that project, which will read in all the code,
-	// and prepare the system to record and possibly write out any changes made to 
-	// that project
+	// The DourceDatabase appears on the screen as a changeList.  This is left over
+	// from an earlier design.  I think I'm going to use that list as a list of
+	// old versions, which will be useful for simple reverts, but I believe it could
+	// actually allow roll-backs to any earlier point in the session.
+
+	// A SourceDatabase is created and opened on the screen in response to the
+	// 'import sources' command in the browser's classPane menu.
+	// Somehow it needs to be specified exactly what sources get imported.
+	// For now, we'll include all, or at least all that you would usually
+	// want in a typical development session.  We may soon want more control
+	// over this and, therefore, a reasonable UI for such control.
 
     initialize: function($super) {
 	this.methodDicts = {};
 	this.cachedFullText = {};
-	this.reservedWords = {};
-	var rws = ['super', 'this', 'for', 'while', 'do', 'length', 'return', 'if', 'else', 'null', 'false', 'true', 'new', 'console', 'log'];
-	for (var i=0; i<rws.length; i++) this.reservedWords[rws[i]] = true;
-	this.crossReference = {};  // A Dict[id] -> [methodStrings...]
-        
         var projectName = 'Changes-di.js';  // Later get this info out of localConfig
 	var contents = this.getFileContents(projectName);
-	var chgList = new FileParser().parseFile(projectName, contents)
-	$super(projectName, contents, chgList);
+	var chgList = new FileParser().parseFile(projectName, contents, this)
+	$super(projectName, null, chgList);
     },
     methodDictFor: function(className) {
 	if (!this.methodDicts[className]) this.methodDicts[className] = {}; 
@@ -1009,55 +1033,58 @@ ChangeList.subclass('SourceDatabase', {
 	if (!descriptor) return null;
 	var fullText = this.getFullText(descriptor.fileName);
 	if (!fullText) return null;
-	return fullText.substring(descriptor.startPos, descriptor.endPos);
+	return fullText.substring(descriptor.startIndex, descriptor.stopIndex);
     },
     getFullText: function(fileName) {
 	var fullText = this.cachedFullText[fileName];
 	if (fullText) return fullText;
 	// Full text not in cache -- retrieve it and enter in cache
-	return null;
+	return this.getFileContents(fileName);
     },
     setDescriptorInClassForMethod: function(className, methodName, descriptor) {
 	var methodDict = this.methodDictFor(className);
 	methodDict[methodName] = descriptor;
     },
-    mergeReferencesFor: function(className, methodName, localRefs, localVars) {
-	if (!className || !methodName) return;
-	var methodString = className.concat('>>', methodName);
-	for (var id in localRefs) {
-		if (!localVars[id] && !this.reservedWords[id]) {
-			var allRefs = this.crossReference[id];
-			if (!allRefs) {
-				allRefs = [];
-				this.crossReference[id] = allRefs;
-			}
-			allRefs.push(methodString);
+    browseReferencesTo: function(str) {
+	var fullList = this.searchFor(str);
+	if (fullList.length > 300) {
+		WorldMorph.current().notify(fullList.length.toString() + " references abbreviated to 300.");
+		fullList = fullList.slice(0,299);
+	}
+	new ChangeList("References to " + str, null, fullList).openIn(WorldMorph.current()); 
+    },
+    searchFor: function(str) {
+	var fullList = [];
+	for (var fName in this.cachedFullText) {
+		if (this.cachedFullText.hasOwnProperty(fName)) {
+			var fullText = this.cachedFullText[fName];
+			var refs = new FileParser().searchFile(fName, fullText, this, str)
+			fullList = fullList.concat(refs);
 		}
 	}
+    return fullList;
     },
-    dumpCrossReference: function() { // if(true) return;
-	for (var id in this.crossReference) {
-		var refs = this.crossReference[id];
-		if (!refs) console.log(id + " -- no refs.");
-		else if (refs.length < 6) { console.log(id + " -- " + refs); }
-		else console.log(id + " -- " + refs.length + " refs.");
-	}
-    },
-    scanKernelFiles: function(list) { // if(true) return;
+    scanKernelFiles: function(list) {
 	for (var i=0; i<list.length; i++) {
 		var fName = list[i];
-		// if (fName != 'Tools.js') continue;  // *** remove this ***
 		var fullText = this.getFileContents(fName);
 		this.cachedFullText[fName] = fullText;
 		new FileParser().parseFile(fName, fullText, this);
 	}
-	// this.dumpCrossReference();
     },
-    getFileContents: function(fName) { // convenient helper method
+    sourceCodeFromDescriptor: function(desc) {
+	var fullText = this.getFullText(desc.fileName);
+	return fullText.substring(desc.startIndex,desc.stopIndex);
+    },
+    viewTitle: function() {
+	return "Source Control for " + this.fileName;
+    },
+    getFileContents: function(fileName) { // convenient helper method
 	var ms = new Date().getTime();
-	var fullText = new NetRequest().beSync().get(URL.source.withFilename(fName)).getResponseText();
+	var fullText = new NetRequest().beSync().get(URL.source.withFilename(fileName)).getResponseText();
 	ms = new Date().getTime() - ms;
-	console.log(fName + " read in " + ms + " ms.");
+	console.log(fileName + " read in " + ms + " ms.");
+	this.cachedFullText[fileName] = fullText;
 	return fullText;
     },
     viewTitle: function() {
@@ -1066,6 +1093,24 @@ ChangeList.subclass('SourceDatabase', {
 });
 
 module.SourceControl = null;
+
+Object.subclass('SourceCodeDescriptor', {
+
+    initialize: function(sourceControl, fileName, startIndex, stopIndex, lineNo, type, name) {
+	this.sourceControl = sourceControl;
+	this.fileName = fileName;
+	this.startIndex = startIndex;
+	this.stopIndex = stopIndex;
+	this.lineNo = lineNo;
+	this.type = type;
+	this.name = name;
+	return this;
+    },
+    sourceCode: function() {
+	return this.sourceControl.sourceCodeFromDescriptor(this);
+    }
+});
+
 
 }).logCompletion("Tools.js")(Global);
 

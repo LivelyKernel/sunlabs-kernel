@@ -1523,29 +1523,34 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
         // console.log('command ' + key);
 	if (key) key = key.toLowerCase();
         switch (key) {
-        case "s": {
+        case "s": { // Save
             this.saveContents(this.textString); 
             return true; 
         }
     
-        case "x": {
+        case "x": { // Cut
             TextMorph.clipboardString = this.selectionString(); 
             this.replaceSelectionWith("");
             return true; 
         }
         
-        case "c": {
+        case "c": { // Copy
             TextMorph.clipboardString = this.selectionString(); 
             return true; 
         }
         
-        case "v": {
+        case "v": { // Paste
             if (TextMorph.clipboardString)
                 this.replaceSelectionWith(TextMorph.clipboardString); 
             return true; 
         }
     
-        case "d": {
+        case "w": { // Where
+            if (SourceControl) SourceControl.browseReferencesTo(this.selectionString()); 
+            return true; 
+        }
+    
+        case "d": { // Do it
 	    try {
 		this.boundEval(this.selectionString());
 	    } catch (e) {
@@ -1554,7 +1559,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
             return true; 
         }
         
-        case "p": {
+        case "p": { // Print it
             var strToEval = this.selectionString();
             this.setNullSelectionAt(this.selectionRange[1] + 1);
             // console.log('selection = ' + strToEval);
@@ -1567,21 +1572,21 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
             return true; 
         }
         
-        case "a": {
+        case "a": { // Select All
             this.setSelectionRange(0, this.textString.length); 
             return true;
         }
         
-        case "j": {
+        case "j": { // Jump for Joy (?)
             return true; 
         }
 
-        case "i": {
+        case "i": { // Inspect
             this.addSvgInspector();
             return true;
         }
 
-        case "z": {
+        case "z": { // Undo
             if (this.undoTextString) {
                 this.setTextString(this.undoTextString);
             }
