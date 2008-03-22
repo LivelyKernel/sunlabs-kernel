@@ -904,7 +904,9 @@ WidgetModel.subclass('ChangeList', {
 	return this.changeList.map(function(each) { return this.bannerOfItem(each); }, this);
     },
     setChangeSelection: function(n, v) {
-	this.changeBanner = n; this.changed("getChangeItemText", v);
+	this.changeBanner = n;
+	this.changed("getChangeItemText", v);
+	if (this.searchString) this.changed("getSearchString", v);
     },
     selectedItem: function() {
 	if (this.changeBanner == null) return null;
@@ -931,6 +933,9 @@ WidgetModel.subclass('ChangeList', {
         var item = this.selectedItem();
 	if (item == null) return "-----";
         return item.sourceCode();
+    },
+    getSearchString: function() {
+        return this.searchString;
     },
     setChangeItemText: function(newItemText, v) {
 	// This all changes completely -- happens through sourceControl...
@@ -959,7 +964,7 @@ WidgetModel.subclass('ChangeList', {
         var m = panel.topPane;
         m.connectModel({model: this, getList: "getChangeBanners", setSelection: "setChangeSelection", getMenu: "getListPaneMenu"});
         m = panel.bottomPane;
-	m.connectModel({model: this, getText: "getChangeItemText", setText: "setChangeItemText"});
+	m.connectModel({model: this, getText: "getChangeItemText", setText: "setChangeItemText", getSelection: "getSearchString"});
 	return panel;
     }
 });
@@ -1051,7 +1056,9 @@ ChangeList.subclass('SourceDatabase', {
 		WorldMorph.current().notify(fullList.length.toString() + " references abbreviated to 300.");
 		fullList = fullList.slice(0,299);
 	}
-	new ChangeList("References to " + str, null, fullList).openIn(WorldMorph.current()); 
+	var refs = new ChangeList("References to " + str, null, fullList);
+	refs.searchString = str;
+	refs.openIn(WorldMorph.current()); 
     },
     searchFor: function(str) {
 	var fullList = [];

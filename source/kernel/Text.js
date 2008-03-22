@@ -1545,8 +1545,13 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
             return true; 
         }
     
-        case "w": { // Where
+        case "w": { // Where (searches for selection in all source files)
             if (SourceControl) SourceControl.browseReferencesTo(this.selectionString()); 
+            return true; 
+        }
+    
+        case "g": { // aGain -- repeats a find or replacement
+            if (this.lastSearchString) this.searchForFind(this.lastSearchString, this.lastFindLoc+1);
             return true; 
         }
     
@@ -1718,7 +1723,9 @@ TextMorph.addMethods({
             if (aspect == p.getText  || aspect == 'all') {
 		this.updateTextString(this.getModelText());
 	    }
-            // if (aspect == p.getSelection) this.searchForMatch(this.getModelSelection());
+            if (aspect == p.getSelection) {
+		this.searchForFind(this.getModelSelection(), 0);
+	    }
             return;
         }
     },
@@ -1726,13 +1733,22 @@ TextMorph.addMethods({
     getModelText: function() {
         if (this.modelPlug) return this.getModelValue('getText', "-----");
     },
-
     setModelText: function(newText) {
         if (this.modelPlug) this.setModelValue('setText', newText);
     },
-
+    getModelSelection: function() {
+        if (this.modelPlug) return this.getModelValue('getSelection', "-----");
+    },
     setModelSelection: function(newSelection) {
-        if (this.modelPlug) this.setModelValue('setSelection', newSelection);  // call the model's value accessor
+        if (this.modelPlug) this.setModelValue('setSelection', newSelection);
+    },
+    searchForFind: function(str, start) {
+	var i1 = this.textString.indexOf(str, start);
+	this.requestKeyboardFocus(this.world().firstHand());
+	if (i1 >= 0) this.setSelectionRange(i1, i1+str.length);
+		else this.setNullSelectionAt(0);
+	this.lastSearchString = str;
+	this.lastFindLoc = i1;
     }
     
 });
