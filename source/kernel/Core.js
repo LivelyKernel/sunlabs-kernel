@@ -5537,11 +5537,20 @@ PasteUpMorph.subclass("WorldMorph", {
     }.logErrors('alert'),
 
     prompt: function(message, callback) {
-	new PromptDialog(message, callback).openIn(this, this.hands[0].lastMouseDownPoint);
+	var model = new SimpleModel(["Message", "Callback", "Input"]);
+	model.setMessage(message);
+	model.setCallback(callback);
+	model.setInput("");
+	var dialog = new PromptDialog(model.makePlugSpecFromPins(PromptDialog.prototype.pins));
+	dialog.openIn(this, this.hands[0].lastMouseDownPoint);
     },
 
     confirm: function(message, callback) {
-	new ConfirmDialog(message, callback).openIn(this, this.hands[0].lastMouseDownPoint);
+	var model = new SimpleModel(["Message", "Callback"]);
+	model.setMessage(message);
+	model.setCallback(callback);
+	var dialog = new ConfirmDialog(model.makePlugSpecFromPins(ConfirmDialog.prototype.pins));
+	dialog.openIn(this, this.hands[0].lastMouseDownPoint);
     },
 
     addFramedMorph: function(morph, title, loc) {
