@@ -427,12 +427,12 @@ Object.forEachOwnProperty = function(object, func, context) {
 
 
 // boodman/crockford delegation
-Object.delegate = function(object, properties) {
+Object.beget = function(object, properties) {
     function Delegate(){};
     Delegate.prototype = object;
     var d = new Delegate();
     properties && Object.extend(d, properties);
-    return d; // Object
+    return d;
 };
 
 
@@ -618,7 +618,7 @@ Object.freeze = function(object) {
 	    }
 	}
     }
-    var context = Object.delegate(object, constr._privatize.privates);
+    var context = Object.beget(object, constr._privatize.privates);
     context.$public = object;
     
     var fns = constr._privatize.functions;
@@ -1542,6 +1542,7 @@ Wrapper.subclass('Image', {
 
     initialize: function(url, width, height) {
 	if (!url) return;
+	var node;
 	if (url.startsWith('#'))
 	    this.loadUse(url);
 	else
@@ -1553,10 +1554,19 @@ Wrapper.subclass('Image', {
             // this brittle and annoying piece of code is a workaround around the likely brokenness
             // of Safari's XMLSerializer's handling of namespaces
             var href = rawNode.getAttributeNS(null /* "xlink"*/, "href");
-	    
+	    var width = rawNode.getAttributeNS(null, "width");
+	    var height = rawNode.getAttributeNS(null, "height");
+	    this.rawNode = null; // just checking
+	    if (href)
+		if (href.startsWith("#")) {
+		    this.loadUse(href);
+		} else {
+		    this.loadImage(href, width, height);
+		}
 	    // note we're reinitializing ourselves
-	    this.initialize(href, this.getWidth(rawNode), this.getHeight(rawNode));
-	    console.log("reinitializing with href " + href + " node " + Exporter.stringify(rawNode));
+	    
+	    console.log("reinitializing with href " + href + " node " + Exporter.stringify(rawNode) 
+			+ " namespace was " + rawNode.namespaceURI);
 	    
 	} else {
 	    $super(importer, rawNode);
@@ -1591,7 +1601,7 @@ Wrapper.subclass('Image', {
 	    return null; // no new node;
 	} else {
 	    this.removeRawNode();
-	    this.rawNode = NodeFactory.createNS(Namespace.SVG, "use");
+	    this.rawNode = NodeFactory.create("use");
 	    XLinkNS.setHref(this.rawNode, url);
 	    return this.rawNode;
 	}
@@ -2667,7 +2677,7 @@ Object.subclass('Exporter', {
 	    
 	    this.prepareForSerialization(helperNodes, simpleModels);
 	    // some formatting
-	    var nl = NodeFactory.createText("\n");
+	    var nl = NodeFactory.createNL();
 	    this.rawNode.parentNode.insertBefore(nl, this.rawNode);
 	    helperNodes.push(nl);
 	});
@@ -2803,6 +2813,7 @@ Copier.marker = Object.extend(new Copier(), {
 Copier.subclass('Importer', {
 
     documentation: "Implementation class for morph de-serialization",
+    verbose: true,
 
     toString: function() {
 	return "#<Importer>";
@@ -2828,7 +2839,7 @@ Copier.subclass('Importer', {
 	this.scripts.forEach(function(s) { s.start(world); });
     },
 
-
+    
     importFromNode: function(rawNode) {
 	///console.log('making morph from %s %s', node, LivelyNS.getType(node));
 	// call reflectively b/c 'this' is not a Visual yet. 
@@ -3158,9 +3169,11 @@ Visual.subclass("Morph", {
 		continue;
 	    } 
 	    var type = LivelyNS.getAttribute(desc, "type");
+	    // alert("got node " + Exporter.stringify(desc));
 	    // depth first traversal
 	    if (type && type != "Selection" && type != "FocusHalo") { // FIXME remove the conditiona
 		var morph = importer.importFromNode(desc);
+		if (morph instanceof ImageMorph) console.log("made image morph "  + morph);
 		this.submorphs.push(morph); 
 		morph.owner = this;
 	    } else {
@@ -4941,11 +4954,29 @@ Model.subclass('SimpleModel', {
 										     this.changed(this.getter(name), v); }} (varName);
     },
 
+    makePlugSpecFromPins: function(pins) {
+	var spec = { model: this};
+	pins.forEach(function(decl) {
+	    if (!decl.startsWith('-')) { // not read-only
+		var stripped = decl.startsWith('+') ? decl.slice(1) : decl;
+		spec['set' + stripped] = 'set' + stripped;
+	    }
+	    if (!decl.startsWith('+')) { // not write-only
+		var stripped = decl.startsWith('-') ? decl.slice(1) : decl;
+		spec['get' + stripped] = 'get' + stripped;
+	    }
+	});
+	return spec;
+    },
+
     makePlugSpec: function() {
 	var model = this;
-	var spec = { };
-	this.variables().forEach(function(v) { spec[this.getter(v)] = model[this.getter(v)]; spec[this.setter(v)] = model[this.setter(v)]; }, this);
-	spec.model = this;
+	var spec = {model: this};
+	this.variables().forEach(function(v) { 
+	    spec[this.getter(v)] = model[this.getter(v)]; 
+	    spec[this.setter(v)] = model[this.setter(v)]; 
+	}, this);
+	return spec;
     },
 
     variables: function() {

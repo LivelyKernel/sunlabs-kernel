@@ -18,17 +18,45 @@
 // ===========================================================================
 // Class Browser -- A simple browser for Lively Kernel code
 // ===========================================================================
-WidgetModel.subclass('SimpleBrowser', {
+Widget.subclass('SimpleBrowser', {
 
-    openTriggerVariable: 'getClassList',
     defaultViewTitle: "Javascript Code Browser",
+    pins: ["+ClassList", "-ClassName", "+MethodList", "-MethodName", "MethodString", "+ClassPaneMenu"],
 
     initialize: function($super) { 
-        $super(); 
+	var model = new SimpleModel(this.pins);
+	var plug = model.makePlugSpecFromPins(this.pins);
+        $super(plug); 
         this.scopeSearchPath = [Global];
+	model.setClassList(this.listClasses());
+	model.setClassPaneMenu(this.getClassPaneMenu());
     },
 
-    getClassList: function() { 
+    updateView: function(aspect, source) {
+	var p = this.modelPlug;
+	if (!p) return;
+	switch (aspect) {
+	case p.getClassName:
+	    var className = this.getModelValue('getClassName');
+	    this.setModelValue("setMethodList", this.listMethodsFor(className));
+	    break;
+	case p.getMethodName:
+	    var methodName = this.getModelValue("getMethodName");
+	    var className = this.getModelValue("getClassName");
+	    this.setModelValue("setMethodString", this.getMethodStringFor(className, methodName));
+	    break;
+	case p.getMethodString:
+	    try {
+		eval(this.getModelValue("getMethodString"));
+	    } catch (er) {
+		WorldMorph.current().alert("error evaluating method " + this.getMethodValue("getMethodString"));
+	    }
+	    // FIXME errors?
+	    break;
+	}
+    },
+
+    listClasses: function() { 
         var list = [];
         for (var i = 0; i < this.scopeSearchPath.length; i++) {
             var p = this.scopeSearchPath[i];
@@ -37,25 +65,23 @@ WidgetModel.subclass('SimpleBrowser', {
         return list;
     },
 
-    setClassName: function(n) { this.className = n; this.changed("getMethodList"); },
 
-    getMethodList: function() {
-        if (this.className == null) return [];
-	var sorted = (this.className == 'Global')
-		? Global.constructor.functionNames().without(this.className).sort()
-		: Global[this.className].localFunctionNames().sort();
+    listMethodsFor: function(className) {
+        if (className == null) return [];
+	var sorted = (className == 'Global')
+		? Global.constructor.functionNames().without(className).sort()
+		: Global[className].localFunctionNames().sort();
 	var defStr = "*definition";
-	var defRef = SourceControl && SourceControl.getSourceInClassForMethod(this.className, defStr);
+	var defRef = SourceControl && SourceControl.getSourceInClassForMethod(className, defStr);
 	return defRef ? [defStr].concat(sorted) : sorted;
     },
 
-    setMethodName: function(n) { this.methodName = n; this.changed("getMethodString"); },
-
-    getMethodString: function() { 
-        if (!this.className || !this.methodName) return "no code"; 
-        else return Function.methodString(this.className, this.methodName); 
+    
+    getMethodStringFor: function(className, methodName) { 
+        if (!className || !methodName) return "no code"; 
+        else return Function.methodString(className, methodName); 
     },
-
+    
     setMethodString: function(newDef) { eval(newDef); },
 
     buildView: function(extent) {
@@ -64,29 +90,32 @@ WidgetModel.subclass('SimpleBrowser', {
             ['rightPane', newListPane, new Rectangle(0.5, 0, 0.5, 0.5)],
             ['bottomPane', newTextPane, new Rectangle(0, 0.5, 1, 0.5)]
         ]);
+	var model = this.getModel();
         var m = panel.leftPane;
-        m.connectModel({model: this, getList: "getClassList", setSelection: "setClassName", getMenu: "getClassPaneMenu"});
+        m.connectModel({model: model, getList: "getClassList", setSelection: "setClassName", getMenu: "getClassPaneMenu"});
+	m.updateView("getClassList");
         m = panel.rightPane;
-        m.connectModel({model: this, getList: "getMethodList", setSelection: "setMethodName"});
+        m.connectModel({model: model, getList: "getMethodList", setSelection: "setMethodName"});
         m = panel.bottomPane;
-        m.connectModel({model: this, getText: "getMethodString", setText: "setMethodString"});
+        m.connectModel({model: model, getText: "getMethodString", setText: "setMethodString"});
         return panel;
     },
 
     getClassPaneMenu: function() {
         var items = [];
-	if (this.className != null) {
-            var theClass = Global[this.className];
+	var className = this.getModelValue("getClassName");
+	if (className != null) {
+            var theClass = Global[className];
             if (theClass.prototype != null) {
-		items.push(['profile selected class', function() {
-                    showStatsViewer(theClass.prototype, this.className + "..."); }.bind(this)]);
+		items.push(['profile selected class', 
+			    function() { showStatsViewer(theClass.prototype, className + "..."); }]);
 	    }
 	}
 	if (Loader.isLoadedFromNetwork) {
             items.push(['load source files', function() {
                 if (! SourceControl) {
-			SourceControl = new SourceDatabase();
-			SourceControl.openIn(this.world());
+		    SourceControl = new SourceDatabase();
+		    SourceControl.openIn(this.world());
 		}
 		SourceControl.scanKernelFiles(["prototype.js", "defaultconfig.js", "localconfig.js",
 			"Core.js", "Text.js", "svgtext-compat.js",
@@ -98,7 +127,6 @@ WidgetModel.subclass('SimpleBrowser', {
     }
 });
    
-
 
 // ===========================================================================
 // Object Hierarchy Browser
@@ -211,15 +239,12 @@ Widget.subclass('SimpleInspector', {
 
     defaultViewExtent: pt(400,250),
 
+    pins: ["+PropList", "PropName", "+PropText", "-Inspectee", "-EvalInput"],
+    
     initialize: function($super, targetMorph) {
         $super();
-	var model = new SimpleModel(["PropList", "PropName", "PropText", "Inspectee", "EvalInput"]);
-	this.connectModel({model: model, 
-			   setPropList: "setPropList", 
-			   setPropName: "setPropName", getPropName: "getPropName",
-			   setPropText: "setPropText",
-			   getEvalInput: "getEvalInput",
-			   getInspectee: "getInspectee" });
+	var model = new SimpleModel(this.pins);
+	this.connectModel(model.makePlugSpecFromPins(this.pins));
 	model.setInspectee(targetMorph);
     },
 
@@ -319,6 +344,7 @@ WidgetModel.subclass('StylePanel', {
 
     defaultViewExtent: pt(340,100),
     defaultViewTitle: "Style Panel",
+
 
     initialize: function($super, targetMorph) {
         $super();
@@ -700,7 +726,7 @@ TextMorph.subclass('FrameRateMorph', {
         if (nowTick != this.lastTick) {
             this.lastTick = nowTick;
             var ms = (1000 / Math.max(this. stepsSinceTick,1)).roundTo(1);
-            this.setTextString(this. stepsSinceTick.toString() + " frames/sec (" + ms.toString() + "ms avg),\nmax latency " + this.maxLatency.toString() + " ms.");
+            this.setTextString(this.stepsSinceTick + " frames/sec (" + ms + "ms avg),\nmax latency " + this.maxLatency + " ms.");
             this.reset(date);
         }
     },
@@ -745,7 +771,8 @@ Object.subclass('FileParser', {
 
 	while (this.lineNo < this.lines.length) {
 	    var line = this.nextLine();
-	    if (this.verbose) console.log("lineNo=" + this.lineNo + " ptr=" + this.ptr + line);		    if (this.lineNo > 100) this.verbose = false;
+	    if (this.verbose) console.log("lineNo=" + this.lineNo + " ptr=" + this.ptr + line); 
+	    if (this.lineNo > 100) this.verbose = false;
 
 	    if (this.scanComment(line)) {
 	    } else if (this.scanClassDef(line)) {

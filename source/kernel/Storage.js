@@ -720,8 +720,8 @@ TwoPaneBrowser.subclass('DOMBrowser', {
     nodeTypes: [ "", "Node", "Attribute", "Text", "CData", "EntityReference", "Entity", "ProcessingInstruction", 
 		 "Comment", "Document", "DocumentType", "DocumentFragment", "Notation"],
 
-    initialize: function($super) {
-	$super(document.documentElement, new DOMFetcher(), new DOMFetcher());
+    initialize: function($super, element) {
+	$super(element || document.documentElement, new DOMFetcher(), new DOMFetcher());
     },
 
     nodesToNames: function(nodes, parent) {

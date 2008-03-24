@@ -197,7 +197,8 @@ Morph.subclass("ImageMorph", {
 
     deserialize: function($super, importer, rawNode) {
 	$super(importer, rawNode);
-	console.log("deserialize " + this + [importer, rawNode, Exporter.stringify(this.image.rawNode)]);
+	alert("deserialize " + this + [importer, rawNode, Exporter.stringify(this.image.rawNode)]);
+	return this;
     },
     
     // FIXME:
