@@ -2087,6 +2087,12 @@ Widget.subclass('Dialog', {
 
     initialize: function(plug) {
 	if (plug) this.connectModel(plug);
+    },
+
+    openIn: function(world, loc) {
+        var view = this.buildView(this.initialViewExtent(world), this.getModel());
+	world.addMorphAt(view, loc);
+	return view;
     }
     
 });
@@ -2094,12 +2100,7 @@ Widget.subclass('Dialog', {
 Dialog.subclass('ConfirmDialog', {
 
     pins: ["-Callback", "-Message"],
-
-    openIn: function(world, location) {
-        var view = this.buildView(pt(300, 90));
-        world.addMorphAt(view, location);
-        return view;
-    },
+    defaultViewExtent: pt(300, 90),
     
     defaultCallback: function(result) {
 	console.log("Confirmed? " + result);
@@ -2119,7 +2120,7 @@ Dialog.subclass('ConfirmDialog', {
 	callback.call(Global, true);
     },
     
-    buildView: function(extent) {
+    buildView: function(extent, model) {
         var panel = new PanelMorph(extent);
 	this.panel = panel;
         panel.linkToStyles(['widgetPanel']);
@@ -2143,10 +2144,10 @@ Dialog.subclass('ConfirmDialog', {
 Dialog.subclass('PromptDialog', {
 
     pins: ["-Message", "-Callback", "Input"],
+    defaultViewExtent: pt(300, 130),
 
-    openIn: function(world, location) {
-        var view = this.buildView(pt(300, 130));
-        world.addMorphAt(view, location);
+    openIn: function($super, world, loc) {
+	var view = $super(world, loc);
 	world.firstHand().setMouseFocus(view.inputLine);
 	world.firstHand().setKeyboardFocus(view.inputLine);
         return view;
@@ -2170,7 +2171,7 @@ Dialog.subclass('PromptDialog', {
 	callback.call(Global, this.getModelValue("getInput"));
     },
 
-    buildView: function(extent) {
+    buildView: function(extent, model) {
         var panel = new PanelMorph(extent);
 	this.panel = panel;
         panel.linkToStyles(['widgetPanel']);
