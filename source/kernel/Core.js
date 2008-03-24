@@ -3057,32 +3057,33 @@ Visual.subclass("Morph", {
 	    }, this);
 	}
 
+
 	for (var p in other) {
 	    if (!(other[p] instanceof Function) 
 		&& other.hasOwnProperty(p) 
 		&& !this.noShallowCopyProperties.include(p)) {
-		this[p] = other[p];
-		if (this[p] instanceof Morph && p != "owner") {
-		    var replacement = copier.lookupMorph(other[p].id());
-		    // console.log("found replacement " + replacement + " for field " + p);
-		    if (replacement) {
-			this[p] = replacement;
-		    }
+		if (other[p] instanceof Morph) {
+		    var replacement = (p == "owner") ? null : copier.lookupMorph(other[p].id());
+		    this[p] = replacement || other[p];
 		    // an instance field points to a submorph, so copy
 		    // should point to a copy of the submorph
-		} else if (this[p] instanceof Model) {
-		    this[p] = this[p].copy(copier);
-		}
+		} else if (other[p] instanceof Image) {
+		    this[p] = other[p].copy(copier);
+		    this.addNonMorph(this[p].rawNode);
+		} else  {
+		    this[p] = other[p];
+		} 
 	    }
 	} // shallow copy by default
 
-	this.setShape(other.shape.copy());    
+	
+	this.setShape(other.shape.copy()); 
 	this.origin = other.origin.copy();
 
 	if (other.cachedTransform) { 
 	    this.cachedTransform = other.cachedTransform.copy();
 	} 
-
+	
 	if (other.defs) {
 	    this.restoreDefs(copier, other.defs.cloneNode(true));
 	}
@@ -3093,7 +3094,9 @@ Visual.subclass("Morph", {
 	    console.log("copy: optimistically assuming that other (%s) is clipped to shape", other);
 	}
 
+
 	this.initializeTransientState(null);
+
 
 	if (other.activeScripts != null) { 
 	    for (var i = 0; i < other.activeScripts.length; i++) {
@@ -3590,6 +3593,7 @@ Morph.addMethods({
     },
 
     addNonMorph: function(node) {
+	if (node instanceof Wrapper) throw new Error("add rawNode, not the wrapper itself");
 	return this.rawNode.insertBefore(node, this.shape && this.shape.rawNode.nextSibling);
     },
 
