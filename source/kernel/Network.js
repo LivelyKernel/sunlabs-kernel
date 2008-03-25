@@ -454,7 +454,7 @@ Widget.subclass('FeedWidget', {
     pvtSetFeedChannels: function(channels) {
 	this.channels = channels;
 	var items = this.extractItemList(channels);
-	console.log("set items to " + items);
+	//console.log("set items to " + items);
 	this.setModelValue("setItemList",  items);
 	this.setModelValue("setChannelTitle", "RSS feed from " +  channels[0].title());
     },

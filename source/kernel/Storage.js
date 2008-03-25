@@ -302,45 +302,37 @@ View.subclass('WebFile', NetRequestReporterTrait, {
 
 Widget.subclass('TwoPaneBrowser', { // move to Widgets.js sometime
 
+    pins: ["-RootNode", "TopNode", 
+	   "UpperNodeList" , "UpperNodeNameList", "SelectedUpperNode", "SelectedUpperNodeName", "-UpperNodeListMenu", 
+	   "LowerNodeList", "LowerNodeNameList", "SelectedLowerNode", "SelectedLowerNodeName", "-LowerNodeListMenu", 
+	   "+LowerNodeDeletionConfirmation", "-LowerNodeDeletionRequest"],
+	   
     initialize: function(rootNode, lowerFetcher, upperFetcher) {
+	// this got a bit out of hand
 	var model = new SimpleModel(["RootNode", //: Node, constant
 	    "TopNode", //:Node the node whose contents are viewed in the left pane
-	    "SelectedUpperNode", //:Node
-	    "SelectedLowerNode",  // :Node
-	    "SelectedUpperNodeName", "SelectedLowerNodeName", //:String
-	    "SelectedUpperNodeContents", //:String
-	    "SelectedLowerNodeContents", // : String
-	    "SelectedLowerNodeProperties", //:String
+	    
 	    "UpperNodeList",  //:Node[]
-	    "LowerNodeList",   // :Node[]
 	    "UpperNodeNameList", // :String[]
+	    "SelectedUpperNode", //:Node
+	    "SelectedUpperNodeName", //: String
+	    "SelectedUpperNodeContents", //:String
+	    "UpperNodeListMenu", 
+
+	    "LowerNodeList",   // :Node[]
 	    "LowerNodeNameList", // :String[]
-	    "UpperNodeListMenu", "LowerNodeListMenu",
-	    "LowerNodeDeletionRequest", "LowerNodeDeletionConfirmation"]);
+	    "SelectedLowerNode",  // :Node
+	    "SelectedLowerNodeName", //:String
+	    "SelectedLowerNodeContents", // : String
+	    "LowerNodeListMenu",
+
+	    "SelectedLowerNodeProperties", //:String
+	    "LowerNodeDeletionRequest", 
+	    "LowerNodeDeletionConfirmation"]);
 	
-	// this got a bit out of hand
-	this.connectModel({model: model, 
-			   
-			   getLowerNodeList: "getLowerNodeList", setLowerNodeList: "setLowerNodeList", 
-			   getUpperNodeList: "getUpperNodeList", setUpperNodeList: "setUpperNodeList", 
-			   
-			   getLowerNodeNameList: "getLowerNodeNameList", setLowerNodeNameList: "setLowerNodeNameList",
-			   getUpperNodeNameList: "getUpperNodeNameList", setUpperNodeNameList: "setUpperNodeNameList", 
-			   
-			   getSelectedLowerNodeName: "getSelectedLowerNodeName",  setSelectedLowerNodeName: "setSelectedLowerNodeName",
-			   getSelectedLowerNode: "getSelectedLowerNode", setSelectedLowerNode: "setSelectedLowerNode",
-			   
-			   getSelectedUpperNodeName: "getSelectedUpperNodeName", setSelectedUpperNodeName: "setSelectedUpperNodeName",
-			   getSelectedUpperNode: "getSelectedUpperNode", setSelectedUpperNode: "setSelectedUpperNode",
-			   
-			   
-			   getLowerNodeListMenu: "getLowerNodeListMenu",
-			   getUpperNodeListMenu: "getUpperNodeListMenu",
-			   setLowerNodeDeletionConfirmation: "setLowerNodeDeletionConfirmation",
-			   getLowerNodeDeletionRequest: "getLowerNodeDeletionRequest",
-			   getTopNode: "getTopNode", setTopNode: "setTopNode",
-			   getRootNode: "getRootNode"
-			  });
+
+	this.connectModel(model.makePlugSpecFromPins(this.pins));
+	
 	model.setRootNode(rootNode);
 	model.setUpperNodeList([rootNode]);
 	model.setUpperNodeNameList([this.SELFLINK]);
@@ -435,8 +427,9 @@ Widget.subclass('TwoPaneBrowser', { // move to Widgets.js sometime
 	    this.setModelValue("setTopNode", selectedUpper);
 	    this.setModelValue("setUpperNodeList", this.getModelValue("getLowerNodeList"));
 	    this.setModelValue("setUpperNodeNameList", this.getModelValue("getLowerNodeNameList"));
-	    this.setModelValue("setSelectedUpperNodeName", lowerName); // 
-	    
+	    // the above will cause the list to set selection, to a new upper name, which will 
+	    // cause the corresp. upper node to be loaded 
+	    this.setModelValue("setSelectedUpperNodeName", lowerName); 
 	    this.setSelectedUpperNode(newNode);
 	    this.setSelectedLowerNode(null);
 	    if (lowerName == this.UPLINK) {
