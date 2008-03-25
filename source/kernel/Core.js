@@ -350,21 +350,11 @@ LivelyNS = {
 };
 
 
+var Class = {
 
-
-// ===========================================================================
-// Our extensions to JavaScript base libraries
-// ===========================================================================
-
-var Class = {};
-
-/**
-  * Extensions to class Class
-  */  
-
-
-
-Object.extend(Class, {
+    isClass: function(object) {
+	return (object instanceof Function) && (object.superclass || object === Object);
+    },
 
     methodNameList: function(className) {
 	if (className != "Global") return this.globalScope[className].localFunctionNames();
@@ -376,7 +366,7 @@ Object.extend(Class, {
 
 	for (var name in scope) { 
 	    try {
-		if (Object.isClass(scope[name])) {
+		if (Class.isClass(scope[name])) {
 		    a.push(name); 
 		}
 	    } catch (er) {
@@ -390,7 +380,14 @@ Object.extend(Class, {
 	return a;
     }
 
-});
+};
+
+
+
+
+// ===========================================================================
+// Our extensions to JavaScript base libraries
+// ===========================================================================
 
 /**
   * Extensions to class Object
@@ -543,10 +540,6 @@ Object.extend(Function.prototype, {
 	}
 
 	return this;
-    },
-
-    isClass: function(object) {
-	return (object instanceof Function) && (object.superclass || object === Object);
     },
 
     // modified from prototype.js
@@ -741,13 +734,6 @@ Object.extend(Function.prototype, {
     
 });
 
-/**
-  * Extensions to class String
-  */  
-Object.extend(String.prototype, {
-    
-
-});
 
 /**
   * Extensions to class Number

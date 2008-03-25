@@ -1708,7 +1708,7 @@ Object.subclass('WebPIM', {
 
                 // In Lively, classes are actually JavaScript functions.
                 // Here's some special code to deal with that feature.
-                if (Object.isClass(object)) {
+                if (Class.isClass(object)) {
                     name += " (a Class)";
                     
                     // The real methods of Lively classes are found under '.prototype'
@@ -1754,7 +1754,7 @@ Object.subclass('WebPIM', {
             if (!object) continue;
             
             // Do not recurse into functions, strings, numbers or booleans
-            if      (Object.isClass(object) || isLivelyClass) /* Intentionally empty */;
+            if      (Class.isClass(object) || isLivelyClass) /* Intentionally empty */;
             else if (Object.isFunction(object)) continue;
             else if (Object.isString(object)) continue;
             else if (Object.isNumber(object)) continue;
