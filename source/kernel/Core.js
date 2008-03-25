@@ -1554,20 +1554,13 @@ Wrapper.subclass('Image', {
             // this brittle and annoying piece of code is a workaround around the likely brokenness
             // of Safari's XMLSerializer's handling of namespaces
             var href = rawNode.getAttributeNS(null /* "xlink"*/, "href");
-	    var width = rawNode.getAttributeNS(null, "width");
-	    var height = rawNode.getAttributeNS(null, "height");
-	    this.rawNode = null; // just checking
 	    if (href)
 		if (href.startsWith("#")) {
+		    // not clear what to do, use target may or may not be in the target document
 		    this.loadUse(href);
 		} else {
-		    this.loadImage(href, width, height);
+		    this.loadImage(href);
 		}
-	    // note we're reinitializing ourselves
-	    
-	    console.log("reinitializing with href " + href + " node " + Exporter.stringify(rawNode) 
-			+ " namespace was " + rawNode.namespaceURI);
-	    
 	} else {
 	    $super(importer, rawNode);
 	}
@@ -1607,17 +1600,35 @@ Wrapper.subclass('Image', {
 	}
     },
 
-    loadImage: function(url, width, height) {
+    loadImage: function(href, width, height) {
 	if (this.rawNode && this.rawNode.localName == "image") {
-	    XLinkNS.setHref(this.rawNode, url);
+	    XLinkNS.setHref(this.rawNode, href);
 	    return null;
 	} else {
-	    width = width || this.getWidth();
-	    height = height || this.getHeight();
-	    this.rawNode = NodeFactory.create("image");
-	    this.rawNode.setAttributeNS(null, "width", width);
-	    this.rawNode.setAttributeNS(null, "height", height);
-	    XLinkNS.setHref(this.rawNode, url);
+	    var useDesperateSerializationHack = true;
+	    if (useDesperateSerializationHack) {
+		width = width || this.getWidth();
+		height = height || this.getHeight();
+		
+		// this desperate measure appears to be necessary to work
+		// around Safari's serialization issues.  Note that
+		// somehow this code has to be used both for normal
+		// loading and loading at deserialization time, otherwise
+		// it'll fail at deserialization
+		var xml = ('<image xmlns="http://www.w3.org/2000/svg" ' 
+		    + 'xmlns:xlink="http://www.w3.org/1999/xlink" ' 
+		    + ' width="%s" height="%s" xlink:href="%s"/>').format(width, height, href);
+		
+		this.rawNode = new Importer().parse(xml);
+	    } else {
+		
+		// this should work but doesn't:
+		
+		this.rawNode = NodeFactory.createNS(Namespace.SVG, "image");
+		this.rawNode.setAttribute("width", width);
+		this.rawNode.setAttribute("height", height);
+		XLinkNS.setHref(this.rawNode, href);
+	    }
 	    return this.rawNode;
 	}
     }
@@ -2867,7 +2878,10 @@ Copier.subclass('Importer', {
     parse: function(string) {
 	var parser = new DOMParser();
 	var xml = parser.parseFromString('<?xml version="1.0" standalone="no"?> ' + string, "text/xml");
-	return document.adoptNode(xml.documentElement);
+	if (xml.documentElement.tagName == "html") {
+	    throw new Error("xml parse error: " + Exporter.stringify(xml.documentElement));
+	} 
+	return document.importNode(xml.documentElement, true);
     },
 
     importFromContainer: function(container) {
@@ -2876,7 +2890,7 @@ Copier.subclass('Importer', {
 	    // console.log("found node " + Exporter.stringify(node));
 	    if (node.localName != "g")  continue;
 	    morphs.push(this.importFromNode(node.ownerDocument === Global.document ? 
-					    node : Global.document.adoptNode(node.cloneNode(true))));
+					    node : Global.document.importNode(node, true)));
 	}
 	return morphs;
     },
@@ -5177,7 +5191,7 @@ PasteUpMorph.subclass("WorldMorph", {
 
         if (backgroundImageId) {
             var background = NodeFactory.create("use");
-            background.setAttributeNS(Namespace.XLINK, "href", backgroundImageId);
+	    XLinkNS.setHref(background, backgroundImageId);
             this.addNonMorph(background);
         }
         

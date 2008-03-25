@@ -195,12 +195,6 @@ Morph.subclass("ImageMorph", {
 	if (url) this.addNonMorph(this.image.rawNode); // otherwise we didn't make a rawNode
     },
 
-    deserialize: function($super, importer, rawNode) {
-	$super(importer, rawNode);
-	alert("deserialize " + this + [importer, rawNode, Exporter.stringify(this.image.rawNode)]);
-	return this;
-    },
-    
     // FIXME:
     restoreFromSubnode: function($super, importer, node) /*:Boolean*/ {
         if ($super(importer, node)) return true;
@@ -215,6 +209,7 @@ Morph.subclass("ImageMorph", {
         }
     },
     
+
     loadGraphics: function(localURL) {
 	this.setFill(null);
 	var node = this.image.loadUse(localURL);
