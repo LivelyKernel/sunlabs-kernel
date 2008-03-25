@@ -4223,6 +4223,10 @@ Morph.addMethods({
 	    ["test tracing (in console)", this.testTracing]
 	];
 	if (this.okToDuplicate()) items.unshift(["duplicate", this.copyToHand.curry(evt.hand)]);
+
+	if (this.getModel() instanceof SimpleModel)
+	    items.push( ["show Simple Model dump", this.addModelInspector.curry(this)]);
+
 	var menu = new MenuMorph(items, this); 
 
 	return menu;
@@ -4671,7 +4675,7 @@ Morph.addMethods({
 
 });
 
-// SVG inspector for Morphs
+// Inspectors for Morphs
 Morph.addMethods( {
 
     addSvgInspector: function() {
@@ -4681,6 +4685,23 @@ Morph.addMethods( {
 	pane.innerMorph().setTextString(xml);
 	pane.innerMorph().xml = xml; // FIXME a sneaky way of passing original text.
 	this.world().addFramedMorph(pane, "XML dump", this.world().positionForNewMorph(this));
+    },
+
+    addModelInspector: function() {
+	var model = this.getModel();
+	if (model instanceof SimpleModel) {
+	    var variables = model.variables();
+	    var txt = "";
+	    for (var i = 0; i < variables.length; i++) {
+		var varName = variables[i];
+		txt += varName + "=" + model.get(varName) + "\n";
+	    }
+	    var extent = pt(500, 300);
+	    var pane = newTextPane(extent.extentAsRectangle(), "");
+	    pane.innerMorph().setTextString(txt);
+	    pane.innerMorph().txt = txt; // FIXME a sneaky way of passing original text.
+	    this.world().addFramedMorph(pane, "Simple Model dump", this.world().positionForNewMorph(this));
+	}
     }
 
 });
@@ -4930,8 +4951,20 @@ Model.subclass('SimpleModel', {
 	return "get" + varName;
     },
 
+    get: function(varName) {
+	var method = this[this.getter(varName)];
+	if (!method) throw new Error(this.getter(varName) + " not present ");
+	return method.call(this, varName);
+    },
+
     setter: function(varName) {
 	return "set" + varName;
+    },
+
+    set: function(varName, value) {
+	var method = this[this.setter(varName)]
+	if (!method) throw new Error(this.setter(varName) + " not present");
+	return method.call(this, varName, value);
     },
 
     initialize: function($super, vars) {

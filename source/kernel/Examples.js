@@ -70,7 +70,7 @@ Widget.subclass('TestWidget', {
         m.autoAccept = true;
         panel.addMorph(m = new TextMorph(new Rectangle(140,110,140,20),"selection"));
         m.connectModel({model: model, getText: "getTextSel"});
-        model.SharedText = "Hello World";
+        model.Text = "Hello World";
 
         // Two linked print views sharing the same value
         panel.addMorph(m = new PrintMorph(new Rectangle(20,140,100,20),"3+4"));
@@ -2616,6 +2616,7 @@ Widget.subclass('StockWidget', NetRequestReporterTrait, {
         var panel = new PanelMorph(extent);
 	var gradient = new LinearGradient(Color.white, Color.primary.blue.lighter(), LinearGradient.EastWest);
         panel.applyStyle({fill: gradient, borderWidth: 2});
+	panel.connectModel({model: model});
 
         //panel.setBorderColor(Color.blue);
 
