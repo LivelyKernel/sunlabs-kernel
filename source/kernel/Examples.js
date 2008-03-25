@@ -2534,28 +2534,27 @@ Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
 // The Stock Widget Example
 // ===========================================================================
 
-/**
- * @class StockWidget
- */
-
 Widget.subclass('StockWidget', NetRequestReporterTrait, {
 
     defaultViewTitle: 'Stock Widget',
     defaultViewExtent: pt(580, 460),
+    pins: ["-StockIndex", "Company", "+Quote", "+NewsURL", "+NewsHeaders"],
 
     initialize: function($super) { 
-	var model = new SimpleModel(["NewsHeaders", "NewsURL", "StockIndex", "Quote", "IndexChartURL", "Company"]);
-	$super({model: model, 
-		getStockIndex: "getStockIndex", 
-		getCompany: "getCompany", 
-		setQuote: "setQuote",
-		setNewsURL: "setNewsURL",
-		setNewsHeaders: "setNewsHeaders"});
-	
-	this.feed = new Feed({model: this, setFeedChannels: "extractNewsHeaders", setStatus: "setRequestStatus"});
-	model.setCompany("JAVA");
+	var model = new SimpleModel(this.pins);
+	$super(model.makePlugSpecFromPins(this.pins));
+	this.setModelValue("setCompany", "JAVA");
+	this.initializeTransientState();
     },
-    
+
+    initializeTransientState: function() {
+	this.feed = new Feed({model: this, setFeedChannels: "extractNewsHeaders", setStatus: "setRequestStatus"});
+    },
+
+    deserialize: function($super, importer, plug) {
+	$super(importer, plug);
+	this.initializeTransientState();
+    },
     
     updateView: function(aspect, controller) {
 	var p = this.modelPlug;
@@ -2564,6 +2563,7 @@ Widget.subclass('StockWidget', NetRequestReporterTrait, {
 	case p.getStockIndex:
 	    var item = this.getModelValue("getStockIndex");
             var entry = this.config[item];
+	    this.setModelValue("setNewsURL", this.makeNewsURL(entry.ticker));
 	    this.feed.request(this.makeNewsURL(entry.ticker));
 	    break;
 	case p.getCompany:
@@ -2649,7 +2649,7 @@ Widget.subclass('StockWidget', NetRequestReporterTrait, {
         m.connectModel({model: model, getList: "getNewsHeaders"});
 
         // Company-specific stock quotes
-        //this.dataList = panel.addMorph(CheapListMorph(new Rectangle(20,300,130,40), this.dataArray));
+
         m = panel.addMorph(new TextMorph(new Rectangle(160, 340, 410, 20), ""));
 	m.connectModel({model: model, getText: "getQuote"});
 	
@@ -2658,7 +2658,8 @@ Widget.subclass('StockWidget', NetRequestReporterTrait, {
         m.connectModel({model: model, getSelection: "getCompany", setSelection: "setCompany"});
 	m.setModelValue("setSelection", "JAVA");
 
-
+	
+	// FIXME: problematic for serialization
         panel.refresh = function() {
            // console.log("Refreshing charts...");
             this.leftChartImage.reload(); 
@@ -2667,7 +2668,7 @@ Widget.subclass('StockWidget', NetRequestReporterTrait, {
 
         return panel;
     },
-
+    
     startSteppingRefreshCharts: function(panel) {
         panel.startStepping(60000, 'refresh');
     },
