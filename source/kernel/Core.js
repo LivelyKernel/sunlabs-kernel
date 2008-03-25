@@ -27,7 +27,7 @@ if (Canvas.height && Canvas.height.baseVal && Canvas.height.baseVal.value < 100)
 // Error/warning console
 // ===========================================================================
 
-Object.extend(String.prototype, {
+var Strings = {
     
     format: function() {
 	return this.formatFromArray($A(arguments));
@@ -35,7 +35,8 @@ Object.extend(String.prototype, {
     
     // adapted from firebug lite
     formatFromArray: function(objects) {
-	
+	var self = objects.shift();
+
 	function appendText(object, string) {
 	    return "" + object;
 	}
@@ -67,7 +68,7 @@ Object.extend(String.prototype, {
 		parts.push(fmt.substr(0, m[0][0] == "%" ? m.index : m.index + 1));
 		parts.push({appender: appender, precision: precision});
 		
-		fmt = fmt.substr(m.index+m[0].length);
+		fmt = fmt.substr(m.index + m[0].length);
 	    }
 	    
 	    parts.push(fmt.toString());
@@ -75,7 +76,7 @@ Object.extend(String.prototype, {
 	    return parts;
 	};
 	
-	var parts = parseFormat(this);
+	var parts = parseFormat(self);
 	var str = "";
 	var objIndex = 0;
 	
@@ -89,9 +90,14 @@ Object.extend(String.prototype, {
 	    }
 	}
 	return str;
+    },
+
+    withDecimalPrecision: function(str, precision) {
+	var floatValue = parseFloat(str);
+	return isNaN(floatValue) ? str : floatValue.toFixed(precision);
     }
     
-});
+};
 
 // console handling
 (function() { 
@@ -149,21 +155,17 @@ Object.extend(String.prototype, {
 	    consumers: [ platformConsole], // new LogWindow() ],
 	    
 	    warn: function() {
-		var args = $A(arguments);
-		var rcv = args.shift();
-		this.consumers.invoke('log', "Warn: " + String(rcv).formatFromArray(args));
+		this.consumers.invoke('log', "Warn: " + Strings.formatFromArray($A(arguments)));
 	    },
 	    
 	    info: function() {
 		var args = $A(arguments);
 		var rcv = args.shift();
-		 this.consumers.invoke('log', "Info: " + String(rcv).formatFromArray(args));
+		this.consumers.invoke('log', "Info: " + Strings.formatFromArray($A(arguments)));
 	    },
 	    
 	    log: function() {
-		var args = $A(arguments);
-		var rcv = args.shift();
-		this.consumers.invoke('log', String(rcv).formatFromArray(args));
+		this.consumers.invoke('log', Strings.formatFromArray($A(arguments)));
 	    },
 	    
 	    assert: function(expr, msg) {
@@ -629,8 +631,6 @@ Object.freeze = function(object) {
 
 };
 
-
-
 Function.globalScope = window;
 
 Function.methodString = function(className, methodName) {
@@ -746,10 +746,6 @@ Object.extend(Function.prototype, {
   */  
 Object.extend(String.prototype, {
     
-    withDecimalPrecision: function(precision) {
-	var floatValue = parseFloat(this);
-	return isNaN(floatValue) ? this : floatValue.toFixed(precision);
-    }
 
 });
 
@@ -911,7 +907,7 @@ Object.subclass("Point", {
     extentAsRectangle: function() { return new Rectangle(0, 0, this.x, this.y) },
 
     toString: function() {
-	return "pt(%1.f,%1.f)".format(this.x, this.y);
+	return Strings.format("pt(%1.f,%1.f)", this.x, this.y);
     },
 
     toJSON: function() { return {x: this.x, y: this.y}; },
@@ -1114,7 +1110,7 @@ Rectangle.addMethods({
     },
 
     toString: function() { 
-	return "rect(%s,%s)".format(this.topLeft(), this.bottomRight());
+	return Strings.format("rect(%s,%s)", this.topLeft(), this.bottomRight());
     },
 
     inspect: function() {
@@ -1615,9 +1611,9 @@ Wrapper.subclass('Image', {
 		// somehow this code has to be used both for normal
 		// loading and loading at deserialization time, otherwise
 		// it'll fail at deserialization
-		var xml = ('<image xmlns="http://www.w3.org/2000/svg" ' 
+		var xml = Strings.format('<image xmlns="http://www.w3.org/2000/svg" ' 
 		    + 'xmlns:xlink="http://www.w3.org/1999/xlink" ' 
-		    + ' width="%s" height="%s" xlink:href="%s"/>').format(width, height, href);
+		    + ' width="%s" height="%s" xlink:href="%s"/>', width, height, href);
 		
 		this.rawNode = new Importer().parse(xml);
 	    } else {
@@ -1952,8 +1948,8 @@ var Event = (function() {
 	},
 
 	toString: function() {
-	    return "#<Event:%s%s%s>".format(this.type, this.mousePoint ?  "@" + this.mousePoint : "",
-					    this.getKeyCode() || "");
+	    return Strings.format("#<Event:%s%s%s>", this.type, this.mousePoint ?  "@" + this.mousePoint : "",
+				  this.getKeyCode() || "");
 	},
 
 	setButtonPressedAndPriorPoint: function(buttonPressed, priorPoint) {
@@ -2168,7 +2164,7 @@ Visual.subclass('Shape', {
     hasElbowProtrusions: false,
 
     toString: function() {
-	return "a Shape(%s,%s)".format(this.getType(), this.bounds());
+	return Strings.format("a Shape(%s,%s)", this.getType(), this.bounds());
     },
 
     initialize: function(fill, strokeWidth, stroke) {
@@ -2857,8 +2853,8 @@ Copier.subclass('Importer', {
 	var morphTypeName = LivelyNS.getType(rawNode);
 	
 	if (!morphTypeName || !Global[morphTypeName]) {
-	    throw new Error("node %s (parent %s) cannot be a morph of %s".format(rawNode.tagName, 
-										 rawNode.parentNode, morphTypeName));
+	    throw new Error(Strings.format("node %s (parent %s) cannot be a morph of %s",
+					   rawNode.tagName, rawNode.parentNode, morphTypeName));
 	}
 
 	try {
@@ -3758,7 +3754,7 @@ Morph.addMethods({
 	// A replacement for toString() which can't be overridden in
 	// some cases.  Invoked by Object.inspect.
 	try {
-	    return "%s(#%s,%s)".format(this.getType(), this.id(), (this.shape || "").toString());
+	    return Strings.format("%s(#%s,%s)", this.getType(), this.id(), this.shape || "");
 	} catch (e) {
 	    //console.log("toString failed on %s", [this.id(), this.getType()]);
 	    return "#<Morph?{" + e + "}>";
@@ -4430,7 +4426,7 @@ Wrapper.subclass('SchedulableAction', {
     },
 
     toString: function() {
-	return "#<SchedulableAction[script=%s,arg=%s,stepTime=%s]>".format(this.scriptName, this.argIfAny, this.stepTime);
+	return Strings.format("#<SchedulableAction[script=%s,arg=%s,stepTime=%s]>", this.scriptName, this.argIfAny, this.stepTime);
     },
 
     stop: function(world) {
@@ -4888,7 +4884,7 @@ Object.subclass('Model', {
     },
 
     toString: function() {
-	return "#<Model:%s>".format(this.dependents);
+	return Strings.format("#<Model:%s>", this.dependents);
     },
 
     // test?
@@ -5538,7 +5534,7 @@ PasteUpMorph.subclass("WorldMorph", {
 	return new Rectangle(vp.x, vp.y, vp.width, vp.height);
     },
 
-    alert: function(format) {
+    alert: function(varargs) {
         var fill = this.getFill();
         this.setFill(Color.black); // poor man's modal dialog
 
@@ -5547,10 +5543,7 @@ PasteUpMorph.subclass("WorldMorph", {
             if (!this.stayUp) this.world().setFill(fill); // cleanup
             MenuMorph.prototype.onMouseUp.apply(this, arguments);
         };
-	var args = $A(arguments);
-	var fmt = args.shift() || "";
-	
-        menu.openIn(this, this.viewport().center(), true, fmt.formatFromArray(args)); 
+        menu.openIn(this, this.viewport().center(), true, Strings.formatFromArray($A(arguments))); 
         menu.scaleBy(2.5);
     }.logErrors('alert'),
 
@@ -5979,9 +5972,9 @@ Morph.subclass("HandMorph", {
     
     toString: function($super) { 
         var superString = $super();
-        var extraString = ", local=%s,id=%s".format(this.isLocal, this.id());
+        var extraString = Strings.format(", local=%s,id=%s", this.isLocal, this.id());
         if (!this.hasSubmorphs()) return superString + ", an empty hand" + extraString;
-        return "%s, a hand carrying %s%s".format(superString, this.topSubmorph(), extraString);
+        return Strings.format("%s, a hand carrying %s%s", superString, this.topSubmorph(), extraString);
     }
     
 });

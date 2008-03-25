@@ -1773,7 +1773,7 @@ TextMorph.subclass(Global, 'PrintMorph', {
 
     // overridable
     formatValue: function(value) {
-	return Object.inspect(value).withDecimalPrecision(2);
+	return Strings.withDecimalPrecision(Object.inspect(value), 2);
     },
     
     getModelText: function() {

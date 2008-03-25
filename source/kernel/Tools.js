@@ -260,7 +260,7 @@ Widget.subclass('SimpleInspector', {
 	    if (!prop) {
 		this.setModelValue("setPropText", "----");
 	    } else {
-		this.setModelValue("setPropText", Object.inspect(prop).withDecimalPrecision(2));
+		this.setModelValue("setPropText", Strings.withDecimalPrecision(Object.inspect(prop), 2));
 	    }
 	    break;
 	case p.getEvalInput:
@@ -287,7 +287,7 @@ Widget.subclass('SimpleInspector', {
     },
 
     viewTitle: function() {
-	return 'Inspector (%s)'.format(this.inspectee()).truncate(50);
+	return Strings.format('Inspector (%s)', this.inspectee()).truncate(50);
     },
 	
     /*
