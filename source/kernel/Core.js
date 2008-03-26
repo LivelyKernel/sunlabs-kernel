@@ -6162,13 +6162,17 @@ LinkMorph.subclass('ExternalLinkMorph', {
 
     enterMyWorld: function(evt) {
 	var url = this.url.toString();
-	this.world().confirm("Leave current runtime to enter another page?",
-			     function (answer) {
-				 if (answer == true) {
-				     Global.location = url;
-				 } else console.log("cancelled loading " + url);
-			     });
-	// add a confirmation dialog!
+	if (evt.isAltDown()) {
+	    this.world().confirm("Leave current runtime to enter another page?",
+				 function (answer) {
+				     if (answer == true) {
+					 Global.location = url;
+				     } else console.log("cancelled loading " + url);
+				 });
+	} else {
+	    if (this.win) this.win.focus()
+	    else this.win = Global.window.open(url);
+	}
 	
     },
     
