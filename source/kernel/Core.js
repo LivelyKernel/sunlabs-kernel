@@ -218,7 +218,6 @@ Namespace =  {
 };
 
 
-
 var Loader = {
 
     loadScript: function(ns, url) {
@@ -383,8 +382,6 @@ var Class = {
 };
 
 
-
-
 // ===========================================================================
 // Our extensions to JavaScript base libraries
 // ===========================================================================
@@ -396,7 +393,7 @@ var Class = {
 Object.properties = function(object, predicate) {
     var a = [];
     for (var name in object) {  
-	if (!(object[name] instanceof Function) && (predicate ? predicate(object) : true)) {
+	if (!(object[name] instanceof Function) && (predicate ? predicate(name, object) : true)) {
 	    a.push(name);
 	}
     } 
@@ -3683,7 +3680,6 @@ Morph.addMethods({
 	if (!this.owner) return null;  // already removed
 
 	this.stopStepping();
-	this.stopSteppingScripts();
 	this.owner.removeMorph(this);
 
 	return this;
@@ -4449,12 +4445,10 @@ Morph.addMethods({
 
     startSteppingScripts: function() { }, // May be overridden to start stepping scripts
 
-    stopSteppingScripts: function() {
-	var world = this.world();
-	if (this.activeScripts) {
-	    this.activeScripts.invoke('stop', world);
-	    this.activeScripts = null;
-	}
+    stopStepping: function() {
+	if (!this.activeScripts) return;
+	this.activeScripts.invoke('stop', this.world());
+	this.activeScripts = null;
     },
 
     startStepping: function(stepTime, scriptName, argIfAny) {
@@ -4477,13 +4471,6 @@ Morph.addMethods({
 	// if we're deserializing the rawNode may already be in the markup
     },
 
-    stopStepping: function() {
-	if (this.activeScripts && this.world()) {
-	    for (var i = 0; i < this.activeScripts.length; i++) 
-		this.world().stopSteppingFor(this.activeScripts[i]);
-	    this.activeScripts = null;
-	} // else: can happen if removing a morph whose parent is not in the world
-    },
 
     suspendAllActiveScripts: function() {
 	this.withAllSubmorphsDo( function() { this.suspendActiveScripts(); });
@@ -4492,7 +4479,7 @@ Morph.addMethods({
     suspendActiveScripts: function() {
 	if (this.activeScripts) { 
 	    this.suspendedScripts = this.activeScripts.clone();
-	    this.stopSteppingScripts();
+	    this.stopStepping();
 	}
     },
 
@@ -5359,10 +5346,10 @@ PasteUpMorph.subclass("WorldMorph", {
     //
     //  The message startSteppingScripts can be sent to morphs when they are placed in the world.
     //  It is intended that this may be overridden to start any required stepping.
-    //  The message stopSteppingScripts will be sent when morphs are removed from the world.
+    //  The message stopStepping will be sent when morphs are removed from the world.
     //  In this case the activeScripts array of the morph is used to determine exactly what
     //  scripts need to be unscheduled.  Note that startSteppingScripts is not sent
-    //  automatically, whereas stopSteppingScripts is.  We know you won't forget to 
+    //  automatically, whereas stopStepping is.  We know you won't forget to 
     //  turn your gadgets on, but we're more concerned to turn them off when you're done.
 
     scheduleForLater: function(action, delayInMs, removePrior) {

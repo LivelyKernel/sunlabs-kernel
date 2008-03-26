@@ -4796,7 +4796,7 @@ Morph.subclass("EngineMorph", {
     setStepTime: function(ms) {
         this.stepTime = ms;
         this.addRunMenu();
-        this.stopSteppingScripts();
+        this.stopStepping();
         this.startStepping(ms,'nextStep');
     },
 
