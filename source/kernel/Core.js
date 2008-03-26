@@ -355,29 +355,18 @@ var Class = {
 	return (object instanceof Function) && (object.superclass || object === Object);
     },
 
-    methodNameList: function(className) {
-	if (className != "Global") return this.globalScope[className].localFunctionNames();
-	return Global.functionNames().copyWithoutAll(this.globalScope.classNames()); 
-    },
-    
-    listClassNames: function(scope) {
-	var a = [];
-
-	for (var name in scope) { 
+    withAllClassNames: function(scope, callback) {
+	for (var name in scope) {
 	    try {
-		if (Class.isClass(scope[name])) {
-		    a.push(name); 
-		}
-	    } catch (er) {
-		// FF can throw an exception here
+		if (Class.isClass(scope[name]))
+		    callback(name);
+	    } catch (er) { // FF exceptions
 	    }
 	}
-
-	a.push("Object", "Global"); // a few others of note
-
-	// console.log('found array ' + a.sort());
-	return a;
+	callback("Object");
+	callback("Global");
     }
+    
 
 };
 

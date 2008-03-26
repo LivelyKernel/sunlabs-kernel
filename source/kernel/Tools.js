@@ -60,7 +60,9 @@ Widget.subclass('SimpleBrowser', {
         var list = [];
         for (var i = 0; i < this.scopeSearchPath.length; i++) {
             var p = this.scopeSearchPath[i];
-            list = list.concat(Class.listClassNames(p).filter(function(n) { return !n.startsWith('SVG')}).sort());
+	    var scopeCls = [];
+	    Class.withAllClassNames(p, function(name) { name.startsWith("SVG") || scopeCls.push(name);});
+	    list = list.concat(scopeCls.sort());
         }
         return list;
     },
@@ -649,7 +651,8 @@ function showStatsViewer(profilee,title) {
         installStackTracers: function(debugStack) {
             // Adds stack tracing to methods of most "classes"
             console.log("installing stack tracers");
-            var classNames = Class.listClassNames(Global).filter(function(n) { return !n.startsWith('SVG')});
+            var classNames = [];
+	    Class.withAllClassNames(Global, function(n) { n.startsWith('SVG') || classNames.push(n)});
             for (var ci= 0; ci < classNames.length; ci++) {
                 var cName = classNames[ci];
                 if (cName != 'Global' && cName != 'Object') {
