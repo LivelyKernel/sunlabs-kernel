@@ -4691,15 +4691,15 @@ Morph.addMethods( {
 	var model = this.getModel();
 	if (model instanceof SimpleModel) {
 	    var variables = model.variables();
-	    var txt = "";
+	    var list = [];
 	    for (var i = 0; i < variables.length; i++) {
 		var varName = variables[i];
-		txt += varName + "=" + model.get(varName) + "\n";
+		list.push(varName + " = " + model.get(varName));
 	    }
-	    var extent = pt(500, 300);
-	    var pane = newTextPane(extent.extentAsRectangle(), "");
-	    pane.innerMorph().setTextString(txt);
-	    pane.innerMorph().txt = txt; // FIXME a sneaky way of passing original text.
+	    var extent = pt(400, Math.min(300, list.length * TextMorph.prototype.fontSize * 1.5));
+	    var pane = newListPane(extent.extentAsRectangle());
+	    
+	    pane.innerMorph().updateList(list);
 	    this.world().addFramedMorph(pane, "Simple Model dump", this.world().positionForNewMorph(this));
 	}
     }
