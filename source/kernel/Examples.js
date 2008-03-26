@@ -2387,24 +2387,21 @@ Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
     imagepath: "Resources/weather/",
     defaultViewTitle: "Weather widget",
     defaultViewExtent: pt(250, 260),
+    pins: ["-Locale", "+WeatherDesc", "+Temperature", "+Wind", "+Gusts", "+DewPoint", "+Humidity", "+Visibility"],
     
     initialize: function($super) { 
-	
-	var model = new SimpleModel(["WeatherDesc", "City", "ImageURL",
-	    "Temperature", "Wind", "Humidity", "DewPoint", "Gusts", "Visibility"]);
-	
-	model.setImageURL("http://www.bbc.co.uk/weather/images/banners/weather_logo.gif");
-	
-	$super({model: model, 
-		getLocale: "getCity", 
-		setWeatherDesc: "setWeatherDesc",
-		setTemperature: "setTemperature",
-		setWind: "setWind",
-		setGusts: "setGusts",
-		setDewPoint: "setDewPoint",
-		setHumidity: "setHumidity",
-		setVisibility: "setVisibility"});
-	
+	var model = new SimpleModel(this.pins);
+	$super(model.makePlugSpecFromPins(this.pins));
+	model.addVariable("ImageURL", "http://www.bbc.co.uk/weather/images/banners/weather_logo.gif");
+	this.initializeTransientState();
+    },
+    
+    deserialize: function($super, importer, plug) {
+	$super(importer, plug);
+	this.initializeTransientState();
+    },
+
+    initializeTransientState: function() {
 	this.feed = new Feed({model: this, setFeedChannels: "parseChannels", setStatus: "setRequestStatus"});
     },
     
@@ -2416,7 +2413,6 @@ Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
 	    this.updateLocale(this.getModelValue('getLocale', null));
 	    break;
 	}
-	
     },
     
     parseChannels: function(channels) {
@@ -2484,7 +2480,7 @@ Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
         m.setFill(null);
 	
         m = panel.addMorph(new CheapListMorph(new Rectangle(40,3,200,20),["San Francisco, California", "Tampere, Finland", "London, United Kingdom"]));
-        m.connectModel({model: model, getSelection: "getCity", setSelection: "setCity"});
+        m.connectModel({model: model, getSelection: "getLocale", setSelection: "setLocale"});
         m.selectLineAt(0); // Select the first item by default
 
         // build the textfields for the weather panel
