@@ -15,11 +15,14 @@
 // Pointer to application instance while it is running
 var PIM; 
 
-// This application can be used in three different modes
+// This application can be used in four different modes
 // Change the value of 'usageMode' below to choose the mode
-const PIM_DemoMode = 1;   // Application used as a PIM with sample data
-const PIM_ServerMode = 2; // Application used as a PIM with data from web server
-const BrowserMode = 3;    // Application used as a JavaScript object browser
+const PIM_DemoMode = 1;    // Application used as a PIM with sample data
+const PIM_ServerMode = 2;  // Application used as a PIM with data from web server
+const BrowserMode = 3;     // Application used as a JavaScript object browser
+                           // with object pre-analysis
+const FastBrowserMode = 4; // Application used as a JavaScript object browser
+                           // without pre-analysis
 
 var usageMode = PIM_DemoMode; 
 
@@ -699,6 +702,17 @@ Morph.subclass("SelectorView", {
         var previousCurrentViewItem = this.currentViewItem;
         this.currentViewItem = value;
         
+        // Special case: In browser mode we get the reflective data
+        // from the JavaScript VM upon clicking a folder
+        if (value && (usageMode == BrowserMode || usageMode == FastBrowserMode)) {
+            var model = value.getModel();
+            // Get the reflective data only if it hasn't been obtained yet!
+            if (model && model.JSobject && model.items && (model.items.length == 0)) {
+                PIM.generateFolderContents(model, model.JSobject, model.JSpathname, 0);
+                model.updateView();
+            }
+        }
+            
         if (previousCurrentViewItem) {
             // Remove highlight from the previously selected view item
             previousCurrentViewItem.removeMorph(this.highlight);
@@ -1169,6 +1183,7 @@ Object.subclass('WebPIM', {
             break;
             
         case BrowserMode:
+        case FastBrowserMode:
             // If the browser feature is enabled, the application
             // displays reflective data from the JavaScript VM itself 
             this.items = this.generateBrowserData();
@@ -1184,6 +1199,10 @@ Object.subclass('WebPIM', {
 
     getId: function() {
         return this.caption;
+    },
+
+    getCaption: function() {
+        return "";
     },
 
     isFolder: function() {
@@ -1622,15 +1641,23 @@ Object.subclass('WebPIM', {
         var target = items[0];
         target.open();
 
-        this.generateFolderContents(target, Global, "Global", "", 0);
+        this.generateFolderContents(target, Global, "", 0);
 
         return items;
     },
 
-    generateFolderContents: function(target, objectToView, nameToView, fullPath, recursion) {
+    generateFolderContents: function(target, objectToView, fullPath, recursion) {
+
+        // Sanity/safety check
+        if (objectToView == null) return;
+        
+        // In fast browser mode, we only generate one level of data at a time,
+        // i.e., we do not recurse into substructures until those structures
+        // are actually accessed by the user
+        if (usageMode == FastBrowserMode && recursion > 0) return;
 
         // Avoid memory overflow / excessive recursion
-        if (objectToView == null || recursion > 4) return;
+        if (recursion > 4) return;
 
         // Avoid analyzing the Global namespace more than once
         if (recursion > 0 && (objectToView == Global || fullPath == "")) return;
@@ -1648,6 +1675,7 @@ Object.subclass('WebPIM', {
         var text;
         var newItem;
         var isLivelyClass;
+        var JSpathname;
 
         // Generate SelectorItems based on the sorted list
         for (var i = 0; i < list.length; i++) {
@@ -1666,6 +1694,9 @@ Object.subclass('WebPIM', {
                 if (path != "") path += ".";
                 path += name;
             }
+
+            // Preserve the original JavaScript object name
+            JSpathname = path;
 
             // Eliminate some browser-specific crud from the tree.
             // Safari runs out of memory if there is too much stuff to analyze.
@@ -1714,6 +1745,7 @@ Object.subclass('WebPIM', {
                     // The real methods of Lively classes are found under '.prototype'
                     // Skip over the "irrelevant" layer of stuff
                     path += ".prototype";
+                    JSpathname += ".prototype";
                     object = eval(path);
                     isLivelyClass = true;
                 }
@@ -1750,6 +1782,7 @@ Object.subclass('WebPIM', {
                 newItem.contents = text; // Must not use setContents()
                 target.items.push(newItem);
             }
+            newItem.JSpathname = JSpathname;
 
             if (!object) continue;
             
@@ -1761,8 +1794,10 @@ Object.subclass('WebPIM', {
             else if (text == "false" || text == "true") continue;
             else if (object == Global) continue;
 
+            newItem.JSobject = object;
+
             // Recurse into subcomponents
-            this.generateFolderContents(newItem, object, name, path, recursion+1);
+            this.generateFolderContents(newItem, object, path, recursion+1);
         }
     }
 
