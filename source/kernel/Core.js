@@ -1919,7 +1919,7 @@ var Event = (function() {
 
 	isCommandKey: function() {
 	    // this is LK convention, not the content of the event
-	    return Config.useMetaAsCommand ? this.isAltDown() : this.isMetaDown();
+	    return Config.useMetaAsCommand ? this.isMetaDown() : this.isAltDown();
 	},
 
 	isShiftDown: function() {
