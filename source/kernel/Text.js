@@ -1482,7 +1482,8 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
         } else if (evt.getKeyCode() == Event.KEY_BACKSPACE) {
 	    // Backspace deletes current selection or prev character
             if (this.hasNullSelection()) this.selectionRange[0] = Math.max(-1, this.selectionRange[0]-1);
-            this. replaceSelectionfromKeyboard(""); 
+            this.replaceSelectionfromKeyboard("");
+	    if (this.charsTyped.length > 0) this.charsTyped = this.charsTyped.substring(0, this.charsTyped.length-1); 
             evt.stop(); // do not use for browser navigation
             return true;
         } else if (!evt.isAltDown()) {
@@ -1510,6 +1511,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
 	} else {
 		this.charsTyped = replacement;
 		this.charsReplaced = this.selectionString();
+		this.lastFindLoc = this.selectionRange[0];
 	}
 	this.setTextString(before.concat(replacement, after), true, this.typingHasBegun);  // 2nd arg = true means delay composition
 	this.typingHasBegun = true;  // So undo will revert to first replacement
@@ -1567,18 +1569,23 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
         }
     
         case "g": { // aGain -- repeats a find or replacement
-            if (this.lastSearchString) this.searchForFind(this.lastSearchString, this.lastFindLoc+1);
+            if (this.lastSearchString) this.searchForFind(this.lastSearchString, this.lastFindLoc + this.lastSearchString.length);
             return true; 
         }
     
         case "r": { // redo -- repeats a typed replacement (check BS weirdness)
             if (this.charsReplaced) {
-		this.searchForFind(this.charsReplaced, this.lastFindLoc+1);
+		//start = this.hasNullSelection()
+		//	? this.selectionRange[0] //this.lastFindLoc + this.charsReplaced.length
+		//	: this.selectionRange[0];
+
+		this.searchForFind(this.charsReplaced, this.selectionRange[0]); //this.lastFindLoc + this.charsReplaced.length);
 		if (this.selectionString() != this.charsReplaced) return;
+		//this.lastFindLoc++;
 		var holdChars = this.charsReplaced;  // Save charsReplaced
                 this.replaceSelectionWith(this.charsTyped); 
 		this.charsReplaced = holdChars ;  // Restore charsReplaced after above
-		this.lastFindLoc += (this.charsTyped.length - this.charsReplaced.length);
+		//this.lastFindLoc += (this.charsTyped.length - this.charsReplaced.length);
 	    }
             return true; 
         }
@@ -1617,6 +1624,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
 
         case "z": { // Undo
             if (this.undoTextString) {
+                this.selectionRange = this.undoSelectionRange;
                 this.setTextString(this.undoTextString);
             }
             return true;
@@ -1641,8 +1649,10 @@ TextMorph.addMethods({
 
     pvtUpdateTextString: function(replacement, delayComposition, justMoreTyping) {
         // Mark for undo, but not if continuation of type-in
-	if(!justMoreTyping) this.undoTextString = this.textString;
-
+	if(!justMoreTyping) {
+		this.undoTextString = this.textString;
+                this.undoSelectionRange = this.selectionRange;
+	}
 	// DI: Might want to put the maxSafeSize test in clients
         this.textString = replacement.truncate(this.maxSafeSize);
         this.recordChange('textString');
