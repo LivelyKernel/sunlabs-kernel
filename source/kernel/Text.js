@@ -1550,6 +1550,14 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
             return true; 
         }
     
+        case "f": { // find -- prompt for, find, and select, a string
+            this.world().prompt("Enter the text you wish to find...",
+		function(response)
+		{return this.searchForFind(response, this.selectionRange[1]); }
+		.bind(this));
+            return true; 
+        }
+    
         case "g": { // aGain -- repeats a find or replacement
             if (this.lastSearchString) this.searchForFind(this.lastSearchString, this.lastFindLoc+1);
             return true; 
@@ -1745,8 +1753,9 @@ TextMorph.addMethods({
         if (this.modelPlug) this.setModelValue('setSelection', newSelection);
     },
     searchForFind: function(str, start) {
-	var i1 = this.textString.indexOf(str, start);
 	this.requestKeyboardFocus(this.world().firstHand());
+	var i1 = this.textString.indexOf(str, start);
+	if (i1 < 0) i1 = this.textString.indexOf(str, 0); // wrap
 	if (i1 >= 0) this.setSelectionRange(i1, i1+str.length);
 		else this.setNullSelectionAt(0);
 	this.lastSearchString = str;

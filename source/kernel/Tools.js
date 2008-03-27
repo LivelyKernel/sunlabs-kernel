@@ -114,11 +114,8 @@ Widget.subclass('SimpleBrowser', {
 	    }
 	}
 	if (Loader.isLoadedFromNetwork) {
-            items.push(['load source files', function() {
-                if (! SourceControl) {
-		    SourceControl = new SourceDatabase();
-		    SourceControl.openIn(this.world());
-		}
+            items.push(['import source files', function() {
+                if (! SourceControl) SourceControl = new SourceDatabase();
 		SourceControl.scanKernelFiles(["prototype.js", "defaultconfig.js", "localconfig.js",
 			"Core.js", "Text.js", "svgtext-compat.js",
 			"Widgets.js", "Network.js", "Storage.js", "Tools.js",
@@ -1028,7 +1025,8 @@ ChangeList.subclass('SourceDatabase', {
     initialize: function($super) {
 	this.methodDicts = {};
 	this.cachedFullText = {};
-        var projectName = 'Changes-di.js';  // Later get this info out of localConfig
+        if (true) return this;  // skip the worthless UI for now
+	var projectName = 'Changes-di.js';  // Later get this info out of localConfig
 	var contents = this.getFileContents(projectName);
 	var chgList = new FileParser().parseFile(projectName, contents, this, "scan")
 	$super(projectName, null, chgList);
