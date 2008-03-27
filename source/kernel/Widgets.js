@@ -135,10 +135,7 @@ Morph.subclass("ButtonMorph", {
         if (this.modelPlug) this.setModelValue('setValue', value);
     },
 
-    takesKeyboardFocus: function() { 
-        // unlike, eg, cheapMenus
-        return true; 
-    },
+    takesKeyboardFocus: Functions.True,          // unlike, eg, cheapMenus
     
     setHasKeyboardFocus: function(newSetting) { 
         return newSetting; // no need to remember
@@ -249,7 +246,7 @@ ButtonMorph.subclass("ImageButtonMorph", {
         this.activatedImageHref = activatedImageHref;
         $super(initialBounds);
         this.addMorph(this.image);
-        this.image.handlesMouseDown = function() { return true; }
+        this.image.handlesMouseDown = Functions.True,
         this.image.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
     },
     
@@ -439,9 +436,8 @@ Morph.subclass("TitleBarMorph", {
         }
     },
 
-    okToDuplicate: function(evt) {
-        return false;
-    }
+    okToDuplicate: Functions.False
+
 
 });
 
@@ -481,10 +477,9 @@ var TitleTabMorph = Morph.subclass("TitleTabMorph", {
         return this;
     },
 
-    handlesMouseDown: function() { return true; },
+    handlesMouseDown: Functions.True,
 
-    onMouseDown: function(evt) {
-    },
+    onMouseDown: Functions.Empty,
 
     onMouseUp: function(evt) {
         this.windowMorph.toggleCollapse();
@@ -513,7 +508,7 @@ Morph.subclass("WindowControlMorph", {
         return this;
     },
 
-    handlesMouseDown: function() { return true; },
+    handlesMouseDown: Functions.True,
 
     onMouseDown: function($super, evt) {
         $super(evt);
@@ -537,9 +532,9 @@ Morph.subclass("WindowControlMorph", {
 	$super(evt);
     },
     
-    checkForControlPointNear: function() { return false; },
+    checkForControlPointNear: Functions.False,
     
-    okToBeGrabbedBy: function() { return null; },
+    okToBeGrabbedBy: Functions.Null,
     
     getHelpText: function() {
 	return this.helpText;
@@ -821,9 +816,7 @@ Morph.subclass('HandleMorph', {
 	return wasShown;
     },
 
-    okToDuplicate: function(evt) {
-        return false;
-    },
+    okToDuplicate: Functions.False,
 
     onMouseDown: function(evt) {
         this.hideHelp();
@@ -1050,9 +1043,7 @@ Morph.subclass("PanelMorph", {
         this.priorExtent = this.innerBounds().extent();
     },
 
-    takesKeyboardFocus: function() {
-        return true;
-    },
+    takesKeyboardFocus: Functions.True, 
 
     onMouseDown: function(evt) {
         this.requestKeyboardFocus(evt.hand);
@@ -1182,13 +1173,9 @@ TextMorph.subclass("CheapListMorph", {
         this.setModelValue('setList', this.itemList);
     },
     
-    takesKeyboardFocus: function() { 
-        return true;
-    },
+    takesKeyboardFocus: Functions.True,
 
-    onKeyPress: function(evt) {
-        // nothing
-    },
+    onKeyPress: Functions.Empty,
 
     onKeyDown: function(evt) {
         switch (evt.getKeyCode()) {
@@ -1263,9 +1250,7 @@ TextMorph.subclass("CheapListMorph", {
         return this.lineNo(this.getCharBounds(this.selectionRange[0]));
     },
     
-    showsSelectionWithoutFocus: function() { 
-        return true;  // Overridden in, eg, Lists
-    },
+    showsSelectionWithoutFocus: Functions.True,
 
     drawSelection: function($super) {
         if (this.hasNullSelection()) { // Null sel in a list is blank
@@ -1354,6 +1339,172 @@ TextMorph.subclass("CheapListMorph", {
     }
 
 });
+
+
+Morph.subclass("TextListMorph", {
+    
+    borderColor: Color.black,
+    borderWidth: 1,
+    fill: Color.white,
+    pins: ["List", "Selection", "-DeletionConfirmation", "+DeletionRequest"],
+    padding: 2,
+    documentation: "replacement for CheapListMorphs, using TextMorphs as menu items",
+
+    defaultOrigin: function(bounds) { 
+        return bounds.topLeft(); 
+    },
+    
+    generateSubmorphs: function(itemList, width) {
+	var listMorph = this;
+	var itemHeight = TextMorph.prototype.fontSize;
+	for (var i = 0; i < itemList.length; i++ ) {
+	    this.addMorph(new TextMorph(new Rectangle(this.padding, i*(itemHeight + this.padding), width - this.padding*2, itemHeight + 2*this.padding), itemList[i])).beListItem(this, i);
+	}  
+    },
+    
+    initialize: function($super, initialBounds, itemList) {
+        // itemList is an array of strings
+	initialBounds = initialBounds.withHeight(itemList.length* (TextMorph.prototype.fontSize + this.padding *2));
+	$super(initialBounds, itemList);
+        this.itemList = itemList;
+	this.selectedLineNo = -1;
+	
+	this.generateSubmorphs(itemList, initialBounds.width);
+	//this.setExtent(pt(initialBounds.width, itemList.length * itemHeight));
+        // this default self connection may get overwritten by, eg, connectModel()...
+        var model = new SimpleModel(this.pins);
+        this.modelPlug = new ModelPlug(model.makePlugSpecFromPins(this.pins));
+        this.setModelValue('setList', itemList);
+        this.layoutChanged();
+        return this;
+    },
+    
+    deserialize: function($super, importer, rawNode) {
+        $super(importer, rawNode);
+        this.layoutChanged();
+    },
+
+    restorePersistentState: function($super, importer) {
+        $super(importer); // FIXME
+        this.setModelValue('setList', this.itemList);
+    },
+
+    takesKeyboardFocus: Functions.True,
+
+    onKeyPress: Functions.Empty,
+
+    onKeyDown: function(evt) {
+        switch (evt.getKeyCode()) {
+        case Event.KEY_UP: {
+            var lineNo = this.selectedLineNo;
+            if (lineNo > 0) {
+                this.selectLineAt(lineNo - 1, true); 
+            } 
+            evt.stop();
+            break;
+        }
+	case Event.KEY_BACKSPACE: {
+	    // request deletion by setting a deletion request in the model
+	    // if model is subsequently updated with a "setDeletionConfirmation"
+	    // the selected item will be removed from the view.
+	    this.setModelValue("setDeletionRequest", this.itemList[this.selectedLineNo]);
+	    evt.stop();
+	    break;
+	}
+        case Event.KEY_DOWN: {
+            var lineNo = this.selectedLineNo;
+            if (lineNo < this.itemList.length - 1) {
+                this.selectLineAt(lineNo + 1, true); 
+            } 
+            evt.stop();
+            break;
+        }
+        case Event.KEY_ESC: {
+            this.relinquishKeyboardFocus(this.world().firstHand());
+            evt.stop();
+            break;
+        }    
+	case Event.KEY_SPACEBAR: { // FIXME this should be more generally
+	    // avoid paging down
+	    evt.stop();
+	    return true;
+        }
+	}
+    },
+
+    selectLineAt: function(lineNo, shouldUpdateModel) {  
+	if (this.selectedLineNo >= 0)
+	    this.submorphs[this.selectedLineNo].setFill(null);
+	this.selectedLineNo = lineNo;
+	var itemMorph = this.submorphs[lineNo];
+	if (itemMorph) {
+	    itemMorph.setFill(TextMorph.prototype.selectionColor);
+	    shouldUpdateModel && this.setSelection(itemMorph.textString);
+	} else console.log("nothing to select");
+    },
+    
+    updateList: function(newList) {
+        var priorItem = this.getSelection();
+	this.itemList = newList;
+	this.removeAllMorphs();
+        this.generateSubmorphs(newList, this.getBounds().width);
+        this.setSelectionToMatch(priorItem);
+        // this.emitSelection(); 
+    },
+
+    setSelectionToMatch: function(item) {
+	for (var i = 0; i < this.submorphs.length; i++) {
+	    if (this.submorphs[i].textString == item) {
+		this.selectLineAt(i, false);
+		return true;
+	    }
+	}
+	return false;
+    },
+    
+    updateView: function(aspect, controller) {
+	if (this === controller) return;
+        var c = this.modelPlug;
+        if (c) { // New style connect
+            switch (aspect) {
+            case this.modelPlug.getList:
+            case 'all':
+                this.updateList(this.getList());
+                return this.itemList; // debugging
+            case this.modelPlug.getSelection:
+                var selection = this.getSelection();
+		console.log("got selection "  + selection);
+                this.setSelectionToMatch(selection);
+                return selection; //debugging
+
+	    case this.modelPlug.getDeletionConfirmation: //someone broadcast a deletion
+		if (this.getModelValue("getDeletionConfirmation") == true) {
+		    // update self to reflect that model changed
+		    var index = this.selectedLineNo();
+		    var list = this.getList();
+		    list.splice(index, 1);
+		    this.updateList(list);
+		} 
+		return null;
+            }
+        }
+    },
+
+    getList: function() {
+        if (this.modelPlug) return this.getModelValue('getList', ["-----"]);
+    },
+
+    getSelection: function() {
+        if (this.modelPlug) return this.getModelValue('getSelection', null);
+    },
+
+    setSelection: function(item) {
+        if (this.modelPlug) this.setModelValue('setSelection', item); 
+    }
+
+});
+
+
 
 /**
  * @class MenuMorph: Popup menus
@@ -1659,18 +1810,13 @@ Morph.subclass("SliderMorph", {
         if (this.modelPlug) return this.getModelValue('getSliderExtent',(0.0));
     },
 
-    takesKeyboardFocus: function() { 
-        // unlike, eg, cheapMenus
-        return true; 
-    },
+    takesKeyboardFocus: Functions.True,
     
     setHasKeyboardFocus: function(newSetting) { 
         return newSetting; // no need to remember
     },
 
-    onKeyPress: function(evt) {
-        // nothing
-    },
+    onKeyPress: Functions.Empty,
 
     onKeyDown: function(evt) {
         var delta = 0;

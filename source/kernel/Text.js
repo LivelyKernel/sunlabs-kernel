@@ -883,9 +883,28 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
 	this.ignoreEvents();
         // this.isAccepting = false;
         this.layoutChanged();
-        this.okToBeGrabbedBy = function(evt) {  return null; }
+        this.okToBeGrabbedBy = Functions.Null;
         return this;
     },
+
+    beListItem: function(listMorph, index) {
+	this.applyStyle({borderWidth: 0, fill: null});
+	this.suppressHandles = true;
+	this.inset = pt(0, 0); // otherwise selection will overlap te
+	this.acceptInput = false;
+	this.okToBeGrabbedBy = Functions.Null;
+	this.focusHaloBorderWidth = 0;
+	this.drawSelection = Functions.Empty;
+	    
+	this.onMouseUp = function(evt) {
+	    listMorph.selectLineAt(index, true);
+	}
+	
+	this.onMouseDown = function(evt) {
+	    this.setFill(this.selectionColor);
+	}
+    },
+
 
     beInputLine: function() {
         //this.setWrapStyle(WrapStyle.None);
@@ -909,7 +928,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
 		return TextMorph.prototype.onKeyDown.call(this, evt);
 	    }
         };
-        this.okToBeGrabbedBy = function(evt) { return null; };
+        this.okToBeGrabbedBy = Functions.Null;
 	this.updateView = function(aspect, controller) {
 	    TextMorph.prototype.updateView.call(this, aspect, controller);
 	    // select the whole thing
@@ -1177,9 +1196,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
 
     },
 
-    showsSelectionWithoutFocus: function() { 
-        return false;  // Overridden in, eg, Lists
-    },
+    showsSelectionWithoutFocus: Functions.False, // Overridden in, eg, Lists
     
     undrawSelection: function() {
         NodeList.clear(this.rawSelectionNode);
@@ -1372,10 +1389,8 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
     },
 
     // TextMorph keyboard event functions
-    takesKeyboardFocus: function() { 
-        // unlike, eg, cheapMenus
-        return true; 
-    },
+    takesKeyboardFocus: Functions.True,         // unlike, eg, cheapMenus
+
     
     setHasKeyboardFocus: function(newSetting) { 
         this.hasKeyboardFocus = newSetting;

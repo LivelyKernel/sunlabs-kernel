@@ -13,7 +13,7 @@
  * as well as the core Morphic graphics framework. 
  */
 
-var Global = window;
+var Global = this;
 
 var Canvas = document.getElementById("canvas"); // singleton for now
 
@@ -127,7 +127,7 @@ var Strings = {
     
     function LogWindow() {
 	this.win = (function() { 
-	    var win = window.open("", "log", "scrollbars,width=900,height=300"); 
+	    var win = Global.window.open("", "log", "scrollbars,width=900,height=300"); 
 	    win.title = "Lively Kernel Log";
 	    win.document.write("<pre>"); 
 	    return win; 
@@ -139,7 +139,7 @@ var Strings = {
 	}
     };
     
-    var platformConsole = window.console || window.parent.console; 
+    var platformConsole = Global.window.console || Global.window.parent.console; 
     if (!platformConsole) {
 	alert('no console! console output disabled');
 	platformConsole = { log: function(msg) { } } // do nothing as a last resort
@@ -147,10 +147,10 @@ var Strings = {
     
     if (platformConsole.warn && platformConsole.info && platformConsole.assert) {
 	// it's a Firebug/Firebug lite console, it does all we want, so no extra work necessary
-	window.console = platformConsole;
+	Global.window.console = platformConsole;
     } else {
 	// rebind to something that has all the calls
-	window.console = {
+	Global.window.console = {
 	    
 	    consumers: [ platformConsole], // new LogWindow() ],
 	    
@@ -176,17 +176,17 @@ var Strings = {
     
 })(); 
 
-window.onerror = function(message, url, code) {
+Global.window.onerror = function(message, url, code) {
     console.log('in %s: %s, code %s', url, message, code);
 };
 
 (function() { // override config options with options from the query part of the URL
 
     // may have security implications ...
-    if (!window.location) // Batik can't deal.
+    if (!Global.window.location) // Batik can't deal.
 	return;
 
-    var configOverrides = window.location.search.toString().toQueryParams();
+    var configOverrides = Global.window.location.search.toString().toQueryParams();
     for (var p in configOverrides) {
 	if (Config.hasOwnProperty(p)) { // can't set unknown properties
 	    // this is surprisingly convoluted in Javascript:
@@ -370,6 +370,14 @@ var Class = {
 
 };
 
+var Functions = {
+    Empty: function() {},
+    K: function(arg) { return arg; },
+    Null: function() { return null; },
+    False: function() { return false; },
+    True: function() { return true; }
+};
+    
 
 // ===========================================================================
 // Our extensions to JavaScript base libraries
@@ -424,8 +432,6 @@ Object.beget = function(object, properties) {
 /**
   * Extensions to class Function
   */  
-
-Function.empty = function() {};
 
 Object.extend(Function.prototype, {
 
@@ -564,7 +570,7 @@ Object.extend(Function.prototype, {
 	}
 
 	if (!klass.prototype.initialize) {
-	    klass.prototype.initialize = Function.empty;
+	    klass.prototype.initialize = Functions.Empty;
 	}
 
 	scope[name] = klass;
@@ -2625,9 +2631,7 @@ var MouseHandlerForDragging = {
 	return true; 
     },
 
-    handlesMouseDown: function(evt) { 
-	return false;
-    }
+    handlesMouseDown: Functions.False
 
 };
 
@@ -2776,13 +2780,8 @@ Object.subclass('Copier', {
 
 // 'dummy' copier for simple objects
 Copier.marker = Object.extend(new Copier(), {
-
-    addMapping: function() { },
-
-    lookupMorph: function() { 
-	return null; 
-    }
-
+    addMapping: Functions.Empty,
+    lookupMorph: Functions.Null
 });
 
 /**
@@ -3052,14 +3051,14 @@ Visual.subclass("Morph", {
 		} else if (other[p] instanceof Image) {
 		    this[p] = other[p].copy(copier);
 		    this.addNonMorph(this[p].rawNode);
-		} else  {
+		} else {		    
 		    this[p] = other[p];
 		} 
 	    }
 	} // shallow copy by default
-
 	
-	this.setShape(other.shape.copy()); 
+
+	this.internalSetShape(other.shape.copy());
 	this.origin = other.origin.copy();
 
 	if (other.cachedTransform) { 
@@ -3076,10 +3075,9 @@ Visual.subclass("Morph", {
 	    console.log("copy: optimistically assuming that other (%s) is clipped to shape", other);
 	}
 
-
 	this.initializeTransientState(null);
 
-
+	
 	if (other.activeScripts != null) { 
 	    for (var i = 0; i < other.activeScripts.length; i++) {
 		var a = other.activeScripts[i];
@@ -3488,11 +3486,11 @@ Morph.addMethods({
 	this.adjustForNewBounds();
     }.wrap(Morph.onLayoutChange('shape')),
 
-    setShape: function(newShape) {
+    internalSetShape: function(newShape) {
 	if (!newShape.rawNode) {
 	    console.log('newShape is ' + newShape + ' ' + (new Error()).stack);
 	}
-
+	
 	this.rawNode.replaceChild(newShape.rawNode, this.shape.rawNode);
 	this.shape = newShape;
 	//this.layoutChanged(); 
@@ -3501,6 +3499,10 @@ Morph.addMethods({
 	    this.clipToShape();
 	}
 	this.adjustForNewBounds();
+    },
+
+    setShape: function(newShape) {
+	this.internalSetShape(newShape);
     }.wrap(Morph.onLayoutChange('shape')),
 
     reshape: function(partName, newPoint, handle, lastCall) {
@@ -3699,7 +3701,7 @@ Morph.addMethods({
 	this.remove();
     },
 
-    okToDuplicate: function() { return true; }  // default is OK
+    okToDuplicate: Functions.True  // default is OK
 
 });
 
@@ -3939,9 +3941,8 @@ Morph.addMethods({
 
 Morph.addMethods({     // help handling
 
-    getHelpText: function() { // override to supply help text
-	return null;
-    },
+    getHelpText: Functions.Null,  // override to supply help text
+
 
     showHelp: function(evt) {
 	if (this.suppressBalloonHelp) return false;
@@ -4059,13 +4060,9 @@ Morph.addMethods({
 
     onMouseWheel: function(evt) { }, // default behavior
 
-    takesKeyboardFocus: function() { 
-	return false; 
-    },
+    takesKeyboardFocus: Functions.False,
 
-    setHasKeyboardFocus: function(newSetting) { 
-	return false; // no matter what, say no
-    },
+    setHasKeyboardFocus: Functions.False, // no matter what, say no
 
     requestKeyboardFocus: function(hand) {
 	if (this.takesKeyboardFocus()) {
@@ -4137,9 +4134,7 @@ Object.subclass('MouseHandlerForRelay', {
 	return true; 
     },
 
-    handlesMouseDown: function(evt) { 
-	return true; 
-    }
+    handlesMouseDown: Functions.True
 
 });
 
@@ -6150,15 +6145,12 @@ LinkMorph.subclass('ExternalLinkMorph', {
     initialize: function($super, url, position) {
 	$super(null, position || pt(0, 0));
 	this.url = url;
+	this.win = null; // browser window
     },
 
-    makeNewWorld: function() {
-	return null;
-    },
-
-    addPathBack: function() {
-	return null;
-    },
+    makeNewWorld: Functions.Null, 
+    
+    addPathBack: Functions.Null,
 
     enterMyWorld: function(evt) {
 	var url = this.url.toString();

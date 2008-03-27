@@ -55,9 +55,9 @@ Widget.subclass('TestWidget', {
         m.connectModel({model: model, getValue: "getB2Value", setValue: "setB2Value"});
 
         // Two lists sharing same selection...
-        panel.addMorph(m = new CheapListMorph(new Rectangle(20,80,50,20),["one","two","three"]));
+        panel.addMorph(m = new TextListMorph(new Rectangle(20,80,50,20),["one","two","three"]));
         m.connectModel({model: model, getSelection: "getListItem", setSelection: "setListItem"});
-        panel.addMorph(m = new CheapListMorph(new Rectangle(80,80,50,20),["one","two","three"]));
+        panel.addMorph(m = new TextListMorph(new Rectangle(80,80,50,20),["one","two","three"]));
         m.connectModel({model: model, getSelection: "getListItem", setSelection: "setListItem"});
 
         // Three text views sharing same text...
@@ -409,7 +409,7 @@ ClipMorph.subclass("DoodleMorph", {
         return true; 
     },
 
-    handlesMouseDown: function() { return true; },
+    handlesMouseDown: Functions.True,
 
     makeSelection: function(evt) { 
         if (this.currentSelection != null) this.currentSelection.removeOnlyIt();
@@ -641,9 +641,7 @@ Morph.subclass('SquiggleMorph', {
         evt.hand.setFill(this.savedHandColor);
     },
 
-    handlesMouseDown: function() { 
-        return true; 
-    }
+    handlesMouseDown: Functions.True
         
 });
 
@@ -2314,9 +2312,7 @@ GameMorph.addMethods({
         return this;
     },
     
-    handlesMouseDown: function() {
-        return true; // hack
-    },
+    handlesMouseDown: Functions.True, // hack
 
     onMouseDown: function(evt) {
         this.requestKeyboardFocus(evt.hand);
@@ -2327,9 +2323,7 @@ GameMorph.addMethods({
         return newSetting;
     },
     
-    takesKeyboardFocus: function() { 
-        return true; 
-    },
+    takesKeyboardFocus: Functions.True,
 
     onKeyDown: function(evt) { 
         keyDown(evt);
@@ -2486,33 +2480,33 @@ Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
         // build the textfields for the weather panel
         m = panel.addMorph(new TextMorph(new Rectangle(40,55, 200,20), "---"));
 	m.connectModel({model: model, getText: "getWeatherDesc"});
-        m.takesKeyboardFocus = function() {return false;};
+        m.takesKeyboardFocus = Functions.True;
 	//m.beLabel();
 
         m = panel.addMorph(new TextMorph(new Rectangle(40,80, 200,20), "---"));
 	m.connectModel({model: model, getText: "getTemperature"});
 	//m.beLabel();
-        m.takesKeyboardFocus = function() {return false;};
+        m.takesKeyboardFocus = Functions.True;
 	
         m = panel.addMorph(new TextMorph(new Rectangle(40,105, 200,20), "---"));
 	m.connectModel({model: model, getText: "getWind"});
-        m.takesKeyboardFocus = function() {return false;};
+        m.takesKeyboardFocus = Functions.True;
 
         m = panel.addMorph(new TextMorph(new Rectangle(40,130, 200,20), "---"));
 	m.connectModel({model: model, getText: "getGusts"});
-        m.takesKeyboardFocus = function() {return false;};
+        m.takesKeyboardFocus = Functions.True;
 	
         m = panel.addMorph(new TextMorph(new Rectangle(40,155, 200,20), "---"));
 	m.connectModel({model: model, getText: "getDewPoint"});
-        m.takesKeyboardFocus = function() {return false;};
+        m.takesKeyboardFocus = Functions.True;
 	
         m = panel.addMorph(new TextMorph(new Rectangle(40,180, 200,20), "---"));
 	m.connectModel({model: model, getText: "getHumidity"});
-        m.takesKeyboardFocus = function() {return false;};
+        m.takesKeyboardFocus = Functions.True;
 	
         m = panel.addMorph(new TextMorph(new Rectangle(40,205, 200,20), "---"));
 	m.connectModel({model: model, getText: "getVisibility"});
-        m.takesKeyboardFocus = function() {return false;};
+        m.takesKeyboardFocus = Functions.True;
 	
 //        panel.addMorph(TextMorph(new Rectangle(80,230, 200,20), "---")).connectModel({model: this, getText: "getDate"});
     
@@ -4023,9 +4017,8 @@ ClipMorph.subclass("CanvasScapeMorph", {
         return newSetting;
     },
     
-    takesKeyboardFocus: function() {
-        return true; 
-    },
+    takesKeyboardFocus: Functions.True,
+
 
     onKeyDown: function(evt) { 
         this.keyDown(evt);
@@ -5282,9 +5275,7 @@ ClipMorph.subclass(scope, "DungBeetleMorph", {
         return newSetting;
     },
     
-    takesKeyboardFocus: function() { 
-        return true; 
-    },	  
+    takesKeyboardFocus: Functions.True,	  
     
     onKeyDown: function(event) { 
 		var key = event.getKeyCode() || event.charCode;
