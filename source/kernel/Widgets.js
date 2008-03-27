@@ -92,7 +92,7 @@ Morph.subclass("ButtonMorph", {
         } 
     },
     
-    onMouseMove: function(evt) { },
+    onMouseMove: Functions.Empty,
 
     onMouseUp: function(evt) {
         var newValue = this.isToggle() ? !this.getValue() : false;
@@ -2265,6 +2265,7 @@ Dialog.subclass('ConfirmDialog', {
         var panel = new PanelMorph(extent);
 	this.panel = panel;
         panel.linkToStyles(['widgetPanel']);
+	panel.setFillOpacity(0.9);
 
 	var r = new Rectangle(this.inset, this.inset, extent.x - 2*this.inset, 30);
 	var label = panel.addMorph(new TextMorph(r, this.getModelValue("getMessage")).beLabel());
@@ -2316,6 +2317,7 @@ Dialog.subclass('PromptDialog', {
         var panel = new PanelMorph(extent);
 	this.panel = panel;
         panel.linkToStyles(['widgetPanel']);
+	panel.setFillOpacity(0.9);
 	
 	var r = new Rectangle(this.inset, this.inset, extent.x - 2*this.inset, 30);
 	var label = panel.addMorph(new TextMorph(r, this.getModelValue("getMessage")).beLabel());
