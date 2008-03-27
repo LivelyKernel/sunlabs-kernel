@@ -1459,6 +1459,11 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
             evt.stop();
             return true;
         }
+	case Event.KEY_TAB: {
+	    this.replaceSelectionfromKeyboard("\t");
+	    evt.stop();
+	    return true;
+	}
         case Event.KEY_ESC: {
             this.relinquishKeyboardFocus(this.world().firstHand());
             return true;

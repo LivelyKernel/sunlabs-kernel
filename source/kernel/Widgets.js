@@ -1035,7 +1035,7 @@ Morph.subclass("SelectionMorph", {
 /**
  * @class PanelMorph
  */
-Morph.subclass("PanelMorph", {
+Morph.subclass('PanelMorph', {
 
     initialize: function($super, extent/*:Point*/) {
         $super(extent.extentAsRectangle(), 'rect');
@@ -1413,7 +1413,6 @@ Morph.subclass("TextListMorph", {
 	    break;
 	}
         case Event.KEY_DOWN: {
-	    console.log("keydown");
             var lineNo = this.selectedLineNo;
             if (lineNo < this.itemList.length - 1) {
                 this.selectLineAt(lineNo + 1, true); 
