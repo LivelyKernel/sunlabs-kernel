@@ -1357,17 +1357,18 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
     },
     
     setNullSelectionAt: function(charIx) { 
-        this.setSelectionRange(charIx,charIx); 
+        this.setSelectionRange(charIx, charIx); 
     },
     
     hasNullSelection: function() { 
         return this.selectionRange[1] < this.selectionRange[0]; 
     },
 
-    setSelectionRange: function(piv,ext) { 
+    setSelectionRange: function(piv, ext) { 
         this.selectionRange = (ext >= piv) ? [piv,ext-1] : [ext,piv-1];
         this.setModelSelection(this.selectionString());
         this.drawSelection(); 
+	this.typingHasBegun = false;  // New selection starts new typing
     },
 
     // TextMorph keyboard event functions
@@ -1504,7 +1505,8 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
         if (!this.acceptInput) return;
         var before = this.textString.substring(0,this.selectionRange[0]); 
         var after = this.textString.substring(this.selectionRange[1]+1,this.textString.length);
-	this.setTextString(before.concat(replacement,after), true);  // 2nd arg = true means delay composition
+	this.setTextString(before.concat(replacement,after), true, this.typingHasBegun);  // 2nd arg = true means delay composition
+	this.typingHasBegun = true;  // So undo will revert to first replacement
 
 	// Here we recompute the selectionRange, but don't compute the selection object yet
 	var selectionIndex = before.length + replacement.length;
@@ -1623,11 +1625,9 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
 // TextMorph accessor functions
 TextMorph.addMethods({
 
-    pvtUpdateTextString: function(replacement, delayComposition) {
-	// introducing new variable, simple one-level undo
-	// DI: Would be nice to recognize consecutive keystrokes as one replacement
-	//     so undo would undo back to the replacement not just last char typed
-        this.undoTextString = this.textString;
+    pvtUpdateTextString: function(replacement, delayComposition, justMoreTyping) {
+        // Mark for undo, but not if continuation of type-in
+	if(!justMoreTyping) this.undoTextString = this.textString;
 
 	// DI: Might want to put the maxSafeSize test in clients
         this.textString = replacement.truncate(this.maxSafeSize);
@@ -1709,9 +1709,9 @@ TextMorph.addMethods({
         this.changed();
     },
     
-    setTextString: function(replacement, delayComposition) {
+    setTextString: function(replacement, delayComposition, justMoreTyping) {
         if (this.autoAccept) this.setModelText(replacement);
-        this.pvtUpdateTextString(replacement, delayComposition); 
+        this.pvtUpdateTextString(replacement, delayComposition, justMoreTyping); 
     },
     
     updateTextString: function(newStr) {
