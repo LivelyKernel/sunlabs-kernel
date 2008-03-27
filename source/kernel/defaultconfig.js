@@ -99,7 +99,10 @@ var Config = {
     showLivelyConsole: false,
 
     // disable caching of webstore requests
-    suppressWebStoreCaching: false
+    suppressWebStoreCaching: false,
+
+    // Defeat bundled type-in for better response in short strings
+    showMostTyping: true
 
 }
 
