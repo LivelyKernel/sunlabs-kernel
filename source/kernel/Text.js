@@ -1505,7 +1505,13 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
         if (!this.acceptInput) return;
         var before = this.textString.substring(0,this.selectionRange[0]); 
         var after = this.textString.substring(this.selectionRange[1]+1,this.textString.length);
-	this.setTextString(before.concat(replacement,after), true, this.typingHasBegun);  // 2nd arg = true means delay composition
+	if (this.typingHasBegun) {
+		this.charsTyped += replacement;
+	} else {
+		this.charsTyped = replacement;
+		this.charsReplaced = this.selectionString();
+	}
+	this.setTextString(before.concat(replacement, after), true, this.typingHasBegun);  // 2nd arg = true means delay composition
 	this.typingHasBegun = true;  // So undo will revert to first replacement
 
 	// Here we recompute the selectionRange, but don't compute the selection object yet
@@ -1543,7 +1549,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
         
         case "v": { // Paste
             if (TextMorph.clipboardString)
-                this.replaceSelectionWith(TextMorph.clipboardString); 
+                this.replaceSelectionfromKeyboard(TextMorph.clipboardString); 
             return true; 
         }
     
@@ -1562,6 +1568,18 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
     
         case "g": { // aGain -- repeats a find or replacement
             if (this.lastSearchString) this.searchForFind(this.lastSearchString, this.lastFindLoc+1);
+            return true; 
+        }
+    
+        case "r": { // redo -- repeats a typed replacement (check BS weirdness)
+            if (this.charsReplaced) {
+		this.searchForFind(this.charsReplaced, this.lastFindLoc+1);
+		if (this.selectionString() != this.charsReplaced) return;
+		var holdChars = this.charsReplaced;  // Save charsReplaced
+                this.replaceSelectionWith(this.charsTyped); 
+		this.charsReplaced = holdChars ;  // Restore charsReplaced after above
+		this.lastFindLoc += (this.charsTyped.length - this.charsReplaced.length);
+	    }
             return true; 
         }
     
@@ -1592,10 +1610,6 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
             return true;
         }
         
-        case "j": { // Jump for Joy (?)
-            return true; 
-        }
-
         case "i": { // Inspect
             this.addSvgInspector();
             return true;
