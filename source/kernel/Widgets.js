@@ -82,7 +82,7 @@ Morph.subclass("ButtonMorph", {
         else return false;
     },
 
-    handlesMouseDown: function(evt) { return !evt.isAltDown(); },
+    handlesMouseDown: function(evt) { return !evt.isCommandKey(); },
     
     onMouseDown: function(evt) {
         this.requestKeyboardFocus(evt.hand);
@@ -823,7 +823,7 @@ Morph.subclass('HandleMorph', {
     },
     
     onMouseUp: function(evt) {
-        if (!evt.isShiftDown() && !evt.isAltDown() && !evt.isCmdDown() &&
+        if (!evt.isShiftDown() && !evt.isCommandKey() && !evt.isMetaDown() &&
             // these hack tests should be replaced by receiver tests
             !(this.targetMorph instanceof WindowMorph || this.targetMorph instanceof TitleBarMorph)) {
                 // last call for, eg, vertex deletion
@@ -851,7 +851,7 @@ Morph.subclass('HandleMorph', {
         var p1 = evt.mousePoint;
         if (!this.initialScale) this.initialScale = this.targetMorph.getScale();
         if (!this.initialRotation) this.initialRotation = this.targetMorph.getRotation();
-        if (evt.isAltDown()) {
+        if (evt.isCommandKey()) {
             // ctrl-drag for rotation (unshifted) and scale (shifted)
             var ctr = this.targetMorph.owner.worldPoint(this.targetMorph.origin);  //origin for rotation and scaling
             var v1 = p1.subPt(ctr); //vector from origin
@@ -1396,6 +1396,7 @@ Morph.subclass("TextListMorph", {
     onKeyDown: function(evt) {
         switch (evt.getKeyCode()) {
         case Event.KEY_UP: {
+	    console.log("keyup");
             var lineNo = this.selectedLineNo;
             if (lineNo > 0) {
                 this.selectLineAt(lineNo - 1, true); 
@@ -1412,6 +1413,7 @@ Morph.subclass("TextListMorph", {
 	    break;
 	}
         case Event.KEY_DOWN: {
+	    console.log("keydown");
             var lineNo = this.selectedLineNo;
             if (lineNo < this.itemList.length - 1) {
                 this.selectLineAt(lineNo + 1, true); 
@@ -1447,7 +1449,7 @@ Morph.subclass("TextListMorph", {
         var priorItem = this.getSelection();
 	this.itemList = newList;
 	this.removeAllMorphs();
-        this.generateSubmorphs(newList, this.getBounds().width);
+        this.generateSubmorphs(newList, this.bounds().width);
         this.setSelectionToMatch(priorItem);
         // this.emitSelection(); 
     },
@@ -1764,9 +1766,10 @@ Morph.subclass("SliderMorph", {
         this.adjustForNewBounds(); 
     },
 
-    sliderReleased: function(evt, slider) { },
+    sliderReleased: Functions.Empty,
     
-    handlesMouseDown: function(evt) { return !evt.isAltDown(); },
+    handlesMouseDown: function(evt) { return !evt.isCommandKey(); },
+
     onMouseDown: function(evt) {
         this.requestKeyboardFocus(evt.hand);
         var inc = this.getSliderExtent();
@@ -2057,7 +2060,7 @@ Morph.subclass("ColorPickerMorph", {
     },
 
     handlesMouseDown: function(evt) { 
-        return !evt.isAltDown();
+        return !evt.isCommandKey();
     },
 
     onMouseDown: function(evt) {

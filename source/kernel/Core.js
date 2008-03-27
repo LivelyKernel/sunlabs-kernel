@@ -1917,12 +1917,17 @@ var Event = (function() {
 	    return this.rawEvent.altKey;
 	},
 
+	isCommandKey: function() {
+	    // this is LK convention, not the content of the event
+	    return Config.useMetaAsCommand ? this.isAltDown() : this.isMetaDown();
+	},
+
 	isShiftDown: function() {
 	    return this.rawEvent.shiftKey;
 	},
 
-	isCmdDown: function() {
-	    return this.rawEvent.cmdKey;
+	isMetaDown: function() {
+	    return this.rawEvent.metaKey;
 	},
 
 	toString: function() {
@@ -1994,8 +1999,14 @@ var Event = (function() {
     return Event;
 })();
 
-Object.extend(window.parent, {
-    onbeforeunload: function(evt) { console.log('window got unload event %s', evt); },
+Object.extend(window, {
+    onbeforeunload: function(evt) { 
+	if (Config.askBeforeQuit) {
+	    var msg = "LK data may be lost if not saved.";
+	    evt.returnValue = msg; 
+	    return msg;
+	} else return null;
+    },
     onblur: function(evt) { /*console.log('window got blur event %s', evt);*/ },
     onfocus: function(evt) { /*console.log('window got focus event %s', evt);*/ }
 });
@@ -4033,7 +4044,7 @@ Morph.addMethods({
     },
 
     handlesMouseDown: function(evt) {
-	if (this.mouseHandler == null || evt.isAltDown()) return false;  //default behavior
+	if (this.mouseHandler == null || evt.isCommandKey()) return false;  //default behavior
 	return this.mouseHandler.handlesMouseDown(); 
     },
 
@@ -4336,7 +4347,7 @@ Morph.addMethods({
 	} else {
 	    // On grabs, can't pick up the world or morphs that handle mousedown
 	    // DI:  I think the world is adequately checked for now elsewhere
-	    // else return (!evt.isAltDown() && this === this.world()) ? null : this; 
+	    // else return (!evt.isCommandKey() && this === this.world()) ? null : this; 
 	    return this;
 	}
 
@@ -4668,7 +4679,7 @@ Morph.addMethods( {
 		list.push(varName + " = " + model.get(varName));
 	    }
 	    var extent = pt(400, Math.min(300, list.length * TextMorph.prototype.fontSize * 1.5));
-	    var pane = newListPane(extent.extentAsRectangle());
+	    var pane = new ScrollPane(new TextListMorph(extent.extentAsRectangle(), []), extent.extentAsRectangle()); 
 	    
 	    pane.innerMorph().updateList(list);
 	    this.world().addFramedMorph(pane, "Simple Model dump", this.world().positionForNewMorph(this));
@@ -5064,7 +5075,7 @@ var PasteUpMorph = Morph.subclass("PasteUpMorph", {
         if (m == null) { 
             this.makeSelection(evt); 
             return true; 
-        } else if (!evt.isAltDown()) {
+        } else if (!evt.isCommandKey()) {
             if (m == this.world()) { 
                 this.makeSelection(evt); 
                 return true; 
@@ -5691,7 +5702,6 @@ Morph.subclass("HandMorph", {
         case "MouseUp":
         case "MouseWheel":
             this.handleMouseEvent(evt);
-            // evt.preventDefault();
             break;
         case "KeyDown":
         case "KeyPress": 
@@ -5701,7 +5711,7 @@ Morph.subclass("HandMorph", {
         default:
             console.log("unknown event type " + evt.type);
         }
-        evt.stopPropagation();
+        // evt.stopPropagation();
     }.logErrors('Event Handler'),
 
     handleMouseEvent: function(evt) { 
@@ -5731,7 +5741,7 @@ Morph.subclass("HandMorph", {
                         this.mouseOverMorph = receiver;
                         // console.log('msOverMorph set to: ' + Object.inspect(this.mouseOverMorph));
                         if (this.mouseOverMorph) this.mouseOverMorph.onMouseOver(evt);
-                        if (!receiver || !receiver.canvas()) return;  // prevent errors after world-switch
+                        if (!receiver || !receiver.canvas()) return false;  // prevent errors after world-switch
                         // Note if onMouseOver sets focus, it will get onMouseMove
                         if (this.mouseFocus) this.mouseFocus.captureMouseEvent(evt, true);
                         else if (!evt.hand.hasSubmorphs()) this.owner.captureMouseEvent(evt, false); 
@@ -5741,7 +5751,7 @@ Morph.subclass("HandMorph", {
                 } 
             }
             this.lastMouseEvent = evt;
-            return;
+            return true;
         }
 	
         //-------------------
@@ -5782,6 +5792,7 @@ Morph.subclass("HandMorph", {
             }
         }
         this.lastMouseEvent = evt; 
+	return true;
     },
 
     grabMorph: function(grabbedMorph, evt) { 
@@ -5790,7 +5801,7 @@ Morph.subclass("HandMorph", {
             grabbedMorph.copyToHand(this);
             return;
         }
-        if (evt.isAltDown()) {
+        if (evt.isCommandKey()) {
             grabbedMorph.showMorphMenu(evt);
             return;
         }
@@ -5936,7 +5947,21 @@ Morph.subclass("HandMorph", {
                 }
             }
         } 
+	this.blockBrowserKeyBindings(evt);
     },
+
+    blockBrowserKeyBindings: function(evt) {
+	// block some surprising behaviors, esp in Safari
+	if (evt.type == "KeyPress")  // note that stopping() KeyDown may result in KeyPress not firing,
+	    // that's why we don't stop() events on KeyDown. 
+	    switch (evt.getKeyCode()) {
+	    case Event.KEY_SPACEBAR: // [don't] scroll
+	    case Event.KEY_BACKSPACE: // [don't] go to the previous page 
+		evt.stop();
+	    }
+	
+    },
+    
 
     bounds: function($super) {
         // account for the extra extent of the drop shadow
@@ -6154,7 +6179,7 @@ LinkMorph.subclass('ExternalLinkMorph', {
 
     enterMyWorld: function(evt) {
 	var url = this.url.toString();
-	if (evt.isAltDown()) {
+	if (evt.isCommandKey()) {
 	    this.world().confirm("Leave current runtime to enter another page?",
 				 function (answer) {
 				     if (answer == true) {

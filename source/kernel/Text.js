@@ -1302,7 +1302,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
     // TextMorph mouse event functions 
     handlesMouseDown: function(evt) {
         // Do selecting if click is in selectable area
-        if (evt.isAltDown()) return false;
+        if (evt.isCommandKey()) return false;
         return this.shape.bounds().insetByPt(this.inset).containsPoint(this.localize(evt.mousePoint)); 
     },
 
@@ -1463,17 +1463,10 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
             this.relinquishKeyboardFocus(this.world().firstHand());
             return true;
         }
-        case Event.KEY_UP:
-        case Event.KEY_DOWN: {
-            // do nothing for now
-            // don't scroll the page
-            evt.stop();
-            return true;
-        }
         }
 
         // have to process commands in keydown...
-        if (evt.isAltDown()) {
+        if (evt.isCommandKey()) {
             var command = evt.getKeyChar();
             if (this.processCommandKeys(command)) { 
 		evt.stop();
@@ -1487,7 +1480,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
         if (!this.acceptInput) return true;
 
         // cleanup: separate BS logic, diddle selection range and use replaceSelectionWith()
-        if (evt.isAltDown() && UserAgent.isWindows) {
+        if (evt.isCommandKey() && UserAgent.isWindows) { // FIXME: isCommandKey() should say no here
             //AltGr pressed
             var replacement = evt.getKeyChar();
             if (this.processCommandKeys(replacement)) {
@@ -1501,8 +1494,8 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
 	    if (this.charsTyped.length > 0) this.charsTyped = this.charsTyped.substring(0, this.charsTyped.length-1); 
             evt.stop(); // do not use for browser navigation
             return true;
-        } else if (!evt.isAltDown()) {
-            this. replaceSelectionfromKeyboard(evt.getKeyChar()); 
+        } else if (!evt.isCommandKey() && !evt.isMetaDown()) {
+            this.replaceSelectionfromKeyboard(evt.getKeyChar()); 
             evt.stop(); // done
 	    return true;
         }

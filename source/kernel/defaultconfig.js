@@ -102,7 +102,14 @@ var Config = {
     suppressWebStoreCaching: false,
 
     // Defeat bundled type-in for better response in short strings
-    showMostTyping: true
+    showMostTyping: true,
+
+    // use the meta modifier (maps to Command on the Mac) instead of alt
+    useMetaAsCommand: false,
+
+    
+    askBeforeQuit: true
+    
 
 }
 
