@@ -1,5 +1,5 @@
 /*
- * Copyright © 2006-2008 Sun Microsystems, Inc.
+ * Copyright ï¿½ 2006-2008 Sun Microsystems, Inc.
  * All rights reserved.  Use is subject to license terms.
  * This distribution may include materials developed by third parties.
  *  
@@ -123,7 +123,7 @@ Morph.subclass("ClockMorph", {
         for (var i = 0; i < 12; i++) {
             var labelPosition = bnds.center().addPt(Point.polar(radius*0.85,((i-3)/12)*Math.PI*2)).addXY(labelSize, 0);
             var label = new TextMorph((pt(labelSize*3, labelSize).extentAsRectangle()), 
-		// (i>0 ? i : 12) + "");  // English numerals
+		// (i>0 ? i : 12) + "");  // Latin numerals
 		['XII','I','II','III','IV','V','VI','VII','VIII','IX','X','XI'][i]); // Roman
 	    label.applyStyle({borderWidth: 0, fill: null, wrapStyle: WrapStyle.Shrink, fontSize: labelSize});
             label.setInset(pt(0,0));        

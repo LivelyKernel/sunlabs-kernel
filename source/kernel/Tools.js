@@ -947,9 +947,6 @@ WidgetModel.subclass('ChangeList', {
 	if (item == null) return "-----";
         return item.getSourceCode();
     },
-    getSearchString: function() {
-        return this.searchString;
-    },
     setChangeItemText: function(newItemText, v) {
         var item = this.selectedItem();
 	if (item == null) return;
@@ -959,6 +956,9 @@ WidgetModel.subclass('ChangeList', {
 	this.changeList = item.newChangeList();
 	this.changed('getChangeBanners');
 	this.setChangeSelection(oldSelection);  // reselect same item in new list (hopefully)
+    },
+    getSearchString: function() {
+        return this.searchString;
     },
     viewTitle: function() {
 	return "Change list for " + this.title;
@@ -1001,25 +1001,20 @@ ChangeList.subclass('SourceDatabase', {
 	// retrieve and alter pieces of the source code files without invalidating
 	// previously scanned changeList-style records.
 
-	// A sourceCodePiece specifies a file name and version number, as well as a 
-	// start and stop character index.  When a piece of source code is changed,
+	// A sourceCodeDescriptor (q.v.) has a file name and version number, as well as 
+	// start and stop character indices.  When a piece of source code is changed,
 	// it will likely invalidate all the other sourceCodePieces that point later
 	// in the file.  However, the SourceDatabase is smart (woo-hoo); it knows
 	// where previous edits have been made, and what effect they would have had
 	// on character ranges of older pieces.  To this end, it maintains an internal
-	// version number for each file, along with a list of the changes made between
-	// each version.
+	// version number for each file, and older versions point to editedStrings (q.v.)
+	// rather than to the current file content string.
 
 	// With this minor bit of bookkeeping, the SourceDataBase is able to keep
-	// producing source code pieces from old versions of a file without the need
-	// to reread the file.  Moreover, to the extent its cache can keep all the
+	// producing source code pieces from old references to a file without the need
+	// to reread it.  Moreover, to the extent its cache can keep all the
 	// file contents, it can do ripping-fast scans for cross reference queries.
 	//
-	// The DourceDatabase appears on the screen as a changeList.  This is left over
-	// from an earlier design.  I think I'm going to use that list as a list of
-	// old versions, which will be useful for simple reverts, but I believe it could
-	// actually allow roll-backs to any earlier point in the session.
-
 	// A SourceDatabase is created and opened on the screen in response to the
 	// 'import sources' command in the browser's classPane menu.
 	// Somehow it needs to be specified exactly what sources get imported.
@@ -1063,6 +1058,7 @@ ChangeList.subclass('SourceDatabase', {
 	refs.openIn(WorldMorph.current()); 
     },
     searchFor: function(str) {
+	// ***** Here we need to include version no in parsefile args and refs
 	var fullList = [];
 	for (var fName in this.cachedFullText) {
 		if (this.cachedFullText.hasOwnProperty(fName)) {
@@ -1082,12 +1078,15 @@ ChangeList.subclass('SourceDatabase', {
 	}
     },
     getSourceCodeRange: function(fileName, versionNo, startIndex, stopIndex) {
+	// ***** Get versions from cache
+	// if this is latest version, then it's full text so do as now
+	// else it's an editedString, so do the right thing
 	var fullText = this.getFullText(fileName);
 	return fullText.substring(startIndex, stopIndex);
     },
-    putSourceCodeRange: function(fileName, versionNo, startIndex, stopIndex, newText) {
-	if (originalText && originalText != this.getSourceCodeForDescriptor(desc)) {
-		console.log("Original text does not match file; store aborted");
+    putSourceCodeRange: function(fileName, versionNo, startIndex, stopIndex, newText, originalText) {
+	if (originalText && originalText != this.getSourceCodeRange(fileName, versionNo, startIndex, stopIndex)) {
+		console.log("***Original text does not match file; store aborted");
 		return;
 	}
 	var fullText = this.getFullText(fileName);
@@ -1097,10 +1096,13 @@ ChangeList.subclass('SourceDatabase', {
 	console.log("Saving " + fileName + "...");
 	new NetRequest({model: new NetRequestReporter(), setStatus: "setRequestStatus"}
 			).put(URL.source.withFilename(fileName), cat);
+	// ***** Here we have to replace latest version with an edited string
+	// Then add the full text (cat) as new latest version
 	this.cachedFullText[fileName] = cat;
 	console.log("... " + cat.length + " bytes saved.");
     },
     changeListForFileNamed: function(fName) {
+	// ***** Here we need to include version no in parsefile args and refs
 	var fullText = this.getFullText(fName);
 	return new FileParser().parseFile(fName, fullText, this, "scan");
     },
@@ -1141,8 +1143,7 @@ Object.subclass('SourceCodeDescriptor', {
 	return this.sourceControl.getSourceCodeRange(this.fileName, this.versionNo, this.startIndex, this.stopIndex);
     },
     putSourceCode: function(newString, originalString) {
-	if (this.getSourceCode() != originalString) { console.log("***Unable to save***"); return; }
-	this.sourceControl. getSourceCodeRange(this.fileName, this.versionNo, this.startIndex, this.stopIndex, newString);
+	this.sourceControl.putSourceCodeRange(this.fileName, this.versionNo, this.startIndex, this.stopIndex, newString, originalString);
     },
     newChangeList: function() {
 	return this.sourceControl.changeListForFileNamed(this.fileName);
