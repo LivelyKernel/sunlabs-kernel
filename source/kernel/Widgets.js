@@ -137,9 +137,8 @@ Morph.subclass("ButtonMorph", {
 
     takesKeyboardFocus: Functions.True,          // unlike, eg, cheapMenus
     
-    setHasKeyboardFocus: function(newSetting) { 
-        return newSetting; // no need to remember
-    },
+    setHasKeyboardFocus: Functions.K, 
+
 
     onKeyDown: function(evt) {
         switch (evt.getKeyCode()) {
@@ -1346,25 +1345,28 @@ TextMorph.subclass("CheapListMorph", {
 Morph.addMethods({
 
     layoutVertically: function(inset) { // assume the size of the 
-	var topLeft = inset.copy();
+	var padLeft = inset.x;
+	var padRight = inset.x;
+	var padTop = inset.y;
+	var padBottom = inset.y;
+
+	var topLeft = pt(padLeft, padTop);
+
 	var ownExtent = pt(0, 0);
 	for (var i = 0; i < this.submorphs.length; i++) {
 	    var morph = this.submorphs[i];
 	    morph.setPosition(topLeft);
 	    var ext = morph.getExtent();
-	    ownExtent = pt(Math.max(ownExtent.x, ext.x + 2*inset.x),  
-			   topLeft.y + inset.y + ext.y + inset.y);
+	    ownExtent = pt(Math.max(ownExtent.x, padLeft  + ext.x + padRight),  
+			   topLeft.y + padTop + ext.y + padBottom);
 	    topLeft = topLeft.withY(ownExtent.y);
 	}
-	//console.log("ownExtent " + ownExtent + " for "  + this);
 	if (this.owner)  {
 	    this.setBounds(this.getPosition().extent(ownExtent));
 	    this.layoutChanged();
 	} else {
 	    this.internalSetBounds(this.getPosition().extent(ownExtent));
-	    
 	}
-	console.log("new bounds for " + this + " are " + this.bounds());
 	return ownExtent;
     }
 });
@@ -1383,17 +1385,14 @@ Morph.subclass("TextListMorph", {
 	var listMorph = this;
 	var itemHeight = TextMorph.prototype.fontSize;
 	for (var i = 0; i < itemList.length; i++ ) {
-	    this.addMorph(new TextMorph(pt(width, itemHeight).extentAsRectangle(), 
-					itemList[i])).beListItem(this, i);
+	    this.addMorph(new TextMorph(pt(width, itemHeight).extentAsRectangle(), itemList[i])).beListItem(this, i);
 	}
-	var extent = this.layoutVertically(pt(this.padding*2, this.padding));
-
-
+	this.layoutVertically(pt(this.padding*2, this.padding));
     },
     
     initialize: function($super, initialBounds, itemList) {
         // itemList is an array of strings
-	var height = Math.max(initialBounds.height, itemList.length* (TextMorph.prototype.fontSize + this.padding *4));
+	var height = Math.max(initialBounds.height, itemList.length* (TextMorph.prototype.fontSize + this.padding *2));
 	initialBounds = initialBounds.withHeight(height);
 	$super(initialBounds, itemList);
         this.itemList = itemList;
@@ -1421,6 +1420,12 @@ Morph.subclass("TextListMorph", {
     },
 
     takesKeyboardFocus: Functions.True,
+
+    setHasKeyboardFocus: function(newSetting) { 
+        this.hasKeyboardFocus = newSetting;
+        return newSetting;
+    },
+
 
     onKeyPress: Functions.Empty,
 

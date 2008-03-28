@@ -1461,6 +1461,14 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
 	    evt.stop();
 	    return true;
 	}
+	case Event.KEY_BACKSPACE: {
+	    // Backspace deletes current selection or prev character
+            if (this.hasNullSelection()) this.selectionRange[0] = Math.max(-1, this.selectionRange[0]-1);
+            this.replaceSelectionfromKeyboard("");
+	    if (this.charsTyped.length > 0) this.charsTyped = this.charsTyped.substring(0, this.charsTyped.length-1); 
+            evt.stop(); // do not use for browser navigation
+            return true;
+        }
         case Event.KEY_ESC: {
             this.relinquishKeyboardFocus(this.world().firstHand());
             return true;
@@ -1489,14 +1497,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
 		evt.stop();
 		return true;
 	    }
-        } else if (evt.getKeyCode() == Event.KEY_BACKSPACE) {
-	    // Backspace deletes current selection or prev character
-            if (this.hasNullSelection()) this.selectionRange[0] = Math.max(-1, this.selectionRange[0]-1);
-            this.replaceSelectionfromKeyboard("");
-	    if (this.charsTyped.length > 0) this.charsTyped = this.charsTyped.substring(0, this.charsTyped.length-1); 
-            evt.stop(); // do not use for browser navigation
-            return true;
-        } else if (!evt.isCommandKey() && !evt.isMetaDown()) {
+        }  else if (!evt.isCommandKey() && !evt.isMetaDown()) {
             this.replaceSelectionfromKeyboard(evt.getKeyChar()); 
             evt.stop(); // done
 	    return true;
