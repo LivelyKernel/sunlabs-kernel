@@ -5958,14 +5958,16 @@ Morph.subclass("HandMorph", {
     },
 
     blockBrowserKeyBindings: function(evt) {
-	// block some surprising behaviors, esp in Safari
-	if (evt.type == "KeyPress")  // note that stopping() KeyDown may result in KeyPress not firing,
-	    // that's why we don't stop() events on KeyDown. 
-	    switch (evt.getKeyCode()) {
-	    case Event.KEY_SPACEBAR: // [don't] scroll
+	switch (evt.getKeyCode()) {
+	case Event.KEY_SPACEBAR: // [don't] scroll
+	    // stop keypress but don't try to stop preceeding keydown,
+	    // which would prevent keypress from firing and being handled by Text etc
+	    if (evt.type == "KeyPress") evt.stop();
+	    break;
 	    case Event.KEY_BACKSPACE: // [don't] go to the previous page 
-		evt.stop();
-	    }
+	    evt.stop();
+	    break;
+	}
 	
     },
     
