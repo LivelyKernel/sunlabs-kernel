@@ -337,6 +337,11 @@ Morph.subclass("ClipMorph", {
         }
         
         return this.fullBounds; 
+    },
+
+    innerMorph: function() {
+	this.submorphs.length != 1 && console.log("not a single inner morph");
+	return this.submorphs.first();
     }
     
 });
@@ -662,7 +667,7 @@ Morph.subclass('WindowMorph', {
     // Next four methods hold onto control until mouseUp brings the window forward.
     handlesMouseDown: function(evt) { return this.needsToComeForward(evt); },
 
-    onMouseDown: function(evt) { },
+    onMouseDown: Functions.Empty,
 
     onMouseMove: function($super, evt) {
         if (!evt.mouseButtonPressed) $super(evt);
@@ -1060,9 +1065,7 @@ Morph.subclass('PanelMorph', {
         }
     },
     
-    handlesMouseDown: function(evt) { 
-        return false;
-    },
+    handlesMouseDown: Functions.False,
 
     focusOnNext: function(evt) {
         var current = evt.hand.keyboardFocus;
@@ -1340,6 +1343,32 @@ TextMorph.subclass("CheapListMorph", {
 
 });
 
+Morph.addMethods({
+
+    layoutVertically: function(inset) { // assume the size of the 
+	var topLeft = inset.copy();
+	var ownExtent = pt(0, 0);
+	for (var i = 0; i < this.submorphs.length; i++) {
+	    var morph = this.submorphs[i];
+	    morph.setPosition(topLeft);
+	    var ext = morph.getExtent();
+	    ownExtent = pt(Math.max(ownExtent.x, ext.x + 2*inset.x),  
+			   topLeft.y + inset.y + ext.y + inset.y);
+	    topLeft = topLeft.withY(ownExtent.y);
+	}
+	//console.log("ownExtent " + ownExtent + " for "  + this);
+	if (this.owner)  {
+	    this.setBounds(this.getPosition().extent(ownExtent));
+	    this.layoutChanged();
+	} else {
+	    this.internalSetBounds(this.getPosition().extent(ownExtent));
+	    
+	}
+	console.log("new bounds for " + this + " are " + this.bounds());
+	return ownExtent;
+    }
+});
+
 
 Morph.subclass("TextListMorph", {
     
@@ -1347,36 +1376,38 @@ Morph.subclass("TextListMorph", {
     borderWidth: 1,
     fill: Color.white,
     pins: ["List", "Selection", "-DeletionConfirmation", "+DeletionRequest"],
-    padding: 2,
+    padding: 1,
     documentation: "replacement for CheapListMorphs, using TextMorphs as menu items",
 
-    defaultOrigin: function(bounds) { 
-        return bounds.topLeft(); 
-    },
-    
     generateSubmorphs: function(itemList, width) {
 	var listMorph = this;
 	var itemHeight = TextMorph.prototype.fontSize;
 	for (var i = 0; i < itemList.length; i++ ) {
-	    this.addMorph(new TextMorph(new Rectangle(this.padding, i*(itemHeight + this.padding), width - this.padding*2, itemHeight + 2*this.padding), itemList[i])).beListItem(this, i);
-	}  
+	    this.addMorph(new TextMorph(pt(width, itemHeight).extentAsRectangle(), 
+					itemList[i])).beListItem(this, i);
+	}
+	var extent = this.layoutVertically(pt(this.padding*2, this.padding));
+
+
     },
     
     initialize: function($super, initialBounds, itemList) {
         // itemList is an array of strings
-	initialBounds = initialBounds.withHeight(itemList.length* (TextMorph.prototype.fontSize + this.padding *2));
+	var height = Math.max(initialBounds.height, itemList.length* (TextMorph.prototype.fontSize + this.padding *4));
+	initialBounds = initialBounds.withHeight(height);
 	$super(initialBounds, itemList);
         this.itemList = itemList;
 	this.selectedLineNo = -1;
-	
 	this.generateSubmorphs(itemList, initialBounds.width);
-	//this.setExtent(pt(initialBounds.width, itemList.length * itemHeight));
         // this default self connection may get overwritten by, eg, connectModel()...
         var model = new SimpleModel(this.pins);
         this.modelPlug = new ModelPlug(model.makePlugSpecFromPins(this.pins));
         this.setModelValue('setList', itemList);
-        this.layoutChanged();
         return this;
+    },
+
+    defaultOrigin: function(bounds) { 
+        return bounds.topLeft(); 
     },
     
     deserialize: function($super, importer, rawNode) {
@@ -1413,6 +1444,7 @@ Morph.subclass("TextListMorph", {
 	    break;
 	}
         case Event.KEY_DOWN: {
+	    console.log("down: " + evt);
             var lineNo = this.selectedLineNo;
             if (lineNo < this.itemList.length - 1) {
                 this.selectLineAt(lineNo + 1, true); 
@@ -1434,8 +1466,7 @@ Morph.subclass("TextListMorph", {
     },
 
     selectLineAt: function(lineNo, shouldUpdateModel) {  
-	if (this.selectedLineNo >= 0)
-	    this.submorphs[this.selectedLineNo].setFill(null);
+	this.submorphs[this.selectedLineNo] && this.submorphs[this.selectedLineNo].setFill(null);
 	this.selectedLineNo = lineNo;
 	var itemMorph = this.submorphs[lineNo];
 	if (itemMorph) {
@@ -1450,6 +1481,7 @@ Morph.subclass("TextListMorph", {
 	this.removeAllMorphs();
         this.generateSubmorphs(newList, this.bounds().width);
         this.setSelectionToMatch(priorItem);
+	this.resetScrollPane();
         // this.emitSelection(); 
     },
 
@@ -1464,7 +1496,6 @@ Morph.subclass("TextListMorph", {
     },
     
     updateView: function(aspect, controller) {
-	if (this === controller) return;
         var c = this.modelPlug;
         if (c) { // New style connect
             switch (aspect) {
@@ -1501,7 +1532,15 @@ Morph.subclass("TextListMorph", {
 
     setSelection: function(item) {
         if (this.modelPlug) this.setModelValue('setSelection', item); 
-    }
+    },
+
+    resetScrollPane: function() { // KP: this copied from TextMorph. Nasty! FIXME!
+        // Need a cleaner way to do this ;-)
+        if (this.owner instanceof ClipMorph && this.owner.owner instanceof ScrollPane) {
+            this.owner.owner.scrollToTop();
+        }
+    },
+
 
 });
 
@@ -1809,7 +1848,7 @@ Morph.subclass("SliderMorph", {
     },
 
     getSliderExtent: function() {
-        if (this.modelPlug) return this.getModelValue('getSliderExtent',(0.0));
+        if (this.modelPlug) return this.getModelValue('getSliderExtent', 0.0);
     },
 
     takesKeyboardFocus: Functions.True,
@@ -1873,6 +1912,7 @@ Morph.subclass("ScrollPane", {
 	
         // suppress handles throughout
         [this, this.clipMorph, morphToClip, this.scrollBar].map(function(m) {m.suppressHandles = true});
+	// alert('inner morph is ' + this.innerMorph());
 
         return this;
     },
@@ -1887,7 +1927,7 @@ Morph.subclass("ScrollPane", {
     },
 
     innerMorph: function() {
-        return this.clipMorph.submorphs.first();
+        return this.clipMorph.innerMorph();
     },
 
     connectModel: function(plugSpec) { // connection is mapped to innerMorph
@@ -1991,6 +2031,10 @@ Morph.subclass("ScrollPane", {
 
 function newListPane(initialBounds) {
     return new ScrollPane(new CheapListMorph(initialBounds,["-----"]), initialBounds); 
+};
+
+function newTextListPane(initialBounds) {
+    return new ScrollPane(new TextListMorph(initialBounds,[]), initialBounds); 
 };
 
 function newTextPane(initialBounds, defaultText) {

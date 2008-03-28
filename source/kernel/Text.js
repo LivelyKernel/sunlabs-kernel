@@ -890,19 +890,16 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
     beListItem: function(listMorph, index) {
 	this.applyStyle({borderWidth: 0, fill: null});
 	this.suppressHandles = true;
-	this.inset = pt(0, 0); // otherwise selection will overlap te
+	this.inset = pt(0, 0); // otherwise selection will overlap
 	this.acceptInput = false;
 	this.okToBeGrabbedBy = Functions.Null;
 	this.focusHaloBorderWidth = 0;
 	this.drawSelection = Functions.Empty;
 	    
-	this.onMouseUp = function(evt) {
+	this.onMouseDown = function(evt) {
 	    listMorph.selectLineAt(index, true);
 	}
-	
-	this.onMouseDown = function(evt) {
-	    this.setFill(this.selectionColor);
-	}
+
     },
 
 

@@ -478,8 +478,8 @@ Widget.subclass('TwoPaneBrowser', { // move to Widgets.js sometime
     
     buildView: function(extent, model) {
         var panel = PanelMorph.makePanedPanel(extent, [
-            ['leftPane', newListPane, new Rectangle(0, 0, 0.5, 0.6)],
-            ['rightPane', newListPane, new Rectangle(0.5, 0, 0.5, 0.6)],
+            ['leftPane', newTextListPane, new Rectangle(0, 0, 0.5, 0.6)],
+            ['rightPane', newTextListPane, new Rectangle(0.5, 0, 0.5, 0.6)],
             ['bottomPane', newTextPane, new Rectangle(0, 0.6, 1, 0.4)]
         ]);
         panel.leftPane.connectModel({model: model,

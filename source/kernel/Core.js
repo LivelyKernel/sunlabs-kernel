@@ -310,6 +310,8 @@ var NodeFactory = {
 
 };
 
+
+
 XLinkNS = {
     setHref: function(node, href) {
 	return node.setAttributeNS(Namespace.XLINK, "href", href);
@@ -846,6 +848,8 @@ Object.subclass("Point", {
     lessPt: function(p) { return this.x < p.x && this.y < p.y; },
     leqPt: function(p) { return this.x <= p.x && this.y <= p.y; },
     eqPt: function(p) { return this.x == p.x && this.y == p.y; },
+    withX: function(x) { return pt(x, this.y); },
+    withY: function(y) { return pt(this.x, y); },
 
     minPt: function(p, acc) { 
 	if (!acc) acc = new Point(0, 0); 
@@ -3533,7 +3537,7 @@ Morph.addMethods({
 	this.adjustForNewBounds();
     }.wrap(Morph.onLayoutChange('shape')),
 
-    setBounds: function(newRect) {
+    internalSetBounds: function(newRect) {
 	// DI: Note get/setBounds should be deprecated in favor of get/setExtent and get/setPosition
 	// This is so that layout management can move things around without triggering redundant or
 	// recursive calls on adjustForNewBounds(q.v.)
@@ -3548,14 +3552,20 @@ Morph.addMethods({
 	// Finally, there is an argument for calling layoutChanged from setPosition and setExtent,
 	// since the caller must do it otherwise.  This would simplify things overall.
 
-	this.setPosition(newRect.topLeft());
-	this.shape.setBounds(this.relativizeRect(newRect)); // FIXME some shapes don't support setFromRect
-
+	var pos = newRect.topLeft();
+	this.setPosition(pos);
+	this.shape.setBounds(newRect.extent().extentAsRectangle()); // FIXME some shapes don't support setFromRect
+	
 	if (this.clipPath) {
 	    console.log('clipped to new shape ' + this.shape);
 	    this.clipToShape();
 	}
 	this.adjustForNewBounds();
+    },
+
+    setBounds: function(newRect) {
+ 	//this.shape.setBounds(this.relativizeRect(newRect)); // FIXME some shapes don't support setFromRect
+	this.internalSetBounds(newRect);
     }.wrap(Morph.onLayoutChange('shape')),
 
     setExtent: function(newExtent) {
@@ -4577,10 +4587,7 @@ Morph.addMethods({
     },
 
     transformForNewOwner: function(newOwner) {
-	// var old = this.getTransform().copy();
-	var t = new Transform(this.transformToMorph(newOwner));
-	// console.log("made new transform " + t + " old " + old + " new Owner " + newOwner.getTransform());
-	return t;
+	return new Transform(this.transformToMorph(newOwner));
     },
 
     changed: function() {
