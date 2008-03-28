@@ -4727,6 +4727,7 @@ Morph.subclass("EngineMorph", {
             this.addMorph(cyl.connectingRod) 
             this.movePiston(cyl);
         };
+	this.doStep(); // makes connecting rods
     },
 
     movePiston: function(cyl) { // Method to move piston and connecting rod
@@ -4775,6 +4776,7 @@ Morph.subclass("EngineMorph", {
         // Demonstrate alternate and sequential firing order
         this.alternateTiming = trueOrFalse;
         this.makeCylinders(this.cylinders.length);
+	this.doStep(); // makes connecting rods
     },
 
     rebuild: function() {
