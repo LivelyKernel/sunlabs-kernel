@@ -106,13 +106,17 @@ Widget.subclass('SimpleBrowser', {
     getClassPaneMenu: function() {
         var items = [];
 	var className = this.getModelValue("getClassName");
+console.log("getClassPaneMenu 1 ");
+console.log("className = " + className);
 	if (className != null) {
             var theClass = Global[className];
+console.log("theClass.prototype = " + Object.inspect(theClass.prototype));
             if (theClass.prototype != null) {
 		items.push(['profile selected class', 
 			    function() { showStatsViewer(theClass.prototype, className + "..."); }]);
 	    }
 	}
+console.log("getClassPaneMenu 2");
 	if (Loader.isLoadedFromNetwork) {
             items.push(['import source files', function() {
                 if (! SourceControl) SourceControl = new SourceDatabase();
@@ -120,6 +124,7 @@ Widget.subclass('SimpleBrowser', {
 			"Core.js", "Text.js", "svgtext-compat.js",
 			"Widgets.js", "Network.js", "Storage.js", "Tools.js",
 			"Examples.js", "WebPIM.js"]);
+		WorldMorph.current().setFill(new RadialGradient(Color.rgb(36,188,255), Color.rgb(127,15,0)));
 		}]);
 	}
 	return items; 
@@ -843,7 +848,7 @@ Object.subclass('FileParser', {
 	var def = this.currentDef;
 	if (this.ptr == 0) return;  // we're being called at new def; if ptr == 0, there's no preamble
 	def.endPos = this.ptr-1;
-	var descriptor = new SourceCodeDescriptor (this.sourceDB, this.fileName, def.startPos, def.endPos, def.lineNo, def.type, def.name);
+	var descriptor = new SourceCodeDescriptor (this.sourceDB, this.fileName, "ignoreVersNo", def.startPos, def.endPos, def.lineNo, def.type, def.name);
 
 	if (this.mode == "scan") {
 	    this.changeList.push(descriptor);
@@ -1076,23 +1081,23 @@ ChangeList.subclass('SourceDatabase', {
 		new FileParser().parseFile(fName, fullText, this, "import");
 	}
     },
-    getSourceCodeForDescriptor: function(desc) {
-	var fullText = this.getFullText(desc.fileName);
-	return fullText.substring(desc.startIndex, desc.stopIndex);
+    getSourceCodeRange: function(fileName, versionNo, startIndex, stopIndex) {
+	var fullText = this.getFullText(fileName);
+	return fullText.substring(startIndex, stopIndex);
     },
-    putSourceCodeForDescriptor: function(desc, newText, originalText) {
+    putSourceCodeRange: function(fileName, versionNo, startIndex, stopIndex, newText) {
 	if (originalText && originalText != this.getSourceCodeForDescriptor(desc)) {
 		console.log("Original text does not match file; store aborted");
 		return;
 	}
-	var fullText = this.getFullText(desc.fileName);
-	var beforeText = fullText.substring(0, desc.startIndex);
-	var afterText = fullText.substring(desc.stopIndex);
+	var fullText = this.getFullText(fileName);
+	var beforeText = fullText.substring(0, startIndex);
+	var afterText = fullText.substring(stopIndex);
         var cat = beforeText.concat(newText, afterText);
-	console.log("Saving " + desc.fileName + "...");
+	console.log("Saving " + fileName + "...");
 	new NetRequest({model: new NetRequestReporter(), setStatus: "setRequestStatus"}
-			).put(URL.source.withFilename(desc.fileName), cat);
-	this.cachedFullText[desc.fileName] = cat;
+			).put(URL.source.withFilename(fileName), cat);
+	this.cachedFullText[fileName] = cat;
 	console.log("... " + cat.length + " bytes saved.");
     },
     changeListForFileNamed: function(fName) {
@@ -1122,27 +1127,81 @@ module.SourceControl = null;
 
 Object.subclass('SourceCodeDescriptor', {
 
-    initialize: function(sourceControl, fileName, startIndex, stopIndex, lineNo, type, name) {
+    initialize: function(sourceControl, fileName, versionNo, startIndex, stopIndex, lineNo, type, name) {
 	this.sourceControl = sourceControl;
 	this.fileName = fileName;
+	this.versionNo = versionNo;
 	this.startIndex = startIndex;
 	this.stopIndex = stopIndex;
 	this.lineNo = lineNo;
-	this.type = type;
+	this.type = type; // Do these need to be retained?
 	this.name = name;
-	return this;
     },
     getSourceCode: function() {
-	return this.sourceControl.getSourceCodeForDescriptor(this);
+	return this.sourceControl.getSourceCodeRange(this.fileName, this.versionNo, this.startIndex, this.stopIndex);
     },
-    putSourceCode: function(newText, originalText) {
-	return this.sourceControl.putSourceCodeForDescriptor(this, newText, originalText);
+    putSourceCode: function(newString, originalString) {
+	if (this.getSourceCode() != originalString) { console.log("***Unable to save***"); return; }
+	this.sourceControl. getSourceCodeRange(this.fileName, this.versionNo, this.startIndex, this.stopIndex, newString);
     },
     newChangeList: function() {
 	return this.sourceControl.changeListForFileNamed(this.fileName);
     }
 });
 
+
+Object.subclass('EditedString', {
+	// An editedString is a string that has been edited since somebody was given start and stop
+	// indices for a substring.  Hey, no problem.  The editedString knows how to find the same
+	// characters in the new string, and either get them or put them (into a copy).
+	// To keep things simple, the *only* edits supported are single edits of the form...
+	//	replaceSubstring(repStart, repStop, replacement[repLength])
+	// ...but of course these may be cascaded to any depth.
+
+    initialize: function(editedString, repStart, repStop, repLength) {
+	this.editedString = editedString;
+	this.repStart = repStart;
+	this.repStop = repStop;
+	this.repLength = repLength;
+    },
+    substring: function(startIndex, stopIndex) {
+	var mappedIndices = this.mappedIndices(startIndex, stopIndex);
+	return this.editedString.substring(map.start, map.stop);
+    },
+    replaceSubstring: function(startIndex, stopIndex, newString) {
+	var mappedIndices = this.mappedIndices(startIndex, stopIndex);
+	return this.sourceControl.putSourceCodeForDescriptor(this, newText, originalText);
+    }
+});
+
+//  -- have a little fun --
+makePianoKeyboard = function() {
+	var wtWid, bkWid, keyRect, key, octavePt, nWhite, nBlack;
+	var keyboard = new Morph(new Rectangle(100, 100, 100, 20), "rect");
+	WorldMorph.current().addMorph(keyboard);
+	var nOctaves = 6;
+	wtWid = 8; bkWid = 5;
+	for (var i=1; i<=nOctaves+1; i++) {
+		if (i <= nOctaves) {nWhite = 7;  nBlack = 5; }
+			else {nWhite = 1;  nBlack = 0; } // Hich C
+		octavePt = keyboard.innerBounds().topLeft().addXY(7*wtWid*(i-1)-1, -1);
+		for (var j=1; j<=nWhite; j++) {
+			keyRect = octavePt.addXY((j-1)*wtWid, 0).extent(pt(wtWid+1, 36));
+			key = new Morph(keyRect, "rect");  key.setFill(Color.white);
+			keyboard.addMorph(key);
+			// on: #mouseDown send: #mouseDownPitch:event:noteMorph: to: self
+			//			withValue: i-1*12 + (#(1 3 5 6 8 10 12) at: j))].
+		}
+		for (var j=1; j<=nBlack; j++) {
+			keyRect = octavePt.addXY([6, 15, 29, 38, 47][j-1], 1).extent(pt(bkWid, 21));
+			key = new Morph(keyRect, "rect");  key.setFill(Color.black);
+			keyboard.addMorph(key);
+			// on: #mouseDown send: #mouseDownPitch:event:noteMorph: to: self
+			//			withValue: i-1*12 + (#(2 4 7 9 11) at: j))]].
+		}
+	}
+	keyboard.setExtent(keyboard.bounds().extent());
+	}
 
 }).logCompletion("Tools.js")(Global);
 
