@@ -767,11 +767,12 @@ Object.subclass('FileParser', {
 	this.mode = mode;  // one of ["scan", "search", "import"]
 	if (mode == "search") this.searchString = str;
 
-	this.verbose = false;  // fname == "Tools.js";
+	this.verbose = false;
+	// this.verbose = (fname == "ToDo-di.txt");
 	this.ptr = 0;
 	this.lineNo = 0;
 	this.changeList = [];
-	if (this.verbose) console.log("Parsing " + this.fileName + ", length = " + len);
+	if (this.verbose) console.log("Parsing " + this.fileName + ", length = " + fstr.length);
 	this.currentDef = {type: "preamble", startPos: 0, lineNo: 1};
 	this.lines = fstr.split("\n");
 
@@ -937,8 +938,7 @@ WidgetModel.subclass('ChangeList', {
     bannerOfItem: function(item) {
         var lineStr = item.lineNo.toString();
 	var firstLine = item.getSourceCode().truncate(40);  // a bit wastefull
-	var end = firstLine.indexOf("\n");
-	if (end >= 0) firstLine = firstLine.substring(0,end);
+	if (firstLine.indexOf("\r") >= 0) firstLine = firstLine.replace(/\r/g, "");
 	end = firstLine.indexOf(":");
 	if (end >= 0) firstLine = firstLine.substring(0,end+1);
 	return item.fileName.concat(":", lineStr, ": ", firstLine);
@@ -1081,7 +1081,6 @@ ChangeList.subclass('SourceDatabase', {
 	return fileString.substring(mapped.startIndex, mapped.stopIndex);
     },
     putSourceCodeRange: function(fileName, versionNo, startIndex, stopIndex, newString, originalString) {
-	// Remember the JS convention that str[stopindex] is not included!!
 	if (originalString && originalString != this.getSourceCodeRange(fileName, versionNo, startIndex, stopIndex)) {
 		WorldMorph.current().notify("Sadly it is not possible to save this text because\n"
 			+ "the original text appears to have been changed elsewhere.\n"

@@ -1443,7 +1443,7 @@ Morph.subclass("TextListMorph", {
 	console.log("target " + target);
 	var index = this.submorphs.indexOf(target);
 	if (index >= 0) {
-	    console.log("picked " + this.submorphs[index] + " at " + index);
+	    // console.log("picked " + this.submorphs[index] + " at " + index);
 	    this.selectLineAt(index, true);
 	    return true
 	}
