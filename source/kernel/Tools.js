@@ -1,5 +1,5 @@
 /*
- * Copyright © 2006-2008 Sun Microsystems, Inc.
+ * Copyright ï¿½ 2006-2008 Sun Microsystems, Inc.
  * All rights reserved.  Use is subject to license terms.
  * This distribution may include materials developed by third parties.
  *  
@@ -121,7 +121,7 @@ console.log("getClassPaneMenu 2");
             items.push(['import source files', function() {
                 if (! SourceControl) SourceControl = new SourceDatabase();
 		SourceControl.scanKernelFiles(["prototype.js", "defaultconfig.js", "localconfig.js",
-			"Core.js", "Text.js", "svgtext-compat.js",
+			"Main.js", "Core.js", "Text.js", "svgtext-compat.js",
 			"Widgets.js", "Network.js", "Storage.js", "Tools.js",
 			"Examples.js", "WebPIM.js"]);
 		WorldMorph.current().setFill(new RadialGradient(Color.rgb(36,188,255), Color.rgb(127,15,0)));
@@ -768,13 +768,13 @@ Object.subclass('FileParser', {
 	if (mode == "search") this.searchString = str;
 
 	this.verbose = false;
-	// this.verbose = (fname == "ToDo-di.txt");
+	// this.verbose = (fname == "Examples.js");
 	this.ptr = 0;
 	this.lineNo = 0;
 	this.changeList = [];
 	if (this.verbose) console.log("Parsing " + this.fileName + ", length = " + fstr.length);
 	this.currentDef = {type: "preamble", startPos: 0, lineNo: 1};
-	this.lines = fstr.split("\n");
+	this.lines = fstr.split(/[\n\r]/);
 
 	while (this.lineNo < this.lines.length) {
 	    var line = this.nextLine();
@@ -784,6 +784,7 @@ Object.subclass('FileParser', {
 	    if (this.scanComment(line)) {
 	    } else if (this.scanClassDef(line)) {
 	    } else if (this.scanMethodDef(line)) {
+	    } else if (this.scanMainConfigBlock(line)) {
 	    } else if (this.scanBlankLine(line)) {
 	    } else this.scanOtherLine(line)
 	}
@@ -841,6 +842,12 @@ Object.subclass('FileParser', {
 	this.processCurrentDef();
 	if (this.verbose) console.log("Method def: " + this.currentClassName + "." + match[1]);
 	this.currentDef = {type: "methodDef", name: match[1], startPos: this.ptr, lineNo: this.lineNo};
+	return true;
+    },   scanMainConfigBlock: function(line) {    // Special match for Config blocks in Main.js	var match = line.match(/^[\s]*(if\s\(Config.show[\w]+\))/);
+	if (match == null) return false;
+	this.processCurrentDef();
+	if (this.verbose) console.log("Main Config: " + this.currentClassName + "." + match[1]);
+	this.currentDef = {type: "mainConfig", name: match[1], startPos: this.ptr, lineNo: this.lineNo};
 	return true;
     },
     processCurrentDef: function() {

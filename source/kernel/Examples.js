@@ -247,8 +247,8 @@ Object.subclass('Pen', {
     
         WorldMorph.current().addMorph(morph); 
     
-        /* if (morph.world().backend()) 
-        morph.world().backend().createMorph(morph.morphId(), morph, morph.world().morphId());*/
+/* if (morph.world().backend())
+        morph.world().backend().createMorph(morph.morphId(), morph, morph.world().morphId());*/
 
         return morph;
     },
