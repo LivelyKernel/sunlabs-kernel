@@ -37,7 +37,7 @@ Widget.subclass('TestWidget', {
         // Make a fancy panel.  Note: Transparency does not
         // work with gradients or stipple patterns yet!
         panel.linkToStyles(['widgetPanel']);
-        var model = new SimpleModel(['Text', 'TextSel', 'ListItem', 'PrintValue', 'B1Value', 'B2Value', 'SliderValue', 'SliderExtent']);
+        var model = new SyntheticModel(['Text', 'TextSel', 'ListItem', 'PrintValue', 'B1Value', 'B2Value', 'SliderValue', 'SliderExtent']);
         panel.connectModel({model: model});
         var m; 
 
@@ -2384,7 +2384,7 @@ Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
     pins: ["-Locale", "+WeatherDesc", "+Temperature", "+Wind", "+Gusts", "+DewPoint", "+Humidity", "+Visibility"],
     
     initialize: function($super) { 
-	var model = new SimpleModel(this.pins);
+	var model = new SyntheticModel(this.pins);
 	$super(model.makePlugSpecFromPins(this.pins));
 	model.addVariable("ImageURL", "http://www.bbc.co.uk/weather/images/banners/weather_logo.gif");
 	this.initializeTransientState();
@@ -2531,7 +2531,7 @@ Widget.subclass('StockWidget', NetRequestReporterTrait, {
     pins: ["-StockIndex", "Company", "+Quote", "+NewsURL", "+NewsHeaders"],
 
     initialize: function($super) { 
-	var model = new SimpleModel(this.pins);
+	var model = new SyntheticModel(this.pins);
 	$super(model.makePlugSpecFromPins(this.pins));
 	this.setModelValue("setCompany", "JAVA");
 	this.initializeTransientState();

@@ -401,7 +401,7 @@ Widget.subclass('FeedWidget', {
     pins: [ "URL", "+ItemList", "+ChannelTitle", "-SelectedItemTitle", "+SelectedItemContent", "+Widget"],
     
     initialize: function($super, urlString) {
-	var model = new SimpleModel(["FeedURL", "ItemList", "ChannelTitle", "SelectedItemContent", "SelectedItemTitle", 
+	var model = new SyntheticModel(["FeedURL", "ItemList", "ChannelTitle", "SelectedItemContent", "SelectedItemTitle", 
 	    "ItemMenu", "Widget"]);
 
 	$super({model: model, 

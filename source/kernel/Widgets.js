@@ -47,7 +47,7 @@ Morph.subclass("ButtonMorph", {
 	
         $super(initialBounds, "rect");
         
-        var model = new SimpleModel(this.pins);
+        var model = new SyntheticModel(this.pins);
         // this default self connection may get overwritten by, eg, connectModel()...
         this.modelPlug = new ModelPlug(model.makePlugSpec());
         // Styling
@@ -1044,6 +1044,11 @@ Morph.subclass('PanelMorph', {
     initialize: function($super, extent/*:Point*/) {
         $super(extent.extentAsRectangle(), 'rect');
         this.lastNavigable = null;
+
+    },
+
+    initializeTransientState: function($super, bounds) {
+	$super(bounds);
         this.priorExtent = this.innerBounds().extent();
     },
 
@@ -1153,7 +1158,7 @@ TextMorph.subclass("CheapListMorph", {
 	
         this.itemList = itemList;
         // this default self connection may get overwritten by, eg, connectModel()...
-        var model = new SimpleModel(this.pins);
+        var model = new SyntheticModel(this.pins);
         this.modelPlug = new ModelPlug(model.makePlugSpec());
         this.setModelValue('setList', itemList);
         this.layoutChanged();
@@ -1367,7 +1372,6 @@ Morph.addMethods({
 	} else {
 	    this.internalSetBounds(this.getPosition().extent(ownExtent));
 	}
-	return ownExtent;
     }
 });
 
@@ -1385,7 +1389,8 @@ Morph.subclass("TextListMorph", {
 	var listMorph = this;
 	var itemHeight = TextMorph.prototype.fontSize;
 	for (var i = 0; i < itemList.length; i++ ) {
-	    this.addMorph(new TextMorph(pt(width, itemHeight).extentAsRectangle(), itemList[i])).beListItem(this, i);
+	    var m = this.addMorph(new TextMorph(pt(width, itemHeight).extentAsRectangle(), itemList[i])).beListItem();
+	    m.relayMouseEvents(this, {onMouseDown: "highlightItem"});
 	}
 	this.layoutVertically(pt(this.padding*2, this.padding));
     },
@@ -1399,7 +1404,7 @@ Morph.subclass("TextListMorph", {
 	this.selectedLineNo = -1;
 	this.generateSubmorphs(itemList, initialBounds.width);
         // this default self connection may get overwritten by, eg, connectModel()...
-        var model = new SimpleModel(this.pins);
+        var model = new SyntheticModel(this.pins);
         this.modelPlug = new ModelPlug(model.makePlugSpecFromPins(this.pins));
         this.setModelValue('setList', itemList);
         return this;
@@ -1411,12 +1416,19 @@ Morph.subclass("TextListMorph", {
     
     deserialize: function($super, importer, rawNode) {
         $super(importer, rawNode);
+	this.itemList = [];
+	for (var i = 0; i < this.submorphs.length; i++ ) {
+	    var m = this.submorphs[i];
+	    m.beListItem();
+	    m.relayMouseEvents(this, {onMouseDown: "highlightItem"});
+	    this.itemList.push(m.textString);
+	}
+        this.setModelValue('setList', this.itemList);
         this.layoutChanged();
     },
 
     restorePersistentState: function($super, importer) {
         $super(importer); // FIXME
-        this.setModelValue('setList', this.itemList);
     },
 
     takesKeyboardFocus: Functions.True,
@@ -1426,6 +1438,17 @@ Morph.subclass("TextListMorph", {
         return newSetting;
     },
 
+    highlightItem: function(evt) {
+	var target = evt.originalTarget;
+	console.log("target " + target);
+	var index = this.submorphs.indexOf(target);
+	if (index >= 0) {
+	    console.log("picked " + this.submorphs[index] + " at " + index);
+	    this.selectLineAt(index, true);
+	    return true
+	}
+	return false;
+    },
 
     onKeyPress: Functions.Empty,
 
@@ -1475,7 +1498,7 @@ Morph.subclass("TextListMorph", {
 	this.selectedLineNo = lineNo;
 	var itemMorph = this.submorphs[lineNo];
 	if (itemMorph) {
-	    itemMorph.setFill(TextMorph.prototype.selectionColor);
+	    itemMorph.setFill(TextSelection.prototype.fill);
 	    shouldUpdateModel && this.setSelection(itemMorph.textString);
 	} else console.log("nothing to select");
     },
@@ -1716,7 +1739,7 @@ Morph.subclass("SliderMorph", {
     initialize: function($super, initialBounds, scaleIfAny) {
         $super(initialBounds, "rect");
 	// this default self connection may get overwritten by, eg, connectModel()...
-        var model = new SimpleModel(this.pins);
+        var model = new SyntheticModel(this.pins);
 	this.modelPlug = new ModelPlug(model.makePlugSpec());
         this.scale = (scaleIfAny == null) ? 1.0 : scaleIfAny;
         var slider = new Morph(new Rectangle(0, 0, this.mss, this.mss), "rect");
@@ -2419,7 +2442,7 @@ WidgetModel.subclass('ConsoleWidget', {
     
     buildView: function(extent) {
 	var panel = PanelMorph.makePanedPanel(extent, [
-            ['messagePane', newListPane, new Rectangle(0, 0, 1, 0.8)],
+            ['messagePane', newTextListPane, new Rectangle(0, 0, 1, 0.8)],
             ['commandLine', TextMorph, new Rectangle(0, 0.8, 1, 0.2)]
         ]);
 	
@@ -2427,7 +2450,7 @@ WidgetModel.subclass('ConsoleWidget', {
 	m.connectModel({model: this, getList: "getRecentMessages"});
 	m.innerMorph().focusHaloBorderWidth = 0;
 	m.innerMorph().updateList = function(list) {
-	    CheapListMorph.prototype.updateList.call(this, list);
+	    TextListMorph.prototype.updateList.call(this, list);
 	    panel.messagePane.scrollToBottom();
 	};
 	var self = this;

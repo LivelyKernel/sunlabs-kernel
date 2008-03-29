@@ -15,7 +15,6 @@
 (function(module) {
 
 
-
 Morph.subclass('PackageMorph', {
     documentation: "Visual representation for a serialized morph",
     borderWidth: 3,
@@ -309,7 +308,7 @@ Widget.subclass('TwoPaneBrowser', { // move to Widgets.js sometime
 	   
     initialize: function(rootNode, lowerFetcher, upperFetcher) {
 	// this got a bit out of hand
-	var model = new SimpleModel(["RootNode", //: Node, constant
+	var model = new SyntheticModel(["RootNode", //: Node, constant
 	    "TopNode", //:Node the node whose contents are viewed in the left pane
 	    
 	    "UpperNodeList",  //:Node[]

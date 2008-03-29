@@ -24,7 +24,7 @@ Widget.subclass('SimpleBrowser', {
     pins: ["+ClassList", "-ClassName", "+MethodList", "-MethodName", "MethodString", "+ClassPaneMenu"],
 
     initialize: function($super) { 
-	var model = new SimpleModel(this.pins);
+	var model = new SyntheticModel(this.pins);
 	var plug = model.makePlugSpecFromPins(this.pins);
         $super(plug); 
         this.scopeSearchPath = [Global];
@@ -247,7 +247,7 @@ Widget.subclass('SimpleInspector', {
     
     initialize: function($super, targetMorph) {
         $super();
-	var model = new SimpleModel(this.pins);
+	var model = new SyntheticModel(this.pins);
 	this.connectModel(model.makePlugSpecFromPins(this.pins));
 	model.setInspectee(targetMorph);
     },

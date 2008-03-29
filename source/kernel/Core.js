@@ -402,8 +402,10 @@ Object.properties = function(object, predicate) {
 Object.ownProperties = function(object) {
     var a = [];
     for (var name in object) {  
-	if (!(object[name] instanceof Function) && object.hasOwnProperty(name)) {
-	    a.push(name);
+	if (object.hasOwnProperty(name)) {
+	    var value = object[name];
+	    if (!(value instanceof Function))
+		a.push(name);
 	}
     } 
     return a;
@@ -412,10 +414,12 @@ Object.ownProperties = function(object) {
 
 Object.forEachOwnProperty = function(object, func, context) {
     for (var name in object) {
-	var value = object[name];
-	if (!(value instanceof Function) && object.hasOwnProperty(name)) {
-	    var result = func.call(context || this, name, value);
-	    //cont && cont.call(context || this, result); 
+	if (object.hasOwnProperty(name)) {
+	    var value = object[name];
+	    if (!(value instanceof Function)) {
+		var result = func.call(context || this, name, value);
+		// cont && cont.call(context || this, result); 
+	    }
 	}
     }
 };
@@ -677,7 +681,7 @@ Object.extend(Function.prototype, {
 		var result = proceed.apply(this, args);
 	    } catch (er) {
 		console.warn('failed to load %s: %s', module, er);
-		Function.showStack();
+		Function.showStack && Function.showStack();
 		throw er;
 	    }
 	    console.log('completed %s', module);
@@ -1868,6 +1872,7 @@ var Event = (function() {
 	initialize: function(rawEvent) {
 	    this.rawEvent = rawEvent;
 	    this.type = capitalizer[rawEvent.type] || rawEvent.type;
+	    this.originalTarget = null; // set when relaying events
 	    //this.charCode = rawEvent.charCode;
 
 	    if (isMouse(rawEvent)) {
@@ -2606,25 +2611,6 @@ Shape.subclass('PathShape', {
 
 });
 
-var NodeList = {
-    // FIXME these implementations are rather lame
-
-    withType: function(type) {
-	return NodeList.become(NodeFactory.create('g'), type);
-    },
-
-    become: function(node, type) {
-	LivelyNS.setType(node, type);
-	return node;
-    },
-
-    clear: function(list) {
-	while (list.firstChild) list.removeChild(list.firstChild);
-    }
-
-
-}
-
 // ===========================================================================
 // Morph functionality
 // ===========================================================================
@@ -2905,7 +2891,7 @@ Copier.subclass('Importer', {
     },
     
     importModelFrom: function(modelNode) {
-	var model = new SimpleModel();
+	var model = new SyntheticModel();
 	var dependentViews = [];
 	for (var node = modelNode.firstChild; node != null; node = node.nextSibling) {
 	    if (node.nodeType === Node.TEXT_NODE || node.nodeType === Node.COMMENT_NODE)
@@ -3313,7 +3299,7 @@ Visual.subclass("Morph", {
 
     pvtSerializeModel: function(extraNodes, simpleModels) {
 	var model = this.getModel();
-	if (!(model instanceof SimpleModel)) 
+	if (!(model instanceof SyntheticModel)) 
 	    return;
 
 	var index = simpleModels.indexOf(model);
@@ -3992,6 +3978,30 @@ Morph.addMethods({     // help handling
 
 });
 
+
+Wrapper.subclass('FocusHalo', {
+
+    borderWidth: 3,
+    borderColor: Color.blue,
+
+    initialize: function(color, width) {
+	if (width !== undefined) this.borderWidth = width;
+	if (color !== undefined) this.borderColor = color;
+	var rawNode = NodeFactory.create('g', {"stroke-opacity": 0.3, 'stroke-linejoin' : Shape.LineJoins.ROUND});
+	this.rawNode = rawNode;
+	LivelyNS.setType(rawNode, "FocusHalo");
+    },
+
+    setShape: function(rect) {
+	var shape = new RectShape(rect.insetBy(-2), null, this.borderWidth, this.borderColor);
+	while (this.rawNode.firstChild) this.rawNode.removeChild(this.rawNode.firstChild);
+	this.rawNode.appendChild(shape.rawNode);
+    }
+
+
+});
+
+
 // Morph mouse event handling functions
 Morph.addMethods({
 
@@ -4050,7 +4060,7 @@ Morph.addMethods({
     },
 
     relayMouseEvents: function(target, eventSpec) {
-	this.mouseHandler = new MouseHandlerForRelay(target, eventSpec); 
+	this.mouseHandler = new MouseHandlerForRelay(this, target, eventSpec); 
     },
 
     handlesMouseDown: function(evt) {
@@ -4110,23 +4120,19 @@ Morph.addMethods({
 
     removeFocusHalo: function() {
 	if (!this.focusHalo) return false;
-	this.rawNode.removeChild(this.focusHalo);
+	this.focusHalo.removeRawNode();
 	this.focusHalo = null;
 	return true;
     },
 
     adjustFocusHalo: function() {
-	NodeList.clear(this.focusHalo);
-	var shape = new RectShape(this.shape.bounds().insetBy(-2), null, 
-	    this.focusHaloBorderWidth, this.focusedBorderColor);
-	this.focusHalo.appendChild(shape.rawNode);
+	this.focusHalo.setShape(this.shape.bounds());
     },
 
     addFocusHalo: function() {
 	if (this.focusHalo || this.focusHaloBorderWidth <= 0) return false;
-	this.focusHalo = this.addNonMorph(NodeList.withType('FocusHalo'));
-	this.focusHalo.setAttributeNS(null, "stroke-opacity", 0.3);
-	this.focusHalo.setAttributeNS(null, 'stroke-linejoin', Shape.LineJoins.ROUND);
+	this.focusHalo = new FocusHalo(this.focusedBorderColor, this.focusHaloBorderWidth);
+	this.addNonMorph(this.focusHalo.rawNode);
 	this.adjustFocusHalo();
 	return true;
     }
@@ -4139,14 +4145,16 @@ Morph.addMethods({
 
 Object.subclass('MouseHandlerForRelay', {
 
-    initialize: function (target, eventSpec) {
+    initialize: function (originalTarget, target, eventSpec) {
 	//  Send events to a different target, with different methods
 	//    Ex: box.relayMouseEvents(box.owner, {onMouseUp: "boxReleased", onMouseDown: "boxPressed"})
+	this.originalTarget = originalTarget;
 	this.target = target;
 	this.eventSpec = eventSpec;
     },
 
     handleMouseEvent: function(evt, appendage) {
+	evt.originalTarget = this.originalTarget;
 	var targetHandler = this.target[this.eventSpec[evt.handlerName()]];
 	if (evt.type == "MouseUp") evt.hand.setMouseFocus(null); // NB: must precede any return
 	if (targetHandler == null) return true; //FixMe: should this be false?
@@ -4225,7 +4233,7 @@ Morph.addMethods({
 	];
 	if (this.okToDuplicate()) items.unshift(["duplicate", this.copyToHand.curry(evt.hand)]);
 
-	if (this.getModel() instanceof SimpleModel)
+	if (this.getModel() instanceof SyntheticModel)
 	    items.push( ["show Simple Model dump", this.addModelInspector.curry(this)]);
 
 	var menu = new MenuMorph(items, this); 
@@ -4678,7 +4686,7 @@ Morph.addMethods( {
 
     addModelInspector: function() {
 	var model = this.getModel();
-	if (model instanceof SimpleModel) {
+	if (model instanceof SyntheticModel) {
 	    var variables = model.variables();
 	    var list = [];
 	    for (var i = 0; i < variables.length; i++) {
@@ -4931,10 +4939,10 @@ Wrapper.subclass('ModelPlug', {
 
 
 /**
-  * @class SimpleModel
+  * @class SyntheticModel
   */ 
 
-Model.subclass('SimpleModel', {
+Model.subclass('SyntheticModel', {
 
     getter: function(varName) {
 	return "get" + varName;
@@ -5556,7 +5564,7 @@ PasteUpMorph.subclass("WorldMorph", {
     }.logErrors('alert'),
 
     prompt: function(message, callback) {
-	var model = new SimpleModel(["Message", "Callback", "Input"]);
+	var model = new SyntheticModel(["Message", "Callback", "Input"]);
 	model.setMessage(message);
 	model.setCallback(callback);
 	model.setInput("");
@@ -5565,7 +5573,7 @@ PasteUpMorph.subclass("WorldMorph", {
     },
 
     confirm: function(message, callback) {
-	var model = new SimpleModel(["Message", "Callback"]);
+	var model = new SyntheticModel(["Message", "Callback"]);
 	model.setMessage(message);
 	model.setCallback(callback);
 	var dialog = new ConfirmDialog(model.makePlugSpecFromPins(ConfirmDialog.prototype.pins));
@@ -5968,7 +5976,6 @@ Morph.subclass("HandMorph", {
 	    evt.stop();
 	    break;
 	}
-	
     },
     
 

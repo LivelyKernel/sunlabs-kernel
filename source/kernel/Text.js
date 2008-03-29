@@ -12,20 +12,21 @@
  * Text.js.  Text-related functionality.
  */
 
+
 (function(scope) {
 
 /**
  * @class Font
  */ 
-Object.subclass(Global, 'Font', {
-
+Object.subclass('Font', {
+    
     initialize: function(family/*:String*/, size/*:Integer*/){
         this.family = family;
         this.size = size;
         this.extents = null;
         // this.extents = this.computeExtents(family, size);
     },
-
+    
     // svgtext-compat overrides the following function
     computeExtents: function(family, size) {
         return [];
@@ -96,7 +97,7 @@ Object.subclass(Global, 'Font', {
  * @class TextWord
  * This 'class' renders single words
  */ 
-Object.subclass(Global, 'TextWord', {
+Object.subclass('TextWord', {
 
     deserialize: function(importer, rawNode) {
         this.rawNode = rawNode;
@@ -235,6 +236,7 @@ Object.subclass(Global, 'TextWord', {
     }
     
 });
+
 
 /**
  * @class WordChunk
@@ -688,17 +690,43 @@ var Locale = {
 };
 
 
+
+
 Global.WrapStyle = { 
     Normal: "Normal",  // fits text to bounds width using word wrap and sets height
     None: "None", // simply sets height based on line breaks only
     Shrink: "Shrink" // sets both width and height based on line breaks only
 };
 
+Wrapper.subclass('TextSelection', {
+    
+    fill: Color.primary.green,
+    borderWidth: 0,
+    borderRadius: 4,
+    
+    initialize: function() {
+	this.rawNode = NodeFactory.create("g", {"fill" : this.fill,  "stroke-width": this.borderWidth});
+	LivelyNS.setType(this.rawNode, "Selection");
+    },
+    
+    addRectangle: function(rect) {
+	this.rawNode.appendChild(new RectShape(rect).roundEdgesBy(this.borderRadius).rawNode);
+    },
+    
+    clear: function() {
+	while (this.rawNode.firstChild) 
+	    this.rawNode.removeChild(this.rawNode.firstChild);
+    }
+    
+});
+
+
 /**
  * @class TextMorph
  */ 
-TextMorph = Morph.subclass(Global, "TextMorph", {
 
+Morph.subclass("TextMorph", {
+    
     // these are prototype variables
     fontSize:   Config.defaultFontSize   || 12,
     fontFamily: Config.defaultFontFamily || 'Helvetica',
@@ -706,13 +734,13 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
     backgroundColor: Color.veryLightGray,
     borderWidth: 1,
     borderColor: Color.black,
-    selectionColor: Color.primary.green,
+
     inset: pt(6,4), // remember this shouldn't be modified unless every morph should get the value 
     wrap: WrapStyle.Normal,
     maxSafeSize: 10000, 
     tabWidth: 4,
     tabsAsSpaces: true,
-    noShallowCopyProperties: Morph.prototype.noShallowCopyProperties.concat(['rawTextNode', 'rawSelectionNode', 'lines']),
+    noShallowCopyProperties: Morph.prototype.noShallowCopyProperties.concat(['rawTextNode', 'textSelection', 'lines']),
     locale: Locale,
     acceptInput: true, // whether it accepts changes to text KP: change: interactive changes
     autoAccept: false,
@@ -727,19 +755,16 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
         // note selection is transient
         this.lines = null;//: TextLine[]
         this.lineNumberHint = 0;
+        this.textSelection = new TextSelection();
+	this.addNonMorph(this.textSelection.rawNode);
+	
     },
 
     initializePersistentState: function($super, initialBounds, shapeType) {
         $super(initialBounds, shapeType);
-
+	
         this.rawTextNode = this.addNonMorph(NodeFactory.create("text", { "kerning": 0 }));
         
-	// the selection element is persistent although its contents are not
-        // generic <g> element with 1-3 rectangles inside
-        this.rawSelectionNode = this.addNonMorph(NodeList.withType('Selection'));
-        this.rawSelectionNode.setAttributeNS(null, "fill", this.selectionColor);
-        this.rawSelectionNode.setAttributeNS(null, "stroke-width", 0);
-	
         this.resetRendering();
 
         LivelyNS.setAttribute(this.rawNode, "wrap", this.wrap);
@@ -784,7 +809,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
 	    if (type == 'Selection') {
 		// that's ok, it's actually transient 
 		// remove all chidren b/c they're really transient
-		this.rawSelectionNode = NodeList.become(node, type);
+		this.textSelection = new TextSelection(importer, node);
 		// console.log('processing selection %s', node);
 		this.undrawSelection();
 		return true;
@@ -887,19 +912,16 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
         return this;
     },
 
-    beListItem: function(listMorph, index) {
+    beListItem: function() {
 	this.applyStyle({borderWidth: 0, fill: null});
+	this.ignoreEvents();
 	this.suppressHandles = true;
 	this.inset = pt(0, 0); // otherwise selection will overlap
 	this.acceptInput = false;
 	this.okToBeGrabbedBy = Functions.Null;
 	this.focusHaloBorderWidth = 0;
 	this.drawSelection = Functions.Empty;
-	    
-	this.onMouseDown = function(evt) {
-	    listMorph.selectLineAt(index, true);
-	}
-
+	return this;
     },
 
 
@@ -1196,7 +1218,7 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
     showsSelectionWithoutFocus: Functions.False, // Overridden in, eg, Lists
     
     undrawSelection: function() {
-        NodeList.clear(this.rawSelectionNode);
+	this.textSelection && this.textSelection.clear();
     },
 
     drawSelection: function() { // should really be called buildSelection now
@@ -1234,18 +1256,17 @@ TextMorph = Morph.subclass(Global, "TextMorph", {
         }
     
         if (this.lineNo(r2) == this.lineNo(r1)) {
-            this.rawSelectionNode.appendChild(new RectShape(r1.union(r2)).roundEdgesBy(4).rawNode);
+            this.textSelection.addRectangle(r1.union(r2));
         } else { // Selection is on two or more lines
             var localBounds = this.shape.bounds();
             r1 = r1.withBottomRight(pt(localBounds.maxX() - this.inset.x, r1.maxY()));
             r2 = r2.withBottomLeft(pt(localBounds.x + this.inset.x, r2.maxY()));
-            this.rawSelectionNode.appendChild(new RectShape(r1).roundEdgesBy(4).rawNode);
-            this.rawSelectionNode.appendChild(new RectShape(r2).roundEdgesBy(4).rawNode);
+            this.textSelection.addRectangle(r1);
+            this.textSelection.addRectangle(r2);
         
             if (this.lineNo(r2) != this.lineNo(r1) + 1) {
                 // Selection spans 3 or more lines; fill the block between top and bottom lines
-                this.rawSelectionNode.appendChild(
-                    new RectShape(Rectangle.fromAny(r1.bottomRight(), r2.topLeft())).roundEdgesBy(4).rawNode); 
+                this.textSelection.addRectangle(Rectangle.fromAny(r1.bottomRight(), r2.topLeft()));
             }
         }
     
@@ -1805,7 +1826,7 @@ TextMorph.addMethods({
  * A PrintMorph is just like a TextMorph, except it converts its model value
  * to a string using toString(), and from a string using eval()
  */ 
-TextMorph.subclass(Global, 'PrintMorph', {
+TextMorph.subclass('PrintMorph', {
     
 
     updateView: function(aspect, controller) {
@@ -1879,5 +1900,6 @@ Object.subclass('TestTextMorph', {
 
 });
 
-}).logCompletion("Text.js")({});
+
+}).logCompletion("Text.js")(Global);
 
