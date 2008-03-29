@@ -1607,17 +1607,11 @@ Morph.subclass("TextMorph", {
     
         case "r": { // redo -- repeats a typed replacement (check BS weirdness)
             if (this.charsReplaced) {
-		//start = this.hasNullSelection()
-		//	? this.selectionRange[0] //this.lastFindLoc + this.charsReplaced.length
-		//	: this.selectionRange[0];
-
-		this.searchForFind(this.charsReplaced, this.selectionRange[0]); //this.lastFindLoc + this.charsReplaced.length);
+		this.searchForFind(this.charsReplaced, this.selectionRange[0]);
 		if (this.selectionString() != this.charsReplaced) return;
-		//this.lastFindLoc++;
 		var holdChars = this.charsReplaced;  // Save charsReplaced
                 this.replaceSelectionWith(this.charsTyped); 
 		this.charsReplaced = holdChars ;  // Restore charsReplaced after above
-		//this.lastFindLoc += (this.charsTyped.length - this.charsReplaced.length);
 	    }
             return true; 
         }
@@ -1644,8 +1638,12 @@ Morph.subclass("TextMorph", {
             return true; 
         }
         
-        case "a": { // Select All
-            this.setSelectionRange(0, this.textString.length); 
+        case "a": {
+	    if (this.typingHasBegun) { // Select chars just typed
+		this.setSelectionRange(this.selectionRange[0] - this.charsTyped.length, this.selectionRange[0]);
+	    } else { // Select All
+            	this.setSelectionRange(0, this.textString.length); 
+	    }
             return true;
         }
         

@@ -756,12 +756,13 @@ Object.subclass('FileParser', {
 	// If mode == "search", it only collects descriptors for code that matches the searchString
 	// If mode == "import", it builds a source code index in SourceControl for use in the browser
 
-    parseFile: function(fname, fstr, db, mode, str) {
+    parseFile: function(fname, version, fstr, db, mode, str) {
 	// Scans the file and returns changeList -- a list of informal divisions of the file
 	// It should be the case that these, in order, exactly contain all the text of the file
 	// Note that if db, a SourceDatabase, is supplied, it will be loaded during the scan
 	var ms = new Date().getTime();
 	this.fileName = fname;
+	this.versionNo = version;
 	this.sourceDB = db;
 	this.mode = mode;  // one of ["scan", "search", "import"]
 	if (mode == "search") this.searchString = str;
@@ -847,8 +848,8 @@ Object.subclass('FileParser', {
 	// We will want to do a better job of finding where it ends
 	var def = this.currentDef;
 	if (this.ptr == 0) return;  // we're being called at new def; if ptr == 0, there's no preamble
-	def.endPos = this.ptr-1;
-	var descriptor = new SourceCodeDescriptor (this.sourceDB, this.fileName, "ignoreVersNo", def.startPos, def.endPos, def.lineNo, def.type, def.name);
+	def.endPos = this.ptr-1;  // don't include the newLine
+	var descriptor = new SourceCodeDescriptor (this.sourceDB, this.fileName, this.versionNo, def.startPos, def.endPos, def.lineNo, def.type, def.name);
 
 	if (this.mode == "scan") {
 	    this.changeList.push(descriptor);
@@ -991,10 +992,8 @@ ChangeList.subclass('SourceDatabase', {
 	// store the source code descriptors for these variously recognized pieces.
 
 	// In the process, it caches the full text of some number of these files for
-	// fast access in subsequent queries.
-
-	// One of the fast queries that can be made is to find all references to a
-	// given identifier, including comments or not.  The result of such searches
+	// fast access in subsequent queries, notably alt-w or "where", that finds
+	// all occurrences of the current selection.  The result of such searches
 	// is presented as a changeList.
 
 	// The other major service provided by SourceDatabase is the ability to 
@@ -1007,29 +1006,31 @@ ChangeList.subclass('SourceDatabase', {
 	// in the file.  However, the SourceDatabase is smart (woo-hoo); it knows
 	// where previous edits have been made, and what effect they would have had
 	// on character ranges of older pieces.  To this end, it maintains an internal
-	// version number for each file, and older versions point to editedStrings (q.v.)
-	// rather than to the current file content string.
+	// version number for each file, and an edit history for each version.
 
 	// With this minor bit of bookkeeping, the SourceDataBase is able to keep
 	// producing source code pieces from old references to a file without the need
 	// to reread it.  Moreover, to the extent its cache can keep all the
 	// file contents, it can do ripping-fast scans for cross reference queries.
 	//
-	// A SourceDatabase is created and opened on the screen in response to the
-	// 'import sources' command in the browser's classPane menu.
-	// Somehow it needs to be specified exactly what sources get imported.
-	// For now, we'll include all, or at least all that you would usually
+	// cachedFullText is a cache of file contents.  Its keys are file names, and
+	// its values are the current contents of the named file.
+
+	// editHistory is a parallel dictionary of arrays of edit specifiers.
+
+	// A SourceDatabase is created in response to the 'import sources' command
+	// in the browser's classPane menu.  The World color changes to contrast that
+	// (developer's) world with any other window that might be testing a new system
+	// under develpment.
+
+	// For now, we include all the LK sources, or at least all that you would usually
 	// want in a typical development session.  We may soon want more control
-	// over this and, therefore, a reasonable UI for such control.
+	// over this and a reasonable UI for such control.
 
     initialize: function($super) {
 	this.methodDicts = {};
 	this.cachedFullText = {};
-        if (true) return this;  // skip the worthless UI for now
-	var projectName = 'Changes-di.js';  // Later get this info out of localConfig
-	var contents = this.getFileContents(projectName);
-	var chgList = new FileParser().parseFile(projectName, contents, this, "scan")
-	$super(projectName, null, chgList);
+	this.editHistory = {};
     },
     methodDictFor: function(className) {
 	if (!this.methodDicts[className]) this.methodDicts[className] = {}; 
@@ -1039,7 +1040,8 @@ ChangeList.subclass('SourceDatabase', {
 	var methodDict = this.methodDictFor(className);
 	var descriptor = methodDict[methodName];
 	if (!descriptor) return null;
-	var fullText = this.getFullText(descriptor.fileName);
+	// *** Needs version edit tweaks...
+	var fullText = this.getCachedText(descriptor.fileName);
 	if (!fullText) return null;
 	return fullText.substring(descriptor.startIndex, descriptor.stopIndex);
     },
@@ -1058,67 +1060,93 @@ ChangeList.subclass('SourceDatabase', {
 	refs.openIn(WorldMorph.current()); 
     },
     searchFor: function(str) {
-	// ***** Here we need to include version no in parsefile args and refs
 	var fullList = [];
-	for (var fName in this.cachedFullText) {
-		if (this.cachedFullText.hasOwnProperty(fName)) {
-			var fullText = this.cachedFullText[fName];
-			var refs = new FileParser().parseFile(fName, fullText, this, "search", str)
-			fullList = fullList.concat(refs);
-		}
-	}
-    return fullList;
+	Object.forEachOwnProperty(this.cachedFullText, function (fileName, fileString) {
+		var refs = new FileParser().parseFile(fileName, this.currentVersion(fileName), fileString, this, "search", str)
+		fullList = fullList.concat(refs);
+		}, this);
+	return fullList;
     },
     scanKernelFiles: function(list) {
 	for (var i=0; i<list.length; i++) {
-		var fName = list[i];
-		var fullText = this.getFileContents(fName);
-		this.cachedFullText[fName] = fullText;
-		new FileParser().parseFile(fName, fullText, this, "import");
+		var fileName = list[i];
+		var fileString = this.getCachedText(fileName);
+		new FileParser().parseFile(fileName, this.currentVersion(fileName), fileString, this, "import");
 	}
     },
     getSourceCodeRange: function(fileName, versionNo, startIndex, stopIndex) {
-	// ***** Get versions from cache
-	// if this is latest version, then it's full text so do as now
-	// else it's an editedString, so do the right thing
-	var fullText = this.getFullText(fileName);
-	return fullText.substring(startIndex, stopIndex);
+	// Remember the JS convention that str[stopindex] is not included!!
+	var fileString = this.getCachedText(fileName);
+	var mapped = this.mapIndices(fileName, versionNo, startIndex, stopIndex);
+	return fileString.substring(mapped.startIndex, mapped.stopIndex);
     },
-    putSourceCodeRange: function(fileName, versionNo, startIndex, stopIndex, newText, originalText) {
-	if (originalText && originalText != this.getSourceCodeRange(fileName, versionNo, startIndex, stopIndex)) {
-		console.log("***Original text does not match file; store aborted");
+    putSourceCodeRange: function(fileName, versionNo, startIndex, stopIndex, newString, originalString) {
+	// Remember the JS convention that str[stopindex] is not included!!
+	if (originalString && originalString != this.getSourceCodeRange(fileName, versionNo, startIndex, stopIndex)) {
+		WorldMorph.current().notify("Sadly it is not possible to save this text because\n"
+			+ "the original text appears to have been changed elsewhere.\n"
+			+ "Perhaps you could copy what you need to the clipboard, browse anew\n"
+			+ "to this code, repeat your edits with the help of the clipboard,\n"
+			+ "and finally try to save again in that new context.  Good luck.");
 		return;
 	}
-	var fullText = this.getFullText(fileName);
-	var beforeText = fullText.substring(0, startIndex);
-	var afterText = fullText.substring(stopIndex);
-        var cat = beforeText.concat(newText, afterText);
+	var fileString = this.getCachedText(fileName);
+	var mapped = this.mapIndices(fileName, versionNo, startIndex, stopIndex);
+	var beforeString = fileString.substring(0, mapped.startIndex);
+	var afterString = fileString.substring(mapped.stopIndex);
+        var newFileString = beforeString.concat(newString, afterString);
 	console.log("Saving " + fileName + "...");
 	new NetRequest({model: new NetRequestReporter(), setStatus: "setRequestStatus"}
-			).put(URL.source.withFilename(fileName), cat);
-	// ***** Here we have to replace latest version with an edited string
-	// Then add the full text (cat) as new latest version
-	this.cachedFullText[fileName] = cat;
-	console.log("... " + cat.length + " bytes saved.");
+			).put(URL.source.withFilename(fileName), newFileString);
+	// Update cache contents and edit history
+	this.cachedFullText[fileName] = newFileString;
+	this.editHistory[fileName].push({repStart: startIndex, repStop: stopIndex, repLength: newString.length});
+	console.log("... " + newFileString.length + " bytes saved.");
     },
-    changeListForFileNamed: function(fName) {
-	// ***** Here we need to include version no in parsefile args and refs
-	var fullText = this.getFullText(fName);
-	return new FileParser().parseFile(fName, fullText, this, "scan");
+    mapIndices: function(fileName, versionNo, startIndex, stopIndex) {
+	// Figure how substring indices must be adjusted to find the same characters in the fileString
+	// given its editHistory.
+	// Note: This assumes only three cases: range above replacement, == replacement, below replacement
+	// It should check for range>replacement or range<replacement and either indicate error or
+	// possibly deal with it (our partitioning may be tractable)
+	var edits = this.editHistory[fileName].slice(versionNo);
+	var start = startIndex;  var stop = stopIndex;
+	for (var i=0; i<edits.length; i++) {  // above replacement
+		var edit = edits[i];
+		var delta = edit.repLength - (edit.repStop - edit.repStart);  // patch size delta
+		if (start >= edit.repStop) {  // above replacement
+			start += delta;
+			stop += delta;
+		} else if (start == edit.repStart && stop == edit.repStop) {  // identical to replacement
+			stop += delta;
+		}  // else below the replacement so no change
+	}  
+	return {startIndex: start, stopIndex: stop};
     },
-    getFullText: function(fileName) {
-	var fullText = this.cachedFullText[fileName];
-	if (fullText) return fullText;
-	// Full text not in cache -- retrieve it and enter in cache
-	return this.getFileContents(fileName);
+    changeListForFileNamed: function(fileName) {
+	var fileString = this.getCachedText(fileName);
+	return new FileParser().parseFile(fileName, this.currentVersion(fileName), fileString, this, "scan");
+    },
+    currentVersion: function(fileName) {
+	// Expects to be called only when fileName will be found in cache!
+	return this.editHistory[fileName].length;
+    },
+    getCachedText: function(fileName) {
+	// Return full text of the named file, installing it in cache if necessary
+	var fileString = this.cachedFullText[fileName];  
+	if (fileString == null) { // Not in cache;  fetch and install
+		fileString = this.getFileContents(fileName);
+		this.cachedFullText[fileName] = fileString;
+		this.editHistory[fileName] = [];
+	}
+	return fileString;
     },
     getFileContents: function(fileName) { // convenient helper method
 	var ms = new Date().getTime();
-	var fullText = new NetRequest().beSync().get(URL.source.withFilename(fileName)).getResponseText();
+	var fileString = new NetRequest().beSync().get(URL.source.withFilename(fileName)).getResponseText();
 	ms = new Date().getTime() - ms;
 	console.log(fileName + " read in " + ms + " ms.");
-	this.cachedFullText[fileName] = fullText;
-	return fullText;
+	return fileString;
     },
     viewTitle: function() {
 	return "Source Control for " + this.fileName;
@@ -1149,60 +1177,6 @@ Object.subclass('SourceCodeDescriptor', {
 	return this.sourceControl.changeListForFileNamed(this.fileName);
     }
 });
-
-
-Object.subclass('EditedString', {
-	// An editedString is a string that has been edited since somebody was given start and stop
-	// indices for a substring.  Hey, no problem.  The editedString knows how to find the same
-	// characters in the new string, and either get them or put them (into a copy).
-	// To keep things simple, the *only* edits supported are single edits of the form...
-	//	replaceSubstring(repStart, repStop, replacement[repLength])
-	// ...but of course these may be cascaded to any depth.
-
-    initialize: function(editedString, repStart, repStop, repLength) {
-	this.editedString = editedString;
-	this.repStart = repStart;
-	this.repStop = repStop;
-	this.repLength = repLength;
-    },
-    substring: function(startIndex, stopIndex) {
-	var mappedIndices = this.mappedIndices(startIndex, stopIndex);
-	return this.editedString.substring(map.start, map.stop);
-    },
-    replaceSubstring: function(startIndex, stopIndex, newString) {
-	var mappedIndices = this.mappedIndices(startIndex, stopIndex);
-	return this.sourceControl.putSourceCodeForDescriptor(this, newText, originalText);
-    }
-});
-
-//  -- have a little fun --
-makePianoKeyboard = function() {
-	var wtWid, bkWid, keyRect, key, octavePt, nWhite, nBlack;
-	var keyboard = new Morph(new Rectangle(100, 100, 100, 20), "rect");
-	WorldMorph.current().addMorph(keyboard);
-	var nOctaves = 6;
-	wtWid = 8; bkWid = 5;
-	for (var i=1; i<=nOctaves+1; i++) {
-		if (i <= nOctaves) {nWhite = 7;  nBlack = 5; }
-			else {nWhite = 1;  nBlack = 0; } // Hich C
-		octavePt = keyboard.innerBounds().topLeft().addXY(7*wtWid*(i-1)-1, -1);
-		for (var j=1; j<=nWhite; j++) {
-			keyRect = octavePt.addXY((j-1)*wtWid, 0).extent(pt(wtWid+1, 36));
-			key = new Morph(keyRect, "rect");  key.setFill(Color.white);
-			keyboard.addMorph(key);
-			// on: #mouseDown send: #mouseDownPitch:event:noteMorph: to: self
-			//			withValue: i-1*12 + (#(1 3 5 6 8 10 12) at: j))].
-		}
-		for (var j=1; j<=nBlack; j++) {
-			keyRect = octavePt.addXY([6, 15, 29, 38, 47][j-1], 1).extent(pt(bkWid, 21));
-			key = new Morph(keyRect, "rect");  key.setFill(Color.black);
-			keyboard.addMorph(key);
-			// on: #mouseDown send: #mouseDownPitch:event:noteMorph: to: self
-			//			withValue: i-1*12 + (#(2 4 7 9 11) at: j))]].
-		}
-	}
-	keyboard.setExtent(keyboard.bounds().extent());
-	}
 
 }).logCompletion("Tools.js")(Global);
 

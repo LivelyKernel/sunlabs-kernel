@@ -4314,11 +4314,12 @@ Morph.addMethods({
     },
 
     notify: function(msg, loc) {
+	if (!loc) loc = this.world().firstHand().lastMouseDownPoint;
 	new MenuMorph([["OK", 0, "toString"]], this).openIn(this.world(), loc, false, msg); 
     },
 
     showOwnerChain: function(evt) {
-	var items = this.ownerChain().map(
+	var items = this.ownerChain().reverse().map(
 	    function(each) { return [Object.inspect(each).truncate(), function() { each.showMorphMenu(evt) }]; });
 	new MenuMorph(items, this).openIn(this.world(), evt.mousePoint, false, "Top item is topmost");
     },
@@ -5528,9 +5529,13 @@ PasteUpMorph.subclass("WorldMorph", {
             ["TextMorph", function(evt) { world.addMorph(new TextMorph(evt.mousePoint.extent(pt(120, 10)), "This is a TextMorph"));}],
             ["Class Browser", function(evt) { new SimpleBrowser().openIn(world, evt.mousePoint); }],
             ["Object Hierarchy Browser", function(evt) { new ObjectBrowser().openIn(world, evt.mousePoint); }],    
+
             ["Clock", function(evt) {
                 var m = world.addMorph(new ClockMorph(evt.mousePoint, 50));
                 m.startSteppingScripts(); }],
+            ["Piano Keyboard", function(evt) {
+                var m = makePianoKeyboard(evt.mousePoint, 50);
+                m.scaleBy(1.5);  m.rotateBy(-0.2); }],
 
 	    ["Console", function(evt) {
 		world.addFramedMorph(new ConsoleWidget(50).buildView(pt(800, 100)), "Console", evt.mousePoint);
