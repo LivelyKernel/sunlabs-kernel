@@ -958,8 +958,8 @@ WidgetModel.subclass('ChangeList', {
     setChangeItemText: function(newItemText, v) {
         var item = this.selectedItem();
 	if (item == null) return;
-	item.putSourceCode(newItemText, v.textBeforeChanges)
-	// Now recreate (slow but sure) list from new contents, as things may have changed
+	item.putSourceCode(newItemText, v.textBeforeChanges)// Recreating the list is not good for searches// For now we have defeated it
+	if (true) return;// Now recreate (slow but sure) list from new contents, as things may have changed
 	var oldSelection = this.changeBanner;
 	this.changeList = item.newChangeList();
 	this.changed('getChangeBanners');

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2006-2008 Sun Microsystems, Inc.
+ * Copyright ï¿½ 2006-2008 Sun Microsystems, Inc.
  * All rights reserved.  Use is subject to license terms.
  * This distribution may include materials developed by third parties.
  *  
@@ -4177,7 +4177,7 @@ Morph.addMethods({
 	var handle = this.shape.possibleHandleForControlPoint(this, this.localize(evt.mousePoint), evt.hand);
 	if (handle == null) return false;
 	this.addMorph(handle);  // after which it should get converted appropriately here
-	handle.showHelp(evt);
+    handle.showHelp(evt);
 	if (evt.hand.mouseFocus instanceof HandleMorph) evt.hand.mouseFocus.remove();
 	evt.hand.setMouseFocus(handle);
 	return true; 

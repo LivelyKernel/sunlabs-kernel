@@ -1,5 +1,5 @@
 /*
- * Copyright © 2006-2008 Sun Microsystems, Inc.
+ * Copyright ï¿½ 2006-2008 Sun Microsystems, Inc.
  * All rights reserved.  Use is subject to license terms.
  * This distribution may include materials developed by third parties.
  *  
@@ -412,7 +412,7 @@ Object.subclass('TextLine', {
     // compose a line of text, breaking it appropriately at compositionWidth
     compose: function(compositionWidth) {
         var runningStartIndex = this.startIndex;
-        var mostRecentBounds = this.topLeft.asRectangle();
+        var mostRecentBounds = this.topLeft.extent(pt(0, this.font.getSize()));
         var lastWord = null;
         var leadingSpaces = 0;
 
@@ -1321,7 +1321,7 @@ Morph.subclass("TextMorph", {
     handlesMouseDown: function(evt) {
         // Do selecting if click is in selectable area
         if (evt.isCommandKey()) return false;
-        return this.shape.bounds().insetByPt(this.inset).containsPoint(this.localize(evt.mousePoint)); 
+         var selectableArea = this.openForDragAndDrop			? this.shape.bounds().insetByPt(this.inset)			:  this.shape.bounds();       return selectableArea.containsPoint(this.localize(evt.mousePoint)); 
     },
 
     onMouseDown: function(evt) {
@@ -1850,7 +1850,7 @@ TextMorph.subclass('PrintMorph', {
 });
 
 // A class for testing TextMorph behavior
-Object.subclass('TestTextMorph', {
+TextMorph.subclass('TestTextMorph', {
     
     // All this does is create a rectangle at mouseDown, and then
     // while the mouse moves, it prints the index of the nearest character,

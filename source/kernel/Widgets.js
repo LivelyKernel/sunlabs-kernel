@@ -1,5 +1,5 @@
 /*
- * Copyright © 2006-2008 Sun Microsystems, Inc.
+ * Copyright ï¿½ 2006-2008 Sun Microsystems, Inc.
  * All rights reserved.  Use is subject to license terms.
  * This distribution may include materials developed by third parties.
  *  
@@ -682,7 +682,7 @@ Morph.subclass('WindowMorph', {
     },
 
     captureMouseEvent: function($super, evt, hasFocus) {
-        if (!this.needsToComeForward(evt)) {
+        if (!this.needsToComeForward(evt) && evt.mouseButtonPressed) {
             return $super(evt, hasFocus)
         }
         return this.mouseHandler.handleMouseEvent(evt, this); 
