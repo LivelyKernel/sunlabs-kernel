@@ -779,8 +779,8 @@ View.subclass('ObjectFetcher', {
     fetchContent: function(node) {
 	console.log("fetching properties of " + node);
 	this.lastNode = node; // FIXME, should be connected to a variable
-	// console.log("properties are " + Object.properties(node));
-	var values = Object.properties(node).map(function(name) { return node[name]; });
+	// console.log("properties are " + Properties.all(node));
+	var values = Properties.own(node).map(function(name) { return node[name]; });
 	this.setModelValue("setDirectoryList", values);
 	this.setModelValue("setContent", Object.inspect(node));
     }
@@ -797,7 +797,7 @@ TwoPaneBrowser.subclass('TwoPaneObjectBrowser', {
     },
 
     nodesToNames: function(nodes, parent) {
-	var props = Object.properties(parent);
+	var props = Properties.own(parent);
 	var names = [];
 	// FIXME! ouch quadratic
 	for (var i = 0; i < nodes.length; i++) 
@@ -816,7 +816,7 @@ TwoPaneBrowser.subclass('TwoPaneObjectBrowser', {
     },
 
     isLeafNode: function(node) {
-	return Object.properties(node).length == 0;
+	return Properties.own(node).length == 0;
     },
 
     deriveChildNode: function(parentNode, childName)  {

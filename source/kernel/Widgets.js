@@ -2530,7 +2530,7 @@ WidgetModel.subclass('ConsoleWidget', {
 		    self.changed('getRecentMessages');
 		}
 		function $p(obj) {
-		    return Object.properties(obj);
+		    return Properties.all(obj);
 		}
 		return eval(text);
 	    }).bind(this.ctx)();
@@ -2558,6 +2558,7 @@ WidgetModel.subclass('ConsoleWidget', {
     }
     
 });
+
 
 
 console.log('loaded Widgets.js');

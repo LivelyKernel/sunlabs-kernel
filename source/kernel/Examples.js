@@ -1529,8 +1529,6 @@ Object.subclass('AsteroidsSprite', {
   }
 
 
-var USE_FUNCTIONAL_DELAY = false;    
-
 ClipMorph.subclass("GameMorph", {
     
     runAsteroidsGame: function() {
@@ -1594,7 +1592,7 @@ ClipMorph.subclass("GameMorph", {
     // Set new timer delay for the game
     if (this.timeoutID) window.clearTimeout(this.timeoutID);
     if (!this.timerCallback) this.timerCallback = arguments.callee.bind(this).logErrors('Asteroid Timer');
-    this.timeoutID = USE_FUNCTIONAL_DELAY ? this.timerCallback.delay(DELAY/1000) : window.setTimeout(this.timerCallback, DELAY);
+    this.timeoutID = window.setTimeout(this.timerCallback, DELAY);
 
     }
 });

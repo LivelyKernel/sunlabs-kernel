@@ -257,7 +257,7 @@ Widget.subclass('SimpleInspector', {
 	if (!p) return;
 	switch (aspect) {
 	case p.getInspectee:
-	    this.setModelValue("setPropList", Object.properties(this.inspectee()));
+	    this.setModelValue("setPropList", Properties.all(this.inspectee()));
 	    break;
 	case p.getPropName:
 	    var prop = this.selectedItem();
@@ -843,7 +843,9 @@ Object.subclass('FileParser', {
 	if (this.verbose) console.log("Method def: " + this.currentClassName + "." + match[1]);
 	this.currentDef = {type: "methodDef", name: match[1], startPos: this.ptr, lineNo: this.lineNo};
 	return true;
-    },   scanMainConfigBlock: function(line) {    // Special match for Config blocks in Main.js	var match = line.match(/^[\s]*(if\s\(Config.show[\w]+\))/);
+    },
+    scanMainConfigBlock: function(line) {    // Special match for Config blocks in Main.js
+	var match = line.match(/^[\s]*(if\s\(Config.show[\w]+\))/);
 	if (match == null) return false;
 	this.processCurrentDef();
 	if (this.verbose) console.log("Main Config: " + this.currentClassName + "." + match[1]);
@@ -1068,14 +1070,14 @@ ChangeList.subclass('SourceDatabase', {
     },
     searchFor: function(str) {
 	var fullList = [];
-	Object.forEachOwnProperty(this.cachedFullText, function (fileName, fileString) {
-		var refs = new FileParser().parseFile(fileName, this.currentVersion(fileName), fileString, this, "search", str)
-		fullList = fullList.concat(refs);
-		}, this);
+	Properties.forEachOwn(this.cachedFullText, function(fileName, fileString) {
+	    var refs = new FileParser().parseFile(fileName, this.currentVersion(fileName), fileString, this, "search", str);
+	    fullList = fullList.concat(refs);
+	}, this);
 	return fullList;
     },
     scanKernelFiles: function(list) {
-	for (var i=0; i<list.length; i++) {
+	for (var i = 0; i<list.length; i++) {
 		var fileName = list[i];
 		var fileString = this.getCachedText(fileName);
 		new FileParser().parseFile(fileName, this.currentVersion(fileName), fileString, this, "import");

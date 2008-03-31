@@ -103,7 +103,7 @@ Object.subclass('URL', {
 
     toQueryString: function(record) {
 	var results = [];
-	Object.forEachOwnProperty(record, function(p) {
+	Properties.forEachOwn(record, function(p) {
 	    var value = record[p];
 	    results.push(encodeURIComponent(p) + "=" + encodeURIComponent(String(value)));
 	});
@@ -196,7 +196,7 @@ View.subclass('NetRequest', {
     },
 
     setRequestHeaders: function(record) {
-	Object.forEachOwnProperty(record, function(prop) {
+	Properties.forEachOwn(record, function(prop) {
 	    this.requestHeaders[prop] = record[prop];
 	}, this);
     },
@@ -233,7 +233,7 @@ View.subclass('NetRequest', {
 	    this.url = url;
 	    this.method = method.toUpperCase();
 	    this.transport.open(this.method, url.toString(), !this.isSync);
-	    Object.forEachOwnProperty(this.requestHeaders, function(p) {
+	    Properties.forEachOwn(this.requestHeaders, function(p) {
 		this.transport.setRequestHeader(p, this.requestHeaders[p]);
 	    }, this);
 	    this.transport.send(content || undefined);

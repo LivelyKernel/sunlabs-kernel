@@ -380,45 +380,37 @@ var Functions = {
     True: function() { return true; }
 };
     
-
-// ===========================================================================
-// Our extensions to JavaScript base libraries
-// ===========================================================================
-
-/**
-  * Extensions to class Object
-  */  
-
-Object.properties = function(object, predicate) {
-    var a = [];
-    for (var name in object) {  
-	if (!(object[name] instanceof Function) && (predicate ? predicate(name, object) : true)) {
-	    a.push(name);
-	}
-    } 
-    return a;
-};
-
-Object.ownProperties = function(object) {
-    var a = [];
-    for (var name in object) {  
-	if (object.hasOwnProperty(name)) {
-	    var value = object[name];
-	    if (!(value instanceof Function))
+var Properties = {
+    all: function(object, predicate) {
+	var a = [];
+	for (var name in object) {  
+	    if (!(object[name] instanceof Function) && (predicate ? predicate(name, object) : true)) {
 		a.push(name);
-	}
-    } 
-    return a;
-};
+	    }
+	} 
+	return a;
+    },
+    
+    own: function(object) {
+	var a = [];
+	for (var name in object) {  
+	    if (object.hasOwnProperty(name)) {
+		var value = object[name];
+		if (!(value instanceof Function))
+		    a.push(name);
+	    }
+	} 
+	return a;
+    },
 
-
-Object.forEachOwnProperty = function(object, func, context) {
-    for (var name in object) {
-	if (object.hasOwnProperty(name)) {
-	    var value = object[name];
-	    if (!(value instanceof Function)) {
-		var result = func.call(context || this, name, value);
-		// cont && cont.call(context || this, result); 
+    forEachOwn: function(object, func, context) {
+	for (var name in object) {
+	    if (object.hasOwnProperty(name)) {
+		var value = object[name];
+		if (!(value instanceof Function)) {
+		    var result = func.call(context || this, name, value);
+		    // cont && cont.call(context || this, result); 
+		}
 	    }
 	}
     }
@@ -433,6 +425,11 @@ Object.beget = function(object, properties) {
     properties && Object.extend(d, properties);
     return d;
 };
+
+
+// ===========================================================================
+// Our extensions to JavaScript base libraries
+// ===========================================================================
 
 
 /**
@@ -4907,14 +4904,14 @@ Object.subclass('Model', {
 Wrapper.subclass('ModelPlug', {
 
     initialize: function(spec) {
-	Object.forEachOwnProperty(spec, function(p) {
+	Properties.forEachOwn(spec, function(p) {
 	    this[p] = spec[p];
 	}, this);
     },
 
     persist: function(modelId) {
 	var rawNode = LivelyNS.create("modelPlug", {model: modelId});
-	Object.forEachOwnProperty(this, function(prop, value) {
+	Properties.forEachOwn(this, function(prop, value) {
 	    switch (prop) {
 	    case 'model':
 	    case 'rawNode':
@@ -5011,7 +5008,7 @@ Model.subclass('SyntheticModel', {
     },
 
     variables: function() {
-	return Object.ownProperties(this).filter(function(name) { return name != 'dependents'});
+	return Properties.own(this).filter(function(name) { return name != 'dependents'});
     },
 
     toMarkup: function(index) {
@@ -5308,7 +5305,7 @@ PasteUpMorph.subclass("WorldMorph", {
     chooseDisplayTheme: function(evt) { 
         var themes = this.displayThemes;
         var target = this; // trouble with function scope
-        var themeNames = Object.ownProperties(themes);
+        var themeNames = Properties.own(themes);
         var items = themeNames.map(
             function(each) { return [each, target, "setDisplayTheme", themes[each]]; });
         var menu = new MenuMorph(items, this);
@@ -5981,6 +5978,16 @@ Morph.subclass("HandMorph", {
 	    evt.stop();
 	    break;
 	}
+	switch (evt.getKeyChar()) {
+	case "[":
+	case "]":
+	    if (evt.isMetaDown() && evt.type == "KeyPress") {
+		// Safari would want to navigate the history
+		evt.preventDefault();
+		break;
+	    }
+	}
+	
     },
     
 

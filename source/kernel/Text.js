@@ -1498,8 +1498,7 @@ Morph.subclass("TextMorph", {
 
         // have to process commands in keydown...
         if (evt.isCommandKey()) {
-            var command = evt.getKeyChar();
-            if (this.processCommandKeys(command)) { 
+            if (this.processCommandKeys(evt)) { 
 		evt.stop();
 		return true;
 	    } 
@@ -1513,8 +1512,7 @@ Morph.subclass("TextMorph", {
         // cleanup: separate BS logic, diddle selection range and use replaceSelectionWith()
         if (evt.isCommandKey() && UserAgent.isWindows) { // FIXME: isCommandKey() should say no here
             //AltGr pressed
-            var replacement = evt.getKeyChar();
-            if (this.processCommandKeys(replacement)) {
+            if (this.processCommandKeys(evt)) {
 		evt.stop();
 		return true;
 	    }
@@ -1561,7 +1559,8 @@ Morph.subclass("TextMorph", {
 	}
     },
     
-    processCommandKeys: function(key) {  //: Boolean (was the command processed?)
+    processCommandKeys: function(evt) {  //: Boolean (was the command processed?)
+	var key = evt.getKeyChar();
         // console.log('command ' + key);
 	if (key) key = key.toLowerCase();
         switch (key) {
@@ -1660,13 +1659,14 @@ Morph.subclass("TextMorph", {
             return true;
         }
         }
-
-        var bracketIndex = CharSet.leftBrackets.indexOf(key);
-
-        if (bracketIndex >= 0) {
-            this.addOrRemoveBrackets(bracketIndex); 
-            return true;
-        } 
+	//if (evt.type == "KeyPress") {
+            var bracketIndex = CharSet.leftBrackets.indexOf(key);
+	    
+            if (bracketIndex >= 0) {
+		this.addOrRemoveBrackets(bracketIndex); 
+		return true;
+            } 
+    //}
         
         return false;
 
