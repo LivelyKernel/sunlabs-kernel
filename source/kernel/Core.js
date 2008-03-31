@@ -2884,7 +2884,8 @@ Copier.subclass('Importer', {
     },
     
     hookupModels: function() {
-	this.models.forEach(function(node) { this.importModelFrom(node); }, this);
+	var self = this;
+	this.models.forEach(function(node) { self.importModelFrom(node); });
     },
     
     importModelFrom: function(modelNode) {
@@ -6226,6 +6227,47 @@ LinkMorph.subclass('ExternalLinkMorph', {
     }
 
 });
+
+
+// adds convenience functions
+function interactiveEval(text) { 
+    /*
+    function $h() {  
+	// history
+	for (var i = self.commandBuffer.length - 1; i > 0; i--) {
+	    self.log(i + ") " + self.commandBuffer[i]);
+	}
+    }
+    function $c() {
+	self.setModelValue("setRecentMessages", []);
+    }
+
+*/
+    function $w() { 
+	// current world
+	return WorldMorph.current(); 
+    }
+    function $m(morph) {
+	// morphs
+	var array = [];
+	(morph || WorldMorph.current()).submorphs.forEach(function(m) { array.push(m) });
+	return array;
+    }
+    function $i(id) {
+	return document.getElementById(id.toString());
+    }
+    function $x(node) {
+	return Exporter.stringify(node);
+    }
+    function $f(id) {
+	// format node by id
+	return $x($i(id));
+    }
+    function $p(obj) {
+	return Properties.all(obj);
+    }
+    return eval(text);
+};
 
 
 console.log('loaded Core.js');

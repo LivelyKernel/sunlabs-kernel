@@ -1440,7 +1440,6 @@ Morph.subclass("TextListMorph", {
 
     highlightItem: function(evt) {
 	var target = evt.originalTarget;
-	console.log("target " + target);
 	var index = this.submorphs.indexOf(target);
 	if (index >= 0) {
 	    // console.log("picked " + this.submorphs[index] + " at " + index);
@@ -1472,7 +1471,6 @@ Morph.subclass("TextListMorph", {
 	    break;
 	}
         case Event.KEY_DOWN: {
-	    console.log("down: " + evt);
             var lineNo = this.selectedLineNo;
             if (lineNo < this.itemList.length - 1) {
                 this.selectLineAt(lineNo + 1, true); 
@@ -1536,7 +1534,7 @@ Morph.subclass("TextListMorph", {
 		console.log("got selection "  + selection);
                 this.setSelectionToMatch(selection);
                 return selection; //debugging
-
+		
 	    case this.modelPlug.getDeletionConfirmation: //someone broadcast a deletion
 		if (this.getModelValue("getDeletionConfirmation") == true) {
 		    // update self to reflect that model changed
@@ -2416,18 +2414,19 @@ Dialog.subclass('PromptDialog', {
 });
 
 
-WidgetModel.subclass('ConsoleWidget', {
+Widget.subclass('ConsoleWidget', {
 
     defaultViewTitle: "Console",
+    pins: ["RecentMessages", "RecentCommands", "LastCommand"],
     
     initialize: function($super, capacity) {
 	$super(null);
+	var model = new SyntheticModel(this.pins);
+	this.connectModel(model.makePlugSpecFromPins(this.pins));
+	model.setRecentCommands([]);
+	model.setRecentMessages([]);
 	this.capacity = capacity;
-	this.messageBuffer = [];
-	this.commandBuffer = [""];
-	this.commandCursor = 0;
 	Global.console.consumers.push(this);
-	this.ctx = { };
 	this.ans = undefined; // last computed value
 	return this;
     },
@@ -2446,8 +2445,9 @@ WidgetModel.subclass('ConsoleWidget', {
             ['commandLine', TextMorph, new Rectangle(0, 0.8, 1, 0.2)]
         ]);
 	
+	var model = this.getModel();
 	var m = panel.messagePane;
-	m.connectModel({model: this, getList: "getRecentMessages"});
+	m.connectModel({model: model, getList: "getRecentMessages"});
 	m.innerMorph().focusHaloBorderWidth = 0;
 	m.innerMorph().updateList = function(list) {
 	    TextListMorph.prototype.updateList.call(this, list);
@@ -2462,99 +2462,43 @@ WidgetModel.subclass('ConsoleWidget', {
 	};
 	
 	m = panel.commandLine.beInputLine();
-	m.connectModel({model: this, setText: "evalCommand", getText: "getCurrentCommand", 
-			getPreviousHistoryEntry: "getPreviousHistoryEntry",
-			getNextHistoryEntry: "getNextHistoryEntry"});
+	m.connectModel({model: model, setText: "setLastCommand", getText: "getLastCommand"});
 	return panel;
     },
-    
-    // history autodecrements/increments 
-    getPreviousHistoryEntry: function() {
-	this.commandCursor = this.commandCursor > 0 ? this.commandCursor - 1 : this.commandBuffer.length - 1;
-	return this.commandBuffer[this.commandCursor];
-    },
-    
-    getNextHistoryEntry: function() {
-	this.commandCursor = this.commandCursor < this.commandBuffer.length - 1 ? this.commandCursor + 1 : 0;
-	return this.commandBuffer[this.commandCursor];
-    },
-    
-    getCurrentCommand: function() {
-	return ""; // the last command is empty (this clears the command line after an eval)
+
+    updateView: function(aspect, source) {
+	var p = this.modelPlug;
+        if (!p) return;
+	switch (aspect) {
+	case p.getLastCommand:
+	    this.evalCommand(this.getModelValue("getLastCommand"));
+	    break;
+	}
     },
 
     evalCommand: function(text) {
 	if (!text) return;
-	this.commandBuffer.push(text);
-	if (this.commandBuffer.length > 100) {
-	    this.commandBuffer.unshift();
-	}
-	this.commandCursor = this.commandBuffer.length - 1;
-	var self = this;
-	var ans = this.ans;
-	
+	var commands = this.getModelValue("getRecentCommands", []);
+	commands.push(text);
+	commands.length > 100 && commands.unshift();
+	this.setModelValue("setRecentCommands", commands);
 	try {
-	    ans = (function() { 
-		// interactive functions. make them available through doitContext ?
-		function $w() { 
-		    // current world
-		    return WorldMorph.current(); 
-		}
-		function $h() {  
-		    // history
-		    for (var i = self.commandBuffer.length - 1; i > 0; i--) {
-			self.log(i + ") " + self.commandBuffer[i]);
-		    }
-		}
-		function $m(morph) {
-		    // morphs
-		    var array = [];
-		    (morph || WorldMorph.current()).submorphs.forEach(function(m) { array.push(m) });
-		    return array;
-		}
-		function $i(id) {
-		    return document.getElementById(id.toString());
-		}
-
-		function $x(node) {
-		    return Exporter.stringify(node);
-		}
-		
-		function $f(id) {
-		    // format node by id
-		    return $x($i(id));
-		}
-		function $c() {
-		    // clear buffer
-		    self.messageBuffer = [];
-		    self.changed('getRecentMessages');
-		}
-		function $p(obj) {
-		    return Properties.all(obj);
-		}
-		return eval(text);
-	    }).bind(this.ctx)();
-	    
+	    var ans = interactiveEval(text);
 	    if (ans !== undefined) {
 		this.ans = ans;
-		this.log(ans && ans.toString());
+		this.log(ans !== undefined && ans !== null && ans.toString());
 	    }
-	    this.changed('getCurrentCommand');
+	    this.setModelValue("setLastCommand", "");
 	} catch (er) {
 	    console.log("Evaluation error: "  + er);
 	}
     },
     
-    getRecentMessages: function() {
-	return this.messageBuffer;
-    },
-
     log: function(message) {
-	if (this.messageBuffer.length == this.capacity) {
-	    this.messageBuffer.unshift();
-	}
-	this.messageBuffer.push(message);
-	this.changed('getRecentMessages');
+	var msgs = this.getModelValue("getRecentMessages", []);
+	(msgs.length == this.capacity) && msgs.unshift();
+	msgs.push(message);
+	this.setModelValue("setRecentMessages", msgs);
     }
     
 });
