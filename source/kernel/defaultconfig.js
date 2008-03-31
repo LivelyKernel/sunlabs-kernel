@@ -1,5 +1,5 @@
 /*
- * Copyright © 2006-2008 Sun Microsystems, Inc.
+ * Copyright ï¿½ 2006-2008 Sun Microsystems, Inc.
  * All rights reserved.  Use is subject to license terms.
  * This distribution may include materials developed by third parties.
  *  
@@ -103,6 +103,8 @@ var Config = {
 
     // Defeat bundled type-in for better response in short strings
     showMostTyping: true,
+    // Defeat all bundled type-in for testing
+    showAllTyping: true,  // Until we're confident
 
     // use the meta modifier (maps to Command on the Mac) instead of alt
     useMetaAsCommand: false,
