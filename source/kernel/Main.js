@@ -319,7 +319,7 @@ function populateWorldWithExamples(world) {
             else widget = new TextMorph(pt(50,30).extent(pt(250,50)), Pen.script);
             widget.align(widget.bounds().bottomRight(), world.bounds().topRight().addPt(pt(-150,100))); 
             devWorld.myWorld.addMorph(widget);
-        }		if (Config.showRichText) {			var txt = new String("But wait, there's more...");			txt.emphasize( {style: 'bold'}, 5, 8);			txt.emphasize( {size: 14, style: 'bold'}, 19, 22);			console.log(txt.style);			// widget = new TextMorph(widget.bounds().bottomLeft().addXY(0, 50).extent(pt(250, 50)), txt);
+        }		if (Config.showRichText) {			var txt = new String("But wait, there's more...");			txt.emphasize( {style: 'bold'}, 4, 7);			txt.emphasize( {size: 14, style: 'bold'}, 18, 21);			console.log(txt.style);			// widget = new TextMorph(widget.bounds().bottomLeft().addXY(0, 50).extent(pt(250, 50)), txt);
             // devWorld.myWorld.addMorph(widget);		}
 
         if (Config.showHilbertFun) Pen.hilbertFun(devWorld.myWorld, widget.bounds().bottomLeft().addXY(180,80));
