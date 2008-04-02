@@ -68,7 +68,7 @@ Object.subclass('Font', {
         rawNode.setAttributeNS(null, "font-family", this.getFamily());
         if (this.style == 'bold') rawNode.setAttributeNS(null, "font-weight", 'bold');
         if (this.style == 'italic') rawNode.setAttributeNS(null, "font-style", 'italic');
-    }
+    if(this.getSize() == 18 || this.style == 'bold' || this.style == 'italic') 			console.log("applying " + this.getSize() + this.style);	}
 
 });
 
@@ -343,8 +343,9 @@ Object.subclass('WordChunk', {
 Object.subclass('TextLine', {
 
     // create a new line
-    initialize: function(textString, startIndex, topLeft, font, chunkSkeleton) {
+    initialize: function(textString, textStyle, startIndex, topLeft, font, chunkSkeleton) {
         this.textString = textString;
+        this.textStyle = textStyle;
         this.startIndex = startIndex;
         this.overallStopIndex = textString.length - 1;
         this.topLeft = topLeft;
@@ -418,7 +419,7 @@ Object.subclass('TextLine', {
         var mostRecentBounds = this.topLeft.extent(pt(0, this.font.getSize()));
         var lastWord = null;
         var leadingSpaces = 0;
-		var styleArray = this.textString.style;		var nextStyleChange = (styleArray) ? 0 : this.textString.length;
+		var nextStyleChange = (this.textStyle) ? 0 : this.textString.length;
 
         // a way to optimize out repeated scanning
         if (this.chunks == null) {
@@ -431,9 +432,8 @@ Object.subclass('TextLine', {
 	    if (c.start >= nextStyleChange) {
 		hasStyleChanged = true;
 		// For now style changes are only seen at chunk breaks
-		console.log("adoptStyle " + c.start + " " + Object.inspect(styleArray.valueAt(c.start)));
-		this.adoptStyle(styleArray.valueAt(c.start));
-		nextStyleChange = c.start + styleArray.runLengthAt(c.start);
+		this.adoptStyle(this.textStyle.valueAt(c.start));
+		nextStyleChange = c.start + this.textStyle.runLengthAt(c.start);
 	    }
             if (c.isWhite) {
                 var spaceIncrement = this.spaceWidth;
@@ -489,11 +489,11 @@ Object.subclass('TextLine', {
         this.hasComposed = true;
     },
 
-    // accessor function (maybe delete - kam)
-	adoptStyle: function(emph) {		var fontFamily = this.font.getFamily();		var fontSize = this.font.getSize();		var fontStyle = 'normal';		var fontColor = Color.black;		Properties.forEachOwn(emph, function(p) {			if (p == "family") fontFamily = emph[p];			if (p == "size") fontSize = emph[p];			if (p == "style") fontStyle = emph[p];			if (p == "color") fontColor = emph[p];			});		this.font = Font.forFamily(fontFamily, fontSize, fontStyle);        this.spaceWidth = this.font.getCharWidth(' ');
+	adoptStyle: function(emph) {		var fontFamily = this.font.getFamily();		var fontSize = this.font.getSize();		var fontStyle = 'normal';		var fontColor = Color.black;		Properties.forEachOwn(emph, function(p) {			if (p == "family") fontFamily = emph[p];			if (p == "size") fontSize = emph[p];			if (p == "style") fontStyle = emph[p];			if (p == "color") fontColor = emph[p];			});		// console.log("adoptStyle/Font.forFamily(" + fontFamily + fontSize + fontStyle);		this.font = Font.forFamily(fontFamily, fontSize, fontStyle);        this.spaceWidth = this.font.getCharWidth(' ');
         this.tabWidth = this.spaceWidth * 4;
     },
    getStopIndex: function() {
+   // accessor function (maybe delete - kam)
         return this.overallStopIndex;
     },
 
@@ -842,7 +842,7 @@ Morph.subclass("TextMorph", {
         $super(rect, "rect");
         // KP: note layoutChanged will be called on addition to the tree
         // DI: ... and yet this seems necessary!
-        this.layoutChanged();
+        if (this.textString instanceof Text) {			this.textStyle = this.textString.style;			this.textString = this.textString.string;			}		this.layoutChanged();
         return this;
     },
 
@@ -1089,7 +1089,7 @@ Morph.subclass("TextMorph", {
         var chunkSkeleton = null;
 
         while (startIndex <= stopIndex) {
-            var line = new TextLine(this.textString, startIndex, topLeft, font, chunkSkeleton);
+            var line = new TextLine(this.textString, this.textStyle, startIndex, topLeft, font, chunkSkeleton);
             line.setTabWidth(this.tabWidth, this.tabsAsSpaces);
             line.compose(compositionWidth);
             line.adjustAfterComposition();
@@ -1403,13 +1403,12 @@ Morph.subclass("TextMorph", {
         return this.textString.substring(this.selectionRange[0], this.selectionRange[1] + 1); 
     },
 
-    replaceSelectionWith: function(replacement) {
-        if (! this.acceptInput) return;		var before = this.textString.substring(0,this.selectionRange[0]); 
-        var after = this.textString.substring(this.selectionRange[1]+1,this.textString.length);
-		this.setTextString(before.concat(replacement,after));
-        this.setNullSelectionAt(before.length + replacement.length); 
+    replaceSelectionWith: function(replacement, delayComposition, justMoreTyping) {		// Often called with only one arg for normal paste        if (! this.acceptInput) return;		var strStyle = this.textStyle;		var repStyle = replacement.style;		var oldLength = this.textString.length;		// Splice the textString
+		var before = this.textString.substring(0,this.selectionRange[0]); 
+        var after = this.textString.substring(this.selectionRange[1]+1, oldLength);		this.setTextString(before.concat(replacement,after), delayComposition, justMoreTyping);		if (strStyle || repStyle) { // Splice the style array if any			if (!strStyle) strStyle = new RunArray([oldLength],  [new TextEmphasis({})]);			if (!repStyle) repStyle = new RunArray([replacement.length],  [new TextEmphasis({})]);				before = strStyle.slice(0, this.selectionRange[0]);			after = strStyle.slice(this.selectionRange[1]+1, oldLength);			this.textStyle = before.concat(repStyle).concat(after);			console.log(before);			console.log(repStyle);			console.log(after);			console.log(this.textStyle);		}		
+        // Compute new selection, and display if not delayed		var selectionIndex = this.selectionRange[0] + replacement.length;		if (delayComposition) this.selectionRange = [selectionIndex, selectionIndex-1];		else this.setNullSelectionAt(selectionIndex); // this displays it as well
     },
-    
+
     setNullSelectionAt: function(charIx) { 
         this.setSelectionRange(charIx, charIx); 
     },
@@ -1553,8 +1552,8 @@ Morph.subclass("TextMorph", {
 	//    then a call to composeAfterEdits() must be forced before handling them.
 
         if (!this.acceptInput) return;
-        var before = this.textString.substring(0,this.selectionRange[0]); 
-        var after = this.textString.substring(this.selectionRange[1]+1,this.textString.length);
+		this.replaceSelectionWith(replacement, true, this.typingHasBegun); // 2nd arg = true delays composition
+
 	if (this.typingHasBegun) {
 		this.charsTyped += replacement;
 	} else {
@@ -1562,12 +1561,7 @@ Morph.subclass("TextMorph", {
 		this.charsReplaced = this.selectionString();
 		this.lastFindLoc = this.selectionRange[0];
 	}
-	this.setTextString(before.concat(replacement, after), true, this.typingHasBegun);  // 2nd arg = true means delay composition
 	this.typingHasBegun = true;  // So undo will revert to first replacement
-
-	// Here we recompute the selectionRange, but don't compute the selection object yet
-	var selectionIndex = before.length + replacement.length;
-	this.selectionRange = [selectionIndex, selectionIndex-1];
 
 	// Bundle display of typing unless suppressed for reliablity or response in small text
 	if (Config.showAllTyping  || (Config.showMostTyping && this.textString.length<1000)) {
@@ -1679,16 +1673,16 @@ Morph.subclass("TextMorph", {
             this.emphsizeSelection({size: this.fontSize-2});
             return true;
         }
-        case "c": { // centered
-            this.emphsizeSelection({align: 'center'});
-            return true;
-        }
-		case "r": { // right flush
+		case "r": { // right flush
 			this.emphsizeSelection({align: 'right'});
 			return true;
 		}
         case "l": { // left flush
             this.emphsizeSelection({align: 'left'});
+            return true;
+        }
+        case "h": { // centered (Half way between left and right ;-)
+            this.emphsizeSelection({align: 'center'});
             return true;
         }
         case "j": { // justify
@@ -1722,7 +1716,7 @@ Morph.subclass("TextMorph", {
 // TextMorph accessor functions
 TextMorph.addMethods({
 
-    emphsizeSelection: function(emph) {		if (this.hasNullSelection()) return;		this.textString.emphasize(emph, this.selectionRange[0], this.selectionRange[1]);	},	pvtUpdateTextString: function(replacement, delayComposition, justMoreTyping) {
+    emphsizeSelection: function(emph) {		if (this.hasNullSelection()) return;		this.textString.emphasize(emph, this.selectionRange[0], this.selectionRange[1]);		this.composeAfterEdits();	},	pvtUpdateTextString: function(replacement, delayComposition, justMoreTyping) {
         // Mark for undo, but not if continuation of type-in
 	if(!justMoreTyping) {
 		this.undoTextString = this.textString;
@@ -1997,7 +1991,8 @@ Object.subclass('RunArray', {
 	mergeStyle: function(emph, start, stop) {		// Note stop is end index, not +1 like slice		if( ! start ) return this.mergeAllStyle(emph);		var newRun = this.slice(start, stop+1).mergeAllStyle(emph);		if (start > 0) newRun = this.slice(0, start).concat(newRun);		if (stop < this.length()-1) newRun = newRun.concat(this.slice(stop+1, this.length()));		return newRun;	},	mergeAllStyle: function(emph) {		// Returns a new runArray with values merged with emph throughout		var newValues = this.values.map(function(each) {return this.mergeStyles(emph, each); }.bind(this));		// Note: this may cause == runs that should be coalesced		return new RunArray(this.runs, newValues);	},	coalesce: function() {		// Coalesce adjacent runs with equal values		// Uses extra slice to copy arrays rather than alter in place		var i = 0;		while (i < runs.length-1) {			if (this.equalValues(this.values[i], this.values[i+1]) ) {				this.values = this.values.slice(0).splice(i,1);				var secondRun = this.runs[i+1];				this.runs = this.runs.slice(0).splice(i,1);				this.runs[i] += secondRun;			}		}		return this;	},	mergeStyles: function(s1, s2) {		// values are style objs like {style: 'bold', fontSize: 14}		// In case of overlapping properties, s1 shall dominate		var result = new TextEmphasis();		Properties.forEachOwn(s2, function(p) {result[p] = s2[p]});		Properties.forEachOwn(s1, function(p) {result[p] = s1[p]});		return result	},	equalValues: function(s1, s2) {		// values are style objs like {style: 'bold', fontSize: 14}		if (typeof s1 == "number" && typeof s2 == "number") return s1 == s2;  // used for testing		var match = true;		Properties.forEachOwn(s1, function(p) {match = match && s2[p] == s1[p] });		if (!match) return false;		// Slow but sure...		Properties.forEachOwn(s2, function(p) {match = match && s2[p] == s1[p] });		return match	},	toString: function() {
 		return "runs = " + this.runs.toString() + ";  values = " + this.values.toString();
     }
-});Object.subclass('TextEmphasis', {
+});Object.subclass('Text', {
+	// Rich text comes to the Lively Kernel	initialize: function(string, style) {		this.string = string;		if (! style) this.style = new RunArray([string.length], [new TextEmphasis({})]);		if (style instanceof TextEmphasis) this.style = new RunArray([string.length], [style]);		if (style instanceof RunArray) this.style = style;	},	emphasize: function (emph, start, stop) {		// Modify the style of this text according to emph		this.style = this.style.mergeStyle(new TextEmphasis(emph), start, stop);		console.log("Text.emphasized: " + this.style);	return this;	},	toString: function() {		return "Text for " + this.string.toString() + "<" + this.style + ">";	}});Object.subclass('TextEmphasis', {
 	// Only a class for better printing	initialize: function(obj) {
 		if (!obj) return;		Properties.forEachOwn( obj, function(p) {this[p] = obj[p]; }, this);   },
 	toString: function() {
@@ -2005,7 +2000,7 @@ Object.subclass('RunArray', {
 });
 RunArray.test = function(a) {	var ra = new RunArray(a, a); // eg [3, 1, 2], [3, 1, 2]	console.log("RunArray test for " + ra + " = " + ra.asArray());	for (var i=0; i<ra.length(); i++) {		var m = ra.markAt(i);		// console.log(i + ":  run = " + m.runIndex + ", offset = " + m.offset);		}	for (var i=0; i<=ra.length(); i++) {		// break into all possible pairs, join them, and check		var ra1 = ra.slice(0, i);		var ra2 = ra.slice(i, ra.length());		var ra3 = ra1.concat(ra2);		// console.log(i + ": " + ra1 + " || " + ra2 + " = " + ra3);		for (var j=0; i<=ra.length(); i++) {			if (ra3.valueAt(j) != ra.valueAt(j)) console.log("***RunArray failing test***");		}	}};RunArray.test([3, 1, 2]);Object.extend(String.prototype, {
 
-	emphasize: function (emph, start, stop) {		// Modify the style of this string according to emph		if (! this.style) this.style = new RunArray( [this.length], [new TextEmphasis({}) ] );		this.style = this.style.mergeStyle(new TextEmphasis(emph), start, stop);		console.log(this.style);	return this;	}})
+	emphasize: function (emph, start, stop) {		// Modify the style of this string according to emph		if (! this.style) this.style = new RunArray( [this.length], [new TextEmphasis({}) ] );		this.style = this.style.mergeStyle(new TextEmphasis(emph), start, stop);		console.log("String.emphasize: " + this.style);	return this;	}})
 		
 }).logCompletion("Text.js")(Global);
 
