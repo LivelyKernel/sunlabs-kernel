@@ -20,9 +20,10 @@
  */ 
 Object.subclass('Font', {
     
-    initialize: function(family/*:String*/, size/*:Integer*/){
+    initialize: function(family/*:String*/, size/*:Integer*/, style/*:String*/){
         this.family = family;
         this.size = size;
+        this.style = style ? style : 'normal';
         this.extents = null;
         // this.extents = this.computeExtents(family, size);
     },
@@ -65,6 +66,8 @@ Object.subclass('Font', {
     applyTo: function(rawNode) {
         rawNode.setAttributeNS(null, "font-size", this.getSize());
         rawNode.setAttributeNS(null, "font-family", this.getFamily());
+        if (this.style == 'bold') rawNode.setAttributeNS(null, "font-weight", 'bold');
+        if (this.style == 'italic') rawNode.setAttributeNS(null, "font-style", 'italic');
     }
 
 });
@@ -74,12 +77,12 @@ Object.subclass('Font', {
 
     Object.extend(Font, {
 
-        forFamily: function(familyName, size) {
-            var key  = familyName + ":" + size;
+        forFamily: function(familyName, size, style) {
+            var key  = familyName + ":" + size /* + ":" + (style ? style[0] : 'n' ) */ ;
             var entry = cache[key];
             if (!entry) {
                 try {
-                    entry = new Font(familyName, size);
+                    entry = new Font(familyName, size, style);
                 } catch(er) {
                     console.log("%s when looking for %s:%s", er, familyName, size);
                     return null;
@@ -342,10 +345,10 @@ Object.subclass('TextLine', {
     // create a new line
     initialize: function(textString, startIndex, topLeft, font, chunkSkeleton) {
         this.textString = textString;
-        this.font = font;
         this.startIndex = startIndex;
         this.overallStopIndex = textString.length - 1;
         this.topLeft = topLeft;
+        this.font = font;
         this.spaceWidth = font.getCharWidth(' ');
         this.tabWidth = this.spaceWidth * 4;
         this.hasComposed = false;
@@ -415,6 +418,7 @@ Object.subclass('TextLine', {
         var mostRecentBounds = this.topLeft.extent(pt(0, this.font.getSize()));
         var lastWord = null;
         var leadingSpaces = 0;
+		var styleArray = this.textString.style;		var nextStyleChange = (styleArray) ? 0 : this.textString.length;
 
         // a way to optimize out repeated scanning
         if (this.chunks == null) {
@@ -423,7 +427,7 @@ Object.subclass('TextLine', {
     
         for (var i = 0; i < this.chunks.length; i++) {
             var c = this.chunks[i];
-        
+			if (c.start >= nextStyleChange) {				// For now style changes are only seen at chunk breaks				console.log("adoptStyle " + c.start + " " + Object.inspect(styleArray.valueAt(c.start)));				this.adoptStyle(styleArray.valueAt(c.start));				nextStyleChange = c.start + styleArray.runLengthAt(c.start);			}
             if (c.isWhite) {
                 var spaceIncrement = this.spaceWidth;
                 c.bounds = mostRecentBounds.withX(mostRecentBounds.maxX());
@@ -474,7 +478,10 @@ Object.subclass('TextLine', {
     },
 
     // accessor function (maybe delete - kam)
-    getStopIndex: function() {
+	adoptStyle: function(emph) {		var fontFamily = this.font.getFamily();		var fontSize = this.font.getSize();		var fontStyle = 'normal';		var fontColor = Color.black;		Properties.forEachOwn(emph, function(p) {			if (p == "family") fontFamily = emph[p];			if (p == "size") fontSize = emph[p];			if (p == "style") fontStyle = emph[p];			if (p == "color") fontColor = emph[p];			});		this.font = Font.forFamily(fontFamily, fontSize, fontStyle);        this.spaceWidth = this.font.getCharWidth(' ');
+        this.tabWidth = this.spaceWidth * 4;
+    },
+   getStopIndex: function() {
         return this.overallStopIndex;
     },
 
@@ -1385,9 +1392,9 @@ Morph.subclass("TextMorph", {
     },
 
     replaceSelectionWith: function(replacement) {
-        var before = this.textString.substring(0,this.selectionRange[0]); 
+        if (! this.acceptInput) return;		var before = this.textString.substring(0,this.selectionRange[0]); 
         var after = this.textString.substring(this.selectionRange[1]+1,this.textString.length);
-        if (this.acceptInput) this.setTextString(before.concat(replacement,after));
+		this.setTextString(before.concat(replacement,after));
         this.setNullSelectionAt(before.length + replacement.length); 
     },
     
@@ -1568,18 +1575,15 @@ Morph.subclass("TextMorph", {
             this.saveContents(this.textString); 
             return true; 
         }
-    
-        case "x": { // Cut
+      case "x": { // Cut
             TextMorph.clipboardString = this.selectionString(); 
             this.replaceSelectionWith("");
             return true; 
         }
-        
         case "c": { // Copy
             TextMorph.clipboardString = this.selectionString(); 
             return true; 
         }
-        
         case "v": { // Paste
             if (TextMorph.clipboardString)
                 this.replaceSelectionfromKeyboard(TextMorph.clipboardString); 
@@ -1590,21 +1594,18 @@ Morph.subclass("TextMorph", {
             if (SourceControl) SourceControl.browseReferencesTo(this.selectionString()); 
             return true; 
         }
-    
-        case "f": { // find -- prompt for, find, and select, a string
+       case "f": { // find -- prompt for, find, and select, a string
             this.world().prompt("Enter the text you wish to find...",
 		function(response)
 		{return this.searchForFind(response, this.selectionRange[1]); }
 		.bind(this));
             return true; 
         }
-    
         case "g": { // aGain -- repeats a find or replacement
             if (this.lastSearchString) this.searchForFind(this.lastSearchString, this.lastFindLoc + this.lastSearchString.length);
             return true; 
         }
-    
-        case "r": { // redo -- repeats a typed replacement (check BS weirdness)
+        case "m": { // more -- repeats a typed replacement (check BS weirdness)
             if (this.charsReplaced) {
 		this.searchForFind(this.charsReplaced, this.selectionRange[0]);
 		if (this.selectionString() != this.charsReplaced) return;
@@ -1638,16 +1639,48 @@ Morph.subclass("TextMorph", {
         }
         
         case "a": {
-	    if (this.typingHasBegun) { // Select chars just typed
-		this.setSelectionRange(this.selectionRange[0] - this.charsTyped.length, this.selectionRange[0]);
-	    } else { // Select All
+	    	if (this.typingHasBegun) { // Select chars just typed
+				this.setSelectionRange(this.selectionRange[0] - this.charsTyped.length, this.selectionRange[0]);
+	    	} else { // Select All
             	this.setSelectionRange(0, this.textString.length); 
-	    }
+	    	}
             return true;
         }
         
-        case "i": { // Inspect
-            this.addSvgInspector();
+        case "b": { // boldface
+            this.emphsizeSelection({style: 'bold'});
+            return true;
+        }
+        case "i": { // italic
+            this.emphsizeSelection({style: 'italic'});
+            return true;
+        }
+        case "n": { // normal (no bold or ital)
+            this.emphsizeSelection({style: 'normal'});
+            return true;
+        }
+        case "+": { // big
+            this.emphsizeSelection({size: this.fontSize+2});
+            return true;
+        }
+        case "-": { // small
+            this.emphsizeSelection({size: this.fontSize-2});
+            return true;
+        }
+        case "c": { // centered
+            this.emphsizeSelection({align: 'center'});
+            return true;
+        }
+		case "r": { // right flush
+			this.emphsizeSelection({align: 'right'});
+			return true;
+		}
+        case "l": { // left flush
+            this.emphsizeSelection({align: 'left'});
+            return true;
+        }
+        case "j": { // justify
+            this.emphsizeSelection({align: 'justify'});
             return true;
         }
 
@@ -1677,7 +1710,7 @@ Morph.subclass("TextMorph", {
 // TextMorph accessor functions
 TextMorph.addMethods({
 
-    pvtUpdateTextString: function(replacement, delayComposition, justMoreTyping) {
+    emphsizeSelection: function(emph) {		if (this.hasNullSelection()) return;		this.textString.emphasize(emph, this.selectionRange[0], this.selectionRange[1]);	},	pvtUpdateTextString: function(replacement, delayComposition, justMoreTyping) {
         // Mark for undo, but not if continuation of type-in
 	if(!justMoreTyping) {
 		this.undoTextString = this.textString;
@@ -1956,7 +1989,7 @@ Object.subclass('RunArray', {
 	// Only a class for better printing	initialize: function(obj) {
 		if (!obj) return;		Properties.forEachOwn( obj, function(p) {this[p] = obj[p]; }, this);   },
 	toString: function() {
-		str = "{";		Properties.forEachOwn( this, function(p) {str += (p + ":=" + this[p].toString() + ","); }, this);		return str + "}";   }
+		var props =		Properties.own(this).map(function(p) { return p + ": " + this[p].toString(); }.bind(this)).join(", ")		return "{" + props + "}";   }
 });
 RunArray.test = function(a) {	var ra = new RunArray(a, a); // eg [3, 1, 2], [3, 1, 2]	console.log("RunArray test for " + ra + " = " + ra.asArray());	for (var i=0; i<ra.length(); i++) {		var m = ra.markAt(i);		// console.log(i + ":  run = " + m.runIndex + ", offset = " + m.offset);		}	for (var i=0; i<=ra.length(); i++) {		// break into all possible pairs, join them, and check		var ra1 = ra.slice(0, i);		var ra2 = ra.slice(i, ra.length());		var ra3 = ra1.concat(ra2);		// console.log(i + ": " + ra1 + " || " + ra2 + " = " + ra3);		for (var j=0; i<=ra.length(); i++) {			if (ra3.valueAt(j) != ra.valueAt(j)) console.log("***RunArray failing test***");		}	}};RunArray.test([3, 1, 2]);Object.extend(String.prototype, {
 
