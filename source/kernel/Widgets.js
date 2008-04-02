@@ -2417,7 +2417,7 @@ Dialog.subclass('PromptDialog', {
 Widget.subclass('ConsoleWidget', {
 
     defaultViewTitle: "Console",
-    pins: ["RecentMessages", "RecentCommands", "LastCommand"],
+    pins: ["RecentMessages", "RecentCommands", "LastCommand", "Menu"],
     
     initialize: function($super, capacity) {
 	$super(null);
@@ -2425,12 +2425,22 @@ Widget.subclass('ConsoleWidget', {
 	this.connectModel(model.makePlugSpecFromPins(this.pins));
 	model.setRecentCommands([]);
 	model.setRecentMessages([]);
+	model.Menu = [["command history", this, "addCommandHistoryInspector"] ];
+	
 	this.capacity = capacity;
 	Global.console.consumers.push(this);
 	this.ans = undefined; // last computed value
 	return this;
     },
     
+    addCommandHistoryInspector: function() {
+	var extent = pt(500, 40);
+	var commands = this.getModelValue("getRecentCommands", []).join('\n');
+	var pane = new ScrollPane(new TextMorph(extent.extentAsRectangle(), commands), extent.extentAsRectangle()); 
+	var world = WorldMorph.current();
+	world.addFramedMorph(pane, "Command history", world.positionForNewMorph());
+    },
+
     initialViewPosition: function(world, hint) {
 	return hint || pt(0, world.viewport().y - 200);
     },
@@ -2447,7 +2457,7 @@ Widget.subclass('ConsoleWidget', {
 	
 	var model = this.getModel();
 	var m = panel.messagePane;
-	m.connectModel({model: model, getList: "getRecentMessages"});
+	m.connectModel({model: model, getList: "getRecentMessages", getMenu: "getMenu"});
 	m.innerMorph().focusHaloBorderWidth = 0;
 	m.innerMorph().updateList = function(list) {
 	    TextListMorph.prototype.updateList.call(this, list);
