@@ -424,10 +424,17 @@ Object.subclass('TextLine', {
         if (this.chunks == null) {
             this.chunks = this.chunkFromString(this.textString, this.startIndex);
         }
-    
+
+	var hasStyleChanged = false;
         for (var i = 0; i < this.chunks.length; i++) {
             var c = this.chunks[i];
-			if (c.start >= nextStyleChange) {				// For now style changes are only seen at chunk breaks				console.log("adoptStyle " + c.start + " " + Object.inspect(styleArray.valueAt(c.start)));				this.adoptStyle(styleArray.valueAt(c.start));				nextStyleChange = c.start + styleArray.runLengthAt(c.start);			}
+	    if (c.start >= nextStyleChange) {
+		hasStyleChanged = true;
+		// For now style changes are only seen at chunk breaks
+		console.log("adoptStyle " + c.start + " " + Object.inspect(styleArray.valueAt(c.start)));
+		this.adoptStyle(styleArray.valueAt(c.start));
+		nextStyleChange = c.start + styleArray.runLengthAt(c.start);
+	    }
             if (c.isWhite) {
                 var spaceIncrement = this.spaceWidth;
                 c.bounds = mostRecentBounds.withX(mostRecentBounds.maxX());
@@ -448,7 +455,12 @@ Object.subclass('TextLine', {
                 }
                 runningStartIndex = c.start + c.length;
             } else {
-                lastWord = new TextWord(this.textString, c.start, pt(mostRecentBounds.maxX(), this.topLeft.y), this.font);
+                lastWord = new TextWord(this.textString, c.start, pt(mostRecentBounds.maxX(), this.topLeft.y), 
+					this.font);
+		
+		if (hasStyleChanged) {  // once we notice one change, we'll reapply font-size to chunk
+		    this.font.applyTo(lastWord.rawNode);
+		}
                 c.word = lastWord;
 
                 if (leadingSpaces) { 
