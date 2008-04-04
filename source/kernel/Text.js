@@ -463,7 +463,7 @@ Object.subclass('TextLine', {
 					this.font);
 		
 		if (hasStyleChanged) {  // once we notice one change, we'll reapply font-size to chunk
-		    this.font.applyTo(lastWord.rawNode);			hasStyleChanged = false;
+		    this.font.applyTo(lastWord.rawNode);			// hasStyleChanged = false;
 		}
                 c.word = lastWord;
 
@@ -1093,7 +1093,7 @@ Morph.subclass("TextMorph", {
         var chunkSkeleton = null;
 
         while (startIndex <= stopIndex) {
-            var line = new TextLine(this.textString, this.textStyle, startIndex, topLeft, font, chunkSkeleton);
+            var line = new TextLine(this.textString, this.textStyle, startIndex, topLeft, font, new TextEmphasis( {} ), chunkSkeleton);
             line.setTabWidth(this.tabWidth, this.tabsAsSpaces);
             line.compose(compositionWidth);
             line.adjustAfterComposition();
