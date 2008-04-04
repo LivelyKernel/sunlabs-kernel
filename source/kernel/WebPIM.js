@@ -752,7 +752,7 @@ Morph.subclass("SelectorView", {
         // If we are in search mode, add the highlight color to found items 
         if (this.searchMode) this.addSearchColor();
 
-        // Enable this line to perform additional integrity checking
+        // Enable this line to perform additional integrity checking (for debugging)
         // if (PIM) PIM.checkModelIntegrity();
 
         // Make sure scrollbars (especially in the selector view) are updated correctly
@@ -1466,6 +1466,8 @@ Object.subclass('WebPIM', {
     // Note: This is SAMPLE DATA only! ===============================
     generateSamplePIMData: function() {        
         var subitems = [];
+        var subitems2 = [];
+        var subitems3 = [];
         var subsubitems = [];
 
         var items = [
@@ -1475,7 +1477,12 @@ Object.subclass('WebPIM', {
             new SelectorNote  (this, "Note 3",   "Contents 3"),
             new SelectorNote  (this, "Note 4",   "Contents 4"),
             new SelectorFolder(this, "Folder 2", subitems),
-            new SelectorNote  (this, "Note 5",   "Contents 5")
+            new SelectorNote  (this, "Note 5",   "Contents 5"),
+            new SelectorFolder(this, "Folder 3", subitems2),
+            new SelectorFolder(this, "Folder 4", subitems3),
+            new SelectorFolder(this, "Folder 5", []),
+            new SelectorNote  (this, "Note 6",   "Contents 6"),
+            new SelectorNote  (this, "Note 7",   "Contents 7")
         ];
 
         subitems.push(new SelectorNote  (items[5], "Subnote 1",   "Subcontents 1"));
@@ -1484,10 +1491,14 @@ Object.subclass('WebPIM', {
         subitems.push(new SelectorNote  (items[5], "Subnote 3",   "Subcontents 3"));
         subitems.push(new SelectorFolder(items[5], "Subfolder 2", []));
 
+        subitems2.push(new SelectorNote (items[7], "Subnote 1",   "Subcontents 1"));
+        subitems3.push(new SelectorNote (items[8], "Subnote 1",   "Subcontents 1"));
+
         subsubitems.push(new SelectorNote(subitems[2], "Subsubnote 1", "Subsubcontents 1"));
         subsubitems.push(new SelectorNote(subitems[2], "Subsubnote 2", "Subsubcontents 2"));
 
         items[5].open();
+        items[7].open();
         subitems[2].open();
         
         return items;
