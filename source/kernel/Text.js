@@ -81,7 +81,7 @@ Object.subclass('Font', {
 
     Object.extend(Font, {
 
-        forFamily: function(familyName, size, style) {
+	forFamily: function(familyName, size, style) {
             var key  = familyName + ":" + size + ":" + (style ? style[0] : 'n' ) ;
             var entry = cache[key];
             if (!entry) {
@@ -140,7 +140,7 @@ Object.subclass('TextWord', {
     setX: function(newValue /*:float*/) {
         var oldValue = this.naiveGetX();
         if (oldValue != newValue) { // FIXME: maybe just recalc the offset
-            this.extentTable = null;
+            if (this.extentTable) {				var offset = newValue-oldValue;				this.extentTable = this.extentTable.map(function(r) { return r.withX(r.x + offset); });			}
         }
         this.rawNode.setAttributeNS(null, "x", newValue.toString());
     },
@@ -214,12 +214,12 @@ Object.subclass('TextWord', {
     },
 
     // keep a copy of the substring we were working on (do we really need this? - kam)
-    adjustAfterComposition: function() {
+    adjustAfterComposition: function(deltaX) {
         while (this.rawNode.firstChild) {
             this.rawNode.removeChild(this.rawNode.firstChild);
         }
         this.rawNode.appendChild(NodeFactory.createText(this.textString.substring(this.startIndex, 
-                                                        this.stopIndex + 1))); // XXX
+                                                        this.stopIndex + 1))); // XXX		this.setX(this.naiveGetX() + deltaX);
     },
 
     // string representation
@@ -353,27 +353,22 @@ Object.subclass('TextLine', {
         this.startIndex = startIndex;
         this.overallStopIndex = textString.length - 1;
         this.topLeft = topLeft;
-        this.font = font;
-        this.defaultStyle = defaultStyle;		// Should probably call adoptStyle(defaultStyle) here		this.spaceWidth = font.getCharWidth(' ');
+        this.font = font;		this.alignment = 'left';
+        this.defaultStyle = defaultStyle;		// Should probably call adoptStyle(defaultStyle) here		//	this.adoptStyle(defaultStyle);		this.spaceWidth = font.getCharWidth(' ');
         this.tabWidth = this.spaceWidth * 4;
         this.hasComposed = false;
         this.chunks = chunkSkeleton;
         return this;
     },
 
-    // is the character 'c' what we consider to be whitespace? (private)
-    isWhiteSpace: function(c) {
-        return (c == ' ' || c == '\t' || c == '\r' || c == '\n');
-    },
-    
-    // is the character 'c' what we consider to be a newline? (private)
-    isNewLine: function(c) {
-        return (c == '\r' || c == '\n');
-    },
+	isWhiteSpace: function(c) {
+	 	// is the character 'c' what we consider to be whitespace? (private) 		return (c == ' ' || c == '\t' || c == '\r' || c == '\n');
+		},
 
-    // we found a word so figure out where the chunk extends to (private)
+	isNewLine: function(c) {		// is the character 'c' what we consider to be a newline? (private)		return (c == '\r' || c == '\n');		},
+
     chunkFromWord: function(wString, offset) {
-        for (var i = offset; i < wString.length; i++) {
+	    // we found a word so figure out where the chunk extends to (private)        for (var i = offset; i < wString.length; i++) {
             if (this.isWhiteSpace(wString[i])) {
                 return i - offset;
             }
@@ -381,9 +376,8 @@ Object.subclass('TextLine', {
         return i - offset;
     },
 
-    // we found a space so figure out where the chunk extends to (private)
     chunkFromSpace: function(wString, offset) {
-        for (var i = offset; i < wString.length; i++) {
+	    // we found a space so figure out where the chunk extends to (private)        for (var i = offset; i < wString.length; i++) {
             if (wString[i] != ' ') {
                 return i - offset;
             }
@@ -391,9 +385,8 @@ Object.subclass('TextLine', {
         return i - offset;
     },
 
-    // look at wString starting at startOffset and return an array with all of the chunks in it
     chunkFromString: function(wString, startOffset) {
-        var offset = startOffset;
+	    // look at wString starting at startOffset and return an array with all of the chunks in it        var offset = startOffset;
         var pieces = [];
         var chunkSize;
 
@@ -417,9 +410,8 @@ Object.subclass('TextLine', {
         return pieces;
     },
 
-    // compose a line of text, breaking it appropriately at compositionWidth
     compose: function(compositionWidth) {
-        var runningStartIndex = this.startIndex;
+	    // compose a line of text, breaking it appropriately at compositionWidth        var runningStartIndex = this.startIndex;
         var mostRecentBounds = this.topLeft.extent(pt(0, this.font.getSize()));
         var lastWord = null;
         var leadingSpaces = 0;
@@ -436,7 +428,7 @@ Object.subclass('TextLine', {
 	    if (c.start >= nextStyleChange) {
 		hasStyleChanged = true;
 		// For now style changes are only seen at chunk breaks
-		this.adoptStyle(this.textStyle.valueAt(c.start));
+		this.adoptStyle(this.textStyle.valueAt(c.start), c.start);
 		nextStyleChange = c.start + this.textStyle.runLengthAt(c.start);
 	    }
             if (c.isWhite) {
@@ -493,7 +485,7 @@ Object.subclass('TextLine', {
         this.hasComposed = true;
     },
 
-	adoptStyle: function(emph) {		var fontFamily = this.font.getFamily();		var fontSize = this.font.getSize();		var fontStyle = 'normal';		var fontColor = Color.black;		var align = 'left';		Properties.forEachOwn(emph, function(p, v) {			if (p == "family") fontFamily = v;			if (p == "size") fontSize = v;			if (p == "style") fontStyle = v;			if (p == "color") fontColor = v;			if (p == "align") align = v;			});		// console.log("adoptStyle/Font.forFamily(" + fontFamily + fontSize + fontStyle);		this.font = Font.forFamily(fontFamily, fontSize, fontStyle);		this.fontColor = fontColor;		this.alignment = align;        this.spaceWidth = this.font.getCharWidth(' ');
+	adoptStyle: function(emph, charIx) {		var fontFamily = this.font.getFamily();		var fontSize = this.font.getSize();		var fontStyle = 'normal';		var fontColor = Color.black;		var align = 'left';		Properties.forEachOwn(emph, function(p, v) {			if (p == "family") fontFamily = v;			if (p == "size") fontSize = v;			if (p == "style") fontStyle = v;			if (p == "color") fontColor = v;			if (p == "align") align = v;			});		// console.log("adoptStyle/Font.forFamily" + fontFamily + fontSize + fontStyle + "; index = " + charIx);		this.font = Font.forFamily(fontFamily, fontSize, fontStyle);		this.fontColor = fontColor;		this.alignment = align;		// if (align != 'left') console.log("alignment = " + this.alignment );        this.spaceWidth = this.font.getCharWidth(' ');
         this.tabWidth = this.spaceWidth * 4;
     },
    getStopIndex: function() {
@@ -566,11 +558,9 @@ Object.subclass('TextLine', {
         return this.startIndex <= index && index <= this.getStopIndex();
     },
 
-    // forward this on to all of the words (do we need this? - kam)
-    adjustAfterComposition: function() {
-        for (var i = 0; i < this.chunks.length; i++) {
+    adjustAfterComposition: function(compositionWidth) {		// This serves to clean up some cruft tht should not be there anyway		// But it now also serves to align the text after composition		var deltaX = 0;		var paddingX = 0;		var spaceRemaining = 0;		if (this.alignment != 'left') {			var rightX = this.getBounds(Math.max(this.overallStopIndex-1, this.startIndex)).maxX();			spaceRemaining =  (this.topLeft.x + compositionWidth) - rightX;			// console.log("alignment = " + this.alignment + "; rightX = " + rightX + "; spaceRemaining = " + spaceRemaining);			if (this.alignment == 'right') deltaX = spaceRemaining;			if (this.alignment == 'center') deltaX = spaceRemaining/2;			if (this.alignment == 'justify') {				paddingX = spaceRemaining/3;  // Compute nSpaces			}		}        for (var i = 0; i < this.chunks.length; i++) {
             if (this.chunks[i].word != null) {
-                this.chunks[i].word.adjustAfterComposition();
+                this.chunks[i].word.adjustAfterComposition(deltaX);				deltaX += paddingX;
             }
         }
     },
@@ -1096,7 +1086,7 @@ Morph.subclass("TextMorph", {
             var line = new TextLine(this.textString, this.textStyle, startIndex, topLeft, font, new TextEmphasis( {} ), chunkSkeleton);
             line.setTabWidth(this.tabWidth, this.tabsAsSpaces);
             line.compose(compositionWidth);
-            line.adjustAfterComposition();
+            line.adjustAfterComposition(compositionWidth);
             lines.push(line);
             startIndex = line.getNextStartIndex();
             topLeft = topLeft.addXY(0, this.lineHeight());
