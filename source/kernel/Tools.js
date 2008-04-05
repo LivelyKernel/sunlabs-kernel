@@ -957,16 +957,16 @@ WidgetModel.subclass('ChangeList', {
 	if (item == null) return "-----";
         return item.getSourceCode();
     },
-    setChangeItemText: function(newItemText, v) {
-        var item = this.selectedItem();
-	if (item == null) return;
-	item.putSourceCode(newItemText, v.textBeforeChanges)// Recreating the list is not good for searches// For now we have defeated it
-	if (true) return;// Now recreate (slow but sure) list from new contents, as things may have changed
-	var oldSelection = this.changeBanner;
-	this.changeList = item.newChangeList();
-	this.changed('getChangeBanners');
-	this.setChangeSelection(oldSelection);  // reselect same item in new list (hopefully)
-    },
+    setChangeItemText: function(newString, view) {
+        var item = this.selectedItem();		if (item == null) return;		var originalString = view.textBeforeChanges;		var fileString = item.getSourceCode();		if (originalString == fileString) {			this.checkBracketsAndSave(item, newString, view);			return;		}	WorldMorph.current().notify("Sadly it is not possible to save this text because\n"
+			+ "the original text appears to have been changed elsewhere.\n"
+			+ "Perhaps you could copy what you need to the clipboard, browse anew\n"
+			+ "to this code, repeat your edits with the help of the clipboard,\n"
+			+ "and finally try to save again in that new context.  Good luck.");
+	},    checkBracketsAndSave: function(item, newString, view) {		var errorIfAny = this.checkBracketError(newString);
+		if (! errorIfAny) {this.reallySaveItemText(item, newString, view); return; }		var msg = "This text contains an unmatched " + errorIfAny + ";\n" +			"do you wish to save it regardless?";		WorldMorph.current().confirm(msg, function (answer) {				if (answer) this.reallySaveItemText(item, newString, view); }.bind(this));	},    reallySaveItemText: function(item, newString, editView) {
+		item.putSourceCode(newString);		editView.acceptChanges();		// Now recreate (slow but sure) list from new contents, as things may have changed		if (this.searchString) return;  // Recreating list is not good for searches		var oldSelection = this.changeBanner;		this.changeList = item.newChangeList();		this.changed('getChangeBanners');		this.setChangeSelection(oldSelection);  // reselect same item in new list (hopefully)
+    },	checkBracketError: function (str) {		// Return name of unmatched bracket, or null		var cnts = {};		cnts.nn = function(c) { return this[c] ? this[c] : 0; };  // count or zero		for (var i=0; i<str.length; i++)  // tally all characters			{ cnts[ str[i] ] = cnts.nn(str[i]) +1 };		if (cnts.nn("{") > cnts.nn("}")) return "open brace";		if (cnts.nn("{") < cnts.nn("}")) return "close brace";		if (cnts.nn("[") > cnts.nn("]")) return "open bracket";		if (cnts.nn("[") < cnts.nn("]")) return "close bracket";		if (cnts.nn("(") > cnts.nn(")")) return "open paren";		if (cnts.nn("(") < cnts.nn(")")) return "close paren";		if (cnts.nn('"')%2 != 0) return "double quote";		if (cnts.nn("'")%2 != 0) return "string quote";		return null; 	},
     getSearchString: function() {
         return this.searchString;
     },
@@ -1089,15 +1089,7 @@ ChangeList.subclass('SourceDatabase', {
 	var mapped = this.mapIndices(fileName, versionNo, startIndex, stopIndex);
 	return fileString.substring(mapped.startIndex, mapped.stopIndex);
     },
-    putSourceCodeRange: function(fileName, versionNo, startIndex, stopIndex, newString, originalString) {
-	if (originalString && originalString != this.getSourceCodeRange(fileName, versionNo, startIndex, stopIndex)) {
-		WorldMorph.current().notify("Sadly it is not possible to save this text because\n"
-			+ "the original text appears to have been changed elsewhere.\n"
-			+ "Perhaps you could copy what you need to the clipboard, browse anew\n"
-			+ "to this code, repeat your edits with the help of the clipboard,\n"
-			+ "and finally try to save again in that new context.  Good luck.");
-		return;
-	}
+    putSourceCodeRange: function(fileName, versionNo, startIndex, stopIndex, newString) {
 	var fileString = this.getCachedText(fileName);
 	var mapped = this.mapIndices(fileName, versionNo, startIndex, stopIndex);
 	var beforeString = fileString.substring(0, mapped.startIndex);
@@ -1178,8 +1170,8 @@ Object.subclass('SourceCodeDescriptor', {
     getSourceCode: function() {
 	return this.sourceControl.getSourceCodeRange(this.fileName, this.versionNo, this.startIndex, this.stopIndex);
     },
-    putSourceCode: function(newString, originalString) {
-	this.sourceControl.putSourceCodeRange(this.fileName, this.versionNo, this.startIndex, this.stopIndex, newString, originalString);
+    putSourceCode: function(newString) {
+	this.sourceControl.putSourceCodeRange(this.fileName, this.versionNo, this.startIndex, this.stopIndex, newString);
     },
     newChangeList: function() {
 	return this.sourceControl.changeListForFileNamed(this.fileName);

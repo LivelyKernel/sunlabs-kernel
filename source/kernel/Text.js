@@ -1755,8 +1755,10 @@ TextMorph.addMethods({
             return; // Hack for browser demo
         } else if (!this.autoAccept) {
             this.setModelText(contentString);
+       }
+    },
+    acceptChanges: function() {    
 	    this.textBeforeChanges = this.textString; 
-        }
     },
     
     boundEval: function(str) {    
