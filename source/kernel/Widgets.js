@@ -1168,6 +1168,8 @@ TextMorph.subclass("CheapListMorph", {
     sanitizedList: function(list) { // make sure entries with new lines don't confuse the list
 	return list && list.invoke('replace', /\n/g, " ");
     },
+    setExtent: function(ignored) {		// Defeat recomposition when reframing windows		// May have deleterious side-effects
+    },
 
     deserialize: function($super, importer, rawNode) {
         $super(importer, rawNode);
@@ -2043,6 +2045,7 @@ Morph.subclass("ScrollPane", {
         var bnds = this.innerBounds();
         var clipR = bnds.withWidth(bnds.width - this.scrollBarWidth+1).insetBy(1);
         this.clipMorph.setExtent(clipR.extent());
+        this.innerMorph().setExtent(clipR.extent());
         var barBnds = bnds.withTopLeft(clipR.topRight());
         if (this.menuButton) {
             var w = this.scrollBarWidth;

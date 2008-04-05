@@ -99,7 +99,8 @@ Widget.subclass('SimpleBrowser', {
         m = panel.rightPane;
         m.connectModel({model: model, getList: "getMethodList", setSelection: "setMethodName"});
         m = panel.bottomPane;
-        m.connectModel({model: model, getText: "getMethodString", setText: "setMethodString"});
+ 		m.innerMorph().textSelection.borderRadius = 0;
+       m.connectModel({model: model, getText: "getMethodString", setText: "setMethodString"});
         return panel;
     },
 
@@ -966,7 +967,7 @@ WidgetModel.subclass('ChangeList', {
 	},    checkBracketsAndSave: function(item, newString, view) {		var errorIfAny = this.checkBracketError(newString);
 		if (! errorIfAny) {this.reallySaveItemText(item, newString, view); return; }		var msg = "This text contains an unmatched " + errorIfAny + ";\n" +			"do you wish to save it regardless?";		WorldMorph.current().confirm(msg, function (answer) {				if (answer) this.reallySaveItemText(item, newString, view); }.bind(this));	},    reallySaveItemText: function(item, newString, editView) {
 		item.putSourceCode(newString);		editView.acceptChanges();		// Now recreate (slow but sure) list from new contents, as things may have changed		if (this.searchString) return;  // Recreating list is not good for searches		var oldSelection = this.changeBanner;		this.changeList = item.newChangeList();		this.changed('getChangeBanners');		this.setChangeSelection(oldSelection);  // reselect same item in new list (hopefully)
-    },	checkBracketError: function (str) {		// Return name of unmatched bracket, or null		var cnts = {};		cnts.nn = function(c) { return this[c] ? this[c] : 0; };  // count or zero		for (var i=0; i<str.length; i++)  // tally all characters			{ cnts[ str[i] ] = cnts.nn(str[i]) +1 };		if (cnts.nn("{") > cnts.nn("}")) return "open brace";		if (cnts.nn("{") < cnts.nn("}")) return "close brace";		if (cnts.nn("[") > cnts.nn("]")) return "open bracket";		if (cnts.nn("[") < cnts.nn("]")) return "close bracket";		if (cnts.nn("(") > cnts.nn(")")) return "open paren";		if (cnts.nn("(") < cnts.nn(")")) return "close paren";		if (cnts.nn('"')%2 != 0) return "double quote";		if (cnts.nn("'")%2 != 0) return "string quote";		return null; 	},
+    },	checkBracketError: function (str) {		// Return name of unmatched bracket, or null		var cnts = {};		cnts.nn = function(c) { return this[c] || 0; };  // count or zero		for (var i=0; i<str.length; i++)  // tally all characters			{ cnts[ str[i] ] = cnts.nn(str[i]) +1 };		if (cnts.nn("{") > cnts.nn("}")) return "open brace";		if (cnts.nn("{") < cnts.nn("}")) return "close brace";		if (cnts.nn("[") > cnts.nn("]")) return "open bracket";		if (cnts.nn("[") < cnts.nn("]")) return "close bracket";		if (cnts.nn("(") > cnts.nn(")")) return "open paren";		if (cnts.nn("(") < cnts.nn(")")) return "close paren";		if (cnts.nn('"')%2 != 0) return "double quote";  // "		if (cnts.nn("'")%2 != 0) return "string quote";  // '		return null; 	},
     getSearchString: function() {
         return this.searchString;
     },
@@ -976,15 +977,16 @@ WidgetModel.subclass('ChangeList', {
     buildView: function(extent) {
         var panel = PanelMorph.makePanedPanel(extent, [
             ['topPane', newListPane, new Rectangle(0, 0, 1, 0.5)],
-            ['bottomPane', newTextPane, new Rectangle(0, 0.5, 1, 1)]
+            ['bottomPane', newTextPane, new Rectangle(0, 0.5, 1, 0.5)]
         ]);
-        var m = panel.topPane;
+        var m = panel.topPane;		m.innerMorph().textSelection.borderRadius = 0;
         m.connectModel({model: this, getList: "getChangeBanners", setSelection: "setChangeSelection", getMenu: "getListPaneMenu"});
         m = panel.bottomPane;
+		m.innerMorph().textSelection.borderRadius = 0;
 	m.connectModel({model: this, getText: "getChangeItemText", setText: "setChangeItemText", getSelection: "getSearchString"});
 	return panel;
     }
-});
+});  // ({ balance
 
 
 // ===========================================================================

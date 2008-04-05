@@ -3479,7 +3479,7 @@ Morph.addMethods({
 	var func = args.shift();
 	func.apply(this.shape, args);
 	if (this.clipPath) {
-	    console.log('clipped to new shape ' + this.shape);
+	    // console.log('clipped to new shape ' + this.shape);
 	    this.clipToShape();
 	}
 	this.adjustForNewBounds();
@@ -3494,7 +3494,7 @@ Morph.addMethods({
 	this.shape = newShape;
 	//this.layoutChanged(); 
 	if (this.clipPath) {
-	    console.log('clipped to new shape ' + this.shape);
+	    // console.log('clipped to new shape ' + this.shape);
 	    this.clipToShape();
 	}
 	this.adjustForNewBounds();
@@ -3509,7 +3509,7 @@ Morph.addMethods({
 
 	// FIXME: consider converting polyline to polygon when vertices merge.
 	if (this.clipPath) {
-	    console.log('clipped to new shape ' + this.shape);
+	    // console.log('clipped to new shape ' + this.shape);
 	    this.clipToShape();
 	}
 	this.adjustForNewBounds();
@@ -3541,7 +3541,7 @@ Morph.addMethods({
 	this.shape.setBounds(newRect.extent().extentAsRectangle()); // FIXME some shapes don't support setFromRect
 	
 	if (this.clipPath) {
-	    console.log('clipped to new shape ' + this.shape);
+	    // console.log('clipped to new shape ' + this.shape);
 	    this.clipToShape();
 	}
 	this.adjustForNewBounds();
