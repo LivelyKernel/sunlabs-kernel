@@ -29,7 +29,12 @@ Widget.subclass('SimpleBrowser', {
         $super(plug); 
         this.scopeSearchPath = [Global];
 	model.setClassList(this.listClasses());
-	model.setClassPaneMenu(this.getClassPaneMenu());
+	// override the synthetic model logic to recompute new values
+	var browser = this;
+	model.getClassPaneMenu = function() {
+	    return browser.getClassPaneMenu();
+	}
+
     },
 
     updateView: function(aspect, source) {
@@ -39,7 +44,6 @@ Widget.subclass('SimpleBrowser', {
 	case p.getClassName:
 	    var className = this.getModelValue('getClassName');
 	    this.setModelValue("setMethodList", this.listMethodsFor(className));
-        p.model.setClassPaneMenu(this.getClassPaneMenu());  // DI: Better way?
 	    break;
 	case p.getMethodName:
 	    var methodName = this.getModelValue("getMethodName");
@@ -577,7 +581,6 @@ Object.profiler = function (object, service) {
 function showStatsViewer(profilee,title) {
     Object.profiler(profilee, "start");
     var m = new ButtonMorph(WorldMorph.current().bounds().topCenter().addXY(0,20).extent(pt(150, 20)));
-    m.connectModel({model: m, getValue: "getThisValue", setValue: "setThisValue"});
     m.getThisValue = function() { return this.onState; };
     m.setThisValue = function(newValue) {
         this.onState = newValue;
@@ -606,7 +609,7 @@ function showStatsViewer(profilee,title) {
             Object.profiler(profilee, "reset"); 
         } 
     }
-    
+    m.connectModel({model: m, getValue: "getThisValue", setValue: "setThisValue"});
     WorldMorph.current().addMorph(m);
     var t = new TextMorph(m.bounds().extent().extentAsRectangle(), 'Display and reset stats').beLabel();
     m.addMorph(t);
