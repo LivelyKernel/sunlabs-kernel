@@ -140,7 +140,7 @@ Object.subclass('TextWord', {
     setX: function(newValue /*:float*/) {
         var oldValue = this.naiveGetX();
         if (oldValue != newValue) { // FIXME: maybe just recalc the offset
-            if (this.extentTable) {				var offset = newValue-oldValue;				this.extentTable = this.extentTable.map(function(r) { return r.withX(r.x + offset); });			}
+            if (this.extentTable) {				var offset = newValue-oldValue;				for (var i=this.startindex; i <= this.stopIndex; i++) {					var oldR = this.extentTable[i];					this.extentTable[i] = oldR.withX(oldR.x + offset);				}			}			this.extentTable = null;
         }
         this.rawNode.setAttributeNS(null, "x", newValue.toString());
     },
@@ -218,13 +218,11 @@ Object.subclass('TextWord', {
         while (this.rawNode.firstChild) {
             this.rawNode.removeChild(this.rawNode.firstChild);
         }
-        this.rawNode.appendChild(NodeFactory.createText(this.textString.substring(this.startIndex, 
-                                                        this.stopIndex + 1))); // XXX		this.setX(this.naiveGetX() + deltaX);
+        this.rawNode.appendChild(NodeFactory.createText( this.textString.substring( this.startIndex, this.stopIndex + 1))); // XXX		this.setX(this.naiveGetX() + deltaX);
     },
 
-    // string representation
     toString: function() {
-        return "textString: (" + this.textString + ")" +
+		// string representation        return "textString: (" + this.textString + ")" +
             " substr: (" + this.textString.substring(this.startIndex, this.stopIndex) + ")" +
             " startIndex: " + this.startIndex +
             " stopIndex: " + this.stopIndex +
@@ -411,8 +409,7 @@ Object.subclass('TextLine', {
     },
 
     compose: function(compositionWidth) {
-	    // compose a line of text, breaking it appropriately at compositionWidth        var runningStartIndex = this.startIndex;
-        var mostRecentBounds = this.topLeft.extent(pt(0, this.font.getSize()));
+	    // compose a line of text, breaking it appropriately at compositionWidth		 // nSpaceChunks and lastChunkBounds are used for alignment in adjustAfterComposition		this.nSpaceChunks = 0; 		this.lastChunkBounds = this.topLeft.extent(pt(0, this.font.getSize()));  // ..  non-whitespace chunk        var runningStartIndex = this.startIndex;
         var lastWord = null;
         var leadingSpaces = 0;
 		var nextStyleChange = (this.textStyle) ? 0 : this.textString.length;
@@ -426,14 +423,14 @@ Object.subclass('TextLine', {
         for (var i = 0; i < this.chunks.length; i++) {
             var c = this.chunks[i];
 	    if (c.start >= nextStyleChange) {
-		hasStyleChanged = true;
-		// For now style changes are only seen at chunk breaks
-		this.adoptStyle(this.textStyle.valueAt(c.start), c.start);
-		nextStyleChange = c.start + this.textStyle.runLengthAt(c.start);
+			hasStyleChanged = true;
+			// For now style changes are only seen at chunk breaks
+			if ( !c.isNewLine) this.adoptStyle(this.textStyle.valueAt(c.start), c.start); // Dont change style at newlines
+			nextStyleChange = c.start + this.textStyle.runLengthAt(c.start);
 	    }
             if (c.isWhite) {
                 var spaceIncrement = this.spaceWidth;
-                c.bounds = mostRecentBounds.withX(mostRecentBounds.maxX());
+                c.bounds = this.lastChunkBounds.withX(this.lastChunkBounds.maxX());
                 if (c.isNewLine) {
                     c.bounds.width = (this.topLeft.x + compositionWidth) - c.bounds.x;
                     runningStartIndex = c.start + c.length;
@@ -441,7 +438,7 @@ Object.subclass('TextLine', {
                     if (lastWord) LivelyNS.setAttribute(lastWord.rawNode, "nl", "true"); // little helper for serialization
                     break;
                 }
-                if (c.isTab) {
+                this.nSpaceChunks++ ;				if (c.isTab) {
                     var tabXBoundary = c.bounds.x - this.topLeft.x;
                     c.bounds.width = Math.floor((tabXBoundary + this.tabWidth) / this.tabWidth) * this.tabWidth - tabXBoundary;
                 } else {
@@ -451,21 +448,19 @@ Object.subclass('TextLine', {
                 }
                 runningStartIndex = c.start + c.length;
             } else {
-                lastWord = new TextWord(this.textString, c.start, pt(mostRecentBounds.maxX(), this.topLeft.y), 
+                lastWord = new TextWord(this.textString, c.start, pt(this.lastChunkBounds.maxX(), this.topLeft.y), 
 					this.font);
 		
-		if (hasStyleChanged) {  // once we notice one change, we'll reapply font-size to chunk
-		    this.font.applyTo(lastWord.rawNode);			// hasStyleChanged = false;
-		}
+				if (hasStyleChanged) {					// once we notice one change, we will reapply font-size to chunk
+		    		this.font.applyTo(lastWord.rawNode);				}
                 c.word = lastWord;
 
                 if (leadingSpaces) { 
                     LivelyNS.setAttribute(lastWord.rawNode, "lead", leadingSpaces);
                     leadingSpaces = 0;
                 }
-                lastWord.compose(compositionWidth - (mostRecentBounds.maxX() - this.topLeft.x), c.length - 1);
-                c.bounds = lastWord.getBounds(c.start).union(lastWord.getBounds(c.start + c.length - 1));
-                if (lastWord.getLineBrokeOnCompose()) {
+                lastWord.compose(compositionWidth - (this.lastChunkBounds.maxX() - this.topLeft.x), c.length - 1);
+                c.bounds = lastWord.getBounds(c.start).union(lastWord.getBounds(c.start + c.length - 1));                if (lastWord.getLineBrokeOnCompose()) {
                     if (i == 0) {
                         // XXX in the future, another chunk needs to be inserted in the array at this point
                         //     otherwise the bounds will be messed up - kam
@@ -474,11 +469,11 @@ Object.subclass('TextLine', {
                         // Back up to re-render this word and abort rendering
                         c.render = false;
                     }
-                    break;
+                	this.nSpaceChunks-- ;  // This makes last interiror space no longer interior                    break;
                }
                runningStartIndex = c.start + c.length;
             }
-            mostRecentBounds = c.bounds;
+            this.lastChunkBounds = c.bounds;
             c.wasComposed = true;
         }
         this.overallStopIndex = runningStartIndex - 1;
@@ -558,16 +553,14 @@ Object.subclass('TextLine', {
         return this.startIndex <= index && index <= this.getStopIndex();
     },
 
-    adjustAfterComposition: function(compositionWidth) {		// This serves to clean up some cruft tht should not be there anyway		// But it now also serves to align the text after composition		var deltaX = 0;		var paddingX = 0;		var spaceRemaining = 0;		if (this.alignment != 'left') {			var rightX = this.getBounds(Math.max(this.overallStopIndex-1, this.startIndex)).maxX();			spaceRemaining =  (this.topLeft.x + compositionWidth) - rightX;			// console.log("alignment = " + this.alignment + "; rightX = " + rightX + "; spaceRemaining = " + spaceRemaining);			if (this.alignment == 'right') deltaX = spaceRemaining;			if (this.alignment == 'center') deltaX = spaceRemaining/2;			if (this.alignment == 'justify') {				paddingX = spaceRemaining/3;  // Compute nSpaces			}		}        for (var i = 0; i < this.chunks.length; i++) {
-            if (this.chunks[i].word != null) {
-                this.chunks[i].word.adjustAfterComposition(deltaX);				deltaX += paddingX;
-            }
+    adjustAfterComposition: function(compositionWidth) {		// This serves to clean up some cruft tht should not be there anyway		// But it now also serves to align the text after composition		var deltaX = 0;		var paddingX = 0;		var spaceRemaining = 0;		if (this.alignment != 'left' && this.lastChunkBounds) {			spaceRemaining =  (this.topLeft.x + compositionWidth) - this.lastChunkBounds.maxX();			// console.log("alignment = " + this.alignment + "; rightX = " + rightX + "; spaceRemaining = " + spaceRemaining);			if (this.alignment == 'right') deltaX = spaceRemaining;			if (this.alignment == 'center') deltaX = spaceRemaining / 2;			if (this.alignment == 'justify' && this.overallStopIndex !=  this.textString.length-1) {				// Distribute remaining space over the various space chunks				var nSpaces = this.nSpaceChunks;				paddingX = spaceRemaining / Math.max(1, nSpaces); 			}		}        for (var i = 0; i < this.chunks.length; i++) {
+            if (this.chunks[i].isSpaces()) deltaX += paddingX;			if (this.chunks[i].word != null) {
+                this.chunks[i].word.adjustAfterComposition(deltaX);            }
         }
     },
 
-    // render each word contained in the line
     render: function(rawTextNode) {
-        for (var i = 0; i < this.chunks.length; i++) {
+	    // render each word contained in the line        for (var i = 0; i < this.chunks.length; i++) {
             if (this.chunks[i].word != null && this.chunks[i].render) {
                 rawTextNode.appendChild(this.chunks[i].word.rawNode);
             }
@@ -1718,7 +1711,7 @@ Morph.subclass("TextMorph", {
 // TextMorph accessor functions
 TextMorph.addMethods({
 
-    emphasizeSelection: function(emph) {		if (this.hasNullSelection()) return;		console.log("emphasizeSelection before: " + this.textStyle);		var txt = new Text(this.textString, this.textStyle);		console.log("empasis: " + emph + " " + this.selectionRange[0] + " " + this.selectionRange[1]);		txt.emphasize(emph, this.selectionRange[0], this.selectionRange[1]);		this.textStyle = txt.style;		console.log("emphasizeSelection confirm: " + this.textStyle);		this.composeAfterEdits();	},	pvtUpdateTextString: function(replacement, delayComposition, justMoreTyping) {
+    emphasizeSelection: function(emph) {		if (this.hasNullSelection()) return;		var txt = new Text(this.textString, this.textStyle);		txt.emphasize(emph, this.selectionRange[0], this.selectionRange[1]);		this.textStyle = txt.style;		// console.log("emphasizeSelection result: " + this.textStyle);		this.composeAfterEdits();	},	pvtUpdateTextString: function(replacement, delayComposition, justMoreTyping) {
         // Mark for undo, but not if continuation of type-in
 	if(!justMoreTyping) {
 		this.undoTextString = this.textString;

@@ -39,6 +39,7 @@ Widget.subclass('SimpleBrowser', {
 	case p.getClassName:
 	    var className = this.getModelValue('getClassName');
 	    this.setModelValue("setMethodList", this.listMethodsFor(className));
+        p.model.setClassPaneMenu(this.getClassPaneMenu());  // DI: Better way?
 	    break;
 	case p.getMethodName:
 	    var methodName = this.getModelValue("getMethodName");
