@@ -350,8 +350,8 @@ Object.subclass('TextLine', {
         this.startIndex = startIndex;
         this.overallStopIndex = textString.length - 1;
         this.topLeft = topLeft;
-        this.font = font;        this.defaultFont = font;  // for the whole textMorph		this.alignment = 'left';
-        this.defaultStyle = defaultStyle;  // currently unused		// Should probably call adoptStyle(defaultStyle) here		//	this.adoptStyle(defaultStyle);		this.spaceWidth = font.getCharWidth(' ');
+        this.font = font;        this.defaultFont = font;  // for the whole textMorph		this.lineHeight = font.getSize() + 2;		this.alignment = 'left';
+        this.defaultStyle = defaultStyle;  // currently unused 		// Should probably call adoptStyle(defaultStyle) here		//	this.adoptStyle(defaultStyle);		this.spaceWidth = font.getCharWidth(' ');
         this.tabWidth = this.spaceWidth * 4;
         this.hasComposed = false;
         this.chunks = chunkSkeleton;
@@ -479,7 +479,7 @@ Object.subclass('TextLine', {
         this.hasComposed = true;
     },
 
-	adoptStyle: function(emph, charIx) {		var fontFamily = this.font.getFamily();		var fontSize = this.font.getSize();		var fontStyle = 'normal';		var fontColor = Color.black;		var align = 'left';		Properties.forEachOwn(emph, function(p, v) {			if (p == "family") fontFamily = v;			if (p == "size")  fontSize = v;			if (p == "style") fontStyle = v;			if (p == "color") fontColor = v;			if (p == "align") align = v;			}.bind(this));		// console.log("adoptStyle/Font.forFamily" + fontFamily + fontSize + fontStyle + "; index = " + charIx);		this.font = Font.forFamily(fontFamily, fontSize, fontStyle);		this.fontColor = fontColor;		this.alignment = align;		// if (align != 'left') console.log("alignment = " + this.alignment );        this.spaceWidth = this.font.getCharWidth(' ');
+	adoptStyle: function(emph, charIx) {		var fontFamily = this.font.getFamily();		var fontSize = this.font.getSize();		var fontStyle = 'normal';		var fontColor = Color.black;		var align = 'left';		Properties.forEachOwn(emph, function(p, v) {			if (p == "family") fontFamily = v;			if (p == "size")  fontSize = v;			if (p == "style") fontStyle = v;			if (p == "color") fontColor = v;			if (p == "align") align = v;			}.bind(this));		// console.log("adoptStyle/Font.forFamily" + fontFamily + fontSize + fontStyle + "; index = " + charIx);		this.font = Font.forFamily(fontFamily, fontSize, fontStyle);		this.fontColor = fontColor;		this.alignment = align;		this.lineHeight = Math.max(this.lineHeight, this.font.getSize() + 2);        this.spaceWidth = this.font.getCharWidth(' ');
         this.tabWidth = this.spaceWidth * 4;
     },
    getStopIndex: function() {
@@ -1016,7 +1016,7 @@ Morph.subclass("TextMorph", {
         return this.shape.bounds().insetByPt(this.inset); 
     },
     
-    lineHeight: function() { 
+    defaultLineHeight: function() { 
         return this.getFontSize() + 2; // for now
     },
 
@@ -1081,7 +1081,7 @@ Morph.subclass("TextMorph", {
             line.adjustAfterComposition(compositionWidth);
             lines.push(line);
             startIndex = line.getNextStartIndex();
-            topLeft = topLeft.addXY(0, this.lineHeight());
+            topLeft = topLeft.addXY(0, line.lineHeight);
             // this is an optimization that keeps us from having to re-scan the string on each line
             chunkSkeleton = line.cloneChunkSkeleton(startIndex);
         }
@@ -1113,18 +1113,17 @@ Morph.subclass("TextMorph", {
     },
 
     // find what line contains the y value in character metric space
-    lineForY: function(y) {
-        if (!this.lines || this.lines.length < 1 || y < this.lines[0].getTopY()) return null;
+    lineNumberForY: function(y) {
+        if (!this.lines || this.lines.length < 1 || y < this.lines[0].getTopY()) return -1;
     
         for (var i = 0; i < this.lines.length; i++) {
             var line = this.lines[i];
-            if (y < line.getTopY() + this.lineHeight()) {
-                // console.log('hit line ' + i + ' for y ' + y + ' slice ' + line.startIndex + "," + line.stopIndex);
-                return line; 
-            }
+            if (y < line.getTopY() + line.lineHeight) return i; 
         }
-        return null; 
+        return -1; 
     },
+    lineForY: function(y) {
+        var i = this.lineNumberForY(y);		if (i<0) return null;		return this.lines[i];    },
     
     hit: function(x, y) {
         var line = this.lineForY(y);
@@ -1159,7 +1158,7 @@ Morph.subclass("TextMorph", {
         }
         
         // console.log('last char is ' + jRect.inspect() + ' for string ' + this.textString);
-        var maxY = Math.max(this.lineHeight(), jRect.maxY());
+        var maxY = Math.max(this.defaultLineHeight(), jRect.maxY());
     
         if (this.shape.bounds().maxY() == maxY + this.inset.y) 
             return; // No change in height  // *** check that this converges
@@ -1178,7 +1177,7 @@ Morph.subclass("TextMorph", {
         var jRect = this.getCharBounds(0);
         if (jRect == null) { 
             console.log("fitWidth failure on TextMorph.getCharBounds");
-            var minH = this.lineHeight();
+            var minH = this.defaultLineHeight();
             var s = this.shape;
             s.setBounds(s.bounds().withHeight(s.minH));
             return; 
@@ -1279,18 +1278,12 @@ Morph.subclass("TextMorph", {
         // this.addNonMorph(this.rawSelectionNode);
     },
     
+
     lineNo: function(r) { //Returns the line number of a given rectangle
-        var lineHeight = this.lineHeight();
-        var y0 = this.textTopLeft().y;
-        return Math.floor((r.center().y - y0) / lineHeight); 
-    },
+        return this.lineNumberForY(r.center().y);   },
     
     lineRect: function(r) { //Returns a new rect aligned to text lines
-        var lineHeight = this.lineHeight();
-        var y0 = this.textTopLeft().y + 1;
-        var y1 = y0 + lineHeight * Math.floor((r.center().y - y0) / lineHeight);
-        return pt(r.x, y1).extent(pt(r.width, lineHeight)); 
-    },
+        var i = this.lineNo(r);		if (i<0) {console.log("lineRect i < 0"); i = 0}		if (i> this.lines.length-1) {console.log("lineRect i > this.lines.length-1"); i = this.lines.length-1}		var line = this.lines[i];		return new Rectangle(r.x, line.getTopY(), r.width, line.lineHeight);    },
     
     charOfPoint: function(localP) {  //Sanitized hit function
         // DI: Nearly perfect now except past last char if not EOL
