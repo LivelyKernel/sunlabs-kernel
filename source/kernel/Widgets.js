@@ -1168,7 +1168,9 @@ TextMorph.subclass("CheapListMorph", {
     sanitizedList: function(list) { // make sure entries with new lines don't confuse the list
 	return list && list.invoke('replace', /\n/g, " ");
     },
-    setExtent: function(ignored) {		// Defeat recomposition when reframing windows		// May have deleterious side-effects
+    setExtent: function(ignored) {
+	// Defeat recomposition when reframing windows
+	// May have deleterious side-effects
     },
 
     deserialize: function($super, importer, rawNode) {
@@ -1351,7 +1353,7 @@ TextMorph.subclass("CheapListMorph", {
 
 Morph.addMethods({
 
-    layoutVertically: function(inset) { // assume the size of the 
+    leftAlignSubmorphs: function(inset) { // assume the size of the 
 	var padLeft = inset.x;
 	var padRight = inset.x;
 	var padTop = inset.y;
@@ -1360,6 +1362,7 @@ Morph.addMethods({
 	var topLeft = pt(padLeft, padTop);
 
 	var ownExtent = pt(0, 0);
+
 	for (var i = 0; i < this.submorphs.length; i++) {
 	    var morph = this.submorphs[i];
 	    morph.setPosition(topLeft);
@@ -1389,15 +1392,15 @@ Morph.subclass("TextListMorph", {
     defaultCapacity: 50,
 
     generateSubmorphs: function(itemList, width) {
-	var itemHeight = TextMorph.prototype.fontSize;
+	var rect = pt(width, TextMorph.prototype.fontSize).extentAsRectangle();
 	for (var i = 0; i < itemList.length; i++ ) {
-	    var m = this.addMorph(new TextMorph(pt(width, itemHeight).extentAsRectangle(), itemList[i])).beListItem();
+	    var m = this.addMorph(new TextMorph(rect, itemList[i])).beListItem();
 	    m.relayMouseEvents(this, {onMouseDown: "highlightItem"});
 	}
     },
     
-    layoutAll: function() {
-	this.layoutVertically(pt(this.padding*2, this.padding));
+    alignAll: function() {
+	this.leftAlignSubmorphs(pt(this.padding*2, this.padding));
     },
 
     initialize: function($super, initialBounds, itemList) {
@@ -1408,7 +1411,7 @@ Morph.subclass("TextListMorph", {
         this.itemList = itemList;
 	this.selectedLineNo = -1;
 	this.generateSubmorphs(itemList, initialBounds.width);
-	this.layoutAll();
+	this.alignAll();
         // this default self connection may get overwritten by, eg, connectModel()...
         var model = new SyntheticModel(this.pins);
         this.modelPlug = new ModelPlug(model.makePlugSpecFromPins(this.pins));
@@ -1456,7 +1459,6 @@ Morph.subclass("TextListMorph", {
     onKeyDown: function(evt) {
         switch (evt.getKeyCode()) {
         case Event.KEY_UP: {
-	    console.log("keyup");
             var lineNo = this.selectedLineNo;
             if (lineNo > 0) {
                 this.selectLineAt(lineNo - 1, true); 
@@ -1513,9 +1515,9 @@ Morph.subclass("TextListMorph", {
 	    }
 	    this.itemList = this.itemList.slice(removed);
 	}
-	this.generateSubmorphs(newItems, this.bounds().width);
-	this.layoutAll();
 	this.itemList = this.itemList.concat(newItems);
+	this.generateSubmorphs(newItems, this.bounds().width);
+	this.alignAll();
         this.setSelectionToMatch(priorItem);
 	this.resetScrollPane(true);
     },
@@ -1525,7 +1527,7 @@ Morph.subclass("TextListMorph", {
 	this.itemList = newList;
 	this.removeAllMorphs();
         this.generateSubmorphs(newList, this.bounds().width);
-	this.layoutAll();
+	this.alignAll();
         this.setSelectionToMatch(priorItem);
 	this.resetScrollPane();
         // this.emitSelection(); 
