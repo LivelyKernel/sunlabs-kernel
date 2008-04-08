@@ -1143,7 +1143,7 @@ TextMorph.subclass("CheapListMorph", {
     
     borderColor: Color.black,
     wrap: WrapStyle.None,
-    maxSafeSize: 2e4,  // override max for subsequent updates
+    maxSafeSize: 4e4,  // override max for subsequent updates
     pins: ["List", "Selection", "-DeletionConfirmation", "+DeletionRequest"],
     
     initialize: function($super, initialBounds, itemList) {

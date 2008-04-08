@@ -140,8 +140,7 @@ Object.subclass('TextWord', {
     setX: function(newValue /*:float*/) {
         var oldValue = this.naiveGetX();
         if (oldValue != newValue) { // FIXME: maybe just recalc the offset
-            if (this.extentTable) {				var offset = newValue-oldValue;				for (var i=this.startindex; i <= this.stopIndex; i++) {					var oldR = this.extentTable[i];					this.extentTable[i] = oldR.withX(oldR.x + offset);				}			}			this.extentTable = null;
-        }
+            if (this.extentTable) {				var offset = newValue-oldValue;				for (var i=this.startindex; i <= this.stopIndex; i++) {					var oldR = this.extentTable[i];					this.extentTable[i] = oldR.withX(oldR.x + offset);				}			}        }
         this.rawNode.setAttributeNS(null, "x", newValue.toString());
     },
     
@@ -351,23 +350,24 @@ Object.subclass('TextLine', {
         this.startIndex = startIndex;
         this.overallStopIndex = textString.length - 1;
         this.topLeft = topLeft;
-        this.font = font;		this.alignment = 'left';
-        this.defaultStyle = defaultStyle;		// Should probably call adoptStyle(defaultStyle) here		//	this.adoptStyle(defaultStyle);		this.spaceWidth = font.getCharWidth(' ');
+        this.font = font;        this.defaultFont = font;  // for the whole textMorph		this.alignment = 'left';
+        this.defaultStyle = defaultStyle;  // currently unused		// Should probably call adoptStyle(defaultStyle) here		//	this.adoptStyle(defaultStyle);		this.spaceWidth = font.getCharWidth(' ');
         this.tabWidth = this.spaceWidth * 4;
         this.hasComposed = false;
         this.chunks = chunkSkeleton;
-        return this;
+        var d = {};		d[ ' ' ] = true;  d[ '\t' ] = true;  d[ '\r' ] = true;  d[ '\n' ] = true;		this.whiteSpaceDict = d;  // Should go in the class after test
+
     },
 
 	isWhiteSpace: function(c) {
-	 	// is the character 'c' what we consider to be whitespace? (private) 		return (c == ' ' || c == '\t' || c == '\r' || c == '\n');
+	 	// is the character 'c' what we consider to be whitespace? (private) 		// return this.whiteSpaceDict[c];		return (c == ' ' || c == '\t' || c == '\r' || c == '\n');
 		},
 
 	isNewLine: function(c) {		// is the character 'c' what we consider to be a newline? (private)		return (c == '\r' || c == '\n');		},
 
     chunkFromWord: function(wString, offset) {
 	    // we found a word so figure out where the chunk extends to (private)        for (var i = offset; i < wString.length; i++) {
-            if (this.isWhiteSpace(wString[i])) {
+            if (this.whiteSpaceDict[wString[i]]) {
                 return i - offset;
             }
         }
@@ -390,7 +390,7 @@ Object.subclass('TextLine', {
 
         while (offset < wString.length) {
             chunkSize = 1; // default is one character long
-            if (this.isWhiteSpace(wString[offset])) {
+            if (this.whiteSpaceDict[wString[offset]]) {
                 if (this.isNewLine(wString[offset])) {
                     pieces.push(new WordChunk(offset).asNewLine());
                 } else if (wString[offset] == '\t') {
@@ -409,7 +409,7 @@ Object.subclass('TextLine', {
     },
 
     compose: function(compositionWidth) {
-	    // compose a line of text, breaking it appropriately at compositionWidth		 // nSpaceChunks and lastChunkBounds are used for alignment in adjustAfterComposition		this.nSpaceChunks = 0; 		this.lastChunkBounds = this.topLeft.extent(pt(0, this.font.getSize()));  // ..  non-whitespace chunk        var runningStartIndex = this.startIndex;
+	    // compose a line of text, breaking it appropriately at compositionWidth		 // nSpaceChunks and lastChunkIndex are used for alignment in adjustAfterComposition		this.nSpaceChunks = 0; 		this.lastChunkIndex = 0;         var lastBounds = this.topLeft.extent(pt(0, this.font.getSize()));		var runningStartIndex = this.startIndex;
         var lastWord = null;
         var leadingSpaces = 0;
 		var nextStyleChange = (this.textStyle) ? 0 : this.textString.length;
@@ -421,7 +421,7 @@ Object.subclass('TextLine', {
 
 	var hasStyleChanged = false;
         for (var i = 0; i < this.chunks.length; i++) {
-            var c = this.chunks[i];
+            var c = this.chunks[i];			this.lastChunkIndex = i;
 	    if (c.start >= nextStyleChange) {
 			hasStyleChanged = true;
 			// For now style changes are only seen at chunk breaks
@@ -430,7 +430,7 @@ Object.subclass('TextLine', {
 	    }
             if (c.isWhite) {
                 var spaceIncrement = this.spaceWidth;
-                c.bounds = this.lastChunkBounds.withX(this.lastChunkBounds.maxX());
+                c.bounds = lastBounds.withX(lastBounds.maxX());
                 if (c.isNewLine) {
                     c.bounds.width = (this.topLeft.x + compositionWidth) - c.bounds.x;
                     runningStartIndex = c.start + c.length;
@@ -448,7 +448,7 @@ Object.subclass('TextLine', {
                 }
                 runningStartIndex = c.start + c.length;
             } else {
-                lastWord = new TextWord(this.textString, c.start, pt(this.lastChunkBounds.maxX(), this.topLeft.y), 
+                lastWord = new TextWord(this.textString, c.start, pt(lastBounds.maxX(), this.topLeft.y), 
 					this.font);
 		
 				if (hasStyleChanged) {					// once we notice one change, we will reapply font-size to chunk
@@ -459,7 +459,7 @@ Object.subclass('TextLine', {
                     LivelyNS.setAttribute(lastWord.rawNode, "lead", leadingSpaces);
                     leadingSpaces = 0;
                 }
-                lastWord.compose(compositionWidth - (this.lastChunkBounds.maxX() - this.topLeft.x), c.length - 1);
+                lastWord.compose(compositionWidth - (lastBounds.maxX() - this.topLeft.x), c.length - 1);
                 c.bounds = lastWord.getBounds(c.start).union(lastWord.getBounds(c.start + c.length - 1));                if (lastWord.getLineBrokeOnCompose()) {
                     if (i == 0) {
                         // XXX in the future, another chunk needs to be inserted in the array at this point
@@ -473,14 +473,13 @@ Object.subclass('TextLine', {
                }
                runningStartIndex = c.start + c.length;
             }
-            this.lastChunkBounds = c.bounds;
-            c.wasComposed = true;
+            lastBounds = c.bounds;			c.wasComposed = true;
         }
         this.overallStopIndex = runningStartIndex - 1;
         this.hasComposed = true;
     },
 
-	adoptStyle: function(emph, charIx) {		var fontFamily = this.font.getFamily();		var fontSize = this.font.getSize();		var fontStyle = 'normal';		var fontColor = Color.black;		var align = 'left';		Properties.forEachOwn(emph, function(p, v) {			if (p == "family") fontFamily = v;			if (p == "size") fontSize = v;			if (p == "style") fontStyle = v;			if (p == "color") fontColor = v;			if (p == "align") align = v;			});		// console.log("adoptStyle/Font.forFamily" + fontFamily + fontSize + fontStyle + "; index = " + charIx);		this.font = Font.forFamily(fontFamily, fontSize, fontStyle);		this.fontColor = fontColor;		this.alignment = align;		// if (align != 'left') console.log("alignment = " + this.alignment );        this.spaceWidth = this.font.getCharWidth(' ');
+	adoptStyle: function(emph, charIx) {		var fontFamily = this.font.getFamily();		var fontSize = this.font.getSize();		var fontStyle = 'normal';		var fontColor = Color.black;		var align = 'left';		Properties.forEachOwn(emph, function(p, v) {			if (p == "family") fontFamily = v;			if (p == "size")  fontSize = v;			if (p == "style") fontStyle = v;			if (p == "color") fontColor = v;			if (p == "align") align = v;			}.bind(this));		// console.log("adoptStyle/Font.forFamily" + fontFamily + fontSize + fontStyle + "; index = " + charIx);		this.font = Font.forFamily(fontFamily, fontSize, fontStyle);		this.fontColor = fontColor;		this.alignment = align;		// if (align != 'left') console.log("alignment = " + this.alignment );        this.spaceWidth = this.font.getCharWidth(' ');
         this.tabWidth = this.spaceWidth * 4;
     },
    getStopIndex: function() {
@@ -553,7 +552,7 @@ Object.subclass('TextLine', {
         return this.startIndex <= index && index <= this.getStopIndex();
     },
 
-    adjustAfterComposition: function(compositionWidth) {		// This serves to clean up some cruft tht should not be there anyway		// But it now also serves to align the text after composition		var deltaX = 0;		var paddingX = 0;		var spaceRemaining = 0;		if (this.alignment != 'left' && this.lastChunkBounds) {			spaceRemaining =  (this.topLeft.x + compositionWidth) - this.lastChunkBounds.maxX();			// console.log("alignment = " + this.alignment + "; rightX = " + rightX + "; spaceRemaining = " + spaceRemaining);			if (this.alignment == 'right') deltaX = spaceRemaining;			if (this.alignment == 'center') deltaX = spaceRemaining / 2;			if (this.alignment == 'justify' && this.overallStopIndex !=  this.textString.length-1) {				// Distribute remaining space over the various space chunks				var nSpaces = this.nSpaceChunks;				paddingX = spaceRemaining / Math.max(1, nSpaces); 			}		}        for (var i = 0; i < this.chunks.length; i++) {
+    adjustAfterComposition: function(compositionWidth) {		// This serves to clean up some cruft tht should not be there anyway		// But it now also serves to align the text after composition		var deltaX = 0;		var paddingX = 0;		var spaceRemaining = 0;		if (this.alignment != 'left' ) {			spaceRemaining =  (this.topLeft.x + compositionWidth) - this.chunks[this.lastChunkIndex-1].bounds.maxX();			if (this.alignment == 'right') deltaX = spaceRemaining;			if (this.alignment == 'center') deltaX = spaceRemaining / 2;			if (this.alignment == 'justify' 				&& (this.overallStopIndex !=  this.textString.length-1)				&& ! (this.chunks[this.lastChunkIndex].isNewLine)				) {				//  Distribute remaining space over the various space chunks				var nSpaces = this.nSpaceChunks;				paddingX = spaceRemaining / Math.max(1, nSpaces); 			}		}        for (var i = 0; i <= this.lastChunkIndex; i++) {
             if (this.chunks[i].isSpaces()) deltaX += paddingX;			if (this.chunks[i].word != null) {
                 this.chunks[i].word.adjustAfterComposition(deltaX);            }
         }
@@ -743,7 +742,7 @@ Morph.subclass("TextMorph", {
 
     inset: pt(6,4), // remember this shouldn't be modified unless every morph should get the value 
     wrap: WrapStyle.Normal,
-    maxSafeSize: 10000, 
+    maxSafeSize: 20000, 
     tabWidth: 4,
     tabsAsSpaces: true,
     noShallowCopyProperties: Morph.prototype.noShallowCopyProperties.concat(['rawTextNode', 'textSelection', 'lines']),
@@ -1119,7 +1118,7 @@ Morph.subclass("TextMorph", {
     
         for (var i = 0; i < this.lines.length; i++) {
             var line = this.lines[i];
-            if (y < this.lines[i].getTopY() + this.lineHeight()) {
+            if (y < line.getTopY() + this.lineHeight()) {
                 // console.log('hit line ' + i + ' for y ' + y + ' slice ' + line.startIndex + "," + line.stopIndex);
                 return line; 
             }
@@ -1405,7 +1404,7 @@ Morph.subclass("TextMorph", {
 	}
 		// Splice the textString
 		var before = this.textString.substring(0,this.selectionRange[0]); 
-        var after = this.textString.substring(this.selectionRange[1]+1, oldLength);		this.setTextString(before.concat(replacement,after), delayComposition, justMoreTyping);		if (strStyle || repStyle) { // Splice the style array if any			if (!strStyle) strStyle = new RunArray([oldLength],  [new TextEmphasis({})]);			if (!repStyle) repStyle = new RunArray([replacement.length], [strStyle.valueAt(Math.max(0, this.selectionRange[0]-1))]);				before = strStyle.slice(0, this.selectionRange[0]);			after = strStyle.slice(this.selectionRange[1]+1, oldLength);			this.textStyle = before.concat(repStyle).concat(after);			console.log("replaceSel; textStyle = " + this.textStyle);		}		
+        var after = this.textString.substring(this.selectionRange[1]+1, oldLength);		this.setTextString(before.concat(replacement,after), delayComposition, justMoreTyping);		if (strStyle || repStyle) { // Splice the style array if any			if (!strStyle) strStyle = new RunArray([oldLength],  [new TextEmphasis({})]);			if (!repStyle) repStyle = new RunArray([replacement.length], [strStyle.valueAt(Math.max(0, this.selectionRange[0]-1))]);				before = strStyle.slice(0, this.selectionRange[0]);			after = strStyle.slice(this.selectionRange[1]+1, oldLength);			this.textStyle = before.concat(repStyle).concat(after);			// console.log("replaceSel; textStyle = " + this.textStyle);		}		
         // Compute new selection, and display if not delayed		var selectionIndex = this.selectionRange[0] + replacement.length;		if (delayComposition) this.selectionRange = [selectionIndex, selectionIndex-1];		else this.setNullSelectionAt(selectionIndex); // this displays it as well
     },
 
@@ -1639,7 +1638,7 @@ Morph.subclass("TextMorph", {
             return true; 
         }
         
-        case "a": {
+        case "a": {  // Select-all
 	    	if (this.typingHasBegun) { // Select chars just typed
 				this.setSelectionRange(this.selectionRange[0] - this.charsTyped.length, this.selectionRange[0]);
 	    	} else { // Select All
@@ -1648,42 +1647,18 @@ Morph.subclass("TextMorph", {
             return true;
         }
         
-        case "b": { // boldface
-            this.emphasizeSelection({style: 'bold'});
-            return true;
-        }
-        case "i": { // italic
-            this.emphasizeSelection({style: 'italic'});
-            return true;
-        }
-        case "n": { // normal (no bold or ital)
-            this.emphasizeSelection({style: 'normal'});
-            return true;
-        }
-        case "+": { // big
-            this.emphasizeSelection({size: this.fontSize+2});
-            return true;
-        }
-        case "-": { // small
-            this.emphasizeSelection({size: this.fontSize-2});
-            return true;
-        }
-		case "r": { // right flush
-			this.emphasizeSelection({align: 'right'});
-			return true;
-		}
-        case "l": { // left flush
-            this.emphasizeSelection({align: 'left'});
-            return true;
-        }
-        case "h": { // centered (Half way between left and right ;-)
-            this.emphasizeSelection({align: 'center'});
-            return true;
-        }
-        case "j": { // justify
-            this.emphasizeSelection({align: 'justify'});
-            return true;
-        }
+        // Typeface		case "b": { this.emphasizeSelection({style: 'bold'}); return true; }
+ 		case "i": { this.emphasizeSelection({style: 'italic'}); return true; }
+ 		case "n": { this.emphasizeSelection({style: 'normal'}); return true; }
+       // Font Size		case "4": { this.emphasizeSelection({size: (this.fontSize*0.8).roundTo(1)}); return true; }
+        case "5": { this.emphasizeSelection({size: (this.fontSize*1).roundTo(1)}); return true; }
+        case "6": { this.emphasizeSelection({size: (this.fontSize*1.2).roundTo(1)}); return true; }
+        case "7": { this.emphasizeSelection({size: (this.fontSize*1.5).roundTo(1)}); return true; }
+        case "8": { this.emphasizeSelection({size: (this.fontSize*2.0).roundTo(1)}); return true; }
+		// Text Alignment		case "l": { this.emphasizeSelection({align: 'left'}); return true; }
+		case "r": { this.emphasizeSelection({align: 'right'}); return true; }
+		case "h": { this.emphasizeSelection({align: 'center'}); return true; }
+		case "j": { this.emphasizeSelection({align: 'justify'}); return true; }
 
         case "z": { // Undo
             if (this.undoTextString) {
@@ -1993,7 +1968,7 @@ Object.subclass('RunArray', {
 });RunArray.test([3, 1, 2]);Object.subclass('Text', {
 	// Rich text comes to the Lively Kernel	initialize: function(string, style) {		this.string = string;		if (! style) this.style = new RunArray([string.length], [new TextEmphasis({})]);		if (style instanceof TextEmphasis) this.style = new RunArray([string.length], [style]);		if (style instanceof RunArray) this.style = style;	},	emphasize: function (emph, start, stop) {		// Modify the style of this text according to emph		var myEmph = emph;
 		if (! (emph instanceof TextEmphasis)) myEmph = new TextEmphasis(emph);
-		this.style = this.style.mergeStyle(myEmph, start, stop);		console.log("Text.emphasized: " + this.style);		return this;	},	substring: function (start, stop) {		// Return string copy		return this.string.substring(start, stop);	},	subtext: function (start, stop) {		// Modify the style of this text according to emph		return new Text(this.string.substring(start, stop), this.style.slice(start, stop));	},	toString: function() {		return "Text for " + this.string.toString() + "<" + this.style + ">";	}});
+		this.style = this.style.mergeStyle(myEmph, start, stop);		// console.log("Text.emphasized: " + this.style);		return this;	},	substring: function (start, stop) {		// Return string copy		return this.string.substring(start, stop);	},	subtext: function (start, stop) {		// Modify the style of this text according to emph		return new Text(this.string.substring(start, stop), this.style.slice(start, stop));	},	toString: function() {		return "Text for " + this.string.toString() + "<" + this.style + ">";	}});
 
 
 Object.subclass('TextEmphasis', {

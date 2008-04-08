@@ -112,24 +112,20 @@ Widget.subclass('SimpleBrowser', {
     getClassPaneMenu: function() {
         var items = [];
 	var className = this.getModelValue("getClassName");
-console.log("getClassPaneMenu 1 ");
-console.log("className = " + className);
 	if (className != null) {
             var theClass = Global[className];
-console.log("theClass.prototype = " + Object.inspect(theClass.prototype));
-            if (theClass.prototype != null) {
+           if (theClass.prototype != null) {
 		items.push(['profile selected class', 
 			    function() { showStatsViewer(theClass.prototype, className + "..."); }]);
 	    }
 	}
-console.log("getClassPaneMenu 2");
 	if (Loader.isLoadedFromNetwork) {
             items.push(['import source files', function() {
                 if (! SourceControl) SourceControl = new SourceDatabase();
 		SourceControl.scanKernelFiles(["prototype.js", "defaultconfig.js", "localconfig.js",
 			"Main.js", "Core.js", "Text.js", "svgtext-compat.js",
 			"Widgets.js", "Network.js", "Storage.js", "Tools.js",
-			"Examples.js", "WebPIM.js"]);
+			"Examples.js", "WebPIM.js", "phone.js"]);
 		WorldMorph.current().setFill(new RadialGradient(Color.rgb(36,188,255), Color.rgb(127,15,0)));
 		}]);
 	}
