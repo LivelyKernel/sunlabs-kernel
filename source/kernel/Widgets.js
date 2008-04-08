@@ -1383,20 +1383,23 @@ Morph.subclass("TextListMorph", {
     borderColor: Color.black,
     borderWidth: 1,
     fill: Color.white,
-    pins: ["List", "Selection", "-DeletionConfirmation", "+DeletionRequest"],
+    pins: ["List", "Capacity", "ListDelta", "Selection", "-DeletionConfirmation", "+DeletionRequest"],
     padding: 1,
     documentation: "replacement for CheapListMorphs, using TextMorphs as menu items",
+    defaultCapacity: 50,
 
     generateSubmorphs: function(itemList, width) {
-	var listMorph = this;
 	var itemHeight = TextMorph.prototype.fontSize;
 	for (var i = 0; i < itemList.length; i++ ) {
 	    var m = this.addMorph(new TextMorph(pt(width, itemHeight).extentAsRectangle(), itemList[i])).beListItem();
 	    m.relayMouseEvents(this, {onMouseDown: "highlightItem"});
 	}
-	this.layoutVertically(pt(this.padding*2, this.padding));
     },
     
+    layoutAll: function() {
+	this.layoutVertically(pt(this.padding*2, this.padding));
+    },
+
     initialize: function($super, initialBounds, itemList) {
         // itemList is an array of strings
 	var height = Math.max(initialBounds.height, itemList.length* (TextMorph.prototype.fontSize + this.padding *2));
@@ -1405,6 +1408,7 @@ Morph.subclass("TextListMorph", {
         this.itemList = itemList;
 	this.selectedLineNo = -1;
 	this.generateSubmorphs(itemList, initialBounds.width);
+	this.layoutAll();
         // this default self connection may get overwritten by, eg, connectModel()...
         var model = new SyntheticModel(this.pins);
         this.modelPlug = new ModelPlug(model.makePlugSpecFromPins(this.pins));
@@ -1427,10 +1431,6 @@ Morph.subclass("TextListMorph", {
 	}
         this.setModelValue('setList', this.itemList);
         this.layoutChanged();
-    },
-
-    restorePersistentState: function($super, importer) {
-        $super(importer); // FIXME
     },
 
     takesKeyboardFocus: Functions.True,
@@ -1502,12 +1502,30 @@ Morph.subclass("TextListMorph", {
 	    shouldUpdateModel && this.setSelection(itemMorph.textString);
 	} else console.log("nothing to select");
     },
+
+    appendList: function(newItems) {
+	var capacity = this.getModelValue("getCapacity", this.defaultCapacity);
+        var priorItem = this.getSelection();
+	var removed = this.itemList.length + newItems.length - capacity;
+	if (removed > 0) {
+	    for (var i = 0; i < removed; i++) {
+		this.submorphs[0].remove();
+	    }
+	    this.itemList = this.itemList.slice(removed);
+	}
+	this.generateSubmorphs(newItems, this.bounds().width);
+	this.layoutAll();
+	this.itemList = this.itemList.concat(newItems);
+        this.setSelectionToMatch(priorItem);
+	this.resetScrollPane(true);
+    },
     
     updateList: function(newList) {
         var priorItem = this.getSelection();
 	this.itemList = newList;
 	this.removeAllMorphs();
         this.generateSubmorphs(newList, this.bounds().width);
+	this.layoutAll();
         this.setSelectionToMatch(priorItem);
 	this.resetScrollPane();
         // this.emitSelection(); 
@@ -1531,6 +1549,12 @@ Morph.subclass("TextListMorph", {
             case 'all':
                 this.updateList(this.getList());
                 return this.itemList; // debugging
+
+	    case this.modelPlug.getListDelta:
+		this.appendList(this.getModelValue("getListDelta"));
+		//this.setModelValue("setListDelta", []);
+		return this.itemList;
+
             case this.modelPlug.getSelection:
                 var selection = this.getSelection();
 		console.log("got selection "  + selection);
@@ -1562,11 +1586,16 @@ Morph.subclass("TextListMorph", {
         if (this.modelPlug) this.setModelValue('setSelection', item); 
     },
 
-    resetScrollPane: function() { // KP: this copied from TextMorph. Nasty! FIXME!
+    resetScrollPane: function(toBottom) { // KP: this copied from TextMorph. Nasty! FIXME!
         // Need a cleaner way to do this ;-)
         if (this.owner instanceof ClipMorph && this.owner.owner instanceof ScrollPane) {
-            this.owner.owner.scrollToTop();
+	    if (toBottom)
+		this.owner.owner.scrollToBottom();
+	    else
+		this.owner.owner.scrollToTop();
+	    return true;
         }
+	return false;
     },
 
 
@@ -2295,11 +2324,14 @@ View.subclass('Widget', { // FIXME remove code duplication
     deserialize: function(importer, modelPlug) {
 	this.connectModel(modelPlug);
     }
+
     
 });
 
 Widget.subclass('Dialog', {
     inset: 10,
+    style: { borderColor: Color.blue, borderWidth: 4, borderRadius: 16,
+             fill: Color.blue.lighter(), opacity: 0.9},
 
     initialize: function(plug) {
 	if (plug) this.connectModel(plug);
@@ -2339,8 +2371,7 @@ Dialog.subclass('ConfirmDialog', {
     buildView: function(extent, model) {
         var panel = new PanelMorph(extent);
 	this.panel = panel;
-        panel.linkToStyles(['widgetPanel']);
-	panel.setFillOpacity(0.9);
+        panel.applyStyle(this.style);
 
 	var r = new Rectangle(this.inset, this.inset, extent.x - 2*this.inset, 30);
 	var label = panel.addMorph(new TextMorph(r, this.getModelValue("getMessage")).beLabel());
@@ -2391,8 +2422,7 @@ Dialog.subclass('PromptDialog', {
     buildView: function(extent, model) {
         var panel = new PanelMorph(extent);
 	this.panel = panel;
-        panel.linkToStyles(['widgetPanel']);
-	panel.setFillOpacity(0.9);
+        panel.applyStyle(this.style);
 	
 	var r = new Rectangle(this.inset, this.inset, extent.x - 2*this.inset, 30);
 	var label = panel.addMorph(new TextMorph(r, this.getModelValue("getMessage")).beLabel());
@@ -2420,17 +2450,16 @@ Dialog.subclass('PromptDialog', {
 Widget.subclass('ConsoleWidget', {
 
     defaultViewTitle: "Console",
-    pins: ["RecentMessages", "RecentCommands", "LastCommand", "Menu"],
+    pins: ["LogMessages", "RecentLogMessages", "Commands", "LastCommand", "Menu"],
     
     initialize: function($super, capacity) {
 	$super(null);
 	var model = new SyntheticModel(this.pins);
 	this.connectModel(model.makePlugSpecFromPins(this.pins));
-	model.setRecentCommands([]);
-	model.setRecentMessages([]);
+	model.setCommands([]);
+	model.setLogMessages([]);
+	model.getLogMessageCapacity = function() { return capacity; }
 	model.Menu = [["command history", this, "addCommandHistoryInspector"] ];
-	
-	this.capacity = capacity;
 	Global.console.consumers.push(this);
 	this.ans = undefined; // last computed value
 	return this;
@@ -2438,8 +2467,9 @@ Widget.subclass('ConsoleWidget', {
     
     addCommandHistoryInspector: function() {
 	var extent = pt(500, 40);
-	var commands = this.getModelValue("getRecentCommands", []).join('\n');
-	var pane = new ScrollPane(new TextMorph(extent.extentAsRectangle(), commands), extent.extentAsRectangle()); 
+	var commands = this.getModelValue("getCommands", []).join('\n');
+	var rect = extent.extentAsRectangle();
+	var pane = new ScrollPane(new TextMorph(rect, commands), rect); 
 	var world = WorldMorph.current();
 	world.addFramedMorph(pane, "Command history", world.positionForNewMorph());
     },
@@ -2456,16 +2486,14 @@ Widget.subclass('ConsoleWidget', {
 	var panel = PanelMorph.makePanedPanel(extent, [
             ['messagePane', newTextListPane, new Rectangle(0, 0, 1, 0.8)],
             ['commandLine', TextMorph, new Rectangle(0, 0.8, 1, 0.2)]
-        ]);
+	]);
 	
 	var model = this.getModel();
 	var m = panel.messagePane;
-	m.connectModel({model: model, getList: "getRecentMessages", getMenu: "getMenu"});
+	m.connectModel({model: model, getList: "getLogMessages", getListDelta: "getRecentLogMessages", 
+			getCapacity: "getLogMessageCapacity", getMenu: "getMenu"});
 	m.innerMorph().focusHaloBorderWidth = 0;
-	m.innerMorph().updateList = function(list) {
-	    TextListMorph.prototype.updateList.call(this, list);
-	    panel.messagePane.scrollToBottom();
-	};
+
 	var self = this;
 	panel.shutdown = function() {
 	    PanelMorph.prototype.shutdown.call(this);
@@ -2491,10 +2519,10 @@ Widget.subclass('ConsoleWidget', {
 
     evalCommand: function(text) {
 	if (!text) return;
-	var commands = this.getModelValue("getRecentCommands", []);
+	var commands = this.getModelValue("getCommands", []);
 	commands.push(text);
 	commands.length > 100 && commands.unshift();
-	this.setModelValue("setRecentCommands", commands);
+	this.setModelValue("setCommands", commands);
 	try {
 	    var ans = interactiveEval(text);
 	    if (ans !== undefined) {
@@ -2508,10 +2536,7 @@ Widget.subclass('ConsoleWidget', {
     },
     
     log: function(message) {
-	var msgs = this.getModelValue("getRecentMessages", []);
-	(msgs.length == this.capacity) && msgs.unshift();
-	msgs.push(message);
-	this.setModelValue("setRecentMessages", msgs);
+	this.setModelValue("setRecentLogMessages", [message]);
     }
     
 });
