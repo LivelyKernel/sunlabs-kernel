@@ -2193,7 +2193,7 @@ Morph.subclass("ColorPickerMorph", {
 /**
  * @class XenoMorph
  */ 
-Morph.subclass('XenoMorph', {
+ClipMorph.subclass('XenoMorph', {
     
     borderWidth: 2,
     fill: Color.gray.lighter(),
@@ -2205,29 +2205,31 @@ Morph.subclass('XenoMorph', {
                               width: bounds.width,
                               height: bounds.height });
 
-        var body = this.foRawNode.appendChild(NodeFactory.createNS(Namespace.XHTML, "body"));
+        var body = this.body = this.foRawNode.appendChild(NodeFactory.createNS(Namespace.XHTML, "body"));
         body.appendChild(document.createTextNode("no content"));
-
-	var model = new Model();
-	model.setDocumentText = function(text) {
-	    console.log('transmission dump %s', text);
-	    var parser = new DOMParser();
-            var xhtml = parser.parseFromString(text, "text/xml");
-            var node = xhtml.getElementsByTagName("body")[0];
-            body.parentNode.replaceChild(document.adoptNode(node), body);
-	};
-
-	model.setDocument = function(doc) {
-            console.log('transmission dump %s', Exporter.stringify(doc));
-	    body.parentNode.replaceChild(document.adoptNode(doc.documentElement), body);
-	};
+        this.addNonMorph(this.foRawNode);
+        this.foRawNode.appendChild(this.body);
 	
-	var req = new NetRequest({model: model, setResponseXML: "setDocument", setResponseText: "setDocumentText"});
+	url && this.fetchURL(url);
+    },
+
+    fetchURL: function(url) {
+	var model = new Model();
+	var req = new NetRequest({model: this, setResponseXML: "setContent"});//, setResponseText: "setContentText"});
 	req.setContentType("text/xml");
 	req.get(url);
-	
-        this.foRawNode.appendChild(body);
-        this.addNonMorph(this.foRawNode);
+    },
+
+    setContent: function(doc) {
+	console.log('transmission dump %s', Exporter.stringify(doc));
+	this.body.parentNode.replaceChild(document.adoptNode(doc.documentElement), this.body);
+    },
+    
+    setContentText: function(text) {
+	var parser = new DOMParser();
+	var xhtml = parser.parseFromString(text, "text/xml");
+	var node = xhtml.getElementsByTagName("body")[0];
+	this.body.parentNode.replaceChild(document.importNode(node, true), this.body);
     },
 
     adjustForNewBounds: function($super) {
@@ -2238,10 +2240,19 @@ Morph.subclass('XenoMorph', {
     },
     
     test: function(url) {
-        url = url || Loader.baseURL + "/index.xhtml";
+        url = url || Loader.baseURL + "/sample.xhtml";
+	console.log("url is " + url);
         var xeno = new XenoMorph(pt(400,200).extentAsRectangle(), new URL(url));
         WorldMorph.current().addFramedMorph(xeno, url, pt(50,50));
+    },
+    
+    test2: function() {
+	var text = '<object width="425" height="355"><param name="movie" value="http://www.youtube.com/v/a0qMe7Z3EYg&hl=en"></param><param name="wmode" value="transparent"></param><embed src="http://www.youtube.com/v/a0qMe7Z3EYg&hl=en" type="application/x-shockwave-flash" wmode="transparent" width="425" height="355"></embed></object>';
+        var xeno = new XenoMorph(pt(400,200).extentAsRectangle());
+	xeno.setContentText(text);
+        WorldMorph.current().addFramedMorph(xeno, url, pt(50,50));
     }
+
 
 });
 

@@ -5502,7 +5502,11 @@ PasteUpMorph.subclass("WorldMorph", {
 	    }],
             ["FrameRateMorph", function(evt) {
                 var m = world.addMorph(new FrameRateMorph(evt.mousePoint.extent(pt(160, 10)), "FrameRateMorph"));
-                m.startSteppingScripts(); }]
+                m.startSteppingScripts(); }],
+	    ["XenoMorph", function(evt) { 
+		var url = new URL(Loader.baseURL + "/sample.xhtml");
+		var xeno = new XenoMorph(pt(400,200).extentAsRectangle(), url);
+		world.addFramedMorph(xeno, url.toString(), pt(50,50)); }]
         ];
         if (Loader.isLoadedFromNetwork) { 
             items.push(["File Browser", function(evt) { new FileBrowser().openIn(world, evt.mousePoint) }])
