@@ -14,11 +14,11 @@
 
 var UserAgent = (function() {
 
-    var webKitVersion = function() {
+    var webKitVersion = (function() {
         if (!window.navigator) return null;
         var match = navigator.userAgent.match(/.*AppleWebKit\/(\d+).*/) 
         return match && match[1];
-    };
+    })();
 
     var isRhino = !window.navigator || window.navigator.userAgent.indexOf("Rhino") > -1;
     var isMozilla = window.navigator && window.navigator.userAgent.indexOf("Mozilla") > -1;
