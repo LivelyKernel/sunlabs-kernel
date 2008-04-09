@@ -181,3 +181,43 @@ WidgetModel.subclass('ConsoleWidget', {
     
 });
 
+
+
+// http://www.sitepen.com/blog/2008/03/18/javascript-metaclass-programming/
+Object.freeze = function(object) {
+
+    var constr = object.constructor;
+    var proto = constr.prototype
+    if (constr._privatize) {    // note, doesn't work with addMethods, should be done there
+	constr._privatize = { privates: {}, functions: [] };
+	for (var key in proto) {
+	    var value = proto[key];
+	    if (key.charAt(0) === "_") {
+		constr._privatize.privates[key.slice(1)] = value;
+		delete proto[key];
+	    } else if (Object.isFunction(value)) {
+		constr._privatize.functions.push(key);
+	    }
+	}
+    }
+    var context = Object.beget(object, constr._privatize.privates);
+    context.$public = object;
+    
+    var fns = constr._privatize.functions;
+    for (var i = 0; i < fns.length; i++) {
+	var fname = fns[i];
+	object[fname] = object[fname].bind(context); // ouch, object-private bindings
+    }
+
+};
+
+
+// boodman/crockford delegation
+Object.beget = function(object, properties) {
+    function Delegate(){};
+    Delegate.prototype = object;
+    var d = new Delegate();
+    properties && Object.extend(d, properties);
+    return d;
+};
+

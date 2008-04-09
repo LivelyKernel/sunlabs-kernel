@@ -2452,7 +2452,7 @@ Dialog.subclass('PromptDialog', {
 Widget.subclass('ConsoleWidget', {
 
     defaultViewTitle: "Console",
-    pins: ["LogMessages", "RecentLogMessages", "Commands", "LastCommand", "Menu"],
+    pins: ["LogMessages", "RecentLogMessages", "Commands", "CommandCursor", "LastCommand", "Menu"],
     
     initialize: function($super, capacity) {
 	$super(null);
@@ -2460,6 +2460,7 @@ Widget.subclass('ConsoleWidget', {
 	this.connectModel(model.makePlugSpecFromPins(this.pins));
 	model.setCommands([]);
 	model.setLogMessages([]);
+	model.setCommandCursor(0);
 	model.getLogMessageCapacity = function() { return capacity; }
 	model.Menu = [["command history", this, "addCommandHistoryInspector"] ];
 	Global.console.consumers.push(this);
@@ -2504,8 +2505,11 @@ Widget.subclass('ConsoleWidget', {
 		window.console.consumers.splice(index);
 	};
 	
-	m = panel.commandLine.beInputLine();
-	m.connectModel({model: model, setText: "setLastCommand", getText: "getLastCommand"});
+	m = panel.commandLine.beInputLine(100);
+	m.connectModel({model: model, 
+			getHistory: "getCommands", 
+			getHistoryCursor: "getCommandCursor", setHistoryCursor: "setCommandCursor",
+			setText: "setLastCommand", getText: "getLastCommand"});
 	return panel;
     },
 
@@ -2521,10 +2525,6 @@ Widget.subclass('ConsoleWidget', {
 
     evalCommand: function(text) {
 	if (!text) return;
-	var commands = this.getModelValue("getCommands", []);
-	commands.push(text);
-	commands.length > 100 && commands.unshift();
-	this.setModelValue("setCommands", commands);
 	try {
 	    var ans = interactiveEval(text);
 	    if (ans !== undefined) {

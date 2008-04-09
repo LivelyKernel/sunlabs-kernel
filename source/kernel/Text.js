@@ -806,6 +806,7 @@ Wrapper.subclass('TextSelection', {
 });
 
 
+
 /**
  * @class TextMorph
  */ 
@@ -1013,22 +1014,52 @@ Morph.subclass("TextMorph", {
 	return this;
     },
 
+    nextHistoryEntry: function() {
+	var history = this.getModelValue("getHistory");
+	if (!history || history.length == 0) return "";
+	var current = this.getModelValue("getHistoryCursor");
+	current = (current + 1) % history.length;
+	this.setModelValue("setHistoryCursor", current);
+	return history[current];
+    },
 
-    beInputLine: function() {
+    previousHistoryEntry: function() {
+	var history = this.getModelValue("getHistory");
+	if (!history || history.length == 0) return "";
+	var current = this.getModelValue("getHistoryCursor");
+	current = (current + history.length - 1) % history.length;
+	this.setModelValue("setHistoryCursor", current);
+	return history[current];
+    },
+
+    saveHistoryEntry: function(text, historySize) {
+	if (!historySize || !text) return;
+	var history = this.getModelValue("getHistory");
+	if (!history) history = [];
+	history.push(text);
+	history.length > historySize && history.unshift();
+	this.setModelValue("setHistory", history);
+	this.setModelValue("setHistoryCursor", history.length);
+    },
+
+
+    beInputLine: function(historySize) {
         //this.setWrapStyle(WrapStyle.None);
+
         this.onKeyDown = function(evt) {
 	    switch (evt.getKeyCode()) {
 	    case Event.KEY_DOWN: 
-		this.setTextString(this.getModelValue("getNextHistoryEntry", ""));
+		historySize && this.setTextString(this.nextHistoryEntry());
 		this.setNullSelectionAt(this.textString.length);
 		evt.stop();
 		return true;
 	    case Event.KEY_UP: 
-		this.setTextString(this.getModelValue("getPreviousHistoryEntry", ""));
+		historySize && this.setTextString(this.previousHistoryEntry());
 		this.setNullSelectionAt(this.textString.length);
 		evt.stop();
 		return true;
 	    case Event.KEY_RETURN:
+		historySize && this.saveHistoryEntry(this.textString, historySize);
 		this.saveContents(this.textString);
 		evt.stop();
 		return true;

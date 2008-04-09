@@ -283,7 +283,8 @@ function phoneDemo(world, origin, size) {
 		// remove html comments (this gets most of them)
 		text = text.replace(/ *<!--([^-]*-[^-]+)*[^-]*-->[ \n]*/g,"");
 		// console.log("Got: " + text);
-		var p = eval("(" + text + ")");
+	    var p; 
+	    try { p = eval("(" + text + ")"); } catch (e) { console.log("error " + e); }
 		if (p["line"]) {
 			sl.updateTextString(p["line"]);
 		} else {
