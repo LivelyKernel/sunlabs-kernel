@@ -2221,7 +2221,6 @@ ClipMorph.subclass('XenoMorph', {
     },
 
     setContent: function(doc) {
-	console.log('transmission dump %s', Exporter.stringify(doc));
 	this.body.parentNode.replaceChild(document.adoptNode(doc.documentElement), this.body);
     },
     
