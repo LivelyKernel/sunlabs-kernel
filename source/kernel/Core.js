@@ -183,10 +183,10 @@ Global.window.onerror = function(message, url, code) {
 (function() { // override config options with options from the query part of the URL
 
     // may have security implications ...
-    if (!Global.window.location) // Batik can't deal.
+    if (!Global.location) // Batik can't deal.
 	return;
 
-    var configOverrides = Global.window.location.search.toString().toQueryParams();
+    var configOverrides = Global.location.search.toString().toQueryParams();
     for (var p in configOverrides) {
 	if (Config.hasOwnProperty(p)) { // can't set unknown properties
 	    // this is surprisingly convoluted in Javascript:
