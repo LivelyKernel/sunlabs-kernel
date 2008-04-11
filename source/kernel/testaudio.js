@@ -16,6 +16,7 @@
 
     var clickData = "data:audio/x-wav;base64," + encodedClick;
     var a = new Audio(clickData);
+    a.volume = 1.0;
     a.play();
-    console.log("played audio " + a.src);
+    console.log("played audio, volume " + a.volume);
 })();
