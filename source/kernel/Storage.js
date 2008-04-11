@@ -71,14 +71,15 @@ Morph.subclass('PackageMorph', {
 	    return;
 	}
 	var importer = new Importer();
-	var targetMorph = importer.importFromString(Exporter.stringify(this.serialized));
+	// var targetMorph = importer.importFromString(Exporter.stringify(this.serialized));
+	var targetMorph = importer.importFromNode(this.serialized);
 	importer.hookupModels();
 	if (targetMorph instanceof WorldMorph) {
 	    this.world().addMorph(new LinkMorph(targetMorph, loc));
 	    for (var i = 0; i < targetMorph.submorphs.length; i++) {
 		var m = targetMorph.submorphs[i];
 		if (m instanceof LinkMorph) { 
-		    // is it so obvious ? should we mark the link world to the external word 		    
+		    // is it so obvious ? should we mark the link world to the external word?
 		    m.myWorld = this.world();
 		}
 	    }
@@ -94,6 +95,7 @@ Morph.subclass('PackageMorph', {
 	if (!$super(importer, node)) {
 	    if (node.parentNode && node.parentNode.localName == "defs" && node.localName == "g") {
 		this.serialized = node;
+		console.log("package located " + node);
 		return true;
 	    } else return false;
 	} else return true;
@@ -162,10 +164,7 @@ NetRequestReporter.subclass('LoadHandler', {
 		for (var i = 0; i < morphs.length; i++) {
 		    // flatten: 
 		    if (morphs[i] instanceof WorldMorph) {
-			morphs[i].remove();
-			var subs = morphs[i].submorphs;
-			subs.invoke('remove');
-			subs.map(function(m) { world.addMorph(m) });
+			morphs[i].submorphs.map(function(m) { world.addMorph(m) });
 		    } else {
 			world.addMorph(morphs[i]);
 		    }
@@ -187,6 +186,10 @@ NetRequestReporter.subclass('LoadHandler', {
 	} 
 	if (!world) 
 	    WorldMorph.current().alert('no morphs found in %s', this.url);
+	else {
+	    world.submorphs.forEach(function(m) { WorldMorph.current().addMorph(m) });
+	}
+	    
     },
 
 

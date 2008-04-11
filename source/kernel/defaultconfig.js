@@ -56,9 +56,6 @@ var Config = {
     // Allows easy object duplication using the Shift key
     shiftDragForDup: true,
     
-    // New scheduler is the default now
-    useNewScheduler: true,
-    
     // URL that acts as a proxy for network operations 
     proxyURL: null,
 
