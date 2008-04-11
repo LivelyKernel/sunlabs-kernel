@@ -131,8 +131,8 @@ function populateWorldWithExamples(world) {
 
             PIM = new WebPIM().openIn(lm1.myWorld, pt(110, 110));
 
-            lm1.myWorld.beetleGame = new DungBeetleMorph(pt(10, 10).extent(pt(240, 320)));
-            lm1.myWorld.addMorph(new WindowMorph(lm1.myWorld.beetleGame, 'Dung Beetle')); 
+           // lm1.myWorld.beetleGame = new DungBeetleMorph(pt(10, 10).extent(pt(240, 320)));
+           // lm1.myWorld.addMorph(new WindowMorph(lm1.myWorld.beetleGame, 'Dung Beetle')); 
 
             if (Config.showCanvasScape) {
                 if (!lm1.myWorld.csMorph) {
@@ -319,15 +319,8 @@ function populateWorldWithExamples(world) {
             else widget = new TextMorph(pt(50,30).extent(pt(250,50)), Pen.script);
             widget.align(widget.bounds().bottomRight(), world.bounds().topRight().addPt(pt(-150,100))); 
             devWorld.myWorld.addMorph(widget);
-        }
-		if (Config.showRichText) {
-			var txt = new Text("But wait, there's more ...");
-			txt.emphasize( {style: 'bold'}, 4, 7);
-			txt.emphasize( {size: 18, style: 'bold'}, 18, 21);
-			console.log(txt.style);
-			widget = new TextMorph(widget.bounds().topLeft().addXY(-280, 0).extent(pt(250, 50)), txt);
-            devWorld.myWorld.addMorph(widget);
-		}
+        }		if (Config.showRichText) {			var txt = new Text("But wait, there's more ...");			txt.emphasize( {style: 'bold'}, 4, 7);			txt.emphasize( {size: 18, style: 'bold'}, 18, 21);			console.log(txt.style);			widget = new TextMorph(widget.bounds().topLeft().addXY(-280, 0).extent(pt(250, 50)), txt);
+            devWorld.myWorld.addMorph(widget);		}
 
         if (Config.showHilbertFun) Pen.hilbertFun(devWorld.myWorld, widget.bounds().bottomLeft().addXY(180,80));
 
@@ -351,15 +344,15 @@ function populateWorldWithExamples(world) {
     }
 
     if (Config.showPhoneWorld) {
-	var phoneWorld = new LinkMorph(null, pt(60, 320));
-	world.addMorph(phoneWorld);
-	var widgetTextMorph = 
-	    new TextMorph(new Rectangle(90, 300, 100, 25), "Telephone Demo");
-	widgetTextMorph.shape.roundEdgesBy(10);
-	world.addMorph(widgetTextMorph);
-	phoneWorld.myWorld.onEnter = function() {
-	    phoneDemo(phoneWorld.myWorld, pt(250,180), 150);
-	}
+		var phoneWorld = new LinkMorph(null, pt(60, 320));
+		world.addMorph(phoneWorld);
+		var widgetTextMorph = 
+			new TextMorph(new Rectangle(90, 300, 100, 25), "Telephone Demo");
+		widgetTextMorph.shape.roundEdgesBy(10);
+		world.addMorph(widgetTextMorph);
+		phoneWorld.myWorld.onEnter = function() {
+			phoneDemo(phoneWorld.myWorld, pt(250,180), 150);
+		}
     }
 
     if (Config.showXenoMorph) {
@@ -387,6 +380,7 @@ function main() {
     // Populate the world with sample objects, widgets and applications
     if (container || Config.skipAllExamples) return; // don't populate if we loaded up stuff from a container
     else populateWorldWithExamples(world);
+
     
 }
 
