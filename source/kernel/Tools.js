@@ -1134,18 +1134,20 @@ ChangeList.subclass('SourceDatabase', {
 	return fileString.substring(mapped.startIndex, mapped.stopIndex);
     },
     putSourceCodeRange: function(fileName, versionNo, startIndex, stopIndex, newString) {
-	var fileString = this.getCachedText(fileName);
-	var mapped = this.mapIndices(fileName, versionNo, startIndex, stopIndex);
-	var beforeString = fileString.substring(0, mapped.startIndex);
-	var afterString = fileString.substring(mapped.stopIndex);
-        var newFileString = beforeString.concat(newString, afterString);
-	console.log("Saving " + fileName + "...");
-	new NetRequest({model: new NetRequestReporter(), setStatus: "setRequestStatus"}
-			).put(URL.source.withFilename(fileName), newFileString);
-	// Update cache contents and edit history
-	this.cachedFullText[fileName] = newFileString;
-	this.editHistory[fileName].push({repStart: startIndex, repStop: stopIndex, repLength: newString.length});
-	console.log("... " + newFileString.length + " bytes saved.");
+		var fileString = this.getCachedText(fileName);
+		var mapped = this.mapIndices(fileName, versionNo, startIndex, stopIndex);
+		var beforeString = fileString.substring(0, mapped.startIndex);
+		var afterString = fileString.substring(mapped.stopIndex);
+		var newFileString = beforeString.concat(newString, afterString);
+		newFileString = newFileString.replace(/\r/gi, '\n');  // change all CRs to LFs
+		var editSpec = {repStart: startIndex, repStop: stopIndex, repLength: newString.length};
+		console.log("Saving " + fileName + "...");
+		new NetRequest({model: new NetRequestReporter(), setStatus: "setRequestStatus"}
+				).put(URL.source.withFilename(fileName), newFileString);
+		// Update cache contents and edit history
+		this.cachedFullText[fileName] = newFileString;
+		this.editHistory[fileName].push(editSpec);
+		console.log("... " + newFileString.length + " bytes saved.");
     },
     mapIndices: function(fileName, versionNo, startIndex, stopIndex) {
 	// Figure how substring indices must be adjusted to find the same characters in the fileString
@@ -1208,7 +1210,7 @@ Object.subclass('SourceCodeDescriptor', {
 	this.startIndex = startIndex;
 	this.stopIndex = stopIndex;
 	this.lineNo = lineNo;
-	this.type = type; // Do these need to be retained?
+	this.type = type;  // Do these need to be retained?
 	this.name = name;
     },
     getSourceCode: function() {
