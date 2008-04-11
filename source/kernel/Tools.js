@@ -274,7 +274,7 @@ Widget.subclass('SimpleInspector', {
 	    var propName = this.getModelValue("getPropName");
 	    if (propName) {
 		var input = this.getModelValue("getEvalInput");
-		var result = eval(input, target);
+		var result = (interactiveEval.bind(this.target))(input);
 		target[propName] = result;
 		this.setModelValue("setPropText", result);
 	    }

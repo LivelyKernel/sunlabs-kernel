@@ -2224,9 +2224,9 @@ ClipMorph.subclass('XenoMorph', {
 	this.body.parentNode.replaceChild(document.adoptNode(doc.documentElement), this.body);
     },
     
-    setContentText: function(text) {
+    setContentText: function(text, mimeType) {
 	var parser = new DOMParser();
-	var xhtml = parser.parseFromString(text, "text/xml");
+	var xhtml = parser.parseFromString(text, mimeType || "text/xml");
 	var node = xhtml.getElementsByTagName("body")[0];
 	this.body.parentNode.replaceChild(document.importNode(node, true), this.body);
     },
@@ -2246,10 +2246,14 @@ ClipMorph.subclass('XenoMorph', {
     },
     
     test2: function() {
-	var text = '<object width="425" height="355"><param name="movie" value="http://www.youtube.com/v/a0qMe7Z3EYg&hl=en"></param><param name="wmode" value="transparent"></param><embed src="http://www.youtube.com/v/a0qMe7Z3EYg&hl=en" type="application/x-shockwave-flash" wmode="transparent" width="425" height="355"></embed></object>';
+//	var text = '<object width="425" height="355"><param name="movie" value="http://www.youtube.com/v/a0qMe7Z3EYg&hl=en"></param><param name="wmode" value="transparent"></param><embed src="http://www.youtube.com/v/a0qMe7Z3EYg&hl=en" type="application/x-shockwave-flash" wmode="transparent" width="425" height="355"></embed></object>';
+	var text = '<xhtml><body><video width="425" height="355" src="http://www.youtube.com/swf/l.swf?video_id=a0qMe7Z3EYg&rel=1" /></body></xhtml>';
+
         var xeno = new XenoMorph(pt(400,200).extentAsRectangle());
-	xeno.setContentText(text);
-        WorldMorph.current().addFramedMorph(xeno, url, pt(50,50));
+	Object.extend(xeno, NetRequestReporterTrait);
+	xeno.setContentText(text, "application/xhtml+xml");
+        WorldMorph.current().addFramedMorph(xeno, 'video', pt(50,50));
+	return xeno;
     }
 
 
@@ -2463,6 +2467,7 @@ Widget.subclass('ConsoleWidget', {
 
     defaultViewTitle: "Console",
     pins: ["LogMessages", "RecentLogMessages", "Commands", "CommandCursor", "LastCommand", "Menu"],
+    ctx: {},
     
     initialize: function($super, capacity) {
 	$super(null);
@@ -2533,10 +2538,12 @@ Widget.subclass('ConsoleWidget', {
 	}
     },
 
+    evaluate: interactiveEval.bind(this.ctx),
+
     evalCommand: function(text) {
 	if (!text) return;
 	try {
-	    var ans = interactiveEval(text);
+	    var ans = this.evaluate(text);
 	    if (ans !== undefined) {
 		this.ans = ans;
 		this.log(ans !== undefined && ans !== null && ans.toString());

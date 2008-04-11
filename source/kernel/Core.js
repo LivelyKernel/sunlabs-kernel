@@ -2157,8 +2157,8 @@ Object.extend(Shape, {
     translateVerticesBy: function(vertices, delta) { // utility class method
 	return vertices.invoke('addPt', delta); 
     },
-    LineJoins: { MITER: "miter", ROUND: "round",  BEVEL: "bevel" },
-    LineCaps:  { BUTT: "butt",   ROUND: "round", SQUARE: "square" }
+    LineJoins: { Miter: "Miter", Round: "Round",  Bevel: "Bevel" },
+    LineCaps:  { Butt: "Butt",   Round: "Round", Square: "Square" }
 
 });
 
@@ -3372,6 +3372,10 @@ Morph.addMethods({
 
     setStrokeOpacity: function(op) { this.shape.setStrokeOpacity(op); },//.wrap(Morph.onChange('shape')),
 
+    setLineJoin: function(joinType) { this.shape.setLineJoin(joinType); },
+
+    setLineCap: function(capType) { this.shape.setLineCap(capType); },
+
     applyStyle: function(specs) { // note: use reflection instead?
 	for (var i = 0; i < arguments.length; i++) {
 	    var spec = arguments[i];
@@ -3947,7 +3951,7 @@ Wrapper.subclass('FocusHalo', {
     initialize: function(color, width) {
 	if (width !== undefined) this.borderWidth = width;
 	if (color !== undefined) this.borderColor = color;
-	var rawNode = NodeFactory.create('g', {"stroke-opacity": 0.3, 'stroke-linejoin' : Shape.LineJoins.ROUND});
+	var rawNode = NodeFactory.create('g', {"stroke-opacity": 0.3, 'stroke-linejoin' : Shape.LineJoins.Round});
 	this.rawNode = rawNode;
 	LivelyNS.setType(rawNode, "FocusHalo");
     },
