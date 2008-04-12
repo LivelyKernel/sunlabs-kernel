@@ -208,7 +208,7 @@ function populateWorldWithExamples(world) {
     if (Config.showSlideWorld) { // Make a slide for "turning web programming upside down"
         var lm2 = new LinkMorph(null, pt(60, 400));
 
-        var samplesTextMorph = new TextMorph(new Rectangle(90, 380, 100, 25), "Simple example morphs");
+        var samplesTextMorph = new TextMorph(new Rectangle(90, 380, 102, 25), "Simple example morphs");
 
         samplesTextMorph.shape.roundEdgesBy(10);
         world.addMorph(samplesTextMorph);
@@ -319,8 +319,15 @@ function populateWorldWithExamples(world) {
             else widget = new TextMorph(pt(50,30).extent(pt(250,50)), Pen.script);
             widget.align(widget.bounds().bottomRight(), world.bounds().topRight().addPt(pt(-150,100))); 
             devWorld.myWorld.addMorph(widget);
-        }		if (Config.showRichText) {			var txt = new Text("But wait, there's more ...");			txt.emphasize( {style: 'bold'}, 4, 7);			txt.emphasize( {size: 18, style: 'bold'}, 18, 21);			console.log(txt.style);			widget = new TextMorph(widget.bounds().topLeft().addXY(-280, 0).extent(pt(250, 50)), txt);
-            devWorld.myWorld.addMorph(widget);		}
+        }
+		if (Config.showRichText) {
+			var txt = new Text("But wait, there's more ...");
+			txt.emphasize( {style: 'bold'}, 4, 7);
+			txt.emphasize( {size: 18, style: 'bold'}, 18, 21);
+			console.log(txt.style);
+			widget = new TextMorph(widget.bounds().topLeft().addXY(-280, 0).extent(pt(250, 50)), txt);
+            devWorld.myWorld.addMorph(widget);
+		}
 
         if (Config.showHilbertFun) Pen.hilbertFun(devWorld.myWorld, widget.bounds().bottomLeft().addXY(180,80));
 

@@ -609,13 +609,14 @@ Object.subclass('TextLine', {
         }
     },
 
-    cloneChunkSkeleton: function(sIndex) {  // Say it 3 times fast (better than "BitBlt" ;-)
+    cloneChunkSkeleton: function(sIndex) {  // Say it 3 times fast 
 	// Copy only the relevant chunks to this.chunks
 	// Return the remaining chunks which may include an extra in case of split lines
 	// DI: Note I rewrote this (much faster) without really knowing the details
         if (this.chunks == null) return null;
     
         var extra = null;
+		var wrap = false;
         var localChunkCount = 0;
 	for (var i = 0; i < this.chunks.length; i++) {  // Step through this line, break at end
             var tc = this.chunks[i];
@@ -623,22 +624,27 @@ Object.subclass('TextLine', {
 		localChunkCount++;
 		if ((tc.start + tc.length) > sIndex) {
 	                // this chunk has been broken up by a word wrap
-	                extra = tc.cloneSkeleton();
+					wrap = true;
+					extra = tc.cloneSkeleton();
 	                extra.length -= sIndex - extra.start;
 	                extra.start = sIndex;
+					tc.length -= extra.length;
+					break
 		}
             }
-            else if (tc.start == sIndex) extra = tc.cloneSkeleton();
+            else if (tc.start == sIndex)  extra = tc.cloneSkeleton();
             else break;
         }
 	var remainingChunks = this.chunks;
-        this.chunks = this.chunks.slice(0, localChunkCount);  // Make copy of chunks local to this line
+	this.chunks = this.chunks.slice(0, localChunkCount);  // Make copy of chunks local to this line
 	if (!extra) remainingChunks.splice(0, localChunkCount+1); // Drop local chunks from big list
-	else remainingChunks.splice(0, localChunkCount+1, extra); // ... adding clone or split at line-end
+	else remainingChunks.splice(0, (wrap ? localChunkCount : localChunkCount+1), extra); // ... adding clone or split at line-end
+
 	return remainingChunks;
     },
 
     // accessor function
+
     setTabWidth: function(w, asSpaces) {
         this.tabWidth = asSpaces ? w * this.spaceWidth : w;
     },
