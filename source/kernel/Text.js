@@ -27,36 +27,28 @@ Object.subclass('Font', {
         this.extents = null;
         // this.extents = this.computeExtents(family, size);
     },
-    
-    // svgtext-compat overrides the following function
     computeExtents: function(family, size) {
         return [];
     },
-
     getSize: function() {
         return this.size;
     },
-    
     getFamily: function() {
         return this.family;
     },
-
     toString: function() {
         return this.family + " " + this.getSize();
     },
-
     getCharInfo: function(charString) {
         var code = charString.charCodeAt(0);
         if (!this.extents) this.extents = this.computeExtents(this.family, this.size);
         return this.extents[code];
     },
-
     getCharWidth: function(charString) {
         var code = charString.charCodeAt(0);
         if (!this.extents) this.extents = this.computeExtents(this.family, this.size);
         return this.extents[code] ? this.extents[code].width : -1;
     },
-
     getCharHeight: function(charString) {
         var code = charString.charCodeAt(0)
         if (!this.extents) this.extents = this.computeExtents(this.family, this.size);
@@ -140,24 +132,10 @@ Object.subclass('TextWord', {
     },
 
     setX: function(newValue /*:float*/) {
-        var oldValue = this.naiveGetX();
-        if (oldValue != newValue) { // FIXME: maybe just recalc the offset
-            if (this.extentTable && false) {  //*** defeated!!
-				var offset = newValue-oldValue;
-				for (var i=this.startindex; i <= this.stopIndex; i++) {
-					var oldR = this.extentTable[i];
-					this.extentTable[i] = oldR.withX(oldR.x + offset);
-				}
-			}
-        }
         this.rawNode.setAttributeNS(null, "x", newValue.toString());
     },
     
     setY: function(newValue /*:float*/) {
-        var oldValue = this.naiveGetY();
-        if (oldValue != newValue) { // FIXME: maybe just recalc the offset
-            this.extentTable = null;
-        }
         this.rawNode.setAttributeNS(null, "y", newValue.toString());
     },
 
@@ -180,26 +158,31 @@ Object.subclass('TextWord', {
     // compose a word within compositionWidth, stopping if the width or string width is exceeded
     // compositionWidth is in the same units as character metrics
     compose: function(compositionWidth, length) {
-        var rightX = this.topLeft.x + compositionWidth;
+        var leftX = this.topLeft.x;
+        var rightX = leftX + compositionWidth;
         var leadingSpaces = 0;
     
         this.didLineBreak = false;
         // get the character bounds until it hits the right side of the compositionWidth
         for (var i = this.startIndex; i < this.textString.length && i < (this.startIndex + length); i++) {
-            if (this.getBounds(i).maxX() >= rightX) {
+            var rightOfChar = leftX + this.getWidthOfChar(i);
+			if (rightOfChar >= rightX) {
                 // Hit right bounds -- wrap at word break if possible
-                this.setStopIndex(Math.max(this.startIndex, i - 1)); 
+                if (i>this.startIndex)  this.setStopIndexAndWidth(i - 1,  leftX - this.topLeft.x);
+					else this.setStopIndexAndWidth(this.startIndex, rightOfChar - this.topLeft.x);
                 this.didLineBreak = true;
                 return;
             }
+		leftX = rightOfChar
         }
         // Reached the end of text
-        this.setStopIndex(i);
+        this.setStopIndexAndWidth(i-1, rightOfChar - this.topLeft.x);
     },
     
     // accessor function
-    setStopIndex: function(i) { 
+    setStopIndexAndWidth: function(i, w) { 
         this.stopIndex = i; 
+		this.width = w;
     },
 
     // accessor function
@@ -214,11 +197,10 @@ Object.subclass('TextWord', {
     
     // get the bounds of the character pointed to by stringIndex
     // overriden by svgtext-compat
-    getBounds: function(stringIndex) { 
-        var result = this.rawNode.getExtentOfChar(stringIndex);
-        console.log("inspecting " + stringIndex + " in " + this.rawNode.textContent 
-            + " parent " + this.rawNode.parentNode + " result " + result);
-        return result;
+
+    getWordBounds: function() { 
+        var tl = this.topLeft;
+		return new Rectangle(tl.x, tl.y, this.width, this.fontInfo.getSize());
     },
 
     // keep a copy of the substring we were working on (do we really need this? - kam)
@@ -239,17 +221,7 @@ Object.subclass('TextWord', {
             " topLeft: " + this.topLeft +
             " textContent: " + this.rawNode.textContent +
             " didLineBreak: " + this.didLineBreak;
-    },
-
-    // log debugging information to the console
-    log: function(label) {
-        var lString = this.toString();
-        if (label != null) {
-            lString = label + ": " + lString;
-        }
-        console.log(lString);
     }
-    
 });
 
 
@@ -285,7 +257,7 @@ Object.subclass('WordChunk', {
 		} else {
 			var leftX = this.bounds.x;
 			for (var j = this.start; j < (this.start + this.length); j++) {
-				var rightX = leftX + this.word.getBounds(j).width;
+				var rightX = leftX + this.word.getWidthOfChar(j);
 				if (x >= leftX && x <= rightX) break;
 				leftX = rightX
 			}
@@ -299,7 +271,7 @@ Object.subclass('WordChunk', {
 		if (this.word && this.word.getBounds) {
 			var leftX = this.bounds.x;
 			for (var j = this.start; j <= stringIndex; j++) {
-				var rightX = leftX + this.word.getBounds(j).width;
+				var rightX = leftX + this.word.getWidthOfChar(j);
 				if (j >= stringIndex) break;
 				leftX = rightX;
 			}
@@ -316,17 +288,6 @@ Object.subclass('WordChunk', {
 		}
 	},
 
-    // accessor function
-    setWord: function(newWord) {
-        this.word = newWord;
-    },
-
-    // accessor function
-    getWord: function() {
-        return this.word;
-    },
-
-    // query
     isSpaces: function() {
         return this.isWhite && !this.isTab && !this.isNewLine;
     },
@@ -355,15 +316,6 @@ Object.subclass('WordChunk', {
                        this.bounds.width + "x" + this.bounds.height + ")";
         }
         return lString;
-    },
-
-    // log debugging information to the console
-    log: function(label) {
-        var lString = this.toString();
-        if (lString != null) {
-            lString = label + ": " + lString;
-        }
-        console.log(lString);
     },
 
     // create a chunk representing whitespace (typically space characters)
@@ -539,8 +491,9 @@ Object.subclass('TextLine', {
                     LivelyNS.setAttribute(lastWord.rawNode, "lead", leadingSpaces);
                     leadingSpaces = 0;
                 }
-                lastWord.compose(compositionWidth - (lastBounds.maxX() - this.topLeft.x), c.length - 1);
-                c.bounds = lastWord.getBounds(c.start).union(lastWord.getBounds(c.start + c.length - 1));
+                lastWord.compose(compositionWidth - (lastBounds.maxX() - this.topLeft.x), c.length);
+                c.bounds = lastWord.getWordBounds();
+                // c.bounds = lastWord.getBounds(c.start).union(lastWord.getBounds(c.start + c.length - 1));
                 if (lastWord.getLineBrokeOnCompose()) {
                     if (i == 0) {
                         // XXX in the future, another chunk needs to be inserted in the array at this point
@@ -690,19 +643,8 @@ Object.subclass('TextLine', {
         this.tabWidth = asSpaces ? w * this.spaceWidth : w;
     },
 
-    // log debugging information to the console
-    logChunks: function(label) {
-        if (this.chunks) {
-            for (var i = 0; i < this.chunks.length; i++) {
-                this.chunks[i].log(label + ": TextLine");
-            }
-        } else {
-            console.log(label + ": " + "no chunks");
-        }
-    },
-
-    // string representation
     toString: function() {
+    // string representation
         var lString = "textString: (" + this.textString + ")" +
             " startIndex: " + this.startIndex +
             " overallStopIndex: " + this.overallStopIndex +
@@ -710,18 +652,6 @@ Object.subclass('TextLine', {
             " spaceWidth: " + this.spaceWidth + 
             " hasComposed: " + this.hasComposed;
         return lString;
-    },
-
-    // log debugging information to the console
-    log: function(label, printChunks) {
-        var lString = this.toString();
-        if (label != null) {
-            lString = label + ": " + lString;
-        }
-        console.log(lString);
-        if (printChunks != null & printChunks) {
-            this.logChunks(label);
-        }
     }
     
 });
@@ -733,52 +663,40 @@ var Locale = {
     //KP: note that this depends heavily on the language, esp if it's a programming language
     selectWord: function(str, i1) { // Selection caret before char i1
         var i2 = i1 - 1;
-        
         if (i1 > 0) { // look left for o backets
             var i = this.charSet.leftBrackets.indexOf(str[i1-1]);
-
             if (str[i1 - 1] == "*" && (i1-2 < 0 || str[i1-2] != "/")) 
                 i = -1; // spl check for /*
-
             if (i >= 0) {
                 var i2 = this.matchBrackets(str, this.charSet.leftBrackets[i], this.charSet.rightBrackets[i], i1 - 1, 1);
                 return [i1, i2 - 1]; 
             } 
         }
-        
         if (i1 < str.length) { // look right for close brackets
             var i = this.charSet.rightBrackets.indexOf(str[i1]);
-            
             if (str[i1]== "*" && (i1+1 >= str.length || str[i1+1] != "/")) 
                 i = -1; // spl check for */
-
             if (i >= 0) {
                 i1 = this.matchBrackets(str, this.charSet.rightBrackets[i], this.charSet.leftBrackets[i],i1,-1);
                 return [i1+1, i2]; 
             } 
         }
-        
         while (i1-1 >= 0 && this.charSet.alphaNum.include(str[i1 - 1])) 
             i1 --;
-    
         while (i2+1 < str.length && this.charSet.alphaNum.include(str[i2 + 1])) 
             i2 ++;
-    
         return [i1, i2]; 
     },
 
     matchBrackets: function(str, chin, chout, start, dir) { 
         var i = start;
         var depth = 1;
-    
         while ((dir < 0) ? i - 1 >= 0 : i + 1 < str.length ) {
             i += dir;
-            
             if (str[i] == chin && chin != chout) depth++;
             if (str[i] == chout) depth--;
             if (depth == 0) return i; 
         }
-        
         return i; 
     }
     
