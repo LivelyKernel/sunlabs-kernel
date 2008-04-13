@@ -930,8 +930,12 @@ WidgetModel.subclass('ChangeList', {
     },
     setChangeSelection: function(n, v) {
 	this.changeBanner = n;
+	this.changed("getChangeSelection", v);
 	this.changed("getChangeItemText", v);
 	if (this.searchString) this.changed("getSearchString", v);
+    },
+    getChangeSelection: function() {
+	return this.changeBanner;
     },
     selectedItem: function() {
 	if (this.changeBanner == null) return null;
@@ -941,6 +945,8 @@ WidgetModel.subclass('ChangeList', {
 	lineNo = new Number(lineNo);
 	for (var i=0; i < this.changeList.length; i++) {
 		var item = this.changeList[i];
+		// Note: should confirm fileName here as well for search lists
+		//  where lineNo might match, but its a different file
 		if (item.lineNo == lineNo) return item;
 	}
 	return null;
@@ -1022,7 +1028,7 @@ WidgetModel.subclass('ChangeList', {
         ]);
         var m = panel.topPane;
 		m.innerMorph().textSelection.borderRadius = 0;
-        m.connectModel({model: this, getList: "getChangeBanners", setSelection: "setChangeSelection", getMenu: "getListPaneMenu"});
+        m.connectModel({model: this, getList: "getChangeBanners", setSelection: "setChangeSelection", getSelection: "getChangeSelection", getMenu: "getListPaneMenu"});
         m = panel.bottomPane;
 		m.innerMorph().textSelection.borderRadius = 0;
 	m.connectModel({model: this, getText: "getChangeItemText", setText: "setChangeItemText", getSelection: "getSearchString"});

@@ -1321,7 +1321,7 @@ TextMorph.subclass("CheapListMorph", {
                 return this.itemList; // debugging
             case this.modelPlug.getSelection:
                 var selection = this.getSelection();
-                this.setSelectionToMatch(selection);
+                if (this !== controller) this.setSelectionToMatch(selection);
                 return selection; //debugging
 
 	    case this.modelPlug.getDeletionConfirmation: //someone broadcast a deletion
@@ -2067,6 +2067,23 @@ Morph.subclass("ScrollPane", {
     scrollToBottom: function() {
         this.setScrollPosition(1);
         this.scrollBar.adjustForNewBounds(); 
+    },
+    scrollRectIntoView: function(r) {
+        var im = this.innerMorph();
+		if (!r || !im) return;
+		var bnds = this.innerBounds();
+		var yToView = r.y + im.getPosition().y;  // scroll down if above top
+		if (yToView < bnds.y) {
+			im.moveBy(pt(0, bnds.y - yToView));
+			this.scrollBar.adjustForNewBounds();
+			return;
+		}
+		var yToView = r.y + r.height + im.getPosition().y;  // scroll up if below bottom
+		var tweak = 5;  // otherwise it doesnt scroll up enough to look good
+		if (yToView > bnds.maxY()-tweak) {
+			im.moveBy(pt(0, bnds.maxY()-tweak - yToView))
+			this.scrollBar.adjustForNewBounds();
+		} 
     },
     
     adjustForNewBounds: function ($super) {

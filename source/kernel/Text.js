@@ -28,6 +28,7 @@ Object.subclass('Font', {
         // this.extents = this.computeExtents(family, size);
     },
     computeExtents: function(family, size) {
+		// Note: this gets overridden in svg-compat.js
         return [];
     },
     getSize: function() {
@@ -47,12 +48,12 @@ Object.subclass('Font', {
     getCharWidth: function(charString) {
         var code = charString.charCodeAt(0);
         if (!this.extents) this.extents = this.computeExtents(this.family, this.size);
-        return this.extents[code] ? this.extents[code].width : -1;
+        return this.extents[code] ? this.extents[code].width : 8;
     },
     getCharHeight: function(charString) {
         var code = charString.charCodeAt(0)
         if (!this.extents) this.extents = this.computeExtents(this.family, this.size);
-        return this.extents[code] ? this.extents[code].height : -1;
+        return this.extents[code] ? this.extents[code].height : 12;
     },
 
     applyTo: function(rawNode) {
@@ -78,18 +79,15 @@ Object.subclass('Font', {
 	forFamily: function(familyName, size, style) {
             var key  = familyName + ":" + size + ":" + (style ? style[0] : 'n' ) ;
             var entry = cache[key];
-            if (!entry) {
-                try {
-                    entry = new Font(familyName, size, style);
+            if (entry) return entry;
+			try { entry = new Font(familyName, size, style);
                 } catch(er) {
                     console.log("%s when looking for %s:%s", er, familyName, size);
                     return null;
                 }
-                cache[key] = entry;
-            }
+			cache[key] = entry;
             return entry;
         }
-
     });
     
 })();
@@ -407,6 +405,8 @@ Object.subclass('TextLine', {
 
     chunkFromString: function(wString, startOffset) {
 	    // look at wString starting at startOffset and return an array with all of the chunks in it
+		// Note: this needs to be passed the runArray of test styles, and to make
+		// new chunks at each change in style
         var offset = startOffset;
         var pieces = [];
         var chunkSize;
@@ -493,7 +493,6 @@ Object.subclass('TextLine', {
                 }
                 lastWord.compose(compositionWidth - (lastBounds.maxX() - this.topLeft.x), c.length);
                 c.bounds = lastWord.getWordBounds();
-                // c.bounds = lastWord.getBounds(c.start).union(lastWord.getBounds(c.start + c.length - 1));
                 if (lastWord.getLineBrokeOnCompose()) {
                     if (i == 0) {
                         // XXX in the future, another chunk needs to be inserted in the array at this point
@@ -1250,7 +1249,6 @@ Morph.subclass("TextMorph", {
         if (!this.showsSelectionWithoutFocus() && this.takesKeyboardFocus() && !this.hasKeyboardFocus) {
             return;
         }
-
         this.undrawSelection();
 
         var jRect;
@@ -1264,8 +1262,9 @@ Morph.subclass("TextMorph", {
         }
         
         if (jRect == null) {
-	    if (this.textString.length > 0)
-		console.log("text box failure in drawSelection index = " + this.selectionRange[0]); 
+	    	if (this.textString.length > 0) {
+				// console.log("text box failure in drawSelection index = " + this.selectionRange[0] + "text is: " + this.textString.substring(0, Math.min(15,this.textString.length)) + '...'); 
+			}
             return;
         }
     
@@ -1294,7 +1293,7 @@ Morph.subclass("TextMorph", {
                 this.textSelection.addRectangle(Rectangle.fromAny(r1.bottomRight(), r2.topLeft()));
             }
         }
-    
+		this.scrollSelectionIntoView();
         // console.log('add selection ' + this.rawSelectionNode.childNodes);
         // this.addNonMorph(this.rawSelectionNode);
     },
@@ -1840,14 +1839,27 @@ TextMorph.addMethods({
     
     updateTextString: function(newStr) {
         this.pvtUpdateTextString(newStr);
-        this.resetScrollPane(); 
+		this.resetScrollPane(); 
     },
     
     resetScrollPane: function() {
-        // Need a cleaner way to do this ;-)
-        if (this.owner instanceof ClipMorph && this.owner.owner instanceof ScrollPane) {
-           this.owner.owner.scrollToTop();
-        }
+        var sp = this.enclosingScrollPane();
+		if (sp) sp.scrollToTop();
+    },
+    scrollSelectionIntoView: function() { 
+		var sp = this.enclosingScrollPane();
+		if (! sp) return
+		var selRect = this.hasNullSelection()
+			? this.getCharBounds(this.selectionRange[0])
+			: this.getCharBounds(this.selectionRange[1]);
+		sp.scrollRectIntoView(selRect);		
+    },
+     enclosingScrollPane: function() { 
+        // Need a cleaner way to do this
+        if (! (this.owner instanceof ClipMorph)) return null;
+		var sp = this.owner.owner;
+		if (! (sp instanceof ScrollPane)) return null;
+		return sp
     },
     
     updateView: function(aspect, controller) {
@@ -2114,7 +2126,7 @@ Object.extend(RunArray, {
 	}
 }
 });
-RunArray.test([3, 1, 2]);
+// RunArray.test([3, 1, 2]);
 
 
 Object.subclass('Text', {
