@@ -48,13 +48,14 @@ Morph.subclass(Global, "GridLayoutMorph", {
 		};
 
 		morph.setExtent=function(newExtent) {
-			Console.log("New extent: " + newExtent);
+			console.log("New extent: " + newExtent);
 			morph.requestedExtent = newExtent;
 
 			// if new size fits in its existing cell, then readjust in cell
 			// otherwise recompute and relayout the entire grid.  for
 			// now, just relayout everything.
 
+			console.log("Scheduling update from setExtent: " + this);
 			this.owner.scheduleUpdate();
 		},
 
@@ -62,7 +63,7 @@ Morph.subclass(Global, "GridLayoutMorph", {
 
 		morph.realLayoutChanged = morph.layoutChanged;
 		morph.layoutChanged = function() {
-			console.log("layoutChanged");
+			console.log("layoutChanged " + this);
 			this.realLayoutChanged();
 			this.owner.scheduleUpdate();
 		}
@@ -77,7 +78,8 @@ Morph.subclass(Global, "GridLayoutMorph", {
         var c = constraints;
 		if (!c) c = new Object();
 		if (c.row) {
-			this.nextCol = 0;
+			this.nextCol = 1;
+			this.nextRow = c.row;
 		} else {
 			c.row = this.nextRow;
 		}
@@ -90,23 +92,33 @@ Morph.subclass(Global, "GridLayoutMorph", {
 		c.cols = c.cols || 1;
 		c.align = c.align || "c";
 		c.pad = c.pad || pt(0,0);
-		for (var v in c) {
-			console.log("- " + v + ": " + c[v]);
-		}
+		console.log(c.row + "," + c.col + " (" + c.cols + "x" + c.rows + ") "
+			+ c.align);
 		return c;
+	},
+
+	// adjust the constraints of a morph (not much error checking)
+
+	moveMorph: function(m, c) {
+		for (var i in c) {
+			m.cst[i] = c[i];
+		}
+		this.scheduleUpdate();
 	},
 
 	// increment the default next row
 
-	nextRow: function(row) {
-		this.nextRow = row || nextRow + 1;
+	setRow: function(row) {
+		this.nextRow = row || this.nextRow + 1;
 	},
+
+	// call this anytime we need to relayout the grid
 
 	scheduleUpdate: function() {
 		if (this.updateScheduled) {
 			clearTimeout(this.updateScheduled);
 		}
-		this.updateScheduled = setTimeout(this.update.bind(this), 50);
+		this.updateScheduled = setTimeout(this.update.bind(this), 100);
 	},
 
 	update: function() {
@@ -120,10 +132,10 @@ Morph.subclass(Global, "GridLayoutMorph", {
 	// fill in this.rows and this.cols
 
 	computeGrid: function() {
-		console.log("Computing Grid");
+		// console.log("Computing Grid");
 		var morphs = new Array();
 		for (var i=0; i<this.submorphs.length; i++) {
-			morphs.push(this.submorphs[i]);
+			if (this.submorphs[i].cst) morphs.push(this.submorphs[i]);
 		}
 		// console.log(" sorting by row");
 		morphs.sort(function(a,b) {
@@ -160,7 +172,18 @@ Morph.subclass(Global, "GridLayoutMorph", {
 		var maxX = this.cols[end];
 		this.cols.length=end+1;
 
-		this.setExtent(pt(maxX, maxY));
+		// this is really dumb for now
+
+		if (this.showGrid) {
+			this.showGridLines(false);
+			this.showGridLines(true);
+		}
+
+		var newExt = pt(maxX, maxY);
+		if (!newExt.eqPt(this.bounds().extent())) {
+			console.log("changing container size");
+			this.setExtent(newExt);
+		} 
 	},
 
 	// fit the morphs in the grid
@@ -168,18 +191,26 @@ Morph.subclass(Global, "GridLayoutMorph", {
 	doLayout: function() {
 		for (var i=0; i<this.submorphs.length; i++) {
 			var m = this.submorphs[i];
-			var c = m.cst;
-			var r = new Rectangle(this.cols[c.col-1], this.rows[c.row-1],
+			if (m.cst) {
+				var c = m.cst;
+				var r = new Rectangle(this.cols[c.col-1], this.rows[c.row-1],
 					this.cols[c.col+c.cols-1]-this.cols[c.col-1],
 					this.rows[c.row+c.rows-1]-this.rows[c.row-1]);
-			// console.log(i + ": layout cell: " + r);
-			r = this.adjustRect(m.requestExtent || m.bounds().extent(), r,
+				// console.log(i + ": layout cell: " + r);
+				r = this.adjustRect(m.requestExtent || m.bounds().extent(), r,
 					c.align);
-			// console.log("  old bounds: " + m.bounds());
-			// console.log("  new bounds: " + r);
-			m.iMeanIt=true;
-			m.setBounds(r);
-			// console.log("  did bounds");
+				// console.log("  old bounds: " + m.bounds());
+				// console.log("  new bounds: " + r);
+				var o = m.bounds();
+				if (r.x==o.x && r.y==o.y && r.width==o.width &&
+						 r.height==o.height) {
+					console.log("No change for: " + m);
+				} else {
+					m.iMeanIt=true;
+					m.setBounds(r);
+					// console.log("  did bounds");
+				}
+			}
 		}
 	},
 
@@ -197,7 +228,7 @@ Morph.subclass(Global, "GridLayoutMorph", {
 		} else if (align.match("n")) {
 			r.height = ext.y;
 		} else if (align.match("s")) {
-			r.height = ext.y; r.y = r.height-ext.y;
+			r.height = ext.y; r.y += r.height-ext.y;
 		} else {
 			r.y += (r.height-ext.y)/2; r.height = ext.y;
 		}
@@ -206,13 +237,63 @@ Morph.subclass(Global, "GridLayoutMorph", {
 			// use r values
 		} else if (align.match("w")) {
 			r.width = ext.x;
+			console.log("west: " + r + "," + ext);
 		} else if (align.match("e")) {
-			r.width = ext.x; r.x = r.width-ext.x;
+			r.width = ext.x; r.x += r.width-ext.x;
+			console.log("east: " + r + "," + ext);
 		} else {
 			r.x += (r.width-ext.x)/2; r.width = ext.x;
 		}
+		console.log("adjust: " + r);
 		return r;
-	}
+	},
+
+	showGridLines: function(on) {
+		if (on) {
+			this.showGrid=true;
+			this.makeGridLines();
+		} else {
+			delete this.showGrid;
+			if (this.colLine) {
+				for(var i=0; i<this.colLine.length;i++) {
+					this.removeMorph(this.colLine[i]);
+				}
+				delete this.colLine;
+			}
+			if (this.rowLine) {
+				for(var i=0; i<this.rowLine.length;i++) {
+					this.removeMorph(this.rowLine[i]);
+				}
+				delete this.rowLine;
+			}
+		}
+	},
+
+	makeGridLines: function() {
+		console.log("making grid lines");
+		var ext = this.bounds().extent().subPt(pt(1,1));
+
+		this.rowLine = new Array();
+		this.colLine = new Array();
+		for(var i=0; i<this.rows.length; i++) {
+			var pos = new Rectangle(0, this.rows[i], ext.x, 1);
+			var w = new Morph(pos, "rect");
+			w.setFillOpacity(.3);
+			w.setBorderWidth(0);
+			w.setFill(Color.red);
+			this.addMorphFrontOrBack(w, true);
+			this.rowLine[i] = w;
+		}
+		for(var i=0; i<this.cols.length; i++) {
+			var pos = new Rectangle(this.cols[i], 0, 1, ext.y);
+			var w = new Morph(pos, "rect");
+			w.setFillOpacity(.3);
+			w.setBorderWidth(0);
+			w.setFill(Color.red);
+			this.addMorphFrontOrBack(w, true);
+			this.colLine[i] = w;
+		}
+	},
 });
 console.log("end gridlayout.js");
 
