@@ -5498,7 +5498,7 @@ PasteUpMorph.subclass("WorldMorph", {
                 var m = world.addMorph(new ClockMorph(evt.mousePoint, 50));
                 m.startSteppingScripts(); }],
             ["Piano Keyboard", function(evt) {
-                var m = makePianoKeyboard(evt.mousePoint, 50);
+                var m = new PianoKeyboard(evt.mousePoint);
                 m.scaleBy(1.5);  m.rotateBy(-0.2); }],
 
 	    ["Console", function(evt) {

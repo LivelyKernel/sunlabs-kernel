@@ -162,45 +162,65 @@ Morph.subclass("ClockMorph", {
 // ===========================================================================
 // Piano Keyboard
 // ===========================================================================
+Morph.subclass('PianoKeyboard', {
 
-makePianoKeyboard = function(loc) {  // No glissandi yet (but it's easy...)
-//  -- Let's Boogie! --
+initialize: function($super, loc) {
+	//  -- Lets Boogie! --
+	console.log("initialize 1 " + loc);
+	$super(loc.extent(pt(100, 20)), "rect");
+	console.log("initialize 2 " + loc);
 	var wtWid, bkWid, keyRect, key, octavePt, nWhite, nBlack;
-	var keyboard = new Morph(loc.extent(pt(100, 20)), "rect");
-	WorldMorph.current().addMorph(keyboard);
+	WorldMorph.current().addMorph(this);  // Should be able to create out of world
 	var nOctaves = 6;
 	wtWid = 8; bkWid = 5;
 	for (var i=0; i<nOctaves+1; i++) {
 		if (i < nOctaves) {nWhite = 7;  nBlack = 5; }
 			else {nWhite = 1;  nBlack = 0; } // Hich C
-		octavePt = keyboard.innerBounds().topLeft().addXY(7*wtWid*i-1, -1);
+		octavePt = this.innerBounds().topLeft().addXY(7*wtWid*i-1, -1);
 		for (var j=0; j<nWhite; j++) {
 			keyRect = octavePt.addXY((j)*wtWid, 0).extent(pt(wtWid+1, 36));
 			key = new Morph(keyRect, "rect");  key.setFill(Color.white);  key.myFill = Color.white;
-        		key.relayMouseEvents(keyboard, {onMouseDown: "pianoKeyDown", onMouseUp: "pianoKeyUp"});
+        		key.relayMouseEvents(this,  { onMouseDown: "pianoKeyDown", onMouseUp: "pianoKeyUp", onMouseMove: "pianoKeyMove" } );
 			key.noteNumber = i*12 + ([1, 3, 5, 6, 8, 10, 12][j]);
-			keyboard.addMorph(key);
+			this.addMorph(key);
 		}
 		for (var j=0; j<nBlack; j++) {
 			keyRect = octavePt.addXY([6, 15, 29, 38, 47][j], 1).extent(pt(bkWid, 21));
 			key = new Morph(keyRect, "rect");  key.setFill(Color.black);  key.myFill = Color.black;
-        		key.relayMouseEvents(keyboard, {onMouseDown: "pianoKeyDown", onMouseUp: "pianoKeyUp"});
+        		key.relayMouseEvents(this, { onMouseDown: "pianoKeyDown", onMouseUp: "pianoKeyUp", onMouseMove: "pianoKeyMove" } );
 			key.noteNumber = i*12 + ([2, 4, 7, 9, 11][j]);
-			keyboard.addMorph(key);
+			this.addMorph(key);
 		}
 	}
-	keyboard.setExtent(keyboard.bounds().extent());
-	keyboard.pianoKeyDown = function(evt, key) {
+	// New bounds encloses all keys but no more
+	this.setExtent(this.bounds().extent().addXY(-1,-1));
+	},
+	pianoKeyDown: function(evt, key) {
 		key.setFill(Color.green);
-		console.log("key number " + key.noteNumber + " pressed."); }
-	keyboard.pianoKeyUp = function(evt, key) {
+		console.log("key number " + key.noteNumber + " pressed."); 
+	},
+	pianoKeyUp: function(evt, key) {
 		key.setFill(key.myFill);
-		console.log("key number " + key.noteNumber + " released."); }
-	return keyboard;
-}
+		console.log("key number " + key.noteNumber + " released."); 
+	},
+	pianoKeyMove: function(evt, key) {
+        if (!evt.mouseButtonPressed) return;
+		if (!key.containsWorldPoint(evt.mousePoint) ) {
+			// user dragged out with mouse down
+			this.pianoKeyUp(evt, key);
+			evt.hand.setMouseFocus(null);
+			// See if it's now on a new key a la glissando
+			var newKey = this.morphToReceiveEvent(evt);
+			if (newKey) {
+				this.pianoKeyDown(evt, newKey);
+				evt.hand.setMouseFocus(newKey);
+			}
+		}
+	}
+});
 
 
-// ===========================================================================
+//===========================================================================
 // The Pen/Hilbert curve demo
 // ===========================================================================
 
