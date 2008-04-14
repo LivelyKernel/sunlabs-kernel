@@ -5499,7 +5499,8 @@ PasteUpMorph.subclass("WorldMorph", {
                 m.startSteppingScripts(); }],
             ["Piano Keyboard", function(evt) {
                 var m = new PianoKeyboard(evt.mousePoint);
-                m.scaleBy(1.5);  m.rotateBy(-0.2); }],
+                m.scaleBy(1.5);  m.rotateBy(-0.2);
+				world.addMorph(m)}],
 
 	    ["Console", function(evt) {
 		world.addFramedMorph(new ConsoleWidget(50).buildView(pt(800, 100)), "Console", evt.mousePoint);

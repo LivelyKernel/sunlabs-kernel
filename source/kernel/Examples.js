@@ -166,11 +166,8 @@ Morph.subclass('PianoKeyboard', {
 
 initialize: function($super, loc) {
 	//  -- Lets Boogie! --
-	console.log("initialize 1 " + loc);
 	$super(loc.extent(pt(100, 20)), "rect");
-	console.log("initialize 2 " + loc);
 	var wtWid, bkWid, keyRect, key, octavePt, nWhite, nBlack;
-	WorldMorph.current().addMorph(this);  // Should be able to create out of world
 	var nOctaves = 6;
 	wtWid = 8; bkWid = 5;
 	for (var i=0; i<nOctaves+1; i++) {
