@@ -129,7 +129,7 @@ function populateWorldWithExamples(world) {
 
         lm1.myWorld.onEnter = function() {
 
-            PIM = new WebPIM().openIn(lm1.myWorld, pt(110, 110));
+            if (!PIM) PIM = new WebPIM().openIn(lm1.myWorld, pt(110, 110));
 
            // lm1.myWorld.beetleGame = new DungBeetleMorph(pt(10, 10).extent(pt(240, 320)));
            // lm1.myWorld.addMorph(new WindowMorph(lm1.myWorld.beetleGame, 'Dung Beetle')); 
