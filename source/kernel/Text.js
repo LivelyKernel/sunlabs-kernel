@@ -1739,8 +1739,9 @@ Morph.subclass("TextMorph", {
 		case "j": { this.emphasizeSelection({align: 'justify'}); return true; }
 
         case "z": { // Undo
-            if (this.undoTextString) {
+            if (this.undoTextString) { // Need to make *this* undo-able
                 this.selectionRange = this.undoSelectionRange;
+                if (this.undoTextStyle) this.textStyle = this.undoTextStyle;
                 this.setTextString(this.undoTextString);
             }
             return true;
@@ -1773,10 +1774,11 @@ TextMorph.addMethods({
 		this.composeAfterEdits();
 	},
 	pvtUpdateTextString: function(replacement, delayComposition, justMoreTyping) {
+	if(!justMoreTyping) { 
         // Mark for undo, but not if continuation of type-in
-	if(!justMoreTyping) {
 		this.undoTextString = this.textString;
-                this.undoSelectionRange = this.selectionRange;
+		this.undoSelectionRange = this.selectionRange;
+		if (this.textStyle) this.undoTextStyle = this.textStyle.clone();
 	}
 	// DI: Might want to put the maxSafeSize test in clients
         this.textString = replacement.truncate(this.maxSafeSize);
