@@ -2694,7 +2694,7 @@ Widget.subclass('StockWidget', NetRequestReporterTrait, {
 
 
         // Newsfeed panel
-        m = panel.addMorph(newListPane(new Rectangle(160, 180, 410, 150)));
+        m = panel.addMorph(newTextListPane(new Rectangle(160, 180, 410, 150)));
         m.connectModel({model: model, getList: "getNewsHeaders"});
 
         // Company-specific stock quotes

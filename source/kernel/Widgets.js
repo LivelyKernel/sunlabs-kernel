@@ -1387,14 +1387,14 @@ Morph.subclass("TextListMorph", {
     borderWidth: 1,
     fill: Color.white,
     pins: ["List", "Capacity", "ListDelta", "Selection", "-DeletionConfirmation", "+DeletionRequest"],
-    padding: 1,
+    itemMargin: 1,
     documentation: "replacement for CheapListMorphs, using TextMorphs as menu items",
     defaultCapacity: 50,
-
+    
 
     initialize: function($super, initialBounds, itemList) {
         // itemList is an array of strings
-	var height = Math.max(initialBounds.height, itemList.length* (TextMorph.prototype.fontSize + this.padding *2));
+	var height = Math.max(initialBounds.height, itemList.length * (TextMorph.prototype.fontSize + this.itemMargin *2));
 	initialBounds = initialBounds.withHeight(height);
 	$super(initialBounds, itemList);
         this.itemList = itemList;
@@ -1423,7 +1423,7 @@ Morph.subclass("TextListMorph", {
     },
 
     generateSubmorphs: function(itemList, width) {
-	var rect = pt(width, TextMorph.prototype.fontSize).extentAsRectangle();
+	var rect = pt(width, TextMorph.prototype.fontSize).extentAsRectangle().insetByPt(pt(this.itemMargin, 0));
 	for (var i = 0; i < itemList.length; i++ ) {
 	    var m = this.addMorph(new TextMorph(rect, itemList[i])).beListItem();
 	    m.relayMouseEvents(this, {onMouseDown: "highlightItem"});
@@ -1431,13 +1431,12 @@ Morph.subclass("TextListMorph", {
     },
     
     alignAll: function() {
-	this.leftAlignSubmorphs(pt(this.padding*2, this.padding));
+	this.leftAlignSubmorphs(pt(this.itemMargin*2, this.itemMargin));
     },
 
     defaultOrigin: function(bounds) { 
         return bounds.topLeft(); 
     },
-
 
     takesKeyboardFocus: Functions.True,
 
@@ -2126,7 +2125,7 @@ function newListPane(initialBounds) {
 };
 
 function newTextListPane(initialBounds) {
-    return new ScrollPane(new TextListMorph(initialBounds,[]), initialBounds); 
+    return new ScrollPane(new TextListMorph(initialBounds, ["-----"]), initialBounds); 
 };
 
 function newTextPane(initialBounds, defaultText) {

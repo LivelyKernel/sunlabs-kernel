@@ -93,8 +93,8 @@ Widget.subclass('SimpleBrowser', {
 
     buildView: function(extent) {
         var panel = PanelMorph.makePanedPanel(extent, [
-            ['leftPane', newListPane, new Rectangle(0, 0, 0.5, 0.5)],
-            ['rightPane', newListPane, new Rectangle(0.5, 0, 0.5, 0.5)],
+            ['leftPane', newTextListPane, new Rectangle(0, 0, 0.5, 0.5)],
+            ['rightPane', newTextListPane, new Rectangle(0.5, 0, 0.5, 0.5)],
             ['bottomPane', newTextPane, new Rectangle(0, 0.5, 1, 0.5)]
         ]);
 	var model = this.getModel();
@@ -217,7 +217,7 @@ WidgetModel.subclass('ObjectBrowser', {
     buildView: function(extent) {
         var panel = PanelMorph.makePanedPanel(extent, [
             ['namePane', TextMorph, new Rectangle(0, 0, 1, 0.07)],
-            ['topPane', newListPane, new Rectangle(0, 0.07, 1, 0.5)],
+            ['topPane', newTextListPane, new Rectangle(0, 0.07, 1, 0.5)],
             ['bottomPane', newTextPane, new Rectangle(0, 0.5, 1, 0.5)]
         ]);
 
@@ -306,7 +306,7 @@ Widget.subclass('SimpleInspector', {
 
     buildView: function(extent, model) {
         var panel = PanelMorph.makePanedPanel(extent, [
-            ['leftPane', newListPane, new Rectangle(0, 0, 0.5, 0.6)],
+            ['leftPane', newTextListPane, new Rectangle(0, 0, 0.5, 0.6)],
             ['rightPane', newTextPane, new Rectangle(0.5, 0, 0.5, 0.6)],
             ['bottomPane', newTextPane, new Rectangle(0, 0.6, 1, 0.4)]
         ]);
@@ -418,7 +418,7 @@ WidgetModel.subclass('StylePanel', {
     setStrokeOpacity: function(op) {
         this.strokeOpacity = op.roundTo(0.01);
         this.targetMorph.setStrokeOpacity(this.strokeOpacity);
-        this.changed('getStrokeOpacity')
+        this.changed('getStrokeOpacity');
     },
 
     setTextColor: function(c) { // Maybe add a little color swatch in the view
@@ -467,9 +467,9 @@ WidgetModel.subclass('StylePanel', {
             y += 30;
         }
 
-        panel.addMorph(m = new CheapListMorph(new Rectangle(50, y, 100, 50),[]));
+        panel.addMorph(m = new TextListMorph(new Rectangle(50, y, 100, 50),[""]));
         m.connectModel({model: this, getList: "getFillTypes", getSelection: "getFillType", setSelection: "setFillType"});
-        panel.addMorph(m = new CheapListMorph(new Rectangle(160, y, 75, 60),[]));
+        panel.addMorph(m = new TextListMorph(new Rectangle(160, y, 75, 60),[""]));
         m.connectModel({model: this, getList: "getFillDirs", getSelection: "getFillDir", setSelection: "setFillDir"});
         panel.addMorph(m = new ColorPickerMorph(new Rectangle(250, y, 50, 30)));
         m.connectModel({model: this, setColor: "setColor1"});
@@ -1023,14 +1023,13 @@ WidgetModel.subclass('ChangeList', {
     },
     buildView: function(extent) {
         var panel = PanelMorph.makePanedPanel(extent, [
-            ['topPane', newListPane, new Rectangle(0, 0, 1, 0.5)],
+            ['topPane', newTextListPane, new Rectangle(0, 0, 1, 0.5)],
             ['bottomPane', newTextPane, new Rectangle(0, 0.5, 1, 0.5)]
         ]);
         var m = panel.topPane;
-		m.innerMorph().textSelection.borderRadius = 0;
         m.connectModel({model: this, getList: "getChangeBanners", setSelection: "setChangeSelection", getSelection: "getChangeSelection", getMenu: "getListPaneMenu"});
         m = panel.bottomPane;
-		m.innerMorph().textSelection.borderRadius = 0;
+	m.innerMorph().textSelection.borderRadius = 0;
 	m.connectModel({model: this, getText: "getChangeItemText", setText: "setChangeItemText", getSelection: "getSearchString"});
 	return panel;
     }

@@ -501,7 +501,7 @@ Widget.subclass('FeedWidget', {
 
 
         var rect = extent.extentAsRectangle();
-        var m = panel.addMorph(newListPane(rect.withBottomRight(rect.bottomCenter())));
+        var m = panel.addMorph(newTextListPane(rect.withBottomRight(rect.bottomCenter())));
         m.connectModel({model: model, getList: "getItemList", 
 			setSelection: "setSelectedItemTitle", getMenu: "getItemMenu", getMenuTarget: "getWidget"});
 	
