@@ -2531,7 +2531,7 @@ Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
         panel.addMorph(m = new ImageMorph(new Rectangle(10,205,20,20), this.imagepath + "visibility.png"));
         m.setFill(null);
 	
-        m = panel.addMorph(new CheapListMorph(new Rectangle(40,3,200,20),["San Francisco, California", "Tampere, Finland", "London, United Kingdom"]));
+        m = panel.addMorph(new TextListMorph(new Rectangle(40,3,200,20),["San Francisco, California", "Tampere, Finland", "London, United Kingdom"]));
         m.connectModel({model: model, getSelection: "getLocale", setSelection: "setLocale"});
         m.selectLineAt(0); // Select the first item by default
 
@@ -2688,7 +2688,7 @@ Widget.subclass('StockWidget', NetRequestReporterTrait, {
         // m.connectModel({model: this, getURL: "getIndexChartURL"});
 
         // Newsfeed selector
-        m = panel.addMorph(new CheapListMorph(new Rectangle(20, 180, 90, 20), Object.keys(this.config)));
+        m = panel.addMorph(new TextListMorph(new Rectangle(20, 180, 90, 20), Object.keys(this.config)));
         m.connectModel({model: model, getSelection: "getStockIndex", setSelection: "setStockIndex"});
 	m.setModelValue("setSelection", 'DOW JONES');
 
@@ -2703,7 +2703,7 @@ Widget.subclass('StockWidget', NetRequestReporterTrait, {
 	m.connectModel({model: model, getText: "getQuote"});
 	
         // Company selector for stock quotes
-        m = panel.addMorph(new CheapListMorph(new Rectangle(20, 340, 120, 40), ["JAVA", "NOK", "GOOG", "QQQQ"]));
+        m = panel.addMorph(new TextListMorph(new Rectangle(20, 340, 120, 40), ["JAVA", "NOK", "GOOG", "QQQQ"]));
         m.connectModel({model: model, getSelection: "getCompany", setSelection: "setCompany"});
 	m.setModelValue("setSelection", "JAVA");
 
