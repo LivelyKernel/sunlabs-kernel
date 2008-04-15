@@ -1926,7 +1926,13 @@ var Event = (function() {
 		var code = this.rawEvent.which;
 		return code && String.fromCharCode(code);
 	    }
+	},
+
+	wheelDelta: function() {
+	    // FIXME: make browser-independent
+	    return this.rawEvent.wheelDelta;
 	}
+
     });
 
     Event.rawEvent = tmp;
@@ -3308,7 +3314,6 @@ Object.extend(Morph, {
     onChange: function(fieldName) {
 	return function(proceed, newValue) {
 	    var result = proceed(newValue);
-	    this.recordChange(fieldName);
 	    this.changed(); 
 	    return result;
 	}
@@ -3321,7 +3326,6 @@ Object.extend(Morph, {
 	    var args = $A(arguments);
 	    var proceed = args.shift();
 	    var result = proceed.apply(this, args);
-	    this.recordChange(fieldName);
 	    this.layoutChanged(priorExtent);
 	    this.changed(); 
 	    return result;
@@ -3773,7 +3777,6 @@ Morph.addMethods({
 	this.changed();
 	this.origin = this.origin.addPt(delta);
 	this.cachedTransform = null;
-	this.recordChange('origin');
 	// this.layoutChanged();
 	// Only position has changed; not extent.  Thus no internal layout is needed
 	// This should become a new transformChanged() method
@@ -4141,7 +4144,7 @@ Morph.addMethods({
 	var handle = this.shape.possibleHandleForControlPoint(this, this.localize(evt.mousePoint), evt.hand);
 	if (handle == null) return false;
 	this.addMorph(handle);  // after which it should get converted appropriately here
-    handle.showHelp(evt);
+	handle.showHelp(evt);
 	if (evt.hand.mouseFocus instanceof HandleMorph) evt.hand.mouseFocus.remove();
 	evt.hand.setMouseFocus(handle);
 	return true; 
@@ -4592,12 +4595,6 @@ Morph.addMethods({
 
 	// If this method is overridden by a subclass, it should call super as well
 	if (this.focusHalo) this.adjustFocusHalo();
-    },
-
-    recordChange: function(fieldName/*:String*/) {  
-	// Update sever or change log or something
-	return;
-	// consider relating to this.changed()
     },
 
     position: function() { // Deprecated -- use getPosition
@@ -5686,10 +5683,11 @@ Morph.subclass("HandMorph", {
 
         Function.resetDebuggingStack();
         switch (evt.type) {
+        case "MouseWheel":
+	    console.log("wheel event " + evt + "," + evt.wheelDelta()); // no break
         case "MouseMove":
         case "MouseDown":
         case "MouseUp":
-        case "MouseWheel":
             this.handleMouseEvent(evt);
             break;
         case "KeyDown":
@@ -5713,7 +5711,6 @@ Morph.subclass("HandMorph", {
         //-------------
         if (evt.type == "MouseMove") { // it is just a move
             this.setPosition(evt.mousePoint);
-            this.recordChange('origin');
             
             if (evt.mousePoint.dist(this.lastMouseDownPoint) > 10) { 
                 this.hasMovedSignificantly = true;
