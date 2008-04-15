@@ -1391,17 +1391,6 @@ Morph.subclass("TextListMorph", {
     documentation: "replacement for CheapListMorphs, using TextMorphs as menu items",
     defaultCapacity: 50,
 
-    generateSubmorphs: function(itemList, width) {
-	var rect = pt(width, TextMorph.prototype.fontSize).extentAsRectangle();
-	for (var i = 0; i < itemList.length; i++ ) {
-	    var m = this.addMorph(new TextMorph(rect, itemList[i])).beListItem();
-	    m.relayMouseEvents(this, {onMouseDown: "highlightItem"});
-	}
-    },
-    
-    alignAll: function() {
-	this.leftAlignSubmorphs(pt(this.padding*2, this.padding));
-    },
 
     initialize: function($super, initialBounds, itemList) {
         // itemList is an array of strings
@@ -1416,13 +1405,10 @@ Morph.subclass("TextListMorph", {
         var model = new SyntheticModel(this.pins);
         this.modelPlug = new ModelPlug(model.makePlugSpecFromPins(this.pins));
         this.setModelValue('setList', itemList);
+	this.savedFill = null; // for selecting items
         return this;
     },
 
-    defaultOrigin: function(bounds) { 
-        return bounds.topLeft(); 
-    },
-    
     deserialize: function($super, importer, rawNode) {
         $super(importer, rawNode);
 	this.itemList = [];
@@ -1436,6 +1422,23 @@ Morph.subclass("TextListMorph", {
         this.layoutChanged();
     },
 
+    generateSubmorphs: function(itemList, width) {
+	var rect = pt(width, TextMorph.prototype.fontSize).extentAsRectangle();
+	for (var i = 0; i < itemList.length; i++ ) {
+	    var m = this.addMorph(new TextMorph(rect, itemList[i])).beListItem();
+	    m.relayMouseEvents(this, {onMouseDown: "highlightItem"});
+	}
+    },
+    
+    alignAll: function() {
+	this.leftAlignSubmorphs(pt(this.padding*2, this.padding));
+    },
+
+    defaultOrigin: function(bounds) { 
+        return bounds.topLeft(); 
+    },
+
+
     takesKeyboardFocus: Functions.True,
 
     setHasKeyboardFocus: function(newSetting) { 
@@ -1447,9 +1450,15 @@ Morph.subclass("TextListMorph", {
 	var target = evt.originalTarget;
 	var index = this.submorphs.indexOf(target);
 	if (index >= 0) {
-	    // console.log("picked " + this.submorphs[index] + " at " + index);
-	    this.selectLineAt(index, true);
-	    return true
+	    if (index == this.selectedLineNo) { 
+		// clicked on what was previously selected: unselect
+		// this.selectLineAt(-1, true);
+		//this.relinquishKeyboardFocus(evt.hand);
+	    } else {
+		this.selectLineAt(index, true);
+		this.requestKeyboardFocus(evt.hand);
+	    }
+	    return true;
 	}
 	return false;
     },
@@ -1484,6 +1493,7 @@ Morph.subclass("TextListMorph", {
         }
         case Event.KEY_ESC: {
             this.relinquishKeyboardFocus(this.world().firstHand());
+	    this.selectLineAt(-1, true);
             evt.stop();
             break;
         }    
@@ -1496,13 +1506,19 @@ Morph.subclass("TextListMorph", {
     },
 
     selectLineAt: function(lineNo, shouldUpdateModel) {  
-	this.submorphs[this.selectedLineNo] && this.submorphs[this.selectedLineNo].setFill(null);
+	if (this.selectedLineNo in this.submorphs) 
+	    this.submorphs[this.selectedLineNo].setFill(this.savedFill);
+	
 	this.selectedLineNo = lineNo;
-	var itemMorph = this.submorphs[lineNo];
-	if (itemMorph) {
-	    itemMorph.setFill(TextSelection.prototype.fill);
-	    shouldUpdateModel && this.setSelection(itemMorph.textString);
-	} else console.log("nothing to select");
+	
+	var selectionContent = null;
+	if (lineNo in this.submorphs) {
+	    var item = this.submorphs[lineNo];
+	    this.savedFill = item.getFill();
+	    item.setFill(TextSelection.prototype.fill);
+	    selectionContent = item.textString;
+	}
+	shouldUpdateModel && this.setSelection(selectionContent);
     },
 
     appendList: function(newItems) {
@@ -1518,7 +1534,8 @@ Morph.subclass("TextListMorph", {
 	this.itemList = this.itemList.concat(newItems);
 	this.generateSubmorphs(newItems, this.bounds().width);
 	this.alignAll();
-        this.setSelectionToMatch(priorItem);
+	if (this.selectedLineNo + removed >= this.itemList.length - 1)
+            this.selectedLineNo = -1;
 	this.resetScrollPane(true);
     },
     
@@ -1556,7 +1573,7 @@ Morph.subclass("TextListMorph", {
 		this.appendList(this.getModelValue("getListDelta"));
 		//this.setModelValue("setListDelta", []);
 		return this.itemList;
-
+		
             case this.modelPlug.getSelection:
                 var selection = this.getSelection();
 		console.log("got selection "  + selection);
@@ -1598,9 +1615,7 @@ Morph.subclass("TextListMorph", {
 	    return true;
         }
 	return false;
-    },
-
-
+    }
 });
 
 
