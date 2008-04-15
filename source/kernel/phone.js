@@ -337,4 +337,5 @@ function phoneDemo(world, origin, size) {
 	sl.req = new NetRequest({model: model, setResponseText: "setLabel"});
 	world.addMorph(sl);
 	sl.req.get(sl.url);
+        return pm;
 }

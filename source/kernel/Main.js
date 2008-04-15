@@ -351,15 +351,17 @@ function populateWorldWithExamples(world) {
     }
 
     if (Config.showPhoneWorld) {
-		var phoneWorld = new LinkMorph(null, pt(60, 320));
-		world.addMorph(phoneWorld);
-		var widgetTextMorph = 
-			new TextMorph(new Rectangle(90, 300, 100, 25), "Telephone Demo");
-		widgetTextMorph.shape.roundEdgesBy(10);
+	var phoneWorld = new LinkMorph(null, pt(60, 320));
+	world.addMorph(phoneWorld);
+	var widgetTextMorph = 
+	    new TextMorph(new Rectangle(90, 300, 100, 25), "Telephone Demo");
+	widgetTextMorph.shape.roundEdgesBy(10);
 		world.addMorph(widgetTextMorph);
-		phoneWorld.myWorld.onEnter = function() {
-			phoneDemo(phoneWorld.myWorld, pt(250,180), 150);
-		}
+	phoneWorld.myWorld.onEnter = function() {
+	    if (!phoneWorld.myWorld.phoneMorph) {
+		phoneWorld.myWorld.phoneMorph = phoneDemo(phoneWorld.myWorld, pt(250,180), 150);
+	    }
+	}
     }
 
     if (Config.showXenoMorph) {
