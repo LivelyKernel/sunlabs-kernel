@@ -1782,7 +1782,6 @@ TextMorph.addMethods({
 	}
 	// DI: Might want to put the maxSafeSize test in clients
         this.textString = replacement.truncate(this.maxSafeSize);
-        this.recordChange('textString');
         if (!delayComposition) this.composeAfterEdits();  // Typein wants lazy composition
     },
 
@@ -1869,27 +1868,27 @@ TextMorph.addMethods({
     
     updateTextString: function(newStr) {
         this.pvtUpdateTextString(newStr);
-		this.resetScrollPane(); 
+	this.resetScrollPane(); 
     },
     
     resetScrollPane: function() {
         var sp = this.enclosingScrollPane();
-		if (sp) sp.scrollToTop();
+	if (sp) sp.scrollToTop();
     },
+    
     scrollSelectionIntoView: function() { 
-		var sp = this.enclosingScrollPane();
-		if (! sp) return
-		var selRect = this.hasNullSelection()
-			? this.getCharBounds(this.selectionRange[0])
-			: this.getCharBounds(this.selectionRange[1]);
-		sp.scrollRectIntoView(selRect);		
+	var sp = this.enclosingScrollPane();
+	if (! sp) return;
+	var selRect = this.getCharBounds(this.selectionRange[this.hasNullSelection() ? 0 : 1]);
+	sp.scrollRectIntoView(selRect); 
     },
-     enclosingScrollPane: function() { 
+    
+    enclosingScrollPane: function() { 
         // Need a cleaner way to do this
         if (! (this.owner instanceof ClipMorph)) return null;
-		var sp = this.owner.owner;
-		if (! (sp instanceof ScrollPane)) return null;
-		return sp
+	var sp = this.owner.owner;
+	if (! (sp instanceof ScrollPane)) return null;
+	return sp;
     },
     
     updateView: function(aspect, controller) {
@@ -1905,7 +1904,7 @@ TextMorph.addMethods({
             return;
         }
     },
-
+    
     getModelText: function() {
         if (this.modelPlug) return this.getModelValue('getText', "-----");
     },
