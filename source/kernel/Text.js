@@ -1809,7 +1809,7 @@ TextMorph.addMethods({
     boundEval: function(str) {    
         // Evaluate the string argument in a context in which "this" may be supplied by the modelPlug
         var ctx = this.getModelValue('doitContext', this);
-        return (function() { return interactiveEval(str) }.bind(ctx))();
+        return (interactiveEval.bind(ctx))(str);
     },
     
     addOrRemoveBrackets: function(bracketIndex) {
