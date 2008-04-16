@@ -910,7 +910,7 @@ Morph.subclass("SelectionMorph", {
         this.initialSelection = true;
         this.shape.setFillOpacity(0.1);
         this.myWorld = defaultworldOrNull ? defaultworldOrNull : this.world();
-        // this.oshape.setAttributeNS(null, "stroke-dasharray", "3,2");
+        // this.shape.setAttributeNS(null, "stroke-dasharray", "3,2");
         return this;
     },
     
@@ -1426,7 +1426,9 @@ Morph.subclass("TextListMorph", {
 	var rect = pt(width, TextMorph.prototype.fontSize).extentAsRectangle().insetByPt(pt(this.itemMargin, 0));
 	for (var i = 0; i < itemList.length; i++ ) {
 	    var m = this.addMorph(new TextMorph(rect, itemList[i])).beListItem();
-	    m.relayMouseEvents(this, {onMouseDown: "highlightItem"});
+	    m.relayMouseEvents(this, {onMouseDown: "highlightOnPress", 
+				      // onMouseUp: "highlightOnPress", 
+				      onMouseMove: "highlightOnMove"});
 	}
     },
     
@@ -1444,21 +1446,42 @@ Morph.subclass("TextListMorph", {
         this.hasKeyboardFocus = newSetting;
         return newSetting;
     },
+    
+    firstSubmorphContainingWorldPoint: function(p) {
+	for (var i = 0; i < this.submorphs.length; i++) {
+	    if (this.submorphs[i].containsWorldPoint(p)) {
+		return i;
+	    }
+	}
+	return -1;
+    },
 
-    highlightItem: function(evt) {
+    highlightOnPress: function(evt) {
+	// console.log("evt " + evt);
 	var target = evt.originalTarget;
 	var index = this.submorphs.indexOf(target);
+	this.highlightItem(evt, index, true);
+    },
+
+    highlightOnMove: function(evt) {
+	//console.log("evt " + evt);
+	var index = this.firstSubmorphContainingWorldPoint(evt.mousePoint);
+	this.highlightItem(evt, index, false);
+    },
+
+    highlightItem: function(evt, index, updateModel) {
 	if (index >= 0) {
 	    if (index == this.selectedLineNo) { 
 		// clicked on what was previously selected: unselect
 		// this.selectLineAt(-1, true);
 		//this.relinquishKeyboardFocus(evt.hand);
 	    } else {
-		this.selectLineAt(index, true);
+		this.selectLineAt(index, updateModel);
 		this.requestKeyboardFocus(evt.hand);
 	    }
 	    return true;
 	}
+	if (!updateModel) this.selectLineAt(-1, updateModel);
 	return false;
     },
 
@@ -1582,7 +1605,7 @@ Morph.subclass("TextListMorph", {
 	    case this.modelPlug.getDeletionConfirmation: //someone broadcast a deletion
 		if (this.getModelValue("getDeletionConfirmation") == true) {
 		    // update self to reflect that model changed
-		    var index = this.selectedLineNo();
+		    var index = this.selectedLineNo;
 		    var list = this.getList();
 		    list.splice(index, 1);
 		    this.updateList(list);
@@ -1617,6 +1640,157 @@ Morph.subclass("TextListMorph", {
     }
 });
 
+
+Morph.subclass("NewMenuMorph", {
+
+    listStyle: { 
+	borderColor: Color.blue,
+	borderWidth: 0.5,
+	textColor: Color.blue,
+	fill: Color.blue.lighter(5),
+	borderRadius: 6, 
+	fillOpacity: 0.75, 
+	wrapStyle: WrapStyle.Shrink
+    },
+
+    labelStyle: {
+	borderRadius: 4, 
+	fillOpacity: 0.75, 
+	wrapStyle: WrapStyle.Shrink
+    },
+
+    suppressHandles: true,
+    
+    initialize: function($super, items, targetMorph) {
+        // items is an array of menuItems, each of which is an array of the form
+        // [itemName, target, functionName, parameterIfAny]
+        // At mouseUp, the call is of the form
+        // target.function(parameterOrNull,event,menuItem)
+        // Note that the last item is seldom used, but it allows the caller to put
+        // additional data at the end of the menuItem, where the receiver can find it.
+        // The optional parameter lineList is an array of indices into items.
+        // It will cause a line to be displayed below each item so indexed
+    
+        // It is intended that a menu can also be created incrementally
+        // with calls of the form...
+        //     var menu = MenuMorph([]);
+        //     menu.addItem(nextItem);  // May be several of these
+        //     menu.addLine();          // interspersed with these
+        //     menu.openIn(world,location,stayUp,captionIfAny);
+	
+	$super(pt(200, 200).extentAsRectangle(), "rect");
+        this.items = items;
+        this.targetMorph = targetMorph || this;
+	this.listMorph = null;
+	this.applyStyle({fill: null, borderWidth: 0, fillOpacity: 0});
+    },
+
+    addItem: function(item) { 
+        this.items.push(item);
+    },
+
+    addLine: function(item) { // Not yet supported
+        // The idea is for this to add a real line on top of the text
+        this.items.push(['-----']);
+    },
+
+    removeItemNamed: function(itemName) {
+        // May not remove all if some have same name
+        // Does not yet fix up the lines array
+        for (var i = 0; i < this.items.length; i++)
+            if (this.items[i][0] == itemName)
+                this.items.splice(i,1);
+    },
+
+    replaceItemNamed: function(itemName, newItem) {
+        for (var i = 0; i < this.items.length; i++)
+            if (this.items[i][0] == itemName)
+                this.items[i] = newItem;
+    },
+
+    removeItemsNamed: function(nameList) {
+        nameList.forEach(function(n) { this.removeItemNamed(n); }, this);
+    },
+
+    keepOnlyItemsNamed: function(nameList) {
+        var rejects = [];
+        this.items.forEach( function(item) { if (nameList.indexOf(item[0]) < 0) rejects.push(item[0])});
+        this.removeItemsNamed(rejects);
+    },
+
+    openIn: function(world, loc, remainOnScreen, captionIfAny) { 
+        if (this.items.length == 0) return;
+	// Note: on a mouseDown invocation (as from a menu button),
+        // mouseFocus should be set immediately before or after this call
+        this.stayUp = remainOnScreen; // set true to keep on screen
+	
+        world.addMorphAt(this, loc);
+	this.label = null;
+        if (captionIfAny) { // Still under construction
+            var label = new TextMorph(new Rectangle(0, 0, 200, 20), captionIfAny);
+	    label.applyStyle(this.labelStyle);
+            label.fitText();
+            label.align(label.bounds().bottomCenter(), this.shape.bounds().topCenter());
+            this.label = this.addMorph(label);
+        }
+	
+	this.listMorph = new TextListMorph(pt(200, 200).extentAsRectangle(), 
+					   this.items.map(function(item) { return item[0]; }));
+	this.listMorph.applyStyle(this.listStyle);
+	this.listMorph.suppressHandles = true;
+
+	var menu = this;
+	this.listMorph.highlightItem = function(evt, index, updateModel) {
+	    var result = TextListMorph.prototype.highlightItem.call(this, evt, index, updateModel);
+            if (updateModel) {
+		if (!menu.stayUp) menu.remove();
+		if (result) menu.invokeItem(evt, menu.items[this.selectedLineNo]);
+	    }
+	};
+	
+	this.addMorph(this.listMorph);
+	
+        // If menu and/or caption is off screen, move it back so it is visible
+        var menuRect = this.bounds();  //includes caption if any
+        // Intersect with world bounds to get visible region.  Note we need shape.bounds,
+        // since world.bounds() would include stick-outs, including this menu!
+        var visibleRect = menuRect.intersection(this.owner.shape.bounds()); 
+        var delta = visibleRect.topLeft().subPt(menuRect.topLeft());  // delta to fix topLeft off screen
+        delta = delta.addPt(visibleRect.bottomRight().subPt(menuRect.bottomRight()));  // same for bottomRight
+        if (delta.dist(pt(0,0)) > 1) this.moveBy(delta);  // move if significant
+
+        // Note menu gets mouse focus by default if pop-up.  If you don't want it, you'll have to null it
+        if (!remainOnScreen) {
+	    world.firstHand().setMouseFocus(this);
+	}
+    },
+
+    
+    invokeItem: function(evt, item) {
+        if (!item) return;
+	
+        if (item[1] instanceof Function) { // alternative style, items ['menu entry', function] pairs
+            item[1].call(this.targetMorph || this, evt);
+	} else if (item[1] instanceof String || typeof item[1] == 'string') {
+	    // another alternative style, send a message to the targetMorph's menu target (presumably a view).
+	    var responder = (this.targetMorph || this).getModelValue("getMenuTarget");
+	    if (responder)  {
+		console.log("menu target is " + responder);
+		var func = responder[item[1]];
+		if (!func) console.log("didn't find function " + item[1]);
+		else func.call(responder, item[2], evt, item);
+	    } else {
+		console.log("no menu target, menu target " + this.targetMorph);
+	    }
+	} else {
+            var func = item[1][item[2]];  // target[functionName]
+            if (func == null) console.log('Could not find function ' + item[2]);
+            // call as target.function(parameterOrNull,event,menuItem)
+            else func.call(item[1], item[3], evt, item); 
+        }
+    }
+
+});
 
 
 /**
@@ -1772,6 +1946,9 @@ CheapListMorph.subclass("MenuMorph", {
     }
 
 });
+
+
+
 
 /**
  * @class SliderMorph: Slider/scroll control
