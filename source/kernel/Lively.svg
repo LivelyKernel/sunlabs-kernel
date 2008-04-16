@@ -115,7 +115,6 @@
 <script type="text/ecmascript" xlink:href="localconfig.js"/>
 <script type="text/ecmascript" xlink:href="Core.js"/>
 <script type="text/ecmascript" xlink:href="Text.js"/>
-<script type="text/ecmascript" xlink:href="svgtext-compat.js"/>
 <script type="text/ecmascript" xlink:href="Widgets.js"/>
 <script type="text/ecmascript" xlink:href="Network.js"/>
 <script type="text/ecmascript" xlink:href="Storage.js"/>

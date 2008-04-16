@@ -75,7 +75,7 @@ Object.subclass('Font', {
     var cache = {};
 
     Object.extend(Font, {
-
+	
 	forFamily: function(familyName, size, style) {
             var key  = familyName + ":" + size + ":" + (style ? style[0] : 'n' ) ;
             var entry = cache[key];
@@ -92,6 +92,90 @@ Object.subclass('Font', {
     
 })();
 
+    
+if (Config.fakeFontMetrics) { 
+    Font.addMethods({
+        // wer're faking here, b/c native calls don't seem to work
+        computeExtents: function(family, size) {
+            var extents = [];
+            for (var i = 33; i < 255; i++) {
+                extents[i] = new CharacterInfo(size*2/3, size);
+            }
+            return extents;
+        }
+    });
+    
+} else if (Config.fontMetricsFromHTML)  {
+    
+Font.addMethods({
+
+    computeExtents: function(family, size) {
+        var extents = [];
+        var body = null;
+        var doc; // walk up the window chain to find the (X)HTML context
+        for (var win = window; win; win = win.parent) {
+            doc = win.document;
+            var bodies = doc.documentElement.getElementsByTagName('body');
+            if (bodies && bodies.length > 0) {
+                body = bodies[0];
+                break;
+            }
+        }
+
+        if (!body) return [];
+
+        function create(name) {
+            // return doc.createElement(name);
+            return doc.createElementNS(Namespace.XHTML, name);
+        }
+
+        var d = body.appendChild(create("div"));
+
+        d.style.kerning    = 0;
+        d.style.fontFamily = family;
+        d.style.fontSize   = size + "px";
+
+        var xWidth = -1;
+        var xCode = 'x'.charCodeAt(0);
+        for (var i = 33; i < 255; i++) {
+            var sub = d.appendChild(create("span"));
+            sub.appendChild(doc.createTextNode(String.fromCharCode(i)));
+            extents[i] = new CharacterInfo(sub.offsetWidth,  sub.offsetHeight);
+            if (i == xCode) xWidth = extents[i].width;
+        }
+
+        if (xWidth < 0) { 
+            throw new Error('x Width is ' + xWidth);
+        }
+
+        if (d.offsetWidth == 0) {
+            console.log("timing problems, expect messed up text for font %s", this);
+        }
+
+        // handle spaces
+        var sub = d.appendChild(create("span"));
+        sub.appendChild(doc.createTextNode('x x'));
+
+        var spaceWidth = sub.offsetWidth - xWidth*2;
+        console.log("font " + this + ': space width ' + spaceWidth + ' from ' + sub.offsetWidth + ' xWidth ' + xWidth);    
+
+        // tjm: sanity check as Firefox seems to do this wrong with certain values
+        if (spaceWidth > 100) {    
+            extents[(' '.charCodeAt(0))] = //new CharacterInfo(this.getCharInfo(' ').width - 2, this.getCharInfo(' ').height);
+            new CharacterInfo(2*xWidth/3, sub.offsetHeight);
+        } else {
+            extents[(' '.charCodeAt(0))] = new CharacterInfo(spaceWidth, sub.offsetHeight);
+        }
+
+        //d.removeChild(span);
+        body.removeChild(d);
+        return extents;
+    }
+});
+
+}    
+    
+    
 /**
  * @class TextWord
  * This 'class' renders single words
@@ -171,7 +255,7 @@ Object.subclass('TextWord', {
                 this.didLineBreak = true;
                 return;
             }
-		leftX = rightOfChar
+	    leftX = rightOfChar;
         }
         // Reached the end of text
         this.setStopIndexAndWidth(i-1, rightOfChar - this.topLeft.x);
@@ -194,11 +278,9 @@ Object.subclass('TextWord', {
     },
     
     // get the bounds of the character pointed to by stringIndex
-    // overriden by svgtext-compat
-
     getWordBounds: function() { 
         var tl = this.topLeft;
-		return new Rectangle(tl.x, tl.y, this.width, this.fontInfo.getSize());
+	return new Rectangle(tl.x, tl.y, this.width, this.fontInfo.getSize());
     },
 
     // keep a copy of the substring we were working on (do we really need this? - kam)
@@ -207,7 +289,7 @@ Object.subclass('TextWord', {
             this.rawNode.removeChild(this.rawNode.firstChild);
         }
         this.rawNode.appendChild(NodeFactory.createText( this.textString.substring( this.startIndex, this.stopIndex + 1))); // XXX
-		this.setX(this.naiveGetX() + deltaX);
+	this.setX(this.naiveGetX() + deltaX);
     },
 
     toString: function() {
@@ -222,6 +304,19 @@ Object.subclass('TextWord', {
     }
 });
 
+if (Config.fontMetricsFromHTML || Config.fakeFontMetrics) {
+TextWord.addMethods({
+    
+    getWidthOfChar: function(position) {
+        var w = this.fontInfo.getCharWidth(this.textString.charAt(position));
+        if (isNaN(w)) {
+            console.warn('getWidthOfChar: width at position ' + position);
+	    return 4;  // dont crash
+        }
+	return w;
+    }
+});
+}
 
 /**
  * @class WordChunk

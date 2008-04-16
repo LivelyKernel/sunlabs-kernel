@@ -123,7 +123,7 @@ Widget.subclass('SimpleBrowser', {
             items.push(['import source files', function() {
                 if (! SourceControl) SourceControl = new SourceDatabase();
 		SourceControl.scanKernelFiles(["prototype.js", "defaultconfig.js", "localconfig.js",
-			"Main.js", "Core.js", "Text.js", "svgtext-compat.js",
+			"Main.js", "Core.js", "Text.js",
 			"Widgets.js", "Network.js", "Storage.js", "Tools.js",
 			"Examples.js", "WebPIM.js", "phone.js"]);
 		WorldMorph.current().setFill(new RadialGradient(Color.rgb(36,188,255), Color.rgb(127,15,0)));
