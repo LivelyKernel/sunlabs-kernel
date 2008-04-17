@@ -683,7 +683,7 @@ Morph.subclass('WindowMorph', {
 
     captureMouseEvent: function($super, evt, hasFocus) {
         if (!this.needsToComeForward(evt) && evt.mouseButtonPressed) {
-            return $super(evt, hasFocus)
+            return $super(evt, hasFocus);
         }
         return this.mouseHandler.handleMouseEvent(evt, this); 
     },
@@ -1390,7 +1390,7 @@ Morph.subclass("TextListMorph", {
     itemMargin: 1,
     documentation: "replacement for CheapListMorphs, using TextMorphs as menu items",
     defaultCapacity: 50,
-    
+    highlightItemsOnMove: false,
 
     initialize: function($super, initialBounds, itemList) {
         // itemList is an array of strings
@@ -1415,20 +1415,27 @@ Morph.subclass("TextListMorph", {
 	for (var i = 0; i < this.submorphs.length; i++ ) {
 	    var m = this.submorphs[i];
 	    m.beListItem();
-	    m.relayMouseEvents(this, {onMouseDown: "highlightItem"});
+	    m.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove"});
 	    this.itemList.push(m.textString);
 	}
         this.setModelValue('setList', this.itemList);
         this.layoutChanged();
     },
 
+/*
+    captureMouseEvent: function($super, evt, hasFocus) {
+	var result = $super(evt, hasFocus);
+	console.log("called captureMouseEvent(" + [evt, hasFocus] + ") -> " + result);
+	return result;
+    },
+*/
+    handlesMouseDown: Functions.True,
+
     generateSubmorphs: function(itemList, width) {
 	var rect = pt(width, TextMorph.prototype.fontSize).extentAsRectangle().insetByPt(pt(this.itemMargin, 0));
-	for (var i = 0; i < itemList.length; i++ ) {
+	for (var i = 0; i < itemList.length; i++)  {
 	    var m = this.addMorph(new TextMorph(rect, itemList[i])).beListItem();
-	    m.relayMouseEvents(this, {onMouseDown: "highlightOnPress", 
-				      // onMouseUp: "highlightOnPress", 
-				      onMouseMove: "highlightOnMove"});
+	    m.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove"});
 	}
     },
     
@@ -1446,26 +1453,20 @@ Morph.subclass("TextListMorph", {
         this.hasKeyboardFocus = newSetting;
         return newSetting;
     },
-    
-    firstSubmorphContainingWorldPoint: function(p) {
-	for (var i = 0; i < this.submorphs.length; i++) {
-	    if (this.submorphs[i].containsWorldPoint(p)) {
-		return i;
-	    }
-	}
-	return -1;
-    },
 
-    highlightOnPress: function(evt) {
-	// console.log("evt " + evt);
-	var target = evt.originalTarget;
+    onMouseDown: function(evt) {
+	var target = this.morphToReceiveEvent(evt);
 	var index = this.submorphs.indexOf(target);
+	// console.log("%s got evt %s target %s", this.getType(), evt, target);
 	this.highlightItem(evt, index, true);
+	evt.hand.setMouseFocus(this); // to get moves
     },
-
-    highlightOnMove: function(evt) {
-	//console.log("evt " + evt);
-	var index = this.firstSubmorphContainingWorldPoint(evt.mousePoint);
+    
+    onMouseMove: function(evt) {
+	// console.log("%s got evt %s", this.getType(),  evt);
+	if (!this.highlightItemsOnMove) return;
+	var target = this.morphToReceiveEvent(evt);
+	var index = this.submorphs.indexOf(target);
 	this.highlightItem(evt, index, false);
     },
 
@@ -1718,13 +1719,22 @@ Morph.subclass("NewMenuMorph", {
         this.removeItemsNamed(rejects);
     },
 
-    openIn: function(world, loc, remainOnScreen, captionIfAny) { 
+    openIn: function(parentMorph, loc, remainOnScreen, captionIfAny) { 
         if (this.items.length == 0) return;
 	// Note: on a mouseDown invocation (as from a menu button),
         // mouseFocus should be set immediately before or after this call
         this.stayUp = remainOnScreen; // set true to keep on screen
 	
-        world.addMorphAt(this, loc);
+        parentMorph.addMorphAt(this, loc);
+	
+	this.listMorph = new TextListMorph(pt(200, 0).extentAsRectangle(), 
+					   this.items.map(function(item) { return item[0]; }));
+	this.listMorph.applyStyle(this.listStyle);
+	this.listMorph.suppressHandles = true;
+	this.listMorph.focusHaloBorderWidth = 0;
+	this.listMorph.highlightItemsOnMove = true;
+	this.addMorph(this.listMorph);
+
 	this.label = null;
         if (captionIfAny) { // Still under construction
             var label = new TextMorph(new Rectangle(0, 0, 200, 20), captionIfAny);
@@ -1734,37 +1744,48 @@ Morph.subclass("NewMenuMorph", {
             this.label = this.addMorph(label);
         }
 	
-	this.listMorph = new TextListMorph(pt(200, 200).extentAsRectangle(), 
-					   this.items.map(function(item) { return item[0]; }));
-	this.listMorph.applyStyle(this.listStyle);
-	this.listMorph.suppressHandles = true;
-
-	var menu = this;
-	this.listMorph.highlightItem = function(evt, index, updateModel) {
-	    var result = TextListMorph.prototype.highlightItem.call(this, evt, index, updateModel);
-            if (updateModel) {
-		if (!menu.stayUp) menu.remove();
-		if (result) menu.invokeItem(evt, menu.items[this.selectedLineNo]);
-	    }
-	};
-	
-	this.addMorph(this.listMorph);
-	
         // If menu and/or caption is off screen, move it back so it is visible
         var menuRect = this.bounds();  //includes caption if any
-        // Intersect with world bounds to get visible region.  Note we need shape.bounds,
-        // since world.bounds() would include stick-outs, including this menu!
+        // Intersect with parentMorph bounds to get visible region.  Note we need shape.bounds,
+        // since parentMorph.bounds() would include stick-outs, including this menu!
         var visibleRect = menuRect.intersection(this.owner.shape.bounds()); 
         var delta = visibleRect.topLeft().subPt(menuRect.topLeft());  // delta to fix topLeft off screen
         delta = delta.addPt(visibleRect.bottomRight().subPt(menuRect.bottomRight()));  // same for bottomRight
         if (delta.dist(pt(0,0)) > 1) this.moveBy(delta);  // move if significant
 
+	this.listMorph.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove"});
         // Note menu gets mouse focus by default if pop-up.  If you don't want it, you'll have to null it
         if (!remainOnScreen) {
-	    world.firstHand().setMouseFocus(this);
+	    console.log("setting mouse focus to " + this);
+	    parentMorph.world().firstHand().setMouseFocus(this);
+	} else {
+	    
+	}
+
+    },
+    
+    onMouseDown: function(evt) {
+	console.log("menu got " + evt);
+	var target = this.listMorph.morphToReceiveEvent(evt);
+	var index = this.listMorph.submorphs.indexOf(target);
+	try {
+	    if (index in this.items) 
+		this.invokeItem(evt, this.items[index]);
+	} finally {
+	    if (!this.stayUp) {
+		this.remove();
+		evt.hand.setMouseFocus(null);
+	    }
 	}
     },
 
+    onMouseMove: function(evt) {
+	console.log("menu got " + evt);
+	evt.hand.setMouseFocus(this);
+	var target = this.listMorph.morphToReceiveEvent(evt);
+	var index = this.listMorph.submorphs.indexOf(target);
+	this.listMorph.highlightItem(evt, index, false);
+    },
     
     invokeItem: function(evt, item) {
         if (!item) return;
@@ -1796,7 +1817,7 @@ Morph.subclass("NewMenuMorph", {
 /**
  * @class MenuMorph: Popup menus
  */ 
-CheapListMorph.subclass("MenuMorph", {
+CheapListMorph.subclass("CheapMenuMorph", {
 
     style: { 
 	borderColor: Color.blue,
@@ -1947,8 +1968,8 @@ CheapListMorph.subclass("MenuMorph", {
 
 });
 
-
-
+// select which
+var MenuMorph = CheapMenuMorph;
 
 /**
  * @class SliderMorph: Slider/scroll control
