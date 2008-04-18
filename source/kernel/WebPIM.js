@@ -1075,6 +1075,15 @@ Morph.subclass("SelectorView", {
                 var model = viewItem.getModel();
                 if (model.found) {
                     this.setCurrentViewItem(viewItem);
+
+                    // Make sure the selected item is always visible (auto-scroll)
+                    var currentViewItem = this.getCurrentViewItem();
+                    if (PIM && currentViewItem) {
+		                var sp = PIM.panel.treePane;
+                        var rectangle = currentViewItem.getPosition().extent(currentViewItem.getExtent());
+		                sp.scrollRectIntoView(rectangle);
+                    }
+
                     return;
                 }
             }    
