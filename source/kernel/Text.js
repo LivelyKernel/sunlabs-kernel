@@ -1030,7 +1030,7 @@ Morph.subclass("TextMorph", {
     },
 
     beListItem: function() {
-	this.applyStyle({borderWidth: 0, fill: null});
+	this.applyStyle({borderWidth: 0, fill: null, wrapStyle: WrapStyle.None});
 	this.ignoreEvents();
 	this.suppressHandles = true;
 	this.inset = pt(0, 0); // otherwise selection will overlap
