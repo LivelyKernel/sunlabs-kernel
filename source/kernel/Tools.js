@@ -209,7 +209,7 @@ WidgetModel.subclass('ObjectBrowser', {
 
     getObjectValue: function() {
         if (!this.objectToView || !this.nameToView || this.nameToView == "") return "(no data)";
-        return this.objectToView[this.nameToView].toString();
+        return Object.inspect(this.objectToView[this.nameToView]);
     },
 
     setObjectValue: function(newDef) { eval(newDef); },
