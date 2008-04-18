@@ -29,6 +29,7 @@ Morph.subclass(Global, "GridLayoutMorph", {
 	},
 
 	initialize: function($super, position) {
+		console.log("GridLayout started");
 		this.rows = [0];	// use 0 index for top/left edge
 		this.cols = [0];
 		if (!position) position=pt(0,0);
@@ -48,7 +49,6 @@ Morph.subclass(Global, "GridLayoutMorph", {
 				// console.log(this.myName + ": setPosition " + this.bounds() +"->"+ newPosition);
 				this.realSetPosition(newPosition);
 				// this.translateBy(newPosition.subPt(this.getPosition()));
-				delete this.iMeanIt;
 			} else {
 				console.log("Deny: " + this.bounds() + "->" + newPosition);
 			}
@@ -61,10 +61,12 @@ Morph.subclass(Global, "GridLayoutMorph", {
 			if (this.requestExtent && this.requestExtent.eqPt(newExtent)) {
 				return;
 			}
-			// console.log(this.myName+" resize request " + this.requestExtent +"->"+ newExtent);
-			this.requestExtent = newExtent;
-			this.owner.needLayout = true;	// tell owner we need relayout
-			this.layoutChanged();
+			if (!this.iMeanIt) {
+				this.requestExtent = newExtent;
+				this.owner.needLayout = true;
+				this.layoutChanged();
+				console.log(this.myName+" setExtent " + this.requestExtent +"->"+ newExtent);
+			}
 		},
 
 		// no-one shoud call setBounds directly, but just in case
@@ -90,12 +92,6 @@ Morph.subclass(Global, "GridLayoutMorph", {
 
         this.addMorphFrontOrBack(morph, true);
 		return morph;
-
-		// for debugging
-
-		morph.toString=function($super) {
-			return "!" + (this.myName || this.textString || $super());
-		};
 	},
 
 	layoutChanged: function($super) {
@@ -268,9 +264,10 @@ Morph.subclass(Global, "GridLayoutMorph", {
 				var o = m.bounds();
 				if (r.x==o.x && r.y==o.y && r.width==o.width &&
 						 r.height==o.height) {
-				} else {
+				} else {	// this is probably wrong
 					m.iMeanIt=true;
 					m.setBounds(r);
+					delete m.iMeanIt;
 				}
 			}
 		}
@@ -392,7 +389,8 @@ function gridDemo(world, position) {
 	var r = new Morph(new Rectangle(0,0,15,15), "rect");
 	r.setFill(Color.red);
 	r.myName = "red";
-	r.alignments = ["c", "n", "s", "e", "w", "nw", "se", "ne", "sw"];
+	r.alignments = ["c", "n", "s", "e", "w", "nw", "se", "ne", "sw",
+		"c", "new", "ew", "sew", "nse", "ns", "nsw", "nsew"];
 	r.alignCount=0;
 	r.nextAlign=function() {
 		var a = new Object;
@@ -400,8 +398,9 @@ function gridDemo(world, position) {
 		console.log("align: " + a.align);
 		this.owner.moveMorph(this, a);
 		this.alignCount = (this.alignCount+1)%this.alignments.length;
-		setTimeout(this.nextAlign.bind(this), 1400);
+		setTimeout(this.nextAlign.bind(this), 700);
 	};
+	red=r;	// for debugging
 
 	g2.addMorph(r,{col:2, row:1, pad: {x:5,y:5}});
 	grid.addMorph(g2, {row:3, cols:2, pad: {x:2, y:2}});
@@ -414,7 +413,7 @@ function gridDemo(world, position) {
 	// g2.showGridLines(true);
 
 	// uncomment this to play with alignments
-	// r.nextAlign();
+	r.nextAlign();
 	return grid;
 }
 console.log("end griddemo");
