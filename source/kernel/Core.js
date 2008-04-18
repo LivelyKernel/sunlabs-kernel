@@ -1831,7 +1831,6 @@ var Event = (function() {
 	initialize: function(rawEvent) {
 	    this.rawEvent = rawEvent;
 	    this.type = capitalizer[rawEvent.type] || rawEvent.type;
-	    this.originalTarget = null; // set when relaying events
 	    //this.charCode = rawEvent.charCode;
 
 	    if (isMouse(rawEvent)) {
@@ -2920,21 +2919,19 @@ Object.subclass('MouseHandlerForDragging', {
 
 Object.subclass('MouseHandlerForRelay', {
 
-    initialize: function (originalTarget, target, eventSpec) {
+    initialize: function (target, eventSpec) {
 	//  Send events to a different target, with different methods
 	//    Ex: box.relayMouseEvents(box.owner, {onMouseUp: "boxReleased", onMouseDown: "boxPressed"})
-	this.originalTarget = originalTarget;
 	this.target = target;
 	this.eventSpec = eventSpec;
     },
 
-    handleMouseEvent: function(evt, appendage) {
-	evt.originalTarget = this.originalTarget;
-	var targetHandler = this.target[this.eventSpec[evt.handlerName()]];
+    handleMouseEvent: function(evt, originalTarget) {
+	var handler = this.target[this.eventSpec[evt.handlerName()]];
 	if (evt.type == "MouseUp") evt.hand.setMouseFocus(null); // NB: must precede any return
-	if (targetHandler == null) return true; //FixMe: should this be false?
-	if (evt.type == "MouseDown") evt.hand.setMouseFocus(appendage);
-	targetHandler.call(this.target, evt, appendage);
+	if (handler == null) return true; //FixMe: should this be false?
+	if (evt.type == "MouseDown") evt.hand.setMouseFocus(originalTarget);
+	handler.call(this.target, evt, originalTarget);
 	return true; 
     },
 
@@ -4014,7 +4011,7 @@ Morph.addMethods({
 	    } else {
 		// just a precaution to make sure fisheye scaling isn't 
 		// affecting its surrounding any more
-		this.setFisheyeScale(1.0)
+		this.setFisheyeScale(1.0);
 	    }
 	}
 
@@ -4051,7 +4048,7 @@ Morph.addMethods({
     },
 
     relayMouseEvents: function(target, eventSpec) {
-	this.mouseHandler = new MouseHandlerForRelay(this, target, eventSpec); 
+	this.mouseHandler = new MouseHandlerForRelay(target, eventSpec); 
     },
 
     handlesMouseDown: function(evt) {
