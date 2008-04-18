@@ -2903,10 +2903,12 @@ Object.subclass('MouseHandlerForDragging', {
     handleMouseEvent: function(evt, targetMorph) {
 	var handler = targetMorph[evt.handlerName()];
 	if (evt.type == "MouseDown") evt.hand.setMouseFocus(targetMorph);
+	evt.hand.resetMouseFocusChanges();
+	
 	if (handler) handler.call(targetMorph, evt, targetMorph);
 	if (evt.type == "MouseUp") {
-	    // if focus changed, then don't cancel it
-	    if (evt.hand.mouseFocus === targetMorph) { 
+	    // cancel focus unless it was set in the handler
+	    if (evt.hand.resetMouseFocusChanges() == 0) {
 		evt.hand.setMouseFocus(null);
 	    }
 	}
@@ -2928,10 +2930,13 @@ Object.subclass('MouseHandlerForRelay', {
     handleMouseEvent: function(evt, originalTarget) {
 	var handler = this.target[this.eventSpec[evt.handlerName()]];
 	if (evt.type == "MouseDown") evt.hand.setMouseFocus(originalTarget);
+	evt.hand.resetMouseFocusChanges();
+
 	if (handler) handler.call(this.target, evt, originalTarget);
+
 	if (evt.type == "MouseUp") {
-	    // if focus changed, then don't cancel it
-	    if (evt.hand.mouseFocus === originalTarget) { 
+	    // cancel focus unless it was set in the handler
+	    if (evt.hand.resetMouseFocusChanges() == 0) {
 		evt.hand.setMouseFocus(null);
 	    }
 	}
@@ -5622,6 +5627,7 @@ Morph.subclass("HandMorph", {
 
         this.keyboardFocus = null;
         this.mouseFocus = null;
+	this.mouseFocusChanges_ = 0; // count mouse focus changes until reset
         this.mouseOverMorph = null;
         this.lastMouseEvent = null;
         this.lastMouseDownPoint = pt(0,0);
@@ -5648,9 +5654,16 @@ Morph.subclass("HandMorph", {
             morph.rawNode.removeEventListener(name, this, this.handleOnCapture);}, this);
     },
     
+    resetMouseFocusChanges: function() {
+	var result = this.mouseFocusChanges_;
+	this.mouseFocusChanges_ = 0;
+	return result;
+    },
+
     setMouseFocus: function(morphOrNull) {
         // console.log('setMouseFocus: ' + morphOrNull);
         this.mouseFocus = morphOrNull; 
+	this.mouseFocusChanges_ ++;
     },
     
     setKeyboardFocus: function(morphOrNull) {

@@ -1756,16 +1756,11 @@ Morph.subclass("NewMenuMorph", {
 	this.listMorph.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove"});
         // Note menu gets mouse focus by default if pop-up.  If you don't want it, you'll have to null it
         if (!remainOnScreen) {
-	    console.log("setting mouse focus to " + this);
 	    parentMorph.world().firstHand().setMouseFocus(this);
-	} else {
-	    
-	}
-
+	} 
     },
     
     onMouseDown: function(evt) {
-	console.log("menu got " + evt);
 	var target = this.listMorph.morphToReceiveEvent(evt);
 	var index = this.listMorph.submorphs.indexOf(target);
 	try {
@@ -1780,7 +1775,6 @@ Morph.subclass("NewMenuMorph", {
     },
 
     onMouseMove: function(evt) {
-	console.log("menu got " + evt);
 	evt.hand.setMouseFocus(this);
 	var target = this.listMorph.morphToReceiveEvent(evt);
 	var index = this.listMorph.submorphs.indexOf(target);
@@ -1969,7 +1963,7 @@ CheapListMorph.subclass("CheapMenuMorph", {
 });
 
 // select which
-var MenuMorph = CheapMenuMorph;
+var MenuMorph = Config.useNewMenu ? NewMenuMorph : CheapMenuMorph;
 
 /**
  * @class SliderMorph: Slider/scroll control
