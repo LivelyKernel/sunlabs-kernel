@@ -2576,30 +2576,6 @@ Shape.subclass('PathShape', {
 
 });
 
-// ===========================================================================
-// Morph functionality
-// ===========================================================================
-
-var MouseHandlerForDragging = {
-
-    handleMouseEvent: function(evt, targetMorph) {
-
-	var handler = targetMorph[evt.handlerName()];
-	if (evt.type == "MouseDown") evt.hand.setMouseFocus(targetMorph);
-	if (handler == null) console.log("bah, null handler on " + evt.type);
-	handler.call(targetMorph, evt);
-	if (evt.type == "MouseUp") {
-	    // if focus changed, then don't cancel it
-	    if (evt.hand.mouseFocus === targetMorph) { 
-		evt.hand.setMouseFocus(null);
-	    }
-	}
-	return true; 
-    },
-
-    handlesMouseDown: Functions.False
-
-};
 
 /**
   * @class Exporter: Implementation class for morph serialization
@@ -2918,6 +2894,54 @@ Copier.subclass('Importer', {
 
 });
 
+
+// ===========================================================================
+// Morph functionality
+// ===========================================================================
+
+Object.subclass('MouseHandlerForDragging', {
+
+    handleMouseEvent: function(evt, targetMorph) {
+	var handler = targetMorph[evt.handlerName()];
+	if (evt.type == "MouseDown") evt.hand.setMouseFocus(targetMorph);
+	if (handler == null) console.log("bah, null handler on " + evt.type);
+	handler.call(targetMorph, evt);
+	if (evt.type == "MouseUp") {
+	    // if focus changed, then don't cancel it
+	    if (evt.hand.mouseFocus === targetMorph) { 
+		evt.hand.setMouseFocus(null);
+	    }
+	}
+	return true; 
+    },
+
+    handlesMouseDown: Functions.False
+});
+
+Object.subclass('MouseHandlerForRelay', {
+
+    initialize: function (originalTarget, target, eventSpec) {
+	//  Send events to a different target, with different methods
+	//    Ex: box.relayMouseEvents(box.owner, {onMouseUp: "boxReleased", onMouseDown: "boxPressed"})
+	this.originalTarget = originalTarget;
+	this.target = target;
+	this.eventSpec = eventSpec;
+    },
+
+    handleMouseEvent: function(evt, appendage) {
+	evt.originalTarget = this.originalTarget;
+	var targetHandler = this.target[this.eventSpec[evt.handlerName()]];
+	if (evt.type == "MouseUp") evt.hand.setMouseFocus(null); // NB: must precede any return
+	if (targetHandler == null) return true; //FixMe: should this be false?
+	if (evt.type == "MouseDown") evt.hand.setMouseFocus(appendage);
+	targetHandler.call(this.target, evt, appendage);
+	return true; 
+    },
+
+    handlesMouseDown: Functions.True
+
+});
+
 /**
   * @class Morph
   * Implements the common functionality inherited by 
@@ -2944,7 +2968,7 @@ Visual.subclass("Morph", {
     keyboardHandler: null, //a KeyboardHandler for keyboard repsonse, etc
     layoutHandler: null, //a LayoutHandler for special response to setExtent, etc
     openForDragAndDrop: true, // Submorphs can be extracted from or dropped into me
-    mouseHandler: MouseHandlerForDragging, //a MouseHandler for mouse sensitivity, etc
+    mouseHandler: MouseHandlerForDragging.prototype, //a MouseHandler for mouse sensitivity, etc
     noShallowCopyProperties: ['id', 'rawNode', 'shape', 'submorphs', 'defs', 'activeScripts', 'nextNavigableSibling', 'focusHalo', 'fullBounds'],
 
     suppressBalloonHelp: Config.suppressBalloonHelp,
@@ -4106,33 +4130,6 @@ Morph.addMethods({
 
 });
 
-/**
-  * @class MouseHandlerForRelay
-  */ 
-
-Object.subclass('MouseHandlerForRelay', {
-
-    initialize: function (originalTarget, target, eventSpec) {
-	//  Send events to a different target, with different methods
-	//    Ex: box.relayMouseEvents(box.owner, {onMouseUp: "boxReleased", onMouseDown: "boxPressed"})
-	this.originalTarget = originalTarget;
-	this.target = target;
-	this.eventSpec = eventSpec;
-    },
-
-    handleMouseEvent: function(evt, appendage) {
-	evt.originalTarget = this.originalTarget;
-	var targetHandler = this.target[this.eventSpec[evt.handlerName()]];
-	if (evt.type == "MouseUp") evt.hand.setMouseFocus(null); // NB: must precede any return
-	if (targetHandler == null) return true; //FixMe: should this be false?
-	if (evt.type == "MouseDown") evt.hand.setMouseFocus(appendage);
-	targetHandler.call(this.target, evt, appendage);
-	return true; 
-    },
-
-    handlesMouseDown: Functions.True
-
-});
 
 // Morph grabbing and menu functionality
 Morph.addMethods({
