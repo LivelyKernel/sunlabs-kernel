@@ -2903,8 +2903,7 @@ Object.subclass('MouseHandlerForDragging', {
     handleMouseEvent: function(evt, targetMorph) {
 	var handler = targetMorph[evt.handlerName()];
 	if (evt.type == "MouseDown") evt.hand.setMouseFocus(targetMorph);
-	if (handler == null) console.log("bah, null handler on " + evt.type);
-	handler.call(targetMorph, evt);
+	if (handler) handler.call(targetMorph, evt, targetMorph);
 	if (evt.type == "MouseUp") {
 	    // if focus changed, then don't cancel it
 	    if (evt.hand.mouseFocus === targetMorph) { 
@@ -2928,10 +2927,14 @@ Object.subclass('MouseHandlerForRelay', {
 
     handleMouseEvent: function(evt, originalTarget) {
 	var handler = this.target[this.eventSpec[evt.handlerName()]];
-	if (evt.type == "MouseUp") evt.hand.setMouseFocus(null); // NB: must precede any return
-	if (handler == null) return true; //FixMe: should this be false?
 	if (evt.type == "MouseDown") evt.hand.setMouseFocus(originalTarget);
-	handler.call(this.target, evt, originalTarget);
+	if (handler) handler.call(this.target, evt, originalTarget);
+	if (evt.type == "MouseUp") {
+	    // if focus changed, then don't cancel it
+	    if (evt.hand.mouseFocus === targetMorph) { 
+		evt.hand.setMouseFocus(null);
+	    }
+	}
 	return true; 
     },
 
