@@ -2931,7 +2931,7 @@ Object.subclass('MouseHandlerForRelay', {
 	if (handler) handler.call(this.target, evt, originalTarget);
 	if (evt.type == "MouseUp") {
 	    // if focus changed, then don't cancel it
-	    if (evt.hand.mouseFocus === targetMorph) { 
+	    if (evt.hand.mouseFocus === originalTarget) { 
 		evt.hand.setMouseFocus(null);
 	    }
 	}
