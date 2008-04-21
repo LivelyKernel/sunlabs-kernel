@@ -948,12 +948,11 @@ Morph.subclass("TextMorph", {
         return bounds.topLeft(); 
     },
     
-    bounds: function($super) {
+    bounds: function($super, ignoreTransients) {
         if (this.fullBounds != null) return this.fullBounds;
         this.resetRendering();
         this.fitText(); // adjust bounds or text for fit
-    
-        return $super();
+        return $super(ignoreTransients);
     },
     
     changed: function($super) {

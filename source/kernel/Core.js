@@ -4483,7 +4483,7 @@ Morph.addMethods({
 Morph.addMethods({ 
 
     // bounds returns the full bounding box in owner coordinates of this morph and all its submorphs
-    bounds: function() {
+    bounds: function(ignoreTransients) {
 	if (this.fullBounds != null) return this.fullBounds;
 
 	var tfm = this.getLocalTransform();
@@ -4496,13 +4496,25 @@ Morph.addMethods({
 	    this.fullBounds.expandBy(this.shape.getStrokeWidth());
 	}
 
+	var subBounds = null; // KP: added = null
 	if (this.hasSubmorphs()) { 
-	    var subBounds = null; // KP: added = null
-	    this.submorphs.forEach(function(m) { 
-		subBounds = subBounds == null ? m.bounds() : subBounds.union(m.bounds()); });
+		if (ignoreTransients) {
+			this.submorphs.forEach(function(m) { 
+				if (! m.transientBounds)
+					subBounds = subBounds == null ? m.bounds(ignoreTransients) :
+							subBounds.union(m.bounds(ignoreTransients));
+			});
+		} else {
+			this.submorphs.forEach(function(m) { 
+				subBounds = subBounds == null ? m.bounds() :
+						subBounds.union(m.bounds());
+			});
+		}
+	} 
+	if (subBounds != null) {
 	    // could be simpler when no rotation...
 	    this.fullBounds = this.fullBounds.union(tfm.transformRectToRect(subBounds));
-	} 
+	}
 
 	if (this.fullBounds.width < 3 || this.fullBounds.height < 3) {
 	    // Prevent Horiz or vert lines from being ungrabable
