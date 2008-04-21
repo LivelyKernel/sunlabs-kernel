@@ -759,7 +759,7 @@ WidgetModel.subclass('StackViewer', {
 
     buildView: function(extent) {
         var panel = PanelMorph.makePanedPanel(extent, [
-            ['listPane', newTextListPane, new Rectangle(0, 0, 0.5, 1)],
+            ['listPane', newListPane, new Rectangle(0, 0, 0.5, 1)],
             ['codePane', newTextPane, new Rectangle(0.5, 0, 1, 1)]
         ]);
 
