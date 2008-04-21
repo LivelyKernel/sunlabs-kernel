@@ -641,7 +641,7 @@ function showStatsViewer(profilee,title) {
                 }
             } else {
                 for (var c = arguments.callee.caller, i = 0; c != null; c = c.caller, i++) {
-                    console.log("%s) %s", i, Object.inspect(c));
+                    console.log("%s: %s", i, Object.inspect(c));
                 }
             }
         },
@@ -704,6 +704,76 @@ function showStatsViewer(profilee,title) {
     });
     
 })(); // end scoping function
+
+// ===========================================================================
+// Call Stack Viewer
+// ===========================================================================
+
+WidgetModel.subclass('StackViewer', {
+
+    defaultViewTitle: "Call Stack Viewer",
+    openTriggerVariable: 'getFunctionList',
+
+    initialize: function($super, param) {
+        $super();
+
+        this.selected = null;
+        this.stack = [];
+        for (var c = arguments.callee.caller, i = 0; c != null; c = c.caller, i++) {
+            this.stack[i] = c;
+        }
+
+        return this;
+    },
+
+    getFunctionList: function() {
+        var list = [];
+
+        for (var i = 0; i < this.stack.length; i++) {
+            list.push(i + ": " + Object.inspect(this.stack[i]));
+        }
+
+        return list;
+    },
+
+    setFunctionName: function(n) {
+        this.selected = null;
+
+        if (n) {
+            var itemNumber = parseInt(n);
+            
+            if (!isNaN(itemNumber)) {
+                this.selected = this.stack[itemNumber].toString();
+            }
+        }
+
+        this.changed("getCodeValue");
+    },
+
+    getCodeValue: function() {
+        if (this.selected) return this.selected;
+        else return "no value";
+    },
+
+    setCodeValue: function() { return; },
+
+    buildView: function(extent) {
+        var panel = PanelMorph.makePanedPanel(extent, [
+            ['listPane', newTextListPane, new Rectangle(0, 0, 0.5, 1)],
+            ['codePane', newTextPane, new Rectangle(0.5, 0, 1, 1)]
+        ]);
+
+        this.panel = panel;
+
+        var m = panel.listPane;
+        m.connectModel({model: this, getList: "getFunctionList", setSelection: "setFunctionName"});
+        m = panel.codePane;
+        m.connectModel({model: this, getText: "getCodeValue", setText: "setCodeValue"});
+
+        return panel;
+    }
+
+});
 
 // ===========================================================================
 // FrameRateMorph

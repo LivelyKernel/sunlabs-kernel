@@ -313,6 +313,8 @@ function populateWorldWithExamples(world) {
 	// ... so don't show it when skipping most examples -- can always open from world menu
         if (!Config.skipMostExamples) new ObjectBrowser().openIn(devWorld.myWorld, pt(50, 100));
 
+        if (Config.showBrowser) new StackViewer().openIn(devWorld.myWorld, pt(120, 240));
+
         // Sample executable script pane
         if (Config.showPenScript) {
              if (Config.showTestText) widget = new TestTextMorph(pt(50,30).extent(pt(250,50)), Pen.script);

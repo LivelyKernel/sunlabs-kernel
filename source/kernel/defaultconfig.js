@@ -107,9 +107,10 @@ var Config = {
     // use the meta modifier (maps to Command on the Mac) instead of alt
     useMetaAsCommand: false,
 
+    // confirm system shutdown from the user
+    askBeforeQuit: true,
     
-    askBeforeQuit: true
-    
-
+    // advanced debugging options
+    debugExtras: false
 }
 
