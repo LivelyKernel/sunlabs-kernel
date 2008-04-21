@@ -805,6 +805,7 @@ Morph.subclass('HandleMorph', {
         this.partName = partName; // may be a name like "topRight" or a vertex index
         this.initialScale = null;
         this.initialRotation = null; 
+		  this.transientBounds = true;
         return this;
     },
     
@@ -1472,8 +1473,14 @@ Morph.subclass("TextListMorph", {
 
     highlightItem: function(evt, index, updateModel) {
 	if (index >= 0) {
-	    this.selectLineAt(index, updateModel);
-	    this.requestKeyboardFocus(evt.hand);
+	    if (index == this.selectedLineNo) { 
+		// clicked on what was previously selected: unselect
+		// this.selectLineAt(-1, true);
+		//this.relinquishKeyboardFocus(evt.hand);
+	    } else {
+		this.selectLineAt(index, updateModel);
+		this.requestKeyboardFocus(evt.hand);
+	    }
 	    return true;
 	}
 	if (!updateModel) this.selectLineAt(-1, updateModel);
@@ -1750,14 +1757,18 @@ Morph.subclass("NewMenuMorph", {
 	this.listMorph.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove"});
         // Note menu gets mouse focus by default if pop-up.  If you don't want it, you'll have to null it
         if (!remainOnScreen) {
+	    console.log("setting mouse focus to " + this);
 	    parentMorph.world().firstHand().setMouseFocus(this);
-	} 
+	} else {
+	    
+	}
+
     },
     
     onMouseDown: function(evt) {
+	console.log("menu got " + evt);
 	var target = this.listMorph.morphToReceiveEvent(evt);
 	var index = this.listMorph.submorphs.indexOf(target);
-	// console.log("menu got " + evt + " target " + target + " index " + index + ' item [' + this.items[index] + ']');
 	try {
 	    if (index in this.items) 
 		this.invokeItem(evt, this.items[index]);
@@ -1770,12 +1781,13 @@ Morph.subclass("NewMenuMorph", {
     },
 
     onMouseMove: function(evt) {
+	console.log("menu got " + evt);
 	evt.hand.setMouseFocus(this);
 	var target = this.listMorph.morphToReceiveEvent(evt);
 	var index = this.listMorph.submorphs.indexOf(target);
 	this.listMorph.highlightItem(evt, index, false);
     },
-
+    
     invokeItem: function(evt, item) {
         if (!item) return;
 	
@@ -1784,7 +1796,7 @@ Morph.subclass("NewMenuMorph", {
 	} else if (item[1] instanceof String || typeof item[1] == 'string') {
 	    // another alternative style, send a message to the targetMorph's menu target (presumably a view).
 	    var responder = (this.targetMorph || this).getModelValue("getMenuTarget");
-	    if (responder) {
+	    if (responder)  {
 		console.log("menu target is " + responder);
 		var func = responder[item[1]];
 		if (!func) console.log("didn't find function " + item[1]);
@@ -1958,7 +1970,7 @@ CheapListMorph.subclass("CheapMenuMorph", {
 });
 
 // select which
-var MenuMorph = Config.useNewMenu ? NewMenuMorph : CheapMenuMorph;
+var MenuMorph = CheapMenuMorph;
 
 /**
  * @class SliderMorph: Slider/scroll control
