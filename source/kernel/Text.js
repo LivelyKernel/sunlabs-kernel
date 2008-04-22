@@ -318,7 +318,7 @@ Object.subclass('WordChunk', {
     isTab: false,
 
     initialize: function(offset, length) {
-        this.start = offset;
+        this.startIndex = offset;
         this.length = length;
         this.render = true;
         this.bounds = null;
@@ -337,17 +337,17 @@ Object.subclass('WordChunk', {
 	if (this.word == null) {
 	    var virtualSpaceSize = this.bounds.width / this.length;
 	    var spacesIn = Math.floor((x - this.bounds.x) / virtualSpaceSize);
-	    return this.start + spacesIn;
+	    return this.startIndex + spacesIn;
 	} else {
 	    var leftX = this.bounds.x;
-	    for (var j = this.start; j < (this.start + this.length); j++) {
+	    for (var j = this.startIndex; j < (this.startIndex + this.length); j++) {
 		var rightX = leftX + this.word.getWidthOfChar(j);
 		if (x >= leftX && x <= rightX) break;
 		leftX = rightX
 	    }
 	    return j;
 	}
-	return this.start; // failsafe
+	return this.startIndex; // failsafe
     },
     
     getBounds: function(stringIndex) {
@@ -355,7 +355,7 @@ Object.subclass('WordChunk', {
 	// DI: change order of this if, and dont test for getBounds
 	if (this.word) {
 	    var leftX = this.bounds.x;
-	    for (var j = this.start; j <= stringIndex; j++) {
+	    for (var j = this.startIndex; j <= stringIndex; j++) {
 		var rightX = leftX + this.word.getWidthOfChar(j);
 		if (j >= stringIndex) break;
 		leftX = rightX;
@@ -365,7 +365,7 @@ Object.subclass('WordChunk', {
 	    if (this.isSpaces()) {
 		var virtualSpaceSize = this.bounds.width / this.length;
 		var b = this.bounds.withWidth(virtualSpaceSize);
-		b.x += virtualSpaceSize * (stringIndex - this.start);
+		b.x += virtualSpaceSize * (stringIndex - this.startIndex);
 		return b;
 	    } else {
 		return this.bounds;
@@ -379,7 +379,7 @@ Object.subclass('WordChunk', {
 
     // clone a chunk only copying minimal information
     cloneSkeleton: function() {
-        var c = new WordChunk(this.start, this.length);
+        var c = new WordChunk(this.startIndex, this.length);
         c.isWhite = this.isWhite;
         c.isNewLine = this.isNewLine;
         c.isTab = this.isTab;
@@ -388,7 +388,7 @@ Object.subclass('WordChunk', {
 
     // string representation
     toString: function() {
-        var lString = "Chunk start: " + this.start +
+        var lString = "Chunk start: " + this.startIndex +
             " length: " + this.length +
             " isWhite: " + this.isWhite +
             " isNewLine: " + this.isNewLine +
@@ -557,17 +557,17 @@ Object.subclass('TextLine', {
         for (var i = 0; i < this.chunks.length; i++) {
             var c = this.chunks[i];
 	    this.lastChunkIndex = i;
-	    if (c.start >= nextStyleChange) {
+	    if (c.startIndex >= nextStyleChange) {
 		hasStyleChanged = true;
 		// For now style changes are only seen at chunk breaks
-		if (!c.isNewLine) this.adoptStyle(this.textStyle.valueAt(c.start), c.start); // Dont change style at newlines
-		nextStyleChange = c.start + this.textStyle.runLengthAt(c.start);
+		if (!c.isNewLine) this.adoptStyle(this.textStyle.valueAt(c.startIndex), c.startIndex); // Dont change style at newlines
+		nextStyleChange = c.startIndex + this.textStyle.runLengthAt(c.startIndex);
 	    }
             if (c.isWhite) {
                 c.bounds = lastBounds.withX(lastBounds.maxX());
                 if (c.isNewLine) {
                     c.bounds.width = (this.topLeft.x + compositionWidth) - c.bounds.x;
-                    runningStartIndex = c.start + c.length;
+                    runningStartIndex = c.startIndex + c.length;
                     c.wasComposed = true;
                     if (lastWord) LivelyNS.setAttribute(lastWord.rawNode, "nl", "true"); // little helper for serialization
                     break;
@@ -582,9 +582,9 @@ Object.subclass('TextLine', {
                     if (lastWord) LivelyNS.setAttribute(lastWord.rawNode, "trail", c.length); // little helper for serialization
                     else leadingSpaces = c.length;
                 }
-                runningStartIndex = c.start + c.length;
+                runningStartIndex = c.startIndex + c.length;
             } else {
-                lastWord = new TextWord(this.textString, c.start, lastBounds.maxX(), this.baselineY(), this.currentFont);
+                lastWord = new TextWord(this.textString, c.startIndex, lastBounds.maxX(), this.baselineY(), this.currentFont);
 		if (hasStyleChanged) {
 		    // once we notice one change, we will reapply font-size to chunk
 		    this.currentFont.applyTo(lastWord.rawNode);
@@ -609,7 +609,7 @@ Object.subclass('TextLine', {
                     this.nSpaceChunks-- ;  // This makes last interiror space no longer interior
                     break;
 		}
-		runningStartIndex = c.start + c.length;
+		runningStartIndex = c.startIndex + c.length;
             }
             lastBounds = c.bounds;
 	    c.wasComposed = true;
@@ -658,7 +658,7 @@ Object.subclass('TextLine', {
     getBounds: function(stringIndex) {
         for (var i = 0; i <= this.lastChunkIndex; i++) {
             var c = this.chunks[i];
-            if (stringIndex >= c.start && stringIndex < (c.start + c.length)) 
+            if (stringIndex >= c.startIndex && stringIndex < (c.startIndex + c.length)) 
 		return c.getBounds(stringIndex);
         }
         return null;
@@ -722,19 +722,19 @@ Object.subclass('TextLine', {
         var localChunkCount = 0;
 	for (var i = 0; i < this.chunks.length; i++) {  // Step through this line, break at end
             var tc = this.chunks[i];
-            if (tc.start < sIndex) {
+            if (tc.startIndex < sIndex) {
 		localChunkCount++;
-		if ((tc.start + tc.length) > sIndex) {
+		if ((tc.startIndex + tc.length) > sIndex) {
 	            // this chunk has been broken up by a word wrap
 		    wrap = true;
 		    extra = tc.cloneSkeleton();
-	            extra.length -= sIndex - extra.start;
-	            extra.start = sIndex;
+	            extra.length -= sIndex - extra.startIndex;
+	            extra.startIndex = sIndex;
 		    tc.length -= extra.length;
 		    break;
 		}
             }
-            else if (tc.start == sIndex)  extra = tc.cloneSkeleton();
+            else if (tc.startIndex == sIndex)  extra = tc.cloneSkeleton();
             else break;
         }
 	var remainingChunks = this.chunks;
