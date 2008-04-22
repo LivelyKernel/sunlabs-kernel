@@ -805,7 +805,7 @@ Morph.subclass('HandleMorph', {
         this.partName = partName; // may be a name like "topRight" or a vertex index
         this.initialScale = null;
         this.initialRotation = null; 
-		  this.transientBounds = true;
+	this.transientBounds = true;
         return this;
     },
     
@@ -1016,7 +1016,6 @@ Morph.subclass("SelectionMorph", {
 // TODO: there MUST be a better way to do this.. but it works without a sweat
 // there "might" be some performance issues with this :)
     setScale: function($super, scale) {
-        console.log('ok');
         for (var i = 0; i < this.selectedMorphs.length; i++ ) {
             this.addMorph(this.selectedMorphs[i]);
         }
@@ -1456,11 +1455,13 @@ Morph.subclass("TextListMorph", {
     },
 
     onMouseDown: function(evt) {
+	//	var ms = new Date().getMilliseconds();
 	var target = this.morphToReceiveEvent(evt);
+	//var ms2 = new Date().getMilliseconds();	
 	var index = this.submorphs.indexOf(target);
-	// console.log("%s got evt %s target %s", this.getType(), evt, target);
 	this.highlightItem(evt, index, true);
 	evt.hand.setMouseFocus(this); // to get moves
+	//console.log("%s got evt %s target %s ticks %s, %s", this.getType(), evt, target, new Date().getMilliseconds() - ms2, ms2 - ms);
     },
     
     onMouseMove: function(evt) {
@@ -1473,14 +1474,8 @@ Morph.subclass("TextListMorph", {
 
     highlightItem: function(evt, index, updateModel) {
 	if (index >= 0) {
-	    if (index == this.selectedLineNo) { 
-		// clicked on what was previously selected: unselect
-		// this.selectLineAt(-1, true);
-		//this.relinquishKeyboardFocus(evt.hand);
-	    } else {
-		this.selectLineAt(index, updateModel);
-		this.requestKeyboardFocus(evt.hand);
-	    }
+	    this.selectLineAt(index, updateModel);
+	    this.requestKeyboardFocus(evt.hand);
 	    return true;
 	}
 	if (!updateModel) this.selectLineAt(-1, updateModel);
@@ -1756,17 +1751,13 @@ Morph.subclass("NewMenuMorph", {
 
 	this.listMorph.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove"});
         // Note menu gets mouse focus by default if pop-up.  If you don't want it, you'll have to null it
-        if (!remainOnScreen) {
-	    console.log("setting mouse focus to " + this);
+        if (!remainOnScreen)
 	    parentMorph.world().firstHand().setMouseFocus(this);
-	} else {
-	    
-	}
 
     },
     
     onMouseDown: function(evt) {
-	console.log("menu got " + evt);
+	//console.log("menu got " + evt);
 	var target = this.listMorph.morphToReceiveEvent(evt);
 	var index = this.listMorph.submorphs.indexOf(target);
 	try {
@@ -1781,7 +1772,7 @@ Morph.subclass("NewMenuMorph", {
     },
 
     onMouseMove: function(evt) {
-	console.log("menu got " + evt);
+	// console.log("menu got " + evt);
 	evt.hand.setMouseFocus(this);
 	var target = this.listMorph.morphToReceiveEvent(evt);
 	var index = this.listMorph.submorphs.indexOf(target);
@@ -1970,7 +1961,7 @@ CheapListMorph.subclass("CheapMenuMorph", {
 });
 
 // select which
-var MenuMorph = CheapMenuMorph;
+var MenuMorph = Config.useNewMenu ? NewMenuMorph : CheapMenuMorph;
 
 /**
  * @class SliderMorph: Slider/scroll control
