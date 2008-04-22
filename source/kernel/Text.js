@@ -203,7 +203,6 @@ Object.subclass('TextWord', {
         this.startIndex = startIndex;
         this.stopIndex = textString.length - 1;
         this.leftX = leftX;
-        this.rawNode.appendChild(NodeFactory.createText(textString.substring(this.startIndex)));
         this.fontInfo = font;
         this.setX(leftX);
 	this.setY(baselineY);
@@ -288,7 +287,7 @@ Object.subclass('TextWord', {
     toString: function() {
 		// string representation
         return "textString: (" + this.textString + ")" +
-            " substr: (" + this.textString.substring(this.startIndex, this.stopIndex) + ")" +
+            " substr: (" + this.textString.substring(this.startIndex, this.stopIndex + 1) + ")" +
             " startIndex: " + this.startIndex +
             " stopIndex: " + this.stopIndex +
             " leftX: " + this.leftX +
@@ -326,12 +325,14 @@ Object.subclass('WordChunk', {
         this.wasComposed = false;
         this.word = null;
     },
+    
     adjustAfterComposition: function(deltaX, paddingX) {
 	// Align the text after composition
         if (deltaX != 0) this.bounds = this.bounds.withX(this.bounds.x+deltaX);
 	if (paddingX != 0 && this.isSpaces()) this.bounds = this.bounds.withWidth(this.bounds.width+paddingX);
 	if (this.word != null) this.word.adjustAfterComposition(deltaX);
     },
+    
     indexForX: function(x) {
 	if (this.word == null) {
 	    var virtualSpaceSize = this.bounds.width / this.length;
@@ -348,6 +349,7 @@ Object.subclass('WordChunk', {
 	}
 	return this.start; // failsafe
     },
+    
     getBounds: function(stringIndex) {
     	// get the bounds of the character at stringIndex
 	// DI: change order of this if, and dont test for getBounds
@@ -525,7 +527,7 @@ Object.subclass('TextLine', {
 	return this.topLeft.y + this.currentFont.getBaselineHeight();
     },
 
-    interline: function(line) {
+    interline: function() {
 	return (this.lineHeightFactor - 1) * this.currentFont.getSize();
     },
 
@@ -562,7 +564,6 @@ Object.subclass('TextLine', {
 		nextStyleChange = c.start + this.textStyle.runLengthAt(c.start);
 	    }
             if (c.isWhite) {
-                var spaceIncrement = this.spaceWidth;
                 c.bounds = lastBounds.withX(lastBounds.maxX());
                 if (c.isNewLine) {
                     c.bounds.width = (this.topLeft.x + compositionWidth) - c.bounds.x;
@@ -576,6 +577,7 @@ Object.subclass('TextLine', {
                     var tabXBoundary = c.bounds.x - this.topLeft.x;
                     c.bounds.width = Math.floor((tabXBoundary + this.tabWidth) / this.tabWidth) * this.tabWidth - tabXBoundary;
                 } else {
+                    var spaceIncrement = this.spaceWidth;
                     c.bounds.width = spaceIncrement * c.length;
                     if (lastWord) LivelyNS.setAttribute(lastWord.rawNode, "trail", c.length); // little helper for serialization
                     else leadingSpaces = c.length;
@@ -703,7 +705,7 @@ Object.subclass('TextLine', {
     render: function(rawTextNode) {
 	// render each word contained in the line
         for (var i = 0; i < this.chunks.length; i++) {
-            if (this.chunks[i].word != null && this.chunks[i].render) {
+            if (this.chunks[i].word && this.chunks[i].render) {
                 rawTextNode.appendChild(this.chunks[i].word.rawNode);
             }
         }
