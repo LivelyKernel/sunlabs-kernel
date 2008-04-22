@@ -4198,7 +4198,9 @@ Morph.addMethods({
 					var url = Exporter.saveDocumentToFile(Exporter.shrinkWrapMorph(this), filename);
 					if (url) WorldMorph.current().reactiveAddMorph(new ExternalLinkMorph(url));
 				    }.bind(this))}], 
-	    ["test tracing (in console)", this.testTracing]
+	    ["test tracing (in console)", this.testTracing],
+	    ["test showStack (in console)", Function.showStack.curry(false)],
+	    ["test showStack (in viewer)", Function.showStack.curry(true)]
 	];
 	if (this.okToDuplicate()) items.unshift(["duplicate", this.copyToHand.curry(evt.hand)]);
 

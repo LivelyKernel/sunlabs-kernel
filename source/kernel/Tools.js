@@ -621,13 +621,16 @@ function showStatsViewer(profilee,title) {
 	    return [].concat(debuggingStack);
 	},
 
-        showStack: function(stack) {
-            stack = stack || debuggingStack;
-            if (Config.debugExtras) {
-                for (var i = 0; i < stack.length; i++) {
-                    var args = stack[i];
-                    var header = Object.inspect(args.callee.originalFunction);
-                    console.log("%s) %s", i, header);
+        showStack: function(useViewer) {
+            stack = debuggingStack;
+console.log("useViewer = " + useViewer);
+            if (useViewer) { new StackViewer(this, debuggingStack).open(); return; }
+
+			if (Config.debugExtras) {
+               for (var i = 0; i < stack.length; i+=2) {
+                    var args = stack[i+1];
+                   var header = Object.inspect(args.callee.originalFunction);
+                    console.log("%s) %s", i/2, header);
                     var k = header.indexOf('(');
                     header = header.substring(k + 1, 999);  // ')' or 'zort)' or 'zort,baz)', etc
                     for (var j = 0; j <args.length; j++) {
@@ -686,7 +689,7 @@ function showStatsViewer(profilee,title) {
             // Make a proxy method (traceFunc) that calls the original method after pushing 'arguments' on stack
             // Normally, it will pop it off before returning, but ***check interaction with try/catch
             var traceFunc = function () {
-                debuggingStack.push(arguments);  // Push the arguments object on the stack ...
+                debuggingStack.push("*that*", arguments);  // Push this and the arguments object on the stack ...
                 var originalFunction = arguments.callee.originalFunction; 
 		
                 if (/*originalFunction.*/ Function.prototype.shouldTrace) {
@@ -695,7 +698,8 @@ function showStatsViewer(profilee,title) {
                 }
 
                 var result = originalFunction.apply(this, arguments); 
-                debuggingStack.pop();            // ... and then pop them off before returning
+                debuggingStack.pop();            // and then pop them off before returning
+                debuggingStack.pop();            // ... 
                 return result; 
             };
             traceFunc.originalFunction = this;  // Attach this (the original function) to the tracing proxy
@@ -714,16 +718,26 @@ WidgetModel.subclass('StackViewer', {
     defaultViewTitle: "Call Stack Viewer",
     openTriggerVariable: 'getFunctionList',
 
-    initialize: function($super, param) {
+    initialize: function($super, param, debugStack) {
         $super();
 
         this.selected = null;
-        this.stack = [];
-        for (var c = arguments.callee.caller, i = 0; c != null; c = c.caller, i++) {
-            this.stack[i] = c;
-        }
-
-        return this;
+        if (debugStack && debugStack.length > 0) {
+			this.stack = [];
+			this.thises = [];
+			this.argses = [];
+			for (i = debugStack.length-2; i>=0; i-=2) {
+            	this.thises.push (debugStack[i]);
+            	this.argses.push (debugStack[i+1]);
+            	this.stack.push (debugStack[i+1].callee.originalFunction);
+			}
+		} else {
+			// if no debugStack, at least build an array of methods
+			this.stack = [];
+			for (var c = arguments.callee.caller, i = 0; c != null; c = c.caller, i++) {
+            	this.stack.push (c);
+        	}
+		}
     },
 
     getFunctionList: function() {
@@ -757,10 +771,10 @@ WidgetModel.subclass('StackViewer', {
 
     setCodeValue: function() { return; },
 
-    buildView: function(extent) {
+    buildView: function(extent) { 
         var panel = PanelMorph.makePanedPanel(extent, [
             ['listPane', newListPane, new Rectangle(0, 0, 0.5, 1)],
-            ['codePane', newTextPane, new Rectangle(0.5, 0, 1, 1)]
+            ['codePane', newTextPane, new Rectangle(0.5, 0, 0.5, 1)]
         ]);
 
         this.panel = panel;

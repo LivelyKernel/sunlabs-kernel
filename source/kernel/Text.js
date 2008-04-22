@@ -1614,7 +1614,7 @@ Morph.subclass("TextMorph", {
         return newSetting;
     },
     
-    onFocus: function($super, hand) {
+    onFocus: function($super, hand) { 
         $super(hand);
         this.drawSelection();
     },

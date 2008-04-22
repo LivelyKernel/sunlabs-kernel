@@ -1231,8 +1231,8 @@ TextMorph.subclass("CheapListMorph", {
     },
 
     onMouseDown: function(evt) {
-        this.requestKeyboardFocus(evt.hand);
         this.onMouseMove(evt); 
+        this.requestKeyboardFocus(evt.hand);
     },
 
     onMouseMove: function(evt) {  
@@ -2274,7 +2274,7 @@ Morph.subclass("ScrollPane", {
     },
     scrollRectIntoView: function(r) {
         var im = this.innerMorph();
-		if (!r || !im) return;
+		if ( !r || !im) return;
 		var bnds = this.innerBounds();
 		var yToView = r.y + im.getPosition().y;  // scroll down if above top
 		if (yToView < bnds.y) {
