@@ -968,6 +968,7 @@ Morph.subclass("TextMorph", {
         if (this.fullBounds != null) return this.fullBounds;
         this.resetRendering();
         this.fitText(); // adjust bounds or text for fit
+		this.drawSelection("noScroll");
         return $super(ignoreTransients);
     },
     
@@ -1384,7 +1385,7 @@ Morph.subclass("TextMorph", {
 	this.textSelection && this.textSelection.clear();
     },
 
-    drawSelection: function() { // should really be called buildSelection now
+    drawSelection: function(noScroll) { // should really be called buildSelection now
         if (!this.showsSelectionWithoutFocus() && this.takesKeyboardFocus() && !this.hasKeyboardFocus) {
             return;
         }
@@ -1432,9 +1433,8 @@ Morph.subclass("TextMorph", {
                 this.textSelection.addRectangle(Rectangle.fromAny(r1.bottomRight(), r2.topLeft()));
             }
         }
-		this.scrollSelectionIntoView();
-        // console.log('add selection ' + this.rawSelectionNode.childNodes);
-        // this.addNonMorph(this.rawSelectionNode);
+		// scrolling here can cause circularity with bounds calc
+		if (!noScroll) this.scrollSelectionIntoView();
     },
     
 
