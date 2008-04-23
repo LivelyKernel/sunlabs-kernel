@@ -77,22 +77,22 @@ Object.subclass('Font', {
 	}
 
 });
-
+    
 (function() {
     var cache = {};
-
+    
     Object.extend(Font, {
 	
 	forFamily: function(familyName, size, style) {
             var key  = familyName + ":" + size + ":" + (style ? style[0] : 'n' ) ;
             var entry = cache[key];
             if (entry) return entry;
-			try { entry = new Font(familyName, size, style);
+	    try { entry = new Font(familyName, size, style);
                 } catch(er) {
                     console.log("%s when looking for %s:%s", er, familyName, size);
                     return null;
                 }
-			cache[key] = entry;
+	    cache[key] = entry;
             return entry;
         }
     });
@@ -128,20 +128,20 @@ Font.addMethods({
                 break;
             }
         }
-
+	
         if (!body) return [];
 
         function create(name) {
             // return doc.createElement(name);
             return doc.createElementNS(Namespace.XHTML, name);
         }
-
+	
         var d = body.appendChild(create("div"));
-
+	
         d.style.kerning    = 0;
         d.style.fontFamily = family;
         d.style.fontSize   = size + "px";
-
+	
         var xWidth = -1;
         var xCode = 'x'.charCodeAt(0);
         for (var i = 33; i < 255; i++) {
@@ -158,7 +158,7 @@ Font.addMethods({
         if (d.offsetWidth == 0) {
             console.log("timing problems, expect messed up text for font %s", this);
         }
-
+	
         // handle spaces
         var sub = d.appendChild(create("span"));
         sub.appendChild(doc.createTextNode('x x'));
@@ -189,14 +189,14 @@ Font.addMethods({
 Object.subclass('TextWord', {
 
     documentation: "renders single words",
-
+    
     deserialize: function(importer, rawNode) {
         this.rawNode = rawNode;
         this.fontInfo = Font.forFamily(this.getFontFamily(), this.getFontSize());
         this.textString = this.rawNode.textContent;
         this.didLineBreak = false;
     },
-
+    
     initialize: function(textString, startIndex, leftX, baselineY, font) {
         this.rawNode = NodeFactory.create("tspan");
         this.textString = textString;
@@ -209,7 +209,7 @@ Object.subclass('TextWord', {
         this.didLineBreak = false;
         return this;
     },
-
+    
     setX: function(newValue /*:float*/) {
         this.rawNode.setAttributeNS(null, "x", newValue.toString());
     },
@@ -217,7 +217,7 @@ Object.subclass('TextWord', {
     setY: function(newValue /*:float*/) {
         this.rawNode.setAttributeNS(null, "y", newValue.toString());
     },
-
+    
     getFontFamily: function() {
         for (var node = this.rawNode; node && (/text|tspan/).test(node.tagName); node = node.parentNode) {
             var result = node.getAttribute("font-family");
@@ -225,7 +225,7 @@ Object.subclass('TextWord', {
         }
         return null; // ???
     },
-
+    
     getFontSize: function() {
         for (var node = this.rawNode; node && (/text|tspan/).test(node.tagName); node = node.parentNode) {
             var result = node.getAttribute("font-size");
@@ -247,7 +247,7 @@ Object.subclass('TextWord', {
             var rightOfChar = leftX + this.getWidthOfChar(i);
 	    if (rightOfChar >= rightX) {
 		// Hit right bounds -- wrap at word break if possible
-		if (i>this.startIndex)  this.setStopIndexAndWidth(i - 1,  leftX - this.leftX);
+		if (i > this.startIndex)  this.setStopIndexAndWidth(i - 1,  leftX - this.leftX);
 		else this.setStopIndexAndWidth(this.startIndex, rightOfChar - this.leftX);
                 this.didLineBreak = true;
                 return;
@@ -263,12 +263,12 @@ Object.subclass('TextWord', {
         this.stopIndex = i; 
 	this.width = w;
     },
-
+    
     // accessor function
     getStopIndex: function() {
         return this.stopIndex;
     },
-
+    
     // return true if we bumped into the width limit while composing
     getLineBrokeOnCompose: function() {
         return this.didLineBreak;
@@ -285,7 +285,7 @@ Object.subclass('TextWord', {
     },
     
     toString: function() {
-		// string representation
+	// string representation
         return "textString: (" + this.textString + ")" +
             " substr: (" + this.textString.substring(this.startIndex, this.stopIndex + 1) + ")" +
             " startIndex: " + this.startIndex +
@@ -316,7 +316,7 @@ Object.subclass('WordChunk', {
     isWhite: false,
     isNewLine: false,
     isTab: false,
-
+    
     initialize: function(offset, length) {
         this.startIndex = offset;
         this.length = length;
@@ -376,7 +376,7 @@ Object.subclass('WordChunk', {
     isSpaces: function() {
         return this.isWhite && !this.isTab && !this.isNewLine;
     },
-
+    
     // clone a chunk only copying minimal information
     cloneSkeleton: function() {
         var c = new WordChunk(this.startIndex, this.length);
@@ -385,7 +385,7 @@ Object.subclass('WordChunk', {
         c.isTab = this.isTab;
         return c;
     },
-
+    
     // string representation
     toString: function() {
         var lString = "Chunk start: " + this.startIndex +
@@ -398,17 +398,17 @@ Object.subclass('WordChunk', {
             lString += " null bounds";
         } else {
             lString += " @(" + this.bounds.x + "," + this.bounds.y + ")(" +
-                       this.bounds.width + "x" + this.bounds.height + ")";
+                this.bounds.width + "x" + this.bounds.height + ")";
         }
         return lString;
     },
-
+    
     // create a chunk representing whitespace (typically space characters)
     asWhite: function() {
         this.isWhite = true;
         return this;
     },
-
+    
     // create a chunk representing a newline   
     asNewLine: function() {
         this.isWhite = true;
@@ -416,7 +416,7 @@ Object.subclass('WordChunk', {
         this.length = 1;
         return this;
     },
-
+    
     // create a chunk representing a tab
     asTab: function() {
         this.isWhite = true;
@@ -437,7 +437,7 @@ Object.subclass('TextLine', {
 
     lineHeightFactor: 1.2, // multiplied with the font size to set the distance between the lines, 
     // semantics analogous to CSS 
-
+    
     
     // create a new line
     initialize: function(textString, textStyle, startIndex, topLeft, font, defaultStyle, chunkSkeleton) {
@@ -459,7 +459,7 @@ Object.subclass('TextLine', {
 	d[ ' ' ] = true;  d[ '\t' ] = true;  d[ '\r' ] = true;  d[ '\n' ] = true;
 	this.whiteSpaceDict = d;  // Should go in the class after test
     },
-
+    
     lineHeight: function() {
 	return this.lineHeightFactor * this.currentFont.getSize();
     },
@@ -484,9 +484,9 @@ Object.subclass('TextLine', {
         }
         return i - offset;
     },
-
+    
     chunkFromSpace: function(wString, offset) {
-	    // we found a space so figure out where the chunk extends to (private)
+	// we found a space so figure out where the chunk extends to (private)
         for (var i = offset; i < wString.length; i++) {
             if (wString[i] != ' ') {
                 return i - offset;
@@ -494,15 +494,15 @@ Object.subclass('TextLine', {
         }
         return i - offset;
     },
-
+    
     chunkFromString: function(wString, startOffset) {
-	    // look at wString starting at startOffset and return an array with all of the chunks in it
-		// Note: this needs to be passed the runArray of test styles, and to make
-		// new chunks at each change in style
+	// look at wString starting at startOffset and return an array with all of the chunks in it
+	// Note: this needs to be passed the runArray of test styles, and to make
+	// new chunks at each change in style
         var offset = startOffset;
         var pieces = [];
         var chunkSize;
-
+	
         while (offset < wString.length) {
             chunkSize = 1; // default is one character long
             if (this.whiteSpaceDict[wString[offset]]) {
@@ -590,7 +590,7 @@ Object.subclass('TextLine', {
 		    this.currentFont.applyTo(lastWord.rawNode);
 		}
                 c.word = lastWord;
-
+		
                 if (leadingSpaces) { 
                     LivelyNS.setAttribute(lastWord.rawNode, "lead", leadingSpaces);
                     leadingSpaces = 0;
@@ -617,7 +617,7 @@ Object.subclass('TextLine', {
         this.overallStopIndex = runningStartIndex - 1;
         this.hasComposed = true;
     },
-
+    
     adoptStyle: function(emph, charIx) {
 	var fontFamily = this.currentFont.getFamily();
 	var fontSize = this.currentFont.getSize();
@@ -638,7 +638,7 @@ Object.subclass('TextLine', {
         this.spaceWidth = this.currentFont.getCharWidth(' ');
         this.tabWidth = this.spaceWidth * 4;
     },
-
+    
     getStopIndex: function() {
 	// accessor function (maybe delete - kam)
         return this.overallStopIndex;
@@ -685,7 +685,7 @@ Object.subclass('TextLine', {
 	var deltaX = 0;
 	var paddingX = 0;
 	var spaceRemaining = 0;
-	if (this.alignment != 'left' ) {
+	if (this.alignment != 'left') {
 	    spaceRemaining =  (this.topLeft.x + compositionWidth) - this.chunks[this.lastChunkIndex-1].bounds.maxX();
 	    if (this.alignment == 'right') deltaX = spaceRemaining;
 	    if (this.alignment == 'center') deltaX = spaceRemaining / 2;
@@ -795,7 +795,7 @@ var Locale = {
             i2 ++;
         return [i1, i2]; 
     },
-
+    
     matchBrackets: function(str, chin, chout, start, dir) { 
         var i = start;
         var depth = 1;
@@ -813,7 +813,7 @@ var Locale = {
 
 
 
-Global.WrapStyle = { 
+WrapStyle = { 
     Normal: "Normal",  // fits text to bounds width using word wrap and sets height
     None: "None", // simply sets height based on line breaks only
     Shrink: "Shrink" // sets both width and height based on line breaks only
@@ -865,7 +865,6 @@ Morph.subclass("TextMorph", {
     locale: Locale,
     acceptInput: true, // whether it accepts changes to text KP: change: interactive changes
     autoAccept: false,
-
     
     
     initializeTransientState: function($super, initialBounds) {
