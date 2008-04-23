@@ -1529,6 +1529,7 @@ Morph.subclass("TextListMorph", {
 	    this.savedFill = item.getFill();
 	    item.setFill(TextSelection.prototype.fill);
 	    selectionContent = item.textString;
+	    this.scrollItemIntoView(item);
 	}
 	shouldUpdateModel && this.setSelection(selectionContent);
     },
@@ -1564,7 +1565,7 @@ Morph.subclass("TextListMorph", {
 
     setSelectionToMatch: function(item) {
 	for (var i = 0; i < this.submorphs.length; i++) {
-	    if (this.submorphs[i].textString == item) {
+	    if (this.submorphs[i].textString === item) {
 		this.selectLineAt(i, false);
 		return true;
 	    }
@@ -1617,16 +1618,27 @@ Morph.subclass("TextListMorph", {
         if (this.modelPlug) this.setModelValue('setSelection', item); 
     },
 
-    resetScrollPane: function(toBottom) { // KP: this copied from TextMorph. Nasty! FIXME!
+    enclosingScrollPane: function() { 
+        // Need a cleaner way to do this
+        if (! (this.owner instanceof ClipMorph)) return null;
+	var sp = this.owner.owner;
+	if (! (sp instanceof ScrollPane)) return null;
+	return sp;
+    },
+    
+    scrollItemIntoView: function(item) { 
+	var sp = this.enclosingScrollPane();
+	if (!sp) return;
+	sp.scrollRectIntoView(item.bounds()); 
+    },
+
+    resetScrollPane: function(toBottom) { 
         // Need a cleaner way to do this ;-)
-        if (this.owner instanceof ClipMorph && this.owner.owner instanceof ScrollPane) {
-	    if (toBottom)
-		this.owner.owner.scrollToBottom();
-	    else
-		this.owner.owner.scrollToTop();
-	    return true;
-        }
-	return false;
+	var sp = this.enclosingScrollPane();
+	if (!sp) return false;
+	if (toBottom) sp.scrollToBottom();
+	else sp.scrollToTop();
+	return true;
     }
 });
 
@@ -2275,22 +2287,23 @@ Morph.subclass("ScrollPane", {
         this.setScrollPosition(1);
         this.scrollBar.adjustForNewBounds(); 
     },
+
     scrollRectIntoView: function(r) {
         var im = this.innerMorph();
-		if ( !r || !im) return;
-		var bnds = this.innerBounds();
-		var yToView = r.y + im.getPosition().y;  // scroll down if above top
-		if (yToView < bnds.y) {
-			im.moveBy(pt(0, bnds.y - yToView));
-			this.scrollBar.adjustForNewBounds();
-			return;
-		}
-		var yToView = r.y + r.height + im.getPosition().y;  // scroll up if below bottom
-		var tweak = 5;  // otherwise it doesnt scroll up enough to look good
-		if (yToView > bnds.maxY()-tweak) {
-			im.moveBy(pt(0, bnds.maxY()-tweak - yToView))
-			this.scrollBar.adjustForNewBounds();
-		} 
+	if (!r || !im) return;
+	var bnds = this.innerBounds();
+	var yToView = r.y + im.getPosition().y;  // scroll down if above top
+	if (yToView < bnds.y) {
+	    im.moveBy(pt(0, bnds.y - yToView));
+	    this.scrollBar.adjustForNewBounds();
+	    return;
+	}
+	var yToView = r.y + r.height + im.getPosition().y;  // scroll up if below bottom
+	var tweak = 5;  // otherwise it doesnt scroll up enough to look good
+	if (yToView > bnds.maxY() - tweak) {
+	    im.moveBy(pt(0, bnds.maxY() - tweak - yToView))
+	    this.scrollBar.adjustForNewBounds();
+	}
     },
     
     adjustForNewBounds: function ($super) {
