@@ -1422,13 +1422,6 @@ Morph.subclass("TextListMorph", {
         this.layoutChanged();
     },
 
-/*
-    captureMouseEvent: function($super, evt, hasFocus) {
-	var result = $super(evt, hasFocus);
-	console.log("called captureMouseEvent(" + [evt, hasFocus] + ") -> " + result);
-	return result;
-    },
-*/
     handlesMouseDown: Functions.True,
 
     generateSubmorphs: function(itemList, width) {
@@ -1747,28 +1740,38 @@ Morph.subclass("NewMenuMorph", {
         var visibleRect = menuRect.intersection(this.owner.shape.bounds()); 
         var delta = visibleRect.topLeft().subPt(menuRect.topLeft());  // delta to fix topLeft off screen
         delta = delta.addPt(visibleRect.bottomRight().subPt(menuRect.bottomRight()));  // same for bottomRight
-        if (delta.dist(pt(0,0)) > 1) this.moveBy(delta);  // move if significant
+        if (delta.dist(pt(0, 0)) > 1) this.moveBy(delta);  // move if significant
 
-	this.listMorph.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove"});
+	this.listMorph.relayMouseEvents(this, {onMouseUp: "onMouseUp", onMouseMove: "onMouseMove", onMouseDown: "onMouseMove"});
         // Note menu gets mouse focus by default if pop-up.  If you don't want it, you'll have to null it
         if (!remainOnScreen)
 	    parentMorph.world().firstHand().setMouseFocus(this);
-
     },
     
-    onMouseDown: function(evt) {
+    removeOnEvent: function(evt) {
+	this.remove();
+	if (evt.hand.mouseFocus === this) {
+	    evt.hand.setMouseFocus(null);
+	}
+    },
+
+    onMouseUp: function(evt) {
 	//console.log("menu got " + evt);
 	var target = this.listMorph.morphToReceiveEvent(evt);
 	var index = this.listMorph.submorphs.indexOf(target);
+	if (!(index in this.items)) return;
 	try {
-	    if (index in this.items) 
-		this.invokeItem(evt, this.items[index]);
+	    this.invokeItem(evt, this.items[index]);
 	} finally {
-	    if (!this.stayUp) {
-		this.remove();
-		evt.hand.setMouseFocus(null);
-	    }
+	    if (!this.stayUp) this.removeOnEvent(evt);
 	}
+    },
+
+    onMouseDown: function(evt) {
+	var target = this.listMorph.morphToReceiveEvent(evt);
+	var index = this.listMorph.submorphs.indexOf(target);
+	if (!(index in this.items)  && !this.stayUp) 
+	    this.removeOnEvent(evt);
     },
 
     onMouseMove: function(evt) {
