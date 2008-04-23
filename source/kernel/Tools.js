@@ -623,7 +623,6 @@ function showStatsViewer(profilee,title) {
 
         showStack: function(useViewer) {
             stack = debuggingStack;
-console.log("useViewer = " + useViewer);
             if (useViewer) { new StackViewer(this, debuggingStack).open(); return; }
 
 			if (Config.debugExtras) {
@@ -689,7 +688,7 @@ console.log("useViewer = " + useViewer);
             // Make a proxy method (traceFunc) that calls the original method after pushing 'arguments' on stack
             // Normally, it will pop it off before returning, but ***check interaction with try/catch
             var traceFunc = function () {
-                debuggingStack.push("*that*", arguments);  // Push this and the arguments object on the stack ...
+                debuggingStack.push(this, arguments);  // Push this and the arguments object on the stack ...
                 var originalFunction = arguments.callee.originalFunction; 
 		
                 if (/*originalFunction.*/ Function.prototype.shouldTrace) {
@@ -720,8 +719,7 @@ WidgetModel.subclass('StackViewer', {
 
     initialize: function($super, param, debugStack) {
         $super();
-
-        this.selected = null;
+		this.selected = null;
         if (debugStack && debugStack.length > 0) {
 			this.stack = [];
 			this.thises = [];
@@ -752,41 +750,79 @@ WidgetModel.subclass('StackViewer', {
 
     setFunctionName: function(n) {
         this.selected = null;
-
         if (n) {
             var itemNumber = parseInt(n);
-            
             if (!isNaN(itemNumber)) {
+            	this.stackIndex = itemNumber;
                 this.selected = this.stack[itemNumber].toString();
             }
         }
-
-        this.changed("getCodeValue");
+       this.changed("getCodeValue");
+       this.changed("getVariableList");
     },
 
     getCodeValue: function() {
-        if (this.selected) return this.selected;
+		if (this.selected) return this.selected;
         else return "no value";
     },
 
     setCodeValue: function() { return; },
 
-    buildView: function(extent) { 
-        var panel = PanelMorph.makePanedPanel(extent, [
-            ['listPane', newListPane, new Rectangle(0, 0, 0.5, 1)],
-            ['codePane', newTextPane, new Rectangle(0.5, 0, 0.5, 1)]
-        ]);
+	getVariableList: function () {
+		if (this.selected) {
+			var ip = this.selected.indexOf(")");
+			if (ip<0) return ["this"];
+			varString = this.selected.substring(0,ip);
+			ip = varString.indexOf("(");
+			varString = varString.substring(ip+1);
+			this.variableNames = (varString.length == 0)
+					? ["this"]
+					: ["this"].concat(varString.split(", "));
+			return this.variableNames
+		}
+		else return ["----"];
+	},
+    setVariableName: function(n) {
+		this.variableValue = null;
+		if(this.variableNames) {
+			for (var i = 0; i < this.variableNames.length; i++) {
+				if (n == this.variableNames[i]) {
+					this.variableValue = (n == "this")
+								? this.thises[this.stackIndex]
+								: this.argses[this.stackIndex][i-1];
+					break;
+				}
+			}
+		}
+		this.changed("getVariableValue");
+    },
+    getVariableValue: function(n) {
+        return Object.inspect(this.variableValue);
+    },
 
-        this.panel = panel;
-
-        var m = panel.listPane;
-        m.connectModel({model: this, getList: "getFunctionList", setSelection: "setFunctionName"});
-        m = panel.codePane;
-        m.connectModel({model: this, getText: "getCodeValue", setText: "setCodeValue"});
-
-        return panel;
-    }
-
+	buildView: function(extent) { 
+		var panel;
+		if (! this.argses) {
+			panel = PanelMorph.makePanedPanel(extent, [
+				['stackPane', newListPane, new Rectangle(0, 0, 0.5, 1)],
+				['codePane', newTextPane, new Rectangle(0.5, 0, 0.5, 1)]
+			]);
+			panel.stackPane.connectModel({model: this, getList: "getFunctionList", setSelection: "setFunctionName"});
+			panel.codePane.connectModel({model: this, getText: "getCodeValue", setText: "setCodeValue"});
+		} else {
+			panel = PanelMorph.makePanedPanel(extent, [
+				['stackPane', newListPane, new Rectangle(0, 0, 0.5, 0.6)],
+				['codePane', newTextPane, new Rectangle(0.5, 0, 0.5, 0.6)],
+				['variablePane', newListPane, new Rectangle(0, 0.6, 0.5, 0.4)],
+				['valuePane', newTextPane, new Rectangle(0.5, 0.6, 0.5, 0.4)]
+			]);
+			panel.stackPane.connectModel({model: this, getList: "getFunctionList", setSelection: "setFunctionName"});
+			panel.codePane.connectModel({model: this, getText: "getCodeValue", setText: "setCodeValue"});
+			panel.variablePane.connectModel({model: this, getList: "getVariableList", setSelection: "setVariableName"});
+			panel.valuePane.connectModel({model: this, getText: "getVariableValue", setText: "setVariableValue"});
+		}
+		return panel;
+	}
 });
 
 // ===========================================================================

@@ -5506,8 +5506,9 @@ PasteUpMorph.subclass("WorldMorph", {
             ["TextMorph", function(evt) { world.addMorph(new TextMorph(evt.mousePoint.extent(pt(120, 10)), "This is a TextMorph"));}],
             ["Class Browser", function(evt) { new SimpleBrowser().openIn(world, evt.mousePoint); }],
             ["Object Hierarchy Browser", function(evt) { new ObjectBrowser().openIn(world, evt.mousePoint); }],    
-            ["Call Stack Viewer", function(evt) { new StackViewer(this).openIn(world, evt.mousePoint); }],    
-
+            ["Call Stack Viewer", function(evt) { 
+				if (Config.debugExtras) Function.showStack("use viewer");
+				else new StackViewer(this).openIn(world, evt.mousePoint); }],    
             ["Clock", function(evt) {
                 var m = world.addMorph(new ClockMorph(evt.mousePoint, 50));
                 m.startSteppingScripts(); }],
