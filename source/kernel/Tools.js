@@ -654,8 +654,7 @@ function showStatsViewer(profilee,title) {
         },
 
         installStackTracers: function(debugStack) {
-            // Adds stack tracing to methods of most "classes"
-            console.log("installing stack tracers");
+            console.log("Wrapping all methods with stackWrapper");
             var classNames = [];
 	    Class.withAllClassNames(Global, function(n) { n.startsWith('SVG') || classNames.push(n)});
             for (var ci= 0; ci < classNames.length; ci++) {
@@ -676,6 +675,30 @@ function showStatsViewer(profilee,title) {
                         theClass.prototype[mName] = originalMethod.stackWrapper(debugStack);
                     }
                 }
+            }
+        },
+        tallyLOC: function(debugStack) {
+            console.log("Tallying lines of code by decompilation");
+            var classNames = [];
+	    	Class.withAllClassNames(Global, function(n) { n.startsWith('SVG') || classNames.push(n)});
+            classNames.sort();
+			var tallies = "";
+			for (var ci= 0; ci < classNames.length; ci++) {
+                var cName = classNames[ci];
+                if (cName != 'Global' && cName != 'Object') {
+                    var theClass = Global[cName];
+                    var methodNames = theClass.localFunctionNames();
+                    var loc = 0;
+					for (var mi = 0; mi < methodNames.length; mi++) {
+                        var mName = methodNames[mi];
+                        var originalMethod = theClass.prototype[mName];
+						// decompile and count lines with more than one non-blank character
+						var lines = originalMethod.toString().split("\n");
+						lines.each( function(line) { if(line.replace(/\s/g, "").length>1) loc++ ; } );
+                    }
+                }
+			console.log(cName + " " + loc.toString());
+			//tallies += cName + " " + loc.toString() + "\n";
             }
         }
     });

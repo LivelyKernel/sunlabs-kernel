@@ -52,6 +52,9 @@ Object.extend(Config, {
 });
 
 // Name the methods for showStack
+if (Config.tallyLOC && Function.tallyLOC) Function.tallyLOC();  
+
+// Name the methods for showStack
 if (Config.debugExtras && Function.installStackTracers) Function.installStackTracers();  
 
 // Class browser visibility can be overridden with Config.browserAnyway
