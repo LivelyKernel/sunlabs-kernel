@@ -923,8 +923,8 @@ Morph.subclass("SelectionMorph", {
             if (selRect.width*selRect.height > 30) {
                 this.reshapeName = selRect.partNameNearest(Rectangle.corners, newPoint);
             }
-            this.setBounds(this.originalPoint.asRectangle())
-        } else { this.reshapeName = partName; }
+            this.setExtent(pt(0, 0)) // don't extend until we know what direction to grow
+        } else { }
 
         $super(this.reshapeName, newPoint, handle, lastCall);
         this.selectedMorphs = [];

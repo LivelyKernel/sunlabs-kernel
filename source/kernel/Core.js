@@ -5094,10 +5094,8 @@ var PasteUpMorph = Morph.subclass("PasteUpMorph", {
         this.world().addMorph(m);
         this.world().currentSelection = m;
         var handle = new HandleMorph(pt(0,0), "rect", evt.hand, m, "bottomRight");
+		handle.setExtent(pt(0, 0));
         m.addMorph(handle);
-        handle.setBounds(handle.bounds().center().asRectangle());
-        m.setBounds(evt.mousePoint.asRectangle()); // prevent handle from making bounds any larger
-        // if (evt.hand.mouseFocus instanceof HandleMorph) evt.hand.mouseFocus.remove(); // DI: necess?
         evt.hand.setMouseFocus(handle);
     }
     
