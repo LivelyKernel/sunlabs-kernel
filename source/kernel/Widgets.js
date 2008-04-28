@@ -984,6 +984,13 @@ Morph.subclass("SelectionMorph", {
             this.selectedMorphs.invoke('withAllSubmorphsDo', function() { this.setBorderColor(color)});
         }
     },
+    shapeRoundEdgesBy: function($super, r) { 
+        if (this.selectedMorphs.length == 0) {
+            $super(r);
+        } else {
+            this.selectedMorphs.invoke('withAllSubmorphsDo', function() { this.shapeRoundEdgesBy(r)});
+        }
+    },
     
     setFillOpacity: function($super, op) { 
         if (this.selectedMorphs.length == 0) {

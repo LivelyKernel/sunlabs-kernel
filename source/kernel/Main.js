@@ -230,7 +230,7 @@ function populateWorldWithExamples(world) {
         for (var i = 0; i < captions.length; i++) { // add boxed text
             var txt = new TextMorph(loc.extent(pt(300,50)), captions[i]);
 	    txt.applyStyle({fontSize: 20, fill: Color.hsb(70*i,0.7,0.8)});
-            loc = loc.addXY(0,33);
+            loc = loc.addXY(0,35);
             lm2.myWorld.addMorph(txt); 
         }
 

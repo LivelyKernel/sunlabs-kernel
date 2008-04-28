@@ -375,7 +375,7 @@ WidgetModel.subclass('StylePanel', {
     getBorderRadius: function() { return this.borderRadius; },
     
     setBorderRadius: function(r) {
-        this.targetMorph.shape.roundEdgesBy(this.borderRadius = r.roundTo(1));
+        this.targetMorph.shapeRoundEdgesBy(this.borderRadius = r.roundTo(1));
         this.changed('getBorderRadius');
     },
 

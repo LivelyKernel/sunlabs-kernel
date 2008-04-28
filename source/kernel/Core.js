@@ -3395,7 +3395,12 @@ Morph.addMethods({
 	return new Color(Importer.prototype, this.shape.getStroke());
     },
 
-    setBorderWidth: function(newWidth) { this.shape.setStrokeWidth(newWidth); },//.wrap(Morph.onChange('shape')),
+    setBorderWidth: function(newWidth) {
+		this.shape.setStrokeWidth(newWidth); 
+	},   //.wrap(Morph.onChange('shape')),
+    shapeRoundEdgesBy: function(r) {
+		this.shape.roundEdgesBy(r); 
+	},
 
     getBorderWidth: function() {
 	return this.shape.getStrokeWidth(); 
