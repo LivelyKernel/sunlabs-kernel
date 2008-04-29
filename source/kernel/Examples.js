@@ -5014,7 +5014,7 @@ Morph.subclass("PlayerMorph",  {
  * @class DungBeetleMorph
  */
 
-ClipMorph.subclass(scope, "DungBeetleMorph", {
+ClipMorph.subclass('DungBeetleMorph', {
 		
 	  /* static final url */
   	IMAGEURL: "http://www.cs.tut.fi/~delga/SunLabsLivelyKernel/DungBeetle/",

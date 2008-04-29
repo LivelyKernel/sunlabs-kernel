@@ -5,7 +5,7 @@
  */
 
 console.log("start phone.js");
-Morph.subclass(Global, "PhoneMorph", {
+Morph.subclass('PhoneMorph', {
 	initialize: function($super, position, radius) {
 		this.radius = radius;
 		$super(position.asRectangle().expandBy(radius), "ellipse");
@@ -185,7 +185,7 @@ console.log("end phone.js");
 // - should allow addMorph()
 
 console.log("start form.js");
-Morph.subclass(Global, "SimpleFormMorph", {
+Morph.subclass('SimpleFormMorph', {
 	initialize: function($super, position, submit, labels, button) {
 		$super(position, "rect");
 		this.makeLayout(position, submit, labels, button);

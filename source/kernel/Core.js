@@ -217,7 +217,6 @@ Namespace =  {
 
 };
 
-
 var Loader = {
 
     loadScript: function(ns, url) {
@@ -270,7 +269,6 @@ Loader.proxyURL = (function() {
     else
 	return Config.proxyURL;
 })();
-
 
 
 var NodeFactory = {
@@ -368,8 +366,6 @@ var Class = {
 	callback("Object");
 	callback("Global");
     }
-    
-
 };
 
 var Functions = {
@@ -527,10 +523,12 @@ Object.extend(Function.prototype, {
 	return this;
     },
 
-    // modified from prototype.js
+
     subclass: function(/*,... */) {
+	// Main method for LK class system.
+	// modified from prototype.js
+
 	var properties = $A(arguments);
-	var scope = (typeof properties[0] == 'string') ? Global : properties.shift(); // primitive string required
 	var name = properties.shift();
 	
 	function klass() {
@@ -556,8 +554,7 @@ Object.extend(Function.prototype, {
 	klass.prototype.constructor = klass;
 	// KP: .name would be better but js ignores .name on anonymous functions
 	klass.type = name;
-	klass.scope = scope;
-
+	
 	for (var i = 0; i < properties.length; i++) {
 	    klass.addMethods(properties[i] instanceof Function ? (properties[i])() : properties[i]);
 	}
@@ -566,7 +563,7 @@ Object.extend(Function.prototype, {
 	    klass.prototype.initialize = Functions.Empty;
 	}
 
-	scope[name] = klass;
+	Global[name] = klass;
 	return klass;
     },
 
@@ -1279,13 +1276,6 @@ Object.subclass('Wrapper', {
 	return null;
     },
 
-    getScope: function() {
-	var ctor = this.constructor.getOriginal();
-	if(ctor.scope) return ctor.scope;
-	console.log("no scope for " + this.constructor + " tried " + this.originalFunction);
-	return Global;
-    },
-
     deserialize: function(importer, rawNode) {
 	this.rawNode = rawNode;
     },
@@ -1295,8 +1285,7 @@ Object.subclass('Wrapper', {
     },
 
     copy: function(copier) {
-	var scope = this.getScope();
-	return new scope[this.getType()](copier || Copier.marker, this);
+	return new Global[this.getType()](copier || Copier.marker, this);
     },
 
     id: function() {
@@ -1434,7 +1423,7 @@ Object.extend(LinearGradient, {
   * @class RadialGradient (NOTE: PORTING-SENSITIVE CODE)
   */
 
-Gradient.subclass("RadialGradient", {
+Gradient.subclass('RadialGradient', {
 
     initialize: function($super, stopColor1, stopColor2) {
 	var c = pt(0.5, 0.5);
@@ -5064,11 +5053,10 @@ Model.subclass('SyntheticModel', {
 
 /**
  * @class PasteUpMorph
- * PasteUp morphs are used for layouts,
- * most notably for the world and, eg, palettes
  */ 
+Morph.subclass("PasteUpMorph", {
 
-var PasteUpMorph = Morph.subclass("PasteUpMorph", {
+    documentation: "used for layout, most notably the world and, e.g., palettes",
 
     initialize: function($super, bounds, shapeType) {
         return $super(bounds, shapeType);
@@ -5999,7 +5987,6 @@ Morph.subclass("HandMorph", {
 	}
 	
     },
-    
 
     bounds: function($super) {
         // account for the extra extent of the drop shadow
@@ -6034,9 +6021,8 @@ Morph.subclass("HandMorph", {
 
 
 /**
- * @class LinkMorph: A two-way hyperlink between two Lively worlds
+ * @class LinkMorph
  */ 
-
 Morph.subclass('LinkMorph', {
 
     documentation: "two-way hyperlink between two Lively worlds",

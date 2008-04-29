@@ -19,7 +19,7 @@ console.log("Hello");
  */
 
 console.log("start gridlayout.js");
-Morph.subclass(Global, "GridLayoutMorph", {
+Morph.subclass('GridLayoutMorph', {
 
 	initialize: function($super, position) {
 		console.log("GridLayout started");

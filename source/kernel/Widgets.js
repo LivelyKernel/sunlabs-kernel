@@ -446,7 +446,7 @@ Morph.subclass("TitleBarMorph", {
 /**
  * @class TitleTabMorph
  */
-var TitleTabMorph = Morph.subclass("TitleTabMorph", {
+Morph.subclass("TitleTabMorph", {
 
     barHeight: 0,
     controlSpacing: 0,
@@ -1360,6 +1360,15 @@ TextMorph.subclass("CheapListMorph", {
 
 Morph.addMethods({
 
+    submorphBounds: function() {
+	var r = pt(0, 0).extent(pt(0, 0));
+	for (var i = 0; i < this.submorphs.length; i++) {
+	    var morph = this.submorphs[i];
+	    r = r.union(morph.bounds());
+	}
+	return r;
+    },
+	
     leftAlignSubmorphs: function(inset) { // assume the size of the 
         var padLeft = inset.x;
         var padRight = inset.x;
@@ -1385,6 +1394,7 @@ Morph.addMethods({
             this.internalSetBounds(this.getPosition().extent(ownExtent));
         }
     }
+    
 });
 
 
@@ -1428,15 +1438,16 @@ Morph.subclass("TextListMorph", {
         this.setModelValue('setList', this.itemList);
         this.layoutChanged();
     },
-
+    
     handlesMouseDown: Functions.True,
-
+    
     generateSubmorphs: function(itemList, width) {
-        var rect = pt(width, TextMorph.prototype.fontSize).extentAsRectangle().insetByPt(pt(this.itemMargin, 0));
-        for (var i = 0; i < itemList.length; i++)  {
-            var m = this.addMorph(new TextMorph(rect, itemList[i])).beListItem();
-            m.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove"});
-        }
+	var rect = pt(width, TextMorph.prototype.fontSize).extentAsRectangle().insetByPt(pt(this.itemMargin, 0));
+	for (var i = 0; i < itemList.length; i++)  {
+	    var m = this.addMorph(new TextMorph(rect, itemList[i])).beListItem();
+	    //m.setWrapStyle(WrapStyle.Shrink);
+	    m.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove"});
+	}
     },
     
     alignAll: function() {
@@ -1453,15 +1464,12 @@ Morph.subclass("TextListMorph", {
         this.hasKeyboardFocus = newSetting;
         return newSetting;
     },
-
+    
     onMouseDown: function(evt) {
-        // var ms = new Date().getMilliseconds();
-        var target = this.morphToReceiveEvent(evt);
-       // var ms2 = new Date().getMilliseconds();
-       var index = this.submorphs.indexOf(target);
-       this.highlightItem(evt, index, true);
-       evt.hand.setMouseFocus(this); // to get moves
-       // console.log("%s got evt %s target %s ticks %s, %s", this.getType(), evt, target, new Date().getMilliseconds() - ms2, ms2 - ms);
+	var target = this.morphToReceiveEvent(evt);
+	var index = this.submorphs.indexOf(target);
+	this.highlightItem(evt, index, true);
+	evt.hand.setMouseFocus(this); // to get moves
     },
     
     onMouseMove: function(evt) {
@@ -1640,7 +1648,7 @@ Morph.subclass("TextListMorph", {
         if (!sp) return;
         sp.scrollRectIntoView(item.bounds()); 
     },
-
+    
     resetScrollPane: function(toBottom) { 
         // Need a cleaner way to do this ;-)
         var sp = this.enclosingScrollPane();
