@@ -1018,7 +1018,7 @@ Rectangle.addMethods({
     },
 
     withPartNamed: function(partName,newValue) {
-	return this[this.setterName(partName)].call(this,newValue); 
+	return this[this.setterName(partName)].call(this, newValue); 
     },
 
     setterName: function(partName) {
@@ -4921,64 +4921,74 @@ Wrapper.subclass('ModelPlug', {
 });
 
 
-/**
-  * @class SyntheticModel
-  */ 
-
 Model.subclass('SyntheticModel', {
+    documentation: "A stereotyped model synthesized from a list of model variables",
 
-    getter: function(varName) {
+    initialize: function($super, vars) {
+	$super(null);
+	if (!vars) 
+	    return;
+	for (var i = 0; i < vars.length; i++) {
+	    var v = vars[i];
+	    if (v.startsWith('-') || v.startsWith('+')) 
+		v = v.slice(1);
+	    this.addVariable(v, null);
+	}
+    },
+
+    makeGetter: function(name) {
+	// functional programming is fun!
+	
+	return function() { 
+	    return this[name]; 
+	};
+    },
+
+    makeSetter: function(name) {
+	return function(newValue, v) { 
+	    this[name] = newValue; 
+	    this.changed(this.getterName(name), v); 
+	};
+    },
+
+    addVariable: function(varName, initialValue) {
+	this[varName] = initialValue;
+	this[this.getterName(varName)] = this.makeGetter(varName);
+	this[this.setterName(varName)] = this.makeSetter(varName);
+    },
+
+    getterName: function(varName) {
 	return "get" + varName;
     },
 
     get: function(varName) {
-	var method = this[this.getter(varName)];
-	if (!method) throw new Error(this.getter(varName) + " not present ");
+	var method = this[this.getterName(varName)];
+	if (!method) throw new Error(this.getterName(varName) + " not present ");
 	return method.call(this, varName);
     },
 
-    setter: function(varName) {
+    setterName: function(varName) {
 	return "set" + varName;
     },
 
     set: function(varName, value) {
-	var method = this[this.setter(varName)]
-	if (!method) throw new Error(this.setter(varName) + " not present");
+	var method = this[this.setterName(varName)]
+	if (!method) throw new Error(this.setterName(varName) + " not present");
 	return method.call(this, varName, value);
     },
 
-    initialize: function($super, vars) {
-	$super(null);
-	if (vars) {
-	    for (var i = 0; i < vars.length; i++) {
-		var v = vars[i];
-		if (v.startsWith('-') || v.startsWith('+')) 
-		    v = v.slice(1);
-		this.addVariable(v, null);
-	    }
-	}
-    },
-
-    addVariable: function(varName, initialValue) {
-	// functional programming is fun!
-	this[varName] = initialValue;
-	this[this.getter(varName)] = function(name) { return function() { return this[name]; } } (varName); // let name = varName ()
-	this[this.setter(varName)] = function(name) { return function(newValue, v) { this[name] = newValue; 
-										     this.changed(this.getter(name), v); }} (varName);
-    },
-
-    makePlugSpecFromPins: function(pins) {
+    makePlugSpecFromPins: function(pinList) {
 	var spec = { model: this};
-	pins.forEach(function(decl) {
+	pinList.forEach(function(decl) {
 	    if (!decl.startsWith('-')) { // not read-only
 		var stripped = decl.startsWith('+') ? decl.slice(1) : decl;
-		spec['set' + stripped] = 'set' + stripped;
+		spec[this.setterName(stripped)] = this.setterName(stripped);
 	    }
 	    if (!decl.startsWith('+')) { // not write-only
 		var stripped = decl.startsWith('-') ? decl.slice(1) : decl;
-		spec['get' + stripped] = 'get' + stripped;
+		spec[this.getterName(stripped)] = this.getterName(stripped);
 	    }
-	});
+	}, this);
 	return spec;
     },
 
@@ -4986,8 +4996,10 @@ Model.subclass('SyntheticModel', {
 	var model = this;
 	var spec = {model: this};
 	this.variables().forEach(function(v) { 
-	    spec[this.getter(v)] = model[this.getter(v)]; 
-	    spec[this.setter(v)] = model[this.setter(v)]; 
+	    var name = this.getterName(v);
+	    spec[name] = model[name];
+	    name = this.setterName(v);
+	    spec[name] = model[name]; 
 	}, this);
 	return spec;
     },
