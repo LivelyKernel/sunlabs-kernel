@@ -105,7 +105,7 @@ Widget.subclass('SimpleBrowser', {
         m.connectModel({model: model, getList: "getMethodList", setSelection: "setMethodName"});
         m = panel.bottomPane;
         m.innerMorph().textSelection.borderRadius = 0;
-        m.connectModel({model: model, getText: "getMethodString", setText: "setMethodString"});
+        m.connectModel({model: model, getText: "getMethodString", setText: "setMethodString", getMenu: "default"});
         return panel;
     },
 

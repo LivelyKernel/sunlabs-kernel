@@ -2272,9 +2272,17 @@ Morph.subclass("ScrollPane", {
 
     menuButtonPressed: function(evt, button) {
         evt.hand.setMouseFocus(null);
-        var items = this.innerMorph().getModelValue("getMenu");
-        if (!items || items.length <= 0) return;
-        var menu = new MenuMorph(items, this);
+        var editItems = this.innerMorph().editMenuItems();
+	var items = this.innerMorph().getModelValue("getMenu") || [];
+        if (editItems.length == 0 && items.length == 0) return;
+        var menu;
+	if (editItems.length > 0 && items.length > 0) {
+        	var menu = new MenuMorph(editItems, this);
+		menu.addLine();
+		items.each(function(item) {menu.addItems(item); });
+	} else {
+		var menu = new MenuMorph(editItems.concat(items), this);
+	}
         menu.openIn(this.world(), evt.mousePoint, false); 
     },
 
@@ -2576,6 +2584,11 @@ View.subclass('Widget', { // FIXME remove code duplication
 
     initialViewExtent: function(world, hint) {
         return hint || this.defaultViewExtent;
+    },
+    
+    viewMenu: function(items) {
+	// Default function passes through all view items if not overridden by a given application
+        return items;
     },
     
     openIn: function(world, loc) {

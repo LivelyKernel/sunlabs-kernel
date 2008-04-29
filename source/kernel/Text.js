@@ -1747,6 +1747,25 @@ Morph.subclass("TextMorph", {
 	}
     },
     
+    editMenuItems: function() {
+	return [
+		["cut (x)", this.doCut.bind(this)],
+		["copy (c)", this.doCopy.bind(this)],
+		["paste (v)", this.doPaste.bind(this)]
+		]
+	},
+
+    doCut: function() {
+	TextMorph.clipboardString = this.getSelectionString(); 
+        this.replaceSelectionWith("");
+        },
+    doCopy: function() {
+	TextMorph.clipboardString = this.getSelectionString(); 
+        },
+    doPaste: function() {
+        if (TextMorph.clipboardString) this.replaceSelectionfromKeyboard(TextMorph.clipboardString); 
+        },
+
     processCommandKeys: function(evt) {  //: Boolean (was the command processed?)
 	var key = evt.getKeyChar();
         // console.log('command ' + key);
