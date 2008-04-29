@@ -1234,7 +1234,7 @@ TextMorph.subclass("CheapListMorph", {
             evt.stop();
             return true;
         }
-	    }
+        }
 
     },
 
@@ -2761,7 +2761,7 @@ Widget.subclass('ConsoleWidget', {
             var index = window.console.consumers.indexOf(self);
             if (index >= 0) {
                 window.console.consumers.splice(index);
-		    }
+            }
         };
 
         m = panel.commandLine.beInputLine(100);

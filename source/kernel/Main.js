@@ -93,8 +93,8 @@ function populateWorldWithExamples(world) {
         // maybe the icons should have a rectangle shaped images (unlike here)
         // var icon = new ImageMorph(new Rectangle(30, 330, 80, 50), "http://logos.sun.com/images/SunSample.gif");
         var icon = new ImageMorph(new Rectangle(60, 580, 100, 45), "#SunLogo");
-	icon.image.scaleBy(0.15);
-	icon.setFill(null); // no background
+        icon.image.scaleBy(0.15);
+        icon.setFill(null); // no background
         icon.toggleFisheye();    
         world.addMorph(icon);
     }
@@ -116,7 +116,7 @@ function populateWorldWithExamples(world) {
     if (Config.showTester) new TestWidget().openIn(world, pt(835, 450));
 
     if (Config.showLivelyConsole  && window.console.consumers) {
-	new ConsoleWidget(50).openIn(world, pt(0, world.viewport().height - 210));
+        new ConsoleWidget(50).openIn(world, pt(0, world.viewport().height - 210));
     }
 
     if (Config.showInnerWorld) {
@@ -198,9 +198,9 @@ function populateWorldWithExamples(world) {
             
             lm1.myWorld.addMorphBack(new WindowMorph(new ImageMorph(new Rectangle(50, 10, width, height), url), 'Tampere'));
         }
-	
+
         if (Config.showDoodle) lm1.myWorld.addFramedMorph(new DoodleMorph(pt(300, 300)), 'Doodle Morph', pt(560, 380));
-	
+
         if (Config.showSquiggle) lm1.myWorld.addFramedMorph(new SquiggleMorph(pt(300, 300)), 'Squiggle Morph', pt(560, 380));
         
         if (Config.showVideo) { lm1.myWorld.addFramedMorph(new PlayerMorph(), "Player", pt(50, 20)); }
@@ -229,7 +229,7 @@ function populateWorldWithExamples(world) {
     
         for (var i = 0; i < captions.length; i++) { // add boxed text
             var txt = new TextMorph(loc.extent(pt(300,50)), captions[i]);
-	    txt.applyStyle({fontSize: 20, fill: Color.hsb(70*i,0.7,0.8)});
+            txt.applyStyle({fontSize: 20, fill: Color.hsb(70*i,0.7,0.8)});
             loc = loc.addXY(0,35);
             lm2.myWorld.addMorph(txt); 
         }
@@ -249,7 +249,7 @@ function populateWorldWithExamples(world) {
                 }
                 return vertices; 
             }
-	    
+    
             widget = Morph.makePolygon(makeStarVertices(50,pt(0,0),0), 1, Color.black, Color.yellow);
             widget.setPosition(pt(125, 275));
             lm2.myWorld.addMorph(widget);
@@ -292,7 +292,7 @@ function populateWorldWithExamples(world) {
             if (Config.showTextSamples) {
                 widget = new TextMorph(loc.extent(pt(100,50)),"Big Text"); // big text
                 lm2.myWorld.addMorph(widget.applyStyle({fontSize: 20, textColor: Color.blue}));
-		
+
                 widget = new TextMorph(loc.addPt(dx).extent(pt(140,50)),"Unbordered"); // unbordered text
                 lm2.myWorld.addMorph(widget.applyStyle({fontSize: 20, borderWidth: 0, fill: null})); 
             }
@@ -306,31 +306,31 @@ function populateWorldWithExamples(world) {
 
         var developerTextMorph = 
             new TextMorph(new Rectangle(90, 500, 100, 25), "Development Tools");
-
         developerTextMorph.shape.roundEdgesBy(10);
         world.addMorph(developerTextMorph);
 
         if (Config.showBrowser) new SimpleBrowser().openIn(devWorld.myWorld, pt(20, 20));
 
-	// DI: The ObjectBrowser takes a long time to start due to its long list
-	// ... so don't show it when skipping most examples -- can always open from world menu
+        // DI: The ObjectBrowser takes a long time to start due to its long list
+        // ... so don't show it when skipping most examples -- can always open from world menu
         if (!Config.skipMostExamples) new ObjectBrowser().openIn(devWorld.myWorld, pt(50, 100));
 
         // Sample executable script pane
         if (Config.showPenScript) {
-             if (Config.showTestText) widget = new TestTextMorph(pt(50,30).extent(pt(250,50)), Pen.script);
+            if (Config.showTestText) widget = new TestTextMorph(pt(50,30).extent(pt(250,50)), Pen.script);
             else widget = new TextMorph(pt(50,30).extent(pt(250,50)), Pen.script);
             widget.align(widget.bounds().bottomRight(), world.bounds().topRight().addPt(pt(-150,100))); 
             devWorld.myWorld.addMorph(widget);
         }
-		if (Config.showRichText) {
-			var txt = new Text("But wait, there's more ...");
-			txt.emphasize( {style: 'bold'}, 4, 7);
-			txt.emphasize( {size: 18, style: 'bold'}, 18, 21);
-			console.log(txt.style);
-			widget = new TextMorph(widget.bounds().topLeft().addXY(-280, 0).extent(pt(250, 50)), txt);
+ 
+        if (Config.showRichText) {
+            var txt = new Text("But wait, there's more ...");
+            txt.emphasize( {style: 'bold'}, 4, 7);
+            txt.emphasize( {size: 18, style: 'bold'}, 18, 21);
+            console.log(txt.style);
+            widget = new TextMorph(widget.bounds().topLeft().addXY(-280, 0).extent(pt(250, 50)), txt);
             devWorld.myWorld.addMorph(widget);
-		}
+        }
 
         if (Config.showHilbertFun) Pen.hilbertFun(devWorld.myWorld, widget.bounds().bottomLeft().addXY(180,80));
 
@@ -338,53 +338,55 @@ function populateWorldWithExamples(world) {
             var store = new FileBrowser();
             store.openIn(Config.webStoreInMain ? WorldMorph.current() : devWorld.myWorld, pt(460, 120));
         }
-	if (Config.showDOMBrowser) {
+
+        if (Config.showDOMBrowser) {
             var browser = new DOMBrowser();
-	    console.log('showing DOMBrowser!');
+            console.log('showing DOMBrowser!');
             browser.openIn(Config.webStoreInMain ? WorldMorph.current() : devWorld.myWorld, pt(260, 120));
+        }
 
-	}
-	if (Config.showTwoPaneObjectBrowser) {
+        if (Config.showTwoPaneObjectBrowser) {
             var browser = new TwoPaneObjectBrowser();
-	    console.log('showing TwoPaneBrowser!');
+            console.log('showing TwoPaneBrowser!');
             browser.openIn(Config.webStoreInMain ? WorldMorph.current() : devWorld.myWorld, pt(160, 150));
-	}
-
+        }
 
     }
 
     if (Config.showPhoneWorld) {
-	var phoneWorld = new LinkMorph(null, pt(60, 320));
-	world.addMorph(phoneWorld);
-	var widgetTextMorph = 
-	    new TextMorph(new Rectangle(90, 300, 100, 25), "Telephone Demo");
-	widgetTextMorph.shape.roundEdgesBy(10);
-		world.addMorph(widgetTextMorph);
-	phoneWorld.myWorld.onEnter = function() {
-	    if (!phoneWorld.myWorld.phoneMorph) {
-		phoneWorld.myWorld.phoneMorph = phoneDemo(phoneWorld.myWorld, pt(250,180), 150);
-	    }
-	}
+        var phoneWorld = new LinkMorph(null, pt(60, 320));
+        world.addMorph(phoneWorld);
+        var widgetTextMorph = 
+            new TextMorph(new Rectangle(90, 300, 100, 25), "Telephone Demo");
+        widgetTextMorph.shape.roundEdgesBy(10);
+        world.addMorph(widgetTextMorph);
+        phoneWorld.myWorld.onEnter = function() {
+            if (!phoneWorld.myWorld.phoneMorph) {
+                phoneWorld.myWorld.phoneMorph = phoneDemo(phoneWorld.myWorld, pt(250,180), 150);
+            }
+        }
     }
 
     if (Config.showXenoMorph) {
         XenoMorph.prototype.test(); //"http://livelykernel.sunlabs.com/index.html");//"http://www.opera.com");
     }
+
     return world;
 }
 
 function main() {
     var world = null;
+
     var container = Loader.shrinkWrapContainer();
     if (container) {
         console.log("found container");
         var importer = new Importer();
-	world = importer.importWorldFromContainer(container);
-	WorldMorph.setCurrent(world);
+        world = importer.importWorldFromContainer(container);
+        WorldMorph.setCurrent(world);
     } else {
         // Create an empty world
         world = new WorldMorph(Canvas);
-	WorldMorph.setCurrent(world);
+        WorldMorph.setCurrent(world);
         console.log("created empty world");
     }
     world.displayWorldOn(Canvas);
@@ -393,7 +395,6 @@ function main() {
     if (container || Config.skipAllExamples) return; // don't populate if we loaded up stuff from a container
     else populateWorldWithExamples(world);
 
-    
 }
 
 // the delay here is a workaround to give FF 2.0 the time to update
@@ -403,5 +404,4 @@ function main() {
 main.logCompletion("main").delay(0.05);
 
 }.logCompletion("Main.js"))();
-
 
