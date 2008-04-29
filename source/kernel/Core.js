@@ -4505,18 +4505,18 @@ Morph.addMethods({
 
 	var subBounds = null; // KP: added = null
 	if (this.hasSubmorphs()) { 
-		if (ignoreTransients) {
-			this.submorphs.forEach(function(m) { 
-				if (! m.transientBounds)
-					subBounds = subBounds == null ? m.bounds(ignoreTransients) :
-							subBounds.union(m.bounds(ignoreTransients));
-			});
-		} else {
-			this.submorphs.forEach(function(m) { 
-				subBounds = subBounds == null ? m.bounds() :
-						subBounds.union(m.bounds());
-			});
-		}
+	    if (ignoreTransients) {
+		this.submorphs.forEach(function(m) { 
+		    if (! m.transientBounds)
+			subBounds = subBounds == null ? m.bounds(ignoreTransients) :
+			subBounds.union(m.bounds(ignoreTransients));
+		});
+	    } else {
+		this.submorphs.forEach(function(m) { 
+		    subBounds = subBounds == null ? m.bounds() :
+			subBounds.union(m.bounds());
+		});
+	    }
 	} 
 	if (subBounds != null) {
 	    // could be simpler when no rotation...
