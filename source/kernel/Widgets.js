@@ -1451,7 +1451,7 @@ Morph.subclass("TextListMorph", {
     },
     
     alignAll: function() {
-        this.leftAlignSubmorphs(pt(this.itemMargin*2, this.itemMargin));
+        this.leftAlignSubmorphs(pt(this.itemMargin, this.itemMargin));
     },
 
     defaultOrigin: function(bounds) { 
