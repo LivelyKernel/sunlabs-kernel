@@ -21,7 +21,6 @@
 //  See the comments in Model, and the Model protocol in Morph (getModelValue(), etc)
 //  The Inspector and Browser are fairly simple examples of this architecture in use.
 
-
 // ===========================================================================
 // Simple widgets
 // ===========================================================================
@@ -43,16 +42,16 @@ Morph.subclass("ButtonMorph", {
     // A ButtonMorph is the simplest widget
     // It read and writes the boolean variable, this.model[this.propertyName]
     initialize: function($super, initialBounds) {
-	this.baseFill = null; 
-	
+        this.baseFill = null; 
+
         $super(initialBounds, "rect");
         
         var model = new SyntheticModel(this.pins);
         // this default self connection may get overwritten by, eg, connectModel()...
         this.modelPlug = new ModelPlug(model.makePlugSpec());
         // Styling
-        this.setValue(false);	
-	this.linkToStyles(['button']);
+        this.setValue(false);
+        this.linkToStyles(['button']);
         this.changeAppearanceFor(false);
         this.setToggle(false); // if true each push toggles the model state 
         return this;
@@ -60,15 +59,15 @@ Morph.subclass("ButtonMorph", {
 
     restorePersistentState: function($super, importer) {
         $super(importer);
-	this.baseFill = this.fill;
+        this.baseFill = this.fill;
         this.changeAppearanceFor(this.getModelValue('getValue', false));
     },
 
     getBaseColor: function() {
-	if (this.fill instanceof Color) return this.fill;
-	else if (this.fill instanceof LinearGradient) return this.fill.stopColor(0);
-	else if (this.fill instanceof RadialGradient) return this.fill.stopColor(1);
-	else throw new Error('cannot handle fill ' + this.fill);
+        if (this.fill instanceof Color) return this.fill;
+        else if (this.fill instanceof LinearGradient) return this.fill.stopColor(0);
+        else if (this.fill instanceof RadialGradient) return this.fill.stopColor(1);
+        else throw new Error('cannot handle fill ' + this.fill);
     },
 
     // KP: FIXME general way of declaring properties mapping to attributes
@@ -101,21 +100,21 @@ Morph.subclass("ButtonMorph", {
     },
     
     changeAppearanceFor: function(value) {
-	var delta = value ? 1 : 0;
-	if (this.baseFill instanceof LinearGradient) {
-	    var base = this.baseFill.stopColor(0).lighter(delta);
+        var delta = value ? 1 : 0;
+        if (this.baseFill instanceof LinearGradient) {
+            var base = this.baseFill.stopColor(0).lighter(delta);
             this.setFill(new LinearGradient(base, base.lighter(), LinearGradient.SouthNorth));
-	} else if (this.baseFill instanceof RadialGradient) {
-	    var base = this.baseFill.stopColor(0).lighter(delta);
+        } else if (this.baseFill instanceof RadialGradient) {
+            var base = this.baseFill.stopColor(0).lighter(delta);
             this.setFill(new RadialGradient(base.lighter(), base));
-	} else if (this.baseFill instanceof Color) {
+        } else if (this.baseFill instanceof Color) {
             this.setFill(this.baseFill.lighter(delta)); 
         } else throw new Error('unsupported fill type ' + this.baseFill);
     },
     
     applyStyle: function($super, spec) {
         $super(spec);
-	this.baseFill = this.fill; // we may change appearance depending on the value
+        this.baseFill = this.fill; // we may change appearance depending on the value
         this.changeAppearanceFor(this.getValue());
     },
 
@@ -138,7 +137,6 @@ Morph.subclass("ButtonMorph", {
     takesKeyboardFocus: Functions.True,          // unlike, eg, cheapMenus
     
     setHasKeyboardFocus: Functions.K, 
-
 
     onKeyDown: function(evt) {
         switch (evt.getKeyCode()) {
@@ -165,12 +163,12 @@ Morph.subclass("ButtonMorph", {
     },
 
     setLabel: function(txt) {
-	this.label && this.label.remove();
-	// FIXME remove random values
-	var l = this.label = new TextMorph(new Rectangle(0, 0, 50, 20), txt).beLabel();
-	l.align(l.bounds().center(), this.innerBounds().center());
-	this.addMorph(l);
-	return this;
+        this.label && this.label.remove();
+        // FIXME remove random values
+        var l = this.label = new TextMorph(new Rectangle(0, 0, 50, 20), txt).beLabel();
+        l.align(l.bounds().center(), this.innerBounds().center());
+        this.addMorph(l);
+        return this;
     }
 
 });
@@ -187,39 +185,40 @@ Morph.subclass("ImageMorph", {
     
     initialize: function($super, viewPort, url) {
         $super(viewPort, "rect");
-	this.image = new Image(url, viewPort.width, viewPort.height);
-	if (url) this.addNonMorph(this.image.rawNode); // otherwise we didn't make a rawNode
+        this.image = new Image(url, viewPort.width, viewPort.height);
+        if (url) this.addNonMorph(this.image.rawNode); // otherwise we didn't make a rawNode
     },
 
     // FIXME:
     restoreFromSubnode: function($super, importer, node) /*:Boolean*/ {
         if ($super(importer, node)) return true;
-	switch (node.localName) {
+
+        switch (node.localName) {
         case "image":
-	case "use":
-	    this.image = new Image(importer, node);
-	    return true;
+        case "use":
+           this.image = new Image(importer, node);
+           return true;
         default:
-	    console.log("got unhandled node " + node.localName + ", " + node.namespaceURI + " node " + node);
+            console.log("got unhandled node " + node.localName + ", " + node.namespaceURI + " node " + node);
             return false;
         }
     },
     
 
     loadGraphics: function(localURL) {
-	this.setFill(null);
-	var node = this.image.loadUse(localURL);
-	node && this.addNonMorph(node);
+        this.setFill(null);
+        var node = this.image.loadUse(localURL);
+        node && this.addNonMorph(node);
     },
 
     loadFromURL: function(url) {
-	this.setFill(ImageMorph.prototype.fill);
-	var node = this.image.loadImage(url.toString());
-	node && this.addNonMorph(node);
+        this.setFill(ImageMorph.prototype.fill);
+        var node = this.image.loadImage(url.toString());
+        node && this.addNonMorph(node);
     },
 
     reload: function() {
-	this.image.reload();
+        this.image.reload();
     },
     
     updateView: function(aspect, controller) {
@@ -339,8 +338,8 @@ Morph.subclass("ClipMorph", {
     },
 
     innerMorph: function() {
-	this.submorphs.length != 1 && console.log("not a single inner morph");
-	return this.submorphs.first();
+        this.submorphs.length != 1 && console.log("not a single inner morph");
+        return this.submorphs.first();
     }
     
 });
@@ -377,7 +376,7 @@ Morph.subclass("TitleBarMorph", {
         this.menuButton = this.addMorph(menuButton);
 
         var collapseButton = new WindowControlMorph(cell, this.controlSpacing, Color.primary.yellow, windowMorph, 
-	    "toggleCollapse", "Collapse");
+            "toggleCollapse", "Collapse");
         this.collapseButton = this.addMorph(collapseButton);
 
         var label;
@@ -398,10 +397,10 @@ Morph.subclass("TitleBarMorph", {
     deserialize: function($super, importer, rawNode) {
         $super(importer, rawNode);
         if (LivelyNS.getType(this.rawNode.parentNode) == "WindowMorph") {
-	    console.log("patching up to " + this.windowMorph);
+            console.log("patching up to " + this.windowMorph);
             this.closeButton.action.actor    = this.windowMorph;
-	    this.menuButton.action.actor     = this.windowMorph;
-	    this.collapseButton.action.actor = this.windowMorph;
+            this.menuButton.action.actor     = this.windowMorph;
+            this.collapseButton.action.actor = this.windowMorph;
         }
         this.ignoreEvents();
         this.label.ignoreEvents();
@@ -442,7 +441,6 @@ Morph.subclass("TitleBarMorph", {
 
     okToDuplicate: Functions.False
 
-
 });
 
 /**
@@ -457,7 +455,7 @@ var TitleTabMorph = Morph.subclass("TitleTabMorph", {
     
     initialize: function($super, headline, windowWidth, windowMorph) {
         $super(new Rectangle(0, 0, windowWidth, this.barHeight), "rect");
-	this.windowMorph = windowMorph;
+        this.windowMorph = windowMorph;
         this.linkToStyles(['titleBar']);
         this.ignoreEvents();
 
@@ -505,9 +503,9 @@ Morph.subclass("WindowControlMorph", {
         $super(rect.insetBy(inset), 'ellipse');
         this.setFill(new RadialGradient(color.lighter(2), color));
         this.targetMorph = targetMorph;
-	// FIXME should be a superclass(?) of SchedulableAction
+        // FIXME should be a superclass(?) of SchedulableAction
         this.action = new SchedulableAction(targetMorph, actionScript, null, 0);
-	this.addNonMorph(this.action.rawNode);
+        this.addNonMorph(this.action.rawNode);
         this.helpText = helpText; // string to be displayed when mouse is brought over the icon
         return this;
     },
@@ -520,20 +518,20 @@ Morph.subclass("WindowControlMorph", {
             console.warn("%s has no action?", this);
             return;
         }
-	this.action.argIfAny = evt;
+        this.action.argIfAny = evt;
         return this.action.exec();
     },
 
     onMouseOver: function($super, evt) {
-	var prevColor = this.fill.stopColor(1);
+        var prevColor = this.fill.stopColor(1);
         this.setFill(new RadialGradient(Color.white, prevColor));
-	$super(evt);
+        $super(evt);
     },
     
     onMouseOut: function($super, evt) {
-	var prevColor = this.fill.stopColor(1);
+        var prevColor = this.fill.stopColor(1);
         this.setFill(new RadialGradient(prevColor.lighter(2), prevColor));
-	$super(evt);
+        $super(evt);
     },
     
     checkForControlPointNear: Functions.False,
@@ -541,12 +539,12 @@ Morph.subclass("WindowControlMorph", {
     okToBeGrabbedBy: Functions.Null,
     
     getHelpText: function() {
-	return this.helpText;
+        return this.helpText;
     },
 
     // note that we override a method that normally adds ticking scripts
     addActiveScript: function(action) {
-	this.action = action;
+        this.action = action;
     }
  
 });
@@ -695,7 +693,7 @@ Morph.subclass('WindowMorph', {
 
     takeHighlight: function() {
         // I've been clicked on.  unhighlight old top, and highlight me
-	var oldTop = WorldMorph.current().topWindow();
+        var oldTop = WorldMorph.current().topWindow();
         if (oldTop) oldTop.titleBar.highlight(false);
         this.titleBar.highlight(true);
     },
@@ -749,7 +747,7 @@ WindowMorph.subclass("TabbedPanelMorph", {
         // click their tab and they retreat to the edge of the screen like a file folder.
         this.sideName = sideName ? sideName : "south";
         $super(targetMorph, headline, location);
-	this.applyStyle({fill: null, borderColor: null});
+        this.applyStyle({fill: null, borderColor: null});
         this.newToTheWorld = true;
         this.setPositions();
         this.moveBy(this.expandedPosition.subPt(this.position()));
@@ -805,20 +803,21 @@ Morph.subclass('HandleMorph', {
         this.partName = partName; // may be a name like "topRight" or a vertex index
         this.initialScale = null;
         this.initialRotation = null; 
-	this.transientBounds = true;
+        this.transientBounds = true;
         return this;
     },
     
     getHelpText: function() {
-	return (this.shape instanceof RectShape) ? this.controlHelpText : this.circleHelpText;
+        return (this.shape instanceof RectShape) ? this.controlHelpText : this.circleHelpText;
     },
     
     showHelp: function($super, evt) {
-	if (this.helpCount > this.maxHelpCount) return false;
-	var wasShown = $super(evt);
-	if (wasShown) 
-	    HandleMorph.prototype.helpCount ++;
-	return wasShown;
+        if (this.helpCount > this.maxHelpCount) return false;
+        var wasShown = $super(evt);
+        if (wasShown) {
+            HandleMorph.prototype.helpCount++;
+        }
+        return wasShown;
     },
 
     okToDuplicate: Functions.False,
@@ -895,9 +894,9 @@ Morph.subclass('HandleMorph', {
 });
 
 Morph.subclass("SelectionMorph", {
-	// @class SelectionMorph: The selection "tray" object that
-	// allows multiple objects to be moved and otherwise manipulated
-	// simultaneously. 
+    // @class SelectionMorph: The selection "tray" object that
+    // allows multiple objects to be moved and otherwise manipulated
+    // simultaneously. 
     
     borderWidth: 1,
     borderColor: Color.blue,
@@ -924,10 +923,10 @@ Morph.subclass("SelectionMorph", {
                 this.reshapeName = selRect.partNameNearest(Rectangle.corners, newPoint);
             }
             this.setExtent(pt(0, 0)) // dont extend until we know what direction to grow
-        	$super(this.reshapeName, newPoint, handle, lastCall);
+            $super(this.reshapeName, newPoint, handle, lastCall);
         } else {
-        	$super(partName, newPoint, handle, lastCall);
-		}
+            $super(partName, newPoint, handle, lastCall);
+        }
         this.selectedMorphs = [];
         this.owner.submorphs.forEach(function(m) {
             if (m !== this && this.bounds().containsRect(m.bounds())) this.selectedMorphs.push(m);
@@ -966,7 +965,7 @@ Morph.subclass("SelectionMorph", {
         if (this.selectedMorphs.length == 0) {
             $super(width);
         } else { 
-	    this.selectedMorphs.invoke('withAllSubmorphsDo', function() { this.setBorderWidth(width)});
+            this.selectedMorphs.invoke('withAllSubmorphsDo', function() { this.setBorderWidth(width)});
         }
     },
     
@@ -974,7 +973,7 @@ Morph.subclass("SelectionMorph", {
         if (this.selectedMorphs.length == 0) {
             $super(color);
         } else {
-	    this.selectedMorphs.invoke('withAllSubmorphsDo', function() { this.setFill(color)});
+            this.selectedMorphs.invoke('withAllSubmorphsDo', function() { this.setFill(color)});
         }
     },
     
@@ -1004,8 +1003,8 @@ Morph.subclass("SelectionMorph", {
     setStrokeOpacity: function($super, op) { 
         if (this.selectedMorphs.length == 0) {
             $super(op);
-	} else {
-	    this.selectedMorphs.invoke('callOnAllSubmorphs', function() { this.setStrokeOpacity(op)});
+        } else {
+            this.selectedMorphs.invoke('callOnAllSubmorphs', function() { this.setStrokeOpacity(op)});
         }
     },
 
@@ -1056,7 +1055,7 @@ Morph.subclass('PanelMorph', {
     },
 
     initializeTransientState: function($super, bounds) {
-	$super(bounds);
+        $super(bounds);
         this.priorExtent = this.innerBounds().extent();
     },
 
@@ -1130,8 +1129,8 @@ Object.extend(PanelMorph, {
         //     ['leftPane', newListPane, new Rectangle(0, 0, 0.5, 0.6)],
         // See example calls in, eg, SimpleBrowser.buildView() for how to use this
         var panel = new PanelMorph(extent);
-	panel.applyStyle({fill: Color.primary.blue.lighter(2), borderWidth: 2});
-	
+        panel.applyStyle({fill: Color.primary.blue.lighter(2), borderWidth: 2});
+
         paneSpecs.forEach(function(spec) {
             var paneName = spec[0];
             var paneConstructor = spec[1];
@@ -1159,11 +1158,11 @@ TextMorph.subclass("CheapListMorph", {
         // Note:  A proper ListMorph is a list of independent submorphs
         // CheapListMorphs simply leverage Textmorph's ability to display
         // multiline paragraphs, though some effort is made to use a similar interface.
-	// Bug: currently selection doesn't work right if items have leading spaces
-	itemList = this.sanitizedList(itemList);
+        // Bug: currently selection doesn't work right if items have leading spaces
+        itemList = this.sanitizedList(itemList);
         var listText = itemList ? itemList.join("\n") : "";
         $super(initialBounds, listText);
-	
+
         this.itemList = itemList;
         // this default self connection may get overwritten by, eg, connectModel()...
         var model = new SyntheticModel(this.pins);
@@ -1174,11 +1173,12 @@ TextMorph.subclass("CheapListMorph", {
     },
 
     sanitizedList: function(list) { // make sure entries with new lines don't confuse the list
-	return list && list.invoke('replace', /\n/g, " ");
+        return list && list.invoke('replace', /\n/g, " ");
     },
+
     setExtent: function(ignored) {
-	// Defeat recomposition when reframing windows
-	// May have deleterious side-effects
+        // Defeat recomposition when reframing windows
+        // May have deleterious side-effects
     },
 
     deserialize: function($super, importer, rawNode) {
@@ -1207,14 +1207,14 @@ TextMorph.subclass("CheapListMorph", {
             evt.stop();
             break;
         }
-	case Event.KEY_BACKSPACE: {
-	    // request deletion by setting a deletion request in the model
-	    // if model is subsequently updated with a "setDeletionConfirmation"
-	    // the selected item will be removed from the view.
-	    this.setModelValue("setDeletionRequest", this.itemList[this.selectedLineNo()]);
-	    evt.stop();
-	    break;
-	}
+        case Event.KEY_BACKSPACE: {
+            // request deletion by setting a deletion request in the model
+            // if model is subsequently updated with a "setDeletionConfirmation"
+            // the selected item will be removed from the view.
+            this.setModelValue("setDeletionRequest", this.itemList[this.selectedLineNo()]);
+            evt.stop();
+            break;
+        }
         case Event.KEY_DOWN: {
             var lineNo = this.selectedLineNo();
             if (lineNo < this.itemList.length - 1) {
@@ -1229,13 +1229,13 @@ TextMorph.subclass("CheapListMorph", {
             evt.stop();
             break;
         }    
-	case Event.KEY_SPACEBAR: { // FIXME this should be more generally
-	    // avoid paging down
-	    evt.stop();
-	    return true;
+        case Event.KEY_SPACEBAR: { // FIXME this should be more general
+            // avoid paging down
+            evt.stop();
+            return true;
         }
-	}
-	
+	    }
+
     },
 
     onMouseDown: function(evt) {
@@ -1296,7 +1296,7 @@ TextMorph.subclass("CheapListMorph", {
     },
     
     updateList: function(newList) {
-	newList = this.sanitizedList(newList);
+        newList = this.sanitizedList(newList);
         var priorItem = this.getSelection();
         this.itemList = newList;
         var listText = (newList == null) ? "" : newList.join("\n");
@@ -1331,16 +1331,15 @@ TextMorph.subclass("CheapListMorph", {
                 var selection = this.getSelection();
                 if (this !== controller) this.setSelectionToMatch(selection);
                 return selection; //debugging
-
-	    case this.modelPlug.getDeletionConfirmation: //someone broadcast a deletion
-		if (this.getModelValue("getDeletionConfirmation") == true) {
-		    // update self to reflect that model changed
-		    var index = this.selectedLineNo();
-		    var list = this.getList();
-		    list.splice(index, 1);
-		    this.updateList(list);
-		} 
-		return null;
+            case this.modelPlug.getDeletionConfirmation: //someone broadcast a deletion
+                if (this.getModelValue("getDeletionConfirmation") == true) {
+                    // update self to reflect that model changed
+                    var index = this.selectedLineNo();
+                    var list = this.getList();
+                    list.splice(index, 1);
+                    this.updateList(list);
+                } 
+                return null;
             }
         }
     },
@@ -1362,29 +1361,29 @@ TextMorph.subclass("CheapListMorph", {
 Morph.addMethods({
 
     leftAlignSubmorphs: function(inset) { // assume the size of the 
-	var padLeft = inset.x;
-	var padRight = inset.x;
-	var padTop = inset.y;
-	var padBottom = inset.y;
+        var padLeft = inset.x;
+        var padRight = inset.x;
+        var padTop = inset.y;
+        var padBottom = inset.y;
 
-	var topLeft = pt(padLeft, padTop);
+        var topLeft = pt(padLeft, padTop);
+        var ownExtent = pt(0, 0);
 
-	var ownExtent = pt(0, 0);
+        for (var i = 0; i < this.submorphs.length; i++) {
+            var morph = this.submorphs[i];
+            morph.setPosition(topLeft);
+            var ext = morph.getExtent();
+            ownExtent = pt(Math.max(ownExtent.x, padLeft  + ext.x + padRight),  
+                topLeft.y + padTop + ext.y + padBottom);
+            topLeft = topLeft.withY(ownExtent.y);
+        }
 
-	for (var i = 0; i < this.submorphs.length; i++) {
-	    var morph = this.submorphs[i];
-	    morph.setPosition(topLeft);
-	    var ext = morph.getExtent();
-	    ownExtent = pt(Math.max(ownExtent.x, padLeft  + ext.x + padRight),  
-			   topLeft.y + padTop + ext.y + padBottom);
-	    topLeft = topLeft.withY(ownExtent.y);
-	}
-	if (this.owner)  {
-	    this.setBounds(this.getPosition().extent(ownExtent));
-	    this.layoutChanged();
-	} else {
-	    this.internalSetBounds(this.getPosition().extent(ownExtent));
-	}
+        if (this.owner)  {
+            this.setBounds(this.getPosition().extent(ownExtent));
+            this.layoutChanged();
+        } else {
+            this.internalSetBounds(this.getPosition().extent(ownExtent));
+        }
     }
 });
 
@@ -1402,30 +1401,30 @@ Morph.subclass("TextListMorph", {
 
     initialize: function($super, initialBounds, itemList) {
         // itemList is an array of strings
-	var height = Math.max(initialBounds.height, itemList.length * (TextMorph.prototype.fontSize + this.itemMargin *2));
-	initialBounds = initialBounds.withHeight(height);
-	$super(initialBounds, itemList);
+        var height = Math.max(initialBounds.height, itemList.length * (TextMorph.prototype.fontSize + this.itemMargin *2));
+        initialBounds = initialBounds.withHeight(height);
+        $super(initialBounds, itemList);
         this.itemList = itemList;
-	this.selectedLineNo = -1;
-	this.generateSubmorphs(itemList, initialBounds.width);
-	this.alignAll();
+        this.selectedLineNo = -1;
+        this.generateSubmorphs(itemList, initialBounds.width);
+        this.alignAll();
         // this default self connection may get overwritten by, eg, connectModel()...
         var model = new SyntheticModel(this.pins);
         this.modelPlug = new ModelPlug(model.makePlugSpecFromPins(this.pins));
         this.setModelValue('setList', itemList);
-	this.savedFill = null; // for selecting items
+        this.savedFill = null; // for selecting items
         return this;
     },
 
     deserialize: function($super, importer, rawNode) {
         $super(importer, rawNode);
-	this.itemList = [];
-	for (var i = 0; i < this.submorphs.length; i++ ) {
-	    var m = this.submorphs[i];
-	    m.beListItem();
-	    m.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove"});
-	    this.itemList.push(m.textString);
-	}
+        this.itemList = [];
+        for (var i = 0; i < this.submorphs.length; i++ ) {
+            var m = this.submorphs[i];
+            m.beListItem();
+            m.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove"});
+           this.itemList.push(m.textString);
+        }
         this.setModelValue('setList', this.itemList);
         this.layoutChanged();
     },
@@ -1433,15 +1432,15 @@ Morph.subclass("TextListMorph", {
     handlesMouseDown: Functions.True,
 
     generateSubmorphs: function(itemList, width) {
-	var rect = pt(width, TextMorph.prototype.fontSize).extentAsRectangle().insetByPt(pt(this.itemMargin, 0));
-	for (var i = 0; i < itemList.length; i++)  {
-	    var m = this.addMorph(new TextMorph(rect, itemList[i])).beListItem();
-	    m.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove"});
-	}
+        var rect = pt(width, TextMorph.prototype.fontSize).extentAsRectangle().insetByPt(pt(this.itemMargin, 0));
+        for (var i = 0; i < itemList.length; i++)  {
+            var m = this.addMorph(new TextMorph(rect, itemList[i])).beListItem();
+            m.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove"});
+        }
     },
     
     alignAll: function() {
-	this.leftAlignSubmorphs(pt(this.itemMargin*2, this.itemMargin));
+        this.leftAlignSubmorphs(pt(this.itemMargin*2, this.itemMargin));
     },
 
     defaultOrigin: function(bounds) { 
@@ -1456,31 +1455,31 @@ Morph.subclass("TextListMorph", {
     },
 
     onMouseDown: function(evt) {
-	//	var ms = new Date().getMilliseconds();
-	var target = this.morphToReceiveEvent(evt);
-	//var ms2 = new Date().getMilliseconds();	
-	var index = this.submorphs.indexOf(target);
-	this.highlightItem(evt, index, true);
-	evt.hand.setMouseFocus(this); // to get moves
-	//console.log("%s got evt %s target %s ticks %s, %s", this.getType(), evt, target, new Date().getMilliseconds() - ms2, ms2 - ms);
+        // var ms = new Date().getMilliseconds();
+        var target = this.morphToReceiveEvent(evt);
+       // var ms2 = new Date().getMilliseconds();
+       var index = this.submorphs.indexOf(target);
+       this.highlightItem(evt, index, true);
+       evt.hand.setMouseFocus(this); // to get moves
+       // console.log("%s got evt %s target %s ticks %s, %s", this.getType(), evt, target, new Date().getMilliseconds() - ms2, ms2 - ms);
     },
     
     onMouseMove: function(evt) {
-	// console.log("%s got evt %s", this.getType(),  evt);
-	if (!this.highlightItemsOnMove) return;
-	var target = this.morphToReceiveEvent(evt);
-	var index = this.submorphs.indexOf(target);
-	this.highlightItem(evt, index, false);
+         // console.log("%s got evt %s", this.getType(),  evt);
+         if (!this.highlightItemsOnMove) return;
+         var target = this.morphToReceiveEvent(evt);
+         var index = this.submorphs.indexOf(target);
+         this.highlightItem(evt, index, false);
     },
 
     highlightItem: function(evt, index, updateModel) {
-	if (index >= 0) {
-	    this.selectLineAt(index, updateModel);
-	    this.requestKeyboardFocus(evt.hand);
-	    return true;
-	}
-	if (!updateModel) this.selectLineAt(-1, updateModel);
-	return false;
+        if (index >= 0) {
+            this.selectLineAt(index, updateModel);
+            this.requestKeyboardFocus(evt.hand);
+            return true;
+        }
+        if (!updateModel) this.selectLineAt(-1, updateModel);
+        return false;
     },
 
     onKeyPress: Functions.Empty,
@@ -1495,14 +1494,14 @@ Morph.subclass("TextListMorph", {
             evt.stop();
             break;
         }
-	case Event.KEY_BACKSPACE: {
-	    // request deletion by setting a deletion request in the model
-	    // if model is subsequently updated with a "setDeletionConfirmation"
-	    // the selected item will be removed from the view.
-	    this.setModelValue("setDeletionRequest", this.itemList[this.selectedLineNo]);
-	    evt.stop();
-	    break;
-	}
+        case Event.KEY_BACKSPACE: {
+            // request deletion by setting a deletion request in the model
+            // if model is subsequently updated with a "setDeletionConfirmation"
+            // the selected item will be removed from the view.
+            this.setModelValue("setDeletionRequest", this.itemList[this.selectedLineNo]);
+            evt.stop();
+            break;
+        }
         case Event.KEY_DOWN: {
             var lineNo = this.selectedLineNo;
             if (lineNo < this.itemList.length - 1) {
@@ -1513,72 +1512,74 @@ Morph.subclass("TextListMorph", {
         }
         case Event.KEY_ESC: {
             this.relinquishKeyboardFocus(this.world().firstHand());
-	    this.selectLineAt(-1, true);
+            this.selectLineAt(-1, true);
             evt.stop();
             break;
         }    
-	case Event.KEY_SPACEBAR: { // FIXME this should be more generally
-	    // avoid paging down
-	    evt.stop();
-	    return true;
+        case Event.KEY_SPACEBAR: { // FIXME this should be more generally
+            // avoid paging down
+            evt.stop();
+            return true;
         }
-	}
+        }
     },
 
     selectLineAt: function(lineNo, shouldUpdateModel) {  
-	if (this.selectedLineNo in this.submorphs) 
-	    this.submorphs[this.selectedLineNo].setFill(this.savedFill);
-	
-	this.selectedLineNo = lineNo;
-	
-	var selectionContent = null;
-	if (lineNo in this.submorphs) {
-	    var item = this.submorphs[lineNo];
-	    this.savedFill = item.getFill();
-	    item.setFill(TextSelection.prototype.fill);
-	    selectionContent = item.textString;
-	    this.scrollItemIntoView(item);
-	}
-	shouldUpdateModel && this.setSelection(selectionContent);
+        if (this.selectedLineNo in this.submorphs) { 
+            this.submorphs[this.selectedLineNo].setFill(this.savedFill);
+        }
+
+        this.selectedLineNo = lineNo;
+
+        var selectionContent = null;
+        if (lineNo in this.submorphs) {
+            var item = this.submorphs[lineNo];
+            this.savedFill = item.getFill();
+            item.setFill(TextSelection.prototype.fill);
+            selectionContent = item.textString;
+            this.scrollItemIntoView(item);
+        }
+        shouldUpdateModel && this.setSelection(selectionContent);
     },
 
     appendList: function(newItems) {
-	var capacity = this.getModelValue("getCapacity", this.defaultCapacity);
+        var capacity = this.getModelValue("getCapacity", this.defaultCapacity);
         var priorItem = this.getSelection();
-	var removed = this.itemList.length + newItems.length - capacity;
-	if (removed > 0) {
-	    for (var i = 0; i < removed; i++) {
-		this.submorphs[0].remove();
-	    }
-	    this.itemList = this.itemList.slice(removed);
-	}
-	this.itemList = this.itemList.concat(newItems);
-	this.generateSubmorphs(newItems, this.bounds().width);
-	this.alignAll();
-	if (this.selectedLineNo + removed >= this.itemList.length - 1)
+        var removed = this.itemList.length + newItems.length - capacity;
+        if (removed > 0) {
+            for (var i = 0; i < removed; i++) {
+                this.submorphs[0].remove();
+            }
+            this.itemList = this.itemList.slice(removed);
+        }
+        this.itemList = this.itemList.concat(newItems);
+        this.generateSubmorphs(newItems, this.bounds().width);
+        this.alignAll();
+        if (this.selectedLineNo + removed >= this.itemList.length - 1) {
             this.selectedLineNo = -1;
-	this.resetScrollPane(true);
+        }
+        this.resetScrollPane(true);
     },
     
     updateList: function(newList) {
         var priorItem = this.getSelection();
-	this.itemList = newList;
-	this.removeAllMorphs();
+        this.itemList = newList;
+        this.removeAllMorphs();
         this.generateSubmorphs(newList, this.bounds().width);
-	this.alignAll();
+        this.alignAll();
         this.setSelectionToMatch(priorItem);
-	this.resetScrollPane();
+        this.resetScrollPane();
         // this.emitSelection(); 
     },
 
     setSelectionToMatch: function(item) {
-	for (var i = 0; i < this.submorphs.length; i++) {
-	    if (this.submorphs[i].textString === item) {
-		this.selectLineAt(i, false);
-		return true;
-	    }
-	}
-	return false;
+        for (var i = 0; i < this.submorphs.length; i++) {
+            if (this.submorphs[i].textString === item) {
+                this.selectLineAt(i, false);
+                return true;
+            }
+        }
+        return false;
     },
     
     updateView: function(aspect, controller) {
@@ -1590,26 +1591,26 @@ Morph.subclass("TextListMorph", {
                 this.updateList(this.getList());
                 return this.itemList; // debugging
 
-	    case this.modelPlug.getListDelta:
-		this.appendList(this.getModelValue("getListDelta"));
-		//this.setModelValue("setListDelta", []);
-		return this.itemList;
-		
+            case this.modelPlug.getListDelta:
+                this.appendList(this.getModelValue("getListDelta"));
+                // this.setModelValue("setListDelta", []);
+                return this.itemList;
+
             case this.modelPlug.getSelection:
                 var selection = this.getSelection();
-		console.log("got selection "  + selection);
+                console.log("got selection "  + selection);
                 this.setSelectionToMatch(selection);
                 return selection; //debugging
-		
-	    case this.modelPlug.getDeletionConfirmation: //someone broadcast a deletion
-		if (this.getModelValue("getDeletionConfirmation") == true) {
-		    // update self to reflect that model changed
-		    var index = this.selectedLineNo;
-		    var list = this.getList();
-		    list.splice(index, 1);
-		    this.updateList(list);
-		} 
-		return null;
+
+            case this.modelPlug.getDeletionConfirmation: //someone broadcast a deletion
+                if (this.getModelValue("getDeletionConfirmation") == true) {
+                    // update self to reflect that model changed
+                    var index = this.selectedLineNo;
+                    var list = this.getList();
+                    list.splice(index, 1);
+                    this.updateList(list);
+                } 
+                return null;
             }
         }
     },
@@ -1629,44 +1630,44 @@ Morph.subclass("TextListMorph", {
     enclosingScrollPane: function() { 
         // Need a cleaner way to do this
         if (! (this.owner instanceof ClipMorph)) return null;
-	var sp = this.owner.owner;
-	if (! (sp instanceof ScrollPane)) return null;
-	return sp;
+        var sp = this.owner.owner;
+        if (! (sp instanceof ScrollPane)) return null;
+        return sp;
     },
     
     scrollItemIntoView: function(item) { 
-	var sp = this.enclosingScrollPane();
-	if (!sp) return;
-	sp.scrollRectIntoView(item.bounds()); 
+        var sp = this.enclosingScrollPane();
+        if (!sp) return;
+        sp.scrollRectIntoView(item.bounds()); 
     },
 
     resetScrollPane: function(toBottom) { 
         // Need a cleaner way to do this ;-)
-	var sp = this.enclosingScrollPane();
-	if (!sp) return false;
-	if (toBottom) sp.scrollToBottom();
-	else sp.scrollToTop();
-	return true;
+        var sp = this.enclosingScrollPane();
+        if (!sp) return false;
+        if (toBottom) sp.scrollToBottom();
+        else sp.scrollToTop();
+        return true;
     }
-});
 
+});
 
 Morph.subclass("NewMenuMorph", {
 
     listStyle: { 
-	borderColor: Color.blue,
-	borderWidth: 0.5,
-	textColor: Color.blue,
-	fill: Color.blue.lighter(5),
-	borderRadius: 6, 
-	fillOpacity: 0.75, 
-	wrapStyle: WrapStyle.Shrink
+        borderColor: Color.blue,
+        borderWidth: 0.5,
+        textColor: Color.blue,
+        fill: Color.blue.lighter(5),
+        borderRadius: 6, 
+        fillOpacity: 0.75, 
+        wrapStyle: WrapStyle.Shrink
     },
 
     labelStyle: {
-	borderRadius: 4, 
-	fillOpacity: 0.75, 
-	wrapStyle: WrapStyle.Shrink
+        borderRadius: 4, 
+        fillOpacity: 0.75, 
+        wrapStyle: WrapStyle.Shrink
     },
 
     suppressHandles: true,
@@ -1687,12 +1688,12 @@ Morph.subclass("NewMenuMorph", {
         //     menu.addItem(nextItem);  // May be several of these
         //     menu.addLine();          // interspersed with these
         //     menu.openIn(world,location,stayUp,captionIfAny);
-	
-	$super(pt(200, 200).extentAsRectangle(), "rect");
+
+        $super(pt(200, 200).extentAsRectangle(), "rect");
         this.items = items;
         this.targetMorph = targetMorph || this;
-	this.listMorph = null;
-	this.applyStyle({fill: null, borderWidth: 0, fillOpacity: 0});
+        this.listMorph = null;
+        this.applyStyle({fill: null, borderWidth: 0, fillOpacity: 0});
     },
 
     addItem: function(item) { 
@@ -1730,29 +1731,30 @@ Morph.subclass("NewMenuMorph", {
 
     openIn: function(parentMorph, loc, remainOnScreen, captionIfAny) { 
         if (this.items.length == 0) return;
-	// Note: on a mouseDown invocation (as from a menu button),
+
+        // Note: on a mouseDown invocation (as from a menu button),
         // mouseFocus should be set immediately before or after this call
         this.stayUp = remainOnScreen; // set true to keep on screen
-	
-        parentMorph.addMorphAt(this, loc);
-	
-	this.listMorph = new TextListMorph(pt(200, 0).extentAsRectangle(), 
-					   this.items.map(function(item) { return item[0]; }));
-	this.listMorph.applyStyle(this.listStyle);
-	this.listMorph.suppressHandles = true;
-	this.listMorph.focusHaloBorderWidth = 0;
-	this.listMorph.highlightItemsOnMove = true;
-	this.addMorph(this.listMorph);
 
-	this.label = null;
+        parentMorph.addMorphAt(this, loc);
+
+        this.listMorph = new TextListMorph(pt(200, 0).extentAsRectangle(), 
+                             this.items.map(function(item) { return item[0]; }));
+        this.listMorph.applyStyle(this.listStyle);
+        this.listMorph.suppressHandles = true;
+        this.listMorph.focusHaloBorderWidth = 0;
+        this.listMorph.highlightItemsOnMove = true;
+        this.addMorph(this.listMorph);
+
+        this.label = null;
         if (captionIfAny) { // Still under construction
             var label = new TextMorph(new Rectangle(0, 0, 200, 20), captionIfAny);
-	    label.applyStyle(this.labelStyle);
+            label.applyStyle(this.labelStyle);
             label.fitText();
             label.align(label.bounds().bottomCenter(), this.shape.bounds().topCenter());
             this.label = this.addMorph(label);
         }
-	
+
         // If menu and/or caption is off screen, move it back so it is visible
         var menuRect = this.bounds();  //includes caption if any
         // Intersect with parentMorph bounds to get visible region.  Note we need shape.bounds,
@@ -1762,63 +1764,65 @@ Morph.subclass("NewMenuMorph", {
         delta = delta.addPt(visibleRect.bottomRight().subPt(menuRect.bottomRight()));  // same for bottomRight
         if (delta.dist(pt(0, 0)) > 1) this.moveBy(delta);  // move if significant
 
-	this.listMorph.relayMouseEvents(this, {onMouseUp: "onMouseUp", onMouseMove: "onMouseMove", onMouseDown: "onMouseMove"});
+        this.listMorph.relayMouseEvents(this, {onMouseUp: "onMouseUp", onMouseMove: "onMouseMove", onMouseDown: "onMouseMove"});
         // Note menu gets mouse focus by default if pop-up.  If you don't want it, you'll have to null it
-        if (!remainOnScreen)
-	    parentMorph.world().firstHand().setMouseFocus(this);
+        if (!remainOnScreen) {
+            parentMorph.world().firstHand().setMouseFocus(this);
+        }
     },
     
     removeOnEvent: function(evt) {
-	this.remove();
-	if (evt.hand.mouseFocus === this) {
-	    evt.hand.setMouseFocus(null);
-	}
+        this.remove();
+        if (evt.hand.mouseFocus === this) {
+            evt.hand.setMouseFocus(null);
+        }
     },
 
     onMouseUp: function(evt) {
-	//console.log("menu got " + evt);
-	var target = this.listMorph.morphToReceiveEvent(evt);
-	var index = this.listMorph.submorphs.indexOf(target);
-	if (!(index in this.items)) return;
-	try {
-	    this.invokeItem(evt, this.items[index]);
-	} finally {
-	    if (!this.stayUp) this.removeOnEvent(evt);
-	}
+        // console.log("menu got " + evt);
+        var target = this.listMorph.morphToReceiveEvent(evt);
+        var index = this.listMorph.submorphs.indexOf(target);
+        if (!(index in this.items)) return;
+        try {
+             this.invokeItem(evt, this.items[index]);
+        } finally {
+             if (!this.stayUp) this.removeOnEvent(evt);
+        }
     },
 
     onMouseDown: function(evt) {
-	var target = this.listMorph.morphToReceiveEvent(evt);
-	var index = this.listMorph.submorphs.indexOf(target);
-	if (!(index in this.items)  && !this.stayUp) 
-	    this.removeOnEvent(evt);
+        var target = this.listMorph.morphToReceiveEvent(evt);
+        var index = this.listMorph.submorphs.indexOf(target);
+        if (!(index in this.items) && !this.stayUp) { 
+            this.removeOnEvent(evt);
+        }
     },
 
     onMouseMove: function(evt) {
-	// console.log("menu got " + evt);
-	evt.hand.setMouseFocus(this);
-	var target = this.listMorph.morphToReceiveEvent(evt);
-	var index = this.listMorph.submorphs.indexOf(target);
-	this.listMorph.highlightItem(evt, index, false);
+        // console.log("menu got " + evt);
+        evt.hand.setMouseFocus(this);
+        var target = this.listMorph.morphToReceiveEvent(evt);
+        var index = this.listMorph.submorphs.indexOf(target);
+        this.listMorph.highlightItem(evt, index, false);
     },
     
     invokeItem: function(evt, item) {
         if (!item) return;
-	
+
         if (item[1] instanceof Function) { // alternative style, items ['menu entry', function] pairs
             item[1].call(this.targetMorph || this, evt);
-	} else if (item[1] instanceof String || typeof item[1] == 'string') {
-	    // another alternative style, send a message to the targetMorph's menu target (presumably a view).
-	    var responder = (this.targetMorph || this).getModelValue("getMenuTarget");
-	    if (responder)  {
-		console.log("menu target is " + responder);
-		var func = responder[item[1]];
-		if (!func) console.log("didn't find function " + item[1]);
-		else func.call(responder, item[2], evt, item);
-	    } else {
-		console.log("no menu target, menu target " + this.targetMorph);
-	    }
-	} else {
+        } else if (item[1] instanceof String || typeof item[1] == 'string') {
+            // another alternative style, send a message to the targetMorph's menu target (presumably a view).
+            var responder = (this.targetMorph || this).getModelValue("getMenuTarget");
+            if (responder)  {
+                console.log("menu target is " + responder);
+                var func = responder[item[1]];
+                if (!func) console.log("didn't find function " + item[1]);
+                else func.call(responder, item[2], evt, item);
+            } else {
+                console.log("no menu target, menu target " + this.targetMorph);
+            }
+        } else {
             var func = item[1][item[2]];  // target[functionName]
             if (func == null) console.log('Could not find function ' + item[2]);
             // call as target.function(parameterOrNull,event,menuItem)
@@ -1828,28 +1832,26 @@ Morph.subclass("NewMenuMorph", {
 
 });
 
-
 /**
  * @class MenuMorph: Popup menus
  */ 
 CheapListMorph.subclass("CheapMenuMorph", {
 
     style: { 
-	borderColor: Color.blue,
-	borderWidth: 0.5,
-	textColor: Color.blue,
-	fill: Color.blue.lighter(5),
-	borderRadius: 6, 
-	fillOpacity: 0.75, 
-	wrapStyle: WrapStyle.Shrink
+        borderColor: Color.blue,
+        borderWidth: 0.5,
+        textColor: Color.blue,
+        fill: Color.blue.lighter(5),
+        borderRadius: 6, 
+        fillOpacity: 0.75, 
+        wrapStyle: WrapStyle.Shrink
     },
 
     labelStyle: {
-	borderRadius: 4, 
-	fillOpacity: 0.75, 
-	wrapStyle: WrapStyle.Shrink
+         borderRadius: 4, 
+         fillOpacity: 0.75, 
+         wrapStyle: WrapStyle.Shrink
     },
-    
 
     initialize: function($super, items, targetMorph, lines) {
         // items is an array of menuItems, each of which is an array of the form
@@ -1867,8 +1869,8 @@ CheapListMorph.subclass("CheapMenuMorph", {
         //     menu.addItem(nextItem);  // May be several of these
         //     menu.addLine();          // interspersed with these
         //     menu.openIn(world,location,stayUp,captionIfAny);
-	
-	// KP: noe that the $super is not called ... should be called at some point
+
+        // KP: noe that the $super is not called ... should be called at some point
         this.items = items;
         this.targetMorph = targetMorph || this;
         this.lines = lines || [];
@@ -1910,8 +1912,8 @@ CheapListMorph.subclass("CheapMenuMorph", {
     },
 
     openIn: function(world, location, remainOnScreen, captionIfAny) { 
-        if(this.items.length == 0) return;
-	// Note: on a mouseDown invocation (as from a menu button),
+        if (this.items.length == 0) return;
+        // Note: on a mouseDown invocation (as from a menu button),
         // mouseFocus should be set immediately before or after this call
         this.stayUp = remainOnScreen; // set true to keep on screen
         this.caption = captionIfAny;  // Not yet implemented
@@ -1921,7 +1923,7 @@ CheapListMorph.subclass("CheapMenuMorph", {
         world.addMorph(this);
         if (captionIfAny) { // Still under construction
             var label = new TextMorph(new Rectangle(0, 0, 200, 20), captionIfAny);
-	    label.applyStyle(this.labelStyle);
+            label.applyStyle(this.labelStyle);
             label.fitText();
             
             label.align(label.bounds().bottomCenter(), this.shape.bounds().topCenter());
@@ -1942,18 +1944,17 @@ CheapListMorph.subclass("CheapMenuMorph", {
 
     compose: function(location) { 
         var itemNames = this.items.map(function (item) { return item[0] });
-
         CheapListMorph.prototype.initialize.call(this, location.extent(pt(200, 200)), itemNames);
+
         // styling
-	this.applyStyle(this.style);
+        this.applyStyle(this.style);
         this.fitText(); // first layout is wasted!
 
         //this.setFill(StipplePattern.create(Color.white, 3, Color.blue.lighter(5), 1));
-
     },
 
     onMouseUp: function(evt) {
-	var item = null;
+        var item = null;
         if (!this.hasNullSelection()) item = this.items[this.selectedLineNo()];
         this.setNullSelectionAt(0);  // Clean up now, in case the call fails
         if (!this.stayUp) this.remove(); 
@@ -1961,18 +1962,18 @@ CheapListMorph.subclass("CheapMenuMorph", {
         if (item) { // Now execute the menu item...
             if (item[1] instanceof Function) { // alternative style, items ['menu entry', function] pairs
                 item[1].call(this.targetMorph || this, evt);
-	    } else if (item[1] instanceof String || typeof item[1] == 'string') {
-		// another alternative style, send a message to the targetMorph's menu target (presumably a view).
-		var responder = (this.targetMorph || this).getModelValue("getMenuTarget");
-		if (responder)  {
-		    console.log("menu target is " + responder);
-		    var func = responder[item[1]];
-		    if (!func) console.log("didn't find function " + item[1]);
-		    else func.call(responder, item[2], evt, item);
-		} else {
-		    console.log("no menu target, menu target " + this.targetMorph);
-		}
-	    } else {
+            } else if (item[1] instanceof String || typeof item[1] == 'string') {
+                // another alternative style, send a message to the targetMorph's menu target (presumably a view).
+                var responder = (this.targetMorph || this).getModelValue("getMenuTarget");
+                if (responder) {
+                    console.log("menu target is " + responder);
+                    var func = responder[item[1]];
+                    if (!func) console.log("didn't find function " + item[1]);
+                    else func.call(responder, item[2], evt, item);
+                } else {
+                    console.log("no menu target, menu target " + this.targetMorph);
+                }
+            } else {
                 var func = item[1][item[2]];  // target[functionName]
                 if (func == null) console.log('Could not find function ' + item[2]);
                 // call as target.function(parameterOrNull,event,menuItem)
@@ -1996,9 +1997,9 @@ Morph.subclass("SliderMorph", {
 
     initialize: function($super, initialBounds, scaleIfAny) {
         $super(initialBounds, "rect");
-	// this default self connection may get overwritten by, eg, connectModel()...
+        // this default self connection may get overwritten by, eg, connectModel()...
         var model = new SyntheticModel(this.pins);
-	this.modelPlug = new ModelPlug(model.makePlugSpec());
+        this.modelPlug = new ModelPlug(model.makePlugSpec());
         this.scale = (scaleIfAny == null) ? 1.0 : scaleIfAny;
         var slider = new Morph(new Rectangle(0, 0, this.mss, this.mss), "rect");
         slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});
@@ -2010,7 +2011,7 @@ Morph.subclass("SliderMorph", {
     
     restorePersistentState: function($super, importer) {
         $super(importer);
-	this.scale = 1.0; // FIXME restore from markup
+        this.scale = 1.0; // FIXME restore from markup
         if (!this.slider) {
             console.warn('no slider in %s, %s', this, this.textContent);
            return;
@@ -2039,7 +2040,7 @@ Morph.subclass("SliderMorph", {
         var val = this.getValue();
         var bnds = this.shape.bounds();
         var ext = this.getSliderExtent();
-	
+
         if (this.vertical()) { // more vertical...
             var elevPix = Math.max(ext*bnds.height,this.mss); // thickness of elevator in pixels
             var topLeft = pt(0,(bnds.height-elevPix)*val);
@@ -2054,8 +2055,8 @@ Morph.subclass("SliderMorph", {
 
         if (this.fill instanceof LinearGradient) {
             var direction = this.vertical() ? LinearGradient.EastWest : LinearGradient.NorthSouth;
-	    var baseColor = this.fill.stopColor(1);
-	    this.fill = new LinearGradient(this.fill.stopColor(0), baseColor, direction);
+            var baseColor = this.fill.stopColor(1);
+            this.fill = new LinearGradient(this.fill.stopColor(0), baseColor, direction);
             this.setFill(this.fill);
             this.slider.setFill(new LinearGradient(baseColor.lighter(), baseColor.darker(), direction));
         } else {
@@ -2079,10 +2080,10 @@ Morph.subclass("SliderMorph", {
         var ext = this.getSliderExtent();
     
         if (this.vertical()) { // more vertical...
-	    var elevPix = Math.max(ext*bnds.height,this.mss); // thickness of elevator in pixels
+            var elevPix = Math.max(ext*bnds.height,this.mss); // thickness of elevator in pixels
             var newValue = p.y / (bnds.height-elevPix); 
         } else { // more horizontal...
-	    var elevPix = Math.max(ext*bnds.width,this.mss); // thickness of elevator in pixels
+            var elevPix = Math.max(ext*bnds.width,this.mss); // thickness of elevator in pixels
             var newValue = p.x / (bnds.width-elevPix); 
         }
     
@@ -2193,23 +2194,24 @@ Morph.subclass("ScrollPane", {
         // Add a scrollbar
         this.scrollBar = this.addMorph(new SliderMorph(bnds.withTopLeft(clipR.topRight())));
         this.scrollBar.connectModel({model: this, 
-				     getValue: "getScrollPosition", setValue: "setScrollPosition", 
-                                     getSliderExtent: "getVisibleExtent"});
-	
+            getValue: "getScrollPosition", setValue: "setScrollPosition", 
+            getSliderExtent: "getVisibleExtent"});
+
         // suppress handles throughout
         [this, this.clipMorph, morphToClip, this.scrollBar].map(function(m) {m.suppressHandles = true});
-	// alert('inner morph is ' + this.innerMorph());
+        // alert('inner morph is ' + this.innerMorph());
 
         return this;
     },
 
     restorePersistentState: function($super, importer) { // FIXME duplication between here and initialize
-	$super(importer);
-	this.scrollBar && this.scrollBar.connectModel({model: this, 
-						       getValue: "getScrollPosition", setValue: "setScrollPosition", 
-						       getSliderExtent: "getVisibleExtent"});
-	if (this.menuButton)
-	    this.menuButton.relayMouseEvents(this, {onMouseDown: "menuButtonPressed"});
+        $super(importer);
+        this.scrollBar && this.scrollBar.connectModel({model: this, 
+            getValue: "getScrollPosition", setValue: "setScrollPosition", 
+            getSliderExtent: "getVisibleExtent"});
+        if (this.menuButton) {
+            this.menuButton.relayMouseEvents(this, {onMouseDown: "menuButtonPressed"});
+        }
     },
 
     innerMorph: function() {
@@ -2222,23 +2224,23 @@ Morph.subclass("ScrollPane", {
     },
     
     disconnectModel: function() {
-	this.innerMorph().disconnectModel();
+        this.innerMorph().disconnectModel();
     },
     
     getModel: function() {
-	return this.innerMorph().getModel();
+        return this.innerMorph().getModel();
     },
 
     getModelPlug: function() {
-	return this.innerMorph().getModelPlug();
+        return this.innerMorph().getModelPlug();
     },
 
     updateView: function(aspect, source) {
-	return this.innerMorph().updateView(aspect, source);
+        return this.innerMorph().updateView(aspect, source);
     },
     
     addMenuButton: function() {
-	if (this.menuButton) return;
+        if (this.menuButton) return;
 
         var w = this.scrollBarWidth;
         this.menuButton = this.addMorph(new Morph(new Rectangle(0, 0, w, w)));
@@ -2247,24 +2249,24 @@ Morph.subclass("ScrollPane", {
         var p0 = this.menuButton.innerBounds().topLeft().addXY(2, 2);
         for (var i = 1; i <= 4; i++) {
             var line = Morph.makeLine([pt(0, i*2), pt([6, 2, 4, 6][i-1], i*2)], 1, Color.black);
-	    line.translateBy(p0);
-	    this.menuButton.addMorph(line);
-	    line.ignoreEvents();
+            line.translateBy(p0);
+            this.menuButton.addMorph(line);
+            line.ignoreEvents();
         }
         if (this.scrollBar) {
-	    this.menuButton.setPosition(this.scrollBar.getPosition());
-	    this.menuButton.setFill(this.scrollBar.getFill());
-	    this.scrollBar.setBounds(this.scrollBar.bounds().withTopLeft(
-		this.scrollBar.bounds().topLeft().addXY(0, w)));
-	}
-	this.menuButton.relayMouseEvents(this, {onMouseDown: "menuButtonPressed"});
+            this.menuButton.setPosition(this.scrollBar.getPosition());
+            this.menuButton.setFill(this.scrollBar.getFill());
+            this.scrollBar.setBounds(this.scrollBar.bounds().withTopLeft(
+            this.scrollBar.bounds().topLeft().addXY(0, w)));
+        }
+        this.menuButton.relayMouseEvents(this, {onMouseDown: "menuButtonPressed"});
     },
 
     menuButtonPressed: function(evt, button) {
         evt.hand.setMouseFocus(null);
         var items = this.innerMorph().getModelValue("getMenu");
         if (!items || items.length <= 0) return;
-	var menu = new MenuMorph(items, this);
+        var menu = new MenuMorph(items, this);
         menu.openIn(this.world(), evt.mousePoint, false); 
     },
 
@@ -2279,7 +2281,7 @@ Morph.subclass("ScrollPane", {
         var slideRoom = ht - this.bounds().height;
         this.innerMorph().setPosition(pt(this.innerMorph().position().x, -slideRoom*scrollPos)); 
         this.scrollBar.adjustForNewBounds();
-	// console.log("setScrollPos  ht = " + ht + ", slideRoom = " + slideRoom + ", scrollPos = " + scrollPos);
+        // console.log("setScrollPos  ht = " + ht + ", slideRoom = " + slideRoom + ", scrollPos = " + scrollPos);
     },
 
     getVisibleExtent: function(scrollPos) {
@@ -2298,20 +2300,20 @@ Morph.subclass("ScrollPane", {
 
     scrollRectIntoView: function(r) {
         var im = this.innerMorph();
-	if (!r || !im) return;
-	var bnds = this.innerBounds();
-	var yToView = r.y + im.getPosition().y;  // scroll down if above top
-	if (yToView < bnds.y) {
-	    im.moveBy(pt(0, bnds.y - yToView));
-	    this.scrollBar.adjustForNewBounds();
-	    return;
-	}
-	var yToView = r.y + r.height + im.getPosition().y;  // scroll up if below bottom
-	var tweak = 5;  // otherwise it doesnt scroll up enough to look good
-	if (yToView > bnds.maxY() - tweak) {
-	    im.moveBy(pt(0, bnds.maxY() - tweak - yToView))
-	    this.scrollBar.adjustForNewBounds();
-	}
+        if (!r || !im) return;
+        var bnds = this.innerBounds();
+        var yToView = r.y + im.getPosition().y;  // scroll down if above top
+        if (yToView < bnds.y) {
+            im.moveBy(pt(0, bnds.y - yToView));
+            this.scrollBar.adjustForNewBounds();
+            return;
+        }
+        var yToView = r.y + r.height + im.getPosition().y;  // scroll up if below bottom
+        var tweak = 5;  // otherwise it doesnt scroll up enough to look good
+        if (yToView > bnds.maxY() - tweak) {
+            im.moveBy(pt(0, bnds.maxY() - tweak - yToView))
+            this.scrollBar.adjustForNewBounds();
+        }
     },
     
     adjustForNewBounds: function ($super) {
@@ -2454,26 +2456,26 @@ ClipMorph.subclass('XenoMorph', {
         body.appendChild(document.createTextNode("no content"));
         this.addNonMorph(this.foRawNode);
         this.foRawNode.appendChild(this.body);
-	
-	url && this.fetchURL(url);
+
+        url && this.fetchURL(url);
     },
 
     fetchURL: function(url) {
-	var model = new Model();
-	var req = new NetRequest({model: this, setResponseXML: "setContent"});//, setResponseText: "setContentText"});
-	req.setContentType("text/xml");
-	req.get(url);
+        var model = new Model();
+        var req = new NetRequest({model: this, setResponseXML: "setContent"});//, setResponseText: "setContentText"});
+        req.setContentType("text/xml");
+        req.get(url);
     },
 
     setContent: function(doc) {
-	this.body.parentNode.replaceChild(document.adoptNode(doc.documentElement), this.body);
+        this.body.parentNode.replaceChild(document.adoptNode(doc.documentElement), this.body);
     },
     
     setContentText: function(text, mimeType) {
-	var parser = new DOMParser();
-	var xhtml = parser.parseFromString(text, mimeType || "text/xml");
-	var node = xhtml.getElementsByTagName("body")[0];
-	this.body.parentNode.replaceChild(document.importNode(node, true), this.body);
+        var parser = new DOMParser();
+        var xhtml = parser.parseFromString(text, mimeType || "text/xml");
+        var node = xhtml.getElementsByTagName("body")[0];
+        this.body.parentNode.replaceChild(document.importNode(node, true), this.body);
     },
 
     adjustForNewBounds: function($super) {
@@ -2485,29 +2487,27 @@ ClipMorph.subclass('XenoMorph', {
     
     test: function(url) {
         url = url || Loader.baseURL + "/sample.xhtml";
-	console.log("url is " + url);
+        console.log("url is " + url);
         var xeno = new XenoMorph(pt(400,200).extentAsRectangle(), new URL(url));
         WorldMorph.current().addFramedMorph(xeno, url, pt(50,50));
     },
     
     test2: function() {
-//	var text = '<object width="425" height="355"><param name="movie" value="http://www.youtube.com/v/a0qMe7Z3EYg&hl=en"></param><param name="wmode" value="transparent"></param><embed src="http://www.youtube.com/v/a0qMe7Z3EYg&hl=en" type="application/x-shockwave-flash" wmode="transparent" width="425" height="355"></embed></object>';
-	var text = '<xhtml><body><video width="425" height="355" src="http://www.youtube.com/swf/l.swf?video_id=a0qMe7Z3EYg&rel=1" /></body></xhtml>';
+// var text = '<object width="425" height="355"><param name="movie" value="http://www.youtube.com/v/a0qMe7Z3EYg&hl=en"></param><param name="wmode" value="transparent"></param><embed src="http://www.youtube.com/v/a0qMe7Z3EYg&hl=en" type="application/x-shockwave-flash" wmode="transparent" width="425" height="355"></embed></object>';
+        var text = '<xhtml><body><video width="425" height="355" src="http://www.youtube.com/swf/l.swf?video_id=a0qMe7Z3EYg&rel=1" /></body></xhtml>';
 
         var xeno = new XenoMorph(pt(400,200).extentAsRectangle());
-	Object.extend(xeno, NetRequestReporterTrait);
-	xeno.setContentText(text, "application/xhtml+xml");
+        Object.extend(xeno, NetRequestReporterTrait);
+        xeno.setContentText(text, "application/xhtml+xml");
         WorldMorph.current().addFramedMorph(xeno, 'video', pt(50,50));
-	return xeno;
+        return xeno;
     }
-
 
 });
 
-
-
 // most likely deprecated, should use Widget, which is a view.
 Model.subclass('WidgetModel', {
+
     defaultViewExtent: pt(400, 300),
     defaultViewTitle: "Widget",
     defaultViewPosition: pt(50, 50),
@@ -2515,78 +2515,77 @@ Model.subclass('WidgetModel', {
     documentation: "Convenience base class for widget models",
     
     viewTitle: function() { // a string or a TextMorph
-	return this.defaultViewTitle;
+        return this.defaultViewTitle;
     },
 
     buildView: function(extent) {
-	throw new Error("override me");
+        throw new Error("override me");
     },
 
     initialViewPosition: function(world, hint) {
-	return hint || this.defaultViewPosition;
+        return hint || this.defaultViewPosition;
     },
 
     initialViewExtent: function(world, hint) {
-	return hint || this.defaultViewExtent;
+        return hint || this.defaultViewExtent;
     },
     
     openIn: function(world, loc) {
         var win = 
-	    world.addFramedMorph(this.buildView(this.initialViewExtent(world)), 
-				 this.viewTitle(), 
-				 this.initialViewPosition(world, loc));
-	if (this.openTriggerVariable)
+            world.addFramedMorph(this.buildView(this.initialViewExtent(world)), 
+                this.viewTitle(), 
+                this.initialViewPosition(world, loc));
+        if (this.openTriggerVariable) {
             this.changed(this.openTriggerVariable);
-	return win;
+        }
+        return win;
     },
 
     open: function() { // call interactively
-	return this.openIn(WorldMorph.current());
+        return this.openIn(WorldMorph.current());
     }
 
 });
 
-
-
 View.subclass('Widget', { // FIXME remove code duplication
+
     defaultViewExtent: pt(400, 300),
     defaultViewTitle: "Widget",
     defaultViewPosition: pt(50, 50),
     documentation: "Nonvisual component of a widget",
     
     viewTitle: function() { // a string or a TextMorph
-	return this.defaultViewTitle;
+        return this.defaultViewTitle;
     },
 
     buildView: function(extent, model) {
-	throw new Error("override me");
+        throw new Error("override me");
     },
 
     initialViewPosition: function(world, hint) {
-	return hint || this.defaultViewPosition;
+        return hint || this.defaultViewPosition;
     },
 
     initialViewExtent: function(world, hint) {
-	return hint || this.defaultViewExtent;
+        return hint || this.defaultViewExtent;
     },
     
     openIn: function(world, loc) {
         var win = 
-	    world.addFramedMorph(this.buildView(this.initialViewExtent(world), this.getModel()), 
-				 this.viewTitle(), 
-				 this.initialViewPosition(world, loc));
-	return win;
+            world.addFramedMorph(this.buildView(this.initialViewExtent(world), this.getModel()), 
+                 this.viewTitle(), 
+                 this.initialViewPosition(world, loc));
+        return win;
     },
 
     open: function() { // call interactively
-	return this.openIn(WorldMorph.current());
+        return this.openIn(WorldMorph.current());
     },
 
     deserialize: function(importer, modelPlug) {
-	this.connectModel(modelPlug);
+        this.connectModel(modelPlug);
     }
 
-    
 });
 
 Widget.subclass('Dialog', {
@@ -2595,13 +2594,13 @@ Widget.subclass('Dialog', {
              fill: Color.blue.lighter(), opacity: 0.9},
 
     initialize: function(plug) {
-	if (plug) this.connectModel(plug);
+        if (plug) this.connectModel(plug);
     },
 
     openIn: function(world, loc) {
         var view = this.buildView(this.initialViewExtent(world), this.getModel());
-	world.addMorphAt(view, loc);
-	return view;
+        world.addMorphAt(view, loc);
+        return view;
     }
     
 });
@@ -2612,38 +2611,38 @@ Dialog.subclass('ConfirmDialog', {
     defaultViewExtent: pt(300, 90),
     
     defaultCallback: function(result) {
-	console.log("Confirmed? " + result);
+        console.log("Confirmed? " + result);
     },
-	
+
     setCancel: function(value) {
-	if (!value) return;
-	this.panel.remove();
-	var callback = this.getModelValue("getCallback", this.defaultCallback);
-	callback.call(Global, false);
+        if (!value) return;
+        this.panel.remove();
+        var callback = this.getModelValue("getCallback", this.defaultCallback);
+        callback.call(Global, false);
     },
     
     setConfirm: function(value) {
-	if (!value) return;
-	this.panel.remove();
-	var callback = this.getModelValue("getCallback", this.defaultCallback);
-	callback.call(Global, true);
+        if (!value) return;
+        this.panel.remove();
+        var callback = this.getModelValue("getCallback", this.defaultCallback);
+        callback.call(Global, true);
     },
     
     buildView: function(extent, model) {
         var panel = new PanelMorph(extent);
-	this.panel = panel;
+        this.panel = panel;
         panel.applyStyle(this.style);
 
-	var r = new Rectangle(this.inset, this.inset, extent.x - 2*this.inset, 30);
-	var label = panel.addMorph(new TextMorph(r, this.getModelValue("getMessage")).beLabel());
+        var r = new Rectangle(this.inset, this.inset, extent.x - 2*this.inset, 30);
+        var label = panel.addMorph(new TextMorph(r, this.getModelValue("getMessage")).beLabel());
 
-    	var indent = extent.x - 2*70 - 3*this.inset;
-	r = new Rectangle(r.x + indent, r.maxY() + this.inset, 70, 30);
-	var yesButton = panel.addMorph(new ButtonMorph(r)).setLabel("Yes");
-	
-	yesButton.connectModel({model: this, setValue: "setConfirm"});
+        var indent = extent.x - 2*70 - 3*this.inset;
+        r = new Rectangle(r.x + indent, r.maxY() + this.inset, 70, 30);
+        var yesButton = panel.addMorph(new ButtonMorph(r)).setLabel("Yes");
+
+        yesButton.connectModel({model: this, setValue: "setConfirm"});
         r = new Rectangle(r.maxX() + this.inset, r.y, 70, 30);
-	var noButton = panel.addMorph(new ButtonMorph(r)).setLabel("No");
+        var noButton = panel.addMorph(new ButtonMorph(r)).setLabel("No");
         noButton.connectModel({model: this, setValue: "setCancel"});
         return panel;
     }
@@ -2656,57 +2655,56 @@ Dialog.subclass('PromptDialog', {
     defaultViewExtent: pt(300, 130),
 
     openIn: function($super, world, loc) {
-	var view = $super(world, loc);
-	world.firstHand().setMouseFocus(view.inputLine);
-	world.firstHand().setKeyboardFocus(view.inputLine);
+        var view = $super(world, loc);
+        world.firstHand().setMouseFocus(view.inputLine);
+        world.firstHand().setKeyboardFocus(view.inputLine);
         return view;
     },
 
     defaultCallback: function(result) {
-	console.log("Input " + result);
+        console.log("Input " + result);
     },
     
     setCancel: function(value) {
-	if (!value) return;
-	this.panel.remove();
-	var callback = this.getModelValue("getCallback", this.defaultCallback);
-	callback.call(Global, null);
+        if (!value) return;
+        this.panel.remove();
+        var callback = this.getModelValue("getCallback", this.defaultCallback);
+        callback.call(Global, null);
     },
     
     setConfirm: function(value) {
-	if (!value) return;
-	this.panel.remove();
-	var callback = this.getModelValue("getCallback", this.defaultCallback);
-	callback.call(Global, this.getModelValue("getInput"));
+        if (!value) return;
+        this.panel.remove();
+        var callback = this.getModelValue("getCallback", this.defaultCallback);
+        callback.call(Global, this.getModelValue("getInput"));
     },
 
     buildView: function(extent, model) {
         var panel = new PanelMorph(extent);
-	this.panel = panel;
+        this.panel = panel;
         panel.applyStyle(this.style);
-	
-	var r = new Rectangle(this.inset, this.inset, extent.x - 2*this.inset, 30);
-	var label = panel.addMorph(new TextMorph(r, this.getModelValue("getMessage")).beLabel());
-	
-	r = new Rectangle(r.x, r.maxY() + this.inset, r.width, r.height);
-	
-	panel.inputLine = panel.addMorph(new TextMorph(r, "").beInputLine());
-	panel.inputLine.autoAccept = true;
-	
-	panel.inputLine.connectModel({model: this.getModel(), getText: "getInput", setText: "setInput"});
-	
-	var indent = extent.x - 2*70 - 3*this.inset;
-	r = new Rectangle(r.x + indent, r.maxY() + this.inset, 70, 30);
-	var okButton = panel.addMorph(new ButtonMorph(r)).setLabel("OK");
-	
-	okButton.connectModel({model: this, setValue: "setConfirm"});
+
+        var r = new Rectangle(this.inset, this.inset, extent.x - 2*this.inset, 30);
+        var label = panel.addMorph(new TextMorph(r, this.getModelValue("getMessage")).beLabel());
+
+        r = new Rectangle(r.x, r.maxY() + this.inset, r.width, r.height);
+
+        panel.inputLine = panel.addMorph(new TextMorph(r, "").beInputLine());
+        panel.inputLine.autoAccept = true;
+
+        panel.inputLine.connectModel({model: this.getModel(), getText: "getInput", setText: "setInput"});
+
+        var indent = extent.x - 2*70 - 3*this.inset;
+        r = new Rectangle(r.x + indent, r.maxY() + this.inset, 70, 30);
+        var okButton = panel.addMorph(new ButtonMorph(r)).setLabel("OK");
+
+        okButton.connectModel({model: this, setValue: "setConfirm"});
         r = new Rectangle(r.maxX() + this.inset, r.y, 70, 30);
-	var cancelButton = panel.addMorph(new ButtonMorph(r)).setLabel("Cancel");
+        var cancelButton = panel.addMorph(new ButtonMorph(r)).setLabel("Cancel");
         cancelButton.connectModel({model: this, setValue: "setCancel"});
         return panel;
     }
 });
-
 
 Widget.subclass('ConsoleWidget', {
 
@@ -2715,97 +2713,96 @@ Widget.subclass('ConsoleWidget', {
     ctx: {},
     
     initialize: function($super, capacity) {
-	$super(null);
-	var model = new SyntheticModel(this.pins);
-	this.connectModel(model.makePlugSpecFromPins(this.pins));
-	model.setCommands([]);
-	model.setLogMessages([]);
-	model.setCommandCursor(0);
-	model.getLogMessageCapacity = function() { return capacity; }
-	model.Menu = [["command history", this, "addCommandHistoryInspector"] ];
-	Global.console.consumers.push(this);
-	this.ans = undefined; // last computed value
-	return this;
+        $super(null);
+        var model = new SyntheticModel(this.pins);
+        this.connectModel(model.makePlugSpecFromPins(this.pins));
+        model.setCommands([]);
+        model.setLogMessages([]);
+        model.setCommandCursor(0);
+        model.getLogMessageCapacity = function() { return capacity; }
+        model.Menu = [["command history", this, "addCommandHistoryInspector"] ];
+        Global.console.consumers.push(this);
+        this.ans = undefined; // last computed value
+        return this;
     },
     
     addCommandHistoryInspector: function() {
-	var extent = pt(500, 40);
-	var commands = this.getModelValue("getCommands", []).join('\n');
-	var rect = extent.extentAsRectangle();
-	var pane = new ScrollPane(new TextMorph(rect, commands), rect); 
-	var world = WorldMorph.current();
-	world.addFramedMorph(pane, "Command history", world.positionForNewMorph());
+        var extent = pt(500, 40);
+        var commands = this.getModelValue("getCommands", []).join('\n');
+        var rect = extent.extentAsRectangle();
+        var pane = new ScrollPane(new TextMorph(rect, commands), rect); 
+        var world = WorldMorph.current();
+        world.addFramedMorph(pane, "Command history", world.positionForNewMorph());
     },
 
     initialViewPosition: function(world, hint) {
-	return hint || pt(0, world.viewport().y - 200);
+        return hint || pt(0, world.viewport().y - 200);
     },
 
     initialViewExtent: function(world, hint) {
-	return hint || pt(world.viewport().width, 160); 
+        return hint || pt(world.viewport().width, 160); 
     },
     
     buildView: function(extent) {
-	var panel = PanelMorph.makePanedPanel(extent, [
+        var panel = PanelMorph.makePanedPanel(extent, [
             ['messagePane', newTextListPane, new Rectangle(0, 0, 1, 0.8)],
             ['commandLine', TextMorph, new Rectangle(0, 0.8, 1, 0.2)]
-	]);
-	
-	var model = this.getModel();
-	var m = panel.messagePane;
-	m.connectModel({model: model, getList: "getLogMessages", getListDelta: "getRecentLogMessages", 
-			getCapacity: "getLogMessageCapacity", getMenu: "getMenu"});
-	m.innerMorph().focusHaloBorderWidth = 0;
+        ]);
 
-	var self = this;
-	panel.shutdown = function() {
-	    PanelMorph.prototype.shutdown.call(this);
-	    var index = window.console.consumers.indexOf(self);
-	    if (index >= 0)
-		window.console.consumers.splice(index);
-	};
-	
-	m = panel.commandLine.beInputLine(100);
-	m.connectModel({model: model, 
-			getHistory: "getCommands", 
-			getHistoryCursor: "getCommandCursor", setHistoryCursor: "setCommandCursor",
-			setText: "setLastCommand", getText: "getLastCommand"});
-	return panel;
+        var model = this.getModel();
+        var m = panel.messagePane;
+        m.connectModel({model: model, getList: "getLogMessages", getListDelta: "getRecentLogMessages", 
+                        getCapacity: "getLogMessageCapacity", getMenu: "getMenu"});
+        m.innerMorph().focusHaloBorderWidth = 0;
+
+        var self = this;
+        panel.shutdown = function() {
+            PanelMorph.prototype.shutdown.call(this);
+            var index = window.console.consumers.indexOf(self);
+            if (index >= 0) {
+                window.console.consumers.splice(index);
+		    }
+        };
+
+        m = panel.commandLine.beInputLine(100);
+        m.connectModel({model: model, 
+                        getHistory: "getCommands", 
+                        getHistoryCursor: "getCommandCursor", setHistoryCursor: "setCommandCursor",
+                        setText: "setLastCommand", getText: "getLastCommand"});
+        return panel;
     },
 
     updateView: function(aspect, source) {
-	var p = this.modelPlug;
+        var p = this.modelPlug;
         if (!p) return;
-	switch (aspect) {
-	case p.getLastCommand:
-	    this.evalCommand(this.getModelValue("getLastCommand"));
-	    break;
-	}
+        switch (aspect) {
+        case p.getLastCommand:
+            this.evalCommand(this.getModelValue("getLastCommand"));
+            break;
+        }
     },
 
     evaluate: interactiveEval.bind(this.ctx),
 
     evalCommand: function(text) {
-	if (!text) return;
-	try {
-	    var ans = this.evaluate(text);
-	    if (ans !== undefined) {
-		this.ans = ans;
-		this.log(ans !== undefined && ans !== null && ans.toString());
-	    }
-	    this.setModelValue("setLastCommand", "");
-	} catch (er) {
-	    console.log("Evaluation error: "  + er);
-	}
+        if (!text) return;
+        try {
+            var ans = this.evaluate(text);
+            if (ans !== undefined) {
+                this.ans = ans;
+                this.log(ans !== undefined && ans !== null && ans.toString());
+            }
+            this.setModelValue("setLastCommand", "");
+        } catch (er) {
+            console.log("Evaluation error: "  + er);
+        }
     },
     
     log: function(message) {
-	this.setModelValue("setRecentLogMessages", [message]);
+        this.setModelValue("setRecentLogMessages", [message]);
     }
     
 });
-
-
 
 console.log('loaded Widgets.js');
 
