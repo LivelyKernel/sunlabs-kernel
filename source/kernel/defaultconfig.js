@@ -111,6 +111,11 @@ var Config = {
     askBeforeQuit: true,
     
     // advanced debugging options
-    debugExtras: false
+    debugExtras: false,
+
+    // use the new menu code that relies on submorphs and does not derive from
+    // a single TextMorph
+    useNewMenu: true
+
 }
 

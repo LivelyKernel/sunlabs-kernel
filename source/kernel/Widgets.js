@@ -1389,14 +1389,14 @@ Morph.subclass("TextListMorph", {
     defaultCapacity: 50,
     highlightItemsOnMove: false,
 
-    initialize: function($super, initialBounds, itemList) {
+    initialize: function($super, initialBounds, itemList, optTextStyle) {
         // itemList is an array of strings
         var height = Math.max(initialBounds.height, itemList.length * (TextMorph.prototype.fontSize + this.itemMargin *2));
         initialBounds = initialBounds.withHeight(height);
         $super(initialBounds, itemList);
         this.itemList = itemList;
         this.selectedLineNo = -1;
-        this.generateSubmorphs(itemList, initialBounds.width);
+        this.generateSubmorphs(itemList, initialBounds.width, optTextStyle);
         this.alignAll();
         var model = new SyntheticModel(this.pins);
         this.modelPlug = new ModelPlug(model.makePlugSpecFromPins(this.pins));
@@ -1420,10 +1420,12 @@ Morph.subclass("TextListMorph", {
 
     handlesMouseDown: Functions.True,
     
-    generateSubmorphs: function(itemList, width) {
+    generateSubmorphs: function(itemList, width, additionalStyling) {
 	var rect = pt(width, TextMorph.prototype.fontSize).extentAsRectangle().insetByPt(pt(this.itemMargin, 0));
 	for (var i = 0; i < itemList.length; i++)  {
-	    var m = this.addMorph(new TextMorph(rect, itemList[i])).beListItem();
+	    var m = new TextMorph(rect, itemList[i]).beListItem();
+	    if (additionalStyling) m.applyStyle(additionalStyling);
+	    this.addMorph(m);
 	    m.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove"});
 	}
     },
@@ -1643,11 +1645,14 @@ Morph.subclass("NewMenuMorph", {
     listStyle: { 
         borderColor: Color.blue,
         borderWidth: 0.5,
-        textColor: Color.blue,
         fill: Color.blue.lighter(5),
         borderRadius: 6, 
         fillOpacity: 0.75, 
         wrapStyle: WrapStyle.Shrink
+    },
+
+    textStyle: {
+        textColor: Color.blue
     },
 
     labelStyle: {
@@ -1733,9 +1738,10 @@ Morph.subclass("NewMenuMorph", {
         this.stayUp = remainOnScreen; // set true to keep on screen
 
         parentMorph.addMorphAt(this, loc);
-
+	
+	var textList = this.items.map(function(item) { return item[0]; });
         this.listMorph = new TextListMorph(pt(this.estimateListWidth(TextMorph.prototype), 0).extentAsRectangle(), 
-                             this.items.map(function(item) { return item[0]; }));
+					   textList, this.textStyle);
         this.listMorph.applyStyle(this.listStyle);
         this.listMorph.suppressHandles = true;
         this.listMorph.focusHaloBorderWidth = 0;
