@@ -317,9 +317,7 @@ Morph.subclass("ClipMorph", {
     },
     
     // do not include submorphs in bounds calculations
-    submorphBounds: function() {
-	return null;
-    },
+    submorphBounds: Functions.Null,
 
     innerMorph: function() {
         this.submorphs.length != 1 && console.log("not a single inner morph");
@@ -338,6 +336,7 @@ Morph.subclass("TitleBarMorph", {
     documentation: "Title bar for WindowMorphs",
     controlSpacing: 3,
     barHeight: 22,
+    labelInset: pt(6, 3),
 
     initialize: function($super, headline, windowWidth, windowMorph) {
         $super(new Rectangle(0, 0, windowWidth, this.barHeight), "rect");
@@ -369,9 +368,9 @@ Morph.subclass("TitleBarMorph", {
         } else { // String
             var width = headline.length * 8; // wild guess headlineString.length * 2 *  font.getCharWidth(' ') + 2;
             label = new TextMorph(new Rectangle(0, 0, width, this.barHeight), headline).beLabel();
-            label.shape.roundEdgesBy(8);
         }
-
+        label.shape.roundEdgesBy(8);
+	label.inset = this.labelInset.copy();
         this.label = this.addMorph(label);
 
         this.adjustForNewBounds();  // This will align the buttons and label properly
