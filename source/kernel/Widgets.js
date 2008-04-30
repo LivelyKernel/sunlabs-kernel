@@ -1675,7 +1675,7 @@ Morph.subclass("NewMenuMorph", {
         //     menu.addLine();          // interspersed with these
         //     menu.openIn(world,location,stayUp,captionIfAny);
 	
-        $super(pt(200, 200).extentAsRectangle(), "rect");
+        $super(pt(100, 0).extentAsRectangle(), "rect");
         this.items = items;
         this.targetMorph = targetMorph || this;
         this.listMorph = null;
@@ -1715,13 +1715,14 @@ Morph.subclass("NewMenuMorph", {
         this.removeItemsNamed(rejects);
     },
 
-    estimateListWidth: function() {
+    estimateListWidth: function(proto) {
+	// estimate with based on some prototypical TextMorph object
 	// lame but let's wait to do the right thing until the layout business is complete
 	var maxWidth = 0;
 	for (var i  = 0; i < this.items.length; i++) {
 	    if (this.items[i][0].length > maxWidth) maxWidth = this.items[i][0].length;
 	}
-	return maxWidth*TextMorph.prototype.fontSize/2 + 2*TextMorph.prototype.inset.x;
+	return maxWidth*proto.fontSize/2 + 2*proto.inset.x;
     },
 
     openIn: function(parentMorph, loc, remainOnScreen, captionIfAny) { 
@@ -1733,7 +1734,7 @@ Morph.subclass("NewMenuMorph", {
 
         parentMorph.addMorphAt(this, loc);
 
-        this.listMorph = new TextListMorph(pt(this.estimateListWidth(), 0).extentAsRectangle(), 
+        this.listMorph = new TextListMorph(pt(this.estimateListWidth(TextMorph.prototype), 0).extentAsRectangle(), 
                              this.items.map(function(item) { return item[0]; }));
         this.listMorph.applyStyle(this.listStyle);
         this.listMorph.suppressHandles = true;
