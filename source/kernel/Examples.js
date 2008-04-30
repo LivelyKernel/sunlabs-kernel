@@ -127,7 +127,7 @@ Morph.subclass("ClockMorph", {
 		['XII','I','II','III','IV','V','VI','VII','VIII','IX','X','XI'][i]); // Roman
 	    label.applyStyle({borderWidth: 0, fill: null, wrapStyle: WrapStyle.Shrink, fontSize: labelSize});
             label.setInset(pt(0,0));        
-            label.align(label.bounds().center(), labelPosition.addXY(-1, 1));
+            label.align(label.bounds().center(), labelPosition.addXY(-1, 2));
             this.addMorph(label);
         }
     
@@ -681,12 +681,16 @@ ClipMorph.subclass('SquiggleMorph', {
 
     onMouseMove: function(evt) {
         if (this.currentMorph) {
-            var verts = this.currentMorph.shape.vertices();
-            var pt = this.localize(evt.mousePoint.subPt(this.start));
-            if (verts.length > 0 && !verts[verts.length - 1].eqPt(pt)) {
+	    if (!this.containsWorldPoint(evt.mousePoint)) {
+		this.onMouseUp(evt);
+		return;
+	    } 
+	    var verts = this.currentMorph.shape.vertices();
+	    var pt = this.localize(evt.mousePoint.subPt(this.start));
+	    if (verts.length > 0 && !verts[verts.length - 1].eqPt(pt)) {
                 verts.push(pt);
                 this.currentMorph.shape.setVertices(verts);
-            }
+	    }
         } else {
             this.checkForControlPointNear(evt);
         }
