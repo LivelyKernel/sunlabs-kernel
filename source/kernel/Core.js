@@ -4496,21 +4496,7 @@ Morph.addMethods({
 	    this.fullBounds.expandBy(this.shape.getStrokeWidth());
 	}
 
-	var subBounds = null; // KP: added = null
-	if (this.hasSubmorphs()) { 
-	    if (ignoreTransients) {
-		this.submorphs.forEach(function(m) { 
-		    if (! m.transientBounds)
-			subBounds = subBounds == null ? m.bounds(ignoreTransients) :
-			subBounds.union(m.bounds(ignoreTransients));
-		});
-	    } else {
-		this.submorphs.forEach(function(m) { 
-		    subBounds = subBounds == null ? m.bounds() :
-			subBounds.union(m.bounds());
-		});
-	    }
-	} 
+	var subBounds = this.submorphBounds(ignoreTransients);
 	if (subBounds != null) {
 	    // could be simpler when no rotation...
 	    this.fullBounds = this.fullBounds.union(tfm.transformRectToRect(subBounds));
@@ -4522,6 +4508,25 @@ Morph.addMethods({
 	}
 
 	return this.fullBounds; 
+    },
+    
+    submorphBounds: function(ignoreTransients) {
+	if (!this.hasSubmorphs()) 
+	    return null;
+	var subBounds = null;
+	if (ignoreTransients) {
+	    this.submorphs.forEach(function(m) { 
+		if (!m.transientBounds)
+		    subBounds = subBounds == null ? m.bounds(ignoreTransients) :
+		    subBounds.union(m.bounds(ignoreTransients));
+	    });
+	} else {
+	    this.submorphs.forEach(function(m) { 
+		subBounds = subBounds == null ? m.bounds() :
+		    subBounds.union(m.bounds());
+	    });
+	}
+	return subBounds;
     },
 
     // innerBounds returns the bounds of this morph only, and in local coordinates

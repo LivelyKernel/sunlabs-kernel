@@ -315,26 +315,10 @@ Morph.subclass("ClipMorph", {
     defaultOrigin: function(bounds) { 
         return bounds.topLeft(); 
     },
-
-    bounds: function() {
-        if (this.fullBounds != null) return this.fullBounds;
-        this.fullBounds = this.getLocalTransform().transformRectToRect(this.shape.bounds());
     
-        if (this.shape.hasElbowProtrusions) {
-            // double border margin for polylines to account for elbow protrusions
-            this.fullBounds.expandBy(this.shape.getStrokeWidth()*2);
-        } else {
-            this.fullBounds.expandBy(this.shape.getStrokeWidth());
-        }
-        
-        // same copy&pasete from Morph but not including the submorphs
-        
-        if (this.fullBounds.width < 3 || this.fullBounds.height < 3) {
-            // Prevent horizontal or vertical lines from being ungrabbable
-            this.fullBounds = this.fullBounds.expandBy(3); 
-        }
-        
-        return this.fullBounds; 
+    // do not include submorphs in bounds calculations
+    submorphBounds: function() {
+	return null;
     },
 
     innerMorph: function() {
@@ -550,11 +534,10 @@ Morph.subclass("WindowControlMorph", {
 });
 
 WindowState = { Expanded: "Expanded", Collapsed: "Collapsed", Shutdown: "Shutdown" };
-/**
- * @class WindowMorph: Full-fledged windows with title bar, menus, etc.
- */
+
 Morph.subclass('WindowMorph', {
 
+    documentation: "Full-fledged windows with title bar, menus, etc.",
     state: WindowState.Expanded,
     titleBar: null,
     targetMorph: null,
@@ -735,10 +718,9 @@ Morph.subclass('WindowMorph', {
 
 });
    
-/**
- * @class TabbedPanelMorph: Alternative to windows for off-screen content
- */
 WindowMorph.subclass("TabbedPanelMorph", {
+
+    documentation: "Alternative to windows for off-screen content",
 
     initialize: function($super, targetMorph, headline, location, sideName) {
         // A TabbedPanelMorph is pretty much like a WindowMorph, in that it is intended to 
@@ -894,10 +876,8 @@ Morph.subclass('HandleMorph', {
 });
 
 Morph.subclass("SelectionMorph", {
-    // @class SelectionMorph: The selection "tray" object that
-    // allows multiple objects to be moved and otherwise manipulated
-    // simultaneously. 
-    
+    documentation: 'selection "tray" object that allows multiple objects to be moved and otherwise '
+	+ 'manipulated simultaneously',
     borderWidth: 1,
     borderColor: Color.blue,
     fill: Color.secondary.blue,
@@ -1399,7 +1379,8 @@ Morph.addMethods({
 
 
 Morph.subclass("TextListMorph", {
-    
+
+    documentation: "A list that uses TextMorphs to display individual items",
     borderColor: Color.black,
     borderWidth: 1,
     fill: Color.white,
@@ -1418,7 +1399,6 @@ Morph.subclass("TextListMorph", {
         this.selectedLineNo = -1;
         this.generateSubmorphs(itemList, initialBounds.width);
         this.alignAll();
-        // this default self connection may get overwritten by, eg, connectModel()...
         var model = new SyntheticModel(this.pins);
         this.modelPlug = new ModelPlug(model.makePlugSpecFromPins(this.pins));
         this.setModelValue('setList', itemList);
@@ -1438,14 +1418,13 @@ Morph.subclass("TextListMorph", {
         this.setModelValue('setList', this.itemList);
         this.layoutChanged();
     },
-    
+
     handlesMouseDown: Functions.True,
     
     generateSubmorphs: function(itemList, width) {
 	var rect = pt(width, TextMorph.prototype.fontSize).extentAsRectangle().insetByPt(pt(this.itemMargin, 0));
 	for (var i = 0; i < itemList.length; i++)  {
 	    var m = this.addMorph(new TextMorph(rect, itemList[i])).beListItem();
-	    //m.setWrapStyle(WrapStyle.Shrink);
 	    m.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove"});
 	}
     },
