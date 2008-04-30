@@ -416,17 +416,12 @@ var Properties = {
 // Our extensions to JavaScript base libraries
 // ===========================================================================
 
-
-/**
-  * Extensions to class Function
-  */  
-
 Object.extend(Function.prototype, {
 
     inspect: function() {
+	// Print method name (if any) and the first 80 characters of the decompiled source (without 'function')
 	var methodBody = this.toString();
-	// First 80 chars of code, without 'function'
-	methodBody = methodBody.substring(8, 88) + (methodBody.length>88 ? '...' : '');
+	methodBody = methodBody.substring(8, 88) + (methodBody.length > 88 ? '...' : '');
 	return this.qualifiedMethodName() + methodBody;
     },
 
@@ -473,8 +468,13 @@ Object.extend(Function.prototype, {
 
     },
 
-    // modified Class.Methods.addMethods from prototype.js
+
     addMethods: function(source) {
+	// copy all the methods and properties from {source} into the
+	// prototype property of the receiver, which is intended to be
+	// a class constructor.  Method arguments named '$super' are treated
+	// specially, see Prototype.js documentation for "Class.create()" for details.
+	// derived from Class.Methods.addMethods() in prototype.js
 	var ancestor = this.superclass && this.superclass.prototype;
 
 	for (var property in source) {
@@ -523,12 +523,18 @@ Object.extend(Function.prototype, {
     },
 
 
-    subclass: function(/*,... */) {
-	// Main method for LK class system.
+    subclass: function(className /*:String*/ /*,... */) {
+	// Main method of the LK class system.
+
+	// {className} is the name of the new class constructor which this method synthesizes
+	// and binds to {className} in the Global namespace. 
+	// Remaining arguments are (inline) properties and methods to be copied into the prototype 
+	// of the newly created constructor.
+
 	// modified from prototype.js
 
 	var properties = $A(arguments);
-	var name = properties.shift();
+	properties.shift();
 	
 	function klass() {
 	    // check for the existence of Importer, which may not be defined very early on
@@ -552,7 +558,7 @@ Object.extend(Function.prototype, {
 
 	klass.prototype.constructor = klass;
 	// KP: .name would be better but js ignores .name on anonymous functions
-	klass.type = name;
+	klass.type = className;
 	
 	for (var i = 0; i < properties.length; i++) {
 	    klass.addMethods(properties[i] instanceof Function ? (properties[i])() : properties[i]);
@@ -562,12 +568,13 @@ Object.extend(Function.prototype, {
 	    klass.prototype.initialize = Functions.Empty;
 	}
 
-	Global[name] = klass;
+	Global[className] = klass;
 	return klass;
     },
 
 
     getOriginal: function() {
+	// get the original 'unwrapped' function, traversing as many wrappers as necessary.
 	var func = this;
 	while (func.originalFunction) func = func.originalFunction;
 	return func;

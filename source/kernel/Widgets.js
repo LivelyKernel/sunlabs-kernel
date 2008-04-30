@@ -697,7 +697,7 @@ Morph.subclass('WindowMorph', {
     world: function() {
 	// note, the window may be removed from the world and its titlebar only in the world, hence the following: 
 	return WorldMorph.current();
-	// ther should be a better way though.
+	// there should be a better way though.
     },
 
     adjustForNewBounds: function ($super) {
