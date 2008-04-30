@@ -1751,7 +1751,13 @@ Morph.subclass("TextMorph", {
 	return [
 		["cut (x)", this.doCut.bind(this)],
 		["copy (c)", this.doCopy.bind(this)],
-		["paste (v)", this.doPaste.bind(this)]
+		["paste (v)", this.doPaste.bind(this)],
+		["replace next (m)", this.doMore.bind(this)],
+		["find (f)", this.doFind.bind(this)],
+		["find next (g)", this.doFindNext.bind(this)],
+		["do it (d)", this.doDoit.bind(this)],
+		["printIt (p)", this.doPrintit.bind(this)],
+		["save (s)", this.doSave.bind(this)]
 		]
 	},
 
@@ -1766,86 +1772,67 @@ Morph.subclass("TextMorph", {
         if (TextMorph.clipboardString) this.replaceSelectionfromKeyboard(TextMorph.clipboardString); 
         },
 
-    processCommandKeys: function(evt) {  //: Boolean (was the command processed?)
-	var key = evt.getKeyChar();
-        // console.log('command ' + key);
-	if (key) key = key.toLowerCase();
-        switch (key) {
-        case "s": { // Save
-            this.saveContents(this.textString); 
-            return true; 
-        }
-      case "x": { // Cut
-            TextMorph.clipboardString = this.getSelectionString(); 
-            this.replaceSelectionWith("");
-            return true; 
-        }
-        case "c": { // Copy
-            TextMorph.clipboardString = this.getSelectionString(); 
-            return true; 
-        }
-        case "v": { // Paste
-            if (TextMorph.clipboardString)
-                this.replaceSelectionfromKeyboard(TextMorph.clipboardString); 
-            return true; 
-        }
-    
-        case "w": { // Where (searches for selection in all source files)
-            if (SourceControl) SourceControl.browseReferencesTo(this.getSelectionString()); 
-            return true; 
-        }
-       case "f": { // find -- prompt for, find, and select, a string
-            this.world().prompt("Enter the text you wish to find...",
-		function(response)
-		{return this.searchForFind(response, this.selectionRange[1]); }
-		.bind(this));
-            return true; 
-        }
-        case "g": { // aGain -- repeats a find or replacement
-            if (this.lastSearchString) this.searchForFind(this.lastSearchString, this.lastFindLoc + this.lastSearchString.length);
-            return true; 
-        }
-        case "m": { // more -- repeats a typed replacement (check BS weirdness)
-            if (this.charsReplaced) {
-		this.searchForFind(this.charsReplaced, this.selectionRange[0]);
-		if (this.getSelectionString() != this.charsReplaced) return;
-		var holdChars = this.charsReplaced;  // Save charsReplaced
-                this.replaceSelectionWith(this.charsTyped); 
-		this.charsReplaced = holdChars ;  // Restore charsReplaced after above
-	    }
-            return true; 
-        }
-    
-        case "d": { // Do it
-	    try {
-		this.boundEval(this.getSelectionString());
-	    } catch (e) {
-		this.world().alert("exception " + e);
-	    }
-            return true; 
-        }
-        
-        case "p": { // Print it
-            var strToEval = this.getSelectionString();
-            this.setNullSelectionAt(this.selectionRange[1] + 1);
-            // console.log('selection = ' + strToEval);
-	    try {
-		var result = this.boundEval(strToEval);
-	    } catch (e) {
-		this.world().alert("exception " + e);
-	    }
-            this.replaceSelectionWith(" " + result);
-            return true; 
-        }
-        
-        case "a": {  // Select-all
-	    	if (this.typingHasBegun) { // Select chars just typed
+	doSelectAll: function(fromKeyboard) {
+        if (fromKeyboard && this.typingHasBegun) { // Select chars just typed
 				this.setSelectionRange(this.selectionRange[0] - this.charsTyped.length, this.selectionRange[0]);
 	    	} else { // Select All
             	this.setSelectionRange(0, this.textString.length); 
 	    	}
-            return true;
-        }
+	},
+	doMore: function() {
+        if (this.charsReplaced) {
+			this.searchForFind(this.charsReplaced, this.selectionRange[0]);
+			if (this.getSelectionString() != this.charsReplaced) return;
+			var holdChars = this.charsReplaced;  // Save charsReplaced
+			this.replaceSelectionWith(this.charsTyped); 
+			this.charsReplaced = holdChars ;  // Restore charsReplaced after above
+		}
+	},
+	doFind: function() {
+        this.world().prompt("Enter the text you wish to find...",
+			function(response)
+				{return this.searchForFind(response, this.selectionRange[1]); }
+			.bind(this));
+	},
+	doFindNext: function() {
+        if (this.lastSearchString) this.searchForFind(this.lastSearchString, this.lastFindLoc + this.lastSearchString.length);
+	},
+	doSearch: function() {
+        if (SourceControl) SourceControl.browseReferencesTo(this.getSelectionString()); 
+	},
+	doDoit: function() {
+		this.replaceSelectionWith(" " + this.tryBoundEval(this.getSelectionString()));
+	},
+	doPrintit: function() {
+		var strToEval = this.getSelectionString();
+		this.setNullSelectionAt(this.selectionRange[1] + 1);
+		this.replaceSelectionWith(" " + this.tryBoundEval(strToEval));
+		},
+	doSave: function() {
+        this.saveContents(this.textString); 
+	},
+	tryBoundEval: function (str) {
+		var result;
+		try { result = this.boundEval(str); }
+			catch (e) { this.world().alert("exception " + e); }
+		return result;
+	},
+    processCommandKeys: function(evt) {  //: Boolean (was the command processed?)
+		var key = evt.getKeyChar();
+		// console.log('command ' + key);
+		if (key) key = key.toLowerCase();
+        switch (key) {
+		case "a": { this.doSelectAll(true); return true; } // SelectAll
+		case "x": { this.doCut(); return true; } // Cut
+		case "c": { this.doCopy(); return true; } // Copy
+		case "v": { this.doPaste(); return true; } // Paste
+		case "m": { this.doMore(); return true; } // More (repeat replacement)
+		case "f": { this.doFind(); return true; } // Find
+		case "g": { this.doFindNext(); return true; } // Find aGain
+		case "w": { this.doSearch(); return true; } // Where (search in system source code)
+		case "d": { this.doDoit(); return true; } // Doit
+		case "p": { this.doPrintit(); return true; } // Printit
+		case "s": { this.doSave(); return true; } // Italic
         
         // Typeface
 		case "b": { this.emphasizeSelection({style: 'bold'}); return true; }
