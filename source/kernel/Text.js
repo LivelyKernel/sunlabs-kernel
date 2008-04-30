@@ -1126,6 +1126,7 @@ Morph.subclass("TextMorph", {
             {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
         // some eye candy for the help
 	this.linkToStyles(['helpText']);
+	this.setWrapStyle(WrapStyle.Shrink);
         this.openForDragAndDrop = false; // so it won't interfere with mouseovers
         return this;
     },
