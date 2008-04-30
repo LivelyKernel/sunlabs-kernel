@@ -1140,7 +1140,8 @@ Morph.subclass("TextMorph", {
         // Add a descriptive separator line
         menu.addItem(['----- text functions -----']);
 
-        menu.addItem(["accept changes", function() { this.saveContents(this.textString) }]);
+        this.editMenuItems().each(function(item) {menu.addItem(item); });
+//		menu.addItem(["accept changes", function() { this.saveContents(this.textString) }]);
         menu.addItem(["evaluate as JavaScript code", function() { this.boundEval(this.textString) }]);
 
         menu.addItem(["evaluate as Lively markup", function() { 
@@ -1757,7 +1758,8 @@ Morph.subclass("TextMorph", {
 		["find next (g)", this.doFindNext.bind(this)],
 		["do it (d)", this.doDoit.bind(this)],
 		["printIt (p)", this.doPrintit.bind(this)],
-		["save (s)", this.doSave.bind(this)]
+		["accept changes (s)", this.doSave.bind(this)],
+		["help", this.doHelp.bind(this)]
 		]
 	},
 
@@ -1810,6 +1812,11 @@ Morph.subclass("TextMorph", {
 		},
 	doSave: function() {
         this.saveContents(this.textString); 
+	},
+	doHelp: function() {
+               WorldMorph.current().notify("Help is on the way...\n" +
+					"...but not today.");
+
 	},
 	tryBoundEval: function (str) {
 		var result;
