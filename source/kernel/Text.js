@@ -1049,7 +1049,7 @@ Morph.subclass("TextMorph", {
 	this.applyStyle({borderWidth: 0, fill: null, wrapStyle: WrapStyle.None});
 	this.ignoreEvents();
 	this.suppressHandles = true;
-	this.inset = pt(0, 0); // otherwise selection will overlap
+	this.inset = pt(4, 0); // otherwise selection will overlap
 	this.acceptInput = false;
 	this.okToBeGrabbedBy = Functions.Null;
 	this.focusHaloBorderWidth = 0;

@@ -1674,7 +1674,7 @@ Morph.subclass("NewMenuMorph", {
         //     menu.addItem(nextItem);  // May be several of these
         //     menu.addLine();          // interspersed with these
         //     menu.openIn(world,location,stayUp,captionIfAny);
-
+	
         $super(pt(200, 200).extentAsRectangle(), "rect");
         this.items = items;
         this.targetMorph = targetMorph || this;
@@ -1715,6 +1715,15 @@ Morph.subclass("NewMenuMorph", {
         this.removeItemsNamed(rejects);
     },
 
+    estimateListWidth: function() {
+	// lame but let's wait to do the right thing until the layout business is complete
+	var maxWidth = 0;
+	for (var i  = 0; i < this.items.length; i++) {
+	    if (this.items[i][0].length > maxWidth) maxWidth = this.items[i][0].length;
+	}
+	return maxWidth*TextMorph.prototype.fontSize/2 + 2*TextMorph.prototype.inset.x;
+    },
+
     openIn: function(parentMorph, loc, remainOnScreen, captionIfAny) { 
         if (this.items.length == 0) return;
 
@@ -1724,7 +1733,7 @@ Morph.subclass("NewMenuMorph", {
 
         parentMorph.addMorphAt(this, loc);
 
-        this.listMorph = new TextListMorph(pt(200, 0).extentAsRectangle(), 
+        this.listMorph = new TextListMorph(pt(this.estimateListWidth(), 0).extentAsRectangle(), 
                              this.items.map(function(item) { return item[0]; }));
         this.listMorph.applyStyle(this.listStyle);
         this.listMorph.suppressHandles = true;
@@ -1737,7 +1746,7 @@ Morph.subclass("NewMenuMorph", {
             var label = new TextMorph(new Rectangle(0, 0, 200, 20), captionIfAny);
             label.applyStyle(this.labelStyle);
             label.fitText();
-            label.align(label.bounds().bottomCenter(), this.shape.bounds().topCenter());
+            label.align(label.bounds().bottomCenter(), this.listMorph.shape.bounds().topCenter());
             this.label = this.addMorph(label);
         }
 
