@@ -255,11 +255,10 @@ ButtonMorph.subclass("ImageButtonMorph", {
     
 });
 
-/**
- * @class IconMorph: Simple icons
- */
 ImageMorph.subclass("IconMorph", {
 
+    documentation: "Simple icon",
+    
     initialize: function($super, viewPort, url, name, targetUrl) {
         $super(viewPort, url);
         this.label = new TextMorph(new Rectangle(viewPort.width, viewPort.height/3, 100, 30), name).beLabel();
@@ -284,10 +283,9 @@ ImageMorph.subclass("IconMorph", {
 // Window widgets
 // ===========================================================================
 
-/**
- * @class ClipMorph: A clipping window/view
- */
 Morph.subclass("ClipMorph", {
+
+    documentation: "A clipping window/view",
 
     fill: null,
     borderWidth: 0,
@@ -326,14 +324,11 @@ Morph.subclass("ClipMorph", {
     
 });
 
-/**
- * @class TitleBarMorph
- */
 Morph.subclass("TitleBarMorph", {
 
-    // prototype variables
-    borderWidth: 0.5,
     documentation: "Title bar for WindowMorphs",
+
+    borderWidth: 0.5,
     controlSpacing: 3,
     barHeight: 22,
     labelInset: pt(6, 3),
@@ -426,14 +421,12 @@ Morph.subclass("TitleBarMorph", {
 
 });
 
-/**
- * @class TitleTabMorph
- */
 Morph.subclass("TitleTabMorph", {
+
+    documentation: "Title bar for tabbed window morphs",
 
     barHeight: 0,
     controlSpacing: 0,
-    documentation: "Title bar for tabbed window morphs",
     suppressHandles: true,
     
     initialize: function($super, headline, windowWidth, windowMorph) {
@@ -474,13 +467,11 @@ Morph.subclass("TitleTabMorph", {
 
 });
 
-/**
- * @class WindowControlMorph
- */ 
 Morph.subclass("WindowControlMorph", {
 
-    borderWidth: 0,
     documentation: "Event handling for Window morphs",
+
+    borderWidth: 0,
 
     initialize: function($super, rect, inset, color, targetMorph, actionScript, helpText) {
         $super(rect.insetBy(inset), 'ellipse');
@@ -699,7 +690,14 @@ Morph.subclass('WindowMorph', {
         tm.replaceItemNamed("reset scaling", ["reset scaling", this, 'setScale', 1]);
         tm.removeItemNamed("duplicate");
         tm.removeItemNamed("turn fisheye on");
+
         tm.openIn(this.world(), evt.mousePoint, false, this.targetMorph.inspect().truncate()); 
+    },
+
+    world: function() {
+	// note, the window may be removed from the world and its titlebar only in the world, hence the following: 
+	return WorldMorph.current();
+	// ther should be a better way though.
     },
 
     adjustForNewBounds: function ($super) {
@@ -755,12 +753,6 @@ WindowMorph.subclass("TabbedPanelMorph", {
 // Handles and selection widgets
 // ===========================================================================
 
-/**
- * @class HandleMorph
- * HandleMorphs are small rectangular objects that are displayed
- * whenever there is a chance to manipulate the shape of the current
- * object, e.g., to resize, re-scale, or rotate it.  
- */ 
 Morph.subclass('HandleMorph', {
     
     fill: null,
