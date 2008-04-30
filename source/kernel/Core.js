@@ -214,7 +214,6 @@ Namespace =  {
     LIVELY : UserAgent.usableNamespacesInSerializer ? "http://www.experimentalstuff.com/Lively"  : null, 
     XLINK : "http://www.w3.org/1999/xlink", 
     XHTML: "http://www.w3.org/1999/xhtml"
-
 };
 
 var Loader = {
@@ -4044,7 +4043,7 @@ Morph.addMethods({
     },
 
     enableEvents: function() {
-	this.mouseHandler = MouseHandlerForDragging;
+	this.mouseHandler = MouseHandlerForDragging.prototype;
 	LivelyNS.removeAttribute(this.rawNode, "disable-mouse-events");
 	return this;
     },
