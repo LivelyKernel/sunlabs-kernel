@@ -640,15 +640,12 @@ ClipMorph.subclass("DoodleMorph", {
     }
 });
 
-/**
- * @class SquiggleMorph
- */
+ClipMorph.subclass('SquiggleMorph', {
 
-Morph.subclass('SquiggleMorph', {
-
+    documentation: "An even simpler drawing program",
     drawingColor: Color.red,
     drawingHandColor: Color.yellow,
-    documentation: "An even simpler drawing program",
+
 
     initialize: function($super, ext) {
         $super(pt(0,0).extent(ext), "rect");
