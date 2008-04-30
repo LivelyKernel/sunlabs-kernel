@@ -131,15 +131,20 @@ Object.extend(URL, {
 });
 
 View.subclass('NetRequest', {
-
+    documentation: "a view that writes the contents of an http request into the model",
+    
+    // see XMLHttpRequest documentation for the following:
     Unsent: 0,
     Opened: 1,
     HeadersReceived: 2,
     Loading: 3,
     Done: 4,
 
-    documentation: "a view that writes the contents of an http request into the model",
-    pins: ["+Status", "+ReadyState", "+ResponseXML", "+ResponseText"],
+    pins: ["+Status",  // Updated once, when request is {Done} with the value returned from 'getStatus'.
+	   "+ReadyState", // Updated on every state transition of the request.
+	   "+ResponseXML", // Updated at most once, when request state is {Done}, with the parsed XML document retrieved.
+	   "+ResponseText" // Updated at most once, when request state is {Done}, with the text content retrieved.
+	  ],
 
     proxy: Loader.proxyURL ? new URL(Loader.proxyURL.endsWith("/") ? Loader.proxyURL : Loader.proxyURL + "/") : null,
 
@@ -148,7 +153,7 @@ View.subclass('NetRequest', {
         if (this.proxy) {
 	    if (this.proxy.hostname != url.hostname) { // FIXME port and protocol?
 		url = this.proxy.withFilename(url.hostname + url.fullPath());
-		//console.log("rewrote url " + Object.inspect(url) + " proxy " + this.proxy);
+		// console.log("rewrote url " + Object.inspect(url) + " proxy " + this.proxy);
 		// return this.proxy + url.hostname + "/" + url.fullPath();
 	    }
 	}
@@ -165,7 +170,7 @@ View.subclass('NetRequest', {
     },
 
     requestNetworkAccess: function() {
-        if (Global.netscape && window.location.protocol == "file:") {       
+        if (Global.netscape && Global.location.protocol == "file:") {       
             try {
                 netscape.security.PrivilegeManager.enablePrivilege("UniversalBrowserRead");
                 console.log("requested browser read privilege");
@@ -276,7 +281,6 @@ View.subclass('NetRequest', {
 
 });
 
-
 NetRequestReporterTrait = {
     setRequestStatus: function(statusInfo) { 
 	// error reporting
@@ -300,11 +304,9 @@ NetRequestReporterTrait = {
 // convenience base class with built in handling of errors
 Object.subclass('NetRequestReporter', NetRequestReporterTrait);
 
-/**
- * @class FeedChannel: RSS feed channel
- */ 
 
 Wrapper.subclass('FeedChannel', {
+    documentation: "Convenience wrapper around RSS Feed Channel XML nodes",
 
     initialize: function(rawNode) {
 	this.rawNode = rawNode;
@@ -322,11 +324,8 @@ Wrapper.subclass('FeedChannel', {
     
 });
 
-/**
- * @class FeedItem: An individual RSS feed item
- */ 
-
 Wrapper.subclass('FeedItem', {
+    documentation: "Convenience wrapper around individual RSS feed items",
 
     initialize: function(rawNode) {
 	this.rawNode = rawNode;
@@ -388,21 +387,15 @@ View.subclass('Feed', NetRequestReporterTrait, {
 
 });
 
-
-
-/**
- * @class Feed: RSS feed reader
- */
-// FIXME something clever, maybe an external library?
-
 Widget.subclass('FeedWidget', {
+    documentation: "RSS Feed Reader",
 
     defaultViewExtent: pt(500, 200),
     pins: [ "URL", "+ItemList", "+ChannelTitle", "-SelectedItemTitle", "+SelectedItemContent", "+Widget"],
     
     initialize: function($super, urlString) {
-	var model = new SyntheticModel(["FeedURL", "ItemList", "ChannelTitle", "SelectedItemContent", "SelectedItemTitle", 
-	    "ItemMenu", "Widget"]);
+	var model = new SyntheticModel(["FeedURL", "ItemList", "ChannelTitle", "SelectedItemContent", 
+	    "SelectedItemTitle", "ItemMenu", "Widget"]);
 
 	$super({model: model, 
 		setURL: "setFeedURL", getURL: "getFeedURL",
@@ -492,8 +485,6 @@ Widget.subclass('FeedWidget', {
 	var entry = this.getEntry(this.getModelValue("getSelectedItemTitle"));
 	return entry && entry.description();
     },
-
-    
 
     buildView: function(extent, model) {
         var panel = new PanelMorph(extent);

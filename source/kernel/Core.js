@@ -2486,11 +2486,8 @@ Shape.subclass('PolylineShape', {
 
 });
 
-/**
-  * @class PathShape
-  */ 
-
 Shape.subclass('PathShape', {
+    documentation: "Generic Path with arbitrary Bezier curves",
 
     hasElbowProtrusions: true,
 
@@ -2549,9 +2546,13 @@ Shape.subclass('PathShape', {
     close: function() {
 	this.rawNode.pathSegList.appendItem(this.rawNode.createSVGPathSegClosePath());
     },
-
+    
     containsPoint: function(p) {
-	return false; // FIXME
+	var r = Canvas.createSVGRect();
+	r.x = p.x;
+	r.y = p.y;
+	r.width = r.height = 0;
+	return Canvas.checkIntersection(this.rawNode, rect);
     },
 
     bounds: function() {
@@ -2562,7 +2563,6 @@ Shape.subclass('PathShape', {
     },
 
     // poorman's traits :)
-    containsPoint: PolygonShape.prototype.containsPoint,
     controlPointNear: PolygonShape.prototype.controlPointNear,
     possibleHandleForControlPoint: PolygonShape.prototype.possibleHandleForControlPoint,
     reshape: PolygonShape.prototype.reshape,
@@ -6039,9 +6039,6 @@ Morph.subclass("HandMorph", {
 });
 
 
-/**
- * @class LinkMorph
- */ 
 Morph.subclass('LinkMorph', {
 
     documentation: "two-way hyperlink between two Lively worlds",
@@ -6207,6 +6204,7 @@ Morph.subclass('LinkMorph', {
 });
 
 LinkMorph.subclass('ExternalLinkMorph', {
+    documentation: "A link to a different web page, presumably containing another LK",
 
     style: {borderColor: Color.black, fill: new RadialGradient(Color.green, Color.yellow)},
     
@@ -6225,15 +6223,14 @@ LinkMorph.subclass('ExternalLinkMorph', {
 	if (evt.isCommandKey()) {
 	    this.world().confirm("Leave current runtime to enter another page?",
 				 function (answer) {
-				     if (answer == true) {
-					 Global.location = url;
-				     } else console.log("cancelled loading " + url);
+				     if (answer) Global.location = url;
+				     else console.log("cancelled loading " + url);
 				 });
 	} else {
-	    if (this.win) this.win.focus()
+	    // FIXME, what it this.win is closed?
+	    if (this.win) this.win.focus();
 	    else this.win = Global.window.open(url);
 	}
-	
     },
     
     getHelpText: function() {
@@ -6267,7 +6264,7 @@ function interactiveEval(text) {
 	(morph || WorldMorph.current()).submorphs.forEach(function(m) { array.push(m) });
 	return array;
     }
-    function $i(id) {
+    function $i(id) { // maybe just '$'
 	return document.getElementById(id.toString());
     }
     function $x(node) {
