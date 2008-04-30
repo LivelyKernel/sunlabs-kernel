@@ -5226,6 +5226,10 @@ PasteUpMorph.subclass("WorldMorph", {
         return this;
     },
 
+    toggleNativeCursor: function(flag) {
+	this.canvas().setAttributeNS(null, "cursor", flag ? "auto" : "none");
+    },
+
     displayWorldOn: function(canvas) {
         this.remove();
 	this.itsCanvas = canvas;
