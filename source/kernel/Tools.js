@@ -264,6 +264,7 @@ Widget.subclass('SimpleInspector', {
         case p.getPropName:
             var prop = this.selectedItem();
             if (!prop) {
+
                 this.setModelValue("setPropText", "----");
             } else {
                 this.setModelValue("setPropText", Strings.withDecimalPrecision(Object.inspect(prop), 2));

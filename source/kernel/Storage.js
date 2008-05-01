@@ -626,7 +626,7 @@ TwoPaneBrowser.subclass('FileBrowser', {
 	    if (result) {
 		var eraser = { 
 		    setRequestStatus: function(status) { 
-			if (status.status < 300) 
+			if (status.isSuccess()) 
 			    model.setLowerNodeDeletionConfirmation(true);
 			NetRequestReporterTrait.setRequestStatus.call(this, status);
 		    }

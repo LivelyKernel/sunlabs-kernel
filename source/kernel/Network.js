@@ -130,6 +130,35 @@ Object.extend(URL, {
     source: new URL(Global.location)
 });
 
+Object.subclass('NetRequestStatus', {
+    documentation: "nice parsed status information, returned by NetRequest.getStatus when request done",
+    initialize: function(method, url, code) {
+	this.method = method;
+	this.url = url;
+	this.code = code;
+	this.exception = null;
+    },
+    
+    isSuccess: function() {
+	return this.code >= 200 && this.code < 300;
+    },
+
+    setException: function(e) {
+	this.exception = e;
+    },
+
+    toString: function() {
+	return Strings.format("#<NetRequestStatus{%s,%s,%s}>", this.method, this.url, this.exception || this.code);
+    },
+    
+    requestString: function() {
+	return this.method + " " + this.url;
+    }
+
+});
+
+
+
 View.subclass('NetRequest', {
     documentation: "a view that writes the contents of an http request into the model",
     
@@ -190,7 +219,6 @@ View.subclass('NetRequest', {
     onReadyStateChange: function() {
 	this.setModelValue('setReadyState', this.getReadyState());
 	if (this.getReadyState() === this.Done) {
-	    // console.log("done with " + this.method + " " + this.url + " status " + this.getStatus());
 	    this.setModelValue('setStatus', this.getStatus());
 	    if (this.transport.responseText) 
 		this.setModelValue('setResponseText', this.getResponseText());
@@ -224,7 +252,7 @@ View.subclass('NetRequest', {
     },
 
     getStatus: function() {
-	return { method: this.method, url: this.url, status: this.transport.status};
+	return new NetRequestStatus(this.method, this.url, this.transport.status);
     },
 
     updateView: function(aspect, controller) {
@@ -245,7 +273,7 @@ View.subclass('NetRequest', {
 	    return this;
 	} catch (er) {
 	    var status = this.getStatus();
-	    status.exception = er;
+	    status.setException(er);
 	    this.setModelValue("setStatus", status);
 	    throw er;
 	}
@@ -282,22 +310,19 @@ View.subclass('NetRequest', {
 });
 
 NetRequestReporterTrait = {
-    setRequestStatus: function(statusInfo) { 
+    setRequestStatus: function(status) { 
 	// error reporting
-	var method = statusInfo.method;
-	var url = statusInfo.url;
-	var status = statusInfo.status;
 	if (status.exception) {
-	    WorldMorph.current().alert("exception " + status.exception + " accessing " + method + " " + url);
-	} else if (status >= 300) {
-	    if (status == 401) {
-		WorldMorph.current().alert("not authorized to access " + method + " " + url); 
+	    WorldMorph.current().alert("exception " + status.exception + " accessing " + status.requestString());
+	} else if (status.code >= 300) {
+	    if (status.code == 401) {
+		WorldMorph.current().alert("not authorized to access " + status.requestString()); 
 		// should try to authorize
 	    } else {
-		WorldMorph.current().alert("failure to " + method + " "  + url + " code " + status);
+		WorldMorph.current().alert("failure to " + status.requestString() + " code " + status.code);
 	    }
 	} else 
-	    console.log("status " + status + " on " + method + " " + url);
+	    console.log("status " + status.code + " on " + status.requestString());
     }
 };
 

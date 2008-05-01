@@ -2641,9 +2641,9 @@ Object.extend(Exporter, {
     getBaseDocument: function() {
 	// FIXME memoize?
 	var req = new NetRequest().beSync().get(URL.source);
-	var status = req.getStatus().status;
-	if (status < 200 && status >= 300) {
-	    console.log("failure retrieving  " + URL.source + ", status " + req.getStatus());
+	var status = req.getStatus();
+	if (!status.isSuccess()) {
+	    console.log("failure retrieving  " + URL.source + ", status " + status);
 	    return null;
 	} else {
 	    return req.getResponseXML();
@@ -2682,11 +2682,11 @@ Object.extend(Exporter, {
 	
 	var status = Exporter.saveDocument(doc, url);
 
-	if (status.status >= 200 && status.status < 300) {
-	    console.log("success publishing world at " + url + ", status " + status.status);
+	if (status.isSuccess()) {
+	    console.log("success publishing world at " + url + ", status " + status.code);
 	    return url;
 	} else {
-	    WorldMorph.current().alert("failure publishing world at " + url + ", status " + status.status);
+	    WorldMorph.current().alert("failure publishing world at " + url + ", status " + status.code);
 	}
 	return null;
     }
