@@ -869,9 +869,9 @@ Morph.subclass("TextMorph", {
     
     initializeTransientState: function($super, initialBounds) {
         $super(initialBounds);
-        this.selectionRange = [0,-1]; // null or a pair of indices into textString
+        this.selectionRange = [0, -1]; // null or a pair of indices into textString
         this.selectionPivot = null;  // index of hit at onmousedown
-        this.priorSelection = [0,-1];  // for double-clicks
+        this.priorSelection = [0, -1];  // for double-clicks
         this.hasKeyboardFocus = false;
         this.isSelecting = false; // true if last onmousedown was in character area (hit>0)
         // note selection is transient
@@ -1508,10 +1508,13 @@ Morph.subclass("TextMorph", {
     onMouseUp: function(evt) {
         this.isSelecting = false;
     
-        // Check for repeated null selection meaning select word
-        if (this.selectionRange[1] != this.selectionRange[0] - 1) return;
-        if (this.priorSelection[1] != this.priorSelection[0] - 1) return;
-        if (this.selectionRange[0] != this.priorSelection[0]) return;
+        // If not a repeated null selection then done after saving previous selection
+        if ( (this.selectionRange[1] != this.selectionRange[0] - 1) ||
+            (this.priorSelection[1] != this.priorSelection[0] - 1) ||
+            (this.selectionRange[0] != this.priorSelection[0]) ) {
+		this.previousSelection = this.priorSelection;
+		return;
+	}
         
         // It is a null selection, repeated in the same place -- select word or range
         if (this.selectionRange[0] == 0 || this.selectionRange[0] == this.textString.length) {
@@ -1564,6 +1567,7 @@ Morph.subclass("TextMorph", {
         if (! this.acceptInput) return;
 	var strStyle = this.textStyle;
 	var repStyle = replacement.style;
+	var repString = repStyle ? replacement.string : replacement;
 	var oldLength = this.textString.length;
 	
 	if (! justMoreTyping) { // save info for 'More' command
@@ -1574,7 +1578,7 @@ Morph.subclass("TextMorph", {
 	// Splice the textString
 	var before = this.textString.substring(0,this.selectionRange[0]); 
         var after = this.textString.substring(this.selectionRange[1]+1, oldLength);
-	this.setTextString(before.concat(replacement,after), delayComposition, justMoreTyping);
+	this.setTextString(before.concat(repString,after), delayComposition, justMoreTyping);
 	
 	if (strStyle || repStyle) { // Splice the style array if any
 	    if (!strStyle) strStyle = new RunArray([oldLength],  [new TextEmphasis({})]);
@@ -1755,6 +1759,8 @@ Morph.subclass("TextMorph", {
 		["copy (c)", this.doCopy.bind(this)],
 		["paste (v)", this.doPaste.bind(this)],
 		["replace next (m)", this.doMore.bind(this)],
+		["exchange (e)", this.doExchange.bind(this)],
+		["undo (z)", this.doUndo.bind(this)],
 		["find (f)", this.doFind.bind(this)],
 		["find next (g)", this.doFindNext.bind(this)],
 		["do it (d)", this.doDoit.bind(this)],
@@ -1762,27 +1768,27 @@ Morph.subclass("TextMorph", {
 		["accept changes (s)", this.doSave.bind(this)],
 		["help", this.doHelp.bind(this)]
 		]
-	},
+    },
 
     doCut: function() {
 	TextMorph.clipboardString = this.getSelectionString(); 
         this.replaceSelectionWith("");
-        },
+    },
     doCopy: function() {
 	TextMorph.clipboardString = this.getSelectionString(); 
-        },
+    },
     doPaste: function() {
         if (TextMorph.clipboardString) this.replaceSelectionfromKeyboard(TextMorph.clipboardString); 
-        },
+    },
 
-	doSelectAll: function(fromKeyboard) {
+    doSelectAll: function(fromKeyboard) {
         if (fromKeyboard && this.typingHasBegun) { // Select chars just typed
 				this.setSelectionRange(this.selectionRange[0] - this.charsTyped.length, this.selectionRange[0]);
 	    	} else { // Select All
             	this.setSelectionRange(0, this.textString.length); 
 	    	}
-	},
-	doMore: function() {
+    },
+    doMore: function() {
         if (this.charsReplaced) {
 			this.searchForFind(this.charsReplaced, this.selectionRange[0]);
 			if (this.getSelectionString() != this.charsReplaced) return;
@@ -1790,41 +1796,79 @@ Morph.subclass("TextMorph", {
 			this.replaceSelectionWith(this.charsTyped); 
 			this.charsReplaced = holdChars ;  // Restore charsReplaced after above
 		}
-	},
-	doFind: function() {
+    },
+    doExchange: function() {
+            var sel1 = this.selectionRange;
+	    var sel2 = this.previousSelection;
+	    var d = 1;  // direction current selection will move
+	    if(sel1[0] > sel2[0]) {var t = sel1; sel1 = sel2; sel2 = t; d = -1} // swap so sel1 is first
+	    if(sel1[1] >= sel2[0]) return; // ranges must not overlap
+
+	    var fullText = (this.textStyle) ? this.getText() : this.textString;
+	    var txt1 = fullText.substring(sel1[0], sel1[1]+1);
+	    var txt2 = fullText.substring(sel2[0], sel2[1]+1);
+	    var between = fullText.substring(sel1[1]+1, sel2[0]);
+	    var d1 = (txt2.size() + between.size());  // amount to move sel1
+	    var d2 = (txt1.size() + between.size());  // amount to move sel2
+	    var newSel = [sel1[0]+d1, sel1[1]+d1];
+	    var newPrev = [sel2[0]-d2, sel2[1]-d2];
+	    if (d < 0) { var t = newSel;  newSel = newPrev;  newPrev = t; }
+	    var replacement = txt2.concat(between.concat(txt1));
+	    this.setSelectionRange(sel1[0], sel2[1]+1);  // select range including both selections
+	    this.replaceSelectionWith(replacement);  // replace by swapped text
+	    this.setSelectionRange(newSel[0], newSel[1]+1);
+	    this.previousSelection = newPrev;
+	    this.undoSelectionRange = d>0 ? sel1 : sel2;
+    },
+    doFind: function() {
         this.world().prompt("Enter the text you wish to find...",
 			function(response)
 				{return this.searchForFind(response, this.selectionRange[1]); }
 			.bind(this));
-	},
-	doFindNext: function() {
-        if (this.lastSearchString) this.searchForFind(this.lastSearchString, this.lastFindLoc + this.lastSearchString.length);
-	},
-	doSearch: function() {
+    },
+    doFindNext: function() {
+        if (this.lastSearchString)
+	    this.searchForFind(this.lastSearchString, this.lastFindLoc + this.lastSearchString.length);
+    },
+    doSearch: function() {
         if (SourceControl) SourceControl.browseReferencesTo(this.getSelectionString()); 
-	},
-	doDoit: function() {
+    },
+    doDoit: function() {
 		this.replaceSelectionWith(" " + this.tryBoundEval(this.getSelectionString()));
-	},
-	doPrintit: function() {
+    },
+    doPrintit: function() {
 		var strToEval = this.getSelectionString();
 		this.setNullSelectionAt(this.selectionRange[1] + 1);
 		this.replaceSelectionWith(" " + this.tryBoundEval(strToEval));
-		},
-	doSave: function() {
+    },
+    doSave: function() {
         this.saveContents(this.textString); 
-	},
-	doHelp: function() {
-               WorldMorph.current().notify("Help is on the way...\n" +
-					"...but not today.");
-
-	},
-	tryBoundEval: function (str) {
+    },
+    tryBoundEval: function (str) {
 		var result;
 		try { result = this.boundEval(str); }
 			catch (e) { this.world().alert("exception " + e); }
 		return result;
-	},
+    },
+    doHelp: function() {
+		WorldMorph.current().notify("Help is on the way...\n" +
+					"...but not today.");
+    },
+    doUndo: function() {
+	if (this.undoTextString) {
+                var t = this.selectionRange;
+		this.selectionRange = this.undoSelectionRange;
+		this.undoSelectionRange = t;
+                t = this.textString;
+		this.setTextString(this.undoTextString);
+		this.undoTextString = t;
+	}
+	if (this.undoTextStyle) {
+                t = this.textStyle;
+		this.textStyle = this.undoTextStyle;
+		this.undoTextStyle = t;
+	}
+     },
     processCommandKeys: function(evt) {  //: Boolean (was the command processed?)
 		var key = evt.getKeyChar();
 		// console.log('command ' + key);
@@ -1835,6 +1879,7 @@ Morph.subclass("TextMorph", {
 		case "c": { this.doCopy(); return true; } // Copy
 		case "v": { this.doPaste(); return true; } // Paste
 		case "m": { this.doMore(); return true; } // More (repeat replacement)
+		case "e": { this.doExchange(); return true; } // Exchange
 		case "f": { this.doFind(); return true; } // Find
 		case "g": { this.doFindNext(); return true; } // Find aGain
 		case "w": { this.doSearch(); return true; } // Where (search in system source code)
@@ -1842,17 +1887,17 @@ Morph.subclass("TextMorph", {
 		case "p": { this.doPrintit(); return true; } // Printit
 		case "s": { this.doSave(); return true; } // Italic
         
-        // Typeface
+        	// Typeface
 		case "b": { this.emphasizeSelection({style: 'bold'}); return true; }
  		case "i": { this.emphasizeSelection({style: 'italic'}); return true; }
  		case "n": { this.emphasizeSelection({style: 'normal'}); return true; }
 
-       // Font Size
+		// Font Size
 		case "4": { this.emphasizeSelection({size: (this.fontSize*0.8).roundTo(1)}); return true; }
-        case "5": { this.emphasizeSelection({size: (this.fontSize*1).roundTo(1)}); return true; }
-        case "6": { this.emphasizeSelection({size: (this.fontSize*1.2).roundTo(1)}); return true; }
-        case "7": { this.emphasizeSelection({size: (this.fontSize*1.5).roundTo(1)}); return true; }
-        case "8": { this.emphasizeSelection({size: (this.fontSize*2.0).roundTo(1)}); return true; }
+		case "5": { this.emphasizeSelection({size: (this.fontSize*1).roundTo(1)}); return true; }
+		case "6": { this.emphasizeSelection({size: (this.fontSize*1.2).roundTo(1)}); return true; }
+		case "7": { this.emphasizeSelection({size: (this.fontSize*1.5).roundTo(1)}); return true; }
+		case "8": { this.emphasizeSelection({size: (this.fontSize*2.0).roundTo(1)}); return true; }
 
 		// Text Alignment
 		case "l": { this.emphasizeSelection({align: 'left'}); return true; }
@@ -1860,14 +1905,7 @@ Morph.subclass("TextMorph", {
 		case "h": { this.emphasizeSelection({align: 'center'}); return true; }
 		case "j": { this.emphasizeSelection({align: 'justify'}); return true; }
 
-        case "z": { // Undo
-            if (this.undoTextString) { // Need to make *this* undo-able
-                this.selectionRange = this.undoSelectionRange;
-                if (this.undoTextStyle) this.textStyle = this.undoTextStyle;
-                this.setTextString(this.undoTextString);
-            }
-            return true;
-        }
+		case "z": { this.doUndo(); return true; }  // Undo
         }
 	//if (evt.type == "KeyPress") {
             var bracketIndex = CharSet.leftBrackets.indexOf(key);
@@ -2179,6 +2217,9 @@ Object.subclass('RunArray', {
 			}
 		return new RunArray(newRuns, this.values.slice(mStart.runIndex, mStop.runIndex + 1));
 		},
+    substring: function(start, beyondStop) {  // echo string protocol
+	return this.slice(start, beyondStop);
+    },
     concat: function(other) {  // Just like Array.concat()
 		if (other.empty()) return new RunArray(this.runs, this.values);
 		if (this.empty()) return new RunArray(other.runs, other.values);
@@ -2296,13 +2337,19 @@ Object.subclass('Text', {
 	// console.log("Text.emphasized: " + this.style);
 	return this;
     },
-    substring: function (start, stop) {
-	// Return string copy
+    asString: function () { // Return string copy
 	return this.string.substring(start, stop);
     },
-    subtext: function (start, stop) {
+    size: function () {
+	return this.string.length;
+    },
+    substring: function (start, stop) {
 	// Modify the style of this text according to emph
 	return new Text(this.string.substring(start, stop), this.style.slice(start, stop));
+    },
+    concat: function (other) {
+	// Modify the style of this text according to emph
+	return new Text(this.string.concat(other.string), this.style.concat(other.style));
     },
     toString: function() {
 	return "Text for " + this.string.toString() + "<" + this.style + ">";
