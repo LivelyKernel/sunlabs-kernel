@@ -840,7 +840,7 @@ WrapStyle = {
     Shrink: "Shrink" // sets both width and height based on line breaks only
 };
 
-Wrapper.subclass('TextSelection', {
+Visual.subclass('TextSelection', {
     
     fill: Color.primary.green,
     borderWidth: 0,

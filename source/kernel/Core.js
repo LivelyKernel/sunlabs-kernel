@@ -202,6 +202,15 @@ Global.window.onerror = function(message, url, code) {
     }
 })();    
 
+Object.extend(String.prototype, {
+    size: function() { // so code can treat, eg, Texts like Strings
+	return this.length;
+    },
+    
+    asString: function() { // so code can treat, eg, Texts like Strings
+	return this;
+    }
+});
 
 
 
@@ -2571,11 +2580,8 @@ Shape.subclass('PathShape', {
 });
 
 
-/**
-  * @class Exporter: Implementation class for morph serialization
-  */
-
 Object.subclass('Exporter', {
+    documentation: "Implementation class for morph serialization",
 
     rootMorph: null,
 
@@ -2719,10 +2725,6 @@ Copier.marker = Object.extend(new Copier(), {
     addMapping: Functions.Empty,
     lookupMorph: Functions.Null
 });
-
-/**
-  * @class Importer
-  */
 
 Copier.subclass('Importer', {
 
@@ -3975,7 +3977,7 @@ Morph.addMethods({     // help handling
 });
 
 
-Wrapper.subclass('FocusHalo', {
+Visual.subclass('FocusHalo', {
 
     borderWidth: 3,
     borderColor: Color.blue,
@@ -3993,7 +3995,6 @@ Wrapper.subclass('FocusHalo', {
 	while (this.rawNode.firstChild) this.rawNode.removeChild(this.rawNode.firstChild);
 	this.rawNode.appendChild(shape.rawNode);
     }
-
 
 });
 

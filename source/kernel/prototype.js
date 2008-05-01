@@ -208,14 +208,6 @@ Object.extend(String.prototype, {
     return this == '';
   },
 
-  size: function() { // so code can treat, eg, Texts like Strings
-    return this.length;
-  },
-
-  asString: function() { // so code can treat, eg, Texts like Strings
-    return this;
-  },
-
   blank: function() {
     return /^\s*$/.test(this);
   }
