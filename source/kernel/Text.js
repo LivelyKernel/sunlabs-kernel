@@ -771,8 +771,9 @@ var Locale = {
     //KP: note that this depends heavily on the language, esp if it's a programming language
     selectWord: function(str, i1) { // Selection caret before char i1
         var i2 = i1 - 1;
-        if (i1 > 0) { // look left for o backets
-            var i = this.charSet.leftBrackets.indexOf(str[i1-1]);
+        if (i1 > 0) { // look left for open backets
+            if(str[i1-1] == "\n" || str[i1-1] == "\r") return this.findLine(str, i1, 1, str[i1-1]);
+	    var i = this.charSet.leftBrackets.indexOf(str[i1-1]);
             if (str[i1 - 1] == "*" && (i1-2 < 0 || str[i1-2] != "/")) 
                 i = -1; // spl check for /*
             if (i >= 0) {
@@ -781,6 +782,7 @@ var Locale = {
             } 
         }
         if (i1 < str.length) { // look right for close brackets
+            if(str[i1] == "\n" || str[i1] == "\r") return this.findLine(str, i1, -1, str[i1]);
             var i = this.charSet.rightBrackets.indexOf(str[i1]);
             if (str[i1]== "*" && (i1+1 >= str.length || str[i1+1] != "/")) 
                 i = -1; // spl check for */
@@ -789,13 +791,32 @@ var Locale = {
                 return [i1+1, i2]; 
             } 
         }
-        while (i1-1 >= 0 && this.charSet.alphaNum.include(str[i1 - 1])) 
-            i1 --;
-        while (i2+1 < str.length && this.charSet.alphaNum.include(str[i2 + 1])) 
-            i2 ++;
+        var prev = (i1<str.length) ? str[i1] : "";
+	while (i1-1 >= 0 && (this.charSet.alphaNum.include(str[i1-1]) || this.periodWithDigit(str[i1-1], prev)) ) {
+            prev = str[i1-1];
+	    i1 --;
+        }
+	while (i2+1 < str.length && (this.charSet.alphaNum.include(str[i2+1]) || this.periodWithDigit(str[i2+1], prev)) ) {
+            prev = str[i2+1];
+	    i2 ++;
+	}
         return [i1, i2]; 
     },
     
+    periodWithDigit: function(c, prev) { // return true iff c is a period and prev is a digit
+        if (c != ".") return false;
+        return "0123456789".indexOf(prev) >= 0;
+    },
+
+    findLine: function(str, start, dir, endChar) { // start points to a CR or LF (== endChar)
+        var i = start;
+        while ((dir < 0) ? i - 1 >= 0 : i + 1 < str.length ) {
+            i += dir;
+            if (str[i] == endChar) return dir>0 ? [start, i] : [i+1, start];
+        }
+        return dir>0 ? [start+1, str.length-1] : [0, start];
+    },
+
     matchBrackets: function(str, chin, chout, start, dir) { 
         var i = start;
         var depth = 1;
@@ -1567,7 +1588,6 @@ Morph.subclass("TextMorph", {
         if (! this.acceptInput) return;
 	var strStyle = this.textStyle;
 	var repStyle = replacement.style;
-	var repString = repStyle ? replacement.string : replacement;
 	var oldLength = this.textString.length;
 	
 	if (! justMoreTyping) { // save info for 'More' command
@@ -1578,7 +1598,7 @@ Morph.subclass("TextMorph", {
 	// Splice the textString
 	var before = this.textString.substring(0,this.selectionRange[0]); 
         var after = this.textString.substring(this.selectionRange[1]+1, oldLength);
-	this.setTextString(before.concat(repString,after), delayComposition, justMoreTyping);
+	this.setTextString(before.concat(replacement.asString(),after), delayComposition, justMoreTyping);
 	
 	if (strStyle || repStyle) { // Splice the style array if any
 	    if (!strStyle) strStyle = new RunArray([oldLength],  [new TextEmphasis({})]);
@@ -1808,6 +1828,7 @@ Morph.subclass("TextMorph", {
 	    var txt1 = fullText.substring(sel1[0], sel1[1]+1);
 	    var txt2 = fullText.substring(sel2[0], sel2[1]+1);
 	    var between = fullText.substring(sel1[1]+1, sel2[0]);
+
 	    var d1 = (txt2.size() + between.size());  // amount to move sel1
 	    var d2 = (txt1.size() + between.size());  // amount to move sel2
 	    var newSel = [sel1[0]+d1, sel1[1]+d1];
@@ -2338,13 +2359,13 @@ Object.subclass('Text', {
 	return this;
     },
     asString: function () { // Return string copy
-	return this.string.substring(start, stop);
+	return this.string.substring(0);
     },
     size: function () {
 	return this.string.length;
     },
     substring: function (start, stop) {
-	// Modify the style of this text according to emph
+	// Return a substring with its emphasis as a Text
 	return new Text(this.string.substring(start, stop), this.style.slice(start, stop));
     },
     concat: function (other) {

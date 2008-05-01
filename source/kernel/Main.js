@@ -323,14 +323,6 @@ function populateWorldWithExamples(world) {
             devWorld.myWorld.addMorph(widget);
         }
  
-        if (Config.showRichText) {
-            var txt = new Text("But wait, there's more ...");
-            txt.emphasize( {style: 'bold'}, 4, 7);
-            txt.emphasize( {size: 18, style: 'bold'}, 18, 21);
-            console.log(txt.style);
-            widget = new TextMorph(widget.bounds().topLeft().addXY(-280, 0).extent(pt(250, 50)), txt);
-            devWorld.myWorld.addMorph(widget);
-        }
 
         if (Config.showHilbertFun) Pen.hilbertFun(devWorld.myWorld, widget.bounds().bottomLeft().addXY(180,80));
 
