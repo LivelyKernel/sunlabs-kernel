@@ -147,10 +147,10 @@ var Strings = {
     
     if (platformConsole.warn && platformConsole.info && platformConsole.assert) {
 	// it's a Firebug/Firebug lite console, it does all we want, so no extra work necessary
-	Global.window.console = platformConsole;
+	Global.console = platformConsole;
     } else {
 	// rebind to something that has all the calls
-	Global.window.console = {
+	Global.console = {
 	    
 	    consumers: [ platformConsole], // new LogWindow() ],
 	    
@@ -1096,6 +1096,14 @@ Object.extend(Rectangle, {
 	return rect(min, max); 
     },
 
+    ensure: function(duck) {
+	if (duck instanceof Rectangle) {
+	    return duck;
+	} else {
+	    return new Rectangle(duck.x, duck.y, duck.width, duck.height);
+	}
+    },
+
 
     fromElement: function(element) {
 	return new Rectangle(element.x.baseVal.value, element.y.baseVal.value, 
@@ -2007,14 +2015,12 @@ if (UserAgent.canExtendBrowserObjects) Object.extend(document, {
 // Graphics primitives
 // ===========================================================================
 
-/**
-  * @class Visual (NOTE: PORTING-SENSITIVE CODE)
-  * In this particular implementation, graphics primitives are
-  * mapped onto various SVG objects and attributes.
-  */
 Wrapper.subclass('Visual', {   
 
     documentation:  "Interface between Lively Kernel graphics classes and the underlying graphics implementation.",
+    //In this particular implementation, graphics primitives are
+    //mapped onto various SVG objects and attributes.
+
 
     rawNode: null, // set by subclasses
 
@@ -2096,6 +2102,18 @@ Wrapper.subclass('Visual', {
     getLocalTransform: function() {
 	var impl = this.rawNode.transform.baseVal.consolidate();
 	return new Transform(impl ? impl.matrix : null); // identity if no transform specified
+    },
+
+    getBoundingBox: function() { // bounds, but using native SVG functionality, and in the object's coordinates.
+	return Rectangle.ensure(this.rawNode.getBBox());
+    },
+
+    undisplay: function() {
+	return this.rawNode.setAttributeNS(null, "display", "none");
+    },
+
+    display: function() {
+	this.rawNode.removeAttributeNS(null, "display");
     }
 
 });
@@ -2533,7 +2551,6 @@ Shape.subclass('PathShape', {
 	// console.log("d=" + d);
 	this.rawNode.setAttributeNS(null, "d", d);
 	this.verticesList = vertlist;
-	delete this.cachedBounds;
     },
 
     vertices: function() {
@@ -2557,18 +2574,17 @@ Shape.subclass('PathShape', {
     },
     
     containsPoint: function(p) {
-	var r = Canvas.createSVGRect();
+	var r = this.rawNode.ownerSVGElement.createSVGRect();
 	r.x = p.x;
 	r.y = p.y;
 	r.width = r.height = 0;
-	return Canvas.checkIntersection(this.rawNode, rect);
+	return this.rawNode.checkIntersection(this.rawNode, rect);
     },
 
     bounds: function() {
-	if (!this.cachedBounds) {
-	    this.cachedBounds = Rectangle.unionPts(this.vertices());
-	}
-	return this.cachedBounds;
+	var r = this.rawNode.getBBox();
+	// check the coordinates!
+	return new Rectangle(r.x, r.y, r.width, r.height);
     },
 
     // poorman's traits :)
@@ -5558,8 +5574,7 @@ PasteUpMorph.subclass("WorldMorph", {
     },
     
     viewport: function() {
-	var vp = this.itsCanvas.viewport;
-	return new Rectangle(vp.x, vp.y, vp.width, vp.height);
+	return Rectangle.ensure(this.itsCanvas.viewport);
     },
 
     alert: function(varargs) {
