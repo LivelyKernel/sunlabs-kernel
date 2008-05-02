@@ -23,15 +23,16 @@ var UserAgent = (function() {
     var isRhino = !window.navigator || window.navigator.userAgent.indexOf("Rhino") > -1;
     var isMozilla = window.navigator && window.navigator.userAgent.indexOf("Mozilla") > -1;
 
-    // determines UA capabilities
+    // Determines User Agent capabilities
     return {
-	// newer versions of WebKit implement proper SVGTransform API,
-	// potentially better performance
+        // Newer versions of WebKit implement proper SVGTransform API,
+        // with potentially better performance
         usableTransformAPI: false, // webKitVersion >= 525,
         usableDropShadow: webKitVersion >= 525,
         canExtendBrowserObjects: !isRhino, // Error, document
         usableNearestViewportElement: !isRhino && !isMozilla,
-        // WebKit XMLSerializer seems to do weird things w/namespaces
+
+        // WebKit XMLSerializer seems to do weird things with namespaces
         usableNamespacesInSerializer: webKitVersion < 0,
 
         usableXmlHttpRequest: !isRhino,
@@ -49,7 +50,6 @@ var UserAgent = (function() {
 
 })();
 
-
 // Determines runtime behavior based on UA capabilities and user choices (override in localconfig.js)
 var Config = {
 
@@ -59,7 +59,7 @@ var Config = {
     // URL that acts as a proxy for network operations 
     proxyURL: null,
 
-    // Quickly enabling/disabling most demos
+    // Quickly enable/disable most demos
     skipMostExamples: false,
     skipAllExamples:  false,
     showWebStore: false,
@@ -75,17 +75,22 @@ var Config = {
     // rhino will give more useful exception info 
     ignoreAdvice: UserAgent.isRhino,
 
-    // derive font metrics from (X)HTML
+    // Derive font metrics from (X)HTML
     fontMetricsFromHTML: UserAgent.usableHTMLEnvironment,
 
-    // try to make up font metrics entirely (can be overriden to use the native SVG API, which rarely works)
+    // Try to make up font metrics entirely (can be overriden to use the native SVG API, which rarely works)
     fakeFontMetrics: !UserAgent.usableHTMLEnvironment,
 
+    // Use the browser's affine transforms
     useTransformAPI: UserAgent.usableTransformAPI, 
-    
+    useGetTransformToElement: true,
+
+    // Enable drop shadows for objects (does not work well in most browsers)
     useDropShadow: UserAgent.usableDropShadow,
 
-    useGetTransformToElement: true,
+    // Use the new menu code that relies on submorphs and does not derive from
+    // a single TextMorph
+    useNewMenu: true,
 
     // We haven't decided on the behavior yet, but let's be brave!
     // This option suspends all the scripts in a world as soon as
@@ -93,29 +98,26 @@ var Config = {
     // world-specific option.
     suspendScriptsOnWorldExit: true,
 
-    // open up our console
+    // Open up our console
     showLivelyConsole: false,
 
-    // disable caching of webstore requests
+    // Disable caching of webstore requests
     suppressWebStoreCaching: false,
 
     // Defeat bundled type-in for better response in short strings
     showMostTyping: true,
+
     // Defeat all bundled type-in for testing
     showAllTyping: true,  // Until we're confident
 
-    // use the meta modifier (maps to Command on the Mac) instead of alt
+    // Use the meta modifier (maps to Command on the Mac) instead of alt
     useMetaAsCommand: false,
 
-    // confirm system shutdown from the user
+    // Confirm system shutdown from the user
     askBeforeQuit: true,
     
-    // advanced debugging options
-    debugExtras: false,
-
-    // use the new menu code that relies on submorphs and does not derive from
-    // a single TextMorph
-    useNewMenu: true
+    // Enable advanced debugging options
+    debugExtras: false
 
 }
 
