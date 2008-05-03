@@ -1598,6 +1598,8 @@ Object.subclass('Similitude', {
     translation: null, // may be set by instances to a component SVGTransform
     rotation: null, // may be set by instances to a component SVGTransform
     scaling: null, // may be set by instances to a component SVGTransform
+    eps: 0.0001, // precision
+
     /**
       * createSimilitude: a similitude is a combination of translation rotation and scale.
       * one could argue that Similitude is a superclass of Transform, not subclass.
@@ -1618,13 +1620,19 @@ Object.subclass('Similitude', {
     },
 
     getRotation: function() { // in degrees
-	return Math.atan2(this.b, this.a).toDegrees();
+	var r =  Math.atan2(this.b, this.a).toDegrees();
+	return Math.abs(r) < this.eps ? 0 : r; // don't bother with values very close to 0
     },
 
     getScale: function() {
 	var a = this.a;
 	var b = this.b;
-	return Math.sqrt(a * a + b * b);
+	var s = Math.sqrt(a * a + b * b);
+	return Math.abs(s - 1) < this.eps ? 1 : s; // don't bother with values very close to 1
+    },
+
+    isTranslation: function() {
+	return this.matrix_.type === SVGTransform.SVG_TRANSFORM_TRANSLATE;
     },
 
     getTranslation: function() {
@@ -1737,7 +1745,8 @@ Object.subclass('Similitude', {
 	    this.f =  t.b * this.e + t.d * this.f  + t.f;
 	}
 	return this;
-    }
+    },
+
 
 });
 
@@ -2021,6 +2030,7 @@ Wrapper.subclass('Visual', {
     //In this particular implementation, graphics primitives are
     //mapped onto various SVG objects and attributes.
 
+    useNativeBounds: !!Config.useNativeBounds,
 
     rawNode: null, // set by subclasses
 
@@ -2114,7 +2124,9 @@ Wrapper.subclass('Visual', {
 
     nativeBounds: function() {
 	var box = this.getBoundingBox();
-	return this.getLocalTransform().transformRectToRect(box);
+	var ltfm = this.getLocalTransform();
+	if (ltfm.isTranslation()) return box.translatedBy(ltfm.getTranslation());
+	else return ltfm.transformRectToRect(box);
     },
 
     nativeWorldBounds: function() {
@@ -2122,8 +2134,17 @@ Wrapper.subclass('Visual', {
 	return new Transform(this.rawNode.getCTM()).transformRectToRect(box);
     },
 
+    nativeCanvas: function() {
+	try {
+	    return this.rawNode.ownerSVGElement;
+	} catch (e) {
+	    // FF can't deal
+	    return null;
+	}
+    },
+
     nativeContainsWorldPoint: function(p) {
-	var svg = this.rawNode.ownerSVGElement;
+	var svg = this.nativeCanvas();
 	var r = svg.createSVGRect();
 	r.x = p.x;
 	r.y = p.y;
@@ -2371,6 +2392,11 @@ Shape.subclass('PolygonShape', {
     },
 
     bounds: function() {
+	if (this.useNativeBounds) {
+	    var b = this.nativeBounds();
+	    if (b.width && b.height) return b;
+	    // else something is suspicious
+	}
 	// FIXME very quick and dirty, consider caching or iterating over this.points
 	var vertices = this.vertices();
 	// Opera has been known not to update the SVGPolygonShape.points property to reflect the SVG points attribute
@@ -4504,17 +4530,16 @@ Morph.addMethods({
 
 // Morph bounds, coordinates, moving and damage reporting functions
 Morph.addMethods({ 
-    useNativeBounds: !!Config.useNativeBounds,
     
     // bounds returns the full bounding box in owner coordinates of this morph and all its submorphs
     bounds: function(ignoreTransients) {
 	if (this.fullBounds != null) return this.fullBounds;
-	if (this.useNativeBounds && !ignoreTransients) {
+	if (this.useNativeBounds && !ignoreTransients && this.nativeCanvas()) {
 	    this.fullBounds = this.nativeBounds();
-	    if (this.fullBounds.width >= 3 || this.fullBounds.height >= 3) {
+	    if (this.fullBounds.width && this.fullBounds.height) {
 		return this.fullBounds;
 	    } 
-	    // else: something is suspicious
+	    // else: something is suspicious, fall through
 	}
 	
 
