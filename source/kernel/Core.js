@@ -2096,7 +2096,7 @@ Wrapper.subclass('Visual', {
 
     enablePointerEvents: function() {
 	this.rawNode.removeAttributeNS(null, "pointer-events");
-    }
+    },
 
     disableBrowserHandlers: function() {
 	this.rawNode.addEventListener("dragstart", Visual.BrowserHandlerDisabler, true);
@@ -2110,6 +2110,25 @@ Wrapper.subclass('Visual', {
 
     getBoundingBox: function() { // bounds, but using native SVG functionality, and in the object's coordinates.
 	return Rectangle.ensure(this.rawNode.getBBox());
+    },
+
+    nativeBounds: function() {
+	var box = this.getBoundingBox();
+	return this.getLocalTransform().transformRectToRect(box);
+    },
+
+    nativeWorldBounds: function() {
+	var box = this.getBoundingBox();
+	return new Transform(this.rawNode.getCTM()).transformRectToRect(box);
+    },
+
+    nativeContainsWorldPoint: function(p) {
+	var svg = this.rawNode.ownerSVGElement;
+	var r = svg.createSVGRect();
+	r.x = p.x;
+	r.y = p.y;
+	r.width = r.height = 0;
+	return svg.checkIntersection(this.rawNode, rect);
     },
 
     undisplay: function() {
@@ -2566,11 +2585,7 @@ Shape.subclass('PathShape', {
     },
     
     containsPoint: function(p) {
-	var r = this.rawNode.ownerSVGElement.createSVGRect();
-	r.x = p.x;
-	r.y = p.y;
-	r.width = r.height = 0;
-	return this.rawNode.checkIntersection(this.rawNode, rect);
+	return this.nativeContainsWorldPoint(p);
     },
 
     bounds: function() {
@@ -3579,10 +3594,7 @@ Morph.addMethods({
     },
 
     fullContainsWorldPoint: function(p) { // p is in world coordinates
-	// unimplemented in firefox:
-	// return canvas.checkEnclosure(this, rect(p,p));
 	if (this.owner == null) return this.fullContainsPoint(p);
-
 	return this.fullContainsPoint(this.owner.localize(p)); 
     },
 
@@ -4492,10 +4504,19 @@ Morph.addMethods({
 
 // Morph bounds, coordinates, moving and damage reporting functions
 Morph.addMethods({ 
-
+    useNativeBounds: !!Config.useNativeBounds,
+    
     // bounds returns the full bounding box in owner coordinates of this morph and all its submorphs
     bounds: function(ignoreTransients) {
 	if (this.fullBounds != null) return this.fullBounds;
+	if (this.useNativeBounds && !ignoreTransients) {
+	    this.fullBounds = this.nativeBounds();
+	    if (this.fullBounds.width >= 3 || this.fullBounds.height >= 3) {
+		return this.fullBounds;
+	    } 
+	    // else: something is suspicious
+	}
+	
 
 	var tfm = this.getLocalTransform();
 	this.fullBounds = tfm.transformRectToRect(this.shape.bounds());
