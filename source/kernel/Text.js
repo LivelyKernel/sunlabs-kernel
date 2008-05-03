@@ -984,12 +984,11 @@ Morph.subclass("TextMorph", {
 	$super();
     },
 
-    
     bounds: function($super, ignoreTransients) {
         if (this.fullBounds != null) return this.fullBounds;
         this.resetRendering();
         this.fitText(); // adjust bounds or text for fit
-		this.drawSelection("noScroll");
+	this.drawSelection("noScroll");
         return $super(ignoreTransients);
     },
     
@@ -1457,7 +1456,7 @@ Morph.subclass("TextMorph", {
             }
         }
 		// scrolling here can cause circularity with bounds calc
-		if (!noScroll) this.scrollSelectionIntoView();
+	if (!noScroll) this.scrollSelectionIntoView();
     },
     
 
