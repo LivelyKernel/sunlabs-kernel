@@ -2094,6 +2094,10 @@ Wrapper.subclass('Visual', {
 	this.rawNode.setAttributeNS(null, "pointer-events", "none");
     },
 
+    enablePointerEvents: function() {
+	this.rawNode.removeAttributeNS(null, "pointer-events");
+    }
+
     disableBrowserHandlers: function() {
 	this.rawNode.addEventListener("dragstart", Visual.BrowserHandlerDisabler, true);
 	this.rawNode.addEventListener("selectstart", Visual.BrowserHandlerDisabler, true);
@@ -2189,10 +2193,6 @@ Object.extend(Shape, {
 
 });
 
-/**
-  * @class RectShape
-  */ 
-
 Shape.subclass('RectShape', {
 
     documentation: "Rectangle shape",
@@ -2268,11 +2268,9 @@ Shape.subclass('RectShape', {
 
 });
 
-/**
-  * @class EllipseShape
-  */ 
-
 Shape.subclass('EllipseShape', {
+
+    documentation: "Ellipses and circles",
 
     initialize: function($super, rect, color, borderWidth, borderColor) {
 	this.rawNode = NodeFactory.create("ellipse");
@@ -2319,11 +2317,8 @@ Shape.subclass('EllipseShape', {
 
 });
 
-/**
-  * @class PolygonShape
-  */ 
-
 Shape.subclass('PolygonShape', {
+    documentation: "polygon",
 
     hasElbowProtrusions: true,
 
@@ -2478,12 +2473,9 @@ Shape.subclass('PolygonShape', {
 
 });
 
-/**
-  * @class PolylineShape
-  */ 
-
 Shape.subclass('PolylineShape', {
-
+    documentation: "Like polygon but not necessarily closed and does not include the interior",
+    
     hasElbowProtrusions: true,
 
     initialize: function($super, vertlist, borderWidth, borderColor) {
@@ -2710,11 +2702,8 @@ Object.extend(Exporter, {
 
 });
 
-/**
-  * @class Copier
-  */
-
 Object.subclass('Copier', {
+    documentation: "context for performing deep copy of objects",
 
     morphMap_: null,
 
@@ -2743,8 +2732,8 @@ Copier.marker = Object.extend(new Copier(), {
 });
 
 Copier.subclass('Importer', {
-
     documentation: "Implementation class for morph de-serialization",
+
     verbose: true,
 
     toString: function() {
@@ -2961,7 +2950,6 @@ Object.subclass('MouseHandlerForRelay', {
 });
 
 /**
-  * @class Morph
   * Implements the common functionality inherited by 
   * all the morphs. 
   */ 

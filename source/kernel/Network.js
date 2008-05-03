@@ -309,6 +309,7 @@ View.subclass('NetRequest', {
 
 });
 
+// extend your objects with this trait if you don't want to deal with error reporting yourself.
 NetRequestReporterTrait = {
     setRequestStatus: function(status) { 
 	// error reporting
