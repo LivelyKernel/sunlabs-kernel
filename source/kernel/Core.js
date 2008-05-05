@@ -602,7 +602,11 @@ Function.methodString = function(className, methodName) {
 	? Function.globalScope[methodName]
 	: Function.globalScope[className].prototype[methodName];
     if (func == null) return "no code";
-    var code = func.toString();
+    if(Config.debugExtras && func.originalFunction) {
+		var code = func.originalFunction.toString()
+	} else {
+		var code = func.toString();
+	}
     if (className == "Global" || methodName == "constructor") return code;
     return className + ".prototype." + methodName + " = " + code; 
 };
@@ -4261,9 +4265,9 @@ Morph.addMethods({
 
     testTracing: function() {
 	console.log("Function.prototype.shouldTrace = true; tracing begins...");
-	Function.prototype.shouldTrace = true;
+	Function.prototype.logCalls = true;
 	this.adjustForNewBounds();
-	Function.prototype.shouldTrace = false;
+	Function.prototype.logCalls = false;
     },
 
     putMeInAWindow: function(loc) {
@@ -5333,6 +5337,10 @@ PasteUpMorph.subclass("WorldMorph", {
         menu.addItem(["choose display theme...", this.chooseDisplayTheme]);
         menu.addItem([(Config.useDebugBackground ? "use normal background" : "use debug background"),
                       this.toggleDebugBackground]);
+        if(Config.debugExtras) {
+		menu.addItem(["arm profile for next mouseDown", function() {evt.hand.armProfileFor("MouseDown") }]);
+        	menu.addItem(["arm profile for next mouseUp", function() {evt.hand.armProfileFor("MouseUp") }]);
+	}
         menu.addLine();
         menu.addItem(["publish world as ... ", function() { 
 	    this.prompt("world file (.xhtml)", function(filename) { 
@@ -5799,7 +5807,23 @@ Morph.subclass("HandMorph", {
         // evt.stopPropagation();
     }.logErrors('Event Handler'),
 
+    armProfileFor: function(evtType) { 
+	this.profileArmed = evtType;  // either "MouseDown" or "MouseUp"
+    },
+
     handleMouseEvent: function(evt) { 
+	if(!Config.debugExtras || !this.profileArmed || this.profileArmed != evt.type) {
+		// Profile not armed or event doesnt match
+		return this.reallyHandleMouseEvent(evt);
+	}
+	// Run profile during handling of this event
+	this.profileArmed = null;  // Only this once
+	var result;
+	Function.trace(function() { result = this.reallyHandleMouseEvent(evt) }.bind(this));
+	return result;
+    },
+
+    reallyHandleMouseEvent: function(evt) { 
 
         evt.setButtonPressedAndPriorPoint(this.mouseButtonPressed, 
 					  this.lastMouseEvent ? this.lastMouseEvent.mousePoint : null);

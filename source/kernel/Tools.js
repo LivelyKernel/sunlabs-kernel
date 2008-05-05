@@ -522,14 +522,10 @@ WidgetModel.subclass('StylePanel', {
     
 });
 
+
 // ===========================================================================
 // Profiler & Statistics Viewer
 // ===========================================================================
-
-/**
- * Dan's JavaScript profiler & debugger
- */
-  
 Object.profiler = function (object, service) {
     // The wondrous Ingalls profiler...
     // Invoke as, eg, Object.profiler(Color, "start"), or Object.profiler(Color.prototype, "start")
@@ -610,35 +606,183 @@ function showStatsViewer(profilee,title) {
     m.addMorph(t);
 };
 
-(function() {
 
-    var debuggingStack = [];
-    
+// ===========================================================================
+// The even-better Execution Tracer
+// ===========================================================================
+(function() { // begin scoping function
+	// The Execution Tracer is enabled by setting Config.debugExtras = true in localconfig.js.
+	// When this is done, every method of every user class is wrapped by tracingWrapper (q.v.),
+	// And the entire system is running with a shadow stack being maintained in this way.
+
+	// This execution tracer maintains a separate stack or tree of called methods.
+	// The variable 'currentContext' points to a TracerNode for the currently executing
+	// method.  The caller chain of that node represents the JavaScript call stack, and
+	// each node gives its method (which has been tagged with its qualifiedMethodName() ),
+	// and also the receiving object, 'itsThis', and the arguments to the call, 'args'.
+	// The end result can be seen in, eg, Function.showStack(), which displays a stack trace
+	// either in the console or in the StackViewer.  You can test this by invoking
+	// "test showStack" in the menu of any morph.
+
+	// At key points in the Morphic environment (like at the beginning of event dispatch and
+	// ticking behavior), the stack environment gets reinitialized by a call to 
+	// Function.resetDebuggingStack().  This prevents excessively long chains from being
+	// held around wasting storage.
+
+	// The tracingWrapper function is the key to how this works.  It calls traceCall()
+	// before each method execution, and traceReturn() afterwards.  The important thing
+	// is that these messages are sent to the currentContext object.  Therefore the same
+	// wrapper works to maintain a simple call stack as well as a full tally and time
+	// execution profile.  In the latter case, currentContext and other nodes of the tracing
+	// structure are instances of TracerTreeNode, rather than TracerStackNode
+	// 
+	// A minor demonstration of flexibility is that turning Function.prototype.logCalls
+	// to true causes the tracer to spew records of every call to the console.  Don't forget
+	// to turn it off ;-).
+
+	// This mechanism can perform much more amazing feats with the use of TracerTreeNode.
+	// Here the nodes stay in place, accumulating call tallies and ticks of the millisecond
+	// clock.  You start it by calling Function.trace() with a function to run (see the example
+	// in Function.testTrace()).  As in normal stack tracing, the value of currentContext is
+	// the node associated with the currently running method.
+
+    var rootContext, currentContext;
+
+    Object.subclass('TracerStackNode', {
+	initialize: function(caller, method) {
+		this.caller = caller;
+		this.method = method;
+		this.itsThis = null;  // These two get nulled after return
+		this.args = null;  //  .. only used for stack trace on error
+		this.callee = null;
+	},
+        traceCall: function(method , itsThis, args) {
+		// this is the currentContext (top of stack)
+		// method has been called with itsThis as receiver, and args as arguments
+		// --> Check here for exceptions
+		var newNode = this.callee;  // recycle an old callee node
+		if (!newNode) {             // ... or make a new one
+			newNode = new TracerStackNode(this, method);
+			this.callee = newNode;
+		} else {
+			newNode.method = method
+		}
+		newNode.itsThis = itsThis;
+		newNode.args = args;
+		if(Function.prototype.logCalls) console.log(this.dashes(this.stackSize()) + this);
+		currentContext = newNode;
+	},
+        traceReturn: function(method) {
+		// this is the currentContext (top of stack)
+		// method is returning
+		this.args = null;  // release storage from unused stack
+		this.itsThis = null;  //   ..
+		currentContext = this.caller;
+	},
+	each: function(funcToCall) {
+		// Stack walk (leaf to root) applying function
+		for (var c=this; c; c=c.caller) funcToCall(this, c);
+	},
+	stackSize: function() {
+		var size = 0;
+		for (var c=this; c; c=c.caller) size++;
+		return size;
+	},
+	dashes: function(n) {
+		var lo = n% 5;
+		return '----|'.times((n-lo)/5) + '----|'.substring(0,lo);
+	},
+	toString: function() {
+		return "<" + this.method.qualifiedMethodName() + ">";
+	}
+	});
+
+    TracerStackNode.subclass('TracerTreeNode', {
+	initialize: function($super, caller, method) {
+		$super(caller, method);
+		this.callees = {};
+		this.tally = 0;
+		this.ticks = 0;
+		this.calltime = null;
+	//console.log("adding node for " + method.qualifiedMethodName());
+	},
+        traceCall: function(method , itsThis, args) {
+		// this is the currentContext (top of stack)
+		// method has been called with itsThis as receiver, and args as arguments
+		// --> Check here for exceptions
+		var newNode = this.callees[method];
+		if (!newNode) {
+			// First hit -- need to make a new node
+			newNode = new TracerTreeNode(this, method);
+			this.callees[method] = newNode;
+		}
+		newNode.itsThis = itsThis;
+		newNode.args = args;
+		newNode.tally ++;
+		newNode.callTime = new Date().getTime();
+		currentContext = newNode;
+	},
+        traceReturn: function(method) {
+		// this is the currentContext (top of stack)
+		// method is returning
+		//if(stackNodeCount < 20) console.log("returning from " + method.qualifiedMethodName());
+		this.args = null;  // release storage from unused stack info
+		this.itsThis = null;  //   ..
+		this.ticks += (new Date().getTime() - this.callTime);
+		currentContext = this.caller;
+	},
+	each: function(funcToCall, level, sortFunc) {
+		// Recursive tree visit with callees order parameter (eg, tallies, ticks, alpha)
+		if (level == null) level = 0;
+		funcToCall(this, level);
+		var sortedCallees = [];
+		Properties.forEachOwn(this.callees, function(meth, node) { sortedCallees.push(node); })
+		if(sortedCallees.length == 0) return;
+		// Default is to sort by tallies, and then by ticks if they are equal (often 0)
+		sortedCallees.sort(sortFunc || function(a, b) {
+			if(a.tally == b.tally) return (a.ticks > b.ticks) ? -1 : (a.ticks < b.ticks) ? 1 : 0; 
+			return (a.tally > b. tally) ? -1 : 1});
+		sortedCallees.each(function(node) { node.each(funcToCall, level+1, sortFunc); });
+	},
+	fullString: function() {
+		var str = "Execution profile (#calls / #ticks)\n"
+		this.each(function(each, level) { str += (this.dashes(level) + each + "\n"); }.bind(this), 0, null)
+		return str;
+	},
+	toString: function() {
+		return '(' + this.tally.toString() + ' / ' + this.ticks.toString() + ') ' + this.method.qualifiedMethodName();
+	}
+    });
+
     Object.extend(Function, {
 
-        cloneStack: function() {
-            return [].concat(debuggingStack);
-        },
+	resetDebuggingStack: function() {
+		var rootMethod = arguments.callee.caller;
+		rootContext = new TracerStackNode(null, rootMethod);
+		currentContext = rootContext;
+		Function.prototype.shouldTrace = false;
+	},
 
         showStack: function(useViewer) {
-            stack = debuggingStack;
-            if (useViewer) { new StackViewer(this, debuggingStack).open(); return; }
+            if (useViewer) { new StackViewer(this, currentContext).open(); return; }
 
             if (Config.debugExtras) {
-                for (var i = 0; i < stack.length; i+=2) {
-                    var args = stack[i+1];
+                for (var c = currentContext, i = 0; c != null; c = c.caller, i++) {
+                    var args = c.args;
                     var header = Object.inspect(args.callee.originalFunction);
-                    console.log("%s) %s", i/2, header);
-                    var k = header.indexOf('(');
+                    var frame = i.toString() + ": " + header + "\n";
+		    frame += "this: " + c.itsThis + "\n";
+		    var k = header.indexOf('(');
                     header = header.substring(k + 1, 999);  // ')' or 'zort)' or 'zort,baz)', etc
                     for (var j = 0; j <args.length; j++) {
                         k = header.indexOf(')');
                         var k2 = header.indexOf(',');
                         if (k2 >= 0) k = Math.min(k,k2);
-                        argName = header.substring(0, k)
-                        header = header.substring(k + 2, 999);
-                        console.log("%s: %s", argName, Object.inspect(args[j]));
-                    }
+                        var argName = header.substring(0, k)
+                        header = header.substring(k + 2);
+                        if (argName.length > 0) frame += argName + ": " + Object.inspect(args[j]) + "\n";
+		    }
+                    console.log(frame);
                 }
             } else {
                 for (var c = arguments.callee.caller, i = 0; c != null; c = c.caller, i++) {
@@ -647,36 +791,61 @@ function showStatsViewer(profilee,title) {
             }
         },
 
-        resetDebuggingStack: function() {
-            debuggingStack.clear();
-            Function.prototype.shouldTrace = false;
-        },
+        testTrace: function() {
+		Function.trace(function () { for (var i=0; i<10; i++) RunArray.test([3, 1, 4, 1, 5, 9]); });
+	},
+
+        trace: function(method) {
+		// Note: trace returns the trace root, not the value of the traced method
+		// If you need the return value, you'll need to store it elsewhwere from the method
+		var traceRoot = new TracerTreeNode(currentContext, method);
+		currentContext = traceRoot;
+		result = method.call(this);
+		currentContext = traceRoot.caller;
+		traceRoot.caller = null;
+		console.log(traceRoot.fullString());
+		return traceRoot;
+	},
 
         installStackTracers: function(debugStack) {
-            console.log("Wrapping all methods with stackWrapper");
+            console.log("Wrapping all methods with tracingWrapper");
             var classNames = [];
-            Class.withAllClassNames(Global, function(n) { n.startsWith('SVG') || classNames.push(n)});
+            Class.withAllClassNames(Global, function(n) { n.startsWith('SVG') || n.startsWith('Tracer') || classNames.push(n)});
             for (var ci= 0; ci < classNames.length; ci++) {
                 var cName = classNames[ci];
                 if (cName != 'Global' && cName != 'Object') {
                     var theClass = Global[cName];
                     var methodNames = theClass.localFunctionNames();
-                    for (var mi = 0; mi < methodNames.length; mi++) {
+
+                    // Replace all methods of this class with a wrapped version
+		    for (var mi = 0; mi < methodNames.length; mi++) {
                         var mName = methodNames[mi];
-                        var originalMethod = theClass.prototype[mName]; 
-                        if (!originalMethod.declaredClass) { // already added 
-                            originalMethod.declaredClass = cName;
-                        }
-                        if (!originalMethod.methodName) { // Attach name to method
-                            originalMethod.methodName = mName;
-                        }
-                        // Now replace each method with a wrapper function that records calls on debugStack
-                        theClass.prototype[mName] = originalMethod.stackWrapper(debugStack);
+                        var originalMethod = theClass.prototype[mName];
+			// Put names on the original methods 
+                        originalMethod.declaredClass = cName;
+                        originalMethod.methodName = mName;
+                        // Now replace each method with a wrapper function
+                        theClass.prototype[mName] = originalMethod.tracingWrapper(debugStack);
+                    }
+		    // Do the same for class methods (need to clean this up)
+		    var classFns = []; 
+		    for (var p in theClass) {
+			if (theClass.hasOwnProperty(p) && theClass[p] instanceof Function && p != "superclass")
+				classFns.push(p);
+		    }
+                    for (var mi = 0; mi < classFns.length; mi++) {
+                        var mName = classFns[mi];
+                        var originalMethod = theClass[mName];
+			// Put names on the original methods 
+                        originalMethod.declaredClass = cName;
+                        originalMethod.methodName = mName;
+                        // Now replace each method with a wrapper functio
+                        theClass[mName] = originalMethod.tracingWrapper(debugStack);
                     }
                 }
             }
         },
-        tallyLOC: function(debugStack) {
+        tallyLOC: function() {
             console.log("Tallying lines of code by decompilation");
             var classNames = [];
             Class.withAllClassNames(Global, function(n) { n.startsWith('SVG') || classNames.push(n)});
@@ -704,23 +873,17 @@ function showStatsViewer(profilee,title) {
     
     Object.extend(Function.prototype, {
 
-        shouldTrace: false, // turn on the prototype value to get tracing globally. Turn off individually for "hidden" functions.
+        logCalls: false, // turn on the prototype value to get tracing globally.
+		// Turn off individually for "hidden" functions.
 
-        stackWrapper: function () {
-            // Make a proxy method (traceFunc) that calls the original method after pushing 'arguments' on stack
-            // Normally, it will pop it off before returning, but ***check interaction with try/catch
-            var traceFunc = function () {
-                debuggingStack.push(this, arguments);  // Push this and the arguments object on the stack ...
-                var originalFunction = arguments.callee.originalFunction; 
-
-                if (/*originalFunction.*/ Function.prototype.shouldTrace) {
-                    var indent = "-".times(debuggingStack.length);
-                    console.log(debuggingStack.length + "" + indent + originalFunction.qualifiedMethodName());
-                }
-
+        tracingWrapper: function () {
+	    // Make a proxy method (traceFunc) that calls the tracing routines before and after this method
+	    var traceFunc = function () {
+		var originalFunction = arguments.callee.originalFunction; 
+		if( !currentContext) return originalFunction.apply(this, arguments);  // not started yet
+		currentContext.traceCall(originalFunction, this, arguments);
                 var result = originalFunction.apply(this, arguments); 
-                debuggingStack.pop();            // and then pop them off before returning
-                debuggingStack.pop();            // ... 
+                currentContext.traceReturn(originalFunction);
                 return result; 
             };
             traceFunc.originalFunction = this;  // Attach this (the original function) to the tracing proxy
@@ -730,26 +893,27 @@ function showStatsViewer(profilee,title) {
     
 })(); // end scoping function
 
+
 // ===========================================================================
 // Call Stack Viewer
 // ===========================================================================
-
 WidgetModel.subclass('StackViewer', {
 
     defaultViewTitle: "Call Stack Viewer",
     openTriggerVariable: 'getFunctionList',
 
-    initialize: function($super, param, debugStack) {
+    initialize: function($super, param, currentCtxt) {
         $super();
         this.selected = null;
-        if (debugStack && debugStack.length > 0) {
+        if (currentCtxt) {
             this.stack = [];
             this.thises = [];
             this.argses = [];
-            for (i = debugStack.length-2; i>=0; i-=2) {
-                this.thises.push (debugStack[i]);
-                this.argses.push (debugStack[i+1]);
-                this.stack.push (debugStack[i+1].callee.originalFunction);
+            //for (i = debugStack.length-2; i>=0; i-=2) {
+            for (var c = currentCtxt; c != null; c = c.caller) {
+                this.thises.push (c.itsThis);
+                this.argses.push (c.args);
+                this.stack.push (c.method);
             }
         } else {
             // if no debugStack, at least build an array of methods
@@ -849,10 +1013,10 @@ WidgetModel.subclass('StackViewer', {
     }
 });
 
+
 // ===========================================================================
 // FrameRateMorph
 // ===========================================================================
- 
 TextMorph.subclass('FrameRateMorph', {
 
     initialize: function($super, rect, textString) {
@@ -886,10 +1050,10 @@ TextMorph.subclass('FrameRateMorph', {
 
 });
 
+
 // ===========================================================================
-// FileParser
+// File Parser
 // ===========================================================================
- 
 Object.subclass('FileParser', {
     // The bad news is: this is not a real parser ;-)
     // It simply looks for class headers, and method headers,
@@ -1062,10 +1226,10 @@ Object.subclass('FileParser', {
     
 });
 
+
 // ===========================================================================
 // ChangeList
 // ===========================================================================
-
 WidgetModel.subclass('ChangeList', {
     // The ChangeListBrowser views a list of patches in a JavaScript (or other) file.
     // The patches taken together entirely capture all the text in the file
@@ -1209,10 +1373,10 @@ WidgetModel.subclass('ChangeList', {
 
 });  // ({ balance
 
+
 // ===========================================================================
 // Source Database
 // ===========================================================================
-
 ChangeList.subclass('SourceDatabase', {
     // SourceDatabase is an interface to the Lively Kernel source code as stored
     // in a CVS-style repository, ie, as a bunch of text files.
@@ -1395,9 +1559,15 @@ ChangeList.subclass('SourceDatabase', {
 
 module.SourceControl = null;
 
+
+// ===========================================================================
+// Source Code Descriptor
+// ===========================================================================
 Object.subclass('SourceCodeDescriptor', {
 
     initialize: function(sourceControl, fileName, versionNo, startIndex, stopIndex, lineNo, type, name) {
+	// This state represents a given range of a given version of a given file in the SourceControl
+	// The lineNo, type and name are further info arrived at during file parsing
         this.sourceControl = sourceControl;
         this.fileName = fileName;
         this.versionNo = versionNo;

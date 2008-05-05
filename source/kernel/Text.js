@@ -2338,7 +2338,7 @@ Object.extend(RunArray, {
 	}
 }
 });
-// RunArray.test([3, 1, 2]);
+RunArray.test([3, 1, 2]);
 
     
 Object.subclass('Text', {

@@ -386,6 +386,7 @@ function main() {
     // Populate the world with sample objects, widgets and applications
     if (container || Config.skipAllExamples) return; // don't populate if we loaded up stuff from a container
     else populateWorldWithExamples(world);
+if(Config.testTracing) Function.testTrace();
 
 }
 
