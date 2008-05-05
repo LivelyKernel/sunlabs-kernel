@@ -681,7 +681,7 @@ function showStatsViewer(profilee,title) {
 		}
 		newNode.itsThis = itsThis;
 		newNode.args = args;
-		if(Function.prototype.logCalls) console.log(this.dashes(this.stackSize()) + this);
+		if(Function.prototype.logAllCalls) console.log(this.dashes(this.stackSize()) + this);
 		currentContext = newNode;
 	},
         traceReturn: function(method) {
@@ -772,7 +772,7 @@ function showStatsViewer(profilee,title) {
 		var rootMethod = arguments.callee.caller;
 		rootContext = new TracerStackNode(null, rootMethod);
 		currentContext = rootContext;
-		Function.prototype.shouldTrace = false;
+		Function.prototype.logAllCalls = false;
 	},
 
         showStack: function(useViewer) {

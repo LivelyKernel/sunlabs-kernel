@@ -4264,10 +4264,10 @@ Morph.addMethods({
     },
 
     testTracing: function() {
-	console.log("Function.prototype.shouldTrace = true; tracing begins...");
-	Function.prototype.logCalls = true;
+	console.log("Function.prototype.logAllCalls = true; tracing begins...");
+	Function.prototype.logAllCalls = true;
 	this.adjustForNewBounds();
-	Function.prototype.logCalls = false;
+	Function.prototype.logAllCalls = false;
     },
 
     putMeInAWindow: function(loc) {
