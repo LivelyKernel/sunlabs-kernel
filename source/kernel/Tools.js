@@ -114,7 +114,7 @@ Widget.subclass('SimpleBrowser', {
         var className = this.getModelValue("getClassName");
         if (className != null) {
             var theClass = Global[className];
-            if (theClass.prototype != null) {
+            if (theClass.prototype != null && !Config.debugExtras) {
                 items.push(['profile selected class', 
                     function() { showStatsViewer(theClass.prototype, className + "..."); }]);
             }
@@ -127,6 +127,18 @@ Widget.subclass('SimpleBrowser', {
                     "Widgets.js", "Network.js", "Storage.js", "Tools.js",
                     "Examples.js", "WebPIM.js", "phone.js"]);
                 WorldMorph.current().setFill(new RadialGradient(Color.rgb(36,188,255), Color.rgb(127,15,0)));
+            }]);
+        }
+        if (!Config.debugExtras && Function.installStackTracers) {
+            items.push(['enable call tracing', function() {
+                Config.debugExtras = true;
+		Function.installStackTracers();  
+            }]);
+        }
+        if (Config.debugExtras && Function.installStackTracers) {
+            items.push(['disable call tracing', function() {
+                Config.debugExtras = false;
+		Function.installStackTracers("uninstall"); 
             }]);
         }
         return items; 
@@ -807,8 +819,9 @@ function showStatsViewer(profilee,title) {
 		return traceRoot;
 	},
 
-        installStackTracers: function(debugStack) {
-            console.log("Wrapping all methods with tracingWrapper");
+        installStackTracers: function(remove) {
+	    console.log("Wrapping all methods with tracingWrapper... " + (remove || ""));
+            remove = (remove == "uninstall");  // call with this string to uninstall
             var classNames = [];
             Class.withAllClassNames(Global, function(n) { n.startsWith('SVG') || n.startsWith('Tracer') || classNames.push(n)});
             for (var ci= 0; ci < classNames.length; ci++) {
@@ -824,8 +837,9 @@ function showStatsViewer(profilee,title) {
 			// Put names on the original methods 
                         originalMethod.declaredClass = cName;
                         originalMethod.methodName = mName;
-                        // Now replace each method with a wrapper function
-                        theClass.prototype[mName] = originalMethod.tracingWrapper(debugStack);
+                        // Now replace each method with a wrapper function (or remove it)
+                        if(!remove) theClass.prototype[mName] = originalMethod.tracingWrapper();
+			else if(originalMethod.originalFunction) theClass.prototype[mName] = originalMethod.originalFunction;
                     }
 		    // Do the same for class methods (need to clean this up)
 		    var classFns = []; 
@@ -839,8 +853,9 @@ function showStatsViewer(profilee,title) {
 			// Put names on the original methods 
                         originalMethod.declaredClass = cName;
                         originalMethod.methodName = mName;
-                        // Now replace each method with a wrapper functio
-                        theClass[mName] = originalMethod.tracingWrapper(debugStack);
+                        // Now replace each method with a wrapper function (or remove it)
+                        if(!remove) theClass[mName] = originalMethod.tracingWrapper();
+			else if(originalMethod.originalFunction) theClass[mName] = originalMethod.originalFunction;
                     }
                 }
             }
@@ -905,11 +920,10 @@ WidgetModel.subclass('StackViewer', {
     initialize: function($super, param, currentCtxt) {
         $super();
         this.selected = null;
-        if (currentCtxt) {
+        if (Config.debugExtras) {
             this.stack = [];
             this.thises = [];
             this.argses = [];
-            //for (i = debugStack.length-2; i>=0; i-=2) {
             for (var c = currentCtxt; c != null; c = c.caller) {
                 this.thises.push (c.itsThis);
                 this.argses.push (c.args);
@@ -918,7 +932,7 @@ WidgetModel.subclass('StackViewer', {
         } else {
             // if no debugStack, at least build an array of methods
             this.stack = [];
-            for (var c = arguments.callee.caller, i = 0; c != null; c = c.caller, i++) {
+            for (var c = arguments.callee.caller; c != null; c = c.caller) {
                 this.stack.push (c);
             }
         }
