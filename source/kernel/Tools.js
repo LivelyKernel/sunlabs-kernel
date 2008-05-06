@@ -135,14 +135,26 @@ Widget.subclass('SimpleBrowser', {
 		Function.installStackTracers();  
             }]);
         }
+	items.push(["test showStack (in console)", Function.showStack.curry(false)]);
+	items.push(["test showStack (in viewer)", Function.showStack.curry(true)]);
         if (Config.debugExtras && Function.installStackTracers) {
+	    items.push(["test profiling (in console)", Function.testTrace]);
+	    items.push(["test tracing (in console)", this.testTracing]);
             items.push(['disable call tracing', function() {
                 Config.debugExtras = false;
 		Function.installStackTracers("uninstall"); 
             }]);
         }
         return items; 
-    }
+    },
+    testTracing: function() {
+	console.log("Function.prototype.logAllCalls = true; tracing begins...");
+	Function.prototype.logAllCalls = true;
+	this.toString();
+	Function.prototype.logAllCalls = false;
+    },
+
+
 });
    
 // ===========================================================================
@@ -1381,7 +1393,7 @@ WidgetModel.subclass('ChangeList', {
         m.connectModel({model: this, getList: "getChangeBanners", setSelection: "setChangeSelection", getSelection: "getChangeSelection", getMenu: "getListPaneMenu"});
         m = panel.bottomPane;
         m.innerMorph().textSelection.borderRadius = 0;
-        m.connectModel({model: this, getText: "getChangeItemText", setText: "setChangeItemText", getSelection: "getSearchString"});
+        m.connectModel({model: this, getText: "getChangeItemText", setText: "setChangeItemText", getSelection: "getSearchString", getMenu: "default"});
         return panel;
     }
 
