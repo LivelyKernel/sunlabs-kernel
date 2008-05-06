@@ -2538,8 +2538,9 @@ Shape.subclass('PolylineShape', {
 	var vertices = this.vertices();
 	for (var i = 1; i < vertices.length; i++) {
 	    var pNear = p.nearestPointOnLineBetween(vertices[i-1], vertices[i]);
-	    if (pNear.dist(p) < howNear) 
+	    if (pNear.dist(p) < howNear) {
 		return true; 
+	    }
 	}
 	return false; 
     },
@@ -4199,17 +4200,9 @@ Morph.addMethods({
 	return true; 
     },
 
-    // A chance to preempt (by returning null) the default action of grabbing me
-    // or to otherwise prepare for being grabbed
-    // or find a parent to grab instead
-    // KP: FIXME rename to reflect that function can have side effects?
+    // May be overridden to preempt (by returning null) the default action of grabbing me
+    // or to otherwise prepare for being grabbed or find a parent to grab instead
     okToBeGrabbedBy: function(evt) {
-	if (evt.hand.mode == "menu") {
-	    evt.hand.mode = "normal";
-	    this.showMorphMenu(evt);
-	    return null; 
-	} 
-
 	return this; 
     },
 
@@ -5854,7 +5847,8 @@ Morph.subclass("HandMorph", {
                         if (this.mouseFocus) this.mouseFocus.captureMouseEvent(evt, true);
                         else if (!evt.hand.hasSubmorphs()) this.owner.captureMouseEvent(evt, false); 
                     } else {
-                        if (receiver) receiver.onMouseWheel(evt);
+                        receiver.captureMouseEvent(evt, false);
+			if (receiver) receiver.onMouseWheel(evt);
                     }
                 } 
             }
