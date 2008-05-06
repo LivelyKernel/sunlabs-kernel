@@ -25,6 +25,7 @@ Morph.subclass('GridLayoutMorph', {
 		console.log("GridLayout started");
 		this.rows = [0];	// use 0 index for top/left edge
 		this.cols = [0];
+		this.minCell = pt(5,5);	// minimum cell size
 		this.nextRow=1;		// use as default if not provided in constraints
 		this.nextCol=1;
 		this.gridLineSpec={
@@ -106,6 +107,19 @@ Morph.subclass('GridLayoutMorph', {
 			}
 		};
 
+		/* add menu items to our morphs
+
+		morph.morphMenu=function($super, evt) { 
+			var menu = $super(evt);
+			console.log("Got MorphMenu");
+			menu.addLine();
+			menu.addItem(["toggle North",
+					this.toggleAlign(morph, "n").bind(this)]);
+			return menu;
+		};
+
+		*/
+
         this.addMorphFrontOrBack(morph, true);
 		this.needLayout=true;
 		this.layoutChanged();
@@ -146,6 +160,7 @@ Morph.subclass('GridLayoutMorph', {
 			}
 			delete m.requestExtent;
 			delete m.iMeanIt;
+			// delete m.morphMenu;
 		}
 	},
 
@@ -245,6 +260,14 @@ Morph.subclass('GridLayoutMorph', {
 			this.rows[end] = Math.max(this.rows[end]||0,
 				(this.rows[start]||0) + m.requestExtent.y + 2*c.pad.y);
 		}
+		
+		// make sure rows are big enough (temp)
+		for(var i=1, incr=0;i<this.rows.length;i++) {
+			var d = this.minCell.y - (this.rows[i]-this.rows[i-1]);
+			if (d>incr) incr = d;
+			this.rows[i] += incr;
+		}
+
 		var maxY = this.rows[end];
 		this.rows.length=end+1;
 
@@ -262,6 +285,13 @@ Morph.subclass('GridLayoutMorph', {
 			this.cols[end] = Math.max(this.cols[end]||0,
 				(this.cols[start]||0) + morphs[i].requestExtent.x + 2*c.pad.x);
 		}
+		
+		// make sure cols are big enough (temp)
+		for(var i=1, incr=0;i<this.cols.length;i++) {
+			var d = this.minCell.x - (this.cols[i]-this.cols[i-1]);
+			if (d>0) incr = d;
+			this.cols[i] += incr;
+		}
 		var maxX = this.cols[end];
 		this.cols.length=end+1;
 
@@ -275,7 +305,7 @@ Morph.subclass('GridLayoutMorph', {
 		}
 
 		var newExt = pt(maxX, maxY);
-		// console.log((this.myName||this) + "computed Grid cols=" + this.cols + " rows=" + this.rows + " ext=" + newExt);
+		console.log((this.myName||this) + "computed Grid cols=" + this.cols + " rows=" + this.rows + " ext=" + newExt);
 
 		// Allow the size to be bigger than required, but not smaller.
 		// If a dimension is bigger, apportion the extra space equally to all
@@ -375,6 +405,21 @@ Morph.subclass('GridLayoutMorph', {
 		return null;
 	},
 
+	toggleGridLines: function() {
+		this.showGridLines(this.showGrid ? false : true);
+	},
+
+	toggleMinCells: function() {
+		if (this.minCell.x < 4) {
+			this.minCell = pt(25,25);
+		} else {
+			this.minCell = pt(0,0);
+		}
+		this.showGridLines(true); 
+		this.needLayout = true;
+		this.scheduleUpdate();
+	},
+
 	showGridLines: function(on) {
 		if (on) {
 			this.showGrid=true;
@@ -403,27 +448,131 @@ Morph.subclass('GridLayoutMorph', {
 		this.rowLine = new Array();
 		this.colLine = new Array();
 		for(var i=0; i<this.rows.length; i++) {
-			var pos = new Rectangle(0, this.rows[i]-1, ext.x, 2);
-			var w = new Morph(pos, "rect");
-			w.transientBounds = true;
-			w.openForDragAndDrop=false;
-			w.suppressHandles=true;
-			w.applyStyle(this.gridLineSpec);
-			this.addMorphFrontOrBack(w, true);
+			var w = new GridLineMorph(new Rectangle(0,this.rows[i]-1,ext.x,2));
+			w.row = i;
 			this.rowLine[i] = w;
+			this.addMorph
+			this.addMorphFrontOrBack(w, true);
 		}
 		for(var i=0; i<this.cols.length; i++) {
-			var pos = new Rectangle(this.cols[i]-1, 0, 2, ext.y);
-			var w = new Morph(pos, "rect");
-			w.ignoreBounds = true;
-			w.applyStyle(this.gridLineSpec);
-			w.openForDragAndDrop=false;
-			w.suppressHandles=true;
-			this.addMorphFrontOrBack(w, true);
+			var w = new GridLineMorph(new Rectangle(this.cols[i]-1,0,2,ext.y));
+			w.col = i;
 			this.colLine[i] = w;
+			this.addMorphFrontOrBack(w, true);
 		}
 	},
+
+	// insert a row or column (combine me!)
+
+	insertRowBefore: function(pos) {
+		for (var i=0; i<this.owner.submorphs.length; i++) {
+			var c = this.submorphs[i].cst;
+			if (!c) continue;
+			if (c.row >= pos) {
+				c.row++;
+			} else if (c.row+c.rows-1 > pos) {
+				c.rows++;
+			}
+		}
+		this.needLayout = true;
+		this.scheduleUpdate();
+	},
+
+	insertColBefore: function(pos) {
+		for (var i=0; i<this.owner.submorphs.length; i++) {
+			var c = this.submorphs[i].cst;
+			if (!c) continue;
+			if (c.col >= pos) {
+				c.col++;
+			} else if (c.col+c.cols-1 > pos) {
+				c.cols++;
+			}
+		}
+		this.needLayout = true;
+		this.scheduleUpdate();
+	},
+
+	// toggle an alignment bit
+	// This argues for keeping the alignment state as a 4 bit vector
+
+	toggleAlign: function(morph, toggle) {
+		var c = morph.cst;
+		if (!c) return;
+		return this.bits2Align(
+				this.align2Bits(toggle) ^ this.align2Bits(c.align));
+	},
+
+	// convert an alignment into a bit vector: "wesn"
+
+	align2Bits: function(s) {
+		var bits=0;
+		s.replace(/[^nsew]/g,"").split("").forEach(function(c) {
+				bits |= "0ns3e567w".indexOf(c); });
+		return bits;
+	},
+
+	alignMap: ["c", "n", "s", "ns", "e", "ne", "se", "nse", "w", "nw", "sw", "nsw", "ew", "new", "sew", "nsew"],
+
+	bits2Align: function(bits) {
+		return this.alignMap[bits&0xF];
+	},
+
+    morphMenu: function($super, evt) { 
+        var menu = $super(evt);
+		console.log("Got MorphMenu");
+        menu.addLine();
+        menu.addItem(["toggle grid lines", this.toggleGridLines]);
+        menu.addItem(["toggle grid spacing", this.toggleMinCells]);
+        return menu;
+    }
 });
+
+// These are our grid lines
+
+Morph.subclass(Global, "GridLineMorph", {
+	initialize: function($super, pos) {
+		this.pos = pos;
+		this.npos = new Rectangle(pos.x-1, pos.y-1, pos.width+2, pos.height+2);
+		this.transientBounds = true;
+		this.openForDragAndDrop=false;
+		this.suppressHandles=true;
+    	this.borderWidth=0;
+		this.focusHaloBorderWidth=0;
+		$super(pos, "rect");
+	},
+
+	handlesMouseDown: function(evt) { return true; },
+
+	onMouseOver: function(evt) {
+		this.setExtent(this.npos.extent());
+		this.setPosition(this.npos.topLeft());
+	},
+
+	onMouseOut: function(evt) {
+		this.setBounds(this.pos);
+	},
+
+	morphMenu: function($super, evt) { 
+		var menu = $super(evt);
+		menu.addLine();
+		menu.addItem(["insert line", this.addCell]);
+		if ((this.row && this.row>0) || (this.col && this.col>0)) {
+			menu.addItem(["remove line", this.rmCell]);
+		}
+		return menu;
+	},
+
+	// either col or row will be defined
+
+	addCell: function() {
+		if (this.row) this.owner.insertRowBefore(this.row);
+		if (this.col) this.owner.insertColBefore(this.col);
+	}, 
+
+	rmCell: function() {
+	}
+});
+
 console.log("end gridlayout.js");
 
 function gridDemo(world, position) {
