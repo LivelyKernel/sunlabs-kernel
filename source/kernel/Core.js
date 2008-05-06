@@ -4116,8 +4116,8 @@ Morph.addMethods({
 	this.hideHelp();
     }, //default behavior
 
-    onMouseMove: function(evt) { //default behavior
-	if (this.owner && evt.mouseButtonPressed && this.owner.openForDragAndDrop) { 
+    onMouseMove: function(evt, hasFocus) { //default behavior
+	if (evt.mouseButtonPressed && hasFocus && this.owner && this.owner.openForDragAndDrop) { 
 	    this.moveBy(evt.mousePoint.subPt(evt.priorPoint));
 	} // else this.checkForControlPointNear(evt);
 	if (!evt.mouseButtonPressed) this.checkForControlPointNear(evt);

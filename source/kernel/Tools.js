@@ -1040,7 +1040,7 @@ TextMorph.subclass('FrameRateMorph', {
 
     reset: function(date) {
         this.lastTick = date.getSeconds();
-        this.lastMS = date.getMilliseconds();
+        this.lastMS = date.getTime();
         this.stepsSinceTick = 0;
         this.maxLatency = 0;
     },
@@ -1048,7 +1048,7 @@ TextMorph.subclass('FrameRateMorph', {
     nextStep: function() {
         var date = new Date();
         this.stepsSinceTick ++;
-        var nowMS = date.getMilliseconds();
+        var nowMS = date.getTime();
         this.maxLatency = Math.max(this.maxLatency, nowMS - this.lastMS);
         this.lastMS = nowMS;
         var nowTick = date.getSeconds();
