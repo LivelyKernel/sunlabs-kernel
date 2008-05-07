@@ -25,7 +25,7 @@ Morph.subclass('GridLayoutMorph', {
 		console.log("GridLayout started");
 		this.rows = [0];	// use 0 index for top/left edge
 		this.cols = [0];
-		this.minCell = pt(5,5);	// minimum cell size
+		this.minCell = pt(0,0);	// minimum cell size
 		this.nextRow=1;		// use as default if not provided in constraints
 		this.nextCol=1;
 		this.gridLineSpec={
@@ -88,6 +88,17 @@ Morph.subclass('GridLayoutMorph', {
 			}
 		};
 
+    	morph.realMorphMenu=morph.morphMenu;
+    	morph.morphMenu=function(evt) { 
+			var menu = morph.realMorphMenu(evt);
+			menu.addLine();
+			// menu.addItem(["toggle N", morph.owner.toggleAlign??); XXX
+			menu.addItem(["toggle N", function() {
+				morph.owner.toggleAlign(morph, "n");
+			}]);
+			return menu;
+		};
+
 		// no-one should call setBounds directly, but just in case
 
 		morph.realSetBounds = morph.setBounds;
@@ -106,19 +117,6 @@ Morph.subclass('GridLayoutMorph', {
 				// console.log(this.myName + " Changed size with out calling setExtent");
 			}
 		};
-
-		/* add menu items to our morphs
-
-		morph.morphMenu=function($super, evt) { 
-			var menu = $super(evt);
-			console.log("Got MorphMenu");
-			menu.addLine();
-			menu.addItem(["toggle North",
-					this.toggleAlign(morph, "n").bind(this)]);
-			return menu;
-		};
-
-		*/
 
         this.addMorphFrontOrBack(morph, true);
 		this.needLayout=true;
@@ -151,11 +149,15 @@ Morph.subclass('GridLayoutMorph', {
 				delete m.realSetPosition;
 			}
 			if (m.realSetBounds) {
-				m.setBounds = m.realSetBounds
+				m.setBounds = m.realSetBounds;
 				delete m.setBounds;
 			}
 			if (m.realSetExtent) {
-				m.setExtent = m.realSetExtent
+				m.setExtent = m.realSetExtent;
+				delete m.setExtent;
+			}
+			if (m.realMorphMenu) {
+				m.morphMenu = m.realMorphMenu;
 				delete m.setExtent;
 			}
 			delete m.requestExtent;
@@ -410,21 +412,23 @@ Morph.subclass('GridLayoutMorph', {
 	},
 
 	toggleMinCells: function() {
-		if (this.minCell.x < 4) {
+		if (this.minCell.x == 0) {
 			this.minCell = pt(25,25);
 		} else {
 			this.minCell = pt(0,0);
 		}
-		this.showGridLines(true); 
+		if (!this.showGrid) {
+			this.showGridLines(true); 
+		}
 		this.needLayout = true;
 		this.scheduleUpdate();
 	},
 
 	showGridLines: function(on) {
-		if (on) {
+		if (on && !this.showGrid) {
 			this.showGrid=true;
 			this.makeGridLines();
-		} else {
+		} else if (this.showGrid) {
 			if (this.colLine) {
 				for(var i=0; i<this.colLine.length;i++) {
 					this.removeMorph(this.colLine[i]);
@@ -451,7 +455,6 @@ Morph.subclass('GridLayoutMorph', {
 			var w = new GridLineMorph(new Rectangle(0,this.rows[i]-1,ext.x,2));
 			w.row = i;
 			this.rowLine[i] = w;
-			this.addMorph
 			this.addMorphFrontOrBack(w, true);
 		}
 		for(var i=0; i<this.cols.length; i++) {
@@ -492,14 +495,48 @@ Morph.subclass('GridLayoutMorph', {
 		this.scheduleUpdate();
 	},
 
+	deleteRow: function(pos) {
+		if (this.owner.rows < 2) return;
+		for (var i=0; i<this.owner.submorphs.length; i++) {
+			var c = this.submorphs[i].cst;
+			if (!c) continue;
+			if (c.row >= pos) {
+				c.row--
+			} else if (c.row+c.rows-1 > pos) {
+				c.rows--;
+			}
+		}
+		this.rows.length--;
+		this.needLayout = true;
+		this.scheduleUpdate();
+	},
+
+	deleteCol: function(pos) {
+		if (this.owner.cols < 2) return;
+		for (var i=0; i<this.owner.submorphs.length; i++) {
+			var c = this.submorphs[i].cst;
+			if (!c) continue;
+			if (c.col >= pos) {
+				c.col--
+			} else if (c.col+c.cols-1 > pos) {
+				c.cols--;
+			}
+		}
+		this.cols.length--;
+		this.needLayout = true;
+		this.scheduleUpdate();
+	},
+
 	// toggle an alignment bit
 	// This argues for keeping the alignment state as a 4 bit vector
 
 	toggleAlign: function(morph, toggle) {
 		var c = morph.cst;
 		if (!c) return;
-		return this.bits2Align(
+		var result =  this.bits2Align(
 				this.align2Bits(toggle) ^ this.align2Bits(c.align));
+		console.log("toggleAlign " + toggle + " " + c.align + "->" + result);
+		return result;
 	},
 
 	// convert an alignment into a bit vector: "wesn"
@@ -507,7 +544,8 @@ Morph.subclass('GridLayoutMorph', {
 	align2Bits: function(s) {
 		var bits=0;
 		s.replace(/[^nsew]/g,"").split("").forEach(function(c) {
-				bits |= "0ns3e567w".indexOf(c); });
+				bits |= "0ns3e567w".indexOf(c);
+			});
 		return bits;
 	},
 
@@ -529,7 +567,7 @@ Morph.subclass('GridLayoutMorph', {
 
 // These are our grid lines
 
-Morph.subclass(Global, "GridLineMorph", {
+Morph.subclass("GridLineMorph", {
 	initialize: function($super, pos) {
 		this.pos = pos;
 		this.npos = new Rectangle(pos.x-1, pos.y-1, pos.width+2, pos.height+2);
@@ -570,6 +608,8 @@ Morph.subclass(Global, "GridLineMorph", {
 	}, 
 
 	rmCell: function() {
+		if (this.row) this.owner.deleteRow(this.row);
+		if (this.col) this.owner.deleteCol(this.col);
 	}
 });
 
