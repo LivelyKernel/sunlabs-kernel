@@ -2306,6 +2306,7 @@ Shape.subclass('RectShape', {
 	if (r) {
 	    this.rawNode.setAttributeNS(null, "rx", r);
 	    this.rawNode.setAttributeNS(null, "ry", r);
+	    this.setStrokeWidth(this.getStrokeWidth());  // DI:  This is here only to force an update on screen
 	}
 	return this;
     }
@@ -3443,14 +3444,15 @@ Morph.addMethods({
     },
 
     setBorderWidth: function(newWidth) {
-		this.shape.setStrokeWidth(newWidth); 
-	},   //.wrap(Morph.onChange('shape')),
-    shapeRoundEdgesBy: function(r) {
-		this.shape.roundEdgesBy(r); 
-	},
-
+	this.shape.setStrokeWidth(newWidth); 
+    },
+    
     getBorderWidth: function() {
 	return this.shape.getStrokeWidth(); 
+    },
+
+    shapeRoundEdgesBy: function(r) {
+	this.shape.roundEdgesBy(r);
     },
 
     setFillOpacity: function(op) { this.shape.setFillOpacity(op); },//.wrap(Morph.onChange('shape')),

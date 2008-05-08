@@ -999,6 +999,8 @@ Morph.subclass("TextMorph", {
     
     setTextColor: function(color) {
         this.textColor = color;
+        this.layoutChanged();
+        this.changed();
     },
     
     getTextColor: function() {
