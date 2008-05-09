@@ -1414,7 +1414,7 @@ Morph.subclass("TextListMorph", {
     handlesMouseDown: Functions.True,
     
     generateSubmorphs: function(itemList, width, additionalStyling) {
-	var rect = pt(width, TextMorph.prototype.fontSize).extentAsRectangle()
+	var rect = pt(width, TextMorph.prototype.fontSize).extentAsRectangle().insetByPt(this.itemMargin);
 	for (var i = 0; i < itemList.length; i++)  {
 	    var m = new TextMorph(rect, itemList[i]).beListItem();
 	    if (additionalStyling) m.applyStyle(additionalStyling);
