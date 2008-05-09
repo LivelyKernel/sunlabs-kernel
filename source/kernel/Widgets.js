@@ -1340,30 +1340,31 @@ Morph.addMethods({
 	return r;
     },
 	
-    leftAlignSubmorphs: function(inset) { // assume the size of the 
-        var padLeft = inset.x;
-        var padRight = inset.x;
-        var padTop = inset.y;
-        var padBottom = inset.y;
+    leftAlignSubmorphs: function(cellInset, inset) { 
+        var padLeft = cellInset.x;
+        var padRight = cellInset.x;
+        var padTop = cellInset.y;
+        var padBottom = cellInset.y;
 
-        var topLeft = pt(padLeft, padTop);
-        var ownExtent = pt(0, 0);
+        var ownExtent = inset;
+        var topLeft = pt(ownExtent.x + padLeft, ownExtent.y + padTop);
 
         for (var i = 0; i < this.submorphs.length; i++) {
             var morph = this.submorphs[i];
             morph.setPosition(topLeft);
             var ext = morph.getExtent();
             ownExtent = pt(Math.max(ownExtent.x, padLeft  + ext.x + padRight),  
-                topLeft.y + padTop + ext.y + padBottom);
+			   topLeft.y + padTop + ext.y + padBottom);
             topLeft = topLeft.withY(ownExtent.y);
         }
+	ownExtent = ownExtent.withY(ownExtent.y + inset.y);
 
-        if (this.owner)  {
-            this.setBounds(this.getPosition().extent(ownExtent));
-            this.layoutChanged();
-        } else {
-            this.internalSetBounds(this.getPosition().extent(ownExtent));
-        }
+	var bounds = this.getPosition().extent(ownExtent);
+	
+        if (this.owner) 
+            this.setBounds(bounds);
+	else
+            this.internalSetBounds(bounds);
     }
     
 });
@@ -1376,20 +1377,20 @@ Morph.subclass("TextListMorph", {
     borderWidth: 1,
     fill: Color.white,
     pins: ["List", "Capacity", "ListDelta", "Selection", "-DeletionConfirmation", "+DeletionRequest"],
-    itemMargin: 1,
-    documentation: "replacement for CheapListMorphs, using TextMorphs as menu items",
+    itemMargin: pt(1, 1), // stylize
     defaultCapacity: 50,
     highlightItemsOnMove: false,
+    
 
-    initialize: function($super, initialBounds, itemList, optTextStyle) {
+    initialize: function($super, initialBounds, itemList, optMargin, optTextStyle) {
         // itemList is an array of strings
-        var height = Math.max(initialBounds.height, itemList.length * (TextMorph.prototype.fontSize + this.itemMargin *2));
+        var height = Math.max(initialBounds.height, itemList.length * (TextMorph.prototype.fontSize + this.itemMargin.y *2));
         initialBounds = initialBounds.withHeight(height);
         $super(initialBounds, itemList);
         this.itemList = itemList;
         this.selectedLineNo = -1;
         this.generateSubmorphs(itemList, initialBounds.width, optTextStyle);
-        this.alignAll();
+        this.alignAll(optMargin);
         var model = new SyntheticModel(this.pins);
         this.modelPlug = new ModelPlug(model.makePlugSpecFromPins(this.pins));
         this.setModelValue('setList', itemList);
@@ -1413,7 +1414,7 @@ Morph.subclass("TextListMorph", {
     handlesMouseDown: Functions.True,
     
     generateSubmorphs: function(itemList, width, additionalStyling) {
-	var rect = pt(width, TextMorph.prototype.fontSize).extentAsRectangle().insetByPt(pt(this.itemMargin, 0));
+	var rect = pt(width, TextMorph.prototype.fontSize).extentAsRectangle()
 	for (var i = 0; i < itemList.length; i++)  {
 	    var m = new TextMorph(rect, itemList[i]).beListItem();
 	    if (additionalStyling) m.applyStyle(additionalStyling);
@@ -1422,8 +1423,8 @@ Morph.subclass("TextListMorph", {
 	}
     },
     
-    alignAll: function() {
-        this.leftAlignSubmorphs(pt(this.itemMargin, this.itemMargin));
+    alignAll: function(optMargin) {
+        this.leftAlignSubmorphs(this.itemMargin, optMargin || pt(0, 0));
     },
 
     defaultOrigin: function(bounds) { 
@@ -1638,7 +1639,7 @@ Morph.subclass("NewMenuMorph", {
         borderColor: Color.blue,
         borderWidth: 0.5,
         fill: Color.blue.lighter(5),
-        borderRadius: 6, 
+        borderRadius: 4, 
         fillOpacity: 0.75, 
         wrapStyle: WrapStyle.Shrink
     },
@@ -1733,7 +1734,7 @@ Morph.subclass("NewMenuMorph", {
 	
 	var textList = this.items.map(function(item) { return item[0]; });
         this.listMorph = new TextListMorph(pt(this.estimateListWidth(TextMorph.prototype), 0).extentAsRectangle(), 
-					   textList, this.textStyle);
+					   textList, pt(0, this.listStyle.borderRadius), this.textStyle);
         this.listMorph.applyStyle(this.listStyle);
         this.listMorph.suppressHandles = true;
         this.listMorph.focusHaloBorderWidth = 0;
