@@ -117,7 +117,11 @@ var Config = {
     askBeforeQuit: true,
     
     // Enable advanced debugging options
-    debugExtras: false
+    debugExtras: false,
+
+    // enable grab halo (alternative to shadow) on objects in the hand.
+    showGrabHalo: false
+
 
 }
 

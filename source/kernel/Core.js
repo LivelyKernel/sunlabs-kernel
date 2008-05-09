@@ -2100,6 +2100,11 @@ Wrapper.subclass('Visual', {
 	this.rawNode.setAttributeNS(null, 'stroke-linecap', capType);
     },
 
+    setStrokeDashArray: function(array) {
+	if (!(array instanceof Array)) throw new Error('wrong type ' + array);
+	this.rawNode.setAttributeNS(null, "stroke-dasharray", array);
+    },
+
     setBounds: function(bounds) { 
 	throw new Error('setBounds unsupported on type ' + this.type());
     },
@@ -2162,6 +2167,13 @@ Wrapper.subclass('Visual', {
 
     display: function() {
 	this.rawNode.removeAttributeNS(null, "display");
+    },
+
+    applyFilter: function(filterUri) {
+	if (filterUri) 
+	    this.rawNode.setAttributeNS(null, "filter", filterUri);
+	else
+	    this.rawNode.removeAttributeNS(null, "filter");
     }
 
 });
@@ -5681,11 +5693,13 @@ Object.extend(WorldMorph, {
 
 Morph.subclass("HandMorph", {
     
-    documentation: "Defines the little triangle that represents the user's cursor.",
+    documentation: "Defines a visual representation for the user's cursor.",
     applyDropShadowFilter: !!Config.enableDropShadow,
+    dropShadowFilter: "url(#DropShadowFilter)",
     shadowOffset: pt(5,5),
     handleOnCapture: true,
     logDnD: false,
+
 
     initialize: function($super, local) {
         $super(pt(5,5).extent(pt(10,10)), "rect");
@@ -5712,6 +5726,7 @@ Morph.subclass("HandMorph", {
 
         this.priorPoint = null;
         this.owner = null;
+	this.boundMorph = null; // surrounds bounds
 
         return this;
     },
@@ -5880,6 +5895,26 @@ Morph.subclass("HandMorph", {
 	return true;
     },
 
+    showAsGrabbed: function(grabbedMorph) {
+        if (this.applyDropShadowFilter) grabbedMorph.applyFilter(this.dropShadowFilter); 
+
+	if (Config.showGrabHalo) {
+	    var bounds = grabbedMorph.bounds(true);
+	    this.grabHaloMorph = this.addMorphBack(new Morph(bounds.insetBy(-4), "rect").applyStyle({fill: null, borderWidth: 0.5 }));
+	    this.grabHaloMorph.setStrokeDashArray([3,2]);
+	    this.grabHaloMorph.setLineJoin(Shape.LineJoins.Round);
+	    this.grabHaloMorph.ignoreEvents();
+	}
+    },
+
+    showAsUngrabbed: function(grabbedMorph) {
+	if (this.applyDropShadowFilter) grabbedMorph.applyFilter(null);
+	if (this.grabHaloMorph) {
+	    this.grabHaloMorph.remove();
+	    this.grabHaloMorph = null;
+	}
+    },
+    
     grabMorph: function(grabbedMorph, evt) { 
         if (evt.isShiftDown() && !(grabbedMorph instanceof LinkMorph)) {
             if (!grabbedMorph.okToDuplicate()) return;
@@ -5905,9 +5940,7 @@ Morph.subclass("HandMorph", {
         this.grabInfo = [grabbedMorph.owner, grabbedMorph.position()];
         if (this.logDnD) console.log('%s grabbing %s', this, grabbedMorph);
         this.addMorph(grabbedMorph);
-        if (this.applyDropShadowFilter) {
-            grabbedMorph.rawNode.setAttributeNS(null, "filter", "url(#DropShadowFilter)");
-        }
+	this.showAsGrabbed(grabbedMorph);
         // grabbedMorph.updateOwner(); 
         this.changed(); //for drop shadow
     },
@@ -5919,12 +5952,7 @@ Morph.subclass("HandMorph", {
             receiver.addMorph(m); // this removes it from hand
             if (this.logDnD) console.log("%s dropping %s on %s", this, m, receiver);
 	    
-            if (this.applyDropShadowFilter) {
-                m.rawNode.setAttributeNS(null, "filter", "none");
-            }
-            // DI: May need to be updated for collaboration...
-            // m.updateBackendFields('origin'); 
-
+	    this.showAsUngrabbed(m);
             // FIXME - following stmt is a workaround for the fact that if the targetMorph gets
             // dragged, its rotation value set in degrees rather than radians, and this
             // may foul things up later if .rotation is read rather than .getRotation
@@ -5943,7 +5971,7 @@ Morph.subclass("HandMorph", {
         selection.removeOnlyIt();
     },
 
-    moveTopMorph: function(evt) {
+    moveSubmorphs: function(evt) {
         var world = WorldMorph.current();
 
         // Display height is returned incorrectly by many web browsers.
@@ -5952,20 +5980,20 @@ Morph.subclass("HandMorph", {
 
         switch (evt.getKeyCode()) {
         case Event.KEY_LEFT:
-            this.topSubmorph().moveBy(pt(-10,0));
+            this.submorphs.invoke('moveBy', pt(-10,0));
             evt.stop();
             return true;
         case Event.KEY_RIGHT:
             // forget the existing selection
-            this.topSubmorph().moveBy(pt(10, 0));
+            this.submorphs.invoke('moveBy', pt(10, 0));
             evt.stop();
             return true;
         case Event.KEY_UP:
-            this.topSubmorph().moveBy(pt(0, -10));
+            this.submorphs.invoke('moveBy', pt(0, -10));
             evt.stop();
             return true;
         case Event.KEY_DOWN:
-            this.topSubmorph().moveBy(pt(0, 10));
+            this.submorphs.invoke('moveBy', pt(0, 10));
             evt.stop();
             return true;
 
@@ -5973,19 +6001,13 @@ Morph.subclass("HandMorph", {
             // Read the comments near method Morph.moveRadially()
         case Event.KEY_PAGEUP:
         case 65: // The "A" key
-            for (var i = 0; i < world.submorphs.length; i++) {
-                var morph = world.submorphs[i];
-                morph.moveRadially(towardsPoint, 10);
-            }
+	    world.submorphs.invoke('moveRadially', towardsPoint, 10);
             this.moveRadially(towardsPoint, 10);            
             evt.stop();
             return true;
         case Event.KEY_PAGEDOWN:
         case 90: // The "Z" key
-            for (var i = 0; i < world.submorphs.length; i++) {
-                var morph = world.submorphs[i];
-                morph.moveRadially(towardsPoint, -10);
-            }
+	    world.submorphs.invoke('moveRadially', towardsPoint, -10);
             this.moveRadially(towardsPoint, -10);            
             evt.stop();
             return true;
@@ -5994,33 +6016,33 @@ Morph.subclass("HandMorph", {
         return false;
     },
 
-    transformTopMorph: function(evt) {
-        var m = this.topSubmorph();
+    transformSubmorphs: function(evt) {
+	var fun = null;
         switch (evt.getKeyChar()) {
         case '>':
-            m.setScale(m.getScale()*1.1);
-            evt.stop();
-            return true;
+	    fun = function(m) { m.setScale(m.getScale()*1.1) };
+	    break;
         case '<':
-            m.setScale(m.getScale()/1.1);
-            evt.stop();
-            return true;
+	    fun = function(m) { m.setScale(m.getScale()/1.1) };
+	    break;
         case ']':
-            m.setRotation(m.getRotation() + 2*Math.PI/16);
-            evt.stop();
-            return true;
+	    fun = function(m) { m.setRotation(m.getRotation() + 2*Math.PI/16) };
+	    break;
         case '[':
-            m.setRotation(m.getRotation() - 2*Math.PI/16);
-            evt.stop();
-            return true;
+            fun = function(m) { m.setRotation(m.getRotation() - 2*Math.PI/16) };
+	    break;
         }
-        return false;
+	if (fun) {
+	    this.submorphs.forEach(fun);
+	    evt.stop();
+	    return true;
+	} else return false;
     },
 
     handleKeyboardEvent: function(evt) { 
         if (this.hasSubmorphs())  {
-            if (evt.type == "KeyDown" && this.moveTopMorph(evt)) return;
-            else if (evt.type == "KeyPress" && this.transformTopMorph(evt)) return;
+            if (evt.type == "KeyDown" && this.moveSubmorphs(evt)) return;
+            else if (evt.type == "KeyPress" && this.transformSubmorphs(evt)) return;
         }
         // manual bubbling up b/c the event won't bubble by itself    
         for (var responder = this.keyboardFocus; responder != null; responder = responder.owner) {
@@ -6177,6 +6199,7 @@ Morph.subclass('LinkMorph', {
             var m = evt.hand.topSubmorph();
             m.suspendAllActiveScripts();
             carriedMorphs.splice(0, 0, m);
+	    evt.hand.showAsUngrabbed(m);
             m.remove();
         }
         this.hideHelp();
@@ -6215,7 +6238,9 @@ Morph.subclass('LinkMorph', {
         }
 
         carriedMorphs.each(function(m) {
-            newWorld.firstHand().addMorph(m);
+	    var hand = newWorld.firstHand();
+	    hand.addMorph(m);
+	    hand.showAsGrabbed(m);
             m.resumeAllSuspendedScripts();
         });
 
