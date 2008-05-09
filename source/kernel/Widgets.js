@@ -1776,12 +1776,13 @@ Morph.subclass("NewMenuMorph", {
         // console.log("menu got " + evt);
         var target = this.listMorph.morphToReceiveEvent(evt);
         var index = this.listMorph.submorphs.indexOf(target);
-        if (!(index in this.items)) return;
-        try {
-             this.invokeItem(evt, this.items[index]);
-        } finally {
-             if (!this.stayUp) this.removeOnEvent(evt);
-        }
+	if (index in this.items)  {
+            try {
+		this.invokeItem(evt, this.items[index]);
+            } finally {
+		if (!this.stayUp) this.removeOnEvent(evt);
+            }
+	} else evt.hand.setMouseFocus(this); // moved away, don't lose the focus
     },
 
     onMouseDown: function(evt) {
