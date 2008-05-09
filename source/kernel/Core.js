@@ -3387,15 +3387,6 @@ Visual.subclass("Morph", {
 // Functions for change management
 Object.extend(Morph, {
 
-    // this function creates an advice function that ensures that the mutation is properly recorded
-    onChange: function(fieldName) {
-	return function(proceed, newValue) {
-	    var result = proceed(newValue);
-	    this.changed(); 
-	    return result;
-	}
-    },
-
     onLayoutChange: function(fieldName) { 
 	return function(/* arguments*/) {
 	    var priorExtent = this.innerBounds().extent();
@@ -3437,7 +3428,7 @@ Morph.addMethods({
 	return this.fill; 
     },
 
-    setBorderColor: function(newColor) { this.shape.setStroke(newColor); },//.wrap(Morph.onChange('shape')),
+    setBorderColor: function(newColor) { this.shape.setStroke(newColor); },
 
     getBorderColor: function() {
 	return new Color(Importer.prototype, this.shape.getStroke());
@@ -3455,9 +3446,9 @@ Morph.addMethods({
 	this.shape.roundEdgesBy(r);
     },
 
-    setFillOpacity: function(op) { this.shape.setFillOpacity(op); },//.wrap(Morph.onChange('shape')),
+    setFillOpacity: function(op) { this.shape.setFillOpacity(op); },
 
-    setStrokeOpacity: function(op) { this.shape.setStrokeOpacity(op); },//.wrap(Morph.onChange('shape')),
+    setStrokeOpacity: function(op) { this.shape.setStrokeOpacity(op); },
 
     setLineJoin: function(joinType) { this.shape.setLineJoin(joinType); },
 
