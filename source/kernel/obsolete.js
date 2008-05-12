@@ -312,4 +312,27 @@ Object.extend(BouncingSpheres, {
     }
 
 });
+   
+ ImageMorph.subclass("IconMorph", {
+
+    documentation: "Simple icon",
     
+    initialize: function($super, viewPort, url, name, targetUrl) {
+        $super(viewPort, url);
+        this.label = new TextMorph(new Rectangle(viewPort.width, viewPort.height/3, 100, 30), name).beLabel();
+        this.target = targetUrl;
+        this.label.setFill(Color.white);
+        this.addMorph(this.label);
+        return this;
+    },
+    
+    okToBeGrabbedBy: function(evt) { // TODO fix the same movement problem as in linkmorph
+        this.open(); 
+        return null; 
+    },
+
+    open: function () {
+        window.open(this.target);
+    }
+
+});

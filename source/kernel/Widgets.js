@@ -173,14 +173,12 @@ Morph.subclass("ButtonMorph", {
 
 });
 
-/**
- * @class ImageMorph
- */
 Morph.subclass("ImageMorph", {
-    
-    fill: Color.blue.lighter(),
-    borderWidth: 0,
+
     documentation: "Image container",
+    
+    background: Color.blue.lighter(),
+    borderWidth: 0,
     pins: ["-URL"],
     
     initialize: function($super, viewPort, url) {
@@ -212,7 +210,7 @@ Morph.subclass("ImageMorph", {
     },
 
     loadFromURL: function(url) {
-        this.setFill(ImageMorph.prototype.fill);
+        this.setFill(this.background);
         var node = this.image.loadImage(url.toString());
         node && this.addNonMorph(node);
     },
@@ -231,11 +229,9 @@ Morph.subclass("ImageMorph", {
 
 });
 
-/**
- * @class ImageButtonMorph: Buttons with images
- */ 
 ButtonMorph.subclass("ImageButtonMorph", {
 
+    documentation: "Button with an image",
     focusHaloBorderWidth: 0,
 
     initialize: function($super, initialBounds, normalImageHref, activatedImageHref) {
@@ -255,29 +251,6 @@ ButtonMorph.subclass("ImageButtonMorph", {
     
 });
 
-ImageMorph.subclass("IconMorph", {
-
-    documentation: "Simple icon",
-    
-    initialize: function($super, viewPort, url, name, targetUrl) {
-        $super(viewPort, url);
-        this.label = new TextMorph(new Rectangle(viewPort.width, viewPort.height/3, 100, 30), name).beLabel();
-        this.target = targetUrl;
-        this.label.setFill(Color.white);
-        this.addMorph(this.label);
-        return this;
-    },
-    
-    okToBeGrabbedBy: function(evt) { // TODO fix the same movement problem as in linkmorph
-        this.open(); 
-        return null; 
-    },
-
-    open: function () {
-        window.open(this.target);
-    }
-
-});
 
 // ===========================================================================
 // Window widgets
