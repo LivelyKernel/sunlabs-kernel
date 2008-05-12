@@ -164,58 +164,58 @@ Morph.subclass("ClockMorph", {
 // ===========================================================================
 Morph.subclass('PianoKeyboard', {
 
-initialize: function($super, loc) {
+    initialize: function($super, loc) {
 	//  -- Lets Boogie! --
 	$super(loc.extent(pt(100, 20)), "rect");
 	var wtWid, bkWid, keyRect, key, octavePt, nWhite, nBlack;
 	var nOctaves = 6;
 	wtWid = 8; bkWid = 5;
 	for (var i=0; i<nOctaves+1; i++) {
-		if (i < nOctaves) {nWhite = 7;  nBlack = 5; }
-			else {nWhite = 1;  nBlack = 0; } // Hich C
-		octavePt = this.innerBounds().topLeft().addXY(7*wtWid*i-1, -1);
-		for (var j=0; j<nWhite; j++) {
-			keyRect = octavePt.addXY((j)*wtWid, 0).extent(pt(wtWid+1, 36));
-			key = new Morph(keyRect, "rect");  key.setFill(Color.white);  key.myFill = Color.white;
-        		key.relayMouseEvents(this,  { onMouseDown: "pianoKeyDown", onMouseUp: "pianoKeyUp", onMouseMove: "pianoKeyMove" } );
-			key.noteNumber = i*12 + ([1, 3, 5, 6, 8, 10, 12][j]);
-			this.addMorph(key);
-		}
-		for (var j=0; j<nBlack; j++) {
-			keyRect = octavePt.addXY([6, 15, 29, 38, 47][j], 1).extent(pt(bkWid, 21));
-			key = new Morph(keyRect, "rect");  key.setFill(Color.black);  key.myFill = Color.black;
-        		key.relayMouseEvents(this, { onMouseDown: "pianoKeyDown", onMouseUp: "pianoKeyUp", onMouseMove: "pianoKeyMove" } );
-			key.noteNumber = i*12 + ([2, 4, 7, 9, 11][j]);
-			this.addMorph(key);
-		}
+	    if (i < nOctaves) {nWhite = 7;  nBlack = 5; }
+	    else {nWhite = 1;  nBlack = 0; } // Hich C
+	    octavePt = this.innerBounds().topLeft().addXY(7*wtWid*i-1, -1);
+	    for (var j=0; j<nWhite; j++) {
+		keyRect = octavePt.addXY((j)*wtWid, 0).extent(pt(wtWid+1, 36));
+		key = new Morph(keyRect, "rect");  key.setFill(Color.white);  key.myFill = Color.white;
+        	key.relayMouseEvents(this,  { onMouseDown: "pianoKeyDown", onMouseUp: "pianoKeyUp", onMouseMove: "pianoKeyMove" } );
+		key.noteNumber = i*12 + ([1, 3, 5, 6, 8, 10, 12][j]);
+		this.addMorph(key);
+	    }
+	    for (var j=0; j<nBlack; j++) {
+		keyRect = octavePt.addXY([6, 15, 29, 38, 47][j], 1).extent(pt(bkWid, 21));
+		key = new Morph(keyRect, "rect");  key.setFill(Color.black);  key.myFill = Color.black;
+        	key.relayMouseEvents(this, { onMouseDown: "pianoKeyDown", onMouseUp: "pianoKeyUp", onMouseMove: "pianoKeyMove" } );
+		key.noteNumber = i*12 + ([2, 4, 7, 9, 11][j]);
+		this.addMorph(key);
+	    }
 	}
 	// New bounds encloses all keys but no more
 	this.setExtent(this.bounds().extent().addXY(-1,-1));
-	},
-	pianoKeyDown: function(evt, key) {
-		key.setFill(Color.green);
-		console.log("key number " + key.noteNumber + " pressed."); 
-	},
-	pianoKeyUp: function(evt, key) {
-		key.setFill(key.myFill);
-		console.log("key number " + key.noteNumber + " released."); 
-	},
-	pianoKeyMove: function(evt, key) {
+    },
+    pianoKeyDown: function(evt, key) {
+	key.setFill(Color.green);
+	console.log("key number " + key.noteNumber + " pressed."); 
+    },
+    pianoKeyUp: function(evt, key) {
+	key.setFill(key.myFill);
+	console.log("key number " + key.noteNumber + " released."); 
+    },
+    pianoKeyMove: function(evt, key) {
         if (!evt.mouseButtonPressed) return;
-		if (!key.containsWorldPoint(evt.mousePoint) ) {
-			// user dragged out with mouse down
-			this.pianoKeyUp(evt, key);
-			evt.hand.setMouseFocus(null);
-			// See if it's now on a new key a la glissando
-			var newKey = this.morphToReceiveEvent(evt);
-			if (newKey) {
-				this.pianoKeyDown(evt, newKey);
-				evt.hand.setMouseFocus(newKey);
-			}
-		}
+	if (!key.containsWorldPoint(evt.mousePoint) ) {
+	    // user dragged out with mouse down
+	    this.pianoKeyUp(evt, key);
+	    evt.hand.setMouseFocus(null);
+	    // See if it's now on a new key a la glissando
+	    var newKey = this.morphToReceiveEvent(evt);
+	    if (newKey) {
+		this.pianoKeyDown(evt, newKey);
+		evt.hand.setMouseFocus(newKey);
+	    }
 	}
+    }
 });
-
+    
 
 //===========================================================================
 // The Pen/Hilbert curve demo
@@ -366,279 +366,9 @@ Pen.script = ["P = new Pen();",
 ""].join("\n");
 
 // ===========================================================================
-// The Doodle & Squiggle Draw Examples
+// Squiggle Draw Example
 // ===========================================================================
 
-/**
- * @class DoodleMorph: A simple drawing program
- */
-
-ClipMorph.subclass("DoodleMorph", {
-
-    borderWidth: 0,
-    fill: Color.veryLightGray,
-    imagepath: "Resources/doodle/",
-
-    initialize: function($super, extent) {
-        $super(extent.asRectangle(), "rect");
-        this.drawingColor = Color.red;
-        this.lineWidth = 2.0;
-        this.colorvalue = true;
-        this.borderMenuOpen = false;
-        this.line = false;
-        
-        // The doodle that we are creating currently
-        this.currentMorph = null;
-        this.start = null;
-
-        var iconSize = 40;
-        var r = new Rectangle(0, 0, iconSize, iconSize);
-        this.linebutton = new ImageButtonMorph(r, this.imagepath + "line.png", this.imagepath + "line_down.png");
-        var r = new Rectangle(0, iconSize, iconSize, iconSize);
-        this.rectbutton = new ImageButtonMorph(r, this.imagepath + "rectangle.png", this.imagepath + "rectangle_down.png");
-        var r = new Rectangle(0, iconSize*2, iconSize, iconSize);
-        this.circlebutton = new ImageButtonMorph(r, this.imagepath + "circle.png", this.imagepath + "circle_down.png");
-        var r = new Rectangle(0, iconSize*3, iconSize, iconSize);
-        this.widthbutton = new ImageButtonMorph(r, this.imagepath + "lines.png", this.imagepath + "lines_down.png");
-        var r = new Rectangle(0, iconSize*4, iconSize, iconSize);
-        this.colorsbutton = new ImageButtonMorph(r, this.imagepath + "colors.png", this.imagepath + "colors_down.png");
-        var r = new Rectangle(0, iconSize*5, iconSize, iconSize);
-        this.stylebutton = new ImageButtonMorph(r, this.imagepath + "style.png", this.imagepath + "style_down.png");
-
-        this.linebutton.onMouseUp = function(evt) {
-            var newValue = this.isToggle() ? !this.getValue() : false;
-            this.changeAppearanceFor(newValue); 
-        };
-        this.linebutton.connectModel({model: this, setValue: "addLine"});
-        this.addMorph(this.linebutton);
-
-        this.rectbutton.onMouseUp = function(evt) {
-            var newValue = this.isToggle() ? !this.getValue() : false;
-           this.changeAppearanceFor(newValue); 
-        };
-        this.rectbutton.connectModel({model: this, setValue: "addRect"});
-        this.addMorph(this.rectbutton);
-
-        this.circlebutton.onMouseUp = function(evt) {
-            var newValue = this.isToggle() ? !this.getValue() : false;
-            this.changeAppearanceFor(newValue); 
-        };
-        this.circlebutton.connectModel({model: this, setValue: "addCirc"});
-        this.addMorph(this.circlebutton);
-                
-        this.widthbutton.onMouseUp = function(evt) {
-            var newValue = this.toggles ? !this.getValue() : false;
-            this.changeAppearanceFor(newValue); 
-        };
-        this.widthbutton.connectModel({model: this, setValue: "setLine", getValue: "getLine"});
-        this.addMorph(this.widthbutton);
-
-        this.colorsbutton.setToggle(true);
-        this.colorsbutton.connectModel({model: this, setValue: "setColor", getValue: "getColor"});
-        this.addMorph(this.colorsbutton);
-
-        this.stylebutton.onMouseUp = function(evt) {
-            var newValue = this.isToggle() ? ! this.getValue() : false;
-            this.changeAppearanceFor(newValue); 
-        };
-        this.stylebutton.connectModel({model: this, setValue: "setStyle"});
-        this.addMorph(this.stylebutton);
-
-        // Position for new objects created from menus
-        this.newPos = 25;
-
-        return this;
-    },
-    
-    onMouseMove: function(evt) {
-    },
-
-    onMouseUp: function(evt) {
-        evt.hand.setFill(Color.primary.blue); 
-    },
-
-    onMouseDown: function(evt) { // Default behavior is to grab a submorph
-        this.openForDragAndDrop = true;
-        var m = this.morphToReceiveEvent(evt);
-        if (m == null || m == this) { 
-            this.makeSelection(evt); 
-            return true; 
-        }
-        if (m.handlesMouseDown(evt)) return false;
-        evt.hand.grabMorph(m, evt);
-        return true; 
-    },
-
-    handlesMouseDown: Functions.True,
-
-    makeSelection: function(evt) { 
-        if (this.currentSelection != null) this.currentSelection.removeOnlyIt();
-        if ( !evt.hand.mouseButtonPressed ) return;
-        var m = new SelectionMorph(this.localize(evt.mousePoint).extent(pt(5,5)), this);
-        m.shape.setStrokeDashArray([3,2]);
-        this.addMorph(m);
-        this.currentSelection = m;
-        var handle = new HandleMorph(evt.mousePoint, "rect", evt.hand, m, "bottomRight");
-        m.addMorph(handle);
-        handle.setBounds(handle.bounds().center().asRectangle());
-//        if (evt.hand.mouseFocus instanceof HandleMorph) evt.hand.mouseFocus.remove();
-        evt.hand.setMouseFocus(handle);
-    },    
-
-    // Add menu items for creating rectangles and ellipses
-    morphMenu: function($super, evt) {
-        var menu = $super(evt);
-        menu.addLine();
-        menu.addItem(["add rectangle", this, 'addRect']);
-        menu.addItem(["add ellipse",   this, 'addCircle']);
-        return menu;
-    },
-
-    addLine: function() {
-        var morph = new Morph(new Rectangle(this.newPos * 2, this.newPos, 60, 20), 'rect');
-	morph.applyStyle({fill: null, borderWidth: this.lineWidth, borderColor: this.drawingColor});
-        morph.setShape(new PolylineShape([pt(0,20),pt(60,0)], this.lineWidth, this.drawingColor));
-        this.addMorph(morph);
-
-        this.newPos += 25;
-        if (this.newPos > 125) this.newPos = 25;            
-    },
-
-    addRect: function() {
-        var morph = new Morph(new Rectangle(this.newPos * 2, this.newPos, 60, 20), 'rect');
-	morph.applyStyle({fill: this.fillColor, borderWidth: this.lineWidth, borderColor: this.drawingColor});
-        this.addMorph(morph);
-	
-        this.newPos += 25;
-        if (this.newPos > 125) this.newPos = 25;            
-    },
-    
-    addCirc: function() {
-        var morph = new Morph(new Rectangle(this.newPos * 2, this.newPos, 60, 20), 'ellipse');
-	morph.applyStyle({fill: this.fillColor, borderWidth: this.lineWidth, borderColor: this.drawingColor});
-        this.addMorph(morph);
-
-        this.newPos += 25;
-        if (this.newPos > 125) this.newPos = 25;            
-    },
-    
-    setColor: function(val) {
-        console.log("Setting Color");
-        this.colorvalue = val;
-        if ( !this.colorvalue && this.colorMorph != null ) { // false
-            this.colorMorph.remove();
-            return;
-        }
-
-        if ( this.colorMorph != null ) {
-            if ( this.colorMorph.position() != this.colorsbutton.bounds().topRight().subPt(pt(0,20)) ) {
-                this.colorMorph.setPosition(this.colorsbutton.bounds().topRight().subPt(pt(0,20)));
-            }
-            this.addMorph(this.colorMorph);
-            return;
-        }
-  
-        if (this.colorvalue) {
-            this.colorMorph = new Morph(this.colorsbutton.bounds().topRight().subPt(pt(0,20)).extent(pt(110,110)), "rect");
-            this.colorMorph.applyStyle({fill: Color.white, fillOpacity: .7, borderRadius: 10});
-
-            var m = new TextMorph(new Rectangle(10, 5, 80, 20), "Border color");
-            m.relayMouseEvents(this.colorMorph, {onMouseDown: "onMouseDown", onMouseUp: "onMouseUp"});
-	    m.applyStyle({borderWidth: 0, fillOpacity: 0, borderRadius: 10});
-            this.colorMorph.addMorph(m);
-
-            m = new TextMorph(new Rectangle(10, 65, 80, 20), "Fill color");
-            m.relayMouseEvents(this.colorMorph, {onMouseDown: "onMouseDown", onMouseUp: "onMouseUp"});
-	    m.applyStyle({borderWidth: 0, fillOpacity: 0, borderRadius: 10});
-            this.colorMorph.addMorph(m);
-
-            this.colorpicker = new ColorPickerMorph(new Rectangle(10, 25, 40, 20));
-            this.colorMorph.addMorph(this.colorpicker);
-            this.fillpicker = new ColorPickerMorph(new Rectangle(10, 85, 40, 20));
-            this.colorMorph.addMorph(this.fillpicker);
-
-            this.colorMorph.borderRect = new Morph(new Rectangle(70, 25, 20, 20), 'ellipse');
-            this.colorMorph.borderRect.setFill(this.drawingColor);
-            this.colorMorph.addMorph(this.colorMorph.borderRect);
-            this.colorMorph.fillRect = new Morph(new Rectangle(70, 85, 20, 20), 'ellipse');
-            this.colorMorph.fillRect.setFill(this.fillColor);
-            this.colorMorph.addMorph(this.colorMorph.fillRect);
-
-            this.colorMorph.moveBy(this.colorsbutton.bounds().topRight().subPt(pt(0,20)));
-            this.addMorph(this.colorMorph);
-            this.colorpicker.connectModel({model: this, setColor: "setColoring"});
-            this.fillpicker.connectModel({model: this, setColor: "setFillColor"});
-
-            this.colorMorph.setPosition(this.colorsbutton.bounds().topRight().subPt(pt(0,20)));
-
-        }
-    },
-    
-    getColor: function() {
-        return this.colorvalue;
-    },
-    
-    setColoring: function(color) {
-        console.log("Setting coloring");
-
-        this.drawingColor = color;
-        this.colorMorph.borderRect.setFill(this.drawingColor);
-        if ( this.currentSelection != null ) {
-            this.currentSelection.setBorderColor(this.drawingColor);
-        }
-    },
-
-    setFillColor: function(color) {
-        this.fillColor = color;
-        this.colorMorph.fillRect.setFill(this.fillColor);
-        if ( this.currentSelection != null ) {
-            this.currentSelection.setFill(this.fillColor);
-        }
-
-    },
-
-    setLine: function(value) {
-
-        this.line = value;
-        var items = [
-            ["No borders", this, "setLineWidth", 0],
-            ["1", this, "setLineWidth", 1],
-            ["2", this, "setLineWidth", 2],
-            ["3", this, "setLineWidth", 3],
-            ["4", this, "setLineWidth", 4],
-            ["5", this, "setLineWidth", 5],
-            ["10", this, "setLineWidth", 10],
-            ["15", this, "setLineWidth", 15],
-        ];
-        if ( !this.borderMenuOpen ) {
-            this.borderMenuOpen = true;
-            (this.borders = new MenuMorph(items, this)).openIn(this.world(), 
-							       this.worldPoint(this.widthbutton.bounds().topRight()), true);
-        } else {
-            this.borders.remove();
-            this.borderMenuOpen = false;
-        }
-    },
-    
-    getLine: function() {
-        return this.line;
-    }, 
-    
-    setLineWidth: function (newWidth) {
-        this.lineWidth = newWidth;
-        if ( this.currentSelection != null ) {
-            this.currentSelection.setBorderWidth(this.lineWidth);
-        }
-        this.borders.remove();
-        this.borderMenuOpen = false;
-    },
-    
-    setStyle: function() {
-        if (this.currentSelection != null) {
-            new StylePanel(this.currentSelection).open();
-        }
-    }
-});
 
 ClipMorph.subclass('SquiggleMorph', {
 
@@ -3703,87 +3433,6 @@ Morph.subclass("MapMorph", {
 
 }(); // end of the map demo module
 
-// ===========================================================================
-// The Bouncing Spheres Example
-// ===========================================================================
-
-/**
- * @class BouncingSpheres
- */
-
-Object.subclass('BouncingSpheres');
-
-Object.extend(BouncingSpheres, {
-    makeCircleGrid: function (itemCount) {
-        var canvasWidth = this.canvas().bounds().width;
-        var canvasHeight = this.canvas().bounds().height;
-
-        var minR = 10, maxR = canvasWidth / 3;
-
-        for (var j = 0; j < itemCount; ++j) {
-            var r = BouncingSpheres.getRandSkewed(minR, maxR);
-            var cx = BouncingSpheres.getRand(r,  canvasWidth  - r);
-            var cy = BouncingSpheres.getRand(r,  canvasHeight - r);
-            //console.log([r, cx, cy]);
-    
-            var aShape  = new Morph(new Rectangle(cx - r, cy - r, 2*r, 2*r), "ellipse");
-            aShape.setFill(BouncingSpheres.randColor(true));
-            aShape.setBorderColor(BouncingSpheres.randColor(true));
-            aShape.setFillOpacity(BouncingSpheres.getRand(0, 1));
-            aShape.setBorderWidth(BouncingSpheres.getRand(0, 3));
-            aShape.fullRadius = r + aShape.shape.getStrokeWidth();
-    
-            WorldMorph.current().addMorph(aShape);
-    
-            aShape.vector = Point.polar(15, BouncingSpheres.getRand(0, Math.PI *2));
-	    aShape.bounce = function() {
-                // var pt = this.getTranslation();
-                this.translateBy(this.vector);
-                var worldpt = this.origin;
-		
-                if ((worldpt.x - this.fullRadius < 0) || (worldpt.x + this.fullRadius > canvasWidth)) {
-                    this.vector.x = -this.vector.x;
-                }
-		
-                if ((worldpt.y - this.fullRadius < 0) || (worldpt.y + this.fullRadius > canvasHeight)) {
-                    this.vector.y = - this.vector.y;
-                }
-	    };
-	    
-            aShape.startStepping(30, "bounce");
-            
-        }
-    },
-
-    getRand: function(from, to) {
-        return Math.random() * (to - from) + from;
-    },
-    
-    getRandSkewed: function(from, to) {
-        // let skew stats to smaller values
-        var seed = 0;
-
-        for (var i = 0; i < BouncingSpheres.skew_stat_factor; ++i) {
-            seed += Math.random();
-        }
-
-        seed = 2 * Math.abs(seed / BouncingSpheres.skew_stat_factor - 0.5);
-        return seed * (to - from) + from;
-    },
-    
-    skew_stat_factor: 15,
-    
-    randColor: function(alpha) {
-        var red   = BouncingSpheres.getRand(0, 1);
-        var green = BouncingSpheres.getRand(0, 1);
-        var blue  = BouncingSpheres.getRand(0, 1);
-        var opacity = 1;
-        var color = new Color(red, green, blue);
-        return color;    
-    }
-
-});
-    
 
 apps.canvascape = function() { // module function
 

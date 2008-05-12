@@ -231,3 +231,85 @@ CheapListMorph.subclass("CheapMenuMorph", {
 
 });
 
+
+// ===========================================================================
+// The Bouncing Spheres Example
+// ===========================================================================
+
+/**
+ * @class BouncingSpheres
+ */
+
+Object.subclass('BouncingSpheres');
+
+Object.extend(BouncingSpheres, {
+    makeCircleGrid: function (itemCount) {
+        var canvasWidth = this.canvas().bounds().width;
+        var canvasHeight = this.canvas().bounds().height;
+
+        var minR = 10, maxR = canvasWidth / 3;
+
+        for (var j = 0; j < itemCount; ++j) {
+            var r = BouncingSpheres.getRandSkewed(minR, maxR);
+            var cx = BouncingSpheres.getRand(r,  canvasWidth  - r);
+            var cy = BouncingSpheres.getRand(r,  canvasHeight - r);
+            //console.log([r, cx, cy]);
+    
+            var aShape  = new Morph(new Rectangle(cx - r, cy - r, 2*r, 2*r), "ellipse");
+            aShape.setFill(BouncingSpheres.randColor(true));
+            aShape.setBorderColor(BouncingSpheres.randColor(true));
+            aShape.setFillOpacity(BouncingSpheres.getRand(0, 1));
+            aShape.setBorderWidth(BouncingSpheres.getRand(0, 3));
+            aShape.fullRadius = r + aShape.shape.getStrokeWidth();
+    
+            WorldMorph.current().addMorph(aShape);
+    
+            aShape.vector = Point.polar(15, BouncingSpheres.getRand(0, Math.PI *2));
+	    aShape.bounce = function() {
+                // var pt = this.getTranslation();
+                this.translateBy(this.vector);
+                var worldpt = this.origin;
+		
+                if ((worldpt.x - this.fullRadius < 0) || (worldpt.x + this.fullRadius > canvasWidth)) {
+                    this.vector.x = -this.vector.x;
+                }
+		
+                if ((worldpt.y - this.fullRadius < 0) || (worldpt.y + this.fullRadius > canvasHeight)) {
+                    this.vector.y = - this.vector.y;
+                }
+	    };
+	    
+            aShape.startStepping(30, "bounce");
+            
+        }
+    },
+
+    getRand: function(from, to) {
+        return Math.random() * (to - from) + from;
+    },
+    
+    getRandSkewed: function(from, to) {
+        // let skew stats to smaller values
+        var seed = 0;
+
+        for (var i = 0; i < BouncingSpheres.skew_stat_factor; ++i) {
+            seed += Math.random();
+        }
+
+        seed = 2 * Math.abs(seed / BouncingSpheres.skew_stat_factor - 0.5);
+        return seed * (to - from) + from;
+    },
+    
+    skew_stat_factor: 15,
+    
+    randColor: function(alpha) {
+        var red   = BouncingSpheres.getRand(0, 1);
+        var green = BouncingSpheres.getRand(0, 1);
+        var blue  = BouncingSpheres.getRand(0, 1);
+        var opacity = 1;
+        var color = new Color(red, green, blue);
+        return color;    
+    }
+
+});
+    
