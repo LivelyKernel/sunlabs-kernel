@@ -183,9 +183,6 @@ Font.addMethods({
 }    
     
     
-/**
- * @class TextWord
- */ 
 Wrapper.subclass('TextWord', {
 
     documentation: "renders single words",
@@ -276,10 +273,7 @@ Wrapper.subclass('TextWord', {
     
     // keep a copy of the substring we were working on (do we really need this? - kam)
     adjustAfterComposition: function(deltaX) {
-        while (this.rawNode.firstChild) {
-            this.rawNode.removeChild(this.rawNode.firstChild);
-        }
-        this.rawNode.appendChild(NodeFactory.createText(this.textString.substring(this.startIndex, this.stopIndex + 1))); 
+	this.replaceRawNodeChildren(NodeFactory.createText(this.textString.substring(this.startIndex, this.stopIndex + 1))); 
 	// XXX
 	this.setX(this.leftX + deltaX);
     },
@@ -853,22 +847,15 @@ Visual.subclass('TextSelection', {
     
     addRectangle: function(rect) {
 	this.rawNode.appendChild(new RectShape(rect).roundEdgesBy(this.borderRadius).rawNode);
-    },
-    
-    clear: function() {
-	while (this.rawNode.firstChild) 
-	    this.rawNode.removeChild(this.rawNode.firstChild);
     }
+    
     
 });
 
 
-/**
- * @class TextMorph
- */ 
-
 Morph.subclass("TextMorph", {
     
+    documentation: "Container for Text",
     // these are prototype variables
     fontSize:   Config.defaultFontSize   || 12,
     fontFamily: Config.defaultFontFamily || 'Helvetica',
@@ -1406,7 +1393,7 @@ Morph.subclass("TextMorph", {
     showsSelectionWithoutFocus: Functions.False, // Overridden in, eg, Lists
     
     undrawSelection: function() {
-	this.textSelection && this.textSelection.clear();
+	this.textSelection && this.textSelection.replaceRawNodeChildren(null);
     },
 
     drawSelection: function(noScroll) { // should really be called buildSelection now

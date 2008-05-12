@@ -1286,10 +1286,6 @@ console.log("Color");
 // Gradient colors, stipple patterns and coordinate transformatins
 // ===========================================================================
 
-/**
-  * @class Wrapper
-  */
-
 Object.subclass('Wrapper', {
 
     documentation: "A wrapper around a native object, stored as rawNode",
@@ -1328,6 +1324,11 @@ Object.subclass('Wrapper', {
     removeRawNode: function() {
 	var parent = this.rawNode && this.rawNode.parentNode;
 	return parent && parent.removeChild(this.rawNode);
+    },
+
+    replaceRawNodeChildren: function(replacement) {
+	while (this.rawNode.firstChild) this.rawNode.removeChild(this.rawNode.firstChild);
+	if (replacement) this.rawNode.appendChild(replacement);
     },
 
     toString: function() {
@@ -4059,8 +4060,7 @@ Visual.subclass('FocusHalo', {
 
     setShape: function(rect) {
 	var shape = new RectShape(rect.insetBy(-2), null, this.borderWidth, this.borderColor);
-	while (this.rawNode.firstChild) this.rawNode.removeChild(this.rawNode.firstChild);
-	this.rawNode.appendChild(shape.rawNode);
+	this.replaceRawNodeChildren(shape.rawNode);
     }
 
 });
@@ -5286,7 +5286,7 @@ PasteUpMorph.subclass("WorldMorph", {
     remove: function() {
         if (!this.rawNode.parentNode) return null;  // already removed
         this.stopStepping();
-        this.rawNode.parentNode.removeChild(this.rawNode);
+	this.removeRawNode();
         return this;
     },
 
@@ -5316,7 +5316,7 @@ PasteUpMorph.subclass("WorldMorph", {
     },
     
     removeHand: function(hand) {
-        this.rawNode.parentNode.removeChild(hand.rawNode);
+	hand.removeRawNode();
         hand.unregisterForEvents(this);
         hand.unregisterForEvents(hand);
 
