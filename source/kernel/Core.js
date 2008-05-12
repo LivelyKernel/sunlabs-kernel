@@ -1558,7 +1558,7 @@ Wrapper.subclass('Image', {
     },
 
     scaleBy: function(factor) {
-	new Similitude(pt(0, 0), 0, factor).applyTo(this.rawNode);
+	new Similitude(pt(0, 0), 0, factor).applyTo(this);
     },
 
     loadUse: function(url) {
@@ -1675,7 +1675,8 @@ Object.subclass('Similitude', {
 	return attr;
     },
 
-    applyTo: function(rawNode) {
+    applyTo: function(wrapper) {
+	var rawNode = wrapper.rawNode;
 	if (Config.useTransformAPI) {
 	    var list = rawNode.transform.baseVal;
 	    var viewport = (UserAgent.usableNearestViewportElement ? rawNode.nearestViewportElement : Canvas);
@@ -3879,7 +3880,7 @@ Morph.addMethods({
 	// this.layoutChanged();
 	// Only position has changed; not extent.  Thus no internal layout is needed
 	// This should become a new transformChanged() method
-	this.getTransform().applyTo(this.rawNode);
+	this.getTransform().applyTo(this);
 	if (this.fullBounds != null) this.fullBounds = this.fullBounds.translatedBy(delta);
 	// DI: I don't think this can affect owner.  It may increase fullbounds
 	//     due to stickouts, but not the bounds for layout...
@@ -4658,7 +4659,7 @@ Morph.addMethods({
 	// It invalidates the cache, which will be recomputed when bounds() is called
 	// Naturally it must be propagated up its owner chain.
 	// Note the difference in meaning from adjustForNewBounds()
-	this.getTransform().applyTo(this.rawNode);  // DI: why is this here?
+	this.getTransform().applyTo(this);  // DI: why is this here?
 	this.fullBounds = null;
 	if (this.owner && this.owner !== this.world()) {     // May affect owner as well...
 	    this.owner.layoutChanged();

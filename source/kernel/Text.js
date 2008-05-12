@@ -63,18 +63,19 @@ Object.subclass('Font', {
         return this.extents[code] ? this.extents[code].height : 12;
     },
 
-    applyTo: function(rawNode) {
+    applyTo: function(wrapper) {
+	var rawNode = wrapper.rawNode;
         rawNode.setAttributeNS(null, "font-size", this.getSize());
         rawNode.setAttributeNS(null, "font-family", this.getFamily());
         if (this.style == 'bold') rawNode.setAttributeNS(null, "font-weight", 'bold');
         if (this.style == 'italic') rawNode.setAttributeNS(null, "font-style", 'italic');
         if (this.style == 'normal') {
-		rawNode.setAttributeNS(null, "font-style", 'normal');
-		rawNode.setAttributeNS(null, "font-weight", 'normal');
+	    rawNode.setAttributeNS(null, "font-style", 'normal');
+	    rawNode.setAttributeNS(null, "font-weight", 'normal');
 	}
         // if (this.getSize() == 18 || this.style == 'bold' || this.style == 'italic') 
 	//	console.log("applying " + this.getSize() + this.style);
-	}
+    }
 
 });
     
@@ -581,7 +582,7 @@ Object.subclass('TextLine', {
                 lastWord = new TextWord(this.textString, c.startIndex, lastBounds.maxX(), this.baselineY(), this.currentFont);
 		if (hasStyleChanged) {
 		    // once we notice one change, we will reapply font-size to chunk
-		    this.currentFont.applyTo(lastWord.rawNode);
+		    this.currentFont.applyTo(lastWord);
 		}
                 c.word = lastWord;
 		
@@ -696,11 +697,11 @@ Object.subclass('TextLine', {
         }
     },
     
-    render: function(rawTextNode) {
+    render: function(textContent) {
 	// render each word contained in the line
         for (var i = 0; i < this.chunks.length; i++) {
             if (this.chunks[i].word && this.chunks[i].render) {
-                rawTextNode.appendChild(this.chunks[i].word.rawNode);
+                textContent.rawNode.appendChild(this.chunks[i].word.rawNode);
             }
         }
     },
@@ -835,7 +836,7 @@ WrapStyle = {
 };
 
 Visual.subclass('TextSelection', {
-    
+    // Should this be a transient morph instead?
     fill: Color.primary.green,
     borderWidth: 0,
     borderRadius: 1,
@@ -848,8 +849,13 @@ Visual.subclass('TextSelection', {
     addRectangle: function(rect) {
 	this.rawNode.appendChild(new RectShape(rect).roundEdgesBy(this.borderRadius).rawNode);
     }
-    
-    
+});
+
+Visual.subclass('TextContent', {
+    documentation: "wrapper around SVG Text elements",
+    initialize: function() {
+	this.rawNode = NodeFactory.create("text", { "kerning": 0 });
+    }
 });
 
 
@@ -869,7 +875,7 @@ Morph.subclass("TextMorph", {
     maxSafeSize: 20000, 
     tabWidth: 4,
     tabsAsSpaces: true,
-    noShallowCopyProperties: Morph.prototype.noShallowCopyProperties.concat(['rawTextNode', 'textSelection', 'lines']),
+    noShallowCopyProperties: Morph.prototype.noShallowCopyProperties.concat(['textContent', 'textSelection', 'lines']),
     locale: Locale,
     acceptInput: true, // whether it accepts changes to text KP: change: interactive changes
     autoAccept: false,
@@ -892,9 +898,9 @@ Morph.subclass("TextMorph", {
 
     initializePersistentState: function($super, initialBounds, shapeType) {
         $super(initialBounds, shapeType);
-	
-        this.rawTextNode = this.addNonMorph(NodeFactory.create("text", { "kerning": 0 }));
-        
+        this.textContent = new TextContent();
+	this.addNonMorph(this.textContent.rawNode);
+
         this.resetRendering();
 	
 	this.setLivelyAttribute("wrap", this.wrap);
@@ -914,7 +920,7 @@ Morph.subclass("TextMorph", {
     restoreFromSubnode: function($super, importer, node) {
 	if ($super(importer, node)) return true;
 	if (node.localName == "text") {
-            this.rawTextNode = node;   
+            this.textContent = new TextContent(importer, node);   
             var content = [];
             for (var child = node.firstChild; child != null; child = child.nextSibling) {
 		if (child.tagName != 'tspan')  
@@ -1186,20 +1192,18 @@ Morph.subclass("TextMorph", {
     ensureRendered: function() { // created on demand and cached
         if (this.ensureTextString() == null) return null;
         
-        if (!this.rawTextNode.firstChild) {
+        if (!this.textContent.rawNode.firstChild) {
             this.renderText(this.textTopLeft(), this.compositionWidth());
         }
 
-        return this.rawTextNode; 
+        return this.textContent; 
     },
 
     resetRendering: function() {
-        while (this.rawTextNode.firstChild) {
-            this.rawTextNode.removeChild(this.rawTextNode.firstChild);
-        }
-        this.rawTextNode.setAttributeNS(null, "fill", this.textColor);
+	this.textContent.replaceRawNodeChildren(null);
+	this.textContent.setFill(String(this.textColor));
         this.font = Font.forFamily(this.fontFamily, this.fontSize);
-        this.font.applyTo(this.rawTextNode);
+        this.font.applyTo(this.textContent);
         this.lines = null;
         this.lineNumberHint = 0;
     },
@@ -1225,7 +1229,7 @@ Morph.subclass("TextMorph", {
             this.lines = this.composeLines(topLeft, compositionWidth, this.font);
         } 
         for (var i = 0; i < this.lines.length; i++) {
-            this.lines[i].render(this.rawTextNode);
+            this.lines[i].render(this.textContent);
         }
     },
 
