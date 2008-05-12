@@ -88,10 +88,6 @@ var Config = {
     // Enable drop shadows for objects (does not work well in most browsers)
     useDropShadow: UserAgent.usableDropShadow,
 
-    // Use the new menu code that relies on submorphs and does not derive from
-    // a single TextMorph
-    useNewMenu: true,
-
     // We haven't decided on the behavior yet, but let's be brave!
     // This option suspends all the scripts in a world as soon as
     // the user moves to another world.  This should really be a

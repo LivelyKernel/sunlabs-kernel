@@ -1633,7 +1633,7 @@ Morph.subclass("TextListMorph", {
 
 });
 
-Morph.subclass("NewMenuMorph", {
+Morph.subclass("MenuMorph", {
 
     listStyle: { 
         borderColor: Color.blue,
@@ -1828,166 +1828,9 @@ Morph.subclass("NewMenuMorph", {
 
 });
 
-/**
- * @class MenuMorph: Popup menus
- */ 
-CheapListMorph.subclass("CheapMenuMorph", {
-
-    style: { 
-        borderColor: Color.blue,
-        borderWidth: 0.5,
-        textColor: Color.blue,
-        fill: Color.blue.lighter(5),
-        borderRadius: 6, 
-        fillOpacity: 0.75, 
-        wrapStyle: WrapStyle.Shrink
-    },
-
-    labelStyle: {
-         borderRadius: 4, 
-         fillOpacity: 0.75, 
-         wrapStyle: WrapStyle.Shrink
-    },
-
-    initialize: function($super, items, targetMorph, lines) {
-        // items is an array of menuItems, each of which is an array of the form
-        // [itemName, target, functionName, parameterIfAny]
-        // At mouseUp, the call is of the form
-        // target.function(parameterOrNull,event,menuItem)
-        // Note that the last item is seldom used, but it allows the caller to put
-        // additional data at the end of the menuItem, where the receiver can find it.
-        // The optional parameter lineList is an array of indices into items.
-        // It will cause a line to be displayed below each item so indexed
-    
-        // It is intended that a menu can also be created incrementally
-        // with calls of the form...
-        //     var menu = MenuMorph([]);
-        //     menu.addItem(nextItem);  // May be several of these
-        //     menu.addLine();          // interspersed with these
-        //     menu.openIn(world,location,stayUp,captionIfAny);
-
-        // KP: noe that the $super is not called ... should be called at some point
-        this.items = items;
-        this.targetMorph = targetMorph || this;
-        this.lines = lines || [];
-        //this.layoutChanged();
-        return this;
-    },
-
-    addItem: function(item) { 
-        this.items.push(item);
-    },
-
-    addLine: function(item) { // Not yet supported
-        // The idea is for this to add a real line on top of the text
-        this.items.push(['-----']);
-    },
-
-    removeItemNamed: function(itemName) {
-        // May not remove all if some have same name
-        // Does not yet fix up the lines array
-        for (var i = 0; i < this.items.length; i++)
-            if (this.items[i][0] == itemName)
-                this.items.splice(i,1);
-    },
-
-    replaceItemNamed: function(itemName, newItem) {
-        for (var i = 0; i < this.items.length; i++)
-            if (this.items[i][0] == itemName)
-                this.items[i] = newItem;
-    },
-
-    removeItemsNamed: function(nameList) {
-        nameList.forEach(function(n) { this.removeItemNamed(n); }, this);
-    },
-
-    keepOnlyItemsNamed: function(nameList) {
-        var rejects = [];
-        this.items.forEach( function(item) { if (nameList.indexOf(item[0]) < 0) rejects.push(item[0])});
-        this.removeItemsNamed(rejects);
-    },
-
-    openIn: function(world, location, remainOnScreen, captionIfAny) { 
-        if (this.items.length == 0) return;
-        // Note: on a mouseDown invocation (as from a menu button),
-        // mouseFocus should be set immediately before or after this call
-        this.stayUp = remainOnScreen; // set true to keep on screen
-        this.caption = captionIfAny;  // Not yet implemented
-
-        this.compose(location);
-
-        world.addMorph(this);
-        if (captionIfAny) { // Still under construction
-            var label = new TextMorph(new Rectangle(0, 0, 200, 20), captionIfAny);
-            label.applyStyle(this.labelStyle);
-            label.fitText();
-            
-            label.align(label.bounds().bottomCenter(), this.shape.bounds().topCenter());
-            this.addMorph(label);
-        }
-        // If menu and/or caption is off screen, move it back so it is visible
-        var menuRect = this.bounds();  //includes caption if any
-        // Intersect with world bounds to get visible region.  Note we need shape.bounds,
-        // since world.bounds() would include stick-outs, including this menu!
-        var visibleRect = menuRect.intersection(this.owner.shape.bounds()); 
-        var delta = visibleRect.topLeft().subPt(menuRect.topLeft());  // delta to fix topLeft off screen
-        delta = delta.addPt(visibleRect.bottomRight().subPt(menuRect.bottomRight()));  // same for bottomRight
-        if (delta.dist(pt(0,0)) > 1) this.moveBy(delta);  // move if significant
-
-        // Note menu gets mouse focus by default if pop-up.  If you don't want it, you'll have to null it
-        if (!remainOnScreen) world.firstHand().setMouseFocus(this);
-    },
-
-    compose: function(location) { 
-        var itemNames = this.items.map(function (item) { return item[0] });
-        CheapListMorph.prototype.initialize.call(this, location.extent(pt(200, 200)), itemNames);
-
-        // styling
-        this.applyStyle(this.style);
-        this.fitText(); // first layout is wasted!
-
-        //this.setFill(StipplePattern.create(Color.white, 3, Color.blue.lighter(5), 1));
-    },
-
-    onMouseUp: function(evt) {
-        var item = null;
-        if (!this.hasNullSelection()) item = this.items[this.selectedLineNo()];
-        this.setNullSelectionAt(0);  // Clean up now, in case the call fails
-        if (!this.stayUp) this.remove(); 
-
-        if (item) { // Now execute the menu item...
-            if (item[1] instanceof Function) { // alternative style, items ['menu entry', function] pairs
-                item[1].call(this.targetMorph || this, evt);
-            } else if (item[1] instanceof String || typeof item[1] == 'string') {
-                // another alternative style, send a message to the targetMorph's menu target (presumably a view).
-                var responder = (this.targetMorph || this).getModelValue("getMenuTarget");
-                if (responder) {
-                    console.log("menu target is " + responder);
-                    var func = responder[item[1]];
-                    if (!func) console.log("didn't find function " + item[1]);
-                    else func.call(responder, item[2], evt, item);
-                } else {
-                    console.log("no menu target, menu target " + this.targetMorph);
-                }
-            } else {
-                var func = item[1][item[2]];  // target[functionName]
-                if (func == null) console.log('Could not find function ' + item[2]);
-                // call as target.function(parameterOrNull,event,menuItem)
-                else func.call(item[1], item[3], evt, item); 
-            }
-        }
-    }
-
-});
-
-// select which
-var MenuMorph = Config.useNewMenu ? NewMenuMorph : CheapMenuMorph;
-
-/**
- * @class SliderMorph: Slider/scroll control
- */ 
 Morph.subclass("SliderMorph", {
 
+    documentation: "Slider/scroll control",
     mss: 8,  // minimum slider size
     pins: ["Value", "SliderExtent"],
 
