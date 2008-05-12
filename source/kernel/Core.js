@@ -470,7 +470,6 @@ Object.extend(Function.prototype, {
 	} catch (e) {
 	    var superNames = [];
 	}
-
 	return this.functionNames(function(name) {
 	    return !superNames.include(name) || this.prototype[name] !== sup.prototype[name];
 	}.bind(this));
@@ -1323,6 +1322,7 @@ Object.subclass('Wrapper', {
 
     removeRawNode: function() {
 	var parent = this.rawNode && this.rawNode.parentNode;
+	console.log("removing in " + this + ", " + this.textString);
 	return parent && parent.removeChild(this.rawNode);
     },
 
@@ -1366,19 +1366,36 @@ Object.subclass('Wrapper', {
     },
 
     // convenience attribute access
-    getLivelyAttribute: function(name) {
+    getLivelyTrait: function(name) {
 	return this.rawNode.getAttributeNS(Namespace.LIVELY, name);
     },
 
     // convenience attribute access
-    setLivelyAttribute: function(name, value) {
+    setLivelyTrait: function(name, value) {
 	return this.rawNode.setAttributeNS(Namespace.LIVELY, name, value);
     },
 
     // convenience attribute access
-    removeLivelyAttribute: function(name) {
+    removeLivelyTrait: function(name) {
 	return this.rawNode.removeAttributeNS(Namespace.LIVELY, name);
-    }
+    },
+    
+    getLengthTrait: function(name) {
+	return Converter.parseLength(this.rawNode.getAttributeNS(null, name));
+    },
+
+    setLengthTrait: function(name, value) {
+	this.setTrait(name, value);
+    },
+
+    getTrait: function(name) {
+	return this.rawNode.getAttributeNS(null, name);
+    },
+
+    setTrait: function(name, value) {
+	return this.rawNode.setAttributeNS(null, name, String(value));
+    },
+    
 
 });
 
@@ -2069,8 +2086,7 @@ Wrapper.subclass('Visual', {
     },
 
     getStrokeWidth: function() {
-	// FIXME stroke-width can have units
-	return Converter.parseLength(this.rawNode.getAttributeNS(null, "stroke-width"));
+	return this.getLengthTrait("stroke-width");
     },
 
     setFillOpacity: function(alpha) {
@@ -3106,7 +3122,7 @@ Visual.subclass("Morph", {
 		    // should point to a copy of the submorph
 		} else if (other[p] instanceof Image) {
 		    this[p] = other[p].copy(copier);
-		    this.addNonMorph(this[p].rawNode);
+		    this.addWrapper(this[p]);
 		} else {		    
 		    this[p] = other[p];
 		} 
@@ -3153,7 +3169,7 @@ Visual.subclass("Morph", {
     },
 
     restorePersistentState: function(importer) {
-	var shouldDisable = this.getLivelyAttribute("disable-mouse-events");
+	var shouldDisable = this.getLivelyTrait("disable-mouse-events");
 	if (shouldDisable) this.ignoreEvents();
 	return; // override in subclasses
     },
@@ -3639,6 +3655,13 @@ Morph.addMethods({
 	return this.rawNode.insertBefore(node, this.shape && this.shape.rawNode.nextSibling);
     },
 
+    addWrapper: function(w) {
+	if (w && w.rawNode) {
+	    this.addNonMorph(w.rawNode);
+	    return w;
+	} else return null;
+    },
+
     addWrapperToDefs: function(wrapper) {
 	if (!this.defs) {
 	    this.defs = this.rawNode.insertBefore(NodeFactory.create("defs"), this.rawNode.firstChild);
@@ -4097,13 +4120,13 @@ Morph.addMethods({
 
     ignoreEvents: function() { // will not respond nor get focus
 	this.mouseHandler = null;
-	this.setLivelyAttribute("disable-mouse-events", "true");
+	this.setLivelyTrait("disable-mouse-events", "true");
 	return this;
     },
 
     enableEvents: function() {
 	this.mouseHandler = MouseHandlerForDragging.prototype;
-	this.removeLivelyAttribute("disable-mouse-events");
+	this.removeLivelyTrait("disable-mouse-events");
 	return this;
     },
 
@@ -4179,8 +4202,7 @@ Morph.addMethods({
 
     addFocusHalo: function() {
 	if (this.focusHalo || this.focusHaloBorderWidth <= 0) return false;
-	this.focusHalo = new FocusHalo(this.focusedBorderColor, this.focusHaloBorderWidth);
-	this.addNonMorph(this.focusHalo.rawNode);
+	this.focusHalo = this.addWrapper(new FocusHalo(this.focusedBorderColor, this.focusHaloBorderWidth));
 	this.adjustFocusHalo();
 	return true;
     }
@@ -4487,9 +4509,8 @@ Morph.addMethods({
 	// Every morph carries a list of currently active actions (alarms and repetitive scripts)
 	if (!this.activeScripts) this.activeScripts = [action];
 	else this.activeScripts.push(action);
-	if (!action.rawNode.parentNode) {
-	    this.addNonMorph(action.rawNode);
-	}
+	if (!action.rawNode.parentNode) 
+	    this.addWrapper(action);
 	return this;
 	// if we're deserializing the rawNode may already be in the markup
     },

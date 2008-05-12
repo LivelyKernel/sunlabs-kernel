@@ -475,7 +475,7 @@ ClipMorph.subclass("DoodleMorph", {
         if (this.currentSelection != null) this.currentSelection.removeOnlyIt();
         if ( !evt.hand.mouseButtonPressed ) return;
         var m = new SelectionMorph(this.localize(evt.mousePoint).extent(pt(5,5)), this);
-        m.shape.rawNode.setAttributeNS(null, "stroke-dasharray", "3,2");
+        m.shape.setStrokeDashArray([3,2]);
         this.addMorph(m);
         this.currentSelection = m;
         var handle = new HandleMorph(evt.mousePoint, "rect", evt.hand, m, "bottomRight");

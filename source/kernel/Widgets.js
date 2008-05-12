@@ -72,11 +72,11 @@ Morph.subclass("ButtonMorph", {
 
     // KP: FIXME general way of declaring properties mapping to attributes
     setToggle: function(flag) {
-        this.setLivelyAttribute("toggle", !!flag);
+        this.setLivelyTrait("toggle", !!flag);
     },
 
     isToggle: function() {
-        var value = this.getLivelyAttribute("toggle");
+        var value = this.getLivelyTrait("toggle");
         if (value && value == 'true') return true;
         else return false;
     },
@@ -186,7 +186,7 @@ Morph.subclass("ImageMorph", {
     initialize: function($super, viewPort, url) {
         $super(viewPort, "rect");
         this.image = new Image(url, viewPort.width, viewPort.height);
-        if (url) this.addNonMorph(this.image.rawNode); // otherwise we didn't make a rawNode
+        if (url) this.addWrapper(this.image); // otherwise we didn't make a rawNode
     },
 
     // FIXME:
@@ -478,8 +478,7 @@ Morph.subclass("WindowControlMorph", {
         this.setFill(new RadialGradient(color.lighter(2), color));
         this.targetMorph = targetMorph;
         // FIXME should be a superclass(?) of SchedulableAction
-        this.action = new SchedulableAction(targetMorph, actionScript, null, 0);
-        this.addNonMorph(this.action.rawNode);
+        this.action = this.addWrapper(new SchedulableAction(targetMorph, actionScript, null, 0));
         this.helpText = helpText; // string to be displayed when mouse is brought over the icon
         return this;
     },
@@ -1519,6 +1518,7 @@ Morph.subclass("TextListMorph", {
         var priorItem = this.getSelection();
         var removed = this.itemList.length + newItems.length - capacity;
         if (removed > 0) {
+	    console.log("removing " + removed);
             for (var i = 0; i < removed; i++) {
                 this.submorphs[0].remove();
             }
@@ -2230,7 +2230,7 @@ Morph.subclass("ColorPickerMorph", {
                 var patchFill = this.colorMap(x, y, rh2, this.colorWheel(r.width + 1)).toString();
                 var element = new RectShape(new Rectangle(x + r.x, y + r.y, dd, dd), patchFill, 0, null);
                 // element.setAttributeNS("fill", this.colorMap(x, rh2, rh2, this.colorWheel(r.width + 1)).toString());
-                this.addNonMorph(element.rawNode);
+                this.addWrapper(element);
             }
         }
     },

@@ -233,7 +233,7 @@ Wrapper.subclass('TextWord', {
     
     getFontFamily: function() {
         for (var node = this.rawNode; node && (/text|tspan/).test(node.tagName); node = node.parentNode) {
-            var result = node.getAttribute("font-family");
+            var result = node.getAttributeNS(null, "font-family");
             if (result) return result;
         }
         return null; // ???
@@ -241,7 +241,7 @@ Wrapper.subclass('TextWord', {
     
     getFontSize: function() {
         for (var node = this.rawNode; node && (/text|tspan/).test(node.tagName); node = node.parentNode) {
-            var result = node.getAttribute("font-size");
+            var result = node.getAttributeNS(null, "font-size");
             if (result) return Converter.parseLength(result);
         }
         return 0; // Should we return a default size?
@@ -579,7 +579,7 @@ Object.subclass('TextLine', {
                     c.bounds.width = (this.topLeft.x + compositionWidth) - c.bounds.x;
                     runningStartIndex = c.startIndex + c.length;
                     c.wasComposed = true;
-                    if (lastWord) lastWord.setLivelyAttribute("nl", "true"); // little helper for serialization
+                    if (lastWord) lastWord.setLivelyTrait("nl", "true"); // little helper for serialization
                     break;
                 }
                 this.nSpaceChunks++ ;
@@ -589,7 +589,7 @@ Object.subclass('TextLine', {
                 } else {
                     var spaceIncrement = this.spaceWidth;
                     c.bounds.width = spaceIncrement * c.length;
-                    if (lastWord) lastWord.setLivelyAttribute("trail", c.length); // little helper for serialization
+                    if (lastWord) lastWord.setLivelyTrait("trail", c.length); // little helper for serialization
                     else leadingSpaces = c.length;
                 }
                 runningStartIndex = c.startIndex + c.length;
@@ -602,7 +602,7 @@ Object.subclass('TextLine', {
                 c.word = lastWord;
 		
                 if (leadingSpaces) { 
-                    lastWord.setLivelyAttribute("lead", leadingSpaces);
+                    lastWord.setLivelyTrait("lead", leadingSpaces);
                     leadingSpaces = 0;
                 }
                 lastWord.compose(compositionWidth - (lastBounds.maxX() - this.topLeft.x), c.length);
@@ -906,62 +906,59 @@ Morph.subclass("TextMorph", {
         // note selection is transient
         this.lines = null;//: TextLine[]
         this.lineNumberHint = 0;
-        this.textSelection = new TextSelection();
-	this.addNonMorph(this.textSelection.rawNode);
-	
+        this.textSelection = this.addWrapper(new TextSelection());
     },
 
     initializePersistentState: function($super, initialBounds, shapeType) {
         $super(initialBounds, shapeType);
-        this.textContent = new TextContent();
-	this.addNonMorph(this.textContent.rawNode);
+        this.textContent = this.addWrapper(new TextContent());
 
         this.resetRendering();
 	
-	this.setLivelyAttribute("wrap", this.wrap);
+	this.setLivelyTrait("wrap", this.wrap);
         // KP: set attributes on the text elt, not on the morph, so that we can retrieve it
 	this.applyStyle({fill: this.backgroundColor, borderWidth: this.borderWidth, borderColor: this.borderColor});
     },
     
     restorePersistentState: function($super, importer) {
         $super(importer);
-        this.wrap = this.getLivelyAttribute("wrap");
-        var inset = this.getLivelyAttribute("inset");
+        this.wrap = this.getLivelyTrait("wrap");
+        var inset = this.getLivelyTrait("inset");
         if (inset) {
             this.inset = new Point(Importer.prototype, inset);
         }
     },
 
-    restoreFromSubnode: function($super, importer, node) {
-	if ($super(importer, node)) return true;
-	if (node.localName == "text") {
-            this.textContent = new TextContent(importer, node);   
+    restoreFromSubnode: function($super, importer, rawNode) {
+	if ($super(importer, rawNode)) return true;
+	if (rawNode.localName == "text") {
+            this.textContent = new TextContent(importer, rawNode);   
             var content = [];
-            for (var child = node.firstChild; child != null; child = child.nextSibling) {
+            for (var child = rawNode.firstChild; child != null; child = child.nextSibling) {
 		if (child.tagName != 'tspan')  
 		    continue;
 		var word = new TextWord(importer, child);
-		var lead = parseInt(word.getLivelyAttribute("lead"));
+		var lead = parseInt(word.getLivelyTrait("lead"));
 		if (lead) content.push(" ".times(lead));
 		content.push(word.rawNode.textContent); 
-		var trail = parseInt(word.getLivelyAttribute("trail"));
+		var trail = parseInt(word.getLivelyTrait("trail"));
 		if (trail) content.push(" ".times(trail));
-		if (word.getLivelyAttribute("nl") == "true")
+		if (word.getLivelyTrait("nl") == "true")
                     content.push("\n");
             }
             this.textString = content.join("");
-            this.fontFamily = node.getAttributeNS(null, "font-family");
-            this.fontSize = Converter.parseLength(node.getAttributeNS(null, "font-size"));
+            this.fontFamily = this.textContent.getTrait("font-family");
+            this.fontSize = this.textContent.getLengthTrait("font-size");
             this.font = Font.forFamily(this.fontFamily, this.fontSize);
-            this.textColor = new Color(Importer.prototype, node.getAttributeNS(null, "fill"));
+            this.textColor = new Color(Importer.prototype, this.textContent.getTrait("fill"));
 	    return true;
 	} else {
-	    var type = LivelyNS.getType(node);
+	    var type = LivelyNS.getType(rawNode);
 	    if (type == 'Selection') {
 		// that's ok, it's actually transient 
 		// remove all chidren b/c they're really transient
-		this.textSelection = new TextSelection(importer, node);
-		// console.log('processing selection %s', node);
+		this.textSelection = new TextSelection(importer, rawNode);
+		// console.log('processing selection %s', rawNode);
 		this.undrawSelection();
 		return true;
             }
@@ -1053,7 +1050,7 @@ Morph.subclass("TextMorph", {
             delete this.wrap;
         } else {
             this.wrap = style;
-	    this.setLivelyAttribute("wrap", style);
+	    this.setLivelyTrait("wrap", style);
         }
     },
 
@@ -1062,7 +1059,7 @@ Morph.subclass("TextMorph", {
             delete this.inset;
         } else {
             this.inset = ext;
-	    this.setLivelyAttribute("inset", ext);
+	    this.setLivelyTrait("inset", ext);
         }
     },
 
