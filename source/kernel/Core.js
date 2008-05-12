@@ -1362,6 +1362,21 @@ Object.subclass('Wrapper', {
 
     getPrototype: function() {
 	return this.constructor.getOriginal().prototype;
+    },
+
+    // convenience attribute access
+    getLivelyAttribute: function(name) {
+	return this.rawNode.getAttributeNS(Namespace.LIVELY, name);
+    },
+
+    // convenience attribute access
+    setLivelyAttribute: function(name, value) {
+	return this.rawNode.setAttributeNS(Namespace.LIVELY, name, value);
+    },
+
+    // convenience attribute access
+    removeLivelyAttribute: function(name) {
+	return this.rawNode.removeAttributeNS(Namespace.LIVELY, name);
     }
 
 });
@@ -3153,7 +3168,7 @@ Visual.subclass("Morph", {
     },
 
     restorePersistentState: function(importer) {
-	var shouldDisable = LivelyNS.getAttribute(this.rawNode, "disable-mouse-events");
+	var shouldDisable = this.getLivelyAttribute("disable-mouse-events");
 	if (shouldDisable) this.ignoreEvents();
 	return; // override in subclasses
     },
@@ -4098,13 +4113,13 @@ Morph.addMethods({
 
     ignoreEvents: function() { // will not respond nor get focus
 	this.mouseHandler = null;
-	LivelyNS.setAttribute(this.rawNode, "disable-mouse-events", "true");
+	this.setLivelyAttribute("disable-mouse-events", "true");
 	return this;
     },
 
     enableEvents: function() {
 	this.mouseHandler = MouseHandlerForDragging.prototype;
-	LivelyNS.removeAttribute(this.rawNode, "disable-mouse-events");
+	this.removeLivelyAttribute("disable-mouse-events");
 	return this;
     },
 

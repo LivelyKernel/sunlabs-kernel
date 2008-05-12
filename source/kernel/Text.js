@@ -186,7 +186,7 @@ Font.addMethods({
 /**
  * @class TextWord
  */ 
-Object.subclass('TextWord', {
+Wrapper.subclass('TextWord', {
 
     documentation: "renders single words",
     
@@ -569,7 +569,7 @@ Object.subclass('TextLine', {
                     c.bounds.width = (this.topLeft.x + compositionWidth) - c.bounds.x;
                     runningStartIndex = c.startIndex + c.length;
                     c.wasComposed = true;
-                    if (lastWord) LivelyNS.setAttribute(lastWord.rawNode, "nl", "true"); // little helper for serialization
+                    if (lastWord) lastWord.setLivelyAttribute("nl", "true"); // little helper for serialization
                     break;
                 }
                 this.nSpaceChunks++ ;
@@ -579,7 +579,7 @@ Object.subclass('TextLine', {
                 } else {
                     var spaceIncrement = this.spaceWidth;
                     c.bounds.width = spaceIncrement * c.length;
-                    if (lastWord) LivelyNS.setAttribute(lastWord.rawNode, "trail", c.length); // little helper for serialization
+                    if (lastWord) lastWord.setLivelyAttribute("trail", c.length); // little helper for serialization
                     else leadingSpaces = c.length;
                 }
                 runningStartIndex = c.startIndex + c.length;
@@ -592,7 +592,7 @@ Object.subclass('TextLine', {
                 c.word = lastWord;
 		
                 if (leadingSpaces) { 
-                    LivelyNS.setAttribute(lastWord.rawNode, "lead", leadingSpaces);
+                    lastWord.setLivelyAttribute("lead", leadingSpaces);
                     leadingSpaces = 0;
                 }
                 lastWord.compose(compositionWidth - (lastBounds.maxX() - this.topLeft.x), c.length);
@@ -909,16 +909,16 @@ Morph.subclass("TextMorph", {
         this.rawTextNode = this.addNonMorph(NodeFactory.create("text", { "kerning": 0 }));
         
         this.resetRendering();
-
-        LivelyNS.setAttribute(this.rawNode, "wrap", this.wrap);
+	
+	this.setLivelyAttribute("wrap", this.wrap);
         // KP: set attributes on the text elt, not on the morph, so that we can retrieve it
 	this.applyStyle({fill: this.backgroundColor, borderWidth: this.borderWidth, borderColor: this.borderColor});
     },
     
     restorePersistentState: function($super, importer) {
         $super(importer);
-        this.wrap = LivelyNS.getAttribute(this.rawNode, "wrap");
-        var inset = LivelyNS.getAttribute(this.rawNode, "inset");
+        this.wrap = this.getLivelyAttribute("wrap");
+        var inset = this.getLivelyAttribute("inset");
         if (inset) {
             this.inset = new Point(Importer.prototype, inset);
         }
@@ -933,12 +933,12 @@ Morph.subclass("TextMorph", {
 		if (child.tagName != 'tspan')  
 		    continue;
 		var word = new TextWord(importer, child);
-		var lead = parseInt(LivelyNS.getAttribute(word.rawNode, "lead"));
+		var lead = parseInt(word.getLivelyAttribute("lead"));
 		if (lead) content.push(" ".times(lead));
 		content.push(word.rawNode.textContent); 
-		var trail = parseInt(LivelyNS.getAttribute(word.rawNode, "trail"));
+		var trail = parseInt(word.getLivelyAttribute("trail"));
 		if (trail) content.push(" ".times(trail));
-		if (LivelyNS.getAttribute(word.rawNode, "nl") == "true")
+		if (word.getLivelyAttribute("nl") == "true")
                     content.push("\n");
             }
             this.textString = content.join("");
@@ -1045,7 +1045,7 @@ Morph.subclass("TextMorph", {
             delete this.wrap;
         } else {
             this.wrap = style;
-            LivelyNS.setAttribute(this.rawNode, "wrap", style);
+	    this.setLivelyAttribute("wrap", style);
         }
     },
 
@@ -1054,7 +1054,7 @@ Morph.subclass("TextMorph", {
             delete this.inset;
         } else {
             this.inset = ext;
-            LivelyNS.setAttribute(this.rawNode, "inset", ext);
+	    this.setLivelyAttribute("inset", ext);
         }
     },
 

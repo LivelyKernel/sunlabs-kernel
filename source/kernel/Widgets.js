@@ -72,11 +72,11 @@ Morph.subclass("ButtonMorph", {
 
     // KP: FIXME general way of declaring properties mapping to attributes
     setToggle: function(flag) {
-        LivelyNS.setAttribute(this.rawNode, "toggle", !!flag);
+        this.setLivelyAttribute("toggle", !!flag);
     },
 
     isToggle: function() {
-        var value = LivelyNS.getAttribute(this.rawNode, "toggle");
+        var value = this.getLivelyAttribute("toggle");
         if (value && value == 'true') return true;
         else return false;
     },
