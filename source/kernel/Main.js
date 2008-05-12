@@ -36,7 +36,7 @@ Object.extend(Config, {
     showEngine: !Config.skipMostExamples,
     showIcon: !Config.skipMostExamples,
     showWeather: !Config.skipMostExamples,
-    showMessenger: !Config.skipMostExamples,
+    //showMessenger: !Config.skipMostExamples,
     showStocks: !Config.skipMostExamples,
     showCanvasScape: !Config.skipMostExamples,
     showRSSReader: !Config.skipMostExamples,
@@ -205,7 +205,7 @@ function populateWorldWithExamples(world) {
         
         if (Config.showVideo) { lm1.myWorld.addFramedMorph(new PlayerMorph(), "Player", pt(50, 20)); }
 
-        if (Config.showMessenger && Config.showNetworkExamples) new MessengerWidget().openIn(lm1.myWorld, pt(875, 375));
+        // if (Config.showMessenger && Config.showNetworkExamples) new MessengerWidget().openIn(lm1.myWorld, pt(875, 375));
     }
     
     if (Config.showSlideWorld) { // Make a slide for "turning web programming upside down"
