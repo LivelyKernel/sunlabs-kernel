@@ -1832,23 +1832,6 @@ Object.extend(CharSet, {
 
 });
 
-/**
-  * @class CharacterInfo
-  */
-
-Object.subclass('CharacterInfo', {
-
-    initialize: function(width, height) {
-	this.width = width;
-	this.height = height;
-    },
-
-    toString: function() {
-	return this.width + "x" + this.height;
-    }
-
-});
-
 // ===========================================================================
 // Event handling foundations
 // ===========================================================================

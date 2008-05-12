@@ -15,11 +15,26 @@
 
 (function(scope) {
 
-/**
- * @class Font
- */ 
+
+Object.subclass('CharacterInfo', {
+    // could simply use Point as extent.
+    documentation: "simple printable info about a character's extent",
+
+    initialize: function(width, height) {
+	this.width = width;
+	this.height = height;
+    },
+
+    toString: function() {
+	return this.width + "x" + this.height;
+    }
+
+});
+
+
 Object.subclass('Font', {
 
+    documentation: "representation of a font",
     baselineFactor: 0.80,
     
     initialize: function(family/*:String*/, size/*:Integer*/, style/*:String*/){
@@ -30,7 +45,7 @@ Object.subclass('Font', {
         // this.extents = this.computeExtents(family, size);
     },
     computeExtents: function(family, size) {
-		// Note: this gets overridden in svg-compat.js
+	// Note: this gets overridden depending on the environment.
         return [];
     },
     getSize: function() {
