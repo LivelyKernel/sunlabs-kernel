@@ -1330,16 +1330,7 @@ TextMorph.subclass("CheapListMorph", {
 });
 
 Morph.addMethods({
-
-    submorphBounds: function() {
-	var r = pt(0, 0).extent(pt(0, 0));
-	for (var i = 0; i < this.submorphs.length; i++) {
-	    var morph = this.submorphs[i];
-	    r = r.union(morph.bounds());
-	}
-	return r;
-    },
-	
+    
     leftAlignSubmorphs: function(cellInset, inset) { 
         var padLeft = cellInset.x;
         var padRight = cellInset.x;
@@ -1358,7 +1349,7 @@ Morph.addMethods({
             topLeft = topLeft.withY(ownExtent.y);
         }
 	ownExtent = ownExtent.withY(ownExtent.y + inset.y);
-
+	
 	var bounds = this.getPosition().extent(ownExtent);
 	
         if (this.owner) 
