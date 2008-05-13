@@ -793,6 +793,10 @@ function showStatsViewer(profilee,title) {
             if (Config.debugExtras) {
                 for (var c = currentContext, i = 0; c != null; c = c.caller, i++) {
                     var args = c.args;
+		    if (!args) {
+			console.log("no frame at " + i);
+			continue;
+		    }
                     var header = Object.inspect(args.callee.originalFunction);
                     var frame = i.toString() + ": " + header + "\n";
 		    frame += "this: " + c.itsThis + "\n";
@@ -807,10 +811,23 @@ function showStatsViewer(profilee,title) {
                         if (argName.length > 0) frame += argName + ": " + Object.inspect(args[j]) + "\n";
 		    }
                     console.log(frame);
+		    if (i >= 500) {
+			console.log("stack overflow?");
+			break;
+		    }
                 }
             } else {
+		var visited = [];
                 for (var c = arguments.callee.caller, i = 0; c != null; c = c.caller, i++) {
                     console.log("%s: %s", i, Object.inspect(c));
+		    if (visited.indexOf(c) >= 0) {
+			console.log("possible recursion");
+			break;
+		    } else visited.push(c);
+		    if (i > 500) {
+			console.log("stack overflow?");
+			break;
+		    }
                 }
             }
         },
