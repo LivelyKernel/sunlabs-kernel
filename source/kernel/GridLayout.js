@@ -615,7 +615,7 @@ Morph.subclass("GridLineMorph", {
 
 console.log("end gridlayout.js");
 
-function gridDemo(world, position) {
+GridLayoutMorph.demo = function(world, position) {
 	console.log("sample GridLayout");
     HandMorph.logDnD=true;
 	var l1 = new TextMorph(new Rectangle(0,0,100,20), "Label one");
