@@ -4183,7 +4183,7 @@ Morph.addMethods({
 	this.focusHalo = this.addMorph(new Morph(this.shape.bounds().insetBy(this.focusHaloInset), "rect"));
 	this.focusHalo.applyStyle(this.focusStyle);
 	this.focusHalo.setBorderWidth(this.focusHaloBorderWidth);
-	// stroke-linejoin: Shape.LineJoins.Round
+	this.focusHalo.setLineJoin(Shape.LineJoins.Round);
 	this.focusHalo.transientBounds = true;
 	this.focusHalo.ignoreEvents();
 	return true;
