@@ -495,7 +495,7 @@ Morph.subclass("WindowControlMorph", {
  
 });
 
-WindowState = { Expanded: "Expanded", Collapsed: "Collapsed", Shutdown: "Shutdown" };
+var WindowState = Class.makeEnum(['Expanded', 'Collapsed', 'Shutdown']);
 
 Morph.subclass('WindowMorph', {
 
@@ -853,7 +853,7 @@ Morph.subclass("SelectionMorph", {
         this.initialSelection = true;
         this.shape.setFillOpacity(0.1);
         this.myWorld = defaultworldOrNull ? defaultworldOrNull : this.world();
-        // this.shape.setAttributeNS(null, "stroke-dasharray", "3,2");
+        // this.shape.setStrokeDashArray([3,2]);
         return this;
     },
     
@@ -976,7 +976,7 @@ Morph.subclass("SelectionMorph", {
     },
     
     okToBeGrabbedBy: function(evt) {
-        this.selectedMorphs.each( function(m) { evt.hand.addMorph(m); } );
+        this.selectedMorphs.forEach( function(m) { evt.hand.addMorph(m); } );
         return this;
     }
     
@@ -994,7 +994,6 @@ Morph.subclass('PanelMorph', {
     initialize: function($super, extent/*:Point*/) {
         $super(extent.extentAsRectangle(), 'rect');
         this.lastNavigable = null;
-
     },
 
     initializeTransientState: function($super, bounds) {
@@ -2072,11 +2071,11 @@ Morph.subclass("ScrollPane", {
         if (editItems.length == 0 && items.length == 0) return;
         var menu;
 	if (editItems.length > 0 && items.length > 0) {
-        	var menu = new MenuMorph(editItems, this);
-		menu.addLine();
-		items.each(function(item) {menu.addItems(item); });
+            var menu = new MenuMorph(editItems, this);
+	    menu.addLine();
+	    items.forEach(function(item) {menu.addItems(item); });
 	} else {
-		var menu = new MenuMorph(editItems.concat(items), this);
+	    var menu = new MenuMorph(editItems.concat(items), this);
 	}
         menu.openIn(this.world(), evt.mousePoint, false); 
     },
@@ -2198,8 +2197,8 @@ Morph.subclass("ColorPickerMorph", {
         //DI: This could be done with width*2 gradients, instead of width*height simple fills
         //    For now it seems to perform OK at 2x granularity, and actual color choices 
         //    are still full resolution
-        for (var x = 0; x < r.width; x+=dd) {
-            for (var y = 0; y < r.height; y+=dd) { // lightest down to neutral
+        for (var x = 0; x < r.width; x += dd) {
+            for (var y = 0; y < r.height; y += dd) { // lightest down to neutral
                 var patchFill = this.colorMap(x, y, rh2, this.colorWheel(r.width + 1)).toString();
                 var element = new RectShape(new Rectangle(x + r.x, y + r.y, dd, dd), patchFill, 0, null);
                 // element.setAttributeNS("fill", this.colorMap(x, rh2, rh2, this.colorWheel(r.width + 1)).toString());
@@ -2210,8 +2209,8 @@ Morph.subclass("ColorPickerMorph", {
 
     colorMap: function(x,y,rh2,wheel) {
         var columnHue = wheel[x];
-        if (y <= rh2) return columnHue.mixedWith(Color.white,y/rh2); // lightest down to neutral
-        else return Color.black.mixedWith(columnHue,(y-rh2)/rh2);  // neutral down to darkest
+        if (y <= rh2) return columnHue.mixedWith(Color.white, y/rh2); // lightest down to neutral
+        else return Color.black.mixedWith(columnHue, (y - rh2)/rh2);  // neutral down to darkest
     },
 
     colorWheel: function(n) { 
@@ -2248,11 +2247,9 @@ Morph.subclass("ColorPickerMorph", {
     
 });
 
-/**
- * @class XenoMorph
- */ 
 ClipMorph.subclass('XenoMorph', {
-    
+
+    documentation: "Contains a foreign object, most likely XHTML",
     borderWidth: 2,
     fill: Color.gray.lighter(),
 

@@ -438,16 +438,13 @@ Object.subclass('WordChunk', {
 });
 
 
-/**
- * @class TextLine
- * This 'class' renders lines composed of words and whitespace
- */ 
-
 Object.subclass('TextLine', {
+    documentation: 'renders lines composed of words and whitespace',
 
     lineHeightFactor: 1.2, // multiplied with the font size to set the distance between the lines, 
     // semantics analogous to CSS 
     
+    whiteSpaceDict: {' ': true, '\t': true, '\r': true, '\n': true},
     
     // create a new line
     initialize: function(textString, textStyle, startIndex, topLeft, font, defaultStyle, chunkSkeleton) {
@@ -465,9 +462,6 @@ Object.subclass('TextLine', {
         this.tabWidth = this.spaceWidth * 4;
         this.hasComposed = false;
         this.chunks = chunkSkeleton;
-        var d = {};
-	d[ ' ' ] = true;  d[ '\t' ] = true;  d[ '\r' ] = true;  d[ '\n' ] = true;
-	this.whiteSpaceDict = d;  // Should go in the class after test
     },
     
     lineHeight: function() {
@@ -842,13 +836,11 @@ var Locale = {
 };
 
 
-
-
-WrapStyle = { 
-    Normal: "Normal",  // fits text to bounds width using word wrap and sets height
-    None: "None", // simply sets height based on line breaks only
-    Shrink: "Shrink" // sets both width and height based on line breaks only
-};
+WrapStyle = Class.makeEnum([ 
+    "Normal",  // fits text to bounds width using word wrap and sets height
+    "None", // simply sets height based on line breaks only
+    "Shrink" // sets both width and height based on line breaks only
+]);
 
 Visual.subclass('TextSelection', {
     // Should this be a transient morph instead?

@@ -373,7 +373,16 @@ var Class = {
 	}
 	callback("Object");
 	callback("Global");
+    },
+
+    makeEnum: function(strings) {
+	var e = {};
+	for (var i = 0; i < strings.length; i++) {
+	    e[strings[i]] = strings[i];
+	}
+	return e;
     }
+
 };
 
 var Functions = {
