@@ -3043,7 +3043,6 @@ Visual.subclass("Morph", {
     borderWidth: 1,
     borderColor: Color.black,
 
-    focusedBorderColor: Color.blue,
     focusHaloBorderWidth: 4,
 
     fishEye: false,        // defines if fisheye effect is used
@@ -3057,6 +3056,7 @@ Visual.subclass("Morph", {
     openForDragAndDrop: true, // Submorphs can be extracted from or dropped into me
     mouseHandler: MouseHandlerForDragging.prototype, //a MouseHandler for mouse sensitivity, etc
     noShallowCopyProperties: ['id', 'rawNode', 'shape', 'submorphs', 'defs', 'activeScripts', 'nextNavigableSibling', 'focusHalo', 'fullBounds'],
+    transientBounds: false,
 
     suppressBalloonHelp: Config.suppressBalloonHelp,
 
@@ -3232,9 +3232,8 @@ Visual.subclass("Morph", {
 	    var type = LivelyNS.getAttribute(desc, "type");
 	    // alert("got node " + Exporter.stringify(desc));
 	    // depth first traversal
-	    if (type && type != "Selection" && type != "FocusHalo") { // FIXME remove the conditiona
+	    if (type && type != "Selection") { // FIXME remove the conditional
 		var morph = importer.importFromNode(desc);
-		if (morph instanceof ImageMorph) console.log("made image morph "  + morph);
 		this.submorphs.push(morph); 
 		morph.owner = this;
 	    } else {
@@ -3326,22 +3325,6 @@ Visual.subclass("Morph", {
 	for (var i = 0; i < helperNodes.length; i++) {
 	    var n = helperNodes[i];
 	    n.parentNode.removeChild(n);
-	}
-    },
-
-    restoreFromSubnode: function(importer, node) { // return true if the elt was handled
-	if (node.nodeName == '#text') {
-	    console.log('text tag name %s', node.tagName);
-	    return true;
-	} else {        
-	    var type = LivelyNS.getType(node);
-	    switch (type) {
-	    case "FocusHalo":
-		this.rawNode.removeChild(node);
-		return true;
-	    default:
-		return false;
-	    }
 	}
     },
 
@@ -4058,26 +4041,6 @@ Morph.addMethods({     // help handling
 });
 
 
-Visual.subclass('FocusHalo', {
-
-    borderWidth: 3,
-    borderColor: Color.blue,
-
-    initialize: function(color, width) {
-	if (width !== undefined) this.borderWidth = width;
-	if (color !== undefined) this.borderColor = color;
-	var rawNode = NodeFactory.create('g', {"stroke-opacity": 0.3, 'stroke-linejoin' : Shape.LineJoins.Round});
-	this.rawNode = rawNode;
-	LivelyNS.setType(rawNode, "FocusHalo");
-    },
-
-    setShape: function(rect) {
-	var shape = new RectShape(rect.insetBy(-2), null, this.borderWidth, this.borderColor);
-	this.replaceRawNodeChildren(shape.rawNode);
-    }
-
-});
-
 
 // Morph mouse event handling functions
 Morph.addMethods({
@@ -4197,19 +4160,32 @@ Morph.addMethods({
 
     removeFocusHalo: function() {
 	if (!this.focusHalo) return false;
-	this.focusHalo.removeRawNode();
+	//this.focusHalo.removeRawNode();
+	this.focusHalo.remove();
 	this.focusHalo = null;
 	return true;
     },
 
+    focusHaloInset: -2,
+
+    focusStyle: {
+	fill: null, 
+	borderColor: Color.blue,
+	strokeOpacity: 0.3
+    },
+    
     adjustFocusHalo: function() {
-	this.focusHalo.setShape(this.shape.bounds());
+	this.focusHalo.setBounds(this.shape.bounds().insetBy(this.focusHaloInset));
     },
 
     addFocusHalo: function() {
 	if (this.focusHalo || this.focusHaloBorderWidth <= 0) return false;
-	this.focusHalo = this.addWrapper(new FocusHalo(this.focusedBorderColor, this.focusHaloBorderWidth));
-	this.adjustFocusHalo();
+	this.focusHalo = this.addMorph(new Morph(this.shape.bounds().insetBy(this.focusHaloInset), "rect"));
+	this.focusHalo.applyStyle(this.focusStyle);
+	this.focusHalo.setBorderWidth(this.focusHaloBorderWidth);
+	// stroke-linejoin: Shape.LineJoins.Round
+	this.focusHalo.transientBounds = true;
+	this.focusHalo.ignoreEvents();
 	return true;
     }
 

@@ -741,6 +741,7 @@ Morph.subclass('HandleMorph', {
         "Shift+drag to change width ",
     maxHelpCount: 20,
     helpCount: 0,
+    transientBounds: true,
     
     initialize: function($super, location, shapeType, hand, targetMorph, partName) {
         $super(location.asRectangle().expandBy(5), shapeType);
@@ -748,7 +749,6 @@ Morph.subclass('HandleMorph', {
         this.partName = partName; // may be a name like "topRight" or a vertex index
         this.initialScale = null;
         this.initialRotation = null; 
-        this.transientBounds = true;
         return this;
     },
     
