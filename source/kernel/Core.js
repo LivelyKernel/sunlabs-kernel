@@ -225,42 +225,6 @@ Namespace =  {
     XHTML: "http://www.w3.org/1999/xhtml"
 };
 
-var Loader = {
-
-    loadScript: function(ns, url) {
-	ns = ns || Namespace.XHTML;
-	var script = NodeFactory.createNS(ns, "script");
-	var srcAttr = ns === Namespace.XHTML ? "src" : "href";
-	script.setAttributeNS(ns === Namespace.XHTML ? ns : Namespace.XLINK, scrAttr, url);
-	document.documentElement.appendChild(script);
-	//document.documentElement.removeChild(script);
-    },
-
-    insertContents: function(iframe) {
-	var node = iframe.contentDocument.documentElement;
-	document.documentElement.appendChild(document.importNode(node, true));
-    },
-
-    isLoadedFromNetwork: (function() {
-	// TODO this is not foolproof.
-	return document.baseURI.startsWith("http");
-    })(),
-
-
-    baseURL: (function() {
-	var segments = document.baseURI.split('/');
-	segments.splice(segments.length - 1, 1); // remove the last segment, incl query
-	return segments.join('/');
-    })()
-
-};
-
-Loader.proxyURL = (function() {
-    if (Loader.isLoadedFromNetwork && !Config.proxyURL) 
-	return Loader.baseURL + "/proxy/"; // a default
-    else
-	return Config.proxyURL;
-})();
 
 
 var NodeFactory = {
@@ -313,8 +277,6 @@ var NodeFactory = {
 	container.setAttribute("id", "ShrinkWrapped");
 	return container;
     }
-
-
 };
 
 
@@ -1403,6 +1365,10 @@ Object.subclass('Wrapper', {
 
     setTrait: function(name, value) {
 	return this.rawNode.setAttributeNS(null, name, String(value));
+    },
+    
+    removeTrait: function(name) {
+	return this.rawNode.removeAttributeNS(null, name);
     }
 
 });
@@ -3188,8 +3154,12 @@ Visual.subclass("Morph", {
     },
 
     restorePersistentState: function(importer) {
-	var shouldDisable = this.getLivelyTrait("disable-mouse-events");
-	if (shouldDisable) this.ignoreEvents();
+	var pointerEvents = this.getTrait("pointer-events");
+	if (pointerEvents == "none") {
+	    this.ignoreEvents();
+	} else if (pointerEvents) {
+	    console.log("can't handle pointer-events " + pointerEvents);
+	}
 	return; // override in subclasses
     },
 
@@ -4111,13 +4081,13 @@ Morph.addMethods({
 
     ignoreEvents: function() { // will not respond nor get focus
 	this.mouseHandler = null;
-	this.setLivelyTrait("disable-mouse-events", "true");
+	this.setTrait("pointer-events", "none");
 	return this;
     },
 
     enableEvents: function() {
 	this.mouseHandler = MouseHandlerForDragging.prototype;
-	this.removeLivelyTrait("disable-mouse-events");
+	this.removeTrait("pointer-events");
 	return this;
     },
 
@@ -5612,13 +5582,10 @@ PasteUpMorph.subclass("WorldMorph", {
                 var m = world.addMorph(new FrameRateMorph(evt.mousePoint.extent(pt(160, 10)), "FrameRateMorph"));
                 m.startSteppingScripts(); }],
 	    ["XenoMorph", function(evt) { 
-		var url = new URL(Loader.baseURL + "/sample.xhtml");
-		var xeno = new XenoMorph(pt(400,200).extentAsRectangle(), url);
-		world.addFramedMorph(xeno, url.toString(), pt(50,50)); }]
+		var xeno = new XenoMorph(pt(400,200).extentAsRectangle(), "sample.xhtml");
+		world.addFramedMorph(xeno, "XenoMorph", pt(50,50)); }]
         ];
-        if (Loader.isLoadedFromNetwork) { 
-            items.push(["File Browser", function(evt) { new FileBrowser().openIn(world, evt.mousePoint) }])
-        }
+        items.push(["File Browser", function(evt) { new FileBrowser().openIn(world, evt.mousePoint) }]);
         new MenuMorph(items, this).openIn(this.world(), evt.mousePoint);
     },
     

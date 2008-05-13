@@ -17,6 +17,7 @@
  */
 
 
+
 Object.subclass('URL', {
     splitter: new RegExp('(http:|https:|file:)//([^/:]*)(:[0-9]+)?(/.*)?'),
     pathSplitter: new RegExp("([^\\?#]*)(\\?[^#]*)?(#.*)?"),
@@ -129,6 +130,49 @@ Object.subclass('URL', {
 
 URL.source = new URL(document.baseURI);
 
+var Loader = {
+
+    loadScript: function(ns, url) {
+	ns = ns || Namespace.XHTML;
+	var script = NodeFactory.createNS(ns, "script");
+	var srcAttr = ns === Namespace.XHTML ? "src" : "href";
+	script.setAttributeNS(ns === Namespace.XHTML ? ns : Namespace.XLINK, scrAttr, url);
+	document.documentElement.appendChild(script);
+	//document.documentElement.removeChild(script);
+    },
+
+    insertContents: function(iframe) {
+	var node = iframe.contentDocument.documentElement;
+	document.documentElement.appendChild(document.importNode(node, true));
+    },
+
+    isLoadedFromNetwork: (function() {
+	// TODO this is not foolproof.
+	return document.baseURI.startsWith("http");
+    })(),
+
+
+    baseURL: (function() {
+	var segments = document.baseURI.split('/');
+	segments.splice(segments.length - 1, 1); // remove the last segment, incl query
+	return segments.join('/');
+    })()
+
+    
+};
+
+Loader.proxy = (function() {
+    var str;
+    if (Loader.isLoadedFromNetwork && !Config.proxyURL) {
+	str = Loader.baseURL + "/proxy/"; // a default
+    } else {
+	str = Config.proxyURL;
+    }
+    if (!str) return null;
+    if (!str.endsWith('/')) str += '/';
+    return new URL(str);
+})();
+
 
 Object.subclass('NetRequestStatus', {
     documentation: "nice parsed status information, returned by NetRequest.getStatus when request done",
@@ -174,16 +218,14 @@ View.subclass('NetRequest', {
 	   "+ResponseXML", // Updated at most once, when request state is {Done}, with the parsed XML document retrieved.
 	   "+ResponseText" // Updated at most once, when request state is {Done}, with the text content retrieved.
 	  ],
-
-    proxy: Loader.proxyURL ? new URL(Loader.proxyURL.endsWith("/") ? Loader.proxyURL : Loader.proxyURL + "/") : null,
-
+    
     rewriteURL: function(url) {
 	url = url instanceof URL ? url : new URL(url);
-        if (this.proxy) {
-	    if (this.proxy.hostname != url.hostname) { // FIXME port and protocol?
-		url = this.proxy.withFilename(url.hostname + url.fullPath());
-		// console.log("rewrote url " + Object.inspect(url) + " proxy " + this.proxy);
-		// return this.proxy + url.hostname + "/" + url.fullPath();
+        if (Loader.proxy) {
+	    if (Loader.proxy.hostname != url.hostname) { // FIXME port and protocol?
+		url = Loader.proxy.withFilename(url.hostname + url.fullPath());
+		// console.log("rewrote url " + Object.inspect(url) + " proxy " + Loader.proxy);
+		// return Loader.proxy + url.hostname + "/" + url.fullPath();
 	    }
 	}
         return url;
@@ -309,6 +351,7 @@ View.subclass('NetRequest', {
 
 });
 
+
 // extend your objects with this trait if you don't want to deal with error reporting yourself.
 NetRequestReporterTrait = {
     setRequestStatus: function(status) { 
@@ -319,7 +362,7 @@ NetRequestReporterTrait = {
 	    if (status.code == 401) {
 		WorldMorph.current().alert("not authorized to access " + status.requestString()); 
 		// should try to authorize
-	    } else {
+x	    } else {
 		WorldMorph.current().alert("failure to " + status.requestString() + " code " + status.code);
 	    }
 	} else 
@@ -329,6 +372,26 @@ NetRequestReporterTrait = {
 
 // convenience base class with built in handling of errors
 Object.subclass('NetRequestReporter', NetRequestReporterTrait);
+
+// to be refactored: Load the doc and 
+Object.extend(Loader, {
+    loadElement: function(filename, id) {
+	var model = new NetRequestReporter();
+	var result;
+	model.setResponseXML = function(doc) {
+	    console.log("got document " + Exporter.stringify(doc.documentElement));
+	    var elt = doc.getElementById(id);
+	    if (elt) {
+		// FIXME Canvas.defs instead!
+		result = document.documentElement.appendChild(document.importNode(elt, true));
+	    }
+		
+	}
+	var url = new URL(Loader.baseURL + "/" + filename);
+	new NetRequest({model: model, setStatus: "setRequestStatus", setResponseXML: "setResponseXML"}).beSync().get(url);
+	return result;
+    }
+});
 
 
 Wrapper.subclass('FeedChannel', {

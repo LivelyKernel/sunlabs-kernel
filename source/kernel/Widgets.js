@@ -353,8 +353,6 @@ Morph.subclass("TitleBarMorph", {
             this.menuButton.action.actor     = this.windowMorph;
             this.collapseButton.action.actor = this.windowMorph;
         }
-        this.ignoreEvents();
-        this.label.ignoreEvents();
     },
 
     acceptsDropping: function(morph) {
@@ -2263,8 +2261,11 @@ ClipMorph.subclass('XenoMorph', {
         body.appendChild(document.createTextNode("no content"));
         this.addNonMorph(this.foRawNode);
         this.foRawNode.appendChild(this.body);
-
-        url && this.fetchURL(url);
+	if (!url) return;
+	if (!(url instanceof URL)) {
+	    url = new URL(Loader.baseURL + "/" + url);
+	}
+        this.fetchURL(url);
     },
 
     fetchURL: function(url) {

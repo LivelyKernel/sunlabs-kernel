@@ -90,6 +90,7 @@ function populateWorldWithExamples(world) {
     if (Config.showIcon) {
         // maybe the icons should have a rectangle shaped images (unlike here)
         // var icon = new ImageMorph(new Rectangle(30, 330, 80, 50), "http://logos.sun.com/images/SunSample.gif");
+	Loader.loadElement("Definitions.svg", "SunLogo");
         var icon = new ImageMorph(new Rectangle(60, 580, 100, 45), "#SunLogo");
         icon.image.scaleBy(0.15);
         icon.setFill(null); // no background
