@@ -16,14 +16,17 @@
  * inherited from the browser.  
  */
 
+
 Object.subclass('URL', {
+    splitter: new RegExp('(http:|https:|file:)//([^/:]*)(:[0-9]+)?(/.*)?'),
+    pathSplitter: new RegExp("([^\\?#]*)(\\?[^#]*)?(#.*)?"),
     
     initialize: function(/*...*/) { // same field names as window.location
 	if (arguments[0] instanceof String || typeof arguments[0] == 'string') {
 	    var urlString = arguments[0];
-	    //console.log('got urlString ' + urlString);
-	    var result = urlString.match(URL.splitter);
-	    if (!result) throw new Error("malformed URL string " + urlString);
+	    // console.log('got urlString ' + urlString + " match to " + this.splitter);
+	    var result = urlString.match(this.splitter);
+	    if (!result) throw new Error("malformed URL string '" + urlString + "'");
 	    this.protocol = result[1]; 
 	    if (!result[1]) 
 		throw new Error("bad url " + urlString + ", " + result);
@@ -33,7 +36,7 @@ Object.subclass('URL', {
 	    
 	    var fullpath = result[4];
 	    if (fullpath) {
-		result = fullpath.match(URL.pathSplitter);
+		result = fullpath.match(this.pathSplitter);
 		this.pathname = result[1];
 		this.search = result[2];
 		this.hash = result[3];
@@ -87,7 +90,7 @@ Object.subclass('URL', {
     },
 
     withPath: function(path) { 
-	var result = path.match(URL.pathSplitter);
+	var result = path.match(this.pathSplitter);
 	if (!result) return null;
 	return new URL({protocol: this.protocol, port: this.port, hostname: this.hostname, pathname: 
 			result[1], search: result[2], hash: result[3] });
@@ -124,11 +127,8 @@ Object.subclass('URL', {
     
 });
 
-Object.extend(URL, {
-    splitter: new RegExp('(http:|https:|file:)//([^/:]*)(:[0-9]+)?(/.*)?'),
-    pathSplitter: new RegExp("([^\\?#]*)(\\?[^#]*)?(#.*)?"),
-    source: new URL(Global.location)
-});
+URL.source = new URL(document.baseURI);
+
 
 Object.subclass('NetRequestStatus', {
     documentation: "nice parsed status information, returned by NetRequest.getStatus when request done",

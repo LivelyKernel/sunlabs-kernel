@@ -183,10 +183,10 @@ Global.window.onerror = function(message, url, code) {
 (function() { // override config options with options from the query part of the URL
 
     // may have security implications ...
-    if (!Global.location) // Batik can't deal.
-	return;
+    var query = document.baseURI.split('?')[1];
+    if (!query) return;
 
-    var configOverrides = Global.location.search.toString().toQueryParams();
+    var configOverrides = query.toQueryParams();
     for (var p in configOverrides) {
 	if (Config.hasOwnProperty(p)) { // can't set unknown properties
 	    // this is surprisingly convoluted in Javascript:
@@ -242,14 +242,13 @@ var Loader = {
     },
 
     isLoadedFromNetwork: (function() {
-	// TODO this is not foolproof. Note, batik doesn't have window.location
-	return window.location ? window.location.protocol.startsWith("http") : false;
+	// TODO this is not foolproof.
+	return document.baseURI.startsWith("http");
     })(),
 
 
     baseURL: (function() {
-	if (!window.location) return ".";
-	var segments = window.location.toString().split('/');
+	var segments = document.baseURI.split('/');
 	segments.splice(segments.length - 1, 1); // remove the last segment, incl query
 	return segments.join('/');
     })(),
@@ -496,7 +495,10 @@ Object.extend(Function.prototype, {
 
 	for (var property in source) {
 	    var value = source[property];
-	    if (ancestor && Object.isFunction(value) &&
+	    // weirdly, RegExps are functions in Safari, so testing for Object.isFunction on
+	    // regexp field values will return true. But they're not full-blown functions and don't 
+	    // inherit argumentNames from Function.prototype
+	    if (ancestor && Object.isFunction(value) && value.argumentNames &&
 		value.argumentNames().first() == "$super") {
 		var method = value;
 		var advice = (function(m) {
@@ -3382,7 +3384,7 @@ Visual.subclass("Morph", {
 	    
 	    extraNodes.push(this.addNonMorph(modelNode));
 	}
-	extraNodes.push(this.addNonMorph(this.getModelPlug().persist(index)));
+	extraNodes.push(this.addNonMorph(this.getModelPlug().serialize(index)));
 
     },
 
@@ -4330,9 +4332,10 @@ Morph.addMethods({
     },
 
     pickMeUp: function(evt) {
-	var offset = evt.hand.position().subPt(evt.hand.lastMouseDownPoint);
+	var offset = evt.hand.getPosition().subPt(evt.hand.lastMouseDownPoint);
 	this.moveBy(offset);
 	evt.hand.addMorph(this);
+	evt.hand.showAsGrabbed(this);
     },
 
     notify: function(msg, loc) {
@@ -4355,6 +4358,7 @@ Morph.addMethods({
 	copy.owner = null; // so following addMorph will just leave the tfm alone
 	this.owner.addMorph(copy); // set up owner as the original parent so that...        
 	hand.addMorph(copy);  // ... it will be properly transformed by this addMorph()
+	hand.showAsGrabbed(copy);
 	// copy.withAllSubmorphsDo(function() { this.startStepping(null); }, null);
     },
 
@@ -4414,10 +4418,6 @@ Morph.addMethods({
     }
 
 });
-
-/**
-  * @class SchedulableAction
-  */ 
 
 Wrapper.subclass('SchedulableAction', {
 
@@ -4940,11 +4940,8 @@ Object.subclass('Model', {
 
 });
 
-/**
-  * @class ModelPlug
-  */ 
-
 Wrapper.subclass('ModelPlug', {
+    documentation: "A 'translation' from view's variable names to model's variable names",
 
     initialize: function(spec) {
 	Properties.forEachOwn(spec, function(p) {
@@ -4952,7 +4949,7 @@ Wrapper.subclass('ModelPlug', {
 	}, this);
     },
 
-    persist: function(modelId) {
+    serialize: function(modelId) {
 	var rawNode = LivelyNS.create("modelPlug", {model: modelId});
 	Properties.forEachOwn(this, function(prop, value) {
 	    switch (prop) {
@@ -5077,7 +5074,7 @@ Model.subclass('SyntheticModel', {
 	    } else if (dependent instanceof View) { // stateless view, will be recreated from type
 		var viewElement = 
 		    element.appendChild(LivelyNS.create("dependentView", { type: dependent.getType()}));
-		var plug = dependent.modelPlug && dependent.modelPlug.persist(index || 0);
+		var plug = dependent.modelPlug && dependent.modelPlug.serialize(index || 0);
 		if (plug) viewElement.appendChild(plug);
 	    } else {
 		console.log("cant handle dependent " + dependent);
