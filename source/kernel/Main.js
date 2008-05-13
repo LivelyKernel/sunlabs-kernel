@@ -364,7 +364,7 @@ function populateWorldWithExamples(world) {
 function main() {
     var world = null;
 
-    var container = Loader.shrinkWrapContainer();
+    var container = NodeFactory.shrinkWrapContainer();
     if (container) {
         console.log("found container");
         var importer = new Importer();

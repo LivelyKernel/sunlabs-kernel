@@ -155,7 +155,7 @@ NetRequestReporter.subclass('LoadHandler', {
     },
 
     loadWorldInSubworld: function(doc) {
-	var container = Loader.shrinkWrapContainer(doc);
+	var container = NodeFactory.shrinkWrapContainer(doc);
 	if (container) {
 	    var importer = new Importer();
 	    var world = new WorldMorph(Canvas);
@@ -178,7 +178,7 @@ NetRequestReporter.subclass('LoadHandler', {
     },
 
     loadWorldContents: function(doc) {
-	var container = Loader.shrinkWrapContainer(doc);
+	var container = NodeFactory.shrinkWrapContainer(doc);
 	var world = null;
 	if (container) {
 	    var importer = new Importer();

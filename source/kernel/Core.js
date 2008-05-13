@@ -251,23 +251,8 @@ var Loader = {
 	var segments = document.baseURI.split('/');
 	segments.splice(segments.length - 1, 1); // remove the last segment, incl query
 	return segments.join('/');
-    })(),
+    })()
 
-    shrinkWrapContainer: function(doc) {
-	return (doc || window.document).getElementById("ShrinkWrapped");
-    },
-
-    newShrinkWrapContainer: function(doc) { 
-	// Remove the old container if it's there and make a new one.
-	// this should be more robust
-	if (!doc) doc = Global.document;
-	var previous = this.shrinkWrapContainer(doc);
-	if (previous) previous.parentNode.removeChild(previous);
-	var canvas = doc.getElementById("canvas");
-	var container = canvas.appendChild(doc.createElementNS(Namespace.SVG, "defs"));
-	container.setAttribute("id", "ShrinkWrapped");
-	return container;
-    }
 };
 
 Loader.proxyURL = (function() {
@@ -311,7 +296,24 @@ var NodeFactory = {
 
     createCDATA: function(string) {
 	return document.createCDATASection(string);
+    },
+
+    shrinkWrapContainer: function(doc) {
+	return (doc || window.document).getElementById("ShrinkWrapped");
+    },
+
+    newShrinkWrapContainer: function(doc) { 
+	// Remove the old container if it's there and make a new one.
+	// this should be more robust
+	doc = doc || Global.document;
+	var previous = this.shrinkWrapContainer(doc);
+	if (previous) previous.parentNode.removeChild(previous);
+	var canvas = doc.getElementById("canvas");
+	var container = canvas.appendChild(this.createNS(Namespace.SVG, "defs"));
+	container.setAttribute("id", "ShrinkWrapped");
+	return container;
     }
+
 
 };
 
@@ -504,7 +506,7 @@ Object.extend(Function.prototype, {
 		var advice = (function(m) {
 		    return function() { 
 			try { 
-			    return ancestor[m].apply(this, arguments) 
+			    return ancestor[m].apply(this, arguments);
 			} catch (e) { 
 			    console.log("problem with ancestor %s.%s(%s):%s",
 					Object.inspect(ancestor), m, $A(arguments), e);
@@ -513,8 +515,8 @@ Object.extend(Function.prototype, {
 			}
 		    };
 		})(property);
-		advice.methodName = "$superAdvice::" + property;
-
+		advice.methodName = "$super:" + (this.superclass ? this.superclass.type + "." : "") + property;
+		
 		value = Object.extend(advice.wrap(method), {
 		    valueOf:  function() { return method },
 		    toString: function() { return method.toString() },
@@ -2724,7 +2726,7 @@ Object.subclass('Exporter', {
     serialize: function(destDocument) {
 	// model is inserted as part of the root morph.
 	var helpers = this.extendForSerialization();
-	var result = destDocument.importNode(this.rootMorph.rawNode, true);
+	var result = (destDocument || Global.document).importNode(this.rootMorph.rawNode, true);
 	this.removeHelperNodes(helpers);
 	return result;
     }
@@ -2753,14 +2755,14 @@ Object.extend(Exporter, {
     shrinkWrapNode: function(node) {
 	var newDoc = Exporter.getBaseDocument();
 	// FIXME deal with subdirectories: rewrite the base doc and change xlink:href for scripts
-	var container = Loader.newShrinkWrapContainer(newDoc);
+	var container = NodeFactory.newShrinkWrapContainer(newDoc);
 	container.appendChild(newDoc.importNode(node, true));
 	return newDoc;
     },
 
     shrinkWrapMorph: function(morph) {
 	var newDoc = Exporter.getBaseDocument();
-	var container = Loader.newShrinkWrapContainer(newDoc);
+	var container = NodeFactory.newShrinkWrapContainer(newDoc);
 	container.appendChild(new Exporter(morph).serialize(newDoc));
 	return newDoc;
     },
@@ -3229,6 +3231,10 @@ Visual.subclass("Morph", {
 	}
     },
 
+    restoreFromSubnode: function(importer, node) {
+	// Override me
+    },
+
     restoreFromSubnodes: function(importer) {
 	//  wade through the children
 	var children = [];
@@ -3391,6 +3397,11 @@ Visual.subclass("Morph", {
     prepareForSerialization: function(extraNodes, simpleModels) {
 	// this is the morph to serialize
 	this.pvtSerializeModel(extraNodes, simpleModels);
+	if (Config.useTransformAPI) {
+	    // gotta set it explicitly, it's not in SVG
+	    this.setTrait("transform", this.getTransform().toAttributeValue());
+	    // FIXME, remove?
+	}
 	for (var prop in this) {
 	    var m = this[prop];
 	    if (m instanceof Morph) {
@@ -3808,7 +3819,7 @@ Morph.addMethods({
 	// A replacement for toString() which can't be overridden in
 	// some cases.  Invoked by Object.inspect.
 	try {
-	    return Strings.format("%s(#%s,%s)", this.getType(), this.id(), this.shape || "");
+	    return Strings.format("%s(#%s,%s)", this.getType(), this.rawNode && this.id(), this.shape || "");
 	} catch (e) {
 	    //console.log("toString failed on %s", [this.id(), this.getType()]);
 	    return "#<Morph?{" + e + "}>";
@@ -5704,6 +5715,8 @@ Morph.subclass("HandMorph", {
     documentation: "Defines a visual representation for the user's cursor.",
     applyDropShadowFilter: !!Config.useDropShadow,
     dropShadowFilter: "url(#DropShadowFilter)",
+    
+
     shadowOffset: pt(5,5),
     handleOnCapture: true,
     logDnD: false,
