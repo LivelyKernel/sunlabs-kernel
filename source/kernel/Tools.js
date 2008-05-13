@@ -674,122 +674,122 @@ function showStatsViewer(profilee,title) {
 
     Object.subclass('TracerStackNode', {
 	initialize: function(caller, method) {
-		this.caller = caller;
-		this.method = method;
-		this.itsThis = null;  // These two get nulled after return
-		this.args = null;  //  .. only used for stack trace on error
-		this.callee = null;
+	    this.caller = caller;
+	    this.method = method;
+	    this.itsThis = null;  // These two get nulled after return
+	    this.args = null;  //  .. only used for stack trace on error
+	    this.callee = null;
 	},
         traceCall: function(method , itsThis, args) {
-		// this is the currentContext (top of stack)
-		// method has been called with itsThis as receiver, and args as arguments
-		// --> Check here for exceptions
-		var newNode = this.callee;  // recycle an old callee node
-		if (!newNode) {             // ... or make a new one
-			newNode = new TracerStackNode(this, method);
-			this.callee = newNode;
-		} else {
-			newNode.method = method
-		}
-		newNode.itsThis = itsThis;
-		newNode.args = args;
-		if(Function.prototype.logAllCalls) console.log(this.dashes(this.stackSize()) + this);
-		currentContext = newNode;
+	    // this is the currentContext (top of stack)
+	    // method has been called with itsThis as receiver, and args as arguments
+	    // --> Check here for exceptions
+	    var newNode = this.callee;  // recycle an old callee node
+	    if (!newNode) {             // ... or make a new one
+		newNode = new TracerStackNode(this, method);
+		this.callee = newNode;
+	    } else {
+		newNode.method = method;
+	    }
+	    newNode.itsThis = itsThis;
+	    newNode.args = args;
+	    if (Function.prototype.logAllCalls) console.log(this.dashes(this.stackSize()) + this);
+	    currentContext = newNode;
 	},
         traceReturn: function(method) {
-		// this is the currentContext (top of stack)
-		// method is returning
-		this.args = null;  // release storage from unused stack
-		this.itsThis = null;  //   ..
-		currentContext = this.caller;
+	    // this is the currentContext (top of stack)
+	    // method is returning
+	    this.args = null;  // release storage from unused stack
+	    this.itsThis = null;  //   ..
+	    currentContext = this.caller;
 	},
 	each: function(funcToCall) {
-		// Stack walk (leaf to root) applying function
-		for (var c=this; c; c=c.caller) funcToCall(this, c);
+	    // Stack walk (leaf to root) applying function
+	    for (var c = this; c; c=c.caller) funcToCall(this, c);
 	},
 	stackSize: function() {
-		var size = 0;
-		for (var c=this; c; c=c.caller) size++;
-		return size;
+	    var size = 0;
+	    for (var c = this; c; c=c.caller) size++;
+	    return size;
 	},
 	dashes: function(n) {
-		var lo = n% 5;
-		return '----|'.times((n-lo)/5) + '----|'.substring(0,lo);
+	    var lo = n% 5;
+	    return '----|'.times((n-lo)/5) + '----|'.substring(0,lo);
 	},
 	toString: function() {
-		return "<" + this.method.qualifiedMethodName() + ">";
-	}
-	});
-
-    TracerStackNode.subclass('TracerTreeNode', {
-	initialize: function($super, caller, method) {
-		$super(caller, method);
-		this.callees = {};
-		this.tally = 0;
-		this.ticks = 0;
-		this.calltime = null;
-	//console.log("adding node for " + method.qualifiedMethodName());
-	},
-        traceCall: function(method , itsThis, args) {
-		// this is the currentContext (top of stack)
-		// method has been called with itsThis as receiver, and args as arguments
-		// --> Check here for exceptions
-		var newNode = this.callees[method];
-		if (!newNode) {
-			// First hit -- need to make a new node
-			newNode = new TracerTreeNode(this, method);
-			this.callees[method] = newNode;
-		}
-		newNode.itsThis = itsThis;
-		newNode.args = args;
-		newNode.tally ++;
-		newNode.callTime = new Date().getTime();
-		currentContext = newNode;
-	},
-        traceReturn: function(method) {
-		// this is the currentContext (top of stack)
-		// method is returning
-		//if(stackNodeCount < 20) console.log("returning from " + method.qualifiedMethodName());
-		this.args = null;  // release storage from unused stack info
-		this.itsThis = null;  //   ..
-		this.ticks += (new Date().getTime() - this.callTime);
-		currentContext = this.caller;
-	},
-	each: function(funcToCall, level, sortFunc) {
-		// Recursive tree visit with callees order parameter (eg, tallies, ticks, alpha)
-		if (level == null) level = 0;
-		funcToCall(this, level);
-		var sortedCallees = [];
-		Properties.forEachOwn(this.callees, function(meth, node) { sortedCallees.push(node); })
-		if(sortedCallees.length == 0) return;
-		// Default is to sort by tallies, and then by ticks if they are equal (often 0)
-		sortedCallees.sort(sortFunc || function(a, b) {
-			if(a.tally == b.tally) return (a.ticks > b.ticks) ? -1 : (a.ticks < b.ticks) ? 1 : 0; 
-			return (a.tally > b. tally) ? -1 : 1});
-		sortedCallees.each(function(node) { node.each(funcToCall, level+1, sortFunc); });
-	},
-	fullString: function() {
-		var str = "Execution profile (#calls / #ticks)\n"
-		this.each(function(each, level) { str += (this.dashes(level) + each + "\n"); }.bind(this), 0, null)
-		return str;
-	},
-	toString: function() {
-		return '(' + this.tally.toString() + ' / ' + this.ticks.toString() + ') ' + this.method.qualifiedMethodName();
+	    return "<" + this.method.qualifiedMethodName() + ">";
 	}
     });
-
-    Object.extend(Function, {
-
-	resetDebuggingStack: function() {
-		var rootMethod = arguments.callee.caller;
-		rootContext = new TracerStackNode(null, rootMethod);
-		currentContext = rootContext;
-		Function.prototype.logAllCalls = false;
+    
+    TracerStackNode.subclass('TracerTreeNode', {
+	initialize: function($super, caller, method) {
+	    $super(caller, method);
+	    this.callees = {};
+	    this.tally = 0;
+	    this.ticks = 0;
+	    this.calltime = null;
+	    //console.log("adding node for " + method.qualifiedMethodName());
 	},
-
+        traceCall: function(method , itsThis, args) {
+	    // this is the currentContext (top of stack)
+	    // method has been called with itsThis as receiver, and args as arguments
+	    // --> Check here for exceptions
+	    var newNode = this.callees[method];
+	    if (!newNode) {
+		// First hit -- need to make a new node
+		newNode = new TracerTreeNode(this, method);
+		this.callees[method] = newNode;
+	    }
+	    newNode.itsThis = itsThis;
+	    newNode.args = args;
+	    newNode.tally ++;
+	    newNode.callTime = new Date().getTime();
+	    currentContext = newNode;
+	},
+        traceReturn: function(method) {
+	    // this is the currentContext (top of stack)
+	    // method is returning
+	    //if(stackNodeCount < 20) console.log("returning from " + method.qualifiedMethodName());
+	    this.args = null;  // release storage from unused stack info
+	    this.itsThis = null;  //   ..
+	    this.ticks += (new Date().getTime() - this.callTime);
+	    currentContext = this.caller;
+	},
+	each: function(funcToCall, level, sortFunc) {
+	    // Recursive tree visit with callees order parameter (eg, tallies, ticks, alpha)
+	    if (level == null) level = 0;
+	    funcToCall(this, level);
+	    var sortedCallees = [];
+	    Properties.forEachOwn(this.callees, function(meth, node) { sortedCallees.push(node); })
+	    if(sortedCallees.length == 0) return;
+	    // Default is to sort by tallies, and then by ticks if they are equal (often 0)
+	    sortedCallees.sort(sortFunc || function(a, b) {
+		if(a.tally == b.tally) return (a.ticks > b.ticks) ? -1 : (a.ticks < b.ticks) ? 1 : 0; 
+		return (a.tally > b. tally) ? -1 : 1});
+	    sortedCallees.each(function(node) { node.each(funcToCall, level+1, sortFunc); });
+	},
+	fullString: function() {
+	    var str = "Execution profile (#calls / #ticks)\n";
+	    this.each(function(each, level) { str += (this.dashes(level) + each + "\n"); }.bind(this), 0, null);
+	    return str;
+	},
+	toString: function() {
+	    return '(' + this.tally.toString() + ' / ' + this.ticks.toString() + ') ' + this.method.qualifiedMethodName();
+	}
+    });
+    
+    Object.extend(Function, {
+	
+	resetDebuggingStack: function() {
+	    var rootMethod = arguments.callee.caller;
+	    rootContext = new TracerStackNode(null, rootMethod);
+	    currentContext = rootContext;
+	    Function.prototype.logAllCalls = false;
+	},
+	
         showStack: function(useViewer) {
             if (useViewer) { new StackViewer(this, currentContext).open(); return; }
-
+	    
             if (Config.debugExtras) {
                 for (var c = currentContext, i = 0; c != null; c = c.caller, i++) {
                     var args = c.args;
@@ -802,7 +802,7 @@ function showStatsViewer(profilee,title) {
                         k = header.indexOf(')');
                         var k2 = header.indexOf(',');
                         if (k2 >= 0) k = Math.min(k,k2);
-                        var argName = header.substring(0, k)
+                        var argName = header.substring(0, k);
                         header = header.substring(k + 2);
                         if (argName.length > 0) frame += argName + ": " + Object.inspect(args[j]) + "\n";
 		    }
@@ -814,23 +814,23 @@ function showStatsViewer(profilee,title) {
                 }
             }
         },
-
+	
         testTrace: function() {
-		Function.trace(function () { for (var i=0; i<10; i++) RunArray.test([3, 1, 4, 1, 5, 9]); });
+	    Function.trace(function () { for (var i=0; i<10; i++) RunArray.test([3, 1, 4, 1, 5, 9]); });
 	},
-
+	
         trace: function(method) {
-		// Note: trace returns the trace root, not the value of the traced method
-		// If you need the return value, you'll need to store it elsewhwere from the method
-		var traceRoot = new TracerTreeNode(currentContext, method);
-		currentContext = traceRoot;
-		result = method.call(this);
-		currentContext = traceRoot.caller;
-		traceRoot.caller = null;
-		console.log(traceRoot.fullString());
-		return traceRoot;
+	    // Note: trace returns the trace root, not the value of the traced method
+	    // If you need the return value, you'll need to store it elsewhwere from the method
+	    var traceRoot = new TracerTreeNode(currentContext, method);
+	    currentContext = traceRoot;
+	    result = method.call(this);
+	    currentContext = traceRoot.caller;
+	    traceRoot.caller = null;
+	    console.log(traceRoot.fullString());
+	    return traceRoot;
 	},
-
+	
         installStackTracers: function(remove) {
 	    console.log("Wrapping all methods with tracingWrapper... " + (remove || ""));
             remove = (remove == "uninstall");  // call with this string to uninstall
@@ -841,7 +841,7 @@ function showStatsViewer(profilee,title) {
                 if (cName != 'Global' && cName != 'Object') {
                     var theClass = Global[cName];
                     var methodNames = theClass.localFunctionNames();
-
+		    
                     // Replace all methods of this class with a wrapped version
 		    for (var mi = 0; mi < methodNames.length; mi++) {
                         var mName = methodNames[mi];
@@ -857,7 +857,7 @@ function showStatsViewer(profilee,title) {
 		    var classFns = []; 
 		    for (var p in theClass) {
 			if (theClass.hasOwnProperty(p) && theClass[p] instanceof Function && p != "superclass")
-				classFns.push(p);
+			    classFns.push(p);
 		    }
                     for (var mi = 0; mi < classFns.length; mi++) {
                         var mName = classFns[mi];
@@ -899,10 +899,10 @@ function showStatsViewer(profilee,title) {
     });
     
     Object.extend(Function.prototype, {
-
+	
         logCalls: false, // turn on the prototype value to get tracing globally.
 		// Turn off individually for "hidden" functions.
-
+	
         tracingWrapper: function () {
 	    // Make a proxy method (traceFunc) that calls the tracing routines before and after this method
 	    var traceFunc = function () {
