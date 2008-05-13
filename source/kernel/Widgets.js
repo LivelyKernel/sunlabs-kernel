@@ -1679,7 +1679,7 @@ Morph.subclass("MenuMorph", {
 	// estimate with based on some prototypical TextMorph object
 	// lame but let's wait to do the right thing until the layout business is complete
 	var maxWidth = 0;
-	for (var i  = 0; i < this.items.length; i++) {
+	for (var i = 0; i < this.items.length; i++) {
 	    if (this.items[i][0].length > maxWidth) maxWidth = this.items[i][0].length;
 	}
 	return maxWidth*proto.fontSize/2 + 2*proto.inset.x;
@@ -1745,7 +1745,7 @@ Morph.subclass("MenuMorph", {
             } finally {
 		if (!this.stayUp) this.removeOnEvent(evt);
             }
-	} else evt.hand.setMouseFocus(this); // moved away, don't lose the focus
+	} else if (!this.stayUp) evt.hand.setMouseFocus(this); // moved away, don't lose the focus
     },
 
     onMouseDown: function(evt) {
