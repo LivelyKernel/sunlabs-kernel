@@ -1491,7 +1491,7 @@ Morph.subclass("TextListMorph", {
         var priorItem = this.getSelection();
         var removed = this.itemList.length + newItems.length - capacity;
         if (removed > 0) {
-	    console.log("removing " + removed);
+	    console.log("removing list items: " + removed);
             for (var i = 0; i < removed; i++) {
                 this.submorphs[0].remove();
             }

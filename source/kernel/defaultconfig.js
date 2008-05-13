@@ -27,7 +27,7 @@ var UserAgent = (function() {
     return {
         // Newer versions of WebKit implement proper SVGTransform API,
         // with potentially better performance
-        usableTransformAPI: false, // webKitVersion >= 525,
+        usableTransformAPI: webKitVersion >= 525,
         usableDropShadow: webKitVersion >= 525,
         canExtendBrowserObjects: !isRhino, // Error, document
         usableNearestViewportElement: !isRhino && !isMozilla,

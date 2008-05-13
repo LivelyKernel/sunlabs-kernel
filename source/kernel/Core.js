@@ -1126,10 +1126,6 @@ console.log("Rectangle");
 // Color support
 // ===========================================================================
 
-/**
-  * @class Color
-  */
-
 Object.subclass("Color", { 
 
     documentation: "Fully portable support for RGB colors",
@@ -1322,7 +1318,7 @@ Object.subclass('Wrapper', {
 
     removeRawNode: function() {
 	var parent = this.rawNode && this.rawNode.parentNode;
-	console.log("removing in " + this + ", " + this.textString);
+	//console.log("removing in " + this + ", " + this.textString);
 	return parent && parent.removeChild(this.rawNode);
     },
 
@@ -1394,8 +1390,7 @@ Object.subclass('Wrapper', {
 
     setTrait: function(name, value) {
 	return this.rawNode.setAttributeNS(null, name, String(value));
-    },
-    
+    }
 
 });
 
@@ -2291,6 +2286,12 @@ Shape.subclass('RectShape', {
     },
 
     bounds: function() {
+	if (this.useNativeBounds) {
+	    var b = this.nativeBounds();
+	    if (b.width && b.height) return b;
+	    // else something is suspicious
+	}
+
 	var x = this.rawNode.x.baseVal.value;
 	var y = this.rawNode.y.baseVal.value;
 	var width = this.rawNode.width.baseVal.value;
@@ -2371,6 +2372,11 @@ Shape.subclass('EllipseShape', {
     },
 
     bounds: function() {
+	if (this.useNativeBounds) {
+	    var b = this.nativeBounds();
+	    if (b.width && b.height) return b;
+	    // else something is suspicious
+	}
 	//console.log("rawNode " + this.rawNode);
 	var w = this.rawNode.rx.baseVal.value * 2;
 	var h = this.rawNode.ry.baseVal.value * 2; 
@@ -5714,7 +5720,7 @@ Object.extend(WorldMorph, {
 Morph.subclass("HandMorph", {
     
     documentation: "Defines a visual representation for the user's cursor.",
-    applyDropShadowFilter: !!Config.enableDropShadow,
+    applyDropShadowFilter: !!Config.useDropShadow,
     dropShadowFilter: "url(#DropShadowFilter)",
     shadowOffset: pt(5,5),
     handleOnCapture: true,
