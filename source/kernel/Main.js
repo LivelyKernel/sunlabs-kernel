@@ -364,7 +364,7 @@ function populateWorldWithExamples(world) {
 
 function main() {
     var world = null;
-    var canvas = document.getElementById("canvas");
+    var canvas = Global.document.getElementById("canvas");
     
     if (canvas.height && canvas.height.baseVal && canvas.height.baseVal.value < 100) {
 	// a forced value, some browsers have problems with height=100%

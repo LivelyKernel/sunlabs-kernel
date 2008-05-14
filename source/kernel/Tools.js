@@ -82,10 +82,16 @@ Widget.subclass('SimpleBrowser', {
         var defRef = SourceControl && SourceControl.getSourceInClassForMethod(className, defStr);
         return defRef ? [defStr].concat(sorted) : sorted;
     },
-
+    
     getMethodStringFor: function(className, methodName) { 
         if (!className || !methodName) return "no code"; 
-        else return Function.methodString(className, methodName); 
+	if (SourceControl != null) var source = SourceControl.getSourceInClassForMethod(className, methodName);
+	if (source) return source;
+	var func = (className == "Global") ? Global[methodName] : Global[className].prototype[methodName];
+	if (func == null) return "no code";
+	var code = func.getOriginal().toString();
+	if (className == "Global" || methodName == "constructor") return code;
+	return className + ".prototype." + methodName + " = " + code; 
     },
     
     setMethodString: function(newDef) { eval(newDef); },

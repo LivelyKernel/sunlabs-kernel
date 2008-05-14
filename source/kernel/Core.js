@@ -16,9 +16,8 @@
 
 var Global = this;
 
-
 // ===========================================================================
-// Error/warning console
+// Our JS library extensions (JS 1.5, no browser or graphics engine should be assumed)
 // ===========================================================================
 
 var Strings = {
@@ -93,219 +92,8 @@ var Strings = {
     
 };
 
-// console handling
-(function() { 
-    
-    // from firebug lite
-    function escapeHTML(value) {
-	return value;
-	
-	function replaceChars(ch) {
-	    switch (ch) {
-	    case "<":
-		return "&lt;";
-	    case ">":
-		return "&gt;";
-	    case "&":
-		return "&amp;";
-	    case "'":
-		return "&#39;";
-	    case '"':
-		return "&quot;";
-	    }
-	    return "?";
-	}
-	
-	return String(value).replace(/[<>&"']/g, replaceChars); // " ])
-    }
-    
-    function LogWindow() {
-	this.win = (function() { 
-	    var win = Global.window.open("", "log", "scrollbars,width=900,height=300"); 
-	    win.title = "Lively Kernel Log";
-	    win.document.write("<pre>"); 
-	    return win; 
-	})();
-	
-	this.log = function(msg) {
-	    if (!this.win) return;
-	    this.win.document.writeln(escapeHTML(msg));
-	}
-    };
-    
-    var platformConsole = Global.window.console || Global.window.parent.console; 
-    if (!platformConsole) {
-	alert('no console! console output disabled');
-	platformConsole = { log: function(msg) { } } // do nothing as a last resort
-    }
-    
-    if (platformConsole.warn && platformConsole.info && platformConsole.assert) {
-	// it's a Firebug/Firebug lite console, it does all we want, so no extra work necessary
-	Global.console = platformConsole;
-    } else {
-	// rebind to something that has all the calls
-	Global.console = {
-	    
-	    consumers: [ platformConsole], // new LogWindow() ],
-	    
-	    warn: function() {
-		this.consumers.invoke('log', "Warn: " + Strings.formatFromArray($A(arguments)));
-	    },
-	    
-	    info: function() {
-		var args = $A(arguments);
-		var rcv = args.shift();
-		this.consumers.invoke('log', "Info: " + Strings.formatFromArray($A(arguments)));
-	    },
-	    
-	    log: function() {
-		this.consumers.invoke('log', Strings.formatFromArray($A(arguments)));
-	    },
-	    
-	    assert: function(expr, msg) {
-		if (!expr) this.log("assert failed:" + msg);
-	    }
-	}
-    }
-    
-})(); 
-
-Global.window.onerror = function(message, url, code) {
-    console.log('in %s: %s, code %s', url, message, code);
-};
-
-(function() { // override config options with options from the query part of the URL
-
-    // may have security implications ...
-    var query = document.baseURI.split('?')[1];
-    if (!query) return;
-
-    var configOverrides = query.toQueryParams();
-    for (var p in configOverrides) {
-	if (Config.hasOwnProperty(p)) { // can't set unknown properties
-	    // this is surprisingly convoluted in Javascript:
-	    if (Config[p] instanceof Boolean || typeof Config[p] == 'boolean') { 
-		// make sure that "false" becomes false
-		Config[p] = configOverrides[p].toLowerCase() == "true";
-	    } else {
-		Config[p] = configOverrides[p];
-	    }
-	} else {
-	    console.log("ignoring unknown property " + p);
-	}
-    }
-})();    
-
-
-
-// ===========================================================================
-// Namespaces and core DOM bindings
-// ===========================================================================
-
-Namespace =  {
-    SVG : "http://www.w3.org/2000/svg", 
-    LIVELY : UserAgent.usableNamespacesInSerializer ? "http://www.experimentalstuff.com/Lively"  : null, 
-    XLINK : "http://www.w3.org/1999/xlink", 
-    XHTML: "http://www.w3.org/1999/xhtml"
-};
-
-
-
-var NodeFactory = {
-
-    createNS: function(ns, name, attributes) {
-	var element = document.createElementNS(ns, name);
-	return NodeFactory.extend(ns, element, attributes);
-    },
-
-    create: function(name, attributes) {
-	//return this.createNS(Namespace.SVG, name, attributes);  // doesn't work
-	var element = document.createElementNS(Namespace.SVG, name);
-	return NodeFactory.extend(null, element, attributes);
-    },
-
-    extend: function(ns, element, attributes) {
-	if (attributes) {
-	    for (var name in attributes) {
-		if (!attributes.hasOwnProperty(name)) continue;
-		element.setAttributeNS(ns, name, attributes[name]);
-	    }
-	}
-	return element;
-    },
-
-    createText: function(string) {
-	return document.createTextNode(string);
-    },
-    
-    createNL: function(string) {
-	return document.createTextNode("\n");
-    },
-
-    createCDATA: function(string) {
-	return document.createCDATASection(string);
-    },
-
-    shrinkWrapContainer: function(doc) {
-	return (doc || window.document).getElementById("ShrinkWrapped");
-    },
-
-    newShrinkWrapContainer: function(doc) { 
-	// Remove the old container if it's there and make a new one.
-	// this should be more robust
-	doc = doc || Global.document;
-	var previous = this.shrinkWrapContainer(doc);
-	if (previous) previous.parentNode.removeChild(previous);
-	var canvas = doc.getElementById("canvas");
-	var container = canvas.appendChild(this.createNS(Namespace.SVG, "defs"));
-	container.setAttribute("id", "ShrinkWrapped");
-	return container;
-    }
-};
-
-
-
-XLinkNS = {
-    setHref: function(node, href) {
-	return node.setAttributeNS(Namespace.XLINK, "href", href);
-    },
-    
-    getHref: function(node) {
-	return node.getAttributeNS(Namespace.XLINK, "href");
-    }
-};
-
-LivelyNS = {
-    
-    create: function(name, attributes) {
-	return NodeFactory.createNS(Namespace.LIVELY, name, attributes);
-    },
-    
-    getAttribute: function(node, name) {
-	return node.getAttributeNS(Namespace.LIVELY, name);
-    },
-
-    removeAttribute: function(node, name) {
-	return node.removeAttributeNS(Namespace.LIVELY, name);
-    },
-
-    setAttribute: function(node, name, value) {
-	node.setAttributeNS(Namespace.LIVELY, name, value);
-    },
-
-    getType: function(node) {
-	return node.getAttributeNS(Namespace.LIVELY, "type");
-    },
-    
-    setType: function(node, string) {
-	node.setAttributeNS(Namespace.LIVELY, "type", string);
-    }
-
-};
-
-
 var Class = {
-
+    
     isClass: function(object) {
 	return (object instanceof Function) && (object.superclass || object === Object);
     },
@@ -378,7 +166,7 @@ var Properties = {
 
 
 // ===========================================================================
-// Our extensions to JavaScript base libraries
+// Our extensions to JavaScript base classes
 // ===========================================================================
 
 Object.extend(Function.prototype, {
@@ -551,36 +339,9 @@ Object.extend(Function.prototype, {
 
 Object.subclasses = [];
 
-Function.globalScope = window;
-
-Function.methodString = function(className, methodName) {
-    if (SourceControl != null) var source = SourceControl.getSourceInClassForMethod(className, methodName);
-    if (source) return source;
-    var func = (className == "Global")
-	? Function.globalScope[methodName]
-	: Function.globalScope[className].prototype[methodName];
-    if (func == null) return "no code";
-    if(Config.debugExtras && func.originalFunction) {
-		var code = func.originalFunction.toString()
-	} else {
-		var code = func.toString();
-	}
-    if (className == "Global" || methodName == "constructor") return code;
-    return className + ".prototype." + methodName + " = " + code; 
-};
-
-if (UserAgent.canExtendBrowserObjects) { // Mozilla
-    if (UserAgent.webKitVersion) { 
-	Error.prototype.inspect = function() {
-	    return this.name + " in " + this.sourceURL + ":" + this.line + ": " + this.message;
-	}
-    } else {
-	Error.prototype.inspect = function() {
-	    return this.name + " in " + this.fileName + ":" + this.lineNumber + ": " + this.message;
-	}
-    }
-}
-
+/**
+  * Extensions to class Function
+  */  
 Object.extend(Function.prototype, {
     
     logErrors: function(prefix) {
@@ -690,7 +451,9 @@ Object.extend(Number.prototype, {
 
 });
 
-
+/**
+  * Extensions to class String
+  */  
 Object.extend(String.prototype, {
     size: function() { // so code can treat, eg, Texts like Strings
 	return this.length;
@@ -718,45 +481,232 @@ var Converter = {
 };
 
 
+if (UserAgent.canExtendBrowserObjects) { // Mozilla
+    if (UserAgent.webKitVersion) { 
+	Error.prototype.inspect = function() {
+	    return this.name + " in " + this.sourceURL + ":" + this.line + ": " + this.message;
+	}
+    } else {
+	Error.prototype.inspect = function() {
+	    return this.name + " in " + this.fileName + ":" + this.lineNumber + ": " + this.message;
+	}
+    }
+}
 
-// SVG/DOM bindings 
 
 
-Object.subclass('Query',  {
 
-    xpe: Global.XPathEvaluator && new XPathEvaluator(),
+// ===========================================================================
+// Error/warning console
+// ===========================================================================
 
-    initialize: function(aNode) {
-	if (!this.xpe) throw new Error("XPath not available");
-	var contextNode = aNode.ownerDocument == null ? 
-	    aNode.documentElement : aNode.ownerDocument.documentElement; 
-	this.nsResolver = this.xpe.createNSResolver(contextNode);
+// console handling
+(function() { 
+    
+    // from firebug lite
+    function escapeHTML(value) {
+	return value;
+	
+	function replaceChars(ch) {
+	    switch (ch) {
+	    case "<":
+		return "&lt;";
+	    case ">":
+		return "&gt;";
+	    case "&":
+		return "&amp;";
+	    case "'":
+		return "&#39;";
+	    case '"':
+		return "&quot;";
+	    }
+	    return "?";
+	}
+	
+	return String(value).replace(/[<>&"']/g, replaceChars); //KP: this comment to workaround a bug in my Emacs's javascript mode " ])
+    }
+    
+    function LogWindow() {
+	this.win = (function() { 
+	    var win = Global.window.open("", "log", "scrollbars,width=900,height=300"); 
+	    win.title = "Lively Kernel Log";
+	    win.document.write("<pre>"); 
+	    return win; 
+	})();
+	
+	this.log = function(msg) {
+	    if (!this.win) return;
+	    this.win.document.writeln(escapeHTML(msg));
+	}
+    };
+    
+    var platformConsole = Global.window.console || Global.window.parent.console; 
+    if (!platformConsole) {
+	alert('no console! console output disabled');
+	platformConsole = { log: function(msg) { } } // do nothing as a last resort
+    }
+    
+    if (platformConsole.warn && platformConsole.info && platformConsole.assert) {
+	// it's a Firebug/Firebug lite console, it does all we want, so no extra work necessary
+	Global.console = platformConsole;
+    } else {
+	// rebind to something that has all the calls
+	Global.console = {
+	    
+	    consumers: [ platformConsole], // new LogWindow() ],
+	    
+	    warn: function() {
+		this.consumers.invoke('log', "Warn: " + Strings.formatFromArray($A(arguments)));
+	    },
+	    
+	    info: function() {
+		var args = $A(arguments);
+		var rcv = args.shift();
+		this.consumers.invoke('log', "Info: " + Strings.formatFromArray($A(arguments)));
+	    },
+	    
+	    log: function() {
+		this.consumers.invoke('log', Strings.formatFromArray($A(arguments)));
+	    },
+	    
+	    assert: function(expr, msg) {
+		if (!expr) this.log("assert failed:" + msg);
+	    }
+	}
+    }
+    
+})(); 
+
+Global.window.onerror = function(message, url, code) {
+    console.log('in %s: %s, code %s', url, message, code);
+};
+
+(function() { // override config options with options from the query part of the URL
+
+    // may have security implications ...
+    var query = Global.document.baseURI.split('?')[1];
+    if (!query) return;
+
+    var configOverrides = query.toQueryParams();
+    for (var p in configOverrides) {
+	if (Config.hasOwnProperty(p)) { // can't set unknown properties
+	    // this is surprisingly convoluted in Javascript:
+	    if (Config[p] instanceof Boolean || typeof Config[p] == 'boolean') { 
+		// make sure that "false" becomes false
+		Config[p] = configOverrides[p].toLowerCase() == "true";
+	    } else {
+		Config[p] = configOverrides[p];
+	    }
+	} else {
+	    console.log("ignoring unknown property " + p);
+	}
+    }
+})();    
+
+
+// ===========================================================================
+// Namespaces and core DOM bindings
+// ===========================================================================
+
+Namespace =  {
+    SVG : "http://www.w3.org/2000/svg", 
+    LIVELY : UserAgent.usableNamespacesInSerializer ? "http://www.experimentalstuff.com/Lively"  : null, 
+    XLINK : "http://www.w3.org/1999/xlink", 
+    XHTML: "http://www.w3.org/1999/xhtml"
+};
+
+
+var NodeFactory = {
+
+    createNS: function(ns, name, attributes) {
+	var element = Global.document.createElementNS(ns, name);
+	return NodeFactory.extend(ns, element, attributes);
     },
 
-    resolver: function(prefix) {
-	if (prefix == null || prefix == "")
-	    prefix = "SVG";
-	else 
-	    prefix = prefix.toUpperCase();
-	return Namespace[prefix];
+    create: function(name, attributes) {
+	//return this.createNS(Namespace.SVG, name, attributes);  // doesn't work
+	var element = Global.document.createElementNS(Namespace.SVG, name);
+	return NodeFactory.extend(null, element, attributes);
     },
 
-    evaluate: function(aNode, anExpr, accumulator) {
-	var result = this.xpe.evaluate(anExpr, aNode, this.nsResolver, XPathResult.ANY_TYPE, null);
-	if (!accumulator)
-	    accumulator = [];
-	var res = null;
-	while (res = result.iterateNext()) accumulator.push(res);
-	return accumulator;
+    extend: function(ns, element, attributes) {
+	if (attributes) {
+	    for (var name in attributes) {
+		if (!attributes.hasOwnProperty(name)) continue;
+		element.setAttributeNS(ns, name, attributes[name]);
+	    }
+	}
+	return element;
     },
 
-    findFirst: function(aNode, anExpr) {
-	var result = this.xpe.evaluate(anExpr, aNode, this.nsResolver, XPathResult.ANY_TYPE, null);
-	return result.iterateNext();
+    createText: function(string) {
+	return Global.document.createTextNode(string);
+    },
+    
+    createNL: function(string) {
+	return Global.document.createTextNode("\n");
+    },
+
+    createCDATA: function(string) {
+	return Global.document.createCDATASection(string);
+    },
+
+    shrinkWrapContainer: function(doc) {
+	return (doc || Global.document).getElementById("ShrinkWrapped");
+    },
+
+    newShrinkWrapContainer: function(doc) { 
+	// Remove the old container if it's there and make a new one.
+	// this should be more robust
+	doc = doc || Global.document;
+	var previous = this.shrinkWrapContainer(doc);
+	if (previous) previous.parentNode.removeChild(previous);
+	var canvas = doc.getElementById("canvas");
+	var container = canvas.appendChild(this.createNS(Namespace.SVG, "defs"));
+	container.setAttribute("id", "ShrinkWrapped");
+	return container;
+    }
+};
+
+
+
+XLinkNS = {
+    setHref: function(node, href) {
+	return node.setAttributeNS(Namespace.XLINK, "href", href);
+    },
+    
+    getHref: function(node) {
+	return node.getAttributeNS(Namespace.XLINK, "href");
+    }
+};
+
+LivelyNS = {
+    
+    create: function(name, attributes) {
+	return NodeFactory.createNS(Namespace.LIVELY, name, attributes);
+    },
+    
+    getAttribute: function(node, name) {
+	return node.getAttributeNS(Namespace.LIVELY, name);
+    },
+
+    removeAttribute: function(node, name) {
+	return node.removeAttributeNS(Namespace.LIVELY, name);
+    },
+
+    setAttribute: function(node, name, value) {
+	node.setAttributeNS(Namespace.LIVELY, name, value);
+    },
+
+    getType: function(node) {
+	return node.getAttributeNS(Namespace.LIVELY, "type");
+    },
+    
+    setType: function(node, string) {
+	node.setAttributeNS(Namespace.LIVELY, "type", string);
     }
 
-});
-
+};
 
 
 // ===========================================================================
@@ -1047,7 +997,7 @@ Object.extend(Rectangle, {
     fromAny: function(ptA, ptB) {
 	return rect(ptA.minPt(ptB), ptA.maxPt(ptB));
     },
-
+    
     unionPts: function(points) {
 	var min = points[0];
 	var max = points[0];
@@ -1621,7 +1571,7 @@ Object.subclass('Similitude', {
     canvas: function() {
 	var world = WorldMorph.current(); // forward reference to World :(
 	if (world) return world.canvas();
-	else return document.getElementById("canvas"); // in early stages world may be null
+	else return Global.document.getElementById("canvas"); // in early stages world may be null
     },
 
     toMatrix: function() {
@@ -1779,7 +1729,7 @@ var Event = (function() {
 	canvas: function() {
 	    if (!UserAgent.usableOwnerSVGElement) {
 		// so much for multiple worlds on one page
-		return document.getElementById("canvas");
+		return Global.document.getElementById("canvas");
 	    } else {
 		return this.rawEvent.currentTarget.ownerSVGElement;
 	    }
@@ -1902,7 +1852,7 @@ Object.extend(window, {
     onfocus: function(evt) { /*console.log('window got focus event %s', evt);*/ }
 });
 
-if (UserAgent.canExtendBrowserObjects) Object.extend(document, {
+if (UserAgent.canExtendBrowserObjects) Object.extend(Global.document, {
     oncontextmenu: function(evt) { 
 	var targetMorph = evt.target.parentNode; // target is probably shape (change me if pointer-events changes for shapes)
 	if ((targetMorph instanceof Morph) 
@@ -2038,9 +1988,9 @@ Wrapper.subclass('Visual', {
     canvas: function() {
 	if (!UserAgent.usableOwnerSVGElement) {
 	    // so much for multiple worlds on one page
-	    return document.getElementById("canvas");
+	    return Global.document.getElementById("canvas");
 	} else {
-	    return (this.rawNode && this.rawNode.ownerSVGElement) || document.getElementById("canvas");
+	    return (this.rawNode && this.rawNode.ownerSVGElement) || Global.document.getElementById("canvas");
 	}
     },
     
@@ -6288,6 +6238,44 @@ LinkMorph.subclass('ExternalLinkMorph', {
     
     getHelpText: function() {
 	return "Click to enter " + this.url;
+    }
+
+});
+
+// Some SVG/DOM bindings 
+
+
+Object.subclass('Query',  {
+
+    xpe: Global.XPathEvaluator && new XPathEvaluator(),
+
+    initialize: function(aNode) {
+	if (!this.xpe) throw new Error("XPath not available");
+	var contextNode = aNode.ownerDocument == null ? 
+	    aNode.documentElement : aNode.ownerDocument.documentElement; 
+	this.nsResolver = this.xpe.createNSResolver(contextNode);
+    },
+
+    resolver: function(prefix) {
+	if (prefix == null || prefix == "")
+	    prefix = "SVG";
+	else 
+	    prefix = prefix.toUpperCase();
+	return Namespace[prefix];
+    },
+
+    evaluate: function(aNode, anExpr, accumulator) {
+	var result = this.xpe.evaluate(anExpr, aNode, this.nsResolver, XPathResult.ANY_TYPE, null);
+	if (!accumulator)
+	    accumulator = [];
+	var res = null;
+	while (res = result.iterateNext()) accumulator.push(res);
+	return accumulator;
+    },
+
+    findFirst: function(aNode, anExpr) {
+	var result = this.xpe.evaluate(anExpr, aNode, this.nsResolver, XPathResult.ANY_TYPE, null);
+	return result.iterateNext();
     }
 
 });
