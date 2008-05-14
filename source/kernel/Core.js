@@ -17,8 +17,151 @@
 var Global = this;
 
 // ===========================================================================
-// Our JS library extensions (JS 1.5, no browser or graphics engine should be assumed)
+// Our JS library extensions (JS 1.5, no particular browser or graphics engine)
 // ===========================================================================
+
+/**
+  * LK class system.
+  */
+
+Object.extend(Function.prototype, {
+
+    subclass: function(className /*:String*/ /*,... */) {
+	// Main method of the LK class system.
+
+	// {className} is the name of the new class constructor which this method synthesizes
+	// and binds to {className} in the Global namespace. 
+	// Remaining arguments are (inline) properties and methods to be copied into the prototype 
+	// of the newly created constructor.
+
+	// modified from prototype.js
+
+	var properties = $A(arguments);
+	properties.shift();
+	
+	function klass() {
+	    // check for the existence of Importer, which may not be defined very early on
+	    if (Global.Importer && (arguments[0] instanceof Importer || arguments[0] === Importer.prototype)) { 
+		this.deserialize.apply(this, arguments);
+	    } else if (Global.Copier && (arguments[0] instanceof Copier || arguments[0] === Copier.prototype)) {
+		this.copyFrom.apply(this, arguments);
+	    } else {
+		this.initialize.apply(this, arguments);
+	    }
+	}
+
+	klass.superclass = this;
+
+	var protoclass = function() { }; // that's the constructor of the new prototype object
+	protoclass.prototype = this.prototype;
+
+	klass.prototype = new protoclass();
+
+	klass.prototype.constructor = klass;
+	// KP: .name would be better but js ignores .name on anonymous functions
+	klass.type = className;
+	
+	for (var i = 0; i < properties.length; i++) {
+	    klass.addMethods(properties[i] instanceof Function ? (properties[i])() : properties[i]);
+	}
+
+	if (!klass.prototype.initialize) {
+	    klass.prototype.initialize = Functions.Empty;
+	}
+
+	Global[className] = klass;
+	return klass;
+    },
+
+    addMethods: function(source) {
+	// copy all the methods and properties from {source} into the
+	// prototype property of the receiver, which is intended to be
+	// a class constructor.  Method arguments named '$super' are treated
+	// specially, see Prototype.js documentation for "Class.create()" for details.
+	// derived from Class.Methods.addMethods() in prototype.js
+	var ancestor = this.superclass && this.superclass.prototype;
+
+	for (var property in source) {
+	    var value = source[property];
+	    // weirdly, RegExps are functions in Safari, so testing for Object.isFunction on
+	    // regexp field values will return true. But they're not full-blown functions and don't 
+	    // inherit argumentNames from Function.prototype
+	    if (ancestor && Object.isFunction(value) && value.argumentNames &&
+		value.argumentNames().first() == "$super") {
+		var method = value;
+		var advice = (function(m) {
+		    return function() { 
+			try { 
+			    return ancestor[m].apply(this, arguments);
+			} catch (e) { 
+			    console.log("problem with ancestor %s.%s(%s):%s",
+					Object.inspect(ancestor), m, $A(arguments), e);
+			    Function.showStack();
+			    throw e;
+			}
+		    };
+		})(property);
+		advice.methodName = "$super:" + (this.superclass ? this.superclass.type + "." : "") + property;
+		
+		value = Object.extend(advice.wrap(method), {
+		    valueOf:  function() { return method },
+		    toString: function() { return method.toString() },
+		    originalFunction: method
+		});
+	    }
+
+	    this.prototype[property] = value;
+	    if (Object.isFunction(value)) {
+		for ( ; value; value = value.originalFunction) {
+		    if (value.methodName) {
+			//console.log("class " + this.prototype.constructor.type 
+			// + " borrowed " + value.qualifiedMethodName());
+		    }
+		    value.declaredClass = this.prototype.constructor.type;
+		    value.methodName = property;
+		    if (!this.prototype.constructor.type) {
+			console.log("named " + value.qualifiedMethodName());
+		    }
+		}
+	    }
+	}
+	return this;
+    }
+
+});
+
+
+var Class = {
+    
+    isClass: function(object) {
+	return (object instanceof Function) && (object.superclass || object === Object);
+    },
+
+    withAllClassNames: function(scope, callback) {
+	for (var name in scope) {
+	    try {
+		if (Class.isClass(scope[name]))
+		    callback(name);
+	    } catch (er) { // FF exceptions
+	    }
+	}
+	callback("Object");
+	callback("Global");
+    },
+
+    makeEnum: function(strings) {
+	// simple mechanism for making objecs with property values set to
+	// property names, to be used as enums.
+	
+	var e = {};
+	for (var i = 0; i < strings.length; i++) {
+	    e[strings[i]] = strings[i];
+	}
+	return e;
+    }
+
+};
+
 
 var Strings = {
     
@@ -89,38 +232,12 @@ var Strings = {
 	var floatValue = parseFloat(str);
 	return isNaN(floatValue) ? str : floatValue.toFixed(precision);
     }
-    
 };
 
-var Class = {
-    
-    isClass: function(object) {
-	return (object instanceof Function) && (object.superclass || object === Object);
-    },
-
-    withAllClassNames: function(scope, callback) {
-	for (var name in scope) {
-	    try {
-		if (Class.isClass(scope[name]))
-		    callback(name);
-	    } catch (er) { // FF exceptions
-	    }
-	}
-	callback("Object");
-	callback("Global");
-    },
-
-    makeEnum: function(strings) {
-	var e = {};
-	for (var i = 0; i < strings.length; i++) {
-	    e[strings[i]] = strings[i];
-	}
-	return e;
-    }
-
-};
 
 var Functions = {
+    documentation: "colllection of reusable functions",
+
     Empty: function() {},
     K: function(arg) { return arg; },
     Null: function() { return null; },
@@ -129,6 +246,8 @@ var Functions = {
 };
     
 var Properties = {
+    documentation: "convenience property access functions",
+
     all: function(object, predicate) {
 	var a = [];
 	for (var name in object) {  
@@ -165,10 +284,13 @@ var Properties = {
 };
 
 
-// ===========================================================================
-// Our extensions to JavaScript base classes
-// ===========================================================================
+/**
+/* Our extensions to JavaScript base classes
+ */
 
+/**
+  * Extensions to class Function
+  */  
 Object.extend(Function.prototype, {
 
     inspect: function() {
@@ -217,114 +339,6 @@ Object.extend(Function.prototype, {
 	return this.functionNames(function(name) {
 	    return !superNames.include(name) || this.prototype[name] !== sup.prototype[name];
 	}.bind(this));
-
-    },
-
-
-    addMethods: function(source) {
-	// copy all the methods and properties from {source} into the
-	// prototype property of the receiver, which is intended to be
-	// a class constructor.  Method arguments named '$super' are treated
-	// specially, see Prototype.js documentation for "Class.create()" for details.
-	// derived from Class.Methods.addMethods() in prototype.js
-	var ancestor = this.superclass && this.superclass.prototype;
-
-	for (var property in source) {
-	    var value = source[property];
-	    // weirdly, RegExps are functions in Safari, so testing for Object.isFunction on
-	    // regexp field values will return true. But they're not full-blown functions and don't 
-	    // inherit argumentNames from Function.prototype
-	    if (ancestor && Object.isFunction(value) && value.argumentNames &&
-		value.argumentNames().first() == "$super") {
-		var method = value;
-		var advice = (function(m) {
-		    return function() { 
-			try { 
-			    return ancestor[m].apply(this, arguments);
-			} catch (e) { 
-			    console.log("problem with ancestor %s.%s(%s):%s",
-					Object.inspect(ancestor), m, $A(arguments), e);
-			    Function.showStack();
-			    throw e;
-			}
-		    };
-		})(property);
-		advice.methodName = "$super:" + (this.superclass ? this.superclass.type + "." : "") + property;
-		
-		value = Object.extend(advice.wrap(method), {
-		    valueOf:  function() { return method },
-		    toString: function() { return method.toString() },
-		    originalFunction: method
-		});
-	    }
-
-	    this.prototype[property] = value;
-	    if (Object.isFunction(value)) {
-		for ( ; value; value = value.originalFunction) {
-		    if (value.methodName) {
-			//console.log("class " + this.prototype.constructor.type 
-			// + " borrowed " + value.qualifiedMethodName());
-		    }
-		    value.declaredClass = this.prototype.constructor.type;
-		    value.methodName = property;
-		    if (!this.prototype.constructor.type) {
-			console.log("named " + value.qualifiedMethodName());
-		    }
-		}
-	    }
-	}
-
-	return this;
-    },
-
-
-    subclass: function(className /*:String*/ /*,... */) {
-	// Main method of the LK class system.
-
-	// {className} is the name of the new class constructor which this method synthesizes
-	// and binds to {className} in the Global namespace. 
-	// Remaining arguments are (inline) properties and methods to be copied into the prototype 
-	// of the newly created constructor.
-
-	// modified from prototype.js
-
-	var properties = $A(arguments);
-	properties.shift();
-	
-	function klass() {
-	    // check for the existence of Importer, which may not be defined very early on
-	    if (Global.Importer && (arguments[0] instanceof Importer || arguments[0] === Importer.prototype)) { 
-		this.deserialize.apply(this, arguments);
-	    } else if (Global.Copier && (arguments[0] instanceof Copier || arguments[0] === Copier.prototype)) {
-		this.copyFrom.apply(this, arguments);
-	    } else {
-		this.initialize.apply(this, arguments);
-	    }
-	}
-
-	klass.superclass = this;
-	klass.subclasses = [];
-
-	var protoclass = function() { }; // that's the constructor of the new prototype object
-	protoclass.prototype = this.prototype;
-
-	klass.prototype = new protoclass();
-	this.subclasses.push(klass);
-
-	klass.prototype.constructor = klass;
-	// KP: .name would be better but js ignores .name on anonymous functions
-	klass.type = className;
-	
-	for (var i = 0; i < properties.length; i++) {
-	    klass.addMethods(properties[i] instanceof Function ? (properties[i])() : properties[i]);
-	}
-
-	if (!klass.prototype.initialize) {
-	    klass.prototype.initialize = Functions.Empty;
-	}
-
-	Global[className] = klass;
-	return klass;
     },
 
 
@@ -333,16 +347,7 @@ Object.extend(Function.prototype, {
 	var func = this;
 	while (func.originalFunction) func = func.originalFunction;
 	return func;
-    }
-
-});
-
-Object.subclasses = [];
-
-/**
-  * Extensions to class Function
-  */  
-Object.extend(Function.prototype, {
+    },
     
     logErrors: function(prefix) {
 	if (Config.ignoreAdvice) return this;
@@ -464,40 +469,39 @@ Object.extend(String.prototype, {
     }
 });
 
-var Converter = {
-    documentation: "singleton used to parse DOM attribute values into JS values",
 
-    parseLength: function(string) {
-	// convert into system coords (pt?)
-	// FIXME: handle units
-	return parseFloat(string);
-    },
+Object.subclass('CharSet', {
+    documentation: "limited support for charsets"
+});
 
-    parseCoordinate: function(string) {
-	// convert into system coords (pt?)
-	// FIXME: handle units
-	return parseFloat(string);
+Object.extend(CharSet, {
+    lowercase: "abcdefghijklmnopqrstuvwxyz",
+    uppercase: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+    digits: "0123456789",
+    underscore: "_",
+    nonAlpha: "`1234567890-=[]\;',./",
+    shiftedNonAlpha: '~!@#$%^&*()_+{}:"<>?|',
+    leftBrackets: "*({[<'" + '"',
+    rightBrackets: "*)}]>'" + '"'
+});
+
+Object.extend(CharSet, {
+    // select word, brackets
+    alphaNum: CharSet.lowercase + CharSet.uppercase + CharSet.digits + CharSet.underscore,
+    charsAsTyped: CharSet.uppercase + CharSet.nonAlpha,
+    charsUnshifted: CharSet.lowercase + CharSet.nonAlpha,
+    charsShifted: CharSet.uppercase + CharSet.shiftedNonAlpha,
+
+    nonBlank: function(cc) {  
+	return " \n\r\t".include(cc) == false;
     }
-};
 
+});
 
-if (UserAgent.canExtendBrowserObjects) { // Mozilla
-    if (UserAgent.webKitVersion) { 
-	Error.prototype.inspect = function() {
-	    return this.name + " in " + this.sourceURL + ":" + this.line + ": " + this.message;
-	}
-    } else {
-	Error.prototype.inspect = function() {
-	    return this.name + " in " + this.fileName + ":" + this.lineNumber + ": " + this.message;
-	}
-    }
-}
-
-
-
+console.log("loaded basic library");
 
 // ===========================================================================
-// Error/warning console
+// Error/warning console (browser dependent)
 // ===========================================================================
 
 // console handling
@@ -605,7 +609,7 @@ Global.window.onerror = function(message, url, code) {
 
 
 // ===========================================================================
-// Namespaces and core DOM bindings
+// Namespaces and core DOM bindings (Browser and graphics-independent)
 // ===========================================================================
 
 Namespace =  {
@@ -613,6 +617,22 @@ Namespace =  {
     LIVELY : UserAgent.usableNamespacesInSerializer ? "http://www.experimentalstuff.com/Lively"  : null, 
     XLINK : "http://www.w3.org/1999/xlink", 
     XHTML: "http://www.w3.org/1999/xhtml"
+};
+
+var Converter = {
+    documentation: "singleton used to parse DOM attribute values into JS values",
+
+    parseLength: function(string) {
+	// convert into system coords (pt?)
+	// FIXME: handle units
+	return parseFloat(string);
+    },
+
+    parseCoordinate: function(string) {
+	// convert into system coords (pt?)
+	// FIXME: handle units
+	return parseFloat(string);
+    }
 };
 
 
@@ -668,8 +688,6 @@ var NodeFactory = {
     }
 };
 
-
-
 XLinkNS = {
     setHref: function(node, href) {
 	return node.setAttributeNS(Namespace.XLINK, "href", href);
@@ -705,12 +723,128 @@ LivelyNS = {
     setType: function(node, string) {
 	node.setAttributeNS(Namespace.LIVELY, "type", string);
     }
-
 };
+
+Object.subclass('Wrapper', {
+    documentation: "A wrapper around a native object, stored as rawNode",
+
+    rawNode: null,
+
+    getType: function() {
+	var ctor = this.constructor.getOriginal();
+	if (ctor.type) return ctor.type;
+	console.log("no type for " + this.constructor);
+	Function.showStack();
+	return null;
+    },
+
+    deserialize: function(importer, rawNode) {
+	this.rawNode = rawNode;
+    },
+
+    copyFrom: function(copier, other) {
+	this.rawNode = other.rawNode.cloneNode(true);
+    },
+
+    copy: function(copier) {
+	return new Global[this.getType()](copier || Copier.marker, this);
+    },
+
+    id: function() {
+	return this.rawNode.getAttribute("id");
+    },
+
+    setId: function(value) {
+	var prev = this.id();
+	this.rawNode.setAttribute("id", value); // this may happen automatically anyway by setting the id property
+	return prev;
+    },
+
+    removeRawNode: function() {
+	var parent = this.rawNode && this.rawNode.parentNode;
+	return parent && parent.removeChild(this.rawNode);
+    },
+
+    replaceRawNodeChildren: function(replacement) {
+	while (this.rawNode.firstChild) this.rawNode.removeChild(this.rawNode.firstChild);
+	if (replacement) this.rawNode.appendChild(replacement);
+    },
+
+    toString: function() {
+	try {
+	    return "#<" + this.getType() +  ":" + this.rawNode + ">";
+	} catch (err) {
+	    return "#<toString error: " + err + ">";
+	}
+    },
+
+    inspect: function() {
+	try {
+	    return this.toString() + "[" + this.toMarkupString() + "]";
+	} catch (err) {
+	    return "#<inspect error: " + err + ">";
+	}
+    },
+
+    toMarkupString: function() {
+	// note forward reference
+	return Exporter.stringify(this.rawNode);
+    },
+
+    queryNode: function(queryString, defaultValue) { 
+	// FIXME forward reference, move to Query?
+	var result = new Query(this.rawNode).evaluate(this.rawNode, queryString, []);
+	return result.length == 0 ? defaultValue : result;
+    },
+
+    uri: function() {
+	return "url(#" + this.id() + ")";
+    },
+
+    getPrototype: function() {
+	return this.constructor.getOriginal().prototype;
+    },
+
+    // convenience attribute access
+    getLivelyTrait: function(name) {
+	return this.rawNode.getAttributeNS(Namespace.LIVELY, name);
+    },
+
+    // convenience attribute access
+    setLivelyTrait: function(name, value) {
+	return this.rawNode.setAttributeNS(Namespace.LIVELY, name, value);
+    },
+
+    // convenience attribute access
+    removeLivelyTrait: function(name) {
+	return this.rawNode.removeAttributeNS(Namespace.LIVELY, name);
+    },
+    
+    getLengthTrait: function(name) {
+	return Converter.parseLength(this.rawNode.getAttributeNS(null, name));
+    },
+
+    setLengthTrait: function(name, value) {
+	this.setTrait(name, value);
+    },
+
+    getTrait: function(name) {
+	return this.rawNode.getAttributeNS(null, name);
+    },
+
+    setTrait: function(name, value) {
+	return this.rawNode.setAttributeNS(null, name, String(value));
+    },
+    
+    removeTrait: function(name) {
+	return this.rawNode.removeAttributeNS(null, name);
+    }
+
+});
 
 
 // ===========================================================================
-// Graphics foundations
+// Portable graphics foundations
 // ===========================================================================
 
 Object.subclass("Point", {
@@ -805,7 +939,6 @@ Object.subclass("Point", {
 
 Object.extend(Point, {
 
-
     ensure: function(duck) { // make sure we have a Lively point
 	if (duck instanceof Point) { 
 	    return duck;
@@ -888,7 +1021,7 @@ Rectangle.addMethods({
 	return rect(this.topLeft().minPt(r.topLeft()),this.bottomRight().maxPt(r.bottomRight())); 
     },
 
-    isNonEmpty: function(rect) { return this.topLeft().lessPt(this.bottomRight())},
+    isNonEmpty: function(rect) { return this.topLeft().lessPt(this.bottomRight()); },
 
     dist: function(r) { // dist between two rects
 	var p1 = this.closestPointToPt(r.center()); 
@@ -970,17 +1103,6 @@ Rectangle.addMethods({
 	return nearest; 
     },
 
-    toPath: function() {
-	var path = new PathShape();
-	path.moveTo(this.x, this.y);
-	path.lineTo(this.x + this.width, this.y); 
-	path.lineTo(this.x + this.width, this.y + this.height);
-	path.lineTo(this.x, this.y + this.height);
-	path.close(); 
-
-	return path;
-    },
-
     toString: function() { 
 	return Strings.format("rect(%s,%s)", this.topLeft(), this.bottomRight());
     },
@@ -988,8 +1110,6 @@ Rectangle.addMethods({
     inspect: function() {
 	return JSON.serialize(this);
     }
-
-
 });
 
 Object.extend(Rectangle, {
@@ -1193,122 +1313,6 @@ console.log("Color");
 // Gradient colors, stipple patterns and coordinate transformatins
 // ===========================================================================
 
-Object.subclass('Wrapper', {
-
-    documentation: "A wrapper around a native object, stored as rawNode",
-    rawNode: null,
-
-    getType: function() {
-	var ctor = this.constructor.getOriginal();
-	if (ctor.type) return ctor.type;
-	console.log("no type for " + this.constructor);
-	Function.showStack();
-	return null;
-    },
-
-    deserialize: function(importer, rawNode) {
-	this.rawNode = rawNode;
-    },
-
-    copyFrom: function(copier, other) {
-	this.rawNode = other.rawNode.cloneNode(true);
-    },
-
-    copy: function(copier) {
-	return new Global[this.getType()](copier || Copier.marker, this);
-    },
-
-    id: function() {
-	return this.rawNode.getAttribute("id");
-    },
-
-    setId: function(value) {
-	var prev = this.id();
-	this.rawNode.setAttribute("id", value); // this may happen automatically anyway by setting the id property
-	return prev;
-    },
-
-    removeRawNode: function() {
-	var parent = this.rawNode && this.rawNode.parentNode;
-	//console.log("removing in " + this + ", " + this.textString);
-	return parent && parent.removeChild(this.rawNode);
-    },
-
-    replaceRawNodeChildren: function(replacement) {
-	while (this.rawNode.firstChild) this.rawNode.removeChild(this.rawNode.firstChild);
-	if (replacement) this.rawNode.appendChild(replacement);
-    },
-
-    toString: function() {
-	try {
-	    return "#<" + this.getType() +  ":" + this.rawNode + ">";
-	} catch (err) {
-	    return "#<toString error: " + err + ">";
-	}
-    },
-
-    inspect: function() {
-	try {
-	    return this.toString() + "[" + this.toMarkupString() + "]";
-	} catch (err) {
-	    return "#<inspect error: " + err + ">";
-	}
-    },
-
-    toMarkupString: function() {
-	return Exporter.stringify(this.rawNode);
-    },
-
-    queryNode: function(queryString, defaultValue) {
-	var result = new Query(this.rawNode).evaluate(this.rawNode, queryString, []);
-	return result.length == 0 ? defaultValue : result;
-    },
-
-    uri: function() {
-	return "url(#" + this.id() + ")";
-    },
-
-
-    getPrototype: function() {
-	return this.constructor.getOriginal().prototype;
-    },
-
-    // convenience attribute access
-    getLivelyTrait: function(name) {
-	return this.rawNode.getAttributeNS(Namespace.LIVELY, name);
-    },
-
-    // convenience attribute access
-    setLivelyTrait: function(name, value) {
-	return this.rawNode.setAttributeNS(Namespace.LIVELY, name, value);
-    },
-
-    // convenience attribute access
-    removeLivelyTrait: function(name) {
-	return this.rawNode.removeAttributeNS(Namespace.LIVELY, name);
-    },
-    
-    getLengthTrait: function(name) {
-	return Converter.parseLength(this.rawNode.getAttributeNS(null, name));
-    },
-
-    setLengthTrait: function(name, value) {
-	this.setTrait(name, value);
-    },
-
-    getTrait: function(name) {
-	return this.rawNode.getAttributeNS(null, name);
-    },
-
-    setTrait: function(name, value) {
-	return this.rawNode.setAttributeNS(null, name, String(value));
-    },
-    
-    removeTrait: function(name) {
-	return this.rawNode.removeAttributeNS(null, name);
-    }
-
-});
 
 /**
   * @class Gradient (NOTE: PORTING-SENSITIVE CODE)
@@ -1344,14 +1348,12 @@ Wrapper.subclass("Gradient", {
 	var stops = this.rawStopNodes();
 	if (!stops || !stops[index || 0]) return null;
 	return Converter.parseLength(stops[index || 0].getAttributeNS(null, "offset"));
+    },
+
+    setDerivedId: function(owner) {
+	this.setId("gradient_" + owner.id());
     }
 
-});
-
-Object.extend(Gradient, {
-    deriveId: function(ownerId) {
-	return "gradient_" + ownerId;
-    }
 });
 
 
@@ -1410,39 +1412,20 @@ Gradient.subclass('RadialGradient', {
     }
 });
 
-/**
-  * @class StipplePattern (NOTE: PORTING-SENSITIVE CODE)
-  */
-
-Wrapper.subclass('StipplePattern', {
-
-    initialize: function(color1, h1, color2, h2) {
-	this.rawNode = NodeFactory.create("pattern", 
-					  {patternUnits: 'userSpaceOnUse', x: 0, y: 0, width: 100, height: h1 + h2});
-	this.rawNode.appendChild(NodeFactory.create('rect', {x: 0, y: 0,  width: 100, height: h1,      fill: color1}));
-	this.rawNode.appendChild(NodeFactory.create('rect', {x: 0, y: h1, width: 100, height: h1 + h2, fill: color2}));
-	return this;
-    }
-
-});
-
-
 Wrapper.subclass('ClipPath', {
     initialize: function(shape) {
 	this.rawNode = NodeFactory.create('clipPath');
 	// Safari used to require a path, not just any shape
-	this.rawNode.appendChild(shape.toPath().rawNode);
+	//this.rawNode.appendChild(shape.toPath().rawNode);
+	// FIXME cleanup the unused attributes (stroke width and such).
+	this.rawNode.appendChild(shape.rawNode.cloneNode(false));
+    },
+
+    setDerivedId: function(owner) {
+	this.setId("clipPath_" + owner.id());
     }
 
 });
-
-Object.extend(ClipPath, {
-    deriveId: function(ownerId) {
-	return "clipPath_" + ownerId;
-    }
-});
-
-
 
 /**
   * @class Similitude (NOTE: PORTING-SENSITIVE CODE)
@@ -1569,7 +1552,7 @@ Object.subclass('Similitude', {
     },
 
     canvas: function() {
-	var world = WorldMorph.current(); // forward reference to World :(
+	var world = WorldMorph.current(); // forward reference to WorldMorph :(
 	if (world) return world.canvas();
 	else return Global.document.getElementById("canvas"); // in early stages world may be null
     },
@@ -1635,42 +1618,6 @@ Similitude.subclass('Transform', {
 
     createInverse: function() {
 	return new Transform(this.matrix_.inverse());
-    }
-
-});
-
-// ===========================================================================
-// Character sets
-// ===========================================================================
-
-/**
-  * @class CharSet (NOTE: PORTING-SENSITIVE CODE)
-  * Currently, support for character sets is rather limited... 
-  */  
-
-// KP: there's more then one charset
-Object.subclass('CharSet');
-
-Object.extend(CharSet, {
-    lowercase: "abcdefghijklmnopqrstuvwxyz",
-    uppercase: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-    digits: "0123456789",
-    underscore: "_",
-    nonAlpha: "`1234567890-=[]\;',./",
-    shiftedNonAlpha: '~!@#$%^&*()_+{}:"<>?|',
-    leftBrackets: "*({[<'" + '"',
-    rightBrackets: "*)}]>'" + '"'
-});
-
-Object.extend(CharSet, {
-    // select word, brackets
-    alphaNum: CharSet.lowercase + CharSet.uppercase + CharSet.digits + CharSet.underscore,
-    charsAsTyped: CharSet.uppercase + CharSet.nonAlpha,
-    charsUnshifted: CharSet.lowercase + CharSet.nonAlpha,
-    charsShifted: CharSet.uppercase + CharSet.shiftedNonAlpha,
-
-    nonBlank: function(cc) {  
-	return " \n\r\t".include(cc) == false;
     }
 
 });
@@ -1873,7 +1820,7 @@ if (UserAgent.canExtendBrowserObjects) Object.extend(Global.document, {
 
 Wrapper.subclass('Visual', {   
 
-    documentation:  "Interface between Lively Kernel graphics classes and the underlying graphics implementation.",
+    documentation:  "Objects that can be located on the screen",
     //In this particular implementation, graphics primitives are
     //mapped onto various SVG objects and attributes.
 
@@ -2112,7 +2059,7 @@ Shape.subclass('RectShape', {
 
     toPath: function() {
 	// FIXME account for rounded edges
-	return this.bounds().toPath();
+	return new PathShape(this.bounds());
     },
 
     bounds: function() {
@@ -2425,10 +2372,17 @@ Shape.subclass('PathShape', {
 
     hasElbowProtrusions: true,
 
-    initialize: function($super, vertlist, color, borderWidth, borderColor) {
+    initialize: function($super, vertlistOrRect, color, borderWidth, borderColor) {
 	this.rawNode = NodeFactory.create("path");
 	$super(color, borderWidth, borderColor);
-	this.setVertices(vertlist || []);
+	if (vertlistOrRect instanceof Rectangle) {
+	    var r = vertlistOrRect;
+	    this.moveTo(r.x, r.y);
+	    this.lineTo(r.x + r.width, r.y); 
+	    this.lineTo(r.x + r.width, r.y + r.height);
+	    this.lineTo(r.x, r.y + r.height);
+	    this.close(); 
+	} else this.setVertices(vertlistOrRect || []);
 	return this;
     },
 
@@ -2506,6 +2460,7 @@ Shape.subclass('PathShape', {
     controlPointNear: PolygonShape.prototype.controlPointNear
 
 });
+
 
 Visual.subclass('Image', {
     description: "Primitive wrapper around images",
@@ -3122,7 +3077,7 @@ Visual.subclass("Morph", {
     restoreDefs: function(importer, originalDefs) {
 	for (var def = originalDefs.firstChild; def != null; def = def.nextSibling) {
 	    function applyGradient(gradient, owner) {
-		gradient.setId(Gradient.deriveId(owner.id()));
+		gradient.setDerivedId(owner);
 		if (owner.shape) {
 		    var myFill = owner.shape.getFill();
 		    if (myFill)
@@ -3138,7 +3093,7 @@ Visual.subclass("Morph", {
 		    console.log('myClip is undefined on %s', this); 
 		if (this.clipPath) throw new Error("how come clipPath is set to " + this.clipPath);
 		this.clipPath = new ClipPath(Importer.prototype, def);
-		this.clipPath.setId(ClipPath.deriveId(this.id()));
+		this.clipPath.setDerivedId(this);
 		this.rawNode.setAttributeNS(null, 'clip-path', this.clipPath.uri());
 		this.addWrapperToDefs(this.clipPath);
 		break;
@@ -3382,7 +3337,7 @@ Morph.addMethods({
 	    attr = fill.toString();
 	} else if (fill instanceof Gradient) { 
 	    this.fill = fill.copy();
-	    this.fill.setId(Gradient.deriveId(this.id()));
+	    this.fill.setDerivedId(this);
 	    this.addWrapperToDefs(this.fill);
 	    attr = this.fill.uri();
 	}
@@ -4622,15 +4577,11 @@ Morph.addMethods({
 
     clipToPath: function(shape) {
 	if (this.clipPath) this.clipPath.removeRawNode();
-
 	var clip = new ClipPath(shape);
-
-	clip.setId(ClipPath.deriveId(this.id()));
+	clip.setDerivedId(this);
 	this.addWrapperToDefs(clip);
-
 	this.rawNode.setAttributeNS(null, "clip-path", clip.uri());
 	this.clipPath = clip;
-
     },
 
     clipToShape: function() {
@@ -4812,7 +4763,7 @@ Morph.addMethods(ViewTrait);
   */ 
 
 // A typical model/view relationship is set up in the following manner:
-//        panel.addMorph(m = newListPane(new Rectangle(200,0,200,150)));
+//        panel.addMorph(m = newTextListPane(new Rectangle(200,0,200,150)));
 //        m.connectModel({model: this, getList: "getMethodList", setSelection: "setMethodName"});
 // The "plug" object passed to connectModel() points to the model, and converts from
 // view-specific messages like getList() and setSelection() to model-specific messages
@@ -6243,7 +6194,6 @@ LinkMorph.subclass('ExternalLinkMorph', {
 });
 
 // Some SVG/DOM bindings 
-
 
 Object.subclass('Query',  {
 

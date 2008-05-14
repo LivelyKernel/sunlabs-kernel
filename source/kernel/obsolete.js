@@ -336,3 +336,31 @@ Object.extend(BouncingSpheres, {
     }
 
 });
+
+
+if (UserAgent.webKitVersion) { 
+    Error.prototype.inspect = function() {
+	return this.name + " in " + this.sourceURL + ":" + this.line + ": " + this.message;
+    }
+} else if (UserAgent.isMozilla) {
+    Error.prototype.inspect = function() {
+	return this.name + " in " + this.fileName + ":" + this.lineNumber + ": " + this.message;
+    }
+}
+
+/**
+  * @class StipplePattern (NOTE: PORTING-SENSITIVE CODE)
+  */
+
+Wrapper.subclass('StipplePattern', {
+
+    initialize: function(color1, h1, color2, h2) {
+	this.rawNode = NodeFactory.create("pattern", 
+					  {patternUnits: 'userSpaceOnUse', x: 0, y: 0, width: 100, height: h1 + h2});
+	this.rawNode.appendChild(NodeFactory.create('rect', {x: 0, y: 0,  width: 100, height: h1,      fill: color1}));
+	this.rawNode.appendChild(NodeFactory.create('rect', {x: 0, y: h1, width: 100, height: h1 + h2, fill: color2}));
+	return this;
+    }
+
+});
+

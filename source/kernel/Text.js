@@ -1925,7 +1925,7 @@ Morph.subclass("TextMorph", {
 		case "z": { this.doUndo(); return true; }  // Undo
         }
 	//if (evt.type == "KeyPress") {
-            var bracketIndex = CharSet.leftBrackets.indexOf(key);
+            var bracketIndex = this.locale.charSet.leftBrackets.indexOf(key);
 	    
             if (bracketIndex >= 0) {
 		this.addOrRemoveBrackets(bracketIndex); 
@@ -1990,8 +1990,8 @@ TextMorph.addMethods({
     },
     
     addOrRemoveBrackets: function(bracketIndex) {
-        var left = CharSet.leftBrackets[bracketIndex];
-        var right = CharSet.rightBrackets[bracketIndex];
+        var left = this.locale.charSet.leftBrackets[bracketIndex];
+        var right = this.locale.charSet.rightBrackets[bracketIndex];
         
         if (bracketIndex == 0) { left = "/*"; right = "*/"; }
     

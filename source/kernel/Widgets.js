@@ -1081,7 +1081,7 @@ Object.extend(PanelMorph, {
     makePanedPanel: function(extent, paneSpecs) {
         // Generalized constructor for paned window panels
         // paneSpec is an array of arrays of the form...
-        //     ['leftPane', newListPane, new Rectangle(0, 0, 0.5, 0.6)],
+        //     ['leftPane', newTextListPane, new Rectangle(0, 0, 0.5, 0.6)],
         // See example calls in, eg, SimpleBrowser.buildView() for how to use this
         var panel = new PanelMorph(extent);
         panel.applyStyle({fill: Color.primary.blue.lighter(2), borderWidth: 2});

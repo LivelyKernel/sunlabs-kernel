@@ -1144,7 +1144,7 @@ Object.subclass('FileParser', {
             } else if (this.scanMethodDef(line)) {
             } else if (this.scanMainConfigBlock(line)) {
             } else if (this.scanBlankLine(line)) {
-            } else this.scanOtherLine(line)
+            } else this.scanOtherLine(line);
         }
         this.ptr = fstr.length;
         this.processCurrentDef();
