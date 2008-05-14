@@ -364,6 +364,13 @@ function populateWorldWithExamples(world) {
 
 function main() {
     var world = null;
+    var canvas = document.getElementById("canvas");
+    
+    if (canvas.height && canvas.height.baseVal && canvas.height.baseVal.value < 100) {
+	// a forced value, some browsers have problems with height=100%
+	canvas.setAttribute("height", "800");
+    }
+
 
     var container = NodeFactory.shrinkWrapContainer();
     if (container) {
@@ -373,12 +380,12 @@ function main() {
         WorldMorph.setCurrent(world);
     } else {
         // Create an empty world
-        world = new WorldMorph(Canvas);
+        world = new WorldMorph(canvas);
         WorldMorph.setCurrent(world);
         console.log("created empty world");
     }
-    world.displayWorldOn(Canvas);
-
+    world.displayWorldOn(canvas);
+    
     // Populate the world with sample objects, widgets and applications
     if (container || Config.skipAllExamples) return; // don't populate if we loaded up stuff from a container
     else populateWorldWithExamples(world);

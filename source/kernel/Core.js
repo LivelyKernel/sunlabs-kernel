@@ -13,13 +13,6 @@
  * as well as the core Morphic graphics framework. 
  */
 
-var Canvas = document.getElementById("canvas"); // singleton for now
-
-if (Canvas.height && Canvas.height.baseVal && Canvas.height.baseVal.value < 100) {
-    // a forced value, some browsers have problems with height=100%
-    Canvas.setAttribute("height", "800");
-}
-
 
 var Global = this;
 
@@ -202,16 +195,6 @@ Global.window.onerror = function(message, url, code) {
 	}
     }
 })();    
-
-Object.extend(String.prototype, {
-    size: function() { // so code can treat, eg, Texts like Strings
-	return this.length;
-    },
-    
-    asString: function() { // so code can treat, eg, Texts like Strings
-	return this;
-    }
-});
 
 
 
@@ -707,11 +690,19 @@ Object.extend(Number.prototype, {
 
 });
 
-/**
-  * @class Converter
-  */
 
-Converter = {
+Object.extend(String.prototype, {
+    size: function() { // so code can treat, eg, Texts like Strings
+	return this.length;
+    },
+    
+    asString: function() { // so code can treat, eg, Texts like Strings
+	return this;
+    }
+});
+
+var Converter = {
+    documentation: "singleton used to parse DOM attribute values into JS values",
 
     parseLength: function(string) {
 	// convert into system coords (pt?)
@@ -724,7 +715,6 @@ Converter = {
 	// FIXME: handle units
 	return parseFloat(string);
     }
-
 };
 
 
@@ -773,11 +763,8 @@ Object.subclass('Query',  {
 // Graphics foundations
 // ===========================================================================
 
-/**
-  * @class Point: 2d points
-  */
-
 Object.subclass("Point", {
+    documentation: "2D Point",
 
     initialize: function(x, y) {
 	this.x = x;
@@ -889,12 +876,11 @@ function pt(x, y) {
 
 console.log("Point");
 
-/**
-  * @class Rectangle
-  */
-
 Object.subclass("Rectangle", {
 
+    documentation: "primitive rectangle", 
+    // structually equivalent to SVGRect 
+    
     initialize: function(x, y, w, h) {
 	this.x = x;
 	this.y = y;
@@ -1632,8 +1618,14 @@ Object.subclass('Similitude', {
 	return new Transform(this);
     },
 
+    canvas: function() {
+	var world = WorldMorph.current(); // forward reference to World :(
+	if (world) return world.canvas();
+	else return document.getElementById("canvas"); // in early stages world may be null
+    },
+
     toMatrix: function() {
-	var mx = Canvas.createSVGMatrix();
+	var mx = this.canvas().createSVGMatrix();
 	mx.a = this.a;
 	mx.b = this.b;
 	mx.c = this.c;
@@ -1787,7 +1779,7 @@ var Event = (function() {
 	canvas: function() {
 	    if (!UserAgent.usableOwnerSVGElement) {
 		// so much for multiple worlds on one page
-		return Global.Canvas;
+		return document.getElementById("canvas");
 	    } else {
 		return this.rawEvent.currentTarget.ownerSVGElement;
 	    }
@@ -2046,9 +2038,9 @@ Wrapper.subclass('Visual', {
     canvas: function() {
 	if (!UserAgent.usableOwnerSVGElement) {
 	    // so much for multiple worlds on one page
-	    return Global.Canvas;
+	    return document.getElementById("canvas");
 	} else {
-	    return (this.rawNode && this.rawNode.ownerSVGElement) || Global.Canvas;
+	    return (this.rawNode && this.rawNode.ownerSVGElement) || document.getElementById("canvas");
 	}
     },
     
@@ -2888,7 +2880,7 @@ Copier.subclass('Importer', {
 		(morphs.length > 1) && console.log("more than one top level morph following a WorldMorph, ignoring remaining morphs");
 	    } else {
 		// no world, create one and add all the shrinkwrapped morphs to it.
-		world = world || new WorldMorph(Canvas);
+		world = world || new WorldMorph(WorldMorph.current().canvas());
 		for (var i = 0; i < morphs.length; i++)
 		    world.addMorph(morphs[i]);
 	    }

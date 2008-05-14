@@ -158,7 +158,7 @@ NetRequestReporter.subclass('LoadHandler', {
 	var container = NodeFactory.shrinkWrapContainer(doc);
 	if (container) {
 	    var importer = new Importer();
-	    var world = new WorldMorph(Canvas);
+	    var world = new WorldMorph(WorldMorph.current().canvas());
 	    var morphs = importer.importFromContainer(container, world);
 	    if (morphs.length > 0) {
 		for (var i = 0; i < morphs.length; i++) {

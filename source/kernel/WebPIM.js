@@ -1727,7 +1727,6 @@ Object.subclass('WebPIM', {
             if (path.substring(0, 3) == "CSS") continue;
             if (path.substring(0, 3) == "XML") continue;
             if (path.substring(0, 5) == "Range") continue;
-            if (path.substring(0, 6) == "Canvas") continue;
             if (path.substring(0, 7) == "Element") continue;
             if (path.substring(0, 8) == "Mutation") continue;
 
