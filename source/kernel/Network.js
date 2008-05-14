@@ -19,21 +19,19 @@
 
 
 Object.subclass('URL', {
-    splitter: new RegExp('(http:|https:|file:)//([^/:]*)(:[0-9]+)?(/.*)?'),
+    splitter: new RegExp('(http:|https:|file:)' + '(//[^/:]*(:[0-9]+)?)?' + '(/.*)?'),
     pathSplitter: new RegExp("([^\\?#]*)(\\?[^#]*)?(#.*)?"),
     
     initialize: function(/*...*/) { // same field names as window.location
 	if (arguments[0] instanceof String || typeof arguments[0] == 'string') {
 	    var urlString = arguments[0];
-	    // console.log('got urlString ' + urlString + " match to " + this.splitter);
 	    var result = urlString.match(this.splitter);
 	    if (!result) throw new Error("malformed URL string '" + urlString + "'");
 	    this.protocol = result[1]; 
 	    if (!result[1]) 
 		throw new Error("bad url " + urlString + ", " + result);
-	    this.hostname = result[2];
-	    if (result[3]) 
-		this.port = parseInt(result[3].substring(1));
+	    this.hostname = result[2] && result[2].substring(2); // skip the leading slashes
+	    this.port = result[3] && parseInt(result[3].substring(1)); // skip the colon
 	    
 	    var fullpath = result[4];
 	    if (fullpath) {
