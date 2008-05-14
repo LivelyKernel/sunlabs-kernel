@@ -157,8 +157,31 @@ var Class = {
 	    e[strings[i]] = strings[i];
 	}
 	return e;
-    }
+    },
 
+    getConstructor: function(object) {
+	return object.constructor.getOriginal();
+    },
+
+    
+    getPrototype: function(object) {
+	return object.constructor.getOriginal().prototype;
+    },
+
+    applyPrototypeMethod: function(methodName, target, args) {
+	var method = this.getPrototype(target);
+	if (!method) throw new Error("method " + methodName + " not found");
+	return method.apply(this, args);
+    },
+    
+    getSuperConstructor: function(object) {
+	return object.constructor.getOriginal().superclass;
+    },
+
+    getSuperPrototype: function(object) {
+	var sup = this.getSuperConstructor(object);
+	return sup && sup.prototype;
+    }
 };
 
 
@@ -821,9 +844,6 @@ Object.subclass('Wrapper', {
 	return "url(#" + this.id() + ")";
     },
 
-    getPrototype: function() {
-	return this.constructor.getOriginal().prototype;
-    },
 
     // convenience attribute access
     getLivelyTrait: function(name) {
@@ -1372,6 +1392,7 @@ Wrapper.subclass("Gradient", {
 
     setDerivedId: function(owner) {
 	this.setId("gradient_" + owner.id());
+	return this;
     }
 
 });
@@ -1443,6 +1464,7 @@ Wrapper.subclass('ClipPath', {
 
     setDerivedId: function(owner) {
 	this.setId("clipPath_" + owner.id());
+	return this;
     }
 
 });
@@ -2557,8 +2579,7 @@ Object.subclass('Exporter', {
 
     initialize: function(rootMorph) {
 	this.rootMorph = rootMorph;
-	if (!(rootMorph instanceof Morph)) 
-	    console.log("wierd, root morph is " + rootMorph);
+	(rootMorph instanceof Morph) || console.log("weird, root morph is " + rootMorph);
     },
 
     extendForSerialization: function() {
@@ -2864,11 +2885,12 @@ Copier.subclass('Importer', {
 Object.subclass('MouseHandlerForDragging', {
 
     handleMouseEvent: function(evt, targetMorph) {
-	var handler = targetMorph[evt.handlerName()];
 	if (evt.type == "MouseDown") evt.hand.setMouseFocus(targetMorph);
 	evt.hand.resetMouseFocusChanges();
-	
+
+	var handler = targetMorph[evt.handlerName()];
 	if (handler) handler.call(targetMorph, evt, targetMorph);
+
 	if (evt.type == "MouseUp") {
 	    // cancel focus unless it was set in the handler
 	    if (evt.hand.resetMouseFocusChanges() == 0) {
@@ -2891,10 +2913,10 @@ Object.subclass('MouseHandlerForRelay', {
     },
 
     handleMouseEvent: function(evt, originalTarget) {
-	var handler = this.target[this.eventSpec[evt.handlerName()]];
 	if (evt.type == "MouseDown") evt.hand.setMouseFocus(originalTarget);
 	evt.hand.resetMouseFocusChanges();
-
+	
+	var handler = this.target[this.eventSpec[evt.handlerName()]];
 	if (handler) handler.call(this.target, evt, originalTarget);
 
 	if (evt.type == "MouseUp") {
@@ -2910,15 +2932,10 @@ Object.subclass('MouseHandlerForRelay', {
 
 });
 
-/**
-  * Implements the common functionality inherited by 
-  * all the morphs. 
-  */ 
-
 Visual.subclass("Morph", {
+    documentation: "Base class for every graphical, manipulatable object in the system", 
 
     // prototype vars
-    documentation: "Base class for every graphical, manipulatable object in the system", 
     fill: Color.primary.green,
     borderWidth: 1,
     borderColor: Color.black,
@@ -3082,8 +3099,7 @@ Visual.subclass("Morph", {
 		if (!this.rawNode.getAttributeNS(null, 'clip-path'))
 		    console.log('myClip is undefined on %s', this); 
 		if (this.clipPath) throw new Error("how come clipPath is set to " + this.clipPath);
-		this.clipPath = new ClipPath(Importer.prototype, def);
-		this.clipPath.setDerivedId(this);
+		this.clipPath = new ClipPath(Importer.prototype, def).setDerivedId(this);
 		this.rawNode.setAttributeNS(null, 'clip-path', this.clipPath.uri());
 		this.addWrapperToDefs(this.clipPath);
 		break;
@@ -3326,8 +3342,7 @@ Morph.addMethods({
 	} else if (fill instanceof Color) {
 	    attr = fill.toString();
 	} else if (fill instanceof Gradient) { 
-	    this.fill = fill.copy();
-	    this.fill.setDerivedId(this);
+	    this.fill = fill.copy().setDerivedId(this);
 	    this.addWrapperToDefs(this.fill);
 	    attr = this.fill.uri();
 	}
@@ -3441,7 +3456,8 @@ Morph.addMethods({
 
     internalSetShape: function(newShape) {
 	if (!newShape.rawNode) {
-	    console.log('newShape is ' + newShape + ' ' + (new Error()).stack);
+	    console.log('newShape is ' + newShape);
+	    Function.showStack();
 	}
 	
 	this.rawNode.replaceChild(newShape.rawNode, this.shape.rawNode);
@@ -4415,48 +4431,45 @@ Morph.addMethods({
 	    } 
 	    // else: something is suspicious, fall through
 	}
-	
 
 	var tfm = this.getLocalTransform();
-	this.fullBounds = tfm.transformRectToRect(this.shape.bounds());
-
+	var fullBounds = tfm.transformRectToRect(this.shape.bounds());
+	
 	if (this.shape.hasElbowProtrusions) {
 	    // double border margin for polylines to account for elbow protrusions
-	    this.fullBounds.expandBy(this.shape.getStrokeWidth()*2);
+	    fullBounds.expandBy(this.shape.getStrokeWidth()*2);
 	} else {
-	    this.fullBounds.expandBy(this.shape.getStrokeWidth());
+	    fullBounds.expandBy(this.shape.getStrokeWidth());
 	}
-
+	
 	var subBounds = this.submorphBounds(ignoreTransients);
 	if (subBounds != null) {
 	    // could be simpler when no rotation...
-	    this.fullBounds = this.fullBounds.union(tfm.transformRectToRect(subBounds));
+	    fullBounds = fullBounds.union(tfm.transformRectToRect(subBounds));
 	}
 
-	if (this.fullBounds.width < 3 || this.fullBounds.height < 3) {
+	if (fullBounds.width < 3 || fullBounds.height < 3) {
 	    // Prevent Horiz or vert lines from being ungrabable
-	    this.fullBounds = this.fullBounds.expandBy(3); 
+	    fullBounds = fullBounds.expandBy(3); 
 	}
-
-	return this.fullBounds; 
+	this.fullBounds = fullBounds;
+	return fullBounds; 
     },
     
     submorphBounds: function(ignoreTransients) {
 	if (!this.hasSubmorphs()) 
 	    return null;
 	var subBounds = null;
-	if (ignoreTransients) {
-	    this.submorphs.forEach(function(m) { 
-		if (!m.transientBounds)
-		    subBounds = subBounds == null ? m.bounds(ignoreTransients) :
-		    subBounds.union(m.bounds(ignoreTransients));
-	    });
-	} else {
-	    this.submorphs.forEach(function(m) { 
-		subBounds = subBounds == null ? m.bounds() :
-		    subBounds.union(m.bounds());
-	    });
-	}
+	this.submorphs.forEach(ignoreTransients ? 
+			       function(m) { 
+				   if (!m.transientBounds)
+				       subBounds = subBounds == null ? m.bounds(ignoreTransients) :
+				       subBounds.union(m.bounds(ignoreTransients));
+			       } : 
+			       function(m) { 
+				   subBounds = subBounds == null ? m.bounds() :
+				       subBounds.union(m.bounds());
+			       });
 	return subBounds;
     },
 
@@ -4567,8 +4580,7 @@ Morph.addMethods({
 
     clipToPath: function(shape) {
 	if (this.clipPath) this.clipPath.removeRawNode();
-	var clip = new ClipPath(shape);
-	clip.setDerivedId(this);
+	var clip = new ClipPath(shape).setDerivedId(this);
 	this.addWrapperToDefs(clip);
 	this.rawNode.setAttributeNS(null, "clip-path", clip.uri());
 	this.clipPath = clip;

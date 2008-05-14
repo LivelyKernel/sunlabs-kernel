@@ -1124,12 +1124,12 @@ Morph.subclass("TextMorph", {
 		evt.stop();
 		return true;
 	    default:
-		return TextMorph.prototype.onKeyDown.call(this, evt);
+		return Class.getPrototype(this).onKeyDown.call(this, evt);
 	    }
         };
         this.okToBeGrabbedBy = Functions.Null;
 	this.updateView = function(aspect, controller) {
-	    TextMorph.prototype.updateView.call(this, aspect, controller);
+	    Class.getPrototype(this).updateView.call(this, aspect, controller);
 	    // select the whole thing
 	    if (this.modelPlug) {
 		if (aspect == this.modelPlug.getText  || aspect == 'all') {

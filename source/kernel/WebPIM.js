@@ -1271,7 +1271,7 @@ Object.subclass('WebPIM', {
 
         // Make serialization operations available in the Window menu
         panel.morphMenu = function(evt) { 
-            var menu = Morph.prototype.morphMenu.call(this, evt);
+            var menu = Class.getPrototype(this).morphMenu.call(this, evt);
             menu.addLine();
             menu.addItem(['load data from web server', function() {
                 PIM.unserializeDataFromWebServer();

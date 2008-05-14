@@ -910,7 +910,7 @@ Morph.subclass("SelectionMorph", {
             this.myWorld = this.world();
         } 
         this.myWorld.currentSelection = null;
-        SelectionMorph.superclass.prototype.remove.call(this);
+        Class.getSuperPrototype(this).remove.call(this);
     },
     
     copyToHand: function(hand) { 
@@ -1467,7 +1467,7 @@ Morph.subclass("TextListMorph", {
             break;
         }
         case Event.KEY_ESC: {
-            this.relinquishKeyboardFocus(this.world().firstHand());
+            this.relinquishKeyboardFocus(evt.hand);
             this.selectLineAt(-1, true);
             evt.stop();
             break;
@@ -1710,6 +1710,15 @@ Morph.subclass("MenuMorph", {
 	var textList = this.items.map(function(item) { return item[0]; });
         this.listMorph = new TextListMorph(pt(this.estimateListWidth(TextMorph.prototype), 0).extentAsRectangle(), 
 					   textList, pt(0, this.listStyle.borderRadius), this.textStyle);
+	
+	var menu = this;
+	this.listMorph.onKeyDown = function(evt) {
+	    console.log("my proto is " + Class.getPrototype(this));
+	    var result = Class.getPrototype(this).onKeyDown.call(this, evt);
+	    if (!menu.stayUp && evt.getKeyCode() == Event.KEY_ESC)
+		menu.removeOnEvent(evt);
+	};
+
         this.listMorph.applyStyle(this.listStyle);
         this.listMorph.suppressHandles = true;
         this.listMorph.focusHaloBorderWidth = 0;
@@ -2585,7 +2594,7 @@ Widget.subclass('ConsoleWidget', {
 
         var self = this;
         panel.shutdown = function() {
-            PanelMorph.prototype.shutdown.call(this);
+            Class.getPrototype(this).shutdown.call(this);
             var index = window.console.consumers.indexOf(self);
             if (index >= 0) {
                 window.console.consumers.splice(index);

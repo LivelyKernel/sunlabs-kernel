@@ -353,7 +353,7 @@ Widget.subclass('SimpleInspector', {
 
         var widget = this;
         panel.morphMenu = function(evt) { // offer to inspect the current selection
-            var menu = Morph.prototype.morphMenu.call(this, evt);
+            var menu = Class.getPrototype(this).morphMenu.call(this, evt);
             if (!widget.selectedItem()) return menu;
             menu.addLine();
             menu.addItem(['inspect selection', function() { 
@@ -541,7 +541,7 @@ WidgetModel.subclass('StylePanel', {
         panel.shape.setBounds(oldBounds.withHeight(y + 5 - oldBounds.y))
 
         panel.morphMenu = function(evt) { 
-            var menu = Morph.prototype.morphMenu.call(this,evt);
+            var menu = Class.getPrototype(this).morphMenu.call(this, evt);
             menu.addLine();
             menu.addItem(['inspect model', new SimpleInspector(panel.getModel()), "openIn", this.world()]);
             return menu;
