@@ -65,9 +65,9 @@ Widget.subclass('SimpleBrowser', {
         var list = [];
         for (var i = 0; i < this.scopeSearchPath.length; i++) {
             var p = this.scopeSearchPath[i];
-        var scopeCls = [];
-        Class.withAllClassNames(p, function(name) { name.startsWith("SVG") || scopeCls.push(name);});
-        list = list.concat(scopeCls.sort());
+            var scopeCls = [];
+            Class.withAllClassNames(p, function(name) { name.startsWith("SVG") || scopeCls.push(name);});
+            list = list.concat(scopeCls.sort());
         }
         return list;
     },
@@ -857,43 +857,40 @@ function showStatsViewer(profilee,title) {
         installStackTracers: function(remove) {
 	    console.log("Wrapping all methods with tracingWrapper... " + (remove || ""));
             remove = (remove == "uninstall");  // call with this string to uninstall
-            var classNames = [];
-            Class.withAllClassNames(Global, function(n) { n.startsWith('SVG') || n.startsWith('Tracer') || classNames.push(n)});
-            for (var ci= 0; ci < classNames.length; ci++) {
-                var cName = classNames[ci];
-                if (cName != 'Global' && cName != 'Object') {
-                    var theClass = Global[cName];
-                    var methodNames = theClass.localFunctionNames();
-		    
-                    // Replace all methods of this class with a wrapped version
-		    for (var mi = 0; mi < methodNames.length; mi++) {
-                        var mName = methodNames[mi];
-                        var originalMethod = theClass.prototype[mName];
-			// Put names on the original methods 
-                        originalMethod.declaredClass = cName;
-                        originalMethod.methodName = mName;
-                        // Now replace each method with a wrapper function (or remove it)
-                        if(!remove) theClass.prototype[mName] = originalMethod.tracingWrapper();
-			else if(originalMethod.originalFunction) theClass.prototype[mName] = originalMethod.originalFunction;
-                    }
-		    // Do the same for class methods (need to clean this up)
-		    var classFns = []; 
-		    for (var p in theClass) {
-			if (theClass.hasOwnProperty(p) && theClass[p] instanceof Function && p != "superclass")
-			    classFns.push(p);
-		    }
-                    for (var mi = 0; mi < classFns.length; mi++) {
-                        var mName = classFns[mi];
-                        var originalMethod = theClass[mName];
-			// Put names on the original methods 
-                        originalMethod.declaredClass = cName;
-                        originalMethod.methodName = mName;
-                        // Now replace each method with a wrapper function (or remove it)
-                        if(!remove) theClass[mName] = originalMethod.tracingWrapper();
-			else if(originalMethod.originalFunction) theClass[mName] = originalMethod.originalFunction;
-                    }
+            Class.withAllClassNames(Global, function(cName) { 
+		if (cName.startsWith('SVG') || cName.startsWith('Tracer')) return;
+                if (cName == 'Global' || cName == 'Object') return;
+                var theClass = Global[cName];
+                var methodNames = theClass.localFunctionNames();
+		
+                // Replace all methods of this class with a wrapped version
+		for (var mi = 0; mi < methodNames.length; mi++) {
+                    var mName = methodNames[mi];
+                    var originalMethod = theClass.prototype[mName];
+		    // Put names on the original methods 
+                    originalMethod.declaredClass = cName;
+                    originalMethod.methodName = mName;
+                    // Now replace each method with a wrapper function (or remove it)
+                    if(!remove) theClass.prototype[mName] = originalMethod.tracingWrapper();
+		    else if(originalMethod.originalFunction) theClass.prototype[mName] = originalMethod.originalFunction;
                 }
-            }
+		// Do the same for class methods (need to clean this up)
+		var classFns = []; 
+		for (var p in theClass) {
+		    if (theClass.hasOwnProperty(p) && theClass[p] instanceof Function && p != "superclass")
+			classFns.push(p);
+		}
+                for (var mi = 0; mi < classFns.length; mi++) {
+                    var mName = classFns[mi];
+                    var originalMethod = theClass[mName];
+		    // Put names on the original methods 
+                    originalMethod.declaredClass = cName;
+                    originalMethod.methodName = mName;
+                    // Now replace each method with a wrapper function (or remove it)
+                    if(!remove) theClass[mName] = originalMethod.tracingWrapper();
+		    else if(originalMethod.originalFunction) theClass[mName] = originalMethod.originalFunction;
+                }
+            });
         },
         tallyLOC: function() {
             console.log("Tallying lines of code by decompilation");

@@ -13,7 +13,6 @@
  * as well as the core Morphic graphics framework. 
  */
 
-
 var Global = this;
 
 // ===========================================================================
@@ -322,26 +321,35 @@ Object.extend(Function.prototype, {
 	return functionNames;
     },
 
-    localFunctionNames: function() {
-	var sup;
-
-	if (!this.superclass) {
-	    sup = (this === Object) ? null : Object; 
-	} else {
-	    sup = this.superclass;
+    withAllFunctionNames: function(callback) {
+	for (var name in this.prototype) { 
+	    try {
+		var value = this.prototype[name];
+		if (value instanceof Function) 
+		    callback(name, value, this);
+	    } catch (er) {
+		// FF can throw an exception here ...
+	    }
 	}
-
+    },
+    
+    localFunctionNames: function() {
+	var sup = this.superclass || ((this === Object) ? null : Object);
+	
 	try {
 	    var superNames = (sup == null) ? [] : sup.functionNames();
 	} catch (e) {
 	    var superNames = [];
 	}
-	return this.functionNames(function(name) {
-	    return !superNames.include(name) || this.prototype[name] !== sup.prototype[name];
-	}.bind(this));
+	var result = [];
+	
+	this.withAllFunctionNames(function(name, value, target) {
+	    if (!superNames.include(name) || target.prototype[name] !== sup.prototype[name]) 
+		result.push(name);
+	});
+	return result;
     },
-
-
+    
     getOriginal: function() {
 	// get the original 'unwrapped' function, traversing as many wrappers as necessary.
 	var func = this;
@@ -581,9 +589,21 @@ console.log("loaded basic library");
     
 })(); 
 
-Global.window.onerror = function(message, url, code) {
-    console.log('in %s: %s, code %s', url, message, code);
-};
+Object.extend(Global.window, {
+    onerror: function(message, url, code) {
+	console.log('in %s: %s, code %s', url, message, code);
+    },
+    onbeforeunload: function(evt) { 
+	if (Config.askBeforeQuit) {
+	    var msg = "Lively Kernel data may be lost if not saved.";
+	    evt.returnValue = msg; 
+	    return msg;
+	} else return null;
+    }
+    // onblur: function(evt) { console.log('window got blur event %s', evt); },
+    // onfocus: function(evt) { console.log('window got focus event %s', evt); }
+});
+
 
 (function() { // override config options with options from the query part of the URL
 
@@ -1055,14 +1075,14 @@ Rectangle.addMethods({
     },
 
     insetBy: function(d) {
-	return new Rectangle(this.x+d, this.y+d, this.width-(d*2), this.height-(d*2)) 
+	return new Rectangle(this.x+d, this.y+d, this.width-(d*2), this.height-(d*2));
     },
 
     insetByPt: function(p) {
-	return new Rectangle(this.x+p.x, this.y+p.y, this.width-(p.x*2), this.height-(p.y*2)) 
+	return new Rectangle(this.x+p.x, this.y+p.y, this.width-(p.x*2), this.height-(p.y*2));
     },
 
-    expandBy: function(delta) { return this.insetBy(0-delta) }
+    expandBy: function(delta) { return this.insetBy(0 - delta); }
 
 });
 
@@ -1627,10 +1647,11 @@ Similitude.subclass('Transform', {
 // ===========================================================================
 
 /**
-  * @class Event: extensions to DOM class Event (NOTE: PORTING-SENSITIVE CODE)
-  * The code below extends the default Event class behavior inherited
-  * from the web browser.  For a detailed description of the Event class,
-  * refer to, e.g., David Flanagan's book (JavaScript: The Definitive Guide) 
+  * @class Event: replacement Event class. (NOTE: PORTING-SENSITIVE CODE)
+  * The code below rebinds the Event class to a LK substitute that wraps around 
+  * the browser implementation.
+  * For a detailed description of the Event class provided by browsers,
+  * refer to, e.g., David Flanagan's book (JavaScript: The Definitive Guide).
   */
 
 var Event = (function() {
@@ -1660,11 +1681,6 @@ var Event = (function() {
 		// console.log("mouse point " + this.mousePoint);
 		//event.mousePoint = pt(event.clientX, event.clientY  - 3);
 		this.priorPoint = this.mousePoint; 
-		// Safari somehow gets the x and y coords so we add them here to Firefox too --PR
-		// console.log("InitMouseOver fix for Firefox evt.x=%s evt.clientX", event.x, event.clientX);
-		this.x = x;
-		this.y = y;
-
 	    } 
 	    this.hand = null;
 
@@ -1734,7 +1750,7 @@ var Event = (function() {
 	getKeyChar: function() {
 	    if (this.type == "KeyPress") {
 		var id = this.rawEvent.charCode;
-		if (id > 63000) return ""; // Safari sends weird key char codes
+		if (id > 63000) return ""; // Old Safari sends weird key char codes
 		return id ? String.fromCharCode(id) : "";
 	    } else  {
 		var code = this.rawEvent.which;
@@ -1787,35 +1803,9 @@ var Event = (function() {
     return Event;
 })();
 
-Object.extend(window, {
-    onbeforeunload: function(evt) { 
-	if (Config.askBeforeQuit) {
-	    var msg = "LK data may be lost if not saved.";
-	    evt.returnValue = msg; 
-	    return msg;
-	} else return null;
-    },
-    onblur: function(evt) { /*console.log('window got blur event %s', evt);*/ },
-    onfocus: function(evt) { /*console.log('window got focus event %s', evt);*/ }
-});
-
-if (UserAgent.canExtendBrowserObjects) Object.extend(Global.document, {
-    oncontextmenu: function(evt) { 
-	var targetMorph = evt.target.parentNode; // target is probably shape (change me if pointer-events changes for shapes)
-	if ((targetMorph instanceof Morph) 
-	    && !(targetMorph instanceof WorldMorph)) {
-	    evt.preventDefault();
-	    var topElement = targetMorph.canvas().parentNode;
-	    evt.mousePoint = pt(evt.pageX - (topElement.offsetLeft || 0), 
-				evt.pageY - (topElement.offsetTop  || 0) - 3);
-	    // evt.mousePoint = pt(evt.clientX, evt.clientY);
-	    targetMorph.showMorphMenu(evt); 
-	} // else get the system context menu
-    }.logErrors('Context Menu Handler')
-});
 
 // ===========================================================================
-// Graphics primitives
+// Graphics primitives (SVG specific, browser-independent)
 // ===========================================================================
 
 Wrapper.subclass('Visual', {   

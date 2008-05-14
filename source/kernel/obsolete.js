@@ -364,3 +364,18 @@ Wrapper.subclass('StipplePattern', {
 
 });
 
+
+if (UserAgent.canExtendBrowserObjects) Object.extend(Global.document, {
+    oncontextmenu: function(evt) { 
+	var targetMorph = evt.target.parentNode; // target is probably shape (change me if pointer-events changes for shapes)
+	if ((targetMorph instanceof Morph) 
+	    && !(targetMorph instanceof WorldMorph)) {
+	    evt.preventDefault();
+	    var topElement = targetMorph.canvas().parentNode;
+	    evt.mousePoint = pt(evt.pageX - (topElement.offsetLeft || 0), 
+				evt.pageY - (topElement.offsetTop  || 0) - 3);
+	    // evt.mousePoint = pt(evt.clientX, evt.clientY);
+	    targetMorph.showMorphMenu(evt); 
+	} // else get the system context menu
+    }.logErrors('Context Menu Handler')
+});
