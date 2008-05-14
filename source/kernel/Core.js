@@ -13,14 +13,15 @@
  * as well as the core Morphic graphics framework. 
  */
 
-var Global = this;
-
 var Canvas = document.getElementById("canvas"); // singleton for now
 
 if (Canvas.height && Canvas.height.baseVal && Canvas.height.baseVal.value < 100) {
     // a forced value, some browsers have problems with height=100%
     Canvas.setAttribute("height", "800");
 }
+
+
+var Global = this;
 
 
 // ===========================================================================
@@ -1442,6 +1443,10 @@ Gradient.subclass("LinearGradient", {
 	    result.addStop(this.offset(i), this.stopColor(i).mixedWith(color, proportion));
 	}
 	return result;
+    },
+
+    toString: function() {
+	return "#<" + this.getType() + this.toMarkupString() + ">";
     }
 
 });
@@ -1501,102 +1506,6 @@ Object.extend(ClipPath, {
     }
 });
 
-
-Wrapper.subclass('Image', {
-
-    initialize: function(url, width, height) {
-	if (!url) return;
-	var node;
-	if (url.startsWith('#'))
-	    this.loadUse(url);
-	else
-	    this.loadImage(url, width, height);
-    },
-    
-    deserialize: function($super, importer, rawNode) {
-	if (rawNode.namespaceURI != Namespace.SVG) {
-            // this brittle and annoying piece of code is a workaround around the likely brokenness
-            // of Safari's XMLSerializer's handling of namespaces
-            var href = rawNode.getAttributeNS(null /* "xlink"*/, "href");
-	    if (href)
-		if (href.startsWith("#")) {
-		    // not clear what to do, use target may or may not be in the target document
-		    this.loadUse(href);
-		} else {
-		    this.loadImage(href);
-		}
-	} else {
-	    $super(importer, rawNode);
-	}
-    },
-
-    getWidth: function(optArg) {
-	return Converter.parseLength((optArg || this.rawNode).getAttributeNS(null, "width"));
-    },
-
-    getHeight: function(optArg) {
-	return Converter.parseLength((optArg || this.rawNode).getAttributeNS(null, "height"));
-    },
-
-    reload: function() {
-	if (this.rawNode.localName == "image")  {
-	    XLinkNS.setHref(this.rawNode, this.getURL() + "?" + new Date());
-	}
-    },
-
-    getURL: function() {
-	return XLinkNS.getHref(this.rawNode);
-    },
-
-    scaleBy: function(factor) {
-	new Similitude(pt(0, 0), 0, factor).applyTo(this);
-    },
-
-    loadUse: function(url) {
-	if (this.rawNode && this.rawNode.localName == "use") {
-	    XLinkNS.setHref(this.rawNode, url);
-	    return null; // no new node;
-	} else {
-	    this.removeRawNode();
-	    this.rawNode = NodeFactory.create("use");
-	    XLinkNS.setHref(this.rawNode, url);
-	    return this.rawNode;
-	}
-    },
-
-    loadImage: function(href, width, height) {
-	if (this.rawNode && this.rawNode.localName == "image") {
-	    XLinkNS.setHref(this.rawNode, href);
-	    return null;
-	} else {
-	    var useDesperateSerializationHack = true;
-	    if (useDesperateSerializationHack) {
-		width = width || this.getWidth();
-		height = height || this.getHeight();
-		
-		// this desperate measure appears to be necessary to work
-		// around Safari's serialization issues.  Note that
-		// somehow this code has to be used both for normal
-		// loading and loading at deserialization time, otherwise
-		// it'll fail at deserialization
-		var xml = Strings.format('<image xmlns="http://www.w3.org/2000/svg" ' 
-		    + 'xmlns:xlink="http://www.w3.org/1999/xlink" ' 
-		    + ' width="%s" height="%s" xlink:href="%s"/>', width, height, href);
-		
-		this.rawNode = new Importer().parse(xml);
-	    } else {
-		
-		// this should work but doesn't:
-		
-		this.rawNode = NodeFactory.createNS(Namespace.SVG, "image");
-		this.rawNode.setAttribute("width", width);
-		this.rawNode.setAttribute("height", height);
-		XLinkNS.setHref(this.rawNode, href);
-	    }
-	    return this.rawNode;
-	}
-    }
-});
 
 
 /**
@@ -1666,21 +1575,22 @@ Object.subclass('Similitude', {
 	return attr;
     },
 
-    applyTo: function(wrapper) {
-	var rawNode = wrapper.rawNode;
+    applyTo: function(visual) {
+	var rawNode = visual.rawNode;
 	if (Config.useTransformAPI) {
 	    var list = rawNode.transform.baseVal;
-	    var viewport = (UserAgent.usableNearestViewportElement ? rawNode.nearestViewportElement : Canvas);
-	    if (!this.translation) this.translation = viewport.createSVGTransform();
+	    var canvas = visual.canvas();
+
+	    if (!this.translation) this.translation = canvas.createSVGTransform();
 	    this.translation.setTranslate(this.e, this.f);
 	    list.initialize(this.translation);
 	    if (this.b || this.c) {
-		if (!this.rotation) this.rotation = viewport.createSVGTransform();
+		if (!this.rotation) this.rotation = canvas.createSVGTransform();
 		this.rotation.setRotate(this.getRotation(), 0, 0);
 		list.appendItem(this.rotation);
 	    }
 	    if (this.a != 1.0 || this.d != 1.0) {
-		if (!this.scaling) this.scaling = viewport.createSVGTransform();
+		if (!this.scaling) this.scaling = canvas.createSVGTransform();
 		var scale = this.getScale();
 		this.scaling.setScale(scale, scale);
 		list.appendItem(this.scaling);
@@ -1875,11 +1785,11 @@ var Event = (function() {
 	},
 
 	canvas: function() {
-	    if (!UserAgent.usableNearestViewportElement) {
+	    if (!UserAgent.usableOwnerSVGElement) {
 		// so much for multiple worlds on one page
-		return Canvas;
+		return Global.Canvas;
 	    } else {
-		return this.rawEvent.currentTarget.nearestViewportElement;
+		return this.rawEvent.currentTarget.ownerSVGElement;
 	    }
 	},
 
@@ -2006,7 +1916,7 @@ if (UserAgent.canExtendBrowserObjects) Object.extend(document, {
 	if ((targetMorph instanceof Morph) 
 	    && !(targetMorph instanceof WorldMorph)) {
 	    evt.preventDefault();
-	    var topElement = (evt.currentTarget.nearestViewportElement || Canvas).parentNode;
+	    var topElement = targetMorph.canvas().parentNode;
 	    evt.mousePoint = pt(evt.pageX - (topElement.offsetLeft || 0), 
 				evt.pageY - (topElement.offsetTop  || 0) - 3);
 	    // evt.mousePoint = pt(evt.clientX, evt.clientY);
@@ -2096,7 +2006,7 @@ Wrapper.subclass('Visual', {
     },
 
     setBounds: function(bounds) { 
-	throw new Error('setBounds unsupported on type ' + this.type());
+	throw new Error('setBounds unsupported on type ' + this.getType());
     },
 
     disablePointerEvents: function() {
@@ -2133,22 +2043,21 @@ Wrapper.subclass('Visual', {
 	return new Transform(this.rawNode.getCTM()).transformRectToRect(box);
     },
 
-    nativeCanvas: function() {
-	try {
-	    return this.rawNode.ownerSVGElement;
-	} catch (e) {
-	    // FF can't deal
-	    return null;
+    canvas: function() {
+	if (!UserAgent.usableOwnerSVGElement) {
+	    // so much for multiple worlds on one page
+	    return Global.Canvas;
+	} else {
+	    return (this.rawNode && this.rawNode.ownerSVGElement) || Global.Canvas;
 	}
     },
-
+    
     nativeContainsWorldPoint: function(p) {
-	var svg = this.nativeCanvas();
-	var r = svg.createSVGRect();
+	var r = this.canvas().createSVGRect();
 	r.x = p.x;
 	r.y = p.y;
 	r.width = r.height = 0;
-	return svg.checkIntersection(this.rawNode, rect);
+	return this.canvas().checkIntersection(this.rawNode, rect);
     },
 
     undisplay: function() {
@@ -2234,8 +2143,8 @@ Object.extend(Shape, {
     translateVerticesBy: function(vertices, delta) { // utility class method
 	return vertices.invoke('addPt', delta); 
     },
-    LineJoins: { Miter: "Miter", Round: "Round",  Bevel: "Bevel" },
-    LineCaps:  { Butt: "Butt",   Round: "Round", Square: "Square" }
+    LineJoins: Class.makeEnum(["Miter", "Round", "Bevel" ]), // note that values become attribute values
+    LineCaps:  Class.makeEnum(["Butt",  "Round", "Square"])  // likewise
 
 });
 
@@ -2577,7 +2486,7 @@ Shape.subclass('PathShape', {
     initialize: function($super, vertlist, color, borderWidth, borderColor) {
 	this.rawNode = NodeFactory.create("path");
 	$super(color, borderWidth, borderColor);
-	if (vertlist) this.setVertices(vertlist);
+	this.setVertices(vertlist || []);
 	return this;
     },
 
@@ -2602,10 +2511,10 @@ Shape.subclass('PathShape', {
 	    }
 	    return code + p.x + "," + p.y;
 	}
-
 	var d = vertlist.map(map2svg).join('');
-	// console.log("d=" + d);
-	this.rawNode.setAttributeNS(null, "d", d);
+	//console.log("d=" + d);
+	if (d.length > 0)
+	    this.rawNode.setAttributeNS(null, "d", d);
 	this.verticesList = vertlist;
     },
 
@@ -2617,8 +2526,8 @@ Shape.subclass('PathShape', {
 	this.rawNode.pathSegList.appendItem(this.rawNode.createSVGPathSegMovetoAbs(x, y));
     },
 
-    curveTo: function(x, y) {
-	this.rawNode.pathSegList.appendItem(this.rawNode.createSVGPathSegCurvetoQuadraticSmoothAbs(x, y));
+    arcTo: function(x, y, r) {
+	this.rawNode.pathSegList.appendItem(this.rawNode.createSVGPathSegArcAbs(x, y, r));
     },
 
     lineTo: function(x, y) {
@@ -2634,17 +2543,123 @@ Shape.subclass('PathShape', {
     },
 
     bounds: function() {
-	var r = this.rawNode.getBBox();
-	// check the coordinates!
-	return new Rectangle(r.x, r.y, r.width, r.height);
+	try {
+	    var r = this.rawNode.getBBox();
+	    // check the coordinates!
+	    return new Rectangle(r.x, r.y, r.width, r.height);
+	} catch (er) {
+	    var u = Rectangle.unionPts(this.verticesList);
+	    return u;
+	}
     },
 
+    setBounds: function(bounds) { 
+	console.log('setBounds unsupported on type ' + this.getType());
+    },
+    
     // poorman's traits :)
     controlPointNear: PolygonShape.prototype.controlPointNear,
     possibleHandleForControlPoint: PolygonShape.prototype.possibleHandleForControlPoint,
     reshape: PolygonShape.prototype.reshape,
     controlPointNear: PolygonShape.prototype.controlPointNear
 
+});
+
+Visual.subclass('Image', {
+    description: "Primitive wrapper around images",
+    
+    initialize: function(url, width, height) {
+	if (!url) return;
+	var node;
+	if (url.startsWith('#'))
+	    this.loadUse(url);
+	else
+	    this.loadImage(url, width, height);
+    },
+    
+    deserialize: function($super, importer, rawNode) {
+	if (rawNode.namespaceURI != Namespace.SVG) {
+            // this brittle and annoying piece of code is a workaround around the likely brokenness
+            // of Safari's XMLSerializer's handling of namespaces
+            var href = rawNode.getAttributeNS(null /* "xlink"*/, "href");
+	    if (href)
+		if (href.startsWith("#")) {
+		    // not clear what to do, use target may or may not be in the target document
+		    this.loadUse(href);
+		} else {
+		    this.loadImage(href);
+		}
+	} else {
+	    $super(importer, rawNode);
+	}
+    },
+
+    getWidth: function(optArg) {
+	return Converter.parseLength((optArg || this.rawNode).getAttributeNS(null, "width"));
+    },
+
+    getHeight: function(optArg) {
+	return Converter.parseLength((optArg || this.rawNode).getAttributeNS(null, "height"));
+    },
+
+    reload: function() {
+	if (this.rawNode.localName == "image")  {
+	    XLinkNS.setHref(this.rawNode, this.getURL() + "?" + new Date());
+	}
+    },
+
+    getURL: function() {
+	return XLinkNS.getHref(this.rawNode);
+    },
+
+    scaleBy: function(factor) {
+	new Similitude(pt(0, 0), 0, factor).applyTo(this);
+    },
+
+    loadUse: function(url) {
+	if (this.rawNode && this.rawNode.localName == "use") {
+	    XLinkNS.setHref(this.rawNode, url);
+	    return null; // no new node;
+	} else {
+	    this.removeRawNode();
+	    this.rawNode = NodeFactory.create("use");
+	    XLinkNS.setHref(this.rawNode, url);
+	    return this.rawNode;
+	}
+    },
+
+    loadImage: function(href, width, height) {
+	if (this.rawNode && this.rawNode.localName == "image") {
+	    XLinkNS.setHref(this.rawNode, href);
+	    return null;
+	} else {
+	    var useDesperateSerializationHack = true;
+	    if (useDesperateSerializationHack) {
+		width = width || this.getWidth();
+		height = height || this.getHeight();
+		
+		// this desperate measure appears to be necessary to work
+		// around Safari's serialization issues.  Note that
+		// somehow this code has to be used both for normal
+		// loading and loading at deserialization time, otherwise
+		// it'll fail at deserialization
+		var xml = Strings.format('<image xmlns="http://www.w3.org/2000/svg" ' 
+		    + 'xmlns:xlink="http://www.w3.org/1999/xlink" ' 
+		    + ' width="%s" height="%s" xlink:href="%s"/>', width, height, href);
+		
+		this.rawNode = new Importer().parse(xml);
+	    } else {
+		
+		// this should work but doesn't:
+		
+		this.rawNode = NodeFactory.createNS(Namespace.SVG, "image");
+		this.rawNode.setAttribute("width", width);
+		this.rawNode.setAttribute("height", height);
+		XLinkNS.setHref(this.rawNode, href);
+	    }
+	    return this.rawNode;
+	}
+    }
 });
 
 
@@ -2870,7 +2885,6 @@ Copier.subclass('Importer', {
 	if (morphs[0]) {
 	    if (morphs[0] instanceof WorldMorph && morphs.length == 1) {
 		world = morphs[0];
-		world.itsCanvas = Canvas;
 		(morphs.length > 1) && console.log("more than one top level morph following a WorldMorph, ignoring remaining morphs");
 	    } else {
 		// no world, create one and add all the shrinkwrapped morphs to it.
@@ -3769,17 +3783,6 @@ Morph.addMethods({
 
 // Morph bindings to its parent, world, canvas, etc.
 Morph.addMethods({
-
-    canvas: function() {
-	try {
-	    var world = this.world();
-	    return world && world.canvas();
-	    // return this.rawNode.ownerSVGElement;
-	} catch (er) {
-	    console.log("no ownerSVG ? %s, %s", this, er.stack);
-	    return null;
-	}
-    },
 
     world: function() {
 	return this.owner ? this.owner.world() : null;
@@ -4732,7 +4735,7 @@ Object.extend(Morph, {
 	// make a line with its origin at the first vertex
 	// Note this works for simple lines (2 vertices) and general polylines
 	var line = new Morph(verts[0].asRectangle(), "rect");
-	var vertices = Shape.translateVerticesBy(verts, verts[0].negated());
+	var vertices = verts.invoke('subPt', verts[0]);
 	line.setShape(new PolylineShape(vertices, lineWidth, lineColor));
 	return line; 
     },
@@ -5182,7 +5185,7 @@ PasteUpMorph.subclass("WorldMorph", {
             styleName: 'lively',
             window:      { borderRadius: 8 },
             titleBar:    { borderRadius: 8, borderWidth: 2, bordercolor: Color.black,
-                           fill: new LinearGradient(Color.primary.blue, Color.primary.blue.lighter(3))},
+                           fill: new LinearGradient(Color.primary.blue, Color.primary.blue.lighter(3), LinearGradient.SouthNorth)},
             slider:      { borderColor: Color.black, borderWidth: 1, 
 			   fill: new LinearGradient(Color.primary.blue.lighter(2), Color.primary.blue)},
             button:      { borderColor: Color.neutral.gray, borderWidth: 0.3, borderRadius: 4,
@@ -5220,7 +5223,6 @@ PasteUpMorph.subclass("WorldMorph", {
 
         // sometimes bounds has zero dimensions (when reloading thes same page, timing issues?
         // in Firefox bounds may be 1x1 size?? maybe everything should be run from onload or sth?
-        this.itsCanvas = canvas; 
         if (bounds.width < 2) {
             bounds.width = this.defaultExtent.x;
         }
@@ -5253,10 +5255,6 @@ PasteUpMorph.subclass("WorldMorph", {
         return this;
     },
 
-    canvas: function() {
-        return this.itsCanvas;
-    },
-
     remove: function() {
         if (!this.rawNode.parentNode) return null;  // already removed
         this.stopStepping();
@@ -5270,7 +5268,6 @@ PasteUpMorph.subclass("WorldMorph", {
 
     displayWorldOn: function(canvas) {
         this.remove();
-	this.itsCanvas = canvas;
         canvas.appendChild(this.rawNode);
         this.addHand(new HandMorph(true));
     },
@@ -5590,7 +5587,7 @@ PasteUpMorph.subclass("WorldMorph", {
     },
     
     viewport: function() {
-	return Rectangle.ensure(this.itsCanvas.viewport);
+	return Rectangle.ensure(this.canvas().viewport);
     },
 
     alert: function(varargs) {
@@ -6136,7 +6133,7 @@ Morph.subclass('LinkMorph', {
         }, this);
 
         if (!otherWorld) {
-            this.myWorld = this.makeNewWorld();
+            this.myWorld = this.makeNewWorld(this.canvas());
 	    this.addPathBack();
 	} else 
             this.myWorld = otherWorld;
@@ -6144,8 +6141,8 @@ Morph.subclass('LinkMorph', {
         return this;
     },
     
-    makeNewWorld: function() {
-	return new WorldMorph(Canvas);
+    makeNewWorld: function(canvas) {
+	return new WorldMorph(canvas);
     },
 
     addPathBack: function() {

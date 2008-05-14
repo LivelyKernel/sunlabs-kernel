@@ -255,7 +255,7 @@ Object.subclass('Pen', {
     
     drawLines: function() {
         var morph = new Morph(this.startingLocation.asRectangle(), "rect");
-        var verts = Shape.translateVerticesBy(this.vertices, this.startingLocation.negated());
+        var verts = this.vertices.invoke('subPt', this.startingLocation);
     
         if (this.fillColor) 
             morph.setShape(new PolygonShape(verts, this.fillColor, this.penWidth, this.penColor));
@@ -4339,7 +4339,7 @@ Morph.subclass("EngineMorph", {
             cr.topLeft().addXY(dHead, -dHead), cr.topRight().addXY(-dHead, -dHead),
             cr.topRight()
         ];
-        cylVerts = Shape.translateVerticesBy(cylVerts, this.crank.bounds().center().negated());
+        cylVerts = cylVerts.invoke('subPt', this.crank.bounds().center());
         var cylinder = Morph.makePolygon(cylVerts, 4, Color.black, Color.gray);
         cylinder.setLineJoin(Shape.LineJoins.Round);
         cylinder.setPosition(cr.topLeft().addXY(0, -dHead));

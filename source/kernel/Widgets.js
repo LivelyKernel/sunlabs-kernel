@@ -103,7 +103,8 @@ Morph.subclass("ButtonMorph", {
         var delta = value ? 1 : 0;
         if (this.baseFill instanceof LinearGradient) {
             var base = this.baseFill.stopColor(0).lighter(delta);
-            this.setFill(new LinearGradient(base, base.lighter(), LinearGradient.SouthNorth));
+	    this.setFill(new LinearGradient(base, base.lighter(), LinearGradient.SouthNorth));
+	    // console.log("set gradient " + gradient);
         } else if (this.baseFill instanceof RadialGradient) {
             var base = this.baseFill.stopColor(0).lighter(delta);
             this.setFill(new RadialGradient(base.lighter(), base));
@@ -307,7 +308,21 @@ Morph.subclass("TitleBarMorph", {
     labelInset: pt(6, 3),
 
     initialize: function($super, headline, windowWidth, windowMorph) {
-        $super(new Rectangle(0, 0, windowWidth, this.barHeight), "rect");
+	var bounds = new Rectangle(0, 0, windowWidth, this.barHeight);
+        $super(bounds, "rect");
+	/*
+	var shape = new PathShape();
+	var radius = 6;
+	shape.moveTo(0, this.barHeight);
+	shape.lineTo(0, radius);
+	shape.arcTo(radius, 0, radius);
+	shape.lineTo(windowWidth - radius, 0);
+	shape.arcTo(windowWidth, radius, radius);
+	shape.lineTo(windowWidth, this.barHeight);
+	shape.lineTo(0, this.barHeight);
+	shape.close();
+	this.setShape(shape);
+*/
         this.windowMorph = windowMorph;
         this.linkToStyles(['titleBar']);
         this.ignoreEvents();

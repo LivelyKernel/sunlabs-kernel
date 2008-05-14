@@ -379,7 +379,7 @@ Object.extend(Loader, {
 	var model = new NetRequestReporter();
 	var result;
 	model.setResponseXML = function(doc) {
-	    console.log("got document " + Exporter.stringify(doc.documentElement));
+	    //console.log("got document " + Exporter.stringify(doc.documentElement));
 	    var elt = doc.getElementById(id);
 	    if (elt) {
 		// FIXME Canvas.defs instead!

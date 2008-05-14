@@ -30,7 +30,7 @@ var UserAgent = (function() {
         usableTransformAPI: webKitVersion >= 525,
         usableDropShadow: webKitVersion >= 525,
         canExtendBrowserObjects: !isRhino, // Error, document
-        usableNearestViewportElement: !isRhino && !isMozilla,
+        usableOwnerSVGElement: !isRhino && !isMozilla,
 
         // WebKit XMLSerializer seems to do weird things with namespaces
         usableNamespacesInSerializer: webKitVersion < 0,
