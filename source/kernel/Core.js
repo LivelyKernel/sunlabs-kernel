@@ -162,7 +162,6 @@ var Class = {
     getConstructor: function(object) {
 	return object.constructor.getOriginal();
     },
-
     
     getPrototype: function(object) {
 	return object.constructor.getOriginal().prototype;
@@ -186,6 +185,7 @@ var Class = {
 
 
 var Strings = {
+    documentation: "Convenience methods on strings",
     
     format: function() {
 	return this.formatFromArray($A(arguments));
@@ -712,23 +712,9 @@ var NodeFactory = {
 
     createCDATA: function(string) {
 	return Global.document.createCDATASection(string);
-    },
-
-    shrinkWrapContainer: function(doc) {
-	return (doc || Global.document).getElementById("ShrinkWrapped");
-    },
-
-    newShrinkWrapContainer: function(doc) { 
-	// Remove the old container if it's there and make a new one.
-	// this should be more robust
-	doc = doc || Global.document;
-	var previous = this.shrinkWrapContainer(doc);
-	if (previous) previous.parentNode.removeChild(previous);
-	var canvas = doc.getElementById("canvas");
-	var container = canvas.appendChild(this.createNS(Namespace.SVG, "defs"));
-	container.setAttribute("id", "ShrinkWrapped");
-	return container;
     }
+
+
 };
 
 XLinkNS = {
@@ -2644,15 +2630,18 @@ Object.extend(Exporter, {
     shrinkWrapNode: function(node) {
 	var newDoc = Exporter.getBaseDocument();
 	// FIXME deal with subdirectories: rewrite the base doc and change xlink:href for scripts
-	var container = NodeFactory.newShrinkWrapContainer(newDoc);
-	container.appendChild(newDoc.importNode(node, true));
+	var importer = new Importer();
+	importer.clearCanvas(newDoc);
+	importer.canvas(newDoc).appendChild(newDoc.importNode(node, true));
 	return newDoc;
     },
 
     shrinkWrapMorph: function(morph) {
 	var newDoc = Exporter.getBaseDocument();
-	var container = NodeFactory.newShrinkWrapContainer(newDoc);
-	container.appendChild(new Exporter(morph).serialize(newDoc));
+	var importer = new Importer();
+	importer.clearCanvas(newDoc);
+	console.log("so shrinkwrapping  with " + morph);
+	importer.canvas(newDoc).appendChild(new Exporter(morph).serialize(newDoc));
 	return newDoc;
     },
 
@@ -2729,6 +2718,43 @@ Copier.subclass('Importer', {
 	this.models = [];
     },
 
+    canvas: function(doc) {
+	// find the first "svg" element with id "canvas"
+	var elements = doc.getElementsByTagName("svg");
+	for (var i = 0; i < elements.length; i++) {
+	    var el = elements.item(i);
+	    if (el.getAttribute("id") == "canvas") {
+		return el;
+	    }
+	}
+	console.log("canvas not found in document " + doc);
+	return null;
+    },
+    
+    canvasContent: function(doc) {
+	var canvas = this.canvas(doc);
+	var elements = [];
+	for (var node = canvas.firstChild; node != null; node = node.nextSibling) {
+	    switch (node.localName) {
+	    case "g":
+		elements.push(node);
+		break;
+	    }
+	}
+	return elements;
+    },
+
+    clearCanvas: function(doc) {
+	var canvas = this.canvas(doc);
+	var node = canvas.firstChild;
+	while (node) {
+	    var toRemove = node;
+	    node = node.nextSibling;
+	    if (toRemove.localName == "g") 
+		canvas.removeChild(toRemove);
+	}
+    },
+
     addScripts: function(array) {
 	if (array) this.scripts = this.scripts.concat(array); 
     },
@@ -2777,9 +2803,10 @@ Copier.subclass('Importer', {
 	return document.importNode(xml.documentElement, true);
     },
 
-    importFromContainer: function(container) {
+    importFromNodeList: function(nodes) {
 	var morphs = [];
-	for (var node = container.firstChild; node != null; node = node.nextSibling) {
+	for (var i = 0; i < nodes.length; i++) {
+	    var node = nodes[i];
 	    // console.log("found node " + Exporter.stringify(node));
 	    if (node.localName != "g")  continue;
 	    morphs.push(this.importFromNode(node.ownerDocument === Global.document ? 
@@ -2788,15 +2815,15 @@ Copier.subclass('Importer', {
 	return morphs;
     },
 
-    importWorldFromContainer: function(container, world) {
-	var morphs = this.importFromContainer(container);
+    importWorldFromNodeList: function(nodes, world) {
+	var morphs = this.importFromNodeList(nodes);
 	if (morphs[0]) {
-	    if (morphs[0] instanceof WorldMorph && morphs.length == 1) {
+	    if (morphs[0] instanceof WorldMorph) {
 		world = morphs[0];
-		(morphs.length > 1) && console.log("more than one top level morph following a WorldMorph, ignoring remaining morphs");
+		if (morphs.length > 1) console.log("more than one top level morph following a WorldMorph, ignoring remaining morphs");
 	    } else {
 		// no world, create one and add all the shrinkwrapped morphs to it.
-		world = world || new WorldMorph(WorldMorph.current().canvas());
+		world = world || new WorldMorph(document.getElementById("canvas"));
 		for (var i = 0; i < morphs.length; i++)
 		    world.addMorph(morphs[i]);
 	    }
@@ -3695,7 +3722,7 @@ Morph.addMethods({
 	// A replacement for toString() which can't be overridden in
 	// some cases.  Invoked by Object.inspect.
 	try {
-	    return Strings.format("%s(#%s,%s)", this.getType(), this.rawNode && this.id(), this.shape || "");
+	    return Strings.format("%s(#%s,%s)", this.getType(), this.rawNode && this.id() || "" , this.shape || "");
 	} catch (e) {
 	    //console.log("toString failed on %s", [this.id(), this.getType()]);
 	    return "#<Morph?{" + e + "}>";
@@ -4144,7 +4171,7 @@ Morph.addMethods({
 		new PackageMorph(this).openIn(this.world(), this.bounds().topLeft()); this.remove()}.bind(this) ],
 	    ["publish shrink-wrapped ...", function() { 
 		this.world().prompt('publish as (.xhtml)', 
-				    function(filename) { 
+				    function(filename) {
 					var url = Exporter.saveDocumentToFile(Exporter.shrinkWrapMorph(this), filename);
 					if (url) WorldMorph.current().reactiveAddMorph(new ExternalLinkMorph(url));
 				    }.bind(this))}] 
@@ -5161,10 +5188,11 @@ PasteUpMorph.subclass("WorldMorph", {
 	this.canvas().setAttributeNS(null, "cursor", flag ? "auto" : "none");
     },
 
-    displayWorldOn: function(canvas) {
+    displayOnCanvas: function(canvas) {
         this.remove();
         canvas.appendChild(this.rawNode);
         this.addHand(new HandMorph(true));
+	WorldMorph.currentWorld = this; // this conflicts with mutliple worlds
     },
     
     addHand: function(hand) {
@@ -5555,11 +5583,8 @@ Object.extend(WorldMorph, {
     
     current: function() {
         return WorldMorph.currentWorld;
-    },
-
-    setCurrent: function(newWorld) {
-        WorldMorph.currentWorld = newWorld;
     }
+
     
 });
 
@@ -6107,9 +6132,7 @@ Morph.subclass('LinkMorph', {
             newWorld.remove();
         }
 
-        WorldMorph.setCurrent(newWorld);
-
-        newWorld.displayWorldOn(canvas); 
+        newWorld.displayOnCanvas(canvas); 
 
         newWorld.onEnter(); 
 

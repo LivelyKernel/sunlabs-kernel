@@ -110,30 +110,28 @@ Morph.subclass("ClockMorph", {
     initialize: function($super, position, radius) {
         $super(position.asRectangle().expandBy(radius), "ellipse");
         this.linkToStyles(['clock']);
-        this.makeNewFace();
+        this.makeNewFace(['XII','I','II','III','IV','V','VI','VII','VIII','IX','X','XI']);  // Roman
         return this;
     },
 
-    makeNewFace: function() {
-
+    makeNewFace: function(items) {
+	
         var bnds = this.shape.bounds();
         var radius = bnds.width/2;
-        var labelSize = Math.max(Math.floor(0.04 * (bnds.width + bnds.height)),2); // room to center with default inset
-
-        for (var i = 0; i < 12; i++) {
-            var labelPosition = bnds.center().addPt(Point.polar(radius*0.85,((i-3)/12)*Math.PI*2)).addXY(labelSize, 0);
-            var label = new TextMorph((pt(labelSize*3, labelSize).extentAsRectangle()), 
-		// (i>0 ? i : 12) + "");  // Latin numerals
-		['XII','I','II','III','IV','V','VI','VII','VIII','IX','X','XI'][i]); // Roman
+        var labelSize = Math.max(Math.floor(0.04 * (bnds.width + bnds.height)), 2); // room to center with default inset
+	
+        for (var i = 0; i < items.length; i++) {
+            var labelPosition = bnds.center().addPt(Point.polar(radius*0.85, ((i-3)/items.length)*Math.PI*2)).addXY(labelSize, 0);
+            var label = new TextMorph((pt(labelSize*3, labelSize).extentAsRectangle()), items[i]);
 	    label.applyStyle({borderWidth: 0, fill: null, wrapStyle: WrapStyle.Shrink, fontSize: labelSize});
-            label.setInset(pt(0,0));        
+            label.setInset(pt(0,0)); 
             label.align(label.bounds().center(), labelPosition.addXY(-1, 2));
             this.addMorph(label);
         }
-    
-        this.hours = this.addMorph(Morph.makeLine([pt(0,0),pt(0,-radius*0.5)],4,Color.blue));
-        this.minutes = this.addMorph(Morph.makeLine([pt(0,0),pt(0,-radius*0.7)],3,Color.blue));
-        this.seconds = this.addMorph(Morph.makeLine([pt(0,0),pt(0,-radius*0.75)],2,Color.red));
+	
+        this.hours   = this.addMorph(Morph.makeLine([pt(0,0), pt(0, -radius*0.50)], 4, Color.blue));
+        this.minutes = this.addMorph(Morph.makeLine([pt(0,0), pt(0, -radius*0.70)], 3, Color.blue));
+        this.seconds = this.addMorph(Morph.makeLine([pt(0,0), pt(0, -radius*0.75)], 2, Color.red));
     
         this.setHands();
         this.changed(); 

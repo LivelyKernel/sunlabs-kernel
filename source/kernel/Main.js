@@ -370,25 +370,24 @@ function main() {
 	// a forced value, some browsers have problems with height=100%
 	canvas.setAttribute("height", "800");
     }
-
-
-    var container = NodeFactory.shrinkWrapContainer();
-    if (container) {
-        console.log("found container");
-        var importer = new Importer();
-        world = importer.importWorldFromContainer(container);
-        WorldMorph.setCurrent(world);
-    } else {
-        // Create an empty world
-        world = new WorldMorph(canvas);
-        WorldMorph.setCurrent(world);
-        console.log("created empty world");
-    }
-    world.displayWorldOn(canvas);
     
+    var importer = new Importer();
+    var canvasContent = importer.canvasContent(document);
+    var world = new WorldMorph(canvas); // will be thrown away if world contained in canvas
+    if (canvasContent.length != 0) {
+	world = importer.importWorldFromNodeList(canvasContent, world);
+	world.displayOnCanvas(canvas);
+	console.log("world is " + world);
+	return;
+    } else {
+	// Create an empty world
+	world.displayOnCanvas(canvas);
+	console.log("created empty world");
+    }
     // Populate the world with sample objects, widgets and applications
-    if (container || Config.skipAllExamples) return; // don't populate if we loaded up stuff from a container
+    if (Config.skipAllExamples) return; // don't populate if we loaded up stuff from a container
     else populateWorldWithExamples(world);
+
 if(Config.testTracing) Function.testTrace();
 
 }

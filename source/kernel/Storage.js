@@ -155,43 +155,36 @@ NetRequestReporter.subclass('LoadHandler', {
     },
 
     loadWorldInSubworld: function(doc) {
-	var container = NodeFactory.shrinkWrapContainer(doc);
-	if (container) {
-	    var importer = new Importer();
-	    var world = new WorldMorph(WorldMorph.current().canvas());
-	    var morphs = importer.importFromContainer(container, world);
-	    if (morphs.length > 0) {
-		for (var i = 0; i < morphs.length; i++) {
-		    // flatten: 
-		    if (morphs[i] instanceof WorldMorph) {
-			morphs[i].submorphs.map(function(m) { world.addMorph(m) });
-		    } else {
-			world.addMorph(morphs[i]);
-		    }
-		}
-		var link = WorldMorph.current().reactiveAddMorph(new LinkMorph(world));
-		link.addPathBack();
-		return;
-	    } 
+	var importer = new Importer();
+	var nodes = importer.canvasContent(doc);
+	if (nodes) {
+	    WorldMorph.current().alert('no morphs found in ' + this.url); 
+	    return;
 	}
-	WorldMorph.current().alert('no morphs found in ' + this.url); 
+	var world = new WorldMorph(WorldMorph.current().canvas());
+	var morphs = importer.importFromNodeList(nodes, world);
+	if (morphs.length > 0) {
+	    for (var i = 0; i < morphs.length; i++) {
+		// flatten: 
+		if (morphs[i] instanceof WorldMorph) {
+		    morphs[i].submorphs.map(function(m) { world.addMorph(m) });
+		} else {
+		    world.addMorph(morphs[i]);
+		}
+	    }
+	    var link = WorldMorph.current().reactiveAddMorph(new LinkMorph(world));
+	    link.addPathBack();
+	    return;
+	}
+	
     },
 
     loadWorldContents: function(doc) {
-	var container = NodeFactory.shrinkWrapContainer(doc);
-	var world = null;
-	if (container) {
-	    var importer = new Importer();
-	    world = importer.importWorldFromContainer(container, WorldMorph.current());
-	} 
-	if (!world) 
-	    WorldMorph.current().alert('no morphs found in %s', this.url);
-	else {
-	    world.submorphs.forEach(function(m) { WorldMorph.current().addMorph(m) });
-	}
-	    
+	var importer = new Importer();
+	var nodes = importer.canvasContent(doc);
+	var world = importer.importWorldFromNodeList(nodes, WorldMorph.current());
+	world.submorphs.forEach(function(m) { WorldMorph.current().addMorph(m) });
     },
-
 
     loadJavascript: function(responseText) {
 	try {

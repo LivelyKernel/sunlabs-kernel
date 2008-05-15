@@ -1713,7 +1713,6 @@ Morph.subclass("MenuMorph", {
 	
 	var menu = this;
 	this.listMorph.onKeyDown = function(evt) {
-	    console.log("my proto is " + Class.getPrototype(this));
 	    var result = Class.getPrototype(this).onKeyDown.call(this, evt);
 	    if (!menu.stayUp && evt.getKeyCode() == Event.KEY_ESC)
 		menu.removeOnEvent(evt);
