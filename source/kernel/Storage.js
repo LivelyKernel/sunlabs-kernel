@@ -74,7 +74,6 @@ Morph.subclass('PackageMorph', {
 	var importer = new Importer();
 	// var targetMorph = importer.importFromString(Exporter.stringify(this.serialized));
 	var targetMorph = importer.importFromNode(this.serialized);
-	importer.hookupModels();
 	if (targetMorph instanceof WorldMorph) {
 	    this.world().addMorph(new LinkMorph(targetMorph, loc));
 	    for (var i = 0; i < targetMorph.submorphs.length; i++) {
@@ -84,10 +83,10 @@ Morph.subclass('PackageMorph', {
 		    m.myWorld = this.world();
 		}
 	    }
-	    importer.startScripts(targetMorph);
+	    importer.finishImport(targetMorph);
 	} else {
 	    this.world().addMorphAt(targetMorph, loc);
-	    importer.startScripts(this.world());
+	    importer.finishImport(this.world());
 	}
 	this.remove();
     },
@@ -147,49 +146,7 @@ Wrapper.subclass('Resource', {
 
 
 NetRequestReporter.subclass('LoadHandler', {
-    initialize: function(url) {
-	this.url = url;
-    },
 
-    loadWorldInSubworld: function(doc) {
-	var importer = new Importer();
-	var nodes = importer.canvasContent(doc);
-	if (nodes) {
-	    WorldMorph.current().alert('no morphs found in ' + this.url); 
-	    return;
-	}
-	var world = new WorldMorph(WorldMorph.current().canvas());
-	var morphs = importer.importFromNodeList(nodes, world);
-	if (morphs.length > 0) {
-	    for (var i = 0; i < morphs.length; i++) {
-		// flatten: 
-		if (morphs[i] instanceof WorldMorph) {
-		    morphs[i].submorphs.forEach(function(m) { world.addMorph(m) });
-		} else {
-		    world.addMorph(morphs[i]);
-		}
-	    }
-	    var link = WorldMorph.current().reactiveAddMorph(new LinkMorph(world));
-	    link.addPathBack();
-	    return;
-	}
-	
-    },
-
-    loadWorldContents: function(doc) {
-	var importer = new Importer();
-	var nodes = importer.canvasContent(doc);
-	var world = importer.importWorldFromNodeList(nodes, WorldMorph.current());
-	world.submorphs.forEach(function(m) { WorldMorph.current().addMorph(m) });
-    },
-
-    loadJavascript: function(responseText) {
-	try {
-	    eval(responseText);
-	} catch (er) {
-	    WorldMorph.current().alert("eval got error " + er);
-	}
-    }
     
 });
 
@@ -572,20 +529,21 @@ TwoPaneBrowser.subclass('FileBrowser', {
 	    if (url.filename().endsWith(".xhtml")) {
 		// FIXME: add loading into a new world
 		items.push(["load into current world", function(evt) {
-		    var loader = new LoadHandler(url);
+		    var loader = Object.extend(new Importer(), NetRequestReporterTrait);
 		    new NetRequest({model: loader, setResponseXML: "loadWorldContents", 
 				    setStatus: "setRequestStatus"}).get(url);
 		}]);
 		
 		items.push(["load into new linked world", function(evt) {
-		    var loader = new LoadHandler(url);
+		    var loader = Object.extend(new Importer(), NetRequestReporterTrait);
+
 		    new NetRequest({model: loader, setResponseXML: "loadWorldInSubworld",
 				    setStatus: "setRequestStatus"}).get(url);
 		}]);
 		
 	    } else if (url.toString().endsWith(".js")) {
 		items.push(["evaluate as Javascript", function(evt) {
-		    var loader = new LoadHandler(url);
+		    var loader = Object.extend(new Importer(), NetRequestReporterTrait);
 		    new NetRequest({model: loader, setResponseText: "loadJavascript",
 				    setStatus: "setRequestStatus"}).get(url);
 		}]);

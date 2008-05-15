@@ -1170,8 +1170,7 @@ Morph.subclass("TextMorph", {
             // console.log('evaluating markup ' + txt);
             var morph = importer.importFromString(txt);
             this.world().addMorph(morph);
-	    importer.hookupModels();
-            importer.startScripts(this.world());
+	    importer.finishImport(this.world());
         }]);
 	
         menu.addItem(["save as ...", function() { 

@@ -372,14 +372,14 @@ function main() {
     }
     
     var importer = new Importer();
-    var canvasContent = importer.canvasContent(document);
-    var world = new WorldMorph(canvas); // will be thrown away if world contained in canvas
-    if (canvasContent.length != 0) {
-	world = importer.importWorldFromNodeList(canvasContent, world);
+
+    var world = importer.loadWorldContents(document);
+    if (world) {
 	world.displayOnCanvas(canvas);
 	console.log("world is " + world);
 	return;
     } else {
+	world = new WorldMorph(canvas); 
 	// Create an empty world
 	world.displayOnCanvas(canvas);
 	console.log("created empty world");

@@ -2698,7 +2698,7 @@ Copier.subclass('Importer', {
     documentation: "Implementation class for morph de-serialization",
 
     verbose: true,
-
+    
     toString: function() {
 	return "#<Importer>";
     },
@@ -2806,6 +2806,15 @@ Copier.subclass('Importer', {
 	return morphs;
     },
 
+    finishImport: function(world) {
+	this.hookupModels();
+	try {
+	    this.startScripts(world);
+	} catch (er) {
+	    console.log("scripts failed: " + er);
+	}
+    },
+
     importWorldFromNodeList: function(nodes, world) {
 	var morphs = this.importFromNodeList(nodes);
 	if (morphs[0]) {
@@ -2815,21 +2824,72 @@ Copier.subclass('Importer', {
 	    } else {
 		// no world, create one and add all the shrinkwrapped morphs to it.
 		world = world || new WorldMorph(document.getElementById("canvas"));
-		morphs.forEach(function(m) { world.addMorph(m); });
-	    }
-	    this.hookupModels();
-	    try {
-		this.startScripts(world);
-	    } catch (er) {
-		console.log("scripts failed: " + er);
+		morphs.clone().forEach(function(m) { world.addMorph(m); });
 	    }
 	}
+	this.finishImport(world);
 	return world;
     },
+
+
+    loadWorldInSubworld: function(doc) {
+	var nodes = this.canvasContent(doc);
+	if (!nodes) {
+	    WorldMorph.current().alert('no morphs found');
+	    return;
+	}
+	var world = new WorldMorph(WorldMorph.current().canvas());
+	var morphs = this.importFromNodeList(nodes, world);
+
+	morphs.forEach(function(morph) {
+	    if (morph instanceof WorldMorph) morph.submorphs.clone().forEach(function(m) { world.addMorph(m) });
+	    else world.addMorph(morph);
+	});
+	
+	// post addition
+	this.finishImport(world);
+	
+	var link = WorldMorph.current().reactiveAddMorph(new LinkMorph(world));
+	link.addPathBack();
+    },
+
+    loadWorldContents: function(doc) { // possibly doc === Global.document WorldMorph.current() may return null early on
+	var world = null;
+	var morphs = this.importFromNodeList(this.canvasContent(doc));
+	
+	if (!(0 in morphs)) 
+	    return null;
+	
+	if (morphs[0] instanceof WorldMorph) {
+	    world = morphs[0];
+	    if (morphs.length > 1) console.log("more than one top level morph following a WorldMorph, ignoring remaining morphs");
+	} else {
+	    // no world, create one and add all the shrinkwrapped morphs to it.
+	    world = new WorldMorph(document.getElementById("canvas"));
+	    morphs.clone().forEach(function(m) { world.addMorph(m); });
+	}
+
+	
+	WorldMorph.current() && world.submorphs.clone().forEach(function(m) { 
+	    console.log("current world " + WorldMorph.current());
+	    WorldMorph.current().addMorph(m) 
+	});
+	this.finishImport(world);
+
+	return world;
+    },
+
+    loadJavascript: function(responseText) {
+	try {
+	    eval(responseText);
+	} catch (er) {
+	    WorldMorph.current().alert("eval got error " + er);
+	}
+    },
+
     
     hookupModels: function() {
-	var self = this;
-	this.models.forEach(function(node) { self.importModelFrom(node); });
+	this.models.forEach(function(node) { this.importModelFrom(node); }, this);
     },
     
     importModelFrom: function(modelNode) {
@@ -5186,7 +5246,7 @@ PasteUpMorph.subclass("WorldMorph", {
     },
 
     displayOnCanvas: function(canvas) {
-        this.remove();
+	// this.remove();
         canvas.appendChild(this.rawNode);
         this.addHand(new HandMorph(true));
 	WorldMorph.currentWorld = this; // this conflicts with mutliple worlds
@@ -5344,8 +5404,8 @@ PasteUpMorph.subclass("WorldMorph", {
         // Never found that action to remove.  Note this is not an error if called
         // from startStepping just to get rid of previous version
         if (!fromStart) {
-	    Function.showStack();
 	    console.log('failed to stopStepping ' + action);
+	    Function.showStack();
 	}
     },
     
@@ -5741,9 +5801,9 @@ Morph.subclass("HandMorph", {
                         // Note if onMouseOver sets focus, it will get onMouseMove
                         if (this.mouseFocus) this.mouseFocus.captureMouseEvent(evt, true);
                         else if (!evt.hand.hasSubmorphs()) this.owner.captureMouseEvent(evt, false); 
-                    } else {
-                        receiver.captureMouseEvent(evt, false);
-			if (receiver) receiver.onMouseWheel(evt);
+                    } else if (receiver) {
+			receiver.captureMouseEvent(evt, false);
+			receiver.onMouseWheel(evt);
                     }
                 } 
             }
