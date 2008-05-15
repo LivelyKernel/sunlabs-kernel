@@ -104,12 +104,11 @@ Morph.subclass('PackageMorph', {
 });
 
 
-/**
- * @class Resource
- */ 
 Wrapper.subclass('Resource', {
     
     documentation: "Wrapper around information returned from WebDAV's PROPFIND",
+    nameQ: new Query("D:href"),
+    propertiesQ: new Query("D:propstat"),
     
     initialize: function(raw, baseUrl) {
         this.rawNode = raw; 
@@ -118,7 +117,7 @@ Wrapper.subclass('Resource', {
     
     name: function() {
 	// FIXME: resolve prefix "D" to something meaningful?
-	var result = new Query("D:href").findFirst(this.rawNode);
+	var result = this.nameQ.findFirst(this.rawNode);
 	if (!result) {
 	    console.log("query failed " + Exporter.stringify(this.rawNode));
 	    return "?"
@@ -141,7 +140,7 @@ Wrapper.subclass('Resource', {
     },
     
     properties: function() {
-	return this.query.evaluate(this.rawNode, "D:propstat", []).pluck('textContent').join('\n');
+	return this.propertiesQ.findAll(this.rawNode).pluck('textContent').join('\n');
     }
 
 });
