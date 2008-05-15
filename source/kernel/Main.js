@@ -203,7 +203,7 @@ function populateWorldWithExamples(world) {
         if (Config.showVideo) { lm1.myWorld.addFramedMorph(new PlayerMorph(), "Player", pt(50, 20)); }
 
     }
-    
+    // load from slideWorld
     if (Config.showSlideWorld) { // Make a slide for "turning web programming upside down"
         var lm2 = new LinkMorph(null, pt(60, 400));
 

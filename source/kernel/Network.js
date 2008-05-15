@@ -16,8 +16,6 @@
  * inherited from the browser.  
  */
 
-
-
 Object.subclass('URL', {
     splitter: new RegExp('(http:|https:|file:)' + '(//[^/:]*(:[0-9]+)?)?' + '(/.*)?'),
     pathSplitter: new RegExp("([^\\?#]*)(\\?[^#]*)?(#.*)?"),
@@ -149,14 +147,11 @@ var Loader = {
 	return document.baseURI.startsWith("http");
     })(),
 
-
     baseURL: (function() {
 	var segments = document.baseURI.split('/');
 	segments.splice(segments.length - 1, 1); // remove the last segment, incl query
 	return segments.join('/');
     })()
-
-    
 };
 
 Loader.proxy = (function() {
@@ -174,6 +169,7 @@ Loader.proxy = (function() {
 
 Object.subclass('NetRequestStatus', {
     documentation: "nice parsed status information, returned by NetRequest.getStatus when request done",
+
     initialize: function(method, url, code) {
 	this.method = method;
 	this.url = url;
@@ -360,7 +356,7 @@ NetRequestReporterTrait = {
 	    if (status.code == 401) {
 		WorldMorph.current().alert("not authorized to access " + status.requestString()); 
 		// should try to authorize
-x	    } else {
+	    } else {
 		WorldMorph.current().alert("failure to " + status.requestString() + " code " + status.code);
 	    }
 	} else 
@@ -380,10 +376,10 @@ Object.extend(Loader, {
 	    //console.log("got document " + Exporter.stringify(doc.documentElement));
 	    var elt = doc.getElementById(id);
 	    if (elt) {
-		// FIXME Canvas.defs instead!
-		result = document.documentElement.appendChild(document.importNode(elt, true));
+		var canvas = document.getElementById("canvas"); // note, no error handling
+		var defs = canvas.getElementsByTagName("defs")[0];
+		result = defs.appendChild(document.importNode(elt, true));
 	    }
-		
 	}
 	var url = new URL(Loader.baseURL + "/" + filename);
 	new NetRequest({model: model, setStatus: "setRequestStatus", setResponseXML: "setResponseXML"}).beSync().get(url);
@@ -392,38 +388,101 @@ Object.extend(Loader, {
 });
 
 
+View.subclass('Query',  {
+    documentation: "Wrapper around XPath evaluation",
+
+    xpe: Global.XPathEvaluator && new XPathEvaluator(),
+    
+    pins: ["+Results", // Node[]
+	   "-ContextNode", // where to evaluate
+	  ],
+
+    initialize: function(expression) {
+	if (!this.xpe) throw new Error("XPath not available");
+	this.contextNode = null;
+	this.expression = expression;
+    },
+
+    establishContext: function(node) {
+	var ctx = node.ownerDocument ? node.ownerDocument.documentElement : node.documentElement;
+	if (ctx !== this.contextNode) {
+	    this.contextNode = ctx;
+	    this.nsResolver = this.xpe.createNSResolver(ctx);
+	}
+    },
+
+    updateView: function(aspect, controller) {
+	var p = this.modelPlug;
+	if (!p) return;
+	switch (aspect) {
+	case p.getContextNode:
+	    this.setModelValue("setResults", this.findAll(this.getModelValue("getContextNode", document.documentElement), null));
+	    break;
+	}
+    },
+
+    resolver: function(prefix) {
+	if (prefix == null || prefix == "") 
+	    prefix = "SVG";
+	else 
+	    prefix = prefix.toUpperCase();
+	return Namespace[prefix];
+    },
+
+    findAll: function(node, defaultValue) {
+	this.establishContext(node);
+	var result = this.xpe.evaluate(this.expression, node, this.nsResolver, XPathResult.ANY_TYPE, null);
+	var accumulator = [];
+	var res = null;
+	while (res = result.iterateNext()) accumulator.push(res);
+	return accumulator.length > 0 ? accumulator : defaultValue;
+    },
+
+    findFirst: function(node) {
+	this.establishContext(node);
+	var result = this.xpe.evaluate(this.expression, node, this.nsResolver, XPathResult.ANY_TYPE, null);
+	return result.iterateNext();
+    }
+
+});
+
 Wrapper.subclass('FeedChannel', {
     documentation: "Convenience wrapper around RSS Feed Channel XML nodes",
+
+    titleQ: new Query("title"),
+    itemQ: new Query("item"),
 
     initialize: function(rawNode) {
 	this.rawNode = rawNode;
         this.items = [];
-        var results = this.queryNode('item');
-    
+        var results = this.itemQ.findAll(rawNode);
+	
         for (var i = 0; i < results.length; i++) {
             this.items.push(new FeedItem(results[i]));
         }
     },
 
     title: function() {
-        return this.queryNode('title', 'none')[0].textContent;
+	return this.titleQ.findFirst(this.rawNode).textContent;
     }
     
 });
 
 Wrapper.subclass('FeedItem', {
     documentation: "Convenience wrapper around individual RSS feed items",
+    titleQ: new Query("title"),
+    descriptionQ: new Query("description"),
 
     initialize: function(rawNode) {
 	this.rawNode = rawNode;
     },
     
     title: function() {
-	return this.queryNode('title', "none")[0].textContent;
+	return this.titleQ.findFirst(this.rawNode).textContent;
     },
 
     description: function() {
-	return this.queryNode('description', "none")[0].textContent;
+	return this.descriptionQ.findFirst(this.rawNode).textContent;
     }
     
 });
@@ -464,7 +523,7 @@ View.subclass('Feed', NetRequestReporterTrait, {
     },
 
     parseChannels: function(elt) {
-	var results = new Query(elt).evaluate(elt, '/rss/channel', []);
+	var results = new Query("/rss/channel").findAll(elt);
         var channels = [];
         for (var i = 0; i < results.length; i++) {
 	    channels.push(new FeedChannel(results[i]));

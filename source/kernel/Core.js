@@ -820,12 +820,6 @@ Object.subclass('Wrapper', {
 	return Exporter.stringify(this.rawNode);
     },
 
-    queryNode: function(queryString, defaultValue) { 
-	// FIXME forward reference, move to Query?
-	var result = new Query(this.rawNode).evaluate(this.rawNode, queryString, []);
-	return result.length == 0 ? defaultValue : result;
-    },
-
     uri: function() {
 	return "url(#" + this.id() + ")";
     },
@@ -1353,7 +1347,6 @@ Wrapper.subclass("Gradient", {
     },
 
     rawStopNodes: function() {
-	//return this.queryNode("svg:stop"); 
 	var array = [];
 	var subnodes = this.rawNode.childNodes;
 	for (var i = 0; i < subnodes.length; i++) {
@@ -2601,7 +2594,7 @@ Object.subclass('Exporter', {
     serialize: function(destDocument) {
 	// model is inserted as part of the root morph.
 	var helpers = this.extendForSerialization();
-	var result = (destDocument || Global.document).importNode(this.rootMorph.rawNode, true);
+	var result = destDocument.importNode(this.rootMorph.rawNode, true);
 	this.removeHelperNodes(helpers);
 	return result;
     }
@@ -2640,7 +2633,6 @@ Object.extend(Exporter, {
 	var newDoc = Exporter.getBaseDocument();
 	var importer = new Importer();
 	importer.clearCanvas(newDoc);
-	console.log("so shrinkwrapping  with " + morph);
 	importer.canvas(newDoc).appendChild(new Exporter(morph).serialize(newDoc));
 	return newDoc;
     },
@@ -2669,8 +2661,11 @@ Object.extend(Exporter, {
 	    WorldMorph.current().alert("failure publishing world at " + url + ", status " + status.code);
 	}
 	return null;
+    },
+    
+    saveNodeToFile: function(node, filename) {
+	return this.saveDocumentToFile(this.shrinkWrapNode(node), filename);
     }
-
 
 });
 
@@ -2824,8 +2819,7 @@ Copier.subclass('Importer', {
 	    } else {
 		// no world, create one and add all the shrinkwrapped morphs to it.
 		world = world || new WorldMorph(document.getElementById("canvas"));
-		for (var i = 0; i < morphs.length; i++)
-		    world.addMorph(morphs[i]);
+		morphs.forEach(function(m) { world.addMorph(m); });
 	    }
 	    this.hookupModels();
 	    try {
@@ -4167,14 +4161,9 @@ Morph.addMethods({
 	    ["-----"],
 	    [((this.openForDragAndDrop) ? "close DnD" : "open DnD"), this.toggleDnD.curry(evt.mousePoint)],
 	    ["show Lively markup", this.addSvgInspector.curry(this)],
-	    ["shrink-wrap", function(evt) {  // FIXME insert package morph in exactly the same position?
-		new PackageMorph(this).openIn(this.world(), this.bounds().topLeft()); this.remove()}.bind(this) ],
-	    ["publish shrink-wrapped ...", function() { 
-		this.world().prompt('publish as (.xhtml)', 
-				    function(filename) {
-					var url = Exporter.saveDocumentToFile(Exporter.shrinkWrapMorph(this), filename);
-					if (url) WorldMorph.current().reactiveAddMorph(new ExternalLinkMorph(url));
-				    }.bind(this))}] 
+	    ["package", function(evt) {  // FIXME insert package morph in exactly the same position?
+		new PackageMorph(this).openIn(this.world(), this.bounds().center()); this.remove(); } ],
+	    ["publish packaged ...", function() { this.world().prompt('publish as (.xhtml)', this.exportLinkedFile.bind(this)); }] 
 	];
 	if (this.okToDuplicate()) items.unshift(["duplicate", this.copyToHand.curry(evt.hand)]);
 
@@ -4623,7 +4612,7 @@ Morph.addMethods({
 Morph.addMethods( {
 
     addSvgInspector: function() {
-	var xml = Exporter.stringify(new Exporter(this).serialize());
+	var xml = Exporter.stringify(new Exporter(this).serialize(Global.document));
 	var extent = pt(500, 300);
 	var pane = newTextPane(extent.extentAsRectangle(), "");
 	pane.innerMorph().setTextString(xml);
@@ -4647,8 +4636,8 @@ Morph.addMethods( {
 	    this.world().addFramedMorph(pane, "Simple Model dump", this.world().positionForNewMorph(this));
 	}
     }
-
 });
+
 
 // Morph factory methods for creating simple morphs easily
 Object.extend(Morph, {
@@ -5009,6 +4998,18 @@ Model.subclass('SyntheticModel', {
     }
 });
 
+
+Morph.addMethods({
+    
+    exportLinkedFile: function(filename) {
+	var url = Exporter.saveDocumentToFile(Exporter.shrinkWrapMorph(this), filename);
+	if (url) this.world().reactiveAddMorph(new ExternalLinkMorph(url));
+	return url;
+    }
+
+});
+
+
 // ===========================================================================
 // World-related widgets
 // ===========================================================================
@@ -5239,12 +5240,7 @@ PasteUpMorph.subclass("WorldMorph", {
         	menu.addItem(["arm profile for next mouseUp", function() {evt.hand.armProfileFor("MouseUp") }]);
 	}
         menu.addLine();
-        menu.addItem(["publish world as ... ", function() { 
-	    this.prompt("world file (.xhtml)", function(filename) { 
-		var url = Exporter.saveDocumentToFile(Exporter.shrinkWrapMorph(this), filename);
-		if (url) WorldMorph.current().reactiveAddMorph(new ExternalLinkMorph(url));
-	    }.bind(this));
-	}]);
+        menu.addItem(["publish world as ... ", function() { this.prompt("world file (.xhtml)", this.exportLinkedFile.bind(this)); }]);
         menu.addItem(["restart system", this.restart]);
         return menu;
     },
@@ -6085,14 +6081,9 @@ Morph.subclass('LinkMorph', {
     morphMenu: function($super, evt) { 
         var menu = $super(evt);
         menu.addItem(["publish linked world as ... ", function() { 
-	    this.world().prompt("world file (.xhtml)", 
-				function(filename) {
-				    var url = Exporter.saveDocumentToFile(Exporter.shrinkWrapMorph(this.myWorld), filename);
-				    if (url) WorldMorph.current().reactiveAddMorph(new ExternalLinkMorph(url));
-				}.bind(this));
-        }]);
-	menu.replaceItemNamed("shrink-wrap", ["shrink-wrap linked world", function(evt) {
-	    new PackageMorph(this.myWorld).openIn(this.world(), this.bounds().topLeft()); this.remove()}.bind(this) ]);
+	    this.world().prompt("world file (.xhtml)", this.exportLinkedFile.bind(this)); }]);
+	menu.replaceItemNamed("package", ["package linked world", function(evt) {
+	    new PackageMorph(this.myWorld).openIn(this.world(), this.bounds().topLeft()); this.remove()} ]);
         return menu;
     },
 
@@ -6220,40 +6211,6 @@ LinkMorph.subclass('ExternalLinkMorph', {
 
 // Some SVG/DOM bindings 
 
-Object.subclass('Query',  {
-
-    xpe: Global.XPathEvaluator && new XPathEvaluator(),
-
-    initialize: function(aNode) {
-	if (!this.xpe) throw new Error("XPath not available");
-	var contextNode = aNode.ownerDocument == null ? 
-	    aNode.documentElement : aNode.ownerDocument.documentElement; 
-	this.nsResolver = this.xpe.createNSResolver(contextNode);
-    },
-
-    resolver: function(prefix) {
-	if (prefix == null || prefix == "")
-	    prefix = "SVG";
-	else 
-	    prefix = prefix.toUpperCase();
-	return Namespace[prefix];
-    },
-
-    evaluate: function(aNode, anExpr, accumulator) {
-	var result = this.xpe.evaluate(anExpr, aNode, this.nsResolver, XPathResult.ANY_TYPE, null);
-	if (!accumulator)
-	    accumulator = [];
-	var res = null;
-	while (res = result.iterateNext()) accumulator.push(res);
-	return accumulator;
-    },
-
-    findFirst: function(aNode, anExpr) {
-	var result = this.xpe.evaluate(anExpr, aNode, this.nsResolver, XPathResult.ANY_TYPE, null);
-	return result.iterateNext();
-    }
-
-});
 
 
 // adds convenience functions

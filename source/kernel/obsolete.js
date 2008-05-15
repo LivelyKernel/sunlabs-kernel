@@ -379,3 +379,4 @@ if (UserAgent.canExtendBrowserObjects) Object.extend(Global.document, {
 	} // else get the system context menu
     }.logErrors('Context Menu Handler')
 });
+

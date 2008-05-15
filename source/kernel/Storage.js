@@ -34,7 +34,7 @@ Morph.subclass('PackageMorph', {
 	    this.defs = this.rawNode.insertBefore(NodeFactory.create("defs"), this.rawNode.firstChild);
         this.serialized = this.defs.appendChild(targetMorph.rawNode.cloneNode(true));
 	exporter.removeHelperNodes(helpers);
-	this.helpText = "Shrink-wrapped " + targetMorph.getType() + ".\nSelect unwrap from menu to deserialize contents.";
+	this.helpText = "Packaged " + targetMorph.getType() + ".\nSelect unpackage from menu to deserialize contents.";
 	this.addMorph(Morph.makeLine([pt(delta, size/2), pt(size - delta, size/2)], 3, Color.black)).ignoreEvents();
 	this.addMorph(Morph.makeLine([pt(size/2, delta), pt(size/2, size - delta)], 3, Color.black)).ignoreEvents();
     },
@@ -44,30 +44,31 @@ Morph.subclass('PackageMorph', {
     },
     
     openIn: function(world, loc) {
-        world.reactiveAddMorph(this);
+        world.addMorphAt(this, loc);
     },
     
     morphMenu: function($super, evt) { 
         var menu = $super(evt);
-        menu.replaceItemNamed("shrink-wrap", ["unwrap", function(evt) { 
-	    this.unwrapAt(this.getPosition()); 
-	}.bind(this)]);
+        menu.replaceItemNamed("package", ["unpackage", function(evt) { 
+	    this.unpackageAt(this.getPosition()); 
+	}]);
 	menu.replaceItemNamed("show Lively markup", ["show packaged Lively markup", function(evt) {
 	    var extent = pt(500, 300);
             var pane = newTextPane(extent.extentAsRectangle(), "");
 	    pane.innerMorph().setTextString(Exporter.stringify(this.serialized));
             this.world().addFramedMorph(pane, "XML dump", this.world().positionForNewMorph(this));
-	}.bind(this)]);
+	}]);
 	
-	menu.replaceItemNamed("publish shrink-wrapped ...", ["save shrink-wrapped morph as ... ", function() { 
-	    this.world().prompt("save shrink-wrapped morph as (.xhtml)", function(filename) { 
-		if (filename) Exporter.saveDocumentToFile(Exporter.shrinkWrapNode(this.serialized), filename) }.bind(this))}]);
+	menu.replaceItemNamed("publish packaged ...", ["save packaged morph as ... ", function() { 
+	    var node = this.serialized;
+	    this.world().prompt("save packaged morph as (.xhtml)", function(filename) { 
+		filename && Exporter.saveNodeToFile(node, filename) })}]);
         return menu;
     },
 
-    unwrapAt: function(loc) {
+    unpackageAt: function(loc) {
 	if (!this.serialized) {
-	    console.log("no morph to unwrap");
+	    console.log("no morph to unpackage");
 	    return;
 	}
 	var importer = new Importer();
@@ -110,17 +111,14 @@ Wrapper.subclass('Resource', {
     
     documentation: "Wrapper around information returned from WebDAV's PROPFIND",
     
-    initialize: function(query, raw, baseUrl) {
+    initialize: function(raw, baseUrl) {
         this.rawNode = raw; 
-	this.query = query; // we capture the query to preserve NS resolution context
 	this.baseUrl = baseUrl;
     },
     
     name: function() {
 	// FIXME: resolve prefix "D" to something meaningful?
-        //return decodeURIComponent(this.queryNode("D:href")[0].textContent)
-	
-	var result = this.query.findFirst(this.rawNode, "D:href");
+	var result = new Query("D:href").findFirst(this.rawNode);
 	if (!result) {
 	    console.log("query failed " + Exporter.stringify(this.rawNode));
 	    return "?"
@@ -167,7 +165,7 @@ NetRequestReporter.subclass('LoadHandler', {
 	    for (var i = 0; i < morphs.length; i++) {
 		// flatten: 
 		if (morphs[i] instanceof WorldMorph) {
-		    morphs[i].submorphs.map(function(m) { world.addMorph(m) });
+		    morphs[i].submorphs.forEach(function(m) { world.addMorph(m) });
 		} else {
 		    world.addMorph(morphs[i]);
 		}
@@ -255,11 +253,10 @@ View.subclass('WebFile', NetRequestReporterTrait, {
 
 
     pvtSetDirectoryContent: function(responseXML) {
-	var query = new Query(responseXML.documentElement);
-	var result = query.evaluate(responseXML.documentElement, "/D:multistatus/D:response", []);
+	var result = new Query("/D:multistatus/D:response").findAll(responseXML.documentElement);
 	var baseUrl = this.getModelValue("getRootNode");
 	
-	var files = result.map(function(raw) { return new Resource(query, raw, baseUrl).toURL(); });
+	var files = result.map(function(rawNode) { return new Resource(rawNode, baseUrl).toURL(); });
 	files = this.arrangeFiles(files);
 	this.setModelValue("setDirectoryList", files);
     },
