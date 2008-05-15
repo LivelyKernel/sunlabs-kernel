@@ -652,7 +652,7 @@ Object.extend(Global.window, {
 
 
 // ===========================================================================
-// Namespaces and core DOM bindings (Browser and graphics-independent)
+// DOM manipulation (Browser and graphics-independent)
 // ===========================================================================
 
 Namespace =  {
@@ -861,7 +861,7 @@ Object.subclass('Wrapper', {
     }
 
 });
-
+console.log("Loaded basic DOM manipulation code");
 
 // ===========================================================================
 // Portable graphics foundations
@@ -976,8 +976,6 @@ Object.extend(Point, {
 function pt(x, y) { 
     return new Point(x, y);
 }
-
-console.log("Point");
 
 Object.subclass("Rectangle", {
 
@@ -1172,8 +1170,6 @@ function rect(location, corner) {
     return new Rectangle(location.x, location.y, corner.x - location.x, corner.y - location.y);
 };
 
-console.log("Rectangle");
-
 // ===========================================================================
 // Color support
 // ===========================================================================
@@ -1327,7 +1323,7 @@ Object.extend(Color, {
 
 });
 
-console.log("Color");
+console.log("Loaded platform-independent graphics primitives");
 
 // ===========================================================================
 // Gradient colors, stipple patterns and coordinate transformatins
