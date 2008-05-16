@@ -58,6 +58,100 @@ if (Config.debugExtras && Function.installStackTracers) Function.installStackTra
 // Class browser visibility can be overridden with Config.browserAnyway
 Config.showBrowser = !Config.skipMostExamples || Config.browserAnyway;
 
+
+function populateSlideWorld(world) {
+    var link = new LinkMorph(null, pt(60, 400));
+    // KP: note that element deletion interferes with iteration, so
+    // we make an array first and then remove 
+    link.myWorld.submorphs.clone().forEach(function(m) { 
+	if (m instanceof LinkMorph) return;
+	m.remove(); 
+    });
+    
+    // link.setPosition(link.position().addXY(65,0));
+    var loc = pt(100, 80);
+    var captions = [
+	"               JavaScript",
+	"                 Widgets",
+	"      HTML, CSS, DOM, etc.",
+	"                Browser",
+	"    OS: Network, Graphics, ..."
+    ];
+    
+    for (var i = 0; i < captions.length; i++) { // add boxed text
+	var txt = new TextMorph(loc.extent(pt(300, 50)), captions[i]);
+	txt.applyStyle({fontSize: 20, fill: Color.hsb(70*i,0.7,0.8)});
+	loc = loc.addXY(0,35);
+	link.myWorld.addMorph(txt); 
+    }
+    
+    world.addMorph(link); 
+    
+    if (Config.showStar) {  // Make a star
+	
+	var makeStarVertices = function(r,center,startAngle) {
+            var vertices = [];
+            var nVerts = 10;
+            for (var i=0; i <= nVerts; i++) {
+		var a = startAngle + (2*Math.PI/nVerts*i);
+		var p = Point.polar(r,a);
+		if (i%2 == 0) p = p.scaleBy(0.39);
+		vertices.push(p.addPt(center)); 
+            }
+            return vertices; 
+	}
+	
+	widget = Morph.makePolygon(makeStarVertices(50,pt(0,0),0), 1, Color.black, Color.yellow);
+	widget.setPosition(pt(125, 275));
+	link.myWorld.addMorph(widget);
+	
+	var spinningStar = !Config.skipMostExamples || Config.spinningStar;
+	if (spinningStar) {  // Make the star spin as a test of stepping
+            widget.startStepping(60, "rotateBy", 0.1);
+	}
+    }
+
+    if (Config.showSampleMorphs) {
+        var colors = Color.wheel(4);
+        var loc = pt(150, 450); 
+        var widgetExtent = pt(70, 30);
+        var dy = pt(0,50); 
+        var dx = pt(120,0);
+	
+        // Create a sample rectangle       
+        widget = new Morph(loc.extent(widgetExtent), "rect");
+        widget.setFill(colors[0]);
+        link.myWorld.addMorph(widget);
+	
+        // Create a sample ellipse
+        widget = new Morph(loc.addPt(dx).extent(widgetExtent), "ellipse");
+        widget.setFill(colors[1]);
+        link.myWorld.addMorph(widget);
+	
+        // Create a sample line
+        loc = loc.addPt(dy);
+        widget = Morph.makeLine([loc.addXY(0,15),loc.addXY(70,15)], 2, Color.black);
+        link.myWorld.addMorph(widget);
+	
+        // Create a sample polygon
+        widget = Morph.makePolygon([pt(0,0),pt(70,0),pt(40,30),pt(0,0)], 1, Color.black, colors[2]);
+        link.myWorld.addMorph(widget);
+        widget.setPosition(loc.addPt(dx));
+        loc = loc.addPt(dy);    
+	
+        // Create sample text widgets
+        if (Config.showTextSamples) {
+            widget = new TextMorph(loc.extent(pt(100,50)),"Big Text"); // big text
+            link.myWorld.addMorph(widget.applyStyle({fontSize: 20, textColor: Color.blue}));
+	    
+            widget = new TextMorph(loc.addPt(dx).extent(pt(140,50)),"Unbordered"); // unbordered text
+            link.myWorld.addMorph(widget.applyStyle({fontSize: 20, borderWidth: 0, fill: null})); 
+        }
+    }
+    return link;
+}
+
+
 function populateWorldWithExamples(world) {
     
     var widget;
@@ -118,16 +212,19 @@ function populateWorldWithExamples(world) {
         new ConsoleWidget(50).openIn(world, pt(0, world.viewport().height - 210));
     }
 
+    // add to Link?
+    function addLinkLabel(link, text) {
+	var label = new TextMorph(pt(110, 25).extentAsRectangle(), text).applyStyle({borderRadius: 10});
+	link.addMorph(label);
+	label.align(label.bounds().leftCenter(), link.shape.bounds().rightCenter().addXY(5, 0));
+	return label;
+    }
+
     if (Config.showInnerWorld) {
         
         var lm1 = new LinkMorph(null, pt(60, 460));
         world.addMorph(lm1);
-
-        var widgetTextMorph = 
-            new TextMorph(new Rectangle(90, 440, 100, 25), "More complex sample widgets");
-
-        widgetTextMorph.shape.roundEdgesBy(10);
-        world.addMorph(widgetTextMorph);
+	addLinkLabel(lm1, "More complex sample widgets");
 
         lm1.myWorld.onEnter = function() {
 
@@ -204,106 +301,30 @@ function populateWorldWithExamples(world) {
 
     }
     // load from slideWorld
+
     if (Config.showSlideWorld) { // Make a slide for "turning web programming upside down"
-        var lm2 = new LinkMorph(null, pt(60, 400));
+	if (Config.loadSerializedSubworlds) {
+	    var reporter = new NetRequestReporter();
+	    reporter.setContents = function(doc) {
+		var importer = new Importer();
+		var simpleWorld  = importer.loadWorldContents(doc);
+		var link = new LinkMorph(simpleWorld, pt(60, 400));
+		world.addMorph(link); 
+		addLinkLabel(link, "Simple example morphs");
+	    }
+	    new NetRequest({model: reporter, setStatus: "setRequestStatus", setResponseXML: "setContents"}).get(URL.source.withFilename("slide.xhtml"));
+	} else { 
+	    var link = populateSlideWorld(world);
+	    addLinkLabel(link, "Simple example morphs");
+	}
 
-        var samplesTextMorph = new TextMorph(new Rectangle(90, 380, 102, 25), "Simple example morphs");
-
-        samplesTextMorph.shape.roundEdgesBy(10);
-        world.addMorph(samplesTextMorph);
-
-        // KP: note that element deletion interferes with iteration, so
-        // we make an array first and then remove 
-        lm2.myWorld.submorphs.clone().forEach(function(m) { 
-            if (m instanceof LinkMorph) return;
-            m.remove(); 
-        });
-        
-        // lm2.setPosition(lm2.position().addXY(65,0));
-        var loc = pt(100, 80);
-        var captions = ["               JavaScript","                 Widgets","      HTML, CSS, DOM, etc.","                Browser","    OS: Network, Graphics, ..."];
-    
-        for (var i = 0; i < captions.length; i++) { // add boxed text
-            var txt = new TextMorph(loc.extent(pt(300,50)), captions[i]);
-            txt.applyStyle({fontSize: 20, fill: Color.hsb(70*i,0.7,0.8)});
-            loc = loc.addXY(0,35);
-            lm2.myWorld.addMorph(txt); 
-        }
-
-        world.addMorph(lm2); 
-
-        if (Config.showStar) {  // Make a star
-
-            var makeStarVertices = function(r,center,startAngle) {
-                var vertices = [];
-                var nVerts = 10;
-                for (var i=0; i <= nVerts; i++) {
-                    var a = startAngle + (2*Math.PI/nVerts*i);
-                    var p = Point.polar(r,a);
-                    if (i%2 == 0) p = p.scaleBy(0.39);
-                    vertices.push(p.addPt(center)); 
-                }
-                return vertices; 
-            }
-    
-            widget = Morph.makePolygon(makeStarVertices(50,pt(0,0),0), 1, Color.black, Color.yellow);
-            widget.setPosition(pt(125, 275));
-            lm2.myWorld.addMorph(widget);
-            
-            var spinningStar = !Config.skipMostExamples || Config.spinningStar;
-            if (spinningStar) {  // Make the star spin as a test of stepping
-                widget.startStepping(60, "rotateBy", 0.1);
-            }
-        }
-
-        if (Config.showSampleMorphs){
-            var colors = Color.wheel(4);
-            var loc = pt(150, 450); 
-            var widgetExtent = pt(70, 30);
-            var dy = pt(0,50); 
-            var dx = pt(120,0);
-     
-            // Create a sample rectangle       
-            widget = new Morph(loc.extent(widgetExtent), "rect");
-            widget.setFill(colors[0]);
-            lm2.myWorld.addMorph(widget);
-  
-            // Create a sample ellipse
-            widget = new Morph(loc.addPt(dx).extent(widgetExtent), "ellipse");
-            widget.setFill(colors[1]);
-            lm2.myWorld.addMorph(widget);
-  
-            // Create a sample line
-            loc = loc.addPt(dy);
-            widget = Morph.makeLine([loc.addXY(0,15),loc.addXY(70,15)], 2, Color.black);
-            lm2.myWorld.addMorph(widget);
-      
-            // Create a sample polygon
-            widget = Morph.makePolygon([pt(0,0),pt(70,0),pt(40,30),pt(0,0)], 1, Color.black, colors[2]);
-            lm2.myWorld.addMorph(widget);
-            widget.setPosition(loc.addPt(dx));
-            loc = loc.addPt(dy);    
-    
-            // Create sample text widgets
-            if (Config.showTextSamples) {
-                widget = new TextMorph(loc.extent(pt(100,50)),"Big Text"); // big text
-                lm2.myWorld.addMorph(widget.applyStyle({fontSize: 20, textColor: Color.blue}));
-
-                widget = new TextMorph(loc.addPt(dx).extent(pt(140,50)),"Unbordered"); // unbordered text
-                lm2.myWorld.addMorph(widget.applyStyle({fontSize: 20, borderWidth: 0, fill: null})); 
-            }
-        }
     }
 
     if (Config.showDeveloperWorld) {
         
         var devWorld = new LinkMorph(null, pt(60, 520));
         world.addMorph(devWorld);
-
-        var developerTextMorph = 
-            new TextMorph(new Rectangle(90, 500, 100, 25), "Development Tools");
-        developerTextMorph.shape.roundEdgesBy(10);
-        world.addMorph(developerTextMorph);
+	addLinkLabel(devWorld, "Development Tools");
 
         if (Config.showBrowser) new SimpleBrowser().openIn(devWorld.myWorld, pt(20, 20));
 
@@ -370,9 +391,7 @@ function main() {
 	// a forced value, some browsers have problems with height=100%
 	canvas.setAttribute("height", "800");
     }
-    
     var importer = new Importer();
-
     var world = importer.loadWorldContents(document);
     if (world) {
 	world.displayOnCanvas(canvas);

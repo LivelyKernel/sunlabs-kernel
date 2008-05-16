@@ -527,10 +527,9 @@ TwoPaneBrowser.subclass('FileBrowser', {
 	    ];
 	    
 	    if (url.filename().endsWith(".xhtml")) {
-		// FIXME: add loading into a new world
 		items.push(["load into current world", function(evt) {
 		    var loader = Object.extend(new Importer(), NetRequestReporterTrait);
-		    new NetRequest({model: loader, setResponseXML: "loadWorldContents", 
+		    new NetRequest({model: loader, setResponseXML: "loadWorldContentsInCurrent", 
 				    setStatus: "setRequestStatus"}).get(url);
 		}]);
 		

@@ -116,7 +116,10 @@ var Config = {
     debugExtras: false,
 
     // enable grab halo (alternative to shadow) on objects in the hand.
-    showGrabHalo: false
+    showGrabHalo: false,
+
+    // load serialized worlds instead of building them from Javascript
+    loadSerializedSubworlds: true
 
 
 }

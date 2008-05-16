@@ -2836,7 +2836,7 @@ Copier.subclass('Importer', {
 	var nodes = this.canvasContent(doc);
 	if (!nodes) {
 	    WorldMorph.current().alert('no morphs found');
-	    return;
+	    return null;
 	}
 	var world = new WorldMorph(WorldMorph.current().canvas());
 	var morphs = this.importFromNodeList(nodes, world);
@@ -2851,9 +2851,19 @@ Copier.subclass('Importer', {
 	
 	var link = WorldMorph.current().reactiveAddMorph(new LinkMorph(world));
 	link.addPathBack();
+	return world;
     },
 
-    loadWorldContents: function(doc) { // possibly doc === Global.document WorldMorph.current() may return null early on
+    loadWorldContentsInCurrent: function(doc) {
+	var world = this.loadWorldContents(doc);
+	// FIXME? scripts have started already ?
+	world.submorphs.clone().forEach(function(m) { 
+	    WorldMorph.current().addMorph(m) 
+	});
+    },
+    
+    loadWorldContents: function(doc) { 
+	// possibly doc === Global.document; 
 	var world = null;
 	var morphs = this.importFromNodeList(this.canvasContent(doc));
 	
@@ -2864,16 +2874,11 @@ Copier.subclass('Importer', {
 	    world = morphs[0];
 	    if (morphs.length > 1) console.log("more than one top level morph following a WorldMorph, ignoring remaining morphs");
 	} else {
-	    // no world, create one and add all the shrinkwrapped morphs to it.
+	    // no world, create one and add all the serialized morphs to it.
 	    world = new WorldMorph(document.getElementById("canvas"));
 	    morphs.clone().forEach(function(m) { world.addMorph(m); });
 	}
-
 	
-	WorldMorph.current() && world.submorphs.clone().forEach(function(m) { 
-	    console.log("current world " + WorldMorph.current());
-	    WorldMorph.current().addMorph(m) 
-	});
 	this.finishImport(world);
 
 	return world;
@@ -2886,7 +2891,6 @@ Copier.subclass('Importer', {
 	    WorldMorph.current().alert("eval got error " + er);
 	}
     },
-
     
     hookupModels: function() {
 	this.models.forEach(function(node) { this.importModelFrom(node); }, this);
