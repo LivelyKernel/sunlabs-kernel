@@ -1758,6 +1758,12 @@ var Event = (function() {
 	wheelDelta: function() {
 	    // FIXME: make browser-independent
 	    return this.rawEvent.wheelDelta;
+	},
+
+	point: function() {
+	    // likely origin of event, obvious for mouse events, the hand's position for
+	    // keyboard events
+	    return this.mousePoint || this.hand.getPosition();
 	}
 
     });
@@ -2422,7 +2428,9 @@ Shape.subclass('PathShape', {
     },
     
     containsPoint: function(p) {
-	return this.nativeContainsWorldPoint(p);
+	if (UserAgent.webKitVersion >= 525)
+	    return Rectangle.unionPts(this.verticesList).containsPoint(p);
+	else return this.nativeContainsWorldPoint(p);
     },
 
     bounds: function() {
@@ -3765,8 +3773,6 @@ Morph.addMethods({
     },
 
     toString: function() {
-	// A replacement for toString() which can't be overridden in
-	// some cases.  Invoked by Object.inspect.
 	try {
 	    return Strings.format("%s(#%s,%s)", this.getType(), this.rawNode && this.id() || "" , this.shape || "");
 	} catch (e) {
@@ -3775,7 +3781,6 @@ Morph.addMethods({
 	}
     },
 
-
     inspect: function() {
 	try {
 	    return this.toString();
@@ -3783,15 +3788,6 @@ Morph.addMethods({
 	    return "#<inspect error: " + err + ">";
 	}
     },
-
-    extendedInspect: function() {
-	try {
-	    return this.toString() + "[" + this.toMarkupString() + "]";
-	} catch (err) {
-	    return "#<inspect error: " + err + ">";
-	}
-    },
-
 
     // Morph coordinate transformation functions
 
@@ -3991,12 +3987,12 @@ Morph.addMethods({     // help handling
 	if (!helpText) return false;
 
 	// Create only one help balloon at a time
-	if (this.helpBalloonMorph && !this.helpBalloonMorph.getPosition().eqPt(evt.mousePoint)) {
-	    this.helpBalloonMorph.setPosition(evt.mousePoint);
+	if (this.helpBalloonMorph && !this.helpBalloonMorph.getPosition().eqPt(evt.point())) {
+	    this.helpBalloonMorph.setPosition(evt.point());
 	    return false;
 	} else {
 	    var width = Math.min(helpText.length * 20, 260); // some estimate of width.
-	    this.helpBalloonMorph = new TextMorph(evt.mousePoint.addXY(10, 10).extent(pt(width, 20)), helpText);
+	    this.helpBalloonMorph = new TextMorph(evt.point().addXY(10, 10).extent(pt(width, 20)), helpText);
 	    this.world().addMorph(this.helpBalloonMorph.beHelpBalloonFor(this));
 	    return true;
 	}
@@ -4100,7 +4096,8 @@ Morph.addMethods({
 	this.hideHelp();
     }, 
 
-    onMouseWheel: function(evt) { }, // default behavior
+    onMouseWheel: function(evt) { 
+    }, // default behavior
 
     takesKeyboardFocus: Functions.False,
 
@@ -4193,13 +4190,13 @@ Morph.addMethods({
 	var menu = this.morphMenu(evt);
 	// if (evt.mouseButtonPressed) evt.hand.setMouseFocus(menu);
 	// evt.hand.setMouseFocus(menu);
-	menu.openIn(this.world(), evt.mousePoint, false, Object.inspect(this).truncate()); 
+	menu.openIn(this.world(), evt.point(), false, Object.inspect(this).truncate()); 
     },
 
     morphMenu: function(evt) { 
 	var items = [
 	    ["remove", this.remove],
-	    ["inspect", function(evt) { new SimpleInspector(this).openIn(this.world(), evt.mousePoint)}],
+	    ["inspect", function(evt) { new SimpleInspector(this).openIn(this.world(), evt.point())}],
 	    ["style", function() { new StylePanel(this).open()}],
 	    ["drill", this.showOwnerChain.curry(evt)],
 	    ["grab", this.pickMeUp.curry(evt)],
@@ -4211,7 +4208,7 @@ Morph.addMethods({
 	    ["put me in a tab", this.putMeInATab.curry(this.position())],
 	    ["put me in the open", this.putMeInTheWorld.curry(this.position())],
 	    ["-----"],
-	    [((this.openForDragAndDrop) ? "close DnD" : "open DnD"), this.toggleDnD.curry(evt.mousePoint)],
+	    [((this.openForDragAndDrop) ? "close DnD" : "open DnD"), this.toggleDnD.curry(evt.point())],
 	    ["show Lively markup", this.addSvgInspector.curry(this)],
 	    ["package", function(evt) {  // FIXME insert package morph in exactly the same position?
 		new PackageMorph(this).openIn(this.world(), this.bounds().center()); this.remove(); } ],
@@ -4301,7 +4298,7 @@ Morph.addMethods({
     showOwnerChain: function(evt) {
 	var items = this.ownerChain().reverse().map(
 	    function(each) { return [Object.inspect(each).truncate(), function() { each.showMorphMenu(evt) }]; });
-	new MenuMorph(items, this).openIn(this.world(), evt.mousePoint, false, "Top item is topmost");
+	new MenuMorph(items, this).openIn(this.world(), evt.point(), false, "Top item is topmost");
     },
 
     copyToHand: function(hand) {
@@ -5115,11 +5112,11 @@ Morph.subclass("PasteUpMorph", {
 
     makeSelection: function(evt) {  //default behavior is to grab a submorph
         if (this.world().currentSelection != null) this.world().currentSelection.removeOnlyIt();
-        var m = new SelectionMorph(evt.mousePoint.extent(pt(0,0)));
+        var m = new SelectionMorph(evt.point().asRectangle());
         this.world().addMorph(m);
         this.world().currentSelection = m;
         var handle = new HandleMorph(pt(0,0), "rect", evt.hand, m, "bottomRight");
-		handle.setExtent(pt(0, 0));
+	handle.setExtent(pt(0, 0));
         m.addMorph(handle);
         evt.hand.setMouseFocus(handle);
     }
@@ -5244,7 +5241,7 @@ PasteUpMorph.subclass("WorldMorph", {
     displayOnCanvas: function(canvas) {
 	// this.remove();
         canvas.appendChild(this.rawNode);
-        this.addHand(new HandMorph(true));
+        var hand = this.addHand(new HandMorph(true));
 	WorldMorph.currentWorld = this; // this conflicts with mutliple worlds
         this.onEnter(); 
 	this.enterCount ++;
@@ -5262,9 +5259,12 @@ PasteUpMorph.subclass("WorldMorph", {
         });
 
         this.rawNode.parentNode.appendChild(hand.rawNode);
+	return hand;
     },
     
     removeHand: function(hand) {
+	hand.setMouseFocus(null); // cleanup, just in case
+	hand.setKeyboardFocus(null); // cleanup (calls blur(), which will remove the focus halo)
 	hand.removeRawNode();
         hand.unregisterForEvents(this);
         hand.unregisterForEvents(hand);
@@ -5317,7 +5317,7 @@ PasteUpMorph.subclass("WorldMorph", {
         var items = themeNames.map(
             function(each) { return [each, target, "setDisplayTheme", themes[each]]; });
         var menu = new MenuMorph(items, this);
-        menu.openIn(this.world(), evt.mousePoint);
+        menu.openIn(this.world(), evt.point());
     },
     
     setDisplayTheme: function(styleDict) { 
@@ -5527,36 +5527,36 @@ PasteUpMorph.subclass("WorldMorph", {
 	// FIXME this boilerplate code should be abstracted somehow.
         var world = this.world();
         var items = [
-            ["New subworld (LinkMorph)", function(evt) { world.addMorph(new LinkMorph(null, evt.mousePoint));}],
-            ["Line", function(evt) { var p = evt.mousePoint; world.addMorph(Morph.makeLine([p, p.addXY(60, 30)], 2, Color.black));}],
-            ["Rectangle", function(evt) { world.addMorph(new Morph(evt.mousePoint.extent(pt(60, 30)), "rect"));}],
-            ["Ellipse", function(evt) { world.addMorph(new Morph(evt.mousePoint.extent(pt(50, 50)), "ellipse"));}],
-            ["TextMorph", function(evt) { world.addMorph(new TextMorph(evt.mousePoint.extent(pt(120, 10)), "This is a TextMorph"));}],
-            ["Class Browser", function(evt) { new SimpleBrowser().openIn(world, evt.mousePoint); }],
-            ["Object Hierarchy Browser", function(evt) { new ObjectBrowser().openIn(world, evt.mousePoint); }],    
+            ["New subworld (LinkMorph)", function(evt) { world.addMorph(new LinkMorph(null, evt.point()));}],
+            ["Line", function(evt) { var p = evt.point(); world.addMorph(Morph.makeLine([p, p.addXY(60, 30)], 2, Color.black));}],
+            ["Rectangle", function(evt) { world.addMorph(new Morph(evt.point().extent(pt(60, 30)), "rect"));}],
+            ["Ellipse", function(evt) { world.addMorph(new Morph(evt.point().extent(pt(50, 50)), "ellipse"));}],
+            ["TextMorph", function(evt) { world.addMorph(new TextMorph(evt.point().extent(pt(120, 10)), "This is a TextMorph"));}],
+            ["Class Browser", function(evt) { new SimpleBrowser().openIn(world, evt.point()); }],
+            ["Object Hierarchy Browser", function(evt) { new ObjectBrowser().openIn(world, evt.point()); }],    
             ["Call Stack Viewer", function(evt) { 
-				if (Config.debugExtras) Function.showStack("use viewer");
-				else new StackViewer(this).openIn(world, evt.mousePoint); }],    
+		if (Config.debugExtras) Function.showStack("use viewer");
+		else new StackViewer(this).openIn(world, evt.point()); }],    
             ["Clock", function(evt) {
-                var m = world.addMorph(new ClockMorph(evt.mousePoint, 50));
+                var m = world.addMorph(new ClockMorph(evt.point(), 50));
                 m.startSteppingScripts(); }],
             ["Piano Keyboard", function(evt) {
-                var m = new PianoKeyboard(evt.mousePoint);
+                var m = new PianoKeyboard(evt.point());
                 m.scaleBy(1.5);  m.rotateBy(-0.2);
 				world.addMorph(m)}],
 
 	    ["Console", function(evt) {
-		world.addFramedMorph(new ConsoleWidget(50).buildView(pt(800, 100)), "Console", evt.mousePoint);
+		world.addFramedMorph(new ConsoleWidget(50).buildView(pt(800, 100)), "Console", evt.point());
 	    }],
             ["FrameRateMorph", function(evt) {
-                var m = world.addMorph(new FrameRateMorph(evt.mousePoint.extent(pt(160, 10)), "FrameRateMorph"));
+                var m = world.addMorph(new FrameRateMorph(evt.point().extent(pt(160, 10)), "FrameRateMorph"));
                 m.startSteppingScripts(); }],
 	    ["XenoMorph", function(evt) { 
 		var xeno = new XenoMorph(pt(400,200).extentAsRectangle(), "sample.xhtml");
 		world.addFramedMorph(xeno, "XenoMorph", pt(50,50)); }]
         ];
-        items.push(["File Browser", function(evt) { new FileBrowser().openIn(world, evt.mousePoint) }]);
-        new MenuMorph(items, this).openIn(this.world(), evt.mousePoint);
+        items.push(["File Browser", function(evt) { new FileBrowser().openIn(world, evt.point()) }]);
+        new MenuMorph(items, this).openIn(this.world(), evt.point());
     },
     
     viewport: function() {
@@ -5660,11 +5660,10 @@ Morph.subclass("HandMorph", {
         $super(pt(5,5).extent(pt(10,10)), "rect");
 	
         this.setShape(new PolygonShape([pt(0,0), pt(9,5), pt(5,9), pt(0,0)], 
-				       (local ? Color.blue : Color.red), 1, Color.black));
+				       (local ? Color.primary.blue : Color.primary.red), 1, Color.black));
         this.shape.disablePointerEvents();
 	
         this.isLocal = local;
-        this.setFill(local ? Color.primary.blue : Color.primary.green); 
 
         this.keyboardFocus = null;
         this.mouseFocus = null;
@@ -5704,7 +5703,8 @@ Morph.subclass("HandMorph", {
 
     setMouseFocus: function(morphOrNull) {
         // console.log('setMouseFocus: ' + morphOrNull);
-        this.mouseFocus = morphOrNull; 
+        this.mouseFocus = morphOrNull;
+	this.setFill(this.mouseFocus ? Color.primary.blue.lighter(2) : Color.primary.blue);
 	this.mouseFocusChanges_ ++;
     },
     
@@ -5736,7 +5736,6 @@ Morph.subclass("HandMorph", {
         Function.resetDebuggingStack();
         switch (evt.type) {
         case "MouseWheel":
-	    console.log("wheel event " + evt + "," + evt.wheelDelta()); // no break
         case "MouseMove":
         case "MouseDown":
         case "MouseUp":
@@ -5773,11 +5772,11 @@ Morph.subclass("HandMorph", {
 
         evt.setButtonPressedAndPriorPoint(this.mouseButtonPressed, 
 					  this.lastMouseEvent ? this.lastMouseEvent.mousePoint : null);
-
+	var world = this.owner;
         //-------------
         // mouse move
         //-------------
-        if (evt.type == "MouseMove") { // it is just a move
+        if (evt.type == "MouseMove" || evt.type == "MouseWheel") { // it is just a move
             this.setPosition(evt.mousePoint);
             
             if (evt.mousePoint.dist(this.lastMouseDownPoint) > 10) { 
@@ -5786,28 +5785,24 @@ Morph.subclass("HandMorph", {
             
             if (this.mouseFocus) { // if mouseFocus is set, events go to that morph
                 this.mouseFocus.captureMouseEvent(evt, true);
-            } else {
-                if (this.owner) {
-                    var receiver = this.owner.morphToReceiveEvent(evt);
-                    if (receiver !== this.mouseOverMorph) {
-                        // if over a new morph, send onMouseOut, onMouseOver
-                        if (this.mouseOverMorph) this.mouseOverMorph.onMouseOut(evt);
-                        this.mouseOverMorph = receiver;
-                        // console.log('msOverMorph set to: ' + Object.inspect(this.mouseOverMorph));
-                        if (this.mouseOverMorph) this.mouseOverMorph.onMouseOver(evt);
-                        if (!receiver || !receiver.canvas()) return false;  // prevent errors after world-switch
-                        // Note if onMouseOver sets focus, it will get onMouseMove
-                        if (this.mouseFocus) this.mouseFocus.captureMouseEvent(evt, true);
-                        else if (!evt.hand.hasSubmorphs()) this.owner.captureMouseEvent(evt, false); 
-                    } else if (receiver) {
-			receiver.captureMouseEvent(evt, false);
-			receiver.onMouseWheel(evt);
-                    }
-                } 
+            } else if (world) {
+                var receiver = world.morphToReceiveEvent(evt);
+                if (receiver !== this.mouseOverMorph) {
+                    // if over a new morph, send onMouseOut, onMouseOver
+                    if (this.mouseOverMorph) this.mouseOverMorph.onMouseOut(evt);
+                    this.mouseOverMorph = receiver;
+                    // console.log('msOverMorph set to: ' + Object.inspect(this.mouseOverMorph));
+                    if (this.mouseOverMorph) this.mouseOverMorph.onMouseOver(evt);
+                    if (!receiver || !receiver.canvas()) return false;  // prevent errors after world-switch
+                    // Note if onMouseOver sets focus, it will get onMouseMove
+                    if (this.mouseFocus) this.mouseFocus.captureMouseEvent(evt, true);
+                    else if (!evt.hand.hasSubmorphs()) world.captureMouseEvent(evt, false); 
+                } else if (receiver) receiver.captureMouseEvent(evt, false);
             }
             this.lastMouseEvent = evt;
             return true;
-        }
+        } 
+
 	
         //-------------------
         // mouse up or down
@@ -5825,21 +5820,20 @@ Morph.subclass("HandMorph", {
             if (this.mouseButtonPressed) {
                 this.mouseFocus.captureMouseEvent(evt, true);
                 this.lastMouseDownPoint = evt.mousePoint; 
-            }
-            else this.mouseFocus.captureMouseEvent(evt, true); 
+            } else 
+		this.mouseFocus.captureMouseEvent(evt, true); 
         } else {
-            if (this.hasSubmorphs() && (evt.type == "MouseDown" || this.hasMovedSignificantly)) {
+	    if (this.hasSubmorphs() && (evt.type == "MouseDown" || this.hasMovedSignificantly)) {
                 // If laden, then drop on mouse up or down
                 var m = this.topSubmorph();
-                var receiver = this.owner.morphToGrabOrReceiveDroppingMorph(evt, m);
+                var receiver = world.morphToGrabOrReceiveDroppingMorph(evt, m);
                 // For now, failed drops go to world; later maybe put them back?
-                if (receiver == null) receiver = this.world();
-                this.dropMorphsOn(receiver);
+                this.dropMorphsOn(receiver || world);
             } else {
                 // console.log("hand dispatching event %s to owner %s", evt, this.owner);
                 // This will tell the world to send the event to the right morph
                 // We do not dispatch mouseup the same way -- only if focus gets set on mousedown
-                if (evt.type == "MouseDown") this.owner.captureMouseEvent(evt, false);
+                if (evt.type == "MouseDown") world.captureMouseEvent(evt, false);
             }
             if (evt.type == "MouseDown") {
                 this.lastMouseDownPoint = evt.mousePoint;
@@ -5859,6 +5853,11 @@ Morph.subclass("HandMorph", {
 	    this.grabHaloMorph.setStrokeDashArray([3,2]);
 	    this.grabHaloMorph.setLineJoin(Shape.LineJoins.Round);
 	    this.grabHaloMorph.ignoreEvents();
+	    var label = new TextMorph(pt(20,10).extentAsRectangle(), String(grabbedMorph.id())).beLabel();
+	    label.setFontSize(Math.floor(TextMorph.prototype.fontSize*0.85));
+	    label.setInset(pt(0, 0));
+	    this.grabHaloMorph.addMorph(label);
+	    label.align(label.bounds().bottomLeft(), this.grabHaloMorph.shape.bounds().topRight());
 	}
     },
 
@@ -6178,8 +6177,6 @@ Morph.subclass('LinkMorph', {
         }
 
         newWorld.displayOnCanvas(canvas); 
-	
-
 	
         if (Config.suspendScriptsOnWorldExit) { 
             newWorld.resumeAllSuspendedScripts();

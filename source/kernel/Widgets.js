@@ -1419,13 +1419,17 @@ Morph.subclass("TextListMorph", {
 	this.highlightItem(evt, index, true);
 	evt.hand.setMouseFocus(this); // to get moves
     },
-    
+
     onMouseMove: function(evt) {
          // console.log("%s got evt %s", this.getType(),  evt);
          if (!this.highlightItemsOnMove) return;
          var target = this.morphToReceiveEvent(evt);
          var index = this.submorphs.indexOf(target);
          this.highlightItem(evt, index, false);
+    },
+    
+    onMouseWheel: function(evt) {
+	console.log("wheel event " + evt + "," + evt.wheelDelta() + " on " + this); // no break
     },
 
     highlightItem: function(evt, index, updateModel) {
@@ -1630,6 +1634,7 @@ Morph.subclass("MenuMorph", {
     },
 
     suppressHandles: true,
+    focusHaloBorderWidth: 0,
     
     initialize: function($super, items, targetMorph) {
         // items is an array of menuItems, each of which is an array of the form
@@ -1714,8 +1719,17 @@ Morph.subclass("MenuMorph", {
 	var menu = this;
 	this.listMorph.onKeyDown = function(evt) {
 	    var result = Class.getPrototype(this).onKeyDown.call(this, evt);
-	    if (!menu.stayUp && evt.getKeyCode() == Event.KEY_ESC)
-		menu.removeOnEvent(evt);
+	    switch (evt.getKeyCode()) {
+	    case Event.KEY_ESC:
+		if (!menu.stayUp) menu.removeOnEvent(evt);
+		evt.stop();
+		return true;
+	    case Event.KEY_RETURN: {
+		if (menu.invokeItemAtIndex(evt, this.selectedLineNo)) 
+		    evt.stop();
+		return true;
+	    }
+	    }
 	};
 
         this.listMorph.applyStyle(this.listStyle);
@@ -1745,7 +1759,9 @@ Morph.subclass("MenuMorph", {
         this.listMorph.relayMouseEvents(this, {onMouseUp: "onMouseUp", onMouseMove: "onMouseMove", onMouseDown: "onMouseMove"});
         // Note menu gets mouse focus by default if pop-up.  If you don't want it, you'll have to null it
         if (!remainOnScreen) {
-            parentMorph.world().firstHand().setMouseFocus(this);
+	    var hand = parentMorph.world().firstHand();
+	    hand.setMouseFocus(this);
+            hand.setKeyboardFocus(this.listMorph);
         }
     },
     
@@ -1760,13 +1776,10 @@ Morph.subclass("MenuMorph", {
         // console.log("menu got " + evt);
         var target = this.listMorph.morphToReceiveEvent(evt);
         var index = this.listMorph.submorphs.indexOf(target);
-	if (index in this.items)  {
-            try {
-		this.invokeItem(evt, this.items[index]);
-            } finally {
-		if (!this.stayUp) this.removeOnEvent(evt);
-            }
-	} else if (!this.stayUp) evt.hand.setMouseFocus(this); // moved away, don't lose the focus
+	if (!this.invokeItemAtIndex(evt, index) && !this.stayUp) {
+	    evt.hand.setMouseFocus(this); // moved away, don't lose the focus
+	    evt.hand.setKeyboardFocus(this.listMorph);
+	}
     },
 
     onMouseDown: function(evt) {
@@ -1778,11 +1791,21 @@ Morph.subclass("MenuMorph", {
     },
 
     onMouseMove: function(evt) {
-        // console.log("menu got " + evt);
         evt.hand.setMouseFocus(this);
+	evt.hand.setKeyboardFocus(this.listMorph);
         var target = this.listMorph.morphToReceiveEvent(evt);
         var index = this.listMorph.submorphs.indexOf(target);
         this.listMorph.highlightItem(evt, index, false);
+    },
+    
+    invokeItemAtIndex: function(evt, index) {
+	if (!(index in this.items)) return false;
+        try {
+	    this.invokeItem(evt, this.items[index]);
+        } finally {
+	    if (!this.stayUp) this.removeOnEvent(evt);
+        }
+	return true;
     },
     
     invokeItem: function(evt, item) {
