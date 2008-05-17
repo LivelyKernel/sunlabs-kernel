@@ -252,8 +252,7 @@ Morph.subclass('SimpleFormMorph', {
 console.log("end form.js");
 
 // All the phone logic is here temporarily
-
-function phoneDemo(world, origin, size) {
+Global.phoneDemo = function(world, origin, size) {
 	origin = origin || pt(180,180); 
 	size = size || 160;
 	var pm = new PhoneMorph(origin, size);

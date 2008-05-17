@@ -2604,38 +2604,24 @@ Object.extend(Exporter, {
 	return node ? new XMLSerializer().serializeToString(node) : null;
     },
 
-    getBaseDocument: function() {
-	// FIXME memoize?
-	var req = new NetRequest().beSync().get(URL.source);
-	var status = req.getStatus();
-	if (!status.isSuccess()) {
-	    console.log("failure retrieving  " + URL.source + ", status " + status);
-	    return null;
-	} else {
-	    return req.getResponseXML();
-	}
-    },
-
     shrinkWrapNode: function(node) {
-	var newDoc = Exporter.getBaseDocument();
 	// FIXME deal with subdirectories: rewrite the base doc and change xlink:href for scripts
 	var importer = new Importer();
-	importer.clearCanvas(newDoc);
+	var newDoc = importer.getBaseDocument();
 	importer.canvas(newDoc).appendChild(newDoc.importNode(node, true));
 	return newDoc;
     },
 
     shrinkWrapMorph: function(morph) {
-	var newDoc = Exporter.getBaseDocument();
 	var importer = new Importer();
-	importer.clearCanvas(newDoc);
+	var newDoc = importer.getBaseDocument();
 	importer.canvas(newDoc).appendChild(new Exporter(morph).serialize(newDoc));
 	return newDoc;
     },
 
     // better place for this?
     saveDocument: function(doc, url) {
-	var content = Exporter.stringify(doc);
+	var content = this.stringify(doc);
 	var req = new NetRequest().beSync().put(url, content);
 	return req.getStatus();
     },
@@ -2648,7 +2634,7 @@ Object.extend(Exporter, {
 	}
 	var url = URL.source.withFilename(filename);
 	
-	var status = Exporter.saveDocument(doc, url);
+	var status = this.saveDocument(doc, url);
 
 	if (status.isSuccess()) {
 	    console.log("success publishing world at " + url + ", status " + status.code);
@@ -2721,6 +2707,21 @@ Copier.subclass('Importer', {
 	console.log("canvas not found in document " + doc);
 	return null;
     },
+
+    getBaseDocument: function() {
+	// FIXME memoize?
+	var req = new NetRequest().beSync().get(URL.source);
+	var status = req.getStatus();
+	if (!status.isSuccess()) {
+	    console.log("failure retrieving  " + URL.source + ", status " + status);
+	    return null;
+	} else {
+	    var doc = req.getResponseXML();
+	    this.clearCanvas(doc);
+	    return doc;
+	}
+    },
+
     
     canvasContent: function(doc) {
 	var canvas = this.canvas(doc);
@@ -2780,7 +2781,6 @@ Copier.subclass('Importer', {
 	}
     },
 
-
     importFromString: function(string) {
 	return this.importFromNode(this.parse(string));
     },
@@ -2830,7 +2830,6 @@ Copier.subclass('Importer', {
 	this.finishImport(world);
 	return world;
     },
-
 
     loadWorldInSubworld: function(doc) {
 	var nodes = this.canvasContent(doc);
@@ -2884,13 +2883,6 @@ Copier.subclass('Importer', {
 	return world;
     },
 
-    loadJavascript: function(responseText) {
-	try {
-	    eval(responseText);
-	} catch (er) {
-	    WorldMorph.current().alert("eval got error " + er);
-	}
-    },
     
     hookupModels: function() {
 	this.models.forEach(function(node) { this.importModelFrom(node); }, this);
@@ -5221,7 +5213,7 @@ PasteUpMorph.subclass("WorldMorph", {
         }
         
         $super(bounds, "rect");
-
+	this.enterCount = 0;
     },
 
     initializeTransientState: function($super, initialBounds) {
@@ -5254,6 +5246,8 @@ PasteUpMorph.subclass("WorldMorph", {
         canvas.appendChild(this.rawNode);
         this.addHand(new HandMorph(true));
 	WorldMorph.currentWorld = this; // this conflicts with mutliple worlds
+        this.onEnter(); 
+	this.enterCount ++;
     },
     
     addHand: function(hand) {
@@ -6184,9 +6178,9 @@ Morph.subclass('LinkMorph', {
         }
 
         newWorld.displayOnCanvas(canvas); 
+	
 
-        newWorld.onEnter(); 
-
+	
         if (Config.suspendScriptsOnWorldExit) { 
             newWorld.resumeAllSuspendedScripts();
         }

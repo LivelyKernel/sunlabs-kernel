@@ -367,13 +367,51 @@ NetRequestReporterTrait = {
 // convenience base class with built in handling of errors
 Object.subclass('NetRequestReporter', NetRequestReporterTrait);
 
-// to be refactored: Load the doc and 
-Object.extend(Loader, {
+Importer.subclass('NetImporter', NetRequestReporterTrait, {
+    onCodeLoad: function(error) {
+	if (error) WorldMorph.current().alert("eval got error " + error);
+    },
+    
+    pvtLoadCode: function(responseText) {
+	try {
+	    eval(responseText); 
+	} catch (er) {
+	    this.onCodeLoad(er);
+	    return;
+	}
+	this.onCodeLoad(null);
+    },
+    
+    loadCode: function(url, isSync) {
+	var req = new NetRequest({model: this, setResponseText: "pvtLoadCode", setStatus: "setRequestStatus"});
+	if (isSync) req.beSync();
+	req.get(url);
+    },
+
+    onWorldLoad: function(world, error) {
+	if (error) WorldMorph.current().alert("doc got error " + error);
+    },
+
+    pvtLoadMarkup: function(doc) {
+	var world;
+	try {
+	    world = this.loadWorldContents(doc);
+	} catch (er) {
+	    this.onWorldLoad(null, er);
+	    return;
+	}
+	this.onWorldLoad(world, null);
+    },
+    
+    loadMarkup: function(url, isSync) {
+	var req = new NetRequest({model: this, setStatus: "setRequestStatus", setResponseXML: "pvtLoadMarkup"});
+	if (isSync) req.beSync();
+	req.get(url);
+    },
+    
     loadElement: function(filename, id) {
-	var model = new NetRequestReporter();
 	var result;
-	model.setResponseXML = function(doc) {
-	    //console.log("got document " + Exporter.stringify(doc.documentElement));
+	this.processResult = function(doc) {
 	    var elt = doc.getElementById(id);
 	    if (elt) {
 		var canvas = document.getElementById("canvas"); // note, no error handling
@@ -381,11 +419,14 @@ Object.extend(Loader, {
 		result = defs.appendChild(document.importNode(elt, true));
 	    }
 	}
-	var url = new URL(Loader.baseURL + "/" + filename);
-	new NetRequest({model: model, setStatus: "setRequestStatus", setResponseXML: "setResponseXML"}).beSync().get(url);
+	var url = URL.source.withFilename(filename);
+	new NetRequest({model: this, setStatus: "setRequestStatus", setResponseXML: "processResult"}).beSync().get(url);
 	return result;
     }
+
 });
+
+
 
 
 View.subclass('Query',  {

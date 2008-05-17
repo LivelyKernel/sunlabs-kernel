@@ -528,23 +528,22 @@ TwoPaneBrowser.subclass('FileBrowser', {
 	    
 	    if (url.filename().endsWith(".xhtml")) {
 		items.push(["load into current world", function(evt) {
-		    var loader = Object.extend(new Importer(), NetRequestReporterTrait);
-		    new NetRequest({model: loader, setResponseXML: "loadWorldContentsInCurrent", 
+		    new NetRequest({model: new NetImporter(), setResponseXML: "loadWorldContentsInCurrent", 
 				    setStatus: "setRequestStatus"}).get(url);
 		}]);
 		
 		items.push(["load into new linked world", function(evt) {
-		    var loader = Object.extend(new Importer(), NetRequestReporterTrait);
-
-		    new NetRequest({model: loader, setResponseXML: "loadWorldInSubworld",
+		    new NetRequest({model: new NetImporter(), setResponseXML: "loadWorldInSubworld",
 				    setStatus: "setRequestStatus"}).get(url);
 		}]);
 		
 	    } else if (url.toString().endsWith(".js")) {
 		items.push(["evaluate as Javascript", function(evt) {
-		    var loader = Object.extend(new Importer(), NetRequestReporterTrait);
-		    new NetRequest({model: loader, setResponseText: "loadJavascript",
-				    setStatus: "setRequestStatus"}).get(url);
+		    var importer = NetImporter();
+		    importer.onCodeLoad = function(error) {
+			if (error) evt.hand.world().alert("eval got error " + error);
+		    }
+		    importer.loadCode(url); 
 		}]);
 	    }
 	    
@@ -559,7 +558,7 @@ TwoPaneBrowser.subclass('FileBrowser', {
 	};
 
     },
-
+    
     removeNode: function(url) {
 	var model = this.getModel();
 	if (!url.isLeaf()) {

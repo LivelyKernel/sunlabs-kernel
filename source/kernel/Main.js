@@ -184,7 +184,7 @@ function populateWorldWithExamples(world) {
     if (Config.showIcon) {
         // maybe the icons should have a rectangle shaped images (unlike here)
         // var icon = new ImageMorph(new Rectangle(30, 330, 80, 50), "http://logos.sun.com/images/SunSample.gif");
-	Loader.loadElement("Definitions.svg", "SunLogo");
+	new NetImporter().loadElement("Definitions.svg", "SunLogo");
         var icon = new ImageMorph(new Rectangle(60, 580, 100, 45), "#SunLogo");
         icon.image.scaleBy(0.15);
         icon.setFill(null); // no background
@@ -225,99 +225,86 @@ function populateWorldWithExamples(world) {
         var lm1 = new LinkMorph(null, pt(60, 460));
         world.addMorph(lm1);
 	addLinkLabel(lm1, "More complex sample widgets");
-
+	
         lm1.myWorld.onEnter = function() {
+	    if (this.enterCount > 0) return;
 
-            if (!PIM) PIM = new WebPIM().openIn(lm1.myWorld, pt(110, 110));
+	    PIM = new WebPIM().openIn(this, pt(110, 110));
+	    
 
-           // lm1.myWorld.beetleGame = new DungBeetleMorph(pt(10, 10).extent(pt(240, 320)));
-           // lm1.myWorld.addMorph(new WindowMorph(lm1.myWorld.beetleGame, 'Dung Beetle')); 
-
-            if (Config.showCanvasScape) {
-                if (!lm1.myWorld.csMorph) {
-                    var csm = new CanvasScapeMorph(new Rectangle(20,50,800,300));
-                    lm1.myWorld.csMorph = lm1.myWorld.addMorph(new WindowMorph(csm, 'CanvasScape'));
-                    csm.owner.collapse();
-                }
-            }
-
-            if (Config.showMap) {
-                if (!lm1.myWorld.mapMorph) {
-                    var tile = apps.maps.tileExtent;
-                    var map = new MapFrameMorph(new Rectangle(0, 0, 2*tile.x, 2*tile.y), true);
-                    map.setScale(0.7);
-                    map.setPosition(pt(160, 250));
-                    lm1.myWorld.addMorph(map);
-                    lm1.myWorld.mapMorph = map;
-                }
-            }
-
-            if (!lm1.myWorld.rssReader && Config.showRSSReader && Config.showNetworkExamples) {
+            if (Config.showRSSReader && Config.showNetworkExamples) {
                 console.log('initializing RSS reader');
-                lm1.myWorld.rssReader = new FeedWidget("http://www.news.com/2547-1_3-0-5.xml").openIn(lm1.myWorld, pt(725, 120));
+                new FeedWidget("http://www.news.com/2547-1_3-0-5.xml").openIn(this, pt(725, 120));
             }
-
+	    
+            // this.beetleGame = new DungBeetleMorph(pt(10, 10).extent(pt(240, 320)));
+            // this.addMorph(new WindowMorph(this.beetleGame, 'Dung Beetle')); 
+	    
+            if (Config.showCanvasScape) {
+                this.addMorph(new WindowMorph(new CanvasScapeMorph(new Rectangle(20,50,800,300)), 'CanvasScape')).collapse();
+            }
+	    
+            if (Config.showMap) {
+                var tile = apps.maps.tileExtent;
+                var map = new MapFrameMorph(new Rectangle(0, 0, 2*tile.x, 2*tile.y), true);
+                map.setScale(0.7);
+                map.setPosition(pt(160, 250));
+                this.addMorph(map);
+            }
+	    
             // Add sample curve stuff
             if (Config.showCurveExample) {
-
                 // bezier blob
                 var shape1 = [pt(0,0), pt(50,0), pt(50,50), pt(0,50), pt(0,0)];
                 var widget = new Morph(pt(100,100).asRectangle(),"rect");
                 widget.setShape(new PathShape(shape1, Color.red, 3, Color.black));
-                lm1.myWorld.addMorph(widget);
+                this.addMorph(widget);
                 widget = new Morph(pt(250,50).asRectangle(),"rect");
-
+		
                 // rectangle with rounded corners
                 var shape2 = [pt(10,0), pt(60,0), pt(70,10), pt(70,40),
                     pt(60,50), pt(10,50), pt(0,40), pt(0, 10), pt(10,0)];
-
+		
                 for (var i = 2; i<=8; i+=2) {
                     // this will work too
                     // shape2[i].radius = pt(10,10); shape2[i].type = "arc";
                     shape2[i].radius = 10; shape2[i].type = "arc";
                 }
-
+		
                 widget.setShape(new PathShape(shape2, Color.green, 2, Color.red));
-                lm1.myWorld.addMorph(widget);
-            }    
-        
-        }
-
-        if (Config.showBitmap) { 
-            var width = 800;
-            var height = 500;
-            var url = "http://maps.google.com/mapdata?"+
-            "Point=b&Point.latitude_e6=61500000&Point.longitude_e6=-3191200000&Point.iconid=15&"+
-            "Point=e&Point=b&Point.latitude_e6=61500000&Point.longitude_e6=-3191200600&Point.iconid=16&"+
-            "Point=e&latitude_e6=61500000&longitude_e6=-3191200000&zm=8000&w=" +
-            width + "&h=" + height + "&cc=US&min_priority=2";
+                this.addMorph(widget);
+            } 
+            if (Config.showBitmap) { 
+		var width = 800;
+		var height = 500;
+		var url = "http://maps.google.com/mapdata?"+
+		    "Point=b&Point.latitude_e6=61500000&Point.longitude_e6=-3191200000&Point.iconid=15&"+
+		    "Point=e&Point=b&Point.latitude_e6=61500000&Point.longitude_e6=-3191200600&Point.iconid=16&"+
+		    "Point=e&latitude_e6=61500000&longitude_e6=-3191200000&zm=8000&w=" +
+		    width + "&h=" + height + "&cc=US&min_priority=2";
+		this.addMorphBack(new WindowMorph(new ImageMorph(new Rectangle(50, 10, width, height), url), 'Tampere'));
+            }
+	    
+            if (Config.showSquiggle) this.addFramedMorph(new SquiggleMorph(pt(300, 300)), 'Squiggle Morph', pt(560, 380));
             
-            lm1.myWorld.addMorphBack(new WindowMorph(new ImageMorph(new Rectangle(50, 10, width, height), url), 'Tampere'));
+            if (Config.showVideo) this.addFramedMorph(new PlayerMorph(), "Player", pt(50, 20));
+	    
         }
-
-        if (Config.showSquiggle) lm1.myWorld.addFramedMorph(new SquiggleMorph(pt(300, 300)), 'Squiggle Morph', pt(560, 380));
-        
-        if (Config.showVideo) { lm1.myWorld.addFramedMorph(new PlayerMorph(), "Player", pt(50, 20)); }
-
     }
     // load from slideWorld
-
     if (Config.showSlideWorld) { // Make a slide for "turning web programming upside down"
 	if (Config.loadSerializedSubworlds) {
-	    var reporter = new NetRequestReporter();
-	    reporter.setContents = function(doc) {
-		var importer = new Importer();
-		var simpleWorld  = importer.loadWorldContents(doc);
-		var link = new LinkMorph(simpleWorld, pt(60, 400));
-		world.addMorph(link); 
+	    var importer = new NetImporter();
+	    importer.onWorldLoad = function(slideWorld, er) {
+		var link = world.addMorph(new LinkMorph(slideWorld, pt(60, 400)));
 		addLinkLabel(link, "Simple example morphs");
 	    }
-	    new NetRequest({model: reporter, setStatus: "setRequestStatus", setResponseXML: "setContents"}).get(URL.source.withFilename("slide.xhtml"));
+	    importer.loadMarkup(URL.source.withFilename("slide.xhtml"));
+	    
 	} else { 
 	    var link = populateSlideWorld(world);
 	    addLinkLabel(link, "Simple example morphs");
 	}
-
     }
 
     if (Config.showDeveloperWorld) {
@@ -359,20 +346,20 @@ function populateWorldWithExamples(world) {
             console.log('showing TwoPaneBrowser!');
             browser.openIn(Config.webStoreInMain ? WorldMorph.current() : devWorld.myWorld, pt(160, 150));
         }
-
     }
 
     if (Config.showPhoneWorld) {
         var phoneWorld = new LinkMorph(null, pt(60, 320));
         world.addMorph(phoneWorld);
-        var widgetTextMorph = 
-            new TextMorph(new Rectangle(90, 300, 100, 25), "Telephone Demo");
-        widgetTextMorph.shape.roundEdgesBy(10);
-        world.addMorph(widgetTextMorph);
-        phoneWorld.myWorld.onEnter = function() {
-            if (!phoneWorld.myWorld.phoneMorph) {
-                phoneWorld.myWorld.phoneMorph = phoneDemo(phoneWorld.myWorld, pt(250,180), 150);
-            }
+	addLinkLabel(phoneWorld, "Telephone Demo");
+        
+	phoneWorld.myWorld.onEnter = function() {
+	    if (this.enterCount > 0) return;
+	    var importer = new NetImporter();
+	    importer.onCodeLoad = function(error) {
+		error || Global.phoneDemo(phoneWorld.myWorld, pt(250,180), 150);
+	    };
+	    importer.loadCode(URL.source.withFilename('phone.js'));
         }
     }
 
@@ -386,7 +373,8 @@ function populateWorldWithExamples(world) {
 function main() {
     var world = null;
     var canvas = Global.document.getElementById("canvas");
-    
+
+
     if (canvas.height && canvas.height.baseVal && canvas.height.baseVal.value < 100) {
 	// a forced value, some browsers have problems with height=100%
 	canvas.setAttribute("height", "800");
