@@ -510,7 +510,7 @@ ClipMorph.subclass('SquiggleMorph', {
         this.currentMorph = null;
         this.start = null;
         this.savedHandColor = null;
-        this.setFill(new LinearGradient(Color.white, Color.primary.blue.lighter(), LinearGradient.EastWest));
+        this.setFill(new LinearGradient([Color.white, 1, Color.primary.blue.lighter()], LinearGradient.EastWest));
         return this;
     },
     
@@ -2366,7 +2366,7 @@ Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
 	var model = this.getModel();
         var panel = new PanelMorph(extent);
 	panel.applyStyle({borderWidth: 2, 
-			  fill: new LinearGradient(Color.white, Color.primary.blue, LinearGradient.WestEast)});
+			  fill: new LinearGradient([Color.white, 1, Color.primary.blue], LinearGradient.WestEast)});
         //panel.setBorderColor(Color.blue);
         // TODO: add rounding to all the elements (panel, window & titlebar)
         // or make the titlebar round depending on the window
@@ -2520,7 +2520,7 @@ Widget.subclass('StockWidget', NetRequestReporterTrait, {
     
     buildView: function(extent, model) {
         var panel = new PanelMorph(extent);
-	var gradient = new LinearGradient(Color.white, Color.primary.blue.lighter(), LinearGradient.EastWest);
+	var gradient = new LinearGradient([Color.white, 1, Color.primary.blue.lighter()], LinearGradient.EastWest);
         panel.applyStyle({fill: gradient, borderWidth: 2});
 	panel.connectModel({model: model});
 
@@ -4263,7 +4263,7 @@ Morph.subclass("EngineMorph", {
     initialize: function($super, fullRect) {
         // A lively model by Dan Ingalls - 9/25/2007
         $super(fullRect, "rect");
-        this.setFill(new LinearGradient(Color.gray, Color.darkGray, LinearGradient.NorthSouth));
+        this.setFill(new LinearGradient([Color.gray, 1, Color.darkGray], LinearGradient.NorthSouth));
         this.makeLayout(1, false);
         this.running = true;
     },
@@ -4565,7 +4565,7 @@ Morph.subclass("PlayerMorph",  {
     initialize: function($super) {
         var rect = new Rectangle(0, 0, 330, 260);
         $super(rect, "rect");
-        this.setFill(new LinearGradient(Color.white, Color.primary.blue, LinearGradient.NorthSouth));
+        this.setFill(new LinearGradient([Color.white, 1, Color.primary.blue], LinearGradient.NorthSouth));
 
         this.animation = new AnimMorph(rect);
         this.animation.startup("Resources/Anim/Frame", 469, ".jpg"); 

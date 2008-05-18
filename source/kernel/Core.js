@@ -936,7 +936,11 @@ Object.subclass("Point", {
     toString: function() {
 	return Strings.format("pt(%1.f,%1.f)", this.x, this.y);
     },
-
+    
+    toTuple: function() {
+	return [ this.x, this.y ];
+    },
+    
     toJSON: function() { return {x: this.x, y: this.y}; },
     
     inspect: function() {
@@ -1124,6 +1128,10 @@ Rectangle.addMethods({
     toString: function() { 
 	return Strings.format("rect(%s,%s)", this.topLeft(), this.bottomRight());
     },
+    
+    toTuple: function() {
+	return [this.x, this.y, this.width, this.height];
+    },
 
     inspect: function() {
 	return JSON.serialize(this);
@@ -1207,7 +1215,10 @@ Object.subclass("Color", {
 	function floor(x) { return Math.floor(x*255.99) };
 	return "rgb(" + floor(this.r) + "," + floor(this.g) + "," + floor(this.b) + ")";
     },
-
+    
+    toTuple: function() {
+	return [this.r, this.g, this.b];
+    },
 
     deserialize: function(importer, str) {
 	if (!str || str == "none") return null;
@@ -1365,6 +1376,23 @@ Wrapper.subclass("Gradient", {
 	return Converter.parseLength(stops[index || 0].getAttributeNS(null, "offset"));
     },
 
+    processSpec: function(stopSpec) {
+	// spec is an array of the form [color_1, delta_1, color_2, delta_2 .... color_n],
+	// deltas are converted into stop-offsets by normalizing to the sum of all deltas,
+	// e.g [c1, 1, c2, 3, c3] results three stops at 0, 25% and 100%.
+	
+	if (stopSpec.length %2 == 0) throw new Error("invalid spec");
+	var sum = 0; // [a, 1, b]
+	for (var i = 1; i < stopSpec.length; i += 2)
+	    sum += stopSpec[i];
+	var offset = 0; 
+	for (var i = 1; i <= stopSpec.length; i += 2) {
+	    this.addStop(offset, stopSpec[i - 1]);
+	    if (i != stopSpec.length)
+		offset += stopSpec[i]/sum;
+	}
+    },
+
     setDerivedId: function(owner) {
 	this.setId("gradient_" + owner.id());
 	return this;
@@ -1380,12 +1408,12 @@ Wrapper.subclass("Gradient", {
 // note that Colors and Gradients are similar
 Gradient.subclass("LinearGradient", {
 
-    initialize: function($super, stopColor1, stopColor2, vector) {
+    initialize: function($super, stopSpec, vector) {
 	vector = vector || LinearGradient.NorthSouth;
 	this.rawNode = NodeFactory.create("linearGradient",
 					  {x1: vector.x, y1: vector.y, 
 					   x2: vector.maxX(), y2: vector.maxY()}); 
-	this.addStop(0, stopColor1).addStop(1, stopColor2);
+	this.processSpec(stopSpec);
 	return this;
     },
 
@@ -1418,13 +1446,13 @@ Object.extend(LinearGradient, {
 
 Gradient.subclass('RadialGradient', {
 
-    initialize: function($super, stopColor1, stopColor2) {
-	var c = pt(0.5, 0.5);
-	var r = 0.4;
-	this.rawNode = NodeFactory.create("radialGradient", {cx: c.x, cy: c.y, r: r});
-	this.addStop(0, stopColor1);
-	this.addStop(1, stopColor2);
-	return this;
+    initialize: function($super, stopSpec, optF) {
+	this.rawNode = NodeFactory.create("radialGradient");
+	if (optF) {
+	    this.rawNode.setAttributeNS(null, "fx", optF.x);
+	    this.rawNode.setAttributeNS(null, "fy", optF.y);
+	}
+	this.processSpec(stopSpec);
     }
 });
 
@@ -3774,7 +3802,8 @@ Morph.addMethods({
 
     toString: function() {
 	try {
-	    return Strings.format("%s(#%s,%s)", this.getType(), this.rawNode && this.id() || "" , this.shape || "");
+	    return Strings.format("%s(#%s,%s)", this.getType(), this.rawNode && this.id() || "" , 
+				  this.shape ? "[" + this.shape.bounds().toTuple() + "]" : "");
 	} catch (e) {
 	    //console.log("toString failed on %s", [this.id(), this.getType()]);
 	    return "#<Morph?{" + e + "}>";
@@ -4197,6 +4226,10 @@ Morph.addMethods({
 	var items = [
 	    ["remove", this.remove],
 	    ["inspect", function(evt) { new SimpleInspector(this).openIn(this.world(), evt.point())}],
+	    ["show class in browser", function(evt) { var browser = new SimpleBrowser(this);
+					      browser.openIn(this.world(), evt.point());
+					      browser.getModel().setClassName(this.getType());
+					    }],
 	    ["style", function() { new StylePanel(this).open()}],
 	    ["drill", this.showOwnerChain.curry(evt)],
 	    ["grab", this.pickMeUp.curry(evt)],
@@ -5147,7 +5180,7 @@ PasteUpMorph.subclass("WorldMorph", {
             widgetPanel: { borderColor: Color.red, borderWidth: 2, borderRadius: 0,
                            fill: Color.blue.lighter()},
             clock:       { borderColor: Color.black, borderWidth: 1,
-                           fill: new RadialGradient(Color.yellow.lighter(2), Color.yellow) },
+                           fill: new RadialGradient([Color.yellow.lighter(2), 1, Color.yellow]) },
 	    panel:       {  },
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue},
 	    helpText:    { borderRadius: 15, fill: Color.primary.yellow.lighter(3), fillOpacity: .8}
@@ -5157,15 +5190,16 @@ PasteUpMorph.subclass("WorldMorph", {
             styleName: 'lively',
             window:      { borderRadius: 8 },
             titleBar:    { borderRadius: 8, borderWidth: 2, bordercolor: Color.black,
-                           fill: new LinearGradient(Color.primary.blue, Color.primary.blue.lighter(3), LinearGradient.SouthNorth)},
+                           fill: new LinearGradient([Color.primary.blue.lighter(), 1, Color.primary.blue, 1, Color.primary.blue.lighter(2)], 
+						    LinearGradient.SouthNorth)},
             slider:      { borderColor: Color.black, borderWidth: 1, 
-			   fill: new LinearGradient(Color.primary.blue.lighter(2), Color.primary.blue)},
+			   fill: new LinearGradient([Color.primary.blue.lighter(2), 1, Color.primary.blue])},
             button:      { borderColor: Color.neutral.gray, borderWidth: 0.3, borderRadius: 4,
-                           fill: new LinearGradient(Color.darkGray, Color.darkGray.lighter(), LinearGradient.SouthNorth) },
+                           fill: new LinearGradient([Color.darkGray, 1, Color.darkGray.lighter(2)], LinearGradient.SouthNorth) },
             widgetPanel: { borderColor: Color.blue, borderWidth: 4, borderRadius: 16,
                            fill: Color.blue.lighter(), opacity: 0.4},
             clock:       { borderColor: Color.black, borderWidth: 1,
-                           fill: new RadialGradient(Color.primary.blue.lighter(2), Color.primary.blue.lighter()) },
+                           fill: new RadialGradient([Color.primary.blue.lighter(2), 1, Color.primary.blue.lighter()]) },
 	    panel:       {  },
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue},
 	    helpText:    { borderRadius: 15, fill: Color.primary.yellow.lighter(3), fillOpacity: .8}
@@ -5175,15 +5209,15 @@ PasteUpMorph.subclass("WorldMorph", {
             styleName: 'turquoise',
             window:      { borderRadius: 8},
             titleBar:    { borderRadius: 8, borderWidth: 2, bordercolor: Color.black,
-                           fill: new LinearGradient(Color.turquoise, Color.turquoise.lighter(3))},
+                           fill: new LinearGradient([Color.turquoise, 1, Color.turquoise.lighter(3)])},
             slider:      { borderColor: Color.black, borderWidth: 1, 
-			   fill: new LinearGradient(Color.turquoise.lighter(2), Color.turquoise)},
+			   fill: new LinearGradient([Color.turquoise.lighter(2), 1, Color.turquoise])},
             button:      { borderColor: Color.neutral.gray.darker(), borderWidth: 2, borderRadius: 8,
-                           fill: new RadialGradient(Color.turquoise.lighter(), Color.turquoise) },
+                           fill: new RadialGradient([Color.turquoise.lighter(), 1, Color.turquoise]) },
             widgetPanel: { borderColor: Color.neutral.gray.darker(), borderWidth: 4,
                            fill: Color.turquoise.lighter(3), borderRadius: 16},
             clock:       { borderColor: Color.black, borderWidth: 1,
-                           fill: new RadialGradient(Color.turquoise.lighter(2), Color.turquoise) },
+                           fill: new RadialGradient([Color.turquoise.lighter(2), 1, Color.turquoise]) },
 	    panel:       {  },
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue},
 	    helpText:    { borderRadius: 15, fill: Color.primary.yellow.lighter(3), fillOpacity: .8}
@@ -6074,7 +6108,7 @@ Morph.subclass('LinkMorph', {
         "onto me to transport objects between worlds.",
     openForDragAndDrop: false,
     suppressHandles: true,
-    style: {borderColor: Color.black, fill: new RadialGradient(Color.green, Color.blue)},
+    style: {borderColor: Color.black, fill: new RadialGradient([Color.blue.lighter(), 1, Color.blue, 1, Color.blue.darker()], pt(0.4, 0.2))},
     
     initialize: function($super, otherWorld, initialPosition) {
         // In a scripter, type: world.addMorph(new LinkMorph(null))
@@ -6113,10 +6147,11 @@ Morph.subclass('LinkMorph', {
     makeNewWorld: function(canvas) {
 	return new WorldMorph(canvas);
     },
-
+    
     addPathBack: function() {
 	var pathBack = new LinkMorph(WorldMorph.current(), this.bounds().center());
-        pathBack.setFill(new RadialGradient(Color.orange, Color.red.darker()));
+        pathBack.setFill(new RadialGradient([Color.orange, 1, Color.red, 1, Color.red.darker(2)], 
+					    pt(0.4, 0.2)));
         this.myWorld.addMorph(pathBack);
 	return pathBack;
     },
@@ -6227,7 +6262,7 @@ Morph.subclass('LinkMorph', {
 LinkMorph.subclass('ExternalLinkMorph', {
     documentation: "A link to a different web page, presumably containing another LK",
 
-    style: {borderColor: Color.black, fill: new RadialGradient(Color.green, Color.yellow)},
+    style: {borderColor: Color.black, fill: new RadialGradient([Color.green, 1, Color.yellow])},
     
     initialize: function($super, url, position) {
 	$super(null, position || pt(0, 0));

@@ -103,11 +103,11 @@ Morph.subclass("ButtonMorph", {
         var delta = value ? 1 : 0;
         if (this.baseFill instanceof LinearGradient) {
             var base = this.baseFill.stopColor(0).lighter(delta);
-	    this.setFill(new LinearGradient(base, base.lighter(), LinearGradient.SouthNorth));
+	    this.setFill(new LinearGradient([base, 1, base.lighter()], LinearGradient.SouthNorth));
 	    // console.log("set gradient " + gradient);
         } else if (this.baseFill instanceof RadialGradient) {
             var base = this.baseFill.stopColor(0).lighter(delta);
-            this.setFill(new RadialGradient(base.lighter(), base));
+            this.setFill(new RadialGradient([base.lighter(), 1, base]));
         } else if (this.baseFill instanceof Color) {
             this.setFill(this.baseFill.lighter(delta)); 
         } else throw new Error('unsupported fill type ' + this.baseFill);
@@ -458,10 +458,12 @@ Morph.subclass("WindowControlMorph", {
     documentation: "Event handling for Window morphs",
 
     borderWidth: 0,
+    
+    focus: pt(0.4, 0.2),
 
     initialize: function($super, rect, inset, color, targetMorph, actionScript, helpText) {
         $super(rect.insetBy(inset), 'ellipse');
-        this.setFill(new RadialGradient(color.lighter(2), color));
+        this.setFill(new RadialGradient([color.lighter(2), 1, color, 1, color.darker()], this.focus));
         this.targetMorph = targetMorph;
         // FIXME should be a superclass(?) of SchedulableAction
         this.action = this.addWrapper(new SchedulableAction(targetMorph, actionScript, null, 0));
@@ -483,13 +485,14 @@ Morph.subclass("WindowControlMorph", {
 
     onMouseOver: function($super, evt) {
         var prevColor = this.fill.stopColor(1);
-        this.setFill(new RadialGradient(Color.white, prevColor));
+        this.setFill(new RadialGradient([Color.white, 1, prevColor, 1, prevColor.darker()], this.focus));
         $super(evt);
     },
     
     onMouseOut: function($super, evt) {
         var prevColor = this.fill.stopColor(1);
-        this.setFill(new RadialGradient(prevColor.lighter(2), prevColor));
+        this.setFill(new RadialGradient([prevColor.lighter(2), 1, prevColor, 1, prevColor.darker()], this.focus));
+        // this.setFill(new RadialGradient([prevColor.lighter(2), 1, prevColor]));
         $super(evt);
     },
     
@@ -854,9 +857,8 @@ Morph.subclass('HandleMorph', {
 Morph.subclass("SelectionMorph", {
     documentation: 'selection "tray" object that allows multiple objects to be moved and otherwise '
 	+ 'manipulated simultaneously',
-    borderWidth: 1,
-    borderColor: Color.blue,
-    fill: Color.secondary.blue,
+
+    style: {borderWidth: 1, borderColor: Color.blue, fill: Color.secondary.blue, fillOpacity: 0.1 },
 
     initialize: function($super, viewPort, defaultworldOrNull) {
         $super(viewPort, "rect");
@@ -864,7 +866,7 @@ Morph.subclass("SelectionMorph", {
         this.reshapeName = "bottomRight";
         this.selectedMorphs = [];
         this.initialSelection = true;
-        this.shape.setFillOpacity(0.1);
+	this.applyStyle(this.style);
         this.myWorld = defaultworldOrNull ? defaultworldOrNull : this.world();
         // this.shape.setStrokeDashArray([3,2]);
         return this;
@@ -1901,9 +1903,9 @@ Morph.subclass("SliderMorph", {
         if (this.fill instanceof LinearGradient) {
             var direction = this.vertical() ? LinearGradient.EastWest : LinearGradient.NorthSouth;
             var baseColor = this.fill.stopColor(1);
-            this.fill = new LinearGradient(this.fill.stopColor(0), baseColor, direction);
+            this.fill = new LinearGradient([this.fill.stopColor(0), 1, baseColor], direction);
             this.setFill(this.fill);
-            this.slider.setFill(new LinearGradient(baseColor.lighter(), baseColor.darker(), direction));
+            this.slider.setFill(new LinearGradient([baseColor.lighter(), 1, baseColor.darker()], direction));
         } else {
             this.setFill(this.fill);
             this.slider.setFill(this.fill.darker());

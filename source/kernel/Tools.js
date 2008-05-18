@@ -105,7 +105,7 @@ Widget.subclass('SimpleBrowser', {
 
         var model = this.getModel();
         var m = panel.leftPane;
-        m.connectModel({model: model, getList: "getClassList", setSelection: "setClassName", getMenu: "getClassPaneMenu"});
+        m.connectModel({model: model, getList: "getClassList", setSelection: "setClassName", getSelection: "getClassName", getMenu: "getClassPaneMenu"});
         m.updateView("getClassList");
         m = panel.rightPane;
         m.connectModel({model: model, getList: "getMethodList", setSelection: "setMethodName"});
@@ -132,7 +132,7 @@ Widget.subclass('SimpleBrowser', {
                     "Main.js", "Core.js", "Text.js",
                     "Widgets.js", "Network.js", "Storage.js", "Tools.js",
                     "Examples.js", "WebPIM.js", "phone.js"]);
-                WorldMorph.current().setFill(new RadialGradient(Color.rgb(36,188,255), Color.rgb(127,15,0)));
+                WorldMorph.current().setFill(new RadialGradient([Color.rgb(36,188,255), 1, Color.rgb(127,15,0)]));
             }]);
         }
         if (!Config.debugExtras && Function.installStackTracers) {
@@ -426,11 +426,11 @@ WidgetModel.subclass('StylePanel', {
     
         if (this.fillType == 'linear gradient') {
             if (this.fillDir == null) this.fillDir = 'NorthSouth';
-            this.targetMorph.setFill(new LinearGradient(this.color1, this.color2, LinearGradient[this.fillDir]));
+            this.targetMorph.setFill(new LinearGradient([this.color1, 1, this.color2], LinearGradient[this.fillDir]));
         }
     
         if (this.fillType == 'radial gradient')
-            this.targetMorph.setFill(new RadialGradient(this.color1, this.color2));
+            this.targetMorph.setFill(new RadialGradient([this.color1, 1, this.color2]));
     },
      
     getFillOpacity: function() { return this.fillOpacity; },
