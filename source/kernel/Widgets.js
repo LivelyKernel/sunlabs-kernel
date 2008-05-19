@@ -355,7 +355,8 @@ Morph.subclass("TitleBarMorph", {
         label.shape.roundEdgesBy(8);
 	label.inset = this.labelInset.copy();
         this.label = this.addMorph(label);
-
+	this.label.setFill(new LinearGradient([Color.white, 1, Color.gray]));
+	
         this.adjustForNewBounds();  // This will align the buttons and label properly
         return this;
     },
@@ -376,7 +377,7 @@ Morph.subclass("TitleBarMorph", {
     },
 
     highlight: function(trueForLight) {
-        this.label.setFill(trueForLight ? Color.white : null);
+	this.label.setFill(trueForLight ? new LinearGradient([Color.white, 1, Color.lightGray]) : null);
     },
 
     okToBeGrabbedBy: function(evt) {
@@ -1747,6 +1748,7 @@ Morph.subclass("MenuMorph", {
             label.fitText();
             label.align(label.bounds().bottomCenter(), this.listMorph.shape.bounds().topCenter());
             this.label = this.addMorph(label);
+	    this.label.setFill(new LinearGradient([Color.white, 1, Color.gray]));
         }
 
         // If menu and/or caption is off screen, move it back so it is visible
