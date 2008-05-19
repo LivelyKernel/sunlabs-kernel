@@ -1498,7 +1498,7 @@ Morph.subclass("TextListMorph", {
         if (lineNo in this.submorphs) {
             var item = this.submorphs[lineNo];
             this.savedFill = item.getFill();
-            item.setFill(TextSelection.prototype.fill);
+            item.setFill(TextSelectionMorph.prototype.style.fill);
             selectionContent = item.textString;
             this.scrollItemIntoView(item);
         }

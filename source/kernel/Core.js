@@ -3245,7 +3245,7 @@ Visual.subclass("Morph", {
 	    var type = LivelyNS.getAttribute(desc, "type");
 	    // alert("got node " + Exporter.stringify(desc));
 	    // depth first traversal
-	    if (type && type != "Selection") { // FIXME remove the conditional
+	    if (type) {
 		var morph = importer.importFromNode(desc);
 		this.submorphs.push(morph); 
 		morph.owner = this;

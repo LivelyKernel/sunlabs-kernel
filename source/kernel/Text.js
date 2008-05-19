@@ -842,21 +842,31 @@ WrapStyle = Class.makeEnum([
     "Shrink" // sets both width and height based on line breaks only
 ]);
 
-Visual.subclass('TextSelection', {
-    // Should this be a transient morph instead?
-    fill: Color.primary.green,
-    borderWidth: 0,
-    borderRadius: 1,
+Morph.subclass('TextSelectionMorph', {
+
+    documentation: "Visual representation of the text selection",
+    style: {fill: Color.primary.green, borderWidth: 0, borderRadius: 1},
+    transientBounds: true,
     
-    initialize: function() {
-	this.rawNode = NodeFactory.create("g", {"fill" : this.fill,  "stroke-width": this.borderWidth});
-	LivelyNS.setType(this.rawNode, "Selection");
+    initialize: function($super) {
+	$super(pt(0, 0).asRectangle(), "rect");
+	this.applyStyle({fill: null, borderWidth: 0});
+	this.ignoreEvents();
     },
-    
+
     addRectangle: function(rect) {
-	this.rawNode.appendChild(new RectShape(rect).roundEdgesBy(this.borderRadius).rawNode);
+	var m = this.addMorph(new Morph(rect, "rect"));
+	m.applyStyle(this.style);
+	m.ignoreEvents();
+    },
+
+    undraw: function() {
+	this.removeAllMorphs();
     }
+
 });
+
+
 
 Visual.subclass('TextContent', {
     documentation: "wrapper around SVG Text elements",
@@ -864,7 +874,6 @@ Visual.subclass('TextContent', {
 	this.rawNode = NodeFactory.create("text", { "kerning": 0 });
     }
 });
-
 
 Morph.subclass("TextMorph", {
     
@@ -882,7 +891,7 @@ Morph.subclass("TextMorph", {
     maxSafeSize: 20000, 
     tabWidth: 4,
     tabsAsSpaces: true,
-    noShallowCopyProperties: Morph.prototype.noShallowCopyProperties.concat(['textContent', 'textSelection', 'lines']),
+    noShallowCopyProperties: Morph.prototype.noShallowCopyProperties.concat(['textContent', 'lines']),
     locale: Locale,
     acceptInput: true, // whether it accepts changes to text KP: change: interactive changes
     autoAccept: false,
@@ -898,7 +907,7 @@ Morph.subclass("TextMorph", {
         // note selection is transient
         this.lines = null;//: TextLine[]
         this.lineNumberHint = 0;
-        this.textSelection = this.addWrapper(new TextSelection());
+        this.textSelection = this.addMorphBack(new TextSelectionMorph());
     },
 
     initializePersistentState: function($super, initialBounds, shapeType) {
@@ -944,17 +953,7 @@ Morph.subclass("TextMorph", {
             this.font = Font.forFamily(this.fontFamily, this.fontSize);
             this.textColor = new Color(Importer.prototype, this.textContent.getTrait("fill"));
 	    return true;
-	} else {
-	    var type = LivelyNS.getType(rawNode);
-	    if (type == 'Selection') {
-		// that's ok, it's actually transient 
-		// remove all chidren b/c they're really transient
-		this.textSelection = new TextSelection(importer, rawNode);
-		// console.log('processing selection %s', rawNode);
-		this.undrawSelection();
-		return true;
-            }
-	}
+	} 
 	return false;
     },
 
@@ -1399,15 +1398,11 @@ Morph.subclass("TextMorph", {
 
     showsSelectionWithoutFocus: Functions.False, // Overridden in, eg, Lists
     
-    undrawSelection: function() {
-	this.textSelection && this.textSelection.replaceRawNodeChildren(null);
-    },
-
     drawSelection: function(noScroll) { // should really be called buildSelection now
         if (!this.showsSelectionWithoutFocus() && this.takesKeyboardFocus() && !this.hasKeyboardFocus) {
             return;
         }
-        this.undrawSelection();
+        this.textSelection.undraw();
 
         var jRect;
         if (this.selectionRange[0] > this.textString.length - 1) { // null sel at end
@@ -1641,7 +1636,7 @@ Morph.subclass("TextMorph", {
 
     onBlur: function($super, hand) {
         $super(hand);
-        if (!this.showsSelectionWithoutFocus()) this.undrawSelection();
+        if (!this.showsSelectionWithoutFocus()) this.textSelection.undraw();
     },
 
     onKeyDown: function(evt) {

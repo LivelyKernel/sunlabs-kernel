@@ -380,3 +380,26 @@ if (UserAgent.canExtendBrowserObjects) Object.extend(Global.document, {
     }.logErrors('Context Menu Handler')
 });
 
+
+
+ // Obsoleted by a transient morph
+Visual.subclass('TextSelection', {
+   
+    fill: Color.primary.green,
+    borderWidth: 0,
+    borderRadius: 1,
+    
+    initialize: function() {
+	this.rawNode = NodeFactory.create("g", {"fill" : this.fill,  "stroke-width": this.borderWidth});
+	LivelyNS.setType(this.rawNode, "Selection");
+    },
+    
+    addRectangle: function(rect) {
+	this.rawNode.appendChild(new RectShape(rect).roundEdgesBy(this.borderRadius).rawNode);
+    },
+
+    undraw: function() {
+	this.replaceRawNodeChildren(null);
+    }
+});
+
