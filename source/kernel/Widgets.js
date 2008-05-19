@@ -355,7 +355,7 @@ Morph.subclass("TitleBarMorph", {
         label.shape.roundEdgesBy(8);
 	label.inset = this.labelInset.copy();
         this.label = this.addMorph(label);
-	this.label.setFill(new LinearGradient([Color.white, 1, Color.gray]));
+	label.setFill(new LinearGradient([Color.white, 1, Color.gray]));
 	
         this.adjustForNewBounds();  // This will align the buttons and label properly
         return this;
@@ -392,16 +392,25 @@ Morph.subclass("TitleBarMorph", {
         var loc = this.innerBounds().topLeft().addXY(3, 3);
         var l0 = loc;
         var dx = pt(this.barHeight - this.controlSpacing, 0);
-        if (this.closeButton) { this.closeButton.setPosition(loc);  loc = loc.addPt(dx); }
         if (this.menuButton) { this.menuButton.setPosition(loc);  loc = loc.addPt(dx); }
         if (this.collapseButton) { this.collapseButton.setPosition(loc);  loc = loc.addPt(dx); }
+        
+	
         if (this.label) {
             this.label.align(this.label.bounds().topCenter(),
-            this.innerBounds().topCenter().addXY(0, 1));
+			     this.innerBounds().topCenter().addXY(0, -1));
             if (this.label.bounds().topLeft().x < loc.x) {
                 this.label.align(this.label.bounds().topLeft(), loc.addXY(0,-2));
             }
         }
+
+
+	if (this.closeButton) { 
+	    loc = this.innerBounds().topRight().addXY(-3 -this.closeButton.shape.bounds().width, 3);
+	    this.closeButton.setPosition(loc);  
+	    // loc = loc.addPt(dx); 
+	}
+
     },
 
     okToDuplicate: Functions.False

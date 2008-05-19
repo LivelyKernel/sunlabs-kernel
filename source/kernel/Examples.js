@@ -125,7 +125,7 @@ Morph.subclass("ClockMorph", {
             var label = new TextMorph((pt(labelSize*3, labelSize).extentAsRectangle()), items[i]);
 	    label.applyStyle({borderWidth: 0, fill: null, wrapStyle: WrapStyle.Shrink, fontSize: labelSize});
             label.setInset(pt(0,0)); 
-            label.align(label.bounds().center(), labelPosition.addXY(-1, 2));
+            label.align(label.bounds().center(), labelPosition.addXY(-2, 2));
             this.addMorph(label);
         }
 	
