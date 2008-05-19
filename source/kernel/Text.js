@@ -886,7 +886,7 @@ Morph.subclass("TextMorph", {
     borderWidth: 1,
     borderColor: Color.black,
 
-    padding: Rectangle.box(6, 4), // remember this shouldn't be modified unless every morph should get the value // KP: should be called padding.
+    padding: Rectangle.inset(6, 4), // remember this shouldn't be modified unless every morph should get the value 
     wrap: WrapStyle.Normal,
     maxSafeSize: 20000, 
     tabWidth: 4,
@@ -924,7 +924,7 @@ Morph.subclass("TextMorph", {
     restorePersistentState: function($super, importer) {
         $super(importer);
         this.wrap = this.getLivelyTrait("wrap");
-	this.padding = Converter.parseBox(this.getLivelyTrait("padding"));
+	this.padding = Converter.parseInset(this.getLivelyTrait("padding"));
     },
 
     restoreFromSubnode: function($super, importer, rawNode) {
@@ -1012,6 +1012,9 @@ Morph.subclass("TextMorph", {
 	if (spec.textColor !== undefined) {
 	    this.setTextColor(spec.textColor);
 	}
+	if (spec.padding !== undefined) {
+	    this.setPadding(spec.padding);
+	}
 	return this;
     },
     
@@ -1046,7 +1049,7 @@ Morph.subclass("TextMorph", {
 	// FIXME: check vs prototype
         this.padding = ext;
 	if (!ext) this.removeLivelyTrait("padding");
-	else this.setLivelyTrait("padding", ext.toBoxTuple().invoke('roundTo', 0.01));
+	else this.setLivelyTrait("padding", ext.toAttributeValue());
     },
 
     beLabel: function() {
@@ -1059,10 +1062,10 @@ Morph.subclass("TextMorph", {
     },
 
     beListItem: function() {
-	this.applyStyle({borderWidth: 0, fill: null, wrapStyle: WrapStyle.None});
+	// specify padding, otherwise selection will overlap
+	this.applyStyle({borderWidth: 0, fill: null, wrapStyle: WrapStyle.None, padding: Rectangle.inset(4, 0)});
 	this.ignoreEvents();
 	this.suppressHandles = true;
-	this.setPadding(Rectangle.box(4, 0)); // otherwise selection will overlap
 	this.acceptInput = false;
 	this.okToBeGrabbedBy = Functions.Null;
 	this.focusHaloBorderWidth = 0;
@@ -2022,7 +2025,7 @@ TextMorph.addMethods({
 	    return;
         this.fontSize = newSize;
         this.font = Font.forFamily(this.fontFamily, newSize);
-        this.setPadding(Rectangle.box(newSize/2 + 2, newSize/3));
+        this.setPadding(Rectangle.inset(newSize/2 + 2, newSize/3));
         this.layoutChanged();
         this.changed();
     },

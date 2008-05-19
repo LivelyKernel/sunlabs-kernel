@@ -305,7 +305,7 @@ Morph.subclass("TitleBarMorph", {
     borderWidth: 0.5,
     controlSpacing: 3,
     barHeight: 22,
-    labelPadding: Rectangle.box(6, 3),
+
 
     initialize: function($super, headline, windowWidth, windowMorph) {
 	var bounds = new Rectangle(0, 0, windowWidth, this.barHeight);
@@ -352,8 +352,7 @@ Morph.subclass("TitleBarMorph", {
             var width = headline.length * 8; // wild guess headlineString.length * 2 *  font.getCharWidth(' ') + 2;
             label = new TextMorph(new Rectangle(0, 0, width, this.barHeight), headline).beLabel();
         }
-        label.shape.roundEdgesBy(8);
-	label.setPadding(this.labelPadding.copy());
+        label.applyStyle({ borderRadius: 8, padding: Rectangle.inset(6, 3)});
         this.label = this.addMorph(label);
 	label.setFill(new LinearGradient([Color.white, 1, Color.gray]));
 	
@@ -1360,7 +1359,7 @@ Morph.subclass("TextListMorph", {
     borderWidth: 1,
     fill: Color.white,
     pins: ["List", "Capacity", "ListDelta", "Selection", "-DeletionConfirmation", "+DeletionRequest"],
-    itemMargin: Rectangle.box(1, 1), // stylize
+    itemMargin: Rectangle.inset(1), // stylize
     defaultCapacity: 50,
     highlightItemsOnMove: false,
     

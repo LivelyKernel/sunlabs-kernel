@@ -677,7 +677,9 @@ var Converter = {
 	return parseFloat(string);
     },
 
-    parseBox: function(string) {
+    parseInset: function(string) {
+	// syntax: <left>(,<top>(,<right>,<bottom>)?)?
+	
 	if (!string || string == "none") return null;
 	var box = string.split(",");
 	var t, b, l, r;
@@ -699,7 +701,7 @@ var Converter = {
 	    console.log("unable to parse padding " + padding);
 	    return null;
 	} 
-        return Rectangle.box(t, l, b, r);
+        return Rectangle.inset(t, l, b, r);
     }
 
 };
@@ -1165,10 +1167,10 @@ Rectangle.addMethods({
 });
 
 Rectangle.addMethods({
-    // These methods enable using rectangles as box specifications, modeled after
+    // These methods enable using rectangles as insets, modeled after
     // the CSS box model, see http://www.w3.org/TR/REC-CSS2/box.html
-    // note topLeft() bottomRight() etc, return the intuitively correct values for Rectangles
-    // used as box specifications.
+    // note topLeft() bottomRight() etc, return the intuitively
+    // correct values for Rectangles used as insets.
 
     left: function() {
 	return this.x;
@@ -1186,13 +1188,17 @@ Rectangle.addMethods({
 	return this.maxY();
     },
 
-    toBoxTuple: function() {
+    toInsetTuple: function() {
+	return [this.left(), this.top(), this.right(), this.bottom()];
+    },
+
+    toAttributeValue: function(d) {
+	var d = 0.01;
+	var result = [this.left()];
 	if (this.top() === this.bottom() && this.left() === this.right()) {
-	    if (this.top() === this.left()) 
-		return [this.left()];
-	    else 
-		return [this.left(), this.top()];
-	} else return [this.left(), this.top(), this.right(), this.bottom()];
+	    if (this.top() === this.left()) result.push(this.top());
+	} else result = result.concat([this.top(), this.right(), this.bottom()]);
+	return result.invoke('roundTo', d || 0.01);
     },
 
     insetByRect: function(r) {
@@ -1234,11 +1240,10 @@ Object.extend(Rectangle, {
 			     element.width.baseVal.value, element.height.baseVal.value);
     },
 
-    box: function(left, top, right, bottom) {
-	if (bottom === undefined) 
-	    bottom = top;
-	if (right === undefined) 
-	    right = left;
+    inset: function(left, top, right, bottom) {
+	if (top === undefined) top = left;
+	if (right === undefined) right = left;
+	if (bottom === undefined) bottom = top;
 	return new Rectangle(left, top, right - left, bottom - top);
     }
 
@@ -5959,8 +5964,7 @@ Morph.subclass("HandMorph", {
 	    this.grabHaloMorph.setLineJoin(Shape.LineJoins.Round);
 	    this.grabHaloMorph.ignoreEvents();
 	    var label = new TextMorph(pt(20,10).extentAsRectangle(), String(grabbedMorph.id())).beLabel();
-	    label.setFontSize(Math.floor(TextMorph.prototype.fontSize*0.85));
-	    label.setPadding(Rectangle.box(0, 0));
+	    label.applyStyle({fontSize: Math.floor(TextMorph.prototype.fontSize*0.85), padding: Rectangle.inset(0)});
 	    this.grabHaloMorph.addMorph(label);
 	    label.align(label.bounds().bottomLeft(), this.grabHaloMorph.shape.bounds().topRight());
 	}
