@@ -1566,8 +1566,9 @@ Morph.subclass("TextMorph", {
         return this.textString.substring(this.selectionRange[0], this.selectionRange[1] + 1); 
     },
     getSelectionText: function() {
-        if (! this.textStyle) return new Text(this.getSelectionString);
-		return this.getText().subtext(this.selectionRange[0], this.selectionRange[1] + 1); 
+	return this.textStyle ? 
+	    this.getText().subtext(this.selectionRange[0], this.selectionRange[1] + 1)
+	    : new Text(this.getSelectionString());
     },
     getText: function() {
         return new Text(this.textString, this.textStyle); 
@@ -1614,7 +1615,7 @@ Morph.subclass("TextMorph", {
     },
 
     setSelectionRange: function(piv, ext) { 
-        this.selectionRange = (ext >= piv) ? [piv,ext-1] : [ext,piv-1];
+        this.selectionRange = (ext >= piv) ? [piv, ext - 1] : [ext, piv - 1];
         this.setModelSelection(this.getSelectionString());
         this.drawSelection(); 
 	this.typingHasBegun = false;  // New selection starts new typing
@@ -1793,49 +1794,49 @@ Morph.subclass("TextMorph", {
 
     doSelectAll: function(fromKeyboard) {
         if (fromKeyboard && this.typingHasBegun) { // Select chars just typed
-				this.setSelectionRange(this.selectionRange[0] - this.charsTyped.length, this.selectionRange[0]);
-	    	} else { // Select All
-            	this.setSelectionRange(0, this.textString.length); 
-	    	}
+	    this.setSelectionRange(this.selectionRange[0] - this.charsTyped.length, this.selectionRange[0]);
+	} else { // Select All
+            this.setSelectionRange(0, this.textString.length); 
+	}
     },
     doMore: function() {
         if (this.charsReplaced) {
-			this.searchForFind(this.charsReplaced, this.selectionRange[0]);
-			if (this.getSelectionString() != this.charsReplaced) return;
-			var holdChars = this.charsReplaced;  // Save charsReplaced
-			this.replaceSelectionWith(this.charsTyped); 
-			this.charsReplaced = holdChars ;  // Restore charsReplaced after above
-		}
+	    this.searchForFind(this.charsReplaced, this.selectionRange[0]);
+	    if (this.getSelectionString() != this.charsReplaced) return;
+	    var holdChars = this.charsReplaced;  // Save charsReplaced
+	    this.replaceSelectionWith(this.charsTyped); 
+	    this.charsReplaced = holdChars ;  // Restore charsReplaced after above
+	}
     },
     doExchange: function() {
-            var sel1 = this.selectionRange;
-	    var sel2 = this.previousSelection;
-	    var d = 1;  // direction current selection will move
-	    if(sel1[0] > sel2[0]) {var t = sel1; sel1 = sel2; sel2 = t; d = -1} // swap so sel1 is first
-	    if(sel1[1] >= sel2[0]) return; // ranges must not overlap
-
-	    var fullText = (this.textStyle) ? this.getText() : this.textString;
-	    var txt1 = fullText.substring(sel1[0], sel1[1]+1);
-	    var txt2 = fullText.substring(sel2[0], sel2[1]+1);
-	    var between = fullText.substring(sel1[1]+1, sel2[0]);
-
-	    var d1 = (txt2.size() + between.size());  // amount to move sel1
-	    var d2 = (txt1.size() + between.size());  // amount to move sel2
-	    var newSel = [sel1[0]+d1, sel1[1]+d1];
-	    var newPrev = [sel2[0]-d2, sel2[1]-d2];
-	    if (d < 0) { var t = newSel;  newSel = newPrev;  newPrev = t; }
-	    var replacement = txt2.concat(between.concat(txt1));
-	    this.setSelectionRange(sel1[0], sel2[1]+1);  // select range including both selections
-	    this.replaceSelectionWith(replacement);  // replace by swapped text
-	    this.setSelectionRange(newSel[0], newSel[1]+1);
-	    this.previousSelection = newPrev;
-	    this.undoSelectionRange = d>0 ? sel1 : sel2;
+        var sel1 = this.selectionRange;
+	var sel2 = this.previousSelection;
+	var d = 1;  // direction current selection will move
+	if (sel1[0] > sel2[0]) {var t = sel1; sel1 = sel2; sel2 = t; d = -1} // swap so sel1 is first
+	if (sel1[1] >= sel2[0]) return; // ranges must not overlap
+	
+	var fullText = (this.textStyle) ? this.getText() : this.textString;
+	var txt1 = fullText.substring(sel1[0], sel1[1]+1);
+	var txt2 = fullText.substring(sel2[0], sel2[1]+1);
+	var between = fullText.substring(sel1[1]+1, sel2[0]);
+	
+	var d1 = (txt2.size() + between.size());  // amount to move sel1
+	var d2 = (txt1.size() + between.size());  // amount to move sel2
+	var newSel = [sel1[0]+d1, sel1[1]+d1];
+	var newPrev = [sel2[0]-d2, sel2[1]-d2];
+	if (d < 0) { var t = newSel;  newSel = newPrev;  newPrev = t; }
+	var replacement = txt2.concat(between.concat(txt1));
+	this.setSelectionRange(sel1[0], sel2[1]+1);  // select range including both selections
+	this.replaceSelectionWith(replacement);  // replace by swapped text
+	this.setSelectionRange(newSel[0], newSel[1]+1);
+	this.previousSelection = newPrev;
+	this.undoSelectionRange = d>0 ? sel1 : sel2;
     },
     doFind: function() {
         this.world().prompt("Enter the text you wish to find...",
-			function(response)
-				{return this.searchForFind(response, this.selectionRange[1]); }
-			.bind(this));
+			    function(response)
+			    {return this.searchForFind(response, this.selectionRange[1]); }
+			    .bind(this));
     },
     doFindNext: function() {
         if (this.lastSearchString)
@@ -1845,94 +1846,94 @@ Morph.subclass("TextMorph", {
         if (SourceControl) SourceControl.browseReferencesTo(this.getSelectionString()); 
     },
     doDoit: function() {
-		this.replaceSelectionWith(" " + this.tryBoundEval(this.getSelectionString()));
+	this.replaceSelectionWith(" " + this.tryBoundEval(this.getSelectionString()));
     },
     doPrintit: function() {
-		var strToEval = this.getSelectionString();
-		this.setNullSelectionAt(this.selectionRange[1] + 1);
-		this.replaceSelectionWith(" " + this.tryBoundEval(strToEval));
+	var strToEval = this.getSelectionString();
+	this.setNullSelectionAt(this.selectionRange[1] + 1);
+	this.replaceSelectionWith(" " + this.tryBoundEval(strToEval));
     },
     doSave: function() {
         this.saveContents(this.textString); 
     },
     tryBoundEval: function (str) {
-		var result;
-		try { result = this.boundEval(str); }
-			catch (e) { this.world().alert("exception " + e); }
-		return result;
+	var result;
+	try { result = this.boundEval(str); }
+	catch (e) { this.world().alert("exception " + e); }
+	return result;
     },
     doHelp: function() {
-		WorldMorph.current().notify("Help is on the way...\n" +
-					"...but not today.");
+	WorldMorph.current().notify("Help is on the way...\n" +
+				    "...but not today.");
     },
     doUndo: function() {
 	if (this.undoTextString) {
-                var t = this.selectionRange;
-		this.selectionRange = this.undoSelectionRange;
-		this.undoSelectionRange = t;
-                t = this.textString;
-		this.setTextString(this.undoTextString);
-		this.undoTextString = t;
+            var t = this.selectionRange;
+	    this.selectionRange = this.undoSelectionRange;
+	    this.undoSelectionRange = t;
+            t = this.textString;
+	    this.setTextString(this.undoTextString);
+	    this.undoTextString = t;
 	}
 	if (this.undoTextStyle) {
-                t = this.textStyle;
-		this.textStyle = this.undoTextStyle;
-		this.undoTextStyle = t;
+            t = this.textStyle;
+	    this.textStyle = this.undoTextStyle;
+	    this.undoTextStyle = t;
 	}
-     },
+    },
     processCommandKeys: function(evt) {  //: Boolean (was the command processed?)
-		var key = evt.getKeyChar();
-		// console.log('command ' + key);
-		if (key) key = key.toLowerCase();
+	var key = evt.getKeyChar();
+	// console.log('command ' + key);
+	if (key) key = key.toLowerCase();
         switch (key) {
-		case "a": { this.doSelectAll(true); return true; } // SelectAll
-		case "x": { this.doCut(); return true; } // Cut
-		case "c": { this.doCopy(); return true; } // Copy
-		case "v": { this.doPaste(); return true; } // Paste
-		case "m": { this.doMore(); return true; } // More (repeat replacement)
-		case "e": { this.doExchange(); return true; } // Exchange
-		case "f": { this.doFind(); return true; } // Find
-		case "g": { this.doFindNext(); return true; } // Find aGain
-		case "w": { this.doSearch(); return true; } // Where (search in system source code)
-		case "d": { this.doDoit(); return true; } // Doit
-		case "p": { this.doPrintit(); return true; } // Printit
-		case "s": { this.doSave(); return true; } // Italic
-        
-        	// Typeface
-		case "b": { this.emphasizeSelection({style: 'bold'}); return true; }
- 		case "i": { this.emphasizeSelection({style: 'italic'}); return true; }
- 		case "n": { this.emphasizeSelection({style: 'normal'}); return true; }
-
-		// Font Size
-		case "4": { this.emphasizeSelection({size: (this.fontSize*0.8).roundTo(1)}); return true; }
-		case "5": { this.emphasizeSelection({size: (this.fontSize*1).roundTo(1)}); return true; }
-		case "6": { this.emphasizeSelection({size: (this.fontSize*1.2).roundTo(1)}); return true; }
-		case "7": { this.emphasizeSelection({size: (this.fontSize*1.5).roundTo(1)}); return true; }
-		case "8": { this.emphasizeSelection({size: (this.fontSize*2.0).roundTo(1)}); return true; }
-
-		// Text Alignment
-		case "l": { this.emphasizeSelection({align: 'left'}); return true; }
-		case "r": { this.emphasizeSelection({align: 'right'}); return true; }
-		case "h": { this.emphasizeSelection({align: 'center'}); return true; }
-		case "j": { this.emphasizeSelection({align: 'justify'}); return true; }
-
-		case "z": { this.doUndo(); return true; }  // Undo
+	case "a": { this.doSelectAll(true); return true; } // SelectAll
+	case "x": { this.doCut(); return true; } // Cut
+	case "c": { this.doCopy(); return true; } // Copy
+	case "v": { this.doPaste(); return true; } // Paste
+	case "m": { this.doMore(); return true; } // More (repeat replacement)
+	case "e": { this.doExchange(); return true; } // Exchange
+	case "f": { this.doFind(); return true; } // Find
+	case "g": { this.doFindNext(); return true; } // Find aGain
+	case "w": { this.doSearch(); return true; } // Where (search in system source code)
+	case "d": { this.doDoit(); return true; } // Doit
+	case "p": { this.doPrintit(); return true; } // Printit
+	case "s": { this.doSave(); return true; } // Italic
+            
+            // Typeface
+	case "b": { this.emphasizeSelection({style: 'bold'}); return true; }
+ 	case "i": { this.emphasizeSelection({style: 'italic'}); return true; }
+ 	case "n": { this.emphasizeSelection({style: 'normal'}); return true; }
+	    
+	    // Font Size
+	case "4": { this.emphasizeSelection({size: (this.fontSize*0.8).roundTo(1)}); return true; }
+	case "5": { this.emphasizeSelection({size: (this.fontSize*1).roundTo(1)}); return true; }
+	case "6": { this.emphasizeSelection({size: (this.fontSize*1.2).roundTo(1)}); return true; }
+	case "7": { this.emphasizeSelection({size: (this.fontSize*1.5).roundTo(1)}); return true; }
+	case "8": { this.emphasizeSelection({size: (this.fontSize*2.0).roundTo(1)}); return true; }
+	    
+	    // Text Alignment
+	case "l": { this.emphasizeSelection({align: 'left'}); return true; }
+	case "r": { this.emphasizeSelection({align: 'right'}); return true; }
+	case "h": { this.emphasizeSelection({align: 'center'}); return true; }
+	case "j": { this.emphasizeSelection({align: 'justify'}); return true; }
+	    
+	case "z": { this.doUndo(); return true; }  // Undo
         }
 	//if (evt.type == "KeyPress") {
-            var bracketIndex = this.locale.charSet.leftBrackets.indexOf(key);
-	    
-            if (bracketIndex >= 0) {
-		this.addOrRemoveBrackets(bracketIndex); 
-		return true;
-            } 
-    //}
+        var bracketIndex = this.locale.charSet.leftBrackets.indexOf(key);
+	
+        if (bracketIndex >= 0) {
+	    this.addOrRemoveBrackets(bracketIndex); 
+	    return true;
+        } 
+	//}
         
         return false;
-
+	
     }
-
+    
 });
-
+    
 // TextMorph accessor functions
 TextMorph.addMethods({
 
