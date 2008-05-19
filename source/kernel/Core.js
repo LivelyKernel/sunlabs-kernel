@@ -675,7 +675,33 @@ var Converter = {
 	// convert into system coords (pt?)
 	// FIXME: handle units
 	return parseFloat(string);
+    },
+
+    parseBox: function(string) {
+	if (!string || string == "none") return null;
+	var box = string.split(",");
+	var t, b, l, r;
+	switch (box.length) {
+	case 1:
+	    b = l = r = t = this.parseLength(box[0].strip());
+	    break;
+	case 2:
+	    t = b = this.parseLength(box[0].strip());
+	    l = r = this.parseLength(box[1].strip());
+	    break;
+	case 4:
+	    t = this.parseLength(box[0].strip());
+	    l = this.parseLength(box[1].strip());
+	    b = this.parseLength(box[2].strip());
+	    r = this.parseLength(box[3].strip());
+	    break;
+	default:
+	    console.log("unable to parse padding " + padding);
+	    return null;
+	} 
+        return Rectangle.box(t, l, b, r);
     }
+
 };
 
 
@@ -1138,6 +1164,44 @@ Rectangle.addMethods({
     }
 });
 
+Rectangle.addMethods({
+    // These methods enable using rectangles as box specifications, modeled after
+    // the CSS box model, see http://www.w3.org/TR/REC-CSS2/box.html
+    // note topLeft() bottomRight() etc, return the intuitively correct values for Rectangles
+    // used as box specifications.
+
+    left: function() {
+	return this.x;
+    },
+
+    right: function() {
+	return this.maxX();
+    },
+
+    top: function() {
+	return this.y;
+    },
+
+    bottom: function() {
+	return this.maxY();
+    },
+
+    toBoxTuple: function() {
+	if (this.top() === this.bottom() && this.left() === this.right()) {
+	    if (this.top() === this.left()) 
+		return [this.left()];
+	    else 
+		return [this.left(), this.top()];
+	} else return [this.left(), this.top(), this.right(), this.bottom()];
+    },
+
+    insetByRect: function(r) {
+	return new Rectangle(this.x + r.left(), this.y + r.top(), this.width - (r.left() + r.right()), this.height - (r.top() + r.bottom()));
+    }
+});
+
+
+
 Object.extend(Rectangle, {
 
     fromAny: function(ptA, ptB) {
@@ -1165,10 +1229,17 @@ Object.extend(Rectangle, {
 	}
     },
 
-
     fromElement: function(element) {
 	return new Rectangle(element.x.baseVal.value, element.y.baseVal.value, 
 			     element.width.baseVal.value, element.height.baseVal.value);
+    },
+
+    box: function(left, top, right, bottom) {
+	if (bottom === undefined) 
+	    bottom = top;
+	if (right === undefined) 
+	    right = left;
+	return new Rectangle(left, top, right - left, bottom - top);
     }
 
 });
@@ -5889,7 +5960,7 @@ Morph.subclass("HandMorph", {
 	    this.grabHaloMorph.ignoreEvents();
 	    var label = new TextMorph(pt(20,10).extentAsRectangle(), String(grabbedMorph.id())).beLabel();
 	    label.setFontSize(Math.floor(TextMorph.prototype.fontSize*0.85));
-	    label.setInset(pt(0, 0));
+	    label.setPadding(Rectangle.box(0, 0));
 	    this.grabHaloMorph.addMorph(label);
 	    label.align(label.bounds().bottomLeft(), this.grabHaloMorph.shape.bounds().topRight());
 	}

@@ -886,7 +886,7 @@ Morph.subclass("TextMorph", {
     borderWidth: 1,
     borderColor: Color.black,
 
-    inset: pt(6,4), // remember this shouldn't be modified unless every morph should get the value 
+    padding: Rectangle.box(6, 4), // remember this shouldn't be modified unless every morph should get the value // KP: should be called padding.
     wrap: WrapStyle.Normal,
     maxSafeSize: 20000, 
     tabWidth: 4,
@@ -924,10 +924,7 @@ Morph.subclass("TextMorph", {
     restorePersistentState: function($super, importer) {
         $super(importer);
         this.wrap = this.getLivelyTrait("wrap");
-        var inset = this.getLivelyTrait("inset");
-        if (inset) {
-            this.inset = new Point(Importer.prototype, inset);
-        }
+	this.padding = Converter.parseBox(this.getLivelyTrait("padding"));
     },
 
     restoreFromSubnode: function($super, importer, rawNode) {
@@ -1045,13 +1042,11 @@ Morph.subclass("TextMorph", {
         }
     },
 
-    setInset: function(ext) {
-        if (ext.eqPt(TextMorph.prototype.inset)) {
-            delete this.inset;
-        } else {
-            this.inset = ext;
-	    this.setLivelyTrait("inset", ext);
-        }
+    setPadding: function(ext) {
+	// FIXME: check vs prototype
+        this.padding = ext;
+	if (!ext) this.removeLivelyTrait("padding");
+	else this.setLivelyTrait("padding", ext.toBoxTuple().invoke('roundTo', 0.01));
     },
 
     beLabel: function() {
@@ -1067,7 +1062,7 @@ Morph.subclass("TextMorph", {
 	this.applyStyle({borderWidth: 0, fill: null, wrapStyle: WrapStyle.None});
 	this.ignoreEvents();
 	this.suppressHandles = true;
-	this.inset = pt(4, 0); // otherwise selection will overlap
+	this.setPadding(Rectangle.box(4, 0)); // otherwise selection will overlap
 	this.acceptInput = false;
 	this.okToBeGrabbedBy = Functions.Null;
 	this.focusHaloBorderWidth = 0;
@@ -1184,11 +1179,11 @@ Morph.subclass("TextMorph", {
 
     // TextMorph composition functions
     textTopLeft: function() { 
-        return this.shape.bounds().topLeft().addPt(this.inset); 
+        return this.shape.bounds().topLeft().addPt(this.padding.topLeft()); 
     },
     
     innerBounds: function() { 
-        return this.shape.bounds().insetByPt(this.inset); 
+        return this.shape.bounds().insetByRect(this.padding);
     },
     
     ensureRendered: function() { // created on demand and cached
@@ -1310,7 +1305,7 @@ Morph.subclass("TextMorph", {
     },
 
     compositionWidth: function() {
-        if (this.wrap === WrapStyle.Normal) return this.shape.bounds().width - (2*this.inset.x);
+        if (this.wrap === WrapStyle.Normal) return this.shape.bounds().width - this.padding.left() - this.padding.right();
         else return 9999; // Huh??
     },
 
@@ -1338,10 +1333,10 @@ Morph.subclass("TextMorph", {
         // console.log('last char is ' + jRect.inspect() + ' for string ' + this.textString);
         var maxY = Math.max(this.lineHeight(), jRect.maxY());
     
-        if (this.shape.bounds().maxY() == maxY + this.inset.y) 
+        if (this.shape.bounds().maxY() == maxY + this.padding.top()) 
             return; // No change in height  // *** check that this converges
     
-        var bottomY = this.inset.y + maxY;
+        var bottomY = this.padding.top() + maxY;
     
         var oldBounds = this.shape.bounds();
         this.shape.setBounds(oldBounds.withHeight(bottomY - oldBounds.y))
@@ -1383,7 +1378,7 @@ Morph.subclass("TextMorph", {
         
         // if (this.innerBounds().width==(maxX-x0) && this.innerBounds().height==(maxY-y0)) return;
         // No change in width *** check convergence
-        var bottomRight = this.inset.addXY(maxX,maxY);
+        var bottomRight = this.padding.topLeft().addXY(maxX,maxY);
 
 
         // DI: This should just say, eg, this.shape.setBottomRight(bottomRight);
@@ -1436,8 +1431,8 @@ Morph.subclass("TextMorph", {
             this.textSelection.addRectangle(r1.union(r2));
         } else { // Selection is on two or more lines
             var localBounds = this.shape.bounds();
-            r1 = r1.withBottomRight(pt(localBounds.maxX() - this.inset.x, r1.maxY()));
-            r2 = r2.withBottomLeft(pt(localBounds.x + this.inset.x, r2.maxY()));
+            r1 = r1.withBottomRight(pt(localBounds.maxX() - this.padding.left(), r1.maxY()));
+            r2 = r2.withBottomLeft(pt(localBounds.x + this.padding.left(), r2.maxY()));
             this.textSelection.addRectangle(r1);
             this.textSelection.addRectangle(r2);
         
@@ -1495,8 +1490,7 @@ Morph.subclass("TextMorph", {
         // Do selecting if click is in selectable area
         if (evt.isCommandKey()) return false;
          var selectableArea = this.openForDragAndDrop
-			? this.shape.bounds().insetByPt(this.inset)
-			:  this.shape.bounds();
+	    ? this.shape.bounds().insetByRect(this.padding) : this.shape.bounds();
        return selectableArea.containsPoint(this.localize(evt.mousePoint)); 
     },
 
@@ -2028,7 +2022,7 @@ TextMorph.addMethods({
 	    return;
         this.fontSize = newSize;
         this.font = Font.forFamily(this.fontFamily, newSize);
-        this.setInset(pt(newSize/2+2, newSize/3));
+        this.setPadding(Rectangle.box(newSize/2 + 2, newSize/3));
         this.layoutChanged();
         this.changed();
     },

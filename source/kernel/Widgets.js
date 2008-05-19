@@ -305,7 +305,7 @@ Morph.subclass("TitleBarMorph", {
     borderWidth: 0.5,
     controlSpacing: 3,
     barHeight: 22,
-    labelInset: pt(6, 3),
+    labelPadding: Rectangle.box(6, 3),
 
     initialize: function($super, headline, windowWidth, windowMorph) {
 	var bounds = new Rectangle(0, 0, windowWidth, this.barHeight);
@@ -353,7 +353,7 @@ Morph.subclass("TitleBarMorph", {
             label = new TextMorph(new Rectangle(0, 0, width, this.barHeight), headline).beLabel();
         }
         label.shape.roundEdgesBy(8);
-	label.inset = this.labelInset.copy();
+	label.setPadding(this.labelPadding.copy());
         this.label = this.addMorph(label);
 	label.setFill(new LinearGradient([Color.white, 1, Color.gray]));
 	
@@ -1229,7 +1229,7 @@ TextMorph.subclass("CheapListMorph", {
     },
 
     charOfY: function(p) { // Like charOfPoint, for the leftmost character in the line
-        return this.charOfPoint(pt(this.inset.x+1,p.y)); 
+        return this.charOfPoint(pt(this.padding.left() + 1, p.y)); 
     },
     
     selectedLineNo: function() { // Return the item index for the current selection
@@ -1327,21 +1327,17 @@ TextMorph.subclass("CheapListMorph", {
 
 Morph.addMethods({
     
-    leftAlignSubmorphs: function(cellInset, inset) { 
-        var padLeft = cellInset.x;
-        var padRight = cellInset.x;
-        var padTop = cellInset.y;
-        var padBottom = cellInset.y;
+    leftAlignSubmorphs: function(pad, inset) { 
 
         var ownExtent = inset;
-        var topLeft = pt(ownExtent.x + padLeft, ownExtent.y + padTop);
-
+        var topLeft = pt(ownExtent.x + pad.left(), ownExtent.y + pad.top());
+	
         for (var i = 0; i < this.submorphs.length; i++) {
             var morph = this.submorphs[i];
             morph.setPosition(topLeft);
             var ext = morph.getExtent();
-            ownExtent = pt(Math.max(ownExtent.x, padLeft  + ext.x + padRight),  
-			   topLeft.y + padTop + ext.y + padBottom);
+            ownExtent = pt(Math.max(ownExtent.x, pad.left()  + ext.x + pad.right()),  
+			   topLeft.y + pad.top() + ext.y + pad.bottom());
             topLeft = topLeft.withY(ownExtent.y);
         }
 	ownExtent = ownExtent.withY(ownExtent.y + inset.y);
@@ -1364,14 +1360,14 @@ Morph.subclass("TextListMorph", {
     borderWidth: 1,
     fill: Color.white,
     pins: ["List", "Capacity", "ListDelta", "Selection", "-DeletionConfirmation", "+DeletionRequest"],
-    itemMargin: pt(1, 1), // stylize
+    itemMargin: Rectangle.box(1, 1), // stylize
     defaultCapacity: 50,
     highlightItemsOnMove: false,
     
 
     initialize: function($super, initialBounds, itemList, optMargin, optTextStyle) {
         // itemList is an array of strings
-        var height = Math.max(initialBounds.height, itemList.length * (TextMorph.prototype.fontSize + this.itemMargin.y *2));
+        var height = Math.max(initialBounds.height, itemList.length * (TextMorph.prototype.fontSize + this.itemMargin.top() + this.itemMargin.bottom()));
         initialBounds = initialBounds.withHeight(height);
         $super(initialBounds, itemList);
         this.itemList = itemList;
@@ -1401,7 +1397,7 @@ Morph.subclass("TextListMorph", {
     handlesMouseDown: Functions.True,
     
     generateSubmorphs: function(itemList, width, additionalStyling) {
-	var rect = pt(width, TextMorph.prototype.fontSize).extentAsRectangle().insetByPt(this.itemMargin);
+	var rect = pt(width, TextMorph.prototype.fontSize).extentAsRectangle().insetByRect(this.itemMargin);
 	for (var i = 0; i < itemList.length; i++)  {
 	    var m = new TextMorph(rect, itemList[i]).beListItem();
 	    if (additionalStyling) m.applyStyle(additionalStyling);
@@ -1712,7 +1708,7 @@ Morph.subclass("MenuMorph", {
 	for (var i = 0; i < this.items.length; i++) {
 	    if (this.items[i][0].length > maxWidth) maxWidth = this.items[i][0].length;
 	}
-	return maxWidth*proto.fontSize/2 + 2*proto.inset.x;
+	return maxWidth*proto.fontSize/2 + proto.padding.left() + proto.padding.right();
     },
 
     openIn: function(parentMorph, loc, remainOnScreen, captionIfAny) { 
