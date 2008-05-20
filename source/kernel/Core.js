@@ -1911,6 +1911,19 @@ var Event = (function() {
 })();
 
 
+(function() {
+    var disabler = {    
+	handleEvent: function(evt) { 	
+	    evt.preventDefault(); 
+	    return false;
+	}
+    };
+    var canvas = Global.document.getElementById("canvas");
+    canvas.addEventListener("dragstart", disabler, true);
+    canvas.addEventListener("selectstart", disabler, true);
+})();
+
+
 // ===========================================================================
 // Graphics primitives (SVG specific, browser-independent)
 // ===========================================================================
@@ -2003,11 +2016,6 @@ Wrapper.subclass('Visual', {
 	this.rawNode.removeAttributeNS(null, "pointer-events");
     },
 
-    disableBrowserHandlers: function() {
-	this.rawNode.addEventListener("dragstart", Visual.BrowserHandlerDisabler, true);
-	this.rawNode.addEventListener("selectstart", Visual.BrowserHandlerDisabler, true);
-    },
-
     getLocalTransform: function() {
 	var impl = this.rawNode.transform.baseVal.consolidate();
 	return new Transform(impl ? impl.matrix : null); // identity if no transform specified
@@ -2069,14 +2077,7 @@ Wrapper.subclass('Visual', {
 
 });
 
-Visual.BrowserHandlerDisabler = { 
 
-    handleEvent: function(evt) { 
-	evt.preventDefault(); 
-	return false;
-    }
-
-};
 
 // ===========================================================================
 // Shape functionality
@@ -2106,7 +2107,6 @@ Visual.subclass('Shape', {
 
 	if (this.shouldIgnorePointerEvents)
 	    this.disablePointerEvents();
-	// this.disableBrowserHandlers();
 
 	if (fill !== undefined)
 	    this.setFill(fill && fill.toString());
@@ -3166,7 +3166,6 @@ Visual.subclass("Morph", {
 	this.initializePersistentState(initialBounds, shapeType);
 
 	this.initializeTransientState(initialBounds);
-	this.disableBrowserHandlers();        
     },
 
     deserialize: function(importer, rawNode) {
@@ -3181,7 +3180,6 @@ Visual.subclass("Morph", {
 
 	this.initializeTransientState(null);
 
-	this.disableBrowserHandlers();        
 
 	// collect scripts
 	if (this.activeScripts) importer.addScripts(this.activeScripts);
@@ -3256,9 +3254,6 @@ Visual.subclass("Morph", {
 	} 
 
 	this.layoutChanged();
-
-	this.disableBrowserHandlers(); 
-
 	return this; 
     },
 
