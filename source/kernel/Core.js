@@ -3913,7 +3913,7 @@ Morph.addMethods({
 
     pvtSetTransform: function(tfm) {
 	this.origin = tfm.getTranslation();
-	this.rotation = tfm.getRotation();
+	this.rotation = tfm.getRotation().toRadians();
 	this.scale = tfm.getScale();
 	// we must make sure the Morph keeps its original size (wrt/fisheyeScale)
 	this.scale = this.scale/this.fisheyeScale;
@@ -6020,13 +6020,8 @@ Morph.subclass("HandMorph", {
             var m = this.submorphs.first();
             receiver.addMorph(m); // this removes it from hand
             if (this.logDnD) console.log("%s dropping %s on %s", this, m, receiver);
-	    
 	    this.showAsUngrabbed(m);
-            // FIXME - following stmt is a workaround for the fact that if the targetMorph gets
-            // dragged, its rotation value set in degrees rather than radians, and this
-            // may foul things up later if .rotation is read rather than .getRotation
-            // Remove this stmt after it gets fixed.
-            m.setRotation(m.getRotation()); //work-around for invalid degree/radian confusion
+
         }
     },
 

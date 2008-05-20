@@ -589,7 +589,6 @@ Morph.subclass('WindowMorph', {
             var owner = this.owner;
             owner.addMorph(this.titleBar);
             this.titleBar.setTransform(this.collapsedTransform ? this.collapsedTransform : this.expandedTransform);
-            this.titleBar.setRotation(this.titleBar.getRotation());  // see comment in HandMorph
             if (this.titleBar.collapsedExtent) this.titleBar.setExtent(this.titleBar.collapsedExtent);
             this.titleBar.enableEvents();
             this.remove();
