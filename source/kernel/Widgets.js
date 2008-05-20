@@ -578,33 +578,46 @@ Morph.subclass('WindowMorph', {
     
     collapse: function() { 
         if (this.isCollapsed()) return;
-        this.expandedTransform = this.getTransform();
-        this.tbTransform = this.titleBar.getTransform();
-        var owner = this.owner;
-        owner.addMorph(this.titleBar);
-        this.titleBar.setTransform(this.collapsedTransform ? this.collapsedTransform : this.expandedTransform);
-        this.titleBar.setRotation(this.titleBar.getRotation());  // see comment in HandMorph
-        if (this.titleBar.collapsedExtent) this.titleBar.setExtent(this.titleBar.collapsedExtent);
-        this.titleBar.enableEvents();
+	if (Config.useSimpleCollapse) {
+	    // won't remember old position
+	    this.targetMorph.undisplay();
+	    this.shape.setBounds(this.titleBar.bounds());
+	    this.layoutChanged();
+	} else {
+            this.expandedTransform = this.getTransform();
+            this.tbTransform = this.titleBar.getTransform();
+            var owner = this.owner;
+            owner.addMorph(this.titleBar);
+            this.titleBar.setTransform(this.collapsedTransform ? this.collapsedTransform : this.expandedTransform);
+            this.titleBar.setRotation(this.titleBar.getRotation());  // see comment in HandMorph
+            if (this.titleBar.collapsedExtent) this.titleBar.setExtent(this.titleBar.collapsedExtent);
+            this.titleBar.enableEvents();
+            this.remove();
+	}
         this.titleBar.highlight(false);
-        this.remove();
         this.state = WindowState.Collapsed;
     },
     
     expand: function() {
         if (!this.isCollapsed()) return;
-        this.collapsedTransform = this.titleBar.getTransform();
-        this.titleBar.collapsedExtent = this.titleBar.innerBounds().extent();
-        var owner = this.titleBar.owner;
-        owner.addMorph(this);
+	if (Config.useSimpleCollapse) {
+	    this.targetMorph.display();
+	    this.shape.setBounds(this.targetMorph.bounds().union(this.titleBar.bounds()));
+	    this.layoutChanged();
+	} else {
+            this.collapsedTransform = this.titleBar.getTransform();
+            this.titleBar.collapsedExtent = this.titleBar.innerBounds().extent();
+            var owner = this.titleBar.owner;
+            owner.addMorph(this);
+            this.setTransform(this.expandedTransform);        
+            // this.titleBar.remove();  //next statement removes it from prior owner
+            this.addMorph(this.titleBar);
+            this.titleBar.setTransform(this.tbTransform)
+            this.titleBar.setExtent(pt(this.innerBounds().width, this.titleBar.innerBounds().height));
+            this.titleBar.setPosition(this.innerBounds().topLeft());
+            this.titleBar.ignoreEvents();
+	}
         this.takeHighlight();
-        this.setTransform(this.expandedTransform);        
-        // this.titleBar.remove();  //next statement removes it from prior owner
-        this.addMorph(this.titleBar);
-        this.titleBar.setTransform(this.tbTransform)
-        this.titleBar.setExtent(pt(this.innerBounds().width, this.titleBar.innerBounds().height));
-        this.titleBar.setPosition(this.innerBounds().topLeft());
-        this.titleBar.ignoreEvents();
         this.state = WindowState.Expanded;
     },
 
@@ -669,12 +682,12 @@ Morph.subclass('WindowMorph', {
     },
     // End of window promotion methods----------------
 
-    isShutdown: function() { return this.state == WindowState.Shutdown; },
-
+    isShutdown: function() { return this.state === WindowState.Shutdown; },
+    
     initiateShutdown: function() {
         if (this.isShutdown()) return;
         this.targetMorph.shutdown(); // shutdown may be prevented ...
-        if (this.isCollapsed()) this.titleBar.remove();
+        if (!Config.useSimpleCollapse && this.isCollapsed()) this.titleBar.remove();
         else this.remove();
         this.state = WindowState.Shutdown; // no one will ever know...
         return true;

@@ -2054,6 +2054,12 @@ Wrapper.subclass('Visual', {
 	this.rawNode.removeAttributeNS(null, "display");
     },
 
+    isDisplayed: function() {
+	// Note: this may not be correct in general in SVG due to inheritance,
+	// but should work in LK.
+	return this.rawNode.getAttributeNS(null, "display") != "none";
+    },
+
     applyFilter: function(filterUri) {
 	if (filterUri) 
 	    this.rawNode.setAttributeNS(null, "filter", filterUri);
@@ -4636,7 +4642,7 @@ Morph.addMethods({
 	var subBounds = null;
 	this.submorphs.forEach(ignoreTransients ? 
 			       function(m) { 
-				   if (!m.transientBounds)
+				   if (!m.transientBounds && m.isDisplayed())
 				       subBounds = subBounds == null ? m.bounds(ignoreTransients) :
 				       subBounds.union(m.bounds(ignoreTransients));
 			       } : 
