@@ -5258,7 +5258,7 @@ PasteUpMorph.subclass("WorldMorph", {
                            fill: Color.blue.lighter()},
             clock:       { borderColor: Color.black, borderWidth: 1,
                            fill: new RadialGradient([Color.yellow.lighter(2), 1, Color.yellow]) },
-	    panel:       {  },
+	    panel:       { fill: Color.primary.blue.lighter(2), borderWidth: 2},
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue},
 	    helpText:    { borderRadius: 15, fill: Color.primary.yellow.lighter(3), fillOpacity: .8}
         },
@@ -5277,7 +5277,7 @@ PasteUpMorph.subclass("WorldMorph", {
                            fill: Color.blue.lighter(), opacity: 0.4},
             clock:       { borderColor: Color.black, borderWidth: 1,
                            fill: new RadialGradient([Color.primary.blue.lighter(2), 1, Color.primary.blue.lighter()]) },
-	    panel:       {  },
+	    panel:       { fill: Color.primary.blue.lighter(2), borderWidth: 2},
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue},
 	    helpText:    { borderRadius: 15, fill: Color.primary.yellow.lighter(3), fillOpacity: .8}
         },
@@ -5295,7 +5295,7 @@ PasteUpMorph.subclass("WorldMorph", {
                            fill: Color.turquoise.lighter(3), borderRadius: 16},
             clock:       { borderColor: Color.black, borderWidth: 1,
                            fill: new RadialGradient([Color.turquoise.lighter(2), 1, Color.turquoise]) },
-	    panel:       {  },
+	    panel:       {fill: Color.primary.blue.lighter(2), borderWidth: 2},
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue},
 	    helpText:    { borderRadius: 15, fill: Color.primary.yellow.lighter(3), fillOpacity: .8}
         }
@@ -6406,6 +6406,9 @@ function interactiveEval(text) {
     }
     function $p(obj) {
 	return Properties.all(obj);
+    }
+    function $x(x, expr) {
+	return new Query(expr).findAll(node.rawNode || node);
     }
     return eval(text);
 };

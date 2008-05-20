@@ -260,28 +260,18 @@ ButtonMorph.subclass("ImageButtonMorph", {
 Morph.subclass("ClipMorph", {
 
     documentation: "A clipping window/view",
-
+    // A clipMorph is like a window through which its submorphs are seen
+    // Its bounds are strictly limited by its shape
+    // Display of its submorphs are strictly clipped to its shape, and
+    // (optionally) reports of damage from submorphs are also clipped so that,
+    // eg, scrolling can be more efficient
+    
     fill: null,
     borderWidth: 0,
 
-    deserialize: function($super, importer, rawNode) {
-        $super(importer, rawNode);
-        this.clipToShape();
-    },
-
-    initialize: function($super, initialBounds) {
-        $super(initialBounds, "rect");
-    
-        // A clipMorph is like a window through which its submorphs are seen
-        // Its bounds are strictly limited by its shape
-        // Display of its submorphs are strictly clipped to its shape, and
-        // (optionally) reports of damage from submorphs are also clipped so that,
-        // eg, scrolling can be more efficient
-        // this.setBorderColor(Color.black);
-        // this.setFill(null);
-        // this.setBorderWidth(0); 
-        this.clipToShape();
-        return this;
+    initializeTransientState: function($super, initialBounds) {
+	$super(initialBounds);
+	this.clipToShape();
     },
 
     defaultOrigin: function(bounds) { 
@@ -538,8 +528,9 @@ Morph.subclass('WindowMorph', {
         $super(location ? rect(location, bounds.extent()) : bounds, 'rect');
         this.targetMorph = this.addMorph(targetMorph);
         this.titleBar = this.addMorph(titleBar);
-        this.contentOffset = pt(0, titleHeight);
+        this.contentOffset = pt(0, titleHeight - titleBar.getBorderWidth()/2); // FIXME: hack
         targetMorph.setPosition(this.contentOffset);
+	this.applyStyle({borderWidth: 0, fill: null});
         this.linkToStyles(['window']);
         this.closeAllToDnD();
         return this;
@@ -1022,11 +1013,9 @@ Morph.subclass("SelectionMorph", {
 // Panels, lists, menus, sliders, panes, etc.
 // ===========================================================================
 
-/**
- * @class PanelMorph
- */
 Morph.subclass('PanelMorph', {
 
+    documentation: "a panel",
     initialize: function($super, extent/*:Point*/) {
         $super(extent.extentAsRectangle(), 'rect');
         this.lastNavigable = null;
@@ -1107,12 +1096,12 @@ Object.extend(PanelMorph, {
         //     ['leftPane', newTextListPane, new Rectangle(0, 0, 0.5, 0.6)],
         // See example calls in, eg, SimpleBrowser.buildView() for how to use this
         var panel = new PanelMorph(extent);
-        panel.applyStyle({fill: Color.primary.blue.lighter(2), borderWidth: 2});
+        panel.linkToStyles(['panel']);
 
         paneSpecs.forEach(function(spec) {
             var paneName = spec[0];
             var paneConstructor = spec[1];
-            var paneRect = pt(0,0).extent(extent).scaleByRect(spec[2]);
+            var paneRect = extent.extentAsRectangle().scaleByRect(spec[2]);
             panel[paneName] = panel.addMorph(new paneConstructor(paneRect));
         });
         panel.suppressHandles = true;
@@ -2510,7 +2499,7 @@ Dialog.subclass('ConfirmDialog', {
     buildView: function(extent, model) {
         var panel = new PanelMorph(extent);
         this.panel = panel;
-        panel.applyStyle(this.style);
+        panel.linkToStyles(["panel"]);
 
         var r = new Rectangle(this.inset, this.inset, extent.x - 2*this.inset, 30);
         var label = panel.addMorph(new TextMorph(r, this.getModelValue("getMessage")).beLabel());
@@ -2561,7 +2550,8 @@ Dialog.subclass('PromptDialog', {
     buildView: function(extent, model) {
         var panel = new PanelMorph(extent);
         this.panel = panel;
-        panel.applyStyle(this.style);
+        panel.linkToStyles(["panel"]);
+
 
         var r = new Rectangle(this.inset, this.inset, extent.x - 2*this.inset, 30);
         var label = panel.addMorph(new TextMorph(r, this.getModelValue("getMessage")).beLabel());
@@ -2607,9 +2597,9 @@ Widget.subclass('ConsoleWidget', {
     
     addCommandHistoryInspector: function() {
         var extent = pt(500, 40);
-        var commands = this.getModelValue("getCommands", []).join('\n');
+        var commands = this.getModelValue("getCommands", []);
         var rect = extent.extentAsRectangle();
-        var pane = new ScrollPane(new TextMorph(rect, commands), rect); 
+        var pane = new ScrollPane(new TextListMorph(rect, commands), rect); 
         var world = WorldMorph.current();
         world.addFramedMorph(pane, "Command history", world.positionForNewMorph());
     },
@@ -2667,10 +2657,8 @@ Widget.subclass('ConsoleWidget', {
         if (!text) return;
         try {
             var ans = this.evaluate(text);
-            if (ans !== undefined) {
-                this.ans = ans;
-                this.log(ans !== undefined && ans !== null && ans.toString());
-            }
+            if (ans !== undefined) this.ans = ans;
+	    this.log(Object.inspect(ans));
             this.setModelValue("setLastCommand", "");
         } catch (er) {
             console.log("Evaluation error: "  + er);

@@ -467,7 +467,7 @@ Widget.subclass('FeedWidget', {
 
     buildView: function(extent, model) {
         var panel = new PanelMorph(extent);
-	panel.applyStyle({fill: Color.blue.lighter(2), borderWidth: 2});
+	panel.linkToStyles(['panel']);
 
 
         var rect = extent.extentAsRectangle();
@@ -496,27 +496,28 @@ Widget.subclass('FeedWidget', {
 // ===========================================================================
 
 
-ClipMorph.subclass('SquiggleMorph', {
+PanelMorph.subclass('SquiggleMorph', {
 
     documentation: "An even simpler drawing program",
     drawingColor: Color.red,
     drawingHandColor: Color.yellow,
-
-
+    borderWidth: 2,
+    
     initialize: function($super, ext) {
-        $super(pt(0,0).extent(ext), "rect");
+        $super(ext);
         // The squiggle that we are creating currently
         this.currentMorph = null;
         this.start = null;
         this.savedHandColor = null;
-        this.setFill(new LinearGradient([Color.white, 1, Color.primary.blue.lighter()], LinearGradient.EastWest));
-        return this;
+	this.contentMorph = this.addMorph(new ClipMorph(ext.extentAsRectangle().insetBy(this.borderWidth/2)));
+	this.contentMorph.ignoreEvents();
+	this.setFill(new LinearGradient([Color.white, 1, Color.primary.blue.lighter()], LinearGradient.NorthSouth));
     },
     
     onMouseDown: function(evt) {
         if (!this.currentMorph) {
             this.start = this.localize(evt.mousePoint);
-            this.currentMorph = this.addMorph(new Morph(this.start.asRectangle(), "rect"));
+            this.currentMorph = this.contentMorph.addMorph(new Morph(this.start.asRectangle(), "rect"));
             // TODO: relaying events stops from moving morphs after drawing them..
             // this.currentMorph.relayMouseEvents(this, {onMouseMove: "onMouseMove"});
 
@@ -932,22 +933,21 @@ Object.subclass('WireObject', {
  * @class Sun3DMorph
  */
   
-ClipMorph.subclass("Sun3DMorph", {
+PanelMorph.subclass("Sun3DMorph", {
 
-    fill: Color.veryLightGray,
-    
     initialize: function($super, rect) {
-
         $super(rect, "rect");
-
-        this.shape.setFillOpacity(0.2);        
+	
+	this.applyStyle({borderWidth: 2, fillOpacity: .2, fill: Color.veryLightGray});
+	this.contentMorph = this.addMorph(new ClipMorph(this.shape.bounds().insetBy(this.getBorderWidth()/2)));
+	this.contentMorph.ignoreEvents();
 
         // Create a bunch of polyline objects for drawing the Sun U's 
         this.morphArray = [];
         for (var i = 0; i < 8; i++) {
             this.morphArray[i] = new Morph(pt(10,10).asRectangle());
             this.morphArray[i].setShape(new PolylineShape([pt(0,0)], 2, Color.red));
-            this.addMorph(this.morphArray[i]);
+            this.contentMorph.addMorph(this.morphArray[i]);
         }
 
         this.wireObject = new apps.threedee.WireObject(0,  0, -6000);
@@ -2365,7 +2365,7 @@ Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
 	var model = this.getModel();
         var panel = new PanelMorph(extent);
 	panel.applyStyle({borderWidth: 2, 
-			  fill: new LinearGradient([Color.white, 1, Color.primary.blue], LinearGradient.WestEast)});
+			  fill: new LinearGradient([Color.white, 1, Color.primary.blue], LinearGradient.NorthSouth)});
         //panel.setBorderColor(Color.blue);
         // TODO: add rounding to all the elements (panel, window & titlebar)
         // or make the titlebar round depending on the window
@@ -2519,7 +2519,7 @@ Widget.subclass('StockWidget', NetRequestReporterTrait, {
     
     buildView: function(extent, model) {
         var panel = new PanelMorph(extent);
-	var gradient = new LinearGradient([Color.white, 1, Color.primary.blue.lighter()], LinearGradient.EastWest);
+	var gradient = new LinearGradient([Color.white, 1, Color.primary.blue.lighter()], LinearGradient.NorthSouth);
         panel.applyStyle({fill: gradient, borderWidth: 2});
 	panel.connectModel({model: model});
 

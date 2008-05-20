@@ -203,8 +203,8 @@ function populateWorldWithExamples(world) {
         var stockWidget = new StockWidget();
         stockWidget.openIn(world, pt(350, 500));
     }
-    
-    if (Config.show3DLogo) world.addMorph(new WindowMorph(new Sun3DMorph(pt(570, 100).extent(pt(200, 200))), 'Sun 3D Logo'));
+
+    if (Config.show3DLogo) world.addFramedMorph(new Sun3DMorph(pt(200, 200)), 'Sun 3D Logo', pt(570, 100));
 
     if (Config.showTester) new TestWidget().openIn(world, pt(835, 450));
 

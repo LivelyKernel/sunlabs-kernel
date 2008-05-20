@@ -471,7 +471,7 @@ WidgetModel.subclass('StylePanel', {
 
     buildView: function(extent) {
         var panel = new PanelMorph(extent, "rect");
-        panel.applyStyle({fill: Color.primary.blue.lighter(2), borderWidth: 2});
+        panel.linkToStyles(["panel"]);
         var m;
         var y = 10;
 
