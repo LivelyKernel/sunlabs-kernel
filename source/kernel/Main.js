@@ -234,7 +234,7 @@ function populateWorldWithExamples(world) {
 
             if (Config.showRSSReader && Config.showNetworkExamples) {
                 console.log('initializing RSS reader');
-                new FeedWidget("http://news.com.com/2547-1_3-0-5.xml").openIn(this, pt(725, 120));
+                new FeedWidget("http://news.cnet.com/2547-1_3-0-5.xml").openIn(this, pt(725, 120));
             }
 	    
             // this.beetleGame = new DungBeetleMorph(pt(10, 10).extent(pt(240, 320)));
