@@ -2,7 +2,7 @@ Object.extend(String.prototype, {
 
     withNiceDecimals: function() {
 
-        // JS can't print nice decimals  // KP: I think it can be convinced, see below
+        // JS can't print nice decimals  // KP: I think it can be convinced, use toFixed
         var dotIx = this.indexOf('.');
         // return unchanged unless all digits with exactly one dot
         if (dotIx < 0 || this.indexOf('.', dotIx+1) >= 0) return this;
