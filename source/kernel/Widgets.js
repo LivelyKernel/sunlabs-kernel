@@ -1868,7 +1868,7 @@ Morph.subclass("SliderMorph", {
         var slider = new Morph(new Rectangle(0, 0, this.mss, this.mss), "rect");
         slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});
         this.slider = this.addMorph(slider);
-        this.linkToStyles(['slider']);
+        this.slider.linkToStyles(['slider']);
         this.adjustForNewBounds(); 
         return this;
     },
@@ -1917,15 +1917,19 @@ Morph.subclass("SliderMorph", {
     
         this.slider.setBounds(bnds.topLeft().addPt(topLeft).extent(sliderExt)); 
 
-        if (this.fill instanceof LinearGradient) {
+	//this.slider.shapeRoundEdgesBy((this.vertical() ? sliderExt.x : sliderExt.y)/2);
+	this.slider.shapeRoundEdgesBy(Math.min(sliderExt.x, sliderExt.y)/2);
+	
+
+        if (this.slider.fill instanceof LinearGradient) {
             var direction = this.vertical() ? LinearGradient.EastWest : LinearGradient.NorthSouth;
-            var baseColor = this.fill.stopColor(1);
-            this.fill = new LinearGradient([this.fill.stopColor(0), 1, baseColor], direction);
-            this.setFill(this.fill);
-            this.slider.setFill(new LinearGradient([baseColor.lighter(), 1, baseColor.darker()], direction));
+            var baseColor = this.slider.fill.stopColor(0);
+	    this.setFill(new LinearGradient([baseColor, 1, baseColor.lighter(2), 1, baseColor], direction));
+	    // FIXME: just flip the gradient
+            this.slider.setFill(new LinearGradient([baseColor, 1, this.slider.fill.stopColor(1)], direction));
+	    this.setBorderWidth(this.slider.getBorderWidth());
         } else {
-            this.setFill(this.fill);
-            this.slider.setFill(this.fill.darker());
+            this.setFill(this.slider.fill.lighter());
         }
     },
     

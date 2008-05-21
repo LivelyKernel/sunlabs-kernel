@@ -1969,7 +1969,7 @@ Wrapper.subclass('Visual', {
     },
 
     getStrokeWidth: function() {
-	return this.getLengthTrait("stroke-width");
+	return this.getLengthTrait("stroke-width") || 0;
     },
 
     setFillOpacity: function(alpha) {
@@ -1986,7 +1986,8 @@ Wrapper.subclass('Visual', {
     },
 
     getStrokeOpacity: function(alpha) {
-	this.rawNode.getAttributeNS(null, "stroke-opacity");
+	var opacity = this.rawNode.getAttributeNS(null, "stroke-opacity");
+	return (opacity === null) ? 1.0 : opacity;
     },
 
     setLineJoin: function(joinType) {
@@ -2152,11 +2153,10 @@ Shape.subclass('RectShape', {
     },
 
     setBounds: function(r) {
-	var n = this.rawNode;
-	n.setAttributeNS(null, "x", r.x);
-	n.setAttributeNS(null, "y", r.y);
-	n.setAttributeNS(null, "width", Math.max(0, r.width));
-	n.setAttributeNS(null, "height", Math.max(0, r.height));
+	this.setLengthTrait("x", r.x);
+	this.setLengthTrait("y", r.y);
+	this.setLengthTrait("width", Math.max(0, r.width));
+	this.setLengthTrait("height", Math.max(0, r.height));
 	return this;
     },
 
@@ -2208,13 +2208,13 @@ Shape.subclass('RectShape', {
     },
 
     getBorderRadius: function() {
-	return Converter.parseLength(this.rawNode.getAttributeNS(null, "rx"));
+	return this.getLengthTrait("rx") || 0;
     },
 
     roundEdgesBy: function(r) {
 	if (r) {
-	    this.rawNode.setAttributeNS(null, "rx", r);
-	    this.rawNode.setAttributeNS(null, "ry", r);
+	    this.setLengthTrait("rx", r);
+	    this.setLengthTrait("ry", r);
 	    this.setStrokeWidth(this.getStrokeWidth());  // DI:  This is here only to force an update on screen
 	}
 	return this;
@@ -2233,11 +2233,10 @@ Shape.subclass('EllipseShape', {
     },
 
     setBounds: function(r) {
-	var n = this.rawNode;
-	n.setAttributeNS(null, "cx", r.x + r.width/2);
-	n.setAttributeNS(null, "cy", r.y + r.height/2);
-	n.setAttributeNS(null, "rx", r.width/2);
-	n.setAttributeNS(null, "ry", r.height/2);
+	this.setLengthTrait("cx", r.x + r.width/2);
+	this.setLengthTrait("cy", r.y + r.height/2);
+	this.setLengthTrait("rx", r.width/2);
+	this.setLengthTrait("ry", r.height/2);
 	return this;
     },
 
@@ -2755,10 +2754,10 @@ Object.extend(Exporter, {
 	var status = this.saveDocument(doc, url);
 
 	if (status.isSuccess()) {
-	    console.log("success publishing world at " + url + ", status " + status.code);
+	    console.log("success publishing world at " + url + ", status " + status.code());
 	    return url;
 	} else {
-	    WorldMorph.current().alert("failure publishing world at " + url + ", status " + status.code);
+	    WorldMorph.current().alert("failure publishing world at " + url + ", status " + status.code());
 	}
 	return null;
     },
@@ -5248,7 +5247,7 @@ PasteUpMorph.subclass("WorldMorph", {
             titleBar:    { borderRadius: 0, borderWidth: 2, bordercolor: Color.black,
                            fill: Color.neutral.gray.lighter() },
 	    
-            slider:      { borderColor: Color.black, borderWidth: 1,
+            slider:      { borderColor: Color.black, borderWidth: 1, 
                            fill: Color.neutral.gray.lighter() },
             button:      { borderColor: Color.black, borderWidth: 1, borderRadius: 0,
                            fill: Color.lightGray },
@@ -5795,7 +5794,7 @@ Morph.subclass("HandMorph", {
         this.priorPoint = null;
         this.owner = null;
 	this.boundMorph = null; // surrounds bounds
-
+	this.layoutChangedCount = 0; // to prevent recursion on layoutChanged
         return this;
     },
     
@@ -5959,16 +5958,28 @@ Morph.subclass("HandMorph", {
 	return true;
     },
     
+    layoutChanged: function($super) {
+	this.layoutChangedCount ++;
+	try {
+	    $super();
+	    if (this.layoutChangedCount == 1) {
+		this.grabHaloMorph && this.updateGrabHalo();
+	    }
+	} finally {
+	    this.layoutChangedCount --;
+	}
+    },
+
+
     showAsGrabbed: function(grabbedMorph) {
         if (this.applyDropShadowFilter) grabbedMorph.applyFilter(this.dropShadowFilter); 
 
 	if (Config.showGrabHalo) {
 	    var bounds = grabbedMorph.bounds(true);
-	    this.grabHaloMorph = this.addMorphBack(new Morph(bounds.insetBy(-4), "rect").applyStyle({fill: null, borderWidth: 0.5 }));
+	    this.grabHaloMorph = this.addMorphBack(new Morph(bounds, "rect").applyStyle({fill: null, borderWidth: 0.5 }));
 	    this.grabHaloMorph.setStrokeDashArray([3,2]);
 	    this.grabHaloMorph.setLineJoin(Shape.LineJoins.Round);
 	    this.grabHaloMorph.ignoreEvents();
-
 
 	    var idLabel = new TextMorph(pt(20,10).extentAsRectangle(), String(grabbedMorph.id())).beLabel();
 	    idLabel.applyStyle(this.grabHaloLabelStyle);
@@ -5993,11 +6004,14 @@ Morph.subclass("HandMorph", {
     },
 
     updateGrabHalo: function() {
-	if (this.grabHaloMorph && this.grabHaloMorph.positionLabel) {
-	    var pos = this.topSubmorph().worldPoint(this.topSubmorph().getPosition());
-	    var posLabel  = this.grabHaloMorph.positionLabel;
-	    posLabel.setTextString(pos.x.roundTo(0.01) + "," + pos.y.roundTo(0.01));
-	    posLabel.align(posLabel.bounds().bottomCenter(), this.grabHaloMorph.innerBounds().topLeft());
+	if (this.grabHaloMorph) {
+	    this.grabHaloMorph.setBounds(this.topSubmorph().bounds(true).expandBy(3));
+	    if (this.grabHaloMorph.positionLabel) {
+		var pos = this.topSubmorph().worldPoint(this.topSubmorph().getPosition());
+		var posLabel  = this.grabHaloMorph.positionLabel;
+		posLabel.setTextString(pos.x.toFixed(1) + "," + pos.y.toFixed(1));
+		posLabel.align(posLabel.bounds().bottomCenter(), this.grabHaloMorph.innerBounds().topLeft());
+	    }
 	}
     },
 
