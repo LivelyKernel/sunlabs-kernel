@@ -19,14 +19,12 @@ Morph.subclass('PackageMorph', {
     documentation: "Visual representation for a serialized morph",
     borderWidth: 3,
     borderColor: Color.black,
-    fill: Color.primary.orange,
     openForDragAndDrop: false,
     suppressHandles: true,
     size: 40,
     
     initialize: function($super, targetMorph) {
 	var size = this.size;
-	var delta = this.borderWidth/2;
 	$super(pt(size, size).extentAsRectangle(), "rect");
         var exporter = new Exporter(targetMorph);
 	var helpers = exporter.extendForSerialization();
@@ -35,8 +33,10 @@ Morph.subclass('PackageMorph', {
         this.serialized = this.defs.appendChild(targetMorph.rawNode.cloneNode(true));
 	exporter.removeHelperNodes(helpers);
 	this.helpText = "Packaged " + targetMorph.getType() + ".\nSelect unpackage from menu to deserialize contents.";
+	var delta = this.borderWidth/2;
 	this.addMorph(Morph.makeLine([pt(delta, size/2), pt(size - delta, size/2)], 3, Color.black)).ignoreEvents();
 	this.addMorph(Morph.makeLine([pt(size/2, delta), pt(size/2, size - delta)], 3, Color.black)).ignoreEvents();
+	this.applyStyle({ fill: new RadialGradient([Color.primary.orange, 1, Color.primary.orange.lighter(), 2, Color.primary.orange]), borderRadius: 6});
     },
 
     getHelpText: function() {
