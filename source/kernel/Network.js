@@ -170,15 +170,16 @@ Loader.proxy = (function() {
 Object.subclass('NetRequestStatus', {
     documentation: "nice parsed status information, returned by NetRequest.getStatus when request done",
 
-    initialize: function(method, url, code) {
+    initialize: function(method, url, transport) {
 	this.method = method;
 	this.url = url;
-	this.code = code;
+	this.transport = transport;
 	this.exception = null;
     },
     
     isSuccess: function() {
-	return this.code >= 200 && this.code < 300;
+	var code = this.transport.status;
+	return code >= 200 && code < 300;
     },
 
     setException: function(e) {
@@ -186,11 +187,19 @@ Object.subclass('NetRequestStatus', {
     },
 
     toString: function() {
-	return Strings.format("#<NetRequestStatus{%s,%s,%s}>", this.method, this.url, this.exception || this.code);
+	return Strings.format("#<NetRequestStatus{%s,%s,%s}>", this.method, this.url, this.exception || this.transport.status);
     },
     
     requestString: function() {
 	return this.method + " " + this.url;
+    },
+
+    code: function() {
+	return this.transport.status;
+    },
+
+    getResponseHeader: function(name) {
+	return this.transport.getResponseHeader(name);
     }
 
 });
@@ -288,7 +297,7 @@ View.subclass('NetRequest', {
     },
 
     getStatus: function() {
-	return new NetRequestStatus(this.method, this.url, this.transport.status);
+	return new NetRequestStatus(this.method, this.url, this.transport);
     },
 
     updateView: function(aspect, controller) {
@@ -349,18 +358,22 @@ View.subclass('NetRequest', {
 // extend your objects with this trait if you don't want to deal with error reporting yourself.
 NetRequestReporterTrait = {
     setRequestStatus: function(status) { 
+	var world = WorldMorph.current();
 	// error reporting
 	if (status.exception) {
-	    WorldMorph.current().alert("exception " + status.exception + " accessing " + status.requestString());
-	} else if (status.code >= 300) {
-	    if (status.code == 401) {
-		WorldMorph.current().alert("not authorized to access " + status.requestString()); 
+	    world.alert("exception " + status.exception + " accessing " + status.requestString());
+	} else if (status.code() >= 300) {
+	    if (status.code() == 301) {
+		// FIXME reissue request? need the 'Location' response header for it
+		world.alert("HTTP/301: Moved to " + status.getResponseHeader("Location") + "\non " + status.requestString());
+	    } else if (status.code() == 401) {
+		world.alert("not authorized to access " + status.requestString()); 
 		// should try to authorize
 	    } else {
-		WorldMorph.current().alert("failure to " + status.requestString() + " code " + status.code);
+		world.alert("failure to " + status.requestString() + " code " + status.code());
 	    }
 	} else 
-	    console.log("status " + status.code + " on " + status.requestString());
+	    console.log("status " + status.code() + " on " + status.requestString());
     }
 };
 
