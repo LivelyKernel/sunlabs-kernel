@@ -398,7 +398,6 @@ Morph.subclass("TitleBarMorph", {
             }
         }
 
-
 	if (this.closeButton) { 
 	    loc = this.innerBounds().topRight().addXY(-3 -this.closeButton.shape.bounds().width, 3);
 	    this.closeButton.setPosition(loc);  

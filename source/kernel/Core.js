@@ -5768,7 +5768,7 @@ Morph.subclass("HandMorph", {
     shadowOffset: pt(5,5),
     handleOnCapture: true,
     logDnD: false,
-
+    grabHaloLabelStyle: {fontSize: Math.floor((Config.defaultFontSize || 12) *0.85), padding: Rectangle.inset(0)},
 
     initialize: function($super, local) {
         $super(pt(5,5).extent(pt(10,10)), "rect");
@@ -5892,6 +5892,7 @@ Morph.subclass("HandMorph", {
         //-------------
         if (evt.type == "MouseMove" || evt.type == "MouseWheel") { // it is just a move
             this.setPosition(evt.mousePoint);
+	    this.updateGrabHalo();
             
             if (evt.mousePoint.dist(this.lastMouseDownPoint) > 10) { 
                 this.hasMovedSignificantly = true;
@@ -5957,7 +5958,7 @@ Morph.subclass("HandMorph", {
         this.lastMouseEvent = evt; 
 	return true;
     },
-
+    
     showAsGrabbed: function(grabbedMorph) {
         if (this.applyDropShadowFilter) grabbedMorph.applyFilter(this.dropShadowFilter); 
 
@@ -5967,10 +5968,19 @@ Morph.subclass("HandMorph", {
 	    this.grabHaloMorph.setStrokeDashArray([3,2]);
 	    this.grabHaloMorph.setLineJoin(Shape.LineJoins.Round);
 	    this.grabHaloMorph.ignoreEvents();
-	    var label = new TextMorph(pt(20,10).extentAsRectangle(), String(grabbedMorph.id())).beLabel();
-	    label.applyStyle({fontSize: Math.floor(TextMorph.prototype.fontSize*0.85), padding: Rectangle.inset(0)});
-	    this.grabHaloMorph.addMorph(label);
-	    label.align(label.bounds().bottomLeft(), this.grabHaloMorph.innerBounds().topRight());
+
+
+	    var idLabel = new TextMorph(pt(20,10).extentAsRectangle(), String(grabbedMorph.id())).beLabel();
+	    idLabel.applyStyle(this.grabHaloLabelStyle);
+	    this.grabHaloMorph.addMorph(idLabel);
+	    idLabel.align(idLabel.bounds().bottomLeft(), this.grabHaloMorph.innerBounds().topRight());
+	    
+	    var pos = grabbedMorph.getPosition();
+	    var posLabel = new TextMorph(pt(20, 10).extentAsRectangle(), "").beLabel();
+	    posLabel.applyStyle(this.grabHaloLabelStyle);
+	    this.grabHaloMorph.positionLabel = this.grabHaloMorph.addMorph(posLabel);
+	    
+	    this.updateGrabHalo();
 	}
     },
 
@@ -5981,6 +5991,16 @@ Morph.subclass("HandMorph", {
 	    this.grabHaloMorph = null;
 	}
     },
+
+    updateGrabHalo: function() {
+	if (this.grabHaloMorph && this.grabHaloMorph.positionLabel) {
+	    var pos = this.topSubmorph().worldPoint(this.topSubmorph().getPosition());
+	    var posLabel  = this.grabHaloMorph.positionLabel;
+	    posLabel.setTextString(pos.x.roundTo(0.01) + "," + pos.y.roundTo(0.01));
+	    posLabel.align(posLabel.bounds().bottomCenter(), this.grabHaloMorph.innerBounds().topLeft());
+	}
+    },
+
     
     grabMorph: function(grabbedMorph, evt) { 
         if (evt.isShiftDown()) {
@@ -6034,8 +6054,8 @@ Morph.subclass("HandMorph", {
     },
 
     moveSubmorphs: function(evt) {
-        var world = WorldMorph.current();
-
+        var world = this.world();
+	
         // Display height is returned incorrectly by many web browsers.
         // We use an absolute Y-value instead. 
         var towardsPoint = pt(world.bounds().center().x, 350);
