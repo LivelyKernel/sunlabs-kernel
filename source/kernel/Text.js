@@ -1185,6 +1185,7 @@ Morph.subclass("TextMorph", {
         return this.shape.bounds().topLeft().addPt(this.padding.topLeft()); 
     },
     
+    // ??
     innerBounds: function() { 
         return this.shape.bounds().insetByRect(this.padding);
     },

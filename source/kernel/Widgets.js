@@ -242,7 +242,7 @@ ButtonMorph.subclass("ImageButtonMorph", {
         $super(initialBounds);
         this.addMorph(this.image);
         this.image.handlesMouseDown = Functions.True,
-        this.image.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
+        this.image.relayMouseEvents(this);
     },
     
     changeAppearanceFor: function(value) {
@@ -277,10 +277,18 @@ Morph.subclass("ClipMorph", {
     defaultOrigin: function(bounds) { 
         return bounds.topLeft(); 
     },
-    
-    // do not include submorphs in bounds calculations
-    submorphBounds: Functions.Null,
 
+    bounds: function(ignoreTransients) {
+	// intersection  of its shape and its children's shapes
+	if (!this.fullBounds) {
+	    var tfm = this.getLocalTransform();
+	    var subBounds = this.submorphBounds(ignoreTransients);
+	    var bounds = this.shape.bounds();
+	    this.fullBounds = tfm.transformRectToRect(subBounds ? subBounds.intersection(bounds) : bounds);
+	}
+	return this.fullBounds;
+    },
+    
     innerMorph: function() {
         this.submorphs.length != 1 && console.log("not a single inner morph");
         return this.submorphs.first();
@@ -292,40 +300,39 @@ Morph.subclass("TitleBarMorph", {
 
     documentation: "Title bar for WindowMorphs",
 
-    borderWidth: 0.5,
     controlSpacing: 3,
     barHeight: 22,
-
+    borderWidth: 0,
+    fill: null,
+    labelStyle: { borderRadius: 8, padding: Rectangle.inset(6, 2), fill: new LinearGradient([Color.white, 1, Color.gray]) },
 
     initialize: function($super, headline, windowWidth, windowMorph) {
 	var bounds = new Rectangle(0, 0, windowWidth, this.barHeight);
+	
         $super(bounds, "rect");
-	/*
-	var shape = new PathShape();
-	var radius = 6;
-	shape.moveTo(0, this.barHeight);
-	shape.lineTo(0, radius);
-	shape.arcTo(radius, 0, radius);
-	shape.lineTo(windowWidth - radius, 0);
-	shape.arcTo(windowWidth, radius, radius);
-	shape.lineTo(windowWidth, this.barHeight);
-	shape.lineTo(0, this.barHeight);
-	shape.close();
-	this.setShape(shape);
-*/
+	
+	var style = this.styleNamed("titleBar");
+	var w = style.borderWidth;
+	var r = style.borderRadius;
+
+	// fillMorph is bigger than the titleBar, so that the lower rounded part of it can be clipped off
+	// arbitrary paths could be used, but FF doesn't implement the geometry methods :(
+	var fillMorph = new Morph(new Rectangle(w/2, w/2, windowWidth, this.barHeight + r), "rect");
+	this.addMorph(new ClipMorph(bounds.expandBy(w/2))).addMorph(fillMorph);
+	
+	fillMorph.linkToStyles(["titleBar"]);
+	
+	this.ignoreEvents();
+	fillMorph.ignoreEvents();
+	fillMorph.owner.ignoreEvents();
+	
         this.windowMorph = windowMorph;
-        this.linkToStyles(['titleBar']);
-        this.ignoreEvents();
 
         // Note: Layout of submorphs happens in adjustForNewBounds (q.v.)
         var cell = new Rectangle(0, 0, this.barHeight, this.barHeight);
         var closeButton = new WindowControlMorph(cell, this.controlSpacing, Color.primary.orange, windowMorph, 
             "initiateShutdown", "Close");
         this.closeButton =  this.addMorph(closeButton);
-        // FIXME this should be simpler
-        // var sign = NodeFactory.create("use").withHref("#CloseIcon");
-        // new Similitude(pt(-9, -9), 0, 0.035).applyTo(sign);
-        // closeButton.addNonMorph(sign);
 
         var menuButton = new WindowControlMorph(cell, this.controlSpacing, Color.primary.blue, windowMorph, 
             "showTargetMorphMenu", "Menu");
@@ -342,9 +349,8 @@ Morph.subclass("TitleBarMorph", {
             var width = headline.length * 8; // wild guess headlineString.length * 2 *  font.getCharWidth(' ') + 2;
             label = new TextMorph(new Rectangle(0, 0, width, this.barHeight), headline).beLabel();
         }
-        label.applyStyle({ borderRadius: 8, padding: Rectangle.inset(6, 3)});
+        label.applyStyle(this.labelStyle);
         this.label = this.addMorph(label);
-	label.setFill(new LinearGradient([Color.white, 1, Color.gray]));
 	
         this.adjustForNewBounds();  // This will align the buttons and label properly
         return this;
@@ -376,9 +382,9 @@ Morph.subclass("TitleBarMorph", {
     },
 
     adjustForNewBounds: function($super) {
-        this.shape.setBounds(this.innerBounds().withHeight(this.barHeight));
+        //this.shape.setBounds(this.innerBounds().withHeight(this.barHeight));
         $super();
-        var loc = this.innerBounds().topLeft().addXY(3, 3);
+        var loc = this.innerBounds().topLeft().addXY(this.controlSpacing, this.controlSpacing);
         var l0 = loc;
         var dx = pt(this.barHeight - this.controlSpacing, 0);
         if (this.menuButton) { this.menuButton.setPosition(loc);  loc = loc.addPt(dx); }
@@ -386,8 +392,7 @@ Morph.subclass("TitleBarMorph", {
         
 	
         if (this.label) {
-            this.label.align(this.label.bounds().topCenter(),
-			     this.innerBounds().topCenter().addXY(0, -1));
+            this.label.align(this.label.bounds().topCenter(), this.innerBounds().topCenter());
             if (this.label.bounds().topLeft().x < loc.x) {
                 this.label.align(this.label.bounds().topLeft(), loc.addXY(0,-2));
             }
@@ -491,7 +496,6 @@ Morph.subclass("WindowControlMorph", {
     onMouseOut: function($super, evt) {
         var prevColor = this.fill.stopColor(1);
         this.setFill(new RadialGradient([prevColor.lighter(2), 1, prevColor, 1, prevColor.darker()], this.focus));
-        // this.setFill(new RadialGradient([prevColor.lighter(2), 1, prevColor]));
         $super(evt);
     },
     
@@ -1240,7 +1244,7 @@ TextMorph.subclass("CheapListMorph", {
 
     drawSelection: function($super) {
         if (this.hasNullSelection()) { // Null sel in a list is blank
-            this.undrawSelection();
+            this.textSelection.undraw();
         } else $super();
     },
 
@@ -1387,7 +1391,7 @@ Morph.subclass("TextListMorph", {
         for (var i = 0; i < this.submorphs.length; i++ ) {
             var m = this.submorphs[i];
             m.beListItem();
-            m.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove"});
+            m.relayMouseEvents(this);
            this.itemList.push(m.textString);
         }
         this.setModelValue('setList', this.itemList);
@@ -1402,7 +1406,7 @@ Morph.subclass("TextListMorph", {
 	    var m = new TextMorph(rect, itemList[i]).beListItem();
 	    if (additionalStyling) m.applyStyle(additionalStyling);
 	    this.addMorph(m);
-	    m.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove"});
+	    m.relayMouseEvents(this);
 	}
     },
     
@@ -1765,7 +1769,7 @@ Morph.subclass("MenuMorph", {
         delta = delta.addPt(visibleRect.bottomRight().subPt(menuRect.bottomRight()));  // same for bottomRight
         if (delta.dist(pt(0, 0)) > 1) this.moveBy(delta);  // move if significant
 
-        this.listMorph.relayMouseEvents(this, {onMouseUp: "onMouseUp", onMouseMove: "onMouseMove", onMouseDown: "onMouseMove"});
+        this.listMorph.relayMouseEvents(this);
         // Note menu gets mouse focus by default if pop-up.  If you don't want it, you'll have to null it
         if (!remainOnScreen) {
 	    var hand = parentMorph.world().firstHand();
@@ -2066,6 +2070,12 @@ Morph.subclass("ScrollPane", {
         if (this.menuButton) {
             this.menuButton.relayMouseEvents(this, {onMouseDown: "menuButtonPressed"});
         }
+    },
+
+    submorphBounds: function() {
+	// a little optimization 
+	// FIXME: epimorphs should be included
+	return this.clipMorph.bounds();
     },
 
     innerMorph: function() {

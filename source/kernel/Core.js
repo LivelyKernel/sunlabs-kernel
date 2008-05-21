@@ -3100,7 +3100,7 @@ Object.subclass('MouseHandlerForRelay', {
 	//  Send events to a different target, with different methods
 	//    Ex: box.relayMouseEvents(box.owner, {onMouseUp: "boxReleased", onMouseDown: "boxPressed"})
 	this.target = target;
-	this.eventSpec = eventSpec;
+	this.eventSpec = eventSpec || {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"};
     },
 
     handleMouseEvent: function(evt, originalTarget) {
@@ -4240,7 +4240,7 @@ Morph.addMethods({
 	return true;
     },
 
-    focusHaloInset: -2,
+    focusHaloInset: 2,
 
     focusStyle: {
 	fill: null, 
@@ -4249,12 +4249,12 @@ Morph.addMethods({
     },
     
     adjustFocusHalo: function() {
-	this.focusHalo.setBounds(this.shape.bounds().insetBy(this.focusHaloInset));
+	this.focusHalo.setBounds(this.localBorderBounds().expandBy(this.focusHaloInset));
     },
 
     addFocusHalo: function() {
 	if (this.focusHalo || this.focusHaloBorderWidth <= 0) return false;
-	this.focusHalo = this.addMorph(new Morph(this.shape.bounds().insetBy(this.focusHaloInset), "rect"));
+	this.focusHalo = this.addMorph(new Morph(this.localBorderBounds().expandBy(this.focusHaloInset), "rect"));
 	this.focusHalo.applyStyle(this.focusStyle);
 	this.focusHalo.setBorderWidth(this.focusHaloBorderWidth);
 	this.focusHalo.setLineJoin(Shape.LineJoins.Round);
@@ -4608,14 +4608,7 @@ Morph.addMethods({
 	}
 
 	var tfm = this.getLocalTransform();
-	var fullBounds = tfm.transformRectToRect(this.shape.bounds());
-	
-	if (this.shape.hasElbowProtrusions) {
-	    // double border margin for polylines to account for elbow protrusions
-	    fullBounds.expandBy(this.shape.getStrokeWidth()*2);
-	} else {
-	    fullBounds.expandBy(this.shape.getStrokeWidth());
-	}
+	var fullBounds = tfm.transformRectToRect(this.localBorderBounds());
 	
 	var subBounds = this.submorphBounds(ignoreTransients);
 	if (subBounds != null) {
@@ -4632,25 +4625,30 @@ Morph.addMethods({
     },
     
     submorphBounds: function(ignoreTransients) {
-	if (!this.hasSubmorphs()) 
-	    return null;
 	var subBounds = null;
-	this.submorphs.forEach(ignoreTransients ? 
-			       function(m) { 
-				   if (!m.transientBounds && m.isDisplayed())
-				       subBounds = subBounds == null ? m.bounds(ignoreTransients) :
-				       subBounds.union(m.bounds(ignoreTransients));
-			       } : 
-			       function(m) { 
-				   subBounds = subBounds == null ? m.bounds() :
-				       subBounds.union(m.bounds());
-			       });
+	for (var i = 0; i < this.submorphs.length; i++) {
+	    var m = this.submorphs[i];
+	    if ((ignoreTransients && m.transientBounds) || !m.isDisplayed())
+		continue;
+	    subBounds = subBounds == null ? m.bounds(ignoreTransients) : subBounds.union(m.bounds(ignoreTransients));
+	}
 	return subBounds;
     },
-
+    
     // innerBounds returns the bounds of this morph only, and in local coordinates
-    innerBounds: function() { return this.shape.bounds() },
-
+    innerBounds: function() { 
+	return this.shape.bounds();
+    },
+    
+    localBorderBounds: function() {
+	// defined by the external edge of the border
+	var bounds = this.shape.bounds();
+	// double border margin for polylines to account for elbow protrusions
+	bounds.expandBy(this.shape.getStrokeWidth()/2*(this.shape.hasElbowProtrusions ? 2 : 1));
+	return bounds;
+    },
+    
+    
     /** 
       * mapping coordinates in the hierarchy
       * @return [Point]
@@ -5671,7 +5669,12 @@ PasteUpMorph.subclass("WorldMorph", {
     },
     
     viewport: function() {
-	return Rectangle.ensure(this.canvas().viewport);
+	try {
+	    return Rectangle.ensure(this.canvas().viewport);
+	} catch (er) { // FF doesn't implement viewport ?
+	    return this.shape.bounds();
+	}
+
     },
 
     alert: function(varargs) {
@@ -5681,7 +5684,7 @@ PasteUpMorph.subclass("WorldMorph", {
         var menu = new MenuMorph([["OK", function() { this.world().setFill(fill); this.remove() }]]);
         menu.onMouseUp = function(/*...*/) { 
             if (!this.stayUp) this.world().setFill(fill); // cleanup
-            MenuMorph.prototype.onMouseUp.apply(this, arguments);
+	    Class.getPrototype(this).onMouseUp.apply(this, arguments);
         };
         menu.openIn(this, this.viewport().center(), true, Strings.formatFromArray($A(arguments))); 
         menu.scaleBy(2.5);
@@ -5967,7 +5970,7 @@ Morph.subclass("HandMorph", {
 	    var label = new TextMorph(pt(20,10).extentAsRectangle(), String(grabbedMorph.id())).beLabel();
 	    label.applyStyle({fontSize: Math.floor(TextMorph.prototype.fontSize*0.85), padding: Rectangle.inset(0)});
 	    this.grabHaloMorph.addMorph(label);
-	    label.align(label.bounds().bottomLeft(), this.grabHaloMorph.shape.bounds().topRight());
+	    label.align(label.bounds().bottomLeft(), this.grabHaloMorph.innerBounds().topRight());
 	}
     },
 
@@ -5980,7 +5983,7 @@ Morph.subclass("HandMorph", {
     },
     
     grabMorph: function(grabbedMorph, evt) { 
-        if (evt.isShiftDown() && !(grabbedMorph instanceof LinkMorph)) {
+        if (evt.isShiftDown()) {
             if (!grabbedMorph.okToDuplicate()) return;
             grabbedMorph.copyToHand(this);
             return;

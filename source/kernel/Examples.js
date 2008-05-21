@@ -116,15 +116,15 @@ Morph.subclass("ClockMorph", {
 
     makeNewFace: function(items) {
 	
-        var bnds = this.shape.bounds();
+        var bnds = this.innerBounds();
         var radius = bnds.width/2;
         var labelSize = Math.max(Math.floor(0.04 * (bnds.width + bnds.height)), 2); // room to center with default inset
 	
         for (var i = 0; i < items.length; i++) {
-            var labelPosition = bnds.center().addPt(Point.polar(radius*0.85, ((i-3)/items.length)*Math.PI*2)).addXY(labelSize, 0);
+            var labelPosition = bnds.center().addPt(Point.polar(radius*0.85, ((i-3)/items.length)*Math.PI*2)).addXY(labelSize/2, 0);
             var label = new TextMorph((pt(labelSize*3, labelSize).extentAsRectangle()), items[i]);
 	    label.applyStyle({borderWidth: 0, fill: null, wrapStyle: WrapStyle.Shrink, fontSize: labelSize, padding: Rectangle.inset(0)});
-            label.align(label.bounds().center(), labelPosition.addXY(-2, 2));
+            label.align(label.bounds().center(), labelPosition);//.addXY(-1, 0));
             this.addMorph(label);
         }
 	
@@ -939,7 +939,7 @@ PanelMorph.subclass("Sun3DMorph", {
         $super(rect, "rect");
 	
 	this.applyStyle({borderWidth: 2, fillOpacity: .2, fill: Color.veryLightGray});
-	this.contentMorph = this.addMorph(new ClipMorph(this.shape.bounds().insetBy(this.getBorderWidth()/2)));
+	this.contentMorph = this.addMorph(new ClipMorph(this.innerBounds().insetBy(this.getBorderWidth()/2)));
 	this.contentMorph.ignoreEvents();
 
         // Create a bunch of polyline objects for drawing the Sun U's 
@@ -963,7 +963,7 @@ PanelMorph.subclass("Sun3DMorph", {
         if (this.wireObject) {
             this.wireObject.paint(this.morphArray, angleX, angleY, 0);
         }
-
+	evt.hand.setMouseFocus(this);
         return true;
     }
 

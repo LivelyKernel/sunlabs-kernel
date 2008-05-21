@@ -285,7 +285,7 @@ function populateWorldWithExamples(world) {
 		this.addMorphBack(new WindowMorph(new ImageMorph(new Rectangle(50, 10, width, height), url), 'Tampere'));
             }
 	    
-            if (Config.showSquiggle) this.addFramedMorph(new SquiggleMorph(pt(300, 300)), 'Squiggle Morph', pt(560, 380));
+            if (Config.showSquiggle) this.addFramedMorph(new SquiggleMorph(pt(300, 300)), 'Freehand', pt(560, 380));
             
             if (Config.showVideo) this.addFramedMorph(new PlayerMorph(), "Player", pt(50, 20));
 	    
