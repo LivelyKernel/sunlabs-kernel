@@ -311,20 +311,17 @@ Morph.subclass("TitleBarMorph", {
 	
         $super(bounds, "rect");
 	
-	var style = this.styleNamed("titleBar");
-	var w = style.borderWidth;
-	var r = style.borderRadius;
-
-	// fillMorph is bigger than the titleBar, so that the lower rounded part of it can be clipped off
+	// contentMorph is bigger than the titleBar, so that the lower rounded part of it can be clipped off
 	// arbitrary paths could be used, but FF doesn't implement the geometry methods :(
-	var fillMorph = new Morph(new Rectangle(w/2, w/2, windowWidth, this.barHeight + r), "rect");
-	this.addMorph(new ClipMorph(bounds.expandBy(w/2))).addMorph(fillMorph);
-	
-	fillMorph.linkToStyles(["titleBar"]);
+	// bounds will be adjusted in adjustForNewBounds()
+	var contentMorph = new Morph(bounds, "rect");
+	this.addMorph(new ClipMorph(bounds)).addMorph(contentMorph);
+	contentMorph.linkToStyles(["titleBar"]);
 	
 	this.ignoreEvents();
-	fillMorph.ignoreEvents();
-	fillMorph.owner.ignoreEvents();
+	contentMorph.ignoreEvents();
+	contentMorph.owner.ignoreEvents();
+	this.contentMorph = contentMorph;
 	
         this.windowMorph = windowMorph;
 
@@ -382,28 +379,38 @@ Morph.subclass("TitleBarMorph", {
     },
 
     adjustForNewBounds: function($super) {
-        //this.shape.setBounds(this.innerBounds().withHeight(this.barHeight));
+	var innerBounds = this.innerBounds();
+	var sp = this.controlSpacing;
         $super();
-        var loc = this.innerBounds().topLeft().addXY(this.controlSpacing, this.controlSpacing);
+        var loc = this.innerBounds().topLeft().addXY(sp, sp);
         var l0 = loc;
-        var dx = pt(this.barHeight - this.controlSpacing, 0);
-        if (this.menuButton) { this.menuButton.setPosition(loc);  loc = loc.addPt(dx); }
-        if (this.collapseButton) { this.collapseButton.setPosition(loc);  loc = loc.addPt(dx); }
-        
-	
+        var dx = pt(this.barHeight - sp, 0);
+        if (this.menuButton) { 
+	    this.menuButton.setPosition(loc);  
+	    loc = loc.addPt(dx); 
+	}
+        if (this.collapseButton) { 
+	    this.collapseButton.setPosition(loc);  
+	    loc = loc.addPt(dx); 
+	}
         if (this.label) {
             this.label.align(this.label.bounds().topCenter(), this.innerBounds().topCenter());
             if (this.label.bounds().topLeft().x < loc.x) {
                 this.label.align(this.label.bounds().topLeft(), loc.addXY(0,-2));
             }
         }
-
 	if (this.closeButton) { 
-	    loc = this.innerBounds().topRight().addXY(-3 -this.closeButton.shape.bounds().width, 3);
+	    loc = this.innerBounds().topRight().addXY(-sp - this.closeButton.shape.bounds().width, sp);
 	    this.closeButton.setPosition(loc);  
 	    // loc = loc.addPt(dx); 
 	}
-
+	
+	var style = this.styleNamed("titleBar");
+	var w = style.borderWidth;
+	var r = style.borderRadius;
+	this.contentMorph.setBounds(new Rectangle(w/2, w/2, innerBounds.width, this.barHeight + r));
+	var clip = this.contentMorph.owner;
+	clip.setBounds(innerBounds.insetByRect(Rectangle.inset(-w/2, -w/2, -w/2, 0)));
     },
 
     okToDuplicate: Functions.False
