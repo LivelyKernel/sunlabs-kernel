@@ -529,7 +529,8 @@ Object.extend(CharSet, {
 
 });
 
-console.log("loaded basic library");
+
+Global.console && Global.console.log("loaded basic library");
 
 // ===========================================================================
 // Error/warning console (browser dependent)
@@ -1978,7 +1979,9 @@ Wrapper.subclass('Visual', {
     },
 
     getFillOpacity: function(alpha) {
-	this.rawNode.getAttributeNS(null, "fill-opacity");
+	var opacity = this.rawNode.getAttributeNS(null, "fill-opacity");
+	return (opacity === null) ? 1.0 : opacity;
+	// note no opacity different from opacity 1, should we return undefined?
     },
 
     setStrokeOpacity: function(alpha) {

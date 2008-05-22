@@ -124,7 +124,7 @@ Morph.subclass("ClockMorph", {
             var labelPosition = bnds.center().addPt(Point.polar(radius*0.85, ((i-3)/items.length)*Math.PI*2)).addXY(labelSize/2, 0);
             var label = new TextMorph((pt(labelSize*3, labelSize).extentAsRectangle()), items[i]);
 	    label.applyStyle({borderWidth: 0, fill: null, wrapStyle: WrapStyle.Shrink, fontSize: labelSize, padding: Rectangle.inset(0)});
-            label.align(label.bounds().center(), labelPosition);//.addXY(-1, 0));
+            label.align(label.bounds().center(), labelPosition.addXY(1, 0));
             this.addMorph(label);
         }
 	

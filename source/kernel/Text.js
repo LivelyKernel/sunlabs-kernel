@@ -203,111 +203,83 @@ Font.addMethods({
 
 }    
     
-    
 Wrapper.subclass('TextWord', {
 
-    documentation: "renders single words",
-    
-    deserialize: function(importer, rawNode) {
-        this.rawNode = rawNode;
-        this.didLineBreak = false;
-    },
-    
-    initialize: function() {
-        this.rawNode = NodeFactory.create("tspan");
-        this.stopIndex = 0;
-        this.didLineBreak = false;
-	this.width = 0;
-        return this;
-    },
-    
-    setX: function(newValue /*:float*/) {
-        this.rawNode.setAttributeNS(null, "x", String(newValue));
-    },
-    
-    setY: function(newValue /*:float*/) {
-        this.rawNode.setAttributeNS(null, "y", String(newValue));
-    },
-    
-    // accessor function
-    setStopIndexAndWidth: function(i, w) { 
-        this.stopIndex = i; 
-	this.width = w;
-    },
-    
-    // accessor function
-    getStopIndex: function() {
-        return this.stopIndex;
-    },
-    
-    // return true if we bumped into the width limit while composing
-    getLineBrokeOnCompose: function() {
-        return this.didLineBreak;
-    },
-    
-    toString: function() {
-        return Strings.format("startIndex: %s, stopIndex: %s, leftX: %s, didLineBreak: %s",
-			      this.startIndex, this.stopIndex, this.leftX, this.didLineBreak);
-    }
-    
-});
-
-Wrapper.subclass('WordChunk', {
+    documentation: "represents a chunk of text which might be printable or might be whitespace",
 
     isWhite: false,
     isNewLine: false,
     isTab: false,
-    documentation: "represents a chunk of text which might be printable or might be whitespace",
+
     
     initialize: function(offset, length) {
         this.startIndex = offset;
+	this.stopIndex  = offset;
         this.length = length;
-        this.render = true;
+	this.width = 0;
+        this.shouldRender = true;
         this.bounds = null;
         this.wasComposed = false;
-        this.word = null;
+	this.rawNode = null;
+    },
+
+    deserialize: function(importer, rawNode) {
+        this.rawNode = rawNode;
     },
     
     adjustAfterComposition: function(textString, deltaX, paddingX, baselineY) {
 	// Align the text after composition
         if (deltaX != 0) this.bounds = this.bounds.withX(this.bounds.x + deltaX);
 	if (paddingX != 0 && this.isSpaces()) this.bounds = this.bounds.withWidth(this.bounds.width + paddingX);
-	if (this.word != null) {
-	    this.word.replaceRawNodeChildren(NodeFactory.createText(textString.substring(this.startIndex, this.word.stopIndex + 1))); 
-	    // XXX
-	    this.word.setX(this.leftX + deltaX);
-	    this.word.setY(baselineY);
+	if (this.rawNode != null) {
+	    this.replaceRawNodeChildren(NodeFactory.createText(textString.substring(this.startIndex, this.getStopIndex() + 1))); 
+            this.rawNode.setAttributeNS(null, "x", this.leftX + deltaX);
+	    this.rawNode.setAttributeNS(null, "y", baselineY);
 	}
     },
-
+    
+    allocRawNode: function() {
+	this.rawNode = NodeFactory.create("tspan");
+    },
+    
     // compose a word within compositionWidth, stopping if the width or string width is exceeded
     // compositionWidth is in the same units as character metrics
+
     compose: function(currentFont, textString, compositionWidth, length) {
+	// return true if we bumped into the width limit while composing
         var leftX = this.leftX;
         var rightX = leftX + compositionWidth;
-        var leadingSpaces = 0;
 	
-        this.didLineBreak = false;
         // get the character bounds until it hits the right side of the compositionWidth
         for (var i = this.startIndex; i < textString.length && i < (this.startIndex + length); i++) {
             var rightOfChar = leftX + currentFont.getCharWidth(textString.charAt(i));
 	    if (rightOfChar >= rightX) {
 		// Hit right bounds -- wrap at word break if possible
-		if (i > this.startIndex)  this.word.setStopIndexAndWidth(i - 1,  leftX - this.leftX);
-		else this.word.setStopIndexAndWidth(this.startIndex, rightOfChar - this.leftX);
-                this.word.didLineBreak = true;
-                return;
+		if (i > this.startIndex)  {
+		    this.stopIndex = i - 1;
+		    this.width = leftX - this.leftX;
+		} else {
+		    this.stopIndex = this.startIndex;
+		    this.width = rightOfChar - this.leftX;
+		}
+                return true;
             }
 	    leftX = rightOfChar;
         }
         // Reached the end of text
-        this.word.setStopIndexAndWidth(i - 1, rightOfChar - this.leftX);
+        this.stopIndex = i - 1;
+	this.width = rightOfChar - this.leftX;
+	return false;
     },
     
+    // accessor function
+    getStopIndex: function() {
+        return this.stopIndex;
+    },
 
     
     indexForX: function(currentFont, textString, x) {
-	if (this.word == null) {
+	if (this.rawNode == null) {
 	    var virtualSpaceSize = this.bounds.width / this.length;
 	    var spacesIn = Math.floor((x - this.bounds.x) / virtualSpaceSize);
 	    return this.startIndex + spacesIn;
@@ -326,7 +298,7 @@ Wrapper.subclass('WordChunk', {
     getBounds: function(currentFont, textString, stringIndex) {
     	// get the bounds of the character at stringIndex
 	// DI: change order of this if, and dont test for getBounds
-	if (this.word) {
+	if (this.rawNode) {
 	    var leftX = this.bounds.x;
 	    for (var j = this.startIndex; j <= stringIndex; j++) {
 		var rightX = leftX + currentFont.getCharWidth(textString.charAt(j));
@@ -345,6 +317,10 @@ Wrapper.subclass('WordChunk', {
 	    }
 	}
     },
+
+    calculateBounds: function(font, topLeftY) { 
+	this.bounds = new Rectangle(this.leftX, topLeftY, this.width, font.getSize());
+    },
     
     isSpaces: function() {
         return this.isWhite && !this.isTab && !this.isNewLine;
@@ -352,7 +328,7 @@ Wrapper.subclass('WordChunk', {
     
     // clone a chunk only copying minimal information
     cloneSkeleton: function() {
-        var c = new WordChunk(this.startIndex, this.length);
+        var c = new TextWord(this.startIndex, this.length);
         c.isWhite = this.isWhite;
         c.isNewLine = this.isNewLine;
         c.isTab = this.isTab;
@@ -396,10 +372,6 @@ Wrapper.subclass('WordChunk', {
         this.isTab = true;
         this.length = 1;
         return this;
-    },
-
-    calculateBounds: function(font, topLeftY) { 
-	return new Rectangle(this.leftX, topLeftY, this.word.width, font.getSize());
     }
 
     
@@ -428,7 +400,6 @@ Object.subclass('TextLine', {
 	//	this.adoptStyle(defaultStyle);
 	this.spaceWidth = font.getCharWidth(' ');
         this.tabWidth = this.spaceWidth * 4;
-        this.hasComposed = false;
         this.chunks = chunkSkeleton;
     },
     
@@ -479,16 +450,16 @@ Object.subclass('TextLine', {
             chunkSize = 1; // default is one character long
             if (this.whiteSpaceDict[wString[offset]]) {
                 if (this.isNewLine(wString[offset])) {
-                    pieces.push(new WordChunk(offset).asNewLine());
+                    pieces.push(new TextWord(offset).asNewLine());
                 } else if (wString[offset] == '\t') {
-                    pieces.push(new WordChunk(offset).asTab());
+                    pieces.push(new TextWord(offset).asTab());
                 } else {
                     chunkSize = this.chunkFromSpace(wString, offset);
-                    pieces.push(new WordChunk(offset, chunkSize).asWhite());
+                    pieces.push(new TextWord(offset, chunkSize).asWhite());
                 }
            } else {
                chunkSize = this.chunkFromWord(wString, offset);
-               pieces.push(new WordChunk(offset, chunkSize));
+               pieces.push(new TextWord(offset, chunkSize));
            }
            offset += chunkSize;
         }
@@ -504,15 +475,12 @@ Object.subclass('TextLine', {
     },
 
     compose: function(compositionWidth) {
-
-	
 	// compose a line of text, breaking it appropriately at compositionWidth
 	// nSpaceChunks and lastChunkIndex are used for alignment in adjustAfterComposition
 	this.nSpaceChunks = 0; 
 	this.lastChunkIndex = 0; 
         var lastBounds = this.topLeft.extent(pt(0, this.currentFont.getSize())); 
 	var runningStartIndex = this.startIndex;
-        var lastWord = null;
         var leadingSpaces = 0;
 	var nextStyleChange = (this.textStyle) ? 0 : this.textString.length;
 	
@@ -537,7 +505,7 @@ Object.subclass('TextLine', {
                     c.bounds.width = (this.topLeft.x + compositionWidth) - c.bounds.x;
                     runningStartIndex = c.startIndex + c.length;
                     c.wasComposed = true;
-                    if (lastWord) lastWord.setLivelyTrait("nl", "true"); // little helper for serialization
+                    if (c.rawNode) c.setLivelyTrait("nl", "true"); // little helper for serialization
                     break;
                 }
                 this.nSpaceChunks++ ;
@@ -547,33 +515,32 @@ Object.subclass('TextLine', {
                 } else {
                     var spaceIncrement = this.spaceWidth;
                     c.bounds.width = spaceIncrement * c.length;
-                    if (lastWord) lastWord.setLivelyTrait("trail", c.length); // little helper for serialization
+                    if (c.rawNode) c.setLivelyTrait("trail", c.length); // little helper for serialization
                     else leadingSpaces = c.length;
                 }
                 runningStartIndex = c.startIndex + c.length;
             } else {
-		c.word = lastWord = new TextWord();
+		c.allocRawNode();
 		c.leftX = lastBounds.maxX();
 		if (hasStyleChanged) {
 		    // once we notice one change, we will reapply font-size to chunk
-		    this.currentFont.applyTo(lastWord);
+		    this.currentFont.applyTo(c);
 		}
-                
 		
                 if (leadingSpaces) { 
-                    lastWord.setLivelyTrait("lead", leadingSpaces);
+                    c.setLivelyTrait("lead", leadingSpaces);
                     leadingSpaces = 0;
                 }
-                c.compose(this.currentFont, this.textString, compositionWidth - (lastBounds.maxX() - this.topLeft.x), c.length);
-                c.bounds = c.calculateBounds(this.currentFont, this.topLeft.y);
-                if (lastWord.getLineBrokeOnCompose()) {
+                var didLineBreak = c.compose(this.currentFont, this.textString, compositionWidth - (lastBounds.maxX() - this.topLeft.x), c.length);
+                c.calculateBounds(this.currentFont, this.topLeft.y);
+                if (didLineBreak) {
                     if (i == 0) {
                         // XXX in the future, another chunk needs to be inserted in the array at this point
                         //     otherwise the bounds will be messed up - kam
-                        runningStartIndex = lastWord.getStopIndex() + 1;
+                        runningStartIndex = c.getStopIndex() + 1;
                     } else {
                         // Back up to re-render this word and abort rendering
-                        c.render = false;
+                        c.shouldRender = false;
                     }
                     this.nSpaceChunks-- ;  // This makes last interiror space no longer interior
                     break;
@@ -584,7 +551,6 @@ Object.subclass('TextLine', {
 	    c.wasComposed = true;
         }
         this.overallStopIndex = runningStartIndex - 1;
-        this.hasComposed = true;
     },
     
     adoptStyle: function(emph, charIx) {
@@ -675,8 +641,8 @@ Object.subclass('TextLine', {
     render: function(textContent) {
 	// render each word contained in the line
         for (var i = 0; i < this.chunks.length; i++) {
-            if (this.chunks[i].word && this.chunks[i].render) {
-                textContent.rawNode.appendChild(this.chunks[i].word.rawNode);
+            if (this.chunks[i].rawNode && this.chunks[i].shouldRender) {
+                textContent.rawNode.appendChild(this.chunks[i].rawNode);
             }
         }
     },
@@ -722,13 +688,12 @@ Object.subclass('TextLine', {
     },
 
     toString: function() {
-    // string representation
+	// string representation
         var lString = "textString: (" + this.textString + ")" +
             " startIndex: " + this.startIndex +
             " overallStopIndex: " + this.overallStopIndex +
             " topLeft: " + Object.inspect(this.topLeft) +
-            " spaceWidth: " + this.spaceWidth + 
-            " hasComposed: " + this.hasComposed;
+            " spaceWidth: " + this.spaceWidth;
         return lString;
     }
     
