@@ -211,7 +211,6 @@ Wrapper.subclass('TextWord', {
     isNewLine: false,
     isTab: false,
 
-    
     initialize: function(offset, length) {
         this.startIndex = offset;
 	this.stopIndex  = offset;
@@ -242,16 +241,15 @@ Wrapper.subclass('TextWord', {
 	this.rawNode = NodeFactory.create("tspan");
     },
     
-    // compose a word within compositionWidth, stopping if the width or string width is exceeded
-    // compositionWidth is in the same units as character metrics
-
-    compose: function(currentFont, textString, compositionWidth, length) {
+    compose: function(currentFont, textString, compositionWidth) {
+	// compose a word within compositionWidth, stopping if the width or string width is exceeded
+	// compositionWidth is in the same units as character metrics
 	// return true if we bumped into the width limit while composing
         var leftX = this.leftX;
         var rightX = leftX + compositionWidth;
 	
         // get the character bounds until it hits the right side of the compositionWidth
-        for (var i = this.startIndex; i < textString.length && i < (this.startIndex + length); i++) {
+        for (var i = this.startIndex; i < textString.length && i < this.getNextStartIndex(); i++) {
             var rightOfChar = leftX + currentFont.getCharWidth(textString.charAt(i));
 	    if (rightOfChar >= rightX) {
 		// Hit right bounds -- wrap at word break if possible
@@ -277,7 +275,16 @@ Wrapper.subclass('TextWord', {
         return this.stopIndex;
     },
 
-    
+    getNextStartIndex: function() {
+	/*
+	if (this.stopIndex != this.startIndex + this.length - 1) {
+	    if (this.stopIndex != this.startIndex)
+		console.log("discrepancy: " + [this.stopIndex, this.startIndex + this.length - 1, this.startIndex, this.length]);
+	}
+        */
+	return this.startIndex + this.length;
+    },
+
     indexForX: function(currentFont, textString, x) {
 	if (this.rawNode == null) {
 	    var virtualSpaceSize = this.bounds.width / this.length;
@@ -485,9 +492,8 @@ Object.subclass('TextLine', {
 	var nextStyleChange = (this.textStyle) ? 0 : this.textString.length;
 	
         // a way to optimize out repeated scanning
-        if (this.chunks == null) {
+        if (this.chunks == null)
             this.chunks = this.chunkFromString(this.textString, this.startIndex);
-        }
 
 	var hasStyleChanged = false;
         for (var i = 0; i < this.chunks.length; i++) {
@@ -503,12 +509,12 @@ Object.subclass('TextLine', {
                 c.bounds = lastBounds.withX(lastBounds.maxX());
                 if (c.isNewLine) {
                     c.bounds.width = (this.topLeft.x + compositionWidth) - c.bounds.x;
-                    runningStartIndex = c.startIndex + c.length;
+                    runningStartIndex = c.getNextStartIndex();
                     c.wasComposed = true;
                     if (c.rawNode) c.setLivelyTrait("nl", "true"); // little helper for serialization
                     break;
                 }
-                this.nSpaceChunks++ ;
+                this.nSpaceChunks ++ ;
 		if (c.isTab) {
                     var tabXBoundary = c.bounds.x - this.topLeft.x;
                     c.bounds.width = Math.floor((tabXBoundary + this.tabWidth) / this.tabWidth) * this.tabWidth - tabXBoundary;
@@ -518,7 +524,7 @@ Object.subclass('TextLine', {
                     if (c.rawNode) c.setLivelyTrait("trail", c.length); // little helper for serialization
                     else leadingSpaces = c.length;
                 }
-                runningStartIndex = c.startIndex + c.length;
+                runningStartIndex = c.getNextStartIndex();
             } else {
 		c.allocRawNode();
 		c.leftX = lastBounds.maxX();
@@ -531,7 +537,7 @@ Object.subclass('TextLine', {
                     c.setLivelyTrait("lead", leadingSpaces);
                     leadingSpaces = 0;
                 }
-                var didLineBreak = c.compose(this.currentFont, this.textString, compositionWidth - (lastBounds.maxX() - this.topLeft.x), c.length);
+                var didLineBreak = c.compose(this.currentFont, this.textString, compositionWidth - (lastBounds.maxX() - this.topLeft.x));
                 c.calculateBounds(this.currentFont, this.topLeft.y);
                 if (didLineBreak) {
                     if (i == 0) {
@@ -545,7 +551,7 @@ Object.subclass('TextLine', {
                     this.nSpaceChunks-- ;  // This makes last interiror space no longer interior
                     break;
 		}
-		runningStartIndex = c.startIndex + c.length;
+		runningStartIndex = c.getNextStartIndex();
             }
             lastBounds = c.bounds;
 	    c.wasComposed = true;
@@ -593,7 +599,7 @@ Object.subclass('TextLine', {
     getBounds: function(stringIndex) {
         for (var i = 0; i <= this.lastChunkIndex; i++) {
             var c = this.chunks[i];
-            if (stringIndex >= c.startIndex && stringIndex < (c.startIndex + c.length)) 
+            if (stringIndex >= c.startIndex && stringIndex < c.getNextStartIndex()) 
 		return c.getBounds(this.currentFont, this.textString, stringIndex);
         }
         return null;
