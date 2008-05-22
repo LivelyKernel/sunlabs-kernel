@@ -346,6 +346,15 @@ function populateWorldWithExamples(world) {
             console.log('showing TwoPaneBrowser!');
             browser.openIn(Config.webStoreInMain ? WorldMorph.current() : devWorld.myWorld, pt(160, 150));
         }
+
+		if (Config.showGridDemo) {
+			if (this.enterCount > 0) return;
+			var importer = new NetImporter();
+			importer.onCodeLoad = function(error) {
+				error || GridLayoutMorph.demo(devWorld.myWorld, pt(90,450));
+			};
+			importer.loadCode(URL.source.withFilename('GridLayout.js'));
+		}
     }
 
     if (Config.showPhoneWorld) {

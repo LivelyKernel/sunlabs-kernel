@@ -626,9 +626,9 @@ console.log("end gridlayout.js");
 GridLayoutMorph.demo = function(world, position) {
 	console.log("sample GridLayout");
         HandMorph.logDnD=true;
-	var l1 = new TextMorph(new Rectangle(0,0,100,20), "Label one");
-	var l2 = new TextMorph(new Rectangle(0,0,100,20), "label two");
-	var b = new TextMorph(new Rectangle(0,0,100, 20) ,"This is some text");
+	var l1 = new TextMorph(new Rectangle(0,0,100,20), "Grid Demo");
+	var l2 = new TextMorph(new Rectangle(0,0,100,20), "a random label");
+	var b = new TextMorph(new Rectangle(0,0,100, 20) ,"Please help fix me");
 	var grid = new GridLayoutMorph(position);
 	l1.myName="1";
 	l2.myName="2";
@@ -669,17 +669,12 @@ GridLayoutMorph.demo = function(world, position) {
 		this.alignCount = (this.alignCount+1)%this.alignments.length;
 		setTimeout(this.nextAlign.bind(this), 700);
 	};
-	red=r;	// for debugging
 
 	g2.addMorph(r,{col:2, row:1, pad: {x:5,y:5}});
 	grid.addMorph(g2, {row:3, cols:2, pad: {x:2, y:2}});
 	world.addMorph(grid);
-	// grid.closeAllToDnD(); // should make D&D work some day
 
-	// XXX grid lines are broken 
-	// grid.showGridLines(true);
 	g2.gridLineSpec.fill=Color.black;
-	// g2.showGridLines(true);
 
 	// uncomment this to play with alignments
     // r.nextAlign();
