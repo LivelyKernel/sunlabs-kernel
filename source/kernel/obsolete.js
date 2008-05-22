@@ -403,3 +403,21 @@ Visual.subclass('TextSelection', {
     }
 });
 
+
+TextWord.addMethods({
+    getFontFamily: function() {
+        for (var node = this.rawNode; node && (/text|tspan/).test(node.tagName); node = node.parentNode) {
+            var result = node.getAttributeNS(null, "font-family");
+            if (result) return result;
+        }
+        return null; // ???
+    },
+    
+    getFontSize: function() {
+        for (var node = this.rawNode; node && (/text|tspan/).test(node.tagName); node = node.parentNode) {
+            var result = node.getAttributeNS(null, "font-size");
+            if (result) return Converter.parseLength(result);
+        }
+        return 0; // Should we return a default size?
+    }
+});

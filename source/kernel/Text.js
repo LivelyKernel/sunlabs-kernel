@@ -70,7 +70,12 @@ Object.subclass('Font', {
     getCharWidth: function(charString) {
         var code = charString.charCodeAt(0);
         if (!this.extents) this.extents = this.computeExtents(this.family, this.size);
-        return this.extents[code] ? this.extents[code].width : 8;
+	var w = this.extents[code] ? this.extents[code].width : 4;
+        if (isNaN(w)) {
+            console.warn('getCharWidth: no width for ' + charString);
+	    return 4;  // don't crash
+        }
+	return w;
     },
     getCharHeight: function(charString) {
         var code = charString.charCodeAt(0)
@@ -205,70 +210,25 @@ Wrapper.subclass('TextWord', {
     
     deserialize: function(importer, rawNode) {
         this.rawNode = rawNode;
-        this.fontInfo = Font.forFamily(this.getFontFamily(), this.getFontSize());
-        this.textString = this.rawNode.textContent;
         this.didLineBreak = false;
     },
     
-    initialize: function(textString, startIndex, leftX, baselineY, font) {
+    initialize: function(startIndex, leftX, baselineY, font) {
         this.rawNode = NodeFactory.create("tspan");
-        this.textString = textString;
         this.startIndex = startIndex;
-        this.stopIndex = textString.length - 1;
+        this.stopIndex = startIndex;
         this.leftX = leftX;
-        this.fontInfo = font;
-        this.setX(leftX);
-	this.setY(baselineY);
+	this.baselineY = baselineY;
         this.didLineBreak = false;
         return this;
     },
     
     setX: function(newValue /*:float*/) {
-        this.rawNode.setAttributeNS(null, "x", newValue.toString());
+        this.rawNode.setAttributeNS(null, "x", String(newValue));
     },
     
     setY: function(newValue /*:float*/) {
-        this.rawNode.setAttributeNS(null, "y", newValue.toString());
-    },
-    
-    getFontFamily: function() {
-        for (var node = this.rawNode; node && (/text|tspan/).test(node.tagName); node = node.parentNode) {
-            var result = node.getAttributeNS(null, "font-family");
-            if (result) return result;
-        }
-        return null; // ???
-    },
-    
-    getFontSize: function() {
-        for (var node = this.rawNode; node && (/text|tspan/).test(node.tagName); node = node.parentNode) {
-            var result = node.getAttributeNS(null, "font-size");
-            if (result) return Converter.parseLength(result);
-        }
-        return 0; // Should we return a default size?
-    },
-    
-    // compose a word within compositionWidth, stopping if the width or string width is exceeded
-    // compositionWidth is in the same units as character metrics
-    compose: function(compositionWidth, length) {
-        var leftX = this.leftX;
-        var rightX = this.leftX + compositionWidth;
-        var leadingSpaces = 0;
-	
-        this.didLineBreak = false;
-        // get the character bounds until it hits the right side of the compositionWidth
-        for (var i = this.startIndex; i < this.textString.length && i < (this.startIndex + length); i++) {
-            var rightOfChar = leftX + this.getWidthOfChar(i);
-	    if (rightOfChar >= rightX) {
-		// Hit right bounds -- wrap at word break if possible
-		if (i > this.startIndex)  this.setStopIndexAndWidth(i - 1,  leftX - this.leftX);
-		else this.setStopIndexAndWidth(this.startIndex, rightOfChar - this.leftX);
-                this.didLineBreak = true;
-                return;
-            }
-	    leftX = rightOfChar;
-        }
-        // Reached the end of text
-        this.setStopIndexAndWidth(i - 1, rightOfChar - this.leftX);
+        this.rawNode.setAttributeNS(null, "y", String(newValue));
     },
     
     // accessor function
@@ -287,45 +247,19 @@ Wrapper.subclass('TextWord', {
         return this.didLineBreak;
     },
     
-    // keep a copy of the substring we were working on (do we really need this? - kam)
-    adjustAfterComposition: function(deltaX) {
-	this.replaceRawNodeChildren(NodeFactory.createText(this.textString.substring(this.startIndex, this.stopIndex + 1))); 
-	// XXX
-	this.setX(this.leftX + deltaX);
-    },
-    
     toString: function() {
-	// string representation
-        return "textString: (" + this.textString + ")" +
-            " substr: (" + this.textString.substring(this.startIndex, this.stopIndex + 1) + ")" +
-            " startIndex: " + this.startIndex +
-            " stopIndex: " + this.stopIndex +
-            " leftX: " + this.leftX +
-            " textContent: " + this.rawNode.textContent +
-            " didLineBreak: " + this.didLineBreak;
-    },
-    
-    getWidthOfChar: function(position) {
-        var w = this.fontInfo.getCharWidth(this.textString.charAt(position));
-        if (isNaN(w)) {
-            console.warn('getWidthOfChar: width at position ' + position);
-	    return 4;  // dont crash
-        }
-	return w;
+        return Strings.format("startIndex: %s, stopIndex: %s, leftX: %s, didLineBreak: %s",
+			      this.startIndex, this.stopIndex, this.leftX, this.didLineBreak);
     }
     
 });
 
-
-/**
- * @class WordChunk
- * This 'class' represents a chunk of text which might be printable or might be whitespace
- */ 
-Object.subclass('WordChunk', {
+Wrapper.subclass('WordChunk', {
 
     isWhite: false,
     isNewLine: false,
     isTab: false,
+    documentation: "represents a chunk of text which might be printable or might be whitespace",
     
     initialize: function(offset, length) {
         this.startIndex = offset;
@@ -336,14 +270,45 @@ Object.subclass('WordChunk', {
         this.word = null;
     },
     
-    adjustAfterComposition: function(deltaX, paddingX) {
+    adjustAfterComposition: function(textString, deltaX, paddingX) {
 	// Align the text after composition
         if (deltaX != 0) this.bounds = this.bounds.withX(this.bounds.x+deltaX);
 	if (paddingX != 0 && this.isSpaces()) this.bounds = this.bounds.withWidth(this.bounds.width+paddingX);
-	if (this.word != null) this.word.adjustAfterComposition(deltaX);
+	if (this.word != null) {
+	    this.word.replaceRawNodeChildren(NodeFactory.createText(textString.substring(this.word.startIndex, this.word.stopIndex + 1))); 
+	    // XXX
+	    this.word.setX(this.word.leftX + deltaX);
+	    this.word.setY(this.word.baselineY);
+	}
+    },
+
+    // compose a word within compositionWidth, stopping if the width or string width is exceeded
+    // compositionWidth is in the same units as character metrics
+    compose: function(currentFont, textString, compositionWidth, length) {
+        var leftX = this.word.leftX;
+        var rightX = this.word.leftX + compositionWidth;
+        var leadingSpaces = 0;
+	
+        this.didLineBreak = false;
+        // get the character bounds until it hits the right side of the compositionWidth
+        for (var i = this.word.startIndex; i < textString.length && i < (this.word.startIndex + length); i++) {
+            var rightOfChar = leftX + currentFont.getCharWidth(textString.charAt(i));
+	    if (rightOfChar >= rightX) {
+		// Hit right bounds -- wrap at word break if possible
+		if (i > this.word.startIndex)  this.word.setStopIndexAndWidth(i - 1,  leftX - this.word.leftX);
+		else this.word.setStopIndexAndWidth(this.word.startIndex, rightOfChar - this.word.leftX);
+                this.word.didLineBreak = true;
+                return;
+            }
+	    leftX = rightOfChar;
+        }
+        // Reached the end of text
+        this.word.setStopIndexAndWidth(i - 1, rightOfChar - this.word.leftX);
     },
     
-    indexForX: function(x) {
+
+    
+    indexForX: function(currentFont, textString, x) {
 	if (this.word == null) {
 	    var virtualSpaceSize = this.bounds.width / this.length;
 	    var spacesIn = Math.floor((x - this.bounds.x) / virtualSpaceSize);
@@ -351,22 +316,22 @@ Object.subclass('WordChunk', {
 	} else {
 	    var leftX = this.bounds.x;
 	    for (var j = this.startIndex; j < (this.startIndex + this.length); j++) {
-		var rightX = leftX + this.word.getWidthOfChar(j);
+		var rightX = leftX + currentFont.getCharWidth(textString.charAt(j));
 		if (x >= leftX && x <= rightX) break;
-		leftX = rightX
+		leftX = rightX;
 	    }
 	    return j;
 	}
 	return this.startIndex; // failsafe
     },
     
-    getBounds: function(stringIndex) {
+    getBounds: function(currentFont, textString, stringIndex) {
     	// get the bounds of the character at stringIndex
 	// DI: change order of this if, and dont test for getBounds
 	if (this.word) {
 	    var leftX = this.bounds.x;
 	    for (var j = this.startIndex; j <= stringIndex; j++) {
-		var rightX = leftX + this.word.getWidthOfChar(j);
+		var rightX = leftX + currentFont.getCharWidth(textString.charAt(j));
 		if (j >= stringIndex) break;
 		leftX = rightX;
 	    }
@@ -538,8 +503,8 @@ Object.subclass('TextLine', {
     compose: function(compositionWidth) {
 
 	// get the bounds 
-	function getWordBounds(word, topLeftY) { 
-	    return new Rectangle(word.leftX, topLeftY, word.width, word.fontInfo.getSize());
+	function getWordBounds(word, font, topLeftY) { 
+	    return new Rectangle(word.leftX, topLeftY, word.width, font.getSize());
 	};
 	
 	// compose a line of text, breaking it appropriately at compositionWidth
@@ -588,7 +553,7 @@ Object.subclass('TextLine', {
                 }
                 runningStartIndex = c.startIndex + c.length;
             } else {
-                lastWord = new TextWord(this.textString, c.startIndex, lastBounds.maxX(), this.baselineY(), this.currentFont);
+                lastWord = new TextWord(c.startIndex, lastBounds.maxX(), this.baselineY(), this.currentFont);
 		if (hasStyleChanged) {
 		    // once we notice one change, we will reapply font-size to chunk
 		    this.currentFont.applyTo(lastWord);
@@ -599,8 +564,8 @@ Object.subclass('TextLine', {
                     lastWord.setLivelyTrait("lead", leadingSpaces);
                     leadingSpaces = 0;
                 }
-                lastWord.compose(compositionWidth - (lastBounds.maxX() - this.topLeft.x), c.length);
-                c.bounds = getWordBounds(lastWord, this.topLeft.y);
+                c.compose(this.currentFont, this.textString, compositionWidth - (lastBounds.maxX() - this.topLeft.x), c.length);
+                c.bounds = getWordBounds(lastWord, this.currentFont, this.topLeft.y);
                 if (lastWord.getLineBrokeOnCompose()) {
                     if (i == 0) {
                         // XXX in the future, another chunk needs to be inserted in the array at this point
@@ -663,7 +628,7 @@ Object.subclass('TextLine', {
         for (var i = 0; i <= this.lastChunkIndex; i++) {
             var c = this.chunks[i];
             if (stringIndex >= c.startIndex && stringIndex < (c.startIndex + c.length)) 
-		return c.getBounds(stringIndex);
+		return c.getBounds(this.currentFont, this.textString, stringIndex);
         }
         return null;
     },
@@ -673,7 +638,7 @@ Object.subclass('TextLine', {
         for (var i = 0; i <= this.lastChunkIndex; i++) {
             var c = this.chunks[i];
             if (!c.wasComposed) continue;
-	    if (x >= c.bounds.x && x <= c.bounds.maxX()) return c.indexForX(x);
+	    if (x >= c.bounds.x && x <= c.bounds.maxX()) return c.indexForX(this.currentFont, this.textString, x);
         }
         return 0; // should not get here unless rightX is out of bounds
     },
@@ -683,7 +648,7 @@ Object.subclass('TextLine', {
         return this.startIndex <= index && index <= this.getStopIndex();
     },
 
-    adjustAfterComposition: function(compositionWidth) {
+    adjustAfterComposition: function(textString, compositionWidth) {
 	// This serves to clean up some cruft tht should not be there anyway
 	// But it now also serves to align the text after composition
 	var deltaX = 0;
@@ -701,7 +666,7 @@ Object.subclass('TextLine', {
 	    }
 	}
         for (var i = 0; i <= this.lastChunkIndex; i++) {
-	    this.chunks[i].adjustAfterComposition(deltaX, paddingX);
+	    this.chunks[i].adjustAfterComposition(textString, deltaX, paddingX);
             if (this.chunks[i].isSpaces()) deltaX += paddingX;
         }
     },
@@ -1247,7 +1212,7 @@ Morph.subclass("TextMorph", {
 		                    topLeft, font, new TextEmphasis({}), chunkSkeleton);
             line.setTabWidth(this.tabWidth, this.tabsAsSpaces);
             line.compose(compositionWidth);
-            line.adjustAfterComposition(compositionWidth);
+            line.adjustAfterComposition(this.textString, compositionWidth);
             lines.push(line);
             startIndex = line.getNextStartIndex();
             topLeft = topLeft.addXY(0, line.lineHeight());
