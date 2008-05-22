@@ -88,14 +88,15 @@ Morph.subclass('GridLayoutMorph', {
 			}
 		};
 
+		// add alignment options, depending on where the click was ?
+
     	morph.realMorphMenu=morph.morphMenu;
     	morph.morphMenu=function(evt) { 
 			var menu = morph.realMorphMenu(evt);
 			menu.addLine();
-			// menu.addItem(["toggle N", morph.owner.toggleAlign??); XXX
-			menu.addItem(["toggle N", function() {
-				morph.owner.toggleAlign(morph, "n");
-			}]);
+			var theta = morph.localize(evt.mousePoint).subPt(morph.relativize(morph.bounds().center())).theta().toDegrees();
+			var cp=["w", "n", "e", "s"][(Math.round(theta*4/360)+2)%4];
+			menu.addItem(["toggle " + cp, morph.owner.toggleAlign.curry(morph, cp)]);
 			return menu;
 		};
 
@@ -531,11 +532,16 @@ Morph.subclass('GridLayoutMorph', {
 	// This argues for keeping the alignment state as a 4 bit vector
 
 	toggleAlign: function(morph, toggle) {
+		// console.log("Toggle");
 		var c = morph.cst;
+		var o = morph.owner; // we could use this XXX
 		if (!c) return;
-		var result =  this.bits2Align(
-				this.align2Bits(toggle) ^ this.align2Bits(c.align));
-		console.log("toggleAlign " + toggle + " " + c.align + "->" + result);
+		var result = o.bits2Align(
+				o.align2Bits(toggle) ^ o.align2Bits(c.align));
+		// we should just return the alignment
+		morph.cst.align=result;
+		o.needLayout = true;
+		o.scheduleUpdate();
 		return result;
 	},
 
@@ -552,15 +558,16 @@ Morph.subclass('GridLayoutMorph', {
 	alignMap: ["c", "n", "s", "ns", "e", "ne", "se", "nse", "w", "nw", "sw", "nsw", "ew", "new", "sew", "nsew"],
 
 	bits2Align: function(bits) {
-		return this.alignMap[bits&0xF];
+		var align =  this.alignMap[bits&0xF];
+		return align;
 	},
 
     morphMenu: function($super, evt) { 
         var menu = $super(evt);
-		console.log("Got MorphMenu");
         menu.addLine();
-        menu.addItem(["toggle grid lines", this.toggleGridLines]);
-        menu.addItem(["toggle grid spacing", this.toggleMinCells]);
+        menu.addItem(["grid lines " + (this.showGrid?"off":"on"), this.toggleGridLines]);
+	var label = this.minCell.x == 0 ? "expand grid" : "un-expand grid";
+        menu.addItem([label, this.toggleMinCells]);
         return menu;
     }
 });
@@ -593,7 +600,8 @@ Morph.subclass("GridLineMorph", {
 	morphMenu: function($super, evt) { 
 		var menu = $super(evt);
 		menu.addLine();
-		menu.addItem(["insert line", this.addCell]);
+		var what = this.row ? "row" : "column";
+		menu.addItem(["insert " + what, this.addCell]);
 		if ((this.row && this.row>0) || (this.col && this.col>0)) {
 			menu.addItem(["remove line", this.rmCell]);
 		}
@@ -603,8 +611,8 @@ Morph.subclass("GridLineMorph", {
 	// either col or row will be defined
 
 	addCell: function() {
-		if (this.row) this.owner.insertRowBefore(this.row);
-		if (this.col) this.owner.insertColBefore(this.col);
+		if (this.row) this.owner.insertRowBefore(this.row+1);
+		if (this.col) this.owner.insertColBefore(this.col+1);
 	}, 
 
 	rmCell: function() {
@@ -617,7 +625,7 @@ console.log("end gridlayout.js");
 
 GridLayoutMorph.demo = function(world, position) {
 	console.log("sample GridLayout");
-    HandMorph.logDnD=true;
+        HandMorph.logDnD=true;
 	var l1 = new TextMorph(new Rectangle(0,0,100,20), "Label one");
 	var l2 = new TextMorph(new Rectangle(0,0,100,20), "label two");
 	var b = new TextMorph(new Rectangle(0,0,100, 20) ,"This is some text");
@@ -674,7 +682,7 @@ GridLayoutMorph.demo = function(world, position) {
 	// g2.showGridLines(true);
 
 	// uncomment this to play with alignments
-	// r.nextAlign();
+    // r.nextAlign();
 	return grid;
 }
 console.log("end griddemo");
