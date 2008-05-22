@@ -64,6 +64,7 @@ var Config = {
     skipAllExamples:  false,
     showWebStore: false,
     showCurveExample: false,
+    showGridDemo: false,
     
     // Additional demo configuration options 
     showThumbnail: false,
