@@ -249,7 +249,7 @@ Wrapper.subclass('TextWord', {
 	
         // get the character bounds until it hits the right side of the compositionWidth
         for (var i = this.startIndex; i < textLine.textString.length && i < this.getNextStartIndex(); i++) {
-            var rightOfChar = leftX + textLine.currentFont.getCharWidth(textLine.textString.charAt(i));
+            var rightOfChar = leftX + textLine.getCharWidthAt(i);
 	    if (rightOfChar >= rightX) {
 		// Hit right bounds -- wrap at word break if possible
 		if (i > this.startIndex)  {
@@ -278,7 +278,7 @@ Wrapper.subclass('TextWord', {
 	return this.startIndex + this.length;
     },
 
-    indexForX: function(currentFont, textString, x) {
+    indexForX: function(textLine, x) {
 	if (this.rawNode == null) {
 	    var virtualSpaceSize = this.bounds.width / this.length;
 	    var spacesIn = Math.floor((x - this.bounds.x) / virtualSpaceSize);
@@ -286,7 +286,7 @@ Wrapper.subclass('TextWord', {
 	} else {
 	    var leftX = this.bounds.x;
 	    for (var j = this.startIndex; j < (this.startIndex + this.length); j++) {
-		var rightX = leftX + currentFont.getCharWidth(textString.charAt(j));
+		var rightX = leftX + textLine.getCharWidthAt(j);
 		if (x >= leftX && x <= rightX) break;
 		leftX = rightX;
 	    }
@@ -295,13 +295,13 @@ Wrapper.subclass('TextWord', {
 	return this.startIndex; // failsafe
     },
     
-    getBounds: function(currentFont, textString, stringIndex) {
+    getBounds: function(textLine, stringIndex) {
     	// get the bounds of the character at stringIndex
 	// DI: change order of this if, and dont test for getBounds
 	if (this.rawNode) {
 	    var leftX = this.bounds.x;
 	    for (var j = this.startIndex; j <= stringIndex; j++) {
-		var rightX = leftX + currentFont.getCharWidth(textString.charAt(j));
+		var rightX = leftX + textLine.getCharWidthAt(j);
 		if (j >= stringIndex) break;
 		leftX = rightX;
 	    }
@@ -469,6 +469,10 @@ Object.subclass('TextLine', {
 	return (this.lineHeightFactor - 1) * this.currentFont.getSize();
     },
 
+    getCharWidthAt: function(index) {
+	return this.currentFont.getCharWidth(this.textString.charAt(index));
+    },
+
     compose: function(compositionWidth) {
 	// compose a line of text, breaking it appropriately at compositionWidth
 	// nSpaceChunks and lastChunkIndex are used for alignment in adjustAfterComposition
@@ -587,7 +591,7 @@ Object.subclass('TextLine', {
         for (var i = 0; i <= this.lastChunkIndex; i++) {
             var c = this.chunks[i];
             if (stringIndex >= c.startIndex && stringIndex < c.getNextStartIndex()) 
-		return c.getBounds(this.currentFont, this.textString, stringIndex);
+		return c.getBounds(this, stringIndex);
         }
         return null;
     },
@@ -597,7 +601,7 @@ Object.subclass('TextLine', {
         for (var i = 0; i <= this.lastChunkIndex; i++) {
             var c = this.chunks[i];
             if (!c.wasComposed) continue;
-	    if (x >= c.bounds.x && x <= c.bounds.maxX()) return c.indexForX(this.currentFont, this.textString, x);
+	    if (x >= c.bounds.x && x <= c.bounds.maxX()) return c.indexForX(this, x);
         }
         return 0; // should not get here unless rightX is out of bounds
     },
