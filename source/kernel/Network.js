@@ -489,7 +489,7 @@ View.subclass('Query',  {
 	var accumulator = [];
 	var res = null;
 	while (res = result.iterateNext()) accumulator.push(res);
-	return accumulator.length > 0 ? accumulator : defaultValue;
+	return accumulator.length > 0 || defaultValue === undefined ? accumulator : defaultValue;
     },
 
     findFirst: function(node) {
