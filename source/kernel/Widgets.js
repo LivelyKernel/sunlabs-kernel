@@ -253,10 +253,6 @@ ButtonMorph.subclass("ImageButtonMorph", {
 });
 
 
-// ===========================================================================
-// Window widgets
-// ===========================================================================
-
 Morph.subclass("ClipMorph", {
 
     documentation: "A clipping window/view",
@@ -296,468 +292,6 @@ Morph.subclass("ClipMorph", {
     
 });
 
-Morph.subclass("TitleBarMorph", {
-
-    documentation: "Title bar for WindowMorphs",
-
-    controlSpacing: 3,
-    barHeight: 22,
-    borderWidth: 0,
-    fill: null,
-    labelStyle: { borderRadius: 8, padding: Rectangle.inset(6, 2), fill: new LinearGradient([Color.white, 1, Color.gray]) },
-
-    initialize: function($super, headline, windowWidth, windowMorph) {
-	var bounds = new Rectangle(0, 0, windowWidth, this.barHeight);
-	
-        $super(bounds, "rect");
-	
-	// contentMorph is bigger than the titleBar, so that the lower rounded part of it can be clipped off
-	// arbitrary paths could be used, but FF doesn't implement the geometry methods :(
-	// bounds will be adjusted in adjustForNewBounds()
-	var contentMorph = new Morph(bounds, "rect");
-	this.addMorph(new ClipMorph(bounds)).addMorph(contentMorph);
-	contentMorph.linkToStyles(["titleBar"]);
-	
-	this.ignoreEvents();
-	contentMorph.ignoreEvents();
-	contentMorph.owner.ignoreEvents();
-	this.contentMorph = contentMorph;
-	
-        this.windowMorph = windowMorph;
-
-        // Note: Layout of submorphs happens in adjustForNewBounds (q.v.)
-        var cell = new Rectangle(0, 0, this.barHeight, this.barHeight);
-        var closeButton = new WindowControlMorph(cell, this.controlSpacing, Color.primary.orange, windowMorph, 
-            "initiateShutdown", "Close");
-        this.closeButton =  this.addMorph(closeButton);
-
-        var menuButton = new WindowControlMorph(cell, this.controlSpacing, Color.primary.blue, windowMorph, 
-            "showTargetMorphMenu", "Menu");
-        this.menuButton = this.addMorph(menuButton);
-
-        var collapseButton = new WindowControlMorph(cell, this.controlSpacing, Color.primary.yellow, windowMorph, 
-            "toggleCollapse", "Collapse");
-        this.collapseButton = this.addMorph(collapseButton);
-
-        var label;
-        if (headline instanceof TextMorph) {
-            label = headline;
-        } else { // String
-            var width = headline.length * 8; // wild guess headlineString.length * 2 *  font.getCharWidth(' ') + 2;
-            label = new TextMorph(new Rectangle(0, 0, width, this.barHeight), headline).beLabel();
-        }
-        label.applyStyle(this.labelStyle);
-        this.label = this.addMorph(label);
-	
-        this.adjustForNewBounds();  // This will align the buttons and label properly
-        return this;
-    },
-
-    deserialize: function($super, importer, rawNode) {
-        $super(importer, rawNode);
-        if (LivelyNS.getType(this.rawNode.parentNode) == "WindowMorph") {
-            console.log("patching up to " + this.windowMorph);
-            this.closeButton.action.actor    = this.windowMorph;
-            this.menuButton.action.actor     = this.windowMorph;
-            this.collapseButton.action.actor = this.windowMorph;
-        }
-    },
-
-    acceptsDropping: function(morph) {
-        //console.log('accept drop from %s of %s, %s', this, morph, morph instanceof WindowControlMorph);
-        return morph instanceof WindowControlMorph; // not used yet... how about text...
-    },
-
-    highlight: function(trueForLight) {
-	this.label.setFill(trueForLight ? new LinearGradient([Color.white, 1, Color.lightGray]) : null);
-    },
-
-    okToBeGrabbedBy: function(evt) {
-        var oldTop = this.world().topSubmorph();
-        if (oldTop instanceof WindowMorph) oldTop.titleBar.highlight(false);
-        return this.windowMorph.isCollapsed() ? this : this.windowMorph;
-    },
-
-    adjustForNewBounds: function($super) {
-	var innerBounds = this.innerBounds();
-	var sp = this.controlSpacing;
-        $super();
-        var loc = this.innerBounds().topLeft().addXY(sp, sp);
-        var l0 = loc;
-        var dx = pt(this.barHeight - sp, 0);
-        if (this.menuButton) { 
-	    this.menuButton.setPosition(loc);  
-	    loc = loc.addPt(dx); 
-	}
-        if (this.collapseButton) { 
-	    this.collapseButton.setPosition(loc);  
-	    loc = loc.addPt(dx); 
-	}
-        if (this.label) {
-            this.label.align(this.label.bounds().topCenter(), this.innerBounds().topCenter());
-            if (this.label.bounds().topLeft().x < loc.x) {
-                this.label.align(this.label.bounds().topLeft(), loc.addXY(0,-2));
-            }
-        }
-	if (this.closeButton) { 
-	    loc = this.innerBounds().topRight().addXY(-sp - this.closeButton.shape.bounds().width, sp);
-	    this.closeButton.setPosition(loc);  
-	    // loc = loc.addPt(dx); 
-	}
-	
-	var style = this.styleNamed("titleBar");
-	var w = style.borderWidth;
-	var r = style.borderRadius;
-	this.contentMorph.setBounds(new Rectangle(w/2, w/2, innerBounds.width, this.barHeight + r));
-	var clip = this.contentMorph.owner;
-	clip.setBounds(innerBounds.insetByRect(Rectangle.inset(-w/2, -w/2, -w/2, 0)));
-    },
-
-    okToDuplicate: Functions.False
-
-});
-
-Morph.subclass("TitleTabMorph", {
-
-    documentation: "Title bar for tabbed window morphs",
-
-    barHeight: 0,
-    controlSpacing: 0,
-    suppressHandles: true,
-    
-    initialize: function($super, headline, windowWidth, windowMorph) {
-        $super(new Rectangle(0, 0, windowWidth, this.barHeight), "rect");
-        this.windowMorph = windowMorph;
-        this.linkToStyles(['titleBar']);
-        this.ignoreEvents();
-
-        var label;
-        if (headline instanceof TextMorph) {
-            label = headline;
-        } else { // String
-            var width = headline.length * 8;
-            // wild guess headlineString.length * 2 *  font.getCharWidth(' ') + 2; 
-            label = new TextMorph(new Rectangle(0, 0, width, this.barHeight), headline).beLabel();
-        }
-        var topY = this.shape.bounds().y;
-        label.align(label.bounds().topLeft(), pt(0,0));
-        this.label = this.addMorph(label);
-        this.shape.setBounds(this.shape.bounds().withTopRight(pt(label.bounds().maxX(), topY)));
-
-        return this;
-    },
-
-    okToBeGrabbedBy: function(evt) {
-        return this;
-    },
-
-    handlesMouseDown: Functions.True,
-
-    onMouseDown: Functions.Empty,
-
-    onMouseUp: function(evt) {
-        this.windowMorph.toggleCollapse();
-    },
-
-    highlight: TitleBarMorph.prototype.highlight
-
-});
-
-Morph.subclass("WindowControlMorph", {
-
-    documentation: "Event handling for Window morphs",
-
-    borderWidth: 0,
-    
-    focus: pt(0.4, 0.2),
-
-    initialize: function($super, rect, inset, color, targetMorph, actionScript, helpText) {
-        $super(rect.insetBy(inset), 'ellipse');
-        this.setFill(new RadialGradient([color.lighter(2), 1, color, 1, color.darker()], this.focus));
-        this.targetMorph = targetMorph;
-        // FIXME should be a superclass(?) of SchedulableAction
-        this.action = this.addWrapper(new SchedulableAction(targetMorph, actionScript, null, 0));
-        this.helpText = helpText; // string to be displayed when mouse is brought over the icon
-        return this;
-    },
-
-    handlesMouseDown: Functions.True,
-
-    onMouseDown: function($super, evt) {
-        $super(evt);
-        if (!this.action) {
-            console.warn("%s has no action?", this);
-            return;
-        }
-        this.action.argIfAny = evt;
-        return this.action.exec();
-    },
-
-    onMouseOver: function($super, evt) {
-        var prevColor = this.fill.stopColor(1);
-        this.setFill(new RadialGradient([Color.white, 1, prevColor, 1, prevColor.darker()], this.focus));
-        $super(evt);
-    },
-    
-    onMouseOut: function($super, evt) {
-        var prevColor = this.fill.stopColor(1);
-        this.setFill(new RadialGradient([prevColor.lighter(2), 1, prevColor, 1, prevColor.darker()], this.focus));
-        $super(evt);
-    },
-    
-    checkForControlPointNear: Functions.False,
-    
-    okToBeGrabbedBy: Functions.Null,
-    
-    getHelpText: function() {
-        return this.helpText;
-    },
-
-    // note that we override a method that normally adds ticking scripts
-    addActiveScript: function(action) {
-        this.action = action;
-    }
- 
-});
-
-var WindowState = Class.makeEnum(['Expanded', 'Collapsed', 'Shutdown']);
-
-Morph.subclass('WindowMorph', {
-
-    documentation: "Full-fledged windows with title bar, menus, etc.",
-    state: WindowState.Expanded,
-    titleBar: null,
-    targetMorph: null,
-    
-    initialize: function($super, targetMorph, headline, location) {
-        var bounds = targetMorph.bounds().copy();
-        var titleBar = this.makeTitleBar(headline, bounds.width);
-        var titleHeight = titleBar.bounds().height;
-
-        bounds.height += titleHeight;
-        $super(location ? rect(location, bounds.extent()) : bounds, 'rect');
-        this.targetMorph = this.addMorph(targetMorph);
-        this.titleBar = this.addMorph(titleBar);
-        this.contentOffset = pt(0, titleHeight - titleBar.getBorderWidth()/2); // FIXME: hack
-        targetMorph.setPosition(this.contentOffset);
-	this.applyStyle({borderWidth: 0, fill: null});
-        this.linkToStyles(['window']);
-        this.closeAllToDnD();
-        return this;
-    },
-
-    deserialize: function($super, importer, rawNode) {
-        $super(importer, rawNode);
-        this.titleBar.windowMorph = this;
-        this.closeAllToDnD();
-    },
-
-    toString: function($super) {
-        var label = this.titleBar && this.titleBar.label;
-        return $super() + (label ? ": " + label.textString : ""); 
-    },
-
-    restorePersistentState: function($super, importer) {
-        $super(importer);
-        //this.targetMorph = this.targetMorph;
-        // this.titleBar = this.titleBar;
-        this.contentOffset = pt(0, this.titleBar.bounds().height);
-    },
-    
-    makeTitleBar: function(headline, width) {
-        // Overridden in TabbedPanelMorph
-        return new TitleBarMorph(headline, width, this);
-    },
-
-    windowContent: function() { return this.targetMorph; },
-    
-    immediateContainer: function() { return this;  },
-
-    toggleCollapse: function() {
-        return this.isCollapsed() ? this.expand() : this.collapse();
-    },
-    
-    collapse: function() { 
-        if (this.isCollapsed()) return;
-	if (Config.useSimpleCollapse) {
-	    // won't remember old position
-	    this.targetMorph.undisplay();
-	    this.shape.setBounds(this.titleBar.bounds());
-	    this.layoutChanged();
-	} else {
-            this.expandedTransform = this.getTransform();
-            this.tbTransform = this.titleBar.getTransform();
-            var owner = this.owner;
-            owner.addMorph(this.titleBar);
-            this.titleBar.setTransform(this.collapsedTransform ? this.collapsedTransform : this.expandedTransform);
-            if (this.titleBar.collapsedExtent) this.titleBar.setExtent(this.titleBar.collapsedExtent);
-            this.titleBar.enableEvents();
-            this.remove();
-	}
-        this.titleBar.highlight(false);
-        this.state = WindowState.Collapsed;
-    },
-    
-    expand: function() {
-        if (!this.isCollapsed()) return;
-	if (Config.useSimpleCollapse) {
-	    this.targetMorph.display();
-	    this.shape.setBounds(this.targetMorph.bounds().union(this.titleBar.bounds()));
-	    this.layoutChanged();
-	} else {
-            this.collapsedTransform = this.titleBar.getTransform();
-            this.titleBar.collapsedExtent = this.titleBar.innerBounds().extent();
-            var owner = this.titleBar.owner;
-            owner.addMorph(this);
-            this.setTransform(this.expandedTransform);        
-            // this.titleBar.remove();  //next statement removes it from prior owner
-            this.addMorph(this.titleBar);
-            this.titleBar.setTransform(this.tbTransform)
-            this.titleBar.setExtent(pt(this.innerBounds().width, this.titleBar.innerBounds().height));
-            this.titleBar.setPosition(this.innerBounds().topLeft());
-            this.titleBar.ignoreEvents();
-	}
-        this.takeHighlight();
-        this.state = WindowState.Expanded;
-    },
-
-    isCollapsed: function() { return this.state === WindowState.Collapsed; },
-
-    contentIsVisible: function() { return !this.isCollapsed(); },
-
-    // Following methods promote windows on first click----------------
-    morphToGrabOrReceive: function($super, evt, droppingMorph, checkForDnD) {
-        // If this window is doesn't need to come forward, then respond normally
-        if (!this.needsToComeForward(evt) || droppingMorph != null) {
-            return $super(evt, droppingMorph, checkForDnD)
-        }
-        // Otherwise, hold mouse focus until mouseUp brings it to the top
-        return this;
-    },
-
-    needsToComeForward: function(evt) {
-        if (this.owner !== this.world()) return true; // weird case -- not directly in world
-        if (!this.fullContainsWorldPoint(evt.mousePoint)) return false;  // not clicked in me
-        if (this === this.world().topSubmorph()) return false;  // already on top
-        if (this.isCollapsed()) return false;  // collapsed labels OK from below
-        if (this.titleBar.fullContainsWorldPoint(evt.mousePoint)) return false;  // labels OK from below
-        return true;  // it's in my content area
-    },
-
-    // Next four methods hold onto control until mouseUp brings the window forward.
-    handlesMouseDown: function(evt) { return this.needsToComeForward(evt); },
-
-    onMouseDown: Functions.Empty,
-
-    onMouseMove: function($super, evt) {
-        if (!evt.mouseButtonPressed) $super(evt);
-    },    
-
-    onMouseUp: function(evt) {
-        // I've been clicked on when not on top.  Bring me to the top now
-        this.takeHighlight()
-        var oldTop = this.world().topSubmorph();
-        this.world().addMorphFront(this);
-        evt.hand.setMouseFocus(null);
-        return true;
-    },
-
-    captureMouseEvent: function($super, evt, hasFocus) {
-        if (!this.needsToComeForward(evt) && evt.mouseButtonPressed) {
-            return $super(evt, hasFocus);
-        }
-        return this.mouseHandler.handleMouseEvent(evt, this); 
-    },
-
-    okToBeGrabbedBy: function(evt) {
-        this.takeHighlight();
-        return this; 
-    },
-
-    takeHighlight: function() {
-        // I've been clicked on.  unhighlight old top, and highlight me
-        var oldTop = WorldMorph.current().topWindow();
-        if (oldTop) oldTop.titleBar.highlight(false);
-        this.titleBar.highlight(true);
-    },
-    // End of window promotion methods----------------
-
-    isShutdown: function() { return this.state === WindowState.Shutdown; },
-    
-    initiateShutdown: function() {
-        if (this.isShutdown()) return;
-        this.targetMorph.shutdown(); // shutdown may be prevented ...
-        if (!Config.useSimpleCollapse && this.isCollapsed()) this.titleBar.remove();
-        else this.remove();
-        this.state = WindowState.Shutdown; // no one will ever know...
-        return true;
-    },
-    
-    showTargetMorphMenu: function(evt) { 
-        var tm = this.targetMorph.morphMenu(evt);
-        tm.replaceItemNamed("remove", ["remove", this, 'initiateShutdown']);
-        tm.replaceItemNamed("reset rotation", ["reset rotation", this, 'setRotation', 0]);
-        tm.replaceItemNamed("reset scaling", ["reset scaling", this, 'setScale', 1]);
-        tm.removeItemNamed("duplicate");
-        tm.removeItemNamed("turn fisheye on");
-
-        tm.openIn(this.world(), evt.mousePoint, false, this.targetMorph.inspect().truncate()); 
-    },
-
-    world: function() {
-	// note, the window may be removed from the world and its titlebar only in the world, hence the following: 
-	return WorldMorph.current();
-	// there should be a better way though.
-    },
-
-    adjustForNewBounds: function ($super) {
-        $super();
-        if (!this.titleBar || !this.targetMorph) return;
-        var titleHeight = this.titleBar.innerBounds().height;
-        var bnds = this.innerBounds();
-        var newWidth = bnds.extent().x;
-        var newHeight = bnds.extent().y;
-        this.titleBar.setExtent(pt(newWidth, titleHeight));
-        this.targetMorph.setExtent(pt(newWidth, newHeight - titleHeight));
-        this.titleBar.setPosition(bnds.topLeft());
-        this.targetMorph.setPosition(bnds.topLeft().addXY(0, titleHeight));
-    }
-
-});
-   
-WindowMorph.subclass("TabbedPanelMorph", {
-
-    documentation: "Alternative to windows for off-screen content",
-
-    initialize: function($super, targetMorph, headline, location, sideName) {
-        // A TabbedPanelMorph is pretty much like a WindowMorph, in that it is intended to 
-        // be a container for applications that may frequently want to be put out of the way.
-        // With windows, you collapse them to their title bars, with tabbed panels, you
-        // click their tab and they retreat to the edge of the screen like a file folder.
-        this.sideName = sideName ? sideName : "south";
-        $super(targetMorph, headline, location);
-        this.applyStyle({fill: null, borderColor: null});
-        this.newToTheWorld = true;
-        this.setPositions();
-        this.moveBy(this.expandedPosition.subPt(this.position()));
-        return this;
-    },
-
-    setPositions: function() {
-        // Compute the nearest collapsed and expanded positions for side tabs
-        var wBounds = WorldMorph.current().shape.bounds();
-        if (this.sideName == "south") {
-            var edgePt = this.position().nearestPointOnLineBetween(wBounds.bottomLeft(), wBounds.bottomRight());
-            this.collapsedPosition = edgePt.subPt(this.contentOffset);  // tabPosition
-            this.expandedPosition = edgePt.addXY(0,-this.shape.bounds().height);
-        }
-    },
-
-    makeTitleBar: function(headline, width) {
-        return new TitleTabMorph(headline, width, this);
-    }
-
-});
    
 // ===========================================================================
 // Handles and selection widgets
@@ -2690,6 +2224,477 @@ Widget.subclass('ConsoleWidget', {
     }
     
 });
+
+
+// ===========================================================================
+// Window widgets
+// ===========================================================================
+
+
+Morph.subclass("TitleBarMorph", {
+
+    documentation: "Title bar for WindowMorphs",
+
+    controlSpacing: 3,
+    barHeight: 22,
+    borderWidth: 0,
+    fill: null,
+    labelStyle: { borderRadius: 8, padding: Rectangle.inset(6, 2), fill: new LinearGradient([Color.white, 1, Color.gray]) },
+
+    initialize: function($super, headline, windowWidth, windowMorph) {
+	var bounds = new Rectangle(0, 0, windowWidth, this.barHeight);
+	
+        $super(bounds, "rect");
+	
+	// contentMorph is bigger than the titleBar, so that the lower rounded part of it can be clipped off
+	// arbitrary paths could be used, but FF doesn't implement the geometry methods :(
+	// bounds will be adjusted in adjustForNewBounds()
+	var contentMorph = new Morph(bounds, "rect");
+	this.addMorph(new ClipMorph(bounds)).addMorph(contentMorph);
+	contentMorph.linkToStyles(["titleBar"]);
+	
+	this.ignoreEvents();
+	contentMorph.ignoreEvents();
+	contentMorph.owner.ignoreEvents();
+	this.contentMorph = contentMorph;
+	
+        this.windowMorph = windowMorph;
+
+        // Note: Layout of submorphs happens in adjustForNewBounds (q.v.)
+        var cell = new Rectangle(0, 0, this.barHeight, this.barHeight);
+        var closeButton = new WindowControlMorph(cell, this.controlSpacing, Color.primary.orange, windowMorph, 
+            "initiateShutdown", "Close");
+        this.closeButton =  this.addMorph(closeButton);
+
+        var menuButton = new WindowControlMorph(cell, this.controlSpacing, Color.primary.blue, windowMorph, 
+            "showTargetMorphMenu", "Menu");
+        this.menuButton = this.addMorph(menuButton);
+
+        var collapseButton = new WindowControlMorph(cell, this.controlSpacing, Color.primary.yellow, windowMorph, 
+            "toggleCollapse", "Collapse");
+        this.collapseButton = this.addMorph(collapseButton);
+
+        var label;
+        if (headline instanceof TextMorph) {
+            label = headline;
+        } else { // String
+            var width = headline.length * 8; // wild guess headlineString.length * 2 *  font.getCharWidth(' ') + 2;
+            label = new TextMorph(new Rectangle(0, 0, width, this.barHeight), headline).beLabel();
+        }
+        label.applyStyle(this.labelStyle);
+        this.label = this.addMorph(label);
+	
+        this.adjustForNewBounds();  // This will align the buttons and label properly
+        return this;
+    },
+
+    deserialize: function($super, importer, rawNode) {
+        $super(importer, rawNode);
+        if (LivelyNS.getType(this.rawNode.parentNode) == "WindowMorph") {
+            console.log("patching up to " + this.windowMorph);
+            this.closeButton.action.actor    = this.windowMorph;
+            this.menuButton.action.actor     = this.windowMorph;
+            this.collapseButton.action.actor = this.windowMorph;
+        }
+    },
+
+    acceptsDropping: function(morph) {
+        //console.log('accept drop from %s of %s, %s', this, morph, morph instanceof WindowControlMorph);
+        return morph instanceof WindowControlMorph; // not used yet... how about text...
+    },
+
+    highlight: function(trueForLight) {
+	this.label.setFill(trueForLight ? new LinearGradient([Color.white, 1, Color.lightGray]) : null);
+    },
+
+    okToBeGrabbedBy: function(evt) {
+        var oldTop = this.world().topSubmorph();
+        if (oldTop instanceof WindowMorph) oldTop.titleBar.highlight(false);
+        return this.windowMorph.isCollapsed() ? this : this.windowMorph;
+    },
+
+    adjustForNewBounds: function($super) {
+	var innerBounds = this.innerBounds();
+	var sp = this.controlSpacing;
+        $super();
+        var loc = this.innerBounds().topLeft().addXY(sp, sp);
+        var l0 = loc;
+        var dx = pt(this.barHeight - sp, 0);
+        if (this.menuButton) { 
+	    this.menuButton.setPosition(loc);  
+	    loc = loc.addPt(dx); 
+	}
+        if (this.collapseButton) { 
+	    this.collapseButton.setPosition(loc);  
+	    loc = loc.addPt(dx); 
+	}
+        if (this.label) {
+            this.label.align(this.label.bounds().topCenter(), this.innerBounds().topCenter());
+            if (this.label.bounds().topLeft().x < loc.x) {
+                this.label.align(this.label.bounds().topLeft(), loc.addXY(0,-2));
+            }
+        }
+	if (this.closeButton) { 
+	    loc = this.innerBounds().topRight().addXY(-sp - this.closeButton.shape.bounds().width, sp);
+	    this.closeButton.setPosition(loc);  
+	    // loc = loc.addPt(dx); 
+	}
+	
+	var style = this.styleNamed("titleBar");
+	var w = style.borderWidth;
+	var r = style.borderRadius;
+	this.contentMorph.setBounds(new Rectangle(w/2, w/2, innerBounds.width, this.barHeight + r));
+	var clip = this.contentMorph.owner;
+	clip.setBounds(innerBounds.insetByRect(Rectangle.inset(-w/2, -w/2, -w/2, 0)));
+    },
+
+    okToDuplicate: Functions.False
+
+});
+
+Morph.subclass("TitleTabMorph", {
+
+    documentation: "Title bar for tabbed window morphs",
+
+    barHeight: 0,
+    controlSpacing: 0,
+    suppressHandles: true,
+    
+    initialize: function($super, headline, windowWidth, windowMorph) {
+        $super(new Rectangle(0, 0, windowWidth, this.barHeight), "rect");
+        this.windowMorph = windowMorph;
+        this.linkToStyles(['titleBar']);
+        this.ignoreEvents();
+
+        var label;
+        if (headline instanceof TextMorph) {
+            label = headline;
+        } else { // String
+            var width = headline.length * 8;
+            // wild guess headlineString.length * 2 *  font.getCharWidth(' ') + 2; 
+            label = new TextMorph(new Rectangle(0, 0, width, this.barHeight), headline).beLabel();
+        }
+        var topY = this.shape.bounds().y;
+        label.align(label.bounds().topLeft(), pt(0,0));
+        this.label = this.addMorph(label);
+        this.shape.setBounds(this.shape.bounds().withTopRight(pt(label.bounds().maxX(), topY)));
+
+        return this;
+    },
+
+    okToBeGrabbedBy: function(evt) {
+        return this;
+    },
+
+    handlesMouseDown: Functions.True,
+
+    onMouseDown: Functions.Empty,
+
+    onMouseUp: function(evt) {
+        this.windowMorph.toggleCollapse();
+    },
+
+    highlight: TitleBarMorph.prototype.highlight
+
+});
+
+Morph.subclass("WindowControlMorph", {
+
+    documentation: "Event handling for Window morphs",
+
+    borderWidth: 0,
+    
+    focus: pt(0.4, 0.2),
+
+    initialize: function($super, rect, inset, color, targetMorph, actionScript, helpText) {
+        $super(rect.insetBy(inset), 'ellipse');
+        this.setFill(new RadialGradient([color.lighter(2), 1, color, 1, color.darker()], this.focus));
+        this.targetMorph = targetMorph;
+        // FIXME should be a superclass(?) of SchedulableAction
+        this.action = this.addWrapper(new SchedulableAction(targetMorph, actionScript, null, 0));
+        this.helpText = helpText; // string to be displayed when mouse is brought over the icon
+        return this;
+    },
+
+    handlesMouseDown: Functions.True,
+
+    onMouseDown: function($super, evt) {
+        $super(evt);
+        if (!this.action) {
+            console.warn("%s has no action?", this);
+            return;
+        }
+        this.action.argIfAny = evt;
+        return this.action.exec();
+    },
+
+    onMouseOver: function($super, evt) {
+        var prevColor = this.fill.stopColor(1);
+        this.setFill(new RadialGradient([Color.white, 1, prevColor, 1, prevColor.darker()], this.focus));
+        $super(evt);
+    },
+    
+    onMouseOut: function($super, evt) {
+        var prevColor = this.fill.stopColor(1);
+        this.setFill(new RadialGradient([prevColor.lighter(2), 1, prevColor, 1, prevColor.darker()], this.focus));
+        $super(evt);
+    },
+    
+    checkForControlPointNear: Functions.False,
+    
+    okToBeGrabbedBy: Functions.Null,
+    
+    getHelpText: function() {
+        return this.helpText;
+    },
+
+    // note that we override a method that normally adds ticking scripts
+    addActiveScript: function(action) {
+        this.action = action;
+    }
+ 
+});
+
+var WindowState = Class.makeEnum(['Expanded', 'Collapsed', 'Shutdown']);
+
+Morph.subclass('WindowMorph', {
+
+    documentation: "Full-fledged windows with title bar, menus, etc.",
+    state: WindowState.Expanded,
+    titleBar: null,
+    targetMorph: null,
+    
+    initialize: function($super, targetMorph, headline, location) {
+        var bounds = targetMorph.bounds().copy();
+        var titleBar = this.makeTitleBar(headline, bounds.width);
+        var titleHeight = titleBar.bounds().height;
+
+        bounds.height += titleHeight;
+        $super(location ? rect(location, bounds.extent()) : bounds, 'rect');
+        this.targetMorph = this.addMorph(targetMorph);
+        this.titleBar = this.addMorph(titleBar);
+        this.contentOffset = pt(0, titleHeight - titleBar.getBorderWidth()/2); // FIXME: hack
+        targetMorph.setPosition(this.contentOffset);
+	this.applyStyle({borderWidth: 0, fill: null});
+        this.linkToStyles(['window']);
+        this.closeAllToDnD();
+        return this;
+    },
+
+    deserialize: function($super, importer, rawNode) {
+        $super(importer, rawNode);
+        this.titleBar.windowMorph = this;
+        this.closeAllToDnD();
+    },
+
+    toString: function($super) {
+        var label = this.titleBar && this.titleBar.label;
+        return $super() + (label ? ": " + label.textString : ""); 
+    },
+
+    restorePersistentState: function($super, importer) {
+        $super(importer);
+        //this.targetMorph = this.targetMorph;
+        // this.titleBar = this.titleBar;
+        this.contentOffset = pt(0, this.titleBar.bounds().height);
+    },
+    
+    makeTitleBar: function(headline, width) {
+        // Overridden in TabbedPanelMorph
+        return new TitleBarMorph(headline, width, this);
+    },
+
+    windowContent: function() { return this.targetMorph; },
+    
+    immediateContainer: function() { return this;  },
+
+    toggleCollapse: function() {
+        return this.isCollapsed() ? this.expand() : this.collapse();
+    },
+    
+    collapse: function() { 
+        if (this.isCollapsed()) return;
+	if (Config.useSimpleCollapse) {
+	    // won't remember old position
+	    this.targetMorph.undisplay();
+	    this.shape.setBounds(this.titleBar.bounds());
+	    this.layoutChanged();
+	} else {
+            this.expandedTransform = this.getTransform();
+            this.tbTransform = this.titleBar.getTransform();
+            var owner = this.owner;
+            owner.addMorph(this.titleBar);
+            this.titleBar.setTransform(this.collapsedTransform ? this.collapsedTransform : this.expandedTransform);
+            if (this.titleBar.collapsedExtent) this.titleBar.setExtent(this.titleBar.collapsedExtent);
+            this.titleBar.enableEvents();
+            this.remove();
+	}
+        this.titleBar.highlight(false);
+        this.state = WindowState.Collapsed;
+    },
+    
+    expand: function() {
+        if (!this.isCollapsed()) return;
+	if (Config.useSimpleCollapse) {
+	    this.targetMorph.display();
+	    this.shape.setBounds(this.targetMorph.bounds().union(this.titleBar.bounds()));
+	    this.layoutChanged();
+	} else {
+            this.collapsedTransform = this.titleBar.getTransform();
+            this.titleBar.collapsedExtent = this.titleBar.innerBounds().extent();
+            var owner = this.titleBar.owner;
+            owner.addMorph(this);
+            this.setTransform(this.expandedTransform);        
+            // this.titleBar.remove();  //next statement removes it from prior owner
+            this.addMorph(this.titleBar);
+            this.titleBar.setTransform(this.tbTransform)
+            this.titleBar.setExtent(pt(this.innerBounds().width, this.titleBar.innerBounds().height));
+            this.titleBar.setPosition(this.innerBounds().topLeft());
+            this.titleBar.ignoreEvents();
+	}
+        this.takeHighlight();
+        this.state = WindowState.Expanded;
+    },
+
+    isCollapsed: function() { return this.state === WindowState.Collapsed; },
+
+    contentIsVisible: function() { return !this.isCollapsed(); },
+
+    // Following methods promote windows on first click----------------
+    morphToGrabOrReceive: function($super, evt, droppingMorph, checkForDnD) {
+        // If this window is doesn't need to come forward, then respond normally
+        if (!this.needsToComeForward(evt) || droppingMorph != null) {
+            return $super(evt, droppingMorph, checkForDnD)
+        }
+        // Otherwise, hold mouse focus until mouseUp brings it to the top
+        return this;
+    },
+
+    needsToComeForward: function(evt) {
+        if (this.owner !== this.world()) return true; // weird case -- not directly in world
+        if (!this.fullContainsWorldPoint(evt.mousePoint)) return false;  // not clicked in me
+        if (this === this.world().topSubmorph()) return false;  // already on top
+        if (this.isCollapsed()) return false;  // collapsed labels OK from below
+        if (this.titleBar.fullContainsWorldPoint(evt.mousePoint)) return false;  // labels OK from below
+        return true;  // it's in my content area
+    },
+
+    // Next four methods hold onto control until mouseUp brings the window forward.
+    handlesMouseDown: function(evt) { return this.needsToComeForward(evt); },
+
+    onMouseDown: Functions.Empty,
+
+    onMouseMove: function($super, evt) {
+        if (!evt.mouseButtonPressed) $super(evt);
+    },    
+
+    onMouseUp: function(evt) {
+        // I've been clicked on when not on top.  Bring me to the top now
+        this.takeHighlight()
+        var oldTop = this.world().topSubmorph();
+        this.world().addMorphFront(this);
+        evt.hand.setMouseFocus(null);
+        return true;
+    },
+
+    captureMouseEvent: function($super, evt, hasFocus) {
+        if (!this.needsToComeForward(evt) && evt.mouseButtonPressed) {
+            return $super(evt, hasFocus);
+        }
+        return this.mouseHandler.handleMouseEvent(evt, this); 
+    },
+
+    okToBeGrabbedBy: function(evt) {
+        this.takeHighlight();
+        return this; 
+    },
+
+    takeHighlight: function() {
+        // I've been clicked on.  unhighlight old top, and highlight me
+        var oldTop = WorldMorph.current().topWindow();
+        if (oldTop) oldTop.titleBar.highlight(false);
+        this.titleBar.highlight(true);
+    },
+    // End of window promotion methods----------------
+
+    isShutdown: function() { return this.state === WindowState.Shutdown; },
+    
+    initiateShutdown: function() {
+        if (this.isShutdown()) return;
+        this.targetMorph.shutdown(); // shutdown may be prevented ...
+        if (!Config.useSimpleCollapse && this.isCollapsed()) this.titleBar.remove();
+        else this.remove();
+        this.state = WindowState.Shutdown; // no one will ever know...
+        return true;
+    },
+    
+    showTargetMorphMenu: function(evt) { 
+        var tm = this.targetMorph.morphMenu(evt);
+        tm.replaceItemNamed("remove", ["remove", this, 'initiateShutdown']);
+        tm.replaceItemNamed("reset rotation", ["reset rotation", this, 'setRotation', 0]);
+        tm.replaceItemNamed("reset scaling", ["reset scaling", this, 'setScale', 1]);
+        tm.removeItemNamed("duplicate");
+        tm.removeItemNamed("turn fisheye on");
+
+        tm.openIn(this.world(), evt.mousePoint, false, this.targetMorph.inspect().truncate()); 
+    },
+
+    world: function() {
+	// note, the window may be removed from the world and its titlebar only in the world, hence the following: 
+	return WorldMorph.current();
+	// there should be a better way though.
+    },
+
+    adjustForNewBounds: function ($super) {
+        $super();
+        if (!this.titleBar || !this.targetMorph) return;
+        var titleHeight = this.titleBar.innerBounds().height;
+        var bnds = this.innerBounds();
+        var newWidth = bnds.extent().x;
+        var newHeight = bnds.extent().y;
+        this.titleBar.setExtent(pt(newWidth, titleHeight));
+        this.targetMorph.setExtent(pt(newWidth, newHeight - titleHeight));
+        this.titleBar.setPosition(bnds.topLeft());
+        this.targetMorph.setPosition(bnds.topLeft().addXY(0, titleHeight));
+    }
+
+});
+   
+WindowMorph.subclass("TabbedPanelMorph", {
+
+    documentation: "Alternative to windows for off-screen content",
+
+    initialize: function($super, targetMorph, headline, location, sideName) {
+        // A TabbedPanelMorph is pretty much like a WindowMorph, in that it is intended to 
+        // be a container for applications that may frequently want to be put out of the way.
+        // With windows, you collapse them to their title bars, with tabbed panels, you
+        // click their tab and they retreat to the edge of the screen like a file folder.
+        this.sideName = sideName ? sideName : "south";
+        $super(targetMorph, headline, location);
+        this.applyStyle({fill: null, borderColor: null});
+        this.newToTheWorld = true;
+        this.setPositions();
+        this.moveBy(this.expandedPosition.subPt(this.position()));
+        return this;
+    },
+
+    setPositions: function() {
+        // Compute the nearest collapsed and expanded positions for side tabs
+        var wBounds = WorldMorph.current().shape.bounds();
+        if (this.sideName == "south") {
+            var edgePt = this.position().nearestPointOnLineBetween(wBounds.bottomLeft(), wBounds.bottomRight());
+            this.collapsedPosition = edgePt.subPt(this.contentOffset);  // tabPosition
+            this.expandedPosition = edgePt.addXY(0,-this.shape.bounds().height);
+        }
+    },
+
+    makeTitleBar: function(headline, width) {
+        return new TitleTabMorph(headline, width, this);
+    }
+
+});
+
+
 
 console.log('loaded Widgets.js');
 
