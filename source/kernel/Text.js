@@ -232,7 +232,7 @@ Wrapper.subclass('TextWord', {
 	if (paddingX != 0 && this.isSpaces()) this.bounds = this.bounds.withWidth(this.bounds.width + paddingX);
 	if (this.rawNode != null) {
 	    this.replaceRawNodeChildren(NodeFactory.createText(textString.substring(this.startIndex, this.getStopIndex() + 1))); 
-            this.rawNode.setAttributeNS(null, "x", this.leftX + deltaX);
+            this.rawNode.setAttributeNS(null, "x", this.bounds.x);
 	    this.rawNode.setAttributeNS(null, "y", baselineY);
 	}
     },
@@ -276,12 +276,6 @@ Wrapper.subclass('TextWord', {
     },
 
     getNextStartIndex: function() {
-	/*
-	if (this.stopIndex != this.startIndex + this.length - 1) {
-	    if (this.stopIndex != this.startIndex)
-		console.log("discrepancy: " + [this.stopIndex, this.startIndex + this.length - 1, this.startIndex, this.length]);
-	}
-        */
 	return this.startIndex + this.length;
     },
 
@@ -325,8 +319,8 @@ Wrapper.subclass('TextWord', {
 	}
     },
 
-    calculateBounds: function(font, topLeftY) { 
-	this.bounds = new Rectangle(this.leftX, topLeftY, this.width, font.getSize());
+    calculateBounds: function(fontSize, topLeftY) { 
+	this.bounds = new Rectangle(this.leftX, topLeftY, this.width, fontSize);
     },
     
     isSpaces: function() {
@@ -538,7 +532,7 @@ Object.subclass('TextLine', {
                     leadingSpaces = 0;
                 }
                 var didLineBreak = c.compose(this.currentFont, this.textString, compositionWidth - (lastBounds.maxX() - this.topLeft.x));
-                c.calculateBounds(this.currentFont, this.topLeft.y);
+                c.calculateBounds(this.currentFont.getSize(), this.topLeft.y);
                 if (didLineBreak) {
                     if (i == 0) {
                         // XXX in the future, another chunk needs to be inserted in the array at this point
