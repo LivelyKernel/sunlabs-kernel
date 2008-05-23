@@ -1856,7 +1856,7 @@ Morph.subclass("MenuMorph", {
 Morph.subclass("SliderMorph", {
 
     documentation: "Slider/scroll control",
-    mss: 8,  // minimum slider size
+    mss: 12,  // minimum slider size
     pins: ["Value", "SliderExtent"],
 
     initialize: function($super, initialBounds, scaleIfAny) {
