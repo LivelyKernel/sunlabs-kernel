@@ -502,8 +502,8 @@ Object.subclass('TextLine', {
                 if (c.isNewLine) {
                     c.bounds.width = (this.topLeft.x + compositionWidth) - c.bounds.x;
                     runningStartIndex = c.getNextStartIndex();
-                    c.wasComposed = true;
                     if (c.rawNode) c.setLivelyTrait("nl", "true"); // little helper for serialization
+                    c.wasComposed = true;
                     break;
                 }
                 this.nSpaceChunks ++ ;
@@ -852,7 +852,8 @@ Morph.subclass("TextMorph", {
     restorePersistentState: function($super, importer) {
         $super(importer);
         this.wrap = this.getLivelyTrait("wrap");
-	this.padding = Converter.parseInset(this.getLivelyTrait("padding"));
+	var padding = Converter.parseInset(this.getLivelyTrait("padding"));
+	if (padding) this.padding = padding;
     },
 
     restoreFromSubnode: function($super, importer, rawNode) {
@@ -863,13 +864,12 @@ Morph.subclass("TextMorph", {
             for (var child = rawNode.firstChild; child != null; child = child.nextSibling) {
 		if (child.tagName != 'tspan')  
 		    continue;
-		var word = new TextWord(importer, child);
-		var lead = parseInt(word.getLivelyTrait("lead"));
+		var lead = parseInt(LivelyNS.getAttribute(child, "lead"));
 		if (lead) content.push(" ".times(lead));
-		content.push(word.rawNode.textContent); 
-		var trail = parseInt(word.getLivelyTrait("trail"));
+		content.push(child.textContent); 
+		var trail = parseInt(LivelyNS.getAttribute(child, "trail"));
 		if (trail) content.push(" ".times(trail));
-		if (word.getLivelyTrait("nl") == "true")
+		if (LivelyNS.getAttribute(child, "nl") == "true")
                     content.push("\n");
             }
             this.textString = content.join("");
