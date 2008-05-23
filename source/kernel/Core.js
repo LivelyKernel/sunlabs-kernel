@@ -6447,7 +6447,7 @@ function interactiveEval(text) {
     function $p(obj) {
 	return Properties.all(obj);
     }
-    function $x(x, expr) {
+    function $x(node, expr) {
 	return new Query(expr).findAll(node.rawNode || node);
     }
     return eval(text);
