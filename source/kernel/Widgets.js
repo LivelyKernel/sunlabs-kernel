@@ -288,6 +288,10 @@ Morph.subclass("ClipMorph", {
     innerMorph: function() {
         this.submorphs.length != 1 && console.log("not a single inner morph");
         return this.submorphs.first();
+    },
+
+    layoutOnSubmorphLayout: function() {
+	return false;
     }
     
 });
@@ -1430,7 +1434,7 @@ Morph.subclass("SliderMorph", {
     
     adjustForNewBounds: function($super) {
         $super();
-        this.adjustSliderParts()
+        this.adjustSliderParts();
     },
     
     adjustSliderParts: function($super) {
@@ -1440,16 +1444,15 @@ Morph.subclass("SliderMorph", {
         var ext = this.getSliderExtent();
 
         if (this.vertical()) { // more vertical...
-            var elevPix = Math.max(ext*bnds.height,this.mss); // thickness of elevator in pixels
-            var topLeft = pt(0,(bnds.height-elevPix)*val);
-            var sliderExt = pt(bnds.width,elevPix); 
+            var elevPix = Math.max(ext*bnds.height, this.mss); // thickness of elevator in pixels
+            var topLeft = pt(0, (bnds.height - elevPix)*val);
+            var sliderExt = pt(bnds.width, elevPix); 
         } else { // more horizontal...
-            var elevPix = Math.max(ext*bnds.width,this.mss); // thickness of elevator in pixels
-            var topLeft = pt((bnds.width-elevPix)*val,0);
-            var sliderExt = pt(elevPix,bnds.height); 
+            var elevPix = Math.max(ext*bnds.width, this.mss); // thickness of elevator in pixels
+            var topLeft = pt((bnds.width - elevPix)*val, 0);
+            var sliderExt = pt(elevPix, bnds.height); 
         }
-    
-        this.slider.setBounds(bnds.topLeft().addPt(topLeft).extent(sliderExt)); 
+        this.slider.setBounds(bnds.topLeft().addPt(topLeft).extent(sliderExt));
 
 	//this.slider.shapeRoundEdgesBy((this.vertical() ? sliderExt.x : sliderExt.y)/2);
 	this.slider.shapeRoundEdgesBy(Math.min(sliderExt.x, sliderExt.y)/2);
@@ -1600,7 +1603,7 @@ Morph.subclass("ScrollPane", {
             getSliderExtent: "getVisibleExtent"});
 
         // suppress handles throughout
-        [this, this.clipMorph, morphToClip, this.scrollBar].map(function(m) {m.suppressHandles = true});
+        [this, this.clipMorph, morphToClip, this.scrollBar].forEach(function(m) {m.suppressHandles = true});
         // alert('inner morph is ' + this.innerMorph());
 
         return this;
@@ -1689,7 +1692,8 @@ Morph.subclass("ScrollPane", {
     getScrollPosition: function() { 
         var ht = this.innerMorph().bounds().height;
         var slideRoom = ht - this.bounds().height;
-        return -this.innerMorph().position().y/slideRoom; 
+	// note that inner morph may have exactly the same size as outer morph so slideRoom may be zero
+        return slideRoom && -this.innerMorph().position().y/slideRoom; 
     },
     
     setScrollPosition: function(scrollPos) { 
@@ -2324,10 +2328,6 @@ Morph.subclass("TitleBarMorph", {
 	    this.menuButton.setPosition(loc);  
 	    loc = loc.addPt(dx); 
 	}
-        if (this.collapseButton) { 
-	    this.collapseButton.setPosition(loc);  
-	    loc = loc.addPt(dx); 
-	}
         if (this.label) {
             this.label.align(this.label.bounds().topCenter(), this.innerBounds().topCenter());
             if (this.label.bounds().topLeft().x < loc.x) {
@@ -2337,8 +2337,13 @@ Morph.subclass("TitleBarMorph", {
 	if (this.closeButton) { 
 	    loc = this.innerBounds().topRight().addXY(-sp - this.closeButton.shape.bounds().width, sp);
 	    this.closeButton.setPosition(loc);  
-	    // loc = loc.addPt(dx); 
+	    loc = loc.subPt(dx); 
 	}
+        if (this.collapseButton) { 
+	    this.collapseButton.setPosition(loc);  
+	    //loc = loc.subPt(dx); 
+	}
+	
 	
 	var style = this.styleNamed("titleBar");
 	var w = style.borderWidth;
@@ -2515,8 +2520,12 @@ Morph.subclass('WindowMorph', {
     collapse: function() { 
         if (this.isCollapsed()) return;
 	if (Config.useSimpleCollapse) {
-	    // won't remember old position
+            this.expandedTransform = this.getTransform();
+	    this.enableEventsOnExpand = this.targetMorph.pointerEventsDisabled();
+	    this.targetMorph.disablePointerEvents(); // unconditionally
 	    this.targetMorph.undisplay();
+	    this.setTransform(this.collapsedTransform  || this.expandedTransform);
+            if (this.collapsedExtent) this.setExtent(this.collapsedExtent);
 	    this.shape.setBounds(this.titleBar.bounds());
 	    this.layoutChanged();
 	} else {
@@ -2536,7 +2545,11 @@ Morph.subclass('WindowMorph', {
     expand: function() {
         if (!this.isCollapsed()) return;
 	if (Config.useSimpleCollapse) {
+            this.collapsedTransform = this.getTransform();
+            this.collapsedExtent = this.innerBounds().extent();
+            this.setTransform(this.expandedTransform);        
 	    this.targetMorph.display();
+	    if (this.enableEventsOnExpand) this.targetMorph.enableEvents();
 	    this.shape.setBounds(this.targetMorph.bounds().union(this.titleBar.bounds()));
 	    this.layoutChanged();
 	} else {

@@ -2020,6 +2020,10 @@ Wrapper.subclass('Visual', {
 	this.rawNode.removeAttributeNS(null, "pointer-events");
     },
 
+    pointerEventsDisabled: function() {
+	return this.rawNode.getAttributeNS(null, "pointer-events") == "none";
+    },
+    
     getLocalTransform: function() {
 	var impl = this.rawNode.transform.baseVal.consolidate();
 	return new Transform(impl ? impl.matrix : null); // identity if no transform specified
@@ -2069,7 +2073,8 @@ Wrapper.subclass('Visual', {
     isDisplayed: function() {
 	// Note: this may not be correct in general in SVG due to inheritance,
 	// but should work in LK.
-	return this.rawNode.getAttributeNS(null, "display") != "none";
+	var hidden = this.rawNode.getAttributeNS(null, "display") == "none";
+	return hidden == false;
     },
 
     applyFilter: function(filterUri) {
@@ -4630,8 +4635,11 @@ Morph.addMethods({
 	var subBounds = null;
 	for (var i = 0; i < this.submorphs.length; i++) {
 	    var m = this.submorphs[i];
-	    if ((ignoreTransients && m.transientBounds) || !m.isDisplayed())
+	    if ((ignoreTransients && m.transientBounds))
 		continue;
+	    if (!m.isDisplayed()) {
+		continue;
+	    }
 	    subBounds = subBounds == null ? m.bounds(ignoreTransients) : subBounds.union(m.bounds(ignoreTransients));
 	}
 	return subBounds;
@@ -4707,6 +4715,12 @@ Morph.addMethods({
     changed: function() {
 	// (this.owner || this).invalidRect(this.bounds());
     },
+    
+    layoutOnSubmorphLayout: function(submorph) {
+	// override to return false, in which case layoutChanged() will not be propagated to
+	// the receiver when a submorph's layout changes. 
+	return true;
+    },
 
     layoutChanged: function() {
 	// layoutChanged() is called whenever the cached fullBounds may have changed
@@ -4715,7 +4729,7 @@ Morph.addMethods({
 	// Note the difference in meaning from adjustForNewBounds()
 	this.getTransform().applyTo(this);  // DI: why is this here?
 	this.fullBounds = null;
-	if (this.owner && this.owner !== this.world()) {     // May affect owner as well...
+	if (this.owner && this.owner.layoutOnSubmorphLayout(this)) {     // May affect owner as well...
 	    this.owner.layoutChanged();
 	}
     },
@@ -5442,6 +5456,10 @@ PasteUpMorph.subclass("WorldMorph", {
 
     defaultOrigin: function(bounds) { 
         return bounds.topLeft(); 
+    },
+
+    layoutOnSubmorphLayout: function() {
+	return false;
     },
     
     world: function() { 
