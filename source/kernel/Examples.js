@@ -1470,6 +1470,7 @@ ClipMorph.subclass("GameMorph", {
     this.timeoutID = window.setTimeout(this.timerCallback, DELAY);
 
     }
+
 });
 
   function loadSounds() {
@@ -4245,19 +4246,8 @@ ClipMorph.subclass("CanvasScapeMorph", {
 // The Morphic Radial Engine Demo
 // ===========================================================================
 
-    apps.makeEngine = function() {
-    var engine = new EngineMorph(new Rectangle(0, 0, 400, 600));
-    // KP: add the top morph to the world first, to make firefox happy
-    WorldMorph.current().addFramedMorph(engine, 'A Lively Engine', pt(250, 5));
-    engine.openAllToDnD();  // have a little fun...
-    engine.startSteppingScripts();
-}
-
-/**
- * @class EngineMorph: The Radial Engine demo
- */ 
-
 Morph.subclass("EngineMorph", {
+    documentation: "The Radial Engine demo",
 
     initialize: function($super, fullRect) {
         // A lively model by Dan Ingalls - 9/25/2007
@@ -4435,9 +4425,18 @@ Morph.subclass("EngineMorph", {
         this.startStepping(ms,'nextStep');
     },
 
-    startSteppingScripts: function() { this.setStepTime(this.normalSpeed); }
+    startSteppingScripts: function() { this.setStepTime(this.normalSpeed); },
 
+    layoutOnSubmorphLayout: Functions.False
 });
+
+EngineMorph.makeEngine = function(world, pos) {
+    var engine = new EngineMorph(new Rectangle(0, 0, 400, 600));
+    // KP: add the top morph to the world first, to make firefox happy
+    world.addFramedMorph(engine, 'A Lively Engine', pos);
+    engine.openAllToDnD();  // have a little fun...
+    engine.startSteppingScripts();
+}
 
 // ===========================================================================
 // Video Player Demo

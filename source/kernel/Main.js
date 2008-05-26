@@ -170,7 +170,7 @@ function populateWorldWithExamples(world) {
     }
     */
 
-    if (Config.showEngine) apps.makeEngine();
+    if (Config.showEngine) EngineMorph.makeEngine(world, pt(230, 5));
     
     if (Config.showAsteroids) {
         var gameMorph = apps.asteroids.makeGameMorph(pt(500, 360).extent(pt(600, 300)));
