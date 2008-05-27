@@ -2012,16 +2012,19 @@ Wrapper.subclass('Visual', {
 	throw new Error('setBounds unsupported on type ' + this.getType());
     },
 
-    disablePointerEvents: function() {
-	this.rawNode.setAttributeNS(null, "pointer-events", "none");
+    // should that be disable?
+    ignoreEvents: function() {
+	this.setTrait("pointer-events", "none");
+	return this;
     },
 
-    enablePointerEvents: function() {
-	this.rawNode.removeAttributeNS(null, "pointer-events");
+    enableEvents: function() {
+	this.removeTrait("pointer-events");
+	return this;
     },
 
-    pointerEventsDisabled: function() {
-	return this.rawNode.getAttributeNS(null, "pointer-events") == "none";
+    areEventsDisabled: function() {
+	return this.getTrait("pointer-events") == "none";
     },
     
     getLocalTransform: function() {
@@ -2115,7 +2118,7 @@ Visual.subclass('Shape', {
     initialize: function(fill, strokeWidth, stroke) {
 
 	if (this.shouldIgnorePointerEvents)
-	    this.disablePointerEvents();
+	    this.ignoreEvents();
 
 	if (fill !== undefined)
 	    this.setFill(fill && fill.toString());
@@ -4167,15 +4170,15 @@ Morph.addMethods({
 	return this.mouseHandler.handleMouseEvent(evt, this); 
     },
 
-    ignoreEvents: function() { // will not respond nor get focus
+    ignoreEvents: function($super) { // will not respond nor get focus
 	this.mouseHandler = null;
 	this.setTrait("pointer-events", "none");
 	return this;
     },
 
-    enableEvents: function() {
+    enableEvents: function($super) {
+	$super();
 	this.mouseHandler = MouseHandlerForDragging.prototype;
-	this.removeTrait("pointer-events");
 	return this;
     },
 
@@ -5795,7 +5798,7 @@ Morph.subclass("HandMorph", {
 	
         this.setShape(new PolygonShape([pt(0,0), pt(9,5), pt(5,9), pt(0,0)], 
 				       (local ? Color.primary.blue : Color.primary.red), 1, Color.black));
-        this.shape.disablePointerEvents();
+        this.shape.ignoreEvents();
 	
         this.isLocal = local;
 

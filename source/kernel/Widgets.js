@@ -2473,7 +2473,6 @@ Morph.subclass('WindowMorph', {
         var bounds = targetMorph.bounds().copy();
         var titleBar = this.makeTitleBar(headline, bounds.width);
         var titleHeight = titleBar.bounds().height;
-
         bounds.height += titleHeight;
         $super(location ? rect(location, bounds.extent()) : bounds, 'rect');
         this.targetMorph = this.addMorph(targetMorph);
@@ -2483,6 +2482,10 @@ Morph.subclass('WindowMorph', {
 	this.applyStyle({borderWidth: 0, fill: null});
         this.linkToStyles(['window']);
         this.closeAllToDnD();
+        this.expandedTransform = null;
+	this.expandedExtent = null;
+	this.enableEventsOnExpand = false;
+
         return this;
     },
 
@@ -2521,8 +2524,9 @@ Morph.subclass('WindowMorph', {
         if (this.isCollapsed()) return;
 	if (Config.useSimpleCollapse) {
             this.expandedTransform = this.getTransform();
-	    this.enableEventsOnExpand = this.targetMorph.pointerEventsDisabled();
-	    this.targetMorph.disablePointerEvents(); // unconditionally
+	    this.expandedExtent = this.getExtent();
+	    this.enableEventsOnExpand = this.targetMorph.areEventsDisabled();
+	    this.targetMorph.ignoreEvents(); // unconditionally
 	    this.targetMorph.undisplay();
 	    this.setTransform(this.collapsedTransform  || this.expandedTransform);
             if (this.collapsedExtent) this.setExtent(this.collapsedExtent);
@@ -2547,10 +2551,10 @@ Morph.subclass('WindowMorph', {
 	if (Config.useSimpleCollapse) {
             this.collapsedTransform = this.getTransform();
             this.collapsedExtent = this.innerBounds().extent();
-            this.setTransform(this.expandedTransform);        
+            this.setTransform(this.expandedTransform); 
 	    this.targetMorph.display();
 	    if (this.enableEventsOnExpand) this.targetMorph.enableEvents();
-	    this.shape.setBounds(this.targetMorph.bounds().union(this.titleBar.bounds()));
+	    if (this.expandedExtent) this.setExtent(this.expandedExtent);
 	    this.layoutChanged();
 	} else {
             this.collapsedTransform = this.titleBar.getTransform();
@@ -2624,7 +2628,7 @@ Morph.subclass('WindowMorph', {
 
     takeHighlight: function() {
         // I've been clicked on.  unhighlight old top, and highlight me
-        var oldTop = WorldMorph.current().topWindow();
+        var oldTop = this.world().topWindow();
         if (oldTop) oldTop.titleBar.highlight(false);
         this.titleBar.highlight(true);
     },
