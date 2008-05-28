@@ -529,8 +529,7 @@ Object.extend(CharSet, {
 
 });
 
-
-Global.console && Global.console.log("loaded basic library");
+console.log("loaded basic library");
 
 // ===========================================================================
 // Error/warning console (browser dependent)
@@ -1979,9 +1978,7 @@ Wrapper.subclass('Visual', {
     },
 
     getFillOpacity: function(alpha) {
-	var opacity = this.rawNode.getAttributeNS(null, "fill-opacity");
-	return (opacity === null) ? 1.0 : opacity;
-	// note no opacity different from opacity 1, should we return undefined?
+	this.rawNode.getAttributeNS(null, "fill-opacity");
     },
 
     setStrokeOpacity: function(alpha) {
@@ -2012,21 +2009,14 @@ Wrapper.subclass('Visual', {
 	throw new Error('setBounds unsupported on type ' + this.getType());
     },
 
-    // should that be disable?
-    ignoreEvents: function() {
-	this.setTrait("pointer-events", "none");
-	return this;
+    disablePointerEvents: function() {
+	this.rawNode.setAttributeNS(null, "pointer-events", "none");
     },
 
-    enableEvents: function() {
-	this.removeTrait("pointer-events");
-	return this;
+    enablePointerEvents: function() {
+	this.rawNode.removeAttributeNS(null, "pointer-events");
     },
 
-    areEventsDisabled: function() {
-	return this.getTrait("pointer-events") == "none";
-    },
-    
     getLocalTransform: function() {
 	var impl = this.rawNode.transform.baseVal.consolidate();
 	return new Transform(impl ? impl.matrix : null); // identity if no transform specified
@@ -2076,8 +2066,7 @@ Wrapper.subclass('Visual', {
     isDisplayed: function() {
 	// Note: this may not be correct in general in SVG due to inheritance,
 	// but should work in LK.
-	var hidden = this.rawNode.getAttributeNS(null, "display") == "none";
-	return hidden == false;
+	return this.rawNode.getAttributeNS(null, "display") != "none";
     },
 
     applyFilter: function(filterUri) {
@@ -2118,7 +2107,7 @@ Visual.subclass('Shape', {
     initialize: function(fill, strokeWidth, stroke) {
 
 	if (this.shouldIgnorePointerEvents)
-	    this.ignoreEvents();
+	    this.disablePointerEvents();
 
 	if (fill !== undefined)
 	    this.setFill(fill && fill.toString());
@@ -4170,15 +4159,15 @@ Morph.addMethods({
 	return this.mouseHandler.handleMouseEvent(evt, this); 
     },
 
-    ignoreEvents: function($super) { // will not respond nor get focus
+    ignoreEvents: function() { // will not respond nor get focus
 	this.mouseHandler = null;
 	this.setTrait("pointer-events", "none");
 	return this;
     },
 
-    enableEvents: function($super) {
-	$super();
+    enableEvents: function() {
 	this.mouseHandler = MouseHandlerForDragging.prototype;
+	this.removeTrait("pointer-events");
 	return this;
     },
 
@@ -4196,7 +4185,7 @@ Morph.addMethods({
     }, //default behavior
 
     onMouseMove: function(evt, hasFocus) { //default behavior
-	if (evt.mouseButtonPressed && hasFocus && this.owner && this.owner.openForDragAndDrop) { 
+	if (evt.mouseButtonPressed && (evt.hand.mouseFocus === this) && (this.owner && this.owner.openForDragAndDrop)) { 
 	    this.moveBy(evt.mousePoint.subPt(evt.priorPoint));
 	} // else this.checkForControlPointNear(evt);
 	if (!evt.mouseButtonPressed) this.checkForControlPointNear(evt);
@@ -4638,11 +4627,8 @@ Morph.addMethods({
 	var subBounds = null;
 	for (var i = 0; i < this.submorphs.length; i++) {
 	    var m = this.submorphs[i];
-	    if ((ignoreTransients && m.transientBounds))
+	    if ((ignoreTransients && m.transientBounds) || !m.isDisplayed())
 		continue;
-	    if (!m.isDisplayed()) {
-		continue;
-	    }
 	    subBounds = subBounds == null ? m.bounds(ignoreTransients) : subBounds.union(m.bounds(ignoreTransients));
 	}
 	return subBounds;
@@ -4718,12 +4704,6 @@ Morph.addMethods({
     changed: function() {
 	// (this.owner || this).invalidRect(this.bounds());
     },
-    
-    layoutOnSubmorphLayout: function(submorph) {
-	// override to return false, in which case layoutChanged() will not be propagated to
-	// the receiver when a submorph's layout changes. 
-	return true;
-    },
 
     layoutChanged: function() {
 	// layoutChanged() is called whenever the cached fullBounds may have changed
@@ -4732,7 +4712,7 @@ Morph.addMethods({
 	// Note the difference in meaning from adjustForNewBounds()
 	this.getTransform().applyTo(this);  // DI: why is this here?
 	this.fullBounds = null;
-	if (this.owner && this.owner.layoutOnSubmorphLayout(this)) {     // May affect owner as well...
+	if (this.owner && this.owner !== this.world()) {     // May affect owner as well...
 	    this.owner.layoutChanged();
 	}
     },
@@ -5460,10 +5440,6 @@ PasteUpMorph.subclass("WorldMorph", {
     defaultOrigin: function(bounds) { 
         return bounds.topLeft(); 
     },
-
-    layoutOnSubmorphLayout: function() {
-	return false;
-    },
     
     world: function() { 
         return this; 
@@ -5798,7 +5774,7 @@ Morph.subclass("HandMorph", {
 	
         this.setShape(new PolygonShape([pt(0,0), pt(9,5), pt(5,9), pt(0,0)], 
 				       (local ? Color.primary.blue : Color.primary.red), 1, Color.black));
-        this.shape.ignoreEvents();
+        this.shape.disablePointerEvents();
 	
         this.isLocal = local;
 
@@ -6468,7 +6444,7 @@ function interactiveEval(text) {
     function $p(obj) {
 	return Properties.all(obj);
     }
-    function $x(node, expr) {
+    function $x(x, expr) {
 	return new Query(expr).findAll(node.rawNode || node);
     }
     return eval(text);

@@ -120,7 +120,7 @@ Widget.subclass('SimpleBrowser', {
         var className = this.getModelValue("getClassName");
         if (className != null) {
             var theClass = Global[className];
-            if (theClass.prototype != null && !Config.debugExtras) {
+            if (theClass.prototype != null) {
                 items.push(['profile selected class', 
                     function() { showStatsViewer(theClass.prototype, className + "..."); }]);
             }
@@ -560,7 +560,7 @@ Object.profiler = function (object, service) {
     // The wondrous Ingalls profiler...
     // Invoke as, eg, Object.profiler(Color, "start"), or Object.profiler(Color.prototype, "start")
     var stats = {};
-    var fnames = object.constructor.functionNames();
+    var fnames = object.constructor.localFunctionNames();
 
     for (var i = 0; i < fnames.length; i++) { 
         var fname = fnames[i];
@@ -605,6 +605,15 @@ function showStatsViewer(profilee,title) {
     m.getThisValue = function() { return this.onState; };
     m.setThisValue = function(newValue) {
         this.onState = newValue;
+	if(this.removed) return;
+	if (this.world().firstHand().lastMouseEvent.isShiftDown()) {
+		// shift-click means remove profiling
+    		Object.profiler(profilee, "stop");
+            	if (this.statsMorph != null) this.statsMorph.remove();
+		this.remove();
+		this.removed = true;
+		return;
+	}	
         if (newValue == false) { // on mouseup...
             if (this.statsMorph == null) {
                 this.statsMorph = new TextMorph(this.bounds().bottomLeft().extent(pt(250,20)), "no text");
@@ -871,8 +880,10 @@ function showStatsViewer(profilee,title) {
                     originalMethod.declaredClass = cName;
                     originalMethod.methodName = mName;
                     // Now replace each method with a wrapper function (or remove it)
-                    if(!remove) theClass.prototype[mName] = originalMethod.tracingWrapper();
-		    else if(originalMethod.originalFunction) theClass.prototype[mName] = originalMethod.originalFunction;
+                    if (mName != "constructor") { // leave the constructor alone
+			if(!remove) theClass.prototype[mName] = originalMethod.tracingWrapper();
+			else if(originalMethod.originalFunction) theClass.prototype[mName] = originalMethod.originalFunction;
+		    }
                 }
 		// Do the same for class methods (need to clean this up)
 		var classFns = []; 
@@ -887,8 +898,10 @@ function showStatsViewer(profilee,title) {
                     originalMethod.declaredClass = cName;
                     originalMethod.methodName = mName;
                     // Now replace each method with a wrapper function (or remove it)
-                    if(!remove) theClass[mName] = originalMethod.tracingWrapper();
-		    else if(originalMethod.originalFunction) theClass[mName] = originalMethod.originalFunction;
+                    if (mName != "constructor") { // leave the constructor alone
+			if(!remove) theClass[mName] = originalMethod.tracingWrapper();
+			else if(originalMethod.originalFunction) theClass[mName] = originalMethod.originalFunction;
+		    }
                 }
             });
         },
