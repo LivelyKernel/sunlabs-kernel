@@ -5263,7 +5263,6 @@ PasteUpMorph.subclass("WorldMorph", {
     displayThemes: {
         primitive: { // Primitive look and feel -- flat fills and no rounding or translucency
             styleName:   'primitive',
-            window:      { borderRadius: 0 },
             titleBar:    { borderRadius: 0, borderWidth: 2, bordercolor: Color.black,
                            fill: Color.neutral.gray.lighter() },
 	    
@@ -5282,7 +5281,6 @@ PasteUpMorph.subclass("WorldMorph", {
 
         lively: { // This is to be the style we like to show for our personality
             styleName: 'lively',
-            window:      { borderRadius: 8 },
             titleBar:    { borderRadius: 8, borderWidth: 2, bordercolor: Color.black,
                            fill: new LinearGradient([Color.primary.blue.lighter(), 1, Color.primary.blue, 1, Color.primary.blue.lighter(2)], 
 						    LinearGradient.SouthNorth)},
@@ -5301,7 +5299,6 @@ PasteUpMorph.subclass("WorldMorph", {
 
         turquoise: { // Like turquoise, black and silver jewelry, [or other artistic style]
             styleName: 'turquoise',
-            window:      { borderRadius: 8},
             titleBar:    { borderRadius: 8, borderWidth: 2, bordercolor: Color.black,
                            fill: new LinearGradient([Color.turquoise, 1, Color.turquoise.lighter(3)])},
             slider:      { borderColor: Color.black, borderWidth: 1, 
@@ -5336,8 +5333,13 @@ PasteUpMorph.subclass("WorldMorph", {
 	    XLinkNS.setHref(background, backgroundImageId);
             this.addNonMorph(background);
         }
-        
         $super(bounds, "rect");
+
+	var gradient = new LinearGradient([Color.primary.blue.lighter(), 1, Color.primary.blue, 1, Color.primary.blue.lighter(), 1, Color.primary.blue, 1, Color.primary.blue.lighter()]);
+	gradient.rawNode.setAttributeNS(null, "gradientTransform", "translate(0, -0.1) skewY(10)");
+        this.setFill(gradient);
+	
+	
 	this.enterCount = 0;
     },
 
@@ -5372,6 +5374,7 @@ PasteUpMorph.subclass("WorldMorph", {
         var hand = this.addHand(new HandMorph(true));
 	WorldMorph.currentWorld = this; // this conflicts with mutliple worlds
         this.onEnter(); 
+	
 	this.enterCount ++;
     },
     

@@ -2480,13 +2480,11 @@ Morph.subclass('WindowMorph', {
         this.titleBar = this.addMorph(titleBar);
         this.contentOffset = pt(0, titleHeight - titleBar.getBorderWidth()/2); // FIXME: hack
         targetMorph.setPosition(this.contentOffset);
-	this.applyStyle({borderWidth: 0, fill: null});
-        this.linkToStyles(['window']);
+	this.applyStyle({borderWidth: 0, fill: null, borderRadius: 0});
         this.closeAllToDnD();
         this.expandedTransform = null;
 	this.expandedExtent = null;
 	this.enableEventsOnExpand = false;
-
         return this;
     },
 
