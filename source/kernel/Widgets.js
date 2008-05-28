@@ -2315,7 +2315,7 @@ Morph.subclass("TitleBarMorph", {
     okToBeGrabbedBy: function(evt) {
         var oldTop = this.world().topSubmorph();
         if (oldTop instanceof WindowMorph) oldTop.titleBar.highlight(false);
-        return this.windowMorph.isCollapsed() ? this : this.windowMorph;
+        return this.windowMorph;
     },
 
     adjustForNewBounds: function($super) {
@@ -2482,12 +2482,14 @@ Morph.subclass('WindowMorph', {
         targetMorph.setPosition(this.contentOffset);
 	this.applyStyle({borderWidth: 0, fill: null, borderRadius: 0});
         this.closeAllToDnD();
+	this.collapsedTransform = null;
+	this.collapsedExtent = null;
         this.expandedTransform = null;
 	this.expandedExtent = null;
 	this.enableEventsOnExpand = false;
         return this;
     },
-
+    
     deserialize: function($super, importer, rawNode) {
         $super(importer, rawNode);
         this.titleBar.windowMorph = this;
@@ -2521,53 +2523,28 @@ Morph.subclass('WindowMorph', {
     
     collapse: function() { 
         if (this.isCollapsed()) return;
-	if (Config.useSimpleCollapse) {
-            this.expandedTransform = this.getTransform();
-	    this.expandedExtent = this.getExtent();
-	    this.enableEventsOnExpand = this.targetMorph.areEventsDisabled();
-	    this.targetMorph.ignoreEvents(); // unconditionally
-	    this.targetMorph.undisplay();
-	    this.setTransform(this.collapsedTransform  || this.expandedTransform);
-            if (this.collapsedExtent) this.setExtent(this.collapsedExtent);
-	    this.shape.setBounds(this.titleBar.bounds());
-	    this.layoutChanged();
-	} else {
-            this.expandedTransform = this.getTransform();
-            this.tbTransform = this.titleBar.getTransform();
-            var owner = this.owner;
-            owner.addMorph(this.titleBar);
-            this.titleBar.setTransform(this.collapsedTransform ? this.collapsedTransform : this.expandedTransform);
-            if (this.titleBar.collapsedExtent) this.titleBar.setExtent(this.titleBar.collapsedExtent);
-            this.titleBar.enableEvents();
-            this.remove();
-	}
+        this.expandedTransform = this.getTransform();
+	this.expandedExtent = this.getExtent();
+	this.enableEventsOnExpand = this.targetMorph.areEventsDisabled();
+	this.targetMorph.ignoreEvents(); // unconditionally
+	this.targetMorph.undisplay();
+	this.setTransform(this.collapsedTransform  || this.expandedTransform);
+        if (this.collapsedExtent) this.setExtent(this.collapsedExtent);
+	this.shape.setBounds(this.titleBar.bounds());
+	this.layoutChanged();
         this.titleBar.highlight(false);
         this.state = WindowState.Collapsed;
     },
     
     expand: function() {
         if (!this.isCollapsed()) return;
-	if (Config.useSimpleCollapse) {
-            this.collapsedTransform = this.getTransform();
-            this.collapsedExtent = this.innerBounds().extent();
-            this.setTransform(this.expandedTransform); 
-	    this.targetMorph.display();
-	    if (this.enableEventsOnExpand) this.targetMorph.enableEvents();
-	    if (this.expandedExtent) this.setExtent(this.expandedExtent);
-	    this.layoutChanged();
-	} else {
-            this.collapsedTransform = this.titleBar.getTransform();
-            this.titleBar.collapsedExtent = this.titleBar.innerBounds().extent();
-            var owner = this.titleBar.owner;
-            owner.addMorph(this);
-            this.setTransform(this.expandedTransform);        
-            // this.titleBar.remove();  //next statement removes it from prior owner
-            this.addMorph(this.titleBar);
-            this.titleBar.setTransform(this.tbTransform)
-            this.titleBar.setExtent(pt(this.innerBounds().width, this.titleBar.innerBounds().height));
-            this.titleBar.setPosition(this.innerBounds().topLeft());
-            this.titleBar.ignoreEvents();
-	}
+        this.collapsedTransform = this.getTransform();
+        this.collapsedExtent = this.innerBounds().extent();
+        this.setTransform(this.expandedTransform); 
+	this.targetMorph.display();
+	if (this.enableEventsOnExpand) this.targetMorph.enableEvents();
+	if (this.expandedExtent) this.setExtent(this.expandedExtent);
+	this.layoutChanged();
         this.takeHighlight();
         this.state = WindowState.Expanded;
     },
@@ -2588,10 +2565,10 @@ Morph.subclass('WindowMorph', {
 
     needsToComeForward: function(evt) {
         if (this.owner !== this.world()) return true; // weird case -- not directly in world
-        if (!this.fullContainsWorldPoint(evt.mousePoint)) return false;  // not clicked in me
+        if (!this.fullContainsWorldPoint(evt.point())) return false;  // not clicked in me
         if (this === this.world().topSubmorph()) return false;  // already on top
         if (this.isCollapsed()) return false;  // collapsed labels OK from below
-        if (this.titleBar.fullContainsWorldPoint(evt.mousePoint)) return false;  // labels OK from below
+        if (this.titleBar.fullContainsWorldPoint(evt.point())) return false;  // labels OK from below
         return true;  // it's in my content area
     },
 
@@ -2638,8 +2615,7 @@ Morph.subclass('WindowMorph', {
     initiateShutdown: function() {
         if (this.isShutdown()) return;
         this.targetMorph.shutdown(); // shutdown may be prevented ...
-        if (!Config.useSimpleCollapse && this.isCollapsed()) this.titleBar.remove();
-        else this.remove();
+        this.remove();
         this.state = WindowState.Shutdown; // no one will ever know...
         return true;
     },
@@ -2651,15 +2627,9 @@ Morph.subclass('WindowMorph', {
         tm.replaceItemNamed("reset scaling", ["reset scaling", this, 'setScale', 1]);
         tm.removeItemNamed("duplicate");
         tm.removeItemNamed("turn fisheye on");
-
         tm.openIn(this.world(), evt.mousePoint, false, this.targetMorph.inspect().truncate()); 
     },
 
-    world: function() {
-	// note, the window may be removed from the world and its titlebar only in the world, hence the following: 
-	return WorldMorph.current();
-	// there should be a better way though.
-    },
 
     adjustForNewBounds: function ($super) {
         $super();
