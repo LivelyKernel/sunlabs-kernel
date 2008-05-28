@@ -1209,7 +1209,7 @@ Morph.subclass("MenuMorph", {
         //     menu.addLine();          // interspersed with these
         //     menu.openIn(world,location,stayUp,captionIfAny);
 	
-        $super(pt(100, 0).extentAsRectangle(), "rect");
+        $super(pt(0, 0).extentAsRectangle(), "rect");
         this.items = items;
         this.targetMorph = targetMorph || this;
         this.listMorph = null;
@@ -1303,6 +1303,7 @@ Morph.subclass("MenuMorph", {
             this.label = this.addMorph(label);
 	    this.label.setFill(new LinearGradient([Color.white, 1, Color.gray]));
         }
+
 
         // If menu and/or caption is off screen, move it back so it is visible
         var menuRect = this.bounds();  //includes caption if any
