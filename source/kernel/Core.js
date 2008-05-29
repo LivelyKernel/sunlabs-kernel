@@ -917,6 +917,7 @@ Object.subclass("Point", {
     subPt: function(p) { return new Point(this.x - p.x, this.y - p.y); },
     negated: function() { return new Point(-this.x, -this.y); },
     inverted: function() { return new Point(1.0/this.x, 1.0/this.y); },
+    invertedSafely: function() { return new Point(this.x && 1.0/this.x, this.y && 1.0/this.y); },
     scaleBy: function(scale) { return new Point(this.x*scale,this.y*scale); },
     scaleByPt: function(scalePt) { return new Point(this.x*scalePt.x,this.y*scalePt.y); },
     lessPt: function(p) { return this.x < p.x && this.y < p.y; },

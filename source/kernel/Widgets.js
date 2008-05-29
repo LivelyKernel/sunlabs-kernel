@@ -606,7 +606,6 @@ Morph.subclass('PanelMorph', {
             if (this.lastNavigable) this.lastNavigable.nextNavigableSibling = m;
             this.lastNavigable = m;
         }
-
         return $super(m, front);
     },
 
@@ -614,16 +613,13 @@ Morph.subclass('PanelMorph', {
         // Compute scales of old submorph extents in priorExtent, then scale up to new extent
         $super();
         var newExtent = this.innerBounds().extent();
-        var scalePt = newExtent.scaleByPt(this.priorExtent.inverted());
-        this.priorExtent = newExtent;
-        for (var i= 0; i<this.submorphs.length; i++) {
-            var sub = this.submorphs[i];
-            var subBnds = sub.innerBounds();
-            sub.setPosition(sub.getPosition().scaleByPt(scalePt));
+        var scalePt = newExtent.scaleByPt(this.priorExtent.invertedSafely());
+	this.submorphs.forEach(function(sub) {
+	    sub.setPosition(sub.getPosition().scaleByPt(scalePt));
             sub.setExtent(sub.getExtent().scaleByPt(scalePt));
-        }
+	});
     },
-
+    
     updateView: function(aspect, controller) {
         var plug = this.modelPlug;
         if (!plug) return;
@@ -2461,6 +2457,33 @@ Morph.subclass("WindowControlMorph", {
  
 });
 
+Morph.subclass('StatusBarMorph', {
+
+    borderWidth: 0,
+    fill: null,
+
+    initialize: function($super, titleBar) {
+	var bounds = titleBar.getExtent().extentAsRectangle().withHeight(8);
+	
+        $super(bounds, "rect");
+	
+	// contentMorph is bigger than the titleBar, so that the lower rounded part of it can be clipped off
+	// arbitrary paths could be used, but FF doesn't implement the geometry methods :(
+	// bounds will be adjusted in adjustForNewBounds()
+	var contentMorph = new Morph(bounds.withHeight(bounds.height*2).withY(-bounds.height), "rect");
+	this.addMorph(new ClipMorph(bounds.withHeight(bounds.height + 2).withWidth(bounds.width + 2))).addMorph(contentMorph);
+	contentMorph.linkToStyles(["titleBar"]);
+	
+	this.ignoreEvents();
+	contentMorph.ignoreEvents();
+	contentMorph.owner.ignoreEvents();
+	this.contentMorph = contentMorph;
+
+        //this.adjustForNewBounds();  
+        return this;
+    }
+});
+
 var WindowState = Class.makeEnum(['Expanded', 'Collapsed', 'Shutdown']);
 
 Morph.subclass('WindowMorph', {
@@ -2468,6 +2491,7 @@ Morph.subclass('WindowMorph', {
     documentation: "Full-fledged windows with title bar, menus, etc.",
     state: WindowState.Expanded,
     titleBar: null,
+    statusBar: null,
     targetMorph: null,
     
     initialize: function($super, targetMorph, headline, location) {
@@ -2487,6 +2511,8 @@ Morph.subclass('WindowMorph', {
         this.expandedTransform = null;
 	this.expandedExtent = null;
 	this.enableEventsOnExpand = false;
+	if (Config.useStatusBar) this.statusBar = this.addMorph(new StatusBarMorph(this.titleBar));
+	this.adjustForNewBounds();
         return this;
     },
     
@@ -2642,6 +2668,8 @@ Morph.subclass('WindowMorph', {
         this.targetMorph.setExtent(pt(newWidth, newHeight - titleHeight));
         this.titleBar.setPosition(bnds.topLeft());
         this.targetMorph.setPosition(bnds.topLeft().addXY(0, titleHeight));
+	if (this.statusBar) 
+	    this.statusBar.setPosition(pt(0, this.isCollapsed() ? 0 : bnds.height));
     }
 
 });
