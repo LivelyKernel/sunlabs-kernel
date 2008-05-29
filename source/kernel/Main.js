@@ -371,11 +371,6 @@ function populateWorldWithExamples(world) {
 	    importer.loadCode(URL.source.withFilename('phone.js'));
         }
     }
-
-    if (Config.showXenoMorph) {
-        XenoMorph.prototype.test(); //"http://livelykernel.sunlabs.com/index.html");//"http://www.opera.com");
-    }
-
     return world;
 }
 
