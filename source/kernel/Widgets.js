@@ -348,9 +348,7 @@ Morph.subclass('HandleMorph', {
     },
     
     onMouseUp: function(evt) {
-        if (!evt.isShiftDown() && !evt.isCommandKey() && !evt.isMetaDown() &&
-            // these hack tests should be replaced by receiver tests
-            !(this.targetMorph instanceof WindowMorph || this.targetMorph instanceof TitleBarMorph)) {
+        if (!evt.isShiftDown() && !evt.isCommandKey() && !evt.isMetaDown()) {
                 // last call for, eg, vertex deletion
                 this.targetMorph.reshape(this.partName, this.targetMorph.localize(evt.mousePoint), this, true); 
         }
@@ -2263,6 +2261,16 @@ Morph.subclass("TitleBarMorph", {
         this.windowMorph = windowMorph;
 
         // Note: Layout of submorphs happens in adjustForNewBounds (q.v.)
+        var label;
+        if (headline instanceof TextMorph) {
+            label = headline;
+        } else { // String
+            var width = headline.length * 8; // wild guess headlineString.length * 2 *  font.getCharWidth(' ') + 2;
+            label = new TextMorph(new Rectangle(0, 0, width, this.barHeight), headline).beLabel();
+        }
+        label.applyStyle(this.labelStyle);
+        this.label = this.addMorph(label);
+	
         var cell = new Rectangle(0, 0, this.barHeight, this.barHeight);
         var closeButton = new WindowControlMorph(cell, this.controlSpacing, Color.primary.orange, windowMorph, 
             "initiateShutdown", "Close");
@@ -2276,16 +2284,6 @@ Morph.subclass("TitleBarMorph", {
             "toggleCollapse", "Collapse");
         this.collapseButton = this.addMorph(collapseButton);
 
-        var label;
-        if (headline instanceof TextMorph) {
-            label = headline;
-        } else { // String
-            var width = headline.length * 8; // wild guess headlineString.length * 2 *  font.getCharWidth(' ') + 2;
-            label = new TextMorph(new Rectangle(0, 0, width, this.barHeight), headline).beLabel();
-        }
-        label.applyStyle(this.labelStyle);
-        this.label = this.addMorph(label);
-	
         this.adjustForNewBounds();  // This will align the buttons and label properly
         return this;
     },
@@ -2329,7 +2327,7 @@ Morph.subclass("TitleBarMorph", {
         if (this.label) {
             this.label.align(this.label.bounds().topCenter(), this.innerBounds().topCenter());
             if (this.label.bounds().topLeft().x < loc.x) {
-                this.label.align(this.label.bounds().topLeft(), loc.addXY(0,-2));
+                this.label.align(this.label.bounds().topLeft(), loc.addXY(0,-3));
             }
         }
 	if (this.closeButton) { 
@@ -2479,9 +2477,12 @@ Morph.subclass('StatusBarMorph', {
 	contentMorph.ignoreEvents();
 	contentMorph.owner.ignoreEvents();
 	this.contentMorph = contentMorph;
-
-        //this.adjustForNewBounds();  
         return this;
+    },
+    adjustForNewBounds: function ($super) {
+        $super();
+	var cm = this.contentMorph;
+	if (cm) cm.setExtent(pt(this.bounds().width, cm.bounds().height))
     }
 });
 
@@ -2556,11 +2557,12 @@ Morph.subclass('WindowMorph', {
 	this.targetMorph.ignoreEvents(); // unconditionally
 	this.targetMorph.undisplay();
 	this.setTransform(this.collapsedTransform  || this.expandedTransform);
+
+        this.state = WindowState.Collapsed;  // Set it now so setExtent works right
         if (this.collapsedExtent) this.setExtent(this.collapsedExtent);
 	this.shape.setBounds(this.titleBar.bounds());
 	this.layoutChanged();
         this.titleBar.highlight(false);
-        this.state = WindowState.Collapsed;
     },
     
     expand: function() {
@@ -2570,10 +2572,11 @@ Morph.subclass('WindowMorph', {
         this.setTransform(this.expandedTransform); 
 	this.targetMorph.display();
 	if (this.enableEventsOnExpand) this.targetMorph.enableEvents();
+
+        this.state = WindowState.Expanded;  // Set it now so setExtent works right
 	if (this.expandedExtent) this.setExtent(this.expandedExtent);
 	this.layoutChanged();
         this.takeHighlight();
-        this.state = WindowState.Expanded;
     },
 
     isCollapsed: function() { return this.state === WindowState.Collapsed; },
@@ -2657,20 +2660,30 @@ Morph.subclass('WindowMorph', {
         tm.openIn(this.world(), evt.mousePoint, false, this.targetMorph.inspect().truncate()); 
     },
 
+    reshape: function($super, partName, newPoint, handle, lastCall) {
+	// Minimum size for reshap should probably be a protoype var
+	var r = this.innerBounds().withPartNamed(partName, newPoint);
+	var maxPoint = r.withExtent(r.extent().maxPt(pt(100,120))).partNamed(partName);
+	$super(partName, maxPoint, handle, lastCall);
+    },
 
     adjustForNewBounds: function ($super) {
         $super();
+	Function.showStack();
         if (!this.titleBar || !this.targetMorph) return;
         var titleHeight = this.titleBar.innerBounds().height;
         var bnds = this.innerBounds();
-        var newWidth = bnds.extent().x;
-        var newHeight = bnds.extent().y;
+        var newWidth = bnds.width;
+        var newHeight = bnds.height;
         this.titleBar.setExtent(pt(newWidth, titleHeight));
-        this.targetMorph.setExtent(pt(newWidth, newHeight - titleHeight));
         this.titleBar.setPosition(bnds.topLeft());
+	if (this.statusBar) {  // DI: this doesn't track reframing...
+	    this.statusBar.setPosition(pt(0, this.isCollapsed() ? titleHeight : bnds.height));
+	    this.statusBar.setExtent(pt(newWidth, this.statusBar.innerBounds().height));
+	}
+        if (this.isCollapsed()) return;
+	this.targetMorph.setExtent(pt(newWidth, newHeight - titleHeight));
         this.targetMorph.setPosition(bnds.topLeft().addXY(0, titleHeight));
-	if (this.statusBar) 
-	    this.statusBar.setPosition(pt(0, this.isCollapsed() ? 0 : bnds.height));
     }
 
 });
