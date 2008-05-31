@@ -618,6 +618,7 @@ Morph.subclass('PanelMorph', {
 	    sub.setPosition(sub.getPosition().scaleByPt(scalePt));
             sub.setExtent(sub.getExtent().scaleByPt(scalePt));
 	});
+	this.priorExtent = newExtent;
     },
     
     updateView: function(aspect, controller) {
