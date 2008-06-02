@@ -215,10 +215,9 @@ Morph.subclass('GridLayoutMorph', {
 	// It should go into the main event loop
 
 	scheduleUpdate: function() {
-		if (this.updateScheduled) {
-			clearTimeout(this.updateScheduled);
-		}
-		this.updateScheduled = setTimeout(this.update.bind(this), 50);
+		if (this.updateScheduled) return;  // already scheduled
+		this.updateScheduled = new SchedulableAction(this, "update", null, 0);
+		WorldMorph.current().scheduleForLater(this.updateScheduled, 0, true);  // zero delay runs on next cycle
 	},
 
 	update: function() {
@@ -303,8 +302,8 @@ Morph.subclass('GridLayoutMorph', {
 		if (this.showGrid) {
 			this.showGridLines(false);
 			// this is a hack to get around a layout update bug.
-			setTimeout(this.showGridLines.bind(this, true), 60);
-			// this.showGridLines(true);
+			// setTimeout(this.showGridLines.bind(this, true), 60);
+			this.showGridLines(true);
 		}
 
 		var newExt = pt(maxX, maxY);
@@ -667,7 +666,6 @@ GridLayoutMorph.demo = function(world, position) {
 		console.log("align: " + a.align);
 		this.owner.moveMorph(this, a);
 		this.alignCount = (this.alignCount+1)%this.alignments.length;
-		setTimeout(this.nextAlign.bind(this), 700);
 	};
 
 	g2.addMorph(r,{col:2, row:1, pad: {x:5,y:5}});
@@ -677,7 +675,7 @@ GridLayoutMorph.demo = function(world, position) {
 	g2.gridLineSpec.fill=Color.black;
 
 	// uncomment this to play with alignments
-    // r.nextAlign();
+	r.startStepping(700, "nextAlign");
 	return grid;
 }
 console.log("end griddemo");

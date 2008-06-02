@@ -3704,6 +3704,7 @@ Morph.addMethods({
 	// since the caller must do it otherwise.  This would simplify things overall.
 
 	var pos = newRect.topLeft();
+	var priorExtent = this.shape.bounds().extent();
 	this.setPosition(pos);
 	this.shape.setBounds(newRect.extent().extentAsRectangle()); // FIXME some shapes don't support setFromRect
 	
@@ -3711,7 +3712,7 @@ Morph.addMethods({
 	    // console.log('clipped to new shape ' + this.shape);
 	    this.clipToShape();
 	}
-	this.adjustForNewBounds();
+	if(!priorExtent.eqPt(newRect.extent())) this.adjustForNewBounds();
     },
 
     setBounds: function(newRect) {
@@ -3798,7 +3799,7 @@ Morph.addMethods({
 	m.owner = this;
 	this.internalAddMorph(m, front);
 	m.changed();
-	m.layoutChanged();  // DI:  Should not be needed
+	m.layoutChanged();
 	this.layoutChanged();
 	return m;
     },
@@ -3963,7 +3964,7 @@ Morph.addMethods({
 	if (this.fullBounds != null) this.fullBounds = this.fullBounds.translatedBy(delta);
 	// DI: I don't think this can affect owner.  It may increase fullbounds
 	//     due to stickouts, but not the bounds for layout...
-	if (this.owner && this.owner !== this.world()) this.owner.layoutChanged(); 
+	if (this.owner /* && this.owner !== this.world() */ && !this.transientBounds) this.owner.layoutChanged(); 
 	this.changed(); 
     },
 
@@ -4197,7 +4198,7 @@ Morph.addMethods({
     }, //default behavior
 
     onMouseMove: function(evt, hasFocus) { //default behavior
-	if (evt.mouseButtonPressed && hasFocus && this.owner && this.owner.openForDragAndDrop) { 
+	if (evt.mouseButtonPressed && this==evt.hand.mouseFocus && this.owner && this.owner.openForDragAndDrop) { 
 	    this.moveBy(evt.mousePoint.subPt(evt.priorPoint));
 	} // else this.checkForControlPointNear(evt);
 	if (!evt.mouseButtonPressed) this.checkForControlPointNear(evt);
@@ -4260,7 +4261,7 @@ Morph.addMethods({
     },
     
     adjustFocusHalo: function() {
-	this.focusHalo.setBounds(this.localBorderBounds().expandBy(this.focusHaloInset));
+	this.focusHalo.internalSetBounds(this.localBorderBounds().expandBy(this.focusHaloInset));
     },
 
     addFocusHalo: function() {
@@ -4733,7 +4734,7 @@ Morph.addMethods({
 	// Note the difference in meaning from adjustForNewBounds()
 	this.getTransform().applyTo(this);  // DI: why is this here?
 	this.fullBounds = null;
-	if (this.owner && this.owner.layoutOnSubmorphLayout(this)) {     // May affect owner as well...
+	if (this.owner && this.owner.layoutOnSubmorphLayout(this) && !this.transientBounds) {     // May affect owner as well...
 	    this.owner.layoutChanged();
 	}
     },
