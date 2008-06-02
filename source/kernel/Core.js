@@ -4266,11 +4266,12 @@ Morph.addMethods({
 
     addFocusHalo: function() {
 	if (this.focusHalo || this.focusHaloBorderWidth <= 0) return false;
-	this.focusHalo = this.addMorph(new Morph(this.localBorderBounds().expandBy(this.focusHaloInset), "rect"));
+	this.focusHalo = new Morph(this.localBorderBounds().expandBy(this.focusHaloInset), "rect");
+	this.focusHalo.transientBounds = true;  // Do this before adding the halo
+	this.addMorph(this.focusHalo);
 	this.focusHalo.applyStyle(this.focusStyle);
 	this.focusHalo.setBorderWidth(this.focusHaloBorderWidth);
 	this.focusHalo.setLineJoin(Shape.LineJoins.Round);
-	this.focusHalo.transientBounds = true;
 	this.focusHalo.ignoreEvents();
 	return true;
     }
