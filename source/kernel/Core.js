@@ -4735,7 +4735,7 @@ Morph.addMethods({
 	// Note the difference in meaning from adjustForNewBounds()
 	this.getTransform().applyTo(this);  // DI: why is this here?
 	this.fullBounds = null;
-	if (this.owner && this.owner.layoutOnSubmorphLayout(this) && && !this.transientBounds) {     // May affect owner as well...
+	if (this.owner && this.owner.layoutOnSubmorphLayout(this) && !this.transientBounds) {     // May affect owner as well...
 	    this.owner.layoutChanged();
 	}
     },
