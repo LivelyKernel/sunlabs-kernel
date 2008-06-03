@@ -2669,7 +2669,6 @@ Morph.subclass('WindowMorph', {
 
     adjustForNewBounds: function ($super) {
         $super();
-	Function.showStack();
         if (!this.titleBar || !this.targetMorph) return;
         var titleHeight = this.titleBar.innerBounds().height;
         var bnds = this.innerBounds();

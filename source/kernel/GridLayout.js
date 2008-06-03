@@ -675,7 +675,7 @@ GridLayoutMorph.demo = function(world, position) {
 	g2.gridLineSpec.fill=Color.black;
 
 	// uncomment this to play with alignments
-	r.startStepping(700, "nextAlign");
+	// r.startStepping(700, "nextAlign");
 	return grid;
 }
 console.log("end griddemo");
