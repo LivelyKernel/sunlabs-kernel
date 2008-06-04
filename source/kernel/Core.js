@@ -2024,7 +2024,7 @@ Wrapper.subclass('Visual', {
 	return this;
     },
 
-    areEventsDisabled: function() {
+    areEventsIgnored: function() {
 	return this.getTrait("pointer-events") == "none";
     },
     
@@ -3018,7 +3018,7 @@ Copier.subclass('Importer', {
     },
     
     importModelFrom: function(modelNode) {
-	var model = new SyntheticModel();
+	var model = new SyntheticModel([]);
 	var dependentViews = [];
 	for (var node = modelNode.firstChild; node != null; node = node.nextSibling) {
 	    if (node.nodeType === Node.TEXT_NODE || node.nodeType === Node.COMMENT_NODE)
@@ -5055,8 +5055,8 @@ Model.subclass('SyntheticModel', {
 
     initialize: function($super, vars) {
 	$super(null);
-	if (!vars) 
-	    return;
+	if (!(vars instanceof Array)) 
+	    throw new Error("wrong argument to SyntheticModel: " + vars);
 	for (var i = 0; i < vars.length; i++) {
 	    var v = vars[i];
 	    if (v.startsWith('-') || v.startsWith('+')) 

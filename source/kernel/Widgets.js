@@ -350,7 +350,7 @@ Morph.subclass('HandleMorph', {
     onMouseUp: function(evt) {
         if (!evt.isShiftDown() && !evt.isCommandKey() && !evt.isMetaDown()) {
                 // last call for, eg, vertex deletion
-                this.targetMorph.reshape(this.partName, this.targetMorph.localize(evt.mousePoint), this, true); 
+            this.targetMorph.reshape(this.partName, this.targetMorph.localize(evt.mousePoint), this, true); 
         }
         this.remove(); 
     },
@@ -2512,7 +2512,7 @@ Morph.subclass('WindowMorph', {
 	this.collapsedExtent = null;
         this.expandedTransform = null;
 	this.expandedExtent = null;
-	this.enableEventsOnExpand = false;
+	this.ignoreEventsOnExpand = false;
 	if (Config.useStatusBar) this.statusBar = this.addMorph(new StatusBarMorph(this.titleBar));
 	this.adjustForNewBounds();
         return this;
@@ -2553,7 +2553,7 @@ Morph.subclass('WindowMorph', {
         if (this.isCollapsed()) return;
         this.expandedTransform = this.getTransform();
 	this.expandedExtent = this.getExtent();
-	this.enableEventsOnExpand = this.targetMorph.areEventsDisabled();
+	this.ignoreEventsOnExpand = this.targetMorph.areEventsIgnored();
 	this.targetMorph.ignoreEvents(); // unconditionally
 	this.targetMorph.undisplay();
 	this.setTransform(this.collapsedTransform  || this.expandedTransform);
@@ -2571,7 +2571,8 @@ Morph.subclass('WindowMorph', {
         this.collapsedExtent = this.innerBounds().extent();
         this.setTransform(this.expandedTransform); 
 	this.targetMorph.display();
-	if (this.enableEventsOnExpand) this.targetMorph.enableEvents();
+	// enable events if they weren't disabled in expanded form
+	if (!this.ignoreEventsOnExpand) this.targetMorph.enableEvents();
 
         this.state = WindowState.Expanded;  // Set it now so setExtent works right
 	if (this.expandedExtent) this.setExtent(this.expandedExtent);
