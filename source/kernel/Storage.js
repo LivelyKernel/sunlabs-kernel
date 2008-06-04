@@ -108,6 +108,7 @@ Wrapper.subclass('Resource', {
     documentation: "Wrapper around information returned from WebDAV's PROPFIND",
     nameQ: new Query("D:href"),
     propertiesQ: new Query("D:propstat"),
+    lastModifiedQ: new Query("lp1:getlastmodified"), // Apache-dependent
     
     initialize: function(raw, baseUrl) {
         this.rawNode = raw; 
@@ -142,12 +143,6 @@ Wrapper.subclass('Resource', {
 	return this.propertiesQ.findAll(this.rawNode).pluck('textContent').join('\n');
     }
 
-});
-
-
-NetRequestReporter.subclass('LoadHandler', {
-
-    
 });
 
 
@@ -274,7 +269,6 @@ Widget.subclass('TwoPaneBrowser', { // move to Widgets.js sometime
 	    "SelectedLowerNodeContents", // : String
 	    "LowerNodeListMenu",
 
-	    "SelectedLowerNodeProperties", //:String
 	    "LowerNodeDeletionRequest", 
 	    "LowerNodeDeletionConfirmation"]);
 	
@@ -499,13 +493,20 @@ TwoPaneBrowser.subclass('FileBrowser', {
 		return [];
 	    var fileName = url.toString();
 	    var model = this;
+
+	    function queryProps(url, queryString, model) {
+		var query = new Query(queryString, {model: model, getContextNode: "getInspectedNode", setResults: "setAllProperties"});
+		var req = new NetRequest({model: model, setResponseXML: "setInspectedNode", setStatus: "setRequestStatus"});
+		req.propfind(url, 1);
+	    }
+
 	    var items = [
 		['edit in separate window', function(evt) {
 		    var textEdit = newTextPane(new Rectangle(0, 0, 500, 200), "Fetching " + url + "...");
 		    var webfile = new WebFile({model: model, 
 			getFile: "getSelectedLowerNode", 
 			setContent: "setSelectedLowerNodeContents",
-			getContent: "getSelectedLowerNodeContents"
+			getContent: "getSelectedLowerNodeContents" 
 			});
 		    webfile.startFetchingFile();
 		    textEdit.innerMorph().connectModel({model: model, 
@@ -515,15 +516,22 @@ TwoPaneBrowser.subclass('FileBrowser', {
 		}],
 		
 		["get WebDAV info", function(evt) {
+		    var m = new SyntheticModel(["InspectedNode", "AllProperties"]);
+		    m.setAllProperties = function(nodes, source) {
+			// translate from nodes to text for the text morph to understand
+			this.AllProperties = nodes.map(function(n) { return Exporter.stringify(n) }).join('\n');
+			this.changed('getAllProperties', source);
+		    };
+		    queryProps(url, "/*", m);
+		    
 		    var infoPane = newTextPane(new Rectangle(0, 0, 500, 200), "");
 		    infoPane.innerMorph().acceptInput = false;
-		    infoPane.innerMorph().connectModel({model: model, getText: "getSelectedLowerNodeProperties"});
-		    
-		    var req = new NetRequest({model: model, 
-			setResponseText: "setSelectedLowerNodeProperties", setStatus: "setRequestStatus"});
-		    req.propfind(url, 1);
-		    this.world().addFramedMorph(infoPane, url.toString(), evt.mousePoint);
-		}]
+		    infoPane.innerMorph().connectModel({model: m, getText: "getAllProperties"});
+
+		    this.world().addFramedMorph(infoPane, url.toString(), evt.point());
+		}],
+
+		["get XPath query morph", browser, "onMenuAddQueryMorph", url]
 	    ];
 	    
 	    if (url.filename().endsWith(".xhtml")) {
@@ -557,6 +565,13 @@ TwoPaneBrowser.subclass('FileBrowser', {
 	    return items; 
 	};
 
+    },
+
+    onMenuAddQueryMorph: function(url, evt) {
+	var req = new NetRequest().beSync();
+	var doc = req.propfind(url, 1).getResponseXML();
+	var m = new XPathQueryMorph(new Rectangle(0, 0, 500, 200), doc.documentElement);
+	WorldMorph.current().addFramedMorph(m, url.toString(), evt.point());
     },
     
     removeNode: function(url) {

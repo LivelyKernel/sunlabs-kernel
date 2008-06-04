@@ -451,10 +451,11 @@ View.subclass('Query',  {
 	   "-ContextNode", // where to evaluate
 	  ],
 
-    initialize: function(expression) {
+    initialize: function(expression, optPlug) {
 	if (!this.xpe) throw new Error("XPath not available");
 	this.contextNode = null;
 	this.expression = expression;
+	if (optPlug) this.connectModel(optPlug);
     },
 
     establishContext: function(node) {
@@ -470,7 +471,10 @@ View.subclass('Query',  {
 	if (!p) return;
 	switch (aspect) {
 	case p.getContextNode:
-	    this.setModelValue("setResults", this.findAll(this.getModelValue("getContextNode", document.documentElement), null));
+	    var node = this.getModelValue("getContextNode", document);
+	    if (node instanceof Document) node = node.documentElement;
+	    var result = this.findAll(node, null);
+	    this.setModelValue("setResults", result);
 	    break;
 	}
     },
@@ -499,6 +503,9 @@ View.subclass('Query',  {
     }
 
 });
+
+
+
 
 Wrapper.subclass('FeedChannel', {
     documentation: "Convenience wrapper around RSS Feed Channel XML nodes",

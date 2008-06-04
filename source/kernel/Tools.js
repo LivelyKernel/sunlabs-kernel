@@ -368,6 +368,22 @@ Widget.subclass('SimpleInspector', {
 
 });
 
+TextMorph.subclass('XPathQueryMorph', {
+    documentation: "TextMorph with an associated contextNode, evals result in evaluating XPath queries",
+    
+    initialize: function($super, bounds, contextNode) {
+	$super(bounds, "");
+	this.contextNode = contextNode;
+    },
+
+    boundEval: function(str) {    
+	var xq = new Query(str);
+	return xq.findAll(this.contextNode, []).map(function(n) { return Exporter.stringify(n); }).join('\n');
+    }
+
+});
+
+
 // ===========================================================================
 // Style Editor Panel
 // ===========================================================================
