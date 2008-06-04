@@ -47,7 +47,7 @@ Morph.subclass('GridLayoutMorph', {
 		// we were dropped on , do something useful (what?)
 
 		if (morph.owner instanceof HandMorph) {
-			var p=morph.owner.bounds().center().subPt(this.bounds().topLeft());
+			var p=this.localize(morph.owner.position());
 			var cell = this.getCell(p);
 			// cell taken don't accept drop
 			console.log("DnD at " + p + " -> " + cell);
