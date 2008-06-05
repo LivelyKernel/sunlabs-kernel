@@ -103,12 +103,13 @@ Morph.subclass('PackageMorph', {
 });
 
 
-Wrapper.subclass('Resource', {
+
+
+Wrapper.subclass('CollectionItem', {
     
     documentation: "Wrapper around information returned from WebDAV's PROPFIND",
     nameQ: new Query("D:href"),
     propertiesQ: new Query("D:propstat"),
-    lastModifiedQ: new Query("lp1:getlastmodified"), // Apache-dependent
     
     initialize: function(raw, baseUrl) {
         this.rawNode = raw; 
@@ -120,7 +121,7 @@ Wrapper.subclass('Resource', {
 	var result = this.nameQ.findFirst(this.rawNode);
 	if (!result) {
 	    console.log("query failed " + Exporter.stringify(this.rawNode));
-	    return "?"
+	    return "?";
 	} else 
 	    return decodeURIComponent(result.textContent);
     },
@@ -207,7 +208,7 @@ View.subclass('WebFile', NetRequestReporterTrait, {
 	var result = new Query("/D:multistatus/D:response").findAll(responseXML.documentElement);
 	var baseUrl = this.getModelValue("getRootNode");
 	
-	var files = result.map(function(rawNode) { return new Resource(rawNode, baseUrl).toURL(); });
+	var files = result.map(function(rawNode) { return new CollectionItem(rawNode, baseUrl).toURL(); });
 	files = this.arrangeFiles(files);
 	this.setModelValue("setDirectoryList", files);
     },
@@ -494,11 +495,10 @@ TwoPaneBrowser.subclass('FileBrowser', {
 	    var fileName = url.toString();
 	    var model = this;
 
+
 	    function queryProps(url, queryString, model) {
-		var query = new Query(queryString, {model: model, getContextNode: "getInspectedNode", setResults: "setAllProperties"});
-		var req = new NetRequest({model: model, setResponseXML: "setInspectedNode", setStatus: "setRequestStatus"});
-		req.propfind(url, 1);
 	    }
+
 
 	    var items = [
 		['edit in separate window', function(evt) {
@@ -522,7 +522,10 @@ TwoPaneBrowser.subclass('FileBrowser', {
 			this.AllProperties = nodes.map(function(n) { return Exporter.stringify(n) }).join('\n');
 			this.changed('getAllProperties', source);
 		    };
-		    queryProps(url, "/*", m);
+
+		    var res = new Resource(url, {model: m, setContentDocument: "setInspectedNode" });
+		    var query = new Query("/*", {model: m, getContextNode: "getInspectedNode", setResults: "setAllProperties"});
+		    res.fetchProperties();
 		    
 		    var infoPane = newTextPane(new Rectangle(0, 0, 500, 200), "");
 		    infoPane.innerMorph().acceptInput = false;
@@ -531,7 +534,9 @@ TwoPaneBrowser.subclass('FileBrowser', {
 		    this.world().addFramedMorph(infoPane, url.toString(), evt.point());
 		}],
 
-		["get XPath query morph", browser, "onMenuAddQueryMorph", url]
+		["get XPath query morph", browser, "onMenuAddQueryMorph", url],
+		["get modification time (temp)", browser, "onMenuShowModificationTime", url] // will go away
+
 	    ];
 	    
 	    if (url.filename().endsWith(".xhtml")) {
@@ -545,7 +550,7 @@ TwoPaneBrowser.subclass('FileBrowser', {
 				    setStatus: "setRequestStatus"}).get(url);
 		}]);
 		
-	    } else if (url.toString().endsWith(".js")) {
+	    } else if (url.filename().endsWith(".js")) {
 		items.push(["evaluate as Javascript", function(evt) {
 		    var importer = NetImporter();
 		    importer.onCodeLoad = function(error) {
@@ -569,9 +574,19 @@ TwoPaneBrowser.subclass('FileBrowser', {
 
     onMenuAddQueryMorph: function(url, evt) {
 	var req = new NetRequest().beSync();
-	var doc = req.propfind(url, 1).getResponseXML();
+	var doc = req.propfind(url, 1).getResponseXML(); // FIXME: make async
 	var m = new XPathQueryMorph(new Rectangle(0, 0, 500, 200), doc.documentElement);
 	WorldMorph.current().addFramedMorph(m, url.toString(), evt.point());
+    },
+
+    onMenuShowModificationTime: function(url, evt) {
+	// to be removed
+	var model = new SyntheticModel(["InspectedNode", "ModTime"]);
+	var res = new Resource(url, {model: model, setContentDocument: "setInspectedNode" });
+	var query = new Query("/D:multistatus/D:response/D:propstat/D:prop/D:getlastmodified", 
+	    {model: model, getContextNode: "getInspectedNode", setResults: "setModTime"});
+	res.fetchProperties(true);
+	WorldMorph.current().alert('result is ' + model.getModTime().map(function(n) { return Exporter.stringify(n) }).join('\n'));
     },
     
     removeNode: function(url) {

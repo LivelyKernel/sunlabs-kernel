@@ -505,6 +505,44 @@ View.subclass('Query',  {
 });
 
 
+View.subclass('Resource', NetRequestReporterTrait, {
+    documentation: "a remote document that can be fetched and queried",
+
+    pins: ["ContentDocument"],
+
+    initialize: function(url, plug) {
+	this.url = url;
+	this.connectModel(plug || new SyntheticModel(this.pins).makePlugSpec());
+    },
+
+    fetch: function(sync) {
+	// fetch the document content itself
+	var req = new NetRequest({model: this, setResponseXML: "pvtSetDoc", setStatus: "setRequestStatus"});
+	if (sync) req.beSync();
+	req.get(this.url);
+	return this;
+    },
+
+    fetchProperties: function(sync) {
+	// fetch the metadata
+	var req = new NetRequest({model: this, setResponseXML: "pvtSetDoc", setStatus: "setRequestStatus"});
+	if (sync) req.beSync();
+	req.propfind(this.url, 1);
+	return this;
+    },
+
+    pvtSetDoc: function(doc) {
+	this.setModelValue("setContentDocument", doc);
+    },
+
+    findAll: function(query, defaultValue) {
+	var content = this.getModelValue("getContentDocument", null);
+	if (!content) return defaultValue;
+	return query.findAll(content.documentElement, defaultValue);
+    }
+
+});
+
 
 
 Wrapper.subclass('FeedChannel', {
