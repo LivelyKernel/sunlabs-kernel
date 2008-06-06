@@ -1878,7 +1878,6 @@ ClipMorph.subclass('XenoMorph', {
     },
 
     fetchURL: function(url) {
-        var model = new Model();
         var req = new NetRequest({model: this, setResponseXML: "setContent"});//, setResponseText: "setContentText"});
         req.setContentType("text/xml");
         req.get(url);

@@ -520,15 +520,15 @@ View.subclass('Resource', NetRequestReporterTrait, {
 	var req = new NetRequest({model: this, setResponseXML: "pvtSetDoc", setStatus: "setRequestStatus"});
 	if (sync) req.beSync();
 	req.get(this.url);
-	return this;
+	return req;
     },
 
     fetchProperties: function(sync) {
-	// fetch the metadata
+	// fetch the metadata 
 	var req = new NetRequest({model: this, setResponseXML: "pvtSetDoc", setStatus: "setRequestStatus"});
 	if (sync) req.beSync();
 	req.propfind(this.url, 1);
-	return this;
+	return req;
     },
 
     pvtSetDoc: function(doc) {

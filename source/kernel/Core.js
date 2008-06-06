@@ -4902,6 +4902,7 @@ ViewTrait = {
 	// The model plug then provides a reference to the model, as well as
 	// the specific model accessor for the aspect being viewed, say "getItemList"
 	// Failure at any stage will return the default value.
+	// TODO: optionally verify that variable name is listed in this.pins
 	var plug = this.getModelPlug();
 	if (plug == null || plug.model == null || functionName == null) return defaultValue;
 	var func = plug.model[plug[functionName]];
@@ -4918,6 +4919,7 @@ ViewTrait = {
 	// a reference to this view.  This allows the model's changed() method
 	// to skip this view when broadcasting updateView(), and thus avoid
 	// needless computation for a view that is already up to date.
+	// TODO: optionally verify that variable name is listed in this.pins
 	var plug = this.getModelPlug();
 	if (plug == null || plug.model == null || functionName == null) return false;
 	var func = plug.model[plug[functionName]];

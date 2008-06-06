@@ -103,11 +103,9 @@ Morph.subclass('PackageMorph', {
 });
 
 
-
-
 Wrapper.subclass('CollectionItem', {
-    
     documentation: "Wrapper around information returned from WebDAV's PROPFIND",
+
     nameQ: new Query("D:href"),
     propertiesQ: new Query("D:propstat"),
     
@@ -148,7 +146,9 @@ Wrapper.subclass('CollectionItem', {
 
 
 View.subclass('WebFile', NetRequestReporterTrait, { 
-    documentation: "Read/Write file",
+    documentation: "Read/Write file",     // merge with Resource?
+    pins: ["-File", "Content", "+DirectoryList", "-RootNode"],
+
     
     getFile: function() {
 	return this.getModelValue('getFile');
@@ -184,7 +184,6 @@ View.subclass('WebFile', NetRequestReporterTrait, {
 	    break;
 	}
     },
-    
     
     fetchContent: function(url) {
 	this.lastFile = url; // FIXME, should be connected to a variable
@@ -381,9 +380,7 @@ Widget.subclass('TwoPaneBrowser', { // move to Widgets.js sometime
 	    } 
 	} 
 	this.lowerFetcher.fetchContent(newNode);
-
     },
-
 
     updateView: function(aspect, source) {
 	var p = this.modelPlug;
