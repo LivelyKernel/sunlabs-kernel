@@ -3688,33 +3688,6 @@ Morph.addMethods({
 	this.adjustForNewBounds();
     }.wrap(Morph.onLayoutChange('shape')),
 
-    internalSetBoundsOLD: function(newRect) {
-	// DI: Note get/setBounds should be deprecated in favor of get/setExtent and get/setPosition
-	// This is so that layout management can move things around without triggering redundant or
-	// recursive calls on adjustForNewBounds(q.v.)
-
-	// All calls on morph.setBounds should be converted to two calls as above (or just one if,
-	// eg, only the extent or position is changing).
-
-	// Of course setBounds remains entirely valid as a message to the *shape* object and, 
-	// in fact, shape.setBounds() will have to be called from both setPosition and setExtent
-	// but adjustForNewBounds will only need to be called from setExtent.
-
-	// Finally, there is an argument for calling layoutChanged from setPosition and setExtent,
-	// since the caller must do it otherwise.  This would simplify things overall.
-
-	var pos = newRect.topLeft();
-	var priorExtent = this.shape.bounds().extent();
-	this.setPosition(pos);
-	this.shape.setBounds(newRect.extent().extentAsRectangle()); // FIXME some shapes don't support setFromRect
-	
-	if (this.clipPath) {
-	    // console.log('clipped to new shape ' + this.shape);
-	    this.clipToShape();
-	}
-	if(!priorExtent.eqPt(newRect.extent())) this.adjustForNewBounds();
-    },
-
     internalSetBounds: function(newRect) {
 	// DI: Note get/setBounds should be deprecated in favor of get/setExtent and get/setPosition
 	// This is so that layout management can move things around without triggering redundant or
@@ -3730,13 +3703,15 @@ Morph.addMethods({
 	// Finally, there is an argument for calling layoutChanged from setPosition and setExtent,
 	// since the caller must do it otherwise.  This would simplify things overall.
 
-	var pos = newRect.topLeft();
-	var priorPos = this.getPosition();
-	var priorExtent = this.shape.bounds().extent();
-	if(!priorPos.eqPt(pos)) {  // Only set position if it changes
-		this.setPosition(pos);
+	// DI:  Note that there is an inconsistency here, in that we are reading and comparing
+	// the full bounds, yet if we set extent, it only affects the shape (ie, innerBounds)
+
+	var priorBounds = this.bounds();
+
+	if(!newRect.topLeft().eqPt(priorBounds.topLeft())) {  // Only set position if it changes
+		this.setPosition(newRect.topLeft());
 	}
-	if(!priorExtent.eqPt(newRect.extent())) {  // Only set extent if it changes
+	if(!newRect.extent().eqPt(priorBounds.extent())) {  // Only set extent if it changes
 		// FIXME some shapes don't support setFromRect
 		this.shape.setBounds(newRect.extent().extentAsRectangle());
  		this.adjustForNewBounds();
