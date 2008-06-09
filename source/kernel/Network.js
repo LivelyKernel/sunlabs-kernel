@@ -447,12 +447,13 @@ View.subclass('Resource', NetRequestReporterTrait, {
 
     initialize: function(url, plug) {
 	this.url = url;
+	this.forceXML = false;
 	this.connectModel(plug || new SyntheticModel(this.pins).makePlugSpec());
     },
 
     fetch: function(sync) {
 	// fetch the document content itself
-	var req = new NetRequest({model: this, setResponseXML: "pvtSetDoc", setStatus: "setRequestStatus"});
+	var req = new NetRequest({model: this, setResponseXML: "pvtSetDoc", setResponseText: "pvtSetText", setStatus: "setRequestStatus"});
 	if (sync) req.beSync();
 	req.get(this.url);
 	return req;
@@ -464,6 +465,14 @@ View.subclass('Resource', NetRequestReporterTrait, {
 	if (sync) req.beSync();
 	req.propfind(this.url, 1);
 	return req;
+    },
+
+    pvtSetText: function(txt) {
+	if (this.forceXML) {
+	    var parser = new DOMParser();
+	    var xml = parser.parseFromString(txt, "text/xml");
+	    this.pvtSetDoc(xml);
+	} else console.log("expected document, got text " + txt.truncate());
     },
 
     pvtSetDoc: function(doc) {
