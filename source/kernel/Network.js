@@ -126,45 +126,17 @@ Object.subclass('URL', {
 
 URL.source = new URL(document.baseURI);
 
-var Loader = {
-
-    loadScript: function(ns, url) {
-	ns = ns || Namespace.XHTML;
-	var script = NodeFactory.createNS(ns, "script");
-	var srcAttr = ns === Namespace.XHTML ? "src" : "href";
-	script.setAttributeNS(ns === Namespace.XHTML ? ns : Namespace.XLINK, scrAttr, url);
-	document.documentElement.appendChild(script);
-	//document.documentElement.removeChild(script);
-    },
-
-    insertContents: function(iframe) {
-	var node = iframe.contentDocument.documentElement;
-	document.documentElement.appendChild(document.importNode(node, true));
-    },
-
-    isLoadedFromNetwork: (function() {
-	// TODO this is not foolproof.
-	return document.baseURI.startsWith("http");
-    })(),
-
-    baseURL: (function() {
-	var segments = document.baseURI.split('/');
-	segments.splice(segments.length - 1, 1); // remove the last segment, incl query
-	return segments.join('/');
-    })()
-};
-
-Loader.proxy = (function() {
-    var str;
-    if (Loader.isLoadedFromNetwork && !Config.proxyURL) {
-	str = Loader.baseURL + "/proxy/"; // a default
+URL.proxy = (function() {
+    if (!URL.source.protocol.startsWith("file") && !Config.proxyURL) {
+	return URL.source.withFilename("/proxy/"); // a default
     } else {
-	str = Config.proxyURL;
+	var str = Config.proxyURL;
+	if (!str) return null;
+	if (!str.endsWith('/')) str += '/';
+	return new URL(str);
     }
-    if (!str) return null;
-    if (!str.endsWith('/')) str += '/';
-    return new URL(str);
 })();
+
 
 
 Object.subclass('NetRequestStatus', {
@@ -224,11 +196,11 @@ View.subclass('NetRequest', {
     
     rewriteURL: function(url) {
 	url = url instanceof URL ? url : new URL(url);
-        if (Loader.proxy) {
-	    if (Loader.proxy.hostname != url.hostname) { // FIXME port and protocol?
-		url = Loader.proxy.withFilename(url.hostname + url.fullPath());
-		// console.log("rewrote url " + Object.inspect(url) + " proxy " + Loader.proxy);
-		// return Loader.proxy + url.hostname + "/" + url.fullPath();
+        if (URL.proxy) {
+	    if (URL.proxy.hostname != url.hostname) { // FIXME port and protocol?
+		url = URL.proxy.withFilename(url.hostname + url.fullPath());
+		// console.log("rewrote url " + Object.inspect(url) + " proxy " + URL.proxy);
+		// return URL.proxy + url.hostname + "/" + url.fullPath();
 	    }
 	}
         return url;
@@ -443,19 +415,38 @@ Importer.subclass('NetImporter', NetRequestReporterTrait, {
 View.subclass('Resource', NetRequestReporterTrait, {
     documentation: "a remote document that can be fetched and queried",
 
-    pins: ["ContentDocument"],
+    pins: ["ContentDocument", "URL"],
 
     initialize: function(url, plug) {
-	this.url = url;
 	this.forceXML = false;
-	this.connectModel(plug || new SyntheticModel(this.pins).makePlugSpec());
+	if (!plug) plug = new SyntheticModel(this.pins).makePlugSpec();
+	this.connectModel(plug);
+	if (!this.setModelValue("setURL", url)) // not stored in the model, will store in a var.
+	    this.url = url;
+    },
+    
+    updateView: function(aspect, source) { // model vars: getURL, setFeedChannels
+        var p = this.modelPlug;
+	if (!p) return;
+	switch (aspect) {
+	case p.getURL:
+	    this.fetch(this.getURL()); // request headers?
+	    break;
+	}
     },
 
-    fetch: function(sync) {
+    getURL: function() {
+	var url = this.getModelValue("getURL");
+	if (!url) return this.url;
+	else return url;
+    },
+
+    fetch: function(sync, optRequestHeaders) {
 	// fetch the document content itself
 	var req = new NetRequest({model: this, setResponseXML: "pvtSetDoc", setResponseText: "pvtSetText", setStatus: "setRequestStatus"});
 	if (sync) req.beSync();
-	req.get(this.url);
+	if (optRequestHeaders) this.setRequestHeaders(optRequestHeaders);
+	req.get(this.getURL());
 	return req;
     },
 
@@ -463,7 +454,7 @@ View.subclass('Resource', NetRequestReporterTrait, {
 	// fetch the metadata 
 	var req = new NetRequest({model: this, setResponseXML: "pvtSetDoc", setStatus: "setRequestStatus"});
 	if (sync) req.beSync();
-	req.propfind(this.url, 1);
+	req.propfind(this.getURL(), 1);
 	return req;
     },
 

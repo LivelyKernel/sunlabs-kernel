@@ -125,7 +125,7 @@ Widget.subclass('SimpleBrowser', {
                     function() { showStatsViewer(theClass.prototype, className + "..."); }]);
             }
         }
-        if (Loader.isLoadedFromNetwork) {
+        if (!URL.source.protocol.startsWith("file")) {
             items.push(['import source files', function() {
                 if (! SourceControl) SourceControl = new SourceDatabase();
                 SourceControl.scanKernelFiles(["prototype.js", "defaultconfig.js", "localconfig.js",
@@ -368,32 +368,13 @@ Widget.subclass('SimpleInspector', {
 
 });
 
-TextMorph.subclass('XPathQueryMorph', {
-    documentation: "TextMorph with an associated contextNode, evals result in evaluating XPath queries",
-    
-    initialize: function($super, bounds, contextNode) {
-	$super(bounds, "");
-	this.contextNode = contextNode;
-    },
-
-    boundEval: function(str) {    
-	var xq = new Query(str);
-	return xq.findAll(this.contextNode, []).map(function(n) { return Exporter.stringify(n); }).join('\n');
-    }
-
-});
-
-
 // ===========================================================================
 // Style Editor Panel
 // ===========================================================================
   
-/**
- * @class StylePanel: Interactive style editor for morphs 
- */
-   
 WidgetModel.subclass('StylePanel', {
 
+    documentation: "Interactive style editor for morphs.",
     defaultViewExtent: pt(340,100),
     defaultViewTitle: "Style Panel",
 

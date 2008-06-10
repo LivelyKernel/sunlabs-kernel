@@ -565,3 +565,56 @@ Pen.script = ["P = new Pen();",
 "    { P.go(2*i); P.turn(89); };",
 "P.drawLines();",
 ""].join("\n");
+
+
+
+XenoMorph.addMethods({
+    test: function(url) {
+        url = url || Loader.baseURL + "/sample.xhtml";
+        console.log("url is " + url);
+        var xeno = new XenoMorph(pt(400,200).extentAsRectangle(), new URL(url));
+        WorldMorph.current().addFramedMorph(xeno, url, pt(50,50));
+    },
+    
+    test2: function() {
+// var text = '<object width="425" height="355"><param name="movie" value="http://www.youtube.com/v/a0qMe7Z3EYg&hl=en"></param><param name="wmode" value="transparent"></param><embed src="http://www.youtube.com/v/a0qMe7Z3EYg&hl=en" type="application/x-shockwave-flash" wmode="transparent" width="425" height="355"></embed></object>';
+        var text = '<xhtml><body><video width="425" height="355" src="http://www.youtube.com/swf/l.swf?video_id=a0qMe7Z3EYg&rel=1" /></body></xhtml>';
+
+        var xeno = new XenoMorph(pt(400,200).extentAsRectangle());
+        Object.extend(xeno, NetRequestReporterTrait);
+        xeno.setContentText(text, "application/xhtml+xml");
+        WorldMorph.current().addFramedMorph(xeno, 'video', pt(50,50));
+        return xeno;
+    },
+
+    setContentText: function(text, mimeType) {
+        var parser = new DOMParser();
+        var xhtml = parser.parseFromString(text, mimeType || "text/xml");
+        var node = xhtml.getElementsByTagName("body")[0];
+        this.body.parentNode.replaceChild(document.importNode(node, true), this.body);
+    },
+
+
+
+});
+
+
+var Loader = {
+
+    loadScript: function(ns, url) {
+	ns = ns || Namespace.XHTML;
+	var script = NodeFactory.createNS(ns, "script");
+	var srcAttr = ns === Namespace.XHTML ? "src" : "href";
+	script.setAttributeNS(ns === Namespace.XHTML ? ns : Namespace.XLINK, scrAttr, url);
+	document.documentElement.appendChild(script);
+	//document.documentElement.removeChild(script);
+    },
+
+    insertContents: function(iframe) {
+	var node = iframe.contentDocument.documentElement;
+	document.documentElement.appendChild(document.importNode(node, true));
+    }
+
+
+};
+

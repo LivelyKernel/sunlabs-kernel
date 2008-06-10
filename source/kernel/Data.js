@@ -77,6 +77,21 @@ View.subclass('Query',  {
 
 });
 
+TextMorph.subclass('XPathQueryMorph', {
+    documentation: "TextMorph with an associated contextNode, evals result in evaluating XPath queries",
+    
+    initialize: function($super, bounds, contextNode) {
+	$super(bounds, "");
+	this.contextNode = contextNode;
+    },
+
+    boundEval: function(str) {    
+	var xq = new Query(str);
+	return xq.findAll(this.contextNode, []).map(function(n) { return Exporter.stringify(n); }).join('\n');
+    }
+
+});
+
 
 /// RSS Feed support (will be rewritten)
 
@@ -123,7 +138,9 @@ Wrapper.subclass('FeedItem', {
 
 View.subclass('Feed', NetRequestReporterTrait, {
 
+    // FIXME: merge into Resource
     pins: ["-URL", "+FeedChannels"],
+    channelQuery: new Query("/rss/channel"),
 
     updateView: function(aspect, source) { // model vars: getURL, setFeedChannels
         var p = this.modelPlug;
@@ -157,7 +174,7 @@ View.subclass('Feed', NetRequestReporterTrait, {
     },
 
     parseChannels: function(elt) {
-	var results = new Query("/rss/channel").findAll(elt);
+	var results = this.channelQuery.findAll(elt);
         var channels = [];
         for (var i = 0; i < results.length; i++) {
 	    channels.push(new FeedChannel(results[i]));
