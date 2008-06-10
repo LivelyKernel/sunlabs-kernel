@@ -208,9 +208,6 @@ function populateWorldWithExamples(world) {
 
     if (Config.showTester) new TestWidget().openIn(world, pt(835, 450));
 
-    if (Config.showLivelyConsole  && window.console.consumers) {
-        new ConsoleWidget(50).openIn(world, pt(0, world.viewport().height - 210));
-    }
 
     // add to Link?
     function addLinkLabel(link, text) {
@@ -321,14 +318,17 @@ function populateWorldWithExamples(world) {
 
         // Sample executable script pane
         if (Config.showPenScript) {
-            if (Config.showTestText) widget = new TestTextMorph(pt(50,30).extent(pt(250,50)), Pen.script);
-            else widget = new TextMorph(pt(50,30).extent(pt(250,50)), Pen.script);
-            widget.align(widget.bounds().bottomRight(), world.bounds().topRight().addPt(pt(-150,100))); 
-            devWorld.myWorld.addMorph(widget);
+	    var parser = new CodeMarkupParser(URL.source.withFilename('Pen.lkml'));
+	    parser.onComplete = function() {
+		var widget;
+		if (Config.showTestText) widget = new TestTextMorph(pt(50,30).extent(pt(250,50)), Pen.script);
+		else widget = new TextMorph(pt(50,30).extent(pt(250,50)), Pen.script);
+		widget.align(widget.bounds().bottomRight(), world.bounds().topRight().addPt(pt(-150,100))); 
+		if (Config.showHilbertFun) Pen.hilbertFun(devWorld.myWorld, widget.bounds().bottomLeft().addXY(180,80));
+		devWorld.myWorld.addMorph(widget);
+	    }
+	    parser.parse();
         }
- 
-
-        if (Config.showHilbertFun) Pen.hilbertFun(devWorld.myWorld, widget.bounds().bottomLeft().addXY(180,80));
 
         if (Config.showWebStore) {
             var store = new FileBrowser();
@@ -371,6 +371,11 @@ function populateWorldWithExamples(world) {
 	    importer.loadCode(URL.source.withFilename('phone.js'));
         }
     }
+
+    if (Config.showLivelyConsole  && window.console.consumers) {
+        new ConsoleWidget(50).openIn(world, pt(0, world.viewport().height - 210));
+    }
+
     return world;
 }
 
