@@ -49,6 +49,7 @@ View.subclass('Query',  {
 	}
     },
 
+/*
     resolver: function(prefix) {
 	if (prefix == null || prefix == "") 
 	    prefix = "SVG";
@@ -56,6 +57,7 @@ View.subclass('Query',  {
 	    prefix = prefix.toUpperCase();
 	return Namespace[prefix];
     },
+*/
 
     findAll: function(node, defaultValue) {
 	this.establishContext(node);
@@ -65,6 +67,7 @@ View.subclass('Query',  {
 	while (res = result.iterateNext()) accumulator.push(res);
 	return accumulator.length > 0 || defaultValue === undefined ? accumulator : defaultValue;
     },
+
 
     findFirst: function(node) {
 	this.establishContext(node);
