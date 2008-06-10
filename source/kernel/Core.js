@@ -4921,11 +4921,11 @@ ViewTrait = {
 	// needless computation for a view that is already up to date.
 	// TODO: optionally verify that variable name is listed in this.pins
 	var plug = this.getModelPlug();
-	if (plug == null || plug.model == null || functionName == null) return false;
+	if (plug == null || plug.model == null || functionName == null) return null;
 	var func = plug.model[plug[functionName]];
-	if (func == null) return false;
+	if (func == null) return null;
 	func.call(plug.model, newValue, this);
-	return true;
+	return plug[functionName];
     },
 
     updateView: function(aspect, controller) {
