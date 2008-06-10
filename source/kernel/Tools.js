@@ -1667,5 +1667,92 @@ Object.subclass('SourceCodeDescriptor', {
 
 });
 
+View.subclass('CodeMarkupParser', {
+    documentation: "Evaluates code in the lkml code format",
+    // this is the first attempt, format subject to change
+    classQuery: new Query("/code/class"),
+    protoQuery: new Query("proto"),
+    staticQuery: new Query("static"),
+    
+    initialize: function(url) {
+	var model = new SyntheticModel(["Document"]);
+	this.resource = new Resource(url, {model: model, setContentDocument: "setDocument"});
+	this.resource.forceXML = true;
+	this.connectModel({model: model, getDocument: "getDocument"});
+    },
+
+    parse: function() {
+	this.resource.fetch();
+    },
+    
+    updateView: function(aspect, source) {
+        var p = this.modelPlug;
+        if (!p) return;
+        if (aspect == p.getDocument || aspect == 'all') {
+	    this.parseCodeDocument(this.getModelValue("getDocument"));
+	}
+    },
+
+    parseCodeDocument: function(doc) {
+	var classes = this.classQuery.findAll(doc);
+	for (var i = 0; i < classes.length; i++) 
+	    this.parseClass(classes[i], doc);
+	this.onComplete();
+    },
+
+    onComplete: function() {
+	// override to supply an action 
+    }, 
+
+    nameOf: function(element) {
+	var name = element.getAttributeNS(null, "name");
+	if (!name) throw new Error("no class name");
+	return name;
+    },
+
+    parseClass: function(element, doc) {
+	// note eval oreder first parse proto methods, then static methods.
+	var superClass = Global[element.getAttributeNS(null, "super")];
+	if (!superClass || !Class.isClass(superClass)) throw new Error('no superclass');
+
+	var className = this.nameOf(element);
+	var cls = superClass.subclass(className);
+	
+	var protos = this.protoQuery.findAll(element);
+	for (var i = 0; i < protos.length; i++)
+	    this.parseProto(protos[i], cls);
+
+	var statics = this.staticQuery.findAll(element);
+	for (var i = 0; i < statics.length; i++)
+	    this.parseStatic(statics[i], cls);
+    },
+
+    evaluateElement: function(element) {
+	try {
+	    // use intermediate value because eval doesn't seem to return function
+	    // values.
+	    // this would be a great place to insert a Cajita evaluator.
+	    return eval("CodeMarkupParser._=" + element.textContent);
+	} catch (er) { 
+	    console.log("error " + er + " parsing " + element.textContent);
+	    return undefined;
+	}
+    },
+
+    parseProto: function(protoElement, cls) {
+	var name = this.nameOf(protoElement);
+	var mixin = {};
+	mixin[name] = this.evaluateElement(protoElement);
+	cls.addMethods(mixin);
+    },
+
+    parseStatic: function(staticElement, cls) {
+	var name = this.nameOf(staticElement);
+	cls[name] = this.evaluateElement(staticElement);
+    }
+
+});
+
+
 }).logCompletion("Tools.js")(Global);
 
