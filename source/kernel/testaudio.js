@@ -1,5 +1,6 @@
 // just evaluate  (load) this file from  the file browser  to make the
 // browser play the sound encoded in a data URI. Works in Safari 3.1.
+// comment to test svn
 
 (function() {
     var encodedClick = "UklGRkwCAABXQVZFZm10IBAAAAABAAEAIlYAACJWAAABAAgAZGF0YSgCAACAgICAgICAgICAgICA"
