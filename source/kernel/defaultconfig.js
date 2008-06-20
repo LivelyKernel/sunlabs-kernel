@@ -10,6 +10,10 @@
 
 /**
  * defaultconfig.js.  System default configuration.
+ *
+ *  Note that if a file localconfig.js can be found, it will be read
+ *  immediately after this one, thus allowing any of these settings
+ *  to be overridden.
  */
 
 var UserAgent = (function() {
@@ -121,7 +125,49 @@ var Config = {
 
     // load serialized worlds instead of building them from Javascript
     loadSerializedSubworlds: true
-
-
 }
 
+// These various overrides of the above have been moved here from main.js
+//	so that they can be overridden in localconfig.js
+//	at some point we should refactor this file nicely.
+Config.showClock = true;
+Config.showStar = true;
+Config.showHilbertFun = true;
+Config.showPenScript = true;
+Config.showTester = true;
+Config.showBitmap = false;
+Config.showMap = !Config.skipMostExamples;
+Config.showSampleMorphs = true;
+Config.showTextSamples = true;
+// Config.random is used as the ID for the messenger morph for each user
+Config.random = Math.round(Math.random()*2147483647);
+
+// More complex demos
+Object.extend(Config, {
+    showClipMorph: !Config.skipMostExamples,
+    show3DLogo: !Config.skipMostExamples,
+    showAsteroids: !Config.skipMostExamples,
+    showEngine: !Config.skipMostExamples,
+    showIcon: !Config.skipMostExamples,
+    showWeather: !Config.skipMostExamples,
+    showStocks: !Config.skipMostExamples,
+    showCanvasScape: !Config.skipMostExamples,
+    showRSSReader: !Config.skipMostExamples,
+    showSquiggle: !Config.skipMostExamples,
+    showWebStore: !Config.skipMostExamples || Config.browserAnyway,
+    showVideo: !Config.skipMostExamples,
+    // Worlds
+    showInnerWorld: true, //!Config.skipMostExamples;
+    showSlideWorld: true, //!Config.skipMostExamples;
+    showDeveloperWorld: true //!Config.skipMostExamples;
+});
+
+
+//	*** Minimal World Only ***
+//  In spite of all the foregoing complexity, merely changing this conditional
+//	to true will bypass all examples and worlds, and only create a few
+//	simple morphs in a simple world.
+//
+//	If you copy these lines to localconfig.js you won't need
+//	to alter any of the supplied Lively Kernel files.
+if(false) {	Config.showInnerWorld = false;	Config.showDeveloperWorld = false;	Config.showSlideWorld = false;	Config.showOnlySimpleMorphs = true;	Config.showStar = false;  // true to show star	Config.spinningStar = false;  // true to enable spinning}

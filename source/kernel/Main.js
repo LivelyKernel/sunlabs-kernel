@@ -15,39 +15,8 @@ var Application;
  */
 (function(module) {
 
-// Small demos that will always be shown
-Config.showClock = true;
-Config.showStar = true;
-Config.showHilbertFun = true;
-Config.showPenScript = true;
-Config.showTester = true;
-Config.showBitmap = false;
-Config.showMap = !Config.skipMostExamples;
-Config.showSampleMorphs = true;
-Config.showTextSamples = true;
-// Config.random is used as the ID for the messenger morph for each user
-Config.random = Math.round(Math.random()*2147483647);
-
-// More complex demos
-Object.extend(Config, {
-    showClipMorph: !Config.skipMostExamples,
-    show3DLogo: !Config.skipMostExamples,
-    showAsteroids: !Config.skipMostExamples,
-    showEngine: !Config.skipMostExamples,
-    showIcon: !Config.skipMostExamples,
-    showWeather: !Config.skipMostExamples,
-    showStocks: !Config.skipMostExamples,
-    showCanvasScape: !Config.skipMostExamples,
-    showRSSReader: !Config.skipMostExamples,
-    showSquiggle: !Config.skipMostExamples,
-    showWebStore: !Config.skipMostExamples || Config.browserAnyway,
-    showVideo: !Config.skipMostExamples,
-    // Worlds
-    showInnerWorld: true, //!Config.skipMostExamples;
-    showSlideWorld: true, //!Config.skipMostExamples;
-    showDeveloperWorld: true //!Config.skipMostExamples;
-
-});
+//Note all demo set-up flags have been moved to defaultconfig.js
+//	so that they can be overridden locally by localconfig.js
 
 // Name the methods for showStack
 if (Config.tallyLOC && Function.tallyLOC) Function.tallyLOC();  
@@ -59,7 +28,7 @@ if (Config.debugExtras && Function.installStackTracers) Function.installStackTra
 Config.showBrowser = !Config.skipMostExamples || Config.browserAnyway;
 
 
-function populateSlideWorld(world) {
+function makeSlideWorld(world) {
     var link = new LinkMorph(null, pt(60, 400));
     // KP: note that element deletion interferes with iteration, so
     // we make an array first and then remove 
@@ -67,28 +36,29 @@ function populateSlideWorld(world) {
 	if (m instanceof LinkMorph) return;
 	m.remove(); 
     });
+    populateSlideWorld(link.myWorld)
+    return link;
+}
     
-    // link.setPosition(link.position().addXY(65,0));
-    var loc = pt(100, 80);
-    var captions = [
-	"               JavaScript",
-	"                 Widgets",
-	"      HTML, CSS, DOM, etc.",
-	"                Browser",
-	"    OS: Network, Graphics, ..."
-    ];
-    
-    for (var i = 0; i < captions.length; i++) { // add boxed text
-	var txt = new TextMorph(loc.extent(pt(300, 50)), captions[i]);
-	txt.applyStyle({fontSize: 20, fill: Color.hsb(70*i,0.7,0.8)});
-	loc = loc.addXY(0,35);
-	link.myWorld.addMorph(txt); 
+function populateSlideWorld(world) {
+    if(Config.showWebStack) {
+	var loc = pt(100, 80);
+	var captions = [
+		"               JavaScript",
+		"                 Widgets",
+		"      HTML, CSS, DOM, etc.",
+		"                Browser",
+		"    OS: Network, Graphics, ..."
+	];
+	for (var i = 0; i < captions.length; i++) { // add boxed text
+		var txt = new TextMorph(loc.extent(pt(300, 50)), captions[i]);
+		txt.applyStyle({fontSize: 20, fill: Color.hsb(70*i,0.7,0.8)});
+		loc = loc.addXY(0,35);
+		world.addMorph(txt); 
+	}
     }
     
-    world.addMorph(link); 
-    
     if (Config.showStar) {  // Make a star
-	
 	var makeStarVertices = function(r,center,startAngle) {
             var vertices = [];
             var nVerts = 10;
@@ -100,13 +70,11 @@ function populateSlideWorld(world) {
             }
             return vertices; 
 	}
-	
 	widget = Morph.makePolygon(makeStarVertices(50,pt(0,0),0), 1, Color.black, Color.yellow);
 	widget.setPosition(pt(125, 275));
-	link.myWorld.addMorph(widget);
+	world.addMorph(widget);
 	
-	var spinningStar = !Config.skipMostExamples || Config.spinningStar;
-	if (spinningStar) {  // Make the star spin as a test of stepping
+	if (Config.showStar && Config.spinningStar) {  // Make the star spin as a test of stepping
             widget.startStepping(60, "rotateBy", 0.1);
 	}
     }
@@ -121,41 +89,62 @@ function populateSlideWorld(world) {
         // Create a sample rectangle       
         widget = new Morph(loc.extent(widgetExtent), "rect");
         widget.setFill(colors[0]);
-        link.myWorld.addMorph(widget);
+        world.addMorph(widget);
 	
         // Create a sample ellipse
         widget = new Morph(loc.addPt(dx).extent(widgetExtent), "ellipse");
         widget.setFill(colors[1]);
-        link.myWorld.addMorph(widget);
+        world.addMorph(widget);
 	
         // Create a sample line
         loc = loc.addPt(dy);
         widget = Morph.makeLine([loc.addXY(0,15),loc.addXY(70,15)], 2, Color.black);
-        link.myWorld.addMorph(widget);
+        world.addMorph(widget);
 	
         // Create a sample polygon
         widget = Morph.makePolygon([pt(0,0),pt(70,0),pt(40,30),pt(0,0)], 1, Color.black, colors[2]);
-        link.myWorld.addMorph(widget);
+        world.addMorph(widget);
         widget.setPosition(loc.addPt(dx));
         loc = loc.addPt(dy);    
 	
         // Create sample text widgets
         if (Config.showTextSamples) {
             widget = new TextMorph(loc.extent(pt(100,50)),"Big Text"); // big text
-            link.myWorld.addMorph(widget.applyStyle({fontSize: 20, textColor: Color.blue}));
+            world.addMorph(widget.applyStyle({fontSize: 20, textColor: Color.blue}));
 	    
             widget = new TextMorph(loc.addPt(dx).extent(pt(140,50)),"Unbordered"); // unbordered text
-            link.myWorld.addMorph(widget.applyStyle({fontSize: 20, borderWidth: 0, fill: null})); 
+            world.addMorph(widget.applyStyle({fontSize: 20, borderWidth: 0, fill: null})); 
         }
     }
-    return link;
 }
+
+
+	// These stubs allow us to run without Tools.js
+	if(!Function.showStack) {
+	    Object.extend(Function, {
+		showStack: function(useViewer) {},
+		resetDebuggingStack: function(useViewer) {}
+	    });
+	}
+	// This stub allows us to run without Widgets.js
+	if(! WindowMorph) {
+	    WindowMorph = function() {};
+	}
 
 
 function populateWorldWithExamples(world) {
     
+    if (Config.showOnlySimpleMorphs) {
+	// Simply put basic shapes in world and nothing else (for testing)
+	populateSlideWorld(world);
+	// If Tools.js is loaded, and Config.debugExtras == true
+	//   then the following call will print a trace of populateSlideWorld
+	//   to the console...
+	// Function.trace(function() {populateSlideWorld(world) });
+	return;
+    }
+
     var widget;
-    
 
     if (Config.showClock) {
         widget = new ClockMorph(pt(60, 60), 50);
@@ -299,7 +288,7 @@ function populateWorldWithExamples(world) {
 	    importer.loadMarkup(URL.source.withFilename("slide.xhtml"));
 	    
 	} else { 
-	    var link = populateSlideWorld(world);
+	    var link = makeSlideWorld(world);
 	    addLinkLabel(link, "Simple example morphs");
 	}
     }
