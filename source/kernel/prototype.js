@@ -90,15 +90,15 @@ Object.extend(Function.prototype, {
     return names.length == 1 && !names[0] ? [] : names;
   },
 
-  bind: function() {
+  bind: function bind() {
     if (arguments.length < 2 && arguments[0] === undefined) return this;
     var __method = this, args = $A(arguments), object = args.shift();
-    return function() {
+    return function $bindAdvice() {
       return __method.apply(object, args.concat($A(arguments)));
     }
   },
 
-  curry: function() {
+  curry: function curry() {
     if (!arguments.length) return this;
     var __method = this, args = $A(arguments);
     return function() {
@@ -106,16 +106,16 @@ Object.extend(Function.prototype, {
     }
   },
 
-  delay: function() {
+  delay: function delay() {
     var __method = this, args = $A(arguments), timeout = args.shift() * 1000;
     return window.setTimeout(function() {
       return __method.apply(__method, args);
     }, timeout);
   },
 
-  wrap: function(wrapper) {
+  wrap: function wrap(wrapper) {
     var __method = this;
-    return function() {
+    return function $wrapAdvice() {
       return wrapper.apply(this, [__method.bind(this)].concat($A(arguments)));
     }
   }

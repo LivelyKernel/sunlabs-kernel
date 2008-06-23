@@ -107,9 +107,9 @@ Object.extend(Function.prototype, {
 		    toString: function() { return method.toString() },
 		    originalFunction: method
 		});
-	    }
-
+	    } 
 	    this.prototype[property] = value;
+	    
 	    if (Object.isFunction(value)) {
 		for ( ; value; value = value.originalFunction) {
 		    if (value.methodName) {
@@ -131,6 +131,50 @@ Object.extend(Function.prototype, {
 
 
 var Class = {
+
+    def: function(constr, superConstr, optProtos, optStatics) {
+	// Main method of the LK class system.
+
+	// {className} is the name of the new class constructor which this method synthesizes
+	// and binds to {className} in the Global namespace. 
+	// Remaining arguments are (inline) properties and methods to be copied into the prototype 
+	// of the newly created constructor.
+
+	// modified from prototype.js
+
+	function klass() {
+	    // check for the existence of Importer, which may not be defined very early on
+	    if (Global.Importer && (arguments[0] instanceof Importer || arguments[0] === Importer.prototype)) { 
+		this.deserialize.apply(this, arguments);
+	    } else if (Global.Copier && (arguments[0] instanceof Copier || arguments[0] === Copier.prototype)) {
+		this.copyFrom.apply(this, arguments);
+	    } else {
+		this.initialize.apply(this, arguments);
+	    }
+	}
+
+	klass.superclass = superConstr;
+
+	var protoclass = function() { }; // that's the constructor of the new prototype object
+	protoclass.prototype = superConstr.prototype;
+
+	klass.prototype = new protoclass();
+	
+	// Object.extend(klass.prototype, constr.prototype);
+	klass.prototype.constructor = klass;
+	var className  = constr.getName();
+	klass.addMethods({initialize: constr});
+	// KP: .name would be better but js ignores .name on anonymous functions
+	klass.type = className;
+
+	
+	if (optProtos) klass.addMethods(optProtos);
+	if (optStatics) Object.extend(klass, optStatics);
+	
+	Global[className] = klass;
+	return klass;
+    },
+
     
     isClass: function(object) {
 	return (object instanceof Function) && (object.superclass || object === Object);
@@ -3497,19 +3541,19 @@ Visual.subclass("Morph", {
 	    }
 	}
     },
-
-    newMorphId: (function() {
+    
+    newMorphId: (function() { 
 	var morphCounter = 0;
 	return function() {
 	    return ++ morphCounter;
 	}
     })()
-
+    
 });
 
 // Functions for change management
 Object.extend(Morph, {
-
+    
     onLayoutChange: function(fieldName) { 
 	return function(/* arguments*/) {
 	    var priorExtent = this.innerBounds().extent();

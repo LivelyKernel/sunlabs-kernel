@@ -1259,7 +1259,7 @@ Object.subclass('AsteroidsSprite', {
 
 ClipMorph.subclass("GameMorph", {
     
-    runAsteroidsGame: function() {
+    runAsteroidsGame: function runAsteroidsGame() {
 
     // This is the main loop.
     
