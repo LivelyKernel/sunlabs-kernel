@@ -792,7 +792,7 @@ function showStatsViewer(profilee,title) {
     
     Object.extend(Function, {
 	
-	resetDebuggingStack: function() {
+	resetDebuggingStack: function resetDebuggingStack() {
 	    var rootMethod = arguments.callee.caller;
 	    rootContext = new TracerStackNode(null, rootMethod);
 	    currentContext = rootContext;

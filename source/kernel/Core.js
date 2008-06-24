@@ -427,7 +427,7 @@ Object.extend(Function.prototype, {
     logErrors: function(prefix) {
 	if (Config.ignoreAdvice) return this;
 	
-	var advice = function (proceed/*,args*/) {
+	var advice = function logErrorsAdvice(proceed/*,args*/) {
 	    var args = $A(arguments); args.shift(); 
 	    try {
 		return proceed.apply(this, args); 
@@ -449,7 +449,7 @@ Object.extend(Function.prototype, {
     logCompletion: function(module) {
 	if (Config.ignoreAdvice) return this;
 	
-	var advice = function(proceed) {
+	var advice = function logCompletionAdvice(proceed) {
 	    var args = $A(arguments); args.shift(); 
 	    try {
 		var result = proceed.apply(this, args);
@@ -474,7 +474,7 @@ Object.extend(Function.prototype, {
 	if (Config.ignoreAdvice) return this;
 
 	var original = this;
-	var advice = function(proceed) {
+	var advice = function logCallsAdvice(proceed) {
 	    var args = $A(arguments); args.shift(); 
 	    var result = proceed.apply(this, args);
 	    if (isUrgent) { 
@@ -494,7 +494,7 @@ Object.extend(Function.prototype, {
     },
     
     traceCalls: function(stack) {
-	var advice = function(proceed) {
+	var advice = function traceCallsAdvice(proceed) {
 	    var args = $A(arguments); args.shift();
 	    stack.push(args);
 	    var result = proceed.apply(this, args);
@@ -3555,7 +3555,7 @@ Visual.subclass("Morph", {
 Object.extend(Morph, {
     
     onLayoutChange: function(fieldName) { 
-	return function(/* arguments*/) {
+	return function layoutChangeAdvice(/* arguments*/) {
 	    var priorExtent = this.innerBounds().extent();
 	    this.changed();
 	    var args = $A(arguments);
@@ -4183,7 +4183,7 @@ Morph.addMethods({
 
     // KP: equivalent of the DOM capture phase
     // KP: hasFocus is true if the receiver is the hands's focus (?)
-    captureMouseEvent: function(evt, hasFocus) {
+    captureMouseEvent: function Morph$captureMouseEvent(evt, hasFocus) {
 	// Dispatch this event to the frontmost receptive morph that contains it
 	// Note boolean return for event consumption has not been QA'd
 	// if we're using the fisheye... 
@@ -4587,7 +4587,7 @@ Wrapper.subclass('SchedulableAction', {
 	world.startSteppingFor(this);
     },
 
-    exec: function() {
+    exec: function SchedulableAction$exec() {
 	if (!this.actor) {
 	    console.warn("no actor on script %s", this);
 	    return null;
@@ -4779,7 +4779,7 @@ Morph.addMethods({
 	return true;
     },
 
-    layoutChanged: function() {
+    layoutChanged: function Morph$layoutChanged() {
 	// layoutChanged() is called whenever the cached fullBounds may have changed
 	// It invalidates the cache, which will be recomputed when bounds() is called
 	// Naturally it must be propagated up its owner chain.
@@ -5267,12 +5267,12 @@ Morph.subclass("PasteUpMorph", {
         return $super(bounds, shapeType);
     },
     
-    captureMouseEvent: function($super, evt, hasFocus) {
+    captureMouseEvent: function PasteUpMorph$captureMouseEvent($super, evt, hasFocus) {
         if (evt.type == "MouseDown" && this.onMouseDown(evt)) return; 
         $super(evt, hasFocus); 
     },
 
-    onMouseDown: function($super, evt) {  //default behavior is to grab a submorph
+    onMouseDown: function PasteUpMorph$onMouseDown($super, evt) {  //default behavior is to grab a submorph
 	$super(evt);
         var m = this.morphToReceiveEvent(evt);
         if (m == null) { 
@@ -5598,13 +5598,13 @@ PasteUpMorph.subclass("WorldMorph", {
 	}
     },
     
-    inspectScheduledActions: function () {
+    inspectScheduledActions: function() {
         // inspect an array of all the actions in the scheduler.  Note this
         // is not the same as scheduledActions which is an array of tuples with times
         new SimpleInspector(this.scheduledActions.map(function(each) { return each[1]; })).open();
     },
 
-    doOneCycle: function (world) {
+    doOneCycle: function WorldMorph$doOneCycle(world) {
         // Process scheduled scripts
 
         // Run through the scheduledActions queue, executing those whose time has come
@@ -5925,7 +5925,7 @@ Morph.subclass("HandMorph", {
     },
 
     // this is the DOM Event callback
-    handleEvent: function(rawEvt) {
+    handleEvent: function HandMorph$handleEvent(rawEvt) {
         var evt = new Event(rawEvt);
         evt.hand = this;
 
@@ -5952,7 +5952,7 @@ Morph.subclass("HandMorph", {
 	this.profileArmed = evtType;  // either "MouseDown" or "MouseUp"
     },
 
-    handleMouseEvent: function(evt) { 
+    handleMouseEvent: function HandMorph$handleMouseEvent(evt) { 
 	if(!Config.debugExtras || !this.profileArmed || this.profileArmed != evt.type) {
 		// Profile not armed or event doesnt match
 		return this.reallyHandleMouseEvent(evt);
@@ -5964,7 +5964,7 @@ Morph.subclass("HandMorph", {
 	return result;
     },
 
-    reallyHandleMouseEvent: function(evt) { 
+    reallyHandleMouseEvent: function HandMorph$reallyHandleMouseEvent(evt) { 
 
         evt.setButtonPressedAndPriorPoint(this.mouseButtonPressed, 
 					  this.lastMouseEvent ? this.lastMouseEvent.mousePoint : null);
@@ -6086,7 +6086,7 @@ Morph.subclass("HandMorph", {
 	}
     },
 
-    updateGrabHalo: function() {
+    updateGrabHalo: function Morph$updateGrabHalo() {
 	if (this.grabHaloMorph) {
 	    this.grabHaloMorph.setBounds(this.topSubmorph().bounds(true).expandBy(3));
 	    if (this.grabHaloMorph.positionLabel) {

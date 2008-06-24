@@ -93,7 +93,7 @@ Object.extend(Function.prototype, {
   bind: function bind() {
     if (arguments.length < 2 && arguments[0] === undefined) return this;
     var __method = this, args = $A(arguments), object = args.shift();
-    return function $bindAdvice() {
+    return function bindAdvice() {
       return __method.apply(object, args.concat($A(arguments)));
     }
   },
@@ -115,7 +115,7 @@ Object.extend(Function.prototype, {
 
   wrap: function wrap(wrapper) {
     var __method = this;
-    return function $wrapAdvice() {
+    return function wrapAdvice() {
       return wrapper.apply(this, [__method.bind(this)].concat($A(arguments)));
     }
   }
