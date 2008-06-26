@@ -128,7 +128,7 @@ Widget.subclass('SimpleBrowser', {
         if (!URL.source.protocol.startsWith("file")) {
             items.push(['import source files', function() {
                 if (! SourceControl) SourceControl = new SourceDatabase();
-                SourceControl.scanKernelFiles(["prototype.js", "defaultconfig.js", "localconfig.js",
+                SourceControl.scanKernelFiles(["miniprototype.js", "defaultconfig.js", "localconfig.js",
                     "Main.js", "Core.js", "Text.js",
                     "Widgets.js", "Network.js", "Storage.js", "Tools.js",
                     "Examples.js", "WebPIM.js", "phone.js"]);
