@@ -1,0 +1,22 @@
+<html>
+<head>
+</head>
+<body>
+<javascript>
+
+
+var command = ["svn", "update", "../.."];
+var p = spawn(command);
+
+var s = "running " + command;
+s += "<br>";
+s += "exit value " + p.exitValue;
+s += "<br>";
+if (p.exitValue !== 0) s+= p.stderr.join("<br>"); else  s+= p.stdout.join("<br>");
+
+s;
+
+
+</javascript>
+</body>
+</html>
