@@ -1,5 +1,5 @@
-window = this;
-load('../kernel/miniprototype.js');
+//var window = this;
+//load('../kernel/miniprototype.js');
 
 function parseProps(props, line) {
     var parts = line.match("([^:]*):(.*)");
