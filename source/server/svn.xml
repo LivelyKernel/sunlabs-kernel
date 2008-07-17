@@ -12,17 +12,16 @@
 
 var command = ["svn"];
 
-var args = request.props.getProperty("query.command");
+var args = Server.getQuery("command");
 command.push(args || "info");
 
 var p = spawn(command);
 
 var s = "";
-if (request.props.getProperty("query.debug"))
-    s += prettyPrintProplist(request.props);
+if (Server.getQuery("debug")) s += Server.prettyPrintProplist(request.props);
 
-s += "running " + command +  "<br />" + "exit value " + p.code + "<br />";
-if (p.code !== 0) s+= p.stderr.join("<br />"); else  s+= p.stdout.join("<br />");
+s += "running " + command +  nl + "exit value " + p.code + nl;
+if (p.code !== 0) s+= p.stderr.join(nl); else  s+= p.stdout.join(nl);
 
 s;
 
