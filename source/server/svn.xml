@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<body>
+<!-- server side javascript -->
+
+<javascript>
+
+
+var command = ["svn"];
+
+var args = request.props.getProperty("query.command");
+command.push(args || "info");
+
+var p = spawn(command);
+
+var s = "";
+if (request.props.getProperty("query.debug"))
+    s += prettyPrintProplist(request.props);
+
+s += "running " + command +  "<br />" + "exit value " + p.code + "<br />";
+if (p.code !== 0) s+= p.stderr.join("<br />"); else  s+= p.stdout.join("<br />");
+
+s;
+
+
+</javascript>
+</body>
+</html>
