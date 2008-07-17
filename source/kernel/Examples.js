@@ -1320,7 +1320,7 @@ ClipMorph.subclass("GameMorph", {
     // Set new timer delay for the game
     if (this.timeoutID) window.clearTimeout(this.timeoutID);
     if (!this.timerCallback) this.timerCallback = arguments.callee.bind(this).logErrors('Asteroid Timer');
-    this.timeoutID = window.setTimeout(this.timerCallback, DELAY);
+    this.timeoutID = Global.setTimeout(this.timerCallback, DELAY);
 
     }
 

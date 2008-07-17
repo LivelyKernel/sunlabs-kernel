@@ -13,7 +13,7 @@
  * as well as the core Morphic graphics framework. 
  */
 
-var Global = this;
+var Global = this.window.top || this.window; // set to the context enclosing the SVG context.
 
 // ===========================================================================
 // Our JS library extensions (JS 1.5, no particular browser or graphics engine)
@@ -629,6 +629,7 @@ Global.console && Global.console.log("loaded basic library");
     if (platformConsole.warn && platformConsole.info && platformConsole.assert) {
 	// it's a Firebug/Firebug lite console, it does all we want, so no extra work necessary
 	Global.console = platformConsole;
+	Global.console.consumers = [platformConsole]; // compatibility fix
     } else {
 	// rebind to something that has all the calls
 	Global.console = {
@@ -636,13 +637,19 @@ Global.console && Global.console.log("loaded basic library");
 	    consumers: [ platformConsole], // new LogWindow() ],
 	    
 	    warn: function() {
-		this.consumers.invoke('log', "Warn: " + Strings.formatFromArray($A(arguments)));
+		var args = $A(arguments);
+		this.consumers.forEach(function(c) { 
+		    if (c.warn) c.warn.apply(c, args); 
+		    else c.log("Warn: " + Strings.formatFromArray(args));
+		});
 	    },
 	    
 	    info: function() {
 		var args = $A(arguments);
-		var rcv = args.shift();
-		this.consumers.invoke('log', "Info: " + Strings.formatFromArray($A(arguments)));
+		this.consumers.forEach(function(c) { 
+		    if (c.info) c.info.apply(c, args); 
+		    else c.log("Info: " + Strings.formatFromArray(args));
+		});
 	    },
 	    
 	    log: function() {
@@ -5407,7 +5414,7 @@ PasteUpMorph.subclass("WorldMorph", {
         this.scheduledActions = [];  // an array of schedulableActions to be evaluated
         this.lastStepTime = (new Date()).getTime();
         this.mainLoopFunc = this.doOneCycle.bind(this).logErrors('Main Loop');
-        this.mainLoop = window.setTimeout(this.mainLoopFunc, 30);
+        this.mainLoop = Global.setTimeout(this.mainLoopFunc, 30);
         this.worldId = ++WorldMorph.worldCount;
 
         return this;
@@ -5677,13 +5684,13 @@ PasteUpMorph.subclass("WorldMorph", {
         if (timeOfNextStep == Infinity) { // didn't find anything to cycle through
             this.mainLoop = null; 
         } else {
-            this.mainLoop = window.setTimeout(this.mainLoopFunc, timeOfNextStep - this.lastStepTime);
+            this.mainLoop = Global.setTimeout(this.mainLoopFunc, timeOfNextStep - this.lastStepTime);
         }
     },
 
     kickstartMainLoop: function() {
         // kickstart the timer (note arbitrary delay)
-        this.mainLoop = window.setTimeout(this.mainLoopFunc, 10);
+        this.mainLoop = Global.setTimeout(this.mainLoopFunc, 10);
     },
 
     scheduleAction: function(msTime, action) { 
