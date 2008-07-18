@@ -170,4 +170,11 @@ Object.extend(Config, {
 //
 //	If you copy these lines to localconfig.js you won't need
 //	to alter any of the supplied Lively Kernel files.
-if(false) {	Config.showInnerWorld = false;	Config.showDeveloperWorld = false;	Config.showSlideWorld = false;	Config.showOnlySimpleMorphs = true;	Config.showStar = false;  // true to show star	Config.spinningStar = false;  // true to enable spinning}
+if (false) {
+    Config.showInnerWorld = false;
+    Config.showDeveloperWorld = false;
+    Config.showSlideWorld = false;
+    Config.showOnlySimpleMorphs = true;
+    Config.showStar = false;  // true to show star
+    Config.spinningStar = false;  // true to enable spinning
+}
