@@ -119,8 +119,16 @@ Object.subclass('URL', {
 	if (!url) return false;
 	else return url.protocol == this.protocol && url.port == this.port && url.hostname == this.hostname
 	    && url.pathname == this.pathname && url.search == this.search && url.hash == this.hash;
+    },
+
+    subversionWorkspacePath: function() {
+	// heuristics to figure out the Subversion path
+	var path = this.pathname;
+	// note that the trunk/branches/tags convention is only a convention
+	var index = path.lastIndexOf('trunk') || path.lastIndexOf('branches') || path.lastIndexOf('tags');
+	if (index < 0) throw new Error("url doesn't point inside a svn workspace");
+	return "/" + path.substring(index);
     }
-    
     
 });
 
@@ -136,6 +144,16 @@ URL.proxy = (function() {
 	return new URL(str);
     }
 })();
+
+
+URL.subversionWorkspace = (function() {
+    // a bit of heuristics to figure the top of the local SVN repository
+    var path = URL.source.pathname;
+    var index = path.lastIndexOf('trunk') || path.lastIndexOf('branches') || path.lastIndexOf('tags');
+    var ws = URL.source.withPath(path.substring(0, index));
+    return ws;
+})();
+
 
 
 
@@ -197,10 +215,12 @@ View.subclass('NetRequest', {
     rewriteURL: function(url) {
 	url = url instanceof URL ? url : new URL(url);
         if (URL.proxy) {
-	    if (URL.proxy.hostname != url.hostname) { // FIXME port and protocol?
+	    if (URL.proxy.hostname != url.hostname) { // FIXME  protocol?
 		url = URL.proxy.withFilename(url.hostname + url.fullPath());
 		// console.log("rewrote url " + Object.inspect(url) + " proxy " + URL.proxy);
 		// return URL.proxy + url.hostname + "/" + url.fullPath();
+	    } else if (URL.proxy.port != url.port) {
+		url = URL.proxy.withFilename(url.hostname + "/" + url.port + url.fullPath());
 	    }
 	}
         return url;
@@ -477,6 +497,15 @@ View.subclass('Resource', NetRequestReporterTrait, {
     }
 
 });
+
+function svnInfo() { // FIXME temporarily 
+    var url = new URL(URL.source);
+    url.port = 8081; // FIXME: parse /trunk/source/server/brazil.config to figure out the port
+    url.search = undefined;
+    url.pathname = "/trunk/source/server/svn.sjs";
+    return new NetRequest().beSync().get(url).getResponseText();
+}
+
 
 console.log('loaded Network.js');
 
