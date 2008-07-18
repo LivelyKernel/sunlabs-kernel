@@ -153,15 +153,15 @@ function populateWorldWithExamples(world) {
     }
 
     /*
-    if (Config.showClipMorph) {
+    if (Config.showClipMorph()) {
         world.addMorph(widget = new ClipMorph(new Rectangle(600, 300, 150, 150)));
         widget.setFill(Color.green.lighter());
     }
     */
 
-    if (Config.showEngine) EngineMorph.makeEngine(world, pt(230, 5));
+    if (Config.showEngine()) EngineMorph.makeEngine(world, pt(230, 5));
     
-    if (Config.showAsteroids) {
+    if (Config.showAsteroids()) {
         var gameMorph = apps.asteroids.makeGameMorph(pt(500, 360).extent(pt(600, 300)));
         world.addMorph(new WindowMorph(gameMorph, 'Asteroids!'));
         apps.asteroids.initialize();
@@ -170,7 +170,7 @@ function populateWorldWithExamples(world) {
     }
     
     // Sample icon morph with a fisheye effect 'on'
-    if (Config.showIcon) {
+    if (Config.showIcon()) {
         // maybe the icons should have a rectangle shaped images (unlike here)
         // var icon = new ImageMorph(new Rectangle(30, 330, 80, 50), "http://logos.sun.com/images/SunSample.gif");
 	new NetImporter().loadElement("Definitions.svg", "SunLogo");
@@ -182,18 +182,18 @@ function populateWorldWithExamples(world) {
     }
 
     // Sample weather morph
-    if (Config.showWeather && Config.showNetworkExamples) {
+    if (Config.showWeather() && Config.showNetworkExamples) {
         // Maybe the icons should have rectangular images (unlike here)
         var weather = new WeatherWidget().openIn(world, pt(785, 65));
         world.topSubmorph().rotateBy(-0.2);
     }
 
-    if (Config.showStocks && Config.showNetworkExamples) {
+    if (Config.showStocks() && Config.showNetworkExamples) {
         var stockWidget = new StockWidget();
         stockWidget.openIn(world, pt(350, 500));
     }
 
-    if (Config.show3DLogo) world.addFramedMorph(new Sun3DMorph(pt(200, 200)), 'Sun 3D Logo', pt(570, 100));
+    if (Config.show3DLogo()) world.addFramedMorph(new Sun3DMorph(pt(200, 200)), 'Sun 3D Logo', pt(570, 100));
 
     if (Config.showTester) new TestWidget().openIn(world, pt(835, 450));
 
@@ -218,7 +218,7 @@ function populateWorldWithExamples(world) {
 	    PIM = new WebPIM().openIn(this, pt(110, 110));
 	    
 
-            if (Config.showRSSReader && Config.showNetworkExamples) {
+            if (Config.showRSSReader() && Config.showNetworkExamples) {
                 console.log('initializing RSS reader');
                 new FeedWidget("http://news.cnet.com/2547-1_3-0-5.xml").openIn(this, pt(725, 120));
             }
@@ -226,7 +226,7 @@ function populateWorldWithExamples(world) {
             // this.beetleGame = new DungBeetleMorph(pt(10, 10).extent(pt(240, 320)));
             // this.addMorph(new WindowMorph(this.beetleGame, 'Dung Beetle')); 
 	    
-            if (Config.showCanvasScape) {
+            if (Config.showCanvasScape()) {
                 this.addMorph(new WindowMorph(new CanvasScapeMorph(new Rectangle(20,50,800,300)), 'CanvasScape')).collapse();
             }
 	    
@@ -271,9 +271,9 @@ function populateWorldWithExamples(world) {
 		this.addMorphBack(new WindowMorph(new ImageMorph(new Rectangle(50, 10, width, height), url), 'Tampere'));
             }
 	    
-            if (Config.showSquiggle) this.addFramedMorph(new SquiggleMorph(pt(300, 300)), 'Freehand', pt(560, 380));
+            if (Config.showSquiggle()) this.addFramedMorph(new SquiggleMorph(pt(300, 300)), 'Freehand', pt(560, 380));
             
-            if (Config.showVideo) this.addFramedMorph(new PlayerMorph(), "Player", pt(50, 20));
+            if (Config.showVideo()) this.addFramedMorph(new PlayerMorph(), "Player", pt(50, 20));
 	    
         }
     }
@@ -319,7 +319,7 @@ function populateWorldWithExamples(world) {
 	    parser.parse();
         }
 
-        if (Config.showWebStore) {
+        if (Config.showWebStore()) {
             var store = new FileBrowser();
             store.openIn(Config.webStoreInMain ? WorldMorph.current() : devWorld.myWorld, pt(460, 120));
         }

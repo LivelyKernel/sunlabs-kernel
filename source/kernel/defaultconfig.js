@@ -66,7 +66,6 @@ var Config = {
     // Quickly enable/disable most demos
     skipMostExamples: false,
     skipAllExamples:  false,
-    showWebStore: false,
     showCurveExample: false,
     showGridDemo: false,
     
@@ -144,18 +143,18 @@ Config.random = Math.round(Math.random()*2147483647);
 
 // More complex demos
 Object.extend(Config, {
-    showClipMorph: !Config.skipMostExamples,
-    show3DLogo: !Config.skipMostExamples,
-    showAsteroids: !Config.skipMostExamples,
-    showEngine: !Config.skipMostExamples,
-    showIcon: !Config.skipMostExamples,
-    showWeather: !Config.skipMostExamples,
-    showStocks: !Config.skipMostExamples,
-    showCanvasScape: !Config.skipMostExamples,
-    showRSSReader: !Config.skipMostExamples,
-    showSquiggle: !Config.skipMostExamples,
-    showWebStore: !Config.skipMostExamples || Config.browserAnyway,
-    showVideo: !Config.skipMostExamples,
+    showClipMorph: function() { return !Config.skipMostExamples},
+    show3DLogo: function() { return !Config.skipMostExamples},
+    showAsteroids: function() { return !Config.skipMostExamples},
+    showEngine: function() { return !Config.skipMostExamples},
+    showIcon: function() { return !Config.skipMostExamples},
+    showWeather: function() { return !Config.skipMostExamples},
+    showStocks: function() { return !Config.skipMostExamples},
+    showCanvasScape: function() { return !Config.skipMostExamples},
+    showRSSReader: function() { return !Config.skipMostExamples},
+    showSquiggle: function() { return !Config.skipMostExamples},
+    showWebStore: function() { return !Config.skipMostExamples || Config.browserAnyway},
+    showVideo: function() { return !Config.skipMostExamples},
     // Worlds
     showInnerWorld: true, //!Config.skipMostExamples;
     showSlideWorld: true, //!Config.skipMostExamples;
