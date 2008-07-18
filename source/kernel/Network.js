@@ -498,13 +498,6 @@ View.subclass('Resource', NetRequestReporterTrait, {
 
 });
 
-function svnInfo() { // FIXME temporarily 
-    var url = new URL(URL.source);
-    url.port = 8081; // FIXME: parse /trunk/source/server/brazil.config to figure out the port
-    url.search = undefined;
-    url.pathname = "/trunk/source/server/svn.sjs";
-    return new NetRequest().beSync().get(url).getResponseText();
-}
 
 
 console.log('loaded Network.js');

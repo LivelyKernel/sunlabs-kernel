@@ -11,7 +11,11 @@ function readAllLines(stream) {
 function load(filename) {
     var str = new Packages.java.io.FileInputStream(filename);
     var content = readAllLines(str).join('\n');
-    return eval(content);
+    try {
+	return eval(content);
+    } finally { 
+	str.close();
+    }
 }
 
 load('trunk/source/server/lib.js');

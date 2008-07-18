@@ -804,6 +804,35 @@ TwoPaneBrowser.subclass('TwoPaneObjectBrowser', {
     
 });
 
+NetRequestReporter.subclass('Subversion', {
+
+    initialize: function() {
+	this.server = new URL(URL.source);
+	this.server.port = Config.personalServerPort; 
+	this.server.search = undefined;
+	this.server.pathname = "/trunk/source/server/svn.sjs";
+    },
+
+    diff: function(repoPath) {
+	var req = new NetRequest({model: this});
+	// use space as argument separator!
+	return req.beSync().get(this.server.withQuery({command: "diff " + repoPath})).getResponseText();
+    },
+
+    info: function(repoPath) {
+	var req = new NetRequest({model: this});
+	// use space as argument separator!
+	return req.beSync().get(this.server.withQuery({command: "info " + (repoPath|| "")})).getResponseText();
+    }
+
+});
+
+
+Subversion.test = function() { 
+    alert(new Subversion().info("trunk/source/kernel/Network.js"));
+}
+
+
 
 
 }.logCompletion('Storage.js'))();

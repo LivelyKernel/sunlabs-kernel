@@ -123,7 +123,12 @@ var Config = {
     showGrabHalo: true,
 
     // load serialized worlds instead of building them from Javascript
-    loadSerializedSubworlds: true
+    loadSerializedSubworlds: true,
+
+    // where the local web server runs
+    // FIXME: parse /trunk/source/server/brazil.config to figure out the port?
+    personalServerPort: 8081
+    
 }
 
 // These various overrides of the above have been moved here from main.js
