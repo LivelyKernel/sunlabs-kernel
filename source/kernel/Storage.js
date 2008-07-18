@@ -805,6 +805,8 @@ TwoPaneBrowser.subclass('TwoPaneObjectBrowser', {
 });
 
 NetRequestReporter.subclass('Subversion', {
+    documentation: "A simple subversion client",
+    // relies on 
 
     initialize: function() {
 	this.server = new URL(URL.source);
@@ -816,7 +818,7 @@ NetRequestReporter.subclass('Subversion', {
     diff: function(repoPath) {
 	var req = new NetRequest({model: this});
 	// use space as argument separator!
-	return req.beSync().get(this.server.withQuery({command: "diff " + repoPath})).getResponseText();
+	return req.beSync().get(this.server.withQuery({command: "diff " + (repoPath || "")})).getResponseText();
     },
 
     info: function(repoPath) {
@@ -831,8 +833,6 @@ NetRequestReporter.subclass('Subversion', {
 Subversion.test = function() { 
     alert(new Subversion().info("trunk/source/kernel/Network.js"));
 }
-
-
 
 
 }.logCompletion('Storage.js'))();
