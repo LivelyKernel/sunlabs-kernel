@@ -181,7 +181,7 @@ Object.subclass('NetRequestStatus', {
     },
     
     requestString: function() {
-	return this.method + " " + this.url;
+	return this.method + " " + decodeURIComponent(this.url);
     },
 
     code: function() {
@@ -351,18 +351,28 @@ View.subclass('NetRequest', {
 NetRequestReporterTrait = {
     setRequestStatus: function(status) { 
 	var world = WorldMorph.current();
+	// some formatting for alerting. could be moved elsewhere
+	var request = status.requestString();
+	var tooLong = 80;
+	if (request.length > tooLong) {
+	    var arr = [];
+	    for (var i = 0; i < request.length; i += tooLong) {
+		arr.push(request.substring(i, i + tooLong));
+	    }
+	    request = arr.join("..\n");
+	}
 	// error reporting
 	if (status.exception) {
-	    world.alert("exception " + status.exception + " accessing " + status.requestString());
+	    world.alert("exception " + status.exception + " accessing\n" + request);
 	} else if (status.code() >= 300) {
 	    if (status.code() == 301) {
 		// FIXME reissue request? need the 'Location' response header for it
-		world.alert("HTTP/301: Moved to " + status.getResponseHeader("Location") + "\non " + status.requestString());
+		world.alert("HTTP/301: Moved to " + status.getResponseHeader("Location") + "\non " + request);
 	    } else if (status.code() == 401) {
-		world.alert("not authorized to access " + status.requestString()); 
+		world.alert("not authorized to access\n" + request); 
 		// should try to authorize
 	    } else {
-		world.alert("failure to " + status.requestString() + " code " + status.code());
+		world.alert("failure to\n" + request + "\ncode " + status.code());
 	    }
 	} else 
 	    console.log("status " + status.code() + " on " + status.requestString());

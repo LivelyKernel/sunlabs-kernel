@@ -5775,7 +5775,17 @@ PasteUpMorph.subclass("WorldMorph", {
             if (!this.stayUp) this.world().setFill(fill); // cleanup
 	    Class.getPrototype(this).onMouseUp.apply(this, arguments);
         };
-        menu.openIn(this, this.viewport().center(), true, Strings.formatFromArray($A(arguments))); 
+
+	var caption = Strings.formatFromArray($A(arguments));
+        menu.openIn(this, this.viewport().center(), true, caption); 
+	menu.label.wrapStyle = WrapStyle.Normal;
+	if (false) {
+	    // FIXME: how to center?
+	    var txt = new Text(menu.label.textString, menu.label.textStyle);
+	    txt.emphasize({align: 'center'}, 0, menu.label.textString.length);
+	    menu.label.textStyle = txt.style;
+	}
+	menu.label.fitText();
         menu.scaleBy(2.5);
     }.logErrors('alert'),
 
