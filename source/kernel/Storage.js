@@ -536,6 +536,25 @@ TwoPaneBrowser.subclass('FileBrowser', {
 
 	    ];
 	    
+	    if (url.fullPath().indexOf("trunk/source/kernel/") >= 0) {
+		items.push(["repository info", function(evt) {
+		    var m = new SyntheticModel(["Info"]);
+		    new Subversion({model: m, setServerResponse: "setInfo"}).info("trunk/source/kernel/" + url.filename());
+		    var infoPane = newTextPane(new Rectangle(0, 0, 500, 200), "");
+		    infoPane.innerMorph().acceptInput = false;
+		    infoPane.innerMorph().connectModel({model: m, getText: "getInfo"});
+		    this.world().addFramedMorph(infoPane, "info " + url, evt.point());
+		}]);
+		items.push(["repository diff", function(evt) {
+		    var m = new SyntheticModel(["Diff"]);
+		    new Subversion({model: m, setServerResponse: "setDiff"}).diff("trunk/source/kernel/" + url.filename());
+		    var infoPane = newTextPane(new Rectangle(0, 0, 500, 200), "");
+		    infoPane.innerMorph().acceptInput = false;
+		    infoPane.innerMorph().connectModel({model: m, getText: "getDiff"});
+		    this.world().addFramedMorph(infoPane, "diff " + url, evt.point());
+		}]);
+	    }
+	    
 	    if (url.filename().endsWith(".xhtml")) {
 		items.push(["load into current world", function(evt) {
 		    new NetRequest({model: new NetImporter(), setResponseXML: "loadWorldContentsInCurrent", 
@@ -804,27 +823,34 @@ TwoPaneBrowser.subclass('TwoPaneObjectBrowser', {
     
 });
 
-NetRequestReporter.subclass('Subversion', {
+View.subclass('Subversion',  NetRequestReporterTrait, {
     documentation: "A simple subversion client",
-    // relies on 
+    
+    pins:["ServerResponse"],
 
-    initialize: function() {
+    initialize: function($super, plug) {
+	$super(plug);
 	this.server = new URL(URL.source);
 	this.server.port = Config.personalServerPort; 
 	this.server.search = undefined;
 	this.server.pathname = "/trunk/source/server/svn.sjs";
+	this.setModelValue("setServerResponse", "");
     },
 
     diff: function(repoPath) {
-	var req = new NetRequest({model: this});
-	// use space as argument separator!
-	return req.beSync().get(this.server.withQuery({command: "diff " + (repoPath || "")})).getResponseText();
+	var req = new NetRequest({model: this, setStatus: "setRequestStatus", setResponseText: "setSubversionResponse"});
+	this.setModelValue("setServerResponse", "");
+	req.get(this.server.withQuery({command: "diff " + (repoPath || "")}));
     },
 
     info: function(repoPath) {
-	var req = new NetRequest({model: this});
+	var req = new NetRequest({model: this, setStatus: "setRequestStatus", setResponseText: "setSubversionResponse"});
 	// use space as argument separator!
-	return req.beSync().get(this.server.withQuery({command: "info " + (repoPath|| "")})).getResponseText();
+	return req.get(this.server.withQuery({command: "info " + (repoPath|| "")}));
+    },
+
+    setSubversionResponse: function(txt) {	
+	this.setModelValue("setServerResponse", txt);
     }
 
 });
