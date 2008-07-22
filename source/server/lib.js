@@ -6,7 +6,8 @@ this.window = this;
 load('trunk/source/kernel/miniprototype.js');
 load('trunk/source/kernel/JSON.js');
 
-var nl = "<br />\n";
+var nl = '\n';
+// var nl = "<br />\n";
 this.Server = {};
 Object.extend(Server, {
     spawn: function(command) {

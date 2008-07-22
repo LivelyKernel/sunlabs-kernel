@@ -2784,6 +2784,10 @@ Object.extend(Exporter, {
 	return node ? new XMLSerializer().serializeToString(node) : null;
     },
 
+    stringifyArray: function(nodes, conj) {
+	return nodes.map(function(n) { return Exporter.stringify(n) }).join(conj);
+    },
+
     shrinkWrapNode: function(node) {
 	// FIXME deal with subdirectories: rewrite the base doc and change xlink:href for scripts
 	var importer = new Importer();

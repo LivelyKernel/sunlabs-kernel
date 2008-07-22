@@ -87,7 +87,7 @@ TextMorph.subclass('XPathQueryMorph', {
 
     boundEval: function(str) {    
 	var xq = new Query(str);
-	return xq.findAll(this.contextNode, []).map(function(n) { return Exporter.stringify(n); }).join('\n');
+	return Exporter.stringifyArray(xq.findAll(this.contextNode, []), '\n');
     }
 
 });

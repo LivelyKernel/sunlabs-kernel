@@ -464,13 +464,51 @@ TwoPaneBrowser.subclass('FileBrowser', {
 	$super(rootNode, new WebFile(), new WebFile());
 	var model = this.getModel();
 	var browser = this;
+
+	function addSubversionItems(url, items) {
+	    var svnPath = url.subversionWorkspacePath();
+	    if (!svnPath) return;
+	    items.push(["repository info", function(evt) {
+		var m = new SyntheticModel(["Info"]);
+		new Subversion({model: m, setServerResponse: "setInfo"}).info(svnPath);
+		var infoPane = newTextPane(new Rectangle(0, 0, 500, 200), "");
+		infoPane.innerMorph().acceptInput = false;
+		infoPane.innerMorph().connectModel({model: m, getText: "getInfo"});
+		this.world().addFramedMorph(infoPane, "info " + url, evt.point());
+	    }]);
+	    items.push(["repository diff", function(evt) {
+		var m = new SyntheticModel(["Diff"]);
+		new Subversion({model: m, setServerResponse: "setDiff"}).diff(svnPath);
+		var infoPane = newTextPane(new Rectangle(0, 0, 500, 200), "");
+		infoPane.innerMorph().acceptInput = false;
+		infoPane.innerMorph().connectModel({model: m, getText: "getDiff"});
+		this.world().addFramedMorph(infoPane, "diff " + url, evt.point());
+	    }]);
+	    items.push(["repository commit", function(evt) {
+		var world = this.world();
+		world.prompt("Enter commit message", function(message) {
+		    if (!message) {
+			// FIXME: pop an alert if message empty
+			console.log("cancelled commit");
+			return;
+		    }
+		    var m = new SyntheticModel(["CommitStatus"]);
+		    new Subversion({model: m, setServerResponse: "setCommitStatus"}).commit(svnPath, message);
+		    var infoPane = newTextPane(new Rectangle(0, 0, 500, 200), "");
+		    infoPane.innerMorph().acceptInput = false;
+		    infoPane.innerMorph().connectModel({model: m, getText: "getCommitStatus"});
+		    world.addFramedMorph(infoPane, "commit " + url, evt.point());
+		});
+	    }]);
+	}
+
 	model.getUpperNodeListMenu =  function() { // cheating: non stereotypical model
 	    var model = this;
-	    return [
+	    var selected = model.getSelectedUpperNode();
+	    if (!selected) return [];
+	    
+	    var items = [
 		["make subdirectory", function(evt) {
-		    var selected = model.getSelectedUpperNode();
-		    if (!selected) 
-			return;
 		    var dir = browser.retrieveParentNode(selected);
 		    this.world().prompt("new directory name", function(response) {
 			if (!response) return;
@@ -482,6 +520,8 @@ TwoPaneBrowser.subclass('FileBrowser', {
 		    });
 		}]
 	    ];
+	    addSubversionItems(selected, items);
+	    return items;
 	};
 
 	model.getLowerNodeListMenu =  function() { // cheating: non stereotypical model
@@ -491,11 +531,6 @@ TwoPaneBrowser.subclass('FileBrowser', {
 		return [];
 	    var fileName = url.toString();
 	    var model = this;
-
-
-	    function queryProps(url, queryString, model) {
-	    }
-
 
 	    var items = [
 		['edit in separate window', function(evt) {
@@ -516,7 +551,7 @@ TwoPaneBrowser.subclass('FileBrowser', {
 		    var m = new SyntheticModel(["InspectedNode", "AllProperties"]);
 		    m.setAllProperties = function(nodes, source) {
 			// translate from nodes to text for the text morph to understand
-			this.AllProperties = nodes.map(function(n) { return Exporter.stringify(n) }).join('\n');
+			this.AllProperties = Exporter.stringifyArray(nodes, '\n');
 			this.changed('getAllProperties', source);
 		    };
 
@@ -535,25 +570,9 @@ TwoPaneBrowser.subclass('FileBrowser', {
 		["get modification time (temp)", browser, "onMenuShowModificationTime", url] // will go away
 
 	    ];
+	    addSubversionItems(url, items);
 	    
-	    if (url.fullPath().indexOf("trunk/source/kernel/") >= 0) {
-		items.push(["repository info", function(evt) {
-		    var m = new SyntheticModel(["Info"]);
-		    new Subversion({model: m, setServerResponse: "setInfo"}).info("trunk/source/kernel/" + url.filename());
-		    var infoPane = newTextPane(new Rectangle(0, 0, 500, 200), "");
-		    infoPane.innerMorph().acceptInput = false;
-		    infoPane.innerMorph().connectModel({model: m, getText: "getInfo"});
-		    this.world().addFramedMorph(infoPane, "info " + url, evt.point());
-		}]);
-		items.push(["repository diff", function(evt) {
-		    var m = new SyntheticModel(["Diff"]);
-		    new Subversion({model: m, setServerResponse: "setDiff"}).diff("trunk/source/kernel/" + url.filename());
-		    var infoPane = newTextPane(new Rectangle(0, 0, 500, 200), "");
-		    infoPane.innerMorph().acceptInput = false;
-		    infoPane.innerMorph().connectModel({model: m, getText: "getDiff"});
-		    this.world().addFramedMorph(infoPane, "diff " + url, evt.point());
-		}]);
-	    }
+	    // FIXME if not trunk, diff with trunk here.
 	    
 	    if (url.filename().endsWith(".xhtml")) {
 		items.push(["load into current world", function(evt) {
@@ -602,7 +621,7 @@ TwoPaneBrowser.subclass('FileBrowser', {
 	var query = new Query("/D:multistatus/D:response/D:propstat/D:prop/D:getlastmodified", 
 	    {model: model, getContextNode: "getInspectedNode", setResults: "setModTime"});
 	res.fetchProperties(true);
-	WorldMorph.current().alert('result is ' + model.getModTime().map(function(n) { return Exporter.stringify(n) }).join('\n'));
+	WorldMorph.current().alert('result is ' + Exporter.stringifyArray(model.getModTime(), '\n'));
     },
     
     removeNode: function(url) {
@@ -847,6 +866,12 @@ View.subclass('Subversion',  NetRequestReporterTrait, {
 	var req = new NetRequest({model: this, setStatus: "setRequestStatus", setResponseText: "setSubversionResponse"});
 	// use space as argument separator!
 	return req.get(this.server.withQuery({command: "info " + (repoPath|| "")}));
+    },
+
+    commit: function(repoPath, message) {
+	var req = new NetRequest({model: this, setStatus: "setRequestStatus", setResponseText: "setSubversionResponse"});
+	// use space as argument separator!
+	return req.get(this.server.withQuery({command: "commit " + (repoPath || "") + ' -m "' + message + '"'}));
     },
 
     setSubversionResponse: function(txt) {	

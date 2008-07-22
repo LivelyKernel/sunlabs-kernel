@@ -126,8 +126,8 @@ Object.subclass('URL', {
 	var path = this.pathname;
 	// note that the trunk/branches/tags convention is only a convention
 	var index = path.lastIndexOf('trunk') || path.lastIndexOf('branches') || path.lastIndexOf('tags');
-	if (index < 0) throw new Error("url doesn't point inside a svn workspace");
-	return "/" + path.substring(index);
+	if (index < 0) return null;
+	else return path.substring(index);
     }
     
 });
