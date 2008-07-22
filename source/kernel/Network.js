@@ -125,7 +125,9 @@ Object.subclass('URL', {
 	// heuristics to figure out the Subversion path
 	var path = this.pathname;
 	// note that the trunk/branches/tags convention is only a convention
-	var index = path.lastIndexOf('trunk') || path.lastIndexOf('branches') || path.lastIndexOf('tags');
+	var index = path.lastIndexOf('trunk');
+	if (index < 0) index = path.lastIndexOf('branches');
+	if (index < 0) index = path.lastIndexOf('tags');
 	if (index < 0) return null;
 	else return path.substring(index);
     }
@@ -149,7 +151,9 @@ URL.proxy = (function() {
 URL.subversionWorkspace = (function() {
     // a bit of heuristics to figure the top of the local SVN repository
     var path = URL.source.pathname;
-    var index = path.lastIndexOf('trunk') || path.lastIndexOf('branches') || path.lastIndexOf('tags');
+    var index = path.lastIndexOf('trunk');
+    if (index < 0) index = path.lastIndexOf('branches');
+    if (index < 0) index = path.lastIndexOf('tags');
     var ws = URL.source.withPath(path.substring(0, index));
     return ws;
 })();
