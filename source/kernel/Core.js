@@ -4913,26 +4913,29 @@ ViewTrait = {
 	// {model: someModel, getList: "getItemList", setSelection: "chooseItem"}
 	var newPlug = (plugSpec instanceof ModelPlug) ? plugSpec : new ModelPlug(plugSpec);
 	
-	if (!(plugSpec.model instanceof Model) && !this.checkModel(plugSpec))
-	    console.log("model " + plugSpec.model +  " is not a Model, view " + this);
+	var model = newPlug.model;
+	if (!(model instanceof Model) && !this.checkModel(newPlug))
+	    console.log("model " + model +  " is not a Model, view " + this);
 
 	this.modelPlug = newPlug;
 
-	if (plugSpec.model.addDependent) { // for mvc-style updating
-	    plugSpec.model.addDependent(this);
+	if (model.addDependent) { // for mvc-style updating
+	    model.addDependent(this);
 	} 
 	return this;
     },
 
     checkModel: function(plugSpec) {
 	// For non-models, check that all supplied handler methods can be found
-	for (var modelMsg in plugSpec) {
-	    if ((modelMsg != 'model') && !(plugSpec.model[plugSpec[modelMsg]] instanceof Function)) {
+	var result = true;
+	Properties.forEachOwn(plugSpec, function(modelMsg) {
+	    if (modelMsg == 'model') return;
+	    if (!(plugSpec.model[plugSpec[modelMsg]] instanceof Function)) {
 		console.log("Supplied method name, " + plugSpec[modelMsg] + " does not resolve to a function.");
-		return false; 
+		result = false;
 	    }
-	}
-	return true;
+	});
+	return result;
     },
 
     disconnectModel: function() {
@@ -5082,9 +5085,17 @@ Wrapper.subclass('ModelPlug', {
     documentation: "A 'translation' from view's variable names to model's variable names",
 
     initialize: function(spec) {
+	var props = [];
 	Properties.forEachOwn(spec, function(p) {
 	    this[p] = spec[p];
+	    props.push(p);
 	}, this);
+    },
+    
+    toString: function() {
+	var pairs = [];
+	Properties.forEachOwn(this, function(p) { if (p != 'model') pairs.push(p + ":" + this[p]) }, this);
+	return "#<ModelPlug{" + pairs.join(',') + "}>";
     },
 
     serialize: function(modelId) {
@@ -5186,13 +5197,13 @@ Model.subclass('SyntheticModel', {
     },
 
     makePlugSpec: function() {
-	var model = this;
+	// make a plug of the form {model: this, getVar1: "getVar1", setVar1: "setVar1" .. }
 	var spec = {model: this};
 	this.variables().forEach(function(v) { 
 	    var name = this.getterName(v);
-	    spec[name] = model[name];
+	    spec[name] = name;
 	    name = this.setterName(v);
-	    spec[name] = model[name]; 
+	    spec[name] = name;
 	}, this);
 	return spec;
     },
