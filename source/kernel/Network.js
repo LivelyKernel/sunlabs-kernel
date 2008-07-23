@@ -154,6 +154,7 @@ URL.subversionWorkspace = (function() {
     var index = path.lastIndexOf('trunk');
     if (index < 0) index = path.lastIndexOf('branches');
     if (index < 0) index = path.lastIndexOf('tags');
+    if (index < 0) return null;
     var ws = URL.source.withPath(path.substring(0, index));
     return ws;
 })();
