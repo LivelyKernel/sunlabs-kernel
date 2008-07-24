@@ -1101,10 +1101,11 @@ Morph.subclass("TextMorph", {
         menu.addItem(["save as ...", function() { 
 	    this.world().prompt("save as...", function(filename) {
 		if (!filename) return;
-		new NetRequest().put(URL.source.withFilename(filename), this.xml || this.textString);
+		var req = new NetRequest({model: new NetRequestReporter(), setStatus: "setRequestStatus"});
+		req.put(URL.source.withFilename(filename), this.xml || this.textString);
 	    }.bind(this));
         }]);
-    
+	
         return menu;
     },
 
