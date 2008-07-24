@@ -501,6 +501,46 @@ TwoPaneBrowser.subclass('FileBrowser', {
 		});
 	    }]);
 	}
+	function addWebDAVItems(url, items) { 
+	    items.push(["get WebDAV info", function(evt) {
+		var m = new SyntheticModel(["InspectedNode", "AllProperties"]);
+		m.setAllProperties = function(nodes, source) {
+		    // translate from nodes to text for the text morph to understand
+		    this.AllProperties = Exporter.stringifyArray(nodes, '\n');
+		    this.changed('getAllProperties', source);
+		};
+		
+		var res = new Resource(url, {model: m, setContentDocument: "setInspectedNode" });
+		res.fetchProperties();
+		
+		var infoPane = newTextPane(new Rectangle(0, 0, 500, 200), "");
+		infoPane.innerMorph().acceptInput = false;
+		infoPane.innerMorph().connectModel({model: m, getText: "getAllProperties"});
+		
+		this.world().addFramedMorph(infoPane, url.toString(), evt.point());
+	    }]);
+	    
+	    // a different way of doing te same thing, to ponder about
+	    if (false) items.push(["also get WebDAV info", function(evt) {
+		var r = new Resource(url);
+		var model = r.getModel();
+		var w = this.world();
+		var v = new View({model: model, setContentDocument: "setContentDocument", getContentDocument: "getContentDocument"});
+		v.updateView = function(aspect, source) {
+		    var p = this.modelPlug;
+		    if (!p) return;
+		    switch (aspect) {
+		    case p.getContentDocument:
+			var infoPane = newTextPane(new Rectangle(0, 0, 500, 200), 
+			    Exporter.stringify(this.getModelValue('getContentDocument').documentElement));
+			w.addFramedMorph(infoPane, 'WebDAV dump', evt.point());
+			break;
+		    }
+		}
+		r.fetchProperties(true);
+	    }]);
+	}
+	
 
 	model.getUpperNodeListMenu =  function() { // cheating: non stereotypical model
 	    var model = this;
@@ -520,6 +560,7 @@ TwoPaneBrowser.subclass('FileBrowser', {
 		    });
 		}]
 	    ];
+	    addWebDAVItems(selected, items);
 	    addSubversionItems(selected, items);
 	    return items;
 	};
@@ -546,30 +587,10 @@ TwoPaneBrowser.subclass('FileBrowser', {
 							setText: "setSelectedLowerNodeContents"});
 		    this.world().addFramedMorph(textEdit, url.toString(), evt.mousePoint);
 		}],
-		
-		["get WebDAV info", function(evt) {
-		    var m = new SyntheticModel(["InspectedNode", "AllProperties"]);
-		    m.setAllProperties = function(nodes, source) {
-			// translate from nodes to text for the text morph to understand
-			this.AllProperties = Exporter.stringifyArray(nodes, '\n');
-			this.changed('getAllProperties', source);
-		    };
-
-		    var res = new Resource(url, {model: m, setContentDocument: "setInspectedNode" });
-		    var query = new Query("/*", {model: m, getContextNode: "getInspectedNode", setResults: "setAllProperties"});
-		    res.fetchProperties();
-		    
-		    var infoPane = newTextPane(new Rectangle(0, 0, 500, 200), "");
-		    infoPane.innerMorph().acceptInput = false;
-		    infoPane.innerMorph().connectModel({model: m, getText: "getAllProperties"});
-
-		    this.world().addFramedMorph(infoPane, url.toString(), evt.point());
-		}],
-
 		["get XPath query morph", browser, "onMenuAddQueryMorph", url],
 		["get modification time (temp)", browser, "onMenuShowModificationTime", url] // will go away
-
 	    ];
+	    addWebDAVItems(url, items);
 	    addSubversionItems(url, items);
 	    
 	    // FIXME if not trunk, diff with trunk here.
