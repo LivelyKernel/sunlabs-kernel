@@ -1,12 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?oxygen RNGSchema="http://www.oasis-open.org/docbook/xml/5.0b5/rng/docbook.rng" type="xml"?>
+<!-- 
+     simple, slow way of generating html from the command line:
+     xsltproc http://docbook.sourceforge.net/release/xsl/current/html/docbook.xsl paper.xml > paper.html
+-->
 <article xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink" version="5.0">
   <info>
-    <title>Lively Kernel</title>
+    <title>The Lively Kernel Application Framework</title>
 <!--    <subtitle></subtitle> -->
     <keywordset>
       <keyword>SVG</keyword>
-      <keyword>graphical user interface</keyword>
+      <keyword>GUI Frameworks</keyword>
+      <keyword>Web Applications</keyword>
     </keywordset>
     <author>
       <personname>
@@ -124,6 +129,153 @@ serialization.
 </abstract>
 </info>
 <section>
+<!-- stolen from the ecoop paper -->
+<title>Time for change</title>
+There is no good reason for Web Programming to be more complicated, less general, or any less fun 
+than desktop or other programming.  There are reasons, of course -- reasons that go back to missed 
+opportunities when the web was designed -- but these need not hold us back.  In this paper we describe 
+a simple and general kernel for programming the web.  It is less than 10,000 lines of code (with 
+comments), it runs in major browsers with no installation, and it performs well.  We call it the Lively 
+Kernel. 
+We inherit from the World Wide Web an architecture built around a text markup language.  The Lively 
+Kernel sets that architecture aside in favor of modern graphics and a dynamic programming language. 
+We begin by turning the conventional we programming "stack" upside-down as shown in Figure 2. 
+Figure 2:  Turning Web Programming Upside-Down
+The first priority of this architecture is to provide a world of active objects.  This is accomplished by 
+putting a dynamic language close to the operating system, which allows both the infrastructure 
+(widgets, etc.) and the application to share the same pervasive generality and power.  The compactness 
+and capability of our small system validates this approach. 
+<!-- end stolen -->
 </section>
+
+<section>
+<!-- stolen from the ecoop paper-->
+<title>A quick summary of the Morphic architecture</title>
+The Morphic architecture is very simple.  It defines a class of graphical objects, or “morphs”, each of 
+which has some or all of the following properties: 
+<itemizedlist mark='bullet'>
+  <listitem> <para>
+      A shape, or graphical appearance
+  </para> </listitem>
+  <listitem> <para>
+      A set of submorphs, comprising the “scene graph” of the page or world
+  </para> </listitem>
+  <listitem> <para>
+      A coordinate transformation that affects its shape and any submorphs
+  </para> </listitem>
+  <listitem> <para>
+      An event handler for mouse and keyboard events 
+  </para> </listitem>
+  <listitem> <para>
+      An editor for changing its shape 
+  </para> </listitem>
+  <listitem> <para>
+      A layout manager for laying out its submorphs 
+  </para> </listitem>
+  <listitem> <para>
+      A stepping protocol for time-varying behavior 
+  </para> </listitem>
+  <listitem> <para> A damage rectangle repainting protocol and
+      double-buffered display mechanism when this is not available in
+      the underlying graphics
+  </para> </listitem>
+</itemizedlist>
+
+A WorldMorph captures the notion of an entire web page; its shape
+defines its background appearance if any, and its submorphs comprise
+all the remaining content of the page.  A HandMorph is the Morphic
+generalization of the cursor; it can be used to pick up, move, and
+deposit other morphs, its shape may change to indicate different
+cursor states, and it is the source of user events in the
+architecture.  In th Lively Kernel, a Morphic world may have several
+hands active at the same time, corresponding to several collaborating
+users of that world, and multiple worlds may be linked in the manner
+of linked web pages.  Interested readers are referred to the original
+papers on Morphic [see References], and to the Lively Kernel technical
+documentation.
+</section>
+
+<section>
+<title>Mapping Morphic onto SVG</title>
+
+
+Natural mapping Morphs onto &lt;g&gt; elements.
+
+Natural mapping of Shapes onto &lt;g&gt; elements.
+
+SVG is a DAG.
+Mapping of paint servers and other leaf-ish elements (referred to by xlink references). 
+Ownership model for paint servers (relative to serialization).
+<!-- What does it have to do with Lessphic-->
+
+
+Implementation strategies: (1) morphs are &lt;g&gt; elements (2) morphs wrap &lt;g&gt; elements.
+
+
+
+</section>
+
+<section>
+<title>Lively Kernel as a Graphics Kernel</title> 
+
+Imperative API for
+SVG, hiding the XML underpinnings and hence portable to different
+architectures. API JS-centric (hence no XBL, even though similar interest in reusable components).
+
+
+<programlisting><![CDATA[
+319 Host Interface – Browser API plus XML utility functions 
+515 Utility – Classes, collections, printing, etc. (plus 562 in Prototype.js) 
+833 Basic Graphics – Point, Rectangle, Transform, Color, Gradient, Image 
+550 Shapes – Host graphical objects (SVG node API) 
+1667 Morph – Basic protocol 
+1170 Morphic Core -- World, Hand, Event, Handles, Handlers 
+1188 Basic Widgets – Button, List, Menu, Dialog, Slider, Selection, ImageMorph 
+1921 Text – basic TextMorph plus composition and rich text 
+747 Editors – Drag/drop manipulation, shape editors and text editing 
+also ColorPicker and StylePanel 
+386 Model, Widget 
+1295 High Level Widgets – Scroll panes, panels, windows, world links 
+also Panel and Browser support 
+1311 Tools – Browser, inspector, stack viewer, change lists, profiler 
+406 Serialization – Copier, exporter, importer (plus 202 in JSON) 
+281 Network – URL, HTTP, WebDAV basics 
+365 Storage – WebDAV, file browser 
+----- ----- 
+12954 Total 
+Figure 10:  Breakdown of Lively Kernel by function with approximate code size 
+The figures above include comments and lines with single bracket characters.  Prototype.js is an open 
+source set  of useful  JavaScript  extensions,  of which we use only a small  number [see 
+http://www.prototypejs.org/], and JSON is a nice encoding for JavaScript objects by Doug Crockford 
+[see http://www.JSON.org/]. 
+]]></programlisting>
+</section>
+
+<section>
+<title>SVG as application description format component</title>
+
+</section>
+
+<section>
+<title>Experiences with SVG implementations</title>
+Firefox, Safari, Batik, Examotion, Opera.
+</section>
+
+<bibliography xmlns="http://docbook.org/ns/docbook">
+  <title>References</title>
+  
+  <biblioentry>
+    <!--      <abbrev>LK-TR</abbrev> -->
+    <authorgroup>
+      <author><personname> <firstname>Antero</firstname><surname>Taivalsaari</surname> </personname></author>
+      <author><personname> <firstname>Tommi</firstname><surname>Mikkonen</surname> </personname></author>
+      <author><personname> <firstname>Dan</firstname><surname>Ingalls</surname> </personname></author>
+      <author><personname> <firstname>Krzysztof</firstname><surname>Palacz</surname> </personname></author>
+    </authorgroup>
+    <title>Web Browser as an Application Platform: The Lively Kernel Experience</title>
+  </biblioentry>
+  
+</bibliography>
+
 
 </article>
