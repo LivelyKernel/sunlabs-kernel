@@ -459,6 +459,10 @@ View.subclass('Resource', NetRequestReporterTrait, {
 	if (!this.setModelValue("setURL", url)) // not stored in the model, will store in a var.
 	    this.url = url;
     },
+
+    toString: function() {
+	return "#<Resource{" + this.getURL() + "}>";
+    },
     
     updateView: function(aspect, source) { // model vars: getURL, setFeedChannels
         var p = this.modelPlug;
@@ -476,9 +480,14 @@ View.subclass('Resource', NetRequestReporterTrait, {
 	else return url;
     },
 
+    getContentDocument: function() {
+	return this.getModelValue("getContentDocument", null);
+    },
+
     fetch: function(sync, optRequestHeaders) {
 	// fetch the document content itself
-	var req = new NetRequest({model: this, setResponseXML: "pvtSetDoc", setResponseText: "pvtSetText", setStatus: "setRequestStatus"});
+	var req = new NetRequest({model: this, setResponseXML: "pvtSetDoc", 
+	    setResponseText: "pvtSetText", setStatus: "setRequestStatus"});
 	if (sync) req.beSync();
 	if (optRequestHeaders) this.setRequestHeaders(optRequestHeaders);
 	req.get(this.getURL());
@@ -506,7 +515,7 @@ View.subclass('Resource', NetRequestReporterTrait, {
     },
 
     findAll: function(query, defaultValue) {
-	var content = this.getModelValue("getContentDocument", null);
+	var content = this.getContentDocument();
 	if (!content) return defaultValue;
 	return query.findAll(content.documentElement, defaultValue);
     }
