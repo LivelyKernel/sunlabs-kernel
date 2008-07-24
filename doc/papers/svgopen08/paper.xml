@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?oxygen RNGSchema="http://www.oasis-open.org/docbook/xml/5.0b5/rng/docbook.rng" type="xml"?>
+<article xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink" version="5.0">
+  <info>
+    <title>Lively Kernel</title>
+<!--    <subtitle></subtitle> -->
+    <keywordset>
+      <keyword>SVG</keyword>
+      <keyword>graphical user interface</keyword>
+    </keywordset>
+    <author>
+      <personname>
+        <firstname>Krzysztof</firstname>
+        <surname>Palacz</surname>
+      </personname>
+      <email>krzysztof.palacz@sun.com</email>
+      <!-- <personblurb><para>Krzysztof Palacz is blah blah</para></personblurb>  -->
+      <affiliation>
+	<!--        <jobtitle>Staff Engineer</jobtitle> -->
+        <org>
+          <orgname>Sun Microsystems Laboratories</orgname>
+	  <!--          <orgdiv></orgdiv> -->
+          <address>
+            <city>Menlo Park</city>
+            <street>16 Network Circle</street>
+	    <!--            <postcode>8610</postcode>
+			    <country>USA</country>
+			    <phone></phone>
+			    <fax></fax>
+			    -->
+          </address>   
+        </org>
+      </affiliation>
+      
+    </author>
+    <author>
+      <personname>
+	<firstname>Dan</firstname>
+	<surname>Ingalls</surname>
+      </personname>
+      <email>dan.ingalls@sun.com</email>
+    </author>
+    <abstract>
+      <para>
+	The Lively Kernel is a fully interactive, "zero-installation" Web
+application framework and development environment and written entirely
+in JavaScript. The rich user experience of applications built using
+the Lively Kernel is enabled by integrated programmatic access to
+arbitrary, dynamic 2D graphics, and owed in no small part to its
+reliance on Scalable Vector Graphics and its bindings to the
+JavaScript language.
+</para>
+
+<para>
+Lively Kernel runs in SVG-enabled Web browsers without installation or
+plug-in requirements; it offers a compact and extensible set of user
+interface components, as a result, it supports familiar desktop-style
+applications with the expected user interface functionality and direct
+manipulation capabilities; it enables application development and
+deployment in a Web browser with no installation or upgrades, using
+only existing Web technologies. In addition to its application
+execution capabilities, the Lively Kernel also functions as an
+integrated development environment (IDE), as a result, it is
+self-supporting and able to improve and extend itself
+dynamically. Lively Kernel is currently also one of the most sizable
+dynamic SVG frameworks available, and has become an important test
+case for SVG implementations in Web browsers.
+</para>
+
+<para>
+The main component of the Lively Kernel is a user interface framework
+called Morphic, originally developed for the Self language, and later
+incorporated into Squeak (a version of the Smalltalk programming
+language). The Morphic framework consists of about 10,000 lines of
+uncompressed JavaScript code downloaded to the Web browser on Lively
+Kernel startup. The central goal of Morphic is to facilitate
+construction and editing of graphical objects, both programmatically
+and by direct, interactive manipulation. Morphic objects are editable,
+composable and animatable, Morphic also handles user input and manages
+underlying system resources such as fonts, gradients or
+images. Built-in mechanisms are provided for object scaling, rotation,
+object editing, as well as for defining user interface
+themes. Currently, visual editing tools are provided for only a subset
+of the elements defined in the SVG specification, however, our system
+could be straightforwardly extended to act as a complete SVG authoring
+tool.
+</para>
+
+<para>
+The Morphic framework also provides a library of higher level user
+interface components, such as buttons, lists, menus, windows, etc.,
+composed from the basic graphical objects, as well as a
+Model-View-Controller infrastructure for abstracting visual
+representation of data from application logic. The default
+configuration of the Lively Kernel offers a familiar desktop metaphor
+with multiple applications running concurrently, however, standalone
+applications are also supported.
+</para>
+
+<para>
+The Morphic framework includes tools for development, modification and
+deployment of applications from within the Lively Kernel system
+itself. The tools include a class browser, an object inspector and a
+DOM inspector. The implementation of these tools relies on the
+reflective capabilities of JavaScript, and can therefore be used
+inside the Web browser without any external tools or IDEs. As a
+result, it is possible to, e.g., create new JavaScript classes, modify
+or delete existing methods, or change the value of any property in the
+system. Finally, it is possible to dynamically export and import
+objects or entire Web pages from within a running system and thus use
+the Lively Kernel as an authoring environment both code and
+interactive graphics. The export mechanism currently uses our own
+implementation of the Distributed Authoring and Versioning (WebDAV)
+extensions built on top of asynchronous HTTP networking support
+present in all the modern browsers. Objects are serialized into valid
+SVG files with additional Lively Kernel-specific annotations necessary
+to reconstruct all the JavaScript objects on deserialization. The
+annotations are placed in a dedicated XML namespace, as a result, if a
+Lively Kernel runtime is not available at deserialization time or the
+user agent does not support JavaScript, the serialized file is
+rendered as a static screenshot of the application at the time of
+serialization.
+</para>
+</abstract>
+</info>
+<section>
+</section>
+
+</article>
