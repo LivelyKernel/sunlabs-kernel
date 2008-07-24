@@ -11,7 +11,7 @@ command.length == 1 && command.push("info");
 var p = Server.spawn(command);
 
 var s = "";
-if (Server.getQuery("debug") || true) { 
+if (Server.getQuery("debug")) { 
     s += Server.prettyPrintProplist(request.props);
     s += "running " + command +  nl + "exit value " + p.code + nl;
 }
