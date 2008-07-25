@@ -18,6 +18,7 @@
       <keyword>GUI Frameworks</keyword>
       <keyword>Web Applications</keyword>
     </keywordset>
+    <authorgroup>
     <author>
       <personname>
         <firstname>Krzysztof</firstname>
@@ -33,26 +34,24 @@
           <address>
             <city>Menlo Park</city>
             <street>16 Network Circle</street>
-	    <!--            <postcode>8610</postcode>
-			    <country>USA</country>
-			    <phone></phone>
-			    <fax></fax>
-			    -->
+	    <postcode>94025</postcode> 
+	    <state>CA</state>
+	    <country>USA</country>
           </address>   
         </org>
       </affiliation>
       
     </author>
     <author>
-      <personname>
-	<firstname>Dan</firstname>
-	<surname>Ingalls</surname>
-      </personname>
+      <personname> <firstname>Dan</firstname> <surname>Ingalls</surname> </personname>
       <email>dan.ingalls@sun.com</email>
     </author>
+    </authorgroup>
+
     <abstract>
       <para>
-	The Lively Kernel is a fully interactive, "zero-installation"
+	
+The Lively Kernel is a fully interactive, "zero-installation"
 Web application framework and development environment and written
 entirely in JavaScript. The rich user experience of applications built
 using the Lively Kernel is enabled by integrated programmatic access
@@ -156,29 +155,36 @@ putting a dynamic language close to the operating system, which allows both the 
 and capability of our small system validates this approach. 
 </para>
 
+<remark>
 <para>
-LK conceptually not tied to any graphics backend but SVG as a good fit
-as an implementation technology, alternatives: canvas: no text,
-silverlight, flex not open.  
+
+ LK conceptually not tied to any graphics backend but SVG as a good
+fit as an implementation technology, alternatives: canvas: no text,
+silverlight, flex not open.
 </para>
+</remark>
 
 <para>
-This paper presents the SVG backend of the Lively Kernel. While we
-found the SVG standard a great fit as our graphics substrate and our
+This paper presents the SVG backend of the Lively Kernel. We have
+found the SVG standard to be a great fit as our graphics substrate,
+and its implementations in widely available Web browsers to be
+adequate to demonstrate the potential of our approach. While our
 current work is almost exclusively built on top of the SVG backend, we
 are vitally interested in portability to other graphics substrates,
 and, in fact, an earlier version of our system provided a custom
 browser-like environment on top of the Java platform, using Java2D
 APIs as its graphics subsystem and Rhino as its execution engine.
 </para>
-<!-- end stolen -->
+
 </section>
 
 <section>
 <!-- stolen from the rejected ecoop paper-->
-<title>A quick summary of the Morphic architecture</title>
-The Morphic architecture is very simple.  It defines a class of graphical objects, or “morphs”, each of 
-which has some or all of the following properties: 
+<title>A quick summary of the Morphic architecture</title> 
+
+The Morphic architecture aims to provide a simple and uniform graphics
+ API.  It achieves this goal by defining a class of graphical objects,
+ or “morphs”, possessing some or all of the following properties:
 <itemizedlist mark='bullet'>
   <listitem> <para>
       A shape, or graphical appearance
@@ -252,25 +258,73 @@ programming abstraction (perhaps as a mechanism to specify widget
 </section>
 
 
+<remark>
 <para>SVG is a DAG.
 Mapping of paint servers and other leaf-ish elements (referred to by xlink references). 
 Ownership model for paint servers (simplifies serialization, not good for space efficiency).
 </para>
-<!-- What does it have to do with Lessphic-->
+What does it have to do with Lessphic?
+</remark>
+
+<section> 
+<title>The implementation of mapping: wrapping versus extending DOM elements</title>
+<para>
+There are at least two general approaches to mapping abstract tree
+data structures (such as the morph tree defined by the Morphic API) to
+DOM trees. The first involves extending appropriate DOM elements so
+that they <emphasis>become</emphasis> Morphs. This was the approach
+originally used by the Lively Kernel SVG backend. Despite its
+conceptual simplicity, it required certain non-obvious implementation
+tricks. For instance, while all morphs were implemented
+as <code>&lt;g&gt;</code> elements, it was not desirable for
+all <code>&lt;g&gt;</code> elements to be morphs. In order to satify
+this requirement, morph factory methods dynamically modified the
+inheriance chain of <code>&lt;g&gt;</code> elements intended to become
+morphs, by inserting a morph prototype object, defining the
+functionality shared by all morphs. Such modifications are not
+possible in according to the ECMAScript language specification (an
+object's <code>prototype</code> is not directly accessible
+programmatically), however, most Javascript implementations recognize
+this problem as a language limitation, and furnish every object with a
+mutable <code>__proto__</code> property, which can be manipulated to
+obtain the desired inheritance behavior. Unfortunately, this approach
+eliminated the Opera browser from the list of potential Lively Kernel
+platforms, since its Javascript implementation does not
+implement <code>__proto__</code>.
+</para>
 
 <para>
-Implementation strategies: (1) morphs are &lt;g&gt; elements (2) morphs wrap &lt;g&gt; elements.
+A minor inconvenience of this approach was that new morphs were
+instantiated using factory methods (of the
+form <code>MyMorph()</code>), instead of explicit allocation syntax,
+as in <code>new MyMorph()</code> (as a side note, due to the semantics
+of Javascript, accidental insertion of the <code>new</code> keyword
+did not affect correctness of the program, but merely resulted in a
+wasteful allocation of an unused object). A much more important
+limitation of the approach turned out to be incompatibility with
+environments such as Batik (FIXME cite?), which support
+the <code>__proto__</code> property but do not allow extension of host
+objects (i.e., objects created and managed outside of the Javascript
+runtime, e.g., DOM objects, and merely exposed programmaticaly to Javascript).
+</para>
+
+<para>
+Faced with the limitations, we turned to a more conventional wrapping
+technique in the subsequent reimplementation of the Lively Kernel SVG backend.
 </para>
 
 
+</section> <!-- end of wrapping vs extending -->
 
+
+<remark>
 <para>Declarative vs imperative animations: the underlying graphics
 substrate not guaranteed to have native declarative animation support - imperative animation.
 </para>
 
 CSS styling not used.
 <!-- unused but useful parts of the SVG spec? -->
-
+</remark>
 </section>
 
 
@@ -341,25 +395,29 @@ serialization.
 <section>
 <title>Experiences with SVG implementations</title> 
 
-
+<remark>
 Firefox, Safari, Batik, Examotion, Opera.  Better support highly
 requested in the areas of drag and drop, copy and paste support,
-filters for dropshadows. Performance questions: efficiency of dynamic
-update to the SVG tree. 
+filters for dropshadows. 
+<para>Performance questions: efficiency of dynamic
+update to the SVG tree; speed of bindings (height of the software layers between JS and the graphics engine).
+</para>
+
+</remark>
 </section>
 
 <bibliography xmlns="http://docbook.org/ns/docbook">
   <title>References</title>
   
   <biblioentry>
-    <!--      <abbrev>LK-TR</abbrev> -->
+    <abbrev>LK-TR</abbrev>
     <authorgroup>
       <author><personname> <firstname>Antero</firstname><surname>Taivalsaari</surname> </personname></author>
       <author><personname> <firstname>Tommi</firstname><surname>Mikkonen</surname> </personname></author>
       <author><personname> <firstname>Dan</firstname><surname>Ingalls</surname> </personname></author>
       <author><personname> <firstname>Krzysztof</firstname><surname>Palacz</surname> </personname></author>
     </authorgroup>
-    <title>Web Browser as an Application Platform: The Lively Kernel Experience</title>
+    <title>Web Browser as an Application Platform: The Lively Kernel Experience.</title>
   </biblioentry>
   
 </bibliography>
