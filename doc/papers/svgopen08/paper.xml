@@ -228,23 +228,22 @@ documentation.
 </section>
 
 <section>
-<title>Mapping Morphic onto SVG</title> 
-
+<title>Implementing Morphic in SVG</title> 
 
 <section>
 <title>Containment</title>
-<para>The original Morphic UI framework organizes visual objects on the
-screen using a tree of morphs. Each morph has a single owner morph and
-can act as an abstract container for other morphs. Lively Kernel
-retains this architectural model, and its SVG backend naturally maps
-morphs onto SVG <code>&lt;g&gt;</code> elements. The semantics of <code>&lt;g&gt;</code>
-elements corresponds well to that of Morphic, since nesting of
+<para>The original Morphic UI framework organizes visual objects on
+the screen using a tree of <emphasis>morphs</emphasis>. Each morph has
+a single owner morph and can act as a container for other
+morphs. Lively Kernel retains this architectural model, and its SVG
+backend naturally maps morphs onto SVG <code>&lt;g&gt;</code>
+elements. The semantics of <code>&lt;g&gt;</code> elements corresponds
+well to that of Morphic, specifically, the nesting of
 <code>&lt;g&gt;</code> elements does not imply visual containment, and submorphs
 are not necessarily visualy contained by their owner morphs, either. A
 morph's shape is represented by one of the basic SVG shape elements, such
-as <code>&lt;rect&gt;</code>, <code>&lt;ellipse&gt;</code>, and <code>&lt;path&gt;</code>. 
+as <code>&lt;rect&gt;</code>, <code>&lt;ellipse&gt;</code>, or <code>&lt;path&gt;</code>. 
 </para>
-
 
 <para>Currently, Lively Kernel does not take advantage of the property
 inheritance mechanism of <code>&lt;g&gt;</code> elements provided by
@@ -284,12 +283,12 @@ morphs, by inserting a morph prototype object, defining the
 functionality shared by all morphs. Such modifications are not
 possible in according to the ECMAScript language specification (an
 object's <code>prototype</code> is not directly accessible
-programmatically), however, most Javascript implementations recognize
+programmatically), however, most JavaScript implementations recognize
 this problem as a language limitation, and furnish every object with a
 mutable <code>__proto__</code> property, which can be manipulated to
 obtain the desired inheritance behavior. Unfortunately, this approach
 eliminated the Opera browser from the list of potential Lively Kernel
-platforms, since its Javascript implementation does not
+platforms, since its JavaScript implementation does not
 implement <code>__proto__</code>.
 </para>
 
@@ -298,21 +297,40 @@ A minor inconvenience of this approach was that new morphs were
 instantiated using factory methods (of the
 form <code>MyMorph()</code>), instead of explicit allocation syntax,
 as in <code>new MyMorph()</code> (as a side note, due to the semantics
-of Javascript, accidental insertion of the <code>new</code> keyword
+of JavaScript, accidental insertion of the <code>new</code> keyword
 did not affect correctness of the program, but merely resulted in a
 wasteful allocation of an unused object). A much more important
 limitation of the approach turned out to be incompatibility with
 environments such as Batik (FIXME cite?), which support
 the <code>__proto__</code> property but do not allow extension of host
-objects (i.e., objects created and managed outside of the Javascript
-runtime, e.g., DOM objects, and merely exposed programmaticaly to Javascript).
+objects (i.e., objects created and managed outside of the JavaScript
+runtime, e.g., DOM objects, and merely exposed programmaticaly to JavaScript).
 </para>
 
 <para>
-Faced with the limitations, we turned to a more conventional wrapping
-technique in the subsequent reimplementation of the Lively Kernel SVG backend.
-</para>
+In the face of the limitations, a more
+conventional <emphasis>wrapper</emphasis> - based technique was
+employed in the subsequent reimplementation of the Lively Kernel SVG
+backend. Morphs are implemented as regular, user-defined JavaScript
+objects furnished with the <code>rawNode</code> property, pointing to
+the host object representing the corresponding <code>&lt;g&gt;</code>
+element. Similarly, <code>Shape</code> objects wrap simple SVG shape
+elements referred to through their <code>rawNode</code> property. No
+new properties or methods are added to host objects, and many Morph
+and Shape methods simply delegate to the
+underlying <code>rawNode</code>. Unfortunately, the object identity of
+the Morph is now distinct from the identity of the
+underlying <code>rawNode</code>, which requires additional boilerplate
+code to map from Morphs to DOM objects (interestingly, apart from
+debugging, it is currently never necessary to find a corresponding
+Morph given the DOM element that implements it, is due largely to the
+fact that Lively Kernel performs its own mouse event delivery).
 
+The technique itself is of course well known, in particular the Dojo
+toolkit uses a similar approach for its cross platform graphics
+library <code>dojo.gfx</code>, and Lively Kernel even borrows its
+convention of naming the underlying DOM element <code>rawNode</code>.
+</para>
 
 </section> <!-- end of wrapping vs extending -->
 
@@ -322,7 +340,9 @@ technique in the subsequent reimplementation of the Lively Kernel SVG backend.
 substrate not guaranteed to have native declarative animation support - imperative animation.
 </para>
 
-CSS styling not used.
+<para>CSS styling not used.</para>
+
+<para>DOM mouse event delivery not used.</para>
 <!-- unused but useful parts of the SVG spec? -->
 </remark>
 </section>
