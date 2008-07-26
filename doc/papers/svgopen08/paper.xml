@@ -163,7 +163,12 @@ fit as an implementation technology, alternatives: canvas: no text,
 silverlight, flex not open.
 </para>
 </remark>
-
+<figure>
+<mediaobject><imageobject>
+<imagedata fileref="screenshot-small.jpg"/>
+</imageobject></mediaobject>
+<caption><para>Example instantiation of the Lively Kernel.</para></caption>
+</figure>
 <para>
 This paper presents the SVG backend of the Lively Kernel. We have
 found the SVG standard to be a great fit as our graphics substrate,
@@ -438,6 +443,14 @@ update to the SVG tree; speed of bindings (height of the software layers between
       <author><personname> <firstname>Krzysztof</firstname><surname>Palacz</surname> </personname></author>
     </authorgroup>
     <title>Web Browser as an Application Platform: The Lively Kernel Experience.</title>
+  </biblioentry>
+  <biblioentry>
+    Maloney, J. H. and Smith, R. B. 1995. Directness and liveness in
+    the morphic user interface construction environment. In
+    Proceedings of the 8th Annual ACM Symposium on User interface and
+    Software Technology (Pittsburgh, Pennsylvania, United States,
+    November 15 - 17, 1995). UIST '95. ACM, New York, NY, 21-28. DOI=
+    http://doi.acm.org/10.1145/215585.215636
   </biblioentry>
   
 </bibliography>
