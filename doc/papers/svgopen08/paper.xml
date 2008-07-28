@@ -135,7 +135,7 @@ serialization.
 <section>
 <!-- stolen from the rejected ecoop paper -->
 <title>Motivation</title>
-
+<!-- AJAX platform -->
 
 <para>There is no good reason for Web Programming to be more complicated, less general, or any less fun 
 than desktop or other programming.  There are reasons, of course -- reasons that go back to missed 
@@ -172,11 +172,11 @@ silverlight, flex not open.
 <para>
 This paper presents the SVG backend of the Lively Kernel. We have
 found the SVG standard to be a great fit as our graphics substrate,
-and its implementations in widely available Web browsers to be
-adequate to demonstrate the potential of our approach. While our
+and its implementations in widely available Web browsers turned out to
+be adequate to demonstrate the potential of our approach. While our
 current work is almost exclusively built on top of the SVG backend, we
-are vitally interested in portability to other graphics substrates,
-and, in fact, an earlier version of our system provided a custom
+are vitally interested in portability to other graphics substrates.
+In fact, an earlier version of our system provided a custom
 browser-like environment on top of the Java platform, using Java2D
 APIs as its graphics subsystem and Rhino as its execution engine.
 </para>
@@ -184,15 +184,29 @@ APIs as its graphics subsystem and Rhino as its execution engine.
 </section>
 
 <section>
-<!-- stolen from the rejected ecoop paper-->
-<title>A quick summary of the Morphic architecture</title> 
 
-The Morphic architecture aims to provide a simple and uniform graphics
- API.  It achieves this goal by defining a class of graphical objects,
- or “morphs”, possessing some or all of the following properties:
+<title>Morphic User Interface Framework</title>
+
+<para>
+The majority of the JavaScript classes defined by the Lively Kernel
+are related to a user interface framework called Morphic.  The central
+goal of Morphic is to facilitate construction and modification of
+interactive graphical objects, both by direct manipulation and by
+conventional programming.  The Morphic framework was developed
+originally for the Self language and system
+(<code>http://research.sun.com/self</code>), and later became popular as a part of
+the Squeak system (<code>http://www.squeak.org</code>). Lively Kernel reimplements
+a sizable subset of the original Morphic framework in JavaScript using
+technologies available in modern web browsers.
+</para>
+
+<para>
+Morphic achieves simplicity and uniformity by defining and extensively
+relying on a class of graphical objects called “morphs”, possessing
+some or all of the following properties:
 <itemizedlist mark='bullet'>
   <listitem> <para>
-      A shape, or graphical appearance
+      A shape, or graphical appearance 
   </para> </listitem>
   <listitem> <para>
       A set of submorphs, comprising the “scene graph” of the page or world
@@ -213,41 +227,64 @@ The Morphic architecture aims to provide a simple and uniform graphics
       A stepping protocol for time-varying behavior 
   </para> </listitem>
   <listitem> <para> A damage rectangle repainting protocol and
-      double-buffered display mechanism when this is not available in
-      the underlying graphics
+      double-buffered display mechanism (used when the underlying
+      graphics substrate does not provide it)
   </para> </listitem>
 </itemizedlist>
+</para>
 
-A WorldMorph captures the notion of an entire web page; its shape
-defines its background appearance if any, and its submorphs comprise
-all the remaining content of the page.  A HandMorph is the Morphic
-generalization of the cursor; it can be used to pick up, move, and
-deposit other morphs, its shape may change to indicate different
-cursor states, and it is the source of user events in the
-architecture.  In th Lively Kernel, a Morphic world may have several
-hands active at the same time, corresponding to several collaborating
-users of that world, and multiple worlds may be linked in the manner
-of linked web pages.  Interested readers are referred to the original
-papers on Morphic [see References], and to the Lively Kernel technical
-documentation.
+<para>
+Morphic defines several classes of morphs with special semantics.
+A <code>WorldMorph</code> captures the notion of an entire web page;
+its shape defines its background appearance, if any, and its submorphs
+comprise all the remaining content of the page. In contrast to typical
+web pages, however, multiple worlds can coexist in a single JavaScript
+execution context. Notionally, the user interacts with the contents of
+single world, and navigates between different worlds by clicking on
+visual representations of connections between worlds,
+called <code>LinkMorphs</code>.
+</para>
+
+<para>
+A HandMorph is the Morphic generalization of a cursor; it can be used
+to pick up, move, and deposit other morphs, its shape may change to
+indicate different cursor states, and it is the source of user events
+in the architecture.  In Lively Kernel, a Morphic world may have
+several hands active at the same time, corresponding to several
+collaborating users of that world (this functionality is not yet
+available in the current incarnation of the Lively Kernel, however, it
+has been implemented in an earlier prototype based on the Java
+platform and Rhino scripting engine).
+</para>
+
 </section>
 
 <section>
 <title>Implementing Morphic in SVG</title> 
 
+<remark> the whole SVG tree is built dynamically. By default, the
+entry point to the Lively Kernel runtime is a static document defining
+only a single empty <code>&lt;svg&gt;</code> element, and the entire
+SVG DOM tree of the running system is constructed programmatically
+from JavaScript on system load.
+</remark>
+
+
+
 <section>
 <title>Containment</title>
-<para>The original Morphic UI framework organizes visual objects on
-the screen using a tree of <emphasis>morphs</emphasis>. Each morph has
-a single owner morph and can act as a container for other
-morphs. Lively Kernel retains this architectural model, and its SVG
-backend naturally maps morphs onto SVG <code>&lt;g&gt;</code>
-elements. The semantics of <code>&lt;g&gt;</code> elements corresponds
-well to that of Morphic, specifically, the nesting of
-<code>&lt;g&gt;</code> elements does not imply visual containment, and submorphs
-are not necessarily visualy contained by their owner morphs, either. A
-morph's shape is represented by one of the basic SVG shape elements, such
-as <code>&lt;rect&gt;</code>, <code>&lt;ellipse&gt;</code>, or <code>&lt;path&gt;</code>. 
+<para>The Morphic framework organizes visual objects on the screen
+using a tree of morphs. Each morph has a single owner morph and can
+act as a container for other morphs. The SVG backend of Lively Kernel
+naturally maps morphs onto SVG <code>&lt;g&gt;</code> elements. The
+semantics of <code>&lt;g&gt;</code> elements corresponds well to the
+semantics of Morphic, specifically, the nesting of
+<code>&lt;g&gt;</code> elements is a means of logical organization and
+does not imply visual containment, and submorphs are not necessarily
+visualy contained inside their owner morphs, either. A morph's shape is
+represented by one of the basic SVG shape elements, such
+as <code>&lt;rect&gt;</code>, <code>&lt;ellipse&gt;</code>,
+or <code>&lt;path&gt;</code>.
 </para>
 
 <para>Currently, Lively Kernel does not take advantage of the property
@@ -262,63 +299,82 @@ programming abstraction (perhaps as a mechanism to specify widget
 </section>
 
 
-<remark>
-<para>SVG is a DAG.
-Mapping of paint servers and other leaf-ish elements (referred to by xlink references). 
-Ownership model for paint servers (simplifies serialization, not good for space efficiency).
+<para>
+The Lively Kernel SVG backend allocates a private
+ <code>&lt;defs&gt;</code> element to every morph. The SVG
+specification designates <code>&lt;defs&gt;</code> elements as
+containers for elements that are not directly rendered on the screen,
+such as gradients or clip paths. These elements are typically referred
+to by URI attributes on other elements (the SVG standard makes
+extensive use of URI references to express relations between elements
+that are not captured by the DOM tree hierarchy). This design
+facilitates space optimizations through sharing of commonly used
+elements, however, Lively Kernel does not currently take advantage of
+it. Instead, all the elements in a morph's <code>&lt;defs&gt;</code>
+section are notionally owned by it, and the URIs of these elements are
+trivially derived from the URI of the morph's <code>&lt;g&gt;</code>
+element. As a result, every morph defines all the gradients it uses,
+even though a typical user interface uses only a handful of distinct
+gradient defintions that could be shared and applied to multiple
+visual elements. This may be perceived as a shortcoming of the current
+SVG backend, however, the current approach does simplify certain
+implementation aspects, most notably copying and serialization of
+individual morphs. We envision that a future version of our system could
+implement gradient sharing, most likely based on a uniform reference
+counting facility for all SVG elements referenced through URIs.
 </para>
-What does it have to do with Lessphic?
-</remark>
+
+<!--What does it have to do with Lessphic? -->
 
 <section> 
 <title>The implementation of mapping: wrapping versus extending DOM elements</title>
 <para>
-There are at least two general approaches to mapping abstract tree
-data structures (such as the morph tree defined by the Morphic API) to
-DOM trees. The first involves extending appropriate DOM elements so
-that they <emphasis>become</emphasis> Morphs. This was the approach
-originally used by the Lively Kernel SVG backend. Despite its
-conceptual simplicity, it required certain non-obvious implementation
-tricks. For instance, while all morphs were implemented
-as <code>&lt;g&gt;</code> elements, it was not desirable for
-all <code>&lt;g&gt;</code> elements to be morphs. In order to satify
-this requirement, morph factory methods dynamically modified the
-inheriance chain of <code>&lt;g&gt;</code> elements intended to become
-morphs, by inserting a morph prototype object, defining the
-functionality shared by all morphs. Such modifications are not
-possible in according to the ECMAScript language specification (an
-object's <code>prototype</code> is not directly accessible
+There are at least two general approaches to implementing the mapping
+of abstract tree data structures, such as the morph tree defined by
+the Morphic API, to DOM trees. The first involves extending
+appropriate DOM elements so that they <emphasis>become</emphasis>
+morphs. This was the approach originally used by the Lively Kernel SVG
+backend. Despite its conceptual simplicity, it required certain
+non-obvious implementation techniques. For instance, while all morphs
+were implemented as <code>&lt;g&gt;</code> elements, it was not
+desirable for all <code>&lt;g&gt;</code> elements to be morphs. In
+order to satisfy this requirement, morph factory methods dynamically
+modified the inheriance chain of <code>&lt;g&gt;</code> elements
+intended to become morphs, by inserting a morph prototype object,
+defining the functionality shared by all morphs. Such modifications
+are not possible according to the ECMAScript language specification
+(an object's <code>prototype</code> is not directly accessible
 programmatically), however, most JavaScript implementations recognize
 this problem as a language limitation, and furnish every object with a
-mutable <code>__proto__</code> property, which can be manipulated to
+mutable <code>__proto__</code> property that can be manipulated to
 obtain the desired inheritance behavior. Unfortunately, this approach
 eliminated the Opera browser from the list of potential Lively Kernel
-platforms, since its JavaScript implementation does not
+platforms, since its JavaScript engine does not
 implement <code>__proto__</code>.
 </para>
 
 <para>
 A minor inconvenience of this approach was that new morphs were
-instantiated using factory methods (of the
-form <code>MyMorph()</code>), instead of explicit allocation syntax,
-as in <code>new MyMorph()</code> (as a side note, due to the semantics
-of JavaScript, accidental insertion of the <code>new</code> keyword
-did not affect correctness of the program, but merely resulted in a
-wasteful allocation of an unused object). A much more important
-limitation of the approach turned out to be incompatibility with
-environments such as Batik (FIXME cite?), which support
-the <code>__proto__</code> property but do not allow extension of host
-objects (i.e., objects created and managed outside of the JavaScript
-runtime, e.g., DOM objects, and merely exposed programmaticaly to JavaScript).
+instantiated using factory methods of the form <code>MyMorph()</code>,
+instead of explicit allocation syntax, as in <code>new
+MyMorph()</code> (as a side note, due to the semantics of JavaScript,
+accidental insertion of the <code>new</code> keyword did not affect
+the correctness of the program, but merely resulted in a wasteful
+allocation of an unused object). A much more important limitation
+turned out to be incompatibility with environments such as Batik
+(FIXME cite?), which support the <code>__proto__</code> property but
+do not allow extension of host objects (i.e., objects created and
+managed outside of the JavaScript runtime, such as DOM objects, and
+merely exposed programmatically to JavaScript).
 </para>
 
 <para>
-In the face of the limitations, a more
-conventional <emphasis>wrapper</emphasis> - based technique was
-employed in the subsequent reimplementation of the Lively Kernel SVG
-backend. Morphs are implemented as regular, user-defined JavaScript
-objects furnished with the <code>rawNode</code> property, pointing to
-the host object representing the corresponding <code>&lt;g&gt;</code>
+In the face of the limitations, the subsequent reimplementation of the
+Lively Kernel SVG backend uses a more conventional implementation
+technique based on <emphasis>wrappers</emphasis>. Morphs are
+implemented as regular, user-defined JavaScript objects furnished with
+a <code>rawNode</code> property, pointing to the host object
+representing the corresponding <code>&lt;g&gt;</code>
 element. Similarly, <code>Shape</code> objects wrap simple SVG shape
 elements referred to through their <code>rawNode</code> property. No
 new properties or methods are added to host objects, and many Morph
@@ -326,13 +382,13 @@ and Shape methods simply delegate to the
 underlying <code>rawNode</code>. Unfortunately, the object identity of
 the Morph is now distinct from the identity of the
 underlying <code>rawNode</code>, which requires additional boilerplate
-code to map from Morphs to DOM objects (interestingly, apart from
+code to map from Morphs to DOM objects. Interestingly, apart from
 debugging, it is currently never necessary to find a corresponding
 Morph given the DOM element that implements it, is due largely to the
-fact that Lively Kernel performs its own mouse event delivery).
+fact that Lively Kernel performs its own mouse event delivery.
 
 The technique itself is of course well known, in particular the Dojo
-toolkit uses a similar approach for its cross platform graphics
+toolkit uses a similar approach for its cross-platform graphics
 library <code>dojo.gfx</code>, and Lively Kernel even borrows its
 convention of naming the underlying DOM element <code>rawNode</code>.
 </para>
@@ -340,12 +396,24 @@ convention of naming the underlying DOM element <code>rawNode</code>.
 </section> <!-- end of wrapping vs extending -->
 
 
-<remark>
-<para>Declarative vs imperative animations: the underlying graphics
-substrate not guaranteed to have native declarative animation support - imperative animation.
+<para>Lively Kernel does not currently use several features of the SVG
+specification. Most notably, it does not use declarative animations,
+due to both lack of support in current browsers, and our interest in
+portability of the implementation to other graphics backends. Instead,
+a simple imperative framework for scheduling and periodic invocation
+of user-supplied actions is provided. Document styling (through either
+Cascading Style Sheets or Extensible Stylesheet Language standards) is
+not currently used, either, although useful applications of styling
+could be envisioned. For instance, styling could be used to provide
+different UI "skins", i.e., sets of visually coherent presentation
+attributes that can be applied to a widget or application at the user's
+discretion.
+
 </para>
 
-<para>CSS styling not used.</para>
+
+<remark>
+
 
 <para>DOM mouse event delivery not used.</para>
 <!-- unused but useful parts of the SVG spec? -->
