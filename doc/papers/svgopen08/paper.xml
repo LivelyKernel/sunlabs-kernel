@@ -133,9 +133,10 @@ serialization.
 </abstract>
 </info>
 <section>
-<!-- stolen from the rejected ecoop paper -->
+
 <title>Motivation</title>
 <!-- AJAX platform -->
+<remark> This chapter to be fixed </remark>
 
 <para>There is no good reason for Web Programming to be more complicated, less general, or any less fun 
 than desktop or other programming.  There are reasons, of course -- reasons that go back to missed 
@@ -256,14 +257,51 @@ in the architecture.  In Lively Kernel, a Morphic world may have
 several hands active at the same time, corresponding to several
 collaborating users of that world (this functionality is not yet
 available in the current incarnation of the Lively Kernel, however, it
-has been implemented in an earlier prototype based on the Java
-platform and Rhino scripting engine).
+has been implemented in the previousy mentioned earlier prototype
+based on the Java platform).
 </para>
 
+<para>
+Morphic provides means of interactive manipulation of morphs included
+in the framework, and, transitively, composite morphs assembled from
+the morphs already in existence.  In particular, basic shape morphs
+can be edited interactively using visual editors. The editors are also
+implemented as morphs, namely <code>HandleMorphs</code> and expose
+user interface bindings for resizing, rotating, reshaping, rotating of
+the target morph. Morphic also provides other editor morphs, among
+them <code>ColorPickerMorph</code>, used to select and apply solid
+colors to <code>fill</code> and <code>stroke</code>
+attributes, and <code>SelectionMorph</code> (or “selection tray”),
+which allows the same operations to be applied to multiple
+morphs. <remark>insert picture</remark>. Our Morphic implementation
+does not currently provide editors for all the elements and attributes
+specified by the SVG standard, however, such a complete implementation
+would be feasible.
+</para>
+
+<para>
+An editable graphics environment would not be complete without support
+for editing text, and Lively Kernel comes with a full-featured rich
+text editor built into every <code>TextMorph</code>, the basic unit of
+text manipultion in Morphic.
+
 <remark>
-Cover shape editors (-> full coverage of the SVG spec possible but not
-implemented), widgets, MVC, tools (img of tilted code browser)
+Rich text editor, most most complex
+text,explain why not drop to HTML (both b/c foreignObjects not so
+well supported and b/c we want a kernel).
 </remark>
+</para>
+
+
+<para>
+
+
+Beyond simple shapes, widgets
+
+<remark>
+widgets, MVC, tools (img of tilted code browser)
+</remark>
+</para>
 
 </section>
 
@@ -306,10 +344,10 @@ http://www.prototypejs.org/], [see http://www.JSON.org/].
 ]]></programlisting>
 
 
-Imperative API for SVG, hiding the XML underpinnings and hence
+<!-- Imperative API for SVG, hiding the XML underpinnings and hence
 portable to different architectures. API JS-centric (hence no XBL,
 even though similar interest in reusable components).
-
+-->
 
 <section>
 <title>Containment</title>
@@ -321,7 +359,7 @@ semantics of <code>&lt;g&gt;</code> elements corresponds well to the
 semantics of Morphic, specifically, the nesting of
 <code>&lt;g&gt;</code> elements is a means of logical organization and
 does not imply visual containment, and submorphs are not necessarily
-visualy contained inside their owner morphs, either. A morph's shape is
+visually contained inside their owner morphs, either. A morph's shape is
 represented by one of the basic SVG shape elements, such
 as <code>&lt;rect&gt;</code>, <code>&lt;ellipse&gt;</code>,
 or <code>&lt;path&gt;</code>.
@@ -355,7 +393,7 @@ section are notionally owned by the morph, and the URIs of these elements are
 trivially derived from the URI of the morph's <code>&lt;g&gt;</code>
 element. As a result, every morph defines all the gradients it uses,
 even though a typical user interface uses only a handful of distinct
-gradient defintions that could be shared and applied to multiple
+gradient definitions that could be shared and applied to multiple
 visual elements. This may be perceived as a shortcoming of the current
 SVG backend, however, the current approach does simplify certain
 implementation aspects, most notably copying and serialization of
@@ -379,7 +417,7 @@ non-obvious implementation techniques. For instance, while all morphs
 were implemented as <code>&lt;g&gt;</code> elements, the converse was
 not deemed appropriate: not all <code>&lt;g&gt;</code> elements
 shouldx be morphs. In order to satisfy this requirement, morph factory
-methods dynamically modified the inheriance chain
+methods dynamically modified the inheritance chain
 of <code>&lt;g&gt;</code> elements intended to become morphs, by
 inserting a morph prototype object, defining the functionality shared
 by all morphs. Such modifications are not possible according to the
@@ -446,11 +484,14 @@ a simple imperative framework for scheduling and periodic invocation
 of user-supplied actions is provided. Document styling (through either
 Cascading Style Sheets or Extensible Stylesheet Language standards) is
 not currently used, either, although useful applications of styling
-could be envisioned. For instance, styling could enable support for
-different UI "skins", i.e., sets of visually coherent presentation
-attributes that can be applied to a widget or application at the
-user's discretion. Another platform feature not used by Lively Kernel
-is mouse event delivery. Instead of registering event handlers on
+could be envisioned. For instance, styling could be used to implement
+UI themes, i.e., sets of visually coherent presentation attributes
+that can be applied to a widget or application at the user's
+discretion. UI themes are already supported by Lively Kernel, however,
+browser support for styling is not leveraged.
+
+Another platform feature not used by Lively Kernel is
+mouse event delivery. Instead of registering event handlers on
 individual SVG elements, the <code>HandMorph</code> registers a single
 input event handler in the capture phase of DOM event delivery. The
 handler determines the morph that should receive the event based on
