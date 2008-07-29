@@ -189,14 +189,17 @@ APIs as its graphics subsystem and Rhino as its execution engine.
 
 <para>
 The majority of the JavaScript classes defined by the Lively Kernel
-are related to a user interface framework called Morphic.  The central
-goal of Morphic is to facilitate construction and modification of
-interactive graphical objects, both by direct manipulation and by
-conventional programming.  The Morphic framework was developed
-originally for the Self language and system
-(<code>http://research.sun.com/self</code>), and later became popular as a part of
-the Squeak system (<code>http://www.squeak.org</code>). Lively Kernel reimplements
-a sizable subset of the original Morphic framework in JavaScript using
+are related to a user interface framework called Morphic. 
+
+
+The central goal of Morphic is to facilitate construction and
+modification of interactive graphical objects, both by direct
+manipulation and by conventional programming.  The Morphic framework
+was developed originally for the Self language and system
+(<code>http://research.sun.com/self</code>), and later became popular
+as the user interface of the Squeak system
+(<code>http://www.squeak.org</code>). Lively Kernel reimplements a
+sizable subset of the original Morphic framework in JavaScript using
 technologies available in modern web browsers.
 </para>
 
@@ -257,6 +260,11 @@ has been implemented in an earlier prototype based on the Java
 platform and Rhino scripting engine).
 </para>
 
+<remark>
+Cover shape editors (-> full coverage of the SVG spec possible but not
+implemented), widgets, MVC, tools (img of tilted code browser)
+</remark>
+
 </section>
 
 <section>
@@ -269,6 +277,38 @@ SVG DOM tree of the running system is constructed programmatically
 from JavaScript on system load.
 </remark>
 
+<programlisting><![CDATA[
+319 Host Interface – Browser API plus XML utility functions 
+515 Utility – Classes, collections, printing, etc. (plus 562 in Prototype.js) 
+833 Basic Graphics – Point, Rectangle, Transform, Color, Gradient, Image 
+550 Shapes – Host graphical objects (SVG node API) 
+1667 Morph – Basic protocol 
+1170 Morphic Core -- World, Hand, Event, Handles, Handlers 
+1188 Basic Widgets – Button, List, Menu, Dialog, Slider, Selection, ImageMorph 
+1921 Text – basic TextMorph plus composition and rich text 
+747 Editors – Drag/drop manipulation, shape editors and text editing 
+also ColorPicker and StylePanel 
+386 Model, Widget 
+1295 High Level Widgets – Scroll panes, panels, windows, world links 
+also Panel and Browser support 
+1311 Tools – Browser, inspector, stack viewer, change lists, profiler 
+406 Serialization – Copier, exporter, importer (plus 202 in JSON) 
+281 Network – URL, HTTP, WebDAV basics 
+365 Storage – WebDAV, file browser 
+----- ----- 
+12954 Total 
+
+Figure 10: Breakdown of Lively Kernel by function with approximate
+code size The figures above include comments and lines with single
+bracket characters.  Prototype.js is an open source set of useful
+JavaScript extensions, of which we use only a small number [see
+http://www.prototypejs.org/], [see http://www.JSON.org/].
+]]></programlisting>
+
+
+Imperative API for SVG, hiding the XML underpinnings and hence
+portable to different architectures. API JS-centric (hence no XBL,
+even though similar interest in reusable components).
 
 
 <section>
@@ -289,7 +329,7 @@ or <code>&lt;path&gt;</code>.
 
 <para>Currently, Lively Kernel does not take advantage of the property
 inheritance mechanism of <code>&lt;g&gt;</code> elements provided by
-the SVG spec, and each basic shape element is required to specify the
+the SVG specification, and each basic shape element is required to specify the
 full set of its visual attributes. This feature of the SVG standard
 could be potentially taken advantage of, both as implementation
 technique to improve space utilization, and as an API-level
@@ -311,7 +351,7 @@ that are not captured by the DOM tree hierarchy). This design
 facilitates space optimizations through sharing of commonly used
 elements, however, Lively Kernel does not currently take advantage of
 it. Instead, all the elements in a morph's <code>&lt;defs&gt;</code>
-section are notionally owned by it, and the URIs of these elements are
+section are notionally owned by the morph, and the URIs of these elements are
 trivially derived from the URI of the morph's <code>&lt;g&gt;</code>
 element. As a result, every morph defines all the gradients it uses,
 even though a typical user interface uses only a handful of distinct
@@ -336,16 +376,17 @@ appropriate DOM elements so that they <emphasis>become</emphasis>
 morphs. This was the approach originally used by the Lively Kernel SVG
 backend. Despite its conceptual simplicity, it required certain
 non-obvious implementation techniques. For instance, while all morphs
-were implemented as <code>&lt;g&gt;</code> elements, it was not
-desirable for all <code>&lt;g&gt;</code> elements to be morphs. In
-order to satisfy this requirement, morph factory methods dynamically
-modified the inheriance chain of <code>&lt;g&gt;</code> elements
-intended to become morphs, by inserting a morph prototype object,
-defining the functionality shared by all morphs. Such modifications
-are not possible according to the ECMAScript language specification
-(an object's <code>prototype</code> is not directly accessible
-programmatically), however, most JavaScript implementations recognize
-this problem as a language limitation, and furnish every object with a
+were implemented as <code>&lt;g&gt;</code> elements, the converse was
+not deemed appropriate: not all <code>&lt;g&gt;</code> elements
+shouldx be morphs. In order to satisfy this requirement, morph factory
+methods dynamically modified the inheriance chain
+of <code>&lt;g&gt;</code> elements intended to become morphs, by
+inserting a morph prototype object, defining the functionality shared
+by all morphs. Such modifications are not possible according to the
+ECMAScript language specification (an object's <code>prototype</code>
+is not directly accessible programmatically), however, most JavaScript
+implementations recognize this problem as a language limitation, and
+make the object prototype accessible through a
 mutable <code>__proto__</code> property that can be manipulated to
 obtain the desired inheritance behavior. Unfortunately, this approach
 eliminated the Opera browser from the list of potential Lively Kernel
@@ -388,7 +429,7 @@ Morph given the DOM element that implements it, is due largely to the
 fact that Lively Kernel performs its own mouse event delivery.
 
 The technique itself is of course well known, in particular the Dojo
-toolkit uses a similar approach for its cross-platform graphics
+toolkit <remark>FIXME cite? </remark> uses a similar approach for its cross-platform graphics
 library <code>dojo.gfx</code>, and Lively Kernel even borrows its
 convention of naming the underlying DOM element <code>rawNode</code>.
 </para>
@@ -396,7 +437,8 @@ convention of naming the underlying DOM element <code>rawNode</code>.
 </section> <!-- end of wrapping vs extending -->
 
 
-<para>Lively Kernel does not currently use several features of the SVG
+<para>
+Lively Kernel does not currently use several features of the SVG
 specification. Most notably, it does not use declarative animations,
 due to both lack of support in current browsers, and our interest in
 portability of the implementation to other graphics backends. Instead,
@@ -404,60 +446,30 @@ a simple imperative framework for scheduling and periodic invocation
 of user-supplied actions is provided. Document styling (through either
 Cascading Style Sheets or Extensible Stylesheet Language standards) is
 not currently used, either, although useful applications of styling
-could be envisioned. For instance, styling could be used to provide
+could be envisioned. For instance, styling could enable support for
 different UI "skins", i.e., sets of visually coherent presentation
-attributes that can be applied to a widget or application at the user's
-discretion.
-
+attributes that can be applied to a widget or application at the
+user's discretion. Another platform feature not used by Lively Kernel
+is mouse event delivery. Instead of registering event handlers on
+individual SVG elements, the <code>HandMorph</code> registers a single
+input event handler in the capture phase of DOM event delivery. The
+handler determines the morph that should receive the event based on
+the coordinates contained in the event object and and geometry
+information obtained by inspecting the morph tree. Clearly, Lively
+Kernel duplicates in JavaScript some of the mechanisms implemented
+natively by the DOM, however, event delivery turns out not to be
+performance-critical, and the resulting codebase is more easily
+portable to graphics backends not based on a DOM.
 </para>
 
 
-<remark>
 
-
-<para>DOM mouse event delivery not used.</para>
-<!-- unused but useful parts of the SVG spec? -->
-</remark>
 </section>
 
 
 
-<section>
-<title>Lively Kernel as a Graphics Kernel</title> 
-
-Imperative API for
-SVG, hiding the XML underpinnings and hence portable to different
-architectures. API JS-centric (hence no XBL, even though similar interest in reusable components).
 
 
-<programlisting><![CDATA[
-319 Host Interface – Browser API plus XML utility functions 
-515 Utility – Classes, collections, printing, etc. (plus 562 in Prototype.js) 
-833 Basic Graphics – Point, Rectangle, Transform, Color, Gradient, Image 
-550 Shapes – Host graphical objects (SVG node API) 
-1667 Morph – Basic protocol 
-1170 Morphic Core -- World, Hand, Event, Handles, Handlers 
-1188 Basic Widgets – Button, List, Menu, Dialog, Slider, Selection, ImageMorph 
-1921 Text – basic TextMorph plus composition and rich text 
-747 Editors – Drag/drop manipulation, shape editors and text editing 
-also ColorPicker and StylePanel 
-386 Model, Widget 
-1295 High Level Widgets – Scroll panes, panels, windows, world links 
-also Panel and Browser support 
-1311 Tools – Browser, inspector, stack viewer, change lists, profiler 
-406 Serialization – Copier, exporter, importer (plus 202 in JSON) 
-281 Network – URL, HTTP, WebDAV basics 
-365 Storage – WebDAV, file browser 
------ ----- 
-12954 Total 
-
-Figure 10: Breakdown of Lively Kernel by function with approximate
-code size The figures above include comments and lines with single
-bracket characters.  Prototype.js is an open source set of useful
-JavaScript extensions, of which we use only a small number [see
-http://www.prototypejs.org/], [see http://www.JSON.org/].
-]]></programlisting>
-</section>
 
 <section>
 <title>SVG as a component of an application description format</title>
