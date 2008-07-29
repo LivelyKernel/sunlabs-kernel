@@ -1751,23 +1751,19 @@ Object.subclass('Similitude', {
 	this.f = mx.f;
 	this.matrix_ = this.toMatrix();
     },
-
+    
     preConcatenate: function(t) {
-	if (true) {
-	    this.fromMatrix(this.matrix_.multiply(t.matrix_));
-	} else { // KP: something's wrong here
-	    t = this;
-
-	    this.a =  t.a * this.a + t.c * this.b;
-	    this.b =  t.b * this.a + t.d * this.b;
-	    this.c =  t.a * this.c + t.c * this.d;
-	    this.d =  t.b * this.c + t.d * this.d;
-	    this.e =  t.a * this.e + t.c * this.f  + t.e;
-	    this.f =  t.b * this.e + t.d * this.f  + t.f;
-	}
+	var m = this.matrix_;
+	this.a =  t.a * m.a + t.c * m.b;
+	this.b =  t.b * m.a + t.d * m.b;
+	this.c =  t.a * m.c + t.c * m.d;
+	this.d =  t.b * m.c + t.d * m.d;
+	this.e =  t.a * m.e + t.c * m.f + t.e;
+	this.f =  t.b * m.e + t.d * m.f + t.f;
+	this.matrix_ = this.toMatrix();
 	return this;
-    },
-
+    }
+    
 
 });
 
@@ -3993,14 +3989,16 @@ Morph.addMethods({
 
     transformToMorph: function(other) {
 	// getTransformToElement has issues on some platforms
-	if (Config.useGetTransformToElement) return this.rawNode.getTransformToElement(other.rawNode);
-	// not quite working yet
-	var tfm = this.getGlobalTransform();
-	var inv = other.getGlobalTransform().createInverse();
-	// console.log("global: " + tfm + " inverse " + inv);
-	tfm.preConcatenate(inv);
-	//console.log("transforming " + this + " to " + tfm);
-	return tfm;
+	if (Config.useGetTransformToElement) {
+	    return this.rawNode.getTransformToElement(other.rawNode);
+	} else {
+	    var tfm = this.getGlobalTransform();
+	    var inv = other.getGlobalTransform().createInverse();
+	    // console.log("global: " + tfm + " inverse " + inv);
+	    tfm.preConcatenate(inv);
+	    //console.log("transforming " + this + " to " + tfm);
+	    return tfm;
+	}
     },
 
     getGlobalTransform: function() {

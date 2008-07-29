@@ -25,7 +25,9 @@ var UserAgent = (function() {
     })();
 
     var isRhino = !window.navigator || window.navigator.userAgent.indexOf("Rhino") > -1;
+
     var isMozilla = window.navigator && window.navigator.userAgent.indexOf("Mozilla") > -1;
+    var fireFoxVersion = window.navigator && window.navigator.userAgent.split("Firefox/")[1]; // may be undefined
 
     // Determines User Agent capabilities
     return {
@@ -48,6 +50,8 @@ var UserAgent = (function() {
         isRhino: isRhino,
 	
         isMozilla: isMozilla,
+
+	fireFoxVersion: fireFoxVersion ? fireFoxVersion.split('.') : null, 
 	
         isWindows: (window.navigator && window.navigator.platform == "Win32")
     };
@@ -87,7 +91,9 @@ var Config = {
 
     // Use the browser's affine transforms
     useTransformAPI: UserAgent.usableTransformAPI, 
-    useGetTransformToElement: true,
+
+    // Firefox 2 has known problems with getTransformToElement, detect it
+    useGetTransformToElement: !(UserAgent.fireFoxVersion && UserAgent.fireFoxVersion[0] == '2'),
 
     // Enable drop shadows for objects (does not work well in most browsers)
     useDropShadow: UserAgent.usableDropShadow,
