@@ -250,7 +250,7 @@ called <code>LinkMorphs</code>.
 </para>
 
 <para>
-A HandMorph is the Morphic generalization of a cursor; it can be used
+A <code>HandMorph</code> is the Morphic generalization of a cursor; it can be used
 to pick up, move, and deposit other morphs, its shape may change to
 indicate different cursor states, and it is the source of user events
 in the architecture.  In Lively Kernel, a Morphic world may have
@@ -305,19 +305,22 @@ graphical idioms.  Figure 3 shows a small snippet of JavaScript that
 draws a polygonal spiral.  Beyond mere marks on the screen, this code
 produces a fully active object that can be copied, scaled, and
 colored, as shown, and that could be set to spinning with one more
-line of code, such as this.startStepping(50, “rotateBy”, 0.1); // 0.1
-radians every 50 ms
+line of code, such as 
+<programlisting><![CDATA[
+this.startStepping(50, “rotateBy”, 0.1); // 0.1 radians every 50 ms
+]]></programlisting>
+</para>
 
+<para>
+ Morphic provides means of interactive manipulation of morphs included
+in the framework, and, transitively, composite morphs assembled from
+the morphs already in existence.
 
- Morphic provides means of
-interactive manipulation of morphs included in the framework, and,
-transitively, composite morphs assembled from the morphs already in
-existence.  
-
-Our Morphic implementation does not currently
-provide editors for all the elements and attributes specified by the
-SVG standard, however, such a complete implementation would be
-feasible.
+Our Morphic implementation does not currently provide editors for all
+the elements and attributes specified by the SVG standard, however,
+such a complete implementation would be feasible, and would constitute
+an interesting light-weight self-sustaining graphics editor for the
+web FIXME.
 
 </para>
 </section>
@@ -485,7 +488,7 @@ accidental insertion of the <code>new</code> keyword did not affect
 the correctness of the program, but merely resulted in a wasteful
 allocation of an unused object). A much more important limitation
 turned out to be incompatibility with environments such as Batik
-(FIXME cite?), which support the <code>__proto__</code> property but
+(<xref linkend="Batik" />), which support the <code>__proto__</code> property but
 do not allow extension of host objects (i.e., objects created and
 managed outside of the JavaScript runtime, such as DOM objects, and
 merely exposed programmatically to JavaScript).
@@ -559,6 +562,8 @@ portable to graphics backends not based on a DOM.
 <section>
 <title>SVG as a component of an application description format</title>
 
+
+
 Even with multiple graphics backends,
 the serialization format could be either an entirely new format (and n
 translations for n platforms), or an existing format like SVG with n-1
@@ -578,7 +583,8 @@ Lively Kernel runtime is not available at deserialization time or the
 user agent does not support JavaScript, the serialized file is
 rendered as a static screenshot of the application at the time of
 serialization.
-
+<remark><para>drum up WebDAV as a persistence mechanism. Expound on
+the possibility of a full-fledged SVG editor here</para></remark>
 
 </section>
 
@@ -586,21 +592,38 @@ serialization.
 <title>Experiences with SVG implementations</title> 
 
 <remark>
-Firefox, Safari, Batik, Examotion, Opera.  Better support highly
+Firefox, Safari, Batik, Examotion/IE, Opera.  This area not
+authoritative.
+
+Better support highly
 requested in the areas of drag and drop, copy and paste support,
-filters for dropshadows. 
-<para>Performance questions: efficiency of dynamic
-update to the SVG tree; speed of bindings (height of the software layers between JS and the graphics engine).
+filters for dropshadows. Font metric support either incorrect or not
+available until webpage rendered).
+<para>Correctness questions: we're not gurus but we ran into several problems
+browser implementors (Apple) used to test correctness.
 </para>
+<para>Performance questions: we don't quite know, too early to make
+meaningful measurements, efficiency of dynamic update to the SVG tree;
+speed of bindings (height of the software layers between JS and the
+graphics engine).
+</para>
+
+<para>Implementation alternatives: flex? silverlight? not open, no dynamicity</para>
+<para>cooperation with other web technologies: foreignobject support,
+leverage MIDAS html editing extensions? </para>
 
 </remark>
 </section>
 
-<bibliography xmlns="http://docbook.org/ns/docbook">
+<section>
+<title>Future Work</title>
+</section>
+
+<bibliography>
   <title>References</title>
   
-  <biblioentry>
-    <abbrev>LK-TR</abbrev>
+  <biblioentry xml:id="Taivalsaari08">
+    <abbrev>Taivalsaari08</abbrev>
     <authorgroup>
       <author><personname> <firstname>Antero</firstname><surname>Taivalsaari</surname> </personname></author>
       <author><personname> <firstname>Tommi</firstname><surname>Mikkonen</surname> </personname></author>
@@ -609,13 +632,21 @@ update to the SVG tree; speed of bindings (height of the software layers between
     </authorgroup>
     <title>Web Browser as an Application Platform: The Lively Kernel Experience.</title>
   </biblioentry>
-  <biblioentry>
+
+  <biblioentry xml:id="Maloney95">
+    <abbrev>Maloney95</abbrev>
     Maloney, J. H. and Smith, R. B. 1995. Directness and liveness in
     the morphic user interface construction environment. In
     Proceedings of the 8th Annual ACM Symposium on User interface and
     Software Technology (Pittsburgh, Pennsylvania, United States,
-    November 15 - 17, 1995). UIST '95. ACM, New York, NY, 21-28. DOI=
-    http://doi.acm.org/10.1145/215585.215636
+    November 15 - 17, 1995). UIST '95. ACM, New York, NY, 21-28.
+    <link xlink:href="http://doi.acm.org/10.1145/215585.215636"/> 
+  </biblioentry>
+
+  <biblioentry xml:id="Batik">
+    <abbrev>Batik</abbrev> 
+    <title>The Batik SVG toolkit</title> 
+    <link xlink:href="http://xmlgraphics.apache.org/batik/"><code>xmlgraphics.apache.org/batik</code></link>
   </biblioentry>
   
 </bibliography>
