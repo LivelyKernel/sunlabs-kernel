@@ -138,33 +138,55 @@ serialization.
 <!-- AJAX platform -->
 <remark> This chapter to be fixed </remark>
 
-<para>There is no good reason for Web Programming to be more complicated, less general, or any less fun 
-than desktop or other programming.  There are reasons, of course -- reasons that go back to missed 
-opportunities when the web was designed -- but these need not hold us back.  In this paper we describe 
-a simple and general kernel for programming the web.  It is less than 10,000 lines of code (with 
-comments), it runs in major browsers with no installation, and it performs well.  We call it the Lively 
-Kernel.
-</para> 
+<remark> 
 <para>
-We inherit from the World Wide Web an architecture built around a text markup language.  The Lively 
-Kernel sets that architecture aside in favor of modern graphics and a dynamic programming language. 
-We begin by turning the conventional we programming "stack" upside-down as shown in Figure 2. 
-Figure 2:  Turning Web Programming Upside-Down
-The first priority of this architecture is to provide a world of active objects.  This is accomplished by 
-putting a dynamic language close to the operating system, which allows both the infrastructure 
-(widgets, etc.) and the application to share the same pervasive generality and power.  The compactness 
-and capability of our small system validates this approach. 
+web and AJAX sparked revival of GUI framework development, lowered
+barrier of entry, not tied to OSes and entrenched vendors and their
+software distribution channels.  Opportunity for introducing new user
+interface paradigms, or reintroducing old but not widely adopted ones.
 </para>
 
-<remark>
 <para>
-
- LK conceptually not tied to any graphics backend but SVG as a good
-fit as an implementation technology, alternatives: canvas: no text,
-silverlight, flex not open.
+The alternatives are: Reproduce a typical desktop environment, or jump
+forward, capitalize on decades of GUI research and innovation outside
+of the desktop mainstream. Multiple very impressive and advanced AJAX
+GUI toolkits attempt to emulate modern desktop environments, Lively
+Kernel (while capable of providing the same), goes further by adding
+an unprecedented level of malleability and interactivity.
 </para>
-</remark>
-<figure>
+
+<para>
+LK aims to improve both functionality and developer-visible software
+architecture at the same time.  While the existing AJAX toolkits
+achieve wonders by building on top the text markup infrastructure
+(HTML) not originally meant to support rich user experiences, LK in
+its current form builds on SVG and its rich graphics model, as well as
+a dynamic programming language, a much better foundation.
+</para>
+
+<para>
+LK presents traditional procedural API, SVG used almost exclusively
+through the DOM interface, low level markup eliminated from the
+programmers interface (although accessible underneath).  Resulting
+system is both compact (10,000 LOC w/comments) and expressive.  A
+natural graphics API enables LK to be a web programming kernel,
+compact and comprehensible for a single programmer, based on single
+syntax and semantics (javascript) while the other AJAX toolkits often
+require a lot of mental context switching among Javascript, HTML, CSS
+and other auxiliary technologies.
+
+</para>
+
+<para>
+our system more than capable of implementing traditional desktop
+metaphors, as shown in <xref linkend="fig_desktop"/>, yet not limited to it.
+</para>
+ </remark>
+
+
+
+<figure xml:id="fig_desktop">
+<title>Lively Kernel desktop</title>
 <mediaobject><imageobject>
 <imagedata fileref="screenshot-small.jpg"/>
 </imageobject></mediaobject>
