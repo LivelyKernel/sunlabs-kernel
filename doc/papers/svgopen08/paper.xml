@@ -261,24 +261,69 @@ has been implemented in the previousy mentioned earlier prototype
 based on the Java platform).
 </para>
 
+</section>
+
+<section>
+<title>A Lively Construction</title>
 <para>
-Morphic provides means of interactive manipulation of morphs included
-in the framework, and, transitively, composite morphs assembled from
-the morphs already in existence.  In particular, basic shape morphs
-can be edited interactively using visual editors. The editors are also
-implemented as morphs, namely <code>HandleMorphs</code> and expose
-user interface bindings for resizing, rotating, reshaping, rotating of
-the target morph. Morphic also provides other editor morphs, among
-them <code>ColorPickerMorph</code>, used to select and apply solid
-colors to <code>fill</code> and <code>stroke</code>
+In contrast with the prevailingly static elements of most Web pages,
+each morph in a Lively Kernel world can be picked up, moved, resized, rotated,
+duplicated and reshaped. Thus, at its simplest, the Lively Kernel
+functions as a rudimentary graphics editor.
+
+
+The sequence shown in Figure FIXME illustrates the construction of a
+simple truck shape by concrete manipulation.  In Figure 2a we see a
+palette of useful shapes.  In Figure 2b, the rectangle has been
+copied, and extended in figure 2c.  In Figure 2d, the rectangle has
+been colored yellow, an ellipse has been copied, resized, and colored,
+and has been given a thick black border to resemble a tire, and a
+second copy has already been affixed to the bus.  In Figure 2e, the
+truck is complete, and figure 2f shows a family of trucks, copied and
+rotated from the new master, all operations that can be accomplished
+with simple gestures in the Lively Kernel's graphic editor. 
+
+
+<!-- The visual interface elements used to ma
+
+ namely <code>HandleMorphs</code> and
+expose user interface bindings for resizing, rotating, reshaping,
+rotating of the target morph. Morphic also provides other editor
+morphs, among them <code>ColorPickerMorph</code>, used to select and
+apply solid colors to <code>fill</code> and <code>stroke</code>
 attributes, and <code>SelectionMorph</code> (or “selection tray”),
 which allows the same operations to be applied to multiple
-morphs. <remark>insert picture</remark>. Our Morphic implementation
-does not currently provide editors for all the elements and attributes
-specified by the SVG standard, however, such a complete implementation
-would be feasible.
-</para>
+morphs. <remark>insert picture</remark>.
+-->
 
+
+<!--Extending the graphical vocabulary  -->
+
+Beyond the basic vocabulary of the underlying graphics support, the
+programmability of Morphic shapes provides an unlimited range of
+graphical idioms.  Figure 3 shows a small snippet of JavaScript that
+draws a polygonal spiral.  Beyond mere marks on the screen, this code
+produces a fully active object that can be copied, scaled, and
+colored, as shown, and that could be set to spinning with one more
+line of code, such as this.startStepping(50, “rotateBy”, 0.1); // 0.1
+radians every 50 ms
+
+
+ Morphic provides means of
+interactive manipulation of morphs included in the framework, and,
+transitively, composite morphs assembled from the morphs already in
+existence.  
+
+Our Morphic implementation does not currently
+provide editors for all the elements and attributes specified by the
+SVG standard, however, such a complete implementation would be
+feasible.
+
+</para>
+</section>
+
+
+<section><title>FIXME more editing: text, widgets, tools</title>
 <para>
 An editable graphics environment would not be complete without support
 for editing text, and Lively Kernel comes with a full-featured rich
@@ -302,11 +347,10 @@ Beyond simple shapes, widgets
 widgets, MVC, tools (img of tilted code browser)
 </remark>
 </para>
-
 </section>
 
-<section>
-<title>Implementing Morphic in SVG</title> 
+
+<section><title>Implementing Morphic in SVG</title> 
 
 <remark> the whole SVG tree is built dynamically. By default, the
 entry point to the Lively Kernel runtime is a static document defining
