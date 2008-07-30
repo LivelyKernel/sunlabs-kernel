@@ -138,30 +138,64 @@ serialization.
 <!-- AJAX platform -->
 <remark> This chapter to be fixed </remark>
 
-<remark> 
-<para>
-web and AJAX sparked revival of GUI framework development, lowered
-barrier of entry, not tied to OSes and entrenched vendors and their
-software distribution channels.  Opportunity for introducing new user
-interface paradigms, or reintroducing old but not widely adopted ones.
-</para>
+
 
 <para>
-The alternatives are: Reproduce a typical desktop environment, or jump
+The explosive growth of the Internet and growing interest in expanding
+interactive functionality and usability of Web applications has
+recently sparked a revival of sorts of graphical user interface (GUI)
+framework development. The cross-platform, standards-oriented nature
+of enabling technologies available in commercial Web browsers lowered
+the barrier of entry to the field of GUI framework development, and
+greatly reduced the dependence on operating system vendors and their
+software distribution and update channels. As a result, a variety of
+popular, actively developed Web-based GUI frameworks have sprung up,
+usually as main components of so called <emphasis>AJAX</emphasis>
+toolkits, which leverage the JavaScript language, dynamically updated
+HTML markup and asynchronous XML requests to provide rich user
+experience. On the other hand, vendors such as Adobe and Microsoft
+recognize the limitations of technologies implemented by Web browsers,
+and promote proprietary frameworks based on external runtimes
+available as browser plug-ins, such as Adobe Flash, Adobe Flex and
+Microsoft Silverlight.
+</para>
+
+
+<para>
+Naturally, currently available AJAX toolkits aim to reproduce the
+functionality and usability of a modern desktop GUI framework. In this
+paper we present an alternative approach, a system that capitalizes on
+decades of GUI research and innovation outside the mainstream practice
+of GUI framework design. The renewed interest in GUI frameworks
+presents itself as a unique opportunity to offer these results to
+wider audiences. 
+</para>
+
+<!-- The alternatives are: Reproduce a typical desktop environment, or jump
 forward, capitalize on decades of GUI research and innovation outside
 of the desktop mainstream. Multiple very impressive and advanced AJAX
-GUI toolkits attempt to emulate modern desktop environments, Lively
-Kernel (while capable of providing the same), goes further by adding
-an unprecedented level of malleability and interactivity.
+GUI toolkits attempt to emulate modern desktop environments, 
+Unique opportunity to improve the state of art.
+-->
+
+
+<remark>
+<para>
+The main difference is a much higher level of dynamicity and
+malleability, offered equally to the programmer and to the interactive
+user.
 </para>
+
 
 <para>
 LK aims to improve both functionality and developer-visible software
 architecture at the same time.  While the existing AJAX toolkits
 achieve wonders by building on top the text markup infrastructure
 (HTML) not originally meant to support rich user experiences, LK in
-its current form builds on SVG and its rich graphics model, as well as
-a dynamic programming language, a much better foundation.
+its current form builds on SVG and its rich graphics model is a much
+better foundation.  We are also aided by the dynamicity of the programming
+language at our disposal.
+
 </para>
 
 <para>
@@ -334,14 +368,14 @@ this.startStepping(50, “rotateBy”, 0.1); // 0.1 radians every 50 ms
 </para>
 
 <para>
- Morphic provides means of interactive manipulation of morphs included
+Morphic provides means of interactive manipulation of morphs included
 in the framework, and, transitively, composite morphs assembled from
 the morphs already in existence.
 
 Our Morphic implementation does not currently provide editors for all
 the elements and attributes specified by the SVG standard, however,
 such a complete implementation would be feasible, and would constitute
-an interesting light-weight self-sustaining graphics editor for the
+an interesting light-weight, self-sustaining graphics editor for the
 web FIXME.
 
 </para>
@@ -351,9 +385,9 @@ web FIXME.
 <section><title>FIXME more editing: text, widgets, tools</title>
 <para>
 An editable graphics environment would not be complete without support
-for editing text, and Lively Kernel comes with a full-featured rich
-text editor built into every <code>TextMorph</code>, the basic unit of
-text manipultion in Morphic.
+for editing text, and Lively Kernel comes with a rich text editor
+built into every <code>TextMorph</code>, the basic text container and
+unit of text manipulation.
 
 <remark>
 Rich text editor, most most complex
@@ -483,22 +517,21 @@ appropriate DOM elements so that they <emphasis>become</emphasis>
 morphs. This was the approach originally used by the Lively Kernel SVG
 backend. Despite its conceptual simplicity, it required certain
 non-obvious implementation techniques. For instance, while all morphs
-were implemented as <code>&lt;g&gt;</code> elements, the converse was
-not deemed appropriate: not all <code>&lt;g&gt;</code> elements
-shouldx be morphs. In order to satisfy this requirement, morph factory
-methods dynamically modified the inheritance chain
-of <code>&lt;g&gt;</code> elements intended to become morphs, by
-inserting a morph prototype object, defining the functionality shared
-by all morphs. Such modifications are not possible according to the
-ECMAScript language specification (an object's <code>prototype</code>
-is not directly accessible programmatically), however, most JavaScript
-implementations recognize this problem as a language limitation, and
-make the object prototype accessible through a
-mutable <code>__proto__</code> property that can be manipulated to
-obtain the desired inheritance behavior. Unfortunately, this approach
-eliminated the Opera browser from the list of potential Lively Kernel
-platforms, since its JavaScript engine does not
-implement <code>__proto__</code>.
+were mapped to <code>&lt;g&gt;</code> elements, the converse was not
+deemed appropriate: not all <code>&lt;g&gt;</code> elements should be
+morphs. In order to satisfy this requirement, morph factory methods
+dynamically modified the inheritance chain of <code>&lt;g&gt;</code>
+elements intended to become morphs, by inserting a morph prototype
+object, defining the functionality shared by all morphs. Such
+modifications are not possible according to the ECMAScript language
+specification (an object's <code>prototype</code> is generally not
+accessible programmatically), however, most JavaScript implementations
+recognize this problem as a language limitation, and make the object
+prototype accessible through a mutable <code>__proto__</code> property
+that can be manipulated to obtain the desired inheritance
+behavior. Unfortunately, this approach eliminated the Opera browser
+from the list of potential Lively Kernel platforms, since its
+JavaScript engine does not implement <code>__proto__</code>.
 </para>
 
 <para>
@@ -509,7 +542,7 @@ MyMorph()</code> (as a side note, due to the semantics of JavaScript,
 accidental insertion of the <code>new</code> keyword did not affect
 the correctness of the program, but merely resulted in a wasteful
 allocation of an unused object). A much more important limitation
-turned out to be incompatibility with environments such as Batik
+turned out to be the incompatibility with environments such as Batik
 (<xref linkend="Batik" />), which support the <code>__proto__</code> property but
 do not allow extension of host objects (i.e., objects created and
 managed outside of the JavaScript runtime, such as DOM objects, and
@@ -530,10 +563,11 @@ and Shape methods simply delegate to the
 underlying <code>rawNode</code>. Unfortunately, the object identity of
 the Morph is now distinct from the identity of the
 underlying <code>rawNode</code>, which requires additional boilerplate
-code to map from Morphs to DOM objects. Interestingly, apart from
-debugging, it is currently never necessary to find a corresponding
-Morph given the DOM element that implements it, is due largely to the
-fact that Lively Kernel performs its own mouse event delivery.
+code to map from Morphs to DOM objects. Interestingly, other than
+while debugging, it is currently never necessary to find a
+corresponding Morph given the DOM element that implements it, is due
+largely to the fact that Lively Kernel performs its own mouse event
+delivery.
 
 The technique itself is of course well known, in particular the Dojo
 toolkit <remark>FIXME cite? </remark> uses a similar approach for its cross-platform graphics
@@ -547,7 +581,7 @@ convention of naming the underlying DOM element <code>rawNode</code>.
 <para>
 Lively Kernel does not currently use several features of the SVG
 specification. Most notably, it does not use declarative animations,
-due to both lack of support in current browsers, and our interest in
+due to both lack of support in many browsers, and our interest in
 portability of the implementation to other graphics backends. Instead,
 a simple imperative framework for scheduling and periodic invocation
 of user-supplied actions is provided. Document styling (through either
