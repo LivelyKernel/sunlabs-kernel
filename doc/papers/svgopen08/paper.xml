@@ -134,9 +134,7 @@ serialization.
 </info>
 <section>
 
-<title>Motivation</title>
-<!-- AJAX platform -->
-<remark> This chapter to be fixed </remark>
+<title>The Lively Kernel approach to Rich Internet Applications</title>
 
 
 
@@ -167,8 +165,8 @@ functionality and usability of a modern desktop GUI framework. In this
 paper we present an alternative approach, a system that capitalizes on
 decades of GUI research and innovation outside the mainstream practice
 of GUI framework design. The renewed interest in GUI frameworks
-presents itself as a unique opportunity to offer these results to
-wider audiences. 
+presents itself as a unique opportunity to advance the state of art
+and offer these results to wider audiences.
 </para>
 
 <!-- The alternatives are: Reproduce a typical desktop environment, or jump
@@ -183,19 +181,21 @@ Unique opportunity to improve the state of art.
 <para>
 The main difference is a much higher level of dynamicity and
 malleability, offered equally to the programmer and to the interactive
-user.
+user. Our system is called Lively Kernel, to emphasize both the intent
+to apply the notions of read-write Web to graphics programming, and 
 </para>
 
 
 <para>
 LK aims to improve both functionality and developer-visible software
-architecture at the same time.  While the existing AJAX toolkits
-achieve wonders by building on top the text markup infrastructure
-(HTML) not originally meant to support rich user experiences, LK in
-its current form builds on SVG and its rich graphics model is a much
-better foundation.  We are also aided by the dynamicity of the programming
-language at our disposal.
-
+architecture at the same time.  The base choice of the JavaScript
+language in typical AJAX environments is fortunate for our goals
+because the language is highly dynamic. The basic choice of the
+graphics substrate is not. While the existing AJAX toolkits achieve
+wonders by building on top the text markup infrastructure (HTML) not
+originally meant to support rich user experiences, LK in its current
+form builds on SVG and its rich graphics model is a much better
+foundation.  
 </para>
 
 <para>
@@ -230,7 +230,7 @@ metaphors, as shown in <xref linkend="fig_desktop"/>, yet not limited to it.
 This paper presents the SVG backend of the Lively Kernel. We have
 found the SVG standard to be a great fit as our graphics substrate,
 and its implementations in widely available Web browsers turned out to
-be adequate to demonstrate the potential of our approach. While our
+ be adequate to demonstrate the potential of our approach. While our
 current work is almost exclusively built on top of the SVG backend, we
 are vitally interested in portability to other graphics substrates.
 In fact, an earlier version of our system provided a custom
@@ -492,17 +492,18 @@ that are not captured by the DOM tree hierarchy). This design
 facilitates space optimizations through sharing of commonly used
 elements, however, Lively Kernel does not currently take advantage of
 it. Instead, all the elements in a morph's <code>&lt;defs&gt;</code>
-section are notionally owned by the morph, and the URIs of these elements are
-trivially derived from the URI of the morph's <code>&lt;g&gt;</code>
-element. As a result, every morph defines all the gradients it uses,
-even though a typical user interface uses only a handful of distinct
-gradient definitions that could be shared and applied to multiple
-visual elements. This may be perceived as a shortcoming of the current
-SVG backend, however, the current approach does simplify certain
-implementation aspects, most notably copying and serialization of
-individual morphs. We envision that a future version of our system could
-implement gradient sharing, most likely based on a uniform reference
-counting facility for all SVG elements referenced through URIs.
+section are notionally owned by the morph, and the URIs of these
+elements are trivially derived from the URI of the
+morph's <code>&lt;g&gt;</code> element. As a result, every morph
+defines all the gradients it uses, even though a typical user
+interface uses only a handful of distinct gradient definitions that
+could be shared and applied to multiple visual elements. This may be
+perceived as a shortcoming of the current SVG backend, however, the
+presented technique does simplify certain implementation aspects, most
+notably copying and serialization of individual morphs. We envision
+that a future version of our system could implement gradient sharing,
+most likely through a uniform reference counting facility for all SVG
+elements referenced through URIs.
 </para>
 
 <!--What does it have to do with Lessphic? -->
@@ -510,11 +511,11 @@ counting facility for all SVG elements referenced through URIs.
 <section> 
 <title>The implementation of mapping: wrapping versus extending DOM elements</title>
 <para>
-There are at least two general approaches to implementing the mapping
+There are at least two general methods of implementing the mapping
 of abstract tree data structures, such as the morph tree defined by
 the Morphic API, to DOM trees. The first involves extending
 appropriate DOM elements so that they <emphasis>become</emphasis>
-morphs. This was the approach originally used by the Lively Kernel SVG
+morphs. This was the method originally used by the Lively Kernel SVG
 backend. Despite its conceptual simplicity, it required certain
 non-obvious implementation techniques. For instance, while all morphs
 were mapped to <code>&lt;g&gt;</code> elements, the converse was not
