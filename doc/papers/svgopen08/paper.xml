@@ -246,24 +246,20 @@ APIs as its graphics subsystem and Rhino as its execution engine.
 
 <para>
 The majority of the JavaScript classes defined by the Lively Kernel
-are related to a user interface framework called Morphic. 
-
-
-The central goal of Morphic is to facilitate construction and
-modification of interactive graphical objects, both by direct
-manipulation and by conventional programming.  The Morphic framework
-was developed originally for the Self language and system
+are related to a user interface framework called Morphic.  The Morphic
+framework was developed originally for the Self language and system
 (<code>http://research.sun.com/self</code>), and later became popular
 as the user interface of the Squeak system
 (<code>http://www.squeak.org</code>). Lively Kernel reimplements a
-sizable subset of the original Morphic framework in JavaScript using
-technologies available in modern web browsers.
+sizable subset of the original Morphic framework using technologies
+available in modern web browsers.
 </para>
 
 <para>
-Morphic achieves simplicity and uniformity by defining and extensively
-relying on a class of graphical objects called “morphs”, possessing
-some or all of the following properties:
+Morphic achieves simplicity and uniformity of programmatic and
+interactive constuction and manipulation of graphical objects by
+defining and extensively relying on a class of graphical objects
+called “morphs”, possessing some or all of the following properties:
 <itemizedlist mark='bullet'>
   <listitem> <para>
       A shape, or graphical appearance 
@@ -328,16 +324,53 @@ duplicated and reshaped. Thus, at its simplest, the Lively Kernel
 functions as a rudimentary graphics editor.
 
 
-The sequence shown in Figure FIXME illustrates the construction of a
-simple truck shape by concrete manipulation.  In Figure 2a we see a
-palette of useful shapes.  In Figure 2b, the rectangle has been
-copied, and extended in figure 2c.  In Figure 2d, the rectangle has
+The sequence shown in Figure <xref linkend="fig_construction"/> illustrates the construction of a
+simple truck shape by concrete manipulation. In Figure a we see a
+palette of useful shapes.  In Figure b, the rectangle has been
+copied, and extended in Figure c.  In Figure d, the rectangle has
 been colored yellow, an ellipse has been copied, resized, and colored,
 and has been given a thick black border to resemble a tire, and a
-second copy has already been affixed to the bus.  In Figure 2e, the
-truck is complete, and figure 2f shows a family of trucks, copied and
+second copy has already been affixed to the bus.  In Figure e, the
+truck is complete, and Figure f shows a family of trucks, copied and
 rotated from the new master, all operations that can be accomplished
 with simple gestures in the Lively Kernel's graphic editor. 
+</para>
+
+<figure xml:id="fig_construction">
+<title>Drag and drop construction of simple objects in the Lively Kernel</title>
+
+<mediaobject>
+<imageobject><imagedata fileref="construction-a.png"/> </imageobject>
+<textobject><phrase>a</phrase></textobject>
+</mediaobject>
+
+<mediaobject>
+<imageobject><imagedata fileref="construction-b.png"/></imageobject>
+<textobject><phrase>b</phrase></textobject>
+</mediaobject>
+
+<mediaobject>
+<imageobject> <imagedata fileref="construction-c.png"/></imageobject>
+<textobject><phrase>c</phrase></textobject>
+</mediaobject>
+
+<mediaobject>
+<imageobject> <imagedata fileref="construction-d.png"/></imageobject>
+<textobject><phrase>d</phrase></textobject>
+</mediaobject>
+
+<mediaobject>
+<imageobject> <imagedata fileref="construction-e.png"/></imageobject>
+<textobject><phrase>e</phrase></textobject>
+</mediaobject>
+
+<mediaobject>
+<imageobject> <imagedata fileref="construction-f.png"/></imageobject>
+<textobject><phrase>f</phrase></textobject>
+</mediaobject>
+
+
+</figure>
 
 
 <!-- The visual interface elements used to ma
@@ -354,14 +387,23 @@ morphs. <remark>insert picture</remark>.
 
 
 <!--Extending the graphical vocabulary  -->
-
+<para>
+<figure xml:id="fig_spiral">
+<title>Extending the graphical vocabulary</title>
+<mediaobject><imageobject>
+<imagedata fileref="spiral.png"/>
+</imageobject></mediaobject>
+<caption><para>Extending the graphical vocabulary.</para></caption>
+</figure>
+</para>
+<para>
 Beyond the basic vocabulary of the underlying graphics support, the
 programmability of Morphic shapes provides an unlimited range of
-graphical idioms.  Figure 3 shows a small snippet of JavaScript that
-draws a polygonal spiral.  Beyond mere marks on the screen, this code
-produces a fully active object that can be copied, scaled, and
-colored, as shown, and that could be set to spinning with one more
-line of code, such as 
+graphical idioms.  Figure <xref linkend="fig_spiral"/> shows a small
+snippet of JavaScript that draws a polygonal spiral.  Beyond mere
+marks on the screen, this code produces a fully active object that can
+be copied, scaled, and colored, as shown, and that could be set to
+spinning with one more line of code, such as
 <programlisting><![CDATA[
 this.startStepping(50, “rotateBy”, 0.1); // 0.1 radians every 50 ms
 ]]></programlisting>
@@ -382,21 +424,76 @@ web FIXME.
 </section>
 
 
-<section><title>FIXME more editing: text, widgets, tools</title>
+<section><title>Text editing</title>
 <para>
 An editable graphics environment would not be complete without support
 for editing text, and Lively Kernel comes with a rich text editor
 built into every <code>TextMorph</code>, the basic text container and
-unit of text manipulation.
+unit of text manipulation.  The Lively Kernel provides this
+functionality with three basic components:
 
+<itemizedlist mark='bullet'>
+  <listitem> <para> A rich text model (Text, RunArray, TextEmphasis)</para>
+    <para> TextEmphasis is an aggregate property, such
+      as <code>{style: 'bold', fontSize: 14}</code>, together with a
+      method for merging with other instances.  RunArray is a
+      compactly encoded array of TextEmphasis objects corresponding to
+      every character of a Text.  Most of the work is associated with
+      slicing and concatenating these objects.  An optimization allows
+      efficient streaming through what is effectively a sparse
+      structure.  Text is nothing more than a String of characters
+      with a matching RunArray of emphasis.
+    </para>
+  </listitem>
+  <listitem> 
+    <para> A text composition facility (Font, TextWord, TextLine, TextMorph)</para>
+    <para> 
+      Text composition is a classic problem in computer
+      graphics.  It is a process of streaming through the text, noting
+      exceptions when emphasis changes, and when the frame boundary or
+      mouse location is encountered.  TextLine and TextWord are the
+      components that capture the state of this process, and that
+      allow efficient display and location of the individual
+      characters.
+    </para>
+  </listitem>
+  <listitem> <para> A text editor (TextMorph, TextSelection) </para>
+    <para> 
+      Once text has been composed, a text editor
+      dispatches user events to manipulate the current selection and alter
+      either the content or the emphasis of the selected text.
+    </para>
+  </listitem>
+</itemizedlist>
+</para>
+
+<para>The totality of the text package in the Lively Kernel is
+approximately 2000 lines of JavaScript, including comments.  Lists and
+menus are built from it in a further 400 lines.
+<remark> not sure of either -- I think 2000 may be without the editor,
+and 400 for lists and menus was a guess</remark>
+</para>
+
+<para> 
+The decision to tackle active text was a daunting one.
+Composition of text is the most complex module in the Lively Kernel.
+Access to font metrics is complex and browser-dependent, and
+character-by-character composition is a challenge even for the faster
+JavaScript implementations.  That said, we consider the achievement of
+active WYSIWYG text, independent of native widgets, to be a
+breakthrough.  In a context such as SVG, arbitrary text and graphics
+can now be freely mixed, interactive changes can be made through
+arbitrary coordinate transformations, all without concern for
+installation barriers or browser-specific text problems.
 <remark>
-Rich text editor, most most complex
-text,explain why not drop to HTML (both b/c foreignObjects not so
-well supported and b/c we want a kernel).
+explain why not drop to HTML (both b/c foreignObjects not so well
+supported and b/c we want a kernel).
 </remark>
 </para>
 
+</section>
 
+<section><title>FIXME more editing: text, widgets, tools</title>
 <para>
 
 
