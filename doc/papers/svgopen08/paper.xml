@@ -324,6 +324,7 @@ elements of typical Web pages, each morph in a Lively Kernel world can
 be picked up, moved, resized, rotated, duplicated and reshaped. Thus,
 at its simplest, the Lively Kernel functions as a rudimentary graphics
 editor.
+<remark>most of LK can be viewed as an editor for something or other</remark>
 </para>
 
 <para>
@@ -410,14 +411,14 @@ this.startStepping(50, “rotateBy”, 0.1); // 0.1 radians every 50 ms
 
 
 </section>
-<section><title>Editors</title>
+<section><title>Simple Editors</title>
 
 <figure xml:id="fig_editors">
 <title>Editor</title>
 <mediaobject><imageobject>
 <imagedata fileref="editors.gif"/>
 </imageobject></mediaobject>
-<caption><para>A SelectionMorph (left) and a HandleMorph (the blue rectangle on the polygon; shown with balloon help)</para></caption>
+<caption><para>A SelectionMorph (left) and a HandleMorph (the blue rectangle on the polygon; shown with balloon help). <remark>FIXME better pic</remark> </para></caption>
 </figure>
 
 
@@ -425,19 +426,21 @@ this.startStepping(50, “rotateBy”, 0.1); // 0.1 radians every 50 ms
 <remark>
 
 <para>
-  Editors implemented as morphs, in particular shape editors are
+Editors implemented as morphs, in particular shape editors are
 instances of <code>HandleMorphs</code> and expose user interface
 bindings for resizing, rotating, reshaping, rotating of the target
 morph. Morphic also provides other editor morphs, among
 them <code>ColorPickerMorph</code>, used to select and apply solid
 colors to <code>fill</code> and <code>stroke</code> attributes,
 and <code>SelectionMorph</code> (or “selection tray”), which allows
-the same operations to be applied to multiple morphs. See Figure <xref linkend="fig_editors"/>.
+the same operations to be applied to multiple morphs. See Figure
+<xref linkend="fig_editors"/>.  Editors are somewhat volatile and
+decorate target morphs.
 </para>
 </remark>
 
 
-<remark>Make better screenshot, with selection, color picker and handle morph</remark>.
+<remark>Make better screenshot, with selection, color picker and handle morph.</remark>
 
 <para>
 
@@ -459,12 +462,12 @@ built into every <code>TextMorph</code>, the basic text container and
 unit of text manipulation.  The Lively Kernel provides this
 functionality with three basic components:
 
-<itemizedlist mark='bullet'>
+<itemizedlist mark="bullet">
   <listitem> <para> A rich text model (<code>Text, RunArray, TextEmphasis</code>)</para>
     <para> TextEmphasis is an aggregate property, such
       as <code>{style: 'bold', fontSize: 14}</code>, together with a
-      method for merging with other instances.  RunArray is a
-      compactly encoded array of TextEmphasis objects corresponding to
+      method for merging with other instances.  <code>RunArray</code> is a
+      compactly encoded array of <code>TextEmphasis</code> objects corresponding to
       every character of a Text.  Most of the work is associated with
       slicing and concatenating these objects.  An optimization allows
       efficient streaming through what is effectively a sparse
