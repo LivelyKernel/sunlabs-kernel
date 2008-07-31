@@ -386,7 +386,10 @@ graphic editor.
 <mediaobject><imageobject>
 <imagedata fileref="spiral.png"/>
 </imageobject></mediaobject>
-<caption><para>Extending the graphical vocabulary.</para></caption>
+<caption><para>The red spiral on the left hand side is a morph created
+programmatically by the code contained in the rectangle on the
+right. The orange morph in the center is derived from it by
+interactive manipulation.</para></caption>
 </figure>
 </para>
 <para>
@@ -406,23 +409,32 @@ this.startStepping(50, “rotateBy”, 0.1); // 0.1 radians every 50 ms
 </section>
 <section><title>Editors</title>
 
+<figure xml:id="fig_editors">
+<title>Editor</title>
+<mediaobject><imageobject>
+<imagedata fileref="editors.gif"/>
+</imageobject></mediaobject>
+<caption><para>A SelectionMorph (left) and a HandleMorph (the blue rectangle on the polygon; shown with balloon help)</para></caption>
+</figure>
+
+
 
 <remark>
 
 <para>
-  <code>HandleMorphs</code> and
-expose user interface bindings for resizing, rotating, reshaping,
-rotating of the target morph. Morphic also provides other editor
-morphs, among them <code>ColorPickerMorph</code>, used to select and
-apply solid colors to <code>fill</code> and <code>stroke</code>
-attributes, and <code>SelectionMorph</code> (or “selection tray”),
-which allows the same operations to be applied to multiple
-morphs. 
+  Editors implemented as morphs, in particular shape editors are
+instances of <code>HandleMorphs</code> and expose user interface
+bindings for resizing, rotating, reshaping, rotating of the target
+morph. Morphic also provides other editor morphs, among
+them <code>ColorPickerMorph</code>, used to select and apply solid
+colors to <code>fill</code> and <code>stroke</code> attributes,
+and <code>SelectionMorph</code> (or “selection tray”), which allows
+the same operations to be applied to multiple morphs. See Figure <xref linkend="fig_editors"/>.
 </para>
 </remark>
 
 
-<remark>insert picture</remark>.
+<remark>Make better screenshot, with selection, color picker and handle morph</remark>.
 
 <para>
 
@@ -436,7 +448,7 @@ web FIXME.
 </section>
 
 
-<section><title>Text editing</title>
+<section><title>Editing of text</title>
 <para>
 An editable graphics environment would not be complete without support
 for editing text, and Lively Kernel comes with a rich text editor
@@ -445,7 +457,7 @@ unit of text manipulation.  The Lively Kernel provides this
 functionality with three basic components:
 
 <itemizedlist mark='bullet'>
-  <listitem> <para> A rich text model (Text, RunArray, TextEmphasis)</para>
+  <listitem> <para> A rich text model (<code>Text, RunArray, TextEmphasis</code>)</para>
     <para> TextEmphasis is an aggregate property, such
       as <code>{style: 'bold', fontSize: 14}</code>, together with a
       method for merging with other instances.  RunArray is a
@@ -458,18 +470,18 @@ functionality with three basic components:
     </para>
   </listitem>
   <listitem> 
-    <para> A text composition facility (Font, TextWord, TextLine, TextMorph)</para>
+    <para> A text composition facility (<code>Font, TextWord, TextLine, TextMorph</code>)</para>
     <para> 
       Text composition is a classic problem in computer
       graphics.  It is a process of streaming through the text, noting
       exceptions when emphasis changes, and when the frame boundary or
-      mouse location is encountered.  TextLine and TextWord are the
+      mouse location is encountered.  <code>TextLine</code> and <code>TextWord</code> are the
       components that capture the state of this process, and that
       allow efficient display and location of the individual
       characters.
     </para>
   </listitem>
-  <listitem> <para> A text editor (TextMorph, TextSelection) </para>
+  <listitem> <para> A text editor (<code>TextMorph, TextSelection</code>) </para>
     <para> 
       Once text has been composed, a text editor
       dispatches user events to manipulate the current selection and alter
@@ -505,16 +517,21 @@ supported and b/c we want a kernel).
 
 </section>
 
-<section><title>FIXME more editing: text, widgets, tools</title>
+<section><title>Editing abstract data: widgets and MVC</title>
 <para>
 
 
-Beyond simple shapes, widgets
 
 <remark>
-widgets, MVC, tools (img of tilted code browser)
+Beyond simple shapes: widgets, MVC,  Style editor as example of a complex editor that is a
+widget.
 </remark>
 </para>
+</section>
+
+<section><title>Editing source code: development tools</title>
+(img of tilted code browser).
+
 </section>
 
 
