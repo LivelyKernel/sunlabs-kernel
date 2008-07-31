@@ -529,6 +529,18 @@ supported and b/c we want a kernel).
 Editing capabilities not only limited to SVG, but apply (potentially)
 to other structured data.
 </para>
+<figure xml:id="fig_widget">
+<title>An example MVC widget.</title>
+<mediaobject><imageobject>
+<imagedata fileref="mvc-widget.png"/>
+</imageobject></mediaobject>
+<caption><para>A composite widget comprising multiple Views on parts of the same Model.<remark>emphasize simplicity and conciseness</remark>
+</para></caption>
+</figure>
+
+
+
+
 <para> MVC style, model is a simple collection of items. Demo
 widget. Style editor as an example of a complex widget. Figure of a
 demo widget and style editor.</para>
