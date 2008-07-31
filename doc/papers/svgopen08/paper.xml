@@ -248,9 +248,9 @@ APIs as its graphics subsystem and Rhino as its execution engine.
 The majority of the JavaScript classes defined by the Lively Kernel
 are related to a user interface framework called Morphic.  The Morphic
 framework was developed originally for the Self language and system
-(<code>http://research.sun.com/self</code>), and later became popular
+(<link xlink:href="http://research.sun.com/self" />), and later became popular
 as the user interface of the Squeak system
-(<code>http://www.squeak.org</code>). Lively Kernel reimplements a
+(<link xlink:href="http://www.squeak.org"/>). Lively Kernel reimplements a
 sizable subset of the original Morphic framework using technologies
 available in modern web browsers.
 </para>
@@ -260,31 +260,31 @@ Morphic achieves simplicity and uniformity of programmatic and
 interactive constuction and manipulation of graphical objects by
 defining and extensively relying on a class of graphical objects
 called “morphs”, possessing some or all of the following properties:
-<itemizedlist mark='bullet'>
+<itemizedlist mark="bullet">
   <listitem> <para>
-      A shape, or graphical appearance 
+      A shape, or graphical appearance,
   </para> </listitem>
   <listitem> <para>
-      A set of submorphs, comprising the “scene graph” of the page or world
+      A set of submorphs, comprising the “scene graph” of the page or world,
   </para> </listitem>
   <listitem> <para>
-      A coordinate transformation that affects its shape and any submorphs
+      A coordinate transformation that affects its shape and any submorphs,
   </para> </listitem>
   <listitem> <para>
-      An event handler for mouse and keyboard events 
+      An event handler for mouse and keyboard events,
   </para> </listitem>
   <listitem> <para>
-      An editor for changing its shape 
+      An editor for changing its shape,
   </para> </listitem>
   <listitem> <para>
-      A layout manager for laying out its submorphs 
+      A layout manager for laying out its submorphs,
   </para> </listitem>
   <listitem> <para>
-      A stepping protocol for time-varying behavior 
+      A stepping protocol for time-varying behavior,
   </para> </listitem>
   <listitem> <para> A damage rectangle repainting protocol and
       double-buffered display mechanism (used when the underlying
-      graphics substrate does not provide it)
+      graphics substrate does not provide it).
   </para> </listitem>
 </itemizedlist>
 </para>
@@ -297,8 +297,7 @@ comprise all the remaining content of the page. In contrast to typical
 web pages, however, multiple worlds can coexist in a single JavaScript
 execution context. Notionally, the user interacts with the contents of
 single world, and navigates between different worlds by clicking on
-visual representations of connections between worlds,
-called <code>LinkMorphs</code>.
+<code>LinkMorphs</code>, representing of connections between worlds.
 </para>
 
 <para>
@@ -342,8 +341,9 @@ can be accomplished with simple gestures in the Lively Kernel's
 graphic editor.
 </para>
 
-<figure xml:id="fig_construction">
 
+<figure xml:id="fig_construction">
+<para>
 
 <mediaobject>
 <imageobject><imagedata fileref="construction-a.png"/> </imageobject>
@@ -359,6 +359,8 @@ graphic editor.
 <imageobject> <imagedata fileref="construction-c.png"/></imageobject>
 <textobject><phrase>c</phrase></textobject>
 </mediaobject>
+</para>
+<para>
 
 <mediaobject>
 <imageobject> <imagedata fileref="construction-d.png"/></imageobject>
@@ -375,6 +377,7 @@ graphic editor.
 <textobject><phrase>f</phrase></textobject>
 </mediaobject>
 <caption>Drag and drop construction of simple objects in the Lively Kernel</caption>
+</para>
 
 </figure>
 
@@ -388,7 +391,7 @@ graphic editor.
 </imageobject></mediaobject>
 <caption><para>The red spiral on the left hand side is a morph created
 programmatically by the code contained in the rectangle on the
-right. The orange morph in the center is derived from it by
+right. The orange spiral in the center is derived from it by
 interactive manipulation.</para></caption>
 </figure>
 </para>
@@ -448,7 +451,7 @@ web FIXME.
 </section>
 
 
-<section><title>Editing of text</title>
+<section><title>Editing text</title>
 <para>
 An editable graphics environment would not be complete without support
 for editing text, and Lively Kernel comes with a rich text editor
@@ -518,15 +521,23 @@ supported and b/c we want a kernel).
 </section>
 
 <section><title>Editing abstract data: widgets and MVC</title>
-<para>
-
-
-
 <remark>
-Beyond simple shapes: widgets, MVC,  Style editor as example of a complex editor that is a
-widget.
-</remark>
+<para>
+Editing capabilities not only limited to SVG, but apply (potentially)
+to other structured data.
 </para>
+<para> MVC style, model is a simple collection of items. Demo
+widget. Style editor as an example of a complex widget. Figure of a
+demo widget and style editor.</para>
+<para> browser for tree-structured data. Figure with a DOM browser
+side by side with a file browser. Applicable to SVG DOM but any other
+kind of structured data (experimental). Also, potentially,
+tree-structured Models. Mention potential relationship to XForms?
+</para>
+
+</remark>
+
+
 </section>
 
 <section><title>Editing source code: development tools</title>
@@ -537,11 +548,20 @@ widget.
 
 <section><title>Implementing Morphic in SVG</title> 
 
-<remark> the whole SVG tree is built dynamically. By default, the
+<remark> 
+<para>the whole SVG tree is built dynamically. By default, the
 entry point to the Lively Kernel runtime is a static document defining
 only a single empty <code>&lt;svg&gt;</code> element, and the entire
 SVG DOM tree of the running system is constructed programmatically
-from JavaScript on system load.
+from JavaScript on system load. </para>
+<para> 
+World maps onto contents of the <code>&lt;svg&gt;</code> element.
+</para>
+<para>
+HandMorph maps to some extent to the <code>&lt;cursor&gt;</code>
+element.
+</para>
+
 </remark>
 
 <programlisting><![CDATA[
@@ -819,7 +839,7 @@ leverage MIDAS html editing extensions? </para>
   <biblioentry xml:id="Maloney95">
     <abbrev>Maloney95</abbrev>
     Maloney, J. H. and Smith, R. B. 1995. Directness and liveness in
-    the morphic user interface construction environment. In
+    the Morphic user interface construction environment. In
     Proceedings of the 8th Annual ACM Symposium on User interface and
     Software Technology (Pittsburgh, Pennsylvania, United States,
     November 15 - 17, 1995). UIST '95. ACM, New York, NY, 21-28.
@@ -829,7 +849,7 @@ leverage MIDAS html editing extensions? </para>
   <biblioentry xml:id="Batik">
     <abbrev>Batik</abbrev> 
     <title>The Batik SVG toolkit</title> 
-    <link xlink:href="http://xmlgraphics.apache.org/batik/"><code>xmlgraphics.apache.org/batik</code></link>
+    <link xlink:href="http://xmlgraphics.apache.org/batik/"/>
   </biblioentry>
   
 </bibliography>
