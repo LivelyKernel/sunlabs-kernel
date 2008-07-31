@@ -545,9 +545,11 @@ to other structured data.
 widget. Style editor as an example of a complex widget. Figure of a
 demo widget and style editor.</para>
 <para> browser for tree-structured data. Figure with a DOM browser
-side by side with a file browser. Applicable to SVG DOM but any other
-kind of structured data (experimental). Also, potentially,
-tree-structured Models. Mention potential relationship to XForms?
+side by side with a file browser and object browser. Applicable to SVG
+DOM but any other kind of structured data (experimental).
+
+Also, potentially, tree-structured Models. Mention potential
+relationship to XForms?
 </para>
 
 </remark>
@@ -558,24 +560,40 @@ tree-structured Models. Mention potential relationship to XForms?
 <section><title>Editing source code: development tools</title>
 <para>
 <figure xml:id="fig_browser">
-<title>Class browser.</title>
+<title>Class browser in action.</title>
 <mediaobject><imageobject>
 <imagedata fileref="browser.png"/>
 </imageobject></mediaobject>
 <caption><para>Code browser editing executable code for a clock
-widget. Saving code results in instant changes to the clock's
-behavior. The browser is tilted for no particular reason other than to
-show that it's fully functional regardless of the affine transforms
-applied to it.</para></caption>
+widget. </para></caption>
 </figure>
 </para>
 
+<para>
+While visual editors are currently suffcient to control many aspects
+of visual appearance, other tools are necessary to modify the behavior
+of widgets and applications. Lively Kernel does currently not provide
+a full visual programming environment (although such an environment
+certainly lies within the interests of the project), but it does
+provide tools to directly edit the JavaScript code of running
+applications. Figure <xref linkend="fig_browser"/> presents a class
+browser inspecting an example clock widget. The class browser itself
+is obviously a fully functional widget, and, as shown, functions the
+same with arbitrary affine transformations applied to it. Saving
+edited code results in instantaneous updates to the clock's behavior.
+For instance, inserting a minus sign in the argument to the last call
+in the body of the method shown will cause the clock to start running
+backwards. 
+</para>
 
+<para>
+<remark> Changes don't persist across invocations. Code database does that.  </remark>
+</para>
 
 </section>
 
 
-<section><title>Implementing Morphic in SVG</title> 
+<section><title>Implementing Morphic in SVG</title>
 
 <remark> 
 <para>the whole SVG tree is built dynamically. By default, the
