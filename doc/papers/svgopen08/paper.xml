@@ -544,7 +544,21 @@ tree-structured Models. Mention potential relationship to XForms?
 </section>
 
 <section><title>Editing source code: development tools</title>
-(img of tilted code browser).
+<para>
+<figure xml:id="fig_browser">
+<title>Class browser.</title>
+<mediaobject><imageobject>
+<imagedata fileref="browser.png"/>
+</imageobject></mediaobject>
+<caption><para>Code browser editing executable code for a clock
+widget. Saving code results in instant changes to the clock's
+behavior. The browser is tilted for no particular reason other than to
+show that it's fully functional regardless of the affine transforms
+applied to it.</para></caption>
+</figure>
+</para>
+
+
 
 </section>
 
