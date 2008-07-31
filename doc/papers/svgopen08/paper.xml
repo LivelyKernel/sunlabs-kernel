@@ -318,26 +318,32 @@ based on the Java platform).
 <section>
 <title>A Lively Construction</title>
 <para>
-In contrast with the prevailingly static elements of most Web pages,
-each morph in a Lively Kernel world can be picked up, moved, resized, rotated,
-duplicated and reshaped. Thus, at its simplest, the Lively Kernel
-functions as a rudimentary graphics editor.
+Morphic provides means of interactive manipulation of morphs included
+in the framework, and, transitively, composite morphs assembled from
+the morphs already in existence.  In contrast with the mostly static
+elements of typical Web pages, each morph in a Lively Kernel world can
+be picked up, moved, resized, rotated, duplicated and reshaped. Thus,
+at its simplest, the Lively Kernel functions as a rudimentary graphics
+editor.
+</para>
 
+<para>
 
-The sequence shown in Figure <xref linkend="fig_construction"/> illustrates the construction of a
-simple truck shape by concrete manipulation. In Figure a we see a
-palette of useful shapes.  In Figure b, the rectangle has been
-copied, and extended in Figure c.  In Figure d, the rectangle has
-been colored yellow, an ellipse has been copied, resized, and colored,
-and has been given a thick black border to resemble a tire, and a
-second copy has already been affixed to the bus.  In Figure e, the
-truck is complete, and Figure f shows a family of trucks, copied and
-rotated from the new master, all operations that can be accomplished
-with simple gestures in the Lively Kernel's graphic editor. 
+The sequence shown in Figure <xref linkend="fig_construction"/>
+illustrates the construction of a simple truck shape by concrete
+manipulation. In Figure a we see a palette of useful shapes.  In
+Figure b, the rectangle has been copied, and extended in Figure c.  In
+Figure d, the rectangle has been colored yellow, an ellipse has been
+copied, resized, and colored, and has been given a thick black border
+to resemble a tire, and a second copy has already been affixed to the
+bus.  In Figure e, the truck is complete, and Figure f shows a family
+of trucks, copied and rotated from the new master, all operations that
+can be accomplished with simple gestures in the Lively Kernel's
+graphic editor.
 </para>
 
 <figure xml:id="fig_construction">
-<title>Drag and drop construction of simple objects in the Lively Kernel</title>
+
 
 <mediaobject>
 <imageobject><imagedata fileref="construction-a.png"/> </imageobject>
@@ -368,22 +374,9 @@ with simple gestures in the Lively Kernel's graphic editor.
 <imageobject> <imagedata fileref="construction-f.png"/></imageobject>
 <textobject><phrase>f</phrase></textobject>
 </mediaobject>
-
+<caption>Drag and drop construction of simple objects in the Lively Kernel</caption>
 
 </figure>
-
-
-<!-- The visual interface elements used to ma
-
- namely <code>HandleMorphs</code> and
-expose user interface bindings for resizing, rotating, reshaping,
-rotating of the target morph. Morphic also provides other editor
-morphs, among them <code>ColorPickerMorph</code>, used to select and
-apply solid colors to <code>fill</code> and <code>stroke</code>
-attributes, and <code>SelectionMorph</code> (or “selection tray”),
-which allows the same operations to be applied to multiple
-morphs. <remark>insert picture</remark>.
--->
 
 
 <!--Extending the graphical vocabulary  -->
@@ -409,10 +402,29 @@ this.startStepping(50, “rotateBy”, 0.1); // 0.1 radians every 50 ms
 ]]></programlisting>
 </para>
 
+
+</section>
+<section><title>Editors</title>
+
+
+<remark>
+
 <para>
-Morphic provides means of interactive manipulation of morphs included
-in the framework, and, transitively, composite morphs assembled from
-the morphs already in existence.
+  <code>HandleMorphs</code> and
+expose user interface bindings for resizing, rotating, reshaping,
+rotating of the target morph. Morphic also provides other editor
+morphs, among them <code>ColorPickerMorph</code>, used to select and
+apply solid colors to <code>fill</code> and <code>stroke</code>
+attributes, and <code>SelectionMorph</code> (or “selection tray”),
+which allows the same operations to be applied to multiple
+morphs. 
+</para>
+</remark>
+
+
+<remark>insert picture</remark>.
+
+<para>
 
 Our Morphic implementation does not currently provide editors for all
 the elements and attributes specified by the SVG standard, however,
