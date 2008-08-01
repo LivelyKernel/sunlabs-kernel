@@ -222,7 +222,7 @@ metaphors, as shown in <xref linkend="fig_desktop"/>, yet not limited to it.
 <figure xml:id="fig_desktop">
 <title>Lively Kernel desktop</title>
 <mediaobject><imageobject>
-<imagedata fileref="screenshot-small.jpg"/>
+<imagedata fileref="screenshot.png"/>
 </imageobject></mediaobject>
 <caption><para>Example instantiation of the Lively Kernel.</para></caption>
 </figure>
@@ -344,6 +344,7 @@ graphic editor.
 
 
 <figure xml:id="fig_construction">
+<title>Construction through visual manipulation</title>
 <para>
 
 <mediaobject>
@@ -377,7 +378,7 @@ graphic editor.
 <imageobject> <imagedata fileref="construction-f.png"/></imageobject>
 <textobject><phrase>f</phrase></textobject>
 </mediaobject>
-<caption>Drag and drop construction of simple objects in the Lively Kernel</caption>
+<caption>Drag and drop construction of simple objects in Lively Kernel.</caption>
 </para>
 
 </figure>
@@ -515,20 +516,30 @@ breakthrough.  In a context such as SVG, arbitrary text and graphics
 can now be freely mixed, interactive changes can be made through
 arbitrary coordinate transformations, all without concern for
 installation barriers or browser-specific text problems.
-<remark>
-explain why not drop to HTML (both b/c foreignObjects not so well
-supported and b/c we want a kernel).
-</remark>
+</para>
+
+<para>
+It should be noted here that many modern browsers, such as those
+derived from the Gecko rendering engine employed in the Firefox
+browser, contain a built-in rich text editor. One could argue that the
+resulting duplication of editing functionality in JavaScript is
+undesirable, however, the rich text editors are neither standardized
+nor easily integratable with SVG. The SVG specification allows
+integration of XHTML content through
+the <code>&lt;foreignobject&gt;</code> element, which then can be
+manipulated, most notably using affine transforms, much like other SVG
+elements. However, the Gecko engine currently only supports editing
+HTML content, and not XHTML, and s of this writing, other browsers
+exhibit similar limitations.  Even if XHTML editing were supported by
+all the browser, performing text editing in Lively Kernel results in
+more self contained code, and as a result, retains its character as a
+computing kernel.
 </para>
 
 </section>
 
-<section><title>Editing abstract data: widgets and MVC</title>
-<remark>
-<para>
-Editing capabilities not only limited to SVG, but apply (potentially)
-to other structured data.
-</para>
+<section><title>Editing abstract data: widgets and Model-View-Controller (MVC) architecture</title>
+
 <figure xml:id="fig_widget">
 <title>An example MVC widget.</title>
 <mediaobject><imageobject>
@@ -538,8 +549,14 @@ to other structured data.
 </para></caption>
 </figure>
 
+<remark>
 
+<para>
+The editing capabilities presented so far are related to editing SVG
+graphics, but Livley Kernel  SVG graphics to edit other kinds of
+structured data.
 
+</para>
 
 <para> MVC style, model is a simple collection of items. Demo
 widget. Style editor as an example of a complex widget. Figure of a
@@ -596,11 +613,11 @@ backwards.
 <section><title>Implementing Morphic in SVG</title>
 
 <remark> 
-<para>the whole SVG tree is built dynamically. By default, the
+<para>the whole SVG DOM tree is built dynamically. By default, the
 entry point to the Lively Kernel runtime is a static document defining
 only a single empty <code>&lt;svg&gt;</code> element, and the entire
-SVG DOM tree of the running system is constructed programmatically
-from JavaScript on system load. </para>
+DOM tree of the running system is constructed programmatically from
+JavaScript on system load. </para>
 <para> 
 World maps onto contents of the <code>&lt;svg&gt;</code> element.
 </para>
@@ -608,9 +625,15 @@ World maps onto contents of the <code>&lt;svg&gt;</code> element.
 HandMorph maps to some extent to the <code>&lt;cursor&gt;</code>
 element.
 </para>
+<!-- Imperative API for SVG, hiding the XML underpinnings and hence
+portable to different architectures. API JS-centric (hence no XBL,
+even though similar interest in reusable components).
+-->
 
 </remark>
 
+
+<figure xml:id="fig_breakdown">
 <programlisting><![CDATA[
 319 Host Interface – Browser API plus XML utility functions 
 515 Utility – Classes, collections, printing, etc. (plus 562 in Prototype.js) 
@@ -631,19 +654,17 @@ also Panel and Browser support
 365 Storage – WebDAV, file browser 
 ----- ----- 
 12954 Total 
-
-Figure 10: Breakdown of Lively Kernel by function with approximate
-code size The figures above include comments and lines with single
-bracket characters.  Prototype.js is an open source set of useful
-JavaScript extensions, of which we use only a small number [see
-http://www.prototypejs.org/], [see http://www.JSON.org/].
 ]]></programlisting>
+<caption><para> Breakdown of Lively Kernel by function with
+    approximate code size The figures above include comments and lines
+    with single bracket characters.  Prototype.js is an open source
+    set of useful JavaScript extensions, of which we use only a small
+    number (see <link xlink:href="http://www.prototypejs.org"/>), JSON is Doug Crockford's
+    implementation the parser for the JSON data interchange format (see
+    <link xlink:href="http://www.JSON.org"/>).
+</para></caption>
+</figure>
 
-
-<!-- Imperative API for SVG, hiding the XML underpinnings and hence
-portable to different architectures. API JS-centric (hence no XBL,
-even though similar interest in reusable components).
--->
 
 <section>
 <title>Containment</title>
