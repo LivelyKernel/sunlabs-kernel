@@ -558,6 +558,39 @@ structured data.
 
 </para>
 
+<para>
+Within the Morphic context, we chose to implement the Lively Kernel's
+widget set with a model/view separation along the lines of many
+Smalltalk systems.  This choice was influenced by experience with
+GUI-builder applications and the Fabrik visual programming system.
+Besides allowing for multiple views of a given model, the model/view
+separation makes it easier to infer appropriate model structure from a
+given concrete assembly of UI components.  It also turns out to
+provide a flexibility that is vital for migration of functionality
+between client and server where this is desired.
+</para>
+
+<para>
+Figure 6 shows a number of simple widgets arranged in a test panel.
+It is not much to look at as a picture, but if one runs the Lively
+Kernel from our site, one finds that the buttons, text boxes and lists
+are in groups that exhibit bidirectional coupling through their shared
+models.  For instance the slider is hooked to a numerical model that
+is bidirectionally connected to one of the text views with a
+read/print converter.
+</para>
+
+<para>
+We made the claim above that even a rudimentary assembly of widgets is
+the makings of open-ended computing.  This should not surprise any of
+our readers, and we see in Figure NN a piece of almost
+professional-looking software which is little more than an assembly of
+text boxes, lists, a clipping component, and the same slider shown in
+Figure 7, now doing service in (almost) vertical orientation as a
+scroll bar.
+</para>
+
+
 <para> MVC style, model is a simple collection of items. Demo
 widget. Style editor as an example of a complex widget. Figure of a
 demo widget and style editor.</para>
