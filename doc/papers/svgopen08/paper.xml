@@ -241,7 +241,6 @@ APIs as its graphics subsystem and Rhino as its execution engine.
 </section>
 
 <section>
-
 <title>Morphic User Interface Framework</title>
 
 <para>
@@ -312,9 +311,8 @@ has been implemented in the previousy mentioned earlier prototype
 based on the Java platform).
 </para>
 
-</section>
-
 <section>
+
 <title>A Lively Construction</title>
 <para>
 Morphic provides means of interactive manipulation of morphs included
@@ -545,8 +543,7 @@ computing kernel.
 <mediaobject><imageobject>
 <imagedata fileref="mvc-widget.png"/>
 </imageobject></mediaobject>
-<caption><para>A composite widget comprising multiple Views on parts of the same Model.<remark>emphasize simplicity and conciseness</remark>
-</para></caption>
+<caption>A composite widget comprising multiple Views on parts of the same Model. <remark>Emphasize simplicity and conciseness</remark> </caption>
 </figure>
 
 <remark>
@@ -557,12 +554,13 @@ graphics, but Livley Kernel  SVG graphics to edit other kinds of
 structured data.
 
 </para>
+</remark>
 
 <para>
-Within the Morphic context, we chose to implement the Lively Kernel's
-widget set with a model/view separation along the lines of many
+Within the Morphic context, the Lively Kernel's widget set has been
+implemented with a model/view separation along the lines of many
 Smalltalk systems.  This choice was influenced by experience with
-GUI-builder applications and the Fabrik visual programming system.
+GUI-builder applications and the Fabrik visual programming system <remark>FIXME reference</remark>.
 Besides allowing for multiple views of a given model, the model/view
 separation makes it easier to infer appropriate model structure from a
 given concrete assembly of UI components.  It also turns out to
@@ -570,30 +568,44 @@ provide a flexibility that is vital for migration of functionality
 between client and server where this is desired.
 </para>
 
+
 <para>
-Figure 6 shows a number of simple widgets arranged in a test panel.
-It is not much to look at as a picture, but if one runs the Lively
-Kernel from our site, one finds that the buttons, text boxes and lists
-are in groups that exhibit bidirectional coupling through their shared
-models.  For instance the slider is hooked to a numerical model that
-is bidirectionally connected to one of the text views with a
-read/print converter.
+Figure <xref linkend="fig_widget"/> shows a number of simple widgets
+arranged in a test panel.  It is not much to look at as a picture, but
+if one runs the Lively Kernel from our site, one finds that the
+buttons, text boxes and lists are in groups that exhibit bidirectional
+coupling through their shared models.  For instance the slider is
+hooked to a numerical model that is bidirectionally connected to one
+of the text views with a read/print converter.
 </para>
 
 <para>
 We made the claim above that even a rudimentary assembly of widgets is
 the makings of open-ended computing.  This should not surprise any of
-our readers, and we see in Figure NN a piece of almost
-professional-looking software which is little more than an assembly of
-text boxes, lists, a clipping component, and the same slider shown in
-Figure 7, now doing service in (almost) vertical orientation as a
-scroll bar.
+our readers, and we see in Figure <xref linkend="fig_browser"/> a
+piece of almost professional-looking software which is little more
+than an assembly of text boxes, lists, a clipping component, and the
+same slider shown in Figure <xref linkend="fig_widget"/>, now doing
+service in (almost) vertical orientation as a scroll bar.
 </para>
 
 
-<para> MVC style, model is a simple collection of items. Demo
-widget. Style editor as an example of a complex widget. Figure of a
-demo widget and style editor.</para>
+<figure xml:id="fig_style_editor">
+<title>Built-in stye editor.</title>
+<mediaobject><imageobject>
+<imagedata fileref="stylepanel.gif"/>
+</imageobject></mediaobject>
+<caption>FIXME better pic needed</caption>
+</figure>
+
+
+<para> The model/view separation can be applied to SVG data itself, as
+shown in Figure <xref linkend="fig_style_editor"/>, demonstrating a simple style editor widget. A
+style editor can be invoked for every morph, and it can be considered
+a view observing parts of the SVG DOM as its model.
+</para>
+
+<remark>
 <para> browser for tree-structured data. Figure with a DOM browser
 side by side with a file browser and object browser. Applicable to SVG
 DOM but any other kind of structured data (experimental).
@@ -641,7 +653,7 @@ backwards.
 </para>
 
 </section>
-
+</section>
 
 <section><title>Implementing Morphic in SVG</title>
 
@@ -864,15 +876,17 @@ portable to graphics backends not based on a DOM.
 
 
 <section>
-<title>SVG as a component of an application description format</title>
+<title>SVG as a serialization and application description format</title>
 
 
-
+<para>
 Even with multiple graphics backends,
-the serialization format could be either an entirely new format (and n
-translations for n platforms), or an existing format like SVG with n-1
-translations for the remaining n-1 platforms.
+the serialization format could be either an entirely new format (and <code>n</code>
+translations for <code>n</code> platforms), or an existing format like SVG with <code>n-1</code>
+translations for the remaining <code>n-1</code> platforms.
+</para>
 <!-- copied from abstract --> 
+<para>
 It is possible to dynamically export and import
 objects or entire Web pages from within a running system and thus use
 the Lively Kernel as an authoring environment both code and
@@ -889,6 +903,7 @@ rendered as a static screenshot of the application at the time of
 serialization.
 <remark><para>drum up WebDAV as a persistence mechanism. Expound on
 the possibility of a full-fledged SVG editor here</para></remark>
+</para>
 
 </section>
 
@@ -903,13 +918,15 @@ Better support highly
 requested in the areas of drag and drop, copy and paste support,
 filters for dropshadows. Font metric support either incorrect or not
 available until webpage rendered).
-<para>Correctness questions: we're not gurus but we ran into several problems
+
+<para>Correctness questions: we ran into several problems
 browser implementors (Apple) used to test correctness.
 </para>
-<para>Performance questions: we don't quite know, too early to make
-meaningful measurements, efficiency of dynamic update to the SVG tree;
-speed of bindings (height of the software layers between JS and the
-graphics engine).
+
+<para>Performance questions: too early to make entirely meaningful
+measurements, questions of efficiency of dynamic update to the SVG
+tree; speed of bindings (height of the software layers between JS and
+the graphics engine).
 </para>
 
 <para>Implementation alternatives: flex? silverlight? not open, no dynamicity</para>
