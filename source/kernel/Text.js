@@ -413,48 +413,52 @@ Object.subclass('TextLine', {
 	return (c == '\r' || c == '\n');
     },
     
-    chunkFromWord: function(wString, offset) {
+    chunkFromWord: function(str, offset) {
 	// we found a word so figure out where the chunk extends to (private)
-        for (var i = offset; i < wString.length; i++) {
-            if (this.whiteSpaceDict[wString[i]]) {
+        for (var i = offset; i < str.length; i++) {
+            if (this.whiteSpaceDict[str[i]]) {
                 return i - offset;
             }
         }
         return i - offset;
     },
     
-    chunkFromSpace: function(wString, offset) {
+    chunkFromSpace: function(str, offset) {
 	// we found a space so figure out where the chunk extends to (private)
-        for (var i = offset; i < wString.length; i++) {
-            if (wString[i] != ' ') {
+        for (var i = offset; i < str.length; i++) {
+            if (str[i] != ' ') {
                 return i - offset;
             }
         }
         return i - offset;
     },
     
-    chunkFromString: function(wString, startOffset) {
-	// look at wString starting at startOffset and return an array with all of the chunks in it
+    chunkFromString: function(str, style, startOffset) {
+	// look at str starting at startOffset and return an array with all of the chunks in it
 	// Note: this needs to be passed the runArray of test styles, and to make
 	// new chunks at each change in style
         var offset = startOffset;
         var pieces = [];
         var chunkSize;
 	
-        while (offset < wString.length) {
+        while (offset < str.length) {
             chunkSize = 1; // default is one character long
-            if (this.whiteSpaceDict[wString[offset]]) {
-                if (this.isNewLine(wString[offset])) {
+            if (this.whiteSpaceDict[str[offset]]) {
+                if (this.isNewLine(str[offset])) {
                     pieces.push(new TextWord(offset).asNewLine());
-                } else if (wString[offset] == '\t') {
+                } else if (str[offset] == '\t') {
                     pieces.push(new TextWord(offset).asTab());
                 } else {
-                    chunkSize = this.chunkFromSpace(wString, offset);
+                    chunkSize = this.chunkFromSpace(str, offset);
                     pieces.push(new TextWord(offset, chunkSize).asWhite());
                 }
            } else {
-               chunkSize = this.chunkFromWord(wString, offset);
-               pieces.push(new TextWord(offset, chunkSize));
+		chunkSize = this.chunkFromWord(str, offset);
+		if(style) {
+			var styleSize = style.runLengthAt(offset);  // length remaining in run
+			if (styleSize < chunkSize) chunkSize = styleSize;
+		}	
+		pieces.push(new TextWord(offset, chunkSize));
            }
            offset += chunkSize;
         }
@@ -485,7 +489,7 @@ Object.subclass('TextLine', {
 	
         // a way to optimize out repeated scanning
         if (this.chunks == null)
-            this.chunks = this.chunkFromString(this.textString, this.startIndex);
+            this.chunks = this.chunkFromString(this.textString, this.textStyle, this.startIndex);
 
 	var hasStyleChanged = false;
         for (var i = 0; i < this.chunks.length; i++) {
