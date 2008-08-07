@@ -435,8 +435,7 @@ Object.subclass('TextLine', {
     
     chunkFromString: function(str, style, startOffset) {
 	// look at str starting at startOffset and return an array with all of the chunks in it
-	// Note: this needs to be passed the runArray of test styles, and to make
-	// new chunks at each change in style
+	// Note: if style is not null, then break at style changes as well as other chunk boundaries
         var offset = startOffset;
         var pieces = [];
         var chunkSize;
@@ -454,7 +453,7 @@ Object.subclass('TextLine', {
                 }
            } else {
 		chunkSize = this.chunkFromWord(str, offset);
-		if(style) {
+		if(style) {  // if style breaks within this chunk, shorten chunk to end at the break
 			var styleSize = style.runLengthAt(offset);  // length remaining in run
 			if (styleSize < chunkSize) chunkSize = styleSize;
 		}	

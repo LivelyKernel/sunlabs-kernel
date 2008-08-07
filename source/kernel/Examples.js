@@ -37,7 +37,7 @@ Widget.subclass('TestWidget', {
         // Make a fancy panel.  Note: Transparency does not
         // work with gradients or stipple patterns yet!
         panel.linkToStyles(['widgetPanel']);
-        var model = new SyntheticModel(['Text', 'TextSel', 'ListItem', 'PrintValue', 'B1Value', 'B2Value', 'SliderValue', 'SliderExtent']);
+        var model = new SyntheticModel(['Text', 'TextSel', 'ListItem', 'PrintValue', 'B1Value', 'B2Value', 'SliderValue', 'SliderRange']);
         panel.connectModel({model: model});
         var m; 
 
@@ -82,13 +82,10 @@ Widget.subclass('TestWidget', {
         panel.addMorph(m = new PrintMorph(new Rectangle(140,140,80,20),"0.5"));
         m.connectModel({model: model, getValue: "getSliderValue", setValue: "setSliderValue"});
         panel.addMorph(m = new PrintMorph(new Rectangle(230,140,50,20),"0.1"));
-        m.connectModel({model: model, setValue: "setSliderExtent"});
+        m.connectModel({model: model, setValue: "setSliderRange"});
         panel.addMorph(m = new SliderMorph(new Rectangle(140,170,140,20)));
-        m.connectModel({model: model, getValue: "getSliderValue", setValue: "setSliderValue", getExtent: "getSliderExtent"});
+        m.connectModel({model: model, getValue: "getSliderValue", setValue: "setSliderValue", getSliderExtent: "getSliderRange"});
 
-        model.SliderValue = 0.2;
-        model.SliderExtent = 0.1;
-        
         return panel;
     }
 
