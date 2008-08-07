@@ -27,6 +27,8 @@ RewriteRule   ^proxy/feeds.tuaw.com(.*)$ 	     http://feeds.tuaw.com$1 [P]
 #the following to enable a personal webserver 
 RewriteRule   ^proxy/localhost/808([0-9])/(.*)$	     http://localhost:808$1/$2 [P]
 
-
 RewriteRule   ^proxy/livelykernel.sunlabs.com/8093(.*)$ http://livelykernel.sunlabs.com:8093$1 [P]
+
+#enable LK repository access
+RewriteRule   ^proxy/livelykernel.sunlabs.com/repository/(.*)   http://livelykernel.sunlabs.com/repository/$1 [P]
 
