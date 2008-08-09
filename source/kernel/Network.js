@@ -148,6 +148,21 @@ URL.proxy = (function() {
 })();
 
 
+URL.makeProxied = function makeProxied(url) {
+    url = url instanceof URL ? url : new URL(url);
+    var px = this.proxy;
+    if (!px) return url;
+    if (px.hostname != url.hostname) { // FIXME  protocol?
+	return px.withFilename(url.hostname + url.fullPath());
+	// console.log("rewrote url " + Object.inspect(url) + " proxy " + URL.proxy);
+	// return URL.proxy + url.hostname + "/" + url.fullPath();
+    } else if (px.port != url.port) {
+	return px.withFilename(url.hostname + "/" + url.port + url.fullPath());
+    }
+    else return url;
+};
+
+
 URL.subversionWorkspace = (function() {
     // a bit of heuristics to figure the top of the local SVN repository
     var path = URL.source.pathname;
@@ -158,6 +173,8 @@ URL.subversionWorkspace = (function() {
     var ws = URL.source.withPath(path.substring(0, index));
     return ws;
 })();
+
+
 
 
 
@@ -217,20 +234,6 @@ View.subclass('NetRequest', {
 	   "+ResponseText" // Updated at most once, when request state is {Done}, with the text content retrieved.
 	  ],
     
-    rewriteURL: function(url) {
-	url = url instanceof URL ? url : new URL(url);
-        if (URL.proxy) {
-	    if (URL.proxy.hostname != url.hostname) { // FIXME  protocol?
-		url = URL.proxy.withFilename(url.hostname + url.fullPath());
-		// console.log("rewrote url " + Object.inspect(url) + " proxy " + URL.proxy);
-		// return URL.proxy + url.hostname + "/" + url.fullPath();
-	    } else if (URL.proxy.port != url.port) {
-		url = URL.proxy.withFilename(url.hostname + "/" + url.port + url.fullPath());
-	    }
-	}
-        return url;
-    },
-
     initialize: function($super, modelPlug) {
 	this.transport = new XMLHttpRequest();
 	this.requestNetworkAccess();
@@ -322,11 +325,11 @@ View.subclass('NetRequest', {
     },
     
     get: function(url) {
-	return this.request("GET", this.rewriteURL(url), null);
+	return this.request("GET", URL.makeProxied(url), null);
     },
 
     put: function(url, content) {
-	return this.request("PUT", this.rewriteURL(url), content);
+	return this.request("PUT", URL.makeProxied(url), content);
     },
 
     propfind: function(url, depth, content) {
@@ -334,15 +337,15 @@ View.subclass('NetRequest', {
 	if (depth != 0 && depth != 1)
 	    depth = "infinity";
 	this.setRequestHeaders({ "Depth" : depth });
-	return this.request("PROPFIND", this.rewriteURL(url), content);
+	return this.request("PROPFIND", URL.makeProxied(url), content);
     },
 
     mkcol: function(url, content) {
-	return this.request("MKCOL", this.rewriteURL(url), content);
+	return this.request("MKCOL", URL.makeProxied(url), content);
     },
     
     del: function(url) {
-	return this.request("DELETE", this.rewriteURL(url));
+	return this.request("DELETE", URL.makeProxied(url));
     },
     
     toString: function() {

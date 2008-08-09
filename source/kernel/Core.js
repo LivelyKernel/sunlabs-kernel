@@ -4928,8 +4928,10 @@ ViewTrait = {
 	var result = true;
 	Properties.forEachOwn(plugSpec, function(modelMsg) {
 	    if (modelMsg == 'model') return;
-	    if (!(plugSpec.model[plugSpec[modelMsg]] instanceof Function)) {
-		console.log("Supplied method name, " + plugSpec[modelMsg] + " does not resolve to a function.");
+	    var handler = plugSpec.model[plugSpec[modelMsg]];
+	    if (!handler || !(handler instanceof Function)) {
+		// console.log
+		alert("Supplied method name, " + plugSpec[modelMsg] + " does not resolve to a function.");
 		result = false;
 	    }
 	});
@@ -5767,6 +5769,18 @@ PasteUpMorph.subclass("WorldMorph", {
 		world.addFramedMorph(xeno, "XenoMorph", pt(50,50)); }]
         ];
         items.push(["File Browser", function(evt) { new FileBrowser().openIn(world, evt.point()) }]);
+	// FIXME this is hardcoded, remove later, shows how Subversion can be accessed directly.
+	items.push(["Model documentation", function(evt) { 
+	    var wikiHost = "http://livelykernel.sunlabs.com";
+	    var file = "/repository/lively-kernel/trunk/doc/wiki/model.txt";
+	    var model = new SyntheticModel(["Content"]);
+	    Object.extend(model, NetRequestReporterTrait);
+	    var txt = newTextPane(new Rectangle(0, 0, 400, 200), "fetching ... ");
+	    world.addFramedMorph(txt, "Model documentation", evt.point());
+	    var req = new NetRequest({model: model, setResponseText: "setContent"});
+	    txt.connectModel({model: model, getText: "getContent"});
+	    req.get(new URL(wikiHost + file));
+	}]);
         new MenuMorph(items, this).openIn(this.world(), evt.point());
     },
     
