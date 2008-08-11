@@ -270,7 +270,7 @@ Web browsers.
 </para>
 
 <para>
-Morphic achieves simplicity of programmatic and interactive by
+Morphic achieves simplicity of programmatic and interactive access by
 consistently relying on a class of graphical objects called “morphs”,
 possessing some or all of the following properties:
 <itemizedlist mark="bullet">
@@ -562,26 +562,23 @@ computing kernel.
 <caption>A composite widget comprising multiple Views on parts of the same Model. <remark>Emphasize simplicity and conciseness</remark> </caption>
 </figure>
 
-<remark>
+
 
 <para>
 The editing capabilities presented so far are related to editing SVG
-graphics, but Livley Kernel  SVG graphics to edit other kinds of
-structured data.
-
-</para>
-</remark>
-
-<para>
-Within the Morphic context, the Lively Kernel's widget set has been
-implemented with a model/view separation along the lines of many
-Smalltalk systems.  This choice was influenced by experience with
-GUI-builder applications and the Fabrik visual programming system <xref linkend="Ingalls88" />.
-Besides allowing for multiple views of a given model, the model/view
-separation makes it easier to infer appropriate model structure from a
-given concrete assembly of UI components.  It also turns out to
-provide a flexibility that is vital for migration of functionality
-between client and server where this is desired.
+graphics, but Lively Kernel is capable of editing other kinds of
+structured data In particular, the Lively Kernel's widget set has been
+implemented with a Model-View separation along the lines of many
+Smalltalk systems, and, in this context, views forming a Lively Kernel
+widget can be regarded as editors for parts of a shared model. This
+architectural choice was influenced by experience with GUI-builder
+applications and the Fabrik visual programming system
+<xref linkend="Ingalls88" />.  Besides allowing for multiple views of
+a given model, the Model-View separation makes it easier to infer
+appropriate model structure from a given concrete assembly of UI
+components.  It also turns out to provide a flexibility that is vital
+for migration of functionality between client and server where this is
+desired.
 </para>
 
 
@@ -615,7 +612,7 @@ service in (almost) vertical orientation as a scroll bar.
 </figure>
 
 
-<para> The model/view separation can be applied to SVG data itself, as
+<para> The Model-View separation can be applied to SVG data itself, as
 shown in <xref linkend="fig_style_editor"/>, demonstrating a simple style editor widget. A
 style editor can be invoked for every morph, and it can be considered
 a view observing parts of the SVG DOM as its model.
@@ -891,7 +888,7 @@ largely to the fact that Lively Kernel performs its own mouse event
 delivery.
 
 The technique itself is of course well known, in particular the Dojo
-toolkit <remark>FIXME cite? </remark> uses a similar approach for its cross-platform graphics
+toolkit <xref linkend="Dojo"/> uses a similar approach for its cross-platform graphics
 library <code>dojo.gfx</code>, and Lively Kernel even borrows its
 convention of naming the underlying DOM element <code>rawNode</code>.
 </para>
@@ -964,9 +961,12 @@ Lively Kernel runtime is not available at deserialization time or the
 user agent does not support JavaScript, the serialized file is
 rendered as a static screenshot of the application at the time of
 serialization.
+</para>
+<!--
 <remark><para>drum up WebDAV as a persistence mechanism. Expound on
 the possibility of a full-fledged SVG editor here</para></remark>
-</para>
+-->
+
 
 </section>
 
