@@ -160,73 +160,88 @@ software distribution and update channels. As a result, a variety of
 popular, actively developed Web-based GUI frameworks have sprung up,
 usually as main components of so called <emphasis>AJAX</emphasis>
 toolkits, which leverage the JavaScript language, dynamically updated
-HTML markup and asynchronous XML requests to provide rich user
-experience. On the other hand, vendors such as Adobe and Microsoft
-recognize the limitations of technologies implemented by Web browsers,
-and promote proprietary frameworks based on external runtimes
-available as browser plug-ins, such as Adobe Flash, Adobe Flex and
-Microsoft Silverlight.
+Hypertext Markup Language (HTML) content and asynchronous requests for
+data in expressed in the Extensible Markup Language (XML) to provide
+rich user experience. Dojo (<xref linkend="Dojo"/>, ExtJS
+(<xref linkend="ExtJS"/>) and
+Scriptaculous <xref linkend="Scriptaculous"/>) are excellent examples
+of such frameworks. On the other hand, vendors such as Adobe and
+Microsoft, recognize the limitations of technologies implemented by
+Web browsers, and promote proprietary frameworks based on external
+runtimes available as browser plug-ins, such as Adobe Flash, Adobe
+Flex and Microsoft Silverlight.
 </para>
 
 
 <para>
 Naturally, currently available AJAX toolkits aim to reproduce the
-functionality and usability of a modern desktop GUI framework. In this
-paper we present an alternative approach, a system that capitalizes on
+functionality and usability of a modern desktop GUI framework. This
+paper presents an alternative approach, a system that capitalizes on
 decades of GUI research and innovation outside the mainstream practice
 of GUI framework design. The renewed interest in GUI frameworks
 presents itself as a unique opportunity to advance the state of art
-and offer these results to wider audiences.
+and offer these results to wider audiences.  The system's main
+intended improvement is a much higher level of dynamicity and
+malleability, offered equally to the programmer and to the interactive
+user. The system is called Lively Kernel, to emphasize both the intent
+to apply the notions of read-write Web to graphics programming, and
+focus on compactness, self-containment and comprehensibility to a
+single programmer.
 </para>
 
-<!-- The alternatives are: Reproduce a typical desktop environment, or jump
-forward, capitalize on decades of GUI research and innovation outside
-of the desktop mainstream. Multiple very impressive and advanced AJAX
-GUI toolkits attempt to emulate modern desktop environments, 
-Unique opportunity to improve the state of art.
--->
-
-
+<!--
 <remark>
 <para>
-The main difference is a much higher level of dynamicity and
-malleability, offered equally to the programmer and to the interactive
-user. Our system is called Lively Kernel, to emphasize both the intent
-to apply the notions of read-write Web to graphics programming, and 
-</para>
-
-
-<para>
 LK aims to improve both functionality and developer-visible software
-architecture at the same time.  The basic choice of the JavaScript
-language in typical AJAX environments is fortunate for our goals
-because the language is reasonably dynamic. The basic choice of the
-graphics substrate is not. While existing AJAX toolkits achieve
-wonders by building on top the text markup infrastructure (HTML) [not
-originally meant to support rich user experiences] LK in its current
-form builds on SVG and its already rich graphics model [is a much better
-foundation] 
+architecture.
+</para>
+</remark>
+-->
+
+<para>
+Lively Kernel follows typical AJAX toolkits by using JavaScript as its
+implementation language. This choice is pragmatic, as JavaScript is
+the only programming language uniformly implemented in modern Web
+browsers, but it is also conductive to project goals, because the
+language is reasonably dynamic. However, Lively Kernel strays form the
+commonly followed path of using HTML. While existing AJAX toolkits
+achieve wonders by building on top of what was intended to be a text
+publishing format, the Scalable Vector Graphics (SVG,
+<xref linkend="SVG11"/>) standard addresses the shortcomings of HTML
+and is a much better foundation for interactive graphical applications
+on the Web.
 </para>
 
 <para>
-LK presents traditional procedural API, SVG used almost exclusively
-through the DOM interface, low level markup eliminated from the
-programmers interface (although accessible underneath).  Resulting
-system is both compact (10,000 LOC w/comments) and expressive.  A
-natural graphics API enables LK to be a web programming kernel,
-compact and comprehensible for a single programmer, based on single
-syntax and semantics (javascript) while the other AJAX toolkits often
-require a lot of mental context switching among Javascript, HTML, CSS
-and other auxiliary technologies.
-
+This paper presents the SVG backend of the Lively Kernel. We have
+found the SVG standard to be a rich and expressive graphics substrate, and its
+implementations in widely available Web browsers demonstrate well the
+potential of our approach. While our current work is almost
+exclusively built on top of the SVG backend, we are equally interested
+in portability to other graphics substrates.  In fact, an earlier
+version of our system provided a custom browser-like environment on
+top of the Java platform, using the Java2D APIs as its graphics subsystem
+and Rhino as its JavaScript execution engine.
 </para>
+
+
 
 <para>
-our system more than capable of implementing traditional desktop
-metaphors, as shown in <xref linkend="fig_desktop"/>, yet not limited to it.
+Despite being based on a text markup format, Lively Kernel presents a
+traditional procedural application programmer's interface (API), which
+acts as a layer of abstraction over SVG and other graphics
+backends. The SVG backend itself does not rely on text markup and
+accesses the SVG implementation through its Document Object Model
+(DOM) interface.  The resulting system is both compact (10,000 lines
+of code, including comments) and expressive. For instance, Lively
+Kernel is more than capable of implementing traditional desktop
+metaphors, as shown in Figure <xref linkend="fig_desktop"/>. The
+system's code base is uniformly implemented in JavaScript, and
+relieves the programmer from the mental context switching required
+when inspecting and developing in a system implemented using multiple
+technologies and formats, as is typically the case in existing AJAX
+toolkits based on HTML, CSS, JavaScript and auxiliary technologies.
 </para>
- </remark>
-
 
 
 <figure xml:id="fig_desktop">
@@ -236,17 +251,6 @@ metaphors, as shown in <xref linkend="fig_desktop"/>, yet not limited to it.
 </imageobject></mediaobject>
 <caption><para>Example instantiation of the Lively Kernel.</para></caption>
 </figure>
-<para>
-This paper presents the SVG backend of the Lively Kernel. We have
-found the SVG standard to be an excellent graphics substrate, and its
-implementations in widely available Web browsers demonstrate well the
-potential of our approach. While our current work is almost
-exclusively built on top of the SVG backend, we are equally interested
-in portability to other graphics substrates.  In fact, an earlier
-version of our system provided a custom browser-like environment on
-top of the Java platform, using the Java2D APIs as its graphics subsystem
-and Rhino as its JavaScript execution engine.
-</para>
 
 </section>
 
@@ -719,7 +723,7 @@ even though similar interest in reusable components).
 <row><entry>1188</entry><entry>Basic Widgets</entry><entry>Button, List, Menu, Dialog, Slider, Selection, ImageMorph </entry></row>
 <row><entry>1921</entry><entry>Text</entry><entry>basic TextMorph plus composition and rich text </entry></row>
 <row><entry>747</entry><entry> Editors</entry><entry>Drag/drop manipulation, shape editors and text editing also ColorPicker and StylePanel </entry></row>
-<row><entry>386</entry><entry>Model, Widget</entry><entry></entry></row>
+<row><entry>386</entry><entry>Model, Widget</entry><entry>Model-View-Controller implementation</entry></row>
 <row><entry>1295</entry><entry>High Level Widgets</entry><entry>Scroll panes, panels, windows, world links, also Panel and Browser support </entry></row>
 <row><entry>1311</entry><entry>Tools</entry><entry>Browser, inspector, stack viewer, change lists, profiler </entry></row>
 <row><entry>406</entry><entry>Serialization</entry><entry>Copier, exporter, importer (plus 202 in JSON) </entry></row>
@@ -1010,6 +1014,30 @@ leverage MIDAS html editing extensions? </para>
     <abbrev>Batik</abbrev> 
     <title>The Apache Batik SVG toolkit</title> 
     <link xlink:href="http://xmlgraphics.apache.org/batik/"/>
+  </biblioentry>
+
+  <biblioentry xml:id="SVG11">
+    <abbrev>SVG1.1</abbrev> 
+    <title>Scalable Vector Graphics (SVG) Specification</title> 
+    <link xlink:href="http://www.w3.org/TR/SVG11/"/>
+  </biblioentry>
+
+  <biblioentry xml:id="Dojo">
+    <abbrev>Dojo</abbrev> 
+    <title>The Dojo Toolkit.</title> 
+    <link xlink:href="http://www.dojotoolkit.org/"/>
+  </biblioentry>
+
+  <biblioentry xml:id="ExtJS">
+    <abbrev>ExtJS</abbrev> 
+    <title>The ExtJS JavaScript library</title> 
+    <link xlink:href="http://extjs.com/"/>
+  </biblioentry>
+
+  <biblioentry xml:id="Scriptaculous">
+    <abbrev>Scriptaculous</abbrev> 
+    <title>The Scriptaculous user interface library.</title> 
+    <link xlink:href="http://script.aculo.us/"/>
   </biblioentry>
   
 </bibliography>
