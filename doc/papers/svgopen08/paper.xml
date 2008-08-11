@@ -232,15 +232,16 @@ traditional procedural application programmer's interface (API), which
 acts as a layer of abstraction over SVG and other graphics
 backends. The SVG backend itself does not rely on text markup and
 accesses the SVG implementation through its Document Object Model
-(DOM) interface.  The resulting system is both compact (10,000 lines
-of code, including comments) and expressive. For instance, Lively
-Kernel is more than capable of implementing traditional desktop
-metaphors, as shown in Figure <xref linkend="fig_desktop"/>. The
-system's code base is uniformly implemented in JavaScript, and
-relieves the programmer from the mental context switching required
-when inspecting and developing in a system implemented using multiple
-technologies and formats, as is typically the case in existing AJAX
-toolkits based on HTML, CSS, JavaScript and auxiliary technologies.
+(DOM) interface.  The resulting system is both compact (approximately
+10,000 lines of code, including comments) and expressive. For
+instance, Lively Kernel is more than capable of implementing
+traditional desktop metaphors, as shown in
+<xref linkend="fig_desktop"/>. The system's code base is uniformly
+implemented in JavaScript, and relieves the programmer from the mental
+context switching required when inspecting and developing in a system
+implemented using multiple technologies and formats, as is typically
+the case in existing AJAX toolkits based on HTML, CSS, JavaScript and
+auxiliary technologies.
 </para>
 
 
@@ -259,13 +260,13 @@ toolkits based on HTML, CSS, JavaScript and auxiliary technologies.
 
 <para>
 The majority of the JavaScript classes defined by the Lively Kernel
-are related to a user interface framework called Morphic.  The Morphic
-framework was developed originally for the Self language and system
-(<link xlink:href="http://research.sun.com/self" />), and later became popular
-as the user interface of the Squeak Smalltalk system
-(<link xlink:href="http://www.squeak.org"/>). Lively Kernel reimplements a
-sizable subset of the original Morphic framework using technologies
-available in modern web browsers.
+are related to a user interface framework called Morphic
+(<xref linkend="Maloney95" />).  The Morphic framework was developed
+originally for the Self language and system (<xref linkend="Self" />),
+and later became popular as the user interface of the Squeak Smalltalk
+system (<xref linkend="Squeak"/>). Lively Kernel reimplements a sizable
+subset of the Morphic framework using technologies available in modern
+Web browsers.
 </para>
 
 <para>
@@ -344,17 +345,17 @@ be picked up, moved, resized, rotated, duplicated and reshaped.
 
 <para>
 
-The sequence shown in Figure <xref linkend="fig_construction"/>
-illustrates the construction of a simple truck shape by concrete
-manipulation. In Figure a we see a palette of useful shapes.  In
-Figure b, the rectangle has been copied, and extended in Figure c.  In
-Figure d, the rectangle has been colored yellow, an ellipse has been
-copied, resized, and colored, and has been given a thick black border
-to resemble a tire, and a second copy has already been affixed to the
-bus.  In Figure e, the truck is complete, and Figure f shows a family
+The sequence shown in <xref linkend="fig_construction"/> illustrates
+the construction of a simple truck shape by concrete manipulation. In
+Figure A we see a palette of useful shapes.  In Figure B, the
+rectangle has been copied, and extended in Figure C.  In Figure D, the
+rectangle has been colored yellow, an ellipse has been copied,
+resized, and colored, and has been given a thick black border to
+resemble a tire, and a second copy has already been affixed to the
+bus.  In Figure E, the truck is complete, and Figure F shows a family
 of trucks, copied and rotated from the new master, all operations that
 can be accomplished with simple gestures in the Lively Kernel's
-graphic editor.
+graphics editor.
 </para>
 
 
@@ -415,7 +416,7 @@ interactive manipulation.</para></caption>
 <para>
 Beyond the basic vocabulary of the underlying graphics support, the
 programmability of Morphic shapes provides an unlimited range of
-graphical idioms.  Figure <xref linkend="fig_spiral"/> shows a small
+graphical idioms. <xref linkend="fig_spiral"/> shows a small
 snippet of JavaScript that draws a polygonal spiral.  Beyond mere
 marks on the screen, this code produces a fully active object that can
 be copied, scaled, and colored, as shown, and that could be set to
@@ -451,7 +452,7 @@ also provides other editor morphs, among
 them <code>ColorPickerMorph</code>, used to select and apply solid
 colors to <code>fill</code> and <code>stroke</code> attributes,
 and <code>SelectionMorph</code> (or “selection tray”), which allows
-the same operations to be applied to multiple morphs. See Figure
+the same operations to be applied to multiple morphs. See
 <xref linkend="fig_editors"/>.  Editors are somewhat volatile and
 decorate target morphs, (are <emphasis>epimorphs</emphasis>).
 Contextual menus are also morphs. So are tooltips.
@@ -554,7 +555,7 @@ computing kernel.
 <section><title>Editing abstract data: widgets and Model-View-Controller (MVC) architecture</title>
 
 <figure xml:id="fig_widget">
-<title>An example MVC widget.</title>
+<title>An example MVC widget</title>
 <mediaobject><imageobject>
 <imagedata fileref="mvc-widget.png"/>
 </imageobject></mediaobject>
@@ -585,7 +586,7 @@ between client and server where this is desired.
 
 
 <para>
-Figure <xref linkend="fig_widget"/> shows a number of simple widgets
+<xref linkend="fig_widget"/> shows a number of simple widgets
 arranged in a test panel.  It is not much to look at as a picture, but
 if one runs the Lively Kernel from our site, one finds that the
 buttons, text boxes and lists are in groups that exhibit bidirectional
@@ -597,16 +598,16 @@ of the text views with a read/print converter.
 <para>
 We made the claim above that even a rudimentary assembly of widgets is
 the makings of open-ended computing.  This should not surprise any of
-our readers, and we see in Figure <xref linkend="fig_browser"/> a
+our readers, and we see in  <xref linkend="fig_browser"/> a
 piece of almost professional-looking software which is little more
 than an assembly of text boxes, lists, a clipping component, and the
-same slider shown in Figure <xref linkend="fig_widget"/>, now doing
+same slider shown in <xref linkend="fig_widget"/>, now doing
 service in (almost) vertical orientation as a scroll bar.
 </para>
 
 
 <figure xml:id="fig_style_editor">
-<title>Built-in stye editor.</title>
+<title>Built-in style editor</title>
 <mediaobject><imageobject>
 <imagedata fileref="stylepanel.gif"/>
 </imageobject></mediaobject>
@@ -615,7 +616,7 @@ service in (almost) vertical orientation as a scroll bar.
 
 
 <para> The model/view separation can be applied to SVG data itself, as
-shown in Figure <xref linkend="fig_style_editor"/>, demonstrating a simple style editor widget. A
+shown in <xref linkend="fig_style_editor"/>, demonstrating a simple style editor widget. A
 style editor can be invoked for every morph, and it can be considered
 a view observing parts of the SVG DOM as its model.
 </para>
@@ -637,7 +638,7 @@ relationship to XForms?
 <section><title>Editing source code: development tools</title>
 <para>
 <figure xml:id="fig_browser">
-<title>Class browser in action.</title>
+<title>Class browser in action</title>
 <mediaobject><imageobject>
 <imagedata fileref="browser.png"/>
 </imageobject></mediaobject>
@@ -653,7 +654,7 @@ of widgets and applications. Lively Kernel does currently not provide
 a full visual programming environment (although such an environment
 certainly lies within the interests of the project), but it does
 provide tools to directly edit the JavaScript code of running
-applications. Figure <xref linkend="fig_browser"/> presents a class
+applications. <xref linkend="fig_browser"/> presents a class
 browser inspecting an example clock widget. The class browser itself
 is obviously a fully functional widget, and, as shown, functions the
 same with arbitrary affine transformations applied to it. Saving
@@ -664,7 +665,32 @@ backwards.
 </para>
 
 <para>
-<remark> Changes don't persist across invocations. Code database does that.  </remark>
+The code of function bodies presented to the programmer within the
+Lively Kernel can be simply obtained from many JavaScript
+implementations (using the <code>toString()</code>
+or <code>toSource()</code> methods of the <code>Function</code>
+object).  However, such code is a result of decompilation, and does
+not include comments or custom formatting. Moreover, while new
+functions can be introduced and bound to existing object member names
+dynamically, such changes do not persist past the lifetime of the
+a Lively Kernel instantiation.
+</para>
+<para>
+Code persistence is implemented by a source code database, a component
+of the Lively Kernel. Currently the programmer can request
+interactively that function bodies be associated with the locations of
+their definitions in the source files used to instantiate the
+executing runtime. A fast scanner retrieves all the source files into
+the browser, locates all the method definitions and matches them with
+runtime function objects. When changes are made to a method
+definition, the source file containing the method is regenerated in
+the browser with the updated definition, and saved back to the server,
+subject to access control checks. Server-side code persistence is
+implemented using Lively Kernel's own implementation of the WebDAV
+protocol (<xref linkend="WebDAV" />).  An active implementation of the
+WebDAV protocol server is required on the Web server hosting the
+Lively Kernel installation.
+
 </para>
 
 </section>
@@ -683,7 +709,7 @@ World maps onto contents of the <code>&lt;svg&gt;</code> element.
 </para>
 <para>
 HandMorph maps to some extent to the <code>&lt;cursor&gt;</code>
-element.
+element. But it does much more, because it is the source of events.
 </para>
 <!-- Imperative API for SVG, hiding the XML underpinnings and hence
 portable to different architectures. API JS-centric (hence no XBL,
@@ -1024,7 +1050,7 @@ leverage MIDAS html editing extensions? </para>
 
   <biblioentry xml:id="Dojo">
     <abbrev>Dojo</abbrev> 
-    <title>The Dojo Toolkit.</title> 
+    <title>The Dojo Toolkit</title> 
     <link xlink:href="http://www.dojotoolkit.org/"/>
   </biblioentry>
 
@@ -1039,7 +1065,25 @@ leverage MIDAS html editing extensions? </para>
     <title>The Scriptaculous user interface library.</title> 
     <link xlink:href="http://script.aculo.us/"/>
   </biblioentry>
-  
+
+  <biblioentry xml:id="Self">
+    <abbrev>Self</abbrev> 
+    <title>The Self Language</title> 
+    <link xlink:href="http://research.sun.com/self/"/>
+  </biblioentry>
+
+  <biblioentry xml:id="Squeak">
+    <abbrev>Squeak</abbrev> 
+    <title>The Squeak Smalltalk system</title> 
+    <link xlink:href="http://www.squeak.org"/>  
+  </biblioentry>
+
+  <biblioentry xml:id="WebDAV">
+    <abbrev>WebDAV</abbrev> 
+    <title>HTTP Extensions for Web Distributed Authoring and Versioning (WebDAV)</title> 
+    <link xlink:href="http://www.ietf.org/rfc/rfc4918.txt"/>  
+  </biblioentry>
+
 </bibliography>
 
 
