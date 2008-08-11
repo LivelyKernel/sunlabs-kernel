@@ -141,7 +141,6 @@ Morph.subclass("ClockMorph", {
 
     setHands: function() {
         var currentDate = new Date();
-        var center = this.shape.bounds().center();
         var second = currentDate.getSeconds();
         var minute = currentDate.getMinutes() + second/60;
         var hour = currentDate.getHours() + minute/60;
