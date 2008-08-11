@@ -27,10 +27,8 @@
       <email>krzysztof.palacz@sun.com</email>
       <!-- <personblurb><para>Krzysztof Palacz is blah blah</para></personblurb>  -->
       <affiliation>
-	<!--        <jobtitle>Staff Engineer</jobtitle> -->
         <org>
           <orgname>Sun Microsystems Laboratories</orgname>
-	  <!--          <orgdiv></orgdiv> -->
           <address>
             <city>Menlo Park</city>
             <street>16 Network Circle</street>
@@ -45,6 +43,18 @@
     <author>
       <personname> <firstname>Dan</firstname> <surname>Ingalls</surname> </personname>
       <email>dan.ingalls@sun.com</email>
+      <affiliation>
+        <org>
+          <orgname>Sun Microsystems Laboratories</orgname>
+          <address>
+            <city>Menlo Park</city>
+            <street>16 Network Circle</street>
+	    <postcode>94025</postcode> 
+	    <state>CA</state>
+	    <country>USA</country>
+          </address>   
+        </org>
+      </affiliation>
     </author>
     </authorgroup>
 
@@ -52,26 +62,26 @@
       <para>
 	
 The Lively Kernel is a fully interactive, "zero-installation"
-Web application framework and development environment and written
+Web application framework and development environment written
 entirely in JavaScript. The rich user experience of applications built
 using the Lively Kernel is enabled by integrated programmatic access
-to arbitrary, dynamic 2D graphics, and owed in no small part to its
-reliance on Scalable Vector Graphics and its bindings to the
+to arbitrary 2D graphics, and owed in no small part to its
+use of Scalable Vector Graphics and its bindings to the
 JavaScript language.
 </para>
 
 <para>
 Lively Kernel runs in SVG-enabled Web browsers without installation or
 plug-in requirements; it offers a compact and extensible set of user
-interface components, as a result, it supports familiar desktop-style
+interface components. As a result, it supports familiar desktop-style
 applications with the expected user interface functionality and direct
 manipulation capabilities; it enables application development and
 deployment in a Web browser with no installation or upgrades, using
 only existing Web technologies. In addition to its application
 execution capabilities, the Lively Kernel also functions as an
-integrated development environment (IDE), as a result, it is
+integrated development environment (IDE). Thus, it is
 self-supporting and able to improve and extend itself
-dynamically. Lively Kernel is currently also one of the most sizable
+dynamically. Lively Kernel is currently also one of the most comprehensive
 dynamic SVG frameworks available, and has become an important test
 case for SVG implementations in Web browsers.
 </para>
@@ -79,20 +89,20 @@ case for SVG implementations in Web browsers.
 <para>
 The main component of the Lively Kernel is a user interface framework
 called Morphic, originally developed for the Self language, and later
-incorporated into Squeak (a version of the Smalltalk programming
-language). The Morphic framework consists of about 10,000 lines of
-uncompressed JavaScript code downloaded to the Web browser on Lively
-Kernel startup. The central goal of Morphic is to facilitate
-construction and editing of graphical objects, both programmatically
-and by direct, interactive manipulation. Morphic objects are editable,
-composable and animatable, Morphic also handles user input and manages
-underlying system resources such as fonts, gradients or
-images. Built-in mechanisms are provided for object scaling, rotation,
-object editing, as well as for defining user interface
-themes. Currently, visual editing tools are provided for only a subset
-of the elements defined in the SVG specification, however, our system
-could be straightforwardly extended to act as a complete SVG authoring
-tool.
+incorporated into the Squeak Smalltalk system
+(<xref linkend="Maloney95" />). The Morphic framework consists of
+about 10,000 lines of uncompressed JavaScript code downloaded to the
+Web browser on Lively Kernel startup. The central goal of Morphic is
+to facilitate construction and editing of graphical objects, both
+programmatically and by direct, interactive manipulation. Morphic
+objects are editable, composable and animatable, Morphic also handles
+user input and manages underlying system resources such as fonts,
+gradients or images. Built-in mechanisms are provided for object
+scaling, rotation, object editing, as well as for defining user
+interface themes. Currently, visual editing tools are provided for
+only a subset of the elements defined in the SVG specification,
+however, our system could be easily extended to act as a complete SVG
+authoring tool.
 </para>
 
 <para>
@@ -115,13 +125,13 @@ reflective capabilities of JavaScript, and can therefore be used
 inside the Web browser without any external tools or IDEs. As a
 result, it is possible to, e.g., create new JavaScript classes, modify
 or delete existing methods, or change the value of any property in the
-system. Finally, it is possible to dynamically export and import
+system. Finally, it is possible to export and import
 objects or entire Web pages from within a running system and thus use
-the Lively Kernel as an authoring environment both code and
+the Lively Kernel as an authoring environment for both code and
 interactive graphics. The export mechanism currently uses our own
 implementation of the Distributed Authoring and Versioning (WebDAV)
-extensions built on top of asynchronous HTTP networking support
-present in all the modern browsers. Objects are serialized into valid
+extensions built on top of the asynchronous HTTP networking support
+present in all modern browsers. Objects are serialized into valid
 SVG files with additional Lively Kernel-specific annotations necessary
 to reconstruct all the JavaScript objects on deserialization. The
 annotations are placed in a dedicated XML namespace, as a result, if a
@@ -188,14 +198,14 @@ to apply the notions of read-write Web to graphics programming, and
 
 <para>
 LK aims to improve both functionality and developer-visible software
-architecture at the same time.  The base choice of the JavaScript
+architecture at the same time.  The basic choice of the JavaScript
 language in typical AJAX environments is fortunate for our goals
-because the language is highly dynamic. The basic choice of the
-graphics substrate is not. While the existing AJAX toolkits achieve
-wonders by building on top the text markup infrastructure (HTML) not
-originally meant to support rich user experiences, LK in its current
-form builds on SVG and its rich graphics model is a much better
-foundation.  
+because the language is reasonably dynamic. The basic choice of the
+graphics substrate is not. While existing AJAX toolkits achieve
+wonders by building on top the text markup infrastructure (HTML) [not
+originally meant to support rich user experiences] LK in its current
+form builds on SVG and its already rich graphics model [is a much better
+foundation] 
 </para>
 
 <para>
@@ -228,14 +238,14 @@ metaphors, as shown in <xref linkend="fig_desktop"/>, yet not limited to it.
 </figure>
 <para>
 This paper presents the SVG backend of the Lively Kernel. We have
-found the SVG standard to be a great fit as our graphics substrate,
-and its implementations in widely available Web browsers turned out to
- be adequate to demonstrate the potential of our approach. While our
-current work is almost exclusively built on top of the SVG backend, we
-are vitally interested in portability to other graphics substrates.
-In fact, an earlier version of our system provided a custom
-browser-like environment on top of the Java platform, using Java2D
-APIs as its graphics subsystem and Rhino as its execution engine.
+found the SVG standard to be an excellent graphics substrate, and its
+implementations in widely available Web browsers demonstrate well the
+potential of our approach. While our current work is almost
+exclusively built on top of the SVG backend, we are equally interested
+in portability to other graphics substrates.  In fact, an earlier
+version of our system provided a custom browser-like environment on
+top of the Java platform, using the Java2D APIs as its graphics subsystem
+and Rhino as its JavaScript execution engine.
 </para>
 
 </section>
@@ -248,17 +258,16 @@ The majority of the JavaScript classes defined by the Lively Kernel
 are related to a user interface framework called Morphic.  The Morphic
 framework was developed originally for the Self language and system
 (<link xlink:href="http://research.sun.com/self" />), and later became popular
-as the user interface of the Squeak system
+as the user interface of the Squeak Smalltalk system
 (<link xlink:href="http://www.squeak.org"/>). Lively Kernel reimplements a
 sizable subset of the original Morphic framework using technologies
 available in modern web browsers.
 </para>
 
 <para>
-Morphic achieves simplicity and uniformity of programmatic and
-interactive constuction and manipulation of graphical objects by
-defining and extensively relying on a class of graphical objects
-called “morphs”, possessing some or all of the following properties:
+Morphic achieves simplicity of programmatic and interactive by
+consistently relying on a class of graphical objects called “morphs”,
+possessing some or all of the following properties:
 <itemizedlist mark="bullet">
   <listitem> <para>
       A shape, or graphical appearance,
@@ -296,33 +305,37 @@ comprise all the remaining content of the page. In contrast to typical
 web pages, however, multiple worlds can coexist in a single JavaScript
 execution context. Notionally, the user interacts with the contents of
 single world, and navigates between different worlds by clicking on
-<code>LinkMorphs</code>, representing of connections between worlds.
+<code>LinkMorphs</code>, representing connections between worlds.
 </para>
 
 <para>
-A <code>HandMorph</code> is the Morphic generalization of a cursor; it can be used
-to pick up, move, and deposit other morphs, its shape may change to
-indicate different cursor states, and it is the source of user events
-in the architecture.  In Lively Kernel, a Morphic world may have
-several hands active at the same time, corresponding to several
-collaborating users of that world (this functionality is not yet
-available in the current incarnation of the Lively Kernel, however, it
-has been implemented in the previousy mentioned earlier prototype
-based on the Java platform).
+A <code>HandMorph</code> is the Morphic generalization of a cursor; it
+can be used to pick up, move, and deposit other morphs, its shape may
+change to indicate different cursor states, and it is the source of
+user events in the architecture.  In Lively Kernel, a Morphic world
+may have several hands active at the same time, corresponding to
+several collaborating users of that world (this functionality is not
+yet available in the current incarnation of the Lively Kernel,
+although, it has been demonstrated in the previously mentioned
+prototype based on the Java platform).
+</para>
+<para>
+In many respects Lively Kernel can be viewed as an interactive editing
+environment for graphic and non-graphic information. The remainder of
+this section presents various aspects of the Morphic framework in
+terms of its editing capabilities.
 </para>
 
 <section>
 
 <title>A Lively Construction</title>
 <para>
-Morphic provides means of interactive manipulation of morphs included
-in the framework, and, transitively, composite morphs assembled from
+Morphic supports interactive manipulation of morphs included
+in the framework, and, by extension, composite morphs assembled from
 the morphs already in existence.  In contrast with the mostly static
 elements of typical Web pages, each morph in a Lively Kernel world can
-be picked up, moved, resized, rotated, duplicated and reshaped. Thus,
-at its simplest, the Lively Kernel functions as a rudimentary graphics
-editor.
-<remark>most of LK can be viewed as an editor for something or other</remark>
+be picked up, moved, resized, rotated, duplicated and reshaped. 
+
 </para>
 
 <para>
@@ -417,7 +430,7 @@ this.startStepping(50, “rotateBy”, 0.1); // 0.1 radians every 50 ms
 <mediaobject><imageobject>
 <imagedata fileref="editors.gif"/>
 </imageobject></mediaobject>
-<caption><para>A SelectionMorph (left) and a HandleMorph (the blue rectangle on the polygon; shown with balloon help). <remark>FIXME better pic</remark> </para></caption>
+<caption>A SelectionMorph (left) and a HandleMorph (the blue rectangle on the polygon; shown with balloon help). <remark>FIXME better pic: tray, handle and color picker</remark> </caption>
 </figure>
 
 
@@ -425,21 +438,21 @@ this.startStepping(50, “rotateBy”, 0.1); // 0.1 radians every 50 ms
 <remark>
 
 <para>
-Editors implemented as morphs, in particular shape editors are
-instances of <code>HandleMorphs</code> and expose user interface
-bindings for resizing, rotating, reshaping, rotating of the target
-morph. Morphic also provides other editor morphs, among
+Beyond simple mouse gestures, Morphic provides simple user interface
+elements to edit the visual appearance of morphs.  Editors are
+implemented as morphs, in particular shape editors are instances
+of <code>HandleMorphs</code> and expose user interface bindings for
+resizing, rotating, reshaping, rotating of the target morph. Morphic
+also provides other editor morphs, among
 them <code>ColorPickerMorph</code>, used to select and apply solid
 colors to <code>fill</code> and <code>stroke</code> attributes,
 and <code>SelectionMorph</code> (or “selection tray”), which allows
 the same operations to be applied to multiple morphs. See Figure
 <xref linkend="fig_editors"/>.  Editors are somewhat volatile and
-decorate target morphs.
+decorate target morphs, (are <emphasis>epimorphs</emphasis>).
+Contextual menus are also morphs. So are tooltips.
 </para>
 </remark>
-
-
-<remark>Make better screenshot, with selection, color picker and handle morph.</remark>
 
 <para>
 
@@ -476,14 +489,12 @@ functionality with three basic components:
   </listitem>
   <listitem> 
     <para> A text composition facility (<code>Font, TextWord, TextLine, TextMorph</code>)</para>
-    <para> 
-      Text composition is a classic problem in computer
-      graphics.  It is a process of streaming through the text, noting
-      exceptions when emphasis changes, and when the frame boundary or
-      mouse location is encountered.  <code>TextLine</code> and <code>TextWord</code> are the
-      components that capture the state of this process, and that
-      allow efficient display and location of the individual
-      characters.
+    <para> Text composition is merely a process of streaming through
+      the text, noting exceptions when emphasis changes, and when the
+      frame boundary or mouse location is
+      encountered.  <code>TextLine</code> and <code>TextWord</code>
+      capture the state of this process, and allow efficient display
+      and location of the individual characters.
     </para>
   </listitem>
   <listitem> <para> A text editor (<code>TextMorph, TextSelection</code>) </para>
@@ -524,13 +535,13 @@ resulting duplication of editing functionality in JavaScript is
 undesirable, however, the rich text editors are neither standardized
 nor easily integratable with SVG. The SVG specification allows
 integration of XHTML content through
-the <code>&lt;foreignobject&gt;</code> element, which then can be
+the <code>&lt;foreignobject&gt;</code> element, which can be
 manipulated, most notably using affine transforms, much like other SVG
 elements. However, the Gecko engine currently only supports editing
-HTML content, and not XHTML, and s of this writing, other browsers
+HTML content, and not XHTML, and as of this writing, other browsers
 exhibit similar limitations.  Even if XHTML editing were supported by
-all the browser, performing text editing in Lively Kernel results in
-more self contained code, and as a result, retains its character as a
+all browsers, performing text editing in Lively Kernel results in more
+self contained code, and as a result, retains its character as a
 computing kernel.
 </para>
 
@@ -560,7 +571,7 @@ structured data.
 Within the Morphic context, the Lively Kernel's widget set has been
 implemented with a model/view separation along the lines of many
 Smalltalk systems.  This choice was influenced by experience with
-GUI-builder applications and the Fabrik visual programming system <remark>FIXME reference</remark>.
+GUI-builder applications and the Fabrik visual programming system <xref linkend="Ingalls88" />.
 Besides allowing for multiple views of a given model, the model/view
 separation makes it easier to infer appropriate model structure from a
 given concrete assembly of UI components.  It also turns out to
@@ -678,37 +689,57 @@ even though similar interest in reusable components).
 </remark>
 
 
-<figure xml:id="fig_breakdown">
-<programlisting><![CDATA[
-319 Host Interface – Browser API plus XML utility functions 
-515 Utility – Classes, collections, printing, etc. (plus 562 in Prototype.js) 
-833 Basic Graphics – Point, Rectangle, Transform, Color, Gradient, Image 
-550 Shapes – Host graphical objects (SVG node API) 
-1667 Morph – Basic protocol 
-1170 Morphic Core -- World, Hand, Event, Handles, Handlers 
-1188 Basic Widgets – Button, List, Menu, Dialog, Slider, Selection, ImageMorph 
-1921 Text – basic TextMorph plus composition and rich text 
-747 Editors – Drag/drop manipulation, shape editors and text editing 
-also ColorPicker and StylePanel 
-386 Model, Widget 
-1295 High Level Widgets – Scroll panes, panels, windows, world links 
-also Panel and Browser support 
-1311 Tools – Browser, inspector, stack viewer, change lists, profiler 
-406 Serialization – Copier, exporter, importer (plus 202 in JSON) 
-281 Network – URL, HTTP, WebDAV basics 
-365 Storage – WebDAV, file browser 
------ ----- 
-12954 Total 
-]]></programlisting>
+<table xml:id="fig_breakdown" frame='all'>
+<title>Breakdown of the implementation code</title>
+<tgroup cols='3' align='left' colsep='1' rowsep='1'>
+<colspec colname='total'/>
+<colspec colname='name'/>
+<colspec colname='desc'/>
+<thead>
+<row>
+  <entry>Total</entry>
+  <entry>Name</entry>
+  <entry>Description</entry>
+</row>
+</thead>
+<tfoot>
+<row>
+  <entry>12954</entry>
+  <entry>Total</entry>
+  <entry></entry>
+</row>
+</tfoot>
+<tbody>
+<row><entry>319</entry><entry>Host Interface</entry><entry>Browser API plus XML utility functions</entry></row>
+<row><entry>515</entry><entry>Utility</entry><entry>Classes, collections, printing, etc. (plus 562 in Prototype.js)</entry></row>
+<row><entry>833</entry><entry>Basic Graphics</entry><entry>Point, Rectangle, Transform, Color, Gradient, Image</entry></row>
+<row><entry>550</entry><entry>Shapes</entry><entry>Host graphical objects (SVG node API)</entry></row>
+<row><entry>1667</entry><entry>Morph</entry><entry>Basic protocol</entry></row>
+<row><entry>1170</entry><entry>Morphic Core</entry><entry>World, Hand, Event, Handles, Handlers</entry></row>
+<row><entry>1188</entry><entry>Basic Widgets</entry><entry>Button, List, Menu, Dialog, Slider, Selection, ImageMorph </entry></row>
+<row><entry>1921</entry><entry>Text</entry><entry>basic TextMorph plus composition and rich text </entry></row>
+<row><entry>747</entry><entry> Editors</entry><entry>Drag/drop manipulation, shape editors and text editing also ColorPicker and StylePanel </entry></row>
+<row><entry>386</entry><entry>Model, Widget</entry><entry></entry></row>
+<row><entry>1295</entry><entry>High Level Widgets</entry><entry>Scroll panes, panels, windows, world links, also Panel and Browser support </entry></row>
+<row><entry>1311</entry><entry>Tools</entry><entry>Browser, inspector, stack viewer, change lists, profiler </entry></row>
+<row><entry>406</entry><entry>Serialization</entry><entry>Copier, exporter, importer (plus 202 in JSON) </entry></row>
+<row><entry>281</entry><entry>Network</entry><entry>URL, HTTP, WebDAV basics </entry></row>
+<row><entry>365</entry><entry>Storage</entry><entry>WebDAV, file browser </entry></row>
+
+</tbody>
+</tgroup>
 <caption><para> Breakdown of Lively Kernel by function with
-    approximate code size The figures above include comments and lines
+    approximate code size. Numbers include comments and lines
     with single bracket characters.  Prototype.js is an open source
     set of useful JavaScript extensions, of which we use only a small
     number (see <link xlink:href="http://www.prototypejs.org"/>), JSON is Doug Crockford's
     implementation the parser for the JSON data interchange format (see
     <link xlink:href="http://www.JSON.org"/>).
 </para></caption>
-</figure>
+</table>            
+
+
+
 
 
 <section>
@@ -841,7 +872,7 @@ convention of naming the underlying DOM element <code>rawNode</code>.
 <para>
 Lively Kernel does not currently use several features of the SVG
 specification. Most notably, it does not use declarative animations,
-due to both lack of support in many browsers, and our interest in
+botu due to lack of support in many browsers, and to our interest in
 portability of the implementation to other graphics backends. Instead,
 a simple imperative framework for scheduling and periodic invocation
 of user-supplied actions is provided. Document styling (through either
@@ -853,15 +884,15 @@ that can be applied to a widget or application at the user's
 discretion. UI themes are already supported by Lively Kernel, however,
 browser support for styling is not leveraged.
 
-Another platform feature not used by Lively Kernel is
-mouse event delivery. Instead of registering event handlers on
-individual SVG elements, the <code>HandMorph</code> registers a single
-input event handler in the capture phase of DOM event delivery. The
-handler determines the morph that should receive the event based on
-the coordinates contained in the event object and and geometry
-information obtained by inspecting the morph tree. Clearly, Lively
-Kernel duplicates in JavaScript some of the mechanisms implemented
-natively by the DOM, however, event delivery turns out not to be
+Another platform feature not used by Lively Kernel is mouse event
+delivery. Instead of registering event handlers on individual SVG
+elements, the <code>HandMorph</code> registers a single input event
+handler in the capture phase of DOM event delivery. The handler
+determines the morph that should receive the event based on the
+coordinates contained in the event object and and geometry information
+obtained by inspecting the morph tree. Clearly, Lively Kernel
+duplicates in JavaScript some of the mechanisms implemented natively
+by the DOM, however, event delivery is not usually
 performance-critical, and the resulting codebase is more easily
 portable to graphics backends not based on a DOM.
 </para>
@@ -870,20 +901,22 @@ portable to graphics backends not based on a DOM.
 
 </section>
 
-
-
-
-
-
 <section>
 <title>SVG as a serialization and application description format</title>
 
 
 <para>
-Even with multiple graphics backends,
-the serialization format could be either an entirely new format (and <code>n</code>
-translations for <code>n</code> platforms), or an existing format like SVG with <code>n-1</code>
-translations for the remaining <code>n-1</code> platforms.
+
+<remark>
+No editor would be complete without saving the results into a
+persistent form.  The chanllenges are the format and how to implement
+writing out the format from within a web browser.  Even with multiple
+graphics backends, the serialization format could be either an
+entirely new format (and <code>n</code> translations
+for <code>n</code> platforms), or an existing format like SVG
+with <code>n-1</code> translations for the remaining <code>n-1</code>
+platforms.
+</remark>
 </para>
 <!-- copied from abstract --> 
 <para>
@@ -942,7 +975,16 @@ leverage MIDAS html editing extensions? </para>
 
 <bibliography>
   <title>References</title>
-  
+  <biblioentry xml:id="Ingalls88">
+    <abbrev>Ingalls88</abbrev>
+    <title>Fabrik.  A Visual Programming Environment</title>
+    Dan Ingalls, Scott Wallace, Yu-Ying Chow, Frank Ludolph, Ken Doyle 
+    Apple Computer Inc. 
+    OOPSLA '88 Conference Proceedings 
+    SIGPLAN Notices 
+    Volume 23, Number 11, November 1988 
+  </biblioentry>
+    
   <biblioentry xml:id="Taivalsaari08">
     <abbrev>Taivalsaari08</abbrev>
     <authorgroup>
@@ -956,9 +998,9 @@ leverage MIDAS html editing extensions? </para>
 
   <biblioentry xml:id="Maloney95">
     <abbrev>Maloney95</abbrev>
-    Maloney, J. H. and Smith, R. B. 1995. Directness and liveness in
-    the Morphic user interface construction environment. In
-    Proceedings of the 8th Annual ACM Symposium on User interface and
+    Maloney, J. H. and Smith, R. B. 1995. 
+    <title>Directness and liveness in the Morphic user interface construction environment.</title>
+      In Proceedings of the 8th Annual ACM Symposium on User interface and
     Software Technology (Pittsburgh, Pennsylvania, United States,
     November 15 - 17, 1995). UIST '95. ACM, New York, NY, 21-28.
     <link xlink:href="http://doi.acm.org/10.1145/215585.215636"/> 
@@ -966,7 +1008,7 @@ leverage MIDAS html editing extensions? </para>
 
   <biblioentry xml:id="Batik">
     <abbrev>Batik</abbrev> 
-    <title>The Batik SVG toolkit</title> 
+    <title>The Apache Batik SVG toolkit</title> 
     <link xlink:href="http://xmlgraphics.apache.org/batik/"/>
   </biblioentry>
   
