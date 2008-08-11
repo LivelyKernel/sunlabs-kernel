@@ -130,20 +130,20 @@
 <static name="hilbertFun"><![CDATA[ 
     function(world, loc) {
 // The menu-driven filled Hilbert curve demo
-    var logoMenu = new MenuMorph([]);
+    var orderMenu = new MenuMorph([]);
 
     for (var i=0; i<=5; i++) {
-        logoMenu.addItem([i.toString(), logoMenu, "makeLogo", i]);
+        orderMenu.addItem([i.toString(), orderMenu, "makeFilberts", i]);
     }
 
-    logoMenu.makeLogo = function(order) {
+    orderMenu.makeFilberts = function(order) {
         if (this.morphs) for (var i=0; i<4; i++) this.morphs[i].remove();
         if (i=0) { this.morphs == null; return; }
         var P = new Pen();
         this.morphs = P.filberts(order,5);
     };
 
-    logoMenu.openIn(world, loc, true, "Hilbert Fun");
+    orderMenu.openIn(world, loc, true, "Hilbert Fun");
 }]]></static>
 
 
