@@ -51,10 +51,13 @@ Widget.subclass('SimpleBrowser', {
             this.setModelValue("setMethodString", this.getMethodStringFor(className, methodName));
             break;
         case p.getMethodString:
-            try {
-                eval(this.getModelValue("getMethodString"));
+            var methodName = this.getModelValue("getMethodName");
+            var className = this.getModelValue("getClassName");
+            var methodDef = className + ".prototype." + methodName + " = " + this.getModelValue("getMethodString");
+	    try {
+                eval(methodDef);
             } catch (er) {
-                WorldMorph.current().alert("error evaluating method " + this.getMethodValue("getMethodString"));
+                WorldMorph.current().alert("error evaluating method " + methodDef);
             }
             // FIXME errors?
             break;
@@ -90,11 +93,15 @@ Widget.subclass('SimpleBrowser', {
 	var func = (className == "Global") ? Global[methodName] : Global[className].prototype[methodName];
 	if (func == null) return "no code";
 	var code = func.getOriginal().toString();
-	if (className == "Global" || methodName == "constructor") return code;
-	return className + ".prototype." + methodName + " = " + code; 
+	return code;
     },
     
-    setMethodString: function(newDef) { eval(newDef); },
+/*
+    setMethodString: function(newDef) {
+	// no longer used
+	// eval(newDef);
+	},
+*/
 
     buildView: function(extent) {
         var panel = PanelMorph.makePanedPanel(extent, [
