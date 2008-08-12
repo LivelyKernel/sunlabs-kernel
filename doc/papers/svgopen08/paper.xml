@@ -549,7 +549,7 @@ computing kernel.
 <mediaobject><imageobject>
 <imagedata fileref="mvc-widget.png"/>
 </imageobject></mediaobject>
-<caption>A composite widget comprising multiple Views on parts of the same Model. <remark>Emphasize simplicity and conciseness</remark> </caption>
+<caption>A composite widget comprising multiple Views on parts of the same Model.</caption>
 </figure>
 
 
@@ -608,6 +608,7 @@ style editor can be invoked for every morph, and it can be considered
 a view observing parts of the SVG DOM as its model.
 </para>
 
+<!--
 <remark>
 <para> browser for tree-structured data. Figure with a DOM browser
 side by side with a file browser and object browser. Applicable to SVG
@@ -618,7 +619,7 @@ relationship to XForms?
 </para>
 
 </remark>
-
+-->
 
 </section>
 
@@ -713,21 +714,29 @@ subsequently created by the system are its descendants.  This element
 act as a canvas, on which the current <code>WorldMorph</code> displays
 itself. When a new world is entered, all the SVG elements used to
 represent it are (directly or indirectly) inserted into the DOM tree,
-and the old world's SVG elements are removed.
+and the old world's SVG elements are removed from it.
 </para>
 
-<remark> 
+
 <para>
-HandMorph maps to some extent to the <code>&lt;cursor&gt;</code>
-element. But it does much more, because it is the source of events.
+Lively Kernel uses an SVG <code>&lt;g&gt;</code> element to implement
+the <code>HandMorph</code>. As a result, the mouse cursor drawn by the
+windowing system is closely followed within the confines of the SVG
+canvas by a visual representation of the <code>HandMorph</code>,
+typically a small arrow shape. Such a choice may appear surprising,
+but it reflects the fact that multiple <code>HandMorphs</code> may
+interact with the same <code>WorldMorph</code>, and enables uniform
+handling of morphs residing in a world and morphs held by
+a <code>HandMorph</code> (in Morphic, morphs grabbed by
+a <code>HandMorph</code> are taken out of the world of residence). SVG
+supports changing and disabling the windowing system cursor
+entirely, and Lively Kernel provides programmatic bindings for this functionality.
 </para>
+
 <!-- Imperative API for SVG, hiding the XML underpinnings and hence
 portable to different architectures. API JS-centric (hence no XBL,
 even though similar interest in reusable components).
 -->
-
-</remark>
-
 
 <table xml:id="fig_breakdown" frame='all'>
 <title>Breakdown of the implementation code</title>
@@ -798,7 +807,8 @@ as <code>&lt;rect&gt;</code>, <code>&lt;ellipse&gt;</code>,
 or <code>&lt;path&gt;</code>.
 </para>
 
-<para>Currently, Lively Kernel does not take advantage of the property
+<para>
+Currently, Lively Kernel does not take advantage of the property
 inheritance mechanism of <code>&lt;g&gt;</code> elements provided by
 the SVG specification, and each basic shape element is required to specify the
 full set of its visual attributes. This feature of the SVG standard
@@ -946,10 +956,40 @@ portable to graphics backends not based on a DOM.
 
 
 <para>
+No autoring environment would be complete without saving the results
+into a persistent form, and Lively Kernel addresses this requirement
+by providing a simple WebDAV protocol client implemented in
+JavaScript. The client is built on top of asynchronous HTTP networking
+support present in all the modern browsers in form of
+the <code>XmlHttpRequest</code> object. Rather than using one of the
+several JavaScript frameworks, Lively Kernel provides its
+own <code>XmlHttpRequest</code> wrapper, which leverages the
+asynchronous model update notification mechanism used in other parts
+of the system. Naturally, the WebDAV protocol has to be implemented
+and enabled on the Web server hosting the Lively Kernel
+installation. Due to the single origin security policy implemented by
+web browsers (and in absence of server side proxies), the WebDAV
+client can only save files to the website from which the current
+runtime has been loaded.
+</para>
 
+<para>
+Lively Kernel is able to save not only static JavaScript files and SVG
+documents, it can also save snapshots of its own active worlds. Such
+snapshots can be later loaded into a running runtime and their
+contents manipulated as any other Lively Kernel object.  Moreover, the
+snapshot files are active Web pages themselves, and, when loaded by a
+supported Web browser, instantiate a new Lively Kernel runtime and
+recreate the worlds contained therein. When the JavaScript runtime is
+not available (because JavaScript execution is disabled or the
+required JavaScript files cannot be found), the snapshot Web page is
+simply rendered as a static screenshots of the active world at the time the
+save operation was performed.
+</para>
+
+<para>
 <remark>
-No editor would be complete without saving the results into a
-persistent form.  The chanllenges are the format and how to implement
+ The chanllenges are the format and how to implement
 writing out the format from within a web browser.  Even with multiple
 graphics backends, the serialization format could be either an
 entirely new format (and <code>n</code> translations
@@ -965,8 +1005,7 @@ objects or entire Web pages from within a running system and thus use
 the Lively Kernel as an authoring environment both code and
 interactive graphics. The export mechanism currently uses our own
 implementation of the Distributed Authoring and Versioning (WebDAV)
-extensions built on top of asynchronous HTTP networking support
-present in all the modern browsers. Objects are serialized into valid
+extensions built on top of Objects are serialized into valid
 SVG files with additional Lively Kernel-specific annotations necessary
 to reconstruct all the JavaScript objects on deserialization. The
 annotations are placed in a dedicated XML namespace, as a result, if a
@@ -1013,14 +1052,14 @@ leverage MIDAS html editing extensions? </para>
 </section>
 
 <section>
-<title>Future Work</title>
+<title>Conclusion</title>
 <para>
 
 Our Morphic implementation does not currently provide editors for all
 the elements and attributes specified by the SVG standard, however,
 such a complete implementation would certainly be feasible, and would
 constitute an interesting light-weight, self-sustaining graphics
-editor for the Web. <remark> possible but not strictly  research goal, perhaps the community will pick up</remark>
+editor for the Web. <remark> possible but not strictly  research goal, perhaps the community will pick up.</remark>
 
 </para>
 
@@ -1066,7 +1105,7 @@ editor for the Web. <remark> possible but not strictly  research goal, perhaps t
   </biblioentry>
 
   <biblioentry xml:id="SVG11">
-    <abbrev>SVG1.1</abbrev> 
+    <abbrev>SVG11</abbrev> 
     <title>Scalable Vector Graphics (SVG) Specification</title> 
     <link xlink:href="http://www.w3.org/TR/SVG11/"/>
   </biblioentry>
