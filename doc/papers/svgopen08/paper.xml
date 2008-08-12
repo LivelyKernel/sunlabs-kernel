@@ -347,16 +347,20 @@ be picked up, moved, resized, rotated, duplicated and reshaped.
 
 The sequence shown in <xref linkend="fig_construction"/> illustrates
 the construction of a simple truck shape by concrete manipulation. In
-Figure A we see a palette of useful shapes.  In Figure B, the
-rectangle has been copied, and extended in Figure C.  In Figure D, the
-rectangle has been colored yellow, an ellipse has been copied,
-resized, and colored, and has been given a thick black border to
-resemble a tire, and a second copy has already been affixed to the
-bus.  In Figure E, the truck is complete, and Figure F shows a family
-of trucks, copied and rotated from the new master, all operations that
-can be accomplished with simple gestures in the Lively Kernel's
-graphics editor.
+<xref linkend="fig_construction"/> A we see a palette of useful
+shapes.  In <xref linkend="fig_construction"/> B, the rectangle has
+been copied, and extended in <xref linkend="fig_construction"/> C.  In
+<xref linkend="fig_construction"/> D, the rectangle has been colored
+yellow, an ellipse has been copied, resized, and colored, and has been
+given a thick black border to resemble a tire, and a second copy has
+already been affixed to the bus.  In
+<xref linkend="fig_construction"/> E, the truck is complete, and
+<xref linkend="fig_construction"/> F shows a family of trucks, copied
+and rotated from the new master, all operations that can be
+accomplished with simple gestures in the Lively Kernel's graphics
+editor.
 </para>
+
 
 
 <figure xml:id="fig_construction">
@@ -365,34 +369,34 @@ graphics editor.
 
 <mediaobject>
 <imageobject><imagedata fileref="construction-a.png"/> </imageobject>
-<textobject><phrase>a</phrase></textobject>
+<caption><phrase>A</phrase></caption>
 </mediaobject>
 
 <mediaobject>
 <imageobject><imagedata fileref="construction-b.png"/></imageobject>
-<textobject><phrase>b</phrase></textobject>
+<caption><phrase>B</phrase></caption>
 </mediaobject>
 
 <mediaobject>
 <imageobject> <imagedata fileref="construction-c.png"/></imageobject>
-<textobject><phrase>c</phrase></textobject>
+<caption><phrase>C</phrase></caption>
 </mediaobject>
 </para>
 <para>
 
 <mediaobject>
 <imageobject> <imagedata fileref="construction-d.png"/></imageobject>
-<textobject><phrase>d</phrase></textobject>
+<caption><phrase>D</phrase></caption>
 </mediaobject>
 
 <mediaobject>
 <imageobject> <imagedata fileref="construction-e.png"/></imageobject>
-<textobject><phrase>e</phrase></textobject>
+<caption><phrase>E</phrase></caption>
 </mediaobject>
 
 <mediaobject>
 <imageobject> <imagedata fileref="construction-f.png"/></imageobject>
-<textobject><phrase>f</phrase></textobject>
+<caption><phrase>F</phrase></caption>
 </mediaobject>
 <caption>Drag and drop construction of simple objects in Lively Kernel.</caption>
 </para>
