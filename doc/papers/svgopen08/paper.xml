@@ -417,10 +417,11 @@ interactive manipulation.</para></caption>
 Beyond the basic vocabulary of the underlying graphics support, the
 programmability of Morphic shapes provides an unlimited range of
 graphical idioms. <xref linkend="fig_spiral"/> shows a small
-snippet of JavaScript that draws a polygonal spiral.  Beyond mere
-marks on the screen, this code produces a fully active object that can
-be copied, scaled, and colored, as shown, and that could be set to
-spinning with one more line of code, such as
+snippet of JavaScript that draws a polygonal spiral.   
+The code demonstrated in the figure produces not merely marks on the
+screen, but, rather, a fully active object that can be copied, scaled,
+and colored, as shown, and that could be set to spinning with one more
+line of code, such as
 <programlisting><![CDATA[
 this.startStepping(50, “rotateBy”, 0.1); // 0.1 radians every 50 ms
 ]]></programlisting>
@@ -431,7 +432,7 @@ this.startStepping(50, “rotateBy”, 0.1); // 0.1 radians every 50 ms
 <section><title>Simple Editors</title>
 
 <figure xml:id="fig_editors">
-<title>Editor</title>
+<title>Simple editors.</title>
 <mediaobject><imageobject>
 <imagedata fileref="editors.gif"/>
 </imageobject></mediaobject>
@@ -440,34 +441,23 @@ this.startStepping(50, “rotateBy”, 0.1); // 0.1 radians every 50 ms
 
 
 
-<remark>
 
 <para>
-Beyond simple mouse gestures, Morphic provides simple user interface
-elements to edit the visual appearance of morphs.  Editors are
-implemented as morphs, in particular shape editors are instances
-of <code>HandleMorphs</code> and expose user interface bindings for
-resizing, rotating, reshaping, rotating of the target morph. Morphic
-also provides other editor morphs, among
+Beyond mouse gestures and keyboard shortcuts, Morphic provides simple
+user interface elements to edit the visual appearance of morphs.
+Morph editors are morphs themselves, in particular, shape editors are
+instances of <code>HandleMorph</code> and expose user interface
+bindings for resizing, rotating, reshaping and rotating the target
+morph. Morphic also provides other editor morphs, among
 them <code>ColorPickerMorph</code>, used to select and apply solid
 colors to <code>fill</code> and <code>stroke</code> attributes,
 and <code>SelectionMorph</code> (or “selection tray”), which allows
-the same operations to be applied to multiple morphs. See
-<xref linkend="fig_editors"/>.  Editors are somewhat volatile and
-decorate target morphs, (are <emphasis>epimorphs</emphasis>).
-Contextual menus are also morphs. So are tooltips.
+the same operations to be applied to multiple morphs (see
+<xref linkend="fig_editors"/>).  Further morph editing operations are
+available through contextual menus, also implemented as morphs.
 </para>
-</remark>
 
-<para>
 
-Our Morphic implementation does not currently provide editors for all
-the elements and attributes specified by the SVG standard, however,
-such a complete implementation would be feasible, and would constitute
-an interesting light-weight, self-sustaining graphics editor for the
-web FIXME.
-
-</para>
 </section>
 
 
@@ -670,7 +660,7 @@ object).  However, such code is a result of decompilation, and does
 not include comments or custom formatting. Moreover, while new
 functions can be introduced and bound to existing object member names
 dynamically, such changes do not persist past the lifetime of the
-a Lively Kernel instantiation.
+Lively Kernel instantiation.
 </para>
 <para>
 Code persistence is implemented by a source code database, a component
@@ -684,10 +674,13 @@ definition, the source file containing the method is regenerated in
 the browser with the updated definition, and saved back to the server,
 subject to access control checks. Server-side code persistence is
 implemented using Lively Kernel's own implementation of the WebDAV
-protocol (<xref linkend="WebDAV" />).  An active implementation of the
+protocol (<xref linkend="WebDAV" />, see <xref linkend="Serialization"/> for more details). 
+
+
+<!-- An active implementation of the
 WebDAV protocol server is required on the Web server hosting the
 Lively Kernel installation.
-
+-->
 </para>
 
 </section>
@@ -695,15 +688,35 @@ Lively Kernel installation.
 
 <section><title>Implementing Morphic in SVG</title>
 
-<remark> 
-<para>the whole SVG DOM tree is built dynamically. By default, the
-entry point to the Lively Kernel runtime is a static document defining
-only a single empty <code>&lt;svg&gt;</code> element, and the entire
-DOM tree of the running system is constructed programmatically from
-JavaScript on system load. </para>
-<para> 
-World maps onto contents of the <code>&lt;svg&gt;</code> element.
+
+<para>
+Thanks in no small part to the expressiveness and dynamicity of
+JavaScript and SVG, the Lively Kernel code base is compact, yet it
+provides an entire toolchain for graphics and application development
+and deployment, as well as for evolution of the system
+itself. <xref linkend="fig_breakdown"/> demonstrates the lines of code
+used to implements various subsystems in a snapshot of Lively Kernel
+code base. Among those subsystems, <code>Basic
+Graphics</code>, <code>Shape</code>, <code>Morphic Core</code>
+<code>Text</code> and <code>Editors</code> directly depend on SVG. The
+remainder of this section concentrates on the dilemmas and solutions
+encountered while implementing the Lively Kernel SVG backend.
 </para>
+
+<para>
+Lively Kernel takes a highly dynamic approach to interfacing with the
+SVG implementation. First of all, the entire SVG DOM tree is built
+dynamically on system load. The default entry point to the Lively
+Kernel runtime is a very simple static document defining only a single
+empty <code>&lt;svg&gt;</code> element, and all the SVG elements
+subsequently created by the system are its descendants.  This element
+act as a canvas, on which the current <code>WorldMorph</code> displays
+itself. When a new world is entered, all the SVG elements used to
+represent it are (directly or indirectly) inserted into the DOM tree,
+and the old world's SVG elements are removed.
+</para>
+
+<remark> 
 <para>
 HandMorph maps to some extent to the <code>&lt;cursor&gt;</code>
 element. But it does much more, because it is the source of events.
@@ -755,7 +768,7 @@ even though similar interest in reusable components).
 
 </tbody>
 </tgroup>
-<caption><para> Breakdown of Lively Kernel by function with
+<caption><para> Breakdown of the Lively Kernel by function with
     approximate code size. Numbers include comments and lines
     with single bracket characters.  Prototype.js is an open source
     set of useful JavaScript extensions, of which we use only a small
@@ -928,7 +941,7 @@ portable to graphics backends not based on a DOM.
 
 </section>
 
-<section>
+<section xml:id="Serialization">
 <title>SVG as a serialization and application description format</title>
 
 
@@ -1001,6 +1014,16 @@ leverage MIDAS html editing extensions? </para>
 
 <section>
 <title>Future Work</title>
+<para>
+
+Our Morphic implementation does not currently provide editors for all
+the elements and attributes specified by the SVG standard, however,
+such a complete implementation would certainly be feasible, and would
+constitute an interesting light-weight, self-sustaining graphics
+editor for the Web. <remark> possible but not strictly  research goal, perhaps the community will pick up</remark>
+
+</para>
+
 </section>
 
 <bibliography>
