@@ -453,7 +453,10 @@ Importer.subclass('NetImporter', NetRequestReporterTrait, {
 View.subclass('Resource', NetRequestReporterTrait, {
     documentation: "a remote document that can be fetched and queried",
 
-    pins: ["ContentDocument", "URL"],
+    pins: ["ContentDocument", //:XML
+	   "ContentText", //:String
+	   "URL" // :URL
+	  ],
 
     initialize: function(url, plug) {
 	this.forceXML = false;
@@ -510,7 +513,9 @@ View.subclass('Resource', NetRequestReporterTrait, {
 	    var parser = new DOMParser();
 	    var xml = parser.parseFromString(txt, "text/xml");
 	    this.pvtSetDoc(xml);
-	} else console.log("expected document, got text " + txt.truncate());
+	} else {
+	    this.setModelValue("setContentText", txt);
+	}
     },
 
     pvtSetDoc: function(doc) {
