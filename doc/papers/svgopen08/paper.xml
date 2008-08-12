@@ -240,7 +240,7 @@ traditional desktop metaphors, as shown in
 implemented in JavaScript, and relieves the programmer from the mental
 context switching required when inspecting and developing in a system
 implemented using multiple technologies and formats, as is typically
-the case in existing AJAX toolkits based on HTML, CSS, JavaScript and
+the case in existing AJAX toolkits based on HTML, Cascading Stylesheets (CSS), JavaScript and
 auxiliary technologies.
 </para>
 
@@ -505,8 +505,8 @@ functionality with three basic components:
 <para>The totality of the text package in the Lively Kernel is
 approximately 2000 lines of JavaScript, including comments.  Lists and
 menus are built from it in a further 400 lines.
-<remark> not sure of either -- I think 2000 may be without the editor,
-and 400 for lists and menus was a guess</remark>
+<!-- <remark> not sure of either - I think 2000 may be without the editor,
+and 400 for lists and menus was a guess</remark> -->
 </para>
 
 <para> 
@@ -926,13 +926,13 @@ botu due to lack of support in many browsers, and to our interest in
 portability of the implementation to other graphics backends. Instead,
 a simple imperative framework for scheduling and periodic invocation
 of user-supplied actions is provided. Document styling (through either
-Cascading Style Sheets or Extensible Stylesheet Language standards) is
-not currently used, either, although useful applications of styling
-could be envisioned. For instance, styling could be used to implement
-UI themes, i.e., sets of visually coherent presentation attributes
-that can be applied to a widget or application at the user's
-discretion. UI themes are already supported by Lively Kernel, however,
-browser support for styling is not leveraged.
+CSS or Extensible Stylesheet Language (XSL) standards) is not
+currently used, either, although useful applications of styling could
+be envisioned. For instance, styling could be used to implement UI
+themes, i.e., sets of visually coherent presentation attributes that
+can be applied to a widget or application at the user's discretion. UI
+themes are already supported by Lively Kernel, however, browser
+support for styling is not leveraged.
 
 Another platform feature not used by Lively Kernel is mouse event
 delivery. Instead of registering event handlers on individual SVG
@@ -952,7 +952,7 @@ portable to graphics backends not based on a DOM.
 </section>
 
 <section xml:id="Serialization">
-<title>SVG as a serialization and application description format</title>
+<title>SVG as a serialization format</title>
 
 
 <para>
@@ -983,85 +983,81 @@ supported Web browser, instantiate a new Lively Kernel runtime and
 recreate the worlds contained therein. When the JavaScript runtime is
 not available (because JavaScript execution is disabled or the
 required JavaScript files cannot be found), the snapshot Web page is
-simply rendered as a static screenshots of the active world at the time the
+simply rendered as a static screenshot of the active world at the time the
 save operation was performed.
 </para>
 
 <para>
-<remark>
- The chanllenges are the format and how to implement
-writing out the format from within a web browser.  Even with multiple
-graphics backends, the serialization format could be either an
-entirely new format (and <code>n</code> translations
-for <code>n</code> platforms), or an existing format like SVG
-with <code>n-1</code> translations for the remaining <code>n-1</code>
-platforms.
-</remark>
+Saving and restoring Lively Kernel objects is supported in several
+different modes. A single morph can be saved into a Web page inside a
+fresh new world simply by selecting an item from its contextual menu
+and following on-screen dialogs. A Web page with a world of objects
+can be loaded into a new separate world, or its content merged into
+the current world. Currently these options are available through
+contextual menus of the standard Lively Kernel WebDAV-based file
+browser.
 </para>
-<!-- copied from abstract --> 
+
+
 <para>
-It is possible to dynamically export and import
-objects or entire Web pages from within a running system and thus use
-the Lively Kernel as an authoring environment both code and
-interactive graphics. The export mechanism currently uses our own
-implementation of the Distributed Authoring and Versioning (WebDAV)
-extensions built on top of Objects are serialized into valid
-SVG files with additional Lively Kernel-specific annotations necessary
-to reconstruct all the JavaScript objects on deserialization. The
-annotations are placed in a dedicated XML namespace, as a result, if a
-Lively Kernel runtime is not available at deserialization time or the
-user agent does not support JavaScript, the serialized file is
-rendered as a static screenshot of the application at the time of
-serialization.
+The format of the Web pages containing saved Lively Kernel worlds is
+that of SVG, extended with Lively Kernel-specific annotations. Those
+annotations contain enough state information to recreate JavaScript
+objects on page load (when the JavaScript runtime cannot be
+instantiated, the annotations are ignored and a static SVG image is
+rendered). Thus, Lively Kernel effectively implements JavaScript
+object serialization and deserialization to implement saving and
+restoring worlds. It is worth emphasizing that the serialization
+protocol is <emphasis>not</emphasis> orthogonal and
+does <emphasis>not</emphasis> perform reachability analysis on the
+object being serialized. This is a conscious choice, dictated both by
+the intent to avoid accidental serialization of large parts of the
+runtime, and the interest to promote Lively's MVC architecture. By
+design, when a morph is serialized, all its submorphs will be
+serialized, and all the object references inside the submorph tree
+will be saved and restored correctly. If the morph functions as a view
+and is connected to a model, the model will also be serialized. If
+other (non-graphical) views are connected to the model, the class
+names of these views and the details of their hookup into the model
+will also be saved. However, no other state will be saved or restored
+for non-graphical views. It is therefore the responsibility of the
+non-graphical views to store persistent state in the model, and
+non-conforming views will not be properly restored on
+deserialization. The above approach to serialization turned to be
+sufficient to serialize several complex widgets in the Lively Kernel
+distribution, however, a more expressive mechanism may be devised in
+the future to deal with larger applications.
 </para>
-<!--
-<remark><para>drum up WebDAV as a persistence mechanism. Expound on
-the possibility of a full-fledged SVG editor here</para></remark>
--->
+
+
+
+<para>
+Note that the project's interest in supporting multiple graphics
+backends does not invalidate the choice of SVG as the graphics
+component of the serialization format. Clearly, an entirely new,
+Lively Kernel-specific serialization format could be devised, but
+then, for every <code>n</code> graphics backends <code>n</code>
+translation mechanisms would be required. With SVG as the format
+choice, only <code>n - 1</code> translation mechanisms are necessary.
+</para>
 
 
 </section>
 
-<section>
-<title>Experiences with SVG implementations</title> 
-
-<remark>
-Firefox, Safari, Batik, Examotion/IE, Opera.  This area not
-authoritative.
-
-Better support highly
-requested in the areas of drag and drop, copy and paste support,
-filters for dropshadows. Font metric support either incorrect or not
-available until webpage rendered).
-
-<para>Correctness questions: we ran into several problems
-browser implementors (Apple) used to test correctness.
-</para>
-
-<para>Performance questions: too early to make entirely meaningful
-measurements, questions of efficiency of dynamic update to the SVG
-tree; speed of bindings (height of the software layers between JS and
-the graphics engine).
-</para>
-
-<para>Implementation alternatives: flex? silverlight? not open, no dynamicity</para>
-<para>cooperation with other web technologies: foreignobject support,
-leverage MIDAS html editing extensions? </para>
-
-</remark>
-</section>
 
 <section>
 <title>Conclusion</title>
 <para>
 
-Our Morphic implementation does not currently provide editors for all
-the elements and attributes specified by the SVG standard, however,
-such a complete implementation would certainly be feasible, and would
-constitute an interesting light-weight, self-sustaining graphics
-editor for the Web. <remark> possible but not strictly  research goal, perhaps the community will pick up.</remark>
-
+The SVG standard proved to be perfectly suited as a foundation for
+alternative Web programming environments, as the Lively Kernel project
+demonstrates. We hope that as the availability and performance of SVG
+implementations increases, so will the interest in light-weight,
+self-sustaining, Web-based graphics editors and integrated development
+environments. Lively Kernel, while currently only a prototype, is
+uniquely positioned to integrate both in a single, coherent framework.
 </para>
+
 
 </section>
 
