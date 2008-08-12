@@ -810,12 +810,10 @@ or <code>&lt;path&gt;</code>.
 <para>
 Currently, Lively Kernel does not take advantage of the property
 inheritance mechanism of <code>&lt;g&gt;</code> elements provided by
-the SVG specification, and each basic shape element is required to specify the
-full set of its visual attributes. This feature of the SVG standard
-could be potentially taken advantage of, both as implementation
-technique to improve space utilization, and as an API-level
-programming abstraction (perhaps as a mechanism to specify widget
-"skins").
+the SVG specification, and each basic shape element is required to
+specify the full set of its visual attributes. This feature of the SVG
+standard could be used to improve space utilization, or offer a
+mechanism to specify widget "skins".
 </para>
 </section>
 
@@ -866,7 +864,7 @@ elements intended to become morphs, by inserting a morph prototype
 object, defining the functionality shared by all morphs. Such
 modifications are not possible according to the ECMAScript language
 specification (an object's <code>prototype</code> is generally not
-accessible programmatically), however, most JavaScript implementations
+accessible programmatically), although most JavaScript implementations
 recognize this problem as a language limitation, and make the object
 prototype accessible through a mutable <code>__proto__</code> property
 that can be manipulated to obtain the desired inheritance
@@ -876,13 +874,10 @@ JavaScript engine does not implement <code>__proto__</code>.
 </para>
 
 <para>
-A minor inconvenience of this approach was that new morphs were
+Another minor inconvenience of this approach was that new morphs were
 instantiated using factory methods of the form <code>MyMorph()</code>,
 instead of explicit allocation syntax, as in <code>new
-MyMorph()</code> (as a side note, due to the semantics of JavaScript,
-accidental insertion of the <code>new</code> keyword did not affect
-the correctness of the program, but merely resulted in a wasteful
-allocation of an unused object). A much more important limitation
+MyMorph()</code>. A much more important limitation
 turned out to be the incompatibility with environments such as Batik
 (<xref linkend="Batik" />), which support the <code>__proto__</code> property but
 do not allow extension of host objects (i.e., objects created and
@@ -891,7 +886,7 @@ merely exposed programmatically to JavaScript).
 </para>
 
 <para>
-In the face of the limitations, the subsequent reimplementation of the
+In the face of such limitations, the subsequent reimplementation of the
 Lively Kernel SVG backend uses a more conventional implementation
 technique based on <emphasis>wrappers</emphasis>. Morphs are
 implemented as regular, user-defined JavaScript objects furnished with
@@ -910,7 +905,7 @@ corresponding Morph given the DOM element that implements it, is due
 largely to the fact that Lively Kernel performs its own mouse event
 delivery.
 
-The technique itself is of course well known, in particular the Dojo
+The wrapper technique itself is well known, in particular the Dojo
 toolkit <xref linkend="Dojo"/> uses a similar approach for its cross-platform graphics
 library <code>dojo.gfx</code>, and Lively Kernel even borrows its
 convention of naming the underlying DOM element <code>rawNode</code>.
@@ -922,29 +917,31 @@ convention of naming the underlying DOM element <code>rawNode</code>.
 <para>
 Lively Kernel does not currently use several features of the SVG
 specification. Most notably, it does not use declarative animations,
-botu due to lack of support in many browsers, and to our interest in
+due both to lack of support in many browsers, and to our interest in
 portability of the implementation to other graphics backends. Instead,
 a simple imperative framework for scheduling and periodic invocation
 of user-supplied actions is provided. Document styling (through either
 CSS or Extensible Stylesheet Language (XSL) standards) is not
-currently used, either, although useful applications of styling could
+currently used, either, although useful applications of styling can
 be envisioned. For instance, styling could be used to implement UI
 themes, i.e., sets of visually coherent presentation attributes that
 can be applied to a widget or application at the user's discretion. UI
-themes are already supported by Lively Kernel, however, browser
+themes are already supported by Lively Kernel, although browser
 support for styling is not leveraged.
+</para>
 
+<para>
 Another platform feature not used by Lively Kernel is mouse event
 delivery. Instead of registering event handlers on individual SVG
 elements, the <code>HandMorph</code> registers a single input event
 handler in the capture phase of DOM event delivery. The handler
 determines the morph that should receive the event based on the
 coordinates contained in the event object and and geometry information
-obtained by inspecting the morph tree. Clearly, Lively Kernel
-duplicates in JavaScript some of the mechanisms implemented natively
-by the DOM, however, event delivery is not usually
-performance-critical, and the resulting codebase is more easily
-portable to graphics backends not based on a DOM.
+obtained by inspecting the morph tree. While Lively Kernel duplicates
+in JavaScript some of the mechanisms implemented natively by the DOM,
+event delivery is not usually performance-critical, and the resulting
+codebase is more easily portable to graphics backends not based on a
+DOM.
 </para>
 
 
@@ -956,12 +953,12 @@ portable to graphics backends not based on a DOM.
 
 
 <para>
-No autoring environment would be complete without saving the results
-into a persistent form, and Lively Kernel addresses this requirement
+No authoring environment would be complete without a way to save the results
+to a persistent form, and Lively Kernel addresses this requirement
 by providing a simple WebDAV protocol client implemented in
 JavaScript. The client is built on top of asynchronous HTTP networking
 support present in all the modern browsers in form of
-the <code>XmlHttpRequest</code> object. Rather than using one of the
+the <code>XmlHttpRequest</code> object. Rather than use one of the
 several JavaScript frameworks, Lively Kernel provides its
 own <code>XmlHttpRequest</code> wrapper, which leverages the
 asynchronous model update notification mechanism used in other parts
@@ -976,7 +973,7 @@ runtime has been loaded.
 <para>
 Lively Kernel is able to save not only static JavaScript files and SVG
 documents, it can also save snapshots of its own active worlds. Such
-snapshots can be later loaded into a running runtime and their
+snapshots can later be loaded into a running Lively Kernel, and their
 contents manipulated as any other Lively Kernel object.  Moreover, the
 snapshot files are active Web pages themselves, and, when loaded by a
 supported Web browser, instantiate a new Lively Kernel runtime and
@@ -1023,7 +1020,7 @@ will also be saved. However, no other state will be saved or restored
 for non-graphical views. It is therefore the responsibility of the
 non-graphical views to store persistent state in the model, and
 non-conforming views will not be properly restored on
-deserialization. The above approach to serialization turned to be
+deserialization. The above approach to serialization proven to be
 sufficient to serialize several complex widgets in the Lively Kernel
 distribution, however, a more expressive mechanism may be devised in
 the future to deal with larger applications.
@@ -1049,13 +1046,13 @@ choice, only <code>n - 1</code> translation mechanisms are necessary.
 <title>Conclusion</title>
 <para>
 
-The SVG standard proved to be perfectly suited as a foundation for
-alternative Web programming environments, as the Lively Kernel project
+The SVG standard is perfectly suited as a foundation for alternative
+Web programming environments, as the Lively Kernel project
 demonstrates. We hope that as the availability and performance of SVG
 implementations increases, so will the interest in light-weight,
 self-sustaining, Web-based graphics editors and integrated development
-environments. Lively Kernel, while currently only a prototype, is
-uniquely positioned to integrate both in a single, coherent framework.
+environments. Lively Kernel, while currently only a prototype, shows
+that this is possible in a single, coherent framework.
 </para>
 
 
