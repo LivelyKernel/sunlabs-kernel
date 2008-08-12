@@ -440,7 +440,9 @@ this.startStepping(50, “rotateBy”, 0.1); // 0.1 radians every 50 ms
 <mediaobject><imageobject>
 <imagedata fileref="editors.gif"/>
 </imageobject></mediaobject>
-<caption>A SelectionMorph (left) and a HandleMorph (the blue rectangle on the polygon; shown with balloon help). <remark>FIXME better pic: tray, handle and color picker</remark> </caption>
+<caption>A SelectionMorph (left) and a HandleMorph (the blue rectangle on the polygon; shown with balloon help). 
+<!--<remark>FIXME better pic: tray, handle and color picker</remark>  -->
+</caption>
 </figure>
 
 
@@ -602,7 +604,7 @@ service in (almost) vertical orientation as a scroll bar.
 <mediaobject><imageobject>
 <imagedata fileref="stylepanel.gif"/>
 </imageobject></mediaobject>
-<caption>FIXME better pic needed</caption>
+<caption>Built-in style editor<!--FIXME better pic needed--></caption>
 </figure>
 
 
