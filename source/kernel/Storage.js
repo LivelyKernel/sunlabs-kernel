@@ -53,10 +53,11 @@ Morph.subclass('PackageMorph', {
 	    this.unpackageAt(this.getPosition()); 
 	}]);
 	menu.replaceItemNamed("show Lively markup", ["show packaged Lively markup", function(evt) {
-	    var extent = pt(500, 300);
-            var pane = newTextPane(extent.extentAsRectangle(), "");
-	    pane.innerMorph().setTextString(Exporter.stringify(this.serialized));
-            this.world().addFramedMorph(pane, "XML dump", this.world().positionForNewMorph(this));
+	    this.world().addTextInspector({
+		content: Exporter.stringify(this.serialized),
+		title: "XML dump",
+		position: this.world().positionForNewMorph(this)
+	    });
 	}]);
 	
 	menu.replaceItemNamed("publish packaged ...", ["save packaged morph as ... ", function() { 
@@ -471,18 +472,19 @@ TwoPaneBrowser.subclass('FileBrowser', {
 	    items.push(["repository info", function(evt) {
 		var m = new SyntheticModel(["Info"]);
 		new Subversion({model: m, setServerResponse: "setInfo"}).info(svnPath);
-		var infoPane = newTextPane(new Rectangle(0, 0, 500, 200), "");
-		infoPane.innerMorph().acceptInput = false;
-		infoPane.innerMorph().connectModel({model: m, getText: "getInfo"});
-		this.world().addFramedMorph(infoPane, "info " + url, evt.point());
+		this.world().addTextInspector({acceptInput: false,
+					       title: "info " + url,
+					       position: evt.point(),
+					       plug: {model: m, getText: "getInfo"} });
 	    }]);
 	    items.push(["repository diff", function(evt) {
 		var m = new SyntheticModel(["Diff"]);
+		this.world().addTextInspector({acceptInput: false,
+					       plug: {model: m, getText: "getDiff"},
+					       title: "diff " + url,
+					       position: evt.point() });
 		new Subversion({model: m, setServerResponse: "setDiff"}).diff(svnPath);
-		var infoPane = newTextPane(new Rectangle(0, 0, 500, 200), "");
-		infoPane.innerMorph().acceptInput = false;
-		infoPane.innerMorph().connectModel({model: m, getText: "getDiff"});
-		this.world().addFramedMorph(infoPane, "diff " + url, evt.point());
+		
 	    }]);
 	    items.push(["repository commit", function(evt) {
 		var world = this.world();
@@ -493,11 +495,11 @@ TwoPaneBrowser.subclass('FileBrowser', {
 			return;
 		    }
 		    var m = new SyntheticModel(["CommitStatus"]);
+		    this.world().addTextInspector({acceptInput: false,
+						   title: "commit " + url, 
+						   plug: {model: m, getText: "getCommitStatus"}, 
+						   position: evt.point() });
 		    new Subversion({model: m, setServerResponse: "setCommitStatus"}).commit(svnPath, message);
-		    var infoPane = newTextPane(new Rectangle(0, 0, 500, 200), "");
-		    infoPane.innerMorph().acceptInput = false;
-		    infoPane.innerMorph().connectModel({model: m, getText: "getCommitStatus"});
-		    world.addFramedMorph(infoPane, "commit " + url, evt.point());
 		});
 	    }]);
 	}
@@ -509,15 +511,13 @@ TwoPaneBrowser.subclass('FileBrowser', {
 		    this.AllProperties = Exporter.stringifyArray(nodes, '\n');
 		    this.changed('getAllProperties', source);
 		};
-		
+		this.world().addTextInspector({acceptInput: false,
+					       plug: {model: m, getText: "getAllProperties"},
+					       title: url.toString(),
+					       position: evt.point() });
 		var res = new Resource(url, {model: m, setContentDocument: "setInspectedNode" });
 		res.fetchProperties();
 		
-		var infoPane = newTextPane(new Rectangle(0, 0, 500, 200), "");
-		infoPane.innerMorph().acceptInput = false;
-		infoPane.innerMorph().connectModel({model: m, getText: "getAllProperties"});
-		
-		this.world().addFramedMorph(infoPane, url.toString(), evt.point());
 	    }]);
 	    
 	    // a different way of doing te same thing, to ponder about
@@ -531,9 +531,11 @@ TwoPaneBrowser.subclass('FileBrowser', {
 		    if (!p) return;
 		    switch (aspect) {
 		    case p.getContentDocument:
-			var infoPane = newTextPane(new Rectangle(0, 0, 500, 200), 
-			    Exporter.stringify(this.getModelValue('getContentDocument').documentElement));
-			w.addFramedMorph(infoPane, 'WebDAV dump', evt.point());
+			w.addTextInspector({ 
+			    content: Exporter.stringify(this.getModelValue('getContentDocument').documentElement),
+			    title: "WebDAV dump",
+			    position: evt.point()
+			});
 			break;
 		    }
 		}
@@ -554,7 +556,7 @@ TwoPaneBrowser.subclass('FileBrowser', {
 			if (!response) return;
 			var newdir = dir.withFilename(response);
 			//console.log("current dir is " + newdir);
-			var req = new NetRequest().connectModel({model: model, setStatus: "setRequestStatus"});
+			var req = new NetRequest({model: model, setStatus: "setRequestStatus"});
 			req.mkcol(newdir);
 			// FIXME: reload subnodes
 		    });
@@ -575,17 +577,19 @@ TwoPaneBrowser.subclass('FileBrowser', {
 
 	    var items = [
 		['edit in separate window', function(evt) {
-		    var textEdit = newTextPane(new Rectangle(0, 0, 500, 200), "Fetching " + url + "...");
-		    var webfile = new WebFile({model: model, 
+		    this.world().addTextInspector({
+			content: "Fetching " + url + "...",
+			plug: {model: model, getText: "getSelectedLowerNodeContents", setText: "setSelectedLowerNodeContents"},
+			title: url.toString(),
+			position: evt.point()
+		    });
+		    var webfile = new WebFile({
+			model: model, 
 			getFile: "getSelectedLowerNode", 
 			setContent: "setSelectedLowerNodeContents",
 			getContent: "getSelectedLowerNodeContents" 
-			});
+		    });
 		    webfile.startFetchingFile();
-		    textEdit.innerMorph().connectModel({model: model, 
-							getText: "getSelectedLowerNodeContents", 
-							setText: "setSelectedLowerNodeContents"});
-		    this.world().addFramedMorph(textEdit, url.toString(), evt.mousePoint);
 		}],
 		["get XPath query morph", browser, "onMenuAddQueryMorph", url],
 		["get modification time (temp)", browser, "onMenuShowModificationTime", url] // will go away

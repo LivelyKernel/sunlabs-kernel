@@ -2890,7 +2890,7 @@ Copier.subclass('Importer', {
 
     getBaseDocument: function() {
 	// FIXME memoize?
-	var req = new NetRequest().beSync().get(URL.source);
+	var req = new Resource(URL.source).fetch(true);
 	var status = req.getStatus();
 	if (!status.isSuccess()) {
 	    console.log("failure retrieving  " + URL.source + ", status " + status);
@@ -4852,11 +4852,12 @@ Morph.addMethods( {
 
     addSvgInspector: function() {
 	var xml = Exporter.stringify(new Exporter(this).serialize(Global.document));
-	var extent = pt(500, 300);
-	var pane = newTextPane(extent.extentAsRectangle(), "");
-	pane.innerMorph().setTextString(xml);
-	pane.innerMorph().xml = xml; // FIXME a sneaky way of passing original text.
-	this.world().addFramedMorph(pane, "XML dump", this.world().positionForNewMorph(this));
+	var txt = this.world().addTextInspector({
+	    content: xml,
+	    title: "XML dump", 
+	    position: this.world().positionForNewMorph(this)
+	});
+	txt.xml = xml; // FIXME a sneaky way of passing original text.
     },
 
     addModelInspector: function() {
@@ -5771,15 +5772,16 @@ PasteUpMorph.subclass("WorldMorph", {
         items.push(["File Browser", function(evt) { new FileBrowser().openIn(world, evt.point()) }]);
 	// FIXME this is hardcoded, remove later, shows how Subversion can be accessed directly.
 	items.push(["Model documentation", function(evt) { 
-	    var wikiHost = "http://livelykernel.sunlabs.com";
-	    var file = "/repository/lively-kernel/trunk/doc/wiki/model.txt";
+	    var url = new URL("http://livelykernel.sunlabs.com/repository/lively-kernel/trunk/doc/wiki/model.txt");
 	    var model = new SyntheticModel(["Content"]);
-	    Object.extend(model, NetRequestReporterTrait);
-	    var txt = newTextPane(new Rectangle(0, 0, 400, 200), "fetching ... ");
-	    world.addFramedMorph(txt, "Model documentation", evt.point());
-	    var req = new NetRequest({model: model, setResponseText: "setContent"});
-	    txt.connectModel({model: model, getText: "getContent"});
-	    req.get(new URL(wikiHost + file));
+	    world.addTextInspector({
+		content: "fetching ... ",
+		title: "Model documentation",
+		plug: {model: model, getText: "getContent"},
+		position: evt.point()
+	    });
+	    var res = new Resource(url, {model: model, setContentText: "setContent" });
+	    res.fetch();
 	}]);
         new MenuMorph(items, this).openIn(this.world(), evt.point());
     },
@@ -5790,7 +5792,6 @@ PasteUpMorph.subclass("WorldMorph", {
 	} catch (er) { // FF doesn't implement viewport ?
 	    return this.shape.bounds();
 	}
-
     },
 
     alert: function(varargs) {
@@ -5835,6 +5836,16 @@ PasteUpMorph.subclass("WorldMorph", {
 
     addFramedMorph: function(morph, title, loc) {
 	return this.addMorphAt(new WindowMorph(morph, title), loc);
+    },
+
+    addTextInspector: function(spec) {
+	// FIXME: typecheck the spec 
+	var extent = spec.extent || pt(500, 200);
+	var pane = newTextPane(extent.extentAsRectangle(), spec.content || "");
+	if (spec.acceptInput !== undefined) pane.innerMorph().acceptInput = spec.acceptInput;
+	if (spec.plug) pane.innerMorph().connectModel(spec.plug);
+	this.addFramedMorph(pane, spec.title || "", spec.position || pt(0,0));
+	return pane.innerMorph();
     },
 
     addMorphFrontOrBack: function($super, m, front) {

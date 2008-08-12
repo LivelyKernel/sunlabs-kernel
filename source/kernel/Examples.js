@@ -267,9 +267,13 @@ Widget.subclass('FeedWidget', {
     makeSourcePane: function(ignored, evt) {
 	var item = this.getEntry(this.getModelValue("getSelectedItemTitle"));
 	if (!item) return; // complain?
-	var infoPane = newTextPane(new Rectangle(0, 0, 500, 200), item.toMarkupString());
-	infoPane.innerMorph().acceptInput = false;
-	WorldMorph.current().addFramedMorph(infoPane, "XML source for " + item.title(), evt.mousePoint);
+	WorldMorph.current().addTextInspector({ 
+	    title: "XML source for " + item.title(),
+	    position: evt.point(),
+	    extent: pt(500, 200),
+	    content: item.toMarkupString(),
+	    acceptInput: false
+	});
     },
 
     pvtSetFeedChannels: function(channels) {
@@ -337,6 +341,8 @@ Widget.subclass('FeedWidget', {
     }
     
 });
+
+
 
 
 
