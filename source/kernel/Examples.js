@@ -2226,62 +2226,65 @@ Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
         // TODO: add rounding to all the elements (panel, window & titlebar)
         // or make the titlebar round depending on the window
         var m; 
-
-        panel.addMorph(m = new ImageMorph(new Rectangle(10,20,25,20), this.imagepath + "city.png"));
+	
+	var r = new Rectangle(10,20,25,20);
+        panel.addMorph(m = new ImageMorph(r, this.imagepath + "city.png"));
         m.setFill(null);
-        panel.addMorph(m = new ImageMorph(new Rectangle(10,55,25,20), this.imagepath + "weather.png"));
+        panel.addMorph(m = new ImageMorph(r.withY(55), this.imagepath + "weather.png"));
         m.setFill(null);
-        panel.addMorph(m = new ImageMorph(new Rectangle(10,80,20,20), this.imagepath + "temperature.png"));
+	r = r.withWidth(20);
+        panel.addMorph(m = new ImageMorph(r.withY(80), this.imagepath + "temperature.png"));
         m.setFill(null);
-        panel.addMorph(m = new ImageMorph(new Rectangle(10,105,20,20), this.imagepath + "wind.png"));
+        panel.addMorph(m = new ImageMorph(r.withY(105), this.imagepath + "wind.png"));
         m.setFill(null);
-        panel.addMorph(m = new ImageMorph(new Rectangle(10,130,20,20), this.imagepath + "wind_dir.png"));
+        panel.addMorph(m = new ImageMorph(r.withY(130), this.imagepath + "wind_dir.png"));
         m.setFill(null);
-        panel.addMorph(m = new ImageMorph(new Rectangle(10,155,20,20), this.imagepath + "barometer.png"));
+        panel.addMorph(m = new ImageMorph(r.withY(155), this.imagepath + "barometer.png"));
         m.setFill(null);
-        panel.addMorph(m = new ImageMorph(new Rectangle(10,180,20,20), this.imagepath + "humidity.png"));
+        panel.addMorph(m = new ImageMorph(r.withY(180), this.imagepath + "humidity.png"));
         m.setFill(null);
-        panel.addMorph(m = new ImageMorph(new Rectangle(10,205,20,20), this.imagepath + "visibility.png"));
+        panel.addMorph(m = new ImageMorph(r.withY(205), this.imagepath + "visibility.png"));
         m.setFill(null);
 	
-        m = panel.addMorph(new TextListMorph(new Rectangle(40,3,200,20),["San Francisco, California", "Tampere, Finland", "London, United Kingdom"]));
+	r = new Rectangle(40, 3, 200, 20);
+        m = panel.addMorph(new TextListMorph(r, ["San Francisco, California", "Tampere, Finland", "London, United Kingdom"]));
         m.connectModel({model: model, getSelection: "getLocale", setSelection: "setLocale"});
         m.selectLineAt(0); // Select the first item by default
 
         // build the textfields for the weather panel
-        m = panel.addMorph(new TextMorph(new Rectangle(40,55, 200,20), "---"));
+        m = panel.addMorph(new TextMorph(r.withY(55), "---"));
 	m.connectModel({model: model, getText: "getWeatherDesc"});
         m.takesKeyboardFocus = Functions.True;
 	//m.beLabel();
 
-        m = panel.addMorph(new TextMorph(new Rectangle(40,80, 200,20), "---"));
+        m = panel.addMorph(new TextMorph(r.withY(80), "---"));
 	m.connectModel({model: model, getText: "getTemperature"});
 	//m.beLabel();
         m.takesKeyboardFocus = Functions.True;
 	
-        m = panel.addMorph(new TextMorph(new Rectangle(40,105, 200,20), "---"));
+        m = panel.addMorph(new TextMorph(r.withY(105), "---"));
 	m.connectModel({model: model, getText: "getWind"});
         m.takesKeyboardFocus = Functions.True;
 
-        m = panel.addMorph(new TextMorph(new Rectangle(40,130, 200,20), "---"));
+        m = panel.addMorph(new TextMorph(r.withY(130), "---"));
 	m.connectModel({model: model, getText: "getGusts"});
         m.takesKeyboardFocus = Functions.True;
 	
-        m = panel.addMorph(new TextMorph(new Rectangle(40,155, 200,20), "---"));
+        m = panel.addMorph(new TextMorph(r.withY(155), "---"));
 	m.connectModel({model: model, getText: "getDewPoint"});
         m.takesKeyboardFocus = Functions.True;
 	
-        m = panel.addMorph(new TextMorph(new Rectangle(40,180, 200,20), "---"));
+        m = panel.addMorph(new TextMorph(r.withY(180), "---"));
 	m.connectModel({model: model, getText: "getHumidity"});
         m.takesKeyboardFocus = Functions.True;
 	
-        m = panel.addMorph(new TextMorph(new Rectangle(40,205, 200,20), "---"));
+        m = panel.addMorph(new TextMorph(r.withY(205), "---"));
 	m.connectModel({model: model, getText: "getVisibility"});
         m.takesKeyboardFocus = Functions.True;
 	
 //        panel.addMorph(TextMorph(new Rectangle(80,230, 200,20), "---")).connectModel({model: this, getText: "getDate"});
     
-        var image = panel.addMorph(new ImageMorph(new Rectangle(40,230,100,20)));
+        var image = panel.addMorph(new ImageMorph(r.withY(230)));
         image.connectModel({model: model, getURL: "getImageURL"});
         image.setFill(null);
     
