@@ -20,48 +20,27 @@
     </keywordset>
     <authorgroup>
     <author>
-      <personname>
-        <firstname>Krzysztof</firstname>
-        <surname>Palacz</surname>
-      </personname>
+      <personname> <firstname>Krzysztof</firstname> <surname>Palacz</surname> </personname> 
       <email>krzysztof.palacz@sun.com</email>
-      <!-- <personblurb><para>Krzysztof Palacz is blah blah</para></personblurb>  -->
-      <affiliation>
-        <org>
-          <orgname>Sun Microsystems Laboratories</orgname>
-          <address>
-            <city>Menlo Park</city>
-            <street>16 Network Circle</street>
-	    <postcode>94025</postcode> 
-	    <state>CA</state>
-	    <country>USA</country>
-          </address>   
-        </org>
-      </affiliation>
-      
     </author>
     <author>
-      <personname> <firstname>Dan</firstname> <surname>Ingalls</surname> </personname>
+      <personname><firstname>Dan</firstname><surname>Ingalls</surname></personname>
       <email>dan.ingalls@sun.com</email>
-      <affiliation>
-        <org>
-          <orgname>Sun Microsystems Laboratories</orgname>
-          <address>
-            <city>Menlo Park</city>
-            <street>16 Network Circle</street>
-	    <postcode>94025</postcode> 
-	    <state>CA</state>
-	    <country>USA</country>
-          </address>   
-        </org>
-      </affiliation>
     </author>
+    <org><orgname>Sun Microsystems Laboratories</orgname>
+      <address>
+        <street>16 Network Circle</street>
+        <city>Menlo Park</city>
+	<postcode>94025</postcode> 
+	<state>CA</state>
+	<country>USA</country>
+    </address></org>
     </authorgroup>
-
+    
     <abstract>
       <para>
 	
-The Lively Kernel is a fully interactive, "zero-installation"
+	The Lively Kernel is a fully interactive, "zero-installation"
 Web application framework and development environment written
 entirely in JavaScript. The rich user experience of applications built
 using the Lively Kernel is enabled by integrated programmatic access
