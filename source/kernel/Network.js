@@ -451,7 +451,8 @@ Importer.subclass('NetImporter', NetRequestReporterTrait, {
 
 
 View.subclass('Resource', NetRequestReporterTrait, {
-    documentation: "a remote document that can be fetched and queried",
+    documentation: "a remote document that can be fetched, stored and queried for metadata",
+    // FIXME: should probably encapsulate content type
 
     pins: ["ContentDocument", //:XML
 	   "ContentText", //:String
