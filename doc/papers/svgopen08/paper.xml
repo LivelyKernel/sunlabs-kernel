@@ -642,7 +642,7 @@ widget. </para></caption>
 </para>
 
 <para>
-While visual editors are currently suffcient to control many aspects
+While visual editors are currently sufficient to control many aspects
 of visual appearance, other tools are necessary to modify the behavior
 of widgets and applications. Lively Kernel does currently not provide
 a full visual programming environment (although such an environment
@@ -699,7 +699,7 @@ Lively Kernel installation.
 <para>
 Thanks in no small part to the expressiveness and dynamicity of
 JavaScript and SVG, the Lively Kernel code base is compact, yet it
-provides an entire toolchain for graphics and application development
+provides an entire tool chain for graphics and application development
 and deployment, as well as for evolution of the system
 itself. <xref linkend="fig_breakdown"/> demonstrates the lines of code
 used to implements various subsystems in a snapshot of Lively Kernel
@@ -1026,7 +1026,7 @@ will also be saved. However, no other state will be saved or restored
 for non-graphical views. It is therefore the responsibility of the
 non-graphical views to store persistent state in the model, and
 non-conforming views will not be properly restored on
-deserialization. The above approach to serialization proven to be
+deserialization. The above approach to serialization proved to be
 sufficient to serialize several complex widgets in the Lively Kernel
 distribution, however, a more expressive mechanism may be devised in
 the future to deal with larger applications.
