@@ -2799,22 +2799,16 @@ Object.extend(Exporter, {
 	return newDoc;
     },
 
-    // better place for this?
-    saveDocument: function(doc, url) {
-	var content = this.stringify(doc);
-	var req = new NetRequest().beSync().put(url, content);
-	return req.getStatus();
-    },
-
     saveDocumentToFile: function(doc, filename) {
 	if (!filename) return null;
 	if (!filename.endsWith('.xhtml')) {
 	    filename += ".xhtml";
 	    console.log("changed url to " + filename + " for base " + URL.source);
 	}
+
 	var url = URL.source.withFilename(filename);
 	
-	var status = this.saveDocument(doc, url);
+	var status = new Resource(url).store(doc, true).getStatus();
 
 	if (status.isSuccess()) {
 	    console.log("success publishing world at " + url + ", status " + status.code());

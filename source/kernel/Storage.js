@@ -214,8 +214,7 @@ View.subclass('WebFile', NetRequestReporterTrait, {
     },
 
     saveFileContent: function(url, content) {
-	var req = new NetRequest({model: this, setStatus: "setRequestStatus"});
-	req.put(url, content);
+	new Resource(url).store(content);
     },
 
     pvtSetFileContent: function(responseText) {

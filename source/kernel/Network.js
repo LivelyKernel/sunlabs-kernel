@@ -470,7 +470,7 @@ View.subclass('Resource', NetRequestReporterTrait, {
 	return "#<Resource{" + this.getURL() + "}>";
     },
     
-    updateView: function(aspect, source) { // model vars: getURL, setFeedChannels
+    updateView: function(aspect, source) {
         var p = this.modelPlug;
 	if (!p) return;
 	switch (aspect) {
@@ -500,11 +500,26 @@ View.subclass('Resource', NetRequestReporterTrait, {
 	return req;
     },
 
-    fetchProperties: function(sync) {
+    fetchProperties: function(optSync, optRequestHeaders) {
 	// fetch the metadata 
 	var req = new NetRequest({model: this, setResponseXML: "pvtSetDoc", setStatus: "setRequestStatus"});
-	if (sync) req.beSync();
+	if (optSync) req.beSync();
+	if (optRequestHeaders) this.setRequestHeaders(optRequestHeaders);
 	req.propfind(this.getURL(), 1);
+	return req;
+    },
+
+    store: function(content, optSync, optRequestHeaders) {
+	// FIXME: check document type
+	if (Global.Document && content instanceof Document) {
+	    content = Exporter.stringify(content);
+	} else if (Global.Node && content instanceof Node) {
+	    content = Exporter.stringify(content);
+	}
+	var req = new NetRequest({model: this, setStatus: "setRequestStatus"});
+	if (optSync) req.beSync();
+	if (optRequestHeaders) this.setRequestHeaders(optRequestHeaders);
+	req.put(this.getURL(), content);
 	return req;
     },
 
