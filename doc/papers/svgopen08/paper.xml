@@ -220,7 +220,7 @@ potential of our approach. While our current work is almost
 exclusively built on top of the SVG backend, we are equally interested
 in portability to other graphics substrates.  In fact, an earlier
 version of our system provided a custom browser-like environment on
-top of the Java platform, using the Java2D APIs as its graphics subsystem
+top of the <trademark>Java</trademark> platform, using the Java2D APIs as its graphics subsystem
 and Rhino as its JavaScript execution engine.
 </para>
 
@@ -322,7 +322,7 @@ may have several hands active at the same time, corresponding to
 several collaborating users of that world (this functionality is not
 yet available in the current incarnation of the Lively Kernel,
 although, it has been demonstrated in the previously mentioned
-prototype based on the Java platform).
+prototype based on the <trademark>Java</trademark> platform).
 </para>
 <para>
 In many respects Lively Kernel can be viewed as an interactive editing
