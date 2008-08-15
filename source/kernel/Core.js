@@ -5430,6 +5430,17 @@ PasteUpMorph.subclass("WorldMorph", {
         return this;
     },
 
+    deserialize: function($super, importer, rawNode) {
+        $super(importer, rawNode);
+	var persistedChanges = this.getLivelyTrait("changes");
+	if (persistedChanges) {
+		console.log("recreating changes from stored trait");
+		this.changes = new ChangeSet;
+		this.changes.setChanges(JSON.unserialize(unescape(persistedChanges)));		if(!Config.skipChanges) this.changes.evaluateAll(); // Can be blocked by URL param 
+		console.log("Successfully evalled " + this.changes.changes.length + " changes.");
+	}
+    },
+
     remove: function() {
         if (!this.rawNode.parentNode) return null;  // already removed
         this.stopStepping();

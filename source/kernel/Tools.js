@@ -51,15 +51,16 @@ Widget.subclass('SimpleBrowser', {
             this.setModelValue("setMethodString", this.getMethodStringFor(className, methodName));
             break;
         case p.getMethodString:
-            var methodName = this.getModelValue("getMethodName");
             var className = this.getModelValue("getClassName");
-            var methodDef = className + ".prototype." + methodName + " = " + this.getModelValue("getMethodString");
+            var methodName = this.getModelValue("getMethodName");
+            var methodString = this.getModelValue("getMethodString");
+            var methodDef = className + ".prototype." + methodName + " = " + methodString;
 	    try {
                 eval(methodDef);
             } catch (er) {
                 WorldMorph.current().alert("error evaluating method " + methodDef);
             }
-            // FIXME errors?
+            ChangeSet.current().logChange({type: 'method', className: className, methodName: methodName, methodString: methodString});
             break;
         }
     },
@@ -96,20 +97,12 @@ Widget.subclass('SimpleBrowser', {
 	return code;
     },
     
-/*
-    setMethodString: function(newDef) {
-	// no longer used
-	// eval(newDef);
-	},
-*/
-
     buildView: function(extent) {
         var panel = PanelMorph.makePanedPanel(extent, [
             ['leftPane', newTextListPane, new Rectangle(0, 0, 0.5, 0.5)],
             ['rightPane', newTextListPane, new Rectangle(0.5, 0, 0.5, 0.5)],
             ['bottomPane', newTextPane, new Rectangle(0, 0.5, 1, 0.5)]
         ]);
-
         var model = this.getModel();
         var m = panel.leftPane;
         m.connectModel({model: model, getList: "getClassList", setSelection: "setClassName", getSelection: "getClassName", getMenu: "getClassPaneMenu"});
@@ -1655,6 +1648,7 @@ Object.subclass('SourceCodeDescriptor', {
 
 });
 
+
 View.subclass('CodeMarkupParser', {
     documentation: "Evaluates code in the lkml code format",
     // this is the first attempt, format subject to change
@@ -1738,8 +1732,46 @@ View.subclass('CodeMarkupParser', {
 	var name = this.nameOf(staticElement);
 	cls[name] = this.evaluateElement(staticElement);
     }
-
 });
+
+
+// ===========================================================================
+// ChangeSet
+// ===========================================================================
+Object.subclass('ChangeSet', {
+
+    initialize: function() {
+	// Keep track of an ordered list of changes for this world
+        this.changes = [];
+    },
+    logChange: function(item) {
+	this.changes.push(item);
+	console.log(item);
+	// Note this only needs to happen once when storing the world...
+	WorldMorph.current().setLivelyTrait("changes", escape(JSON.serialize(this.changes)))    },
+    setChanges: function(arrayOfItems) {
+	this.changes = arrayOfItems;
+    },
+    evaluateAll: function() {
+	this.changes.each(function(item) {this.evalItem(item);}.bind(this));
+    },
+    evalItem: function(item) {
+	if(item.type = 'method') eval(item.className + '.prototype.' + item.methodName + ' = ' + item.methodString);
+	if(item.type = 'doit') eval(item.doitString);
+    }
+});
+
+ChangeSet.current = function() {
+    // Return the changeSet associated with the current world
+    var world = WorldMorph.current();
+    var chgs = world.changes;
+    if (!chgs) {
+	chgs = new ChangeSet();
+	world.changes = chgs;
+    }
+    return chgs;
+};
+
 
 
 }).logCompletion("Tools.js")(Global);
