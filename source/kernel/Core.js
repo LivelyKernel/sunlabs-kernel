@@ -25,7 +25,7 @@ var Global = this.window.top || this.window; // set to the context enclosing the
 
 Object.extend(Function.prototype, {
 
-    subclass: function(className /*:String*/ /*,... */) {
+    subclass: function(/*... */) {
 	// Main method of the LK class system.
 
 	// {className} is the name of the new class constructor which this method synthesizes
@@ -34,9 +34,9 @@ Object.extend(Function.prototype, {
 	// of the newly created constructor.
 
 	// modified from prototype.js
-
+	
 	var properties = $A(arguments);
-	properties.shift();
+	var className = properties.shift();
 	
 	function klass() {
 	    // check for the existence of Importer, which may not be defined very early on
@@ -58,7 +58,8 @@ Object.extend(Function.prototype, {
 
 	klass.prototype.constructor = klass;
 	// KP: .name would be better but js ignores .name on anonymous functions
-	klass.type = className;
+	if (className)
+	    klass.type = className;
 	
 	for (var i = 0; i < properties.length; i++) {
 	    klass.addMethods(properties[i] instanceof Function ? (properties[i])() : properties[i]);
@@ -68,7 +69,7 @@ Object.extend(Function.prototype, {
 	    klass.prototype.initialize = Functions.Empty;
 	}
 
-	Global[className] = klass;
+	if (className) Global[className] = klass; // otherwise it's anonymous
 	return klass;
     },
 
@@ -125,9 +126,66 @@ Object.extend(Function.prototype, {
 	    }
 	}
 	return this;
+    },
+
+    addProperties: function(spec) {
+	var source = Record.create(spec).prototype;
+	for (var prop in source) {
+	    var value = source[prop];
+	    if (prop == "constructor" || prop == "initialize") continue;
+	    this.prototype[prop] = value;
+	}
     }
 
 });
+    
+// a new unified mechanism for properties that map onto the DOM
+var Record = {};
+
+Record.create = function(bodySpec, optNodeName) {
+    var klass = Object.subclass();
+    var def = {};
+    
+    Properties.forEachOwn(bodySpec, function(name) {
+	var spec = bodySpec[name];
+	var ns = spec.ns || null;
+	var attribute = spec.name || name;
+	var setterName = "set" + name;
+	var setter = def[setterName] = function(value, optSource) {
+	    if (value === undefined) {
+		this.rawNode.removeAttributeNS(ns, attribute);
+		return;
+	    }
+	    if (spec.to) value = spec.to(value);
+	    else if (!value && spec.byDefault) value = spec.byDefault;
+	    this.rawNode.setAttributeNS(ns, attribute, value);
+	}
+	if (spec.mode && spec.mode.indexOf('!') >= 0) {
+	    def[setterName] = function(value, optSource) {
+		var result = setter.call(this, value);
+		var obs = this[name + '$observers'];
+		if (!obs) return result;
+		for (var i = 0; i < obs.length; i++) {
+		    obs.valueChanged(this, name, value, optSource);
+		}
+		return result;
+	    }
+	}
+	
+	def["get" + name] = function() {
+	    var value = this.rawNode.getAttributeNS(ns, attribute);
+	    if (!value && spec.byDefault) return spec.byDefault;
+	    else if (spec.from) return spec.from(value)
+	    else return value;
+	}
+    });
+
+    def.initialize = function(spec) {
+	Properties.forEachOwn(spec, function(key) { this["set" + key](spec[key]); });
+    }
+    klass.addMethods(def);
+    return klass;
+};
 
 
 var Class = {
@@ -729,11 +787,22 @@ var Converter = {
 	return parseFloat(string);
     },
 
+    parseBoolean: function(string) {
+	return string && string == 'true';
+    },
+
+    unparseBoolean: function(object) {
+	var b = object.valueOf();
+	return b === true ? true : false;
+    },
+
     parseInset: function(string) {
 	// syntax: <left>(,<top>(,<right>,<bottom>)?)?
 	
 	if (!string || string == "none") return null;
-	var box = string.split(",");
+	try {
+	    var box = string.split(",");
+	} catch (er) {alert("string is " + string + " string? " + (string instanceof String)) }
 	var t, b, l, r;
 	switch (box.length) {
 	case 1:
@@ -842,7 +911,7 @@ Object.subclass('Wrapper', {
     getType: function() {
 	var ctor = this.constructor.getOriginal();
 	if (ctor.type) return ctor.type;
-	console.log("no type for " + this.constructor);
+	console.log("no type for " + ctor);
 	Function.showStack();
 	return null;
     },
@@ -941,6 +1010,11 @@ Object.subclass('Wrapper', {
     }
 
 });
+
+
+
+
+
 console.log("Loaded basic DOM manipulation code");
 
 // ===========================================================================
@@ -1977,7 +2051,16 @@ var Event = (function() {
 // Graphics primitives (SVG specific, browser-independent)
 // ===========================================================================
 
-Wrapper.subclass('Visual', {   
+Wrapper.subclass('Visual');
+
+Visual.addProperties({ 
+    FillOpacity: { name: "fill-opacity", from: Number, to: String, byDefault: 1.0},
+    StrokeOpacity: { name: "stroke-opacity", from: Number, to: String, byDefault: 1.0},
+    StrokeWidth: { name: "stroke-width", from: Number, to: String, byDefault: 0.0},
+    Stroke: { name: "stroke", byDefault: "none"}
+});
+
+Visual.addMethods({   
 
     documentation:  "Objects that can be located on the screen",
     //In this particular implementation, graphics primitives are
@@ -2002,43 +2085,6 @@ Wrapper.subclass('Visual', {
 
     getFill: function() {
 	return this.rawNode.getAttributeNS(null, "fill");
-    },
-
-    setStroke: function(paint) {
-	//console.log('new color ' + color);
-	this.rawNode.setAttributeNS(null, "stroke", paint == null ? "none" : paint.toString());
-    },
-
-    getStroke: function() {
-	return this.rawNode.getAttributeNS(null, "stroke");
-    },
-
-    setStrokeWidth: function(width) {
-	this.rawNode.setAttributeNS(null, "stroke-width", width);
-    },
-
-    getStrokeWidth: function() {
-	return this.getLengthTrait("stroke-width") || 0;
-    },
-
-    setFillOpacity: function(alpha) {
-	//    console.log('opacity ' + alpha);
-	this.rawNode.setAttributeNS(null, "fill-opacity", alpha);
-    },
-
-    getFillOpacity: function(alpha) {
-	var opacity = this.rawNode.getAttributeNS(null, "fill-opacity");
-	return (opacity === null) ? 1.0 : opacity;
-	// note no opacity different from opacity 1, should we return undefined?
-    },
-
-    setStrokeOpacity: function(alpha) {
-	this.rawNode.setAttributeNS(null, "stroke-opacity", alpha);
-    },
-
-    getStrokeOpacity: function(alpha) {
-	var opacity = this.rawNode.getAttributeNS(null, "stroke-opacity");
-	return (opacity === null) ? 1.0 : opacity;
     },
 
     setLineJoin: function(joinType) {
@@ -2200,7 +2246,8 @@ Object.extend(Shape, {
 
 });
 
-Shape.subclass('RectShape', {
+ Shape.subclass('RectShape', {
+
 
     documentation: "Rectangle shape",
 
@@ -3179,7 +3226,7 @@ Object.subclass('MouseHandlerForRelay', {
 
 });
 
-Visual.subclass("Morph", {
+Visual.subclass('Morph', {
     documentation: "Base class for every graphical, manipulatable object in the system", 
 
     // prototype vars
@@ -5434,13 +5481,14 @@ PasteUpMorph.subclass("WorldMorph", {
         $super(importer, rawNode);
 	var persistedChanges = this.getLivelyTrait("changes");
 	if (persistedChanges) {
-		console.log("recreating changes from stored trait");
-		this.changes = new ChangeSet;
-		this.changes.setChanges(JSON.unserialize(unescape(persistedChanges)));		if(!Config.skipChanges) this.changes.evaluateAll(); // Can be blocked by URL param 
-		console.log("Successfully evalled " + this.changes.changes.length + " changes.");
+	    console.log("recreating changes from stored trait");
+	    this.changes = new ChangeSet;
+	    this.changes.setChanges(JSON.unserialize(unescape(persistedChanges)));
+	    if(!Config.skipChanges) this.changes.evaluateAll(); // Can be blocked by URL param 
+	    console.log("Successfully evalled " + this.changes.changes.length + " changes.");
 	}
     },
-
+    
     remove: function() {
         if (!this.rawNode.parentNode) return null;  // already removed
         this.stopStepping();

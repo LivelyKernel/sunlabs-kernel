@@ -203,7 +203,15 @@ Font.addMethods({
 
 }    
     
-Wrapper.subclass('TextWord', {
+Wrapper.subclass('TextWord');
+
+TextWord.addProperties({
+    NL: { name: "nl", from: Converter.parseBoolean, to: Converter.unparseBoolean },
+    Lead: {name: "lead", from: Number },
+    Trail: {name: "trail", from: Number }
+});
+
+TextWord.addMethods({
 
     documentation: "represents a chunk of text which might be printable or might be whitespace",
 
@@ -368,9 +376,8 @@ Wrapper.subclass('TextWord', {
         this.length = 1;
         return this;
     }
-
-    
 });
+
 
 
 Object.subclass('TextLine', {
@@ -505,7 +512,7 @@ Object.subclass('TextLine', {
                 if (c.isNewLine) {
                     c.bounds.width = (this.topLeft.x + compositionWidth) - c.bounds.x;
                     runningStartIndex = c.getNextStartIndex();
-                    if (c.rawNode) c.setLivelyTrait("nl", "true"); // little helper for serialization
+                    if (c.rawNode) c.setNL(true); // little helper for serialization
                     c.wasComposed = true;
                     break;
                 }
@@ -516,7 +523,7 @@ Object.subclass('TextLine', {
                 } else {
                     var spaceIncrement = this.spaceWidth;
                     c.bounds.width = spaceIncrement * c.length;
-                    if (c.rawNode) c.setLivelyTrait("trail", c.length); // little helper for serialization
+                    if (c.rawNode) c.setTrail(c.length); // little helper for serialization
                     else leadingSpaces = c.length;
                 }
                 runningStartIndex = c.getNextStartIndex();
@@ -529,7 +536,7 @@ Object.subclass('TextLine', {
 		}
 		
                 if (leadingSpaces) { 
-                    c.setLivelyTrait("lead", leadingSpaces);
+                    c.setLead(leadingSpaces);
                     leadingSpaces = 0;
                 }
                 var didLineBreak = c.compose(this, lastBounds.maxX(), this.topLeft.y, this.topLeft.x  + compositionWidth);
@@ -806,7 +813,14 @@ Visual.subclass('TextContent', {
     }
 });
 
-Morph.subclass("TextMorph", {
+Morph.subclass("TextMorph");
+
+Morph.addProperties({
+    Wrap: { name: "wrap", byDefault: WrapStyle.Normal },
+    Padding: { name: "padding", byDefault: String(Rectangle.inset(6, 4).toInsetTuple()) } // FIXME move to coercion funcions
+});
+
+TextMorph.addMethods({
     
     documentation: "Container for Text",
     // these are prototype variables
@@ -817,8 +831,7 @@ Morph.subclass("TextMorph", {
     borderWidth: 1,
     borderColor: Color.black,
 
-    padding: Rectangle.inset(6, 4), // remember this shouldn't be modified unless every morph should get the value 
-    wrap: WrapStyle.Normal,
+    defaultWrap: WrapStyle.Normal, 
     maxSafeSize: 20000, 
     tabWidth: 4,
     tabsAsSpaces: true,
@@ -844,19 +857,9 @@ Morph.subclass("TextMorph", {
     initializePersistentState: function($super, initialBounds, shapeType) {
         $super(initialBounds, shapeType);
         this.textContent = this.addWrapper(new TextContent());
-
         this.resetRendering();
-	
-	this.setLivelyTrait("wrap", this.wrap);
         // KP: set attributes on the text elt, not on the morph, so that we can retrieve it
 	this.applyStyle({fill: this.backgroundColor, borderWidth: this.borderWidth, borderColor: this.borderColor});
-    },
-    
-    restorePersistentState: function($super, importer) {
-        $super(importer);
-        this.wrap = this.getLivelyTrait("wrap");
-	var padding = Converter.parseInset(this.getLivelyTrait("padding"));
-	if (padding) this.padding = padding;
     },
 
     restoreFromSubnode: function($super, importer, rawNode) {
@@ -944,15 +947,15 @@ Morph.subclass("TextMorph", {
 	    this.setTextColor(spec.textColor);
 	}
 	if (spec.padding !== undefined) {
-	    this.setPadding(spec.padding);
+	    this.setPaddingStyle(spec.padding);
 	}
 	return this;
     },
     
     makeStyleSpec: function($super, spec) {
 	var spec = $super();
-	if (this.wrap !== TextMorph.prototype.wrap) {
-	    spec.wrapStyle = this.wrap;
+	if (this.getWrap() != TextMorph.prototype.defaultWrap) {
+	    spec.wrapStyle = this.getWrap();
 	}
 	if (this.getFontSize() !== TextMorph.prototype.fontSize) {
 	    spec.fontSize = this.getFontSize();
@@ -964,23 +967,29 @@ Morph.subclass("TextMorph", {
     },
     
     setWrapStyle: function(style) {
+	// FIXME fold into coertion/validation, use just setWrap
 	if (!(style in WrapStyle)) { 
 	    console.log("unknown style " + style); 
 	    return; 
 	}
-        if (style === TextMorph.prototype.wrap) {
-            delete this.wrap;
+        if (style == TextMorph.prototype.defaultWrap) {
+            this.setWrap(undefined);
         } else {
-            this.wrap = style;
-	    this.setLivelyTrait("wrap", style);
+	    this.setWrap(style);
         }
     },
+    
+    getPaddingStyle: function() { // FIXME fold into coertion/validation
+	var padding = this.getPadding();
+	return padding && Converter.parseInset(padding);
+    },
 
-    setPadding: function(ext) {
-	// FIXME: check vs prototype
-        this.padding = ext;
-	if (!ext) this.removeLivelyTrait("padding");
-	else this.setLivelyTrait("padding", ext.toAttributeValue());
+    setPaddingStyle: function(ext) {
+	if (!ext) {
+	    this.setPadding(undefined);
+	} else {
+	    this.setPadding(String(ext.toInsetTuple()));
+	}
     },
 
     beLabel: function() {
@@ -1114,12 +1123,12 @@ Morph.subclass("TextMorph", {
 
     // TextMorph composition functions
     textTopLeft: function() { 
-        return this.shape.bounds().topLeft().addPt(this.padding.topLeft()); 
+        return this.shape.bounds().topLeft().addPt(this.getPaddingStyle().topLeft()); 
     },
     
     // ??
     innerBounds: function() { 
-        return this.shape.bounds().insetByRect(this.padding);
+        return this.shape.bounds().insetByRect(this.getPaddingStyle());
     },
     
     ensureRendered: function() { // created on demand and cached
@@ -1241,13 +1250,14 @@ Morph.subclass("TextMorph", {
     },
 
     compositionWidth: function() {
-        if (this.wrap === WrapStyle.Normal) return this.shape.bounds().width - this.padding.left() - this.padding.right();
+	var padding = this.getPaddingStyle();
+        if (this.getWrap() == WrapStyle.Normal) return this.shape.bounds().width - padding.left() - padding.right();
         else return 9999; // Huh??
     },
 
     // DI: Should rename fitWidth to be composeLineWrap and fitHeight to be composeWordWrap
     fitText: function() { 
-        if (this.wrap === WrapStyle.Normal) this.fitHeight();
+        if (this.getWrap() == WrapStyle.Normal) this.fitHeight();
         else this.fitWidth();
     },
 
@@ -1269,10 +1279,11 @@ Morph.subclass("TextMorph", {
         // console.log('last char is ' + jRect.inspect() + ' for string ' + this.textString);
         var maxY = Math.max(this.lineHeight(), jRect.maxY());
     
-        if (this.shape.bounds().maxY() == maxY + this.padding.top()) 
+	var padding  = this.getPaddingStyle();
+        if (this.shape.bounds().maxY() == maxY + padding.top()) 
             return; // No change in height  // *** check that this converges
     
-        var bottomY = this.padding.top() + maxY;
+        var bottomY = padding.top() + maxY;
     
         var oldBounds = this.shape.bounds();
         this.shape.setBounds(oldBounds.withHeight(bottomY - oldBounds.y))
@@ -1314,14 +1325,15 @@ Morph.subclass("TextMorph", {
         
         // if (this.innerBounds().width==(maxX-x0) && this.innerBounds().height==(maxY-y0)) return;
         // No change in width *** check convergence
-        var bottomRight = this.padding.topLeft().addXY(maxX,maxY);
+	var padding = this.getPaddingStyle();
+        var bottomRight = padding.topLeft().addXY(maxX,maxY);
 
 
         // DI: This should just say, eg, this.shape.setBottomRight(bottomRight);
 	var b = this.shape.bounds();
-        if (this.wrap === WrapStyle.None) {
+        if (this.getWrap() == WrapStyle.None) {
             this.shape.setBounds(b.withHeight(bottomRight.y - b.y));
-        } else if (this.wrap === WrapStyle.Shrink) {
+        } else if (this.getWrap() == WrapStyle.Shrink) {
             this.shape.setBounds(b.withBottomRight(bottomRight));
         }
 
@@ -1367,8 +1379,9 @@ Morph.subclass("TextMorph", {
             this.textSelection.addRectangle(r1.union(r2));
         } else { // Selection is on two or more lines
             var localBounds = this.shape.bounds();
-            r1 = r1.withBottomRight(pt(localBounds.maxX() - this.padding.left(), r1.maxY()));
-            r2 = r2.withBottomLeft(pt(localBounds.x + this.padding.left(), r2.maxY()));
+	    var padding = this.getPaddingStyle();
+            r1 = r1.withBottomRight(pt(localBounds.maxX() - padding.left(), r1.maxY()));
+            r2 = r2.withBottomLeft(pt(localBounds.x + padding.left(), r2.maxY()));
             this.textSelection.addRectangle(r1);
             this.textSelection.addRectangle(r2);
         
@@ -1426,7 +1439,7 @@ Morph.subclass("TextMorph", {
         // Do selecting if click is in selectable area
         if (evt.isCommandKey()) return false;
          var selectableArea = this.openForDragAndDrop
-	    ? this.shape.bounds().insetByRect(this.padding) : this.shape.bounds();
+	    ? this.shape.bounds().insetByRect(this.getPaddingStyle()) : this.shape.bounds();
        return selectableArea.containsPoint(this.localize(evt.mousePoint)); 
     },
 
@@ -1958,7 +1971,7 @@ TextMorph.addMethods({
 	    return;
         this.fontSize = newSize;
         this.font = Font.forFamily(this.fontFamily, newSize);
-        this.setPadding(Rectangle.inset(newSize/2 + 2, newSize/3));
+        this.setPaddingStyle(Rectangle.inset(newSize/2 + 2, newSize/3));
         this.layoutChanged();
         this.changed();
     },

@@ -25,10 +25,7 @@
 // Simple widgets
 // ===========================================================================
 
-/**
- * @class ButtonMorph
- */ 
-Morph.subclass("ButtonMorph", {
+Morph.subclass('ButtonMorph', {
     
     documentation: "Simple button",
     focusHaloBorderWidth: 3, // override the default
@@ -70,22 +67,11 @@ Morph.subclass("ButtonMorph", {
         else throw new Error('cannot handle fill ' + this.fill);
     },
 
-    // KP: FIXME general way of declaring properties mapping to attributes
-    setToggle: function(flag) {
-        this.setLivelyTrait("toggle", !!flag);
-    },
-
-    isToggle: function() {
-        var value = this.getLivelyTrait("toggle");
-        if (value && value == 'true') return true;
-        else return false;
-    },
-
     handlesMouseDown: function(evt) { return !evt.isCommandKey(); },
     
     onMouseDown: function(evt) {
         this.requestKeyboardFocus(evt.hand);
-        if (!this.isToggle()) {
+        if (!this.getToggle()) {
             this.setValue(true); 
             this.changeAppearanceFor(true); 
         } 
@@ -94,7 +80,7 @@ Morph.subclass("ButtonMorph", {
     onMouseMove: Functions.Empty,
 
     onMouseUp: function(evt) {
-        var newValue = this.isToggle() ? !this.getValue() : false;
+        var newValue = this.getToggle() ? !this.getValue() : false;
         this.setValue(newValue); 
         this.changeAppearanceFor(newValue); 
     },
@@ -151,7 +137,7 @@ Morph.subclass("ButtonMorph", {
     },
 
     onKeyUp: function(evt) {
-        var newValue = this.isToggle() ? !this.getValue() : false;
+        var newValue = this.getToggle() ? !this.getValue() : false;
         switch (evt.getKeyCode()) {
         case Event.KEY_RETURN:
         case Event.KEY_SPACEBAR:
@@ -173,6 +159,12 @@ Morph.subclass("ButtonMorph", {
     }
 
 });
+
+
+ButtonMorph.addProperties({
+    Toggle: { name: "toggle", from: Converter.parseBoolean, to: Converter.unparseBoolean }
+});
+
 
 Morph.subclass("ImageMorph", {
 
@@ -659,7 +651,7 @@ Object.extend(PanelMorph, {
 TextMorph.subclass("CheapListMorph", {
     
     borderColor: Color.black,
-    wrap: WrapStyle.None,
+
     maxSafeSize: 4e4,  // override max for subsequent updates
     pins: ["List", "Selection", "-DeletionConfirmation", "+DeletionRequest"],
     
@@ -672,7 +664,8 @@ TextMorph.subclass("CheapListMorph", {
         itemList = this.sanitizedList(itemList);
         var listText = itemList ? itemList.join("\n") : "";
         $super(initialBounds, listText);
-
+	
+	this.setWrapStyle(WrapStyle.None);
         this.itemList = itemList;
         // this default self connection may get overwritten by, eg, connectModel()...
         var model = new SyntheticModel(this.pins);
@@ -1251,7 +1244,8 @@ Morph.subclass("MenuMorph", {
 	for (var i = 0; i < this.items.length; i++) {
 	    if (this.items[i][0].length > maxWidth) maxWidth = this.items[i][0].length;
 	}
-	return maxWidth*proto.fontSize/2 + proto.padding.left() + proto.padding.right();
+	var protoPadding = Rectangle.inset(6, 4);
+	return maxWidth*proto.fontSize/2 + protoPadding.left() + protoPadding.right();
     },
 
     openIn: function(parentMorph, loc, remainOnScreen, captionIfAny) { 
