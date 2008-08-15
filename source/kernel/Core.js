@@ -160,23 +160,18 @@ Record.create = function(bodySpec, optNodeName) {
 	    else if (!value && spec.byDefault) value = spec.byDefault;
 	    this.rawNode.setAttributeNS(ns, attribute, value);
 	}
-	if (spec.mode && spec.mode.indexOf('!') >= 0) {
-	    def[setterName] = function(value, optSource) {
-		var result = setter.call(this, value);
-		var obs = this[name + '$observers'];
-		if (!obs) return result;
-		for (var i = 0; i < obs.length; i++) {
-		    obs.valueChanged(this, name, value, optSource);
-		}
-		return result;
-	    }
-	}
 	
 	def["get" + name] = function() {
-	    var value = this.rawNode.getAttributeNS(ns, attribute);
-	    if (!value && spec.byDefault) return spec.byDefault;
-	    else if (spec.from) return spec.from(value)
-	    else return value;
+	    if (this.rawNode) {
+		var value = this.rawNode.getAttributeNS(ns, attribute);
+		if (!value && spec.byDefault) return spec.byDefault;
+		else if (spec.from) return spec.from(value)
+		else return value;
+	    } else if (this === this.constructor.prototype) { // we are the prototype? not foolproof but works in LK
+		return spec.byDefault; 
+	    } else {
+		throw new Error("no rawNode");
+	    }
 	}
     });
 
@@ -2057,7 +2052,7 @@ Visual.addProperties({
     FillOpacity: { name: "fill-opacity", from: Number, to: String, byDefault: 1.0},
     StrokeOpacity: { name: "stroke-opacity", from: Number, to: String, byDefault: 1.0},
     StrokeWidth: { name: "stroke-width", from: Number, to: String, byDefault: 0.0},
-    Stroke: { name: "stroke", byDefault: "none"}
+    Stroke: { name: "stroke", byDefault: "none"} // FIXME byDefault should be in JS not DOM type
 });
 
 Visual.addMethods({   

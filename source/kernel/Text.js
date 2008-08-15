@@ -831,7 +831,6 @@ TextMorph.addMethods({
     borderWidth: 1,
     borderColor: Color.black,
 
-    defaultWrap: WrapStyle.Normal, 
     maxSafeSize: 20000, 
     tabWidth: 4,
     tabsAsSpaces: true,
@@ -954,7 +953,7 @@ TextMorph.addMethods({
     
     makeStyleSpec: function($super, spec) {
 	var spec = $super();
-	if (this.getWrap() != TextMorph.prototype.defaultWrap) {
+	if (this.getWrap() != TextMorph.prototype.getWrap()) {
 	    spec.wrapStyle = this.getWrap();
 	}
 	if (this.getFontSize() !== TextMorph.prototype.fontSize) {
@@ -972,7 +971,7 @@ TextMorph.addMethods({
 	    console.log("unknown style " + style); 
 	    return; 
 	}
-        if (style == TextMorph.prototype.defaultWrap) {
+        if (style == TextMorph.prototype.getWrap()) {
             this.setWrap(undefined);
         } else {
 	    this.setWrap(style);
