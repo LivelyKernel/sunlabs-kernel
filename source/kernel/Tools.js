@@ -120,6 +120,8 @@ Widget.subclass('SimpleBrowser', {
         var className = this.getModelValue("getClassName");
         if (className != null) {
             var theClass = Global[className];
+            items.push(['make a new subclass', 
+                    function() { WorldMorph.current().prompt("name of subclass", this.makeSubclass.bind(this));}.bind(this)]);
             if (theClass.prototype != null) {
                 items.push(['profile selected class', 
                     function() { showStatsViewer(theClass.prototype, className + "..."); }]);
@@ -153,14 +155,23 @@ Widget.subclass('SimpleBrowser', {
         }
         return items; 
     },
+    makeSubclass: function(subName) {
+        var className = this.getModelValue("getClassName");
+        var theClass = Global[className];
+	theClass.subclass(subName, {});
+	// Need to regenerate the class list and select the new sub
+        this.getModel().setClassList(this.listClasses());
+        this.getModel().setClassName(subName);
+	var doitString = className + '.subclass("' + subName + '", {})';
+	ChangeSet.current().logChange({type: 'subclass', className: className, subName: subName});
+
+    },
     testTracing: function() {
 	console.log("Function.prototype.logAllCalls = true; tracing begins...");
 	Function.prototype.logAllCalls = true;
 	this.toString();
 	Function.prototype.logAllCalls = false;
-    },
-
-
+    }
 });
    
 // ===========================================================================
@@ -1746,8 +1757,7 @@ Object.subclass('ChangeSet', {
     },
     logChange: function(item) {
 	this.changes.push(item);
-	console.log(item);
-	// Note this only needs to happen once when storing the world...
+	// Note this really only needs to happen once when storing the world...
 	WorldMorph.current().setLivelyTrait("changes", escape(JSON.serialize(this.changes)))    },
     setChanges: function(arrayOfItems) {
 	this.changes = arrayOfItems;
@@ -1756,7 +1766,9 @@ Object.subclass('ChangeSet', {
 	this.changes.each(function(item) {this.evalItem(item);}.bind(this));
     },
     evalItem: function(item) {
+	console.log("ChangeSet evaluating a " + item.type + " def.");
 	if(item.type = 'method') eval(item.className + '.prototype.' + item.methodName + ' = ' + item.methodString);
+	if(item.type = 'subclass') eval(item.className + '.subclass("' + item.subName + '", {})');
 	if(item.type = 'doit') eval(item.doitString);
     }
 });
