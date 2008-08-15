@@ -1767,9 +1767,9 @@ Object.subclass('ChangeSet', {
     },
     evalItem: function(item) {
 	console.log("ChangeSet evaluating a " + item.type + " def.");
-	if(item.type = 'method') eval(item.className + '.prototype.' + item.methodName + ' = ' + item.methodString);
-	if(item.type = 'subclass') eval(item.className + '.subclass("' + item.subName + '", {})');
-	if(item.type = 'doit') eval(item.doitString);
+	if(item.type == 'method') eval(item.className + '.prototype.' + item.methodName + ' = ' + item.methodString);
+	if(item.type == 'subclass') eval(item.className + '.subclass("' + item.subName + '", {})');
+	if(item.type == 'doit') eval(item.doitString);
     }
 });
 
