@@ -53,7 +53,7 @@ Morph.subclass('PackageMorph', {
 	    this.unpackageAt(this.getPosition()); 
 	}]);
 	menu.replaceItemNamed("show Lively markup", ["show packaged Lively markup", function(evt) {
-	    this.world().addTextInspector({
+	    this.world().addTextWindow({
 		content: Exporter.stringify(this.serialized),
 		title: "XML dump",
 		position: this.world().positionForNewMorph(this)
@@ -471,17 +471,17 @@ TwoPaneBrowser.subclass('FileBrowser', {
 	    items.push(["repository info", function(evt) {
 		var m = new SyntheticModel(["Info"]);
 		new Subversion({model: m, setServerResponse: "setInfo"}).info(svnPath);
-		this.world().addTextInspector({acceptInput: false,
-					       title: "info " + url,
-					       position: evt.point(),
-					       plug: {model: m, getText: "getInfo"} });
+		this.world().addTextWindow({acceptInput: false,
+					    title: "info " + url,
+					    position: evt.point(),
+					    plug: {model: m, getText: "getInfo"} });
 	    }]);
 	    items.push(["repository diff", function(evt) {
 		var m = new SyntheticModel(["Diff"]);
-		this.world().addTextInspector({acceptInput: false,
-					       plug: {model: m, getText: "getDiff"},
-					       title: "diff " + url,
-					       position: evt.point() });
+		this.world().addTextWindow({acceptInput: false,
+					    plug: {model: m, getText: "getDiff"},
+					    title: "diff " + url,
+					    position: evt.point() });
 		new Subversion({model: m, setServerResponse: "setDiff"}).diff(svnPath);
 		
 	    }]);
@@ -494,10 +494,10 @@ TwoPaneBrowser.subclass('FileBrowser', {
 			return;
 		    }
 		    var m = new SyntheticModel(["CommitStatus"]);
-		    this.world().addTextInspector({acceptInput: false,
-						   title: "commit " + url, 
-						   plug: {model: m, getText: "getCommitStatus"}, 
-						   position: evt.point() });
+		    this.world().addTextWindow({acceptInput: false,
+						title: "commit " + url, 
+						plug: {model: m, getText: "getCommitStatus"}, 
+						position: evt.point() });
 		    new Subversion({model: m, setServerResponse: "setCommitStatus"}).commit(svnPath, message);
 		});
 	    }]);
@@ -510,10 +510,10 @@ TwoPaneBrowser.subclass('FileBrowser', {
 		    this.AllProperties = Exporter.stringifyArray(nodes, '\n');
 		    this.changed('getAllProperties', source);
 		};
-		this.world().addTextInspector({acceptInput: false,
-					       plug: {model: m, getText: "getAllProperties"},
-					       title: url.toString(),
-					       position: evt.point() });
+		this.world().addTextWindow({acceptInput: false,
+					    plug: {model: m, getText: "getAllProperties"},
+					    title: url.toString(),
+					    position: evt.point() });
 		var res = new Resource(url, {model: m, setContentDocument: "setInspectedNode" });
 		res.fetchProperties();
 		
@@ -530,7 +530,7 @@ TwoPaneBrowser.subclass('FileBrowser', {
 		    if (!p) return;
 		    switch (aspect) {
 		    case p.getContentDocument:
-			w.addTextInspector({ 
+			w.addTextWindow({ 
 			    content: Exporter.stringify(this.getModelValue('getContentDocument').documentElement),
 			    title: "WebDAV dump",
 			    position: evt.point()
@@ -576,7 +576,7 @@ TwoPaneBrowser.subclass('FileBrowser', {
 
 	    var items = [
 		['edit in separate window', function(evt) {
-		    this.world().addTextInspector({
+		    this.world().addTextWindow({
 			content: "Fetching " + url + "...",
 			plug: {model: model, getText: "getSelectedLowerNodeContents", setText: "setSelectedLowerNodeContents"},
 			title: url.toString(),

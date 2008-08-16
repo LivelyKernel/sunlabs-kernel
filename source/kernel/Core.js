@@ -5014,7 +5014,7 @@ Morph.addMethods( {
 
     addSvgInspector: function() {
 	var xml = Exporter.stringify(new Exporter(this).serialize(Global.document));
-	var txt = this.world().addTextInspector({
+	var txt = this.world().addTextWindow({
 	    content: xml,
 	    title: "XML dump", 
 	    position: this.world().positionForNewMorph(this)
@@ -5948,7 +5948,7 @@ PasteUpMorph.subclass("WorldMorph", {
 	items.push(["Model documentation", function(evt) { 
 	    var url = new URL("http://livelykernel.sunlabs.com/repository/lively-kernel/trunk/doc/wiki/model.txt");
 	    var model = new SyntheticModel(["Content"]);
-	    world.addTextInspector({
+	    world.addTextWindow({
 		content: "fetching ... ",
 		title: "Model documentation",
 		plug: {model: model, getText: "getContent"},
@@ -6012,13 +6012,13 @@ PasteUpMorph.subclass("WorldMorph", {
 	return this.addMorphAt(new WindowMorph(morph, title), loc);
     },
 
-    addTextInspector: function(spec) {
+    addTextWindow: function(spec) {
 	// FIXME: typecheck the spec 
 	var extent = spec.extent || pt(500, 200);
 	var pane = newTextPane(extent.extentAsRectangle(), spec.content || "");
 	if (spec.acceptInput !== undefined) pane.innerMorph().acceptInput = spec.acceptInput;
 	if (spec.plug) pane.innerMorph().connectModel(spec.plug);
-	this.addFramedMorph(pane, spec.title || "", spec.position || pt(0,0));
+	this.addFramedMorph(pane, String(spec.title) || "", spec.position || this.firstHand().position().subPt(pt(5, 5)));
 	return pane.innerMorph();
     },
 

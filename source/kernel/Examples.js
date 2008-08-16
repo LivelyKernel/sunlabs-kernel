@@ -267,7 +267,7 @@ Widget.subclass('FeedWidget', {
     makeSourcePane: function(ignored, evt) {
 	var item = this.getEntry(this.getModelValue("getSelectedItemTitle"));
 	if (!item) return; // complain?
-	WorldMorph.current().addTextInspector({ 
+	WorldMorph.current().addTextWindow({ 
 	    title: "XML source for " + item.title(),
 	    position: evt.point(),
 	    extent: pt(500, 200),
