@@ -896,7 +896,7 @@ convention of naming the underlying DOM element <code>rawNode</code>.
 
 </section>  <!-- end of mapping -->
 
-<section><title>Unused features</title> <!-- various observations -->
+<section><title>Unused specification features</title> <!-- various observations -->
 <para>
 Lively Kernel does not currently use several features of the SVG
 specification. Most notably, it does not use declarative animations,
