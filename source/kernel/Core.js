@@ -951,11 +951,11 @@ var Converter = {
     },
 
     toJSONAttribute: function(obj) {
-	return escape(JSON.serialize(obj));
+	return obj ? escape(JSON.serialize(obj)) : undefined;
     },
 
     fromJSONAttribute: function(str) {
-	return JSON.unserialize(unescape(str));
+	return str ?  JSON.unserialize(unescape(str)) : null;
     }
 };
 
