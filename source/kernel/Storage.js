@@ -504,17 +504,16 @@ TwoPaneBrowser.subclass('FileBrowser', {
 	}
 	function addWebDAVItems(url, items) { 
 	    items.push(["get WebDAV info", function(evt) {
-		var m = new SyntheticModel(["InspectedNode", "AllProperties"]);
-		m.setAllProperties = function(nodes, source) {
+		var m = new SyntheticModel(["InfoDocument", "AllProperties"]);
+		m.setInfoDocument = function(doc, source) {
 		    // translate from nodes to text for the text morph to understand
-		    this.AllProperties = Exporter.stringifyArray(nodes, '\n');
-		    this.changed('getAllProperties', source);
+		    this.setAllProperties(Exporter.stringify(doc), source);
 		};
 		this.world().addTextWindow({acceptInput: false,
 					    plug: {model: m, getText: "getAllProperties"},
-					    title: url.toString(),
+					    title: url,
 					    position: evt.point() });
-		var res = new Resource(url, {model: m, setContentDocument: "setInspectedNode" });
+		var res = new Resource(url, {model: m, setContentDocument: "setInfoDocument" });
 		res.fetchProperties();
 		
 	    }]);
