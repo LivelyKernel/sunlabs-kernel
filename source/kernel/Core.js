@@ -476,6 +476,10 @@ var Strings = {
     withDecimalPrecision: function(str, precision) {
 	var floatValue = parseFloat(str);
 	return isNaN(floatValue) ? str : floatValue.toFixed(precision);
+    },
+
+    isLike: function(arg) { // is arg a primitive string or a string object?
+	return (arg instanceof String) || (typeof arg == "string");
     }
 };
 
@@ -6014,7 +6018,7 @@ PasteUpMorph.subclass("WorldMorph", {
 
     addTextWindow: function(spec) {
 	// FIXME: typecheck the spec 
-	if ((spec instanceof String) || (typeof spec === "string")) spec = {content: spec}; // convenience
+	if (Strings.isLike(spec)) spec = {content: spec}; // convenience
 	var extent = spec.extent || pt(500, 200);
 	var pane = newTextPane(extent.extentAsRectangle(), spec.content || "");
 	if (spec.acceptInput !== undefined) pane.innerMorph().acceptInput = spec.acceptInput;
@@ -6026,8 +6030,8 @@ PasteUpMorph.subclass("WorldMorph", {
     },
 
     addTextListWindow: function(spec) {
-	if (spec instanceof Array) spec = {content: spec }; // convenience
 	// FIXME: typecheck the spec 
+	if (spec instanceof Array) spec = {content: spec }; // convenience
 	var content = spec.content;
 	if (!content) content = "";
 	if (!(content instanceof Array)) content = [content];
