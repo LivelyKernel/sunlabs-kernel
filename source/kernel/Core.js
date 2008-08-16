@@ -144,43 +144,210 @@ var Record = {};
 
 Record.create = function(bodySpec, optNodeName) {
     var klass = Object.subclass();
-    var def = {};
-    
+    function observerListName(name) { return name + "$observers" }
+    var def = {
+	addObserver: function(name, dep) {
+	    if (!this["set" + name]) throw new Error("cannot observe nonexistent variable " + name);
+	    var deps = this[observerListName(name)];
+	    if (!deps) deps = this[observerListName(name)] = [];
+	    else if (deps.indexOf(dep) >= 0) return;
+	    deps.push(dep);
+	}
+    };
     Properties.forEachOwn(bodySpec, function(name) {
 	var spec = bodySpec[name];
-	var ns = spec.ns || null;
-	var attribute = spec.name || name;
-	var setterName = "set" + name;
-	var setter = def[setterName] = function(value, optSource) {
-	    if (value === undefined) {
-		this.rawNode.removeAttributeNS(ns, attribute);
-		return;
-	    }
-	    if (spec.to) value = spec.to(value);
-	    else if (!value && spec.byDefault) value = spec.byDefault;
-	    this.rawNode.setAttributeNS(ns, attribute, value);
-	}
 	
-	def["get" + name] = function() {
-	    if (this.rawNode) {
-		var value = this.rawNode.getAttributeNS(ns, attribute);
-		if (!value && spec.byDefault) return spec.byDefault;
-		else if (spec.from) return spec.from(value)
-		else return value;
-	    } else if (this === this.constructor.prototype) { // we are the prototype? not foolproof but works in LK
-		return spec.byDefault; 
-	    } else {
-		throw new Error("no rawNode");
+	def["set" + name] = (function(ns, name, to, byDefault) { 
+	    return function(value, optSource) {
+		if (value === undefined) {
+		    this.rawNode.removeAttributeNS(ns, name);
+		} else {
+		    if (!value && byDefault) value = byDefault;
+		    var coercedValue = to ? to(value) : value;
+		    this.rawNode.setAttributeNS(ns, name, coercedValue);
+		}
+		var deps = this[observerListName(name)];
+		if (deps) {
+		    for (var i = 0; i < deps.length; i++) {
+			var dep = deps[i];
+			dep["on" + name + "Update"].call(dep, value, optSource);
+		    }
+		}
 	    }
-	}
+	})(spec.ns|| null, spec.name || name, spec.to, spec.byDefault);
+	
+	def["get" + name] = (function(ns, name, from, byDefault) {
+	    return function(optSource) {
+		if (this.rawNode) {
+		    var value = this.rawNode.getAttributeNS(ns, name);
+		    if (!value && byDefault) return byDefault;
+		    else if (from) return from(value);
+		    else return value;
+		} else if (this === this.constructor.prototype) { // we are the prototype? not foolproof but works in LK
+		    return byDefault; 
+		} else {
+		    throw new Error("no rawNode");
+		}
+	    }
+	})(spec.ns|| null, spec.name || name, spec.from, spec.byDefault);
     });
 
-    def.initialize = function(spec) {
-	Properties.forEachOwn(spec, function(key) { this["set" + key](spec[key]); });
+    def.initialize = function(rawNode, spec) {
+	this.rawNode = rawNode;
+	Properties.forEachOwn(spec, function(key) { this["set" + key](spec[key]); }, this);
     }
     klass.addMethods(def);
     return klass;
 };
+
+
+Record.test1 = function() {
+    var Rec = Record.create({ Field: {}, OtherField: {from:Number, to:String} });
+    var r = new Rec(NodeFactory.create("test"), {Field: "10", OtherField: 10});
+    r.addObserver("Field", { 
+	onFieldUpdate: function(value) { 
+	    alert('got value ' + value); 
+	    r.setOtherField(111);
+	}
+    });
+		  
+    r.addObserver("OtherField", {
+	onOtherFieldUpdate: function(value) {
+	    alert('other field!' + value);
+	} 
+    }); 
+    r.setField("yo!");
+    r.setOtherField(1243);
+}
+
+
+Record.test = function() {
+    // Toolkit
+
+    var View = {
+	connectModel: function(plug)  { 
+	    this.plug = plug;
+	},
+	setModelVariable: function(varname, value) {
+	    var model = this.plug.model;
+	    model["set" + this.plug[varname]].call(model, value);
+	}
+    };
+
+    function InputBox() {};
+    Object.extend(InputBox.prototype, View);
+    InputBox.prototype.scan = function() {
+	var value = prompt('give me a number');
+	this.setModelVariable("Input", Number(value));
+    }
+
+    function OutputBox() { };
+    Object.extend(OutputBox.prototype, View);
+
+    OutputBox.prototype.print = function(content) {
+	alert("displaying new content " + content);
+    }
+
+    // App logic
+    var CalcModel = Record.create({ 
+	Op1: {from:Number, to:String}, 
+	Op2: {from:Number, to:String}, 
+	Result: {from:Number, to :String} 
+    });
+    var m = new CalcModel(NodeFactory.create("model"), {Op1: 10, Op2: 20, Result: 0});
+    
+    function Summator() {}
+    Summator.prototype = {
+	// FIXME sumator talks about Op1 Op2 and Result
+	onOp1Update: function(value) { m.setResult(value + m.getOp2()); },
+	onOp2Update: function(value) { m.setResult(m.getOp1() + value);	}
+    };
+
+    var summator = new Summator();
+    m.addObserver("Op1", summator);
+    m.addObserver("Op2", summator);
+
+    var op1Box = new InputBox();
+    op1Box.connectModel({model: m, Input: "Op1"});
+    var op2Box = new InputBox();
+    op2Box.connectModel({model: m, Input: "Op2"});
+
+    var resBox = new OutputBox();
+    m.addObserver("Result", { onResultUpdate: function(value) { resBox.print(value) }});
+    
+    op1Box.scan();
+    op2Box.scan();
+}
+    
+Record.t2 = function() {
+    // Toolkit
+    var View = {
+	connectModel: function(plug)  { 
+	    this.plug = plug;
+	},
+	setModelVariable: function(varname, value) {
+	    var model = this.plug.model;
+	    model["set" + this.plug[varname]].call(model, value);
+	}
+    };
+    
+    function InputBox() {};
+    Object.extend(InputBox.prototype, View);
+    InputBox.prototype.scan = function() {
+	var value = prompt('give me a number');
+	this.setModelVariable("Input", Number(value));
+    }
+    function OutputBox() { };
+    Object.extend(OutputBox.prototype, View);
+    OutputBox.prototype.print = function(content) {
+	alert("displaying new content " + content);
+    }
+    // App logic
+    var CalcModel = Record.create({ 
+	Op1: {from:Number, to:String}, 
+	Op2: {from:Number, to:String}, 
+	Result: {from:Number, to :String} 
+    });
+    var m = new CalcModel(NodeFactory.create("model"), {Op1: 10, Op2: 20, Result: 0});
+    
+    function Summator() {} // "Summand1", "Summand2", "Sum"
+    
+    var mStub = { // delegate -> generate automatically
+	setSum: function(v) { m.setResult(v) },
+	getSummand1: function(v) { return m.getOp1(v); },
+	getSummand2: function(v) { return m.getOp2(v); }
+    };
+
+
+    Summator.prototype = {
+	summand1Changed: function(value) { mStub.setSum( value + mStub.getSummand2()); },
+	summand2Changed: function(value) { mStub.setSum(mStub.getSummand1() + value); }
+    };
+    
+
+    var summator = new Summator();
+    var observerPlug = {
+	onOp1Update: function(value) { summator.summand1Changed(value) },
+	onOp2Update: function(value) { summator.summand2Changed(value) }
+    };
+
+
+    m.addObserver("Op1", observerPlug);
+    m.addObserver("Op2", observerPlug);
+
+    var op1Box = new InputBox();
+    op1Box.connectModel({model: m, Input: "Op1"});
+    var op2Box = new InputBox();
+    op2Box.connectModel({model: m, Input: "Op2"});
+
+    var resBox = new OutputBox();
+    m.addObserver("Result", { onResultUpdate: function(value) { resBox.print(value) }});
+    
+    op1Box.scan();
+    op2Box.scan();
+}
+
+
 
 
 var Class = {

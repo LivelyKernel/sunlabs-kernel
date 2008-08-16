@@ -509,10 +509,12 @@ Object.subclass('TextLine', {
 	    }
             if (c.isWhite) {
                 c.bounds = lastBounds.withX(lastBounds.maxX());
+
                 if (c.isNewLine) {
                     c.bounds.width = (this.topLeft.x + compositionWidth) - c.bounds.x;
                     runningStartIndex = c.getNextStartIndex();
-                    if (c.rawNode) c.setNL(true); // little helper for serialization
+		    var prev = this.chunks[i - 1];
+		    if (prev) prev.rawNode && prev.setNL(true); // little helper for serialization
                     c.wasComposed = true;
                     break;
                 }
@@ -528,13 +530,12 @@ Object.subclass('TextLine', {
                 }
                 runningStartIndex = c.getNextStartIndex();
             } else {
-		c.allocRawNode();
-		
+		c.allocRawNode(); 
+
 		if (hasStyleChanged) {
 		    // once we notice one change, we will reapply font-size to chunk
 		    this.currentFont.applyTo(c);
 		}
-		
                 if (leadingSpaces) { 
                     c.setLead(leadingSpaces);
                     leadingSpaces = 0;
@@ -874,8 +875,9 @@ TextMorph.addMethods({
 		content.push(child.textContent); 
 		var trail = parseInt(LivelyNS.getAttribute(child, "trail"));
 		if (trail) content.push(" ".times(trail));
-		if (LivelyNS.getAttribute(child, "nl") == "true")
+		if (LivelyNS.getAttribute(child, "nl") == "true") {
                     content.push("\n");
+		}
             }
             this.textString = content.join("");
             this.fontFamily = this.textContent.getTrait("font-family");
@@ -1132,11 +1134,9 @@ TextMorph.addMethods({
     
     ensureRendered: function() { // created on demand and cached
         if (this.ensureTextString() == null) return null;
-        
         if (!this.textContent.rawNode.firstChild) {
-            this.renderText(this.textTopLeft(), this.compositionWidth());
+	    this.renderText(this.textTopLeft(), this.compositionWidth());
         }
-
         return this.textContent; 
     },
 

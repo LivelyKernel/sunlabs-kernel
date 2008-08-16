@@ -467,6 +467,8 @@ View.subclass('Resource', NetRequestReporterTrait, {
 	    this.url = url;
     },
 
+    deserialize: Functions.Empty, // stateless besides the model and .forceXML ...
+
     toString: function() {
 	return "#<Resource{" + this.getURL() + "}>";
     },
