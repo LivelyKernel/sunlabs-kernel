@@ -1,4 +1,3 @@
-
 <?xml version="1.0" encoding="UTF-8"?>
 <?oxygen RNGSchema="http://www.oasis-open.org/docbook/xml/5.0b5/rng/docbook.rng" type="xml"?>
 <?xml-stylesheet type="text/xsl" href="http://docbook.sourceforge.net/release/xsl/current/xhtml/docbook.xsl"?>
@@ -23,19 +22,27 @@
     <author>
       <personname> <firstname>Krzysztof</firstname> <surname>Palacz</surname> </personname> 
       <email>krzysztof.palacz@sun.com</email>
+      <affiliation>
+	<org>
+	  <orgname>Sun Microsystems Laboratories</orgname>
+	  <address>
+            <street>16 Network Circle</street>
+            <city>Menlo Park</city>
+	    <postcode>94025</postcode> 
+	    <state>CA</state>
+	    <country>USA</country>
+	  </address>
+	</org>
+      </affiliation>
+
     </author>
+<!--
     <author>
       <personname><firstname>Dan</firstname><surname>Ingalls</surname></personname>
       <email>dan.ingalls@sun.com</email>
+
     </author>
-    <org><orgname>Sun Microsystems Laboratories</orgname>
-      <address>
-        <street>16 Network Circle</street>
-        <city>Menlo Park</city>
-	<postcode>94025</postcode> 
-	<state>CA</state>
-	<country>USA</country>
-    </address></org>
+-->
     </authorgroup>
     
     <abstract>
@@ -349,36 +356,36 @@ editor.
 
 <mediaobject>
 <imageobject><imagedata fileref="construction-a.png"/> </imageobject>
-<caption><phrase>A</phrase></caption>
+<caption><para>A</para></caption>
 </mediaobject>
 
 <mediaobject>
 <imageobject><imagedata fileref="construction-b.png"/></imageobject>
-<caption><phrase>B</phrase></caption>
+<caption><para>B</para></caption>
 </mediaobject>
 
 <mediaobject>
 <imageobject> <imagedata fileref="construction-c.png"/></imageobject>
-<caption><phrase>C</phrase></caption>
+<caption><para>C</para></caption>
 </mediaobject>
 </para>
 <para>
 
 <mediaobject>
 <imageobject> <imagedata fileref="construction-d.png"/></imageobject>
-<caption><phrase>D</phrase></caption>
+<caption><para>D</para></caption>
 </mediaobject>
 
 <mediaobject>
 <imageobject> <imagedata fileref="construction-e.png"/></imageobject>
-<caption><phrase>E</phrase></caption>
+<caption><para>E</para></caption>
 </mediaobject>
 
 <mediaobject>
 <imageobject> <imagedata fileref="construction-f.png"/></imageobject>
-<caption><phrase>F</phrase></caption>
+<caption><para>F</para></caption>
 </mediaobject>
-<caption>Drag and drop construction of simple objects in Lively Kernel.</caption>
+<!-- <caption>Drag and drop construction of simple objects in Lively Kernel.</caption>-->
 </para>
 
 </figure>
@@ -412,19 +419,16 @@ this.startStepping(50, “rotateBy”, 0.1); // 0.1 radians every 50 ms
 </para>
 
 
+
 </section>
 <section><title>Simple Editors</title>
 
 <figure xml:id="fig_editors">
 <title>Simple editors.</title>
-<mediaobject><imageobject>
-<imagedata fileref="editors.gif"/>
-</imageobject></mediaobject>
-<caption>A SelectionMorph (left) and a HandleMorph (the blue rectangle on the polygon; shown with balloon help). 
-<!--<remark>FIXME better pic: tray, handle and color picker</remark>  -->
-</caption>
-</figure>
-
+<mediaobject>
+<imageobject><imagedata fileref="editors.png"/> </imageobject>
+</mediaobject>
+<caption><para>A SelectionMorph on the left, and a HandleMorph, appearing as the blue rectangle on the polygon</para></caption></figure>
 
 
 
@@ -535,8 +539,7 @@ computing kernel.
 <mediaobject><imageobject>
 <imagedata fileref="mvc-widget.png"/>
 </imageobject></mediaobject>
-<caption>A composite widget comprising multiple Views on parts of the same Model.</caption>
-</figure>
+<caption><para>A composite widget comprising multiple Views on parts of the same Model</para></caption></figure>
 
 
 
@@ -582,10 +585,9 @@ service in (almost) vertical orientation as a scroll bar.
 <figure xml:id="fig_style_editor">
 <title>Built-in style editor</title>
 <mediaobject><imageobject>
-<imagedata fileref="stylepanel.gif"/>
+<imagedata fileref="stylepanel.png"/>
 </imageobject></mediaobject>
-<caption>Built-in style editor<!--FIXME better pic needed--></caption>
-</figure>
+<caption><para>Built-in style editor</para><!--FIXME better pic needed--></caption></figure>
 
 
 <para> The Model-View separation can be applied to SVG data itself, as
@@ -719,10 +721,6 @@ supports changing and disabling the windowing system cursor
 entirely, and Lively Kernel provides programmatic bindings for this functionality.
 </para>
 
-<!-- Imperative API for SVG, hiding the XML underpinnings and hence
-portable to different architectures. API JS-centric (hence no XBL,
-even though similar interest in reusable components).
--->
 
 <table xml:id="fig_breakdown" frame='all'>
 <title>Breakdown of the implementation code</title>
@@ -775,8 +773,6 @@ even though similar interest in reusable components).
 
 
 
-
-
 <section>
 <title>Containment</title>
 <para>The Morphic framework organizes visual objects on the screen
@@ -801,7 +797,7 @@ specify the full set of its visual attributes. This feature of the SVG
 standard could be used to improve space utilization, or offer a
 mechanism to specify widget "skins".
 </para>
-</section>
+
 
 
 <para>
@@ -830,9 +826,10 @@ most likely through a uniform reference counting facility for all SVG
 elements referenced through URIs.
 </para>
 
+</section> <!-- end of containment -->
 <!--What does it have to do with Lessphic? -->
 
-<section> 
+<section>  <!-- mapping -->
 <title>The implementation of mapping: wrapping versus extending DOM elements</title>
 <para>
 There are at least two general methods of implementing the mapping
@@ -897,9 +894,9 @@ library <code>dojo.gfx</code>, and Lively Kernel even borrows its
 convention of naming the underlying DOM element <code>rawNode</code>.
 </para>
 
-</section> <!-- end of wrapping vs extending -->
+</section>  <!-- end of mapping -->
 
-
+<section><title>Unused features</title> <!-- various observations -->
 <para>
 Lively Kernel does not currently use several features of the SVG
 specification. Most notably, it does not use declarative animations,
@@ -929,8 +926,7 @@ event delivery is not usually performance-critical, and the resulting
 codebase is more easily portable to graphics backends not based on a
 DOM.
 </para>
-
-
+</section> <!-- various observations -->
 
 </section>
 
@@ -1048,12 +1044,17 @@ that this is possible in a single, coherent framework.
   <title>References</title>
   <biblioentry xml:id="Ingalls88">
     <abbrev>Ingalls88</abbrev>
-    <title>Fabrik.  A Visual Programming Environment</title>
-    Dan Ingalls, Scott Wallace, Yu-Ying Chow, Frank Ludolph, Ken Doyle 
-    Apple Computer Inc. 
-    OOPSLA '88 Conference Proceedings 
-    SIGPLAN Notices 
-    Volume 23, Number 11, November 1988 
+    <title>Fabrik:  A Visual Programming Environment</title>
+    <authorgroup>
+      <author><personname><firstname>Dan</firstname><surname>Ingalls</surname></personname></author>
+      <author><personname><firstname>Scott</firstname><surname>Wallace</surname></personname></author>
+      <author><personname><firstname>Yu-Ying</firstname><surname>Chow</surname></personname></author>
+      <author><personname><firstname>Frank</firstname><surname>Ludolph</surname></personname></author>
+      <author><personname><firstname>Ken</firstname><surname>Doyle</surname></personname></author>
+      </authorgroup>
+    <!-- Apple Computer Inc.  -->
+    <publisher><publishername>SIGPLAN Notices, OOPSLA '88 Conference Proceedings  Volume 23, Number 11, November 1988 </publishername></publisher>
+
   </biblioentry>
     
   <biblioentry xml:id="Taivalsaari08">
@@ -1069,60 +1070,63 @@ that this is possible in a single, coherent framework.
 
   <biblioentry xml:id="Maloney95">
     <abbrev>Maloney95</abbrev>
-    Maloney, J. H. and Smith, R. B. 1995. 
-    <title>Directness and liveness in the Morphic user interface construction environment.</title>
+    <authorgroup>
+      <author><personname> <firstname>J.H.</firstname><surname>Maloney</surname> </personname></author>
+      <author><personname> <firstname>R.B.</firstname><surname>Smith</surname> </personname></author>
+    </authorgroup>
+    <title>Directness and liveness in the Morphic user interface construction environment.
       In Proceedings of the 8th Annual ACM Symposium on User interface and
     Software Technology (Pittsburgh, Pennsylvania, United States,
     November 15 - 17, 1995). UIST '95. ACM, New York, NY, 21-28.
-    <link xlink:href="http://doi.acm.org/10.1145/215585.215636"/> 
+    <link xlink:href="http://doi.acm.org/10.1145/215585.215636"/> </title>
   </biblioentry>
 
   <biblioentry xml:id="Batik">
     <abbrev>Batik</abbrev> 
-    <title>The Apache Batik SVG toolkit</title> 
-    <link xlink:href="http://xmlgraphics.apache.org/batik/"/>
+    <title>The Apache Batik SVG toolkit
+    <link xlink:href="http://xmlgraphics.apache.org/batik/"/> </title> 
   </biblioentry>
 
   <biblioentry xml:id="SVG11">
     <abbrev>SVG11</abbrev> 
-    <title>Scalable Vector Graphics (SVG) Specification</title> 
-    <link xlink:href="http://www.w3.org/TR/SVG11/"/>
+    <title>Scalable Vector Graphics (SVG) Specification
+    <link xlink:href="http://www.w3.org/TR/SVG11/"/> </title> 
   </biblioentry>
 
   <biblioentry xml:id="Dojo">
     <abbrev>Dojo</abbrev> 
-    <title>The Dojo Toolkit</title> 
-    <link xlink:href="http://www.dojotoolkit.org/"/>
+    <title>The Dojo Toolkit
+    <link xlink:href="http://www.dojotoolkit.org/"/></title> 
   </biblioentry>
 
   <biblioentry xml:id="ExtJS">
     <abbrev>ExtJS</abbrev> 
-    <title>The ExtJS JavaScript library</title> 
-    <link xlink:href="http://extjs.com/"/>
+    <title>The ExtJS JavaScript library
+    <link xlink:href="http://extjs.com/"/></title> 
   </biblioentry>
 
   <biblioentry xml:id="Scriptaculous">
     <abbrev>Scriptaculous</abbrev> 
-    <title>The Scriptaculous user interface library.</title> 
-    <link xlink:href="http://script.aculo.us/"/>
+    <title>The Scriptaculous user interface library.
+    <link xlink:href="http://script.aculo.us/"/></title> 
   </biblioentry>
 
   <biblioentry xml:id="Self">
     <abbrev>Self</abbrev> 
-    <title>The Self Language</title> 
-    <link xlink:href="http://research.sun.com/self/"/>
+    <title>The Self Language
+    <link xlink:href="http://research.sun.com/self/"/> </title> 
   </biblioentry>
 
   <biblioentry xml:id="Squeak">
     <abbrev>Squeak</abbrev> 
-    <title>The Squeak Smalltalk system</title> 
-    <link xlink:href="http://www.squeak.org"/>  
+    <title>The Squeak Smalltalk system
+    <link xlink:href="http://www.squeak.org"/>  </title> 
   </biblioentry>
 
   <biblioentry xml:id="WebDAV">
     <abbrev>WebDAV</abbrev> 
-    <title>HTTP Extensions for Web Distributed Authoring and Versioning (WebDAV)</title> 
-    <link xlink:href="http://www.ietf.org/rfc/rfc4918.txt"/>  
+    <title>HTTP Extensions for Web Distributed Authoring and Versioning (WebDAV)
+    <link xlink:href="http://www.ietf.org/rfc/rfc4918.txt"/>  </title> 
   </biblioentry>
 
 </bibliography>
