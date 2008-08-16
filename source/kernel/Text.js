@@ -817,6 +817,7 @@ Visual.subclass('TextContent', {
 Morph.subclass("TextMorph");
 
 Morph.addProperties({
+    StoredTextStyle: {name: "stored-style", from:Converter.fromJSONAttribute, to:Converter.toJSONAttribute },
     Wrap: { name: "wrap", byDefault: WrapStyle.Normal },
     Padding: { name: "padding", byDefault: String(Rectangle.inset(6, 4).toInsetTuple()) } // FIXME move to coercion funcions
 });
@@ -892,6 +893,14 @@ TextMorph.addMethods({
 	return false;
     },
 
+    restorePersistentState: function($super, importer) {
+	$super(importer);
+	var styleInfo = this.getStoredTextStyle();
+	if (styleInfo) {
+	    this.textStyle = new RunArray(styleInfo.runs, styleInfo.values); 
+	}
+    },
+
     initialize: function($super, rect, textString) {
         this.textString = textString || "";
         $super(rect, "rect");
@@ -899,6 +908,7 @@ TextMorph.addMethods({
         // DI: ... and yet this seems necessary!
         if (this.textString instanceof Text) {
 	    this.textStyle = this.textString.style;
+	    this.setStoredTextStyle(this.textStyle);
 	    this.textString = this.textString.string;
 	}
 	this.layoutChanged();
@@ -1543,6 +1553,7 @@ TextMorph.addMethods({
 	    before = strStyle.slice(0, this.selectionRange[0]);
 	    after = strStyle.slice(this.selectionRange[1]+1, oldLength);
 	    this.textStyle = before.concat(repStyle).concat(after);
+	    this.setStoredTextStyle(this.textStyle);
 	    // console.log("replaceSel; textStyle = " + this.textStyle);
 	}		
         // Compute new selection, and display if not delayed
@@ -1823,6 +1834,7 @@ TextMorph.addMethods({
 	if (this.undoTextStyle) {
             t = this.textStyle;
 	    this.textStyle = this.undoTextStyle;
+	    this.setStoredTextStyle(this.textStyle);
 	    this.undoTextStyle = t;
 	}
     },
@@ -1887,6 +1899,7 @@ TextMorph.addMethods({
 	var txt = new Text(this.textString, this.textStyle);
 	txt.emphasize(emph, this.selectionRange[0], this.selectionRange[1]);
 	this.textStyle = txt.style;
+	this.setStoredTextStyle(this.textStyle);
 	// console.log("emphasizeSelection result: " + this.textStyle);
 	this.composeAfterEdits();
     },

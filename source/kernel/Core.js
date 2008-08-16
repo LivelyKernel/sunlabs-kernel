@@ -948,8 +948,15 @@ var Converter = {
 	    return null;
 	} 
         return Rectangle.inset(t, l, b, r);
-    }
+    },
 
+    toJSONAttribute: function(obj) {
+	return escape(JSON.serialize(obj));
+    },
+
+    fromJSONAttribute: function(str) {
+	return JSON.unserialize(unescape(str));
+    }
 };
 
 
