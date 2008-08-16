@@ -145,13 +145,18 @@ var Record = {};
 Record.create = function(bodySpec, optNodeName) {
     var klass = Object.subclass();
     function observerListName(name) { return name + "$observers" }
+    // do klass.prototype.addObserver = .. ?
     var def = {
-	addObserver: function(name, dep) {
-	    if (!this["set" + name]) throw new Error("cannot observe nonexistent variable " + name);
-	    var deps = this[observerListName(name)];
-	    if (!deps) deps = this[observerListName(name)] = [];
-	    else if (deps.indexOf(dep) >= 0) return;
-	    deps.push(dep);
+	addObserver: function(dep, array) {
+	    // FIXME if array not provided, find all the "on"<Variable>"Update" methods of dep
+	    if (!array instanceof Array) array = [array];
+	    array.forEach(function(name) {
+		if (!this["set" + name]) throw new Error("cannot observe nonexistent variable " + name);
+		var deps = this[observerListName(name)];
+		if (!deps) deps = this[observerListName(name)] = [];
+		else if (deps.indexOf(dep) >= 0) return;
+		deps.push(dep);
+	    }, this);
 	}
     };
     Properties.forEachOwn(bodySpec, function(name) {
@@ -200,154 +205,108 @@ Record.create = function(bodySpec, optNodeName) {
     return klass;
 };
 
+var Forwarder = {};
 
-Record.test1 = function() {
-    var Rec = Record.create({ Field: {}, OtherField: {from:Number, to:String} });
-    var r = new Rec(NodeFactory.create("test"), {Field: "10", OtherField: 10});
-    r.addObserver("Field", { 
-	onFieldUpdate: function(value) { 
-	    alert('got value ' + value); 
-	    r.setOtherField(111);
+Forwarder.create = function(args) {
+    var klass = Object.subclass();
+    var def = {};    
+    Properties.forEachOwn(args, function(name) {
+	var translated = args[name];
+	if (translated.startsWith("!")) {
+	    var stripped = translated.substring(1);
+	    def["on" + name + "Update"] = function(/*...*/) {
+		this.delegate[stripped].apply(this.delegate, arguments);
+	    }
+	} else {
+	    if (!translated.startsWith('-')) { // not read-only
+		var stripped = translated.startsWith('+') ? translated.substring(1) : translated;
+		def["set" + name] = function(/*...*/) {
+		    // FIXME what if method not available?
+		    this.delegate["set" + stripped].apply(this.delegate, arguments);
+		}
+	    }
+	    if (!translated.startsWith('+')) { // not write-only
+		var stripped = translated.startsWith('-') ? translated.substring(1) : translated;
+		def["get" + name] = function(/*...*/) {
+		    // FIXME what if method not available?
+		    return this.delegate["get" + stripped].apply(this.delegate, arguments);
+		}
+	    }
 	}
     });
-		  
-    r.addObserver("OtherField", {
-	onOtherFieldUpdate: function(value) {
-	    alert('other field!' + value);
-	} 
-    }); 
-    r.setField("yo!");
-    r.setOtherField(1243);
-}
+    def.initialize = function(delegate) { this.delegate = delegate; };
+    klass.addMethods(def);
+    return klass;
+};
 
+ Forwarder.test = function() {
+     var Fwd = Forwarder.create({Callback: "!update", Sum: "+Result", Summand1: "-Op1"});
+     var fwd = new Fwd({ 
+	 update: function(value) { alert('yo, update ' + value) },
+	 setResult: function(value) { alert('yo, set ' + value) },
+	 getOp1: function() { return 42 }
+     });
+     fwd.onCallbackUpdate(10);
+     fwd.setSum(5);
+     alert('got ' + fwd.getSummand1());
 
-Record.test = function() {
-    // Toolkit
+ }
 
-    var View = {
-	connectModel: function(plug)  { 
-	    this.plug = plug;
-	},
-	setModelVariable: function(varname, value) {
-	    var model = this.plug.model;
-	    model["set" + this.plug[varname]].call(model, value);
-	}
-    };
-
-    function InputBox() {};
-    Object.extend(InputBox.prototype, View);
-    InputBox.prototype.scan = function() {
-	var value = prompt('give me a number');
-	this.setModelVariable("Input", Number(value));
-    }
-
-    function OutputBox() { };
-    Object.extend(OutputBox.prototype, View);
-
-    OutputBox.prototype.print = function(content) {
-	alert("displaying new content " + content);
-    }
-
-    // App logic
+Forwarder.test = function() {
+    // the model knows about operands and result.
     var CalcModel = Record.create({ 
 	Op1: {from:Number, to:String}, 
 	Op2: {from:Number, to:String}, 
 	Result: {from:Number, to :String} 
     });
-    var m = new CalcModel(NodeFactory.create("model"), {Op1: 10, Op2: 20, Result: 0});
-    
-    function Summator() {}
+    var backingStore = NodeFactory.create("model"); // could be the DOM, SQL or plain JavaScript
+
+    var m = new CalcModel(backingStore, {Op1: 10, Op2: 20, Result: 0});
+
+    // the particular view that will operate on the calc
+    function Summator() {} 
+    // this is domain logic
     Summator.prototype = {
-	// FIXME sumator talks about Op1 Op2 and Result
-	onOp1Update: function(value) { m.setResult(value + m.getOp2()); },
-	onOp2Update: function(value) { m.setResult(m.getOp1() + value);	}
+	firstSummandChanged: function(value) { this.formalModel.setSum(value + this.formalModel.getSummand2()); },
+	secondSummandChanged: function(value) { this.formalModel.setSum(this.formalModel.getSummand1() + value); },
     };
 
     var summator = new Summator();
-    m.addObserver("Op1", summator);
-    m.addObserver("Op2", summator);
 
-    var op1Box = new InputBox();
-    op1Box.connectModel({model: m, Input: "Op1"});
-    var op2Box = new InputBox();
-    op2Box.connectModel({model: m, Input: "Op2"});
+    // summator writes a formal "Result" and reads "Op1" and "Op2"
+    summator.formalModel = new (Forwarder.create({ Sum: "+Result", Summand1: "-Op1", Summand2: "-Op2"}))(m);
 
-    var resBox = new OutputBox();
-    m.addObserver("Result", { onResultUpdate: function(value) { resBox.print(value) }});
+    // model will call onOp1Update or onOp2Update on the forwarder
+    // the forwarder will forward onOp1Update to summator.firstSummandChanged, and onOp2Update to summator.secondSummandChanged
+    m.addObserver(new (Forwarder.create({ Op1: "!firstSummandChanged", Op2: "!secondSummandChanged" }))(summator),
+		  ["Op1", "Op2"]);
     
-    op1Box.scan();
-    op2Box.scan();
-}
-    
-Record.t2 = function() {
-    // Toolkit
-    var View = {
-	connectModel: function(plug)  { 
-	    this.plug = plug;
-	},
-	setModelVariable: function(varname, value) {
-	    var model = this.plug.model;
-	    model["set" + this.plug[varname]].call(model, value);
+    function InputBox() {
+	this.input = function() {
+	    this.formalModel.setInput(Number(prompt("input a number")));
 	}
-    };
-    
-    function InputBox() {};
-    Object.extend(InputBox.prototype, View);
-    InputBox.prototype.scan = function() {
-	var value = prompt('give me a number');
-	this.setModelVariable("Input", Number(value));
     }
-    function OutputBox() { };
-    Object.extend(OutputBox.prototype, View);
-    OutputBox.prototype.print = function(content) {
-	alert("displaying new content " + content);
+    function OutputBox() { 
+	this.print = function(content) {
+	    alert("result is " + content);
+	}
     }
-    // App logic
-    var CalcModel = Record.create({ 
-	Op1: {from:Number, to:String}, 
-	Op2: {from:Number, to:String}, 
-	Result: {from:Number, to :String} 
-    });
-    var m = new CalcModel(NodeFactory.create("model"), {Op1: 10, Op2: 20, Result: 0});
-    
-    function Summator() {} // "Summand1", "Summand2", "Sum"
-    
-    var mStub = { // delegate -> generate automatically
-	setSum: function(v) { m.setResult(v) },
-	getSummand1: function(v) { return m.getOp1(v); },
-	getSummand2: function(v) { return m.getOp2(v); }
-    };
-
-
-    Summator.prototype = {
-	summand1Changed: function(value) { mStub.setSum( value + mStub.getSummand2()); },
-	summand2Changed: function(value) { mStub.setSum(mStub.getSummand1() + value); }
-    };
-    
-
-    var summator = new Summator();
-    var observerPlug = {
-	onOp1Update: function(value) { summator.summand1Changed(value) },
-	onOp2Update: function(value) { summator.summand2Changed(value) }
-    };
-
-
-    m.addObserver("Op1", observerPlug);
-    m.addObserver("Op2", observerPlug);
 
     var op1Box = new InputBox();
-    op1Box.connectModel({model: m, Input: "Op1"});
+    // formalModel will forward setInput() to m.setOp1()
+    op1Box.formalModel = new (Forwarder.create({Input: "+Op1"}))(m);
+    // InputBox will set its formal "Input" variable which will result on m.setOp1() being called
+    
     var op2Box = new InputBox();
-    op2Box.connectModel({model: m, Input: "Op2"});
+    op2Box.formalModel = new (Forwarder.create({Input: "+Op2"}))(m);
 
     var resBox = new OutputBox();
-    m.addObserver("Result", { onResultUpdate: function(value) { resBox.print(value) }});
+    // m will call resBox.display() whenever m.Result is set
+    m.addObserver(new (Forwarder.create({Result: "!print" }))(resBox), ["Result"]);
     
-    op1Box.scan();
-    op2Box.scan();
+    op1Box.input();
+    op2Box.input();
 }
-
-
 
 
 var Class = {

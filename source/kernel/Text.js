@@ -514,7 +514,7 @@ Object.subclass('TextLine', {
                     c.bounds.width = (this.topLeft.x + compositionWidth) - c.bounds.x;
                     runningStartIndex = c.getNextStartIndex();
 		    var prev = this.chunks[i - 1];
-		    if (prev) prev.rawNode && prev.setNL(true); // little helper for serialization
+		    if (prev && prev.rawNode) prev.setNL(true); // little helper for serialization
                     c.wasComposed = true;
                     break;
                 }
@@ -875,6 +875,9 @@ TextMorph.addMethods({
 		content.push(child.textContent); 
 		var trail = parseInt(LivelyNS.getAttribute(child, "trail"));
 		if (trail) content.push(" ".times(trail));
+		// FIXME: instead, check the difference between the y value of the previous and the current child,
+		// wrt/fontSize
+		// and if they differ, generate the appropriate number of "\n" chars
 		if (LivelyNS.getAttribute(child, "nl") == "true") {
                     content.push("\n");
 		}
