@@ -5031,11 +5031,11 @@ Morph.addMethods( {
 		var varName = variables[i];
 		list.push(varName + " = " + model.get(varName));
 	    }
-	    var extent = pt(400, Math.min(300, list.length * TextMorph.prototype.fontSize * 1.5));
-	    var pane = new ScrollPane(new TextListMorph(extent.extentAsRectangle(), []), extent.extentAsRectangle()); 
-	    
-	    pane.innerMorph().updateList(list);
-	    this.world().addFramedMorph(pane, "Simple Model dump", this.world().positionForNewMorph(this));
+	    this.world().addTextListWindow({
+		content: list,
+		title: "Simple Model dump",
+		position: this.world().positionForNewMorph(this)
+	    });
 	}
     }
 });
@@ -6014,13 +6014,35 @@ PasteUpMorph.subclass("WorldMorph", {
 
     addTextWindow: function(spec) {
 	// FIXME: typecheck the spec 
+	if ((spec instanceof String) || (typeof spec === "string")) spec = {content: spec}; // convenience
 	var extent = spec.extent || pt(500, 200);
 	var pane = newTextPane(extent.extentAsRectangle(), spec.content || "");
 	if (spec.acceptInput !== undefined) pane.innerMorph().acceptInput = spec.acceptInput;
 	if (spec.plug) pane.innerMorph().connectModel(spec.plug);
-	this.addFramedMorph(pane, String(spec.title) || "", spec.position || this.firstHand().position().subPt(pt(5, 5)));
+	this.addFramedMorph(pane, 
+			    spec.title ? String(spec.title) : "", 
+			    spec.position || this.firstHand().position().subPt(pt(5, 5)));
 	return pane.innerMorph();
     },
+
+    addTextListWindow: function(spec) {
+	if (spec instanceof Array) spec = {content: spec }; // convenience
+	// FIXME: typecheck the spec 
+	var content = spec.content;
+	if (!content) content = "";
+	if (!(content instanceof Array)) content = [content];
+
+	var extent = spec.extent || pt(500, Math.min(300, content.length * TextMorph.prototype.fontSize * 1.5));
+	var rec = extent.extentAsRectangle();
+
+	var pane = new ScrollPane(new TextListMorph(rec, content), rec); 
+	if (spec.plug) pane.innerMorph().connectModel(spec.plug);
+	this.addFramedMorph(pane, 
+			    spec.title ? String(spec.title) : "", 
+			    spec.position || this.firstHand().position().subPt(pt(5, 5)));
+	return pane.innerMorph();
+    },
+
 
     addMorphFrontOrBack: function($super, m, front) {
 	var oldTop = this.topWindow();
