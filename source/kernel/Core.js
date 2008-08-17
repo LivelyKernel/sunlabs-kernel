@@ -5719,7 +5719,7 @@ PasteUpMorph.subclass("WorldMorph", {
 	    // save but only if it's not the startup world
             menu.addItem(["save current world to current URL", function() { 
 		menu.remove(); 
-		else Exporter.saveDocumentToFile(Exporter.shrinkWrapMorph(this), URL.source.filename());
+		Exporter.saveDocumentToFile(Exporter.shrinkWrapMorph(this), URL.source.filename());
 	    }]);
 	}
         menu.addItem(["restart system", this.restart]);
