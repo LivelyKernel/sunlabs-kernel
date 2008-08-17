@@ -152,18 +152,16 @@ Record.create = function(bodySpec) {
 		// do forwarding
 		dep = Forwarder.newInstance(optForwardingSpec, dep);
 	    }
-	    function processName(name) {
-		if (!this["set" + name]) throw new Error("cannot observe nonexistent variable " + name);
-		var deps = this[observerListName(name)];
-		if (!deps) deps = this[observerListName(name)] = [];
-		else if (deps.indexOf(dep) >= 0) return;
-		deps.push(dep);
-	    }
-	    // if array not provided, find all the "on"<Variable>"Update" methods of dep
+	    // find all the "on"<Variable>"Update" methods of dep
 	    for (var name in dep) {
 		if (name.startsWith("on") && name.endsWith("Update")) {
 		    var varname = name.substring(2, name.indexOf("Update"));
-		    processName.call(this, varname);
+		    if (!this["set" + varname]) 
+			throw new Error("cannot observe nonexistent variable " + varname);
+		    var deps = this[observerListName(varname)];
+		    if (!deps) deps = this[observerListName(varname)] = [];
+		    else if (deps.indexOf(dep) >= 0) return;
+		    deps.push(dep);
 		}
 	    }
 	}
@@ -215,7 +213,7 @@ Record.create = function(bodySpec) {
 
     def.newForwarder = function(spec) {
 	return Forwarder.newInstance(spec, this);
-    }
+    };
 
     klass.addMethods(def);
     return klass;
