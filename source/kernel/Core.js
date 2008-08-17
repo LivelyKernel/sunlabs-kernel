@@ -142,22 +142,33 @@ Object.extend(Function.prototype, {
 // a new unified mechanism for properties that map onto the DOM
 var Record = {};
 
-Record.create = function(bodySpec, optNodeName) {
+Record.create = function(bodySpec) {
     var klass = Object.subclass();
     function observerListName(name) { return name + "$observers" }
     // do klass.prototype.addObserver = .. ?
     var def = {
-	addObserver: function(dep, array) {
-	    // FIXME if array not provided, find all the "on"<Variable>"Update" methods of dep
-	    if (!array instanceof Array) array = [array];
-	    array.forEach(function(name) {
+	addObserver: function(dep, optForwardingSpec) {
+	    if (optForwardingSpec) {
+		// do forwarding
+		dep = Forwarder.newInstance(optForwardingSpec, dep);
+	    }
+	    function processName(name) {
 		if (!this["set" + name]) throw new Error("cannot observe nonexistent variable " + name);
 		var deps = this[observerListName(name)];
 		if (!deps) deps = this[observerListName(name)] = [];
 		else if (deps.indexOf(dep) >= 0) return;
 		deps.push(dep);
-	    }, this);
+	    }
+	    // if array not provided, find all the "on"<Variable>"Update" methods of dep
+	    for (var name in dep) {
+		if (name.startsWith("on") && name.endsWith("Update")) {
+		    var varname = name.substring(2, name.indexOf("Update"));
+		    processName.call(this, varname);
+		}
+	    }
 	}
+
+	// FIXME remove observers?
     };
     Properties.forEachOwn(bodySpec, function(name) {
 	var spec = bodySpec[name];
@@ -200,12 +211,26 @@ Record.create = function(bodySpec, optNodeName) {
     def.initialize = function(rawNode, spec) {
 	this.rawNode = rawNode;
 	Properties.forEachOwn(spec, function(key) { this["set" + key](spec[key]); }, this);
+    };
+
+    def.newForwarder = function(spec) {
+	return Forwarder.newInstance(spec, this);
     }
+
     klass.addMethods(def);
     return klass;
 };
 
-var Forwarder = {};
+Record.newInstance = function(fieldSpec, argSpec, optStore) {
+    var Rec = Record.create(fieldSpec);
+    if (!optStore) optStore = NodeFactory.create("model"); // FIXME flat JavaScript instead by default?
+    return new Rec(optStore, argSpec);
+};
+
+
+var Forwarder = {
+    documentation: "Property access forwarder factory"
+};
 
 Forwarder.create = function(args) {
     var klass = Object.subclass();
@@ -239,18 +264,10 @@ Forwarder.create = function(args) {
     return klass;
 };
 
- Forwarder.test = function() {
-     var Fwd = Forwarder.create({Callback: "!update", Sum: "+Result", Summand1: "-Op1"});
-     var fwd = new Fwd({ 
-	 update: function(value) { alert('yo, update ' + value) },
-	 setResult: function(value) { alert('yo, set ' + value) },
-	 getOp1: function() { return 42 }
-     });
-     fwd.onCallbackUpdate(10);
-     fwd.setSum(5);
-     alert('got ' + fwd.getSummand1());
-
- }
+Forwarder.newInstance = function(spec, delegate) {
+    var Fwd = Forwarder.create(spec); // make a new class
+    return new Fwd(delegate); // now make a new instance
+}
 
 Forwarder.test = function() {
     // the model knows about operands and result.
@@ -274,12 +291,11 @@ Forwarder.test = function() {
     var summator = new Summator();
 
     // summator writes a formal "Result" and reads "Op1" and "Op2"
-    summator.formalModel = new (Forwarder.create({ Sum: "+Result", Summand1: "-Op1", Summand2: "-Op2"}))(m);
-
+    summator.formalModel = m.newForwarder({ Sum: "+Result", Summand1: "-Op1", Summand2: "-Op2"});
+    
     // model will call onOp1Update or onOp2Update on the forwarder
     // the forwarder will forward onOp1Update to summator.firstSummandChanged, and onOp2Update to summator.secondSummandChanged
-    m.addObserver(new (Forwarder.create({ Op1: "!firstSummandChanged", Op2: "!secondSummandChanged" }))(summator),
-		  ["Op1", "Op2"]);
+    m.addObserver(summator, { Op1: "!firstSummandChanged", Op2: "!secondSummandChanged" });
     
     function InputBox() {
 	this.input = function() {
@@ -294,15 +310,15 @@ Forwarder.test = function() {
 
     var op1Box = new InputBox();
     // formalModel will forward setInput() to m.setOp1()
-    op1Box.formalModel = new (Forwarder.create({Input: "+Op1"}))(m);
+    op1Box.formalModel = m.newForwarder({Input: "+Op1"});
     // InputBox will set its formal "Input" variable which will result on m.setOp1() being called
     
     var op2Box = new InputBox();
-    op2Box.formalModel = new (Forwarder.create({Input: "+Op2"}))(m);
+    op2Box.formalModel = m.newForwarder({Input: "+Op2"});
 
     var resBox = new OutputBox();
     // m will call resBox.display() whenever m.Result is set
-    m.addObserver(new (Forwarder.create({Result: "!print" }))(resBox), ["Result"]);
+    m.addObserver(resBox, {Result: "!print" });
     
     op1Box.input();
     op2Box.input();
@@ -5135,6 +5151,13 @@ ViewTrait = {
 	// the specific model accessor for the aspect being viewed, say "getItemList"
 	// Failure at any stage will return the default value.
 	// TODO: optionally verify that variable name is listed in this.pins
+	if (this.formalModel) {  
+	    // snuck in compatiblitiy with new style models
+	    var func = this.formalModel[functionName];
+	    if (func == null) return defaultValue;
+	    else return this.formalModel[functionName].call(this.formalModel);
+	}
+	
 	var plug = this.getModelPlug();
 	if (plug == null || plug.model == null || functionName == null) return defaultValue;
 	var func = plug.model[plug[functionName]];
@@ -5152,6 +5175,10 @@ ViewTrait = {
 	// to skip this view when broadcasting updateView(), and thus avoid
 	// needless computation for a view that is already up to date.
 	// TODO: optionally verify that variable name is listed in this.pins
+	if (this.formalModel) { 
+	    // snuck in compatiblitiy with new style models
+	    return this.formalModel[functionName].call(this.formalModel, newValue);
+	}
 	var plug = this.getModelPlug();
 	if (plug == null || plug.model == null || functionName == null) return null;
 	var func = plug.model[plug[functionName]];

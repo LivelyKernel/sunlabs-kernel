@@ -464,7 +464,7 @@ View.subclass('Resource', NetRequestReporterTrait, {
 	if (!plug) plug = new SyntheticModel(this.pins).makePlugSpec();
 	this.connectModel(plug);
 	if (!this.setModelValue("setURL", url)) // not stored in the model, will store in a var.
-	    this.url = url;
+	    this.url = url; // FIXME: the model vs variable distinction is confusing
     },
 
     deserialize: Functions.Empty, // stateless besides the model and .forceXML ...
@@ -484,9 +484,7 @@ View.subclass('Resource', NetRequestReporterTrait, {
     },
 
     getURL: function() {
-	var url = this.getModelValue("getURL");
-	if (!url) return this.url;
-	else return url;
+	return this.getModelValue("getURL") || this.url;
     },
 
     getContentDocument: function() {

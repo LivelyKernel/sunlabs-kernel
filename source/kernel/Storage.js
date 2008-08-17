@@ -469,12 +469,16 @@ TwoPaneBrowser.subclass('FileBrowser', {
 	    var svnPath = url.subversionWorkspacePath();
 	    if (!svnPath) return;
 	    items.push(["repository info", function(evt) {
-		var m = new SyntheticModel(["Info"]);
-		new Subversion({model: m, setServerResponse: "setInfo"}).info(svnPath);
-		this.world().addTextWindow({acceptInput: false,
-					    title: "info " + url,
-					    position: evt.point(),
-					    plug: {model: m, getText: "getInfo"} });
+		var m = Record.newInstance({Info: {}}, {Info: "fetching info"});
+		var s = new Subversion();
+		s.formalModel = m.newForwarder({ServerResponse: "+Info"});
+		var txt = this.world().addTextWindow({
+		    acceptInput: false,
+		    title: "info " + url,
+		    position: evt.point()
+		});
+		m.addObserver(txt, { Info: "!updateTextString" });
+		s.info(svnPath);
 	    }]);
 	    items.push(["repository diff", function(evt) {
 		var m = new SyntheticModel(["Diff"]);
@@ -504,41 +508,27 @@ TwoPaneBrowser.subclass('FileBrowser', {
 	}
 	function addWebDAVItems(url, items) { 
 	    items.push(["get WebDAV info", function(evt) {
-		var m = new SyntheticModel(["InfoDocument", "AllProperties"]);
-		m.setInfoDocument = function(doc, source) {
-		    // translate from nodes to text for the text morph to understand
-		    this.setAllProperties(Exporter.stringify(doc), source);
-		};
-		this.world().addTextWindow({acceptInput: false,
-					    plug: {model: m, getText: "getAllProperties"},
-					    title: url,
-					    position: evt.point() });
-		var res = new Resource(url, {model: m, setContentDocument: "setInfoDocument" });
+		var m = Record.newInstance(
+		    {InfoDocument: {}, AllProperties: {}, URL: {}},
+		    {InfoDocument: null, AllProperties: ""});
+		m.addObserver({  // ad-hoc observer, convenient data conversion
+		    onInfoDocumentUpdate: function(doc) { 
+			m.setAllProperties(Exporter.stringify(doc));
+		    }
+		});
+		
+		var txt = this.world().addTextWindow({acceptInput: false,
+		    title: url,
+		    position: evt.point() });
+
+		m.addObserver(txt, {AllProperties: "!updateTextString"});
+		var res = new Resource(url); // resource would try to use its own synthetic model, which is useless
+		m.setURL(url);
+		res.formalModel = m.newForwarder({ContentDocument: "+InfoDocument", URL: "-URL" });
 		res.fetchProperties();
 		
 	    }]);
 	    
-	    // a different way of doing te same thing, to ponder about
-	    if (false) items.push(["also get WebDAV info", function(evt) {
-		var r = new Resource(url);
-		var model = r.getModel();
-		var w = this.world();
-		var v = new View({model: model, setContentDocument: "setContentDocument", getContentDocument: "getContentDocument"});
-		v.updateView = function(aspect, source) {
-		    var p = this.modelPlug;
-		    if (!p) return;
-		    switch (aspect) {
-		    case p.getContentDocument:
-			w.addTextWindow({ 
-			    content: Exporter.stringify(this.getModelValue('getContentDocument').documentElement),
-			    title: "WebDAV dump",
-			    position: evt.point()
-			});
-			break;
-		    }
-		}
-		r.fetchProperties(true);
-	    }]);
 	}
 	
 
