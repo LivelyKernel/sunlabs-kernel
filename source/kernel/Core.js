@@ -4587,7 +4587,7 @@ Morph.addMethods({
 	if (this.okToDuplicate()) items.unshift(["duplicate", this.copyToHand.curry(evt.hand)]);
 
 	if (this.getModel() instanceof SyntheticModel)
-	    items.push( ["show Simple Model dump", this.addModelInspector.curry(this)]);
+	    items.push( ["show Model dump", this.addModelInspector.curry(this)]);
 
 	var menu = new MenuMorph(items, this); 
 
@@ -5715,6 +5715,13 @@ PasteUpMorph.subclass("WorldMorph", {
 	}
         menu.addLine();
         menu.addItem(["publish world as ... ", function() { this.prompt("world file (.xhtml)", this.exportLinkedFile.bind(this)); }]);
+	if (URL.source.filename() != "index.xhtml") { 
+	    // save but only if it's not the startup world
+            menu.addItem(["save current world to current URL", function() { 
+		menu.remove(); 
+		else Exporter.saveDocumentToFile(Exporter.shrinkWrapMorph(this), URL.source.filename());
+	    }]);
+	}
         menu.addItem(["restart system", this.restart]);
         return menu;
     },
