@@ -205,12 +205,6 @@ Font.addMethods({
     
 Wrapper.subclass('TextWord');
 
-TextWord.addProperties({
-    NL: { name: "nl", from: Converter.parseBoolean, to: Converter.unparseBoolean },
-    Lead: {name: "lead", from: Number },
-    Trail: {name: "trail", from: Number }
-});
-
 TextWord.addMethods({
 
     documentation: "represents a chunk of text which might be printable or might be whitespace",
@@ -286,6 +280,10 @@ TextWord.addMethods({
 	return this.startIndex + this.length;
     },
 
+    getContent: function(string) {
+	return string.substring(this.startIndex, this.stopIndex);
+    },
+
     indexForX: function(textLine, x) {
 	if (this.rawNode == null) {
 	    var virtualSpaceSize = this.bounds.width / this.length;
@@ -341,7 +339,7 @@ TextWord.addMethods({
     
     // string representation
     toString: function() {
-        var lString = "Chunk start: " + this.startIndex +
+        var lString = "TextWord start: " + this.startIndex +
             " length: " + this.length +
             " isWhite: " + this.isWhite +
             " isNewLine: " + this.isNewLine +
@@ -490,7 +488,6 @@ Object.subclass('TextLine', {
 	this.lastChunkIndex = 0; 
         var lastBounds = this.topLeft.extent(pt(0, this.currentFont.getSize())); 
 	var runningStartIndex = this.startIndex;
-        var leadingSpaces = 0;
 	var nextStyleChange = (this.textStyle) ? 0 : this.textString.length;
 	
         // a way to optimize out repeated scanning
@@ -498,6 +495,7 @@ Object.subclass('TextLine', {
             this.chunks = this.chunkFromString(this.textString, this.textStyle, this.startIndex);
 
 	var hasStyleChanged = false;
+	var lastNonWhite = null;
         for (var i = 0; i < this.chunks.length; i++) {
             var c = this.chunks[i];
 	    this.lastChunkIndex = i;
@@ -513,8 +511,6 @@ Object.subclass('TextLine', {
                 if (c.isNewLine) {
                     c.bounds.width = (this.topLeft.x + compositionWidth) - c.bounds.x;
                     runningStartIndex = c.getNextStartIndex();
-		    var prev = this.chunks[i - 1];
-		    if (prev && prev.rawNode) prev.setNL(true); // little helper for serialization
                     c.wasComposed = true;
                     break;
                 }
@@ -525,21 +521,16 @@ Object.subclass('TextLine', {
                 } else {
                     var spaceIncrement = this.spaceWidth;
                     c.bounds.width = spaceIncrement * c.length;
-                    if (c.rawNode) c.setTrail(c.length); // little helper for serialization
-                    else leadingSpaces = c.length;
                 }
                 runningStartIndex = c.getNextStartIndex();
             } else {
 		c.allocRawNode(); 
+		lastNonWhite = c;
 
 		if (hasStyleChanged) {
 		    // once we notice one change, we will reapply font-size to chunk
 		    this.currentFont.applyTo(c);
 		}
-                if (leadingSpaces) { 
-                    c.setLead(leadingSpaces);
-                    leadingSpaces = 0;
-                }
                 var didLineBreak = c.compose(this, lastBounds.maxX(), this.topLeft.y, this.topLeft.x  + compositionWidth);
                 if (didLineBreak) {
                     if (i == 0) {
@@ -816,8 +807,9 @@ Visual.subclass('TextContent', {
 
 Morph.subclass("TextMorph");
 
-Morph.addProperties({
+TextMorph.addProperties({
     StoredTextStyle: {name: "stored-style", from:Converter.fromJSONAttribute, to:Converter.toJSONAttribute },
+    StoredString: {name: "stored-text", from: Converter.fromJSONAttribute, to:Converter.toJSONAttribute},
     Wrap: { name: "wrap", byDefault: WrapStyle.Normal },
     Padding: { name: "padding", byDefault: String(Rectangle.inset(6, 4).toInsetTuple()) } // FIXME move to coercion funcions
 });
@@ -867,23 +859,6 @@ TextMorph.addMethods({
 	if ($super(importer, rawNode)) return true;
 	if (rawNode.localName == "text") {
             this.textContent = new TextContent(importer, rawNode);   
-            var content = [];
-            for (var child = rawNode.firstChild; child != null; child = child.nextSibling) {
-		if (child.tagName != 'tspan')  
-		    continue;
-		var lead = parseInt(LivelyNS.getAttribute(child, "lead"));
-		if (lead) content.push(" ".times(lead));
-		content.push(child.textContent); 
-		var trail = parseInt(LivelyNS.getAttribute(child, "trail"));
-		if (trail) content.push(" ".times(trail));
-		// FIXME: instead, check the difference between the y value of the previous and the current child,
-		// wrt/fontSize
-		// and if they differ, generate the appropriate number of "\n" chars
-		if (LivelyNS.getAttribute(child, "nl") == "true") {
-                    content.push("\n");
-		}
-            }
-            this.textString = content.join("");
             this.fontFamily = this.textContent.getTrait("font-family");
             this.fontSize = this.textContent.getLengthTrait("font-size");
             this.font = Font.forFamily(this.fontFamily, this.fontSize);
@@ -899,6 +874,7 @@ TextMorph.addMethods({
 	if (styleInfo) {
 	    this.textStyle = new RunArray(styleInfo.runs, styleInfo.values); 
 	}
+	this.textString = this.getStoredString();
     },
 
     initialize: function($super, rect, textString) {
@@ -910,7 +886,9 @@ TextMorph.addMethods({
 	    this.textStyle = this.textString.style;
 	    this.setStoredTextStyle(this.textStyle);
 	    this.textString = this.textString.string;
-	}
+	    this.setStoredString(this.textString);
+	} 
+	this.setStoredString(this.textString);
 	this.layoutChanged();
         return this;
     },
@@ -1912,6 +1890,7 @@ TextMorph.addMethods({
 	}
 	// DI: Might want to put the maxSafeSize test in clients
         this.textString = replacement.truncate(this.maxSafeSize);
+	this.setStoredString(this.textString);
         if (!delayComposition) this.composeAfterEdits();  // Typein wants lazy composition
     },
     

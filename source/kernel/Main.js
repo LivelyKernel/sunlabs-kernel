@@ -290,6 +290,7 @@ function populateWorldWithExamples(world) {
 	} else { 
 	    var link = makeSlideWorld(world);
 	    addLinkLabel(link, "Simple example morphs");
+	    world.addMorph(link);
 	}
     }
 
