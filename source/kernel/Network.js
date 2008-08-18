@@ -71,13 +71,13 @@ Object.subclass('URL', {
     
     // POSIX style
     dirname: function() {
-	var p = this.fullPath();
+	var p = this.pathname;
 	var slash = p.endsWith('/') ? p.lastIndexOf('/', p.length - 2) : p.lastIndexOf('/');
 	return p.substring(0, slash + 1);
     },
 
     filename: function() {
-	var p = this.fullPath();
+	var p = this.pathname;
 	var slash = p.endsWith('/') ? p.lastIndexOf('/', p.length - 2) : p.lastIndexOf('/');
 	return p.substring(slash + 1);
     },

@@ -160,6 +160,11 @@ View.subclass('WebFile', NetRequestReporterTrait, {
 	this.lastFile = null;
     },
 
+    deserialize: function() {
+	// empty, no state should be needed, other than the modelPlug
+    },
+
+
     toString: function() {
 	return "#<" + this.getType() + "," + this.getFile() + ">";
     },
