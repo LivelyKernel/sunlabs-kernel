@@ -622,7 +622,7 @@ Object.subclass('Record', {
 	return Relay.newInstance(spec, this);
     },
 
-    get: function(name) {
+    getRecordField: function(name) {
 	if (this.rawNode instanceof Global.Node) {
 	    var ns = null;
 	    return this.rawNode.getAttributeNS(ns, name);
@@ -631,7 +631,7 @@ Object.subclass('Record', {
 	}
     },
 
-    set: function(name, value) {
+    setRecordField: function(name, value) {
 	if (this.rawNode instanceof Global.Node) {
 	    var ns = null;
 	    return this.rawNode.setAttributeNS(ns, name, value);
@@ -640,7 +640,7 @@ Object.subclass('Record', {
 	}
     },
     
-    remove: function(name) {
+    removeRecordField: function(name) {
 	if (this.rawNode instanceof Global.Node) {
 	    var ns = null;
 	    return this.rawNode.removeAttributeNS(ns, name);
@@ -683,10 +683,10 @@ Record.create = function(bodySpec) {
 	def["set" + name] = (function(name, to, byDefault) { 
 	    return function(value, optSource) {
 		if (value === undefined) {
-		    this.remove(name);
+		    this.removeRecordField(name);
 		} else {
 		    if (!value && byDefault) value = byDefault;
-		    this.set(name, coercedValue = to ? to(value) : value);
+		    this.setRecordField(name, coercedValue = to ? to(value) : value);
 		}
 		var deps = this[observerListName(name)];
 		if (deps) {
@@ -701,7 +701,7 @@ Record.create = function(bodySpec) {
 	def["get" + name] = (function(name, from, byDefault) {
 	    return function(optSource) {
 		if (this.rawNode) {
-		    var value = this.get(name);
+		    var value = this.getRecordField(name);
 		    if (!value && byDefault) return byDefault;
 		    else if (from) return from(value);
 		    else return value;
@@ -737,7 +737,6 @@ Relay.create = function(args) {
     var klass = Relay.subclass();
     var def = {};    
     Properties.forEachOwn(args, function(name) {
-	var translated = args[name];
 	var translated = args[name];
 	if (translated.startsWith("!")) {
 	    // call an update method with the derived name
