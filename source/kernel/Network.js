@@ -340,6 +340,10 @@ View.subclass('NetRequest', {
 	return this.request("PROPFIND", URL.makeProxied(url), content);
     },
 
+    report: function(url, content) {
+	return this.request("REPORT", URL.makeProxied(url), content);
+    },
+
     mkcol: function(url, content) {
 	return this.request("MKCOL", URL.makeProxied(url), content);
     },
@@ -463,8 +467,7 @@ View.subclass('Resource', NetRequestReporterTrait, {
 	this.forceXML = false;
 	if (!plug) plug = new SyntheticModel(this.pins).makePlugSpec();
 	this.connectModel(plug);
-	if (!this.setModelValue("setURL", url)) // not stored in the model, will store in a var.
-	    this.url = url; // FIXME: the model vs variable distinction is confusing
+	this.pvtSetURL(url);
     },
 
     deserialize: Functions.Empty, // stateless besides the model and .forceXML ...
@@ -476,6 +479,7 @@ View.subclass('Resource', NetRequestReporterTrait, {
     updateView: function(aspect, source) {
         var p = this.modelPlug;
 	if (!p) return;
+	//console.log('called Resource.updateView'); console.log(aspect); console.log(source);
 	switch (aspect) {
 	case p.getURL:
 	    this.fetch(this.getURL()); // request headers?
@@ -524,6 +528,30 @@ View.subclass('Resource', NetRequestReporterTrait, {
 	return req;
     },
 
+	//     pvtSetRequestStatus: function(status) {
+	// this.setModelValue("setRequestStatus", status);
+	// console.log("pvtSetRequestStatus");
+	// 
+	// // call method inherited from NetRequestReporterTrait
+	// // should already be done by setModelValue call above???
+	// this.setRequestStatus(status);
+	//     },
+	// 	
+	// 
+	//     store: function(content, optSync, optRequestHeaders) {
+	// // FIXME: check document type
+	// if (Global.Document && content instanceof Document) {
+	//     content = Exporter.stringify(content);
+	// } else if (Global.Node && content instanceof Node) {
+	//     content = Exporter.stringify(content);
+	// }
+	// var req = new NetRequest({model: this, setStatus: "pvtSetRequestStatus"});
+	// if (optSync) req.beSync();
+	// if (optRequestHeaders) this.setRequestHeaders(optRequestHeaders);
+	// req.put(this.getURL(), content);
+	// return req;
+	//     },
+
     pvtSetText: function(txt) {
 	if (this.forceXML) {
 	    var parser = new DOMParser();
@@ -538,15 +566,102 @@ View.subclass('Resource', NetRequestReporterTrait, {
 	this.setModelValue("setContentDocument", doc);
     },
 
+    pvtSetURL: function(newUrl) {
+	if (!this.setModelValue("setURL", newUrl)) // not stored in the model, will store in a var.
+            this.url = newUrl;
+    },
+
     findAll: function(query, defaultValue) {
 	var content = this.getContentDocument();
 	if (!content) return defaultValue;
 	return query.findAll(content.documentElement, defaultValue);
     }
+});
 
+Resource.subclass('SVNResource', {
+	
+    initialize: function($super, repoUrl, ownUrl, plug) {
+	this.pins = this.pins.concat(['Metadata', 'HeadRevision']);
+	this.repoUrl = repoUrl;
+	$super(ownUrl, plug);
+    },
+	
+    getLocalUrl: function() {
+	return this.getURL().slice(this.repoUrl.length + 1);
+    },
+	
+    fetchHeadRevision: function(optSync) {
+	var req = new NetRequest({model: this, setResponseXML: "pvtSetHeadRevFromDoc",
+				setStatus: "setRequestStatus"});
+	if (optSync) req.beSync();
+	req.propfind(this.getURL(), 1);
+	return req;
+    },
+	
+    fetch: function($super, optSync, optRequestHeaders, rev) {
+	var req;
+	if (rev) {
+	    this.withBaselineUriDo(rev, function() {
+	    	req = $super(optSync, optRequestHeaders);
+	    });
+	} else {
+	    req = $super(optSync, optRequestHeaders);
+	};
+	return req;
+    },
+	
+    fetchMetadata: function(optSync, optRequestHeaders, startRev) {
+	// get the whole history if startRev is undefined
+	// FIXME: in this case the getHeadRevision will be called synchronous
+	if (!startRev) {
+		this.fetchHeadRevision(true);
+		startRev = this.getModelValue('getHeadRevision')};
+	var req = new NetRequest({model: this, setResponseXML: "pvtSetMetadataDoc",
+				setStatus: "setRequestStatus"});
+	if (optSync) req.beSync();
+	if (optRequestHeaders) this.setRequestHeaders(optRequestHeaders);
+	req.report(this.getURL(), this.pvtRequestMetadataXML(startRev));
+	return req;
+    },
+	
+    pvtSetHeadRevFromDoc: function(xml) {
+	if (!xml) return;
+	/* The response contains the properties of the specified file or directory,
+		e.g. the revision (= version-name) */
+	var revisionNode = xml.getElementsByTagName('version-name')[0];
+	if (!revisionNode) return;
+	this.setModelValue('setHeadRevision', Number(revisionNode.textContent));
+    },
+	
+    pvtSetMetadataDoc: function(xml) {
+	if (!xml) return;
+	var array = $A(xml.getElementsByTagName('log-item'));
+	var result = array.collect(function(ea) {
+	    return {
+		rev: Number(ea.getElementsByTagName('version-name')[0].textContent),
+		date: ea.getElementsByTagName('date')[0].textContent/*,
+		ea.getElementsByTagName('creator-displayname')[0].textContents*/}
+	});
+	this.setModelValue('setMetadata', result);
+    },
+	
+    pvtRequestMetadataXML: function(startRev) {
+	return Strings.format(
+	    '<S:log-report xmlns:S="svn:">' + 
+	    	'<S:start-revision>%s</S:start-revision>' +
+	    	'<S:end-revision>0</S:end-revision>' +
+		'<S:all-revprops/>' +
+	    	'<S:path/>' +
+	    '</S:log-report>', startRev);
+    },
+	
+    withBaselineUriDo: function(rev, doFunc) {
+	var tempUrl = this.getURL();
+	this.pvtSetURL(this.repoUrl + '/!svn/bc/' + rev + '/' + this.getLocalUrl());
+	doFunc();
+	this.pvtSetURL(tempUrl);
+    }
 });
 
 
-
 console.log('loaded Network.js');
-
