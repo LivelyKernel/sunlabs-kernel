@@ -1057,15 +1057,10 @@ TextMorph.addMethods({
 	    }
         };
         this.okToBeGrabbedBy = Functions.Null;
-	this.updateView = function(aspect, controller) {
-	    Class.getPrototype(this).updateView.call(this, aspect, controller);
-	    // select the whole thing
-	    if (this.modelPlug) {
-		if (aspect == this.modelPlug.getText  || aspect == 'all') {
-		    this.setSelectionRange(0, this.textString.length); 
-		}
-	    }
-	};
+	this.onTextUpdate = function(newValue) {
+	    TextMorph.prototype.onTextUpdate.call(this, newValue);
+	    this.setSelectionRange(0, this.textString.length); 
+	}
 	return this;
     },
 
@@ -1903,7 +1898,8 @@ TextMorph.addMethods({
     },
     
     saveContents: function(contentString) {    
-        if (this.modelPlug == null) {
+        if (!this.modelPlug && !this.formalModel) {
+	    // FIXME: remove hack
             eval(contentString); 
             this.world().changed(); 
             return; // Hack for browser demo
@@ -2021,16 +2017,16 @@ TextMorph.addMethods({
     },
     
     getModelText: function() {
-        if (this.modelPlug) return this.getModelValue('getText', "-----");
+        return this.getModelValue('getText', "-----");
     },
     setModelText: function(newText) {
-        if (this.modelPlug) this.setModelValue('setText', newText);
+        return this.setModelValue('setText', newText);
     },
     getModelSelection: function() {
-        if (this.modelPlug) return this.getModelValue('getSelection', "-----");
+        return this.getModelValue('getSelection', "-----");
     },
     setModelSelection: function(newSelection) {
-        if (this.modelPlug) this.setModelValue('setSelection', newSelection);
+        return this.setModelValue('setSelection', newSelection);
     },
     searchForFind: function(str, start) {
 	this.requestKeyboardFocus(this.world().firstHand());
