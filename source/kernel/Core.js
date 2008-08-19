@@ -135,6 +135,26 @@ Object.extend(Function.prototype, {
 	    if (prop == "constructor" || prop == "initialize") continue;
 	    this.prototype[prop] = value;
 	}
+    },
+
+    isSubclassOf: function(aClass){
+	if (!Class.isClass(aClass) && this === Object && !this.superclass)
+	    return false;
+	if (this.superclass === aClass)
+	    return true;
+	return this.superclass.isSubclassOf(aClass)
+    },
+    
+    allSubclasses: function(){
+        var self = this; 
+        return Object.values(Global).select(function(ea) {
+            try {
+                return ea && Class.isClass(ea) && ea.isSubclassOf(self);
+            }
+            catch(e) {
+                return false;
+            };
+        })
     }
 
 });
@@ -5965,6 +5985,7 @@ PasteUpMorph.subclass("WorldMorph", {
             ["TextMorph", function(evt) { world.addMorph(new TextMorph(evt.point().extent(pt(120, 10)), "This is a TextMorph"));}],
             ["Class Browser", function(evt) { new SimpleBrowser().openIn(world, evt.point()); }],
             ["Object Hierarchy Browser", function(evt) { new ObjectBrowser().openIn(world, evt.point()); }],    
+            ["TestRunner", function(evt) { new TestRunner().openIn(world, evt.point()); }],
             ["Call Stack Viewer", function(evt) { 
 		if (Config.debugExtras) Function.showStack("use viewer");
 		else new StackViewer(this).openIn(world, evt.point()); }],    
