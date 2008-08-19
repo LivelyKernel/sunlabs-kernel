@@ -451,8 +451,15 @@ Morph.subclass("SelectionMorph", {
 
     morphMenu: function($super, evt) { 
         var menu = $super(evt);
-        menu.removeItemNamed("inspect");
-        menu.removeItemNamed("XML");
+        menu.keepOnlyItemsNamed(['duplicate', 'remove', 'reset rotation', 'reset scaling', ]);
+        menu.removeItemNamed('---');
+        menu.addLine();
+	menu.addItem(["align vertically", this.alignVertically]);
+        menu.addItem(["space vertically", this.spaceVertically]);
+        menu.addItem(["align horizontally", this.alignHorizontally]);
+        menu.addItem(["space horizontally", this.spaceHorizontally]);
+        menu.addItem(["align to grid...", this.alignToGrid]);
+
         return menu;
     },
     
@@ -469,6 +476,43 @@ Morph.subclass("SelectionMorph", {
         Class.getSuperPrototype(this).remove.call(this);
     },
     
+    // Note: the next four methods should be removed after we have gridding, i think (DI)
+    alignVertically: function() { 
+	// Align all morphs to same left x as the top one.
+	var morphs = this.selectedMorphs.slice(0).sort(function(m,n) {return m.position().y - n.position().y});
+	var minX = morphs[0].position().x;  // align to left x of top morph
+	morphs.forEach(function(m) { m.setPosition(pt(minX,m.position().y)) });
+    },
+    alignHorizontally: function() { 
+	var minY = 9999;
+	this.selectedMorphs.forEach(function(m) { minY = Math.min(minY, m.position().y); });
+	this.selectedMorphs.forEach(function(m) { m.setPosition(pt(m.position().x, minY)) });
+    },
+    
+    spaceVertically: function() { 
+	// Sort the morphs vertically
+	var morphs = this.selectedMorphs.slice(0).sort(function(m,n) {return m.position().y - n.position().y});
+	// Align all morphs to same left x as the top one.
+	var minX = morphs[0].position().x;
+	var minY = morphs[0].position().y;
+	// Compute maxY and sumOfHeights
+	var maxY = minY;
+	var sumOfHeights = 0;
+	morphs.forEach(function(m) {
+		var ht = m.innerBounds().height;
+		sumOfHeights += ht;
+		maxY = Math.max(maxY, m.position().y + ht);
+	});
+	// Now spread them out to fit old top and bottom with even spacing between
+	var separation = (maxY-minY-sumOfHeights)/Math.max(this.selectedMorphs.length-1, 1);
+	var y = minY;
+	morphs.forEach(function(m) {
+		m.setPosition(pt(minX, y));
+		y += m.innerBounds().height + separation;
+	});
+    },
+    spaceHorizontally: function() { 	// Sort the morphs vertically	var morphs = this.selectedMorphs.slice(0).sort(function(m,n) {return m.position().x - n.position().x});	// Align all morphs to same left x as the top one.	var minX = morphs[0].position().x;	var minY = morphs[0].position().y;	// Compute maxX and sumOfWidths	var maxX = minY;	var sumOfWidths = 0;	morphs.forEach(function(m) {		var wid = m.innerBounds().width;		sumOfWidths += wid;		maxX = Math.max(maxX, m.position().x + wid);	});	// Now spread them out to fit old top and bottom with even spacing between	var separation = (maxX-minX-sumOfWidths)/Math.max(this.selectedMorphs.length-1, 1);	var x = minX;	morphs.forEach(function(m) {		m.setPosition(pt(x, minY));		x += m.innerBounds().width + separation;	});    },
+ 
     copyToHand: function(hand) { 
         this.selectedMorphs.invoke('copyToHand', hand);
     },
