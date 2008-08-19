@@ -1912,14 +1912,11 @@ ClipMorph.subclass('XenoMorph', {
                               height: bounds.height });
 
         var body = this.body = this.foRawNode.appendChild(NodeFactory.createNS(Namespace.XHTML, "body"));
-        body.appendChild(document.createTextNode("no content"));
+        body.appendChild(document.createTextNode("no content, load an URL"));
         this.addNonMorph(this.foRawNode);
         this.foRawNode.appendChild(this.body);
 	
 	if (!url) return;
-	if (!(url instanceof URL)) {
-	    url = URL.source.withFilename(url);
-	}
 	this.onURLUpdate(url);
     },
 
@@ -1929,7 +1926,12 @@ ClipMorph.subclass('XenoMorph', {
 	callback.setContent = function(doc) {
 	    xenoBody.parentNode.replaceChild(document.adoptNode(doc.documentElement), xenoBody);
 	}
-        var req = new NetRequest({model: callback, setResponseXML: "setContent"});//, setResponseText: "setContentText"});
+	callback.setContentText = function(txt) {
+	    while (xenoBody.firstChild)
+		xenoBody.removeChild(xenoBody.firstChild);
+	    xenoBody.appendChild(xenoBody.ownerDocument.createTextNode(txt));
+	}
+        var req = new NetRequest({model: callback, setResponseXML: "setContent", setResponseText: "setContentText"});
         req.setContentType("text/xml");
         req.get(url);
     },
@@ -2251,16 +2253,29 @@ Widget.subclass('ConsoleWidget', {
 
 Widget.subclass('XenoBrowserWidget', {
     
+    defaultViewExtent: pt(800, 300),
+
     initialize: function($super) {
-	var model = Record.create({URL: {from: Converter.parseURL, to: String}});
+	this.actualModel = 
+	    Record.newInstance({URLString: {}}, 
+			       {URLString: URL.source.withFilename("sample.xhtml")});
+
+	$super();
     },
     
     buildView: function(extent) {
 	var panel = PanelMorph.makePanedPanel(extent, [
-	    ['urlPane', newTextPane, new Rectangle(0, 0, 0.7, 0.1)],
-	    ['goUrlButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0.7, 0, 0.3, 0.1)],
-	    ['contentPane', newTextPane, new Rectangle(0, 0.1, 0.7, 0.8)]
+	    //['urlInput', function(initialBounds) { return new TextMorph(initialBounds, "").beInputLine()}, new Rectangle(0, 0, 0.9, 0.1)],
+	    //['goButton', function(initialBounds) {return new ButtonMorph(initialBounds) }, new Rectangle(0.9, 0, 0.1, 0.1)],
+	    ['urlInput', function(initialBounds) { return new TextMorph(initialBounds, "").beInputLine()}, new Rectangle(0, 0, 1, 0.1)],
+	    ['contentPane', function(initialBounds) { return new XenoMorph(initialBounds)}, new Rectangle(0, 0.1, 1, 0.9)]
 	]);
+	panel.urlInput.formalModel = this.actualModel.newRelay({Text: "URLString"});
+	panel.urlInput.onTextUpdate(panel.urlInput.formalModel.getText());
+	this.actualModel.addObserver({onURLStringUpdate: function(urlString) { 
+	    panel.contentPane.onURLUpdate(new URL(urlString));
+	}});
+	return panel;
     }
 });
     

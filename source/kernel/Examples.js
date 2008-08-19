@@ -2433,7 +2433,7 @@ Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
         m.takesKeyboardFocus = Functions.True;
 	
         m = panel.addMorph(new TextMorph(r.withY(205), "---"));
-	m.formalModel= model.newRelay({Text: "-Visibility"});
+	m.formalModel = model.newRelay({Text: "-Visibility"});
 	model.addObserver(m, {Visibility: "!Text"});
 	
         m.takesKeyboardFocus = Functions.True;

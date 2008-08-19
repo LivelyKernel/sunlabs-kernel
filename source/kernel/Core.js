@@ -763,7 +763,7 @@ Relay.create = function(args) {
 		def["get" + name] = function(/*...*/) {
 		    // FIXME what if method not available?
 		    return this.delegate["get" + stripped].apply(this.delegate, arguments);
-	    }
+		}
 	    }
 	}
     });
@@ -5226,9 +5226,8 @@ ViewTrait = {
 	// TODO: optionally verify that variable name is listed in this.pins
 	if (this.formalModel) {  
 	    // snuck in compatiblitiy with new style models
-	    var func = this.formalModel[functionName];
-	    if (func == null) return defaultValue;
-	    else return this.formalModel[functionName].call(this.formalModel);
+	    var impl = this.formalModel[functionName];
+	    return impl ? impl.call(this.formalModel) : defaultValue;
 	}
 	
 	var plug = this.getModelPlug();
@@ -5250,7 +5249,8 @@ ViewTrait = {
 	// TODO: optionally verify that variable name is listed in this.pins
 	if (this.formalModel) { 
 	    // snuck in compatiblitiy with new style models
-	    return this.formalModel[functionName].call(this.formalModel, newValue);
+	    var impl = this.formalModel[functionName];
+	    return impl && impl.call(this.formalModel, newValue);
 	}
 	var plug = this.getModelPlug();
 	if (plug == null || plug.model == null || functionName == null) return null;
@@ -6058,9 +6058,10 @@ PasteUpMorph.subclass("WorldMorph", {
             ["FrameRateMorph", function(evt) {
                 var m = world.addMorph(new FrameRateMorph(evt.point().extent(pt(160, 10)), "FrameRateMorph"));
                 m.startSteppingScripts(); }],
-	    ["XenoMorph", function(evt) { 
-		var xeno = new XenoMorph(pt(400,200).extentAsRectangle(), "sample.xhtml");
-		world.addFramedMorph(xeno, "XenoMorph", pt(50,50)); }]
+	    ["XenoBrowser", function(evt) { 
+		var xeno = new XenoBrowserWidget();
+		xeno.openIn(world, evt.point()); 
+	    }]
         ];
         items.push(["File Browser", function(evt) { new FileBrowser().openIn(world, evt.point()) }]);
 	// FIXME this is hardcoded, remove later, shows how Subversion can be accessed directly.
