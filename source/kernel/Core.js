@@ -973,6 +973,11 @@ var Converter = {
 	return b === true ? true : false;
     },
 
+    parseURL: function(string) {
+	return new URL(string);
+    },
+
+    
     parseInset: function(string) {
 	// syntax: <left>(,<top>(,<right>,<bottom>)?)?
 	
@@ -3745,18 +3750,18 @@ Visual.subclass('Morph', {
 		extraNodes.push(this.addNonMorph(modelNode));
 	    }
 	    extraNodes.push(this.addNonMorph(this.getModelPlug().serialize(index)));
-	} else if (model instanceof Record) {
-	    var index = simpleModels.indexOf(model);
+	} else if (this.formalModel) {
+	    var modelNode = this.formalModel.delegate.rawNode;
+	    var index = simpleModels.indexOf(modelNode);
 	    if (index < 0) { // not seen before, serialize model
 		index = simpleModels.length;
-		var rawNode = model.rawNode;
-		simpleModels.push(rawNode);
-		alert('serializing ' + Exporter.stringify(rawNode));
-		rawNode.setAttribute("id", "model_" + index); 
-		extraNodes.push(this.addNonMorph(rawNode));
+		simpleModels.push(modelNode);
+		alert('serializing ' + Exporter.stringify(modelNode));
+		modelNode.setAttribute("id", "model_" + index); 
+		extraNodes.push(this.addNonMorph(modelNode));
 	    }
 	    // FIXME serialize hookup
-	    //extraNodes.push(this.addNonMorph(this.getModelPlug().serialize(index)));
+	    extraNodes.push(this.addNonMorph(this.formalModel.rawNode));
 	} // else don't do anything
     },
 

@@ -1876,20 +1876,20 @@ ClipMorph.subclass('XenoMorph', {
 	if (!(url instanceof URL)) {
 	    url = URL.source.withFilename(url);
 	}
-	
-	this.fetchURL(url);
+	this.onURLUpdate(url);
     },
 
-    fetchURL: function(url) {
-        var req = new NetRequest({model: this, setResponseXML: "setContent"});//, setResponseText: "setContentText"});
+    onURLUpdate: function(url) {
+	var callback = new NetRequestReporter();
+	var xenoBody = this.body;
+	callback.setContent = function(doc) {
+	    xenoBody.parentNode.replaceChild(document.adoptNode(doc.documentElement), xenoBody);
+	}
+        var req = new NetRequest({model: callback, setResponseXML: "setContent"});//, setResponseText: "setContentText"});
         req.setContentType("text/xml");
         req.get(url);
     },
 
-    setContent: function(doc) {
-        this.body.parentNode.replaceChild(document.adoptNode(doc.documentElement), this.body);
-    },
-    
     adjustForNewBounds: function($super) {
         $super();
         var bounds = this.shape.bounds();
@@ -1898,6 +1898,8 @@ ClipMorph.subclass('XenoMorph', {
     }
 
 });
+
+
 
 // most likely deprecated, should use Widget, which is a view.
 Model.subclass('WidgetModel', {
@@ -2202,6 +2204,22 @@ Widget.subclass('ConsoleWidget', {
     
 });
 
+
+Widget.subclass('XenoBrowserWidget', {
+    
+    initialize: function($super) {
+	var model = Record.create({URL: {from: Converter.parseURL, to: String}});
+    },
+    
+    buildView: function(extent) {
+	var panel = PanelMorph.makePanedPanel(extent, [
+	    ['urlPane', newTextPane, new Rectangle(0, 0, 0.7, 0.1)],
+	    ['goUrlButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0.7, 0, 0.3, 0.1)],
+	    ['contentPane', newTextPane, new Rectangle(0, 0.1, 0.7, 0.8)]
+	]);
+    }
+});
+    
 
 // ===========================================================================
 // Window widgets

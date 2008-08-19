@@ -2004,18 +2004,20 @@ TextMorph.addMethods({
 	this.updateTextString(string);
 	this.textBeforeChanges = string;
     },
+
+    onSelectionUpdate: function(string) {
+	this.searchForFind(string, 0);
+    },
     
     updateView: function(aspect, controller) {
         var p = this.modelPlug;
-        if (p) {
-            if (aspect == p.getText  || aspect == 'all') {
-		this.onTextUpdate(this.getModelText());
-	    }
-            if (aspect == p.getSelection) {
-		this.searchForFind(this.getModelSelection(), 0);
-	    }
-            return;
-        }
+	if (!p) return;
+	
+        if (aspect == p.getText  || aspect == 'all') {
+	    this.onTextUpdate(this.getModelText());
+	} else if (aspect == p.getSelection) {
+	    this.onSelectionUpdate(this.getModelSelection());
+	}
     },
     
     getModelText: function() {
