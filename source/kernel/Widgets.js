@@ -211,13 +211,17 @@ Morph.subclass("ImageMorph", {
     reload: function() {
         this.image.reload();
     },
+
+    onURLUpdate: function(url) {
+	this.loadFromURL(url);
+    },
     
     updateView: function(aspect, controller) {
         var p = this.modelPlug;
         if (!p) return;
         if (aspect == p.getURL) {
-            this.loadFromURL(this.getModelValue('getURL', ""));
-        }
+	    this.onURLUpdate(this.getModelValue('getURL', ""));
+	}
     }
 
 });
@@ -611,13 +615,16 @@ Morph.subclass('PanelMorph', {
 	this.priorExtent = newExtent;
     },
     
+    onVisibleUpdate: function(state) {
+	if (state == false) this.remove();
+    },
+
     updateView: function(aspect, controller) {
         var plug = this.modelPlug;
         if (!plug) return;
         
         if (aspect == plug.getVisible || aspect == 'all') {
-            var state = this.getModelValue('getVisible', true);
-            if (state == false) this.remove();
+	    this.onVisibleUpdate(this.getModelValue('getVisible', true));
         }
     }
 

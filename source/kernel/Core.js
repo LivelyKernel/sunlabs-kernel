@@ -158,190 +158,6 @@ Object.extend(Function.prototype, {
     }
 
 });
-    
-// a new unified mechanism for properties that map onto the DOM
-var Record = {};
-
-Record.create = function(bodySpec) {
-    var klass = Object.subclass();
-    function observerListName(name) { return name + "$observers" }
-    // do klass.prototype.addObserver = .. ?
-    var def = {
-	addObserver: function(dep, optForwardingSpec) {
-	    if (optForwardingSpec) {
-		// do forwarding
-		dep = Forwarder.newInstance(optForwardingSpec, dep);
-	    }
-	    // find all the "on"<Variable>"Update" methods of dep
-	    for (var name in dep) {
-		if (name.startsWith("on") && name.endsWith("Update")) {
-		    var varname = name.substring(2, name.indexOf("Update"));
-		    if (!this["set" + varname]) 
-			throw new Error("cannot observe nonexistent variable " + varname);
-		    var deps = this[observerListName(varname)];
-		    if (!deps) deps = this[observerListName(varname)] = [];
-		    else if (deps.indexOf(dep) >= 0) return;
-		    deps.push(dep);
-		}
-	    }
-	}
-
-	// FIXME remove observers?
-    };
-    Properties.forEachOwn(bodySpec, function(name) {
-	var spec = bodySpec[name];
-	
-	def["set" + name] = (function(ns, name, to, byDefault) { 
-	    return function(value, optSource) {
-		if (value === undefined) {
-		    this.rawNode.removeAttributeNS(ns, name);
-		} else {
-		    if (!value && byDefault) value = byDefault;
-		    var coercedValue = to ? to(value) : value;
-		    this.rawNode.setAttributeNS(ns, name, coercedValue);
-		}
-		var deps = this[observerListName(name)];
-		if (deps) {
-		    for (var i = 0; i < deps.length; i++) {
-			var dep = deps[i];
-			dep["on" + name + "Update"].call(dep, value, optSource);
-		    }
-		}
-	    }
-	})(spec.ns|| null, spec.name || name, spec.to, spec.byDefault);
-	
-	def["get" + name] = (function(ns, name, from, byDefault) {
-	    return function(optSource) {
-		if (this.rawNode) {
-		    var value = this.rawNode.getAttributeNS(ns, name);
-		    if (!value && byDefault) return byDefault;
-		    else if (from) return from(value);
-		    else return value;
-		} else if (this === this.constructor.prototype) { // we are the prototype? not foolproof but works in LK
-		    return byDefault; 
-		} else {
-		    throw new Error("no rawNode");
-		}
-	    }
-	})(spec.ns|| null, spec.name || name, spec.from, spec.byDefault);
-    });
-
-    def.initialize = function(rawNode, spec) {
-	this.rawNode = rawNode;
-	Properties.forEachOwn(spec, function(key) { this["set" + key](spec[key]); }, this);
-    };
-
-    def.newForwarder = function(spec) {
-	return Forwarder.newInstance(spec, this);
-    };
-
-    klass.addMethods(def);
-    return klass;
-};
-
-Record.newInstance = function(fieldSpec, argSpec, optStore) {
-    var Rec = Record.create(fieldSpec);
-    if (!optStore) optStore = NodeFactory.create("model"); // FIXME flat JavaScript instead by default?
-    return new Rec(optStore, argSpec);
-};
-
-
-var Forwarder = {
-    documentation: "Property access forwarder factory"
-};
-
-Forwarder.create = function(args) {
-    var klass = Object.subclass();
-    var def = {};    
-    Properties.forEachOwn(args, function(name) {
-	var translated = args[name];
-	if (translated.startsWith("!")) {
-	    var stripped = translated.substring(1);
-	    def["on" + name + "Update"] = function(/*...*/) {
-		this.delegate[stripped].apply(this.delegate, arguments);
-	    }
-	} else {
-	    if (!translated.startsWith('-')) { // not read-only
-		var stripped = translated.startsWith('+') ? translated.substring(1) : translated;
-		def["set" + name] = function(/*...*/) {
-		    // FIXME what if method not available?
-		    this.delegate["set" + stripped].apply(this.delegate, arguments);
-		}
-	    }
-	    if (!translated.startsWith('+')) { // not write-only
-		var stripped = translated.startsWith('-') ? translated.substring(1) : translated;
-		def["get" + name] = function(/*...*/) {
-		    // FIXME what if method not available?
-		    return this.delegate["get" + stripped].apply(this.delegate, arguments);
-		}
-	    }
-	}
-    });
-    def.initialize = function(delegate) { this.delegate = delegate; };
-    klass.addMethods(def);
-    return klass;
-};
-
-Forwarder.newInstance = function(spec, delegate) {
-    var Fwd = Forwarder.create(spec); // make a new class
-    return new Fwd(delegate); // now make a new instance
-}
-
-Forwarder.test = function() {
-    // the model knows about operands and result.
-    var CalcModel = Record.create({ 
-	Op1: {from:Number, to:String}, 
-	Op2: {from:Number, to:String}, 
-	Result: {from:Number, to :String} 
-    });
-    var backingStore = NodeFactory.create("model"); // could be the DOM, SQL or plain JavaScript
-
-    var m = new CalcModel(backingStore, {Op1: 10, Op2: 20, Result: 0});
-
-    // the particular view that will operate on the calc
-    function Summator() {} 
-    // this is domain logic
-    Summator.prototype = {
-	firstSummandChanged: function(value) { this.formalModel.setSum(value + this.formalModel.getSummand2()); },
-	secondSummandChanged: function(value) { this.formalModel.setSum(this.formalModel.getSummand1() + value); },
-    };
-
-    var summator = new Summator();
-
-    // summator writes a formal "Result" and reads "Op1" and "Op2"
-    summator.formalModel = m.newForwarder({ Sum: "+Result", Summand1: "-Op1", Summand2: "-Op2"});
-    
-    // model will call onOp1Update or onOp2Update on the forwarder
-    // the forwarder will forward onOp1Update to summator.firstSummandChanged, and onOp2Update to summator.secondSummandChanged
-    m.addObserver(summator, { Op1: "!firstSummandChanged", Op2: "!secondSummandChanged" });
-    
-    function InputBox() {
-	this.input = function() {
-	    this.formalModel.setInput(Number(prompt("input a number")));
-	}
-    }
-    function OutputBox() { 
-	this.print = function(content) {
-	    alert("result is " + content);
-	}
-    }
-
-    var op1Box = new InputBox();
-    // formalModel will forward setInput() to m.setOp1()
-    op1Box.formalModel = m.newForwarder({Input: "+Op1"});
-    // InputBox will set its formal "Input" variable which will result on m.setOp1() being called
-    
-    var op2Box = new InputBox();
-    op2Box.formalModel = m.newForwarder({Input: "+Op2"});
-
-    var resBox = new OutputBox();
-    // m will call resBox.display() whenever m.Result is set
-    m.addObserver(resBox, {Result: "!print" });
-    
-    op1Box.input();
-    op2Box.input();
-}
-
 
 var Class = {
 
@@ -567,6 +383,8 @@ var Properties = {
 };
 
 
+
+
 /**
 /* Our extensions to JavaScript base classes
  */
@@ -789,6 +607,200 @@ Object.extend(CharSet, {
     }
 
 });
+    
+// a new unified mechanism for properties that map onto the DOM
+Object.subclass('Record');
+
+Record.create = function(bodySpec) {
+    var klass = Record.subclass();
+    function observerListName(name) { return name + "$observers" }
+    // do klass.prototype.addObserver = .. ?
+    var def = {
+	addObserver: function(dep, optForwardingSpec) {
+	    if (optForwardingSpec) {
+		// do forwarding
+		dep = Relay.newInstance(optForwardingSpec, dep);
+	    }
+	    // find all the "on"<Variable>"Update" methods of dep
+	    for (var name in dep) {
+		if (name.startsWith("on") && name.endsWith("Update")) {
+		    var varname = name.substring(2, name.indexOf("Update"));
+		    if (!this["set" + varname]) 
+			throw new Error("cannot observe nonexistent variable " + varname);
+		    var deps = this[observerListName(varname)];
+		    if (!deps) deps = this[observerListName(varname)] = [];
+		    else if (deps.indexOf(dep) >= 0) return;
+		    deps.push(dep);
+		}
+	    }
+	}
+
+	// FIXME remove observers?
+    };
+    Properties.forEachOwn(bodySpec, function(name) {
+	var spec = bodySpec[name];
+	
+	def["set" + name] = (function(ns, name, to, byDefault) { 
+	    return function(value, optSource) {
+		if (value === undefined) {
+		    this.rawNode.removeAttributeNS(ns, name);
+		} else {
+		    if (!value && byDefault) value = byDefault;
+		    var coercedValue = to ? to(value) : value;
+		    this.rawNode.setAttributeNS(ns, name, coercedValue);
+		}
+		var deps = this[observerListName(name)];
+		if (deps) {
+		    for (var i = 0; i < deps.length; i++) {
+			var dep = deps[i];
+			dep["on" + name + "Update"].call(dep, value, optSource);
+		    }
+		}
+	    }
+	})(spec.ns|| null, spec.name || name, spec.to, spec.byDefault);
+	
+	def["get" + name] = (function(ns, name, from, byDefault) {
+	    return function(optSource) {
+		if (this.rawNode) {
+		    var value = this.rawNode.getAttributeNS(ns, name);
+		    if (!value && byDefault) return byDefault;
+		    else if (from) return from(value);
+		    else return value;
+		} else if (this === this.constructor.prototype) { // we are the prototype? not foolproof but works in LK
+		    return byDefault; 
+		} else {
+		    throw new Error("no rawNode");
+		}
+	    }
+	})(spec.ns|| null, spec.name || name, spec.from, spec.byDefault);
+    });
+
+    def.initialize = function(rawNode, spec) {
+	this.rawNode = rawNode;
+	Properties.forEachOwn(spec, function(key) { this["set" + key](spec[key]); }, this);
+    };
+
+    def.newRelay = function(spec) {
+	return Relay.newInstance(spec, this);
+    };
+
+    klass.addMethods(def);
+    return klass;
+};
+
+Record.newInstance = function(fieldSpec, argSpec, optStore) {
+    var Rec = Record.create(fieldSpec);
+    if (!optStore) optStore = NodeFactory.create("model"); // FIXME flat JavaScript instead by default?
+    return new Rec(optStore, argSpec);
+};
+
+
+Object.subclass('Relay', {
+    documentation: "Property access forwarder factory"
+    
+});
+
+Relay.create = function(args) {
+    var klass = Object.subclass();
+    var def = {};    
+    Properties.forEachOwn(args, function(name) {
+	var translated = args[name];
+	var translated = args[name];
+	if (translated.startsWith("!")) {
+	    // call an update method with the derived name
+	    var stripped = translated.substring(1);
+	    def["on" + name + "Update"] = function(/*...*/) {
+		this.delegate["on" + stripped + "Update"].apply(this.delegate, arguments);
+	    }
+	} else if (translated.startsWith("=")) {
+	    // call exactly that method
+	    var stripped = translated.substring(1);
+	    def["on" + name + "Update"] = function(/*...*/) {
+		this.delegate[stripped].apply(this.delegate, arguments);
+	    }
+	} else {
+	    if (!translated.startsWith('-')) { // not read-only
+		var stripped = translated.startsWith('+') ? translated.substring(1) : translated;
+		def["set" + name] = function(/*...*/) {
+		    // FIXME what if method not available?
+		    this.delegate["set" + stripped].apply(this.delegate, arguments);
+		}
+	    }
+	    if (!translated.startsWith('+')) { // not write-only
+		var stripped = translated.startsWith('-') ? translated.substring(1) : translated;
+		def["get" + name] = function(/*...*/) {
+		    // FIXME what if method not available?
+		    return this.delegate["get" + stripped].apply(this.delegate, arguments);
+	    }
+	    }
+	}
+    });
+    def.initialize = function(delegate) { this.delegate = delegate; };
+    
+    klass.addMethods(def);
+    return klass;
+};
+
+Relay.newInstance = function(spec, delegate) {
+    var Fwd = Relay.create(spec); // make a new class
+    return new Fwd(delegate); // now make a new instance
+}
+
+Relay.test = function() {
+    // the model knows about operands and result.
+    var CalcModel = Record.create({ 
+	Op1: {from:Number, to:String}, 
+	Op2: {from:Number, to:String}, 
+	Result: {from:Number, to :String} 
+    });
+    var backingStore = NodeFactory.create("model"); // could be the DOM, SQL or plain JavaScript
+
+    var m = new CalcModel(backingStore, {Op1: 10, Op2: 20, Result: 0});
+
+    // the particular view that will operate on the calc
+    function Summator() {} 
+    // this is domain logic
+    Summator.prototype = {
+	firstSummandChanged: function(value) { this.formalModel.setSum(value + this.formalModel.getSummand2()); },
+	secondSummandChanged: function(value) { this.formalModel.setSum(this.formalModel.getSummand1() + value); },
+    };
+
+    var summator = new Summator();
+
+    // summator writes a formal "Result" and reads "Op1" and "Op2"
+    summator.formalModel = m.newRelay({ Sum: "+Result", Summand1: "-Op1", Summand2: "-Op2"});
+    
+    // model will call onOp1Update or onOp2Update on the forwarder
+    // the forwarder will forward onOp1Update to summator.firstSummandChanged, and onOp2Update to summator.secondSummandChanged
+    m.addObserver(summator, { Op1: "=firstSummandChanged", Op2: "=secondSummandChanged" });
+    
+    function InputBox() {
+	this.input = function() {
+	    this.formalModel.setInput(Number(prompt("input a number")));
+	}
+    }
+    function OutputBox() { 
+	this.print = function(content) {
+	    alert("result is " + content);
+	}
+    }
+
+    var op1Box = new InputBox();
+    // formalModel will forward setInput() to m.setOp1()
+    op1Box.formalModel = m.newRelay({Input: "+Op1"});
+    // InputBox will set its formal "Input" variable which will result on m.setOp1() being called
+    
+    var op2Box = new InputBox();
+    op2Box.formalModel = m.newRelay({Input: "+Op2"});
+
+    var resBox = new OutputBox();
+    // m will call resBox.display() whenever m.Result is set
+    m.addObserver(resBox, {Result: "=print" });
+    
+    op1Box.input();
+    op2Box.input();
+}
+
 
 
 Global.console && Global.console.log("loaded basic library");
@@ -3688,7 +3700,6 @@ Visual.subclass('Morph', {
     },
 
     initializePersistentState: function(initialBounds /*:Rectangle*/, shapeType/*:String*/) {
-
 	// a rect shape by default, will change later
 	switch (shapeType) {
 	case "ellipse":
@@ -3718,22 +3729,29 @@ Visual.subclass('Morph', {
 
     pvtSerializeModel: function(extraNodes, simpleModels) {
 	var model = this.getModel();
-	if (!(model instanceof SyntheticModel)) 
-	    return;
-
-	var index = simpleModels.indexOf(model);
-	if (index < 0) { // not seen before, serialize model
-	    
-	    index = simpleModels.length;
-	    console.log("serializing model " + index);
-	    var modelNode = model.toMarkup(index);
-	    simpleModels.push(model);
-	    modelNode.setAttribute("id", "model_" + index); 
-	    
-	    extraNodes.push(this.addNonMorph(modelNode));
-	}
-	extraNodes.push(this.addNonMorph(this.getModelPlug().serialize(index)));
-
+	if (model instanceof SyntheticModel) {
+	    var index = simpleModels.indexOf(model);
+	    if (index < 0) { // not seen before, serialize model
+		index = simpleModels.length;
+		var modelNode = model.toMarkup(index);
+		simpleModels.push(model);
+		modelNode.setAttribute("id", "model_" + index); 
+		extraNodes.push(this.addNonMorph(modelNode));
+	    }
+	    extraNodes.push(this.addNonMorph(this.getModelPlug().serialize(index)));
+	} else if (model instanceof Record) {
+	    var index = simpleModels.indexOf(model);
+	    if (index < 0) { // not seen before, serialize model
+		index = simpleModels.length;
+		var rawNode = model.rawNode;
+		simpleModels.push(rawNode);
+		alert('serializing ' + Exporter.stringify(rawNode));
+		rawNode.setAttribute("id", "model_" + index); 
+		extraNodes.push(this.addNonMorph(rawNode));
+	    }
+	    // FIXME serialize hookup
+	    //extraNodes.push(this.addNonMorph(this.getModelPlug().serialize(index)));
+	} // else don't do anything
     },
 
     prepareForSerialization: function(extraNodes, simpleModels) {
@@ -5155,7 +5173,8 @@ ViewTrait = {
 
     getModel: function() {
 	var plug = this.getModelPlug();
-	return plug && plug.model;
+	if (plug) return plug.model;
+	return this.formalModel && this.formalModel.delegate;
     },
     
     getModelPlug: function() { 

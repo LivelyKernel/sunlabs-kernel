@@ -476,7 +476,7 @@ TwoPaneBrowser.subclass('FileBrowser', {
 	    items.push(["repository info", function(evt) {
 		var m = Record.newInstance({Info: {}}, {Info: "fetching info"});
 		var s = new Subversion();
-		s.formalModel = m.newForwarder({ServerResponse: "+Info"});
+		s.formalModel = m.newRelay({ServerResponse: "+Info"});
 		var txt = this.world().addTextWindow({
 		    acceptInput: false,
 		    title: "info " + url,
@@ -526,10 +526,10 @@ TwoPaneBrowser.subclass('FileBrowser', {
 		    title: url,
 		    position: evt.point() });
 
-		m.addObserver(txt, {AllProperties: "!updateTextString"});
+		m.addObserver(txt, {AllProperties: "!Text"});
 		var res = new Resource(url); // resource would try to use its own synthetic model, which is useless
 		m.setURL(url);
-		res.formalModel = m.newForwarder({ContentDocument: "+InfoDocument", URL: "-URL" });
+		res.formalModel = m.newRelay({ContentDocument: "+InfoDocument", URL: "-URL" });
 		res.fetchProperties();
 		
 	    }]);

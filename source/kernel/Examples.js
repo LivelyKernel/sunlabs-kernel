@@ -2147,7 +2147,7 @@ GameMorph.addMethods({
  
 // We should consider using other weather service.
 // These images are of low quality
-Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
+Widget.subclass('OldWeatherWidget', NetRequestReporterTrait, {
 
     imagepath: "Resources/weather/",
     defaultViewTitle: "Weather widget",
@@ -2289,6 +2289,161 @@ Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
         image.setFill(null);
     
 	this.updateLocale("San Francisco, California");
+        return panel;
+    }
+    
+});
+
+
+/**
+ * @class WeatherWidget
+ */
+ 
+// Weather widget works by selecting the city from the list.
+// It uses XMLHttpRequest to obtain weather info for the selected city
+ 
+// We should consider using other weather service.
+// These images are of low quality
+Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
+
+    imagepath: "Resources/weather/",
+    defaultViewTitle: "Weather widget",
+    defaultViewExtent: pt(250, 260),
+    
+    initialize: function($super) { 
+	this.model = Record.newInstance({Locale: {}, WeatherDesc: {}, Temperature: {}, Wind: {}, Gusts: {},
+					 DewPoint: {}, Humidity: {}, Visibility: {}, ImageURL: {}}, 
+					{ImageURL: "http://www.bbc.co.uk/weather/images/banners/weather_logo.gif"});
+	$super();
+	this.model.addObserver(this, { Locale: "!Locale" });
+	this.initializeTransientState();
+    },
+    
+    deserialize: function($super, importer, plug) {
+	$super(importer, plug);
+	this.initializeTransientState();
+    },
+    
+    initializeTransientState: function() {
+	this.feed = new Feed({model: this, setFeedChannels: "parseChannels", setStatus: "setRequestStatus"});
+    },
+    
+    parseChannels: function(channels) {
+	if (channels.length <= 0) return;
+	var channel = channels[0];
+	var text = channel.items[0].description();
+	var arr = text.split(",");
+	var topic = channel.items[0].title();
+	var weather = topic.substring(topic.indexOf("."), topic.indexOf("GMT:")+4).replace(/^\s+|\s+$/g, '');
+	this.model.setWeatherDesc(weather[0].toUpperCase() + weather.substr(1));
+	this.model.setTemperature(arr[0].replace(/^\s+|\s+$/g, ''));
+	this.model.setWind(arr[1].replace(/^\s+|\s+$/g, ''));
+	this.model.setGusts(arr[2].replace(/^\s+|\s+$/g, ''));
+	this.model.setDewPoint(arr[3].replace(/^\s+|\s+$/g, ''));
+	this.model.setHumidity(arr[4].replace(/^\s+|\s+$/g, '') + ", " + arr[5].replace(/^\s+|\s+$/g, ''));
+	this.model.setVisibility(arr[6].replace(/^\s+|\s+$/g, ''));
+    },
+
+    onLocaleUpdate: function(item) {
+	var citycode = null;
+        // initialize UI update
+        switch (item) {
+        case "San Francisco, California":
+            citycode = "6568"; // "USCA0050"  6568 -- San Francisco International (SFO)
+            break;
+        case "Tampere, Finland":
+            citycode = "4974"; // "FIXX0031"  or 4974
+            break;
+        case "London, United Kingdom":
+            citycode = "4583"; // "UKXX0318"  or 4583 
+            break;
+        }
+	if (citycode) {
+	    var url = new URL("http://feeds.bbc.co.uk/weather/feeds/rss/obs/world/" + citycode + ".xml");
+	    this.feed.request(url);
+	}
+    },
+
+    
+    buildView: function(extent) {
+	var model = this.model;
+        var panel = new PanelMorph(extent);
+	panel.applyStyle({borderWidth: 2, 
+			  fill: new LinearGradient([Color.white, 1, Color.primary.blue], LinearGradient.NorthSouth)});
+        //panel.setBorderColor(Color.blue);
+        // TODO: add rounding to all the elements (panel, window & titlebar)
+        // or make the titlebar round depending on the window
+        var m; 
+	
+	var r = new Rectangle(10,20,25,20);
+        panel.addMorph(m = new ImageMorph(r, this.imagepath + "city.png"));
+        m.setFill(null);
+        panel.addMorph(m = new ImageMorph(r.withY(55), this.imagepath + "weather.png"));
+        m.setFill(null);
+	r = r.withWidth(20);
+        panel.addMorph(m = new ImageMorph(r.withY(80), this.imagepath + "temperature.png"));
+        m.setFill(null);
+        panel.addMorph(m = new ImageMorph(r.withY(105), this.imagepath + "wind.png"));
+        m.setFill(null);
+        panel.addMorph(m = new ImageMorph(r.withY(130), this.imagepath + "wind_dir.png"));
+        m.setFill(null);
+        panel.addMorph(m = new ImageMorph(r.withY(155), this.imagepath + "barometer.png"));
+        m.setFill(null);
+        panel.addMorph(m = new ImageMorph(r.withY(180), this.imagepath + "humidity.png"));
+        m.setFill(null);
+        panel.addMorph(m = new ImageMorph(r.withY(205), this.imagepath + "visibility.png"));
+        m.setFill(null);
+	
+	r = new Rectangle(40, 3, 200, 20);
+        m = panel.addMorph(new TextListMorph(r, ["San Francisco, California", "Tampere, Finland", "London, United Kingdom"]));
+	m.formalModel = model.newRelay({ Selection: "Locale"});
+        m.selectLineAt(0); // Select the first item by default
+
+        // build the textfields for the weather panel
+        m = panel.addMorph(new TextMorph(r.withY(55), "---"));
+	m.formalModel = model.newRelay({Text: "-WeatherDesc"});
+	model.addObserver(m, {WeatherDesc: "!Text"});
+        m.takesKeyboardFocus = Functions.True;
+
+
+        m = panel.addMorph(new TextMorph(r.withY(80), "---"));
+	m.formalModel = model.newRelay({Text: "-Temperature"});
+	model.addObserver(m, {Temperature: "!Text"});
+        m.takesKeyboardFocus = Functions.True;
+	
+        m = panel.addMorph(new TextMorph(r.withY(105), "---"));
+	m.formalModel = model.newRelay({Text: "-Wind"});
+	model.addObserver(m, {Wind: "!Text"});
+        m.takesKeyboardFocus = Functions.True;
+
+        m = panel.addMorph(new TextMorph(r.withY(130), "---"));
+	m.formalModel = model.newRelay({Text: "-Gusts"});
+	model.addObserver(m, {Gusts: "!Text"});
+        m.takesKeyboardFocus = Functions.True;
+	
+        m = panel.addMorph(new TextMorph(r.withY(155), "---"));
+	m.formalModel = model.newRelay({Text: "-DewPoint"});
+	model.addObserver(m, {DewPoint: "!Text"});
+        m.takesKeyboardFocus = Functions.True;
+	
+        m = panel.addMorph(new TextMorph(r.withY(180), "---"));
+	m.formalModel = model.newRelay({Text: "-Humidity"});
+	model.addObserver(m, {Humidity: "!Text"});
+        m.takesKeyboardFocus = Functions.True;
+	
+        m = panel.addMorph(new TextMorph(r.withY(205), "---"));
+	m.formalModel= model.newRelay({Text: "-Visibility"});
+	model.addObserver(m, {Visibility: "!Text"});
+	
+        m.takesKeyboardFocus = Functions.True;
+	
+        var image = panel.addMorph(new ImageMorph(r.withY(230)));
+	model.addObserver(image, {ImageURL: "!URL"});
+	image.formalModel = model.newRelay({URL: "-ImageURL"});
+
+        image.setFill(null);
+    
+	this.onLocaleUpdate("San Francisco, California");
         return panel;
     }
     

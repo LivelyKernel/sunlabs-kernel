@@ -1999,13 +1999,17 @@ TextMorph.addMethods({
 	if (! (sp instanceof ScrollPane)) return null;
 	return sp;
     },
+
+    onTextUpdate: function(string) {
+	this.updateTextString(string);
+	this.textBeforeChanges = string;
+    },
     
     updateView: function(aspect, controller) {
         var p = this.modelPlug;
         if (p) {
             if (aspect == p.getText  || aspect == 'all') {
-		this.updateTextString(this.getModelText());
-		this.textBeforeChanges = this.textString;
+		this.onTextUpdate(this.getModelText());
 	    }
             if (aspect == p.getSelection) {
 		this.searchForFind(this.getModelSelection(), 0);
