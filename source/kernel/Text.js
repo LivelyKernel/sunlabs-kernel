@@ -1780,7 +1780,7 @@ TextMorph.addMethods({
         if (SourceControl) SourceControl.browseReferencesTo(this.getSelectionString()); 
     },
     doDoit: function() {
-	this.replaceSelectionWith(" " + this.tryBoundEval(this.getSelectionString()));
+	this.tryBoundEval(this.getSelectionString());
     },
     doPrintit: function() {
 	var strToEval = this.getSelectionString();
