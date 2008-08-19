@@ -620,6 +620,33 @@ Object.subclass('Record', {
     
     newRelay: function(spec) {
 	return Relay.newInstance(spec, this);
+    },
+
+    get: function(name) {
+	if (this.rawNode instanceof Global.Node) {
+	    var ns = null;
+	    return this.rawNode.getAttributeNS(ns, name);
+	} else {
+	    return this.rawNode[name];
+	}
+    },
+
+    set: function(name, value) {
+	if (this.rawNode instanceof Global.Node) {
+	    var ns = null;
+	    return this.rawNode.setAttributeNS(ns, name, value);
+	} else {
+	    return this.rawNode[name] = value;
+	}
+    },
+    
+    remove: function(name) {
+	if (this.rawNode instanceof Global.Node) {
+	    var ns = null;
+	    return this.rawNode.removeAttributeNS(ns, name);
+	} else {
+	    delete this.rawNode[name];
+	}
     }
 });
 
@@ -653,14 +680,13 @@ Record.create = function(bodySpec) {
     Properties.forEachOwn(bodySpec, function(name) {
 	var spec = bodySpec[name];
 	
-	def["set" + name] = (function(ns, name, to, byDefault) { 
+	def["set" + name] = (function(name, to, byDefault) { 
 	    return function(value, optSource) {
 		if (value === undefined) {
-		    this.rawNode.removeAttributeNS(ns, name);
+		    this.remove(name);
 		} else {
 		    if (!value && byDefault) value = byDefault;
-		    var coercedValue = to ? to(value) : value;
-		    this.rawNode.setAttributeNS(ns, name, coercedValue);
+		    this.set(name, coercedValue = to ? to(value) : value);
 		}
 		var deps = this[observerListName(name)];
 		if (deps) {
@@ -670,12 +696,12 @@ Record.create = function(bodySpec) {
 		    }
 		}
 	    }
-	})(spec.ns|| null, spec.name || name, spec.to, spec.byDefault);
+	})(spec.name || name, spec.to, spec.byDefault);
 	
-	def["get" + name] = (function(ns, name, from, byDefault) {
+	def["get" + name] = (function(name, from, byDefault) {
 	    return function(optSource) {
 		if (this.rawNode) {
-		    var value = this.rawNode.getAttributeNS(ns, name);
+		    var value = this.get(name);
 		    if (!value && byDefault) return byDefault;
 		    else if (from) return from(value);
 		    else return value;
@@ -685,7 +711,7 @@ Record.create = function(bodySpec) {
 		    throw new Error("no rawNode");
 		}
 	    }
-	})(spec.ns|| null, spec.name || name, spec.from, spec.byDefault);
+	})(spec.name || name, spec.from, spec.byDefault);
     });
 
 

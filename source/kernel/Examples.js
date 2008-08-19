@@ -2311,10 +2311,11 @@ Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
     defaultViewExtent: pt(250, 260),
     
     initialize: function($super) { 
+	$super();
 	this.model = Record.newInstance({Locale: {}, WeatherDesc: {}, Temperature: {}, Wind: {}, Gusts: {},
 					 DewPoint: {}, Humidity: {}, Visibility: {}, ImageURL: {}}, 
-					{ImageURL: "http://www.bbc.co.uk/weather/images/banners/weather_logo.gif"});
-	$super();
+					{ImageURL: "http://www.bbc.co.uk/weather/images/banners/weather_logo.gif"},
+					{});
 	this.model.addObserver(this, { Locale: "!Locale" });
 	this.initializeTransientState();
     },
