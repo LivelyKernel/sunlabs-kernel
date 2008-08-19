@@ -609,7 +609,20 @@ Object.extend(CharSet, {
 });
     
 // a new unified mechanism for properties that map onto the DOM
-Object.subclass('Record');
+Object.subclass('Record', {
+
+    initialize: function(rawNode, spec) {
+	this.rawNode = rawNode;
+	Properties.forEachOwn(spec, function(key) { 
+	    this["set" + key].call(this, spec[key]); 
+	}, this);
+    },
+    
+    newRelay: function(spec) {
+	return Relay.newInstance(spec, this);
+    }
+});
+
 
 Record.create = function(bodySpec) {
     var klass = Record.subclass();
@@ -675,14 +688,6 @@ Record.create = function(bodySpec) {
 	})(spec.ns|| null, spec.name || name, spec.from, spec.byDefault);
     });
 
-    def.initialize = function(rawNode, spec) {
-	this.rawNode = rawNode;
-	Properties.forEachOwn(spec, function(key) { this["set" + key](spec[key]); }, this);
-    };
-
-    def.newRelay = function(spec) {
-	return Relay.newInstance(spec, this);
-    };
 
     klass.addMethods(def);
     return klass;
@@ -696,12 +701,14 @@ Record.newInstance = function(fieldSpec, argSpec, optStore) {
 
 
 Object.subclass('Relay', {
-    documentation: "Property access forwarder factory"
-    
+    documentation: "Property access forwarder factory",
+    initialize: function(delegate) {
+	this.delegate = delegate; 
+    }
 });
 
 Relay.create = function(args) {
-    var klass = Object.subclass();
+    var klass = Relay.subclass();
     var def = {};    
     Properties.forEachOwn(args, function(name) {
 	var translated = args[name];
@@ -735,7 +742,6 @@ Relay.create = function(args) {
 	    }
 	}
     });
-    def.initialize = function(delegate) { this.delegate = delegate; };
     
     klass.addMethods(def);
     return klass;
