@@ -1635,6 +1635,7 @@ Morph.subclass("ScrollPane", {
     borderWidth: 2,
     fill: null,
     scrollBarWidth: 14,
+    ScrollBarFormalRelay: Relay.create({Value: "ScrollPosition", SliderExtent: "-VisibleExtent"}), // a class for relays
 
     initialize: function($super, morphToClip, initialBounds) {
         $super(initialBounds, "rect");
@@ -1648,28 +1649,24 @@ Morph.subclass("ScrollPane", {
         morphToClip.setBorderWidth(0);
         morphToClip.setPosition(clipR.topLeft());
         this.clipMorph.addMorph(morphToClip);
-    
+	
         // Add a scrollbar
         this.scrollBar = this.addMorph(new SliderMorph(bnds.withTopLeft(clipR.topRight())));
-        this.scrollBar.connectModel({model: this, 
-            getValue: "getScrollPosition", setValue: "setScrollPosition", 
-            getSliderExtent: "getVisibleExtent"});
-
+	this.scrollBar.formalModel = new (this.ScrollBarFormalRelay)(this);
+	
         // suppress handles throughout
         [this, this.clipMorph, morphToClip, this.scrollBar].forEach(function(m) {m.suppressHandles = true});
         // alert('inner morph is ' + this.innerMorph());
-
+	
         return this;
     },
-
+    
     restorePersistentState: function($super, importer) { // FIXME duplication between here and initialize
         $super(importer);
-        this.scrollBar && this.scrollBar.connectModel({model: this, 
-            getValue: "getScrollPosition", setValue: "setScrollPosition", 
-            getSliderExtent: "getVisibleExtent"});
-        if (this.menuButton) {
+        if (this.scrollBar) 
+	    this.scrollBar.formalModel = new (this.ScrollBarFormalRelay)(this);
+        if (this.menuButton)
             this.menuButton.relayMouseEvents(this, {onMouseDown: "menuButtonPressed"});
-        }
     },
 
     submorphBounds: function() {
