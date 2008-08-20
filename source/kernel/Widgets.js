@@ -418,13 +418,17 @@ Morph.subclass("SelectionMorph", {
         $super(viewPort, "rect");
         this.originalPoint = viewPort.topLeft();
         this.reshapeName = "bottomRight";
-        this.selectedMorphs = [];
-        this.initialSelection = true;
 	this.applyStyle(this.style);
         this.myWorld = defaultworldOrNull ? defaultworldOrNull : this.world();
         // this.shape.setStrokeDashArray([3,2]);
         return this;
     },
+
+    initializeTransientState: function() {
+	this.selectedMorphs = [];
+        this.initialSelection = true;
+    },
+
     
     reshape: function($super, partName, newPoint, handle, lastCall) {
         // Initial selection might actually move in another direction than toward bottomRight
