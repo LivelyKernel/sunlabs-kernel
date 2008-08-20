@@ -1746,7 +1746,7 @@ Morph.subclass("ScrollPane", {
         var slideRoom = ht - this.bounds().height;
         this.innerMorph().setPosition(pt(this.innerMorph().position().x, -slideRoom*scrollPos)); 
         this.scrollBar.adjustForNewBounds();
-        // console.log("setScrollPos  ht = " + ht + ", slideRoom = " + slideRoom + ", scrollPos = " + scrollPos);
+	//console.log("setScrollPos  ht = " + ht + ", slideRoom = " + slideRoom + ", scrollPos = " + scrollPos);
     },
 
     getVisibleExtent: function(scrollPos) {
@@ -1816,6 +1816,10 @@ function newTextPane(initialBounds, defaultText) {
 function newPrintPane(initialBounds, defaultText) {
     return new ScrollPane(new PrintMorph(initialBounds, defaultText), initialBounds); 
 };
+
+function newXenoPane(initialBounds) {
+    return new ScrollPane(new XenoMorph(initialBounds.withHeight(1000)), initialBounds);
+}
 
 // ===========================================================================
 // Utility widgets
@@ -1902,10 +1906,10 @@ Morph.subclass("ColorPickerMorph", {
     
 });
 
-ClipMorph.subclass('XenoMorph', {
+Morph.subclass('XenoMorph', {
 
     documentation: "Contains a foreign object, most likely XHTML",
-    borderWidth: 2,
+    borderWidth: 0,
     fill: Color.gray.lighter(),
 
     initialize: function($super, bounds, url) { 
@@ -1943,8 +1947,9 @@ ClipMorph.subclass('XenoMorph', {
     adjustForNewBounds: function($super) {
         $super();
         var bounds = this.shape.bounds();
+	console.log("bounds " + bounds + " vs " + bounds.width + "," + bounds.height);
         this.foRawNode.setAttributeNS(null, "width", bounds.width);
-        this.foRawNode.setAttributeNS(null, "height", bounds.height);
+        //this.foRawNode.setAttributeNS(null, "height", bounds.height);
     }
 
 });
@@ -2258,7 +2263,7 @@ Widget.subclass('ConsoleWidget', {
 Widget.subclass('XenoBrowserWidget', {
     
     defaultViewExtent: pt(800, 300),
-
+    
     initialize: function($super) {
 	this.actualModel = 
 	    Record.newInstance({URLString: {}}, 
@@ -2269,16 +2274,15 @@ Widget.subclass('XenoBrowserWidget', {
     
     buildView: function(extent) {
 	var panel = PanelMorph.makePanedPanel(extent, [
-	    //['urlInput', function(initialBounds) { return new TextMorph(initialBounds, "").beInputLine()}, new Rectangle(0, 0, 0.9, 0.1)],
-	    //['goButton', function(initialBounds) {return new ButtonMorph(initialBounds) }, new Rectangle(0.9, 0, 0.1, 0.1)],
 	    ['urlInput', function(initialBounds) { return new TextMorph(initialBounds, "").beInputLine()}, new Rectangle(0, 0, 1, 0.1)],
-	    ['contentPane', function(initialBounds) { return new XenoMorph(initialBounds)}, new Rectangle(0, 0.1, 1, 0.9)]
+	    ['contentPane', newXenoPane, new Rectangle(0, 0.1, 1, 0.9)]
 	]);
 	panel.urlInput.formalModel = this.actualModel.newRelay({Text: "URLString"});
 	panel.urlInput.onTextUpdate(panel.urlInput.formalModel.getText());
 	this.actualModel.addObserver({onURLStringUpdate: function(urlString) { 
-	    panel.contentPane.onURLUpdate(new URL(urlString));
+	    panel.contentPane.innerMorph().onURLUpdate(new URL(urlString));
 	}});
+	// this.actualModel.addObserver(panel.contentPane.innerMorph(), { URLString: "!URL"}) // except that String -> URL coertion necessary
 	return panel;
     }
 });
