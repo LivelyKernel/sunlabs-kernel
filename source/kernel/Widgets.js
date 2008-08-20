@@ -1568,24 +1568,34 @@ Morph.subclass("SliderMorph", {
         return Math.min(1.0,Math.max(0,0,val.roundTo(0.0001))); 
     },
 
-    updateView: function(aspect, controller) {
+    updateView: function(aspect, controller) { // obsolete soon ?
         var p = this.modelPlug;
-        if (p) {
-            if (aspect == p.getValue || aspect == p.getSliderExtent || aspect == 'all') this.adjustForNewBounds();
-            return;
-        }
+	if (!p) return;
+	if (aspect == p.getValue || aspect == 'all') {
+	    this.onValueUpdate(this.getValue());
+	} else if (aspect == p.getSliderExtent || aspect == 'all')  {
+	    this.onSliderExtentUpdate(this.getSliderExtent());
+	}
+    },
+
+    onSliderExtentUpdate: function(extent) {
+	this.adjustForNewBounds();
+    },
+
+    onValueUpdate: function(value) {
+	this.adjustForNewBounds();
     },
 
     getValue: function() {
-        if (this.modelPlug) return this.getModelValue('getValue', 0) / this.scale;
+        return (this.formalModel ? this.formalModel.getValue() : this.getModelValue('getValue', 0)) / this.scale;
     },
 
     setValue: function(value) {
-        if (this.modelPlug) this.setModelValue('setValue', value * this.scale);
+        return this.formalModel ? this.formalModel.setValue(value * this.scale) : this.setModelValue('setValue', value * this.scale);
     },
 
     getSliderExtent: function() {
-        if (this.modelPlug) return this.getModelValue('getSliderExtent', 0.0);
+        return this.formalModel ? this.formalModel.getSliderExtent() : this.getModelValue('getSliderExtent', 0.0);
     },
 
     takesKeyboardFocus: Functions.True,
@@ -1611,19 +1621,17 @@ Morph.subclass("SliderMorph", {
             default: return false;
             }    
         }
-        this.adjustForNewBounds();
         this.setValue(this.clipValue(this.getValue() + delta * this.getSliderExtent()));
+        this.adjustForNewBounds();
         evt.stop();
         return true;
     }
 
 });
 
-/**
- * @class ScrollPane
- */ 
 Morph.subclass("ScrollPane", {
 
+    description: "A scrolling container",
     borderWidth: 2,
     fill: null,
     scrollBarWidth: 14,
