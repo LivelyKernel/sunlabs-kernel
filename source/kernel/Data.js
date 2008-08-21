@@ -147,26 +147,38 @@ View.subclass('Feed', NetRequestReporterTrait, {
 	if (!p) return;
 	switch (aspect) {
 	case p.getURL:
-	    var url = this.getModelValue('getURL');
-	    this.request(url);
+	    this.onURLChange(this.getURL());
 	    break;
 	}
+    },
+
+    getURL: function() {
+	return this.formalModel ?  (this.formalModel.getURL && this.formalModel.getURL) : this.getModelValue('getURL');
+    },
+
+    onURLChange: function(newValue) {
+	this.request(newValue);
     },
     
     deserialize: function() { },
 
     kickstart: function() {
-	if (this.modelPlug)
-	    this.updateView(this.modelPlug.getURL, this);
+	if (this.formalModel) this.onURLChange(this.getURL());
+	else if (this.modelPlug) this.updateView(this.modelPlug.getURL, this);
     },
     
+    setFeedChannels: function(channels) {
+	if (this.formalModel) this.formalModel.setFeedChannels(channels);
+	else this.setModelValue("setFeedChannels", channels);
+    },
+
     setRawFeedContents: function(responseXML) {
-	this.setModelValue('setFeedChannels', this.parseChannels(responseXML));
+	this.setFeedChannels(this.parseChannels(responseXML));
     },
     
     request: function(url) {
         var hourAgo = new Date((new Date()).getTime() - 1000*60*60);
-	var req = new NetRequest({model: this, setResponseXML: "setRawFeedContents", setStatus: "setRequestStatus"});
+	var req = new NetRequest(Relay.newInstance({ ResponseXML: "+RawFeedContents", Status: "+RequestStatus"}, this));
 	req.setContentType('text/xml');
 	req.setRequestHeaders({ "If-Modified-Since": hourAgo.toString() });
 	console.log("feed requesting " + url);

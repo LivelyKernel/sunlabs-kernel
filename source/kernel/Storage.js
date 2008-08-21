@@ -476,13 +476,13 @@ TwoPaneBrowser.subclass('FileBrowser', {
 	    items.push(["repository info", function(evt) {
 		var m = Record.newInstance({Info: {}}, {Info: "fetching info"});
 		var s = new Subversion();
-		s.formalModel = m.newRelay({ServerResponse: "+Info"});
+		s.connectModel(m.newRelay({ServerResponse: "+Info"}));
 		var txt = this.world().addTextWindow({
 		    acceptInput: false,
 		    title: "info " + url,
 		    position: evt.point()
 		});
-		m.addObserver(txt, { Info: "!updateTextString" });
+		m.addObserver(txt, { Info: "!Text" });
 		s.info(svnPath);
 	    }]);
 	    items.push(["repository diff", function(evt) {
@@ -492,7 +492,7 @@ TwoPaneBrowser.subclass('FileBrowser', {
 					    title: "diff " + url,
 					    position: evt.point() });
 		new Subversion({model: m, setServerResponse: "setDiff"}).diff(svnPath);
-		
+			       
 	    }]);
 	    items.push(["repository commit", function(evt) {
 		var world = this.world();
@@ -525,17 +525,16 @@ TwoPaneBrowser.subclass('FileBrowser', {
 		var txt = this.world().addTextWindow({acceptInput: false,
 		    title: url,
 		    position: evt.point() });
-
+		
 		m.addObserver(txt, {AllProperties: "!Text"});
-		var res = new Resource(url); // resource would try to use its own synthetic model, which is useless
+		var res = new Resource(url, m.newRelay({ContentDocument: "+InfoDocument", URL: "-URL" }));
+		// resource would try to use its own synthetic model, which is useless
 		m.setURL(url);
-		res.formalModel = m.newRelay({ContentDocument: "+InfoDocument", URL: "-URL" });
 		res.fetchProperties();
 		
 	    }]);
 	    
 	}
-	
 
 	model.getUpperNodeListMenu =  function() { // cheating: non stereotypical model
 	    var model = this;
@@ -875,19 +874,19 @@ View.subclass('Subversion',  NetRequestReporterTrait, {
     },
 
     diff: function(repoPath) {
-	var req = new NetRequest({model: this, setStatus: "setRequestStatus", setResponseText: "setSubversionResponse"});
+	var req = new NetRequest(Relay.newInstance({Status: "+RequestStatus", ResponseText: "+SubversionResponse"}, this));
 	this.setModelValue("setServerResponse", "");
 	req.get(this.server.withQuery({command: "diff " + (repoPath || "")}));
     },
 
     info: function(repoPath) {
-	var req = new NetRequest({model: this, setStatus: "setRequestStatus", setResponseText: "setSubversionResponse"});
+	var req = new NetRequest(Relay.newInstance({Status: "+RequestStatus", ResponseText: "+SubversionResponse"}, this));
 	// use space as argument separator!
 	return req.get(this.server.withQuery({command: "info " + (repoPath|| "")}));
     },
-
+    
     commit: function(repoPath, message) {
-	var req = new NetRequest({model: this, setStatus: "setRequestStatus", setResponseText: "setSubversionResponse"});
+	var req = new NetRequest(Relay.newInstance({Status: "+RequestStatus", ResponseText: "+SubversionResponse"}, this));
 	// use space as argument separator!
 	return req.get(this.server.withQuery({command: "commit " + (repoPath || "") + ' -m "' + message + '"'}));
     },

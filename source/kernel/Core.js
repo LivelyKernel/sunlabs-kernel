@@ -729,13 +729,17 @@ Record.newInstance = function(fieldSpec, argSpec, optStore) {
 Object.subclass('Relay', {
     documentation: "Property access forwarder factory",
     initialize: function(delegate) {
+	// FIXME here a checker could verify this.prototype and check
+	// that the delegate really has all the methods
 	this.delegate = delegate; 
     }
 });
 
 Relay.create = function(args) {
     var klass = Relay.subclass();
-    var def = {};    
+    var def = {
+	definition: Object.clone(args) // the relay was constructed
+    };
     Properties.forEachOwn(args, function(name) {
 	var translated = args[name];
 	if (translated.startsWith("!")) {
@@ -5169,6 +5173,11 @@ Object.extend(Morph, {
 // View trait
 ViewTrait = {
     connectModel: function(plugSpec) {
+	if (plugSpec instanceof Relay) {
+	    // new style model
+	    this.formalModel = plugSpec;
+	    return;
+	}
 	// connector makes this view pluggable to different models, as in
 	// {model: someModel, getList: "getItemList", setSelection: "chooseItem"}
 	var newPlug = (plugSpec instanceof ModelPlug) ? plugSpec : new ModelPlug(plugSpec);
@@ -5184,6 +5193,7 @@ ViewTrait = {
 	} 
 	return this;
     },
+
 
     checkModel: function(plugSpec) {
 	// For non-models, check that all supplied handler methods can be found

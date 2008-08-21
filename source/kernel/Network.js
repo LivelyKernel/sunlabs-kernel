@@ -261,14 +261,31 @@ View.subclass('NetRequest', {
 	return this;
     },
     
+    // synthesize
+    setModelReadyState: function(state) { return this.formalModel ? 
+					  (this.formalModel.setReadyState && this.formalModel.setReadyState(state))
+					  : this.setModelValue("setReadyState", state); },
+
+    setModelStatus: function(value)  { return this.formalModel ? 
+				       (this.formalModel.setStatus && this.formalModel.setStatus(value))
+				       : this.setModelValue("setStatus", value); },
+    
+    setModelResponseText: function(value) { return this.formalModel ? 
+					    (this.formalModel.setResponseText && this.formalModel.setResponseText(value))
+					    : this.setModelValue("setResponseText", value); },
+    
+    setModelResponseXML: function(value) { return this.formalModel ? 
+					   (this.formalModel.setResponseXML && this.formalModel.setResponseXML(value)) 
+					   : this.setModelValue("setResponseXML", value); },
+
     onReadyStateChange: function() {
-	this.setModelValue('setReadyState', this.getReadyState());
+	this.setModelReadyState(this.getReadyState());
 	if (this.getReadyState() === this.Done) {
-	    this.setModelValue('setStatus', this.getStatus());
+	    this.setModelStatus(this.getStatus());
 	    if (this.transport.responseText) 
-		this.setModelValue('setResponseText', this.getResponseText());
+		this.setModelResponseText(this.getResponseText());
 	    if (this.transport.responseXML) 
-		this.setModelValue('setResponseXML', this.getResponseXML());
+		this.setModelResponseXML(this.getResponseXML());
 	    this.disconnectModel(); // autodisconnect?
 	}
     },
@@ -319,7 +336,7 @@ View.subclass('NetRequest', {
 	} catch (er) {
 	    var status = this.getStatus();
 	    status.setException(er);
-	    this.setModelValue("setStatus", status);
+	    this.setModelStatus(status);
 	    throw er;
 	}
     },

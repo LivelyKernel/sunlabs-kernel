@@ -2238,51 +2238,51 @@ Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
 	
 	r = new Rectangle(40, 3, 200, 20);
         m = panel.addMorph(new TextListMorph(r, ["San Francisco, California", "Tampere, Finland", "London, United Kingdom"]));
-	m.formalModel = model.newRelay({ Selection: "Locale"});
+	m.connectModel(model.newRelay({ Selection: "Locale"}));
         m.selectLineAt(0); // Select the first item by default
 
         // build the textfields for the weather panel
         m = panel.addMorph(new TextMorph(r.withY(55), "---"));
-	m.formalModel = model.newRelay({Text: "-WeatherDesc"});
+	m.connectModel(model.newRelay({Text: "-WeatherDesc"}));
 	model.addObserver(m, {WeatherDesc: "!Text"});
         m.takesKeyboardFocus = Functions.True;
 
 
         m = panel.addMorph(new TextMorph(r.withY(80), "---"));
-	m.formalModel = model.newRelay({Text: "-Temperature"});
+	m.connectModel(model.newRelay({Text: "-Temperature"}));
 	model.addObserver(m, {Temperature: "!Text"});
         m.takesKeyboardFocus = Functions.True;
 	
         m = panel.addMorph(new TextMorph(r.withY(105), "---"));
-	m.formalModel = model.newRelay({Text: "-Wind"});
+	m.connectModel(model.newRelay({Text: "-Wind"}));
 	model.addObserver(m, {Wind: "!Text"});
         m.takesKeyboardFocus = Functions.True;
 
         m = panel.addMorph(new TextMorph(r.withY(130), "---"));
-	m.formalModel = model.newRelay({Text: "-Gusts"});
+	m.connectModel(model.newRelay({Text: "-Gusts"}));
 	model.addObserver(m, {Gusts: "!Text"});
         m.takesKeyboardFocus = Functions.True;
 	
         m = panel.addMorph(new TextMorph(r.withY(155), "---"));
-	m.formalModel = model.newRelay({Text: "-DewPoint"});
+	m.connectModel(model.newRelay({Text: "-DewPoint"}));
 	model.addObserver(m, {DewPoint: "!Text"});
         m.takesKeyboardFocus = Functions.True;
 	
         m = panel.addMorph(new TextMorph(r.withY(180), "---"));
-	m.formalModel = model.newRelay({Text: "-Humidity"});
+	m.connectModel(model.newRelay({Text: "-Humidity"}));
 	model.addObserver(m, {Humidity: "!Text"});
         m.takesKeyboardFocus = Functions.True;
 	
         m = panel.addMorph(new TextMorph(r.withY(205), "---"));
-	m.formalModel = model.newRelay({Text: "-Visibility"});
+	m.connectModel(model.newRelay({Text: "-Visibility"}));
 	model.addObserver(m, {Visibility: "!Text"});
 	
         m.takesKeyboardFocus = Functions.True;
 	
         var image = panel.addMorph(new ImageMorph(r.withY(230)));
+	image.connectModel(model.newRelay({URL: "-ImageURL"}));
 	model.addObserver(image, {ImageURL: "!URL"});
-	image.formalModel = model.newRelay({URL: "-ImageURL"});
-
+	
         image.setFill(null);
     
 	this.onLocaleUpdate("San Francisco, California");
