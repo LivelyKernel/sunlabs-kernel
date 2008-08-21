@@ -650,81 +650,96 @@ Object.subclass('Record', {
     }
 });
 
-
-Record.create = function(bodySpec) {
-    var klass = Record.subclass();
-    function observerListName(name) { return name + "$observers" }
-    // do klass.prototype.addObserver = .. ?
-    var def = {
-	addObserver: function(dep, optForwardingSpec) {
-	    if (optForwardingSpec) {
-		// do forwarding
-		dep = Relay.newInstance(optForwardingSpec, dep);
-	    }
-	    // find all the "on"<Variable>"Update" methods of dep
-	    for (var name in dep) {
-		if (name.startsWith("on") && name.endsWith("Update")) {
-		    var varname = name.substring(2, name.indexOf("Update"));
-		    if (!this["set" + varname]) 
-			throw new Error("cannot observe nonexistent variable " + varname);
-		    var deps = this[observerListName(varname)];
-		    if (!deps) deps = this[observerListName(varname)] = [];
-		    else if (deps.indexOf(dep) >= 0) return;
-		    deps.push(dep);
-		}
-	    }
-	}
-
-	// FIXME remove observers?
-    };
-    Properties.forEachOwn(bodySpec, function(name) {
-	var spec = bodySpec[name];
+Object.extend(Record, {
 	
-	def["set" + name] = (function(name, to, byDefault) { 
-	    return function(value, optSource) {
-		if (value === undefined) {
-		    this.removeRecordField(name);
-		} else {
-		    if (!value && byDefault) value = byDefault;
-		    this.setRecordField(name, coercedValue = to ? to(value) : value);
-		}
-		var deps = this[observerListName(name)];
-		if (deps) {
-		    for (var i = 0; i < deps.length; i++) {
-			var dep = deps[i];
-			dep["on" + name + "Update"].call(dep, value, optSource);
-		    }
-		}
-	    }
-	})(spec.name || name, spec.to, spec.byDefault);
-	
-	def["get" + name] = (function(name, from, byDefault) {
-	    return function(optSource) {
-		if (this.rawNode) {
-		    var value = this.getRecordField(name);
-		    if (!value && byDefault) return byDefault;
-		    else if (from) return from(value);
-		    else return value;
-		} else if (this === this.constructor.prototype) { // we are the prototype? not foolproof but works in LK
-		    return byDefault; 
-		} else {
-		    throw new Error("no rawNode");
-		}
-	    }
-	})(spec.name || name, spec.from, spec.byDefault);
-    });
+    create: function(bodySpec) {
+	var klass = Record.subclass();
+	this.addObserverMethod(klass);
+	this.extendRecordClass(klass, bodySpec);
+	return klass;
+    },
 
+    newInstance: function(fieldSpec, argSpec, optStore) {
+	var Rec = Record.create(fieldSpec);
+	if (!optStore) optStore = NodeFactory.create("model"); // FIXME flat JavaScript instead by default?
+	return new Rec(optStore, argSpec);
+    },
 
-    klass.addMethods(def);
-    return klass;
-};
+    extendRecordClass: function(klass, bodySpec) {
+	var def = {};
+	Properties.forEachOwn(bodySpec, function(name) {
+            var spec = bodySpec[name];
+            Record.addAccessorMethods(def, name, spec);           
+        });
+    	klass.addMethods(def);
+    },
 
-Record.newInstance = function(fieldSpec, argSpec, optStore) {
-    var Rec = Record.create(fieldSpec);
-    if (!optStore) optStore = NodeFactory.create("model"); // FIXME flat JavaScript instead by default?
-    return new Rec(optStore, argSpec);
-};
-
+    observerListName: function(name) { return name + "$observers"},
+    
+    addAccessorMethods: function(def, fieldName, spec) {
+        def["set" + fieldName] = this.createSetter(spec.name || fieldName, spec.to, spec.byDefault);
+        def["get" + fieldName] = this.createGetter(spec.name || fieldName, spec.from, spec.byDefault);
+    },
+    
+    createSetter: function (name, to, byDefault) {
+        return function(value, optSource) {
+            if (value === undefined) {
+            	this.removeRecordField(name);
+            } else {
+            	if (!value && byDefault) value = byDefault;
+				var coercedValue = to ? to(value) : value;
+				if (this.getRecordField(name) === coercedValue) return;
+            	this.setRecordField(name, coercedValue);
+            }
+            var deps = this[Record.observerListName(name)];
+            if (deps) {
+            	for (var i = 0; i < deps.length; i++) {
+                    var dep = deps[i];
+                    dep["on" + name + "Update"].call(dep, value, optSource);
+            	}
+            }
+        }
+    },
+    
+    createGetter: function (name, from, byDefault) {
+        return function(optSource) {
+            if (this.rawNode) {
+                var value = this.getRecordField(name);
+                if (!value && byDefault) return byDefault;
+                else if (from) return from(value);
+                else return value;
+            } else if (this === this.constructor.prototype) { // we are the prototype? not foolproof but works in LK
+                return byDefault; 
+            } else {
+                throw new Error("no rawNode");
+            }
+        }
+    },
+    
+    addObserverMethod: function(klass) {
+        var def = {
+            addObserver: function(dep, optForwardingSpec) {
+                if (optForwardingSpec) {
+                    // do forwarding
+                    dep = Relay.newInstance(optForwardingSpec, dep);
+                }
+                // find all the "on"<Variable>"Update" methods of dep
+                for (var name in dep) {
+                    if (name.startsWith("on") && name.endsWith("Update")) {
+                        var varname = name.substring(2, name.indexOf("Update"));
+                        if (!this["set" + varname]) 
+                            throw new Error("cannot observe nonexistent variable " + varname);
+                        var deps = this[Record.observerListName(varname)];
+                        if (!deps) deps = this[Record.observerListName(varname)] = [];
+                        else if (deps.indexOf(dep) >= 0) return;
+                        deps.push(dep);
+                    }
+                }
+            }
+        };
+        klass.addMethods(def);
+    }
+});
 
 Object.subclass('Relay', {
     documentation: "Property access forwarder factory",
