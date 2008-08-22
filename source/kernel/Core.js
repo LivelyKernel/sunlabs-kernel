@@ -110,8 +110,11 @@ Object.extend(Function.prototype, {
 		});
 	    } 
 	    this.prototype[property] = value;
-	    
-	    if (Object.isFunction(value)) {
+
+	    if (property == "formals") {
+		// special property (used to be pins, but now called formals to disambiguate old and new style
+		this.addPins(value);
+	    } else if (Object.isFunction(value)) {
 		for ( ; value; value = value.originalFunction) {
 		    if (value.methodName) {
 			//console.log("class " + this.prototype.constructor.type 
@@ -129,7 +132,14 @@ Object.extend(Function.prototype, {
     },
 
     addProperties: function(spec) {
-	var source = Record.create(spec).prototype;
+	this.addMixin(Record.create(spec).prototype);
+    },
+    
+    addPins: function(list) {
+	this.addMixin(Relay.newDelegationMixin(list).prototype);
+    },
+    
+    addMixin: function(source) { // FIXME: do the extra processing like addMethods does
 	for (var prop in source) {
 	    var value = source[prop];
 	    if (prop == "constructor" || prop == "initialize") continue;
@@ -687,8 +697,8 @@ Object.extend(Record, {
             	this.removeRecordField(name);
             } else {
             	if (!value && byDefault) value = byDefault;
-				var coercedValue = to ? to(value) : value;
-				if (this.getRecordField(name) === coercedValue) return;
+		var coercedValue = to ? to(value) : value;
+		if (this.getRecordField(name) === coercedValue) return;
             	this.setRecordField(name, coercedValue);
             }
             var deps = this[Record.observerListName(name)];
@@ -715,7 +725,7 @@ Object.extend(Record, {
             }
         }
     },
-    
+
     addObserverMethod: function(klass) {
         var def = {
             addObserver: function(dep, optForwardingSpec) {
@@ -750,52 +760,94 @@ Object.subclass('Relay', {
     }
 });
 
-Relay.create = function(args) {
-    var klass = Relay.subclass();
-    var def = {
-	definition: Object.clone(args) // the relay was constructed
-    };
-    Properties.forEachOwn(args, function(name) {
-	var translated = args[name];
-	if (translated.startsWith("!")) {
+Object.extend(Relay, {
+
+    newRelayFunction: function(targetName) {
+	return function(/*...*/) {
+	    // what if  this.delegate[targetName] is null? more info
+	    this.delegate[targetName].apply(this.delegate, arguments);
+	}
+    },
+
+
+    handleRelaySpec: function(def, key, value) {
+	if (value.startsWith("!")) {
 	    // call an update method with the derived name
-	    var stripped = translated.substring(1);
-	    def["on" + name + "Update"] = function(/*...*/) {
-		this.delegate["on" + stripped + "Update"].apply(this.delegate, arguments);
-	    }
-	} else if (translated.startsWith("=")) {
+	    def["on" + key + "Update"] = Relay.newRelayFunction("on" + value.substring(1) + "Update");
+	} else if (value.startsWith("=")) {
 	    // call exactly that method
-	    var stripped = translated.substring(1);
-	    def["on" + name + "Update"] = function(/*...*/) {
-		this.delegate[stripped].apply(this.delegate, arguments);
-	    }
+	    def["on" + key + "Update"] = Relay.newRelayFunction(value.substring(1));
 	} else {
-	    if (!translated.startsWith('-')) { // not read-only
-		var stripped = translated.startsWith('+') ? translated.substring(1) : translated;
-		def["set" + name] = function(/*...*/) {
-		    // FIXME what if method not available?
-		    this.delegate["set" + stripped].apply(this.delegate, arguments);
-		}
+	    if (!value.startsWith('-')) { // not read-only
+		var stripped = value.startsWith('+') ? value.substring(1) : value;
+		def["set" + key] = Relay.newRelayFunction("set" + stripped);
 	    }
-	    if (!translated.startsWith('+')) { // not write-only
-		var stripped = translated.startsWith('-') ? translated.substring(1) : translated;
-		def["get" + name] = function(/*...*/) {
-		    // FIXME what if method not available?
-		    return this.delegate["get" + stripped].apply(this.delegate, arguments);
-		}
+	    if (!value.startsWith('+')) { // not write-only
+		var stripped = value.startsWith('-') ? value.substring(1) : value;
+		def["get" + key] = Relay.newRelayFunction("get" + stripped);
 	    }
 	}
-    });
+    },
+
+    create: function(args) {
+	var klass = Relay.subclass();
+	var def = {
+	    definition: Object.clone(args) // how the relay was constructed
+	};
+	Properties.forEachOwn(args, function(key) { Relay.handleRelaySpec(def, key, args[key]); });
     
-    klass.addMethods(def);
-    return klass;
-};
+	klass.addMethods(def);
+	return klass;
+    },
 
-Relay.newInstance = function(spec, delegate) {
-    var Fwd = Relay.create(spec); // make a new class
-    return new Fwd(delegate); // now make a new instance
-}
+    newInstance: function(spec, delegate) {
+	var Fwd = Relay.create(spec); // make a new class
+	return new Fwd(delegate); // now make a new instance
+    },
+    
+    // not sure if it belongs in Relay    
+    newDelegationMixin: function(list) {
+	
+	function newDelegatorGetter(name) {
+            return function(optDefault) {
+		var m = this.formalModel;
+		if (m) {
+		    var method = m["get" + name];
+		    return method && method.call(m, optDefault);
+		} else return this.getModelValue("get" + name, optDefault);
+            }
+	}
+	
+	function newDelegatorSetter(name) {
+	    return function(value) {
+		var m = this.formalModel;
+		if (m) {
+		    var method = m["set" + name];
+		    return method && method.call(m, value);
+		}
+		return this.setModelValue("set" + name, value);
+            }
+	}
+	
+	var klass = Object.subclass();
+	
+	list.forEach(function(name) {
+	    if (!name.startsWith('-')) { // not read-only
+		var stripped = name.startsWith('+') ? name.substring(1) : name;
+		klass.prototype["set" + stripped] = newDelegatorSetter(stripped);
+	    }
+	    if (!name.startsWith('+')) { // not write-only
+		var stripped = name.startsWith('-') ? name.substring(1) : name;
+		klass.prototype["get" + stripped] = newDelegatorGetter(stripped);
+	    }
+	});
+	
+	return klass;
+    }
+    
 
+});
+    
 Relay.test = function() {
     // the model knows about operands and result.
     var CalcModel = Record.create({ 

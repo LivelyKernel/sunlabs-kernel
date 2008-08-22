@@ -34,7 +34,7 @@ Morph.subclass('ButtonMorph', {
     borderColor: Color.neutral.gray,
     label: null,
     
-    pins: ["Value"],
+    formals: ["Value"],
 
     // A ButtonMorph is the simplest widget
     // It read and writes the boolean variable, this.model[this.propertyName]
@@ -43,7 +43,7 @@ Morph.subclass('ButtonMorph', {
 
         $super(initialBounds, "rect");
         
-        var model = new SyntheticModel(this.pins);
+        var model = new SyntheticModel(this.formals);
         // this default self connection may get overwritten by, eg, connectModel()...
         this.modelPlug = new ModelPlug(model.makePlugSpec());
         // Styling
@@ -107,18 +107,13 @@ Morph.subclass('ButtonMorph', {
 
     updateView: function(aspect, controller) {
         var p = this.modelPlug;
-        if (p) {
-            if (aspect == p.getValue || aspect == 'all') this.changeAppearanceFor(this.getValue());
-            return this.getValue();
-        }
+	if (!p) return;
+        if (aspect == p.getValue || aspect == 'all') 
+	    this.onValueUpdate(this.getValue());
     },
 
-    getValue: function() {
-        if (this.modelPlug) return this.getModelValue('getValue', false);
-    },
-
-    setValue: function(value) {
-        if (this.modelPlug) this.setModelValue('setValue', value);
+    onValueUpdate: function(value) {
+	this.changeAppearanceFor(value);
     },
 
     takesKeyboardFocus: Functions.True,          // unlike, eg, cheapMenus

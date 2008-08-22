@@ -228,11 +228,11 @@ View.subclass('NetRequest', {
     Loading: 3,
     Done: 4,
 
-    pins: ["+Status",  // Updated once, when request is {Done} with the value returned from 'getStatus'.
-	   "+ReadyState", // Updated on every state transition of the request.
-	   "+ResponseXML", // Updated at most once, when request state is {Done}, with the parsed XML document retrieved.
-	   "+ResponseText" // Updated at most once, when request state is {Done}, with the text content retrieved.
-	  ],
+    formals: ["+Status",  // Updated once, when request is {Done} with the value returned from 'getStatus'.
+	      "+ReadyState", // Updated on every state transition of the request.
+	      "+ResponseXML", // Updated at most once, when request state is {Done}, with the parsed XML document retrieved.
+	      "+ResponseText" // Updated at most once, when request state is {Done}, with the text content retrieved.
+	     ],
     
     initialize: function($super, modelPlug) {
 	this.transport = new XMLHttpRequest();
@@ -260,32 +260,15 @@ View.subclass('NetRequest', {
 	this.isSync = true;
 	return this;
     },
-    
-    // synthesize
-    setModelReadyState: function(state) { return this.formalModel ? 
-					  (this.formalModel.setReadyState && this.formalModel.setReadyState(state))
-					  : this.setModelValue("setReadyState", state); },
-
-    setModelStatus: function(value)  { return this.formalModel ? 
-				       (this.formalModel.setStatus && this.formalModel.setStatus(value))
-				       : this.setModelValue("setStatus", value); },
-    
-    setModelResponseText: function(value) { return this.formalModel ? 
-					    (this.formalModel.setResponseText && this.formalModel.setResponseText(value))
-					    : this.setModelValue("setResponseText", value); },
-    
-    setModelResponseXML: function(value) { return this.formalModel ? 
-					   (this.formalModel.setResponseXML && this.formalModel.setResponseXML(value)) 
-					   : this.setModelValue("setResponseXML", value); },
 
     onReadyStateChange: function() {
-	this.setModelReadyState(this.getReadyState());
+	this.setReadyState(this.getReadyState());
 	if (this.getReadyState() === this.Done) {
-	    this.setModelStatus(this.getStatus());
+	    this.setStatus(this.getStatus());
 	    if (this.transport.responseText) 
-		this.setModelResponseText(this.getResponseText());
+		this.setResponseText(this.getResponseText());
 	    if (this.transport.responseXML) 
-		this.setModelResponseXML(this.getResponseXML());
+		this.setResponseXML(this.getResponseXML());
 	    this.disconnectModel(); // autodisconnect?
 	}
     },
@@ -336,7 +319,7 @@ View.subclass('NetRequest', {
 	} catch (er) {
 	    var status = this.getStatus();
 	    status.setException(er);
-	    this.setModelStatus(status);
+	    this.setStatus(status);
 	    throw er;
 	}
     },
