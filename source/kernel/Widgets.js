@@ -878,7 +878,7 @@ TextMorph.subclass("CheapListMorph", {
             switch (aspect) {
             case this.modelPlug.getList:
             case 'all':
-                this.updateList(this.getList());
+                this.updateList(this.getList(["----"]));
                 return this.itemList; // debugging
             case this.modelPlug.getSelection:
                 var selection = this.getSelection();
@@ -888,17 +888,13 @@ TextMorph.subclass("CheapListMorph", {
                 if (this.getModelValue("getDeletionConfirmation") == true) {
                     // update self to reflect that model changed
                     var index = this.selectedLineNo();
-                    var list = this.getList();
+                    var list = this.getList(["----"]);
                     list.splice(index, 1);
                     this.updateList(list);
                 } 
                 return null;
             }
         }
-    },
-
-    getList: function() {
-        if (this.modelPlug) return this.getModelValue('getList', ["-----"]);
     },
 
     getSelection: function() {
@@ -945,7 +941,7 @@ Morph.subclass("TextListMorph", {
     borderColor: Color.black,
     borderWidth: 1,
     fill: Color.white,
-    pins: ["List", "Capacity", "ListDelta", "Selection", "-DeletionConfirmation", "+DeletionRequest"],
+    formals: ["List", "Selection", "-Capacity", "-ListDelta", "-DeletionConfirmation", "+DeletionRequest"],
     itemMargin: Rectangle.inset(1), // stylize
     defaultCapacity: 50,
     highlightItemsOnMove: false,
@@ -960,9 +956,9 @@ Morph.subclass("TextListMorph", {
         this.selectedLineNo = -1;
         this.generateSubmorphs(itemList, initialBounds.width, optTextStyle);
         this.alignAll(optMargin);
-        var model = new SyntheticModel(this.pins);
-        this.modelPlug = new ModelPlug(model.makePlugSpecFromPins(this.pins));
-        this.setModelValue('setList', itemList);
+        var model = new SyntheticModel(this.formals);
+        this.modelPlug = new ModelPlug(model.makePlugSpecFromPins(this.formals));
+        this.setList(itemList);
         this.savedFill = null; // for selecting items
         return this;
     },
@@ -976,7 +972,7 @@ Morph.subclass("TextListMorph", {
             m.relayMouseEvents(this);
            this.itemList.push(m.textString);
         }
-        this.setModelValue('setList', this.itemList);
+        this.setList(this.itemList);
         this.layoutChanged();
     },
 
@@ -1052,7 +1048,7 @@ Morph.subclass("TextListMorph", {
             // request deletion by setting a deletion request in the model
             // if model is subsequently updated with a "setDeletionConfirmation"
             // the selected item will be removed from the view.
-            this.setModelValue("setDeletionRequest", this.itemList[this.selectedLineNo]);
+            this.setDeletionRequest(this.itemList[this.selectedLineNo]);
             evt.stop();
             break;
         }
@@ -1097,7 +1093,7 @@ Morph.subclass("TextListMorph", {
     },
 
     appendList: function(newItems) {
-        var capacity = this.getModelValue("getCapacity", this.defaultCapacity);
+        var capacity = this.getCapacity(this.defaultCapacity);
         var priorItem = this.getSelection();
         var removed = this.itemList.length + newItems.length - capacity;
         if (removed > 0) {
@@ -1135,51 +1131,50 @@ Morph.subclass("TextListMorph", {
         }
         return false;
     },
+
+    onListUpdate: function(list) {
+	this.updateList(list);
+    },
+
+    onSelectionUpdate: function(selection) {
+	console.log("got selection "  + selection);
+        this.setSelectionToMatch(selection);
+    },
+
+    onDeletionConfirmationUpdate: function(conf) {
+        if (conf == true) {
+            // update self to reflect that model changed
+            var index = this.selectedLineNo;
+            var list = this.getList();
+            list.splice(index, 1);
+            this.updateList(list);
+        } 
+    },
     
     updateView: function(aspect, controller) {
         var c = this.modelPlug;
-        if (c) { // New style connect
-            switch (aspect) {
-            case this.modelPlug.getList:
-            case 'all':
-                this.updateList(this.getList());
-                return this.itemList; // debugging
-
-            case this.modelPlug.getListDelta:
-                this.appendList(this.getModelValue("getListDelta"));
-                // this.setModelValue("setListDelta", []);
-                return this.itemList;
-
-            case this.modelPlug.getSelection:
-                var selection = this.getSelection();
-                console.log("got selection "  + selection);
-                this.setSelectionToMatch(selection);
-                return selection; //debugging
-
-            case this.modelPlug.getDeletionConfirmation: //someone broadcast a deletion
-                if (this.getModelValue("getDeletionConfirmation") == true) {
-                    // update self to reflect that model changed
-                    var index = this.selectedLineNo;
-                    var list = this.getList();
-                    list.splice(index, 1);
-                    this.updateList(list);
-                } 
-                return null;
-            }
+	if (!c) return;
+        switch (aspect) {
+        case this.modelPlug.getList:
+        case 'all':
+            this.onListUpdate(this.getList());
+            return this.itemList; // debugging
+	    
+        case this.modelPlug.getListDelta:
+            this.appendList(this.getListDelta());
+            return this.itemList;
+	    
+        case this.modelPlug.getSelection:
+            var selection = this.getSelection();
+	    this.onSelectionUpdate(selection);
+            return selection; //debugging
+	    
+        case this.modelPlug.getDeletionConfirmation: //someone broadcast a deletion
+	    this.onDeletionConfirmationUpdate(this.getDeletionConfirmation());
+            return null;
         }
     },
 
-    getList: function() {
-        if (this.modelPlug) return this.getModelValue('getList', ["-----"]);
-    },
-
-    getSelection: function() {
-        if (this.modelPlug) return this.getModelValue('getSelection', null);
-    },
-
-    setSelection: function(item) {
-        if (this.modelPlug) this.setModelValue('setSelection', item); 
-    },
 
     enclosingScrollPane: function() { 
         // Need a cleaner way to do this
