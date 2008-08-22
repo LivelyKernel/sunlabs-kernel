@@ -1742,13 +1742,11 @@ Morph.subclass("ScrollPane", {
         var slideRoom = ht - this.bounds().height;
         this.innerMorph().setPosition(pt(this.innerMorph().position().x, -slideRoom*scrollPos)); 
         this.scrollBar.adjustForNewBounds();
-	console.log("setScrollPos  ht = " + ht + ", slideRoom = " + slideRoom + ", scrollPos = " + scrollPos);
+	//console.log("setScrollPos  ht = " + ht + ", slideRoom = " + slideRoom + ", scrollPos = " + scrollPos);
     },
 
     getVisibleExtent: function(scrollPos) {
-        var result = Math.min(1, this.bounds().height / Math.max(10, this.innerMorph().bounds().height)); 
-	console.log("visible extent " + result);
-	return result;
+        return Math.min(1, this.bounds().height / Math.max(10, this.innerMorph().bounds().height)); 
     },
     
     scrollToTop: function() {
