@@ -398,7 +398,7 @@ if(Config.testTracing) Function.testTrace();
 // the DOM to reflect the geometry of objects on the screen, which is
 // needed to figure out font geometry. Apparently the update happens
 // after control returns to the caller of JS
-main.logCompletion("main").delay(0.05);
+main.logCompletion("main").delay(Config.mainDelay);
 
 }.logCompletion("Main.js"))();
 

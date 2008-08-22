@@ -133,7 +133,10 @@ var Config = {
 
     // where the local web server runs
     // FIXME: parse /trunk/source/server/brazil.config to figure out the port?
-    personalServerPort: 8081
+    personalServerPort: 8081,
+
+    // the delay set on the main() function
+    mainDelay: 0.05
     
 }
 
