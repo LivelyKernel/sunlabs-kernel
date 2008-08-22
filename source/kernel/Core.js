@@ -765,7 +765,7 @@ Object.extend(Relay, {
     newRelayFunction: function(targetName) {
 	return function(/*...*/) {
 	    // what if  this.delegate[targetName] is null? more info
-	    this.delegate[targetName].apply(this.delegate, arguments);
+	    return this.delegate[targetName].apply(this.delegate, arguments);
 	}
     },
 
@@ -3890,6 +3890,9 @@ Visual.subclass('Morph', {
     
 });
 
+Morph.addProperties({ CopySubmorphsOnGrab: {name: "copy-submorphs-on-grab", from:Converter.parseBoolean, to:Converter.unparseBoolean,
+				   byDefault: false}});
+
 // Functions for change management
 Object.extend(Morph, {
     
@@ -4733,7 +4736,12 @@ Morph.addMethods({
 
 	if (this.getModel() instanceof SyntheticModel)
 	    items.push( ["show Model dump", this.addModelInspector.curry(this)]);
-
+	
+	if (this.getCopySubmorphsOnGrab() == true) 
+	    items.push(["unpalettize", this.setCopySubmorphsOnGrab.curry(false)]);
+	else 
+	    items.push(["palettize", this.setCopySubmorphsOnGrab.curry(true)]);
+	
 	var menu = new MenuMorph(items, this); 
 
 	return menu;
@@ -6548,7 +6556,7 @@ Morph.subclass("HandMorph", {
 
     
     grabMorph: function(grabbedMorph, evt) { 
-        if (evt.isShiftDown()) {
+        if (evt.isShiftDown() || (grabbedMorph.owner && grabbedMorph.owner.getCopySubmorphsOnGrab() == true)) {
             if (!grabbedMorph.okToDuplicate()) return;
             grabbedMorph.copyToHand(this);
             return;

@@ -809,7 +809,7 @@ Morph.subclass("TextMorph");
 
 TextMorph.addProperties({
     StoredTextStyle: {name: "stored-style", from:Converter.fromJSONAttribute, to:Converter.toJSONAttribute },
-    StoredString: {name: "stored-text", from: Converter.fromJSONAttribute, to:Converter.toJSONAttribute},
+    StoredString: {name: "stored-text", from: Converter.fromJSONAttribute, to:Converter.toJSONAttribute, byDefault: ""},
     Wrap: { name: "wrap", byDefault: WrapStyle.Normal },
     Padding: { name: "padding", byDefault: String(Rectangle.inset(6, 4).toInsetTuple()) } // FIXME move to coercion funcions
 });
@@ -874,7 +874,7 @@ TextMorph.addMethods({
 	if (styleInfo) {
 	    this.textStyle = new RunArray(styleInfo.runs, styleInfo.values); 
 	}
-	this.textString = this.getStoredString();
+	this.textString = this.getStoredString() || "";
     },
 
     initialize: function($super, rect, textString) {

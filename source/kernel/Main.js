@@ -217,14 +217,10 @@ function populateWorldWithExamples(world) {
 
 	    PIM = new WebPIM().openIn(this, pt(110, 110));
 	    
-
             if (Config.showRSSReader() && Config.showNetworkExamples) {
                 console.log('initializing RSS reader');
                 new FeedWidget("http://news.cnet.com/2547-1_3-0-5.xml").openIn(this, pt(725, 120));
             }
-	    
-            // this.beetleGame = new DungBeetleMorph(pt(10, 10).extent(pt(240, 320)));
-            // this.addMorph(new WindowMorph(this.beetleGame, 'Dung Beetle')); 
 	    
             if (Config.showCanvasScape()) {
                 this.addMorph(new WindowMorph(new CanvasScapeMorph(new Rectangle(20,50,800,300)), 'CanvasScape')).collapse();
@@ -402,7 +398,7 @@ if(Config.testTracing) Function.testTrace();
 // the DOM to reflect the geometry of objects on the screen, which is
 // needed to figure out font geometry. Apparently the update happens
 // after control returns to the caller of JS
-main.logCompletion("main").delay(0.05);
+main.logCompletion("main").delay(0.5);
 
 }.logCompletion("Main.js"))();
 

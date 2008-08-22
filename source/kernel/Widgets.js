@@ -1477,7 +1477,7 @@ Morph.subclass("SliderMorph", {
         var val = this.getValue();
         var bnds = this.shape.bounds();
         var ext = this.getSliderExtent();
-
+	
         if (this.vertical()) { // more vertical...
             var elevPix = Math.max(ext*bnds.height, this.mss); // thickness of elevator in pixels
             var topLeft = pt(0, (bnds.height - elevPix)*val);
@@ -1586,6 +1586,7 @@ Morph.subclass("SliderMorph", {
 
     getSliderExtent: function() {
         return this.formalModel ? this.formalModel.getSliderExtent() : this.getModelValue('getSliderExtent', 0.0);
+	return result;
     },
 
     takesKeyboardFocus: Functions.True,
@@ -1741,11 +1742,13 @@ Morph.subclass("ScrollPane", {
         var slideRoom = ht - this.bounds().height;
         this.innerMorph().setPosition(pt(this.innerMorph().position().x, -slideRoom*scrollPos)); 
         this.scrollBar.adjustForNewBounds();
-	//console.log("setScrollPos  ht = " + ht + ", slideRoom = " + slideRoom + ", scrollPos = " + scrollPos);
+	console.log("setScrollPos  ht = " + ht + ", slideRoom = " + slideRoom + ", scrollPos = " + scrollPos);
     },
 
     getVisibleExtent: function(scrollPos) {
-        return Math.min(1, this.bounds().height / Math.max(10, this.innerMorph().bounds().height)); 
+        var result = Math.min(1, this.bounds().height / Math.max(10, this.innerMorph().bounds().height)); 
+	console.log("visible extent " + result);
+	return result;
     },
     
     scrollToTop: function() {
