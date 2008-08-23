@@ -510,7 +510,29 @@ Morph.subclass("SelectionMorph", {
 		y += m.innerBounds().height + separation;
 	});
     },
-    spaceHorizontally: function() { 	// Sort the morphs vertically	var morphs = this.selectedMorphs.slice(0).sort(function(m,n) {return m.position().x - n.position().x});	// Align all morphs to same left x as the top one.	var minX = morphs[0].position().x;	var minY = morphs[0].position().y;	// Compute maxX and sumOfWidths	var maxX = minY;	var sumOfWidths = 0;	morphs.forEach(function(m) {		var wid = m.innerBounds().width;		sumOfWidths += wid;		maxX = Math.max(maxX, m.position().x + wid);	});	// Now spread them out to fit old top and bottom with even spacing between	var separation = (maxX-minX-sumOfWidths)/Math.max(this.selectedMorphs.length-1, 1);	var x = minX;	morphs.forEach(function(m) {		m.setPosition(pt(x, minY));		x += m.innerBounds().width + separation;	});    },
+    spaceHorizontally: function() { 
+	// Sort the morphs vertically
+	var morphs = this.selectedMorphs.slice(0).sort(function(m, n) { 
+	    return m.position().x - n.position().x;
+	});
+	// Align all morphs to same left x as the top one.
+	var minX = morphs[0].position().x;
+	var minY = morphs[0].position().y;
+	// Compute maxX and sumOfWidths
+	var maxX = minY;
+	var sumOfWidths = 0;
+	morphs.forEach(function(m) {
+	    var wid = m.innerBounds().width;
+	    sumOfWidths += wid;
+	    maxX = Math.max(maxX, m.position().x + wid);
+	});	// Now spread them out to fit old top and bottom with even spacing between
+	var separation = (maxX -minX - sumOfWidths)/Math.max(this.selectedMorphs.length - 1, 1);
+	var x = minX;
+	morphs.forEach(function(m) {
+	    m.setPosition(pt(x, minY));
+	    x += m.innerBounds().width + separation;
+	});
+    },
  
     copyToHand: function(hand) { 
         this.selectedMorphs.invoke('copyToHand', hand);
