@@ -490,7 +490,7 @@ Morph.subclass("SelectionMorph", {
     
     spaceVertically: function() { 
 	// Sort the morphs vertically
-	var morphs = this.selectedMorphs.slice(0).sort(function(m,n) {return m.position().y - n.position().y});
+	var morphs = this.selectedMorphs.clone().sort(function(m,n) {return m.position().y - n.position().y});
 	// Align all morphs to same left x as the top one.
 	var minX = morphs[0].position().x;
 	var minY = morphs[0].position().y;
@@ -503,16 +503,17 @@ Morph.subclass("SelectionMorph", {
 		maxY = Math.max(maxY, m.position().y + ht);
 	});
 	// Now spread them out to fit old top and bottom with even spacing between
-	var separation = (maxY-minY-sumOfHeights)/Math.max(this.selectedMorphs.length-1, 1);
+	var separation = (maxY - minY - sumOfHeights)/Math.max(this.selectedMorphs.length - 1, 1);
 	var y = minY;
 	morphs.forEach(function(m) {
 		m.setPosition(pt(minX, y));
 		y += m.innerBounds().height + separation;
 	});
     },
+
     spaceHorizontally: function() { 
 	// Sort the morphs vertically
-	var morphs = this.selectedMorphs.slice(0).sort(function(m, n) { 
+	var morphs = this.selectedMorphs.clone().sort(function(m, n) { 
 	    return m.position().x - n.position().x;
 	});
 	// Align all morphs to same left x as the top one.
@@ -526,7 +527,7 @@ Morph.subclass("SelectionMorph", {
 	    sumOfWidths += wid;
 	    maxX = Math.max(maxX, m.position().x + wid);
 	});	// Now spread them out to fit old top and bottom with even spacing between
-	var separation = (maxX -minX - sumOfWidths)/Math.max(this.selectedMorphs.length - 1, 1);
+	var separation = (maxX - minX - sumOfWidths)/Math.max(this.selectedMorphs.length - 1, 1);
 	var x = minX;
 	morphs.forEach(function(m) {
 	    m.setPosition(pt(x, minY));
