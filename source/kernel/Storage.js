@@ -588,10 +588,14 @@ TwoPaneBrowser.subclass('FileBrowser', {
 	    ];
 	    addWebDAVItems(url, items);
 	    addSubversionItems(url, items);
-	    
+
+	    function isGraphics(shortName) {
+		return shortName.endsWith(".jpg") || shortName.endsWith(".PNG") || shortName.endsWith(".png");
+	    }
+
 	    // FIXME if not trunk, diff with trunk here.
-	    
-	    if (url.filename().endsWith(".xhtml")) {
+	    var shortName = url.filename();
+	    if (shortName.endsWith(".xhtml")) {
 		items.push(["load into current world", function(evt) {
 		    new NetRequest({model: new NetImporter(), setResponseXML: "loadWorldContentsInCurrent", 
 				    setStatus: "setRequestStatus"}).get(url);
@@ -602,13 +606,19 @@ TwoPaneBrowser.subclass('FileBrowser', {
 				    setStatus: "setRequestStatus"}).get(url);
 		}]);
 		
-	    } else if (url.filename().endsWith(".js")) {
+	    } else if (shortName.endsWith(".js")) {
 		items.push(["evaluate as Javascript", function(evt) {
 		    var importer = NetImporter();
 		    importer.onCodeLoad = function(error) {
 			if (error) evt.hand.world().alert("eval got error " + error);
 		    }
 		    importer.loadCode(url); 
+		}]);
+	    } else if (isGraphics(shortName)) {
+		// FIXME tell the browser not to load the contents.
+		items.push(["load image", function(evt) {
+		    var img = new ImageMorph(rect(pt(0,0), pt(600, 400)), fileName);
+		    evt.hand.world().addFramedMorph(img, shortName, evt.point());
 		}]);
 	    }
 	    
@@ -628,7 +638,7 @@ TwoPaneBrowser.subclass('FileBrowser', {
 	var req = new NetRequest().beSync();
 	var doc = req.propfind(url, 1).getResponseXML(); // FIXME: make async
 	var m = new XPathQueryMorph(new Rectangle(0, 0, 500, 200), doc.documentElement);
-	WorldMorph.current().addFramedMorph(m, url.toString(), evt.point());
+	evt.hand.world().addFramedMorph(m, url.toString(), evt.point());
     },
 
     onMenuShowModificationTime: function(url, evt) {
@@ -638,7 +648,7 @@ TwoPaneBrowser.subclass('FileBrowser', {
 	var query = new Query("/D:multistatus/D:response/D:propstat/D:prop/D:getlastmodified", 
 	    {model: model, getContextNode: "getInspectedNode", setResults: "setModTime"});
 	res.fetchProperties(true);
-	WorldMorph.current().alert('result is ' + Exporter.stringifyArray(model.getModTime(), '\n'));
+	evt.hand.world().alert('result is ' + Exporter.stringifyArray(model.getModTime(), '\n'));
     },
     
     removeNode: function(url) {
