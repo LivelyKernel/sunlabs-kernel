@@ -6906,14 +6906,20 @@ Morph.subclass('LinkMorph', {
     
 });
 
-LinkMorph.subclass('ExternalLinkMorph', {
+LinkMorph.subclass('ExternalLinkMorph');
+
+ExternalLinkMorph.addProperties({
+    URL: { name: "url"}
+});
+
+ExternalLinkMorph.addMethods({
     documentation: "A link to a different web page, presumably containing another LK",
 
     style: {borderColor: Color.black, fill: new RadialGradient([Color.green, 1, Color.yellow])},
     
     initialize: function($super, url, position) {
 	$super(null, position || pt(0, 0));
-	this.url = url;
+	this.setURL(url.toString());
 	this.win = null; // browser window
     },
 
@@ -6922,7 +6928,7 @@ LinkMorph.subclass('ExternalLinkMorph', {
     addPathBack: Functions.Null,
 
     enterMyWorld: function(evt) {
-	var url = this.url.toString();
+	var url = this.getURL();
 	if (evt.isCommandKey()) {
 	    this.world().confirm("Leave current runtime to enter another page?",
 				 function (answer) {
@@ -6930,14 +6936,13 @@ LinkMorph.subclass('ExternalLinkMorph', {
 				     else console.log("cancelled loading " + url);
 				 });
 	} else {
-	    // FIXME, what it this.win is closed?
-	    if (this.win) this.win.focus();
+	    if (this.win && !this.win.closed) this.win.focus();
 	    else this.win = Global.window.open(url);
 	}
     },
     
     getHelpText: function() {
-	return "Click to enter " + this.url;
+	return "Click to enter " + this.getURL();
     }
 
 });
