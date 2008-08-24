@@ -121,6 +121,7 @@ Wrapper.subclass('FeedItem', {
     documentation: "Convenience wrapper around individual RSS feed items",
     titleQ: new Query("title"),
     descriptionQ: new Query("description"),
+    linkQ: new Query("link"),
 
     initialize: function(rawNode) {
 	this.rawNode = rawNode;
@@ -132,7 +133,11 @@ Wrapper.subclass('FeedItem', {
 
     description: function() {
 	return this.descriptionQ.findFirst(this.rawNode).textContent;
-    }
+    },
+
+    link: function() {
+	return this.linkQ.findFirst(this.rawNode).textContent;
+    },
     
 });
 

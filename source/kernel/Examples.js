@@ -253,16 +253,25 @@ Widget.subclass('FeedWidget', {
 
     initializeTransientState: function() {
 	this.channels = null;
-	this.getModel().ItemMenu = [["get XML source", "makeSourcePane"],
-				    ["Jonathan Schwartz's Blog", "setURL", "http://blogs.sun.com/jonathan/feed/entries/rss"],
-				    ["Unofficial Apple blog", "setURL", "http://feeds.tuaw.com/weblogsinc/tuaw"],
-				    ["Ajaxian", "setURL", "http://feeds.feedburner.com/ajaxian"],
-				   ];
+	this.getModel().ItemMenu = [
+	    ["open in new window", "openLink"],
+	    ["get XML source", "makeSourcePane"],
+	    ["Jonathan Schwartz's Blog", "setURL", "http://blogs.sun.com/jonathan/feed/entries/rss"],
+	    ["Unofficial Apple blog", "setURL", "http://feeds.tuaw.com/weblogsinc/tuaw"],
+	    ["Ajaxian", "setURL", "http://feeds.feedburner.com/ajaxian"],
+	];
 	this.feed = new Feed({model: this, setFeedChannels: "pvtSetFeedChannels", getURL: "getURL"});
 	this.setModelValue("setWidget", this);
 	this.feed.kickstart();
     },
 
+
+    openLink: function(ignored, evt) {
+	var item = this.getEntry(this.getModelValue("getSelectedItemTitle"));
+	var urlString = item.link();
+	if (urlString) 
+	    window.open(urlString);
+    },
 
     makeSourcePane: function(ignored, evt) {
 	var item = this.getEntry(this.getModelValue("getSelectedItemTitle"));
