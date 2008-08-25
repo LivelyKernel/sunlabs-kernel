@@ -589,10 +589,6 @@ TwoPaneBrowser.subclass('FileBrowser', {
 	    addWebDAVItems(url, items);
 	    addSubversionItems(url, items);
 
-	    function isGraphics(shortName) {
-		return shortName.endsWith(".jpg") || shortName.endsWith(".PNG") || shortName.endsWith(".png");
-	    }
-
 	    // FIXME if not trunk, diff with trunk here.
 	    var shortName = url.filename();
 	    if (shortName.endsWith(".xhtml")) {
@@ -614,10 +610,10 @@ TwoPaneBrowser.subclass('FileBrowser', {
 		    }
 		    importer.loadCode(url); 
 		}]);
-	    } else if (isGraphics(shortName)) {
+	    } else if (FileBrowser.prototype.isGraphicFile(url)) {
 		// FIXME tell the browser not to load the contents.
 		items.push(["load image", function(evt) {
-		    var img = new ImageMorph(rect(pt(0,0), pt(600, 400)), fileName);
+		    var img = new ImageMorph(rect(pt(0,0), pt(500*2, 380*2)), fileName);
 		    evt.hand.world().addFramedMorph(img, shortName, evt.point());
 		}]);
 	    }
@@ -633,6 +629,13 @@ TwoPaneBrowser.subclass('FileBrowser', {
 	};
 
     },
+    
+    isGraphicFile: function(url) {
+	var shortName = url.filename();
+	// not extensive
+	return (shortName.endsWith(".jpg") || shortName.endsWith(".PNG") || shortName.endsWith(".png"));
+    },
+
 
     onMenuAddQueryMorph: function(url, evt) {
 	var req = new NetRequest().beSync();
