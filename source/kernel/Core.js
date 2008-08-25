@@ -6146,7 +6146,9 @@ PasteUpMorph.subclass("WorldMorph", {
 	    ["XenoBrowser", function(evt) { 
 		var xeno = new XenoBrowserWidget();
 		xeno.openIn(world, evt.point()); 
-	    }]
+	    }],
+	    ["External link", function(evt) { world.addMorph(new ExternalLinkMorph(URL.source.toString(), evt.point()));}],
+
         ];
         items.push(["File Browser", function(evt) { new FileBrowser().openIn(world, evt.point()) }]);
 	// FIXME this is hardcoded, remove later, shows how Subversion can be accessed directly.
@@ -6196,12 +6198,12 @@ PasteUpMorph.subclass("WorldMorph", {
         menu.scaleBy(2.5);
     }.logErrors('alert'),
 
-    prompt: function(message, callback) {
+    prompt: function(message, callback, defaultInput) {
 	var model = new SyntheticModel(["Message", "Callback", "Input"]);
 	model.setMessage(message);
 	model.setCallback(callback);
-	model.setInput("");
 	var dialog = new PromptDialog(model.makePlugSpecFromPins(PromptDialog.prototype.pins));
+	model.setInput(defaultInput || "");
 	dialog.openIn(this, this.hands[0].lastMouseDownPoint);
     },
 
@@ -6943,8 +6945,19 @@ ExternalLinkMorph.addMethods({
     
     getHelpText: function() {
 	return "Click to enter " + this.getURL();
-    }
+    },
 
+
+    morphMenu: function($super, evt) { 
+	var menu = $super(evt);
+	menu.addItem(["set link target...", function() {
+	    this.world().prompt("Set new target file", function(answer) {
+		this.setURL(URL.source.withFilename(answer));
+	    }.bind(this), URL.source.toString());
+	}]);
+	return menu;
+    }
+    
 });
 
 // Some SVG/DOM bindings 
