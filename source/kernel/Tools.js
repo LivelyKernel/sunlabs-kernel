@@ -1745,6 +1745,14 @@ View.subclass('CodeMarkupParser', {
     }
 });
 
+Object.extend(CodeMarkupParser, {
+    load: function(filename, callback) {
+	var parser = new CodeMarkupParser(URL.source.withFilename(filename));
+	if (callback) parser.onComplete = callback;
+	parser.parse();
+    }
+});
+
 
 // ===========================================================================
 // ChangeSet
