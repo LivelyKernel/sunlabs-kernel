@@ -1,7 +1,7 @@
 Widget.subclass('WikiWindow', {
 
-	defaultViewTitle: "WikiWindow",
-	defaultViewExtent: pt(550, 350),
+	viewTitle: "WikiWindow",
+	initialViewExtent: pt(550, 350),
 	pins: ['Content', 'Url'],
 	ctx: {},
 	defaultUrl: URL.proxy.toString() + 'wiki',

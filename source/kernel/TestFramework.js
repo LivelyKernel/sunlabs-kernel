@@ -177,8 +177,8 @@ Object.subclass('TestResult', {
  */
 Widget.subclass('TestRunner', {
 
-	defaultViewTitle: "TestRunner",
-	defaultViewExtent: pt(600,500),
+	viewTitle: "TestRunner",
+	initialViewExtent: pt(600,500),
 	pins: ['+TestClasses', 'SelectedTestClass', 'ResultText', 'FailureList'],
 	ctx: {},
 	

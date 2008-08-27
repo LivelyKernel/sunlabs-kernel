@@ -20,7 +20,7 @@
 
 Widget.subclass('SimpleBrowser', {
 
-    defaultViewTitle: "Javascript Code Browser",
+    viewTitle: "Javascript Code Browser",
     pins: ["+ClassList", "-ClassName", "+MethodList", "-MethodName", "MethodString", "+ClassPaneMenu"],
 
     initialize: function($super) { 
@@ -180,7 +180,7 @@ Widget.subclass('SimpleBrowser', {
 
 WidgetModel.subclass('ObjectBrowser', {
 
-    defaultViewTitle: "Object Hierarchy Browser",
+    viewTitle: "Object Hierarchy Browser",
     openTriggerVariable: 'getObjectList',
 
     initialize: function($super, objectToView) {
@@ -283,7 +283,7 @@ WidgetModel.subclass('ObjectBrowser', {
    
 Widget.subclass('SimpleInspector', {
 
-    defaultViewExtent: pt(400,250),
+    initialViewExtent: pt(400,250),
 
     pins: ["+PropList", "PropName", "+PropText", "-Inspectee", "-EvalInput"],
     
@@ -333,7 +333,7 @@ Widget.subclass('SimpleInspector', {
         return target ? target[this.getModelValue("getPropName")] : undefined;
     },
 
-    viewTitle: function() {
+    getViewTitle: function() {
         return Strings.format('Inspector (%s)', this.inspectee()).truncate(50);
     },
 
@@ -386,8 +386,8 @@ Widget.subclass('SimpleInspector', {
 WidgetModel.subclass('StylePanel', {
 
     documentation: "Interactive style editor for morphs.",
-    defaultViewExtent: pt(340,100),
-    defaultViewTitle: "Style Panel",
+    initialViewExtent: pt(340,100),
+    viewTitle: "Style Panel",
 
     initialize: function($super, targetMorph) {
         $super();
@@ -967,7 +967,7 @@ function showStatsViewer(profilee,title) {
 // ===========================================================================
 WidgetModel.subclass('StackViewer', {
 
-    defaultViewTitle: "Call Stack Viewer",
+    viewTitle: "Call Stack Viewer",
     openTriggerVariable: 'getFunctionList',
 
     initialize: function($super, param, currentCtxt) {
@@ -1305,7 +1305,7 @@ WidgetModel.subclass('ChangeList', {
     // during a development session should (;-) be completely well-formed in this regard.
     // Saving a change in a ChangeList browser will only edit the file;  no evaluation is implied
     
-    defaultViewExtent: pt(400,250),
+    initialViewExtent: pt(400,250),
     openTriggerVariable: 'getChangeBanners',
 
     initialize: function($super, title, ignored, changes) {
@@ -1421,7 +1421,7 @@ WidgetModel.subclass('ChangeList', {
         return this.searchString;
     },
 
-    viewTitle: function() {
+    getViewTitle: function() {
         return "Change list for " + this.title;
     },
 
@@ -1618,7 +1618,7 @@ ChangeList.subclass('SourceDatabase', {
         return fileString;
     },
 
-    viewTitle: function() {
+    getViewTitle: function() {
         return "Source Control for " + this.fileName;
     }
 

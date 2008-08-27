@@ -632,8 +632,8 @@ var Loader = {
 Widget.subclass('OldWeatherWidget', NetRequestReporterTrait, {
 
     imagepath: "Resources/weather/",
-    defaultViewTitle: "Weather widget",
-    defaultViewExtent: pt(250, 260),
+    viewTitle: "Weather widget",
+    initialViewExtent: pt(250, 260),
     pins: ["-Locale", "+WeatherDesc", "+Temperature", "+Wind", "+Gusts", "+DewPoint", "+Humidity", "+Visibility"],
     
     initialize: function($super) { 

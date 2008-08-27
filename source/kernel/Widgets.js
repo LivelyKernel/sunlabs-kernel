@@ -1978,33 +1978,28 @@ Morph.subclass('XenoMorph', {
 // most likely deprecated, should use Widget, which is a view.
 Model.subclass('WidgetModel', {
 
-    defaultViewExtent: pt(400, 300),
-    defaultViewTitle: "Widget",
-    defaultViewPosition: pt(50, 50),
+    viewTitle: "Widget",
+    initialViewExtent: pt(400, 300),
+
     openTriggerVariable: 'all',
     documentation: "Convenience base class for widget models",
     
-    viewTitle: function() { // a string or a TextMorph
-        return this.defaultViewTitle;
+    getViewTitle: function() { // a string or a TextMorph
+        return this.viewTitle;
     },
 
     buildView: function(extent) {
         throw new Error("override me");
     },
 
-    initialViewPosition: function(world, hint) {
-        return hint || this.defaultViewPosition;
-    },
-
-    initialViewExtent: function(world, hint) {
-        return hint || this.defaultViewExtent;
+    getInitialViewExtent: function(world, hint) {
+        return hint || this.initialViewExtent;
     },
     
     openIn: function(world, loc) {
         var win = 
-            world.addFramedMorph(this.buildView(this.initialViewExtent(world)), 
-                this.viewTitle(), 
-                this.initialViewPosition(world, loc));
+	    world.addFramedMorph(this.buildView(this.getInitialViewExtent(world)), 
+				 this.getViewTitle(), loc);
         if (this.openTriggerVariable) {
             this.changed(this.openTriggerVariable);
         }
@@ -2019,25 +2014,21 @@ Model.subclass('WidgetModel', {
 
 View.subclass('Widget', { // FIXME remove code duplication
 
-    defaultViewExtent: pt(400, 300),
-    defaultViewTitle: "Widget",
-    defaultViewPosition: pt(50, 50),
+    viewTitle: "Widget",
+    initialViewExtent: pt(400, 300),
+    initialViewPosition: pt(50, 50),
     documentation: "Nonvisual component of a widget",
     
-    viewTitle: function() { // a string or a TextMorph
-        return this.defaultViewTitle;
+    getViewTitle: function() { // a string or a TextMorph
+        return this.viewTitle;
     },
 
     buildView: function(extent, model) {
         throw new Error("override me");
     },
 
-    initialViewPosition: function(world, hint) {
-        return hint || this.defaultViewPosition;
-    },
-
-    initialViewExtent: function(world, hint) {
-        return hint || this.defaultViewExtent;
+    getInitialViewExtent: function(world, hint) {
+        return hint || this.initialViewExtent;
     },
     
     viewMenu: function(items) {
@@ -2045,11 +2036,10 @@ View.subclass('Widget', { // FIXME remove code duplication
         return items;
     },
     
-    openIn: function(world, loc) {
+    openIn: function(world, optLoc) {
         var win = 
-            world.addFramedMorph(this.buildView(this.initialViewExtent(world), this.getModel()), 
-                 this.viewTitle(), 
-                 this.initialViewPosition(world, loc));
+            world.addFramedMorph(this.buildView(this.getInitialViewExtent(world), this.getModel()), 
+				 this.getViewTitle(), optLoc);
         return win;
     },
 
@@ -2073,7 +2063,7 @@ Widget.subclass('Dialog', {
     },
 
     openIn: function(world, loc) {
-        var view = this.buildView(this.initialViewExtent(world), this.getModel());
+        var view = this.buildView(this.getInitialViewExtent(world), this.getModel());
         world.addMorphAt(view, loc);
         return view;
     }
@@ -2083,7 +2073,7 @@ Widget.subclass('Dialog', {
 Dialog.subclass('ConfirmDialog', {
 
     pins: ["-Callback", "-Message"],
-    defaultViewExtent: pt(300, 90),
+    initialViewExtent: pt(300, 90),
     
     defaultCallback: function(result) {
         console.log("Confirmed? " + result);
@@ -2127,7 +2117,7 @@ Dialog.subclass('ConfirmDialog', {
 Dialog.subclass('PromptDialog', {
 
     pins: ["-Message", "-Callback", "Input"],
-    defaultViewExtent: pt(300, 130),
+    initialViewExtent: pt(300, 130),
 
     openIn: function($super, world, loc) {
         var view = $super(world, loc);
@@ -2184,7 +2174,7 @@ Dialog.subclass('PromptDialog', {
 
 Widget.subclass('ConsoleWidget', {
 
-    defaultViewTitle: "Console",
+    viewTitle: "Console",
     pins: ["LogMessages", "RecentLogMessages", "Commands", "CommandCursor", "LastCommand", "Menu"],
     ctx: {},
     
@@ -2211,11 +2201,7 @@ Widget.subclass('ConsoleWidget', {
         world.addFramedMorph(pane, "Command history", world.positionForNewMorph());
     },
 
-    initialViewPosition: function(world, hint) {
-        return hint || pt(0, world.viewport().y - 200);
-    },
-
-    initialViewExtent: function(world, hint) {
+    getInitialViewExtent: function(world, hint) {
         return hint || pt(world.viewport().width, 160); 
     },
     
@@ -2281,7 +2267,7 @@ Widget.subclass('ConsoleWidget', {
 
 Widget.subclass('XenoBrowserWidget', {
     
-    defaultViewExtent: pt(800, 300),
+    initialViewExtent: pt(800, 300),
     
     initialize: function($super) {
 	this.actualModel = 

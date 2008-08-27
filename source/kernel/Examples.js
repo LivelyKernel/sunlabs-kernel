@@ -218,7 +218,7 @@ Morph.subclass('PianoKeyboard', {
 Widget.subclass('FeedWidget', {
     documentation: "RSS Feed Reader",
 
-    defaultViewExtent: pt(500, 200),
+    initialViewExtent: pt(500, 200),
     pins: [ "URL", "+ItemList", "+ChannelTitle", "-SelectedItemTitle", "+SelectedItemContent", "+Widget"],
     
     initialize: function($super, urlString) {
@@ -343,7 +343,7 @@ Widget.subclass('FeedWidget', {
         return panel;
     },
     
-    viewTitle: function() {
+    getViewTitle: function() {
 	var title = new TextMorph(new Rectangle(0, 0, 150, 15), 'RSS feed                    ').beLabel();
 	title.connectModel({model: this.getModel(), getText: 'getChannelTitle'});
 	return title;
@@ -2156,8 +2156,8 @@ Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
 
     description: "Example widget with updated weather info for a list of cities",
     imagepath: "Resources/weather/",
-    defaultViewTitle: "Weather widget",
-    defaultViewExtent: pt(250, 260),
+    viewTitle: "Weather widget",
+    initialViewExtent: pt(250, 260),
 
     
     initialize: function($super) { 
@@ -2307,8 +2307,8 @@ Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
 
 Widget.subclass('StockWidget', NetRequestReporterTrait, {
 
-    defaultViewTitle: 'Stock Widget',
-    defaultViewExtent: pt(580, 460),
+    viewTitle: 'Stock Widget',
+    initialViewExtent: pt(580, 460),
     pins: ["-StockIndex", "Company", "+Quote", "+NewsURL", "+NewsHeaders"],
 
     initialize: function($super) { 

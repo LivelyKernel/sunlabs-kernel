@@ -299,12 +299,6 @@ View.subclass('NetRequest', {
     getStatus: function() {
 	return new NetRequestStatus(this.method, this.url, this.transport);
     },
-
-    updateView: function(aspect, controller) {
-	// console.log("update view on aspect " + aspect);
-	// nothing, does not result to model changes (yet?)
-	// should it result to setting the url by fetching it?
-    },
     
     request: function(method, url, content) {
 	try {
