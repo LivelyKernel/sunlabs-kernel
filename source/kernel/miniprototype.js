@@ -93,7 +93,7 @@ Object.extend(Function.prototype, {
   bind: function bind() {
     if (arguments.length < 2 && arguments[0] === undefined) return this;
     var __method = this, args = $A(arguments), object = args.shift();
-    return function bindAdvice() {
+    return function bound() {
       return __method.apply(object, args.concat($A(arguments)));
     }
   },
@@ -101,21 +101,21 @@ Object.extend(Function.prototype, {
   curry: function curry() {
     if (!arguments.length) return this;
     var __method = this, args = $A(arguments);
-    return function() {
+    return function curried() {
       return __method.apply(this, args.concat($A(arguments)));
     }
   },
 
   delay: function delay() {
     var __method = this, args = $A(arguments), timeout = args.shift() * 1000;
-    return window.setTimeout(function() {
+    return window.setTimeout(function delayed() {
       return __method.apply(__method, args);
     }, timeout);
   },
 
   wrap: function wrap(wrapper) {
     var __method = this;
-    return function wrapAdvice() {
+    return function wrapped() {
       return wrapper.apply(this, [__method.bind(this)].concat($A(arguments)));
     }
   }
