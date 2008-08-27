@@ -6199,21 +6199,23 @@ PasteUpMorph.subclass("WorldMorph", {
     }.logErrors('alert'),
 
     prompt: function(message, callback, defaultInput) {
-	var model = new SyntheticModel(["Message", "Callback", "Input"]);
-	model.setMessage(message);
-	model.setCallback(callback);
-	var dialog = new PromptDialog(model.makePlugSpecFromPins(PromptDialog.prototype.pins));
-	model.setInput(defaultInput || "");
+	var model = Record.newInstance({Message: {}, Input: {}, Result: {}}, 
+	    {Message: message, Input: defaultInput || ""});
+	model.addObserver({ 
+	    onResultUpdate: function(value) { 
+		if (value == true && callback) callback.call(Global, model.getInput());
+	    }});
+	var dialog = new PromptDialog(model.newRelay({Message: "-Message", Result: "+Result", Input: "Input"}));
 	dialog.openIn(this, this.hands[0].lastMouseDownPoint);
     },
 
     confirm: function(message, callback) {
 	var model = Record.newInstance({Message: {}, Result: {}}, {Message: message, Result: false});
-	model.addObserver({ onResultUpdate: function(value) { 
-	    if (value && callback) callback.call(Global, value);
-	}});
+	model.addObserver({ 
+	    onResultUpdate: function(value) { 
+		if (value && callback) callback.call(Global, value);
+	    }});
 	var dialog = new ConfirmDialog(model.newRelay({Message: "-Message", Result: "+Result"}));
-
 	dialog.openIn(this, this.firstHand().lastMouseDownPoint);
 	return dialog;
     },

@@ -2114,13 +2114,9 @@ Dialog.subclass('ConfirmDialog', {
 
 });
 
-ConfirmDialog.test = function() {
-    return WorldMorph.current().confirm("what?", function() { alert('yo') });
-}
-
 Dialog.subclass('PromptDialog', {
 
-    pins: ["-Message", "-Callback", "Input"],
+    formals: ["-Message", "Input", "+Result"],
     initialViewExtent: pt(300, 130),
 
     openIn: function($super, world, loc) {
@@ -2130,21 +2126,20 @@ Dialog.subclass('PromptDialog', {
         return view;
     },
 
-    defaultCallback: function(result) {
-        console.log("Input " + result);
-    },
     
-    setCancel: function(value) {
+    cancelled: function(value) {
         if (value == false) return;
+	this.setResult(false);
         this.removeTopLevel();
     },
     
-    setConfirm: function(value) {
-        if (!value) return;
+    confirmed: function(value) {
+        if (value == false) return;
+	this.setResult(true);
         this.removeTopLevel();
-        var callback = this.getModelValue("getCallback", this.defaultCallback);
-        callback.call(Global, this.getModelValue("getInput"));
+
     },
+
 
     buildView: function(extent, model) {
         var panel = new PanelMorph(extent);
@@ -2153,26 +2148,32 @@ Dialog.subclass('PromptDialog', {
 
 
         var r = new Rectangle(this.inset, this.inset, extent.x - 2*this.inset, 30);
-        var label = panel.addMorph(new TextMorph(r, this.getModelValue("getMessage")).beLabel());
+        var label = panel.addMorph(new TextMorph(r, this.getMessage()).beLabel());
 
         r = new Rectangle(r.x, r.maxY() + this.inset, r.width, r.height);
 
         panel.inputLine = panel.addMorph(new TextMorph(r, "").beInputLine());
         panel.inputLine.autoAccept = true;
-
-        panel.inputLine.connectModel({model: this.getModel(), getText: "getInput", setText: "setInput"});
-
+	
+        panel.inputLine.connectModel({model: this, getText: "getInput", setText: "setInput"});
+	// FIXME is this necessary
+	if (this.getInput()) panel.inputLine.updateTextString(this.getInput());
+	
         var indent = extent.x - 2*70 - 3*this.inset;
         r = new Rectangle(r.x + indent, r.maxY() + this.inset, 70, 30);
         var okButton = panel.addMorph(new ButtonMorph(r)).setLabel("OK");
 
-        okButton.connectModel({model: this, setValue: "setConfirm"});
+        okButton.connectModel({model: this, setValue: "confirmed"});
         r = new Rectangle(r.maxX() + this.inset, r.y, 70, 30);
         var cancelButton = panel.addMorph(new ButtonMorph(r)).setLabel("Cancel");
-        cancelButton.connectModel({model: this, setValue: "setCancel"});
+        cancelButton.connectModel({model: this, setValue: "cancelled"});
         return panel;
     }
 });
+
+PromptDialog.test = function() {
+    return WorldMorph.current().prompt("what", function(value) { alert('got input ' + value) });
+}
 
 Widget.subclass('ConsoleWidget', {
 
