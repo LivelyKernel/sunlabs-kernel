@@ -6214,11 +6214,11 @@ PasteUpMorph.subclass("WorldMorph", {
 	var dialog = new ConfirmDialog(model.makePlugSpecFromPins(ConfirmDialog.prototype.pins));
 	dialog.openIn(this, this.hands[0].lastMouseDownPoint);
     },
-
-    addFramedMorph: function(morph, title, loc) {
-	var displ = 3;
-	return this.addMorphAt(new WindowMorph(morph, title), 
-			       loc || this.point().addXY(displ, displ));
+    
+    addFramedMorph: function(morph, title, optLoc, optSuppressControls) {
+	var displ = pt(5, 5);
+	return this.addMorphAt(new WindowMorph(morph, title, optSuppressControls), 
+			       optLoc || this.firstHand.position().subPt(displ));
     },
 
     addTextWindow: function(spec) {
@@ -6230,7 +6230,7 @@ PasteUpMorph.subclass("WorldMorph", {
 	if (spec.plug) pane.innerMorph().connectModel(spec.plug);
 	this.addFramedMorph(pane, 
 			    spec.title ? String(spec.title) : "", 
-			    spec.position || this.firstHand().position().subPt(pt(5, 5)));
+			    spec.position);
 	return pane.innerMorph();
     },
 

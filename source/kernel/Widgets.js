@@ -2018,6 +2018,7 @@ View.subclass('Widget', { // FIXME remove code duplication
     initialViewExtent: pt(400, 300),
     initialViewPosition: pt(50, 50),
     documentation: "Nonvisual component of a widget",
+    useLightFrame: false,
     
     getViewTitle: function() { // a string or a TextMorph
         return this.viewTitle;
@@ -2037,18 +2038,28 @@ View.subclass('Widget', { // FIXME remove code duplication
     },
     
     openIn: function(world, optLoc) {
-        var win = 
-            world.addFramedMorph(this.buildView(this.getInitialViewExtent(world), this.getModel()), 
-				 this.getViewTitle(), optLoc);
-        return win;
+	var view = this.buildView(this.getInitialViewExtent(world), this.getModel());
+	return world.addFramedMorph(view, this.getViewTitle(), optLoc, this.useLightFrame);
     },
 
     open: function() { // call interactively
         return this.openIn(WorldMorph.current());
     },
 
+    initialize: function(plug) {
+        if (plug) this.connectModel(plug);
+    },
+    
     deserialize: function(importer, modelPlug) {
         this.connectModel(modelPlug);
+    },
+
+    parentWindow: function(view) {
+	var parent = view.owner;
+	while (parent && !(parent instanceof WindowMorph)) {
+	    parent = parent.owner;
+	}
+	return parent;
     }
 
 });
@@ -2057,16 +2068,12 @@ Widget.subclass('Dialog', {
     inset: 10,
     style: { borderColor: Color.blue, borderWidth: 4, borderRadius: 16,
              fill: Color.blue.lighter(), opacity: 0.9},
-
-    initialize: function(plug) {
-        if (plug) this.connectModel(plug);
-    },
-
-    openIn: function(world, loc) {
-        var view = this.buildView(this.getInitialViewExtent(world), this.getModel());
-        world.addMorphAt(view, loc);
-        return view;
+    useLightFrame: true,
+    viewTitle: "",
+    removeTopLevel: function() {
+        (this.parentWindow(this.panel) || this.panel).remove();
     }
+
     
 });
 
@@ -2081,14 +2088,14 @@ Dialog.subclass('ConfirmDialog', {
 
     setCancel: function(value) {
         if (!value) return;
-        this.panel.remove();
+	this.removeTopLevel();
         var callback = this.getModelValue("getCallback", this.defaultCallback);
         callback.call(Global, false);
     },
     
     setConfirm: function(value) {
         if (!value) return;
-        this.panel.remove();
+        this.removeTopLevel();
         var callback = this.getModelValue("getCallback", this.defaultCallback);
         callback.call(Global, true);
     },
@@ -2131,15 +2138,13 @@ Dialog.subclass('PromptDialog', {
     },
     
     setCancel: function(value) {
-        if (!value) return;
-        this.panel.remove();
-        var callback = this.getModelValue("getCallback", this.defaultCallback);
-        callback.call(Global, null);
+        if (value == false) return;
+        this.removeTopLevel();
     },
     
     setConfirm: function(value) {
         if (!value) return;
-        this.panel.remove();
+        this.removeTopLevel();
         var callback = this.getModelValue("getCallback", this.defaultCallback);
         callback.call(Global, this.getModelValue("getInput"));
     },
@@ -2308,7 +2313,8 @@ Morph.subclass("TitleBarMorph", {
     fill: null,
     labelStyle: { borderRadius: 8, padding: Rectangle.inset(6, 2), fill: new LinearGradient([Color.white, 1, Color.gray]) },
 
-    initialize: function($super, headline, windowWidth, windowMorph) {
+    initialize: function($super, headline, windowWidth, windowMorph, optSuppressControls) {
+	if (optSuppressControls)  this.barHeight = 15; // for alerts and such
 	var bounds = new Rectangle(0, 0, windowWidth, this.barHeight);
 	
         $super(bounds, "rect");
@@ -2327,30 +2333,32 @@ Morph.subclass("TitleBarMorph", {
 	
         this.windowMorph = windowMorph;
 
+	    
         // Note: Layout of submorphs happens in adjustForNewBounds (q.v.)
         var label;
         if (headline instanceof TextMorph) {
-            label = headline;
-        } else { // String
-            var width = headline.length * 8; // wild guess headlineString.length * 2 *  font.getCharWidth(' ') + 2;
-            label = new TextMorph(new Rectangle(0, 0, width, this.barHeight), headline).beLabel();
+	    label = headline;
+        } else if (headline != null) { // String
+	    // wild guess headlineString.length * 2 *  font.getCharWidth(' ') + 2;
+	    var width = headline.length * 8; 
+	    label = new TextMorph(new Rectangle(0, 0, width, this.barHeight), headline).beLabel();
         }
         label.applyStyle(this.labelStyle);
         this.label = this.addMorph(label);
-	
-        var cell = new Rectangle(0, 0, this.barHeight, this.barHeight);
-        var closeButton = new WindowControlMorph(cell, this.controlSpacing, Color.primary.orange, windowMorph, 
-            "initiateShutdown", "Close");
-        this.closeButton =  this.addMorph(closeButton);
-
-        var menuButton = new WindowControlMorph(cell, this.controlSpacing, Color.primary.blue, windowMorph, 
-            "showTargetMorphMenu", "Menu");
-        this.menuButton = this.addMorph(menuButton);
-
-        var collapseButton = new WindowControlMorph(cell, this.controlSpacing, Color.primary.yellow, windowMorph, 
-            "toggleCollapse", "Collapse");
-        this.collapseButton = this.addMorph(collapseButton);
-
+	if (!optSuppressControls) {
+            var cell = new Rectangle(0, 0, this.barHeight, this.barHeight);
+            var closeButton = new WindowControlMorph(cell, this.controlSpacing, Color.primary.orange, windowMorph, 
+		"initiateShutdown", "Close");
+            this.closeButton =  this.addMorph(closeButton);
+	    
+            var menuButton = new WindowControlMorph(cell, this.controlSpacing, Color.primary.blue, 
+		windowMorph, "showTargetMorphMenu", "Menu");
+            this.menuButton = this.addMorph(menuButton);
+	    
+            var collapseButton = new WindowControlMorph(cell, this.controlSpacing, Color.primary.yellow, 
+		windowMorph, "toggleCollapse", "Collapse");
+            this.collapseButton = this.addMorph(collapseButton);
+	} 
         this.adjustForNewBounds();  // This will align the buttons and label properly
         return this;
     },
@@ -2563,12 +2571,12 @@ Morph.subclass('WindowMorph', {
     statusBar: null,
     targetMorph: null,
     
-    initialize: function($super, targetMorph, headline, location) {
+    initialize: function($super, targetMorph, headline, optSuppressControls) {
         var bounds = targetMorph.bounds().copy();
-        var titleBar = this.makeTitleBar(headline, bounds.width);
+        var titleBar = this.makeTitleBar(headline, bounds.width, optSuppressControls);
         var titleHeight = titleBar.bounds().height;
         bounds.height += titleHeight;
-        $super(location ? rect(location, bounds.extent()) : bounds, 'rect');
+        $super(bounds, "rect");
         this.targetMorph = this.addMorph(targetMorph);
         this.titleBar = this.addMorph(titleBar);
         this.contentOffset = pt(0, titleHeight - titleBar.getBorderWidth()/2); // FIXME: hack
@@ -2603,9 +2611,9 @@ Morph.subclass('WindowMorph', {
         this.contentOffset = pt(0, this.titleBar.bounds().height);
     },
     
-    makeTitleBar: function(headline, width) {
+    makeTitleBar: function(headline, width, optSuppressControls) {
         // Overridden in TabbedPanelMorph
-        return new TitleBarMorph(headline, width, this);
+        return new TitleBarMorph(headline, width, this, optSuppressControls);
     },
 
     windowContent: function() { return this.targetMorph; },
