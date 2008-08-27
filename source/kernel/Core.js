@@ -6223,7 +6223,7 @@ PasteUpMorph.subclass("WorldMorph", {
     addFramedMorph: function(morph, title, optLoc, optSuppressControls) {
 	var displ = pt(5, 5);
 	return this.addMorphAt(new WindowMorph(morph, title, optSuppressControls), 
-			       optLoc || this.firstHand.position().subPt(displ));
+			       optLoc || this.firstHand().lastMouseDownPoint.subPt(displ));
     },
 
     addTextWindow: function(spec) {
