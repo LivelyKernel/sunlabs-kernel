@@ -2073,31 +2073,23 @@ Widget.subclass('Dialog', {
     removeTopLevel: function() {
         (this.parentWindow(this.panel) || this.panel).remove();
     }
-
     
 });
 
 Dialog.subclass('ConfirmDialog', {
 
-    pins: ["-Callback", "-Message"],
+    formals: ["+Result",  // yes or no, listen for updates
+	      "-Message"], // what to display
     initialViewExtent: pt(300, 90),
     
-    defaultCallback: function(result) {
-        console.log("Confirmed? " + result);
-    },
-
-    setCancel: function(value) {
-        if (!value) return;
-	this.removeTopLevel();
-        var callback = this.getModelValue("getCallback", this.defaultCallback);
-        callback.call(Global, false);
+    cancelled: function(value, source) {
+	if (value == false) this.setResult(false);
+        this.removeTopLevel();
     },
     
-    setConfirm: function(value) {
-        if (!value) return;
+    confirmed: function(value, source) {
+	if (value == true) this.setResult(true);
         this.removeTopLevel();
-        var callback = this.getModelValue("getCallback", this.defaultCallback);
-        callback.call(Global, true);
     },
     
     buildView: function(extent, model) {
@@ -2106,20 +2098,25 @@ Dialog.subclass('ConfirmDialog', {
         panel.linkToStyles(["panel"]);
 
         var r = new Rectangle(this.inset, this.inset, extent.x - 2*this.inset, 30);
-        var label = panel.addMorph(new TextMorph(r, this.getModelValue("getMessage")).beLabel());
+        var label = panel.addMorph(new TextMorph(r, this.getMessage()).beLabel());
 
         var indent = extent.x - 2*70 - 3*this.inset;
-        r = new Rectangle(r.x + indent, r.maxY() + this.inset, 70, 30);
+        
+	r = new Rectangle(r.x + indent, r.maxY() + this.inset, 70, 30);
         var yesButton = panel.addMorph(new ButtonMorph(r)).setLabel("Yes");
-
-        yesButton.connectModel({model: this, setValue: "setConfirm"});
-        r = new Rectangle(r.maxX() + this.inset, r.y, 70, 30);
+        yesButton.connectModel({model: this, setValue: "confirmed"});
+        
+	r = new Rectangle(r.maxX() + this.inset, r.y, 70, 30);
         var noButton = panel.addMorph(new ButtonMorph(r)).setLabel("No");
-        noButton.connectModel({model: this, setValue: "setCancel"});
+        noButton.connectModel({model: this, setValue: "cancelled"});
         return panel;
     }
 
 });
+
+ConfirmDialog.test = function() {
+    return WorldMorph.current().confirm("what?", function() { alert('yo') });
+}
 
 Dialog.subclass('PromptDialog', {
 
@@ -2309,12 +2306,13 @@ Morph.subclass("TitleBarMorph", {
 
     controlSpacing: 3,
     barHeight: 22,
+    shortBarHeight: 15,
     borderWidth: 0,
     fill: null,
     labelStyle: { borderRadius: 8, padding: Rectangle.inset(6, 2), fill: new LinearGradient([Color.white, 1, Color.gray]) },
 
     initialize: function($super, headline, windowWidth, windowMorph, optSuppressControls) {
-	if (optSuppressControls)  this.barHeight = 15; // for alerts and such
+	if (optSuppressControls)  this.barHeight = this.shortBarHeight; // for dialog boxes
 	var bounds = new Rectangle(0, 0, windowWidth, this.barHeight);
 	
         $super(bounds, "rect");

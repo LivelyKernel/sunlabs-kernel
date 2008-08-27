@@ -6208,11 +6208,14 @@ PasteUpMorph.subclass("WorldMorph", {
     },
 
     confirm: function(message, callback) {
-	var model = new SyntheticModel(["Message", "Callback"]);
-	model.setMessage(message);
-	model.setCallback(callback);
-	var dialog = new ConfirmDialog(model.makePlugSpecFromPins(ConfirmDialog.prototype.pins));
-	dialog.openIn(this, this.hands[0].lastMouseDownPoint);
+	var model = Record.newInstance({Message: {}, Result: {}}, {Message: message, Result: false});
+	model.addObserver({ onResultUpdate: function(value) { 
+	    if (value && callback) callback.call(Global, value);
+	}});
+	var dialog = new ConfirmDialog(model.newRelay({Message: "-Message", Result: "+Result"}));
+
+	dialog.openIn(this, this.firstHand().lastMouseDownPoint);
+	return dialog;
     },
     
     addFramedMorph: function(morph, title, optLoc, optSuppressControls) {
