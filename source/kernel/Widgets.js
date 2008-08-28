@@ -82,7 +82,8 @@ Morph.subclass('ButtonMorph', {
     onMouseUp: function(evt) {
         var newValue = this.getToggle() ? !this.getValue() : false;
         this.setValue(newValue); 
-        this.changeAppearanceFor(newValue); 
+	// the following should happen in response
+        //this.changeAppearanceFor(newValue); 
     },
     
     changeAppearanceFor: function(value) {
@@ -113,6 +114,7 @@ Morph.subclass('ButtonMorph', {
     },
 
     onValueUpdate: function(value) {
+	if (this.getToggle()) console.log("got updated with value " + value);
 	this.changeAppearanceFor(value);
     },
 
@@ -1453,14 +1455,14 @@ Morph.subclass("SliderMorph", {
 
     documentation: "Slider/scroll control",
     mss: 12,  // minimum slider size
-    pins: ["Value", "SliderExtent"],
+    formals: ["Value", "-SliderExtent"],
 
     initialize: function($super, initialBounds, scaleIfAny) {
         $super(initialBounds, "rect");
         // this default self connection may get overwritten by, eg, connectModel()...
-        var model = new SyntheticModel(this.pins);
-        this.modelPlug = new ModelPlug(model.makePlugSpec());
-        this.scale = (scaleIfAny == null) ? 1.0 : scaleIfAny;
+        var model = Record.newInstance({Value: {}, SliderExtent: {}}, {Value: 0, SliderExtent: 0}, {});
+	this.connectModel(model.newRelay({Value: "Value", SliderExtent: "SliderExtent"}));
+        this.scale = (scaleIfAny === undefined) ? 1.0 : scaleIfAny;
         var slider = new Morph(new Rectangle(0, 0, this.mss, this.mss), "rect");
         slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});
         this.slider = this.addMorph(slider);
@@ -1497,9 +1499,10 @@ Morph.subclass("SliderMorph", {
     
     adjustSliderParts: function($super) {
         // This method adjusts the slider for changes in value as well as geometry
-        var val = this.getValue();
+        var val = this.getScaledValue();
         var bnds = this.shape.bounds();
-        var ext = this.getSliderExtent();
+        var ext = this.getSliderExtent() || 0; // FIXME remove zero
+	
 	
         if (this.vertical()) { // more vertical...
             var elevPix = Math.max(ext*bnds.height, this.mss); // thickness of elevator in pixels
@@ -1540,7 +1543,7 @@ Morph.subclass("SliderMorph", {
         // Compute the value from a new mouse point, and emit it
         var p = this.localize(evt.mousePoint).subPt(this.hitPoint);
         var bnds = this.shape.bounds();
-        var ext = this.getSliderExtent();
+        var ext = this.getSliderExtent() || 0; // FIXME remove 0
     
         if (this.vertical()) { // more vertical...
             var elevPix = Math.max(ext*bnds.height,this.mss); // thickness of elevator in pixels
@@ -1550,7 +1553,7 @@ Morph.subclass("SliderMorph", {
             var newValue = p.x / (bnds.width-elevPix); 
         }
     
-        this.setValue(this.clipValue(newValue));
+        this.setScaledValue(this.clipValue(newValue));
         this.adjustForNewBounds(); 
     },
 
@@ -1560,14 +1563,14 @@ Morph.subclass("SliderMorph", {
 
     onMouseDown: function(evt) {
         this.requestKeyboardFocus(evt.hand);
-        var inc = this.getSliderExtent();
+        var inc = this.getSliderExtent() || 0; // FIXME remove 0
         var newValue = this.getValue();
 
         var delta = this.localize(evt.mousePoint).subPt(this.slider.bounds().center());
         if (this.vertical() ? delta.y > 0 : delta.x > 0) newValue += inc;
         else newValue -= inc;
     
-        this.setValue(this.clipValue(newValue));
+        this.setScaledValue(this.clipValue(newValue));
         this.adjustForNewBounds(); 
     },
     
@@ -1587,7 +1590,7 @@ Morph.subclass("SliderMorph", {
 	if (aspect == p.getValue || aspect == 'all') {
 	    this.onValueUpdate(this.getValue());
 	} else if (aspect == p.getSliderExtent || aspect == 'all')  {
-	    this.onSliderExtentUpdate(this.getSliderExtent());
+	    this.onSliderExtentUpdate(this.getSliderExtent() || 0); // FIXME remove 0
 	}
     },
 
@@ -1599,19 +1602,14 @@ Morph.subclass("SliderMorph", {
 	this.adjustForNewBounds();
     },
 
-    getValue: function() {
-        return (this.formalModel ? this.formalModel.getValue() : this.getModelValue('getValue', 0)) / this.scale;
+    getScaledValue: function() {
+        return this.getValue() / this.scale;
     },
 
-    setValue: function(value) {
-        return this.formalModel ? this.formalModel.setValue(value * this.scale) : this.setModelValue('setValue', value * this.scale);
+    setScaledValue: function(value) {
+        return this.setValue(value * this.scale);
     },
-
-    getSliderExtent: function() {
-        return this.formalModel ? this.formalModel.getSliderExtent() : this.getModelValue('getSliderExtent', 0.0);
-	return result;
-    },
-
+    
     takesKeyboardFocus: Functions.True,
     
     setHasKeyboardFocus: function(newSetting) { 
@@ -1635,7 +1633,7 @@ Morph.subclass("SliderMorph", {
             default: return false;
             }    
         }
-        this.setValue(this.clipValue(this.getValue() + delta * this.getSliderExtent()));
+        this.setScaledValue(this.clipValue(this.getScaledValue() + delta * (this.getSliderExtent() || 0)));
         this.adjustForNewBounds();
         evt.stop();
         return true;
@@ -1666,7 +1664,7 @@ Morph.subclass("ScrollPane", {
 	
         // Add a scrollbar
         this.scrollBar = this.addMorph(new SliderMorph(bnds.withTopLeft(clipR.topRight())));
-	this.scrollBar.formalModel = new (this.ScrollBarFormalRelay)(this);
+	this.scrollBar.connectModel(new (this.ScrollBarFormalRelay)(this));
 	
         // suppress handles throughout
         [this, this.clipMorph, morphToClip, this.scrollBar].forEach(function(m) {m.suppressHandles = true});
@@ -2083,13 +2081,13 @@ Dialog.subclass('ConfirmDialog', {
     initialViewExtent: pt(300, 90),
     
     cancelled: function(value, source) {
-	if (value == false) this.setResult(false);
         this.removeTopLevel();
+	if (value == false) this.setResult(false);
     },
     
     confirmed: function(value, source) {
-	if (value == true) this.setResult(true);
         this.removeTopLevel();
+	if (value == true) this.setResult(true);
     },
     
     buildView: function(extent, model) {
@@ -2126,20 +2124,17 @@ Dialog.subclass('PromptDialog', {
         return view;
     },
 
-    
     cancelled: function(value) {
         if (value == false) return;
-	this.setResult(false);
         this.removeTopLevel();
+	this.setResult(false);
     },
     
     confirmed: function(value) {
         if (value == false) return;
-	this.setResult(true);
         this.removeTopLevel();
-
+	this.setResult(true);
     },
-
 
     buildView: function(extent, model) {
         var panel = new PanelMorph(extent);

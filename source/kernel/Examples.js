@@ -37,55 +37,67 @@ Widget.subclass('TestWidget', {
         // Make a fancy panel.  Note: Transparency does not
         // work with gradients or stipple patterns yet!
         panel.linkToStyles(['widgetPanel']);
-        var model = new SyntheticModel(['Text', 'TextSel', 'ListItem', 'PrintValue', 'B1Value', 'B2Value', 'SliderValue', 'SliderRange']);
-        panel.connectModel({model: model});
+	var model = Record.newInstance({Text: {}, TextSel: {}, ListItem: {}, PrintValue: {},
+	    B1Value: {}, B2Value: {}, SliderValue: {}, SliderRange: {}}, {}, 
+	    { SliderValue: 0, SliderRange: 0, Text: "Hello World" });
+	
+        panel.connectModel(Relay.newInstance({Text: "Text", TextSel: "TextSel", ListItem: "ListItem",
+					      PrintValue: "PrintValue", B1Value: "B1Value", B2Value: "B2Value",
+					      SliderValue: "SliderValue", SliderRange: "SliderRange"}));
         var m; 
 
         // Two simple buttons, one toggles...
-        panel.addMorph(m = new ButtonMorph(new Rectangle(20,20,50,20)));
-        m.connectModel({model: model, getValue: "getB1Value", setValue: "setB1Value"});
-        panel.addMorph(m = new ButtonMorph(new Rectangle(20,50,50,20)));
-        m.connectModel({model: model, getValue: "getB1Value", setValue: "setB1Value"});
+        m = panel.addMorph(new ButtonMorph(new Rectangle(20,20,50,20)));
+        m.connectModel(model.newRelay({Value: "B1Value"}));
+	
+        m = panel.addMorph(new ButtonMorph(new Rectangle(20,50,50,20)));
+        m.connectModel(model.newRelay({Value: "B1Value"}));
+        
         m.setToggle(true);
 
         // Two buttons sharing same value...
-        panel.addMorph(m = new ButtonMorph(new Rectangle(80,20,50,20)));
-        m.connectModel({model: model, getValue: "getB2Value", setValue: "setB2Value"});
-        panel.addMorph(m = new ButtonMorph(new Rectangle(80,50,50,20)));
-        m.connectModel({model: model, getValue: "getB2Value", setValue: "setB2Value"});
-
+        m = panel.addMorph(new ButtonMorph(new Rectangle(80,20,50,20)));
+        m.connectModel(model.newRelay({Value: "B2Value"}));
+	
+	m = panel.addMorph(new ButtonMorph(new Rectangle(80,50,50,20)));
+        m.connectModel(model.newRelay({Value: "B2Value"}));
+	
         // Two lists sharing same selection...
-        panel.addMorph(m = new TextListMorph(new Rectangle(20,80,50,20),["one","two","three"]));
-        m.connectModel({model: model, getSelection: "getListItem", setSelection: "setListItem"});
-        panel.addMorph(m = new TextListMorph(new Rectangle(80,80,50,20),["one","two","three"]));
-        m.connectModel({model: model, getSelection: "getListItem", setSelection: "setListItem"});
+        m = panel.addMorph(new TextListMorph(new Rectangle(20,80,50,20),["one","two","three"]));
+	m.connectModel(model.newRelay({Selection: "ListItem"}));
+
+        m = panel.addMorph(new TextListMorph(new Rectangle(80,80,50,20),["one","two","three"]));
+        m.connectModel(model.newRelay({Selection: "ListItem"}));
 
         // Three text views sharing same text...
-        panel.addMorph(m = new TextMorph(new Rectangle(140,20,140,20),"Hello World"));
-        m.connectModel({model: model, getText: "getText", setText: "setText", setSelection: "setTextSel"});
+        m = panel.addMorph(new TextMorph(new Rectangle(140,20,140,20), "Hello World"));
+        m.connectModel(model.newRelay({Text: "Text", Selection: "+TextSel"}));
+
         panel.addMorph(m = new TextMorph(new Rectangle(140,50,140,20),"Hello World"));
-        m.connectModel({model: model, getText: "getText", setText: "setText", setSelection: "setTextSel"});
+        m.connectModel(model.newRelay({Text: "Text", Selection: "+TextSel"}));
         panel.addMorph(m = new TextMorph(new Rectangle(140,80,140,20),"Hello World"));
-        m.connectModel({model: model, getText: "getText", setText: "setText", setSelection: "setTextSel"});
+	m.connectModel(model.newRelay({Text: "Text", Selection: "+TextSel"}));
         m.autoAccept = true;
-        panel.addMorph(m = new TextMorph(new Rectangle(140,110,140,20),"selection"));
-        m.connectModel({model: model, getText: "getTextSel"});
-        model.Text = "Hello World";
+        panel.addMorph(m = new TextMorph(new Rectangle(140,110,140,20), "selection"));
+        m.connectModel(model.newRelay({Text: "TextSel"}));
+
 
         // Two linked print views sharing the same value
         panel.addMorph(m = new PrintMorph(new Rectangle(20,140,100,20),"3+4"));
-        m.connectModel({model: model, getValue: "getPrintValue", setValue: "setPrintValue"});
+        m.connectModel(model.newRelay({Value: "PrintValue"}));
         panel.addMorph(m = new PrintMorph(new Rectangle(20,170,100,20),"3+4"));
-        m.connectModel({model: model, getValue: "getPrintValue", setValue: "setPrintValue"});
+        m.connectModel(model.newRelay({Value: "PrintValue"}));
+
 
         // Slider linked to print view, with another for slider width
-        panel.addMorph(m = new PrintMorph(new Rectangle(140,140,80,20),"0.5"));
-        m.connectModel({model: model, getValue: "getSliderValue", setValue: "setSliderValue"});
-        panel.addMorph(m = new PrintMorph(new Rectangle(230,140,50,20),"0.1"));
-        m.connectModel({model: model, setValue: "setSliderRange"});
-        panel.addMorph(m = new SliderMorph(new Rectangle(140,170,140,20)));
-        m.connectModel({model: model, getValue: "getSliderValue", setValue: "setSliderValue", getSliderExtent: "getSliderRange"});
+        m = panel.addMorph(new PrintMorph(new Rectangle(140,140,80,20), "0.5"));
+        m.connectModel(model.newRelay({Value: "SliderValue"}));
+        m = panel.addMorph(new PrintMorph(new Rectangle(230,140,50,20), "0.1"));
+        m.connectModel(model.newRelay({Value: "SliderRange"}));
 
+        m = panel.addMorph(new SliderMorph(new Rectangle(140,170,140,20)));
+        m.connectModel(model.newRelay({Value: "SliderValue",  SliderExtent: "-SliderRange"}));
+	
         return panel;
     }
 
@@ -2253,44 +2265,36 @@ Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
         // build the textfields for the weather panel
         m = panel.addMorph(new TextMorph(r.withY(55), "---"));
 	m.connectModel(model.newRelay({Text: "-WeatherDesc"}));
-	model.addObserver(m, {WeatherDesc: "!Text"});
         m.takesKeyboardFocus = Functions.True;
 
 
         m = panel.addMorph(new TextMorph(r.withY(80), "---"));
 	m.connectModel(model.newRelay({Text: "-Temperature"}));
-	model.addObserver(m, {Temperature: "!Text"});
         m.takesKeyboardFocus = Functions.True;
 	
         m = panel.addMorph(new TextMorph(r.withY(105), "---"));
 	m.connectModel(model.newRelay({Text: "-Wind"}));
-	model.addObserver(m, {Wind: "!Text"});
         m.takesKeyboardFocus = Functions.True;
 
         m = panel.addMorph(new TextMorph(r.withY(130), "---"));
 	m.connectModel(model.newRelay({Text: "-Gusts"}));
-	model.addObserver(m, {Gusts: "!Text"});
         m.takesKeyboardFocus = Functions.True;
 	
         m = panel.addMorph(new TextMorph(r.withY(155), "---"));
 	m.connectModel(model.newRelay({Text: "-DewPoint"}));
-	model.addObserver(m, {DewPoint: "!Text"});
         m.takesKeyboardFocus = Functions.True;
 	
         m = panel.addMorph(new TextMorph(r.withY(180), "---"));
 	m.connectModel(model.newRelay({Text: "-Humidity"}));
-	model.addObserver(m, {Humidity: "!Text"});
         m.takesKeyboardFocus = Functions.True;
 	
         m = panel.addMorph(new TextMorph(r.withY(205), "---"));
 	m.connectModel(model.newRelay({Text: "-Visibility"}));
-	model.addObserver(m, {Visibility: "!Text"});
 	
         m.takesKeyboardFocus = Functions.True;
 	
         var image = panel.addMorph(new ImageMorph(r.withY(230)));
 	image.connectModel(model.newRelay({URL: "-ImageURL"}));
-	model.addObserver(image, {ImageURL: "!URL"});
 	
         image.setFill(null);
     

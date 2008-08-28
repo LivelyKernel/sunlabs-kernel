@@ -955,6 +955,8 @@ TextMorph.addMethods({
 	if (this.textColor !== TextMorph.prototype.textColor) {
 	    spec.textColor = this.textColor;
 	}
+
+	
 	return spec;
     },
     
@@ -2017,16 +2019,24 @@ TextMorph.addMethods({
     },
     
     getModelText: function() {
-        return this.getModelValue('getText', "-----");
+	if (this.formalModel) 
+	    return this.formalModel.getText && this.formalModel.getText("----");
+        else return this.getModelValue('getText', "-----");
     },
     setModelText: function(newText) {
+	if (this.formalModel) 
+	    return this.formalModel.setText && this.formalModel.setText(newText);
         return this.setModelValue('setText', newText);
     },
     getModelSelection: function() {
-        return this.getModelValue('getSelection', "-----");
+	if (this.formalModel) 
+	    return this.formalModel.getSelection && this.formalModel.getSelection("----");
+        else return this.getModelValue('getSelection', "-----");
     },
     setModelSelection: function(newSelection) {
-        return this.setModelValue('setSelection', newSelection);
+	if (this.formalModel) 
+	    return this.formalModel.setSelection && this.formalModel.setSelection(newSelection);
+        else return this.setModelValue('setSelection', newSelection);
     },
     searchForFind: function(str, start) {
 	this.requestKeyboardFocus(this.world().firstHand());
@@ -2043,25 +2053,42 @@ TextMorph.addMethods({
 
 TextMorph.subclass('PrintMorph', {
     documentation: "TextMorph that converts its model value to string using toString(), and from a string using eval()",
-    
+    precision: 2,
+
     updateView: function(aspect, controller) {
         var p = this.modelPlug;
-        if (p) {
-            if (aspect == p.getValue || aspect == 'all') this.updateTextString(this.getModelText());
-        }
+	if (!p) return;
+        if (aspect == p.getValue || aspect == 'all') this.onValueUpdate(this.getValue());
+    },
+
+    onValueUpdate: function(value) {
+	this.onTextUpdate(this.formatValue(value));
+    },
+    
+    getValue: function() {
+	if (this.formalModel && this.formalModel.getValue) return this.formalModel.getValue();
+	else return this.getModelValue("getValue");
+    },
+
+    setValue: function(value) {
+	if (this.formalModel && this.formalModel.setValue) 
+	    return this.formalModel.setValue(value);
+	else return this.setModelValue("setValue", value);
     },
 
     // overridable
     formatValue: function(value) {
-	return Strings.withDecimalPrecision(Object.inspect(value), 2);
+	if ((value instanceof Number) || (typeof value == 'number')) return String(value.toFixed(this.precision));
+	else return value.toString();
     },
     
     getModelText: function() {
-        return this.formatValue(this.getModelValue('getValue', null));
+	return this.formatValue(this.getValue());
     },
     
     setModelText: function(newText) {
-        this.setModelValue('setValue', eval(newText));
+	var result = String(eval(newText));  // exceptions?
+	return this.setValue(result);
     }
 
 });

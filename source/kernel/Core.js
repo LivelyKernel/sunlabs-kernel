@@ -658,6 +658,7 @@ Object.subclass('Record', {
 	    delete this.rawNode[name];
 	}
     }
+
 });
 
 Object.extend(Record, {
@@ -733,19 +734,46 @@ Object.extend(Record, {
                     // do forwarding
                     dep = Relay.newInstance(optForwardingSpec, dep);
                 }
-                // find all the "on"<Variable>"Update" methods of dep
+		
+                var deps = null;
+		// find all the "on"<Variable>"Update" methods of dep
                 for (var name in dep) {
                     if (name.startsWith("on") && name.endsWith("Update")) {
                         var varname = name.substring(2, name.indexOf("Update"));
                         if (!this["set" + varname]) 
                             throw new Error("cannot observe nonexistent variable " + varname);
-                        var deps = this[Record.observerListName(varname)];
+                        deps = this[Record.observerListName(varname)];
                         if (!deps) deps = this[Record.observerListName(varname)] = [];
                         else if (deps.indexOf(dep) >= 0) return;
                         deps.push(dep);
                     }
                 }
-            }
+
+            },
+
+	    addObserversFromSetters: function(reverseSpec, dep, optKickstartUpdates) {
+		var forwardSpec = {};
+		Properties.forEachOwn(reverseSpec, function(key) {
+		    var value = reverseSpec[key];
+		    if (!value.startsWith("+")) {  // if not write only, get updates
+			forwardSpec[value.startsWith("-") ? value.substring(1) : value] = "!" + key;
+		    }
+		});
+		this.addObserver(dep, forwardSpec);
+		if (optKickstartUpdates) 
+		    Properties.forEachOwn(reverseSpec, function(key) {
+			var value = reverseSpec[key];
+			if (!value.startsWith("+")) {  
+			    // trigger updates
+			    try {
+				dep["on" + key + "Update"].call(dep, this["get" + value].call(this));
+			    } catch (er) {
+				console.log(er + ' on ' + [key, value]);
+			    }
+			}
+		}, this);
+		
+	    }
         };
         klass.addMethods(def);
     }
@@ -765,7 +793,9 @@ Object.extend(Relay, {
     newRelayFunction: function(targetName) {
 	return function(/*...*/) {
 	    // what if  this.delegate[targetName] is null? more info
-	    return this.delegate[targetName].apply(this.delegate, arguments);
+	    var impl = this.delegate[targetName];
+	    if (!impl) throw new Error("delegate " + this.delegate + " does not implement " + targetName);
+	    return impl.apply(this.delegate, arguments);
 	}
     },
 
@@ -5247,10 +5277,13 @@ Object.extend(Morph, {
 
 // View trait
 ViewTrait = {
-    connectModel: function(plugSpec) {
+    connectModel: function(plugSpec, optKickstartUpdates) {
 	if (plugSpec instanceof Relay) {
 	    // new style model
 	    this.formalModel = plugSpec;
+	    if (plugSpec.delegate instanceof Record) 
+		plugSpec.delegate.addObserversFromSetters(plugSpec.definition, this, optKickstartUpdates);
+	    // now, go through the setters and add notifications on model
 	    return;
 	}
 	// connector makes this view pluggable to different models, as in
@@ -6200,7 +6233,7 @@ PasteUpMorph.subclass("WorldMorph", {
 
     prompt: function(message, callback, defaultInput) {
 	var model = Record.newInstance({Message: {}, Input: {}, Result: {}}, 
-	    {Message: message, Input: defaultInput || ""});
+	    {Message: message, Input: defaultInput || ""}, {});
 	model.addObserver({ 
 	    onResultUpdate: function(value) { 
 		if (value == true && callback) callback.call(Global, model.getInput());
@@ -6210,7 +6243,7 @@ PasteUpMorph.subclass("WorldMorph", {
     },
 
     confirm: function(message, callback) {
-	var model = Record.newInstance({Message: {}, Result: {}}, {Message: message, Result: false});
+	var model = Record.newInstance({Message: {}, Result: {}}, {Message: message, Result: false}, {});
 	model.addObserver({ 
 	    onResultUpdate: function(value) { 
 		if (value && callback) callback.call(Global, value);
