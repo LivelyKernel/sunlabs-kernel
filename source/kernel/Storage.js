@@ -12,8 +12,9 @@
  * Storage.js.  Storage system implementation.
  */
 
-(function(module) {
-
+namespace('lk.storage');
+ 
+using(lk.storage).run(function(module) {
 
 Morph.subclass('PackageMorph', {
     documentation: "Visual representation for a serialized morph",
@@ -104,7 +105,7 @@ Morph.subclass('PackageMorph', {
 });
 
 
-Wrapper.subclass('CollectionItem', {
+Wrapper.subclass('lk.storage.CollectionItem', {
     documentation: "Wrapper around information returned from WebDAV's PROPFIND",
 
     nameQ: new Query("D:href"),
@@ -146,7 +147,7 @@ Wrapper.subclass('CollectionItem', {
 });
 
 
-View.subclass('WebFile', NetRequestReporterTrait, { 
+View.subclass('lk.storage.WebFile', NetRequestReporterTrait, { 
     documentation: "Read/Write file",     // merge with Resource?
     pins: ["-File", "Content", "+DirectoryList", "-RootNode"],
 
@@ -213,7 +214,7 @@ View.subclass('WebFile', NetRequestReporterTrait, {
 	var result = new Query("/D:multistatus/D:response").findAll(responseXML.documentElement);
 	var baseUrl = this.getModelValue("getRootNode");
 	
-	var files = result.map(function(rawNode) { return new CollectionItem(rawNode, baseUrl).toURL(); });
+	var files = result.map(function(rawNode) { return new module.CollectionItem(rawNode, baseUrl).toURL(); });
 	files = this.arrangeFiles(files);
 	this.setModelValue("setDirectoryList", files);
     },
@@ -466,7 +467,7 @@ TwoPaneBrowser.subclass('FileBrowser', {
 
     initialize: function($super, rootNode) {
 	if (!rootNode) rootNode = URL.source.getDirectory();
-	$super(rootNode, new WebFile(), new WebFile());
+	$super(rootNode, new module.WebFile(), new module.WebFile());
 	var model = this.getModel();
 	var browser = this;
 
@@ -575,7 +576,7 @@ TwoPaneBrowser.subclass('FileBrowser', {
 			title: url.toString(),
 			position: evt.point()
 		    });
-		    var webfile = new WebFile({
+		    var webfile = new module.WebFile({
 			model: model, 
 			getFile: "getSelectedLowerNode", 
 			setContent: "setSelectedLowerNodeContents",
@@ -910,11 +911,5 @@ View.subclass('Subversion',  NetRequestReporterTrait, {
 
 });
 
-
-Subversion.test = function() { 
-    alert(new Subversion().info("trunk/source/kernel/Network.js"));
-}
-
-
-}.logCompletion('Storage.js'))();
+}.logCompletion('Storage.js'));
 
