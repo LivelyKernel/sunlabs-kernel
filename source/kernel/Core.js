@@ -3618,7 +3618,7 @@ Visual.subclass('Morph', {
     },
 
     copyFrom: function(copier, other) {
-	this.internalInitialize(NodeFactory.create("g"));
+	this.internalInitialize(other.rawNode.cloneNode(false));
 	this.pvtSetTransform(this.getLocalTransform());
 
 	this.initializePersistentState(pt(0,0).asRectangle(), "rect");
