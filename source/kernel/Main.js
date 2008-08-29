@@ -161,13 +161,13 @@ function populateWorldWithExamples(world) {
 
     if (Config.showEngine()) EngineMorph.makeEngine(world, pt(230, 5));
     
-    if (Config.showAsteroids()) {
-        var gameMorph = apps.asteroids.makeGameMorph(pt(500, 360).extent(pt(600, 300)));
+    if (Config.showAsteroids()) using(lk.examples.asteroids).run(function(app) {
+        var gameMorph = app.makeGameMorph(pt(500, 360).extent(pt(600, 300)));
         world.addMorph(new WindowMorph(gameMorph, 'Asteroids!'));
-        apps.asteroids.initialize();
+        app.initialize();
         gameMorph.runAsteroidsGame();
         gameMorph.owner.collapse();
-    }
+    });
     
     // Sample icon morph with a fisheye effect 'on'
     if (Config.showIcon()) {
@@ -193,10 +193,10 @@ function populateWorldWithExamples(world) {
         stockWidget.openIn(world, pt(350, 500));
     }
 
-    if (Config.show3DLogo()) world.addFramedMorph(new Sun3DMorph(pt(200, 200)), 'Sun 3D Logo', pt(570, 100));
+    if (Config.show3DLogo()) world.addFramedMorph(new lk.examples.Sun3DMorph(pt(200, 200)), 
+						  'Sun 3D Logo', pt(570, 100));
 
     if (Config.showTester) new TestWidget().openIn(world, pt(835, 450));
-
 
     // add to Link?
     function addLinkLabel(link, text) {
@@ -223,11 +223,11 @@ function populateWorldWithExamples(world) {
             }
 	    
             if (Config.showCanvasScape()) {
-                this.addMorph(new WindowMorph(new CanvasScapeMorph(new Rectangle(20,50,800,300)), 'CanvasScape')).collapse();
+                this.addMorph(new WindowMorph(new lk.examples.canvascape.CanvasScapeMorph(new Rectangle(20,50,800,300)), 'CanvasScape')).collapse();
             }
 	    
             if (Config.showMap) {
-                var tile = apps.maps.tileExtent;
+                var tile = lk.examples.maps.tileExtent;
                 var map = new MapFrameMorph(new Rectangle(0, 0, 2*tile.x, 2*tile.y), true);
                 map.setScale(0.7);
                 map.setPosition(pt(160, 250));

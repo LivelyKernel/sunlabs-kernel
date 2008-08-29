@@ -12,11 +12,11 @@
  * Text.js.  Text-related functionality.
  */
 
+namespace('lk.text');
 
-(function(scope) {
+using(lk.text).run(function(module) {
 
-
-Object.subclass('CharacterInfo', {
+Object.subclass('lk.text.CharacterInfo', {
     // could simply use Point as extent.
     documentation: "simple printable info about a character's extent",
 
@@ -32,7 +32,7 @@ Object.subclass('CharacterInfo', {
 });
 
 
-Object.subclass('Font', {
+Object.subclass('lk.text.Font', {
 
     documentation: "representation of a font",
     baselineFactor: 0.80,
@@ -102,13 +102,13 @@ Object.subclass('Font', {
 (function() {
     var cache = {};
     
-    Object.extend(Font, {
+    Object.extend(module.Font, {
 	
 	forFamily: function(familyName, size, style) {
             var key  = familyName + ":" + size + ":" + (style ? style[0] : 'n' ) ;
             var entry = cache[key];
             if (entry) return entry;
-	    try { entry = new Font(familyName, size, style);
+	    try { entry = new module.Font(familyName, size, style);
                 } catch(er) {
                     console.log("%s when looking for %s:%s", er, familyName, size);
                     return null;
@@ -122,12 +122,12 @@ Object.subclass('Font', {
 
     
 if (Config.fakeFontMetrics) { 
-    Font.addMethods({
+    module.Font.addMethods({
         // wer're faking here, b/c native calls don't seem to work
         computeExtents: function(family, size) {
             var extents = [];
             for (var i = 33; i < 255; i++) {
-                extents[i] = new CharacterInfo(size*2/3, size);
+                extents[i] = new module.CharacterInfo(size*2/3, size);
             }
             return extents;
         }
@@ -135,7 +135,7 @@ if (Config.fakeFontMetrics) {
     
 } else if (Config.fontMetricsFromHTML)  {
     
-Font.addMethods({
+module.Font.addMethods({
 
     computeExtents: function(family, size) {
         var extents = [];
@@ -168,7 +168,7 @@ Font.addMethods({
         for (var i = 33; i < 255; i++) {
             var sub = d.appendChild(create("span"));
             sub.appendChild(doc.createTextNode(String.fromCharCode(i)));
-            extents[i] = new CharacterInfo(sub.offsetWidth,  sub.offsetHeight);
+            extents[i] = new module.CharacterInfo(sub.offsetWidth,  sub.offsetHeight);
             if (i == xCode) xWidth = extents[i].width;
         }
 
@@ -190,9 +190,9 @@ Font.addMethods({
         // tjm: sanity check as Firefox seems to do this wrong with certain values
         if (spaceWidth > 100) {    
             extents[(' '.charCodeAt(0))] = //new CharacterInfo(this.getCharInfo(' ').width - 2, this.getCharInfo(' ').height);
-            new CharacterInfo(2*xWidth/3, sub.offsetHeight);
+            new module.CharacterInfo(2*xWidth/3, sub.offsetHeight);
         } else {
-            extents[(' '.charCodeAt(0))] = new CharacterInfo(spaceWidth, sub.offsetHeight);
+            extents[(' '.charCodeAt(0))] = new module.CharacterInfo(spaceWidth, sub.offsetHeight);
         }
 
         //d.removeChild(span);
@@ -766,7 +766,7 @@ var Locale = {
 };
 
 
-WrapStyle = Class.makeEnum([ 
+module.WrapStyle = Class.makeEnum([ 
     "Normal",  // fits text to bounds width using word wrap and sets height
     "None", // simply sets height based on line breaks only
     "Shrink" // sets both width and height based on line breaks only
@@ -810,7 +810,7 @@ Morph.subclass("TextMorph");
 TextMorph.addProperties({
     StoredTextStyle: {name: "stored-style", from:Converter.fromJSONAttribute, to:Converter.toJSONAttribute },
     StoredString: {name: "stored-text", from: Converter.fromJSONAttribute, to:Converter.toJSONAttribute, byDefault: ""},
-    Wrap: { name: "wrap", byDefault: WrapStyle.Normal },
+    Wrap: { name: "wrap", byDefault: module.WrapStyle.Normal },
     Padding: { name: "padding", byDefault: String(Rectangle.inset(6, 4).toInsetTuple()) } // FIXME move to coercion funcions
 });
 
@@ -861,7 +861,7 @@ TextMorph.addMethods({
             this.textContent = new TextContent(importer, rawNode);   
             this.fontFamily = this.textContent.getTrait("font-family");
             this.fontSize = this.textContent.getLengthTrait("font-size");
-            this.font = Font.forFamily(this.fontFamily, this.fontSize);
+            this.font = module.Font.forFamily(this.fontFamily, this.fontSize);
             this.textColor = new Color(Importer.prototype, this.textContent.getTrait("fill"));
 	    return true;
 	} 
@@ -930,7 +930,7 @@ TextMorph.addMethods({
     applyStyle: function($super, spec) { // no default actions, note: use reflection instead?
 	$super(spec);
 	if (spec.wrapStyle !== undefined) {
-	    if (spec.wrapStyle in WrapStyle) this.setWrapStyle(spec.wrapStyle);
+	    if (spec.wrapStyle in module.WrapStyle) this.setWrapStyle(spec.wrapStyle);
 	    else console.log("unknown wrap style " + spec.wrapStyle);
 	}
 	if (spec.fontSize !== undefined) {
@@ -963,8 +963,8 @@ TextMorph.addMethods({
     
     setWrapStyle: function(style) {
 	// FIXME fold into coertion/validation, use just setWrap
-	if (!(style in WrapStyle)) { 
-	    console.log("unknown style " + style); 
+	if (!(style in module.WrapStyle)) { 
+	    console.log("unknown style " + style + " in " + module.WrapStyle);
 	    return; 
 	}
         if (style == TextMorph.prototype.getWrap()) {
@@ -988,7 +988,7 @@ TextMorph.addMethods({
     },
 
     beLabel: function() {
-	this.applyStyle({borderWidth: 0, fill: null, wrapStyle: WrapStyle.Shrink});
+	this.applyStyle({borderWidth: 0, fill: null, wrapStyle: module.WrapStyle.Shrink});
 	this.ignoreEvents();
         // this.isAccepting = false;
         this.layoutChanged();
@@ -998,7 +998,7 @@ TextMorph.addMethods({
 
     beListItem: function() {
 	// specify padding, otherwise selection will overlap
-	this.applyStyle({borderWidth: 0, fill: null, wrapStyle: WrapStyle.None, padding: Rectangle.inset(4, 0)});
+	this.applyStyle({borderWidth: 0, fill: null, wrapStyle: module.WrapStyle.None, padding: Rectangle.inset(4, 0)});
 	this.ignoreEvents();
 	this.suppressHandles = true;
 	this.acceptInput = false;
@@ -1072,7 +1072,7 @@ TextMorph.addMethods({
             {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
         // some eye candy for the help
 	this.linkToStyles(['helpText']);
-	this.setWrapStyle(WrapStyle.Shrink);
+	this.setWrapStyle(module.WrapStyle.Shrink);
         this.openForDragAndDrop = false; // so it won't interfere with mouseovers
         return this;
     },
@@ -1132,7 +1132,7 @@ TextMorph.addMethods({
     resetRendering: function() {
 	this.textContent.replaceRawNodeChildren(null);
 	this.textContent.setFill(String(this.textColor));
-        this.font = Font.forFamily(this.fontFamily, this.fontSize);
+        this.font = module.Font.forFamily(this.fontFamily, this.fontSize);
         this.font.applyTo(this.textContent);
         this.lines = null;
         this.lineNumberHint = 0;
@@ -1239,13 +1239,13 @@ TextMorph.addMethods({
 
     compositionWidth: function() {
 	var padding = this.getPaddingStyle();
-        if (this.getWrap() == WrapStyle.Normal) return this.shape.bounds().width - padding.left() - padding.right();
+        if (this.getWrap() == module.WrapStyle.Normal) return this.shape.bounds().width - padding.left() - padding.right();
         else return 9999; // Huh??
     },
 
     // DI: Should rename fitWidth to be composeLineWrap and fitHeight to be composeWordWrap
     fitText: function() { 
-        if (this.getWrap() == WrapStyle.Normal) this.fitHeight();
+        if (this.getWrap() == module.WrapStyle.Normal) this.fitHeight();
         else this.fitWidth();
     },
 
@@ -1319,9 +1319,9 @@ TextMorph.addMethods({
 
         // DI: This should just say, eg, this.shape.setBottomRight(bottomRight);
 	var b = this.shape.bounds();
-        if (this.getWrap() == WrapStyle.None) {
+        if (this.getWrap() == module.WrapStyle.None) {
             this.shape.setBounds(b.withHeight(bottomRight.y - b.y));
-        } else if (this.getWrap() == WrapStyle.Shrink) {
+        } else if (this.getWrap() == module.WrapStyle.Shrink) {
             this.shape.setBounds(b.withBottomRight(bottomRight));
         }
 
@@ -1499,10 +1499,10 @@ TextMorph.addMethods({
     getSelectionText: function() {
 	return this.textStyle ? 
 	    this.getText().subtext(this.selectionRange[0], this.selectionRange[1] + 1)
-	    : new Text(this.getSelectionString());
+	    : new module.Text(this.getSelectionString());
     },
     getText: function() {
-        return new Text(this.textString, this.textStyle); 
+        return new module.Text(this.textString, this.textStyle); 
     },
 
     replaceSelectionWith: function(replacement, delayComposition, justMoreTyping) {
@@ -1775,7 +1775,7 @@ TextMorph.addMethods({
 	    this.searchForFind(this.lastSearchString, this.lastFindLoc + this.lastSearchString.length);
     },
     doSearch: function() {
-        if (SourceControl) SourceControl.browseReferencesTo(this.getSelectionString()); 
+        if (lk.tools.SourceControl) SourceControl.browseReferencesTo(this.getSelectionString()); 
     },
     doDoit: function() {
 	this.tryBoundEval(this.getSelectionString());
@@ -1872,7 +1872,7 @@ TextMorph.addMethods({
 
     emphasizeSelection: function(emph) {
 	if (this.hasNullSelection()) return;
-	var txt = new Text(this.textString, this.textStyle);
+	var txt = new module.Text(this.textString, this.textStyle);
 	txt.emphasize(emph, this.selectionRange[0], this.selectionRange[1]);
 	this.textStyle = txt.style;
 	this.setStoredTextStyle(this.textStyle);
@@ -1952,7 +1952,7 @@ TextMorph.addMethods({
     
     setFontFamily: function(familyName) {
         this.fontFamily = familyName;
-        this.font = Font.forFamily(this.fontFamily, this.fontSize);
+        this.font = module.Font.forFamily(this.fontFamily, this.fontSize);
         this.layoutChanged();
         this.changed();
     },
@@ -1963,7 +1963,7 @@ TextMorph.addMethods({
 	if (newSize == this.fontSize && this.font)  // make sure this.font is inited
 	    return;
         this.fontSize = newSize;
-        this.font = Font.forFamily(this.fontFamily, newSize);
+        this.font = module.Font.forFamily(this.fontFamily, newSize);
         this.setPaddingStyle(Rectangle.inset(newSize/2 + 2, newSize/3));
         this.layoutChanged();
         this.changed();
@@ -2294,7 +2294,7 @@ Object.extend(RunArray, {
 RunArray.test([3, 1, 2]);
 
     
-Object.subclass('Text', {
+Object.subclass('lk.text.Text', {
     // Rich text comes to the Lively Kernel
     initialize: function(string, style) {
 	this.string = string;
@@ -2318,17 +2318,16 @@ Object.subclass('Text', {
     },
     substring: function (start, stop) {
 	// Return a substring with its emphasis as a Text
-	return new Text(this.string.substring(start, stop), this.style.slice(start, stop));
+	return new module.Text(this.string.substring(start, stop), this.style.slice(start, stop));
     },
     concat: function (other) {
 	// Modify the style of this text according to emph
-	return new Text(this.string.concat(other.string), this.style.concat(other.style));
+	return new module.Text(this.string.concat(other.string), this.style.concat(other.style));
     },
     toString: function() {
 	return "Text for " + this.string + "<" + this.style + ">";
     }
 });
-
 
 
 Object.subclass('TextEmphasis', {
@@ -2349,6 +2348,6 @@ Object.subclass('TextEmphasis', {
 });
 
 
-}).logCompletion("Text.js")(Global);
+}.logCompletion("Text.js"));
 
 

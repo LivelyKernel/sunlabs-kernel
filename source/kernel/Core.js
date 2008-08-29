@@ -15,6 +15,48 @@
 
 var Global = this.window.top || this.window; // set to the context enclosing the SVG context.
 
+// namespace logic borrowed from 
+// http://higher-order.blogspot.com/2008/02/designing-clientserver-web-applications.html
+function using() {
+    var args = arguments;
+    return {run: function(inner) { return inner.apply(args[0], args); }};
+}
+
+function namespace(spec, context) {
+    var  i,N;
+    context = context || Global;
+    spec = spec.valueOf();
+    if (typeof spec === 'object') {
+        if (typeof spec.length === 'number') {//assume an array-like object
+            for (i = 0,N = spec.length; i < N; i++) {
+                namespace(spec[i], context);
+            }
+        }
+        else {//spec is a specification object e.g, {com: {trifork: ['model,view']}}
+            for (i in spec) if (spec.hasOwnProperty(i)) {
+                context[i] = context[i] || {};
+                namespace(spec[i], context[i]);//recursively descend tree
+            }
+        }
+    } else if (typeof spec === 'string') {
+        (function handleStringCase() {
+            var parts;
+            if (!Class.isValidIdentifier(spec)) {
+                throw new Error('"'+spec+'" is not a valid name for a package.');
+            }
+            parts = spec.split('.');
+            for (i = 0, N = parts.length; i<N; i++) {
+                spec = parts[i];
+                context[spec] = context[spec] || {};
+                context = context[spec];
+            }
+        })();
+    } else {
+	throw new TypeError();
+    }
+}
+
+
 // ===========================================================================
 // Our JS library extensions (JS 1.5, no particular browser or graphics engine)
 // ===========================================================================
@@ -37,6 +79,20 @@ Object.extend(Function.prototype, {
 	
 	var properties = $A(arguments);
 	var className = properties.shift();
+	var targetScope = Global;
+	if (className) {
+	    var idx = className.lastIndexOf('.');
+	    if (idx > 0) {
+		var targetScopeName = className.substring(0, idx);
+		// FIXME: remove eval
+		targetScope = eval('Global.' + targetScopeName);
+		className = className.substring(idx + 1);
+	    } else {
+		if (!Class.isValidIdentifier(className))
+		    throw new Error("invalid id " + className);
+	    }
+	} 
+
 	
 	function klass() {
 	    // check for the existence of Importer, which may not be defined very early on
@@ -68,7 +124,7 @@ Object.extend(Function.prototype, {
 	    klass.prototype.initialize = Functions.Empty;
 	}
 
-	if (className) Global[className] = klass; // otherwise it's anonymous
+	if (className) targetScope[className] = klass; // otherwise it's anonymous
 	return klass;
     },
 
@@ -169,8 +225,9 @@ Object.extend(Function.prototype, {
 });
 
 var Class = {
-
+    
     anonymousCounter: 0,
+
 
     def: function(constr, superConstr, optProtos, optStatics) {
 	// Main method of the LK class system.
@@ -214,7 +271,10 @@ var Class = {
 	Global[className] = klass;
 	return klass;
     },
-
+    
+    isValidIdentifier: function(str) {
+	return (/^(?:[a-zA-Z_]\w*[.])*[a-zA-Z_]\w*$/).test(str);
+    },
     
     isClass: function(object) {
 	return (object instanceof Function) && (object.superclass || object === Object);
@@ -3554,6 +3614,12 @@ Object.subclass('MouseHandlerForRelay', {
 
 });
 
+
+namespace('lk.text');
+
+using(lk.text).run(function(text) {
+
+
 Visual.subclass('Morph', {
     documentation: "Base class for every graphical, manipulatable object in the system", 
 
@@ -6233,7 +6299,7 @@ PasteUpMorph.subclass("WorldMorph", {
 
 	var caption = Strings.formatFromArray($A(arguments));
         menu.openIn(this, this.viewport().center(), true, caption); 
-	menu.label.wrapStyle = WrapStyle.Normal;
+	menu.label.wrapStyle = text.WrapStyle.Normal;
 	if (false) {
 	    // FIXME: how to center?
 	    var txt = new Text(menu.label.textString, menu.label.textStyle);
@@ -7012,6 +7078,8 @@ ExternalLinkMorph.addMethods({
     }
     
 });
+
+}); // using lk.text
 
 // Some SVG/DOM bindings 
 

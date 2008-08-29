@@ -12,7 +12,10 @@
  * Tools.js.  This file defines various tools such as the class browser,
  * object inspector, style editor, and profiling and debugging capabilities.  
  */
-(function(module) {
+
+namespace('lk.tools');
+
+using(lk.text, lk.tools).run(function(text, module) {
 
 // ===========================================================================
 // Class Browser -- A simple browser for Lively Kernel code
@@ -83,13 +86,15 @@ Widget.subclass('SimpleBrowser', {
             ? Global.constructor.functionNames().without(className).sort()
             : Global[className].localFunctionNames().sort();
         var defStr = "*definition";
-        var defRef = SourceControl && SourceControl.getSourceInClassForMethod(className, defStr);
+        var defRef = module.SourceControl && module.SourceControl.getSourceInClassForMethod(className, defStr);
         return defRef ? [defStr].concat(sorted) : sorted;
     },
     
     getMethodStringFor: function(className, methodName) { 
         if (!className || !methodName) return "no code"; 
-	if (SourceControl != null) var source = SourceControl.getSourceInClassForMethod(className, methodName);
+	var source = null;
+	if (module.SourceControl != null) 
+	    source = module.SourceControl.getSourceInClassForMethod(className, methodName);
 	if (source) return source;
 	var func = (className == "Global") ? Global[methodName] : Global[className].prototype[methodName];
 	if (func == null) return "no code";
@@ -129,8 +134,8 @@ Widget.subclass('SimpleBrowser', {
         }
         if (!URL.source.protocol.startsWith("file")) {
             items.push(['import source files', function() {
-                if (! SourceControl) SourceControl = new SourceDatabase();
-                SourceControl.scanKernelFiles(["miniprototype.js", "defaultconfig.js", "localconfig.js",
+                if (! module.SourceControl) module.SourceControl = new SourceDatabase();
+                module.SourceControl.scanKernelFiles(["miniprototype.js", "defaultconfig.js", "localconfig.js",
                     "Main.js", "Core.js", "Text.js",
                     "Widgets.js", "Network.js", "Storage.js", "Tools.js",
                     "Examples.js", "WebPIM.js", "phone.js"]);
@@ -1806,5 +1811,5 @@ ChangeSet.current = function() {
 
 
 
-}).logCompletion("Tools.js")(Global);
+}.logCompletion("Tools.js"));
 

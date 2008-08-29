@@ -25,6 +25,11 @@
 // Simple widgets
 // ===========================================================================
 
+
+
+using(lk.text).run(function(text) {
+
+
 Morph.subclass('ButtonMorph', {
     
     documentation: "Simple button",
@@ -740,7 +745,7 @@ TextMorph.subclass("CheapListMorph", {
         var listText = itemList ? itemList.join("\n") : "";
         $super(initialBounds, listText);
 	
-	this.setWrapStyle(WrapStyle.None);
+	this.setWrapStyle(text.WrapStyle.None);
         this.itemList = itemList;
         // this default self connection may get overwritten by, eg, connectModel()...
         var model = new SyntheticModel(this.pins);
@@ -1234,7 +1239,7 @@ Morph.subclass("MenuMorph", {
         fill: Color.blue.lighter(5),
         borderRadius: 4, 
         fillOpacity: 0.75, 
-        wrapStyle: WrapStyle.Shrink
+        wrapStyle: text.WrapStyle.Shrink
     },
 
     textStyle: {
@@ -1244,7 +1249,7 @@ Morph.subclass("MenuMorph", {
     labelStyle: {
         borderRadius: 4, 
         fillOpacity: 0.75, 
-        wrapStyle: WrapStyle.Shrink
+        wrapStyle: text.WrapStyle.Shrink
     },
 
     suppressHandles: true,
@@ -1818,23 +1823,23 @@ Morph.subclass("ScrollPane", {
 
 });
 
-function newListPane(initialBounds) {
+Global.newListPane = function(initialBounds) {
     return new ScrollPane(new CheapListMorph(initialBounds,["-----"]), initialBounds); 
 };
 
-function newTextListPane(initialBounds) {
+Global.newTextListPane = function(initialBounds) {
     return new ScrollPane(new TextListMorph(initialBounds, ["-----"]), initialBounds); 
 };
 
-function newTextPane(initialBounds, defaultText) {
+Global.newTextPane = function(initialBounds, defaultText) {
     return new ScrollPane(new TextMorph(initialBounds, defaultText), initialBounds); 
 };
 
-function newPrintPane(initialBounds, defaultText) {
+Global.newPrintPane = function(initialBounds, defaultText) {
     return new ScrollPane(new PrintMorph(initialBounds, defaultText), initialBounds); 
 };
 
-function newXenoPane(initialBounds) {
+Global.newXenoPane = function(initialBounds) {
     return new ScrollPane(new XenoMorph(initialBounds.withHeight(1000)), initialBounds);
 }
 
@@ -2792,6 +2797,5 @@ WindowMorph.subclass("TabbedPanelMorph", {
 });
 
 
-
-console.log('loaded Widgets.js');
+}.logCompletion('loaded Widgets.js')); // end using
 

@@ -14,7 +14,10 @@
  */
 
 
-(function(scope) {
+namespace('lk.examples');
+
+
+using(lk.examples).run(function(module) {
 
 // ===========================================================================
 // Widget (panel) Tester Demo
@@ -129,7 +132,7 @@ Morph.subclass("ClockMorph", {
         for (var i = 0; i < items.length; i++) {
             var labelPosition = bnds.center().addPt(Point.polar(radius*0.85, ((i-3)/items.length)*Math.PI*2)).addXY(labelSize/2, 0);
             var label = new TextMorph((pt(labelSize*3, labelSize).extentAsRectangle()), items[i]);
-	    label.applyStyle({borderWidth: 0, fill: null, wrapStyle: WrapStyle.Shrink, fontSize: labelSize, padding: Rectangle.inset(0)});
+	    label.applyStyle({borderWidth: 0, fill: null, wrapStyle: lk.text.WrapStyle.Shrink, fontSize: labelSize, padding: Rectangle.inset(0)});
             label.align(label.bounds().center(), labelPosition.addXY(1, 0));
             this.addMorph(label);
         }
@@ -436,7 +439,7 @@ PanelMorph.subclass('SquiggleMorph', {
         
 });
 
-var apps = scope.apps = {};
+namespace('lk.examples.threedee');
 
 // ===========================================================================
 // The 3D Rotation Example
@@ -448,7 +451,7 @@ var apps = scope.apps = {};
  * and a Java version written in 1998.
  *============================================================================*/
 
-apps.threedee = function() {
+using(lk.examples.threedee).run(function(threedee) {
 
     // Rapid sin and cos functions inherited from the original
     // C program.  Note that you must supply a multiplier in 
@@ -664,7 +667,7 @@ apps.threedee = function() {
  * WireObject instance constructor
  *============================================================================*/
 
-Object.subclass('WireObject', {
+Object.subclass('lk.examples.threedee.WireObject', {
     // WireObject constructor: create the wireframe object
     initialize: function(hereX, hereY, hereZ) {
 
@@ -796,17 +799,14 @@ Object.subclass('WireObject', {
         this.display(morphArray);
     }
 
-});
-    // module exports
-    return { WireObject: WireObject }
+}); 
 
-}(); // end of the 3D demo module
 
 /**
  * @class Sun3DMorph
  */
   
-PanelMorph.subclass("Sun3DMorph", {
+PanelMorph.subclass('lk.examples.Sun3DMorph', {
 
     initialize: function($super, rect) {
         $super(rect, "rect");
@@ -823,7 +823,7 @@ PanelMorph.subclass("Sun3DMorph", {
             this.contentMorph.addMorph(this.morphArray[i]);
         }
 
-        this.wireObject = new apps.threedee.WireObject(0,  0, -6000);
+        this.wireObject = new threedee.WireObject(0,  0, -6000);
         this.wireObject.paint(this.morphArray, 0, 0, 0);
 
         return this;
@@ -841,6 +841,8 @@ PanelMorph.subclass("Sun3DMorph", {
     }
 
 });
+
+}); // end of the 3D demo module
 
 // ===========================================================================
 // The Asteroids Game Example
@@ -871,7 +873,9 @@ PanelMorph.subclass("Sun3DMorph", {
 
 *****************************************************************************/
 
-apps.asteroids = function() {
+namespace('lk.examples.asteroids');
+
+using(lk.examples.asteroids).run(function(module) {
 
 // The game instance
 var gameMorph = null;
@@ -887,7 +891,7 @@ var gameHeight = 300;
   rotation. It also can detemine if two objects collide.
 ************************************************************************************************/
 
-Object.subclass('AsteroidsSprite', {
+Object.subclass('lk.examples.asteroids.AsteroidsSprite', {
 
     /* boolean */ active: false,    // Active flag.
     /* double */  angle: 0,         // Current angle of rotation.
@@ -979,6 +983,7 @@ Object.subclass('AsteroidsSprite', {
     }
 
 });
+
 
 /************************************************************************************************
   Main application code -- constants and variables
@@ -1124,8 +1129,9 @@ Object.subclass('AsteroidsSprite', {
   Main application code -- Methods.
 ************************************************************************************************/
 
+
   // Application initialization
-  function initAsteroidsGame() {
+  module.initialize = function() {
 
       // Generate starry background.
       initBackground();
@@ -1135,31 +1141,31 @@ Object.subclass('AsteroidsSprite', {
       
       // Create shape for the ship sprite.
       
-      ship = new AsteroidsSprite([pt(0, -10), pt(7, 10), pt(-7, 10)]);
+      ship = new module.AsteroidsSprite([pt(0, -10), pt(7, 10), pt(-7, 10)]);
       
       // Create shape for the photon sprites.
       
       for (var i = 0; i < MAX_SHOTS; i++) {
-          photons[i] = new AsteroidsSprite([pt(1,1), pt(1,-1), pt(-1,1), pt(-1,-1)]);
+          photons[i] = new module.AsteroidsSprite([pt(1,1), pt(1,-1), pt(-1,1), pt(-1,-1)]);
       }
       
       // Create shape for the flying saucer.
       
-      ufo = new AsteroidsSprite([pt(-15,0), pt(-10,-5), pt(-5,-5), pt(-5,-9), pt(5,-9), pt(5,-5), pt(10,-5), pt(15,0), pt(10,5),pt(-10,5)]);
+      ufo = new module.AsteroidsSprite([pt(-15,0), pt(-10,-5), pt(-5,-5), pt(-5,-9), pt(5,-9), pt(5,-5), pt(10,-5), pt(15,0), pt(10,5),pt(-10,5)]);
       
       // Create shape for the guided missile.
       
-      missile = new AsteroidsSprite([pt(0,-4), pt(1,-3), pt(1,3), pt(2,4), pt(-2,4),pt(-1,3), pt(-1,-3)]);
+      missile = new module.AsteroidsSprite([pt(0,-4), pt(1,-3), pt(1,3), pt(2,4), pt(-2,4),pt(-1,3), pt(-1,-3)]);
       
       // Create asteroid sprites.
       
       for (i = 0; i < MAX_ROCKS; i++)
-          asteroids[i] = new AsteroidsSprite([]);
+          asteroids[i] = new module.AsteroidsSprite([]);
       
       // Create explosion sprites.
       
       for (i = 0; i < MAX_SCRAP; i++)
-          explosions[i] = new AsteroidsSprite([]);
+          explosions[i] = new module.AsteroidsSprite([]);
 
     // Set font data.
     /* NOTE: Fonts are not supported yet
@@ -1191,6 +1197,7 @@ Object.subclass('AsteroidsSprite', {
     initPhotons();
     stopUfo();
     stopMissile();
+
     initAsteroids();
     initExplosions();
     playing = true;
@@ -1277,7 +1284,7 @@ Object.subclass('AsteroidsSprite', {
   }
 
 
-ClipMorph.subclass("GameMorph", {
+ClipMorph.subclass("lk.examples.asteroids.GameMorph", {
     
     runAsteroidsGame: function runAsteroidsGame() {
 
@@ -1715,7 +1722,7 @@ ClipMorph.subclass("GameMorph", {
     for (i = 0; i < MAX_ROCKS; i++) {
 
       // Create a jagged shape for the asteroid and give it a random rotation.
-      if (asteroids[i].morph) {
+     if (asteroids[i].morph) {
           asteroids[i].morph.remove();
           asteroids[i].morph = null;
       }
@@ -2091,7 +2098,7 @@ ClipMorph.subclass("GameMorph", {
     return true;
   }
 
-GameMorph.addMethods({
+    module.GameMorph.addMethods({
     
     initialize: function($super, rect) {
         $super(rect, "rect");
@@ -2139,18 +2146,14 @@ GameMorph.addMethods({
 
 });
 
-    function makeGameMorph(rect) {
-        gameMorph = new GameMorph(rect); 
-        return gameMorph;
-    }
+    module.makeGameMorph = function(rect) {
+    gameMorph = new module.GameMorph(rect); 
+    return gameMorph;
+}
 
-    // module exports
-    return {
-        initialize: initAsteroidsGame,
-        makeGameMorph: makeGameMorph
-    };
+    
 
-}(); // end of the asteroid game module
+}); // end of the asteroid game module
 
 // ===========================================================================
 // The Weather Widget Example
@@ -2418,7 +2421,7 @@ Widget.subclass('StockWidget', NetRequestReporterTrait, {
 
 
         // Newsfeed panel
-        m = panel.addMorph(newTextListPane(new Rectangle(160, 180, 410, 150)));
+        m = panel.addMorph(Global.newTextListPane(new Rectangle(160, 180, 410, 150)));
         m.connectModel({model: model, getList: "getNewsHeaders"});
 
         // Company-specific stock quotes
@@ -2481,7 +2484,7 @@ Widget.subclass('StockWidget', NetRequestReporterTrait, {
 // The Map Widget Example
 // ===========================================================================
 
-apps.maps = function() {
+module.maps = function() {
 
 // 6 is largest as a system print, lower numbers are debugprints
 // 6 is to be used if user must be notified lower levels to developer use
@@ -3427,7 +3430,9 @@ Morph.subclass("MapMorph", {
 }(); // end of the map demo module
 
 
-apps.canvascape = function() { // module function
+namespace('lk.examples.canvascape');
+
+using(lk.examples.canvascape).run(function(module) { 
 
 // ===========================================================================
 // The CanvasScape 3D Maze Walker Example
@@ -3440,7 +3445,7 @@ apps.canvascape = function() { // module function
  * @class MiniMapMorph: The "radar view" for the game
  */
 
-Morph.subclass("MiniMapMorph", {
+Morph.subclass("lk.examples.canvascape.MiniMapMorph", {
     
     initialize: function($super, rect) {
         $super(rect, "rect");
@@ -3485,7 +3490,7 @@ Morph.subclass("MiniMapMorph", {
  * @class CanvasScapeMorph: The Canvas Game Morph
  */
 
-ClipMorph.subclass("CanvasScapeMorph", {
+ClipMorph.subclass("lk.examples.canvascape.CanvasScapeMorph", {
     
     initialize: function($super, rect) {
         $super(rect, "rect");
@@ -3588,7 +3593,7 @@ ClipMorph.subclass("CanvasScapeMorph", {
         this.jumpCycle=0;
         this.color = Color.red;
         this.note = "";
-        this.map = new MiniMapMorph(new Rectangle(5,25,8*this.arena.length,8*this.arena[0].length));
+        this.map = new module.MiniMapMorph(new Rectangle(5,25,8*this.arena.length,8*this.arena[0].length));
         this.morphArray =[];
         console.log("initParameters completed");
     },
@@ -4079,7 +4084,7 @@ ClipMorph.subclass("CanvasScapeMorph", {
     startGame: function() {
         if (this.map) this.map.remove();
         this.initGame();
-        this.map = new MiniMapMorph(new Rectangle(5,25,8*this.arena.length,8*this.arena[0].length)); 
+        this.map = new module.MiniMapMorph(new Rectangle(5,25,8*this.arena.length,8*this.arena[0].length)); 
         this.initUnderMap();
         this.addMorph(this.map);
         this.note="";
@@ -4103,10 +4108,7 @@ ClipMorph.subclass("CanvasScapeMorph", {
     }
 });
 
-   // module exports
-    return { CanvasScapeMorph: apps.CanvasScapeMorph };
-
-}(); // end canvascape
+}); // end canvascape
 
 // ===========================================================================
 // The Morphic Radial Engine Demo
@@ -4456,6 +4458,6 @@ Morph.subclass("PlayerMorph",  {
 
 });
 
+});
 
-}).logCompletion("Examples.js")(Global);
 

@@ -618,10 +618,10 @@ TwoPaneBrowser.subclass('FileBrowser', {
 		}]);
 	    }
 	    
-	    if (SourceControl) {
+	    if (lk.tools.SourceControl) {
 		var fileName = url.filename();
 		items.unshift(['open a changeList browser', function(evt) {
-                    var chgList = SourceControl.changeListForFileNamed(fileName);
+                    var chgList = lk.tools.SourceControl.changeListForFileNamed(fileName);
 		    new ChangeList(fileName, null, chgList).openIn(this.world()); 
 		}]);
 	    }
