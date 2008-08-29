@@ -38,16 +38,13 @@ Widget.subclass('TestWidget', {
         // work with gradients or stipple patterns yet!
         panel.linkToStyles(['widgetPanel']);
 	var model = Record.newInstance({Text: {}, TextSel: {}, ListItem: {}, PrintValue: {},
-	    B1Value: {}, B2Value: {}, SliderValue: {}, SliderRange: {}}, {}, 
-	    { SliderValue: 0, SliderRange: 0, Text: "Hello World" });
+	    B1Value: {}, B2Value: {}, SliderValue: {}, SliderRange: {}}, 
+	    {}, 
+	    { Text: "Hello World" });
 	
-        panel.connectModel(Relay.newInstance({Text: "Text", TextSel: "TextSel", ListItem: "ListItem",
-					      PrintValue: "PrintValue", B1Value: "B1Value", B2Value: "B2Value",
-					      SliderValue: "SliderValue", SliderRange: "SliderRange"}));
-        var m; 
 
         // Two simple buttons, one toggles...
-        m = panel.addMorph(new ButtonMorph(new Rectangle(20,20,50,20)));
+        var m = panel.addMorph(new ButtonMorph(new Rectangle(20,20,50,20)));
         m.connectModel(model.newRelay({Value: "B1Value"}));
 	
         m = panel.addMorph(new ButtonMorph(new Rectangle(20,50,50,20)));
@@ -91,12 +88,12 @@ Widget.subclass('TestWidget', {
 
         // Slider linked to print view, with another for slider width
         m = panel.addMorph(new PrintMorph(new Rectangle(140,140,80,20), "0.5"));
-        m.connectModel(model.newRelay({Value: "SliderValue"}));
+        m.connectModel(model.newRelay({Value: "SliderValue"}), true);
         m = panel.addMorph(new PrintMorph(new Rectangle(230,140,50,20), "0.1"));
-        m.connectModel(model.newRelay({Value: "SliderRange"}));
+        m.connectModel(model.newRelay({Value: "SliderRange"}), true);
 
         m = panel.addMorph(new SliderMorph(new Rectangle(140,170,140,20)));
-        m.connectModel(model.newRelay({Value: "SliderValue",  SliderExtent: "-SliderRange"}));
+        m.connectModel(model.newRelay({Value: "SliderValue",  SliderExtent: "-SliderRange"}), true);
 	
         return panel;
     }

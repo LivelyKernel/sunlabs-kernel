@@ -552,7 +552,7 @@ Widget.subclass('StylePanel', {
 
             panel.addMorph(new TextMorph(new Rectangle(50, y, 100, 20), 'Font Size').beLabel());
             m = panel.addMorph(new TextMorph(new Rectangle(150, y, 50, 20)));
-            m.connectModel(model.newRelay({Text: "+FontSize"}));
+            m.connectModel(model.newRelay({Text: "+FontSize"}), true);
             y += 30;
         }
 

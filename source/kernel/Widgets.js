@@ -1502,7 +1502,7 @@ Morph.subclass("SliderMorph", {
         var val = this.getScaledValue();
         var bnds = this.shape.bounds();
         var ext = this.getSliderExtent() || 0; // FIXME remove zero
-	
+
 	
         if (this.vertical()) { // more vertical...
             var elevPix = Math.max(ext*bnds.height, this.mss); // thickness of elevator in pixels
@@ -1603,7 +1603,7 @@ Morph.subclass("SliderMorph", {
     },
 
     getScaledValue: function() {
-        return this.getValue() / this.scale;
+        return (this.getValue() || 0) / this.scale; // FIXME remove 0
     },
 
     setScaledValue: function(value) {

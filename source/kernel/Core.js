@@ -763,12 +763,13 @@ Object.extend(Record, {
 		if (optKickstartUpdates) 
 		    Properties.forEachOwn(reverseSpec, function(key) {
 			var value = reverseSpec[key];
-			if (!value.startsWith("+")) {  
+			if (!value.startsWith("+")) {
+			    if (value.startsWith("-")) value = value.substring(1);
 			    // trigger updates
 			    try {
 				dep["on" + key + "Update"].call(dep, this["get" + value].call(this));
 			    } catch (er) {
-				console.log(er + ' on ' + [key, value]);
+				console.log("on kickstart update: " + er + ' on ' + [key, value]);
 			    }
 			}
 		}, this);
@@ -2122,6 +2123,11 @@ Object.subclass('Similitude', {
 
     toMatrix: function() {
 	var mx = this.canvas().createSVGMatrix();
+	// note that if a,b,.. f are not numbers, it's usually a
+	// problem, which may crash browsers (like Safari) that don't
+	// do good typechecking of SVGMatrix properties before passing
+	// them to native code. We could check here, but the problem
+	// most likely happened much earlier
 	mx.a = this.a;
 	mx.b = this.b;
 	mx.c = this.c;
