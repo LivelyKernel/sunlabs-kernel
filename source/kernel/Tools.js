@@ -674,7 +674,7 @@ function showStatsViewer(profilee,title) {
 // ===========================================================================
 // The even-better Execution Tracer
 // ===========================================================================
-(function() { // begin scoping function
+using().run(function() { // begin scoping function
 	// The Execution Tracer is enabled by setting Config.debugExtras = true in localconfig.js.
 	// When this is done, every method of every user class is wrapped by tracingWrapper (q.v.),
 	// And the entire system is running with a shadow stack being maintained in this way.
@@ -976,7 +976,7 @@ function showStatsViewer(profilee,title) {
         }
     });
     
-})(); // end scoping function
+}); // end scoping function
 
 
 // ===========================================================================
