@@ -885,9 +885,10 @@ TextMorph.addMethods({
         if (this.textString instanceof Text) {
 	    this.textStyle = this.textString.style;
 	    this.setStoredTextStyle(this.textStyle);
-	    this.textString = this.textString.string;
+	    this.textString = this.textString.string || "";
 	    this.setStoredString(this.textString);
 	} 
+	if (this.textString === undefined) alert('initialize: ' + this);
 	this.setStoredString(this.textString);
 	this.layoutChanged();
         return this;

@@ -58,9 +58,8 @@ Object.extend(Function.prototype, {
 
 	klass.prototype.constructor = klass;
 	// KP: .name would be better but js ignores .name on anonymous functions
-	if (className)
-	    klass.type = className;
-	
+	klass.type = className || "anonymous_" + (Class.anonymousCounter ++);
+
 	for (var i = 0; i < properties.length; i++) {
 	    klass.addMethods(properties[i] instanceof Function ? (properties[i])() : properties[i]);
 	}
@@ -170,6 +169,8 @@ Object.extend(Function.prototype, {
 });
 
 var Class = {
+
+    anonymousCounter: 0,
 
     def: function(constr, superConstr, optProtos, optStatics) {
 	// Main method of the LK class system.
@@ -635,7 +636,10 @@ Object.subclass('Record', {
     getRecordField: function(name) {
 	if (this.rawNode instanceof Global.Node) {
 	    var ns = null;
-	    return this.rawNode.getAttributeNS(ns, name);
+	    var result = this.rawNode.getAttributeNS(ns, name);
+	    if (result === null) return undefined;
+	    else if (result === "") return null;
+	    else return result;
 	} else {
 	    return this.rawNode[name];
 	}
@@ -644,7 +648,10 @@ Object.subclass('Record', {
     setRecordField: function(name, value) {
 	if (this.rawNode instanceof Global.Node) {
 	    var ns = null;
-	    return this.rawNode.setAttributeNS(ns, name, value);
+	    if (value === undefined) {
+		throw new Error("use removeRecordField to remove " + name);
+	    }
+	    return this.rawNode.setAttributeNS(ns, name, value || "");
 	} else {
 	    return this.rawNode[name] = value;
 	}
@@ -713,7 +720,7 @@ Object.extend(Record, {
     },
     
     createGetter: function (name, from, byDefault) {
-        return function(optSource) {
+        return function() {
             if (this.rawNode) {
                 var value = this.getRecordField(name);
                 if (!value && byDefault) return byDefault;
@@ -1135,7 +1142,7 @@ var Converter = {
     },
 
     toJSONAttribute: function(obj) {
-	return obj ? escape(JSON.serialize(obj)) : undefined;
+	return obj ? escape(JSON.serialize(obj)) : "";
     },
 
     fromJSONAttribute: function(str) {
