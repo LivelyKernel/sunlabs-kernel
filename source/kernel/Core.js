@@ -178,12 +178,13 @@ Object.extend(Function.prototype, {
 		    value.declaredClass = this.prototype.constructor.type;
 		    value.methodName = property;
 		    if (!this.prototype.constructor.type) {
-			console.log("named " + value.qualifiedMethodName());
+			//console.log("named " + value.qualifiedMethodName());
 		    }
 		}
 	    }
 	}
 	return this;
+
     },
 
     addProperties: function(spec) {
@@ -462,6 +463,12 @@ var Properties = {
   */  
 Object.extend(Function.prototype, {
 
+    inspectFull: function() {
+	var methodBody = this.toString();
+	methodBody = methodBody.substring(8, methodBody.length);
+	return this.qualifiedMethodName() + methodBody;
+    },
+
     inspect: function() {
 	// Print method name (if any) and the first 80 characters of the decompiled source (without 'function')
 	var methodBody = this.toString();
@@ -729,7 +736,7 @@ Object.extend(Record, {
 	
     create: function(bodySpec) {
 	var klass = Record.subclass();
-	this.addObserverMethod(klass);
+	this.addObserverMethods(klass);
 	this.extendRecordClass(klass, bodySpec);
 	return klass;
     },
@@ -770,7 +777,7 @@ Object.extend(Record, {
             if (deps) {
             	for (var i = 0; i < deps.length; i++) {
                     var dep = deps[i];
-                    dep["on" + name + "Update"].call(dep, value, optSource);
+                    dep["on" + name + "Update"].call(dep, coercedValue, optSource);
             	}
             }
         }
@@ -790,29 +797,41 @@ Object.extend(Record, {
             }
         }
     },
-
-    addObserverMethod: function(klass) {
+    
+    addObserverMethods: function(klass) {
         var def = {
             addObserver: function(dep, optForwardingSpec) {
                 if (optForwardingSpec) {
                     // do forwarding
                     dep = Relay.newInstance(optForwardingSpec, dep);
                 }
-		
-                var deps = null;
-		// find all the "on"<Variable>"Update" methods of dep
+                // find all the "on"<Variable>"Update" methods of dep
                 for (var name in dep) {
                     if (name.startsWith("on") && name.endsWith("Update")) {
                         var varname = name.substring(2, name.indexOf("Update"));
                         if (!this["set" + varname]) 
                             throw new Error("cannot observe nonexistent variable " + varname);
-                        deps = this[Record.observerListName(varname)];
+                        var deps = this[Record.observerListName(varname)];
                         if (!deps) deps = this[Record.observerListName(varname)] = [];
                         else if (deps.indexOf(dep) >= 0) return;
                         deps.push(dep);
                     }
                 }
-
+            },
+            // dep may be the relay or relay.delegate
+            removeObserver: function(dep, fieldName) {              
+                if (fieldName && !this[fieldName + '$observers']) {
+                    console.log('Tried to remove non existing observer:' + fieldName + '$observers');
+                    return;
+                };
+                var observerFields = fieldName ?
+                    [Record.observerListName(fieldName)] :
+                    Object.keys(this).select(function(ea) {
+                        return ea.endsWith('$observers')
+                    });
+                observerFields.each(function(ea) {
+                    this[ea] = this[ea].reject(function(relay) { return relay === dep || relay.delegate === dep });
+                }, this);
             },
 
 	    addObserversFromSetters: function(reverseSpec, dep, optKickstartUpdates) {
@@ -4891,6 +4910,7 @@ Morph.addMethods({
     },
 
     toggleDnD: function(loc) {
+        // console.log(this + ">>toggleDnD");
 	this.openForDragAndDrop = !this.openForDragAndDrop;
     },
 
@@ -4899,10 +4919,12 @@ Morph.addMethods({
     },
 
     closeDnD: function(loc) {
+        // console.log(this + ">>closeDnD");
 	this.openForDragAndDrop = false;
     },
 
     closeAllToDnD: function(loc) {
+        // console.log(this + ">>closeAllDnD");
 	// Close this and all submorphs to drag and drop
 	this.withAllSubmorphsDo( function() { this.closeDnD(); });
     },
@@ -5531,7 +5553,7 @@ Object.subclass('Model', {
 	//console.log('changed ' + varName);
 	for (var i = 0; i < this.dependents.length; i++) {
 	    if (source !== this.dependents[i]) {
-		//console.log('updating %s for name %s', this.dependents[i], varName);
+		// console.log('updating %s for name %s', this.dependents[i], varName);
 		this.dependents[i].updateView(varName, source);
 	    } 
 	} 
@@ -6235,7 +6257,8 @@ PasteUpMorph.subclass("WorldMorph", {
             ["Class Browser", function(evt) { new SimpleBrowser().openIn(world, evt.point()); }],
             ["Object Hierarchy Browser", function(evt) { new ObjectBrowser().openIn(world, evt.point()); }],    
             ["TestRunner", function(evt) { new TestRunner().openIn(world, evt.point()); }],
-            ["Call Stack Viewer", function(evt) { 
+            ["OmetaWorkspace", function(evt) { new OmetaWorkspace().openIn(world, evt.point()); }],
+			["Call Stack Viewer", function(evt) { 
 		if (Config.debugExtras) Function.showStack("use viewer");
 		else new StackViewer(this).openIn(world, evt.point()); }],    
             ["Clock", function(evt) {
@@ -6452,6 +6475,9 @@ Morph.subclass("HandMorph", {
         this.owner = null;
 	this.boundMorph = null; // surrounds bounds
 	this.layoutChangedCount = 0; // to prevent recursion on layoutChanged
+	
+	this.formalModel =  Record.newInstance({GlobalPosition: {}}, {}, {});
+	
         return this;
     },
     
@@ -7124,6 +7150,33 @@ function interactiveEval(text) {
     }
     return eval(text);
 };
+
+// for Fabrik
+Morph.addMethods({
+    isContainedIn: function(morph) {
+        if (!this.owner)
+            return false;
+        if (this.owner === morph)
+            return true;
+        else
+            return this.owner.isContainedIn(morph)
+    }
+
+});
+
+// for Fabrik
+HandMorph.addMethods({
+    changed: function($super, morph) {
+        $super();
+        if (this.formalModel)
+            this.formalModel.setGlobalPosition(this.getPosition());
+        this.submorphs.each(function(ea){
+            // console.log("changed "+ ea);
+            ea.changed("globalPosition", this.getPosition());
+        }, this);
+    }
+});
+
 
 
 console.log('loaded Core.js');

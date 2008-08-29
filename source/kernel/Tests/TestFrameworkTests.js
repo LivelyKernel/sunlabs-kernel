@@ -35,7 +35,7 @@ TestCase.subclass('TestTestCase', {
 	},
 	
 	testRunSetUp: function() {
-	    log(this.setUpWasRun);
+	    this.log(this.setUpWasRun);
 	    this.assert(this.setUpWasRun, 'setUp method was not invoked');
 	},
 	
@@ -147,6 +147,101 @@ TestCase.subclass('TestSuiteTest', {
 	    ts.setTestCases([DummyTestCase1, DummyTestCase2, DummyTestCase3]);
 	    ts.runAll();
 	    this.assertEqual(ts.result.runs(), 3, 'result');
+	}
+});
+
+TestCase.subclass('RememberStackTest', {
+	
+	a: function(a, b, c) {
+		this.assert(false);
+	},
+	
+	b: function(parameter) {
+		throw new Error();
+	},
+	
+	dummyTest: function() {
+		console.log("dummy: " + getCurrentContext());
+		this.a(1, 2, 3);
+	},
+	
+	myFailure: function() {
+		this.a(1, 2, 3, ['a', 'b', 'c']);
+	},
+	
+	// testFailure: function() {
+	// 	this.a(1, 2, 3, ['a', 'b', 'c']);
+	// },
+	
+	myError: function() {
+		this.b(1);
+	},
+	
+	// testOpenStackViewer: function() {
+	// 	Config.debugExtras = true;
+	// 	var result = this.debugTest("testError");
+	// 	new StackViewer(this, result.err.stack).openIn(WorldMorph.current(), pt(1,1));
+	// 	Config.debugExtras = false;
+	// },
+	
+	testReturnCurrentContextWhenFail: function() {
+		var testCase = new this.constructor();
+		var originalSource = testCase.a.toString();
+		//root = Function.trace(this.dummyTest());
+		var error = testCase.debugTest("dummyTest");
+		
+		this.assert(error.err.stack, "Failed to capture currentContext into assertion.stack");
+		this.assertEqual(error.err.stack.caller.method.qualifiedMethodName(), "RememberStackTest.a");
+		
+		this.assert(testCase.a.toString() == originalSource, "Functions are not unwrapped");
+	},
+	
+	testGetArgumentNames: function() {
+		var errorStackViewer = new ErrorStackViewer();
+		var result = errorStackViewer.getArgumentNames(this.a.toString());
+		this.assertEqual(result.length, 3);
+		this.assertEqual(result[0], 'a');
+		this.assertEqual(result[1], 'b');
+		this.assertEqual(result[2], 'c');
+	},
+	
+	testGetArgumentNames2: function() {
+		var errorStackViewer = new ErrorStackViewer();
+		var result = errorStackViewer.getArgumentNames(this.myError.toString());
+		this.assertEqual(result.length, 0);
+	},
+	
+	testGetArgumentValueNamePairs: function() {
+		var testCase = new this.constructor();
+		var testResult = testCase.debugTest("myError");
+		
+		var errorStackViewer = new ErrorStackViewer();
+		var result = errorStackViewer.getArgumentValueNamePairs(testResult.err.stack);
+		this.assertEqual(result.length, 1);
+		this.assertEqual(result[0], 'parameter: 1');
+	},
+	
+	testGetArgumentValueNamePairsForMethodWithUnnamedParameters: function() {
+		var testCase = new this.constructor();
+		var testResult = testCase.debugTest("myFailure");
+		
+		var errorStackViewer = new ErrorStackViewer();
+		// testResult.err.stack is the assertion, so use caller
+		var result = errorStackViewer.getArgumentValueNamePairs(testResult.err.stack.caller);
+		console.log('Result: ' + result);
+		this.assertEqual(result.length, 4);
+		this.assertEqual(result[0], 'a: 1');
+	},
+	
+	testGetArgumentValueNamePairsForMethodWithUnnamedParameters: function() {
+		var testCase = new this.constructor();
+		var testResult = testCase.debugTest("myError");
+		
+		var errorStackViewer = new ErrorStackViewer();
+		// testResult.err.stack is the assertion, so use caller
+		var result = errorStackViewer.getArgumentValueNamePairs(testResult.err.stack.caller);
+			console.log('Result: ' + result);
+		this.assertEqual(result.length, 0);
 	}
 });
 

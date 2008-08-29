@@ -712,6 +712,10 @@ using().run(function() { // begin scoping function
 
     var rootContext, currentContext;
 
+	Global.getCurrentContext = function() {
+		return currentContext;
+	};
+
     Object.subclass('TracerStackNode', {
 	initialize: function(caller, method) {
 	    this.caller = caller;
@@ -719,6 +723,13 @@ using().run(function() { // begin scoping function
 	    this.itsThis = null;  // These two get nulled after return
 	    this.args = null;  //  .. only used for stack trace on error
 	    this.callee = null;
+	},
+	copyMe: function() {
+	    var result = new TracerStackNode(this.caller, this.method);
+	    result.itsThis = this.itsThis;
+	    result.args = this.args;
+	    result.callee = this.callee;
+	    return result;
 	},
         traceCall: function(method , itsThis, args) {
 	    // this is the currentContext (top of stack)
@@ -731,7 +742,7 @@ using().run(function() { // begin scoping function
 	    } else {
 		newNode.method = method;
 	    }
-	    newNode.itsThis = itsThis;
+	    newNode.itsThis = itsThis;		
 	    newNode.args = args;
 	    if (Function.prototype.logAllCalls) console.log(this.dashes(this.stackSize()) + this);
 	    currentContext = newNode;
@@ -827,7 +838,8 @@ using().run(function() { // begin scoping function
 	    Function.prototype.logAllCalls = false;
 	},
 	
-        showStack: function(useViewer) {
+        showStack: function(useViewer, c) {
+		var currentContext = c;
             if (useViewer) { new StackViewer(this, currentContext).open(); return; }
 	    
             if (Config.debugExtras) {
@@ -965,11 +977,16 @@ using().run(function() { // begin scoping function
 	    // Make a proxy method (traceFunc) that calls the tracing routines before and after this method
 	    var traceFunc = function () {
 		var originalFunction = arguments.callee.originalFunction; 
-		if( !currentContext) return originalFunction.apply(this, arguments);  // not started yet
-		currentContext.traceCall(originalFunction, this, arguments);
-                var result = originalFunction.apply(this, arguments); 
-                currentContext.traceReturn(originalFunction);
-                return result; 
+		if (!currentContext) return originalFunction.apply(this, arguments);  // not started yet
+		try {
+			currentContext.traceCall(originalFunction, this, arguments);
+			var result = originalFunction.apply(this, arguments); 
+			currentContext.traceReturn(originalFunction);
+			return result;
+		} catch(e) {
+			if (!e.stack) e.stack = currentContext.copyMe();
+			throw e;
+		};
             };
             traceFunc.originalFunction = this;  // Attach this (the original function) to the tracing proxy
             return traceFunc;
@@ -1076,11 +1093,11 @@ WidgetModel.subclass('StackViewer', {
         var panel;
         if (! this.argses) {
             panel = PanelMorph.makePanedPanel(extent, [
-                ['stackPane', newListPane, new Rectangle(0, 0, 0.5, 1)],
-                ['codePane', newTextPane, new Rectangle(0.5, 0, 0.5, 1)]
-            ]);
-            panel.stackPane.connectModel({model: this, getList: "getFunctionList", setSelection: "setFunctionName"});
-            panel.codePane.connectModel({model: this, getText: "getCodeValue", setText: "setCodeValue"});
+                            ['stackPane', newListPane, new Rectangle(0, 0, 0.5, 1)],
+                            ['codePane', newTextPane, new Rectangle(0.5, 0, 0.5, 1)]
+                        ]);
+                        panel.stackPane.connectModel({model: this, getList: "getFunctionList", setSelection: "setFunctionName"});
+                        panel.codePane.connectModel({model: this, getText: "getCodeValue", setText: "setCodeValue"});
         } else {
             panel = PanelMorph.makePanedPanel(extent, [
                 ['stackPane', newListPane, new Rectangle(0, 0, 0.5, 0.6)],
@@ -1783,7 +1800,8 @@ Object.subclass('ChangeSet', {
     logChange: function(item) {
 	this.changes.push(item);
 	// Note this really only needs to happen once when storing the world...
-	WorldMorph.current().setLivelyTrait("changes", escape(JSON.serialize(this.changes)))    },
+	WorldMorph.current().setLivelyTrait("changes", escape(JSON.serialize(this.changes)))
+    },
     setChanges: function(arrayOfItems) {
 	this.changes = arrayOfItems;
     },

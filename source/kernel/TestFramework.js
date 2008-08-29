@@ -3,17 +3,6 @@ creating own tests. TestResult and TestSuite are used internally for running the
 TestRunner is a Widget which creates a standard xUnit TestRunner window. All tests of 
 the system can be run from it */
 
-function log(aString) {
-	console.log(aString)
-}
-
-function logln(aString) {
-	log(aString)
-}
-
-//Error.subclass("AssertionFaild", {});
-//AssertionFaild = new Error();
-
 Object.subclass('TestCase', {
    
 	initialize: function(testResult) {
@@ -21,14 +10,22 @@ Object.subclass('TestCase', {
 			this.result = testResult;	 
 		} else {
 			this.result = new TestResult();	   
-		}
+		};
+	},
+	
+	verbose: function() {
+	    return true;
+	},
+	
+	log: function(aString) {
+    	if(this.verbose())
+    	    console.log(aString);
 	},
 	
 	runAll: function() {
-		var self = this;
 		this.allTestSelectors().each(function(ea) {
-			self.runTest(ea)
-		});
+			this.runTest(ea)
+		}, this);
 	},
 	
 	setUp: function() {},
@@ -36,28 +33,32 @@ Object.subclass('TestCase', {
 	tearDown: function() {},
 	
 	runTest: function(aSelector) {
-		log('Running test: ' + aSelector);
+		this.log('Running test: ' + aSelector);
 		try {
 			this.setUp();
 			this[aSelector]();
 			this.result.addSuccess(this.constructor.type, aSelector);
-			logln(' ++ succeeded ++');
-		}
-		catch (e) {
-		    //if(!e.isAssertion)
-			//    throw e;
+			this.log(' ++ succeeded ++');
+		} catch (e) {
 			this.result.addFailure(this.constructor.type, aSelector, e);
-			logln(' -- failed -- ' + '(' + e.message + ')');
-		}
-		finally {
+			this.log(' -- failed -- ' + '(' + e.message + ')');
+			//if (!e.isAssertion) throw e;
+		} finally {
 			this.tearDown();
 		}
 	},
+	
+	debugTest: function(selector) {
+		// FIXME
+		Function.installStackTracers();
+		this.runTest(selector);
+		Function.installStackTracers("uninstall");
+		return this.result.failed.last();
+	},
 
 	assert: function(bool, msg) {
-		if(!bool)  {
-			throw {isAssertion: true, message: " assert failed " + "(" + msg +")"}
-		}
+		if (bool) return;
+		throw {isAssertion: true, message: " assert failed " + "(" + msg + ")"}
 	},
 
 	assertEqual: function(firstValue, secondValue, msg){
@@ -84,7 +85,7 @@ Object.subclass('TestCase', {
 		var cmp = function(left, right) {
 			for (var value in left) {
 				if (!(left[value] instanceof Function)) {
-					console.log('comparing: ' + left[value] + ' ' + right[value]);
+					self.log('comparing: ' + left[value] + ' ' + right[value]);
 					self.assertEqualState(left[value], right[value], msg);
 				};
 			};
@@ -215,9 +216,10 @@ Widget.subclass('TestRunner', {
 		
 	setResultOf: function(testObject) {
 		var model = this.getModel();
-		model.setResultText(testObject.result.shortResult());
-		model.setFailureList(testObject.result.failureList());
-		this.setBarColor(testObject.result.failureList().length == 0 ? Color.green : Color.red);
+		this.testObject = testObject;
+		model.setResultText(this.testObject.result.shortResult());
+		model.setFailureList(this.testObject.result.failureList());
+		this.setBarColor(this.testObject.result.failureList().length == 0 ? Color.green : Color.red);
 	},
 	
 	listTestClasses: function() {
@@ -265,16 +267,130 @@ Widget.subclass('TestRunner', {
 		this.resultBar.connectModel({model: model, getText: "getResultText"});
 
 		var failuresList = panel.failuresList;
-		failuresList.connectModel({model: model, getList: "getFailureList"});
+		failuresList.connectModel({model: model, getList: "getFailureList", setSelection: "setFailure"});
+		// quick hack for building stackList
+		model.setFailure = (function(failureDescription) {
+			// FIXME: put his in testResult
+			var i = this.testObject.result.failureList().indexOf(failureDescription);
+			this.openErrorStackViewer(this.testObject.result.failed[i]);
+		}).bind(this);
 		
 		return panel;
 		},
 		
 		setBarColor: function(color) {
 				this.resultBar.innerMorph().setFill(color);
+	},
+	
+	openErrorStackViewer: function(testFailedObj) {
+		var testCase = new Global[testFailedObj.classname]();
+		var failedDebugObj = testCase.debugTest(testFailedObj.selector);
+		
+		if (!failedDebugObj.err.stack) {
+			console.log("Cannot open ErrorStackViewer: no stack");
+			return;
+		};
+		
+		new ErrorStackViewer(failedDebugObj).openIn(WorldMorph.current(), pt(220, 10));
 	}
 	
 });
+
+Widget.subclass('ErrorStackViewer', {
+
+	defaultViewTitle: "ErrorStackViewer",
+	defaultViewExtent: pt(450,350),
+	
+	initialize: function($super, testFailedObj) {
+		$super();
+		if (!testFailedObj) return;
+		var list = [];		
+		testFailedObj.err.stack.each(function(currentNode, c) { list.push(c) });
+		this.formalModel = Record.newInstance(
+			{StackList: {}, MethodSource: {}, ArgumentsList: {}, SelectedCaller: {}},
+			{StackList: list, MethodSource: "", ArgumentsList: [], SelectedCaller: null}, {});
+		return this;
+	},
+	
+	buildView: function(extent) {
+		var panel = PanelMorph.makePanedPanel(extent, [
+			['callerList', newTextListPane, new Rectangle(0, 0, 1, 0.3)],
+			['argumentsList', newTextListPane, new Rectangle(0, 0.3, 0.7, 0.2)],
+			['inspectButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0.7, 0.3, 0.3, 0.2)],
+			['methodSource', newTextPane, new Rectangle(0, 0.5, 1, 0.5)]
+		]);
+		
+		var model = this.formalModel;
+		
+		var callerList = panel.callerList;
+		callerList.connectModel({model: this, getList: "getCallerList", setSelection: "setCaller"});
+		callerList.updateView("all");
+		
+		var argumentsList = panel.argumentsList;
+		this.argumentsList = argumentsList;
+		argumentsList.connectModel({model: model, getList: "getArgumentsList"});
+		
+		var inspectButton = panel.inspectButton;
+		this.inspectButton = inspectButton;
+		inspectButton.setLabel("Inspect");
+		inspectButton.connectModel({model: this, setValue: "inspectCaller"});
+		
+		var methodSource = panel.methodSource;
+		// FIXME
+		this.methodSource = methodSource;
+		methodSource.connectModel({model: model, getText: "getMethodSource"});
+		
+		return panel;
+	},
+	
+	getCallerList: function() {
+		return this.formalModel.getStackList().collect(function(ea) {
+			var argsString = '---'
+			var args = $A(ea.args);
+			if (args.length > 0)
+				argsString = '(' + args + ')';
+			return ea.method.qualifiedMethodName() + argsString});
+	},
+	
+	setCaller: function(callerString) {
+		var i = this.getCallerList().indexOf(callerString);
+		var contextNode = this.formalModel.getStackList()[i];
+		this.formalModel.setSelectedCaller(contextNode);
+		this.formalModel.setMethodSource(contextNode.method.inspectFull());
+		this.methodSource.updateView("getMethodSource");
+		
+		this.formalModel.setArgumentsList(this.getArgumentValueNamePairs(contextNode));
+		this.argumentsList.updateView("getArgumentsList");
+	},
+	
+	inspectCaller: function(value) {
+		if (!value) return;
+		var contextNode = this.formalModel.getSelectedCaller(contextNode);
+		new SimpleInspector(contextNode).openIn(WorldMorph.current(), pt(200,10))
+	},
+	
+	getArgumentValueNamePairs: function(stackNode) {
+		var args = $A(stackNode.args);
+		var argNames = this.getArgumentNames(stackNode.method.toString());
+		console.log('Argnames: ' + args);
+		var nameValues = argNames.inject([], function(nameValuePairs, eaArgName) {
+			nameValuePairs.push(eaArgName + ': ' + args.shift());
+			return nameValuePairs;
+		});
+		nameValues = nameValues.concat(args.collect(function(ea) {
+			return 'unnamed: ' + ea;
+		}));
+		return nameValues;
+	},
+	
+	getArgumentNames: function(methodSrc) {
+		var parameterString = /function \((.*?)\)/.exec(methodSrc)[1];
+		return parameterString.split(", ").reject(function(ea) { return ea == '' });
+	}
+});
+
+
+// 
 
 function openTestRunner() {
 	new TestRunner().openIn(WorldMorph.current(), pt(120, 10));
