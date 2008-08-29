@@ -6337,7 +6337,7 @@ PasteUpMorph.subclass("WorldMorph", {
 
     addTextWindow: function(spec) {
 	// FIXME: typecheck the spec 
-	if (Objec.isString(spec.valueOf())) spec = {content: spec}; // convenience
+	if (Object.isString(spec.valueOf())) spec = {content: spec}; // convenience
 	var extent = spec.extent || pt(500, 200);
 	var pane = newTextPane(extent.extentAsRectangle(), spec.content || "");
 	if (spec.acceptInput !== undefined) pane.innerMorph().acceptInput = spec.acceptInput;
