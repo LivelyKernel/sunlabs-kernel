@@ -21,7 +21,7 @@ Object.subclass('URL', {
     pathSplitter: new RegExp("([^\\?#]*)(\\?[^#]*)?(#.*)?"),
     
     initialize: function(/*...*/) { // same field names as window.location
-	if (arguments[0] instanceof String || typeof arguments[0] == 'string') {
+	if (Object.isString(arguments[0].valueOf())) {
 	    var urlString = arguments[0];
 	    var result = urlString.match(this.splitter);
 	    if (!result) throw new Error("malformed URL string '" + urlString + "'");

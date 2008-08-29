@@ -2079,7 +2079,7 @@ TextMorph.subclass('PrintMorph', {
 
     // overridable
     formatValue: function(value) {
-	if ((value instanceof Number) || (typeof value == 'number')) return String(value.toFixed(this.precision));
+	if (value && Object.isNumber(value.valueOf())) return String(value.toFixed(this.precision));
 	else return value.toString();
     },
     

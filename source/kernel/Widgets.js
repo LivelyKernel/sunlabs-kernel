@@ -1435,7 +1435,7 @@ Morph.subclass("MenuMorph", {
 
         if (item[1] instanceof Function) { // alternative style, items ['menu entry', function] pairs
             item[1].call(this.targetMorph || this, evt);
-        } else if (Strings.isLike(item[1])) {
+        } else if (Object.isString(item[1].valueOf())) {
             // another alternative style, send a message to the targetMorph's menu target (presumably a view).
             var responder = (this.targetMorph || this).getModelValue("getMenuTarget");
             if (responder)  {

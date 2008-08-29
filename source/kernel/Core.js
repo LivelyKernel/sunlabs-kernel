@@ -397,11 +397,8 @@ var Strings = {
     withDecimalPrecision: function(str, precision) {
 	var floatValue = parseFloat(str);
 	return isNaN(floatValue) ? str : floatValue.toFixed(precision);
-    },
-
-    isLike: function(arg) { // is arg a primitive string or a string object?
-	return (arg instanceof String) || (typeof arg == "string");
     }
+
 };
 
 
@@ -1119,7 +1116,7 @@ Object.extend(Global.window, {
     for (var p in configOverrides) {
 	if (Config.hasOwnProperty(p)) { // can't set unknown properties
 	    // this is surprisingly convoluted in Javascript:
-	    if (Config[p] instanceof Boolean || typeof Config[p] == 'boolean') { 
+	    if ((typeof Config[p].valueOf()) === 'boolean') { 
 		// make sure that "false" becomes false
 		Config[p] = configOverrides[p].toLowerCase() == "true";
 	    } else {
@@ -2464,7 +2461,7 @@ Visual.addMethods({
     setFill: function(string) {
 	if (string) {
 	    if (!string.startsWith) 
-		console.log("what, string is " + string + " .. " + (typeof string));
+		console.log("what, string is " + string + " .. " + (typeof string.valueOf()));
 	    else if (string.startsWith("uri"))
 		console.log("setting %s on %s", string, this);
 	}
@@ -6340,7 +6337,7 @@ PasteUpMorph.subclass("WorldMorph", {
 
     addTextWindow: function(spec) {
 	// FIXME: typecheck the spec 
-	if (Strings.isLike(spec)) spec = {content: spec}; // convenience
+	if (Objec.isString(spec.valueOf())) spec = {content: spec}; // convenience
 	var extent = spec.extent || pt(500, 200);
 	var pane = newTextPane(extent.extentAsRectangle(), spec.content || "");
 	if (spec.acceptInput !== undefined) pane.innerMorph().acceptInput = spec.acceptInput;
