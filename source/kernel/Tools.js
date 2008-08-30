@@ -1705,9 +1705,9 @@ View.subclass('CodeMarkupParser', {
 
     initialize: function(url) {
 	var model = Record.newPlainInstance({ CodeDocument: null, CodeText: null, URL: url});
-	this.resource = new Resource(model.newRelay({ContentDocument: "+CodeDocument", ContentText: "+CodeText", URL: "-URL"}), 
+	this.resource = new Resource(model.newRelay({ ContentDocument: "+CodeDocument", ContentText: "+CodeText", URL: "-URL"}), 
 				     "application/xml");
-	this.connectModel(model.newRelay({ CodeDocument: "CodeDocument", CodeText: "CodeText"}), true);
+	this.connectModel(model.newRelay({ CodeDocument: "CodeDocument", CodeText: "CodeText"}));
     },
 
     parse: function() {
@@ -1715,6 +1715,7 @@ View.subclass('CodeMarkupParser', {
     },
     
     onCodeTextUpdate: function(txt) {
+	if (!txt) return;
 	// in case the document is served as text anyway, try forcing xml
 	var parser = new DOMParser();
 	var xml = parser.parseFromString(txt, "text/xml");
@@ -1722,6 +1723,7 @@ View.subclass('CodeMarkupParser', {
     },
 
     onCodeDocumentUpdate: function(doc) {
+	if (!doc) return;
 	var classes = this.classQuery.findAll(doc);
 	for (var i = 0; i < classes.length; i++) 
 	    this.parseClass(classes[i], doc);
