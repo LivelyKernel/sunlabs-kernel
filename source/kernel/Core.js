@@ -201,7 +201,8 @@ Object.extend(Function.prototype, {
     addMixin: function(source) { // FIXME: do the extra processing like addMethods does
 	for (var prop in source) {
 	    var value = source[prop];
-	    if (prop == "constructor" || prop == "initialize") continue;
+	    if (prop == "constructor" || prop == "initialize" || prop == "toString" || prop == "definition") 
+		continue;
 	    this.prototype[prop] = value;
 	}
     },
@@ -827,8 +828,9 @@ Object.extend(Record, {
                 for (var name in dep) {
                     if (name.startsWith("on") && name.endsWith("Update")) {
                         var varname = name.substring(2, name.indexOf("Update"));
-                        if (!this["set" + varname]) 
-                            throw new Error("cannot observe nonexistent variable " + varname);
+                        if (!this["set" + varname]) {
+                            debugger; throw new Error("cannot observe nonexistent variable " + varname);
+			}
                         var deps = this[Record.observerListName(varname)];
                         if (!deps) deps = this[Record.observerListName(varname)] = [];
                         else if (deps.indexOf(dep) >= 0) return;
@@ -854,7 +856,7 @@ Object.extend(Record, {
 
 	    addObserversFromSetters: function(reverseSpec, dep, optKickstartUpdates) {
 		var forwardSpec = {};
-		Properties.forEachOwn(reverseSpec, function(key) {
+		Properties.forEachOwn(reverseSpec, function loop(key) {
 		    var value = reverseSpec[key];
 		    if (Object.isString(value.valueOf())) {
 			if (!value.startsWith("+")) {  // if not write only, get updates
@@ -872,12 +874,13 @@ Object.extend(Record, {
 			dep["on" + key + "Update"].call(dep, self["get" + value].call(self));
 		    } catch (er) {
 			//debugger;
-			console.log("on kickstart update: " + er + ' on ' + [key, value]);
+			console.log("on kickstart update: " + er + ' on ' + dep + "on" + key + "Update" + 
+				    " mapping to get" + value + " " + er.stack);
 		    }
 		}
 
 		if (optKickstartUpdates) 
-		    Properties.forEachOwn(reverseSpec, function(key) {
+		    Properties.forEachOwn(reverseSpec, function loop(key) {
 			var value = reverseSpec[key];
 			if (Object.isString(value.valueOf()) && !value.startsWith("+")) {
 			    if (value.startsWith("-")) value = value.substring(1);
@@ -957,7 +960,10 @@ Object.extend(Relay, {
     create: function(args) {
 	var klass = Relay.subclass();
 	var def = {
-	    definition: Object.clone(args) // how the relay was constructed
+	    definition: String(JSON.serialize(args)), // how the relay was constructed
+	    toString: function() {
+		return "#<Relay{" + this.definition + "}>";
+	    }
 	};
 	Properties.forEachOwn(args, function(key) { 
 	    var spec = args[key];
@@ -1031,61 +1037,6 @@ Object.extend(Relay, {
 
 });
     
-Relay.test = function() {
-    // the model knows about operands and result.
-    var CalcModel = Record.create({ 
-	Op1: {from:Number, to:String}, 
-	Op2: {from:Number, to:String}, 
-	Result: {from:Number, to :String} 
-    });
-    var backingStore = NodeFactory.create("model"); // could be the DOM, SQL or plain JavaScript
-
-    var m = new CalcModel(backingStore, {Op1: 10, Op2: 20, Result: 0});
-
-    // the particular view that will operate on the calc
-    function Summator() {} 
-    // this is domain logic
-    Summator.prototype = {
-	firstSummandChanged: function(value) { this.formalModel.setSum(value + this.formalModel.getSummand2()); },
-	secondSummandChanged: function(value) { this.formalModel.setSum(this.formalModel.getSummand1() + value); },
-    };
-
-    var summator = new Summator();
-
-    // summator writes a formal "Result" and reads "Op1" and "Op2"
-    summator.formalModel = m.newRelay({ Sum: "+Result", Summand1: "-Op1", Summand2: "-Op2"});
-    
-    // model will call onOp1Update or onOp2Update on the forwarder
-    // the forwarder will forward onOp1Update to summator.firstSummandChanged, and onOp2Update to summator.secondSummandChanged
-    m.addObserver(summator, { Op1: "=firstSummandChanged", Op2: "=secondSummandChanged" });
-    
-    function InputBox() {
-	this.input = function() {
-	    this.formalModel.setInput(Number(prompt("input a number")));
-	}
-    }
-    function OutputBox() { 
-	this.print = function(content) {
-	    alert("result is " + content);
-	}
-    }
-
-    var op1Box = new InputBox();
-    // formalModel will forward setInput() to m.setOp1()
-    op1Box.formalModel = m.newRelay({Input: "+Op1"});
-    // InputBox will set its formal "Input" variable which will result on m.setOp1() being called
-    
-    var op2Box = new InputBox();
-    op2Box.formalModel = m.newRelay({Input: "+Op2"});
-
-    var resBox = new OutputBox();
-    // m will call resBox.display() whenever m.Result is set
-    m.addObserver(resBox, {Result: "=print" });
-    
-    op1Box.input();
-    op2Box.input();
-}
-
 
 
 Global.console && Global.console.log("loaded basic library");
@@ -5454,11 +5405,11 @@ ViewTrait = {
 	    this.formalModel = plugSpec;
 	    // now, go through the setters and add notifications on model
 	    if (plugSpec.delegate instanceof Record) 
-		plugSpec.delegate.addObserversFromSetters(plugSpec.definition, this, optKickstartUpdates);
+		plugSpec.delegate.addObserversFromSetters(JSON.unserialize(plugSpec.definition), this, optKickstartUpdates);
 	    return;
 	} else if (plugSpec instanceof Record) {
 	    this.formalModel = plugSpec;
-	    plugSpec.addObserversFromSetters(plugSpec.definition, this, optKickstartUpdates);
+	    plugSpec.addObserversFromSetters(JSON.unserialize(plugSpec.definition), this, optKickstartUpdates);
 	    return;
 	}
 	// connector makes this view pluggable to different models, as in
