@@ -844,7 +844,6 @@ TextMorph.addMethods({
         // note selection is transient
         this.lines = null;//: TextLine[]
         this.lineNumberHint = 0;
-        this.textSelection = this.addMorphBack(new TextSelectionMorph());
     },
 
     initializePersistentState: function($super, initialBounds, shapeType) {
@@ -853,6 +852,7 @@ TextMorph.addMethods({
         this.resetRendering();
         // KP: set attributes on the text elt, not on the morph, so that we can retrieve it
 	this.applyStyle({fill: this.backgroundColor, borderWidth: this.borderWidth, borderColor: this.borderColor});
+        this.textSelection = this.addMorphBack(new TextSelectionMorph());
     },
 
     restoreFromSubnode: function($super, importer, rawNode) {
