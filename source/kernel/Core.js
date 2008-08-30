@@ -5762,7 +5762,7 @@ Model.subclass('SyntheticModel', {
 		console.log("model dependent " + this[name] + " index " + index);
 	    } else {
 		varEl = LivelyNS.create("variable", {name: name});
-		console.log("trying to serialize " + this[name]);
+		// console.log("trying to serialize " + this[name]);
 		// FIXME check if it's actually serializable
 		varEl.appendChild(NodeFactory.createCDATA(JSON.serialize(this[name])));
 	    }

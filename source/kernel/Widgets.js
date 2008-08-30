@@ -171,10 +171,9 @@ ButtonMorph.addProperties({
 Morph.subclass("ImageMorph", {
 
     documentation: "Image container",
-    
     background: Color.blue.lighter(),
     borderWidth: 0,
-    pins: ["-URL"],
+    formals: ["-URL"],
     
     initialize: function($super, viewPort, url) {
         $super(viewPort, "rect");
@@ -197,7 +196,6 @@ Morph.subclass("ImageMorph", {
         }
     },
     
-
     loadGraphics: function(localURL) {
         this.setFill(null);
         var node = this.image.loadUse(localURL);
@@ -222,7 +220,7 @@ Morph.subclass("ImageMorph", {
         var p = this.modelPlug;
         if (!p) return;
         if (aspect == p.getURL) {
-	    this.onURLUpdate(this.getModelValue('getURL', ""));
+	    this.onURLUpdate(this.getURL());
 	}
     }
 
@@ -1860,7 +1858,7 @@ Morph.subclass("ColorPickerMorph", {
     fill: null,
     borderWidth: 1, 
     borderColor: Color.black,
-    pins: ["+Color"],
+    formals: ["+Color"],
 
     initialize: function($super, initialBounds, targetMorph, setFillName, popup) {
         $super(initialBounds, "rect");
@@ -1927,7 +1925,7 @@ Morph.subclass("ColorPickerMorph", {
             var relp = r.constrainPt(this.localize(evt.mousePoint).addXY(-2,-2));
             // console.log('mp = ' + Object.inspect(this.localize(evt.mousePoint)) + ' / relp = ' + Object.inspect(relp));
             var selectedColor = this.colorMap(relp.x,relp.y,rh2,wheel);
-            this.setModelValue('setColor', selectedColor);
+            this.setColor(selectedColor);
         } 
     }
     

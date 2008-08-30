@@ -1194,7 +1194,7 @@ ClockMorph.prototype.setHands = ClockMorph.prototype.setHands.wrap(function(proc
     this.formalModel.setMinutes(minute);
     this.formalModel.setHours(hour);
     this.formalModel.setSeconds(second);
-    console.log("setting time");
+    //    console.log("setting time");
     return proceed(hour, minute, second);
 });
 //WorldMorph.current().addMorph(new ClockMorph(pt(400, 60), 200));
