@@ -397,19 +397,20 @@ Widget.subclass('StylePanel', {
         $super();
         this.targetMorph = targetMorph;
         var spec = targetMorph.makeStyleSpec();
-	this.actualModel = Record.newInstance({BorderWidth: {}, BorderColor: {}, BorderRadius: {},
-					       FillOpacity: {}, StrokeOpacity: {},
-					       FillType: {}, FillDir: {}, Color1: {}, Color2: {},
-					       TextColor: {}, FontFamily: {}, FontSize: {}}, 
-					      { 
-						  FillOpacity: spec.fillOpacity,
-						  StrokeOpacity: spec.strokeOpacity,
-						  BorderRadius: spec.borderRadius,
-						  BorderWidth: spec.borderWidth,
-						  TextColor: spec.textColor,
-						  FontSize: spec.fontSize
-					      },
-					      {});
+	this.actualModel = Record.newPlainInstance({
+	    BorderWidth: spec.borderWidth,
+	    BorderColor: spec.textColor,
+	    BorderRadius: spec.borderRadius,
+	    FillOpacity: spec.fillOpacity,
+	    StrokeOpacity: spec.strokeOpacity,
+	    FontSize: spec.fontSize,
+	    FontFamily: null, 
+	    FillType: null, 
+	    FillDir: null, 
+	    Color1: null, 
+	    Color2: null,
+	    TextColor: null
+	}); 
 	this.actualModel.addObserver(this);
 	this.color1 = null;
 	this.color2 = null;
