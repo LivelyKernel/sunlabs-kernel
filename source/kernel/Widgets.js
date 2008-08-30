@@ -2129,6 +2129,8 @@ Dialog.subclass('PromptDialog', {
         return view;
     },
 
+    onInputUpdate: Functions.Empty, // shouldn't there be a better way?
+
     cancelled: function(value) {
         if (value == false) return;
         this.removeTopLevel();
