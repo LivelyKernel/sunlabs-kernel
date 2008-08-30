@@ -41,7 +41,7 @@ Widget.subclass('TestWidget', {
         // work with gradients or stipple patterns yet!
         panel.linkToStyles(['widgetPanel']);
 	var model = Record.newPlainInstance({Text: "Hello World", TextSel: null, ListItem: null, PrintValue: null,
-	    B1Value: null, B2Value: null, SliderValue: null, SliderRange: null}); 
+	    B1Value: null, B2Value: null, SliderValue: 0, SliderRange: 0}); 
 	
 
         // Two simple buttons, one toggles...
