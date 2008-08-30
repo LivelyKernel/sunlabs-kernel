@@ -21,6 +21,8 @@ Object.subclass('URL', {
     pathSplitter: new RegExp("([^\\?#]*)(\\?[^#]*)?(#.*)?"),
     
     initialize: function(/*...*/) { // same field names as window.location
+	if (!arguments[0])
+	    debugger;
 	if (Object.isString(arguments[0].valueOf())) {
 	    var urlString = arguments[0];
 	    var result = urlString.match(this.splitter);
@@ -452,17 +454,16 @@ View.subclass('Resource', NetRequestReporterTrait, {
     documentation: "a remote document that can be fetched, stored and queried for metadata",
     // FIXME: should probably encapsulate content type
 
-    pins: ["ContentDocument", //:XML
-	   "ContentText", //:String
-	   "URL" // :URL
-	  ],
+    formals: ["ContentDocument", //:XML
+	      "ContentText", //:String
+	      "URL" // :URL
+	     ],
 
-    initialize: function(url, plug) {
+    initialize: function(plug) {
 	this.forceXML = false;
-	if (!plug) plug = new SyntheticModel(this.pins).makePlugSpec();
 	this.connectModel(plug);
-	this.pvtSetURL(url);
     },
+    
 
     deserialize: Functions.Empty, // stateless besides the model and .forceXML ...
 
@@ -473,26 +474,31 @@ View.subclass('Resource', NetRequestReporterTrait, {
     updateView: function(aspect, source) {
         var p = this.modelPlug;
 	if (!p) return;
-	//console.log('called Resource.updateView'); console.log(aspect); console.log(source);
 	switch (aspect) {
 	case p.getURL:
-	    this.fetch(this.getURL()); // request headers?
+	    this.onURLUpdate(this.getURL()); // request headers?
 	    break;
 	}
     },
 
-    getURL: function() {
-	return this.getModelValue("getURL") || this.url;
+    onURLUpdate: function(url) {
+	return this.fetch(url);
     },
 
-    getContentDocument: function() {
-	return this.getModelValue("getContentDocument", null);
+    onContentTextUpdate: function(txt) {
+	if (this.forceXML) {
+	    var parser = new DOMParser();
+	    var xml = parser.parseFromString(txt, "text/xml");
+	    this.setContentDocument(xml);
+	} 
     },
 
     fetch: function(sync, optRequestHeaders) {
 	// fetch the document content itself
-	var req = new NetRequest({model: this, setResponseXML: "pvtSetDoc", 
-	    setResponseText: "pvtSetText", setStatus: "setRequestStatus"});
+	var req = new NetRequest(Relay.newInstance({
+	    ResponseXML: "+ContentDocument", 
+	    ResponseText: "ContentText", 
+	    Status: "+RequestStatus"}, this));
 	if (sync) req.beSync();
 	if (optRequestHeaders) this.setRequestHeaders(optRequestHeaders);
 	req.get(this.getURL());
@@ -501,7 +507,9 @@ View.subclass('Resource', NetRequestReporterTrait, {
 
     fetchProperties: function(optSync, optRequestHeaders) {
 	// fetch the metadata 
-	var req = new NetRequest({model: this, setResponseXML: "pvtSetDoc", setStatus: "setRequestStatus"});
+	var req = new NetRequest(Relay.newInstance({
+	    ResponseXML: "ContentDocument", 
+	    Status: "RequestStatus"}, this));
 	if (optSync) req.beSync();
 	if (optRequestHeaders) this.setRequestHeaders(optRequestHeaders);
 	req.propfind(this.getURL(), 1);
@@ -515,7 +523,7 @@ View.subclass('Resource', NetRequestReporterTrait, {
 	} else if (Global.Node && content instanceof Node) {
 	    content = Exporter.stringify(content);
 	}
-	var req = new NetRequest({model: this, setStatus: "setRequestStatus"});
+	var req = new NetRequest(Relay.newInstance({Status: "setRequestStatus"}, this));
 	if (optSync) req.beSync();
 	if (optRequestHeaders) this.setRequestHeaders(optRequestHeaders);
 	req.put(this.getURL(), content);
@@ -546,24 +554,6 @@ View.subclass('Resource', NetRequestReporterTrait, {
 	// return req;
 	//     },
 
-    pvtSetText: function(txt) {
-	if (this.forceXML) {
-	    var parser = new DOMParser();
-	    var xml = parser.parseFromString(txt, "text/xml");
-	    this.pvtSetDoc(xml);
-	} else {
-	    this.setModelValue("setContentText", txt);
-	}
-    },
-
-    pvtSetDoc: function(doc) {
-	this.setModelValue("setContentDocument", doc);
-    },
-
-    pvtSetURL: function(newUrl) {
-	if (!this.setModelValue("setURL", newUrl)) // not stored in the model, will store in a var.
-            this.url = newUrl;
-    },
 
     findAll: function(query, defaultValue) {
 	var content = this.getContentDocument();

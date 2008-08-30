@@ -1700,27 +1700,27 @@ View.subclass('CodeMarkupParser', {
     classQuery: new Query("/code/class"),
     protoQuery: new Query("proto"),
     staticQuery: new Query("static"),
+
     
     initialize: function(url) {
-	var model = new SyntheticModel(["Document"]);
-	this.resource = new Resource(url, {model: model, setContentDocument: "setDocument"});
+	this.url = url;
+	this.resource = new Resource(Relay.newInstance({ContentDocument: "+Document", URL: "URL"}, this));
 	this.resource.forceXML = true;
-	this.connectModel({model: model, getDocument: "getDocument"});
     },
 
     parse: function() {
 	this.resource.fetch();
     },
     
-    updateView: function(aspect, source) {
-        var p = this.modelPlug;
-        if (!p) return;
-        if (aspect == p.getDocument || aspect == 'all') {
-	    this.parseCodeDocument(this.getModelValue("getDocument"));
-	}
+    setURL: function(url) {
+	this.url = url;
     },
 
-    parseCodeDocument: function(doc) {
+    getURL: function(url) {
+	return this.url;
+    },
+
+    setDocument: function(doc) {
 	var classes = this.classQuery.findAll(doc);
 	for (var i = 0; i < classes.length; i++) 
 	    this.parseClass(classes[i], doc);

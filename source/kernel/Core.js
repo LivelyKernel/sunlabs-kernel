@@ -744,6 +744,16 @@ Object.extend(Record, {
 	return klass;
     },
 
+    newPlainInstance: function(spec) {
+	var argSpec = {};
+	var fieldSpec = {};
+	Properties.forEachOwn(spec, function(key) {
+	    fieldSpec[key] = {};
+	    argSpec[key] = spec[key];
+	});
+	return this.newInstance(fieldSpec, argSpec, {});
+    },
+
     newInstance: function(fieldSpec, argSpec, optStore) {
 	var Rec = Record.create(fieldSpec);
 	if (!optStore) optStore = NodeFactory.create("model"); // FIXME flat JavaScript instead by default?
@@ -832,7 +842,7 @@ Object.extend(Record, {
                     Object.keys(this).select(function(ea) {
                         return ea.endsWith('$observers')
                     });
-                observerFields.each(function(ea) {
+                observerFields.forEach(function(ea) {
                     this[ea] = this[ea].reject(function(relay) { return relay === dep || relay.delegate === dep });
                 }, this);
             },
@@ -845,6 +855,7 @@ Object.extend(Record, {
 			forwardSpec[value.startsWith("-") ? value.substring(1) : value] = "!" + key;
 		    }
 		});
+		// FIXME: sometimes automatic update callbacks are not desired!
 		this.addObserver(dep, forwardSpec);
 		if (optKickstartUpdates) 
 		    Properties.forEachOwn(reverseSpec, function(key) {
@@ -3262,8 +3273,8 @@ Object.extend(Exporter, {
 
 	var url = URL.source.withFilename(filename);
 	
-	var status = new Resource(url).store(doc, true).getStatus();
-
+	var status = new Resource(Record.newPlainInstance({URL: url})).store(doc, true).getStatus();
+	
 	if (status.isSuccess()) {
 	    console.log("success publishing world at " + url + ", status " + status.code());
 	    return url;
@@ -3337,8 +3348,9 @@ Copier.subclass('Importer', {
     },
 
     getBaseDocument: function() {
-	// FIXME memoize?
-	var req = new Resource(URL.source).fetch(true);
+	// FIXME memoize
+	var rec = Record.newPlainInstance({URL: URL.source});
+	var req = new Resource(rec).fetch(true);
 	var status = req.getStatus();
 	if (!status.isSuccess()) {
 	    console.log("failure retrieving  " + URL.source + ", status " + status);
@@ -3975,17 +3987,19 @@ Visual.subclass('Morph', {
 	    }
 	    extraNodes.push(this.addNonMorph(this.getModelPlug().serialize(index)));
 	} else if (this.formalModel) {
-	    var modelNode = this.formalModel.delegate.rawNode;
-	    var index = simpleModels.indexOf(modelNode);
-	    if (index < 0) { // not seen before, serialize model
-		index = simpleModels.length;
-		simpleModels.push(modelNode);
-		alert('serializing ' + Exporter.stringify(modelNode));
-		modelNode.setAttribute("id", "model_" + index); 
-		extraNodes.push(this.addNonMorph(modelNode));
+	    var modelNode = this.getActualModel().rawNode;
+	    if (modelNode instanceof Global.Node) {
+		var index = simpleModels.indexOf(modelNode);
+		if (index < 0) { // not seen before, serialize model
+		    index = simpleModels.length;
+		    simpleModels.push(modelNode);
+		    alert('serializing ' + Exporter.stringify(modelNode) + "," + modelNode);
+		    modelNode.setAttribute("id", "model_" + index); 
+		    extraNodes.push(this.addNonMorph(modelNode));
+		}
+		// FIXME serialize hookup
+		extraNodes.push(this.addNonMorph(this.formalModel.rawNode));
 	    }
-	    // FIXME serialize hookup
-	    extraNodes.push(this.addNonMorph(this.formalModel.rawNode));
 	} // else don't do anything
     },
 
@@ -5379,12 +5393,17 @@ Object.extend(Morph, {
 // View trait
 ViewTrait = {
     connectModel: function(plugSpec, optKickstartUpdates) {
+	// FIXME what if already connected, 
 	if (plugSpec instanceof Relay) {
 	    // new style model
 	    this.formalModel = plugSpec;
+	    // now, go through the setters and add notifications on model
 	    if (plugSpec.delegate instanceof Record) 
 		plugSpec.delegate.addObserversFromSetters(plugSpec.definition, this, optKickstartUpdates);
-	    // now, go through the setters and add notifications on model
+	    return;
+	} else if (plugSpec instanceof Record) {
+	    this.formalModel = plugSpec;
+	    plugSpec.addObserversFromSetters(plugSpec.definition, this, optKickstartUpdates);
 	    return;
 	}
 	// connector makes this view pluggable to different models, as in
@@ -5410,6 +5429,7 @@ ViewTrait = {
 	Properties.forEachOwn(plugSpec, function(modelMsg) {
 	    if (modelMsg == 'model') return;
 	    var handler = plugSpec.model[plugSpec[modelMsg]];
+	    
 	    if (!handler || !(handler instanceof Function)) {
 		// console.log
 		alert("Supplied method name, " + plugSpec[modelMsg] + " does not resolve to a function.");
@@ -5429,7 +5449,11 @@ ViewTrait = {
     getModel: function() {
 	var plug = this.getModelPlug();
 	if (plug) return plug.model;
-	return this.formalModel && this.formalModel.delegate;
+	else return this.getActualModel();
+    },
+
+    getActualModel: function() {
+	return this.formalModel instanceof Relay ? this.formalModel.delegate : this.formalModel;
     },
     
     getModelPlug: function() { 
@@ -6289,14 +6313,14 @@ PasteUpMorph.subclass("WorldMorph", {
 	// FIXME this is hardcoded, remove later, shows how Subversion can be accessed directly.
 	items.push(["Model documentation", function(evt) { 
 	    var url = new URL("http://livelykernel.sunlabs.com/repository/lively-kernel/trunk/doc/wiki/model.txt");
-	    var model = new SyntheticModel(["Content"]);
+	    var model = Record.newPlainInstance({URL: url,  Content: null});
 	    world.addTextWindow({
 		content: "fetching ... ",
 		title: "Model documentation",
 		plug: {model: model, getText: "getContent"},
 		position: evt.point()
 	    });
-	    var res = new Resource(url, {model: model, setContentText: "setContent" });
+	    var res = new Resource( model);
 	    res.fetch();
 	}]);
         new MenuMorph(items, this).openIn(this.world(), evt.point());
@@ -6334,8 +6358,7 @@ PasteUpMorph.subclass("WorldMorph", {
     }.logErrors('alert'),
 
     prompt: function(message, callback, defaultInput) {
-	var model = Record.newInstance({Message: {}, Input: {}, Result: {}}, 
-	    {Message: message, Input: defaultInput || ""}, {});
+	var model = Record.newPlainInstance({Message: message, Input: defaultInput || "", Result: null});
 	model.addObserver({ 
 	    onResultUpdate: function(value) { 
 		if (value == true && callback) callback.call(Global, model.getInput());
@@ -6345,7 +6368,7 @@ PasteUpMorph.subclass("WorldMorph", {
     },
 
     confirm: function(message, callback) {
-	var model = Record.newInstance({Message: {}, Result: {}}, {Message: message, Result: false}, {});
+	var model = Record.newPlainInstance({Message: message, Result: null});
 	model.addObserver({ 
 	    onResultUpdate: function(value) { 
 		if (value && callback) callback.call(Global, value);
@@ -6479,7 +6502,7 @@ Morph.subclass("HandMorph", {
 	this.boundMorph = null; // surrounds bounds
 	this.layoutChangedCount = 0; // to prevent recursion on layoutChanged
 	
-	this.formalModel =  Record.newInstance({GlobalPosition: {}}, {}, {});
+	this.formalModel =  Record.newPlainInstance({GlobalPosition: null});
 	
         return this;
     },
@@ -7173,7 +7196,7 @@ HandMorph.addMethods({
         $super();
         if (this.formalModel)
             this.formalModel.setGlobalPosition(this.getPosition());
-        this.submorphs.each(function(ea){
+        this.submorphs.forEach(function(ea){
             // console.log("changed "+ ea);
             ea.changed("globalPosition", this.getPosition());
         }, this);

@@ -40,10 +40,8 @@ Widget.subclass('TestWidget', {
         // Make a fancy panel.  Note: Transparency does not
         // work with gradients or stipple patterns yet!
         panel.linkToStyles(['widgetPanel']);
-	var model = Record.newInstance({Text: {}, TextSel: {}, ListItem: {}, PrintValue: {},
-	    B1Value: {}, B2Value: {}, SliderValue: {}, SliderRange: {}}, 
-	    {}, 
-	    { Text: "Hello World" });
+	var model = Record.newPlainInstance({Text: "Hello World", TextSel: null, ListItem: null, PrintValue: null,
+	    B1Value: null, B2Value: null, SliderValue: null, SliderRange: null}); 
 	
 
         // Two simple buttons, one toggles...
@@ -2174,10 +2172,11 @@ Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
     
     initialize: function($super) { 
 	$super();
-	this.model = Record.newInstance({Locale: {}, WeatherDesc: {}, Temperature: {}, Wind: {}, Gusts: {},
-					 DewPoint: {}, Humidity: {}, Visibility: {}, ImageURL: {}}, 
-					{ImageURL: "http://www.bbc.co.uk/weather/images/banners/weather_logo.gif"},
-					{});
+	this.model = 
+	    Record.newPlainInstance({Locale: null, WeatherDesc: null, Temperature: null, Wind: null, 
+				     Gusts: null, DewPoint: null, Humidity: null, Visibility: null, 
+				     ImageURL:"http://www.bbc.co.uk/weather/images/banners/weather_logo.gif"});
+	
 	this.model.addObserver(this, { Locale: "!Locale" });
 	this.initializeTransientState();
     },

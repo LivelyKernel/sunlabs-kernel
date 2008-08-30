@@ -220,7 +220,7 @@ View.subclass('lk.storage.WebFile', NetRequestReporterTrait, {
     },
 
     saveFileContent: function(url, content) {
-	new Resource(url).store(content);
+	new Resource(Record.newPlainInstance({URL: url})).store(content);
     },
 
     pvtSetFileContent: function(responseText) {
@@ -475,7 +475,7 @@ TwoPaneBrowser.subclass('FileBrowser', {
 	    var svnPath = url.subversionWorkspacePath();
 	    if (!svnPath) return;
 	    items.push(["repository info", function(evt) {
-		var m = Record.newInstance({Info: {}}, {Info: "fetching info"});
+		var m = Record.newPlainInstance({Info: "fetching info"});
 		var s = new Subversion();
 		s.connectModel(m.newRelay({ServerResponse: "+Info"}));
 		var txt = this.world().addTextWindow({
@@ -528,7 +528,7 @@ TwoPaneBrowser.subclass('FileBrowser', {
 		    position: evt.point() });
 		
 		m.addObserver(txt, {AllProperties: "!Text"});
-		var res = new Resource(url, m.newRelay({ContentDocument: "+InfoDocument", URL: "-URL" }));
+		var res = new Resource(m.newRelay({ContentDocument: "+InfoDocument", URL: "-URL" }));
 		// resource would try to use its own synthetic model, which is useless
 		m.setURL(url);
 		res.fetchProperties();
@@ -648,7 +648,7 @@ TwoPaneBrowser.subclass('FileBrowser', {
     onMenuShowModificationTime: function(url, evt) {
 	// to be removed
 	var model = new SyntheticModel(["InspectedNode", "ModTime"]);
-	var res = new Resource(url, {model: model, setContentDocument: "setInspectedNode" });
+	var res = new Resource({model: model, setContentDocument: "setInspectedNode" });
 	var query = new Query("/D:multistatus/D:response/D:propstat/D:prop/D:getlastmodified", 
 	    {model: model, getContextNode: "getInspectedNode", setResults: "setModTime"});
 	res.fetchProperties(true);

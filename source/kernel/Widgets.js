@@ -1465,7 +1465,7 @@ Morph.subclass("SliderMorph", {
     initialize: function($super, initialBounds, scaleIfAny) {
         $super(initialBounds, "rect");
         // this default self connection may get overwritten by, eg, connectModel()...
-        var model = Record.newInstance({Value: {}, SliderExtent: {}}, {Value: 0, SliderExtent: 0}, {});
+        var model = Record.newPlainInstance({Value: 0, SliderExtent: 0});
 	this.connectModel(model.newRelay({Value: "Value", SliderExtent: "SliderExtent"}));
         this.scale = (scaleIfAny === undefined) ? 1.0 : scaleIfAny;
         var slider = new Morph(new Rectangle(0, 0, this.mss, this.mss), "rect");
@@ -2276,9 +2276,7 @@ Widget.subclass('XenoBrowserWidget', {
     
     initialize: function($super) {
 	this.actualModel = 
-	    Record.newInstance({URLString: {}}, 
-			       {URLString: URL.source.withFilename("sample.xhtml")});
-
+	    Record.newPlainInstance({URLString:  URL.source.withFilename("sample.xhtml")});
 	$super();
     },
     
