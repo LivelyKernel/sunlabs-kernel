@@ -869,8 +869,9 @@ Object.extend(Record, {
 		function callUpdate(self, key, value) {
 		    // trigger updates
 		    try {
-			dep["on" + key + "Update"].call(dep, this["get" + value].call(self));
+			dep["on" + key + "Update"].call(dep, self["get" + value].call(self));
 		    } catch (er) {
+			//debugger;
 			console.log("on kickstart update: " + er + ' on ' + [key, value]);
 		    }
 		}
@@ -880,9 +881,9 @@ Object.extend(Record, {
 			var value = reverseSpec[key];
 			if (Object.isString(value.valueOf()) && !value.startsWith("+")) {
 			    if (value.startsWith("-")) value = value.substring(1);
-			    callUpdate(self, key, value);
+			    callUpdate(this, key, value);
 			} /* else if (value.mode !== '+') {
-			    callUpdate(self, key, value.name);
+			    callUpdate(this, key, value.name);
 			}*/
 		    }, this);
 		
