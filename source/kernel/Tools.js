@@ -1700,27 +1700,28 @@ View.subclass('CodeMarkupParser', {
     classQuery: new Query("/code/class"),
     protoQuery: new Query("proto"),
     staticQuery: new Query("static"),
-
+    formals: ["CodeDocument", "CodeText", "URL"],
     
+
     initialize: function(url) {
-	this.url = url;
-	this.resource = new Resource(Relay.newInstance({ContentDocument: "+Document", URL: "URL"}, this));
-	this.resource.forceXML = true;
+	var model = Record.newPlainInstance({ CodeDocument: null, CodeText: null, URL: url});
+	this.resource = new Resource(model.newRelay({ContentDocument: "+CodeDocument", ContentText: "+CodeText", URL: "-URL"}), 
+				     "application/xml");
+	this.connectModel(model.newRelay({ CodeDocument: "CodeDocument", CodeText: "CodeText"}), true);
     },
 
     parse: function() {
 	this.resource.fetch();
     },
     
-    setURL: function(url) {
-	this.url = url;
+    onCodeTextUpdate: function(txt) {
+	// in case the document is served as text anyway, try forcing xml
+	var parser = new DOMParser();
+	var xml = parser.parseFromString(txt, "text/xml");
+	this.onCodeDocumentUpdate(xml);
     },
 
-    getURL: function(url) {
-	return this.url;
-    },
-
-    setDocument: function(doc) {
+    onCodeDocumentUpdate: function(doc) {
 	var classes = this.classQuery.findAll(doc);
 	for (var i = 0; i < classes.length; i++) 
 	    this.parseClass(classes[i], doc);

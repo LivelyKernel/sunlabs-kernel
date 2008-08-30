@@ -461,11 +461,10 @@ View.subclass('Resource', NetRequestReporterTrait, {
 	      "URL" // :URL
 	     ],
 
-    initialize: function(plug) {
-	this.forceXML = false;
+    initialize: function(plug, contentType) {
+	this.contentType  = contentType;
 	this.connectModel(plug);
     },
-    
 
     deserialize: Functions.Empty, // stateless besides the model and .forceXML ...
 
@@ -487,22 +486,15 @@ View.subclass('Resource', NetRequestReporterTrait, {
 	return this.fetch(url);
     },
 
-    onContentTextUpdate: function(txt) {
-	if (this.forceXML) {
-	    var parser = new DOMParser();
-	    var xml = parser.parseFromString(txt, "text/xml");
-	    this.setContentDocument(xml);
-	} 
-    },
-
     fetch: function(sync, optRequestHeaders) {
 	// fetch the document content itself
 	var req = new NetRequest(Relay.newInstance({
 	    ResponseXML: "+ContentDocument", 
-	    ResponseText: "ContentText", 
+	    ResponseText: "+ContentText", 
 	    Status: "+RequestStatus"}, this));
 	if (sync) req.beSync();
-	if (optRequestHeaders) this.setRequestHeaders(optRequestHeaders);
+	if (this.contentType) req.setContentType(this.contentType);
+	if (optRequestHeaders) req.setRequestHeaders(optRequestHeaders);
 	req.get(this.getURL());
 	return req;
     },
@@ -513,7 +505,8 @@ View.subclass('Resource', NetRequestReporterTrait, {
 	    ResponseXML: "ContentDocument", 
 	    Status: "+RequestStatus"}, this));
 	if (optSync) req.beSync();
-	if (optRequestHeaders) this.setRequestHeaders(optRequestHeaders);
+	if (this.contentType) req.setContentType(this.contentType);
+	if (optRequestHeaders) req.setRequestHeaders(optRequestHeaders);
 	req.propfind(this.getURL(), 1);
 	return req;
     },
@@ -527,7 +520,8 @@ View.subclass('Resource', NetRequestReporterTrait, {
 	}
 	var req = new NetRequest(Relay.newInstance({Status: "+RequestStatus"}, this));
 	if (optSync) req.beSync();
-	if (optRequestHeaders) this.setRequestHeaders(optRequestHeaders);
+	if (this.contentType) req.setContentType(this.contentType);
+	if (optRequestHeaders) req.setRequestHeaders(optRequestHeaders);
 	req.put(this.getURL(), content);
 	return req;
     },
