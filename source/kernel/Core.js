@@ -80,19 +80,22 @@ Object.extend(Function.prototype, {
 	var properties = $A(arguments);
 	var className = properties.shift();
 	var targetScope = Global;
+	var shorName = null;
 	if (className) {
-	    var idx = className.lastIndexOf('.');
-	    if (idx > 0) {
-		var targetScopeName = className.substring(0, idx);
-		// FIXME: remove eval
-		targetScope = eval('Global.' + targetScopeName);
-		className = className.substring(idx + 1);
+	    var path = className.split('.');
+	    if (path.length > 1) {
+		for (var i = 0; i < path.length - 1; i++) {
+		    if (!Class.isValidIdentifier(path[i]))
+			throw new Error("invalid package name " + path[i]);
+		    targetScope = targetScope[path[i]];
+		}
+		shortName = path[path.length - 1];
 	    } else {
-		if (!Class.isValidIdentifier(className))
-		    throw new Error("invalid id " + className);
+		shortName = className;
 	    }
+	    if (!Class.isValidIdentifier(className))
+		throw new Error("invalid class name " + className);
 	} 
-
 	
 	function klass() {
 	    // check for the existence of Importer, which may not be defined very early on
@@ -124,7 +127,7 @@ Object.extend(Function.prototype, {
 	    klass.prototype.initialize = Functions.Empty;
 	}
 
-	if (className) targetScope[className] = klass; // otherwise it's anonymous
+	if (className) targetScope[shortName] = klass; // otherwise it's anonymous
 	return klass;
     },
 
