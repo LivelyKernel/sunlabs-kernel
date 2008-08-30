@@ -566,7 +566,7 @@ Object.subclass('TextLine', {
 	    if (p == "align") align = v;
 	});
 	// console.log("adoptStyle/Font.forFamily" + fontFamily + fontSize + fontStyle + "; index = " + charIx);
-	this.currentFont = Font.forFamily(fontFamily, fontSize, fontStyle);
+	this.currentFont = module.Font.forFamily(fontFamily, fontSize, fontStyle);
 	this.fontColor = fontColor;
 	this.alignment = align;
         this.spaceWidth = this.currentFont.getCharWidth(' ');
