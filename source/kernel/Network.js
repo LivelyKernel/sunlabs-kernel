@@ -21,8 +21,7 @@ Object.subclass('URL', {
     pathSplitter: new RegExp("([^\\?#]*)(\\?[^#]*)?(#.*)?"),
     
     initialize: function(/*...*/) { // same field names as window.location
-	if (!arguments[0])
-	    debugger;
+	if (!arguments[0]) debugger;
 	if (Object.isString(arguments[0].valueOf())) {
 	    var urlString = arguments[0];
 	    var result = urlString.match(this.splitter);
@@ -149,6 +148,9 @@ URL.proxy = (function() {
     }
 })();
 
+URL.create = function(string) { 
+    return new URL(string);
+};
 
 URL.makeProxied = function makeProxied(url) {
     url = url instanceof URL ? url : new URL(url);
@@ -509,7 +511,7 @@ View.subclass('Resource', NetRequestReporterTrait, {
 	// fetch the metadata 
 	var req = new NetRequest(Relay.newInstance({
 	    ResponseXML: "ContentDocument", 
-	    Status: "RequestStatus"}, this));
+	    Status: "+RequestStatus"}, this));
 	if (optSync) req.beSync();
 	if (optRequestHeaders) this.setRequestHeaders(optRequestHeaders);
 	req.propfind(this.getURL(), 1);
@@ -523,7 +525,7 @@ View.subclass('Resource', NetRequestReporterTrait, {
 	} else if (Global.Node && content instanceof Node) {
 	    content = Exporter.stringify(content);
 	}
-	var req = new NetRequest(Relay.newInstance({Status: "setRequestStatus"}, this));
+	var req = new NetRequest(Relay.newInstance({Status: "+RequestStatus"}, this));
 	if (optSync) req.beSync();
 	if (optRequestHeaders) this.setRequestHeaders(optRequestHeaders);
 	req.put(this.getURL(), content);
@@ -563,11 +565,12 @@ View.subclass('Resource', NetRequestReporterTrait, {
 });
 
 Resource.subclass('SVNResource', {
-	
-    initialize: function($super, repoUrl, ownUrl, plug) {
-	this.pins = this.pins.concat(['Metadata', 'HeadRevision']);
+
+    formals: Resource.prototype.formals.concat(['Metadata', 'HeadRevision']),
+    
+    initialize: function($super, repoUrl, plug) {
 	this.repoUrl = repoUrl;
-	$super(ownUrl, plug);
+	$super(plug);
     },
 	
     getLocalUrl: function() {
@@ -598,10 +601,11 @@ Resource.subclass('SVNResource', {
 	// get the whole history if startRev is undefined
 	// FIXME: in this case the getHeadRevision will be called synchronous
 	if (!startRev) {
-		this.fetchHeadRevision(true);
-		startRev = this.getModelValue('getHeadRevision')};
+	    this.fetchHeadRevision(true);
+	    startRev = this.getHeadRevision();
+	}
 	var req = new NetRequest({model: this, setResponseXML: "pvtSetMetadataDoc",
-				setStatus: "setRequestStatus"});
+	    setStatus: "setRequestStatus"});
 	if (optSync) req.beSync();
 	if (optRequestHeaders) this.setRequestHeaders(optRequestHeaders);
 	req.report(this.getURL(), this.pvtRequestMetadataXML(startRev));
@@ -614,7 +618,7 @@ Resource.subclass('SVNResource', {
 		e.g. the revision (= version-name) */
 	var revisionNode = xml.getElementsByTagName('version-name')[0];
 	if (!revisionNode) return;
-	this.setModelValue('setHeadRevision', Number(revisionNode.textContent));
+	this.setHeadRevision(Number(revisionNode.textContent));
     },
 	
     pvtSetMetadataDoc: function(xml) {
@@ -626,7 +630,7 @@ Resource.subclass('SVNResource', {
 		date: ea.getElementsByTagName('date')[0].textContent/*,
 		ea.getElementsByTagName('creator-displayname')[0].textContents*/}
 	});
-	this.setModelValue('setMetadata', result);
+	this.setMetadata(result);
     },
 	
     pvtRequestMetadataXML: function(startRev) {
@@ -641,9 +645,9 @@ Resource.subclass('SVNResource', {
 	
     withBaselineUriDo: function(rev, doFunc) {
 	var tempUrl = this.getURL();
-	this.pvtSetURL(this.repoUrl + '/!svn/bc/' + rev + '/' + this.getLocalUrl());
+	this.setURL(this.repoUrl + '/!svn/bc/' + rev + '/' + this.getLocalUrl());
 	doFunc();
-	this.pvtSetURL(tempUrl);
+	this.setURL(tempUrl);
     }
 });
 
