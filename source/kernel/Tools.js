@@ -405,7 +405,7 @@ Widget.subclass('StylePanel', {
 	    StrokeOpacity: spec.strokeOpacity,
 	    FontSize: spec.fontSize,
 	    FontFamily: null, 
-	    FillType: null, 
+	    FillType: "simple", 
 	    FillDir: null, 
 	    Color1: null, 
 	    Color2: null,
@@ -414,8 +414,8 @@ Widget.subclass('StylePanel', {
 	this.actualModel.addObserver(this);
 	this.color1 = null;
 	this.color2 = null;
-	this.fillType = null;
 	this.fillDir = null;
+	this.fillType = this.actualModel.getFillType();
 	var base = targetMorph.getFill();
 	this.baseColor = (base instanceof Gradient) ? base.stopColor(0) : base;
     },
@@ -432,7 +432,7 @@ Widget.subclass('StylePanel', {
         this.targetMorph.shapeRoundEdgesBy(r.roundTo(1));
     },
 
-    onFillTypeUpdate: function(type) { this.fillType = type;  this.setFill(); },
+    onFillTypeUpdate: function(type) { this.fillType = type; this.setFill(); },
     onFillDirUpdate: function(dir) { this.fillDir = dir;  this.setFill(); },
 
     onColor1Update: function(color) { this.color1 = color; this.setFill(); },
@@ -517,7 +517,7 @@ Widget.subclass('StylePanel', {
 	
         m = panel.addMorph(new TextListMorph(new Rectangle(50, y, 100, 50), 
 					     ["simple", "linear gradient", "radial gradient", "stipple"]));
-        m.connectModel(model.newRelay({Selection: "FillType"}));
+        m.connectModel(model.newRelay({Selection: "FillType"}), true);
         m = panel.addMorph(new TextListMorph(new Rectangle(160, y, 75, 60),
 					     ["NorthSouth", "SouthNorth", "EastWest", "WestEast"]));
         m.connectModel(model.newRelay({Selection: "FillDir"}));
