@@ -1340,7 +1340,7 @@ Object.subclass('Wrapper', {
     },
 
     copyFrom: function(copier, other) {
-	this.rawNode = other.rawNode.cloneNode(true);
+	if (other.rawNode) this.rawNode = other.rawNode.cloneNode(true);
     },
 
     copy: function(copier) {
