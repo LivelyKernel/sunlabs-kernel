@@ -1460,12 +1460,17 @@ Morph.subclass("SliderMorph", {
 
     documentation: "Slider/scroll control",
     mss: 12,  // minimum slider size
-    formals: ["Value", "-SliderExtent"],
+    formals: { 
+	Value:        {byDefault: 0}, // from: function(value) { alert('from!' + value); return value;}}, 
+	SliderExtent: {mode: "-", byDefault: 0} 
+    },
+    selfModelClass: Record.create({Value: { byDefault: 0 }, SliderExtent: { byDefault: 0}}),
 
     initialize: function($super, initialBounds, scaleIfAny) {
         $super(initialBounds, "rect");
         // this default self connection may get overwritten by, eg, connectModel()...
-        var model = Record.newPlainInstance({Value: 0, SliderExtent: 0});
+	var modelClass = this.selfModelClass;
+        var model = new modelClass({}, {});
 	this.connectModel(model.newRelay({Value: "Value", SliderExtent: "SliderExtent"}));
         this.scale = (scaleIfAny === undefined) ? 1.0 : scaleIfAny;
         var slider = new Morph(new Rectangle(0, 0, this.mss, this.mss), "rect");
@@ -1506,7 +1511,7 @@ Morph.subclass("SliderMorph", {
         // This method adjusts the slider for changes in value as well as geometry
         var val = this.getScaledValue();
         var bnds = this.shape.bounds();
-        var ext = this.getSliderExtent() || 0; // FIXME remove zero
+        var ext = this.getSliderExtent(); 
 
 	
         if (this.vertical()) { // more vertical...
@@ -1548,7 +1553,7 @@ Morph.subclass("SliderMorph", {
         // Compute the value from a new mouse point, and emit it
         var p = this.localize(evt.mousePoint).subPt(this.hitPoint);
         var bnds = this.shape.bounds();
-        var ext = this.getSliderExtent() || 0; // FIXME remove 0
+        var ext = this.getSliderExtent(); 
     
         if (this.vertical()) { // more vertical...
             var elevPix = Math.max(ext*bnds.height,this.mss); // thickness of elevator in pixels
@@ -1568,7 +1573,7 @@ Morph.subclass("SliderMorph", {
 
     onMouseDown: function(evt) {
         this.requestKeyboardFocus(evt.hand);
-        var inc = this.getSliderExtent() || 0; // FIXME remove 0
+        var inc = this.getSliderExtent();
         var newValue = this.getValue();
 
         var delta = this.localize(evt.mousePoint).subPt(this.slider.bounds().center());
@@ -1595,7 +1600,7 @@ Morph.subclass("SliderMorph", {
 	if (aspect == p.getValue || aspect == 'all') {
 	    this.onValueUpdate(this.getValue());
 	} else if (aspect == p.getSliderExtent || aspect == 'all')  {
-	    this.onSliderExtentUpdate(this.getSliderExtent() || 0); // FIXME remove 0
+	    this.onSliderExtentUpdate(this.getSliderExtent()); // FIXME remove 0
 	}
     },
 
@@ -1638,7 +1643,7 @@ Morph.subclass("SliderMorph", {
             default: return false;
             }    
         }
-        this.setScaledValue(this.clipValue(this.getScaledValue() + delta * (this.getSliderExtent() || 0)));
+        this.setScaledValue(this.clipValue(this.getScaledValue() + delta * (this.getSliderExtent())));
         this.adjustForNewBounds();
         evt.stop();
         return true;
@@ -1951,6 +1956,7 @@ Morph.subclass('XenoMorph', {
     },
 
     onURLUpdate: function(url) {
+	alert(this + ' got updated');
 	var callback = new NetRequestReporter();
 	var xenoBody = this.body;
 	callback.setContent = function(doc) {
@@ -2274,9 +2280,10 @@ Widget.subclass('XenoBrowserWidget', {
     
     initialViewExtent: pt(800, 300),
     
+    
+
     initialize: function($super) {
-	this.actualModel = 
-	    Record.newPlainInstance({URLString:  URL.source.withFilename("sample.xhtml")});
+	this.actualModel = Record.newPlainInstance({URL:null});
 	$super();
     },
     
@@ -2285,12 +2292,14 @@ Widget.subclass('XenoBrowserWidget', {
 	    ['urlInput', function(initialBounds) { return new TextMorph(initialBounds, "").beInputLine()}, new Rectangle(0, 0, 1, 0.1)],
 	    ['contentPane', newXenoPane, new Rectangle(0, 0.1, 1, 0.9)]
 	]);
-	panel.urlInput.formalModel = this.actualModel.newRelay({Text: "URLString"});
-	panel.urlInput.onTextUpdate(panel.urlInput.formalModel.getText());
-	this.actualModel.addObserver({onURLStringUpdate: function(urlString) { 
-	    panel.contentPane.innerMorph().onURLUpdate(new URL(urlString));
-	}});
-	// this.actualModel.addObserver(panel.contentPane.innerMorph(), { URLString: "!URL"}) // except that String -> URL coertion necessary
+	var model = this.actualModel;
+	panel.urlInput.connectModel(model.newRelay({Text: { name: "URL", to: URL.create, from: String }}), true);
+	
+	this.actualModel.addObserver(panel.contentPane.innerMorph(), { 
+	    URL:{ name: "URL", to: URL.create, from: String }
+	});
+
+	model.setURL(URL.source.withFilename("sample.xhtml"));
 	return panel;
     }
 });

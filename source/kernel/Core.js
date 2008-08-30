@@ -194,8 +194,8 @@ Object.extend(Function.prototype, {
 	this.addMixin(Record.create(spec).prototype);
     },
     
-    addPins: function(list) {
-	this.addMixin(Relay.newDelegationMixin(list).prototype);
+    addPins: function(spec) {
+	this.addMixin(Relay.newDelegationMixin(spec).prototype);
     },
     
     addMixin: function(source) { // FIXME: do the extra processing like addMethods does
@@ -741,6 +741,8 @@ Object.extend(Record, {
 	var klass = Record.subclass();
 	this.addObserverMethods(klass);
 	this.extendRecordClass(klass, bodySpec);
+	klass.prototype.definition = String(JSON.serialize(bodySpec));
+	klass.addMethods({toString: function() { return "#<Record{" + this.definition + "}"; }});
 	return klass;
     },
 
@@ -764,20 +766,23 @@ Object.extend(Record, {
 	var def = {};
 	Properties.forEachOwn(bodySpec, function(name) {
             var spec = bodySpec[name];
-            Record.addAccessorMethods(def, name, spec);           
+	    Record.addAccessorMethods(def, name, spec);
         });
     	klass.addMethods(def);
     },
 
+    addAccessorMethods: function(def, fieldName, spec) {
+	if (spec.mode !== "-")
+            def["set" + fieldName] = this.createSetter(spec.name || fieldName, spec.to, spec.byDefault);
+	if (spec.mode !== "+")
+            def["get" + fieldName] = this.createGetter(spec.name || fieldName, spec.from, spec.byDefault);
+    },
+
+
     observerListName: function(name) { return name + "$observers"},
     
-    addAccessorMethods: function(def, fieldName, spec) {
-        def["set" + fieldName] = this.createSetter(spec.name || fieldName, spec.to, spec.byDefault);
-        def["get" + fieldName] = this.createGetter(spec.name || fieldName, spec.from, spec.byDefault);
-    },
-    
     createSetter: function (name, to, byDefault) {
-        return function(value, optSource) {
+        return function setter(value, optSource) {
             if (value === undefined) {
             	this.removeRecordField(name);
             } else {
@@ -797,7 +802,7 @@ Object.extend(Record, {
     },
     
     createGetter: function (name, from, byDefault) {
-        return function() {
+        return function getter() {
             if (this.rawNode) {
                 var value = this.getRecordField(name);
                 if (!value && byDefault) return byDefault;
@@ -851,25 +856,35 @@ Object.extend(Record, {
 		var forwardSpec = {};
 		Properties.forEachOwn(reverseSpec, function(key) {
 		    var value = reverseSpec[key];
-		    if (!value.startsWith("+")) {  // if not write only, get updates
-			forwardSpec[value.startsWith("-") ? value.substring(1) : value] = "!" + key;
-		    }
+		    if (Object.isString(value.valueOf())) {
+			if (!value.startsWith("+")) {  // if not write only, get updates
+			    forwardSpec[value.startsWith("-") ? value.substring(1) : value] = "!" + key;
+			}
+		    } /*else if (value.mode !== '+') {
+			forwardSpec[value.name] = "!" + key;
+		    }*/
 		});
 		// FIXME: sometimes automatic update callbacks are not desired!
 		this.addObserver(dep, forwardSpec);
+		function callUpdate(self, key, value) {
+		    // trigger updates
+		    try {
+			dep["on" + key + "Update"].call(dep, this["get" + value].call(self));
+		    } catch (er) {
+			console.log("on kickstart update: " + er + ' on ' + [key, value]);
+		    }
+		}
+
 		if (optKickstartUpdates) 
 		    Properties.forEachOwn(reverseSpec, function(key) {
 			var value = reverseSpec[key];
-			if (!value.startsWith("+")) {
+			if (Object.isString(value.valueOf()) && !value.startsWith("+")) {
 			    if (value.startsWith("-")) value = value.substring(1);
-			    // trigger updates
-			    try {
-				dep["on" + key + "Update"].call(dep, this["get" + value].call(this));
-			    } catch (er) {
-				console.log("on kickstart update: " + er + ' on ' + [key, value]);
-			    }
-			}
-		}, this);
+			    callUpdate(self, key, value);
+			} /* else if (value.mode !== '+') {
+			    callUpdate(self, key, value.name);
+			}*/
+		    }, this);
 		
 	    }
         };
@@ -888,17 +903,19 @@ Object.subclass('Relay', {
 
 Object.extend(Relay, {
 
-    newRelayFunction: function(targetName) {
+    newRelayFunction: function(targetName, optConv) {
 	return function(/*...*/) {
-	    // what if  this.delegate[targetName] is null? more info
 	    var impl = this.delegate[targetName];
-	    if (!impl) throw new Error("delegate " + this.delegate + " does not implement " + targetName);
-	    return impl.apply(this.delegate, arguments);
+	    if (!impl) { debugger; throw new Error("delegate " + this.delegate + " does not implement " + targetName); }
+	    var args = arguments;
+	    if (optConv) { args = $A(arguments); args.unshift(optConv(args.shift())); }
+	    return impl.apply(this.delegate, args);
 	}
     },
 
+    handleStringSpec: function(def, key, value) {
+	if (value.startsWith("set") || value.startsWith("get")) debugger; // probably a mixup
 
-    handleRelaySpec: function(def, key, value) {
 	if (value.startsWith("!")) {
 	    // call an update method with the derived name
 	    def["on" + key + "Update"] = Relay.newRelayFunction("on" + value.substring(1) + "Update");
@@ -917,13 +934,36 @@ Object.extend(Relay, {
 	}
     },
 
+
+    handleDictSpec: function(def, key, spec) { // FIXME unused
+	if (spec.mode === "!") {
+	    // call an update method with the derived name
+	    def["on" + key + "Update"] = Relay.newRelayFunction("on" + spec.name + "Update", spec.from);
+	} else if (spec.mode === "=") {
+	    // call exactly that method
+	    def["on" + key + "Update"] = Relay.newRelayFunction(spec.name, spec.from);
+	} else {
+	    if (mode !== '-') { // not read-only
+		def["set" + key] = Relay.newRelayFunction("set" + spec.name, spec.to);
+	    }
+	    if (mode !== '+') { // not write-only
+		def["get" + key] = Relay.newRelayFunction("get" + spec.name, spec.from);
+	    }
+	}
+    },
+
+
     create: function(args) {
 	var klass = Relay.subclass();
 	var def = {
 	    definition: Object.clone(args) // how the relay was constructed
 	};
-	Properties.forEachOwn(args, function(key) { Relay.handleRelaySpec(def, key, args[key]); });
-    
+	Properties.forEachOwn(args, function(key) { 
+	    var spec = args[key];
+	    if (Object.isString(spec.valueOf()))
+		Relay.handleStringSpec(def, key, spec); 
+	});
+	
 	klass.addMethods(def);
 	return klass;
     },
@@ -934,24 +974,26 @@ Object.extend(Relay, {
     },
     
     // not sure if it belongs in Relay    
-    newDelegationMixin: function(list) {
+    newDelegationMixin: function(spec) {
 	
-	function newDelegatorGetter(name) {
-            return function(optDefault) {
+	function newDelegatorGetter(name, from, byDefault) {
+            return function() {
 		var m = this.formalModel;
 		if (m) {
 		    var method = m["get" + name];
-		    return method && method.call(m, optDefault);
-		} else return this.getModelValue("get" + name, optDefault);
+		    if (!method) return byDefault;
+		    var result = method.call(m);
+		    return (result === undefined) ? byDefault : (from ? from(result) : result);
+		} else return this.getModelValue("get" + name, byDefault);
             }
 	}
 	
-	function newDelegatorSetter(name) {
+	function newDelegatorSetter(name, to) {
 	    return function(value) {
 		var m = this.formalModel;
 		if (m) {
 		    var method = m["set" + name];
-		    return method && method.call(m, value);
+		    return method && method.call(m, to ? to(value) : value);
 		}
 		return this.setModelValue("set" + name, value);
             }
@@ -959,17 +1001,29 @@ Object.extend(Relay, {
 	
 	var klass = Object.subclass();
 	
-	list.forEach(function(name) {
-	    if (!name.startsWith('-')) { // not read-only
-		var stripped = name.startsWith('+') ? name.substring(1) : name;
-		klass.prototype["set" + stripped] = newDelegatorSetter(stripped);
-	    }
-	    if (!name.startsWith('+')) { // not write-only
-		var stripped = name.startsWith('-') ? name.substring(1) : name;
-		klass.prototype["get" + stripped] = newDelegatorGetter(stripped);
-	    }
-	});
-	
+	if (spec instanceof Array) {
+	    spec.forEach(function(name) {
+		if (!name.startsWith('-')) { // not read-only
+		    var stripped = name.startsWith('+') ? name.substring(1) : name;
+		    klass.prototype["set" + stripped] = newDelegatorSetter(stripped);
+		}
+		if (!name.startsWith('+')) { // not write-only
+		    var stripped = name.startsWith('-') ? name.substring(1) : name;
+		    klass.prototype["get" + stripped] = newDelegatorGetter(stripped);
+		}
+	    });
+	} else {
+	    Properties.forEachOwn(spec, function(name) {
+		var desc = spec[name];
+		var mode = desc.mode;
+		if (mode !== "-") {
+		    klass.prototype["set" + name] = newDelegatorSetter(name, desc.to);
+		}
+		if (mode !== "+") {
+		    klass.prototype["get" + name] = newDelegatorGetter(name, desc.from, desc.byDefault);
+		}
+	    });
+	}
 	return klass;
     }
     
