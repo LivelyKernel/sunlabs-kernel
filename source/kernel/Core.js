@@ -125,7 +125,6 @@ Object.extend(Function.prototype, {
 	}
 
 	if (className) targetScope[shortName] = klass; // otherwise it's anonymous
-	if (klass.name) console.log('made class named ' + klass.name);
 	return klass;
     },
 
