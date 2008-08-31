@@ -171,7 +171,7 @@ Object.extend(Function.prototype, {
 
 	    if (property == "formals") {
 		// special property (used to be pins, but now called formals to disambiguate old and new style
-		this.addPins(value);
+		Class.addPins(this, value);
 	    } else if (Object.isFunction(value)) {
 		for ( ; value; value = value.originalFunction) {
 		    if (value.methodName) {
@@ -191,20 +191,7 @@ Object.extend(Function.prototype, {
     },
 
     addProperties: function(spec) {
-	this.addMixin(Record.create(spec).prototype);
-    },
-    
-    addPins: function(spec) {
-	this.addMixin(Relay.newDelegationMixin(spec).prototype);
-    },
-    
-    addMixin: function(source) { // FIXME: do the extra processing like addMethods does
-	for (var prop in source) {
-	    var value = source[prop];
-	    if (prop == "constructor" || prop == "initialize" || prop == "toString" || prop == "definition") 
-		continue;
-	    this.prototype[prop] = value;
-	}
+	Class.addMixin(this, Record.create(spec).prototype);
     },
 
     isSubclassOf: function(aClass){
@@ -329,7 +316,21 @@ var Class = {
     getSuperPrototype: function(object) {
 	var sup = this.getSuperConstructor(object);
 	return sup && sup.prototype;
-    }
+    },
+
+    addPins: function(cls, spec) {
+	Class.addMixin(cls, Relay.newDelegationMixin(spec).prototype);
+    },
+    
+    addMixin: function(cls, source) { // FIXME: do the extra processing like addMethods does
+	for (var prop in source) {
+	    var value = source[prop];
+	    if (prop == "constructor" || prop == "initialize" || prop == "toString" || prop == "definition") 
+		continue;
+	    cls.prototype[prop] = value;
+	}
+    },
+
 };
 
 
@@ -442,7 +443,7 @@ var Properties = {
 	return a;
     },
 
-    forEachOwn: function(object, func, context) {
+    forEachOwn: function forEachOwn(object, func, context) {
 	for (var name in object) {
 	    if (object.hasOwnProperty(name)) {
 		var value = object[name];
@@ -742,15 +743,15 @@ Object.extend(Record, {
 	var klass = Record.subclass();
 	this.addObserverMethods(klass);
 	this.extendRecordClass(klass, bodySpec);
-	klass.prototype.definition = String(JSON.serialize(bodySpec));
-	klass.addMethods({toString: function() { return "#<Record{" + this.definition + "}"; }});
+	klass.prototype.definition = bodySpec;
+	klass.addMethods({toString: function() { return "#<Record{" + String(JSON.serialize(this.definition)) + "}"; }});
 	return klass;
     },
 
     newPlainInstance: function(spec) {
 	var argSpec = {};
 	var fieldSpec = {};
-	Properties.forEachOwn(spec, function(key) {
+	Properties.forEachOwn(spec, function (key) {
 	    fieldSpec[key] = {};
 	    argSpec[key] = spec[key];
 	});
@@ -775,18 +776,18 @@ Object.extend(Record, {
 
     addAccessorMethods: function(def, fieldName, spec) {
 	if (spec.mode !== "-")
-            def["set" + fieldName] = this.newSetter(spec.name || fieldName, spec.to, spec.byDefault);
+            def["set" + fieldName] = this.newRecordSetter(spec.name || fieldName, spec.to, spec.byDefault);
 	if (spec.mode !== "+")
-            def["get" + fieldName] = this.newGetter(spec.name || fieldName, spec.from, spec.byDefault);
+            def["get" + fieldName] = this.newRecordGetter(spec.name || fieldName, spec.from, spec.byDefault);
     },
 
 
     observerListName: function(name) { return name + "$observers"},
     
-    newSetter: function (name, to, byDefault) {
-        return function setter(value, optSource) {
+    newRecordSetter: function newRecordSetter(name, to, byDefault) {
+        return function recordSetter(value, optSource) {
             if (value === undefined) {
-            	this.removeRecordField(name);
+            	this.removeRecordField(name); // return ?
             } else {
             	if (!value && byDefault) value = byDefault;
 		var coercedValue = to ? to(value) : value;
@@ -794,17 +795,19 @@ Object.extend(Record, {
             	this.setRecordField(name, coercedValue);
             }
             var deps = this[Record.observerListName(name)];
+	    var updateName = "on" + name + "Update";
             if (deps) {
             	for (var i = 0; i < deps.length; i++) {
                     var dep = deps[i];
-                    dep["on" + name + "Update"].call(dep, coercedValue, optSource);
+		    // shouldn't this be uncoerced value? ......
+                    dep[updateName].call(dep, coercedValue, optSource);
             	}
             }
         }
     },
     
-    newGetter: function (name, from, byDefault) {
-        return function getter() {
+    newRecordGetter: function newRecordGetter(name, from, byDefault) {
+        return function recordGetter() {
             if (this.rawNode) {
                 var value = this.getRecordField(name);
                 if (!value && byDefault) return byDefault;
@@ -857,38 +860,45 @@ Object.extend(Record, {
 
 	    addObserversFromSetters: function(reverseSpec, dep, optKickstartUpdates) {
 		var forwardSpec = {};
-		Properties.forEachOwn(reverseSpec, function loop(key) {
+		Properties.forEachOwn(reverseSpec, function each(key) {
 		    var value = reverseSpec[key];
+
 		    if (Object.isString(value.valueOf())) {
 			if (!value.startsWith("+")) {  // if not write only, get updates
 			    forwardSpec[value.startsWith("-") ? value.substring(1) : value] = "!" + key;
 			}
-		    } /*else if (value.mode !== '+') {
-			forwardSpec[value.name] = "!" + key;
-		    }*/
+		    } else if (value.mode !== '+') {
+			var spec = forwardSpec[value.name] =  {};
+			spec.name = "!" + key;
+			// FIXME: Q&A the following
+			spec.from = value.from;
+			spec.to = value.to;
+		    }
 		});
 		// FIXME: sometimes automatic update callbacks are not desired!
 		this.addObserver(dep, forwardSpec);
-		function callUpdate(self, key, value) {
+		function callUpdate(self, key, value, from) {
+		    var target = "on" + key + "Update";
+		    var source = "get" + value;
 		    // trigger updates
 		    try {
-			dep["on" + key + "Update"].call(dep, self["get" + value].call(self));
+			var tmp = self[source].call(self);
+			dep[target].call(dep, from ? from(tmp) : tmp);
 		    } catch (er) {
-			//debugger;
-			console.log("on kickstart update: " + er + ' on ' + dep + "on" + key + "Update" + 
-				    " mapping to get" + value + " " + er.stack);
+			console.log("on kickstart update: " + er + " on " + dep + " " + target
+				    + " mapping to " + source + " " + er.stack);
 		    }
 		}
 
 		if (optKickstartUpdates) 
-		    Properties.forEachOwn(reverseSpec, function loop(key) {
+		    Properties.forEachOwn(reverseSpec, function each(key) {
 			var value = reverseSpec[key];
 			if (Object.isString(value.valueOf()) && !value.startsWith("+")) {
 			    if (value.startsWith("-")) value = value.substring(1);
-			    callUpdate(this, key, value);
-			} /* else if (value.mode !== '+') {
-			    callUpdate(this, key, value.name);
-			}*/
+			    callUpdate(this, key, value, value.from);
+			} else if (value.mode !== '+') {
+			    callUpdate(this, key, value.name, value.from);
+			}
 		    }, this);
 		
 	    }
@@ -908,8 +918,8 @@ Object.subclass('Relay', {
 
 Object.extend(Relay, {
 
-    newRelayFunction: function(targetName, optConv) {
-	return function relay(/*...*/) {
+    newRelaySetter: function newRelaySetter(targetName, optConv) {
+	return function setterRelay(/*...*/) {
 	    var impl = this.delegate[targetName];
 	    if (!impl) { debugger; throw new Error("delegate " + this.delegate + " does not implement " + targetName); }
 	    var args = arguments;
@@ -918,41 +928,60 @@ Object.extend(Relay, {
 	}
     },
 
+    newRelayGetter: function newRelayGetter(targetName, optConv) {
+	return function getterRelay(/*...*/) {
+	    var impl = this.delegate[targetName];
+	    if (!impl) { debugger; throw new Error("delegate " + this.delegate + " does not implement " + targetName); }
+	    var result = impl.apply(this.delegate, arguments);
+	    return optConv ? optConv(result) : result;
+	}
+    },
+
+    newRelayUpdater: function newRelayUpdater(targetName, optConv) {
+	return function updateRelay(/*...*/) {
+	    var impl = this.delegate[targetName];
+	    if (!impl) { debugger; throw new Error("delegate " + this.delegate + " does not implement " + targetName); }
+	    return impl.apply(this.delegate, arguments);
+	}
+    },
+
     handleStringSpec: function(def, key, value) {
 	if (value.startsWith("set") || value.startsWith("get")) debugger; // probably a mixup
 
 	if (value.startsWith("!")) {
 	    // call an update method with the derived name
-	    def["on" + key + "Update"] = Relay.newRelayFunction("on" + value.substring(1) + "Update");
+	    def["on" + key + "Update"] = Relay.newRelayUpdater("on" + value.substring(1) + "Update");
 	} else if (value.startsWith("=")) {
 	    // call exactly that method
-	    def["on" + key + "Update"] = Relay.newRelayFunction(value.substring(1));
+	    def["on" + key + "Update"] = Relay.newRelayUpdater(value.substring(1));
 	} else {
 	    if (!value.startsWith('-')) { // not read-only
 		var stripped = value.startsWith('+') ? value.substring(1) : value;
-		def["set" + key] = Relay.newRelayFunction("set" + stripped);
+		def["set" + key] = Relay.newRelaySetter("set" + stripped);
 	    }
 	    if (!value.startsWith('+')) { // not write-only
 		var stripped = value.startsWith('-') ? value.substring(1) : value;
-		def["get" + key] = Relay.newRelayFunction("get" + stripped);
+		def["get" + key] = Relay.newRelayGetter("get" + stripped);
 	    }
 	}
     },
 
 
     handleDictSpec: function(def, key, spec) { // FIXME unused
-	if (spec.mode === "!") {
+	var mode = spec.mode;
+	if (mode === "!") {
 	    // call an update method with the derived name
-	    def["on" + key + "Update"] = Relay.newRelayFunction("on" + spec.name + "Update", spec.from);
-	} else if (spec.mode === "=") {
+
+	    def["on" + key + "Update"] = Relay.newRelayUpdater("on" + spec.name + "Update", spec.from);
+	} else if (mode === "=") {
 	    // call exactly that method
-	    def["on" + key + "Update"] = Relay.newRelayFunction(spec.name, spec.from);
+	    def["on" + key + "Update"] = Relay.newRelayUpdater(spec.name, spec.from);
 	} else {
 	    if (mode !== '-') { // not read-only
-		def["set" + key] = Relay.newRelayFunction("set" + spec.name, spec.to);
+		def["set" + key] = Relay.newRelaySetter("set" + spec.name, spec.to);
 	    }
 	    if (mode !== '+') { // not write-only
-		def["get" + key] = Relay.newRelayFunction("get" + spec.name, spec.from);
+		def["get" + key] = Relay.newRelayGetter("get" + spec.name, spec.from);
 	    }
 	}
     },
@@ -961,15 +990,17 @@ Object.extend(Relay, {
     create: function(args) {
 	var klass = Relay.subclass();
 	var def = {
-	    definition: String(JSON.serialize(args)), // how the relay was constructed
+	    definition: Object.clone(args), // how the relay was constructed
 	    toString: function() {
-		return "#<Relay{" + this.definition + "}>";
+		return "#<Relay{" + String(JSON.serialize(args)) + "}>";
 	    }
 	};
 	Properties.forEachOwn(args, function(key) { 
 	    var spec = args[key];
 	    if (Object.isString(spec.valueOf()))
 		Relay.handleStringSpec(def, key, spec); 
+	    else 
+		Relay.handleDictSpec(def, key, spec);
 	});
 	
 	klass.addMethods(def);
@@ -1201,7 +1232,6 @@ var Converter = {
     },
 
     fromBoolean: function(object) {
-	if (object === null) debugger; 
 	var b = object.valueOf();
 	return b === true ? true : false;
     },
@@ -5409,11 +5439,11 @@ ViewTrait = {
 	    this.formalModel = plugSpec;
 	    // now, go through the setters and add notifications on model
 	    if (plugSpec.delegate instanceof Record) 
-		plugSpec.delegate.addObserversFromSetters(JSON.unserialize(plugSpec.definition), this, optKickstartUpdates);
+		plugSpec.delegate.addObserversFromSetters(plugSpec.definition, this, optKickstartUpdates);
 	    return;
 	} else if (plugSpec instanceof Record) {
 	    this.formalModel = plugSpec;
-	    plugSpec.addObserversFromSetters(JSON.unserialize(plugSpec.definition), this, optKickstartUpdates);
+	    plugSpec.addObserversFromSetters(plugSpec.definition, this, optKickstartUpdates);
 	    return;
 	}
 	// connector makes this view pluggable to different models, as in
