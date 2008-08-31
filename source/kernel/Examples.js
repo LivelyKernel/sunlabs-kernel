@@ -41,7 +41,7 @@ Widget.subclass('TestWidget', {
         // work with gradients or stipple patterns yet!
         panel.linkToStyles(['widgetPanel']);
 	var model = Record.newPlainInstance({Text: "Hello World", TextSel: null, ListItem: null, PrintValue: null,
-	    B1Value: null, B2Value: null, SliderValue: 0, SliderRange: 0}); 
+	    B1Value: null, B2Value: null, SliderValue: 0.5, SliderRange: 0.1}); 
 	
 
         // Two simple buttons, one toggles...
@@ -89,9 +89,9 @@ Widget.subclass('TestWidget', {
 
         // Slider linked to print view, with another for slider width
         m = panel.addMorph(new PrintMorph(new Rectangle(140,140,80,20), "0.5"));
-        m.connectModel(model.newRelay({Value: "SliderValue"}), true);
+        m.connectModel(model.newRelay({Value: "SliderValue"}));
         m = panel.addMorph(new PrintMorph(new Rectangle(230,140,50,20), "0.1"));
-        m.connectModel(model.newRelay({Value: "SliderRange"}), true);
+        m.connectModel(model.newRelay({Value: "SliderRange"}));
 
         m = panel.addMorph(new SliderMorph(new Rectangle(140,170,140,20)));
         m.connectModel(model.newRelay({Value: "SliderValue",  SliderExtent: "-SliderRange"}), true);

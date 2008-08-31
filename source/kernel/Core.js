@@ -1196,11 +1196,12 @@ var Converter = {
 	return parseFloat(string);
     },
 
-    parseBoolean: function(string) {
+    toBoolean: function(string) {
 	return string && string == 'true';
     },
 
-    unparseBoolean: function(object) {
+    fromBoolean: function(object) {
+	if (object === null) debugger; 
 	var b = object.valueOf();
 	return b === true ? true : false;
     },
@@ -4040,8 +4041,9 @@ Visual.subclass('Morph', {
     
 });
 
-Morph.addProperties({ CopySubmorphsOnGrab: {name: "copy-submorphs-on-grab", from:Converter.parseBoolean, to:Converter.unparseBoolean,
-				   byDefault: false}});
+Morph.addProperties({ 
+    CopySubmorphsOnGrab: {name: "copy-submorphs-on-grab", from:Converter.toBoolean, to:Converter.fromBoolean, byDefault: false}
+});
 
 // Functions for change management
 Object.extend(Morph, {

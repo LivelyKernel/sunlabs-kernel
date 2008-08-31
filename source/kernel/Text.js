@@ -1504,10 +1504,11 @@ TextMorph.addMethods({
     },
     getSelectionText: function() {
 	return this.textStyle ? 
-	    this.getText().subtext(this.selectionRange[0], this.selectionRange[1] + 1)
+	    this.getRichText().subtext(this.selectionRange[0], this.selectionRange[1] + 1)
 	    : new module.Text(this.getSelectionString());
     },
-    getText: function() {
+
+    getRichText: function() {
         return new module.Text(this.textString, this.textStyle); 
     },
 
@@ -1753,7 +1754,7 @@ TextMorph.addMethods({
 	if (sel1[0] > sel2[0]) {var t = sel1; sel1 = sel2; sel2 = t; d = -1} // swap so sel1 is first
 	if (sel1[1] >= sel2[0]) return; // ranges must not overlap
 	
-	var fullText = (this.textStyle) ? this.getText() : this.textString;
+	var fullText = (this.textStyle) ? this.getRichText() : this.textString;
 	var txt1 = fullText.substring(sel1[0], sel1[1]+1);
 	var txt2 = fullText.substring(sel2[0], sel2[1]+1);
 	var between = fullText.substring(sel1[1]+1, sel2[0]);
@@ -1913,7 +1914,7 @@ TextMorph.addMethods({
             this.world().changed(); 
             return; // Hack for browser demo
         } else if (!this.autoAccept) {
-            this.setModelText(contentString);
+            this.setText(contentString);
        }
     },
     acceptChanges: function() {    
@@ -1976,7 +1977,7 @@ TextMorph.addMethods({
     },
     
     setTextString: function(replacement, delayComposition, justMoreTyping) {
-        if (this.autoAccept) this.setModelText(replacement);
+        if (this.autoAccept) this.setText(replacement);
         this.pvtUpdateTextString(replacement, delayComposition, justMoreTyping); 
     },
     
@@ -2019,7 +2020,7 @@ TextMorph.addMethods({
 	if (!p) return;
 	
         if (aspect == p.getText  || aspect == 'all') {
-	    this.onTextUpdate(this.getModelText());
+	    this.onTextUpdate(this.getText());
 	} else if (aspect == p.getSelection || aspect == 'all') {
 	    this.onSelectionUpdate(this.getSelection());
 	}
@@ -2073,11 +2074,11 @@ TextMorph.subclass('PrintMorph', {
 	else return value.toString();
     },
     
-    getModelText: function() {
+    getText: function() {
 	return this.formatValue(this.getValue());
     },
     
-    setModelText: function(newText) {
+    setText: function(newText) {
 	var result = String(eval(newText));  // exceptions?
 	return this.setValue(result);
     }

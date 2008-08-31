@@ -164,7 +164,7 @@ Morph.subclass('ButtonMorph', {
 
 
 ButtonMorph.addProperties({
-    Toggle: { name: "toggle", from: Converter.parseBoolean, to: Converter.unparseBoolean }
+    Toggle: { name: "toggle", from: Converter.toBoolean, to: Converter.fromBoolean }
 });
 
 
