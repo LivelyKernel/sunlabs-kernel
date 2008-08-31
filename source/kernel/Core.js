@@ -6431,9 +6431,7 @@ PasteUpMorph.subclass("WorldMorph", {
 	var pane = newTextPane(extent.extentAsRectangle(), spec.content || "");
 	if (spec.acceptInput !== undefined) pane.innerMorph().acceptInput = spec.acceptInput;
 	if (spec.plug) pane.innerMorph().connectModel(spec.plug);
-	this.addFramedMorph(pane, 
-			    spec.title ? String(spec.title) : "", 
-			    spec.position);
+	this.addFramedMorph(pane, String(spec.title || ""), spec.position);
 	return pane.innerMorph();
     },
 
