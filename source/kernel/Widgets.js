@@ -2288,23 +2288,21 @@ Widget.subclass('XenoBrowserWidget', {
     initialViewExtent: pt(800, 300),
 
     initialize: function($super) {
-	this.actualModel = Record.newPlainInstance({URL:null});
+	this.actualModel = Record.newPlainInstance({URL: URL.source.withFilename("sample.xhtml")});
 	$super();
     },
     
     buildView: function(extent) {
 	var panel = PanelMorph.makePanedPanel(extent, [
-	    ['urlInput', function(initialBounds) { return new TextMorph(initialBounds, "").beInputLine()}, new Rectangle(0, 0, 1, 0.1)],
+	    ['urlInput', TextMorph, new Rectangle(0, 0, 1, 0.1)],
 	    ['contentPane', newXenoPane, new Rectangle(0, 0.1, 1, 0.9)]
 	]);
 	var model = this.actualModel;
-	panel.urlInput.connectModel(model.newRelay({Text: { name: "URL", to: URL.create, from: String }}), true);
 	
-	this.actualModel.addObserver(panel.contentPane.innerMorph(), { 
-	    URL:{ name: "URL", to: URL.create, from: String }
-	});
-
-	model.setURL(URL.source.withFilename("sample.xhtml"));
+	panel.urlInput.beInputLine();
+	panel.urlInput.connectModel(model.newRelay({Text: { name: "URL", to: URL.create, from: String }}), true);
+	this.actualModel.addObserver(panel.contentPane.innerMorph());
+	
 	return panel;
     }
 });
