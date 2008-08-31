@@ -701,9 +701,6 @@ using().run(function() { // begin scoping function
 	// execution profile.  In the latter case, currentContext and other nodes of the tracing
 	// structure are instances of TracerTreeNode, rather than TracerStackNode
 	// 
-	// A minor demonstration of flexibility is that turning Function.prototype.logCalls
-	// to true causes the tracer to spew records of every call to the console.  Don't forget
-	// to turn it off ;-).
 
 	// This mechanism can perform much more amazing feats with the use of TracerTreeNode.
 	// Here the nodes stay in place, accumulating call tallies and ticks of the millisecond
@@ -970,9 +967,6 @@ using().run(function() { // begin scoping function
     });
     
     Object.extend(Function.prototype, {
-	
-        logCalls: false, // turn on the prototype value to get tracing globally.
-		// Turn off individually for "hidden" functions.
 	
         tracingWrapper: function () {
 	    // Make a proxy method (traceFunc) that calls the tracing routines before and after this method
