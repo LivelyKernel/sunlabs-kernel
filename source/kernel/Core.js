@@ -97,37 +97,35 @@ Object.extend(Function.prototype, {
 		throw new Error("invalid class name " + className);
 	} 
 	
-	function klass() {
-	    // check for the existence of Importer, which may not be defined very early on
-	    if (Global.Importer && (arguments[0] instanceof Importer || arguments[0] === Importer.prototype)) { 
-		this.deserialize.apply(this, arguments);
-	    } else if (Global.Copier && (arguments[0] instanceof Copier || arguments[0] === Copier.prototype)) {
-		this.copyFrom.apply(this, arguments);
-	    } else {
-		this.initialize.apply(this, arguments);
-	    }
+	if (!shortName) {
+	    shortName = "anonymous_" + (Class.anonymousCounter ++);
+	    if (!className) className = shortName;
 	}
+	
 
+	var klass = Class.newInitializer(shortName);
+	
 	klass.superclass = this;
 
 	var protoclass = function() { }; // that's the constructor of the new prototype object
 	protoclass.prototype = this.prototype;
 
 	klass.prototype = new protoclass();
+	
 
 	klass.prototype.constructor = klass;
 	// KP: .name would be better but js ignores .name on anonymous functions
-	klass.type = className || "anonymous_" + (Class.anonymousCounter ++);
+	klass.prototype.constructor.type = className;
 
 	for (var i = 0; i < properties.length; i++) {
 	    klass.addMethods(properties[i] instanceof Function ? (properties[i])() : properties[i]);
 	}
-
 	if (!klass.prototype.initialize) {
 	    klass.prototype.initialize = Functions.Empty;
 	}
 
 	if (className) targetScope[shortName] = klass; // otherwise it's anonymous
+	if (klass.name) console.log('made class named ' + klass.name);
 	return klass;
     },
 
@@ -148,10 +146,11 @@ Object.extend(Function.prototype, {
 		value.argumentNames().first() == "$super") {
 		var method = value;
 		var advice = (function(m) {
-		    return function() { 
+		    return function callSuper() { 
 			try { 
 			    return ancestor[m].apply(this, arguments);
 			} catch (e) { 
+			    debugger;
 			    console.log("problem with ancestor %s.%s(%s):%s",
 					Object.inspect(ancestor), m, $A(arguments), e);
 			    Function.showStack();
@@ -219,6 +218,24 @@ Object.extend(Function.prototype, {
 var Class = {
     
     anonymousCounter: 0,
+    
+    initializerTemplate: (function CLASS(){ Class.initializer.apply(this, arguments) }).toString(),
+    
+    newInitializer: function(name) {
+	// this hack ensures that class instances have a name
+	return eval(Class.initializerTemplate.replace(/CLASS/g, shortName) + ";" + shortName);
+    },
+    
+    initializer: function initializer() {
+	// check for the existence of Importer, which may not be defined very early on
+	if (Global.Importer && (arguments[0] instanceof Importer || arguments[0] === Importer.prototype)) { 
+	    this.deserialize.apply(this, arguments);
+	} else if (Global.Copier && (arguments[0] instanceof Copier || arguments[0] === Copier.prototype)) {
+	    this.copyFrom.apply(this, arguments);
+	} else {
+	    this.initialize.apply(this, arguments); 
+	}
+    },
 
 
     def: function(constr, superConstr, optProtos, optStatics) {
@@ -231,27 +248,17 @@ var Class = {
 
 	// modified from prototype.js
 
-	function klass() {
-	    // check for the existence of Importer, which may not be defined very early on
-	    if (Global.Importer && (arguments[0] instanceof Importer || arguments[0] === Importer.prototype)) { 
-		this.deserialize.apply(this, arguments);
-	    } else if (Global.Copier && (arguments[0] instanceof Copier || arguments[0] === Copier.prototype)) {
-		this.copyFrom.apply(this, arguments);
-	    } else {
-		this.initialize.apply(this, arguments);
-	    }
-	}
-
+	var klass = Class.newInitializer("klass");
 	klass.superclass = superConstr;
-
+	
 	var protoclass = function() { }; // that's the constructor of the new prototype object
 	protoclass.prototype = superConstr.prototype;
 
 	klass.prototype = new protoclass();
 	
 	// Object.extend(klass.prototype, constr.prototype);
-	klass.prototype.constructor = klass;
-	var className  = constr.getName();
+	klass.prototype.constructor = klass; 
+	var className  = constr.name; // getName()
 	klass.addMethods({initialize: constr});
 	// KP: .name would be better but js ignores .name on anonymous functions
 	klass.type = className;
@@ -1377,7 +1384,9 @@ Object.subclass('Wrapper', {
     },
 
     copy: function(copier) {
-	return new Global[this.getType()](copier || Copier.marker, this);
+	try {
+	    return new Global[this.getType()](copier || Copier.marker, this);
+	} catch (er) { debugger }
     },
 
     id: function() {
@@ -3687,10 +3696,12 @@ Object.subclass('MouseHandlerForRelay', {
 
 namespace('lk.text');
 
+
 using(lk.text).run(function(text) {
 
 
 Visual.subclass('Morph', {
+
     documentation: "Base class for every graphical, manipulatable object in the system", 
 
     // prototype vars
@@ -3729,12 +3740,10 @@ Visual.subclass('Morph', {
 	//console.log('initializing morph %s %s', initialBounds, shapeType);
 	this.internalInitialize(NodeFactory.create("g"));
 	this.pvtSetTransform(new Similitude(this.defaultOrigin(initialBounds, shapeType)));
-
 	this.initializePersistentState(initialBounds, shapeType);
-
 	this.initializeTransientState(initialBounds);
     },
-
+    
     deserialize: function(importer, rawNode) {
 
 	// FIXME what if id is not unique?
@@ -3773,7 +3782,7 @@ Visual.subclass('Morph', {
 		&& other.hasOwnProperty(p) 
 		&& !this.noShallowCopyProperties.include(p)) {
 		if (other[p] instanceof Morph) {
-		    var replacement = (p == "owner") ? null : copier.lookupMorph(other[p].id());
+		    var replacement = (p === "owner") ? null : copier.lookupMorph(other[p].id());
 		    this[p] = replacement || other[p];
 		    // an instance field points to a submorph, so copy
 		    // should point to a copy of the submorph
@@ -3784,7 +3793,7 @@ Visual.subclass('Morph', {
 		    this[p] = other[p];
 		} 
 	    }
-	} // shallow copy by default
+	} // shallow copy by default, note that arrays of Morphs are not handled
 	
 
 	this.internalSetShape(other.shape.copy());

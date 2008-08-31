@@ -1894,6 +1894,7 @@ TextMorph.addMethods({
 	    if (this.textStyle) this.undoTextStyle = this.textStyle.clone();
 	}
 	// DI: Might want to put the maxSafeSize test in clients
+	if (!replacement.truncate) debugger;
         this.textString = replacement.truncate(this.maxSafeSize);
 	this.setStoredString(this.textString);
         if (!delayComposition) this.composeAfterEdits();  // Typein wants lazy composition
