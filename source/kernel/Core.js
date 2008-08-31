@@ -758,6 +758,7 @@ Object.extend(Record, {
     },
 
     newInstance: function(fieldSpec, argSpec, optStore) {
+	if (arguments.length < 2) throw new Error("call with two or more arguments");
 	var Rec = Record.create(fieldSpec);
 	if (!optStore) optStore = NodeFactory.create("model"); // FIXME flat JavaScript instead by default?
 	return new Rec(optStore, argSpec);
@@ -774,15 +775,15 @@ Object.extend(Record, {
 
     addAccessorMethods: function(def, fieldName, spec) {
 	if (spec.mode !== "-")
-            def["set" + fieldName] = this.createSetter(spec.name || fieldName, spec.to, spec.byDefault);
+            def["set" + fieldName] = this.newSetter(spec.name || fieldName, spec.to, spec.byDefault);
 	if (spec.mode !== "+")
-            def["get" + fieldName] = this.createGetter(spec.name || fieldName, spec.from, spec.byDefault);
+            def["get" + fieldName] = this.newGetter(spec.name || fieldName, spec.from, spec.byDefault);
     },
 
 
     observerListName: function(name) { return name + "$observers"},
     
-    createSetter: function (name, to, byDefault) {
+    newSetter: function (name, to, byDefault) {
         return function setter(value, optSource) {
             if (value === undefined) {
             	this.removeRecordField(name);
@@ -802,7 +803,7 @@ Object.extend(Record, {
         }
     },
     
-    createGetter: function (name, from, byDefault) {
+    newGetter: function (name, from, byDefault) {
         return function getter() {
             if (this.rawNode) {
                 var value = this.getRecordField(name);
@@ -908,7 +909,7 @@ Object.subclass('Relay', {
 Object.extend(Relay, {
 
     newRelayFunction: function(targetName, optConv) {
-	return function(/*...*/) {
+	return function relay(/*...*/) {
 	    var impl = this.delegate[targetName];
 	    if (!impl) { debugger; throw new Error("delegate " + this.delegate + " does not implement " + targetName); }
 	    var args = arguments;
@@ -983,26 +984,27 @@ Object.extend(Relay, {
     // not sure if it belongs in Relay    
     newDelegationMixin: function(spec) {
 	
-	function newDelegatorGetter(name, from, byDefault) {
-            return function() {
+	function newDelegatorGetter (name, from, byDefault) {
+	    var methodName = "get" + name;
+            return function getter() {
 		var m = this.formalModel;
 		if (m) {
-		    var method = m["get" + name];
+		    var method = m[methodName];
 		    if (!method) return byDefault;
 		    var result = method.call(m);
 		    return (result === undefined) ? byDefault : (from ? from(result) : result);
-		} else return this.getModelValue("get" + name, byDefault);
+		} else return this.getModelValue(methodName, byDefault);
             }
 	}
 	
 	function newDelegatorSetter(name, to) {
-	    return function(value) {
+	    var methodName = "set" + name;
+	    return function setter(value) {
 		var m = this.formalModel;
 		if (m) {
-		    var method = m["set" + name];
+		    var method = m[methodName];
 		    return method && method.call(m, to ? to(value) : value);
-		}
-		return this.setModelValue("set" + name, value);
+		} else return this.setModelValue(methodName, value);
             }
 	}
 	
