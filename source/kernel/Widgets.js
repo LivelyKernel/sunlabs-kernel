@@ -1121,7 +1121,7 @@ Morph.subclass("TextListMorph", {
     },
 
     appendList: function(newItems) {
-        var capacity = this.getCapacity(this.defaultCapacity);
+        var capacity = this.getCapacity();
         var priorItem = this.getSelection();
         var removed = this.itemList.length + newItems.length - capacity;
         if (removed > 0) {
@@ -1164,6 +1164,11 @@ Morph.subclass("TextListMorph", {
 	this.updateList(list);
     },
 
+
+    onListDeltaUpdate: function(delta) {
+	this.appendList(delta);
+    },
+
     onSelectionUpdate: function(selection) {
 	console.log("got selection "  + selection);
         this.setSelectionToMatch(selection);
@@ -1189,7 +1194,7 @@ Morph.subclass("TextListMorph", {
             return this.itemList; // debugging
 	    
         case this.modelPlug.getListDelta:
-            this.appendList(this.getListDelta());
+            this.onListDeltaUpdate(this.getListDelta());
             return this.itemList;
 	    
         case this.modelPlug.getSelection:
@@ -1202,7 +1207,6 @@ Morph.subclass("TextListMorph", {
             return null;
         }
     },
-
 
     enclosingScrollPane: function() { 
         // Need a cleaner way to do this
@@ -1954,7 +1958,6 @@ Morph.subclass('XenoMorph', {
     },
 
     onURLUpdate: function(url) {
-	alert(this + ' got updated');
 	var callback = new NetRequestReporter();
 	var xenoBody = this.body;
 	callback.setContent = function(doc) {
@@ -2184,18 +2187,22 @@ PromptDialog.test = function() {
 Widget.subclass('ConsoleWidget', {
 
     viewTitle: "Console",
-    pins: ["LogMessages", "RecentLogMessages", "Commands", "CommandCursor", "LastCommand", "Menu"],
+    formals: ["LogMessages", "RecentLogMessages", "Commands", "CommandCursor", "LastCommand", "Menu", "Capacity"],
     ctx: {},
     
     initialize: function($super, capacity) {
         $super(null);
-        var model = new SyntheticModel(this.pins);
-        this.connectModel(model.makePlugSpecFromPins(this.pins));
-        model.setCommands([]);
-        model.setLogMessages([]);
-        model.setCommandCursor(0);
-        model.getLogMessageCapacity = function() { return capacity; }
-        model.Menu = [["command history", this, "addCommandHistoryInspector"] ];
+
+        this.actualModel = Record.newPlainInstance({LogMessages: [], RecentLogMessages: [], Commands: [], 
+						    CommandCursor: 0,  LastCommand: "", Capacity: capacity,
+						    Menu: [["command history", this, "addCommandHistoryInspector"]]});
+	
+        this.connectModel(this.actualModel.newRelay({LogMessages: "LogMessages",
+						     RecentLogMessages: "+RecentLogMessages",
+						     Commands: "Commands",
+						     LastCommand: "LastCommand",
+						     Menu: "Menu",
+						     Capacity: "-Capacity"}));
         Global.console.consumers.push(this);
         this.ans = undefined; // last computed value
         return this;
@@ -2203,7 +2210,7 @@ Widget.subclass('ConsoleWidget', {
     
     addCommandHistoryInspector: function() {
         var extent = pt(500, 40);
-        var commands = this.getModelValue("getCommands", []);
+        var commands = this.getCommands([]);
         var rect = extent.extentAsRectangle();
         var pane = new ScrollPane(new TextListMorph(rect, commands), rect); 
         var world = WorldMorph.current();
@@ -2220,12 +2227,14 @@ Widget.subclass('ConsoleWidget', {
             ['commandLine', TextMorph, new Rectangle(0, 0.8, 1, 0.2)]
         ]);
 
-        var model = this.getModel();
+        var model = this.actualModel;
         var m = panel.messagePane;
-        m.connectModel({model: model, getList: "getLogMessages", getListDelta: "getRecentLogMessages", 
-                        getCapacity: "getLogMessageCapacity", getMenu: "getMenu"});
-        m.innerMorph().focusHaloBorderWidth = 0;
-
+	
+        m.connectModel(model.newRelay({List: "-LogMessages", ListDelta: "RecentLogMessages", 
+				       Capacity: "-Capacity", Menu: "-Menu"}));
+	
+	m.innerMorph().focusHaloBorderWidth = 0;
+	
         var self = this;
         panel.shutdown = function() {
             Class.getPrototype(this).shutdown.call(this);
@@ -2236,10 +2245,9 @@ Widget.subclass('ConsoleWidget', {
         };
 
         m = panel.commandLine.beInputLine(100);
-        m.connectModel({model: model, 
-                        getHistory: "getCommands", 
-                        getHistoryCursor: "getCommandCursor", setHistoryCursor: "setCommandCursor",
-                        setText: "setLastCommand", getText: "getLastCommand"});
+	m.connectModel(model.newRelay({ History: "-Commands", 
+					HistoryCursor: "CommandCursor",
+					Text: "LastCommand"}));
         return panel;
     },
 
@@ -2248,27 +2256,28 @@ Widget.subclass('ConsoleWidget', {
         if (!p) return;
         switch (aspect) {
         case p.getLastCommand:
-            this.evalCommand(this.getModelValue("getLastCommand"));
+            this.onLastCommandUpdate(this.getLastCommand());
             break;
         }
     },
 
     evaluate: interactiveEval.bind(this.ctx),
-
-    evalCommand: function(text) {
+    
+    onLastCommandUpdate: function(text) {
         if (!text) return;
         try {
             var ans = this.evaluate(text);
             if (ans !== undefined) this.ans = ans;
-	    this.log(Object.inspect(ans));
-            this.setModelValue("setLastCommand", "");
+	    var command = Object.inspect(ans);
+	    this.setRecentLogMessages([command]);
         } catch (er) {
-            console.log("Evaluation error: "  + er);
+	    debugger;
+            alert("Whoa Evaluation error: "  + er);
         }
     },
     
     log: function(message) {
-        this.setModelValue("setRecentLogMessages", [message]);
+        this.setRecentLogMessages([message]);
     }
     
 });
@@ -2277,8 +2286,6 @@ Widget.subclass('ConsoleWidget', {
 Widget.subclass('XenoBrowserWidget', {
     
     initialViewExtent: pt(800, 300),
-    
-    
 
     initialize: function($super) {
 	this.actualModel = Record.newPlainInstance({URL:null});

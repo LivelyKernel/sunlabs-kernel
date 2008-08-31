@@ -1007,33 +1007,33 @@ TextMorph.addMethods({
 	this.drawSelection = Functions.Empty;
 	return this;
     },
-
+    
     nextHistoryEntry: function() {
-	var history = this.getModelValue("getHistory");
+	var history = this.getModelHistory();
 	if (!history || history.length == 0) return "";
-	var current = this.getModelValue("getHistoryCursor");
+	var current = this.getModelHistoryCursor();
 	current = (current + 1) % history.length;
-	this.setModelValue("setHistoryCursor", current);
+	this.setModelHistoryCursor(current);
 	return history[current];
     },
     
     previousHistoryEntry: function() {
-	var history = this.getModelValue("getHistory");
+	var history = this.getModelHistory();
 	if (!history || history.length == 0) return "";
-	var current = this.getModelValue("getHistoryCursor");
+	var current = this.getModelHistoryCursor();
 	current = (current + history.length - 1) % history.length;
-	this.setModelValue("setHistoryCursor", current);
+	this.setModelHistoryCursor(current);
 	return history[current];
     },
     
     saveHistoryEntry: function(text, historySize) {
 	if (!historySize || !text) return;
-	var history = this.getModelValue("getHistory");
+	var history = this.getModelHistory();
 	if (!history) history = [];
 	history.push(text);
 	history.length > historySize && history.unshift();
-	this.setModelValue("setHistory", history);
-	this.setModelValue("setHistoryCursor", history.length);
+	this.setModelHistory(history);
+	this.setModelHistoryCursor(history.length);
     },
     
     
@@ -2039,6 +2039,34 @@ TextMorph.addMethods({
 	    return this.formalModel.setSelection && this.formalModel.setSelection(newSelection);
         else return this.setModelValue('setSelection', newSelection);
     },
+
+    getModelHistory: function() {
+	if (this.formalModel) 
+	    return this.formalModel.getHistory && this.formalModel.getHistory("----");
+        else return this.getModelValue('getHistory', "-----");
+    },
+
+    setModelHistory: function(newHistory) {
+	if (this.formalModel) 
+	    return this.formalModel.setHistory && this.formalModel.setHistory(newHistory);
+        else return this.setModelValue('setHistory', newHistory);
+    },
+
+    getModelHistoryCursor: function() {
+	if (this.formalModel) 
+	    return this.formalModel.getHistory && this.formalModel.getHistoryCursor("----");
+        else return this.getModelValue('getHistoryCursor', "-----");
+    },
+
+    setModelHistoryCursor: function(newHistory) {
+	if (this.formalModel) 
+	    return this.formalModel.setHistoryCursor && this.formalModel.setHistoryCursor(newHistory);
+        else return this.setModelValue('setHistoryCursor', newHistory);
+    },
+
+    onHistoryCursorUpdate: Functions.Empty,
+    onHistoryUpdate: Functions.Empty,
+
     searchForFind: function(str, start) {
 	this.requestKeyboardFocus(this.world().firstHand());
 	var i1 = this.textString.indexOf(str, start);
