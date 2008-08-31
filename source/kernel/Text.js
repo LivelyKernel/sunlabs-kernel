@@ -87,12 +87,12 @@ Object.subclass('lk.text.Font', {
 	var rawNode = wrapper.rawNode;
         rawNode.setAttributeNS(null, "font-size", this.getSize());
         rawNode.setAttributeNS(null, "font-family", this.getFamily());
-        if (this.style == 'bold') rawNode.setAttributeNS(null, "font-weight", 'bold');
-        if (this.style == 'italic') rawNode.setAttributeNS(null, "font-style", 'italic');
-        if (this.style == 'normal') {
-	    rawNode.setAttributeNS(null, "font-style", 'normal');
-	    rawNode.setAttributeNS(null, "font-weight", 'normal');
-	}
+        if (this.style == 'bold' || this.style == 'bold-italic') rawNode.setAttributeNS(null, "font-weight", 'bold');
+        if (this.style == 'italic' || this.style == 'bold-italic') rawNode.setAttributeNS(null, "font-style", 'italic');
+        //if (this.style == 'normal') {
+	//    rawNode.setAttributeNS(null, "font-style", 'normal');
+	//    rawNode.setAttributeNS(null, "font-weight", 'normal');
+	//}
         // if (this.getSize() == 18 || this.style == 'bold' || this.style == 'italic') 
 	//	console.log("applying " + this.getSize() + this.style);
     }
@@ -105,7 +105,11 @@ Object.subclass('lk.text.Font', {
     Object.extend(module.Font, {
 	
 	forFamily: function(familyName, size, style) {
-            var key  = familyName + ":" + size + ":" + (style ? style[0] : 'n' ) ;
+            var styleKey = 'n';
+		if (style == 'bold') styleKey = 'b';
+		if (style == 'italic') styleKey = 'i';
+		if (style == 'bold-italic') styleKey = 'bi';
+	    var key  = familyName + ":" + size + ":" + styleKey ;
             var entry = cache[key];
             if (entry) return entry;
 	    try { entry = new module.Font(familyName, size, style);
@@ -1839,12 +1843,8 @@ TextMorph.addMethods({
 	case "s": { this.doSave(); return true; } // Save
             
             // Typeface
-	case "b": { this.emphasizeSelection({style: 'bold'}); return true; }
- 	case "i": { this.emphasizeSelection({style: 'italic'}); return true; }
- 	case "n": { this.emphasizeSelection({style: 'normal'}); return true; }
-		// DI:  Note, at some point we should test if this.getSelectionText is all bold
-		// and turn off bold, etc with italic
-		// Also it would be nice to support bold-italic, and then drop 'normal'
+	case "b": { this.emphasizeBoldItalic({style: 'bold'}); return true; }
+ 	case "i": { this.emphasizeBoldItalic({style: 'italic'}); return true; }
 	    
 	    // Font Size
 	case "4": { this.emphasizeSelection({size: (this.fontSize*0.8).roundTo(1)}); return true; }
@@ -1908,6 +1908,15 @@ TextMorph.addMethods({
 	this.setStoredTextStyle(this.textStyle);
 	// console.log("emphasizeSelection result: " + this.textStyle);
 	this.composeAfterEdits();
+    },
+    emphasizeBoldItalic: function(emph) {
+	// Second assertion of bold or italic *undoes* that emphasis in the current selection
+	if (this.hasNullSelection()) return;
+	var currentEmphasis = this.getSelectionText().style.values[0];  // at first char
+	if (currentEmphasis.style == null) return this.emphasizeSelection(emph);
+	if (emph.style == 'bold' && currentEmphasis.style.startsWith('bold')) return this.emphasizeSelection({style: 'unbold'});
+	if (emph.style == 'italic' && currentEmphasis.style.endsWith('italic')) return this.emphasizeSelection({style: 'unitalic'});
+	this.emphasizeSelection(emph);
     },
     pvtUpdateTextString: function(replacement, delayComposition, justMoreTyping) {
 	if(!justMoreTyping) { 
@@ -2335,6 +2344,10 @@ Object.subclass('lk.text.Text', {
 	// Return a substring with its emphasis as a Text
 	return new module.Text(this.string.substring(start, stop), this.style.slice(start, stop));
     },
+    subtext: function (start, stop) {
+	// Return a substring with its emphasis as a Text
+	return new module.Text(this.string.substring(start, stop), this.style.slice(start, stop));
+    },
     concat: function (other) {
 	// Modify the style of this text according to emph
 	return new module.Text(this.string.concat(other.string), this.style.concat(other.style));
@@ -2353,7 +2366,18 @@ Object.subclass('TextEmphasis', {
 	// this and other are style objs like {style: 'bold', fontSize: 14}
 	// In case of overlapping properties, this shall dominate
 	var result = new TextEmphasis(other);
-	Properties.forEachOwn(this, function(p, v) {result[p] = v;});
+	Properties.forEachOwn(this,
+	    function(p, v) {
+		if (p != 'style') result[p] = v;
+		else { // special handling of bold, italic
+			var op = other[p];
+			if (v == 'bold') result[p] = (op == 'italic' || op == 'bold-italic') ? 'bold-italic' : 'bold';
+			if (v == 'italic') result[p] = (op == 'bold' || op == 'bold-italic') ? 'bold-italic' : 'italic';
+			if (v == 'unbold') result[p] = (op == 'italic' || op == 'bold-italic') ? 'italic' : null;
+			if (v == 'unitalic') result[p] = (op == 'bold' || op == 'bold-italic') ? 'bold' : null;
+			if (result[p] == null) delete result.style
+		}
+	    }); 
 	return result;
     },
     toString: function() {
