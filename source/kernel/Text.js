@@ -1441,19 +1441,35 @@ TextMorph.addMethods({
     },
 
     onMouseDown: function(evt) {
+	if (this.mouseIsOverALink(evt)) this.doLinkThing(evt);
         this.isSelecting = true;
         var charIx = this.charOfPoint(this.localize(evt.mousePoint));
-
         this.startSelection(charIx);
         this.requestKeyboardFocus(evt.hand);
         return true; 
     },
 
     onMouseMove: function($super, evt) {  
-        if (!this.isSelecting) { 
-            return $super(evt);
-        }
-        this.extendSelection(evt);
+        if (this.isSelecting) return this.extendSelection(evt);
+	if (this.mouseIsOverALink(evt)) evt.hand.lookLinky();
+		else evt.hand.lookNormal();
+        return $super(evt);        
+    },
+
+    mouseIsOverALink: function(evt) {  
+        if (!this.textStyle) return false;
+	var charIx = this.charOfPoint(this.localize(evt.mousePoint));
+        return (this.textStyle.valueAt(charIx).link) != null;        
+    },
+    doLinkThing: function(evt) {  
+        // Later this should set a flag like isSelecting, so that we can highlight the 
+	// link during mouseDown and then act on mouseUp.
+	// Fo now, we just act on mouseDown
+	evt.hand.lookNormal();
+	var charIx = this.charOfPoint(this.localize(evt.mousePoint));
+        var link = this.textStyle.valueAt(charIx).link;   
+	if (link) this.world().confirm("Ach du lieber, wir mussen " + link + " folgen.",
+		function (answer) { }.bind(this));
     },
     
     onMouseUp: function(evt) {
@@ -2333,6 +2349,9 @@ Object.subclass('lk.text.Text', {
 	this.style = this.style.mergeStyle(myEmph, start, stop);
 	// console.log("Text.emphasized: " + this.style);
 	return this;
+    },
+    emphasisAt: function(index) {
+	return this.style.valueAt(index);
     },
     asString: function () { // Return string copy
 	return this.string.substring(0);

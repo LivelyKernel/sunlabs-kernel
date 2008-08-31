@@ -6544,6 +6544,12 @@ Morph.subclass("HandMorph", {
 	
         return this;
     },
+    lookNormal: function(morph) {
+        this.shape.setVertices([pt(0,0), pt(9,5), pt(5,9), pt(0,0)]);
+    },
+    lookLinky: function(morph) {
+        this.shape.setVertices([pt(0,0), pt(18,10), pt(10,18), pt(0,0)]);
+    },
     
     registerForEvents: function(morph) {
         Event.basicInputEvents.forEach(function(name) { 
