@@ -530,6 +530,7 @@ Object.subclass('TextLine', {
 		if (hasStyleChanged) {
 		    // once we notice one change, we will reapply font-size to chunk
 		    this.currentFont.applyTo(c);
+		    if(this.localColor) c.rawNode.setAttributeNS(null, "fill", String(this.localColor));  // or String(this.localColor) ??
 		}
                 var didLineBreak = c.compose(this, lastBounds.maxX(), this.topLeft.y, this.topLeft.x  + compositionWidth);
                 if (didLineBreak) {
@@ -556,19 +557,17 @@ Object.subclass('TextLine', {
 	var fontFamily = this.currentFont.getFamily();
 	var fontSize = this.currentFont.getSize();
 	var fontStyle = 'normal';
-	var fontColor = Color.black;
-	var align = 'left';
+	this.localColor = null;
+	this.alignment = 'left';
 	Properties.forEachOwn(emph, function(p, v) {
 	    if (p == "family") fontFamily = v;
 	    if (p == "size")  fontSize = v;
 	    if (p == "style") fontStyle = v;
-	    if (p == "color") fontColor = v;
-	    if (p == "align") align = v;
-	});
+	    if (p == "color") this.localColor = v;
+	    if (p == "align") this.alignment = v;
+	}.bind(this));
 	// console.log("adoptStyle/Font.forFamily" + fontFamily + fontSize + fontStyle + "; index = " + charIx);
 	this.currentFont = module.Font.forFamily(fontFamily, fontSize, fontStyle);
-	this.fontColor = fontColor;
-	this.alignment = align;
         this.spaceWidth = this.currentFont.getCharWidth(' ');
         this.tabWidth = this.spaceWidth * 4;
     },
@@ -1837,12 +1836,15 @@ TextMorph.addMethods({
 	case "w": { this.doSearch(); return true; } // Where (search in system source code)
 	case "d": { this.doDoit(); return true; } // Doit
 	case "p": { this.doPrintit(); return true; } // Printit
-	case "s": { this.doSave(); return true; } // Italic
+	case "s": { this.doSave(); return true; } // Save
             
             // Typeface
 	case "b": { this.emphasizeSelection({style: 'bold'}); return true; }
  	case "i": { this.emphasizeSelection({style: 'italic'}); return true; }
  	case "n": { this.emphasizeSelection({style: 'normal'}); return true; }
+		// DI:  Note, at some point we should test if this.getSelectionText is all bold
+		// and turn off bold, etc with italic
+		// Also it would be nice to support bold-italic, and then drop 'normal'
 	    
 	    // Font Size
 	case "4": { this.emphasizeSelection({size: (this.fontSize*0.8).roundTo(1)}); return true; }
@@ -1856,6 +1858,9 @@ TextMorph.addMethods({
 	case "r": { this.emphasizeSelection({align: 'right'}); return true; }
 	case "h": { this.emphasizeSelection({align: 'center'}); return true; }
 	case "j": { this.emphasizeSelection({align: 'justify'}); return true; }
+
+ 	case "u": { this.linkifySelection(evt); return true; }  // add link attribute
+ 	case "o": { this.colorSelection(evt); return true; }  // a bit of local color
 	    
 	case "z": { this.doUndo(); return true; }  // Undo
         }
@@ -1867,10 +1872,28 @@ TextMorph.addMethods({
 	    return true;
         } 
 	//}
-        
         return false;
-	
-    }
+    },
+    linkifySelection: function(emph) {
+        this.world().prompt("Enter the link you wish to find...",
+			    function(response)
+			    { this.emphasizeSelection( {color: "blue", link: response} ); }
+			    .bind(this));
+    },
+    colorSelection: function(evt) {
+	var colors = ['black', 'brown', 'red', 'orange', 'yellow', 'green', 'blue', 'violet', 'gray', 'white'];
+	var items = colors.map( function(c) {return [c, this, "setSelectionColor", c] }.bind(this));
+	new MenuMorph(items, this).openIn(this.world(), evt.hand.position(), false, "Choose a color for this selection");
+    },
+    setSelectionColor: function(c, evt) {
+	var color = Color.c;
+	if (c == 'brown') color = Color.orange.darker();
+	if (c == 'violet') color = Color.magenta;
+	if (c == 'gray') color = Color.darkGray;
+	this.emphasizeSelection( {color: c} );
+        this.requestKeyboardFocus(evt.hand);
+    },
+
     
 });
     
