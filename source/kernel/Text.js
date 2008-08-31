@@ -832,7 +832,13 @@ TextMorph.addMethods({
     locale: Locale,
     acceptInput: true, // whether it accepts changes to text KP: change: interactive changes
     autoAccept: false,
-    
+    formals: {
+	Text: { byDefault: ""},
+	Selection: { byDefault: ""},
+	History: {byDefault: "----"},
+	HistoryCursor: {byDefault: 0},
+	DoitContext: {byDefault: null}
+    },
     
     initializeTransientState: function($super, initialBounds) {
         $super(initialBounds);
@@ -1009,31 +1015,31 @@ TextMorph.addMethods({
     },
     
     nextHistoryEntry: function() {
-	var history = this.getModelHistory();
+	var history = this.getHistory();
 	if (!history || history.length == 0) return "";
-	var current = this.getModelHistoryCursor();
+	var current = this.getHistoryCursor();
 	current = (current + 1) % history.length;
-	this.setModelHistoryCursor(current);
+	this.setHistoryCursor(current);
 	return history[current];
     },
     
     previousHistoryEntry: function() {
-	var history = this.getModelHistory();
+	var history = this.getHistory();
 	if (!history || history.length == 0) return "";
-	var current = this.getModelHistoryCursor();
+	var current = this.getHistoryCursor();
 	current = (current + history.length - 1) % history.length;
-	this.setModelHistoryCursor(current);
+	this.setHistoryCursor(current);
 	return history[current];
     },
     
     saveHistoryEntry: function(text, historySize) {
 	if (!historySize || !text) return;
-	var history = this.getModelHistory();
+	var history = this.getHistory();
 	if (!history) history = [];
 	history.push(text);
 	history.length > historySize && history.unshift();
-	this.setModelHistory(history);
-	this.setModelHistoryCursor(history.length);
+	this.setHistory(history);
+	this.setHistoryCursor(history.length);
     },
     
     
@@ -1465,7 +1471,7 @@ TextMorph.addMethods({
             this.selectionRange = this.locale.selectWord(this.textString, this.selectionRange[0]);
         }
         
-        this.setModelSelection(this.getSelectionString());
+        this.setSelection(this.getSelectionString());
         this.drawSelection(); 
     },
     
@@ -1548,7 +1554,7 @@ TextMorph.addMethods({
 
     setSelectionRange: function(piv, ext) { 
         this.selectionRange = (ext >= piv) ? [piv, ext - 1] : [ext, piv - 1];
-        this.setModelSelection(this.getSelectionString());
+        this.setSelection(this.getSelectionString());
         this.drawSelection(); 
 	this.typingHasBegun = false;  // New selection starts new typing
     },
@@ -1916,7 +1922,7 @@ TextMorph.addMethods({
     
     boundEval: function(str) {    
         // Evaluate the string argument in a context in which "this" may be supplied by the modelPlug
-        var ctx = this.getModelValue('doitContext', this);
+        var ctx = this.getDoitContext() || this;
         return (interactiveEval.bind(ctx))(str);
     },
     
@@ -2014,57 +2020,13 @@ TextMorph.addMethods({
 	
         if (aspect == p.getText  || aspect == 'all') {
 	    this.onTextUpdate(this.getModelText());
-	} else if (aspect == p.getSelection) {
-	    this.onSelectionUpdate(this.getModelSelection());
+	} else if (aspect == p.getSelection || aspect == 'all') {
+	    this.onSelectionUpdate(this.getSelection());
 	}
     },
     
-    getModelText: function() {
-	if (this.formalModel) 
-	    return this.formalModel.getText && this.formalModel.getText("----");
-        else return this.getModelValue('getText', "-----");
-    },
-    setModelText: function(newText) {
-	if (this.formalModel) 
-	    return this.formalModel.setText && this.formalModel.setText(newText);
-        return this.setModelValue('setText', newText);
-    },
-    getModelSelection: function() {
-	if (this.formalModel) 
-	    return this.formalModel.getSelection && this.formalModel.getSelection("----");
-        else return this.getModelValue('getSelection', "-----");
-    },
-    setModelSelection: function(newSelection) {
-	if (this.formalModel) 
-	    return this.formalModel.setSelection && this.formalModel.setSelection(newSelection);
-        else return this.setModelValue('setSelection', newSelection);
-    },
-
-    getModelHistory: function() {
-	if (this.formalModel) 
-	    return this.formalModel.getHistory && this.formalModel.getHistory("----");
-        else return this.getModelValue('getHistory', "-----");
-    },
-
-    setModelHistory: function(newHistory) {
-	if (this.formalModel) 
-	    return this.formalModel.setHistory && this.formalModel.setHistory(newHistory);
-        else return this.setModelValue('setHistory', newHistory);
-    },
-
-    getModelHistoryCursor: function() {
-	if (this.formalModel) 
-	    return this.formalModel.getHistory && this.formalModel.getHistoryCursor("----");
-        else return this.getModelValue('getHistoryCursor', "-----");
-    },
-
-    setModelHistoryCursor: function(newHistory) {
-	if (this.formalModel) 
-	    return this.formalModel.setHistoryCursor && this.formalModel.setHistoryCursor(newHistory);
-        else return this.setModelValue('setHistoryCursor', newHistory);
-    },
-
     onHistoryCursorUpdate: Functions.Empty,
+
     onHistoryUpdate: Functions.Empty,
 
     searchForFind: function(str, start) {

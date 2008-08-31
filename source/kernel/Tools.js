@@ -361,10 +361,10 @@ Widget.subclass('SimpleInspector', {
             getList: "getPropList", setSelection: "setPropName"});
 
         panel.rightPane.connectModel({model: model, 
-            getText: "getPropText", setText: "setEvalInput", doitContext: "getInspectee"});
+            getText: "getPropText", setText: "setEvalInput", getDoitContext: "getInspectee"});
 
         var m = panel.bottomPane;
-        m.connectModel({model: model, doitContext: "getInspectee"});
+        m.connectModel({model: model, getDoitContext: "getInspectee"});
         m.innerMorph().setTextString("doits here have this === inspectee");
 
         var widget = this;
