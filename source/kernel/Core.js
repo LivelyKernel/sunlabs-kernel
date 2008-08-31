@@ -3710,7 +3710,7 @@ Visual.subclass('Morph', {
     layoutHandler: null, //a LayoutHandler for special response to setExtent, etc
     openForDragAndDrop: true, // Submorphs can be extracted from or dropped into me
     mouseHandler: MouseHandlerForDragging.prototype, //a MouseHandler for mouse sensitivity, etc
-    noShallowCopyProperties: ['id', 'rawNode', 'shape', 'submorphs', 'defs', 'activeScripts', 'nextNavigableSibling', 'focusHalo', 'fullBounds'],
+    noShallowCopyProperties: ['id', 'rawNode', 'shape', 'submorphs', 'defs', 'activeScripts', 'nextNavigableSibling', 'focusHalo', 'fullBounds', 'clipPath'],
     transientBounds: false,
 
     suppressBalloonHelp: Config.suppressBalloonHelp,
@@ -3760,15 +3760,13 @@ Visual.subclass('Morph', {
 	this.initializePersistentState(pt(0,0).asRectangle(), "rect");
 
 	if (other.hasSubmorphs()) { // deep copy of submorphs
-	    other.submorphs.forEach(function(m) { 
+	    other.submorphs.forEach(function each(m) { 
 		var copy = m.copy(copier);
 		copier.addMapping(m.id(), copy);
 		copy.owner = null;  // Makes correct transfer of transform in next addMorph
 		this.addMorph(copy);
-		//this.internalAddMorph(copy, false);
 	    }, this);
 	}
-
 
 	for (var p in other) {
 	    if (!(other[p] instanceof Function) 
@@ -3782,7 +3780,7 @@ Visual.subclass('Morph', {
 		} else if (other[p] instanceof Image) {
 		    this[p] = other[p].copy(copier);
 		    this.addWrapper(this[p]);
-		} else {		    
+		} else if (!(other[p] instanceof Gradient)) {		    
 		    this[p] = other[p];
 		} 
 	    }
@@ -3797,17 +3795,10 @@ Visual.subclass('Morph', {
 	} 
 	
 	if (other.defs) {
-	    this.restoreDefs(copier, other.defs.cloneNode(true));
-	}
-
-	if (other.clipPath) {
-	    console.log('other clipPath is ' + other.clipPath);
-	    this.clipToShape();
-	    console.log("copy: optimistically assuming that other (%s) is clipped to shape", other);
+	    this.restoreDefs(copier, other.defs, true);
 	}
 
 	this.initializeTransientState(null);
-
 	
 	if (other.activeScripts != null) { 
 	    for (var i = 0; i < other.activeScripts.length; i++) {
@@ -3834,19 +3825,20 @@ Visual.subclass('Morph', {
 	return; // override in subclasses
     },
 
-    restoreDefs: function(importer, originalDefs) {
+    restoreDefs: function(importer, originalDefs, isOnClone) {
+	function applyGradient(gradient, owner) {
+	    gradient.setDerivedId(owner);
+	    if (owner.shape) {
+		var myFill = owner.shape.getFill();
+		if (myFill)
+		    owner.shape.setFill(gradient.uri());
+		else console.warn('myFill undefined on %s', owner);
+	    } else console.warn("cannot set fill %s (yet?), no shape...", gradient.id());
+	    return gradient;
+	}
+	
 	for (var def = originalDefs.firstChild; def != null; def = def.nextSibling) {
-	    function applyGradient(gradient, owner) {
-		gradient.setDerivedId(owner);
-		if (owner.shape) {
-		    var myFill = owner.shape.getFill();
-		    if (myFill)
-			owner.shape.setFill(gradient.uri());
-		    else console.warn('myFill undefined on %s', owner);
-		} else console.warn("cannot set fill %s (yet?), no shape...", gradient.id());
-		return gradient;
-	    }
-
+	    if (isOnClone) def = def.cloneNode(true);
 	    switch (def.tagName) {
 	    case "clipPath":
 		if (!this.rawNode.getAttributeNS(null, 'clip-path'))
@@ -3860,7 +3852,7 @@ Visual.subclass('Morph', {
 		this.fill = this.addWrapperToDefs(applyGradient(new LinearGradient(Importer.prototype, def), this));
 		break;
 	    case "radialGradient": // FIXME gradients can be used on strokes too
-		this.fill = this.addWrapperToDefs(applyGradient(new RadialGradient(Importer.prototype, def), this));
+		this.fill = this.addWrapperToDefs(applyGradient(new RadialGradient(Importer.prototype,  def), this));
 		break;
 	    case "g":
 		this.restoreFromSubnode(importer, def);
