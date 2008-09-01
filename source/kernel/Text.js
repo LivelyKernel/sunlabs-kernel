@@ -1735,6 +1735,8 @@ TextMorph.addMethods({
 		["do it (d)", this.doDoit.bind(this)],
 		["printIt (p)", this.doPrintit.bind(this)],
 		["accept changes (s)", this.doSave.bind(this)],
+		["color (o)", this.colorSelection.bind(this)],
+		["make link (u)", this.linkifySelection.bind(this)],
 		["help", this.doHelp.bind(this)]
 		]
     },
