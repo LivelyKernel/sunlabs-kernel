@@ -534,7 +534,11 @@ Object.subclass('TextLine', {
 		if (hasStyleChanged) {
 		    // once we notice one change, we will reapply font-size to chunk
 		    this.currentFont.applyTo(c);
-		    if(this.localColor) c.rawNode.setAttributeNS(null, "fill", String(this.localColor));  // or String(this.localColor) ??
+		    if(this.localColor) {
+			var colorSpec = this.localColor;
+			if (!(colorSpec instanceof Color)) colorSpec = Color[colorSpec]; // allow color names
+			if (colorSpec instanceof Color) c.rawNode.setAttributeNS(null, "fill", String(colorSpec));
+		    }
 		}
                 var didLineBreak = c.compose(this, lastBounds.maxX(), this.topLeft.y, this.topLeft.x  + compositionWidth);
                 if (didLineBreak) {
@@ -603,7 +607,7 @@ Object.subclass('TextLine', {
     
     // find the pointer into 'textString' for a given X coordinate in character metric space
     indexForX: function(x) {
-        for (var i = 0; i <= this.lastChunkIndex; i++) {
+        for (var i = 0; i < this.chunks.length; i++) {
             var c = this.chunks[i];
             if (!c.wasComposed) continue;
 	    if (x >= c.bounds.x && x <= c.bounds.maxX()) return c.indexForX(this, x);
@@ -1904,11 +1908,12 @@ TextMorph.addMethods({
 	new MenuMorph(items, this).openIn(this.world(), evt.hand.position(), false, "Choose a color for this selection");
     },
     setSelectionColor: function(c, evt) {
-	var color = Color.c;
+	// Color parameter can be a string like 'red' or an actual color
+	var color = c;
 	if (c == 'brown') color = Color.orange.darker();
 	if (c == 'violet') color = Color.magenta;
 	if (c == 'gray') color = Color.darkGray;
-	this.emphasizeSelection( {color: c} );
+	this.emphasizeSelection( {color: color} );
         this.requestKeyboardFocus(evt.hand);
     },
 
@@ -2340,9 +2345,13 @@ Object.subclass('lk.text.Text', {
     // Rich text comes to the Lively Kernel
     initialize: function(string, style) {
 	this.string = string;
-	if (! style) this.style = new RunArray([string.length], [new TextEmphasis({})]);
-	if (style instanceof TextEmphasis) this.style = new RunArray([string.length], [style]);
-	if (style instanceof RunArray) this.style = style;
+	if (style) {
+		if (style instanceof TextEmphasis) this.style = new RunArray([string.length], [style]);
+		else if (style instanceof RunArray) this.style = style;
+		else this.style = new RunArray([string.length], [new TextEmphasis(style)]);
+	} else {
+		this.style = new RunArray([string.length], [new TextEmphasis({})]);
+	}
     },
     emphasize: function (emph, start, stop) {
 	// Modify the style of this text according to emph
