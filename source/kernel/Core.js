@@ -891,6 +891,7 @@ Object.extend(Record, {
 			var tmp = self[source].call(self);
 			dep[target].call(dep, from ? from(tmp) : tmp);
 		    } catch (er) {
+			debugger;
 			console.log("on kickstart update: " + er + " on " + dep + " " + target
 				    + " mapping to " + source + " " + er.stack);
 		    }
@@ -899,9 +900,11 @@ Object.extend(Record, {
 		if (optKickstartUpdates) 
 		    Properties.forEachOwn(reverseSpec, function each(key) {
 			var value = reverseSpec[key];
-			if (Object.isString(value.valueOf()) && !value.startsWith("+")) {
-			    if (value.startsWith("-")) value = value.substring(1);
-			    callUpdate(this, key, value, value.from);
+			if (Object.isString(value.valueOf())) {
+			    if (!value.startsWith("+")) {
+				if (value.startsWith("-")) value = value.substring(1);
+				callUpdate(this, key, value, value.from);
+			    }
 			} else if (value.mode !== '+') {
 			    callUpdate(this, key, value.name, value.from);
 			}
