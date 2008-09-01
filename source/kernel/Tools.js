@@ -282,20 +282,18 @@ WidgetModel.subclass('ObjectBrowser', {
 // Object Inspector
 // ===========================================================================
 
-/**
- * @class SimpleInspector: A simple JavaScript object (instance) inspector
- */
-   
 Widget.subclass('SimpleInspector', {
+
+    description: "A simple JavaScript object (instance) inspector",
 
     initialViewExtent: pt(400,250),
 
-    pins: ["+PropList", "PropName", "+PropText", "-Inspectee", "-EvalInput"],
+    formals: ["+PropList", "PropName", "+PropText", "-Inspectee", "-EvalInput"],
     
     initialize: function($super, targetMorph) {
         $super();
-        var model = new SyntheticModel(this.pins);
-        this.connectModel(model.makePlugSpecFromPins(this.pins));
+        var model = new SyntheticModel(this.formals);
+        this.connectModel(model.makePlugSpecFromPins(this.formals));
         model.setInspectee(targetMorph);
     },
 
@@ -305,41 +303,47 @@ Widget.subclass('SimpleInspector', {
 
         switch (aspect) {
         case p.getInspectee:
-            this.setModelValue("setPropList", Properties.all(this.inspectee()));
+            this.onInspecteeUpdate(this.getInspectee());
             break;
         case p.getPropName:
-            var prop = this.selectedItem();
-            if (!prop) {
-
-                this.setModelValue("setPropText", "----");
-            } else {
-                this.setModelValue("setPropText", Strings.withDecimalPrecision(Object.inspect(prop), 2));
-            }
+	    this.onPropNameUpdate(this.getPropName());
             break;
         case p.getEvalInput:
-            var target = this.inspectee();
-            var propName = this.getModelValue("getPropName");
-            if (propName) {
-                var input = this.getModelValue("getEvalInput");
-                var result = (interactiveEval.bind(this.target))(input);
-                target[propName] = result;
-                this.setModelValue("setPropText", result);
-            }
+	    this.onEvalInputUpdate(this.getEvalInput());
             break;
         }
     },
-    
-    inspectee: function() {
-        return this.getModelValue("getInspectee");
+
+    onEvalInputUpdate: function(input) {
+        var propName = this.getPropName();
+        if (propName) {
+	    var target = this.getInspectee();
+            var result = (interactiveEval.bind(this.target))(input);
+            target[propName] = result;
+            this.setPropText(result);
+        }
+    },
+
+    onInspecteeUpdate: function(inspectee) {
+	this.setPropList(Properties.all(inspectee));
+    },
+
+    onPropNameUpdate: function(propName) {
+        var prop = this.propValue(propName);
+	if (prop == null) {
+            this.setPropText("----");
+        } else {
+            this.setPropText(Strings.withDecimalPrecision(Object.inspect(prop), 2));
+        }
     },
     
-    selectedItem: function() {
-        var target = this.inspectee();
-        return target ? target[this.getModelValue("getPropName")] : undefined;
+    propValue: function(propName) {
+        var target = this.getInspectee();
+        return target ? target[propName] : undefined;
     },
 
     getViewTitle: function() {
-        return Strings.format('Inspector (%s)', this.inspectee()).truncate(50);
+        return Strings.format('Inspector (%s)', this.getInspectee()).truncate(50);
     },
 
     /*
@@ -370,7 +374,7 @@ Widget.subclass('SimpleInspector', {
         var widget = this;
         panel.morphMenu = function(evt) { // offer to inspect the current selection
             var menu = Class.getPrototype(this).morphMenu.call(this, evt);
-            if (!widget.selectedItem()) return menu;
+            if (!widget.propValue(widget.getPropName())) return menu;
             menu.addLine();
             menu.addItem(['inspect selection', function() { 
                 new SimpleInspector(widget.selectedItem()).open()}])
