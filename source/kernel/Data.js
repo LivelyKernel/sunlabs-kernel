@@ -17,7 +17,7 @@ View.subclass('Query',  {
 
     xpe: Global.XPathEvaluator && new XPathEvaluator(),
     
-    pins: ["+Results", // Node[]
+    formals: ["+Results", // Node[]
 	   "-ContextNode", // where to evaluate
 	  ],
 
@@ -41,10 +41,10 @@ View.subclass('Query',  {
 	if (!p) return;
 	switch (aspect) {
 	case p.getContextNode:
-	    var node = this.getModelValue("getContextNode", document);
+	    var node = this.getContextNode(document);
 	    if (node instanceof Document) node = node.documentElement;
 	    var result = this.findAll(node, null);
-	    this.setModelValue("setResults", result);
+	    this.setResults(result);
 	    break;
 	}
     },
