@@ -1043,7 +1043,7 @@ Object.extend(Relay, {
 		var m = this.formalModel;
 		if (m) {
 		    var method = m[methodName];
-		    return method && method.call(m, to ? to(value) : value);
+		    return method && method.call(m, to ? to(value) : value, this); // third arg is source
 		} else return this.setModelValue(methodName, value);
             }
 	}
