@@ -77,10 +77,10 @@ Object.extend(Function.prototype, {
 
 	// modified from prototype.js
 	
-	var properties = $A(arguments);
-	var className = properties.shift();
+	var args = arguments;
+	var className = args[0];
 	var targetScope = Global;
-	var shorName = null;
+	var shortName = null;
 	if (className) {
 	    var path = className.split('.');
 	    if (path.length > 1) {
@@ -97,7 +97,7 @@ Object.extend(Function.prototype, {
 		throw new Error("invalid class name " + className);
 	} 
 	
-	if (!shortName) {
+	if (shortName == null) {
 	    shortName = "anonymous_" + (Class.anonymousCounter ++);
 	    if (!className) className = shortName;
 	}
@@ -117,8 +117,8 @@ Object.extend(Function.prototype, {
 	// KP: .name would be better but js ignores .name on anonymous functions
 	klass.prototype.constructor.type = className;
 
-	for (var i = 0; i < properties.length; i++) {
-	    klass.addMethods(properties[i] instanceof Function ? (properties[i])() : properties[i]);
+	for (var i = 1; i < args.length; i++) {
+	    klass.addMethods(args[i] instanceof Function ? (args[i])() : args[i]);
 	}
 	if (!klass.prototype.initialize) {
 	    klass.prototype.initialize = Functions.Empty;
@@ -222,7 +222,7 @@ var Class = {
     
     newInitializer: function(name) {
 	// this hack ensures that class instances have a name
-	return eval(Class.initializerTemplate.replace(/CLASS/g, shortName) + ";" + shortName);
+	return eval(Class.initializerTemplate.replace(/CLASS/g, name) + ";" + name);
     },
     
     initializer: function initializer() {
@@ -331,6 +331,7 @@ var Class = {
     addMixin: function(cls, source) { // FIXME: do the extra processing like addMethods does
 	for (var prop in source) {
 	    var value = source[prop];
+
 	    if (prop == "constructor" || prop == "initialize" || prop == "toString" || prop == "definition") 
 		continue;
 	    cls.prototype[prop] = value;
@@ -781,6 +782,7 @@ Object.extend(Record, {
     },
 
     addAccessorMethods: function(def, fieldName, spec) {
+	if (fieldName.startsWith("set") || fieldName.startsWith("get")) debugger; // prolly a prob
 	if (spec.mode !== "-")
             def["set" + fieldName] = this.newRecordSetter(spec.name || fieldName, spec.to, spec.byDefault);
 	if (spec.mode !== "+")
