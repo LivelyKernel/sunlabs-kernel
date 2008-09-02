@@ -288,39 +288,22 @@ Widget.subclass('SimpleInspector', {
 
     initialViewExtent: pt(400,250),
 
-    formals: ["+PropList", "PropName", "+PropText", "-Inspectee", "-EvalInput"],
+    formals: ["+PropList", "PropName", "+PropText", "-Inspectee"],
     
     initialize: function($super, targetMorph) {
         $super();
-        var model = new SyntheticModel(this.formals);
-        this.connectModel(model.makePlugSpecFromPins(this.formals));
-        model.setInspectee(targetMorph);
+        this.actualModel = Record.newPlainInstance({PropList: null, PropName: null, Inspectee: targetMorph, PropText: ""});
     },
 
-    updateView: function(aspect, source) {
-        var p = this.modelPlug;
-        if (!p) return;
-
-        switch (aspect) {
-        case p.getInspectee:
-            this.onInspecteeUpdate(this.getInspectee());
-            break;
-        case p.getPropName:
-	    this.onPropNameUpdate(this.getPropName());
-            break;
-        case p.getEvalInput:
-	    this.onEvalInputUpdate(this.getEvalInput());
-            break;
-        }
-    },
-
-    onEvalInputUpdate: function(input) {
+    onPropTextUpdate: function(input, source) {
+	if (source === this) return;
         var propName = this.getPropName();
         if (propName) {
 	    var target = this.getInspectee();
-            var result = (interactiveEval.bind(this.target))(input);
+	    try {
+		var result = (interactiveEval.bind(this.target))(input);
+	    } catch (er) { debugger; throw er;}
             target[propName] = result;
-            this.setPropText(result);
         }
     },
 
@@ -336,6 +319,7 @@ Widget.subclass('SimpleInspector', {
             this.setPropText(Strings.withDecimalPrecision(Object.inspect(prop), 2));
         }
     },
+
     
     propValue: function(propName) {
         var target = this.getInspectee();
@@ -360,15 +344,16 @@ Widget.subclass('SimpleInspector', {
             ['rightPane', newTextPane, new Rectangle(0.5, 0, 0.5, 0.6)],
             ['bottomPane', newTextPane, new Rectangle(0, 0.6, 1, 0.4)]
         ]);
+	
+	var model = this.actualModel;
+	
+        panel.leftPane.connectModel(model.newRelay({List: "-PropList", Selection: "+PropName"}));
+	
+	panel.rightPane.connectModel(model.newRelay({Text: "PropText", DoitContext: "-Inspectee"}));
 
-        panel.leftPane.connectModel({model: model, 
-            getList: "getPropList", setSelection: "setPropName"});
-
-        panel.rightPane.connectModel({model: model, 
-            getText: "getPropText", setText: "setEvalInput", getDoitContext: "getInspectee"});
-
-        var m = panel.bottomPane;
-        m.connectModel({model: model, getDoitContext: "getInspectee"});
+	
+	var m = panel.bottomPane;
+	m.connectModel(model.newRelay({DoitContext: "-Inspectee"}));
         m.innerMorph().setTextString("doits here have this === inspectee");
 
         var widget = this;
@@ -377,12 +362,12 @@ Widget.subclass('SimpleInspector', {
             if (!widget.propValue(widget.getPropName())) return menu;
             menu.addLine();
             menu.addItem(['inspect selection', function() { 
-                new SimpleInspector(widget.selectedItem()).open()}])
+                new SimpleInspector(widget.propValue(widget.getPropName())).open()}])
             return menu; 
         }
+	this.connectModel(model.newRelay({PropList: "+PropList", PropName: "PropName", 
+					  PropText: "PropText", Inspectee: "-Inspectee"}), true);
 
-        // kickstart the dependencies
-        model.setInspectee(model.getInspectee());
         return panel;
     }
 
