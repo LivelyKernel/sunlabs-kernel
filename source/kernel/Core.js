@@ -232,6 +232,7 @@ var Class = {
 	} else if (Global.Copier && (arguments[0] instanceof Copier || arguments[0] === Copier.prototype)) {
 	    this.copyFrom.apply(this, arguments);
 	} else {
+	    // if this.initialize is undefined then prolly the constructor was called without 'new'
 	    this.initialize.apply(this, arguments); 
 	}
     },
