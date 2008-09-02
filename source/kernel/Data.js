@@ -144,7 +144,7 @@ Wrapper.subclass('FeedItem', {
 View.subclass('Feed', NetRequestReporterTrait, {
 
     // FIXME: merge into Resource
-    pins: ["-URL", "+FeedChannels"],
+    formals: ["-URL", "+FeedChannels"],
     channelQuery: new Query("/rss/channel"),
 
     updateView: function(aspect, source) { // model vars: getURL, setFeedChannels
@@ -157,26 +157,17 @@ View.subclass('Feed', NetRequestReporterTrait, {
 	}
     },
 
-    getURL: function() {
-	return this.formalModel ?  (this.formalModel.getURL && this.formalModel.getURL) : this.getModelValue('getURL');
-    },
-
     onURLChange: function(newValue) {
 	this.request(newValue);
     },
     
-    deserialize: function() { },
+    deserialize: Functions.Empty,
 
     kickstart: function() {
 	if (this.formalModel) this.onURLChange(this.getURL());
 	else if (this.modelPlug) this.updateView(this.modelPlug.getURL, this);
     },
     
-    setFeedChannels: function(channels) {
-	if (this.formalModel) this.formalModel.setFeedChannels(channels);
-	else this.setModelValue("setFeedChannels", channels);
-    },
-
     setRawFeedContents: function(responseXML) {
 	this.setFeedChannels(this.parseChannels(responseXML));
     },
