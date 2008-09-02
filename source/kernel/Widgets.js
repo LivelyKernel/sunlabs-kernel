@@ -1432,7 +1432,7 @@ Morph.subclass("MenuMorph", {
 	return true;
     },
     
-    invokeItem: function(evt, item) {
+    invokeItem: function invokeItem(evt, item) {
         if (!item) return;
 
         if (item[1] instanceof Function) { // alternative style, items ['menu entry', function] pairs
@@ -2082,7 +2082,15 @@ Widget.subclass('Dialog', {
     viewTitle: "",
     removeTopLevel: function() {
         (this.parentWindow(this.panel) || this.panel).remove();
-    }
+    },
+
+    openIn: function($super, world, position) {
+	var view = $super(world, position);
+	if (position)  // slight usability improvement
+	    view.align(view.bounds().center(), position);
+	return view;
+
+    },
     
 });
 
