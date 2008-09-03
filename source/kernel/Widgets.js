@@ -977,13 +977,14 @@ Morph.subclass("TextListMorph", {
 
     initialize: function($super, initialBounds, itemList, optMargin, optTextStyle) {
         // itemList is an array of strings
+	this.baseWidth = initialBounds.width;
         var height = Math.max(initialBounds.height, itemList.length * (TextMorph.prototype.fontSize + this.itemMargin.top() + this.itemMargin.bottom()));
         initialBounds = initialBounds.withHeight(height);
         $super(initialBounds, itemList);
         this.itemList = itemList;
         this.selectedLineNo = -1;
 	this.textStyle = optTextStyle;
-	this.generateSubmorphs(itemList, initialBounds.width);
+	this.generateSubmorphs(itemList);
         this.alignAll(optMargin);
         var model = new SyntheticModel(this.formals);
         this.modelPlug = new ModelPlug(model.makePlugSpecFromPins(this.formals));
@@ -1007,14 +1008,21 @@ Morph.subclass("TextListMorph", {
 
     handlesMouseDown: Functions.True,
     
-    generateSubmorphs: function(itemList, width) {
-	var rect = pt(width, TextMorph.prototype.fontSize).extentAsRectangle().insetByRect(this.itemMargin);
+    generateSubmorphs: function(itemList) {
+	var rect = pt(this.baseWidth, TextMorph.prototype.fontSize).extentAsRectangle().insetByRect(this.itemMargin);
 	for (var i = 0; i < itemList.length; i++)  {
 	    var m = new TextMorph(rect, itemList[i]).beListItem();
 	    if (this.textStyle) m.applyStyle(this.textStyle);
 	    this.addMorph(m);
 	    m.relayMouseEvents(this);
 	}
+    },
+
+    adjustForNewBounds: function($super) {
+	$super();
+	// FIXME: go through all the submorphs adjust?
+	// Really, just fold into the layout logic, when in place
+	this.baseWidth = this.bounds().width;
     },
 
     alignAll: function(optMargin) {
@@ -1132,7 +1140,7 @@ Morph.subclass("TextListMorph", {
             this.itemList = this.itemList.slice(removed);
         }
         this.itemList = this.itemList.concat(newItems);
-        this.generateSubmorphs(newItems, this.bounds().width);
+        this.generateSubmorphs(newItems);
         this.alignAll();
         if (this.selectedLineNo + removed >= this.itemList.length - 1) {
             this.selectedLineNo = -1;
@@ -1144,7 +1152,7 @@ Morph.subclass("TextListMorph", {
         var priorItem = this.getSelection();
         this.itemList = newList;
         this.removeAllMorphs();
-        this.generateSubmorphs(newList, this.bounds().width);
+        this.generateSubmorphs(newList);
         this.alignAll();
         this.setSelectionToMatch(priorItem);
         this.resetScrollPane();
