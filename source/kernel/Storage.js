@@ -471,8 +471,8 @@ TwoPaneBrowser.subclass('FileBrowser', {
 	var model = this.getModel();
 	var browser = this;
 
-	function addSubversionItems(url, items) {
-	    var svnPath = url.subversionWorkspacePath();
+	function addSvnItems(url, items) {
+	    var svnPath = url.svnWorkspacePath();
 	    if (!svnPath) return;
 	    items.push(["repository info", function(evt) {
 		var m = Record.newPlainInstance({Info: "fetching info"});
@@ -511,27 +511,26 @@ TwoPaneBrowser.subclass('FileBrowser', {
 		    new Subversion({model: m, setServerResponse: "setCommitStatus"}).commit(svnPath, message);
 		});
 	    }]);
+
+	    
 	}
 	function addWebDAVItems(url, items) { 
 	    items.push(["get WebDAV info", function(evt) {
-		var m = Record.newInstance(
-		    {InfoDocument: {}, AllProperties: {}, URL: {}},
-		    {InfoDocument: null, AllProperties: ""});
+		var m = Record.newPlainInstance({ Properties: null, PropertiesString: "", URL: url});
 		m.addObserver({  // ad-hoc observer, convenient data conversion
-		    onInfoDocumentUpdate: function(doc) { 
-			m.setAllProperties(Exporter.stringify(doc));
+		    onPropertiesUpdate: function(doc) { 
+			m.setPropertiesString(Exporter.stringify(doc));
 		    }
 		});
 		
 		var txt = this.world().addTextWindow({acceptInput: false,
 		    title: url,
 		    position: evt.point() });
+		txt.connectModel(m.newRelay({Text : "-PropertiesString"}));
 		
-		m.addObserver(txt, {AllProperties: "!Text"});
-		var res = new Resource(m.newRelay({ContentDocument: "+InfoDocument", URL: "-URL" }));
+		var res = new Resource(m);
 		// resource would try to use its own synthetic model, which is useless
-		m.setURL(url);
-		res.fetchProperties();
+		res.fetchProperties(m);
 		
 	    }]);
 	    
@@ -556,7 +555,7 @@ TwoPaneBrowser.subclass('FileBrowser', {
 		}]
 	    ];
 	    addWebDAVItems(selected, items);
-	    addSubversionItems(selected, items);
+	    addSvnItems(selected, items);
 	    return items;
 	};
 
@@ -588,7 +587,7 @@ TwoPaneBrowser.subclass('FileBrowser', {
 		["get modification time (temp)", browser, "onMenuShowModificationTime", url] // will go away
 	    ];
 	    addWebDAVItems(url, items);
-	    addSubversionItems(url, items);
+	    addSvnItems(url, items);
 
 	    // FIXME if not trunk, diff with trunk here.
 	    var shortName = url.filename();
@@ -651,7 +650,7 @@ TwoPaneBrowser.subclass('FileBrowser', {
 	var res = new Resource({model: model, setContentDocument: "setInspectedNode" });
 	var query = new Query("/D:multistatus/D:response/D:propstat/D:prop/D:getlastmodified", 
 	    {model: model, getContextNode: "getInspectedNode", setResults: "setModTime"});
-	res.fetchProperties(true);
+	res.fetchProperties(model, true);
 	evt.hand.world().alert('result is ' + Exporter.stringifyArray(model.getModTime(), '\n'));
     },
     
@@ -704,7 +703,7 @@ TwoPaneBrowser.subclass('FileBrowser', {
 });
 
 
-View.subclass('DOMFetcher', {
+View.subclass('lk.storage.DOMFetcher', {
 
     initialize: function($super, plug) {
 	$super(plug);
@@ -757,7 +756,7 @@ TwoPaneBrowser.subclass('DOMBrowser', {
 		 "Comment", "Document", "DocumentType", "DocumentFragment", "Notation"],
 
     initialize: function($super, element) {
-	$super(element || document.documentElement, new DOMFetcher(), new DOMFetcher());
+	$super(element || document.documentElement, new module.DOMFetcher(), new module.DOMFetcher());
     },
 
     nodesToNames: function(nodes, parent) {
@@ -873,6 +872,8 @@ TwoPaneBrowser.subclass('TwoPaneObjectBrowser', {
     
 });
 
+
+// deprecated?
 View.subclass('Subversion',  NetRequestReporterTrait, {
     documentation: "A simple subversion client",
     
@@ -910,6 +911,7 @@ View.subclass('Subversion',  NetRequestReporterTrait, {
     }
 
 });
+
 
 }.logCompletion('Storage.js'));
 

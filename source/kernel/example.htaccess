@@ -30,5 +30,8 @@ RewriteRule   ^proxy/localhost/808([0-9])/(.*)$	     http://localhost:808$1/$2 [
 RewriteRule   ^proxy/livelykernel.sunlabs.com/8093(.*)$ http://livelykernel.sunlabs.com:8093$1 [P]
 
 #enable LK repository access
-RewriteRule   ^proxy/livelykernel.sunlabs.com/repository/(.*)   http://livelykernel.sunlabs.com/repository/$1 [P]
+#RewriteRule   ^proxy/livelykernel.sunlabs.com/repository/(.*)   http://livelykernel.sunlabs.com/repository/$1 [P]
+
+RewriteRule   ^proxy/lively-kernel/(.*)		http://livelykernel.sunlabs.com/repository/lively-kernel/$1 [P]
+RewriteRule   ^proxy/lively-wiki/(.*)		http://livelykernel.sunlabs.com/repository/lively-wiki/$1 [P]
 

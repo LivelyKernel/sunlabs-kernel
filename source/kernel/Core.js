@@ -6358,15 +6358,15 @@ PasteUpMorph.subclass("WorldMorph", {
         items.push(["File Browser", function(evt) { new FileBrowser().openIn(world, evt.point()) }]);
 	// FIXME this is hardcoded, remove later, shows how Subversion can be accessed directly.
 	items.push(["Model documentation", function(evt) { 
-	    var url = new URL("http://livelykernel.sunlabs.com/repository/lively-kernel/trunk/doc/wiki/model.txt");
-	    var model = Record.newPlainInstance({URL: url,  Content: null});
+	    var url = URL.common.repository.withRelativePath("trunk/doc/wiki/model.txt");
+	    var model = Record.newPlainInstance({URL: url,  ContentText: null});
 	    world.addTextWindow({
 		content: "fetching ... ",
 		title: "Model documentation",
-		plug: {model: model, getText: "getContent"},
+		plug: model.newRelay({Text: "-ContentText"}),
 		position: evt.point()
 	    });
-	    var res = new Resource( model);
+	    var res = new Resource(model);
 	    res.fetch();
 	}]);
         new MenuMorph(items, this).openIn(this.world(), evt.point());

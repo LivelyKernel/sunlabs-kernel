@@ -93,6 +93,17 @@ Object.subclass('URL', {
 	return new URL({protocol: this.protocol, port: this.port, hostname: this.hostname, pathname: 
 			result[1], search: result[2], hash: result[3] });
     },
+
+    withRelativePath: function(pathString) {
+	if (pathString.startsWith('/')) {
+	    if (this.pathname.endsWith('/'))
+		pathString = pathString.substring(1);
+	} else {
+	    if (!this.pathname.endsWith('/'))
+		pathString = "/" + pathString;
+	}
+	return this.withPath(this.pathname + pathString);
+    },
     
     withFilename: function(filename) {
 	if (filename == "./" || filename == ".") // a bit of normalization, not foolproof
@@ -122,7 +133,13 @@ Object.subclass('URL', {
 	    && url.pathname == this.pathname && url.search == this.search && url.hash == this.hash;
     },
 
-    subversionWorkspacePath: function() {
+    relativePathFrom: function(origin) {
+	if (!this.pathname.startsWith(origin.pathname) 
+	    || origin.hostname != this.hostname) throw new Error('bad origin');
+	return this.pathname.substring(origin.hostname.length - 1);
+    },
+
+    svnWorkspacePath: function() {
 	// heuristics to figure out the Subversion path
 	var path = this.pathname;
 	// note that the trunk/branches/tags convention is only a convention
@@ -131,6 +148,12 @@ Object.subclass('URL', {
 	if (index < 0) index = path.lastIndexOf('tags');
 	if (index < 0) return null;
 	else return path.substring(index);
+    },
+
+
+    svnVersioned: function(repo, revision) {
+	var relative = this.relativePathFrom(repo);
+	return repo.withPath(repo.pathname + "!svn/bc/" + revision + "/" + relative);
     }
     
 });
@@ -139,7 +162,7 @@ URL.source = new URL(document.baseURI);
 
 URL.proxy = (function() {
     if (!URL.source.protocol.startsWith("file") && !Config.proxyURL) {
-	return URL.source.withFilename("/proxy/"); // a default
+	return URL.source.withFilename("proxy/"); // a default
     } else {
 	var str = Config.proxyURL;
 	if (!str) return null;
@@ -147,6 +170,13 @@ URL.proxy = (function() {
 	return new URL(str);
     }
 })();
+
+// FIXME: better names?
+URL.common = {
+    wiki:   URL.proxy.withFilename('lively-wiki/'),
+    repository: URL.proxy.withFilename('lively-kernel/')
+};
+
 
 URL.create = function(string) { 
     return new URL(string);
@@ -167,7 +197,7 @@ URL.makeProxied = function makeProxied(url) {
 };
 
 
-URL.subversionWorkspace = (function() {
+URL.svnWorkspace = (function() {
     // a bit of heuristics to figure the top of the local SVN repository
     var path = URL.source.pathname;
     var index = path.lastIndexOf('trunk');
@@ -460,13 +490,13 @@ View.subclass('Resource', NetRequestReporterTrait, {
 	      "ContentText", //:String
 	      "URL" // :URL
 	     ],
-
+    
     initialize: function(plug, contentType) {
 	this.contentType  = contentType;
 	this.connectModel(plug);
     },
 
-    deserialize: Functions.Empty, // stateless besides the model and .forceXML ...
+    deserialize: Functions.Empty, // stateless besides the model and content type
 
     toString: function() {
 	return "#<Resource{" + this.getURL() + "}>";
@@ -499,11 +529,16 @@ View.subclass('Resource', NetRequestReporterTrait, {
 	return req;
     },
 
-    fetchProperties: function(optSync, optRequestHeaders) {
+    fetchProperties: function(destModel, optSync, optRequestHeaders) {
 	// fetch the metadata 
-	var req = new NetRequest(Relay.newInstance({
-	    ResponseXML: "ContentDocument", 
-	    Status: "+RequestStatus"}, this));
+	var req = new NetRequest(Relay.newInstance({ ResponseXML: "Document", Status: "+RequestStatus"}, 
+	    Object.extend(new NetRequestReporter(), {
+		// FIXME replace with relay
+		setDocument: function(doc) {
+		    destModel.setProperties(doc);
+		}
+	    })));
+	
 	if (optSync) req.beSync();
 	if (this.contentType) req.setContentType(this.contentType);
 	if (optRequestHeaders) req.setRequestHeaders(optRequestHeaders);
@@ -526,36 +561,52 @@ View.subclass('Resource', NetRequestReporterTrait, {
 	return req;
     },
 
-	//     pvtSetRequestStatus: function(status) {
-	// this.setModelValue("setRequestStatus", status);
-	// console.log("pvtSetRequestStatus");
-	// 
-	// // call method inherited from NetRequestReporterTrait
-	// // should already be done by setModelValue call above???
-	// this.setRequestStatus(status);
-	//     },
-	// 	
-	// 
-	//     store: function(content, optSync, optRequestHeaders) {
-	// // FIXME: check document type
-	// if (Global.Document && content instanceof Document) {
-	//     content = Exporter.stringify(content);
-	// } else if (Global.Node && content instanceof Node) {
-	//     content = Exporter.stringify(content);
-	// }
-	// var req = new NetRequest({model: this, setStatus: "pvtSetRequestStatus"});
-	// if (optSync) req.beSync();
-	// if (optRequestHeaders) this.setRequestHeaders(optRequestHeaders);
-	// req.put(this.getURL(), content);
-	// return req;
-	//     },
-
-
     findAll: function(query, defaultValue) {
 	var content = this.getContentDocument();
 	if (!content) return defaultValue;
 	return query.findAll(content.documentElement, defaultValue);
+    },
+
+    
+    fetchHeadRevision: function(destModel) {
+	var req = new NetRequest(Relay.newInstance({ResponseXML: "+Document", Status: "+RequestStatus"}, 
+	    Object.extend(new NetRequestReporter(), { 
+		setDocument: function(xml) {
+		    if (!xml) return;
+		    /* The response contains the properties of the specified file or directory,
+		       e.g. the revision (= version-name) */
+		    var revisionNode = xml.getElementsByTagName('version-name')[0];
+		    if (!revisionNode) 
+			return;
+		    var number = Number(revisionNode.textContent);
+		    destModel.setHeadRevision(number);
+		}
+	    })));
+	
+	req.propfind(this.getURL(), 1);
+	return req;
+    },
+    
+    logReportTemplate: '<S:log-report xmlns:S="svn:">' + 
+	'<S:start-revision>%s</S:start-revision>' +
+	'<S:end-revision>%s</S:end-revision>' +
+	'<S:all-revprops/>' +
+	'<S:path/>' +
+	'</S:log-report>',
+
+    fetchVersionHistory: function(mostRecentRev, leastRecentRev, destModel) {
+	var req = new NetRequest(Relay.newInstance({ResponseXML: "+Document", Status: "+RequestStatus"},
+	    Object.extend(new NetRequestReporter(), {
+		setDocument: function(doc) {
+		    destModel.setRevisionHistory(doc);
+		}
+	    })));
+	
+	req.report(this.getURL(), 
+		   Strings.format(this.logReportTemplate, mostRecentRev, leastRecentRev));
+	return req;
     }
+    
 });
 
 Resource.subclass('SVNResource', {
