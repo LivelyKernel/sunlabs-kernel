@@ -1185,6 +1185,7 @@ function openFabrikFunctionComponentExample2() {
 /*
  * Extending ClockMorph for PluggableComponent
  */
+if(!Config.originalClock) { // **Wrap clock methods...
 ClockMorph.prototype.initialize = ClockMorph.prototype.initialize.wrap(function(proceed, position, radius) {
     this.formalModel = Record.newInstance({Minutes: {}, Seconds: {}, Hours: {}}, {}, {});
     return proceed(position,radius);
@@ -1198,6 +1199,8 @@ ClockMorph.prototype.setHands = ClockMorph.prototype.setHands.wrap(function(proc
     return proceed(hour, minute, second);
 });
 //WorldMorph.current().addMorph(new ClockMorph(pt(400, 60), 200));
+} // **... end wrap of clock changes...
+
 /*
  * Helper functions for debugging
  */
