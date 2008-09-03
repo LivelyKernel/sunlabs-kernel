@@ -292,9 +292,13 @@ Widget.subclass('SimpleInspector', {
     
     initialize: function($super, targetMorph) {
         $super();
-        this.actualModel = Record.newPlainInstance({PropList: null, PropName: null, Inspectee: targetMorph, PropText: ""});
+        this.actualModel = Record.newPlainInstance({PropList: [], PropName: null, Inspectee: targetMorph, PropText: "",
+						    PropMenu: ['inspect selection', function() { 
+							var name = this.getPropName();
+							if (!name) return;
+							new SimpleInspector(this.propValue(name)).open()}.bind(this)]});
     },
-
+    
     onPropTextUpdate: function(input, source) {
 	if (source === this) return;
         var propName = this.getPropName();
@@ -347,7 +351,7 @@ Widget.subclass('SimpleInspector', {
 	
 	var model = this.actualModel;
 	
-        panel.leftPane.connectModel(model.newRelay({List: "-PropList", Selection: "+PropName"}));
+        panel.leftPane.connectModel(model.newRelay({List: "-PropList", Selection: "+PropName", Menu: "-PropMenu"}));
 	
 	panel.rightPane.connectModel(model.newRelay({Text: "PropText", DoitContext: "-Inspectee"}));
 
