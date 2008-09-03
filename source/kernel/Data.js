@@ -28,6 +28,7 @@ View.subclass('Query',  {
 	if (optPlug) this.connectModel(optPlug);
     },
 
+
     establishContext: function(node) {
 	var ctx = node.ownerDocument ? node.ownerDocument.documentElement : node.documentElement;
 	if (ctx !== this.contextNode) {
@@ -41,23 +42,17 @@ View.subclass('Query',  {
 	if (!p) return;
 	switch (aspect) {
 	case p.getContextNode:
-	    var node = this.getContextNode(document);
-	    if (node instanceof Document) node = node.documentElement;
-	    var result = this.findAll(node, null);
-	    this.setResults(result);
+	    this.onContextNodeUpdate(this.getContextNode());
 	    break;
 	}
     },
-
-/*
-    resolver: function(prefix) {
-	if (prefix == null || prefix == "") 
-	    prefix = "SVG";
-	else 
-	    prefix = prefix.toUpperCase();
-	return Namespace[prefix];
+    
+    onContextNodeUpdate: function(node) {
+	if (node instanceof Document) node = node.documentElement;
+	var result = this.findAll(node, null);
+	this.setResults(result);
     },
-*/
+
 
     findAll: function(node, defaultValue) {
 	this.establishContext(node);
