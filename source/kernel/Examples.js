@@ -40,7 +40,9 @@ Widget.subclass('TestWidget', {
         // Make a fancy panel.  Note: Transparency does not
         // work with gradients or stipple patterns yet!
         panel.linkToStyles(['widgetPanel']);
-	var model = Record.newPlainInstance({Text: "Hello World", TextSel: null, ListItem: null, PrintValue: null,
+	var model = Record.newPlainInstance({Text: "Hello World", TextSel: null, 
+	    List: ["one","two","three"],
+	    ListItem: null, PrintValue: null,
 	    B1Value: null, B2Value: null, SliderValue: 0.5, SliderRange: 0.1}); 
 	
 
@@ -60,12 +62,13 @@ Widget.subclass('TestWidget', {
 	m = panel.addMorph(new ButtonMorph(new Rectangle(80,50,50,20)));
         m.connectModel(model.newRelay({Value: "B2Value"}));
 	
-        // Two lists sharing same selection...
-        m = panel.addMorph(new TextListMorph(new Rectangle(20,80,50,20),["one","two","three"]));
-	m.connectModel(model.newRelay({Selection: "ListItem"}));
 
-        m = panel.addMorph(new TextListMorph(new Rectangle(80,80,50,20),["one","two","three"]));
-        m.connectModel(model.newRelay({Selection: "ListItem"}));
+        // Two lists sharing same selection...
+        m = panel.addMorph(new TextListMorph(new Rectangle(20,80,50,20), []));
+	m.connectModel(model.newRelay({List: "-List", Selection: "ListItem"}), true);
+
+        m = panel.addMorph(new TextListMorph(new Rectangle(80,80,50,20), []));
+        m.connectModel(model.newRelay({List: "-List", Selection: "ListItem"}), true);
 
         // Three text views sharing same text...
         m = panel.addMorph(new TextMorph(new Rectangle(140,20,140,20), "Hello World"));
