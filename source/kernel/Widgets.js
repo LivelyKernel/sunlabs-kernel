@@ -62,7 +62,7 @@ Morph.subclass('ButtonMorph', {
     restorePersistentState: function($super, importer) {
         $super(importer);
         this.baseFill = this.fill;
-        this.changeAppearanceFor(this.getModelValue('getValue', false));
+        this.changeAppearanceFor(this.getValue(false));
     },
 
     getBaseColor: function() {
@@ -982,7 +982,8 @@ Morph.subclass("TextListMorph", {
         $super(initialBounds, itemList);
         this.itemList = itemList;
         this.selectedLineNo = -1;
-        this.generateSubmorphs(itemList, initialBounds.width, optTextStyle);
+	this.textStyle = optTextStyle;
+	this.generateSubmorphs(itemList, initialBounds.width);
         this.alignAll(optMargin);
         var model = new SyntheticModel(this.formals);
         this.modelPlug = new ModelPlug(model.makePlugSpecFromPins(this.formals));
@@ -1006,16 +1007,16 @@ Morph.subclass("TextListMorph", {
 
     handlesMouseDown: Functions.True,
     
-    generateSubmorphs: function(itemList, width, additionalStyling) {
+    generateSubmorphs: function(itemList, width) {
 	var rect = pt(width, TextMorph.prototype.fontSize).extentAsRectangle().insetByRect(this.itemMargin);
 	for (var i = 0; i < itemList.length; i++)  {
 	    var m = new TextMorph(rect, itemList[i]).beListItem();
-	    if (additionalStyling) m.applyStyle(additionalStyling);
+	    if (this.textStyle) m.applyStyle(this.textStyle);
 	    this.addMorph(m);
 	    m.relayMouseEvents(this);
 	}
     },
-    
+
     alignAll: function(optMargin) {
         this.leftAlignSubmorphs(this.itemMargin, optMargin || pt(0, 0));
     },
@@ -1164,6 +1165,8 @@ Morph.subclass("TextListMorph", {
 	this.updateList(list);
     },
 
+    // FIXME containing ScrollPane has a Menu formal var  but update callbacks will be directed the List
+    onMenuUpdate: Functions.Empty, 
 
     onListDeltaUpdate: function(delta) {
 	this.appendList(delta);
@@ -1192,11 +1195,11 @@ Morph.subclass("TextListMorph", {
         case 'all':
             this.onListUpdate(this.getList());
             return this.itemList; // debugging
-	    
+
         case this.modelPlug.getListDelta:
             this.onListDeltaUpdate(this.getListDelta());
             return this.itemList;
-	    
+
         case this.modelPlug.getSelection:
             var selection = this.getSelection();
 	    this.onSelectionUpdate(selection);
@@ -1703,8 +1706,8 @@ Morph.subclass("ScrollPane", {
         return this.clipMorph.innerMorph();
     },
 
-    connectModel: function(plugSpec) { // connection is mapped to innerMorph
-        this.innerMorph().connectModel(plugSpec);
+    connectModel: function(plugSpec, optFlag) { // connection is mapped to innerMorph
+        this.innerMorph().connectModel(plugSpec, optFlag);
         if (plugSpec.getMenu) this.addMenuButton();
     },
     
