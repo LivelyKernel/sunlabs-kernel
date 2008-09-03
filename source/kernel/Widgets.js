@@ -1952,33 +1952,33 @@ Morph.subclass('XenoMorph', {
     borderWidth: 0,
     fill: Color.gray.lighter(),
 
-    initialize: function($super, bounds, url) { 
+    initialize: function($super, bounds) { 
         $super(bounds, "rect"); 
         this.foRawNode = NodeFactory.createNS(Namespace.SVG, "foreignObject", 
                              {x: bounds.x, y: bounds.y, 
                               width: bounds.width,
                               height: bounds.height });
 
-        var body = this.body = this.foRawNode.appendChild(NodeFactory.createNS(Namespace.XHTML, "body"));
-        body.appendChild(document.createTextNode("no content, load an URL"));
+        this.foRawNode.appendChild(document.createTextNode("no content, load an URL"));
         this.addNonMorph(this.foRawNode);
-        this.foRawNode.appendChild(this.body);
 	
-	if (!url) return;
-	this.onURLUpdate(url);
     },
 
     onURLUpdate: function(url) {
-	var callback = new NetRequestReporter();
-	var xenoBody = this.body;
-	callback.setContent = function(doc) {
-	    xenoBody.parentNode.replaceChild(document.adoptNode(doc.documentElement), xenoBody);
+	var xeno = this;
+	function clearChildren(node) {
+	    while(node.firstChild) node.removeChild(node.firstChild);
 	}
-	callback.setContentText = function(txt) {
-	    while (xenoBody.firstChild)
-		xenoBody.removeChild(xenoBody.firstChild);
-	    xenoBody.appendChild(xenoBody.ownerDocument.createTextNode(txt));
-	}
+	var callback = Object.extend(new NetRequestReporter(), {
+	    setContent: function(doc) {
+		clearChildren(xeno.foRawNode);
+		xeno.foRawNode.appendChild(document.adoptNode(doc.documentElement));
+	    },
+	    setContentText: function(txt) {
+		clearChildren(xeno.foRawNode);
+		xeno.foRawNode.appendChild(document.createTextNode(txt));
+	    }
+	});
         var req = new NetRequest({model: callback, setResponseXML: "setContent", setResponseText: "setContentText"});
         req.setContentType("text/xml");
         req.get(url);
@@ -2320,7 +2320,7 @@ Widget.subclass('XenoBrowserWidget', {
 	
 	panel.urlInput.beInputLine();
 	panel.urlInput.connectModel(model.newRelay({Text: { name: "URL", to: URL.create, from: String }}), true);
-	this.actualModel.addObserver(panel.contentPane.innerMorph());
+	panel.contentPane.connectModel(model.newRelay({URL: "-URL"}), true);
 	
 	return panel;
     }
