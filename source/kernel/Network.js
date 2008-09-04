@@ -174,7 +174,8 @@ URL.proxy = (function() {
 // FIXME: better names?
 URL.common = {
     wiki:   URL.proxy.withFilename('lively-wiki/'),
-    repository: URL.proxy.withFilename('lively-kernel/')
+    repository: URL.proxy.withFilename('lively-kernel/'),
+    project: URL.proxy.withFilename('lively-project/')  // currently livelykernel.sunlabs.com
 };
 
 

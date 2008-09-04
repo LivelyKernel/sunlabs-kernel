@@ -6331,7 +6331,7 @@ PasteUpMorph.subclass("WorldMorph", {
             ["Object Hierarchy Browser", function(evt) { new ObjectBrowser().openIn(world, evt.point()); }],    
             ["TestRunner", function(evt) { new TestRunner().openIn(world, evt.point()); }],
             ["OmetaWorkspace", function(evt) { new OmetaWorkspace().openIn(world, evt.point()); }],
-			["Call Stack Viewer", function(evt) { 
+	    ["Call Stack Viewer", function(evt) { 
 		if (Config.debugExtras) Function.showStack("use viewer");
 		else new StackViewer(this).openIn(world, evt.point()); }],    
             ["Clock", function(evt) {
@@ -6348,7 +6348,7 @@ PasteUpMorph.subclass("WorldMorph", {
             ["FrameRateMorph", function(evt) {
                 var m = world.addMorph(new FrameRateMorph(evt.point().extent(pt(160, 10)), "FrameRateMorph"));
                 m.startSteppingScripts(); }],
-	    ["XenoBrowser", function(evt) { 
+	    ["XHTML Browser", function(evt) { 
 		var xeno = new XenoBrowserWidget();
 		xeno.openIn(world, evt.point()); 
 	    }],
@@ -6358,13 +6358,14 @@ PasteUpMorph.subclass("WorldMorph", {
         items.push(["File Browser", function(evt) { new FileBrowser().openIn(world, evt.point()) }]);
 	// FIXME this is hardcoded, remove later, shows how Subversion can be accessed directly.
 	items.push(["Model documentation", function(evt) { 
-	    var url = URL.common.repository.withRelativePath("trunk/doc/wiki/model.txt");
+	    //var url = URL.common.repository.withRelativePath("trunk/doc/wiki/model.txt");
+	    var url = URL.common.project.withRelativePath("/index.fcgi/wiki/NewModelProposal?format=txt");
 	    var model = Record.newPlainInstance({URL: url,  ContentText: null});
 	    world.addTextWindow({
 		content: "fetching ... ",
 		title: "Model documentation",
 		plug: model.newRelay({Text: "-ContentText"}),
-		position: evt.point()
+		position: "center"
 	    });
 	    var res = new Resource(model);
 	    res.fetch();
@@ -6437,7 +6438,12 @@ PasteUpMorph.subclass("WorldMorph", {
 	var pane = newTextPane(extent.extentAsRectangle(), spec.content || "");
 	if (spec.acceptInput !== undefined) pane.innerMorph().acceptInput = spec.acceptInput;
 	if (spec.plug) pane.innerMorph().connectModel(spec.plug);
-	this.addFramedMorph(pane, String(spec.title || ""), spec.position);
+	var pos = (spec.position instanceof Point) ? spec.position : undefined;
+	var win = this.addFramedMorph(pane, String(spec.title || ""), pos);
+	if (spec.position == "center") {
+	    // what if center is specified and 
+	    win.align(win.bounds().center(), this.viewport().center());
+	}  
 	return pane.innerMorph();
     },
 
