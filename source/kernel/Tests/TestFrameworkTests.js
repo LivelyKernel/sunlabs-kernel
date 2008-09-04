@@ -169,9 +169,9 @@ TestCase.subclass('RememberStackTest', {
 		this.a(1, 2, 3, ['a', 'b', 'c']);
 	},
 	
-	// testFailure: function() {
-	// 	this.a(1, 2, 3, ['a', 'b', 'c']);
-	// },
+    // testError: function() {
+    //  this.a(1, 2, ['a', 'b', 'c']);
+    // },
 	
 	myError: function() {
 		this.b(1);
@@ -244,5 +244,20 @@ TestCase.subclass('RememberStackTest', {
 		this.assertEqual(result.length, 0);
 	}
 });
+
+
+TestCase.subclass('ErrorStackViewerTest', {
+	
+	setUp: function() {
+		this.viewer = new ErrorStackViewer();
+	},
+	
+	testExtractArgumentString: function() {
+		this.assertEqual(this.viewer.extractArgumentString("function () { }"), "");
+		this.assertEqual(this.viewer.extractArgumentString("function (a, b) { }"), "a, b");
+		this.assertEqual(this.viewer.extractArgumentString("function foobar (a, b) { }"), "a, b");
+	}
+});
+
 
 console.log('loaded TestFrameworkTests.js');

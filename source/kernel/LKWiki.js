@@ -4,6 +4,7 @@ Widget.subclass('WikiWindow', NetRequestReporterTrait, {
     initialViewExtent: pt(550, 350),
     pins: ['Content', 'Url'],
     ctx: {},
+    //defaultUrl: URL.source.getDirectory().toString() + 'proxy/wiki',
     defaultUrl: URL.proxy.toString() + 'wiki',
     
     initialize: function($super) {
@@ -16,8 +17,8 @@ Widget.subclass('WikiWindow', NetRequestReporterTrait, {
     
     buildView: function(extent) {
 	var panel = PanelMorph.makePanedPanel(extent, [
-	    ['urlPane', newTextPane, new Rectangle(0, 0, 0.7, 0.1)],
-	    ['goUrlButton', ButtonMorph, new Rectangle(0.7, 0, 0.3, 0.1)],
+	    ['urlPane', newTextPane, new Rectangle(0, 0, 1, 0.1)],
+//	    ['goUrlButton', ButtonMorph, new Rectangle(0.7, 0, 0.3, 0.1)],
 	    ['contentPane', newTextPane, new Rectangle(0, 0.1, 0.7, 0.8)],
 	    ['versionList', newTextListPane, new Rectangle(0.7, 0.1, 0.3, 0.9)],
 	    ['saveContentButton', ButtonMorph, new Rectangle(0, 0.9, 0.7, 0.1)],
@@ -27,11 +28,11 @@ Widget.subclass('WikiWindow', NetRequestReporterTrait, {
 	
 	var urlPane = panel.urlPane;
 	urlPane.connectModel({model: model, getText: "getUrl", setText: "setUrl"});
-	urlPane.innerMorph().autoAccept = true;
+	urlPane.innerMorph().autoAccept = false;
 	
-	var goUrlButton = panel.goUrlButton;
-	goUrlButton.setLabel("Go");
-	goUrlButton.connectModel({model: this, setValue: "goToUrl"});
+        // var goUrlButton = panel.goUrlButton;
+        // goUrlButton.setLabel("Go");
+        // goUrlButton.connectModel({model: this, setValue: "goToUrl"});
 	
 	var contentPane = panel.contentPane;
 	contentPane.connectModel({model: model, getText: "getContent", setText: "setContent"});
@@ -59,6 +60,8 @@ Widget.subclass('WikiWindow', NetRequestReporterTrait, {
 	if (!value) return;
 	var model = this.getModel();
 	this.url = model.getUrl();
+	
+	console.log("loading url: " + this.url);
 	// 1. GetHeadRevision. If one exists loadMetadataFromRev() is called (2.).
 	// 
 	// Get the HeadRevision in detail: If the requested file does not exist then set
@@ -77,15 +80,17 @@ Widget.subclass('WikiWindow', NetRequestReporterTrait, {
 		wikiWindow.informAboutNonExistingUrl();
 		return;
 	    };
+	    console.log("got head rev from, proceeding in setRequestStatus: " + this.url);
 	    proceed(status);
 	});
 	svnResource.fetchHeadRevision(true);
+	console.log("finished loading url: " + this.url);
     },
     
     loadMetadataFromRev: function(revision) {
 	var svnResource = new SVNResource(this.defaultUrl, 
-	    {model: this, setMetadata: "setVersions", setURL: "getUrl", setStatus: "setRequestStatus"});
-	svnResource.fetchMetadata(false, null, revision);
+	    {model: this, setMetadata: "setVersions", getURL: "getUrl", setStatus: "setRequestStatus"});
+	svnResource.fetchMetadata(true, null, revision);
     },
     
     saveContents: function(value) {
@@ -152,8 +157,193 @@ Widget.subclass('WikiWindow', NetRequestReporterTrait, {
     }
 });
     
+Widget.subclass('WikiNavigator', {
+    
+    repoUrl: function() {
+            // FIXME: assertion: */proxy/wiki is used as the repository
+            // if URL.source.getDirectory() is http://localhost/livelyBranch/proxy/wiki/test/
+            // the regexp outputs ["http://localhost/livelyBranch/proxy/wiki/test/", "http://localhost/livelyBranch/proxy/wiki"]
+            // return /(.*\/proxy\/wiki).*/.exec(URL.source.getDirectory().toString())[1];
+            return "http://localhost/livelyBranch/proxy/wiki"
+    },
+   
+    initialize: function($super, url, world) {
+		$super(null);
+		if (!world) world = WorldMorph.current();
+		this.world = world;
+		
+		this.model = Record.newPlainInstance({Versions: [], Version: null, URL: this.removeBaselinePartsFrom(url)});
+		this.model.addObserver(this, { Version: "!Version" });
+		
+		this.svnResource = new SVNResource(this.repoUrl(), Record.newPlainInstance({URL: this.model.getURL(), HeadRevision: null, Metadata: null}));
+		
+		return this;
+	},
+	
+	// maybe better when we do this with rewrite rules?
+	removeBaselinePartsFrom: function(url) {
+	    // concatenates the two ends of the url
+	    // "http://localhost/livelyBranch/proxy/wiki/!svn/bc/187/test/index.xhtml"
+	    // --> "http://localhost/livelyBranch/proxy/wiki/index.xhtml"
+	    var reg = /(.*)!svn\/bc\/[0-9]+\/(.*)/;
+	    return url.replace(reg, '$1$2');
+	},
+	
+	buildView: function(extent) {
+	    var panel = PanelMorph.makePanedPanel(extent, [
+			['saveContentButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0.1, 0.2, 0.1, 0.6)],
+			['versionList', newTextListPane, new Rectangle(0.3, 0.2, 0.5, 0.6)]
+		]);
+
+        // delete panel when moving the mouse away from it
+        panel.onMouseOut = panel.onMouseOut.wrap(function(proceed, evt) {
+            if (this.submorphs.any(function(ea) { return ea.fullContainsWorldPoint(evt.point()) })) return;
+            this.remove();
+        });
+        
+		var saveContentButton = panel.saveContentButton;
+		saveContentButton.setLabel("Save");
+		saveContentButton.connectModel({model: this, setValue: "saveWorld"});
+		
+/*****/
+        this.findVersions();
+        var versionList = panel.versionList;
+        // FIXME This is for value conversion. Much better is using conversion method support of relay (see below)
+        var convertSVNMetadataToStrings = function(data) { return data.collect(function(ea) { return ea.date + ' ' + ea.author }) };
+        versionList.innerMorph().setList = versionList.innerMorph().setList.wrap(function(proceed, values) {
+            console.log("wrapped setList");
+            proceed(convertSVNMetadataToStrings(values));
+        });    
+        versionList.innerMorph().onListUpdate = versionList.innerMorph().onListUpdate.wrap(function(proceed, values) {
+            console.log("wrapped onListUpdate");
+            proceed(convertSVNMetadataToStrings(values));
+        });      
+        versionList.connectModel(this.model.newRelay({List: "Versions", Selection: "Version"}), true /* kickstart if morph was deleted*/);
+        //When using conversion methods this.model.setVersions no longer triggers the onListUpdate... why?
+        // Relay.create({List: {mode: '', name: 'Versions', from: Number, to: String}})
+        // var relay = Relay.newInstance({
+        //         List: {name: 'Versions', mode: '',
+        //                 to: function(list) { console.log("to conv setVersions triggered!"); return ['list']; },
+        //                 from: function(list) { console.log("from conv of setVersions triggered!"); return list; }},
+        //         Selection: {name: 'Version', mode: '', to: String}},
+        //         this.model);
+        //         versionList.connectModel(relay, true /* kickstart if morph was deleted*/);
+/*****/
+
+		this.panel = panel;
+		return panel;
+	},
+	
+	saveWorld: function(value) {
+	    if (!value) return;
+	    
+        if (this.panel) this.panel.remove();
+        if (this.btn) this.btn.remove();
+	    
+	    var url = this.model.getURL();
+        var status = this.svnResource.store(Exporter.shrinkWrapMorph(WorldMorph.current()), true).getStatus();        
+
+    	if (status.isSuccess()) {
+    	    console.log("success saving world at " + url + ", to wiki. Status: " + status.code());
+    	    this.findVersions();
+    	    this.onVersionUpdate(this.model.getVersions().first().toString());
+    	} else {
+    	    console.log("Failure saving world at " + url + ", to wiki");
+    	    this.createWikiNavigatorButton();
+    	}
+	},
+	
+	onVersionUpdate: function(versionString) {
+	    // FIXME ... looking for correct version ... better with conversion methods
+	    var selectedVersion = this.model.getVersions().detect(function(ea) { return ea.date + ' ' + ea.author == versionString});
+	    var svnres = this.svnResource;
+	    svnres.withBaselineUriDo(selectedVersion.rev, function() {
+	        console.log("visiting: " + svnres.getURL());
+            Config.askBeforeQuit = false;
+            window.location.assign(svnres.getURL());
+	    });
+	    
+	},
+	
+	findVersions: function() {
+	    this.svnResource.fetchMetadata(true);
+        this.model.setVersions(this.svnResource.getMetadata());
+	},
+		
+	createWikiNavigatorButton: function() {
+	    var btn =  new TextMorph(new Rectangle(0,0,200,50), 'Wiki control');
+	    btn.supressHandles = true;
+	    btn.handlesMouseDown = Functions.False;
+	    var self = this;
+	    btn.onMouseOver = function(evt) {
+	        var navMorph = self.buildView(pt(700,75));
+	        self.world.addMorph(navMorph);
+	        navMorph.setPosition(pt(0, 0))
+	    };
+	    btn.positionInLowerLeftCorner = function() { btn.setPosition(pt(0, 0)) };
+	    this.btn = btn;
+	},
+	
+	isActive: function() {
+	    // just look if url seems to point to a wiki file
+        return this.model.getURL().toString().include("wiki");
+	},
+	
+    worldExists: function() {
+        return new NetRequest().beSync().get(this.model.getURL()).getStatus().isSuccess();
+    }
+});
+    
+Object.extend(WikiNavigator, {
+    enableWikiNavigator: function() {
+        if (WikiNavigator.current) return;
+        var nav = new WikiNavigator(URL.source.toString());
+        // var nav = new WikiNavigator('http://localhost/livelyBranch/proxy/wiki/test/blabla');
+        if (!nav.isActive()) return;
+        nav.createWikiNavigatorButton();
+        WorldMorph.current().addMorph(nav.btn);
+        nav.btn.startStepping(1000, "positionInLowerLeftCorner");
+        WikiNavigator.current = nav;
+    }
+});
+
 function openWikiWindow() {
     var wiki = new WikiWindow();
     wiki.open();
     return wiki;
 };
+
+// function svnMetadataReq() {
+//     var svnResource = new SVNResource('http://localhost/livelyBranch/proxy/wiki',
+//         Record.newPlainInstance({URL: 'http://localhost/livelyBranch/proxy/wiki/test/blabla', Metadata: null, HeadRevision: null}));
+//     svnResource.fetchMetadata(true);
+//     return svnResource.getMetadata();
+// };
+// 
+// function storeSomething() {
+//     var svnResource = new SVNResource('http://localhost/livelyBranch/proxy/wiki',
+//         Record.newPlainInstance({URL: 'http://localhost/livelyBranch/proxy/wiki/test/blabla', Metadata: null, HeadRevision: null}));
+//     svnResource.store('das ist content', true);
+// };
+// 
+// function createImg() {
+//     var m = new ImageMorph(new Rectangle(10,20,250,200), "background2.jpg");
+//     m.setFill(null);
+//     WorldMorph.current().addMorph(m);
+// };
+
+//TestCase.subclass('AAAA', { test1: function() { createImg() }});
+// (new XMLSerializer()).serializeToString(xmlobject);
+
+// x = new SVNResource('http://localhost/livelyBranch/proxy/wiki',
+//     Record.newPlainInstance({URL: 'http://localhost/livelyBranch/proxy/wiki/test/',
+//                             HeadRevision: null, ContentDocument: null, ContentText: null}));
+// x.fetch(true);
+// xml = (new DOMParser()).parseFromString(x.getContentText(), "text/xml");
+// (new XMLSerializer()).serializeToString(xml);
+// xml.getElementsByTagName('li')[4].textContent
+
+// 'http://www.webservicex.net/CurrencyConvertor.asmx/ConversionRate?FromCurrency=USD'
+// x = new SVNResource('http://localhost/livelyBranch/proxy/wiki',
+//     Record.newPlainInstance({URL: 'http://www.webservicex.net/CurrencyConvertor.asmx/ConversionRate?FromCurrency=USD&ToCurrency=EUR',
+//                                 ContentDocument: null, ContentText: null}));

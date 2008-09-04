@@ -69,13 +69,14 @@ TestCase.subclass('SVNResourceTest', {
 		
 		var wikiUrl = URL.proxy.toString() + 'wiki';
 		var completeUrl = wikiUrl + '/directory/file123';
-		this.svnResource = new SVNResource(wikiUrl, completeUrl);
+		this.svnResource = new SVNResource(wikiUrl,
+		        Record.newPlainInstance({URL: completeUrl, HeadRevision: null, ContentText: null, Metadata: null}));
 	},
 	
 	testGetLocalUrl: function() {
 		var localUrl = 'local';
 		var wikiUrl = 'http://path/to/svn/repo';
-		this.svnResource = new SVNResource(wikiUrl, wikiUrl + '/' + localUrl);
+		this.svnResource = new SVNResource(wikiUrl, Record.newPlainInstance({URL: wikiUrl + '/' + localUrl}));
 		var result = this.svnResource.getLocalUrl();
 		this.assertEqual(result, localUrl);
 	},
@@ -98,7 +99,7 @@ TestCase.subclass('SVNResourceTest', {
 		this.svnResource.fetchHeadRevision();
 		
 		this.assert(wasRequested, 'request() should be called');
-		this.assertEqual(rev, this.svnResource.getModelValue('getHeadRevision'));
+		this.assertEqual(rev, this.svnResource.getHeadRevision());
 	},
 	
 	testFetchFileContent: function() {
@@ -121,7 +122,7 @@ TestCase.subclass('SVNResourceTest', {
 		this.svnResource.fetch(true, null, rev);
 		
 		this.assert(wasRequested, 'request() should be called');
-		this.assertEqual(expectedContent, this.svnResource.getModelValue('getContentText'));
+		this.assertEqual(expectedContent, this.svnResource.getContentText());
 	},
 	
 	testFetchMetadata: function() {
@@ -130,8 +131,8 @@ TestCase.subclass('SVNResourceTest', {
 		var expectedRequestContent = '<S:log-report xmlns:S="svn:">' + 
 	    	'<S:start-revision>' + startRev + '</S:start-revision>' + '<S:end-revision>0</S:end-revision>' +
 			'<S:all-revprops/>' + '<S:path/>' + '</S:log-report>';
-		var expectedData = [{rev: 75, date: '2008-08-08T23:03:01.342813Z'},
-							{rev: 18, date: '2008-08-08T22:37:07.441511Z'}];
+		var expectedData = [{rev: 75, date: '2008-08-08T23:03:01.342813Z', author: '(no author)'},
+							{rev: 18, date: '2008-08-08T22:37:07.441511Z', author: '(no author)'}];
 		var test = this;
 		MockNetRequest.prototype.request = function(method, url, content) {
 			test.assertEqual(method, 'REPORT');
@@ -149,19 +150,99 @@ TestCase.subclass('SVNResourceTest', {
 		this.svnResource.fetchMetadata(true, null, startRev);
 		
 		this.assert(wasRequested, 'request() should be called');
-		this.assertEqualState(expectedData, this.svnResource.getModelValue('getMetadata'),
+		this.assertEqualState(expectedData, this.svnResource.getMetadata(),
 			'Metadata is not correct');
 	},
+	
+    // testListDirectory: function() {
+    //     var theUrl = 'http://localhost/livelyBranch/proxy/wiki/test/';
+    //     this.svnResource = new SVNResource('http://localhost/livelyBranch/proxy/wiki',
+    //          Record.newPlainInstance({URL: theUrl, ContentText: null}));
+    //     var contentText = '<html><head><title>repo1 - Revision 268: /test</title></head>' + 
+    //         '<body>' +
+    //         '<h2>repo1 - Revision 268: /test</h2>' + 
+    //         '<ul>'
+    //           '<li><a href="../">..</a></li>' + 
+    //           '<li><a href="a.js">Contributions.js</a></li>' +
+    //           '<li><a href="abc.js">Core.js</a></li>' +
+    //           '<li><a href="demo1.xhtml">demo1.xhtml</a></li>' +
+    //           '<li><a href="folder1/">folder1/</a></li>' +
+    //          '</ul>' +
+    //          '<hr noshade><em>Powered by <a href="http://subversion.tigris.org/">Subversion</a> version 1.5.1 (r32289).</em>'
+    //         '</body></html>';
+    //  var expected = [url + 'a.js', url + 'abc.js', url + 'demo1.xhtml', url + 'folder1/'];
+    //  MockNetRequest.prototype.request = function(method, url, content) {
+    //      test.assertEqual(method, 'GET');
+    //      test.assertEqual(theUrl, url);
+    //      wasRequested = true;
+    //      this.onReadyStateChange();
+    //      return this;
+    //  };
+    //  MockNetRequest.prototype.getResponseText = function() {
+    //      return contentText;
+    //  };
+    //  
+    //  this.svnResource.fetch(true);
+    //  this.assert(wasRequested, 'request() should be called');
+    // },
 	
 	tearDown: function() {
 		NetRequest = this.oldNetRequest;
 	}
 });
 
+TestCase.subclass('WikiNavigatorTest', {
+    	
+    testIsActiveForWikiUrls: function() {
+        var nav = new WikiNavigator('http://localhost/lively/proxy/wiki/test.xhtml');
+        this.assert(nav.isActive(), 'Navigator did not recognize wiki url');
+        var nav = new WikiNavigator('http://localhost/lively/index.xhtml');
+        this.assert(!nav.isActive(), 'Navigator did not recognize non-wiki url');
+    },
+    
+    testRecognizeAndModifiesBaselineURIs: function() {
+        var url1 = 'http://localhost/lively/proxy/wiki/test.xhtml';
+        var nav = new WikiNavigator(url1);
+        this.assertEqual(nav.model.getURL(), url1, "Modified url1");
+        
+        var url2 = 'http://localhost/livelyBranch/proxy/wiki/!svn/bc/187/test/index.xhtml';
+        var expectedUrl2 = 'http://localhost/livelyBranch/proxy/wiki/test/index.xhtml';
+        nav = new WikiNavigator(url2);
+        this.assertEqual(nav.model.getURL(), expectedUrl2, "Could not modify url2");
+    },
+    
+    // Tests are doing real stuff and work only when current url is correct
+    // (something like *proxy/wiki/*xhtml)
+    setUp: function() {
+        //this.nav = new WikiNavigator(URL.source.toString());
+        this.nav = new WikiNavigator('http://localhost/livelyBranch/proxy/wiki/test/blabla');
+        WikiNavigator.current = this.nav;
+    },
+    
+    // testFindVersions: function() {
+    //     var wasCalled = false;
+    //     this.nav.model.setVersions = this.nav.model.setVersions.wrap(function(proceed, list) {
+    //         wasCalled = true;
+    //         proceed(list); 
+    //     });
+    //     // execute
+    //     this.nav.findVersions();
+    //     this.assert(wasCalled, "setversions was not triggered");
+    //     this.assert(this.nav.model.getVersions().length > 0, "cannot read versions from: " + this.nav.model.getURL());
+    // },
+    // 
+    // testWikiWorldExists: function() {
+    //     this.nav = new WikiNavigator('http://localhost/livelyBranch/proxy/wiki/abc');
+    //     this.assert(this.nav.worldExists(), 'did not found abc');
+    //     this.nav = new WikiNavigator('http://localhost/livelyBranch/proxy/wiki/IdoNOTexists');
+    //     this.assert(!this.nav.worldExists(), 'notified false existence');
+    // }
+});
+
 function exampleSVNResource() {
 	var repoUrl = URL.proxy.toString() + 'wiki';
 	var url = repoUrl + '/abc';
-	var res = new SVNResource(repoUrl, url);
+	var res = new SVNResource(repoUrl, Record.newPlainInstance({URL: url}));
 	res.store('this is new content which was written from exampleSVNResource()');
 	res.fetchHeadRevision();
 	res.fetchMetadata();

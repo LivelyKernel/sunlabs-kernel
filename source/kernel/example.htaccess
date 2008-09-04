@@ -36,3 +36,7 @@ RewriteRule   ^proxy/lively-kernel/(.*)		http://livelykernel.sunlabs.com/reposit
 RewriteRule   ^proxy/lively-wiki/(.*)		http://livelykernel.sunlabs.com/repository/lively-wiki/$1 [P
 RewriteRule   ^proxy/lively-project/(.*)   	http://livelykernel.sunlabs.com/$1 [P]
 
+# for local svn wiki -- how to access the current URL (everything which comes before proxy/wiki ?)
+RewriteRule   ^proxy/wiki.*/(.*js)$              http://localhost/livelyBranch/$1 [P]
+RewriteRule   ^proxy/wiki(.*)$               http://localhost/testsvn/repo1$1 [P]
+

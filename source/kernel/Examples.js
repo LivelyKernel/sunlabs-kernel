@@ -120,7 +120,11 @@ Morph.subclass("ClockMorph", {
     initialize: function($super, position, radius) {
         $super(position.asRectangle().expandBy(radius), "ellipse");
         this.linkToStyles(['clock']);
+        this.formalModel = Record.newInstance({Minutes: {}, Seconds: {}, Hours: {}}, {}, {});
         this.makeNewFace(['XII','I','II','III','IV','V','VI','VII','VIII','IX','X','XI']);  // Roman
+
+        
+		
         return this;
     },
 
@@ -142,26 +146,49 @@ Morph.subclass("ClockMorph", {
         this.minutes = this.addMorph(Morph.makeLine([pt(0,0), pt(0, -radius*0.70)], 3, Color.blue));
         this.seconds = this.addMorph(Morph.makeLine([pt(0,0), pt(0, -radius*0.75)], 2, Color.red));
     
-        this.setHands();
+        this.updateHands();
         this.changed(); 
     },
 
     reshape: function(a,b,c,d) { /*no reshaping*/ },
     
-    startSteppingScripts: function() {
-        this.startStepping(1000, "setHands"); // once per second
-    },
+    // startSteppingScripts: function() {
+    //     this.startStepping(1000, "updateHands"); // once per second
+    // },
+    // 
+    // updateHands: function() {
+    //     var currentDate = new Date();
+    //     var second = currentDate.getSeconds();
+    //     var minute = currentDate.getMinutes() + second/60;
+    //     var hour = currentDate.getHours() + minute/60;
+    //     this.hours.setRotation(hour/12*2*Math.PI);
+    //     this.minutes.setRotation(minute/60*2*Math.PI);
+    //     this.seconds.setRotation(second/60*2*Math.PI); 
+    // }
 
-    setHands: function() {
-        var currentDate = new Date();
-        var second = currentDate.getSeconds();
-        var minute = currentDate.getMinutes() + second/60;
-        var hour = currentDate.getHours() + minute/60;
-        this.hours.setRotation(hour/12*2*Math.PI);
-        this.minutes.setRotation(minute/60*2*Math.PI);
-        this.seconds.setRotation(second/60*2*Math.PI); 
-    }
+    startSteppingScripts: function() {
+        this.startStepping(1000, "updateHands"); // once per second
+    },
     
+    updateHands: function() {
+        var currentDate = new Date();
+        var seconds = currentDate.getSeconds();
+        var minutes = currentDate.getMinutes() + seconds/60
+        var hours = currentDate.getHours() + minutes/60
+        this.setHands(seconds, minutes, hours);
+    },
+    
+    setHands: function(seconds, minutes, hours) {
+    
+        this.formalModel.setMinutes(minutes);
+        this.formalModel.setHours(hours);
+        this.formalModel.setSeconds(seconds);
+    
+        this.hours.setRotation(hours/12*2*Math.PI);
+        this.minutes.setRotation(minutes/60*2*Math.PI);
+        this.seconds.setRotation(seconds/60*2*Math.PI); 
+    }
+
 });
 
 

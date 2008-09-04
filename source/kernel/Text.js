@@ -1472,8 +1472,20 @@ TextMorph.addMethods({
 	evt.hand.lookNormal();
 	var charIx = this.charOfPoint(this.localize(evt.mousePoint));
         var link = this.textStyle.valueAt(charIx).link;   
-	if (link) this.world().confirm("Ach du lieber, wir mussen " + link + " folgen.",
-		function (answer) { }.bind(this));
+	if (link) this.world().confirm("Ach du lieber, wir müssen " + link + " folgen.",
+		function (answer) {
+		    // quick hack for wiki demo
+		    var wikiNav = new WikiNavigator(link);
+		    if (wikiNav.isActive() && !wikiNav.worldExists()) {
+		        //alert("wiki link");
+		        wikiNav.saveWorld(true);
+		    } else {
+		        //alert("normal link");
+		        Config.askBeforeQuit = false;
+		        window.location.assign(link);
+		    };
+		    
+		}.bind(this));
     },
     
     onMouseUp: function(evt) {

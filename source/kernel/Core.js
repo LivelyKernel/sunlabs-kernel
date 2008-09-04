@@ -192,24 +192,23 @@ Object.extend(Function.prototype, {
 	Class.addMixin(this, Record.create(spec).prototype);
     },
 
-    isSubclassOf: function(aClass){
+    isSubclassOf: function(aClass) {
 	if (!Class.isClass(aClass) && this === Object && !this.superclass)
 	    return false;
 	if (this.superclass === aClass)
 	    return true;
-	return this.superclass.isSubclassOf(aClass)
+	return this.superclass.isSubclassOf(aClass);
     },
     
-    allSubclasses: function(){
+    allSubclasses: function() {
         var self = this; 
         return Object.values(Global).select(function(ea) {
             try {
                 return ea && Class.isClass(ea) && ea.isSubclassOf(self);
-            }
-            catch(e) {
+            } catch(e) {
                 return false;
             };
-        })
+        });
     }
 
 });
@@ -916,7 +915,6 @@ Object.extend(Record, {
         }
     }
     
-
 });
 
 Object.subclass('Relay', {
@@ -5136,7 +5134,7 @@ Wrapper.subclass('SchedulableAction', {
 	if (func) {
 	    return func.call(this.actor, this.argIfAny);
 	} else {
-	    console.warn("no callback on actor %s", this.actor);
+	    //console.warn("no callback on actor %s", this.actor);
 	    return null;
 	}
     }
@@ -6079,7 +6077,7 @@ PasteUpMorph.subclass("WorldMorph", {
 	}
         menu.addLine();
         menu.addItem(["publish world as ... ", function() { this.prompt("world file (.xhtml)", this.exportLinkedFile.bind(this)); }]);
-	if (URL.source.filename() != "index.xhtml") { 
+	if (true /*URL.source.filename() != "index.xhtml"*/) { 
 	    // save but only if it's not the startup world
             menu.addItem(["save current world to current URL", function() { 
 		menu.remove(); 

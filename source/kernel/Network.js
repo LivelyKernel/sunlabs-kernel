@@ -669,12 +669,16 @@ Resource.subclass('SVNResource', {
 	
     pvtSetMetadataDoc: function(xml) {
 	if (!xml) return;
+	metadataXML = xml;
 	var array = $A(xml.getElementsByTagName('log-item'));
 	var result = array.collect(function(ea) {
 	    return {
 		rev: Number(ea.getElementsByTagName('version-name')[0].textContent),
-		date: ea.getElementsByTagName('date')[0].textContent/*,
-		ea.getElementsByTagName('creator-displayname')[0].textContents*/}
+		date: ea.getElementsByTagName('date')[0].textContent,
+		author: ea.getElementsByTagName('creator-displayname')[0] ?
+		            ea.getElementsByTagName('creator-displayname')[0].textContent :
+		            '(no author)',
+		toString: function() { return this.date + ' ' + this.author}}
 	});
 	this.setMetadata(result);
     },

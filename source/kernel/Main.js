@@ -7,7 +7,8 @@
  * or registered trademarks of Sun Microsystems, Inc. in the U.S. and
  * other countries.
  */ 
-
+	
+	
 var Application;
 
 /**
@@ -197,6 +198,17 @@ function populateWorldWithExamples(world) {
 						  'Sun 3D Logo', pt(570, 100));
 
     if (Config.showTester) new TestWidget().openIn(world, pt(835, 450));
+    	
+    if (Config.showTesterRunner) openTestRunner();
+    if (Config.showWikiNavigator) WikiNavigator.enableWikiNavigator();
+
+	if (Config.showFabrikComponentBox) openComponentBox()
+	if (Config.showFahrenheitCelsiusExample) openFahrenheitCelsiusExample();
+	if (Config.showTextListExample) openFabrikTextListExample();
+	if (Config.openFabrikBrowserExample) openFabrikBrowserExample();
+
+    // Open OmetaWorkspace
+    //openOmetaWorkspace();
 
     // add to Link?
     function addLinkLabel(link, text) {
@@ -379,6 +391,11 @@ function main() {
     if (world) {
 	world.displayOnCanvas(canvas);
 	console.log("world is " + world);
+	
+	//just a quick hack...
+	console.log('starting WikiNavigator');
+    if(Config.showWikiNavigator) WikiNavigator.enableWikiNavigator();
+    
 	return;
     } else {
 	world = new WorldMorph(canvas); 

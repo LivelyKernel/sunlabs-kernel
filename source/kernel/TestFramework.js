@@ -106,7 +106,12 @@ Object.subclass('TestCase', {
 			}
 		}
 		return selectors;
-	}
+	},
+	
+	toString: function($super) {
+	    return $super() + "(" + this.timeToRun +")"
+	},
+	
 });
 
 Object.subclass('TestSuite', {
@@ -123,7 +128,9 @@ Object.subclass('TestSuite', {
 	
 	runAll: function() {
 		this.testCases.each(function(ea) {
+		    var startTime = (new Date()).getTime();
 			ea.runAll();
+			ea.timeToRun = (new Date()).getTime() - startTime;
 		});
 	}
 });
@@ -166,9 +173,10 @@ Object.subclass('TestResult', {
 	},
 	
 	failureList: function() {
-		return this.failed.collect(function(ea) {
+		var result = this.failed.collect(function(ea) {
 			return ea.classname + '.' + ea.selector + '-->' + ea.err.message;
 		});
+		return result
 	}
 });
 
@@ -231,7 +239,7 @@ Widget.subclass('TestRunner', {
 		        return !ea.endsWith('GuiTest')
 		    else
 	            return true;
-		});
+		}).sort();
 	},
 	
 	buildView: function(extent) {
@@ -340,6 +348,21 @@ Widget.subclass('ErrorStackViewer', {
 		this.methodSource = methodSource;
 		methodSource.connectModel({model: model, getText: "getMethodSource"});
 		
+		formalModel = this.formalModel;
+		var self = this;
+		methodSource.innerMorph().boundEval = methodSource.innerMorph().boundEval.wrap(function(proceed, str) {
+			console.log("eval " + str);
+			try {
+				var stackNode = formalModel.getSelectedCaller();
+				var argNames = self.extractArgumentString(stackNode.method.toString());
+				var source = "argFunc = function("+ argNames +") {return eval(str)}; argFunc";			
+				return eval(source).apply(formalModel.getSelectedCaller().itsThis, stackNode.args); // magic...
+			} catch(e) {
+				console.log("Error in boundEval: " + e.toString())
+				return ""
+			}
+		}); 
+
 		return panel;
 	},
 	
@@ -383,8 +406,19 @@ Widget.subclass('ErrorStackViewer', {
 		return nameValues;
 	},
 	
+	extractArgumentString: function(methodSource) {
+		var match =  /function.*?\((.*?)\)/.exec(methodSource);
+		if (!match) {
+			console.log("Error in extractArgumentString: " +methodSource);
+			return ""
+		};
+		return match[1]
+	},
+	
 	getArgumentNames: function(methodSrc) {
-		var parameterString = /function \((.*?)\)/.exec(methodSrc)[1];
+		var match =  /function.*?\((.*?)\)/.exec(methodSrc);
+		if (!match) return [];
+		var parameterString = match[1];
 		return parameterString.split(", ").reject(function(ea) { return ea == '' });
 	}
 });
@@ -394,6 +428,10 @@ Widget.subclass('ErrorStackViewer', {
 
 function openTestRunner() {
 	new TestRunner().openIn(WorldMorph.current(), pt(120, 10));
+};
+
+function inspectObj(object) {
+    new SimpleInspector(object).openIn(WorldMorph.current(), pt(200,10))
 };
 
 console.log("loaded TestFramework.js");

@@ -178,6 +178,7 @@ Morph.subclass("ImageMorph", {
     initialize: function($super, viewPort, url) {
         $super(viewPort, "rect");
         this.image = new Image(url, viewPort.width, viewPort.height);
+        console.log("making an image from: " + url);
         if (url) this.addWrapper(this.image); // otherwise we didn't make a rawNode
     },
 
@@ -1149,6 +1150,7 @@ Morph.subclass("TextListMorph", {
     },
     
     updateList: function(newList) {
+		if(newList.length == 0) newList = ["-----"]; // jl 2008-08-02 workaround... :-(
         var priorItem = this.getSelection();
         this.itemList = newList;
         this.removeAllMorphs();
@@ -1170,6 +1172,7 @@ Morph.subclass("TextListMorph", {
     },
 
     onListUpdate: function(list) {
+        console.log("onlistupdate triggered with:" + list);
 	this.updateList(list);
     },
 
