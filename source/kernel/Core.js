@@ -696,11 +696,13 @@ Object.extend(CharSet, {
 
 });
     
-// a new unified mechanism for properties that map onto the DOM
 Object.subclass('Record', {
 
+    description: "abstract data structure that maps getters/setters onto DOM properties or plain JS objects",
+    definition: "none yet",
+
     initialize: function(rawNode, spec) {
-	this.rawNode = rawNode;
+	this.rawNode = rawNode; // DOM or plain JS Object
 	Properties.forEachOwn(spec, function(key) { 
 	    this["set" + key].call(this, spec[key]); 
 	}, this);
@@ -710,7 +712,7 @@ Object.subclass('Record', {
 	return Relay.newInstance(spec, this);
     },
 
-    getRecordField: function(name) {
+    getRecordField: function(name) { 
 	if (this.rawNode instanceof Global.Node) {
 	    var ns = null;
 	    var result = this.rawNode.getAttributeNS(ns, name);
@@ -741,18 +743,102 @@ Object.subclass('Record', {
 	} else {
 	    delete this.rawNode[name];
 	}
-    }
+    },
 
+    addObserver: function(dep, optForwardingSpec) {
+        if (optForwardingSpec) {
+            // do forwarding
+            dep = Relay.newInstance(optForwardingSpec, dep);
+        }
+        // find all the "on"<Variable>"Update" methods of dep
+        for (var name in dep) {
+            if (name.startsWith("on") && name.endsWith("Update")) {
+                var varname = name.substring(2, name.indexOf("Update"));
+                if (!this["set" + varname]) {
+                    debugger; throw new Error("cannot observe nonexistent variable " + varname);
+		}
+                var deps = this[Record.observerListName(varname)];
+                if (!deps) deps = this[Record.observerListName(varname)] = [];
+                else if (deps.indexOf(dep) >= 0) return;
+                deps.push(dep);
+            }
+        }
+    },
+    // dep may be the relay or relay.delegate
+    removeObserver: function(dep, fieldName) {              
+        if (fieldName && !this[fieldName + '$observers']) {
+            console.log('Tried to remove non existing observer:' + fieldName + '$observers');
+            return;
+        };
+        var observerFields = fieldName ?
+            [Record.observerListName(fieldName)] :
+            Object.keys(this).select(function(ea) {
+                return ea.endsWith('$observers')
+            });
+        observerFields.forEach(function(ea) {
+            this[ea] = this[ea].reject(function(relay) { return relay === dep || relay.delegate === dep });
+        }, this);
+    },
+
+    addObserversFromSetters: function(reverseSpec, dep, optKickstartUpdates) {
+	var forwardSpec = {};
+	Properties.forEachOwn(reverseSpec, function each(key) {
+	    var value = reverseSpec[key];
+	    
+	    if (Object.isString(value.valueOf())) {
+		if (!value.startsWith("+")) {  // if not write only, get updates
+		    forwardSpec[value.startsWith("-") ? value.substring(1) : value] = "!" + key;
+		}
+	    } else if (value.mode !== '+') {
+		var spec = forwardSpec[value.name] =  {};
+		spec.name = "!" + key;
+		// FIXME: Q&A the following
+		spec.from = value.from;
+		spec.to = value.to;
+	    }
+	});
+	// FIXME: sometimes automatic update callbacks are not desired!
+	this.addObserver(dep, forwardSpec);
+	function callUpdate(self, key, value, from) {
+	    var target = "on" + key + "Update";
+	    var source = "get" + value;
+	    // trigger updates
+	    try {
+		var tmp = self[source].call(self);
+		dep[target].call(dep, from ? from(tmp) : tmp);
+	    } catch (er) {
+		debugger;
+		console.log("on kickstart update: " + er + " on " + dep + " " + target
+			    + " mapping to " + source + " " + er.stack);
+	    }
+	}
+	
+	if (optKickstartUpdates) 
+	    Properties.forEachOwn(reverseSpec, function each(key) {
+		var value = reverseSpec[key];
+		if (Object.isString(value.valueOf())) {
+		    if (!value.startsWith("+")) {
+			if (value.startsWith("-")) value = value.substring(1);
+			callUpdate(this, key, value, value.from);
+		    }
+		} else if (value.mode !== '+') {
+		    callUpdate(this, key, value.name, value.from);
+		}
+	    }, this);
+    },
+
+    toString: function() {
+	return "#<Record{" + String(JSON.serialize(this.definition)) + "}";
+    }
+    
 });
 
 Object.extend(Record, {
 	
     create: function(bodySpec) {
 	var klass = Record.subclass();
-	this.addObserverMethods(klass);
 	this.extendRecordClass(klass, bodySpec);
 	klass.prototype.definition = bodySpec;
-	klass.addMethods({toString: function() { return "#<Record{" + String(JSON.serialize(this.definition)) + "}"; }});
 	return klass;
     },
 
@@ -790,7 +876,7 @@ Object.extend(Record, {
             def["get" + fieldName] = this.newRecordGetter(spec.name || fieldName, spec.from, spec.byDefault);
     },
 
-
+    
     observerListName: function(name) { return name + "$observers"},
     
     newRecordSetter: function newRecordSetter(name, to, byDefault) {
@@ -828,95 +914,9 @@ Object.extend(Record, {
                 throw new Error("no rawNode");
             }
         }
-    },
-    
-    addObserverMethods: function(klass) {
-        var def = {
-            addObserver: function(dep, optForwardingSpec) {
-                if (optForwardingSpec) {
-                    // do forwarding
-                    dep = Relay.newInstance(optForwardingSpec, dep);
-                }
-                // find all the "on"<Variable>"Update" methods of dep
-                for (var name in dep) {
-                    if (name.startsWith("on") && name.endsWith("Update")) {
-                        var varname = name.substring(2, name.indexOf("Update"));
-                        if (!this["set" + varname]) {
-                            debugger; throw new Error("cannot observe nonexistent variable " + varname);
-			}
-                        var deps = this[Record.observerListName(varname)];
-                        if (!deps) deps = this[Record.observerListName(varname)] = [];
-                        else if (deps.indexOf(dep) >= 0) return;
-                        deps.push(dep);
-                    }
-                }
-            },
-            // dep may be the relay or relay.delegate
-            removeObserver: function(dep, fieldName) {              
-                if (fieldName && !this[fieldName + '$observers']) {
-                    console.log('Tried to remove non existing observer:' + fieldName + '$observers');
-                    return;
-                };
-                var observerFields = fieldName ?
-                    [Record.observerListName(fieldName)] :
-                    Object.keys(this).select(function(ea) {
-                        return ea.endsWith('$observers')
-                    });
-                observerFields.forEach(function(ea) {
-                    this[ea] = this[ea].reject(function(relay) { return relay === dep || relay.delegate === dep });
-                }, this);
-            },
-
-	    addObserversFromSetters: function(reverseSpec, dep, optKickstartUpdates) {
-		var forwardSpec = {};
-		Properties.forEachOwn(reverseSpec, function each(key) {
-		    var value = reverseSpec[key];
-
-		    if (Object.isString(value.valueOf())) {
-			if (!value.startsWith("+")) {  // if not write only, get updates
-			    forwardSpec[value.startsWith("-") ? value.substring(1) : value] = "!" + key;
-			}
-		    } else if (value.mode !== '+') {
-			var spec = forwardSpec[value.name] =  {};
-			spec.name = "!" + key;
-			// FIXME: Q&A the following
-			spec.from = value.from;
-			spec.to = value.to;
-		    }
-		});
-		// FIXME: sometimes automatic update callbacks are not desired!
-		this.addObserver(dep, forwardSpec);
-		function callUpdate(self, key, value, from) {
-		    var target = "on" + key + "Update";
-		    var source = "get" + value;
-		    // trigger updates
-		    try {
-			var tmp = self[source].call(self);
-			dep[target].call(dep, from ? from(tmp) : tmp);
-		    } catch (er) {
-			debugger;
-			console.log("on kickstart update: " + er + " on " + dep + " " + target
-				    + " mapping to " + source + " " + er.stack);
-		    }
-		}
-
-		if (optKickstartUpdates) 
-		    Properties.forEachOwn(reverseSpec, function each(key) {
-			var value = reverseSpec[key];
-			if (Object.isString(value.valueOf())) {
-			    if (!value.startsWith("+")) {
-				if (value.startsWith("-")) value = value.substring(1);
-				callUpdate(this, key, value, value.from);
-			    }
-			} else if (value.mode !== '+') {
-			    callUpdate(this, key, value.name, value.from);
-			}
-		    }, this);
-		
-	    }
-        };
-        klass.addMethods(def);
     }
+    
+
 });
 
 Object.subclass('Relay', {
@@ -5388,7 +5388,7 @@ Morph.addMethods( {
 	    title: "XML dump", 
 	    position: this.world().positionForNewMorph(this)
 	});
-	txt.xml = xml; // FIXME a sneaky way of passing original text.
+	txt.innerMorph().xml = xml; // FIXME a sneaky way of passing original text.
     },
 
     addModelInspector: function() {
@@ -6358,7 +6358,6 @@ PasteUpMorph.subclass("WorldMorph", {
         items.push(["File Browser", function(evt) { new FileBrowser().openIn(world, evt.point()) }]);
 	// FIXME this is hardcoded, remove later, shows how Subversion can be accessed directly.
 	items.push(["Model documentation", function(evt) { 
-	    //var url = URL.common.repository.withRelativePath("trunk/doc/wiki/model.txt");
 	    var url = URL.common.project.withRelativePath("/index.fcgi/wiki/NewModelProposal?format=txt");
 	    var model = Record.newPlainInstance({URL: url,  ContentText: null});
 	    world.addTextWindow({
@@ -6435,16 +6434,13 @@ PasteUpMorph.subclass("WorldMorph", {
 	// FIXME: typecheck the spec 
 	if (Object.isString(spec.valueOf())) spec = {content: spec}; // convenience
 	var extent = spec.extent || pt(500, 200);
-	var pane = newTextPane(extent.extentAsRectangle(), spec.content || "");
+
+	var pane  = 
+	    this.internalAddMorph(newTextPane(extent.extentAsRectangle(), spec.content || ""),
+				  spec.title, spec.position);
 	if (spec.acceptInput !== undefined) pane.innerMorph().acceptInput = spec.acceptInput;
-	if (spec.plug) pane.innerMorph().connectModel(spec.plug);
-	var pos = (spec.position instanceof Point) ? spec.position : undefined;
-	var win = this.addFramedMorph(pane, String(spec.title || ""), pos);
-	if (spec.position == "center") {
-	    // what if center is specified and 
-	    win.align(win.bounds().center(), this.viewport().center());
-	}  
-	return pane.innerMorph();
+	if (spec.plug) pane.connectModel(spec.plug, true);
+	return pane;
     },
 
     addTextListWindow: function(spec) {
@@ -6453,16 +6449,20 @@ PasteUpMorph.subclass("WorldMorph", {
 	var content = spec.content;
 	if (!content) content = "";
 	if (!(content instanceof Array)) content = [content];
-
 	var extent = spec.extent || pt(500, Math.min(300, content.length * TextMorph.prototype.fontSize * 1.5));
 	var rec = extent.extentAsRectangle();
+	var pane = this.internalAddWindow(newTextListPane(rec, content), spec.title, spec.position);
+	if (spec.plug) pane.connectModel(spec.plug, true);
+	return pane;
+    },
 
-	var pane = new ScrollPane(new TextListMorph(rec, content), rec); 
-	if (spec.plug) pane.innerMorph().connectModel(spec.plug);
-	this.addFramedMorph(pane, 
-			    spec.title ? String(spec.title) : "", 
-			    spec.position || this.firstHand().position().subPt(pt(5, 5)));
-	return pane.innerMorph();
+    internalAddWindow: function(pane, titleSpec, posSpec) {
+	var pos = (posSpec instanceof Point) ? posSpec : undefined;
+	var win = this.addFramedMorph(pane, String(titleSpec || ""), pos || this.firstHand().position().subPt(pt(5, 5)));
+	if (posSpec == "center") {
+	    win.align(win.bounds().center(), this.viewport().center());
+	}
+	return pane;
     },
 
 
