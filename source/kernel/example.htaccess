@@ -33,5 +33,6 @@ RewriteRule   ^proxy/livelykernel.sunlabs.com/8093(.*)$ http://livelykernel.sunl
 #RewriteRule   ^proxy/livelykernel.sunlabs.com/repository/(.*)   http://livelykernel.sunlabs.com/repository/$1 [P]
 
 RewriteRule   ^proxy/lively-kernel/(.*)		http://livelykernel.sunlabs.com/repository/lively-kernel/$1 [P]
-RewriteRule   ^proxy/lively-wiki/(.*)		http://livelykernel.sunlabs.com/repository/lively-wiki/$1 [P]
+RewriteRule   ^proxy/lively-wiki/(.*)		http://livelykernel.sunlabs.com/repository/lively-wiki/$1 [P
+RewriteRule   ^proxy/lively-project/(.*)   	http://livelykernel.sunlabs.com/$1 [P]
 
