@@ -162,9 +162,10 @@ Widget.subclass('WikiNavigator', {
     repoUrl: function() {
             // FIXME: assertion: */proxy/wiki is used as the repository
             // if URL.source.getDirectory() is http://localhost/livelyBranch/proxy/wiki/test/
-            // the regexp outputs ["http://localhost/livelyBranch/proxy/wiki/test/", "http://localhost/livelyBranch/proxy/wiki"]
-            // return /(.*\/proxy\/wiki).*/.exec(URL.source.getDirectory().toString())[1];
-            return "http://localhost/livelyBranch/proxy/wiki"
+            // the regexp outputs ["http://localhost/livelyBranch/proxy/wiki/test/", "http://localhost/livelyBranch/proxy/wiki"]\
+	    if (!URL.source.toString().include('wiki')) return URL.source.toString();
+            return /(.*\/proxy\/wiki).*/.exec(URL.source.getDirectory().toString())[1];
+            //return "http://localhost/livelyBranch/proxy/wiki"
     },
    
     initialize: function($super, url, world) {
