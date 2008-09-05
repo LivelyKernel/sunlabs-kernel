@@ -120,7 +120,7 @@ Morph.subclass("ClockMorph", {
     initialize: function($super, position, radius) {
         $super(position.asRectangle().expandBy(radius), "ellipse");
         this.linkToStyles(['clock']);
-        this.formalModel = Record.newInstance({Minutes: {}, Seconds: {}, Hours: {}}, {}, {});
+        this.formalModel = Record.newPlainInstance({Minutes: null, Seconds: null, Hours: null});
         this.makeNewFace(['XII','I','II','III','IV','V','VI','VII','VIII','IX','X','XI']);  // Roman
 
         

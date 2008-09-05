@@ -189,7 +189,7 @@ Object.extend(Function.prototype, {
     },
 
     addProperties: function(spec) {
-	Class.addMixin(this, Record.create(spec).prototype);
+	Class.addMixin(this, DOMRecord.prototype.create(spec).prototype);
     },
 
     isSubclassOf: function(aClass) {
@@ -699,6 +699,7 @@ Object.subclass('Record', {
 
     description: "abstract data structure that maps getters/setters onto DOM properties or plain JS objects",
     definition: "none yet",
+    // Note: can act as a mixin, so no instance state!
 
     initialize: function(rawNode, spec) {
 	this.rawNode = rawNode; // DOM or plain JS Object
@@ -709,39 +710,6 @@ Object.subclass('Record', {
     
     newRelay: function(spec) {
 	return Relay.newInstance(spec, this);
-    },
-
-    getRecordField: function(name) { 
-	if (this.rawNode instanceof Global.Node) {
-	    var ns = null;
-	    var result = this.rawNode.getAttributeNS(ns, name);
-	    if (result === null) return undefined;
-	    else if (result === "") return null;
-	    else return result;
-	} else {
-	    return this.rawNode[name];
-	}
-    },
-
-    setRecordField: function(name, value) {
-	if (this.rawNode instanceof Global.Node) {
-	    var ns = null;
-	    if (value === undefined) {
-		throw new Error("use removeRecordField to remove " + name);
-	    }
-	    return this.rawNode.setAttributeNS(ns, name, value || "");
-	} else {
-	    return this.rawNode[name] = value;
-	}
-    },
-    
-    removeRecordField: function(name) {
-	if (this.rawNode instanceof Global.Node) {
-	    var ns = null;
-	    return this.rawNode.removeAttributeNS(ns, name);
-	} else {
-	    delete this.rawNode[name];
-	}
     },
 
     addObserver: function(dep, optForwardingSpec) {
@@ -828,19 +796,61 @@ Object.subclass('Record', {
 
     toString: function() {
 	return "#<Record{" + String(JSON.serialize(this.definition)) + "}";
+    },
+
+    create: function(bodySpec) { // called most likely on the prototype object
+	var klass = this.constructor.subclass.apply(this.constructor);
+	Record.extendRecordClass(klass, bodySpec);
+	klass.prototype.definition = bodySpec;
+	return klass;
     }
     
 });
 
-Object.extend(Record, {
-	
-    create: function(bodySpec) {
-	var klass = Record.subclass();
-	this.extendRecordClass(klass, bodySpec);
-	klass.prototype.definition = bodySpec;
-	return klass;
+Record.subclass('DOMRecord', {
+    description: "base class for records backed by a DOM Node",
+
+    initialize: function($super, rawNode, spec, optNS) {
+	$super(rawNode, spec);
     },
 
+    getRecordField: function(name) { 
+	if (!this.rawNode || !this.rawNode.getAttributeNS)  debugger;
+	var result = this.rawNode.getAttributeNS(null, name);
+	if (result === null) return undefined;
+	else if (result === "") return null;
+	else return result;
+    },
+
+    setRecordField: function(name, value) {
+	if (value === undefined) {
+	    throw new Error("use removeRecordField to remove " + name);
+	}
+	return this.rawNode.setAttributeNS(null, name, value || "");
+    },
+    
+    removeRecordField: function(name) {
+	return this.rawNode.removeAttributeNS(null, name);
+    }
+	
+});
+
+Record.subclass('PlainRecord', {
+    getRecordField: function(name) { 
+	return this.rawNode[name];
+    },
+
+    setRecordField: function(name, value) {
+	return this.rawNode[name] = value;
+    },
+    
+    removeRecordField: function(name) {
+	delete this.rawNode[name];
+    }
+});
+
+Object.extend(Record, {
+	
     newPlainInstance: function(spec) {
 	var argSpec = {};
 	var fieldSpec = {};
@@ -853,8 +863,15 @@ Object.extend(Record, {
 
     newInstance: function(fieldSpec, argSpec, optStore) {
 	if (arguments.length < 2) throw new Error("call with two or more arguments");
-	var Rec = Record.create(fieldSpec);
-	if (!optStore) optStore = NodeFactory.create("model"); // FIXME flat JavaScript instead by default?
+	var storeClass;
+	if (!optStore) {
+	    storeClass = DOMRecord;
+	    optStore = NodeFactory.create("model"); // FIXME flat JavaScript instead by default?
+	} else {
+	    storeClass = optStore instanceof Global.Node ? DOMRecord : PlainRecord;
+	}
+
+	var Rec = storeClass.prototype.create(fieldSpec);
 	return new Rec(optStore, argSpec);
     },
 

@@ -178,7 +178,7 @@ Widget.subclass('FabrikComponent', {
 });
 
 /* Fabrik Model */
-Record.create({}).subclass("NewComponentModel", {
+PlainRecord.prototype.create({}).subclass("NewComponentModel", {
     
     initialize: function($super, spec, rawNode) {
         if (!rawNode) rawNode = {};
@@ -1016,7 +1016,7 @@ function openComponentBox() {
 Object.subclass("PointSnapper", {
 
     initialize: function(morph, points) {
-        this.formalModel = Record.newInstance({Snapped: {}}, {Snapped: false}, {});
+        this.formalModel = Record.newPlainInstance({Snapped: false});
         this.morph = morph;
         this.points = points;
         this.limit = 30;
@@ -1410,7 +1410,7 @@ function openFabrikFunctionComponentExample2() {
  */
 if(!Config.originalClock) { // **Wrap clock methods...
 ClockMorph.prototype.initialize = ClockMorph.prototype.initialize.wrap(function(proceed, position, radius) {
-    this.formalModel = Record.newInstance({Minutes: {}, Seconds: {}, Hours: {}}, {}, {});
+    this.formalModel = Record.newPlainInstance({Minutes: null, Seconds: null, Hours: null});
     return proceed(position,radius);
 });
 

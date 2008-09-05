@@ -1172,7 +1172,6 @@ Morph.subclass("TextListMorph", {
     },
 
     onListUpdate: function(list) {
-        console.log("onlistupdate triggered with:" + list);
 	this.updateList(list);
     },
 
@@ -1480,7 +1479,7 @@ Morph.subclass("SliderMorph", {
 	Value:        {byDefault: 0}, // from: function(value) { alert('from!' + value); return value;}}, 
 	SliderExtent: {mode: "-", byDefault: 0} 
     },
-    selfModelClass: Record.create({Value: { byDefault: 0 }, SliderExtent: { byDefault: 0}}),
+    selfModelClass: PlainRecord.prototype.create({Value: { byDefault: 0 }, SliderExtent: { byDefault: 0}}),
 
     initialize: function($super, initialBounds, scaleIfAny) {
         $super(initialBounds, "rect");
