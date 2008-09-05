@@ -1432,11 +1432,16 @@ Object.subclass('Wrapper', {
     id: function() {
 	return this.rawNode.getAttribute("id");
     },
-
+    
     setId: function(value) {
 	var prev = this.id();
-	this.rawNode.setAttribute("id", value); // this may happen automatically anyway by setting the id property
+	this.rawNode.setAttribute("id", this.getType() + "." + value); // this may happen automatically anyway by setting the id property
 	return prev;
+    },
+
+    setDerivedId: function(origin) {
+	this.setId(origin.id().split('.')[1]);
+	return this;
     },
 
     removeRawNode: function() {
@@ -2098,11 +2103,6 @@ Wrapper.subclass("Gradient", {
 	    if (i != stopSpec.length)
 		offset += stopSpec[i]/sum;
 	}
-    },
-
-    setDerivedId: function(owner) {
-	this.setId("gradient_" + owner.id());
-	return this;
     }
 
 });
@@ -2170,11 +2170,6 @@ Wrapper.subclass('ClipPath', {
 	//this.rawNode.appendChild(shape.toPath().rawNode);
 	// FIXME cleanup the unused attributes (stroke width and such).
 	this.rawNode.appendChild(shape.rawNode.cloneNode(false));
-    },
-
-    setDerivedId: function(owner) {
-	this.setId("clipPath_" + owner.id());
-	return this;
     }
 
 });
@@ -4496,7 +4491,7 @@ Morph.addMethods({
 
     toString: function() {
 	try {
-	    return Strings.format("%s(#%s,%s)", this.getType(), this.rawNode && this.id() || "" , 
+	    return Strings.format("%s(%s)", this.rawNode && this.id() || "" , 
 				  this.shape ? "[" + this.shape.bounds().toTuple() + "]" : "");
 	} catch (e) {
 	    //console.log("toString failed on %s", [this.id(), this.getType()]);
@@ -6458,9 +6453,9 @@ PasteUpMorph.subclass("WorldMorph", {
 	// FIXME: typecheck the spec 
 	if (Object.isString(spec.valueOf())) spec = {content: spec}; // convenience
 	var extent = spec.extent || pt(500, 200);
-
+	
 	var pane  = 
-	    this.internalAddMorph(newTextPane(extent.extentAsRectangle(), spec.content || ""),
+	    this.internalAddWindow(newTextPane(extent.extentAsRectangle(), spec.content || ""),
 				  spec.title, spec.position);
 	if (spec.acceptInput !== undefined) pane.innerMorph().acceptInput = spec.acceptInput;
 	if (spec.plug) pane.connectModel(spec.plug, true);
@@ -6985,6 +6980,7 @@ Morph.subclass("HandMorph", {
             this.submorphs.push(m);
 	else
             this.submorphs.unshift(m);
+	return m;
     },
     
     toString: function($super) { 
