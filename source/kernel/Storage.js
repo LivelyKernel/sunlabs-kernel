@@ -511,6 +511,54 @@ TwoPaneBrowser.subclass('FileBrowser', {
 		    new Subversion({model: m, setServerResponse: "setCommitStatus"}).commit(svnPath, message);
 		});
 	    }]);
+	    items.push(["repository log", function(evt) {
+		var world = this.world();
+		var url = URL.common.repository.withRelativePath(svnPath);
+
+		var model = Record.newPlainInstance({
+		    HeadRevision: 0, 
+		    RevisionHistory: null, 
+		    ReportDocument: null, 
+		    LogItems: null, 
+		    URL: url});
+		
+		var res = new Resource(model.newRelay({URL: "-URL", ContentDocument: "+ReportDocument"}));
+		
+		var q = new Query("//S:log-item", model.newRelay({ContextNode: "-RevisionHistory",
+								  Results: "+LogItems"}));
+		
+		model.addObserver({  //app logic is here
+		    onHeadRevisionUpdate: function(rev) {
+			res.fetchVersionHistory(rev, 0, model);
+		    },
+		    
+		    onLogItemsUpdate: function(items) {
+			var content = items.map(function(node) { 
+			    var creator = node.getElementsByTagName("creator-displayname")[0].textContent;
+			    var date = node.getElementsByTagName("date")[0].textContent;
+			    var comment = node.getElementsByTagName("comment")[0].textContent;
+			    return Strings.format("On %s by %s: %s", date, creator, comment);
+			});
+			var world = WorldMorph.current();
+			
+			world.addTextListWindow({ 
+			    extent: pt(500, 300), 
+			    content: content,
+			    title: "log history for " + url.filename(),
+			    plug: Record.newPlainInstance({
+				List: content,
+				Menu: [['show head revision', function() {
+				    world.alert('head revision ' + model.getHeadRevision())
+				}]]
+			    }).newRelay({List: "-List", Menu: "-Menu"})
+			});
+		    }
+		});
+		
+		res.fetchHeadRevision(model);
+		
+	    }]);
+
 
 	    
 	}
