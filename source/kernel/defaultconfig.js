@@ -136,7 +136,10 @@ var Config = {
     personalServerPort: 8081,
 
     // the delay set on the main() function
-    mainDelay: 0.05
+    mainDelay: 0.05,
+
+    // whether the .style property is usable
+    useStyling: false  
     
 }
 

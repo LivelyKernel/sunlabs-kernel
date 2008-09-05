@@ -178,9 +178,6 @@ Object.extend(Function.prototype, {
 		    }
 		    value.declaredClass = this.prototype.constructor.type;
 		    value.methodName = property;
-		    if (!this.prototype.constructor.type) {
-			//console.log("named " + value.qualifiedMethodName());
-		    }
 		}
 	    }
 	}
@@ -188,8 +185,8 @@ Object.extend(Function.prototype, {
 
     },
 
-    addProperties: function(spec) {
-	Class.addMixin(this, DOMRecord.prototype.create(spec).prototype);
+    addProperties: function(spec, optRecordType) {
+	Class.addMixin(this, (optRecordType || DOMRecord).prototype.create(spec).prototype);
     },
 
     isSubclassOf: function(aClass) {
@@ -332,7 +329,7 @@ var Class = {
 	for (var prop in source) {
 	    var value = source[prop];
 
-	    if (prop == "constructor" || prop == "initialize" || prop == "toString" || prop == "definition") 
+	    if (prop == "constructor" || prop == "initialize" || prop == "toString" || prop == "definition" || prop == "description") 
 		continue;
 	    cls.prototype[prop] = value;
 	}
@@ -629,6 +626,7 @@ Object.extend(Function.prototype, {
 });
 
 
+
 /**
   * Extensions to class Number
   */  
@@ -800,7 +798,8 @@ Object.subclass('Record', {
 
     create: function(bodySpec) { // called most likely on the prototype object
 	var klass = this.constructor.subclass.apply(this.constructor);
-	Record.extendRecordClass(klass, bodySpec);
+	//console.log('got record type ' + this.constructor.name);
+	klass.addMethods(Record.extendRecordClass(bodySpec));
 	klass.prototype.definition = bodySpec;
 	return klass;
     }
@@ -809,11 +808,6 @@ Object.subclass('Record', {
 
 Record.subclass('DOMRecord', {
     description: "base class for records backed by a DOM Node",
-
-    initialize: function($super, rawNode, spec, optNS) {
-	$super(rawNode, spec);
-    },
-
     getRecordField: function(name) { 
 	if (!this.rawNode || !this.rawNode.getAttributeNS)  debugger;
 	var result = this.rawNode.getAttributeNS(null, name);
@@ -821,7 +815,7 @@ Record.subclass('DOMRecord', {
 	else if (result === "") return null;
 	else return result;
     },
-
+    
     setRecordField: function(name, value) {
 	if (value === undefined) {
 	    throw new Error("use removeRecordField to remove " + name);
@@ -832,7 +826,33 @@ Record.subclass('DOMRecord', {
     removeRecordField: function(name) {
 	return this.rawNode.removeAttributeNS(null, name);
     }
+
+});
+
+Record.subclass('StyleRecord', {
+    description: "base class for records backed by a DOM Node",
+    getRecordField: function(name) { 
+	if (!this.rawNode || !this.rawNode.style)  debugger;
+	var result = this.rawNode.style.getPropertyValue(name);
 	
+	if (result === null) return undefined;
+	else if (result === "") return null;
+	else return result;
+    },
+
+    setRecordField: function(name, value) {
+	if (!this.rawNode || !this.rawNode.style)  debugger;
+	if (value === undefined) {
+	    throw new Error("use removeRecordField to remove " + name);
+	}
+	return this.rawNode.style.setProperty(name, value || "", "");
+    },
+    
+    removeRecordField: function(name) {
+	if (!this.rawNode || !this.rawNode.style)  debugger;
+	return this.rawNode.style.removeProperty(name);
+    }
+
 });
 
 Record.subclass('PlainRecord', {
@@ -875,13 +895,13 @@ Object.extend(Record, {
 	return new Rec(optStore, argSpec);
     },
 
-    extendRecordClass: function(klass, bodySpec) {
+    extendRecordClass: function(bodySpec) {
 	var def = {};
 	Properties.forEachOwn(bodySpec, function(name) {
             var spec = bodySpec[name];
 	    Record.addAccessorMethods(def, name, spec);
         });
-    	klass.addMethods(def);
+    	return def;
     },
 
     addAccessorMethods: function(def, fieldName, spec) {
@@ -898,12 +918,12 @@ Object.extend(Record, {
     newRecordSetter: function newRecordSetter(name, to, byDefault) {
         return function recordSetter(value, optSource) {
             if (value === undefined) {
-            	this.removeRecordField(name); // return ?
+		this.removeRecordField(name);
             } else {
-            	if (!value && byDefault) value = byDefault;
+            	if (value == null && byDefault) value = byDefault;
 		var coercedValue = to ? to(value) : value;
 		if (this.getRecordField(name) === coercedValue) return;
-            	this.setRecordField(name, coercedValue);
+		this.setRecordField(name, coercedValue);
             }
             var deps = this[Record.observerListName(name)];
 	    var updateName = "on" + name + "Update";
@@ -920,7 +940,7 @@ Object.extend(Record, {
     newRecordGetter: function newRecordGetter(name, from, byDefault) {
         return function recordGetter() {
             if (this.rawNode) {
-                var value = this.getRecordField(name);
+		var value = this.getRecordField(name);
                 if (!value && byDefault) return byDefault;
                 else if (from) return from(value);
                 else return value;
@@ -1906,16 +1926,19 @@ Object.subclass("Color", {
 
     deserialize: function(importer, str) {
 	if (!str || str == "none") return null;
-
 	// FIXME this should be much more refined
 	var match = str.match("rgb\\((\\d+),(\\d+),(\\d+)\\)");
 	if (match) { 
 	    this.r = parseInt(match[1])/255;
 	    this.g = parseInt(match[2])/255;
 	    this.b = parseInt(match[3])/255;
-	} else { 
-	    throw new Error('color ' + str + ' unsupported');
-	}
+	} else if (str.length == 7 && str.charAt(0) == '#') {
+	    this.r = parseInt(str.substring(1,3), 16)/255;
+	    this.g = parseInt(str.substring(3,5), 16)/255;
+	    this.b = parseInt(str.substring(5,7), 16)/255;
+	    console.log('parsed ' + this);
+	} else throw new Error('color ' + str + ' unsupported');
+	
     }
 });
 
@@ -2542,11 +2565,10 @@ Wrapper.subclass('Visual');
 Visual.addProperties({ 
     FillOpacity: { name: "fill-opacity", from: Number, to: String, byDefault: 1.0},
     StrokeOpacity: { name: "stroke-opacity", from: Number, to: String, byDefault: 1.0},
-    StrokeWidth: { name: "stroke-width", from: Number, to: String, byDefault: 0.0},
+    StrokeWidth: { name: "stroke-width", from: Number, to: String, byDefault: 1.0},
     Stroke: { name: "stroke", byDefault: "none"}, // FIXME byDefault should be in JS not DOM type
     Fill: { name: "fill", byDefault: "none"} // FIXME byDefault should be in JS not DOM type
-
-});
+}, Config.useStyling ? StyleRecord : DOMRecord);
 
 Visual.addMethods({   
 
@@ -2868,15 +2890,17 @@ Shape.subclass('PolygonShape', {
 	if (this.rawNode.points) {
 	    this.rawNode.points.clear();
 	}
-	this.rawNode.setAttributeNS(null, "points", vertlist.map(function (p) { return p.x + "," + p.y }).join(' '));
-	// FIXME: use DOM instead of attributes for the above
-	// vertlist.forEach( function(p) {  this.points.appendItem(p); }, this);
+	var useDOM = false;
+	if (useDOM) vertlist.forEach(function(p) { this.rawNode.points.appendItem(p) }, this);
+	else this.rawNode.setAttributeNS(null, "points",
+					 vertlist.map(function (p) { return (p.x||0.0) + "," + (p.y||0.0) }).join(' '));
     },
 
     vertices: function() {
 	var array = [];
 	for (var i = 0; i < this.rawNode.points.numberOfItems; i++) {
-	    array.push(Point.ensure(this.rawNode.points.getItem(i)));
+	    var item = this.rawNode.points.getItem(i);
+	    array.push(Point.ensure(item));
 	}
 	return array;
     },
@@ -4135,7 +4159,7 @@ Morph.addMethods({
     },
     
     getBorderWidth: function() {
-	return this.shape.getStrokeWidth(); 
+	return this.shape.getStrokeWidth() || 0; // FIXME: fix defaults logic
     },
 
     shapeRoundEdgesBy: function(r) {
@@ -5251,7 +5275,7 @@ Morph.addMethods({
 	// defined by the external edge of the border
 	var bounds = this.shape.bounds();
 	// double border margin for polylines to account for elbow protrusions
-	bounds.expandBy(this.shape.getStrokeWidth()/2*(this.shape.hasElbowProtrusions ? 2 : 1));
+	bounds.expandBy(this.getBorderWidth()/2*(this.shape.hasElbowProtrusions ? 2 : 1));
 	return bounds;
     },
     

@@ -1891,7 +1891,7 @@ Morph.subclass("ColorPickerMorph", {
     buildView: function() {
         // Slow -- should be cached as a bitmap and invalidated by layoutChanged
         // Try caching wheel as an interim measure
-        var r = this.shape.bounds().insetBy(this.shape.getStrokeWidth());
+        var r = this.shape.bounds().insetBy(this.getBorderWidth());
         var rh2 = r.height/2;
         var dd = 2; // grain for less resolution in output (input is still full resolution)
         
@@ -1935,7 +1935,7 @@ Morph.subclass("ColorPickerMorph", {
 
     onMouseMove: function(evt) {
         if (evt.mouseButtonPressed) { 
-            var r = this.bounds().insetBy(this.shape.getStrokeWidth());
+            var r = this.bounds().insetBy(this.getBorderWidth());
             r = pt(0,0).extent(r.extent());
             var rh2 = r.height/2;
             var wheel = this.colorWheel(r.width+1);
