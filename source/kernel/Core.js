@@ -2543,7 +2543,9 @@ Visual.addProperties({
     FillOpacity: { name: "fill-opacity", from: Number, to: String, byDefault: 1.0},
     StrokeOpacity: { name: "stroke-opacity", from: Number, to: String, byDefault: 1.0},
     StrokeWidth: { name: "stroke-width", from: Number, to: String, byDefault: 0.0},
-    Stroke: { name: "stroke", byDefault: "none"} // FIXME byDefault should be in JS not DOM type
+    Stroke: { name: "stroke", byDefault: "none"}, // FIXME byDefault should be in JS not DOM type
+    Fill: { name: "fill", byDefault: "none"} // FIXME byDefault should be in JS not DOM type
+
 });
 
 Visual.addMethods({   
@@ -2555,23 +2557,6 @@ Visual.addMethods({
     useNativeBounds: !!Config.useNativeBounds,
 
     rawNode: null, // set by subclasses
-
-    /**
-      * @param [String] string the string specification of the fill attribute.
-      */
-    setFill: function(string) {
-	if (string) {
-	    if (!string.startsWith) 
-		console.log("what, string is " + string + " .. " + (typeof string.valueOf()));
-	    else if (string.startsWith("uri"))
-		console.log("setting %s on %s", string, this);
-	}
-	this.rawNode.setAttributeNS(null, "fill", string  || "none");
-    },
-
-    getFill: function() {
-	return this.rawNode.getAttributeNS(null, "fill");
-    },
 
     setLineJoin: function(joinType) {
 	if (!joinType) throw new Error('undefined joinType');
