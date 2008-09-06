@@ -2416,7 +2416,7 @@ Morph.subclass("TitleBarMorph", {
 
     okToBeGrabbedBy: function(evt) {
         var oldTop = this.world().topSubmorph();
-        if (oldTop instanceof WindowMorph) oldTop.titleBar.highlight(false);
+	if (oldTop instanceof WindowMorph) oldTop.titleBar.highlight(false);
         return this.windowMorph;
     },
 
@@ -2743,7 +2743,7 @@ Morph.subclass('WindowMorph', {
     takeHighlight: function() {
         // I've been clicked on.  unhighlight old top, and highlight me
         var oldTop = this.world().topWindow();
-        if (oldTop) oldTop.titleBar.highlight(false);
+        if (oldTop instanceof WindowMorph) oldTop.titleBar.highlight(false);
         this.titleBar.highlight(true);
     },
     // End of window promotion methods----------------

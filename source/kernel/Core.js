@@ -3376,11 +3376,11 @@ Object.subclass('Copier', {
     },
 
     addMapping: function(oldId, newMorph) {
-	this.morphMap_[Number(oldId)] = newMorph; 
+	this.morphMap_[oldId] = newMorph; 
     },
 
     lookupMorph: function(oldId) {
-	return this.morphMap_[Number(oldId)];
+	return this.morphMap_[oldId];
     }
 
 }); 
@@ -3989,6 +3989,22 @@ Visual.subclass('Morph', {
 		}
 		break;
 	    }
+	    case "array": {
+		var name = LivelyNS.getAttribute(node, "name");
+		this[name] = [];
+		for (var elt = node.firstChild; elt != null; elt = elt.nextSibling) {
+		    if (elt.localName == "item") {
+			var ref = LivelyNS.getAttribute(elt, "ref");
+			if (ref) {
+			    var found = importer.lookupMorph(ref);
+			    if (!found) console.warn("value not found for array %s ref %s", name, ref);
+			    this[name].push(found);
+			} else this[name].push(null);
+		    }
+
+		}
+		break;
+	    }
 	    default: {
 		if (node.nodeType === Node.TEXT_NODE) {
 		    console.log('text tag name %s', node.tagName);
@@ -4080,9 +4096,26 @@ Visual.subclass('Morph', {
 	    if (m instanceof Morph) {
 		if (prop == 'owner') 
 		    continue; // we'll deal manually
-		console.log("serializing field name='%s', ref='%s'", prop, m.id(), m.getType());
+		//console.log("serializing field name='%s', ref='%s'", prop, m.id(), m.getType());
 		var desc = LivelyNS.create("field", {name: prop, ref: m.id()});
 		extraNodes.push(this.addNonMorph(desc));
+		extraNodes.push(this.addNonMorph(NodeFactory.createNL()));
+	    } else if (m instanceof Array) {
+		if (prop === 'submorphs')
+		    continue;  // we'll deal manually
+		var arr = LivelyNS.create("array", {name: prop});
+		var abort = false;
+		m.forEach(function iter(elt) {
+		    if (!(elt instanceof Morph)) {
+			abort = true;
+			return;
+		    }
+		    // if item empty, don't set the ref field
+		    var item =  elt ? LivelyNS.create("item", {ref: elt.id()}) : LivelyNS.create("item"); 
+		    arr.appendChild(item);
+		    extraNodes.push(arr.appendChild(NodeFactory.createNL()));
+		}, this);
+		if (!abort) extraNodes.push(this.addNonMorph(arr));
 	    }
 	}
     },
