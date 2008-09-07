@@ -479,7 +479,7 @@ Object.extend(Function.prototype, {
 
     qualifiedMethodName: function() {
 	return (this.declaredClass ? this.declaredClass + "." : "")  
-	    + (this.methodName || "anonymous");
+	    + (this.methodName || this.name || "anonymous");
     },
 
     functionNames: function(filter) {
@@ -1266,14 +1266,15 @@ var Converter = {
 	return parseFloat(string);
     },
 
-    toBoolean: function(string) {
+    toBoolean: function toBoolean(string) {
 	return string && string == 'true';
     },
 
-    fromBoolean: function(object) {
-	if (object == null) return false;
+    fromBoolean: function fromBoolean(object) {
+	if (object == null) return "false";
 	var b = object.valueOf();
-	return b === true ? true : false;
+	// this is messy and should be revisited
+	return (b === true || b === "true") ? "true" : "false";
     },
 
     parseURL: function(string) {
