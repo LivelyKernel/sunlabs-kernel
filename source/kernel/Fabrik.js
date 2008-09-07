@@ -1406,21 +1406,65 @@ Object.subclass('HandPositionObserver', {
 /*
  * Extending ClockMorph for PluggableComponent
  */
-if (!Config.originalClock) { // **Wrap clock methods...
-ClockMorph.prototype.initialize = ClockMorph.prototype.initialize.wrap(function(proceed, position, radius) {
-    this.formalModel = Record.newPlainInstance({Minutes: null, Seconds: null, Hours: null});
-    return proceed(position,radius);
-});
+Morph.subclass("FabrikClockMorph", {
 
-ClockMorph.prototype.setHands = ClockMorph.prototype.setHands.wrap(function(proceed, hour, minute, second) {
-    this.formalModel.setMinutes(minute);
-    this.formalModel.setHours(hour);
-    this.formalModel.setSeconds(second);
-    //    console.log("setting time");
-    return proceed(hour, minute, second);
+ borderWidth: 2,
+ openForDragAndDrop: false,
+
+ initialize: function($super, position, radius) {
+     $super(position.asRectangle().expandBy(radius), "ellipse");
+     this.formalModel = Record.newPlainInstance({Minutes: null, Seconds: null, Hours: null});
+     this.linkToStyles(['clock']);
+     this.makeNewFace(['XII','I','II','III','IV','V','VI','VII','VIII','IX','X','XI']);  // Roman
+     return this;
+ },
+
+ makeNewFace: function(items) {
+     var bnds = this.innerBounds();
+     var radius = bnds.width/2;
+     var labelSize = Math.max(Math.floor(0.04 * (bnds.width + bnds.height)), 2); // room to center with default inset
+
+     for (var i = 0; i < items.length; i++) {
+         var labelPosition = bnds.center().addPt(Point.polar(radius*0.85, ((i-3)/items.length)*Math.PI*2)).addXY(labelSize/2, 0);
+         var label = new TextMorph((pt(labelSize*3, labelSize).extentAsRectangle()), items[i]);
+	    label.applyStyle({borderWidth: 0, fill: null, wrapStyle: lk.text.WrapStyle.Shrink, fontSize: labelSize, padding: Rectangle.inset(0)});
+         label.align(label.bounds().center(), labelPosition.addXY(1, 0));
+         this.addMorph(label);
+     }
+
+     this.hours   = this.addMorph(Morph.makeLine([pt(0,0), pt(0, -radius*0.50)], 4, Color.blue));
+     this.minutes = this.addMorph(Morph.makeLine([pt(0,0), pt(0, -radius*0.70)], 3, Color.blue));
+     this.seconds = this.addMorph(Morph.makeLine([pt(0,0), pt(0, -radius*0.75)], 2, Color.red));
+
+     this.updateHands();
+     this.changed(); 
+ },
+
+ reshape: function(a,b,c,d) { /*no reshaping*/ },
+
+ startSteppingScripts: function() {
+     this.startStepping(1000, "updateHands"); // once per second
+ },
+
+ updateHands: function() {
+     var currentDate = new Date();
+     var seconds = currentDate.getSeconds();
+     var minutes = currentDate.getMinutes() + seconds/60
+     var hours = currentDate.getHours() + minutes/60
+     this.setHands(seconds, minutes, hours);
+ },
+
+ setHands: function(seconds, minutes, hours) {
+     this.formalModel.setMinutes(minutes);
+     this.formalModel.setHours(hours);
+     this.formalModel.setSeconds(seconds);
+
+     this.hours.setRotation(hours/12*2*Math.PI);
+     this.minutes.setRotation(minutes/60*2*Math.PI);
+     this.seconds.setRotation(seconds/60*2*Math.PI); 
+ }
+
 });
-//WorldMorph.current().addMorph(new ClockMorph(pt(400, 60), 200));
-} // **... end wrap of clock changes...
 
 /*
  * Helper functions for debugging
@@ -1456,7 +1500,4 @@ function debugFunction(func) {
 	Function.installStackTracers("uninstall");
 	var viewer = new ErrorStackViewer(errObj)
 	viewer.openIn(WorldMorph.current(), pt(220, 10));
-}
-
-
-
+};

@@ -148,7 +148,7 @@ function populateWorldWithExamples(world) {
     var widget;
 
     if (Config.showClock) {
-        widget = new ClockMorph(pt(60, 60), 50);
+        widget = Config.originalClock ? new ClockMorph(pt(60, 60), 50) : new FabrikClockMorph(pt(60, 60), 50);
         world.addMorph(widget);
         widget.startSteppingScripts();
     }
