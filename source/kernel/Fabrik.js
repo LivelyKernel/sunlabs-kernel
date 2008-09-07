@@ -13,6 +13,7 @@
  * Fabrik.js.  This file contains Fabrik   
  *
  * == List of classes == 
+ * - Fabrik
  * - FabrikMorph
  * - FabrikComponent
  * - NewComponentModel
@@ -27,7 +28,307 @@
  * - FlowLayout
  */
  
+ /**************************************************
+  * Examples for interactive testing and exploring
+  */
+var Fabrik = {
+    
+    positionComponentRelativeToOther: function(comp, otherComp, relPos) {
+        comp.panel.setPosition(otherComp.panel.getPosition().addPt(relPos));
+    },
 
+    addTextComponent: function(toComponent) {
+         var c = new TextComponent();
+         toComponent.plugin(c);
+         return c;
+    },
+
+    addFunctionComponent: function(toComponent) {
+        var c = new FunctionComponent();
+        toComponent.plugin(c);
+        return c;
+    },
+
+    addFunctionComponent2Inputs: function(toComponent) {
+        var c = new FunctionComponent();
+        c.addFieldAndPinHandle("Input2");
+        c.formalModel.addObserver({onInput2Update: function(){
+        	c.execute()}.bind(c)});
+        toComponent.plugin(c);
+        return c;
+    },
+
+    addTextListComponent: function(toComponent) {
+        var c = new TextListComponent();
+        toComponent.plugin(c);
+        return c;
+    },
+
+    openComponentBox: function(world, loc) {
+        if (!world) world = WorldMorph.current();
+        var box = new ComponentBox();
+        box.openIn(world, loc);
+        return box;
+    },
+
+    openFabrikComponent: function(world, loc, extent, title) {
+        if (!world) world = WorldMorph.current();
+        if (!extent) extent = pt(400, 300);
+        if (!loc) loc = pt(100, 100);
+        if (!title) title = 'Fabrik Component';
+        var c = new FabrikComponent(extent);
+        FabrikComponent.current = c;
+        c.viewTitle = title;
+        c.openIn(world, loc);
+        return c;
+    },
+
+    openFabrikComponentExample: function() {
+        var f = this.openFabrikComponent();
+        var c1 = this.addTextComponent(f);
+        var c2 = this.addTextComponent(f);
+        var c3 = this.addTextComponent(f);
+        this.addTextComponent(f);
+        this.addTextComponent(f);
+        c1.setText("Hello World");
+        c2.setText("Hallo Welt");
+        c3.setText("Ola mundo");
+        f.morph.automaticLayout();
+        f.connectPins(c1.getPinHandle("Text"), c2.getPinHandle("Text"));
+        f.connectPins(c2.getPinHandle("Text"), c3.getPinHandle("Text"))
+        return f;
+    },
+
+    openFabrikTextListExample: function() {
+        // the next variables are intentionally defined global
+        f = this.openFabrikComponent();
+        input = this.addFunctionComponent(f);
+        input.setFunctionBody("return ['eins', 'zwei', 'drei']")
+        list = this.addTextListComponent(f);
+        out = this.addTextComponent(f);
+        f.connectComponents(input, "Result", list, "List");
+        f.connectComponents(list, "Selection", out, "Text");	
+        f.morph.automaticLayout();
+        return f;
+    },
+    
+    openConnectorMorphExample: function() {
+        var c = new ConnectorMorph();
+        var m1 = new Morph(new Rectangle(100,100,10,10),"rect");
+        var m2 = new Morph(new Rectangle(200,200, 10,10),"rect");
+        world = WorldMorph.current();
+        world.addMorph(c);
+        world.addMorph(m1);
+        world.addMorph(m2);
+
+        c.model = NewComponentModel.instantiateNewClass();
+        c.model.addField("StartHandle");
+        c.model.addField("EndHandle");
+        c.model.setStartHandle(m1);
+        c.model.setEndHandle(m2);
+        c.updateOnChangeInMorph(m1);
+        c.updateOnChangeInMorph(m2);
+        c.updateView();
+        return c;
+    },
+
+    openFabrikFunctionComponentExample: function() {
+        // the next variables are intentionally defined global
+        var f = this.openFabrikComponent();
+        var c1 = this.addTextComponent(f);
+        var c2 = this.addTextComponent(f);
+        var f1 = this.addFunctionComponent(f);
+        c1.setText("");
+        c2.setText("");
+
+        f1.setFunctionBody("return 3 + 4");
+        f.connectComponents(f1, "Result", c2, "Text");
+
+        f.morph.automaticLayout();
+        return f;
+    },
+    
+    /*
+     * Browser Example:
+     *  - Todo: "prepared methods..."
+     *  - added second input field to function manually
+     * 
+     */
+    addConvenienceFunctions: function() {
+        Global.allFabrikClassNames = function() {
+            return ["FabrikMorph", "FabrikComponent", "NewComponentModel", "PinMorph", "PinHandle", "ConnectorMorph", 
+                "Component",  "TextComponent", "FunctionComponent", "ComponentBox", "PointSnapper", "FlowLayout"]
+        };
+        Global.allClassNames = function() {
+        	var classNames = [];
+        	Class.withAllClassNames(Global, function(n) { n.startsWith('SVG') || classNames.push(n)});
+        	return classNames;
+        };
+        Global.allMethodsFor = function(className) {
+            if (className == null) return [];
+            return Global[className].localFunctionNames().sort();
+        };
+        Global.getMethodStringFor = function(className, methodName) { 
+        	try {
+        		var func = Global[className].prototype[methodName];
+        		if (func == null) return "no code";
+        		var code = func.getOriginal().toString();
+        		return code;
+        	} catch(e) { return "no code" }
+        };
+    },
+    
+    openFabrikBrowserExample: function(world, loc) {
+        this.addConvenienceFunctions();
+        
+        if (!loc) loc = pt(100, 100);
+        var f = this.openFabrikComponent(world, loc, pt(750, 500), 'Fabrik Browser');
+
+        var getClasses = this.addFunctionComponent(f);
+    	getClasses.setFunctionBody('return allFabrikClassNames()');
+        var getMethods = this.addFunctionComponent(f);
+    	getMethods.setFunctionBody('return allMethodsFor(this.getInput())'); 
+
+        var getSource = new FunctionComponent();
+      	getSource.addFieldAndPinHandle("Input2");
+    	getSource.formalModel.addObserver({onInput2Update: function() {
+        	getSource.execute()}.bind(getSource)});
+        f.plugin(getSource);	
+    	getSource.setFunctionBody('return getMethodStringFor(this.getInput(), this.getInput2())'); 
+
+    	var classList = this.addTextListComponent(f);
+        var methodList = this.addTextListComponent(f);
+
+
+        var methodSource = this.addTextComponent(f);
+
+        f.connectComponents(getClasses, "Result", classList, "List");
+     	f.connectComponents(classList, "Selection", getMethods, "Input");	
+    	f.connectComponents(getMethods, "Result", methodList, "List");	
+
+    	f.connectComponents(classList, 	"Selection", getSource, "Input");	
+    	f.connectComponents(methodList, "Selection", getSource, "Input2");	
+
+    	f.connectComponents(getSource, "Result", methodSource, "Text");	
+
+        f.morph.automaticLayout();
+
+        // some manual layout
+        getClasses.panel.setPosition(pt(250,30));
+        this.positionComponentRelativeToOther(classList, getClasses, pt(0, getClasses.panel.getExtent().y + 20));
+        this.positionComponentRelativeToOther(getMethods, getClasses, pt(getClasses.panel.getExtent().x + 50, 0));
+        this.positionComponentRelativeToOther(methodList, getMethods, pt(0, getMethods.panel.getExtent().y + 20));
+        this.positionComponentRelativeToOther(methodSource, classList, pt(0, classList.panel.getExtent().y + 20));
+        methodSource.panel.setExtent(pt(methodList.panel.getPosition().x - classList.panel.getPosition().x + classList.panel.getExtent().x, 200));
+        this.positionComponentRelativeToOther(getSource, methodSource, pt(-1 * (getSource.panel.getExtent().x + 20), 0));
+
+    	getClasses.execute();
+        return f;
+    },
+
+    openCurrencyConverterExample: function(world, loc) {
+        // the next variables are intentionally defined global
+        var f = this.openFabrikComponent(world, loc, 'Currency Converter');
+
+        var urlComp = this.addTextComponent(f);
+        urlComp.setText("http://www.webservicex.net/CurrencyConvertor.asmx/ConversionRate?FromCurrency=USD&ToCurrency=EUR");
+        var reqComp = this.addFunctionComponent(f);
+        reqComp.setFunctionBody("new NetRequest().beSync().get('http://www.webservicex.net/CurrencyConvertor.asmx/ConversionRate?FromCurrency=USD&ToCurrency=EUR').getResponseXML().getElementsByTagName('double')[0].textContent;");
+        // reqComp.setFunctionBody("");
+        f.connectComponents(urlComp, "Text", reqComp, "Input");
+        var currencyComp = this.addTextComponent(f);
+        //f.connectComponents(reqComp, "Result", currencyComp, "Text");
+
+
+        var currency1Comp = this.addTextComponent(f);
+        var currency2Comp = this.addTextComponent(f);
+
+        var fromToConvComp = this.addFunctionComponent2Inputs(f);
+        fromToConvComp.setFunctionBody("return Number(this.getInput()) * Number(this.getInput2())");
+        f.connectComponents(fromToConvComp, "Result", currency2Comp, "Text");
+
+        var toFromConvComp = this.addFunctionComponent2Inputs(f);
+        toFromConvComp.setFunctionBody("return 1/Number(this.getInput()) * Number(this.getInput2())");
+        f.connectComponents(toFromConvComp, "Result", currency1Comp, "Text");
+
+        currencyComp.setText("0");
+        currency1Comp.setText("");
+        currency2Comp.setText("");
+
+
+        f.morph.automaticLayout();
+        return f;
+    },
+
+    openFahrenheitCelsiusExample: function(world, loc) {
+        if (!loc) loc = pt(100, 100);
+        var f = this.openFabrikComponent(world, loc, pt(940,270), 'Celsius-Fahrenheit Converter');
+        celsius = this.addTextComponent(f);
+        celsius.setText("");
+
+        var f1 = this.addFunctionComponent(f);
+        f1.setFunctionBody("return this.getInput() * 9/5");
+
+
+        var f2 = this.addFunctionComponent(f);
+        f2.setFunctionBody("return this.getInput() + 32");
+
+        var fahrenheit = this.addTextComponent(f);
+        fahrenheit.setText("");
+
+        var f3 = this.addFunctionComponent(f);
+        //f4.addFieldAndPinHandle('Input');
+        f3.setFunctionBody("return this.getInput() * 5/9");
+
+        var f4 = this.addFunctionComponent(f);
+        //f3.addFieldAndPinHandle('Input');
+        f4.setFunctionBody("return this.getInput() - 32");
+
+        f.connectComponents(celsius, "Text", f1, "Input");
+        f.connectComponents(f1, "Result", f2, "Input");
+        f.connectComponents(f2, "Result", fahrenheit, "Text");
+
+        // f.connectComponents(fahrenheit, "Text", f3, "Input");
+        // f.connectComponents(f3, "Result", f4, "Input");
+        // f.connectComponents(f4, "Result", celsius, "Text");
+
+        f.morph.automaticLayout();
+
+        // some manual layouting
+        f3.panel.setPosition(f1.panel.getPosition().addPt(pt(0,f1.panel.getExtent().y + 20)));
+        f4.panel.setPosition(f2.panel.getPosition().addPt(pt(0,f2.panel.getExtent().y + 20)));
+        celsius.panel.setPosition(celsius.panel.getPosition().addPt(pt(0,(celsius.panel.getExtent().y + 20) / 2)));
+        fahrenheit.panel.setPosition(fahrenheit.panel.getPosition().addPt(pt(0,(fahrenheit.panel.getExtent().y + 20) / 2)));
+
+        return f;
+    },
+
+    openFabrikFunctionComponentExample2: function() {
+        // the next variables are intentionally defined global
+        var f = this.openFabrikComponent();
+        var c1 = this.addTextComponent(f);
+        var c2 = this.addTextComponent(f);
+        var f1 = this.addFunctionComponent(f);
+        c1.setText("");
+        c2.setText("");
+
+        f1.setFunctionBody("return this.getInput() * this.getInput()");
+
+        f.connectComponents(f1, "Result", c1, "Text");
+        f.connectComponents(c2, "Text", f1, "Input");
+
+        f.morph.automaticLayout();
+
+        return f;
+    }
+};
+
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+                        Fabrik implementation
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *    
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 Morph.subclass('FabrikMorph', {
     initialize: function($super, bounds) {
@@ -188,7 +489,7 @@ PlainRecord.prototype.create({}).subclass("NewComponentModel", {
     
     addField: function(fieldName, coercionSpec) {
         var spec = {}; spec[fieldName] = coercionSpec || {};
-        new Record.extendRecordClass(this.constructor, spec);
+        this.constructor.addMethods(new Record.extendRecordClass(spec));
     },
     
     /*
@@ -927,28 +1228,24 @@ Component.subclass('TextListComponent', {
            $super();
            this.addFieldAndPinHandle('List', {to: asStringArray});
            this.addFieldAndPinHandle('Selection');
-
 		   this.setList([]);
     },
 
     buildView: function() {
           this.setupPanel();
-
 		  this.morph = this.panel.textList.innerMorph();
           this.morph.connectModel(this.formalModel.newRelay({List: "List", Selection: "Selection"}));
           this.setupHandles();
-
           this.setupDragAndDrop();
           return this.panel;
-      },
-    
+    }
     
 }),
 
 Widget.subclass('ComponentBox', {
 
-    defaultViewTitle: "ComponentBox",
-    defaultViewExtent: pt(440,150),
+    viewTitle: "Fabrik Component Box",
+    viewExtent: pt(440,150),
     
     initialize: function($super) { 
         $super();
@@ -999,12 +1296,6 @@ Widget.subclass('ComponentBox', {
     }
 
 });
-
-function openComponentBox() {
-    var box = new ComponentBox();
-    box.openIn(WorldMorph.current(), pt(700, 100));
-    return box;
-};
 
 /*********************************
  * Gerneral Purpose Helper Classes
@@ -1112,303 +1403,10 @@ Object.subclass('HandPositionObserver', {
     },
 });
 
-
-/**************************************************
- * Examples for interactive testing and exploring
- */
-function openFabrikComponent(extent) {
-    var c = new FabrikComponent(extent);
-    FabrikComponent.current = c;
-    c.openIn(WorldMorph.current(), pt(100, 100));
-    return c;
-};
-
-function addTextComponent(toComponent) {
-    var c = new TextComponent();
-    toComponent.plugin(c);
-    return c;
-};
-
-function addFunctionComponent(toComponent) {
-    var c = new FunctionComponent();
-    toComponent.plugin(c);
-    return c;
-};
-
-function addFunctionComponent2Inputs(toComponent) {
-    var c = new FunctionComponent();
-    c.addFieldAndPinHandle("Input2");
-    c.formalModel.addObserver({onInput2Update: function(){
-    	c.execute()}.bind(c)});
-    toComponent.plugin(c);
-    return c;
-};
-
-function addTextListComponent(toComponent) {
-    var c = new TextListComponent();
-    toComponent.plugin(c);
-    return c;
-};
-
-
-function addComponentConnector(toComponent) {
-    var c = new PinConnector();
-    var m = c.buildView();
-    toComponent.morph.addMorph(m);
-    return c;
-};
-
-function openFabrikComponentExample() {
-    var f = openFabrikComponent();
-    var c1 = addTextComponent(f);
-    var c2 = addTextComponent(f);
-    var c3 = addTextComponent(f);
-    addTextComponent(f);
-    addTextComponent(f);
-    c1.setText("Hello World");
-    c2.setText("Hallo Welt");
-    c3.setText("Ola mundo");
-    f.morph.automaticLayout();
-    f.connectPins(c1.getPinHandle("Text"), c2.getPinHandle("Text"));
-    f.connectPins(c2.getPinHandle("Text"), c3.getPinHandle("Text"))
-    return f;
-};
-
-
-function openFabrikTextListExample() {
-    // the next variables are intentionally defined global
-    f = openFabrikComponent();
-    input = addFunctionComponent(f);
-	input.setFunctionBody("return ['eins', 'zwei', 'drei']")
-    list = addTextListComponent(f);
-    out = addTextComponent(f);
-    f.connectComponents(input, "Result", list, "List");
- 	f.connectComponents(list, "Selection", out, "Text");	
-    f.morph.automaticLayout();
-    return f;
-};
-
-
-function allFabrikClassNames() {
-return ["FabrikMorph", "FabrikComponent", "NewComponentModel", "PinMorph", "PinHandle", "ConnectorMorph", "Component", 
-"TextComponent", "FunctionComponent", "ComponentBox", "PointSnapper", "FlowLayout"]
-}
-
-// for demo
-function allClassNames() {
-	var classNames = [];
-	Class.withAllClassNames(Global, function(n) { n.startsWith('SVG') || classNames.push(n)});
-	return classNames
-}
-
-// for demo
-function allMethodsFor(className) {
-    if (className == null) return [];
-    return Global[className].localFunctionNames().sort();
-};
-
-// For demo
-function getMethodStringFor(className, methodName) { 
-	try {
-		var func = Global[className].prototype[methodName];
-		if (func == null) return "no code";
-		var code = func.getOriginal().toString();
-		return code;
-	} catch(e) {
-		return "no code";
-	}
-};
-
-function positionComponentRelativeToOther(comp, otherComp, relPos) {
-    comp.panel.setPosition(otherComp.panel.getPosition().addPt(relPos));
-};
-
-/*
- * Browser Example:
- *  - Todo: "prepared methods..."
- *  - added second input field to function manually
- * 
- */
-function openFabrikBrowserExample() {
-    var f = openFabrikComponent(pt(750, 500));
-
-    var getClasses = addFunctionComponent(f);
-	getClasses.setFunctionBody('return allFabrikClassNames()');
-    var getMethods = addFunctionComponent(f);
-	getMethods.setFunctionBody('return allMethodsFor(this.getInput())'); 
-
-    var getSource = new FunctionComponent();
-  	getSource.addFieldAndPinHandle("Input2");
-	getSource.formalModel.addObserver({onInput2Update: function(){
-    	getSource.execute()}.bind(getSource)});
-    f.plugin(getSource);	
-	getSource.setFunctionBody('return getMethodStringFor(this.getInput(), this.getInput2())'); 
-	
-	var classList = addTextListComponent(f);
-    var methodList = addTextListComponent(f);
-    
-
-    var methodSource = addTextComponent(f);
-  
-    f.connectComponents(getClasses, "Result", classList, "List");
- 	f.connectComponents(classList, "Selection", getMethods, "Input");	
-	f.connectComponents(getMethods, "Result", methodList, "List");	
-
-	f.connectComponents(classList, 	"Selection", getSource, "Input");	
-	f.connectComponents(methodList, "Selection", getSource, "Input2");	
-
-	f.connectComponents(getSource, "Result", methodSource, "Text");	
-
-    f.morph.automaticLayout();
-    
-    // some manual layout
-    getClasses.panel.setPosition(pt(250,30));
-    positionComponentRelativeToOther(classList, getClasses, pt(0, getClasses.panel.getExtent().y + 20));
-    positionComponentRelativeToOther(getMethods, getClasses, pt(getClasses.panel.getExtent().x + 50, 0));
-    positionComponentRelativeToOther(methodList, getMethods, pt(0, getMethods.panel.getExtent().y + 20));
-    positionComponentRelativeToOther(methodSource, classList, pt(0, classList.panel.getExtent().y + 20));
-    methodSource.panel.setExtent(pt(methodList.panel.getPosition().x - classList.panel.getPosition().x + classList.panel.getExtent().x, 200));
-    positionComponentRelativeToOther(getSource, methodSource, pt(-1 * (getSource.panel.getExtent().x + 20), 0));
-        
-	getClasses.execute();
-    return f;
-};
-
-function openConnectorMorphExample() {
-    var c = new ConnectorMorph();
-    var m1 = new Morph(new Rectangle(100,100,10,10),"rect");
-    var m2 = new Morph(new Rectangle(200,200, 10,10),"rect");
-    world = WorldMorph.current();
-    world.addMorph(c);
-    world.addMorph(m1);
-    world.addMorph(m2);
-    
-    c.model = NewComponentModel.instantiateNewClass();
-    c.model.addField("StartHandle");
-    c.model.addField("EndHandle");
-    c.model.setStartHandle(m1);
-    c.model.setEndHandle(m2);
-    c.updateOnChangeInMorph(m1);
-    c.updateOnChangeInMorph(m2);
-    c.updateView();
-    return c;
-};
-
-function openFabrikFunctionComponentExample() {
-    // the next variables are intentionally defined global
-    var f = openFabrikComponent();
-    var c1 = addTextComponent(f);
-    var c2 = addTextComponent(f);
-    var f1 = addFunctionComponent(f);
-    c1.setText("");
-    c2.setText("");
-
-    f1.setFunctionBody("return 3 + 4");
-    f.connectComponents(f1, "Result", c2, "Text");
-    
-    f.morph.automaticLayout();
-    return f;
-};
-
-function openCurrencyConverterExample() {
-    // the next variables are intentionally defined global
-    var f = openFabrikComponent();
-    
-    var urlComp = addTextComponent(f);
-    urlComp.setText("http://www.webservicex.net/CurrencyConvertor.asmx/ConversionRate?FromCurrency=USD&ToCurrency=EUR");
-    var reqComp = addFunctionComponent(f);
-    reqComp.setFunctionBody("new NetRequest().beSync().get('http://www.webservicex.net/CurrencyConvertor.asmx/ConversionRate?FromCurrency=USD&ToCurrency=EUR').getResponseXML().getElementsByTagName('double')[0].textContent;");
-    // reqComp.setFunctionBody("");
-    f.connectComponents(urlComp, "Text", reqComp, "Input");
-    var currencyComp = addTextComponent(f);
-    //f.connectComponents(reqComp, "Result", currencyComp, "Text");
-    
-    
-    var currency1Comp = addTextComponent(f);
-    var currency2Comp = addTextComponent(f);
-    
-    var fromToConvComp = addFunctionComponent2Inputs(f);
-    fromToConvComp.setFunctionBody("return Number(this.getInput()) * Number(this.getInput2())");
-    f.connectComponents(fromToConvComp, "Result", currency2Comp, "Text");
-    
-    var toFromConvComp = addFunctionComponent2Inputs(f);
-    toFromConvComp.setFunctionBody("return 1/Number(this.getInput()) * Number(this.getInput2())");
-    f.connectComponents(toFromConvComp, "Result", currency1Comp, "Text");
-    
-    currencyComp.setText("0");
-    currency1Comp.setText("");
-    currency2Comp.setText("");
-
-    
-    f.morph.automaticLayout();
-    return f;
-};
-
-function openFahrenheitCelsiusExample() {
-    var f = openFabrikComponent(pt(940,270));
-    celsius = addTextComponent(f);
-    celsius.setText("");
-    
-    var f1 = addFunctionComponent(f);
-    f1.setFunctionBody("return this.getInput() * 9/5");
-
-    
-    var f2 = addFunctionComponent(f);
-    f2.setFunctionBody("return this.getInput() + 32");
-    
-    var fahrenheit = addTextComponent(f);
-    fahrenheit.setText("");
-    
-    var f3 = addFunctionComponent(f);
-    //f4.addFieldAndPinHandle('Input');
-    f3.setFunctionBody("return this.getInput() * 5/9");
-    
-    var f4 = addFunctionComponent(f);
-    //f3.addFieldAndPinHandle('Input');
-    f4.setFunctionBody("return this.getInput() - 32");
-    
-    f.connectComponents(celsius, "Text", f1, "Input");
-    f.connectComponents(f1, "Result", f2, "Input");
-    f.connectComponents(f2, "Result", fahrenheit, "Text");
-    
-    // f.connectComponents(fahrenheit, "Text", f3, "Input");
-    // f.connectComponents(f3, "Result", f4, "Input");
-    // f.connectComponents(f4, "Result", celsius, "Text");
-    
-    f.morph.automaticLayout();
-    
-    // some manual layouting
-    f3.panel.setPosition(f1.panel.getPosition().addPt(pt(0,f1.panel.getExtent().y + 20)));
-    f4.panel.setPosition(f2.panel.getPosition().addPt(pt(0,f2.panel.getExtent().y + 20)));
-    celsius.panel.setPosition(celsius.panel.getPosition().addPt(pt(0,(celsius.panel.getExtent().y + 20) / 2)));
-    fahrenheit.panel.setPosition(fahrenheit.panel.getPosition().addPt(pt(0,(fahrenheit.panel.getExtent().y + 20) / 2)));
-        
-    return f;
-};
-
-function openFabrikFunctionComponentExample2() {
-    // the next variables are intentionally defined global
-    var f = openFabrikComponent();
-    var c1 = addTextComponent(f);
-    var c2 = addTextComponent(f);
-    var f1 = addFunctionComponent(f);
-    c1.setText("");
-    c2.setText("");
-
-    f1.setFunctionBody("return this.getInput() * this.getInput()");
-
-    f.connectComponents(f1, "Result", c1, "Text");
-    f.connectComponents(c2, "Text", f1, "Input");
-    
-    f.morph.automaticLayout();
-
-    return f;
-};
-
 /*
  * Extending ClockMorph for PluggableComponent
  */
-if(!Config.originalClock) { // **Wrap clock methods...
+if (!Config.originalClock) { // **Wrap clock methods...
 ClockMorph.prototype.initialize = ClockMorph.prototype.initialize.wrap(function(proceed, position, radius) {
     this.formalModel = Record.newPlainInstance({Minutes: null, Seconds: null, Hours: null});
     return proceed(position,radius);

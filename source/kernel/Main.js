@@ -199,13 +199,13 @@ function populateWorldWithExamples(world) {
 
     if (Config.showTester) new TestWidget().openIn(world, pt(835, 450));
     	
-    if (Config.showTesterRunner) openTestRunner();
+    if (Config.showTesterRunner) TestRunner.openIn();
     if (Config.showWikiNavigator) WikiNavigator.enableWikiNavigator();
 
-	if (Config.showFabrikComponentBox) openComponentBox()
-	if (Config.showFahrenheitCelsiusExample) openFahrenheitCelsiusExample();
-	if (Config.showTextListExample) openFabrikTextListExample();
-	if (Config.openFabrikBrowserExample) openFabrikBrowserExample();
+	if (Config.showFabrikComponentBox) Fabrik.openComponentBox()
+	if (Config.showFahrenheitCelsiusExample) Fabrik.openFahrenheitCelsiusExample();
+	if (Config.showTextListExample) Fabrik.openFabrikTextListExample();
+	if (Config.openFabrikBrowserExample) Fabrik.openFabrikBrowserExample();
 
     // Open OmetaWorkspace
     //openOmetaWorkspace();
@@ -374,6 +374,25 @@ function populateWorldWithExamples(world) {
         new ConsoleWidget(50).openIn(world, pt(0, world.viewport().height - 210));
     }
 
+    if (Config.showFabrik) {
+        var fabrikWorld = new LinkMorph(null, pt(60, 330));
+        world.addMorph(fabrikWorld);
+    	addLinkLabel(fabrikWorld, "Visual programming with Fabrik");
+
+    	fabrikWorld.myWorld.onEnter = function() {
+            if (this.enterCount > 0) return;
+    	    Fabrik.openFabrikBrowserExample(fabrikWorld.myWorld, pt(70,245));
+    	    Fabrik.openFahrenheitCelsiusExample(fabrikWorld.myWorld, pt(100,20));
+    	    Fabrik.openComponentBox(fabrikWorld.myWorld, pt(700,300));
+            //          if (this.enterCount > 0) return;
+            //          var importer = new NetImporter();
+            //          importer.onCodeLoad = function(error) {
+            // error || Global.phoneDemo(phoneWorld.myWorld, pt(250,180), 150);
+            //          };
+            //          importer.loadCode(URL.source.withFilename('phone.js'));
+        }
+    }
+    
     return world;
 }
 

@@ -304,6 +304,12 @@ Widget.subclass('TestRunner', {
 	
 });
 
+TestRunner.openIn = function(world, loc) {
+    if (!world) world = WorldMorph.current();
+    if (!loc) loc = pt(120, 10);
+	new TestRunner().openIn(world, loc);
+};
+
 Widget.subclass('ErrorStackViewer', {
 
 	defaultViewTitle: "ErrorStackViewer",
@@ -424,13 +430,8 @@ Widget.subclass('ErrorStackViewer', {
 });
 
 
-// 
-
-function openTestRunner() {
-	new TestRunner().openIn(WorldMorph.current(), pt(120, 10));
-};
-
-function inspectObj(object) {
+// For convenience
+SimpleInspector.inspectObj = function(object) {
     new SimpleInspector(object).openIn(WorldMorph.current(), pt(200,10))
 };
 
