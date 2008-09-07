@@ -1246,12 +1246,32 @@ Morph.subclass("TextListMorph", {
 
 });
 
-Object.subclass('MenuItem', {
+
+Morph.subclass('PseudoMorph', {
+    description: "This hack to make various objects serializable, despite not being morphs",
+    initialize: function($super) {
+	$super(pt(0,0).extent(0,0), "rect");
+	this.undisplay();
+    }
+
+
+});
+
+PseudoMorph.subclass('MenuItem');
+
+MenuItem.addProperties({
+    Para1: { name: 'para-1' }
+	
+});
+
+MenuItem.addMethods({
     
-    initialize: function(name, action, para1, para2) {
+    initialize: function($super, name, action, para1, para2) {
+	$super();
 	this.name = name;
 	this.action = action;
 	this.para1 = para1;
+	if (Object.isString(para1)) this.setPara1(para1);
 	this.para2 = para2;
     },
 
@@ -1270,8 +1290,8 @@ Object.subclass('MenuItem', {
                 console.log("no menu target, menu target " + targetMorph);
             }
         } else {
-            var func = this.action[this.para1];  // target[functionName]
-            if (func == null) console.log('Could not find function ' + this.para1);
+            var func = this.action[this.getPara1() || this.para1];  // target[functionName]
+            if (func == null) console.log('Could not find function ' + this.para1 + " on " + this.action);
             // call as target.function(parameterOrNull,event,menuItem)
             else func.call(this.action, this.para2, evt, this); 
         }
@@ -1323,7 +1343,9 @@ Morph.subclass("MenuMorph", {
         //     menu.openIn(world,location,stayUp,captionIfAny);
 	
         $super(pt(0, 0).extentAsRectangle(), "rect");
-        this.items = items.map(function(item) { return new MenuItem(item[0], item[1], item[2], item[3])});
+        this.items = items.map(function(item) { 
+	    return this.addMorph(new MenuItem(item[0], item[1], item[2], item[3])); 
+	}, this);
         this.targetMorph = targetMorph || this;
         this.listMorph = null;
         this.applyStyle({fill: null, borderWidth: 0, fillOpacity: 0});
@@ -1331,31 +1353,38 @@ Morph.subclass("MenuMorph", {
 
     deserialize: function($super, importer, rawNode) {
 	$super(importer, rawNode);
-	//this.items = []; // FIXME remove
 	this.listMorph.relayMouseEvents(this);
+        this.listMorph.highlightItemsOnMove = true;
+        this.stayUp = true; // deserializing, so stay up, FIXME: make persistent
     },
 
     addItem: function(item) { 
-        this.items.push(new MenuItem(item[0], item[1], item[2], item[3]));
+	var item = new MenuItem(item[0], item[1], item[2], item[3]);
+	this.addMorph(item);
+        this.items.push(item);
     },
 
     addLine: function(item) { // Not yet supported
         // The idea is for this to add a real line on top of the text
-        this.items.push(new MenuItem('-----'));
+	var item = new MenuItem('-----');
+	this.addMorph(item);
+        this.items.push(item);
     },
 
     removeItemNamed: function(itemName) {
         // May not remove all if some have same name
         // Does not yet fix up the lines array
         for (var i = 0; i < this.items.length; i++)
-            if (this.items[i].name == itemName)
+            if (this.items[i].name == itemName) {
+		this.items[i].remove();
                 this.items.splice(i,1);
+	    }
     },
 
     replaceItemNamed: function(itemName, newItem) {
         for (var i = 0; i < this.items.length; i++)
             if (this.items[i].name == itemName)
-                this.items[i] = newItem;
+                this.items[i] = this.addMorph(new MenuItem(newItem[0], newItem[1], newItem[2], newItem[3]));
     },
 
     removeItemsNamed: function(nameList) {
@@ -1387,7 +1416,7 @@ Morph.subclass("MenuMorph", {
 
         parentMorph.addMorphAt(this, loc);
 	
-	var textList = this.items.map(function(item) { return item.name; });
+	var textList = this.items.pluck('name');
         this.listMorph = new TextListMorph(pt(this.estimateListWidth(TextMorph.prototype), 0).extentAsRectangle(), 
 					   textList, pt(0, this.listStyle.borderRadius), this.textStyle);
 	
