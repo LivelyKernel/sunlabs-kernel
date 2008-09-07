@@ -1253,26 +1253,27 @@ Morph.subclass('PseudoMorph', {
 	$super(pt(0,0).extent(0,0), "rect");
 	this.undisplay();
     }
-
-
 });
 
 PseudoMorph.subclass('MenuItem');
 
 MenuItem.addProperties({
-    Para1: { name: 'para-1' }
-	
+    Selector: { name: 'selector' },
+    Argument: {name: 'argument', from:Converter.fromJSONAttribute, to:Converter.toJSONAttribute }
 });
 
 MenuItem.addMethods({
     
-    initialize: function($super, name, action, para1, para2) {
+    initialize: function($super, name, closureOrMorph, selectorOrClosureArg, selectorArg) {
 	$super();
 	this.name = name;
-	this.action = action;
-	this.para1 = para1;
-	if (Object.isString(para1)) this.setPara1(para1);
-	this.para2 = para2;
+	this.action = closureOrMorph;
+	this.para1 = selectorOrClosureArg;
+	this.para2 = selectorArg;
+	if (!(closureOrMorph instanceof Function)) {
+	    this.setSelector(selectorOrClosureArg);
+	    this.setArgument(Converter.toJSONAttribute(selectorArg));
+	}
     },
 
     invoke: function(evt, targetMorph) {
@@ -1290,10 +1291,14 @@ MenuItem.addMethods({
                 console.log("no menu target, menu target " + targetMorph);
             }
         } else {
-            var func = this.action[this.getPara1() || this.para1];  // target[functionName]
-            if (func == null) console.log('Could not find function ' + this.para1 + " on " + this.action);
+	    var functionName = this.getSelector() || this.para1;
+            var func = this.action[functionName];  // target[functionName]
+            if (func == null) console.log('Could not find function ' + functionName + " on " + this.action);
             // call as target.function(parameterOrNull,event,menuItem)
-            else func.call(this.action, this.para2, evt, this); 
+            else { 	    
+		var arg = this.getArgument();
+		func.call(this.action, arg, evt, this); 
+	    }
         }
     }
 
