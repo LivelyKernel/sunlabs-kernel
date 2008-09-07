@@ -4236,10 +4236,12 @@ Morph.subclass("EngineMorph", {
         piston.addMorph(wristPin);
 
         // Duplicate and rotate the cylinder assembly to complete the engine
-        if (this.cylinders) this.cylinders.each( // remove any previous assemblies
-            function(each) { each.connectingRod.remove(); each.remove(); } 
-        );
+        if (this.cylinders) this.cylinders.invoke('remove'); // remove any previous assemblies
+	if (this.connectingRods) this.connectingRods.invoke('remove');
+
+
         this.cylinders = []; // Note this is an array that points to various submorphs
+	this.connectingRods = [];
         for (var i=0; i<nCylinders; i++) {
             var cyl = cylinder.copy();
             this.addMorph(cyl)
@@ -4251,11 +4253,11 @@ Morph.subclass("EngineMorph", {
             cyl.wristPin = cyl.piston.topSubmorph();
             this.cylinders.push(cyl);
             // Note: cyl.connectingRod points to a morph that is not a submorph
-            cyl.connectingRod = Morph.makeLine(
+            this.connectingRods[i] = Morph.makeLine(
                 [pt(10, 10), pt(10, 10)],  // Real endpoints get set in 
                 cr.width*0.15, Color.gray.darker(2) 
             );
-            this.addMorph(cyl.connectingRod) 
+            this.addMorph(this.connectingRods[i]) 
             this.movePiston(cyl);
         };
 	this.doStep(); // makes connecting rods
@@ -4294,13 +4296,13 @@ Morph.subclass("EngineMorph", {
         this.crankAngle += this.angleStep;
         if (this.crankAngle > Math.PI*4) this.crankAngle -= Math.PI*4;
         this.crank.setRotation(this.crankAngle);  // Rotate the crankshaft
-        this.cylinders.each(function(cyl) {
+        this.cylinders.forEach(function(cyl, i) {
             this.movePiston(cyl);  // Move the pistons
-            cyl.connectingRod.setVertices(  // Relocate the connecting rods
-                [cyl.connectingRod.localizePointFrom(cyl.wristPin.bounds().center(), cyl.piston),
-                cyl.connectingRod.localizePointFrom(this.crankPin.bounds().center(), this.crank)]
+            this.connectingRods[i].setVertices(  // Relocate the connecting rods
+                [this.connectingRods[i].localizePointFrom(cyl.wristPin.bounds().center(), cyl.piston),
+                this.connectingRods[i].localizePointFrom(this.crankPin.bounds().center(), this.crank)]
             );
-        }.bind(this) );
+        }, this);
     },
 
     setAlternateTiming: function(trueOrFalse) {
