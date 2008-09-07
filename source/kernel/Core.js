@@ -5042,8 +5042,8 @@ Morph.addMethods({
 	this.withAllSubmorphsDo( function() { this.closeDnD(); });
     },
 
-    openAllToDnD: function(loc) {
-	// Close this and all submorphs to drag and drop
+    openAllToDnD: function() {
+	// Open this and all submorphs to drag and drop
 	this.withAllSubmorphsDo( function() { this.openDnD(); });
     },
 
