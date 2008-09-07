@@ -1246,6 +1246,41 @@ Morph.subclass("TextListMorph", {
 
 });
 
+Object.subclass('MenuItem', {
+    
+    initialize: function(name, action, para1, para2) {
+	this.name = name;
+	this.action = action;
+	this.para1 = para1;
+	this.para2 = para2;
+    },
+
+    invoke: function(evt, targetMorph) {
+        if (this.action instanceof Function) { // alternative style, items ['menu entry', function] pairs
+            this.action.call(targetMorph || this, evt);
+        } else if (Object.isString(this.action.valueOf())) {
+            // another alternative style, send a message to the targetMorph's menu target (presumably a view).
+            var responder = (targetMorph || this).getModelValue("getMenuTarget");
+            if (responder)  {
+                console.log("menu target is " + responder);
+                var func = responder[this.action];
+                if (!func) console.log("didn't find function " + this.action);
+                else func.call(responder, this.para1, evt, this);
+            } else {
+                console.log("no menu target, menu target " + targetMorph);
+            }
+        } else {
+            var func = this.action[this.para1];  // target[functionName]
+            if (func == null) console.log('Could not find function ' + this.para1);
+            // call as target.function(parameterOrNull,event,menuItem)
+            else func.call(this.action, this.para2, evt, this); 
+        }
+    }
+
+});
+
+
+
 Morph.subclass("MenuMorph", {
 
     listStyle: { 
@@ -1288,32 +1323,38 @@ Morph.subclass("MenuMorph", {
         //     menu.openIn(world,location,stayUp,captionIfAny);
 	
         $super(pt(0, 0).extentAsRectangle(), "rect");
-        this.items = items;
+        this.items = items.map(function(item) { return new MenuItem(item[0], item[1], item[2], item[3])});
         this.targetMorph = targetMorph || this;
         this.listMorph = null;
         this.applyStyle({fill: null, borderWidth: 0, fillOpacity: 0});
     },
 
+    deserialize: function($super, importer, rawNode) {
+	$super(importer, rawNode);
+	//this.items = []; // FIXME remove
+	this.listMorph.relayMouseEvents(this);
+    },
+
     addItem: function(item) { 
-        this.items.push(item);
+        this.items.push(new MenuItem(item[0], item[1], item[2], item[3]));
     },
 
     addLine: function(item) { // Not yet supported
         // The idea is for this to add a real line on top of the text
-        this.items.push(['-----']);
+        this.items.push(new MenuItem('-----'));
     },
 
     removeItemNamed: function(itemName) {
         // May not remove all if some have same name
         // Does not yet fix up the lines array
         for (var i = 0; i < this.items.length; i++)
-            if (this.items[i][0] == itemName)
+            if (this.items[i].name == itemName)
                 this.items.splice(i,1);
     },
 
     replaceItemNamed: function(itemName, newItem) {
         for (var i = 0; i < this.items.length; i++)
-            if (this.items[i][0] == itemName)
+            if (this.items[i].name == itemName)
                 this.items[i] = newItem;
     },
 
@@ -1323,7 +1364,7 @@ Morph.subclass("MenuMorph", {
 
     keepOnlyItemsNamed: function(nameList) {
         var rejects = [];
-        this.items.forEach( function(item) { if (nameList.indexOf(item[0]) < 0) rejects.push(item[0])});
+        this.items.forEach(function(item) { if (nameList.indexOf(item.name) < 0) rejects.push(item.name)});
         this.removeItemsNamed(rejects);
     },
 
@@ -1331,9 +1372,8 @@ Morph.subclass("MenuMorph", {
 	// estimate with based on some prototypical TextMorph object
 	// lame but let's wait to do the right thing until the layout business is complete
 	var maxWidth = 0;
-	for (var i = 0; i < this.items.length; i++) {
-	    if (this.items[i][0].length > maxWidth) maxWidth = this.items[i][0].length;
-	}
+	for (var i = 0; i < this.items.length; i++)
+	    if (this.items[i].name.length > maxWidth) maxWidth = this.items[i].name.length;
 	var protoPadding = Rectangle.inset(6, 4);
 	return maxWidth*proto.fontSize/2 + protoPadding.left() + protoPadding.right();
     },
@@ -1347,7 +1387,7 @@ Morph.subclass("MenuMorph", {
 
         parentMorph.addMorphAt(this, loc);
 	
-	var textList = this.items.map(function(item) { return item[0]; });
+	var textList = this.items.map(function(item) { return item.name; });
         this.listMorph = new TextListMorph(pt(this.estimateListWidth(TextMorph.prototype), 0).extentAsRectangle(), 
 					   textList, pt(0, this.listStyle.borderRadius), this.textStyle);
 	
@@ -1447,26 +1487,7 @@ Morph.subclass("MenuMorph", {
     
     invokeItem: function invokeItem(evt, item) {
         if (!item) return;
-
-        if (item[1] instanceof Function) { // alternative style, items ['menu entry', function] pairs
-            item[1].call(this.targetMorph || this, evt);
-        } else if (Object.isString(item[1].valueOf())) {
-            // another alternative style, send a message to the targetMorph's menu target (presumably a view).
-            var responder = (this.targetMorph || this).getModelValue("getMenuTarget");
-            if (responder)  {
-                console.log("menu target is " + responder);
-                var func = responder[item[1]];
-                if (!func) console.log("didn't find function " + item[1]);
-                else func.call(responder, item[2], evt, item);
-            } else {
-                console.log("no menu target, menu target " + this.targetMorph);
-            }
-        } else {
-            var func = item[1][item[2]];  // target[functionName]
-            if (func == null) console.log('Could not find function ' + item[2]);
-            // call as target.function(parameterOrNull,event,menuItem)
-            else func.call(item[1], item[3], evt, item); 
-        }
+	item.invoke(evt, this.targetMorph);
     }
 
 });
