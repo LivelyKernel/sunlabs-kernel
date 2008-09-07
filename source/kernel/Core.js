@@ -3372,7 +3372,7 @@ Object.subclass('Copier', {
     },
 
     initialize: function() {
-	this.morphMap_ = [];
+	this.morphMap_ = {};
     },
 
     addMapping: function(oldId, newMorph) {
@@ -3769,7 +3769,6 @@ Visual.subclass('Morph', {
     },
     
     deserialize: function(importer, rawNode) {
-
 	// FIXME what if id is not unique?
 	importer.addMapping(rawNode.getAttribute("id"), this); 
 	this.internalInitialize(rawNode);
@@ -3997,7 +3996,7 @@ Visual.subclass('Morph', {
 			var ref = LivelyNS.getAttribute(elt, "ref");
 			if (ref) {
 			    var found = importer.lookupMorph(ref);
-			    if (!found) console.warn("value not found for array %s ref %s", name, ref);
+			    if (!found) console.warn("value not found for array " + name +  " ref "  +  ref);
 			    this[name].push(found);
 			} else this[name].push(null);
 		    }
