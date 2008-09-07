@@ -4116,16 +4116,49 @@ ClipMorph.subclass("lk.examples.canvascape.CanvasScapeMorph", {
 // The Morphic Radial Engine Demo
 // ===========================================================================
 
-Morph.subclass("EngineMorph", {
-    documentation: "The Radial Engine demo",
 
+Morph.subclass("EngineMorph");
+
+EngineMorph.addProperties({
+    NormalSpeed: { name: "normal-speed", from: Number, to: String, byDefault: 100},
+    Stroke: { name: "engine-stroke", from: Number, to: String},
+    CrankAngle: {name: "crank-angle", from: Number, to: String},
+    Running: {name: "running", from:Converter.toBoolean, to: Converter.fromBoolean },
+    Alternate: {name: "alternate", from:Converter.toBoolean, to: Converter.fromBoolean }
+});
+
+EngineMorph.addMethods({
+    documentation: "The Radial Engine demo",
+    angleStep: Math.PI/8,
+    
     initialize: function($super, fullRect) {
         // A lively model by Dan Ingalls - 9/25/2007
         $super(fullRect, "rect");
         this.setFill(new LinearGradient([Color.gray, 1, Color.darkGray], LinearGradient.NorthSouth));
         this.makeLayout(1, false);
-        this.running = true;
+        this.setRunning(true);
     },
+
+    initializeTransientState: function($super, initialBounds) {
+	var bnds = this.innerBounds().withHeight(this.innerBounds().width);
+        var center = bnds.center();
+        var relBore = 0.14;
+        var cr = bnds.scaleByRect(new Rectangle(0.5 - (relBore/2), 0.1, relBore, 0.2));
+        var dHead = cr.width*0.2;  // slight dome at top of cylinder -- room for valves
+        var pistonBW = 2;
+	this.topPosDisplacement = pt(pistonBW, dHead);
+    },
+
+
+    deserialize: function($super, importer, rawNode) {
+	$super(importer, rawNode);
+	this.cylinders.forEach(function(cyl, i, array) {
+	    cyl.angle = (Math.PI*2/array.length)*i;
+            if (this.getAlternate() && i%2 == 1) cyl.angle += Math.PI*2;
+	    cyl.piston.topPos = cyl.innerBounds().topLeft().addPt(this.topPosDisplacement);
+	}, this);
+    },
+
 
     makeLayout: function(nCylinders, alternating) {
         // FYI, here's the declarative structure...
@@ -4140,15 +4173,13 @@ Morph.subclass("EngineMorph", {
 
         var bnds = this.innerBounds().withHeight(this.innerBounds().width);
         var center = bnds.center();
-        this.stroke = bnds.height*0.14;
-        this.normalSpeed = 100
-        this.crank = Morph.makeCircle(center, this.stroke*0.8, 4, Color.black, Color.gray);
+        this.setStroke(bnds.height*0.14);
+        this.setNormalSpeed(100);
+        this.crank = Morph.makeCircle(center, this.getStroke()*0.8, 4, Color.black, Color.gray);
         this.addMorph(this.crank);
-        this.crankPin = Morph.makeCircle(pt(0, -this.stroke/2), this.stroke*0.25, 0, null, Color.black);
+        this.crankPin = Morph.makeCircle(pt(0, -this.getStroke()/2), this.getStroke()*0.25, 0, null, Color.black);
         this.crank.addMorph(this.crankPin);
-        this.crankAngle = 0;  // goes up to 4*pi, while rotation wraps at 2*pi
-        this.angleStep = Math.PI/8;
-        this.alternateTiming = alternating;
+        this.setAlternate(alternating);
         this.makeCylinders(nCylinders);
 
         var menu = new MenuMorph([]);
@@ -4171,27 +4202,27 @@ Morph.subclass("EngineMorph", {
     addRunMenu: function() {
         if (this.runMenu) this.runMenu.remove();
         this.runMenu = new MenuMorph([
-            (this.running ? ["stop", this, 'setRunning', false]
-                          : ["run", this, 'setRunning', true]),
+            (this.getRunning() ? ["stop", this, 'updateRunning', false]
+                          : ["run", this, 'updateRunning', true]),
             ["step", this, 'doStep'],
             ["rebuild", this, 'rebuild'],
-            (this.stepTime == this.normalSpeed ? ["fast", this, 'setStepTime', 1]
-                                               : ["slow", this, 'setStepTime', this.normalSpeed])
+            (this.stepTime == this.getNormalSpeed() ? ["fast", this, 'setStepTime', 1]
+             : ["slow", this, 'setStepTime', this.getNormalSpeed()])
         ]);
         this.runMenu.openIn(this, pt(310,515), true, "Operating State");
     },
 
     makeCylinders: function(nCylinders) {
         // Build cylinder-piston assembly with center of rotation at crank center
-        this.crankAngle = 0;
-        this.crank.setRotation(this.crankAngle);
+        this.setCrankAngle(0); // goes up to 4*pi, while rotation wraps at 2*pi
+        this.crank.setRotation(this.getCrankAngle());
         var bnds = this.innerBounds().withHeight(this.innerBounds().width);
         var center = bnds.center();
         var relBore = 0.14;
         var cr = bnds.scaleByRect(new Rectangle(0.5 - (relBore/2), 0.1, relBore, 0.2));
         var dHead = cr.width*0.2;  // slight dome at top of cylinder -- room for valves
         var cylVerts = [cr.topRight(), cr.bottomRight(),  //vertices of cylinder polygon
-            cr.topRight().addXY(0, this.stroke), cr.topLeft().addXY(0, this.stroke),
+            cr.topRight().addXY(0, this.getStroke()), cr.topLeft().addXY(0, this.getStroke()),
             cr.bottomLeft(), cr.topLeft(),
             cr.topLeft().addXY(dHead, -dHead), cr.topRight().addXY(-dHead, -dHead),
             cr.topRight()
@@ -4202,7 +4233,7 @@ Morph.subclass("EngineMorph", {
         cylinder.setPosition(cr.topLeft().addXY(0, -dHead));
         var pistonBW = 2;
         var pistonDx = (cylinder.getBorderWidth() + pistonBW) / 2;
-        var piston = new Morph(cr.insetByPt(pt(pistonDx, (cr.height-this.stroke)/2)), "rectangle");
+        var piston = new Morph(cr.insetByPt(pt(pistonDx, (cr.height-this.getStroke())/2)), "rectangle");
 	piston.applyStyle({fill: Color.darkGray, borderWidth: pistonBW});
         cylinder.addMorph(piston);
         var wristPin = Morph.makeCircle(piston.innerBounds().center(), cr.width*0.1, 0, null, Color.black);
@@ -4219,18 +4250,17 @@ Morph.subclass("EngineMorph", {
             var cyl = cylinder.copy();
             this.addMorph(cyl)
             cyl.angle = (Math.PI*2/nCylinders)*i;
-            if (this.alternateTiming && i%2 == 1) cyl.angle += Math.PI*2;
+            if (this.getAlternate() && i%2 == 1) cyl.angle += Math.PI*2;
             cyl.setRotation(cyl.angle);
             cyl.piston = cyl.topSubmorph();
-            cyl.piston.topPos = cyl.innerBounds().topLeft().addXY(pistonDx, dHead);
+	    cyl.piston.topPos = cyl.innerBounds().topLeft().addPt(this.topPosDisplacement);
             cyl.wristPin = cyl.piston.topSubmorph();
             this.cylinders.push(cyl);
             // Note: cyl.connectingRod points to a morph that is not a submorph
-            this.connectingRods[i] = Morph.makeLine(
+            this.connectingRods[i] = this.addMorph(Morph.makeLine(
                 [pt(10, 10), pt(10, 10)],  // Real endpoints get set in 
                 cr.width*0.15, Color.gray.darker(2) 
-            );
-            this.addMorph(this.connectingRods[i]) 
+            ));
             this.movePiston(cyl);
         };
 	this.doStep(); // makes connecting rods
@@ -4238,9 +4268,9 @@ Morph.subclass("EngineMorph", {
 
     movePiston: function(cyl) { // Method to move piston and connecting rod
         var pi = Math.PI;
-        var phase = (this.crankAngle - cyl.angle);
+        var phase = (this.getCrankAngle() - cyl.angle);
         if (phase < 0) phase += pi*4;
-        var dy = (Math.cos(phase) - 1) * this.stroke/2;
+        var dy = (Math.cos(phase) - 1) * this.getStroke()/2;
         cyl.piston.setPosition(cyl.piston.topPos.addXY(0, -dy));
         var cycle = Math.floor(phase / pi);  // Change color based on cycle
         var frac = phase / pi - cycle;  // Change shading based on fractional part of cycle (wow ;-)
@@ -4253,22 +4283,25 @@ Morph.subclass("EngineMorph", {
         if (Math.abs(phase-2*pi) < this.angleStep/2) cyl.setFill(Color.yellow);  // ignition
     },
 
-    setRunning: function(trueOrFalse) {
-        this.running = trueOrFalse;
+    updateRunning: function(trueOrFalse) {
+        this.setRunning(trueOrFalse);
         this.addRunMenu();
     },
 
     nextStep: function() {
-        if (!this.running) return;
+        if (!this.getRunning()) {
+	    return;
+	}
         // Don't bother stepping if we are in a collapsed window
         if (this.immediateContainer() && !this.immediateContainer().contentIsVisible()) return;
         this.doStep();
     },
 
     doStep: function() {
-        this.crankAngle += this.angleStep;
-        if (this.crankAngle > Math.PI*4) this.crankAngle -= Math.PI*4;
-        this.crank.setRotation(this.crankAngle);  // Rotate the crankshaft
+	var newCrankAngle = this.getCrankAngle() + this.angleStep; 
+        if (newCrankAngle > Math.PI*4) newCrankAngle -= Math.PI*4;
+	this.setCrankAngle(newCrankAngle);
+        this.crank.setRotation(newCrankAngle);  // Rotate the crankshaft
         this.cylinders.forEach(function(cyl, i) {
             this.movePiston(cyl);  // Move the pistons
             this.connectingRods[i].setVertices(  // Relocate the connecting rods
@@ -4280,14 +4313,14 @@ Morph.subclass("EngineMorph", {
 
     setAlternateTiming: function(trueOrFalse) {
         // Demonstrate alternate and sequential firing order
-        this.alternateTiming = trueOrFalse;
+        this.setAlternate(trueOrFalse);
         this.makeCylinders(this.cylinders.length);
 	this.doStep(); // makes connecting rods
     },
 
     rebuild: function() {
         this.removeAllMorphs();
-        this.makeLayout(this.cylinders.length, this.alternateTiming);
+        this.makeLayout(this.cylinders.length, this.getAlternate());
     },
 
     setStepTime: function(ms) {
@@ -4297,7 +4330,7 @@ Morph.subclass("EngineMorph", {
         this.startStepping(ms,'nextStep');
     },
 
-    startSteppingScripts: function() { this.setStepTime(this.normalSpeed); },
+    startSteppingScripts: function() { this.setStepTime(this.getNormalSpeed()); },
 
     layoutOnSubmorphLayout: Functions.False
 });
