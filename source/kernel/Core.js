@@ -146,15 +146,7 @@ Object.extend(Function.prototype, {
 		var method = value;
 		var advice = (function(m) {
 		    return function callSuper() { 
-			try { 
-			    return ancestor[m].apply(this, arguments);
-			} catch (e) { 
-			    debugger;
-			    console.log("problem with ancestor %s.%s(%s):%s",
-					Object.inspect(ancestor), m, $A(arguments), e);
-			    Function.showStack();
-			    throw e;
-			}
+			return ancestor[m].apply(this, arguments);
 		    };
 		})(property);
 		advice.methodName = "$super:" + (this.superclass ? this.superclass.type + "." : "") + property;
@@ -1279,6 +1271,7 @@ var Converter = {
     },
 
     fromBoolean: function(object) {
+	if (object == null) return false;
 	var b = object.valueOf();
 	return b === true ? true : false;
     },
@@ -2196,12 +2189,12 @@ Object.subclass('Similitude', {
     initialize: function(delta, angleInRadians, scale) {
 	if (angleInRadians === undefined) angleInRadians = 0.0;
 	if (scale === undefined) scale = 1.0;
-	this.a = scale * Math.cos(angleInRadians);
-	this.b = scale * Math.sin(angleInRadians);
-	this.c = scale * - Math.sin(angleInRadians);
-	this.d = scale * Math.cos(angleInRadians);
-	this.e =  delta.x;
-	this.f =  delta.y;
+	this.a = this.ensureNumber(scale * Math.cos(angleInRadians));
+	this.b = this.ensureNumber(scale * Math.sin(angleInRadians));
+	this.c = this.ensureNumber(scale * - Math.sin(angleInRadians));
+	this.d = this.ensureNumber(scale * Math.cos(angleInRadians));
+	this.e = this.ensureNumber(delta.x);
+	this.f = this.ensureNumber(delta.y);
 	this.matrix_ = this.toMatrix();
     },
 
@@ -2306,11 +2299,6 @@ Object.subclass('Similitude', {
 
     toMatrix: function() {
 	var mx = this.canvas().createSVGMatrix();
-	// note that if a,b,.. f are not numbers, it's usually a
-	// problem, which may crash browsers (like Safari) that don't
-	// do good typechecking of SVGMatrix properties before passing
-	// them to native code. We could check here, but the problem
-	// most likely happened much earlier
 	mx.a = this.a;
 	mx.b = this.b;
 	mx.c = this.c;
@@ -2320,13 +2308,24 @@ Object.subclass('Similitude', {
 	return mx;
     },
 
+    ensureNumber: function(value) {
+	// note that if a,b,.. f are not numbers, it's usually a
+	// problem, which may crash browsers (like Safari) that don't
+	// do good typechecking of SVGMatrix properties before passing
+	// them to native code.  It's probably too late to figure out
+	// the cause, but at least we won't crash.
+	if (isNaN(value)) { debugger; throw new Error('not a number');}
+	return value;
+    },
+
+
     fromMatrix: function(mx) {
-	this.a = mx.a;
-	this.b = mx.b;
-	this.c = mx.c;
-	this.d = mx.d;
-	this.e = mx.e;
-	this.f = mx.f;
+	this.a = this.ensureNumber(mx.a);
+	this.b = this.ensureNumber(mx.b);
+	this.c = this.ensureNumber(mx.c);
+	this.d = this.ensureNumber(mx.d);
+	this.e = this.ensureNumber(mx.e);
+	this.f = this.ensureNumber(mx.f);
 	this.matrix_ = this.toMatrix();
     },
     
