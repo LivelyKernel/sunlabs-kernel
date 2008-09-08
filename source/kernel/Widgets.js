@@ -1286,14 +1286,6 @@ TextListMorph.subclass("ListMorph", {
     
 });
 
-Morph.subclass('PseudoMorph', {
-    description: "This hack to make various objects serializable, despite not being morphs",
-    initialize: function($super) {
-	$super(pt(0,0).extent(0,0), "rect");
-	this.undisplay();
-    }
-});
-
 PseudoMorph.subclass('MenuItem');
 
 MenuItem.addProperties({

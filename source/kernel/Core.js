@@ -3988,14 +3988,14 @@ Visual.subclass('Morph', {
 		this.restoreFromSubnode(importer, node);
 		break;
 		// nodes from the Lively namespace
-	    case "action": {
+	    case "action":  { // FIXME: compatibility, remove
+		
 		var a = new SchedulableAction(importer, node);
-		a.actor = this;
+		a.actor = this; // FIXME: this isn't true for SchedulableAction used for generic actions
 		this.addActiveScript(a);
-		// console.log('deserialized script ' + a);
 		// don't start the action until morph fully constructed
 		break;
-	    }
+	    } 
 	    case "model": {
 		if (modelNode) console.warn("%s already has modelNode %s", this, modelNode);
 		modelNode = node;
@@ -4034,6 +4034,7 @@ Visual.subclass('Morph', {
 		break;
 	    }
 	    case "array": {
+		helperNodes.push(node);
 		var name = LivelyNS.getAttribute(node, "name");
 		this[name] = [];
 		for (var elt = node.firstChild; elt != null; elt = elt.nextSibling) {
@@ -4041,7 +4042,7 @@ Visual.subclass('Morph', {
 			var ref = LivelyNS.getAttribute(elt, "ref");
 			if (ref) {
 			    var found = importer.lookupMorph(ref);
-			    if (!found) console.warn("value not found for array " + name +  " ref "  +  ref);
+			    if (!found) console.warn("value not found for array " + name +  ": ref "  +  ref);
 			    this[name].push(found);
 			} else this[name].push(null);
 		    }
@@ -4135,6 +4136,11 @@ Visual.subclass('Morph', {
 	    this.setTrait("transform", this.getTransform().toAttributeValue());
 	    // FIXME, remove?
 	}
+	
+	function addNL(self) {
+	    extraNodes.push(self.addNonMorph(NodeFactory.createNL()));
+	}
+
 	for (var prop in this) {
 	    if (!this.hasOwnProperty(prop)) continue;
 	    var m = this[prop];
@@ -4144,7 +4150,7 @@ Visual.subclass('Morph', {
 		//console.log("serializing field name='%s', ref='%s'", prop, m.id(), m.getType());
 		var desc = LivelyNS.create("field", {name: prop, ref: m.id()});
 		extraNodes.push(this.addNonMorph(desc));
-		extraNodes.push(this.addNonMorph(NodeFactory.createNL()));
+		addNL(this);
 	    } else if (m instanceof Array) {
 		if (prop === 'submorphs')
 		    continue;  // we'll deal manually
@@ -4157,17 +4163,20 @@ Visual.subclass('Morph', {
 		    }
 		    // if item empty, don't set the ref field
 		    var item =  elt ? LivelyNS.create("item", {ref: elt.id()}) : LivelyNS.create("item"); 
-		    arr.appendChild(item);
+		    extraNodes.push(arr.appendChild(item));
 		    extraNodes.push(arr.appendChild(NodeFactory.createNL()));
 		}, this);
-		if (!abort) extraNodes.push(this.addNonMorph(arr));
+		if (!abort) { 
+		    extraNodes.push(this.addNonMorph(arr));
+		    addNL(this);
+		}
 	    } else if (m instanceof Number || (typeof m == 'number') || 
 		       (m instanceof Boolean || (typeof m == 'boolean')) ||
 		       (m instanceof String || (typeof m == 'string'))) {
 		// FIXME: deal with arrays of primitives etc?
 		var desc = LivelyNS.create("field", {name: prop, value: JSON.serialize(m)});
 		extraNodes.push(this.addNonMorph(desc));
-		extraNodes.push(this.addNonMorph(NodeFactory.createNL()));
+		addNL(this);
 	    }
 	}
     },
@@ -5189,7 +5198,16 @@ Morph.addMethods({
 
 });
 
-Wrapper.subclass('SchedulableAction', {
+Morph.subclass('PseudoMorph', {
+    description: "This hack to make various objects serializable, despite not being morphs",
+    initialize: function($super) {
+	$super(pt(0,0).extent(0,0), "rect");
+	this.undisplay();
+    }
+
+});
+
+PseudoMorph.subclass('SchedulableAction', {
 
     documentation: "Description of a periodic action",
     beVerbose: false,
@@ -5197,28 +5215,23 @@ Wrapper.subclass('SchedulableAction', {
     initialize: function($super, actor, scriptName, argIfAny, stepTime) {
 	$super();
 	this.actor = actor;
-	this.rawNode = LivelyNS.create("action"); // FIXME stop generating these eagerly
 	this.scriptName = scriptName;
-	this.argIfAny = argIfAny;
+	this.argIfAny = argIfAny; // better be primitive
 	this.stepTime = stepTime;
 	this.ticks = 0;
-	this.rawNode.appendChild(NodeFactory.createCDATA(JSON.serialize(this)));
     },
 
     deserialize: function($super, importer, rawNode) {
-	$super(importer, rawNode);
-	this.rawNode = rawNode;
-	var init = JSON.unserialize(rawNode.textContent);
-	Object.extend(this, init);
-    },
-
-    toJSON: function() {
-	// do not try to to convert actor to JSON
-	return {scriptName: this.scriptName, argIfAny: this.argIfAny, stepTime: this.stepTime, ticks: this.ticks};
-    },
+	if (rawNode.localName == "action") { // compatibility with the new format
+	    this.rawNode = rawNode;
+	    var init = JSON.unserialize(rawNode.textContent);
+	    Object.extend(this, init);
+	} else $super(importer, rawNode);
+     },
 
     toString: function() {
-	return Strings.format("#<SchedulableAction[script=%s,arg=%s,stepTime=%s]>", this.scriptName, this.argIfAny, this.stepTime);
+	return Strings.format("#<SchedulableAction[script=%s,arg=%s,stepTime=%s]>", 
+			      this.scriptName, this.argIfAny, this.stepTime);
     },
 
     stop: function(world) {
@@ -5271,7 +5284,7 @@ Morph.addMethods({
 	if (!this.activeScripts) this.activeScripts = [action];
 	else this.activeScripts.push(action);
 	if (!action.rawNode.parentNode) 
-	    this.addWrapper(action);
+	    this.addMorph(action);
 	return this;
 	// if we're deserializing the rawNode may already be in the markup
     },
