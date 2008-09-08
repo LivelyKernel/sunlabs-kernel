@@ -1468,12 +1468,13 @@ Object.subclass('Wrapper', {
     
     setId: function(value) {
 	var prev = this.id();
-	this.rawNode.setAttribute("id", this.getType() + "." + value); // this may happen automatically anyway by setting the id property
+	// easy parsing if value is an int, just call parseInt()
+	this.rawNode.setAttribute("id", value + ":" + this.getType()); // this may happen automatically anyway by setting the id property
 	return prev;
     },
 
     setDerivedId: function(origin) {
-	this.setId(origin.id().split('.')[1]);
+	this.setId(origin.id().split(':')[0]);
 	return this;
     },
 
@@ -5222,7 +5223,7 @@ PseudoMorph.subclass('SchedulableAction', {
     },
 
     deserialize: function($super, importer, rawNode) {
-	if (rawNode.localName == "action") { // compatibility with the new format
+	if (rawNode.localName == "action") { // compatibility with the old format
 	    this.rawNode = rawNode;
 	    var init = JSON.unserialize(rawNode.textContent);
 	    Object.extend(this, init);
