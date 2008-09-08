@@ -192,7 +192,7 @@ View.subclass('lk.storage.WebFile', NetRequestReporterTrait, {
 	}
     },
     
-    fetchContent: function(url) {
+    fetchContent: function(url, optSync) {
 	this.lastFile = url; // FIXME, should be connected to a variable
 	if (url.isLeaf()) {
 	    var req = new NetRequest({model: this,  // this is not a full model
@@ -200,10 +200,12 @@ View.subclass('lk.storage.WebFile', NetRequestReporterTrait, {
 		setStatus: "setRequestStatus"});
 	    if (Config.suppressWebStoreCaching)
 		req.setRequestHeaders({"Cache-Control": "no-cache"});
+	    if (optSync) req.beSync();
 	    req.get(url);
 	} else {
 	    var req = new NetRequest({model: this, setResponseXML: "pvtSetDirectoryContent", 
 		setStatus: "setRequestStatus"});
+	    if (optSync) req.beSync();
             // initialize getting the content
 	    req.propfind(url, 1);
 	}

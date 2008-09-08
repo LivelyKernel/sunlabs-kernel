@@ -1,11 +1,13 @@
+URL.common.localWiki = URL.proxy.withFilename('wiki/');
+
+// Deprecated
 Widget.subclass('WikiWindow', NetRequestReporterTrait, {
     
     viewTitle: "WikiWindow",
     initialViewExtent: pt(550, 350),
     pins: ['Content', 'Url'],
     ctx: {},
-    //defaultUrl: URL.source.getDirectory().toString() + 'proxy/wiki',
-    defaultUrl: URL.proxy.toString() + 'wiki',
+    defaultUrl: URL.common.localWiki.toString(),
     
     initialize: function($super) {
 	$super(null);		
@@ -156,15 +158,22 @@ Widget.subclass('WikiWindow', NetRequestReporterTrait, {
 	this.setModelValue("setContent", text);
     }
 });
-    
+
+WikiWindow.open = function() {
+    var wiki = new WikiWindow();
+    wiki.open();
+    return wiki;
+};
+
 Widget.subclass('WikiNavigator', {
     
     repoUrl: function() {
             // FIXME: assertion: */proxy/wiki is used as the repository
             // if URL.source.getDirectory() is http://localhost/livelyBranch/proxy/wiki/test/
-            // the regexp outputs ["http://localhost/livelyBranch/proxy/wiki/test/", "http://localhost/livelyBranch/proxy/wiki"]\
-	    if (!URL.source.toString().include('wiki')) return URL.source.toString();
-            return /(.*\/proxy\/wiki).*/.exec(URL.source.getDirectory().toString())[1];
+            // the regexp outputs ["http://localhost/livelyBranch/proxy/wiki/test/", "http://localhost/livelyBranch/proxy/wiki"]
+            if (!URL.source.toString().include("wiki")) return URL.source.getDirectory().toString();
+            return /(.*wiki).*/.exec(URL.source.getDirectory().toString())[1];
+            // return /(.*\/proxy\/.*wiki).*/.exec(URL.source.getDirectory().toString())[1];
             //return "http://localhost/livelyBranch/proxy/wiki"
     },
    
@@ -308,43 +317,73 @@ Object.extend(WikiNavigator, {
     }
 });
 
-function openWikiWindow() {
-    var wiki = new WikiWindow();
-    wiki.open();
-    return wiki;
-};
+// will be merged with Resource
+Object.subclass('FileDirectory', {
+   
+   initialize: function(url) {
+        this.url = url.isLeaf() ? url.getDirectory() : url;
+   },
+   
+   fileContent: function(localname) {
+       var url = this.url.withFilename(localname);
+       var resource = new Resource(Record.newPlainInstance({URL: url, ContentText: null}));
+       resource.fetch(true);
+       return resource.getContentText();
+   },
+   
+   filesAndDirs: function() {
+       var url = this.url;
+       var webFile = new lk.storage.WebFile(Record.newPlainInstance(
+           {File: url, RootNode: url, Content: null, DirectoryList: null}));
+       webFile.fetchContent(webFile.formalModel.getFile(), true);
+       return webFile.formalModel.getDirectoryList();
+   },
+   
+   files: function() {
+       return this.filesAndDirs().select(function(ea) { return ea.isLeaf() });
+   },
+   
+   filenames: function() {
+       return this.files().collect(function(ea) { return ea.filename() } );
+   },
+   
+   subdirectories: function() {
+       // remove the first, its the url of the current directory
+       var result = this.filesAndDirs().reject(function(ea) { return ea.isLeaf() });
+       result.shift();
+       return result;
+   },
 
-// function svnMetadataReq() {
-//     var svnResource = new SVNResource('http://localhost/livelyBranch/proxy/wiki',
-//         Record.newPlainInstance({URL: 'http://localhost/livelyBranch/proxy/wiki/test/blabla', Metadata: null, HeadRevision: null}));
-//     svnResource.fetchMetadata(true);
-//     return svnResource.getMetadata();
-// };
-// 
-// function storeSomething() {
-//     var svnResource = new SVNResource('http://localhost/livelyBranch/proxy/wiki',
-//         Record.newPlainInstance({URL: 'http://localhost/livelyBranch/proxy/wiki/test/blabla', Metadata: null, HeadRevision: null}));
-//     svnResource.store('das ist content', true);
-// };
-// 
-// function createImg() {
-//     var m = new ImageMorph(new Rectangle(10,20,250,200), "background2.jpg");
-//     m.setFill(null);
-//     WorldMorph.current().addMorph(m);
-// };
-
-//TestCase.subclass('AAAA', { test1: function() { createImg() }});
-// (new XMLSerializer()).serializeToString(xmlobject);
-
-// x = new SVNResource('http://localhost/livelyBranch/proxy/wiki',
-//     Record.newPlainInstance({URL: 'http://localhost/livelyBranch/proxy/wiki/test/',
-//                             HeadRevision: null, ContentDocument: null, ContentText: null}));
-// x.fetch(true);
-// xml = (new DOMParser()).parseFromString(x.getContentText(), "text/xml");
-// (new XMLSerializer()).serializeToString(xml);
-// xml.getElementsByTagName('li')[4].textContent
-
-// 'http://www.webservicex.net/CurrencyConvertor.asmx/ConversionRate?FromCurrency=USD'
-// x = new SVNResource('http://localhost/livelyBranch/proxy/wiki',
-//     Record.newPlainInstance({URL: 'http://www.webservicex.net/CurrencyConvertor.asmx/ConversionRate?FromCurrency=USD&ToCurrency=EUR',
-//                                 ContentDocument: null, ContentText: null}));
+   subdirectoryNames: function() {
+       return this.subdirectories().collect(function(ea) { return ea.filename() } );
+   },
+   
+   fileOrDirectoryExists: function(localname) {
+       return new NetRequest().beSync().get(this.url.withFilename(localname)).transport.status != 404;
+   },
+   
+   writeFileNamed: function(localname, content, askUser) {
+       var url = this.url.withFilename(localname);
+       var resource = new Resource(Record.newPlainInstance({URL: url}));
+       return resource.store(content, true).getStatus().isSuccess();
+   },
+   
+   createDirectory: function(localname) {
+       return new NetRequest().beSync().mkcol(this.url.withFilename(localname)).getStatus().isSuccess();
+   },
+   
+   deleteFileNamed: function(localname) {
+       return new NetRequest().beSync().del(this.url.withFilename(localname)).getStatus().isSuccess();       
+   },
+   
+   // Move to somewhere else? Not directory specific...
+   copyFile: function(srcUrl, destUrl) {
+       return new NetRequest().beSync().copy(srcUrl, destUrl, true /*overwrite*/).getStatus().isSuccess();
+   },
+   
+   copyFileNamed: function(srcFileName, destUrl) {
+       var otherDir = new FileDirectory(destUrl);
+       otherDir.writeFileNamed(srcFileName, this.fileContent(srcFileName));
+   }
+   
+});

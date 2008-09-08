@@ -1910,9 +1910,10 @@ TextMorph.addMethods({
     },
     linkifySelection: function(emph) {
         this.world().prompt("Enter the link you wish to find...",
-			    function(response)
-			    { this.emphasizeSelection( {color: "blue", link: response} ); }
-			    .bind(this));
+			    function(response) {
+			        if (!response.startsWith('http://')) response = URL.source.withFilename(response).toString();
+			        this.emphasizeSelection( {color: "blue", link: response} );
+			    }.bind(this));
     },
     colorSelection: function(evt) {
 	var colors = ['black', 'brown', 'red', 'orange', 'yellow', 'green', 'blue', 'violet', 'gray', 'white'];

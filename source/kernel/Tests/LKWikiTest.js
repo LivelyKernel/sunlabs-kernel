@@ -239,6 +239,87 @@ TestCase.subclass('WikiNavigatorTest', {
     // }
 });
 
+TestCase.subclass('FileDirectoryTest', {
+    
+    setUp: function() {
+        this.url = URL.source.getDirectory();
+        this.sut = new FileDirectory(this.url);
+        this.aFileName = 'newFile';
+        this.dirname = 'testdir/';
+        this.assert(!this.sut.fileOrDirectoryExists(this.aFileName), 'failure in setup, dummy file exists');
+        this.assert(!this.sut.fileOrDirectoryExists(this.dirname), 'failure in setup, dummy dir exists');
+    },
+    
+    tearDown: function() {
+        if (this.sut.fileOrDirectoryExists(this.aFileName))
+            this.sut.deleteFileNamed(this.aFileName);
+        if (this.sut.fileOrDirectoryExists(this.dirname))
+            this.sut.deleteFileNamed(this.dirname);
+    },
+    
+    testDeleteFile: function() {
+        this.sut.writeFileNamed(this.aFileName, '');
+        this.assert(this.sut.fileOrDirectoryExists(this.aFileName), 'could not create file');
+        this.sut.deleteFileNamed(this.aFileName);
+        this.assert(!this.sut.fileOrDirectoryExists(this.aFileName), 'Could not delete file');
+    },
+    
+    testDeleteDirectory: function() {
+        this.assert(this.sut.createDirectory(this.dirname), 'failure when creating directory');
+        this.sut.deleteFileNamed(this.dirname);
+        this.assert(!this.sut.fileOrDirectoryExists(this.dirname), 'failure deleting directory');
+    },
+    
+    testGetFileContent: function() {
+        this.assert(this.sut.fileContent('index.xhtml').match(/.*<title>Sun Labs Lively Kernel<\/title>.*/),
+            'false or no content');
+    },
+    
+    testReadFiles: function() {
+        this.assert(this.sut.files(), 'no files read');
+        this.assert(this.sut.filenames().include('index.xhtml'), 'could not find index.xhtml');
+        this.assert(!this.sut.filenames().any(function (ea) { return ea.endsWith('/') }), 'non files recognized as files');
+        this.assert(this.sut.fileOrDirectoryExists('index.xhtml'), 'fileOrDirectoryExists failed?');
+    },
+    
+    testReadSubdirectories: function() {
+        this.assert(this.sut.subdirectories().first().toString() != this.url.toString(), 'first is this.url');
+        this.assert(this.sut.subdirectoryNames().all(function(ea) { return ea.endsWith('/') }), 'strange urls');
+    },
+    
+    testCreateNewFile: function() {
+        var content = 'content';
+        this.assert(!this.sut.fileOrDirectoryExists(this.aFileName), 'file does already exist');
+        this.sut.writeFileNamed(this.aFileName, content);
+        this.assert(this.sut.fileOrDirectoryExists(this.aFileName), 'no file created');
+    },
+    
+    testOverwriteExistingFile: function() {
+        var content = 'content';
+        this.sut.writeFileNamed(this.aFileName, 'blabla');
+        this.assert(this.sut.fileOrDirectoryExists(this.aFileName), 'could not create file');
+        this.sut.writeFileNamed(this.aFileName, content);
+        this.assertEqual(this.sut.fileContent(this.aFileName), content);
+    },
+    
+    testCreateDirectory: function() {
+        this.assert(!this.sut.fileOrDirectoryExists(this.dirname), 'directory already exists');
+        this.assert(this.sut.createDirectory(this.dirname), 'failure when creating directory');
+     //   this.assert(this.sut.fileOrDirectoryExists(dirname), 'directory does not exists');
+    },
+    
+    testCopyFile: function() {
+        var anotherFilename = 'anotherName';
+        var content = 'istDasSchoen!';
+        this.sut.writeFileNamed(anotherFilename, content);
+        this.sut.copyFile(this.url.withFilename(anotherFilename), this.url.withFilename(this.aFileName));
+        this.sut.deleteFileNamed(anotherFilename);
+        this.assert(this.sut.fileOrDirectoryExists(this.aFileName), 'could not copy');
+        this.assertEqual(this.sut.fileContent(this.aFileName), content, 'could not copy content');
+    },
+    
+});
+
 function exampleSVNResource() {
 	var repoUrl = URL.proxy.toString() + 'wiki';
 	var url = repoUrl + '/abc';

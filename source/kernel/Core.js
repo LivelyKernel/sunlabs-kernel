@@ -329,7 +329,6 @@ var Class = {
 
 };
 
-
 var Strings = {
     documentation: "Convenience methods on strings",
     
@@ -340,6 +339,7 @@ var Strings = {
     // adapted from firebug lite
     formatFromArray: function(objects) {
 	var self = objects.shift();
+        if(!self) {console.log("Error in Strings>>formatFromArray, self is undefined")};
 
 	function appendText(object, string) {
 	    return "" + object;
@@ -362,7 +362,7 @@ var Strings = {
 	var reg = /((^%|[^\\]%)(\d+)?(\.)([a-zA-Z]))|((^%|[^\\]%)([a-zA-Z]))/; 
 	
 	function parseFormat(fmt) {
-	    
+	    var oldFmt = fmt;
 	    var parts = [];
 	    
 	    for (var m = reg.exec(fmt); m; m = reg.exec(fmt)) {
@@ -374,8 +374,8 @@ var Strings = {
 		
 		fmt = fmt.substr(m.index + m[0].length);
 	    }
-	    
-	    parts.push(fmt.toString());
+	    if (fmt)
+                parts.push(fmt.toString());
 	    
 	    return parts;
 	};
@@ -453,7 +453,44 @@ var Properties = {
 };
 
 
+/*
+ * Stack Viewer when Dans StackTracer is not available
+ */
+function getStack() {
+    var result = [];
+    for(var caller = arguments.callee.caller; caller; caller = caller.caller) {
+        if (result.indexOf(caller) != -1) {
+           result.push({name: "recursive call cant be traced"});
+           break;
+        }
+        result.push(caller);
+    };
+    return result;  
+};
 
+function guessFunctionName(func) {
+       if(func.name) return func.name;
+       var m = func.toString().match(/function (.+)\(/);
+       if (m) return m[1];
+       return func
+};
+
+function printStack() {  
+    var string = "== Stack ==\n";
+    var stack = getStack();
+    stack.shift(); // for getStack
+    stack.shift(); // for printStack (me)
+    var indent = "";
+    for(var i=0; i < stack.length; i++) {
+        string += indent + i + ": " +guessFunctionName(stack[i]) + "\n";
+        indent += " ";        
+    };
+    return string;
+};
+
+function logStack() {
+    this.console.log(printStack())
+};
 
 /**
 /* Our extensions to JavaScript base classes
@@ -6129,8 +6166,9 @@ PasteUpMorph.subclass("WorldMorph", {
         	menu.addItem(["arm profile for next mouseUp", function() {evt.hand.armProfileFor("MouseUp") }]);
 	}
         menu.addLine();
+        menu.addItem(["authenticate for write access", function() { new NetRequest().put(URL.source.withFilename('auth')); }]);
         menu.addItem(["publish world as ... ", function() { this.prompt("world file (.xhtml)", this.exportLinkedFile.bind(this)); }]);
-	if (true /*URL.source.filename() != "index.xhtml"*/) { 
+	if (URL.source.filename() != "index.xhtml") { 
 	    // save but only if it's not the startup world
             menu.addItem(["save current world to current URL", function() { 
 		menu.remove(); 
@@ -7312,6 +7350,7 @@ HandMorph.addMethods({
         }, this);
     }
 });
+
 
 
 

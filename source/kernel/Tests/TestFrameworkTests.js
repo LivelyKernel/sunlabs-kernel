@@ -135,7 +135,11 @@ TestCase.subclass('TestResultTest', {
         var result = this.dummyTestCase.result;
         this.assertEqual(result.shortResult(), 'Tests run: 3 -- Tests failed: 1');
         this.assertEqual(result.failureList().length, 1);
-    }
+        this.assert(result.toString(), "toString failed");
+        this.assert(result.printResult(), "printResult failed");
+    },
+    
+    
 });
 
 /**
@@ -170,8 +174,8 @@ TestCase.subclass('RememberStackTest', {
 	},
 	
     // testError: function() {
-    //  this.a(1, 2, ['a', 'b', 'c']);
-    // },
+    //          this.a(1, 2, ['a', 'b', 'c']);
+    //     },
 	
 	myError: function() {
 		this.b(1);
@@ -257,6 +261,75 @@ TestCase.subclass('ErrorStackViewerTest', {
 		this.assertEqual(this.viewer.extractArgumentString("function (a, b) { }"), "a, b");
 		this.assertEqual(this.viewer.extractArgumentString("function foobar (a, b) { }"), "a, b");
 	}
+});
+
+Object.subclass('StackDummy', {
+	
+	a: function(parameter) {
+	    console.log("a callee: " + arguments.callee)
+	    console.log("a callee.caller: " + arguments.callee.caller)
+	    console.log("a callee.caller.caller: " + arguments.callee.caller.caller)
+	    console.log("a callee.caller.caller.caller: " + arguments.callee.caller.caller.caller)
+        return parameter + 1;
+	},
+	
+	b: function(parameter) {
+        return this.a(parameter) + 1
+	},
+
+	c: function(parameter) {
+        return this.b(parameter) + 1		
+	},
+	
+	d: function(parameter) {
+        return this.c(parameter) + 1		
+	},
+});
+
+function stackTestFunctions(){
+
+function a(parameter) {
+    for(p in arguments.callee.caller){
+        this.console.log("P:" + p)
+    };
+    logStack();
+    return arguments;
+};
+
+function b(parameter) {
+    return a(1,2,3)
+};
+
+c = function(parameter) {
+    return b()		
+};
+
+d = function(parameter) {
+    return c()	
+};
+
+function dummyRecurse(a) {
+    if (a < 0 ) {
+        logStack();
+        return 1
+    } else {
+        return dummyRecurse(a - 1) * a
+    }
+};
+} //stackTestFunctions
+
+
+TestCase.subclass('NativeStackTest', {
+        
+    testGetStack: function() {
+        var stack = getStack();
+        this.assert(stack.length > 1);
+           
+    },
+
+    testOpenStackViewer: function() {
+        openStackViewer();
+    }
 });
 
 

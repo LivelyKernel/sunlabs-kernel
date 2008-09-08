@@ -194,3 +194,10 @@ if (false) {
     Config.showStar = false;  // true to show star
     Config.spinningStar = false;  // true to enable spinning
 }
+
+Config.showTesterRunner = false;
+Config.showFabrikComponentBox = false;
+Config.showFahrenheitCelsiusExample = false;
+Config.showTextListExample = false;
+Config.openFabrikBrowserExample = false;
+Config.showWikiNavigator = true;

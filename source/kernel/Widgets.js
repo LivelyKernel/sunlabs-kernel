@@ -1246,6 +1246,45 @@ Morph.subclass("TextListMorph", {
 
 });
 
+// it should be the other way round...
+TextListMorph.subclass("ListMorph", {
+
+    generateListItem: function(value, rect) {
+        if(this.itemPrinter)
+            value = this.itemPrinter(value);
+        return new TextMorph(rect, value.toString()).beListItem()
+    },
+
+    generateSubmorphs: function(itemList) {
+        var rect = pt(this.baseWidth, TextMorph.prototype.fontSize).extentAsRectangle().insetByRect(this.itemMargin);
+        for (var i = 0; i < itemList.length; i++)  {
+            var m = this.generateListItem(itemList[i], rect);
+            if (this.textStyle) m.applyStyle(this.textStyle);
+            this.addMorph(m);
+            m.relayMouseEvents(this);
+        }
+    },
+    
+    selectLineAt: function(lineNo, shouldUpdateModel) {  
+        if (this.selectedLineNo in this.submorphs) { 
+            this.submorphs[this.selectedLineNo].setFill(this.savedFill);
+        }
+
+        this.selectedLineNo = lineNo;
+
+        var selectionContent = null;
+        if (lineNo in this.submorphs) {
+            var item = this.submorphs[lineNo];
+            this.savedFill = item.getFill();
+            item.setFill(TextSelectionMorph.prototype.style.fill);
+            selectionContent = this.itemList[lineNo];
+            this.scrollItemIntoView(item);
+        }
+        shouldUpdateModel && this.setSelection(selectionContent);
+    },
+    
+    
+});
 
 Morph.subclass('PseudoMorph', {
     description: "This hack to make various objects serializable, despite not being morphs",
@@ -1303,7 +1342,6 @@ MenuItem.addMethods({
     }
 
 });
-
 
 
 Morph.subclass("MenuMorph", {
@@ -1904,6 +1942,10 @@ Global.newListPane = function(initialBounds) {
 
 Global.newTextListPane = function(initialBounds) {
     return new ScrollPane(new TextListMorph(initialBounds, ["-----"]), initialBounds); 
+};
+
+Global.newListPane = function(initialBounds) {
+    return new ScrollPane(new ListMorph(initialBounds, ["-----"]), initialBounds); 
 };
 
 Global.newTextPane = function(initialBounds, defaultText) {

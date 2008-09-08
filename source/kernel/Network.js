@@ -338,7 +338,7 @@ View.subclass('NetRequest', {
     request: function(method, url, content) {
 	try {
 	    this.url = url;
-	    this.method = method.toUpperCase();
+	    this.method = method.toUpperCase();	    
 	    this.transport.open(this.method, url.toString(), !this.isSync);
 	    Properties.forEachOwn(this.requestHeaders, function(p) {
 		this.transport.setRequestHeader(p, this.requestHeaders[p]);
@@ -379,6 +379,12 @@ View.subclass('NetRequest', {
     
     del: function(url) {
 	return this.request("DELETE", URL.makeProxied(url));
+    },
+    
+    copy: function(url, destUrl, overwrite) {
+    this.setRequestHeaders({ "Destination" : destUrl.toString() });
+    if (overwrite) this.setRequestHeaders({ "Overwrite" : 'T' });
+	return this.request("COPY", URL.makeProxied(url));
     },
     
     toString: function() {

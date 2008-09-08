@@ -3,6 +3,8 @@ creating own tests. TestResult and TestSuite are used internally for running the
 TestRunner is a Widget which creates a standard xUnit TestRunner window. All tests of 
 the system can be run from it */
 
+
+
 Object.subclass('TestCase', {
    
 	initialize: function(testResult) {
@@ -23,9 +25,15 @@ Object.subclass('TestCase', {
 	},
 	
 	runAll: function() {
+	    var startTime = (new Date()).getTime();	
 		this.allTestSelectors().each(function(ea) {
 			this.runTest(ea)
 		}, this);
+		this.result.setTimeToRun(this.name(), (new Date()).getTime() - startTime);
+	},
+	
+	name: function() {
+	    return this.constructor.type
 	},
 	
 	setUp: function() {},
@@ -41,7 +49,7 @@ Object.subclass('TestCase', {
 			this.log(' ++ succeeded ++');
 		} catch (e) {
 			this.result.addFailure(this.constructor.type, aSelector, e);
-			this.log(' -- failed -- ' + '(' + e.message + ')');
+			this.log(' -- failed -- ' + '(' + printError(e) + ')');
 			//if (!e.isAssertion) throw e;
 		} finally {
 			this.tearDown();
@@ -128,11 +136,10 @@ Object.subclass('TestSuite', {
 	
 	runAll: function() {
 		this.testCases.each(function(ea) {
-		    var startTime = (new Date()).getTime();
 			ea.runAll();
-			ea.timeToRun = (new Date()).getTime() - startTime;
 		});
-	}
+	},
+
 });
 
 
@@ -140,6 +147,15 @@ Object.subclass('TestResult', {
 	initialize: function() {
 		this.failed = [];
 		this.succeeded = [];
+		this.timeToRun = {};
+	},
+	
+	setTimeToRun: function(testCaseName, time) {
+	    return this.timeToRun[testCaseName]= time
+	},
+	
+	getTimeToRun: function(testCaseName) {
+	    return this.timeToRun[testCaseName]
 	},
 	
 	addSuccess: function(className, selector) {
@@ -159,13 +175,26 @@ Object.subclass('TestResult', {
 			return this.failed.length + this.succeeded.length;
 	},
 	
-	// not used, but can be useful for just getting a string
 	toString: function() {
+        return "[TestResult " + this.shortResult() + "]"
+	},
+	
+	// not used, but can be useful for just getting a string
+	printResult: function() {
 		var string = 'Tests run: ' + this.runs() + ' -- Tests failed: ' + this.failed.length;
-		string += ' -- Failed tests: ';
-		return this.failed.inject(string, function(memo, ea) {
-			return memo + ea.classname + '.' + ea.selector + '-->' + ea.err.message + ' --- ';
+		string += ' -- Failed tests: \n';
+		this.failed.each(function(ea) {
+			string +=  ea.classname + '.' + ea.selector + '-->' 
+			    + ea.err.message + ' in ' + ea.err.sourceURL.filename + ' ('+ ea.err.line + ') '+'\n';
 		});
+		string += ' -- TestCases timeToRuns: \n';
+		var self = this;
+		var sortedList = $A(Properties.all(this.timeToRun)).sort(function(a,b) {
+		    return self.getTimeToRun(a) - self.getTimeToRun(b)});
+		sortedList.each(function(ea){
+		   string +=  this.getTimeToRun(ea)  + " " + ea+ "\n"
+		}, this);
+		return string
 	},
 	
 	shortResult: function() {
@@ -174,7 +203,8 @@ Object.subclass('TestResult', {
 	
 	failureList: function() {
 		var result = this.failed.collect(function(ea) {
-			return ea.classname + '.' + ea.selector + '-->' + ea.err.message;
+			return ea.classname + '.' + ea.selector + '-->' + ea.err.message  +
+	        ' in ' + new URL(ea.err.sourceURL).filename() + ' ( Line '+ ea.err.line + ')' ;
 		});
 		return result
 	}
@@ -228,6 +258,8 @@ Widget.subclass('TestRunner', {
 		model.setResultText(this.testObject.result.shortResult());
 		model.setFailureList(this.testObject.result.failureList());
 		this.setBarColor(this.testObject.result.failureList().length == 0 ? Color.green : Color.red);
+		console.log(testObject.result.printResult());
+		this.testClassListMorph.updateView("all");
 	},
 	
 	listTestClasses: function() {
@@ -244,24 +276,33 @@ Widget.subclass('TestRunner', {
 	
 	buildView: function(extent) {
 		var panel = PanelMorph.makePanedPanel(extent, [
-		   ['testClassList', newTextListPane, new Rectangle(0, 0, 1, 0.6)],
+		   ['testClassList', newListPane, new Rectangle(0, 0, 1, 0.6)],
 		   ['runButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0, 0.6, 0.5, 0.05)],
 		   ['runAllButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0.5, 0.6, 0.5, 0.05)],
 		   ['resultBar', newTextPane, new Rectangle(0, 0.65, 1, 0.05)],
 		   ['failuresList', newTextListPane, new Rectangle(0, 0.7, 1, 0.3)],
-		   
 		]);
 
 		var model = this.getModel();
 		// necessary?
 		var self = this;
-		
 		var testClassList = panel.testClassList;
+		this.testClassListMorph = testClassList.innerMorph();
+		this.testClassListMorph.itemPrinter = function(item) { 
+		     var string = "";
+		     if (self.testObject) {
+		         var time = self.testObject.result.getTimeToRun(item);
+		         if (time) string += "  ("+ time + "ms)";
+		     }
+             return  item.toString() + string ;
+        };
+		
+		
 		testClassList.connectModel({model: model, getList: "getTestClasses", setSelection: "setSelectedTestClass"});
 		this.setModelValue("setTestClasses", this.listTestClasses());
 		//model.setTestClasses(this.listTestClasses());
 		testClassList.innerMorph().focusHaloBorderWidth = 0;
-
+	
 		var runButton = panel.runButton;
 		runButton.setLabel("Run Tests");
 		runButton.connectModel({model: self, setValue: "runTests"});
@@ -317,13 +358,18 @@ Widget.subclass('ErrorStackViewer', {
 	
 	initialize: function($super, testFailedObj) {
 		$super();
-		if (!testFailedObj) return;
-		var list = [];		
-		testFailedObj.err.stack.each(function(currentNode, c) { list.push(c) });
+		var list = [];	
+		if(testFailedObj && testFailedObj.err && testFailedObj.err.stack) {
+		    testFailedObj.err.stack.each(function(currentNode, c) { list.push(c) });
+		};
 		this.formalModel = Record.newInstance(
 			{StackList: {}, MethodSource: {}, ArgumentsList: {}, SelectedCaller: {}},
 			{StackList: list, MethodSource: "", ArgumentsList: [], SelectedCaller: null}, {});
 		return this;
+	},
+	
+	setStackList: function(list) {
+        this.formalModel.setStackList(list)
 	},
 	
 	buildView: function(extent) {
@@ -429,10 +475,40 @@ Widget.subclass('ErrorStackViewer', {
 	}
 });
 
-
 // For convenience
 SimpleInspector.inspectObj = function(object) {
     new SimpleInspector(object).openIn(WorldMorph.current(), pt(200,10))
+};
+    
+/* 
+ * *** Error properties for documentation: ***
+ *  Example from WebKit
+ *    message:  assert failed (no files read), 
+ *    line: 70
+ *    expressionBeginOffset: 1765
+ *    expressionEndOffset: 1836
+ *    sourceId: 18326
+ *    sourceURL: http://localhost/lk/kernel/TestFramework.js
+ */
+
+function printError(e) {
+   var s = "";
+   for(i in e) { s += i + ": " + String(e[i]) + ", "}; // get everything out....
+   return s
+}
+
+function logError(e) {
+    console.log("Error: " + printError(e));
+}
+
+function openStackViewer() {
+   var stack = getStack();
+   stack.shift();
+   stack.shift();
+   var stackList = stack.collect(function(ea){return {method: ea, args: []}});
+   var viewer = new ErrorStackViewer();
+   viewer.setStackList(stackList);
+   viewer.openIn(WorldMorph.current(), pt(220, 10));
 };
 
 console.log("loaded TestFramework.js");

@@ -336,7 +336,7 @@ Morph.subclass('FabrikMorph', {
     },
     
     automaticLayout: function() {
-        (new FlowLayout()).layoutElementsInMorph(this.fabrik.components, this)
+        (new FlowLayout()).layoutElementsInMorph(this.fabrik.components, this);
     },
     
     setupForFabrik: function(fabrik){
@@ -351,7 +351,7 @@ Morph.subclass('FabrikMorph', {
             // check for failed dropp...
             otherPinMorph = this.morphToGrabOrReceive({mousePoint:morph.worldPoint(pt(5,5))});
             if(otherPinMorph.isPinMorph) {
-                return otherPinMorph.addMorph(morph) // let him do the job
+                return otherPinMorph.addMorph(morph); // let him do the job
             };  
             morph.pinHandle.connectors.first().remove();
             return morph.owner.removeMorph(morph);
@@ -408,21 +408,19 @@ Widget.subclass('FabrikComponent', {
     },
 
     // can be called when this.morph does not exist, simply adds components and wires them
-    plugin: function(component){
-        if (!this.components.include(component)) {
-            //console.log("plugin: "+component);
-            this.components.push(component);
-            component.fabrik = this; // remember me
-            if(this.morph)
-                this.morph.addMorphForComponent(component);
-        } else {
-            // what todo when the component is already there?
+    plugin: function(component) {
+        if (this.components.include(component)) {
             console.log('FabrikComponent.plugin(): ' + component + 'was already plugged in.');
-        };
+            return;
+        }
+        this.components.push(component);
+        component.fabrik = this; // remember me
+        if (this.morph) this.morph.addMorphForComponent(component);
+        return component;
     },
 
     pluginConnector: function(connector) {
-        if(this.connectors.include(connector)) {
+        if (this.connectors.include(connector)) {
             console.log("Plugin connector failed: " + connector + " is already plugged in!");
             return;
         };        
@@ -438,7 +436,7 @@ Widget.subclass('FabrikComponent', {
 
     connectPins: function(fromPinHandle, toPinHandle) {
         console.log("Fabrik>>connectPins(" + fromPinHandle + ", " + toPinHandle + ")");
-        if(!fromPinHandle || !toPinHandle) {
+        if (!fromPinHandle || !toPinHandle) {
             console.log("FabrikComponent.connectPins(): could not connect " + fromPinHandle + " and " + toPinHandle);
         };
 
@@ -455,25 +453,17 @@ Widget.subclass('FabrikComponent', {
     },
 
     removeConnector: function(connector) {
-        if(this.connectors.include(connector)){
-            this.connectors = this.connectors.reject(function(ea) {return ea === connector});
-            this.morph.removeMorph(connector.morph);
-        } else {
+        if (!this.connectors.include(connector)) {
             console.log('FabrikComponent>>removeConnector: tried to remove connector, which is not there')
-        }
+        };
+        this.connectors = this.connectors.reject(function(ea) { return ea === connector });
+        this.morph.removeMorph(connector.morph);
     },
 
     // setup after the window is opened
     openIn: function($super, world, location) {
-        //console.log(this + ">>openIn ");
         var result = $super(world, location);
         this.morph.openForDragAndDrop = true;
-        // when the window is moved, the connectors are updated
-        var self = this;
-        result.changed = result.changed.wrap(function(proceed, varName, source) {
-            self.connectors.each(function(ea){ ea.updateView() });
-            return proceed();
-        });
         return result;
     }
 });
@@ -484,7 +474,6 @@ PlainRecord.prototype.create({}).subclass("NewComponentModel", {
     initialize: function($super, spec, rawNode) {
         if (!rawNode) rawNode = {};
         $super(rawNode, spec);
-        console.log("model created");
     },
     
     addField: function(fieldName, coercionSpec) {
@@ -509,6 +498,7 @@ PlainRecord.prototype.create({}).subclass("NewComponentModel", {
         this.connectPins(myPinName, otherModel, otherModelPinName);
         otherModel.connectPins(otherModelPinName, this, myPinName);
     }
+    
 });
 
 NewComponentModel.instantiateNewClass = function() {
@@ -521,6 +511,8 @@ NewComponentModel.instantiateNewClass = function() {
  */
 Morph.subclass('PinMorph', {
     
+    isPinMorph: true,
+    
     initialize: function ($super){
         $super(new Rectangle( 0, 0, 15, 15), 'rect');
         this.suppressHandles = true; // no handles
@@ -529,7 +521,6 @@ Morph.subclass('PinMorph', {
         this.handlesMouseDown = Functions.True; // hack
         this.openForDragAndDrop = true;
         this.onMouseDown = this.onMouseDown.bind(this);
-        this.isPinMorph = true;
     
         this.setupMorphStyle();
         
@@ -538,23 +529,16 @@ Morph.subclass('PinMorph', {
     
      /* Drag and Drop of Pin */        
     addMorph: function($super, morph) {
+        if (!morph.pinHandle || !morph.pinHandle.isFakeHandle) return;
         console.log("dropping pin on other pin...");
         $super(morph); // to remove it out of the hand
-        if (!morph.pinHandle) {
-            // console.log("PinHandle does not accept dropping of "+ morph);
-            WorldMorph.current().addMorph(morph); // I don't want any other morphs so go away
-            morph.setPosition(pt(100,100));
-            return;
-        };
-        // console.log("PinHandle accepts dropping "+ morph);
-        //self.connectFromFakeHandle(morph.pinHandle);
+
         //FIXME: just for make things work...
         var fakePin = morph.pinHandle;
         fakePin.connectors.first().remove();
-        this.pinHandle.fabrik().connectPins(fakePin.originPin, this.pinHandle);
+        this.pinHandle.component.fabrik.connectPins(fakePin.originPin, this.pinHandle);
         
         this.removeMorph(morph);
-        this.updatePosition();
     },
     
     setupMorphStyle: function() {
@@ -570,7 +554,7 @@ Morph.subclass('PinMorph', {
     },
 
     getLocalPinPosition: function() {
-        return this.bounds().extent().scaleBy(0.5)
+        return this.getExtent().scaleBy(0.5);
     },
     
     getGlobalPinPosition: function(){
@@ -579,29 +563,61 @@ Morph.subclass('PinMorph', {
 
     // PinPosition relative to the Fabrik Morph
     getPinPosition: function() {
-        return this.pinHandle.fabrik().morph.localize(this.getGlobalPinPosition())
+        // arghhhhhh, law of demeter
+        return this.pinHandle.component.fabrik.morph.localize(this.getGlobalPinPosition());
     },
 
-    updatePosition: function(evt){
+    updatePosition: function(evt) {
         // console.log("update position" + this.getPosition());
         this.pinHandle.connectors.each(function(ea){
             ea.updateView();
         });
     },    
 
+    // showHelp: function($super, evt) {
+    //     var helpShown = $super(evt);
+    //     if (!this.pinHandle.isFakeHandle) evt.hand.setMouseFocus(this);
+    //     return helpShown;
+    // },
+    
+    onMouseMove: function(evt) {
+        // evt.hand.setMouseFocus(this);
+        if (evt.isMetaDown()) {
+            this.setPosition(
+                this.owner.bounds().closestPointToPt(this.owner.localize(evt.mousePoint)).subPt(this.getExtent().scaleBy(0.5))
+                // this.owner.localize(evt.mousePoint).subPt(this.getExtent().scaleBy(0.5))
+                );
+            // this.moveBy(evt.mousePoint.subPt(this.getGlobalPinPosition()));
+            //evt.hand.showAsUngrabbed(this);
+            return;
+        }
+    },
     // When PinHandleMorph is there, connect to its onMouseDown
     onMouseDown: function($super, evt) {
+        if (evt.isMetaDown()) return;
+        // for not grabbing non-fake pins.
+        // Extend, so that pins can be moved around componentmorphs
+        if (evt.hand.topSubmorph() === this) {
+
+                // this.setPosition(this.getNearestValidPositionTo(evt))}
+            evt.hand.showAsUngrabbed(this);
+        };
+        
         if (this.pinHandle.isFakeHandle) return;
         var fakePin = this.pinHandle.createFakePinHandle();
         fakePin.buildView();
-        fakePin.morph.setFill(Color.red); // change style to distinguish between real handles
+        
+        // change style to distinguish between real handles... put into an own method...?
+        fakePin.morph.setFill(Color.red);
         fakePin.morph.setExtent(pt(10,10));
+        
         evt.hand.addMorph(fakePin.morph);
         fakePin.morph.setPosition(pt(0,0));
         fakePin.morph.startSnapping();
         
         //FIXME: just for make things work... connect redundant with createFakePinHandle()
         this.pinHandle.component.fabrik.connectPins(this.pinHandle, fakePin);
+        this.updatePosition();
     },
 
     getHelpText: function() {
@@ -613,17 +629,17 @@ Morph.subclass('PinMorph', {
     },
     
     getFakeConnectorMorph: function() {
-        return this.pinHandle.connectors.first().morph
+        return this.pinHandle.connectors.first().morph;
     },
 
 	okToBeGrabbedBy: Functions.Null,
     
     startSnapping: function() {
         this.snapper = new PointSnapper(this);
-        this.snapper.points = this.pinHandle.fabrik().morph.allPinSnappPoints(); 
+        this.snapper.points = this.pinHandle.component.fabrik.morph.allPinSnappPoints(); 
         this.snapper.offset = pt(this.bounds().width * -0.5, this.bounds().height * -0.5);
         var self = this;
-        this.snapper.formalModel.addObserver({onSnappedUpdate: function(snapped){
+        this.snapper.formalModel.addObserver({onSnappedUpdate: function(snapped) {
             if (self.snapper.formalModel.getSnapped()) {
                 self.setFill(Color.green);
                 self.getFakeConnectorMorph().setBorderColor(Color.green);
@@ -718,13 +734,13 @@ Widget.subclass('PinHandle', {
         fakePin.isFakeHandle = true;
         fakePin.originPin = this;
         fakePin.component = this.component;
-        this.connectTo(fakePin);        
+        // in createFakePinHandle() fabrik.connectPins is send again after the connector morph was created
+        // for adding the connector morph to the update position logic. This is redundant, how to remove this
+        // without mixing model and view logic?
+        this.connectTo(fakePin);
         return fakePin;
-    },
+    }
     
-    fabrik: function() { 
-        return this.component.fabrik 
-    },
 });
 
 Object.subclass('PinConnector', {
@@ -738,13 +754,13 @@ Object.subclass('PinConnector', {
         // FIXME: Relays inbetween? (Law of Demeter)
         var fromModel = fromPinHandle.component.formalModel;
         var toModel = toPinHandle.component.formalModel;
-        
-        console.log("PinConnector>>connectTo: Connect pin " + fromPinHandle.name + " to pin " + toPinHandle.name);
-        
+
         // implicit assertion: pinHandle name equals field name of model
         var spec = {};
         spec[fromPinHandle.name] = "=set" + toPinHandle.name;
         fromModel.addObserver(toModel, spec);
+        
+        console.log("PinConnector says: Connected pin " + fromPinHandle.name + " to pin " + toPinHandle.name);
     },
 
     // just for make things work ...
@@ -752,8 +768,7 @@ Object.subclass('PinConnector', {
         this.morph = new ConnectorMorph(null, 4, Color.blue, this);
         this.morph.formalModel.setStartHandle(this.fromPin.morph);
         this.morph.formalModel.setEndHandle(this.toPin.morph);
-        this.morph.connector = this; // for debugging
-        
+        this.morph.connector = this; // for debugging... of course...
         return this.morph;
     },
     
@@ -767,17 +782,13 @@ Object.subclass('PinConnector', {
         if (this.morph) this.morph.remove();
     
         // should be removed! Fabrik should not know about connectors!
-        if (this.fabrik)
-            this.fabrik.removeConnector(this)
+        if (this.fabrik) this.fabrik.removeConnector(this);
 
         // FIXME move to PionHandle
         var self = this;
         console.log("remove con from " + this.fromPin.name + " to: " + this.toPin.name);
         this.fromPin.connectors = this.fromPin.connectors.reject(function (ea) { return ea === self}, this);
         this.toPin.connectors = this.toPin.connectors.reject(function (ea) { return ea === self}, this);
-        
-        if (this.fromPin.isFakeHandle) console.log("frompin is fakePin");
-        if (this.toPin.isFakeHandle) console.log("topin is fakePin");
         
         this.fromPin.component.formalModel.removeObserver(this.toPin.component.formalModel, this.fromPin.name);
         if (this.isBidirectional)
@@ -1160,8 +1171,9 @@ Component.subclass('FunctionComponent', {
 		evalButton.setLabel("eval");
         evalButton.connectModel({model: this, setValue: "saveAndExecute"});
 		
-        this.morph.formalModel = this.formalModel.newRelay({Text: "FunctionBody"});
-        this.formalModel.addObserver(this.morph, {FunctionBody: "!Text"});
+        // this.morph.formalModel = this.formalModel.newRelay({Text: "FunctionBody"});
+        // this.formalModel.addObserver(this.morph, {FunctionBody: "!Text"});
+        this.morph.connectModel(this.formalModel.newRelay({Text: "FunctionBody"}));
 
         this.setupHandles();
         
@@ -1183,19 +1195,21 @@ Component.subclass('FunctionComponent', {
 	},
 
     setupAutomaticExecution: function(){
-        this.formalModel.addObserver({onFunctionBodyUpdate: function(){
+        this.formalModel.addObserver({onFunctionBodyUpdate: function() {
             this.setResult(null); // force an update
-            this.execute()}.bind(this)});
+            this.execute()
+        }.bind(this)});
 
-        this.formalModel.addObserver({onInputUpdate: function(){
-            this.execute()}.bind(this)});
+        this.formalModel.addObserver({onInputUpdate: function() {
+            this.execute()
+        }.bind(this)});
     },
         
     pvtGetFunction: function() {
         try {
             return eval("var x = function() {" + this.getFunctionBody() + "}; x");
         } catch(e) {
-            console.log("FunctionComponentModel could not compile source:" + funcSource + " error: " + e.msg);
+            console.log("Error when evaluating:" + funcSource + " error: " + e.msg);
         }
     },
 
@@ -1214,8 +1228,7 @@ asStringArray = function(input) {
 	var list = $A(input);
 	if(list.length == 0) 
 		return ["------"];  // awful hack around the bug that TextLists break when empty
-	return list.collect(function(ea){return ea.toString()});
-	
+	return list.collect(function(ea){return ea.toString()});	
 };
 
 Component.subclass('TextListComponent', {
@@ -1257,6 +1270,7 @@ Widget.subclass('ComponentBox', {
         var m = comp.buildView();
         m.setExtent(pt(120, 100));
         
+        // FIXME
         if (m.text) {
             m.text.innerMorph().onMouseDown = m.text.innerMorph().onMouseDown.wrap(
                 function(proceed, evt) {
@@ -1283,11 +1297,12 @@ Widget.subclass('ComponentBox', {
         var components = [];
         var m; 
 
-        //FIXME: remove redundant code
-        
         this.addMorphOfComponent(new FunctionComponent(), components);
         this.addMorphOfComponent(new TextComponent(), components);
         this.addMorphOfComponent(new PluggableComponent(), components);
+        
+        new FlowLayout().layoutElementsInMorph(components, panel),
+        panel.openDnD();
         
         new FlowLayout().layoutElementsInMorph(components, panel),
         panel.openDnD();
@@ -1492,10 +1507,12 @@ function debugFunction(func) {
 	var errObj = {};
 	Function.installStackTracers();
 	try {
-		func.call()
+		return func.call()
 	} catch(e) {
 		errObj.err = e;
-
+    	Function.installStackTracers("uninstall");
+    	var viewer = new ErrorStackViewer(errObj)
+    	viewer.openIn(WorldMorph.current(), pt(220, 10));
 	};
 	Function.installStackTracers("uninstall");
 	var viewer = new ErrorStackViewer(errObj)
