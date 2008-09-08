@@ -4015,14 +4015,20 @@ Visual.subclass('Morph', {
 		// console.log("found field " + Exporter.stringify(node));
 		helperNodes.push(node);
 		var name = LivelyNS.getAttribute(node, "name");
-		var ref = LivelyNS.getAttribute(node, "ref");
+		
 		if (name) {
-		    var found = this[name] = importer.lookupMorph(ref);
-		    if (!found) {
-			console.warn("no value found for field %s ref %s", name, ref);
+		    var ref = LivelyNS.getAttribute(node, "ref");
+		    if (ref) {
+			var found = this[name] = importer.lookupMorph(ref);
+			if (!found) {
+			    console.warn("no value found for field %s ref %s", name, ref);
+			} else {
+			    //node.parentNode.removeChild(node);
+			    // console.log("found " + name + "=" + found + "and assigned to " + this.id());
+			}
 		    } else {
-			//node.parentNode.removeChild(node);
-			// console.log("found " + name + "=" + found + "and assigned to " + this.id());
+			var value = LivelyNS.getAttribute(node, "value");
+			if (value != null) this[name] = JSON.unserialize(value);
 		    }
 		}
 		break;
@@ -4130,6 +4136,7 @@ Visual.subclass('Morph', {
 	    // FIXME, remove?
 	}
 	for (var prop in this) {
+	    if (!this.hasOwnProperty(prop)) continue;
 	    var m = this[prop];
 	    if (m instanceof Morph) {
 		if (prop == 'owner') 
@@ -4144,7 +4151,7 @@ Visual.subclass('Morph', {
 		var arr = LivelyNS.create("array", {name: prop});
 		var abort = false;
 		m.forEach(function iter(elt) {
-		    if (!(elt instanceof Morph)) {
+		    if (elt && !(elt instanceof Morph)) {
 			abort = true;
 			return;
 		    }
@@ -4154,6 +4161,13 @@ Visual.subclass('Morph', {
 		    extraNodes.push(arr.appendChild(NodeFactory.createNL()));
 		}, this);
 		if (!abort) extraNodes.push(this.addNonMorph(arr));
+	    } else if (m instanceof Number || (typeof m == 'number') || 
+		       (m instanceof Boolean || (typeof m == 'boolean')) ||
+		       (m instanceof String || (typeof m == 'string'))) {
+		// FIXME: deal with arrays of primitives etc?
+		var desc = LivelyNS.create("field", {name: prop, value: JSON.serialize(m)});
+		extraNodes.push(this.addNonMorph(desc));
+		extraNodes.push(this.addNonMorph(NodeFactory.createNL()));
 	    }
 	}
     },
