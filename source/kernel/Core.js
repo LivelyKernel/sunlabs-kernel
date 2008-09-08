@@ -320,12 +320,14 @@ var Class = {
     addMixin: function(cls, source) { // FIXME: do the extra processing like addMethods does
 	for (var prop in source) {
 	    var value = source[prop];
-
-	    if (prop == "constructor" || prop == "initialize" || prop == "toString" || prop == "definition" || prop == "description") 
-		continue;
+	    switch (prop) {
+	    case "constructor": case "initialize": case "toString": case "definition": case "description":
+		break;
+	    default:
 	    cls.prototype[prop] = value;
+	    }
 	}
-    },
+    }
 
 };
 
@@ -5093,7 +5095,7 @@ Morph.addMethods({
     },
 
     notify: function(msg, loc) {
-	if (!loc) loc = this.world().firstHand().lastMouseDownPoint;
+	if (!loc) loc = this.world().positionForNewMorph();
 	new MenuMorph([["OK", 0, "toString"]], this).openIn(this.world(), loc, false, msg); 
     },
 
@@ -6501,7 +6503,7 @@ PasteUpMorph.subclass("WorldMorph", {
 		if (value == true && callback) callback.call(Global, model.getInput());
 	    }});
 	var dialog = new PromptDialog(model.newRelay({Message: "-Message", Result: "+Result", Input: "Input"}));
-	dialog.openIn(this, this.hands[0].lastMouseDownPoint);
+	dialog.openIn(this, this.positionForNewMorph());
     },
 
     confirm: function(message, callback) {
@@ -6511,14 +6513,14 @@ PasteUpMorph.subclass("WorldMorph", {
 		if (value && callback) callback.call(Global, value);
 	    }});
 	var dialog = new ConfirmDialog(model.newRelay({Message: "-Message", Result: "+Result"}));
-	dialog.openIn(this, this.firstHand().lastMouseDownPoint);
+	dialog.openIn(this, this.positionForNewMorph());
 	return dialog;
     },
     
     addFramedMorph: function(morph, title, optLoc, optSuppressControls) {
 	var displ = pt(5, 5);
 	return this.addMorphAt(new WindowMorph(morph, title, optSuppressControls), 
-			       optLoc || this.firstHand().lastMouseDownPoint.subPt(displ));
+			       optLoc || this.positionForNewMorph().subPt(displ));
     },
 
     addTextWindow: function(spec) {

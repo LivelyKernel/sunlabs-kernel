@@ -1708,7 +1708,7 @@ Morph.subclass("SliderMorph", {
 	if (aspect == p.getValue || aspect == 'all') {
 	    this.onValueUpdate(this.getValue());
 	} else if (aspect == p.getSliderExtent || aspect == 'all')  {
-	    this.onSliderExtentUpdate(this.getSliderExtent()); // FIXME remove 0
+	    this.onSliderExtentUpdate(this.getSliderExtent()); 
 	}
     },
 
