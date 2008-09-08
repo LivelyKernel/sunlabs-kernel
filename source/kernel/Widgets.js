@@ -2751,7 +2751,10 @@ Morph.subclass('WindowMorph', {
 	if (!this.ignoreEventsOnExpand) this.targetMorph.enableEvents();
 
         this.state = WindowState.Expanded;  // Set it now so setExtent works right
-	if (this.expandedExtent) this.setExtent(this.expandedExtent);
+	if (this.expandedExtent) {
+	    this.setExtent(this.expandedExtent);
+	    this.shape.setBounds(this.expandedExtent.extentAsRectangle());
+	}
 	this.layoutChanged();
         this.takeHighlight();
     },
