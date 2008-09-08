@@ -4146,7 +4146,8 @@ Morph.subclass("EngineMorph", {
 	this.cylinders.forEach(function(cyl, i, array) {
 	    //cyl.angle = (Math.PI*2/array.length)*i;
             //if (this.alternate && i%2 == 1) cyl.angle += Math.PI*2;
-	    cyl.piston.topPos = cyl.innerBounds().topLeft().addPt(this.topPosDisplacement);
+	    if (cyl)
+		cyl.piston.topPos = cyl.innerBounds().topLeft().addPt(this.topPosDisplacement);
 	}, this);
     },
 

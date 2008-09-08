@@ -1356,6 +1356,10 @@ var Converter = {
 
     fromJSONAttribute: function(str) {
 	return str ?  JSON.unserialize(unescape(str)) : null;
+    },
+
+    isJSONConformant: function(value) {
+	return value == null || (typeof value.valueOf()  !== 'object');
     }
 };
 
@@ -1457,9 +1461,7 @@ Object.subclass('Wrapper', {
     },
 
     copy: function(copier) {
-	try {
-	    return new Global[this.getType()](copier || Copier.marker, this);
-	} catch (er) { debugger }
+	return new Global[this.getType()](copier || Copier.marker, this);
     },
 
     id: function() {
@@ -4112,7 +4114,7 @@ Visual.subclass('Morph', {
 		extraNodes.push(this.addNonMorph(modelNode));
 	    }
 	    extraNodes.push(this.addNonMorph(this.getModelPlug().serialize(index)));
-	} else if (this.formalModel) {
+	} else if (false && this.formalModel) {
 	    var modelNode = this.getActualModel().rawNode;
 	    if (modelNode instanceof Global.Node) {
 		var index = simpleModels.indexOf(modelNode);
@@ -4171,9 +4173,7 @@ Visual.subclass('Morph', {
 		    extraNodes.push(this.addNonMorph(arr));
 		    addNL(this);
 		}
-	    } else if (m instanceof Number || (typeof m == 'number') || 
-		       (m instanceof Boolean || (typeof m == 'boolean')) ||
-		       (m instanceof String || (typeof m == 'string'))) {
+	    } else if (Converter.isJSONConformant(m)) {
 		// FIXME: deal with arrays of primitives etc?
 		var desc = LivelyNS.create("field", {name: prop, value: JSON.serialize(m)});
 		extraNodes.push(this.addNonMorph(desc));
@@ -4451,6 +4451,12 @@ Morph.addMethods({
 	    this.addNonMorph(w.rawNode);
 	    return w;
 	} else return null;
+    },
+
+    addPseudoMorph: function(pseudomorph) {
+	if (pseudomorph instanceof Global.PseudoMorph) {
+	    return this.addMorph(pseudomorph);
+	} else throw new Error(pseudomorph + " is not a PseudoMorph");
     },
 
     addWrapperToDefs: function(wrapper) {
@@ -5208,16 +5214,39 @@ Morph.subclass('PseudoMorph', {
 
 });
 
-PseudoMorph.subclass('SchedulableAction', {
+
+PseudoMorph.subclass('Invocation', {
+    initialize: function($super, actor, scriptName, argIfAny) {
+	$super();
+	this.actor = actor;
+	this.scriptName = scriptName;
+	this.argIfAny = argIfAny; // better be primitive
+    },
+
+    exec: function Invocation$exec() {
+	if (!this.actor) {
+	    console.warn("no actor on script %s", this);
+	    return null;
+	}
+	var func = this.actor[this.scriptName];
+	if (func) {
+	    return func.call(this.actor, this.argIfAny);
+	} else {
+	    //console.warn("no callback on actor %s", this.actor);
+	    return null;
+	}
+    }
+
+});
+
+
+Invocation.subclass('SchedulableAction', {
 
     documentation: "Description of a periodic action",
     beVerbose: false,
 
     initialize: function($super, actor, scriptName, argIfAny, stepTime) {
-	$super();
-	this.actor = actor;
-	this.scriptName = scriptName;
-	this.argIfAny = argIfAny; // better be primitive
+	$super(actor, scriptName, argIfAny);
 	this.stepTime = stepTime;
 	this.ticks = 0;
     },
@@ -5243,21 +5272,8 @@ PseudoMorph.subclass('SchedulableAction', {
     start: function(world) {
 	if (this.beVerbose) console.log("started stepping task %s", this);
 	world.startSteppingFor(this);
-    },
-
-    exec: function SchedulableAction$exec() {
-	if (!this.actor) {
-	    console.warn("no actor on script %s", this);
-	    return null;
-	}
-	var func = this.actor[this.scriptName];
-	if (func) {
-	    return func.call(this.actor, this.argIfAny);
-	} else {
-	    //console.warn("no callback on actor %s", this.actor);
-	    return null;
-	}
     }
+
 });
 
 // Morph stepping/timer functions

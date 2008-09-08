@@ -1303,7 +1303,9 @@ MenuItem.addMethods({
 	this.para2 = selectorArg;
 	if (!(closureOrMorph instanceof Function)) {
 	    this.setSelector(selectorOrClosureArg);
-	    this.setArgument(Converter.toJSONAttribute(selectorArg));
+	    if (Converter.isJSONConformant(selectorArg)) { // JSON may be a problem otherwise
+		this.setArgument(Converter.toJSONAttribute(selectorArg));
+	    }
 	}
     },
 
@@ -1379,7 +1381,7 @@ Morph.subclass("MenuMorph", {
 	
         $super(pt(0, 0).extentAsRectangle(), "rect");
         this.items = items.map(function(item) { 
-	    return this.addMorph(new MenuItem(item[0], item[1], item[2], item[3])); 
+	    return this.addPseudoMorph(new MenuItem(item[0], item[1], item[2], item[3])); 
 	}, this);
         this.targetMorph = targetMorph || this;
         this.listMorph = null;
@@ -1394,16 +1396,12 @@ Morph.subclass("MenuMorph", {
     },
 
     addItem: function(item) { 
-	var item = new MenuItem(item[0], item[1], item[2], item[3]);
-	this.addMorph(item);
-        this.items.push(item);
+        this.items.push(this.addPseudoMorph(new MenuItem(item[0], item[1], item[2], item[3])));
     },
 
     addLine: function(item) { // Not yet supported
         // The idea is for this to add a real line on top of the text
-	var item = new MenuItem('-----');
-	this.addMorph(item);
-        this.items.push(item);
+        this.items.push(this.addPseudoMorph(new MenuItem('-----')));
     },
 
     removeItemNamed: function(itemName) {
@@ -1419,7 +1417,7 @@ Morph.subclass("MenuMorph", {
     replaceItemNamed: function(itemName, newItem) {
         for (var i = 0; i < this.items.length; i++)
             if (this.items[i].name == itemName)
-                this.items[i] = this.addMorph(new MenuItem(newItem[0], newItem[1], newItem[2], newItem[3]));
+                this.items[i] = this.addPseudoMorph(new MenuItem(newItem[0], newItem[1], newItem[2], newItem[3]));
     },
 
     removeItemsNamed: function(nameList) {
@@ -2468,29 +2466,26 @@ Morph.subclass("TitleBarMorph", {
         this.label = this.addMorph(label);
 	if (!optSuppressControls) {
             var cell = new Rectangle(0, 0, this.barHeight, this.barHeight);
-            var closeButton = new WindowControlMorph(cell, this.controlSpacing, Color.primary.orange, windowMorph, 
-		"initiateShutdown", "Close");
-            this.closeButton =  this.addMorph(closeButton);
-	    
-            var menuButton = new WindowControlMorph(cell, this.controlSpacing, Color.primary.blue, 
-		windowMorph, "showTargetMorphMenu", "Menu");
-            this.menuButton = this.addMorph(menuButton);
-	    
-            var collapseButton = new WindowControlMorph(cell, this.controlSpacing, Color.primary.yellow, 
-		windowMorph, "toggleCollapse", "Collapse");
-            this.collapseButton = this.addMorph(collapseButton);
+            this.closeButton =  this.addMorph(new WindowControlMorph(cell, this.controlSpacing, Color.primary.orange));
+	    this.menuButton = this.addMorph(new WindowControlMorph(cell, this.controlSpacing, Color.primary.blue));
+            this.collapseButton = this.addMorph(new WindowControlMorph(cell, this.controlSpacing, Color.primary.yellow));
+	    this.connectButtons(windowMorph);
 	} 
         this.adjustForNewBounds();  // This will align the buttons and label properly
         return this;
+    },
+    
+    connectButtons: function(w) {
+	this.closeButton.connectModel(Relay.newInstance({HelpText: "-CloseHelp", Trigger: "=initiateShutdown"}, w));
+	this.menuButton.connectModel(Relay.newInstance({HelpText: "-MenuHelp", Trigger: "=showTargetMorphMenu"}, w));
+	this.collapseButton.connectModel(Relay.newInstance({HelpText: "-CollapseHelp", Trigger: "=toggleCollapse"}, w));
     },
 
     deserialize: function($super, importer, rawNode) {
         $super(importer, rawNode);
         if (LivelyNS.getType(this.rawNode.parentNode) == "WindowMorph") {
             console.log("patching up to " + this.windowMorph);
-            this.closeButton.action.actor    = this.windowMorph;
-            this.menuButton.action.actor     = this.windowMorph;
-            this.collapseButton.action.actor = this.windowMorph;
+            this.connectButtons(this.windowMorph);
         }
     },
 
@@ -2602,14 +2597,11 @@ Morph.subclass("WindowControlMorph", {
     borderWidth: 0,
     
     focus: pt(0.4, 0.2),
-
-    initialize: function($super, rect, inset, color, targetMorph, actionScript, helpText) {
+    formals: ["-HelpText", "-Trigger"],
+    
+    initialize: function($super, rect, inset, color) {
         $super(rect.insetBy(inset), 'ellipse');
         this.setFill(new RadialGradient([color.lighter(2), 1, color, 1, color.darker()], this.focus));
-        this.targetMorph = targetMorph;
-        // FIXME should be a superclass(?) of SchedulableAction
-        this.action = this.addWrapper(new SchedulableAction(targetMorph, actionScript, null, 0));
-        this.helpText = helpText; // string to be displayed when mouse is brought over the icon
         return this;
     },
 
@@ -2617,12 +2609,8 @@ Morph.subclass("WindowControlMorph", {
 
     onMouseDown: function($super, evt) {
         $super(evt);
-        if (!this.action) {
-            console.warn("%s has no action?", this);
-            return;
-        }
-        this.action.argIfAny = evt;
-        return this.action.exec();
+	// interesting case for the MVC architecture
+        return this.formalModel.onTriggerUpdate(evt);
     },
 
     onMouseOver: function($super, evt) {
@@ -2639,16 +2627,8 @@ Morph.subclass("WindowControlMorph", {
     
     checkForControlPointNear: Functions.False,
     
-    okToBeGrabbedBy: Functions.Null,
-    
-    getHelpText: function() {
-        return this.helpText;
-    },
+    okToBeGrabbedBy: Functions.Null
 
-    // note that we override a method that normally adds ticking scripts
-    addActiveScript: function(action) {
-        this.action = action;
-    }
  
 });
 
@@ -2777,6 +2757,12 @@ Morph.subclass('WindowMorph', {
     },
 
     isCollapsed: function() { return this.state === WindowState.Collapsed; },
+
+    getCloseHelp: function() { return "Close"; },
+
+    getMenuHelp: function() { return "Menu"; },
+    
+    getCollapseHelp: function() { return this.isCollapsed() ? "Expand" : "Collapse"; },
 
     contentIsVisible: function() { return !this.isCollapsed(); },
 
