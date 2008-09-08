@@ -1358,7 +1358,7 @@ var Converter = {
 	return str ?  JSON.unserialize(unescape(str)) : null;
     },
 
-    isJSONConformant: function(value) {
+    isJSONConformant: function(value) { // for now, arrays not handled but could be
 	return value == null || (typeof value.valueOf()  !== 'object');
     }
 };
@@ -2604,7 +2604,10 @@ Visual.addProperties({
     StrokeOpacity: { name: "stroke-opacity", from: Number, to: String, byDefault: 1.0},
     StrokeWidth: { name: "stroke-width", from: Number, to: String, byDefault: 1.0},
     Stroke: { name: "stroke", byDefault: "none"}, // FIXME byDefault should be in JS not DOM type
-    Fill: { name: "fill", byDefault: "none"} // FIXME byDefault should be in JS not DOM type
+    Fill: { name: "fill", byDefault: "none"}, // FIXME byDefault should be in JS not DOM type
+    LineJoin: {name: "stroke-linejoin"},
+    LineCap: {name: "stroke-linecap"},
+    StrokeDashArray: {name: "stroke-dasharray"}
 }, Config.useStyling ? StyleRecord : DOMRecord);
 
 Visual.addMethods({   
@@ -2616,21 +2619,6 @@ Visual.addMethods({
     useNativeBounds: !!Config.useNativeBounds,
 
     rawNode: null, // set by subclasses
-
-    setLineJoin: function(joinType) {
-	if (!joinType) throw new Error('undefined joinType');
-	this.rawNode.setAttributeNS(null, 'stroke-linejoin', joinType);
-    },
-
-    setLineCap: function(capType) {
-	if (!capType) throw new Error('undefined capType');
-	this.rawNode.setAttributeNS(null, 'stroke-linecap', capType);
-    },
-
-    setStrokeDashArray: function(array) {
-	if (!(array instanceof Array)) throw new Error('wrong type ' + array);
-	this.rawNode.setAttributeNS(null, "stroke-dasharray", array);
-    },
 
     setBounds: function(bounds) { 
 	throw new Error('setBounds unsupported on type ' + this.getType());
