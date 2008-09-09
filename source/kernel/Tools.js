@@ -784,7 +784,7 @@ using().run(function() { // begin scoping function
 	    }
 	    newNode.itsThis = itsThis;
 	    newNode.args = args;
-	    newNode.tally ++;
+	    newNode.tally++;
 	    newNode.callTime = new Date().getTime();
 	    currentContext = newNode;
 	},
@@ -972,6 +972,9 @@ using().run(function() { // begin scoping function
 			currentContext.traceReturn(originalFunction);
 			return result;
 		} catch(e) {
+		    console.log('got error:' + e.message);
+		    if (!e.stack) console.log('caller ' + currentContext.caller);
+		    
 			if (!e.stack) e.stack = currentContext.copyMe();
 			throw e;
 		};

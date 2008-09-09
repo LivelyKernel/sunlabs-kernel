@@ -55,7 +55,23 @@ TestCase.subclass('TestTestCase', {
     testAssertEqualFailsNot: function() {
 		this.assertEqual(3,3, 'This should not fail');
 	},
+
+    testAssertIndentityFails: function() { 
+        try {
+            var o1 = {};
+            var o2 = {};
+            this.assertIdentity(o1,o2, 'This should fail');
+	    } catch(e) {
+	        return;
+	    };
+	    this.assert(false);
+	},
 	
+    testAssertEqualIdentityNot: function() {
+        var o = {};
+		this.assertEqual(o,o, 'This should not fail');
+	},
+
 	testAssertEqualState: function() {
 		this.assertEqualState({a: 123, b: 'xyz'}, {a: 123, b: 'xyz'});
 	},
@@ -292,7 +308,7 @@ function a(parameter) {
     for(p in arguments.callee.caller){
         this.console.log("P:" + p)
     };
-    logStack();
+    // logStack();
     return arguments;
 };
 
@@ -310,7 +326,7 @@ d = function(parameter) {
 
 function dummyRecurse(a) {
     if (a < 0 ) {
-        logStack();
+        // logStack();
         return 1
     } else {
         return dummyRecurse(a - 1) * a
@@ -328,8 +344,12 @@ TestCase.subclass('NativeStackTest', {
     },
 
     testOpenStackViewer: function() {
-        openStackViewer();
-    }
+        this.window = openStackViewer();
+    },
+    
+    tearDown: function() {
+        if(this.window) this.window.remove();
+    },
 });
 
 

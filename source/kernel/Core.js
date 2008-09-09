@@ -454,7 +454,6 @@ var Properties = {
     }
 };
 
-
 /*
  * Stack Viewer when Dans StackTracer is not available
  */
@@ -3792,6 +3791,9 @@ Visual.subclass('Morph', {
 
     initialize: function(initialBounds, shapeType) {
 	//console.log('initializing morph %s %s', initialBounds, shapeType);
+	if(!initialBounds) initialBounds = new Rectangle(0,0,100,100);
+	if(!shapeType) shapeType = "rect";
+	
 	this.internalInitialize(NodeFactory.create("g"));
 	this.pvtSetTransform(new Similitude(this.defaultOrigin(initialBounds, shapeType)));
 	this.initializePersistentState(initialBounds, shapeType);
@@ -4790,6 +4792,7 @@ Morph.addMethods({     // help handling
 
 
     showHelp: function(evt) {
+
 	if (this.suppressBalloonHelp) return false;
 	if (this.owner instanceof HandMorph) return false;
 	var helpText = this.getHelpText();
@@ -4797,12 +4800,14 @@ Morph.addMethods({     // help handling
 
 	// Create only one help balloon at a time
 	if (this.helpBalloonMorph && !this.helpBalloonMorph.getPosition().eqPt(evt.point())) {
-	    this.helpBalloonMorph.setPosition(evt.point());
+	    this.helpBalloonMorph.setPosition(this.window().localize(evt.point()));
 	    return false;
 	} else {
 	    var width = Math.min(helpText.length * 20, 260); // some estimate of width.
-	    this.helpBalloonMorph = new TextMorph(evt.point().addXY(10, 10).extent(pt(width, 20)), helpText);
-	    this.world().addMorph(this.helpBalloonMorph.beHelpBalloonFor(this));
+	    var window = this.window();
+	    var pos = window.localize(evt.point());
+	    this.helpBalloonMorph = new TextMorph(pos.addXY(10, 10).extent(pt(width, 20)), helpText);
+	    window.addMorph(this.helpBalloonMorph.beHelpBalloonFor(this));
 	    return true;
 	}
     },
@@ -5104,6 +5109,11 @@ Morph.addMethods({
 	// Open this and all submorphs to drag and drop
 	this.withAllSubmorphsDo( function() { this.openDnD(); });
     },
+    
+    dropMeOnMorph: function(receiver) {
+        receiver.addMorph(this); // this removes me from hand
+        if (this.logDnD) console.log("%s dropping %s on %s", this, this, receiver);
+    },
 
     pickMeUp: function(evt) {
 	var offset = evt.hand.getPosition().subPt(evt.hand.lastMouseDownPoint);
@@ -5144,12 +5154,13 @@ Morph.addMethods({
 	// If checkForDnD is false, return the morph to receive this mouse event (or null)
 	// If checkForDnD is true, return the morph to grab from a mouse down event (or null)
 	// If droppingMorph is not null, then check that this is a willing recipient (else null)
-
+	        
 	if (!this.fullContainsWorldPoint(evt.mousePoint)) return null; // not contained anywhere
 	// First check all the submorphs, front first
 	for (var i = this.submorphs.length - 1; i >= 0; i--) {
 	    var hit = this.submorphs[i].morphToGrabOrReceive(evt, droppingMorph, checkForDnD); 
 	    if (hit != null) { 
+	        //console.log(this + ">>morphToGrabOrReceive hit");
 		return hit;  // hit a submorph
 	    }
 	}
@@ -6790,7 +6801,9 @@ Morph.subclass("HandMorph", {
             if (this.mouseFocus) { // if mouseFocus is set, events go to that morph
                 this.mouseFocus.captureMouseEvent(evt, true);
             } else if (world) {
+                // console.log("world.morphToReceiveEvent " + evt)
                 var receiver = world.morphToReceiveEvent(evt);
+                // console.log("looked up morph " + receiver)
                 if (receiver !== this.mouseOverMorph) {
                     // if over a new morph, send onMouseOut, onMouseOver
                     if (this.mouseOverMorph) this.mouseOverMorph.onMouseOut(evt);
@@ -6940,10 +6953,8 @@ Morph.subclass("HandMorph", {
         if (receiver !== this.world()) this.unbundleCarriedSelection();
         while (this.hasSubmorphs()) { // drop in same z-order as in hand
             var m = this.submorphs.first();
-            receiver.addMorph(m); // this removes it from hand
-            if (this.logDnD) console.log("%s dropping %s on %s", this, m, receiver);
+            m.dropMeOnMorph(receiver);
 	    this.showAsUngrabbed(m);
-
         }
     },
 
@@ -7368,9 +7379,11 @@ Morph.addMethods({
             return true;
         else
             return this.owner.isContainedIn(morph)
-    }
-
+    },
 });
+
+
+
 
 // for Fabrik
 HandMorph.addMethods({
@@ -7384,8 +7397,6 @@ HandMorph.addMethods({
         }, this);
     }
 });
-
-
 
 
 console.log('loaded Core.js');

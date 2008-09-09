@@ -1475,14 +1475,15 @@ TextMorph.addMethods({
 	if (link) this.world().confirm("Ach du lieber, wir müssen " + link + " folgen.",
 		function (answer) {
 		    // quick hack for wiki demo
-		    var wikiNav = new WikiNavigator(link);
+		    var wikiNav = new WikiNavigator(new URL(link));
 		    if (wikiNav.isActive() && !wikiNav.worldExists()) {
 		        //alert("wiki link");
 		        wikiNav.saveWorld(true);
 		    } else {
 		        //alert("normal link");
 		        Config.askBeforeQuit = false;
-		        window.location.assign(link);
+		        // force to load site from server by passing the date
+		        window.location.assign(link + '?' + new Date().getTime());
 		    };
 		    
 		}.bind(this));
@@ -1911,7 +1912,7 @@ TextMorph.addMethods({
     linkifySelection: function(emph) {
         this.world().prompt("Enter the link you wish to find...",
 			    function(response) {
-			        if (!response.startsWith('http://')) response = URL.source.withFilename(response).toString();
+			        if (!response.startsWith('http://')) response = URL.source.notSvnVersioned().withFilename(response).toString();
 			        this.emphasizeSelection( {color: "blue", link: response} );
 			    }.bind(this));
     },

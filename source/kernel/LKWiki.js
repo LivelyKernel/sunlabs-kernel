@@ -173,19 +173,17 @@ Widget.subclass('WikiNavigator', {
             // the regexp outputs ["http://localhost/livelyBranch/proxy/wiki/test/", "http://localhost/livelyBranch/proxy/wiki"]
             if (!URL.source.toString().include("wiki")) return URL.source.getDirectory().toString();
             return /(.*wiki).*/.exec(URL.source.getDirectory().toString())[1];
-            // return /(.*\/proxy\/.*wiki).*/.exec(URL.source.getDirectory().toString())[1];
-            //return "http://localhost/livelyBranch/proxy/wiki"
     },
    
     initialize: function($super, url, world) {
 		$super(null);
 		if (!world) world = WorldMorph.current();
 		this.world = world;
-		
-		this.model = Record.newPlainInstance({Versions: [], Version: null, URL: this.removeBaselinePartsFrom(url)});
+		url = new URL(url);
+		this.model = Record.newPlainInstance({Versions: [], Version: null, URL: url.notSvnVersioned().withoutQuery() });
 		this.model.addObserver(this, { Version: "!Version" });
 		
-		this.svnResource = new SVNResource(this.repoUrl(), Record.newPlainInstance({URL: this.model.getURL(), HeadRevision: null, Metadata: null}));
+		this.svnResource = new SVNResource(this.repoUrl(), Record.newPlainInstance({URL: this.model.getURL().toString(), HeadRevision: null, Metadata: null}));
 		
 		return this;
 	},
@@ -250,15 +248,14 @@ Widget.subclass('WikiNavigator', {
         if (this.panel) this.panel.remove();
         if (this.btn) this.btn.remove();
 	    
-	    var url = this.model.getURL();
         var status = this.svnResource.store(Exporter.shrinkWrapMorph(WorldMorph.current()), true).getStatus();        
 
     	if (status.isSuccess()) {
-    	    console.log("success saving world at " + url + ", to wiki. Status: " + status.code());
+    	    console.log("success saving world at " + this.model.getURL().toString() + ", to wiki. Status: " + status.code());
     	    this.findVersions();
     	    this.onVersionUpdate(this.model.getVersions().first().toString());
     	} else {
-    	    console.log("Failure saving world at " + url + ", to wiki");
+    	    console.log("Failure saving world at " + this.model.getURL().toString() + ", to wiki");
     	    this.createWikiNavigatorButton();
     	}
 	},
@@ -307,7 +304,7 @@ Widget.subclass('WikiNavigator', {
 Object.extend(WikiNavigator, {
     enableWikiNavigator: function() {
         if (WikiNavigator.current) return;
-        var nav = new WikiNavigator(URL.source.toString());
+        var nav = new WikiNavigator(URL.source);
         // var nav = new WikiNavigator('http://localhost/livelyBranch/proxy/wiki/test/blabla');
         if (!nav.isActive()) return;
         nav.createWikiNavigatorButton();
@@ -315,75 +312,4 @@ Object.extend(WikiNavigator, {
         nav.btn.startStepping(1000, "positionInLowerLeftCorner");
         WikiNavigator.current = nav;
     }
-});
-
-// will be merged with Resource
-Object.subclass('FileDirectory', {
-   
-   initialize: function(url) {
-        this.url = url.isLeaf() ? url.getDirectory() : url;
-   },
-   
-   fileContent: function(localname) {
-       var url = this.url.withFilename(localname);
-       var resource = new Resource(Record.newPlainInstance({URL: url, ContentText: null}));
-       resource.fetch(true);
-       return resource.getContentText();
-   },
-   
-   filesAndDirs: function() {
-       var url = this.url;
-       var webFile = new lk.storage.WebFile(Record.newPlainInstance(
-           {File: url, RootNode: url, Content: null, DirectoryList: null}));
-       webFile.fetchContent(webFile.formalModel.getFile(), true);
-       return webFile.formalModel.getDirectoryList();
-   },
-   
-   files: function() {
-       return this.filesAndDirs().select(function(ea) { return ea.isLeaf() });
-   },
-   
-   filenames: function() {
-       return this.files().collect(function(ea) { return ea.filename() } );
-   },
-   
-   subdirectories: function() {
-       // remove the first, its the url of the current directory
-       var result = this.filesAndDirs().reject(function(ea) { return ea.isLeaf() });
-       result.shift();
-       return result;
-   },
-
-   subdirectoryNames: function() {
-       return this.subdirectories().collect(function(ea) { return ea.filename() } );
-   },
-   
-   fileOrDirectoryExists: function(localname) {
-       return new NetRequest().beSync().get(this.url.withFilename(localname)).transport.status != 404;
-   },
-   
-   writeFileNamed: function(localname, content, askUser) {
-       var url = this.url.withFilename(localname);
-       var resource = new Resource(Record.newPlainInstance({URL: url}));
-       return resource.store(content, true).getStatus().isSuccess();
-   },
-   
-   createDirectory: function(localname) {
-       return new NetRequest().beSync().mkcol(this.url.withFilename(localname)).getStatus().isSuccess();
-   },
-   
-   deleteFileNamed: function(localname) {
-       return new NetRequest().beSync().del(this.url.withFilename(localname)).getStatus().isSuccess();       
-   },
-   
-   // Move to somewhere else? Not directory specific...
-   copyFile: function(srcUrl, destUrl) {
-       return new NetRequest().beSync().copy(srcUrl, destUrl, true /*overwrite*/).getStatus().isSuccess();
-   },
-   
-   copyFileNamed: function(srcFileName, destUrl) {
-       var otherDir = new FileDirectory(destUrl);
-       otherDir.writeFileNamed(srcFileName, this.fileContent(srcFileName));
-   }
-   
 });

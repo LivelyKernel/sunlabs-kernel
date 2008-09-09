@@ -348,13 +348,7 @@ Morph.subclass('FabrikMorph', {
     addMorph: function($super, morph) {
         // don't let loose ends lie around
         if (morph.pinHandle && morph.pinHandle.isFakeHandle) {
-            // check for failed dropp...
-            otherPinMorph = this.morphToGrabOrReceive({mousePoint:morph.worldPoint(pt(5,5))});
-            if(otherPinMorph.isPinMorph) {
-                return otherPinMorph.addMorph(morph); // let him do the job
-            };  
-            morph.pinHandle.connectors.first().remove();
-            return morph.owner.removeMorph(morph);
+            throw new Error("Pin dropped on fabrik, this should not happen any more")
         };
         // dropping components into the fabrik component...!
         if (morph.component) this.fabrik.plugin(morph.component);
@@ -425,6 +419,7 @@ Widget.subclass('FabrikComponent', {
             return;
         };        
         this.connectors.push(connector);
+        // argh! is this really necessary??
         connector.fabrik = this;
         
         if (this.morph) {
@@ -454,8 +449,9 @@ Widget.subclass('FabrikComponent', {
 
     removeConnector: function(connector) {
         if (!this.connectors.include(connector)) {
-            console.log('FabrikComponent>>removeConnector: tried to remove connector, which is not there')
+            console.log('FabrikComponent>>removeConnector: tried to remove connector, which is not there');
         };
+        console.log('Removing connectir')
         this.connectors = this.connectors.reject(function(ea) { return ea === connector });
         this.morph.removeMorph(connector.morph);
     },
@@ -560,6 +556,22 @@ Morph.subclass('PinMorph', {
     getGlobalPinPosition: function(){
         return this.getGlobalTransform().transformPoint(this.getLocalPinPosition());
     },
+    
+    dropMeOnMorph: function(receiver) {
+        // logCall(arguments, this);
+        if(receiver && receiver.isPinMorph)
+            receiver.addMorph(this);
+        else {
+            otherPinMorph = this.window().morphToGrabOrReceive(
+                newFakeMouseEvent(this.worldPoint(pt(5,5))));
+                if(otherPinMorph.isPinMorph) {
+                    return otherPinMorph.addMorph(this); // let him do the job
+            }; 
+            console.log("found other pin " + otherPinMorph)
+            this.pinHandle.connectors.first().remove();
+            this.remove();
+        };
+    },
 
     // PinPosition relative to the Fabrik Morph
     getPinPosition: function() {
@@ -574,24 +586,19 @@ Morph.subclass('PinMorph', {
         });
     },    
 
-    // showHelp: function($super, evt) {
-    //     var helpShown = $super(evt);
-    //     if (!this.pinHandle.isFakeHandle) evt.hand.setMouseFocus(this);
-    //     return helpShown;
-    // },
+    snapToPointInside: function(point) {
+        var oldPos = point
+        point = point.maxPt(pt(0,0));
+        point = point.minPt(this.owner.getExtent());
+        this.setPosition(point.subPt(this.getExtent().scaleBy(0.5)));
+    },
     
     onMouseMove: function(evt) {
-        // evt.hand.setMouseFocus(this);
         if (evt.isMetaDown()) {
-            this.setPosition(
-                this.owner.bounds().closestPointToPt(this.owner.localize(evt.mousePoint)).subPt(this.getExtent().scaleBy(0.5))
-                // this.owner.localize(evt.mousePoint).subPt(this.getExtent().scaleBy(0.5))
-                );
-            // this.moveBy(evt.mousePoint.subPt(this.getGlobalPinPosition()));
-            //evt.hand.showAsUngrabbed(this);
-            return;
+            this.snapToPointInside(this.owner.localize(evt.mousePoint))
         }
     },
+
     // When PinHandleMorph is there, connect to its onMouseDown
     onMouseDown: function($super, evt) {
         if (evt.isMetaDown()) return;
@@ -671,6 +678,7 @@ Widget.subclass('PinHandle', {
         this.morph = new PinMorph();
         // perhaps move to morph
         this.morph.pinHandle = this;
+        return this.morph;
     },
  
     setValue: function(value) {
@@ -720,12 +728,12 @@ Widget.subclass('PinHandle', {
         });
     },
 
+    // Not used right now! Instead PinMorph.addMorph has all the logic! Refactor!
     connectFromFakeHandle: function(fakePin) {
         // FIXME: remove fakePin connection or replace fakePin with this!
         var con = fakePin.originPin.detectConnectorWith(fakePin);
         if (!con) throw new Error('No connector encountered when removing fakpin connection');
         con.remove();
-        
         return fakePin.originPin.connectTo(this);
     },
 
@@ -734,7 +742,7 @@ Widget.subclass('PinHandle', {
         fakePin.isFakeHandle = true;
         fakePin.originPin = this;
         fakePin.component = this.component;
-        // in createFakePinHandle() fabrik.connectPins is send again after the connector morph was created
+        // in PinMorph.onMouseDown() fabrik.connectPins is send again after the connector morph was created
         // for adding the connector morph to the update position logic. This is redundant, how to remove this
         // without mixing model and view logic?
         this.connectTo(fakePin);
@@ -779,7 +787,10 @@ Object.subclass('PinConnector', {
     
     remove: function() {
         // FIXME: View!!!
-        if (this.morph) this.morph.remove();
+        if (this.morph) {
+            console.log('remove con');
+            this.morph.remove();
+        }
     
         // should be removed! Fabrik should not know about connectors!
         if (this.fabrik) this.fabrik.removeConnector(this);
@@ -856,7 +867,6 @@ Morph.subclass('ConnectorMorph', {
                         if (evt.isCommandKey())
                             self.pinConnector.remove() // remove connector
                         });
-                  
                 return handleMorph;
         });               
     },
@@ -867,7 +877,8 @@ Morph.subclass('ConnectorMorph', {
     
         this.contextMenu = new MenuMorph([["cut", this.pinConnector, "remove"]], self);
         var offset = pt(-40,-40);
-        this.contextMenu.openIn(WorldMorph.current(), evt.mousePoint.addPt(offset), false, "");
+        var pos = this.window().localize(evt.mousePoint).addPt(offset)
+        this.contextMenu.openIn(this.window(), pos, false, "");
         
         var connector = this;
         var handObserver = new HandPositionObserver(function(value) {
@@ -913,9 +924,10 @@ Morph.subclass('ConnectorMorph', {
         return this.shape.vertices().last();
     },
     
-    remove: function(){
-        if(this.fabrik)
-            this.fabrik.removeConnector(this)
+    remove: function($super) {
+        $super();
+        if (!this.fabrik) console.log('no fabrik!!!');
+        if (this.fabrik) this.fabrik.removeConnector(this);
     },
     
     updateView: function (varname, source) {
@@ -965,35 +977,60 @@ Morph.subclass('ComponentMorph', {
  */
 Object.subclass('Component', {
     
+    defaultPanelContents: [
+        ['text', newTextPane, new Rectangle(0.025, 0.05, 0.95, 0.9)]
+    ],
+    
     initialize: function() {
         this.formalModel = NewComponentModel.instantiateNewClass();
         this.pinHandles = [];
     },
     
-	defaultPanelContents: [
-        ['text', newTextPane, new Rectangle(0.025, 0.05, 0.95, 0.9)]
-    ],
-
-    setupPanel: function(){
-        this.panel = PanelMorph.makePanedPanel(pt(200, 100), this.defaultPanelContents),
-        this.panel.openForDragAndDrop = false;
-        this.panel.suppressHandles = false;
-        var self = this;
-        this.panel.changed = this.panel.changed.wrap(function(proceed){
-            var newPos = this.getGlobalTransform().transformPoint(pt(0,0));
-            if (!this.pvtOldPosition || !this.pvtOldPosition.eqPt(newPos)) {
-                this.pvtOldPosition = newPos;
-                self.pinHandles.each(function(ea){
-                    ea.morph.updatePosition();
-                });
-            };
-            proceed();
-        });
-
-        // argh, just a quick hack for dropping components into  the fabrikcomponent.
-        // see the wrapped addMorph() in FabrikComponent.buildView()
-        this.panel.component = this;
+    buildView: function() {
+        this.setupPanel();
+        this.setupHandles();
+        // Fix for adding to Fabrik with addMorph()
+        this.morph = this.panel;
+        return this.panel;
     },
+
+    setupPanel: function() {
+         // // new PanelMorph(pt(100,100)).addMorph(
+         //     new ScrollPane(new ComponentMorph(new Rectangle(0, 0.65, 1, 0.05)), new Rectangle(0, 0.65, 1, 0.05));
+         //     // newTextListPane(new Rectangle(0, 0.65, 1, 0.05));
+         // // PanelMorph.makePanedPanel(pt(100,100), [
+         // //     ['resultBar', newTextPane, new Rectangle(0, 0.65, 1, 0.05)]
+         // // ]);
+         this.panel = PanelMorph.makePanedPanel(pt(200, 100), this.defaultPanelContents);
+         // this.panel = PanelMorph.makePanedPanel(pt(200, 100), this.defaultPanelContents);
+         this.panel.openForDragAndDrop = false;
+         this.panel.suppressHandles = false;
+         var self = this;
+         this.panel.changed = this.panel.changed.wrap(function(proceed){
+             var newPos = this.getGlobalTransform().transformPoint(pt(0,0));
+             if (!this.pvtOldPosition || !this.pvtOldPosition.eqPt(newPos)) {
+                 this.pvtOldPosition = newPos;
+                 self.pinHandles.each(function(ea){
+                     ea.morph.updatePosition();
+                 });
+             };
+             proceed();
+         });
+         
+         var self = this;
+         this.panel.morphMenu = this.panel.morphMenu.wrap(function(proceed, evt) { 
+             var menu = proceed(evt);
+             menu.addItem(["add pin named...", function() { 
+                 WorldMorph.current().prompt('Name for Pin?', function(name) {
+                      self.addFieldAndPinHandle(name) }, 'Test')}]
+                  );
+             return menu;
+         });
+         
+         // argh, just a quick hack for dropping components into  the fabrikcomponent.
+         // see the wrapped addMorph() in FabrikComponent.buildView()
+         this.panel.component = this;
+     },
     
     setupTextPane: function(){
         this.morph = this.panel.text.innerMorph();
@@ -1035,6 +1072,7 @@ Object.subclass('Component', {
             throw new Error('Cannot add Pin. There exist no field for ' + pinName);
         var pinHandle = new PinHandle(this, pinName);
         this.pinHandles.push(pinHandle);
+        if (this.morph) this.setupPinHandle(pinHandle);
         return pinHandle;
     },
     
@@ -1047,17 +1085,23 @@ Object.subclass('Component', {
         return $super() + this.name
     },
 
+    // move this to morph!! Just say addNewPinHandle. Morph must figure out where it should go.
     setupHandles: function() {
         if (!this.panel) return;
         var offset = this.panel.bounds().height / 2 - 10;
-        this.pinHandles.each(function(handle){
-            handle.buildView();
+        this.pinHandles.each(function(handle) {
+            if(!handle.morph) this.setupPinHandle(handle);
             handle.morph.setPosition(pt(-5, offset));
             offset += handle.morph.bounds().height + 10;
-            this.panel.addMorph(handle.morph);
-            handle.morph.openForDragAndDrop = false;
         }, this);
+    },
+    
+    setupPinHandle: function(pin) {
+        pin.buildView();
+        this.panel.addMorph(pin.morph);
+        pin.morph.openForDragAndDrop = false;
     }
+    
 });
 
 Component.subclass('PluggableComponent', {
@@ -1088,14 +1132,11 @@ Component.subclass('PluggableComponent', {
         this.panel.component = this;
     },
 
+    // call super
     buildView: function() {
         this.setupPanel();
         // Fix for adding to Fabrik with addMorph()
         this.morph = this.panel;
-        //this.panel.text.remove();
-        this.panel.addMorph = this.panel.addMorph.wrap(function(proceed, morph) {
-            proceed(morph);
-        });
         return this.panel;
     },
 
@@ -1514,7 +1555,12 @@ function debugFunction(func) {
     	var viewer = new ErrorStackViewer(errObj)
     	viewer.openIn(WorldMorph.current(), pt(220, 10));
 	};
-	Function.installStackTracers("uninstall");
-	var viewer = new ErrorStackViewer(errObj)
-	viewer.openIn(WorldMorph.current(), pt(220, 10));
+};
+
+newFakeMouseEvent = function(point) {
+    var rawEvent = {type: "mousemove", pageX: 100, pageY: 100, altKey: false, shiftKey: false, metaKey: false}, 
+    var evt = new Event(rawEvent);
+    evt.hand = WorldMorph.current().hands.first();
+    if(point) evt.mousePoint = point;
+    return evt;
 };

@@ -126,6 +126,10 @@ Object.subclass('URL', {
 	return new URL({protocol: this.protocol, port: this.port, hostname: this.hostname, pathname: this.pathname,
 			search: "?" + this.toQueryString(record), hash: this.hash});
     },
+    
+    withoutQuery: function() {
+        return new URL({protocol: this.protocol, port: this.port, hostname: this.hostname, pathname: this.pathname});
+    },
 
     eq: function(url) {
 	if (!url) return false;
@@ -154,6 +158,13 @@ Object.subclass('URL', {
     svnVersioned: function(repo, revision) {
 	var relative = this.relativePathFrom(repo);
 	return repo.withPath(repo.pathname + "!svn/bc/" + revision + "/" + relative);
+    },
+    
+    notSvnVersioned: function() {
+        // concatenates the two ends of the url
+        // "http://localhost/livelyBranch/proxy/wiki/!svn/bc/187/test/index.xhtml"
+        // --> "http://localhost/livelyBranch/proxy/wiki/index.xhtml"
+        return this.withPath(this.fullPath().replace(/(.*)!svn\/bc\/[0-9]+\/(.*)/, '$1$2'));
     }
     
 });
@@ -196,7 +207,6 @@ URL.makeProxied = function makeProxied(url) {
     }
     else return url;
 };
-
 
 URL.svnWorkspace = (function() {
     // a bit of heuristics to figure the top of the local SVN repository
@@ -707,5 +717,77 @@ Resource.subclass('SVNResource', {
     }
 });
 
+// TODO will be merged with Resource
+// TODO make async?
+Object.subclass('FileDirectory', {
+   
+   initialize: function(url) {
+        this.url = url.isLeaf() ? url.getDirectory() : url;
+   },
+   
+   fileContent: function(localname) {
+       var url = this.url.withFilename(localname);
+       var resource = new Resource(Record.newPlainInstance({URL: url, ContentText: null}));
+       resource.fetch(true);
+       return resource.getContentText();
+   },
+   
+   filesAndDirs: function() {
+       var url = this.url;
+       var webFile = new lk.storage.WebFile(Record.newPlainInstance(
+           {File: url, RootNode: url, Content: null, DirectoryList: null}));
+       webFile.fetchContent(webFile.formalModel.getFile(), true);
+       return webFile.formalModel.getDirectoryList();
+   },
+   
+   files: function() {
+       return this.filesAndDirs().select(function(ea) { return ea.isLeaf() });
+   },
+   
+   filenames: function() {
+       return this.files().collect(function(ea) { return ea.filename() } );
+   },
+   
+   subdirectories: function() {
+       // remove the first, its the url of the current directory
+       var result = this.filesAndDirs().reject(function(ea) { return ea.isLeaf() });
+       result.shift();
+       return result;
+   },
+
+   subdirectoryNames: function() {
+       return this.subdirectories().collect(function(ea) { return ea.filename() } );
+   },
+   
+   fileOrDirectoryExists: function(localname) {
+       return new NetRequest().beSync().get(this.url.withFilename(localname)).transport.status != 404;
+   },
+   
+   writeFileNamed: function(localname, content, askUser) {
+       var url = this.url.withFilename(localname);
+       var resource = new Resource(Record.newPlainInstance({URL: url}));
+       return resource.store(content, true).getStatus().isSuccess();
+   },
+   
+   createDirectory: function(localname) {
+       return new NetRequest().beSync().mkcol(this.url.withFilename(localname)).getStatus().isSuccess();
+   },
+   
+   deleteFileNamed: function(localname) {
+       return new NetRequest().beSync().del(this.url.withFilename(localname)).getStatus().isSuccess();       
+   },
+   
+   // Move to somewhere else? Not directory specific...
+   copyFile: function(srcUrl, destUrl) {
+       return new NetRequest().beSync().copy(srcUrl, destUrl, true /*overwrite*/).getStatus().isSuccess();
+   },
+   
+   copyFileNamed: function(srcFileName, destUrl, optNewFileName) {
+       if (!optNewFileName) optNewFileName = srcFileName;
+       var otherDir = new FileDirectory(destUrl);
+       otherDir.writeFileNamed(optNewFileName, this.fileContent(srcFileName));
+   }
+   
+});
 
 console.log('loaded Network.js');

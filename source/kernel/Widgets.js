@@ -716,7 +716,9 @@ Object.extend(PanelMorph, {
             var paneName = spec[0];
             var paneConstructor = spec[1];
             var paneRect = extent.extentAsRectangle().scaleByRect(spec[2]);
-            panel[paneName] = panel.addMorph(new paneConstructor(paneRect));
+            // fix for mixed class vs. function initialization bug
+            var pane = Class.isClass(paneConstructor) ? new paneConstructor(paneRect) : paneConstructor(paneRect);
+            panel[paneName] = panel.addMorph(pane)
         });
         panel.suppressHandles = true;
         return panel;
@@ -1934,7 +1936,7 @@ Global.newTextListPane = function(initialBounds) {
     return new ScrollPane(new TextListMorph(initialBounds, ["-----"]), initialBounds); 
 };
 
-Global.newListPane = function(initialBounds) {
+Global.newRealListPane = function(initialBounds) {
     return new ScrollPane(new ListMorph(initialBounds, ["-----"]), initialBounds); 
 };
 
@@ -2872,6 +2874,22 @@ Morph.subclass('WindowMorph', {
     }
 
 });
+   
+// every morph should be able to get his window
+// e.g. helper texts are created in the window, not in the world
+Morph.addMethods({
+    window: function(morph) {
+        if(!this.owner) return this;
+        return this.owner.window();
+    },
+});
+
+WindowMorph.addMethods({
+    window: function(morph) {
+        return this
+    },
+});
+   
    
 WindowMorph.subclass("TabbedPanelMorph", {
 

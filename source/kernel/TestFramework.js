@@ -20,8 +20,8 @@ Object.subclass('TestCase', {
 	},
 	
 	log: function(aString) {
-    	if(this.verbose())
-    	    console.log(aString);
+        if (this.verbose())
+            console.log(aString);
 	},
 	
 	runAll: function() {
@@ -58,9 +58,9 @@ Object.subclass('TestCase', {
 	
 	debugTest: function(selector) {
 		// FIXME
-		Function.installStackTracers();
+        Function.installStackTracers();
 		this.runTest(selector);
-		Function.installStackTracers("uninstall");
+        Function.installStackTracers("uninstall");
 		return this.result.failed.last();
 	},
 
@@ -74,6 +74,14 @@ Object.subclass('TestCase', {
 			/* Better call assert() and assemble error message
 			in AssertionError */
 			throw {isAssertion: true, message: (msg ? msg	 : "") + " (" + firstValue +" != " + secondValue +") "};
+		}
+	},
+	
+	assertIdentity: function(firstValue, secondValue, msg){
+		if(!(firstValue === secondValue))  {
+			/* Better call assert() and assemble error message
+			in AssertionError */
+			throw {isAssertion: true, message: (msg ? msg	 : "") + " (" + firstValue +" !== " + secondValue +") "};
 		}
 	},
 	
@@ -138,8 +146,7 @@ Object.subclass('TestSuite', {
 		this.testCases.each(function(ea) {
 			ea.runAll();
 		});
-	},
-
+	}
 });
 
 
@@ -276,7 +283,7 @@ Widget.subclass('TestRunner', {
 	
 	buildView: function(extent) {
 		var panel = PanelMorph.makePanedPanel(extent, [
-		   ['testClassList', newListPane, new Rectangle(0, 0, 1, 0.6)],
+		   ['testClassList', newRealListPane, new Rectangle(0, 0, 1, 0.6)],
 		   ['runButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0, 0.6, 0.5, 0.05)],
 		   ['runAllButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0.5, 0.6, 0.5, 0.05)],
 		   ['resultBar', newTextPane, new Rectangle(0, 0.65, 1, 0.05)],
@@ -479,6 +486,7 @@ Widget.subclass('ErrorStackViewer', {
 SimpleInspector.inspectObj = function(object) {
     new SimpleInspector(object).openIn(WorldMorph.current(), pt(200,10))
 };
+inspectObj = SimpleInspector.inspectObj;
     
 /* 
  * *** Error properties for documentation: ***
@@ -508,7 +516,8 @@ function openStackViewer() {
    var stackList = stack.collect(function(ea){return {method: ea, args: []}});
    var viewer = new ErrorStackViewer();
    viewer.setStackList(stackList);
-   viewer.openIn(WorldMorph.current(), pt(220, 10));
+   var window = viewer.openIn(WorldMorph.current(), pt(220, 10));
+   return window;
 };
 
 console.log("loaded TestFramework.js");

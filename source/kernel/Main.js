@@ -199,7 +199,7 @@ function populateWorldWithExamples(world) {
 
     if (Config.showTester) new TestWidget().openIn(world, pt(835, 450));
     	
-    if (Config.showTesterRunner) TestRunner.openIn();
+    if (Config.showTesterRunnerForDevelopment) TestRunner.openIn();
     if (Config.showWikiNavigator) WikiNavigator.enableWikiNavigator();
 
 	if (Config.showFabrikComponentBox) Fabrik.openComponentBox()
@@ -308,6 +308,7 @@ function populateWorldWithExamples(world) {
         world.addMorph(devWorld);
 	addLinkLabel(devWorld, "Development Tools");
 
+            
         if (Config.showBrowser) new SimpleBrowser().openIn(devWorld.myWorld, pt(20, 20));
 
         // DI: The ObjectBrowser takes a long time to start due to its long list
@@ -353,6 +354,8 @@ function populateWorldWithExamples(world) {
 			};
 			importer.loadCode(URL.source.withFilename('GridLayout.js'));
 		}
+		
+        if (Config.showTesterRunner) TestRunner.openIn(devWorld.myWorld, pt(500, 100));
     }
 
     if (Config.showPhoneWorld) {
