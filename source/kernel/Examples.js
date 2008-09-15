@@ -169,13 +169,27 @@ Morph.subclass("ClockMorph", {
 // Piano Keyboard
 // ===========================================================================
 Morph.subclass('PianoKeyboard', {
-
+    
+    click: "UklGRkwCAABXQVZFZm10IBAAAAABAAEAIlYAACJWAAABAAgAZGF0YSgCAACAgICAgICAgICAgICA"
+	+ "gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgH+AgICA"
+	+"gICAgICAf4CAgICDh4qDd3h8f4aJgX2DioyCcWhufYmEe4KRkoR0a298ioyGgISKhnxzb3SBi4yG"
+	+ "goOEgHdydn6GjIyGfXl5fICAf4GBgoOAfnx6eXyDiId/enuBhYOBgICCg4KAfn1/goOCgIB/fn5/"
+	+ "gIGAfn+BgoKCgYB+fn+BgoKCgYCAgIGBgH+Bg4OCgH+AgYCAgIGAgICAgH9/f4CAgYGAgH9/gIGA"
+	+ "gICBgYGBgYB/f4CBgYGAfn5/gIGAf3+AgYCAf3+AgYGAf3+AgICAgH+AgYGBf35/gYGBgYGBgYB/"
+	+ "fn+BgoKBgH+AgYB+fX+Bg4OCgYB/f4CAgIGBgYGBgYB/f3+Af3+AgYKDgn99fX6AgoKBgICAgYB/"
+	+ "f4CAgICAgICAf3+AgYGAgICAgIB/gICAgICAgIB/f3+AgYCAgICAgICBgYCAgICBgYB/f3+AgICA"
+	+ "gYGAgH9/f3+AgYKBgYCAgICAgH9+f4GCgoGAf39/gICAgIGBgYCAf39/gIGBgYCAgIGBgH9/gICB"
+	+ "gYGAgICAgYGAgICAgH9/gICBgYCAgH9/f4CAgICAgIGBgYB/fn+AgYKBgICAgIB/f4CBgYGAf35/"
+	+ "f4CAgIGBgYCAgIB/f4CAgICAgICAgICAgIA=",
+    
     initialize: function($super, loc) {
 	//  -- Lets Boogie! --
 	$super(loc.extent(pt(100, 20)), "rect");
 	var wtWid, bkWid, keyRect, key, octavePt, nWhite, nBlack;
 	var nOctaves = 6;
 	wtWid = 8; bkWid = 5;
+
+
 	for (var i=0; i<nOctaves+1; i++) {
 	    if (i < nOctaves) {nWhite = 7;  nBlack = 5; }
 	    else {nWhite = 1;  nBlack = 0; } // Hich C
@@ -198,6 +212,12 @@ Morph.subclass('PianoKeyboard', {
 	// New bounds encloses all keys but no more
 	this.setExtent(this.bounds().extent().addXY(-1,-1));
     },
+
+    initializeTransientState: function($super, initialBounds) {
+	$super(initialBounds);
+	this.audio = new Audio("data:audio/x-wav;base64," + this.click);
+	this.audio.volume = 1.0;
+    },
     
     deserialize: function($super, importer, rawNode) {
 	$super(importer, rawNode);
@@ -209,10 +229,12 @@ Morph.subclass('PianoKeyboard', {
     pianoKeyDown: function(evt, key) {
 	key.setFill(Color.green);
 	console.log("key number " + key.noteNumber + " pressed."); 
+	this.audio.play();
     },
     pianoKeyUp: function(evt, key) {
 	key.setFill(key.myFill);
 	console.log("key number " + key.noteNumber + " released."); 
+	this.audio.pause();
     },
     pianoKeyMove: function(evt, key) {
         if (!evt.mouseButtonPressed) return;
