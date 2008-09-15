@@ -220,6 +220,7 @@ Morph.subclass('PianoKeyboard', {
 	//this.audio = new Audio("data:audio/x-wav;base64," + this.click);
 	this.audio = new Audio(URL.source.dirname() + "/Resources/Sounds/C4.wav");
 	this.audio.volume = 1.0;
+	this.audio.load();
     },
     
     deserialize: function($super, importer, rawNode) {
