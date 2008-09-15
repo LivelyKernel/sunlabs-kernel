@@ -169,7 +169,8 @@ Morph.subclass("ClockMorph", {
 // Piano Keyboard
 // ===========================================================================
 Morph.subclass('PianoKeyboard', {
-    
+
+    // obtained by uuencode -m
     click: "UklGRkwCAABXQVZFZm10IBAAAAABAAEAIlYAACJWAAABAAgAZGF0YSgCAACAgICAgICAgICAgICA"
 	+ "gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgH+AgICA"
 	+"gICAgICAf4CAgICDh4qDd3h8f4aJgX2DioyCcWhufYmEe4KRkoR0a298ioyGgISKhnxzb3SBi4yG"
@@ -181,6 +182,7 @@ Morph.subclass('PianoKeyboard', {
 	+ "gYGAgH9/f3+AgYKBgYCAgICAgH9+f4GCgoGAf39/gICAgIGBgYCAf39/gIGBgYCAgIGBgH9/gICB"
 	+ "gYGAgICAgYGAgICAgH9/gICBgYCAgH9/f4CAgICAgIGBgYB/fn+AgYKBgICAgIB/f4CBgYGAf35/"
 	+ "f4CAgIGBgYCAgIB/f4CAgICAgICAgICAgIA=",
+
     
     initialize: function($super, loc) {
 	//  -- Lets Boogie! --
@@ -215,7 +217,8 @@ Morph.subclass('PianoKeyboard', {
 
     initializeTransientState: function($super, initialBounds) {
 	$super(initialBounds);
-	this.audio = new Audio("data:audio/x-wav;base64," + this.click);
+	//this.audio = new Audio("data:audio/x-wav;base64," + this.click);
+	this.audio = new Audio(URL.source.dirname() + "/Resources/Sounds/C4.wav");
 	this.audio.volume = 1.0;
     },
     
@@ -230,20 +233,23 @@ Morph.subclass('PianoKeyboard', {
 	key.setFill(Color.green);
 	console.log("key number " + key.noteNumber + " pressed."); 
 	this.audio.play();
+
     },
-    pianoKeyUp: function(evt, key) {
+    pianoKeyUp: function(evt, key, optSuppressPause) {
 	key.setFill(key.myFill);
 	console.log("key number " + key.noteNumber + " released."); 
-	this.audio.pause();
+	if (!optSuppressPause) this.audio.pause();
+	this.audio.currentTime = 0;
     },
     pianoKeyMove: function(evt, key) {
         if (!evt.mouseButtonPressed) return;
 	if (!key.containsWorldPoint(evt.mousePoint) ) {
 	    // user dragged out with mouse down
-	    this.pianoKeyUp(evt, key);
+	    var newKey = this.morphToReceiveEvent(evt);
+	    this.pianoKeyUp(evt, key, !!newKey);
 	    evt.hand.setMouseFocus(null);
 	    // See if it's now on a new key a la glissando
-	    var newKey = this.morphToReceiveEvent(evt);
+
 	    if (newKey) {
 		this.pianoKeyDown(evt, newKey);
 		evt.hand.setMouseFocus(newKey);
