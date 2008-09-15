@@ -1967,6 +1967,7 @@ Object.subclass("Color", {
     deserialize: function(importer, str) {
 	if (!str || str == "none") return null;
 	// FIXME this should be much more refined
+	if (!str.match) debugger;
 	var match = str.match("rgb\\((\\d+),(\\d+),(\\d+)\\)");
 	if (match) { 
 	    this.r = parseInt(match[1])/255;
@@ -2039,6 +2040,10 @@ Object.extend(Color, {
 
     rgb: function(r, g, b) {
 	return new Color(r/255, g/255, b/255);
+    },
+
+    fromJSON: function(spec) {
+	return new Color(spec.r, spec.g, spec.b);
     }
 
 });
@@ -4021,7 +4026,15 @@ Visual.subclass('Morph', {
 			}
 		    } else {
 			var value = LivelyNS.getAttribute(node, "value");
-			if (value != null) this[name] = JSON.unserialize(value);
+			//alert('found value ' + value);
+			if (value != null) {
+			    console.log('unserialized ' + JSON.unserialize(value));
+			    var family = LivelyNS.getAttribute(node, "family");
+			    if (family) {
+				if (!Global[family]) throw new Error('uknown type ' + family);
+				this[name] = Global[family].fromJSON(JSON.unserialize(value));
+			    } else this[name] = JSON.unserialize(value);
+			}
 		    }
 		}
 		break;
@@ -4166,6 +4179,10 @@ Visual.subclass('Morph', {
 	    } else if (Converter.isJSONConformant(m)) {
 		// FIXME: deal with arrays of primitives etc?
 		var desc = LivelyNS.create("field", {name: prop, value: JSON.serialize(m)});
+		extraNodes.push(this.addNonMorph(desc));
+		addNL(this);
+	    } else if (m instanceof Color) {
+		var desc = LivelyNS.create("field", {name: prop, family: "Color", value: JSON.serialize(m)});
 		extraNodes.push(this.addNonMorph(desc));
 		addNL(this);
 	    }
@@ -5601,6 +5618,9 @@ ViewTrait = {
 	return this;
     },
 
+    relayToModel: function(model, spec, optKickstart) {
+	return this.connectModel(Relay.newInstance(spec, model), optKickstart);
+    },
 
     checkModel: function(plugSpec) {
 	// For non-models, check that all supplied handler methods can be found
