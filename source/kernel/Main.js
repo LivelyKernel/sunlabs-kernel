@@ -9,8 +9,6 @@
  */ 
 	
 	
-var Application;
-
 /**
  * Main.js.  System startup and demo loading.
  */
