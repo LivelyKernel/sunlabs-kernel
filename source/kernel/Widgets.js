@@ -2478,9 +2478,9 @@ Morph.subclass("TitleBarMorph", {
     },
     
     connectButtons: function(w) {
-	this.closeButton.connectModel(Relay.newInstance({HelpText: "-CloseHelp", Trigger: "=initiateShutdown"}, w));
-	this.menuButton.connectModel(Relay.newInstance({HelpText: "-MenuHelp", Trigger: "=showTargetMorphMenu"}, w));
-	this.collapseButton.connectModel(Relay.newInstance({HelpText: "-CollapseHelp", Trigger: "=toggleCollapse"}, w));
+	this.closeButton.relayToModel(w, {HelpText: "-CloseHelp", Trigger: "=initiateShutdown"});
+	this.menuButton.relayToModel(w, {HelpText: "-MenuHelp", Trigger: "=showTargetMorphMenu"});
+	this.collapseButton.relayToModel(w, {HelpText: "-CollapseHelp", Trigger: "=toggleCollapse"});
     },
 
     deserialize: function($super, importer, rawNode) {
