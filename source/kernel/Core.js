@@ -2606,7 +2606,8 @@ Visual.addProperties({
     Fill: { name: "fill", byDefault: "none"}, // FIXME byDefault should be in JS not DOM type
     LineJoin: {name: "stroke-linejoin"},
     LineCap: {name: "stroke-linecap"},
-    StrokeDashArray: {name: "stroke-dasharray"}
+    StrokeDashArray: {name: "stroke-dasharray"},
+    StyleClass: {name: "class"}
 }, Config.useStyling ? StyleRecord : DOMRecord);
 
 Visual.addMethods({   
@@ -3982,9 +3983,8 @@ Visual.subclass('Morph', {
 		break;
 		// nodes from the Lively namespace
 	    case "action":  { // FIXME: compatibility, remove
-		
 		var a = new SchedulableAction(importer, node);
-		a.actor = this; // FIXME: this isn't true for SchedulableAction used for generic actions
+		a.actor = this;
 		this.addActiveScript(a);
 		// don't start the action until morph fully constructed
 		break;
