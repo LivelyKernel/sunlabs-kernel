@@ -198,6 +198,14 @@ Morph.subclass('PianoKeyboard', {
 	// New bounds encloses all keys but no more
 	this.setExtent(this.bounds().extent().addXY(-1,-1));
     },
+    
+    deserialize: function($super, importer, rawNode) {
+	$super(importer, rawNode);
+	this.submorphs.invoke('relayMouseEvents', this, 
+			      { onMouseDown: "pianoKeyDown", onMouseUp: "pianoKeyUp", onMouseMove: "pianoKeyMove" });
+    },
+
+
     pianoKeyDown: function(evt, key) {
 	key.setFill(Color.green);
 	console.log("key number " + key.noteNumber + " pressed."); 
