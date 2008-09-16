@@ -838,11 +838,13 @@ Object.subclass('Record', {
 
 Record.subclass('DOMRecord', {
     description: "base class for records backed by a DOM Node",
+
     getRecordField: function(name) { 
 	if (!this.rawNode || !this.rawNode.getAttributeNS)  debugger;
 	var result = this.rawNode.getAttributeNS(null, name);
 	if (result === null) return undefined;
 	else if (result === "") return null;
+	if (result.startsWith("json:")) return Converter.fromJSONAttribute(result.substring("json:".length));
 	else return result;
     },
     
@@ -850,6 +852,10 @@ Record.subclass('DOMRecord', {
 	if (value === undefined) {
 	    throw new Error("use removeRecordField to remove " + name);
 	}
+	if (value && Converter.needsJSONEncoding(value)) {
+	    value = "json:" + Converter.toJSONAttribute(value);
+	}
+
 	return this.rawNode.setAttributeNS(null, name, value || "");
     },
     
@@ -911,12 +917,22 @@ Object.extend(Record, {
 	return this.newInstance(fieldSpec, argSpec, {});
     },
 
+    newNodeInstance: function(spec) { // backed by a DOM node
+	var argSpec = {};
+	var fieldSpec = {};
+	Properties.forEachOwn(spec, function (key) {
+	    fieldSpec[key] = {};
+	    argSpec[key] = spec[key];
+	});
+	return this.newInstance(fieldSpec, argSpec, NodeFactory.create("record"));
+    },
+
     newInstance: function(fieldSpec, argSpec, optStore) {
 	if (arguments.length < 2) throw new Error("call with two or more arguments");
 	var storeClass;
 	if (!optStore) {
 	    storeClass = DOMRecord;
-	    optStore = NodeFactory.create("model"); // FIXME flat JavaScript instead by default?
+	    optStore = NodeFactory.create("record"); // FIXME flat JavaScript instead by default?
 	} else {
 	    storeClass = optStore instanceof Global.Node ? DOMRecord : PlainRecord;
 	}
@@ -1355,6 +1371,14 @@ var Converter = {
 
     fromJSONAttribute: function(str) {
 	return str ?  JSON.unserialize(unescape(str)) : null;
+    },
+
+    needsJSONEncoding: function(value) {
+	// some objects can be saved in as DOM attributes using their
+	// .toString() form, others need JSON
+	if (value instanceof Color) return false;
+	var type = typeof value.valueOf();
+	return type != "string" && type != "number"; 
     },
 
     isJSONConformant: function(value) { // for now, arrays not handled but could be
@@ -4028,7 +4052,6 @@ Visual.subclass('Morph', {
 			var value = LivelyNS.getAttribute(node, "value");
 			//alert('found value ' + value);
 			if (value != null) {
-			    console.log('unserialized ' + JSON.unserialize(value));
 			    var family = LivelyNS.getAttribute(node, "family");
 			    if (family) {
 				if (!Global[family]) throw new Error('uknown type ' + family);
@@ -6900,7 +6923,7 @@ Morph.subclass("HandMorph", {
 	if (Config.showGrabHalo) {
 	    var bounds = grabbedMorph.bounds(true);
 	    this.grabHaloMorph = this.addMorphBack(new Morph(bounds, "rect").applyStyle({fill: null, borderWidth: 0.5 }));
-	    this.grabHaloMorph.setStrokeDashArray([3,2]);
+	    this.grabHaloMorph.setStrokeDashArray(String([3,2]));
 	    this.grabHaloMorph.setLineJoin(Shape.LineJoins.Round);
 	    this.grabHaloMorph.ignoreEvents();
 

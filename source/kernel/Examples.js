@@ -40,12 +40,12 @@ Widget.subclass('TestWidget', {
         // Make a fancy panel.  Note: Transparency does not
         // work with gradients or stipple patterns yet!
         panel.linkToStyles(['widgetPanel']);
-	var model = Record.newPlainInstance({Text: "Hello World", TextSel: null, 
+	var model = Record.newNodeInstance({Text: "Hello World", TextSel: null, 
 	    List: ["one","two","three"],
 	    ListItem: null, PrintValue: null,
 	    B1Value: null, B2Value: null, SliderValue: 0.5, SliderRange: 0.1}); 
 	
-
+	panel.addNonMorph(model.rawNode);
         // Two simple buttons, one toggles...
         var m = panel.addMorph(new ButtonMorph(new Rectangle(20,20,50,20)));
         m.connectModel(model.newRelay({Value: "B1Value"}));
