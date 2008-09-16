@@ -2675,11 +2675,11 @@ Morph.subclass('WindowMorph', {
     targetMorph: null,
     
     initialize: function($super, targetMorph, headline, optSuppressControls) {
-        var bounds = targetMorph.bounds().copy();
+        var bounds = targetMorph.bounds();
+        $super(bounds, "rect");
         var titleBar = this.makeTitleBar(headline, bounds.width, optSuppressControls);
         var titleHeight = titleBar.bounds().height;
-        bounds.height += titleHeight;
-        $super(bounds, "rect");
+	this.setBounds(bounds.withHeight(bounds.height + titleHeight));
         this.targetMorph = this.addMorph(targetMorph);
         this.titleBar = this.addMorph(titleBar);
         this.contentOffset = pt(0, titleHeight - titleBar.getBorderWidth()/2); // FIXME: hack
