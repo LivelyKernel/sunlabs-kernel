@@ -12,7 +12,7 @@
 /**
  * Main.js.  System startup and demo loading.
  */
-(function(module) {
+using().run(function() {
 
 //Note all demo set-up flags have been moved to defaultconfig.js
 //	so that they can be overridden locally by localconfig.js
@@ -441,5 +441,5 @@ if(Config.testTracing) Function.testTrace();
 // after control returns to the caller of JS
 main.logCompletion("main").delay(Config.mainDelay);
 
-}.logCompletion("Main.js"))();
+}.logCompletion("Main.js"));
 
