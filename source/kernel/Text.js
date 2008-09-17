@@ -816,7 +816,6 @@ Morph.subclass("TextMorph");
 
 TextMorph.addProperties({
     StoredTextStyle: {name: "stored-style", from:Converter.fromJSONAttribute, to:Converter.toJSONAttribute },
-    StoredString: {name: "stored-text", from: Converter.fromJSONAttribute, to:Converter.toJSONAttribute, byDefault: ""},
     Wrap: { name: "wrap", byDefault: module.WrapStyle.Normal },
     Padding: { name: "padding", byDefault: String(Rectangle.inset(6, 4).toInsetTuple()) } // FIXME move to coercion funcions
 });
@@ -887,7 +886,6 @@ TextMorph.addMethods({
 	if (styleInfo) {
 	    this.textStyle = new RunArray(styleInfo.runs, styleInfo.values); 
 	}
-	this.textString = this.getStoredString() || "";
     },
 
     initialize: function($super, rect, textString) {
@@ -899,10 +897,8 @@ TextMorph.addMethods({
 	    this.textStyle = this.textString.style;
 	    this.setStoredTextStyle(this.textStyle);
 	    this.textString = this.textString.string || "";
-	    this.setStoredString(this.textString);
 	} 
 	if (this.textString === undefined) alert('initialize: ' + this);
-	this.setStoredString(this.textString);
 	this.layoutChanged();
         return this;
     },
@@ -1965,7 +1961,6 @@ TextMorph.addMethods({
 	// DI: Might want to put the maxSafeSize test in clients
 	if (!replacement.truncate) debugger;
         this.textString = replacement.truncate(this.maxSafeSize);
-	this.setStoredString(this.textString);
         if (!delayComposition) this.composeAfterEdits();  // Typein wants lazy composition
     },
     
