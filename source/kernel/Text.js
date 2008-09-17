@@ -875,7 +875,7 @@ TextMorph.addMethods({
             this.fontFamily = this.textContent.getTrait("font-family");
             this.fontSize = this.textContent.getLengthTrait("font-size");
             this.font = module.Font.forFamily(this.fontFamily, this.fontSize);
-            this.textColor = new Color(Importer.prototype, this.textContent.getTrait("fill"));
+            this.textColor = new Color(Importer.marker, this.textContent.getTrait("fill"));
 	    return true;
 	} 
 	return false;

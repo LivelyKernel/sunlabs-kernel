@@ -967,7 +967,7 @@ Importer.addMethods({
 	    switch (node.localName) {
 	    case "dependent":
 		var oldId = LivelyNS.getAttribute(node, "ref");
-		var dependent = this.lookupMorph(oldId);
+		var dependent = this.lookup(oldId);
 		if (!dependent)  {
 		    console.warn('dep %s not found', oldId);
 		    continue; 

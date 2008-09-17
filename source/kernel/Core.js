@@ -215,9 +215,9 @@ var Class = {
     
     initializer: function initializer() {
 	// check for the existence of Importer, which may not be defined very early on
-	if (Global.Importer && (arguments[0] instanceof Importer || arguments[0] === Importer.prototype)) { 
+	if (Global.Importer && (arguments[0] instanceof Importer)) {
 	    this.deserialize.apply(this, arguments);
-	} else if (Global.Copier && (arguments[0] instanceof Copier || arguments[0] === Copier.prototype)) {
+	} else if (Global.Copier && (arguments[0] instanceof Copier)) {
 	    this.copyFrom.apply(this, arguments);
 	} else {
 	    // if this.initialize is undefined then prolly the constructor was called without 'new'
@@ -1493,6 +1493,8 @@ Object.subclass('Wrapper', {
 
     deserialize: function(importer, rawNode) {
 	this.rawNode = rawNode;
+	var id = rawNode.getAttribute("id");
+	if (id) importer.addMapping(id, this); 
     },
 
     copyFrom: function(copier, other) {
@@ -2174,7 +2176,7 @@ Wrapper.subclass("Gradient", {
     stopColor: function(index) {
 	var stops = this.rawStopNodes();
 	if (!stops || !stops[index || 0]) return null;
-	return new Color(Importer.prototype, stops[index || 0].getAttributeNS(null, "stop-color"));
+	return new Color(Importer.marker, stops[index || 0].getAttributeNS(null, "stop-color"));
     },
 
     offset: function(index) {
@@ -2222,7 +2224,7 @@ Gradient.subclass("LinearGradient", {
     mixedWith: function(color, proportion) {
 	var stops = this.rawStopNodes();
 	var rawNode = NodeFactory.create("linearGradient");
-	var result = new LinearGradient(Importer.prototype, rawNode);
+	var result = new LinearGradient(Importer.marker, rawNode);
 	for (var i = 0; i < stops.length; i++) {
 	    result.addStop(this.offset(i), this.stopColor(i).mixedWith(color, proportion));
 	}
@@ -3449,22 +3451,23 @@ Object.extend(Exporter, {
 Object.subclass('Copier', {
     documentation: "context for performing deep copy of objects",
 
-    morphMap_: null,
+    wrapperMap: null,
 
     toString: function() { 
 	return "#<Copier>"; 
     },
 
     initialize: function() {
-	this.morphMap_ = {};
+	this.wrapperMap = {};
     },
 
     addMapping: function(oldId, newMorph) {
-	this.morphMap_[oldId] = newMorph; 
+	if (!this.wrapperMap) debugger;
+	this.wrapperMap[oldId] = newMorph; 
     },
 
-    lookupMorph: function(oldId) {
-	return this.morphMap_[oldId];
+    lookup: function(oldId) {
+	return this.wrapperMap[oldId];
     }
 
 }); 
@@ -3472,7 +3475,7 @@ Object.subclass('Copier', {
 // 'dummy' copier for simple objects
 Copier.marker = Object.extend(new Copier(), {
     addMapping: Functions.Empty,
-    lookupMorph: Functions.Null
+    lookup: Functions.Null
 });
 
 Copier.subclass('Importer', {
@@ -3606,10 +3609,10 @@ Copier.subclass('Importer', {
     },
 
     hookupModels: function() {
-	Properties.forEachOwn(this.morphMap_, function (key, morph) {
-	    morph.reconnectModel();
+	Properties.forEachOwn(this.wrapperMap, function each(key, wrapper) {
+	    if (wrapper.reconnectModel) // instanceof View
+		wrapper.reconnectModel();
 	});
-
     },
 
     importWorldFromNodeList: function(nodes, world) {
@@ -3682,6 +3685,11 @@ Copier.subclass('Importer', {
 
     
 
+});
+
+Importer.marker = Object.extend(new Importer(), {
+    addMapping: Functions.Empty,
+    lookup: Functions.Null
 });
 
 
@@ -3793,9 +3801,9 @@ Visual.subclass('Morph', {
 	this.initializeTransientState(initialBounds);
     },
     
-    deserialize: function(importer, rawNode) {
+    deserialize: function($super, importer, rawNode) {
 	// FIXME what if id is not unique?
-	importer.addMapping(rawNode.getAttribute("id"), this); 
+	$super(importer, rawNode);
 	this.internalInitialize(rawNode);
 	this.pvtSetTransform(this.getLocalTransform());
 
@@ -3830,7 +3838,7 @@ Visual.subclass('Morph', {
 		&& other.hasOwnProperty(p) 
 		&& !this.noShallowCopyProperties.include(p)) {
 		if (other[p] instanceof Morph) {
-		    var replacement = (p === "owner") ? null : copier.lookupMorph(other[p].id());
+		    var replacement = (p === "owner") ? null : copier.lookup(other[p].id());
 		    this[p] = replacement || other[p];
 		    // an instance field points to a submorph, so copy
 		    // should point to a copy of the submorph
@@ -3901,15 +3909,15 @@ Visual.subclass('Morph', {
 		if (!this.rawNode.getAttributeNS(null, 'clip-path'))
 		    console.log('myClip is undefined on %s', this); 
 		if (this.clipPath) throw new Error("how come clipPath is set to " + this.clipPath);
-		this.clipPath = new ClipPath(Importer.prototype, def).setDerivedId(this);
+		this.clipPath = new ClipPath(Importer.marker, def).setDerivedId(this);
 		this.rawNode.setAttributeNS(null, 'clip-path', this.clipPath.uri());
 		this.addWrapperToDefs(this.clipPath);
 		break;
 	    case "linearGradient":
-		this.fill = this.addWrapperToDefs(applyGradient(new LinearGradient(Importer.prototype, def), this));
+		this.fill = this.addWrapperToDefs(applyGradient(new LinearGradient(Importer.marker, def), this));
 		break;
 	    case "radialGradient": // FIXME gradients can be used on strokes too
-		this.fill = this.addWrapperToDefs(applyGradient(new RadialGradient(Importer.prototype,  def), this));
+		this.fill = this.addWrapperToDefs(applyGradient(new RadialGradient(Importer.marker,  def), this));
 		break;
 	    case "g":
 		this.restoreFromSubnode(importer, def);
@@ -3988,7 +3996,7 @@ Visual.subclass('Morph', {
 		if (name) {
 		    var ref = LivelyNS.getAttribute(node, "ref");
 		    if (ref) {
-			var found = this[name] = importer.lookupMorph(ref);
+			var found = this[name] = importer.lookup(ref);
 			if (!found) {
 			    console.warn("no value found for field %s ref %s", name, ref);
 			} else {
@@ -4017,7 +4025,7 @@ Visual.subclass('Morph', {
 		    if (elt.localName == "item") {
 			var ref = LivelyNS.getAttribute(elt, "ref");
 			if (ref) {
-			    var found = importer.lookupMorph(ref);
+			    var found = importer.lookup(ref);
 			    if (!found) console.warn("value not found for array " + name +  ": ref "  +  ref);
 			    this[name].push(found);
 			} else this[name].push(null);
@@ -4203,7 +4211,7 @@ Morph.addMethods({
     setBorderColor: function(newColor) { this.shape.setStroke(newColor); },
 
     getBorderColor: function() {
-	return new Color(Importer.prototype, this.shape.getStroke());
+	return new Color(Importer.marker, this.shape.getStroke());
     },
 
     setBorderWidth: function(newWidth) {
@@ -5585,7 +5593,7 @@ ViewTrait = {
 
     reconnectModel: function() {
 	var model = Wrapper.prototype.getWrapperByUri(this.getLivelyTrait("model"));
-	if (!model) { debugger; return; }	    
+	if (!model) return;
 	var relaySpec = Converter.fromJSONAttribute(this.getLivelyTrait("relay"));
 	this.relayToModel(model, relaySpec);
     },
@@ -5760,7 +5768,7 @@ Object.subclass('Model', {
     // test?
     copyFrom: function(copier, other) {
 	this.dependents = [];
-	other.dependents.forEach(function(dep) { this.dependents.push(copier.lookupMorph(dep.id())) }, this);
+	other.dependents.forEach(function(dep) { this.dependents.push(copier.lookup(dep.id())) }, this);
     }
 
 });
