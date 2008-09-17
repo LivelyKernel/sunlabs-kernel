@@ -115,8 +115,7 @@ Object.subclass('URL', {
 
     toQueryString: function(record) {
 	var results = [];
-	Properties.forEachOwn(record, function(p) {
-	    var value = record[p];
+	Properties.forEachOwn(record, function(p, value) {
 	    results.push(encodeURIComponent(p) + "=" + encodeURIComponent(String(value)));
 	});
 	return results.join('&');
@@ -319,8 +318,8 @@ View.subclass('NetRequest', {
     },
 
     setRequestHeaders: function(record) {
-	Properties.forEachOwn(record, function(prop) {
-	    this.requestHeaders[prop] = record[prop];
+	Properties.forEachOwn(record, function(prop, value) {
+	    this.requestHeaders[prop] = value;
 	}, this);
     },
     
@@ -350,8 +349,8 @@ View.subclass('NetRequest', {
 	    this.url = url;
 	    this.method = method.toUpperCase();	    
 	    this.transport.open(this.method, url.toString(), !this.isSync);
-	    Properties.forEachOwn(this.requestHeaders, function(p) {
-		this.transport.setRequestHeader(p, this.requestHeaders[p]);
+	    Properties.forEachOwn(this.requestHeaders, function(p, value) {
+		this.transport.setRequestHeader(p, value);
 	    }, this);
 	    this.transport.send(content || undefined);
 	    return this;
