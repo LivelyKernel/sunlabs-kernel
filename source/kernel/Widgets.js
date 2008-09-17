@@ -45,14 +45,13 @@ Morph.subclass('ButtonMorph', {
     // It read and writes the boolean variable, this.model[this.propertyName]
     initialize: function($super, initialBounds) {
         this.baseFill = null; 
-
         $super(initialBounds, "rect");
-        
-        var model = new SyntheticModel(this.formals);
-        // this default self connection may get overwritten by, eg, connectModel()...
-        this.modelPlug = new ModelPlug(model.makePlugSpec());
+	if (Config.selfConnect) {
+            var model = Record.newNodeInstance({Value: false});
+	    // this default self connection may get overwritten by, eg, connectModel()...
+	    this.relayToModel(model, {Value: "Value"});
+	}
         // Styling
-        this.setValue(false);
         this.linkToStyles(['button']);
         this.changeAppearanceFor(false);
         this.setToggle(false); // if true each push toggles the model state 
@@ -989,8 +988,14 @@ Morph.subclass("TextListMorph", {
 	this.textStyle = optTextStyle;
 	this.generateSubmorphs(itemList);
         this.alignAll(optMargin);
-        var model = new SyntheticModel(this.formals);
-        this.modelPlug = new ModelPlug(model.makePlugSpecFromPins(this.formals));
+	if (Config.selfConnect) { // self connect logic, not really needed 
+            var model = Record.newNodeInstance({List: [], Selection: null, Capacity: this.defaultCapacity, 
+		ListDelta: [], DeletionConfirmation: null, DeletionRequest: null});
+	    //this.addNonMorph(model.rawNode);
+	    this.relayToModel(model, {List: "List", Selection: "Selection", Capacity: "-Capacity", 
+				      ListDelta: "-ListDelta",
+				      DeletionConfirmation: "-DeletionConfirmation", DeletionRequest: "+DeletionRequest"});
+	}
         this.setList(itemList);
         this.savedFill = null; // for selecting items
         return this;
@@ -1152,7 +1157,7 @@ Morph.subclass("TextListMorph", {
     },
     
     updateList: function(newList) {
-		if(newList.length == 0) newList = ["-----"]; // jl 2008-08-02 workaround... :-(
+	if(newList.length == 0) newList = ["-----"]; // jl 2008-08-02 workaround... :-(
         var priorItem = this.getSelection();
         this.itemList = newList;
         this.removeAllMorphs();
@@ -2478,6 +2483,7 @@ Morph.subclass("TitleBarMorph", {
     },
     
     connectButtons: function(w) {
+	w.linkWrapee();
 	this.closeButton.relayToModel(w, {HelpText: "-CloseHelp", Trigger: "=initiateShutdown"});
 	this.menuButton.relayToModel(w, {HelpText: "-MenuHelp", Trigger: "=showTargetMorphMenu"});
 	this.collapseButton.relayToModel(w, {HelpText: "-CollapseHelp", Trigger: "=toggleCollapse"});

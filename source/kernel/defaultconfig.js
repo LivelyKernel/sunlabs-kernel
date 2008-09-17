@@ -138,8 +138,14 @@ var Config = {
     // the delay set on the main() function
     mainDelay: 0.05,
 
-    // whether the .style property is usable
-    useStyling: false  
+    // whether the .style property should be used
+    useStyling: false,
+
+    verboseImport: false,
+
+    // some widgets self connect to a private model on startup, but it doesn't
+    // seem necessary, turn on to override
+    selfConnect: false
     
 }
 

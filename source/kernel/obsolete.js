@@ -955,3 +955,103 @@ WidgetModel.subclass('OldStylePanel', {
     
 });
 
+
+Importer.addMethods({
+    
+    importModelFrom: function(modelNode) {
+	var model = new SyntheticModel([]);
+	var dependentViews = [];
+	for (var node = modelNode.firstChild; node != null; node = node.nextSibling) {
+	    if (node.nodeType === Node.TEXT_NODE || node.nodeType === Node.COMMENT_NODE)
+		continue;
+	    switch (node.localName) {
+	    case "dependent":
+		var oldId = LivelyNS.getAttribute(node, "ref");
+		var dependent = this.lookupMorph(oldId);
+		if (!dependent)  {
+		    console.warn('dep %s not found', oldId);
+		    continue; 
+		}
+		dependent.modelPlug.model = model;
+		model.addDependent(dependent);
+		break;
+
+	    case "dependentView":
+		dependentViews.push(node);
+		break;
+		
+	    case "variable":
+		var name = LivelyNS.getAttribute(node, "name");
+		var content = node.firstChild;
+		model.addVariable(name, JSON.unserialize(content.textContent));
+		break;
+
+	    case "dependentVariable":
+		var name = LivelyNS.getAttribute(node, "name");
+		var index = LivelyNS.getAttribute(node, "index");
+		var dep = model.dependents[index];
+		if (!dep) console.log("didnt find depdendentVariable at index " + index);
+		else model.addVariable(name, dep); // FIXME order dependent!
+		break;
+
+	    default:
+		console.log('got unexpected node %s %s', node.tagName, node); 
+	    }
+	}
+	
+	for (var i = 0; i < dependentViews.length; i++) {
+	    var dep = dependentViews[i];
+	    var type = LivelyNS.getAttribute(dep, "type");
+	    if (type && Global[type]) {
+		var plug = new ModelPlug(this, dep.firstChild);
+		plug.model = model;
+		try {
+		    var dependent = new Global[type](this, plug);
+		    this.verbose && console.log("deserialized dependent " + dependent + " with model " + model);
+		} catch (er) {
+		    alert("problem instantiating " + type);
+		}
+	    }
+	}
+	
+	console.log('restored model %s', model);
+	return model;
+    },
+
+    hookupModels: function() {
+	this.models.forEach(function(node) { this.OBSOLETEimportModelFrom(node); }, this);
+    }
+    
+});
+
+
+Morph.addMethods({
+    pvtSerializeModel: function(extraNodes, simpleModels) {
+	var model = this.getModel();
+	if (model instanceof SyntheticModel) {
+	    var index = simpleModels.indexOf(model);
+	    if (index < 0) { // not seen before, serialize model
+		index = simpleModels.length;
+		var modelNode = model.toMarkup(index);
+		simpleModels.push(model);
+		modelNode.setAttribute("id", "model_" + index); 
+		extraNodes.push(this.addNonMorph(modelNode));
+	    }
+	    extraNodes.push(this.addNonMorph(this.getModelPlug().serialize(index)));
+	} else if (false && this.formalModel) {
+	    var modelNode = this.getActualModel().rawNode;
+	    if (modelNode instanceof Global.Node) {
+		var index = simpleModels.indexOf(modelNode);
+		if (index < 0) { // not seen before, serialize model
+		    index = simpleModels.length;
+		    simpleModels.push(modelNode);
+		    alert('serializing ' + Exporter.stringify(modelNode) + "," + modelNode);
+		    modelNode.setAttribute("id", "model_" + index); 
+		    extraNodes.push(this.addNonMorph(modelNode));
+		}
+		// FIXME serialize hookup
+		extraNodes.push(this.addNonMorph(this.formalModel.rawNode));
+	    }
+	} // else don't do anything
+    }
+});

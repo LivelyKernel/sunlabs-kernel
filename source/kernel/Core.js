@@ -321,7 +321,8 @@ var Class = {
 	for (var prop in source) {
 	    var value = source[prop];
 	    switch (prop) {
-	    case "constructor": case "initialize": case "toString": case "definition": case "description":
+	    case "constructor": case "initialize": case "deserialize": case "copyFrom": 
+	    case "toString": case "definition": case "description":
 		break;
 	    default:
 	    cls.prototype[prop] = value;
@@ -731,8 +732,8 @@ Object.subclass('Record', {
 
     initialize: function(rawNode, spec) {
 	this.rawNode = rawNode; // DOM or plain JS Object
-	Properties.forEachOwn(spec, function(key) { 
-	    this["set" + key].call(this, spec[key]); 
+	Properties.forEachOwn(spec, function(key, value) { 
+	    this["set" + key].call(this, value); 
 	}, this);
     },
     
@@ -777,8 +778,7 @@ Object.subclass('Record', {
 
     addObserversFromSetters: function(reverseSpec, dep, optKickstartUpdates) {
 	var forwardSpec = {};
-	Properties.forEachOwn(reverseSpec, function each(key) {
-	    var value = reverseSpec[key];
+	Properties.forEachOwn(reverseSpec, function each(key, value) {
 	    
 	    if (Object.isString(value.valueOf())) {
 		if (!value.startsWith("+")) {  // if not write only, get updates
@@ -809,8 +809,7 @@ Object.subclass('Record', {
 	}
 	
 	if (optKickstartUpdates) 
-	    Properties.forEachOwn(reverseSpec, function each(key) {
-		var value = reverseSpec[key];
+	    Properties.forEachOwn(reverseSpec, function each(key, value) {
 		if (Object.isString(value.valueOf())) {
 		    if (!value.startsWith("+")) {
 			if (value.startsWith("-")) value = value.substring(1);
@@ -838,6 +837,15 @@ Object.subclass('Record', {
 
 Record.subclass('DOMRecord', {
     description: "base class for records backed by a DOM Node",
+    initialize: function($super, store, argSpec) {
+	$super(store, argSpec);
+	var def = this.rawNode.appendChild(NodeFactory.create("definition"));
+	def.appendChild(NodeFactory.createCDATA(String(JSON.serialize(this.definition))));
+    },
+
+    deserialize: function(importer, rawNode) {
+	this.rawNode = rawNode;
+    },
 
     getRecordField: function(name) { 
 	if (!this.rawNode || !this.rawNode.getAttributeNS)  debugger;
@@ -864,6 +872,12 @@ Record.subclass('DOMRecord', {
     }
 
 });
+
+
+
+
+// note: the following happens later
+//Class.addMixin(DOMRecord, Wrapper.prototype);
 
 Record.subclass('StyleRecord', {
     description: "base class for records backed by a DOM Node",
@@ -910,9 +924,9 @@ Object.extend(Record, {
     newPlainInstance: function(spec) {
 	var argSpec = {};
 	var fieldSpec = {};
-	Properties.forEachOwn(spec, function (key) {
+	Properties.forEachOwn(spec, function (key, value) {
 	    fieldSpec[key] = {};
-	    argSpec[key] = spec[key];
+	    argSpec[key] = value;
 	});
 	return this.newInstance(fieldSpec, argSpec, {});
     },
@@ -920,11 +934,14 @@ Object.extend(Record, {
     newNodeInstance: function(spec) { // backed by a DOM node
 	var argSpec = {};
 	var fieldSpec = {};
-	Properties.forEachOwn(spec, function (key) {
+	Properties.forEachOwn(spec, function (key, value) {
 	    fieldSpec[key] = {};
-	    argSpec[key] = spec[key];
+	    argSpec[key] = value;
 	});
-	return this.newInstance(fieldSpec, argSpec, NodeFactory.create("record"));
+	var inst = this.newInstance(fieldSpec, argSpec, NodeFactory.create("record"));
+	
+	inst.linkWrapee();
+	return inst;
     },
 
     newInstance: function(fieldSpec, argSpec, optStore) {
@@ -943,9 +960,8 @@ Object.extend(Record, {
 
     extendRecordClass: function(bodySpec) {
 	var def = {};
-	Properties.forEachOwn(bodySpec, function(name) {
-            var spec = bodySpec[name];
-	    Record.addAccessorMethods(def, name, spec);
+	Properties.forEachOwn(bodySpec, function(name, value) {
+	    Record.addAccessorMethods(def, name, value);
         });
     	return def;
     },
@@ -1088,8 +1104,7 @@ Object.extend(Relay, {
 		return "#<Relay{" + String(JSON.serialize(args)) + "}>";
 	    }
 	};
-	Properties.forEachOwn(args, function(key) { 
-	    var spec = args[key];
+	Properties.forEachOwn(args, function(key, spec) { 
 	    if (Object.isString(spec.valueOf()))
 		Relay.handleStringSpec(def, key, spec); 
 	    else 
@@ -1117,7 +1132,9 @@ Object.extend(Relay, {
 		    if (!method) return byDefault;
 		    var result = method.call(m);
 		    return (result === undefined) ? byDefault : (from ? from(result) : result);
-		} else return this.getModelValue(methodName, byDefault);
+		} else {
+		    return this.getModelValue(methodName, byDefault);
+		}
             }
 	}
 	
@@ -1146,8 +1163,7 @@ Object.extend(Relay, {
 		}
 	    });
 	} else {
-	    Properties.forEachOwn(spec, function(name) {
-		var desc = spec[name];
+	    Properties.forEachOwn(spec, function(name, desc) {
 		var mode = desc.mode;
 		if (mode !== "-") {
 		    klass.prototype["set" + name] = newDelegatorSetter(name, desc.to);
@@ -1488,6 +1504,7 @@ Object.subclass('Wrapper', {
     },
 
     id: function() {
+	if (!this.rawNode) debugger;
 	return this.rawNode.getAttribute("id");
     },
     
@@ -1537,7 +1554,21 @@ Object.subclass('Wrapper', {
     uri: function() {
 	return "url(#" + this.id() + ")";
     },
+    
+    getWrapperByUri: function(uri) {
+	// locate the JS wrapper given it's URI
+	var id = uri.substring(5, uri.length - 1);
+	var node = Global.document.getElementById(id);
+	return node && node.wrapper;
+    },
 
+    linkWrapee: function() {
+	// ensure that wrapper can be found based on the rawNode. 
+	// Not sure this should be handled this way, esp. b/c
+	// batik won't like it.
+	if (this.rawNode.wrapper && this.rawNode.wrapper != this) throw new Error();
+	this.rawNode.wrapper = this;
+    },
 
     // convenience attribute access
     getLivelyTrait: function(name) {
@@ -1575,8 +1606,8 @@ Object.subclass('Wrapper', {
     }
 
 });
-
-
+    
+Class.addMixin(DOMRecord, Wrapper.prototype);
 
 
 
@@ -3332,23 +3363,17 @@ Object.subclass('Exporter', {
     extendForSerialization: function() {
 	// decorate with all the extra needed to serialize correctly. Return the additional nodes, to be removed 
 	var helperNodes = [];
-	var simpleModels = []; // models are identified by their index in this array
 
 	var exporter = this;
 	this.rootMorph.withAllSubmorphsDo(function() { 
 	    exporter.verbose && console.log("serializing " + this);
 	    
-	    this.prepareForSerialization(helperNodes, simpleModels);
+	    this.prepareForSerialization(helperNodes);
 	    // some formatting
 	    var nl = NodeFactory.createNL();
 	    this.rawNode.parentNode.insertBefore(nl, this.rawNode);
 	    helperNodes.push(nl);
 	});
-
-
-	for (var i = 0; i < simpleModels.length; i++) {
-	    // ...
-	}
 	return helperNodes;
     },
 
@@ -3453,7 +3478,7 @@ Copier.marker = Object.extend(new Copier(), {
 Copier.subclass('Importer', {
     documentation: "Implementation class for morph de-serialization",
 
-    verbose: true,
+    verbose: !!Config.verboseImport,
     
     toString: function() {
 	return "#<Importer>";
@@ -3522,16 +3547,10 @@ Copier.subclass('Importer', {
 	if (array) this.scripts = this.scripts.concat(array); 
     },
 
-    addModel: function(modelNode) {
-	console.info("found modelNode %s", Exporter.stringify(modelNode));
-	this.models.push(modelNode);
-    },
-
     startScripts: function(world) {
 	this.verbose && console.log("start scripts %s in %s", this.scripts, world);
 	this.scripts.forEach(function(s) { s.start(world); });
     },
-
     
     importFromNode: function(rawNode) {
 	///console.log('making morph from %s %s', node, LivelyNS.getType(node));
@@ -3584,6 +3603,13 @@ Copier.subclass('Importer', {
 	} catch (er) {
 	    console.log("scripts failed: " + er);
 	}
+    },
+
+    hookupModels: function() {
+	Properties.forEachOwn(this.morphMap_, function (key, morph) {
+	    morph.reconnectModel();
+	});
+
     },
 
     importWorldFromNodeList: function(nodes, world) {
@@ -3652,72 +3678,9 @@ Copier.subclass('Importer', {
 	this.finishImport(world);
 
 	return world;
-    },
-
-    
-    hookupModels: function() {
-	this.models.forEach(function(node) { this.importModelFrom(node); }, this);
-    },
-    
-    importModelFrom: function(modelNode) {
-	var model = new SyntheticModel([]);
-	var dependentViews = [];
-	for (var node = modelNode.firstChild; node != null; node = node.nextSibling) {
-	    if (node.nodeType === Node.TEXT_NODE || node.nodeType === Node.COMMENT_NODE)
-		continue;
-	    switch (node.localName) {
-	    case "dependent":
-		var oldId = LivelyNS.getAttribute(node, "ref");
-		var dependent = this.lookupMorph(oldId);
-		if (!dependent)  {
-		    console.warn('dep %s not found', oldId);
-		    continue; 
-		}
-		dependent.modelPlug.model = model;
-		model.addDependent(dependent);
-		break;
-
-	    case "dependentView":
-		dependentViews.push(node);
-		break;
-		
-	    case "variable":
-		var name = LivelyNS.getAttribute(node, "name");
-		var content = node.firstChild;
-		model.addVariable(name, JSON.unserialize(content.textContent));
-		break;
-
-	    case "dependentVariable":
-		var name = LivelyNS.getAttribute(node, "name");
-		var index = LivelyNS.getAttribute(node, "index");
-		var dep = model.dependents[index];
-		if (!dep) console.log("didnt find depdendentVariable at index " + index);
-		else model.addVariable(name, dep); // FIXME order dependent!
-		break;
-
-	    default:
-		console.log('got unexpected node %s %s', node.tagName, node); 
-	    }
-	}
-	
-	for (var i = 0; i < dependentViews.length; i++) {
-	    var dep = dependentViews[i];
-	    var type = LivelyNS.getAttribute(dep, "type");
-	    if (type && Global[type]) {
-		var plug = new ModelPlug(this, dep.firstChild);
-		plug.model = model;
-		try {
-		    var dependent = new Global[type](this, plug);
-		    this.verbose && console.log("deserialized dependent " + dependent + " with model " + model);
-		} catch (er) {
-		    alert("problem instantiating " + type);
-		}
-	    }
-	}
-	
-	console.log('restored model %s', model);
-	return model;
     }
+
+    
 
 });
 
@@ -3987,7 +3950,6 @@ Visual.subclass('Morph', {
 	if (origDefs) 
 	    origDefs.parentNode.removeChild(origDefs);
 
-	var modelNode = null;
 	var helperNodes = [];
 
 	for (var i = 0; i < children.length; i++) {
@@ -4016,21 +3978,6 @@ Visual.subclass('Morph', {
 		a.actor = this;
 		this.addActiveScript(a);
 		// don't start the action until morph fully constructed
-		break;
-	    } 
-	    case "model": {
-		if (modelNode) console.warn("%s already has modelNode %s", this, modelNode);
-		modelNode = node;
-		// currently model node is not stored.
-		helperNodes.push(node);
-		// postpone hooking up model until all the morphs are reconstructed
-		importer.addModel(modelNode);
-		break;
-	    } 
-	    case "modelPlug": {
-		this.modelPlug = new ModelPlug(importer, node);
-		helperNodes.push(node);
-		// console.info("%s reconstructed plug %s", this, this.modelPlug);
 		break;
 	    } 
 	    case "field": {
@@ -4075,8 +4022,23 @@ Visual.subclass('Morph', {
 			    this[name].push(found);
 			} else this[name].push(null);
 		    }
-
 		}
+		break;
+	    }
+	    case "record": { // make generic, not all records must be models.
+		try {
+		    var spec = JSON.unserialize(node.textContent);
+		    var Rec = DOMRecord.prototype.create(spec);
+		    var model = new Rec(importer, node);
+		    // FIXME: non Batik-friendly:
+		    model.linkWrapee();
+		    var relayAttr = this.getLivelyTrait("relay");
+		    if (relayAttr) {
+			var relay = Converter.fromJSONAttribute(relayAttr);
+			console.log('relay ' + relay);
+			this.relayToModel(model, relay);
+		    }
+		} catch (er) { debugger; throw er; }
 		break;
 	    }
 	    default: {
@@ -4128,38 +4090,8 @@ Visual.subclass('Morph', {
     },
 
 
-    pvtSerializeModel: function(extraNodes, simpleModels) {
-	var model = this.getModel();
-	if (model instanceof SyntheticModel) {
-	    var index = simpleModels.indexOf(model);
-	    if (index < 0) { // not seen before, serialize model
-		index = simpleModels.length;
-		var modelNode = model.toMarkup(index);
-		simpleModels.push(model);
-		modelNode.setAttribute("id", "model_" + index); 
-		extraNodes.push(this.addNonMorph(modelNode));
-	    }
-	    extraNodes.push(this.addNonMorph(this.getModelPlug().serialize(index)));
-	} else if (false && this.formalModel) {
-	    var modelNode = this.getActualModel().rawNode;
-	    if (modelNode instanceof Global.Node) {
-		var index = simpleModels.indexOf(modelNode);
-		if (index < 0) { // not seen before, serialize model
-		    index = simpleModels.length;
-		    simpleModels.push(modelNode);
-		    alert('serializing ' + Exporter.stringify(modelNode) + "," + modelNode);
-		    modelNode.setAttribute("id", "model_" + index); 
-		    extraNodes.push(this.addNonMorph(modelNode));
-		}
-		// FIXME serialize hookup
-		extraNodes.push(this.addNonMorph(this.formalModel.rawNode));
-	    }
-	} // else don't do anything
-    },
-
-    prepareForSerialization: function(extraNodes, simpleModels) {
+    prepareForSerialization: function(extraNodes) {
 	// this is the morph to serialize
-	this.pvtSerializeModel(extraNodes, simpleModels);
 	if (Config.useTransformAPI) {
 	    // gotta set it explicitly, it's not in SVG
 	    this.setTrait("transform", this.getTransform().toAttributeValue());
@@ -5616,6 +5548,12 @@ ViewTrait = {
 	if (plugSpec instanceof Relay) {
 	    // new style model
 	    this.formalModel = plugSpec;
+	    if (this instanceof Wrapper) {
+		this.setLivelyTrait("relay", Converter.toJSONAttribute(plugSpec.definition));
+		if (!plugSpec) debugger;
+		if (plugSpec.delegate.uri) 
+		    this.setLivelyTrait("model", plugSpec.delegate.uri());
+	    }
 	    // now, go through the setters and add notifications on model
 	    if (plugSpec.delegate instanceof Record) 
 		plugSpec.delegate.addObserversFromSetters(plugSpec.definition, this, optKickstartUpdates);
@@ -5645,16 +5583,23 @@ ViewTrait = {
 	return this.connectModel(Relay.newInstance(spec, model), optKickstart);
     },
 
+    reconnectModel: function() {
+	var model = Wrapper.prototype.getWrapperByUri(this.getLivelyTrait("model"));
+	if (!model) { debugger; return; }	    
+	var relaySpec = Converter.fromJSONAttribute(this.getLivelyTrait("relay"));
+	this.relayToModel(model, relaySpec);
+    },
+
     checkModel: function(plugSpec) {
 	// For non-models, check that all supplied handler methods can be found
 	var result = true;
-	Properties.forEachOwn(plugSpec, function(modelMsg) {
+	Properties.forEachOwn(plugSpec, function(modelMsg, value) {
 	    if (modelMsg == 'model') return;
-	    var handler = plugSpec.model[plugSpec[modelMsg]];
+	    var handler = plugSpec.model[value];
 	    
 	    if (!handler || !(handler instanceof Function)) {
 		// console.log
-		alert("Supplied method name, " + plugSpec[modelMsg] + " does not resolve to a function.");
+		alert("Supplied method name, " + value + " does not resolve to a function.");
 		result = false;
 	    }
 	});
@@ -5820,7 +5765,7 @@ Object.subclass('Model', {
 
 });
 
-Wrapper.subclass('ModelPlug', {
+Wrapper.subclass('ModelPlug', { // obsolete with CheapTextList?
     documentation: "A 'translation' from view's variable names to model's variable names",
 
     initialize: function(spec) {
@@ -5833,7 +5778,7 @@ Wrapper.subclass('ModelPlug', {
     
     toString: function() {
 	var pairs = [];
-	Properties.forEachOwn(this, function(p) { if (p != 'model') pairs.push(p + ":" + this[p]) }, this);
+	Properties.forEachOwn(this, function(p, value) { if (p != 'model') pairs.push(p + ":" + value) });
 	return "#<ModelPlug{" + pairs.join(',') + "}>";
     },
 

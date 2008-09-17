@@ -45,6 +45,8 @@ Widget.subclass('TestWidget', {
 	    ListItem: null, PrintValue: null,
 	    B1Value: null, B2Value: null, SliderValue: 0.5, SliderRange: 0.1}); 
 	
+	model.setId(1000);
+	panel.actualModel = model;
 	panel.addNonMorph(model.rawNode);
         // Two simple buttons, one toggles...
         var m = panel.addMorph(new ButtonMorph(new Rectangle(20,20,50,20)));
