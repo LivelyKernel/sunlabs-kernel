@@ -3759,6 +3759,8 @@ Visual.subclass('Morph', {
     documentation: "Base class for every graphical, manipulatable object in the system", 
 
     // prototype vars
+    rotation: 0.0,
+    scale: 1.0,
     fill: Color.primary.green,
     borderWidth: 1,
     borderColor: Color.black,
@@ -3935,10 +3937,13 @@ Visual.subclass('Morph', {
     restoreFromSubnodes: function(importer) {
 	//  wade through the children
 	var children = [];
+	var helperNodes = [];
 	var origDefs;
 	for (var desc = this.rawNode.firstChild; desc != null; desc = desc.nextSibling) {
-	    if (desc.nodeType == Node.TEXT_NODE || desc.nodeType == Node.COMMENT_NODE)
+	    if (desc.nodeType == Node.TEXT_NODE || desc.nodeType == Node.COMMENT_NODE) {
+		if (desc.textContent == "\n") helperNodes.push(desc); // remove newlines, which will be reinserted for formatting
 		continue; // ignore whitespace and maybe other things
+	    }
 	    if (desc.localName == "defs") {
 		origDefs = desc;
 		continue;
@@ -3958,7 +3963,7 @@ Visual.subclass('Morph', {
 	if (origDefs) 
 	    origDefs.parentNode.removeChild(origDefs);
 
-	var helperNodes = [];
+
 
 	for (var i = 0; i < children.length; i++) {
 	    var node = children[i];
@@ -4113,7 +4118,11 @@ Visual.subclass('Morph', {
 	for (var prop in this) {
 	    if (!this.hasOwnProperty(prop)) continue;
 	    var m = this[prop];
-	    if (m instanceof Morph) {
+	    if (m === this.constructor.prototype[prop])  // save space
+		continue;
+	    if (m instanceof Function) {
+		continue;
+	    } else if (m instanceof Morph) {
 		if (prop == 'owner') 
 		    continue; // we'll deal manually
 		//console.log("serializing field name='%s', ref='%s'", prop, m.id(), m.getType());

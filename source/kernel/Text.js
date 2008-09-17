@@ -838,6 +838,11 @@ TextMorph.addMethods({
     locale: Locale,
     acceptInput: true, // whether it accepts changes to text KP: change: interactive changes
     autoAccept: false,
+    isSelecting: false, // true if last onmousedown was in character area (hit>0)
+    selectionPivot: null,  // index of hit at onmousedown
+    lineNumberHint: 0,
+    hasKeyboardFocus: false,
+    
     formals: {
 	Text: { byDefault: ""},
 	Selection: { byDefault: ""},
@@ -849,13 +854,9 @@ TextMorph.addMethods({
     initializeTransientState: function($super, initialBounds) {
         $super(initialBounds);
         this.selectionRange = [0, -1]; // null or a pair of indices into textString
-        this.selectionPivot = null;  // index of hit at onmousedown
         this.priorSelection = [0, -1];  // for double-clicks
-        this.hasKeyboardFocus = false;
-        this.isSelecting = false; // true if last onmousedown was in character area (hit>0)
         // note selection is transient
         this.lines = null;//: TextLine[]
-        this.lineNumberHint = 0;
     },
 
     initializePersistentState: function($super, initialBounds, shapeType) {
