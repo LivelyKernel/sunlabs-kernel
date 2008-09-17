@@ -64,16 +64,25 @@ Object.subclass('TestCase', {
 		return this.result.failed.last();
 	},
 
-	assert: function(bool, msg) {
-		if (bool) return;
-		throw {isAssertion: true, message: " assert failed " + "(" + msg + ")"}
-	},
-
+        assert: function(bool, msg) {
+                if (bool) return;
+                    throw {isAssertion: true, message: " assert failed " + "(" + msg + ")"}
+        },
+        	
 	assertEqual: function(firstValue, secondValue, msg){
-		if(!(firstValue == secondValue))  {
+	    if (firstValue && firstValue.constructor === Point && secondValue &&
+	        secondValue.constructor === Point && firstValue.eqPt(secondValue)) return;
+		if (firstValue == secondValue) return;
+		/* Better call assert() and assemble error message
+		in AssertionError */
+		throw {isAssertion: true, message: (msg ? msg	 : "") + " (" + firstValue +" != " + secondValue +") "};
+	},
+	
+	assertIdentity: function(firstValue, secondValue, msg){
+		if(!(firstValue === secondValue))  {
 			/* Better call assert() and assemble error message
 			in AssertionError */
-			throw {isAssertion: true, message: (msg ? msg	 : "") + " (" + firstValue +" != " + secondValue +") "};
+			throw {isAssertion: true, message: (msg ? msg	 : "") + " (" + firstValue +" !== " + secondValue +") "};
 		}
 	},
 	
@@ -87,7 +96,7 @@ Object.subclass('TestCase', {
 	
 	assertEqualState: function(leftObj, rightObj, msg) {
 		var self = this;
-		msg = (msg ? msg : ' ')  + leftObj + " != " + rightObj + " because ";
+        msg = (msg ? msg : ' ') + leftObj + " != " + rightObj + " because ";
 		if (!leftObj && !rightObj) return;
 		if (!leftObj || !rightObj) self.assert(false, msg);
 		switch (leftObj.constructor) {
@@ -110,6 +119,12 @@ Object.subclass('TestCase', {
 		cmp(rightObj, leftObj);		
 	},
 
+    assertIncludesAll: function(arrayShouldHaveAllItems, fromThisArray, msg) {
+        fromThisArray.each(function(ea) {
+            this.assert(arrayShouldHaveAllItems.include(ea), msg)
+        }, this);
+    },
+    
 	allTestSelectors: function() {
 		/* How to get the properties of this as an Enumerable?
 		toArray() does not work. If we would have the properties
@@ -192,7 +207,7 @@ Object.subclass('TestResult', {
 		string += ' -- Failed tests: \n';
 		this.failed.each(function(ea) {
 			string +=  ea.classname + '.' + ea.selector + '-->' 
-			    + ea.err.message + ' in ' + ea.err.sourceURL.filename + ' ('+ ea.err.line + ') '+'\n';
+			    + ea.err.message +  '\n';
 		});
 		string += ' -- TestCases timeToRuns: \n';
 		var self = this;
@@ -208,11 +223,19 @@ Object.subclass('TestResult', {
 		return 'Tests run: ' + this.runs() + ' -- Tests failed: ' + this.failed.length;
 	},
 	
+	getFileNameFromError: function(err) {
+	    if (err.sourceURL)
+            return new URL(err.sourceURL).filename()
+        else
+            return "";
+	},
+	
 	failureList: function() {
 		var result = this.failed.collect(function(ea) {
 			return ea.classname + '.' + ea.selector + '-->' + ea.err.message  +
-	        ' in ' + new URL(ea.err.sourceURL).filename() + ' ( Line '+ ea.err.line + ')' ;
-		});
+	            ' in ' + this.getFileNameFromError(ea.err) + 
+	            (ea.err.line ? ' ( Line '+ ea.err.line + ')' : "");
+		}, this);
 		return result
 	}
 });
@@ -239,8 +262,8 @@ Widget.subclass('TestRunner', {
 		return this;
 	},
 	
-	runTests: function(value) {
-		if (!value) return;
+	runTests: function(buttonDown) {
+		if (buttonDown) return;
 		var testClass = this.getModel().getSelectedTestClass();
 		if (!testClass) return;
 		var testCase = new Global[testClass]();
@@ -248,8 +271,8 @@ Widget.subclass('TestRunner', {
 		this.setResultOf(testCase);
 	},
 	
-	runAllTests: function(value) {
-		if (!value) return;
+	runAllTests: function(buttonDown) {
+		if (buttonDown) return;
 		var testSuite = new TestSuite();
 		//all classes from the list
 		testSuite.setTestCases(this.getModel().getTestClasses().collect(function(ea) {
@@ -270,15 +293,11 @@ Widget.subclass('TestRunner', {
 	},
 	
 	listTestClasses: function() {
-		return TestCase.allSubclasses().collect(function(ea) {
-			return ea.type;
-		}).select(function(ea) {return !ea.startsWith('Dummy')
-		}).select(function(ea) {
-		    if(Config.skipGuiTests)
-		        return !ea.endsWith('GuiTest')
-		    else
-	            return true;
-		}).sort();
+		return TestCase.allSubclasses()
+		    .collect(function(ea) { return ea.type })
+		    .select(function(ea) { return !ea.startsWith('Dummy') })
+		    .select(function(ea) { return Config.skipGuiTests ? !ea.endsWith('GuiTest') : true })
+            .sort();
 	},
 	
 	buildView: function(extent) {
@@ -367,7 +386,10 @@ Widget.subclass('ErrorStackViewer', {
 		$super();
 		var list = [];	
 		if(testFailedObj && testFailedObj.err && testFailedObj.err.stack) {
-		    testFailedObj.err.stack.each(function(currentNode, c) { list.push(c) });
+		    if(! testFailedObj.err.stack.each)
+		        console.log("ErrorStackViewer: don't know what to do with" +testFailedObj.err.stack )
+		    else
+		        testFailedObj.err.stack.each(function(currentNode, c) { list.push(c) });
 		};
 		this.formalModel = Record.newInstance(
 			{StackList: {}, MethodSource: {}, ArgumentsList: {}, SelectedCaller: {}},
@@ -431,6 +453,9 @@ Widget.subclass('ErrorStackViewer', {
 			var args = $A(ea.args);
 			if (args.length > 0)
 				argsString = '(' + args + ')';
+			if(!(ea.method && ea.method.qualifiedMethodName))	
+				return "no method found for " + printObject(ea);
+				
 			return ea.method.qualifiedMethodName() + argsString});
 	},
 	

@@ -87,7 +87,7 @@ Morph.subclass('ButtonMorph', {
         var newValue = this.getToggle() ? !this.getValue() : false;
         this.setValue(newValue); 
 	// the following should happen in response
-        //this.changeAppearanceFor(newValue); 
+        this.changeAppearanceFor(newValue); 
     },
     
     changeAppearanceFor: function(value) {
@@ -1268,6 +1268,7 @@ TextListMorph.subclass("ListMorph", {
             var m = this.generateListItem(itemList[i], rect);
             if (this.textStyle) m.applyStyle(this.textStyle);
             this.addMorph(m);
+            m.closeDnD();
             m.relayMouseEvents(this);
         }
     },

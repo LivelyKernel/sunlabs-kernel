@@ -207,3 +207,6 @@ Config.showFahrenheitCelsiusExample = false;
 Config.showTextListExample = false;
 Config.openFabrikBrowserExample = false;
 Config.showWikiNavigator = true;
+
+Config.alignToGridSpace = 10; // determins the pixels to snap to during shift dragging with mouse
+Config.ballonHelpDelay = 1000; // Default

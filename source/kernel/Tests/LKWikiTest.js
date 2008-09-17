@@ -131,8 +131,8 @@ TestCase.subclass('SVNResourceTest', {
 		var expectedRequestContent = '<S:log-report xmlns:S="svn:">' + 
 	    	'<S:start-revision>' + startRev + '</S:start-revision>' + '<S:end-revision>0</S:end-revision>' +
 			'<S:all-revprops/>' + '<S:path/>' + '</S:log-report>';
-		var expectedData = [{rev: 75, date: '2008-08-08T23:03:01.342813Z', author: '(no author)'},
-							{rev: 18, date: '2008-08-08T22:37:07.441511Z', author: '(no author)'}];
+		var expectedData = [{rev: 75, date: new Date(2008, 8, 8, 23, 3, 1), author: '(no author)'},
+							{rev: 18, date: new Date(2008, 8, 8, 22, 37, 7), author: '(no author)'}];
 		var test = this;
 		MockNetRequest.prototype.request = function(method, url, content) {
 			test.assertEqual(method, 'REPORT');
@@ -148,10 +148,8 @@ TestCase.subclass('SVNResourceTest', {
 		};
 		
 		this.svnResource.fetchMetadata(true, null, startRev);
-		
 		this.assert(wasRequested, 'request() should be called');
-		this.assertEqualState(expectedData, this.svnResource.getMetadata(),
-			'Metadata is not correct');
+		this.assertEqualState(expectedData, this.svnResource.getMetadata(), 'Metadata is not correct');
 	},
 	
     // testListDirectory: function() {
@@ -191,6 +189,25 @@ TestCase.subclass('SVNResourceTest', {
 	}
 });
 
+TestCase.subclass('SVNVersionInfoTest', {
+    testParseUTCDate: function() {
+        var sut = new SVNVersionInfo(0, '', null);
+        var dateString = '2008-08-08T23:03:01.342813Z';
+        var result = sut.parseUTCDateString(dateString);
+        var expected = new Date(2008, 8, 8, 23, 3, 1);
+        this.assertEqualState(expected, result, 'date parsing not correct');
+    },
+    
+    testToString: function() {
+        var sut = new SVNVersionInfo(75, '2008-08-08T23:03:01.342813Z', null);
+        
+        this.assertEqual(sut.toString(), '(no author), 23:03:01 GMT-0700 (PDT), Mon Sep 08 2008, Revision 75',
+            'vers info toString failure');
+        // see SVNVersionInfo.toString()
+        // this.assert(sut.toString().orig === sut, 'vers info string has not pointer to original');
+    }
+});
+
 TestCase.subclass('WikiNavigatorTest', {
     	
     testIsActiveForWikiUrls: function() {
@@ -210,7 +227,7 @@ TestCase.subclass('WikiNavigatorTest', {
         nav = new WikiNavigator(url2);
         this.assertEqual(nav.model.getURL(), expectedUrl2, "Could not modify url2");
     },
-    
+     
     // Tests are doing real stuff and work only when current url is correct
     // (something like *proxy/wiki/*xhtml)
     setUp: function() {
@@ -318,7 +335,73 @@ TestCase.subclass('WikiNavigatorTest', {
 //         this.assertEqual(this.sut.fileContent(this.aFileName), content, 'could not copy content');
 //     },
 //     
+//     testCopyAllFiles: function() {
+//         var test = this;
+//         var filenames = ['a', 'b', 'c'];
+//         var toUrl = new URL ('http://to/url.com/bla');
+//         var copiedFiles = [];
+//         this.sut.filenames = function() { return filenames };
+//         this.sut.copyFileNamed = function(srcFileName, destUrl, optNewFileName) {
+//             test.assertEqual(destUrl, toUrl, 'Wrong destUrl');
+//             test.assert(!optNewFileName || optNewFileName == srcFileName, 'problem with filename');
+//             copiedFiles.push(srcFileName);
+//         };
+//         this.sut.copyAllFiles(toUrl);
+//         this.assertIncludesAll(copiedFiles, filenames);
+//     },
+//     
+//     testCopySubdirIfOtherDirExists: function() {
+//         var test = this;
+//         var subDirName = 'a/';
+//         var toUrl = new URL ('http://to/url.com/bla');
+//         var toFileDir = new FileDirectory(toUrl);
+//         
+//         this.sut.subdirectoryNames = function() {return [subDirName]};
+//         var existsCalled = false;
+//         toFileDir.fileOrDirectoryExists = function(localName) {
+//             test.assertEqual(localName, subDirName, 'foreign test localName');
+//             existsCalled = true;
+//             return true;
+//         };
+//         
+//         this.sut.copySubdirectory(subDirName, toFileDir, false);
+//         
+//         this.assert(existsCalled, 'foreignExistsCalled');
+//     },
+//     
+//     testCopySubdirRecursively: function() {
+//         var test = this;
+//         var subDirName = 'a/';
+//         var toUrl = new URL ('http://to/url.com/bla');
+//         var toFileDir = new FileDirectory(toUrl);
+//         
+//         this.sut.subdirectoryNames = function() {return [subDirName]};
+//         toFileDir.fileOrDirectoryExists = Functions.True;
+//         
+//         this.sut.copySubdirectory(subDirName, toFileDir, true);
+//     },
+//     
+//     testCopySubdirIfOtherDirNotExists: function() {
+//         var test = this;
+//         var subDirName = 'a/';
+//         var toUrl = new URL ('http://to/url.com/bla');
+//         var toFileDir = new FileDirectory(toUrl);
+//         
+//         this.sut.subdirectoryNames = function() {return [subDirName]};
+//         toFileDir.fileOrDirectoryExists = Functions.False;
+//         var createDirCalled = false;
+//         toFileDir.createDirectory = function(local) {
+//             test.assertEqual(local, subDirName, 'wrong dir created');
+//             createDirCalled = true;
+//         }
+//         
+//         this.sut.copySubdirectory(subDirName, toFileDir, false);
+//         
+//         this.assert(createDirCalled, 'createDirCalled not');
+//     },
+//     
 // });
+
 
 function exampleSVNResource() {
 	var repoUrl = URL.proxy.toString() + 'wiki';

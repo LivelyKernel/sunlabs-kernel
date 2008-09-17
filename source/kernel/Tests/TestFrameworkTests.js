@@ -85,6 +85,24 @@ TestCase.subclass('TestTestCase', {
 		this.assert(false, 'State of objects are not equal!');
 	},
 	
+	testAssertIncludesAll: function() {
+
+		try { this.assertIncludesAll([1,2,3], [1,2,3]) } catch(e) {
+		    if (e.isAssertion)
+		        this.assert(false, '[1,2,3], [1,2,3]')
+		    else throw e
+		};
+		try { this.assertIncludesAll([1,2,3], [1,2]) } catch(e) {this.assert(false, '[1,2,3], [1,2]')};
+		
+		var asserted = false
+		try { this.assertIncludesAll([1,2], [1,2,3]) } catch(e) {if (e.isAssertion) asserted = true};
+		if (!asserted) this.assert(false, 'assertIncludesAll([1,2], [1,2,3]) was successful');
+		
+		asserted = false
+		try { this.assertIncludesAll([1,2,9], [1,2,3]) } catch(e) {if (e.isAssertion) asserted = true};
+		if (!asserted) this.assert(false, 'assertIncludesAll([1,2], [1,2,3]) was successful');
+	},
+	
 	testTearDown: function() {
         var counter = 0;
         // Use a existing DummyClass...!

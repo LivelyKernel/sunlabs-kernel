@@ -684,16 +684,13 @@ Resource.subclass('SVNResource', {
 	
     pvtSetMetadataDoc: function(xml) {
 	if (!xml) return;
-	metadataXML = xml;
 	var array = $A(xml.getElementsByTagName('log-item'));
 	var result = array.collect(function(ea) {
-	    return {
-		rev: Number(ea.getElementsByTagName('version-name')[0].textContent),
-		date: ea.getElementsByTagName('date')[0].textContent,
-		author: ea.getElementsByTagName('creator-displayname')[0] ?
-		            ea.getElementsByTagName('creator-displayname')[0].textContent :
-		            '(no author)',
-		toString: function() { return this.date + ' ' + this.author}}
+	    return new SVNVersionInfo(Number(ea.getElementsByTagName('version-name')[0].textContent),
+    		                      ea.getElementsByTagName('date')[0].textContent,
+    		                      ea.getElementsByTagName('creator-displayname')[0] ?
+    		                        ea.getElementsByTagName('creator-displayname')[0].textContent :
+    		                        null);
 	});
 	this.setMetadata(result);
     },
@@ -716,77 +713,129 @@ Resource.subclass('SVNResource', {
     }
 });
 
+Object.subclass('SVNVersionInfo', {
+    
+    initialize: function(rev, dateString, author) {
+        this.rev = rev,
+		this.date = dateString ? this.parseUTCDateString(dateString) : new Date(Date.now()),
+		this.author = author ? author : '(no author)';
+    },
+    
+    parseUTCDateString: function(dateString) {
+        var yearElems = dateString.slice(0,10).split('-').collect(function(ea) {return Number(ea)});
+        var timeElems = dateString.slice(11,19).split(':').collect(function(ea) {return Number(ea)});
+        return new Date(yearElems[0], yearElems[1], yearElems[2], timeElems[0], timeElems[1], timeElems[2])
+    },
+    
+    toString: function() {
+        // does not work when evaluate {new SVNVersionInfo() + ""} although toStrings() works fine. *grmph*
+        // string = Strings.format('%s, %s, %s, Revision %s',
+        //     this.author, this.date.toTimeString(), this.date.toDateString(), this.rev);
+        // string = new String(string);
+        // string.orig = this;
+        
+         return Strings.format('%s, %s, %s, Revision %s',
+            this.author, this.date.toTimeString(), this.date.toDateString(), this.rev);
+    }
+});
 // TODO will be merged with Resource
 // TODO make async?
 Object.subclass('FileDirectory', {
-   
-   initialize: function(url) {
-        this.url = url.isLeaf() ? url.getDirectory() : url;
-   },
-   
-   fileContent: function(localname) {
-       var url = this.url.withFilename(localname);
-       var resource = new Resource(Record.newPlainInstance({URL: url, ContentText: null}));
-       resource.fetch(true);
-       return resource.getContentText();
-   },
-   
-   filesAndDirs: function() {
-       var url = this.url;
-       var webFile = new lk.storage.WebFile(Record.newPlainInstance(
-           {File: url, RootNode: url, Content: null, DirectoryList: null}));
-       webFile.fetchContent(webFile.formalModel.getFile(), true);
-       return webFile.formalModel.getDirectoryList();
-   },
-   
-   files: function() {
-       return this.filesAndDirs().select(function(ea) { return ea.isLeaf() });
-   },
-   
-   filenames: function() {
-       return this.files().collect(function(ea) { return ea.filename() } );
-   },
-   
-   subdirectories: function() {
-       // remove the first, its the url of the current directory
-       var result = this.filesAndDirs().reject(function(ea) { return ea.isLeaf() });
-       result.shift();
-       return result;
-   },
 
-   subdirectoryNames: function() {
-       return this.subdirectories().collect(function(ea) { return ea.filename() } );
-   },
-   
-   fileOrDirectoryExists: function(localname) {
-       return new NetRequest().beSync().get(this.url.withFilename(localname)).transport.status != 404;
-   },
-   
-   writeFileNamed: function(localname, content, askUser) {
-       var url = this.url.withFilename(localname);
-       var resource = new Resource(Record.newPlainInstance({URL: url}));
-       return resource.store(content, true).getStatus().isSuccess();
-   },
-   
-   createDirectory: function(localname) {
-       return new NetRequest().beSync().mkcol(this.url.withFilename(localname)).getStatus().isSuccess();
-   },
-   
-   deleteFileNamed: function(localname) {
-       return new NetRequest().beSync().del(this.url.withFilename(localname)).getStatus().isSuccess();       
-   },
-   
-   // Move to somewhere else? Not directory specific...
-   copyFile: function(srcUrl, destUrl) {
-       return new NetRequest().beSync().copy(srcUrl, destUrl, true /*overwrite*/).getStatus().isSuccess();
-   },
-   
-   copyFileNamed: function(srcFileName, destUrl, optNewFileName) {
-       if (!optNewFileName) optNewFileName = srcFileName;
-       var otherDir = new FileDirectory(destUrl);
-       otherDir.writeFileNamed(optNewFileName, this.fileContent(srcFileName));
-   }
-   
+    initialize: function(url) {
+        this.url = url.isLeaf() ? url.getDirectory() : url;
+        this.writeAsync = false;
+    },
+
+    fileContent: function(localname) {
+        var url = this.url.withFilename(localname);
+        var resource = new Resource(Record.newPlainInstance({URL: url, ContentText: null}));
+        resource.fetch(true);
+        return resource.getContentText();
+    },
+
+    filesAndDirs: function() {
+        var url = this.url;
+        var webFile = new lk.storage.WebFile(Record.newPlainInstance(
+            {File: url, RootNode: url, Content: null, DirectoryList: null}));
+            webFile.fetchContent(webFile.formalModel.getFile(), true);
+            return webFile.formalModel.getDirectoryList();
+        },
+
+        files: function() {
+            return this.filesAndDirs().select(function(ea) { return ea.isLeaf() });
+        },
+
+        filenames: function() {
+            return this.files().collect(function(ea) { return ea.filename() } );
+        },
+
+        subdirectories: function() {
+            // remove the first, its the url of the current directory
+            var result = this.filesAndDirs().reject(function(ea) { return ea.isLeaf() });
+            result.shift();
+            return result;
+        },
+
+        subdirectoryNames: function() {
+            return this.subdirectories().collect(function(ea) { return ea.filename() } );
+        },
+
+        fileOrDirectoryExists: function(localname) {
+            return new NetRequest().beSync().get(this.url.withFilename(localname)).transport.status != 404;
+        },
+        
+        writeFileNamed: function(localname, content) {
+            var url = this.url.withFilename(localname);
+            var resource = new Resource(Record.newPlainInstance({URL: url}));
+            if(this.writeAsync)
+                return resource.store(content, false);
+            else
+                return resource.store(content, true).getStatus().isSuccess();
+        },
+
+        createDirectory: function(localname) {
+            return new NetRequest().beSync().mkcol(this.url.withFilename(localname)).getStatus().isSuccess();
+        },
+
+        deleteFileNamed: function(localname) {
+            return new NetRequest().beSync().del(this.url.withFilename(localname)).getStatus().isSuccess();       
+        },
+
+        // Move to somewhere else? Not directory specific...
+        copyFile: function(srcUrl, destUrl) {
+        return new NetRequest().beSync().copy(srcUrl, destUrl, true /*overwrite*/).getStatus().isSuccess();
+    },
+
+    copyFileNamed: function(srcFileName, destUrl, optNewFileName) {
+        if (!optNewFileName) optNewFileName = srcFileName;
+        var otherDir = new FileDirectory(destUrl);
+        otherDir.writeFileNamed(optNewFileName, this.fileContent(srcFileName));
+    },
+    
+    copyAllFiles: function(destUrl, selectFunc) {
+        var filesToCopy = selectFunc ? this.filenames().select(selectFunc) : this.filenames();
+        filesToCopy.each(function(ea) { this.copyFileNamed(ea, destUrl) }, this);
+    },
+    
+    copySubdirectory: function(subDirName, newDirName, toUrlOrFileDir, recursively, selectFunc) {
+        if (!newDirName) newDirName = subDirName;
+        if (!this.subdirectoryNames().include(subDirName)) return;
+        var foreignDir = toUrlOrFileDir.constructor === this.constructor ? toUrlOrFileDir : new this.constructor(toUrlOrFileDir);
+        var toUrl = foreignDir.url;
+        if (!foreignDir.fileOrDirectoryExists(newDirName)) {
+            foreignDir.createDirectory(newDirName);
+        };
+        var subDir = new this.constructor(this.url.withFilename(subDirName));
+        subDir.copyAllFiles(toUrl.withFilename(newDirName), selectFunc);
+        subDir.copyAllSubdirectories(toUrl, recursively, selectFunc);
+    },
+    
+    copyAllSubdirectories: function(toUrl, recursively, selectFunc) {
+        var dirsToCopy = selectFunc ? this.subdirectoryNames().select(selectFunc) : this.subdirectoryNames();
+        dirsToCopy.each(function(ea) { this.copySubdirectory(ea, ea, toUrl, recursively, selectFunc) }, this);
+    }
+
 });
 
 console.log('loaded Network.js');

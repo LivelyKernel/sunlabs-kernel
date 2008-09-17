@@ -56,10 +56,31 @@ function namespace(spec, context) {
     }
 }
 
+/* Code loader. Appends file to DOM. File will not be saved in xhtml. */
+var Loader = {
+    loadScript: function(url) {
+        console.log("load script: " + url.toString())
+        var head = document.getElementsByTagName("head")[0];
+        script = document.createElement('script');
+        script.id = url;
+        script.type = 'text/javascript';
+        script.src = url;
+        head.appendChild(script);
+    }
+};
 
 // ===========================================================================
 // Our JS library extensions (JS 1.5, no particular browser or graphics engine)
 // ===========================================================================
+
+Object.extend(Object.prototype, {
+        
+    assert: function(bool, msg) {
+        if (bool) return;
+        throw {isAssertion: true, message: " assert failed " + "(" + msg + ")"}
+	}
+	
+});
 
 /**
   * LK class system.
@@ -182,7 +203,7 @@ Object.extend(Function.prototype, {
     },
 
     isSubclassOf: function(aClass) {
-	if (!Class.isClass(aClass) && this === Object && !this.superclass)
+	if (!Class.isClass(aClass) || this === Object || !this.superclass)
 	    return false;
 	if (this.superclass === aClass)
 	    return true;
@@ -760,10 +781,14 @@ Object.subclass('Record', {
             }
         }
     },
-    // dep may be the relay or relay.delegate
-    removeObserver: function(dep, fieldName) {              
+    // dep may be the relay or relay.delegate, can be called with dep, dep and fielName, or only with fielName
+    removeObserver: function(dep, fieldName) {
         if (fieldName && !this[fieldName + '$observers']) {
             console.log('Tried to remove non existing observer:' + fieldName + '$observers');
+            return;
+        };
+        if (fieldName && !dep) { // remove all abservers from this field
+            this[Record.observerListName(fieldName)] = null;
             return;
         };
         var observerFields = fieldName ?
@@ -978,13 +1003,13 @@ Object.extend(Record, {
     observerListName: function(name) { return name + "$observers"},
     
     newRecordSetter: function newRecordSetter(name, to, byDefault) {
-        return function recordSetter(value, optSource) {
+        return function recordSetter(value, optSource, force) {
             if (value === undefined) {
 		this.removeRecordField(name);
             } else {
             	if (value == null && byDefault) value = byDefault;
 		var coercedValue = to ? to(value) : value;
-		if (this.getRecordField(name) === coercedValue) return;
+		if (!force && this.getRecordField(name) === coercedValue) return;
 		this.setRecordField(name, coercedValue);
             }
             var deps = this[Record.observerListName(name)];
@@ -1060,9 +1085,17 @@ Object.extend(Relay, {
 	if (value.startsWith("!")) {
 	    // call an update method with the derived name
 	    def["on" + key + "Update"] = Relay.newRelayUpdater("on" + value.substring(1) + "Update");
+	    // see below
+	    def["set" + key] = Relay.newRelayUpdater("on" + value.substring(1) + "Update");
 	} else if (value.startsWith("=")) {
 	    // call exactly that method
 	    def["on" + key + "Update"] = Relay.newRelayUpdater(value.substring(1));
+	    // FIXME: e.g. closeHalo is a ButtonMorph,
+	    // this.closeHalo.connectModel(Relay.newInstance({Value: "=onRemoveButtonPress"}, this)); should call
+	    // this.onRemoveButtonPress()
+	    // the method newDelegatorSetter --> setter() which is triggered from setValue() of the button would only look
+	    // for the method setValue in def, but there is onyl onValueUpdate, so add also setValue ...
+	    def["set" + key] = Relay.newRelayUpdater(value.substring(1));
 	} else {
 	    if (!value.startsWith('-')) { // not read-only
 		var stripped = value.startsWith('+') ? value.substring(1) : value;
@@ -1140,11 +1173,12 @@ Object.extend(Relay, {
 	
 	function newDelegatorSetter(name, to) {
 	    var methodName = "set" + name;
-	    return function setter(value) {
+	    return function setter(value, force) {
 		var m = this.formalModel;
 		if (m) {
 		    var method = m[methodName];
-		    return method && method.call(m, to ? to(value) : value, this); // third arg is source
+		    // third arg is source, fourth arg forces relay to set value even if oldValue === value
+		    return method && method.call(m, to ? to(value) : value, this, force);
 		} else return this.setModelValue(methodName, value);
             }
 	}
@@ -2848,7 +2882,7 @@ Object.extend(Shape, {
 
     toPath: function() {
 	// FIXME account for rounded edges
-	return new PathShape(this.bounds());
+    return new PathShape(this.bounds());
     },
 
     bounds: function() {
@@ -2879,7 +2913,7 @@ Object.extend(Shape, {
 	var r = this.bounds().withPartNamed(partName, newPoint);
 	this.setBounds(r);
     },
-
+    
     controlPointNear: function(p) {
 	var bnds = this.bounds();
 	return bnds.partNameNear(Rectangle.corners, p, this.controlPointProximity);
@@ -3552,7 +3586,8 @@ Copier.subclass('Importer', {
 
     startScripts: function(world) {
 	this.verbose && console.log("start scripts %s in %s", this.scripts, world);
-	this.scripts.forEach(function(s) { s.start(world); });
+	// sometimes there are null values in this.scripts. Filter them out
+	this.scripts.select(function(ea) {return ea}).forEach(function(s) { s.start(world); });
     },
     
     importFromNode: function(rawNode) {
@@ -4891,8 +4926,19 @@ Morph.addMethods({
 
     onMouseUp: function(evt) { }, //default behavior
 
-    onMouseOver: function(evt) { 
-	this.showHelp(evt);
+    considerShowHelp: function(oldEvt) {
+        // if the mouse has not moved reasonably
+        if (WorldMorph.current().hands.first().getPosition().dist(oldEvt.mousePoint) < 10)
+            this.showHelp(oldEvt)
+    },
+    
+    delayShowHelp: function(evt) {
+        var scheduledHelp = new SchedulableAction(this, "considerShowHelp", evt, 0);
+        WorldMorph.current().scheduleForLater(scheduledHelp, Config.ballonHelpDelay || 1000, false);             
+    },
+
+    onMouseOver: function(evt) {
+        this.delayShowHelp(evt)
     }, 
 
     onMouseOut: function(evt) { 
@@ -5271,7 +5317,8 @@ Morph.addMethods({
 
     stopStepping: function() {
 	if (!this.activeScripts) return;
-	this.activeScripts.invoke('stop', this.world());
+	// ignore null values
+	this.activeScripts.select(function (ea) { return ea }).invoke('stop', this.world());
 	this.activeScripts = null;
     },
 
@@ -5310,7 +5357,8 @@ Morph.addMethods({
 	var world = this.world();
 	this.withAllSubmorphsDo( function() {
 	    if (this.suspendedScripts) {
-		this.suspendedScripts.invoke('start', world);
+	    // ignore null values
+		this.suspendedScripts.select(function (ea) { return ea }).invoke('start', world);
 		this.activeScripts = this.suspendedScripts;
 		this.suspendedScripts = null;
 	    }
@@ -6055,7 +6103,8 @@ PasteUpMorph.subclass("WorldMorph", {
                            fill: new RadialGradient([Color.yellow.lighter(2), 1, Color.yellow]) },
 	    panel:       { fill: Color.primary.blue.lighter(2), borderWidth: 2},
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue},
-	    helpText:    { borderRadius: 15, fill: Color.primary.yellow.lighter(3), fillOpacity: .8}
+	    helpText:    { borderRadius: 15, fill: Color.primary.yellow.lighter(3), fillOpacity: .8},
+	    fabrik:      { borderColor: Color.red, borderWidth: 2, borderRadius: 0, fill: Color.blue.lighter()}
         },
 
         lively: { // This is to be the style we like to show for our personality
@@ -6073,7 +6122,9 @@ PasteUpMorph.subclass("WorldMorph", {
                            fill: new RadialGradient([Color.primary.blue.lighter(2), 1, Color.primary.blue.lighter()]) },
 	    panel:       { fill: Color.primary.blue.lighter(2), borderWidth: 2},
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue},
-	    helpText:    { borderRadius: 15, fill: Color.primary.yellow.lighter(3), fillOpacity: .8}
+	    helpText:    { borderRadius: 15, fill: Color.primary.yellow.lighter(3), fillOpacity: .8},
+	    fabrik:      { borderColor: Color.blue, borderWidth: 2, borderRadius: 3,
+	                        fill: Color.blue.lighter(), opacity: 1}
         },
 
         turquoise: { // Like turquoise, black and silver jewelry, [or other artistic style]
@@ -6090,7 +6141,9 @@ PasteUpMorph.subclass("WorldMorph", {
                            fill: new RadialGradient([Color.turquoise.lighter(2), 1, Color.turquoise]) },
 	    panel:       {fill: Color.primary.blue.lighter(2), borderWidth: 2},
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue},
-	    helpText:    { borderRadius: 15, fill: Color.primary.yellow.lighter(3), fillOpacity: .8}
+	    helpText:    { borderRadius: 15, fill: Color.primary.yellow.lighter(3), fillOpacity: .8},
+	    fabrik:      { borderColor: Color.neutral.gray.darker(), borderWidth: 4,
+                               fill: Color.turquoise.lighter(3), borderRadius: 16}
         }
     },
 
@@ -6216,7 +6269,8 @@ PasteUpMorph.subclass("WorldMorph", {
         	menu.addItem(["arm profile for next mouseUp", function() {evt.hand.armProfileFor("MouseUp") }]);
 	}
         menu.addLine();
-        menu.addItem(["authenticate for write access", function() { new NetRequest().put(URL.source.withFilename('auth')); }]);
+        menu.addItem(["authenticate for write access", function() { new NetRequest().put(URL.source.withFilename('auth'));
+                      if (Config.showWikiNavigator) WikiNavigator.enableWikiNavigator(true); /* sometimes the wikiBtn seems to break after an authenticate*/ }]);
         menu.addItem(["publish world as ... ", function() { this.prompt("world file (.xhtml)", this.exportLinkedFile.bind(this)); }]);
 	if (URL.source.filename() != "index.xhtml") { 
 	    // save but only if it's not the startup world
@@ -6627,7 +6681,11 @@ PasteUpMorph.subclass("WorldMorph", {
 
     positionForNewMorph: function(relatedMorph) {
 	// this should be much smarter than the following:
-	return relatedMorph ? relatedMorph.bounds().topLeft().addPt(pt(5, 0)) : this.firstHand().lastMouseDownPoint;
+	return relatedMorph ?
+	    relatedMorph.bounds().topLeft().addPt(pt(5, 0)) :
+	    //this.firstHand().lastMouseDownPoint; // returns sometimes very odd positions
+	    this.hands.first().getPosition();
+        // this.getExtent().scaleBy(0.5);
     },
 
     reactiveAddMorph: function(morph, relatedMorph) { 	// add morph in response to a user action, make it prominent
@@ -6797,6 +6855,10 @@ Morph.subclass("HandMorph", {
         //-------------
         if (evt.type == "MouseMove" || evt.type == "MouseWheel") { // it is just a move
             this.setPosition(evt.mousePoint);
+            
+            if(evt.isShiftDown())
+                    this.alignToGrid(this.topSubmorph());
+            
 	    this.updateGrabHalo();
             
             if (evt.mousePoint.dist(this.lastMouseDownPoint) > 10) { 
@@ -6911,11 +6973,22 @@ Morph.subclass("HandMorph", {
 	}
     },
 
+    alignToGrid: function(draggedMorph) {
+        if(!this.grabHaloMorph) return;
+        var grid = function(a) {
+                return a - (a % (Config.alignToGridSpace || 5))};
+        if (!this.grabHaloMorph.orgSubmorphPosition)
+            this.grabHaloMorph.orgSubmorphPosition = draggedMorph.getPosition();
+        var oldPos = this.worldPoint(this.grabHaloMorph.orgSubmorphPosition);
+        var gridPos = pt(grid(oldPos.x), grid(oldPos.y));
+        draggedMorph.setPosition(this.localize(gridPos));
+    },
+
     updateGrabHalo: function Morph$updateGrabHalo() {
 	if (this.grabHaloMorph) {
-	    this.grabHaloMorph.setBounds(this.topSubmorph().bounds(true).expandBy(3));
+	    this.grabHaloMorph.setBounds( this.topSubmorph().bounds(true).expandBy(3));
 	    if (this.grabHaloMorph.positionLabel) {
-		var pos = this.topSubmorph().worldPoint(this.topSubmorph().getPosition());
+		var pos = this.worldPoint(this.topSubmorph().getPosition());
 		var posLabel  = this.grabHaloMorph.positionLabel;
 		posLabel.setTextString(pos.x.toFixed(1) + "," + pos.y.toFixed(1));
 		posLabel.align(posLabel.bounds().bottomCenter(), this.grabHaloMorph.innerBounds().topLeft());
@@ -7403,6 +7476,22 @@ HandMorph.addMethods({
     }
 });
 
+ClipboardHack = {
+    ensurePasteBuffer: function() {
+       var buffer = document.getElementById("copypastebuffer");
+       if (!buffer) {
+           buffer = document.createElement("textarea");
+           buffer.setAttribute("cols","1");
+           buffer.setAttribute("rows","1");
+           buffer.setAttribute("id","copypastebuffer");
+           buffer.setAttribute("style","position:absolute;left:0px; top:1px; width:1px; height:1px;");
+           buffer.textContent = "NoText";
+           document.body.appendChild(buffer);
+           buffer = document.getElementById("copypastebuffer");
+       };
+       return buffer
+   }
+}
 
 console.log('loaded Core.js');
 

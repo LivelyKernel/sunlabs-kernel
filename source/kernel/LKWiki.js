@@ -214,10 +214,9 @@ Widget.subclass('WikiNavigator', {
 		saveContentButton.connectModel({model: this, setValue: "saveWorld"});
 		
 /*****/
-        this.findVersions();
         var versionList = panel.versionList;
         // FIXME This is for value conversion. Much better is using conversion method support of relay (see below)
-        var convertSVNMetadataToStrings = function(data) { return data.collect(function(ea) { return ea.date + ' ' + ea.author }) };
+        var convertSVNMetadataToStrings = function(data) { return data.collect(function(ea) { return ea.toString() }) };
         versionList.innerMorph().setList = versionList.innerMorph().setList.wrap(function(proceed, values) {
             console.log("wrapped setList");
             proceed(convertSVNMetadataToStrings(values));
@@ -237,7 +236,7 @@ Widget.subclass('WikiNavigator', {
         //         this.model);
         //         versionList.connectModel(relay, true /* kickstart if morph was deleted*/);
 /*****/
-
+        this.findVersions();
 		this.panel = panel;
 		return panel;
 	},
@@ -246,7 +245,11 @@ Widget.subclass('WikiNavigator', {
 	    if (!value) return;
 	    
         if (this.panel) this.panel.remove();
-        if (this.btn) this.btn.remove();
+        // remove all control btns.... remove this when all pages updated
+        x = WorldMorph.current().submorphs.select(function(ea) { return ea.constructor == TextMorph });
+        x = x.select(function(ea) { return ea.textContent && ea.textContent.rawNode.textContent == 'Wikicontrol' });
+        x.each(function(ea) { ea.remove() });
+        // if (this.btn) this.btn.remove();
 	    
         var status = this.svnResource.store(Exporter.shrinkWrapMorph(WorldMorph.current()), true).getStatus();        
 
@@ -257,12 +260,15 @@ Widget.subclass('WikiNavigator', {
     	} else {
     	    console.log("Failure saving world at " + this.model.getURL().toString() + ", to wiki");
     	    this.createWikiNavigatorButton();
+    	    // FISXME CLEANUP
+    	    WorldMorph.current().addMorph(this.btn);
+            this.btn.startStepping(1000, "positionInLowerLeftCorner");
     	}
 	},
 	
 	onVersionUpdate: function(versionString) {
 	    // FIXME ... looking for correct version ... better with conversion methods
-	    var selectedVersion = this.model.getVersions().detect(function(ea) { return ea.date + ' ' + ea.author == versionString});
+	    var selectedVersion = this.model.getVersions().detect(function(ea) { return ea.toString() == versionString});
 	    var svnres = this.svnResource;
 	    svnres.withBaselineUriDo(selectedVersion.rev, function() {
 	        console.log("visiting: " + svnres.getURL());
@@ -273,8 +279,15 @@ Widget.subclass('WikiNavigator', {
 	},
 	
 	findVersions: function() {
-	    this.svnResource.fetchMetadata(true);
-        this.model.setVersions(this.svnResource.getMetadata());
+	    if (this.model.getVersions().length == 0) this.model.setVersions(['Please wait, fetching version infos...']);
+	    this.svnResource.formalModel.addObserver({onHeadRevisionUpdate: function(headRevision) {
+            this.svnResource.fetchMetadata(false, null, headRevision);
+        }.bind(this)});
+        this.svnResource.formalModel.addObserver({onMetadataUpdate: function() {
+            this.model.setVersions(this.svnResource.getMetadata());
+        }.bind(this)});
+	    this.svnResource.fetchHeadRevision();
+        
 	},
 		
 	createWikiNavigatorButton: function() {
@@ -283,7 +296,7 @@ Widget.subclass('WikiNavigator', {
 	    btn.handlesMouseDown = Functions.False;
 	    var self = this;
 	    btn.onMouseOver = function(evt) {
-	        var navMorph = self.buildView(pt(700,75));
+	        var navMorph = self.buildView(pt(900,105));
 	        self.world.addMorph(navMorph);
 	        navMorph.setPosition(pt(0, 0))
 	    };
@@ -302,8 +315,9 @@ Widget.subclass('WikiNavigator', {
 });
     
 Object.extend(WikiNavigator, {
-    enableWikiNavigator: function() {
-        if (WikiNavigator.current) return;
+    enableWikiNavigator: function(force) {
+        if (!force && WikiNavigator.current) return;
+        if (WikiNavigator.current && WikiNavigator.current.btn) WikiNavigator.current.btn.remove();
         var nav = new WikiNavigator(URL.source);
         // var nav = new WikiNavigator('http://localhost/livelyBranch/proxy/wiki/test/blabla');
         if (!nav.isActive()) return;

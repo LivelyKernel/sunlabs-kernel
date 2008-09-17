@@ -26,6 +26,7 @@ if (Config.debugExtras && Function.installStackTracers) Function.installStackTra
 // Class browser visibility can be overridden with Config.browserAnyway
 Config.showBrowser = !Config.skipMostExamples || Config.browserAnyway;
 
+ClipboardHack.ensurePasteBuffer();
 
 function makeSlideWorld(world) {
     var link = new LinkMorph(null, pt(60, 400));
@@ -204,6 +205,7 @@ function populateWorldWithExamples(world) {
 	if (Config.showFahrenheitCelsiusExample) Fabrik.openFahrenheitCelsiusExample();
 	if (Config.showTextListExample) Fabrik.openFabrikTextListExample();
 	if (Config.openFabrikBrowserExample) Fabrik.openFabrikBrowserExample();
+	if (Config.showFabrikWebRequestExample) Fabrik.openFabrikWebRequestExample();
 
     // Open OmetaWorkspace
     //openOmetaWorkspace();
@@ -430,6 +432,8 @@ function main() {
 if(Config.testTracing) Function.testTrace();
 
 }
+
+
 
 // the delay here is a workaround to give FF 2.0 the time to update
 // the DOM to reflect the geometry of objects on the screen, which is

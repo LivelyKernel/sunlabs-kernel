@@ -1469,7 +1469,7 @@ TextMorph.addMethods({
 	evt.hand.lookNormal();
 	var charIx = this.charOfPoint(this.localize(evt.mousePoint));
         var link = this.textStyle.valueAt(charIx).link;   
-	if (link) this.world().confirm("Ach du lieber, wir müssen " + link + " folgen.",
+	if (link) this.world().confirm("Ach du lieber, wir muessen " + link + " folgen.",
 		function (answer) {
 		    // quick hack for wiki demo
 		    var wikiNav = new WikiNavigator(new URL(link));
@@ -1616,7 +1616,7 @@ TextMorph.addMethods({
         if (!this.acceptInput) return;
         
         var before = this.textString.substring(0, this.selectionRange[0]); 
-	
+
         switch (evt.getKeyCode()) {
         case Event.KEY_LEFT: {
             // forget the existing selection
@@ -1692,9 +1692,46 @@ TextMorph.addMethods({
         } 
 	return false;
     },
-    
+     
     onKeyPress: function(evt) {
         if (!this.acceptInput) return true;
+
+        // Copy and Paste Hack that works in Webkit 
+        var self= this;        
+        if(evt.isMetaDown() && (evt.getKeyChar() == "v")) {
+            var buffer = ClipboardHack.ensurePasteBuffer();
+            if(!buffer) return;
+            buffer.onpaste = function() {
+                TextMorph.clipboardString = event.clipboardData.getData("text/plain");
+                self.doPaste();
+            };
+            buffer.focus(); 
+            return;
+        };
+        if(evt.isMetaDown() && (evt.getKeyChar() == "c")) {
+            var buffer = ClipboardHack.ensurePasteBuffer();
+            if(!buffer) return;
+            buffer.oncopy = function() {
+                self.doCopy();
+                event.clipboardData.setData("text/plain", TextMorph.clipboardString);
+                event.preventDefault();
+            };
+            buffer.select();
+            buffer.focus();
+            return;
+        };
+        if(evt.isMetaDown() && (evt.getKeyChar() == "x")) {
+            var buffer = ClipboardHack.ensurePasteBuffer();
+            if(!buffer) return;
+            buffer.oncut = function() {
+                self.doCut();
+                event.clipboardData.setData("text/plain", TextMorph.clipboardString);
+                event.preventDefault();
+            };
+            buffer.select();
+            buffer.focus();
+            return;   
+        };
 
         // cleanup: separate BS logic, diddle selection range and use replaceSelectionWith()
         if (evt.isCommandKey() && UserAgent.isWindows) { // FIXME: isCommandKey() should say no here
@@ -1822,10 +1859,16 @@ TextMorph.addMethods({
     doDoit: function() {
 	this.tryBoundEval(this.getSelectionString());
     },
+    // eval selection or current line if selection is emtpy
     doPrintit: function() {
 	var strToEval = this.getSelectionString();
+	if (strToEval.length == 0)
+	    strToEval = this.pvtCurrentLineString();
 	this.setNullSelectionAt(this.selectionRange[1] + 1);
-	this.replaceSelectionWith(" " + this.tryBoundEval(strToEval));
+	var prevSelection = this.selectionRange[0];
+	var result = "" + this.tryBoundEval(strToEval);
+	this.replaceSelectionWith(" " + result, false);
+	this.setSelectionRange(prevSelection, prevSelection + result.length + 1);
     },
     doSave: function() {
         this.saveContents(this.textString); 
@@ -1927,8 +1970,12 @@ TextMorph.addMethods({
 	this.emphasizeSelection( {color: color} );
         this.requestKeyboardFocus(evt.hand);
     },
-
-    
+    pvtCurrentLineString: function() {
+        var lineNumber =  this.lineNumberForIndex(this.selectionRange[1]);
+        if (lineNumber == -1) lineNumber = 0; 
+        var line = this.lines[lineNumber];
+        return String(this.textString.substring(line.startIndex, line.getStopIndex() + 1));      
+    },
 });
     
 // TextMorph accessor functions
@@ -1953,6 +2000,7 @@ TextMorph.addMethods({
 	this.emphasizeSelection(emph);
     },
     pvtUpdateTextString: function(replacement, delayComposition, justMoreTyping) {
+        replacement = replacement || "";    
 	if(!justMoreTyping) { 
             // Mark for undo, but not if continuation of type-in
 	    this.undoTextString = this.textString;
@@ -2043,6 +2091,7 @@ TextMorph.addMethods({
     },
     
     setTextString: function(replacement, delayComposition, justMoreTyping) {
+        if (Object.isString(replacement)) replacement = String(replacement); 
         if (this.autoAccept) this.setText(replacement);
         this.pvtUpdateTextString(replacement, delayComposition, justMoreTyping); 
     },
@@ -2194,6 +2243,86 @@ TextMorph.subclass('TestTextMorph', {
     }
 });
 
+Morph.subclass('LabeledTextMorph', {
+
+    documentation: "Morph that contains a small label and a TextMorph. Clipps when TextMorphs growes larger than maxExtent",
+    labelOffset: pt(5, 1),
+    maxExtent: pt(500, 400),
+    
+    initialize: function($super, rect, labelString, textString, maxExtent) {
+        $super(rect, 'rect');
+        if (maxExtent) this.maxExtent = maxExtent;
+        
+        /* configure the label */
+        var label = new TextMorph(this.labelOffset.asRectangle(), labelString);
+        label.beLabel();
+        label.applyStyle({borderWidth: 0, fontSize: 11, fill: Color.veryLightGray,
+                          wrapStyle: module.WrapStyle.Shrink, padding: Rectangle.inset(1)});
+        label.setBounds(label.bounds()); // set the bounds again, when padding is changed, otherwise they would be wrong
+        this.addMorphFront(label);
+        
+        /* configure the text */
+        var textPos = pt(0,label.getExtent().y/2);
+        var text = new TextMorph(textPos.extent(rect.extent()), textString);
+        text.applyStyle({wrapStyle: module.WrapStyle.Normal, borderColor: Color.veryLightGray.darker().darker(),
+                         padding: text.getPaddingStyle().withY(label.bounds().height / 2)});
+        this.addMorphBack(text);
+        text.composeAfterEdits = text.composeAfterEdits.wrap(function(proceed) {
+            proceed();
+            if (this.textHeight() < this.maxExtent().y) this.setToTextHeight(); // grow with the textMorph
+            else this.clipToShape();
+        }.bind(this));
+        
+        
+        /* configure this*/
+        this.applyStyle({borderWidth: 0, fill: Color.veryLightGray});        
+        this.label = label;
+        this.text = text;
+        [this, this.label, this.text].each(function(m) {
+             m.suppressHandles = true;
+             m.closeDnD();
+        });
+        this.setExtent(textPos.addPt(text.getExtent())); // include the padding in own size
+    },
+
+    maxExtent: function() {
+        return this.owner ? this.owner.innerBounds().extent() : this.maxExtent;
+    },
+    
+    reshape: function($super, partName, newPoint, handle, lastCall) {
+        var priorPosition = this.getPosition();
+        var priorExtent = this.getExtent();
+        $super(partName, newPoint, handle, lastCall);
+        if (lastCall && this.textHeight() < this.getExtent().y) this.setToTextHeight();
+        var moveBy = this.getPosition().subPt(priorPosition);
+        var extendBy = this.getExtent().subPt(priorExtent);
+        this.label.setPosition(this.label.getPosition().addPt(moveBy));
+        this.text.setPosition(this.text.getPosition().addPt(moveBy));
+        this.text.setExtent(this.text.getExtent().addPt(extendBy));
+    },
+    
+    textHeight: function() {
+        return this.label.getExtent().y/2 + this.text.getExtent().y;
+    },
+    
+    setToTextHeight: function() {
+        // FIXME minPt with maxExtent
+        this.shape.setBounds(this.shape.bounds().withHeight(this.textHeight()));  
+    },
+     
+    innerMorph: function() {
+        return this.text;
+    },
+    
+    adoptToBoundsChange: function(ownerPositionDelta, ownerExtentDelta) {
+        var oldE = this.innerMorph().getExtent();
+        this.innerMorph().setExtent(this.innerMorph().getExtent().addPt(ownerExtentDelta));
+        var newE = this.innerMorph().getExtent();
+        this.setExtent(this.getExtent().addPt(ownerExtentDelta.withY(0))); // only set width
+        this.setToTextHeight();
+        this.setPosition(this.getPosition().addPt(ownerPositionDelta));
+    }
+});
 
 Object.subclass('RunArray', {
 	// A run-coded array for storing text emphasis codes
@@ -2425,6 +2554,7 @@ Object.subclass('TextEmphasis', {
 	return "{" + props.join(", ") + "}";
     }
 });
+
 
 
 }.logCompletion("Text.js"));

@@ -2261,6 +2261,9 @@ Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
         case "London, United Kingdom":
             citycode = "4583"; // "UKXX0318"  or 4583 
             break;
+        case "Berlin, Germany":
+            citycode = "0050"; // 0050 -- Code for Potsdam???
+            break;
         }
 	if (citycode) {
 	    var url = new URL("http://feeds.bbc.co.uk/weather/feeds/rss/obs/world/" + citycode + ".xml");
@@ -2282,59 +2285,59 @@ Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
 	var r = new Rectangle(10,20,25,20);
         panel.addMorph(m = new ImageMorph(r, this.imagepath + "city.png"));
         m.setFill(null);
-        panel.addMorph(m = new ImageMorph(r.withY(55), this.imagepath + "weather.png"));
+        panel.addMorph(m = new ImageMorph(r.withY(68), this.imagepath + "weather.png"));
         m.setFill(null);
 	r = r.withWidth(20);
-        panel.addMorph(m = new ImageMorph(r.withY(80), this.imagepath + "temperature.png"));
+        panel.addMorph(m = new ImageMorph(r.withY(93), this.imagepath + "temperature.png"));
         m.setFill(null);
-        panel.addMorph(m = new ImageMorph(r.withY(105), this.imagepath + "wind.png"));
+        panel.addMorph(m = new ImageMorph(r.withY(118), this.imagepath + "wind.png"));
         m.setFill(null);
-        panel.addMorph(m = new ImageMorph(r.withY(130), this.imagepath + "wind_dir.png"));
+        panel.addMorph(m = new ImageMorph(r.withY(143), this.imagepath + "wind_dir.png"));
         m.setFill(null);
-        panel.addMorph(m = new ImageMorph(r.withY(155), this.imagepath + "barometer.png"));
+        panel.addMorph(m = new ImageMorph(r.withY(168), this.imagepath + "barometer.png"));
         m.setFill(null);
-        panel.addMorph(m = new ImageMorph(r.withY(180), this.imagepath + "humidity.png"));
+        panel.addMorph(m = new ImageMorph(r.withY(193), this.imagepath + "humidity.png"));
         m.setFill(null);
-        panel.addMorph(m = new ImageMorph(r.withY(205), this.imagepath + "visibility.png"));
+        panel.addMorph(m = new ImageMorph(r.withY(218), this.imagepath + "visibility.png"));
         m.setFill(null);
 	
 	r = new Rectangle(40, 3, 200, 20);
-        m = panel.addMorph(new TextListMorph(r, ["San Francisco, California", "Tampere, Finland", "London, United Kingdom"]));
+        m = panel.addMorph(new TextListMorph(r, ["San Francisco, California", "Tampere, Finland", "London, United Kingdom", "Berlin, Germany"]));
 	m.connectModel(model.newRelay({ Selection: "Locale"}));
         m.selectLineAt(0); // Select the first item by default
 
         // build the textfields for the weather panel
-        m = panel.addMorph(new TextMorph(r.withY(55), "---"));
+        m = panel.addMorph(new TextMorph(r.withY(68), "---"));
 	m.connectModel(model.newRelay({Text: "-WeatherDesc"}));
         m.takesKeyboardFocus = Functions.True;
 
 
-        m = panel.addMorph(new TextMorph(r.withY(80), "---"));
+        m = panel.addMorph(new TextMorph(r.withY(93), "---"));
 	m.connectModel(model.newRelay({Text: "-Temperature"}));
         m.takesKeyboardFocus = Functions.True;
 	
-        m = panel.addMorph(new TextMorph(r.withY(105), "---"));
+        m = panel.addMorph(new TextMorph(r.withY(118), "---"));
 	m.connectModel(model.newRelay({Text: "-Wind"}));
         m.takesKeyboardFocus = Functions.True;
 
-        m = panel.addMorph(new TextMorph(r.withY(130), "---"));
+        m = panel.addMorph(new TextMorph(r.withY(143), "---"));
 	m.connectModel(model.newRelay({Text: "-Gusts"}));
         m.takesKeyboardFocus = Functions.True;
 	
-        m = panel.addMorph(new TextMorph(r.withY(155), "---"));
+        m = panel.addMorph(new TextMorph(r.withY(168), "---"));
 	m.connectModel(model.newRelay({Text: "-DewPoint"}));
         m.takesKeyboardFocus = Functions.True;
 	
-        m = panel.addMorph(new TextMorph(r.withY(180), "---"));
+        m = panel.addMorph(new TextMorph(r.withY(193), "---"));
 	m.connectModel(model.newRelay({Text: "-Humidity"}));
         m.takesKeyboardFocus = Functions.True;
 	
-        m = panel.addMorph(new TextMorph(r.withY(205), "---"));
+        m = panel.addMorph(new TextMorph(r.withY(218), "---"));
 	m.connectModel(model.newRelay({Text: "-Visibility"}));
 	
         m.takesKeyboardFocus = Functions.True;
 	
-        var image = panel.addMorph(new ImageMorph(r.withY(230)));
+        var image = panel.addMorph(new ImageMorph(r.withY(243)));
 	image.connectModel(model.newRelay({URL: "-ImageURL"}));
 	
         image.setFill(null);

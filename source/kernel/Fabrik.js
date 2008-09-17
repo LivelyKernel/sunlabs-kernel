@@ -9,6 +9,7 @@
  * other countries.
  */ 
 
+
  /**
  * Fabrik.js.  This file contains Fabrik   
  *
@@ -26,11 +27,15 @@
  * - ComponentBox
  * - PointSnapper
  * - FlowLayout
+ * - ... to be updated ...
  */
  
  /**************************************************
   * Examples for interactive testing and exploring
   */
+  
+Loader.loadScript('Helper.js');
+
 var Fabrik = {
     
     positionComponentRelativeToOther: function(comp, otherComp, relPos) {
@@ -52,8 +57,6 @@ var Fabrik = {
     addFunctionComponent2Inputs: function(toComponent) {
         var c = new FunctionComponent();
         c.addFieldAndPinHandle("Input2");
-        c.formalModel.addObserver({onInput2Update: function(){
-        	c.execute()}.bind(c)});
         toComponent.plugin(c);
         return c;
     },
@@ -64,6 +67,13 @@ var Fabrik = {
         return c;
     },
 
+    addWebRequestComponent: function(toComponent) {
+        var c = new WebRequestComponent();
+        toComponent.plugin(c);
+        c.panel.setExtent(pt(220,50));
+        return c;
+    },
+    
     openComponentBox: function(world, loc) {
         if (!world) world = WorldMorph.current();
         var box = new ComponentBox();
@@ -76,7 +86,8 @@ var Fabrik = {
         if (!extent) extent = pt(400, 300);
         if (!loc) loc = pt(100, 100);
         if (!title) title = 'Fabrik Component';
-        var c = new FabrikComponent(extent);
+        var c = new FabrikComponent();
+        c.defaultExtent = extent;
         FabrikComponent.current = c;
         c.viewTitle = title;
         c.openIn(world, loc);
@@ -107,27 +118,32 @@ var Fabrik = {
         list = this.addTextListComponent(f);
         out = this.addTextComponent(f);
         f.connectComponents(input, "Result", list, "List");
-        f.connectComponents(list, "Selection", out, "Text");	
+        f.connectComponents(list, "Selection", out, "Text");    
         f.morph.automaticLayout();
         return f;
     },
     
     openConnectorMorphExample: function() {
         var c = new ConnectorMorph();
-        var m1 = new Morph(new Rectangle(100,100,10,10),"rect");
-        var m2 = new Morph(new Rectangle(200,200, 10,10),"rect");
+        
+        var m1 = new Morph(new Rectangle(100,100,30,30),"rect");
+        var m2 = new Morph(new Rectangle(200,200, 30,30),"rect");
+        m1.getPinPosition = function(){return this.getPosition()};
+        m2.getPinPosition = m1.getPinPosition;  
+
+        m1.changed = function(){c.updateView()};
+        m2.changed = function(){c.updateView()};
+        
         world = WorldMorph.current();
         world.addMorph(c);
         world.addMorph(m1);
         world.addMorph(m2);
 
-        c.model = NewComponentModel.instantiateNewClass();
-        c.model.addField("StartHandle");
-        c.model.addField("EndHandle");
-        c.model.setStartHandle(m1);
-        c.model.setEndHandle(m2);
-        c.updateOnChangeInMorph(m1);
-        c.updateOnChangeInMorph(m2);
+        c.formalModel = NewComponentModel.instantiateNewClass();
+        c.formalModel.addField("StartHandle");
+        c.formalModel.addField("EndHandle");
+        c.formalModel.setStartHandle(m1);
+        c.formalModel.setEndHandle(m2);
         c.updateView();
         return c;
     },
@@ -160,21 +176,21 @@ var Fabrik = {
                 "Component",  "TextComponent", "FunctionComponent", "ComponentBox", "PointSnapper", "FlowLayout"]
         };
         Global.allClassNames = function() {
-        	var classNames = [];
-        	Class.withAllClassNames(Global, function(n) { n.startsWith('SVG') || classNames.push(n)});
-        	return classNames;
+            var classNames = [];
+            Class.withAllClassNames(Global, function(n) { n.startsWith('SVG') || classNames.push(n)});
+            return classNames;
         };
         Global.allMethodsFor = function(className) {
             if (className == null) return [];
             return Global[className].localFunctionNames().sort();
         };
         Global.getMethodStringFor = function(className, methodName) { 
-        	try {
-        		var func = Global[className].prototype[methodName];
-        		if (func == null) return "no code";
-        		var code = func.getOriginal().toString();
-        		return code;
-        	} catch(e) { return "no code" }
+            try {
+                var func = Global[className].prototype[methodName];
+                if (func == null) return "no code";
+                var code = func.getOriginal().toString();
+                return code;
+            } catch(e) { return "no code" }
         };
     },
     
@@ -185,31 +201,30 @@ var Fabrik = {
         var f = this.openFabrikComponent(world, loc, pt(750, 500), 'Fabrik Browser');
 
         var getClasses = this.addFunctionComponent(f);
-    	getClasses.setFunctionBody('return allFabrikClassNames()');
+        getClasses.setFunctionBody('return allFabrikClassNames()');
         var getMethods = this.addFunctionComponent(f);
-    	getMethods.setFunctionBody('return allMethodsFor(this.getInput())'); 
+        getMethods.setFunctionBody('return allMethodsFor(this.getInput())'); 
 
         var getSource = new FunctionComponent();
-      	getSource.addFieldAndPinHandle("Input2");
-    	getSource.formalModel.addObserver({onInput2Update: function() {
-        	getSource.execute()}.bind(getSource)});
-        f.plugin(getSource);	
-    	getSource.setFunctionBody('return getMethodStringFor(this.getInput(), this.getInput2())'); 
+        getSource.addFieldAndPinHandle("Input2");
+        getSource.formalModel.addObserver({onInput2Update: function() { getSource.execute()}.bind(getSource)});
+        f.plugin(getSource);    
+        getSource.setFunctionBody('return getMethodStringFor(this.getInput(), this.getInput2())'); 
 
-    	var classList = this.addTextListComponent(f);
+        var classList = this.addTextListComponent(f);
         var methodList = this.addTextListComponent(f);
 
 
         var methodSource = this.addTextComponent(f);
 
         f.connectComponents(getClasses, "Result", classList, "List");
-     	f.connectComponents(classList, "Selection", getMethods, "Input");	
-    	f.connectComponents(getMethods, "Result", methodList, "List");	
+        f.connectComponents(classList, "Selection", getMethods, "Input");   
+        f.connectComponents(getMethods, "Result", methodList, "List");  
 
-    	f.connectComponents(classList, 	"Selection", getSource, "Input");	
-    	f.connectComponents(methodList, "Selection", getSource, "Input2");	
+        f.connectComponents(classList,  "Selection", getSource, "Input");   
+        f.connectComponents(methodList, "Selection", getSource, "Input2");  
 
-    	f.connectComponents(getSource, "Result", methodSource, "Text");	
+        f.connectComponents(getSource, "Result", methodSource, "Text"); 
 
         f.morph.automaticLayout();
 
@@ -222,12 +237,29 @@ var Fabrik = {
         methodSource.panel.setExtent(pt(methodList.panel.getPosition().x - classList.panel.getPosition().x + classList.panel.getExtent().x, 200));
         this.positionComponentRelativeToOther(getSource, methodSource, pt(-1 * (getSource.panel.getExtent().x + 20), 0));
 
-    	getClasses.execute();
+        getClasses.execute();
         return f;
     },
 
+    openFabrikWebRequestExample: function(world, loc) {
+            if (!loc) loc = pt(100, 100);
+            var f = this.openFabrikComponent(world, loc, pt(650, 250), 'WebRequest Example');
+
+            var urlHolder = this.addTextComponent(f);
+            urlHolder.setText("http://www.webservicex.net/CurrencyConvertor.asmx/ConversionRate?FromCurrency=USD&ToCurrency=EUR");
+            
+            var req = this.addWebRequestComponent(f);
+            
+            var result = this.addTextComponent(f);
+            
+            f.morph.automaticLayout();
+            
+            return f;
+    },
+    
     openCurrencyConverterExample: function(world, loc) {
         // the next variables are intentionally defined global
+        if (!loc) loc = pt(10,10);
         var f = this.openFabrikComponent(world, loc, 'Currency Converter');
 
         var urlComp = this.addTextComponent(f);
@@ -238,19 +270,19 @@ var Fabrik = {
         f.connectComponents(urlComp, "Text", reqComp, "Input");
         var currencyComp = this.addTextComponent(f);
         //f.connectComponents(reqComp, "Result", currencyComp, "Text");
-
-
+        
+        
         var currency1Comp = this.addTextComponent(f);
         var currency2Comp = this.addTextComponent(f);
-
+        
         var fromToConvComp = this.addFunctionComponent2Inputs(f);
         fromToConvComp.setFunctionBody("return Number(this.getInput()) * Number(this.getInput2())");
         f.connectComponents(fromToConvComp, "Result", currency2Comp, "Text");
-
+        
         var toFromConvComp = this.addFunctionComponent2Inputs(f);
         toFromConvComp.setFunctionBody("return 1/Number(this.getInput()) * Number(this.getInput2())");
         f.connectComponents(toFromConvComp, "Result", currency1Comp, "Text");
-
+        
         currencyComp.setText("0");
         currency1Comp.setText("");
         currency2Comp.setText("");
@@ -297,6 +329,7 @@ var Fabrik = {
         // some manual layouting
         f3.panel.setPosition(f1.panel.getPosition().addPt(pt(0,f1.panel.getExtent().y + 20)));
         f4.panel.setPosition(f2.panel.getPosition().addPt(pt(0,f2.panel.getExtent().y + 20)));
+        //f4.panel.setPosition(f2.panel.getPosition().addPt(pt(0,f2.panel.getExtent().y - 10)));
         celsius.panel.setPosition(celsius.panel.getPosition().addPt(pt(0,(celsius.panel.getExtent().y + 20) / 2)));
         fahrenheit.panel.setPosition(fahrenheit.panel.getPosition().addPt(pt(0,(fahrenheit.panel.getExtent().y + 20) / 2)));
 
@@ -330,141 +363,8 @@ var Fabrik = {
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *    
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-Morph.subclass('FabrikMorph', {
-    initialize: function($super, bounds) {
-        return $super(bounds, "rect");
-    },
-    
-    automaticLayout: function() {
-        (new FlowLayout()).layoutElementsInMorph(this.fabrik.components, this);
-    },
-    
-    setupForFabrik: function(fabrik){
-         this.fabrik = fabrik;
-         this.fabrik.components.each(function(ea) {this.addMorphForComponent(ea) }, this);
-         this.fabrik.connectors.each(function(ea) {this.addMorph(ea.buildView())}, this);        
-    },
-    
-    addMorph: function($super, morph) {
-        // don't let loose ends lie around
-        if (morph.pinHandle && morph.pinHandle.isFakeHandle) {
-            throw new Error("Pin dropped on fabrik, this should not happen any more")
-        };
-        // dropping components into the fabrik component...!
-        if (morph.component) this.fabrik.plugin(morph.component);
-        return $super(morph);
-    }, 
-    
-    allPins: function(){
-          return this.fabrik.components.inject([], function(allPins, ea) {
-                  return allPins.concat(ea.pinHandles);
-          });
-    },
-    
-    allPinSnappPoints: function() {
-        return this.allPins().collect(function(ea){
-            return ea.morph.owner.worldPoint(ea.morph.bounds().center())});
-    },
-    
-    addMorphForComponent: function(component) {
-        if (component.morph) return; // Morph is already there... 
-        this.addMorph(component.buildView());
-    },
-});
- 
-/*
- * The main Fabrik Component
- *  - contains other components and connections between them
- */
-Widget.subclass('FabrikComponent', {
-
-    defaultViewExtent: pt(750,500),
-    defaultViewTitle: "FabrikComponent",
-
-    initialize: function($super, viewExtent) {
-        $super(null);
-        this.components = [];
-        this.connectors = [];
-        this.viewExtent = viewExtent;
-        return this;
-    },
-  
-    buildView: function() {
-        //console.log("buildView for " + this);
-        this.panel = PanelMorph.makePanedPanel(this.viewExtent || this.defaultViewExtent,[            
-            ['playfield', function(initialBounds){ return new FabrikMorph(initialBounds) },
-                new Rectangle(0, 0, 1, 1)]
-        ]);
-        this.panel.fabrik = this;
-        this.morph = this.panel.playfield;
-        this.morph.setupForFabrik(this);
-        return this.panel;
-    },
-
-    // can be called when this.morph does not exist, simply adds components and wires them
-    plugin: function(component) {
-        if (this.components.include(component)) {
-            console.log('FabrikComponent.plugin(): ' + component + 'was already plugged in.');
-            return;
-        }
-        this.components.push(component);
-        component.fabrik = this; // remember me
-        if (this.morph) this.morph.addMorphForComponent(component);
-        return component;
-    },
-
-    pluginConnector: function(connector) {
-        if (this.connectors.include(connector)) {
-            console.log("Plugin connector failed: " + connector + " is already plugged in!");
-            return;
-        };        
-        this.connectors.push(connector);
-        // argh! is this really necessary??
-        connector.fabrik = this;
-        
-        if (this.morph) {
-            this.morph.addMorph(connector.buildView());
-            connector.updateView();
-        };
-        return connector;
-    },
-
-    connectPins: function(fromPinHandle, toPinHandle) {
-        console.log("Fabrik>>connectPins(" + fromPinHandle + ", " + toPinHandle + ")");
-        if (!fromPinHandle || !toPinHandle) {
-            console.log("FabrikComponent.connectPins(): could not connect " + fromPinHandle + " and " + toPinHandle);
-        };
-
-        var con = fromPinHandle.connectTo(toPinHandle);
-        //FIXME: alles ausmisten
-        if (!con) throw new Error('CouldNotCreateNewConnection');
-        
-        this.pluginConnector(con);
-        return con;
-    },
-
-    connectComponents: function(fromComponent, fromPinName, toComponent, toPinName){
-        return this.connectPins(fromComponent.getPinHandle(fromPinName), toComponent.getPinHandle(toPinName));
-    },
-
-    removeConnector: function(connector) {
-        if (!this.connectors.include(connector)) {
-            console.log('FabrikComponent>>removeConnector: tried to remove connector, which is not there');
-        };
-        console.log('Removing connectir')
-        this.connectors = this.connectors.reject(function(ea) { return ea === connector });
-        this.morph.removeMorph(connector.morph);
-    },
-
-    // setup after the window is opened
-    openIn: function($super, world, location) {
-        var result = $super(world, location);
-        this.morph.openForDragAndDrop = true;
-        return result;
-    }
-});
-
-/* Fabrik Model */
+/* Fabrik Model. It is used to store the data of the components. Data flow is simulated
+   by establishing observer relationships bewtween the models of the components */
 PlainRecord.prototype.create({}).subclass("NewComponentModel", {
     
     initialize: function($super, spec, rawNode) {
@@ -472,9 +372,13 @@ PlainRecord.prototype.create({}).subclass("NewComponentModel", {
         $super(rawNode, spec);
     },
     
-    addField: function(fieldName, coercionSpec) {
+    addField: function(fieldName, coercionSpec, forceSet) {
         var spec = {}; spec[fieldName] = coercionSpec || {};
         this.constructor.addMethods(new Record.extendRecordClass(spec));
+        if (!forceSet) return;
+        this['set' + fieldName] = this['set' + fieldName].wrap(function(proceed, value, optSource, force) {
+            proceed(value, optSource, true);
+        })
     },
     
     /*
@@ -501,7 +405,6 @@ NewComponentModel.instantiateNewClass = function() {
     return new (NewComponentModel.subclass())();
 };
 
-
 /*
  * PinMorph, the graphical representation of a pin handle
  */
@@ -510,7 +413,8 @@ Morph.subclass('PinMorph', {
     isPinMorph: true,
     
     initialize: function ($super){
-        $super(new Rectangle( 0, 0, 15, 15), 'rect');
+        $super(new Rectangle( 0, 0, 10, 10), 'ellipse');
+        
         this.suppressHandles = true; // no handles
         this.okToBeGrabbedBy = Functions.Null; // no dragging
        
@@ -519,8 +423,8 @@ Morph.subclass('PinMorph', {
         this.onMouseDown = this.onMouseDown.bind(this);
     
         this.setupMorphStyle();
-        
-        return this;
+        this.setExtent(pt(18,18)); // fixes ellipse pt(0,0) === center behavior
+         return this;
     },
     
      /* Drag and Drop of Pin */        
@@ -542,6 +446,19 @@ Morph.subclass('PinMorph', {
         this.setFillOpacity(0.5);
     },
     
+    setupInputMorphStyle: function() {
+        this.setFill(Color.blue);
+        if (this.pinHandle.component) {
+            var inputPins = this.pinHandle.component.inputPins();
+            var index = inputPins.indexOf(this.pinHandle);
+            if (index > 0) {
+                var prevPinPosition = (inputPins[index - 1]).morph.getPosition();
+                console.log("prev pos " + prevPinPosition);
+                this.setPosition(prevPinPosition.addPt(pt(0,25)));
+            }       
+        }
+    },
+    
     changed: function($super, aspect, value) {
         $super();
         if (aspect == "globalPosition" && this.snapper) 
@@ -559,13 +476,15 @@ Morph.subclass('PinMorph', {
     
     dropMeOnMorph: function(receiver) {
         // logCall(arguments, this);
-        if(receiver && receiver.isPinMorph)
+        if (receiver && receiver.isPinMorph)
             receiver.addMorph(this);
         else {
             otherPinMorph = this.window().morphToGrabOrReceive(
-                newFakeMouseEvent(this.worldPoint(pt(5,5))));
-                if(otherPinMorph.isPinMorph) {
-                    return otherPinMorph.addMorph(this); // let him do the job
+                newFakeMouseEvent(this.worldPoint(this.getExtent().scaleBy(0.5))));
+            if (otherPinMorph.isPinMorph) {
+                return otherPinMorph.addMorph(this); // let him do the job
+            } else {
+                console.log("Pin DnD Problem: found  " + String(otherPinMorph));
             }; 
             console.log("found other pin " + otherPinMorph)
             this.pinHandle.connectors.first().remove();
@@ -581,16 +500,15 @@ Morph.subclass('PinMorph', {
 
     updatePosition: function(evt) {
         // console.log("update position" + this.getPosition());
-        this.pinHandle.connectors.each(function(ea){
-            ea.updateView();
-        });
+        if (!this.pinHandle) return;
+        this.pinHandle.connectors.each(function(ea){ ea.updateView() });
     },    
 
     snapToPointInside: function(point) {
         var oldPos = point
         point = point.maxPt(pt(0,0));
-        point = point.minPt(this.owner.getExtent());
-        this.setPosition(point.subPt(this.getExtent().scaleBy(0.5)));
+        point = point.minPt(this.owner.shape.bounds().extent());
+        this.setPosition(point.subPt(this.shape.bounds().extent().scaleBy(0.5)));
     },
     
     onMouseMove: function(evt) {
@@ -601,11 +519,13 @@ Morph.subclass('PinMorph', {
 
     // When PinHandleMorph is there, connect to its onMouseDown
     onMouseDown: function($super, evt) {
+        logCall(arguments, this);
+        
+        
         if (evt.isMetaDown()) return;
         // for not grabbing non-fake pins.
         // Extend, so that pins can be moved around componentmorphs
         if (evt.hand.topSubmorph() === this) {
-
                 // this.setPosition(this.getNearestValidPositionTo(evt))}
             evt.hand.showAsUngrabbed(this);
         };
@@ -639,7 +559,7 @@ Morph.subclass('PinMorph', {
         return this.pinHandle.connectors.first().morph;
     },
 
-	okToBeGrabbedBy: Functions.Null,
+    okToBeGrabbedBy: Functions.Null,
     
     startSnapping: function() {
         this.snapper = new PointSnapper(this);
@@ -656,16 +576,29 @@ Morph.subclass('PinMorph', {
                 self.getFakeConnectorMorph().setBorderColor(Color.red);
             }
         }})
+    },
+    
+    adoptToBoundsChange: function(ownerPositionDelta, ownerExtentDelta, scaleDelta) {
+        var center = this.getExtent().scaleBy(0.5);
+        // console.log("center: " + center);
+        var centerPos = this.getPosition().addPt(center);
+        // console.log("centerPos: " + centerPos);
+        var scaledPos = centerPos.scaleByPt(scaleDelta);
+        // console.log("scaledPos: " + scaledPos);
+        var newPos = scaledPos.subPt(center);
+        // console.log("newPos: " + newPos);
+        this.setPosition(newPos);
     }
+    
 });
     
 /*
  * A graphical representation for pins
- * TODO: make use of PinHandleMorph
  */
 Widget.subclass('PinHandle', {
     
     isPinHandle: true,
+    isInputPin: false,
     
     initialize: function($super, component, pinName) {
         $super();
@@ -674,10 +607,17 @@ Widget.subclass('PinHandle', {
         this.connectors = [];
     },
 
+    becomeInputPin: function() {
+        this.isInputPin= true;
+        if (this.morph) this.morph.setupInputMorphStyle();
+    },
+
     buildView: function() {
         this.morph = new PinMorph();
         // perhaps move to morph
         this.morph.pinHandle = this;
+        if (this.isInputPin)
+            this.morph.setupInputMorphStyle();
         return this.morph;
     },
  
@@ -751,6 +691,209 @@ Widget.subclass('PinHandle', {
     
 });
 
+Morph.subclass('ArrowHeadMorph', {
+     
+    initialize: function($super, lineWidth, lineColor, fill, length, width) {
+        $super();
+        this.setFillOpacity(0);
+        this.setStrokeOpacity(0);
+        this.head = new Morph(pt(0,0).asRectangle(), "rect");
+
+        lineWidth = lineWidth || 1;
+        lineColor = lineColor || Color.black;
+        fill = fill || Color.black;
+        length = length || 16;
+        width = width || 12;
+
+        var verts = [pt(0,0), pt(-length, 0.5* width), pt(-length, -0.5 * width)];
+        this.head.setShape(new PolygonShape(verts, fill, 1, lineColor, fill));
+        this.addMorph(this.head);
+        this.ignoreEvents();
+        this.head.ignoreEvents();
+        
+        //this.head.setFillOpacity(0.7);
+        //this.head.setStrokeOpacity(0.7);
+        
+        return this;
+    },
+    
+    pointFromTo: function(from, to) {
+        var dir = (to.subPt(from)).theta()
+        this.setRotation(dir)
+        this.setPosition(to);
+    }
+
+});
+
+
+Morph.subclass('ConnectorMorph', {
+    
+    isConnectorMorph: true,
+    
+    initialize: function($super, verts, lineWidth, lineColor, pinConnector) {
+        if (!verts) verts = [pt(0,0), pt(100,100)];
+        if (!lineWidth) lineWidth = 1;  
+        if (!lineColor) lineColor = Color.red;   
+        this.formalModel = NewComponentModel.instantiateNewClass();
+        this.formalModel.addField("StartHandle");
+        this.formalModel.addField("EndHandle");
+        
+        this.pinConnector = pinConnector;
+        
+        $super(verts[0].asRectangle(), "rect")
+        var vertices = verts.invoke('subPt', verts[0]);
+        this.setShape(new PolylineShape(vertices, lineWidth, lineColor));
+        this.customizeShapeBehavior();
+        
+        this.setStrokeOpacity(0.7);
+        this.lineColor = lineColor;
+        
+        this.closeAllToDnD();    
+        
+        // try to disable drag and drop for me, but it does not work
+        this.okToBeGrabbedBy = function(){return null};
+        this.morphToGrabOrReceive = Functions.Null;
+        this.handlesMouseDown = Functions.True;
+
+        this.arrowHead = new ArrowHeadMorph(1, lineColor, lineColor);
+        this.addMorph(this.arrowHead);
+
+        var self = this;
+        this.shape.setVertices = this.shape.setVertices.wrap(function(proceed) {
+            var args = $A(arguments); args.shift(); 
+            proceed.apply(this, args);
+            self.updateArrow();
+        });
+    
+    },
+    
+    // I don't know who sends this, but by intercepting here I can stop him....
+    // logStack shows no meaningfull results here
+    translateBy: function($super, delta) {
+        //logStack();
+        //$super(delta)
+    },
+    
+    customizeShapeBehavior: function() {
+        var self = this;
+        
+        this.shape.controlPointProximity = 20;
+        
+        // disable first and last control point of polygone 
+        this.shape.controlPointNear = this.shape.controlPointNear.wrap(function(proceed, p) { 
+            var part = proceed(p);
+            if (part == 0 || part == (this.vertices().length - 1)) return null
+            return part 
+        });
+         
+        // change behavior of the control point handles 
+        this.shape.possibleHandleForControlPoint =  this.shape.possibleHandleForControlPoint.wrap(
+            function(proceed, targetMorph, mousePoint, hand) {
+                var handleMorph = proceed(targetMorph, mousePoint, hand);
+                if (!handleMorph) return;
+                handleMorph.showHelp =  handleMorph.showHelp.wrap(function(proceed, evt) {
+                    proceed(evt);
+                    self.showContextMenu(evt);
+                });
+                handleMorph.onMouseDown = handleMorph.onMouseDown.wrap(function(proceed, evt) {
+                    proceed(evt); 
+                    if (evt.isCommandKey())
+                    self.pinConnector.remove() // remove connector
+                });
+                handleMorph.onMouseMove = handleMorph.onMouseMove.wrap(function(proceed, evt) {
+                    proceed(evt); 
+                });                
+                return handleMorph;
+        });               
+    },
+    
+    showContextMenu: function(evt) {
+        if (this.contextMenu) return; // open only one context menu
+    
+        this.contextMenu = new MenuMorph([["cut", this.pinConnector, "remove"]], self);
+        var offset = pt(-40,-40);
+        var pos = this.window().localize(evt.mousePoint).addPt(offset)
+        this.contextMenu.openIn(this.window(), pos, false, "");
+        
+        var connector = this;
+        var handObserver = new HandPositionObserver(function(value) {
+            if (!connector.contextMenu.owner || 
+                value.dist(connector.contextMenu.worldPoint(pt(20,20))) > 40) {
+                connector.contextMenu.remove();
+                connector.contextMenu = null;
+                this.stop();
+            }
+        });
+        handObserver.start();
+    },
+    
+    containsWorldPoint: Functions.Null,
+    
+    fullContainsWorldPoint: function($super, p) {
+        // to ensure correct dnd behavior when connector is beneath a pinMorph in hand
+        if (this.formalModel.getStartHandle().fullContainsWorldPoint(p) || 
+            this.formalModel.getEndHandle().fullContainsWorldPoint(p))
+            return false;
+        return $super(p);
+    },
+
+    setStartPoint: function(point) {
+        if (!point) 
+        throw {msg: "failed setStartPoint " + point};
+        var v = this.shape.vertices();
+        v[0] = point;
+        this.setVertices(v); 
+    },
+    
+    setEndPoint: function(point) {
+        if (!point) 
+        throw {msg: "failed setEndPoint " + point}; 
+        var v = this.shape.vertices();
+        v[v.length-1] = point;
+        this.setVertices(v); 
+    },
+    
+    getStartPoint: function() {
+        return this.shape.vertices().first();
+    },
+    
+    getEndPoint: function() {
+        return this.shape.vertices().last();
+    },
+    
+    remove: function($super) {
+        $super();
+        if (!this.fabrik) console.log('no fabrik!!!');
+        if (this.fabrik) this.fabrik.removeConnector(this);
+    },
+
+    updateArrow: function() {
+        var v = this.shape.vertices();
+        var toPos = v[v.length-1];
+        var fromPos = v[v.length-2];
+        this.arrowHead.pointFromTo(fromPos, toPos);
+        if (this.pinConnector && this.pinConnector.isBidirectional) {
+            if (!this.arrowHeadBack) {
+                this.arrowHeadBack = new ArrowHeadMorph(1, this.lineColor, this.lineColor);
+                this.addMorph(this.arrowHeadBack);
+                this.closeAllToDnD();
+            };
+            toPos = v[0];
+            fromPos = v[1];        
+            this.arrowHeadBack.pointFromTo(fromPos, toPos);
+        };
+    },
+    
+    updateView: function (varname, source) {
+        // console.log("update View for connector");
+        if (!this.formalModel) return;
+        var start = this.formalModel.getStartHandle();
+        if (start) this.setStartPoint(start.getPinPosition());
+        var end = this.formalModel.getEndHandle();
+        if (end) this.setEndPoint(end.getPinPosition());
+    },
+});
+
 Object.subclass('PinConnector', {
     
     initialize: function(fromPinHandle, toPinHandle) {
@@ -815,246 +958,406 @@ Object.subclass('PinConnector', {
         var spec = {};
         spec[this.toPin.name] = "=set" + this.fromPin.name;
         toModel.addObserver(fromModel, spec);
-    },
-});
-
-
-Morph.subclass('ConnectorMorph', {
-    
-    initialize: function($super, verts, lineWidth, lineColor, pinConnector) {
-        if(!verts) verts = [pt(0,0), pt(100,100)];
-        if(!lineWidth) lineWidth = 1;  
-        if(!lineColor) lineColor = Color.black;   
-        this.formalModel = NewComponentModel.instantiateNewClass();
-        this.formalModel.addField("StartHandle");
-        this.formalModel.addField("EndHandle");
-        
-        this.pinConnector = pinConnector;
-        
-        $super(verts[0].asRectangle(), "rect")
-        var vertices = verts.invoke('subPt', verts[0]);
-        this.setShape(new PolylineShape(vertices, lineWidth, lineColor));
-        this.customizeShapeBehavior();
-        
-        this.okToBeGrabbedBy = function(){return null};
-        this.setStrokeOpacity(0.7);
-        
-        return this;         
-    },
-    
-    customizeShapeBehavior: function() {
-        var self = this;
-        
-        // disable first and last control point of polygone 
-        this.shape.controlPointNear = this.shape.controlPointNear.wrap(function(proceed, p) { 
-            var part = proceed(p);
-            if(part == 0 || part == (this.vertices().length - 1)) return null
-            return part 
-        });
-         
-        // change behavior of the control point handles 
-        this.shape.possibleHandleForControlPoint =  this.shape.possibleHandleForControlPoint.wrap(
-            function(proceed, targetMorph, mousePoint, hand) {
-                var handleMorph = proceed(targetMorph, mousePoint, hand);
-                if (!handleMorph) return;
-                handleMorph.showHelp =  handleMorph.showHelp.wrap(function(proceed, evt) {
-                        proceed(evt);
-                        self.showContextMenu(evt);
-                });
-                handleMorph.onMouseDown = handleMorph.onMouseDown.wrap(
-                    function(proceed, evt) {
-                        proceed(evt); 
-                        if (evt.isCommandKey())
-                            self.pinConnector.remove() // remove connector
-                        });
-                return handleMorph;
-        });               
-    },
-    
-
-    showContextMenu: function(evt) {
-        if(this.contextMenu) return; // open only one context menu
-    
-        this.contextMenu = new MenuMorph([["cut", this.pinConnector, "remove"]], self);
-        var offset = pt(-40,-40);
-        var pos = this.window().localize(evt.mousePoint).addPt(offset)
-        this.contextMenu.openIn(this.window(), pos, false, "");
-        
-        var connector = this;
-        var handObserver = new HandPositionObserver(function(value) {
-            if (!connector.contextMenu.owner || 
-                value.dist(connector.contextMenu.worldPoint(pt(20,20))) > 40) {
-                connector.contextMenu.remove();
-                connector.contextMenu = null;
-                this.stop();
-            }
-        });
-        handObserver.start();
-    },
-    
-    fullContainsWorldPoint: function($super, p) {
-        // to ensure correct dnd behavior when connector is beneath a pinMorph in hand
-        if (this.formalModel.getStartHandle().fullContainsWorldPoint(p) || 
-            this.formalModel.getEndHandle().fullContainsWorldPoint(p))
-            return false;
-        return $super(p);
-    },
-
-    setStartPoint: function(point) {
-        if (!point) 
-        throw {msg: "failed setStartPoint " + point};
-        var v = this.shape.vertices();
-        v[0] = point;
-        this.setVertices(v); 
-    },
-    
-    setEndPoint: function(point) {
-        if (!point) 
-        throw {msg: "failed setEndPoint " + point}; 
-        var v = this.shape.vertices();
-        v[v.length-1] = point;
-        this.setVertices(v); 
-    },
-    
-    getStartPoint: function() {
-        return this.shape.vertices().first();
-    },
-    
-    getEndPoint: function() {
-        return this.shape.vertices().last();
-    },
-    
-    remove: function($super) {
-        $super();
-        if (!this.fabrik) console.log('no fabrik!!!');
-        if (this.fabrik) this.fabrik.removeConnector(this);
-    },
-    
-    updateView: function (varname, source) {
-        // console.log("update View for connector");
-        if(!this.formalModel) return;
-        var start = this.formalModel.getStartHandle();
-        if(start) this.setStartPoint(start.getPinPosition());
-        var end = this.formalModel.getEndHandle();
-        if(end) this.setEndPoint(end.getPinPosition());
+        this.updateView();
     },
 });
 
 Morph.subclass('ComponentMorph', {
     
+    inset: 7,
+    defaultExtent: pt(180,100),
+
     initialize: function($super, bounds) {
+        bounds = bounds || this.defaultExtent.extentAsRectangle();
         $super(bounds, "rect");
-        this.openForDragAndDrop = true;
-        this.suppressHandles = true;
+        this.closeDnD();
+        
+        this.linkToStyles(['fabrik']);
+        this.shapeRoundEdgesBy(8);
+        this.setFillOpacity(0.7);
+        this.setStrokeOpacity(0.7);
+        
+        this.priorExtent = pt(0,0);
+        this.priorPosition = pt(0,0);
+                
         return this;
     },
     
+    setComponent: function(component) {
+        this.component = component;
+        this.setupWithComponent();
+    },
     
-    addMorph: function($super, morph) {
-        $super(morph);
-        if (morph.constructor == HandleMorph) return;
-        if (morph.constructor == PinMorph) return;
-        //this.submorphs.each(function(ea) { if (ea !== morph) ea.remove() });
-        
-        var inset = 5;
-        this.setExtent(morph.getExtent().addPt(pt(inset * 2, inset * 2)));
-        morph.setPosition(pt(inset, inset));
-        
-        if (morph.formalModel) {
-            this.component.adoptToModel(morph.formalModel);
+    setupWithComponent: function() {
+        this.component.setupHandles();
+        this.setupHalos();
+        this.updateHaloItemPositions();        
+    },
+    
+    changed: function($super) {
+        $super();
+        if (!this.component) return;
+        // update the position of the pins
+        var newPos = this.getGlobalTransform().transformPoint(pt(0,0));
+        if (!this.pvtOldPosition || !this.pvtOldPosition.eqPt(newPos)) {
+            this.pvtOldPosition = newPos;
+            this.component.pinHandles.each(function(ea) { if (ea.morph) ea.morph.updatePosition() });
         };
-        return morph;
+    },
+    
+    morphMenu: function($super, evt) { 
+        var menu = $super(evt);
+        var self = this;
+        menu.addItem(["add pin named...", function() { 
+            WorldMorph.current().prompt('Name for Pin?', function(name) {
+                 self.component.addFieldAndPinHandle(name) }, 'Test')}]
+             );
+        return menu;
     },
     
     okToBeGrabbedBy: function(evt) {
         return this; 
-    }
+    },
     
+    innerBounds: function($super) {
+        return $super().insetByRect(pt(this.inset, this.inset).asRectangle());
+    },
+    
+    // addMorph and layout logic
+    addMorph: function($super, morph, accessorname) {
+        // FIXME: cleanup
+        if (morph.formalModel) {
+            this.submorphs.each(function(ea) { ea.remove() });
+            $super(morph);
+            this.setExtent(morph.getExtent().addPt(pt(this.inset * 2, this.inset * 2)));
+            morph.setPosition(pt(this.inset, this.inset));
+            this.component.adoptToModel(morph.formalModel);
+            return morph;
+        };
+
+        if (morph.isPinMorph)
+            this.addMorphFront(morph)
+        else
+            this.addMorphBack(morph);
+
+        morph.closeDnD();
+        morph.withAllSubmorphsDo(function() {this.closeDnD()});
+        
+        // FIXME cleanup
+        if (this[accessorname]) throw new Error("Added two times same type of morph. See add methods");
+        if (accessorname) this[accessorname] = morph;
+
+        // Wrap mouse over to make Halos show everytime
+        var self = this;
+        var wrapMouseOver = function() {
+            this.onMouseOver = this.onMouseOver.wrap(function(proceed, evt) {
+                proceed(evt);
+                self.showHalos();
+            });
+        };
+        wrapMouseOver.apply(morph);
+        morph.withAllSubmorphsDo(wrapMouseOver);
+
+        return morph;
+    },
+    
+    getBoundsAndShrinkIfNecessary: function(minHeight) {
+        // assume that we have all the space
+        var topLeft = pt(this.inset, this.inset);
+        var bottomRight = this.getExtent().subPt(pt(this.inset, this.inset));
+        // see if other morphs are there and if yes shrink them so that minHeight fits into this
+        var otherRelevantMorphs = this.submorphs.reject(function(ea) { return ea.constructor === PinMorph});
+        if (otherRelevantMorphs.length > 0) {
+            this.adoptSubmorphsToNewExtent(this.getPosition(), this.getExtent(),
+                this.getPosition(), this.getExtent().subPt(pt(0, minHeight)));
+            // new topLeft so that we can put morph below the last one. let inset/2 space between morphs
+            topLeft = topLeft.addPt(pt(0, bottomRight.y - minHeight - this.inset / 2));
+        };
+        return rect(topLeft, bottomRight);
+    },
+    
+    addVisualChangeClue: function(textMorph) {
+        var changeClue = new Morph(new Rectangle(0,0,5,5));
+        changeClue.setFill(Color.red);
+        changeClue.ignoreEvents(); 
+        textMorph.replaceSelectionWith =  textMorph.replaceSelectionWith.wrap(function(proceed, replacement, delayComposition, justMoreTyping){      
+            proceed(replacement, delayComposition, justMoreTyping);
+            this.addMorph(changeClue)
+        })
+        textMorph.doSave = textMorph.doSave.wrap(function(proceed, str) {
+            proceed();
+            this.removeMorph(changeClue)
+        });
+    },
+    
+    // CLEANUp!!!!!!!!!!!!!!!
+    addTextPane: function() {
+        var minHeight = 70;
+        var morph = newTextPane(this.getBoundsAndShrinkIfNecessary(minHeight), "------");
+        morph.adoptToBoundsChange = function(ownerPositionDelta, ownerExtentDelta) {
+            morph.setExtent(morph.getExtent().addPt(ownerExtentDelta));
+        };
+        morph.innerMorph().saveContents = morph.innerMorph().saveContents.wrap(function(proceed, contentString) {    
+            this.setText(contentString, true /*force new value*/);
+        });
+        var spec = {fontSize: 12, borderWidth: 0, opacity: 0.9, borderRadius: 3};
+        morph.submorphs[0].applyStyle(spec); 
+        morph.submorphs[1].applyStyle(spec);
+        spec.fill = null;
+        morph.innerMorph().applyStyle(spec); 
+        spec.borderWidth = 1;
+        morph.applyStyle(spec); 
+
+        morph.openForDragAndDrop = false;
+        morph.innerMorph().openForDragAndDrop = false;
+        morph.okToBeGrabbedBy = this.okToBeGrabbedBy;
+        morph.innerMorph().okToBeGrabbedBy = this.okToBeGrabbedBy;
+        
+        morph.relayMouseEvents(morph.innerMorph(), {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
+    
+        this.addVisualChangeClue(morph.innerMorph());
+        
+        return this.addMorph(morph, 'text');
+    },
+
+    addLabel: function(label) {
+        if (!label) label = "------";
+        var minHeight = 15;
+        var morph = new TextMorph(this.getBoundsAndShrinkIfNecessary(minHeight),label).beLabel();
+        morph.adoptToBoundsChange = function(ownerPositionDelta, ownerExtentDelta) {
+            morph.setExtent(morph.getExtent().addPt(ownerExtentDelta));
+        };
+        return this.addMorph(morph, 'label');
+    },
+    
+    addListPane: function() {
+        var minHeight = 80;
+        var morph = newRealListPane(this.getBoundsAndShrinkIfNecessary(minHeight));
+        morph.adoptToBoundsChange = function(ownerPositionDelta, ownerExtentDelta) {
+            morph.setExtent(morph.getExtent().addPt(ownerExtentDelta));
+            morph.setPosition(morph.getPosition().addPt(ownerPositionDelta));
+        };
+        var spec = {fontSize: 12, borderWidth: 0, opacity: 0.75, borderRadius: 3};
+        morph.innerMorph().applyStyle(spec); 
+        spec.fill = null;
+        morph.submorphs[0].applyStyle(spec);
+        morph.submorphs[1].applyStyle(spec); 
+        spec.borderWidth = 1;
+        morph.applyStyle(spec);
+        
+        morph.openForDragAndDrop = false;
+        morph.innerMorph().openForDragAndDrop = false;
+        morph.okToBeGrabbedBy = this.okToBeGrabbedBy;
+        morph.innerMorph().okToBeGrabbedBy = this.okToBeGrabbedBy;
+        
+        return this.addMorph(morph, 'textList');
+    },
+    
+    addLabeledText: function(label) {
+        var minHeight = 80;
+        var morph = new LabeledTextMorph(this.getBoundsAndShrinkIfNecessary(minHeight), label , '-----');
+        morph.reshape = morph.reshape.wrap(function(proceed, partName, newPoint, handle, lastCall) {
+            proceed(partName, newPoint, handle, lastCall);
+            var owner = this.owner;
+            if (owner.getExtent().subPt(pt(owner.inset, owner.inset)).y < this.bounds().extent().y) {
+                owner.setExtent(this.getExtent().addPt(pt(owner.inset, owner.inset)));
+            }
+        });
+        
+        var spec = {borderWidth: 0, opacity: 0.9, borderRadius: 3};
+        morph.applyStyle(spec);        
+        
+        morph.openForDragAndDrop = false;
+        morph.innerMorph().openForDragAndDrop = false;
+        morph.okToBeGrabbedBy = this.okToBeGrabbedBy;
+        morph.innerMorph().okToBeGrabbedBy = this.okToBeGrabbedBy;
+        
+        return this.addMorph(morph, 'labeledText');
+    },
+    
+    addButton: function(buttonLabel) {
+        var height = 22;
+        var morph = new ButtonMorph(this.getBoundsAndShrinkIfNecessary(height));
+        morph.adoptToBoundsChange = function(ownerPositionDelta, ownerExtentDelta) {
+            morph.setPosition(morph.getPosition().addPt(pt(0, ownerExtentDelta.y)));
+            morph.setExtent(morph.getExtent().addPt(pt(ownerExtentDelta.x, 0)));
+            morph.setPosition(morph.getPosition().addPt(ownerPositionDelta));
+        };
+        morph.setLabel(buttonLabel);
+        return this.addMorph(morph, 'button');
+    },
+
+    reshape: function($super, partName, newPoint, handle, lastCall) {
+        var insetPt = pt(this.inset, this.inset);
+        var priorExtent = this.getExtent().subPt(insetPt);
+        var priorPosition = this.getPosition();
+
+        // FIXME: cleanup!!!
+        var delta = pt(0,0);
+        var self = this.shape;
+        this.shape.reshape = function(partName, newPoint, handle, lastCall) {
+            var r = self.bounds().withPartNamed(partName, newPoint);
+            var newWidth = Math.max(r.width, 50);
+            var newHeight = Math.max(r.height, 50);
+            delta = r.topLeft().subPt(pt(newWidth - r.width, newHeight - r.height));
+            r = new Rectangle(0,0, newWidth, newHeight);                
+            self.setBounds(r);
+        };
+        $super(partName, newPoint, handle, lastCall);
+        
+        this.adoptSubmorphsToNewExtent(priorPosition,priorExtent, this.getPosition(), this.getExtent().subPt(insetPt))
+        this.setPosition(this.getPosition().addPt(delta));
+    },
+    
+    setExtent: function($super, newExt) {
+        this.adoptSubmorphsToNewExtent(this.getPosition(), this.getExtent(), this.getPosition(), newExt);
+        $super(newExt);
+    },
+
+    adoptSubmorphsToNewExtent: function (priorPosition, priorExtent, newPosition, newExtent) {
+        var positionDelta = newPosition.subPt(priorPosition);
+        var extentDelta = newExtent.subPt(priorExtent);
+        var scaleDelta = newExtent.scaleByPt(priorExtent.invertedSafely());
+        this.submorphs.select(function(ea) { return ea.adoptToBoundsChange }).each(function(morph) {
+            // console.log("adopting to bounds change: " + morph);
+            morph.adoptToBoundsChange(positionDelta, extentDelta, scaleDelta, rect(newPosition, newExtent));
+        });
+    },
+
+    setupMenu: function() {
+        this.menuButton = new ButtonMorph(new Rectangle(0, -20, 40, 20));
+        this.menuButton.setLabel("Menu");
+        this.menuButton.setFill(Color.blue);
+        this.menuButton.setFillOpacity(0.5);
+        this.halos.addMorph(this.menuButton);
+        this.menuButton.connectModel({model: this, setValue: "openComponentMenu"});   
+    },
+    
+    getMenuItems: function() {
+        return [["say Hello ", function(){ alert("Hello")}]]
+    },
+    
+    openComponentMenu: function(buttonDown) {
+        if (!buttonDown) return;
+        if (this.componentMenu)
+            this.componentMenu.remove();
+        this.componentMenu = new MenuMorph(this.getMenuItems(), this);
+        this.componentMenu.openIn(this, this.menuButton.getPosition());
+    },
+
+    setupHalos: function() {
+        this.halos = new Morph();
+        // to be replace by some general layout mechanism ... aber kloar
+        var self = this;
+        this.halos.setExtent(this.getExtent());
+        this.halos.adoptToBoundsChange = function(ownerPositionDelta, ownerExtentDelta) {
+            self.halos.setExtent(self.halos.getExtent().addPt(ownerExtentDelta));
+            self.updateHaloItemPositions();
+        };
+        this.halos.setFill(null);
+        this.halos.setBorderWidth(0);
+        this.halos.ignoreEvents();
+        this.setupHaloItems();
+    },
+    
+    setupHaloItems: function() {
+        this.closeHalo = this.addHaloItem("X", new Rectangle(0, 0, 20, 20), 
+            {relativePosition: pt(1,0), positionOffset: pt(0, -20)},
+            {fill: Color.red, fillOpacity: 0.5});
+        this.closeHalo.connectModel(Relay.newInstance({Value: "=onRemoveButtonPress"}, this));
+    },
+    
+    updateHaloItemPositions: function() {
+        this.halos.submorphs.each(function(ea){
+            var newPos = ea.layoutFrame.relativePosition.scaleByPt(this.getExtent());
+            newPos = newPos.addPt(ea.layoutFrame.positionOffset);
+            ea.setPosition(newPos);
+        }, this)
+        //this.closeHalo.setPosition(pt(this.getExtent().x - 0, -20));
+    },
+    
+    onRemoveButtonPress: function(value) {
+        // if (value) return;
+        this.remove()
+    },
+    
+    showHalos: function() {
+        if (this.halos) {
+            if (this.handObserver) return; // we are not finished yet
+            var self = this;
+            this.addMorph(this.halos);
+            this.updateHaloItemPositions();
+            this.handObserver = new HandPositionObserver(function(value) {
+                if (!self.owner || !self.bounds().expandBy(10).containsPoint(self.owner.localize(value))) {
+                    self.removeMorph(self.halos);
+                    this.stop();
+                    self.handObserver = null;
+                };
+            });
+            this.handObserver.start();
+        }        
+    }, 
+    
+    addHaloItem: function(label, bounds, layoutFrame, style) {
+        var button = new ButtonMorph(bounds ||  new Rectangle(0, -20, 40, 20));
+        button.setLabel(label || "----");       
+        button.applyStyle(style || {});
+        button.layoutFrame = layoutFrame || {relativePosition: pt(0,0), positionOffset: pt(0,0)};
+        this.halos.addMorph(button);
+        return button;
+    },
+    
+    onMouseOver: function() {
+        this.showHalos();
+    },
+    
+    allPinMorphs: function() {
+       return this.submorphs.select(function(ea){return ea.isPinMorph})
+    },
+    
+    allConnectors: function() {
+        return this.allPinMorphs().inject([], function(all, ea){
+            return all.concat(ea.pinHandle.connectors)
+        })
+    },
+    
+    remove: function($super) {
+        $super();
+        this.allConnectors().each(function(ea){ea.remove()})
+    },
+  
 });
 
 /*
  * The basic component
  */
-Object.subclass('Component', {
+Widget.subclass('Component', {
     
-    defaultPanelContents: [
-        ['text', newTextPane, new Rectangle(0.025, 0.05, 0.95, 0.9)]
-    ],
+    morphClass: ComponentMorph,
     
     initialize: function() {
         this.formalModel = NewComponentModel.instantiateNewClass();
         this.pinHandles = [];
     },
-    
-    buildView: function() {
-        this.setupPanel();
-        this.setupHandles();
-        // Fix for adding to Fabrik with addMorph()
+
+    buildView: function(optExtent) {
+        var bounds = optExtent && optExtent.extentAsRectangle();
+        this.panel = new this.morphClass(bounds);
         this.morph = this.panel;
+        this.panel.setComponent(this);
+        // this.setupHandles();
+        // Fix for adding to Fabrik with addMorph()
         return this.panel;
     },
-
-    setupPanel: function() {
-         // // new PanelMorph(pt(100,100)).addMorph(
-         //     new ScrollPane(new ComponentMorph(new Rectangle(0, 0.65, 1, 0.05)), new Rectangle(0, 0.65, 1, 0.05));
-         //     // newTextListPane(new Rectangle(0, 0.65, 1, 0.05));
-         // // PanelMorph.makePanedPanel(pt(100,100), [
-         // //     ['resultBar', newTextPane, new Rectangle(0, 0.65, 1, 0.05)]
-         // // ]);
-         this.panel = PanelMorph.makePanedPanel(pt(200, 100), this.defaultPanelContents);
-         // this.panel = PanelMorph.makePanedPanel(pt(200, 100), this.defaultPanelContents);
-         this.panel.openForDragAndDrop = false;
-         this.panel.suppressHandles = false;
-         var self = this;
-         this.panel.changed = this.panel.changed.wrap(function(proceed){
-             var newPos = this.getGlobalTransform().transformPoint(pt(0,0));
-             if (!this.pvtOldPosition || !this.pvtOldPosition.eqPt(newPos)) {
-                 this.pvtOldPosition = newPos;
-                 self.pinHandles.each(function(ea){
-                     ea.morph.updatePosition();
-                 });
-             };
-             proceed();
-         });
-         
-         var self = this;
-         this.panel.morphMenu = this.panel.morphMenu.wrap(function(proceed, evt) { 
-             var menu = proceed(evt);
-             menu.addItem(["add pin named...", function() { 
-                 WorldMorph.current().prompt('Name for Pin?', function(name) {
-                      self.addFieldAndPinHandle(name) }, 'Test')}]
-                  );
-             return menu;
-         });
-         
-         // argh, just a quick hack for dropping components into  the fabrikcomponent.
-         // see the wrapped addMorph() in FabrikComponent.buildView()
-         this.panel.component = this;
-     },
-    
-    setupTextPane: function(){
-        this.morph = this.panel.text.innerMorph();
-        this.morph.setTextString("------"); // the morph need to have something to work with, ToDo: Fix it
-        this.morph.openForDragAndDrop = false;
-    },
-    
-    setupDragAndDrop: function(){
-        var self = this;
-        var grabFunction = function(evt){
-            return self.panel
-        };
-        this.morph.okToBeGrabbedBy = grabFunction;
-        this.morph.owner.okToBeGrabbedBy = grabFunction;  
-    },
-    
-    addField: function(fieldName, coercionSpec) {
+             
+    addField: function(fieldName, coercionSpec, forceSet) {
+        this.formalModel.addField(fieldName, coercionSpec, forceSet);
         this.pvtCreateAccessorsForField(fieldName);
-        this.formalModel.addField(fieldName, coercionSpec);
     },
     
-    addFieldAndPinHandle: function(field, coercionSpec) {
-        this.addField(field, coercionSpec);
-        this.addPinHandle(field);
+    addFieldAndPinHandle: function(field, coercionSpec, forceSet) {
+        this.addField(field, coercionSpec, forceSet);
+        return this.addPinHandle(field);
     },
     
     pvtCreateAccessorsForField: function(fieldName) {
@@ -1076,9 +1379,18 @@ Object.subclass('Component', {
         return pinHandle;
     },
     
+    // deprecated, use getPin!
     getPinHandle: function(pinName) {
         console.log('looking for pinHandle named ' + pinName);
         return this.pinHandles.detect(function(ea) {console.log(ea.name); return ea.name == pinName});
+    },
+    
+    getPin: function(pinName) {
+        return this.getPinHandle(pinName);
+    },
+
+    inputPins: function() {
+        return this.pinHandles.select(function(ea){return ea.isInputPin})
     },
 
     toString: function($super){
@@ -1090,8 +1402,8 @@ Object.subclass('Component', {
         if (!this.panel) return;
         var offset = this.panel.bounds().height / 2 - 10;
         this.pinHandles.each(function(handle) {
-            if(!handle.morph) this.setupPinHandle(handle);
-            handle.morph.setPosition(pt(-5, offset));
+            if (!handle.morph) this.setupPinHandle(handle);
+            handle.morph.setPosition(pt(-1 * (handle.morph.getExtent().x / 2), offset));
             offset += handle.morph.bounds().height + 10;
         }, this);
     },
@@ -1100,54 +1412,15 @@ Object.subclass('Component', {
         pin.buildView();
         this.panel.addMorph(pin.morph);
         pin.morph.openForDragAndDrop = false;
-    }
-    
-});
-
-Component.subclass('PluggableComponent', {
-    
-    // just copied, clean this up
-    setupPanel: function() {
-        this.panel = new ComponentMorph(new Rectangle(0,0,100,100));
-        // var xxx = PanelMorph.makePanedPanel(pt(100, 100), [
-        //                  ['text', newTextPane, new Rectangle(0.05, 0.05, 0.9, 0.9)]
-        //              ]);
-        //this.panel.addMorph(new TextMorph(new Rectangle(0,0,300,200), '---'));
-        // this.panel = new TextMorph(new Rectangle(0,0,100,100), '---');
-        // this.panel.openForDragAndDrop = false;
-        var self = this;
-        this.panel.changed = this.panel.changed.wrap(function(proceed){
-            var newPos = this.getGlobalTransform().transformPoint(pt(0,0));
-            if (!this.pvtOldPosition || !this.pvtOldPosition.eqPt(newPos)) {
-                this.pvtOldPosition = newPos;
-                self.pinHandles.each(function(ea){
-                    ea.morph.updatePosition();
-                });
-            };
-            proceed();
-        });
-
-        // argh, just a quick hack for dropping components into  the fabrikcomponent.
-        // see the wrapped addMorph() in FabrikComponent.buildView()
-        this.panel.component = this;
     },
-
-    // call super
-    buildView: function() {
-        this.setupPanel();
-        // Fix for adding to Fabrik with addMorph()
-        this.morph = this.panel;
-        return this.panel;
-    },
-
-    adoptToModel: function(model) {
-        this.formalModel = model;
-        var fieldNames = this.getFieldNamesFromModel(model);
-        fieldNames.each(function(ea) {
-            this.pvtCreateAccessorsForField(ea);
-            this.addPinHandle(ea);
-        }, this);
-        this.setupHandles();
+    
+    addTextMorphForFieldNamed: function(fieldName) {
+        if (!this.panel) throw new Error('Adding morph before base morph (panel exists)');
+        this.morph = this.panel.addTextPane().innerMorph();
+        this.morph.formalModel = this.formalModel.newRelay({Text: fieldName});
+        var spec = {}; spec[fieldName] = '!Text';
+        this.formalModel.addObserver(this.morph, spec);
+        return this.morph
     },
     
     getFieldNamesFromModel: function(model) {
@@ -1167,96 +1440,372 @@ Component.subclass('PluggableComponent', {
         };
         return result;
     }
+    
+});
+
+/* Morph and Component for encapsulating other components */
+ComponentMorph.subclass('FabrikMorph', {
+        
+    automaticLayout: function() {
+        (new FlowLayout()).layoutElementsInMorph(this.fabrik.components, this);
+    },
+    
+    setupForFabrik: function(fabrik){
+         this.fabrik = fabrik;
+         this.fabrik.components.each(function(ea) {this.addMorphForComponent(ea) }, this);
+         this.fabrik.connectors.each(function(ea) {this.addMorph(ea.buildView())}, this);        
+    },
+    
+    setupHaloItems: function($super) {
+        $super();        
+        var grabHalo = this.addHaloItem("grap",  new Rectangle(0,0,45,20),
+            {relativePosition: pt(1,0), positionOffset: pt(-45,0)}, 
+            {fill: Color.green, fillOpacity: 0.5});
+        
+        grabHalo.connectModel(Relay.newInstance({Value: '=grabbed'}, {grabbed: function() { this.pickMeUp() }.bind(this)}));
+        // evalHalo.getHelpText = function(){return "accept text in component [alt+s]"}
+    },
+    
+    addMorph: function($super, morph) {
+        // don't let loose ends lie around
+        if (morph.pinHandle && morph.pinHandle.isFakeHandle) {
+            throw new Error("Pin dropped on fabrik, this should not happen any more")
+        };
+        
+        if (morph.constructor === FabrikMorph) {
+            console.log("got another fabrik!!!");
+        };
+        // dropping components into the fabrik component...!
+        if (morph.component) this.fabrik.plugin(morph.component);
+        
+        
+        if (morph.isConnectorMorph) return this.addMorphFront(morph);
+        else return this.addMorphBack(morph);
+    }, 
+    
+    allPins: function(){
+          return this.fabrik.components.inject([], function(allPins, ea) {
+                  return allPins.concat(ea.pinHandles);
+          });
+    },
+    
+    allPinSnappPoints: function() {
+        return this.allPins().collect(function(ea){
+            return ea.morph.owner.worldPoint(ea.morph.bounds().center())});
+    },
+    
+    addMorphForComponent: function(component) {
+        if (component.morph) return; // Morph is already there... 
+        this.addMorph(component.buildView());
+    },
+});
+
+/*
+ * The main Fabrik Component
+ *  - contains other components and connections between them
+ */
+Component.subclass('FabrikComponent', {
+
+    morphClass: FabrikMorph,
+    defaultViewExtent: pt(750,500),
+    defaultViewTitle: "FabrikComponent",
+
+    initialize: function($super) {
+        $super(null);
+        this.components = [];
+        this.connectors = [];
+        return this;
+    },
+  
+    buildView: function($super, optExtent) {
+        //console.log("buildView for " + this);
+        // this.panel = PanelMorph.makePanedPanel(this.viewExtent || optExtent || this.defaultViewExtent,
+        //     [['playfield', function(initialBounds){ return new FabrikMorph(initialBounds) }, pt(1,1).extentAsRectangle()]]
+        // );
+        // this.morph = this.panel.playfield;
+        
+        $super(optExtent || this.defaultViewExtent);
+        this.panel.fabrik = this;
+        
+        
+        this.morph.setupForFabrik(this);
+        // this.panel.linkToStyles(['fabrik']);
+        this.morph.linkToStyles(['fabrik']);
+            
+        return this.panel;
+    },
+
+    // can be called when this.morph does not exist, simply adds components and wires them
+    plugin: function(component) {
+        if (this.components.include(component)) {
+            console.log('FabrikComponent.plugin(): ' + component + 'was already plugged in.');
+            return;
+        }
+        this.components.push(component);
+        component.fabrik = this; // remember me
+        if (this.morph) this.morph.addMorphForComponent(component);
+        return component;
+    },
+
+    pluginConnector: function(connector) {
+        if (this.connectors.include(connector)) {
+            console.log("Plugin connector failed: " + connector + " is already plugged in!");
+            return;
+        };        
+        this.connectors.push(connector);
+        // argh! is this really necessary??
+        connector.fabrik = this;
+        
+        if (this.morph) {
+            this.morph.addMorph(connector.buildView());
+            connector.updateView();
+        };
+        return connector;
+    },
+
+    connectPins: function(fromPinHandle, toPinHandle) {
+        console.log("Fabrik>>connectPins(" + fromPinHandle + ", " + toPinHandle + ")");
+        if (!fromPinHandle || !toPinHandle) {
+            console.log("FabrikComponent.connectPins(): could not connect " + fromPinHandle + " and " + toPinHandle);
+        };
+
+        var con = fromPinHandle.connectTo(toPinHandle);
+        //FIXME: alles ausmisten
+        if (!con) throw new Error('CouldNotCreateNewConnection');
+        
+        this.pluginConnector(con);
+        return con;
+    },
+
+    connectComponents: function(fromComponent, fromPinName, toComponent, toPinName){
+        return this.connectPins(fromComponent.getPinHandle(fromPinName), toComponent.getPinHandle(toPinName));
+    },
+
+    removeConnector: function(connector) {
+        if (!this.connectors.include(connector)) {
+            console.log('FabrikComponent>>removeConnector: tried to remove connector, which is not there');
+        };
+        console.log('Removing connectir')
+        this.connectors = this.connectors.reject(function(ea) { return ea === connector });
+        this.morph.removeMorph(connector.morph);
+    },
+
+    // setup after the window is opened
+    openIn: function($super, world, location) {
+        var result = $super(world, location);
+        result.setExtent(this.defaultViewExtent); // FIXME: 1000 places were extent is set... arghhh!
+        this.morph.openForDragAndDrop = true;
+        return result;
+    }
+});
+
+Component.subclass('PluggableComponent', {
+    
+    buildView: function($super, extent) {
+        $super(extent);
+        this.morph.openDnD();
+        return this.panel;
+    },
+    
+    adoptToModel: function(model) {
+        this.formalModel = model;
+        var fieldNames = this.getFieldNamesFromModel(model);
+        fieldNames.each(function(ea) {
+            this.pvtCreateAccessorsForField(ea);
+            this.addPinHandle(ea);
+        }, this);
+        this.setupHandles();
+    },
 });
     
+ComponentMorph.subclass('TextComponentMorph', {
+        
+    setupWithComponent: function($super) {
+        $super();
+        this.text = this.component.addTextMorphForFieldNamed('Text')
+    },
+    
+    setupHaloItems: function($super) {
+        $super();        
+        var evalHalo = this.addHaloItem("accept",  new Rectangle(0,0,45,20),
+            {relativePosition: pt(1,1), positionOffset: pt(-45,2)}, 
+            {fill: Color.green, fillOpacity: 0.5});
+        evalHalo.connectModel({model: this, setValue: "onAcceptPressed"});
+        evalHalo.getHelpText = function(){return "accept text in component [alt+s]"}
+    },  
+    
+    onAcceptPressed: function(value) {
+        this.text.doSave()
+    },    
+});
+     
 Component.subclass('TextComponent', {
+    
+    morphClass: TextComponentMorph,
  
     initialize: function ($super) {
         $super();
         this.addFieldAndPinHandle('Text', {to: String});
     },
 
-    buildView: function() {
-        this.setupPanel();
-        this.setupTextPane();
-           
-        this.morph.formalModel = this.formalModel.newRelay({Text: "Text"});
-        this.formalModel.addObserver(this.morph, {Text: "!Text"});
-        
+    buildView: function($super) {
+        $super();
         this.setupHandles();
-        this.setupDragAndDrop();
         return this.panel;
     },
 });
 
+ComponentMorph.subclass('FunctionComponentMorph', {
+
+    setupWithComponent: function($super) {
+        $super();
+        var label = this.addLabel();
+        label.connectModel(this.component.formalModel.newRelay({Text: "-FunctionHeader"}), true);        
+        this.functionBodyMorph = this.component.addTextMorphForFieldNamed('FunctionBody');
+    },
+
+    setupHaloItems: function($super) {
+        $super();
+         var inputHalo = this.addHaloItem("+input", new Rectangle(0,0,45,20),
+            {relativePosition: pt(0,0), positionOffset: pt(0,-20)},
+            {fill: Color.blue, fillOpacity: 0.5});
+        inputHalo.connectModel({model: this.component, setValue: "interactiveAndNewInputField"});
+        
+        var evalHalo = this.addHaloItem("eval",  new Rectangle(0,0,45,20),
+            {relativePosition: pt(1,1), positionOffset: pt(-45,0)}, 
+            {fill: Color.green, fillOpacity: 0.5});
+        evalHalo.connectModel({model: this.component, setValue: "evalButtonPressed"});
+    },
+    
+    setupTextField: function() {
+        var self = this;
+        this.functionBodyMorph.boundEval = this.functionBodyMorph.boundEval.wrap(function(proceed, str) {
+            var source = self.component.pvtGetFunction(str);			
+            return eval(source).apply(self.component, self.component.parameterValues());
+        });
+    }
+    
+         
+});
+
 Component.subclass('FunctionComponent', {
 
-    initialize: function ($super) {
+    morphClass: FunctionComponentMorph,
+
+    initialize: function ($super) { // fix here...
         $super();
-        this.addFieldAndPinHandle("Result");
-        this.addFieldAndPinHandle("Input");
         this.addField("FunctionBody");
+        this.addField("FunctionHeader");
+        this.addFieldAndPinHandle("Result");
+        this.addInputFieldAndPin("Input");
         this.setupAutomaticExecution();
     },
-
-	defaultPanelContents: [
-        ['text', newTextPane, new Rectangle(0.025, 0.05, 0.95, 0.7)],
-		['evalButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0.025, 0.80, 0.95, 0.15)]
-    ],
     
-    buildView: function() {
-        this.setupPanel();
-        this.setupTextPane();
-		
-		var evalButton = this.panel.evalButton;
-		evalButton.setLabel("eval");
-        evalButton.connectModel({model: this, setValue: "saveAndExecute"});
-		
-        // this.morph.formalModel = this.formalModel.newRelay({Text: "FunctionBody"});
-        // this.formalModel.addObserver(this.morph, {FunctionBody: "!Text"});
-        this.morph.connectModel(this.formalModel.newRelay({Text: "FunctionBody"}));
+    buildView: function($super, extent) {
+        $super(extent)
 
+        
+
+        this.panel.setupTextField();
+        
         this.setupHandles();
         
+        // FIXME cleanup
         var input = this.getPinHandle("Input").morph;
-        var h = 40;
-        input.setFill(Color.blue);
-        input.setPosition(pt(-5,h));
+        input.setupInputMorphStyle();
+        input.setPosition(pt(-1 * input.getExtent().x / 2, 
+            (this.panel.getExtent().y / 2) - (input.getExtent().y / 2)));
         
         var result = this.getPinHandle("Result").morph;
-        result.setPosition(pt(195 - 5,h));
+        result.setPosition(pt(this.panel.getExtent().x - (input.getExtent().x / 2), 
+            (this.panel.getExtent().y / 2) - (input.getExtent().y / 2)));
         
-        this.setupDragAndDrop();
         return this.panel;
     },
+
+    guessNewInputFieldName: function() {
+        return "Input" + (this.inputPins().length + 1)
+    },
     
-	saveAndExecute: function() {
-		this.morph.doSave();
-		this.execute();
-	},
+    evalButtonPressed: function(buttonDown) {
+        if(buttonDown) return;
+        this.saveAndExecute();
+    },
+    
+    interactiveAndNewInputField: function(buttonDown) {
+        if (buttonDown) return;
+        var name = this.guessNewInputFieldName();
+        WorldMorph.current().prompt('Name for Input Pin?', function(name) {
+            this.addInputFieldAndPin(name);
+        }.bind(this), name)
+    },
+    
+    addInputFieldAndPin: function(name) {
+        this.addFieldAndPinHandle(name);
+        this.getPinHandle(name).becomeInputPin();
+        this.updateFunctionHeader();
+    },
+    
+    saveAndExecute: function() {
+        this.morph.doSave();
+        this.execute();
+    },
 
     setupAutomaticExecution: function(){
         this.formalModel.addObserver({onFunctionBodyUpdate: function() {
             this.setResult(null); // force an update
             this.execute()
         }.bind(this)});
-
-        this.formalModel.addObserver({onInputUpdate: function() {
-            this.execute()
-        }.bind(this)});
+        // arg, thats dirty. addFieldAndPinHandle automatically adds an observer for all pins...
+        // solve this with input/output pins!
+        this.formalModel.removeObserver(null, 'Result');
     },
-        
-    pvtGetFunction: function() {
+    
+    addFieldAndPinHandle: function($super, field, coercionSpec) {
+        var result = $super(field, coercionSpec);
+        // for automatic execution when input values change
+        var specObj = {};
+        specObj['on' + field + 'Update'] = function() { this.execute() }.bind(this);
+        this.formalModel.addObserver(specObj);
+        return result;
+    },
+      
+    parameterNames: function() {
+        return this.inputPins().collect(function(ea){return ea.name.toLowerCase()}); 
+    },  
+
+    parameterValues: function() {
+        return this.inputPins().collect(function(ea){return ea.getValue()}); 
+    },  
+
+    functionHeader: function() {
+        return  'function f(' + this.parameterNames() + ')';
+    },
+
+    updateFunctionHeader: function() {
+        this.setFunctionHeader(this.functionHeader());
+    },
+
+    pvtGetFunction: function(body) {
+        body = body || this.getFunctionBody();
+        if(!body) return function(){};
+        this.updateFunctionHeader();
+        var funcSource = "var x = "+ this.getFunctionHeader();
+        if(this.getFunctionBody().match(/return /))
+            funcSource += " { " + this.getFunctionBody() + "}; x";
+        else
+            funcSource += " { return eval(" + this.getFunctionBody() + ")}; x"; // implicit return
         try {
-            return eval("var x = function() {" + this.getFunctionBody() + "}; x");
+            return eval(funcSource);
         } catch(e) {
             console.log("Error when evaluating:" + funcSource + " error: " + e.msg);
+            return function(){} // do nothing
         }
     },
 
     execute: function() {
         try {
-            this.setResult(this.pvtGetFunction().call(this));
+            this.setResult(this.pvtGetFunction().apply(this, this.parameterValues()));
             console.log("Result of function call: " + this.getResult());
         } catch(e) {
             console.log("FunctionComponentModel: error " + e + " when executing " + this.pvtGetFunction);
@@ -1265,33 +1814,74 @@ Component.subclass('FunctionComponent', {
     },
 });
 
+Component.subclass('WebRequestComponent', {
+    
+    initialize: function ($super) {
+        $super();
+        this.addFieldAndPinHandle("URL", null, true); // force sets even if value the same
+        this.addFieldAndPinHandle("ResponseText");
+        this.addFieldAndPinHandle("ResponseXML");
+        
+        this.formalModel.addObserver({onURLUpdate: function() { this.makeRequest() }.bind(this)});
+        this.formalModel.addObserver({onResponseTextUpdate: function() { console.log('getting response...') }});
+    },
+    
+    buildView: function($super, optExtent) {
+        $super(optExtent);
+
+        this.morph = this.panel.addLabeledText('Url').innerMorph();;            
+        this.morph.formalModel = this.formalModel.newRelay({Text: 'URL'});
+        this.formalModel.addObserver(this.morph, {URL: '!Text'});
+        
+        this.setupHandles();
+        return this.panel;
+    },
+    
+    setupHandles: function($super) {
+        $super();
+        var morph = this.getPin("URL").morph;
+        morph.setPosition(pt(-1 * (morph.getExtent().x / 2), this.panel.getExtent().y / 2));
+        // FIXME: positions below are not really correct, but when scaling the pins, things get messed up...
+        var morph = this.getPin("ResponseText").morph;
+        morph.setPosition(pt(this.panel.getExtent().x - morph.getExtent().x / 2, this.panel.getExtent().y * 1/4));
+        var morph = this.getPin("ResponseXML").morph;
+        morph.setPosition(pt(this.panel.getExtent().x - morph.getExtent().x / 2, this.panel.getExtent().y * 3/5));  
+    },
+    
+    makeRequest: function() {
+        console.log('making reqest to: ' + this.getURL());
+        // var x = new Resource(this.formalModel.newRelay({URL: '-URL', ContentText: '+ResponseText', ContentDocument: '+ResponseXML'}));
+        
+        var x = new Resource(Record.newPlainInstance({URL: this.getURL(), ContentText: '', ContentDocument: null}));
+        x.formalModel.addObserver({onContentTextUpdate: function(response){ this.setResponseText(response) }.bind(this)});
+        x.formalModel.addObserver({onContentDocumentUpdate: function(response){ this.setResponseXML(new XMLSerializer().serializeToString(response))}.bind(this)});
+        
+        x.fetch();
+    }
+});
+
 asStringArray = function(input) {
-	var list = $A(input);
-	if(list.length == 0) 
-		return ["------"];  // awful hack around the bug that TextLists break when empty
-	return list.collect(function(ea){return ea.toString()});	
+    var list = $A(input);
+    if (list.length == 0) 
+        return ["------"];  // awful hack around the bug that TextLists break when empty
+    return list.collect(function(ea){return ea.toString()});    
 };
 
 Component.subclass('TextListComponent', {
 
-	defaultPanelContents: [
-        ['textList', newTextListPane, new Rectangle(0.025, 0.05, 0.95, 0.9)]
-    ],
-	
     initialize: function ($super) {
            $super();
            this.addFieldAndPinHandle('List', {to: asStringArray});
            this.addFieldAndPinHandle('Selection');
-		   this.setList([]);
+           this.setList([]);
     },
 
-    buildView: function() {
-          this.setupPanel();
-		  this.morph = this.panel.textList.innerMorph();
-          this.morph.connectModel(this.formalModel.newRelay({List: "List", Selection: "Selection"}));
-          this.setupHandles();
-          this.setupDragAndDrop();
-          return this.panel;
+    buildView: function($super, optExtent) {
+        $super(optExtent);
+        this.morph = this.panel.addListPane().innerMorph();
+        this.morph.connectModel(this.formalModel.newRelay({List: "List", Selection: "Selection"}));
+        this.setupHandles();
+        return this.panel;
     }
     
 }),
@@ -1299,53 +1889,66 @@ Component.subclass('TextListComponent', {
 Widget.subclass('ComponentBox', {
 
     viewTitle: "Fabrik Component Box",
-    viewExtent: pt(440,150),
+    viewExtent: pt(540,300),
     
     initialize: function($super) { 
         $super();
         this.model = NewComponentModel.instantiateNewClass();
     },
-
-    addMorphOfComponent: function(comp, allComponents) {
-        allComponents.push(comp);
+    
+    addMorphOfComponent: function(comp, createFunc, optExtent) {
         var m = comp.buildView();
-        m.setExtent(pt(120, 100));
         
-        // FIXME
-        if (m.text) {
-            m.text.innerMorph().onMouseDown = m.text.innerMorph().onMouseDown.wrap(
-                function(proceed, evt) {
-                    var compMorph = new comp.constructor().buildView();
+        m.setExtent(optExtent || pt(120, 100));
+        
+        m.withAllSubmorphsDo(function() {
+            this.handlesMouseDown = Functions.True;
+            this.okToBeGrabbedBy = function() {
+                return createFunc();
+            };
+            this.onMouseDown = function(evt) {
+                    var compMorph = createFunc();
                     evt.hand.addMorph(compMorph);
                     compMorph.setPosition(pt(0,0));
-                });
-        } else {
-            m.okToBeGrabbedBy = m.okToBeGrabbedBy.wrap(function(proceed) {
-                return new comp.constructor().buildView();
-            });
-        }
-        this.panel.addMorph(m);
+            };
+        });
+
+        var textHeight = 30;
+        var wrapper = new ClipMorph(m.getExtent().addPt(pt(0,textHeight)).extentAsRectangle(), "rect");
+        wrapper.addMorph(m);
+        var text = new TextMorph(pt(0,m.getExtent().y).extent(m.getExtent().x, wrapper.getExtent().y), comp.constructor.type);
+        text.beLabel();
+        wrapper.addMorph(text);
+        this.panel.addMorph(wrapper);
     },
     
     buildView: function(extent) {
         var model = this.model;
-        var panel = new PanelMorph(extent);
+        var panel = new PanelMorph(this.viewExtent);
         this.panel = panel;
         
         panel.applyStyle({borderWidth: 2,
             fill: new LinearGradient([Color.white, 1, Color.primary.blue], LinearGradient.NorthSouth)});
 
-        var components = [];
-        var m; 
 
-        this.addMorphOfComponent(new FunctionComponent(), components);
-        this.addMorphOfComponent(new TextComponent(), components);
-        this.addMorphOfComponent(new PluggableComponent(), components);
+        this.addMorphOfComponent(new FabrikComponent(), function() {
+            var fabrik = new FabrikComponent(pt(400,400));
+            fabrik.viewTitle = 'Fabrik';
+            fabrik.openIn(WorldMorph.current(), WorldMorph.current().hands.first().getPosition());
+            return fabrik.panel.owner;
+        });
         
-        new FlowLayout().layoutElementsInMorph(components, panel),
-        panel.openDnD();
+        var defaultCreateFunc = function(theClass, optExtent) {
+            return new theClass().buildView(optExtent);
+        };
         
-        new FlowLayout().layoutElementsInMorph(components, panel),
+        this.addMorphOfComponent(new FunctionComponent(), defaultCreateFunc.curry(FunctionComponent));
+        this.addMorphOfComponent(new TextComponent(), defaultCreateFunc.curry(TextComponent));
+        this.addMorphOfComponent(new PluggableComponent(), defaultCreateFunc.curry(PluggableComponent));
+        this.addMorphOfComponent(new TextListComponent(), defaultCreateFunc.curry(TextListComponent));
+        this.addMorphOfComponent(new WebRequestComponent(), defaultCreateFunc.curry(WebRequestComponent, pt(220,50)), pt(220,50));
+                
+        new FlowLayout(this.panel).layoutSubmorphsInMorph();
         panel.openDnD();
         
         return panel;
@@ -1393,13 +1996,14 @@ Object.subclass("PointSnapper", {
     },
 
     detectPointNear: function(position) {
+        if(!this.points) return;
         return this.points.detect(function(ea) {
             // console.log("detect " + ea);
             var dx = Math.abs(ea.x - position.x);
             var dy = Math.abs(ea.y - position.y);
             // console.log("dx " + dx + " dy " + dy);
             return  dx < this.limit && dy < this.limit;
-            }, this);
+        }, this);
     },
 });
 
@@ -1413,30 +2017,43 @@ Object.subclass('FlowLayout', {
     *   - top to bottom
     *   - keep a space between 
     */
-    layoutElementsInMorph: function(elements, morph) {
-        var inset = 20; 
-        var positionX = inset;
-        var positionY = inset;
-        var maxHeight = 0;
-        elements.each(function(ea){
-            var bounds = ea.panel.bounds();
-            if ((positionX + bounds.width + inset) > morph.bounds().right()) {
-                positionX = inset; // start left
-                positionY += maxHeight + inset; // on a new line
-                maxHeight = 0; // and reset maxHeigth for that new line
-            };
-            ea.panel.setPosition(pt(positionX, positionY));
-            positionX += bounds.width + inset;
-            if (bounds.height > maxHeight)
-            maxHeight = bounds.height;
-        })
+    
+    initialize: function(morphToLayout) {
+        this.morphToLayout = morphToLayout;
+        this.inset = 20; 
+        this.positionX = this.inset;
+        this.positionY = this.inset;
+        this.maxHeight = 0;
     },
+    
+    layoutSubmorphsInMorph: function() {
+        this.morphToLayout.submorphs.each(function(ea) {
+            this.setPositionFor(ea);
+        }, this);
+    },
+    
+    layoutElementsInMorph: function(components, morph) {
+        this.morphToLayout = morph;
+        components.each(function(ea) { this.setPositionFor(ea.panel) }, this);
+    },
+    
+    setPositionFor: function(submorph) {
+        var bounds = submorph.bounds();
+        if ((this.positionX + bounds.width + this.inset) > this.morphToLayout.bounds().right()) {
+            this.positionX = this.inset; // start left
+            this.positionY += this.maxHeight + this.inset; // on a new line
+            this.maxHeight = 0; // and reset maxHeigth for that new line
+        };
+        submorph.setPosition(pt(this.positionX, this.positionY));
+        this.positionX += bounds.width + this.inset;
+        if (bounds.height > this.maxHeight) this.maxHeight = bounds.height;
+    }
 
 });
  
 /*
-* HandPositionObserver, obsverse the position change of the hand and calls the function
-*/
+ * HandPositionObserver, obsverse the position change of the hand and calls the function
+ */
 Object.subclass('HandPositionObserver', {
 
     initialize: function(func) {
@@ -1446,7 +2063,7 @@ Object.subclass('HandPositionObserver', {
     },
 
     onGlobalPositionUpdate: function(value) {
-        if(this.func)
+        if (this.func)
         this.func.call(this, value)
     },
 
@@ -1463,104 +2080,103 @@ Object.subclass('HandPositionObserver', {
  * Extending ClockMorph for PluggableComponent
  */
 Morph.subclass("FabrikClockMorph", {
+    borderWidth: 2,
+    openForDragAndDrop: false,
 
- borderWidth: 2,
- openForDragAndDrop: false,
+    initialize: function($super, position, radius) {
+        $super(position.asRectangle().expandBy(radius), "ellipse");
+        this.formalModel = Record.newPlainInstance({Minutes: null, Seconds: null, Hours: null});
+        this.linkToStyles(['clock']);
+        this.makeNewFace(['XII','I','II','III','IV','V','VI','VII','VIII','IX','X','XI']);  // Roman
+        return this;
+    },
 
- initialize: function($super, position, radius) {
-     $super(position.asRectangle().expandBy(radius), "ellipse");
-     this.formalModel = Record.newPlainInstance({Minutes: null, Seconds: null, Hours: null});
-     this.linkToStyles(['clock']);
-     this.makeNewFace(['XII','I','II','III','IV','V','VI','VII','VIII','IX','X','XI']);  // Roman
-     return this;
- },
+    makeNewFace: function(items) {
+        var bnds = this.innerBounds();
+        var radius = bnds.width/2;
+        var labelSize = Math.max(Math.floor(0.04 * (bnds.width + bnds.height)), 2); // room to center with default inset
 
- makeNewFace: function(items) {
-     var bnds = this.innerBounds();
-     var radius = bnds.width/2;
-     var labelSize = Math.max(Math.floor(0.04 * (bnds.width + bnds.height)), 2); // room to center with default inset
+        for (var i = 0; i < items.length; i++) {
+            var labelPosition = bnds.center().addPt(Point.polar(radius*0.85, ((i-3)/items.length)*Math.PI*2)).addXY(labelSize/2, 0);
+            var label = new TextMorph((pt(labelSize*3, labelSize).extentAsRectangle()), items[i]);
+            label.applyStyle({borderWidth: 0, fill: null, wrapStyle: lk.text.WrapStyle.Shrink, fontSize: labelSize, padding: Rectangle.inset(0)});
+            label.align(label.bounds().center(), labelPosition.addXY(1, 0));
+            this.addMorph(label);
+        }
 
-     for (var i = 0; i < items.length; i++) {
-         var labelPosition = bnds.center().addPt(Point.polar(radius*0.85, ((i-3)/items.length)*Math.PI*2)).addXY(labelSize/2, 0);
-         var label = new TextMorph((pt(labelSize*3, labelSize).extentAsRectangle()), items[i]);
-	    label.applyStyle({borderWidth: 0, fill: null, wrapStyle: lk.text.WrapStyle.Shrink, fontSize: labelSize, padding: Rectangle.inset(0)});
-         label.align(label.bounds().center(), labelPosition.addXY(1, 0));
-         this.addMorph(label);
-     }
+        this.hours   = this.addMorph(Morph.makeLine([pt(0,0), pt(0, -radius*0.50)], 4, Color.blue));
+        this.minutes = this.addMorph(Morph.makeLine([pt(0,0), pt(0, -radius*0.70)], 3, Color.blue));
+        this.seconds = this.addMorph(Morph.makeLine([pt(0,0), pt(0, -radius*0.75)], 2, Color.red));
 
-     this.hours   = this.addMorph(Morph.makeLine([pt(0,0), pt(0, -radius*0.50)], 4, Color.blue));
-     this.minutes = this.addMorph(Morph.makeLine([pt(0,0), pt(0, -radius*0.70)], 3, Color.blue));
-     this.seconds = this.addMorph(Morph.makeLine([pt(0,0), pt(0, -radius*0.75)], 2, Color.red));
+        this.updateHands();
+        this.changed(); 
+    },
 
-     this.updateHands();
-     this.changed(); 
- },
+    reshape: function(a,b,c,d) { /*no reshaping*/ },
 
- reshape: function(a,b,c,d) { /*no reshaping*/ },
+    startSteppingScripts: function() {
+        this.startStepping(1000, "updateHands"); // once per second
+    },
 
- startSteppingScripts: function() {
-     this.startStepping(1000, "updateHands"); // once per second
- },
+    updateHands: function() {
+        var currentDate = new Date();
+        var seconds     = currentDate.getSeconds();
+        var minutes     = currentDate.getMinutes() + seconds/60
+        var hours       = currentDate.getHours() + minutes/60
+        this.setHands(seconds, minutes, hours);
+    },
 
- updateHands: function() {
-     var currentDate = new Date();
-     var seconds = currentDate.getSeconds();
-     var minutes = currentDate.getMinutes() + seconds/60
-     var hours = currentDate.getHours() + minutes/60
-     this.setHands(seconds, minutes, hours);
- },
+    setHands: function(seconds, minutes, hours) {
+        this.formalModel.setMinutes(minutes);
+        this.formalModel.setHours(hours);
+        this.formalModel.setSeconds(seconds);
 
- setHands: function(seconds, minutes, hours) {
-     this.formalModel.setMinutes(minutes);
-     this.formalModel.setHours(hours);
-     this.formalModel.setSeconds(seconds);
-
-     this.hours.setRotation(hours/12*2*Math.PI);
-     this.minutes.setRotation(minutes/60*2*Math.PI);
-     this.seconds.setRotation(seconds/60*2*Math.PI); 
- }
+        this.hours.setRotation(hours/12*2*Math.PI);
+        this.minutes.setRotation(minutes/60*2*Math.PI);
+        this.seconds.setRotation(seconds/60*2*Math.PI); 
+    }
 
 });
 
 /*
- * Helper functions for debugging
- */
+* Helper functions for debugging
+*/
 function emptyString(length){
-  for(var s=""; s.length < length ; s += " ") {}  
-  return s
+    for(var s=""; s.length < length ; s += " ") {}  
+    return s
 };
 
 function logTransformChain(morph, indent, result) {
-    if(!result)
-        result = ""
-    if(!indent)
-        indent = 0;
+    if (!result)
+    result = ""
+    if (!indent)
+    indent = 0;
     result += emptyString(indent*2) + morph + " " + morph.getTransform() + "\n";
     if (morph.owner)
-        return logTransformChain(morph.owner, indent + 1, result);
+    return logTransformChain(morph.owner, indent + 1, result);
     else
-        // console.log(result);
-        return result
+    // console.log(result);
+    return result
 };
 
 
 function debugFunction(func) {
-	var errObj = {};
-	Function.installStackTracers();
-	try {
-		return func.call()
-	} catch(e) {
-		errObj.err = e;
-    	Function.installStackTracers("uninstall");
-    	var viewer = new ErrorStackViewer(errObj)
-    	viewer.openIn(WorldMorph.current(), pt(220, 10));
-	};
+    var errObj = {};
+    Function.installStackTracers();
+    try {
+        return func.call()
+    } catch(e) {
+        errObj.err = e;
+        Function.installStackTracers("uninstall");
+        var viewer = new ErrorStackViewer(errObj)
+        viewer.openIn(WorldMorph.current(), pt(220, 10));
+    };
 };
 
 newFakeMouseEvent = function(point) {
-    var rawEvent = {type: "mousemove", pageX: 100, pageY: 100, altKey: false, shiftKey: false, metaKey: false}, 
+    var rawEvent = {type: "mousemove", pageX: 100, pageY: 100, altKey: false, shiftKey: false, metaKey: false}; 
     var evt = new Event(rawEvent);
     evt.hand = WorldMorph.current().hands.first();
-    if(point) evt.mousePoint = point;
+    if (point) evt.mousePoint = point;
     return evt;
 };
