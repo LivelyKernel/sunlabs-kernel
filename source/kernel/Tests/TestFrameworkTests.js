@@ -208,6 +208,7 @@ TestCase.subclass('RememberStackTest', {
 	},
 	
     // testError: function() {
+    //         new FabrikComponent().buildView();
     //          this.a(1, 2, ['a', 'b', 'c']);
     //     },
 	

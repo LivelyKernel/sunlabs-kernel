@@ -73,15 +73,6 @@ var Loader = {
 // Our JS library extensions (JS 1.5, no particular browser or graphics engine)
 // ===========================================================================
 
-Object.extend(Object.prototype, {
-        
-    assert: function(bool, msg) {
-        if (bool) return;
-        throw {isAssertion: true, message: " assert failed " + "(" + msg + ")"}
-	}
-	
-});
-
 /**
   * LK class system.
   */

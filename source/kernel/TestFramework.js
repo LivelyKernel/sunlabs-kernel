@@ -64,11 +64,11 @@ Object.subclass('TestCase', {
 		return this.result.failed.last();
 	},
 
-        assert: function(bool, msg) {
-                if (bool) return;
-                    throw {isAssertion: true, message: " assert failed " + "(" + msg + ")"}
-        },
-        	
+    assert: function(bool, msg) {
+            if (bool) return;
+                throw {isAssertion: true, message: " assert failed " + "(" + msg + ")"}
+    },
+        
 	assertEqual: function(firstValue, secondValue, msg){
 	    if (firstValue && firstValue.constructor === Point && secondValue &&
 	        secondValue.constructor === Point && firstValue.eqPt(secondValue)) return;

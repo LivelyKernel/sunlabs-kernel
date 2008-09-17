@@ -548,7 +548,7 @@ Morph.subclass('PinMorph', {
     },
 
     getHelpText: function() {
-        return this.pinHandle.name;
+        return this.pinHandle.name + "\n" + this.pinHandle.getValue();
     },
     
     acceptsDropping: function($super, evt) {
@@ -1254,6 +1254,7 @@ Morph.subclass('ComponentMorph', {
             self.halos.setExtent(self.halos.getExtent().addPt(ownerExtentDelta));
             self.updateHaloItemPositions();
         };
+        this.halos.closeDnD();
         this.halos.setFill(null);
         this.halos.setBorderWidth(0);
         this.halos.ignoreEvents();
@@ -1268,7 +1269,8 @@ Morph.subclass('ComponentMorph', {
     },
     
     updateHaloItemPositions: function() {
-        this.halos.submorphs.each(function(ea){
+        // select can be removed? no one shpuld be able to add foreign morphs
+        this.halos.submorphs.select(function(ea){return ea.layoutFrame}).each(function(ea){
             var newPos = ea.layoutFrame.relativePosition.scaleByPt(this.getExtent());
             newPos = newPos.addPt(ea.layoutFrame.positionOffset);
             ea.setPosition(newPos);
@@ -1462,7 +1464,17 @@ ComponentMorph.subclass('FabrikMorph', {
             {relativePosition: pt(1,0), positionOffset: pt(-45,0)}, 
             {fill: Color.green, fillOpacity: 0.5});
         
-        grabHalo.connectModel(Relay.newInstance({Value: '=grabbed'}, {grabbed: function() { this.pickMeUp() }.bind(this)}));
+        var grabFunction = function(value) {
+            if (!value) return;
+            var owner = this.owner;
+            owner.removeMorph(this);
+            if (owner.constructor == WindowMorph) owner.remove();
+            var hand = WorldMorph.current().hands.first(); //FIXME -- get the click event?
+            hand.addMorph(this);
+            this.setPosition(pt(0,0));
+            this.moveBy(grabHalo.getPosition().negated().subPt(grabHalo.getExtent().scaleBy(0.5)));
+        }.bind(this);
+        grabHalo.connectModel(Relay.newInstance({Value: '=grabbed'}, {grabbed: grabFunction}));
         // evalHalo.getHelpText = function(){return "accept text in component [alt+s]"}
     },
     
@@ -1680,7 +1692,8 @@ ComponentMorph.subclass('FunctionComponentMorph', {
     setupTextField: function() {
         var self = this;
         this.functionBodyMorph.boundEval = this.functionBodyMorph.boundEval.wrap(function(proceed, str) {
-            var source = self.component.pvtGetFunction(str);			
+            var source = self.component.pvtGetFunction(str);
+            console.log("eval: " + source)			
             return eval(source).apply(self.component, self.component.parameterValues());
         });
     }
@@ -1791,10 +1804,10 @@ Component.subclass('FunctionComponent', {
         if(!body) return function(){};
         this.updateFunctionHeader();
         var funcSource = "var x = "+ this.getFunctionHeader();
-        if(this.getFunctionBody().match(/return /))
-            funcSource += " { " + this.getFunctionBody() + "}; x";
+        if(body.match(/return /))
+            funcSource += " { " + body + "}; x";
         else
-            funcSource += " { return eval(" + this.getFunctionBody() + ")}; x"; // implicit return
+            funcSource += " { return eval(" + body + ")}; x"; // implicit return
         try {
             return eval(funcSource);
         } catch(e) {
@@ -2038,6 +2051,7 @@ Object.subclass('FlowLayout', {
     },
     
     setPositionFor: function(submorph) {
+        //var bounds = rect(submorph.getPosition(), submorph.getExtent());
         var bounds = submorph.bounds();
         if ((this.positionX + bounds.width + this.inset) > this.morphToLayout.bounds().right()) {
             this.positionX = this.inset; // start left
@@ -2137,6 +2151,14 @@ Morph.subclass("FabrikClockMorph", {
     }
 
 });
+
+/* Changing the behavior of the WorldMorph: when a FabrikMorph is dropped, make it framed */
+WorldMorph.prototype.addMorphFrontOrBack = WorldMorph.prototype.addMorphFrontOrBack.wrap(function(proceed, m, front) {
+    if (m instanceof FabrikMorph) {
+        return this.addFramedMorph(m, m.fabrik.viewTitle, this.hands.first().getPosition().addPt(m.getPosition()), false);
+    };
+    return proceed(m, front);
+})
 
 /*
 * Helper functions for debugging
