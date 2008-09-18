@@ -292,11 +292,11 @@ Widget.subclass('SimpleInspector', {
     
     initialize: function($super, targetMorph) {
         $super();
-        this.actualModel = Record.newPlainInstance({PropList: [], PropName: null, Inspectee: targetMorph, PropText: "",
-						    PropMenu: ['inspect selection', function() { 
-							var name = this.getPropName();
-							if (!name) return;
-							new SimpleInspector(this.propValue(name)).open()}.bind(this)]});
+        this.relayToModel(Record.newPlainInstance({PropList: [], PropName: null, Inspectee: targetMorph, PropText: "",
+						   PropMenu: ['inspect selection', function() { 
+						       var name = this.getPropName();
+						       if (!name) return;
+						       new SimpleInspector(this.propValue(name)).open()}.bind(this)]}));
     },
     
     onPropTextUpdate: function(input, source) {
@@ -349,15 +349,15 @@ Widget.subclass('SimpleInspector', {
             ['bottomPane', newTextPane, new Rectangle(0, 0.6, 1, 0.4)]
         ]);
 	
-	var model = this.actualModel;
+	var model = this.getModel();
 	
-        panel.leftPane.connectModel(model.newRelay({List: "-PropList", Selection: "+PropName", Menu: "-PropMenu"}));
+        panel.leftPane.relayToModel(model, {List: "-PropList", Selection: "+PropName", Menu: "-PropMenu"});
 	
-	panel.rightPane.connectModel(model.newRelay({Text: "PropText", DoitContext: "-Inspectee"}));
+	panel.rightPane.relayToModel(model, {Text: "PropText", DoitContext: "-Inspectee"});
 
 	
 	var m = panel.bottomPane;
-	m.connectModel(model.newRelay({DoitContext: "-Inspectee"}));
+	m.relayToModel(model, {DoitContext: "-Inspectee"});
         m.innerMorph().setTextString("doits here have this === inspectee");
 
         var widget = this;
@@ -369,8 +369,9 @@ Widget.subclass('SimpleInspector', {
                 new SimpleInspector(widget.propValue(widget.getPropName())).open()}])
             return menu; 
         }
-	this.connectModel(model.newRelay({PropList: "+PropList", PropName: "PropName", 
-					  PropText: "PropText", Inspectee: "-Inspectee"}), true);
+	// FIXME: note that we already relay to a model
+	this.relayToModel(model, {PropList: "+PropList", PropName: "PropName", 
+				  PropText: "PropText", Inspectee: "-Inspectee"}, true);
 
         return panel;
     }

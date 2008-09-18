@@ -44,64 +44,63 @@ Widget.subclass('TestWidget', {
 	    List: ["one","two","three"],
 	    ListItem: null, PrintValue: null,
 	    B1Value: null, B2Value: null, SliderValue: 0.5, SliderRange: 0.1}); 
+	panel.relayToModel(model);
 	if (true) {
 	    // FIXME this shoud be refactored
-	    //model.setId(1000);
-	    panel.actualModel = model;
 	    panel.addNonMorph(model.rawNode);
 	}
         // Two simple buttons, one toggles...
         var m = panel.addMorph(new ButtonMorph(new Rectangle(20,20,50,20)));
-        m.connectModel(model.newRelay({Value: "B1Value"}));
+        m.relayToModel(model, {Value: "B1Value"});
 	
         m = panel.addMorph(new ButtonMorph(new Rectangle(20,50,50,20)));
-        m.connectModel(model.newRelay({Value: "B1Value"}));
+        m.relayToModel(model, {Value: "B1Value"});
         
         m.setToggle(true);
 
         // Two buttons sharing same value...
         m = panel.addMorph(new ButtonMorph(new Rectangle(80,20,50,20)));
-        m.connectModel(model.newRelay({Value: "B2Value"}));
+        m.relayToModel(model, {Value: "B2Value"});
 	
 	m = panel.addMorph(new ButtonMorph(new Rectangle(80,50,50,20)));
-        m.connectModel(model.newRelay({Value: "B2Value"}));
+        m.relayToModel(model, {Value: "B2Value"});
 	
 
         // Two lists sharing same selection...
         m = panel.addMorph(new TextListMorph(new Rectangle(20,80,50,20), []));
-	m.connectModel(model.newRelay({List: "-List", Selection: "ListItem"}), true);
+	m.relayToModel(model, {List: "-List", Selection: "ListItem"}, true);
 
         m = panel.addMorph(new TextListMorph(new Rectangle(80,80,50,20), []));
-        m.connectModel(model.newRelay({List: "-List", Selection: "ListItem"}), true);
+        m.relayToModel(model, {List: "-List", Selection: "ListItem"}, true);
 
         // Three text views sharing same text...
         m = panel.addMorph(new TextMorph(new Rectangle(140,20,140,20), "Hello World"));
-        m.connectModel(model.newRelay({Text: "Text", Selection: "+TextSel"}));
+        m.relayToModel(model, {Text: "Text", Selection: "+TextSel"});
 
         panel.addMorph(m = new TextMorph(new Rectangle(140,50,140,20),"Hello World"));
-        m.connectModel(model.newRelay({Text: "Text", Selection: "+TextSel"}));
+        m.relayToModel(model, {Text: "Text", Selection: "+TextSel"});
         panel.addMorph(m = new TextMorph(new Rectangle(140,80,140,20),"Hello World"));
-	m.connectModel(model.newRelay({Text: "Text", Selection: "+TextSel"}));
+	m.relayToModel(model, {Text: "Text", Selection: "+TextSel"});
         m.autoAccept = true;
         panel.addMorph(m = new TextMorph(new Rectangle(140,110,140,20), "selection"));
-        m.connectModel(model.newRelay({Text: "TextSel"}));
+        m.relayToModel(model, {Text: "TextSel"});
 
 
         // Two linked print views sharing the same value
         panel.addMorph(m = new PrintMorph(new Rectangle(20,140,100,20),"3+4"));
-        m.connectModel(model.newRelay({Value: "PrintValue"}));
+        m.relayToModel(model, {Value: "PrintValue"});
         panel.addMorph(m = new PrintMorph(new Rectangle(20,170,100,20),"3+4"));
-        m.connectModel(model.newRelay({Value: "PrintValue"}));
+        m.relayToModel(model, {Value: "PrintValue"});
 
 
         // Slider linked to print view, with another for slider width
         m = panel.addMorph(new PrintMorph(new Rectangle(140,140,80,20), "0.5"));
-        m.connectModel(model.newRelay({Value: "SliderValue"}));
+        m.relayToModel(model, {Value: "SliderValue"});
         m = panel.addMorph(new PrintMorph(new Rectangle(230,140,50,20), "0.1"));
-        m.connectModel(model.newRelay({Value: "SliderRange"}));
+        m.relayToModel(model, {Value: "SliderRange"});
 
         m = panel.addMorph(new SliderMorph(new Rectangle(140,170,140,20)));
-        m.connectModel(model.newRelay({Value: "SliderValue",  SliderExtent: "-SliderRange"}), true);
+        m.relayToModel(model, {Value: "SliderValue",  SliderExtent: "-SliderRange"}, true);
 	
         return panel;
     }
@@ -2279,10 +2278,10 @@ Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
     buildView: function(extent) {
 
         var panel = new PanelMorph(extent);
-	var model = this.getActualModel();
+	var model = this.getModel();
+	panel.relayToModel(model, {});
 	if (true) {
 	    // FIXME this shoud be refactored
-	    panel.relayToModel(model, {});
 	    panel.addNonMorph(model.rawNode);
 	}
 	

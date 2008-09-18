@@ -5607,7 +5607,7 @@ ViewTrait = {
 	    this.formalModel = plugSpec;
 	    if (this instanceof Wrapper) {
 		this.setLivelyTrait("relay", Converter.toJSONAttribute(plugSpec.definition));
-		if (!plugSpec) debugger;
+		if (!plugSpec || !plugSpec.delegate) debugger;
 		if (plugSpec.delegate.uri) 
 		    this.setLivelyTrait("model", plugSpec.delegate.uri());
 	    }
@@ -5636,8 +5636,8 @@ ViewTrait = {
 	return this;
     },
 
-    relayToModel: function(model, spec, optKickstart) {
-	return this.connectModel(Relay.newInstance(spec, model), optKickstart);
+    relayToModel: function(model, optSpec, optKickstart) {
+	return this.connectModel(Relay.newInstance(optSpec || {}, model), optKickstart);
     },
 
     reconnectModel: function() {
