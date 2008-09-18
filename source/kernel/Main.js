@@ -413,11 +413,11 @@ function main() {
     if (world) {
 	world.displayOnCanvas(canvas);
 	console.log("world is " + world);
-	
-	//just a quick hack...
-	console.log('starting WikiNavigator');
-    if(Config.showWikiNavigator) WikiNavigator.enableWikiNavigator();
-    
+	if(Config.showWikiNavigator) { 
+	    //just a quick hack...
+	    console.log('starting WikiNavigator');
+	    WikiNavigator.enableWikiNavigator();
+	}
 	return;
     } else {
 	world = new WorldMorph(canvas); 

@@ -1407,8 +1407,13 @@ var Converter = {
         return Rectangle.inset(t, l, b, r);
     },
 
+    wrapperFilter: function(baseObj, key) {
+	var value = baseObj[key]; 
+	return (value instanceof Wrapper) ? value.uri() : value;
+    },
+
     toJSONAttribute: function(obj) {
-	return obj ? escape(JSON.serialize(obj)) : "";
+	return obj ? escape(JSON.serialize(obj, Converter.wrapperFilter)) : "";
     },
 
     fromJSONAttribute: function(str) {
@@ -3699,10 +3704,13 @@ Copier.subclass('Importer', {
 	    if (morphs.length > 1) console.log("more than one top level morph following a WorldMorph, ignoring remaining morphs");
 	} else {
 	    // no world, create one and add all the serialized morphs to it.
-	    world = new WorldMorph(document.getElementById("canvas"));
+	    var canvas = document.getElementById("canvas");
+	    world = new WorldMorph(canvas);
+	    // this adds a the WorldMorph's <g> at the end of the list
+	    canvas.appendChild(world.rawNode);
+	    // the following will reparent all the existing morphs under the WorldMorph's <g>
 	    morphs.clone().forEach(function(m) { world.addMorph(m); });
 	}
-	
 	this.finishImport(world);
 
 	return world;
@@ -4080,8 +4088,8 @@ Visual.subclass('Morph', {
 		    model.linkWrapee();
 		    var relayAttr = this.getLivelyTrait("relay");
 		    if (relayAttr) {
+			console.log('relay ' + unescape(relayAttr));
 			var relay = Converter.fromJSONAttribute(relayAttr);
-			console.log('relay ' + relay);
 			this.relayToModel(model, relay);
 		    }
 		} catch (er) { debugger; throw er; }
@@ -6212,7 +6220,7 @@ PasteUpMorph.subclass("WorldMorph", {
 
     displayOnCanvas: function(canvas) {
 	// this.remove();
-        canvas.appendChild(this.rawNode);
+	if (this.rawNode.parentNode !== canvas) canvas.appendChild(this.rawNode);
         var hand = this.addHand(new HandMorph(true));
 	WorldMorph.currentWorld = this; // this conflicts with mutliple worlds
         this.onEnter(); 
