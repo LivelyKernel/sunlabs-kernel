@@ -2308,28 +2308,28 @@ Widget.subclass('ConsoleWidget', {
     initialize: function($super, capacity) {
         $super(null);
 
-        this.actualModel = Record.newPlainInstance({LogMessages: [], RecentLogMessages: [], Commands: [], 
-						    CommandCursor: 0,  LastCommand: "", Capacity: capacity,
-						    Menu: [["command history", this, "addCommandHistoryInspector"]]});
+	// note newNodeInstance causes problems with serializing Menu
+        var model = Record.newPlainInstance({LogMessages: [], RecentLogMessages: [], Commands: [], 
+	    CommandCursor: 0,  LastCommand: "", Capacity: capacity,
+	    Menu: [["command history", this, "addCommandHistoryInspector"]]});
 	
-        this.connectModel(this.actualModel.newRelay({LogMessages: "LogMessages",
-						     RecentLogMessages: "+RecentLogMessages",
-						     Commands: "Commands",
-						     LastCommand: "LastCommand",
-						     Menu: "Menu",
-						     Capacity: "-Capacity"}));
+        this.relayToModel(model, {LogMessages: "LogMessages",
+				  RecentLogMessages: "+RecentLogMessages",
+				  Commands: "Commands",
+				  LastCommand: "LastCommand",
+				  Menu: "Menu",
+				  Capacity: "-Capacity"});
         Global.console.consumers.push(this);
         this.ans = undefined; // last computed value
         return this;
     },
     
     addCommandHistoryInspector: function() {
-        var extent = pt(500, 40);
-        var commands = this.getCommands([]);
-        var rect = extent.extentAsRectangle();
-        var pane = new ScrollPane(new TextListMorph(rect, commands), rect); 
-        var world = WorldMorph.current();
-        world.addFramedMorph(pane, "Command history", world.positionForNewMorph());
+        WorldMorph.current().addTextListWindow({
+	    extent:pt(500, 40),
+	    content: this.getCommands([]),
+	    title: "Command history"
+	});
     },
 
     getInitialViewExtent: function(world, hint) {
@@ -2342,11 +2342,11 @@ Widget.subclass('ConsoleWidget', {
             ['commandLine', TextMorph, new Rectangle(0, 0.8, 1, 0.2)]
         ]);
 
-        var model = this.actualModel;
+        var model = this.getModel();
         var m = panel.messagePane;
 	
-        m.connectModel(model.newRelay({List: "-LogMessages", ListDelta: "RecentLogMessages", 
-				       Capacity: "-Capacity", Menu: "-Menu"}));
+        m.relayToModel(model, {List: "-LogMessages", ListDelta: "RecentLogMessages", 
+			       Capacity: "-Capacity", Menu: "-Menu"});
 	
 	m.innerMorph().focusHaloBorderWidth = 0;
 	
@@ -2360,20 +2360,8 @@ Widget.subclass('ConsoleWidget', {
         };
 
         m = panel.commandLine.beInputLine(100);
-	m.connectModel(model.newRelay({ History: "-Commands", 
-					HistoryCursor: "CommandCursor",
-					Text: "LastCommand"}));
+	m.relayToModel(model, { History: "-Commands", HistoryCursor: "CommandCursor", Text: "LastCommand"});
         return panel;
-    },
-
-    updateView: function(aspect, source) {
-        var p = this.modelPlug;
-        if (!p) return;
-        switch (aspect) {
-        case p.getLastCommand:
-            this.onLastCommandUpdate(this.getLastCommand());
-            break;
-        }
     },
 
     evaluate: interactiveEval.bind(this.ctx),
