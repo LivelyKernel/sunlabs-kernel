@@ -2130,7 +2130,7 @@ Model.subclass('WidgetModel', {
 
 });
 
-View.subclass('Widget', { // FIXME remove code duplication
+Wrapper.subclass('Widget', ViewTrait, { // FIXME remove code duplication
 
     viewTitle: "Widget",
     initialViewExtent: pt(400, 300),
@@ -2157,6 +2157,7 @@ View.subclass('Widget', { // FIXME remove code duplication
     
     openIn: function(world, optLoc) {
 	var view = this.buildView(this.getInitialViewExtent(world), this.getModel());
+	view.addWrapper(this);
 	return world.addFramedMorph(view, this.getViewTitle(), optLoc, this.useLightFrame);
     },
 
@@ -2165,11 +2166,9 @@ View.subclass('Widget', { // FIXME remove code duplication
     },
 
     initialize: function(plug) {
+	this.rawNode = NodeFactory.create("widget");
+	this.setId(this.newId());
         if (plug) this.connectModel(plug);
-    },
-    
-    deserialize: function(importer, modelPlug) {
-        this.connectModel(modelPlug);
     },
 
     parentWindow: function(view) {

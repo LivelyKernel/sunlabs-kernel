@@ -44,10 +44,12 @@ Widget.subclass('TestWidget', {
 	    List: ["one","two","three"],
 	    ListItem: null, PrintValue: null,
 	    B1Value: null, B2Value: null, SliderValue: 0.5, SliderRange: 0.1}); 
-	
-	model.setId(1000);
-	panel.actualModel = model;
-	panel.addNonMorph(model.rawNode);
+	if (true) {
+	    // FIXME this shoud be refactored
+	    model.setId(1000);
+	    panel.actualModel = model;
+	    panel.addNonMorph(model.rawNode);
+	}
         // Two simple buttons, one toggles...
         var m = panel.addMorph(new ButtonMorph(new Rectangle(20,20,50,20)));
         m.connectModel(model.newRelay({Value: "B1Value"}));
@@ -2215,16 +2217,17 @@ Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
     initialize: function($super) { 
 	$super();
 	this.model = 
-	    Record.newPlainInstance({Locale: null, WeatherDesc: null, Temperature: null, Wind: null, 
-				     Gusts: null, DewPoint: null, Humidity: null, Visibility: null, 
-				     ImageURL:"http://www.bbc.co.uk/weather/images/banners/weather_logo.gif"});
-	
-	this.model.addObserver(this, { Locale: "!Locale" });
+	    Record.newNodeInstance({Locale: null, WeatherDesc: null, Temperature: null, Wind: null, 
+				    Gusts: null, DewPoint: null, Humidity: null, Visibility: null, 
+				    ImageURL:"http://www.bbc.co.uk/weather/images/banners/weather_logo.gif"});
+	this.model.setId(1002);
+	this.relayToModel(this.model, {Locale: "-Locale"});
+
 	this.initializeTransientState();
     },
     
-    deserialize: function($super, importer, plug) {
-	$super(importer, plug);
+    deserialize: function($super, importer, rawNode) {
+	$super(importer, rawNode);
 	this.initializeTransientState();
     },
     
@@ -2239,6 +2242,10 @@ Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
 	var arr = text.split(",");
 	var topic = channel.items[0].title();
 	var weather = topic.substring(topic.indexOf("."), topic.indexOf("GMT:")+4).replace(/^\s+|\s+$/g, '');
+	if (!this.model) {  // FIXME big hack, has to be refactored
+	    this.model = this.getActualModel();
+	}
+			   
 	this.model.setWeatherDesc(weather[0].toUpperCase() + weather.substr(1));
 	this.model.setTemperature(arr[0].replace(/^\s+|\s+$/g, ''));
 	this.model.setWind(arr[1].replace(/^\s+|\s+$/g, ''));
@@ -2275,6 +2282,12 @@ Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
     buildView: function(extent) {
 	var model = this.model;
         var panel = new PanelMorph(extent);
+	if (true) {
+	    // FIXME this shoud be refactored
+	    panel.actualModel = this.model;
+	    panel.addNonMorph(this.model.rawNode);
+	}
+
 	panel.applyStyle({borderWidth: 2, 
 			  fill: new LinearGradient([Color.white, 1, Color.primary.blue], LinearGradient.NorthSouth)});
         //panel.setBorderColor(Color.blue);

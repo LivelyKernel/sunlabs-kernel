@@ -1530,6 +1530,13 @@ Object.subclass('Wrapper', {
 	return new Global[this.getType()](copier || Copier.marker, this);
     },
 
+    newId: (function() { 
+	var wrapperCounter = 0;
+	return function() {
+	    return ++ wrapperCounter;
+	}
+    })(),
+
     id: function() {
 	if (!this.rawNode) debugger;
 	return this.rawNode.getAttribute("id");
@@ -3636,25 +3643,11 @@ Copier.subclass('Importer', {
 
     hookupModels: function() {
 	Properties.forEachOwn(this.wrapperMap, function each(key, wrapper) {
-	    if (wrapper.reconnectModel) // instanceof View
-		wrapper.reconnectModel();
-	});
-    },
-
-    importWorldFromNodeList: function(nodes, world) {
-	var morphs = this.importFromNodeList(nodes);
-	if (morphs[0]) {
-	    if (morphs[0] instanceof WorldMorph) {
-		world = morphs[0];
-		if (morphs.length > 1) console.log("more than one top level morph following a WorldMorph, ignoring remaining morphs");
-	    } else {
-		// no world, create one and add all the shrinkwrapped morphs to it.
-		world = world || new WorldMorph(document.getElementById("canvas"));
-		morphs.clone().forEach(function(m) { world.addMorph(m); });
+	    if (wrapper.reconnectModel) {// instanceof View
+		var m = wrapper.reconnectModel();
+		m && console.log('connecting model on ' + wrapper + " model " + m);
 	    }
-	}
-	this.finishImport(world);
-	return world;
+	});
     },
 
     loadWorldInSubworld: function(doc) {
@@ -3664,7 +3657,7 @@ Copier.subclass('Importer', {
 	    return null;
 	}
 	var world = new WorldMorph(WorldMorph.current().canvas());
-	var morphs = this.importFromNodeList(nodes, world);
+	var morphs = this.importFromNodeList(nodes);
 
 	morphs.forEach(function(morph) {
 	    if (morph instanceof WorldMorph) morph.submorphs.clone().forEach(function(m) { world.addMorph(m) });
@@ -3815,7 +3808,7 @@ Visual.subclass('Morph', {
 	this.submorphs = [];
 	this.owner = null;
 	LivelyNS.setType(this.rawNode, this.getType());
-	this.setId(this.newMorphId());
+	this.setId(this.newId());
     },
 
     initialize: function(initialBounds, shapeType) {
@@ -4048,6 +4041,16 @@ Visual.subclass('Morph', {
 		}
 		break;
 	    }
+	    case "widget": {
+		var id = node.getAttribute("id");
+		if (id) {
+		    var type = id.split(":")[1];
+		    var widget = new (Global[type])(importer, node);
+		    // widget will be connected to the model later.
+		}
+		break;
+		
+	    }
 	    case "array": {
 		helperNodes.push(node);
 		var name = LivelyNS.getAttribute(node, "name");
@@ -4187,12 +4190,6 @@ Visual.subclass('Morph', {
 	}
     },
     
-    newMorphId: (function() { 
-	var morphCounter = 0;
-	return function() {
-	    return ++ morphCounter;
-	}
-    })()
     
 });
 
@@ -5640,10 +5637,16 @@ ViewTrait = {
     },
 
     reconnectModel: function() {
-	var model = Wrapper.prototype.getWrapperByUri(this.getLivelyTrait("model"));
-	if (!model) return;
+	var uri = this.getLivelyTrait("model");
+	var model = Wrapper.prototype.getWrapperByUri(uri);
+	//console.log('reconnect model looked for URI ' + this.getLivelyTrait("model") + ' and got ' +  model);
+	if (!model) { 
+	    if (uri) console.log("not found model by " + uri + " for " + this);
+	    return null;
+	}
 	var relaySpec = Converter.fromJSONAttribute(this.getLivelyTrait("relay"));
 	this.relayToModel(model, relaySpec);
+	return model;
     },
 
     checkModel: function(plugSpec) {

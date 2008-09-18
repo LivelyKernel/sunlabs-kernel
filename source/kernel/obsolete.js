@@ -1020,7 +1020,25 @@ Importer.addMethods({
 
     hookupModels: function() {
 	this.models.forEach(function(node) { this.OBSOLETEimportModelFrom(node); }, this);
+    },
+
+
+    importWorldFromNodeList: function(nodes, world) {
+	var morphs = this.importFromNodeList(nodes);
+	if (morphs[0]) {
+	    if (morphs[0] instanceof WorldMorph) {
+		world = morphs[0];
+		if (morphs.length > 1) console.log("more than one top level morph following a WorldMorph, ignoring remaining morphs");
+	    } else {
+		// no world, create one and add all the shrinkwrapped morphs to it.
+		world = world || new WorldMorph(document.getElementById("canvas"));
+		morphs.clone().forEach(function(m) { world.addMorph(m); });
+	    }
+	}
+	this.finishImport(world);
+	return world;
     }
+
     
 });
 
