@@ -46,7 +46,7 @@ Widget.subclass('TestWidget', {
 	    B1Value: null, B2Value: null, SliderValue: 0.5, SliderRange: 0.1}); 
 	if (true) {
 	    // FIXME this shoud be refactored
-	    model.setId(1000);
+	    //model.setId(1000);
 	    panel.actualModel = model;
 	    panel.addNonMorph(model.rawNode);
 	}
@@ -2216,13 +2216,13 @@ Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
     
     initialize: function($super) { 
 	$super();
-	this.model = 
+	var model = 
 	    Record.newNodeInstance({Locale: null, WeatherDesc: null, Temperature: null, Wind: null, 
 				    Gusts: null, DewPoint: null, Humidity: null, Visibility: null, 
 				    ImageURL:"http://www.bbc.co.uk/weather/images/banners/weather_logo.gif"});
-	this.model.setId(1002);
-	this.relayToModel(this.model, {Locale: "-Locale"});
-
+	this.relayToModel(model, {Locale: "-Locale", WeatherDesc: "+WeatherDesc", Temperature: "+Temperature", 
+				  Wind: "+Wind", Gusts: "+Gusts", DewPoint: "+DewPoint", 
+				  Humidity: "+Humidity", Visibility: "+Visibility"});
 	this.initializeTransientState();
     },
     
@@ -2242,17 +2242,14 @@ Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
 	var arr = text.split(",");
 	var topic = channel.items[0].title();
 	var weather = topic.substring(topic.indexOf("."), topic.indexOf("GMT:")+4).replace(/^\s+|\s+$/g, '');
-	if (!this.model) {  // FIXME big hack, has to be refactored
-	    this.model = this.getActualModel();
-	}
-			   
-	this.model.setWeatherDesc(weather[0].toUpperCase() + weather.substr(1));
-	this.model.setTemperature(arr[0].replace(/^\s+|\s+$/g, ''));
-	this.model.setWind(arr[1].replace(/^\s+|\s+$/g, ''));
-	this.model.setGusts(arr[2].replace(/^\s+|\s+$/g, ''));
-	this.model.setDewPoint(arr[3].replace(/^\s+|\s+$/g, ''));
-	this.model.setHumidity(arr[4].replace(/^\s+|\s+$/g, '') + ", " + arr[5].replace(/^\s+|\s+$/g, ''));
-	this.model.setVisibility(arr[6].replace(/^\s+|\s+$/g, ''));
+	var model = this.getModel(); 
+	model.setWeatherDesc(weather[0].toUpperCase() + weather.substr(1));
+	model.setTemperature(arr[0].replace(/^\s+|\s+$/g, ''));
+	model.setWind(arr[1].replace(/^\s+|\s+$/g, ''));
+	model.setGusts(arr[2].replace(/^\s+|\s+$/g, ''));
+	model.setDewPoint(arr[3].replace(/^\s+|\s+$/g, ''));
+	model.setHumidity(arr[4].replace(/^\s+|\s+$/g, '') + ", " + arr[5].replace(/^\s+|\s+$/g, ''));
+	model.setVisibility(arr[6].replace(/^\s+|\s+$/g, ''));
     },
 
     onLocaleUpdate: function(item) {
@@ -2280,14 +2277,15 @@ Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
 
     
     buildView: function(extent) {
-	var model = this.model;
+
         var panel = new PanelMorph(extent);
+	var model = this.getActualModel();
 	if (true) {
 	    // FIXME this shoud be refactored
-	    panel.actualModel = this.model;
-	    panel.addNonMorph(this.model.rawNode);
+	    panel.relayToModel(model, {});
+	    panel.addNonMorph(model.rawNode);
 	}
-
+	
 	panel.applyStyle({borderWidth: 2, 
 			  fill: new LinearGradient([Color.white, 1, Color.primary.blue], LinearGradient.NorthSouth)});
         //panel.setBorderColor(Color.blue);

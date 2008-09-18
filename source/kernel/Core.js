@@ -855,6 +855,7 @@ Record.subclass('DOMRecord', {
     description: "base class for records backed by a DOM Node",
     initialize: function($super, store, argSpec) {
 	$super(store, argSpec);
+	this.setId(this.newId());
 	var def = this.rawNode.appendChild(NodeFactory.create("definition"));
 	def.appendChild(NodeFactory.createCDATA(String(JSON.serialize(this.definition))));
     },
@@ -1508,14 +1509,6 @@ Object.subclass('Wrapper', {
 
     rawNode: null,
 
-    getType: function() {
-	var ctor = this.constructor.getOriginal();
-	if (ctor.type) return ctor.type;
-	console.log("no type for " + ctor);
-	Function.showStack();
-	return null;
-    },
-
     deserialize: function(importer, rawNode) {
 	this.rawNode = rawNode;
 	var id = rawNode.getAttribute("id");
@@ -1528,6 +1521,19 @@ Object.subclass('Wrapper', {
 
     copy: function(copier) {
 	return new Global[this.getType()](copier || Copier.marker, this);
+    },
+
+    getType: function() {
+	var ctor = this.constructor.getOriginal();
+	if (ctor.type) return ctor.type;
+	console.log("no type for " + ctor);
+	Function.showStack();
+	return null;
+    },
+
+    getEncodedType: function(node) { // this should be merged with getType
+	var id = node.getAttribute("id");
+	return id && id.split(":")[1];
     },
 
     newId: (function() { 
@@ -4042,14 +4048,12 @@ Visual.subclass('Morph', {
 		break;
 	    }
 	    case "widget": {
-		var id = node.getAttribute("id");
-		if (id) {
-		    var type = id.split(":")[1];
+		var type = Wrapper.prototype.getEncodedType(node);
+		if (type) {
 		    var widget = new (Global[type])(importer, node);
 		    // widget will be connected to the model later.
 		}
 		break;
-		
 	    }
 	    case "array": {
 		helperNodes.push(node);
