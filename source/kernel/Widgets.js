@@ -1337,7 +1337,7 @@ MenuItem.addMethods({
             if (func == null) console.log('Could not find function ' + functionName + " on " + this.action);
             // call as target.function(parameterOrNull,event,menuItem)
             else { 	    
-		var arg = this.getArgument();
+		var arg = this.getArgument() || this.para2;
 		func.call(this.action, arg, evt, this); 
 	    }
         }
