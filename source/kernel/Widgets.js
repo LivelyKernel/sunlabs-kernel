@@ -2309,7 +2309,7 @@ Widget.subclass('ConsoleWidget', {
         $super(null);
 
 	// note newNodeInstance causes problems with serializing Menu
-        var model = Record.newPlainInstance({LogMessages: [], RecentLogMessages: [], Commands: [], 
+        var model = Record.newNodeInstance({LogMessages: [], RecentLogMessages: [], Commands: [], 
 	    CommandCursor: 0,  LastCommand: "", Capacity: capacity,
 	    Menu: [["command history", this, "addCommandHistoryInspector"]]});
 	
@@ -2345,6 +2345,7 @@ Widget.subclass('ConsoleWidget', {
         var model = this.getModel();
         var m = panel.messagePane;
 	
+	panel.addWrapper(model) || console.log("failed to add model");
         m.relayToModel(model, {List: "-LogMessages", ListDelta: "RecentLogMessages", 
 			       Capacity: "-Capacity", Menu: "-Menu"});
 	

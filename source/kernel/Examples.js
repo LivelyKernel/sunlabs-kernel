@@ -45,10 +45,9 @@ Widget.subclass('TestWidget', {
 	    ListItem: null, PrintValue: null,
 	    B1Value: null, B2Value: null, SliderValue: 0.5, SliderRange: 0.1}); 
 	panel.relayToModel(model);
-	if (true) {
-	    // FIXME this shoud be refactored
-	    panel.addNonMorph(model.rawNode);
-	}
+	// FIXME this shoud be refactored
+	panel.addWrapper(model) || console.log('failed to add model');
+
         // Two simple buttons, one toggles...
         var m = panel.addMorph(new ButtonMorph(new Rectangle(20,20,50,20)));
         m.relayToModel(model, {Value: "B1Value"});
@@ -2280,10 +2279,8 @@ Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
         var panel = new PanelMorph(extent);
 	var model = this.getModel();
 	panel.relayToModel(model, {});
-	if (true) {
-	    // FIXME this shoud be refactored
-	    panel.addNonMorph(model.rawNode);
-	}
+	// FIXME this shoud be refactored
+	panel.addWrapper(model) || console.log("problem adding model");
 	
 	panel.applyStyle({borderWidth: 2, 
 			  fill: new LinearGradient([Color.white, 1, Color.primary.blue], LinearGradient.NorthSouth)});
