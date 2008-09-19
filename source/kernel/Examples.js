@@ -39,7 +39,7 @@ Widget.subclass('TestWidget', {
         var panel = new PanelMorph(extent);
         // Make a fancy panel.  Note: Transparency does not
         // work with gradients or stipple patterns yet!
-        panel.linkToStyles(['widgetPanel']);
+        panel.linkToStyles(['widgetPanel'], Config.useStyling);
 	var model = Record.newNodeInstance({Text: "Hello World", TextSel: null, 
 	    List: ["one","two","three"],
 	    ListItem: null, PrintValue: null,

@@ -4322,10 +4322,10 @@ Morph.addMethods({
 	return WorldMorph.current().styleNamed(name);
     },
 
-    linkToStyles: function(styleClassList) {
+    linkToStyles: function(styleClassList, optSupressApplication) {
 	// Record the links for later updates, and apply them now
 	this.setStyleClass(styleClassList.join(' '));
-	this.applyLinkedStyles();
+	if (!optSupressApplication) this.applyLinkedStyles();
 	return this;
     },
 
