@@ -841,12 +841,8 @@ Object.subclass('lk.examples.threedee.WireObject', {
 
 }); 
 
-
-/**
- * @class Sun3DMorph
- */
-  
 PanelMorph.subclass('lk.examples.Sun3DMorph', {
+    documentation: "Sun logo rotating in 3D",
 
     initialize: function($super, rect) {
         $super(rect, "rect");
@@ -2276,7 +2272,7 @@ Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
     
     buildView: function(extent) {
 
-        var panel = new PanelMorph(extent);
+        var panel = new PanelMorph(extent).linkToStyles(["panel"]);
 	var model = this.getModel();
 	panel.relayToModel(model, {});
 	// FIXME this shoud be refactored
@@ -2439,12 +2435,9 @@ Widget.subclass('StockWidget', NetRequestReporterTrait, {
     },
     
     buildView: function(extent, model) {
-        var panel = new PanelMorph(extent);
-	var gradient = new LinearGradient([Color.white, 1, Color.primary.blue.lighter()], LinearGradient.NorthSouth);
-        panel.applyStyle({fill: gradient, borderWidth: 2});
+        var panel = new PanelMorph(extent).linkToStyles(['panel']);
+	panel.applyStyle({fill: new LinearGradient([Color.white, 1, Color.primary.blue.lighter()], LinearGradient.NorthSouth)});
 	panel.connectModel({model: model});
-
-        //panel.setBorderColor(Color.blue);
 
         // Marketwatch/Bigcharts logo
         var m = panel.addMorph(new ImageMorph(new Rectangle(20, 10, 135, 68), 

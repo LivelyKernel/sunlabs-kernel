@@ -44,7 +44,7 @@ Morph.subclass('ButtonMorph', {
     // A ButtonMorph is the simplest widget
     // It read and writes the boolean variable, this.model[this.propertyName]
     initialize: function($super, initialBounds) {
-        this.baseFill = null; 
+        this.baseFill = null;
         $super(initialBounds, "rect");
 	if (Config.selfConnect) {
             var model = Record.newNodeInstance({Value: false});
@@ -628,6 +628,10 @@ Morph.subclass("SelectionMorph", {
 
 Morph.subclass('PanelMorph', {
 
+    fill: undefined,        // rely on styling
+    borderWidth: undefined, // rely on styling
+    borderColor: undefined, // rely on styling
+    
     documentation: "a panel",
     initialize: function($super, extent/*:Point*/) {
         $super(extent.extentAsRectangle(), 'rect');

@@ -4281,6 +4281,7 @@ Morph.addMethods({
     applyStyle: function(specs) { // note: use reflection instead?
 	for (var i = 0; i < arguments.length; i++) {
 	    var spec = arguments[i];
+	    if (!spec) debugger;
 	    if (spec.borderWidth !== undefined) this.setBorderWidth(spec.borderWidth);
 	    if (spec.borderColor !== undefined) this.setBorderColor(spec.borderColor);
 	    if (spec.fill !== undefined) this.setFill(spec.fill);
@@ -4321,23 +4322,20 @@ Morph.addMethods({
 	return WorldMorph.current().styleNamed(name);
     },
 
-    linkToStyles: function(arrayOfNames) {
+    linkToStyles: function(styleClassList) {
 	// Record the links for later updates, and apply them now
-	this.styleLinks = arrayOfNames;
+	this.setStyleClass(styleClassList.join(' '));
 	this.applyLinkedStyles();
-    },
-
-    respondToChangingStyleNamed: function(name) {
-	// (re)Apply my linked styles if name refers to one of them
-	if (this.styleLinks && this.styleLinks.include(name)) this.applyLinkedStyles();
+	return this;
     },
 
     applyLinkedStyles: function() {
 	// Apply all the styles to which I am linked, in order
-	if (!this.styleLinks) return;
-
-	for (var i = 0; i < this.styleLinks.length; i++) {
-	    this.applyStyleNamed(this.styleLinks[i]); 
+	var styleClassDecl = this.getStyleClass();
+	if (!styleClassDecl) return;
+	var styleClasses = styleClassDecl.split(' '); // better parsing?
+	for (var i = 0; i < styleClasses.length; i++) {
+	    this.applyStyleNamed(styleClasses[i]); 
 	}
     },
 
@@ -5594,7 +5592,7 @@ Object.extend(Morph, {
 
     makeCircle: function(location, radius, lineWidth, lineColor, fill) {
 	// make a circle of the given radius with its origin at the center
-	var circle = new Morph(location.asRectangle().expandBy(radius), "ellipse")
+	var circle = new Morph(location.asRectangle().expandBy(radius), "ellipse");
 	return circle.applyStyle({fill: fill, borderWidth: lineWidth, borderColor: lineColor});
     },
 
@@ -6107,7 +6105,7 @@ PasteUpMorph.subclass("WorldMorph", {
                            fill: Color.blue.lighter()},
             clock:       { borderColor: Color.black, borderWidth: 1,
                            fill: new RadialGradient([Color.yellow.lighter(2), 1, Color.yellow]) },
-	    panel:       { fill: Color.primary.blue.lighter(2), borderWidth: 2},
+	    panel:       { fill: Color.primary.blue.lighter(2), borderWidth: 2, borderColor: Color.black},
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue},
 	    helpText:    { borderRadius: 15, fill: Color.primary.yellow.lighter(3), fillOpacity: .8},
 	    fabrik:      { borderColor: Color.red, borderWidth: 2, borderRadius: 0, fill: Color.blue.lighter()}
@@ -6126,7 +6124,7 @@ PasteUpMorph.subclass("WorldMorph", {
                            fill: Color.blue.lighter(), opacity: 0.4},
             clock:       { borderColor: Color.black, borderWidth: 1,
                            fill: new RadialGradient([Color.primary.blue.lighter(2), 1, Color.primary.blue.lighter()]) },
-	    panel:       { fill: Color.primary.blue.lighter(2), borderWidth: 2},
+	    panel:       { fill: Color.primary.blue.lighter(2), borderWidth: 2, borderColor: Color.black},
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue},
 	    helpText:    { borderRadius: 15, fill: Color.primary.yellow.lighter(3), fillOpacity: .8},
 	    fabrik:      { borderColor: Color.blue, borderWidth: 2, borderRadius: 3,
@@ -6145,7 +6143,7 @@ PasteUpMorph.subclass("WorldMorph", {
                            fill: Color.turquoise.lighter(3), borderRadius: 16},
             clock:       { borderColor: Color.black, borderWidth: 1,
                            fill: new RadialGradient([Color.turquoise.lighter(2), 1, Color.turquoise]) },
-	    panel:       {fill: Color.primary.blue.lighter(2), borderWidth: 2},
+	    panel:       {fill: Color.primary.blue.lighter(2), borderWidth: 2, borderColor: Color.black},
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue},
 	    helpText:    { borderRadius: 15, fill: Color.primary.yellow.lighter(3), fillOpacity: .8},
 	    fabrik:      { borderColor: Color.neutral.gray.darker(), borderWidth: 4,
