@@ -13,7 +13,7 @@
  * object inspector, style editor, and profiling and debugging capabilities.  
  */
 
-namespace('lk.tools');
+namespace('lk::tools');
 
 using(lk.text, lk.tools).run(function(text, module) {
 

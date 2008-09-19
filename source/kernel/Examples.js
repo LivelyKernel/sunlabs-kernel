@@ -14,7 +14,7 @@
  */
 
 
-namespace('lk.examples');
+namespace('lk::examples');
 
 
 using(lk.examples).run(function(module) {
@@ -479,7 +479,7 @@ PanelMorph.subclass('SquiggleMorph', {
         
 });
 
-namespace('lk.examples.threedee');
+namespace('lk::examples::threedee');
 
 // ===========================================================================
 // The 3D Rotation Example
@@ -707,7 +707,7 @@ using(lk.examples.threedee).run(function(threedee) {
  * WireObject instance constructor
  *============================================================================*/
 
-Object.subclass('lk.examples.threedee.WireObject', {
+Object.subclass('lk::examples::threedee::WireObject', {
     // WireObject constructor: create the wireframe object
     initialize: function(hereX, hereY, hereZ) {
 
@@ -841,7 +841,7 @@ Object.subclass('lk.examples.threedee.WireObject', {
 
 }); 
 
-PanelMorph.subclass('lk.examples.Sun3DMorph', {
+PanelMorph.subclass('lk::examples::Sun3DMorph', {
     documentation: "Sun logo rotating in 3D",
 
     initialize: function($super, rect) {
@@ -909,7 +909,7 @@ PanelMorph.subclass('lk.examples.Sun3DMorph', {
 
 *****************************************************************************/
 
-namespace('lk.examples.asteroids');
+namespace('lk::examples::asteroids');
 
 using(lk.examples.asteroids).run(function(module) {
 
@@ -927,7 +927,7 @@ var gameHeight = 300;
   rotation. It also can detemine if two objects collide.
 ************************************************************************************************/
 
-Object.subclass('lk.examples.asteroids.AsteroidsSprite', {
+Object.subclass('lk::examples::asteroids::AsteroidsSprite', {
 
     /* boolean */ active: false,    // Active flag.
     /* double */  angle: 0,         // Current angle of rotation.
@@ -1320,7 +1320,7 @@ Object.subclass('lk.examples.asteroids.AsteroidsSprite', {
   }
 
 
-ClipMorph.subclass("lk.examples.asteroids.GameMorph", {
+ClipMorph.subclass("lk::examples::asteroids::GameMorph", {
     
     runAsteroidsGame: function runAsteroidsGame() {
 
@@ -3474,7 +3474,7 @@ Morph.subclass("MapMorph", {
 }(); // end of the map demo module
 
 
-namespace('lk.examples.canvascape');
+namespace('lk::examples::canvascape');
 
 using(lk.examples.canvascape).run(function(module) { 
 
@@ -3489,7 +3489,7 @@ using(lk.examples.canvascape).run(function(module) {
  * @class MiniMapMorph: The "radar view" for the game
  */
 
-Morph.subclass("lk.examples.canvascape.MiniMapMorph", {
+Morph.subclass("lk::examples::canvascape::MiniMapMorph", {
     
     initialize: function($super, rect) {
         $super(rect, "rect");
@@ -3534,7 +3534,7 @@ Morph.subclass("lk.examples.canvascape.MiniMapMorph", {
  * @class CanvasScapeMorph: The Canvas Game Morph
  */
 
-ClipMorph.subclass("lk.examples.canvascape.CanvasScapeMorph", {
+ClipMorph.subclass("lk::examples::canvascape::CanvasScapeMorph", {
     
     initialize: function($super, rect) {
         $super(rect, "rect");

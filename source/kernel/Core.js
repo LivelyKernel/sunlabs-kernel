@@ -15,10 +15,10 @@
 
 var Global = this.window.top || this.window; // set to the context enclosing the SVG context.
 
-// namespace logic borrowed from 
+// namespace logic adapted frm
 // http://higher-order.blogspot.com/2008/02/designing-clientserver-web-applications.html
 function using() {
-    var args = arguments;
+    var args = arguments; // FIXME: enable using('lk::text')
     return {run: function(inner) { return inner.apply(args[0], args); }};
 }
 
@@ -41,12 +41,12 @@ function namespace(spec, context) {
     } else if (typeof spec === 'string') {
         (function handleStringCase() {
             var parts;
-            if (!Class.isValidIdentifier(spec)) {
-                throw new Error('"'+spec+'" is not a valid name for a package.');
-            }
-            parts = spec.split('.');
+            parts = spec.split('::');
             for (i = 0, N = parts.length; i<N; i++) {
                 spec = parts[i];
+		if (!Class.isValidIdentifier(spec)) {
+                    throw new Error('"'+spec+'" is not a valid name for a package.');
+		}
                 context[spec] = context[spec] || {};
                 context = context[spec];
             }
@@ -94,7 +94,7 @@ Object.extend(Function.prototype, {
 	var targetScope = Global;
 	var shortName = null;
 	if (className) {
-	    var path = className.split('.');
+	    var path = className.split('::');
 	    if (path.length > 1) {
 		for (var i = 0; i < path.length - 1; i++) {
 		    if (!Class.isValidIdentifier(path[i]))
@@ -105,8 +105,8 @@ Object.extend(Function.prototype, {
 	    } else {
 		shortName = className;
 	    }
-	    if (!Class.isValidIdentifier(className))
-		throw new Error("invalid class name " + className);
+	    if (!Class.isValidIdentifier(shortName))
+		throw new Error("invalid class name " + shortName);
 	} 
 	
 	if (shortName == null) {
@@ -3781,7 +3781,7 @@ Object.subclass('MouseHandlerForRelay', {
 });
 
 
-namespace('lk.text');
+namespace('lk::text');
 
 
 using(lk.text).run(function(text) {

@@ -12,11 +12,11 @@
  * Text.js.  Text-related functionality.
  */
 
-namespace('lk.text');
+namespace('lk::text');
 
 using(lk.text).run(function(module) {
 
-Object.subclass('lk.text.CharacterInfo', {
+Object.subclass('lk::text::CharacterInfo', {
     // could simply use Point as extent.
     documentation: "simple printable info about a character's extent",
 
@@ -32,7 +32,7 @@ Object.subclass('lk.text.CharacterInfo', {
 });
 
 
-Object.subclass('lk.text.Font', {
+Object.subclass('lk::text::Font', {
 
     documentation: "representation of a font",
     baselineFactor: 0.80,
@@ -2480,7 +2480,7 @@ Object.extend(RunArray, {
 RunArray.test([3, 1, 2]);
 
     
-Object.subclass('lk.text.Text', {
+Object.subclass('lk::text::Text', {
     // Rich text comes to the Lively Kernel
     initialize: function(string, style) {
 	this.string = string;

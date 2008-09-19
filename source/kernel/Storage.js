@@ -12,7 +12,7 @@
  * Storage.js.  Storage system implementation.
  */
 
-namespace('lk.storage');
+namespace('lk::storage');
  
 using(lk.storage).run(function(module) {
 
@@ -105,7 +105,7 @@ Morph.subclass('PackageMorph', {
 });
 
 
-Wrapper.subclass('lk.storage.CollectionItem', {
+Wrapper.subclass('lk::storage::CollectionItem', {
     documentation: "Wrapper around information returned from WebDAV's PROPFIND",
 
     nameQ: new Query("D:href"),
@@ -147,7 +147,7 @@ Wrapper.subclass('lk.storage.CollectionItem', {
 });
 
 
-View.subclass('lk.storage.WebFile', NetRequestReporterTrait, { 
+View.subclass('lk::storage::WebFile', NetRequestReporterTrait, { 
     documentation: "Read/Write file",     // merge with Resource?
     pins: ["-File", "Content", "+DirectoryList", "-RootNode"],
 
@@ -753,7 +753,7 @@ TwoPaneBrowser.subclass('FileBrowser', {
 });
 
 
-View.subclass('lk.storage.DOMFetcher', {
+View.subclass('lk::storage::DOMFetcher', {
 
     initialize: function($super, plug) {
 	$super(plug);
