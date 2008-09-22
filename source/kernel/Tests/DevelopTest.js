@@ -1,5 +1,5 @@
 
-TestCase.subclass('LoaderTest', {
+TestCase.subclass('LoaderTestOld', {
 	
 	testLoadScript: function() {
 	    //var url = URL.source.withFilename("Tests/DummyScript.js");
