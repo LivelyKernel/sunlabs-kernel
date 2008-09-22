@@ -1561,6 +1561,9 @@ TextMorph.addMethods({
 	var before = this.textString.substring(0,this.selectionRange[0]); 
         var after = this.textString.substring(this.selectionRange[1]+1, oldLength);
 	this.setTextString(before.concat(replacement.asString(),after), delayComposition, justMoreTyping);
+        if(this.selectionRange[0] == -1 && this.selectionRange[1] == -1) {
+            this.setSelectionRange(0,0); // symthom fix of typing into an "very emty" string
+        };
 	
 	if (strStyle || repStyle) { // Splice the style array if any
 	    if (!strStyle) strStyle = new RunArray([oldLength],  [new TextEmphasis({})]);
@@ -1749,28 +1752,31 @@ TextMorph.addMethods({
     },
     
     replaceSelectionfromKeyboard: function(replacement) {
-	// This special version of replaceSelectionWith carries out the replacement
-	// but postpones the necessary composition for some time (200 ms) later.
-	// Thus, if there is further keyboard input pending, it can get handled also
-	// without composition until there is an adequate pause.
-	// Note: If other events happen when composition has been postponed,
-	//    and this can be tested by if(this.delayedComposition),
-	//    then a call to composeAfterEdits() must be forced before handling them.
-
+        // This special version of replaceSelectionWith carries out the replacement
+        // but postpones the necessary composition for some time (200 ms) later.
+        // Thus, if there is further keyboard input pending, it can get handled also
+        // without composition until there is an adequate pause.
+        // Note: If other events happen when composition has been postponed,
+        //    and this can be tested by if(this.delayedComposition),
+        //    then a call to composeAfterEdits() must be forced before handling them.
         if (!this.acceptInput) return;
-		this.replaceSelectionWith(replacement, true, this.typingHasBegun); // 2nd arg = true delays composition
+        
+        this.replaceSelectionWith(replacement, true, this.typingHasBegun); // 2nd arg = true delays composition
 
-	if (this.typingHasBegun)  this.charsTyped += replacement;
-		else  this.charsTyped = replacement;
-	this.typingHasBegun = true;  // So undo will revert to first replacement
+        if (this.typingHasBegun) {
+            this.charsTyped += replacement;
+        } else {  
+            this.charsTyped = replacement;
+        };
+        this.typingHasBegun = true;  // So undo will revert to first replacement
 
-	// Bundle display of typing unless suppressed for reliablity or response in small text
-	if (Config.showAllTyping  || (Config.showMostTyping && this.textString.length<1000)) {
-	    this.composeAfterEdits();
-	} else {
-	    if(!this.delayedComposition) this.delayedComposition = new SchedulableAction(this, "composeAfterEdits", null, 0);
-	    this.world().scheduleForLater(this.delayedComposition, 200, true); // will override a prior request
-	}
+        // Bundle display of typing unless suppressed for reliablity or response in small text
+        if (Config.showAllTyping  || (Config.showMostTyping && this.textString.length<1000)) {
+            this.composeAfterEdits();
+        } else {
+            if(!this.delayedComposition) this.delayedComposition = new SchedulableAction(this, "composeAfterEdits", null, 0);
+            this.world().scheduleForLater(this.delayedComposition, 200, true); // will override a prior request
+        }
     },
     
     editMenuItems: function() {
@@ -1857,7 +1863,10 @@ TextMorph.addMethods({
         if (lk.tools.SourceControl) SourceControl.browseReferencesTo(this.getSelectionString()); 
     },
     doDoit: function() {
-	this.tryBoundEval(this.getSelectionString());
+        var strToEval = this.getSelectionString(); 
+        if (strToEval.length == 0)
+            strToEval = this.pvtCurrentLineString();
+        this.tryBoundEval(strToEval);
     },
     // eval selection or current line if selection is emtpy
     doPrintit: function() {

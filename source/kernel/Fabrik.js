@@ -33,10 +33,12 @@
  /**************************************************
   * Examples for interactive testing and exploring
   */
-  
-Loader.loadScript('Helper.js');
 
-var Fabrik = {
+module('Fabrik.js').requires('Helper.js').toRun(function() {
+
+// logMethod(Morph.prototype, 'onMouseDown');
+
+Global.Fabrik = {
     
     positionComponentRelativeToOther: function(comp, otherComp, relPos) {
         comp.panel.setPosition(otherComp.panel.getPosition().addPt(relPos));
@@ -87,7 +89,7 @@ var Fabrik = {
         if (!loc) loc = pt(100, 100);
         if (!title) title = 'Fabrik Component';
         var c = new FabrikComponent();
-        c.defaultExtent = extent;
+        c.defaultViewExtent = extent;
         FabrikComponent.current = c;
         c.viewTitle = title;
         c.openIn(world, loc);
@@ -105,8 +107,8 @@ var Fabrik = {
         c2.setText("Hallo Welt");
         c3.setText("Ola mundo");
         f.morph.automaticLayout();
-        f.connectPins(c1.getPinHandle("Text"), c2.getPinHandle("Text"));
-        f.connectPins(c2.getPinHandle("Text"), c3.getPinHandle("Text"))
+        c1.getPinHandle("Text").connectTo(c2.getPinHandle("Text"));
+        c2.getPinHandle("Text").connectTo(c3.getPinHandle("Text"));
         return f;
     },
 
@@ -139,7 +141,7 @@ var Fabrik = {
         world.addMorph(m1);
         world.addMorph(m2);
 
-        c.formalModel = NewComponentModel.instantiateNewClass();
+        c.formalModel = Record.newNodeInstance({});
         c.formalModel.addField("StartHandle");
         c.formalModel.addField("EndHandle");
         c.formalModel.setStartHandle(m1);
@@ -243,7 +245,7 @@ var Fabrik = {
 
     openFabrikWebRequestExample: function(world, loc) {
             if (!loc) loc = pt(100, 100);
-            var f = this.openFabrikComponent(world, loc, pt(650, 250), 'WebRequest Example');
+            var f = this.openFabrikComponent(world, loc, pt(730, 170), 'WebRequest Example');
 
             var urlHolder = this.addTextComponent(f);
             urlHolder.setText("http://www.webservicex.net/CurrencyConvertor.asmx/ConversionRate?FromCurrency=USD&ToCurrency=EUR");
@@ -299,26 +301,17 @@ var Fabrik = {
         celsius.setText("");
 
         var f1 = this.addFunctionComponent(f);
-        f1.setFunctionBody("return this.getInput() * 9/5");
-
-
-        var f2 = this.addFunctionComponent(f);
-        f2.setFunctionBody("return this.getInput() + 32");
+        f1.setFunctionBody("input * 9/5 + 32");
 
         var fahrenheit = this.addTextComponent(f);
         fahrenheit.setText("");
 
-        var f3 = this.addFunctionComponent(f);
+        var f2 = this.addFunctionComponent(f);
         //f4.addFieldAndPinHandle('Input');
-        f3.setFunctionBody("return this.getInput() * 5/9");
-
-        var f4 = this.addFunctionComponent(f);
-        //f3.addFieldAndPinHandle('Input');
-        f4.setFunctionBody("return this.getInput() - 32");
+        f2.setFunctionBody("(input - 32) * 5/9");
 
         f.connectComponents(celsius, "Text", f1, "Input");
-        f.connectComponents(f1, "Result", f2, "Input");
-        f.connectComponents(f2, "Result", fahrenheit, "Text");
+        f.connectComponents(f1, "Result", fahrenheit, "Text");
 
         // f.connectComponents(fahrenheit, "Text", f3, "Input");
         // f.connectComponents(f3, "Result", f4, "Input");
@@ -327,14 +320,58 @@ var Fabrik = {
         f.morph.automaticLayout();
 
         // some manual layouting
-        f3.panel.setPosition(f1.panel.getPosition().addPt(pt(0,f1.panel.getExtent().y + 20)));
-        f4.panel.setPosition(f2.panel.getPosition().addPt(pt(0,f2.panel.getExtent().y + 20)));
+        // f3.panel.setPosition(f1.panel.getPosition().addPt(pt(0,f1.panel.getExtent().y + 20)));
+        // f4.panel.setPosition(f2.panel.getPosition().addPt(pt(0,f2.panel.getExtent().y + 20)));
         //f4.panel.setPosition(f2.panel.getPosition().addPt(pt(0,f2.panel.getExtent().y - 10)));
-        celsius.panel.setPosition(celsius.panel.getPosition().addPt(pt(0,(celsius.panel.getExtent().y + 20) / 2)));
+        this.positionComponentRelativeToOther(f2, f1, pt(0, f1.panel.getExtent().y + 20));
+        celsius.panel.setPosition(celsius.panel.getPosition().addPt(pt(0,celsius.panel.getExtent().y / 2)));
         fahrenheit.panel.setPosition(fahrenheit.panel.getPosition().addPt(pt(0,(fahrenheit.panel.getExtent().y + 20) / 2)));
 
         return f;
     },
+
+
+    openFahrenheitCelsiusExampleSimple: function(world, loc) {
+        if (!loc) loc = pt(100, 100);
+        var f = this.openFabrikComponent(world, loc, pt(940,270), 'Celsius-Fahrenheit Converter');
+        celsius = this.addTextComponent(f);
+        celsius.setText("");
+
+        var f1 = this.addFunctionComponent(f);
+        f1.setFunctionBody("input * 9/5 + 32");
+
+        var fahrenheit = this.addTextComponent(f);
+        fahrenheit.setText("");
+
+        var f2 = this.addFunctionComponent(f);
+        //f4.addFieldAndPinHandle('Input');
+        f2.setFunctionBody("(input - 32) * 5/9");
+
+        f.connectComponents(celsius, "Text", f1, "Input");
+        f.connectComponents(f1, "Result", fahrenheit, "Text");
+
+        // f.connectComponents(fahrenheit, "Text", f3, "Input");
+        // f.connectComponents(f3, "Result", f4, "Input");
+        // f.connectComponents(f4, "Result", celsius, "Text");
+
+        f.morph.automaticLayout();
+
+        // some manual layouting
+        // f3.panel.setPosition(f1.panel.getPosition().addPt(pt(0,f1.panel.getExtent().y + 20)));
+        // f4.panel.setPosition(f2.panel.getPosition().addPt(pt(0,f2.panel.getExtent().y + 20)));
+        //f4.panel.setPosition(f2.panel.getPosition().addPt(pt(0,f2.panel.getExtent().y - 10)));
+        this.positionComponentRelativeToOther(f2, f1, pt(0, f1.panel.getExtent().y + 20));
+        celsius.panel.setPosition(celsius.panel.getPosition().addPt(pt(0,celsius.panel.getExtent().y / 2)));
+        fahrenheit.panel.setPosition(fahrenheit.panel.getPosition().addPt(pt(0,(fahrenheit.panel.getExtent().y + 20) / 2)));
+
+        return f;
+    },
+
+
+
+
+
+
 
     openFabrikFunctionComponentExample2: function() {
         // the next variables are intentionally defined global
@@ -365,45 +402,6 @@ var Fabrik = {
 
 /* Fabrik Model. It is used to store the data of the components. Data flow is simulated
    by establishing observer relationships bewtween the models of the components */
-PlainRecord.prototype.create({}).subclass("NewComponentModel", {
-    
-    initialize: function($super, spec, rawNode) {
-        if (!rawNode) rawNode = {};
-        $super(rawNode, spec);
-    },
-    
-    addField: function(fieldName, coercionSpec, forceSet) {
-        var spec = {}; spec[fieldName] = coercionSpec || {};
-        this.constructor.addMethods(new Record.extendRecordClass(spec));
-        if (!forceSet) return;
-        this['set' + fieldName] = this['set' + fieldName].wrap(function(proceed, value, optSource, force) {
-            proceed(value, optSource, true);
-        })
-    },
-    
-    /*
-        Deprecated code below. Remove those things!
-    */
-    addPin: function(pinName, coercionSpec) {
-        this.addField(pinName, coercionSpec);
-    },
-    
-    connectPins: function(myPinName, otherModel, otherModelPinName){
-        var spec = {};
-        spec[myPinName] = "=set" + otherModelPinName;
-        this.addObserver(otherModel, spec);
-    },
-    
-    connectPinsBidirectional: function(myPinName, otherModel, otherModelPinName){
-        this.connectPins(myPinName, otherModel, otherModelPinName);
-        otherModel.connectPins(otherModelPinName, this, myPinName);
-    }
-    
-});
-
-NewComponentModel.instantiateNewClass = function() {
-    return new (NewComponentModel.subclass())();
-};
 
 /*
  * PinMorph, the graphical representation of a pin handle
@@ -424,7 +422,33 @@ Morph.subclass('PinMorph', {
     
         this.setupMorphStyle();
         this.setExtent(pt(18,18)); // fixes ellipse pt(0,0) === center behavior
-         return this;
+        return this;
+    },
+    
+    deserialize: function($super, importer, rawNode) {
+        $super(importer, rawNode);    
+        console.log("###deserialize " + this.id() +  " raw: " + rawNode.id)
+    },
+    
+    restorePersistentState: function($super, importer) {
+        console.log("###restorePersistentState " + this.id())
+        var uri = this.getTrait("pinHandle");
+        if (uri)
+            console.log(" uri: " + uri);
+        else
+        console.log(" NO URI FOUND");
+        this.debugValue = "I was here"
+
+        this.pinHandle = Wrapper.prototype.getWrapperByUri(uri);
+        console.log("found wrapper: " + this.pinHandle);
+        if (!this.pinHandle)
+            console.log("no wrapper found")       
+    },
+    
+    setPinHandle: function(pinHandle) {
+        console.log("setPinHandle" + pinHandle)
+        this.setTrait("pinHandle", pinHandle.uri());
+        this.pinHandle = pinHandle;
     },
     
      /* Drag and Drop of Pin */        
@@ -436,14 +460,16 @@ Morph.subclass('PinMorph', {
         //FIXME: just for make things work...
         var fakePin = morph.pinHandle;
         fakePin.connectors.first().remove();
-        this.pinHandle.component.fabrik.connectPins(fakePin.originPin, this.pinHandle);
         
+        // FIXME only kludge for connect problem, use double dispatch
+        fakePin.originPin.connectTo(this.pinHandle);
+                
         this.removeMorph(morph);
     },
     
     setupMorphStyle: function() {
         this.setFill(Color.green);
-        this.setFillOpacity(0.5);
+        // this.setFillOpacity(0.5);
     },
     
     setupInputMorphStyle: function() {
@@ -470,7 +496,7 @@ Morph.subclass('PinMorph', {
         return this.getExtent().scaleBy(0.5);
     },
     
-    getGlobalPinPosition: function(){
+    getGlobalPinPosition: function() {
         return this.getGlobalTransform().transformPoint(this.getLocalPinPosition());
     },
     
@@ -494,8 +520,13 @@ Morph.subclass('PinMorph', {
 
     // PinPosition relative to the Fabrik Morph
     getPinPosition: function() {
-        // arghhhhhh, law of demeter
-        return this.pinHandle.component.fabrik.morph.localize(this.getGlobalPinPosition());
+        // FIXME kludge
+        if (this.pinHandle.component instanceof FabrikComponent)
+                return this.pinHandle.component.morph.localize(this.getGlobalPinPosition());
+        if (this.pinHandle.component.fabrik)
+            return this.pinHandle.component.fabrik.morph.localize(this.getGlobalPinPosition());
+        // we have no fabrik so we are probably global
+        return this.getGlobalPinPosition()
     },
 
     updatePosition: function(evt) {
@@ -520,35 +551,30 @@ Morph.subclass('PinMorph', {
     // When PinHandleMorph is there, connect to its onMouseDown
     onMouseDown: function($super, evt) {
         logCall(arguments, this);
-        
-        
+            
         if (evt.isMetaDown()) return;
+        
         // for not grabbing non-fake pins.
-        // Extend, so that pins can be moved around componentmorphs
-        if (evt.hand.topSubmorph() === this) {
-                // this.setPosition(this.getNearestValidPositionTo(evt))}
-            evt.hand.showAsUngrabbed(this);
-        };
+        if (evt.hand.topSubmorph() === this) evt.hand.showAsUngrabbed(this);
         
         if (this.pinHandle.isFakeHandle) return;
-        var fakePin = this.pinHandle.createFakePinHandle();
-        fakePin.buildView();
         
+        var fakePin = this.pinHandle.createFakePinHandle();
+        
+        if (!fakePin.morph) fakePin.buildView(); // Could already be triggered in connectTo in create....
         // change style to distinguish between real handles... put into an own method...?
         fakePin.morph.setFill(Color.red);
         fakePin.morph.setExtent(pt(10,10));
         
         evt.hand.addMorph(fakePin.morph);
         fakePin.morph.setPosition(pt(0,0));
-        fakePin.morph.startSnapping();
-        
-        //FIXME: just for make things work... connect redundant with createFakePinHandle()
-        this.pinHandle.component.fabrik.connectPins(this.pinHandle, fakePin);
+        fakePin.morph.startSnapping(fakePin.reachablePins());
+                
         this.updatePosition();
     },
 
     getHelpText: function() {
-        return this.pinHandle.name + "\n" + this.pinHandle.getValue();
+        return this.pinHandle.getName() + "\n" + this.pinHandle.getValue();
     },
     
     acceptsDropping: function($super, evt) {
@@ -561,9 +587,12 @@ Morph.subclass('PinMorph', {
 
     okToBeGrabbedBy: Functions.Null,
     
-    startSnapping: function() {
+    startSnapping: function(pinSnapPoints) {
+        if (!this.pinHandle.component.fabrik && !(this.pinHandle.component instanceof FabrikComponent))
+            return; // wihtout a fabrik we don't know what other points to snap
         this.snapper = new PointSnapper(this);
-        this.snapper.points = this.pinHandle.component.fabrik.morph.allPinSnappPoints(); 
+        //FIXME
+        this.snapper.points = pinSnapPoints.collect(function(ea) { return ea.morph.owner.worldPoint(ea.morph.bounds().center()) });
         this.snapper.offset = pt(this.bounds().width * -0.5, this.bounds().height * -0.5);
         var self = this;
         this.snapper.formalModel.addObserver({onSnappedUpdate: function(snapped) {
@@ -598,42 +627,121 @@ Morph.subclass('PinMorph', {
 Widget.subclass('PinHandle', {
     
     isPinHandle: true,
-    isInputPin: false,
-    
+
     initialize: function($super, component, pinName) {
         $super();
+        this.formalModel = Record.newNodeInstance({Name: pinName, Type: "regular"});
+        //this.formalModel = Record.newPlainInstance({Name: pinName, Type: "regular"});
+        //this.name = pinName;
+        //this.type = "regular";
         this.component = component;
-        this.name = pinName;
-        this.connectors = [];
+        this.initializeTransientState();
+
+        this.linkWrapee();
+        this.rawNode.appendChild(this.getModel().rawNode);
+    },
+    
+    initializeTransientState: function() {
+        this.connectors = [];            
     },
 
+    getName: function() {
+        return this.formalModel.getName();
+        //return this.name
+    },
+    
+    isInputPin: function() {
+        return this.formalModel.getType() === "input"   
+        //return  this.type === "input";
+    },
+    
     becomeInputPin: function() {
-        this.isInputPin= true;
+        this.formalModel.setType("input");
+        //this.type = "input" 
         if (this.morph) this.morph.setupInputMorphStyle();
     },
 
     buildView: function() {
         this.morph = new PinMorph();
         // perhaps move to morph
-        this.morph.pinHandle = this;
-        if (this.isInputPin)
+        this.morph.setPinHandle(this);
+        if (this.isInputPin())
             this.morph.setupInputMorphStyle();
         return this.morph;
     },
- 
+    
+    deserialize: function($super, importer, rawNode) {
+        $super(importer, rawNode);
+        console.log("###deserialize " + this.id())
+        
+        var records = this.rawNode.getElementsByTagName('record')
+        if(records.length > 0) {
+            this.formalModel = this.deserializeModelFromNode(importer, records[0]);
+            this.formalModel.owner = this; // remember the component diretly in a non persisten way 
+        };
+    },
+    
     setValue: function(value) {
-        this.component.formalModel["set" + this.name](value);
+        this.component.formalModel["set" + this.getName()](value);
     },
     
     getValue: function() {
-        return this.component.formalModel["get" + this.name]();
+        return this.component.formalModel["get" + this.getName()]();
+    },
+
+    reachablePins: function() {
+        // this method determines all pins which are "physically" reachable, this means
+        // the own pins, the pins of the outer FabrikComponent and pins of the own components
+        // (when this.component is a fabrikCompoment)
+        // filter all through isConnectableTo()
+        var ownPins = this.component.pinHandles;
+        
+        
+        var ownerPins = this.component.fabrik ?
+            this.component.fabrik.components.inject(this.component.fabrik.pinHandles, function(pins, ea) {
+                return ea == this.component ? pins : pins.concat(ea.pinHandles) }) :
+            [];
+        ownerPins = this.component.fabrik && this.component.fabrik.panel && this.component.fabrik.panel.isCollapsed ?
+                    [] :
+                    ownerPins;
+
+        var childPins = this.component instanceof FabrikComponent ?
+            this.component.components.inject([], function(pins, ea) { return pins.concat(ea.pinHandles) }) :
+            [];
+        childPins = this.component && this.component.panel && this.component.panel.isCollapsed ?
+                    [] :
+                    childPins;
+                        
+        var allPins = ownPins.concat(ownerPins).concat(childPins);
+        return allPins.uniq().select(function(ea) { return this.isConnectableTo(ea) }, this);
+        
+        
+        
+    },
+    
+    isConnectableTo: function(otherPin) {
+        if (otherPin === this || otherPin === this.originPin) return false;
+        if (otherPin.isFakeHandle && this === otherPin.originPin) return true;
+        if (this.component instanceof FabrikComponent && this.component.components.include(otherPin.component)) return true;
+        if (otherPin.component instanceof FabrikComponent && otherPin.component.components.include(this.component)) return true;
+        if (this.component.fabrik === otherPin.component.fabrik) return true;
+        return false;
     },
     
     connectTo: function(otherPinHandle) {
+
+        if (!this.isConnectableTo(otherPinHandle)) {
+            console.log('tried to connect pins but a connection is not allowed')
+            return;
+        }
         
+        // force an update, even if there is already a connection
+        if (!otherPinHandle.isFakeHandle && otherPinHandle.getValue() != this.getValue())
+            otherPinHandle.setValue(this.getValue());
+                    
         var existingConnection = this.detectConnectorWith(otherPinHandle);
         if (existingConnection) {
-            console.log('There exists already a connection from ' + this.name + ' to ' + otherPinHandle.name);
+            console.log('There exists already a connection from ' + this.getName() + ' to ' + otherPinHandle.getName());
             return existingConnection;
         };
                 
@@ -648,6 +756,13 @@ Widget.subclass('PinHandle', {
         connector = new PinConnector(this, otherPinHandle);
         this.connectors.push(connector);
         otherPinHandle.connectors.push(connector);
+        
+        //FIXME
+        if (this.component instanceof FabrikComponent)
+            this.component.pluginConnector(connector);
+        else
+            this.component.fabrik && this.component.fabrik.pluginConnector(connector);
+                    
         return connector;
     },
     
@@ -711,8 +826,8 @@ Morph.subclass('ArrowHeadMorph', {
         this.ignoreEvents();
         this.head.ignoreEvents();
         
-        //this.head.setFillOpacity(0.7);
-        //this.head.setStrokeOpacity(0.7);
+        this.head.setFillOpacity(0.7);
+        this.head.setStrokeOpacity(0.7);
         
         return this;
     },
@@ -725,6 +840,12 @@ Morph.subclass('ArrowHeadMorph', {
 
 });
 
+// depricated
+NewComponentModel = {
+    instantiateNewClass: function() {
+        return Record.newNodeInstance({});
+    }
+}
 
 Morph.subclass('ConnectorMorph', {
     
@@ -734,9 +855,7 @@ Morph.subclass('ConnectorMorph', {
         if (!verts) verts = [pt(0,0), pt(100,100)];
         if (!lineWidth) lineWidth = 1;  
         if (!lineColor) lineColor = Color.red;   
-        this.formalModel = NewComponentModel.instantiateNewClass();
-        this.formalModel.addField("StartHandle");
-        this.formalModel.addField("EndHandle");
+        this.formalModel = Record.newPlainInstance({StartHandle: null, EndHandle: null});
         
         this.pinConnector = pinConnector;
         
@@ -745,7 +864,7 @@ Morph.subclass('ConnectorMorph', {
         this.setShape(new PolylineShape(vertices, lineWidth, lineColor));
         this.customizeShapeBehavior();
         
-        this.setStrokeOpacity(0.7);
+        // this.setStrokeOpacity(0.7);
         this.lineColor = lineColor;
         
         this.closeAllToDnD();    
@@ -817,11 +936,10 @@ Morph.subclass('ConnectorMorph', {
         
         var connector = this;
         var handObserver = new HandPositionObserver(function(value) {
-            if (!connector.contextMenu.owner || 
-                value.dist(connector.contextMenu.worldPoint(pt(20,20))) > 40) {
-                connector.contextMenu.remove();
-                connector.contextMenu = null;
-                this.stop();
+            if (!connector.contextMenu.owner || value.dist(connector.contextMenu.worldPoint(pt(20,20))) > 40) {
+                    connector.contextMenu.remove();
+                    connector.contextMenu = null;
+                    this.stop();
             }
         });
         handObserver.start();
@@ -830,6 +948,8 @@ Morph.subclass('ConnectorMorph', {
     containsWorldPoint: Functions.Null,
     
     fullContainsWorldPoint: function($super, p) {
+        if (!this.formalModel)
+            return false;
         // to ensure correct dnd behavior when connector is beneath a pinMorph in hand
         if (this.formalModel.getStartHandle().fullContainsWorldPoint(p) || 
             this.formalModel.getEndHandle().fullContainsWorldPoint(p))
@@ -839,7 +959,7 @@ Morph.subclass('ConnectorMorph', {
 
     setStartPoint: function(point) {
         if (!point) 
-        throw {msg: "failed setStartPoint " + point};
+            throw {msg: "failed setStartPoint " + point};
         var v = this.shape.vertices();
         v[0] = point;
         this.setVertices(v); 
@@ -847,7 +967,7 @@ Morph.subclass('ConnectorMorph', {
     
     setEndPoint: function(point) {
         if (!point) 
-        throw {msg: "failed setEndPoint " + point}; 
+            throw {msg: "failed setEndPoint " + point}; 
         var v = this.shape.vertices();
         v[v.length-1] = point;
         this.setVertices(v); 
@@ -886,7 +1006,10 @@ Morph.subclass('ConnectorMorph', {
     
     updateView: function (varname, source) {
         // console.log("update View for connector");
-        if (!this.formalModel) return;
+        if (!this.formalModel) {
+            console.log("no formal model found for connector: " + this);
+            return;
+        }
         var start = this.formalModel.getStartHandle();
         if (start) this.setStartPoint(start.getPinPosition());
         var end = this.formalModel.getEndHandle();
@@ -894,35 +1017,58 @@ Morph.subclass('ConnectorMorph', {
     },
 });
 
-Object.subclass('PinConnector', {
+Widget.subclass('PinConnector', {
     
-    initialize: function(fromPinHandle, toPinHandle) {
+    initialize: function($super, fromPinHandle, toPinHandle) {
+        $super();
+        
+        // manual serialization for now: until the Records are fixe to handle references correctly
+        this.fromPin = fromPinHandle; 
+        this.toPin = toPinHandle;                 
         this.isBidirectional = false;
-        this.fromPin = fromPinHandle;
-        this.toPin = toPinHandle;
+        
         if (toPinHandle.isFakeHandle) return;
         
-        // FIXME: Relays inbetween? (Law of Demeter)
+        // FIXME: Relays inbetween? Serialization?
         var fromModel = fromPinHandle.component.formalModel;
         var toModel = toPinHandle.component.formalModel;
 
         // implicit assertion: pinHandle name equals field name of model
         var spec = {};
-        spec[fromPinHandle.name] = "=set" + toPinHandle.name;
+        spec[fromPinHandle.getName()] = "=set" + toPinHandle.getName();
         fromModel.addObserver(toModel, spec);
         
-        console.log("PinConnector says: Connected pin " + fromPinHandle.name + " to pin " + toPinHandle.name);
+        this.linkWrapee();
+        
+        console.log("PinConnector says: Connected pin " + fromPinHandle.getName() + " to pin " + toPinHandle.getName());
+    },
+
+    prepareForSerialization: function($super, helperNodes) {
+        $super(helperNodes);
+        this.setTrait("bidirectional", this.isBidirectional);
+        this.setTrait("fromPin", this.fromPin);
+        this.setTrait("toPin", this.toPin);
+    },
+
+    deserialize: function($super, importer, rawNode) {
+        $super(importer, rawNode);
+        this.fromPin = Wrapper.prototype.getWrapperByUri(this.getTrait("fromPin"));
+        this.fromPin = Wrapper.prototype.getWrapperByUri(this.getTrait("fromPin"));
+        this.isBidirectional = this.getTrait("bidirectional") == "true";
     },
 
     // just for make things work ...
     buildView: function() {
         this.morph = new ConnectorMorph(null, 4, Color.blue, this);
+        if (!this.fromPin.morph) this.fromPin.buildView();
+        if (!this.toPin.morph) this.toPin.buildView();
         this.morph.formalModel.setStartHandle(this.fromPin.morph);
         this.morph.formalModel.setEndHandle(this.toPin.morph);
         this.morph.connector = this; // for debugging... of course...
         return this.morph;
     },
-    
+
+    // do we need this anymore? Can be directly called ... ?
     updateView: function(varname, source) {
         if (!this.morph) this.buildView();
         this.morph.updateView(varname, source);
@@ -940,13 +1086,13 @@ Object.subclass('PinConnector', {
 
         // FIXME move to PionHandle
         var self = this;
-        console.log("remove con from " + this.fromPin.name + " to: " + this.toPin.name);
+        console.log("remove con from " + this.fromPin.getName() + " to: " + this.toPin.getName());
         this.fromPin.connectors = this.fromPin.connectors.reject(function (ea) { return ea === self}, this);
         this.toPin.connectors = this.toPin.connectors.reject(function (ea) { return ea === self}, this);
         
-        this.fromPin.component.formalModel.removeObserver(this.toPin.component.formalModel, this.fromPin.name);
+        this.fromPin.component.formalModel.removeObserver(this.toPin.component.formalModel, this.fromPin.getName());
         if (this.isBidirectional)
-            this.toPin.component.formalModel.removeObserver(this.fromPin.component.formalModel, this.toPin.name);
+            this.toPin.component.formalModel.removeObserver(this.fromPin.component.formalModel, this.toPin.getName());
     },
     
     beBidirectional: function() {
@@ -956,7 +1102,7 @@ Object.subclass('PinConnector', {
         var toModel = this.toPin.component.formalModel;
         
         var spec = {};
-        spec[this.toPin.name] = "=set" + this.fromPin.name;
+        spec[this.toPin.getName()] = "=set" + this.fromPin.getName();
         toModel.addObserver(fromModel, spec);
         this.updateView();
     },
@@ -971,11 +1117,11 @@ Morph.subclass('ComponentMorph', {
         bounds = bounds || this.defaultExtent.extentAsRectangle();
         $super(bounds, "rect");
         this.closeDnD();
-        
+            
         this.linkToStyles(['fabrik']);
         this.shapeRoundEdgesBy(8);
-        this.setFillOpacity(0.7);
-        this.setStrokeOpacity(0.7);
+        // this.setFillOpacity(0.7);
+        // this.setStrokeOpacity(0.7);
         
         this.priorExtent = pt(0,0);
         this.priorPosition = pt(0,0);
@@ -983,9 +1129,34 @@ Morph.subclass('ComponentMorph', {
         return this;
     },
     
+    prepareForSerialization: function($super, helperNodes) {
+        $super(helperNodes);
+        this.component.prepareForSerialization(helperNodes)
+    },
+    
+    deserialize: function($super, importer, rawNode) {
+        $super(importer, rawNode);
+
+        console.log("+++deserialize Morph: " + this.id());
+        var uri = this.getLivelyTrait("model");
+        this.formalModel = Wrapper.prototype.getWrapperByUri(uri);
+        if(this.formalModel) {
+            this.component = this.formalModel.owner;
+            if(this.component)
+                this.component.panel = this;
+            else
+                console.log("no owner for formalModel found")
+        } else {
+            console.log("no formalModel found for " + uri)
+        }
+    },
+    
     setComponent: function(component) {
         this.component = component;
+        //this.relayToModel(component.getModel(), {Name: "Name"});
+        this.formalModel = component.getModel()
         this.setupWithComponent();
+        this.rawNode.setAttribute("model", this.formalModel.uri()); // ok, lets do this by hand...
     },
     
     setupWithComponent: function() {
@@ -1035,13 +1206,11 @@ Morph.subclass('ComponentMorph', {
             return morph;
         };
 
-        if (morph.isPinMorph)
-            this.addMorphFront(morph)
-        else
-            this.addMorphBack(morph);
+        if (morph.isPinMorph) this.addMorphFront(morph)
+        else this.addMorphBack(morph);
 
         morph.closeDnD();
-        morph.withAllSubmorphsDo(function() {this.closeDnD()});
+        morph.closeAllToDnD();
         
         // FIXME cleanup
         if (this[accessorname]) throw new Error("Added two times same type of morph. See add methods");
@@ -1051,8 +1220,7 @@ Morph.subclass('ComponentMorph', {
         var self = this;
         var wrapMouseOver = function() {
             this.onMouseOver = this.onMouseOver.wrap(function(proceed, evt) {
-                proceed(evt);
-                self.showHalos();
+                proceed(evt); self.showHalos();
             });
         };
         wrapMouseOver.apply(morph);
@@ -1100,7 +1268,7 @@ Morph.subclass('ComponentMorph', {
         morph.innerMorph().saveContents = morph.innerMorph().saveContents.wrap(function(proceed, contentString) {    
             this.setText(contentString, true /*force new value*/);
         });
-        var spec = {fontSize: 12, borderWidth: 0, opacity: 0.9, borderRadius: 3};
+        var spec = {fontSize: 12, borderWidth: 0, /*opacity: 0.9,*/ borderRadius: 3};
         morph.submorphs[0].applyStyle(spec); 
         morph.submorphs[1].applyStyle(spec);
         spec.fill = null;
@@ -1137,7 +1305,7 @@ Morph.subclass('ComponentMorph', {
             morph.setExtent(morph.getExtent().addPt(ownerExtentDelta));
             morph.setPosition(morph.getPosition().addPt(ownerPositionDelta));
         };
-        var spec = {fontSize: 12, borderWidth: 0, opacity: 0.75, borderRadius: 3};
+        var spec = {fontSize: 12, borderWidth: 0, /*opacity: 0.75,*/ borderRadius: 3};
         morph.innerMorph().applyStyle(spec); 
         spec.fill = null;
         morph.submorphs[0].applyStyle(spec);
@@ -1164,7 +1332,7 @@ Morph.subclass('ComponentMorph', {
             }
         });
         
-        var spec = {borderWidth: 0, opacity: 0.9, borderRadius: 3};
+        var spec = {borderWidth: 0, /*opacity: 0.9,*/ borderRadius: 3};
         morph.applyStyle(spec);        
         
         morph.openForDragAndDrop = false;
@@ -1187,26 +1355,46 @@ Morph.subclass('ComponentMorph', {
         return this.addMorph(morph, 'button');
     },
 
+    minExtent: function() { return pt(50,50) },
+    
+    /* reshape changes the bounds of the morph and its shape but makes it not smaller than minExtent()
+     * submorphs can react to bounds shape by implementing adoptSubmorphsToNewExtent
+     * FIXME what about adoptToBoundsChange???
+     */
     reshape: function($super, partName, newPoint, handle, lastCall) {
         var insetPt = pt(this.inset, this.inset);
         var priorExtent = this.getExtent().subPt(insetPt);
         var priorPosition = this.getPosition();
-
-        // FIXME: cleanup!!!
-        var delta = pt(0,0);
-        var self = this.shape;
-        this.shape.reshape = function(partName, newPoint, handle, lastCall) {
-            var r = self.bounds().withPartNamed(partName, newPoint);
-            var newWidth = Math.max(r.width, 50);
-            var newHeight = Math.max(r.height, 50);
-            delta = r.topLeft().subPt(pt(newWidth - r.width, newHeight - r.height));
-            r = new Rectangle(0,0, newWidth, newHeight);                
-            self.setBounds(r);
-        };
-        $super(partName, newPoint, handle, lastCall);
+        var deltaPos = pt(0,0);
+        var morph = this;
         
+        // overwrite reshape ... move stuff there or in Morph/WindowMorph? Behavior should be correct for most morphs...
+        // FIXME move as much as possible from shape.reshape into this!
+        this.shape.reshape = function(partName, newPoint, handle, lastCall) {
+            var bnds = this.bounds();
+            var userRect = this.bounds().withPartNamed(partName, newPoint);
+            // do not flip the bounds
+            if (!userRect.partNamed(partName).eqPt(newPoint)) return;
+            deltaPos = userRect.topLeft(); // vector by which the morph is moved
+            var minExtent = morph.minExtent();
+            // adopt deltaPos and userRect so that newBounds has ar least minExtent
+            if (userRect.extent().x <= minExtent.x) {
+                if (deltaPos.x != 0)
+                    deltaPos = deltaPos.withX(deltaPos.x - (minExtent.x - userRect.extent().x));
+                userRect = userRect.withWidth(minExtent.x);
+            };
+            if (userRect.extent().y <= minExtent.y) {
+                if (deltaPos.y != 0)
+                    deltaPos = deltaPos.withY(deltaPos.y - (minExtent.y - userRect.extent().y));
+                userRect = userRect.withHeight(minExtent.y);
+            };
+            var newBounds = userRect.extent().extentAsRectangle(); // newBounds has position (0,0)
+            this.setBounds(newBounds);
+        }.bind(this.shape);
+        
+        $super(partName, newPoint, handle, lastCall);
         this.adoptSubmorphsToNewExtent(priorPosition,priorExtent, this.getPosition(), this.getExtent().subPt(insetPt))
-        this.setPosition(this.getPosition().addPt(delta));
+        this.setPosition(this.getPosition().addPt(deltaPos));
     },
     
     setExtent: function($super, newExt) {
@@ -1228,7 +1416,7 @@ Morph.subclass('ComponentMorph', {
         this.menuButton = new ButtonMorph(new Rectangle(0, -20, 40, 20));
         this.menuButton.setLabel("Menu");
         this.menuButton.setFill(Color.blue);
-        this.menuButton.setFillOpacity(0.5);
+        // this.menuButton.setFillOpacity(0.5);
         this.halos.addMorph(this.menuButton);
         this.menuButton.connectModel({model: this, setValue: "openComponentMenu"});   
     },
@@ -1262,10 +1450,10 @@ Morph.subclass('ComponentMorph', {
     },
     
     setupHaloItems: function() {
-        this.closeHalo = this.addHaloItem("X", new Rectangle(0, 0, 20, 20), 
+        this.closeHalo = this.addHaloItem("X", new Rectangle(0, 0, 18, 20), 
             {relativePosition: pt(1,0), positionOffset: pt(0, -20)},
-            {fill: Color.red, fillOpacity: 0.5});
-        this.closeHalo.connectModel(Relay.newInstance({Value: "=onRemoveButtonPress"}, this));
+            {fill: Color.red/*, fillOpacity: 0.5*/});
+        this.closeHalo.connectModel(Relay.newInstance({Value: "=removeMe"}, {removeMe: function() {this.remove()}.bind(this)}));
     },
     
     updateHaloItemPositions: function() {
@@ -1276,11 +1464,6 @@ Morph.subclass('ComponentMorph', {
             ea.setPosition(newPos);
         }, this)
         //this.closeHalo.setPosition(pt(this.getExtent().x - 0, -20));
-    },
-    
-    onRemoveButtonPress: function(value) {
-        // if (value) return;
-        this.remove()
     },
     
     showHalos: function() {
@@ -1302,7 +1485,7 @@ Morph.subclass('ComponentMorph', {
     
     addHaloItem: function(label, bounds, layoutFrame, style) {
         var button = new ButtonMorph(bounds ||  new Rectangle(0, -20, 40, 20));
-        button.setLabel(label || "----");       
+        button.setLabel(label || "----");
         button.applyStyle(style || {});
         button.layoutFrame = layoutFrame || {relativePosition: pt(0,0), positionOffset: pt(0,0)};
         this.halos.addMorph(button);
@@ -1311,6 +1494,12 @@ Morph.subclass('ComponentMorph', {
     
     onMouseOver: function() {
         this.showHalos();
+    },
+    
+    onMouseDown: function ($super, evt) {
+        console.log('making selection');
+        $super(evt);
+        return true;
     },
     
     allPinMorphs: function() {
@@ -1325,28 +1514,102 @@ Morph.subclass('ComponentMorph', {
     
     remove: function($super) {
         $super();
-        this.allConnectors().each(function(ea){ea.remove()})
+        this.allConnectors().each(function(ea){ ea.remove() });
+        this.component.remove();
     },
+    
+    adjustForNewBounds: function($super) {
+        this.fullBounds = null;
+        $super();
+    }
   
 });
 
 /*
  * The basic component
+ *
+ *  Componet - NodeRecord - ComponentMorph
+ *   the relation beteween component and component morph is implicitly established via the shared formalModel
  */
 Widget.subclass('Component', {
     
     morphClass: ComponentMorph,
     
-    initialize: function() {
-        this.formalModel = NewComponentModel.instantiateNewClass();
+    initialize: function($super) {
+        $super();
+        this.formalModel = Record.newNodeInstance({Name: "NoName"});
+                
+        //this.addField("Name"); // just to have something for testing....
+        this.formalModel.setName("ThisIsNoComponent");
+              
+        this.linkWrapee();
+        this.rawNode.appendChild(this.getModel().rawNode);
+        
         this.pinHandles = [];
+        
+        this.initializeTransientState();
     },
+    
+    initializeTransientState: function() {
 
+    },
+    
+    prepareForSerialization: function(helperNodes) {
+        this.pinHandles.each(function(ea){
+            this.rawNode.appendChild(ea.rawNode)
+        }, this)
+    },
+    
+    deserialize: function($super, importer, rawNode) {
+        $super(importer, rawNode);
+        console.log("###deserialize " + this.id())
+        // dam it only morphs are clever right now... so I have to be stupid!
+        
+        var records = this.rawNode.getElementsByTagName('record')
+        if(records.length > 0) {
+            this.formalModel = this.deserializeModelFromNode(importer, records[0]);
+            this.formalModel.owner = this; // remember the component diretly in a non persisten way 
+        };
+        
+        var widgets = [];        
+        $A(this.rawNode.childNodes).each(function(node) {
+            console.log(" node: "+ node.id)
+            if (node.localName == "widget") {
+                var type = Wrapper.prototype.getEncodedType(node);
+                console.log(" found widget node (" + node.id + ")")
+                if (node.wrapper) {
+                    widgets.push(node.wrapper)
+                } else if (type) {
+                    var constructor = Global[type];
+                    if (!constructor)
+                        console.log("ERROR: no constructor for " + type)
+                    else {
+                        var widget = new constructor(importer, node);
+                        widget.linkWrapee()
+                        widgets.push(widget);
+                    }
+                } else {
+                    console.log("no type found ")
+                } 
+            }
+        });
+        this.setupChildWidgets(widgets);
+        this.initializeTransientState();
+    },
+    
+    setupChildWidgets: function(widgets) {
+        this.pinHandles = widgets.select(function(ea){return ea instanceof PinHandle});        
+    },
+    
     buildView: function(optExtent) {
         var bounds = optExtent && optExtent.extentAsRectangle();
         this.panel = new this.morphClass(bounds);
         this.morph = this.panel;
+       
         this.panel.setComponent(this);
+       
+        
+       
         // this.setupHandles();
         // Fix for adding to Fabrik with addMorph()
         return this.panel;
@@ -1358,8 +1621,8 @@ Widget.subclass('Component', {
     },
     
     addFieldAndPinHandle: function(field, coercionSpec, forceSet) {
-        this.addField(field, coercionSpec, forceSet);
-        return this.addPinHandle(field);
+        // automaticaly create field if no field exists for pin
+        return this.addPin(field, coercionSpec, forceSet);
     },
     
     pvtCreateAccessorsForField: function(fieldName) {
@@ -1371,10 +1634,14 @@ Widget.subclass('Component', {
         };
     },
     
+    // deprecated, use addPin
     addPinHandle: function(pinName) {
+        return this.addPin(pinName);
+    },
+    
+    addPin: function(pinName, optCoercionSpec, force) {
         // FIXME: Rewrite test that field exists
-        if (!this["get" + pinName])
-            throw new Error('Cannot add Pin. There exist no field for ' + pinName);
+        if (!this["get" + pinName]) this.addField(pinName, optCoercionSpec, force);
         var pinHandle = new PinHandle(this, pinName);
         this.pinHandles.push(pinHandle);
         if (this.morph) this.setupPinHandle(pinHandle);
@@ -1383,16 +1650,15 @@ Widget.subclass('Component', {
     
     // deprecated, use getPin!
     getPinHandle: function(pinName) {
-        console.log('looking for pinHandle named ' + pinName);
-        return this.pinHandles.detect(function(ea) {console.log(ea.name); return ea.name == pinName});
+        return this.getPin(pinName);
     },
     
     getPin: function(pinName) {
-        return this.getPinHandle(pinName);
+        return this.pinHandles.detect(function(ea) { return ea.getName() == pinName });
     },
 
     inputPins: function() {
-        return this.pinHandles.select(function(ea){return ea.isInputPin})
+        return this.pinHandles.select(function(ea){return ea.isInputPin()})
     },
 
     toString: function($super){
@@ -1441,75 +1707,190 @@ Widget.subclass('Component', {
             result.push(nameWithoutSet);
         };
         return result;
-    }
+    },
     
+    remove: function() {
+        if (this.fabrik) this.fabrik.unplug(this);
+    }
+        
 });
 
 /* Morph and Component for encapsulating other components */
 ComponentMorph.subclass('FabrikMorph', {
-        
+    
+    inset: 0,
+    
+    initializeTransientState: function($super) {
+        $super();
+    },
+    
     automaticLayout: function() {
         (new FlowLayout()).layoutElementsInMorph(this.fabrik.components, this);
     },
+
+    deserialize: function($super, importer, rawNode) {
+        $super(importer, rawNode);
+    },
     
+    // remove and put stuff in setupforcomponent instead
     setupForFabrik: function(fabrik){
-         this.fabrik = fabrik;
-         this.fabrik.components.each(function(ea) {this.addMorphForComponent(ea) }, this);
-         this.fabrik.connectors.each(function(ea) {this.addMorph(ea.buildView())}, this);        
+         this.fabrik = fabrik;  // remove instance var, component is sufficient
+         this.component = fabrik;
+         this.component.components.each(function(ea) {this.addMorphForComponent(ea) }, this);
+         this.component.connectors.each(function(ea) {this.addMorph(ea.buildView())}, this);        
     },
     
     setupHaloItems: function($super) {
         $super();        
         var grabHalo = this.addHaloItem("grap",  new Rectangle(0,0,45,20),
             {relativePosition: pt(1,0), positionOffset: pt(-45,0)}, 
-            {fill: Color.green, fillOpacity: 0.5});
+            {fill: Color.green/*, fillOpacity: 0.5*/});
         
         var grabFunction = function(value) {
             if (!value) return;
+            
+            // CLEANUP
+            this.openInWindow = null;
             var owner = this.owner;
             owner.removeMorph(this);
-            if (owner.constructor == WindowMorph) owner.remove();
+            if (owner.constructor == WindowMorph) {
+                owner.remove();
+                this.reshape = this.origReshape || this.reshape;
+                this.collapseToggle = this.origCollapseToggle || this.collapseToggle;
+            }
+            
             var hand = WorldMorph.current().hands.first(); //FIXME -- get the click event?
             hand.addMorph(this);
             this.setPosition(pt(0,0));
             this.moveBy(grabHalo.getPosition().negated().subPt(grabHalo.getExtent().scaleBy(0.5)));
         }.bind(this);
         grabHalo.connectModel(Relay.newInstance({Value: '=grabbed'}, {grabbed: grabFunction}));
-        // evalHalo.getHelpText = function(){return "accept text in component [alt+s]"}
+
+        this.collapseHalo = this.addHaloItem("collapse",  new Rectangle(0,0,60,20),
+            {relativePosition: pt(1,0), positionOffset: pt(-105,0)}, 
+            {fill: Color.orange/*, fillOpacity: 0.5*/});
+        this.collapseHalo.connectModel(Relay.newInstance({Value: '=collapseToggle'}, this));
     },
     
     addMorph: function($super, morph) {
-        // don't let loose ends lie around
+        // don't let loose ends stay around
         if (morph.pinHandle && morph.pinHandle.isFakeHandle) {
             throw new Error("Pin dropped on fabrik, this should not happen any more")
         };
         
-        if (morph.constructor === FabrikMorph) {
-            console.log("got another fabrik!!!");
-        };
         // dropping components into the fabrik component...!
-        if (morph.component) this.fabrik.plugin(morph.component);
+        if (morph.component) this.component.plugin(morph.component);
         
-        
-        if (morph.isConnectorMorph) return this.addMorphFront(morph);
-        else return this.addMorphBack(morph);
+        if (morph.isConnectorMorph) 
+            this.addMorphFront(morph);
+        else 
+            this.addMorphBack(morph);
+                
+        return morph;
     }, 
     
-    allPins: function(){
-          return this.fabrik.components.inject([], function(allPins, ea) {
-                  return allPins.concat(ea.pinHandles);
-          });
-    },
-    
-    allPinSnappPoints: function() {
-        return this.allPins().collect(function(ea){
-            return ea.morph.owner.worldPoint(ea.morph.bounds().center())});
-    },
-    
     addMorphForComponent: function(component) {
+        // wouldnt it be better to do:
+        // this.addMorph(component.morph || component.buildView());
+        // or
+        // if (component.morph && this.submorphs.include(component.morph)) return;
+        // this.addMorph(component.morph || component.buildView());
+        // ?
         if (component.morph) return; // Morph is already there... 
         this.addMorph(component.buildView());
     },
+
+    okToBeGrabbedBy: function(evt) {
+        return null; 
+    },
+        
+    onMouseDown: function ($super, evt) {
+        console.log('making selection');
+        return $super(evt);
+         
+         
+        this.makeSelection(evt); 
+        return true;
+    },
+
+    makeSelection: function(evt) {  //default behavior is to grab a submorph
+        if (this.currentSelection != null) this.currentSelection.remove();
+        var m = new SelectionMorph(evt.point().asRectangle());
+        this.addMorph(m);
+        this.currentSelection = m;
+        var handle = new HandleMorph(pt(0,0), "rect", evt.hand, m, "bottomRight");
+	    handle.setExtent(pt(0, 0));
+        m.addMorph(handle);
+        evt.hand.setMouseFocus(handle);
+    },
+    
+    collapseToggle: function(value) {
+        if (!value) return; // FIXME value from button click... ignore!
+        if (this.isCollapsed) this.uncollapse()
+        else this.collapse();
+        this.updateHaloItemPositions();
+    },
+    
+    collapse: function() {
+        console.log('collapse fabrik');
+        this.isCollapsed = true;
+        this.collapseHalo.setLabel('uncollapse');
+        this.uncollapsedExtent = this.getExtent();
+        this.uncollapsedPosition = this.getPosition();
+        this.setFill(Color.gray);
+        
+        this.component.components.each(function(ea) { this.removeMorph(ea.panel) }.bind(this));
+        this.component.connectors.each(function(ea) { this.removeMorph(ea.morph) }.bind(this));
+        
+        this.setPosition(this.collapsedPosition || this.getPosition());
+        this.setExtent(this.collapsedExtent || this.component.defaultCollapsedExtent);
+    },
+    
+    uncollapse: function() {
+        console.log('uncollapse fabrik');
+        this.isCollapsed = false;
+        this.collapseHalo.setLabel('collapse');
+        this.collapsedExtent = this.getExtent();
+        this.collapsedPosition = this.getPosition();
+        this.setFill(Color.blue.lighter());
+                
+        this.component.components.each(function(ea) { this.addMorph(ea.panel) }.bind(this));
+        this.component.connectors.each(function(ea) { this.addMorph(ea.morph) }.bind(this));
+                
+        this.setPosition(this.uncollapsedPosition || this.getPosition());
+        this.setExtent(this.uncollapsedExtent || this.component.defaultViewExtent);
+    },
+    
+    minExtent: function() {
+        if (this.isCollapsed) return pt(10,5);
+        var borderMorphs = this.getComponentMorphsNearBorders();
+        var topY = borderMorphs.top ? borderMorphs.top.getPosition().y : 0;
+        var leftX = borderMorphs.left ? borderMorphs.left.getPosition().y : 0;
+        var bottomY = borderMorphs.bottom ? borderMorphs.bottom.bounds().maxY() : 50;
+        var rightX = borderMorphs.right ? borderMorphs.right.bounds().maxX() : 50;
+        return pt(rightX - leftX, bottomY - topY);
+    },
+    
+    getComponentMorphsNearBorders: function() {
+        var compMorphs = this.submorphs.select(function(ea) { return ea instanceof ComponentMorph});
+        var borderMorphs = {};
+        var cmpFuncs = {top: function(m1, m2) { return m1.getPosition().y <= m2.getPosition().y},
+                        left: function(m1, m2) { return m1.getPosition().x <= m2.getPosition().x},
+                        right: function(m1, m2) { return m1.bounds().maxX() >= m2.bounds().maxX()},
+                        bottom: function(m1, m2) { return m1.bounds().maxY() >= m2.bounds().maxY()}};
+        for (pos in cmpFuncs) {
+            compMorphs.each(function(eaMorph) {
+                if (!borderMorphs[pos]) borderMorphs[pos] = eaMorph;
+                borderMorphs[pos] = cmpFuncs[pos](eaMorph, borderMorphs[pos]) ? eaMorph : borderMorphs[pos];
+            });
+        };
+        return borderMorphs;
+    },
+    
+    closeAllToDnD: function(loc) {
+        // ok, lets handle this myself
+    },
+
 });
 
 /*
@@ -1519,14 +1900,37 @@ ComponentMorph.subclass('FabrikMorph', {
 Component.subclass('FabrikComponent', {
 
     morphClass: FabrikMorph,
-    defaultViewExtent: pt(750,500),
+    defaultViewExtent: pt(750, 500),
+    defaultCollapsedExtent: pt(200, 100), // move to morph?
     defaultViewTitle: "FabrikComponent",
 
     initialize: function($super) {
         $super(null);
+        this.initializeTransientState();
         this.components = [];
         this.connectors = [];
         return this;
+    },
+  
+    initializeTransientState: function($super) {
+        $super()
+    },
+    
+    prepareForSerialization: function($super, helperNodes) {
+        $super();
+        this.connectors.each(function(ea){
+            this.rawNode.appendChild(ea.rawNode)
+        }, this)
+    },
+
+    setupChildWidgets: function($super, widgets) {
+        console.log("///////////setupChildWidgets: " + widgets.length)
+        $super(widgets);
+        this.components = widgets.select(function(ea) {
+            return ea instanceof Component});
+        this.connectors = widgets.select(function(ea) {
+            return ea instanceof PinConnector});
+
     },
   
     buildView: function($super, optExtent) {
@@ -1538,17 +1942,28 @@ Component.subclass('FabrikComponent', {
         
         $super(optExtent || this.defaultViewExtent);
         this.panel.fabrik = this;
-        
-        
+        this.panel.setComponent(this);
+     
+        var pseudo = new PseudoMorph();
+        WorldMorph.current().addMorphBack(pseudo);
+        pseudo.addNonMorph(this.rawNode); // fabrik hangs the all compontens implicit into this tree position
+     
+     
         this.morph.setupForFabrik(this);
         // this.panel.linkToStyles(['fabrik']);
         this.morph.linkToStyles(['fabrik']);
             
         return this.panel;
     },
+    
+    deserialize: function($super, importer, rawNode) {
+        $super(importer, rawNode);
+    },
 
     // can be called when this.morph does not exist, simply adds components and wires them
     plugin: function(component) {
+        this.rawNode.appendChild(component.rawNode);
+        
         if (this.components.include(component)) {
             console.log('FabrikComponent.plugin(): ' + component + 'was already plugged in.');
             return;
@@ -1559,6 +1974,12 @@ Component.subclass('FabrikComponent', {
         return component;
     },
 
+    unplug: function(component) {
+        this.components = this.components.reject(function(ea) { return ea === component });
+
+        this.rawNode.removeChild(component.rawNode);
+    },
+    
     pluginConnector: function(connector) {
         if (this.connectors.include(connector)) {
             console.log("Plugin connector failed: " + connector + " is already plugged in!");
@@ -1569,28 +1990,17 @@ Component.subclass('FabrikComponent', {
         connector.fabrik = this;
         
         if (this.morph) {
-            this.morph.addMorph(connector.buildView());
+            if (!connector.morph)
+                connector.buildView();
+            if (!this.morph.submorphs.include(connector.morph))
+                this.morph.addMorph(connector.buildView());
             connector.updateView();
         };
         return connector;
     },
 
-    connectPins: function(fromPinHandle, toPinHandle) {
-        console.log("Fabrik>>connectPins(" + fromPinHandle + ", " + toPinHandle + ")");
-        if (!fromPinHandle || !toPinHandle) {
-            console.log("FabrikComponent.connectPins(): could not connect " + fromPinHandle + " and " + toPinHandle);
-        };
-
-        var con = fromPinHandle.connectTo(toPinHandle);
-        //FIXME: alles ausmisten
-        if (!con) throw new Error('CouldNotCreateNewConnection');
-        
-        this.pluginConnector(con);
-        return con;
-    },
-
     connectComponents: function(fromComponent, fromPinName, toComponent, toPinName){
-        return this.connectPins(fromComponent.getPinHandle(fromPinName), toComponent.getPinHandle(toPinName));
+        return fromComponent.getPin(fromPinName).connectTo(toComponent.getPin(toPinName));
     },
 
     removeConnector: function(connector) {
@@ -1601,13 +2011,40 @@ Component.subclass('FabrikComponent', {
         this.connectors = this.connectors.reject(function(ea) { return ea === connector });
         this.morph.removeMorph(connector.morph);
     },
-
+    
     // setup after the window is opened
     openIn: function($super, world, location) {
-        var result = $super(world, location);
-        result.setExtent(this.defaultViewExtent); // FIXME: 1000 places were extent is set... arghhh!
-        this.morph.openForDragAndDrop = true;
-        return result;
+        var morph = this.panel || this.buildView();
+        var window = world.addFramedMorph(morph, morph.component.viewTitle, location, false);
+        window.suppressHandles = true;
+        
+        // window.reshape = Functions.Null;
+        // window.reshape = window.reshape.wrap(function(proceed, partName, newPoint, handle, lastCall) {
+        //    m.reshape(partName, newPoint, handle, lastCall);
+        //    if (m.getExtent().x < m.minExtent().x) {m.setExtentreturn;}
+        //    if (m.getExtent().y < m.minExtent().y) return;
+        //    proceed(partName, newPoint, handle, lastCall);
+        // });
+        morph.origReshape = morph.reshape;
+        morph.reshape = morph.reshape.wrap(function(proceed, partName, newPoint, handle, lastCall) {
+            proceed(partName, newPoint, handle, lastCall);
+            var windowdBnds = window.bounds().topLeft().extent(morph.shape.bounds().extent().addXY(0, window.titleBar.innerBounds().height));
+            // window.setExtent(windowdBnds.extent());
+            window.setBounds(windowdBnds);
+            window.adjustForNewBounds();
+        });
+        
+        morph.origCollapseToggle = morph.collapseToggle;
+        morph.collapseToggle = morph.collapseToggle.wrap(function(proceed, val) {
+            proceed(val);
+            window.setExtent(morph.getExtent().addXY(0,window.titleBar.innerBounds().height));
+            window.adjustForNewBounds();
+        });
+        // undo closeAllToDnD
+        morph.openDnD();
+        morph.openInWindow = window;
+        morph.component.fabrik = null;
+        return window;
     }
 });
 
@@ -1641,7 +2078,7 @@ ComponentMorph.subclass('TextComponentMorph', {
         $super();        
         var evalHalo = this.addHaloItem("accept",  new Rectangle(0,0,45,20),
             {relativePosition: pt(1,1), positionOffset: pt(-45,2)}, 
-            {fill: Color.green, fillOpacity: 0.5});
+            {fill: Color.green/*, fillOpacity: 0.5*/});
         evalHalo.connectModel({model: this, setValue: "onAcceptPressed"});
         evalHalo.getHelpText = function(){return "accept text in component [alt+s]"}
     },  
@@ -1649,6 +2086,7 @@ ComponentMorph.subclass('TextComponentMorph', {
     onAcceptPressed: function(value) {
         this.text.doSave()
     },    
+    
 });
      
 Component.subclass('TextComponent', {
@@ -1680,19 +2118,19 @@ ComponentMorph.subclass('FunctionComponentMorph', {
         $super();
          var inputHalo = this.addHaloItem("+input", new Rectangle(0,0,45,20),
             {relativePosition: pt(0,0), positionOffset: pt(0,-20)},
-            {fill: Color.blue, fillOpacity: 0.5});
+            {fill: Color.blue.lighter().lighter()/*, fillOpacity: 0.5*/});
         inputHalo.connectModel({model: this.component, setValue: "interactiveAndNewInputField"});
         
         var evalHalo = this.addHaloItem("eval",  new Rectangle(0,0,45,20),
             {relativePosition: pt(1,1), positionOffset: pt(-45,0)}, 
-            {fill: Color.green, fillOpacity: 0.5});
+            {fill: Color.green/*, fillOpacity: 0.5*/});
         evalHalo.connectModel({model: this.component, setValue: "evalButtonPressed"});
     },
     
     setupTextField: function() {
         var self = this;
         this.functionBodyMorph.boundEval = this.functionBodyMorph.boundEval.wrap(function(proceed, str) {
-            var source = self.component.pvtGetFunction(str);
+            var source = self.component.composeFunction(self.component.getFunctionHeader(), str, interactiveEval);
             console.log("eval: " + source)			
             return eval(source).apply(self.component, self.component.parameterValues());
         });
@@ -1713,11 +2151,9 @@ Component.subclass('FunctionComponent', {
         this.addInputFieldAndPin("Input");
         this.setupAutomaticExecution();
     },
-    
+        
     buildView: function($super, extent) {
         $super(extent)
-
-        
 
         this.panel.setupTextField();
         
@@ -1784,7 +2220,7 @@ Component.subclass('FunctionComponent', {
     },
       
     parameterNames: function() {
-        return this.inputPins().collect(function(ea){return ea.name.toLowerCase()}); 
+        return this.inputPins().collect(function(ea){return ea.getName().toLowerCase()}); 
     },  
 
     parameterValues: function() {
@@ -1799,17 +2235,27 @@ Component.subclass('FunctionComponent', {
         this.setFunctionHeader(this.functionHeader());
     },
 
-    pvtGetFunction: function(body) {
-        body = body || this.getFunctionBody();
-        if(!body) return function(){};
+    pvtGetFunction: function() {
         this.updateFunctionHeader();
-        var funcSource = "var x = "+ this.getFunctionHeader();
-        if(body.match(/return /))
+        return this.composeFunction(this.getFunctionHeader(), this.getFunctionBody() || "", interactiveEval)
+    },
+    
+    composeFunction: function(header, body, evalFunc) {
+        var funcSource = "var x = "+ header;
+        var evalImplicit = ! body.match(/return /)
+        if(evalImplicit) {
+            funcSource = funcSource.replace("(", "(pvtArgToEvalBody, ");
+            funcSource = funcSource.replace(", )", ")") // just in case we would have no other parameter
+            funcSource += ' { return eval(pvtArgToEvalBody)}; x'; // implicit return
+        } else {
             funcSource += " { " + body + "}; x";
-        else
-            funcSource += " { return eval(" + body + ")}; x"; // implicit return
+        };
+        evalFunc = evalFunc || eval;
         try {
-            return eval(funcSource);
+            if(evalImplicit)
+                return evalFunc(funcSource).curry(body).bind(this)
+            else
+                return evalFunc(funcSource).bind(this);
         } catch(e) {
             console.log("Error when evaluating:" + funcSource + " error: " + e.msg);
             return function(){} // do nothing
@@ -1821,7 +2267,7 @@ Component.subclass('FunctionComponent', {
             this.setResult(this.pvtGetFunction().apply(this, this.parameterValues()));
             console.log("Result of function call: " + this.getResult());
         } catch(e) {
-            console.log("FunctionComponentModel: error " + e + " when executing " + this.pvtGetFunction);
+            console.log("FunctionComponentModel: error " + e + " when executing body" + this.getFunctionBody());
             throw e;
         }
     },
@@ -1831,7 +2277,8 @@ Component.subclass('WebRequestComponent', {
     
     initialize: function ($super) {
         $super();
-        this.addFieldAndPinHandle("URL", null, true); // force sets even if value the same
+        // this.addFieldAndPinHandle("URL", null, true); // force sets even if value the same
+        this.addFieldAndPinHandle("URL");
         this.addFieldAndPinHandle("ResponseText");
         this.addFieldAndPinHandle("ResponseXML");
         
@@ -1906,7 +2353,7 @@ Widget.subclass('ComponentBox', {
     
     initialize: function($super) { 
         $super();
-        this.model = NewComponentModel.instantiateNewClass();
+        this.model = Record.newNodeInstance({});
     },
     
     addMorphOfComponent: function(comp, createFunc, optExtent) {
@@ -2153,9 +2600,12 @@ Morph.subclass("FabrikClockMorph", {
 });
 
 /* Changing the behavior of the WorldMorph: when a FabrikMorph is dropped, make it framed */
-WorldMorph.prototype.addMorphFrontOrBack = WorldMorph.prototype.addMorphFrontOrBack.wrap(function(proceed, m, front) {
-    if (m instanceof FabrikMorph) {
-        return this.addFramedMorph(m, m.fabrik.viewTitle, this.hands.first().getPosition().addPt(m.getPosition()), false);
+    WorldMorph.prototype.addMorphFrontOrBack = WorldMorph.prototype.addMorphFrontOrBack.wrap(function(proceed, m, front) {
+    if (m instanceof FabrikMorph && !m.openInWindow) {
+        m.halos.remove();
+        m.adjustForNewBounds();
+        console.log('adding fabrikmorph to world...')
+        return m.component.openIn(this, this.hands.first().getPosition().addPt(m.getPosition()));
     };
     return proceed(m, front);
 })
@@ -2202,3 +2652,7 @@ newFakeMouseEvent = function(point) {
     if (point) evt.mousePoint = point;
     return evt;
 };
+
+console.log('loaded Fabrik.js');
+
+}); // end of require

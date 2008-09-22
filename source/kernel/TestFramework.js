@@ -3,6 +3,13 @@ creating own tests. TestResult and TestSuite are used internally for running the
 TestRunner is a Widget which creates a standard xUnit TestRunner window. All tests of 
 the system can be run from it */
 
+TestFramework = {
+    // loadTests: function(tests) {
+    //     tests.each(function(ea) {
+    //         Loader.loadScript('Tests/' + ea + '.js');
+    //     })
+    // },
+}
 
 
 Object.subclass('TestCase', {
@@ -65,8 +72,9 @@ Object.subclass('TestCase', {
 	},
 
     assert: function(bool, msg) {
-            if (bool) return;
-                throw {isAssertion: true, message: " assert failed " + "(" + msg + ")"}
+        if (bool) return;
+        msg = msg || "unknown";
+        throw {isAssertion: true, message: " assert failed " + "(" + msg + ")"}
     },
         
 	assertEqual: function(firstValue, secondValue, msg){
@@ -148,6 +156,8 @@ Object.subclass('TestCase', {
 Object.subclass('TestSuite', {
 	initialize: function() {
 		this.result = new TestResult();
+		this.testsToRun = []
+		
 	},
 	
 	setTestCases: function(testCaseClasses) {
@@ -158,10 +168,25 @@ Object.subclass('TestSuite', {
 	},
 	
 	runAll: function() {
-		this.testCases.each(function(ea) {
-			ea.runAll();
-		});
-	}
+	    this.testsToRun = this.testCases;
+	    this.runDelayed();
+	},
+	
+	runDelayed: function() {
+	    var testCase = this.testsToRun.shift();
+	    if (!testCase) {
+	        if (this.runFinished)
+	            this.runFinished();
+	        return
+	    }
+	    if (this.showProgress)
+	        this.showProgress(testCase);
+        testCase.runAll();
+        var scheduledRunTests = new SchedulableAction(this, "runDelayed", null, 0);
+        WorldMorph.current().scheduleForLater(scheduledRunTests, 0, false);
+	},
+	
+	
 });
 
 
@@ -206,7 +231,7 @@ Object.subclass('TestResult', {
 		var string = 'Tests run: ' + this.runs() + ' -- Tests failed: ' + this.failed.length;
 		string += ' -- Failed tests: \n';
 		this.failed.each(function(ea) {
-			string +=  ea.classname + '.' + ea.selector + '-->' 
+			string +=  ea.classname + '.' + ea.selector + '\n   -->' 
 			    + ea.err.message +  '\n';
 		});
 		string += ' -- TestCases timeToRuns: \n';
@@ -232,7 +257,7 @@ Object.subclass('TestResult', {
 	
 	failureList: function() {
 		var result = this.failed.collect(function(ea) {
-			return ea.classname + '.' + ea.selector + '-->' + ea.err.message  +
+			return ea.classname + '.' + ea.selector + '\n  -->' + ea.err.message  +
 	            ' in ' + this.getFileNameFromError(ea.err) + 
 	            (ea.err.line ? ' ( Line '+ ea.err.line + ')' : "");
 		}, this);
@@ -274,12 +299,29 @@ Widget.subclass('TestRunner', {
 	runAllTests: function(buttonDown) {
 		if (buttonDown) return;
 		var testSuite = new TestSuite();
+		var counter = 0;
 		//all classes from the list
 		testSuite.setTestCases(this.getModel().getTestClasses().collect(function(ea) {
 				return Global[ea];
-		}));
+		}).select(function(ea){return !ea.prototype.isSlowTest}));
+		var self = this;
+		var total = self.resultBar.getExtent().x;
+		var step = self.resultBar.getExtent().x / testSuite.testCases.length;
+		testSuite.showProgress = function(testCase) {
+		    self.getModel().setResultText(testCase.constructor.type);
+		    self.resultBar.setExtent(pt(step*counter,  self.resultBar.getExtent().y));
+		    var failureList = testSuite.result.failureList();
+		    if(failureList.length > 0) {
+		        self.getModel().setFailureList(failureList);
+		        self.resultBar.setFill(Color.red);
+		    };
+		    counter += 1;
+		};
 		testSuite.runAll();
-		this.setResultOf(testSuite);
+		testSuite.runFinished = function() {
+	        self.setResultOf(testSuite);
+		};
+			
 	},
 		
 	setResultOf: function(testObject) {
@@ -305,7 +347,7 @@ Widget.subclass('TestRunner', {
 		   ['testClassList', newRealListPane, new Rectangle(0, 0, 1, 0.6)],
 		   ['runButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0, 0.6, 0.5, 0.05)],
 		   ['runAllButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0.5, 0.6, 0.5, 0.05)],
-		   ['resultBar', newTextPane, new Rectangle(0, 0.65, 1, 0.05)],
+		   ['resultBar', function(initialBounds){return new TextMorph(initialBounds)}, new Rectangle(0, 0.65, 1, 0.05)],
 		   ['failuresList', newTextListPane, new Rectangle(0, 0.7, 1, 0.3)],
 		]);
 
@@ -354,13 +396,14 @@ Widget.subclass('TestRunner', {
 		},
 		
 		setBarColor: function(color) {
-				this.resultBar.innerMorph().setFill(color);
+				this.resultBar.setFill(color);
 	},
 	
 	openErrorStackViewer: function(testFailedObj) {
+	    if (!failedDebugObj) return;
 		var testCase = new Global[testFailedObj.classname]();
 		var failedDebugObj = testCase.debugTest(testFailedObj.selector);
-		
+
 		if (!failedDebugObj.err.stack) {
 			console.log("Cannot open ErrorStackViewer: no stack");
 			return;

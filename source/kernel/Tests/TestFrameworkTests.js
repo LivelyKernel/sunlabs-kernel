@@ -179,16 +179,19 @@ TestCase.subclass('TestResultTest', {
 /**
  * @class TestSuiteTest
  */
-TestCase.subclass('TestSuiteTest', {
-	testRunAll: function() {
-	    ts = new TestSuite();
-	    ts.setTestCases([DummyTestCase1, DummyTestCase2, DummyTestCase3]);
-	    ts.runAll();
-	    this.assertEqual(ts.result.runs(), 3, 'result');
-	}
-});
+// Todo: implement async testing to be able to test that
+// TestCase.subclass('TestSuiteTest', {
+//  testRunAll: function() {
+//      ts = new TestSuite();
+//      ts.setTestCases([DummyTestCase1, DummyTestCase2, DummyTestCase3]);
+//      ts.runAll();
+//      this.assertEqual(ts.result.runs(), 3, 'result');
+//  }
+// });
 
 TestCase.subclass('RememberStackTest', {
+	
+	isSlowTest: true,
 	
 	a: function(a, b, c) {
 		this.assert(false);

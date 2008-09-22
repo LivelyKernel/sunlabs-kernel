@@ -56,16 +56,142 @@ function namespace(spec, context) {
     }
 }
 
-/* Code loader. Appends file to DOM. File will not be saved in xhtml. */
+// this was the beginning of all this...
+// function require(/* script file names */) {
+//     var args = $A(arguments);
+//     var loadAll = function(code) {
+//         args.reverse().inject(code, function(onLoadAction, url) {
+//             return function() { Loader.loadScript(url, onLoadAction) };
+//         })();
+//     };
+//     return {run: loadAll};
+// };
+
+var PendingRequirements = {};
+
+// Semaphore functions
+function moduleLoaded(module) {
+    Object.keys(PendingRequirements).each(function(ea) {
+        if (PendingRequirements[ea])
+            PendingRequirements[ea] = PendingRequirements[ea].reject(function(name) {return name == module});
+    });
+};
+function waitFor(module, requiredModules) {
+    if (!PendingRequirements[module]){
+        PendingRequirements[module] = requiredModules;
+        return;
+    }
+    PendingRequirements[module] = PendingRequirements[module].concat(requiredModules);
+};
+function noPendingRequirements(module) {
+    // if (document.getElementById(module) && Loader.wasLoaded[module]) return true;
+    return !PendingRequirements[module] || PendingRequirements[module].length == 0;
+};
+
+function module(moduleName) {
+    PendingRequirements[moduleName] = 0;
+    return {requires: require.curry(moduleName)};
+};
+
+// Uses just loadScript. To be removed.
+function require1(/*ownModuleName, requiredModuleNamesOrAnArray*/) {
+    var args = $A(arguments);    
+    var ownModuleName = args.shift();
+    var requiredModuleName = args.shift();
+    console.assert(args.length == 0);
+    
+    waitFor(ownModuleName, [requiredModuleName]);
+    return {toRun: function(code) { Loader.loadScript(requiredModuleName, onModuleLoad.curry(ownModuleName, code)) }};
+};
+
+function require(/*ownModuleName, requiredModuleName1OrAnArray, requiredModuleName2, ...*/) {
+    var args = $A(arguments);    
+    var ownModuleName = args.shift();
+    var requiredModuleNames = Object.isArray(args[0]) ? args[0] : args;
+    waitFor(ownModuleName, requiredModuleNames);
+    return {toRun: function(code) { Loader.loadScripts(requiredModuleNames, onModuleLoad.curry(ownModuleName, code)) }};
+};
+
+function onModuleLoad(ownModuleName, code) {
+    if (noPendingRequirements(ownModuleName)) {
+        try {
+            code();
+        } catch(e) {
+            debugger; throw e;
+        } finally {
+            if (noPendingRequirements(ownModuleName)) moduleLoaded(ownModuleName);
+        };
+        return;
+    };
+    // console.log('Trying soon again to load requirements for ' + ownModuleName);
+    window.setTimeout(onModuleLoad.curry(ownModuleName, code), 0);
+};
+
+/* Code loader. Appends file to DOM. */
 var Loader = {
-    loadScript: function(url) {
-        console.log("load script: " + url.toString())
-        var head = document.getElementsByTagName("head")[0];
-        script = document.createElement('script');
+    
+    wasLoaded: {},
+    
+    pendingActions: [],
+    
+    pendingActionsFor: function(url) {
+        return Loader.pendingActions.inject([], function(all, ea) {
+            if (ea.url == url) all.push(ea.action);
+            return all;
+        }); 
+    },
+    
+    loadScripts: function(urls, actionWhenDone) {
+        if (urls.length == 0) {
+            actionWhenDone();
+            return;
+        };
+        var notifier = function(url) {
+            urls = urls.without(url);
+            if (urls.length == 0) actionWhenDone();
+        };
+        urls.each(function(ea) { Loader.loadScript(ea, notifier.curry(ea)) });
+    },
+    
+    loadScript: function(url /*not really a url yet*/, onLoadAction, embedSerializable) {
+        console.log('Loading: ' + url + (embedSerializable ? ' into <defs>' : ''));
+        if (document.getElementById(url)) {
+            console.log(url + ' already loaded');
+            if (onLoadAction) {
+                if (Loader.wasLoaded[url]) {
+                    console.log(url + "was loaded directly because it is already in the DOM and it is loaded");
+                    onLoadAction();
+                    // When url is already there, onModuleLoad isn't run again, so remove url from the requirement list manually
+                    if (noPendingRequirements(url)) moduleLoaded(url);
+                } else  {
+                    // in the DOM but not loaded yet
+                    Loader.pendingActions.push({url: url, action: onLoadAction});
+                }
+            };
+            return;
+        };
+        
+        var node = embedSerializable ? // add it to other script elements in svg to make it serializable
+            document.getElementsByTagName("defs")[0]:
+            document.getElementsByTagName("body")[0];
+        var script = document.createElement('script');
         script.id = url;
         script.type = 'text/javascript';
         script.src = url;
-        head.appendChild(script);
+        
+        var loaderWrapper = function() {
+            if (onLoadAction) {
+                onLoadAction();
+                // why signal moduleLoaded again? should already be included in onLoadAction...???
+                if (noPendingRequirements(url)) moduleLoaded(url);
+            }
+            Loader.wasLoaded[url] = true;
+            Loader.pendingActionsFor(url).each(function(ea) { ea(); });
+        };
+        script.onload = loaderWrapper;
+        node.appendChild(script);
+        
+        return this;
     }
 };
 
@@ -170,7 +296,7 @@ Object.extend(Function.prototype, {
 		});
 	    } 
 	    this.prototype[property] = value;
-
+	    
 	    if (property == "formals") {
 		// special property (used to be pins, but now called formals to disambiguate old and new style
 		Class.addPins(this, value);
@@ -763,7 +889,10 @@ Object.subclass('Record', {
             if (name.startsWith("on") && name.endsWith("Update")) {
                 var varname = name.substring(2, name.indexOf("Update"));
                 if (!this["set" + varname]) {
-                    debugger; throw new Error("cannot observe nonexistent variable " + varname);
+                     // console.log("ERROR: cannot observe nonexistent variable " + varname);
+                     // logStack();
+                    // debugger; 
+                    throw new Error("cannot observe nonexistent variable " + varname);
 		}
                 var deps = this[Record.observerListName(varname)];
                 if (!deps) deps = this[Record.observerListName(varname)] = [];
@@ -886,7 +1015,18 @@ Record.subclass('DOMRecord', {
     
     removeRecordField: function(name) {
 	return this.rawNode.removeAttributeNS(null, name);
-    }
+    },
+    
+    // needed for dynamic field adding in fabric
+    addField: function(fieldName, coercionSpec, forceSet) {
+        var spec = {}; spec[fieldName] = coercionSpec || {};
+        this.constructor.addMethods(new Record.extendRecordClass(spec));
+        this.definition[fieldName]= spec[fieldName];
+        if (!forceSet) return;
+        this['set' + fieldName] = this['set' + fieldName].wrap(function(proceed, value, optSource, force) {
+            proceed(value, optSource, true);
+        })
+    },
 
 });
 
@@ -1611,7 +1751,8 @@ Object.subclass('Wrapper', {
 	// ensure that wrapper can be found based on the rawNode. 
 	// Not sure this should be handled this way, esp. b/c
 	// batik won't like it.
-	if (this.rawNode.wrapper && this.rawNode.wrapper != this) throw new Error();
+	if (this.rawNode.wrapper && this.rawNode.wrapper != this) 
+	    throw new Error("linkWrapee(): node has already a wrapper and it is not me");
 	this.rawNode.wrapper = this;
     },
 
@@ -4644,6 +4785,7 @@ Morph.addMethods({
 
     transformToMorph: function(other) {
 	// getTransformToElement has issues on some platforms
+	if (!other) debugger;
 	if (Config.useGetTransformToElement) {
 	    return this.rawNode.getTransformToElement(other.rawNode);
 	} else {
@@ -5134,8 +5276,10 @@ Morph.addMethods({
 
     closeAllToDnD: function(loc) {
         // console.log(this + ">>closeAllDnD");
-	// Close this and all submorphs to drag and drop
-	this.withAllSubmorphsDo( function() { this.closeDnD(); });
+        // Close this and all submorphs to drag and drop
+        this.closeDnD(); 
+        // make this recursive to give children a chance to interrupt...
+        this.submorphs.each( function(ea) { ea.closeAllToDnD(); });
     },
 
     openAllToDnD: function() {
@@ -5655,7 +5799,12 @@ ViewTrait = {
 	    return null;
 	}
 	var relaySpec = Converter.fromJSONAttribute(this.getLivelyTrait("relay"));
-	this.relayToModel(model, relaySpec);
+	try {
+	        this.relayToModel(model, relaySpec);
+	} catch (e){
+	        console.log("Error in " + this+ " reconnectModel: " + e)
+	}
+	return model;
 	return model;
     },
 
@@ -6108,7 +6257,7 @@ PasteUpMorph.subclass("WorldMorph", {
 	    panel:       { fill: Color.primary.blue.lighter(2), borderWidth: 2, borderColor: Color.black},
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue},
 	    helpText:    { borderRadius: 15, fill: Color.primary.yellow.lighter(3), fillOpacity: .8},
-	    fabrik:      { borderColor: Color.red, borderWidth: 2, borderRadius: 0, fill: Color.blue.lighter()}
+	    fabrik:      { borderColor: Color.red, borderWidth: 2, borderRadius: 0, fill: Color.blue.lighter(), opacity: 1}
         },
 
         lively: { // This is to be the style we like to show for our personality

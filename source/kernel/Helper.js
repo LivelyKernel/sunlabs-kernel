@@ -2,6 +2,9 @@
 /*
  * Stack Viewer when Dans StackTracer is not available
  */
+
+
+ 
 function getStack() {
     var result = [];
     for(var caller = arguments.callee.caller; caller; caller = caller.caller) {
@@ -106,3 +109,4 @@ function logObject(obj) {
 }
 
 
+console.log('Helper.js loaded');

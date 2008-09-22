@@ -717,7 +717,7 @@ Object.subclass('SVNVersionInfo', {
     
     initialize: function(rev, dateString, author) {
         this.rev = rev,
-		this.date = dateString ? this.parseUTCDateString(dateString) : new Date(Date.now()),
+		this.date = dateString ? this.parseUTCDateString(dateString) : new Date() /* current date */,
 		this.author = author ? author : '(no author)';
     },
     

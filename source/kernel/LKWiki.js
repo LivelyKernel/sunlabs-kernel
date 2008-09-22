@@ -199,8 +199,8 @@ Widget.subclass('WikiNavigator', {
 	
 	buildView: function(extent) {
 	    var panel = PanelMorph.makePanedPanel(extent, [
-			['saveContentButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0.1, 0.2, 0.1, 0.6)],
-			['versionList', newTextListPane, new Rectangle(0.3, 0.2, 0.5, 0.6)]
+			['saveContentButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0.05, 0.2, 0.1, 0.6)],
+			['versionList', newTextListPane, new Rectangle(0.25, 0.2, 0.55, 0.6)]
 		]);
 
         // delete panel when moving the mouse away from it
@@ -296,7 +296,7 @@ Widget.subclass('WikiNavigator', {
 	    btn.handlesMouseDown = Functions.False;
 	    var self = this;
 	    btn.onMouseOver = function(evt) {
-	        var navMorph = self.buildView(pt(900,105));
+	        var navMorph = self.buildView(pt(800,105));
 	        self.world.addMorph(navMorph);
 	        navMorph.setPosition(pt(0, 0))
 	    };

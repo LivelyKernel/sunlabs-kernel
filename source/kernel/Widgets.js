@@ -1795,7 +1795,7 @@ Morph.subclass("ScrollPane", {
     
     restorePersistentState: function($super, importer) { // FIXME duplication between here and initialize
         $super(importer);
-        if (this.scrollBar) 
+        if (this.scrollBar && this.ScrollBarFormalRelay) 
 	    this.scrollBar.formalModel = new (this.ScrollBarFormalRelay)(this);
         if (this.menuButton)
             this.menuButton.relayMouseEvents(this, {onMouseDown: "menuButtonPressed"});
@@ -2922,6 +2922,23 @@ WindowMorph.subclass("TabbedPanelMorph", {
         return new TitleTabMorph(headline, width, this);
     }
 
+});
+
+
+// for Fabrik widget deserialization
+Widget.addMethods({
+    
+    deserializeModelFromNode: function(importer, node) {    
+        console.log(" unserialize node " + node.id)
+        if (node.textContent)
+            var spec = JSON.unserialize(node.textContent);
+        else
+            var spec = {};
+        var Rec = DOMRecord.prototype.create(spec);
+        var model = new Rec(importer, node);
+        model.linkWrapee();
+        return model;
+    },
 });
 
 
