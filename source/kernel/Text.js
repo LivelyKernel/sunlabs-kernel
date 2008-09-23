@@ -1107,7 +1107,7 @@ TextMorph.addMethods({
             var importer = new Importer();
             var txt = this.xml || this.textString;
             // console.log('evaluating markup ' + txt);
-            var morph = importer.importFromString(txt);
+            var morph = importer.importWrapperFromString(txt);
             this.world().addMorph(morph);
 	    importer.finishImport(this.world());
         }]);

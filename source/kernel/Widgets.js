@@ -2559,7 +2559,6 @@ Morph.subclass("TitleTabMorph", {
         label.align(label.bounds().topLeft(), pt(0,0));
         this.label = this.addMorph(label);
         this.shape.setBounds(this.shape.bounds().withTopRight(pt(label.bounds().maxX(), topY)));
-
         return this;
     },
 

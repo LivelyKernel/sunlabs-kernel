@@ -74,8 +74,8 @@ Morph.subclass('PackageMorph', {
 	    return;
 	}
 	var importer = new Importer();
-	// var targetMorph = importer.importFromString(Exporter.stringify(this.serialized));
-	var targetMorph = importer.importFromNode(this.serialized);
+	// var targetMorph = importer.importWrapperFromString(Exporter.stringify(this.serialized));
+	var targetMorph = importer.importWrapperFromNode(this.serialized);
 	if (targetMorph instanceof WorldMorph) {
 	    this.world().addMorph(new LinkMorph(targetMorph, loc));
 	    for (var i = 0; i < targetMorph.submorphs.length; i++) {

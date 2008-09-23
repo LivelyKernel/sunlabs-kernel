@@ -3759,27 +3759,27 @@ Copier.subclass('Importer', {
 	this.patchSites.push([wrapper, name, ref, optIndex]);
     },
     
-    importFromNode: function(rawNode) {
+    importWrapperFromNode: function(rawNode) {
 	///console.log('making morph from %s %s', node, LivelyNS.getType(node));
 	// call reflectively b/c 'this' is not a Visual yet. 
-	var morphTypeName = LivelyNS.getType(rawNode);
+	var wrapperType = Wrapper.prototype.getEncodedType(rawNode);
 	
-	if (!morphTypeName || !Global[morphTypeName]) {
+	if (!wrapperType || !Global[wrapperType]) {
 	    throw new Error(Strings.format("node %s (parent %s) cannot be a morph of %s",
-					   rawNode.tagName, rawNode.parentNode, morphTypeName));
+					   rawNode.tagName, rawNode.parentNode, wrapperType));
 	}
 
 	try {
-	    return new Global[morphTypeName](this, rawNode);
+	    return new Global[wrapperType](this, rawNode);
 	} catch (er) {
 	    console.log("%s instantiating type %s from node %s", er, 
-			morphTypeName, Exporter.stringify(rawNode));
+			wrapperType, Exporter.stringify(rawNode));
 	    throw er;
 	}
     },
 
-    importFromString: function(string) {
-	return this.importFromNode(this.parse(string));
+    importWrapperFromString: function(string) {
+	return this.importWrapperFromNode(this.parse(string));
     },
 
     parse: function(string) {
@@ -3797,8 +3797,8 @@ Copier.subclass('Importer', {
 	    var node = nodes[i];
 	    // console.log("found node " + Exporter.stringify(node));
 	    if (node.localName != "g")  continue;
-	    morphs.push(this.importFromNode(node.ownerDocument === Global.document ? 
-					    node : Global.document.importNode(node, true)));
+	    morphs.push(this.importWrapperFromNode(node.ownerDocument === Global.document ? 
+						   node : Global.document.importNode(node, true)));
 	}
 	return morphs;
     },
@@ -4013,20 +4013,21 @@ Visual.subclass('Morph', {
 
     nextNavigableSibling: null, // keyboard navigation
 
-    internalInitialize: function(rawNode, transform) {
+    internalInitialize: function(rawNode) {
 	this.rawNode = rawNode;
 	this.submorphs = [];
 	this.owner = null;
-	LivelyNS.setType(this.rawNode, this.getType());
-	this.setId(this.newId());
     },
 
     initialize: function(initialBounds, shapeType) {
 	//console.log('initializing morph %s %s', initialBounds, shapeType);
+
 	if(!initialBounds) initialBounds = new Rectangle(0,0,100,100);
 	if(!shapeType) shapeType = "rect";
-	
 	this.internalInitialize(NodeFactory.create("g"));
+ 	LivelyNS.setType(this.rawNode, this.getType());
+	this.setId(this.newId());
+
 	this.pvtSetTransform(new Similitude(this.defaultOrigin(initialBounds, shapeType)));
 	this.initializePersistentState(initialBounds, shapeType);
 	this.initializeTransientState(initialBounds);
@@ -4177,7 +4178,7 @@ Visual.subclass('Morph', {
 	    // alert("got node " + Exporter.stringify(desc));
 	    // depth first traversal
 	    if (type) {
-		var morph = importer.importFromNode(desc);
+		var morph = importer.importWrapperFromNode(desc);
 		this.submorphs.push(morph); 
 		morph.owner = this;
 	    } else {
@@ -4220,7 +4221,6 @@ Visual.subclass('Morph', {
 			importer.addPatchSite(this, name, ref);
 		    } else {
 			var value = LivelyNS.getAttribute(node, "value");
-			//alert('found value ' + value);
 			if (value != null) {
 			    var family = LivelyNS.getAttribute(node, "family");
 			    if (family) {
@@ -4233,6 +4233,7 @@ Visual.subclass('Morph', {
 		break;
 	    }
 	    case "widget": {
+		// FIXME!
 		var type = Wrapper.prototype.getEncodedType(node);
 		if (type) {
 		    var widget = new (Global[type])(importer, node);
