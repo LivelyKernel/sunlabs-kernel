@@ -2269,8 +2269,7 @@ Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
         var panel = new PanelMorph(extent).linkToStyles(["panel"]);
 	var model = this.getModel();
 	panel.relayToModel(model, {});
-	// FIXME this shoud be refactored
-	panel.addWrapper(model) || console.log("problem adding model");
+	panel.addWrapper(model) || console.log('failed to add model');
 	
 	panel.applyStyle({borderWidth: 2, 
 			  fill: new LinearGradient([Color.white, 1, Color.primary.blue], LinearGradient.NorthSouth)});

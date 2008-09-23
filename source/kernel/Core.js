@@ -1045,11 +1045,9 @@ Record.subclass('DOMRecord', {
         this['set' + fieldName] = this['set' + fieldName].wrap(function(proceed, value, optSource, force) {
             proceed(value, optSource, true);
         })
-    },
+    }
 
 });
-
-
 
 
 // note: the following happens later
@@ -1114,10 +1112,7 @@ Object.extend(Record, {
 	    fieldSpec[key] = {};
 	    argSpec[key] = value;
 	});
-	var inst = this.newInstance(fieldSpec, argSpec, NodeFactory.create("record"));
-	
-	inst.linkWrapee();
-	return inst;
+	return this.newInstance(fieldSpec, argSpec, NodeFactory.create("record"));
     },
 
     newInstance: function(fieldSpec, argSpec, optStore) {
@@ -1215,6 +1210,7 @@ Object.extend(Relay, {
 
     newRelayGetter: function newRelayGetter(targetName, optConv) {
 	return function getterRelay(/*...*/) {
+	    if (!this.delegate) debugger;
 	    var impl = this.delegate[targetName];
 	    if (!impl) { debugger; throw new Error("delegate " + this.delegate + " does not implement " + targetName); }
 	    var result = impl.apply(this.delegate, arguments);
@@ -1278,7 +1274,6 @@ Object.extend(Relay, {
 	    }
 	}
     },
-
 
     create: function(args) {
 	var klass = Relay.subclass();
@@ -1360,7 +1355,6 @@ Object.extend(Relay, {
 	}
 	return klass;
     }
-    
 
 });
     
@@ -1760,6 +1754,7 @@ Object.subclass('Wrapper', {
     },
     
     getWrapperByUri: function(uri) {
+	throw new Error('obsolete!');
 	// locate the JS wrapper given it's URI
 	var id = uri.substring(5, uri.length - 1);
 	var node = Global.document.getElementById(id);
@@ -1767,6 +1762,7 @@ Object.subclass('Wrapper', {
     },
 
     linkWrapee: function() {
+	throw new Error('obsolete!');
 	// ensure that wrapper can be found based on the rawNode. 
 	// Not sure this should be handled this way, esp. b/c
 	// batik won't like it.
@@ -2542,9 +2538,8 @@ Object.subclass('Similitude', {
     },
 
     applyTo: function(visual) {
-	var rawNode = visual.rawNode;
 	if (Config.useTransformAPI) {
-	    var list = rawNode.transform.baseVal;
+	    var list = visual.getBaseTransform();
 	    var canvas = visual.canvas();
 
 	    if (!this.translation) this.translation = canvas.createSVGTransform();
@@ -2562,7 +2557,7 @@ Object.subclass('Similitude', {
 		list.appendItem(this.scaling);
 	    }
 	} else {
-	    rawNode.setAttributeNS(null, "transform", this.toAttributeValue());
+	    visual.rawNode.setAttributeNS(null, "transform", this.toAttributeValue());
 	}
     },
 
@@ -2962,6 +2957,10 @@ Visual.addMethods({
 	    this.rawNode.setAttributeNS(null, "filter", filterUri);
 	else
 	    this.rawNode.removeAttributeNS(null, "filter");
+    },
+
+    getBaseTransform: function() {
+	return this.rawNode.transform.baseVal;
     }
 
 });
@@ -4189,8 +4188,6 @@ Visual.subclass('Morph', {
 	if (origDefs) 
 	    origDefs.parentNode.removeChild(origDefs);
 
-
-
 	for (var i = 0; i < children.length; i++) {
 	    var node = children[i];
 	    switch (node.localName) {
@@ -4253,28 +4250,40 @@ Visual.subclass('Morph', {
 			var ref = LivelyNS.getAttribute(elt, "ref");
 			if (ref) {
 			    importer.addPatchSite(this, name, ref, index);
-			    //var found = importer.lookup(ref);
-			    //if (!found) console.warn("value not found for array " + name +  ": ref "  +  ref);
-			    //this[name].push(found);
 			} else this[name].push(null);
 			index ++;
 		    }
 		}
 		break;
 	    }
+
+	    case "relay": {
+		var spec = {};
+		for (var elt = node.firstChild; elt != null; elt = elt.nextSibling) {
+		    if (elt.localName == "binding") {
+			var key = elt.getAttributeNS(null, "formal");
+			var value = elt.getAttributeNS(null, "actual");
+			spec[key] = value;
+		    }
+		}
+		var name = LivelyNS.getAttribute(node, "name");
+		if (name) {
+		    var relay = this[name] = Relay.newInstance(spec, null);
+		    var ref = LivelyNS.getAttribute(node, "ref");
+		    importer.addPatchSite(relay, "delegate", ref);
+		}
+		break;
+	    }
+
 	    case "record": { // make generic, not all records must be models.
 		try {
 		    var spec = JSON.unserialize(node.textContent);
 		    var Rec = DOMRecord.prototype.create(spec);
 		    var model = new Rec(importer, node);
+		    var id = node.getAttribute("id");
+		    if (id) importer.addMapping(id, model); 
 		    // FIXME: non Batik-friendly:
-		    model.linkWrapee();
-		    var relayAttr = this.getLivelyTrait("relay");
-		    if (relayAttr) {
-			console.log('relay ' + unescape(relayAttr));
-			var relay = Converter.fromJSONAttribute(relayAttr);
-			this.relayToModel(model, relay);
-		    }
+		    //model.linkWrapee();
 		} catch (er) { debugger; throw er; }
 		break;
 	    }
@@ -4346,7 +4355,7 @@ Visual.subclass('Morph', {
 		continue;
 	    if (m instanceof Function) {
 		continue;
-	    } else if (m instanceof Wrapper) {
+	    } else if (m instanceof Wrapper) { // FIXME what if Wrapper is a mixin?
 		if (prop == 'owner') 
 		    continue; // we'll deal manually
 		if (m instanceof Gradient || m instanceof ClipPath || m instanceof Image) 
@@ -4359,13 +4368,27 @@ Visual.subclass('Morph', {
 		    extraNodes.push(this.addNonMorph(desc));
 		    addNL(this);
 		}
+	    } else if (m instanceof Relay) {
+		var delegate = m.delegate;
+		if (delegate instanceof Wrapper || delegate instanceof DOMRecord) { // FIXME: better instanceof
+		    var desc = LivelyNS.create("relay", {name: prop, ref: delegate.id()});
+		    Properties.forEachOwn(m.definition, function(key, value) {
+			var binding = desc.appendChild(LivelyNS.create("binding"));
+			binding.setAttributeNS(null, "formal", key);
+			binding.setAttributeNS(null, "actual", value);
+		    })
+		    extraNodes.push(this.addNonMorph(desc));
+		} else {
+		    console.warn('unexpected: '+ m + 's delegate is ' + delegate);
+		}
+		addNL(this);
 	    } else if (m instanceof Array) {
 		if (prop === 'submorphs')
 		    continue;  // we'll deal manually
 		var arr = LivelyNS.create("array", {name: prop});
 		var abort = false;
 		m.forEach(function iter(elt) {
-		    if (elt && !(elt instanceof Wrapper)) {
+		    if (elt && !(elt instanceof Wrapper)) { // FIXME what if Wrapper is a mixin?
 			abort = true;
 			return;
 		    }
@@ -5128,7 +5151,7 @@ Morph.addMethods({
     },
 
     onMouseOver: function(evt) {
-        this.delayShowHelp(evt)
+        this.delayShowHelp(evt);
     }, 
 
     onMouseOut: function(evt) { 
@@ -5433,6 +5456,7 @@ Morph.addMethods({
 
 Morph.subclass('PseudoMorph', {
     description: "This hack to make various objects serializable, despite not being morphs",
+    
     initialize: function($super) {
 	$super(pt(0,0).extent(0,0), "rect");
 	this.undisplay();
@@ -5797,12 +5821,6 @@ ViewTrait = {
 	if (plugSpec instanceof Relay) {
 	    // new style model
 	    this.formalModel = plugSpec;
-	    if (this instanceof Wrapper) {
-		this.setLivelyTrait("relay", Converter.toJSONAttribute(plugSpec.definition));
-		if (!plugSpec || !plugSpec.delegate) debugger;
-		if (plugSpec.delegate.uri) 
-		    this.setLivelyTrait("model", plugSpec.delegate.uri());
-	    }
 	    // now, go through the setters and add notifications on model
 	    if (plugSpec.delegate instanceof Record) 
 		plugSpec.delegate.addObserversFromSetters(plugSpec.definition, this, optKickstartUpdates);
@@ -5833,21 +5851,15 @@ ViewTrait = {
     },
 
     reconnectModel: function() {
-	var uri = this.getLivelyTrait("model");
-	var model = Wrapper.prototype.getWrapperByUri(uri);
-	//console.log('reconnect model looked for URI ' + this.getLivelyTrait("model") + ' and got ' +  model);
-	if (!model) { 
-	    if (uri) console.log("not found model by " + uri + " for " + this);
-	    return null;
-	}
-	var relaySpec = Converter.fromJSONAttribute(this.getLivelyTrait("relay"));
-	try {
-	        this.relayToModel(model, relaySpec);
-	} catch (e){
-	        console.log("Error in " + this+ " reconnectModel: " + e)
-	}
-	return model;
-	return model;
+	if (this.formalModel instanceof Relay) {
+	    // now, go through the setters and add notifications on model
+	    //alert('delegate ' + this.formalModel.delegate);
+	    if (this.formalModel.delegate instanceof Record)  {
+		this.formalModel.delegate.addObserversFromSetters(this.formalModel.definition, this);
+	    }
+	} else if (this.formalModel instanceof Record) {
+	    this.formalModel.addObserversFromSetters(this.formalModel.definition, this);
+	} //else alert('formal model ' + this.formalModel);
     },
 
     checkModel: function(plugSpec) {

@@ -58,8 +58,7 @@ Morph.subclass('ButtonMorph', {
         return this;
     },
 
-    restorePersistentState: function($super, importer) {
-        $super(importer);
+    onDeserialize: function() {
         this.baseFill = this.fill;
         this.changeAppearanceFor(this.getValue(false));
     },
@@ -1586,9 +1585,7 @@ Morph.subclass("SliderMorph", {
         return this;
     },
     
-    restorePersistentState: function($super, importer) {
-        $super(importer);
-        this.scale = 1.0; // FIXME restore from markup
+    onDeserialize: function() {
         if (!this.slider) {
             console.warn('no slider in %s, %s', this, this.textContent);
            return;
@@ -1788,8 +1785,7 @@ Morph.subclass("ScrollPane", {
         return this;
     },
     
-    restorePersistentState: function($super, importer) { // FIXME duplication between here and initialize
-        $super(importer);
+    onDeserialize: function() { // FIXME duplication between here and initialize
         if (this.scrollBar && this.ScrollBarFormalRelay) 
 	    this.scrollBar.formalModel = new (this.ScrollBarFormalRelay)(this);
         if (this.menuButton)
@@ -2164,7 +2160,8 @@ Wrapper.subclass('Widget', ViewTrait, { // FIXME remove code duplication
         return this.openIn(WorldMorph.current());
     },
 
-    initialize: function(plug) {
+    initialize: function($super, plug) {
+	$super();
 	this.rawNode = NodeFactory.create("widget");
 	this.setId(this.newId());
         if (plug) this.connectModel(plug);
@@ -2471,7 +2468,6 @@ Morph.subclass("TitleBarMorph", {
     },
     
     connectButtons: function(w) {
-	w.linkWrapee();
 	this.closeButton.relayToModel(w, {HelpText: "-CloseHelp", Trigger: "=initiateShutdown"});
 	this.menuButton.relayToModel(w, {HelpText: "-MenuHelp", Trigger: "=showTargetMorphMenu"});
 	this.collapseButton.relayToModel(w, {HelpText: "-CollapseHelp", Trigger: "=toggleCollapse"});
@@ -2924,7 +2920,6 @@ Widget.addMethods({
             var spec = {};
         var Rec = DOMRecord.prototype.create(spec);
         var model = new Rec(importer, node);
-        model.linkWrapee();
         return model;
     },
 });
