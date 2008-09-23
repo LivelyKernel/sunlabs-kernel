@@ -154,8 +154,10 @@ function populateWorldWithExamples(world) {
             widget.startSteppingScripts();
         };
         
-        if (Config.originalClock) createClock(ClockMorph);
-        else module('main.js').requires('Fabrik.js').toRun(function() { createClock(FabrikClockMorph) });
+        if (Config.originalClock)
+            require('Examples.js').toRun(function() { createClock(ClockMorph) })
+        else
+            require('Fabrik.js').toRun(function() { createClock(FabrikClockMorph) });
     }
 
     /*
@@ -165,14 +167,21 @@ function populateWorldWithExamples(world) {
     }
     */
 
-    if (Config.showEngine()) EngineMorph.makeEngine(world, pt(230, 5));
+    if (Config.showEngine())
+        require('Examples.js').toRun(function() {
+            EngineMorph.makeEngine(world, pt(230, 5))
+        });
     
-    if (Config.showAsteroids()) using(lk.examples.asteroids).run(function(app) {
-        var gameMorph = app.makeGameMorph(pt(500, 360).extent(pt(600, 300)));
-        world.addMorph(new WindowMorph(gameMorph, 'Asteroids!'));
-        app.initialize();
-        gameMorph.runAsteroidsGame();
-        gameMorph.owner.collapse();
+    if (Config.showAsteroids())
+        require('Examples.js').toRun(function() {
+            using(lk.examples.asteroids).run(function(app) {
+            var gameMorph = app.makeGameMorph(pt(500, 360).extent(pt(600, 300)));
+            world.addMorph(new WindowMorph(gameMorph, 'Asteroids!'));
+            app.initialize();
+            gameMorph.runAsteroidsGame();
+            gameMorph.owner.collapse();
+        })
+
     });
     
     // Sample icon morph with a fisheye effect 'on'
@@ -189,38 +198,54 @@ function populateWorldWithExamples(world) {
 
     // Sample weather morph
     if (Config.showWeather() && Config.showNetworkExamples) {
-        // Maybe the icons should have rectangular images (unlike here)
-        var weather = new WeatherWidget().openIn(world, pt(785, 65));
-        world.topSubmorph().rotateBy(-0.2);
+        require('Examples.js').toRun(function() {
+            // Maybe the icons should have rectangular images (unlike here)
+            var weather = new WeatherWidget().openIn(world, pt(785, 65));
+            world.topSubmorph().rotateBy(-0.2);
+        });
     }
 
     if (Config.showStocks() && Config.showNetworkExamples) {
-        var stockWidget = new StockWidget();
-        stockWidget.openIn(world, pt(350, 500));
+        require('Examples.js').toRun(function() {
+            var stockWidget = new StockWidget();
+            stockWidget.openIn(world, pt(350, 500));
+        });
     }
 
-    if (Config.show3DLogo()) world.addFramedMorph(new lk.examples.Sun3DMorph(pt(200, 200)), 
-						  'Sun 3D Logo', pt(570, 100));
+    if (Config.show3DLogo()) 
+        require('Examples.js').toRun(function() {
+            world.addFramedMorph(new lk.examples.Sun3DMorph(pt(200, 200)), 
+						            'Sun 3D Logo', pt(570, 100));
+		});
 						      
-    if (Config.showTester) new TestWidget().openIn(world, pt(835, 450));
+    if (Config.showTester)
+        require('Examples.js').toRun(function() { new TestWidget().openIn(world, pt(835, 450)) });
     
     if (Config.showTesterRunnerForDevelopment) {
-        module('main.js').requires('TestFramework.js').toRun(function() {
+        require('TestFramework.js').toRun(function(currentModule) {
             var tests = Config.loadTests.collect(function(ea) { return 'Tests/' + ea + '.js'});
-            module('main.js').requires(tests).toRun(function() {
+            module(currentModule).requires(tests).toRun(function() {
                 TestRunner.openIn();
                 console.log('Tests loaded: .............................  ' + TestCase.allSubclasses().length);
             });
         });
     }
 
-    if (Config.showWikiNavigator) WikiNavigator.enableWikiNavigator();
+    if (Config.showWikiNavigator)
+        require('LKWiki.js').toRun(function() {
+            WikiNavigator.enableWikiNavigator();
+        });
 
-    if (Config.showFabrikComponentBox) module('main.js').requires('Fabrik.js').toRun(function() { Global.Fabrik.openComponentBox() });
-    if (Config.showFahrenheitCelsiusExample) module('main.js').requires('Fabrik.js').toRun(function() { Global.Fabrik.openFahrenheitCelsiusExample() });
-    if (Config.showTextListExample) module('main.js').requires('Fabrik.js').toRun(function() { Global.Fabrik.openFabrikTextListExample() });
-    if (Config.openFabrikBrowserExample) module('main.js').requires('Fabrik.js').toRun(function() { Global.Fabrik.openFabrikBrowserExample() });
-    if (Config.showFabrikWebRequestExample) module('main.js').requires('Fabrik.js').toRun(function() { Global.Fabrik.openFabrikWebRequestExample() });
+    if (Config.showFabrikComponentBox)
+        require('Fabrik.js').toRun(function() { Fabrik.openComponentBox() });
+    if (Config.showFahrenheitCelsiusExample)
+        require('Fabrik.js').toRun(function() { Fabrik.openFahrenheitCelsiusExample() });
+    if (Config.showTextListExample)
+        require('Fabrik.js').toRun(function() { Fabrik.openFabrikTextListExample() });
+    if (Config.openFabrikBrowserExample)
+        require('Fabrik.js').toRun(function() { Fabrik.openFabrikBrowserExample() });
+    if (Config.showFabrikWebRequestExample)
+        require('Fabrik.js').toRun(function() { Fabrik.openFabrikWebRequestExample() });
 
     // Open OmetaWorkspace
     //openOmetaWorkspace();
@@ -242,23 +267,32 @@ function populateWorldWithExamples(world) {
         lm1.myWorld.onEnter = function() {
 	    if (this.enterCount > 0) return;
 
-	    PIM = new WebPIM().openIn(this, pt(110, 110));
+        require('WebPIM.js').toRun(function() {
+            PIM = new WebPIM().openIn(this, pt(200, 110));
+        }.bind(this));
+	    
 	    
             if (Config.showRSSReader() && Config.showNetworkExamples) {
-                console.log('initializing RSS reader');
-                new FeedWidget("http://news.cnet.com/2547-1_3-0-5.xml").openIn(this, pt(725, 120));
+                require('Examples.js').toRun(function() {
+                    console.log('initializing RSS reader');
+                    new FeedWidget("http://news.cnet.com/2547-1_3-0-5.xml").openIn(this, pt(725, 120));
+                });
             }
 	    
             if (Config.showCanvasScape()) {
-                this.addMorph(new WindowMorph(new lk.examples.canvascape.CanvasScapeMorph(new Rectangle(20,50,800,300)), 'CanvasScape')).collapse();
+                require('Examples.js').toRun(function() {
+                    this.addMorph(new WindowMorph(new lk.examples.canvascape.CanvasScapeMorph(new Rectangle(20,50,800,300)), 'CanvasScape')).collapse();
+                });
             }
 	    
             if (Config.showMap) {
-                var tile = lk.examples.maps.tileExtent;
-                var map = new MapFrameMorph(new Rectangle(0, 0, 2*tile.x, 2*tile.y), true);
-                map.setScale(0.7);
-                map.setPosition(pt(160, 250));
-                this.addMorph(map);
+                require('Examples.js').toRun(function() {
+                    var tile = lk.examples.maps.tileExtent;
+                    var map = new MapFrameMorph(new Rectangle(0, 0, 2*tile.x, 2*tile.y), true);
+                    map.setScale(0.7);
+                    map.setPosition(pt(160, 250));
+                    this.addMorph(map);
+                }.bind(this));
             }
 	    
             // Add sample curve stuff
@@ -294,9 +328,15 @@ function populateWorldWithExamples(world) {
 		this.addMorphBack(new WindowMorph(new ImageMorph(new Rectangle(50, 10, width, height), url), 'Tampere'));
             }
 	    
-            if (Config.showSquiggle()) this.addFramedMorph(new SquiggleMorph(pt(300, 300)), 'Freehand', pt(560, 380));
+            if (Config.showSquiggle())
+                require('Examples.js').toRun(function() {
+                    this.addFramedMorph(new SquiggleMorph(pt(300, 300)), 'Freehand', pt(560, 380));
+                });
             
-            if (Config.showVideo()) this.addFramedMorph(new PlayerMorph(), "Player", pt(50, 20));
+            if (Config.showVideo())
+                require('Examples.js').toRun(function() {
+                    this.addFramedMorph(new PlayerMorph(), "Player", pt(50, 20));
+                });
 	    
         }
     }
@@ -370,10 +410,15 @@ function populateWorldWithExamples(world) {
 			importer.loadCode(URL.source.withFilename('GridLayout.js'));
 		}
 		
-        // if (Config.showTesterRunner)
-        //     module('Main.js').requires('TestFramework.js').toRun(function() {
-        //         TestRunner.openIn(devWorld.myWorld, pt(500, 100))
-        //     });
+        if (Config.showTesterRunner) {
+            require('TestFramework.js').toRun(function(currentModule) {
+                // Just show a few of our various tests
+                var tests = ['Tests/FabrikTest.js', 'Tests/TestFrameworkTests.js']
+                module(currentModule).requires(tests).toRun(function() {
+                    TestRunner.openIn(devWorld.myWorld, pt(500, 100))
+                });
+            });
+        }
     }
 
     if (Config.showPhoneWorld) {
@@ -395,21 +440,21 @@ function populateWorldWithExamples(world) {
         new ConsoleWidget(50).openIn(world, pt(0, world.viewport().height - 210));
     }
 
-    // if (Config.showFabrik) {
-    //     module('ShowFabrik1').requires('Fabrik.js').toRun(function() {
-    //         var fabrikWorld = new LinkMorph(null, pt(60, 330));
-    //         world.addMorph(fabrikWorld);
-    //      addLinkLabel(fabrikWorld, "Visual programming with Fabrik");
-    //      fabrikWorld.myWorld.onEnter = function() {
-    //             if (this.enterCount > 0) return;
-    //          Global.Fabrik.openFabrikBrowserExample(fabrikWorld.myWorld, pt(70,245));
-    //          Global.Fabrik.openFahrenheitCelsiusExample(fabrikWorld.myWorld, pt(100,20));
-    //          Global.Fabrik.openComponentBox(fabrikWorld.myWorld, pt(620,100));
-    //          Global.Fabrik.openFabrikWebRequestExample(fabrikWorld.myWorld, pt(400,445));
-    //         };
-    //     });
-    // 
-    // }
+    if (Config.showFabrik) {
+        require('Fabrik.js').toRun(function() {
+            var fabrikWorld = new LinkMorph(null, pt(60, 330));
+            world.addMorph(fabrikWorld);
+         addLinkLabel(fabrikWorld, "Visual programming with Fabrik");
+         fabrikWorld.myWorld.onEnter = function() {
+                if (this.enterCount > 0) return;
+             Global.Fabrik.openFabrikBrowserExample(fabrikWorld.myWorld, pt(70,245));
+             Global.Fabrik.openFahrenheitCelsiusExample(fabrikWorld.myWorld, pt(100,20));
+             Global.Fabrik.openComponentBox(fabrikWorld.myWorld, pt(620,100));
+             Global.Fabrik.openFabrikWebRequestExample(fabrikWorld.myWorld, pt(400,445));
+            };
+        });
+    
+    }
     
     return world;
 }
@@ -428,10 +473,12 @@ function main() {
     if (world) {
 	world.displayOnCanvas(canvas);
 	console.log("world is " + world);
-	if(Config.showWikiNavigator) { 
-	    //just a quick hack...
-	    console.log('starting WikiNavigator');
-	    WikiNavigator.enableWikiNavigator();
+	if(Config.showWikiNavigator) {
+        require('LKWiki.js').toRun(function() {
+            //just a quick hack...
+            console.log('starting WikiNavigator');
+            WikiNavigator.enableWikiNavigator();
+        });
 	}
 	return;
     } else {

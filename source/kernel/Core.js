@@ -67,10 +67,18 @@ function namespace(spec, context) {
 //     return {run: loadAll};
 // };
 
+var getUniqueName = (function() { 
+    var counter = 0;
+    return function() {
+        return 'anonymous_module_' + ++counter; // What a language!
+    }
+})();
+
 var PendingRequirements = {};
 
 // Semaphore functions
 function moduleLoaded(module) {
+    console.log('declaring ' + module + ' as loaded');
     Object.keys(PendingRequirements).each(function(ea) {
         if (PendingRequirements[ea])
             PendingRequirements[ea] = PendingRequirements[ea].reject(function(name) {return name == module});
@@ -84,32 +92,36 @@ function waitFor(module, requiredModules) {
     PendingRequirements[module] = PendingRequirements[module].concat(requiredModules);
 };
 function noPendingRequirements(module) {
-    // if (document.getElementById(module) && Loader.wasLoaded[module]) return true;
-    return !PendingRequirements[module] || PendingRequirements[module].length == 0;
+    if (!PendingRequirements[module]) return true;
+    
+    if (PendingRequirements[module].any(function(ea) { document.getElementById(module) && !Loader.wasLoaded[module] }))
+        return false;
+
+    return PendingRequirements[module].length == 0;
 };
 
 function module(moduleName) {
     PendingRequirements[moduleName] = 0;
-    return {requires: require.curry(moduleName)};
+    return {requires: basicRequire.curry(moduleName)};
 };
 
-// Uses just loadScript. To be removed.
-function require1(/*ownModuleName, requiredModuleNamesOrAnArray*/) {
-    var args = $A(arguments);    
-    var ownModuleName = args.shift();
-    var requiredModuleName = args.shift();
-    console.assert(args.length == 0);
+function require(/*requiredModuleNameOrAnArray, anotherRequiredModuleName, ...*/) {
+    return module(getUniqueName()).requires($A(arguments));
+};
     
-    waitFor(ownModuleName, [requiredModuleName]);
-    return {toRun: function(code) { Loader.loadScript(requiredModuleName, onModuleLoad.curry(ownModuleName, code)) }};
-};
-
-function require(/*ownModuleName, requiredModuleName1OrAnArray, requiredModuleName2, ...*/) {
+function basicRequire(/*ownModuleName, requiredModuleNameOrAnArray, anotherRequiredModuleName, ...*/) {
     var args = $A(arguments);    
     var ownModuleName = args.shift();
-    var requiredModuleNames = Object.isArray(args[0]) ? args[0] : args;
+    var preReqModuleNames = Object.isArray(args[0]) ? args[0] : args;
+    var requiredModuleNames = [];
+    for (var i = 0; i < preReqModuleNames.length; i++) {
+        requiredModuleNames[i] = preReqModuleNames[i];
+    }
+    
     waitFor(ownModuleName, requiredModuleNames);
-    return {toRun: function(code) { Loader.loadScripts(requiredModuleNames, onModuleLoad.curry(ownModuleName, code)) }};
+    return {toRun: function(code) {
+        code = code.curry(ownModuleName); // pass in the own module name for nested requirements
+        Loader.loadScripts(requiredModuleNames, onModuleLoad.curry(ownModuleName, code)) }};
 };
 
 function onModuleLoad(ownModuleName, code) {
@@ -117,6 +129,7 @@ function onModuleLoad(ownModuleName, code) {
         try {
             code();
         } catch(e) {
+            console.log(JSON.serialize(PendingRequirements));
             debugger; throw e;
         } finally {
             if (noPendingRequirements(ownModuleName)) moduleLoaded(ownModuleName);
@@ -136,7 +149,7 @@ var Loader = {
     
     pendingActionsFor: function(url) {
         return Loader.pendingActions.inject([], function(all, ea) {
-            if (ea.url == url) all.push(ea.action);
+            if (ea.url == url) all.push(ea);
             return all;
         }); 
     },
@@ -154,18 +167,20 @@ var Loader = {
     },
     
     loadScript: function(url /*not really a url yet*/, onLoadAction, embedSerializable) {
-        console.log('Loading: ' + url + (embedSerializable ? ' into <defs>' : ''));
+        console.log('Begin to load ' + url + (embedSerializable ? ' into <defs>' : ''));
         if (document.getElementById(url)) {
-            console.log(url + ' already loaded');
+            // console.log(url + ' already loaded');
             if (onLoadAction) {
                 if (Loader.wasLoaded[url]) {
-                    console.log(url + "was loaded directly because it is already in the DOM and it is loaded");
+                    console.log("The action which is dependend from " + url +
+                                " will be directly run because " + url + " is in the DOM and loaded");
                     onLoadAction();
                     // When url is already there, onModuleLoad isn't run again, so remove url from the requirement list manually
                     if (noPendingRequirements(url)) moduleLoaded(url);
                 } else  {
                     // in the DOM but not loaded yet
-                    Loader.pendingActions.push({url: url, action: onLoadAction});
+                    // console.log('adding a pending action for ' + url);
+                    Loader.pendingActions.unshift({url: url, action: onLoadAction});
                 }
             };
             return;
@@ -186,7 +201,11 @@ var Loader = {
                 if (noPendingRequirements(url)) moduleLoaded(url);
             }
             Loader.wasLoaded[url] = true;
-            Loader.pendingActionsFor(url).each(function(ea) { ea(); });
+            Loader.pendingActionsFor(url).each(function(ea) {
+                // console.log(url + ' was loaded. Loading now its pending action for ' + ea.url);
+                ea.action();
+                if (noPendingRequirements(ea.url)) moduleLoaded(ea.url);
+            });
         };
         script.onload = loaderWrapper;
         node.appendChild(script);
@@ -6709,9 +6728,10 @@ PasteUpMorph.subclass("WorldMorph", {
                 var m = world.addMorph(new ClockMorph(evt.point(), 50));
                 m.startSteppingScripts(); }],
             ["Piano Keyboard", function(evt) {
-                var m = new PianoKeyboard(evt.point());
-                m.scaleBy(1.5);  m.rotateBy(-0.2);
-				world.addMorph(m)}],
+                module('Main.js').requires('Examples.js').toRun(function() {
+                    var m = new PianoKeyboard(evt.point());
+                    m.scaleBy(1.5);  m.rotateBy(-0.2);
+    				world.addMorph(m)})}],
 
 	    ["Console", function(evt) {
 		world.addFramedMorph(new ConsoleWidget(50).buildView(pt(800, 100)), "Console", evt.point());
