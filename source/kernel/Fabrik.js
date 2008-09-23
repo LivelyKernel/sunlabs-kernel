@@ -439,10 +439,10 @@ Morph.subclass('PinMorph', {
         console.log(" NO URI FOUND");
         this.debugValue = "I was here"
 
-        this.pinHandle = Wrapper.prototype.getWrapperByUri(uri);
-        console.log("found wrapper: " + this.pinHandle);
-        if (!this.pinHandle)
-            console.log("no wrapper found")       
+        // this.pinHandle = Wrapper.prototype.getWrapperByUri(uri);
+        // console.log("found wrapper: " + this.pinHandle);
+        // if (!this.pinHandle)
+        //     console.log("no wrapper found")       
     },
     
     setPinHandle: function(pinHandle) {
@@ -637,7 +637,6 @@ Widget.subclass('PinHandle', {
         this.component = component;
         this.initializeTransientState();
 
-        this.linkWrapee();
         this.rawNode.appendChild(this.getModel().rawNode);
     },
     
@@ -1038,8 +1037,6 @@ Widget.subclass('PinConnector', {
         spec[fromPinHandle.getName()] = "=set" + toPinHandle.getName();
         fromModel.addObserver(toModel, spec);
         
-        this.linkWrapee();
-        
         console.log("PinConnector says: Connected pin " + fromPinHandle.getName() + " to pin " + toPinHandle.getName());
     },
 
@@ -1052,9 +1049,9 @@ Widget.subclass('PinConnector', {
 
     deserialize: function($super, importer, rawNode) {
         $super(importer, rawNode);
-        this.fromPin = Wrapper.prototype.getWrapperByUri(this.getTrait("fromPin"));
-        this.fromPin = Wrapper.prototype.getWrapperByUri(this.getTrait("fromPin"));
-        this.isBidirectional = this.getTrait("bidirectional") == "true";
+        // this.fromPin = Wrapper.prototype.getWrapperByUri(this.getTrait("fromPin"));
+        // this.fromPin = Wrapper.prototype.getWrapperByUri(this.getTrait("fromPin"));
+        // this.isBidirectional = this.getTrait("bidirectional") == "true";
     },
 
     // just for make things work ...
@@ -1139,16 +1136,16 @@ Morph.subclass('ComponentMorph', {
 
         console.log("+++deserialize Morph: " + this.id());
         var uri = this.getLivelyTrait("model");
-        this.formalModel = Wrapper.prototype.getWrapperByUri(uri);
-        if(this.formalModel) {
-            this.component = this.formalModel.owner;
-            if(this.component)
-                this.component.panel = this;
-            else
-                console.log("no owner for formalModel found")
-        } else {
-            console.log("no formalModel found for " + uri)
-        }
+        // this.formalModel = Wrapper.prototype.getWrapperByUri(uri);
+        // if(this.formalModel) {
+        //     this.component = this.formalModel.owner;
+        //     if(this.component)
+        //         this.component.panel = this;
+        //     else
+        //         console.log("no owner for formalModel found")
+        // } else {
+        //     console.log("no formalModel found for " + uri)
+        // }
     },
     
     setComponent: function(component) {
@@ -1542,7 +1539,6 @@ Widget.subclass('Component', {
         //this.addField("Name"); // just to have something for testing....
         this.formalModel.setName("ThisIsNoComponent");
               
-        this.linkWrapee();
         this.rawNode.appendChild(this.getModel().rawNode);
         
         this.pinHandles = [];
@@ -1585,7 +1581,6 @@ Widget.subclass('Component', {
                         console.log("ERROR: no constructor for " + type)
                     else {
                         var widget = new constructor(importer, node);
-                        widget.linkWrapee()
                         widgets.push(widget);
                     }
                 } else {
