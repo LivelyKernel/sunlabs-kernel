@@ -5148,7 +5148,8 @@ Morph.addMethods({
     
     delayShowHelp: function(evt) {
         var scheduledHelp = new SchedulableAction(this, "considerShowHelp", evt, 0);
-        this.world().scheduleForLater(scheduledHelp, Config.ballonHelpDelay || 1000, false);             
+        if (this.world())
+            this.world().scheduleForLater(scheduledHelp, Config.ballonHelpDelay || 1000, false);
     },
 
     onMouseOver: function(evt) {
