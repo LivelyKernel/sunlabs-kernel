@@ -6430,6 +6430,8 @@ PasteUpMorph.subclass("WorldMorph", {
     },
     
     addHand: function(hand) {
+        if (this.hands.length > 0 && !this.hands.first())
+            this.hands.shift(); // FIXME: Quick bugfix. When deserializing the world the hands.first() is sometimes undefined
         this.hands.push(hand);
         hand.owner = this;
         hand.registerForEvents(this);
