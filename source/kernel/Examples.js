@@ -23,10 +23,6 @@ using(lk.examples).run(function(module) {
 // Widget (panel) Tester Demo
 // ===========================================================================
 
-/**
- * @class TestWidget
- */
-
 Widget.subclass('TestWidget', {
 
     documentation: "a panel with various sample widgets such as buttons, sliders, etc.",
@@ -289,8 +285,7 @@ Widget.subclass('FeedWidget', {
 	this.initializeTransientState();
     },
 
-    deserialize: function($super, importer, plug) {
-	$super(importer, plug);
+    onDeserialize: function() {
 	this.initializeTransientState();
     },
 
@@ -2220,8 +2215,7 @@ Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
 	this.initializeTransientState();
     },
     
-    deserialize: function($super, importer, rawNode) {
-	$super(importer, rawNode);
+    onDeserialize: function() {
 	this.initializeTransientState();
     },
     
@@ -2373,8 +2367,7 @@ Widget.subclass('StockWidget', NetRequestReporterTrait, {
 	this.feed = new Feed({model: this, setFeedChannels: "extractNewsHeaders", setStatus: "setRequestStatus"});
     },
 
-    deserialize: function($super, importer, plug) {
-	$super(importer, plug);
+    onDeserialize: function() {
 	this.initializeTransientState();
     },
     
@@ -4182,9 +4175,7 @@ Morph.subclass("EngineMorph", {
 	this.topPosDisplacement = pt(pistonBW, dHead);
     },
 
-
-    deserialize: function($super, importer, rawNode) {
-	$super(importer, rawNode);
+    onDeserialize: function() {
 	this.cylinders.forEach(function(cyl, i, array) {
 	    //cyl.angle = (Math.PI*2/array.length)*i;
             //if (this.alternate && i%2 == 1) cyl.angle += Math.PI*2;

@@ -784,10 +784,12 @@ Morph.subclass('TextSelectionMorph', {
     documentation: "Visual representation of the text selection",
     style: {fill: Color.primary.green, borderWidth: 0, borderRadius: 1},
     transientBounds: true,
+    mouseHandler: null,
+    fill: null,
     
     initialize: function($super) {
 	$super(pt(0, 0).asRectangle(), "rect");
-	this.applyStyle({fill: null, borderWidth: 0});
+	this.applyStyle({borderWidth: 0});
 	this.ignoreEvents();
     },
 

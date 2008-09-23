@@ -1752,7 +1752,7 @@ Object.subclass('Wrapper', {
 	// Not sure this should be handled this way, esp. b/c
 	// batik won't like it.
 	if (this.rawNode.wrapper && this.rawNode.wrapper != this) 
-	    throw new Error("linkWrapee(): node has already a wrapper and it is not me");
+	    throw new Error("linkWrapee(): node has already a wrapper and it is not me but " + this.rawNode);
 	this.rawNode.wrapper = this;
     },
 
@@ -3675,6 +3675,7 @@ Copier.subclass('Importer', {
 	$super();
 	this.scripts = [];
 	this.models = [];
+	this.patchSites = [];
     },
 
     canvas: function(doc) {
@@ -3730,14 +3731,14 @@ Copier.subclass('Importer', {
 	}
     },
 
-    addScripts: function(array) {
-	if (array) this.scripts = this.scripts.concat(array); 
-    },
-
     startScripts: function(world) {
 	this.verbose && console.log("start scripts %s in %s", this.scripts, world);
 	// sometimes there are null values in this.scripts. Filter them out
 	this.scripts.select(function(ea) {return ea}).forEach(function(s) { s.start(world); });
+    },
+    
+    addPatchSite: function(wrapper, name, ref, optIndex) {
+	this.patchSites.push([wrapper, name, ref, optIndex]);
     },
     
     importFromNode: function(rawNode) {
@@ -3785,11 +3786,36 @@ Copier.subclass('Importer', {
     },
 
     finishImport: function(world) {
+	this.patchReferences();
 	this.hookupModels();
+	this.runDeserializationHooks();
 	try {
 	    this.startScripts(world);
 	} catch (er) {
 	    console.log("scripts failed: " + er);
+	}
+    },
+
+    patchReferences: function() {
+	for (var i = 0, N = this.patchSites.length; i < N; i++) {
+	    var site = this.patchSites[i];
+	    var wrapper = site[0];
+	    var name = site[1];
+	    var ref = site[2];
+	    var index = site[3];
+	    var found;
+	    if (index !== undefined) {
+		if (!wrapper[name]) wrapper[name] = [];
+		else if (!(wrapper[name] instanceof Array)) throw new Error('whoops, serialization problem?');
+		found = (wrapper[name])[index] = this.lookup(ref);
+	    } else {
+		found = wrapper[name] = this.lookup(ref);
+	    }
+	    if (!found) {
+		console.warn("no value found for field %s ref %s", name, ref);
+	    } else {
+		// console.log("found " + name + "=" + found + "and assigned to " + this.id());
+	    }
 	}
     },
 
@@ -3801,6 +3827,17 @@ Copier.subclass('Importer', {
 	    }
 	});
     },
+
+    runDeserializationHooks: function() {
+	Properties.forEachOwn(this.wrapperMap, function each(key, wrapper) {
+	    if (wrapper.onDeserialize) {
+		wrapper.onDeserialize();
+	    }
+	    // collect scripts
+	    if (wrapper.activeScripts) this.scripts = this.scripts.concat(wrapper.activeScripts);
+	}, this);
+    },
+
 
     loadWorldInSubworld: function(doc) {
 	var nodes = this.canvasContent(doc);
@@ -3987,10 +4024,6 @@ Visual.subclass('Morph', {
 	this.restorePersistentState(importer);    
 
 	this.initializeTransientState(null);
-
-
-	// collect scripts
-	if (this.activeScripts) importer.addScripts(this.activeScripts);
 	importer.verbose && console.log("deserialized " + this);
     },
 
@@ -4160,13 +4193,6 @@ Visual.subclass('Morph', {
 		this.restoreFromSubnode(importer, node);
 		break;
 		// nodes from the Lively namespace
-	    case "action":  { // FIXME: compatibility, remove
-		var a = new SchedulableAction(importer, node);
-		a.actor = this;
-		this.addActiveScript(a);
-		// don't start the action until morph fully constructed
-		break;
-	    } 
 	    case "field": {
 		// console.log("found field " + Exporter.stringify(node));
 		helperNodes.push(node);
@@ -4175,13 +4201,7 @@ Visual.subclass('Morph', {
 		if (name) {
 		    var ref = LivelyNS.getAttribute(node, "ref");
 		    if (ref) {
-			var found = this[name] = importer.lookup(ref);
-			if (!found) {
-			    console.warn("no value found for field %s ref %s", name, ref);
-			} else {
-			    //node.parentNode.removeChild(node);
-			    // console.log("found " + name + "=" + found + "and assigned to " + this.id());
-			}
+			importer.addPatchSite(this, name, ref);
 		    } else {
 			var value = LivelyNS.getAttribute(node, "value");
 			//alert('found value ' + value);
@@ -4208,14 +4228,17 @@ Visual.subclass('Morph', {
 		helperNodes.push(node);
 		var name = LivelyNS.getAttribute(node, "name");
 		this[name] = [];
+		var index = 0;
 		for (var elt = node.firstChild; elt != null; elt = elt.nextSibling) {
 		    if (elt.localName == "item") {
 			var ref = LivelyNS.getAttribute(elt, "ref");
 			if (ref) {
-			    var found = importer.lookup(ref);
-			    if (!found) console.warn("value not found for array " + name +  ": ref "  +  ref);
-			    this[name].push(found);
+			    importer.addPatchSite(this, name, ref, index);
+			    //var found = importer.lookup(ref);
+			    //if (!found) console.warn("value not found for array " + name +  ": ref "  +  ref);
+			    //this[name].push(found);
 			} else this[name].push(null);
+			index ++;
 		    }
 		}
 		break;
@@ -4304,25 +4327,31 @@ Visual.subclass('Morph', {
 		continue;
 	    if (m instanceof Function) {
 		continue;
-	    } else if (m instanceof Morph) {
+	    } else if (m instanceof Wrapper) {
 		if (prop == 'owner') 
 		    continue; // we'll deal manually
+		if (m instanceof Gradient || m instanceof ClipPath || m instanceof Image) 
+		    continue; // these should sit in defs and be handled by restoreDefs()
 		//console.log("serializing field name='%s', ref='%s'", prop, m.id(), m.getType());
-		var desc = LivelyNS.create("field", {name: prop, ref: m.id()});
-		extraNodes.push(this.addNonMorph(desc));
-		addNL(this);
+		if (!m.rawNode) {
+		    console.log("wha', no raw node on " + m);
+		} else if (m.id() != null) {
+		    var desc = LivelyNS.create("field", {name: prop, ref: m.id()});
+		    extraNodes.push(this.addNonMorph(desc));
+		    addNL(this);
+		}
 	    } else if (m instanceof Array) {
 		if (prop === 'submorphs')
 		    continue;  // we'll deal manually
 		var arr = LivelyNS.create("array", {name: prop});
 		var abort = false;
 		m.forEach(function iter(elt) {
-		    if (elt && !(elt instanceof Morph)) {
+		    if (elt && !(elt instanceof Wrapper)) {
 			abort = true;
 			return;
 		    }
 		    // if item empty, don't set the ref field
-		    var item =  elt ? LivelyNS.create("item", {ref: elt.id()}) : LivelyNS.create("item"); 
+		    var item =  (elt && elt.id()) ? LivelyNS.create("item", {ref: elt.id()}) : LivelyNS.create("item"); 
 		    extraNodes.push(arr.appendChild(item));
 		    extraNodes.push(arr.appendChild(NodeFactory.createNL()));
 		}, this);
@@ -4335,7 +4364,7 @@ Visual.subclass('Morph', {
 		var desc = LivelyNS.create("field", {name: prop, value: JSON.serialize(m)});
 		extraNodes.push(this.addNonMorph(desc));
 		addNL(this);
-	    } else if (m instanceof Color) {
+	    } else if (m instanceof Color) { // FIXME all the other special cases?
 		var desc = LivelyNS.create("field", {name: prop, family: "Color", value: JSON.serialize(m)});
 		extraNodes.push(this.addNonMorph(desc));
 		addNL(this);
@@ -5068,13 +5097,15 @@ Morph.addMethods({
 
     considerShowHelp: function(oldEvt) {
         // if the mouse has not moved reasonably
-        if (WorldMorph.current().hands.first().getPosition().dist(oldEvt.mousePoint) < 10)
-            this.showHelp(oldEvt)
+	var hand = this.world().firstHand();
+	if (!hand) return; // this is not an active world so it doesn't have a hand
+        else if (hand.getPosition().dist(oldEvt.mousePoint) < 10)
+            this.showHelp(oldEvt);
     },
     
     delayShowHelp: function(evt) {
         var scheduledHelp = new SchedulableAction(this, "considerShowHelp", evt, 0);
-        WorldMorph.current().scheduleForLater(scheduledHelp, Config.ballonHelpDelay || 1000, false);             
+        this.world().scheduleForLater(scheduledHelp, Config.ballonHelpDelay || 1000, false);             
     },
 
     onMouseOver: function(evt) {
@@ -5426,14 +5457,6 @@ Invocation.subclass('SchedulableAction', {
 	this.stepTime = stepTime;
 	this.ticks = 0;
     },
-
-    deserialize: function($super, importer, rawNode) {
-	if (rawNode.localName == "action") { // compatibility with the old format
-	    this.rawNode = rawNode;
-	    var init = JSON.unserialize(rawNode.textContent);
-	    Object.extend(this, init);
-	} else $super(importer, rawNode);
-     },
 
     toString: function() {
 	return Strings.format("#<SchedulableAction[script=%s,arg=%s,stepTime=%s]>", 
@@ -5983,7 +6006,7 @@ Object.subclass('Model', {
 
 });
 
-Wrapper.subclass('ModelPlug', { // obsolete with CheapTextList?
+Wrapper.subclass('ModelPlug', { // obsolete with CheapListMorph?
     documentation: "A 'translation' from view's variable names to model's variable names",
 
     initialize: function(spec) {
@@ -7397,9 +7420,9 @@ Morph.subclass('LinkMorph', {
 	return pathBack;
     },
     
-    restorePersistentState: function($super, importer) {
-        $super(importer);
-        if (!this.myWorld) this.myWorld = WorldMorph.current(); // a link to the current world: a reasonable default?
+    onDeserialize: function() {
+        //if (!this.myWorld) 
+	this.myWorld = WorldMorph.current(); // a link to the current world: a reasonable default?
     },
 
     okToBeGrabbedBy: function(evt) {

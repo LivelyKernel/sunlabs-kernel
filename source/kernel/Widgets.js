@@ -768,8 +768,7 @@ TextMorph.subclass("CheapListMorph", {
         // May have deleterious side-effects
     },
 
-    deserialize: function($super, importer, rawNode) {
-        $super(importer, rawNode);
+    onDeserialize: function() {
         this.layoutChanged();
     },
 
@@ -1004,9 +1003,8 @@ Morph.subclass("TextListMorph", {
         this.savedFill = null; // for selecting items
         return this;
     },
-
-    deserialize: function($super, importer, rawNode) {
-        $super(importer, rawNode);
+    
+    onDeserialize: function() {
         this.itemList = [];
         for (var i = 0; i < this.submorphs.length; i++ ) {
             var m = this.submorphs[i];
@@ -1400,11 +1398,8 @@ Morph.subclass("MenuMorph", {
         this.applyStyle({fill: null, borderWidth: 0, fillOpacity: 0});
     },
 
-    deserialize: function($super, importer, rawNode) {
-	$super(importer, rawNode);
+    onDeserialize: function() {
 	this.listMorph.relayMouseEvents(this);
-        this.listMorph.highlightItemsOnMove = true;
-        this.stayUp = true; // deserializing, so stay up, FIXME: make persistent
     },
 
     addItem: function(item) { 
@@ -2482,12 +2477,9 @@ Morph.subclass("TitleBarMorph", {
 	this.collapseButton.relayToModel(w, {HelpText: "-CollapseHelp", Trigger: "=toggleCollapse"});
     },
 
-    deserialize: function($super, importer, rawNode) {
-        $super(importer, rawNode);
-        if (LivelyNS.getType(this.rawNode.parentNode) == "WindowMorph") {
-            console.log("patching up to " + this.windowMorph);
-            this.connectButtons(this.windowMorph);
-        }
+    
+    onDeserialize: function() {
+        this.connectButtons(this.windowMorph);
     },
 
     acceptsDropping: function(morph) {
@@ -2694,12 +2686,6 @@ Morph.subclass('WindowMorph', {
 	this.adjustForNewBounds();
         return this;
     },
-    
-    deserialize: function($super, importer, rawNode) {
-        $super(importer, rawNode);
-        this.titleBar.windowMorph = this;
-        this.closeAllToDnD();
-    },
 
     toString: function($super) {
         var label = this.titleBar && this.titleBar.label;
@@ -2708,9 +2694,8 @@ Morph.subclass('WindowMorph', {
 
     restorePersistentState: function($super, importer) {
         $super(importer);
-        //this.targetMorph = this.targetMorph;
-        // this.titleBar = this.titleBar;
-        this.contentOffset = pt(0, this.titleBar.bounds().height);
+	// remove the following:
+        //this.contentOffset = pt(0, this.titleBar.bounds().height);
     },
     
     makeTitleBar: function(headline, width, optSuppressControls) {
@@ -2822,6 +2807,7 @@ Morph.subclass('WindowMorph', {
     takeHighlight: function() {
         // I've been clicked on.  unhighlight old top, and highlight me
         var oldTop = this.world().topWindow();
+	if (!oldTop.titleBar) return; // may be too early when in deserialization
         if (oldTop instanceof WindowMorph) oldTop.titleBar.highlight(false);
         this.titleBar.highlight(true);
     },
@@ -2877,6 +2863,7 @@ Morph.subclass('WindowMorph', {
 // every morph should be able to get his window
 // e.g. helper texts are created in the window, not in the world
 Morph.addMethods({
+    // KP: shouldn't this be replaced by Morph.immediateContainer?
     window: function(morph) {
         if(!this.owner) return this;
         return this.owner.window();
@@ -2884,6 +2871,7 @@ Morph.addMethods({
 });
 
 WindowMorph.addMethods({
+    // KP: shouldn't this be replaced by Morph.immediateContainer?
     window: function(morph) {
         return this
     },
