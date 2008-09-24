@@ -149,7 +149,7 @@ function populateWorldWithExamples(world) {
 
     if (Config.showClock) {
         var createClock = function(clockClass) {
-            var widget = new clockClass(pt(60, 60), 50);
+            var widget = new clockClass(pt(80, 100), 50);
             world.addMorph(widget);
             widget.startSteppingScripts();
         };
@@ -267,21 +267,21 @@ function populateWorldWithExamples(world) {
         lm1.myWorld.onEnter = function() {
 	    if (this.enterCount > 0) return;
 
-        require('WebPIM.js').toRun(function() {
-            PIM = new WebPIM().openIn(this, pt(200, 110));
-        }.bind(this));
+            require('WebPIM.js').toRun(function() {
+                    PIM = new WebPIM().openIn(lm1.myWorld, pt(200, 110));
+            });
 	    
 	    
             if (Config.showRSSReader() && Config.showNetworkExamples) {
                 require('Examples.js').toRun(function() {
                     console.log('initializing RSS reader');
-                    new FeedWidget("http://news.cnet.com/2547-1_3-0-5.xml").openIn(this, pt(725, 120));
+                    new FeedWidget("http://news.cnet.com/2547-1_3-0-5.xml").openIn(lm1.myWorld, pt(725, 120));
                 });
             }
 	    
             if (Config.showCanvasScape()) {
                 require('Examples.js').toRun(function() {
-                    this.addMorph(new WindowMorph(new lk.examples.canvascape.CanvasScapeMorph(new Rectangle(20,50,800,300)), 'CanvasScape')).collapse();
+                    lm1.myWorld.addMorph(new WindowMorph(new lk.examples.canvascape.CanvasScapeMorph(new Rectangle(20,50,800,300)), 'CanvasScape')).collapse();
                 });
             }
 	    
@@ -291,8 +291,8 @@ function populateWorldWithExamples(world) {
                     var map = new MapFrameMorph(new Rectangle(0, 0, 2*tile.x, 2*tile.y), true);
                     map.setScale(0.7);
                     map.setPosition(pt(160, 250));
-                    this.addMorph(map);
-                }.bind(this));
+                    lm1.myWorld.addMorph(map);
+                });
             }
 	    
             // Add sample curve stuff
@@ -330,12 +330,12 @@ function populateWorldWithExamples(world) {
 	    
             if (Config.showSquiggle())
                 require('Examples.js').toRun(function() {
-                    this.addFramedMorph(new SquiggleMorph(pt(300, 300)), 'Freehand', pt(560, 380));
+                    lm1.myWorld.addFramedMorph(new SquiggleMorph(pt(300, 300)), 'Freehand', pt(560, 380));
                 });
             
             if (Config.showVideo())
                 require('Examples.js').toRun(function() {
-                    this.addFramedMorph(new PlayerMorph(), "Player", pt(50, 20));
+                    lm1.myWorld.addFramedMorph(new PlayerMorph(), "Player", pt(50, 20));
                 });
 	    
         }

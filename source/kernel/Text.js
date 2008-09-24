@@ -784,12 +784,10 @@ Morph.subclass('TextSelectionMorph', {
     documentation: "Visual representation of the text selection",
     style: {fill: Color.primary.green, borderWidth: 0, borderRadius: 1},
     transientBounds: true,
-    mouseHandler: null,
-    fill: null,
     
     initialize: function($super) {
 	$super(pt(0, 0).asRectangle(), "rect");
-	this.applyStyle({borderWidth: 0});
+	this.applyStyle({fill: null, borderWidth: 0});
 	this.ignoreEvents();
     },
 
@@ -1107,7 +1105,7 @@ TextMorph.addMethods({
             var importer = new Importer();
             var txt = this.xml || this.textString;
             // console.log('evaluating markup ' + txt);
-            var morph = importer.importWrapperFromString(txt);
+            var morph = importer.importFromString(txt);
             this.world().addMorph(morph);
 	    importer.finishImport(this.world());
         }]);
@@ -1444,7 +1442,10 @@ TextMorph.addMethods({
     },
 
     onMouseDown: function(evt) {
-	if (this.mouseIsOverALink(evt)) this.doLinkThing(evt);
+	if (this.mouseIsOverALink(evt)) {
+	    this.doLinkThing(evt);
+	    return true;
+	}
         this.isSelecting = true;
         var charIx = this.charOfPoint(this.localize(evt.mousePoint));
         this.startSelection(charIx);
@@ -1471,7 +1472,7 @@ TextMorph.addMethods({
 	evt.hand.lookNormal();
 	var charIx = this.charOfPoint(this.localize(evt.mousePoint));
         var link = this.textStyle.valueAt(charIx).link;   
-	if (link) this.world().confirm("Ach du lieber, wir muessen " + link + " folgen.",
+	if (link) var dlg = this.world().confirm("Ach du lieber, wir muessen " + link + " folgen.",
 		function (answer) {
 		    // quick hack for wiki demo
 		    var wikiNav = new WikiNavigator(new URL(link));

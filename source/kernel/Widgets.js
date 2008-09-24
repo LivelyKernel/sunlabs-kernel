@@ -129,6 +129,7 @@ Morph.subclass('ButtonMorph', {
         switch (evt.getKeyCode()) {
         case Event.KEY_RETURN:
         case Event.KEY_SPACEBAR:
+            this.setValue(true); 
             this.changeAppearanceFor(true);
             evt.stop();
             return true;
@@ -2207,6 +2208,13 @@ Dialog.subclass('ConfirmDialog', {
 	      "-Message"], // what to display
     initialViewExtent: pt(300, 90),
     
+    openIn: function($super, world, position) {
+	var view = $super(world, position);
+        world.firstHand().setKeyboardFocus(view.targetMorph.submorphs[1]);
+	return view;
+
+    },
+    
     cancelled: function(value, source) {
         this.removeTopLevel();
 	if (value == false) this.setResult(false);
@@ -2246,8 +2254,7 @@ Dialog.subclass('PromptDialog', {
 
     openIn: function($super, world, loc) {
         var view = $super(world, loc);
-        world.firstHand().setMouseFocus(view.inputLine);
-        world.firstHand().setKeyboardFocus(view.inputLine);
+        world.firstHand().setKeyboardFocus(view.targetMorph.inputLine);
         return view;
     },
 

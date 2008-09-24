@@ -86,7 +86,6 @@ function logMethod(obj, methodName) {
     })
 }
 
-
 function printObject(obj) {
     var s = String(obj) + ":";
     for(ea in obj) { 

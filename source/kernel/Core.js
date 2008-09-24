@@ -6681,6 +6681,7 @@ PasteUpMorph.subclass("WorldMorph", {
                 action.exec();
             } catch (er) {
                 console.warn("error on actor %s: %s", action.actor, er);
+                debugger;
                 Function.showStack();
 		timeStarted = new Date().getTime();
 		continue;
