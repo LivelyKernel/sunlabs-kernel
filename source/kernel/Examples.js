@@ -28,7 +28,9 @@ Widget.subclass('TestWidget', {
     documentation: "a panel with various sample widgets such as buttons, sliders, etc.",
 
     openIn: function(world, location) {
-        return world.addMorphAt(this.buildView(pt(300, 220)), location);
+	var view = this.buildView(pt(300, 220));
+	view.ownerWidget = this;
+        return world.addMorphAt(view, location);
     },
     
     buildView: function(extent) {
@@ -41,9 +43,8 @@ Widget.subclass('TestWidget', {
 	    ListItem: null, PrintValue: null,
 	    B1Value: null, B2Value: null, SliderValue: 0.5, SliderRange: 0.1}); 
 	panel.relayToModel(model);
+	this.relayToModel(model);
 	this.ownModel(model);
-	// FIXME this shoud be refactored
-	//panel.addWrapper(model) || console.log('failed to add model');
 
         // Two simple buttons, one toggles...
         var m = panel.addMorph(new ButtonMorph(new Rectangle(20,20,50,20)));
