@@ -459,12 +459,12 @@ function populateWorldWithExamples(world) {
     return world;
 }
 
-function documentHasWorld(doc) {
-    var nodes = doc.getElementsByTagName("g")[0]
+function documentHasSerializedMorphs(doc) { 
+    var nodes = doc.getElementsByTagName("g");
     if (!nodes || nodes.length == 0)
-        return false
+        return false;
     else
-    return nodes.getAttribute("type") == "WorldMorph"
+	return true; // nodes[0].getAttribute("type") == "WorldMorph"; // world is not always serialized
 }
 
 function main() {
@@ -477,7 +477,7 @@ function main() {
         canvas.setAttribute("height", "800");
     }
     var importer = new Importer();
-    if (documentHasWorld(document)) {
+    if (documentHasSerializedMorphs(document)) {
         module("worldLoading").requires(Config.modulesOnWorldLoad).toRun(function() {
             var world = importer.loadWorldContents(document);    
             world.displayOnCanvas(canvas);
