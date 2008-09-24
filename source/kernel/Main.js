@@ -459,39 +459,49 @@ function populateWorldWithExamples(world) {
     return world;
 }
 
+function documentHasWorld(doc) {
+    var nodes = doc.getElementsByTagName("g")[0]
+    if (!nodes || nodes.length == 0)
+        return false
+    else
+    return nodes.getAttribute("type") == "WorldMorph"
+}
+
 function main() {
     var world = null;
     var canvas = Global.document.getElementById("canvas");
 
 
     if (canvas.height && canvas.height.baseVal && canvas.height.baseVal.value < 100) {
-	// a forced value, some browsers have problems with height=100%
-	canvas.setAttribute("height", "800");
+        // a forced value, some browsers have problems with height=100%
+        canvas.setAttribute("height", "800");
     }
     var importer = new Importer();
-    var world = importer.loadWorldContents(document);
-    if (world) {
-	world.displayOnCanvas(canvas);
-	console.log("world is " + world);
-	if(Config.showWikiNavigator) {
-        require('LKWiki.js').toRun(function() {
-            //just a quick hack...
-            console.log('starting WikiNavigator');
-            WikiNavigator.enableWikiNavigator();
-        });
-	}
-	return;
+    if (documentHasWorld(document)) {
+        module("worldLoading").requires(Config.modulesOnWorldLoad).toRun(function() {
+            var world = importer.loadWorldContents(document);    
+            world.displayOnCanvas(canvas);
+            console.log("world is " + world);
+            if(Config.showWikiNavigator) {
+                require('LKWiki.js').toRun(function() {
+                    //just a quick hack...
+                    console.log('starting WikiNavigator');
+                    WikiNavigator.enableWikiNavigator();
+                });
+            }
+        })
+        return;
     } else {
-	world = new WorldMorph(canvas); 
-	// Create an empty world
-	world.displayOnCanvas(canvas);
-	console.log("created empty world");
+        world = new WorldMorph(canvas); 
+        // Create an empty world
+        world.displayOnCanvas(canvas);
+        console.log("created empty world");
     }
     // Populate the world with sample objects, widgets and applications
     if (Config.skipAllExamples) return; // don't populate if we loaded up stuff from a container
     else populateWorldWithExamples(world);
 
-if(Config.testTracing) Function.testTrace();
+    if(Config.testTracing) Function.testTrace();
 
 }
 

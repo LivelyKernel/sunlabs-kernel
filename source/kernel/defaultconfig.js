@@ -212,3 +212,5 @@ Config.alignToGridSpace = 10; // determins the pixels to snap to during shift dr
 Config.ballonHelpDelay = 1000; // Default
 
 Config.loadTests = [] //  e.g. ["FabrikTest", "RecordTest", "TestFrameworkTests", "ClassTest", "LKWikiTest", "DevelopTest", "MorphTest"]
+
+Config.modulesOnWorldLoad = ["Fabrik.js"]

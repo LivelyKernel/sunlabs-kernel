@@ -4236,7 +4236,11 @@ Visual.subclass('Morph', {
 		// FIXME!
 		var type = Wrapper.prototype.getEncodedType(node);
 		if (type) {
-		    var widget = new (Global[type])(importer, node);
+		    var constructor = Global[type];
+		    if (constructor)
+		        var widget = new (Global[type])(importer, node);
+		    else
+		        console.log("Error in deserializing " + type + ", no class")
 		    // widget will be connected to the model later.
 		}
 		break;
