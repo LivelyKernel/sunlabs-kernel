@@ -1804,7 +1804,8 @@ Object.subclass('Wrapper', {
     
     removeTrait: function(name) {
 	return this.rawNode.removeAttributeNS(null, name);
-    }
+    },
+
 
 });
     
@@ -4137,7 +4138,7 @@ Visual.subclass('Morph', {
 	this.initializeTransientState(null);
 	importer.verbose && console.log("deserialized " + this);
     },
-    
+
     prepareForSerialization: function(extraNodes) {
 	// this is the morph to serialize
 	if (Config.useTransformAPI) {
@@ -4145,7 +4146,17 @@ Visual.subclass('Morph', {
 	    this.setTrait("transform", this.getTransform().toAttributeValue());
 	    // FIXME, remove?
 	}
-	
+	for (var prop in this) {
+	    if (!this.hasOwnProperty(prop)) continue;
+	    var m = this[prop];
+	    if (m === this.constructor.prototype[prop])  // save space
+		continue;
+	    this.preparePropertyForSerialization(prop, m, extraNodes);
+	}
+    },
+    
+    preparePropertyForSerialization: function(prop, m, extraNodes) {
+	debugger;
 	function addNL(self) {
 	    extraNodes.push(self.addNonMorph(NodeFactory.createNL()));
 	}
@@ -4153,84 +4164,79 @@ Visual.subclass('Morph', {
 	    return m instanceof Wrapper || m instanceof DOMRecord;
 	}
 
-	for (var prop in this) {
-	    if (!this.hasOwnProperty(prop)) continue;
-	    var m = this[prop];
-	    if (m === this.constructor.prototype[prop])  // save space
-		continue;
-	    if (m instanceof Function) {
-		continue;
-	    } else if (m instanceof Wrapper) { // FIXME better instanceof
-		if (prop === 'owner') 
-		    continue; // we'll deal manually
-		if (m instanceof Gradient || m instanceof ClipPath || m instanceof Image) 
-		    continue; // these should sit in defs and be handled by restoreDefs()
-		//console.log("serializing field name='%s', ref='%s'", prop, m.id(), m.getType());
-		if (!m.rawNode) {
-		    console.log("wha', no raw node on " + m);
-		} else if (m.id() != null) {
-		    var desc = LivelyNS.create("field", {name: prop, ref: m.id()});
-		    extraNodes.push(this.addNonMorph(desc));
-		    addNL(this);
-		    if (prop === "ownerWidget") {
-			extraNodes.push(this.addNonMorph(m.rawNode));
-			// should recurse here
-			var relay = m.formalModel;
-			var relayNode = m.rawNode.appendChild(LivelyNS.create("relay", {name: "formalModel", ref: relay.delegate.id()}));
-			Properties.forEachOwn(relay.definition, function(key, value) {
-			    var binding = relayNode.appendChild(LivelyNS.create("binding"));
-			    binding.setAttributeNS(null, "formal", key);
-			    binding.setAttributeNS(null, "actual", value);
-			});
-			addNL(this);
-		    }
-		}
-	    } else if (m instanceof Relay) {
-		var delegate = m.delegate;
-		if (isWrapper(delegate)) { // FIXME: better instanceof
-		    var desc = LivelyNS.create("relay", {name: prop, ref: delegate.id()});
-		    Properties.forEachOwn(m.definition, function(key, value) {
-			var binding = desc.appendChild(LivelyNS.create("binding"));
+	if (m instanceof Function) {
+	    return;
+	} else if (m instanceof Wrapper) { // FIXME better instanceof
+	    if (prop === 'owner') 
+		return; // we'll deal manually
+	    if (m instanceof Gradient || m instanceof ClipPath || m instanceof Image) 
+		return; // these should sit in defs and be handled by restoreDefs()
+	    //console.log("serializing field name='%s', ref='%s'", prop, m.id(), m.getType());
+	    if (!m.rawNode) {
+		console.log("wha', no raw node on " + m);
+	    } else if (m.id() != null) {
+		var desc = LivelyNS.create("field", {name: prop, ref: m.id()});
+		extraNodes.push(this.addNonMorph(desc));
+		addNL(this);
+		if (prop === "ownerWidget") {
+		    extraNodes.push(this.addNonMorph(m.rawNode));
+		    // should recurse here
+		    var relay = m.formalModel;
+		    var relayNode = m.rawNode.appendChild(LivelyNS.create("relay", {name: "formalModel", ref: relay.delegate.id()}));
+		    Properties.forEachOwn(relay.definition, function(key, value) {
+			var binding = relayNode.appendChild(LivelyNS.create("binding"));
 			binding.setAttributeNS(null, "formal", key);
 			binding.setAttributeNS(null, "actual", value);
 		    });
-		    extraNodes.push(this.addNonMorph(desc));
-		} else {
-		    console.warn('unexpected: '+ m + 's delegate is ' + delegate);
-		}
-		addNL(this);
-	    } else if (m instanceof Array) {
-		if (prop === 'submorphs')
-		    continue;  // we'll deal manually
-		var arr = LivelyNS.create("array", {name: prop});
-		var abort = false;
-		m.forEach(function iter(elt) {
-		    if (elt && !(elt instanceof Wrapper)) { // FIXME what if Wrapper is a mixin?
-			abort = true;
-			return;
-		    }
-		    // if item empty, don't set the ref field
-		    var item =  (elt && elt.id()) ? LivelyNS.create("item", {ref: elt.id()}) : LivelyNS.create("item"); 
-		    extraNodes.push(arr.appendChild(item));
-		    extraNodes.push(arr.appendChild(NodeFactory.createNL()));
-		}, this);
-		if (!abort) { 
-		    extraNodes.push(this.addNonMorph(arr));
 		    addNL(this);
 		}
-	    } else if (Converter.isJSONConformant(m)) {
-		// FIXME: deal with arrays of primitives etc?
-		var desc = LivelyNS.create("field", {name: prop, value: JSON.serialize(m)});
+	    }
+	} else if (m instanceof Relay) {
+	    var delegate = m.delegate;
+	    if (isWrapper(delegate)) { // FIXME: better instanceof
+		var desc = LivelyNS.create("relay", {name: prop, ref: delegate.id()});
+		Properties.forEachOwn(m.definition, function(key, value) {
+		    var binding = desc.appendChild(LivelyNS.create("binding"));
+		    binding.setAttributeNS(null, "formal", key);
+		    binding.setAttributeNS(null, "actual", value);
+		});
 		extraNodes.push(this.addNonMorph(desc));
-		addNL(this);
-	    } else if (m instanceof Color) { // FIXME all the other special cases?
-		var desc = LivelyNS.create("field", {name: prop, family: "Color", value: JSON.serialize(m)});
-		extraNodes.push(this.addNonMorph(desc));
+	    } else {
+		console.warn('unexpected: '+ m + 's delegate is ' + delegate);
+	    }
+	    addNL(this);
+	} else if (m instanceof Array) {
+	    if (prop === 'submorphs')
+		return;  // we'll deal manually
+	    var arr = LivelyNS.create("array", {name: prop});
+	    var abort = false;
+	    m.forEach(function iter(elt) {
+		if (elt && !(elt instanceof Wrapper)) { // FIXME what if Wrapper is a mixin?
+		    abort = true;
+		    return;
+		}
+		// if item empty, don't set the ref field
+		var item =  (elt && elt.id()) ? LivelyNS.create("item", {ref: elt.id()}) : LivelyNS.create("item"); 
+		extraNodes.push(arr.appendChild(item));
+		extraNodes.push(arr.appendChild(NodeFactory.createNL()));
+	    }, this);
+	    if (!abort) { 
+		extraNodes.push(this.addNonMorph(arr));
 		addNL(this);
 	    }
+	} else if (Converter.isJSONConformant(m)) {
+	    // FIXME: deal with arrays of primitives etc?
+	    var desc = LivelyNS.create("field", {name: prop, value: JSON.serialize(m)});
+	    extraNodes.push(this.addNonMorph(desc));
+	    addNL(this);
+	} else if (m instanceof Color) { // FIXME all the other special cases?
+	    var desc = LivelyNS.create("field", {name: prop, family: "Color", value: JSON.serialize(m)});
+	    extraNodes.push(this.addNonMorph(desc));
+	    addNL(this);
 	}
     },
-
+    
+    
     restorePersistentState: function(importer) {
 	var pointerEvents = this.getTrait("pointer-events");
 	if (pointerEvents == "none") {
