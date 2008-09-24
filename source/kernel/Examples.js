@@ -41,8 +41,9 @@ Widget.subclass('TestWidget', {
 	    ListItem: null, PrintValue: null,
 	    B1Value: null, B2Value: null, SliderValue: 0.5, SliderRange: 0.1}); 
 	panel.relayToModel(model);
+	this.ownModel(model);
 	// FIXME this shoud be refactored
-	panel.addWrapper(model) || console.log('failed to add model');
+	//panel.addWrapper(model) || console.log('failed to add model');
 
         // Two simple buttons, one toggles...
         var m = panel.addMorph(new ButtonMorph(new Rectangle(20,20,50,20)));
@@ -2212,6 +2213,7 @@ Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
 	this.relayToModel(model, {Locale: "-Locale", WeatherDesc: "+WeatherDesc", Temperature: "+Temperature", 
 				  Wind: "+Wind", Gusts: "+Gusts", DewPoint: "+DewPoint", 
 				  Humidity: "+Humidity", Visibility: "+Visibility"});
+	this.ownModel(model);
 	this.initializeTransientState();
     },
     
@@ -2269,7 +2271,6 @@ Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
         var panel = new PanelMorph(extent).linkToStyles(["panel"]);
 	var model = this.getModel();
 	panel.relayToModel(model, {});
-	panel.addWrapper(model) || console.log('failed to add model');
 	
 	panel.applyStyle({borderWidth: 2, 
 			  fill: new LinearGradient([Color.white, 1, Color.primary.blue], LinearGradient.NorthSouth)});

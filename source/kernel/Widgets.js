@@ -993,7 +993,6 @@ Morph.subclass("TextListMorph", {
 	if (Config.selfConnect) { // self connect logic, not really needed 
             var model = Record.newNodeInstance({List: [], Selection: null, Capacity: this.defaultCapacity, 
 		ListDelta: [], DeletionConfirmation: null, DeletionRequest: null});
-	    //this.addNonMorph(model.rawNode);
 	    this.relayToModel(model, {List: "List", Selection: "Selection", Capacity: "-Capacity", 
 				      ListDelta: "-ListDelta",
 				      DeletionConfirmation: "-DeletionConfirmation", DeletionRequest: "+DeletionRequest"});
@@ -2152,8 +2151,13 @@ Wrapper.subclass('Widget', ViewTrait, { // FIXME remove code duplication
     
     openIn: function(world, optLoc) {
 	var view = this.buildView(this.getInitialViewExtent(world), this.getModel());
-	view.addWrapper(this);
+	view.ownerWidget = this; // ??
 	return world.addFramedMorph(view, this.getViewTitle(), optLoc, this.useLightFrame);
+    },
+    
+    ownModel: function(model) {
+	this.actualModel = model;
+	this.rawNode.appendChild(model.rawNode);
     },
 
     open: function() { // call interactively
@@ -2341,7 +2345,6 @@ Widget.subclass('ConsoleWidget', {
         var model = this.getModel();
         var m = panel.messagePane;
 	
-	panel.addWrapper(model) || console.log("failed to add model");
         m.relayToModel(model, {List: "-LogMessages", ListDelta: "RecentLogMessages", 
 			       Capacity: "-Capacity", Menu: "-Menu"});
 	

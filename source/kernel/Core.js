@@ -3830,9 +3830,9 @@ Copier.subclass('Importer', {
 		found = wrapper[name] = this.lookup(ref);
 	    }
 	    if (!found) {
-		console.warn("no value found for field %s ref %s", name, ref);
+		console.warn("no value found for field %s ref %s in wrapper %s", name, ref, wrapper);
 	    } else {
-		// console.log("found " + name + "=" + found + "and assigned to " + this.id());
+		console.log("found " + name + "=" + found + "and assigned to " + wrapper);
 	    }
 	}
     },
@@ -4013,10 +4013,14 @@ Visual.subclass('Morph', {
 
     nextNavigableSibling: null, // keyboard navigation
 
-    internalInitialize: function(rawNode) {
+    internalInitialize: function(rawNode, shouldAssign) {
 	this.rawNode = rawNode;
 	this.submorphs = [];
 	this.owner = null;
+	if (shouldAssign) {
+ 	    LivelyNS.setType(this.rawNode, this.getType());
+	    this.setId(this.newId());
+	}
     },
 
     initialize: function(initialBounds, shapeType) {
@@ -4024,30 +4028,43 @@ Visual.subclass('Morph', {
 
 	if(!initialBounds) initialBounds = new Rectangle(0,0,100,100);
 	if(!shapeType) shapeType = "rect";
-	this.internalInitialize(NodeFactory.create("g"));
- 	LivelyNS.setType(this.rawNode, this.getType());
-	this.setId(this.newId());
+	this.internalInitialize(NodeFactory.create("g"), true);
 
 	this.pvtSetTransform(new Similitude(this.defaultOrigin(initialBounds, shapeType)));
 	this.initializePersistentState(initialBounds, shapeType);
 	this.initializeTransientState(initialBounds);
     },
-    
-    deserialize: function($super, importer, rawNode) {
-	// FIXME what if id is not unique?
-	$super(importer, rawNode);
-	this.internalInitialize(rawNode);
-	this.pvtSetTransform(this.getLocalTransform());
 
-	this.restoreFromSubnodes(importer);
-	this.restorePersistentState(importer);    
-
-	this.initializeTransientState(null);
-	importer.verbose && console.log("deserialized " + this);
+    initializePersistentState: function(initialBounds /*:Rectangle*/, shapeType/*:String*/) {
+	// a rect shape by default, will change later
+	switch (shapeType) {
+	case "ellipse":
+	    this.shape = new EllipseShape(initialBounds.translatedBy(this.origin.negated()),
+					  this.fill, this.borderWidth, this.borderColor);
+	    break;
+	default:
+	    // polygons and polylines are set explicitly later
+	    this.shape = new RectShape(initialBounds.translatedBy(this.origin.negated()),
+				       this.fill, this.borderWidth, this.borderColor);
+	    break;
+	}
+	this.rawNode.appendChild(this.shape.rawNode);
+	return this;
     },
 
+    // setup various things 
+    initializeTransientState: function(initialBounds) { 
+	this.fullBounds = initialBounds; // a Rectangle in owner coordinates
+	// this includes the shape as well as any submorphs
+	// cached here and lazily computed by bounds(); invalidated by layoutChanged()
+
+	// this.created = false; // exists on server now
+	// some of this stuff may become persistent
+    },
+    
     copyFrom: function(copier, other) {
-	this.internalInitialize(other.rawNode.cloneNode(false));
+	this.internalInitialize(other.rawNode.cloneNode(false), true);
+	
 	this.pvtSetTransform(this.getLocalTransform());
 
 	this.initializePersistentState(pt(0,0).asRectangle(), "rect");
@@ -4106,6 +4123,112 @@ Visual.subclass('Morph', {
 
 	this.layoutChanged();
 	return this; 
+    },
+
+    deserialize: function($super, importer, rawNode) {
+	// FIXME what if id is not unique?
+	$super(importer, rawNode);
+	this.internalInitialize(rawNode, false);
+	this.pvtSetTransform(this.getLocalTransform());
+	
+	this.restoreFromSubnodes(importer);
+	this.restorePersistentState(importer);    
+	
+	this.initializeTransientState(null);
+	importer.verbose && console.log("deserialized " + this);
+    },
+    
+    prepareForSerialization: function(extraNodes) {
+	// this is the morph to serialize
+	if (Config.useTransformAPI) {
+	    // gotta set it explicitly, it's not in SVG
+	    this.setTrait("transform", this.getTransform().toAttributeValue());
+	    // FIXME, remove?
+	}
+	
+	function addNL(self) {
+	    extraNodes.push(self.addNonMorph(NodeFactory.createNL()));
+	}
+	function isWrapper(m) {
+	    return m instanceof Wrapper || m instanceof DOMRecord;
+	}
+
+	for (var prop in this) {
+	    if (!this.hasOwnProperty(prop)) continue;
+	    var m = this[prop];
+	    if (m === this.constructor.prototype[prop])  // save space
+		continue;
+	    if (m instanceof Function) {
+		continue;
+	    } else if (m instanceof Wrapper) { // FIXME better instanceof
+		if (prop === 'owner') 
+		    continue; // we'll deal manually
+		if (m instanceof Gradient || m instanceof ClipPath || m instanceof Image) 
+		    continue; // these should sit in defs and be handled by restoreDefs()
+		//console.log("serializing field name='%s', ref='%s'", prop, m.id(), m.getType());
+		if (!m.rawNode) {
+		    console.log("wha', no raw node on " + m);
+		} else if (m.id() != null) {
+		    var desc = LivelyNS.create("field", {name: prop, ref: m.id()});
+		    extraNodes.push(this.addNonMorph(desc));
+		    addNL(this);
+		    if (prop === "ownerWidget") {
+			extraNodes.push(this.addNonMorph(m.rawNode));
+			// should recurse here
+			var relay = m.formalModel;
+			var relayNode = m.rawNode.appendChild(LivelyNS.create("relay", {name: "formalModel", ref: relay.delegate.id()}));
+			Properties.forEachOwn(relay.definition, function(key, value) {
+			    var binding = relayNode.appendChild(LivelyNS.create("binding"));
+			    binding.setAttributeNS(null, "formal", key);
+			    binding.setAttributeNS(null, "actual", value);
+			});
+			addNL(this);
+		    }
+		}
+	    } else if (m instanceof Relay) {
+		var delegate = m.delegate;
+		if (isWrapper(delegate)) { // FIXME: better instanceof
+		    var desc = LivelyNS.create("relay", {name: prop, ref: delegate.id()});
+		    Properties.forEachOwn(m.definition, function(key, value) {
+			var binding = desc.appendChild(LivelyNS.create("binding"));
+			binding.setAttributeNS(null, "formal", key);
+			binding.setAttributeNS(null, "actual", value);
+		    });
+		    extraNodes.push(this.addNonMorph(desc));
+		} else {
+		    console.warn('unexpected: '+ m + 's delegate is ' + delegate);
+		}
+		addNL(this);
+	    } else if (m instanceof Array) {
+		if (prop === 'submorphs')
+		    continue;  // we'll deal manually
+		var arr = LivelyNS.create("array", {name: prop});
+		var abort = false;
+		m.forEach(function iter(elt) {
+		    if (elt && !(elt instanceof Wrapper)) { // FIXME what if Wrapper is a mixin?
+			abort = true;
+			return;
+		    }
+		    // if item empty, don't set the ref field
+		    var item =  (elt && elt.id()) ? LivelyNS.create("item", {ref: elt.id()}) : LivelyNS.create("item"); 
+		    extraNodes.push(arr.appendChild(item));
+		    extraNodes.push(arr.appendChild(NodeFactory.createNL()));
+		}, this);
+		if (!abort) { 
+		    extraNodes.push(this.addNonMorph(arr));
+		    addNL(this);
+		}
+	    } else if (Converter.isJSONConformant(m)) {
+		// FIXME: deal with arrays of primitives etc?
+		var desc = LivelyNS.create("field", {name: prop, value: JSON.serialize(m)});
+		extraNodes.push(this.addNonMorph(desc));
+		addNL(this);
+	    } else if (m instanceof Color) { // FIXME all the other special cases?
+		var desc = LivelyNS.create("field", {name: prop, family: "Color", value: JSON.serialize(m)});
+		extraNodes.push(this.addNonMorph(desc));
+		addNL(this);
+	    }
+	}
     },
 
     restorePersistentState: function(importer) {
@@ -4174,20 +4297,20 @@ Visual.subclass('Morph', {
 		origDefs = desc;
 		continue;
 	    } 
-	    var type = LivelyNS.getAttribute(desc, "type");
-	    // alert("got node " + Exporter.stringify(desc));
+	    var type = Wrapper.prototype.getEncodedType(desc);
 	    // depth first traversal
 	    if (type) {
-		var morph = importer.importWrapperFromNode(desc);
-		this.submorphs.push(morph); 
-		morph.owner = this;
+		var wrapper = importer.importWrapperFromNode(desc);
+		if (wrapper instanceof Morph) {
+		    this.submorphs.push(wrapper); 
+		    wrapper.owner = this;
+		} else children.push(desc);
 	    } else {
 		children.push(desc);
 	    }
 	}
 
-	if (origDefs) 
-	    origDefs.parentNode.removeChild(origDefs);
+	if (origDefs) origDefs.parentNode.removeChild(origDefs);
 
 	for (var i = 0; i < children.length; i++) {
 	    var node = children[i];
@@ -4241,8 +4364,37 @@ Visual.subclass('Morph', {
 		        var widget = new (Global[type])(importer, node);
 		    else
 		        console.log("Error in deserializing " + type + ", no class")
-		    // widget will be connected to the model later.
+		    for (var child = node.firstChild; child != null; child = child.nextSibling) {
+			// here we should recurse into restoreFromSubnodes() but "widget" can't do it yet
+			if (child.localName == "record") {
+			    var spec = JSON.unserialize(child.textContent);
+			    var Rec = DOMRecord.prototype.create(spec);
+			    var model = new Rec(importer, child);
+			    var id = child.getAttribute("id");
+			    if (id) importer.addMapping(id, model); 
+			    widget.actualModel = model;
+			    //widget.ownModel(model);
+			} else if (child.localName == "relay") {
+			    var spec = {};
+			    for (var elt = child.firstChild; elt != null; elt = elt.nextSibling) {
+				if (elt.localName == "binding") {
+				    var key = elt.getAttributeNS(null, "formal");
+				    var value = elt.getAttributeNS(null, "actual");
+				    spec[key] = value;
+				}
+			    }
+			    var name = LivelyNS.getAttribute(child, "name");
+			    if (name) {
+				// here widget instead of name is the only difference
+				var relay = widget[name] = Relay.newInstance(spec, null);
+				var ref = LivelyNS.getAttribute(child, "ref");
+				importer.addPatchSite(relay, "delegate", ref);
+			    }
+			    
+			} 
+		    }
 		}
+		
 		break;
 	    }
 	    case "array": {
@@ -4279,19 +4431,6 @@ Visual.subclass('Morph', {
 		}
 		break;
 	    }
-
-	    case "record": { // make generic, not all records must be models.
-		try {
-		    var spec = JSON.unserialize(node.textContent);
-		    var Rec = DOMRecord.prototype.create(spec);
-		    var model = new Rec(importer, node);
-		    var id = node.getAttribute("id");
-		    if (id) importer.addMapping(id, model); 
-		    // FIXME: non Batik-friendly:
-		    //model.linkWrapee();
-		} catch (er) { debugger; throw er; }
-		break;
-	    }
 	    default: {
 		if (node.nodeType === Node.TEXT_NODE) {
 		    console.log('text tag name %s', node.tagName);
@@ -4312,113 +4451,6 @@ Visual.subclass('Morph', {
 	    n.parentNode.removeChild(n);
 	}
     },
-
-    initializePersistentState: function(initialBounds /*:Rectangle*/, shapeType/*:String*/) {
-	// a rect shape by default, will change later
-	switch (shapeType) {
-	case "ellipse":
-	    this.shape = new EllipseShape(initialBounds.translatedBy(this.origin.negated()),
-					  this.fill, this.borderWidth, this.borderColor);
-	    break;
-	default:
-	    // polygons and polylines are set explicitly later
-	    this.shape = new RectShape(initialBounds.translatedBy(this.origin.negated()),
-				       this.fill, this.borderWidth, this.borderColor);
-	    break;
-	}
-	this.rawNode.appendChild(this.shape.rawNode);
-	return this;
-    },
-
-    // setup various things 
-    initializeTransientState: function(initialBounds) { 
-	this.fullBounds = initialBounds; // a Rectangle in owner coordinates
-	// this includes the shape as well as any submorphs
-	// cached here and lazily computed by bounds(); invalidated by layoutChanged()
-
-	// this.created = false; // exists on server now
-	// some of this stuff may become persistent
-    },
-
-
-    prepareForSerialization: function(extraNodes) {
-	// this is the morph to serialize
-	if (Config.useTransformAPI) {
-	    // gotta set it explicitly, it's not in SVG
-	    this.setTrait("transform", this.getTransform().toAttributeValue());
-	    // FIXME, remove?
-	}
-	
-	function addNL(self) {
-	    extraNodes.push(self.addNonMorph(NodeFactory.createNL()));
-	}
-
-	for (var prop in this) {
-	    if (!this.hasOwnProperty(prop)) continue;
-	    var m = this[prop];
-	    if (m === this.constructor.prototype[prop])  // save space
-		continue;
-	    if (m instanceof Function) {
-		continue;
-	    } else if (m instanceof Wrapper) { // FIXME what if Wrapper is a mixin?
-		if (prop == 'owner') 
-		    continue; // we'll deal manually
-		if (m instanceof Gradient || m instanceof ClipPath || m instanceof Image) 
-		    continue; // these should sit in defs and be handled by restoreDefs()
-		//console.log("serializing field name='%s', ref='%s'", prop, m.id(), m.getType());
-		if (!m.rawNode) {
-		    console.log("wha', no raw node on " + m);
-		} else if (m.id() != null) {
-		    var desc = LivelyNS.create("field", {name: prop, ref: m.id()});
-		    extraNodes.push(this.addNonMorph(desc));
-		    addNL(this);
-		}
-	    } else if (m instanceof Relay) {
-		var delegate = m.delegate;
-		if (delegate instanceof Wrapper || delegate instanceof DOMRecord) { // FIXME: better instanceof
-		    var desc = LivelyNS.create("relay", {name: prop, ref: delegate.id()});
-		    Properties.forEachOwn(m.definition, function(key, value) {
-			var binding = desc.appendChild(LivelyNS.create("binding"));
-			binding.setAttributeNS(null, "formal", key);
-			binding.setAttributeNS(null, "actual", value);
-		    })
-		    extraNodes.push(this.addNonMorph(desc));
-		} else {
-		    console.warn('unexpected: '+ m + 's delegate is ' + delegate);
-		}
-		addNL(this);
-	    } else if (m instanceof Array) {
-		if (prop === 'submorphs')
-		    continue;  // we'll deal manually
-		var arr = LivelyNS.create("array", {name: prop});
-		var abort = false;
-		m.forEach(function iter(elt) {
-		    if (elt && !(elt instanceof Wrapper)) { // FIXME what if Wrapper is a mixin?
-			abort = true;
-			return;
-		    }
-		    // if item empty, don't set the ref field
-		    var item =  (elt && elt.id()) ? LivelyNS.create("item", {ref: elt.id()}) : LivelyNS.create("item"); 
-		    extraNodes.push(arr.appendChild(item));
-		    extraNodes.push(arr.appendChild(NodeFactory.createNL()));
-		}, this);
-		if (!abort) { 
-		    extraNodes.push(this.addNonMorph(arr));
-		    addNL(this);
-		}
-	    } else if (Converter.isJSONConformant(m)) {
-		// FIXME: deal with arrays of primitives etc?
-		var desc = LivelyNS.create("field", {name: prop, value: JSON.serialize(m)});
-		extraNodes.push(this.addNonMorph(desc));
-		addNL(this);
-	    } else if (m instanceof Color) { // FIXME all the other special cases?
-		var desc = LivelyNS.create("field", {name: prop, family: "Color", value: JSON.serialize(m)});
-		extraNodes.push(this.addNonMorph(desc));
-		addNL(this);
-	    }
-	}
-    },
-    
     
 });
 
@@ -4725,16 +4757,14 @@ Morph.addMethods({
 	    // morph.setTransform(tfm); 
 	    // m.layoutChanged(); 
 	} 
-
-	m.owner = this;
-	this.internalAddMorph(m, front);
+	this.insertMorph(m, front);
 	m.changed();
 	m.layoutChanged();
 	this.layoutChanged();
 	return m;
     },
 
-    internalAddMorph: function(m, isFront) {
+    insertMorph: function(m, isFront) { // low level
 	var insertionPt = this.submorphs.length == 0 ? this.shape.rawNode.nextSibling :
 	    isFront ? this.submorphs.last().rawNode.nextSibling : this.submorphs.first().rawNode;
 	// the last one, so drawn last, so front
@@ -4744,6 +4774,8 @@ Morph.addMethods({
 	    this.submorphs.push(m);
 	else
 	    this.submorphs.unshift(m);
+	m.owner = this;
+	return m;
     },
 
     removeMorph: function(m) {
@@ -5144,7 +5176,7 @@ Morph.addMethods({
 
     considerShowHelp: function(oldEvt) {
         // if the mouse has not moved reasonably
-	var hand = this.world().firstHand();
+	var hand = oldEvt.hand;
 	if (!hand) return; // this is not an active world so it doesn't have a hand
         else if (hand.getPosition().dist(oldEvt.mousePoint) < 10)
             this.showHelp(oldEvt);
@@ -7248,6 +7280,7 @@ Morph.subclass("HandMorph", {
         while (this.hasSubmorphs()) { // drop in same z-order as in hand
             var m = this.submorphs.first();
             m.dropMeOnMorph(receiver);
+
 	    this.showAsUngrabbed(m);
         }
     },
@@ -7379,8 +7412,8 @@ Morph.subclass("HandMorph", {
         else return $super();
     },
 
-    internalAddMorph: function(m, isFront) {
-	// override
+    insertMorph: function(m, isFront) {
+	// overrides Morph.prototype.insertMorph
 	var insertionPt = this.submorphs.length == 0 ? this.shape.rawNode :
 	    isFront ? this.submorphs.last().rawNode : this.submorphs.first().rawNode;
         // the last one, so drawn last, so front
@@ -7391,6 +7424,7 @@ Morph.subclass("HandMorph", {
             this.submorphs.push(m);
 	else
             this.submorphs.unshift(m);
+	m.owner = this;
 	return m;
     },
     
