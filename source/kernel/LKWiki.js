@@ -255,8 +255,10 @@ Widget.subclass('WikiNavigator', {
 
     	if (status.isSuccess()) {
     	    console.log("success saving world at " + this.model.getURL().toString() + ", to wiki. Status: " + status.code());
-    	    this.findVersions();
-    	    this.onVersionUpdate(this.model.getVersions().first().toString());
+    	    window.location.assign(this.model.getURL());
+            // this.findVersions();
+    	    
+            // this.onVersionUpdate(this.model.getVersions().first().toString());
     	} else {
     	    console.log("Failure saving world at " + this.model.getURL().toString() + ", to wiki");
     	    this.createWikiNavigatorButton();
