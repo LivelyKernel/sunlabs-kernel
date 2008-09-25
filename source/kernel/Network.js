@@ -724,7 +724,7 @@ Object.subclass('SVNVersionInfo', {
     parseUTCDateString: function(dateString) {
         var yearElems = dateString.slice(0,10).split('-').collect(function(ea) {return Number(ea)});
         var timeElems = dateString.slice(11,19).split(':').collect(function(ea) {return Number(ea)});
-        return new Date(yearElems[0], yearElems[1], yearElems[2], timeElems[0], timeElems[1], timeElems[2])
+        return new Date(yearElems[0], yearElems[1] - 1, yearElems[2], timeElems[0], timeElems[1], timeElems[2])
     },
     
     toString: function() {
