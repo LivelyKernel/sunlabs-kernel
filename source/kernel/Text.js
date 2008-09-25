@@ -1472,7 +1472,7 @@ TextMorph.addMethods({
 	evt.hand.lookNormal();
 	var charIx = this.charOfPoint(this.localize(evt.mousePoint));
         var link = this.textStyle.valueAt(charIx).link;   
-	if (link) var dlg = this.world().confirm("Ach du lieber, wir muessen " + link + " folgen.",
+	if (link) var dlg = this.world().confirm("Please confirm link to " + link,
 		function (answer) {
 		    // quick hack for wiki demo
 		    var wikiNav = new WikiNavigator(new URL(link));
