@@ -1469,24 +1469,20 @@ TextMorph.addMethods({
         // Later this should set a flag like isSelecting, so that we can highlight the 
 	// link during mouseDown and then act on mouseUp.
 	// Fo now, we just act on mouseDown
-	evt.hand.lookNormal();
-	var charIx = this.charOfPoint(this.localize(evt.mousePoint));
-        var link = this.textStyle.valueAt(charIx).link;   
-	if (link) var dlg = this.world().confirm("Please confirm link to " + link,
-		function (answer) {
-		    // quick hack for wiki demo
-		    var wikiNav = new WikiNavigator(new URL(link));
-		    if (wikiNav.isActive() && !wikiNav.worldExists()) {
-		        //alert("wiki link");
-		        wikiNav.saveWorld(true);
-		    } else {
-		        //alert("normal link");
-		        Config.askBeforeQuit = false;
-		        // force to load site from server by passing the date
-		        window.location.assign(link + '?' + new Date().getTime());
-		    };
-		    
-		}.bind(this));
+        evt.hand.lookNormal();
+        var charIx = this.charOfPoint(this.localize(evt.mousePoint));
+        var link = this.textStyle.valueAt(charIx).link;
+        if (!link) return;
+
+        // add require to LKWiki.js here
+        var wikiNav = new WikiNavigator(new URL(link));
+        if (!wikiNav.isActive())
+            this.world().confirm("Please confirm link to " + link,
+                function (answer) {
+                    Config.askBeforeQuit = false;
+                    window.location.assign(link + '?' + new Date().getTime());
+                }.bind(this));
+        else wikiNav.askToNavigateToUrl(this.world());
     },
     
     onMouseUp: function(evt) {

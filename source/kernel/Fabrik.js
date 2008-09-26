@@ -262,7 +262,7 @@ Fabrik = {
     openCurrencyConverterExample: function(world, loc) {
         // the next variables are intentionally defined global
         if (!loc) loc = pt(10,10);
-        var f = this.openFabrikComponent(world, loc, 'Currency Converter');
+        var f = this.openFabrikComponent(world, loc, pt(940,270), 'Currency Converter');
 
         var urlComp = this.addTextComponent(f);
         urlComp.setText("http://www.webservicex.net/CurrencyConvertor.asmx/ConversionRate?FromCurrency=USD&ToCurrency=EUR");
@@ -1971,8 +1971,8 @@ Component.subclass('FabrikComponent', {
 
     unplug: function(component) {
         this.components = this.components.reject(function(ea) { return ea === component });
-        if (this.rawNode && $A(this.rawNode.childNodes).include(component.rawNode))
-            this.rawNode.removeChild(component.rawNode);
+
+        this.rawNode.removeChild(component.rawNode);
     },
     
     pluginConnector: function(connector) {

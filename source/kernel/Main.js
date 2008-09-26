@@ -175,14 +175,14 @@ function populateWorldWithExamples(world) {
     if (Config.showAsteroids())
         require('Examples.js').toRun(function() {
             using(lk.examples.asteroids).run(function(app) {
-            var gameMorph = app.makeGameMorph(pt(500, 360).extent(pt(600, 300)));
-            world.addMorph(new WindowMorph(gameMorph, 'Asteroids!'));
-            app.initialize();
-            gameMorph.runAsteroidsGame();
-            gameMorph.owner.collapse();
-        })
-
-    });
+                var gameMorph = app.makeGameMorph(pt(500, 360).extent(pt(600, 300)));
+                world.addMorph(new WindowMorph(gameMorph, 'Asteroids!'));
+                app.initialize();
+                gameMorph.runAsteroidsGame();
+                gameMorph.owner.collapse();
+            });
+        }
+    );
     
     // Sample icon morph with a fisheye effect 'on'
     if (Config.showIcon()) {

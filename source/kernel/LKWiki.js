@@ -241,25 +241,26 @@ Widget.subclass('WikiNavigator', {
 		return panel;
 	},
 	
-	saveWorld: function(value) {
-	    if (!value) return;
-	    
-        if (this.panel) this.panel.remove();
+	prepareForSaving: function() {
+	    if (this.panel) this.panel.remove();
         // remove all control btns.... remove this when all pages updated
-        x = WorldMorph.current().submorphs.select(function(ea) { return ea.constructor == TextMorph });
+        var x = WorldMorph.current().submorphs.select(function(ea) { return ea.constructor == TextMorph });
         x = x.select(function(ea) { return ea.textContent && ea.textContent.rawNode.textContent == 'Wikicontrol' });
         x.each(function(ea) { ea.remove() });
         // if (this.btn) this.btn.remove();
-	    
-        var status = this.svnResource.store(Exporter.shrinkWrapMorph(WorldMorph.current()), true).getStatus();        
-
+	},
+	
+	doSave: function() {
+	    this.prepareForSaving();
+        return this.svnResource.store(Exporter.shrinkWrapMorph(WorldMorph.current()), true).getStatus();
+	},
+	
+	saveWorld: function(value) {
+	    if (!value) return;
+	    var status = this.doSave();
     	if (status.isSuccess()) {
     	    console.log("success saving world at " + this.model.getURL().toString() + ", to wiki. Status: " + status.code());
-    	    Config.askBeforeQuit = false;
-    	    window.location.assign(this.model.getURL().toString() + '?' + new Date().getTime());
-            // this.findVersions();
-    	    
-            // this.onVersionUpdate(this.model.getVersions().first().toString());
+            this.navigateToUrl();
     	} else {
     	    console.log("Failure saving world at " + this.model.getURL().toString() + ", to wiki");
     	    this.createWikiNavigatorButton();
@@ -269,12 +270,43 @@ Widget.subclass('WikiNavigator', {
     	}
 	},
 	
+	askToNavigateToUrl: function(world) {	    
+        var msg = 'Go to ' + this.model.getURL() + ' ?';
+        var label1 = this.worldExists() ? 'Save and follow link' : 'Save, create, follow link';
+        var label2 = 'Just follow link';
+        
+             var model = Record.newPlainInstance({
+                 Button1: null, Button2: null, Message: msg, LabelButton1: label1, LabelButton2: label2 });
+             model.addObserver({
+                 onButton1Update: function(value) {
+                     if (!value) return;
+                     if (WikiNavigator.current && WikiNavigator.current.doSave().isSuccess()) {
+                         if (!this.worldExists()) this.doSave(); // create other world
+                         this.navigateToUrl();
+                         return; // Alibi
+                     }
+                     world.alert('World cannot be saved. Did not follow link.');
+                 }.bind(this),
+                 onButton2Update: function(value) { if (value) this.navigateToUrl() }.bind(this)});
+             var dialog = new WikiLinkDialog(model.newRelay({
+                 Button1: "+Button1", Button2: "+Button2", Message: "-Message",
+                 LabelButton1: "-LabelButton1", LabelButton2: "-LabelButton2"}));
+             dialog.openIn(world, world.positionForNewMorph());
+             return dialog;
+    },
+	    
+	navigateToUrl: function() {
+	    Config.askBeforeQuit = false;
+	    window.location.assign(this.model.getURL().toString() + '?' + new Date().getTime());
+	},
+	
 	onVersionUpdate: function(versionString) {
 	    // FIXME ... looking for correct version ... better with conversion methods
 	    var selectedVersion = this.model.getVersions().detect(function(ea) { return ea.toString() == versionString});
 	    var svnres = this.svnResource;
 	    svnres.withBaselineUriDo(selectedVersion.rev, function() {
 	        console.log("visiting: " + svnres.getURL());
+	        // FIXME use navigateToUrl
             Config.askBeforeQuit = false;
             window.location.assign(svnres.getURL());
 	    });
@@ -316,7 +348,7 @@ Widget.subclass('WikiNavigator', {
         return new NetRequest().beSync().get(this.model.getURL()).getStatus().isSuccess();
     }
 });
-    
+
 Object.extend(WikiNavigator, {
     enableWikiNavigator: function(force) {
         if (!force && WikiNavigator.current) return;
@@ -329,4 +361,55 @@ Object.extend(WikiNavigator, {
         nav.btn.startStepping(1000, "positionInLowerLeftCorner");
         WikiNavigator.current = nav;
     }
+});
+
+Dialog.subclass('WikiLinkDialog', {
+
+    formals: ["-LabelButton1", "-LabelButton2", "+Button1", "+Button2", "-Message"],
+    initialViewExtent: pt(330, 90),
+    
+    openIn: function($super, world, position) {
+	    var view = $super(world, position);
+        world.firstHand().setKeyboardFocus(view.targetMorph.submorphs[1]);
+	    return view;
+    },
+    
+    cancelled: function(value, source) {
+        this.removeTopLevel();
+    },
+    
+    confirmed1: function(value, source) {
+        this.removeTopLevel();
+	    if (value == true) this.setButton1(true);
+    },
+    
+    confirmed2: function(value, source) {
+        this.removeTopLevel();
+	    if (value == true) this.setButton2(true);
+    },
+    
+    buildView: function(extent, model) {
+        var panel = new PanelMorph(extent);
+        this.panel = panel;
+        panel.linkToStyles(["panel"]);
+
+        var r = new Rectangle(this.inset, this.inset, extent.x - 2*this.inset, 30);
+        var label = panel.addMorph(new TextMorph(r, this.getMessage()).beLabel());
+        var indent = extent.x - 135 - 80 - 60 - 3*this.inset;
+        var height = r.maxY() + this.inset;
+        
+        r = new Rectangle(r.x + indent, height, 135, 30);
+        var confirm1Button = panel.addMorph(new ButtonMorph(r)).setLabel(this.getLabelButton1());
+        confirm1Button.connectModel({model: this, setValue: "confirmed1"});
+        
+        r = new Rectangle(r.x + confirm1Button.getExtent().x + this.inset, height, 80, 30);
+        var confirm2Button = panel.addMorph(new ButtonMorph(r)).setLabel(this.getLabelButton2());
+        confirm2Button.connectModel({model: this, setValue: "confirmed2"});
+
+        r = new Rectangle(r.maxX() + this.inset, height, 55, 30);
+        var noButton = panel.addMorph(new ButtonMorph(r)).setLabel("Cancel");
+        noButton.connectModel({model: this, setValue: "cancelled"});
+        return panel;
+    }
+
 });
