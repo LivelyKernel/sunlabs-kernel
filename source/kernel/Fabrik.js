@@ -1976,8 +1976,8 @@ Component.subclass('FabrikComponent', {
 
     unplug: function(component) {
         this.components = this.components.reject(function(ea) { return ea === component });
-
-        this.rawNode.removeChild(component.rawNode);
+        if (this.rawNode && $A(this.rawNode.childNodes).include(component.rawNode))
+            this.rawNode.removeChild(component.rawNode);
     },
     
     pluginConnector: function(connector) {
