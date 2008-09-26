@@ -1731,8 +1731,8 @@ ComponentMorph.subclass('FabrikMorph', {
     setupForFabrik: function(fabrik){
          this.fabrik = fabrik;  // remove instance var, component is sufficient
          this.component = fabrik;
-         this.component.components.each(function(ea) {this.addMorphForComponent(ea) }, this);
-         this.component.connectors.each(function(ea) {this.addMorph(ea.buildView())}, this);        
+         this.component.components.each(function(ea) { this.addMorphForComponent(ea) }, this);
+         this.component.connectors.each(function(ea) { this.addMorph(ea.morph || ea.buildView()) }, this);        
     },
     
     setupHaloItems: function($super) {

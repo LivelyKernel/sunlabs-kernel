@@ -685,17 +685,27 @@ TestCase.subclass('FunctionComponentTest', {
         var f = this.functionComponent1.composeFunction("function f(input)", "23");
         this.assertIdentity(f.apply(this.functionComponent1, []), 23, "implicit return number failed");
         
-        var f = this.functionComponent1.composeFunction("function f(input)", "Number(input) + 1");
+        f = this.functionComponent1.composeFunction("function f(input)", "Number(input) + 1");
         this.assertIdentity(f.apply(this.functionComponent1, [23]), 24, "implicit return with variable failed");
                 
-        var f = this.functionComponent1.composeFunction("function f(input)", '"hallo"');
+        f = this.functionComponent1.composeFunction("function f(input)", '"hallo"');
         this.assertIdentity(f.apply(this.functionComponent1, []), "hallo", "implicit return string failed");
         
-        var f = this.functionComponent1.composeFunction("function f(input)", '23;24;25');
+        f = this.functionComponent1.composeFunction("function f(input)", '23;24;25');
         this.assertIdentity(f.apply(this.functionComponent1, []), 25, "implicit return last of a number failed");
         
-        var f = this.functionComponent1.composeFunction("function f(input)", '23\n24;\n3+\n4');
+        f = this.functionComponent1.composeFunction("function f(input)", '23\n24;\n3+\n4');
         this.assertIdentity(f.apply(this.functionComponent1, []), 7, "implicit return last of a number failed");
+        
+        try {
+            f = this.functionComponent1.composeFunction("function f(input)", '{test: 123, test2: 789}');
+            this.assertEqual(f.apply(this.functionComponent1, []).test, 123, "implicit return of object failed");
+        } catch(e) {
+            if (e.isAssertion) throw e
+            else this.assert(false, 'cannot parse implicit returned object function body')
+        }
+        
+        
     },
 
 
