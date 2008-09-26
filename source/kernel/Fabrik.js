@@ -522,7 +522,7 @@ Morph.subclass('PinMorph', {
     getPinPosition: function() {
         // FIXME kludge
         if (this.pinHandle.component instanceof FabrikComponent)
-                return this.pinHandle.component.morph.localize(this.getGlobalPinPosition());
+            return this.pinHandle.component.morph.localize(this.getGlobalPinPosition());
         if (this.pinHandle.component.fabrik)
             return this.pinHandle.component.fabrik.morph.localize(this.getGlobalPinPosition());
         // we have no fabrik so we are probably global
@@ -693,9 +693,11 @@ Widget.subclass('PinHandle', {
         // the own pins, the pins of the outer FabrikComponent and pins of the own components
         // (when this.component is a fabrikCompoment)
         // filter all through isConnectableTo()
+        
+        //FIXME
+        // ----------
         var ownPins = this.component.pinHandles;
-        
-        
+        // ----------
         var ownerPins = this.component.fabrik ?
             this.component.fabrik.components.inject(this.component.fabrik.pinHandles, function(pins, ea) {
                 return ea == this.component ? pins : pins.concat(ea.pinHandles) }) :
@@ -703,7 +705,7 @@ Widget.subclass('PinHandle', {
         ownerPins = this.component.fabrik && this.component.fabrik.panel && this.component.fabrik.panel.isCollapsed ?
                     [] :
                     ownerPins;
-
+        // ----------
         var childPins = this.component instanceof FabrikComponent ?
             this.component.components.inject([], function(pins, ea) { return pins.concat(ea.pinHandles) }) :
             [];
@@ -713,9 +715,6 @@ Widget.subclass('PinHandle', {
                         
         var allPins = ownPins.concat(ownerPins).concat(childPins);
         return allPins.uniq().select(function(ea) { return this.isConnectableTo(ea) }, this);
-        
-        
-        
     },
     
     isConnectableTo: function(otherPin) {
@@ -757,7 +756,11 @@ Widget.subclass('PinHandle', {
         otherPinHandle.connectors.push(connector);
         
         //FIXME
-        if (this.component instanceof FabrikComponent)
+        if (this.component instanceof FabrikComponent && this.component === otherPinHandle.component)
+            this.component.pluginConnector(connector);
+        else if (this.component instanceof FabrikComponent && this.component.fabrik === otherPinHandle.component)
+            otherPinHandle.component.pluginConnector(connector);
+        else if (this.component instanceof FabrikComponent && this.component === otherPinHandle.component.fabrik)
             this.component.pluginConnector(connector);
         else
             this.component.fabrik && this.component.fabrik.pluginConnector(connector);
@@ -1010,9 +1013,11 @@ Morph.subclass('ConnectorMorph', {
             return;
         }
         var start = this.formalModel.getStartHandle();
-        if (start) this.setStartPoint(start.getPinPosition());
+        // if (start) this.setStartPoint(start.getPinPosition());
+        if (start) this.setStartPoint(this.localize(start.getGlobalPinPosition()));
         var end = this.formalModel.getEndHandle();
-        if (end) this.setEndPoint(end.getPinPosition());
+        // if (end) this.setEndPoint(end.getPinPosition());
+        if (end) this.setEndPoint(this.localize(end.getGlobalPinPosition()));
     },
 });
 
@@ -1065,7 +1070,7 @@ Widget.subclass('PinConnector', {
         return this.morph;
     },
 
-    // do we need this anymore? Can be directly called ... ?
+    // FIXME do we need this anymore? Can be directly called from pinMorph?... ?
     updateView: function(varname, source) {
         if (!this.morph) this.buildView();
         this.morph.updateView(varname, source);
@@ -1169,7 +1174,7 @@ Morph.subclass('ComponentMorph', {
         var newPos = this.getGlobalTransform().transformPoint(pt(0,0));
         if (!this.pvtOldPosition || !this.pvtOldPosition.eqPt(newPos)) {
             this.pvtOldPosition = newPos;
-            this.component.pinHandles.each(function(ea) { if (ea.morph) ea.morph.updatePosition() });
+            this.component.pinHandles.each(function(ea) { ea.morph && ea.morph.updatePosition() });
         };
     },
     
