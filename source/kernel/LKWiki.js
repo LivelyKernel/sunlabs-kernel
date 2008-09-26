@@ -273,7 +273,7 @@ Widget.subclass('WikiNavigator', {
 	askToNavigateToUrl: function(world) {	    
         var msg = 'Go to ' + this.model.getURL() + ' ?';
         var label1 = this.worldExists() ? 'Save and follow link' : 'Save, create, follow link';
-        var label2 = 'Just follow link';
+        var label2 = this.worldExists() ? 'Just follow link' : 'Create and follow link';
         
              var model = Record.newPlainInstance({
                  Button1: null, Button2: null, Message: msg, LabelButton1: label1, LabelButton2: label2 });
@@ -287,7 +287,12 @@ Widget.subclass('WikiNavigator', {
                      }
                      world.alert('World cannot be saved. Did not follow link.');
                  }.bind(this),
-                 onButton2Update: function(value) { if (value) this.navigateToUrl() }.bind(this)});
+                 onButton2Update: function(value) {
+                     if (!value) return;
+                     if (!this.worldExists())
+                        if (!this.doSave().isSuccess()) return;
+                     this.navigateToUrl()
+                 }.bind(this)});
              var dialog = new WikiLinkDialog(model.newRelay({
                  Button1: "+Button1", Button2: "+Button2", Message: "-Message",
                  LabelButton1: "-LabelButton1", LabelButton2: "-LabelButton2"}));
@@ -366,7 +371,7 @@ Object.extend(WikiNavigator, {
 Dialog.subclass('WikiLinkDialog', {
 
     formals: ["-LabelButton1", "-LabelButton2", "+Button1", "+Button2", "-Message"],
-    initialViewExtent: pt(330, 90),
+    initialViewExtent: pt(350, 90),
     
     openIn: function($super, world, position) {
 	    var view = $super(world, position);
@@ -395,14 +400,14 @@ Dialog.subclass('WikiLinkDialog', {
 
         var r = new Rectangle(this.inset, this.inset, extent.x - 2*this.inset, 30);
         var label = panel.addMorph(new TextMorph(r, this.getMessage()).beLabel());
-        var indent = extent.x - 135 - 80 - 60 - 3*this.inset;
+        var indent = extent.x - 135 - 120 - 60 - 3*this.inset;
         var height = r.maxY() + this.inset;
         
         r = new Rectangle(r.x + indent, height, 135, 30);
         var confirm1Button = panel.addMorph(new ButtonMorph(r)).setLabel(this.getLabelButton1());
         confirm1Button.connectModel({model: this, setValue: "confirmed1"});
         
-        r = new Rectangle(r.x + confirm1Button.getExtent().x + this.inset, height, 80, 30);
+        r = new Rectangle(r.x + confirm1Button.getExtent().x + this.inset, height, 120, 30);
         var confirm2Button = panel.addMorph(new ButtonMorph(r)).setLabel(this.getLabelButton2());
         confirm2Button.connectModel({model: this, setValue: "confirmed2"});
 
