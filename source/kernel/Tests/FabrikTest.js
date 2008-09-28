@@ -833,9 +833,9 @@ TestCase.subclass('ConnectorMorphTest', {
     testUpdatePosition: function() {
         c = new ConnectorMorph();
         m1 = new Morph(new Rectangle(100,100,10,10),"rect");
-        m1.getPinPosition = function(){return this.getPosition()};
+        m1.getGlobalPinPosition = function(){return this.getPosition()};
         m2 = new Morph(new Rectangle(200,200, 10,10),"rect");
-        m2.getPinPosition = m1.getPinPosition;      
+        m2.getGlobalPinPosition = m1.getGlobalPinPosition;
         c.formalModel.setStartHandle(m1);
         c.formalModel.setEndHandle(m2);
         c.updateView();
@@ -1301,27 +1301,36 @@ TestCase.subclass('TextListComponentTest', {
 
 TestCase.subclass('ComponentSerializeTest', {
     
+    setUp: function() {
+        this.world = WorldMorph.current();
+    },
+    
+    tearDown: function() {
+        if (this.morphAddedToWorld) {
+            this.world.removeMorph(this.morphAddedToWorld); // to be sure
+            this.morphAddedToWorld.remove();
+        }
+    },
+    
     xtestPlainComponent: function() {
-        var world = WorldMorph.current();
         var comp = new Component()
-        var morph = comp.buildView();
-        world.addMorph(morph);
-        var doc = Exporter.shrinkWrapMorph(world);
+        this.morphAddedToWorld = comp.buildView();
+        world.addMorph(this.morphAddedToWorld);
+        var doc = Exporter.shrinkWrapMorph(this.world);
         var string = Exporter.stringify(doc);
-        morph.remove();
-        
+        this.morphAddedToWorld.remove();
+
         var importer = new Importer();
         var parser = new DOMParser();
-	var xml = parser.parseFromString(string, "text/xml");
-	this.assert(xml, "parse failed");
+        var xml = parser.parseFromString(string, "text/xml");
+        this.assert(xml, "parse failed");
         var newWorld = importer.loadWorldContents(xml);
-        
+
         console.log(string);
     },
 
 
     testFabrikWithTextComponent: function() {
-        var world = WorldMorph.current();
         var fabrik = new FabrikComponent();
         var textComponent = new TextComponent();
         var fieldName = "ThisIsAFieldNameOrSo";
@@ -1329,10 +1338,10 @@ TestCase.subclass('ComponentSerializeTest', {
         textComponent.setThisIsAFieldNameOrSo("Tatatatatatataaaa");
         fabrik.plugin(textComponent);
     
-        var morph = fabrik.openIn(world);
-        var doc = Exporter.shrinkWrapMorph(world);
+        this.morphAddedToWorld = fabrik.openIn(this.world);
+        var doc = Exporter.shrinkWrapMorph(this.world);
         var string = Exporter.stringify(doc);
-        morph.remove();
+        this.morphAddedToWorld.remove();
     
         this.assert(string.match("FabrikComponent"), "no FabrikComponent serialized");
         this.assert(string.match(fieldName), "no fieldName serialized");
@@ -1352,7 +1361,7 @@ TestCase.subclass('ComponentSerializeTest', {
         // this.assert(widgets.detect(function(ea){return ea.localName == "PinConnector"}), "no connectors");
 
         
-        console.log(string);
+        // console.log(string);
     },
     
 });
