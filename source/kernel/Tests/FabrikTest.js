@@ -1,3 +1,5 @@
+module('FabrikTest.js').requires('Fabrik.js', 'Helper.js').toRun(function(ownModule) {
+
 TestCase.subclass('FabrikTestCase', {
     
     setUp: function() {
@@ -1366,4 +1368,100 @@ TestCase.subclass('ComponentSerializeTest', {
     
 });
 
+TestCase.subclass('AXMLConverter', {
+   
+   xmlString:   '<?xml version="1.0"?>' +
+    '<xml_api_reply version="1">' +
+            '<weather module_id="0" tab_id="0">' +
+                    '<forecast_information>' +
+                            '<city data="Berlin, Berlin"/>' +
+                            '<postal_code data="12685"/>' +
+                    '</forecast_information>' +
+                    '<current_conditions>' +
+                            '<condition data="Fog"/>' +
+                            '<temp_f data="54"/>' +
+                            '<temp_c data="12"/>' +
+                            '<humidity data="Humidity: 81%"/>' +
+                            '<icon data="/images/weather/fog.gif"/>' +
+                            '<wind_condition data="Wind: NW at 1 mph"/>' +
+                    '</current_conditions>' +
+                    '<forecast_conditions>' +
+                            '<day_of_week data="Today"/>' +
+                            '<low data="48"/>' +
+                            '<high data="64"/>' +
+                            '<icon data="/images/weather/sunny.gif"/>' +
+                            '<condition data="Clear"/>' +
+                    '</forecast_conditions>' +
+                    '<forecast_conditions>' +
+                            '<day_of_week data="Sun"/>' +
+                            '<low data="50"/>' +
+                            '<high data="64"/>' +
+                            '<icon data="/images/weather/mostly_sunny.gif"/>' +
+                            '<condition data="Mostly Sunny"/>' +
+                    '</forecast_conditions>' +
+                    '<forecast_conditions>' +
+                            '<day_of_week data="Mon"/>' +
+                            '<low data="48"/>' +
+                            '<high data="59"/>' +
+                            '<icon data="/images/weather/chance_of_rain.gif"/>' +
+                            '<condition data="Chance of Rain"/>' +
+                    '</forecast_conditions>' +
+                    '<forecast_conditions>' +
+                            '<day_of_week data="Tue"/>' +
+                            '<low data="48"/>' +
+                            '<high data="57"/>' +
+                            '<icon data="/images/weather/mostly_sunny.gif"/>' +
+                            '<condition data="Partly Sunny"/>' +
+                    '</forecast_conditions>' +
+            '</weather>' +
+    '</xml_api_reply>',
+    
+    setUp: function() {
+        this.xml = stringToXML(this.xmlString),
+        this.xmlForcastInfo = this.xml.firstChild.firstChild.firstChild,
+        this.xmlLeaf = this.xmlForcastInfo.firstChild, // Berlin
+        this.converter = new XMLJSConverter();
+    },
+    
+    testConvertLeaf: function() {
+        this.assertEqualState(this.converter.basicToJs(this.xmlLeaf), {city: "Berlin, Berlin"}, 'wrong leaf conversion');
+    },
+    
+    testConvertNonLeaf: function() {
+        this.assertEqualState(this.converter.basicToJs(this.xmlForcastInfo), {forecast_information: {}}, 'wrong non-leaf conversion');
+    },
+    
+    testConvertElement: function() {
+        var result = this.converter.xmlToJs(this.xmlForcastInfo);
+        var expected = {forecast_information: {city: "Berlin, Berlin", postal_code: '12685'}}
+        this.assertEqualState(result, expected, 'wrong element conversion');
+    },
+    
+    testConvertAll: function() {
+        var result = this.converter.xmlToJs(this.xml);
+        console.log('result: ' + JSON.serialize(result));
+    },
+    
+    testStringArrayfromXMLSimple: function() {
+        var result = this.converter.xmlToStringArray(this.xmlLeaf);
+        this.assertEqual(result.length, 1, 'could not create array from xml');
+        this.assertEqual(result.first().string, '<city data="Berlin, Berlin"/>', 'wrong string');
+        this.assertIdentity(result.first().xml, this.xmlLeaf, 'wrong xml');
+    },
+    
+    testStringArrayfromXMLElement: function() {
+        var result = this.converter.xmlToStringArray(this.xmlForcastInfo);
+        this.assertEqual(result.length, 4, 'could not create array from xml');
+        this.assertEqual(result[0].string, '<forecast_information>', 'wrong string 1');
+        this.assertEqual(result[1].string, '<city data="Berlin, Berlin"/>', 'wrong string 2');
+        this.assertEqual(result[2].string, '<postal_code data="12685"/>', 'wrong string 3');
+        this.assertEqual(result[3].string, '</forecast_information>', 'wrong string 4');
+        this.assertEqual(result[0].xml, this.xmlForcastInfo, 'wrong xml 1');
+        this.assertEqual(result[1].xml, this.xmlLeaf, 'wrong xml 2');
+        this.assertEqual(result[3].xml, this.xmlForcastInfo, 'wrong xml 2');
+    }
+});
+
 console.log("Loaded FabrikTest.js");
+
+}); // end of require

@@ -107,5 +107,13 @@ function logObject(obj) {
     console.log(printObject(obj))
 }
 
+function xmlToString(xml) {
+    return new XMLSerializer().serializeToString(xml);
+}
+
+function stringToXML(string) {
+    return new DOMParser().parseFromString(string, "text/xml");
+}
+
 
 console.log('Helper.js loaded');

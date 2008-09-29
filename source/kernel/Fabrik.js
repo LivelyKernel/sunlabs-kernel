@@ -2537,6 +2537,46 @@ Object.subclass('HandPositionObserver', {
     },
 });
 
+/* Very simple XML to JSON converter */
+Object.subclass('XMLJSConverter', {
+   
+    basicToJs: function(xml) {
+        var obj = {};
+        // FIXME assumes data is only important attribute...
+        obj[xml.nodeName] = xml.hasChildNodes() ? {} : xml.getAttribute('data');
+        return obj;
+    },
+    
+    xmlToJs: function(xml) {
+        if (!xml.hasChildNodes())
+            return this.basicToJs(xml);
+        var baseObj = this.basicToJs(xml);
+        var childObjs = $A(xml.childNodes).collect(function(ea) { return this.xmlToJs(ea) }.bind(this));
+        
+        function firstKey(obj) { return Object.keys(obj).first() };
+        childObjs.each(function(ea) { baseObj[firstKey(baseObj)][firstKey(ea)] = ea[firstKey(ea)] });
+        return baseObj;
+        
+    },
+    
+    xmlToStringArray: function(xml) {
+        if (!xml.hasChildNodes())
+            return [{string: xmlToString(xml), xml: xml}];
+        if (!xml.parentNode)
+            return xmlToStringArray(xml.firstChild); // omit root
+        var list = $A(xml.childNodes).inject([], function(all, ea) {
+            return all.concat(this.xmlToStringArray(ea)) }.bind(this));
+        // very dirty, get the tag opener and closer
+        var ownXMLStrings = /(<.*?>).*(<.*?>)/.exec(xmlToString(xml));
+        list.unshift({string: ownXMLStrings[1], xml: xml});
+        list.push({string: ownXMLStrings[2], xml: xml});
+        return list;
+    }
+    // toJSON: function(xml) {
+    //     
+    // }
+});
+
 /*
  * Extending ClockMorph for PluggableComponent
  */
