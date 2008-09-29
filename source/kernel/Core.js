@@ -1018,6 +1018,7 @@ Record.subclass('DOMRecord', {
 	if (result === null) return undefined;
 	else if (result === "") return null;
 	if (result.startsWith("json:")) return Converter.fromJSONAttribute(result.substring("json:".length));
+	if (result.startsWith("XML:")) return Converter.fromXMLString(result.substring("XML:".length));
 	else return result;
     },
     
@@ -1025,9 +1026,13 @@ Record.subclass('DOMRecord', {
 	if (value === undefined) {
 	    throw new Error("use removeRecordField to remove " + name);
 	}
+	if (value && Converter.needsXMLStringification(value)) {
+	    value = "XML:" + Converter.toXMLString(value);
+	}
 	if (value && Converter.needsJSONEncoding(value)) {
 	    value = "json:" + Converter.toJSONAttribute(value);
 	}
+
 
 	return this.rawNode.setAttributeNS(null, name, value || "");
     },
@@ -1561,8 +1566,8 @@ var Converter = {
     },
 
     wrapperFilter: function(baseObj, key) {
-	var value = baseObj[key]; 
-	return (value instanceof Wrapper) ? value.uri() : value;
+	var value = baseObj[key];
+	return value instanceof Wrapper ? value.uri() : value;
     },
 
     toJSONAttribute: function(obj) {
@@ -1573,6 +1578,18 @@ var Converter = {
 	return str ?  JSON.unserialize(unescape(str)) : null;
     },
 
+    toXMLString: function(value) {
+        return new XMLSerializer().serializeToString(value);
+    },
+
+    fromXMLString: function(string) {
+        return new DOMParser().parseFromString(string, "text/xml");    
+    },
+    
+    needsXMLStringification: function(value) {
+        return value instanceof Document;
+    },
+    
     needsJSONEncoding: function(value) {
 	// some objects can be saved in as DOM attributes using their
 	// .toString() form, others need JSON

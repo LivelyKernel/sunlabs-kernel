@@ -2313,8 +2313,10 @@ Component.subclass('WebRequestComponent', {
         // var x = new Resource(this.formalModel.newRelay({URL: '-URL', ContentText: '+ResponseText', ContentDocument: '+ResponseXML'}));
         
         var x = new Resource(Record.newPlainInstance({URL: this.getURL(), ContentText: '', ContentDocument: null}));
-        x.formalModel.addObserver({onContentTextUpdate: function(response){ this.setResponseText(response) }.bind(this)});
-        x.formalModel.addObserver({onContentDocumentUpdate: function(response){ this.setResponseXML(new XMLSerializer().serializeToString(response))}.bind(this)});
+        x.formalModel.addObserver({onContentTextUpdate: function(response) { this.setResponseText(response) }.bind(this)});
+        x.formalModel.addObserver({onContentDocumentUpdate: function(response) { 
+                debugger;
+                this.setResponseXML(response) }.bind(this)});
         
         x.fetch();
     }
@@ -2538,7 +2540,7 @@ Object.subclass('HandPositionObserver', {
 });
 
 /* Very simple XML to JSON converter */
-Object.subclass('XMLJSConverter', {
+Object.subclass('FabrikXMLConverter', {
    
     basicToJs: function(xml) {
         var obj = {};
@@ -2560,21 +2562,19 @@ Object.subclass('XMLJSConverter', {
     },
     
     xmlToStringArray: function(xml) {
+        var objCreator = function(string, xml) { return {string: string, xml: xml, toString: function() { return string }} };
         if (!xml.hasChildNodes())
-            return [{string: xmlToString(xml), xml: xml}];
+            return [objCreator(xmlToString(xml), xml)];
         if (!xml.parentNode)
             return xmlToStringArray(xml.firstChild); // omit root
         var list = $A(xml.childNodes).inject([], function(all, ea) {
             return all.concat(this.xmlToStringArray(ea)) }.bind(this));
         // very dirty, get the tag opener and closer
         var ownXMLStrings = /(<.*?>).*(<.*?>)/.exec(xmlToString(xml));
-        list.unshift({string: ownXMLStrings[1], xml: xml});
-        list.push({string: ownXMLStrings[2], xml: xml});
+        list.unshift(objCreator(ownXMLStrings[1], xml));
+        list.push(objCreator(ownXMLStrings[2], xml));
         return list;
     }
-    // toJSON: function(xml) {
-    //     
-    // }
 });
 
 /*

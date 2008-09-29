@@ -103,26 +103,30 @@ Object.subclass('TestCase', {
 	},
 	
 	assertEqualState: function(leftObj, rightObj, msg) {
-		var self = this;
         msg = (msg ? msg : ' ') + leftObj + " != " + rightObj + " because ";
 		if (!leftObj && !rightObj) return;
-		if (!leftObj || !rightObj) self.assert(false, msg);
+		if (!leftObj || !rightObj) this.assert(false, msg);
 		switch (leftObj.constructor) {
 			case String:
 			case Boolean:
+			case Boolean:
 			case Number: {
-				self.assertEqual(leftObj, rightObj, msg);
+				this.assertEqual(leftObj, rightObj, msg);
 				return;
 			}
+		};
+		if (leftObj.isEqualNode) {
+		    this.assert(leftObj.isEqualNode(rightObj), msg);
+            return;
 		};
 		var cmp = function(left, right) {
 			for (var value in left) {
 				if (!(left[value] instanceof Function)) {
-					self.log('comparing: ' + left[value] + ' ' + right[value]);
-					self.assertEqualState(left[value], right[value], msg);
+					this.log('comparing: ' + left[value] + ' ' + right[value]);
+					this.assertEqualState(left[value], right[value], msg);
 				};
 			};
-		};
+		}.bind(this);
 		cmp(leftObj, rightObj);
 		cmp(rightObj, leftObj);		
 	},

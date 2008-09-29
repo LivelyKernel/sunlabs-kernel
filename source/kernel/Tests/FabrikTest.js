@@ -1368,7 +1368,7 @@ TestCase.subclass('ComponentSerializeTest', {
     
 });
 
-TestCase.subclass('AXMLConverter', {
+TestCase.subclass('AFabrikXMLConverterTest', {
    
    xmlString:   '<?xml version="1.0"?>' +
     '<xml_api_reply version="1">' +
@@ -1420,7 +1420,7 @@ TestCase.subclass('AXMLConverter', {
         this.xml = stringToXML(this.xmlString),
         this.xmlForcastInfo = this.xml.firstChild.firstChild.firstChild,
         this.xmlLeaf = this.xmlForcastInfo.firstChild, // Berlin
-        this.converter = new XMLJSConverter();
+        this.converter = new FabrikXMLConverter();
     },
     
     testConvertLeaf: function() {
@@ -1451,14 +1451,11 @@ TestCase.subclass('AXMLConverter', {
     
     testStringArrayfromXMLElement: function() {
         var result = this.converter.xmlToStringArray(this.xmlForcastInfo);
-        this.assertEqual(result.length, 4, 'could not create array from xml');
-        this.assertEqual(result[0].string, '<forecast_information>', 'wrong string 1');
-        this.assertEqual(result[1].string, '<city data="Berlin, Berlin"/>', 'wrong string 2');
-        this.assertEqual(result[2].string, '<postal_code data="12685"/>', 'wrong string 3');
-        this.assertEqual(result[3].string, '</forecast_information>', 'wrong string 4');
-        this.assertEqual(result[0].xml, this.xmlForcastInfo, 'wrong xml 1');
-        this.assertEqual(result[1].xml, this.xmlLeaf, 'wrong xml 2');
-        this.assertEqual(result[3].xml, this.xmlForcastInfo, 'wrong xml 2');
+        var expected = [{string: '<forecast_information>', xml: this.xmlForcastInfo},
+                        {string: '<city data="Berlin, Berlin"/>', xml: this.xmlForcastInfo.childNodes[0]},
+                        {string: '<postal_code data="12685"/>', xml: this.xmlForcastInfo.childNodes[1]},
+                        {string: '</forecast_information>', xml: this.xmlForcastInfo}]        
+        this.assertEqualState(expected, result, 'error');
     }
 });
 
