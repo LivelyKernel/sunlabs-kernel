@@ -4176,16 +4176,6 @@ Morph.subclass("EngineMorph", {
 	this.topPosDisplacement = pt(pistonBW, dHead);
     },
 
-    onDeserialize: function() {
-	this.cylinders.forEach(function(cyl, i, array) {
-	    //cyl.angle = (Math.PI*2/array.length)*i;
-            //if (this.alternate && i%2 == 1) cyl.angle += Math.PI*2;
-	    if (cyl)
-		cyl.piston.topPos = cyl.innerBounds().topLeft().addPt(this.topPosDisplacement);
-	}, this);
-    },
-
-
     makeLayout: function(nCylinders, alternating) {
         // FYI, here's the declarative structure...
         //    Engine

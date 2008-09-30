@@ -1,5 +1,5 @@
 /*
- * Copyright � 2006-2008 Sun Microsystems, Inc.
+ * Copyright ï¿½ 2006-2008 Sun Microsystems, Inc.
  * All rights reserved.  Use is subject to license terms.
  * This distribution may include materials developed by third parties.
  *  
@@ -316,7 +316,7 @@ Object.extend(Function.prototype, {
 	    } 
 	    this.prototype[property] = value;
 	    
-	    if (property == "formals") {
+	    if (property === "formals") {
 		// special property (used to be pins, but now called formals to disambiguate old and new style
 		Class.addPins(this, value);
 	    } else if (Object.isFunction(value)) {
@@ -482,7 +482,8 @@ var Class = {
 	    case "toString": case "definition": case "description":
 		break;
 	    default:
-	    cls.prototype[prop] = value;
+		if (cls.prototype[prop] === undefined) // do not override existing values!
+		    cls.prototype[prop] = value;
 	    }
 	}
     }
@@ -1040,7 +1041,6 @@ Record.subclass('DOMRecord', {
 	    value = "json:" + Converter.toJSONAttribute(value);
 	}
 
-
 	return this.rawNode.setAttributeNS(null, name, value || "");
     },
     
@@ -1049,6 +1049,63 @@ Record.subclass('DOMRecord', {
     }
 
 });
+
+DOMRecord.subclass('DOMNodeRecord', {
+    documentation: "uses nodes instead of attributes to store values",
+
+    getRecordField: function(name) { 
+	var fieldElement = this[name + "$Element"];
+	if (fieldElement) {
+	    var value = fieldElement.textContent;
+	    if (value) {
+		var family = LivelyNS.getAttribute(fieldElement, "family");
+		if (family) {
+		    if (!Global[family]) throw new Error('uknown type ' + family);
+		    return Global[family].fromJSON(JSON.unserialize(value));
+		} else return JSON.unserialize(value);
+	    }
+	} else {
+	    console.log('not found ' + name);
+	    return undefined;
+	}
+    },
+    
+    setRecordField: function(name, value) {
+	if (value === undefined) {
+	    throw new Error("use removeRecordField to remove " + name);
+	}
+	var fieldElement = this[name + "$Element"];
+	if (fieldElement) {
+	    this.rawNode.removeChild(fieldElement);
+	}
+	fieldElement = Converter.encodeProperty(name, value);
+	if (fieldElement) this.rawNode.appendChild(fieldElement);
+	else console.log("failed to encode " + name + "= " + value);
+	this[name + "$Element"] = fieldElement;
+	console.log("created cdata " + fieldElement.textContent);
+    },
+    
+    removeRecordField: function(name) {
+	var fieldElement = this[name + "$Element"];
+	if (fieldElement) {
+	    this.rawNode.removeChild(fieldElement);
+	    delete this.fieldElement;
+	}
+    },
+
+    deserialize: function(importer, rawNode) {
+	this.rawNode = rawNode;
+	for (var child = rawNode.firstChild; child != null; child = child.nextSibling) {
+	    if (child.localName == "field") {
+		this[name + "$Element"] = child.getAttributeNS(null, "name");
+	    }	
+	}
+    },
+
+
+
+});
+
 
 
 // note: the following happens later
@@ -1120,10 +1177,10 @@ Object.extend(Record, {
 	if (arguments.length < 2) throw new Error("call with two or more arguments");
 	var storeClass;
 	if (!optStore) {
-	    storeClass = DOMRecord;
+	    storeClass = DOMNodeRecord;
 	    optStore = NodeFactory.create("record"); // FIXME flat JavaScript instead by default?
 	} else {
-	    storeClass = optStore instanceof Global.Node ? DOMRecord : PlainRecord;
+	    storeClass = optStore instanceof Global.Node ? DOMNodeRecord : PlainRecord;
 	}
 
 	var Rec = storeClass.prototype.create(fieldSpec);
@@ -1596,9 +1653,39 @@ var Converter = {
 	return type != "string" && type != "number"; 
     },
 
+    encodeProperty: function(prop, propValue) {
+	var desc = LivelyNS.create("field", {name: prop});
+	if (Converter.isJSONConformant(propValue) || propValue instanceof Array) { // hope for the best wrt/arrays
+	    // FIXME: deal with arrays of primitives etc?
+	    var encoding;
+	    if (propValue === null)
+		encoding = NodeFactory.createText("null");
+	    else switch (typeof propValue) {
+	    case "number":
+	    case "boolean":
+		encoding = NodeFactory.createText(String(propValue));
+		break;
+	    default:
+		encoding = NodeFactory.createCDATA(JSON.serialize(propValue));
+	    }
+	    desc.appendChild(encoding);
+	} else if (propValue instanceof Color) { // FIXME all the other special cases?
+	    desc.setAttributeNS(null, "family", "Color");
+	    desc.appendChild(NodeFactory.createCDATA(JSON.serialize(propValue)));
+	} else if (propValue instanceof Point) { // FIXME all the other special cases?
+	    desc.setAttributeNS(null, "family", "Point");
+	    desc.appendChild(NodeFactory.createCDATA(JSON.serialize(propValue)));
+	} else if (propValue instanceof Rectangle) {
+	    desc.setAttributeNS(null, "family", "Rectangle");
+	    desc.appendChild(NodeFactory.createCDATA(JSON.serialize(propValue)));
+	} else return null;
+	return desc;
+    },
+
     isJSONConformant: function(value) { // for now, arrays not handled but could be
 	return value == null || (typeof value.valueOf()  !== 'object');
     }
+
 };
 
 
@@ -1821,10 +1908,89 @@ Object.subclass('Wrapper', {
 	return this.rawNode.removeAttributeNS(null, name);
     },
 
+    prepareForSerialization: function(extraNodes) {
+	for (var prop in this) {
+	    if (!this.hasOwnProperty(prop)) continue;
+	    var m = this[prop];
+	    if (m === this.constructor.prototype[prop])  // save space
+		continue;
+	    this.preparePropertyForSerialization(prop, m, extraNodes);
+	}
+    },
+
+    preparePropertyForSerialization: function(prop, propValue, extraNodes) {
+	function isWrapper(m) {
+	    return m instanceof Wrapper || m instanceof DOMRecord;
+	}
+	var self = this;
+	function appendNode(node) {
+	    try {
+		extraNodes.push(self.rawNode.appendChild(node));
+	    } catch (er) { debugger; throw er;}
+	    extraNodes.push(self.rawNode.appendChild(NodeFactory.createNL()));
+	}
+
+	if (propValue instanceof Function) {
+	    return;
+	} else if (propValue instanceof Wrapper) { // FIXME better instanceof
+	    if (prop === 'owner') 
+		return; // we'll deal manually
+	    if (propValue instanceof Gradient || propValue instanceof ClipPath || propValue instanceof Image) 
+		return; // these should sit in defs and be handled by restoreDefs()
+	    //console.log("serializing field name='%s', ref='%s'", prop, m.id(), m.getType());
+	    if (!propValue.rawNode) {
+		console.log("wha', no raw node on " + propValue);
+	    } else if (propValue.id() != null) {
+		var desc = LivelyNS.create("field", {name: prop, ref: propValue.id()});
+		appendNode(desc);
+		if (prop === "ownerWidget") {
+		    console.log('recursing for field ' + prop);
+		    propValue.prepareForSerialization(extraNodes);
+		    appendNode(propValue.rawNode);
+		}
+	    }
+	} else if (propValue instanceof Relay) {
+	    var delegate = propValue.delegate;
+	    if (isWrapper(delegate)) { // FIXME: better instanceof
+		var desc = LivelyNS.create("relay", {name: prop, ref: delegate.id()});
+		Properties.forEachOwn(propValue.definition, function(key, value) {
+		    var binding = desc.appendChild(LivelyNS.create("binding"));
+		    binding.setAttributeNS(null, "formal", key);
+		    binding.setAttributeNS(null, "actual", value);
+		});
+		appendNode(desc);
+	    } else {
+		console.warn('unexpected: '+ propValue + 's delegate is ' + delegate);
+	    }
+	} else if (propValue instanceof Array) {
+	    if (prop === 'submorphs')
+		return;  // we'll deal manually
+	    var arr = LivelyNS.create("array", {name: prop});
+	    var abort = false;
+	    propValue.forEach(function iter(elt) {
+		if (elt && !(elt instanceof Wrapper)) { // FIXME what if Wrapper is a mixin?
+		    abort = true;
+		    return;
+		}
+		// if item empty, don't set the ref field
+		var item =  (elt && elt.id()) ? LivelyNS.create("item", {ref: elt.id()}) : LivelyNS.create("item"); 
+		extraNodes.push(arr.appendChild(item));
+		extraNodes.push(arr.appendChild(NodeFactory.createNL()));
+	    }, this);
+	    if (!abort) { 
+		appendNode(arr);
+	    }
+	} else {
+	    var node = Converter.encodeProperty(prop, propValue);
+	    node && appendNode(node);
+	}
+    }
+    
 
 });
     
 Class.addMixin(DOMRecord, Wrapper.prototype);
+Class.addMixin(DOMNodeRecord, Wrapper.prototype);
 
 
 
@@ -1940,7 +2106,11 @@ Object.extend(Point, {
     },
 
     polar: function(r, theta) { return new Point(r*Math.cos(theta), r*Math.sin(theta)); },
-    random: function(scalePt) { return new Point(scalePt.x.randomSmallerInteger(), scalePt.y.randomSmallerInteger()); }
+    random: function(scalePt) { return new Point(scalePt.x.randomSmallerInteger(), scalePt.y.randomSmallerInteger()); },
+    
+    fromJSON: function(json) {
+	return pt(json.x, json.y);
+    }
 
 });
 
@@ -2143,7 +2313,10 @@ Rectangle.addMethods({
 
     insetByRect: function(r) {
 	return new Rectangle(this.x + r.left(), this.y + r.top(), this.width - (r.left() + r.right()), this.height - (r.top() + r.bottom()));
-    }
+    },
+
+    toJSON: function() { return {x: this.x, y: this.y, width: this.width, height: this.height}; },
+    
 });
 
 
@@ -2152,6 +2325,10 @@ Object.extend(Rectangle, {
 
     fromAny: function(ptA, ptB) {
 	return rect(ptA.minPt(ptB), ptA.maxPt(ptB));
+    },
+
+    fromJSON: function(json) {
+	return new Rectangle(json.x, json.y, json.width, json.height);
     },
     
     unionPts: function(points) {
@@ -3785,13 +3962,15 @@ Copier.subclass('Importer', {
 					   rawNode.tagName, rawNode.parentNode, wrapperType));
 	}
 
+	return new Global[wrapperType](this, rawNode);
+	/*
 	try {
-	    return new Global[wrapperType](this, rawNode);
+
 	} catch (er) {
 	    console.log("%s instantiating type %s from node %s", er, 
 			wrapperType, Exporter.stringify(rawNode));
 	    throw er;
-	}
+	}*/
     },
 
     importWrapperFromString: function(string) {
@@ -3848,7 +4027,7 @@ Copier.subclass('Importer', {
 	    if (!found) {
 		console.warn("no value found for field %s ref %s in wrapper %s", name, ref, wrapper);
 	    } else {
-		console.log("found " + name + "=" + found + "and assigned to " + wrapper);
+		//console.log("found " + name + "=" + found + " and assigned to " + wrapper);
 	    }
 	}
     },
@@ -3993,13 +4172,12 @@ Object.subclass('MouseHandlerForRelay', {
 });
 
 
-namespace('lk::text');
+Visual.subclass('Morph');
+Morph.addProperties({ 
+    CopySubmorphsOnGrab: {name: "copy-submorphs-on-grab", from:Converter.toBoolean, to:Converter.fromBoolean, byDefault: false}
+});
 
-
-using(lk.text).run(function(text) {
-
-
-Visual.subclass('Morph', {
+Morph.addMethods({
 
     documentation: "Base class for every graphical, manipulatable object in the system", 
 
@@ -4154,103 +4332,15 @@ Visual.subclass('Morph', {
 	importer.verbose && console.log("deserialized " + this);
     },
 
-    prepareForSerialization: function(extraNodes) {
+    prepareForSerialization: function($super, extraNodes) {
 	// this is the morph to serialize
 	if (Config.useTransformAPI) {
 	    // gotta set it explicitly, it's not in SVG
 	    this.setTrait("transform", this.getTransform().toAttributeValue());
 	    // FIXME, remove?
 	}
-	for (var prop in this) {
-	    if (!this.hasOwnProperty(prop)) continue;
-	    var m = this[prop];
-	    if (m === this.constructor.prototype[prop])  // save space
-		continue;
-	    this.preparePropertyForSerialization(prop, m, extraNodes);
-	}
+	return $super(extraNodes);
     },
-    
-    preparePropertyForSerialization: function(prop, m, extraNodes) {
-	debugger;
-	function addNL(self) {
-	    extraNodes.push(self.addNonMorph(NodeFactory.createNL()));
-	}
-	function isWrapper(m) {
-	    return m instanceof Wrapper || m instanceof DOMRecord;
-	}
-
-	if (m instanceof Function) {
-	    return;
-	} else if (m instanceof Wrapper) { // FIXME better instanceof
-	    if (prop === 'owner') 
-		return; // we'll deal manually
-	    if (m instanceof Gradient || m instanceof ClipPath || m instanceof Image) 
-		return; // these should sit in defs and be handled by restoreDefs()
-	    //console.log("serializing field name='%s', ref='%s'", prop, m.id(), m.getType());
-	    if (!m.rawNode) {
-		console.log("wha', no raw node on " + m);
-	    } else if (m.id() != null) {
-		var desc = LivelyNS.create("field", {name: prop, ref: m.id()});
-		extraNodes.push(this.addNonMorph(desc));
-		addNL(this);
-		if (prop === "ownerWidget") {
-		    extraNodes.push(this.addNonMorph(m.rawNode));
-		    // should recurse here
-		    var relay = m.formalModel;
-		    var relayNode = m.rawNode.appendChild(LivelyNS.create("relay", {name: "formalModel", ref: relay.delegate.id()}));
-		    Properties.forEachOwn(relay.definition, function(key, value) {
-			var binding = relayNode.appendChild(LivelyNS.create("binding"));
-			binding.setAttributeNS(null, "formal", key);
-			binding.setAttributeNS(null, "actual", value);
-		    });
-		    addNL(this);
-		}
-	    }
-	} else if (m instanceof Relay) {
-	    var delegate = m.delegate;
-	    if (isWrapper(delegate)) { // FIXME: better instanceof
-		var desc = LivelyNS.create("relay", {name: prop, ref: delegate.id()});
-		Properties.forEachOwn(m.definition, function(key, value) {
-		    var binding = desc.appendChild(LivelyNS.create("binding"));
-		    binding.setAttributeNS(null, "formal", key);
-		    binding.setAttributeNS(null, "actual", value);
-		});
-		extraNodes.push(this.addNonMorph(desc));
-	    } else {
-		console.warn('unexpected: '+ m + 's delegate is ' + delegate);
-	    }
-	    addNL(this);
-	} else if (m instanceof Array) {
-	    if (prop === 'submorphs')
-		return;  // we'll deal manually
-	    var arr = LivelyNS.create("array", {name: prop});
-	    var abort = false;
-	    m.forEach(function iter(elt) {
-		if (elt && !(elt instanceof Wrapper)) { // FIXME what if Wrapper is a mixin?
-		    abort = true;
-		    return;
-		}
-		// if item empty, don't set the ref field
-		var item =  (elt && elt.id()) ? LivelyNS.create("item", {ref: elt.id()}) : LivelyNS.create("item"); 
-		extraNodes.push(arr.appendChild(item));
-		extraNodes.push(arr.appendChild(NodeFactory.createNL()));
-	    }, this);
-	    if (!abort) { 
-		extraNodes.push(this.addNonMorph(arr));
-		addNL(this);
-	    }
-	} else if (Converter.isJSONConformant(m)) {
-	    // FIXME: deal with arrays of primitives etc?
-	    var desc = LivelyNS.create("field", {name: prop, value: JSON.serialize(m)});
-	    extraNodes.push(this.addNonMorph(desc));
-	    addNL(this);
-	} else if (m instanceof Color) { // FIXME all the other special cases?
-	    var desc = LivelyNS.create("field", {name: prop, family: "Color", value: JSON.serialize(m)});
-	    extraNodes.push(this.addNonMorph(desc));
-	    addNL(this);
-	}
-    },
-    
     
     restorePersistentState: function(importer) {
 	var pointerEvents = this.getTrait("pointer-events");
@@ -4364,8 +4454,8 @@ Visual.subclass('Morph', {
 		    if (ref) {
 			importer.addPatchSite(this, name, ref);
 		    } else {
-			var value = LivelyNS.getAttribute(node, "value");
-			if (value != null) {
+			var value = node.textContent;
+			if (value) {
 			    var family = LivelyNS.getAttribute(node, "family");
 			    if (family) {
 				if (!Global[family]) throw new Error('uknown type ' + family);
@@ -4388,7 +4478,7 @@ Visual.subclass('Morph', {
 		    for (var child = node.firstChild; child != null; child = child.nextSibling) {
 			// here we should recurse into restoreFromSubnodes() but "widget" can't do it yet
 			if (child.localName == "record") {
-			    var spec = JSON.unserialize(child.textContent);
+			    var spec = JSON.unserialize(child.getElementsByTagName("definition")[0].textContent);
 			    var Rec = DOMRecord.prototype.create(spec);
 			    var model = new Rec(importer, child);
 			    var id = child.getAttribute("id");
@@ -4475,9 +4565,7 @@ Visual.subclass('Morph', {
     
 });
 
-Morph.addProperties({ 
-    CopySubmorphsOnGrab: {name: "copy-submorphs-on-grab", from:Converter.toBoolean, to:Converter.fromBoolean, byDefault: false}
-});
+
 
 // Functions for change management
 Object.extend(Morph, {
@@ -4836,11 +4924,6 @@ Morph.addMethods({
 	return this;
     },
 
-    applyToAllSubmorphs: function(func, argumentArray) {
-	func.apply(this, argumentArray);
-	this.submorphs.invoke('withAllSubmorphsDo', func, argumentArray);
-    },
-
     withAllSubmorphsDo: function(func, rest) {
 	// Call the supplied function on me and all of my submorphs by recursion.
 	var args = $A(arguments);
@@ -4849,6 +4932,15 @@ Morph.addMethods({
 	for (var i = 0; i < this.submorphs.length; i++) {
 	    this.submorphs[i].withAllSubmorphsDo(func, rest);
 	}
+    },
+
+    invokeOnAllSubmorphs: function(selector, rest) {
+	var args = $A(arguments);
+	args.shift();
+	var func = this[selector];
+	func.apply(this, args);
+	for (var i = 0; i < this.submorphs.length; i++)
+	    this.submorphs[i].invokeOnAllSubmorphs(selector, rest);
     },
 
     topSubmorph: function() {
@@ -6225,45 +6317,6 @@ Model.subclass('SyntheticModel', {
 
     variables: function() {
 	return Properties.own(this).filter(function(name) { return name != 'dependents'});
-    },
-
-    toMarkup: function(index) {
-	var element = LivelyNS.create("model");
-	var vars = this.variables();
-	for (var i = 0; i < this.dependents.length; i++) { // write dependents first so that model variables can refer to it
-	    var dependent = this.dependents[i];
-	    console.log("model dependent " + dependent);
-	    if (dependent instanceof Morph) {
-		element.appendChild(LivelyNS.create("dependent", {ref: dependent.id()}));
-	    } else if (dependent instanceof View) { // stateless view, will be recreated from type
-		var viewElement = 
-		    element.appendChild(LivelyNS.create("dependentView", { type: dependent.getType()}));
-		var plug = dependent.modelPlug && dependent.modelPlug.serialize(index || 0);
-		if (plug) viewElement.appendChild(plug);
-	    } else {
-		console.log("cant handle dependent " + dependent);
-	    }
-	    element.appendChild(NodeFactory.createNL());
-        }
-	for (var i = 0; i < vars.length; i++) {
-	    var name = vars[i];
-	    var index = this.dependents.indexOf(this[name]);
-	    var varEl;
-	    if (index >= 0) {
-		varEl = LivelyNS.create("dependentVariable", {name: name, index: index});
-		console.log("model dependent " + this[name] + " index " + index);
-	    } else {
-		varEl = LivelyNS.create("variable", {name: name});
-		// console.log("trying to serialize " + this[name]);
-		// FIXME check if it's actually serializable
-		varEl.appendChild(NodeFactory.createCDATA(JSON.serialize(this[name])));
-	    }
-	    element.appendChild(varEl);
-	    element.appendChild(NodeFactory.createNL());
-	}
-	    
-        console.log("produced markup " + element);
-        return element;
     }
 });
 
@@ -6342,6 +6395,11 @@ Morph.subclass("PasteUpMorph", {
     }
     
 });
+
+
+namespace('lk::text');
+
+using(lk.text).run(function(text) {
 
 /**
  * @class WorldMorph
@@ -6975,6 +7033,9 @@ Object.extend(WorldMorph, {
 
     
 });
+
+}); // using(lk.text)
+
 
 /**
  * @class HandMorph
@@ -7671,7 +7732,7 @@ ExternalLinkMorph.addMethods({
     
 });
 
-}); // using lk.text
+
 
 // Some SVG/DOM bindings 
 
@@ -7766,3 +7827,4 @@ ClipboardHack = {
 }
 
 console.log('loaded Core.js');
+

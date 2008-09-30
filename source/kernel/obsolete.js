@@ -1073,3 +1073,46 @@ Morph.addMethods({
 	} // else don't do anything
     }
 });
+
+
+
+ SyntheticModel.addMethods({
+    toMarkup: function(index) {
+	var element = LivelyNS.create("model");
+	var vars = this.variables();
+	for (var i = 0; i < this.dependents.length; i++) { // write dependents first so that model variables can refer to it
+	    var dependent = this.dependents[i];
+	    console.log("model dependent " + dependent);
+	    if (dependent instanceof Morph) {
+		element.appendChild(LivelyNS.create("dependent", {ref: dependent.id()}));
+	    } else if (dependent instanceof View) { // stateless view, will be recreated from type
+		var viewElement = 
+		    element.appendChild(LivelyNS.create("dependentView", { type: dependent.getType()}));
+		var plug = dependent.modelPlug && dependent.modelPlug.serialize(index || 0);
+		if (plug) viewElement.appendChild(plug);
+	    } else {
+		console.log("cant handle dependent " + dependent);
+	    }
+	    element.appendChild(NodeFactory.createNL());
+        }
+	for (var i = 0; i < vars.length; i++) {
+	    var name = vars[i];
+	    var index = this.dependents.indexOf(this[name]);
+	    var varEl;
+	    if (index >= 0) {
+		varEl = LivelyNS.create("dependentVariable", {name: name, index: index});
+		console.log("model dependent " + this[name] + " index " + index);
+	    } else {
+		varEl = LivelyNS.create("variable", {name: name});
+		// console.log("trying to serialize " + this[name]);
+		// FIXME check if it's actually serializable
+		varEl.appendChild(NodeFactory.createCDATA(JSON.serialize(this[name])));
+	    }
+	    element.appendChild(varEl);
+	    element.appendChild(NodeFactory.createNL());
+	}
+	    
+        console.log("produced markup " + element);
+        return element;
+    }
+ });
