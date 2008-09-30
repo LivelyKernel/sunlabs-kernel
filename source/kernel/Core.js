@@ -1095,15 +1095,11 @@ DOMRecord.subclass('DOMNodeRecord', {
 
     deserialize: function(importer, rawNode) {
 	this.rawNode = rawNode;
-	for (var child = rawNode.firstChild; child != null; child = child.nextSibling) {
-	    if (child.localName == "field") {
-		this[name + "$Element"] = child.getAttributeNS(null, "name");
-	    }	
-	}
-    },
-
-
-
+	$A(rawNode.getElementsByTagName("field")).forEach(function(child) {
+	    this[name + "$Element"] = child.getAttributeNS(null, "name");
+	}, this);
+    }
+    
 });
 
 
@@ -3919,18 +3915,18 @@ Copier.subclass('Importer', {
 
     
     canvasContent: function(doc) {
-	var canvas = this.canvas(doc);
-	var elements = [];
+        var canvas = this.canvas(doc);
+        var elements = [];
 	for (var node = canvas.firstChild; node != null; node = node.nextSibling) {
-	    switch (node.localName) {
-	    case "g":
-		elements.push(node);
-		break;
-	    }
+           switch (node.localName) {
+           case "g":
+               elements.push(node);
+               break;
+           }
 	}
 	return elements;
     },
-
+    
     clearCanvas: function(doc) {
 	var canvas = this.canvas(doc);
 	var node = canvas.firstChild;
@@ -4474,36 +4470,32 @@ Morph.addMethods({
 		    if (constructor)
 		        var widget = new (Global[type])(importer, node);
 		    else
-		        console.log("Error in deserializing " + type + ", no class")
-		    for (var child = node.firstChild; child != null; child = child.nextSibling) {
-			// here we should recurse into restoreFromSubnodes() but "widget" can't do it yet
-			if (child.localName == "record") {
-			    var spec = JSON.unserialize(child.getElementsByTagName("definition")[0].textContent);
-			    var Rec = DOMRecord.prototype.create(spec);
-			    var model = new Rec(importer, child);
-			    var id = child.getAttribute("id");
-			    if (id) importer.addMapping(id, model); 
-			    widget.actualModel = model;
-			    //widget.ownModel(model);
-			} else if (child.localName == "relay") {
-			    var spec = {};
-			    for (var elt = child.firstChild; elt != null; elt = elt.nextSibling) {
-				if (elt.localName == "binding") {
-				    var key = elt.getAttributeNS(null, "formal");
-				    var value = elt.getAttributeNS(null, "actual");
-				    spec[key] = value;
-				}
-			    }
-			    var name = LivelyNS.getAttribute(child, "name");
-			    if (name) {
-				// here widget instead of name is the only difference
-				var relay = widget[name] = Relay.newInstance(spec, null);
-				var ref = LivelyNS.getAttribute(child, "ref");
-				importer.addPatchSite(relay, "delegate", ref);
-			    }
-			    
-			} 
-		    }
+		        console.log("Error in deserializing " + type + ", no class");
+		    $A(node.getElementsByTagName("record")).forEach(function(child) {
+			var spec = JSON.unserialize(child.getElementsByTagName("definition")[0].textContent);
+			var Rec = DOMRecord.prototype.create(spec);
+			var model = new Rec(importer, child);
+			var id = child.getAttribute("id");
+			if (id) importer.addMapping(id, model); 
+			widget.actualModel = model;
+		    });
+		    
+		    $A(node.getElementsByTagName("relay")).forEach(function(child) {
+			var spec = {};
+			$A(child.getElementsByTagName("binding")).forEach(function(elt) {
+			    var key = elt.getAttributeNS(null, "formal");
+			    var value = elt.getAttributeNS(null, "actual");
+			    spec[key] = value;
+			});
+			
+			var name = LivelyNS.getAttribute(child, "name");
+			if (name) {
+			    // here widget instead of name is the only difference
+			    var relay = widget[name] = Relay.newInstance(spec, null);
+			    var ref = LivelyNS.getAttribute(child, "ref");
+			    importer.addPatchSite(relay, "delegate", ref);
+			}
+		    });
 		}
 		
 		break;
@@ -4513,27 +4505,23 @@ Morph.addMethods({
 		var name = LivelyNS.getAttribute(node, "name");
 		this[name] = [];
 		var index = 0;
-		for (var elt = node.firstChild; elt != null; elt = elt.nextSibling) {
-		    if (elt.localName == "item") {
-			var ref = LivelyNS.getAttribute(elt, "ref");
-			if (ref) {
-			    importer.addPatchSite(this, name, ref, index);
-			} else this[name].push(null);
-			index ++;
-		    }
-		}
+		$A(node.getElementsByTagName("item")).forEach(function(elt) {
+		    var ref = LivelyNS.getAttribute(elt, "ref");
+		    if (ref) {
+			importer.addPatchSite(this, name, ref, index);
+		    } else this[name].push(null);
+		    index ++;
+		}, this);
 		break;
 	    }
 
 	    case "relay": {
 		var spec = {};
-		for (var elt = node.firstChild; elt != null; elt = elt.nextSibling) {
-		    if (elt.localName == "binding") {
-			var key = elt.getAttributeNS(null, "formal");
-			var value = elt.getAttributeNS(null, "actual");
-			spec[key] = value;
-		    }
-		}
+		$A(node.getElementsByTagName("binding")).forEach(function(elt) {
+		    var key = elt.getAttributeNS(null, "formal");
+		    var value = elt.getAttributeNS(null, "actual");
+		    spec[key] = value;
+		});
 		var name = LivelyNS.getAttribute(node, "name");
 		if (name) {
 		    var relay = this[name] = Relay.newInstance(spec, null);
