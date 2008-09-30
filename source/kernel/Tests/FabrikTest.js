@@ -509,6 +509,25 @@ TestCase.subclass('ComponentTest', {
         this.assert(comp.getPinHandle("Test"));
     },
     
+    testRemovePin: function() {
+		var comp = this.component;
+		comp.addFieldAndPinHandle('Test');
+		comp.removePin('Test');
+        this.assert(!comp.getTest, 'accessors not removed');
+        this.assert(!comp.getPin('Test'), 'pin still there');
+    },
+    
+    testRemovePinRemovesConnectors: function() {
+		var comp = this.component;
+		comp.addPin('Test');
+		var otherComp = new Component();
+		otherComp.addPin('Test2');
+        comp.getPin('Test').connectTo(otherComp.getPin('Test2'));
+		
+        comp.removePin('Test');
+        this.assertEqual(otherComp.getPin('Test2').connectors.length, 0, 'connection not removed');
+    },
+    
     testPinHandleAndHisMorph: function() {
         var comp = this.component;
         comp.addFieldAndPinHandle('Test');;
@@ -1429,7 +1448,7 @@ TestCase.subclass('AFabrikXMLConverterTest', {
         this.xml = stringToXML(this.xmlString),
         this.xmlForcastInfo = this.xml.firstChild.firstChild.firstChild,
         this.xmlLeaf = this.xmlForcastInfo.firstChild, // Berlin
-        this.converter = new FabrikXMLConverter();
+        this.converter = FabrikConverter;
     },
     
     testConvertLeaf: function() {
@@ -1469,7 +1488,7 @@ TestCase.subclass('AFabrikXMLConverterTest', {
     
     testCompatibilityOfConverterWhenWritingXML: function() {
         var json = Converter.toJSONAttribute(this.xmlLeaf);
-        this.assertEqual(JSON.unserialize(unescape(json)), 'XML:' + xmlToString(this.xmlLeaf), 'Converter did not convert xml to string');
+        this.assertEqual(JSON.unserialize(unescape(json)), JSON.serialize({XML: xmlToString(this.xmlLeaf)}), 'Converter did not convert xml to string');
     },
     
     testCompatibilityOfConverterWhenWritingStringXMLArray: function() {

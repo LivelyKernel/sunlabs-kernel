@@ -1060,7 +1060,7 @@ DOMRecord.subclass('DOMNodeRecord', {
 	    if (value) {
 		var family = LivelyNS.getAttribute(fieldElement, "family");
 		if (family) {
-		    if (!Global[family]) throw new Error('uknown type ' + family);
+		    if (!Global[family]) throw new Error('unknown type ' + family);
 		    return Global[family].fromJSON(JSON.unserialize(value));
 		} else return JSON.unserialize(value);
 	    }

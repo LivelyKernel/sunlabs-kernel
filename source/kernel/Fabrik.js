@@ -44,6 +44,11 @@ Fabrik = {
         comp.panel.setPosition(otherComp.panel.getPosition().addPt(relPos));
     },
 
+    setPositionRel: function(relPos, morph) {
+        console.assert(morph.owner, 'no owner');
+        morph.setPosition(relPos.scaleByPt(morph.owner.getExtent()));
+    },
+    
     addTextComponent: function(toComponent) {
          var c = new TextComponent();
          toComponent.plugin(c);
@@ -264,8 +269,12 @@ Fabrik = {
         if (!loc) loc = pt(100, 100);
         
         var base = this.openFabrikComponent(world, loc, pt(730, 170), 'Weather Example');
+        var urlPin = base.addPin('URL'); this.setPositionRel(pt(0, 0.4), urlPin.morph);
+        var zipPin = base.addPin('ZIP'); this.setPositionRel(pt(0, 0.6), zipPin.morph);
+        var xmlListPin = base.addPin('XMLList'); this.setPositionRel(pt(0.8, 0.9), xmlListPin.morph);
         
         var combineURLAndZIP = this.addFunctionComponent(base);
+        combineURLAndZIP.removePin('Input');
         combineURLAndZIP.addInputFieldAndPin('Zip');
         combineURLAndZIP.addInputFieldAndPin('Url');
         combineURLAndZIP.setFunctionBody('url + zip');
@@ -274,7 +283,7 @@ Fabrik = {
         combineURLAndZIP.getPin('Result').connectTo(req.getPin('URL'));
         
         var xmlToStrArr = this.addFunctionComponent(base);
-        xmlToStrArr.setFunctionBody('new FabrikXMLConverter().xmlToStringArray(input)');
+        xmlToStrArr.setFunctionBody('FabrikConverter.xmlToStringArray(input)');
 
         base.morph.automaticLayout();
 
@@ -828,6 +837,11 @@ Widget.subclass('PinHandle', {
         // without mixing model and view logic?
         this.connectTo(fakePin);
         return fakePin;
+    },
+    
+    remove: function() {
+        this.connectors.each(function(ea) { ea.remove() });
+        if (this.morph) this.morph.remove();
     }
     
 });
@@ -1675,6 +1689,13 @@ Widget.subclass('Component', {
         return pinHandle;
     },
     
+    removePin: function(name) {
+        this.getPin(name).remove();
+        this.pinHandles = this.pinHandles.without(this.getPin(name));
+        delete this['get' + name];
+        delete this['set' + name];
+    },
+    
     // deprecated, use getPin!
     getPinHandle: function(pinName) {
         return this.getPin(pinName);
@@ -2337,6 +2358,7 @@ Component.subclass('WebRequestComponent', {
     },
     
     makeRequest: function() {
+        if (!this.getURL()) return;
         console.log('making reqest to: ' + this.getURL());
         // var x = new Resource(this.formalModel.newRelay({URL: '-URL', ContentText: '+ResponseText', ContentDocument: '+ResponseXML'}));
         
@@ -2404,7 +2426,7 @@ Component.subclass('TextListComponent', {
 Widget.subclass('ComponentBox', {
 
     viewTitle: "Fabrik Component Box",
-    viewExtent: pt(540,300),
+    viewExtent: pt(600,300),
     
     initialize: function($super) { 
         $super();
@@ -2597,7 +2619,7 @@ Object.subclass('HandPositionObserver', {
 });
 
 /* Very simple XML converter */
-Object.subclass('FabrikXMLConverter', {
+Global.FabrikConverter = {
    
     basicToJs: function(xml) {
         var obj = {};
@@ -2607,10 +2629,8 @@ Object.subclass('FabrikXMLConverter', {
     },
     
     xmlToJs: function(xml) {
-        if (!xml.hasChildNodes()) return this.basicToJs(xml);
-        var baseObj = this.basicToJs(xml);
-        var childObjs = $A(xml.childNodes).collect(function(ea) { return this.xmlToJs(ea) }.bind(this));
-        
+        var baseObj = FabrikConverter.basicToJs(xml);
+        var childObjs = $A(xml.childNodes).collect(function(ea) { return FabrikConverter.xmlToJs(ea) });
         function firstKey(obj) { return Object.keys(obj).first() };
         childObjs.each(function(ea) { baseObj[firstKey(baseObj)][firstKey(ea)] = ea[firstKey(ea)] });
         return baseObj;
@@ -2621,17 +2641,17 @@ Object.subclass('FabrikXMLConverter', {
         var objCreator = function(string, xml) { return {string: string, xml: xml} };
         
         if (!xml || xml instanceof DocumentType) return [];
-        if (!xml.parentNode) return this.xmlToStringArray(xml.firstChild); // omit root
+        if (!xml.parentNode) return FabrikConverter.xmlToStringArray(xml.firstChild); // omit root
         if (!xml.hasChildNodes()) return [objCreator(xmlToString(xml), xml)];
         var list = $A(xml.childNodes).inject([], function(all, ea) {
-            return all.concat(this.xmlToStringArray(ea)) }, this);
+            return all.concat(FabrikConverter.xmlToStringArray(ea)) });
         // get just the tag opener and closer for the string
         var ownXMLStrings = /(<.*?>).*(<.*?>)/.exec(xmlToString(xml));
         list.unshift(objCreator(ownXMLStrings[1], xml));
         list.push(objCreator(ownXMLStrings[2], xml));
         return list;
     }
-});
+};
 
 /*
  * Extending ClockMorph for PluggableComponent
