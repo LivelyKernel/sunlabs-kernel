@@ -296,6 +296,7 @@ JSON = (function () {
                     return result;
                 }
             }
+            debugger;
             throw new SyntaxError('parseJSON');
         }
     };

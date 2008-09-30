@@ -995,6 +995,17 @@ Object.subclass('Record', {
 	klass.addMethods(Record.extendRecordClass(bodySpec));
 	klass.prototype.definition = bodySpec;
 	return klass;
+    },
+    
+    // needed for adding fields for fabric
+    addField: function(fieldName, coercionSpec, forceSet) {
+        var spec = {}; spec[fieldName] = coercionSpec || {};
+        this.constructor.addMethods(new Record.extendRecordClass(spec));
+        this.definition[fieldName]= spec[fieldName];
+        if (!forceSet) return;
+        this['set' + fieldName] = this['set' + fieldName].wrap(function(proceed, value, optSource, force) {
+            proceed(value, optSource, true);
+        })
     }
     
 });
@@ -1018,16 +1029,12 @@ Record.subclass('DOMRecord', {
 	if (result === null) return undefined;
 	else if (result === "") return null;
 	if (result.startsWith("json:")) return Converter.fromJSONAttribute(result.substring("json:".length));
-	if (result.startsWith("XML:")) return Converter.fromXMLString(result.substring("XML:".length));
 	else return result;
     },
     
     setRecordField: function(name, value) {
 	if (value === undefined) {
 	    throw new Error("use removeRecordField to remove " + name);
-	}
-	if (value && Converter.needsXMLStringification(value)) {
-	    value = "XML:" + Converter.toXMLString(value);
 	}
 	if (value && Converter.needsJSONEncoding(value)) {
 	    value = "json:" + Converter.toJSONAttribute(value);
@@ -1039,17 +1046,6 @@ Record.subclass('DOMRecord', {
     
     removeRecordField: function(name) {
 	return this.rawNode.removeAttributeNS(null, name);
-    },
-    
-    // needed for dynamic field adding in fabric
-    addField: function(fieldName, coercionSpec, forceSet) {
-        var spec = {}; spec[fieldName] = coercionSpec || {};
-        this.constructor.addMethods(new Record.extendRecordClass(spec));
-        this.definition[fieldName]= spec[fieldName];
-        if (!forceSet) return;
-        this['set' + fieldName] = this['set' + fieldName].wrap(function(proceed, value, optSource, force) {
-            proceed(value, optSource, true);
-        })
     }
 
 });
@@ -1565,29 +1561,31 @@ var Converter = {
         return Rectangle.inset(t, l, b, r);
     },
 
-    wrapperFilter: function(baseObj, key) {
+    wrapperAndDocumentEncodeFilter: function(baseObj, key) {
 	var value = baseObj[key];
-	return value instanceof Wrapper ? value.uri() : value;
+	if (value instanceof Wrapper) return value.uri();
+	if (value instanceof Document || value instanceof Element || value instanceof DocumentType)
+        return JSON.serialize({XML: new XMLSerializer().serializeToString(value)});
+	return value;
     },
 
     toJSONAttribute: function(obj) {
-	return obj ? escape(JSON.serialize(obj, Converter.wrapperFilter)) : "";
+	return obj ? escape(JSON.serialize(obj, Converter.wrapperAndDocumentEncodeFilter)) : "";
+    },
+
+    documentDecodeFilter: function(baseObj, key) {
+	var value = baseObj[key];
+	if (!value || !Object.isString(value) || !value.include('XML')) return value;
+	var unserialized = JSON.unserialize(value);
+	if (!unserialized.XML) return value;
+    // var xmlString = value.substring("XML:".length);
+	// FIXME if former XML was an Element, it has now a new parentNode, seperate in Elements/Documents?
+    // debugger;
+	return new DOMParser().parseFromString(unserialized.XML, "text/xml");
     },
 
     fromJSONAttribute: function(str) {
-	return str ?  JSON.unserialize(unescape(str)) : null;
-    },
-
-    toXMLString: function(value) {
-        return new XMLSerializer().serializeToString(value);
-    },
-
-    fromXMLString: function(string) {
-        return new DOMParser().parseFromString(string, "text/xml");    
-    },
-    
-    needsXMLStringification: function(value) {
-        return value instanceof Document;
+	return str ?  JSON.unserialize(unescape(str), Converter.documentDecodeFilter) : null;
     },
     
     needsJSONEncoding: function(value) {
@@ -7768,4 +7766,3 @@ ClipboardHack = {
 }
 
 console.log('loaded Core.js');
-

@@ -1260,7 +1260,7 @@ TextListMorph.subclass("ListMorph", {
     generateListItem: function(value, rect) {
         if(this.itemPrinter)
             value = this.itemPrinter(value);
-        return new TextMorph(rect, value.toString()).beListItem()
+        return new TextMorph(rect, value.string /*fix for Fabrik XMLStringArray*/ || value.toString()).beListItem()
     },
 
     generateSubmorphs: function(itemList) {

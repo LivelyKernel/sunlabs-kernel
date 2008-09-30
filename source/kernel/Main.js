@@ -246,6 +246,8 @@ function populateWorldWithExamples(world) {
         require('Fabrik.js').toRun(function() { Fabrik.openFabrikBrowserExample() });
     if (Config.showFabrikWebRequestExample)
         require('Fabrik.js').toRun(function() { Fabrik.openFabrikWebRequestExample() });
+    if (Config.showFabrikWeatherWidgetExample)
+        require('Fabrik.js').toRun(function() { Fabrik.openFabrikWeatherWidgetExample() });
 
     // Open OmetaWorkspace
     //openOmetaWorkspace();

@@ -1,4 +1,5 @@
-module('FabrikTest.js').requires('Fabrik.js', 'Helper.js').toRun(function(ownModule) {
+// this seems to cause a bug with require...
+// module('FabrikTest.js').requires('Fabrik.js', 'Helper.js').toRun(function(ownModule) {
 
 TestCase.subclass('FabrikTestCase', {
     
@@ -1272,7 +1273,7 @@ TestCase.subclass('HandPositionObserverTest', {
     
 });
 
-TestCase.subclass('TextListComponentTest', {
+TestCase.subclass('ATextListComponentTest', {
 
     setUp: function() {
         this.textList = new TextListComponent();
@@ -1297,7 +1298,15 @@ TestCase.subclass('TextListComponentTest', {
     testSetListObjects: function() {
         this.textList.setList([Color.blue]);
         this.assertEqual(this.textList.getList().length, 1);
-    }
+    },
+    
+    testXMLStringArray: function() {
+        var xml = stringToXML('<forecast_information>' + '<city data="Berlin, Berlin"/>' +
+                            '<postal_code data="12685"/>' + '</forecast_information>');
+        var list = new FabrikXMLConverter().xmlToStringArray(xml);
+        this.textList.setList(list);
+        console.log('THE LIST::::    ' + this.textList.getList());
+    },
 });
 
 
@@ -1456,9 +1465,41 @@ TestCase.subclass('AFabrikXMLConverterTest', {
                         {string: '<postal_code data="12685"/>', xml: this.xmlForcastInfo.childNodes[1]},
                         {string: '</forecast_information>', xml: this.xmlForcastInfo}]        
         this.assertEqualState(expected, result, 'error');
+    },
+    
+    testCompatibilityOfConverterWhenWritingXML: function() {
+        var json = Converter.toJSONAttribute(this.xmlLeaf);
+        this.assertEqual(JSON.unserialize(unescape(json)), 'XML:' + xmlToString(this.xmlLeaf), 'Converter did not convert xml to string');
+    },
+    
+    testCompatibilityOfConverterWhenWritingStringXMLArray: function() {
+        var json = Converter.toJSONAttribute(this.converter.xmlToStringArray(this.xmlForcastInfo));
+        console.log('Result: -------- ' + unescape(json));
+        // this.assertEqual(unescape(json), xmlToString(this.xmlLeaf), 'Converter did not convert xml to string');
+    },
+    
+    testCompatibilityOfConverterWhenUnserializingXML: function() {
+        var json = Converter.toJSONAttribute(this.xmlForcastInfo);
+
+        var result = Converter.fromJSONAttribute(json);
+        this.assert(result.isEqualNode, 'no xml');
+        // Why does this not work...?
+        this.assert(result.firstChild.isEqualNode(this.xmlForcastInfo), 'wrong nodes');
+        // this.assertEqual(unescape(json), xmlToString(this.xmlLeaf), 'Converter did not convert xml to string');
+    },
+    
+    testStringArrayWithDeserializedXML: function() {
+        var xml = stringToXML('<double xmlns="http://www.webserviceX.NET/">0.6923</double>');
+        var model = Record.newNodeInstance({});
+        model.addField('Test');
+        model.setTest(xml);
+        var deserXML = model.getTest();
+        // debugger;
+        var result = this.converter.xmlToStringArray(deserXML);
+        result.toString();
     }
 });
 
 console.log("Loaded FabrikTest.js");
 
-}); // end of require
+// }); // end of require

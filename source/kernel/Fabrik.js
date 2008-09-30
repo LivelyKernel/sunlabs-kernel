@@ -141,6 +141,7 @@ Fabrik = {
         world.addMorph(m1);
         world.addMorph(m2);
 
+        // FIXME Why isnt this handled at a central point?????
         c.formalModel = Record.newNodeInstance({});
         c.formalModel.addField("StartHandle");
         c.formalModel.addField("EndHandle");
@@ -244,19 +245,40 @@ Fabrik = {
     },
 
     openFabrikWebRequestExample: function(world, loc) {
-            if (!loc) loc = pt(100, 100);
-            var f = this.openFabrikComponent(world, loc, pt(730, 170), 'WebRequest Example');
+        if (!loc) loc = pt(100, 100);
+        var f = this.openFabrikComponent(world, loc, pt(730, 170), 'WebRequest Example');
 
-            var urlHolder = this.addTextComponent(f);
-            urlHolder.setText("http://www.webservicex.net/CurrencyConvertor.asmx/ConversionRate?FromCurrency=USD&ToCurrency=EUR");
-            
-            var req = this.addWebRequestComponent(f);
-            
-            var result = this.addTextComponent(f);
-            
-            f.morph.automaticLayout();
-            
-            return f;
+        var urlHolder = this.addTextComponent(f);
+        urlHolder.setText("http://www.webservicex.net/CurrencyConvertor.asmx/ConversionRate?FromCurrency=USD&ToCurrency=EUR");
+
+        var req = this.addWebRequestComponent(f);
+
+        var result = this.addTextComponent(f);
+
+        f.morph.automaticLayout();
+
+        return f;
+    },
+
+    openFabrikWeatherWidgetExample: function(world, loc) {
+        if (!loc) loc = pt(100, 100);
+        
+        var base = this.openFabrikComponent(world, loc, pt(730, 170), 'Weather Example');
+        
+        var combineURLAndZIP = this.addFunctionComponent(base);
+        combineURLAndZIP.addInputFieldAndPin('Zip');
+        combineURLAndZIP.addInputFieldAndPin('Url');
+        combineURLAndZIP.setFunctionBody('url + zip');
+
+        var req = this.addWebRequestComponent(base);
+        combineURLAndZIP.getPin('Result').connectTo(req.getPin('URL'));
+        
+        var xmlToStrArr = this.addFunctionComponent(base);
+        xmlToStrArr.setFunctionBody('new FabrikXMLConverter().xmlToStringArray(input)');
+
+        base.morph.automaticLayout();
+
+        return base;
     },
     
     openCurrencyConverterExample: function(world, loc) {
@@ -630,6 +652,8 @@ Widget.subclass('PinHandle', {
 
     initialize: function($super, component, pinName) {
         $super();
+        
+        // Why isnt this handled at a central point?????
         this.formalModel = Record.newNodeInstance({Name: pinName, Type: "regular"});
         //this.formalModel = Record.newPlainInstance({Name: pinName, Type: "regular"});
         //this.name = pinName;
@@ -845,6 +869,7 @@ Morph.subclass('ArrowHeadMorph', {
 // depricated
 NewComponentModel = {
     instantiateNewClass: function() {
+        // FIXME Why isnt this handled at a central point?????
         return Record.newNodeInstance({});
     }
 }
@@ -1539,10 +1564,12 @@ Widget.subclass('Component', {
     
     initialize: function($super) {
         $super();
+        
+// FIXME Why isnt this handled at a central point?????
         this.formalModel = Record.newNodeInstance({Name: "NoName"});
                 
         //this.addField("Name"); // just to have something for testing....
-        this.formalModel.setName("ThisIsNoComponent");
+        this.formalModel.setName("Abstract Component");
               
         this.rawNode.appendChild(this.getModel().rawNode);
         
@@ -2267,6 +2294,7 @@ Component.subclass('FunctionComponent', {
             this.setResult(this.pvtGetFunction().apply(this, this.parameterValues()));
             console.log("Result of function call: " + this.getResult());
         } catch(e) {
+            debugger;
             console.log("FunctionComponentModel: error " + e + " when executing body" + this.getFunctionBody());
             throw e;
         }
@@ -2282,7 +2310,7 @@ Component.subclass('WebRequestComponent', {
         this.addFieldAndPinHandle("ResponseText");
         this.addFieldAndPinHandle("ResponseXML");
         
-        this.formalModel.addObserver({onURLUpdate: function() { this.makeRequest() }.bind(this)});
+        this.formalModel.addObserver({onURLUpdate: function(url) { this.makeRequest() }.bind(this)});
         this.formalModel.addObserver({onResponseTextUpdate: function() { console.log('getting response...') }});
     },
     
@@ -2314,11 +2342,34 @@ Component.subclass('WebRequestComponent', {
         
         var x = new Resource(Record.newPlainInstance({URL: this.getURL(), ContentText: '', ContentDocument: null}));
         x.formalModel.addObserver({onContentTextUpdate: function(response) { this.setResponseText(response) }.bind(this)});
-        x.formalModel.addObserver({onContentDocumentUpdate: function(response) { 
-                debugger;
-                this.setResponseXML(response) }.bind(this)});
-        
+        x.formalModel.addObserver({onContentDocumentUpdate: function(response) { this.setResponseXML(response) }.bind(this)});
         x.fetch();
+    }
+});
+
+Component.subclass('ImageComponent', {
+    
+    initialize: function ($super) {
+        $super();
+        this.addFieldAndPinHandle("URL");
+    },
+    
+    buildView: function($super, optExtent) {
+        $super(optExtent);
+
+        var url = this.getURL() || 'http://livelykernel.sunlabs.com/favicon.ico';
+        this.morph = new ImageMorph(this.panel.getBoundsAndShrinkIfNecessary(80), url);
+        this.morph.adoptToBoundsChange = function(ownerPositionDelta, ownerExtentDelta, scaleDelta) {
+            this.morph.setExtent(this.morph.getExtent().addPt(ownerExtentDelta));
+            this.morph.image.scaleBy(Math.max(scaleDelta.x, scaleDelta.y) || 1);
+        }.bind(this);
+        this.morph.openForDragAndDrop = false;
+        this.morph.okToBeGrabbedBy = function() { return this.panel }.bind(this);
+        this.formalModel.addObserver(this.morph, {URL: '!URL'});
+        this.panel.addMorph(this.morph, 'image');
+        
+        // this.setupHandles();
+        return this.panel;
     }
 });
 
@@ -2326,7 +2377,9 @@ asStringArray = function(input) {
     var list = $A(input);
     if (list.length == 0) 
         return ["------"];  // awful hack around the bug that TextLists break when empty
-    return list.collect(function(ea){return ea.toString()});    
+    if (list.length == 1 && !list.first()) 
+        return ['undefined!'];
+    return list.collect(function(ea){ return ea.string || ea.toString() });    
 };
 
 Component.subclass('TextListComponent', {
@@ -2355,11 +2408,12 @@ Widget.subclass('ComponentBox', {
     
     initialize: function($super) { 
         $super();
+        // FIXME Why isnt this handled at a central point?????
         this.model = Record.newNodeInstance({});
     },
     
     addMorphOfComponent: function(comp, createFunc, optExtent) {
-        var m = comp.buildView();
+        var m = comp.buildView(optExtent);
         
         m.setExtent(optExtent || pt(120, 100));
         
@@ -2409,6 +2463,9 @@ Widget.subclass('ComponentBox', {
         this.addMorphOfComponent(new PluggableComponent(), defaultCreateFunc.curry(PluggableComponent));
         this.addMorphOfComponent(new TextListComponent(), defaultCreateFunc.curry(TextListComponent));
         this.addMorphOfComponent(new WebRequestComponent(), defaultCreateFunc.curry(WebRequestComponent, pt(220,50)), pt(220,50));
+        this.addMorphOfComponent(new ImageComponent(), defaultCreateFunc.curry(ImageComponent, pt(50,50)), pt(50,50));
+        
+        
                 
         new FlowLayout(this.panel).layoutSubmorphsInMorph();
         panel.openDnD();
@@ -2539,7 +2596,7 @@ Object.subclass('HandPositionObserver', {
     },
 });
 
-/* Very simple XML to JSON converter */
+/* Very simple XML converter */
 Object.subclass('FabrikXMLConverter', {
    
     basicToJs: function(xml) {
@@ -2550,26 +2607,25 @@ Object.subclass('FabrikXMLConverter', {
     },
     
     xmlToJs: function(xml) {
-        if (!xml.hasChildNodes())
-            return this.basicToJs(xml);
+        if (!xml.hasChildNodes()) return this.basicToJs(xml);
         var baseObj = this.basicToJs(xml);
         var childObjs = $A(xml.childNodes).collect(function(ea) { return this.xmlToJs(ea) }.bind(this));
         
         function firstKey(obj) { return Object.keys(obj).first() };
         childObjs.each(function(ea) { baseObj[firstKey(baseObj)][firstKey(ea)] = ea[firstKey(ea)] });
         return baseObj;
-        
     },
     
+    // flattens XML and creates string representations for each node
     xmlToStringArray: function(xml) {
-        var objCreator = function(string, xml) { return {string: string, xml: xml, toString: function() { return string }} };
-        if (!xml.hasChildNodes())
-            return [objCreator(xmlToString(xml), xml)];
-        if (!xml.parentNode)
-            return xmlToStringArray(xml.firstChild); // omit root
+        var objCreator = function(string, xml) { return {string: string, xml: xml} };
+        
+        if (!xml || xml instanceof DocumentType) return [];
+        if (!xml.parentNode) return this.xmlToStringArray(xml.firstChild); // omit root
+        if (!xml.hasChildNodes()) return [objCreator(xmlToString(xml), xml)];
         var list = $A(xml.childNodes).inject([], function(all, ea) {
-            return all.concat(this.xmlToStringArray(ea)) }.bind(this));
-        // very dirty, get the tag opener and closer
+            return all.concat(this.xmlToStringArray(ea)) }, this);
+        // get just the tag opener and closer for the string
         var ownXMLStrings = /(<.*?>).*(<.*?>)/.exec(xmlToString(xml));
         list.unshift(objCreator(ownXMLStrings[1], xml));
         list.push(objCreator(ownXMLStrings[2], xml));
