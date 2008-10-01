@@ -250,7 +250,7 @@ Fabrik = {
     },
 
     openFabrikWebRequestExample: function(world, loc) {
-        if (!loc) loc = pt(100, 100);
+        if (!loc) loc = pt(120, 110);
         var f = this.openFabrikComponent(world, loc, pt(730, 170), 'WebRequest Example');
 
         var urlHolder = this.addTextComponent(f);
@@ -2364,7 +2364,9 @@ Component.subclass('WebRequestComponent', {
         
         var x = new Resource(Record.newPlainInstance({URL: this.getURL(), ContentText: '', ContentDocument: null}));
         x.formalModel.addObserver({onContentTextUpdate: function(response) { this.setResponseText(response) }.bind(this)});
-        x.formalModel.addObserver({onContentDocumentUpdate: function(response) { this.setResponseXML(response) }.bind(this)});
+        x.formalModel.addObserver({onContentDocumentUpdate: function(response) {
+                this.setResponseXML(document.importNode(response.documentElement, true));
+        }.bind(this)});
         x.fetch();
     }
 });

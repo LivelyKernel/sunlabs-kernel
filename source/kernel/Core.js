@@ -1056,13 +1056,19 @@ DOMRecord.subclass('DOMNodeRecord', {
     getRecordField: function(name) { 
 	var fieldElement = this[name + "$Element"];
 	if (fieldElement) {
+	    if (LivelyNS.getAttribute(fieldElement, "isNode")) return fieldElement.firstChild; // Replace with DocumentFragment
 	    var value = fieldElement.textContent;
 	    if (value) {
 		var family = LivelyNS.getAttribute(fieldElement, "family");
 		if (family) {
 		    if (!Global[family]) throw new Error('unknown type ' + family);
-		    return Global[family].fromJSON(JSON.unserialize(value));
-		} else return JSON.unserialize(value);
+		    return Global[family].fromJSON(JSON.unserialize(value, Converter.nodeDecodeFilter));
+    		} else {
+    		    if (value == 'NaN') return NaN;
+    		    if (value == 'undefined') return undefined;
+    		    if (value == 'null') return null;
+    		    return JSON.unserialize(value);
+                }
 	    }
 	} else {
 	    console.log('not found ' + name);
@@ -1614,7 +1620,7 @@ var Converter = {
         return Rectangle.inset(t, l, b, r);
     },
 
-    wrapperAndDocumentEncodeFilter: function(baseObj, key) {
+    wrapperAndNodeEncodeFilter: function(baseObj, key) {
 	var value = baseObj[key];
 	if (value instanceof Wrapper) return value.uri();
 	if (value instanceof Document || value instanceof Element || value instanceof DocumentType)
@@ -1622,11 +1628,19 @@ var Converter = {
 	return value;
     },
 
+    nodeEncodeFilter: function(baseObj, key) {
+        var value = baseObj[key];
+        if (!value.nodeType) return value;
+        if (value.nodeType !== document.DOCUMENT_NODE && value.nodeType !== document.DOCUMENT_TYPE_NODE)
+            return JSON.serialize({XML: new XMLSerializer().serializeToString(value)});
+        throw new Error('Cannot store Document/DocumentType'); // to be removed
+    },
+    
     toJSONAttribute: function(obj) {
-	return obj ? escape(JSON.serialize(obj, Converter.wrapperAndDocumentEncodeFilter)) : "";
+	return obj ? escape(JSON.serialize(obj, Converter.wrapperAndNodeEncodeFilter)) : "";
     },
 
-    documentDecodeFilter: function(baseObj, key) {
+    nodeDecodeFilter: function(baseObj, key) {
 	var value = baseObj[key];
 	if (!value || !Object.isString(value) || !value.include('XML')) return value;
 	var unserialized = JSON.unserialize(value);
@@ -1634,11 +1648,12 @@ var Converter = {
     // var xmlString = value.substring("XML:".length);
 	// FIXME if former XML was an Element, it has now a new parentNode, seperate in Elements/Documents?
     // debugger;
-	return new DOMParser().parseFromString(unserialized.XML, "text/xml");
+	var node = new DOMParser().parseFromString(unserialized.XML, "text/xml");
+        return document.importNode(node.documentElement, true);
     },
 
     fromJSONAttribute: function(str) {
-	return str ?  JSON.unserialize(unescape(str), Converter.documentDecodeFilter) : null;
+	return str ?  JSON.unserialize(unescape(str), Converter.nodeDecodeFilter) : null;
     },
     
     needsJSONEncoding: function(value) {
@@ -1662,18 +1677,31 @@ var Converter = {
 		encoding = NodeFactory.createText(String(propValue));
 		break;
 	    default:
-		encoding = NodeFactory.createCDATA(JSON.serialize(propValue));
+		encoding = NodeFactory.createCDATA(JSON.serialize(propValue, Converter.nodeEncodeFilter));
 	    }
 	    desc.appendChild(encoding);
 	} else if (propValue instanceof Color) { // FIXME all the other special cases?
 	    desc.setAttributeNS(null, "family", "Color");
 	    desc.appendChild(NodeFactory.createCDATA(JSON.serialize(propValue)));
-	} else if (propValue instanceof Point) { // FIXME all the other special cases?
+	} else if (propValue instanceof Point) {
 	    desc.setAttributeNS(null, "family", "Point");
 	    desc.appendChild(NodeFactory.createCDATA(JSON.serialize(propValue)));
 	} else if (propValue instanceof Rectangle) {
 	    desc.setAttributeNS(null, "family", "Rectangle");
 	    desc.appendChild(NodeFactory.createCDATA(JSON.serialize(propValue)));
+    } else if (propValue.nodeType === document.DOCUMENT_NODE && propValue.nodeType === document.DOCUMENT_TYPE_NODE) {
+                throw new Error('Cannot store Document/DocumentType'); // to be removed
+    } else if (propValue.nodeType) {
+        if (desc.getAttribute('name') == 'rawNode') { // FIXME remove me
+            /*debugger*/
+            /*desc.appendChild(NodeFactory.createCDATA(JSON.serialize(propValue, Converter.nodeEncodeFilter)));*/
+            return null
+        };
+        if (propValue.nodeName == "defs") { // FIXME remove me
+            return null
+        };
+        desc.setAttributeNS(null, "isNode", true); // Replace with DocumentFragment
+        desc.appendChild(propValue);
 	} else return null;
 	return desc;
     },
@@ -1907,6 +1935,7 @@ Object.subclass('Wrapper', {
     prepareForSerialization: function(extraNodes) {
 	for (var prop in this) {
 	    if (!this.hasOwnProperty(prop)) continue;
+            if (prop === 'rawNode') continue;
 	    var m = this[prop];
 	    if (m === this.constructor.prototype[prop])  // save space
 		continue;

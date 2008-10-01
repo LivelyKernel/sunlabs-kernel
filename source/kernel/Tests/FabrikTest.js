@@ -1322,7 +1322,7 @@ TestCase.subclass('ATextListComponentTest', {
     testXMLStringArray: function() {
         var xml = stringToXML('<forecast_information>' + '<city data="Berlin, Berlin"/>' +
                             '<postal_code data="12685"/>' + '</forecast_information>');
-        var list = new FabrikXMLConverter().xmlToStringArray(xml);
+        var list = FabrikConverter.xmlToStringArray(xml);
         this.textList.setList(list);
         console.log('THE LIST::::    ' + this.textList.getList());
     },
@@ -1396,7 +1396,23 @@ TestCase.subclass('ComponentSerializeTest', {
     
 });
 
-TestCase.subclass('AFabrikXMLConverterTest', {
+TestCase.subclass('ANodeRecordSerializationTest', {
+    documentation: 'The new NodeRecord seems to have bugs when serializing/deserializing. Especially \
+                    in combination with the new node serialization which is needed for Fabrik WebRequests',
+    
+    xtestSerializeButtonMorph: function() {
+        var x = new ButtonMorph(pt(200,100).extentAsRectangle());
+        WorldMorph.current().addMorph(x);
+        
+        btn1 = x; // Remove
+        btn2 = new ButtonMorph(new Rectangle(200,100,200,100));; // Remove
+        WorldMorph.current().addMorph(btn2);
+        
+        Exporter.shrinkWrapMorph(x);
+    },
+});
+
+TestCase.subclass('FabrikConverterTest', {
    
    xmlString:   '<?xml version="1.0"?>' +
     '<xml_api_reply version="1">' +
@@ -1499,23 +1515,18 @@ TestCase.subclass('AFabrikXMLConverterTest', {
     
     testCompatibilityOfConverterWhenUnserializingXML: function() {
         var json = Converter.toJSONAttribute(this.xmlForcastInfo);
-
         var result = Converter.fromJSONAttribute(json);
         this.assert(result.isEqualNode, 'no xml');
-        // Why does this not work...?
-        this.assert(result.firstChild.isEqualNode(this.xmlForcastInfo), 'wrong nodes');
-        // this.assertEqual(unescape(json), xmlToString(this.xmlLeaf), 'Converter did not convert xml to string');
+        this.assert(result.isEqualNode(this.xmlForcastInfo), 'wrong nodes');
     },
     
     testStringArrayWithDeserializedXML: function() {
         var xml = stringToXML('<double xmlns="http://www.webserviceX.NET/">0.6923</double>');
+        xml = document.importNode(xml.documentElement, true);
         var model = Record.newNodeInstance({});
         model.addField('Test');
         model.setTest(xml);
-        var deserXML = model.getTest();
-        // debugger;
-        var result = this.converter.xmlToStringArray(deserXML);
-        result.toString();
+        this.assert(model.getTest().isEqualNode(xml));
     }
 });
 
