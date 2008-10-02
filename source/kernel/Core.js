@@ -6386,7 +6386,7 @@ Morph.subclass("PasteUpMorph", {
             this.makeSelection(evt); 
             return true; 
         } else if (!evt.isCommandKey()) {
-            if (m == this.world()) { 
+            if (m === this.world()) { 
                 this.makeSelection(evt); 
                 return true; 
             } else if (m.handlesMouseDown(evt)) return false;
@@ -7174,7 +7174,7 @@ Morph.subclass("HandMorph", {
         default:
             console.log("unknown event type " + evt.type);
         }
-        // evt.stopPropagation();
+        evt.stopPropagation();
     }.logErrors('Event Handler'),
 
     armProfileFor: function(evtType) { 
