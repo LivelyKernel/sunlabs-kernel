@@ -1608,33 +1608,34 @@ Widget.subclass('Component', {
         // dam it only morphs are clever right now... so I have to be stupid!
         
         var records = this.rawNode.getElementsByTagName('record')
-        if(records.length > 0) {
-            this.formalModel = this.deserializeModelFromNode(importer, records[0]);
+        if (records.length > 0) {
+            // this.formalModel = this.deserializeModelFromNode(importer, records[0]);
+            this.formalModel = new DOMNodeRecord(importer, rawNode.getElementsByTagName('record')[0])
             this.formalModel.owner = this; // remember the component diretly in a non persisten way 
-        };
+        } else console.warn('No record for ' + this);
         
-        var widgets = [];        
-        $A(this.rawNode.childNodes).each(function(node) {
-            console.log(" node: "+ node.id)
-            if (node.localName == "widget") {
-                var type = Wrapper.prototype.getEncodedType(node);
-                console.log(" found widget node (" + node.id + ")")
-                if (node.wrapper) {
-                    widgets.push(node.wrapper)
-                } else if (type) {
-                    var constructor = Global[type];
-                    if (!constructor)
-                        console.log("ERROR: no constructor for " + type)
-                    else {
-                        var widget = new constructor(importer, node);
-                        widgets.push(widget);
-                    }
-                } else {
-                    console.log("no type found ")
-                } 
-            }
-        });
-        this.setupChildWidgets(widgets);
+        // var widgets = [];        
+        // $A(this.rawNode.childNodes).each(function(node) {
+        //     console.log(" node: "+ node.id)
+        //     if (node.localName == "widget") {
+        //         var type = Wrapper.prototype.getEncodedType(node);
+        //         console.log(" found widget node (" + node.id + ")")
+        //         if (node.wrapper) {
+        //             widgets.push(node.wrapper)
+        //         } else if (type) {
+        //             var constructor = Global[type];
+        //             if (!constructor)
+        //                 console.log("ERROR: no constructor for " + type)
+        //             else {
+        //                 var widget = new constructor(importer, node);
+        //                 widgets.push(widget);
+        //             }
+        //         } else {
+        //             console.log("no type found ")
+        //         } 
+        //     }
+        // });
+        // this.setupChildWidgets(widgets);
         this.initializeTransientState();
     },
     

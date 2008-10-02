@@ -655,6 +655,7 @@ TestCase.subclass('FunctionComponentTest', {
     
     testAutomaticExecuteWhenNewPinIsAdded: function() {
         var newPinName = 'NewInput';
+        debugger;
         this.assert(!this.functionComponent1['get' + newPinName], 'Should not have another pin or field yet');
         this.functionComponent1.addFieldAndPinHandle(newPinName);
         this.assert(this.functionComponent1['get' + newPinName], 'Should have another pin or field yet');
@@ -1360,14 +1361,18 @@ TestCase.subclass('ComponentSerializeTest', {
     },
 
 
-    testFabrikWithTextComponent: function() {
+    xtestFabrikWithTextComponent: function() {
+        
+        // var l = WorldMorph.current().submorphs.length;
+        //                         for (var i = l-1; i >= 0; i--) { WorldMorph.current().submorphs[i].remove() };
+        
         var fabrik = new FabrikComponent();
         var textComponent = new TextComponent();
         var fieldName = "ThisIsAFieldNameOrSo";
         textComponent.addField(fieldName);
         textComponent.setThisIsAFieldNameOrSo("Tatatatatatataaaa");
         fabrik.plugin(textComponent);
-    
+
         this.morphAddedToWorld = fabrik.openIn(this.world);
         var doc = Exporter.shrinkWrapMorph(this.world);
         var string = Exporter.stringify(doc);
@@ -1375,7 +1380,7 @@ TestCase.subclass('ComponentSerializeTest', {
     
         this.assert(string.match("FabrikComponent"), "no FabrikComponent serialized");
         this.assert(string.match(fieldName), "no fieldName serialized");
-        
+    debugger;        
         var importer = new Importer();
         var parser = new DOMParser();
 	    var xml = parser.parseFromString(string, "text/xml");

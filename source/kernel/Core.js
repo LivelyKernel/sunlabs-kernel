@@ -1101,9 +1101,15 @@ DOMRecord.subclass('DOMNodeRecord', {
 
     deserialize: function(importer, rawNode) {
 	this.rawNode = rawNode;
+	
+	var bodySpec = JSON.unserialize(rawNode.getElementsByTagName('definition')[0].firstChild.textContent);
+	this.constructor.addMethods(Record.extendRecordClass(bodySpec));
+	this.definition = bodySpec;
+	
 	$A(rawNode.getElementsByTagName("field")).forEach(function(child) {
-	    this[name + "$Element"] = child.getAttributeNS(null, "name");
-	}, this);
+            // this[name + "$Element"] = child.getAttributeNS(null, "name");
+	    this[child.getAttributeNS(null, "name") + "$Element"] = child;
+        }, this);
     }
     
 });
@@ -1692,14 +1698,6 @@ var Converter = {
     } else if (propValue.nodeType === document.DOCUMENT_NODE && propValue.nodeType === document.DOCUMENT_TYPE_NODE) {
                 throw new Error('Cannot store Document/DocumentType'); // to be removed
     } else if (propValue.nodeType) {
-        if (desc.getAttribute('name') == 'rawNode') { // FIXME remove me
-            /*debugger*/
-            /*desc.appendChild(NodeFactory.createCDATA(JSON.serialize(propValue, Converter.nodeEncodeFilter)));*/
-            return null
-        };
-        if (propValue.nodeName == "defs") { // FIXME remove me
-            return null
-        };
         desc.setAttributeNS(null, "isNode", true); // Replace with DocumentFragment
         desc.appendChild(propValue);
 	} else return null;
@@ -2005,6 +2003,8 @@ Object.subclass('Wrapper', {
 	    if (!abort) { 
 		appendNode(arr);
 	    }
+	} else if (prop === 'rawNode' || prop === 'defs') { // necessary because nodes get serialized
+	    return;
 	} else {
 	    var node = Converter.encodeProperty(prop, propValue);
 	    node && appendNode(node);
