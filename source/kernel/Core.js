@@ -1081,7 +1081,7 @@ DOMRecord.subclass('DOMNodeRecord', {
 	    throw new Error("use removeRecordField to remove " + name);
 	}
 	var fieldElement = this[name + "$Element"];
-	if (fieldElement) {
+	if (fieldElement && fieldElement.parentElement === this.rawNode) {
 	    this.rawNode.removeChild(fieldElement);
 	}
 	fieldElement = Converter.encodeProperty(name, value);

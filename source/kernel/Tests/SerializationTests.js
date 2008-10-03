@@ -79,7 +79,7 @@ TestCase.subclass('ASerializationTestCase', {
 //     //     var found = Wrapper.prototype.getWrapperByUri(this.model.getMyWidget());
 //     //     this.assertIdentity(found, this.widget, "failed to store widget")
 //     // }, 
-//     
+//     split
 //     // m = new Morph(); WorldMorph.current().addMorph(m); m.linkWrapee(); n = Global.document.getElementById(m.id()); n.wrapper
 //     // testGetWrapperByUri: function(number){        
 //     //     var uri = this.morph.uri();
@@ -101,7 +101,7 @@ TestCase.subclass('DomRecordTest', {
         this.model = Record.newNodeInstance({StaticField: null});
         this.assertEqualState(this.model.definition, {StaticField: {}});
         this.model.addField("DynamicField");
-        this.assertEqualState(this.model.definition, {StaticField: {}, DynamicField: {} });
+        this.assertEqualState(this.model.definition, {StaticField: {}, DynamicField: {}});
+        this.assert(this.model.getDynamicField && this.model.setDynamicField);
     }
-
 });

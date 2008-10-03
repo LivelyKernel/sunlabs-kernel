@@ -2292,6 +2292,7 @@ Component.subclass('FunctionComponent', {
         var funcSource = "var x = "+ header;
         var evalImplicit = ! body.match(/return /)
         if(evalImplicit) {
+            body = this.fixObjectLiterals(body);
             funcSource = funcSource.replace("(", "(pvtArgToEvalBody, ");
             funcSource = funcSource.replace(", )", ")") // just in case we would have no other parameter
             funcSource += ' { return eval(pvtArgToEvalBody)}; x'; // implicit return
@@ -2310,6 +2311,19 @@ Component.subclass('FunctionComponent', {
         }
     },
 
+    fixObjectLiterals: function(str) {
+        // var lines = str.split(/\n|\r/);
+        str = ' ' + str + ' '; // whoaaa, ugly
+        var regExp = /(.*)[^\(]\{(.*?)\}[^\)](.*)/;
+        // debugger;
+        while (regExp.test(str)) {
+            var parts = regExp.exec(str);
+            str = parts[1] + '({' + parts[2] + '})' + parts[3];
+        };
+        // return lines.join('\n');
+        return str
+    },
+    
     execute: function() {
         try {
             this.setResult(this.pvtGetFunction().apply(this, this.parameterValues()));

@@ -655,7 +655,6 @@ TestCase.subclass('FunctionComponentTest', {
     
     testAutomaticExecuteWhenNewPinIsAdded: function() {
         var newPinName = 'NewInput';
-        debugger;
         this.assert(!this.functionComponent1['get' + newPinName], 'Should not have another pin or field yet');
         this.functionComponent1.addFieldAndPinHandle(newPinName);
         this.assert(this.functionComponent1['get' + newPinName], 'Should have another pin or field yet');
@@ -727,9 +726,20 @@ TestCase.subclass('FunctionComponentTest', {
             if (e.isAssertion) throw e
             else this.assert(false, 'cannot parse implicit returned object function body')
         }
-        
-        
     },
+    
+    // new FunctionComponentTest().runTest('testFixObjectLiterals')
+    testFixObjectLiterals: function() {
+        var str = '{abc: 123, def: 456}';
+        var expected = '({abc: 123, def: 456})';
+        this.assertEqual(this.functionComponent1.fixObjectLiterals(str), expected, '1');
+        debugger;
+        str = '{abc: 123, def: 456} + {a: 1, d: 4}';
+        expected = '({abc: 123, def: 456})+({a: 1, d: 4})';
+        this.assertEqual(this.functionComponent1.fixObjectLiterals(str), expected, '2');
+        
+        
+    }
 
 
 });
@@ -1199,7 +1209,6 @@ TestCase.subclass('ComponentMorphTest', {
 
     testReshapeDragHandleFromTopLeftToBottomRightInsideMinExtent: function() {
         this.reshapeSetup();
-        // debugger;
         this.morph.reshape('topLeft', pt(60,0), null, true);
         this.assertEqual(this.morph.getPosition(), pt(50,0), 'morph has wrong position');
         this.assertEqual(this.morph.getExtent(), pt(50,100), 'morph not shrinked');
@@ -1361,6 +1370,7 @@ TestCase.subclass('ComponentSerializeTest', {
     },
 
 
+    // this test does way too much!!!
     xtestFabrikWithTextComponent: function() {
         
         // var l = WorldMorph.current().submorphs.length;
@@ -1380,7 +1390,7 @@ TestCase.subclass('ComponentSerializeTest', {
     
         this.assert(string.match("FabrikComponent"), "no FabrikComponent serialized");
         this.assert(string.match(fieldName), "no fieldName serialized");
-    debugger;        
+
         var importer = new Importer();
         var parser = new DOMParser();
 	    var xml = parser.parseFromString(string, "text/xml");
