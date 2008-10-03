@@ -17,7 +17,7 @@
  * - Fabrik
  * - FabrikMorph
  * - FabrikComponent
- * - NewComponentModel
+ * - ComponentModel
  * - PinMorph
  * - PinHandle
  * - ConnectorMorph
@@ -147,7 +147,7 @@ Fabrik = {
         world.addMorph(m2);
 
         // FIXME Why isnt this handled at a central point?????
-        c.formalModel = Record.newNodeInstance({});
+        c.formalModel = ComponentModel.newModel();
         c.formalModel.addField("StartHandle");
         c.formalModel.addField("EndHandle");
         c.formalModel.setStartHandle(m1);
@@ -180,7 +180,7 @@ Fabrik = {
      */
     addConvenienceFunctions: function() {
         Global.allFabrikClassNames = function() {
-            return ["FabrikMorph", "FabrikComponent", "NewComponentModel", "PinMorph", "PinHandle", "ConnectorMorph", 
+            return ["FabrikMorph", "FabrikComponent", "ComponentModel", "PinMorph", "PinHandle", "ConnectorMorph", 
                 "Component",  "TextComponent", "FunctionComponent", "ComponentBox", "PointSnapper", "FlowLayout"]
         };
         Global.allClassNames = function() {
@@ -663,7 +663,7 @@ Widget.subclass('PinHandle', {
         $super();
         
         // Why isnt this handled at a central point?????
-        this.formalModel = Record.newNodeInstance({Name: pinName, Type: "regular"});
+        this.formalModel = ComponentModel.newModel({Name: pinName, Type: "regular"});
         //this.formalModel = Record.newPlainInstance({Name: pinName, Type: "regular"});
         //this.name = pinName;
         //this.type = "regular";
@@ -880,11 +880,10 @@ Morph.subclass('ArrowHeadMorph', {
 
 });
 
-// depricated
-NewComponentModel = {
-    instantiateNewClass: function() {
+ComponentModel = {
+    newModel: function(optSpec) {
         // FIXME Why isnt this handled at a central point?????
-        return Record.newNodeInstance({});
+        return Record.newNodeInstance(optSpec || {});
     }
 }
 
@@ -1580,7 +1579,7 @@ Widget.subclass('Component', {
         $super();
         
 // FIXME Why isnt this handled at a central point?????
-        this.formalModel = Record.newNodeInstance({Name: "NoName"});
+        this.formalModel = ComponentModel.newModel({Name: "NoName"});
                 
         //this.addField("Name"); // just to have something for testing....
         this.formalModel.setName("Abstract Component");
@@ -2434,7 +2433,7 @@ Widget.subclass('ComponentBox', {
     initialize: function($super) { 
         $super();
         // FIXME Why isnt this handled at a central point?????
-        this.model = Record.newNodeInstance({});
+        this.model = ComponentMorph.newModel();
     },
     
     addMorphOfComponent: function(comp, createFunc, optExtent) {

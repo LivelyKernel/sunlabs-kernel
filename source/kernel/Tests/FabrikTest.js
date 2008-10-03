@@ -272,10 +272,10 @@ FabrikTestCase.subclass('FlowLayoutTest', {
     },
 });
 
-TestCase.subclass('NewComponentModelTest', {
+TestCase.subclass('ComponentModelTest', {
     
     setUp: function() {
-        this.model = NewComponentModel.instantiateNewClass();
+        this.model = ComponentModel.newModel();
     },
 
 	testSetAndGetText: function() {
@@ -336,7 +336,7 @@ TestCase.subclass('NewComponentModelTest', {
 	setUpForObserverRemoveTest: function() {
 		this.model.addField("Field1");
 		this.model.addField("Field2");
-		this.observerModel = NewComponentModel.instantiateNewClass();
+		this.observerModel = ComponentModel.newModel();
 		this.observerModel.addField("ObserverField1");
 		this.observerModel.addField("ObserverField2");
 	},
@@ -369,7 +369,7 @@ TestCase.subclass('NewComponentModelTest', {
 	
 	testRemoveObserver4: function() { // remove only one dependency from a field and let the other one alone
 		this.setUpForObserverRemoveTest();
-		var observerModel2 = NewComponentModel.instantiateNewClass();
+		var observerModel2 = ComponentModel.newModel();
 		observerModel2.addField("Observer2Field");
 		this.model.addObserver(this.observerModel, {Field1: "=setObserverField1"});
 		this.model.addObserver(observerModel2, {Field1: "=setObserver2Field"});
@@ -408,15 +408,15 @@ TestCase.subclass('NewComponentModelTest', {
 	// },
 
 	testAddAlreadyExistingField: function() {
-		var model = NewComponentModel.instantiateNewClass();
+		var model = ComponentModel.newModel();
 		model.addField("TestPin");
 		model.setTestPin("content");
 		model.addField("TestPin");
 		this.assertEqual(model.getTestPin(), "content", "addField overwrote content");
 	},
 	
-	testCreateModelDoesNotAffectNewComponentModelClass: function() {
-		var model = NewComponentModel.instantiateNewClass();
+	testCreateModelDoesNotAffectComponentModelClass: function() {
+		var model = ComponentModel.newModel();
 		var ModelClass = model.constructor;
 		model.addField("TestPin");
 		this.assert(ModelClass.functionNames().include("getTestPin"), "class wasn't correctly extended");
@@ -424,9 +424,9 @@ TestCase.subclass('NewComponentModelTest', {
 	},
 	
 	testCreateNewModelClassCreatesIndependentModels: function() {
-		var model = NewComponentModel.instantiateNewClass();
+		var model = ComponentModel.newModel();
 		var ModelClass1 = model.constructor;
-		var ModelClass2 = NewComponentModel.instantiateNewClass().constructor;
+		var ModelClass2 = ComponentModel.newModel().constructor;
 		model.addField("TestPin");
 		this.assert(ModelClass1.functionNames().include("getTestPin"));
 		this.assert(!ModelClass2.functionNames().include("getTestPin"));
