@@ -1,4 +1,31 @@
-//(function() {
+TestCase.subclass('OmetaLoadingTest', {
+    
+    testLoadAllFiles: function() {
+        
+        require('ometa/lib.js').toRun(function() {
+        module('ometa/lib.js').requires('ometa/ometa-base.js').toRun(function() {
+        module('ometa/ometa-base.js').requires('ometa/parser.js').toRun(function() {
+        module('ometa/parser.js').requires('ometa/bs-js-compiler.js').toRun(function() {
+        module('ometa/bs-js-compiler.js').requires('ometa/bs-ometa-compiler.js').toRun(function() {
+        module('ometa/bs-ometa-compiler.js').requires('ometa/bs-ometa-optimizer.js').toRun(function() {
+        module('ometa/bs-ometa-optimizer.js').requires('ometa/bs-ometa-js-compiler.js').toRun(function() {
+        // module('ometa/bs-ometa-js-compiler.js').requires('ometa/bs-project-list-parser.js').toRun(function() {
+        // module('ometa/bs-project-list-parser.js').requires('ometa/workspace.js').toRun(function() {
+        // module('ometa/ometa/workspace.js').requires('ometa/wiki.js').toRun(function() {
+        // })
+        // })
+        // })
+        })
+        })
+        })
+        })
+        })
+        })
+        });
+        
+    }
+});
+
 
 var ometaSampleInterpeter = "        ometa Calc {  \n\
   digit    = super(#digit):d          -> d.digitValue(),\n\

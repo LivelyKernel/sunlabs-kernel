@@ -2447,7 +2447,7 @@ Widget.subclass('ComponentBox', {
     initialize: function($super) { 
         $super();
         // FIXME Why isnt this handled at a central point?????
-        this.model = ComponentMorph.newModel();
+        this.model = ComponentModel.newModel();
     },
     
     addMorphOfComponent: function(comp, createFunc, optExtent) {

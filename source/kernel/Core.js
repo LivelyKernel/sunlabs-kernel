@@ -79,9 +79,11 @@ var PendingRequirements = {};
 // Semaphore functions
 function moduleLoaded(module) {
     console.log('declaring ' + module + ' as loaded');
-    Object.keys(PendingRequirements).each(function(ea) {
+    Object.keys(PendingRequirements)
+        .select(function(ea) { return Object.isArray(PendingRequirements[ea]) })
+        .each(function(ea) {
         if (PendingRequirements[ea])
-            PendingRequirements[ea] = PendingRequirements[ea].reject(function(name) {return name == module});
+            PendingRequirements[ea] = PendingRequirements[ea].without(module);
     });
 };
 function waitFor(module, requiredModules) {
