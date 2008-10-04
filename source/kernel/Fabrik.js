@@ -1790,7 +1790,7 @@ ComponentMorph.subclass('FabrikMorph', {
     
     setupHaloItems: function($super) {
         $super();        
-        var grabHalo = this.addHaloItem("grap",  new Rectangle(0,0,45,20),
+        var grabHalo = this.addHaloItem("grab",  new Rectangle(0,0,45,20),
             {relativePosition: pt(1,0), positionOffset: pt(-45,0)}, 
             {fill: Color.green/*, fillOpacity: 0.5*/});
         
