@@ -894,7 +894,7 @@ TextMorph.addMethods({
         $super(rect, "rect");
         // KP: note layoutChanged will be called on addition to the tree
         // DI: ... and yet this seems necessary!
-        if (this.textString instanceof Text) {
+        if (this.textString instanceof module.Text) {
 	    this.textStyle = this.textString.style;
 	    this.setStoredTextStyle(this.textStyle);
 	    this.textString = this.textString.string || "";
@@ -2532,9 +2532,9 @@ Object.subclass('lk::text::Text', {
     toString: function() {
 	return "Text for " + this.string + "<" + this.style + ">";
     },
-    // asMorph: function() {
-    //     return new TextMorph();
-    // }
+    asMorph: function() {
+        return new TextMorph(new Rectangle(0,0,200,100), this);
+    }
 });
 
 

@@ -4,7 +4,15 @@
  */
 
 
- 
+Morph.addMethods({
+    openInWorld: function(loc) {
+        WorldMorph.current().addMorph(this);
+        loc && this.setPosition(loc);
+    }
+});
+
+// this.getRichText().asMorph().openInWorld()
+
 function getStack() {
     var result = [];
     for(var caller = arguments.callee.caller; caller; caller = caller.caller) {

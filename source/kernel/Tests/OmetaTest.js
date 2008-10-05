@@ -1,5 +1,5 @@
 
-module('Tests/OmetaTest.js').requires('ometa/ometa-base.js', 'ometa/parser.js',
+module('Tests/OmetaTest.js').requires('Helper.js', 'ometa/ometa-base.js', 'ometa/parser.js',
                                       'ometa/bs-ometa-compiler.js', 'ometa/bs-ometa-js-compiler.js',
                                        'ometa/bs-js-compiler.js', 'ometa/bs-ometa-optimizer.js').toRun(function() {
 
