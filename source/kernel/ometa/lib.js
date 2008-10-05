@@ -25,6 +25,7 @@
 
 // try to use StringBuffer instead of string concatenation to improve performance
 
+
 function StringBuffer() {
   this.strings = []
   for (var idx = 0; idx < arguments.length; idx++)
@@ -38,7 +39,7 @@ String.prototype.writeStream      = function() { return new StringBuffer(this) }
 
 Object.prototype.printOn = function(ws) { ws.nextPutAll(this.toString()) }
 
-// Array.prototype.toString = function() { var ws = "".writeStream(); this.printOn(ws); return ws.contents() }
+Array.prototype.toOmetaString = function() { var ws = "".writeStream(); this.printOn(ws); return ws.contents() }
 Array.prototype.printOn = function(ws) {
   ws.nextPutAll("[")
   for (var idx = 0; idx < this.length; idx++) {
