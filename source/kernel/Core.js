@@ -6869,7 +6869,6 @@ PasteUpMorph.subclass("WorldMorph", {
             ["Class Browser", function(evt) { new SimpleBrowser().openIn(world, evt.point()); }],
             ["Object Hierarchy Browser", function(evt) { new ObjectBrowser().openIn(world, evt.point()); }],    
             ["TestRunner", function(evt) { new TestRunner().openIn(world, evt.point()); }],
-            ["Fabrik Component", function(evt) { Fabrik.openFabrikComponent(world, evt.point()); }],
             ["Fabrik Component Box", function(evt) { Fabrik.openComponentBox(world, evt.point()); }],
             ["OmetaWorkspace", function(evt) { new OmetaWorkspace().openIn(world, evt.point()); }],
 	    ["Call Stack Viewer", function(evt) { 

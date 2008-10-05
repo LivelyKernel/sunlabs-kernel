@@ -1,17 +1,16 @@
-
-/*
- * Stack Viewer when Dans StackTracer is not available
- */
-
-
+ 
+// extension to Morphs
 Morph.addMethods({
     openInWorld: function(loc) {
         WorldMorph.current().addMorph(this);
         loc && this.setPosition(loc);
     }
 });
-
 // this.getRichText().asMorph().openInWorld()
+
+/*
+ * Stack Viewer when Dans StackTracer is not available
+ */
 
 function getStack() {
     var result = [];
@@ -121,6 +120,15 @@ function xmlToString(xml) {
 
 function stringToXML(string) {
     return new DOMParser().parseFromString(string, "text/xml");
+}
+
+// Generator for an array
+function range(begin, end) {
+    result = [];
+    for (var i = begin; i <= end; i++) {
+        result.push(i);
+    }
+    return result;
 }
 
 
