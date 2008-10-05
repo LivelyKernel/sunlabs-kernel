@@ -1,7 +1,21 @@
+
+module('Tests/OmetaTest.js').requires('ometa/ometa-base.js', 'ometa/parser.js',
+                                      'ometa/bs-ometa-compiler.js', 'ometa/bs-ometa-js-compiler.js',
+                                       'ometa/bs-js-compiler.js', 'ometa/bs-ometa-optimizer.js').toRun(function() {
+
+TestCase.subclass('SyntaxHighlighterTest', {
+    
+    testStringToAttributedText: function() {
+        var sut = new SyntaxHighlighter();
+        sut.makeBold('Hello world!!!');
+    }
+});
+
 TestCase.subclass('OmetaLoadingTest', {
+
+    shouldRun: false,
     
     testLoadAllFiles: function() {
-        
         require('ometa/lib.js').toRun(function() {
         module('ometa/lib.js').requires('ometa/ometa-base.js').toRun(function() {
         module('ometa/ometa-base.js').requires('ometa/parser.js').toRun(function() {
@@ -12,20 +26,11 @@ TestCase.subclass('OmetaLoadingTest', {
         // module('ometa/bs-ometa-js-compiler.js').requires('ometa/bs-project-list-parser.js').toRun(function() {
         // module('ometa/bs-project-list-parser.js').requires('ometa/workspace.js').toRun(function() {
         // module('ometa/ometa/workspace.js').requires('ometa/wiki.js').toRun(function() {
-        // })
-        // })
-        // })
-        })
-        })
-        })
-        })
-        })
-        })
-        });
+        // })})})
+        })})})})})})});
         
     }
 });
-
 
 var ometaSampleInterpeter = "        ometa Calc {  \n\
   digit    = super(#digit):d          -> d.digitValue(),\n\
@@ -69,14 +74,16 @@ TestCase.subclass('OmetaTest', {
 
 
 TestCase.subclass('OmetaWorkspaceTest', {
+    
+    shouldRun: false,
+    
     setUp: function() {
         this.ws = new OmetaWorkspace();  
     },
     testEvalOmeta: function() {
         this.assertEqual(this.ws.evalOmeta(ometaSampleInterpeter), 42)
-    }
-    
+    }  
 });
 
 //})();
-
+});

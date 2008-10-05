@@ -65,6 +65,8 @@ try {
 } catch (f) { alert(f) }
 */
 
+module('ometa/ometa-base.js').requires('ometa/lib.js').toRun(function() {
+    
 // the failure exception
 
 fail = { toString: function() { return "match failed" } }
@@ -370,4 +372,6 @@ OMeta = {
     return this._genericMatch(listyObj.toOMInputStream(), rule, args, matchFailed)
   }
 }
+
+});
 

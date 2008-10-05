@@ -114,6 +114,7 @@ TestCase.subclass('TestTestCase', {
         new DummyTearDownTestCase().runAll();
         this.assertEqual(counter, 2);
 	},
+	
 	testDonCatchErrors: function() {
         TestCase.subclass('DummyTestCatchError', {
             test1: function() {throw Error},
@@ -124,7 +125,28 @@ TestCase.subclass('TestTestCase', {
         } catch (e) {
             this.assert(true, "should get here")
         };
-	}	
+	},
+	
+	testDonRunTestsInTestClassesWhichDoNotWant: function() {
+        var notCalled = true;
+        // Use a existing DummyClass...!
+        TestCase.subclass('DummyDontRunTestCase', {
+            shouldRun: false,
+            test1: function() { notCalled = false },
+        });
+        new DummyDontRunTestCase().runAll();
+        this.assert(notCalled);
+        new DummyDontRunTestCase().runTest('test1');
+        this.assert(notCalled);
+	},
+	
+	testTestSelectorsDontIncludeInherit: function() {
+        var notCalled = true;
+        // Use a existing DummyClass...!
+        TestCase.subclass('Dummy1', { test1: function() {} });
+        Dummy1.subclass('Dummy2', { test2: function() {} });
+        this.assertEqualState(new Dummy2().allTestSelectors(), ['test2']);
+	},
 	
 });
 
@@ -191,7 +213,7 @@ TestCase.subclass('TestResultTest', {
 
 TestCase.subclass('RememberStackTest', {
 	
-	isSlowTest: true,
+	shouldRun: true,
 	
 	a: function(a, b, c) {
 		this.assert(false);

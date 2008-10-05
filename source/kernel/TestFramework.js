@@ -13,7 +13,9 @@ TestFramework = {
 
 
 Object.subclass('TestCase', {
-   
+
+    shouldRun: true,
+    
 	initialize: function(testResult) {
 		if (testResult) {
 			this.result = testResult;	 
@@ -48,6 +50,7 @@ Object.subclass('TestCase', {
 	tearDown: function() {},
 	
 	runTest: function(aSelector) {
+	    if (!this.shouldRun) return;
 		this.log('Running test: ' + aSelector);
 		try {
 			this.setUp();
@@ -138,17 +141,9 @@ Object.subclass('TestCase', {
     },
     
 	allTestSelectors: function() {
-		/* How to get the properties of this as an Enumerable?
-		toArray() does not work. If we would have the properties
-		as an Enumarable we could call select() on it */
-		var selectors = [];
-		for (var property in this) {
-			if (typeof this[property] == 'function' &&
-			property.startsWith('test')) {
-				selectors.push(property);
-			}
-		}
-		return selectors;
+	    return this.constructor.functionNames().select(function(ea) {
+	        return this.constructor.prototype.hasOwnProperty(ea) && ea.startsWith('test');
+	    }, this);
 	},
 	
 	toString: function($super) {
@@ -306,11 +301,12 @@ Widget.subclass('TestRunner', {
 		var counter = 0;
 		//all classes from the list
 		testSuite.setTestCases(this.getModel().getTestClasses().collect(function(ea) {
-				return Global[ea];
-		}).select(function(ea){return !ea.prototype.isSlowTest}));
+			return Global[ea];
+		}));
 		var self = this;
 		var total = self.resultBar.getExtent().x;
 		var step = self.resultBar.getExtent().x / testSuite.testCases.length;
+		// Refactor!
 		testSuite.showProgress = function(testCase) {
 		    self.getModel().setResultText(testCase.constructor.type);
 		    self.resultBar.setExtent(pt(step*counter,  self.resultBar.getExtent().y));
@@ -340,6 +336,7 @@ Widget.subclass('TestRunner', {
 	
 	listTestClasses: function() {
 		return TestCase.allSubclasses()
+		    .select(function(ea) { return ea.prototype.shouldRun })
 		    .collect(function(ea) { return ea.type })
 		    .select(function(ea) { return !ea.startsWith('Dummy') })
 		    .select(function(ea) { return Config.skipGuiTests ? !ea.endsWith('GuiTest') : true })

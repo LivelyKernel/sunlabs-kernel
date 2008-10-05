@@ -1,3 +1,4 @@
+
 ometa BSNullOptimization {
   setHelped = !($elf._didSomething = true),
   helped    = ?$elf._didSomething,

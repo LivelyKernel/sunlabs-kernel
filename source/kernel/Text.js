@@ -2531,7 +2531,10 @@ Object.subclass('lk::text::Text', {
     },
     toString: function() {
 	return "Text for " + this.string + "<" + this.style + ">";
-    }
+    },
+    // asMorph: function() {
+    //     return new TextMorph();
+    // }
 });
 
 
