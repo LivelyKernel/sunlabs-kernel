@@ -81,6 +81,14 @@ Fabrik = {
         return c;
     },
     
+    addFabrikComponent: function(toComponent, title) {
+        var c = new FabrikComponent();
+        c.viewTitle = title;
+        toComponent.plugin(c);
+        // c.panel.setExtent(pt(220,50));
+        return c;
+    },
+    
     openComponentBox: function(world, loc) {
         if (!world) world = WorldMorph.current();
         var box = new ComponentBox();
@@ -268,25 +276,106 @@ Fabrik = {
     openFabrikWeatherWidgetExample: function(world, loc) {
         if (!loc) loc = pt(100, 100);
         
-        var base = this.openFabrikComponent(world, loc, pt(730, 170), 'Weather Example');
-        var urlPin = base.addPin('URL'); this.setPositionRel(pt(0, 0.4), urlPin.morph);
-        var zipPin = base.addPin('ZIP'); this.setPositionRel(pt(0, 0.6), zipPin.morph);
-        var xmlListPin = base.addPin('XMLList'); this.setPositionRel(pt(0.8, 0.9), xmlListPin.morph);
         
-        var combineURLAndZIP = this.addFunctionComponent(base);
-        combineURLAndZIP.removePin('Input');
+        
+        var base = this.openFabrikComponent(world, loc.addXY(-50,-20), pt(800, 350), 'Weather Example');
+        var urlInput = this.addTextComponent(base); urlInput.panel.setExtent(pt(180,60));
+        var zipInput = this.addTextComponent(base); zipInput.panel.setExtent(pt(100,50));
+        
+        /* 
+         * Building the requester Fabrik
+         */
+        var requestor = this.openFabrikComponent(world, loc, pt(700, 250), 'Request Weather');
+        requestor.morph.owner.remove(); // FIXME hack so that window morph disappears...
+        base.morph.addMorph(requestor.morph);
+        requestor.morph.setExtent(pt(700,250));
+        requestor.morph.setPosition(pt(50,50));
+        
+        /* Pins */
+        var urlPin = requestor.addPin('URL'); this.setPositionRel(pt(0.1, 0), urlPin.morph);
+        var zipPin = requestor.addPin('ZIP'); this.setPositionRel(pt(0.2, 0), zipPin.morph);
+        var infoPin = requestor.addPin('Info'); this.setPositionRel(pt(0.9, 0.96), infoPin.morph);
+        var conditionsPin = requestor.addPin('Conditions'); this.setPositionRel(pt(0.8, 0.96), conditionsPin.morph);
+        urlInput.getPin('Text').connectTo(urlPin);
+        zipInput.getPin('Text').connectTo(zipPin);
+        
+        /* Function component for combining url and zip */
+        var combineURLAndZIP = this.addFunctionComponent(requestor);
+        var pin = combineURLAndZIP.addInputFieldAndPin('Url'); this.setPositionRel(pt(-0.04,0.33), pin.morph);
         combineURLAndZIP.addInputFieldAndPin('Zip');
-        combineURLAndZIP.addInputFieldAndPin('Url');
+        combineURLAndZIP.removePin('Input');
         combineURLAndZIP.setFunctionBody('url + zip');
+        zipPin.connectTo(combineURLAndZIP.getPin('Zip'));
+        urlPin.connectTo(combineURLAndZIP.getPin('Url'));
 
-        var req = this.addWebRequestComponent(base);
+        /* WebRequestor */
+        var req = this.addWebRequestComponent(requestor);
         combineURLAndZIP.getPin('Result').connectTo(req.getPin('URL'));
+                
+        /* Lists for extracting Information */
+        var infoList = this.addTextListComponent(requestor);
+        // debugger;
+        req.getPin('ResponseXML').connectTo(infoList.getPin('List'));
+        infoList.getPin('Selection').connectTo(infoPin);
+        var conditionList = this.addTextListComponent(requestor);
+        conditionList.getPin('Selection').connectTo(conditionsPin);
+        req.getPin('ResponseXML').connectTo(conditionList.getPin('List'));
         
-        var xmlToStrArr = this.addFunctionComponent(base);
-        xmlToStrArr.setFunctionBody('FabrikConverter.xmlToStringArray(input)');
-
+        requestor.morph.automaticLayout();
+        requestor.morph.collapseToggle(true);
+        
+        // Base fabrik: create data processing components
+        var extractInfos = this.addFunctionComponent(base);
+        extractInfos.removePin('Result');
+        var cityPin = extractInfos.addPin('City'); this.setPositionRel(pt(0.96, 0.3), cityPin.morph);
+        var datePin = extractInfos.addPin('Date'); this.setPositionRel(pt(0.96, 0.6), datePin.morph);
+        extractInfos.setFunctionBody('if (input) { \n var infos = input.js.forecast_information; \n this.setCity(infos.city); \n this.setDate(infos.forecast_date); \n }');
+        
+        var extractCondition = this.addFunctionComponent(base);
+        extractCondition.removePin('Result');
+        var conditionPin = extractCondition.addPin('Condition'); this.setPositionRel(pt(0.96, 0.2), conditionPin.morph);
+        var tempPin = extractCondition.addPin('Temp'); this.setPositionRel(pt(0.96, 0.4), tempPin.morph);
+        var humidityPin = extractCondition.addPin('Humidity'); this.setPositionRel(pt(0.96, 0.6), humidityPin.morph);
+        var windPin = extractCondition.addPin('Wind'); this.setPositionRel(pt(0.96, 0.8), windPin.morph);
+        var imagePin = extractCondition.addPin('Image'); this.setPositionRel(pt(0.5, 0.96), imagePin.morph);
+        extractCondition.setFunctionBody('if (input) {\n var infos = input.js.current_conditions; \n this.setCondition(infos.condition); \n this.setTemp(infos.temp_c + "°C / " + infos.temp_f + "°F"); \n this.setHumidity(infos.humidity); \n this.setWind(infos.wind_condition); \n this.setImage("http://www.google.com/ig" + infos.icon);\n }');
+                
+        // add the 'UI'
+        var extent = pt(80,50);
+        var cityTxt = this.addTextComponent(base);
+        cityTxt.panel.setExtent(extent);
+        cityPin.connectTo(cityTxt.getPin('Text'));
+        
+        var dateTxt = this.addTextComponent(base);
+        dateTxt.panel.setExtent(extent);
+        datePin.connectTo(dateTxt.getPin('Text'));
+        
+        var conditionTxt = this.addTextComponent(base);
+        conditionTxt.panel.setExtent(extent);
+        conditionPin.connectTo(conditionTxt.getPin('Text'));
+        
+        var tempTxt = this.addTextComponent(base);
+        tempTxt.panel.setExtent(extent);
+        tempPin.connectTo(tempTxt.getPin('Text'));
+        
+        var humidityTxt = this.addTextComponent(base);
+        humidityTxt.panel.setExtent(extent);
+        humidityPin.connectTo(humidityTxt.getPin('Text'));
+        
+        var windTxt = this.addTextComponent(base);
+        windTxt.panel.setExtent(extent);
+        windPin.connectTo(windTxt.getPin('Text'));        
+        
         base.morph.automaticLayout();
-
+        
+        // get things going
+        infoList.selectedIndex = 1;
+        conditionList.selectedIndex = 10;
+        zipInput.setText('12685');
+        urlInput.setText('http://www.google.com/ig/api?weather=');
+        
+        
+        
         return base;
     },
     
@@ -1395,7 +1484,7 @@ Morph.subclass('ComponentMorph', {
         return this.addMorph(morph, 'button');
     },
 
-    minExtent: function() { return pt(50,50) },
+    minExtent: function() { return pt(50,25) },
     
     /* reshape changes the bounds of the morph and its shape but makes it not smaller than minExtent()
      * submorphs can react to bounds shape by implementing adoptSubmorphsToNewExtent
@@ -1532,6 +1621,33 @@ Morph.subclass('ComponentMorph', {
         return button;
     },
     
+    addGrabHalo: function(positionSpec) {
+        var grabHalo = this.addHaloItem("grab",  new Rectangle(0,0,45,20),
+            positionSpec, {fill: Color.green/*, fillOpacity: 0.5*/});
+
+        var grabFunction = function(value) {
+            if (!value) return;
+
+            // CLEANUP
+            this.openInWindow = null;
+            var owner = this.owner;
+            owner.removeMorph(this);
+            if (owner.constructor == WindowMorph) {
+                owner.remove();
+                this.reshape = this.origReshape || this.reshape;
+                this.collapseToggle = this.origCollapseToggle || this.collapseToggle;
+            }
+
+            var hand = WorldMorph.current().hands.first(); //FIXME -- get the click event?
+            hand.addMorph(this);
+            this.setPosition(pt(0,0));
+            this.moveBy(grabHalo.getPosition().negated().subPt(grabHalo.getExtent().scaleBy(0.5)));
+        }.bind(this);
+        grabHalo.connectModel(Relay.newInstance({Value: '=grabbed'}, {grabbed: grabFunction}));
+    },
+    
+    handlesMouseDown: Functions.True,
+    
     onMouseOver: function() {
         this.showHalos();
     },
@@ -1659,6 +1775,7 @@ Widget.subclass('Component', {
     addField: function(fieldName, coercionSpec, forceSet) {
         this.formalModel.addField(fieldName, coercionSpec, forceSet);
         this.pvtCreateAccessorsForField(fieldName);
+        this['set' + fieldName](null); // FIXME do with spec
     },
     
     addFieldAndPinHandle: function(field, coercionSpec, forceSet) {
@@ -1692,8 +1809,8 @@ Widget.subclass('Component', {
     removePin: function(name) {
         this.getPin(name).remove();
         this.pinHandles = this.pinHandles.without(this.getPin(name));
-        delete this['get' + name];
-        delete this['set' + name];
+        // delete this['get' + name];
+        // delete this['set' + name];
     },
     
     // deprecated, use getPin!
@@ -1763,6 +1880,16 @@ Widget.subclass('Component', {
         
 });
 
+SelectionMorph.subclass('UserFrameMorph', {
+    
+    removeWhenEmpty: false, 
+    
+    remove: function() { 
+        // this.selectedMorphs.invoke('remove');
+        this.removeOnlyIt();
+    }
+});
+
 /* Morph and Component for encapsulating other components */
 ComponentMorph.subclass('FabrikMorph', {
     
@@ -1790,29 +1917,7 @@ ComponentMorph.subclass('FabrikMorph', {
     
     setupHaloItems: function($super) {
         $super();        
-        var grabHalo = this.addHaloItem("grab",  new Rectangle(0,0,45,20),
-            {relativePosition: pt(1,0), positionOffset: pt(-45,0)}, 
-            {fill: Color.green/*, fillOpacity: 0.5*/});
-        
-        var grabFunction = function(value) {
-            if (!value) return;
-            
-            // CLEANUP
-            this.openInWindow = null;
-            var owner = this.owner;
-            owner.removeMorph(this);
-            if (owner.constructor == WindowMorph) {
-                owner.remove();
-                this.reshape = this.origReshape || this.reshape;
-                this.collapseToggle = this.origCollapseToggle || this.collapseToggle;
-            }
-            
-            var hand = WorldMorph.current().hands.first(); //FIXME -- get the click event?
-            hand.addMorph(this);
-            this.setPosition(pt(0,0));
-            this.moveBy(grabHalo.getPosition().negated().subPt(grabHalo.getExtent().scaleBy(0.5)));
-        }.bind(this);
-        grabHalo.connectModel(Relay.newInstance({Value: '=grabbed'}, {grabbed: grabFunction}));
+        this.addGrabHalo({relativePosition: pt(1,0), positionOffset: pt(-45,0)});
 
         this.collapseHalo = this.addHaloItem("collapse",  new Rectangle(0,0,60,20),
             {relativePosition: pt(1,0), positionOffset: pt(-105,0)}, 
@@ -1851,23 +1956,23 @@ ComponentMorph.subclass('FabrikMorph', {
     okToBeGrabbedBy: function(evt) {
         return null; 
     },
-        
+    
+    // handlesMouseDown: Functions.True,
+    
     onMouseDown: function ($super, evt) {
         console.log('making selection');
-        return $super(evt);
-         
-         
         this.makeSelection(evt); 
         return true;
     },
 
     makeSelection: function(evt) {  //default behavior is to grab a submorph
         if (this.currentSelection != null) this.currentSelection.remove();
-        var m = new SelectionMorph(evt.point().asRectangle());
+        // debugger;
+        var m = new UserFrameMorph(this.localize(evt.point()).asRectangle());
         this.addMorph(m);
         this.currentSelection = m;
         var handle = new HandleMorph(pt(0,0), "rect", evt.hand, m, "bottomRight");
-	    handle.setExtent(pt(0, 0));
+	    handle.setExtent(pt(5, 5));
         m.addMorph(handle);
         evt.hand.setMouseFocus(handle);
     },
@@ -1902,21 +2007,22 @@ ComponentMorph.subclass('FabrikMorph', {
         this.collapsedPosition = this.getPosition();
         this.setFill(Color.blue.lighter());
                 
-        this.component.components.each(function(ea) { this.addMorph(ea.panel) }.bind(this));
-        this.component.connectors.each(function(ea) { this.addMorph(ea.morph) }.bind(this));
-                
         this.setPosition(this.uncollapsedPosition || this.getPosition());
         this.setExtent(this.uncollapsedExtent || this.component.defaultViewExtent);
+        
+        this.component.components.each(function(ea) { this.addMorph(ea.panel) }.bind(this));
+        this.component.connectors.each(function(ea) { this.addMorph(ea.morph); ea.updateView(); }.bind(this));
     },
     
     minExtent: function() {
-        if (this.isCollapsed) return pt(10,5);
-        var borderMorphs = this.getComponentMorphsNearBorders();
-        var topY = borderMorphs.top ? borderMorphs.top.getPosition().y : 0;
-        var leftX = borderMorphs.left ? borderMorphs.left.getPosition().y : 0;
-        var bottomY = borderMorphs.bottom ? borderMorphs.bottom.bounds().maxY() : 50;
-        var rightX = borderMorphs.right ? borderMorphs.right.bounds().maxX() : 50;
-        return pt(rightX - leftX, bottomY - topY);
+        return pt(10,5);
+        // if (this.isCollapsed) return pt(10,5);
+        //         var borderMorphs = this.getComponentMorphsNearBorders();
+        //         var topY = borderMorphs.top ? borderMorphs.top.getPosition().y : 0;
+        //         var leftX = borderMorphs.left ? borderMorphs.left.getPosition().y : 0;
+        //         var bottomY = borderMorphs.bottom ? borderMorphs.bottom.bounds().maxY() : 50;
+        //         var rightX = borderMorphs.right ? borderMorphs.right.bounds().maxX() : 50;
+        //         return pt(rightX - leftX, bottomY - topY);
     },
     
     getComponentMorphsNearBorders: function() {
@@ -2239,9 +2345,10 @@ Component.subclass('FunctionComponent', {
     },
     
     addInputFieldAndPin: function(name) {
-        this.addFieldAndPinHandle(name);
-        this.getPinHandle(name).becomeInputPin();
+        var pin = this.addFieldAndPinHandle(name);
+        pin.becomeInputPin();
         this.updateFunctionHeader();
+        return pin;
     },
     
     saveAndExecute: function() {
@@ -2327,12 +2434,12 @@ Component.subclass('FunctionComponent', {
     
     execute: function() {
         try {
-            this.setResult(this.pvtGetFunction().apply(this, this.parameterValues()));
+            this.setResult(this.pvtGetFunction().apply(this, this.parameterValues()) || null);
             console.log("Result of function call: " + this.getResult());
         } catch(e) {
             debugger;
             console.log("FunctionComponentModel: error " + e + " when executing body" + this.getFunctionBody());
-            throw e;
+            // throw e;
         }
     },
 });
@@ -2375,12 +2482,20 @@ Component.subclass('WebRequestComponent', {
     makeRequest: function() {
         if (!this.getURL()) return;
         console.log('making reqest to: ' + this.getURL());
+        
+        try {
+            var url = new URL(this.getURL());
+        } catch(e) {
+            console.log('Invalid URL!');
+            return // invalid url, we do not proceed
+        }
         // var x = new Resource(this.formalModel.newRelay({URL: '-URL', ContentText: '+ResponseText', ContentDocument: '+ResponseXML'}));
         
-        var x = new Resource(Record.newPlainInstance({URL: this.getURL(), ContentText: '', ContentDocument: null}));
+        var x = new Resource(Record.newPlainInstance({URL: url, ContentText: '', ContentDocument: null}));
         x.formalModel.addObserver({onContentTextUpdate: function(response) { this.setResponseText(response) }.bind(this)});
         x.formalModel.addObserver({onContentDocumentUpdate: function(response) {
-                this.setResponseXML(document.importNode(response.documentElement, true));
+                var elem = document.importNode(response.documentElement, true);
+                this.setResponseXML(FabrikConverter.xmlToStringArray(elem));
         }.bind(this)});
         x.fetch();
     }
@@ -2424,18 +2539,48 @@ asStringArray = function(input) {
 Component.subclass('TextListComponent', {
 
     initialize: function ($super) {
-           $super();
-           this.addFieldAndPinHandle('List', {to: asStringArray});
-           this.addFieldAndPinHandle('Selection');
-           this.setList([]);
+        $super();
+        this.addFieldAndPinHandle('List'/*, {to: asStringArray}*/);
+        this.addFieldAndPinHandle('Selection');
+        this.setList([]);
+        
     },
 
     buildView: function($super, optExtent) {
         $super(optExtent);
         this.morph = this.panel.addListPane().innerMorph();
-        this.morph.connectModel(this.formalModel.newRelay({List: "List", Selection: "Selection"}));
+        // this should convert ...
+        // this.morph.connectModel(this.formalModel.newRelay(
+        //     {   List: {name: "List"},
+        //         Selection: {name: "Selection", to: function(obj) { debugger; return obj.string || obj.toString() } }
+        //     }));
+        this.morph.connectModel(this.formalModel.newRelay({List: "-List", Selection: "Selection"}));
+        
+        this.setupListEnhancement();
+        
+        
         this.setupHandles();
         return this.panel;
+    },
+    
+    // remember selection when list changes and give back the object not only a string repr when available in List
+    // FIXME for returning objects better use conversion methods, but they seem not to work currently...
+    setupListEnhancement: function() {
+
+        var self = this;
+        this.morph.updateList = this.morph.updateList.wrap(function(proceed, newList) {
+            proceed(newList);
+            self.selectedIndex && this.selectLineAt(self.selectedIndex, true);
+        })
+        // this.formalModel.addObserver({onListUpdate: function(newList) { 
+        //     var idx = this.selectedIndex;
+        //     // this.setList(newList);
+        //     this.morph.setList(newList);
+        //     idx && newList && newList[idx] && this.morph.selectLineAt(idx, true);
+        // }.bind(this) });
+        this.formalModel.addObserver({onSelectionUpdate: function(sel) {
+                this.selectedIndex = this.morph.selectedLineNo;
+        }.bind(this) });
     }
     
 }),
@@ -2641,7 +2786,7 @@ Global.FabrikConverter = {
     basicToJs: function(xml) {
         var obj = {};
         // FIXME assumes data is only important attribute...
-        obj[xml.nodeName] = xml.hasChildNodes() ? {} : xml.getAttribute('data');
+        obj[xml.nodeName] = xml.hasChildNodes() ? {} : (xml.attributes && xml.getAttribute('data')) || xml.textContent;
         return obj;
     },
     
@@ -2654,18 +2799,20 @@ Global.FabrikConverter = {
     },
     
     // flattens XML and creates string representations for each node
-    xmlToStringArray: function(xml) {
-        var objCreator = function(string, xml) { return {string: string, xml: xml} };
+    xmlToStringArray: function(xml, indent) {
+        if (!indent) indent = '';
+        
+        var objCreator = function(string, xml) { return {string: string, xml: xml, js: FabrikConverter.xmlToJs(xml)} };
         
         if (!xml || xml instanceof DocumentType) return [];
-        if (!xml.parentNode) return FabrikConverter.xmlToStringArray(xml.firstChild); // omit root
-        if (!xml.hasChildNodes()) return [objCreator(xmlToString(xml), xml)];
+        if (!xml.parentNode) return FabrikConverter.xmlToStringArray(xml.firstChild, indent); // omit root
+        if (!xml.hasChildNodes()) return [objCreator(indent + xmlToString(xml), xml)];
         var list = $A(xml.childNodes).inject([], function(all, ea) {
-            return all.concat(FabrikConverter.xmlToStringArray(ea)) });
+            return all.concat(FabrikConverter.xmlToStringArray(ea, indent + '\t')) });
         // get just the tag opener and closer for the string
         var ownXMLStrings = /(<.*?>).*(<.*?>)/.exec(xmlToString(xml));
-        list.unshift(objCreator(ownXMLStrings[1], xml));
-        list.push(objCreator(ownXMLStrings[2], xml));
+        list.unshift(objCreator(indent + ownXMLStrings[1], xml));
+        list.push(objCreator(indent + ownXMLStrings[2], xml));
         return list;
     }
 };

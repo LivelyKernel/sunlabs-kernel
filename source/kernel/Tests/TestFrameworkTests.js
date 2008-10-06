@@ -213,7 +213,7 @@ TestCase.subclass('TestResultTest', {
 
 TestCase.subclass('RememberStackTest', {
 	
-	shouldRun: true,
+	shouldRun: false,
 	
 	a: function(a, b, c) {
 		this.assert(false);
@@ -311,6 +311,8 @@ TestCase.subclass('RememberStackTest', {
 
 
 TestCase.subclass('ErrorStackViewerTest', {
+	
+	shouldRun: false,
 	
 	setUp: function() {
 		this.viewer = new ErrorStackViewer();

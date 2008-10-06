@@ -414,6 +414,8 @@ Morph.subclass("SelectionMorph", {
 
     style: {borderWidth: 1, borderColor: Color.blue, fill: Color.secondary.blue, fillOpacity: 0.1 },
 
+    removeWhenEmpty: true,
+    
     initialize: function($super, viewPort, defaultworldOrNull) {
         $super(viewPort, "rect");
         this.originalPoint = viewPort.topLeft();
@@ -450,7 +452,7 @@ Morph.subclass("SelectionMorph", {
         this.selectedMorphs.reverse();
             
         if (lastCall) this.initialSelection = false;
-        if (lastCall && this.selectedMorphs.length == 0) this.remove();
+        if (lastCall && this.selectedMorphs.length == 0 && this.removeWhenEmpty) this.remove();
     },
 
     morphMenu: function($super, evt) { 
@@ -1158,7 +1160,7 @@ Morph.subclass("TextListMorph", {
     },
     
     updateList: function(newList) {
-	if(newList.length == 0) newList = ["-----"]; // jl 2008-08-02 workaround... :-(
+	if(!newList || newList.length == 0) newList = ["-----"]; // jl 2008-08-02 workaround... :-(
         var priorItem = this.getSelection();
         this.itemList = newList;
         this.removeAllMorphs();

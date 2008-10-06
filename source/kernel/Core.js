@@ -1708,7 +1708,9 @@ var Converter = {
     },
 
     isJSONConformant: function(value) { // for now, arrays not handled but could be
-	return value == null || (typeof value.valueOf()  !== 'object');
+        return true;
+        // why disallow all objects?
+        // return value == null || (typeof value.valueOf()  !== 'object');
     }
 
 };
