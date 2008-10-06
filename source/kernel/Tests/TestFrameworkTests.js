@@ -213,7 +213,7 @@ TestCase.subclass('TestResultTest', {
 
 TestCase.subclass('RememberStackTest', {
 	
-	shouldRun: false,
+	shouldRun: true,
 	
 	a: function(a, b, c) {
 		this.assert(false);
@@ -381,7 +381,7 @@ function dummyRecurse(a) {
 
 TestCase.subclass('NativeStackTest', {
     
-    shouldRun: false,
+    shouldRun: true,
     
     testGetStack: function() {
         var stack = getStack();
