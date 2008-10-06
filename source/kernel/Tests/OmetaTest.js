@@ -16,7 +16,7 @@ TestCase.subclass('TextTest', {
             if (this.styleOfIncludes(spec, text.emphasisAt(i))) return;
             this.assert(false, 'TextStyle of ' + text.string + ' has not '
                                 + JSON.serialize(spec) + ' at position ' + i + ' -- ' + msg);
-        }, this),
+        }, this);
     },
     
     // to test assertion

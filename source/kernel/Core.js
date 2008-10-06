@@ -138,8 +138,8 @@ function onModuleLoad(ownModuleName, code) {
         };
         return;
     };
-    // console.log('Trying soon again to load requirements for ' + ownModuleName);
-    window.setTimeout(onModuleLoad.curry(ownModuleName, code), 0);
+    console.log('Trying soon again to load requirements for ' + ownModuleName);
+    window.setTimeout(onModuleLoad.curry(ownModuleName, code), 10);
 };
 
 /* Code loader. Appends file to DOM. */
@@ -744,7 +744,8 @@ Object.extend(Function.prototype, {
 	    } catch (er) {
 		if (prefix) console.warn("%s.%s(%s): err: %s %s", this, prefix, args,  er, er.stack || "");
 		else console.warn("%s %s", er, er.stack || "");
-		Function.showStack();
+		logStack();
+        // Function.showStack();
 		throw er;
 	    }
 	}

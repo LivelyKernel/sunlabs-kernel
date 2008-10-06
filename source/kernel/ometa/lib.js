@@ -91,9 +91,9 @@ String.prototype.isUpper     = function() { return this.isCharacter() && this >=
 String.prototype.digitValue  = function() { return this.charCodeAt(0) - "0".charCodeAt(0) }
 
 // Why aren't these functions???
-Object.prototype.isSequenceable = false
-Array.prototype.isSequenceable  = true
-String.prototype.isSequenceable = true
+// Object.prototype.isSequenceable = false
+// Array.prototype.isSequenceable  = true
+// String.prototype.isSequenceable = true
 
 // some functional programming stuff
 
@@ -147,7 +147,7 @@ escapeChar = function(c) {
   return charCode > 255 ? String.fromCharCode(charCode) : escapeStringFor[charCode]
 }
 
-function unescape(s) {
+function ometaUnescape(s) {
   if (s[0] == '\\')
     switch (s[1]) {
       case '\\': return '\\'

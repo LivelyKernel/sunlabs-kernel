@@ -1926,12 +1926,13 @@ ComponentMorph.subclass('FabrikMorph', {
                         left: function(m1, m2) { return m1.getPosition().x <= m2.getPosition().x},
                         right: function(m1, m2) { return m1.bounds().maxX() >= m2.bounds().maxX()},
                         bottom: function(m1, m2) { return m1.bounds().maxY() >= m2.bounds().maxY()}};
-        for (pos in cmpFuncs) {
+        // for in does not work with ometa...
+        ['top', 'left', 'right', 'bottom'].each(function(pos) {
             compMorphs.each(function(eaMorph) {
                 if (!borderMorphs[pos]) borderMorphs[pos] = eaMorph;
                 borderMorphs[pos] = cmpFuncs[pos](eaMorph, borderMorphs[pos]) ? eaMorph : borderMorphs[pos];
             });
-        };
+        });
         return borderMorphs;
     },
     

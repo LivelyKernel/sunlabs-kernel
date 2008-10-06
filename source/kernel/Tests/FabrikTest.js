@@ -351,6 +351,7 @@ TestCase.subclass('ComponentModelTest', {
 	},
 	
 	testRemoveObserver2: function() { // remove the observer in two fields
+        // debugger;
 		this.setUpForObserverRemoveTest();
 		this.model.addObserver(this.observerModel, {Field1: "=setObserverField1", Field2: "=setObserverField2"});
 		this.model.removeObserver(this.observerModel);
@@ -733,7 +734,6 @@ TestCase.subclass('FunctionComponentTest', {
         var str = '{abc: 123, def: 456}';
         var expected = '({abc: 123, def: 456})';
         this.assertEqual(this.functionComponent1.fixObjectLiterals(str), expected, '1');
-        debugger;
         str = '{abc: 123, def: 456} + {a: 1, d: 4}';
         expected = '({abc: 123, def: 456})+({a: 1, d: 4})';
         this.assertEqual(this.functionComponent1.fixObjectLiterals(str), expected, '2');

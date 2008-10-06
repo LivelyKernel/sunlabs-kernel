@@ -213,7 +213,7 @@ OMeta = {
   _many1: function(x) { return this._many(x, x()) },
   _form: function(x) {
     var v = this._apply("anything")
-    if (!v.isSequenceable)
+    if (!Object.isArray(v) && !Object.isString(v))
       throw fail
     var origInput = this.input
     this.input = makeArrayOMInputStream(v, 0)

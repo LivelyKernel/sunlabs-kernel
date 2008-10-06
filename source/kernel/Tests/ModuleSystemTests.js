@@ -1,6 +1,8 @@
 
 TestCase.subclass('LoaderTest', {
 	
+	shouldRun: false,
+	
 	files: ['test1.js', 'test2.js', 'test3.js'],
 	
 	tearDown: function() {
