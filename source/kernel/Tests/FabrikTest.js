@@ -1309,7 +1309,7 @@ TestCase.subclass('ATextListComponentTest', {
     },
 
     testEmpty: function() {
-        this.assertEqual(this.textList.getList().length, 1); // Workaround....
+        this.assertEqual(this.textList.getList().length, 0);
     },
     
     testSetList: function() {
@@ -1336,6 +1336,31 @@ TestCase.subclass('ATextListComponentTest', {
         this.textList.setList(list);
         console.log('THE LIST::::    ' + this.textList.getList());
     },
+    
+    testRemembersSelectionIndex: function() {
+        var list = [{a: 1}, {b: 2}];
+        this.textList.setList(list);
+        this.textList.setSelection(list[1]);
+        this.assertEqual(this.textList.getSelectionIndex(), 1, 'wrong selection index');
+        var otherList = [{c: 3}, {d: 4}];
+        this.textList.setList(otherList);
+        this.assertEqual(this.textList.getSelectionIndex(), 1, 'wrong selection index after assigning new list');
+        // this.assertIdentity(this.textList.getSelection(), otherList[1], 'wrong selection');
+        this.assertEqualState(this.textList.getSelection(), otherList[1], 'wrong selection');
+    },
+    
+    testRemembersSelectionIndexWithMorph: function() {
+        var list = [{a: 1}, {b: 2}];
+        this.textList.buildView();
+        var morph = this.textList.morph;
+        this.textList.setList(list);
+        this.textList.setSelection(list[1]);
+        this.assertEqual(morph.selectedLineNo, 1, 'wrong selectedLineNo');
+        var otherList = [{c: 3}, {d: 4}];
+        this.textList.setList(otherList);
+        this.assertEqual(morph.selectedLineNo, 1, 'wrong selectedLineNo after assigning new list');
+        this.assertEqualState(morph.getSelection(), otherList[1], 'wrong selection');
+    }
 });
 
 

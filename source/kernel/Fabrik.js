@@ -369,8 +369,8 @@ Fabrik = {
         base.morph.automaticLayout();
         
         // get things going
-        infoList.selectedIndex = 1;
-        conditionList.selectedIndex = 10;
+        infoList.setSelectionIndex(1);
+        conditionList.setSelectionIndex(10);
         zipInput.setText('12685');
         urlInput.setText('http://www.google.com/ig/api?weather=');
         
@@ -1583,6 +1583,7 @@ Morph.subclass('ComponentMorph', {
             {relativePosition: pt(1,0), positionOffset: pt(0, -20)},
             {fill: Color.red/*, fillOpacity: 0.5*/});
         this.closeHalo.connectModel(Relay.newInstance({Value: "=removeMe"}, {removeMe: function() {this.remove()}.bind(this)}));
+        this.addGrabHalo({relativePosition: pt(1,0), positionOffset: pt(-45, -20)})
     },
     
     updateHaloItemPositions: function() {
@@ -1882,11 +1883,45 @@ Widget.subclass('Component', {
 
 SelectionMorph.subclass('UserFrameMorph', {
     
-    removeWhenEmpty: false, 
+    reshape: function($super, partName, newPoint, handle, lastCall) {
+        // Initial selection might actually move in another direction than toward bottomRight
+        // This code watches that and changes the control point if so
+        if (this.initialSelection) {
+            var selRect = new Rectangle.fromAny(pt(0,0), newPoint);
+            if (selRect.width*selRect.height > 30) {
+                this.reshapeName = selRect.partNameNearest(Rectangle.corners, newPoint);
+            }
+            this.setExtent(pt(0, 0)) // dont extend until we know what direction to grow
+            // $super(this.reshapeName, newPoint, handle, lastCall);
+            Morph.prototype.reshape.call(this, this.reshapeName, newPoint, handle, lastCall)
+        } else {
+            // $super(partName, newPoint, handle, lastCall);
+            Morph.prototype.reshape.call(this, partName, newPoint, handle, lastCall)
+        }
+        this.selectedMorphs = [];
+        this.owner.submorphs.forEach(function(m) {
+            if (m !== this && this.bounds().containsRect(m.bounds())) this.selectedMorphs.push(m);
+        }, this);
+        this.selectedMorphs.reverse();
+            
+        if (lastCall) this.initialSelection = false;
+        // if (lastCall /*&& this.selectedMorphs.length == 0 && this.removeWhenEmpty*/) this.remove();
+        if (lastCall && this.selectedMorphs.length == 0 && this.removeWhenEmpty) this.remove();
+        // this.selectedMorphs = [];
+    },
+    
+    // removeWhenEmpty: false, 
     
     remove: function() { 
         // this.selectedMorphs.invoke('remove');
-        this.removeOnlyIt();
+        // this.owner.removeMorph(this); // FIXME
+        if (this.fabrik) this.fabrik.currentSelection = null;
+        Morph.prototype.remove.call(this);
+    },
+    
+    okToBeGrabbedBy: function(evt) {
+        // this.selectedMorphs.forEach( function(m) { evt.hand.addMorph(m); } );
+        return this;
     }
 });
 
@@ -1916,7 +1951,11 @@ ComponentMorph.subclass('FabrikMorph', {
     },
     
     setupHaloItems: function($super) {
-        $super();        
+        this.closeHalo = this.addHaloItem("X", new Rectangle(0, 0, 18, 20), 
+            {relativePosition: pt(1,0), positionOffset: pt(0, -20)},
+            {fill: Color.red/*, fillOpacity: 0.5*/});
+        this.closeHalo.connectModel(Relay.newInstance({Value: "=removeMe"}, {removeMe: function() {this.remove()}.bind(this)}));
+
         this.addGrabHalo({relativePosition: pt(1,0), positionOffset: pt(-45,0)});
 
         this.collapseHalo = this.addHaloItem("collapse",  new Rectangle(0,0,60,20),
@@ -1991,6 +2030,24 @@ ComponentMorph.subclass('FabrikMorph', {
         this.uncollapsedExtent = this.getExtent();
         this.uncollapsedPosition = this.getPosition();
         this.setFill(Color.gray);
+        
+        
+        
+        if (this.currentSelection) {
+            this.component.connectors.each(function(ea) { this.removeMorph(ea.morph) }.bind(this));
+            
+            this.component.components.each(function(ea) {
+                if (!this.currentSelection.selectedMorphs.include(ea))
+                this.removeMorph(ea.panel)
+            }.bind(this));
+            
+            
+            this.currentSelection.selectedMorphs.each(function(ea) { this.addMorph(ea) }.bind(this));
+            this.currentSelection.selectedMorphs.each(function(ea) { ea.component.pinHandles.each(function(pin) { ea.removeMorph(pin.morph) } ) }.bind(this));
+            // this.setPosition(this.currentSelection.getPosition());
+            // this.setExtent(this.currentSelection.getExtent());
+            return;
+        }
         
         this.component.components.each(function(ea) { this.removeMorph(ea.panel) }.bind(this));
         this.component.connectors.each(function(ea) { this.removeMorph(ea.morph) }.bind(this));
@@ -2168,8 +2225,8 @@ Component.subclass('FabrikComponent', {
     },
     
     // setup after the window is opened
-    openIn: function($super, world, location) {
-        var morph = this.panel || this.buildView();
+    openIn: function($super, world, location, optExtent) {
+        var morph = this.panel || this.buildView(optExtent);
         var window = world.addFramedMorph(morph, morph.component.viewTitle, location, false);
         window.suppressHandles = true;
         
@@ -2527,59 +2584,37 @@ Component.subclass('ImageComponent', {
     }
 });
 
-asStringArray = function(input) {
-    var list = $A(input);
-    if (list.length == 0) 
-        return ["------"];  // awful hack around the bug that TextLists break when empty
-    if (list.length == 1 && !list.first()) 
-        return ['undefined!'];
-    return list.collect(function(ea){ return ea.string || ea.toString() });    
-};
-
 Component.subclass('TextListComponent', {
 
     initialize: function ($super) {
         $super();
-        this.addFieldAndPinHandle('List'/*, {to: asStringArray}*/);
+        this.addFieldAndPinHandle('List');
         this.addFieldAndPinHandle('Selection');
+        this.addField('SelectionIndex');
         this.setList([]);
-        
+        this.setupListEnhancement();
     },
 
     buildView: function($super, optExtent) {
         $super(optExtent);
         this.morph = this.panel.addListPane().innerMorph();
-        // this should convert ...
-        // this.morph.connectModel(this.formalModel.newRelay(
-        //     {   List: {name: "List"},
-        //         Selection: {name: "Selection", to: function(obj) { debugger; return obj.string || obj.toString() } }
-        //     }));
-        this.morph.connectModel(this.formalModel.newRelay({List: "-List", Selection: "Selection"}));
-        
-        this.setupListEnhancement();
-        
-        
+        this.morph.connectModel(this.formalModel.newRelay({List: "List", Selection: "Selection"}));
         this.setupHandles();
         return this.panel;
     },
     
-    // remember selection when list changes and give back the object not only a string repr when available in List
-    // FIXME for returning objects better use conversion methods, but they seem not to work currently...
+    // remember selection idx when list changes, let also the morph know
+    // TODO should be called during deserialization
     setupListEnhancement: function() {
-
-        var self = this;
-        this.morph.updateList = this.morph.updateList.wrap(function(proceed, newList) {
-            proceed(newList);
-            self.selectedIndex && this.selectLineAt(self.selectedIndex, true);
-        })
-        // this.formalModel.addObserver({onListUpdate: function(newList) { 
-        //     var idx = this.selectedIndex;
-        //     // this.setList(newList);
-        //     this.morph.setList(newList);
-        //     idx && newList && newList[idx] && this.morph.selectLineAt(idx, true);
-        // }.bind(this) });
+        this.formalModel.addObserver({onListUpdate: function(newList) {
+            if (!this.getSelectionIndex()) return;
+            this.setSelection(this.getList()[this.getSelectionIndex()]);
+        }.bind(this) });        
         this.formalModel.addObserver({onSelectionUpdate: function(sel) {
-                this.selectedIndex = this.morph.selectedLineNo;
+            var idx;
+            this.getList().each(function(ea, i) { if (equals(ea, sel)) idx = i;  });
+            this.setSelectionIndex(idx);
+            this.morph && this.morph.selectLineAt(idx);
         }.bind(this) });
     }
     
@@ -2632,9 +2667,11 @@ Widget.subclass('ComponentBox', {
 
 
         this.addMorphOfComponent(new FabrikComponent(), function() {
-            var fabrik = new FabrikComponent(pt(400,400));
+            var extent = pt(300,250);
+            var fabrik = new FabrikComponent();
+            fabrik.defaultViewExtent = extent;
             fabrik.viewTitle = 'Fabrik';
-            fabrik.openIn(WorldMorph.current(), WorldMorph.current().hands.first().getPosition());
+            fabrik.openIn(WorldMorph.current(), WorldMorph.current().hands.first().getPosition().midPt(extent));
             return fabrik.panel.owner;
         });
         

@@ -131,7 +131,7 @@ Morph.subclass("ClockMorph", {
         var labelSize = Math.max(Math.floor(0.04 * (bnds.width + bnds.height)), 2); // room to center with default inset
 	
         for (var i = 0; i < items.length; i++) {
-            var labelPosition = bnds.center().addPt(Point.polar(radius*0.85, ((i/items.length - 0.25)*Math.PI*2)).addXY(labelSize/2, 0);
+            var labelPosition = bnds.center().addPt(Point.polar(radius*0.85, ((i/items.length - 0.25)*Math.PI*2)).addXY(labelSize/2, 0));
             var label = new TextMorph((pt(labelSize*3, labelSize).extentAsRectangle()), items[i]);
 	    label.applyStyle({borderWidth: 0, fill: null, wrapStyle: lk.text.WrapStyle.Shrink, fontSize: labelSize, padding: Rectangle.inset(0)});
             label.align(label.bounds().center(), labelPosition.addXY(1, 0));

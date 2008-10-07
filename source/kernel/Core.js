@@ -139,7 +139,7 @@ function onModuleLoad(ownModuleName, code) {
         return;
     };
     console.log('Trying soon again to load requirements for ' + ownModuleName);
-    window.setTimeout(onModuleLoad.curry(ownModuleName, code), 10);
+    window.setTimeout(onModuleLoad.curry(ownModuleName, code), 0);
 };
 
 /* Code loader. Appends file to DOM. */
@@ -3777,6 +3777,25 @@ Visual.subclass('Image', {
     }
 });
 
+
+function equals(leftObj, rightObj) {
+	if (!leftObj && !rightObj) return true;
+	if (!leftObj || !rightObj) return false;
+	switch (leftObj.constructor) {
+		case String:
+		case Boolean:
+		case Boolean:
+		case Number:
+			return leftObj == rightObj;
+	};
+	if (leftObj.isEqualNode) return leftObj.isEqualNode(rightObj);
+	var cmp = function(left, right) {
+		for (var value in left)
+			if (!(left[value] instanceof Function))
+				return equals(left[value], right[value]);
+	};
+	return cmp(leftObj, rightObj) && cmp(rightObj, leftObj);
+};
 
 Object.subclass('Exporter', {
     documentation: "Implementation class for morph serialization",

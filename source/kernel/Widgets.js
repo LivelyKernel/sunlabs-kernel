@@ -479,7 +479,8 @@ Morph.subclass("SelectionMorph", {
             this.myWorld = this.world();
         } 
         this.myWorld.currentSelection = null;
-        Class.getSuperPrototype(this).remove.call(this);
+        // Class.getSuperPrototype(this).remove.call(this);
+        Morph.prototype.remove.call(this);
     },
     
     // Note: the next four methods should be removed after we have gridding, i think (DI)
@@ -1260,9 +1261,9 @@ Morph.subclass("TextListMorph", {
 TextListMorph.subclass("ListMorph", {
 
     generateListItem: function(value, rect) {
-        if(this.itemPrinter)
+        if (this.itemPrinter)
             value = this.itemPrinter(value);
-        return new TextMorph(rect, value.string /*fix for Fabrik XMLStringArray*/ || value.toString()).beListItem()
+        return new TextMorph(rect, value.string /*fix for Fabrik XMLStringArray, use itemPrinter*/ || value.toString()).beListItem();
     },
 
     generateSubmorphs: function(itemList) {
@@ -1294,7 +1295,10 @@ TextListMorph.subclass("ListMorph", {
         shouldUpdateModel && this.setSelection(selectionContent);
     },
     
-    
+    updateList: function($super, newList) {
+        $super(newList);
+        this.selectLineAt(this.selectedLineNo);
+    }
 });
 
 PseudoMorph.subclass('MenuItem');
