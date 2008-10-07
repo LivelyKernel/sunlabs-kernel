@@ -2118,7 +2118,7 @@ Object.subclass("Point", {
 	return acc;
     },
 
-    // Polar coordinates...
+    // Polar coordinates (theta=0 is East on screen, and increases in CCW direction
     r: function() { return this.dist(pt(0,0)); },
     theta: function() { return Math.atan2(this.y,this.x); },
 
@@ -2135,6 +2135,7 @@ Object.extend(Point, {
 	}
     },
 
+    // Note: theta=0 is East on the screen, and increases in counter-clockwise direction
     polar: function(r, theta) { return new Point(r*Math.cos(theta), r*Math.sin(theta)); },
     random: function(scalePt) { return new Point(scalePt.x.randomSmallerInteger(), scalePt.y.randomSmallerInteger()); },
     

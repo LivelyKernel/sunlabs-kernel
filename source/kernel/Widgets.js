@@ -1327,12 +1327,11 @@ MenuItem.addMethods({
             // another alternative style, send a message to the targetMorph's menu target (presumably a view).
             var responder = (targetMorph || this).getModelValue("getMenuTarget");
             if (responder)  {
-                console.log("menu target is " + responder);
                 var func = responder[this.action];
-                if (!func) console.log("didn't find function " + this.action);
+                if (!func) console.log(this.action + " not found in menu target " + responder);
                 else func.call(responder, this.para1, evt, this);
             } else {
-                console.log("no menu target, menu target " + targetMorph);
+                console.log("no menu target " + targetMorph);
             }
         } else {
 	    var functionName = this.getSelector() || this.para1;
@@ -1375,11 +1374,20 @@ Morph.subclass("MenuMorph", {
     
     initialize: function($super, items, targetMorph) {
         // items is an array of menuItems, each of which is an array of the form
-        // [itemName, target, functionName, parameterIfAny]
-        // At mouseUp, the call is of the form
-        // target.function(parameterOrNull,event,menuItem)
-        // Note that the last item is seldom used, but it allows the caller to put
+        // 	[itemName, target, functionName, parameterIfAny]
+        // At mouseUp, the item will be executed as follows:
+        // 	target.function(parameterOrNull,event,menuItem)
+        // The last item is seldom used, but it allows the caller to put
         // additional data at the end of the menuItem, where the receiver can find it.
+
+	// Note that an alternative form of item is supported, as:
+	// 	[itemName, itemFunction]
+	// which will be executed as follows:
+	//	itemFunction.call(targetMorph || this, evt)
+	// See MenuItem for yet another form of invocation for targets matching
+	//	var responder = (targetMorph || this).getModelValue("getMenuTarget");
+
+
         // The optional parameter lineList is an array of indices into items.
         // It will cause a line to be displayed below each item so indexed
     
@@ -2920,10 +2928,72 @@ WindowMorph.subclass("TabbedPanelMorph", {
 });
 
 
-// for Fabrik widget deserialization
+Morph.subclass("PieMenuMorph", {
+
+    documentation: "Fabrik-style gesture menus for fast one-button UI",
+
+    initialize: function($super, targetmorph, items, centerMenuItems) {
+        // items is an array of menuItems, each of which is an array of the form
+        // [itemName, target, functionName, parameterIfAny]
+
+        // A PieMenu allows many mouse drag operations to be carried out in a single stroke.
+	// It is the initial direction of the stroke that determines the operation.
+	// Beginners are assisted by the appearance of a pie-shaped map after some delay.
+	// The geometry divides 360 degrees by the number of items, and centers the
+	// first pie-shaped segment on the vertical direction, with the item list
+	// continuing around in a clockwise direction.
+        $super(new Rectangle(100,100,100,100), 'ellipse');
+        return this;
+    },
+    open: function(evt) {
+        // Note current mouse position and start a timer
+	this.mouseDownPoint = evt.mousePoint;
+	console.log("this.mouseDownPoint = " + this.mouseDownPoint);
+	WorldMorph.current().addMorph(this);
+	this.setPosition(this.mouseDownPoint.subPt(this.bounds().extent().scaleBy(0.5)));
+    },
+    onTimeExpired: function() {
+        // Display help disk
+    },
+    onMouseMove: function() {
+        // Test for whether we have reached the commitment radius.
+	// If so dispatch to appropriate action
+    },
+    onMouseUp: function() {
+        // This should only happen within the commitment radius.
+	// If the help disk has not been shown, then show it,
+	// otherwise, display the default (normal) menu.
+    }
+});
+
+PieMenuMorph.test = function() {
+	// Put an elipse on the screen and invoke the following menu on it...
+	// ----------------
+	// N	Undo			~
+	// NE	Duplicate		o-->o
+	// E	Move (pick up)		o-->
+	// SE	Scale			o < O
+	// S	Hide/show handles	<>
+	// SW	Rotate			G
+	// W	Drag (don't pick up)	-->
+	// NW	Delete			X
+	// center - Show menu
+	// -----------------
+    var items = [];
+    var menu = new PieMenuMorph(items);
+
+    var targetMorph = new Morph(new Rectangle(500,200,100,100), 'ellipse');
+    WorldMorph.current().addMorph(targetMorph);
+    targetMorph.onMouseDown = function(evt) {
+	new PieMenuMorph(targetMorph, items).open(evt);
+	};
+    targetMorph.handlesMouseDown = function () { return true };    
+};
+
 Widget.addMethods({
     
     deserializeModelFromNode: function(importer, node) {    
+	// for Fabrik widget deserialization
         console.log(" unserialize node " + node.id)
         if (node.textContent)
             var spec = JSON.unserialize(node.textContent);
