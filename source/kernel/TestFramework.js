@@ -126,7 +126,12 @@ Object.subclass('TestCase', {
 			for (var value in left) {
 				if (!(left[value] instanceof Function)) {
 					this.log('comparing: ' + left[value] + ' ' + right[value]);
-					this.assertEqualState(left[value], right[value], msg);
+					try {
+					    this.assertEqualState(left[value], right[value], msg);
+					} catch (e) {
+                        // debugger;
+					    throw e;
+					}
 				};
 			};
 		}.bind(this);

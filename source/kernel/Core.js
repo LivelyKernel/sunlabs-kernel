@@ -1708,6 +1708,7 @@ var Converter = {
     },
 
     isJSONConformant: function(value) { // for now, arrays not handled but could be
+        if (value instanceof Element && value.ownerDocument === document) return false;
         return true;
         // why disallow all objects?
         // return value == null || (typeof value.valueOf()  !== 'object');
