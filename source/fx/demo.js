@@ -39,6 +39,13 @@ var fx = {
 	    var listenerClass = Packages.com.sun.scenario.scenegraph.event.SGMouseListener;
 	    var jAdapter = new listenerClass(adapter);
 	    shape.addMouseListener(jAdapter);
+	},
+
+	rotate: function(node, theta, x, y) {
+	    node = fx.Transform.createTranslation(-x, -y, node);
+	    node = fx.Transform.createRotation(theta, node);
+	    node = fx.Transform.createTranslation(x, y, node);
+	    return node;
 	}
     }
 }
@@ -64,6 +71,7 @@ fx.util.setInterval = function(callback, delay) {
     });
     var timer = new fx.Timer(delay, listener);
     timer.start();
+    return timer;
 }
 
 
@@ -112,6 +120,6 @@ var tickCounter = 0;
 fx.util.setInterval(function() {
     group.remove(container);
     tickCounter ++;
-    container = fx.Transform.createRotation(tickCounter * Math.PI/32, shape);
+    container = fx.util.rotate(shape, tickCounter * Math.PI/8, 150, 150);
     group.add(container);
 }, 1000);
