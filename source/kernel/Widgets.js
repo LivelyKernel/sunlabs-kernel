@@ -2946,18 +2946,26 @@ Morph.subclass("PieMenuMorph", {
 	// The geometry divides 360 degrees by the number of items, and centers the
 	// first pie-shaped segment on the vertical direction, with the item list
 	// continuing around in a clockwise direction.
+
+	// NEXT TO DO:
+	// Add timeout to show disk
+	// Decorate disk in makeVisible
+	// Track extent from mouseMove
+	// Build help menu from mouseUp
+	// Implement a couple of committed actions
+
         $super(new Rectangle(100,100,100,100), 'ellipse');
         return this;
     },
     open: function(evt) {
         // Note current mouse position and start a timer
 	this.mouseDownPoint = evt.mousePoint;
-	console.log("this.mouseDownPoint = " + this.mouseDownPoint);
-	WorldMorph.current().addMorph(this);
 	this.setPosition(this.mouseDownPoint.subPt(this.bounds().extent().scaleBy(0.5)));
-    },
-    onTimeExpired: function() {
-        // Display help disk
+	var opacity = 0.1;  this.setFillOpacity(opacity);  this.setStrokeOpacity(opacity);
+	WorldMorph.current().addMorph(this);
+	evt.hand.setMouseFocus(this);
+	this.hasCommitted = false;  // Gesture not yet outside commitment radius
+        this.world().scheduleForLater(new SchedulableAction(this, "makeVisible", evt, 0), 300, false);
     },
     onMouseMove: function() {
         // Test for whether we have reached the commitment radius.
@@ -2967,6 +2975,14 @@ Morph.subclass("PieMenuMorph", {
         // This should only happen within the commitment radius.
 	// If the help disk has not been shown, then show it,
 	// otherwise, display the default (normal) menu.
+	this.remove();
+    },
+    makeVisible: function(openEvent) {
+	if (this.hasCommitted) return;
+	var opacity = 0.5;  this.setFillOpacity(opacity);  this.setStrokeOpacity(opacity);
+	// Make an inner circle with a '?'
+	// Make radial lines from inner circle to outer
+	// Add text labels from item labels (inside last parens)
     }
 });
 
