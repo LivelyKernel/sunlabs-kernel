@@ -3780,23 +3780,24 @@ Visual.subclass('Image', {
 
 
 function equals(leftObj, rightObj) {
-	if (!leftObj && !rightObj) return true;
-	if (!leftObj || !rightObj) return false;
-	switch (leftObj.constructor) {
-		case String:
-		case Boolean:
-		case Boolean:
-		case Number:
-			return leftObj == rightObj;
-	};
-	if (leftObj.isEqualNode) return leftObj.isEqualNode(rightObj);
-	var cmp = function(left, right) {
-		for (var value in left)
-			if (!(left[value] instanceof Function))
-				return equals(left[value], right[value]);
-	};
-	return cmp(leftObj, rightObj) && cmp(rightObj, leftObj);
+    if (!leftObj && !rightObj) return true;
+    if (!leftObj || !rightObj) return false;
+    switch (leftObj.constructor) {
+        case String:
+	case Boolean:
+	case Number:
+            return leftObj == rightObj;
+    };
+    if (leftObj.isEqualNode)
+        return leftObj.isEqualNode(rightObj);
+    var cmp = function(left, right) {
+	for (var value in left)
+	    if (!(left[value] instanceof Function))
+		return equals(left[value], right[value]);
+    };
+    return cmp(leftObj, rightObj) && cmp(rightObj, leftObj);
 };
+
 
 Object.subclass('Exporter', {
     documentation: "Implementation class for morph serialization",
