@@ -220,30 +220,30 @@ Fabrik = {
         getClasses.setFunctionBody('return allFabrikClassNames()');
         var getMethods = this.addFunctionComponent(f);
         getMethods.setFunctionBody('return allMethodsFor(this.getInput())'); 
-
+        
         var getSource = new FunctionComponent();
         getSource.addFieldAndPinHandle("Input2");
         getSource.formalModel.addObserver({onInput2Update: function() { getSource.execute()}.bind(getSource)});
         f.plugin(getSource);    
         getSource.setFunctionBody('return getMethodStringFor(this.getInput(), this.getInput2())'); 
-
+        
         var classList = this.addTextListComponent(f);
         var methodList = this.addTextListComponent(f);
-
-
+        
+        
         var methodSource = this.addTextComponent(f);
-
+        
         f.connectComponents(getClasses, "Result", classList, "List");
         f.connectComponents(classList, "Selection", getMethods, "Input");   
         f.connectComponents(getMethods, "Result", methodList, "List");  
-
+        
         f.connectComponents(classList,  "Selection", getSource, "Input");   
         f.connectComponents(methodList, "Selection", getSource, "Input2");  
-
+        
         f.connectComponents(getSource, "Result", methodSource, "Text"); 
-
+        
         f.morph.automaticLayout();
-
+        
         // some manual layout
         getClasses.panel.setPosition(pt(250,30));
         this.positionComponentRelativeToOther(classList, getClasses, pt(0, getClasses.panel.getExtent().y + 20));
@@ -252,7 +252,7 @@ Fabrik = {
         this.positionComponentRelativeToOther(methodSource, classList, pt(0, classList.panel.getExtent().y + 20));
         methodSource.panel.setExtent(pt(methodList.panel.getPosition().x - classList.panel.getPosition().x + classList.panel.getExtent().x, 200));
         this.positionComponentRelativeToOther(getSource, methodSource, pt(-1 * (getSource.panel.getExtent().x + 20), 0));
-
+        
         getClasses.execute();
         return f;
     },
@@ -1605,6 +1605,7 @@ Morph.subclass('ComponentMorph', {
             this.handObserver = new HandPositionObserver(function(value) {
                 if (!self.owner || !self.bounds().expandBy(10).containsPoint(self.owner.localize(value))) {
                     self.removeMorph(self.halos);
+                    self.adjustForNewBounds();
                     this.stop();
                     self.handObserver = null;
                 };
@@ -1629,16 +1630,10 @@ Morph.subclass('ComponentMorph', {
         var grabFunction = function(value) {
             if (!value) return;
 
-            // CLEANUP
-            this.openInWindow = null;
-            var owner = this.owner;
-            owner.removeMorph(this);
-            if (owner.constructor == WindowMorph) {
-                owner.remove();
-                this.reshape = this.origReshape || this.reshape;
-                this.collapseToggle = this.origCollapseToggle || this.collapseToggle;
-            }
-
+            
+            if (this.isFramed()) this.unframed();
+            this.remove();
+            
             var hand = WorldMorph.current().hands.first(); //FIXME -- get the click event?
             hand.addMorph(this);
             this.setPosition(pt(0,0));
@@ -1678,7 +1673,9 @@ Morph.subclass('ComponentMorph', {
     adjustForNewBounds: function($super) {
         this.fullBounds = null;
         $super();
-    }
+    },
+    
+    isFramed: Functions.False,
   
 });
 
@@ -1966,12 +1963,12 @@ ComponentMorph.subclass('FabrikMorph', {
     
     addMorph: function($super, morph) {
         // don't let loose ends stay around
-        if (morph.pinHandle && morph.pinHandle.isFakeHandle) {
+        if (morph.pinHandle && morph.pinHandle.isFakeHandle)
             throw new Error("Pin dropped on fabrik, this should not happen any more")
-        };
         
         // dropping components into the fabrik component...!
-        if (morph.component) this.component.plugin(morph.component);
+        if (morph.component)
+            this.component.plugin(morph.component);
         
         if (morph.isConnectorMorph) 
             this.addMorphFront(morph);
@@ -2033,21 +2030,21 @@ ComponentMorph.subclass('FabrikMorph', {
         
         
         
-        if (this.currentSelection) {
-            this.component.connectors.each(function(ea) { this.removeMorph(ea.morph) }.bind(this));
-            
-            this.component.components.each(function(ea) {
-                if (!this.currentSelection.selectedMorphs.include(ea))
-                this.removeMorph(ea.panel)
-            }.bind(this));
-            
-            
-            this.currentSelection.selectedMorphs.each(function(ea) { this.addMorph(ea) }.bind(this));
-            this.currentSelection.selectedMorphs.each(function(ea) { ea.component.pinHandles.each(function(pin) { ea.removeMorph(pin.morph) } ) }.bind(this));
-            // this.setPosition(this.currentSelection.getPosition());
-            // this.setExtent(this.currentSelection.getExtent());
-            return;
-        }
+        // if (this.currentSelection) {
+        //     this.component.connectors.each(function(ea) { this.removeMorph(ea.morph) }.bind(this));
+        //     
+        //     this.component.components.each(function(ea) {
+        //         if (!this.currentSelection.selectedMorphs.include(ea))
+        //         this.removeMorph(ea.panel)
+        //     }.bind(this));
+        //     
+        //     
+        //     this.currentSelection.selectedMorphs.each(function(ea) { this.addMorph(ea) }.bind(this));
+        //     this.currentSelection.selectedMorphs.each(function(ea) { ea.component.pinHandles.each(function(pin) { ea.removeMorph(pin.morph) } ) }.bind(this));
+        //     // this.setPosition(this.currentSelection.getPosition());
+        //     // this.setExtent(this.currentSelection.getExtent());
+        //     return;
+        // }
         
         this.component.components.each(function(ea) { this.removeMorph(ea.panel) }.bind(this));
         this.component.connectors.each(function(ea) { this.removeMorph(ea.morph) }.bind(this));
@@ -2102,6 +2099,44 @@ ComponentMorph.subclass('FabrikMorph', {
     closeAllToDnD: function(loc) {
         // ok, lets handle this myself
     },
+    
+    isFramed: function() {
+        return this.owner instanceof WindowMorph;
+    },
+    
+    framed: function() {
+        if (this.isFramed()) return;
+        // debugger;
+        var window = new WindowMorph(this, this.component.viewTitle, false);
+        window.suppressHandles = true;
+        this.reshape = this.reshape.wrap(function(proceed, partName, newPoint, handle, lastCall) {
+            proceed(partName, newPoint, handle, lastCall);
+            var windowdBnds = window.bounds().topLeft().extent(this.shape.bounds().extent().addXY(0, window.titleBar.innerBounds().height));
+            // window.setExtent(windowdBnds.extent());
+            window.setBounds(windowdBnds);
+            window.adjustForNewBounds();
+        });
+        
+        this.collapseToggle = this.collapseToggle.wrap(function(proceed, val) {
+            proceed(val);
+            window.setExtent(this.getExtent().addXY(0, window.titleBar.innerBounds().height));
+            window.adjustForNewBounds();
+        });
+        // undo closeAllToDnD
+        this.openDnD();
+        this.openInWindow = window;
+        // this.component.fabrik = null;
+        return window;
+    },
+    
+    unframed: function() {
+        if (!this.isFramed()) return;
+        this.owner.remove();
+        this.openInWindow = null;
+        this.reshape = this.constructor.prototype.reshape.bind(this);
+        this.collapseToggle = this.constructor.prototype.collapseToggle.bind(this);
+        return this;
+    }
 
 });
 
@@ -2190,6 +2225,7 @@ Component.subclass('FabrikComponent', {
         this.components = this.components.reject(function(ea) { return ea === component });
         if (this.rawNode && $A(this.rawNode.childNodes).include(component.rawNode))
             this.rawNode.removeChild(component.rawNode);
+        component.fabrik = null;
     },
     
     pluginConnector: function(connector) {
@@ -2201,13 +2237,13 @@ Component.subclass('FabrikComponent', {
         // argh! is this really necessary??
         connector.fabrik = this;
         
-        if (this.morph) {
-            if (!connector.morph)
-                connector.buildView();
-            if (!this.morph.submorphs.include(connector.morph))
-                this.morph.addMorph(connector.buildView());
-            connector.updateView();
-        };
+        if (!this.morph) return connector;
+        
+        if (!connector.morph)
+            connector.buildView();
+        if (!this.morph.submorphs.include(connector.morph))
+            this.morph.addMorph(connector.morph);
+        connector.updateView();
         return connector;
     },
 
@@ -2227,35 +2263,8 @@ Component.subclass('FabrikComponent', {
     // setup after the window is opened
     openIn: function($super, world, location, optExtent) {
         var morph = this.panel || this.buildView(optExtent);
-        var window = world.addFramedMorph(morph, morph.component.viewTitle, location, false);
-        window.suppressHandles = true;
-        
-        // window.reshape = Functions.Null;
-        // window.reshape = window.reshape.wrap(function(proceed, partName, newPoint, handle, lastCall) {
-        //    m.reshape(partName, newPoint, handle, lastCall);
-        //    if (m.getExtent().x < m.minExtent().x) {m.setExtentreturn;}
-        //    if (m.getExtent().y < m.minExtent().y) return;
-        //    proceed(partName, newPoint, handle, lastCall);
-        // });
-        morph.origReshape = morph.reshape;
-        morph.reshape = morph.reshape.wrap(function(proceed, partName, newPoint, handle, lastCall) {
-            proceed(partName, newPoint, handle, lastCall);
-            var windowdBnds = window.bounds().topLeft().extent(morph.shape.bounds().extent().addXY(0, window.titleBar.innerBounds().height));
-            // window.setExtent(windowdBnds.extent());
-            window.setBounds(windowdBnds);
-            window.adjustForNewBounds();
-        });
-        
-        morph.origCollapseToggle = morph.collapseToggle;
-        morph.collapseToggle = morph.collapseToggle.wrap(function(proceed, val) {
-            proceed(val);
-            window.setExtent(morph.getExtent().addXY(0,window.titleBar.innerBounds().height));
-            window.adjustForNewBounds();
-        });
-        // undo closeAllToDnD
-        morph.openDnD();
-        morph.openInWindow = window;
-        morph.component.fabrik = null;
+        var window = world.addMorph(morph.framed());
+        window.setPosition(location);
         return window;
     }
 });
@@ -2918,7 +2927,7 @@ Morph.subclass("FabrikClockMorph", {
 
 /* Changing the behavior of the WorldMorph: when a FabrikMorph is dropped, make it framed */
     WorldMorph.prototype.addMorphFrontOrBack = WorldMorph.prototype.addMorphFrontOrBack.wrap(function(proceed, m, front) {
-    if (m instanceof FabrikMorph && !m.openInWindow) {
+    if (m instanceof FabrikMorph/* && !m.openInWindow*/) {
         m.halos.remove();
         m.adjustForNewBounds();
         console.log('adding fabrikmorph to world...')

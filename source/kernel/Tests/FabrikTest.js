@@ -68,6 +68,7 @@ FabrikTestCase.subclass('FabrikTest', {
         this.buildFabrikWithComponents(1);
         this.components[0].panel.remove(); // high level remove
 		this.assertEqual(this.fabrikComponent.components.length, 0, "component not removed");
+		this.assert(!this.components[0].fabrik, "fabrik reference still there");
     },
     
     testFabrikInFabrikConnectorsBelongsToInner: function() {
@@ -222,17 +223,38 @@ FabrikTestCase.subclass('FabrikMorphTest', {
         this.assertIdentity(result.bottom, this.submorph2, 'bottom morph not found');
     },
     
-    testCollapseRemovesAllComponentMorphsAndResizes: function() {
+    testAddWindowFrameMorph: function() {
+        this.buildFabrikWithComponents(1);
+        var fabMorph = this.fabrikComponent.morph;
+        var window = fabMorph.framed();
+        this.assert(window instanceof WindowMorph, 'Window not windowMorph?')
+        this.assertIdentity(window, fabMorph.owner, 'window not owner')
+    },
+    
+    testRemoveWindowFrameMorph: function() {
+        this.buildFabrikWithComponents(1);
+        var fabMorph = this.fabrikComponent.morph;
+        fabMorph.framed();
+        fabMorph.unframed();
+        
+        this.assert(!fabMorph.owner, 'owner not removed');
+        this.assertIdentity(window, fabMorph.owner, 'window not owner')
+    },
+    
+    testCollapseRemovesAllComponentMorphsResizesAndMoves: function() {
         this.buildFabrikWithComponents(2);
         var fabMorph = this.fabrikComponent.morph;
+        var position = fabMorph.getPosition();
         this.assert(fabMorph.submorphs.include(this.components[0].panel), 'no morph for textComp1');
         this.assert(fabMorph.submorphs.include(this.components[1].panel), 'no morph for textComp2');
         this.assertEqual(fabMorph.getExtent(), this.fabrikComponent.defaultViewExtent, 'strange size');
-        this.fabrikComponent.morph.collapse();
+        fabMorph.collapsedPosition = pt(400,300);
+        fabMorph.collapse();
         this.assert(!fabMorph.submorphs.include(this.components[0].panel), 'textComp1 not removed');
         this.assert(!fabMorph.submorphs.include(this.components[1].panel), 'textComp2 not removed');
+        this.assertEqual(fabMorph.getPosition(), pt(400,300), 'wrong collapsed position');
         this.assertEqual(fabMorph.getExtent(), this.fabrikComponent.defaultCollapsedExtent, 'not resized');
-    }
+    },
    
 });
 
