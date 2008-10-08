@@ -48,7 +48,7 @@ var fx = {
 	    }
 	    var listenerClass = Packages.com.sun.scenario.scenegraph.event.SGMouseListener;
 	    var jAdapter = new listenerClass(adapter);
-	    shape.addMouseListener(jAdapter);
+	    shape._fxShape.addMouseListener(jAdapter);
 	},
 
 	rotate: function(element, theta, x, y) {
@@ -118,12 +118,32 @@ Object.extend(SVGGElement.prototype, {
     }
 
 });
+// http://www.w3.org/TR/2003/REC-SVG11-20030114/painting.html#paint-att-mod
+ var PaintModule = {
+     _fxHandlePaint: function(attr, value) {
+	 switch (attr) {
+	 case "fill":
+	     if (fx.Color[String(value)]) {
+		 this._fxShape.setFillPaint(fx.Color[String(value)]);
+		 return true;
+	     } else {
+		 console.log('unknown fill ' + value);
+	     }
+	 case "stroke":
+	     // FIXME
+	 }
+	 
+	 return false;
+     }
+}
 
 function SVGRectElement() {
     this._fxShape = fx.util.antiAlias(new fx.Shape());
     this._fxShape.setShape(new fx.Rectangle(0,0,0,0));
     this._fxTransform = fx.Transform.createTranslation(0, 0, this._fxShape);
 }
+
+Object.extend(SVGRectElement.prototype, PaintModule);
 
 Object.extend(SVGRectElement.prototype, {
     _fxTop: function() { // top node 
@@ -134,11 +154,41 @@ Object.extend(SVGRectElement.prototype, {
 	// ignore ns for now
 	if (["x", "y", "width", "height"].include(attr)) {
 	    this._fxShape.getShape()[attr] = Number(value); // FIXME parse units etc
+	} else if (["fill", "stroke"].include(attr)) {
+	    this._fxHandlePaint(attr, value);
 	} else {
 	    console.log('unknown attribute ' + attr  + " with value " + value);
 	}
     }
 });
+
+
+function SVGEllipseElement() {
+    this._fxShape = fx.util.antiAlias(new fx.Shape());
+    this._fxShape.setShape(new fx.Ellipse(0,0,0,0));
+    this._fxTransform = fx.Transform.createTranslation(0, 0, this._fxShape);
+}
+
+Object.extend(SVGEllipseElement.prototype, PaintModule);
+
+Object.extend(SVGEllipseElement.prototype, {
+    _fxTop: function() { // top node 
+	return this._fxTransform;
+    },
+    
+    setAttributeNS: function(ns, attr, value) {
+	// FIXME: SVG uses cx, cy, rx, ry
+	if (["x", "y", "width", "height"].include(attr)) {
+	    this._fxShape.getShape()[attr] = Number(value); // FIXME parse units etc
+	} else if (["fill", "stroke"].include(attr)) {
+	    this._fxHandlePaint(attr, value);
+	} else {
+	    console.log('unknown attribute ' + attr  + " with value " + value);
+	}
+    }
+});
+
+
 
 function SVGSVGElement() {
     this._fxGroup = new fx.Group();
@@ -148,7 +198,7 @@ Object.extend(SVGSVGElement.prototype, {
     appendChild: function(node) {
 	this._fxGroup.add(node._fxTop());
     },
-
+    
     removeChild: function(node) { // FIXME: proper exceptions?
 	this._fxGroup.remove(node._fxTop());
     }
@@ -162,14 +212,18 @@ Object.extend(SVGSVGElement.prototype, {
 var browser = new fx.Frame(1024,500);
 var canvas = new SVGSVGElement();
     
-var shape = new fx.Shape();
-shape.setShape(new fx.Ellipse(50, 50, 50, 50));
-shape.setFillPaint(fx.Color.BLUE);
-fx.util.antiAlias(shape);
-canvas._fxGroup.add(shape);
+var shape = new SVGEllipseElement();
+shape.setAttributeNS(null, "x", 50); // FIXME
+shape.setAttributeNS(null, "y", 50); // FIXME
+shape.setAttributeNS(null, "width", 50); // FIXME
+shape.setAttributeNS(null, "height", 50); // FIXME
+shape.setAttributeNS(null, "fill", "BLUE");
+canvas.appendChild(shape);
 fx.util.addMouseListener(shape, "mousePressed", function(evt) { 
     console.log('mousePressed event ' + evt);
 });
+
+
 
 
 var shape = new SVGRectElement();
@@ -178,10 +232,15 @@ shape.setAttributeNS(null, "y", 150);
 shape.setAttributeNS(null, "width", 50);
 shape.setAttributeNS(null, "height", 50);
 
-shape._fxShape.setFillPaint(fx.Color.RED);
+shape.setAttributeNS(null, "fill", "RED");
 shape._fxShape.setDrawPaint(fx.Color.GREEN);
 
 fx.util.setBorderWidth(shape._fxShape, 2);
+
+fx.util.addMouseListener(shape, "mousePressed", function(evt) { 
+    console.log('translated OK, event ' + evt);
+});
+
 
 canvas.appendChild(shape);
 
