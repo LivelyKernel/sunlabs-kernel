@@ -9,6 +9,15 @@
  */ 
 
 
+
+var window = {}
+load('../kernel/rhino-compat.js');
+
+
+load('../kernel/JSON.js'); print('JSON.js');
+load('../kernel/miniprototype.js'); print('miniprototype.js');
+
+
 var fx = {
     Panel: Packages.com.sun.scenario.scenegraph.JSGPanel,
     Group: Packages.com.sun.scenario.scenegraph.SGGroup,
@@ -23,6 +32,7 @@ var fx = {
 	antiAlias: function(shape) {
 	    var hints = Packages.java.awt.RenderingHints;
 	    shape.setAntialiasingHint(hints.VALUE_ANTIALIAS_ON);
+	    return shape;
 	},
 	setBorderWidth: function(shape, width) {
 	    var BasicStroke = Packages.java.awt.BasicStroke;
@@ -41,11 +51,11 @@ var fx = {
 	    shape.addMouseListener(jAdapter);
 	},
 
-	rotate: function(node, theta, x, y) {
-	    node = fx.Transform.createTranslation(-x, -y, node);
-	    node = fx.Transform.createRotation(theta, node);
-	    node = fx.Transform.createTranslation(x, y, node);
-	    return node;
+	rotate: function(element, theta, x, y) {
+	    element._fxTransform = fx.Transform.createTranslation(-x, -y, element._fxShape);
+	    element._fxTransform = fx.Transform.createRotation(theta, element._fxTransform);
+	    element._fxTransform = fx.Transform.createTranslation(x, y, element._fxTransform);
+	    return element;
 	}
     }
 }
@@ -63,6 +73,7 @@ fx.util.MouseAdapter.prototype = {
 }
 
 fx.util.setInterval = function(callback, delay) {
+    // env.js setInterval is not Swing-friendly
     var listener = new Packages.java.awt.event.ActionListener({
 	actionPerformed: function(actionEvent) {
 	    // transform actionEvent ?
@@ -73,7 +84,6 @@ fx.util.setInterval = function(callback, delay) {
     timer.start();
     return timer;
 }
-
 
 fx.Frame = function(width, height) {
     this.frame = new Packages.javax.swing.JFrame();
@@ -90,6 +100,45 @@ fx.Frame.prototype.display = function(node) {
     this.frame.setVisible(true);
 }
 
+// Here comes the SVG implementation
+function SVGGElement() {
+    this.group_ = new fx.Group();
+}
+
+Object.extend(SVGGElement.prototype, {
+    _fxTransform: null, // 
+    group_: null,
+    _fxTop: function() {
+	// transform may be applied to this group as a whole
+	return this._fxTransform || this.group_;
+    }
+
+});
+
+function SVGRectElement() {
+    this._fxShape = fx.util.antiAlias(new fx.Shape());
+    this._fxShape.setShape(new fx.Rectangle(0,0,0,0));
+}
+
+Object.extend(SVGRectElement.prototype, {
+    _fxTop: function() { // top node 
+	return this._fxTransform || this._fxShape;
+    },
+
+    setAttributeNS: function(ns, attr, value) {
+	// ignore ns for now
+	if (["x", "y", "width", "height"].include(attr)) {
+	    this._fxShape.getShape()[attr] = Number(value); // FIXME parse units etc
+	} else {
+	    console.log('unknown attribute ' + attr  + " with value " + value);
+	}
+    }
+});
+
+// end of SVG impl
+
+// example program
+
 var browser = new fx.Frame(1024,500);
 var group = new fx.Group(); 
     
@@ -99,27 +148,29 @@ shape.setFillPaint(fx.Color.BLUE);
 fx.util.antiAlias(shape);
 group.add(shape);
 fx.util.addMouseListener(shape, "mousePressed", function(evt) { 
-    print('mousePressed event ' + evt);
+    console.log('mousePressed event ' + evt);
 });
 
 
+var shape = new SVGRectElement();
+shape.setAttributeNS(null, "x", 150);
+shape.setAttributeNS(null, "y", 150);
+shape.setAttributeNS(null, "width", 50);
+shape.setAttributeNS(null, "height", 50);
 
-shape = new fx.Shape();
-shape.setShape(new fx.Rectangle(150, 150, 50, 50));
-shape.setFillPaint(fx.Color.RED);
-shape.setDrawPaint(fx.Color.GREEN);
-fx.util.antiAlias(shape);
-fx.util.setBorderWidth(shape, 2);
+shape._fxShape.setFillPaint(fx.Color.RED);
+shape._fxShape.setDrawPaint(fx.Color.GREEN);
 
-var container = new fx.Transform.createRotation(0, shape);
-group.add(container);
+fx.util.setBorderWidth(shape._fxShape, 2);
+
+group.add(shape._fxTop());
 
 browser.display(group);
 var tickCounter = 0;
 
 fx.util.setInterval(function() {
-    group.remove(container);
+    group.remove(shape._fxTop());
     tickCounter ++;
-    container = fx.util.rotate(shape, tickCounter * Math.PI/8, 150, 150);
-    group.add(container);
+    fx.util.rotate(shape, tickCounter * Math.PI/8, 150, 150);
+    group.add(shape._fxTop());
 }, 1000);
