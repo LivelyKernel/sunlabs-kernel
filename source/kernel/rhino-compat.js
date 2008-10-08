@@ -14,10 +14,9 @@ window.console = {
 
     log: function(/*...*/) { 
         var msg = "";
-        for (var i = 0; i < arguments.length; i++) {
-            msg += arguments[i].toString();
-        } 
-        System.err.println(msg);
+	for (var i = 0; i < arguments.length; i++) 
+	    msg += String(arguments[i]);
+        Packages.java.lang.System.err.println(msg);
     }
 
 };
