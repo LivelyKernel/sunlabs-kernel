@@ -32,12 +32,6 @@ var fx = {
 	    shape.setAntialiasingHint(hints.VALUE_ANTIALIAS_ON);
 	    return shape;
 	},
-	setBorderWidth: function(shape, width) { // set "stroke-width"
-	    var BasicStroke = Packages.java.awt.BasicStroke;
-	    shape.setDrawStroke(new BasicStroke(width, BasicStroke.CAP_ROUND,
-						BasicStroke.JOIN_MITER));
-            shape.setMode(fx.ShapeMode.STROKE_FILL);
-	},
 	
 	addMouseListener: function(shape, eventName, handler) {
 	    var adapter  = new fx.util.MouseAdapter();
@@ -127,8 +121,8 @@ Object.extend(SVGGElement.prototype, {
 
 });
 // http://www.w3.org/TR/2003/REC-SVG11-20030114/painting.html#paint-att-mod
- var PaintModule = {
-     
+var PaintModule = {
+     attributes: ["stroke", "fill", "stroke-width"],
      _fxHandlePaint: function(attr, value) {
 	 switch (attr) {
 	 case "fill":
@@ -137,12 +131,33 @@ Object.extend(SVGGElement.prototype, {
 		 return true;
 	     } else {
 		 console.log('unknown fill ' + value);
+		 break;
 	     }
-	 case "stroke":
-	     // FIXME
+	 case "stroke-width": {
+	     var BasicStroke = Packages.java.awt.BasicStroke;
+	     var shape = this._fxShape;
+	     shape.setDrawStroke(new BasicStroke(Number(value),  // FIXME conv, units, etc.
+						 BasicStroke.CAP_ROUND,
+						 BasicStroke.JOIN_MITER));
+	     //console.log('paint ' + shape.getDrawPaint() + " mode " + shape.getMode());
+             shape.setMode(shape.getMode() === fx.ShapeMode.FILL ?  
+			   fx.ShapeMode.STROKE_FILL : fx.ShapeMode.STROKE);
+	     return true;
 	 }
-	 
-	 return false;
+	     
+	 case "stroke": {
+	     if (fx.Color[String(value)]) {
+		 this._fxShape.setDrawPaint(fx.Color[String(value)]);
+		 return true;
+	     } else {
+		 console.log('unknown stroke ' + value);
+		 break;
+	     }
+    
+	 }
+	 default: 
+	     return false;	     
+     }
      }
 }
 
@@ -163,7 +178,7 @@ Object.extend(SVGRectElement.prototype, {
 	// ignore ns for now
 	if (["x", "y", "width", "height"].include(attr)) {
 	    this._fxShape.getShape()[attr] = Number(value); // FIXME parse units etc
-	} else if (["fill", "stroke"].include(attr)) {
+	} else if (PaintModule.attributes.include(attr)) {
 	    this._fxHandlePaint(attr, value);
 	} else {
 	    console.log('unknown attribute ' + attr  + " with value " + value);
@@ -189,7 +204,7 @@ Object.extend(SVGEllipseElement.prototype, {
 	// FIXME: SVG uses cx, cy, rx, ry
 	if (["x", "y", "width", "height"].include(attr)) {
 	    this._fxShape.getShape()[attr] = Number(value); // FIXME parse units etc
-	} else if (["fill", "stroke"].include(attr)) {
+	} else if (PaintModule.attributes.include(attr)) {
 	    this._fxHandlePaint(attr, value);
 	} else {
 	    console.log('unknown attribute ' + attr  + " with value " + value);
@@ -243,7 +258,7 @@ Object.extend(SVGPolygonElement.prototype, {
     
     setAttributeNS: function(ns, attr, value) {
 	// FIXME: SVG uses cx, cy, rx, ry
-	if (["fill", "stroke"].include(attr)) {
+	if (PaintModule.attributes.include(attr)) {
 	    this._fxHandlePaint(attr, value);
 	} else {
 	    console.log('unknown attribute ' + attr  + " with value " + value);
@@ -256,7 +271,6 @@ Object.extend(SVGPolygonElement.prototype, {
     }
 
 });
-
 
 
 function SVGSVGElement() {
@@ -294,6 +308,7 @@ this.document = Object.extend({},  {
 // example program
 
 var browser = new fx.Frame(1024,500);
+
 var canvas = new SVGSVGElement();
     
 var shape = document.createElementNS(null, "ellipse");
@@ -305,7 +320,7 @@ shape.setAttributeNS(null, "fill", "BLUE");
 canvas.appendChild(shape);
 
 fx.util.addMouseListener(shape, "mousePressed", function(evt) { 
-    console.log('mousePressed event ' + evt);
+    console.log('mouse pressed event ' + evt);
 });
 
 
@@ -316,20 +331,15 @@ shape.setAttributeNS(null, "width", 50);
 shape.setAttributeNS(null, "height", 50);
 
 shape.setAttributeNS(null, "fill", "RED");
-shape._fxShape.setDrawPaint(fx.Color.GREEN);
-
-fx.util.setBorderWidth(shape._fxShape, 2);
-
-fx.util.addMouseListener(shape, "mousePressed", function(evt) { 
-    console.log('translated OK, event ' + evt);
-});
+shape.setAttributeNS(null, "stroke", "GREEN");
+shape.setAttributeNS(null, "stroke-width", 2);
 
 canvas.appendChild(shape);
 
 var star = document.createElementNS(null, "polygon");
 
 function makeStarVertices(r, center, startAngle) { 
-    // changes to account for lack of real points
+    // changed to account for lack of real points
     var vertices = [];
     var nVerts = 10;
     for (var i = 0; i <= nVerts; i++) {
@@ -345,13 +355,16 @@ var verts = makeStarVertices(50, {x: 0, y:0}, 0);
 for (var i = 0; i < verts.length; i++) {
     star.points.appendItem(verts[i]);
 }
-star.close(); // FIXME impure
+star.close(); // FIXME not SVG
 star.setAttributeNS(null, "fill", "YELLOW");
+star.setAttributeNS(null, "stroke", "BLACK");
+star.setAttributeNS(null, "stroke-width", 1);
+
 canvas.appendChild(star);
 fx.util.translate(star, 250, 100);
     
 browser.display(canvas._fxGroup);
 
-fx.util.setInterval(function() {
+fx.util.setInterval(function() { // FIXME not standard
     fx.util.rotate(star, Math.PI/8, 250, 100);
 }, 50);
