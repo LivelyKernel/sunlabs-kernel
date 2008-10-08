@@ -12,7 +12,7 @@
 
 var window = {}
 load('../kernel/rhino-compat.js');
-
+this.console = window.console;
 
 load('../kernel/JSON.js'); print('JSON.js');
 load('../kernel/miniprototype.js'); print('miniprototype.js');
@@ -52,9 +52,13 @@ var fx = {
 	},
 
 	rotate: function(element, theta, x, y) {
-	    element._fxTransform = fx.Transform.createTranslation(-x, -y, element._fxShape);
+	    // note that it's cumulative
+	    var parent = element._fxTransform.getParent();
+	    parent.remove(element._fxTransform);
+	    element._fxTransform = fx.Transform.createTranslation(-x, -y, element._fxTransform);
 	    element._fxTransform = fx.Transform.createRotation(theta, element._fxTransform);
 	    element._fxTransform = fx.Transform.createTranslation(x, y, element._fxTransform);
+	    parent.add(element._fxTransform);
 	    return element;
 	}
     }
@@ -77,7 +81,7 @@ fx.util.setInterval = function(callback, delay) {
     var listener = new Packages.java.awt.event.ActionListener({
 	actionPerformed: function(actionEvent) {
 	    // transform actionEvent ?
-	    callback.call(this, actionEvent);
+	    callback.call(window, actionEvent);
 	}
     });
     var timer = new fx.Timer(delay, listener);
@@ -102,15 +106,15 @@ fx.Frame.prototype.display = function(node) {
 
 // Here comes the SVG implementation
 function SVGGElement() {
-    this.group_ = new fx.Group();
+    this._fxGroup = new fx.Group();
 }
 
 Object.extend(SVGGElement.prototype, {
     _fxTransform: null, // 
-    group_: null,
+    _fxGroup: null,
     _fxTop: function() {
 	// transform may be applied to this group as a whole
-	return this._fxTransform || this.group_;
+	return this._fxTransform || this._fxGroup;
     }
 
 });
@@ -118,11 +122,12 @@ Object.extend(SVGGElement.prototype, {
 function SVGRectElement() {
     this._fxShape = fx.util.antiAlias(new fx.Shape());
     this._fxShape.setShape(new fx.Rectangle(0,0,0,0));
+    this._fxTransform = fx.Transform.createTranslation(0, 0, this._fxShape);
 }
 
 Object.extend(SVGRectElement.prototype, {
     _fxTop: function() { // top node 
-	return this._fxTransform || this._fxShape;
+	return this._fxTransform;
     },
 
     setAttributeNS: function(ns, attr, value) {
@@ -135,18 +140,33 @@ Object.extend(SVGRectElement.prototype, {
     }
 });
 
+function SVGSVGElement() {
+    this._fxGroup = new fx.Group();
+}
+
+Object.extend(SVGSVGElement.prototype, {
+    appendChild: function(node) {
+	this._fxGroup.add(node._fxTop());
+    },
+
+    removeChild: function(node) { // FIXME: proper exceptions?
+	this._fxGroup.remove(node._fxTop());
+    }
+
+});
+
 // end of SVG impl
 
 // example program
 
 var browser = new fx.Frame(1024,500);
-var group = new fx.Group(); 
+var canvas = new SVGSVGElement();
     
 var shape = new fx.Shape();
 shape.setShape(new fx.Ellipse(50, 50, 50, 50));
 shape.setFillPaint(fx.Color.BLUE);
 fx.util.antiAlias(shape);
-group.add(shape);
+canvas._fxGroup.add(shape);
 fx.util.addMouseListener(shape, "mousePressed", function(evt) { 
     console.log('mousePressed event ' + evt);
 });
@@ -163,14 +183,10 @@ shape._fxShape.setDrawPaint(fx.Color.GREEN);
 
 fx.util.setBorderWidth(shape._fxShape, 2);
 
-group.add(shape._fxTop());
+canvas.appendChild(shape);
 
-browser.display(group);
-var tickCounter = 0;
+browser.display(canvas._fxGroup);
 
 fx.util.setInterval(function() {
-    group.remove(shape._fxTop());
-    tickCounter ++;
-    fx.util.rotate(shape, tickCounter * Math.PI/8, 150, 150);
-    group.add(shape._fxTop());
+    fx.util.rotate(shape, Math.PI/8, 150, 150);
 }, 1000);
