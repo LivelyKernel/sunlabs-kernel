@@ -8,11 +8,8 @@
  * other countries.
  */ 
 
-
-
-var window = {}
+var window = this;
 load('../kernel/rhino-compat.js');
-this.console = window.console;
 
 load('../kernel/JSON.js'); print('JSON.js');
 load('../kernel/miniprototype.js'); print('miniprototype.js');
@@ -26,6 +23,7 @@ var fx = {
     ShapeMode: Packages.com.sun.scenario.scenegraph.SGAbstractShape$Mode,
     Ellipse: Packages.java.awt.geom.Ellipse2D.Double,
     Rectangle: Packages.java.awt.geom.Rectangle2D.Double,
+    Path: Packages.java.awt.geom.GeneralPath,
     Color: Packages.java.awt.Color,
     Timer: Packages.javax.swing.Timer,
     util: {
@@ -34,7 +32,7 @@ var fx = {
 	    shape.setAntialiasingHint(hints.VALUE_ANTIALIAS_ON);
 	    return shape;
 	},
-	setBorderWidth: function(shape, width) {
+	setBorderWidth: function(shape, width) { // set "stroke-width"
 	    var BasicStroke = Packages.java.awt.BasicStroke;
 	    shape.setDrawStroke(new BasicStroke(width, BasicStroke.CAP_ROUND,
 						BasicStroke.JOIN_MITER));
@@ -51,7 +49,7 @@ var fx = {
 	    shape._fxShape.addMouseListener(jAdapter);
 	},
 
-	rotate: function(element, theta, x, y) {
+	rotate: function(element, theta, x, y) { // move to SVGTransform
 	    // note that it's cumulative
 	    var parent = element._fxTransform.getParent();
 	    parent.remove(element._fxTransform);
@@ -60,7 +58,17 @@ var fx = {
 	    element._fxTransform = fx.Transform.createTranslation(x, y, element._fxTransform);
 	    parent.add(element._fxTransform);
 	    return element;
+	},
+
+	translate: function(element, x, y) { // move to SVGTransform
+	    // note that it's cumulative
+	    var parent = element._fxTransform.getParent();
+	    parent && parent.remove(element._fxTransform);
+	    element._fxTransform = fx.Transform.createTranslation(x, y, element._fxTransform);
+	    parent && parent.add(element._fxTransform);
+	    return element;
 	}
+
     }
 }
 
@@ -120,6 +128,7 @@ Object.extend(SVGGElement.prototype, {
 });
 // http://www.w3.org/TR/2003/REC-SVG11-20030114/painting.html#paint-att-mod
  var PaintModule = {
+     
      _fxHandlePaint: function(attr, value) {
 	 switch (attr) {
 	 case "fill":
@@ -190,6 +199,66 @@ Object.extend(SVGEllipseElement.prototype, {
 
 
 
+function SVGPointList(node) {
+    this.node = node;
+    this._fxContents = [];
+}
+
+Object.extend(SVGPointList.prototype, {
+    getItem: function(idx) {
+	return this._fxContents[idx];
+    },
+    
+    appendItem: function(point) {
+	this._fxContents.push(point);
+	var shape = this.node._fxShape.getShape();
+	if (this._fxContents.length == 1) {
+	    shape.moveTo(point.x, point.y);
+	} else {
+	    shape.lineTo(point.x, point.y);
+	}
+    },
+    
+    
+});
+    
+SVGPointList.prototype.__defineGetter__("numberOfItems", function() {
+    return this._fxContents.length;
+});
+
+function SVGPolygonElement() {
+    this._fxShape = fx.util.antiAlias(new fx.Shape());
+    this._fxShape.setShape(new fx.Path());
+    this._fxTransform = fx.Transform.createTranslation(0, 0, this._fxShape);
+    this.points = new SVGPointList(this);
+}
+
+
+Object.extend(SVGPolygonElement.prototype, PaintModule);
+
+Object.extend(SVGPolygonElement.prototype, {
+    _fxTop: function() { // top node 
+	return this._fxTransform;
+    },
+    
+    setAttributeNS: function(ns, attr, value) {
+	// FIXME: SVG uses cx, cy, rx, ry
+	if (["fill", "stroke"].include(attr)) {
+	    this._fxHandlePaint(attr, value);
+	} else {
+	    console.log('unknown attribute ' + attr  + " with value " + value);
+	}
+    },
+
+    close: function() { // FIXME: not SVG
+	var shape = this._fxShape.getShape();
+	shape.closePath();
+    }
+
+});
+
+
+
 function SVGSVGElement() {
     this._fxGroup = new fx.Group();
 }
@@ -205,6 +274,21 @@ Object.extend(SVGSVGElement.prototype, {
 
 });
 
+this.document = Object.extend({},  {
+    createElementNS: function(ns, name) { // FIXME ns
+	switch (name) {
+	case "rect":
+	    return new SVGRectElement();
+	case "ellipse":
+	    return new SVGEllipseElement();
+	case "polygon":
+	    return new SVGPolygonElement();
+	default:
+	    console.log("unknown element " + name);
+	    return null;
+	}
+    }
+});
 // end of SVG impl
 
 // example program
@@ -212,21 +296,20 @@ Object.extend(SVGSVGElement.prototype, {
 var browser = new fx.Frame(1024,500);
 var canvas = new SVGSVGElement();
     
-var shape = new SVGEllipseElement();
+var shape = document.createElementNS(null, "ellipse");
 shape.setAttributeNS(null, "x", 50); // FIXME
 shape.setAttributeNS(null, "y", 50); // FIXME
 shape.setAttributeNS(null, "width", 50); // FIXME
 shape.setAttributeNS(null, "height", 50); // FIXME
 shape.setAttributeNS(null, "fill", "BLUE");
 canvas.appendChild(shape);
+
 fx.util.addMouseListener(shape, "mousePressed", function(evt) { 
     console.log('mousePressed event ' + evt);
 });
 
 
-
-
-var shape = new SVGRectElement();
+shape = document.createElementNS(null, "rect");
 shape.setAttributeNS(null, "x", 150);
 shape.setAttributeNS(null, "y", 150);
 shape.setAttributeNS(null, "width", 50);
@@ -241,11 +324,34 @@ fx.util.addMouseListener(shape, "mousePressed", function(evt) {
     console.log('translated OK, event ' + evt);
 });
 
-
 canvas.appendChild(shape);
 
+var star = document.createElementNS(null, "polygon");
+
+function makeStarVertices(r, center, startAngle) { 
+    // changes to account for lack of real points
+    var vertices = [];
+    var nVerts = 10;
+    for (var i = 0; i <= nVerts; i++) {
+	var theta = startAngle + (2*Math.PI/nVerts*i);
+	var p = { x: r*Math.cos(theta), y: r*Math.sin(theta)};
+	if (i%2 == 0) p = { x: p.x* 0.39, y: p.y*0.39}; // scaleBy
+	vertices.push({ x: p.x + center.x, y: p.y + center.y});
+    }
+    return vertices; 
+}
+    
+var verts = makeStarVertices(50, {x: 0, y:0}, 0);
+for (var i = 0; i < verts.length; i++) {
+    star.points.appendItem(verts[i]);
+}
+star.close(); // FIXME impure
+star.setAttributeNS(null, "fill", "YELLOW");
+canvas.appendChild(star);
+fx.util.translate(star, 250, 100);
+    
 browser.display(canvas._fxGroup);
 
 fx.util.setInterval(function() {
-    fx.util.rotate(shape, Math.PI/8, 150, 150);
-}, 1000);
+    fx.util.rotate(star, Math.PI/8, 250, 100);
+}, 50);
