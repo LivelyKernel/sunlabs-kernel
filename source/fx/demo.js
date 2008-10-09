@@ -9,11 +9,23 @@
  */ 
 
 var window = this;
+
 load('../kernel/rhino-compat.js');
 
-load('../kernel/JSON.js'); print('JSON.js');
-load('../kernel/miniprototype.js'); print('miniprototype.js');
+load('../kernel/JSON.js');
+load('../kernel/miniprototype.js'); 
+load('dom/mico.js');
+load('dom/dom2-core.js');
+load('dom/dom2-events.js');
+load('dom/dom2-html.js');
+//load('dom/svg1.1.js');
+print('loaded DOM implementation in JS');
+load('dom/index.xhtml.js');
+print('loaded start document emulation');
 
+
+load('../kernel/defaultconfig.js');
+load('../kernel/Core.js');
 
 var fx = {
     Panel: Packages.com.sun.scenario.scenegraph.JSGPanel,
@@ -44,7 +56,8 @@ var fx = {
 	},
 
 	rotate: function(element, theta, x, y) { // move to SVGTransform
-	    // note that it's cumulative
+	    // note that it's cumulative, we end up creating a lot of transforms, hence stack overflows etc
+	    // instead, calculate a single cumulative transform and replace the original
 	    var parent = element._fxTransform.getParent();
 	    parent.remove(element._fxTransform);
 	    element._fxTransform = fx.Transform.createTranslation(-x, -y, element._fxTransform);
