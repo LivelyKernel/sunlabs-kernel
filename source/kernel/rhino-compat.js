@@ -8,17 +8,18 @@
  * other countries.
  */ 
 
+
 window.parent = window;
 
 window.console = { 
-
     log: function(/*...*/) { 
         var msg = "";
 	for (var i = 0; i < arguments.length; i++) 
 	    msg += String(arguments[i]);
         Packages.java.lang.System.err.println(msg);
     }
-
 };
 
+window.navigator = { userAgent: "Rhino" };
+window.alert = print;
 
