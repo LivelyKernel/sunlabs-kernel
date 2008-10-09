@@ -113,6 +113,13 @@ fx.Frame.prototype.display = function(node) {
     this.frame.setVisible(true);
 }
 
+
+Function.wrap(SVGElement.prototype,  ['appendChild', 'setAttributeNS', 'setAttribute' ], function(func, args) {
+    console.log('append or set ' + $A(args));
+    return func.apply(this, args);
+});
+
+
 // scenegraph bindings to SVG
 
 // http://www.w3.org/TR/2003/REC-SVG11-20030114/painting.html#paint-att-mod
@@ -156,27 +163,27 @@ var PaintModule = {
 }
 
 
+
 Object.extend(SVGRectElement.prototype, PaintModule);
 Object.extend(SVGRectElement.prototype, {
     _fxInit: function() {
 	this._fxShape = fx.util.antiAlias(new fx.Shape());
 	this._fxShape.setShape(new fx.Rectangle(0,0,0,0));
 	this._fxTransform = fx.Transform.createTranslation(0, 0, this._fxShape);
-    },
+    }
+});
 
-    _fxTop: function() { // top node 
-	return this._fxTransform;
-    },
-
-    setAttributeNS: function(ns, attr, value) {
-	// ignore ns for now
-	if (["x", "y", "width", "height"].include(attr)) {
-	    this._fxShape.getShape()[attr] = Number(value); // FIXME parse units etc
-	} else if (PaintModule.attributes.include(attr)) {
-	    this._fxHandlePaint(attr, value);
-	} else {
-	    console.log('unknown attribute ' + attr  + " with value " + value);
-	}
+// FIXME should wrap setAttributeNodeNS the Attr is first created and set, and then its value is set
+Function.wrap(SVGRectElement.prototype, 'setAttributeNS', function(func, args) {
+    func.apply(this, args);
+    var name = args[1];
+    var value = args[2];
+    if (["x", "y", "width", "height"].include(name)) {
+	this._fxShape.getShape()[name] = Number(value); // FIXME parse units etc
+    } else if (PaintModule.attributes.include(name)) {
+	this._fxHandlePaint(name, value);
+    } else {
+	console.log('unknown attribute ' + name  + " with value " + value);
     }
 });
 
@@ -187,23 +194,25 @@ Object.extend(SVGEllipseElement.prototype, {
 	this._fxShape = fx.util.antiAlias(new fx.Shape());
 	this._fxShape.setShape(new fx.Ellipse(0,0,0,0));
 	this._fxTransform = fx.Transform.createTranslation(0, 0, this._fxShape);
-    },
-
-    _fxTop: function() { // top node 
-	return this._fxTransform;
-    },
-    
-    setAttributeNS: function(ns, attr, value) {
-	// FIXME: SVG uses cx, cy, rx, ry
-	if (["x", "y", "width", "height"].include(attr)) {
-	    this._fxShape.getShape()[attr] = Number(value); // FIXME parse units etc
-	} else if (PaintModule.attributes.include(attr)) {
-	    this._fxHandlePaint(attr, value);
-	} else {
-	    console.log('unknown attribute ' + attr  + " with value " + value);
-	}
     }
 });
+
+
+Function.wrap(SVGEllipseElement.prototype, 'setAttributeNS', function(func, args) {
+    func.apply(this, args);
+    var attr = args[1];
+    var value = args[2];
+    // FIXME: SVG uses cx, cy, rx, ry
+    if (["x", "y", "width", "height"].include(attr)) {
+	this._fxShape.getShape()[attr] = Number(value); // FIXME parse units etc
+    } else if (PaintModule.attributes.include(attr)) {
+	this._fxHandlePaint(attr, value);
+    } else {
+	console.log('unknown attribute ' + attr  + " with value " + value);
+    }
+});
+
+
 
 Object.extend(SVGPolygonElement.prototype, PaintModule);
 Object.extend(SVGPolygonElement.prototype, {
@@ -212,10 +221,6 @@ Object.extend(SVGPolygonElement.prototype, {
 	this._fxShape = fx.util.antiAlias(new fx.Shape());
 	this._fxShape.setShape(new fx.Path());
 	this._fxTransform = fx.Transform.createTranslation(0, 0, this._fxShape);
-    },
-
-    _fxTop: function() { // top node 
-	return this._fxTransform;
     },
 
     _fxMakePath: function() {
@@ -229,18 +234,23 @@ Object.extend(SVGPolygonElement.prototype, {
 	    }
 	}
 	path.closePath();
-    },
-    
-    setAttributeNS: function(ns, attr, value) {
-	// FIXME: SVG uses cx, cy, rx, ry
-	if (PaintModule.attributes.include(attr)) {
-	    this._fxHandlePaint(attr, value);
-	} else {
-	    console.log('unknown attribute ' + attr  + " with value " + value);
-	}
     }
 
 });
+
+
+Function.wrap(SVGPolygonElement.prototype, 'setAttributeNS', function(func, args) {
+    func.apply(this, args);
+    var attr = args[1];
+    var value = args[2];
+    if (PaintModule.attributes.include(attr)) {
+	this._fxHandlePaint(attr, value);
+    } else {
+	console.log('unknown attribute ' + attr  + " with value " + value);
+    }
+
+});
+
 
 Object.extend(SVGSVGElement.prototype, {
     _fxInit: function() {
@@ -251,11 +261,11 @@ Object.extend(SVGSVGElement.prototype, {
 
 Object.extend(SVGSVGElement.prototype, {
     _fxAppendChild: function(node) {
-	this._fxGroup.add(node._fxTop());
+	this._fxGroup.add(node._fxTransform);
     },
     
     _fxRemoveChild: function(node) { // FIXME: proper exceptions?
-	this._fxGroup.remove(node._fxTop());
+	this._fxGroup.remove(node._fxTransform);
     }
 
 });
