@@ -18,14 +18,14 @@ load('dom/mico.js');
 load('dom/dom2-core.js');
 load('dom/dom2-events.js');
 load('dom/dom2-html.js');
-//load('dom/svg1.1.js');
+load('dom/svg1.1.js');
 print('loaded DOM implementation in JS');
 load('dom/index.xhtml.js');
 print('loaded start document emulation');
 
 
-load('../kernel/defaultconfig.js');
-load('../kernel/Core.js');
+//load('../kernel/defaultconfig.js');
+//load('../kernel/Core.js');
 
 var fx = {
     Panel: Packages.com.sun.scenario.scenegraph.JSGPanel,
@@ -119,20 +119,8 @@ fx.Frame.prototype.display = function(node) {
     this.frame.setVisible(true);
 }
 
-// Here comes the SVG implementation
-function SVGGElement() {
-    this._fxGroup = new fx.Group();
-}
+// scenegraph bindings to SVG
 
-Object.extend(SVGGElement.prototype, {
-    _fxTransform: null, // 
-    _fxGroup: null,
-    _fxTop: function() {
-	// transform may be applied to this group as a whole
-	return this._fxTransform || this._fxGroup;
-    }
-
-});
 // http://www.w3.org/TR/2003/REC-SVG11-20030114/painting.html#paint-att-mod
 var PaintModule = {
      attributes: ["stroke", "fill", "stroke-width"],
@@ -166,7 +154,6 @@ var PaintModule = {
 		 console.log('unknown stroke ' + value);
 		 break;
 	     }
-    
 	 }
 	 default: 
 	     return false;	     
@@ -174,15 +161,15 @@ var PaintModule = {
      }
 }
 
-function SVGRectElement() {
-    this._fxShape = fx.util.antiAlias(new fx.Shape());
-    this._fxShape.setShape(new fx.Rectangle(0,0,0,0));
-    this._fxTransform = fx.Transform.createTranslation(0, 0, this._fxShape);
-}
 
 Object.extend(SVGRectElement.prototype, PaintModule);
-
 Object.extend(SVGRectElement.prototype, {
+    _fxInit: function() {
+	this._fxShape = fx.util.antiAlias(new fx.Shape());
+	this._fxShape.setShape(new fx.Rectangle(0,0,0,0));
+	this._fxTransform = fx.Transform.createTranslation(0, 0, this._fxShape);
+    },
+
     _fxTop: function() { // top node 
 	return this._fxTransform;
     },
@@ -200,15 +187,14 @@ Object.extend(SVGRectElement.prototype, {
 });
 
 
-function SVGEllipseElement() {
-    this._fxShape = fx.util.antiAlias(new fx.Shape());
-    this._fxShape.setShape(new fx.Ellipse(0,0,0,0));
-    this._fxTransform = fx.Transform.createTranslation(0, 0, this._fxShape);
-}
-
 Object.extend(SVGEllipseElement.prototype, PaintModule);
-
 Object.extend(SVGEllipseElement.prototype, {
+    _fxInit: function() {
+	this._fxShape = fx.util.antiAlias(new fx.Shape());
+	this._fxShape.setShape(new fx.Ellipse(0,0,0,0));
+	this._fxTransform = fx.Transform.createTranslation(0, 0, this._fxShape);
+    },
+
     _fxTop: function() { // top node 
 	return this._fxTransform;
     },
@@ -225,48 +211,30 @@ Object.extend(SVGEllipseElement.prototype, {
     }
 });
 
-
-
-function SVGPointList(node) {
-    this.node = node;
-    this._fxContents = [];
-}
-
-Object.extend(SVGPointList.prototype, {
-    getItem: function(idx) {
-	return this._fxContents[idx];
-    },
-    
-    appendItem: function(point) {
-	this._fxContents.push(point);
-	var shape = this.node._fxShape.getShape();
-	if (this._fxContents.length == 1) {
-	    shape.moveTo(point.x, point.y);
-	} else {
-	    shape.lineTo(point.x, point.y);
-	}
-    },
-    
-    
-});
-    
-SVGPointList.prototype.__defineGetter__("numberOfItems", function() {
-    return this._fxContents.length;
-});
-
-function SVGPolygonElement() {
-    this._fxShape = fx.util.antiAlias(new fx.Shape());
-    this._fxShape.setShape(new fx.Path());
-    this._fxTransform = fx.Transform.createTranslation(0, 0, this._fxShape);
-    this.points = new SVGPointList(this);
-}
-
-
 Object.extend(SVGPolygonElement.prototype, PaintModule);
-
 Object.extend(SVGPolygonElement.prototype, {
+
+    _fxInit: function() {
+	this._fxShape = fx.util.antiAlias(new fx.Shape());
+	this._fxShape.setShape(new fx.Path());
+	this._fxTransform = fx.Transform.createTranslation(0, 0, this._fxShape);
+    },
+
     _fxTop: function() { // top node 
 	return this._fxTransform;
+    },
+
+    _fxMakePath: function() {
+	var path = this._fxShape.getShape();
+	for (var i = 0; i < this.points.numberOfItems; i++) {
+	    var point = this.points.getItem(i);
+	    if (i == 0) {
+		path.moveTo(point.x, point.y);
+	    } else {
+		path.lineTo(point.x, point.y);
+	    }
+	}
+	path.closePath();
     },
     
     setAttributeNS: function(ns, attr, value) {
@@ -276,68 +244,40 @@ Object.extend(SVGPolygonElement.prototype, {
 	} else {
 	    console.log('unknown attribute ' + attr  + " with value " + value);
 	}
-    },
-
-    close: function() { // FIXME: not SVG
-	var shape = this._fxShape.getShape();
-	shape.closePath();
     }
 
 });
 
+Object.extend(SVGSVGElement.prototype, {
+    _fxInit: function() {
+	this._fxGroup = new fx.Group();
+    }
+});
 
-function SVGSVGElement() {
-    this._fxGroup = new fx.Group();
-}
 
 Object.extend(SVGSVGElement.prototype, {
-    appendChild: function(node) {
+    _fxAppendChild: function(node) {
 	this._fxGroup.add(node._fxTop());
     },
     
-    removeChild: function(node) { // FIXME: proper exceptions?
+    _fxRemoveChild: function(node) { // FIXME: proper exceptions?
 	this._fxGroup.remove(node._fxTop());
     }
 
 });
-
-this.document = Object.extend({},  {
-    createElementNS: function(ns, name) { // FIXME ns
-	switch (name) {
-	case "rect":
-	    return new SVGRectElement();
-	case "ellipse":
-	    return new SVGEllipseElement();
-	case "polygon":
-	    return new SVGPolygonElement();
-	default:
-	    console.log("unknown element " + name);
-	    return null;
-	}
-    }
-});
+    
 // end of SVG impl
 
 // example program
+var SVGNS = 'http://www.w3.org/2000/svg';
 
 var browser = new fx.Frame(1024,500);
 
-var canvas = new SVGSVGElement();
-    
-var shape = document.createElementNS(null, "ellipse");
-shape.setAttributeNS(null, "x", 50); // FIXME
-shape.setAttributeNS(null, "y", 50); // FIXME
-shape.setAttributeNS(null, "width", 50); // FIXME
-shape.setAttributeNS(null, "height", 50); // FIXME
-shape.setAttributeNS(null, "fill", "BLUE");
-canvas.appendChild(shape);
+var canvas = document.getElementById("canvas");
+canvas._fxInit();    
 
-fx.util.addMouseListener(shape, "mousePressed", function(evt) { 
-    console.log('mouse pressed event ' + evt);
-});
-
-
-shape = document.createElementNS(null, "rect");
+var shape = document.createElementNS(SVGNS, "rect");
+shape._fxInit();
 shape.setAttributeNS(null, "x", 150);
 shape.setAttributeNS(null, "y", 150);
 shape.setAttributeNS(null, "width", 50);
@@ -346,10 +286,35 @@ shape.setAttributeNS(null, "height", 50);
 shape.setAttributeNS(null, "fill", "RED");
 shape.setAttributeNS(null, "stroke", "GREEN");
 shape.setAttributeNS(null, "stroke-width", 2);
+canvas.appendChild(shape);
+canvas._fxAppendChild(shape);
+
+
+var shape = document.createElementNS(SVGNS, "ellipse");
+shape._fxInit();
+shape.setAttributeNS(null, "x", 50); // FIXME
+shape.setAttributeNS(null, "y", 50); // FIXME
+shape.setAttributeNS(null, "width", 50); // FIXME
+shape.setAttributeNS(null, "height", 50); // FIXME
+shape.setAttributeNS(null, "fill", "BLUE");
 
 canvas.appendChild(shape);
+canvas._fxAppendChild(shape);
 
-var star = document.createElementNS(null, "polygon");
+fx.util.addMouseListener(shape, "mousePressed", function(evt) { 
+    console.log('mouse pressed event ' + evt);
+});
+
+
+var star = document.createElementNS(SVGNS, "polygon");
+star._fxInit();
+
+function svgpt(x, y) {
+    var point = new SVGPoint();
+    point.x = x;
+    point.y = y;
+    return point;
+}
 
 function makeStarVertices(r, center, startAngle) { 
     // changed to account for lack of real points
@@ -357,27 +322,32 @@ function makeStarVertices(r, center, startAngle) {
     var nVerts = 10;
     for (var i = 0; i <= nVerts; i++) {
 	var theta = startAngle + (2*Math.PI/nVerts*i);
-	var p = { x: r*Math.cos(theta), y: r*Math.sin(theta)};
-	if (i%2 == 0) p = { x: p.x* 0.39, y: p.y*0.39}; // scaleBy
-	vertices.push({ x: p.x + center.x, y: p.y + center.y});
+	var p =  svgpt(r*Math.cos(theta), r*Math.sin(theta));
+	if (i%2 == 0) p = svgpt(p.x* 0.39, p.y*0.39); // scaleBy
+	vertices.push(svgpt(p.x + center.x, p.y + center.y));
     }
     return vertices; 
 }
     
-var verts = makeStarVertices(50, {x: 0, y:0}, 0);
+var verts = makeStarVertices(50, svgpt(0,0), 0);
 for (var i = 0; i < verts.length; i++) {
     star.points.appendItem(verts[i]);
 }
-star.close(); // FIXME not SVG
+star._fxMakePath(); // FIXME not in SVG
+
+
 star.setAttributeNS(null, "fill", "YELLOW");
 star.setAttributeNS(null, "stroke", "BLACK");
 star.setAttributeNS(null, "stroke-width", 1);
 
 canvas.appendChild(star);
+canvas._fxAppendChild(star);
+
 fx.util.translate(star, 250, 100);
-    
+
 browser.display(canvas._fxGroup);
 
 fx.util.setInterval(function() { // FIXME not standard
     fx.util.rotate(star, Math.PI/8, 250, 100);
 }, 50);
+
