@@ -2503,7 +2503,7 @@ Component.subclass('FunctionComponent', {
             this.setResult(this.pvtGetFunction().apply(this, this.parameterValues()) || null);
             console.log("Result of function call: " + this.getResult());
         } catch(e) {
-            debugger;
+            dbgOn(true);
             console.log("FunctionComponentModel: error " + e + " when executing body" + this.getFunctionBody());
             // throw e;
         }

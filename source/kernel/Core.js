@@ -14,6 +14,11 @@
  */
 
 var Global = this.window.top || this.window; // set to the context enclosing the SVG context.
+function dbgOn(cond) {
+    if (cond) debugger; // note that rhino has issues with this keyword
+    // also call as: throw dbgOn(new Error(....))
+    return cond;
+}
 
 // namespace logic adapted frm
 // http://higher-order.blogspot.com/2008/02/designing-clientserver-web-applications.html
@@ -132,7 +137,7 @@ function onModuleLoad(ownModuleName, code) {
             code();
         } catch(e) {
             console.log(JSON.serialize(PendingRequirements));
-            debugger; throw e;
+            dbgOn(true); throw e;
         } finally {
             if (noPendingRequirements(ownModuleName)) moduleLoaded(ownModuleName);
         };
@@ -300,8 +305,9 @@ Object.extend(Function.prototype, {
 	    // weirdly, RegExps are functions in Safari, so testing for Object.isFunction on
 	    // regexp field values will return true. But they're not full-blown functions and don't 
 	    // inherit argumentNames from Function.prototype
-	    if (ancestor && Object.isFunction(value) && value.argumentNames &&
-		value.argumentNames().first() == "$super") {
+	    
+	    if (ancestor && Object.isFunction(value) && value.argumentNames
+		&& value.argumentNames().first() == "$super") {
 		var method = value;
 		var advice = (function(m) {
 		    return function callSuper() { 
@@ -315,7 +321,7 @@ Object.extend(Function.prototype, {
 		    toString: function() { return method.toString() },
 		    originalFunction: method
 		});
-	    } 
+	    }
 	    this.prototype[property] = value;
 	    
 	    if (property === "formals") {
@@ -914,7 +920,6 @@ Object.subclass('Record', {
                 if (!this["set" + varname]) {
                      // console.log("ERROR: cannot observe nonexistent variable " + varname);
                      // logStack();
-                    // debugger; 
                     throw new Error("cannot observe nonexistent variable " + varname);
 		}
                 var deps = this[Record.observerListName(varname)];
@@ -944,6 +949,7 @@ Object.subclass('Record', {
         }, this);
     },
 
+
     addObserversFromSetters: function(reverseSpec, dep, optKickstartUpdates) {
 	var forwardSpec = {};
 	Properties.forEachOwn(reverseSpec, function each(key, value) {
@@ -970,7 +976,6 @@ Object.subclass('Record', {
 		var tmp = self[source].call(self);
 		dep[target].call(dep, from ? from(tmp) : tmp);
 	    } catch (er) {
-		debugger;
 		console.log("on kickstart update: " + er + " on " + dep + " " + target
 			    + " mapping to " + source + " " + er.stack);
 	    }
@@ -989,8 +994,9 @@ Object.subclass('Record', {
 	    }, this);
     },
 
+
     toString: function() {
-	return "#<Record{" + String(JSON.serialize(this.definition)) + "}";
+	return "#<Record{" + String(JSON.serialize(this.definition)) + "}>";
     },
 
     create: function(bodySpec) { // called most likely on the prototype object
@@ -1028,7 +1034,7 @@ Record.subclass('DOMRecord', {
     },
 
     getRecordField: function(name) { 
-	if (!this.rawNode || !this.rawNode.getAttributeNS)  debugger;
+	dbgOn(!this.rawNode || !this.rawNode.getAttributeNS);
 	var result = this.rawNode.getAttributeNS(null, name);
 	if (result === null) return undefined;
 	else if (result === "") return null;
@@ -1125,7 +1131,7 @@ DOMRecord.subclass('DOMNodeRecord', {
 Record.subclass('StyleRecord', {
     description: "base class for records backed by a DOM Node",
     getRecordField: function(name) { 
-	if (!this.rawNode || !this.rawNode.style)  debugger;
+	dbgOn(!this.rawNode || !this.rawNode.style);
 	var result = this.rawNode.style.getPropertyValue(name);
 	
 	if (result === null) return undefined;
@@ -1134,7 +1140,7 @@ Record.subclass('StyleRecord', {
     },
 
     setRecordField: function(name, value) {
-	if (!this.rawNode || !this.rawNode.style)  debugger;
+	dbgOn(!this.rawNode || !this.rawNode.style);
 	if (value === undefined) {
 	    throw new Error("use removeRecordField to remove " + name);
 	}
@@ -1142,7 +1148,7 @@ Record.subclass('StyleRecord', {
     },
     
     removeRecordField: function(name) {
-	if (!this.rawNode || !this.rawNode.style)  debugger;
+	dbgOn(!this.rawNode || !this.rawNode.style);
 	return this.rawNode.style.removeProperty(name);
     }
 
@@ -1207,7 +1213,7 @@ Object.extend(Record, {
     },
 
     addAccessorMethods: function(def, fieldName, spec) {
-	if (fieldName.startsWith("set") || fieldName.startsWith("get")) debugger; // prolly a prob
+	dbgOn(fieldName.startsWith("set") || fieldName.startsWith("get")); // prolly a prob
 	if (spec.mode !== "-")
             def["set" + fieldName] = this.newRecordSetter(spec.name || fieldName, spec.to, spec.byDefault);
 	if (spec.mode !== "+")
@@ -1270,7 +1276,7 @@ Object.extend(Relay, {
     newRelaySetter: function newRelaySetter(targetName, optConv) {
 	return function setterRelay(/*...*/) {
 	    var impl = this.delegate[targetName];
-	    if (!impl) { debugger; throw new Error("delegate " + this.delegate + " does not implement " + targetName); }
+	    if (!impl) { throw dbgOn(new Error("delegate " + this.delegate + " does not implement " + targetName)); }
 	    var args = arguments;
 	    if (optConv) { args = $A(arguments); args.unshift(optConv(args.shift())); }
 	    return impl.apply(this.delegate, args);
@@ -1279,9 +1285,10 @@ Object.extend(Relay, {
 
     newRelayGetter: function newRelayGetter(targetName, optConv) {
 	return function getterRelay(/*...*/) {
-	    if (!this.delegate) debugger;
 	    var impl = this.delegate[targetName];
-	    if (!impl) { debugger; throw new Error("delegate " + this.delegate + " does not implement " + targetName); }
+	    if (!impl) { 
+		throw dbgOn(new Error("delegate " + this.delegate + " does not implement " + targetName)); 
+	    }
 	    var result = impl.apply(this.delegate, arguments);
 	    return optConv ? optConv(result) : result;
 	}
@@ -1290,13 +1297,15 @@ Object.extend(Relay, {
     newRelayUpdater: function newRelayUpdater(targetName, optConv) {
 	return function updateRelay(/*...*/) {
 	    var impl = this.delegate[targetName];
-	    if (!impl) { debugger; throw new Error("delegate " + this.delegate + " does not implement " + targetName); }
+	    if (!impl) { 
+		throw dbgOn(new Error("delegate " + this.delegate + " does not implement " + targetName)); 
+	    }
 	    return impl.apply(this.delegate, arguments);
 	}
     },
 
     handleStringSpec: function(def, key, value) {
-	if (value.startsWith("set") || value.startsWith("get")) debugger; // probably a mixup
+	dbgOn(value.startsWith("set") || value.startsWith("get")); // probably a mixup
 
 	if (value.startsWith("!")) {
 	    // call an update method with the derived name
@@ -1475,9 +1484,9 @@ Global.console && Global.console.log("loaded basic library");
 	}
     };
     
-    var platformConsole = Global.window.console || Global.window.parent.console; 
+    var platformConsole = Global.window.console || ( Global.window.parent && Global.window.parent.console); 
     if (!platformConsole) {
-	alert('no console! console output disabled');
+	window.alert && window.alert('no console! console output disabled');
 	platformConsole = { log: function(msg) { } } // do nothing as a last resort
     }
     
@@ -1656,7 +1665,7 @@ var Converter = {
 	if (!unserialized.XML) return value;
     // var xmlString = value.substring("XML:".length);
 	// FIXME if former XML was an Element, it has now a new parentNode, seperate in Elements/Documents?
-    // debugger;
+	//dbgOn(true);
 	var node = new DOMParser().parseFromString(unserialized.XML, "text/xml");
         return document.importNode(node.documentElement, true);
     },
@@ -1832,7 +1841,7 @@ Object.subclass('Wrapper', {
     })(),
 
     id: function() {
-	if (!this.rawNode) debugger;
+	dbgOn(!this.rawNode);
 	return this.rawNode.getAttribute("id");
     },
     
@@ -1955,7 +1964,7 @@ Object.subclass('Wrapper', {
 	function appendNode(node) {
 	    try {
 		extraNodes.push(self.rawNode.appendChild(node));
-	    } catch (er) { debugger; throw er;}
+	    } catch (er) { throw er;}
 	    extraNodes.push(self.rawNode.appendChild(NodeFactory.createNL()));
 	}
 
@@ -2448,7 +2457,7 @@ Object.subclass("Color", {
     deserialize: function(importer, str) {
 	if (!str || str == "none") return null;
 	// FIXME this should be much more refined
-	if (!str.match) debugger;
+	dbgOn(!str.match);
 	var match = str.match("rgb\\((\\d+),(\\d+),(\\d+)\\)");
 	if (match) { 
 	    this.r = parseInt(match[1])/255;
@@ -2841,7 +2850,7 @@ Object.subclass('Similitude', {
 	// do good typechecking of SVGMatrix properties before passing
 	// them to native code.  It's probably too late to figure out
 	// the cause, but at least we won't crash.
-	if (isNaN(value)) { debugger; throw new Error('not a number');}
+	if (isNaN(value)) { throw new Error('not a number');}
 	return value;
     },
 
@@ -3392,6 +3401,7 @@ Shape.subclass('PolygonShape', {
     documentation: "polygon",
 
     hasElbowProtrusions: true,
+    useDOM: false,
 
     initialize: function($super, vertlist, color, borderWidth, borderColor) {
 	this.rawNode = NodeFactory.create("polygon");
@@ -3404,8 +3414,7 @@ Shape.subclass('PolygonShape', {
 	if (this.rawNode.points) {
 	    this.rawNode.points.clear();
 	}
-	var useDOM = false;
-	if (useDOM) vertlist.forEach(function(p) { this.rawNode.points.appendItem(p) }, this);
+	if (this.useDOM) vertlist.forEach(function(p) { this.rawNode.points.appendItem(p) }, this);
 	else this.rawNode.setAttributeNS(null, "points",
 					 vertlist.map(function (p) { return (p.x||0.0) + "," + (p.y||0.0) }).join(' '));
     },
@@ -3909,7 +3918,7 @@ Object.subclass('Copier', {
     },
 
     addMapping: function(oldId, newMorph) {
-	if (!this.wrapperMap) debugger;
+	dbgOn(!this.wrapperMap);
 	this.wrapperMap[oldId] = newMorph; 
     },
 
@@ -4683,7 +4692,7 @@ Morph.addMethods({
     applyStyle: function(specs) { // note: use reflection instead?
 	for (var i = 0; i < arguments.length; i++) {
 	    var spec = arguments[i];
-	    if (!spec) debugger;
+	    dbgOn(!spec);
 	    if (spec.borderWidth !== undefined) this.setBorderWidth(spec.borderWidth);
 	    if (spec.borderColor !== undefined) this.setBorderColor(spec.borderColor);
 	    if (spec.fill !== undefined) this.setFill(spec.fill);
@@ -5050,7 +5059,7 @@ Morph.addMethods({
 
     transformToMorph: function(other) {
 	// getTransformToElement has issues on some platforms
-	if (!other) debugger;
+	dbgOn(!other);
 	if (Config.useGetTransformToElement) {
 	    return this.rawNode.getTransformToElement(other.rawNode);
 	} else {
@@ -6798,7 +6807,7 @@ PasteUpMorph.subclass("WorldMorph", {
                 action.exec();
             } catch (er) {
                 console.warn("error on actor %s: %s", action.actor, er);
-                debugger;
+                dbgOn(true);
                 Function.showStack();
 		timeStarted = new Date().getTime();
 		continue;

@@ -2395,7 +2395,7 @@ Widget.subclass('ConsoleWidget', {
 	    var command = Object.inspect(ans);
 	    this.setRecentLogMessages([command]);
         } catch (er) {
-	    debugger;
+	    dbgOn(true);
             alert("Whoa Evaluation error: "  + er);
         }
     },
