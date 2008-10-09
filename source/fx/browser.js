@@ -100,6 +100,8 @@ fx.util.setInterval = function(callback, delay) {
     return timer;
 }
 
+
+
 fx.Frame = function(width, height) {
     this.frame = new Packages.javax.swing.JFrame();
     this.frame.setSize(width, height);
@@ -149,16 +151,34 @@ Function.wrapSetter(Attr.prototype, 'value', function(func, args) {
 // http://www.w3.org/TR/2003/REC-SVG11-20030114/painting.html#paint-att-mod
 var PaintModule = {
     attributes: ["stroke", "fill", "stroke-width"],
+    
+    parseColor: function(color) {
+	var match = color && String(color).match(/rgb\((\d+),(\d+),(\d+)\)/);
+	if (match) {
+	    var r = Number(match[1]) / 255;
+	    var g = Number(match[2]) / 255;
+	    var b = Number(match[3]) / 255;
+	    return new fx.Color(r, g, b);
+	} else {
+	    var name = String(color);
+	    if (name.startsWith("url")) return null;
+	    else return fx.Color[name];
+	} 
+    },
+
+
     renderAttribute: function(element, attr, value) {
 	switch (attr) {
-	case "fill":
-	    if (fx.Color[String(value).toUpperCase()]) {
-		element._fxShape.setFillPaint(fx.Color[String(value).toUpperCase()]);
+	case "fill": {
+	    var fill = PaintModule.parseColor(value);
+	    if (fill) {  
+		element._fxShape.setFillPaint(fill);
 		return true;
 	    } else {
 		console.log('unknown fill ' + value);
-		break;
+		return false;
 	    }
+	}
 	case "stroke-width": {
 	    var BasicStroke = Packages.java.awt.BasicStroke;
 	    var shape = element._fxShape;
@@ -172,12 +192,13 @@ var PaintModule = {
 	}
 	    
 	case "stroke": {
-	    if (fx.Color[String(value).toUpperCase()]) {
-		element._fxShape.setDrawPaint(fx.Color[String(value).toUpperCase()]);
+	    var stroke = PaintModule.parseColor(value);
+	    if (stroke) {  
+		element._fxShape.setDrawPaint(stroke);
 		return true;
 	    } else {
 		console.log('unknown stroke ' + value);
-		break;
+		return false;
 	    }
 	}
 	default: 
@@ -197,19 +218,6 @@ fx.dom.renderers[SVGRectElement.tagName] = function(element) {
 	}
     }
 }
-
-
-Function.wrap(SVGSVGElement.prototype, ["insertBefore", "appendChild"], function(func, args) {
-    var result = func.apply(this, args);
-    var newChild = args[0];
-    if (newChild._fxInit) { // FIXME: do only once, despite additions and removals and such
-	newChild._fxInit();
-    }
-    if (!this._fxGroup) console.log('not ready, should enqueue? ' + this);
-    else this._fxGroup.add(newChild._fxTransform);
-    fx.dom.update(); // note synchronous updates
-    return result;
-});
 
 // FIXME remove
 
@@ -289,5 +297,60 @@ Object.extend(SVGSVGElement.prototype, {
     }
 });
 
+
+Function.wrap(SVGSVGElement.prototype, ["insertBefore", "appendChild"], function(func, args) {
+    var result = func.apply(this, args);
+    var newChild = args[0];
+    if (newChild._fxInit) { // FIXME: do only once, despite additions and removals and such
+	newChild._fxInit();
+    }
+    if (!this._fxGroup) console.log('not ready, should enqueue? ' + this);
+    else this._fxGroup.add(newChild._fxTransform);
+    fx.dom.update(); // note synchronous updates
+    return result;
+});
+
+
+Object.extend(SVGGElement.prototype, {
+    _fxInit: function() {
+	this._fxGroup = new fx.Group();
+	this._fxTransform = fx.Transform.createTranslation(0, 0, this._fxGroup);
+    }
+});
+
+    // FIXME literal copy, remove
+Function.wrap(SVGGElement.prototype, ["insertBefore", "appendChild"], function(func, args) {
+    var result = func.apply(this, args);
+    var newChild = args[0];
+    if (newChild._fxInit) { // FIXME: do only once, despite additions and removals and such
+	newChild._fxInit();
+    }
+    fx.dom.enqueue(this); // console.log('not ready, should enqueue? ' + this);
+
+    //fx.dom.update(); // note synchronous updates
+    return result;
+});
+
+fx.dom.renderers[SVGGElement.tagName] = function(element) {
+    element.childNodes._nodes.forEach(function(child) {
+	if (child._fxTransform && child._fxTransform.getParent() != element._fxGroup)  {
+	    element._fxGroup.add(child._fxTransform);
+	    console.log('container handling ' + child);
+	} else console.log('what to do with ' + child);
+	fx.dom.render(child);
+    });
+
+    //    if (!element._fxGroup) console.log('element not ready?'); // do not update
+    //else element._fxGroup.add(newChild._fxTransform);
+}
+
+
+
     
 // end of SVG impl
+
+window.setTimeout = function(action, delay) {
+    var timer = fx.util.setInterval(action, delay);
+    timer.setRepeats(false);
+    return timer;
+}

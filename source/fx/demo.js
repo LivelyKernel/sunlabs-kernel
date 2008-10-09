@@ -11,6 +11,11 @@
 load('browser.js');
 load('dom/index.xhtml.js');
 print('loaded start document emulation');
+load('../kernel/defaultconfig.js');
+load('../kernel/Core.js');
+load('../kernel/Text.js');
+load('../kernel/Widgets.js');
+
 
 // example program
 var SVGNS = 'http://www.w3.org/2000/svg';
@@ -19,6 +24,9 @@ var browser = new fx.Frame(1024,500);
 
 var canvas = document.getElementById("canvas");
 canvas._fxInit(); // still necessary
+
+
+
 
 var shape = document.createElementNS(SVGNS, "rect");
 shape.setAttributeNS(null, "x", 150);
@@ -93,3 +101,46 @@ fx.util.setInterval(function() { // FIXME not standard
     fx.dom.update();
 }, 50);
 
+function morphicMain() {
+    var canvas = Global.document.getElementById("canvas");
+    var world = new WorldMorph(canvas); 
+    console.log('created empty world ' + world);
+    world.displayOnCanvas(canvas);
+    console.log("displayed world");
+    var colors = Color.wheel(4);
+    var loc = pt(150, 450); 
+    var widgetExtent = pt(70, 30);
+    var dy = pt(0,50); 
+    var dx = pt(120,0);
+    // Create a sample rectangle       
+    var widget = new Morph(loc.extent(widgetExtent), "rect");
+    widget.setFill(colors[0]);
+    world.addMorph(widget);
+     
+     // Create a sample ellipse
+     widget = new Morph(loc.addPt(dx).extent(widgetExtent), "ellipse");
+     widget.setFill(colors[1]);
+     world.addMorph(widget);
+     
+     // Create a sample line
+     loc = loc.addPt(dy);
+     widget = Morph.makeLine([loc.addXY(0,15),loc.addXY(70,15)], 2, Color.black);
+     world.addMorph(widget);
+     
+     // Create a sample polygon
+     widget = Morph.makePolygon([pt(0,0),pt(70,0),pt(40,30),pt(0,0)], 1, Color.black, colors[2]);
+     world.addMorph(widget);
+     widget.setPosition(loc.addPt(dx));
+     loc = loc.addPt(dy);    
+     
+     // Create sample text widgets
+     if (false) {
+         widget = new TextMorph(loc.extent(pt(100,50)),"Big Text"); // big text
+         world.addMorph(widget.applyStyle({fontSize: 20, textColor: Color.blue}));
+	 
+         widget = new TextMorph(loc.addPt(dx).extent(pt(140,50)),"Unbordered"); // unbordered text
+         world.addMorph(widget.applyStyle({fontSize: 20, borderWidth: 0, fill: null})); 
+     }
+}
+
+morphicMain();
