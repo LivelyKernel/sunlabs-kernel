@@ -114,12 +114,6 @@ fx.Frame.prototype.display = function(node) {
 }
 
 
-Function.wrap(SVGElement.prototype,  ['appendChild', 'setAttributeNS', 'setAttribute' ], function(func, args) {
-    console.log('append or set ' + $A(args));
-    return func.apply(this, args);
-});
-
-
 // scenegraph bindings to SVG
 
 // http://www.w3.org/TR/2003/REC-SVG11-20030114/painting.html#paint-att-mod
@@ -163,6 +157,18 @@ var PaintModule = {
 }
 
 
+Function.wrap(SVGSVGElement.prototype, ["insertBefore", "appendChild"], function(func, args) {
+    var result = func.apply(this, args);
+    var newChild = args[0];
+    if (newChild._fxInit) { // FIXME: do only once, despite additions and removals and such
+	newChild._fxInit();
+    }
+    if (!this._fxGroup) console.log('not ready, should enqueue? ' + this);
+    else this._fxGroup.add(newChild._fxTransform);
+    return result;
+});
+
+// FIXME remove
 
 Object.extend(SVGRectElement.prototype, PaintModule);
 Object.extend(SVGRectElement.prototype, {
@@ -258,16 +264,5 @@ Object.extend(SVGSVGElement.prototype, {
     }
 });
 
-
-Object.extend(SVGSVGElement.prototype, {
-    _fxAppendChild: function(node) {
-	this._fxGroup.add(node._fxTransform);
-    },
-    
-    _fxRemoveChild: function(node) { // FIXME: proper exceptions?
-	this._fxGroup.remove(node._fxTransform);
-    }
-
-});
     
 // end of SVG impl

@@ -21,10 +21,11 @@ var SVGNS = 'http://www.w3.org/2000/svg';
 var browser = new fx.Frame(1024,500);
 
 var canvas = document.getElementById("canvas");
-canvas._fxInit();    
+canvas._fxInit(); // still necessary
 
 var shape = document.createElementNS(SVGNS, "rect");
-shape._fxInit();
+canvas.appendChild(shape);
+
 shape.setAttributeNS(null, "x", 150);
 shape.setAttributeNS(null, "y", 150);
 shape.setAttributeNS(null, "width", 50);
@@ -33,20 +34,17 @@ shape.setAttributeNS(null, "height", 50);
 shape.setAttributeNS(null, "fill", "RED");
 shape.setAttributeNS(null, "stroke", "GREEN");
 shape.setAttributeNS(null, "stroke-width", 2);
-canvas.appendChild(shape);
-canvas._fxAppendChild(shape);
 
 
 var shape = document.createElementNS(SVGNS, "ellipse");
-shape._fxInit();
+canvas.appendChild(shape);
+
 shape.setAttributeNS(null, "x", 50); // FIXME
 shape.setAttributeNS(null, "y", 50); // FIXME
 shape.setAttributeNS(null, "width", 50); // FIXME
 shape.setAttributeNS(null, "height", 50); // FIXME
 shape.setAttributeNS(null, "fill", "BLUE");
 
-canvas.appendChild(shape);
-canvas._fxAppendChild(shape);
 
 fx.util.addMouseListener(shape, "mousePressed", function(evt) { 
     console.log('mouse pressed event ' + evt);
@@ -54,7 +52,7 @@ fx.util.addMouseListener(shape, "mousePressed", function(evt) {
 
 
 var star = document.createElementNS(SVGNS, "polygon");
-star._fxInit();
+canvas.appendChild(star);
 
 function svgpt(x, y) {
     var point = new SVGPoint();
@@ -87,8 +85,6 @@ star.setAttributeNS(null, "fill", "YELLOW");
 star.setAttributeNS(null, "stroke", "BLACK");
 star.setAttributeNS(null, "stroke-width", 1);
 
-canvas.appendChild(star);
-canvas._fxAppendChild(star);
 
 fx.util.translate(star, 250, 100);
 
