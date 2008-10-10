@@ -321,6 +321,8 @@ Morph.subclass('HandleMorph', {
         this.partName = partName; // may be a name like "topRight" or a vertex index
         this.initialScale = null;
         this.initialRotation = null; 
+	this.mode = null;
+	this.rollover = true;  // the default
         return this;
     },
     
@@ -341,19 +343,14 @@ Morph.subclass('HandleMorph', {
 
     onMouseDown: function(evt) {
         this.hideHelp();
-    },
-    
-    onMouseUp: function(evt) {
-        if (!evt.isShiftDown() && !evt.isCommandKey() && !evt.isMetaDown()) {
-                // last call for, eg, vertex deletion
-            this.targetMorph.reshape(this.partName, this.targetMorph.localize(evt.mousePoint), this, true); 
-        }
-        this.remove(); 
+	if (!this.rollover) return;  // if not a rollover, mode is probably set
+        if (evt.isCommandKey()) this.mode = evt.isShiftDown() ? 'scale' : 'rotate';
+		else this.mode = evt.isShiftDown() ? 'borderWidth' : 'reshape';
     },
     
     onMouseMove: function(evt) {
         // When dragged, I also drag the designated control point of my target
-        if (!evt.mouseButtonPressed) { 
+        if (this.rollover && !evt.mouseButtonPressed) { 
             // Mouse up: Remove handle if mouse drifts away
             if (!this.containsWorldPoint(evt.mousePoint)) {
                 evt.hand.setMouseFocus(null);
@@ -366,33 +363,39 @@ Morph.subclass('HandleMorph', {
         // Mouse down: edit targetMorph
         this.align(this.bounds().center(), this.owner.localize(evt.mousePoint));
 
-        var p0 = evt.hand.lastMouseDownPoint; // in world coords
-        var p1 = evt.mousePoint;
-        if (!this.initialScale) this.initialScale = this.targetMorph.getScale();
-        if (!this.initialRotation) this.initialRotation = this.targetMorph.getRotation();
-        if (evt.isCommandKey()) {
-            // ctrl-drag for rotation (unshifted) and scale (shifted)
-            var ctr = this.targetMorph.owner.worldPoint(this.targetMorph.origin);  //origin for rotation and scaling
-            var v1 = p1.subPt(ctr); //vector from origin
-            var v0 = p0.subPt(ctr); //vector from origin at mousedown
+	var p0 = evt.hand.lastMouseDownPoint; // in world coords
+	var p1 = evt.mousePoint;
+	if (!this.initialScale) this.initialScale = this.targetMorph.getScale();
+	if (!this.initialRotation) this.initialRotation = this.targetMorph.getRotation();
+	var ctr = this.targetMorph.owner.worldPoint(this.targetMorph.origin);  //origin for rotation and scaling
+	var v1 = p1.subPt(ctr); //vector from origin now
+	var v0 = p0.subPt(ctr); //vector from origin at mousedown
+	var d = p1.dist(p0); //dist from mousedown
             
-            if (evt.isShiftDown()) {
-                var ratio = v1.r() / v0.r();
-                ratio = Math.max(0.1,Math.min(10,ratio));
-                // console.log('set scale to ' + this.initialScale + ' times ' +  ratio);
-                this.targetMorph.setScale(this.initialScale*ratio); 
-            } else { 
-                this.targetMorph.setRotation(this.initialRotation + v1.theta() - v0.theta()); 
-            } 
-        } else {    // normal drag for reshape (unshifted) and borderWidth (shifted)
-            var d = p1.dist(p0); //dist from mousedown
-        
-            if (evt.isShiftDown()) {
-                this.targetMorph.setBorderWidth(Math.max(0, Math.floor(d/3)/2), true);
-            } else { 
-                this.targetMorph.reshape(this.partName, this.targetMorph.localize(evt.mousePoint), this, false);
-            } 
+	switch(this.mode) {  // Note mode is set in mouseDown
+	    case 'scale' :
+		var ratio = v1.r() / v0.r();
+		ratio = Math.max(0.1,Math.min(10,ratio));
+		this.targetMorph.setScale(this.initialScale*ratio);
+		break; 
+	    case 'rotate' :
+		this.targetMorph.setRotation(this.initialRotation + v1.theta() - v0.theta());
+		break; 
+	    case 'borderWidth' :
+		this.targetMorph.setBorderWidth(Math.max(0, Math.floor(d/3)/2), true);
+		break;
+	    case 'reshape' :
+		this.targetMorph.reshape(this.partName, this.targetMorph.localize(evt.mousePoint), this, false);
+		break;
         }
+    },
+    
+    onMouseUp: function(evt) {
+        if (!evt.isShiftDown() && !evt.isCommandKey() && !evt.isMetaDown()) {
+	    // last call for, eg, vertex deletion
+	    if (this.partName) this.targetMorph.reshape(this.partName, this.targetMorph.localize(evt.mousePoint), this, true); 
+        }
+        this.remove(); 
     },
     
     inspect: function($super) {
@@ -2951,7 +2954,6 @@ Morph.subclass("PieMenuMorph", {
 
 	// NEXT TO DO:
 	// Track extent from mouseMove
-	// Build help menu from mouseUp
 	// Implement a couple of committed actions
 
         this.items = items;
@@ -2971,9 +2973,19 @@ Morph.subclass("PieMenuMorph", {
 	evt.hand.setMouseFocus(this);
         this.world().scheduleForLater(new SchedulableAction(this, "makeVisible", evt, 0), 300, false);
     },
-    onMouseMove: function() {
+    onMouseMove: function(evt) {
         // Test for whether we have reached the commitment radius.
+	var delta = evt.mousePoint.subPt(this.mouseDownPoint)
+	if (delta.dist(pt(0, 0)) < this.r1) return
 	// If so dispatch to appropriate action
+	this.hasCommitted = true;
+	this.remove();
+	evt.hand.setMouseFocus(null);
+	var index = (delta.theta()/(Math.PI*2) + 0.25) * this.items.length;
+	index = (index+8).toFixed(0)%8;  // 0..7
+	var item = this.items[index];
+	if (item[1] instanceof Function) item[1](evt)
+	//	else what?
     },
     onMouseUp: function(evt) {
         // This should only happen within the commitment radius.
@@ -2985,7 +2997,7 @@ Morph.subclass("PieMenuMorph", {
 	helpMenu.addItem(["help"]);
 	helpMenu.openIn(this.world(), evt.mousePoint, false);
 	this.remove();
-	evt.hand.setmouseFocus(helpMenu);
+	evt.hand.setMouseFocus(helpMenu);
     },
     makeVisible: function(openEvent) {
 	if (this.hasCommitted) return;
@@ -3004,7 +3016,6 @@ Morph.subclass("PieMenuMorph", {
 		var x = labelString.indexOf('(');
 		if (x < 0) continue
 		labelString = labelString.slice(x+1, labelString.length-1);  // drop parens
-		console.log(labelString);
 		var labelPt = Point.polar(this.r2*0.7, theta+(0.5/nItems*Math.PI*2))
 		var label = new TextMorph(new Rectangle(0,0,40,20), labelString);
 		label.applyStyle({borderWidth: 0, fill: null, wrapStyle: lk.text.WrapStyle.Shrink, fontSize: 12, padding: Rectangle.inset(0)});
@@ -3024,23 +3035,40 @@ Morph.subclass("PieMenuMorph", {
 });
 
 PieMenuMorph.test = function() {
-	// Put a square on the screen and invoke the following menu on it...
-    var items = [
-	['undo (~)'],
-	['duplicate (o-->o)'],
-	['move (o-->)'],
-	['scale (o < O)'],
-	['hide/show handles (<>)'],
-	['rotate (G)'],
-	['drag (-->)'],
-	['delete (X)']
-	];
+    // Put a square on the screen and invoke a pie menu on it...
     var targetMorph = new Morph(new Rectangle(500,200,100,100), 'rectangle');
     targetMorph.setFill(Color.orange);
     targetMorph.handlesMouseDown = function () { return true };    
-    targetMorph.onMouseDown = function(evt) {
-	new PieMenuMorph(items, targetMorph).open(evt);
-	};
+    targetMorph.onMouseDown = function(evt) { this.showPieMenu(evt) };
+    targetMorph.showPieMenu = function(evt) {
+    	var menu;
+	var items = [
+		['border width ([])', function(evt) { targetMorph.addHandle(evt, 'borderWidth'); }],
+		['duplicate (o-->o)', function(evt) {
+			evt.hand.setPosition(menu.mouseDownPoint);
+			menu.targetMorph.copyToHand(evt.hand); }],
+		['move (o-->)', function(evt) {
+			evt.hand.setPosition(menu.mouseDownPoint);
+			evt.hand.addMorph(menu.targetMorph); }],
+		['scale (o < O)', function(evt) { targetMorph.addHandle(evt, 'scale'); }],
+		['fill color (<>)', function(evt) {
+			var picker = new ColorPickerMorph(evt.mousePoint.extent(pt(50, 30)), targetMorph, "setFill", true);
+			targetMorph.world().addMorph(picker);
+			evt.hand.setMouseFocus(picker); }],
+		['rotate (G)', function(evt) { targetMorph.addHandle(evt, 'rotate'); }],
+		['drag (-->)'],  // use a relay morph to track tfm'd mouse coord until button down or up
+		['delete (X)', function(evt) { targetMorph.remove(); }]
+	];
+	menu = new PieMenuMorph(items, targetMorph);
+	menu.open(evt);
+    };
+    targetMorph.addHandle = function(evt, mode) {
+    	var handle = new HandleMorph(evt.mousePoint, 'ellipse', evt.hand, this, null);
+	handle.mode = mode;
+	handle.rollover = false;
+	this.addMorph(handle);
+	evt.hand.setMouseFocus(handle);
+    };
     WorldMorph.current().addMorph(targetMorph);
 };
 
