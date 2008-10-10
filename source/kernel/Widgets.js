@@ -2956,6 +2956,7 @@ Morph.subclass("PieMenuMorph", {
 	// Implement drag (move without extracting from owner)
 	// Implement help item in backup menu
 	// Check that target/funcName form of item works (it doesn't now)
+	// Put a choice in world to use pie menus
 
         this.items = items;
 	this.targetMorph = targetMorph;
@@ -3070,13 +3071,6 @@ PieMenuMorph.test = function() {
 	];
 	menu = new PieMenuMorph(items, targetMorph);
 	menu.open(evt);
-    };
-    targetMorph.addHandle = function(evt, mode) {
-    	var handle = new HandleMorph(evt.mousePoint, 'ellipse', evt.hand, this, null);
-	handle.mode = mode;
-	handle.rollover = false;
-	this.addMorph(handle);
-	evt.hand.setMouseFocus(handle);
     };
     WorldMorph.current().addMorph(targetMorph);
 };
