@@ -2936,9 +2936,11 @@ Morph.subclass("PieMenuMorph", {
 
     documentation: "Fabrik-style gesture menus for fast one-button UI",
 
-    initialize: function($super, targetmorph, items, centerMenuItems) {
+    initialize: function($super, items, targetMorph, centerMenuItems) {
         // items is an array of menuItems, each of which is an array of the form
-        // [itemName, target, functionName, parameterIfAny]
+        // [itemName, target, functionName, parameterIfAny], or
+        // [itemName, closure], and
+	// itemName has the form 'menu text (pie text)'
 
         // A PieMenu allows many mouse drag operations to be carried out in a single stroke.
 	// It is the initial direction of the stroke that determines the operation.
@@ -2948,14 +2950,17 @@ Morph.subclass("PieMenuMorph", {
 	// continuing around in a clockwise direction.
 
 	// NEXT TO DO:
-	// Add timeout to show disk
-	// Decorate disk in makeVisible
 	// Track extent from mouseMove
 	// Build help menu from mouseUp
 	// Implement a couple of committed actions
 
-        $super(new Rectangle(100,100,100,100), 'ellipse');
-        return this;
+        this.items = items;
+	this.targetMorph = targetMorph;
+	this.r1 = 10;  // inner radius
+	this.r2 = 50;  // outer radius
+        $super(new Rectangle(100, 100, this.r2*2, this.r2*2), 'ellipse');
+	this.hasCommitted = false;  // Gesture not yet outside commitment radius
+	return this;
     },
     open: function(evt) {
         // Note current mouse position and start a timer
@@ -2964,50 +2969,79 @@ Morph.subclass("PieMenuMorph", {
 	var opacity = 0.1;  this.setFillOpacity(opacity);  this.setStrokeOpacity(opacity);
 	WorldMorph.current().addMorph(this);
 	evt.hand.setMouseFocus(this);
-	this.hasCommitted = false;  // Gesture not yet outside commitment radius
         this.world().scheduleForLater(new SchedulableAction(this, "makeVisible", evt, 0), 300, false);
     },
     onMouseMove: function() {
         // Test for whether we have reached the commitment radius.
 	// If so dispatch to appropriate action
     },
-    onMouseUp: function() {
+    onMouseUp: function(evt) {
         // This should only happen within the commitment radius.
 	// If the help disk has not been shown, then show it,
 	// otherwise, display the default (normal) menu.
+	if (this.hasCommitted) return;  // shouldn't happen
+	var helpMenu = new MenuMorph(this.items, this.targetMorph);
+	helpMenu.addLine();
+	helpMenu.addItem(["help"]);
+	helpMenu.openIn(this.world(), evt.mousePoint, false);
 	this.remove();
+	evt.hand.setmouseFocus(helpMenu);
     },
     makeVisible: function(openEvent) {
 	if (this.hasCommitted) return;
-	var opacity = 0.5;  this.setFillOpacity(opacity);  this.setStrokeOpacity(opacity);
+	var opacity = 0.5;
+	this.setFillOpacity(opacity);
+	this.setStrokeOpacity(opacity);
 	// Make an inner circle with a '?'
+	var nItems = this.items.length;
+	if(nItems == 0) return;
+	for (var i=0; i<nItems; i++) {
+		var theta = (((i-0.5)/nItems)-(1/4))*Math.PI*2;
+		var line = Morph.makeLine([Point.polar(this.r1, theta), Point.polar(this.r2, theta)], 1, Color.black);
+		line.setStrokeOpacity(opacity);
+		this.addMorph(line);
+		var labelString = this.items[i][0];
+		var x = labelString.indexOf('(');
+		if (x < 0) continue
+		labelString = labelString.slice(x+1, labelString.length-1);  // drop parens
+		console.log(labelString);
+		var labelPt = Point.polar(this.r2*0.7, theta+(0.5/nItems*Math.PI*2))
+		var label = new TextMorph(new Rectangle(0,0,40,20), labelString);
+		label.applyStyle({borderWidth: 0, fill: null, wrapStyle: lk.text.WrapStyle.Shrink, fontSize: 12, padding: Rectangle.inset(0)});
+		label.align(label.bounds().center(), labelPt);
+		label.setStrokeOpacity(opacity);
+		this.addMorph(label);
+	}
+	// FIXME DI: We need a simple TextMorph.makeLabel(labelString)
+	var label = new TextMorph(new Rectangle(0,0,40,20), "?");
+	label.applyStyle({borderWidth: 0, fill: null, wrapStyle: lk.text.WrapStyle.Shrink, fontSize: 12, padding: Rectangle.inset(0)});
+        label.align(label.bounds().center(), pt(0, 0));
+	label.setStrokeOpacity(opacity);
+	this.addMorph(label);
 	// Make radial lines from inner circle to outer
 	// Add text labels from item labels (inside last parens)
     }
 });
 
 PieMenuMorph.test = function() {
-	// Put an elipse on the screen and invoke the following menu on it...
-	// ----------------
-	// N	Undo			~
-	// NE	Duplicate		o-->o
-	// E	Move (pick up)		o-->
-	// SE	Scale			o < O
-	// S	Hide/show handles	<>
-	// SW	Rotate			G
-	// W	Drag (don't pick up)	-->
-	// NW	Delete			X
-	// center - Show menu
-	// -----------------
-    var items = [];
-    var menu = new PieMenuMorph(items);
-
-    var targetMorph = new Morph(new Rectangle(500,200,100,100), 'ellipse');
-    WorldMorph.current().addMorph(targetMorph);
-    targetMorph.onMouseDown = function(evt) {
-	new PieMenuMorph(targetMorph, items).open(evt);
-	};
+	// Put a square on the screen and invoke the following menu on it...
+    var items = [
+	['undo (~)'],
+	['duplicate (o-->o)'],
+	['move (o-->)'],
+	['scale (o < O)'],
+	['hide/show handles (<>)'],
+	['rotate (G)'],
+	['drag (-->)'],
+	['delete (X)']
+	];
+    var targetMorph = new Morph(new Rectangle(500,200,100,100), 'rectangle');
+    targetMorph.setFill(Color.orange);
     targetMorph.handlesMouseDown = function () { return true };    
+    targetMorph.onMouseDown = function(evt) {
+	new PieMenuMorph(items, targetMorph).open(evt);
+	};
+    WorldMorph.current().addMorph(targetMorph);
 };
 
 Widget.addMethods({
