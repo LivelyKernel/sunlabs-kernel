@@ -2939,7 +2939,7 @@ Morph.subclass("PieMenuMorph", {
 
     documentation: "Fabrik-style gesture menus for fast one-button UI",
 
-    initialize: function($super, items, targetMorph, centerMenuItems) {
+    initialize: function($super, items, targetMorph) {
         // items is an array of menuItems, each of which is an array of the form
         // [itemName, target, functionName, parameterIfAny], or
         // [itemName, closure], and
@@ -2952,9 +2952,10 @@ Morph.subclass("PieMenuMorph", {
 	// first pie-shaped segment on the vertical direction, with the item list
 	// continuing around in a clockwise direction.
 
-	// NEXT TO DO:
-	// Track extent from mouseMove
-	// Implement a couple of committed actions
+	// YET TO DO:
+	// Implement drag (move without extracting from owner)
+	// Implement help item in backup menu
+	// Check that target/funcName form of item works (it doesn't now)
 
         this.items = items;
 	this.targetMorph = targetMorph;
@@ -3031,7 +3032,15 @@ Morph.subclass("PieMenuMorph", {
 	this.addMorph(label);
 	// Make radial lines from inner circle to outer
 	// Add text labels from item labels (inside last parens)
+    },
+    addHandleTo: function(morph, evt, mode) {
+    	var handle = new HandleMorph(evt.mousePoint, 'ellipse', evt.hand, morph, null);
+	handle.mode = mode;
+	handle.rollover = false;
+	morph.addMorph(handle);
+	evt.hand.setMouseFocus(handle);
     }
+
 });
 
 PieMenuMorph.test = function() {
@@ -3043,19 +3052,19 @@ PieMenuMorph.test = function() {
     targetMorph.showPieMenu = function(evt) {
     	var menu;
 	var items = [
-		['border width ([])', function(evt) { targetMorph.addHandle(evt, 'borderWidth'); }],
+		['border width ([])', function(evt) { menu.addHandleTo(targetMorph, evt, 'borderWidth'); }],
 		['duplicate (o-->o)', function(evt) {
 			evt.hand.setPosition(menu.mouseDownPoint);
 			menu.targetMorph.copyToHand(evt.hand); }],
 		['move (o-->)', function(evt) {
 			evt.hand.setPosition(menu.mouseDownPoint);
 			evt.hand.addMorph(menu.targetMorph); }],
-		['scale (o < O)', function(evt) { targetMorph.addHandle(evt, 'scale'); }],
+		['scale (o < O)', function(evt) { menu.addHandleTo(targetMorph, evt, 'scale'); }],
 		['fill color (<>)', function(evt) {
 			var picker = new ColorPickerMorph(evt.mousePoint.extent(pt(50, 30)), targetMorph, "setFill", true);
 			targetMorph.world().addMorph(picker);
 			evt.hand.setMouseFocus(picker); }],
-		['rotate (G)', function(evt) { targetMorph.addHandle(evt, 'rotate'); }],
+		['rotate (G)', function(evt) { menu.addHandleTo(targetMorph, evt, 'rotate'); }],
 		['drag (-->)'],  // use a relay morph to track tfm'd mouse coord until button down or up
 		['delete (X)', function(evt) { targetMorph.remove(); }]
 	];
