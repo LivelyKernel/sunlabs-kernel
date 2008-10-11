@@ -278,7 +278,7 @@ Fabrik = {
         
         
         
-        var base = this.openFabrikComponent(world, loc.addXY(-50,-20), pt(800, 350), 'Weather Example');
+        var base = this.openFabrikComponent(world, loc.addXY(-50,-20), pt(800, 400), 'Current Weather Conditions');
         var urlInput = this.addTextComponent(base); urlInput.panel.setExtent(pt(180,60));
         var zipInput = this.addTextComponent(base); zipInput.panel.setExtent(pt(100,50));
         
@@ -301,12 +301,12 @@ Fabrik = {
         
         /* Function component for combining url and zip */
         var combineURLAndZIP = this.addFunctionComponent(requestor);
-        var pin = combineURLAndZIP.addInputFieldAndPin('Url'); this.setPositionRel(pt(-0.04,0.33), pin.morph);
+        // var pin = combineURLAndZIP.addIncputFieldAndPin('Url'); this.setPositionRel(pt(-0.04,0.33), pin.morph);
         combineURLAndZIP.addInputFieldAndPin('Zip');
         combineURLAndZIP.removePin('Input');
         combineURLAndZIP.setFunctionBody('url + zip');
         zipPin.connectTo(combineURLAndZIP.getPin('Zip'));
-        urlPin.connectTo(combineURLAndZIP.getPin('Url'));
+        // urlPin.connectTo(combineURLAndZIP.getPin('Url'));
 
         /* WebRequestor */
         var req = this.addWebRequestComponent(requestor);
@@ -367,6 +367,25 @@ Fabrik = {
         windPin.connectTo(windTxt.getPin('Text'));        
         
         base.morph.automaticLayout();
+        
+        var dist = 0;
+        [tempTxt, conditionTxt, humidityTxt, windTxt].each(function(ea) { ea.panel.setExtent(pt(220,35)) });
+        conditionTxt.panel.setPosition(pt(290, 250));
+        this.positionComponentRelativeToOther(tempTxt, conditionTxt, pt(0, conditionTxt.panel.getExtent().y + dist));
+        this.positionComponentRelativeToOther(humidityTxt, tempTxt, pt(0, tempTxt.panel.getExtent().y + dist));
+        this.positionComponentRelativeToOther(windTxt, humidityTxt, pt(0, humidityTxt.panel.getExtent().y + dist));
+        
+        this.positionComponentRelativeToOther(cityTxt, conditionTxt, pt(0, -1*(cityTxt.panel.getExtent().y + dist)));
+        this.positionComponentRelativeToOther(dateTxt, cityTxt, pt(conditionTxt.panel.getExtent().x-dateTxt.panel.getExtent().x, 0));
+        
+        extractCondition.panel.setExtent(pt(255.0,145.0));
+        this.positionComponentRelativeToOther(extractCondition, windTxt, pt(0 - extractCondition.panel.getExtent().x - 30, windTxt.panel.getExtent().y - extractCondition.panel.getExtent().y));
+        extractInfos.panel.setExtent(pt(255.0,145.0));
+        this.positionComponentRelativeToOther(extractInfos, windTxt, pt(windTxt.panel.getExtent().x + 30, windTxt.panel.getExtent().y - extractInfos.panel.getExtent().y));
+        
+        zipInput.panel.setExtent(pt(220,35));
+        this.positionComponentRelativeToOther(zipInput, cityTxt, pt(0, -1*(zipInput.panel.getExtent().y + dist)));
+        
         
         // get things going
         infoList.setSelectionIndex(1);
@@ -589,7 +608,7 @@ Morph.subclass('PinMorph', {
     
     setupMorphStyle: function() {
         this.setFill(Color.green);
-        // this.setFillOpacity(0.5);
+        this.setFillOpacity(0.5);
     },
     
     setupInputMorphStyle: function() {
@@ -939,6 +958,10 @@ Morph.subclass('ArrowHeadMorph', {
      
     initialize: function($super, lineWidth, lineColor, fill, length, width) {
         $super();
+        
+        /* FIXME
+         * Morph abuse!
+         */
         this.setFillOpacity(0);
         this.setStrokeOpacity(0);
         this.head = new Morph(pt(0,0).asRectangle(), "rect");
@@ -952,11 +975,14 @@ Morph.subclass('ArrowHeadMorph', {
         var verts = [pt(0,0), pt(-length, 0.5* width), pt(-length, -0.5 * width)];
         this.head.setShape(new PolygonShape(verts, fill, 1, lineColor, fill));
         this.addMorph(this.head);
+        
+        this.setPosition(this.head.getPosition());
+        this.setExtent(this.head.getExtent());
         this.ignoreEvents();
         this.head.ignoreEvents();
         
-        this.head.setFillOpacity(0.7);
-        this.head.setStrokeOpacity(0.7);
+        // this.head.setFillOpacity(0.7);
+        // this.head.setStrokeOpacity(0.7);
         
         return this;
     },
@@ -1618,6 +1644,7 @@ Morph.subclass('ComponentMorph', {
         var button = new ButtonMorph(bounds ||  new Rectangle(0, -20, 40, 20));
         button.setLabel(label || "----");
         button.applyStyle(style || {});
+        button.setFillOpacity(0.5);
         button.layoutFrame = layoutFrame || {relativePosition: pt(0,0), positionOffset: pt(0,0)};
         this.halos.addMorph(button);
         return button;
@@ -1632,7 +1659,8 @@ Morph.subclass('ComponentMorph', {
 
             
             if (this.isFramed()) this.unframed();
-            this.remove();
+            this.owner.removeMorph(this);
+            this.owner = null;
             
             var hand = WorldMorph.current().hands.first(); //FIXME -- get the click event?
             hand.addMorph(this);
@@ -1897,7 +1925,7 @@ SelectionMorph.subclass('UserFrameMorph', {
         }
         this.selectedMorphs = [];
         this.owner.submorphs.forEach(function(m) {
-            if (m !== this && this.bounds().containsRect(m.bounds())) this.selectedMorphs.push(m);
+            if (m !== this && this.bounds().containsRect(m.bounds()) && m instanceof ComponentMorph) this.selectedMorphs.push(m);
         }, this);
         this.selectedMorphs.reverse();
             
@@ -1912,20 +1940,69 @@ SelectionMorph.subclass('UserFrameMorph', {
     remove: function() { 
         // this.selectedMorphs.invoke('remove');
         // this.owner.removeMorph(this); // FIXME
-        if (this.fabrik) this.fabrik.currentSelection = null;
         Morph.prototype.remove.call(this);
     },
     
     okToBeGrabbedBy: function(evt) {
         // this.selectedMorphs.forEach( function(m) { evt.hand.addMorph(m); } );
         return this;
+    },
+    
+    createHandle: function(hand) {
+        var handle = new HandleMorph(pt(0,0), "rect", hand, this, "bottomRight");
+        handle.setExtent(pt(5, 5));
+        this.addMorph(handle);
+        hand.setMouseFocus(handle);
+        return handle;
+    },
+    
+    handleCollapseFor: function(fabrikMorph) {
+        // remove morphs and connectors
+        fabrikMorph.component.connectors.each(function(ea) { fabrikMorph.removeMorph(ea.morph) } );
+        var compMorphs = fabrikMorph.component.components.collect(function(ea) { return ea.panel });
+        var morphsToHide = this.selectedMorphs ?
+            compMorphs.reject(function(ea) { return this.selectedMorphs.include(ea) }.bind(this)) :
+            compMorphs;
+        morphsToHide.each(function(ea) { fabrikMorph.removeMorph(ea) });
+        
+        // we move the fabrikMorph to where this selection currently is, the selectedMorphs have to be moved in the other direction
+        this.positionDelta = this.getPosition();
+        fabrikMorph.positionAndExtentChange(fabrikMorph.getPosition().addPt(this.positionDelta), this.getExtent());
+        this.selectedMorphs.each(function(ea) {
+            ea.component.pinHandles.each(function(pin) { ea.removeMorph(pin.morph) });
+            ea.moveBy(this.positionDelta.negated());
+        }.bind(this));
+        
+        fabrikMorph.removeMorph(this);
+    },
+    
+    handleUncollapseFor: function(fabrikMorph) {
+        // remove morphs and connectors
+        fabrikMorph.component.connectors.each(function(ea) { fabrikMorph.addMorph(ea.morph); ea.updateView(); } );
+        var compMorphs = fabrikMorph.component.components.collect(function(ea) { return ea.panel });
+        var morphsToShow = this.selectedMorphs ?
+            compMorphs.reject(function(ea) { return this.selectedMorphs.include(ea) }.bind(this)) :
+            compMorphs;
+        morphsToShow.each(function(ea) { fabrikMorph.addMorph(ea) });
+        
+        this.selectedMorphs.each(function(ea) {
+            ea.component.pinHandles.each(function(pin) { ea.addMorph(pin.morph) })
+            this.positionDelta && ea.moveBy(this.positionDelta);
+        }.bind(this));
+                
+        fabrikMorph.addMorph(this);
     }
+
 });
 
 /* Morph and Component for encapsulating other components */
 ComponentMorph.subclass('FabrikMorph', {
     
     inset: 0,
+    
+    initialize: function($super, bounds) {
+        $super(bounds);
+    },
     
     initializeTransientState: function($super) {
         $super();
@@ -1997,20 +2074,16 @@ ComponentMorph.subclass('FabrikMorph', {
     
     onMouseDown: function ($super, evt) {
         console.log('making selection');
-        this.makeSelection(evt); 
+        if (!this.isCollapsed) this.makeSelection(evt); 
         return true;
     },
 
     makeSelection: function(evt) {  //default behavior is to grab a submorph
         if (this.currentSelection != null) this.currentSelection.remove();
-        // debugger;
         var m = new UserFrameMorph(this.localize(evt.point()).asRectangle());
         this.addMorph(m);
         this.currentSelection = m;
-        var handle = new HandleMorph(pt(0,0), "rect", evt.hand, m, "bottomRight");
-	    handle.setExtent(pt(5, 5));
-        m.addMorph(handle);
-        evt.hand.setMouseFocus(handle);
+        return m.createHandle(evt.hand);
     },
     
     collapseToggle: function(value) {
@@ -2028,44 +2101,34 @@ ComponentMorph.subclass('FabrikMorph', {
         this.uncollapsedPosition = this.getPosition();
         this.setFill(Color.gray);
         
-        
-        
-        // if (this.currentSelection) {
-        //     this.component.connectors.each(function(ea) { this.removeMorph(ea.morph) }.bind(this));
-        //     
-        //     this.component.components.each(function(ea) {
-        //         if (!this.currentSelection.selectedMorphs.include(ea))
-        //         this.removeMorph(ea.panel)
-        //     }.bind(this));
-        //     
-        //     
-        //     this.currentSelection.selectedMorphs.each(function(ea) { this.addMorph(ea) }.bind(this));
-        //     this.currentSelection.selectedMorphs.each(function(ea) { ea.component.pinHandles.each(function(pin) { ea.removeMorph(pin.morph) } ) }.bind(this));
-        //     // this.setPosition(this.currentSelection.getPosition());
-        //     // this.setExtent(this.currentSelection.getExtent());
-        //     return;
-        // }
-        
-        this.component.components.each(function(ea) { this.removeMorph(ea.panel) }.bind(this));
-        this.component.connectors.each(function(ea) { this.removeMorph(ea.morph) }.bind(this));
-        
-        this.setPosition(this.collapsedPosition || this.getPosition());
-        this.setExtent(this.collapsedExtent || this.component.defaultCollapsedExtent);
+        if (this.currentSelection) {
+            this.currentSelection.handleCollapseFor(this);
+        } else {
+            this.component.components.each(function(ea) { this.removeMorph(ea.panel) }.bind(this));
+            this.component.connectors.each(function(ea) { this.removeMorph(ea.morph) }.bind(this));
+            this.positionAndExtentChange(this.collapsedPosition || this.getPosition(),
+                                         this.collapsedExtent || this.component.defaultCollapsedExtent);
+        }
     },
     
     uncollapse: function() {
         console.log('uncollapse fabrik');
         this.isCollapsed = false;
         this.collapseHalo.setLabel('collapse');
-        this.collapsedExtent = this.getExtent();
-        this.collapsedPosition = this.getPosition();
         this.setFill(Color.blue.lighter());
-                
-        this.setPosition(this.uncollapsedPosition || this.getPosition());
-        this.setExtent(this.uncollapsedExtent || this.component.defaultViewExtent);
         
-        this.component.components.each(function(ea) { this.addMorph(ea.panel) }.bind(this));
-        this.component.connectors.each(function(ea) { this.addMorph(ea.morph); ea.updateView(); }.bind(this));
+        if (this.currentSelection) {
+            this.positionAndExtentChange(this.uncollapsedPosition || this.getPosition(), this.uncollapsedExtent || this.component.defaultViewExtent);
+            this.currentSelection.handleUncollapseFor(this);
+        } else {
+            this.collapsedExtent = this.getExtent();
+            this.collapsedPosition = this.getPosition();
+            this.positionAndExtentChange(this.uncollapsedPosition || this.getPosition(), this.uncollapsedExtent || this.component.defaultViewExtent);
+            this.component.components.each(function(ea) { this.addMorph(ea.panel) }.bind(this));
+            this.component.connectors.each(function(ea) { this.addMorph(ea.morph); ea.updateView(); }.bind(this));
+        };
+        
+
     },
     
     minExtent: function() {
@@ -2098,6 +2161,13 @@ ComponentMorph.subclass('FabrikMorph', {
     
     closeAllToDnD: function(loc) {
         // ok, lets handle this myself
+    },
+    
+    // considers windowMorph when exsiting
+    positionAndExtentChange: function(pos, ext) {
+        var morphToModify = this.owner instanceof WindowMorph ? this.owner : this;
+        morphToModify.setPosition(pos);
+        morphToModify.setExtent(ext);
     },
     
     isFramed: function() {
@@ -2264,7 +2334,7 @@ Component.subclass('FabrikComponent', {
     openIn: function($super, world, location, optExtent) {
         var morph = this.panel || this.buildView(optExtent);
         var window = world.addMorph(morph.framed());
-        window.setPosition(location);
+        window.setPosition(location || morph.getPosition());
         return window;
     }
 });
