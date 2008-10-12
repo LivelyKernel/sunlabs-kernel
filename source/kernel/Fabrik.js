@@ -1933,6 +1933,11 @@ SelectionMorph.subclass('UserFrameMorph', {
         // if (lastCall /*&& this.selectedMorphs.length == 0 && this.removeWhenEmpty*/) this.remove();
         if (lastCall && this.selectedMorphs.length == 0 && this.removeWhenEmpty) this.remove();
         // this.selectedMorphs = [];
+        
+        if (!lastCall) return;
+        if ((this.shape.bounds().extent().x < 10 && this.shape.bounds().extent().y < 10) ||
+            (this.shape.bounds().extent().x < 3 || this.shape.bounds().extent().y < 3))
+            this.remove();
     },
     
     // removeWhenEmpty: false, 
@@ -1941,6 +1946,7 @@ SelectionMorph.subclass('UserFrameMorph', {
         // this.selectedMorphs.invoke('remove');
         // this.owner.removeMorph(this); // FIXME
         Morph.prototype.remove.call(this);
+        if (this.fabrik) this.fabrik.currentSelection = null
     },
     
     okToBeGrabbedBy: function(evt) {
@@ -1978,7 +1984,6 @@ SelectionMorph.subclass('UserFrameMorph', {
     
     handleUncollapseFor: function(fabrikMorph) {
         // remove morphs and connectors
-        fabrikMorph.component.connectors.each(function(ea) { fabrikMorph.addMorph(ea.morph); ea.updateView(); } );
         var compMorphs = fabrikMorph.component.components.collect(function(ea) { return ea.panel });
         var morphsToShow = this.selectedMorphs ?
             compMorphs.reject(function(ea) { return this.selectedMorphs.include(ea) }.bind(this)) :
@@ -2083,6 +2088,7 @@ ComponentMorph.subclass('FabrikMorph', {
         var m = new UserFrameMorph(this.localize(evt.point()).asRectangle());
         this.addMorph(m);
         this.currentSelection = m;
+        this.currentSelection.fabrik = this;
         return m.createHandle(evt.hand);
     },
     
@@ -2091,6 +2097,8 @@ ComponentMorph.subclass('FabrikMorph', {
         if (this.isCollapsed) this.uncollapse()
         else this.collapse();
         this.updateHaloItemPositions();
+        if (this.isFramed())
+            this.setExtent(this.getExtent().addPt(this.owner.titleBar.getExtent().withX(0)));
     },
     
     collapse: function() {
@@ -2125,10 +2133,9 @@ ComponentMorph.subclass('FabrikMorph', {
             this.collapsedPosition = this.getPosition();
             this.positionAndExtentChange(this.uncollapsedPosition || this.getPosition(), this.uncollapsedExtent || this.component.defaultViewExtent);
             this.component.components.each(function(ea) { this.addMorph(ea.panel) }.bind(this));
-            this.component.connectors.each(function(ea) { this.addMorph(ea.morph); ea.updateView(); }.bind(this));
         };
         
-
+        this.component.connectors.each(function(ea) { this.addMorph(ea.morph); ea.updateView(); }.bind(this) );
     },
     
     minExtent: function() {
