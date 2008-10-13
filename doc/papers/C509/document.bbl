@@ -1,0 +1,103 @@
+\begin{thebibliography}{10}\setlength{\itemsep}{-1ex}\small
+
+\bibitem{AppleAutomator}
+Apple.
+\newblock Automator: Doing things over and over is over, 2007.
+
+\bibitem{Baroth1995VPR}
+E.~Baroth and C.~Hartsough.
+\newblock Visual programming in the real world.
+\newblock pages 21--42, 1995.
+
+\bibitem{Bitter2006LAP}
+R.~Bitter, T.~Mohiuddin, and M.~Nawrocki.
+\newblock {\em {LabVIEW: Advanced Programming Techniques}}.
+\newblock CRC Press, 2006.
+
+\bibitem{Ingalls2007SLL}
+D.~Ingalls, T.~Mikkonen, K.~Palacz, and A.~Taivalsaari.
+\newblock Sun labs lively kernel, 2007.
+\newblock as of Oct 12, 2007, \url{http://research.sun.com/projects/lively/}.
+
+\bibitem{Ingalls1988FVP}
+D.~Ingalls, S.~Wallace, Y.-Y. Chow, F.~Ludolph, and K.~Doyle.
+\newblock Fabrik: a visual programming environment.
+\newblock {\em SIGPLAN Not.}, 23(11):176--190, 1988.
+
+\bibitem{Johnston2004ADP}
+W.~M. Johnston, J.~R.~P. Hanna, and R.~J. Millar.
+\newblock Advances in dataflow programming languages.
+\newblock {\em ACM Comput. Surv.}, 36(1):1--34, 2004.
+
+\bibitem{Kay2005SEA}
+A.~Kay.
+\newblock Squeak etoys authoring and media, 2005.
+\newblock as of Aug 01, 2005,
+  \url{http://www.squeakland.org/pdf/etoys_n_authoring.pdf}.
+
+\bibitem{Ludolph1988FPE}
+F.~Ludolph, Y.-Y. Chow, D.~Ingalls, S.~Wallace, and K.~Doyle.
+\newblock The fabrik programming environment.
+\newblock {\em Visual Languages, 1988., IEEE Workshop on}, pages 222--230, Oct
+  1988.
+
+\bibitem{Maloney2004SSP}
+J.~Maloney, L.~Burd, Y.~Kafai, N.~Rusk, B.~Silverman, and M.~Resnick.
+\newblock Scratch: A sneak preview.
+\newblock In {\em C5 '04: Proceedings of the Second International Conference on
+  Creating, Connecting and Collaborating through Computing}, pages 104--109,
+  Washington, DC, USA, 2004. IEEE Computer Society.
+
+\bibitem{Maloney1995DLM}
+J.~H. Maloney and R.~B. Smith.
+\newblock Directness and liveness in the morphic user interface construction
+  environment.
+\newblock In {\em UIST '95: Proceedings of the 8th annual ACM symposium on User
+  interface and software technology}, pages 21--28, New York, NY, USA, 1995.
+  ACM.
+
+\bibitem{Merrill2006MNB}
+D.~Merrill.
+\newblock {Mashups: The new breed of Web app}.
+\newblock {\em IBM Web Architecture Technical Library}, 2006.
+
+\bibitem{MicrosoftPopfly}
+Microsoft.
+\newblock Popfly, 2008.
+\newblock as of Sep 23 2008, \url{http://www.popfly.com}.
+
+\bibitem{Morgan2008PMR}
+S.~Morgan.
+\newblock {\em Programming Microsoft Robotics Studio}.
+\newblock Microsoft Press, Redmond, WA, USA, 2008.
+
+\bibitem{Renggli2008PMD}
+L.~Renggli.
+\newblock {Pier--The Meta-Described Content Management System ESUG Innovation
+  Technology Awards 2007}.
+\newblock Technical report, University of Bern, Mar 2008.
+
+\bibitem{Rode2006EUD}
+J.~Rode, M.~B. Rosson, and M.~A.~P. Qui{\~n}ones.
+\newblock {End User Development of Web Applications}.
+\newblock In F.~P. Henry~Lieberman and V.~Wulf, editors, {\em End User
+  Development}, volume~9 of {\em Human-Computer Interaction Series}, pages
+  161--182. Springer, 2006.
+
+\bibitem{Taivalsaari2008TLKE}
+A.~Taivalsaari, T.~Mikkonen, D.~Ingalls, and K.~Palacz.
+\newblock Web browser as an application platform: The lively kernel experience.
+\newblock Technical Report SMLI TR-2008-175, Sun Microsystems, January 2008.
+
+\bibitem{Warth2008TMS}
+A.~Warth, T.~Yamamiya, Y.~Ohshima, and S.~Wallace.
+\newblock Toward a more scalable end-user scripting language.
+\newblock {\em Creating, Connecting and Collaborating through Computing, 2008.
+  C5 2008. Sixth International Conference on}, pages 172--178, Jan. 2008.
+
+\bibitem{YahooPipes}
+Yahoo.
+\newblock Pipes, 2008.
+\newblock as of Sep 23 2008, \url{http://pipes.yahoo.com/pipes/}.
+
+\end{thebibliography}
