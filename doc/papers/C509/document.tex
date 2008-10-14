@@ -167,7 +167,7 @@ With {\em FabrikComponents} users are empowered to create their own components. 
 
 
 \subsection{Pins and Connectors}
-When the users want to connect two components, they click on the pin of the first component and then on a pin of the second component to establish a directed connection between those components (respectively their pins). A connection between pins means: when the value in the pin of the first component changes, it is copied to the other pin. Thus the connection is directed. Bidirectional connections are created by reverse connecting two pins. Connections are not allowed to cross the borders of a {\em FabrikComponent}, this maintains order and avoids ''wire-choas''. 
+When the users want to connect two components, they click on the pin of the first component and then on a pin of the second component to establish a directed connection between those components (respectively their pins). A connection between pins means: when the value in the pin of the first component changes, it is copied to the other pin. Thus the connection is directed. Bidirectional connections are created by reverse connecting two pins. Connections are not allowed to cross the borders of a {\em FabrikComponent}, this maintains order and avoids 'wire-chaos'. 
 
 
 
@@ -194,7 +194,7 @@ Lively Fabrik does not restrict the type of data that flows from pin to pin. A c
 \end{figure}
 Although the data-flow principle is very expressive, data-flow programming languages have their shortcomings. 
 
-The original Fabrik demonstrated bidirectional data-flow with a Fahrenheit to Celsius converter as seen in Figure~\ref{fig:FabrikCelsiusFahrenheit}. While not all users may be comfortable with the backwards operation of a '+ -' or '$\times \div$' component, we think that bidirectional data-flow can be an enriching feature when used at the right level. So we combine the overall data-flow behavior with a simple imperative scripting language inside of components.  We used JavaScript as a scripting language but we are planning to integrate a visual tile scripting language like Etoys~\cite{Kay2005SEA}, Scratch~\cite{Maloney2004SSP}, or TileScript~\cite{Warth2008TMS} to make the scripting part more end-user friendly.  
+The original Fabrik demonstrated bidirectional data-flow with a Fahrenheit to Celsius converter as seen in Figure~\ref{fig:FabrikCelsiusFahrenheit}. While not all users may be comfortable with the backwards operation of a  '$\times \div$' or '+ -' component, we think that bidirectional data-flow can be an enriching feature when used at the right level. So we combine the overall data-flow behavior with a simple imperative scripting language inside of components.  We used JavaScript as a scripting language but we are planning to integrate a visual tile scripting language like Etoys~\cite{Kay2005SEA}, Scratch~\cite{Maloney2004SSP}, or TileScript~\cite{Warth2008TMS} to make the scripting part more end-user friendly.  
 
 Introducing an imperative language has its costs, the user has to cope with possible syntax errors and it violates the data-flow paradigm by possible access to global variables.  By exposing the user to real source code only in a very narrow scope of {\em FunctionComponents}, many problems with textual languages are limited to  the component where the user can fix it without having to browse a whole source code file.  
 
@@ -279,6 +279,10 @@ Copy-and-paste of scripts and customizing them is a crucial activity in end-user
 
 
 \section{Bringing It All Together}
+In the following we describe the construction of a more complex Lively Fabrik application, a weather widget Meshup which queries a Web-service and has a nice user interface. 
+
+Figure ~\ref{fig:WeatherExample} shows the weather widget which allows users to type the name of a city or a zip code into the input field at the top of the component. The component then displays current weather conditions for the place as textual and graphical informations below. This new component can be assembled by a user knowing the basic Fabrik components and how to use them in just a few minutes. It can be saved inside a Lively Kernel world for publishing it in the Web. Other users are then able to use the widget, or if they intend to extend or change it, they can just 'uncollapse' the hidden parts of the application and modify them. 
+
 
 
 \begin{figure}[h]\centering
@@ -287,10 +291,6 @@ Copy-and-paste of scripts and customizing them is a crucial activity in end-user
 \caption{The user can enter the name of a city or a zip in the topmost input field to see the current weather conditions }
 \label{fig:WeatherExample}
 \end{figure}
-In the following we describe the construction of a more complex Lively Fabrik application, a weather widget Meshup which queries a Web-service and has a nice user interface. 
-
-Figure ~\ref{fig:WeatherExample} shows the weather widget which allows users to type the name of a city or a zip code into the input field at the top of the component. The component then displays current weather conditions for the place as textual and graphical informations below. This new component can be assembled by a user knowing the basic Fabrik components and how to use them in just a few minutes. It can be saved inside a Lively Kernel world for publishing it in the Web. Other users are then able to use the widget, or if they intend to extend or change it, they can just 'uncollapse' the hidden parts of the application and modify them. 
-
 Basically, the construction of the weather widget consists of three parts: 
 
 
@@ -358,7 +358,7 @@ We are working on improving the usability of Lively Fabrik, and studying feedbac
 
 
 \section{Acknowledgements}
-We thank Krzysztof Palacz for fruitful discussions, valuable contributions, and his creative work on Lively Kernel, and we would like to thank Philipp Engelhard for for his comments on an early draft of this paper.  
+We thank Krzysztof Palacz for fruitful discussions, valuable contributions, and his creative work on Lively Kernel, and Philipp Engelhard for for his comments on an early draft of this paper.  
 
  
 
