@@ -234,7 +234,7 @@ The user interface of Lively Kernel inherits its directness and liveliness from 
 
 
 \subsection{Architecture Overview}
-Lively Fabrik is about visually wiring together components. We separated the user interface and the domain model of our components as shown in Figure~\ref{fig:LivelyFabrikCore}. Components glue together models and Morphs as their visual appearance.  
+We separated the user interface and the domain model of our components as shown in Figure~\ref{fig:LivelyFabrikCore}, because it allowed better development and automatic testing of the core component functionality.  
 
 
 
@@ -246,17 +246,15 @@ Lively Fabrik is about visually wiring together components. We separated the use
 \end{figure*}
 
 
-\subsection{Components, Models, Morphs}
-Components have typically a rectangular shape and user interface elements like a text field and pins.  The pins, provide an interface to its value fields. Components can react on value changes in pins and put new values out to their own pins.  
-
-A model is a collection of fields of values and object references. It provides accessors and generates update events for registered observers and is responsible for persisting the state of a component. 
+\paragraph{Components, Models, Morphs}
+Components have a rectangular shape and contain user interface elements like text fields, buttons, and pins.  We use NodeRecords as models, they store fields of values and object references and provide accessors and generate update events for registered observers. These update events make it easy to implement our data-flow model.  
 
 Morphs act as a view on models and components and are responsible for user interaction.  
 
 
 
-\subsection{Pins and Connectors}
-The data flows through connectors from pin to pin. This data-flow is implemented with an observer pattern, which is provided by Lively Kernel. Pins and Connectors use Morphs as their graphical representation and manage the observer relationships between component fields. Currently connections are simple lines that have to be laid out manually but we plan to replace them by curves and add layout support, because the ease of use of connecting pins is very important. 
+\paragraph{Pins and Connectors}
+The data flows through connectors from pin to pin. This data-flow is implemented with an observer pattern that is provided by Lively Kernel. Pins and Connectors use Morphs as their graphical representation and manage the observer relationships between component fields. Currently connections are simple lines that have to be laid out manually but we plan to replace them by curves and add layout support, because the ease of use of connecting pins is very important. 
 
 
 
@@ -273,18 +271,18 @@ Components may not immediately produce an output to a given input. The WebReques
 \subsection{Integration with Lively Kernel}
 Lively Fabrik aims for a strong integration into the Lively Kernel to make graphics and widgets available that where not specially made for Fabrik.  
 
-Standard Lively Kernel widgets can be used as components in Lively Fabrik. Pins are automatically generated from the Model of the widget and the Morph is embedded as a pluggable component. An example for wrapped widgets is the Clock Morph that can act as source of ticking events when dropped into Fabrik.  
+Standard Lively Kernel widgets can be used as components in Lively Fabrik. They are wrapped by PluggableComponents which automatically generates pins from the model to provide an interface. An example for wrapped widgets is the Clock Morph that when dropped into Fabrik can act as source of ticking events to create animations. 
 
-For creating graphics, the Morphs of the Lively Kernel can be used. They can flow as references from one component to another, so that one component creates a Morph, the user sets some attributes and the third moves it. The use of references violates the data flow concept and collides with the change update mechanism, but it is a straight forward way to interact with the whole Lively Kernel. 
+For creating graphics, the Morphs of the Lively Kernel can be used. They can flow as references from one component to another, so that one component creates a Morph, the next sets some attributes and last moves it. The use of references violates the data flow concept and collides with the change update mechanism, but it is a straight forward way to interact with the whole Lively Kernel. 
 
-Fabrik components can contain and encapsulate other components. This mechanism can be used to group behavior and abstract it into one component. The components inside can communicate to other components outside through pins of the container component, so that the interface is clear. By copying the container component the behavior can be reused and shared. 
+Fabrik components can contain and encapsulate other components. This mechanism can be used to group behavior and abstract it into one component. Components inside a Fabrik can communicate to other components outside through the clear interace of pins. By copying the container component the behavior can be reused and shared. 
 
 
 
 \subsection{Storing Fabrik Content}
-Lively Fabrik components are stored as any other objects in the Lively Kernel as DOM elements of a Web page. Thus not only the real content such as the component types, their connections, and their current data is stored, but also their user interface so that the user can customize the visual appearance without having to program. This may lead to conflicts in future versions, because the user may expect that his content updates itself in some ways and keeps the user changes in others.  
+Lively Fabrik components are stored as other objects in the Lively Kernel as Nodes in the DOM and serialized by the browser. Thus not only main content such as the component types, their connections, and their current data is stored, but also their Morphs so that the user can customize the visual appearance without having to program. This may lead to conflicts in future versions, because the user may expect that his content updates itself in some ways and keeps the user changes in others.  
 
-Copy-and-paste of scripts and customizing them is a crucial activity in end-user development.  This is easy for text-based languages but difficult in a graphical environment.  So visual scripts can only be shared by explicitly importing whole projects or in the worst case by rebuilding everything from scratch according to a picture.  By using the system clipboard and the serialization mechanism of the Lively Kernel, Fabrik components can be copied from one browser page to another. 
+Copy-and-paste of scripts and customizing them is a crucial activity in end-user development.  This is easy for text-based languages but difficult in a graphical environment, so visual scripts can only be shared by explicitly importing whole projects or in the worst case by rebuilding everything from scratch according to a picture.  By using the system clipboard and the serialization mechanism of the Lively Kernel, Fabrik components can be copied from one browser page to another. 
 
 
 
@@ -297,9 +295,9 @@ Copy-and-paste of scripts and customizing them is a crucial activity in end-user
 \caption{The user can enter the name of a city or a zip in the topmost input field to see the current weather conditions }
 \label{fig:WeatherExample}
 \end{figure}
-I the following we describe the construction of a more complex Lively Fabrik application, a weather widget, which combines a Meshup with a user interface. 
+In the following we describe the construction of a more complex Lively Fabrik application, a weather widget Meshup which queries a Web-service and has a nice user interface. 
 
-Figure ~\ref{fig:WeatherExample} shows the weather widget which allows users to type the name of a city or a zip code into the input field at the top of the component. The component then displays current weather conditions for the place as textual and graphical informations below. This new component can be assembled by a user knowing the basic Fabrik components and how to use them in just a few minutes minutes. It can be saved inside a Lively Kernel world for publishing it in the Web. Other users are then able to use the widget, or if they intend to extend or change it, they can just 'uncollapse' the hidden parts of the application and modify them. 
+Figure ~\ref{fig:WeatherExample} shows the weather widget which allows users to type the name of a city or a zip code into the input field at the top of the component. The component then displays current weather conditions for the place as textual and graphical informations below. This new component can be assembled by a user knowing the basic Fabrik components and how to use them in just a few minutes. It can be saved inside a Lively Kernel world for publishing it in the Web. Other users are then able to use the widget, or if they intend to extend or change it, they can just 'uncollapse' the hidden parts of the application and modify them. 
 
 Basically, the construction of the weather widget consists of three parts: 
 
@@ -325,7 +323,7 @@ Basically, the construction of the weather widget consists of three parts:
 \caption{The complete Weather component. For simplification the component from Figure~\ref{fig:WebrequestInWeatherExample} is collapsed. }
 \label{fig:ExapandedSimplifiedWeatherExample}
 \end{figure*}
-To begin, a new FabrikComponent is dragged from the ComponentBox into the Lively Kernel world. Then a WebRequestComponent is dropped inside it. This component takes a URL as input and generates an XMLHTTPRequest using the HTTP GET method, thus retrieving data from the Web. For obtaining the weather data a Google service is used. The weather for Tokyo, for instance, can be retrieved by writing \url{http://www.google.com/ig/api?weather=Tokyo} into a WebRequestComponent. When the request is completed, the ResponseXML pin of this component will carry a list of objects, each having two attributes: An attribute {\tt xml} which is pointing to an XML element (one for each tag) and an attribute {\tt js} which is a JavaScript object generated from the XML element. It contains, recursively converted, all XML attributes and child nodes as ordinary object properties, thus allowing users to access the XML data without knowing anything about the DOM API or XML queries. When the ResponseXML pin of the WebRequestComponent is connected to a List pin of a ListComponent it shows a string representation of every element in the XML document. 
+To begin, a new FabrikComponent is dragged from the ComponentBox into the Lively Kernel world. Then a WebRequestComponent is dropped inside it. This component takes a URL as input and generates an XMLHTTPRequest using the HTTP GET method, thus retrieving data from the Web. For obtaining the weather data a Google service is used. The weather for Tokyo, for instance, can be retrieved by writing \url{http://www.google.com/ig/api?weather=Tokyo} into a WebRequestComponent. When the request is completed, the 'ResponseXML' pin of this component will carry a list of objects, each having two attributes: An attribute {\tt xml} which is pointing to an XML element (one for each tag) and an attribute {\tt js} which is a JavaScript object generated from the XML element. It contains, recursively converted, all XML attributes and child nodes as ordinary object properties, thus allowing users to access the XML data without knowing anything about the DOM API or XML queries. When the 'ResponseXML' pin of the WebRequestComponent is connected to a 'List' pin of a ListComponent it shows a string representation of every element in the XML document. 
 
 The ListComponent now allows the selection of an object referencing sub elements of the XML tree which can be used in other components. Figure~\ref{fig:WebrequestInWeatherExample} shows the Web request part of the weather widget. Because the user should be able to pass in a city name or a zip, the URL will not be directly written into the WebRequestComponent. Instead it will be produced by a FunctionComponent which concatenates the constant part of the URL with the city/zip. The result is the input for the WebRequestComponent which is then connected to two ListComponents. As described above, these are used to select parts of the provided information, namely the tags 'forcast\_information' and 'current\_conditions'. 
 
@@ -344,11 +342,11 @@ This example showed the construction of a more advanced Lively Fabrik applicatio
 
 
 \section{Related Work}
-Lively Fabrik is named after the experimental interactive programming environment Fabrik~\cite{Ingalls1988FVP,Ludolph1988FPE}. In Fabrik components are placed in a graph and wired by connecting pins. It integrates the programming process and the creation of the user interface in one environment. Fabrik uses the structure data flow model and thus is timeless and allows connections to be potentially bidirectional. User interface elements support user input and the program can not only print results, but generate graphics, for example for creating diagrams. The original Fabrik is implemented in Smalltalk and uses code generation to speed things up. Lively Fabriks FunctionComponents directly create JavaScript functions that can be evaluated without generated classed and methods and the graphical representation.  
+Lively Fabrik is named after the experimental interactive programming environment Fabrik~\cite{Ingalls1988FVP,Ludolph1988FPE}. In Fabrik programming was done by placing components in a graph and connecting them with wires. It integrates the programming process and the creation of the user interface in one environment. Fabrik uses the structure data flow model and thus is timeless and allows connections to be potentially bidirectional. User interface elements support user input and the program can not only print results, but generate graphics, for example for creating diagrams. The original Fabrik is implemented in Smalltalk and uses code generation to speed things up. Lively Fabriks FunctionComponents directly create JavaScript functions that can be evaluated without generated classed or a graphical representation.  
 
 Many visual programming languages use the metaphor of data flow, popular representatives are LabView~\cite{Bitter2006LAP} or the Visual Language in Microsoft's Robotic Studio~\cite{Morgan2008PMR}. An overview of current visual data flow languages is given in~\cite{Johnston2004ADP}. 
 
-Another approach to end-user Development of Web Applications is described in~\cite{Rode2006EUD}. Rode et al. surveyed casual Web masters without programming knowledge as their group of end-users. The resulting tool phpClick is meant for basic data collection, storage and retrieval applications. Meshups and Active Object are not in their focus. 
+Another approach to end-user Development of Web Applications is described in~\cite{Rode2006EUD}. Rode et al. surveyed casual Web masters without programming knowledge as their group of end-users. The resulting tool phpClick is meant for basic data collection, storage and retrieval applications. Meshups and more graphical Web applications are not in their focus. 
 
 There are browser based products as Yahoo Pipes~\cite{YahooPipes} or Microsoft Popfly~\cite{MicrosoftPopfly} that allow users to generate Meshups, but they are restricted in their ability to integrate the results into Web applications. Yahoo Pipes generates very restricted views to display the output and provides the result in form of feeds for reuse in other contexts. Popfly lets users integrate created widgets into their own Web applications (via copy and paste JavaScript code, and other ways) but there are few end-user Web environments for creating general Web applications. 
 
@@ -359,9 +357,9 @@ The dataflow paradigm is not only used in end-user environments for creating Mes
 \section{Summary and Outlook}
 We have designed and implemented Lively Fabrik, a Web-based end-user programming environment. To make system development more appealing to end-users, Lively Fabrik combines the data flow of visually wired components with dynamic scripting capabilities. In Lively Fabrik, end-users do not have to split their work on the application's core behavior from the associated graphical user interfaces, since these can be easily and automatically separated if needed. With Lively Fabrik being part of a client-side interactive Web application environment, there is no need to install or update, since end-users have instant access to an always current and rich programming substrate. 
 
-As of today, Lively Fabrik has only very basic support for the collaborative development of Web applications. We plan to extend these capabilities to experiment with near real-time collaboration in a widely distributed Web-scale environment. Lively Kernel's entire functionality can be made accessible through our function components. To improve modularity and with that comprehensibility of more complex applications, we will provide means similar to procedural abstraction to group, extract, and offer abstractions meaningful and useful in particular programming situations. Examples here are Web content extraction, filtering, syndication, and the provisioning of graphical objects for direct interaction. 
+As of today, Lively Fabrik has only very basic support for the collaborative development of Web applications. We plan to extend these capabilities to experiment with near real-time collaboration in a widely distributed Web-scale environment. Lively Kernel's entire functionality can be made accessible through our FunctionComponents. To improve modularity and with that comprehensibility of more complex applications, we will provide means similar to procedural abstraction to group, extract, and offer abstractions meaningful and useful in particular programming situations. Examples are Web content extraction, filtering, syndication, and the provisioning of graphical objects for direct interaction. 
 
-Integrating tile scripting languages like those of Etoys~\cite{Kay2005SEA} or Scratch~\cite{Maloney2004SSP} is an promising alternative to using JavaScript in function components. TileScript~\cite{Warth2008TMS} is an interesting example of how a textual scripting language such as JavaScript can be transformed into a visual representation and back. Combined with the graphical capabilities of Lively Kernel, this may result in an Etoys-like system in the browser. 
+Integrating tile scripting languages like those of Etoys~\cite{Kay2005SEA} or Scratch~\cite{Maloney2004SSP} is an promising alternative to using JavaScript in function components. TileScript~\cite{Warth2008TMS} is an interesting example of how a textual scripting language like JavaScript can be transformed into a visual representation and back. Combined with the graphical capabilities of Lively Kernel, this may result in an Etoys-like system in the browser. 
 
 We are working on improving the usability of Lively Fabrik, and studying feedback from actual end-users when applying our programming environment to creatively express their ideas and solve their problems. 
 
