@@ -25,11 +25,14 @@ var fx = {
     Panel: Packages.com.sun.scenario.scenegraph.JSGPanel,
     Group: Packages.com.sun.scenario.scenegraph.SGGroup,
     Parent: Packages.com.sun.scenario.scenegraph.SGFilter, // an intermediate node with one child
+    Text: Packages.com.sun.scenario.scenegraph.SGText,
     Shape: Packages.com.sun.scenario.scenegraph.SGShape,
     Transform: Packages.com.sun.scenario.scenegraph.SGTransform,
     ShapeMode: Packages.com.sun.scenario.scenegraph.SGAbstractShape$Mode,
     Ellipse: Packages.java.awt.geom.Ellipse2D.Double,
+    Point: Packages.java.awt.geom.Point2D.Double,
     Rectangle: Packages.java.awt.geom.Rectangle2D.Double,
+    Font: Packages.java.awt.Font,
     Path: Packages.java.awt.geom.GeneralPath,
     Color: Packages.java.awt.Color,
     Timer: Packages.javax.swing.Timer,
@@ -37,6 +40,12 @@ var fx = {
 	antiAlias: function(shape) {
 	    var hints = Packages.java.awt.RenderingHints;
 	    shape.setAntialiasingHint(hints.VALUE_ANTIALIAS_ON);
+	    return shape;
+	},
+
+	antiAliasText: function(shape) {
+	    var hints = Packages.java.awt.RenderingHints;
+	    shape.setAntialiasingHint(hints.VALUE_TEXT_ANTIALIAS_ON);
 	    return shape;
 	},
 	
@@ -351,36 +360,62 @@ fx.dom.renderers[SVGPolygonElement.tagName] = function(element) {
     }
     //console.log('rendering ' + element);
     return  element._fxBegin;
-}
+};
 
-Function.wrap(SVGSVGElement.prototype, ["insertBefore", "appendChild"], function(func, args) {
-    var result = func.apply(this, args);
-    fx.dom.enqueue(this); // console.log('not ready, should enqueue? ' + this);
-    fx.dom.update(); // note synchronous updates
-    return result;
+// b0rken but does something
+fx.dom.renderers[SVGTextElement.tagName] = function(element) {
+    if (element._fxBegin)
+	element._fxBegin.remove();
+    else 
+	element._fxBegin = new fx.Parent();
+    var text = fx.util.antiAliasText(new fx.Text());
+
+    var attrs = element.attributes;
+    var fontSize = 12;
+    for (var i = 0; i < attrs.length; i++) {
+	var attr = attrs.item(i);
+	switch (attr.name) {
+	case "font-size":
+	    //var font = text.getFont(); 
+	    fontSize = parseInt(attr.value);
+	    var newFont = new fx.Font('Helvetica', fx.Font.PLAIN, fontSize);
+	    text.setFont(newFont);
+	    break;
+	}
+    }
+
+    text.setLocation(new fx.Point(0, fontSize));
+    var content = "";
+    element.childNodes._nodes.forEach(function(node) {
+	// FIXME FIXME FIXME
+	if (node.localName == 'tspan') {
+	    content += node.firstChild.nodeValue; // not really but TBC
+	}
+    });
+
+    text.setText(content);
+    element._fxBegin.setChild(text);
+    return element._fxBegin;
+};
+
+
+[SVGSVGElement, SVGGElement].forEach(function(constr) {
+    Function.wrap(constr.prototype, ["insertBefore", "appendChild"], function(func, args) {
+	var result = func.apply(this, args);
+	fx.dom.enqueue(this); // console.log('not ready, should enqueue? ' + this);
+	fx.dom.update(); // note synchronous updates
+	return result;
+    });
 });
 
-// FIXME literal copy, remove
-Function.wrap(SVGGElement.prototype, ["insertBefore", "appendChild"], function(func, args) {
-    var result = func.apply(this, args);
-    fx.dom.enqueue(this); // console.log('not ready, should enqueue? ' + this);
-    //console.log('updating ' + this.id + ' on change of ' + args[0].id);
-    fx.dom.update(); // note synchronous updates
-    return result;
-});
 
-Function.wrap(SVGGElement.prototype, ["removeChild"], function(func, args) {
-    var result = func.apply(this, args);
-    fx.dom.enqueue(this); 
-    fx.dom.update(); // note synchronous updates
-    return result;
-});
-
-Function.wrap(SVGSVGElement.prototype, ["removeChild"], function(func, args) {
-    var result = func.apply(this, args);
-    fx.dom.enqueue(this); 
-    fx.dom.update(); // note synchronous updates
-    return result;
+[SVGSVGElement, SVGGElement].forEach(function(constr) {
+    Function.wrap(constr.prototype, ["removeChild"], function(func, args) {
+	var result = func.apply(this, args);
+	fx.dom.enqueue(this); 
+	fx.dom.update(); // note synchronous updates
+	return result;
+    });
 });
 
 
@@ -389,14 +424,15 @@ fx.dom.renderers[HTMLHtmlElement.tagName] =
 fx.dom.renderers[HTMLBodyElement.tagName] =
 fx.dom.renderers[SVGSVGElement.tagName] =
 fx.dom.renderers[SVGGElement.tagName] = function(element) {
-    if (element._fxBegin) 
+    if (element._fxBegin)
 	element._fxBegin.remove();
-    else 
+    else
 	element._fxBegin = new fx.Parent();
-    
+
     var fxObj = element._fxEnd = new fx.Group();
-    element.childNodes._nodes.forEach(function(child) {
-	var fxChild = child._fxBegin || fx.dom.render(child);
+
+    element.childNodes._nodes.forEach(function(node) {
+	var fxChild = node._fxBegin || fx.dom.render(node);
 	if (fxChild) fxObj.add(fxChild);
     });
 
@@ -416,6 +452,7 @@ fx.dom.renderers[SVGGElement.tagName] = function(element) {
 	    fxtfm.setChild(fxObj);
 	    fxObj = fxtfm;
 	}
+	//console.log('reorg of ' + element.id);
     } 
 
     element._fxBegin.setChild(fxObj);

@@ -96,7 +96,7 @@ function morphicMain() {
 
 browser.display(canvas._fxBegin);
 //window.setTimeout(manualDemo, 1); // ensure the right thread
-window.setTimeout(morphicMain, 1);
+
 
 // this belongs in the browser
 window.setTimeout(function() {
@@ -122,3 +122,6 @@ window.setTimeout(function() {
 
 
 }, 1);
+
+
+window.setTimeout(morphicMain, 500);
