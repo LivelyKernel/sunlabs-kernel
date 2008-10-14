@@ -332,6 +332,22 @@ Function.wrap(SVGGElement.prototype, ["insertBefore", "appendChild"], function(f
     return result;
 });
 
+Function.wrap(SVGGElement.prototype, ["removeChild"], function(func, args) {
+    var result = func.apply(this, args);
+    fx.dom.enqueue(this); 
+    fx.dom.update(); // note synchronous updates
+    return result;
+});
+
+Function.wrap(SVGSVGElement.prototype, ["removeChild"], function(func, args) {
+    var result = func.apply(this, args);
+    fx.dom.enqueue(this); 
+    fx.dom.update(); // note synchronous updates
+    return result;
+});
+
+
+
 
 fx.dom.renderers[HTMLHtmlElement.tagName] =
 fx.dom.renderers[HTMLBodyElement.tagName] =

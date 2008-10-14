@@ -13,14 +13,13 @@ load('dom/index.xhtml.js');
 print('loaded start document emulation');
 load('../kernel/defaultconfig.js');
 Config.useTransformAPI = false;
-// Config.forceTransformAttribute = true;
 Config.useGetTransformToElement = false;
 
 load('../kernel/Core.js');
 load('../kernel/Text.js');
 load('../kernel/Widgets.js');
 
- Function.resetDebuggingStack = Functions.Null;
+Function.resetDebuggingStack = Functions.Null;
 
 // example program
 var SVGNS = 'http://www.w3.org/2000/svg';
