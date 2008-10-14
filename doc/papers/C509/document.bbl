@@ -3,6 +3,7 @@
 \bibitem{AppleAutomator}
 Apple.
 \newblock Automator: Doing things over and over is over, 2007.
+\newblock as of Sep 23 2008, \url{http://automator.us}.
 
 \bibitem{Baroth1995VPR}
 E.~Baroth and C.~Hartsough.
@@ -70,6 +71,14 @@ Microsoft.
 S.~Morgan.
 \newblock {\em Programming Microsoft Robotics Studio}.
 \newblock Microsoft Press, Redmond, WA, USA, 2008.
+
+\bibitem{Ohshima2007TLW}
+Y.~Ohshima, T.~Yamamiya, S.~Wallace, and A.~Raab.
+\newblock Tinlizzie wysiwiki and wikiphone: Alternative approaches to
+  asynchronous and synchronous collaboration on the web.
+\newblock In {\em C5 '07: Proceedings of the Fifth International Conference on
+  Creating, Connecting and Collaborating through Computing}, pages 36--46,
+  Washington, DC, USA, 2007. IEEE Computer Society.
 
 \bibitem{Rode2006EUD}
 J.~Rode, M.~B. Rosson, and M.~A.~P. Qui{\~n}ones.

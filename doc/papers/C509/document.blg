@@ -2,47 +2,46 @@ This is BibTeX, Version 0.99c (Web2C 7.5.4)
 The top-level auxiliary file: document.aux
 The style file: latex8.bst
 Database file #1: bibliography.bib
-Warning--I didn't find a database entry for "Ohshima2007TLW"
 Warning--empty journal in Baroth1995VPR
-You've used 17 entries,
+You've used 18 entries,
             2118 wiz_defined-function locations,
-            616 strings with 6697 characters,
-and the built_in function-call counts, 5761 in all, are:
-= -- 571
-> -- 288
-< -- 8
-+ -- 114
-- -- 96
-* -- 370
-:= -- 959
-add.period$ -- 53
-call.type$ -- 17
-change.case$ -- 96
+            621 strings with 7048 characters,
+and the built_in function-call counts, 6258 in all, are:
+= -- 625
+> -- 311
+< -- 9
++ -- 123
+- -- 104
+* -- 403
+:= -- 1035
+add.period$ -- 58
+call.type$ -- 18
+change.case$ -- 103
 chr.to.int$ -- 0
-cite$ -- 18
-duplicate$ -- 232
-empty$ -- 414
-format.name$ -- 96
-if$ -- 1215
+cite$ -- 19
+duplicate$ -- 253
+empty$ -- 450
+format.name$ -- 104
+if$ -- 1327
 int.to.chr$ -- 0
-int.to.str$ -- 17
-missing$ -- 13
-newline$ -- 87
-num.names$ -- 36
-pop$ -- 104
+int.to.str$ -- 18
+missing$ -- 14
+newline$ -- 93
+num.names$ -- 38
+pop$ -- 112
 preamble$ -- 1
-purify$ -- 81
+purify$ -- 87
 quote$ -- 0
-skip$ -- 180
+skip$ -- 195
 stack$ -- 0
-substring$ -- 295
-swap$ -- 68
-text.length$ -- 8
+substring$ -- 324
+swap$ -- 76
+text.length$ -- 9
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 64
+type$ -- 68
 warning$ -- 1
-while$ -- 55
-width$ -- 19
-write$ -- 185
-(There were 2 warnings)
+while$ -- 60
+width$ -- 20
+write$ -- 200
+(There was 1 warning)
