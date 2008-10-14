@@ -3134,8 +3134,44 @@ Visual.addMethods({
     },
     
     getLocalTransform: function() {
-	var impl = this.rawNode.transform.baseVal.consolidate();
-	return new Transform(impl ? impl.matrix : null); // identity if no transform specified
+	if (Config.useTransformAPI) {
+	    var impl = this.getBaseTransform().consolidate();
+	    return new Transform(impl ? impl.matrix : null); // identity if no transform specified
+	} else {
+	    // parse the attribute: by Dan Amelang
+	    var s = this.rawNode.getAttributeNS(null, "transform");
+	    var matrix = null;
+	    var match = s.match(/(\w+)\s*\((.*)\)/);
+	    if (match) {
+		matrix = this.canvas().createSVGMatrix();
+		var args = match[2].split(/(?:\s|,)+/).
+		map(function(n) { return parseFloat(n) || 0; });
+		switch (match[1]) {
+		case 'matrix':
+		    matrix.a = args[0]; matrix.b = args[1];
+		    matrix.c = args[2]; matrix.d = args[3];
+		    matrix.e = args[4]; matrix.f = args[5];
+		    break;
+		case 'translate':
+		    matrix = matrix.translate(args[0], args[1]);
+		    break;
+		case 'scale':
+		    matrix = matrix.scaleNonUniform(args[0], args[1] || 1.0);
+		    break;
+		case 'rotate':
+		    // FIXME check:
+		    matrix = matrix.translate(-args[1], -args[2]).rotate(args[0]).translate(args[1], args[2]);
+		    break;
+		case 'skewX':
+		    matrix = matrix.skewX(args[0]);
+		    break;
+		case 'skewY':
+		    matrix = matrix.setSkewY(args[0]);
+		    break;
+		}
+	    }
+	    return new Transform(matrix);
+	}
     },
 
     getBoundingBox: function() { // bounds, but using native SVG functionality, and in the object's coordinates.
@@ -5289,19 +5325,19 @@ Morph.addMethods({
 	if (hasFocus) return this.mouseHandler.handleMouseEvent(evt, this);
 
 	if (!evt.priorPoint || !this.fullContainsWorldPoint(evt.priorPoint)) return false;
-
+	
 	if (this.hasSubmorphs()) {
 	    // If any submorph handles it (ie returns true), then return
 	    for (var i = this.submorphs.length - 1; i >= 0; i--) {
 		if (this.submorphs[i].captureMouseEvent(evt, false)) return true;
 	    }
 	}
-
 	if (this.mouseHandler == null)
 	    return false;
 
 	if (!evt.priorPoint || !this.shape.containsPoint(this.localize(evt.priorPoint))) 
 	    return false;
+
 
 	return this.mouseHandler.handleMouseEvent(evt, this); 
     },
@@ -5431,7 +5467,6 @@ Morph.addMethods({
 Morph.addMethods({
 
     checkForControlPointNear: function(evt) {
-	// console.log('checking %s', this);
 	if (this.suppressHandles) return false; // disabled
 	if (this.owner == null) return false; // can't reshape the world
 	var handle = this.shape.possibleHandleForControlPoint(this, this.localize(evt.mousePoint), evt.hand);
@@ -7231,7 +7266,7 @@ Morph.subclass("HandMorph", {
     },
 
     reallyHandleMouseEvent: function HandMorph$reallyHandleMouseEvent(evt) { 
-
+	
         evt.setButtonPressedAndPriorPoint(this.mouseButtonPressed, 
 					  this.lastMouseEvent ? this.lastMouseEvent.mousePoint : null);
 	var world = this.owner;
@@ -7242,7 +7277,7 @@ Morph.subclass("HandMorph", {
             this.setPosition(evt.mousePoint);
             
             if(evt.isShiftDown())
-                    this.alignToGrid(this.topSubmorph());
+                this.alignToGrid(this.topSubmorph());
             
 	    this.updateGrabHalo();
             
