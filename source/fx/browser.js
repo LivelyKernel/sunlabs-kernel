@@ -157,10 +157,12 @@ fx.dom = {
     },
 
     update: function() {
+	var length = this.queue.length;
 	while (this.queue.length > 0) {
 	    var element = this.queue.pop();
 	    this.render(element);
 	}
+	return length;
     }
 };
 
@@ -172,6 +174,46 @@ Function.wrapSetter(Attr.prototype, 'value', function(func, args) {
 });
 
 
+window.setTimeout = function(action, delay) {
+    var timer = fx.util.setInterval(action, delay);
+    timer.setRepeats(false);
+    var no = fx.dom.update();
+    return timer;
+}
+
+window.setInterval = function(action, delay) {
+    var timer = fx.util.setInterval(action, delay);
+    fx.dom.update();
+    return timer;
+}
+
+
+    
+Function.wrap(window, ['onmousemove', 'onmousedown', 'onmouseup'], function(func, args) {
+    func.apply(this, args);
+    fx.dom.update();
+});
+
+
+[SVGPolygonElement, SVGRectElement, SVGEllipseElement, SVGGElement].forEach(function(constr) {
+    Function.wrap(constr.prototype, ['deepClone', 'cloneNode'], function(func, args) {
+	console.log('wrapped clone ' + this);
+	var begin = this._fxBegin;
+	var end = this._fxEnd;
+	delete this._fxBegin;
+	delete this._fxEnd;
+	var clone = func.apply(this, args);
+	begin && (this._fxBegin = begin);
+	end && (this._fxEnd = end);
+	var tfm = this.getAttributeNS(null, "transform");
+	if (tfm) {
+	    clone.setAttributeNS(Namespace.SVG, "transform", tfm);
+	    console.log('tfm ' + tfm + ' field ' + (typeof clone.transform) + ", " + clone.transform);
+	}
+	return clone;
+    });
+});
+		      
 // scenegraph bindings to SVG
 
 // http://www.w3.org/TR/2003/REC-SVG11-20030114/painting.html#paint-att-mod
@@ -304,16 +346,12 @@ fx.dom.renderers[SVGPolygonElement.tagName] = function(element) {
 		}
 	    }
 	    path.closePath();
-	    
-	    //element._fxMakePath(path);
 	} 
 
     }
     //console.log('rendering ' + element);
     return  element._fxBegin;
 }
-
-
 
 Function.wrap(SVGSVGElement.prototype, ["insertBefore", "appendChild"], function(func, args) {
     var result = func.apply(this, args);
@@ -322,13 +360,12 @@ Function.wrap(SVGSVGElement.prototype, ["insertBefore", "appendChild"], function
     return result;
 });
 
-
-    // FIXME literal copy, remove
-
+// FIXME literal copy, remove
 Function.wrap(SVGGElement.prototype, ["insertBefore", "appendChild"], function(func, args) {
     var result = func.apply(this, args);
     fx.dom.enqueue(this); // console.log('not ready, should enqueue? ' + this);
-    //fx.dom.update(); // note synchronous updates
+    //console.log('updating ' + this.id + ' on change of ' + args[0].id);
+    fx.dom.update(); // note synchronous updates
     return result;
 });
 
@@ -345,7 +382,6 @@ Function.wrap(SVGSVGElement.prototype, ["removeChild"], function(func, args) {
     fx.dom.update(); // note synchronous updates
     return result;
 });
-
 
 
 
@@ -387,15 +423,6 @@ fx.dom.renderers[SVGGElement.tagName] = function(element) {
     return element._fxBegin;
 }
 
-
-
-    
 // end of SVG impl
 
 
-
-window.setTimeout = function(action, delay) {
-    var timer = fx.util.setInterval(action, delay);
-    timer.setRepeats(false);
-    return timer;
-}
