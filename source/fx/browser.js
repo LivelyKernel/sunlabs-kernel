@@ -24,6 +24,7 @@ print('loaded DOM implementation in JS');
 var fx = {
     Panel: Packages.com.sun.scenario.scenegraph.JSGPanel,
     Group: Packages.com.sun.scenario.scenegraph.SGGroup,
+    Parent: Packages.com.sun.scenario.scenegraph.SGFilter, // an intermediate node with one child
     Shape: Packages.com.sun.scenario.scenegraph.SGShape,
     Transform: Packages.com.sun.scenario.scenegraph.SGTransform,
     ShapeMode: Packages.com.sun.scenario.scenegraph.SGAbstractShape$Mode,
@@ -68,7 +69,7 @@ var fx = {
 	    element._fxTransform = fx.Transform.createTranslation(-x, -y, element._fxTransform);
 	    element._fxTransform = fx.Transform.createRotation(theta, element._fxTransform);
 	    element._fxTransform = fx.Transform.createTranslation(x, y, element._fxTransform);
-	    parent.add(element._fxTransform);
+	    parent.setChild(element._fxTransform);
 	    return element;
 	},
 
@@ -77,8 +78,20 @@ var fx = {
 	    var parent = element._fxTransform.getParent();
 	    parent && parent.remove(element._fxTransform);
 	    element._fxTransform = fx.Transform.createTranslation(x, y, element._fxTransform);
-	    parent && parent.add(element._fxTransform);
+	    parent && parent.setChild(element._fxTransform);
 	    return element;
+	},
+
+	className: function(fxInstance) {
+	    return fxInstance ? String(fxInstance.getClass().getName()).split('.').last() : "null";
+	},
+
+	parentChain: function(fxInstance) {
+	    var parents = [];
+	    for (var p = fxInstance; p != null; p = p.getParent()) {
+		parents.push(p);
+	    }
+	    return parents;
 	},
 
 	queue: []
@@ -144,6 +157,7 @@ fx.dom = {
     },
 
     update: function() {
+	this.queue.length && console.log('updating ' + this.queue.length);
 	while (this.queue.length > 0) {
 	    var element = this.queue.pop();
 	    this.render(element);
@@ -220,17 +234,17 @@ var PaintModule = {
 }
 
 fx.dom.renderers[SVGRectElement.tagName] = function(element) {
-    if (element._fxBegin) {
-	fx.util.removeAll(element);
-    } else 
-	element._fxBegin = new fx.Group();
+    if (element._fxBegin)
+	element._fxBegin.remove();
+    else 
+	element._fxBegin = new fx.Parent();
     var shape = fx.util.antiAlias(new fx.Shape());
 
     shape.setShape(new fx.Rectangle(element.x.baseVal.value,
 				    element.y.baseVal.value,
 				    element.width.baseVal.value,
 				    element.height.baseVal.value));
-    element._fxBegin.add(shape);
+    element._fxBegin.setChild(shape);
     
     var attrs = element.attributes;
     
@@ -240,23 +254,26 @@ fx.dom.renderers[SVGRectElement.tagName] = function(element) {
 	    PaintModule.renderAttribute(element, attr.name, attr.value);
 	}
     }
+    console.log('rendering ' + element);
     return element._fxBegin;
 }
 
 
 fx.dom.renderers[SVGEllipseElement.tagName] = function(element) {
-    if (element._fxBegin) {
-	fx.util.removeAll(element); // FIXME
-    } else 
-	element._fxBegin = new fx.Group();
-
-    var shape = fx.util.antiAlias(new fx.Shape());
-    element._fxBegin.add(shape);
+    if (element._fxBegin)
+	element._fxBegin.remove();
+    else 
+	element._fxBegin = new fx.Parent();
     var cx = element.cx.baseVal.value;
     var cy = element.cy.baseVal.value;
     var rx = element.rx.baseVal.value;
     var ry = element.ry.baseVal.value;
+    var shape = fx.util.antiAlias(new fx.Shape());
+
     shape.setShape(new fx.Ellipse(cx - rx, cy - ry, rx*2, ry*2));
+
+    element._fxBegin.setChild(shape);
+    
 
     var attrs = element.attributes;
     for (var i = 0; i < attrs.length; i++) {
@@ -265,6 +282,7 @@ fx.dom.renderers[SVGEllipseElement.tagName] = function(element) {
 	    PaintModule.renderAttribute(element, attr.name, attr.value);
 	}
     }
+    console.log('rendering ' + element);
     return element._fxBegin;
 
 }
@@ -286,13 +304,13 @@ Object.extend(SVGPolygonElement.prototype, {
 });
 
 fx.dom.renderers[SVGPolygonElement.tagName] = function(element) {
-    if (element._fxBegin) {
-	fx.util.removeAll(element); // FIXME
-    } else 
-	element._fxBegin = new fx.Group();
+    if (element._fxBegin)
+	element._fxBegin.remove();
+    else 
+	element._fxBegin = new fx.Parent();
     var shape = fx.util.antiAlias(new fx.Shape());
     var path = new fx.Path();
-    element._fxBegin.add(shape);
+    element._fxBegin.setChild(shape);
     shape.setShape(path);
 
     var attrs = element.attributes;
@@ -306,71 +324,66 @@ fx.dom.renderers[SVGPolygonElement.tagName] = function(element) {
 	    console.log('unknown attribute ' + attr);
 	}
     }
+    console.log('rendering ' + element);
+    return  element._fxBegin;
 }
 
 
 
 Function.wrap(SVGSVGElement.prototype, ["insertBefore", "appendChild"], function(func, args) {
     var result = func.apply(this, args);
-    var newChild = args[0];
     fx.dom.enqueue(this); // console.log('not ready, should enqueue? ' + this);
-
     fx.dom.update(); // note synchronous updates
     return result;
 });
 
 
     // FIXME literal copy, remove
+
 Function.wrap(SVGGElement.prototype, ["insertBefore", "appendChild"], function(func, args) {
     var result = func.apply(this, args);
-    var newChild = args[0];
     fx.dom.enqueue(this); // console.log('not ready, should enqueue? ' + this);
-
     //fx.dom.update(); // note synchronous updates
     return result;
 });
+
 
 fx.dom.renderers[HTMLHtmlElement.tagName] =
 fx.dom.renderers[HTMLBodyElement.tagName] =
 fx.dom.renderers[SVGSVGElement.tagName] =
 fx.dom.renderers[SVGGElement.tagName] = function(element) {
-    if (element._fxBegin) {
-	fx.util.removeAll(element); // FIXME
-    } else 
-	element._fxBegin = new fx.Group();
+    if (element._fxBegin) 
+	element._fxBegin.remove();
+    else 
+	element._fxBegin = new fx.Parent();
     
-    var gobj = element._fxEnd = element.childNodes._nodes.map(function(child) {
-	child._fxBegin || console.log('recursing into child ' + child);
-	return child._fxBegin || fx.dom.render(child);
+    var fxObj = element._fxEnd = new fx.Group();
+    element.childNodes._nodes.forEach(function(child) {
+	var fxChild = child._fxBegin || fx.dom.render(child);
+	if (fxChild) fxObj.add(fxChild);
     });
 
-    if (false && element.hasAttribute('transform')) { // only for G elements for us
-	console.log('detected transform ' + element.transform);
+    if (element.transform) { 
 	var list = element.transform.baseVal;
 	for (var i = list.numberOfItems - 1; i >= 0; i--) {
-	    var base = element._fxTransform || element._fxGroup;
+	    var fxtfm = undefined;
 	    var transform = list.getItem(i);
-	    if (transform.type == SVGTransform.SVG_TRANSFORM_TRANSLATE)
-		base = new fx.Transform.createTranslation(transform.matrix.e, transform.matrix.f, base);
-	    else if (transform.type == SVGTransform.SVG_TRANSFORM_SCALE)
-		base = new fx.Transform.createScale(transform.matrix.a, transform.matrix.d, base);
-	    else if (transform.type == SVGTransform.SVG_TRANSFORM_ROTATE)
-		base = new fx.Transform.createRotation(transform.angle, base);
-	    else
+	    if (transform.type == SVGTransform.SVG_TRANSFORM_TRANSLATE) {
+		fxtfm = new fx.Transform.createTranslation(transform.matrix.e, transform.matrix.f, null);
+	    } else if (transform.type == SVGTransform.SVG_TRANSFORM_SCALE) {
+		fxtfm = new fx.Transform.createScale(transform.matrix.a, transform.matrix.d, null);
+	    } else if (transform.type == SVGTransform.SVG_TRANSFORM_ROTATE) {
+		fxtfm = new fx.Transform.createRotation(transform.angle, null);
+	    } else
 		continue;
+	    fxtfm.setChild(fxObj);
+	    fxObj = fxtfm;
 	}
-	element._fxTransform  = base;
-	if (element._fxGroup) element._fxGroup.add(element._fxTransform);
-    }
-    for (var i = 0; i < gobj.length; i++)  {
-	var childGphx = gobj[i];
-	if (childGphx)
-	    element._fxBegin.add(childGphx);
-    }
+    } 
+
+    element._fxBegin.setChild(fxObj);
+    console.log('rendering ' + element);
     return element._fxBegin;
-    
-    //    if (!element._fxGroup) console.log('element not ready?'); // do not update
-    //else element._fxGroup.add(newChild._fxTransform);
 }
 
 

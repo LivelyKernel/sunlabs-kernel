@@ -12,6 +12,7 @@ load('browser.js');
 load('dom/index.xhtml.js');
 print('loaded start document emulation');
 load('../kernel/defaultconfig.js');
+Config.useTransformAPI = true;
 load('../kernel/Core.js');
 load('../kernel/Text.js');
 load('../kernel/Widgets.js');
@@ -20,16 +21,15 @@ load('../kernel/Widgets.js');
 // example program
 var SVGNS = 'http://www.w3.org/2000/svg';
 
-var browser = new fx.Frame(1024,500);
+var browser = new fx.Frame(1024,600);
 
 var canvas = document.getElementById("canvas");
-
-
 
 
 function morphicMain() {
     var canvas = Global.document.getElementById("canvas");
     var world = new WorldMorph(canvas); 
+    world.setFill(Color.blue);
     console.log('created empty world ' + world);
     world.displayOnCanvas(canvas);
     console.log("displayed world");
@@ -67,16 +67,24 @@ function morphicMain() {
          widget = new TextMorph(loc.addPt(dx).extent(pt(140,50)),"Unbordered"); // unbordered text
          world.addMorph(widget.applyStyle({fontSize: 20, borderWidth: 0, fill: null})); 
      }
+    fx.util.setInterval(function() { // FIXME not standard
+	//fx.util.rotate(star, Math.PI/8, 250, 100);
+	fx.dom.update();
+    }, 50);
+
+
 }
 
 
 
 
 
+function manualDemo() {
 
 
-
-
+var container = document.createElementNS(SVGNS, "g");
+container.setAttributeNS(null, "transform", "translate(50 50)");
+container.setAttribute("id", "container");
 
 var shape = document.createElementNS(SVGNS, "rect");
 shape.setAttributeNS(null, "x", 150);
@@ -87,7 +95,7 @@ shape.setAttributeNS(null, "height", 50);
 shape.setAttributeNS(null, "fill", "red");
 shape.setAttributeNS(null, "stroke", "green");
 shape.setAttributeNS(null, "stroke-width", 2);
-canvas.appendChild(shape);
+container.appendChild(shape);
 
 var shape = document.createElementNS(SVGNS, "ellipse");
 
@@ -97,15 +105,11 @@ shape.setAttributeNS(null, "cx", 150);
 shape.setAttributeNS(null, "cy", 300); 
 shape.setAttributeNS(null, "fill", "blue");
 
-canvas.appendChild(shape);
-
-fx.util.addMouseListener(shape, "mousePressed", function(evt) { 
-    console.log('mouse pressed event ' + evt);
-});
+container.appendChild(shape);
 
 
 var star = document.createElementNS(SVGNS, "polygon");
-canvas.appendChild(star);
+container.appendChild(star);
 
 function svgpt(x, y) {
     var point = new SVGPoint();
@@ -136,6 +140,13 @@ star.setAttributeNS(null, "fill", "yellow");
 star.setAttributeNS(null, "stroke", "black");
 star.setAttributeNS(null, "stroke-width", 1);
 
+
+canvas.appendChild(container);
+
+fx.util.addMouseListener(shape, "mousePressed", function(evt) { 
+    console.log('mouse pressed event ' + evt);
+});
+
 //fx.util.translate(star, 250, 100);
 
 
@@ -151,5 +162,8 @@ fx.util.setInterval(function() { // FIXME not standard
     fx.dom.update();
 }, 50);
 
+}
+
 browser.display(canvas._fxBegin);
-morphicMain();
+//window.setTimeout(manualDemo, 1); // ensure the right thread
+window.setTimeout(morphicMain, 1);
