@@ -39,6 +39,17 @@ var fx = {
 	    return shape;
 	},
 	
+	getShape: function(element) { // FIXME what about transforms
+	    return element._fxBegin.getChildren().get(0);
+	},
+
+	removeAll: function(element) {
+	    var children = element._fxBegin.getChildren();
+	    var length = children.size();
+	    for (var i = length - 1; i >= 0; i--) 
+		element._fxBegin.remove(children.get(i));
+	},
+
 	addMouseListener: function(shape, eventName, handler) {
 	    var adapter  = new fx.util.MouseAdapter();
 	    adapter[eventName] = function(awtEvent, sgNode) {
@@ -46,13 +57,13 @@ var fx = {
 	    }
 	    var listenerClass = Packages.com.sun.scenario.scenegraph.event.SGMouseListener;
 	    var jAdapter = new listenerClass(adapter);
-	    shape._fxShape.addMouseListener(jAdapter);
+	    fx.util.getShape(shape).addMouseListener(jAdapter);
 	},
 
 	rotate: function(element, theta, x, y) { // move to SVGTransform
 	    // note that it's cumulative, we end up creating a lot of transforms, hence stack overflows etc
 	    // instead, calculate a single cumulative transform and replace the original
-	    var parent = element._fxTransform.getParent();
+	    var parent = element._fxBegin.getParent();
 	    parent.remove(element._fxTransform);
 	    element._fxTransform = fx.Transform.createTranslation(-x, -y, element._fxTransform);
 	    element._fxTransform = fx.Transform.createRotation(theta, element._fxTransform);
@@ -133,8 +144,10 @@ fx.dom = {
     },
 
     update: function() {
-	while (this.queue.length > 0)
-	    this.render(this.queue.pop());
+	while (this.queue.length > 0) {
+	    var element = this.queue.pop();
+	    this.render(element);
+	}
     }
 };
 
@@ -166,13 +179,12 @@ var PaintModule = {
 	} 
     },
 
-
     renderAttribute: function(element, attr, value) {
 	switch (attr) {
 	case "fill": {
 	    var fill = PaintModule.parseColor(value);
 	    if (fill) {  
-		element._fxShape.setFillPaint(fill);
+		fx.util.getShape(element).setFillPaint(fill);
 		return true;
 	    } else {
 		console.log('unknown fill ' + value);
@@ -181,7 +193,7 @@ var PaintModule = {
 	}
 	case "stroke-width": {
 	    var BasicStroke = Packages.java.awt.BasicStroke;
-	    var shape = element._fxShape;
+	    var shape = fx.util.getShape(element);
 	    shape.setDrawStroke(new BasicStroke(Number(value),  // FIXME conv, units, etc.
 						BasicStroke.CAP_ROUND,
 						BasicStroke.JOIN_MITER));
@@ -194,7 +206,7 @@ var PaintModule = {
 	case "stroke": {
 	    var stroke = PaintModule.parseColor(value);
 	    if (stroke) {  
-		element._fxShape.setDrawPaint(stroke);
+		fx.util.getShape(element).setDrawPaint(stroke);
 		return true;
 	    } else {
 		console.log('unknown stroke ' + value);
@@ -208,61 +220,58 @@ var PaintModule = {
 }
 
 fx.dom.renderers[SVGRectElement.tagName] = function(element) {
+    if (element._fxBegin) {
+	fx.util.removeAll(element);
+    } else 
+	element._fxBegin = new fx.Group();
+    var shape = fx.util.antiAlias(new fx.Shape());
+
+    shape.setShape(new fx.Rectangle(element.x.baseVal.value,
+				    element.y.baseVal.value,
+				    element.width.baseVal.value,
+				    element.height.baseVal.value));
+    element._fxBegin.add(shape);
+    
     var attrs = element.attributes;
+    
     for (var i = 0; i < attrs.length; i++) {
 	var attr = attrs.item(i);
-	if (["x", "y", "width", "height"].include(attr.name)) {
-	    element._fxShape.getShape()[attr.name] = Number(attr.value); // FIXME parse units etc
-	} else if (PaintModule.attributes.include(attr.name)) {
+	if (PaintModule.attributes.include(attr.name)) {
 	    PaintModule.renderAttribute(element, attr.name, attr.value);
 	}
     }
+    return element._fxBegin;
 }
 
-// FIXME remove
-
-Object.extend(SVGRectElement.prototype, {
-    _fxInit: function() {
-	this._fxShape = fx.util.antiAlias(new fx.Shape());
-	this._fxShape.setShape(new fx.Rectangle(0,0,0,0));
-	this._fxTransform = fx.Transform.createTranslation(0, 0, this._fxShape);
-    }
-});
-
-
-Object.extend(SVGEllipseElement.prototype, {
-    _fxInit: function() {
-	this._fxShape = fx.util.antiAlias(new fx.Shape());
-	this._fxShape.setShape(new fx.Ellipse(0,0,0,0));
-	this._fxTransform = fx.Transform.createTranslation(0, 0, this._fxShape);
-    }
-});
 
 fx.dom.renderers[SVGEllipseElement.tagName] = function(element) {
+    if (element._fxBegin) {
+	fx.util.removeAll(element); // FIXME
+    } else 
+	element._fxBegin = new fx.Group();
+
+    var shape = fx.util.antiAlias(new fx.Shape());
+    element._fxBegin.add(shape);
+    var cx = element.cx.baseVal.value;
+    var cy = element.cy.baseVal.value;
+    var rx = element.rx.baseVal.value;
+    var ry = element.ry.baseVal.value;
+    shape.setShape(new fx.Ellipse(cx - rx, cy - ry, rx*2, ry*2));
+
     var attrs = element.attributes;
     for (var i = 0; i < attrs.length; i++) {
 	var attr = attrs.item(i);
-	// FIXME: SVG uses cx, cy, rx, ry
-	if (["x", "y", "width", "height"].include(attr.name)) {
-	    element._fxShape.getShape()[attr.name] = Number(attr.value); // FIXME parse units etc
-	} else if (PaintModule.attributes.include(attr.name)) {
+	if (PaintModule.attributes.include(attr.name)) {
 	    PaintModule.renderAttribute(element, attr.name, attr.value);
-	} else {
-	    console.log('unknown attribute ' + attr);
 	}
     }
+    return element._fxBegin;
+
 }
     
 Object.extend(SVGPolygonElement.prototype, {
 
-    _fxInit: function() {
-	this._fxShape = fx.util.antiAlias(new fx.Shape());
-	this._fxShape.setShape(new fx.Path());
-	this._fxTransform = fx.Transform.createTranslation(0, 0, this._fxShape);
-    },
-
-    _fxMakePath: function() {
-	var path = this._fxShape.getShape();
+    _fxMakePath: function(path) {
 	for (var i = 0; i < this.points.numberOfItems; i++) {
 	    var point = this.points.getItem(i);
 	    if (i == 0) {
@@ -277,13 +286,22 @@ Object.extend(SVGPolygonElement.prototype, {
 });
 
 fx.dom.renderers[SVGPolygonElement.tagName] = function(element) {
+    if (element._fxBegin) {
+	fx.util.removeAll(element); // FIXME
+    } else 
+	element._fxBegin = new fx.Group();
+    var shape = fx.util.antiAlias(new fx.Shape());
+    var path = new fx.Path();
+    element._fxBegin.add(shape);
+    shape.setShape(path);
+
     var attrs = element.attributes;
     for (var i = 0; i < attrs.length; i++) {
 	var attr = attrs.item(i);
 	if (PaintModule.attributes.include(attr.name)) {
 	    PaintModule.renderAttribute(element, attr.name, attr.value);
 	} else if (attr.name == 'points') {
-	    element._fxMakePath();
+	    element._fxMakePath(path);
 	} else {
 	    console.log('unknown attribute ' + attr);
 	}
@@ -291,55 +309,66 @@ fx.dom.renderers[SVGPolygonElement.tagName] = function(element) {
 }
 
 
-Object.extend(SVGSVGElement.prototype, {
-    _fxInit: function() {
-	this._fxGroup = new fx.Group();
-    }
-});
-
 
 Function.wrap(SVGSVGElement.prototype, ["insertBefore", "appendChild"], function(func, args) {
     var result = func.apply(this, args);
     var newChild = args[0];
-    if (newChild._fxInit) { // FIXME: do only once, despite additions and removals and such
-	newChild._fxInit();
-    }
-    if (!this._fxGroup) console.log('not ready, should enqueue? ' + this);
-    else this._fxGroup.add(newChild._fxTransform);
+    fx.dom.enqueue(this); // console.log('not ready, should enqueue? ' + this);
+
     fx.dom.update(); // note synchronous updates
     return result;
 });
 
 
-Object.extend(SVGGElement.prototype, {
-    _fxInit: function() {
-	this._fxGroup = new fx.Group();
-	this._fxTransform = fx.Transform.createTranslation(0, 0, this._fxGroup);
-    }
-});
-
     // FIXME literal copy, remove
 Function.wrap(SVGGElement.prototype, ["insertBefore", "appendChild"], function(func, args) {
     var result = func.apply(this, args);
     var newChild = args[0];
-    if (newChild._fxInit) { // FIXME: do only once, despite additions and removals and such
-	newChild._fxInit();
-    }
     fx.dom.enqueue(this); // console.log('not ready, should enqueue? ' + this);
 
     //fx.dom.update(); // note synchronous updates
     return result;
 });
 
+fx.dom.renderers[HTMLHtmlElement.tagName] =
+fx.dom.renderers[HTMLBodyElement.tagName] =
+fx.dom.renderers[SVGSVGElement.tagName] =
 fx.dom.renderers[SVGGElement.tagName] = function(element) {
-    element.childNodes._nodes.forEach(function(child) {
-	if (child._fxTransform && child._fxTransform.getParent() != element._fxGroup)  {
-	    element._fxGroup.add(child._fxTransform);
-	    console.log('container handling ' + child);
-	} else console.log('what to do with ' + child);
-	fx.dom.render(child);
+    if (element._fxBegin) {
+	fx.util.removeAll(element); // FIXME
+    } else 
+	element._fxBegin = new fx.Group();
+    
+    var gobj = element._fxEnd = element.childNodes._nodes.map(function(child) {
+	child._fxBegin || console.log('recursing into child ' + child);
+	return child._fxBegin || fx.dom.render(child);
     });
 
+    if (false && element.hasAttribute('transform')) { // only for G elements for us
+	console.log('detected transform ' + element.transform);
+	var list = element.transform.baseVal;
+	for (var i = list.numberOfItems - 1; i >= 0; i--) {
+	    var base = element._fxTransform || element._fxGroup;
+	    var transform = list.getItem(i);
+	    if (transform.type == SVGTransform.SVG_TRANSFORM_TRANSLATE)
+		base = new fx.Transform.createTranslation(transform.matrix.e, transform.matrix.f, base);
+	    else if (transform.type == SVGTransform.SVG_TRANSFORM_SCALE)
+		base = new fx.Transform.createScale(transform.matrix.a, transform.matrix.d, base);
+	    else if (transform.type == SVGTransform.SVG_TRANSFORM_ROTATE)
+		base = new fx.Transform.createRotation(transform.angle, base);
+	    else
+		continue;
+	}
+	element._fxTransform  = base;
+	if (element._fxGroup) element._fxGroup.add(element._fxTransform);
+    }
+    for (var i = 0; i < gobj.length; i++)  {
+	var childGphx = gobj[i];
+	if (childGphx)
+	    element._fxBegin.add(childGphx);
+    }
+    return element._fxBegin;
+    
     //    if (!element._fxGroup) console.log('element not ready?'); // do not update
     //else element._fxGroup.add(newChild._fxTransform);
 }
