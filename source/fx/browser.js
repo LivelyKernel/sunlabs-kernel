@@ -246,7 +246,7 @@ fx.dom.renderers[SVGRectElement.tagName] = function(element) {
 	    PaintModule.renderAttribute(element, attr.name, attr.value);
 	}
     }
-    console.log('rendering ' + element);
+    //console.log('rendering ' + element);
     return element._fxBegin;
 }
 
@@ -274,27 +274,11 @@ fx.dom.renderers[SVGEllipseElement.tagName] = function(element) {
 	    PaintModule.renderAttribute(element, attr.name, attr.value);
 	}
     }
-    console.log('rendering ' + element);
+    //console.log('rendering ' + element);
     return element._fxBegin;
 
 }
     
-Object.extend(SVGPolygonElement.prototype, {
-
-    _fxMakePath: function(path) {
-	for (var i = 0; i < this.points.numberOfItems; i++) {
-	    var point = this.points.getItem(i);
-	    if (i == 0) {
-		path.moveTo(point.x, point.y);
-	    } else {
-		path.lineTo(point.x, point.y);
-	    }
-	}
-	path.closePath();
-    }
-
-});
-
 fx.dom.renderers[SVGPolygonElement.tagName] = function(element) {
     if (element._fxBegin)
 	element._fxBegin.remove();
@@ -311,12 +295,21 @@ fx.dom.renderers[SVGPolygonElement.tagName] = function(element) {
 	if (PaintModule.attributes.include(attr.name)) {
 	    PaintModule.renderAttribute(element, attr.name, attr.value);
 	} else if (attr.name == 'points') {
-	    element._fxMakePath(path);
-	} else {
-	    console.log('unknown attribute ' + attr);
-	}
+	    for (var j = 0; j < element.points.numberOfItems; j++) {
+		var point = element.points.getItem(j);
+		if (j == 0) {
+		    path.moveTo(point.x, point.y);
+		} else {
+		    path.lineTo(point.x, point.y);
+		}
+	    }
+	    path.closePath();
+	    
+	    //element._fxMakePath(path);
+	} 
+
     }
-    console.log('rendering ' + element);
+    //console.log('rendering ' + element);
     return  element._fxBegin;
 }
 

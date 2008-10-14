@@ -12,7 +12,10 @@ load('browser.js');
 load('dom/index.xhtml.js');
 print('loaded start document emulation');
 load('../kernel/defaultconfig.js');
-//Config.useTransformAPI = true;
+Config.useTransformAPI = false;
+// Config.forceTransformAttribute = true;
+Config.useGetTransformToElement = false;
+
 load('../kernel/Core.js');
 load('../kernel/Text.js');
 load('../kernel/Widgets.js');
@@ -175,20 +178,27 @@ window.setTimeout(function() {
     fx.util.addMouseListener(document.getElementById("canvas"), "mouseMoved", function(evt) { 
 	//console.log('mouse moved event ' + evt);
 	window.onmousemove(evt.getX(), evt.getY(), false);
+	fx.dom.update();
     });
 
     fx.util.addMouseListener(document.getElementById("canvas"), "mousePressed", function(evt) { 
 	//console.log('mouse moved event ' + evt);
 	window.onmousedown(evt.getX(), evt.getY(), false);
+	fx.dom.update();
+
     })
 
     fx.util.addMouseListener(document.getElementById("canvas"), "mouseReleased", function(evt) { 
 	//console.log('mouse moved event ' + evt);
 	window.onmouseup(evt.getX(), evt.getY(), false);
+	fx.dom.update();
+
     });
     fx.util.addMouseListener(document.getElementById("canvas"), "mouseDragged", function(evt) { 
 	//console.log('mouse moved event ' + evt);
 	window.onmousemove(evt.getX(), evt.getY(), false);
+	fx.dom.update();
+	
     });
 
 
