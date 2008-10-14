@@ -51,14 +51,14 @@ var fx = {
 		element._fxBegin.remove(children.get(i));
 	},
 
-	addMouseListener: function(shape, eventName, handler) {
+	addMouseListener: function(element, eventName, handler) {
 	    var adapter  = new fx.util.MouseAdapter();
 	    adapter[eventName] = function(awtEvent, sgNode) {
 		handler.call(this, awtEvent, sgNode);
 	    }
 	    var listenerClass = Packages.com.sun.scenario.scenegraph.event.SGMouseListener;
 	    var jAdapter = new listenerClass(adapter);
-	    fx.util.getShape(shape).addMouseListener(jAdapter);
+	    element._fxBegin.addMouseListener(jAdapter);
 	},
 
 	rotate: function(element, theta, x, y) { // move to SVGTransform
@@ -157,7 +157,6 @@ fx.dom = {
     },
 
     update: function() {
-	this.queue.length && console.log('updating ' + this.queue.length);
 	while (this.queue.length > 0) {
 	    var element = this.queue.pop();
 	    this.render(element);
@@ -188,8 +187,11 @@ var PaintModule = {
 	    return new fx.Color(r, g, b);
 	} else {
 	    var name = String(color);
-	    if (name.startsWith("url")) return null;
-	    else return fx.Color[name];
+	    if (name == "none") return new fx.Color(0,0,0,0); // FIXME not strictly the same thing as no color
+	    else if (!fx.Color[name]) {
+		console.log('unknown fill ' + value);
+		return null;
+	    } else return fx.Color[name];
 	} 
     },
 
@@ -197,13 +199,8 @@ var PaintModule = {
 	switch (attr) {
 	case "fill": {
 	    var fill = PaintModule.parseColor(value);
-	    if (fill) {  
-		fx.util.getShape(element).setFillPaint(fill);
-		return true;
-	    } else {
-		console.log('unknown fill ' + value);
-		return false;
-	    }
+	    fx.util.getShape(element).setFillPaint(fill);
+	    return true;
 	}
 	case "stroke-width": {
 	    var BasicStroke = Packages.java.awt.BasicStroke;
@@ -219,13 +216,8 @@ var PaintModule = {
 	    
 	case "stroke": {
 	    var stroke = PaintModule.parseColor(value);
-	    if (stroke) {  
-		fx.util.getShape(element).setDrawPaint(stroke);
-		return true;
-	    } else {
-		console.log('unknown stroke ' + value);
-		return false;
-	    }
+	    fx.util.getShape(element).setDrawPaint(stroke);
+	    return true;
 	}
 	default: 
 	    return false;	     
@@ -382,7 +374,7 @@ fx.dom.renderers[SVGGElement.tagName] = function(element) {
     } 
 
     element._fxBegin.setChild(fxObj);
-    console.log('rendering ' + element);
+    //console.log('rendering ' + element);
     return element._fxBegin;
 }
 
@@ -390,6 +382,8 @@ fx.dom.renderers[SVGGElement.tagName] = function(element) {
 
     
 // end of SVG impl
+
+
 
 window.setTimeout = function(action, delay) {
     var timer = fx.util.setInterval(action, delay);

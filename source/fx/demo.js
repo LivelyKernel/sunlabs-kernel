@@ -12,11 +12,12 @@ load('browser.js');
 load('dom/index.xhtml.js');
 print('loaded start document emulation');
 load('../kernel/defaultconfig.js');
-Config.useTransformAPI = true;
+//Config.useTransformAPI = true;
 load('../kernel/Core.js');
 load('../kernel/Text.js');
 load('../kernel/Widgets.js');
 
+ Function.resetDebuggingStack = Functions.Null;
 
 // example program
 var SVGNS = 'http://www.w3.org/2000/svg';
@@ -29,7 +30,7 @@ var canvas = document.getElementById("canvas");
 function morphicMain() {
     var canvas = Global.document.getElementById("canvas");
     var world = new WorldMorph(canvas); 
-    world.setFill(Color.blue);
+    world.setFill(Color.blue.lighter());
     console.log('created empty world ' + world);
     world.displayOnCanvas(canvas);
     console.log("displayed world");
@@ -71,6 +72,7 @@ function morphicMain() {
 	//fx.util.rotate(star, Math.PI/8, 250, 100);
 	fx.dom.update();
     }, 50);
+
 
 
 }
@@ -162,8 +164,35 @@ fx.util.setInterval(function() { // FIXME not standard
     fx.dom.update();
 }, 50);
 
-}
+} // manualDemo
 
 browser.display(canvas._fxBegin);
 //window.setTimeout(manualDemo, 1); // ensure the right thread
 window.setTimeout(morphicMain, 1);
+
+window.setTimeout(function() {
+
+    fx.util.addMouseListener(document.getElementById("canvas"), "mouseMoved", function(evt) { 
+	//console.log('mouse moved event ' + evt);
+	window.onmousemove(evt.getX(), evt.getY(), false);
+    });
+
+    fx.util.addMouseListener(document.getElementById("canvas"), "mousePressed", function(evt) { 
+	//console.log('mouse moved event ' + evt);
+	window.onmousedown(evt.getX(), evt.getY(), false);
+    })
+
+    fx.util.addMouseListener(document.getElementById("canvas"), "mouseReleased", function(evt) { 
+	//console.log('mouse moved event ' + evt);
+	window.onmouseup(evt.getX(), evt.getY(), false);
+    });
+    fx.util.addMouseListener(document.getElementById("canvas"), "mouseDragged", function(evt) { 
+	//console.log('mouse moved event ' + evt);
+	window.onmousemove(evt.getX(), evt.getY(), false);
+    });
+
+
+
+
+
+}, 0);
