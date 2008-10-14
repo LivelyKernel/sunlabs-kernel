@@ -4,45 +4,45 @@ The style file: latex8.bst
 Database file #1: bibliography.bib
 Warning--I didn't find a database entry for "Ohshima2007TLW"
 Warning--empty journal in Baroth1995VPR
-You've used 18 entries,
+You've used 17 entries,
             2118 wiz_defined-function locations,
-            622 strings with 6850 characters,
-and the built_in function-call counts, 5959 in all, are:
-= -- 592
-> -- 295
+            616 strings with 6697 characters,
+and the built_in function-call counts, 5761 in all, are:
+= -- 571
+> -- 288
 < -- 8
-+ -- 117
-- -- 98
-* -- 379
-:= -- 999
-add.period$ -- 56
-call.type$ -- 18
-change.case$ -- 101
++ -- 114
+- -- 96
+* -- 370
+:= -- 959
+add.period$ -- 53
+call.type$ -- 17
+change.case$ -- 96
 chr.to.int$ -- 0
-cite$ -- 19
-duplicate$ -- 240
-empty$ -- 429
-format.name$ -- 98
-if$ -- 1254
+cite$ -- 18
+duplicate$ -- 232
+empty$ -- 414
+format.name$ -- 96
+if$ -- 1215
 int.to.chr$ -- 0
-int.to.str$ -- 18
+int.to.str$ -- 17
 missing$ -- 13
-newline$ -- 92
-num.names$ -- 38
-pop$ -- 107
+newline$ -- 87
+num.names$ -- 36
+pop$ -- 104
 preamble$ -- 1
-purify$ -- 84
+purify$ -- 81
 quote$ -- 0
-skip$ -- 185
+skip$ -- 180
 stack$ -- 0
-substring$ -- 300
+substring$ -- 295
 swap$ -- 68
 text.length$ -- 8
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 68
+type$ -- 64
 warning$ -- 1
-while$ -- 57
-width$ -- 20
-write$ -- 196
+while$ -- 55
+width$ -- 19
+write$ -- 185
 (There were 2 warnings)

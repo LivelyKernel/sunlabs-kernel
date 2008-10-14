@@ -1,4 +1,4 @@
-This is pdfeTeX, Version 3.141592-1.21a-2.2 (Web2C 7.5.4) (format=pdflatex 2008.1.3)  13 OCT 2008 23:16
+This is pdfeTeX, Version 3.141592-1.21a-2.2 (Web2C 7.5.4) (format=pdflatex 2008.1.3)  14 OCT 2008 00:45
 entering extended mode
 **document.tex
 (./document.tex
@@ -376,32 +376,31 @@ Overfull \hbox (11.29218pt too wide) in paragraph at lines 121--122
  [][] 
  []
 
-
-Underfull \hbox (badness 1331) in paragraph at lines 136--137
- \OT1/ptm/b/n/10 Com-po-nents, Pins, and Con-nec-tors[] \OT1/ptm/m/n/10 Ap-pli-
-ca-tions in
- []
-
-LaTeX Font Info:    Font shape `OMS/ptm/m/n' in size <10> not available
-(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 140.
-
-Underfull \hbox (badness 10000) in paragraph at lines 143--144
-[]\OT1/ptm/m/n/10 FunctionComponents al-low the eval-u-a-tion of
- []
-
-
-Underfull \hbox (badness 1874) in paragraph at lines 143--144
-\OT1/ptm/m/n/10 JavaScript. The scripts can ac-cess any num-ber
- []
-
 [2 <./Fabrik_figure6.png>]
-Underfull \hbox (badness 1546) in paragraph at lines 184--184
+Underfull \hbox (badness 10000) in paragraph at lines 155--156
+ \OT1/ptm/b/n/10 Plug-gab-ble Com-po-nents[] \OT1/ptm/m/n/10 Plug-gable-Com-po-
+nents are
+ []
+
+
+Underfull \hbox (badness 1845) in paragraph at lines 155--156
+\OT1/ptm/m/n/10 used to wrap nor-mal Lively Ker-nel wid-gets that are
+ []
+
+
+Underfull \hbox (badness 4416) in paragraph at lines 163--164
+ \OT1/ptm/b/n/10 En-cap-su-lat-ing Com-pon-tents[] \OT1/ptm/m/n/10 Fab-rik-Com-
+po-nents pro-
+ []
+
+
+Underfull \hbox (badness 1546) in paragraph at lines 181--181
 []\elvbf Enhancing the data flow prin-ci-ple
  []
 
 
 LaTeX Warning: No positions in optional float specifier.
-               Default added (so using `tbp') on input line 187.
+               Default added (so using `tbp') on input line 184.
 
 <FabrikCelsiusFahrenheit.png, id=30, 454.69875pt x 189.70876pt>
 File: FabrikCelsiusFahrenheit.png Graphic file (type png)
@@ -409,53 +408,61 @@ File: FabrikCelsiusFahrenheit.png Graphic file (type png)
 <use FabrikCelsiusFahrenheit.png>
 
 LaTeX Warning: No positions in optional float specifier.
-               Default added (so using `tbp') on input line 195.
+               Default added (so using `tbp') on input line 192.
 
 <Fabrik_figure2b.png, id=31, 192.72pt x 262.9825pt>
 File: Fabrik_figure2b.png Graphic file (type png)
  <use Fabrik_figure2b.png>
-Underfull \hbox (badness 1412) in paragraph at lines 198--198
+Underfull \hbox (badness 1412) in paragraph at lines 195--195
 []\tenhv Figure 3. Bidi-rec-tional Fahren-heit Cel-sius
  []
 
-[3 <./Fabrik_figure2b.png>] [4 <./FabrikCelsiusFahrenheit.png>]
+[3 <./Fabrik_figure2b.png>]
 
 LaTeX Warning: No positions in optional float specifier.
-               Default added (so using `tbp') on input line 253.
+               Default added (so using `tbp') on input line 230.
 
-<LivelyFabrikCore.png, id=38, 1015.795pt x 390.45876pt>
+<LivelyFabrikCore.png, id=35, 1015.795pt x 390.45876pt>
 File: LivelyFabrikCore.png Graphic file (type png)
 
-<use LivelyFabrikCore.png>
+<use LivelyFabrikCore.png> [4 <./FabrikCelsiusFahrenheit.png>]
 <weatherExample03.png, id=39, 234.8775pt x 260.975pt>
 File: weatherExample03.png Graphic file (type png)
 
-<use weatherExample03.png> [5 <./weatherExample03.png>]
-<weatherExample09.png, id=43, 644.4075pt x 226.8475pt>
+<use weatherExample03.png>
+Underfull \vbox (badness 2846) has occurred while \output is active []
+
+ [5 <./LivelyFabrikCore.png>]
+LaTeX Font Info:    Font shape `OMS/ptm/m/n' in size <10> not available
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 287.
+ <weatherExample09.png, id=43, 644.4075pt x 226.8475pt>
 File: weatherExample09.png Graphic file (type png)
 
 <use weatherExample09.png>
 
 LaTeX Warning: No positions in optional float specifier.
-               Default added (so using `tbp') on input line 313.
+               Default added (so using `tbp') on input line 301.
 
 <weatherExample07.png, id=44, 803.0pt x 339.2675pt>
 File: weatherExample07.png Graphic file (type png)
  <use weatherExample07.png>
 
 LaTeX Warning: Reference `fig:ExapandedWeatherExample' on page 6 undefined on i
-nput line 316.
+nput line 304.
 
 
 LaTeX Warning: Reference `fig:ExapandedWeatherExample' on page 6 undefined on i
-nput line 316.
+nput line 304.
 
-[6 <./LivelyFabrikCore.png>]
-Underfull \hbox (badness 3386) in paragraph at lines 329--330
+[6 <./weatherExample03.png>]
+Underfull \hbox (badness 3386) in paragraph at lines 317--318
 []\OT1/ptm/m/n/10 To avoid cre-at-ing a Func-tion-Com-po-nent for each
  []
 
-[7 <./weatherExample09.png> <./weatherExample07.png>] (./document.bbl
+
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [7 <./weatherExample09.png> <./weatherExample07.png>] (./document.bbl
 LaTeX Font Info:    Try loading font information for OT1+pcr on input line 20.
 
 (/sw/share/texmf-dist/tex/latex/psnfss/ot1pcr.fd
@@ -483,10 +490,10 @@ LaTeX Warning: There were undefined references.
 
  ) 
 Here is how much of TeX's memory you used:
- 1379 strings out of 94500
- 16660 string characters out of 1176115
- 67894 words of memory out of 1500000
- 4535 multiletter control sequences out of 10000+50000
+ 1378 strings out of 94500
+ 16644 string characters out of 1176115
+ 67890 words of memory out of 1500000
+ 4534 multiletter control sequences out of 10000+50000
  24936 words of font info for 50 fonts, out of 1200000 for 2000
  580 hyphenation exceptions out of 8191
  25i,8n,21p,1173b,327s stack positions out of 5000i,500n,6000p,200000b,5000s
@@ -501,4 +508,4 @@ exmf-dist/fonts/type1/urw/times/utmri8a.pfb></sw/share/texmf-dist/fonts/type1/b
 luesky/cm/cmsy10.pfb></sw/share/texmf-dist/fonts/type1/bluesky/cm/cmr8.pfb></sw
 /share/texmf-dist/fonts/type1/urw/times/utmr8a.pfb></sw/share/texmf-dist/fonts/
 type1/urw/times/utmb8a.pfb>
-Output written on document.pdf (9 pages, 303586 bytes).
+Output written on document.pdf (9 pages, 303345 bytes).

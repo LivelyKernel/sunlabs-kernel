@@ -93,20 +93,20 @@ Graphical and textual scripting languages are widely used in end-user programmin
 
 Lively Fabrik is Web-based, because many end-users are not allowed to install third party software on the computer they are using but have a modern Web browser at their hands. This may be because they are in an Internet café or they are using a pool computer. Other positive aspects of the Web-based approach is the capability for automatic software updates as well as collaboration between the end-users ~\cite{Ohshima2007TLW} and sharing of content.  
 
-The remainder of the paper is organized as follows section 2 describes the visual web-based end-user programming environment Lively Fabrik. Section 3 discusses implementation details. Section 4 shows the usage of the environment by creating a weather widget Meshup. Section 5 discusses related work and Section 6 makes a summary and gives and outlook. 
+The remainder of the paper is organized as follows section 2 gives a short introduction into end-user Web application development. Section 3 describes the visual Web-based end-user programming environment Lively Fabrik. Section 4 discusses implementation details. Section 5 shows the usage of the environment by creating a weather widget Meshup. Section 6 discusses related work and Section 7 makes a summary and gives and outlook. 
 
 
 
 \section{End-user Web Application Development}
-The state of the art tools for authoring content in the browser include native web applications like Wikis and Content Management Systems and Web versions of typical desktop applications like word processors, spreadsheets or drawing programs. This web applications allow the often collaborative creation of passive media like texts, tables and pictures. Other tools are specialized on online creation of Web pages and special applications like Web shops.  
+The state of the art tools for authoring content in the browser include native Web applications like Wikis and Content Management Systems and Web versions of typical desktop applications like word processors, spreadsheets or drawing programs. This Web applications allow the often collaborative creation of passive media like texts, tables and pictures. Other tools are specialized on online creation of Web pages and special applications like Web shops. All these online applications are limited when it comes to programming in the browser and specifically programming for end-users in the browser. 
 
-Web-based programming is different from programming on personal computer. Programmers have to cope with client/server aspects, security limitations, less CPU cycles to burn and inferior libraries. For example because of  security reasons the clients side has no access to local files and services.  Some of these issues are addressed by modern browser technologies like faster JavaScript virtual machines and more powerful browser APIs make new application programming environments like the Lively Kernel possible. Other issues like the security limitations have to be dealt individually. JavaScript applications that need access to the internet, as need a web proxy on the server the original JavaScript source file is from.   
+Web-based programming is different from programming on personal computer. Programmers have to cope with client/server aspects, security limitations, less CPU cycles to burn and inferior libraries. For example because of  security reasons the clients side has no access to local files and services.  Some of these issues are addressed by modern browser technologies like faster JavaScript virtual machines and more powerful browser APIs make new application programming environments like the Lively Kernel possible. Other issues like the security limitations have to be dealt individually. JavaScript applications that need access to the Internet, as need a Web proxy on the server the original JavaScript source file is from.   
 
 Building real applications for a Web browser in itself was a challenging activity, but it gets easier with the evolution on browser technology. We want to go further and enable end-users to create their own applications, without having to struggle with the limitations of the Web environment. 
 
-All these online applications are limited when it comes to programming in the browser and specifically programming for end-users in the browser.  
-
 An important domain of end-user programming in the browser is the creation of Meshups.  A Meshup (for an overview see ~\cite{Merrill2006MNB}) is a recombination of different Web pages or services in a new and often unanticipated way. It consist typically of a script running on a server, that fetches data from different sources and produces new Web content.  
+
+We want to create an end-user development environment to create simple Web-applications like Meshups or widgets.   
 
 
 
@@ -132,43 +132,40 @@ We want to reduce the complexity by providing a distinct and small set of concep
 
 
 
-\paragraph{Components, Pins, and Connectors}
+\subsection{Components}
 Applications in Lively Fabrik can be build from very few elements, thus lowering the conceptual complexity of programming. The main elements are components, pins and connections between them. Components manipulate data, create data or trigger side effects. Pins define the interface to components and are the endpoints of a connections. Lively Fabrik defines a set of primitive components which are not created in Fabrik itself. These components are: 
 
 
-\begin{itemize}
-  \item TextComponents display strings which can be both user input or data from other components. 
+
+\paragraph{Input / Output Components}
+TextComponents display strings which can be both user input or data from other components. 
+
+ListComponents have an input pin 'List' and an output pin 'Selection'. They show arrays and allow the user to select elements from it. 
+
+ImageComponents load and display images from specified urls. 
 
 
-  \item FunctionComponents allow the evaluation of JavaScript. The scripts can access any  number of pins for in and output. By default there is a pin 'Input' and a pin 'Result' which automatically gets the return value of the JavaScript code assigned. 
+
+\paragraph{Scripting Components}
+FunctionComponents allow the evaluation of JavaScript. The scripts can access any  number of pins for in and output. By default there is a pin 'Input' and a pin 'Result' which automatically gets the return value of the JavaScript code assigned. 
 
 
-  \item ListComponents have an input pin 'List' and an output pin 'Selection'. They show arrays and allow the user to select elements from it. 
+
+\paragraph{Pluggabble Components}
+PluggableComponents are used to wrap normal Lively Kernel widgets that are dropped into a Fabrik. Widgets have a formal interface from which a pins can be generated and enable the widget to act as a component in Fabrik.  
 
 
-  \item ImageComponents load and display images from specified urls. 
+
+\paragraph{Web Requests}
+WebRequestComponents take URLs as inputs and asynchronously perform a XMLHTTPRequest with the GET method. The output pin 'ResponseText' then gets a string version of the XML response assigned and the output pin ResponseXML gets a list of objects, each representing a XML tag of the response XML. Every of these objects has an attribute 'xml' and an attribute 'js', carrying a XML element respectively a recursively converted Javascript object of the XML element.  
+
+\paragraph{Encapsulating Compontents}
+FabrikComponents provide a container for other components and encapsulate them: Components inside a FabrikComponent cannot directly be connected to outside components. The only means to do this is a indirect connection via pins of the FabrikComponent. FabrikComponents can be collapsed for hiding internal components. When a user frame is added to a FabrikComponent, components in this user fram are not hidden. With FabrikComponents users are empowered to create their own components. 
 
 
-\end{itemize}
 
-\begin{itemize}
-  \item PluggableComponents are used to wrap normal Lively Kernel widgets that are dropped into a Fabrik. Widgets have a formal interface from which a pins can be generated and enable the widget to act as a component in Fabrik.  
-
-
-  \item WebRequestComponents take URLs as inputs and asynchronously perform a XMLHTTPRequest with the GET method. The output pin 'ResponseText' then gets a string version of the XML response assigned and the output pin ResponseXML gets a list of objects, each representing a XML tag of the response XML. Every of these objects has an attribute 'xml' and an attribute 'js', carrying a XML element respectively a recursively converted Javascript object of the XML element.  
-
-
-\end{itemize}
-
-\begin{itemize}
-  \item FabrikComponents provide a container for other components and encapsulate them: Components inside a FabrikComponent cannot directly be connected to outside components. The only means to do this is a indirect connection via pins of the FabrikComponent. FabrikComponents can be collapsed for hiding internal components. When a user frame is added to a FabrikComponent, components in this user fram are not hidden. With FabrikComponents users are empowered to create their own components. 
-
-
-\end{itemize}
-* pins are the the interface to components When the user wants to connect two components, he clicks on the pin of the first component and then on a pin of the second component to establish a directed connection between those components (respectively their pins). The semantic of the connection is when the value in the pin of the first component changes, it is transported to the other pin. Thus the connection is directed. Bidirectional connections are created by reverse connecting two pins. Some components trigger actions when a pin value changes (a FunctionComponent executes its associated function, a WebRequestComponent triggers a XMLHTTPRequest and so on). 
-
-\paragraph{Behavior of Components}
-The response of a component to changes in pin values may be predefined, for example a text component displays the value, or a URL component retrieves content from the Web. The other possibility is that the component is scriptable or that it encapsulates other components. 
+\subsection{Pins and Connectors}
+When the user wants to connect two components, he clicks on the pin of the first component and then on a pin of the second component to establish a directed connection between those components (respectively their pins). The semantic of the connection is when the value in the pin of the first component changes, it is transported to the other pin. Thus the connection is directed. Bidirectional connections are created by reverse connecting two pins. The response of a component to changes in pin values may be predefined, for example a Text component displays the value, or a Web Request component retrieves content from the Web. 
 
 
 
@@ -215,32 +212,12 @@ In contrast to typical user interface builders and visual languages like LabView
 
 
 \paragraph{Continuous running}
-Many end-user programming systems distinguish between creating programs and running them. So there is often a ''run'' button that executes the program after its creation. This can lead to a long time where an initial program is created by the user but not executed. To solve this dynamic systems often have a tight feedback loop where parts of the program or short snippets of code can be evaluated and tested, which makes things much more simpler and interactive.  The use of a visual programming language allows us to go a step further, by manipulating the running program and objects directly, end-users can grow their program seeing the results of their changes instantly. This way of programming can occasionally frighten the user. So we must make sure that, while increasing the expressive power and possibilities of Lively Fabrik, we also secure user data and program itself so that the user can not destroy his own work or valuable data. Having a browser and a web-server between the user and his data allows the integration of automatic versioning, that is not available in the interaction with files in an ordinary operating system.  
+Many end-user programming systems distinguish between creating programs and running them. So there is often a ''run'' button that executes the program after its creation. This can lead to a long time where an initial program is created by the user but not executed. To solve this dynamic systems often have a tight feedback loop where parts of the program or short snippets of code can be evaluated and tested, which makes things much more simpler and interactive.  The use of a visual programming language allows us to go a step further, by manipulating the running program and objects directly, end-users can grow their program seeing the results of their changes instantly. This way of programming can occasionally frighten the user. So we must make sure that, while increasing the expressive power and possibilities of Lively Fabrik, we also secure user data and program itself so that the user can not destroy his own work or valuable data. Having a browser and a Web-server between the user and his data allows the integration of automatic versioning, that is not available in the interaction with files in an ordinary operating system.  
 
 
 
 \paragraph{Visual Aids}
-The user interface in Lively Kernel inherits its directness and liveliness from Morphic ~\cite{Maloney1995DLM}, this enabled use to experiment with non standard use user interfaces like halos in etoys  ~\cite{Kay2005SEA} or custom balloon helps. We use these  visual aids to show the state of the program to help the user debugging its program. This should be further improved in the future, for example by displaying annotations of values, visualizing unused components or connectors, errors in the data flow, or how often a connection is used. 
-
-\subsection{Integration with Lively Kernel}
-Lively Fabrik aims for a strong integration into the Lively Kernel to make graphics and widgets available that where not specially made for Fabrik.  
-
-
-
-\paragraph{Pluggable Components}
-Standard Lively Kernel widgets can be used as components in Lively Fabrik. Pins are automatically generated from the Model of the widget and the Morph is embedded as a pluggable component. An example for wrapped widgets is the Clock Morph that can act as source of ticking events when dropped into Fabrik.  
-
-
-
-\paragraph{Graphics}
-For creating graphics, the Morphs of the Lively Kernel can be used. They can flow as references from one component to another, so that one component creates a Morph, the user sets some attributes and the third moves it. The use of references violates the data flow concept and collides with the change update mechanism, but it is a straight forward way to interact with the whole Lively Kernel. 
-
-
-
-\paragraph{Encapsulating Components}
-Some components can contain and encapsulate other components. This mechanism can be used to group behavior and abstract it into one component. The components inside can communicate to other components outside through pins of the container component, so that the interface is clear. By copying the container component the behavior can be reused and shared.  
-
-
+The user interface in Lively Kernel inherits its directness and liveliness from Morphic ~\cite{Maloney1995DLM}, this enabled use to experiment with non standard use user interfaces like halos in Etoys  ~\cite{Kay2005SEA} or custom balloon helps. We use these  visual aids to show the state of the program to help the user debugging its program. This should be further improved in the future, for example by displaying annotations of values, visualizing unused components or connectors, errors in the data flow, or how often a connection is used. 
 
 \section{Implementation of Lively Fabrik}
 
@@ -259,7 +236,7 @@ Lively Fabrik is about visually wiring together components. We separated the use
 
 
 \subsection{Components, Models, Morphs}
-Components have typically a rectangular shape and user interface elements like a text field and pins.  The pins, provide an interace to its value fields. Components can react on value changes in pins and put new values out to their own pins.  
+Components have typically a rectangular shape and user interface elements like a text field and pins.  The pins, provide an interface to its value fields. Components can react on value changes in pins and put new values out to their own pins.  
 
 A model is a collection of fields of values and object references. It provides accessors and generates update events for registered observers and is responsible for persisting the state of a component. 
 
@@ -269,6 +246,17 @@ Morphs act as a view on models and components and are responsible for user inter
 
 \subsection{Pins and Connectors}
 The data flows through connectors from pin to pin. This data-flow is implemented with an observer pattern, which is provided by Lively Kernel. Pins and Connectors use Morphs as their graphical representation and manage the observer relationships between component fields. Currently connections are simple lines that have to be laid out manually but we plan to replace them by curves and add layout support, because the ease of use of connecting pins is very important. 
+
+
+
+\subsection{Integration with Lively Kernel}
+Lively Fabrik aims for a strong integration into the Lively Kernel to make graphics and widgets available that where not specially made for Fabrik.  
+
+Standard Lively Kernel widgets can be used as components in Lively Fabrik. Pins are automatically generated from the Model of the widget and the Morph is embedded as a pluggable component. An example for wrapped widgets is the Clock Morph that can act as source of ticking events when dropped into Fabrik.  
+
+For creating graphics, the Morphs of the Lively Kernel can be used. They can flow as references from one component to another, so that one component creates a Morph, the user sets some attributes and the third moves it. The use of references violates the data flow concept and collides with the change update mechanism, but it is a straight forward way to interact with the whole Lively Kernel. 
+
+Fabrik components can contain and encapsulate other components. This mechanism can be used to group behavior and abstract it into one component. The components inside can communicate to other components outside through pins of the container component, so that the interface is clear. By copying the container component the behavior can be reused and shared. 
 
 
 
@@ -333,24 +321,22 @@ Now All components are created and connected. A user frame is drawn around the T
 
 
 \section{Related Work}
-Lively Fabrik is named after the experimental interactive programming environment Fabrik ~\cite{Ingalls1988FVP,Ludolph1988FPE}. In Fabrik Components placed in graph and wired  by connecting pins. It integrates the programming processe and creation of the user interface in one environment. Fabrik uses the structure data flow model and thus is timeless and allows connections to be potentially bidirectional. User interface elements support user input and the program can not only print results, but generate graphics, for example for creating diagrams. The original Fabrik is implemented in Smalltalk and uses code generation to speed things up. Lively Fabriks FunctionComponents directly create JavaScript functions that can be evaluated without generated classed and methods and the graphical representation.  
+Lively Fabrik is named after the experimental interactive programming environment Fabrik ~\cite{Ingalls1988FVP,Ludolph1988FPE}. In Fabrik components are placed in a graph and wired by connecting pins. It integrates the programming process and the creation of the user interface in one environment. Fabrik uses the structure data flow model and thus is timeless and allows connections to be potentially bidirectional. User interface elements support user input and the program can not only print results, but generate graphics, for example for creating diagrams. The original Fabrik is implemented in Smalltalk and uses code generation to speed things up. Lively Fabriks FunctionComponents directly create JavaScript functions that can be evaluated without generated classed and methods and the graphical representation.  
 
 Many visual programming languages use the metaphor of data flow, popular representatives are LabView ~\cite{Bitter2006LAP} or the Visual Language in Microsoft's Robotic Studio ~\cite{Morgan2008PMR}. An overview of current visual data flow languages is given in ~\cite{Johnston2004ADP}. 
 
-Building Web applications in the browser is also a topic in the Pier CMS ~\cite{Renggli2008PMD}, where the user can specify the behavior of their Web pages reusing  ... TODO: read and then write 
-
 Another approach to end-user Development of Web Applications is described in ~\cite{Rode2006EUD}. Rode et al. surveyed casual Web masters without programming knowledge as their group of end-users. The resulting tool phpClick is meant for basic data collection, storage and retrieval applications. Meshups and Active Object are not in their focus. 
 
-There are browser based products as Yahoo Pipes ~\cite{YahooPipes} or Microsoft Popfly ~\cite{MicrosoftPopfly} that allow users to generate Meshups, but they are restricted in their ability to integrate the results into Web applications. Yahoo Pipes generates very restricted views to display the output and provides the result in form of feeds for reuse in other contexts. Popfly lets users integrate created widgets into their own Web applications (via copy and paste JavaScript code, and other ways) but there are few end-user web environments for creating general Web applications. 
+There are browser based products as Yahoo Pipes ~\cite{YahooPipes} or Microsoft Popfly ~\cite{MicrosoftPopfly} that allow users to generate Meshups, but they are restricted in their ability to integrate the results into Web applications. Yahoo Pipes generates very restricted views to display the output and provides the result in form of feeds for reuse in other contexts. Popfly lets users integrate created widgets into their own Web applications (via copy and paste JavaScript code, and other ways) but there are few end-user Web environments for creating general Web applications. 
 
-The dataflow paradigm is not only used in end-user environments for creating Meshups, but it has a recent application in operating system scripting, too. Apple Automator ~\cite{AppleAutomator} is end-user development tool for automating work with applications and the operating system. It uses a pipe metaphor where data flows from the top to the bottom from one pipe to anther. It this mainly linear flow loops and variables are possible, but they don't fit in naturally into the system. Some automator actions provide access to unix shell scripting and apple script which makes it a very open and powerful system, that combines overall dataflow with scripting inside of components (here called actions). 
+The dataflow paradigm is not only used in end-user environments for creating Meshups, but it has a also an application in operating system scripting. Apple Automator ~\cite{AppleAutomator} is an end-user development tool for automating applications and the Macintosh operating system. It uses a pipe metaphor in which data flows like in pipe from the top to the bottom from one action to the next (actions correspond to our components). In this mainly linear flow loops and variables are possible, but they don't fit in naturally into the system. Some automator actions provide access to unix shell scripting and AppleScript which makes it a very open and powerful system by combines overall dataflow with scripting inside of actions. 
 
 
 
 \section{Summary and Outlook}
 We have designed and implemented Lively Fabrik, a Web-based end-user programming environment. To make system development more appealing to end-users, Lively Fabrik combines the data flow of visually wired components with dynamic scripting capabilities. In Lively Fabrik, end-users do not have to split their work on the application's core behavior from the associated graphical user interfaces, since these can be easily and automatically separated if needed. With Lively Fabrik being part of a client-side interactive Web application environment, there is no need to install or update, since end-users have instant access to an always current and rich programming substrate. 
 
-As of today, Lively Fabrik has only very basic support for the collaborative development of web applications. We plan to extend these capabilities to experiment with near real-time collaboration in a widely distributed Web-scale environment. Lively Kernel's entire functionality can be made accessible through our function components. To improve modularity and with that comprehensibility of more complex applications, we will provide means similar to procedural abstraction to group, extract, and offer abstractions meaningful and useful in particular programming situations. Examples here are Web content extraction, filtering, syndication, and the provisioning of graphical objects for direct interaction. 
+As of today, Lively Fabrik has only very basic support for the collaborative development of Web applications. We plan to extend these capabilities to experiment with near real-time collaboration in a widely distributed Web-scale environment. Lively Kernel's entire functionality can be made accessible through our function components. To improve modularity and with that comprehensibility of more complex applications, we will provide means similar to procedural abstraction to group, extract, and offer abstractions meaningful and useful in particular programming situations. Examples here are Web content extraction, filtering, syndication, and the provisioning of graphical objects for direct interaction. 
 
 Integrating tile scripting languages like those of Etoys ~\cite{Kay2005SEA} or Scratch ~\cite{Maloney2004SSP} is an promising alternative to using JavaScript in function components. TileScript ~\cite{Warth2008TMS} is an interesting example of how a textual scripting language such as JavaScript can be transformed into a visual representation and back. Combined with the graphical capabilities of Lively Kernel, this may result in an Etoys-like system in the browser. 
 
