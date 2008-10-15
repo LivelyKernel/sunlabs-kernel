@@ -210,7 +210,7 @@ window.setInterval = function(action, delay) {
 
 
 
-[SVGPolygonElement, SVGRectElement, SVGEllipseElement, SVGGElement].forEach(function(constr) {
+[SVGPolylineElement, SVGPolygonElement, SVGRectElement, SVGEllipseElement, SVGGElement].forEach(function(constr) {
     Function.wrap(constr.prototype, ['cloneNode'], function(func, args) {
 	console.log('cloning ' + (this.id || this.tagName));
 	var begin = this._fxBegin;
@@ -235,7 +235,7 @@ window.setInterval = function(action, delay) {
 
 // http://www.w3.org/TR/2003/REC-SVG11-20030114/painting.html#paint-att-mod
 var PaintModule = {
-    attributes: ["stroke", "fill", "stroke-width"],
+    attributes: ["stroke", "fill", "stroke-width", "fill-opacity"],
     
     parseColor: function(color) {
 	var match = color && String(color).match(/rgb\((\d+),(\d+),(\d+)\)/);
@@ -263,6 +263,16 @@ var PaintModule = {
 	    fx.util.getShape(element).setFillPaint(fill);
 	    return true;
 	}
+	    
+	case "fill-opacity": {
+	    var shape = fx.util.getShape(element);
+	    var fill = shape.getDrawPaint();
+	    var alpha = parseInt(value); // FIXME units
+	    // what if fill is not a color?
+	    shape.setDrawPaint(new fx.Color(fill.getRed()/255, fill.getGreen()/255, fill.getBlue()/255, alpha));
+	    return true;
+	}
+
 	case "stroke-width": {
 	    var BasicStroke = Packages.java.awt.BasicStroke;
 	    var shape = fx.util.getShape(element);
@@ -274,6 +284,9 @@ var PaintModule = {
 		
 		shape.setMode(shape.getMode() === fx.ShapeMode.FILL ?  
 			      fx.ShapeMode.STROKE_FILL : fx.ShapeMode.STROKE);
+	    } else {
+		if (shape.getMode() === fx.ShapeMode.STROKE_FILL)
+		    shape.setMode(fx.ShapeMode.STROKE);
 	    }
 	    return true;
 	}
@@ -340,7 +353,8 @@ fx.dom.renderers[SVGEllipseElement.tagName] = function(element) {
     return element._fxBegin;
 
 }
-    
+
+fx.dom.renderers[SVGPolylineElement.tagName] =    
 fx.dom.renderers[SVGPolygonElement.tagName] = function(element) {
     if (element._fxBegin)
 	element._fxBegin.remove();
@@ -365,7 +379,8 @@ fx.dom.renderers[SVGPolygonElement.tagName] = function(element) {
 		    path.lineTo(point.x, point.y);
 		}
 	    }
-	    path.closePath();
+	    if (element.tagName === "polygon")
+		path.closePath();
 	} 
     }
     //console.log('rendering ' + element);

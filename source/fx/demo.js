@@ -18,12 +18,9 @@ Config.logDnD = true;
 load('../kernel/Core.js');
 load('../kernel/Text.js');
 
-using(lk.text).run(function(text) {
-});
- 
-
 load('../kernel/Widgets.js');
 load('../kernel/Network.js');
+load('../kernel/Examples.js');
 
 Function.resetDebuggingStack = Functions.Null;
 
