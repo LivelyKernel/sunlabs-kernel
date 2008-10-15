@@ -33,11 +33,11 @@ var EventTarget = {
 
   // TODO check the spec again
   removeEventListener: function(type, listener, useCapture) {
-    /*
     this._eventListeners = this._eventListeners || {};
-    if (this._eventListeners[type] && this._eventListeners[type].indexOf(listener)
-    */
-    TODO();
+      var listeners = this._eventListeners[type];
+      if (listeners && listeners.indexOf(listener) >= 0)
+	  listeners.splice(listeners.indexOf(listener), 1);
+    //TODO();
   },
 
   dispatchEvent: function(evt) {

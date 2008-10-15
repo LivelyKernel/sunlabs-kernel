@@ -559,3 +559,6 @@ Object.extend(Document.prototype, {
 
   getElementById: function(elementId) { return null; }
 });
+
+// FIXME
+DocumentType = function() {}

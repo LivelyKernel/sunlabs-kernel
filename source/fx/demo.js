@@ -26,7 +26,7 @@ Function.resetDebuggingStack = Functions.Null;
 
 // example program
 
-var browser = new fx.Frame(1024,600);
+var browser = new fx.Frame(1024,680);
 
 var canvas = document.getElementById("canvas");
 
@@ -98,6 +98,12 @@ function morphicMain() {
         widget.startSteppingScripts();
 	widget.setFill(Color.yellow); // cheating b/c we don't have gradients
     }
+    var link = new LinkMorph(null, pt(60, 400));
+    world.addMorph(link);
+
+    if (Config.showEngine())
+        EngineMorph.makeEngine(world, pt(400, 5))
+    
 
     canvas._fxBegin.requestFocus();
 }
