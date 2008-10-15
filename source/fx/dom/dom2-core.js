@@ -175,7 +175,13 @@ Object.extend(Node.prototype, {
     if (deep)
       clone = this.deepClone();
     else {
-      clone = Object.extend({}, this);
+	//clone = Object.extend({}, this);
+	clone = {};
+	clone.__proto__ = this.__proto__;
+	for (var p in this) {
+	    if (!this.hasOwnProperty(p)) continue;
+	    clone[p] = this[p];
+	}
       clone._parentNode = null;
       if (this._childNodes)
         clone._childNodes = new NodeList;

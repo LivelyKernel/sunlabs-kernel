@@ -35,8 +35,11 @@ Object.deepClone = function(original /*, blacklist */) {
     }
     else {
       clone = {};
-      clone.constructor = original.constructor;
+      clone.__proto__ = original.__proto__;
+	//clone.constructor = original.constructor;
+
       for (var p in original) {
+	  if (!original.hasOwnProperty(p)) continue;
         if (blacklist.indexOf(p) != -1)
           continue;
         var getter = original.__lookupGetter__(p);

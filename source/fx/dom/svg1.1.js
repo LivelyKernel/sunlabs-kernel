@@ -517,8 +517,7 @@ Element.factories['http://www.w3.org/2000/svg'] = SVGElement.factory = {};
 SVGElement.defineElement = function(name, parents) {
   (parents = parents || []).unshift(this);
   var element = function() {
-    var _this = this;
-    parents.forEach(function(parent) { parent.call(_this); });
+      parents.forEach(function(parent) { parent.call(this); }, this);
   };
   element.attributeSpecs = {};
   parents.forEach(function(parent) {
