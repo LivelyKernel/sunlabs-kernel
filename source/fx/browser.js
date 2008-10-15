@@ -284,10 +284,13 @@ var PaintModule = {
 	    
 	case "fill-opacity": {
 	    var shape = fx.util.getShape(element);
-	    var fill = shape.getDrawPaint();
-	    var alpha = parseInt(value); // FIXME units
-	    // what if fill is not a color?
-	    shape.setDrawPaint(new fx.Color(fill.getRed()/255, fill.getGreen()/255, fill.getBlue()/255, alpha));
+	    var fill = shape.getFillPaint();
+	    if (Packages.java.lang.Class.forName('java.awt.Color').isInstance(fill)) {
+		var alpha = parseFloat(value); // FIXME units
+		// FIXME what if fill is not a color?
+		var color = new fx.Color(fill.getRed()/255, fill.getGreen()/255, fill.getBlue()/255, alpha);
+		shape.setFillPaint(color);
+	    }
 	    return true;
 	}
 
@@ -334,6 +337,7 @@ fx.dom.renderers[SVGRectElement.tagName] = function(element) {
 					   element.height.baseVal.value,
 					   element.rx.baseVal.value,
 					   element.ry.baseVal.value));
+//    console.log('rounding ' + [element.rx.baseVal.value, element.ry.baseVal.value]);
     element._fxBegin.setChild(shape);
     
     var attrs = element.attributes;
