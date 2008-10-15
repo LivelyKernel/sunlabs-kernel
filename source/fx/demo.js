@@ -20,9 +20,9 @@ load('../kernel/Text.js');
 
 load('../kernel/Widgets.js');
 load('../kernel/Network.js');
+load('../kernel/Data.js');
+load('../kernel/Tools.js');
 load('../kernel/Examples.js');
-
-Function.resetDebuggingStack = Functions.Null;
 
 // example program
 
