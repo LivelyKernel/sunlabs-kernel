@@ -99,29 +99,25 @@ browser.display(canvas._fxBegin);
 
 
 // this belongs in the browser
-window.setTimeout(function() {
-
-    fx.util.addMouseListener(document.getElementById("canvas"), "mouseMoved", function(evt) { 
-	//console.log('mouse moved event ' + evt);
-	window.onmousemove(evt.getX(), evt.getY(), false);
-    });
-
-    fx.util.addMouseListener(document.getElementById("canvas"), "mousePressed", function(evt) { 
-	//console.log('mouse pressed event ' + evt);
-	window.onmousedown(evt.getX(), evt.getY(), evt.isShiftDown());
-    })
-
-    fx.util.addMouseListener(document.getElementById("canvas"), "mouseReleased", function(evt) { 
-	//console.log('mouse moved event ' + evt);
-	window.onmouseup(evt.getX(), evt.getY(), false);
-    });
-    fx.util.addMouseListener(document.getElementById("canvas"), "mouseDragged", function(evt) { 
-	//console.log('mouse moved event ' + evt);
-	window.onmousemove(evt.getX(), evt.getY(), evt.isShiftDown());
-    });
 
 
-}, 1);
+fx.util.addMouseListener(canvas, "mouseMoved", function(evt) { 
+     //console.log('mouse moved event ' + evt);
+    fx.util.dispatchMouseEvent('mousemove', evt);
+ });
+    
+fx.util.addMouseListener(canvas, "mousePressed", function(evt) { 
+    fx.util.dispatchMouseEvent('mousedown', evt);
+});
+
+ fx.util.addMouseListener(canvas, "mouseReleased", function(evt) { 
+    fx.util.dispatchMouseEvent('mouseup', evt);
+     
+ });
+
+ fx.util.addMouseListener(canvas, "mouseDragged", function(evt) { 
+    fx.util.dispatchMouseEvent('mousemove', evt);
+ });
 
 
 window.setTimeout(morphicMain, 500);

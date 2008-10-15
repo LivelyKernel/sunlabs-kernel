@@ -70,6 +70,15 @@ var fx = {
 	    element._fxBegin.addMouseListener(jAdapter);
 	},
 
+	dispatchMouseEvent: function(type, evt) {
+	    var event = new MouseEvent();
+	    event._type = type;
+	    event._shiftKey = evt.isShiftDown();
+	    event._clientX = evt.getX();
+	    event._clientY = evt.getY();
+	    return document.documentElement.dispatchEvent(event);
+	},
+
 	rotate: function(element, theta, x, y) { // move to SVGTransform
 	    // note that it's cumulative, we end up creating a lot of transforms, hence stack overflows etc
 	    // instead, calculate a single cumulative transform and replace the original
@@ -456,6 +465,8 @@ fx.dom.renderers[SVGGElement.tagName] = function(element) {
     //console.log('rendering ' + element);
     return element._fxBegin;
 }
+
+
 
 // end of SVG impl
 
