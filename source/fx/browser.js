@@ -59,8 +59,16 @@ var fx = {
 		handler.call(this, awtEvent, sgNode);
 	    }
 	    var listenerClass = Packages.com.sun.scenario.scenegraph.event.SGMouseListener;
-	    var jAdapter = new listenerClass(adapter);
-	    element._fxBegin.addMouseListener(jAdapter);
+	    element._fxBegin.addMouseListener(new listenerClass(adapter));
+	},
+
+	addKeyListener: function(element, eventName, handler) {
+	    var adapter  = new fx.util.KeyAdapter();
+	    adapter[eventName] = function(awtEvent, sgNode) {
+		handler.call(this, awtEvent, sgNode);
+	    }
+	    var listenerClass = Packages.com.sun.scenario.scenegraph.event.SGKeyListener;
+	    element._fxBegin.addKeyListener(new listenerClass(adapter));
 	},
 
 	dispatchMouseEvent: function(type, evt) {
@@ -71,7 +79,15 @@ var fx = {
 	    event._clientX = evt.getX();
 	    event._clientY = evt.getY();
 	    var result = document.documentElement.dispatchEvent(event);
-	    //fx.dom.update();
+	},
+
+	dispatchKeyboardEvent: function(type, evt) {
+	    var event = new KeyboardEvent();
+	    event._type = type;
+	    event._keyCode = evt.getKeyCode();
+	    event._keyChar = evt.getKeyChar();
+	    var result = document.documentElement.dispatchEvent(event);
+	    console.log('dispached keyboard event code: ' + event._keyCode + ' char: ' + event._keyChar);
 	},
 
 	className: function(fxInstance) {
@@ -114,6 +130,12 @@ fx.util.MouseAdapter.prototype = {
     mouseWheelMoved: function(awtEvent, sgNode) { }
 };
 
+fx.util.KeyAdapter = function() {};
+fx.util.KeyAdapter.prototype = {
+    keyPressed: function(awtEvent, svnNode) {},
+    keyReleased:function(awtEvent, svnNode) {},
+    keyTyped : function(awtEvent, svnNode) {}
+};
 
 fx.Frame = function(width, height) {
     this.frame = new Packages.javax.swing.JFrame();

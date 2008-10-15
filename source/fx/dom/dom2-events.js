@@ -9,6 +9,17 @@ Object.extend(MouseEvent.prototype, {
   stopPropagation: function() { this._propagationStopped = true; }
 });
 
+
+  //FIXME: check standards
+var KeyboardEvent = function() {};
+Object.extend(MouseEvent.prototype, {
+  get currentTarget() { return this._currentTarget; },
+  get type() { return this._type; },
+  get keyCode() { return this._keyCode },
+  get charCode() {  return this._keyChar; },
+  stopPropagation: function() { this._propagationStopped = true; }
+});
+
 var EventTarget = {
   // TODO check the spec again
   addEventListener: function(type, listener, useCapture) {

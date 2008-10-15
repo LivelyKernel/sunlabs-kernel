@@ -17,6 +17,11 @@ Config.useGetTransformToElement = false;
 Config.logDnD = true;
 load('../kernel/Core.js');
 load('../kernel/Text.js');
+
+using(lk.text).run(function(text) {
+});
+ 
+
 load('../kernel/Widgets.js');
 load('../kernel/Network.js');
 
@@ -94,24 +99,36 @@ function morphicMain() {
 fx.dom.update();
 browser.display(canvas._fxBegin);
 
+
 // this belongs in the browser
 fx.util.addMouseListener(canvas, "mouseMoved", function(evt) { 
-     //console.log('mouse moved event ' + evt);
+    //console.log('mouse moved event ' + evt);
     fx.util.dispatchMouseEvent('mousemove', evt);
- });
+});
     
 fx.util.addMouseListener(canvas, "mousePressed", function(evt) { 
     fx.util.dispatchMouseEvent('mousedown', evt);
 });
-
- fx.util.addMouseListener(canvas, "mouseReleased", function(evt) { 
+	
+fx.util.addMouseListener(canvas, "mouseReleased", function(evt) { 
     fx.util.dispatchMouseEvent('mouseup', evt);
-     
+});
+	
+fx.util.addMouseListener(canvas, "mouseDragged", function(evt) { 
+     fx.util.dispatchMouseEvent('mousemove', evt);
  });
 
- fx.util.addMouseListener(canvas, "mouseDragged", function(evt) { 
-    fx.util.dispatchMouseEvent('mousemove', evt);
- });
+fx.util.addKeyListener(canvas, "keyPressed", function(evt) { 
+    fx.util.dispatchKeyboardEvent('keydown', evt);
+});
+
+fx.util.addKeyListener(canvas, "keyTyped", function(evt) { 
+    fx.util.dispatchKeyboardEvent('keypress', evt);
+});
+
+fx.util.addKeyListener(canvas, "keyReleased", function(evt) { 
+    fx.util.dispatchKeyboardEvent('keyup', evt);
+});
 
 
 window.setTimeout(morphicMain, 500);
