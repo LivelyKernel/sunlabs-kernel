@@ -91,9 +91,8 @@ function morphicMain() {
     }
 }
 
-
+fx.dom.update();
 browser.display(canvas._fxBegin);
-//window.setTimeout(manualDemo, 1); // ensure the right thread
 
 // this belongs in the browser
 fx.util.addMouseListener(canvas, "mouseMoved", function(evt) { 

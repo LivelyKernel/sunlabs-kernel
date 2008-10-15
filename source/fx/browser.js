@@ -53,13 +53,6 @@ var fx = {
 	    return element._fxBegin.getChildren().get(0);
 	},
 
-	removeAll: function(element) {
-	    var children = element._fxBegin.getChildren();
-	    var length = children.size();
-	    for (var i = length - 1; i >= 0; i--) 
-		element._fxBegin.remove(children.get(i));
-	},
-
 	addMouseListener: function(element, eventName, handler) {
 	    var adapter  = new fx.util.MouseAdapter();
 	    adapter[eventName] = function(awtEvent, sgNode) {
@@ -77,28 +70,8 @@ var fx = {
 	    event._altKey = evt.isAltDown();
 	    event._clientX = evt.getX();
 	    event._clientY = evt.getY();
-	    return document.documentElement.dispatchEvent(event);
-	},
-
-	rotate: function(element, theta, x, y) { // move to SVGTransform
-	    // note that it's cumulative, we end up creating a lot of transforms, hence stack overflows etc
-	    // instead, calculate a single cumulative transform and replace the original
-	    var parent = element._fxBegin.getParent();
-	    parent.remove(element._fxTransform);
-	    element._fxTransform = fx.Transform.createTranslation(-x, -y, element._fxTransform);
-	    element._fxTransform = fx.Transform.createRotation(theta, element._fxTransform);
-	    element._fxTransform = fx.Transform.createTranslation(x, y, element._fxTransform);
-	    parent.setChild(element._fxTransform);
-	    return element;
-	},
-
-	translate: function(element, x, y) { // move to SVGTransform
-	    // note that it's cumulative
-	    var parent = element._fxTransform.getParent();
-	    parent && parent.remove(element._fxTransform);
-	    element._fxTransform = fx.Transform.createTranslation(x, y, element._fxTransform);
-	    parent && parent.setChild(element._fxTransform);
-	    return element;
+	    var result = document.documentElement.dispatchEvent(event);
+	    //fx.dom.update();
 	},
 
 	className: function(fxInstance) {
@@ -113,13 +86,23 @@ var fx = {
 	    return parents;
 	},
 
-	queue: []
-
+	setInterval: function(callback, delay) {
+	    // env.js setInterval is not Swing-friendly
+	    var listener = new Packages.java.awt.event.ActionListener({
+		actionPerformed: function(actionEvent) {
+		    // transform actionEvent ?
+		    callback.call(window, actionEvent);
+		}
+	    });
+	    var timer = new fx.Timer(delay, listener);
+	    timer.start();
+	    return timer;
+	}
     }
-}
+};
+    
 
-
-fx.util.MouseAdapter = function() { }
+fx.util.MouseAdapter = function() { };
 fx.util.MouseAdapter.prototype = {
     mouseClicked: function(awtEvent, sgNode) { },
     mouseDragged: function(awtEvent, sgNode) { },
@@ -129,20 +112,7 @@ fx.util.MouseAdapter.prototype = {
     mousePressed: function(awtEvent, sgNode) { },
     mouseReleased: function(awtEvent, sgNode) { },
     mouseWheelMoved: function(awtEvent, sgNode) { }
-}
-
-fx.util.setInterval = function(callback, delay) {
-    // env.js setInterval is not Swing-friendly
-    var listener = new Packages.java.awt.event.ActionListener({
-	actionPerformed: function(actionEvent) {
-	    // transform actionEvent ?
-	    callback.call(window, actionEvent);
-	}
-    });
-    var timer = new fx.Timer(delay, listener);
-    timer.start();
-    return timer;
-}
+};
 
 
 fx.Frame = function(width, height) {
@@ -206,20 +176,16 @@ window.setTimeout = function(action, delay) {
     }, delay);
     timer.setRepeats(false);
     return timer;
-}
+};
+
 
 window.setInterval = function(action, delay) {
-    var timer = fx.util.setInterval(function() {
+    return fx.util.setInterval(function() {
 	action.apply(this, arguments);
 	fx.dom.update();
     }, delay);
-    return timer;
-}
+};
 
-Function.wrap(window, ['onmousemove', 'onmousedown', 'onmouseup'], function(func, args) {
-    func.apply(this, args);
-    fx.dom.update();
-});
 
 
 [SVGPolygonElement, SVGRectElement, SVGEllipseElement, SVGGElement].forEach(function(constr) {
@@ -400,7 +366,8 @@ fx.dom.renderers[SVGTextElement.tagName] = function(element) {
 	    break;
 	}
     }
-
+    // use this for tspans?
+    //text.setVerticalAlignment(Packages.com.sun.scenario.scenegraph.SGText$VAlign.TOP);
     text.setLocation(new fx.Point(0, fontSize));
     var content = "";
     element.childNodes._nodes.forEach(function(node) {
@@ -420,7 +387,6 @@ fx.dom.renderers[SVGTextElement.tagName] = function(element) {
     Function.wrap(constr.prototype, ["insertBefore", "appendChild"], function(func, args) {
 	var result = func.apply(this, args);
 	fx.dom.enqueue(this); // console.log('not ready, should enqueue? ' + this);
-	fx.dom.update(); // note synchronous updates
 	return result;
     });
 });
@@ -430,7 +396,6 @@ fx.dom.renderers[SVGTextElement.tagName] = function(element) {
     Function.wrap(constr.prototype, ["removeChild"], function(func, args) {
 	var result = func.apply(this, args);
 	fx.dom.enqueue(this); 
-	fx.dom.update(); // note synchronous updates
 	return result;
     });
 });
