@@ -126,12 +126,26 @@ Object.subclass('lk::text::Font', {
 
     
 if (Config.fakeFontMetrics) { 
+    
     module.Font.addMethods({
         // wer're faking here, b/c native calls don't seem to work
         computeExtents: function(family, size) {
+	    // adapted from the IE port branch
             var extents = [];
             for (var i = 33; i < 255; i++) {
-                extents[i] = new module.CharacterInfo(size*2/3, size);
+		var ch = String.fromCharCode(i);
+		switch (ch) {
+                case 'i': case 'I': case 'l': case 't': case '.': case ',': case '\'':
+                    extents[i] = new module.CharacterInfo(size*0.245, size);
+		    break;
+		case 'M': case 'm': case 'W': case 'B': 
+		case 'w': case 'S': case 'D': case 'A': case 'H': case 'C': case 'E':
+                    extents[i] = new module.CharacterInfo(size*0.820, size);
+		    break;
+		default:
+                    extents[i] = new module.CharacterInfo(size*0.505, size);
+		    break;
+                }
             }
             return extents;
         }
@@ -2485,7 +2499,7 @@ Object.extend(RunArray, {
 	}
     }
 });
-RunArray.test([3, 1, 2]);
+//RunArray.test([3, 1, 2]);
 
     
 Object.subclass('lk::text::Text', {
