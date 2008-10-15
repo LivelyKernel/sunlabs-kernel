@@ -87,7 +87,7 @@ var fx = {
 	    event._keyCode = evt.getKeyCode();
 	    event._keyChar = evt.getKeyChar();
 	    var result = document.documentElement.dispatchEvent(event);
-	    console.log('dispached keyboard event code: ' + event._keyCode + ' char: ' + event._keyChar);
+	    console.log('dispached keyboard event ' + type + ' code: ' + event._keyCode + ' char: ' + event._keyChar);
 	},
 
 	className: function(fxInstance) {
@@ -266,12 +266,15 @@ var PaintModule = {
 	case "stroke-width": {
 	    var BasicStroke = Packages.java.awt.BasicStroke;
 	    var shape = fx.util.getShape(element);
-	    shape.setDrawStroke(new BasicStroke(Number(value),  // FIXME conv, units, etc.
-						BasicStroke.CAP_ROUND,
-						BasicStroke.JOIN_MITER));
-	    //console.log('paint ' + shape.getDrawPaint() + " mode " + shape.getMode());
-            shape.setMode(shape.getMode() === fx.ShapeMode.FILL ?  
-			  fx.ShapeMode.STROKE_FILL : fx.ShapeMode.STROKE);
+	    var width = parseInt(value); // FIXME units
+	    if (width > 0) {
+		shape.setDrawStroke(new BasicStroke(width,  
+						    BasicStroke.CAP_ROUND,
+						    BasicStroke.JOIN_MITER));
+		
+		shape.setMode(shape.getMode() === fx.ShapeMode.FILL ?  
+			      fx.ShapeMode.STROKE_FILL : fx.ShapeMode.STROKE);
+	    }
 	    return true;
 	}
 	    
