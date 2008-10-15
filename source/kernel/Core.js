@@ -5601,7 +5601,6 @@ Morph.addMethods({
     
     dropMeOnMorph: function(receiver) {
         receiver.addMorph(this); // this removes me from hand
-        if (this.logDnD) console.log("%s dropping %s on %s", this, this, receiver);
     },
 
     pickMeUp: function(evt) {
@@ -7141,7 +7140,7 @@ Morph.subclass("HandMorph", {
 
     shadowOffset: pt(5,5),
     handleOnCapture: true,
-    logDnD: false,
+    logDnD: Config.logDnD,
     grabHaloLabelStyle: {fontSize: Math.floor((Config.defaultFontSize || 12) *0.85), padding: Rectangle.inset(0)},
 
     initialize: function($super, local) {
@@ -7449,10 +7448,10 @@ Morph.subclass("HandMorph", {
     
     dropMorphsOn: function(receiver) {
         if (receiver !== this.world()) this.unbundleCarriedSelection();
+	if (this.logDnD) console.log("%s dropping %s on %s", this, this.topSubmorph(), receiver);
         while (this.hasSubmorphs()) { // drop in same z-order as in hand
             var m = this.submorphs.first();
             m.dropMeOnMorph(receiver);
-
 	    this.showAsUngrabbed(m);
         }
     },
