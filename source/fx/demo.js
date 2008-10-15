@@ -91,7 +91,7 @@ function morphicMain() {
 	world.addMorph(widget);
 	
 	if (true) {  // Make the star spin as a test of stepping
-            widget.startStepping(100, "rotateBy", 0.1);
+            widget.startStepping(60, "rotateBy", 0.1);
 	}
     }
 }

@@ -451,7 +451,7 @@ fx.dom.renderers[SVGGElement.tagName] = function(element) {
 	    } else if (transform.type == SVGTransform.SVG_TRANSFORM_SCALE) {
 		fxObj = new fx.Transform.createScale(transform.matrix.a, transform.matrix.d, fxObj);
 	    } else if (transform.type == SVGTransform.SVG_TRANSFORM_ROTATE) {
-		fxObj = new fx.Transform.createRotation(transform.angle, fxObj);
+		fxObj = new fx.Transform.createRotation(transform.angle.toRadians(), fxObj);
 	    } 
 	}
     } 
