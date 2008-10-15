@@ -15,14 +15,14 @@
 View.subclass('Query',  {
     documentation: "Wrapper around XPath evaluation",
 
-    xpe: Global.XPathEvaluator && new XPathEvaluator(),
+    xpe: Global.XPathEvaluator ? new XPathEvaluator() : (console.log('XPath not available') || null),
     
     formals: ["+Results", // Node[]
 	   "-ContextNode", // where to evaluate
 	  ],
 
     initialize: function(expression, optPlug) {
-	if (!this.xpe) throw new Error("XPath not available");
+	//if (!this.xpe) throw new Error("XPath not available");
 	this.contextNode = null;
 	this.expression = expression;
 	if (optPlug) this.connectModel(optPlug);
