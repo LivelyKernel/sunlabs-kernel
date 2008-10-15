@@ -18,6 +18,7 @@ Config.logDnD = true;
 load('../kernel/Core.js');
 load('../kernel/Text.js');
 load('../kernel/Widgets.js');
+load('../kernel/Network.js');
 
 Function.resetDebuggingStack = Functions.Null;
 
@@ -88,19 +89,13 @@ function morphicMain() {
             widget.startStepping(100, "rotateBy", 0.1);
 	}
     }
-
-
-
 }
 
 
 browser.display(canvas._fxBegin);
 //window.setTimeout(manualDemo, 1); // ensure the right thread
 
-
 // this belongs in the browser
-
-
 fx.util.addMouseListener(canvas, "mouseMoved", function(evt) { 
      //console.log('mouse moved event ' + evt);
     fx.util.dispatchMouseEvent('mousemove', evt);

@@ -8,7 +8,7 @@ window.document = (function() {
   // TODO baseURI is actually part of dom level 3 core, and is defined
   // for all Nodes (and is complicated to implement).
   // TODO baseURI here should be 'file:///...xhtml' */
-  document.baseURI = '';
+    document.baseURI = 'http://localhost/index.xhtml';  // TODO
 
   // TODO doctype
 

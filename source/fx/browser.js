@@ -74,6 +74,7 @@ var fx = {
 	    var event = new MouseEvent();
 	    event._type = type;
 	    event._shiftKey = evt.isShiftDown();
+	    event._altKey = evt.isAltDown();
 	    event._clientX = evt.getX();
 	    event._clientY = evt.getY();
 	    return document.documentElement.dispatchEvent(event);
@@ -256,7 +257,9 @@ var PaintModule = {
 	} else {
 	    var name = String(color);
 	    if (name == "none") return new fx.Color(0,0,0,0); // FIXME not strictly the same thing as no color
-	    else if (!fx.Color[name]) {
+	    else if (name.startsWith("url")) { // FIXME specialcasing the gradients
+		return new fx.Color(0,0,0,0); // FIXME not strictly the same thing as no color
+	    } else if (!fx.Color[name]) {
 		console.log('unknown fill ' + value);
 		return null;
 	    } else return fx.Color[name];

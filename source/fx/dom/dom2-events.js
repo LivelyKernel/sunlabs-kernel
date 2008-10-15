@@ -2,6 +2,7 @@ var MouseEvent = function() {};
 Object.extend(MouseEvent.prototype, {
   get currentTarget() { return this._currentTarget; },
   get shiftKey() { return this._shiftKey; },
+  get altKey()  { return this._altKey; },
   get type() { return this._type; },
   get clientX() { return this._clientX; },
   get clientY() { return this._clientY; },
