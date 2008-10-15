@@ -91,6 +91,14 @@ function morphicMain() {
             widget.startStepping(60, "rotateBy", 0.1);
 	}
     }
+
+    if (Config.showClock) {
+        var widget = new ClockMorph(pt(80, 100), 50);
+        world.addMorph(widget);
+        widget.startSteppingScripts();
+	widget.setFill(Color.yellow); // cheating b/c we don't have gradients
+    }
+
 }
 
 fx.dom.update();
