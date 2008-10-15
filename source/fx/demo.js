@@ -99,11 +99,12 @@ function morphicMain() {
 	widget.setFill(Color.yellow); // cheating b/c we don't have gradients
     }
 
+    canvas._fxBegin.requestFocus();
 }
 
 fx.dom.update();
 browser.display(canvas._fxBegin);
-canvas._fxBegin.requestFocus();
+
 
 
 // this belongs in the browser
