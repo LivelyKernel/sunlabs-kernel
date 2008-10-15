@@ -108,6 +108,7 @@ var fx = {
     }
 }
 
+
 fx.util.MouseAdapter = function() { }
 fx.util.MouseAdapter.prototype = {
     mouseClicked: function(awtEvent, sgNode) { },
@@ -134,7 +135,6 @@ fx.util.setInterval = function(callback, delay) {
 }
 
 
-
 fx.Frame = function(width, height) {
     this.frame = new Packages.javax.swing.JFrame();
     this.frame.setSize(width, height);
@@ -154,12 +154,14 @@ fx.dom = {
     queue: [],
     renderers: {},
     render: function(element) {
+	const SVGNS = 'http://www.w3.org/2000/svg';
+	
 	var renderer = this.renderers[element.constructor.tagName];
-	if (renderer)
-	    return renderer(element);
-	else return null;
+	return renderer && renderer(element);
+	
 	//else return (element.geziraBegin = new gezira.Object);
     },
+
     enqueue: function(element) {
 	if (this.queue.last() !== element) {
 	    this.queue.push(element);
@@ -171,6 +173,7 @@ fx.dom = {
 	var length = this.queue.length;
 	while (this.queue.length > 0) {
 	    var element = this.queue.pop();
+	    if (!element.constructor.tagName) console.log('no tag name for ' + element.constructor);
 	    this.render(element);
 	}
 	//console.log('queue was ' + length);
@@ -203,7 +206,6 @@ window.setInterval = function(action, delay) {
     return timer;
 }
 
-    
 Function.wrap(window, ['onmousemove', 'onmousedown', 'onmouseup'], function(func, args) {
     func.apply(this, args);
     fx.dom.update();
@@ -211,8 +213,8 @@ Function.wrap(window, ['onmousemove', 'onmousedown', 'onmouseup'], function(func
 
 
 [SVGPolygonElement, SVGRectElement, SVGEllipseElement, SVGGElement].forEach(function(constr) {
-    Function.wrap(constr.prototype, ['deepClone', 'cloneNode'], function(func, args) {
-	console.log('wrapped clone ' + this);
+    Function.wrap(constr.prototype, ['cloneNode'], function(func, args) {
+	console.log('cloning ' + (this.id || this.tagName));
 	var begin = this._fxBegin;
 	var end = this._fxEnd;
 	delete this._fxBegin;
@@ -223,7 +225,7 @@ Function.wrap(window, ['onmousemove', 'onmousedown', 'onmouseup'], function(func
 	var tfm = this.getAttributeNS(null, "transform");
 	if (tfm) {
 	    clone.setAttributeNS(Namespace.SVG, "transform", tfm);
-	    console.log('tfm ' + tfm + ' field ' + (typeof clone.transform) + ", " + clone.transform);
+	    //console.log('!!tfm ' + tfm + ' field ' + (typeof clone.transform) + ", " + clone.transform);
 	}
 	return clone;
     });
@@ -296,14 +298,13 @@ fx.dom.renderers[SVGRectElement.tagName] = function(element) {
     element._fxBegin.setChild(shape);
     
     var attrs = element.attributes;
-    
     for (var i = 0; i < attrs.length; i++) {
 	var attr = attrs.item(i);
 	if (PaintModule.attributes.include(attr.name)) {
 	    PaintModule.renderAttribute(element, attr.name, attr.value);
 	}
     }
-    //console.log('rendering ' + element);
+    //element.parentNode && console.log('rendering ' + element.parentNode.id);
     return element._fxBegin;
 }
 
@@ -322,7 +323,6 @@ fx.dom.renderers[SVGEllipseElement.tagName] = function(element) {
     shape.setShape(new fx.Ellipse(cx - rx, cy - ry, rx*2, ry*2));
 
     element._fxBegin.setChild(shape);
-    
 
     var attrs = element.attributes;
     for (var i = 0; i < attrs.length; i++) {
@@ -331,7 +331,7 @@ fx.dom.renderers[SVGEllipseElement.tagName] = function(element) {
 	    PaintModule.renderAttribute(element, attr.name, attr.value);
 	}
     }
-    //console.log('rendering ' + element);
+    //element.parentNode && console.log('rendering ' + element.parentNode.id);
     return element._fxBegin;
 
 }
@@ -423,8 +423,6 @@ fx.dom.renderers[SVGTextElement.tagName] = function(element) {
     });
 });
 
-
-
 fx.dom.renderers[HTMLHtmlElement.tagName] =
 fx.dom.renderers[HTMLBodyElement.tagName] =
 fx.dom.renderers[SVGSVGElement.tagName] =
@@ -435,7 +433,6 @@ fx.dom.renderers[SVGGElement.tagName] = function(element) {
 	element._fxBegin = new fx.Parent();
 
     var fxObj = element._fxEnd = new fx.Group();
-
     element.childNodes._nodes.forEach(function(node) {
 	var fxChild = node._fxBegin || fx.dom.render(node);
 	if (fxChild) fxObj.add(fxChild);

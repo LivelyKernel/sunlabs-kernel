@@ -14,7 +14,7 @@ print('loaded start document emulation');
 load('../kernel/defaultconfig.js');
 Config.useTransformAPI = false;
 Config.useGetTransformToElement = false;
-
+Config.logDnD = true;
 load('../kernel/Core.js');
 load('../kernel/Text.js');
 load('../kernel/Widgets.js');
