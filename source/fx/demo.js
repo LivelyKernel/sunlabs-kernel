@@ -33,7 +33,7 @@ var canvas = document.getElementById("canvas");
 function morphicMain() {
     var canvas = Global.document.getElementById("canvas");
     var world = new WorldMorph(canvas); 
-    world.setFill(Color.blue.lighter());
+    //world.setFill(Color.blue.lighter());
     console.log('created empty world ' + world);
     world.displayOnCanvas(canvas);
     console.log("displayed world");

@@ -36,6 +36,7 @@ var fx = {
     Font: Packages.java.awt.Font,
     Path: Packages.java.awt.geom.GeneralPath,
     Color: Packages.java.awt.Color,
+    Gradient: Packages.java.awt.GradientPaint,
     Timer: Packages.javax.swing.Timer,
     util: {
 	antiAlias: function(shape) {
@@ -158,10 +159,8 @@ fx.dom = {
     renderers: {},
     render: function(element) {
 	const SVGNS = 'http://www.w3.org/2000/svg';
-	
 	var renderer = this.renderers[element.constructor.tagName];
 	return renderer && renderer(element);
-	
 	//else return (element.geziraBegin = new gezira.Object);
     },
 
@@ -237,7 +236,7 @@ window.setInterval = function(action, delay) {
 var PaintModule = {
     attributes: ["stroke", "fill", "stroke-width", "fill-opacity"],
     
-    parseColor: function(color) {
+    parsePaint: function(color) {
 	var match = color && String(color).match(/rgb\((\d+),(\d+),(\d+)\)/);
 	if (match) {
 	    var r = Number(match[1]) / 255;
@@ -248,7 +247,25 @@ var PaintModule = {
 	    var name = String(color);
 	    if (name == "none") return new fx.Color(0,0,0,0); // FIXME not strictly the same thing as no color
 	    else if (name.startsWith("url")) { // FIXME specialcasing the gradients
-		return new fx.Color(0,0,0,0); // FIXME not strictly the same thing as no color
+		// parse uri
+		var id = name.substring(5, name.length - 1);
+		var node = document.getElementById(id);
+		if (node && node.tagName == 'linearGradient') {
+		    // go through stops
+		    var x1 = node.x1.baseVal.value*100;
+		    var x2 = node.x2.baseVal.value*100;
+		    var y1 = node.y1.baseVal.value*100;
+		    var y2 = node.y2.baseVal.value*100;
+		    var stops = node.getElementsByTagNameNS(Namespace.SVG, "stop");
+		    //console.log('got vector ' + [x1, y1, x2, y2] + ' stops ' + stops._nodes);
+		    var c1 = stops.item(0) ? stops.item(0).getAttributeNS(null, "stop-color") : "white";
+		    var c2 = stops.item(1) ? stops.item(1).getAttributeNS(null, "stop-color") : "gray";
+		    return new fx.Gradient(x1, y1, this.parsePaint(c1), x2, y2, this.parsePaint(c2));
+		} else {
+		    // note: radial paint will be a problem
+		    //console.log('unknown paint ' + id);
+		    return new fx.Color(0,0,0,0); // FIXME not strictly the same thing as no color
+		}
 	    } else if (!fx.Color[name]) {
 		console.log('unknown fill ' + value);
 		return null;
@@ -259,7 +276,7 @@ var PaintModule = {
     renderAttribute: function(element, attr, value) {
 	switch (attr) {
 	case "fill": {
-	    var fill = PaintModule.parseColor(value);
+	    var fill = PaintModule.parsePaint(value);
 	    fx.util.getShape(element).setFillPaint(fill);
 	    return true;
 	}
@@ -292,7 +309,7 @@ var PaintModule = {
 	}
 	    
 	case "stroke": {
-	    var stroke = PaintModule.parseColor(value);
+	    var stroke = PaintModule.parsePaint(value);
 	    fx.util.getShape(element).setDrawPaint(stroke);
 	    return true;
 	}
@@ -309,6 +326,7 @@ fx.dom.renderers[SVGRectElement.tagName] = function(element) {
 	element._fxBegin = new fx.Parent();
     var shape = fx.util.antiAlias(new fx.Shape());
 
+    // TODO optimize - use rounding if necessary
     shape.setShape(new fx.Rectangle(element.x.baseVal.value,
 				    element.y.baseVal.value,
 				    element.width.baseVal.value,
@@ -355,6 +373,8 @@ fx.dom.renderers[SVGEllipseElement.tagName] = function(element) {
     return element._fxBegin;
 
 }
+
+
 
 fx.dom.renderers[SVGPolylineElement.tagName] =    
 fx.dom.renderers[SVGPolygonElement.tagName] = function(element) {
