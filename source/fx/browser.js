@@ -198,6 +198,8 @@ window.setInterval = function(action, delay) {
 	var clone = func.apply(this, args);
 	begin && (this._fxBegin = begin);
 	end && (this._fxEnd = end);
+	// Dan's code assumes that the property 'transform' is the same as the attribute 'transform',
+	// but the former is an SVGAnimatedTransformList, the other is a string
 	var tfm = this.getAttributeNS(null, "transform");
 	if (tfm) {
 	    clone.setAttributeNS(Namespace.SVG, "transform", tfm);
@@ -351,7 +353,7 @@ fx.dom.renderers[SVGTextElement.tagName] = function(element) {
 	element._fxBegin.remove();
     else 
 	element._fxBegin = new fx.Parent();
-    var text = fx.util.antiAliasText(new fx.Text());
+
 
     var attrs = element.attributes;
     var fontSize = 12;
@@ -361,14 +363,10 @@ fx.dom.renderers[SVGTextElement.tagName] = function(element) {
 	case "font-size":
 	    //var font = text.getFont(); 
 	    fontSize = parseInt(attr.value);
-	    var newFont = new fx.Font('Helvetica', fx.Font.PLAIN, fontSize);
-	    text.setFont(newFont);
 	    break;
 	}
     }
-    // use this for tspans?
-    //text.setVerticalAlignment(Packages.com.sun.scenario.scenegraph.SGText$VAlign.TOP);
-    text.setLocation(new fx.Point(0, fontSize));
+
     var content = "";
     element.childNodes._nodes.forEach(function(node) {
 	// FIXME FIXME FIXME
@@ -376,6 +374,14 @@ fx.dom.renderers[SVGTextElement.tagName] = function(element) {
 	    content += node.firstChild.nodeValue; // not really but TBC
 	}
     });
+
+    var text = fx.util.antiAliasText(new fx.Text());
+    var newFont = new fx.Font('Helvetica', fx.Font.PLAIN, fontSize);
+    text.setFont(newFont);
+
+    // use this for tspans?
+    //text.setVerticalAlignment(Packages.com.sun.scenario.scenegraph.SGText$VAlign.TOP);
+    text.setLocation(new fx.Point(0, fontSize));
 
     text.setText(content);
     element._fxBegin.setChild(text);
@@ -432,7 +438,9 @@ fx.dom.renderers[SVGGElement.tagName] = function(element) {
     element._fxBegin.setChild(fxObj);
     //console.log('rendering ' + element);
     return element._fxBegin;
-}
+};
+
+
 
 
 
