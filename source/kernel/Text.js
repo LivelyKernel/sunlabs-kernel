@@ -136,7 +136,8 @@ if (Config.fakeFontMetrics) {
 		var ch = String.fromCharCode(i);
 		switch (ch) {
                 case 'i': case 'I': case 'l': case 't': case '.': case ',': case '\'':
-                    extents[i] = new module.CharacterInfo(size*0.245, size);
+                    //extents[i] = new module.CharacterInfo(size*0.245, size);
+		    extents[i] = new module.CharacterInfo(size*0.345, size);
 		    break;
 		case 'M': case 'm': case 'W': case 'B': 
 		case 'w': case 'S': case 'D': case 'A': case 'H': case 'C': case 'E':
