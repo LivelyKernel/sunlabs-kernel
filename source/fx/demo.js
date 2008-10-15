@@ -103,6 +103,7 @@ function morphicMain() {
 
 fx.dom.update();
 browser.display(canvas._fxBegin);
+canvas._fxBegin.requestFocus();
 
 
 // this belongs in the browser

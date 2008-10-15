@@ -6,18 +6,21 @@ Object.extend(MouseEvent.prototype, {
   get type() { return this._type; },
   get clientX() { return this._clientX; },
   get clientY() { return this._clientY; },
-  stopPropagation: function() { this._propagationStopped = true; }
+  stopPropagation: function() { this._propagationStopped = true; },
+  preventDefault: function() { /* no default to prevent?*/ }   
 });
 
 
   //FIXME: check standards
 var KeyboardEvent = function() {};
-Object.extend(MouseEvent.prototype, {
+Object.extend(KeyboardEvent.prototype, {
   get currentTarget() { return this._currentTarget; },
   get type() { return this._type; },
   get keyCode() { return this._keyCode },
   get charCode() {  return this._keyChar; },
-  stopPropagation: function() { this._propagationStopped = true; }
+  stopPropagation: function() { this._propagationStopped = true; },
+  preventDefault: function() { /* no default to prevent? */ }   
+
 });
 
 var EventTarget = {
@@ -40,7 +43,6 @@ var EventTarget = {
   dispatchEvent: function(evt) {
     var listeners = this._eventListeners && this._eventListeners[evt.type];
     evt._currentTarget = this;
-
     if (listeners)
       listeners.forEach(function(l) { l.handleEvent(evt); });
 

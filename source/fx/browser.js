@@ -87,7 +87,7 @@ var fx = {
 	    event._keyCode = evt.getKeyCode();
 	    event._keyChar = evt.getKeyChar();
 	    var result = document.documentElement.dispatchEvent(event);
-	    console.log('dispached keyboard event ' + type + ' code: ' + event._keyCode + ' char: ' + event._keyChar);
+	    //console.log('dispached keyboard event ' + type + ' code: ' + event._keyCode + ' char: ' + event._keyChar);
 	},
 
 	className: function(fxInstance) {
