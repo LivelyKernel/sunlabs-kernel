@@ -1900,15 +1900,6 @@ Object.subclass('Wrapper', {
 	return node && node.wrapper;
     },
 
-    linkWrapee: function() {
-	throw new Error('obsolete!');
-	// ensure that wrapper can be found based on the rawNode. 
-	// Not sure this should be handled this way, esp. b/c
-	// batik won't like it.
-	if (this.rawNode.wrapper && this.rawNode.wrapper != this) 
-	    throw new Error("linkWrapee(): node has already a wrapper and it is not me but " + this.rawNode);
-	this.rawNode.wrapper = this;
-    },
 
     // convenience attribute access
     getLivelyTrait: function(name) {
@@ -7539,6 +7530,7 @@ Morph.subclass("HandMorph", {
             if (evt.type == "KeyDown" && this.moveSubmorphs(evt)) return;
             else if (evt.type == "KeyPress" && this.transformSubmorphs(evt)) return;
         }
+
         // manual bubbling up b/c the event won't bubble by itself    
         for (var responder = this.keyboardFocus; responder != null; responder = responder.owner) {
             if (responder.takesKeyboardFocus()) {
