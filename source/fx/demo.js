@@ -26,7 +26,7 @@ Function.resetDebuggingStack = Functions.Null;
 
 // example program
 
-var browser = new fx.Frame(1024,680);
+var browser = new fx.Frame(1024, 680);
 
 var canvas = document.getElementById("canvas");
 

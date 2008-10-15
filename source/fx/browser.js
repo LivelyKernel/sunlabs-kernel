@@ -31,7 +31,8 @@ var fx = {
     ShapeMode: Packages.com.sun.scenario.scenegraph.SGAbstractShape$Mode,
     Ellipse: Packages.java.awt.geom.Ellipse2D.Double,
     Point: Packages.java.awt.geom.Point2D.Double,
-    Rectangle: Packages.java.awt.geom.Rectangle2D.Double,
+    Rectangle: Packages.java.awt.geom.RoundRectangle2D.Double,
+    //Rectangle: Packages.java.awt.geom.Rectangle2D.Double,
     Font: Packages.java.awt.Font,
     Path: Packages.java.awt.geom.GeneralPath,
     Color: Packages.java.awt.Color,
@@ -209,10 +210,9 @@ window.setInterval = function(action, delay) {
 };
 
 
-
 [SVGPolylineElement, SVGPolygonElement, SVGRectElement, SVGEllipseElement, SVGGElement].forEach(function(constr) {
     Function.wrap(constr.prototype, ['cloneNode'], function(func, args) {
-	console.log('cloning ' + (this.id || this.tagName));
+	//console.log('cloning ' + (this.id || this.tagName));
 	var begin = this._fxBegin;
 	var end = this._fxEnd;
 	delete this._fxBegin;
@@ -312,7 +312,9 @@ fx.dom.renderers[SVGRectElement.tagName] = function(element) {
     shape.setShape(new fx.Rectangle(element.x.baseVal.value,
 				    element.y.baseVal.value,
 				    element.width.baseVal.value,
-				    element.height.baseVal.value));
+				    element.height.baseVal.value,
+				    element.rx.baseVal.value,
+				    element.ry.baseVal.value));
     element._fxBegin.setChild(shape);
     
     var attrs = element.attributes;
