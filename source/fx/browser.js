@@ -161,8 +161,10 @@ fx.dom = {
 	//else return (element.geziraBegin = new gezira.Object);
     },
     enqueue: function(element) {
-	if (this.queue.last() !== element) 
+	if (this.queue.last() !== element) {
 	    this.queue.push(element);
+	    // trigger an update as soon as possible?
+	}
     },
 
     update: function() {
@@ -171,6 +173,7 @@ fx.dom = {
 	    var element = this.queue.pop();
 	    this.render(element);
 	}
+	//console.log('queue was ' + length);
 	return length;
     }
 };
@@ -184,18 +187,21 @@ Function.wrapSetter(Attr.prototype, 'value', function(func, args) {
 
 
 window.setTimeout = function(action, delay) {
-    var timer = fx.util.setInterval(action, delay);
+    var timer = fx.util.setInterval(function() {
+	action.apply(this, arguments);
+	fx.dom.update();
+    }, delay);
     timer.setRepeats(false);
-    var no = fx.dom.update();
     return timer;
 }
 
 window.setInterval = function(action, delay) {
-    var timer = fx.util.setInterval(action, delay);
-    fx.dom.update();
+    var timer = fx.util.setInterval(function() {
+	action.apply(this, arguments);
+	fx.dom.update();
+    }, delay);
     return timer;
 }
-
 
     
 Function.wrap(window, ['onmousemove', 'onmousedown', 'onmouseup'], function(func, args) {
@@ -356,7 +362,6 @@ fx.dom.renderers[SVGPolygonElement.tagName] = function(element) {
 	    }
 	    path.closePath();
 	} 
-
     }
     //console.log('rendering ' + element);
     return  element._fxBegin;
@@ -439,20 +444,15 @@ fx.dom.renderers[SVGGElement.tagName] = function(element) {
     if (element.transform) { 
 	var list = element.transform.baseVal;
 	for (var i = list.numberOfItems - 1; i >= 0; i--) {
-	    var fxtfm = undefined;
 	    var transform = list.getItem(i);
 	    if (transform.type == SVGTransform.SVG_TRANSFORM_TRANSLATE) {
-		fxtfm = new fx.Transform.createTranslation(transform.matrix.e, transform.matrix.f, null);
+		fxObj = new fx.Transform.createTranslation(transform.matrix.e, transform.matrix.f, fxObj);
 	    } else if (transform.type == SVGTransform.SVG_TRANSFORM_SCALE) {
-		fxtfm = new fx.Transform.createScale(transform.matrix.a, transform.matrix.d, null);
+		fxObj = new fx.Transform.createScale(transform.matrix.a, transform.matrix.d, fxObj);
 	    } else if (transform.type == SVGTransform.SVG_TRANSFORM_ROTATE) {
-		fxtfm = new fx.Transform.createRotation(transform.angle, null);
-	    } else
-		continue;
-	    fxtfm.setChild(fxObj);
-	    fxObj = fxtfm;
+		fxObj = new fx.Transform.createRotation(transform.angle, fxObj);
+	    } 
 	}
-	//console.log('reorg of ' + element.id);
     } 
 
     element._fxBegin.setChild(fxObj);
