@@ -28,11 +28,12 @@ var fx = {
     Text: Packages.com.sun.scenario.scenegraph.SGText,
     Shape: Packages.com.sun.scenario.scenegraph.SGShape,
     Transform: Packages.com.sun.scenario.scenegraph.SGTransform,
+    Clip: Packages.com.sun.scenario.scenegraph.SGClip,
     ShapeMode: Packages.com.sun.scenario.scenegraph.SGAbstractShape$Mode,
     Ellipse: Packages.java.awt.geom.Ellipse2D.Double,
     Point: Packages.java.awt.geom.Point2D.Double,
-    Rectangle: Packages.java.awt.geom.RoundRectangle2D.Double,
-    //Rectangle: Packages.java.awt.geom.Rectangle2D.Double,
+    RoundedRectangle: Packages.java.awt.geom.RoundRectangle2D.Double,
+    Rectangle: Packages.java.awt.geom.Rectangle2D.Double,
     Font: Packages.java.awt.Font,
     Path: Packages.java.awt.geom.GeneralPath,
     Color: Packages.java.awt.Color,
@@ -327,12 +328,12 @@ fx.dom.renderers[SVGRectElement.tagName] = function(element) {
     var shape = fx.util.antiAlias(new fx.Shape());
 
     // TODO optimize - use rounding if necessary
-    shape.setShape(new fx.Rectangle(element.x.baseVal.value,
-				    element.y.baseVal.value,
-				    element.width.baseVal.value,
-				    element.height.baseVal.value,
-				    element.rx.baseVal.value,
-				    element.ry.baseVal.value));
+    shape.setShape(new fx.RoundedRectangle(element.x.baseVal.value,
+					   element.y.baseVal.value,
+					   element.width.baseVal.value,
+					   element.height.baseVal.value,
+					   element.rx.baseVal.value,
+					   element.ry.baseVal.value));
     element._fxBegin.setChild(shape);
     
     var attrs = element.attributes;
@@ -495,6 +496,25 @@ fx.dom.renderers[SVGGElement.tagName] = function(element) {
 	    } 
 	}
     } 
+
+    var clip = element.getAttributeNS(null, "clip-path");
+    if (clip) {
+	var id = clip.substring(5, clip.length - 1);
+	var node = document.getElementById(id);
+	if (node) {
+	    var clips = node.getElementsByTagNameNS(Namespace.SVG, "rect");
+	    if (clips.length > 0) {
+		var clipRect = clips.item(0);
+		var save = fxObj;
+		var fxObj = new fx.Clip();
+		fxObj.setShape(new fx.Rectangle(clipRect.x.baseVal.value, clipRect.y.baseVal.value,
+						clipRect.width.baseVal.value, clipRect.height.baseVal.value));
+		fxObj.setChild(save);
+	    } else 
+		console.log("cannot deal with non-rect clip region");
+	}
+	
+    }
 
     element._fxBegin.setChild(fxObj);
     //console.log('rendering ' + element);
