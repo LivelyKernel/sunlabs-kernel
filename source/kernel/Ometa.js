@@ -39,8 +39,8 @@ Widget.subclass('OmetaWorkspace', {
 /*
  * A sample OMeta Workspace with the simple interpreter from the OMeta-js Tutorial
  */
-function openOmetaWorkspace() {
-    w = new OmetaWorkspace(); 
+OmetaWorkspace.openOmetaWorkspace = function() {
+    var w = new OmetaWorkspace(); 
 	w.openIn(WorldMorph.current(), pt(540, 20));
 	w.panel.textPane.setTextString("ometa Calc {  \n\
       digit    = super(#digit):d          -> d.digitValue(),\n\
@@ -78,6 +78,7 @@ Object.subclass('SyntaxHighlighter', {
     	return resource.getContentText();
     },
     
+    // better interpret/evalParserSrc
     compileParserSrc: function() {
         var ometaSrc = BSOMetaJSParser.matchAll(this.parserSrc(), "topLevel");
         var jsSrc = BSOMetaJSTranslator.match(ometaSrc, "trans")

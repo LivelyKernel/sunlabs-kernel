@@ -1,0 +1,45 @@
+ometa My <: Parser {
+    isLKParser  = ''                                                    -> (true),
+  
+	nameFirst    = letter | '$' | '_',
+  	nameRest     = nameFirst | digit,
+  	iName        = firstAndRest(#nameFirst, #nameRest):r		-> r.join(''),
+  	isKeyword :x = ?BSJSParser._isKeyword(x),
+  	name         = iName:n ~isKeyword(n)										-> n,
+
+  
+    spacesNoNl  = (~'\n' space)*														-> ' ',
+    sc          = spacesNoNl ('\n' | &'}' | end)										-> '<real  end>'
+                | ";"																						-> '<end because of ; >',
+    srcElem     = "function" /*"name":n*/ funcRest:f                    -> { 'this is a fuction:' + f }
+                | stmt:s																			-> s,
+    funcRest    = "(" listOf(#formal, ','):fs ")" "{" srcElems:body "}" -> { fs + '<--->' + body},
+    formal      = spaces name:n								-> n,
+    srcElems    = srcElem*:ss                                         -> ss,
+    stmt        = something:sth                                         ->  { sth + '<END OF STMT>' },
+   something    = (~sc anything)+:cs sc:end			                        ->  { cs.join('') + end }
+};
+x = My.matchAll("function tesr(a,b) { a + b; }", 'srcElem');
+My.matchAll("(ab,d){a + b; def arg.de()}", 'funcRest');
+
+/*
+ometa Test {
+	all = ( group)*:g		-> g,
+	group = (cha*):cs	sth			->  { console.log('recognizing: ' + cs); cs.join('') + ';'; },
+	sth = '\n' | ';' | ~anything,
+	cha = ~sth anything:x			-> x
+};
+
+Test.matchAll('abc\ndef;', 'all');
+*/
+
+/*
+ometa My <: Parser {
+    isLKParser = ''                                             -> (true),
+    param = spaces:sp1 string:p spaces:sp2						-> (sp1.join(' ') + p + sp2.join(' ')),
+    funcHeader = "function":f '(' listOf(#param, ','):p ')'  	-> ( 'attr:' + f + '(' + p + ')'),
+	stmts = string,
+	funcBody = '{' (/*string*/"abc")*:s	'}'						-> ('{' + '\n' + s.join('')),
+    func = funcHeader:h spaces funcBody:fb				        -> (h + ' ' + fb)
+}
+*/

@@ -279,7 +279,7 @@ Fabrik = {
         
         
         var base = this.openFabrikComponent(world, loc.addXY(-50,-20), pt(800, 400), 'Current Weather Conditions');
-        var urlInput = this.addTextComponent(base); urlInput.panel.setExtent(pt(180,60));
+        // var urlInput = this.addTextComponent(base); urlInput.panel.setExtent(pt(180,60));
         var zipInput = this.addTextComponent(base); zipInput.panel.setExtent(pt(100,50));
         
         /* 
@@ -292,11 +292,11 @@ Fabrik = {
         requestor.morph.setPosition(pt(50,50));
         
         /* Pins */
-        var urlPin = requestor.addPin('URL'); this.setPositionRel(pt(0.1, 0), urlPin.morph);
+        // var urlPin = requestor.addPin('URL'); this.setPositionRel(pt(0.1, 0), urlPin.morph);
         var zipPin = requestor.addPin('ZIP'); this.setPositionRel(pt(0.2, 0), zipPin.morph);
         var infoPin = requestor.addPin('Info'); this.setPositionRel(pt(0.9, 0.96), infoPin.morph);
         var conditionsPin = requestor.addPin('Conditions'); this.setPositionRel(pt(0.8, 0.96), conditionsPin.morph);
-        urlInput.getPin('Text').connectTo(urlPin);
+        // urlInput.getPin('Text').connectTo(urlPin);
         zipInput.getPin('Text').connectTo(zipPin);
         
         /* Function component for combining url and zip */
@@ -304,7 +304,6 @@ Fabrik = {
         // var pin = combineURLAndZIP.addIncputFieldAndPin('Url'); this.setPositionRel(pt(-0.04,0.33), pin.morph);
         combineURLAndZIP.addInputFieldAndPin('Zip');
         combineURLAndZIP.removePin('Input');
-        combineURLAndZIP.setFunctionBody('url + zip');
         zipPin.connectTo(combineURLAndZIP.getPin('Zip'));
         // urlPin.connectTo(combineURLAndZIP.getPin('Url'));
 
@@ -391,7 +390,7 @@ Fabrik = {
         infoList.setSelectionIndex(1);
         conditionList.setSelectionIndex(10);
         zipInput.setText('12685');
-        urlInput.setText('http://www.google.com/ig/api?weather=');
+        combineURLAndZIP.setFunctionBody("'http://www.google.com/ig/api?weather=' + zip");
         
         
         
