@@ -353,7 +353,7 @@ fx.dom.renderers[SVGTextElement.tagName] = function(element) {
 	element._fxBegin.remove();
     else 
 	element._fxBegin = new fx.Parent();
-
+    element._fxEnd = new fx.Group();
 
     var attrs = element.attributes;
     var fontSize = 12;
@@ -367,24 +367,23 @@ fx.dom.renderers[SVGTextElement.tagName] = function(element) {
 	}
     }
 
-    var content = "";
+    var newFont = new fx.Font('Helvetica', fx.Font.PLAIN, fontSize);
     element.childNodes._nodes.forEach(function(node) {
+	
 	// FIXME FIXME FIXME
 	if (node.localName == 'tspan') {
-	    content += node.firstChild.nodeValue; // not really but TBC
+	    var text = fx.util.antiAliasText(new fx.Text());
+	    text.setFont(newFont);
+	    // use this for tspans?
+	    text.setVerticalAlignment(Packages.com.sun.scenario.scenegraph.SGText$VAlign.BASELINE);
+	    var origin = new fx.Point(node.getAttributeNS(null, "x") || 0, node.getAttributeNS(null, "y") || 0);
+	    text.setLocation(origin);
+	    text.setText(node.firstChild.nodeValue); 
+	    element._fxEnd.add(text);
 	}
     });
 
-    var text = fx.util.antiAliasText(new fx.Text());
-    var newFont = new fx.Font('Helvetica', fx.Font.PLAIN, fontSize);
-    text.setFont(newFont);
-
-    // use this for tspans?
-    //text.setVerticalAlignment(Packages.com.sun.scenario.scenegraph.SGText$VAlign.TOP);
-    text.setLocation(new fx.Point(0, fontSize));
-
-    text.setText(content);
-    element._fxBegin.setChild(text);
+    element._fxBegin.setChild(element._fxEnd);
     return element._fxBegin;
 };
 
