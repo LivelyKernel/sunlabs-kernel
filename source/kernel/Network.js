@@ -171,11 +171,12 @@ Object.subclass('URL', {
 URL.source = new URL(document.baseURI);
 
 URL.proxy = (function() {
-    if (!URL.source.protocol.startsWith("file") && !Config.proxyURL) {
-	return URL.source.withFilename("proxy/"); // a default
+    if (!Config.proxyURL) {
+	if (URL.source.protocol.startsWith("file")) 
+	    console.log("loading from localhost, proxying won't work");
+	return URL.source.withFilename("proxy/");
     } else {
 	var str = Config.proxyURL;
-	if (!str) return null;
 	if (!str.endsWith('/')) str += '/';
 	return new URL(str);
     }
