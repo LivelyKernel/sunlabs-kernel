@@ -295,6 +295,15 @@ Object.extend(Function.prototype, {
 	var ancestor = this.superclass && this.superclass.prototype;
 
 	for (var property in source) {
+
+	    var getter = source.__lookupGetter__(property);
+	    if (getter) this.prototype.__defineGetter__(property, getter);
+	    var setter = source.__lookupSetter__(property);
+	    if (setter) this.prototype.__defineSetter__(property, setter);
+	    if (getter || setter)
+		continue;
+
+	    
 	    var value = source[property];
 	    // weirdly, RegExps are functions in Safari, so testing for Object.isFunction on
 	    // regexp field values will return true. But they're not full-blown functions and don't 
