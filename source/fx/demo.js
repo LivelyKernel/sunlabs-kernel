@@ -15,6 +15,7 @@ load('../kernel/defaultconfig.js');
 Config.useTransformAPI = false;
 Config.useGetTransformToElement = false;
 Config.logDnD = true;
+load('../kernel/Base.js');
 load('../kernel/Core.js');
 load('../kernel/Text.js');
 
@@ -29,6 +30,36 @@ load('../kernel/Examples.js');
 var browser = new fx.Frame(1024, 680);
 
 var canvas = document.getElementById("canvas");
+
+
+function swingDemo() {
+    var rect = new Rectangle(0, 0, 500, 300);
+    var xeno = new XenoMorph(rect);
+
+    var JScrollPane = Packages.javax.swing.JScrollPane;
+    var JEditorPane = Packages.javax.swing.JEditorPane;
+    var Dimension = Packages.java.awt.Dimension;
+    var URL = Packages.java.net.URL;
+    var editorPane = new JEditorPane();
+    editorPane.setEditable(false);
+    var url = new URL("http://livelykernel.sunlabs.com");
+    try {
+        editorPane.setPage(url);
+    } catch (e) {
+        console.log("Attempted to read a bad URL: " + url);
+    }
+    
+    //Put the editor pane in a scroll pane.
+    var editorScrollPane = new JScrollPane(editorPane);
+    editorScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+    editorScrollPane.setPreferredSize(new Dimension(rect.width, rect.height));
+    editorScrollPane.setMinimumSize(new Dimension(10, 10));
+    xeno.foRawNode._fxSetComponent(editorScrollPane);
+    WorldMorph.current().addFramedMorph(xeno, "Swing Editor: " + url.toString(), pt(50, 50));
+}
+
+
+
 
 function morphicMain() {
     var canvas = Global.document.getElementById("canvas");
@@ -106,6 +137,7 @@ function morphicMain() {
     
 
     canvas._fxBegin.requestFocus();
+    swingDemo();
 }
 
 fx.dom.update();
@@ -148,35 +180,3 @@ window.setTimeout(morphicMain, 500);
 
 
 
-
-function swingDemo() {
-    var rect = new Rectangle(0, 0, 500, 300);
-    var xeno = new XenoMorph(rect);
-
-    var JScrollPane = Packages.javax.swing.JScrollPane;
-    var JEditorPane = Packages.javax.swing.JEditorPane;
-    var Dimension = Packages.java.awt.Dimension;
-    var URL = Packages.java.net.URL;
-    var editorPane = new JEditorPane();
-    editorPane.setEditable(false);
-    var url = new URL("http://livelykernel.sunlabs.com");
-    try {
-        editorPane.setPage(url);
-    } catch (e) {
-        console.log("Attempted to read a bad URL: " + url);
-    }
-    
-    //Put the editor pane in a scroll pane.
-    var editorScrollPane = new JScrollPane(editorPane);
-    editorScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-    editorScrollPane.setPreferredSize(new Dimension(rect.width, rect.height));
-    editorScrollPane.setMinimumSize(new Dimension(10, 10));
-    xeno.foRawNode._fxSetComponent(editorScrollPane);
-    WorldMorph.current().addFramedMorph(xeno, "Swing Editor: " + url.toString(), pt(50, 50));
-}
-
-
-
-
-
-window.setTimeout(swingDemo, 1000);
