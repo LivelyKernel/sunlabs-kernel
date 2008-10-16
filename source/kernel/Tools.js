@@ -136,9 +136,9 @@ Widget.subclass('SimpleBrowser', {
             items.push(['import source files', function() {
                 if (! module.SourceControl) module.SourceControl = new SourceDatabase();
                 module.SourceControl.scanKernelFiles(["miniprototype.js", "defaultconfig.js", "localconfig.js",
-                    "Main.js", "Core.js", "Text.js",
-                    "Widgets.js", "Network.js", "Storage.js", "Tools.js",
-                    "Examples.js", "WebPIM.js", "phone.js"]);
+						      "Main.js", "Base.js", "Core.js", "Text.js",
+						      "Widgets.js", "Network.js", "Storage.js", "Tools.js",
+						      "Examples.js", "WebPIM.js", "phone.js"]);
                 WorldMorph.current().setFill(new RadialGradient([Color.rgb(36,188,255), 1, Color.rgb(127,15,0)]));
             }]);
         }
