@@ -1,26 +1,25 @@
-var MouseEvent = function() {};
-Object.extend(MouseEvent.prototype, {
-  get currentTarget() { return this._currentTarget; },
-  get shiftKey() { return this._shiftKey; },
-  get altKey()  { return this._altKey; },
-  get type() { return this._type; },
-  get clientX() { return this._clientX; },
-  get clientY() { return this._clientY; },
-  stopPropagation: function() { this._propagationStopped = true; },
-  preventDefault: function() { /* no default to prevent?*/ }   
+Object.subclass('Event', {
+    get type() { return this._type; },
+    get currentTarget() { return this._currentTarget; },
+    //...
+    stopPropagation: function() { this._propagationStopped = true; },
+    preventDefault: function() { /* no default to prevent?*/ },
+    toString: function() { return this._type; }
 });
 
+Event.subclass('MouseEvent', {
+    get shiftKey() { return this._shiftKey; },
+    get altKey()  { return this._altKey; },
+    get clientX() { return this._clientX; },
+    get clientY() { return this._clientY; },
+    toString: function() { return this._type + "@" + pt(this._clientX, this._clientY); }
+});
 
   //FIXME: check standards
-var KeyboardEvent = function() {};
-Object.extend(KeyboardEvent.prototype, {
-  get currentTarget() { return this._currentTarget; },
-  get type() { return this._type; },
-  get keyCode() { return this._keyCode },
-  get charCode() {  return this._keyChar; },
-  stopPropagation: function() { this._propagationStopped = true; },
-  preventDefault: function() { /* no default to prevent? */ }   
 
+Event.subclass('KeyboardEvent', {
+    get keyCode() { return this._keyCode },
+    get charCode() {  return this._keyChar; }
 });
 
 var EventTarget = {
@@ -67,34 +66,3 @@ function(func, args) {
 // support multiple inheritance.
 Object.extend(Element.prototype, EventTarget);
 Object.extend(Text.prototype, EventTarget);
-
-// TODO is this where these callbacks should be defined?
-// I don't like talking about document.documentElement here...
-this.onmousemove = function(x, y, shift) {
-  var event = new MouseEvent;
-  event._type = 'mousemove';
-  event._shiftKey = shift;
-  event._clientX = x;
-  event._clientY = y;
-  document.documentElement.dispatchEvent(event);
-};
-
-this.onmousedown = function(x, y, shift) {
-  //print('onmousedown');
-  var event = new MouseEvent;
-  event._type = 'mousedown';
-  event._shiftKey = shift;
-  event._clientX = x;
-  event._clientY = y;
-  document.documentElement.dispatchEvent(event);
-};
-
-this.onmouseup = function(x, y, shift) {
-  //print('onmouseup');
-  var event = new MouseEvent;
-  event._type = 'mouseup';
-  event._shiftKey = shift;
-  event._clientX = x;
-  event._clientY = y;
-  document.documentElement.dispatchEvent(event);
-};

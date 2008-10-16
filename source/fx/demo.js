@@ -142,7 +142,6 @@ browser.display(canvas._fxBegin);
 
 // this belongs in the browser
 fx.util.addMouseListener(canvas, "mouseMoved", function(evt) { 
-    //console.log('mouse moved event ' + evt);
     fx.util.dispatchMouseEvent('mousemove', evt);
 });
     
