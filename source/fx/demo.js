@@ -145,3 +145,38 @@ fx.util.addKeyListener(canvas, "keyReleased", function(evt) {
 
 
 window.setTimeout(morphicMain, 500);
+
+
+
+
+function swingDemo() {
+    var rect = new Rectangle(0, 0, 500, 300);
+    var xeno = new XenoMorph(rect);
+
+    var JScrollPane = Packages.javax.swing.JScrollPane;
+    var JEditorPane = Packages.javax.swing.JEditorPane;
+    var Dimension = Packages.java.awt.Dimension;
+    var URL = Packages.java.net.URL;
+    var editorPane = new JEditorPane();
+    editorPane.setEditable(false);
+    var url = new URL("http://livelykernel.sunlabs.com");
+    try {
+        editorPane.setPage(url);
+    } catch (e) {
+        console.log("Attempted to read a bad URL: " + url);
+    }
+    
+    //Put the editor pane in a scroll pane.
+    var editorScrollPane = new JScrollPane(editorPane);
+    editorScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+    editorScrollPane.setPreferredSize(new Dimension(rect.width, rect.height));
+    editorScrollPane.setMinimumSize(new Dimension(10, 10));
+    xeno.foRawNode._fxSetComponent(editorScrollPane);
+    WorldMorph.current().addFramedMorph(xeno, "Swing Editor: " + url.toString(), pt(50, 50));
+}
+
+
+
+
+
+window.setTimeout(swingDemo, 1000);

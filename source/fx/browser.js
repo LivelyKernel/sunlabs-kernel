@@ -26,6 +26,7 @@ var fx = {
     Group: Packages.com.sun.scenario.scenegraph.SGGroup,
     Parent: Packages.com.sun.scenario.scenegraph.SGFilter, // an intermediate node with one child
     Text: Packages.com.sun.scenario.scenegraph.SGText,
+    Component: Packages.com.sun.scenario.scenegraph.SGComponent,
     Shape: Packages.com.sun.scenario.scenegraph.SGShape,
     Transform: Packages.com.sun.scenario.scenegraph.SGTransform,
     Clip: Packages.com.sun.scenario.scenegraph.SGClip,
@@ -208,6 +209,8 @@ window.setInterval = function(action, delay) {
 	fx.dom.update();
     }, delay);
 };
+
+
 
 
 [SVGPolylineElement, SVGPolygonElement, SVGRectElement, SVGEllipseElement, SVGGElement].forEach(function(constr) {
@@ -526,8 +529,31 @@ fx.dom.renderers[SVGGElement.tagName] = function(element) {
 };
 
 
+var SVGForeignObjectElement = SVGElement.defineElement('foreignObject', [SVGTransformable, SVGStylable], 
+    {name:'x',      type:SVGAnimatedLength, readonly:true, defaultValue:'0'},
+    {name:'y',      type:SVGAnimatedLength, readonly:true, defaultValue:'0'},
+    {name:'width',  type:SVGAnimatedLength, readonly:true, defaultValue:'100%'},
+    {name:'height', type:SVGAnimatedLength, readonly:true, defaultValue:'100%'}
+);
+
+SVGForeignObjectElement.prototype._fxSetComponent = function(component) {
+    if (!this._fxComponent) {
+	this._fxComponent = new fx.Component();
+    }
+    this._fxComponent.setComponent(component);
+    fx.dom.enqueue(this);
+};
 
 
+fx.dom.renderers[SVGForeignObjectElement.tagName] = function(element) {
+    if (element._fxBegin)
+	element._fxBegin.remove(); // clean up element._fxComponent somehow?
+    else 
+	element._fxBegin = new fx.Parent();
+    console.log('render foreign object ' + element);
+    if (element._fxComponent) 
+	element._fxBegin.setChild(element._fxComponent);
+};
 
 // end of SVG impl
 
