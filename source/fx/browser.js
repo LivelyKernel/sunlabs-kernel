@@ -71,22 +71,22 @@ Object.extend(fx.util, {
 	return element._fxBegin.getChildren().get(0);
     },
     
-    addMouseListener: function(element, eventName, handler) {
+    addMouseListener: function(node, eventName, handler) {
 	    var adapter  = new fx.util.MouseAdapter();
 	adapter[eventName] = function(awtEvent, sgNode) {
 	    handler.call(this, awtEvent, sgNode);
 	}
 	var listenerClass = Packages.com.sun.scenario.scenegraph.event.SGMouseListener;
-	element._fxBegin.addMouseListener(new listenerClass(adapter));
+	node.addMouseListener(new listenerClass(adapter));
     },
     
-    addKeyListener: function(element, eventName, handler) {
+    addKeyListener: function(node, eventName, handler) {
 	var adapter  = new fx.util.KeyAdapter();
 	adapter[eventName] = function(awtEvent, sgNode) {
 	    handler.call(this, awtEvent, sgNode);
 	}
 	var listenerClass = Packages.com.sun.scenario.scenegraph.event.SGKeyListener;
-	element._fxBegin.addKeyListener(new listenerClass(adapter));
+	node.addKeyListener(new listenerClass(adapter));
     },
     
     dispatchMouseEvent: function(type, evt) {
@@ -105,7 +105,6 @@ Object.extend(fx.util, {
 	event._keyCode = evt.getKeyCode();
 	event._keyChar = evt.getKeyChar();
 	var result = document.documentElement.dispatchEvent(event);
-	//console.log('dispached keyboard event ' + type + ' code: ' + event._keyCode + ' char: ' + event._keyChar);
     },
     
     className: function(fxInstance) {
@@ -164,6 +163,33 @@ Object.subclass('fx::Frame', {
     },
 
     display: function(node) {
+	fx.util.addMouseListener(node, "mouseMoved", function(evt) { 
+	    fx.util.dispatchMouseEvent('mousemove', evt);
+	});
+	
+	fx.util.addMouseListener(node, "mousePressed", function(evt) { 
+	    fx.util.dispatchMouseEvent('mousedown', evt);
+	});
+	
+	fx.util.addMouseListener(node, "mouseReleased", function(evt) { 
+	    fx.util.dispatchMouseEvent('mouseup', evt);
+	});
+	
+	fx.util.addMouseListener(node, "mouseDragged", function(evt) { 
+	    fx.util.dispatchMouseEvent('mousemove', evt);
+	});
+	
+	fx.util.addKeyListener(node, "keyPressed", function(evt) { 
+	    fx.util.dispatchKeyboardEvent('keydown', evt);
+	});
+	
+	fx.util.addKeyListener(node, "keyTyped", function(evt) { 
+	    fx.util.dispatchKeyboardEvent('keypress', evt);
+	});
+	
+	fx.util.addKeyListener(node, "keyReleased", function(evt) { 
+	    fx.util.dispatchKeyboardEvent('keyup', evt);
+	});
 	this.panel.setScene(node);
 	this.frame.pack();
 	this.frame.setVisible(true);
