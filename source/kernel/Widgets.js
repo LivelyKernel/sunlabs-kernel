@@ -2074,6 +2074,7 @@ Morph.subclass('XenoMorph', {
     },
 
     onURLUpdate: function(url) {
+	if (!url) return;
 	var xeno = this;
 	function clearChildren(node) {
 	    while(node.firstChild) node.removeChild(node.firstChild);
@@ -2414,8 +2415,9 @@ Widget.subclass('XenoBrowserWidget', {
     
     initialViewExtent: pt(800, 300),
 
-    initialize: function($super) {
-	this.actualModel = Record.newPlainInstance({URL: URL.source.withFilename("sample.xhtml")});
+    initialize: function($super, filename) {
+	var url = filename ? URL.source.withFilename(filename) : null;
+	this.actualModel = Record.newPlainInstance({URL: url});
 	$super();
     },
     

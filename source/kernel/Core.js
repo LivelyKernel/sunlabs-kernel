@@ -6951,7 +6951,7 @@ PasteUpMorph.subclass("WorldMorph", {
                 var m = world.addMorph(new FrameRateMorph(evt.point().extent(pt(160, 10)), "FrameRateMorph"));
                 m.startSteppingScripts(); }],
 	    ["XHTML Browser", function(evt) { 
-		var xeno = new XenoBrowserWidget();
+		var xeno = new XenoBrowserWidget('sample.xhtml');
 		xeno.openIn(world, evt.point()); 
 	    }],
 	    ["External link", function(evt) { world.addMorph(new ExternalLinkMorph(URL.source.toString(), evt.point()));}],
