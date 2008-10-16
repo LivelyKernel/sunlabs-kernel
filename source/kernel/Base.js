@@ -1296,7 +1296,30 @@ Object.extend(Relay, {
     }
 
 });
-    
+
+
+namespace('lk');
+
+
+// See http://www.w3.org/TR/css3-values/
+// and http://www.w3.org/TR/CSS2/syndata.html#values    
+
+Object.extend(Object.subclass('lk::Length'), {
+
+    parse: function(string) {
+	// FIXME: handle units
+	return parseFloat(string);
+    }
+});
+
+
+Object.extend(lk.Length.subclass('lk::Coordinate'), {
+    parse: function(string) {
+	// FIXME: handle units
+	return parseFloat(string);
+    }
+});
+
 
 
 Global.console && Global.console.log("loaded basic library");
@@ -1317,8 +1340,8 @@ Object.subclass("Point", {
 
     deserialize: function(importer, string) { // reverse of toString
 	var array = string.substring(3, string.length - 1).split(',');
-	this.x = Converter.parseCoordinate(array[0]);
-	this.y = Converter.parseCoordinate(array[1]);
+	this.x = lk.Coordinate.parse(array[0]);
+	this.y = lk.Coordinate.parse(array[1]);
     },
 
     addPt: function(p) { return new Point(this.x + p.x, this.y + p.y); },
@@ -1719,24 +1742,16 @@ Object.subclass("Color", {
     toTuple: function() {
 	return [this.r, this.g, this.b];
     },
-
+    
     deserialize: function(importer, str) {
-	if (!str || str == "none") return null;
-	// FIXME this should be much more refined
+	if (!str) return null;
 	dbgOn(!str.match);
-	var match = str.match("rgb\\((\\d+),(\\d+),(\\d+)\\)");
-	if (match) { 
-	    this.r = parseInt(match[1])/255;
-	    this.g = parseInt(match[2])/255;
-	    this.b = parseInt(match[3])/255;
-	} else if (str.length == 7 && str.charAt(0) == '#') {
-	    this.r = parseInt(str.substring(1,3), 16)/255;
-	    this.g = parseInt(str.substring(3,5), 16)/255;
-	    this.b = parseInt(str.substring(5,7), 16)/255;
-	    console.log('parsed ' + this);
-	} else throw new Error('color ' + str + ' unsupported');
-	
+	var tuple = Color.fromTuple(str);
+	this.r = tuple[0];
+	this.g = tuple[1];
+	this.b = tuple[2];
     }
+
 });
 
 Object.extend(Color, {
@@ -1800,7 +1815,37 @@ Object.extend(Color, {
 
     fromJSON: function(spec) {
 	return new Color(spec.r, spec.g, spec.b);
+    },
+
+    fromTuple: function(tuple) {
+	return new Color(tuple[0], tuple[1], tuple[2]);
+    },
+
+    fromString: function(str) {
+	return Color.fromTuple(Color.parse(str));
+    },
+
+    parse: function(str) { 
+	// FIXME this should be much more refined
+	// FIXME handle keywords
+	if (!str || str == 'none')
+	    return null;
+	var match = str.match("rgb\\((\\d+),(\\d+),(\\d+)\\)");
+	var r,g,b;
+	if (match) { 
+	    r = parseInt(match[1])/255;
+	    g = parseInt(match[2])/255;
+	    b = parseInt(match[3])/255;
+	    return [r, g, b];
+	} else if (str.length == 7 && str.charAt(0) == '#') {
+	    r = parseInt(str.substring(1,3), 16)/255;
+	    g = parseInt(str.substring(3,5), 16)/255;
+	    b = parseInt(str.substring(5,7), 16)/255;
+	    return [r, g, b];
+	} else return null;
     }
+
+
 
 });
 

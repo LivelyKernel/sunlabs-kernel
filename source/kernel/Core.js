@@ -289,17 +289,6 @@ Namespace =  {
 var Converter = {
     documentation: "singleton used to parse DOM attribute values into JS values",
 
-    parseLength: function(string) {
-	// convert into system coords (pt?)
-	// FIXME: handle units
-	return parseFloat(string);
-    },
-
-    parseCoordinate: function(string) {
-	// convert into system coords (pt?)
-	// FIXME: handle units
-	return parseFloat(string);
-    },
 
     toBoolean: function toBoolean(string) {
 	return string && string == 'true';
@@ -312,11 +301,6 @@ var Converter = {
 	return (b === true || b === "true") ? "true" : "false";
     },
 
-    parseURL: function(string) {
-	return new URL(string);
-    },
-
-    
     parseInset: function(string) {
 	// syntax: <left>(,<top>(,<right>,<bottom>)?)?
 	
@@ -327,17 +311,17 @@ var Converter = {
 	var t, b, l, r;
 	switch (box.length) {
 	case 1:
-	    b = l = r = t = this.parseLength(box[0].strip());
+	    b = l = r = t = lk.Length.parse(box[0].strip());
 	    break;
 	case 2:
-	    t = b = this.parseLength(box[0].strip());
-	    l = r = this.parseLength(box[1].strip());
+	    t = b = lk.Length.parse(box[0].strip());
+	    l = r = lk.Length.parse(box[1].strip());
 	    break;
 	case 4:
-	    t = this.parseLength(box[0].strip());
-	    l = this.parseLength(box[1].strip());
-	    b = this.parseLength(box[2].strip());
-	    r = this.parseLength(box[3].strip());
+	    t = lk.Length.parse(box[0].strip());
+	    l = lk.Length.parse(box[1].strip());
+	    b = lk.Length.parse(box[2].strip());
+	    r = lk.Length.parse(box[3].strip());
 	    break;
 	default:
 	    console.log("unable to parse padding " + padding);
@@ -625,7 +609,7 @@ Object.subclass('Wrapper', {
     },
     
     getLengthTrait: function(name) {
-	return Converter.parseLength(this.rawNode.getAttributeNS(null, name));
+	return lk.Length.parse(this.rawNode.getAttributeNS(null, name));
     },
 
     setLengthTrait: function(name, value) {
@@ -753,26 +737,19 @@ Wrapper.subclass("Gradient", {
     },
 
     rawStopNodes: function() {
-	var array = [];
-	var subnodes = this.rawNode.childNodes;
-	for (var i = 0; i < subnodes.length; i++) {
-	    var n = subnodes.item(i);
-	    if (n.localName == "stop") 
-		array.push(n);
-	}
-	return array;
+	return this.rawNode.getElementsByTagNameNS(Namespace.SVG, 'stop');
     },
 
     stopColor: function(index) {
 	var stops = this.rawStopNodes();
-	if (!stops || !stops[index || 0]) return null;
-	return new Color(Importer.marker, stops[index || 0].getAttributeNS(null, "stop-color"));
+	if (!stops.item(index || 0)) return null;
+	return Color.fromString(stops.item(index || 0).getAttributeNS(null, "stop-color"));
     },
 
     offset: function(index) {
 	var stops = this.rawStopNodes();
-	if (!stops || !stops[index || 0]) return null;
-	return Converter.parseLength(stops[index || 0].getAttributeNS(null, "offset"));
+	if (!stops[index || 0]) return null;
+	return lk.Length.parse(stops[index || 0].getAttributeNS(null, "offset"));
     },
 
     processSpec: function(stopSpec) {
@@ -1913,11 +1890,11 @@ Visual.subclass('Image', {
     },
 
     getWidth: function(optArg) {
-	return Converter.parseLength((optArg || this.rawNode).getAttributeNS(null, "width"));
+	return lk.Length.parse((optArg || this.rawNode).getAttributeNS(null, "width"));
     },
 
     getHeight: function(optArg) {
-	return Converter.parseLength((optArg || this.rawNode).getAttributeNS(null, "height"));
+	return lk.Length.parse((optArg || this.rawNode).getAttributeNS(null, "height"));
     },
 
     reload: function() {
