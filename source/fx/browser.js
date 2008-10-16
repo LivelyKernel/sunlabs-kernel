@@ -14,6 +14,14 @@ load('../kernel/rhino-compat.js');
 
 load('../kernel/JSON.js');
 load('../kernel/miniprototype.js'); 
+load('../kernel/defaultconfig.js');
+// our local config
+Config.useTransformAPI = false;
+Config.useGetTransformToElement = false;
+Config.logDnD = true;
+
+load('../kernel/Base.js');
+
 load('dom/mico.js');
 load('dom/dom2-core.js');
 load('dom/dom2-events.js');
@@ -21,7 +29,9 @@ load('dom/dom2-html.js');
 load('dom/svg1.1.js');
 print('loaded DOM implementation in JS');
 
-var fx = {
+namespace('fx');
+
+Object.extend(fx, {
     Panel: Packages.com.sun.scenario.scenegraph.JSGPanel,
     Group: Packages.com.sun.scenario.scenegraph.SGGroup,
     Parent: Packages.com.sun.scenario.scenegraph.SGFilter, // an intermediate node with one child
@@ -40,144 +50,147 @@ var fx = {
     Color: Packages.java.awt.Color,
     Gradient: Packages.java.awt.GradientPaint,
     Timer: Packages.javax.swing.Timer,
-    util: {
-	antiAlias: function(shape) {
-	    var hints = Packages.java.awt.RenderingHints;
-	    shape.setAntialiasingHint(hints.VALUE_ANTIALIAS_ON);
-	    return shape;
-	},
+});
 
-	antiAliasText: function(shape) {
-	    var hints = Packages.java.awt.RenderingHints;
-	    shape.setAntialiasingHint(hints.VALUE_TEXT_ANTIALIAS_ON);
-	    return shape;
-	},
-	
-	getShape: function(element) { // FIXME what about transforms
-	    return element._fxBegin.getChildren().get(0);
-	},
+namespace('fx::util');
 
-	addMouseListener: function(element, eventName, handler) {
+Object.extend(fx.util, {
+    antiAlias: function(shape) {
+	var hints = Packages.java.awt.RenderingHints;
+	shape.setAntialiasingHint(hints.VALUE_ANTIALIAS_ON);
+	return shape;
+    },
+    
+    antiAliasText: function(shape) {
+	var hints = Packages.java.awt.RenderingHints;
+	shape.setAntialiasingHint(hints.VALUE_TEXT_ANTIALIAS_ON);
+	return shape;
+    },
+    
+    getShape: function(element) { // FIXME what about transforms
+	return element._fxBegin.getChildren().get(0);
+    },
+    
+    addMouseListener: function(element, eventName, handler) {
 	    var adapter  = new fx.util.MouseAdapter();
-	    adapter[eventName] = function(awtEvent, sgNode) {
-		handler.call(this, awtEvent, sgNode);
-	    }
-	    var listenerClass = Packages.com.sun.scenario.scenegraph.event.SGMouseListener;
-	    element._fxBegin.addMouseListener(new listenerClass(adapter));
-	},
-
-	addKeyListener: function(element, eventName, handler) {
-	    var adapter  = new fx.util.KeyAdapter();
-	    adapter[eventName] = function(awtEvent, sgNode) {
-		handler.call(this, awtEvent, sgNode);
-	    }
-	    var listenerClass = Packages.com.sun.scenario.scenegraph.event.SGKeyListener;
-	    element._fxBegin.addKeyListener(new listenerClass(adapter));
-	},
-
-	dispatchMouseEvent: function(type, evt) {
-	    var event = new MouseEvent();
-	    event._type = type;
-	    event._shiftKey = evt.isShiftDown();
-	    event._altKey = evt.isAltDown();
-	    event._clientX = evt.getX();
-	    event._clientY = evt.getY();
-	    var result = document.documentElement.dispatchEvent(event);
-	},
-
-	dispatchKeyboardEvent: function(type, evt) {
-	    var event = new KeyboardEvent();
-	    event._type = type;
-	    event._keyCode = evt.getKeyCode();
-	    event._keyChar = evt.getKeyChar();
-	    var result = document.documentElement.dispatchEvent(event);
-	    //console.log('dispached keyboard event ' + type + ' code: ' + event._keyCode + ' char: ' + event._keyChar);
-	},
-
-	className: function(fxInstance) {
-	    return fxInstance ? String(fxInstance.getClass().getName()).split('.').last() : "null";
-	},
-
-	parentChain: function(fxInstance) {
-	    var parents = [];
-	    for (var p = fxInstance; p != null; p = p.getParent()) {
-		parents.push(p);
-	    }
-	    return parents;
-	},
-
-	setInterval: function(callback, delay) {
-	    // env.js setInterval is not Swing-friendly
-	    var listener = new Packages.java.awt.event.ActionListener({
-		actionPerformed: function(actionEvent) {
-		    // transform actionEvent ?
-		    callback.call(window, actionEvent);
-		}
-	    });
-	    var timer = new fx.Timer(delay, listener);
-	    timer.start();
-	    return timer;
+	adapter[eventName] = function(awtEvent, sgNode) {
+	    handler.call(this, awtEvent, sgNode);
 	}
+	var listenerClass = Packages.com.sun.scenario.scenegraph.event.SGMouseListener;
+	element._fxBegin.addMouseListener(new listenerClass(adapter));
+    },
+    
+    addKeyListener: function(element, eventName, handler) {
+	var adapter  = new fx.util.KeyAdapter();
+	adapter[eventName] = function(awtEvent, sgNode) {
+	    handler.call(this, awtEvent, sgNode);
+	}
+	var listenerClass = Packages.com.sun.scenario.scenegraph.event.SGKeyListener;
+	element._fxBegin.addKeyListener(new listenerClass(adapter));
+    },
+    
+    dispatchMouseEvent: function(type, evt) {
+	var event = new MouseEvent();
+	event._type = type;
+	event._shiftKey = evt.isShiftDown();
+	event._altKey = evt.isAltDown();
+	event._clientX = evt.getX();
+	event._clientY = evt.getY();
+	var result = document.documentElement.dispatchEvent(event);
+    },
+    
+    dispatchKeyboardEvent: function(type, evt) {
+	var event = new KeyboardEvent();
+	event._type = type;
+	event._keyCode = evt.getKeyCode();
+	event._keyChar = evt.getKeyChar();
+	var result = document.documentElement.dispatchEvent(event);
+	//console.log('dispached keyboard event ' + type + ' code: ' + event._keyCode + ' char: ' + event._keyChar);
+    },
+    
+    className: function(fxInstance) {
+	return fxInstance ? String(fxInstance.getClass().getName()).split('.').last() : "null";
+    },
+    
+    parentChain: function(fxInstance) {
+	var parents = [];
+	for (var p = fxInstance; p != null; p = p.getParent()) {
+	    parents.push(p);
+	}
+	return parents;
+    },
+    
+    setInterval: function(callback, delay) {
+	// env.js setInterval is not Swing-friendly
+	var listener = new Packages.java.awt.event.ActionListener({
+	    actionPerformed: function(actionEvent) {
+		// transform actionEvent ?
+		callback.call(window, actionEvent);
+	    }
+	});
+	var timer = new fx.Timer(delay, listener);
+	timer.start();
+	return timer;
     }
-};
+});
     
 
-fx.util.MouseAdapter = function() { };
-fx.util.MouseAdapter.prototype = {
-    mouseClicked: function(awtEvent, sgNode) { },
-    mouseDragged: function(awtEvent, sgNode) { },
-    mouseEntered: function(awtEvent, sgNode) { },
-    mouseExited: function(awtEvent, sgNode) { },
-    mouseMoved: function(awtEvent, sgNode) { },
-    mousePressed: function(awtEvent, sgNode) { },
-    mouseReleased: function(awtEvent, sgNode) { },
-    mouseWheelMoved: function(awtEvent, sgNode) { }
-};
+Object.subclass('fx::util::MouseAdapter', {
+    mouseClicked: Functions.Null,
+    mouseDragged: Functions.Null,
+    mouseEntered: Functions.Null,
+    mouseExited: Functions.Null,
+    mouseMoved: Functions.Null,
+    mousePressed: Functions.Null,
+    mouseReleased: Functions.Null,
+    mouseWheelMoved: Functions.Null
+});
 
-fx.util.KeyAdapter = function() {};
-fx.util.KeyAdapter.prototype = {
-    keyPressed: function(awtEvent, svnNode) {},
-    keyReleased:function(awtEvent, svnNode) {},
-    keyTyped : function(awtEvent, svnNode) {}
-};
 
-fx.Frame = function(width, height) {
-    this.frame = new Packages.javax.swing.JFrame();
-    this.frame.setSize(width, height);
-    this.panel = new Packages.com.sun.scenario.scenegraph.JSGPanel();
-    this.panel.setBackground(fx.Color.white);
-    this.panel.setPreferredSize(new Packages.java.awt.Dimension(width, height));
-    this.frame.add(this.panel);
-}
+Object.subclass('fx::util::KeyAdapter', {
+    keyPressed: Functions.Null,
+    keyReleased: Functions.Null,
+    keyTyped: Functions.Null
+});
 
-fx.Frame.prototype.display = function(node) {
-    this.panel.setScene(node);
-    this.frame.pack();
-    this.frame.setVisible(true);
-}
+Object.subclass('fx::Frame', {
+    initialize: function(width, height) {
+	this.frame = new Packages.javax.swing.JFrame();
+	this.frame.setSize(width, height);
+	this.panel = new Packages.com.sun.scenario.scenegraph.JSGPanel();
+	this.panel.setBackground(fx.Color.white);
+	this.panel.setPreferredSize(new Packages.java.awt.Dimension(width, height));
+	this.frame.add(this.panel);
+    },
 
+    display: function(node) {
+	this.panel.setScene(node);
+	this.frame.pack();
+	this.frame.setVisible(true);
+    }
+});
+    
 fx.dom = {
     queue: [],
     renderers: {},
     render: function(element) {
-	const SVGNS = 'http://www.w3.org/2000/svg';
 	var renderer = this.renderers[element.constructor.tagName];
 	return renderer && renderer(element);
 	//else return (element.geziraBegin = new gezira.Object);
     },
-
+    
     enqueue: function(element) {
 	if (this.queue.last() !== element) {
 	    this.queue.push(element);
 	    // trigger an update as soon as possible?
 	}
     },
-
+    
     update: function() {
 	var length = this.queue.length;
 	while (this.queue.length > 0) {
 	    var element = this.queue.pop();
-	    if (!element.constructor.tagName) console.log('no tag name for ' + element.constructor);
+	    if (!element.constructor.tagName) console.log('no tag name for ' + element.constructor.name);
 	    this.render(element);
 	}
 	//console.log('queue was ' + length);
@@ -209,8 +222,6 @@ window.setInterval = function(action, delay) {
 	fx.dom.update();
     }, delay);
 };
-
-
 
 
 [SVGPolylineElement, SVGPolygonElement, SVGRectElement, SVGEllipseElement, SVGGElement].forEach(function(constr) {
@@ -266,7 +277,7 @@ var PaintModule = {
 		    var c2 = stops.item(1) ? stops.item(1).getAttributeNS(null, "stop-color") : "gray";
 		    return new fx.Gradient(x1, y1, this.parsePaint(c1), x2, y2, this.parsePaint(c2));
 		} else {
-		    // note: radial paint will be a problem
+		    // wait for radial paint until java 6
 		    //console.log('unknown paint ' + id);
 		    return new fx.Color(0,0,0,0); // FIXME not strictly the same thing as no color
 		}
@@ -520,7 +531,6 @@ fx.dom.renderers[SVGGElement.tagName] = function(element) {
 	    } else 
 		console.log("cannot deal with non-rect clip region");
 	}
-	
     }
 
     element._fxBegin.setChild(fxObj);

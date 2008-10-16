@@ -11,14 +11,9 @@
 load('browser.js');
 load('dom/index.xhtml.js');
 print('loaded start document emulation');
-load('../kernel/defaultconfig.js');
-Config.useTransformAPI = false;
-Config.useGetTransformToElement = false;
-Config.logDnD = true;
-load('../kernel/Base.js');
+
 load('../kernel/Core.js');
 load('../kernel/Text.js');
-
 load('../kernel/Widgets.js');
 load('../kernel/Network.js');
 load('../kernel/Data.js');
