@@ -4512,8 +4512,117 @@ Morph.subclass("PlayerMorph",  {
     startAnimation: function() {
         this.animation.startStepping(100,"nextFrame"); 
     }    
-
 });
+
+
+lk.examples.installFasteroids = function (world, rect) {
+console.log("-------------- Begin Fasteroids ----------------");
+
+ClipMorph.subclass('Fasteroids', {
+    initialize: function ($super, initialBounds) {
+	// An attempt to show how small Asteroids can be in Morphic
+	// here we set up the game board
+	$super(initialBounds, "rectangle");
+	this.asteroids = [];
+	for (var i=4; i<10; i++) this.asteroids.push(this.addMorph(this.makeAsteroid(i, 200, Color.green)));
+	this.fragments = [];
+	this.missiles = [];
+	this.ship = this.addMorph(Morph.makePolygon (
+		[pt(0, 0), pt(5, 20), pt(-5, 20), pt(0, 0)], 1, Color.black, Color.blue));
+	this.ship.setPosition(this.innerBounds().center());
+	this.setFill(Color.orange);
+    },
+    makeAsteroid: function(nSides, circumf, fillColor) {
+	//makes a simple polygon of n sides
+	if(nSides < 3) return;
+	var p = new Pen();
+	for (var i=0; i<= nSides; i++) { p.go(circumf/nSides); p.turn(360/nSides); };
+        var p0 = Rectangle.unionPts(p.vertices).center();
+        var verts = p.vertices.invoke('subPt', p0);
+	var veloc = pt(6, 6).random().subPt(pt(3, 3));
+	var rot = 0.6*Math.random() - 0.3;
+	return new Asteroid(verts, 1, Color.black, Color.green, veloc, rot).translateBy(this.innerBounds().extent().random());
+    },
+    tick: function() {
+	this.asteroids.each( function (each) { each.updatePosition(); });
+    },
+    onMouseDown: function(evt) {
+        this.requestKeyboardFocus(evt.hand);
+        return true; 
+    },
+    takesKeyboardFocus: function() {
+	return true; 
+    },
+    onKeyDown: function(evt) { 
+        this.keyDown(evt);
+        evt.stop();
+        return true; 
+    },
+    startSteppingScripts: function() {
+        console.log("startSteppingScripts");
+	this.startStepping(100, "tick"); // ten frames per second
+	// this.world.hands()[0].setKeyboardFocus(this);
+    }
+});
+
+Morph.subclass('InertialBody', {
+    initialize: function ($super, verts, lineWidth, lineColor, fill, velocity, angularVelocity) {
+	// make a polygon with its origin at the starting vertex (avg of verts??)
+	$super(pt(0,0).asRectangle(), "rect");
+	this.setShape(new PolygonShape(verts, fill, lineWidth, lineColor));
+	this.velocity = velocity || 0.0;
+	this.angularVelocity = angularVelocity || 0.0;
+    },
+    updatePosition: function() {
+	this.rotateBy(this.angularVelocity);	this.moveBy(this.velocity);	if (!this.testInBounds()) this.isOutOfBounds();
+	if (this.owner === null) return;    },
+    testInBounds: function() {
+	return this.bounds().intersection(this.owner.innerBounds()).isNonEmpty();
+    },
+    isOutOfBounds: function() { // May override, eg to remove
+	this.wrapAround()
+    },
+    wrapAround: function() {
+	var ownerBox = this.owner.innerBounds();  // fix - relative!
+	var myBox = this.bounds();
+//console.log("ownerBox = " + Object.inspect(ownerBox));
+//console.log("myBox = " + Object.inspect(myBox));
+	if (this.velocity.x > 0 && myBox.x > ownerBox.maxX()) this.moveBy(pt(-ownerBox.width, 0));
+	if (this.velocity.y > 0 && myBox.y > ownerBox.maxY()) this.moveBy(pt(0, -ownerBox.height));
+	if (this.velocity.x < 0 && myBox.maxX() < ownerBox.x) this.moveBy(pt(ownerBox.width, 0));
+	if (this.velocity.y < 0 && myBox.maxY() < ownerBox.y) this.moveBy(pt(0, ownerBox.height));
+    }
+});
+
+InertialBody.subclass('Asteroid', {
+    initialize: function ($super, verts, lineWidth, lineColor, fill, velocity, angularVelocity) {
+	// Asteroids are sizeable polygons that drift and wrap around the bounds
+	// until they are destroyed by missiles or until they clobber the ship
+	$super(verts, lineWidth, lineColor, fill, velocity, angularVelocity);
+    }
+});
+InertialBody.subclass('Missile', {
+    initialize: function ($super, verts, lineWidth, lineColor, fill, velocity, angularVelocity) {
+	// Missiles are little bullets with constant velocity
+	$super(verts, lineWidth, lineColor, fill, velocity, angularVelocity);
+    },
+    isOutOfBounds: function() { // Missiles go away when out of bounds
+	this.remove()
+    }
+});
+
+InertialBody.subclass('Ship', {
+    initialize: function ($super, verts, lineWidth, lineColor, fill, velocity, angularVelocity) {
+	//  The ship's position and rotation give the initial trajectory to its missiles
+	//  Left and right keys rotate it, and 
+	//  up and down buttons add thrust and retro to its velocity	$super(verts, lineWidth, lineColor, fill, velocity, angularVelocity);
+    }
+});
+
+(world.addMorph( new Fasteroids(rect))).startSteppingScripts();
+console.log("-------------- End Fasteroids ----------------");
+};
+//}
 
 });
 

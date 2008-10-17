@@ -382,6 +382,7 @@ function populateWorldWithExamples(world) {
 		widget.align(widget.bounds().bottomRight(), world.bounds().topRight().addPt(pt(-150,100))); 
 		if (Config.showHilbertFun) Pen.hilbertFun(devWorld.myWorld, widget.bounds().bottomLeft().addXY(180,80));
 		devWorld.myWorld.addMorph(widget);
+		if(Config.tryFasteroids) lk.examples.installFasteroids(world, new Rectangle(150, 100, 600, 400));
 	    }
 	    parser.parse();
         }

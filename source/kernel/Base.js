@@ -1312,6 +1312,8 @@ Object.subclass("Point", {
 
     roundTo: function(quantum) { return new Point(this.x.roundTo(quantum), this.y.roundTo(quantum)); },
 
+    random: function() {  return new Point(this.x*Math.random(), this.y*Math.random());  },
+
     dist: function(p) { 
 	var dx = this.x - p.x;
 	var dy = this.y - p.y;
