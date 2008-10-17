@@ -2181,6 +2181,15 @@ TextMorph.addMethods({
 });
 
 
+Object.extend(TextMorph, {
+    makeLabel: function(labelString, fontSize) {
+	var label = new TextMorph(new Rectangle(0,0,200,100), labelString);
+	label.applyStyle({borderWidth: 0, fill: null, wrapStyle: lk.text.WrapStyle.Shrink, fontSize: (fontSize || 12), padding: Rectangle.inset(0)});
+	return label;
+    }
+});
+
+
 TextMorph.subclass('PrintMorph', {
     documentation: "TextMorph that converts its model value to string using toString(), and from a string using eval()",
     precision: 2,

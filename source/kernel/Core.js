@@ -3266,7 +3266,8 @@ Morph.addMethods({
 	// DI: I don't think this can affect owner.  It may increase fullbounds
 	//     due to stickouts, but not the bounds for layout...
 	if (this.owner /* && this.owner !== this.world() */ && !this.transientBounds) this.owner.layoutChanged(); 
-	this.changed(); 
+	this.changed();
+	return this; 
     },
 
     setRotation: function(theta) { // in radians
@@ -3312,7 +3313,11 @@ Morph.addMethods({
     },
 
     align: function(p1, p2) {
-	this.translateBy(p2.subPt(p1)); 
+	return this.translateBy(p2.subPt(p1)); 
+    },
+
+    centerAt: function(p) {
+	return this.align(this.bounds().center(), p); 
     },
 
     // toggle fisheye effect on/off
