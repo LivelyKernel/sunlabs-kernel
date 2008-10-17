@@ -8,10 +8,88 @@
  * other countries.
  */ 
 
- /**
- * Core.js.  This file contains the core system definition
- * as well as the core Morphic graphics framework. 
- */
+/**
+* Core.js.  This file contains the core system definition
+* as well as the core Morphic graphics framework. 
+*/
+
+
+/* Code loader. Appends file to DOM. */
+var Loader = {
+    
+    wasLoaded: {},
+    
+    pendingActions: [],
+    
+    pendingActionsFor: function(url) {
+        return Loader.pendingActions.inject([], function(all, ea) {
+            if (ea.url == url) all.push(ea);
+            return all;
+        }); 
+    },
+    
+    loadScripts: function(urls, actionWhenDone) {
+        if (urls.length == 0) {
+            actionWhenDone();
+            return;
+        };
+        var notifier = function(url) {
+            urls = urls.without(url);
+            if (urls.length == 0) actionWhenDone();
+        };
+        urls.each(function(ea) { Loader.loadScript(ea, notifier.curry(ea)) });
+    },
+
+    loadScript: function(url /*not really a url yet*/, onLoadAction, embedSerializable) {
+        console.log('Begin to load ' + url + (embedSerializable ? ' into <defs>' : ''));
+        if (document.getElementById(url)) {
+            // console.log(url + ' already loaded');
+            if (onLoadAction) {
+                if (Loader.wasLoaded[url]) {
+                    console.log("The action which is dependend from " + url +
+                                " will be directly run because " + url + " is in the DOM and loaded");
+                    onLoadAction();
+                    // When url is already there, onModuleLoad isn't run again, so remove url from the requirement list manually
+                    if (noPendingRequirements(url)) moduleLoaded(url);
+                } else  {
+                    // in the DOM but not loaded yet
+                    // console.log('adding a pending action for ' + url);
+                    Loader.pendingActions.unshift({url: url, action: onLoadAction});
+                }
+            };
+            return;
+        };
+        
+        var node = embedSerializable ? // add it to other script elements in svg to make it serializable
+            document.getElementsByTagName("defs")[0]:
+            document.getElementsByTagName("body")[0];
+        var script = document.createElement('script');
+        script.id = url;
+        script.type = 'text/javascript';
+        script.src = url;
+        
+        var loaderWrapper = function() {
+            if (onLoadAction) {
+                onLoadAction();
+                // why signal moduleLoaded again? should already be included in onLoadAction...???
+                if (noPendingRequirements(url)) moduleLoaded(url);
+            }
+            Loader.wasLoaded[url] = true;
+            Loader.pendingActionsFor(url).forEach(function(ea) {
+                // console.log(url + ' was loaded. Loading now its pending action for ' + ea.url);
+                ea.action();
+                if (noPendingRequirements(ea.url)) moduleLoaded(ea.url);
+            });
+        };
+        script.onload = loaderWrapper;
+        node.appendChild(script);
+        
+        return this;
+    }
+
+});
+
+
 
 Record.subclass('DOMRecord', {
     description: "base class for records backed by a DOM Node",
