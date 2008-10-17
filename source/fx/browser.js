@@ -173,11 +173,17 @@ Object.subclass('fx::Frame', {
 	var node = new fx.Parent();
 	this.panel.setScene(node);
 
+    },
+
+    display: function(element) {
+	var node = element._fxBegin;
+	this.panel.getScene().setChild(node);
 	fx.util.addMouseListener(node, "mouseMoved", function(evt) { 
 	    fx.util.dispatchMouseEvent('mousemove', evt);
 	});
 	
 	fx.util.addMouseListener(node, "mousePressed", function(evt) { 
+	    //console.log('dispatch to node ' + node);
 	    fx.util.dispatchMouseEvent('mousedown', evt);
 	});
 	
@@ -201,10 +207,8 @@ Object.subclass('fx::Frame', {
 	    fx.util.dispatchKeyboardEvent('keyup', evt);
 	});
 	node.requestFocus();
-    },
 
-    display: function(element) {
-	this.panel.getScene().setChild(element._fxBegin);
+
 	this.frame.pack();
 	this.frame.setVisible(true);
     }
@@ -213,9 +217,9 @@ Object.subclass('fx::Frame', {
 fx.dom = {
     queue: [],
     renderers: {},
-    render: function(element) {
+    render: function(element, optAttribute) {
 	var renderer = this.renderers[element.constructor.tagName];
-	return renderer && renderer(element);
+	return renderer && renderer(element, optAttribute);
     },
     
     enqueue: function(element) {
@@ -236,26 +240,28 @@ fx.dom = {
 	//if (length > 5) console.log('queue was ' + length + " at " + new Date());
 	//if (length < 10) console.log( 'queue ' + this.queue);
 	while (this.queue.length > 0) {
-	    var element = this.queue.pop();
-	    this.render(element);
+	    var attr = this.queue.pop();
+
+	    if (attr.ownerElement)
+		this.render(attr.ownerElement, attr);
+	    //else console.log('attr has no owner ' + attr);
 	}
 
 	return length;
     }
 };
 
- (function() {
-     var count = 0;
-     Function.wrapSetter(Attr.prototype, 'value', function(func, args) {
-	 func.apply(this, args);
-	 if (this.value && this.ownerElement) {
-	     if (++count < 100)
-		 console.log('attr is ' + this);
-	     fx.dom.enqueue(this.ownerElement);
-	 }
-     });
-     
- })();
+    
+Function.wrapSetter(Attr.prototype, 'value', function(func, args) {
+    func.apply(this, args);
+    var name = this.name;
+    // if it's non-graphical, don't render. Ideally we would check the namespace, but it doesn't work yet.
+    if (name === 'id' || name === 'type') 
+	return;
+    if (this.value && this.ownerElement) {
+	fx.dom.enqueue(this);
+    }
+});
  
 window.setTimeout = function(action, delay) {
     var timer = fx.util.setInterval(function() {
@@ -358,7 +364,7 @@ var PaintModule = {
 	case "stroke-width": {
 	    var BasicStroke = Packages.java.awt.BasicStroke;
 	    var shape = fx.util.getShape(element);
-	    var width = parseInt(value); // FIXME units
+	    var width = parseFloat(value); // FIXME units
 	    if (width > 0) {
 		shape.setDrawStroke(new BasicStroke(width,  
 						    BasicStroke.CAP_ROUND,
@@ -485,7 +491,7 @@ fx.dom.renderers[SVGTextElement.tagName] = function(element) {
 	switch (attr.name) {
 	case "font-size":
 	    //var font = text.getFont(); 
-	    fontSize = parseInt(attr.value);
+	    fontSize = parseFloat(attr.value);
 	    break;
 	}
     }
@@ -531,15 +537,14 @@ fx.dom.renderers[SVGTextElement.tagName] = function(element) {
 fx.dom.renderers[HTMLHtmlElement.tagName] =
 fx.dom.renderers[HTMLBodyElement.tagName] =
 fx.dom.renderers[SVGSVGElement.tagName] =
-fx.dom.renderers[SVGGElement.tagName] = function(element) {
+fx.dom.renderers[SVGGElement.tagName] = function(element, attribute) {
     if (!element._fxBegin) element._fxBegin = new fx.Parent();
-    
     if (element._fxEnd) 
 	fx.util.clearGroup(element._fxEnd);
     else 
 	element._fxEnd = new fx.Group();
     
-    var fxObj = element._fxEnd;
+    var fxObj = element._fxEnd; // grow it from the end up
     element.childNodes._nodes.forEach(function(node) {
 	var fxChild = node._fxBegin || fx.dom.render(node);
 	if (fxChild) fxObj.add(fxChild);
@@ -559,6 +564,7 @@ fx.dom.renderers[SVGGElement.tagName] = function(element) {
 	}
     } 
 
+	
     var clip = element.getAttributeNS(null, "clip-path");
     if (clip) {
 	var node = lk.FragmentURI.getElement(clip);
@@ -577,6 +583,7 @@ fx.dom.renderers[SVGGElement.tagName] = function(element) {
     }
 
     element._fxBegin.setChild(fxObj);
+    
     //console.log('rendering ' + element);
     return element._fxBegin;
 };
@@ -598,9 +605,10 @@ SVGForeignObjectElement.prototype._fxSetComponent = function(component) {
 };
 
 
-fx.dom.renderers[SVGForeignObjectElement.tagName] = function(element) {
+fx.dom.renderers[SVGForeignObjectElement.tagName] = function(element, attribute) {
     if (!element._fxBegin) element._fxBegin = new fx.Parent();
-    console.log('render foreign object ' + element);
+    console.log('render foreign object ' + element + " on " + attribute);
+    // update size here, if necessary
     if (element._fxComponent) 
 	element._fxBegin.setChild(element._fxComponent);
 };
