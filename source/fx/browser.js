@@ -243,19 +243,20 @@ fx.dom = {
 	return length;
     }
 };
-    function() {
-	var count = 0;
-Function.wrapSetter(Attr.prototype, 'value', function(func, args) {
-    func.apply(this, args);
-    if (this.value && this.ownerElement) {
-	if (++count < 10)
-	    console.log('attr is ' + this);
-	fx.dom.enqueue(this.ownerElement);
-    }
-});
 
-    }();
-
+ (function() {
+     var count = 0;
+     Function.wrapSetter(Attr.prototype, 'value', function(func, args) {
+	 func.apply(this, args);
+	 if (this.value && this.ownerElement) {
+	     if (++count < 100)
+		 console.log('attr is ' + this);
+	     fx.dom.enqueue(this.ownerElement);
+	 }
+     });
+     
+ })();
+ 
 window.setTimeout = function(action, delay) {
     var timer = fx.util.setInterval(function() {
 	action.apply(this, arguments);
