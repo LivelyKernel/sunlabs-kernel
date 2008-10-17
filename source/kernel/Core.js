@@ -39,7 +39,7 @@ var Loader = {
         };
         urls.each(function(ea) { Loader.loadScript(ea, notifier.curry(ea)) });
     },
-
+    
     loadScript: function(url /*not really a url yet*/, onLoadAction, embedSerializable) {
         console.log('Begin to load ' + url + (embedSerializable ? ' into <defs>' : ''));
         if (document.getElementById(url)) {
@@ -86,8 +86,25 @@ var Loader = {
         
         return this;
     }
+    
+};
 
+    
+Object.extend(Object.subclass('lk::FragmentURI'), {
+    parse: function(string) {
+	//var match = str.match("uri\\(#(.*)\\)");
+	//return match[0];
+	// 'uri(#fragmentURI)'
+	return string.substring(5, string.length - 1);
+    },
+    
+    getElement: function(string) {
+	var id = lk.FragmentURI.parse(string);
+	return id && Global.document.getElementById(id);
+    }
+    
 });
+
 
 
 
@@ -662,14 +679,6 @@ Object.subclass('Wrapper', {
 	return "url(#" + this.id() + ")";
     },
     
-    getWrapperByUri: function(uri) {
-	throw new Error('obsolete!');
-	// locate the JS wrapper given it's URI
-	var id = uri.substring(5, uri.length - 1);
-	var node = Global.document.getElementById(id);
-	return node && node.wrapper;
-    },
-
 
     // convenience attribute access
     getLivelyTrait: function(name) {

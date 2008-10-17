@@ -289,8 +289,7 @@ var PaintModule = {
 	    if (name == "none") return new fx.Color(0,0,0,0); // FIXME not strictly the same thing as no color
 	    else if (name.startsWith("url")) { // FIXME specialcasing the gradients
 		// parse uri
-		var id = name.substring(5, name.length - 1);
-		var node = document.getElementById(id);
+		var node = lk.FragmentURI.getElement(name);
 		if (node && node.tagName == 'linearGradient') {
 		    // go through stops
 		    var x1 = node.x1.baseVal.value*100;
@@ -543,8 +542,7 @@ fx.dom.renderers[SVGGElement.tagName] = function(element) {
 
     var clip = element.getAttributeNS(null, "clip-path");
     if (clip) {
-	var id = clip.substring(5, clip.length - 1);
-	var node = document.getElementById(id);
+	var node = lk.FragmentURI.getElement(clip);
 	if (node) {
 	    var clips = node.getElementsByTagNameNS(Namespace.SVG, "rect");
 	    if (clips.length > 0) {

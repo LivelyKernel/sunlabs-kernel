@@ -991,7 +991,7 @@ Object.extend(Record, {
 	if (arguments.length < 2) throw new Error("call with two or more arguments");
 	var storeClass;
 	if (!optStore) {
-	    storeClass = DOMNodeRecord;
+	    storeClass = DOMNodeRecord; // FIME forward reference
 	    optStore = NodeFactory.create("record"); // FIXME flat JavaScript instead by default?
 	} else {
 	    storeClass = optStore instanceof Global.Node ? DOMNodeRecord : PlainRecord;
@@ -1255,6 +1255,7 @@ Object.extend(lk.Length.subclass('lk::Coordinate'), {
 	return parseFloat(string);
     }
 });
+
 
 
 
