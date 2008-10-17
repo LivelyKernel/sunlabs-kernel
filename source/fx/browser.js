@@ -130,6 +130,16 @@ Object.extend(fx.util, {
 	var timer = new fx.Timer(delay, listener);
 	timer.start();
 	return timer;
+    },
+
+    clearGroup: function(group) {
+	var list = group.getChildren();
+	if (list) {
+	    for (var i = list.size() - 1; i >= 0; i--) {
+		group.remove(list.get(i));
+	    }
+	}
+	return group;
     }
 });
     
@@ -160,9 +170,9 @@ Object.subclass('fx::Frame', {
 	this.panel.setBackground(fx.Color.white);
 	this.panel.setPreferredSize(new Packages.java.awt.Dimension(width, height));
 	this.frame.add(this.panel);
-    },
+	var node = new fx.Parent();
+	this.panel.setScene(node);
 
-    display: function(node) {
 	fx.util.addMouseListener(node, "mouseMoved", function(evt) { 
 	    fx.util.dispatchMouseEvent('mousemove', evt);
 	});
@@ -190,7 +200,11 @@ Object.subclass('fx::Frame', {
 	fx.util.addKeyListener(node, "keyReleased", function(evt) { 
 	    fx.util.dispatchKeyboardEvent('keyup', evt);
 	});
-	this.panel.setScene(node);
+	node.requestFocus();
+    },
+
+    display: function(element) {
+	this.panel.getScene().setChild(element._fxBegin);
 	this.frame.pack();
 	this.frame.setVisible(true);
     }
@@ -202,10 +216,15 @@ fx.dom = {
     render: function(element) {
 	var renderer = this.renderers[element.constructor.tagName];
 	return renderer && renderer(element);
-	//else return (element.geziraBegin = new gezira.Object);
     },
     
     enqueue: function(element) {
+	const lookBehind = 10;
+	for (var i = this.queue.length - 1, count  = 0; i >= 0; i--) {
+	    if (this.queue[i] === element) 
+		return;
+	    if (++count > lookBehind) break;
+	}
 	if (this.queue.last() !== element) {
 	    this.queue.push(element);
 	    // trigger an update as soon as possible?
@@ -214,12 +233,13 @@ fx.dom = {
     
     update: function() {
 	var length = this.queue.length;
+	//if (length > 5) console.log('queue was ' + length + " at " + new Date());
+	//if (length < 10) console.log( 'queue ' + this.queue);
 	while (this.queue.length > 0) {
 	    var element = this.queue.pop();
-	    if (!element.constructor.tagName) console.log('no tag name for ' + element.constructor.name);
 	    this.render(element);
 	}
-	//console.log('queue was ' + length);
+
 	return length;
     }
 };
@@ -278,12 +298,9 @@ var PaintModule = {
     attributes: ["stroke", "fill", "stroke-width", "fill-opacity"],
     
     parsePaint: function(color) {
-	var match = color && String(color).match(/rgb\((\d+),(\d+),(\d+)\)/);
-	if (match) {
-	    var r = Number(match[1]) / 255;
-	    var g = Number(match[2]) / 255;
-	    var b = Number(match[3]) / 255;
-	    return new fx.Color(r, g, b);
+	var rgb = Color.parse(String(color));
+	if (rgb) {
+	    return new fx.Color(rgb[0], rgb[1], rgb[2]);
 	} else {
 	    var name = String(color);
 	    if (name == "none") return new fx.Color(0,0,0,0); // FIXME not strictly the same thing as no color
@@ -363,10 +380,8 @@ var PaintModule = {
 }
 
 fx.dom.renderers[SVGRectElement.tagName] = function(element) {
-    if (element._fxBegin)
-	element._fxBegin.remove();
-    else 
-	element._fxBegin = new fx.Parent();
+    if (!element._fxBegin) element._fxBegin = new fx.Parent();
+
     var shape = fx.util.antiAlias(new fx.Shape());
 
     // TODO optimize - use rounding if necessary
@@ -392,10 +407,7 @@ fx.dom.renderers[SVGRectElement.tagName] = function(element) {
 
 
 fx.dom.renderers[SVGEllipseElement.tagName] = function(element) {
-    if (element._fxBegin)
-	element._fxBegin.remove();
-    else 
-	element._fxBegin = new fx.Parent();
+    if (!element._fxBegin) element._fxBegin = new fx.Parent();
     var cx = element.cx.baseVal.value;
     var cy = element.cy.baseVal.value;
     var rx = element.rx.baseVal.value;
@@ -422,9 +434,7 @@ fx.dom.renderers[SVGEllipseElement.tagName] = function(element) {
 
 fx.dom.renderers[SVGPolylineElement.tagName] =    
 fx.dom.renderers[SVGPolygonElement.tagName] = function(element) {
-    if (element._fxBegin)
-	element._fxBegin.remove();
-    else 
+    if (!element._fxBegin)
 	element._fxBegin = new fx.Parent();
     var shape = fx.util.antiAlias(new fx.Shape());
     var path = new fx.Path();
@@ -455,11 +465,13 @@ fx.dom.renderers[SVGPolygonElement.tagName] = function(element) {
 
 // b0rken but does something
 fx.dom.renderers[SVGTextElement.tagName] = function(element) {
-    if (element._fxBegin)
-	element._fxBegin.remove();
-    else 
+    if (!element._fxBegin)
 	element._fxBegin = new fx.Parent();
-    element._fxEnd = new fx.Group();
+
+    if (element._fxEnd) 
+	fx.util.clearGroup(element._fxEnd);
+    else 
+	element._fxEnd = new fx.Group();
 
     var attrs = element.attributes;
     var fontSize = 12;
@@ -515,12 +527,14 @@ fx.dom.renderers[HTMLHtmlElement.tagName] =
 fx.dom.renderers[HTMLBodyElement.tagName] =
 fx.dom.renderers[SVGSVGElement.tagName] =
 fx.dom.renderers[SVGGElement.tagName] = function(element) {
-    if (element._fxBegin)
-	element._fxBegin.remove();
-    else
-	element._fxBegin = new fx.Parent();
-
-    var fxObj = element._fxEnd = new fx.Group();
+    if (!element._fxBegin) element._fxBegin = new fx.Parent();
+    
+    if (element._fxEnd) 
+	fx.util.clearGroup(element._fxEnd);
+    else 
+	element._fxEnd = new fx.Group();
+    
+    var fxObj = element._fxEnd;
     element.childNodes._nodes.forEach(function(node) {
 	var fxChild = node._fxBegin || fx.dom.render(node);
 	if (fxChild) fxObj.add(fxChild);
@@ -536,7 +550,7 @@ fx.dom.renderers[SVGGElement.tagName] = function(element) {
 		fxObj = new fx.Transform.createScale(transform.matrix.a, transform.matrix.d, fxObj);
 	    } else if (transform.type == SVGTransform.SVG_TRANSFORM_ROTATE) {
 		fxObj = new fx.Transform.createRotation(transform.angle.toRadians(), fxObj);
-	    } 
+	    }
 	}
     } 
 
@@ -580,10 +594,7 @@ SVGForeignObjectElement.prototype._fxSetComponent = function(component) {
 
 
 fx.dom.renderers[SVGForeignObjectElement.tagName] = function(element) {
-    if (element._fxBegin)
-	element._fxBegin.remove(); // clean up element._fxComponent somehow?
-    else 
-	element._fxBegin = new fx.Parent();
+    if (!element._fxBegin) element._fxBegin = new fx.Parent();
     console.log('render foreign object ' + element);
     if (element._fxComponent) 
 	element._fxBegin.setChild(element._fxComponent);

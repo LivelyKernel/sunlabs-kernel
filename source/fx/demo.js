@@ -10,8 +10,8 @@
 
 load('browser.js');
 load('dom/index.xhtml.js');
-print('loaded start document emulation');
 
+print('loaded start document emulation');
 load('../kernel/Core.js');
 load('../kernel/Text.js');
 load('../kernel/Widgets.js');
@@ -24,7 +24,11 @@ load('../kernel/Examples.js');
 
 var browser = new fx.Frame(1024, 680);
 
+
 var canvas = document.getElementById("canvas");
+
+fx.dom.update();
+browser.display(canvas);
 
 
 function swingDemo() {
@@ -135,8 +139,6 @@ function morphicMain() {
     swingDemo();
 }
 
-fx.dom.update();
-browser.display(canvas._fxBegin);
 
 
 window.setTimeout(morphicMain, 500);
