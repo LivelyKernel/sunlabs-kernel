@@ -92,10 +92,14 @@ var Loader = {
     
 Object.extend(Object.subclass('lk::FragmentURI'), {
     parse: function(string) {
-	//var match = str.match("uri\\(#(.*)\\)");
-	//return match[0];
-	// 'uri(#fragmentURI)'
-	return string.substring(5, string.length - 1);
+	var match = string.match("url\\(#(.*)\\)");
+	return match && match[1];
+	// 'ur(#fragmentURI)'
+	//return string.substring(5, string.length - 1);
+    },
+
+    fromString: function(id) {
+	return "url(#" + id + ")";
     },
     
     getElement: function(string) {
@@ -676,10 +680,9 @@ Object.subclass('Wrapper', {
     },
 
     uri: function() {
-	return "url(#" + this.id() + ")";
+	return lk.FragmentURI.fromString(this.id());
     },
     
-
     // convenience attribute access
     getLivelyTrait: function(name) {
 	return this.rawNode.getAttributeNS(Namespace.LIVELY, name);
