@@ -4524,13 +4524,12 @@ ClipMorph.subclass('Fasteroids', {
 	// here we set up the game board
 	$super(initialBounds, "rectangle");
 	this.asteroids = [];
-	for (var i=4; i<10; i++) this.asteroids.push(this.addMorph(this.makeAsteroid(i, 200, Color.green)));
+	for (var i=4; i<10; i++) this.addMorphToGroup(this.makeAsteroid(i, 200, Color.green), this.asteroids);
+	this.torpedos = [];
 	this.fragments = [];
-	this.missiles = [];
-	this.ship = this.addMorph(Morph.makePolygon (
-		[pt(0, 0), pt(5, 20), pt(-5, 20), pt(0, 0)], 1, Color.black, Color.blue));
+	this.ship = this.addMorph(new Ship([pt(0, -10), pt(5, 10), pt(-5, 10), pt(0, -10)], 1, Color.black, Color.blue));
 	this.ship.setPosition(this.innerBounds().center());
-	this.setFill(Color.orange);
+	this.setFill(Color.black);
     },
     makeAsteroid: function(nSides, circumf, fillColor) {
 	//makes a simple polygon of n sides
@@ -4541,27 +4540,51 @@ ClipMorph.subclass('Fasteroids', {
         var verts = p.vertices.invoke('subPt', p0);
 	var veloc = pt(6, 6).random().subPt(pt(3, 3));
 	var rot = 0.6*Math.random() - 0.3;
-	return new Asteroid(verts, 1, Color.black, Color.green, veloc, rot).translateBy(this.innerBounds().extent().random());
+	return new Asteroid(verts, 1, Color.yellow, Color.darkGray.darker(3), veloc, rot).translateBy(this.innerBounds().extent().random());
+    },
+    checkForCollisions: function(evt) {
+        return true; 
     },
     tick: function() {
-	this.asteroids.each( function (each) { each.updatePosition(); });
+	this.asteroids.each( function (each) { each.tick(); });
+	this.torpedos.each( function (each) { each.tick(); });
+	this.fragments.each( function (each) { each.tick(); });
+	this.checkForCollisions();
+	this.ship.tick();
     },
+    addMorphToGroup: function(m, group) { group.push(this.addMorph(m)); },
+    removeMorphFromGroup: function(m, group) {
+	m.remove();
+	var ix = group.indexOf(m);
+	if (ix < 0) return;
+	group.splice(ix, 1); 
+    },
+
+    handlesMouseDown: Functions.True, // hack
+
     onMouseDown: function(evt) {
         this.requestKeyboardFocus(evt.hand);
+console.log("kbdfocus = " + evt.hand.keyboardFocus);
         return true; 
     },
-    takesKeyboardFocus: function() {
-	return true; 
+
+    setHasKeyboardFocus: function(newSetting) { 
+        return newSetting;
     },
+    
+    takesKeyboardFocus: Functions.True,
+
     onKeyDown: function(evt) { 
-        this.keyDown(evt);
-        evt.stop();
-        return true; 
+        if(this.ship.keyDown(evt, true)) { evt.stop(); return true; }
+	return false
+    },
+    onKeyUp: function(evt) { 
+        if(this.ship.keyDown(evt, false)) { evt.stop(); return true; }
+	return false
     },
     startSteppingScripts: function() {
         console.log("startSteppingScripts");
 	this.startStepping(100, "tick"); // ten frames per second
-	// this.world.hands()[0].setKeyboardFocus(this);
     }
 });
 
@@ -4570,12 +4593,15 @@ Morph.subclass('InertialBody', {
 	// make a polygon with its origin at the starting vertex (avg of verts??)
 	$super(pt(0,0).asRectangle(), "rect");
 	this.setShape(new PolygonShape(verts, fill, lineWidth, lineColor));
-	this.velocity = velocity || 0.0;
-	this.angularVelocity = angularVelocity || 0.0;
+	this.velocity = velocity || pt(0, 0);
+	this.angularVelocity = angularVelocity || 0;
+    },
+    tick: function() {
+	this.updatePosition();
     },
     updatePosition: function() {
-	this.rotateBy(this.angularVelocity);	this.moveBy(this.velocity);	if (!this.testInBounds()) this.isOutOfBounds();
-	if (this.owner === null) return;    },
+	if (this.owner === null) return;	this.rotateBy(this.angularVelocity);	this.moveBy(this.velocity);	if (!this.testInBounds()) this.isOutOfBounds();
+    },
     testInBounds: function() {
 	return this.bounds().intersection(this.owner.innerBounds()).isNonEmpty();
     },
@@ -4585,8 +4611,6 @@ Morph.subclass('InertialBody', {
     wrapAround: function() {
 	var ownerBox = this.owner.innerBounds();  // fix - relative!
 	var myBox = this.bounds();
-//console.log("ownerBox = " + Object.inspect(ownerBox));
-//console.log("myBox = " + Object.inspect(myBox));
 	if (this.velocity.x > 0 && myBox.x > ownerBox.maxX()) this.moveBy(pt(-ownerBox.width, 0));
 	if (this.velocity.y > 0 && myBox.y > ownerBox.maxY()) this.moveBy(pt(0, -ownerBox.height));
 	if (this.velocity.x < 0 && myBox.maxX() < ownerBox.x) this.moveBy(pt(ownerBox.width, 0));
@@ -4601,21 +4625,53 @@ InertialBody.subclass('Asteroid', {
 	$super(verts, lineWidth, lineColor, fill, velocity, angularVelocity);
     }
 });
-InertialBody.subclass('Missile', {
+InertialBody.subclass('Torpedo', {
     initialize: function ($super, verts, lineWidth, lineColor, fill, velocity, angularVelocity) {
 	// Missiles are little bullets with constant velocity
 	$super(verts, lineWidth, lineColor, fill, velocity, angularVelocity);
     },
     isOutOfBounds: function() { // Missiles go away when out of bounds
-	this.remove()
+	this.owner.removeMorphFromGroup(this, this.owner.torpedos)
     }
 });
 
 InertialBody.subclass('Ship', {
-    initialize: function ($super, verts, lineWidth, lineColor, fill, velocity, angularVelocity) {
+    initialize: function ($super, verts, lineWidth, lineColor, fill) {
 	//  The ship's position and rotation give the initial trajectory to its missiles
 	//  Left and right keys rotate it, and 
-	//  up and down buttons add thrust and retro to its velocity	$super(verts, lineWidth, lineColor, fill, velocity, angularVelocity);
+	//  up and down buttons add thrust and retro to its velocity	$super(verts, lineWidth, lineColor, fill);
+	this.cycle = 0;
+    },
+    keyDown: function(event, downElseUp) {
+        // Check if any cursor keys have been pressed and set flags.
+	// Return false if we are not interested in this event      
+        var key = event.getKeyCode();
+	//console.log("key = " + key + (downElseUp?" down":" up"));
+        if (key == Event.KEY_LEFT) { this.leftThrust = downElseUp; return true; }
+        else if (key == Event.KEY_RIGHT) { this.rightThrust = downElseUp; return true; }
+        else if (key == Event.KEY_UP) { this.fwdThrust = downElseUp; return true; }
+        else if (key == Event.KEY_DOWN) { this.retroThrust = downElseUp; return true; }
+        else if (key == Event.KEY_SPACEBAR) {
+		if (!this.shooting && downElseUp) this.shoot();  // immed shot on first click
+		this.shooting = downElseUp;
+		return true; }
+	return false
+    },
+    tick: function() {
+	if (this.rightThrust) this.rotateBy(0.1);
+	if (this.leftThrust) this.rotateBy(-0.1);
+	var heading = this.getRotation()-Math.PI/2;
+	if (this.fwdThrust) this.velocity = this.velocity.addPt(Point.polar(0.5, heading));
+	if (this.retroThrust) this.velocity = this.velocity.subPt(Point.polar(0.5, heading));
+	if (this.shooting && this.cycle++ >= 3) this.shoot();  // limit rep rate
+	this.updatePosition();
+    },
+    shoot: function() {
+	var heading = this.getRotation()-Math.PI/2;
+	var noseLoc = this.getPosition().addPt(Point.polar(5, heading));
+	verts = [noseLoc, noseLoc.addPt(Point.polar(4, heading))];
+	this.owner.addMorphToGroup(new Torpedo(verts, 1, Color.white, null, Point.polar(5, heading)), this.owner.torpedos);
+	this.cycle = 0;
     }
 });
 
