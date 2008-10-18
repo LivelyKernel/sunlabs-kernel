@@ -241,8 +241,7 @@ fx.dom = {
 	//if (length < 10) console.log( 'queue ' + this.queue);
 	while (this.queue.length > 0) {
 	    var attr = this.queue.pop();
-
-	    if (attr.ownerElement)
+	    if (attr.ownerElement && attr.name)
 		this.render(attr.ownerElement, attr);
 	    //else console.log('attr has no owner ' + attr);
 	}
@@ -400,8 +399,9 @@ fx.dom.renderers[SVGRectElement.tagName] = function(element) {
 					   element.y.baseVal.value,
 					   element.width.baseVal.value,
 					   element.height.baseVal.value,
-					   element.rx.baseVal.value,
-					   element.ry.baseVal.value));
+					   element.rx.baseVal.value*2,
+					   element.rx.baseVal.value*2));
+    // can't really deal with rx != ry
 //    console.log('rounding ' + [element.rx.baseVal.value, element.ry.baseVal.value]);
     element._fxBegin.setChild(shape);
     
@@ -563,7 +563,6 @@ fx.dom.renderers[SVGGElement.tagName] = function(element, attribute) {
 	    }
 	}
     } 
-
 	
     var clip = element.getAttributeNS(null, "clip-path");
     if (clip) {
