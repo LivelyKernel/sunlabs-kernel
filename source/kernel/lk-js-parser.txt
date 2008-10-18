@@ -1,45 +1,37 @@
-ometa My <: Parser {
-    isLKParser  = ''                                                    -> (true),
+/* this parser is heavily based on Alex Warth's bootstrap js parser */
+
+ometa LKJSParser <: Parser {
+    isLKParser  = ''                                                    -> true,
   
-	nameFirst    = letter | '$' | '_',
-  	nameRest     = nameFirst | digit,
-  	iName        = firstAndRest(#nameFirst, #nameRest):r		-> r.join(''),
-  	isKeyword :x = ?BSJSParser._isKeyword(x),
-  	name         = iName:n ~isKeyword(n)										-> n,
-
+	nameFirst       = letter | '$' | '_',
+  	nameRest        = nameFirst | digit,
+  	iName           = firstAndRest(#nameFirst, #nameRest):r		        -> r.join(''),
+  	isKeyword :x    = ?BSJSParser._isKeyword(x),
+  	name            = iName:n ~isKeyword(n)								-> n,
+  	keyword         = iName:k isKeyword(k)									-> k,
+/*  	str     = seq('"""')  (escapeChar | ~seq('"""') char)*:cs seq('"""')    -> cs.join('') + '<string>'
+            | '\'' (escapeChar | ~'\'' char)*:cs '\''                       -> cs.join('') + '<string>',*/
+            
   
-    spacesNoNl  = (~'\n' space)*														-> ' ',
-    sc          = spacesNoNl ('\n' | &'}' | end)										-> '<real  end>'
-                | ";"																						-> '<end because of ; >',
-    srcElem     = "function" /*"name":n*/ funcRest:f                    -> { 'this is a fuction:' + f }
-                | stmt:s																			-> s,
-    funcRest    = "(" listOf(#formal, ','):fs ")" "{" srcElems:body "}" -> { fs + '<--->' + body},
-    formal      = spaces name:n								-> n,
-    srcElems    = srcElem*:ss                                         -> ss,
-    stmt        = something:sth                                         ->  { sth + '<END OF STMT>' },
-   something    = (~sc anything)+:cs sc:end			                        ->  { cs.join('') + end }
-};
-x = My.matchAll("function tesr(a,b) { a + b; }", 'srcElem');
-My.matchAll("(ab,d){a + b; def arg.de()}", 'funcRest');
-
-/*
-ometa Test {
-	all = ( group)*:g		-> g,
-	group = (cha*):cs	sth			->  { console.log('recognizing: ' + cs); cs.join('') + ';'; },
-	sth = '\n' | ';' | ~anything,
-	cha = ~sth anything:x			-> x
+    optNl           = spacesNoNl ('\n' | empty):nl                      -> nl,
+    spacesNoNl      = (~'\n' space)*:spcs									-> '\t',
+    sc              = spacesNoNl ('\n'								    -> '\n'
+					| &'}' | end)						
+                    | ";"	optNl:nl									    -> { ';' + nl },
+    srcElem         = "function":f (formal | empty):n funcRest:fr             -> { lk.text.createText(f).concat(fr) }
+                    | stmt:s											-> s,
+    funcRest        = "(" listOf(#formal, ','):fs ")" "{" optNl:nl srcElems:body "}" -> { lk.text.createText('(' + fs + ') {' + nl).concat(body).concat(lk.text.createText('}')) },
+    formal          = spaces:sps name:n								    -> { sps.join('') + n},
+    srcElems        = srcElem*:ss                                       -> ss.inject(lk.text.createText(''), function(text, ea) { return text.concat(ea) }) ,
+    stmt            = something:sth                                     ->  { sth },
+   something        =  spacesNoNl:spcs ( partStmt )+:parts sc:end            ->  {  parts.inject(lk.text.createText(spcs), function(text, ea) {
+                                                                                        return text.concat(ea)
+                                                                                    }).concat(lk.text.createText(end)) },
+	partStmt = /*str:s                                                ->  { lk.text.createText(s, {color: Color.green}) }
+	            | */keyword:k									        ->  { lk.text.createText(k, {color: Color.red}) }
+				| name:n											->  { lk.text.createText(n) }
+				| (~sc anything:a)									->  { lk.text.createText(a) }
 };
 
-Test.matchAll('abc\ndef;', 'all');
-*/
 
-/*
-ometa My <: Parser {
-    isLKParser = ''                                             -> (true),
-    param = spaces:sp1 string:p spaces:sp2						-> (sp1.join(' ') + p + sp2.join(' ')),
-    funcHeader = "function":f '(' listOf(#param, ','):p ')'  	-> ( 'attr:' + f + '(' + p + ')'),
-	stmts = string,
-	funcBody = '{' (/*string*/"abc")*:s	'}'						-> ('{' + '\n' + s.join('')),
-    func = funcHeader:h spaces funcBody:fb				        -> (h + ' ' + fb)
-}
-*/
+LKJSParser;

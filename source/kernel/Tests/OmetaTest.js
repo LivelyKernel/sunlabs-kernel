@@ -38,12 +38,20 @@ TextTest.subclass('SyntaxHighlighterTest', {
     testGetGrammarString: function() {
         var result = this.sut.parserSrc();
         this.assert(Object.isString(result), 'cannot read');
-        this.assert(result.startsWith('ometa LKJSParser'), 'wrong string');
+        this.assert(/.*ometa LKJSParser.*/.test(result), 'wrong string');
+    },
+    testCompileGrammar: function() {
+        var src = this.sut.parserSrc();
+        this.assert(Object.isString(src));
+        var result = this.sut.evalOmetaJs(src);
+        
+        this.assert(result.isLKParser, 'cannot create own js parser');
     },
     
-    testCompileGrammar: function() {
-        var result = this.sut.compileParserSrc();
-        this.assert(result.isLKParser);
+    testEvalOmetaJs: function() {
+        var src = "ometa Test {\n   test = '' -> true \n }";
+        var result = this.sut.evalOmetaJs(src);
+        this.assert(Object.isFunction(result.test), 'cannot eval ometa/js');
     },
     
     testStringToAttributedText: function() {

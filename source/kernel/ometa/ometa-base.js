@@ -69,7 +69,8 @@ module('ometa/ometa-base.js').requires('ometa/lib.js').toRun(function() {
     
 // the failure exception
 
-fail = { toString: function() { return "match failed" } }
+// fail = { toString: function() { return "match failed" } }
+fail = new Error('match failed');
 
 // streams and memoization
 

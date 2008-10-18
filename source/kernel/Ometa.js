@@ -61,27 +61,67 @@ OmetaWorkspace.openOmetaWorkspace = function() {
 	return w
 };
 
-// SyntaxHighlighter for LK
+// Interface for using the parser. It would be better to extend the parser directly...
+
+lk.text.createText = function(str, style) {
+    return new lk.text.Text(str, style);
+};
+
 using(lk.text).run(function(text) {
 Object.subclass('SyntaxHighlighter', {
 
     parserSrcFileName: 'lk-js-parser.txt',
     
+    _parserSrc: "ometa My <: Parser { \
+        isLKParser  = ''                                                        -> true, \
+\
+    	nameFirst       = letter | '$' | '_', \
+      	nameRest        = nameFirst | digit, \
+      	iName           = firstAndRest(#nameFirst, #nameRest):r		            -> r.join(''), \
+      	isKeyword :x    = ?BSJSParser._isKeyword(x), \
+      	name            = iName:n ~isKeyword(n)								    -> n, \
+ \
+        spacesNoNl      = (~'\n' space)*										-> ' ', \
+        sc              = spacesNoNl ('\n' | &'}' | end)						-> '<real  end>' \
+                        | \";\"													-> '<end because of ; >', \
+        srcElem         = \"function\" /*\"name\":n*/ funcRest:f                    -> { 'this is a fuction:' + f } \
+                        | stmt:s												-> s, \
+        funcRest        = '(' listOf(#formal, ','):fs ')' '{' srcElems:body '}' -> { fs + '<--->' + body}, \
+        formal          = spaces:sps name:n								            -> { sps.join('') + n}, \
+        srcElems        = srcElem*:ss                                           -> ss, \
+        stmt            = something:sth                                         ->  { sth + '<END OF STMT>' }, \
+       something        = (~sc anything)+:cs sc:end			                    ->  { cs.join('') + end } \
+    };",
+    
     initialize: function() {
-        this.parser = this.compileParserSrc();
+        this.parser = this.evalOmetaJs(this.parserSrc());
+    },
+    
+    highlightFunction: function(sourceString) {
+        var attributedSrc = this.parser.matchAll(sourceString, 'srcElem');
+        // var style = {style: 'bold', fontSize: 4, color: Color.red};
+        // var t = new text.Text(attributedSrc, style);
+        var t = attributedSrc;
+        return t;
     },
     
     parserSrc: function() {
         var url = URL.source.withFilename(this.parserSrcFileName);
-    	var resource = new Resource(Record.newPlainInstance({URL: url, ContentText: null}));
-    	resource.fetch(true);
-    	return resource.getContentText();
+        var resource = new Resource(Record.newPlainInstance({URL: url, ContentText: null}));
+        resource.fetch(true);
+        return resource.getContentText();
+        // return this._parserSrc;
     },
     
-    // better interpret/evalParserSrc
-    compileParserSrc: function() {
-        var ometaSrc = BSOMetaJSParser.matchAll(this.parserSrc(), "topLevel");
-        var jsSrc = BSOMetaJSTranslator.match(ometaSrc, "trans")
+    translateSrc: function(src) {
+        var ometaSrc = BSOMetaJSParser.matchAll(src, "topLevel");
+        var jsSrc = BSOMetaJSTranslator.match(ometaSrc, "trans");
+        return jsSrc;
+    },
+    
+    evalOmetaJs: function(src) {
+        // dbgOn(true);
+        var jsSrc = this.translateSrc(src);
         return eval(jsSrc);
     },
     
