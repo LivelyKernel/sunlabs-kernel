@@ -1446,6 +1446,8 @@ Rectangle.addMethods({
 	return rect(this.topLeft().maxPt(r.topLeft()),this.bottomRight().minPt(r.bottomRight())); 
     },
 
+    intersects: function(r) { return this.intersection(r).isNonEmpty(); },  // not the fastest
+
     union: function(r) {
 	return rect(this.topLeft().minPt(r.topLeft()),this.bottomRight().maxPt(r.bottomRight())); 
     },

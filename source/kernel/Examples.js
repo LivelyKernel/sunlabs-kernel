@@ -4517,11 +4517,18 @@ Morph.subclass("PlayerMorph",  {
 
 lk.examples.installFasteroids = function (world, rect) {
 console.log("-------------- Begin Fasteroids ----------------");
+// Yet to do...
+// NOTE still requires click to get kbd focus
+// Put in window for keyboard focus
+// End game when asteroid hits ship
+// Add button for click to restart
+// Make asteroids break into fragments
+// Would be nice if fragment collision same as torpdo, then can be same morphs
 
 ClipMorph.subclass('Fasteroids', {
     initialize: function ($super, initialBounds) {
 	// An attempt to show how small Asteroids can be in Morphic
-	// here we set up the game board
+	// Here we set up the game board
 	$super(initialBounds, "rectangle");
 	this.asteroids = [];
 	for (var i=4; i<10; i++) this.addMorphToGroup(this.makeAsteroid(i, 200, Color.green), this.asteroids);
@@ -4542,15 +4549,31 @@ ClipMorph.subclass('Fasteroids', {
 	var rot = 0.6*Math.random() - 0.3;
 	return new Asteroid(verts, 1, Color.yellow, Color.darkGray.darker(3), veloc, rot).translateBy(this.innerBounds().extent().random());
     },
-    checkForCollisions: function(evt) {
-        return true; 
-    },
     tick: function() {
 	this.asteroids.each( function (each) { each.tick(); });
 	this.torpedos.each( function (each) { each.tick(); });
 	this.fragments.each( function (each) { each.tick(); });
-	this.checkForCollisions();
 	this.ship.tick();
+	this.checkForCollisions();
+    },
+    checkForCollisions: function(evt) {
+	if (this.torpedos.length == 0) return;
+	var torpBox = this.torpedos[0].bounds();
+	console.log("torpBnds = " + torpBox);
+	this.torpedos.each( function(torp) { torpBox = torpBox.union(torp.bounds()); });
+	console.log("torpBox = " + torpBox);
+	this.asteroids.each( function (ast) { var astBnds = ast.bounds();
+		if (astBnds.intersects(torpBox)) {  // asteroid is in torpedo region
+			this.torpedos.each( function (torp) {
+				if (torp.bounds().intersects(astBnds)  // torpedo in its bounds
+					&& ast.containsPoint(torp.bounds().center())) {  // actual hit
+					this.removeMorphFromGroup(ast, this.asteroids);
+					this.removeMorphFromGroup(torp, this.torpedos);
+				}
+			}.bind(this));
+		}
+	}.bind(this));
+        return true; 
     },
     addMorphToGroup: function(m, group) { group.push(this.addMorph(m)); },
     removeMorphFromGroup: function(m, group) {
@@ -4564,14 +4587,11 @@ ClipMorph.subclass('Fasteroids', {
 
     onMouseDown: function(evt) {
         this.requestKeyboardFocus(evt.hand);
-console.log("kbdfocus = " + evt.hand.keyboardFocus);
         return true; 
     },
-
     setHasKeyboardFocus: function(newSetting) { 
         return newSetting;
     },
-    
     takesKeyboardFocus: Functions.True,
 
     onKeyDown: function(evt) { 
@@ -4583,14 +4603,13 @@ console.log("kbdfocus = " + evt.hand.keyboardFocus);
 	return false
     },
     startSteppingScripts: function() {
-        console.log("startSteppingScripts");
 	this.startStepping(100, "tick"); // ten frames per second
     }
 });
 
 Morph.subclass('InertialBody', {
     initialize: function ($super, verts, lineWidth, lineColor, fill, velocity, angularVelocity) {
-	// make a polygon with its origin at the starting vertex (avg of verts??)
+	// I'm a polygon with velocity and spin
 	$super(pt(0,0).asRectangle(), "rect");
 	this.setShape(new PolygonShape(verts, fill, lineWidth, lineColor));
 	this.velocity = velocity || pt(0, 0);
@@ -4603,7 +4622,7 @@ Morph.subclass('InertialBody', {
 	if (this.owner === null) return;	this.rotateBy(this.angularVelocity);	this.moveBy(this.velocity);	if (!this.testInBounds()) this.isOutOfBounds();
     },
     testInBounds: function() {
-	return this.bounds().intersection(this.owner.innerBounds()).isNonEmpty();
+	return this.bounds().intersects(this.owner.innerBounds());
     },
     isOutOfBounds: function() { // May override, eg to remove
 	this.wrapAround()
@@ -4668,17 +4687,15 @@ InertialBody.subclass('Asteroid', {
     },
     shoot: function() {
 	var heading = this.getRotation()-Math.PI/2;
-	var noseLoc = this.getPosition().addPt(Point.polar(5, heading));
+	var noseLoc = this.bounds().center().addPt(Point.polar(5, heading));
 	verts = [noseLoc, noseLoc.addPt(Point.polar(4, heading))];
 	this.owner.addMorphToGroup(new Torpedo(verts, 1, Color.white, null, Point.polar(5, heading)), this.owner.torpedos);
 	this.cycle = 0;
     }
 });
-
 (world.addMorph( new Fasteroids(rect))).startSteppingScripts();
 console.log("-------------- End Fasteroids ----------------");
 };
-//}
 
 });
 
