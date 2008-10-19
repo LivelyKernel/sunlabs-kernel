@@ -4706,6 +4706,7 @@ Morph.subclass("PasteUpMorph", {
         this.world().currentSelection = m;
         var handle = new HandleMorph(pt(0,0), "rect", evt.hand, m, "bottomRight");
 	handle.setExtent(pt(0, 0));
+	handle.mode = 'reshape';
         m.addMorph(handle);
         evt.hand.setMouseFocus(handle);
     }
