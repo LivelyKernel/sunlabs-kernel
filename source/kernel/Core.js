@@ -3724,7 +3724,7 @@ Morph.addMethods({
 	menu.openIn(this.world(), evt.point(), false, Object.inspect(this).truncate()); 
     },
 
-    morphMenu: function(evt) { 
+    morphMenu: function(evt) {
 	var items = [
 	    ["remove", this.remove],
 	    ["inspect", function(evt) { new SimpleInspector(this).openIn(this.world(), evt.point())}],
@@ -3749,19 +3749,66 @@ Morph.addMethods({
 		new PackageMorph(this).openIn(this.world(), this.bounds().center()); this.remove(); } ],
 	    ["publish packaged ...", function() { this.world().prompt('publish as (.xhtml)', this.exportLinkedFile.bind(this)); }] 
 	];
-	if (this.okToDuplicate()) items.unshift(["duplicate", this.copyToHand.curry(evt.hand)]);
+	if (this.okToDuplicate())
+	    items.unshift(["duplicate", this.copyToHand.curry(evt.hand)]);
 
 	if (this.getModel() instanceof SyntheticModel)
 	    items.push( ["show Model dump", this.addModelInspector.curry(this)]);
 	
 	if (this.getCopySubmorphsOnGrab() == true) 
 	    items.push(["unpalettize", this.setCopySubmorphsOnGrab.curry(false)]);
-	else 
+	    else 
 	    items.push(["palettize", this.setCopySubmorphsOnGrab.curry(true)]);
 	
-	var menu = new MenuMorph(items, this); 
+	return new MenuMorph(items, this);
+    },
 
-	return menu;
+    showPieMenu: function(evt) {
+    	var menu, targetMorph = this;
+	var items = [
+		['border width ([])', function(evt) {
+			var oldWidth = targetMorph.getBorderWidth();
+			PieMenuMorph.setUndo(function() { targetMorph.setBorderWidth(oldWidth); });
+			menu.addHandleTo(targetMorph, evt, 'borderWidth'); }],
+		['duplicate (o-->o)', function(evt) {
+			evt.hand.setPosition(menu.mouseDownPoint);
+			menu.targetMorph.copyToHand(evt.hand);
+			var theCopy = evt.hand.submorphs[0];
+			PieMenuMorph.setUndo(function() { theCopy.remove(); });  // Why doesn't this work??
+			}],
+		['move (o-->)', function(evt) {
+			var oldPos = targetMorph.getPosition();
+			PieMenuMorph.setUndo(function() { targetMorph.setPosition(oldPos); });
+			evt.hand.setPosition(menu.mouseDownPoint);
+			evt.hand.addMorph(menu.targetMorph);
+			if (menu.targetMorph instanceof SelectionMorph)  // Fixme:  This should be in SelectionMorph
+				menu.targetMorph.selectedMorphs.forEach( function(m) { evt.hand.addMorph(m); });
+			}],
+		['scale (o < O)', function(evt) {
+			var oldScale = targetMorph.getScale();
+			PieMenuMorph.setUndo(function() { targetMorph.setScale(oldScale); });
+			menu.addHandleTo(targetMorph, evt, 'scale');
+			}],
+		['rotate (G)', function(evt) {
+			var oldRotation = targetMorph.getRotation();
+			PieMenuMorph.setUndo(function() { targetMorph.setRotation(oldRotation); });
+			menu.addHandleTo(targetMorph, evt, 'rotate');
+			}],
+		['delete (X)', function(evt) {
+			var oldOwner = targetMorph.owner;
+			PieMenuMorph.setUndo(function() { oldOwner.addMorph(targetMorph); });
+			targetMorph.remove();
+			}],
+		['undo (~)', function(evt) { PieMenuMorph.doUndo(); }],
+		['fill color (<>)', function(evt) {
+			var oldFill = targetMorph.getFill();
+			PieMenuMorph.setUndo(function() { targetMorph.setFill(oldFill); });
+			var picker = new ColorPickerMorph(evt.mousePoint.extent(pt(50, 30)), targetMorph, "setFill", true);
+			targetMorph.world().addMorph(picker);
+			evt.hand.setMouseFocus(picker); }]
+	];
+	menu = new PieMenuMorph(items, this, 0.5);
+	menu.open(evt);
     },
 
     putMeInAWindow: function(loc) {
@@ -4681,7 +4728,12 @@ Morph.subclass("PasteUpMorph", {
     onMouseDown: function PasteUpMorph$onMouseDown($super, evt) {  //default behavior is to grab a submorph
 	$super(evt);
         var m = this.morphToReceiveEvent(evt);
-        if (m == null) { 
+        if (Config.usePieMenus) {
+		if (m.handlesMouseDown(evt)) return false;
+		m.showPieMenu(evt, m);
+		return true;
+	}
+	if (m == null) { 
             this.makeSelection(evt); 
             return true; 
         } else if (!evt.isCommandKey()) {
@@ -4899,14 +4951,16 @@ PasteUpMorph.subclass("WorldMorph", {
     morphMenu: function($super, evt) { 
         var menu = $super(evt);
         menu.keepOnlyItemsNamed(["inspect", "style"]);
+        menu.addLine();
+        menu.addItem(["new object...", this.addMorphs.curry(evt)]);
+        menu.addLine();
+        menu.addItem([(Config.usePieMenus ? "don't " : "") + "use pie menus",
+                      function() { Config.usePieMenus = !Config.usePieMenus; }]);
+        menu.addItem(["choose display theme...", this.chooseDisplayTheme]);
         menu.addItem([(Morph.prototype.suppressBalloonHelp ? "enable balloon help" : "disable balloon help"),
                       this.toggleBalloonHelp]);
         menu.addItem([(HandMorph.prototype.applyDropShadowFilter ? "disable " : "enable ") + "drop shadow (if supported)",
 		      function () { HandMorph.prototype.applyDropShadowFilter = !HandMorph.prototype.applyDropShadowFilter}]);
-        menu.addLine();
-        menu.addItem(["new object...", this.addMorphs.curry(evt)]);
-        menu.addLine();
-        menu.addItem(["choose display theme...", this.chooseDisplayTheme]);
         menu.addItem([(Config.useDebugBackground ? "use normal background" : "use debug background"),
                       this.toggleDebugBackground]);
         if(Config.debugExtras) {
@@ -4928,6 +4982,18 @@ PasteUpMorph.subclass("WorldMorph", {
         return menu;
     },
     
+    showPieMenu: function(evt) {
+    	var menu, targetMorph = this;
+	var items = [
+		['make selection ([NE])', function(evt) { targetMorph.makeSelection(evt); }],
+		['make selection ([SE])', function(evt) { targetMorph.makeSelection(evt); }],
+		['make selection ([SW])', function(evt) { targetMorph.makeSelection(evt); }],
+		['make selection ([NW])', function(evt) { targetMorph.makeSelection(evt); }],
+		];
+	menu = new PieMenuMorph(items, this, 0);
+	menu.open(evt);
+    },
+
     toggleBalloonHelp: function() {
         Morph.prototype.suppressBalloonHelp = !Morph.prototype.suppressBalloonHelp;
     },
@@ -5901,9 +5967,12 @@ Morph.subclass('LinkMorph', {
 	this.myWorld = WorldMorph.current(); // a link to the current world: a reasonable default?
     },
 
-    okToBeGrabbedBy: function(evt) {
+    handlesMouseDown: function(evt) {
+        return true; 
+    },
+    onMouseDown: function(evt) {
         this.enterMyWorld(evt); 
-        return null; 
+        return true; 
     },
 
     morphMenu: function($super, evt) { 

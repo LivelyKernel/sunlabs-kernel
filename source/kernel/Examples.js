@@ -4550,9 +4550,9 @@ ClipMorph.subclass('Fasteroids', {
 	return new Asteroid(verts, 1, Color.yellow, Color.darkGray.darker(3), veloc, rot).translateBy(this.innerBounds().extent().random());
     },
     tick: function() {
-	this.asteroids.each( function (each) { each.tick(); });
-	this.torpedos.each( function (each) { each.tick(); });
-	this.fragments.each( function (each) { each.tick(); });
+	this.asteroids.forEach( function (each) { each.tick(); });
+	this.torpedos.forEach( function (each) { each.tick(); });
+	this.fragments.forEach( function (each) { each.tick(); });
 	this.ship.tick();
 	this.checkForCollisions();
     },
@@ -4560,11 +4560,11 @@ ClipMorph.subclass('Fasteroids', {
 	if (this.torpedos.length == 0) return;
 	var torpBox = this.torpedos[0].bounds();
 	console.log("torpBnds = " + torpBox);
-	this.torpedos.each( function(torp) { torpBox = torpBox.union(torp.bounds()); });
+	this.torpedos.forEach( function(torp) { torpBox = torpBox.union(torp.bounds()); });
 	console.log("torpBox = " + torpBox);
-	this.asteroids.each( function (ast) { var astBnds = ast.bounds();
+	this.asteroids.forEach( function (ast) { var astBnds = ast.bounds();
 		if (astBnds.intersects(torpBox)) {  // asteroid is in torpedo region
-			this.torpedos.each( function (torp) {
+			this.torpedos.forEach( function (torp) {
 				if (torp.bounds().intersects(astBnds)  // torpedo in its bounds
 					&& ast.containsPoint(torp.bounds().center())) {  // actual hit
 					this.removeMorphFromGroup(ast, this.asteroids);

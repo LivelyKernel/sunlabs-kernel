@@ -597,8 +597,6 @@ Morph.subclass("SelectionMorph", {
         }
     },
 
-    // TODO: there MUST be a better way to do this
-    // there "might" be some performance issues with this :)
     setRotation: function($super, theta) {
         for ( var i = 0; i < this.selectedMorphs.length; i++ ) {
             this.addMorph(this.selectedMorphs[i]);
@@ -609,8 +607,6 @@ Morph.subclass("SelectionMorph", {
         }
     },
     
-// TODO: there MUST be a better way to do this.. but it works without a sweat
-// there "might" be some performance issues with this :)
     setScale: function($super, scale) {
         for (var i = 0; i < this.selectedMorphs.length; i++ ) {
             this.addMorph(this.selectedMorphs[i]);
@@ -1326,6 +1322,9 @@ MenuItem.addMethods({
 	    }
 	}
     },
+    asArrayItem: function() { // for extrinsic menu manipulations
+	return [this.name, this.action, this.para1, this.para2];
+    },
 
     invoke: function(evt, targetMorph) {
         if (this.action instanceof Function) { // alternative style, items ['menu entry', function] pairs
@@ -1413,7 +1412,6 @@ Morph.subclass("MenuMorph", {
         this.listMorph = null;
         this.applyStyle({fill: null, borderWidth: 0, fillOpacity: 0});
     },
-
     onDeserialize: function() {
 	this.listMorph.relayMouseEvents(this);
     },
@@ -1421,6 +1419,10 @@ Morph.subclass("MenuMorph", {
     addItem: function(item) { 
         this.items.push(this.addPseudoMorph(new MenuItem(item[0], item[1], item[2], item[3])));
     },
+    arrayItems: function() {
+	return this.items.map( function(item) { return item.asArrayItem(); });
+    },
+
 
     addLine: function(item) { // Not yet supported
         // The idea is for this to add a real line on top of the text
@@ -1872,7 +1874,7 @@ Morph.subclass("ScrollPane", {
 	if (editItems.length > 0 && items.length > 0) {
             var menu = new MenuMorph(editItems, this);
 	    menu.addLine();
-	    items.forEach(function(item) {menu.addItems(item); });
+	    items.forEach(function(item) {menu.addItem(item); });
 	} else {
 	    var menu = new MenuMorph(editItems.concat(items), this);
 	}
@@ -2941,11 +2943,12 @@ Morph.subclass("PieMenuMorph", {
 
     documentation: "Fabrik-style gesture menus for fast one-button UI",
 
-    initialize: function($super, items, targetMorph) {
+    initialize: function($super, items, targetMorph, offset) {
         // items is an array of menuItems, each of which is an array of the form
-        // [itemName, target, functionName, parameterIfAny], or
         // [itemName, closure], and
 	// itemName has the form 'menu text (pie text)'
+	// If offset is zero, the first item extends CW from 12 o'clock
+	// If offset is, eg, 0.5, then the first item begins 1/2 a slice-size CCW from there.
 
         // A PieMenu allows many mouse drag operations to be carried out in a single stroke.
 	// It is the initial direction of the stroke that determines the operation.
@@ -2955,15 +2958,13 @@ Morph.subclass("PieMenuMorph", {
 	// continuing around in a clockwise direction.
 
 	// YET TO DO:
-	// Implement help item in backup menu
-	// Link to normal object menu as well
-	// Put a choice in world to use pie menus
 	// Put a pie menu in world -- selection, undo, and world menu
 
         this.items = items;
 	this.targetMorph = targetMorph;
 	this.r1 = 15;  // inner radius
 	this.r2 = 50;  // outer radius
+	this.offset = offset;
         $super(new Rectangle(100, 100, this.r2*2, this.r2*2), 'ellipse');
 	this.hasCommitted = false;  // Gesture not yet outside commitment radius
 	return this;
@@ -2971,6 +2972,7 @@ Morph.subclass("PieMenuMorph", {
     open: function(evt) {
         // Note current mouse position and start a timer
 	this.mouseDownPoint = evt.mousePoint;
+	this.originalEvent = evt;
 	this.setPosition(this.mouseDownPoint.subPt(this.bounds().extent().scaleBy(0.5)));
 	var opacity = 0.1;  this.setFillOpacity(opacity);  this.setStrokeOpacity(opacity);
 	WorldMorph.current().addMorph(this);
@@ -2985,34 +2987,51 @@ Morph.subclass("PieMenuMorph", {
 	this.hasCommitted = true;
 	this.remove();
 	evt.hand.setMouseFocus(null);
-	var index = (delta.theta()/(Math.PI*2) + 0.25) * this.items.length;
-	index = (index+8).toFixed(0)%8;  // 0..7
+	var n = this.items.length;
+	var index = (delta.theta()/(Math.PI*2) + (this.offset/2)) * n;
+	index = (index+n).toFixed(0)%n;  // 0..n-1
 	var item = this.items[index];
-	if (item[1] instanceof Function) item[1](evt)
+	if (item[1] instanceof Function) item[1](this.originalEvent)
 	//	else what?
     },
     onMouseUp: function(evt) {
-        // This should only happen within the commitment radius.
+        // This should only happen inside the commitment radius.
 	// If the help disk has not been shown, then show it,
 	// otherwise, display the default (normal) menu.
 	if (this.hasCommitted) return;  // shouldn't happen
-	var helpMenu = new MenuMorph(this.items, this.targetMorph);
-	helpMenu.addLine();
-	helpMenu.addItem(["help"]);
-	helpMenu.openIn(this.world(), evt.mousePoint, false);
+	var world = this.world();
+	var menuItems = [
+		["pie menu help", function(helpEvt) {
+			var helpMenu = new MenuMorph(this.items, this.targetMorph);
+			helpMenu.openIn(world, evt.mousePoint, false, this.helpString());
+			}.bind(this)],
+		["-----"]
+		].concat(this.targetMorph.morphMenu(evt).arrayItems());
+	var normalMenu = new MenuMorph(menuItems, this.targetMorph);
 	this.remove();
-	evt.hand.setMouseFocus(helpMenu);
+	normalMenu.openIn(world, evt.mousePoint, false, Object.inspect(this.targetMorph).truncate());
+	evt.hand.setMouseFocus(normalMenu);
+    },
+    helpString: function() {
+	var help = "Pie menus let you choose mouse-down actions";
+	help += "\nbased on the direction of your stroke.";
+	help += "\nIf you hold the button down without moving,";
+	help += "\nyou will see a map of the directions and actions.";
+	help += "\nThis menu has the same items with words to";
+	help += "\nexplain the abbreviated captions in the map.";
+	help += "\nRelease in the center to get the normal menu.";
+	return help;
     },
     makeVisible: function(openEvent) {
 	if (this.hasCommitted) return;
 	var opacity = 0.5;
 	this.setFillOpacity(opacity);
 	this.setStrokeOpacity(opacity);
-	// Make an inner circle with a '?'
+	// Make an inner circle with 'menu'
 	var nItems = this.items.length;
 	if(nItems == 0) return;
 	for (var i=0; i<nItems; i++) {
-		var theta = (((i-0.5)/nItems)-(1/4))*Math.PI*2;
+		var theta = (((i-this.offset)/nItems)-(1/4))*Math.PI*2;
 		var line = Morph.makeLine([Point.polar(this.r1, theta), Point.polar(this.r2, theta)], 1, Color.black);
 		line.setStrokeOpacity(opacity);
 		this.addMorph(line);
@@ -3023,7 +3042,7 @@ Morph.subclass("PieMenuMorph", {
 		var labelPt = Point.polar(this.r2*0.7, theta+(0.5/nItems*Math.PI*2))
 		this.addMorph(TextMorph.makeLabel(labelString).centerAt(labelPt));
 	}
-	this.addMorph(TextMorph.makeLabel("?").centerAt(pt(0, 0)));
+	this.addMorph(TextMorph.makeLabel("menu").centerAt(pt(0, 0)));
     },
     addHandleTo: function(morph, evt, mode) {
     	var handle = new HandleMorph(evt.mousePoint, 'ellipse', evt.hand, morph, null);
@@ -3033,7 +3052,6 @@ Morph.subclass("PieMenuMorph", {
 	evt.hand.setMouseFocus(handle);
     }
 });
-
 Object.extend(PieMenuMorph, {
     setUndo: function(undoFunction) {
     	PieMenuMorph.undoer = undoFunction;
@@ -3041,60 +3059,7 @@ Object.extend(PieMenuMorph, {
     doUndo: function() {
     	if(PieMenuMorph.undoer) PieMenuMorph.undoer();
 	PieMenuMorph.undoer = null;
-    },
-    test: function() {
-    // Put a square on the screen and invoke a pie menu on it...
-    var targetMorph = new Morph(new Rectangle(500,200,100,100), 'rectangle');
-    targetMorph.setFill(Color.orange);
-    targetMorph.handlesMouseDown = function () { return true };    
-    targetMorph.onMouseDown = function(evt) { this.showPieMenu(evt) };
-    targetMorph.showPieMenu = function(evt) {
-    	var menu;
-	var items = [
-		['border width ([])', function(evt) {
-			var oldWidth = targetMorph.getBorderWidth();
-			PieMenuMorph.setUndo(function() { targetMorph.setBorderWidth(oldWidth); });
-			menu.addHandleTo(targetMorph, evt, 'borderWidth'); }],
-		['duplicate (o-->o)', function(evt) {
-			evt.hand.setPosition(menu.mouseDownPoint);
-			menu.targetMorph.copyToHand(evt.hand);
-			var theCopy = evt.hand.submorphs[0];
-			PieMenuMorph.setUndo(function() { theCopy.remove(); });  // Why doesn't this work??
-			}],
-		['move (o-->)', function(evt) {
-			var oldPos = targetMorph.getPosition();
-			PieMenuMorph.setUndo(function() { targetMorph.setPosition(oldPos); });
-			evt.hand.setPosition(menu.mouseDownPoint);
-			evt.hand.addMorph(menu.targetMorph);
-			}],
-		['scale (o < O)', function(evt) {
-			var oldScale = targetMorph.getScale();
-			PieMenuMorph.setUndo(function() { targetMorph.setScale(oldScale); });
-			menu.addHandleTo(targetMorph, evt, 'scale');
-			}],
-		['rotate (G)', function(evt) {
-			var oldRotation = targetMorph.getRotation();
-			PieMenuMorph.setUndo(function() { targetMorph.setRotation(oldRotation); });
-			menu.addHandleTo(targetMorph, evt, 'rotate');
-			}],
-		['delete (X)', function(evt) {
-			var oldOwner = targetMorph.owner;
-			PieMenuMorph.setUndo(function() { oldOwner.addMorph(targetMorph); });
-			targetMorph.remove();
-			}],
-		['undo (~)', function(evt) { PieMenuMorph.doUndo(); }],
-		['fill color (<>)', function(evt) {
-			var oldFill = targetMorph.getFill();
-			PieMenuMorph.setUndo(function() { targetMorph.setFill(oldFill); });
-			var picker = new ColorPickerMorph(evt.mousePoint.extent(pt(50, 30)), targetMorph, "setFill", true);
-			targetMorph.world().addMorph(picker);
-			evt.hand.setMouseFocus(picker); }]
-	];
-	menu = new PieMenuMorph(items, targetMorph);
-	menu.open(evt);
-    };
-    WorldMorph.current().addMorph(targetMorph);
-}
+    }
 });
 
 Widget.addMethods({
