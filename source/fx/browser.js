@@ -216,23 +216,23 @@ Object.subclass('fx::Frame', {
     
 fx.dom = {
     queue: [],
+    attrQueue: [],
     renderers: {},
+    lookBehind: 50,
     render: function(element, optAttribute) {
 	var renderer = this.renderers[element.constructor.tagName];
 	return renderer && renderer(element, optAttribute);
     },
     
-    enqueue: function(element) {
-	const lookBehind = 10;
-	for (var i = this.queue.length - 1, count  = 0; i >= 0; i--) {
-	    if (this.queue[i] === element) 
+    enqueue: function(element, attribute) { 
+	for (var i = Math.min(this.lookBehind, this.queue.length) - 1; i >= 0; i--) {
+	    if (this.queue[i] === element) { 
 		return;
-	    if (++count > lookBehind) break;
+	    }
 	}
-	if (this.queue.last() !== element) {
-	    this.queue.push(element);
-	    // trigger an update as soon as possible?
-	}
+	this.queue.push(element);
+	this.attrQueue.push(attribute);
+	// trigger an update as soon as possible?
     },
     
     update: function() {
@@ -240,12 +240,10 @@ fx.dom = {
 	//if (length > 5) console.log('queue was ' + length + " at " + new Date());
 	//if (length < 10) console.log( 'queue ' + this.queue);
 	while (this.queue.length > 0) {
-	    var attr = this.queue.pop();
-	    if (attr.ownerElement && attr.name)
-		this.render(attr.ownerElement, attr);
-	    //else console.log('attr has no owner ' + attr);
+	    var element = this.queue.pop();
+	    var attribute = this.attrQueue.pop();
+	    this.render(element, attribute);
 	}
-
 	return length;
     }
 };
@@ -258,7 +256,7 @@ Function.wrapSetter(Attr.prototype, 'value', function(func, args) {
     if (name === 'id' || name === 'type') 
 	return;
     if (this.value && this.ownerElement) {
-	fx.dom.enqueue(this);
+	fx.dom.enqueue(this.ownerElement, this);
     }
 });
  
@@ -341,15 +339,15 @@ var PaintModule = {
     },
 
     renderAttribute: function(element, attr, value) {
+	var shape = fx.util.getShape(element);
 	switch (attr) {
 	case "fill": {
 	    var fill = PaintModule.parsePaint(value);
-	    fx.util.getShape(element).setFillPaint(fill);
+	    shape.setFillPaint(fill);
 	    return true;
 	}
 	    
 	case "fill-opacity": {
-	    var shape = fx.util.getShape(element);
 	    var fill = shape.getFillPaint();
 	    if (Packages.java.lang.Class.forName('java.awt.Color').isInstance(fill)) {
 		var alpha = parseFloat(value); // FIXME units
@@ -362,7 +360,6 @@ var PaintModule = {
 
 	case "stroke-width": {
 	    var BasicStroke = Packages.java.awt.BasicStroke;
-	    var shape = fx.util.getShape(element);
 	    var width = parseFloat(value); // FIXME units
 	    if (width > 0) {
 		shape.setDrawStroke(new BasicStroke(width,  
@@ -380,7 +377,7 @@ var PaintModule = {
 	    
 	case "stroke": {
 	    var stroke = PaintModule.parsePaint(value);
-	    fx.util.getShape(element).setDrawPaint(stroke);
+	    shape.setDrawPaint(stroke);
 	    return true;
 	}
 	default: 
@@ -436,11 +433,10 @@ fx.dom.renderers[SVGEllipseElement.tagName] = function(element) {
 	    PaintModule.renderAttribute(element, attr.name, attr.value);
 	}
     }
-    //element.parentNode && console.log('rendering ' + element.parentNode.id);
+    element.parentNode && console.log('rendering ' + element.parentNode.id);
     return element._fxBegin;
 
 }
-
 
 
 fx.dom.renderers[SVGPolylineElement.tagName] =    
@@ -520,7 +516,7 @@ fx.dom.renderers[SVGTextElement.tagName] = function(element) {
 [SVGSVGElement, SVGGElement].forEach(function(constr) {
     Function.wrap(constr.prototype, ["insertBefore", "appendChild"], function(func, args) {
 	var result = func.apply(this, args);
-	fx.dom.enqueue(this); // console.log('not ready, should enqueue? ' + this);
+	fx.dom.enqueue(this, null); 
 	return result;
     });
 });
@@ -529,7 +525,7 @@ fx.dom.renderers[SVGTextElement.tagName] = function(element) {
 [SVGSVGElement, SVGGElement].forEach(function(constr) {
     Function.wrap(constr.prototype, ["removeChild"], function(func, args) {
 	var result = func.apply(this, args);
-	fx.dom.enqueue(this); 
+	fx.dom.enqueue(this, null);
 	return result;
     });
 });
@@ -600,7 +596,7 @@ SVGForeignObjectElement.prototype._fxSetComponent = function(component) {
 	this._fxComponent = new fx.Component();
     }
     this._fxComponent.setComponent(component);
-    fx.dom.enqueue(this);
+    fx.dom.enqueue(this, null);
 };
 
 

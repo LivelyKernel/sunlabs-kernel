@@ -41,7 +41,8 @@ function swingDemo() {
     var URL = Packages.java.net.URL;
     var editorPane = new JEditorPane();
     editorPane.setEditable(false);
-    var url = new URL("http://livelykernel.sunlabs.com");
+//    var url = new URL("http://livelykernel.sunlabs.com");
+    var url = new URL("file:../kernel/sample.xhtml");
     try {
         editorPane.setPage(url);
     } catch (e) {
