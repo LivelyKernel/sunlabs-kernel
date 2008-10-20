@@ -85,11 +85,11 @@ TextTest.subclass('SyntaxHighlighterTest', {
         this.assertEqual(result, string, 'cannot recognize strings');
     },
     
-    // testRecognizeComments: function() {
-    //     var string = '\'aaa\'';
-    //     var result = this.sut.parse(string, 'str');
-    //     this.assertEqual(result, string, 'cannot recognize strings');
-    // }
+    testRecognizeComments: function() {
+        var string = '// this is a comment\n';
+        var result = this.sut.parse(string, 'comment');
+        this.assertEqual(result, '// this is a comment', 'cannot recognize comments');
+    }
     
 });
 

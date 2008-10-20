@@ -3,6 +3,7 @@
 ometa LKJSParser <: Parser {
     isLKParser  = ''                                                    -> true,
   
+    fromTo :x :y    = seq(x) (~seq(y) char)*:cs seq(y)                  -> cs,
 	nameFirst       = letter | '$' | '_',
   	nameRest        = nameFirst | digit,
   	iName           = firstAndRest(#nameFirst, #nameRest):r		        -> r.join(''),
@@ -10,9 +11,11 @@ ometa LKJSParser <: Parser {
   	name            = iName:n ~isKeyword(n)								-> n,
   	keyword         = iName:k isKeyword(k)									-> k,
   	escapeChar   = '\\' char:c                                              -> ometaUnescape('\\' + c),
-  	str     = '\'' (escapeChar | ~'\'' char)*:cs '\''                   -> {'\'' + cs.join('') + '\''}
-  	        | '\'' (escapeChar | ~'\'' char)*:cs '\''                   -> {'"' + cs.join('') + '"'},
-            
+  	str     = '\'' (escapeChar | ~'\'' char)*:cs '\''                   -> { '\'' + cs.join('') + '\'' }
+  	        | '"' (escapeChar | ~'"' char)*:cs '"'                   -> { '"' + cs.join('') + '"' },
+    
+    comment         = fromTo('//', '\n'):c                              -> { '//' + c.join('')}
+                    | fromTo('/*', '*/'):c                              -> { '/*' + c.join('') + '*/' },
   
     optNl           = spacesNoNl ('\n'                                  -> '\n'
                     | empty                                             -> ''

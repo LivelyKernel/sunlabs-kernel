@@ -101,7 +101,7 @@ Object.subclass('SyntaxHighlighter', {
     };",
     
     initialize: function() {
-        this.parser = OMetaSupport.ometaEval(this.parserSrc());
+        this.parser = Global.LKJSParser ? Global.LKJSParser : OMetaSupport.ometaEval(this.parserSrc());
     },
     
     parse: function(string, rule) {
