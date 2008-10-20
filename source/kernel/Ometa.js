@@ -8,32 +8,40 @@ module('Ometa.js').requires('ometa/ometa-base.js', 'ometa/parser.js', 'ometa/bs-
     Uses Alessandro Warth OMeta-js 2 to evalute text. 
 */
 
-Widget.subclass('OmetaWorkspace', {
-    defaultViewExtent: pt(400,250),
-    initialize: function(){
-        OmetaWorkspace.current = this;
+OMetaSupport = {
+    
+    translateToJs: function(src) {
+        var ometaSrc = BSOMetaJSParser.matchAll(src, "topLevel");
+        var jsSrc = BSOMetaJSTranslator.match(ometaSrc, "trans");
+        return jsSrc;
     },
+    
+    ometaEval: function(src) {
+        var jsSrc = OMetaSupport.translateToJs(src);
+        return eval(jsSrc);
+    }
+    
+}
+
+Widget.subclass('OmetaWorkspace', {
+    
+    defaultViewExtent: pt(400,250),
+    
     buildView: function() {
-        var pane =  PanelMorph.makePanedPanel(this.defaultViewExtent, [
-                ['textPane', function (initialBounds){return new TextMorph(initialBounds)}, new Rectangle(0, 0, 1, 0.0)]
-            ]);
-        this.panel = pane;
-        pane.textPane.setExtent(this.defaultViewExtent);
+        var panel =  PanelMorph.makePanedPanel(this.defaultViewExtent, [
+                ['textPane', function (initialBounds){return new TextMorph(initialBounds)}, new Rectangle(0, 0, 1, 0.0)]]);
+        panel.textPane.setExtent(this.defaultViewExtent);
         // override the standart eval function in this instance to evaluate Ometa Source instead of JavaScript
-        pane.textPane.tryBoundEval = function (str) {
+        panel.textPane.tryBoundEval = function (str) {
         	var result;
-        	try { result = this.evalOmeta(str); }
+        	try { result = OMetaSupport.ometaEval(str); }
         	catch (e) { // this.world().alert("exception " + e);
         	    console.log('error evaling ometa: ' + e) };
         	return result;
-         }.bind(this);
+         };
         return pane;
-    },
-    evalOmeta: function(source) {
-        var tree = BSOMetaJSParser.matchAll(source, "topLevel", undefined, undefined);
-        var result= BSOMetaJSTranslator.match(tree, "trans", undefined, undefined);
-        return eval(result)
-    },
+    }
+    
 });
 
 /*
@@ -67,7 +75,6 @@ lk.text.createText = function(str, style) {
     return new lk.text.Text(str, style);
 };
 
-using(lk.text).run(function(text) {
 Object.subclass('SyntaxHighlighter', {
 
     parserSrcFileName: 'lk-js-parser.txt',
@@ -94,11 +101,16 @@ Object.subclass('SyntaxHighlighter', {
     };",
     
     initialize: function() {
-        this.parser = this.evalOmetaJs(this.parserSrc());
+        this.parser = OMetaSupport.ometaEval(this.parserSrc());
+    },
+    
+    parse: function(string, rule) {
+        if (!rule) rule = 'srcElem';
+        return this.parser.matchAll(string, rule);
     },
     
     highlightFunction: function(sourceString) {
-        var attributedSrc = this.parser.matchAll(sourceString, 'srcElem');
+        var attributedSrc = this.parse(sourceString);
         // var style = {style: 'bold', fontSize: 4, color: Color.red};
         // var t = new text.Text(attributedSrc, style);
         var t = attributedSrc;
@@ -110,29 +122,7 @@ Object.subclass('SyntaxHighlighter', {
         var resource = new Resource(Record.newPlainInstance({URL: url, ContentText: null}));
         resource.fetch(true);
         return resource.getContentText();
-        // return this._parserSrc;
-    },
-    
-    translateSrc: function(src) {
-        var ometaSrc = BSOMetaJSParser.matchAll(src, "topLevel");
-        var jsSrc = BSOMetaJSTranslator.match(ometaSrc, "trans");
-        return jsSrc;
-    },
-    
-    evalOmetaJs: function(src) {
-        // dbgOn(true);
-        var jsSrc = this.translateSrc(src);
-        return eval(jsSrc);
-    },
-    
-    makeBold: function(string) {
-        var style = {style: 'bold', fontSize: 4, color: Color.red};
-        var t = new text.Text(string, style);
-        return t
-        
     }
-    
-});
 });
 
 

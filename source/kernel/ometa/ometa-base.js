@@ -126,13 +126,13 @@ OMeta = {
       var origInput = this.input,
           failer    = new Failer()
       this.input.memo[rule] = failer
-      this.input.memo[rule] = memoRec = {ans: this[rule].apply(this), nextInput: this.input}
+      this.input.memo[rule] = memoRec = {ans: this._applyRule(rule), nextInput: this.input}
       if (failer.used) {
         var sentinel = this.input
         while (true) {
           try {
             this.input = origInput
-            var ans = this[rule].apply(this)
+            var ans = this._applyRule(rule)
             if (this.input == sentinel)
               throw fail
             memoRec.ans       = ans
@@ -158,12 +158,17 @@ OMeta = {
   _applyWithArgs: function(rule) {
     for (var idx = arguments.length - 1; idx > 0; idx--)
       this.input = new OMInputStream(arguments[idx], this.input)
-    return this[rule].apply(this)
+    return this._applyRule(rule);
+  },
+  _applyRule: function(rule, optTarget) {
+      if (!this[rule]) throw new Error('Grammer has no rule ' + rule);
+      var target = optTarget || this;
+      return this[rule].apply(target);
   },
   _superApplyWithArgs: function($elf, rule) {
     for (var idx = arguments.length - 1; idx > 1; idx--)
       $elf.input = new OMInputStream(arguments[idx], $elf.input)
-    return this[rule].apply($elf)
+    return this._applyRule(rule, $elf);
   },
   _pred: function(b) {
     if (b)

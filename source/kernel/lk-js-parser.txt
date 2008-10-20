@@ -9,14 +9,17 @@ ometa LKJSParser <: Parser {
   	isKeyword :x    = ?BSJSParser._isKeyword(x),
   	name            = iName:n ~isKeyword(n)								-> n,
   	keyword         = iName:k isKeyword(k)									-> k,
-/*  	str     = seq('"""')  (escapeChar | ~seq('"""') char)*:cs seq('"""')    -> cs.join('') + '<string>'
-            | '\'' (escapeChar | ~'\'' char)*:cs '\''                       -> cs.join('') + '<string>',*/
+  	escapeChar   = '\\' char:c                                              -> ometaUnescape('\\' + c),
+  	str     = '\'' (escapeChar | ~'\'' char)*:cs '\''                   -> {'\'' + cs.join('') + '\''}
+  	        | '\'' (escapeChar | ~'\'' char)*:cs '\''                   -> {'"' + cs.join('') + '"'},
             
   
-    optNl           = spacesNoNl ('\n' | empty):nl                      -> nl,
+    optNl           = spacesNoNl ('\n'                                  -> '\n'
+                    | empty                                             -> ''
+                    ),
     spacesNoNl      = (~'\n' space)*:spcs									-> '\t',
     sc              = spacesNoNl ('\n'								    -> '\n'
-					| &'}' | end)						
+					| &'}' | end)						                -> ''
                     | ";"	optNl:nl									    -> { ';' + nl },
     srcElem         = "function":f (formal | empty):n funcRest:fr             -> { lk.text.createText(f).concat(fr) }
                     | stmt:s											-> s,
@@ -27,8 +30,8 @@ ometa LKJSParser <: Parser {
    something        =  spacesNoNl:spcs ( partStmt )+:parts sc:end            ->  {  parts.inject(lk.text.createText(spcs), function(text, ea) {
                                                                                         return text.concat(ea)
                                                                                     }).concat(lk.text.createText(end)) },
-	partStmt = /*str:s                                                ->  { lk.text.createText(s, {color: Color.green}) }
-	            | */keyword:k									        ->  { lk.text.createText(k, {color: Color.red}) }
+	partStmt = str:s                                                ->  { lk.text.createText(s, {color: Color.green}) }
+	            | keyword:k									        ->  { lk.text.createText(k, {color: Color.red}) }
 				| name:n											->  { lk.text.createText(n) }
 				| (~sc anything:a)									->  { lk.text.createText(a) }
 };
