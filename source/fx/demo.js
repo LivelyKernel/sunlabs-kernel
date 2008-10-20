@@ -59,6 +59,17 @@ function swingDemo() {
 }
 
 
+function swingFileChooserDemo()  {
+    var JFileChooser = Packages.javax.swing.JFileChooser;
+    var Dimension = Packages.java.awt.Dimension;
+
+    var rect = new Rectangle(0, 0, 500, 300);
+    var xeno = new XenoMorph(rect);
+    var chooser = new JFileChooser();
+    chooser.setMinimumSize(new Dimension(10, 10));
+    WorldMorph.current().addFramedMorph(xeno, "Choose file ", pt(250, 150));
+    xeno.foRawNode._fxSetComponent(chooser);
+}
 
 
 function morphicMain() {
@@ -138,6 +149,7 @@ function morphicMain() {
 
     canvas._fxBegin.requestFocus();
     swingDemo();
+    swingFileChooserDemo();
 }
 
 

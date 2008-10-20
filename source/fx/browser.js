@@ -433,7 +433,7 @@ fx.dom.renderers[SVGEllipseElement.tagName] = function(element) {
 	    PaintModule.renderAttribute(element, attr.name, attr.value);
 	}
     }
-    element.parentNode && console.log('rendering ' + element.parentNode.id);
+    //element.parentNode && console.log('rendering ' + element.parentNode.id);
     return element._fxBegin;
 
 }
