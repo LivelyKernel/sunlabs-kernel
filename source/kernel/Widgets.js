@@ -274,10 +274,12 @@ Morph.subclass("ClipMorph", {
 	// intersection  of its shape and its children's shapes
 	if (!this.fullBounds) {
 	    var tfm = this.getLocalTransform();
-	    var subBounds = this.submorphBounds(ignoreTransients);
 	    var bounds = this.shape.bounds();
-	    this.fullBounds = tfm.transformRectToRect(subBounds ? subBounds.intersection(bounds) : bounds);
-	}
+	    // var subBounds = this.submorphBounds(ignoreTransients);
+	    // this.fullBounds = tfm.transformRectToRect(subBounds ? subBounds.intersection(bounds) : bounds);
+	    // DI:  ClipMorph bounds should be independent of subMorphs, right?
+	    // DI:  so we should be able to replace the 2 lines above with this simpler one...
+	    this.fullBounds = tfm.transformRectToRect(bounds);  	}
 	return this.fullBounds;
     },
     
@@ -1346,6 +1348,7 @@ MenuItem.addMethods({
             // call as target.function(parameterOrNull,event,menuItem)
             else { 	    
 		var arg = this.getArgument() || this.para2;
+//console.log("menu.invoke: " + Object.inspect(this.action) + " action=" + functionName + " arg =" + Object.inspect(arg));
 		func.call(this.action, arg, evt, this); 
 	    }
         }
@@ -2815,6 +2818,7 @@ Morph.subclass('WindowMorph', {
         var oldTop = this.world().topSubmorph();
         this.world().addMorphFront(this);
         evt.hand.setMouseFocus(null);
+	if(this.targetMorph.takesKeyboardFocus()) evt.hand.setKeyboardFocus(this.targetMorph);
         return true;
     },
 
@@ -2949,17 +2953,6 @@ Morph.subclass("PieMenuMorph", {
 	// itemName has the form 'menu text (pie text)'
 	// If offset is zero, the first item extends CW from 12 o'clock
 	// If offset is, eg, 0.5, then the first item begins 1/2 a slice-size CCW from there.
-
-        // A PieMenu allows many mouse drag operations to be carried out in a single stroke.
-	// It is the initial direction of the stroke that determines the operation.
-	// Beginners are assisted by the appearance of a pie-shaped map after some delay.
-	// The geometry divides 360 degrees by the number of items, and centers the
-	// first pie-shaped segment on the vertical direction, with the item list
-	// continuing around in a clockwise direction.
-
-	// YET TO DO:
-	// Put a pie menu in world -- selection, undo, and world menu
-
         this.items = items;
 	this.targetMorph = targetMorph;
 	this.r1 = 15;  // inner radius
@@ -2968,6 +2961,16 @@ Morph.subclass("PieMenuMorph", {
         $super(new Rectangle(100, 100, this.r2*2, this.r2*2), 'ellipse');
 	this.hasCommitted = false;  // Gesture not yet outside commitment radius
 	return this;
+    },
+    helpString: function() {
+	var help = "Pie menus let you choose mouse-down actions";
+	help += "\nbased on the direction of your stroke.";
+	help += "\nIf you hold the button down without moving,";
+	help += "\nyou will see a map of the directions and actions.";
+	help += "\nThis menu has the same items with words to";
+	help += "\nexplain the abbreviated captions in the map.";
+	help += "\nRelease in the center to get the normal menu.";
+	return help;
     },
     open: function(evt) {
         // Note current mouse position and start a timer
@@ -3011,16 +3014,6 @@ Morph.subclass("PieMenuMorph", {
 	this.remove();
 	normalMenu.openIn(world, evt.mousePoint, false, Object.inspect(this.targetMorph).truncate());
 	evt.hand.setMouseFocus(normalMenu);
-    },
-    helpString: function() {
-	var help = "Pie menus let you choose mouse-down actions";
-	help += "\nbased on the direction of your stroke.";
-	help += "\nIf you hold the button down without moving,";
-	help += "\nyou will see a map of the directions and actions.";
-	help += "\nThis menu has the same items with words to";
-	help += "\nexplain the abbreviated captions in the map.";
-	help += "\nRelease in the center to get the normal menu.";
-	return help;
     },
     makeVisible: function(openEvent) {
 	if (this.hasCommitted) return;

@@ -4253,7 +4253,7 @@ Morph.subclass("EngineMorph", {
         cylinder.setLineJoin(Shape.LineJoins.Round);
         cylinder.setPosition(cr.topLeft().addXY(0, -dHead));
         var pistonBW = 2;
-        var pistonDx = (cylinder.getBorderWidth() + pistonBW) / 2;
+        var pistonDx = (cylinder.getBorderWidth() + pistonBW) / 2 - 1;
         var piston = new Morph(cr.insetByPt(pt(pistonDx, (cr.height-this.stroke)/2)), "rectangle");
 	piston.applyStyle({fill: Color.darkGray, borderWidth: pistonBW});
         cylinder.addMorph(piston);
@@ -4278,10 +4278,10 @@ Morph.subclass("EngineMorph", {
             cyl.wristPin = cyl.piston.topSubmorph();
             this.cylinders.push(cyl);
             // Note: cyl.connectingRod points to a morph that is not a submorph
-            this.connectingRods[i] = this.addMorph(Morph.makeLine(
+            this.connectingRods[i] = cyl.addMorph(Morph.makeLine(
                 [pt(10, 10), pt(10, 10)],  // Real endpoints get set in 
-                cr.width*0.15, Color.gray.darker(2) 
-            ));
+                cr.width*0.15, Color.gray.darker(2) ));
+	    cyl.addMorph(cyl.piston);  // brings it on top of connecting rod (looks better)
             this.movePiston(cyl);
         };
 	this.doStep(); // makes connecting rods
@@ -4516,14 +4516,13 @@ Morph.subclass("PlayerMorph",  {
 
 
 lk.examples.installFasteroids = function (world, rect) {
-console.log("-------------- Begin Fasteroids ----------------");
+console.log("-------------- Loading Fasteroids ----------------");
 // Yet to do...
-// NOTE still requires click to get kbd focus
-// Put in window for keyboard focus
-// End game when asteroid hits ship
-// Add button for click to restart
+// End game when asteroid or fragment hits ship
+// Add button/ menu command for click to restart
 // Make asteroids break into fragments
-// Would be nice if fragment collision same as torpdo, then can be same morphs
+// Allow DnD of, eg, clock to add other morphs as asteroids
+// When blast a morph, make fragments out of its submorphs (one level)
 
 ClipMorph.subclass('Fasteroids', {
     initialize: function ($super, initialBounds) {
@@ -4550,6 +4549,8 @@ ClipMorph.subclass('Fasteroids', {
 	return new Asteroid(verts, 1, Color.yellow, Color.darkGray.darker(3), veloc, rot).translateBy(this.innerBounds().extent().random());
     },
     tick: function() {
+        // Don't bother stepping if we are in a collapsed window
+        if (this.immediateContainer() && !this.immediateContainer().contentIsVisible()) return;
 	this.asteroids.forEach( function (each) { each.tick(); });
 	this.torpedos.forEach( function (each) { each.tick(); });
 	this.fragments.forEach( function (each) { each.tick(); });
@@ -4583,15 +4584,9 @@ ClipMorph.subclass('Fasteroids', {
 	group.splice(ix, 1); 
     },
 
-    handlesMouseDown: Functions.True, // hack
-
-    onMouseDown: function(evt) {
-        this.requestKeyboardFocus(evt.hand);
-        return true; 
-    },
-    setHasKeyboardFocus: function(newSetting) { 
-        return newSetting;
-    },
+    handlesMouseDown: Functions.True,
+    onMouseDown: function(evt) { this.requestKeyboardFocus(evt.hand); return true; },
+    setHasKeyboardFocus: function(newSetting) { return newSetting; },
     takesKeyboardFocus: Functions.True,
 
     onKeyDown: function(evt) { 
@@ -4641,19 +4636,19 @@ InertialBody.subclass('Asteroid', {
     initialize: function ($super, verts, lineWidth, lineColor, fill, velocity, angularVelocity) {
 	// Asteroids are sizeable polygons that drift and wrap around the bounds
 	// until they are destroyed by missiles or until they clobber the ship
+	// They simply inherit all behavior from InertialBody
 	$super(verts, lineWidth, lineColor, fill, velocity, angularVelocity);
     }
 });
 InertialBody.subclass('Torpedo', {
     initialize: function ($super, verts, lineWidth, lineColor, fill, velocity, angularVelocity) {
-	// Missiles are little bullets with constant velocity
+	// Torpedos are little bullets with constant velocity.  They disappear when out of bounds
 	$super(verts, lineWidth, lineColor, fill, velocity, angularVelocity);
     },
     isOutOfBounds: function() { // Missiles go away when out of bounds
 	this.owner.removeMorphFromGroup(this, this.owner.torpedos)
     }
 });
-
 InertialBody.subclass('Ship', {
     initialize: function ($super, verts, lineWidth, lineColor, fill) {
 	//  The ship's position and rotation give the initial trajectory to its missiles
@@ -4693,7 +4688,12 @@ InertialBody.subclass('Asteroid', {
 	this.cycle = 0;
     }
 });
-(world.addMorph( new Fasteroids(rect))).startSteppingScripts();
+Fasteroids.openInWindow = function(world, loc) {
+    var game = new Fasteroids(new Rectangle(0, 0, 600, 300));
+    world.addFramedMorph(game, 'A Lively Asteroids', loc);
+    game.startSteppingScripts();
+    };
+Fasteroids.openInWindow(world, pt(150, 100));
 console.log("-------------- End Fasteroids ----------------");
 };
 
