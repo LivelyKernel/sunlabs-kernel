@@ -4,6 +4,7 @@ ometa LKJSParser <: Parser {
     isLKParser  = ''                                                    -> true,
   
     fromTo :x :y    = seq(x) (~seq(y) char)*:cs seq(y)                  -> cs,
+    nl              = '\n' | '\r'                                       -> '\n',
 	nameFirst       = letter | '$' | '_',
   	nameRest        = nameFirst | digit,
   	iName           = firstAndRest(#nameFirst, #nameRest):r		        -> r.join(''),
@@ -17,11 +18,11 @@ ometa LKJSParser <: Parser {
     comment         = fromTo('//', '\n'):c                              -> { '//' + c.join('')}
                     | fromTo('/*', '*/'):c                              -> { '/*' + c.join('') + '*/' },
   
-    optNl           = spacesNoNl ('\n'                                  -> '\n'
+    optNl           = spacesNoNl (nl:n                                  -> n
                     | empty                                             -> ''
                     ),
-    spacesNoNl      = (~'\n' space)*:spcs									-> '\t',
-    sc              = spacesNoNl ('\n'								    -> '\n'
+    spacesNoNl      = (~nl space)*:spcs									-> '\t',
+    sc              = spacesNoNl (nl:n								    -> n
 					| &'}' | end)						                -> ''
                     | ";"	optNl:nl									    -> { ';' + nl },
     srcElem         = "function":f (formal | empty):n funcRest:fr             -> { lk.text.createText(f).concat(fr) }
