@@ -13,6 +13,25 @@ load('dom/index.xhtml.js');
 
 print('loaded start document emulation');
 load('../kernel/Core.js');
+
+
+Loader.loadScript = function(url /*not really a url yet*/, onLoadAction, embedSerializable) {
+    console.log('loadScript ' + $A(arguments));
+    load('../kernel/' + url);
+    if (onLoadAction) {
+        onLoadAction();
+        // why signal moduleLoaded again? should already be included in onLoadAction...???
+        if (noPendingRequirements(url)) moduleLoaded(url);
+    }
+    Loader.wasLoaded[url] = true;
+    Loader.pendingActionsFor(url).forEach(function(ea) {
+        // console.log(url + ' was loaded. Loading now its pending action for ' + ea.url);
+        ea.action();
+        if (noPendingRequirements(ea.url)) moduleLoaded(ea.url);
+    });
+}
+
+
 load('../kernel/Text.js');
 load('../kernel/Widgets.js');
 load('../kernel/Network.js');
@@ -70,6 +89,7 @@ function swingFileChooserDemo()  {
     WorldMorph.current().addFramedMorph(xeno, "Choose file ", pt(250, 150));
     xeno.foRawNode._fxSetComponent(chooser);
 }
+
 
 
 function morphicMain() {
@@ -150,6 +170,7 @@ function morphicMain() {
     canvas._fxBegin.requestFocus();
     swingDemo();
     swingFileChooserDemo();
+
 }
 
 

@@ -610,4 +610,24 @@ fx.dom.renderers[SVGForeignObjectElement.tagName] = function(element, attribute)
 
 // end of SVG impl
 
+Object.subclass('Audio', { // stubbed out HTML5 Audio
+    volume: 0,
+    url: null,
+    currentTime: 0.0,
+    load: function() {
+	// now load
+    },
+
+    initialize: function(url) {
+	console.log('creating new audio with url ' + url);
+	this.url = url;
+    },
+
+    play: function() {
+    },
+
+    pause: function() {
+    }
+
+});
 
