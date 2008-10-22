@@ -1,7 +1,21 @@
 
 module('TileScriptingTests.js').requires('TileScripting.js').toRun(function() {
+
+TestCase.subclass('TileHolderTest', {
     
-TestCase.subclass('TileTest', {
+    testAddNewDropWhenExistingOneWasUsed: function() {
+        var holder = new TileHolder(pt(50,50).extentAsRectangle());
+        var tile = new Tile();
+        
+        this.assertEqual(holder.submorphs.length, 1, 'More or less than one submorph');
+        this.assert(holder.submorphs[0] instanceof DropArea, 'No DropArea');
+        holder.submorphs[0].addMorph(tile);
+        this.assertEqual(holder.submorphs.length, 2, 'No new DropArea added');
+        this.assert(holder.submorphs[1] instanceof DropArea, 'No DropArea');
+    }
+});
+
+TestCase.subclass('DropAreaTest', {
     
     testDropAcceptsTile: function() {
         var drop = new DropArea();
@@ -22,8 +36,21 @@ TestCase.subclass('TileTest', {
         this.assertIdentity(tile1.owner, drop);
         this.assert(!tile2.owner, 'tile 2 has a owner...');
         this.assert(!drop.submorphs.include(tile2), 'tile 2 was added to dropArea');
+    },
+    
+    testResizeWhenTileAdded: function() {
+        var drop = new DropArea(pt(20,20).extentAsRectangle());
+        drop.openInWorld();
+        var tile = new Tile(pt(50,50).extentAsRectangle());
+        // dbgOn(true);
+        drop.addMorph(tile);
+        this.assertEqual(drop.getExtent(), tile.getExtent(), 'no resizing...');
     }
 });
+    
+// TestCase.subclass('TileTest', {
+//     
+// });
 
 TestCase.subclass('IfTileTest', {
     
@@ -32,12 +59,12 @@ TestCase.subclass('IfTileTest', {
         var testTile = new Tile();
         this.assert(tile.testExprDropArea instanceof Morph, 'No testExpression morph');
         tile.testExprDropArea.addMorph(testTile);        
-        this.assertIdentity(testTile, tile.testExprDropArea.tile);
+        this.assertIdentity(testTile, tile.testExprDropArea.tile());
         
         this.assert(tile.exprDropArea instanceof Morph, 'No expr morph');
         var exprTile = new Tile();
         tile.exprDropArea.addMorph(exprTile);
-        this.assertIdentity(exprTile, tile.exprDropArea.tile);
+        this.assertIdentity(exprTile, tile.exprDropArea.tile());
     },
     
     testGetJs: function() {
