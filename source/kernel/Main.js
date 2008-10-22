@@ -252,6 +252,12 @@ function populateWorldWithExamples(world) {
     // Open OmetaWorkspace
     //openOmetaWorkspace();
 
+    if (Config.activateTileScripting)
+        require('TileScripting.js').toRun(function() {
+            ScriptEnvironment.open();
+            TileBox.open();
+        });
+        
     // add to Link?
     function addLinkLabel(link, text) {
 	var label = new TextMorph(pt(110, 25).extentAsRectangle(), text).applyStyle({borderRadius: 10});
