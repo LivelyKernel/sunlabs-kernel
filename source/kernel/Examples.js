@@ -188,7 +188,8 @@ Morph.subclass('PianoKeyboard', {
 	+ "gYGAgICAgYGAgICAgH9/gICBgYCAgH9/f4CAgICAgIGBgYB/fn+AgYKBgICAgIB/f4CBgYGAf35/"
 	+ "f4CAgIGBgYCAgIB/f4CAgICAgICAgICAgIA=",
 
-    
+
+
     initialize: function($super, loc) {
 	//  -- Lets Boogie! --
 	$super(loc.extent(pt(100, 20)), "rect");
@@ -223,9 +224,9 @@ Morph.subclass('PianoKeyboard', {
     initializeTransientState: function($super, initialBounds) {
 	$super(initialBounds);
 	//this.audio = new Audio("data:audio/x-wav;base64," + this.click);
-	this.audio = new Audio(URL.source.dirname() + "/Resources/Sounds/C4.wav");
+	this.audio = new Audio();
 	this.audio.volume = 1.0;
-	this.audio.load();
+	this.baseURL = URL.source.dirname() + "/Resources/Sounds/C4.wav";
     },
     
     deserialize: function($super, importer, rawNode) {
@@ -238,6 +239,8 @@ Morph.subclass('PianoKeyboard', {
     pianoKeyDown: function(evt, key) {
 	key.setFill(Color.green);
 	console.log("key number " + key.noteNumber + " pressed."); 
+	this.audio.src = this.baseURL + "?noteNumber=" + key.noteNumber;
+	this.audio.load();
 	this.audio.play();
 
     },
