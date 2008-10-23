@@ -33,7 +33,7 @@ function namespace(spec, context) {
         }
         else {//spec is a specification object e.g, {com: {trifork: ['model,view']}}
             for (i in spec) if (spec.hasOwnProperty(i)) {
-                context[i] = context[i] || {};
+                context[i] = context[i] || new lively.lang.Namespace();
                 namespace(spec[i], context[i]);//recursively descend tree
             }
         }
@@ -79,6 +79,7 @@ function moduleLoaded(module) {
             PendingRequirements[ea] = PendingRequirements[ea].without(module);
     });
 };
+// FIXME depends on 'Document' and Loader
 function noPendingRequirements(module) {
     if (!PendingRequirements[module]) return true;
     
@@ -430,6 +431,9 @@ var Class = {
 
 };
 
+
+
+ 
 var Strings = {
     documentation: "Convenience methods on strings",
     
@@ -505,6 +509,10 @@ var Strings = {
 };
 
 
+
+
+
+
 var Functions = {
     documentation: "colllection of reusable functions",
 
@@ -555,12 +563,13 @@ var Properties = {
 
 namespace('lively.lang');
 
+Object.subclass('lively.lang.Namespace'); // exact location is tricky
+
 lively.lang.Execution = { // will be extended later
     showStack: Functions.Null,
     resetDebuggingStack: Functions.Null,
     installStackTracers: Functions.Null,
 };
-
 
 
 /*
@@ -578,14 +587,14 @@ function getStack() {
     return result;  
 };
 
-function guessFunctionName(func) {
-       if(func.name) return func.name;
-       var m = func.toString().match(/function (.+)\(/);
-       if (m) return m[1];
-       return func
-};
-
 function printStack() {  
+    function guessFunctionName(func) {
+	if(func.name) return func.name;
+	var m = func.toString().match(/function (.+)\(/);
+	if (m) return m[1];
+	return func
+    };
+
     var string = "== Stack ==\n";
     var stack = getStack();
     stack.shift(); // for getStack

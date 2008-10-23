@@ -24,14 +24,15 @@ function getStack() {
     return result;  
 };
 
-function guessFunctionName(func) {
-       if(func.qualifiedMethodName()) return func.qualifiedMethodName();
-       var m = func.toString().match(/function (.+)\(/);
-       if (m) return m[1];
-       return func
-};
 
 function printStack() {  
+    function guessFunctionName(func) {
+	if(func.qualifiedMethodName()) return func.qualifiedMethodName();
+	var m = func.toString().match(/function (.+)\(/);
+	if (m) return m[1];
+	return func
+    };
+    
     var string = "== Stack ==\n";
     var stack = getStack();
     stack.shift(); // for getStack
