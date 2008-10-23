@@ -66,12 +66,6 @@ function namespace(spec, context) {
 //     return {run: loadAll};
 // };
 
-var getUniqueName = (function() { 
-    var counter = 0;
-    return function() {
-        return 'anonymous_module_' + ++counter; // What a language!
-    }
-})();
 
 var PendingRequirements = {};
 
@@ -85,13 +79,6 @@ function moduleLoaded(module) {
             PendingRequirements[ea] = PendingRequirements[ea].without(module);
     });
 };
-function waitFor(module, requiredModules) {
-    if (!PendingRequirements[module]){
-        PendingRequirements[module] = requiredModules;
-        return;
-    }
-    PendingRequirements[module] = PendingRequirements[module].concat(requiredModules);
-};
 function noPendingRequirements(module) {
     if (!PendingRequirements[module]) return true;
     
@@ -102,27 +89,41 @@ function noPendingRequirements(module) {
 };
 
 function module(moduleName) {
+
+    function waitFor(module, requiredModules) {
+	if (!PendingRequirements[module]){
+            PendingRequirements[module] = requiredModules;
+            return;
+	}
+	PendingRequirements[module] = PendingRequirements[module].concat(requiredModules);
+    }
+
+    function basicRequire(/*ownModuleName, requiredModuleNameOrAnArray, anotherRequiredModuleName, ...*/) {
+	var args = $A(arguments);    
+	var ownModuleName = args.shift();
+	var preReqModuleNames = Object.isArray(args[0]) ? args[0] : args;
+	var requiredModuleNames = [];
+	for (var i = 0; i < preReqModuleNames.length; i++) {
+            requiredModuleNames[i] = preReqModuleNames[i];
+	}
+	
+	waitFor(ownModuleName, requiredModuleNames);
+	return {toRun: function(code) {
+            code = code.curry(ownModuleName); // pass in the own module name for nested requirements
+            Loader.loadScripts(requiredModuleNames, onModuleLoad.curry(ownModuleName, code));
+	}};
+    };
+
     PendingRequirements[moduleName] = 0;
     return {requires: basicRequire.curry(moduleName)};
 };
-
+    
 function require(/*requiredModuleNameOrAnArray, anotherRequiredModuleName, ...*/) {
-    return module(getUniqueName()).requires($A(arguments));
-};
-    
-function basicRequire(/*ownModuleName, requiredModuleNameOrAnArray, anotherRequiredModuleName, ...*/) {
-    var args = $A(arguments);    
-    var ownModuleName = args.shift();
-    var preReqModuleNames = Object.isArray(args[0]) ? args[0] : args;
-    var requiredModuleNames = [];
-    for (var i = 0; i < preReqModuleNames.length; i++) {
-        requiredModuleNames[i] = preReqModuleNames[i];
+    var counter = 0;
+    function getUniqueName() {
+        return 'anonymous_module_' + ++counter; // What a language!
     }
-    
-    waitFor(ownModuleName, requiredModuleNames);
-    return {toRun: function(code) {
-        code = code.curry(ownModuleName); // pass in the own module name for nested requirements
-        Loader.loadScripts(requiredModuleNames, onModuleLoad.curry(ownModuleName, code)) }};
+    return module(getUniqueName()).requires($A(arguments));
 };
 
 function onModuleLoad(ownModuleName, code) {
