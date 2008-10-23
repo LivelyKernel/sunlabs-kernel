@@ -14,10 +14,10 @@
  */
 
 
-namespace('lk::examples');
+namespace('lively.examples');
 
 
-using(lk.examples).run(function(module) {
+using(lively.examples).run(function(module) {
 
 // ===========================================================================
 // Widget (panel) Tester Demo
@@ -136,7 +136,7 @@ Morph.subclass("ClockMorph", {
 	    
 	    /*
 		var label = new TextMorph((pt(labelSize*3, labelSize).extentAsRectangle()), items[i]);
-	    label.applyStyle({borderWidth: 0, fill: null, wrapStyle: lk.text.WrapStyle.Shrink, fontSize: labelSize, padding: Rectangle.inset(0)});
+	    label.applyStyle({borderWidth: 0, fill: null, wrapStyle: lively.text.WrapStyle.Shrink, fontSize: labelSize, padding: Rectangle.inset(0)});
             label.align(label.bounds().center(), labelPosition.addXY(1, 0));
             this.addMorph(label);
 		*/
@@ -484,7 +484,7 @@ PanelMorph.subclass('SquiggleMorph', {
         
 });
 
-namespace('lk::examples::threedee');
+namespace('lively.examples.threedee');
 
 // ===========================================================================
 // The 3D Rotation Example
@@ -496,7 +496,7 @@ namespace('lk::examples::threedee');
  * and a Java version written in 1998.
  *============================================================================*/
 
-using(lk.examples.threedee).run(function(threedee) {
+using(lively.examples.threedee).run(function(threedee) {
 
     // Rapid sin and cos functions inherited from the original
     // C program.  Note that you must supply a multiplier in 
@@ -712,7 +712,7 @@ using(lk.examples.threedee).run(function(threedee) {
  * WireObject instance constructor
  *============================================================================*/
 
-Object.subclass('lk::examples::threedee::WireObject', {
+Object.subclass('lively.examples.threedee.WireObject', {
     // WireObject constructor: create the wireframe object
     initialize: function(hereX, hereY, hereZ) {
 
@@ -846,7 +846,7 @@ Object.subclass('lk::examples::threedee::WireObject', {
 
 }); 
 
-PanelMorph.subclass('lk::examples::Sun3DMorph', {
+PanelMorph.subclass('lively.examples.Sun3DMorph', {
     documentation: "Sun logo rotating in 3D",
 
     initialize: function($super, rect) {
@@ -914,9 +914,9 @@ PanelMorph.subclass('lk::examples::Sun3DMorph', {
 
 *****************************************************************************/
 
-namespace('lk::examples::asteroids');
+namespace('lively.examples.asteroids');
 
-using(lk.examples.asteroids).run(function(module) {
+using(lively.examples.asteroids).run(function(module) {
 
 // The game instance
 var gameMorph = null;
@@ -932,7 +932,7 @@ var gameHeight = 300;
   rotation. It also can detemine if two objects collide.
 ************************************************************************************************/
 
-Object.subclass('lk::examples::asteroids::AsteroidsSprite', {
+Object.subclass('lively.examples.asteroids.AsteroidsSprite', {
 
     /* boolean */ active: false,    // Active flag.
     /* double */  angle: 0,         // Current angle of rotation.
@@ -1325,7 +1325,7 @@ Object.subclass('lk::examples::asteroids::AsteroidsSprite', {
   }
 
 
-ClipMorph.subclass("lk::examples::asteroids::GameMorph", {
+ClipMorph.subclass("lively.examples.asteroids.GameMorph", {
     
     runAsteroidsGame: function runAsteroidsGame() {
 
@@ -3476,9 +3476,9 @@ Morph.subclass("MapMorph", {
 }(); // end of the map demo module
 
 
-namespace('lk::examples::canvascape');
+namespace('lively.examples.canvascape');
 
-using(lk.examples.canvascape).run(function(module) { 
+using(lively.examples.canvascape).run(function(module) { 
 
 // ===========================================================================
 // The CanvasScape 3D Maze Walker Example
@@ -3491,7 +3491,7 @@ using(lk.examples.canvascape).run(function(module) {
  * @class MiniMapMorph: The "radar view" for the game
  */
 
-Morph.subclass("lk::examples::canvascape::MiniMapMorph", {
+Morph.subclass("lively.examples.canvascape.MiniMapMorph", {
     
     initialize: function($super, rect) {
         $super(rect, "rect");
@@ -3536,7 +3536,7 @@ Morph.subclass("lk::examples::canvascape::MiniMapMorph", {
  * @class CanvasScapeMorph: The Canvas Game Morph
  */
 
-ClipMorph.subclass("lk::examples::canvascape::CanvasScapeMorph", {
+ClipMorph.subclass("lively.examples.canvascape.CanvasScapeMorph", {
     
     initialize: function($super, rect) {
         $super(rect, "rect");
@@ -4518,7 +4518,7 @@ Morph.subclass("PlayerMorph",  {
 });
 
 
-lk.examples.installFasteroids = function (world, rect) {
+lively.examples.installFasteroids = function (world, rect) {
 console.log("-------------- Loading Fasteroids ----------------");
 // Yet to do...
 // End game when asteroid or fragment hits ship

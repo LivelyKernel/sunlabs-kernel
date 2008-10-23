@@ -13,9 +13,9 @@
  * object inspector, style editor, and profiling and debugging capabilities.  
  */
 
-namespace('lk::tools');
+namespace('lively.tools');
 
-using(lk.text, lk.tools).run(function(text, module) {
+using(lively.text, lively.tools).run(function(text, module) {
 
 // ===========================================================================
 // Class Browser -- A simple browser for Lively Kernel code

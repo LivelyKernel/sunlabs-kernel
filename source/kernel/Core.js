@@ -89,7 +89,7 @@ var Loader = {
 };
 
     
-Object.extend(Object.subclass('lk::FragmentURI'), {
+Object.extend(Object.subclass('lively.FragmentURI'), {
     parse: function(string) {
 	var match = string.match("url\\(#(.*)\\)");
 	return match && match[1];
@@ -102,16 +102,16 @@ Object.extend(Object.subclass('lk::FragmentURI'), {
     },
     
     getElement: function(string) {
-	var id = lk.FragmentURI.parse(string);
+	var id = lively.FragmentURI.parse(string);
 	return id && Global.document.getElementById(id);
     }
     
 });
 
-namespace('lk::data');
+namespace('lively.data');
 
 
-Record.subclass('lk::data::DOMRecord', {
+Record.subclass('lively.data.DOMRecord', {
     description: "base class for records backed by a DOM Node",
     initialize: function($super, store, argSpec) {
 	$super(store, argSpec);
@@ -150,7 +150,7 @@ Record.subclass('lk::data::DOMRecord', {
 
 });
 
-lk.data.DOMRecord.subclass('lk::data::DOMNodeRecord', {
+lively.data.DOMRecord.subclass('lively.data.DOMNodeRecord', {
     documentation: "uses nodes instead of attributes to store values",
 
     getRecordField: function(name) { 
@@ -219,7 +219,7 @@ lk.data.DOMRecord.subclass('lk::data::DOMNodeRecord', {
 // note: the following happens later
 //Class.addMixin(DOMRecord, Wrapper.prototype);
 
-Record.subclass('lk::data::StyleRecord', {
+Record.subclass('lively.data.StyleRecord', {
     description: "base class for records backed by a DOM Node",
     getRecordField: function(name) { 
 	dbgOn(!this.rawNode || !this.rawNode.style);
@@ -409,17 +409,17 @@ var Converter = {
 	var t, b, l, r;
 	switch (box.length) {
 	case 1:
-	    b = l = r = t = lk.Length.parse(box[0].strip());
+	    b = l = r = t = lively.Length.parse(box[0].strip());
 	    break;
 	case 2:
-	    t = b = lk.Length.parse(box[0].strip());
-	    l = r = lk.Length.parse(box[1].strip());
+	    t = b = lively.Length.parse(box[0].strip());
+	    l = r = lively.Length.parse(box[1].strip());
 	    break;
 	case 4:
-	    t = lk.Length.parse(box[0].strip());
-	    l = lk.Length.parse(box[1].strip());
-	    b = lk.Length.parse(box[2].strip());
-	    r = lk.Length.parse(box[3].strip());
+	    t = lively.Length.parse(box[0].strip());
+	    l = lively.Length.parse(box[1].strip());
+	    b = lively.Length.parse(box[2].strip());
+	    r = lively.Length.parse(box[3].strip());
 	    break;
 	default:
 	    console.log("unable to parse padding " + padding);
@@ -680,7 +680,7 @@ Object.subclass('Wrapper', {
     },
 
     uri: function() {
-	return lk.FragmentURI.fromString(this.id());
+	return lively.FragmentURI.fromString(this.id());
     },
     
     // convenience attribute access
@@ -699,7 +699,7 @@ Object.subclass('Wrapper', {
     },
     
     getLengthTrait: function(name) {
-	return lk.Length.parse(this.rawNode.getAttributeNS(null, name));
+	return lively.Length.parse(this.rawNode.getAttributeNS(null, name));
     },
 
     setLengthTrait: function(name, value) {
@@ -731,7 +731,7 @@ Object.subclass('Wrapper', {
 
     preparePropertyForSerialization: function(prop, propValue, extraNodes) {
 	function isWrapper(m) {
-	    return m instanceof Wrapper || m instanceof lk.data.DOMRecord;
+	    return m instanceof Wrapper || m instanceof lively.data.DOMRecord;
 	}
 	var self = this;
 	function appendNode(node) {
@@ -802,8 +802,8 @@ Object.subclass('Wrapper', {
 
 });
     
-Class.addMixin(lk.data.DOMRecord, Wrapper.prototype);
-Class.addMixin(lk.data.DOMNodeRecord, Wrapper.prototype);
+Class.addMixin(lively.data.DOMRecord, Wrapper.prototype);
+Class.addMixin(lively.data.DOMNodeRecord, Wrapper.prototype);
 
 
 
@@ -839,7 +839,7 @@ Wrapper.subclass("Gradient", {
     offset: function(index) {
 	var stops = this.rawStopNodes();
 	if (!stops[index || 0]) return null;
-	return lk.Length.parse(stops[index || 0].getAttributeNS(null, "offset"));
+	return lively.Length.parse(stops[index || 0].getAttributeNS(null, "offset"));
     },
 
     processSpec: function(stopSpec) {
@@ -1326,7 +1326,7 @@ Visual.addProperties({
     LineCap: {name: "stroke-linecap"},
     StrokeDashArray: {name: "stroke-dasharray"},
     StyleClass: {name: "class"}
-}, Config.useStyling ? lk.data.StyleRecord : lk.data.DOMRecord);
+}, Config.useStyling ? lively.data.StyleRecord : lively.data.DOMRecord);
 
 Visual.addMethods({   
 
@@ -1441,7 +1441,7 @@ Visual.addMethods({
 
     isDisplayed: function() {
 	// Note: this may not be correct in general in SVG due to inheritance,
-	// but should work in LK.
+	// but should work in LIVELY.
 	var hidden = this.rawNode.getAttributeNS(null, "display") == "none";
 	return hidden == false;
     },
@@ -1980,11 +1980,11 @@ Visual.subclass('Image', {
     },
 
     getWidth: function(optArg) {
-	return lk.Length.parse((optArg || this.rawNode).getAttributeNS(null, "width"));
+	return lively.Length.parse((optArg || this.rawNode).getAttributeNS(null, "width"));
     },
 
     getHeight: function(optArg) {
-	return lk.Length.parse((optArg || this.rawNode).getAttributeNS(null, "height"));
+	return lively.Length.parse((optArg || this.rawNode).getAttributeNS(null, "height"));
     },
 
     reload: function() {
@@ -2795,7 +2795,7 @@ Morph.addMethods({
 		        console.log("Error in deserializing " + type + ", no class");
 		    $A(node.getElementsByTagName("record")).forEach(function(child) {
 			var spec = JSON.unserialize(child.getElementsByTagName("definition")[0].textContent);
-			var Rec = lk.data.DOMRecord.prototype.create(spec);
+			var Rec = lively.data.DOMRecord.prototype.create(spec);
 			var model = new Rec(importer, child);
 			var id = child.getAttribute("id");
 			if (id) importer.addMapping(id, model); 
@@ -4765,9 +4765,9 @@ Morph.subclass("PasteUpMorph", {
 });
 
 
-namespace('lk::text');
+namespace('lively.text');
 
-using(lk.text).run(function(text) {
+using(lively.text).run(function(text) {
 
 /**
  * @class WorldMorph
@@ -5417,7 +5417,7 @@ Object.extend(WorldMorph, {
     
 });
 
-}); // using(lk.text)
+}); // using(lively.text)
 
 
 /**
@@ -6071,7 +6071,7 @@ LinkMorph.subclass('ExternalLinkMorph');
 
 ExternalLinkMorph.addProperties({
     URL: { name: "url"}
-}, lk.data.DOMRecord);
+}, lively.data.DOMRecord);
 
 ExternalLinkMorph.addMethods({
     documentation: "A link to a different web page, presumably containing another LK",

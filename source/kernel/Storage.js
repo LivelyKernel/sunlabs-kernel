@@ -12,9 +12,9 @@
  * Storage.js.  Storage system implementation.
  */
 
-namespace('lk::storage');
+namespace('lively.storage');
  
-using(lk.storage).run(function(module) {
+using(lively.storage).run(function(module) {
 
 Morph.subclass('PackageMorph', {
     documentation: "Visual representation for a serialized morph",
@@ -105,7 +105,7 @@ Morph.subclass('PackageMorph', {
 });
 
 
-Wrapper.subclass('lk::storage::CollectionItem', {
+Wrapper.subclass('lively.storage.CollectionItem', {
     documentation: "Wrapper around information returned from WebDAV's PROPFIND",
 
     nameQ: new Query("D:href"),
@@ -147,7 +147,7 @@ Wrapper.subclass('lk::storage::CollectionItem', {
 });
 
 
-View.subclass('lk::storage::WebFile', NetRequestReporterTrait, { 
+View.subclass('lively.storage.WebFile', NetRequestReporterTrait, { 
     documentation: "Read/Write file",     // merge with Resource?
     pins: ["-File", "Content", "+DirectoryList", "-RootNode"],
 
@@ -668,10 +668,10 @@ TwoPaneBrowser.subclass('FileBrowser', {
 		}]);
 	    }
 	    
-	    if (lk.tools.SourceControl) {
+	    if (lively.tools.SourceControl) {
 		var fileName = url.filename();
 		items.unshift(['open a changeList browser', function(evt) {
-                    var chgList = lk.tools.SourceControl.changeListForFileNamed(fileName);
+                    var chgList = lively.tools.SourceControl.changeListForFileNamed(fileName);
 		    new ChangeList(fileName, null, chgList).openIn(this.world()); 
 		}]);
 	    }
@@ -753,7 +753,7 @@ TwoPaneBrowser.subclass('FileBrowser', {
 });
 
 
-View.subclass('lk::storage::DOMFetcher', {
+View.subclass('lively.storage.DOMFetcher', {
 
     initialize: function($super, plug) {
 	$super(plug);

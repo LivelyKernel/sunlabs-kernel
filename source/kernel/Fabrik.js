@@ -1750,7 +1750,7 @@ Widget.subclass('Component', {
         var records = this.rawNode.getElementsByTagName('record')
         if (records.length > 0) {
             // this.formalModel = this.deserializeModelFromNode(importer, records[0]);
-            this.formalModel = new lk.data.DOMNodeRecord(importer, rawNode.getElementsByTagName('record')[0])
+            this.formalModel = new lively.data.DOMNodeRecord(importer, rawNode.getElementsByTagName('record')[0])
             this.formalModel.owner = this; // remember the component diretly in a non persisten way 
         } else console.warn('No record for ' + this);
         
@@ -2962,7 +2962,7 @@ Morph.subclass("FabrikClockMorph", {
         for (var i = 0; i < items.length; i++) {
             var labelPosition = bnds.center().addPt(Point.polar(radius*0.85, ((i-3)/items.length)*Math.PI*2)).addXY(labelSize/2, 0);
             var label = new TextMorph((pt(labelSize*3, labelSize).extentAsRectangle()), items[i]);
-            label.applyStyle({borderWidth: 0, fill: null, wrapStyle: lk.text.WrapStyle.Shrink, fontSize: labelSize, padding: Rectangle.inset(0)});
+            label.applyStyle({borderWidth: 0, fill: null, wrapStyle: lively.text.WrapStyle.Shrink, fontSize: labelSize, padding: Rectangle.inset(0)});
             label.align(label.bounds().center(), labelPosition.addXY(1, 0));
             this.addMorph(label);
         }

@@ -12,11 +12,11 @@
  * Text.js.  Text-related functionality.
  */
 
-namespace('lk::text');
+namespace('lively.text');
 
-using(lk.text).run(function(module) {
+using(lively.text).run(function(module) {
 
-Object.subclass('lk::text::CharacterInfo', {
+Object.subclass('lively.text.CharacterInfo', {
     // could simply use Point as extent.
     documentation: "simple printable info about a character's extent",
 
@@ -32,7 +32,7 @@ Object.subclass('lk::text::CharacterInfo', {
 });
 
 
-Object.subclass('lk::text::Font', {
+Object.subclass('lively.text.Font', {
 
     documentation: "representation of a font",
     baselineFactor: 0.80,
@@ -833,7 +833,7 @@ TextMorph.addProperties({
     StoredTextStyle: {name: "stored-style", from:Converter.fromJSONAttribute, to:Converter.toJSONAttribute },
     Wrap: { name: "wrap", byDefault: module.WrapStyle.Normal },
     Padding: { name: "padding", byDefault: String(Rectangle.inset(6, 4).toInsetTuple()) } // FIXME move to coercion funcions
-}, lk.data.DOMRecord);
+}, lively.data.DOMRecord);
 
 TextMorph.addMethods({
     
@@ -1557,7 +1557,7 @@ TextMorph.addMethods({
 
     // FIXME integrate into model of TextMorph
     setRichText: function(text) {
-        if (!(text instanceof lk.text.Text)) dbgOn(new Error('Not text'));
+        if (!(text instanceof lively.text.Text)) dbgOn(new Error('Not text'));
         this.textStyle = text.style;
         this.setStoredTextStyle(this.textStyle);
         this.setTextString(text.string);
@@ -1882,7 +1882,7 @@ TextMorph.addMethods({
 	    this.searchForFind(this.lastSearchString, this.lastFindLoc + this.lastSearchString.length);
     },
     doSearch: function() {
-        if (lk.tools.SourceControl) SourceControl.browseReferencesTo(this.getSelectionString()); 
+        if (lively.tools.SourceControl) SourceControl.browseReferencesTo(this.getSelectionString()); 
     },
     doDoit: function() {
         var strToEval = this.getSelectionString(); 
@@ -2192,7 +2192,7 @@ TextMorph.addMethods({
 Object.extend(TextMorph, {
     makeLabel: function(labelString, fontSize) {
 	var label = new TextMorph(new Rectangle(0,0,200,100), labelString);
-	label.applyStyle({borderWidth: 0, fill: null, wrapStyle: lk.text.WrapStyle.Shrink, fontSize: (fontSize || 12), padding: Rectangle.inset(0)});
+	label.applyStyle({borderWidth: 0, fill: null, wrapStyle: lively.text.WrapStyle.Shrink, fontSize: (fontSize || 12), padding: Rectangle.inset(0)});
 	return label;
     }
 });
@@ -2520,7 +2520,7 @@ Object.extend(RunArray, {
 //RunArray.test([3, 1, 2]);
 
     
-Object.subclass('lk::text::Text', {
+Object.subclass('lively.text.Text', {
     // Rich text comes to the Lively Kernel
     initialize: function(string, style) {
 	this.string = string;

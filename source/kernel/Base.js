@@ -17,7 +17,7 @@ function dbgOn(cond) {
 // namespace logic adapted frm
 // http://higher-order.blogspot.com/2008/02/designing-clientserver-web-applications.html
 function using() {
-    var args = arguments; // FIXME: enable using('lk::text')
+    var args = arguments; // FIXME: enable using('lively.text')
     return {run: function(inner) { return inner.apply(args[0], args); }};
 }
 
@@ -40,7 +40,7 @@ function namespace(spec, context) {
     } else if (typeof spec === 'string') {
         (function handleStringCase() {
             var parts;
-            parts = spec.split('::');
+            parts = spec.split('.');
             for (i = 0, N = parts.length; i<N; i++) {
                 spec = parts[i];
 		if (!Class.isValidIdentifier(spec)) {
@@ -167,7 +167,7 @@ Object.extend(Function.prototype, {
 	var targetScope = Global;
 	var shortName = null;
 	if (className) {
-	    var path = className.split('::');
+	    var path = className.split('.');
 	    if (path.length > 1) {
 		for (var i = 0; i < path.length - 1; i++) {
 		    if (!Class.isValidIdentifier(path[i]))
@@ -991,10 +991,10 @@ Object.extend(Record, {
 	if (arguments.length < 2) throw new Error("call with two or more arguments");
 	var storeClass;
 	if (!optStore) {
-	    storeClass = lk.data.DOMNodeRecord; // FXIME forward reference
+	    storeClass = lively.data.DOMNodeRecord; // FXIME forward reference
 	    optStore = NodeFactory.create("record"); // FIXME flat JavaScript instead by default?
 	} else {
-	    storeClass = optStore instanceof Global.Node ? lk.data.DOMNodeRecord : PlainRecord;
+	    storeClass = optStore instanceof Global.Node ? lively.data.DOMNodeRecord : PlainRecord;
 	}
 
 	var Rec = storeClass.prototype.create(fieldSpec);
@@ -1234,13 +1234,13 @@ Object.extend(Relay, {
 });
 
 
-namespace('lk');
+namespace('lively');
 
 
 // See http://www.w3.org/TR/css3-values/
 // and http://www.w3.org/TR/CSS2/syndata.html#values    
 
-Object.extend(Object.subclass('lk::Length'), {
+Object.extend(Object.subclass('lively.Length'), {
 
     parse: function(string) {
 	// FIXME: handle units
@@ -1249,7 +1249,7 @@ Object.extend(Object.subclass('lk::Length'), {
 });
 
 
-Object.extend(lk.Length.subclass('lk::Coordinate'), {
+Object.extend(lively.Length.subclass('lively.Coordinate'), {
     parse: function(string) {
 	// FIXME: handle units
 	return parseFloat(string);
@@ -1277,8 +1277,8 @@ Object.subclass("Point", {
 
     deserialize: function(importer, string) { // reverse of toString
 	var array = string.substring(3, string.length - 1).split(',');
-	this.x = lk.Coordinate.parse(array[0]);
-	this.y = lk.Coordinate.parse(array[1]);
+	this.x = lively.Coordinate.parse(array[0]);
+	this.y = lively.Coordinate.parse(array[1]);
     },
 
     addPt: function(p) { return new Point(this.x + p.x, this.y + p.y); },

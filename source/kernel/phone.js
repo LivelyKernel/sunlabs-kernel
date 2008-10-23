@@ -72,7 +72,7 @@ Morph.subclass('PhoneMorph', {
 		shim.setFillOpacity(.5);
 
 		var label = new TextMorph(new Rectangle(0,0,big*0.9,100), "X18814");
-		label.applyStyle({fontSize: 16, borderWidth: 1, fill: null, wrapStyle: lk.text.WrapStyle.Shrink});
+		label.applyStyle({fontSize: 16, borderWidth: 1, fill: null, wrapStyle: lively.text.WrapStyle.Shrink});
 		label.translateBy(label.bounds().center().negated());
 
 		var letters = ["oper"," ","ABC","DEF","GHI","JKL","MNO","PRS","TUV","WXZ"];
@@ -93,7 +93,7 @@ Morph.subclass('PhoneMorph', {
 			var txt = letters[idx] + "\n   "+ idx;
 			var digit = new TextMorph(new Rectangle(0, 0, 40, 20), txt);
 			digit.scaleBy(1.7*small/digit.bounds().height);
-			digit.applyStyle({borderWidth: 0, fill: null, wrapStyle: lk.text.WrapStyle.Shrink});
+			digit.applyStyle({borderWidth: 0, fill: null, wrapStyle: lively.text.WrapStyle.Shrink});
 			var adj=pt(small, -small).scaleBy(rt2);
 			digit.translateBy(x.addPt(adj).subPt(digit.bounds().center())); // should use align
 			digit.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});

@@ -284,7 +284,7 @@ TextMorph.subclass("CaptionTextMorph", {
 
     initialize: function($super, initialBounds, text, model) {
         $super(initialBounds, text);
-        this.setWrapStyle(lk.text.WrapStyle.NONE);
+        this.setWrapStyle(lively.text.WrapStyle.NONE);
         this.setFill(Color.gray);
         this.setBorderWidth(0); // Use unbordered text
         this.suppressHandles = true; // No handles!

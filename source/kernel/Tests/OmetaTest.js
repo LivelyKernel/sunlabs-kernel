@@ -21,8 +21,8 @@ TestCase.subclass('TextTest', {
     // to test assertion
     testThisTest: function() {
         var style = {style: 'bold', fontSize: 4, color: Color.red};
-        var text = new lk.text.Text('Hello', style);
-        this.assert(text instanceof lk.text.Text, 'not text');
+        var text = new lively.text.Text('Hello', style);
+        this.assert(text instanceof lively.text.Text, 'not text');
         // result.asMorph().openInWorld();
         this.assertTextStyle(text, {color: Color.red}, 0, text.string.length);
     }

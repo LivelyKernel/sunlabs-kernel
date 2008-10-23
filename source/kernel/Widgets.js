@@ -27,7 +27,7 @@
 
 
 
-using(lk.text).run(function(text) {
+using(lively.text).run(function(text) {
 
 
 Morph.subclass('ButtonMorph', {
@@ -3103,7 +3103,7 @@ Widget.addMethods({
             var spec = JSON.unserialize(node.textContent);
         else
             var spec = {};
-        var Rec = lk.data.DOMRecord.prototype.create(spec);
+        var Rec = lively.data.DOMRecord.prototype.create(spec);
         var model = new Rec(importer, node);
         return model;
     },
