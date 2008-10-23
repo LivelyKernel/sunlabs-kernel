@@ -8,10 +8,10 @@ TestCase.subclass('TileHolderTest', {
         var tile = new Tile();
         
         this.assertEqual(holder.submorphs.length, 1, 'More or less than one submorph');
-        this.assert(holder.submorphs[0] instanceof DropArea, 'No DropArea');
+        this.assert(holder.submorphs[0].isDropArea, 'No DropArea');
         holder.submorphs[0].addMorph(tile);
         this.assertEqual(holder.submorphs.length, 2, 'No new DropArea added');
-        this.assert(holder.submorphs[1] instanceof DropArea, 'No DropArea');
+        this.assert(holder.submorphs[1].isDropArea, 'No DropArea');
     }
 });
 
@@ -40,17 +40,57 @@ TestCase.subclass('DropAreaTest', {
     
     testResizeWhenTileAdded: function() {
         var drop = new DropArea(pt(20,20).extentAsRectangle());
-        drop.openInWorld();
         var tile = new Tile(pt(50,50).extentAsRectangle());
-        // dbgOn(true);
         drop.addMorph(tile);
         this.assertEqual(drop.getExtent(), tile.getExtent(), 'no resizing...');
+    },
+    
+    testCreateTileFromMorph: function() {
+        var morph = new Morph(pt(20,20).extentAsRectangle());
+        var result = morph.asTile();
+        
+        this.assertIdentity(morph, result.targetMorph);
+        this.assertEqual(morph.id(), result.objectId());
     }
 });
+
+TestCase.subclass('ObjectTileTest', {
+   
+        // var morph = new Morph(new Rectangle(10,10,110,210));
+        // morph.closeDnD();
+        // morph.handlesMouseDown = Functions.True;
+        // morph.onMouseDown = function() { console.log('clicked')};
+        // morph.openInWorld();
+         
+    testAcceptsMorph: function() {
+        var tile = new ObjectTile();
+        var morph = new Morph(pt(20,20).extentAsRectangle());
+        
+        tile.createAlias(morph);
+        this.assertEqual(tile.objectId(), morph.id(), 'Morph id not added ti tile');
+    },
     
-// TestCase.subclass('TileTest', {
-//     
-// });
+    testTileMenuSpecCreation: function() {
+        Object.subclass('Dummy', { a: function() {}, b: function() {}, c: 123});
+        var obj = new Dummy();
+        var sut = new TileMenuCreator(obj);
+        
+        var classNames = sut.classNames();
+        this.assertEqualState(classNames, ['Dummy']);
+        
+        var methodNames = sut.methodNamesFor('Dummy');
+        this.assertEqualState(methodNames, ['a', 'b']);
+    },
+    
+    testTileMenuCreation: function() {
+        Object.subclass('Dummy', { a: function() {}, b: function() {}, c: 123});
+        var obj = new Dummy();
+        var sut = new TileMenuCreator(obj);
+        
+        var menu = sut.createMenu();
+        this.assertEqual(menu.items.length, 1, 'wrong number of menu items');
+    }
+});
 
 TestCase.subclass('IfTileTest', {
     

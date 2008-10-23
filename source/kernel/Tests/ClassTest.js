@@ -23,6 +23,12 @@ TestCase.subclass('ClassTest', {
 		this.assert(Class.isClass(DummyClass));	 
 		this.assertEqual(DummyClass.allSubclasses().length, 3); 
 		//this.assertEquals(SubDummyClass1.allSubclasses[0], SubSubDummyClass); 
-		
+	},
+	
+	testGetSuperClasses: function() {
+	    TestCase.subclass('A', {});
+		A.subclass('B', {});
+		var result = A.superclasses();
+		this.assertEqualState(result, [Object, TestCase, A]);
 	}
 });

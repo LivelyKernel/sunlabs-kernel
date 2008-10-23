@@ -1555,8 +1555,6 @@ TextMorph.addMethods({
 	    : new module.Text(this.getSelectionString());
     },
 
-    //this.setRichText = this.setRichText.wrap(function(proceed, text) {dbgOn(true), proceed(text) })
-    //this.setRichText(new lk.text.Text('123'))
     // FIXME integrate into model of TextMorph
     setRichText: function(text) {
         if (!(text instanceof lk.text.Text)) dbgOn(new Error('Not text'));

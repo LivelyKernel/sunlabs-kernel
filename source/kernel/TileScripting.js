@@ -44,11 +44,23 @@ Layout.subclass('HLayout', {
     
 });
 
+// Extensions
+// TODO: Merge
+
 Morph.addMethods({
    layout: function(notResizeSelf) {
        this.layouterClass && new this.layouterClass(this, !notResizeSelf).layout();
        this.owner && this.owner.layout();
+   },
+   asTile: function() {
+       return new ObjectTile(null,this);
    }
+});
+Morph.prototype.morphMenu = Morph.prototype.morphMenu.wrap(function(proceed, evt) {
+    var menu = proceed(evt);
+    menu.addItem(["as tile", function(evt) { evt.hand.addMorph(this.asTile()) }.bind(this)], 3);
+    // menu.addSubmenuItem(['submenu', function(evt) { return [['1'],['2'],['3']] }])
+    return menu;
 });
 
 Widget.subclass('TileBox', {
@@ -197,7 +209,14 @@ Morph.subclass('TileHolder', {
         var self = this;
         dropArea.addMorph = dropArea.addMorph.wrap(function(proceed, morph) {
             proceed(morph);
-            self.addDropArea();
+            
+            // find empty DropAreas
+            var emptyDrop = self.submorphs.detect(function(ea) { return ea.isDropArea && !ea.tile() });
+            if (emptyDrop) {
+                self.removeMorph(emptyDrop); self.addMorph(emptyDrop); // take it below
+            } else {
+                self.addDropArea();
+            }
             return morph;
         })
         this.addMorph(dropArea);
@@ -221,7 +240,7 @@ Morph.subclass('Tile', {
     
     addMorph: function($super, morph) {
         $super(morph);
-        if (morph instanceof HandleMorph) return;
+        if (morph instanceof HandleMorph) return morph;
         this.layout();
         return morph;
     },
@@ -243,22 +262,134 @@ Tile.subclass('DebugTile', {
     
     initialize: function($super, bounds, sourceString) {
         $super(bounds, "rect");
+        
         this.myString = '';
         this.text = this.addMorph(new TextMorph(this.shape.bounds().insetBy(5)));
-        this.text.connectModel({model: this, setText: "setMyString"});
-        this.text.setText(sourceString || '"enter code"');
-        this.closeAllToDnD();
-        // FIXME why is it so hard to use a SIMPLE TextMorph??!
+        this.text.connectModel({model: {setMyString: function(string) { this.myString = string }.bind(this) }, setText: "setMyString"});
+        this.text.setText(sourceString);
         
+        this.closeAllToDnD();
+        // FIXME why is it so hard to use a SIMPLE TextMorph??!  
     },
-    
-    setMyString: function(string) { this.myString = string },
     
     asJs: function() {
         return this.myString;
     }
 });
+
+Tile.subclass('ObjectTile', {
     
+    initialize: function($super, bounds, targetMorphOrObject) {
+        $super(bounds, "rect");
+        
+        this.myString = '';
+        this.label = this.addMorph(new TextMorph(this.shape.bounds()));
+        this.label.beLabel();
+        
+        if (targetMorphOrObject) this.createAlias(targetMorphOrObject);
+        
+    },
+    
+    createAlias: function(morph) {
+        this.targetMorph = morph;
+        this.label.setTextString(this.objectId());
+        this.addMenuButton();
+    },
+    
+    objectId: function() {
+        return this.targetMorph.id();
+    },
+        
+    addMenuButton: function() {
+        var extent = pt(8,8);
+        this.menuTrigger = this.addMorph(new ButtonMorph(extent.extentAsRectangle()));
+        this.menuTrigger.moveBy(pt(0,this.getExtent().y/2 - extent.x/2));
+        this.menuTrigger.setFill(this.getFill().darker());
+        this.menuTrigger.connectModel({model: this, setValue: "openMenu"});
+    },
+    
+    openMenu: function(btnVal) {
+        if (!btnVal) return;
+        var menu = new TileMenuCreator(this.targetMorph).createMenu();
+        var pos = this.getGlobalTransform().transformPoint(this.menuTrigger.getPosition());
+    	menu.openIn(this.world(), pos, false, this.targetMorph.toString());
+    }
+        
+});
+
+Object.subclass('TileMenuCreator', {
+    
+    initialize: function(obj) {
+        this.target = obj;
+    },
+    
+    classes: function() {
+        var classes = this.target.constructor.superclasses().concat(this.target.constructor);
+        classes.shift(); // remove Object
+        return classes;
+    },
+    
+    classNames: function() {
+        return this.classes().collect(function(ea) { return ea.type });
+    },
+    
+    methodNamesFor: function(className) {
+        var allMethods = Global[className].localFunctionNames();
+        return allMethods.without.apply(allMethods, this.ignoredMethods);
+    },
+    
+    createMenu: function() {
+        var menu = new MenuMorph([], this.target);
+        this.classNames().each(function(ea) { this.addClassMenuItem(menu, ea)}, this);
+        return menu;
+    },
+    
+    addClassMenuItem: function(menu, className) {
+        var self = this;
+        menu.addSubmenuItem([className, function(evt) {
+            return self.methodNamesFor(className).collect(function(ea) { return [ea] });
+        }])
+    },
+    
+    // addMethodMenuItem: function(menu, methodName) {
+    //     return [methodName];
+    // }
+    
+    ignoredMethods: [ // from Morph
+                    "constructor", "setCopySubmorphsOnGrab", "getCopySubmorphsOnGrab", "internalInitialize", "initialize", "initializePersistentState",
+                    "initializeTransientState", "copyFrom", "deserialize", "prepareForSerialization", "restorePersistentState", "restoreDefs",
+                    "restoreFromSubnode", "restoreFromSubnodes", "setLineJoin", "setLineCap", "applyStyle", "makeStyleSpec", "applyStyleNamed", "styleNamed",
+                    "applyLinkedStyles", "applyFunctionToShape", "internalSetShape", "setShape", "reshape", "setVertices", "internalSetBounds", "setBounds",
+                    "addNonMorph", "addWrapper", "addPseudoMorph", "addWrapperToDefs", "addMorphAt", "addMorphFront", "addMorphBack", "addMorphFrontOrBack",
+                    "insertMorph", "removeAllMorphs", "hasSubmorphs", "withAllSubmorphsDo", "invokeOnAllSubmorphs", "topSubmorph", "shutdown",
+                    "okToDuplicate", "getTransform", "pvtSetTransform", "setTransform", "transformToMorph", "getGlobalTransform", "translateBy",
+                    "defaultOrigin", "throb", "align", "centerAt", "toggleFisheye", "setFisheyeScale", "getHelpText", "showHelp", "hideHelp",
+                    "captureMouseEvent", "ignoreEvents", "enableEvents", "relayMouseEvents", "handlesMouseDown", "onMouseDown", "onMouseMove", "onMouseUp",
+                    "considerShowHelp", "delayShowHelp", "onMouseOver", "onMouseOut", "onMouseWheel", "takesKeyboardFocus", "setHasKeyboardFocus",
+                    "requestKeyboardFocus", "relinquishKeyboardFocus", "onFocus", "onBlur", "removeFocusHalo", "adjustFocusHalo", "addFocusHalo",
+                    "checkForControlPointNear", "okToBeGrabbedBy", "editMenuItems", "showMorphMenu", "morphMenu", "showPieMenu", "putMeInAWindow",
+                    "putMeInATab", "putMeInTheWorld", "immediateContainer", "windowContent", "windowTitle", "toggleDnD", "openDnD", "closeDnD",
+                    "closeAllToDnD", "openAllToDnD", "dropMeOnMorph", "pickMeUp", "notify", "showOwnerChain", "copyToHand",
+                    "morphToGrabOrReceiveDroppingMorph", "morphToGrabOrReceive", "morphToReceiveEvent", "ownerChain", "acceptsDropping",
+                    "startSteppingScripts", "suspendAllActiveScripts", "suspendActiveScripts", "resumeAllSuspendedScripts", "bounds", "submorphBounds",
+                    "innerBounds", "localBorderBounds", "worldPoint", "relativize", "relativizeRect", "localize", "localizePointFrom",
+                    "transformForNewOwner", "changed", "layoutOnSubmorphLayout", "layoutChanged", "adjustForNewBounds", "position", "clipToPath",
+                    "clipToShape", "addSvgInspector", "addModelInspector", "connectModel", "relayToModel", "reconnectModel", "checkModel", "disconnectModel",
+                    "getModel", "getActualModel", "getModelPlug", "getModelValue", "setModelValue", "updateView", "exportLinkedFile", "isContainedIn",
+                    "leftAlignSubmorphs", "window", "layout","setBorderWidth", "getBorderWidth", "shapeRoundEdgesBy", "setStrokeOpacity", "linkToStyles",
+                    "fullContainsPoint", "fullContainsWorldPoint", "removeMorph", "world", "inspect", "stopStepping", "startStepping", "addActiveScript",
+                    "getStrokeOpacity", "setStrokeWidth", "getStrokeWidth", "setStroke", "getStroke", "getLineJoin", "getLineCap", "setStrokeDashArray",
+                    "getStrokeDashArray", "setStyleClass", "getStyleClass", "getRecordField", "setRecordField", "removeRecordField", "newRelay",
+                    "create", "addField", "areEventsIgnored", "getLocalTransform", "addObserver", "removeObserver", "addObserversFromSetters",
+                    "getBoundingBox", "nativeBounds", "nativeWorldBounds", "canvas", "nativeContainsWorldPoint", "undisplay", "display", "isDisplayed",
+                    "applyFilter", "getBaseTransform", "copy", "getType", "getEncodedType", "newId", "id", "setId", "setDerivedId", "removeRawNode",
+                    "replaceRawNodeChildren", "toMarkupString", "uri", "getLivelyTrait", "setLivelyTrait", "removeLivelyTrait", "getLengthTrait",
+                    "setLengthTrait", "getTrait", "setTrait", "removeTrait", "preparePropertyForSerialization",
+                    
+                    // from OMeta
+                    "printOn", "delegated", "ownPropertyNames", "hasProperty", "isNumber", "isString", "isCharacter"]
+});
+
 Tile.subclass('IfTile', {
     
     initialize: function($super, bounds) {
@@ -275,6 +406,9 @@ Tile.subclass('IfTile', {
     
 Morph.subclass('DropArea', {
 
+    isDropArea: true,
+    layouterClass: VLayout,
+    
     initialize: function($super, bounds) {
         $super(bounds, "rect");
         this.suppressHandles = true;
@@ -295,12 +429,10 @@ Morph.subclass('DropArea', {
     },
     
     addMorph: function($super, morph) {
-        // dbgOn(true);
-        if (this.tile() || !(morph instanceof Tile)) return morph;
-        
+        if (this.tile() || !morph.isTile) return morph; // FIXME think that morph was accepted... overwrite acceptmorph for that or closeDnD
         this.setExtent(morph.getExtent());
         $super(morph);
-        morph.setPosition(pt(0,0));
+        this.layout();
         this.owner && this.owner.layout();
         // this.layoutChanged();
         // this.closeDnD();
