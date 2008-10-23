@@ -169,7 +169,15 @@ function morphicMain() {
 
     canvas._fxBegin.requestFocus();
     swingDemo();
-    swingFileChooserDemo();
+    //swingFileChooserDemo();
+    
+    // piano
+    module('Main.js').requires('Examples.js').toRun(function() {
+        var m = new PianoKeyboard(pt(150, 550));
+        m.scaleBy(1.5);  
+	m.rotateBy(-0.2);
+    	world.addMorph(m);
+    });
 
 }
 

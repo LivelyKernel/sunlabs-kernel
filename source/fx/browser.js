@@ -610,23 +610,52 @@ fx.dom.renderers[SVGForeignObjectElement.tagName] = function(element, attribute)
 
 // end of SVG impl
 
+
 Object.subclass('Audio', { // stubbed out HTML5 Audio
     volume: 0,
-    url: null,
+    _src: null,
+    currentNote: -1,
     currentTime: 0.0,
+
+    get src() {
+	return this._src;
+    },
+
+    set src(value) {
+	this._src = value;
+    },
+
     load: function() {
 	// now load
     },
 
-    initialize: function(url) {
-	console.log('creating new audio with url ' + url);
-	this.url = url;
+    initialize: function(src) {
+	this._src = src;
+	var synth = Packages.javax.sound.midi.MidiSystem.getSynthesizer();
+	synth.open();
+	var channels = synth.getChannels();
+	this.channel = channels[1];
+	// FIXME close on unload?
     },
-
+    
     play: function() {
+	// currently we ignore the URL and use the query part to encode MIDI parameters
+	var query = this._src && this._src.match(/.*\?(.*)/);
+	if (!query) return;
+	var pairs = query[1].split('&');
+	var dict = {};
+	for (var i = 0; i < pairs.length; i++)  {
+	    var pair = pairs[i].split('=');
+	    dict[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1]);
+	}
+	const baseOctave = 3;
+	this.currentNote = parseInt(dict['noteNumber']) - 1 + baseOctave*12;
+	var velocity = dict['velocity'] || 200;
+	this.channel.noteOn(this.currentNote, velocity);
     },
 
     pause: function() {
+	this.channel.noteOff(this.currentNote);
     }
 
 });
