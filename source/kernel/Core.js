@@ -439,6 +439,7 @@ var Converter = {
 
     nodeEncodeFilter: function(baseObj, key) {
         var value = baseObj[key];
+	if (!value) return value;
         if (!value.nodeType) return value;
         if (value.nodeType !== document.DOCUMENT_NODE && value.nodeType !== document.DOCUMENT_TYPE_NODE)
             return JSON.serialize({XML: new XMLSerializer().serializeToString(value)});
@@ -498,20 +499,20 @@ var Converter = {
 	} else if (propValue instanceof Rectangle) {
 	    desc.setAttributeNS(null, "family", "Rectangle");
 	    desc.appendChild(NodeFactory.createCDATA(JSON.serialize(propValue)));
-    } else if (propValue.nodeType === document.DOCUMENT_NODE && propValue.nodeType === document.DOCUMENT_TYPE_NODE) {
-                throw new Error('Cannot store Document/DocumentType'); // to be removed
-    } else if (propValue.nodeType) {
-        desc.setAttributeNS(null, "isNode", true); // Replace with DocumentFragment
-        desc.appendChild(propValue);
+	} else if (propValue.nodeType === document.DOCUMENT_NODE && propValue.nodeType === document.DOCUMENT_TYPE_NODE) {
+            throw new Error('Cannot store Document/DocumentType'); // to be removed
+	} else if (propValue.nodeType) {
+            desc.setAttributeNS(null, "isNode", true); // Replace with DocumentFragment
+            desc.appendChild(propValue);
 	} else return null;
 	return desc;
     },
-
+    
     isJSONConformant: function(value) { // for now, arrays not handled but could be
         if (value instanceof Element && value.ownerDocument === document) return false;
-        return true;
         // why disallow all objects?
-        // return value == null || (typeof value.valueOf()  !== 'object');
+	// KP: because we don't know how to handle them up front, special cases handled bye encodeProperty
+        return value == null || (typeof value.valueOf()  !== 'object');
     }
 
 };
