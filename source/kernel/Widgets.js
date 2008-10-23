@@ -1302,7 +1302,7 @@ TextListMorph.subclass("ListMorph", {
     }
 });
 
-PseudoMorph.subclass('MenuItem');
+PseudoMorph.subclass('MenuItem'); //
 
 MenuItem.addProperties({
     Selector: { name: 'selector' },
@@ -1356,6 +1356,32 @@ MenuItem.addMethods({
 
 });
 
+MenuItem.subclass("SubListMenuItem", {
+        
+    isSubListMenuItem: true,
+    
+    initialize: function($super, name, closure) {
+        $super(name + ' ->', closure);    
+    },
+    
+    getList: function(evt, targetMorph) {
+        if (!this.action) return [];
+        return this.action.call(targetMorph || this, evt);
+    },
+    
+    showMenu: function(evt, originalMenu) {
+        var target = originalMenu.targetMorph;
+        var menu = this.menu || new MenuMorph(this.getList(evt, target), target);
+        var pos = evt.point().withX(originalMenu.getPosition().x + originalMenu.listMorph.getExtent().x);
+        menu.openIn(originalMenu.owner, pos, false, Object.inspect(target).truncate()); 
+        this.menu = menu;
+    },
+    
+    closeMenu: function(evt, originalMenu) {
+        if (!this.menu) return;
+        this.menu.remove();
+    }
+});
 
 Morph.subclass("MenuMorph", {
 
@@ -1419,8 +1445,17 @@ Morph.subclass("MenuMorph", {
 	this.listMorph.relayMouseEvents(this);
     },
 
-    addItem: function(item) { 
-        this.items.push(this.addPseudoMorph(new MenuItem(item[0], item[1], item[2], item[3])));
+    addItem: function(item, index) {
+        var item = this.addPseudoMorph(new MenuItem(item[0], item[1], item[2], item[3]));
+        if (!index) {
+            this.items.push(item);
+            return
+        }
+        if (index > this.items.length || index < 0) throw dbgOn(new Error('Strange index'));
+        var parts = this.items.partition(function(ea, i) { return i < index });
+        parts[0].push(item);
+        this.items = parts[0].concat(parts[1]);
+        
     },
     arrayItems: function() {
 	return this.items.map( function(item) { return item.asArrayItem(); });
@@ -1432,6 +1467,11 @@ Morph.subclass("MenuMorph", {
         this.items.push(this.addPseudoMorph(new MenuItem('-----')));
     },
 
+    addSubmenuItem: function(item) {
+        var item = new SubListMenuItem(item[0], item[1], item[2], item[3]);
+        this.items.push(this.addPseudoMorph(item));
+    },
+    
     removeItemNamed: function(itemName) {
         // May not remove all if some have same name
         // Does not yet fix up the lines array
@@ -1562,7 +1602,24 @@ Morph.subclass("MenuMorph", {
 	evt.hand.setKeyboardFocus(this.listMorph);
         var target = this.listMorph.morphToReceiveEvent(evt);
         var index = this.listMorph.submorphs.indexOf(target);
+        if (!(index in this.items)) return;
         this.listMorph.highlightItem(evt, index, false);
+        
+        for (var i = 0; i < this.items.length; i++)
+            if (i != index && this.items[i].isSubListMenuItem)
+                this.items[i].closeMenu();
+        if (!this.items[index].isSubListMenuItem) return;
+        this.items[index].showMenu(evt, this);
+        
+        evt.hand.setMouseFocus(this);
+	    evt.hand.setKeyboardFocus(this.listMorph);
+    },
+    
+    // does not work
+    onMouseOut: function(evt) {
+            console.log("mouse moved away ....");
+        if (this.stayUp) return;
+        this.removeOnEvent(evt);
     },
     
     invokeItemAtIndex: function(evt, index) {
