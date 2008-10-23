@@ -2494,9 +2494,6 @@ Object.subclass('MouseHandlerForRelay', {
 
 
 Visual.subclass('Morph');
-Morph.addProperties({ 
-    CopySubmorphsOnGrab: {name: "copy-submorphs-on-grab", from:Converter.toBoolean, to:Converter.fromBoolean, byDefault: false}
-});
 
 Morph.addMethods({
 
@@ -3706,7 +3703,9 @@ Morph.addMethods({
 	evt.hand.setMouseFocus(handle);
 	return true; 
     },
-
+    
+    copySubmorphsOnGrab: false, // acts as a palette if true.
+    
     // May be overridden to preempt (by returning null) the default action of grabbing me
     // or to otherwise prepare for being grabbed or find a parent to grab instead
     okToBeGrabbedBy: function(evt) {
@@ -3755,10 +3754,10 @@ Morph.addMethods({
 	if (this.getModel() instanceof SyntheticModel)
 	    items.push( ["show Model dump", this.addModelInspector.curry(this)]);
 	
-	if (this.getCopySubmorphsOnGrab() == true) 
-	    items.push(["unpalettize", this.setCopySubmorphsOnGrab.curry(false)]);
-	    else 
-	    items.push(["palettize", this.setCopySubmorphsOnGrab.curry(true)]);
+	if (this.copySubmorphsOnGrab == true) 
+	    items.push(["unpalettize", function() { this.copySubmorphsOnGrab = false; }]);
+	else 
+	    items.push(["palettize", function() { this.copySubmorphsOnGrab = true; }]);
 	
 	return new MenuMorph(items, this);
     },
@@ -5713,7 +5712,7 @@ Morph.subclass("HandMorph", {
 
     
     grabMorph: function(grabbedMorph, evt) { 
-        if (evt.isShiftDown() || (grabbedMorph.owner && grabbedMorph.owner.getCopySubmorphsOnGrab() == true)) {
+        if (evt.isShiftDown() || (grabbedMorph.owner && grabbedMorph.owner.copySubmorphsOnGrab == true)) {
             if (!grabbedMorph.okToDuplicate()) return;
             grabbedMorph.copyToHand(this);
             return;

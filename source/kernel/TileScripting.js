@@ -358,7 +358,7 @@ Object.subclass('TileMenuCreator', {
     },
     
     ignoredMethods: [ // from Morph
-                    "constructor", "setCopySubmorphsOnGrab", "getCopySubmorphsOnGrab", "internalInitialize", "initialize", "initializePersistentState",
+                    "constructor", "internalInitialize", "initialize", "initializePersistentState",
                     "initializeTransientState", "copyFrom", "deserialize", "prepareForSerialization", "restorePersistentState", "restoreDefs",
                     "restoreFromSubnode", "restoreFromSubnodes", "setLineJoin", "setLineCap", "applyStyle", "makeStyleSpec", "applyStyleNamed", "styleNamed",
                     "applyLinkedStyles", "applyFunctionToShape", "internalSetShape", "setShape", "reshape", "setVertices", "internalSetBounds", "setBounds",
