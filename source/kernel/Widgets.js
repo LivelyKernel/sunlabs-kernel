@@ -164,7 +164,7 @@ Morph.subclass('ButtonMorph', {
 
 ButtonMorph.addProperties({
     Toggle: { name: "toggle", from: Converter.toBoolean, to: Converter.fromBoolean }
-});
+}, DOMRecord);
 
 
 Morph.subclass("ImageMorph", {
@@ -1307,7 +1307,7 @@ PseudoMorph.subclass('MenuItem'); //
 MenuItem.addProperties({
     Selector: { name: 'selector' },
     Argument: {name: 'argument', from:Converter.fromJSONAttribute, to:Converter.toJSONAttribute }
-});
+}, DOMRecord);
 
 MenuItem.addMethods({
     

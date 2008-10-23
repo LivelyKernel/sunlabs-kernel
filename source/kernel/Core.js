@@ -6072,7 +6072,7 @@ LinkMorph.subclass('ExternalLinkMorph');
 
 ExternalLinkMorph.addProperties({
     URL: { name: "url"}
-});
+}, DOMRecord);
 
 ExternalLinkMorph.addMethods({
     documentation: "A link to a different web page, presumably containing another LK",

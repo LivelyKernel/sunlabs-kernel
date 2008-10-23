@@ -272,8 +272,8 @@ Object.extend(Function.prototype, {
 
     },
 
-    addProperties: function(spec, optRecordType) {
-	Class.addMixin(this, (optRecordType || DOMRecord).prototype.create(spec).prototype);
+    addProperties: function(spec, recordType) {
+	Class.addMixin(this, recordType.prototype.create(spec).prototype);
     },
 
     isSubclassOf: function(aClass) {
@@ -991,7 +991,7 @@ Object.extend(Record, {
 	if (arguments.length < 2) throw new Error("call with two or more arguments");
 	var storeClass;
 	if (!optStore) {
-	    storeClass = DOMNodeRecord; // FIME forward reference
+	    storeClass = DOMNodeRecord; // FXIME forward reference
 	    optStore = NodeFactory.create("record"); // FIXME flat JavaScript instead by default?
 	} else {
 	    storeClass = optStore instanceof Global.Node ? DOMNodeRecord : PlainRecord;
