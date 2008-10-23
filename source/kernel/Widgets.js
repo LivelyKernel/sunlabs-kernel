@@ -38,6 +38,7 @@ Morph.subclass('ButtonMorph', {
     fill: Color.neutral.gray,
     borderColor: Color.neutral.gray,
     label: null,
+    toggle: false, //if true each push toggles the model state 
     
     formals: ["Value"],
 
@@ -54,7 +55,6 @@ Morph.subclass('ButtonMorph', {
         // Styling
         this.linkToStyles(['button']);
         this.changeAppearanceFor(false);
-        this.setToggle(false); // if true each push toggles the model state 
         return this;
     },
 
@@ -74,7 +74,7 @@ Morph.subclass('ButtonMorph', {
     
     onMouseDown: function(evt) {
         this.requestKeyboardFocus(evt.hand);
-        if (!this.getToggle()) {
+        if (!this.toggle) {
             this.setValue(true); 
             this.changeAppearanceFor(true); 
         } 
@@ -83,7 +83,7 @@ Morph.subclass('ButtonMorph', {
     onMouseMove: Functions.Empty,
 
     onMouseUp: function(evt) {
-        var newValue = this.getToggle() ? !this.getValue() : false;
+        var newValue = this.toggle ? !this.getValue() : false;
         this.setValue(newValue); 
 	// the following should happen in response
         this.changeAppearanceFor(newValue); 
@@ -117,7 +117,7 @@ Morph.subclass('ButtonMorph', {
     },
 
     onValueUpdate: function(value) {
-	if (this.getToggle()) console.log("got updated with value " + value);
+	if (this.toggle) console.log("got updated with value " + value);
 	this.changeAppearanceFor(value);
     },
 
@@ -138,7 +138,7 @@ Morph.subclass('ButtonMorph', {
     },
 
     onKeyUp: function(evt) {
-        var newValue = this.getToggle() ? !this.getValue() : false;
+        var newValue = this.toggle ? !this.getValue() : false;
         switch (evt.getKeyCode()) {
         case Event.KEY_RETURN:
         case Event.KEY_SPACEBAR:
@@ -160,11 +160,6 @@ Morph.subclass('ButtonMorph', {
     }
 
 });
-
-
-ButtonMorph.addProperties({
-    Toggle: { name: "toggle", from: Converter.toBoolean, to: Converter.fromBoolean }
-}, DOMRecord);
 
 
 Morph.subclass("ImageMorph", {

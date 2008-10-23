@@ -639,7 +639,7 @@ ClipMorph.subclass("DoodleMorph", {
         this.widthbutton.connectModel({model: this, setValue: "setLine", getValue: "getLine"});
         this.addMorph(this.widthbutton);
 
-        this.colorsbutton.setToggle(true);
+        this.colorsbutton.toggle = true;
         this.colorsbutton.connectModel({model: this, setValue: "setColor", getValue: "getColor"});
         this.addMorph(this.colorsbutton);
 

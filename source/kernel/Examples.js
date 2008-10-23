@@ -53,7 +53,7 @@ Widget.subclass('TestWidget', {
         m = panel.addMorph(new ButtonMorph(new Rectangle(20,50,50,20)));
         m.relayToModel(model, {Value: "B1Value"});
         
-        m.setToggle(true);
+        m.toggle = true;
 
         // Two buttons sharing same value...
         m = panel.addMorph(new ButtonMorph(new Rectangle(80,20,50,20)));
@@ -2635,7 +2635,7 @@ Morph.subclass("MapFrameMorph", {
         this.leftbutton.align(this.leftbutton.bounds().rightCenter(), 
                               this.mapclip.bounds().leftCenter().addXY(-clipInset, 0));
         this.leftbutton.connectModel({model: this.mapmodel, setValue: "goLeft", getValue: "isStepping"});
-        this.leftbutton.setToggle(true);
+        this.leftbutton.toggle = true;
         this.addMorph(this.leftbutton);
 
         this.rightbutton = new ImageButtonMorph(r, IMAGEFOLDER + "buttonright.PNG", 
@@ -2644,19 +2644,19 @@ Morph.subclass("MapFrameMorph", {
         this.mapclip.bounds().rightCenter().addXY(clipInset, 0));
 
         this.rightbutton.connectModel({model: this.mapmodel, setValue: "goRight", getValue: "isStepping"});
-        this.rightbutton.setToggle(true);
+        this.rightbutton.toggle = true;
         this.addMorph(this.rightbutton);
 
         r = new Rectangle(this.topLeft.x + 25,this.topLeft.y-20,this.bottomRight.x-this.topLeft.x-52,20);
         this.upbutton =  new ImageButtonMorph(r, IMAGEFOLDER + "buttonup.PNG",IMAGEFOLDER + "buttonupdown.PNG");
         this.upbutton.connectModel({model: this.mapmodel, setValue: "goUp", getValue: "isStepping"});
-        this.upbutton.setToggle(true);
+        this.upbutton.toggle = true;
         this.addMorph(this.upbutton);
 
         r = new Rectangle(this.topLeft.x + 25,this.bottomRight.y,this.bottomRight.x-this.topLeft.x-52,20);
         this.downbutton = new ImageButtonMorph(r, IMAGEFOLDER + "buttondown.PNG", IMAGEFOLDER + "buttondowndown.PNG");
         this.downbutton.connectModel({model: this.mapmodel, setValue: "goDown", getValue: "isStepping"});
-        this.downbutton.setToggle(true);
+        this.downbutton.toggle = true;
         this.addMorph(this.downbutton);
 
         r = new Rectangle(0, 0, iconSize, iconSize);
@@ -2673,7 +2673,7 @@ Morph.subclass("MapFrameMorph", {
         this.maptypebutton = new ImageButtonMorph(r, IMAGEFOLDER + "maptype.PNG", IMAGEFOLDER + "maptype2.PNG");
         this.maptypebutton.align(this.maptypebutton.bounds().bottomLeft(), this.bounds().bottomLeft());
         this.maptypebutton.connectModel({model: this.mapmodel, setValue: "setMapType", getValue: "isSatelliteView"});
-        this.maptypebutton.setToggle(true);
+        this.maptypebutton.toggle = true;
         this.addMorph(this.maptypebutton);
 
         pd("MapFrameMorph constructed",2);
