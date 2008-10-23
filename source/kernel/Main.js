@@ -13,16 +13,16 @@
 /**
  * Main.js.  System startup and demo loading.
  */
-using().run(function() {
+using(lively.lang.Execution).run(function(exec) {
 
 //Note all demo set-up flags have been moved to defaultconfig.js
 //	so that they can be overridden locally by localconfig.js
 
 // Name the methods for showStack
-if (Config.tallyLOC && Function.tallyLOC) Function.tallyLOC();  
+if (Config.tallyLOC && exec.tallyLOC) exec.tallyLOC();  
 
 // Name the methods for showStack
-if (Config.debugExtras && Function.installStackTracers) Function.installStackTracers();  
+if (Config.debugExtras) exec.installStackTracers();  
 
 // Class browser visibility can be overridden with Config.browserAnyway
 Config.showBrowser = !Config.skipMostExamples || Config.browserAnyway;
@@ -120,13 +120,6 @@ function populateSlideWorld(world) {
 }
 
 
-	// These stubs allow us to run without Tools.js
-	if(!Function.showStack) {
-	    Object.extend(Function, {
-		showStack: function(useViewer) {},
-		resetDebuggingStack: function(useViewer) {}
-	    });
-	}
 	// This stub allows us to run without Widgets.js
 	if(! WindowMorph) {
 	    WindowMorph = function() {};
@@ -141,7 +134,7 @@ function populateWorldWithExamples(world) {
 	// If Tools.js is loaded, and Config.debugExtras == true
 	//   then the following call will print a trace of populateSlideWorld
 	//   to the console...
-	// Function.trace(function() {populateSlideWorld(world) });
+	// lively.lang.Execution.trace(function() {populateSlideWorld(world) });
 	return;
     }
 
@@ -512,7 +505,7 @@ function main() {
     if (Config.skipAllExamples) return; // don't populate if we loaded up stuff from a container
     else populateWorldWithExamples(world);
 
-    if(Config.testTracing) Function.testTrace();
+    if(Config.testTracing) lively.lang.Execution.testTrace();
 
 }
 

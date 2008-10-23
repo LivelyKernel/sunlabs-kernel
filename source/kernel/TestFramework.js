@@ -68,10 +68,10 @@ Object.subclass('TestCase', {
 	
 	debugTest: function(selector) {
 		// FIXME
-        Function.installStackTracers();
-		this.runTest(selector);
-        Function.installStackTracers("uninstall");
-		return this.result.failed.last();
+            lively.lang.Execution.installStackTracers();
+	    this.runTest(selector);
+            lively.lang.Execution.installStackTracers("uninstall");
+	    return this.result.failed.last();
 	},
 
     assert: function(bool, msg) {

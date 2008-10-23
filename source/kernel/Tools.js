@@ -152,20 +152,20 @@ Widget.subclass('SimpleBrowser', {
                 WorldMorph.current().setFill(new RadialGradient([Color.rgb(36,188,255), 1, Color.rgb(127,15,0)]));
             }]);
         }
-        if (!Config.debugExtras && Function.installStackTracers) {
+        if (!Config.debugExtras) {
             items.push(['enable call tracing', function() {
                 Config.debugExtras = true;
-		Function.installStackTracers();  
+		lively.lang.Execution.installStackTracers();  
             }]);
         }
-	items.push(["test showStack (in console)", Function.showStack.curry(false)]);
-	items.push(["test showStack (in viewer)", Function.showStack.curry(true)]);
-        if (Config.debugExtras && Function.installStackTracers) {
-	    items.push(["test profiling (in console)", Function.testTrace]);
+	items.push(["test showStack (in console)", lively.lang.Execution.showStack.curry(false)]);
+	items.push(["test showStack (in viewer)", lively.lang.Execution.showStack.curry(true)]);
+        if (Config.debugExtras) {
+	    items.push(["test profiling (in console)", lively.lang.Execution.testTrace]);
 	    items.push(["test tracing (in console)", this.testTracing]);
             items.push(['disable call tracing', function() {
                 Config.debugExtras = false;
-		Function.installStackTracers("uninstall"); 
+		lively.lang.Execution.installStackTracers("uninstall"); 
             }]);
         }
         return items; 
@@ -689,13 +689,13 @@ using().run(function() { // begin scoping function
 	// method.  The caller chain of that node represents the JavaScript call stack, and
 	// each node gives its method (which has been tagged with its qualifiedMethodName() ),
 	// and also the receiving object, 'itsThis', and the arguments to the call, 'args'.
-	// The end result can be seen in, eg, Function.showStack(), which displays a stack trace
+	// The end result can be seen in, eg, lively.lang.Execution.showStack(), which displays a stack trace
 	// either in the console or in the StackViewer.  You can test this by invoking
 	// "test showStack" in the menu of any morph.
 
 	// At key points in the Morphic environment (like at the beginning of event dispatch and
 	// ticking behavior), the stack environment gets reinitialized by a call to 
-	// Function.resetDebuggingStack().  This prevents excessively long chains from being
+	// lively.lang.Execution.resetDebuggingStack().  This prevents excessively long chains from being
 	// held around wasting storage.
 
 	// The tracingWrapper function is the key to how this works.  It calls traceCall()
@@ -708,8 +708,8 @@ using().run(function() { // begin scoping function
 
 	// This mechanism can perform much more amazing feats with the use of TracerTreeNode.
 	// Here the nodes stay in place, accumulating call tallies and ticks of the millisecond
-	// clock.  You start it by calling Function.trace() with a function to run (see the example
-	// in Function.testTrace()).  As in normal stack tracing, the value of currentContext is
+	// clock.  You start it by calling lively.lang.Execution.trace() with a function to run (see the example
+	// in lively.lang.Execution.testTrace()).  As in normal stack tracing, the value of currentContext is
 	// the node associated with the currently running method.
 
     var rootContext, currentContext;
@@ -831,7 +831,7 @@ using().run(function() { // begin scoping function
 	}
     });
     
-    Object.extend(Function, {
+    Object.extend(lively.lang.Execution, {
 	
 	resetDebuggingStack: function resetDebuggingStack() {
 	    var rootMethod = arguments.callee.caller;
@@ -841,7 +841,7 @@ using().run(function() { // begin scoping function
 	},
 	
         showStack: function(useViewer, c) {
-		var currentContext = c;
+	    var currentContext = c;
             if (useViewer) { new StackViewer(this, currentContext).open(); return; }
 	    
             if (Config.debugExtras) {
@@ -884,10 +884,10 @@ using().run(function() { // begin scoping function
 		    }
                 }
             }
-        },
-	
+        }
+
         testTrace: function() {
-	    Function.trace(function () { for (var i=0; i<10; i++) RunArray.test([3, 1, 4, 1, 5, 9]); });
+	    this.trace(function () { for (var i=0; i<10; i++) RunArray.test([3, 1, 4, 1, 5, 9]); });
 	},
 	
         trace: function(method) {
@@ -986,8 +986,8 @@ using().run(function() { // begin scoping function
 		    console.log('got error:' + e.message);
 		    if (!e.stack) console.log('caller ' + currentContext.caller);
 		    
-			if (!e.stack) e.stack = currentContext.copyMe();
-			throw e;
+		    if (!e.stack) e.stack = currentContext.copyMe();
+		    throw e;
 		};
             };
             traceFunc.originalFunction = this;  // Attach this (the original function) to the tracing proxy
@@ -1020,13 +1020,14 @@ WidgetModel.subclass('StackViewer', {
             }
         } else {
             // if no debugStack, at least build an array of methods
+	    // KP: what about recursion?
             this.stack = [];
             for (var c = arguments.callee.caller; c != null; c = c.caller) {
                 this.stack.push (c);
             }
         }
     },
-
+    
     getFunctionList: function() {
         var list = [];
 

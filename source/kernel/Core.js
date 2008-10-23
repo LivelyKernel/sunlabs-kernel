@@ -615,7 +615,7 @@ Object.subclass('Wrapper', {
 	var ctor = this.constructor.getOriginal();
 	if (ctor.type) return ctor.type;
 	console.log("no type for " + ctor);
-	Function.showStack();
+	lively.lang.Execution.showStack();
 	return null;
     },
 
@@ -3022,7 +3022,7 @@ Morph.addMethods({
     internalSetShape: function(newShape) {
 	if (!newShape.rawNode) {
 	    console.log('newShape is ' + newShape);
-	    Function.showStack();
+	    lively.lang.Execution.showStack();
 	}
 	
 	this.rawNode.replaceChild(newShape.rawNode, this.shape.rawNode);
@@ -4190,7 +4190,7 @@ Morph.addMethods({
 	try {
 	    return pt.matrixTransform(otherMorph.transformToMorph(this));
 	} catch (er) {
-	    // Function.showStack();
+	    // lively.lang.Execution.showStack();
 	    console.log("problem " + er + " on " + this + " other " + otherMorph);
 	    return pt;
 	}
@@ -5101,7 +5101,7 @@ PasteUpMorph.subclass("WorldMorph", {
         // from startStepping just to get rid of previous version
         if (!fromStart) {
 	    console.log('failed to stopStepping ' + action);
-	    Function.showStack();
+	    lively.lang.Execution.showStack();
 	}
     },
     
@@ -5133,13 +5133,13 @@ PasteUpMorph.subclass("WorldMorph", {
             var schedNode = list.pop();  // [time, action] -- now removed
             var action = schedNode[1];
             this.currentScript = action; // so visible from stopStepping
-            Function.resetDebuggingStack();  // Reset at each tick event
+            lively.lang.Execution.resetDebuggingStack();  // Reset at each tick event
 	    try {
                 action.exec();
             } catch (er) {
                 console.warn("error on actor %s: %s", action.actor, er);
                 dbgOn(true);
-                Function.showStack();
+                lively.lang.Execution.showStack();
 		timeStarted = new Date().getTime();
 		continue;
             }
@@ -5237,7 +5237,7 @@ PasteUpMorph.subclass("WorldMorph", {
             ["Fabrik Component Box", function(evt) { Fabrik.openComponentBox(world, evt.point()); }],
             ["OmetaWorkspace", function(evt) { new OmetaWorkspace().openIn(world, evt.point()); }],
 	    ["Call Stack Viewer", function(evt) { 
-		if (Config.debugExtras) Function.showStack("use viewer");
+		if (Config.debugExtras) lively.lang.Execution.showStack("use viewer");
 		else new StackViewer(this).openIn(world, evt.point()); }],    
             ["Clock", function(evt) {
                 var m = world.addMorph(new ClockMorph(evt.point(), 50));
@@ -5524,7 +5524,7 @@ Morph.subclass("HandMorph", {
         var evt = new Event(rawEvt);
         evt.hand = this;
 
-        Function.resetDebuggingStack();
+        lively.lang.Execution.resetDebuggingStack();
         switch (evt.type) {
         case "MouseWheel":
         case "MouseMove":
@@ -5555,7 +5555,7 @@ Morph.subclass("HandMorph", {
 	// Run profile during handling of this event
 	this.profileArmed = null;  // Only this once
 	var result;
-	Function.trace(function() { result = this.reallyHandleMouseEvent(evt) }.bind(this));
+	lively.lang.Execution.trace(function() { result = this.reallyHandleMouseEvent(evt) }.bind(this));
 	return result;
     },
 

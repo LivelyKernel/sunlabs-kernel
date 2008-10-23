@@ -3036,12 +3036,12 @@ function logTransformChain(morph, indent, result) {
 
 function debugFunction(func) {
     var errObj = {};
-    Function.installStackTracers();
+    lively.lang.Execution.installStackTracers();
     try {
         return func.call()
     } catch(e) {
         errObj.err = e;
-        Function.installStackTracers("uninstall");
+        lively.lang.Execution.installStackTracers("uninstall");
         var viewer = new ErrorStackViewer(errObj)
         viewer.openIn(WorldMorph.current(), pt(220, 10));
     };

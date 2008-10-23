@@ -143,6 +143,7 @@ function onModuleLoad(ownModuleName, code) {
 };
 
 
+
 // ===========================================================================
 // Our JS library extensions (JS 1.5, no particular browser or graphics engine)
 // ===========================================================================
@@ -552,6 +553,16 @@ var Properties = {
     }
 };
 
+namespace('lively.lang');
+
+lively.lang.Execution = { // will be extended later
+    showStack: Functions.Null,
+    resetDebuggingStack: Functions.Null,
+    installStackTracers: Functions.Null,
+};
+
+
+
 /*
  * Stack Viewer when Dans StackTracer is not available
  */
@@ -682,7 +693,7 @@ Object.extend(Function.prototype, {
 		if (prefix) console.warn("%s.%s(%s): err: %s %s", this, prefix, args,  er, er.stack || "");
 		else console.warn("%s %s", er, er.stack || "");
 		logStack();
-        // Function.showStack();
+		// lively.lang.Execution.showStack();
 		throw er;
 	    }
 	}
@@ -703,7 +714,7 @@ Object.extend(Function.prototype, {
 		var result = proceed.apply(this, args);
 	    } catch (er) {
 		console.warn('failed to load %s: %s', module, er);
-		Function.showStack && Function.showStack();
+		lively.lang.Execution.showStack();
 		throw er;
 	    }
 	    console.log('completed %s', module);
