@@ -277,22 +277,22 @@ Object.extend(Function.prototype, {
     },
 
     isSubclassOf: function(aClass) {
-	if (!Class.isClass(aClass) || this === Object || !this.superclass)
-	    return false;
-	if (this.superclass === aClass)
-	    return true;
-	return this.superclass.isSubclassOf(aClass);
+        return this.superclasses().include(aClass);
     },
     
     allSubclasses: function() {
-        var self = this; 
         return Object.values(Global).select(function(ea) {
             try {
-                return ea && Class.isClass(ea) && ea.isSubclassOf(self);
+                return ea && Class.isClass(ea) && ea.isSubclassOf(this);
             } catch(e) {
                 return false;
             };
-        });
+        }.bind(this));
+    },
+    
+    superclasses: function() {
+        if (this.superclass === Object) return [Object];
+        return this.superclass.superclasses().concat([this.superclass]);
     }
 
 });
