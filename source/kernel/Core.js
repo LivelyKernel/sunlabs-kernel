@@ -86,7 +86,6 @@ var Loader = {
         
         return this;
     }
-    
 };
 
     
@@ -109,10 +108,10 @@ Object.extend(Object.subclass('lk::FragmentURI'), {
     
 });
 
+namespace('lk::data');
 
 
-
-Record.subclass('DOMRecord', {
+Record.subclass('lk::data::DOMRecord', {
     description: "base class for records backed by a DOM Node",
     initialize: function($super, store, argSpec) {
 	$super(store, argSpec);
@@ -151,7 +150,7 @@ Record.subclass('DOMRecord', {
 
 });
 
-DOMRecord.subclass('DOMNodeRecord', {
+lk.data.DOMRecord.subclass('lk::data::DOMNodeRecord', {
     documentation: "uses nodes instead of attributes to store values",
 
     getRecordField: function(name) { 
@@ -220,7 +219,7 @@ DOMRecord.subclass('DOMNodeRecord', {
 // note: the following happens later
 //Class.addMixin(DOMRecord, Wrapper.prototype);
 
-Record.subclass('StyleRecord', {
+Record.subclass('lk::data::StyleRecord', {
     description: "base class for records backed by a DOM Node",
     getRecordField: function(name) { 
 	dbgOn(!this.rawNode || !this.rawNode.style);
@@ -732,7 +731,7 @@ Object.subclass('Wrapper', {
 
     preparePropertyForSerialization: function(prop, propValue, extraNodes) {
 	function isWrapper(m) {
-	    return m instanceof Wrapper || m instanceof DOMRecord;
+	    return m instanceof Wrapper || m instanceof lk.data.DOMRecord;
 	}
 	var self = this;
 	function appendNode(node) {
@@ -803,8 +802,8 @@ Object.subclass('Wrapper', {
 
 });
     
-Class.addMixin(DOMRecord, Wrapper.prototype);
-Class.addMixin(DOMNodeRecord, Wrapper.prototype);
+Class.addMixin(lk.data.DOMRecord, Wrapper.prototype);
+Class.addMixin(lk.data.DOMNodeRecord, Wrapper.prototype);
 
 
 
@@ -1327,7 +1326,7 @@ Visual.addProperties({
     LineCap: {name: "stroke-linecap"},
     StrokeDashArray: {name: "stroke-dasharray"},
     StyleClass: {name: "class"}
-}, Config.useStyling ? StyleRecord : DOMRecord);
+}, Config.useStyling ? lk.data.StyleRecord : lk.data.DOMRecord);
 
 Visual.addMethods({   
 
@@ -2796,7 +2795,7 @@ Morph.addMethods({
 		        console.log("Error in deserializing " + type + ", no class");
 		    $A(node.getElementsByTagName("record")).forEach(function(child) {
 			var spec = JSON.unserialize(child.getElementsByTagName("definition")[0].textContent);
-			var Rec = DOMRecord.prototype.create(spec);
+			var Rec = lk.data.DOMRecord.prototype.create(spec);
 			var model = new Rec(importer, child);
 			var id = child.getAttribute("id");
 			if (id) importer.addMapping(id, model); 
@@ -6072,7 +6071,7 @@ LinkMorph.subclass('ExternalLinkMorph');
 
 ExternalLinkMorph.addProperties({
     URL: { name: "url"}
-}, DOMRecord);
+}, lk.data.DOMRecord);
 
 ExternalLinkMorph.addMethods({
     documentation: "A link to a different web page, presumably containing another LK",

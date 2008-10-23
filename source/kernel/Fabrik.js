@@ -1750,7 +1750,7 @@ Widget.subclass('Component', {
         var records = this.rawNode.getElementsByTagName('record')
         if (records.length > 0) {
             // this.formalModel = this.deserializeModelFromNode(importer, records[0]);
-            this.formalModel = new DOMNodeRecord(importer, rawNode.getElementsByTagName('record')[0])
+            this.formalModel = new lk.data.DOMNodeRecord(importer, rawNode.getElementsByTagName('record')[0])
             this.formalModel.owner = this; // remember the component diretly in a non persisten way 
         } else console.warn('No record for ' + this);
         

@@ -833,7 +833,7 @@ TextMorph.addProperties({
     StoredTextStyle: {name: "stored-style", from:Converter.fromJSONAttribute, to:Converter.toJSONAttribute },
     Wrap: { name: "wrap", byDefault: module.WrapStyle.Normal },
     Padding: { name: "padding", byDefault: String(Rectangle.inset(6, 4).toInsetTuple()) } // FIXME move to coercion funcions
-}, DOMRecord);
+}, lk.data.DOMRecord);
 
 TextMorph.addMethods({
     

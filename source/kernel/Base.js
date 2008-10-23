@@ -991,10 +991,10 @@ Object.extend(Record, {
 	if (arguments.length < 2) throw new Error("call with two or more arguments");
 	var storeClass;
 	if (!optStore) {
-	    storeClass = DOMNodeRecord; // FXIME forward reference
+	    storeClass = lk.data.DOMNodeRecord; // FXIME forward reference
 	    optStore = NodeFactory.create("record"); // FIXME flat JavaScript instead by default?
 	} else {
-	    storeClass = optStore instanceof Global.Node ? DOMNodeRecord : PlainRecord;
+	    storeClass = optStore instanceof Global.Node ? lk.data.DOMNodeRecord : PlainRecord;
 	}
 
 	var Rec = storeClass.prototype.create(fieldSpec);
