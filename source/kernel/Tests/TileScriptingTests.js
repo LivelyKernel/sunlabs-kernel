@@ -92,6 +92,15 @@ TestCase.subclass('ObjectTileTest', {
     }
 });
 
+TestCase.subclass('FunctionTileTest', {
+    
+    testHasTextAndDropZone: function() {
+        var tile = new FunctionTile(null, 'test');
+        this.assertEqual(tile.submorphs.length, 3, 'text or dropzone are missing');
+        this.assert(tile.submorphs[1].isDropArea, 'no droparea');
+    }
+});
+
 TestCase.subclass('IfTileTest', {
     
     testCanAddExprAndTestExpression: function() {

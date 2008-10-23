@@ -205,20 +205,16 @@ Morph.subclass('TileHolder', {
     },
     
     addDropArea: function() {
-        var dropArea = new DropArea(this.dropAreaExtent.extentAsRectangle());
-        var self = this;
-        dropArea.addMorph = dropArea.addMorph.wrap(function(proceed, morph) {
-            proceed(morph);
-            
-            // find empty DropAreas
-            var emptyDrop = self.submorphs.detect(function(ea) { return ea.isDropArea && !ea.tile() });
+        
+        var cleanUp = function() {
+            var emptyDrop = this.submorphs.detect(function(ea) { return ea.isDropArea && !ea.tile() });
             if (emptyDrop) {
-                self.removeMorph(emptyDrop); self.addMorph(emptyDrop); // take it below
-            } else {
-                self.addDropArea();
-            }
-            return morph;
-        })
+                this.removeMorph(emptyDrop); this.addMorph(emptyDrop); // take it below
+            } else this.addDropArea();
+        }.bind(this);
+        
+        var dropArea = new DropArea(this.dropAreaExtent.extentAsRectangle(), cleanUp);
+
         this.addMorph(dropArea);
     }
     
@@ -282,7 +278,10 @@ Tile.subclass('ObjectTile', {
     initialize: function($super, bounds, targetMorphOrObject) {
         $super(bounds, "rect");
         
-        this.myString = '';
+        this.targetMorph = null;
+        this.opTile = null;
+        this.menuTrigger = null;
+        
         this.label = this.addMorph(new TextMorph(this.shape.bounds()));
         this.label.beLabel();
         
@@ -308,9 +307,15 @@ Tile.subclass('ObjectTile', {
         this.menuTrigger.connectModel({model: this, setValue: "openMenu"});
     },
     
+    addFunctionTile: function(methodName) {
+        this.menuTrigger && this.menuTrigger.remove();
+        this.opTile = new FunctionTile(null, methodName);
+        this.addMorph(this.opTile);
+    },
+    
     openMenu: function(btnVal) {
         if (!btnVal) return;
-        var menu = new TileMenuCreator(this.targetMorph).createMenu();
+        var menu = new TileMenuCreator(this.targetMorph, this).createMenu();
         var pos = this.getGlobalTransform().transformPoint(this.menuTrigger.getPosition());
     	menu.openIn(this.world(), pos, false, this.targetMorph.toString());
     }
@@ -319,8 +324,9 @@ Tile.subclass('ObjectTile', {
 
 Object.subclass('TileMenuCreator', {
     
-    initialize: function(obj) {
-        this.target = obj;
+    initialize: function(target, tile) {
+        this.target = target;
+        this.tile = tile;
     },
     
     classes: function() {
@@ -347,13 +353,9 @@ Object.subclass('TileMenuCreator', {
     addClassMenuItem: function(menu, className) {
         var self = this;
         menu.addSubmenuItem([className, function(evt) {
-            return self.methodNamesFor(className).collect(function(ea) { return [ea] });
-        }])
+            return self.methodNamesFor(className).collect(function(ea) { return [ea, function() { self.tile.addFunctionTile(ea) }] });
+        }]);
     },
-    
-    // addMethodMenuItem: function(menu, methodName) {
-    //     return [methodName];
-    // }
     
     ignoredMethods: [ // from Morph
                     "constructor", "setCopySubmorphsOnGrab", "getCopySubmorphsOnGrab", "internalInitialize", "initialize", "initializePersistentState",
@@ -390,6 +392,33 @@ Object.subclass('TileMenuCreator', {
                     "printOn", "delegated", "ownPropertyNames", "hasProperty", "isNumber", "isString", "isCharacter"]
 });
 
+Tile.subclass('FunctionTile', {
+    
+    layouterClass: HLayout,
+    
+    initialize: function($super, bounds, methodName) {
+        $super(bounds, "rect");
+
+        this.text1 = this.addMorph(new TextMorph(new Rectangle(0,0,20,15), '.' + methodName + '('));
+        this.text1.beLabel();
+        
+        this.text2 = this.addMorph(new TextMorph(new Rectangle(0,0,20,15), ')'));
+        this.text2.beLabel();
+        
+        this.argumentDropAreas = [];
+        this.addDropArea();
+    },
+    
+    addDropArea: function() {
+        this.removeMorph(this.text2.remove());
+        
+        this.argumentDropAreas.push(this.addMorph(new DropArea(new Rectangle(0,0,20,15), this.addDropArea.bind(this))));
+        
+        this.addMorph(this.text2);
+    }
+
+});
+
 Tile.subclass('IfTile', {
     
     initialize: function($super, bounds) {
@@ -409,11 +438,11 @@ Morph.subclass('DropArea', {
     isDropArea: true,
     layouterClass: VLayout,
     
-    initialize: function($super, bounds) {
+    initialize: function($super, bounds, actionWhenDropped) {
         $super(bounds, "rect");
         this.suppressHandles = true;
         this.styleNormal();
-        return this;
+        this.actionWhenDropped = actionWhenDropped;
     },
     
     styleNormal: function() {
@@ -434,6 +463,7 @@ Morph.subclass('DropArea', {
         $super(morph);
         this.layout();
         this.owner && this.owner.layout();
+        this.actionWhenDropped && this.actionWhenDropped(morph);
         // this.layoutChanged();
         // this.closeDnD();
         return morph;
