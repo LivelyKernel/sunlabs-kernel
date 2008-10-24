@@ -79,11 +79,21 @@ Widget.subclass('TileBox', {
     viewTitle: "Tile Box",
     viewExtent: pt(600,300),
         
-    add: function(createFunc, panel, caption) {
+    add: function(createFunc, demoMorph, caption, panel) {
         
-        var m = createFunc();
+        var m = demoMorph || createFunc();
+
+        var textHeight = 30;
+        var wrapper = new ClipMorph(m.getExtent().addPt(pt(0,textHeight)).extentAsRectangle(), "rect");
+        wrapper.setBorderWidth(1);
+        m.setBorderWidth(2);
+        wrapper.addMorph(m);
+        var text = new TextMorph(pt(0,m.getExtent().y).extent(m.getExtent().x, wrapper.getExtent().y), caption || m.constructor.type);
+        text.beLabel();
+        wrapper.addMorph(text);
+        panel.addMorph(wrapper);
         
-        m.withAllSubmorphsDo(function() {
+        wrapper.withAllSubmorphsDo(function() {
             this.handlesMouseDown = Functions.True;
             this.okToBeGrabbedBy = function() {
                 return createFunc();
@@ -94,15 +104,6 @@ Widget.subclass('TileBox', {
                     compMorph.setPosition(pt(0,0));
             };
         });
-
-        var textHeight = 30;
-        var wrapper = new ClipMorph(m.getExtent().addPt(pt(0,textHeight)).extentAsRectangle(), "rect");
-        m.setBorderWidth(2);
-        wrapper.addMorph(m);
-        var text = new TextMorph(pt(0,m.getExtent().y).extent(m.getExtent().x, wrapper.getExtent().y), caption || m.constructor.type);
-        text.beLabel();
-        wrapper.addMorph(text);
-        panel.addMorph(wrapper);
     },
     
     // new TileBox().openIn(WorldMorph.current())
@@ -110,16 +111,24 @@ Widget.subclass('TileBox', {
         var panel = new PanelMorph(this.viewExtent);
         panel.adjustForNewBounds = Morph.prototype.adjustForNewBounds.bind(this); // so submorphs don't scale
         panel.setFill(Color.white);
+        panel.setBorderWidth(1);
         // panel.suppressHandles = true;
-        
-        
         
         var defaultCreateFunc = function(theClass, optExtent) {
             return new theClass(optExtent && optExtent.extentAsRectangle());
         };
         [IfTile, DebugTile].each(function(ea) {
-            this.add(defaultCreateFunc.curry(ea), panel);
+            this.add(defaultCreateFunc.curry(ea), null, null, panel);
         }, this);
+        
+        var buildScriptBox = function() {
+            var world = WorldMorph.current();
+            var window = new ScriptEnvironment().openIn(world);
+            // window.remove();
+            world.removeMorph(window);
+            return window;
+        }
+        this.add(buildScriptBox, new TitleBarMorph('ScriptBox', 150), 'ScriptBox', panel);
         
         // dbgOn(true);
         new VLayout(panel, true).layout();
