@@ -37,10 +37,6 @@ Object.extend(Object, {
     }
   },
 
-  toQueryString: function(object) {
-    return $H(object).toQueryString();
-  },
-
   keys: function(object) {
     var keys = [];
     for (var property in object)
