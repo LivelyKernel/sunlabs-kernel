@@ -1557,7 +1557,7 @@ TextMorph.addMethods({
 
     // FIXME integrate into model of TextMorph
     setRichText: function(text) {
-        if (!(text instanceof lively.text.Text)) dbgOn(new Error('Not text'));
+        if (!(text instanceof lively.text.Text)) throw dbgOn(new Error('Not text'));
         this.textStyle = text.style;
         this.setStoredTextStyle(this.textStyle);
         this.setTextString(text.string);

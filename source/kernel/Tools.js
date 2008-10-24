@@ -316,7 +316,7 @@ Widget.subclass('SimpleInspector', {
 	    var target = this.getInspectee();
 	    try {
 		var result = (interactiveEval.bind(this.target))(input);
-	    } catch (er) { dbgOn(true); throw er;}
+	    } catch (er) { throw dbgOn(er); }
             target[propName] = result;
         }
     },

@@ -8,7 +8,8 @@
  * other countries.
  */ 
 var Global = this.window.top || this.window; // set to the context enclosing the SVG context.
-function dbgOn(cond) {
+function dbgOn(cond, optMessage) {
+    if (optMessage) console.log(optMessage);
     if (cond) debugger; // note that rhino has issues with this keyword
     // also call as: throw dbgOn(new Error(....))
     return cond;
@@ -132,8 +133,7 @@ function onModuleLoad(ownModuleName, code) {
         try {
             code();
         } catch(e) {
-            console.log(JSON.serialize(PendingRequirements));
-            dbgOn(true); throw e;
+	    throw dbgOn(e, JSON.serialize(PendingRequirements));
         } finally {
             if (noPendingRequirements(ownModuleName)) moduleLoaded(ownModuleName);
         };
