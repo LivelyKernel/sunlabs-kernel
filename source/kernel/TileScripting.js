@@ -79,7 +79,7 @@ Widget.subclass('TileBox', {
     viewTitle: "Tile Box",
     viewExtent: pt(600,300),
         
-    add: function(createFunc, panel) {
+    add: function(createFunc, panel, caption) {
         
         var m = createFunc();
         
@@ -99,7 +99,7 @@ Widget.subclass('TileBox', {
         var wrapper = new ClipMorph(m.getExtent().addPt(pt(0,textHeight)).extentAsRectangle(), "rect");
         m.setBorderWidth(2);
         wrapper.addMorph(m);
-        var text = new TextMorph(pt(0,m.getExtent().y).extent(m.getExtent().x, wrapper.getExtent().y), m.constructor.type);
+        var text = new TextMorph(pt(0,m.getExtent().y).extent(m.getExtent().x, wrapper.getExtent().y), caption || m.constructor.type);
         text.beLabel();
         wrapper.addMorph(text);
         panel.addMorph(wrapper);
@@ -110,13 +110,14 @@ Widget.subclass('TileBox', {
         var panel = new PanelMorph(this.viewExtent);
         panel.adjustForNewBounds = Morph.prototype.adjustForNewBounds.bind(this); // so submorphs don't scale
         panel.setFill(Color.white);
-        panel.suppressHandles = true;
+        // panel.suppressHandles = true;
+        
+        
         
         var defaultCreateFunc = function(theClass, optExtent) {
             return new theClass(optExtent && optExtent.extentAsRectangle());
         };
-        
-        [Tile, IfTile, DebugTile].each(function(ea) {
+        [IfTile, DebugTile].each(function(ea) {
             this.add(defaultCreateFunc.curry(ea), panel);
         }, this);
         
@@ -139,6 +140,7 @@ Object.extend(TileBox, {
 
 Widget.subclass('ScriptEnvironment', {
     
+    viewTitle: "ScriptBox",
     viewExtent: pt(200,300),
     
     initialize: function($super) {
@@ -246,33 +248,44 @@ Morph.subclass('TileHolder', {
         this.setFill(Color.gray.lighter());
         this.layout = this.layout.curry(true); // no resizing on layout
         this.closeDnD();
+        // this.suppressHandles = true;
         this.addDropArea();
+        
     },
     
     addMorph: function($super, morph) {
-        $super(morph);
+        if (!morph.isDropArea) this.addDropArea().addMorph(morph);
+        else $super(morph);
         this.layout();
         return morph;
+    },
+    
+    ensureEmptyDropAreaExists: function() {
+        if (this.submorphs.last().isDropArea && !this.submorphs.last().tile())
+            return;
+        this.addDropArea();
     },
     
     addDropArea: function() {
         
         var cleanUp = function() {
-            var emptyDrop = this.submorphs.detect(function(ea) { return ea.isDropArea && !ea.tile() });
-            if (emptyDrop) {
-                this.removeMorph(emptyDrop); this.addMorph(emptyDrop); // take it below
-            } else this.addDropArea();
+            var emptyDrops = this.submorphs.select(function(ea) { return ea.isDropArea && !ea.tile() });
+            emptyDrops.invoke('remove');
+            this.ensureEmptyDropAreaExists();
         }.bind(this);
         
         var dropArea = new DropArea(this.dropAreaExtent.extentAsRectangle(), cleanUp);
+        dropArea.setExtent(pt(this.getExtent().x, dropArea.getExtent().y));
 
-        this.addMorph(dropArea);
+        return this.addMorph(dropArea);
     },
     
     tilesAsJs: function() {
         var lines = this.submorphs.select(function(ea) { return ea.tile && ea.tile() }).collect(function(ea) { return ea.tile().asJs() });
         return lines.join(';\n');
-    }
+    },
+    
+    okToBeGrabbedBy: Functions.Null
     
 });
     
@@ -556,6 +569,12 @@ Morph.subclass('DropArea', {
     
     onMouseOut: function(evt) {
         this.styleNormal();
+    },
+    
+    okToBeGrabbedBy: function() {
+        if (this.tile())
+            return this.tile();
+        return null;
     }
 });
 
