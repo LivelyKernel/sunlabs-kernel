@@ -1377,7 +1377,7 @@ Visual.addMethods({
 		    matrix.e = args[4]; matrix.f = args[5];
 		    break;
 		case 'translate':
-		    matrix = matrix.translate(args[0], args[1]);
+		    matrix = matrix.translate(args[0], args[1] || 0); // may be just one arg
 		    break;
 		case 'scale':
 		    matrix = matrix.scaleNonUniform(args[0], args[1] || 1.0);
