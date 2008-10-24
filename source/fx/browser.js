@@ -212,6 +212,7 @@ Object.subclass('fx.Frame', {
 
 	this.frame.pack();
 	this.frame.setVisible(true);
+	
     }
 });
     
@@ -319,7 +320,6 @@ var PaintModule = {
 		if (node && node.tagName == 'linearGradient') {
 		    // go through stops
 		    // FIXME gradients are in user space in fx!
-		    
 		    var start = new fx.Point(node.x1.baseVal.value*100, node.y1.baseVal.value*100);
 		    var end = new fx.Point(node.x2.baseVal.value*100, node.y2.baseVal.value*100);
 		    var stops = Object.extend(node.getElementsByTagNameNS(Namespace.SVG, "stop"), Enumerable);
@@ -563,6 +563,24 @@ fx.dom.renderers[SVGGElement.tagName] = function(element, attribute) {
 	if (fxChild) fxObj.add(fxChild);
     });
 
+    var clip = element.getAttributeNS(null, "clip-path");
+    if (clip) {
+	var node = lively.FragmentURI.getElement(clip);
+	if (node) {
+	    var clips = node.getElementsByTagNameNS(Namespace.SVG, "rect");
+	    if (clips.length > 0) {
+		var clipRect = clips.item(0);
+		var save = fxObj;
+		var fxObj = new fx.Clip();
+		var rect = new fx.Rectangle(clipRect.x.baseVal.value, clipRect.y.baseVal.value,
+		    clipRect.width.baseVal.value, clipRect.height.baseVal.value);
+		fxObj.setShape(rect);
+		fxObj.setChild(save);
+	    } else 
+		console.log("cannot deal with non-rect clip region");
+	}
+    }
+
     if (element.transform) { 
 	var list = element.transform.baseVal;
 	for (var i = list.numberOfItems - 1; i >= 0; i--) {
@@ -576,23 +594,6 @@ fx.dom.renderers[SVGGElement.tagName] = function(element, attribute) {
 	    }
 	}
     } 
-	
-    var clip = element.getAttributeNS(null, "clip-path");
-    if (clip) {
-	var node = lively.FragmentURI.getElement(clip);
-	if (node) {
-	    var clips = node.getElementsByTagNameNS(Namespace.SVG, "rect");
-	    if (clips.length > 0) {
-		var clipRect = clips.item(0);
-		var save = fxObj;
-		var fxObj = new fx.Clip();
-		fxObj.setShape(new fx.Rectangle(clipRect.x.baseVal.value, clipRect.y.baseVal.value,
-						clipRect.width.baseVal.value, clipRect.height.baseVal.value));
-		fxObj.setChild(save);
-	    } else 
-		console.log("cannot deal with non-rect clip region");
-	}
-    }
 
     element._fxBegin.setChild(fxObj);
     
@@ -619,7 +620,7 @@ SVGForeignObjectElement.prototype._fxSetComponent = function(component) {
 
 fx.dom.renderers[SVGForeignObjectElement.tagName] = function(element, attribute) {
     if (!element._fxBegin) element._fxBegin = new fx.Parent();
-    console.log('render foreign object ' + element + " on " + attribute);
+    //console.log('render foreign object ' + element + " on " + attribute);
     // update size here, if necessary
     if (element._fxComponent) 
 	element._fxBegin.setChild(element._fxComponent);
@@ -676,4 +677,5 @@ Object.subclass('Audio', { // stubbed out HTML5 Audio
     }
 
 });
+
 

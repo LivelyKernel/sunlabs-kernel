@@ -16,7 +16,6 @@ load('../kernel/Core.js');
 
 
 Loader.loadScript = function(url /*not really a url yet*/, onLoadAction, embedSerializable) {
-    console.log('loadScript ' + $A(arguments));
     load('../kernel/' + url);
     if (onLoadAction) {
         onLoadAction();
@@ -34,6 +33,16 @@ Loader.loadScript = function(url /*not really a url yet*/, onLoadAction, embedSe
 
 load('../kernel/Text.js');
 load('../kernel/Widgets.js');
+
+XenoMorph.addMethods({
+
+    setFXComponent: function(component) {
+	this.foRawNode._fxSetComponent(component);
+    }
+
+});
+
+
 load('../kernel/Network.js');
 load('../kernel/Data.js');
 load('../kernel/Tools.js');
@@ -42,7 +51,7 @@ load('../kernel/Examples.js');
 
 // example program
 
-var browser = new fx.Frame(1024, 680);
+var browser = new fx.Frame(1200, 800);
 
 
 var canvas = document.getElementById("canvas");
@@ -56,6 +65,10 @@ browser.display(canvas);
 //Config.loadSerializedSubworlds = false;
 //Config.showPenScript = false;
 //load('../kernel/Main.js');
+
+
+load('../kernel/TileScripting.js');
+
 
 
 function swingDemo() {
@@ -81,7 +94,7 @@ function swingDemo() {
     editorScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
     editorScrollPane.setPreferredSize(new Dimension(rect.width, rect.height));
     editorScrollPane.setMinimumSize(new Dimension(10, 10));
-    xeno.foRawNode._fxSetComponent(editorScrollPane);
+    xeno.setFXComponent(editorScrollPane);
     WorldMorph.current().addFramedMorph(xeno, "Swing Editor: " + url.toString(), pt(50, 50));
 }
 
@@ -95,7 +108,7 @@ function swingFileChooserDemo()  {
     var chooser = new JFileChooser();
     chooser.setMinimumSize(new Dimension(10, 10));
     WorldMorph.current().addFramedMorph(xeno, "Choose file ", pt(250, 150));
-    xeno.foRawNode._fxSetComponent(chooser);
+    xeno.setFXComponent(chooser);
 }
 
 
@@ -184,8 +197,19 @@ function morphicMain() {
     	world.addMorph(m);
     });
 
+    
     if (Config.showTester)
         require('Examples.js').toRun(function() { new TestWidget().openIn(world, pt(835, 450)) });
+
+    // tile script environment
+    Config.activateTileScripting = true;
+    if (Config.activateTileScripting) {
+	ScriptEnvironment.open();
+	world.topSubmorph().moveBy(pt(820, 80));
+	TileBox.open();
+	world.topSubmorph().moveBy(pt(1050, 80));
+    }
+
 
 }
 
