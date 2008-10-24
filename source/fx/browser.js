@@ -98,6 +98,7 @@ Object.extend(fx.util, {
 	event._clientX = evt.getX();
 	event._clientY = evt.getY();
 	var result = document.documentElement.dispatchEvent(event);
+	fx.dom.update();
     },
     
     dispatchKeyboardEvent: function(type, evt) {
@@ -106,6 +107,7 @@ Object.extend(fx.util, {
 	event._keyCode = evt.getKeyCode();
 	event._keyChar = evt.getKeyChar();
 	var result = document.documentElement.dispatchEvent(event);
+	fx.dom.update();
     },
     
     className: function(fxInstance) {
@@ -585,12 +587,18 @@ fx.dom.renderers[SVGGElement.tagName] = function(element, attribute) {
 	var list = element.transform.baseVal;
 	for (var i = list.numberOfItems - 1; i >= 0; i--) {
 	    var transform = list.getItem(i);
-	    if (transform.type == SVGTransform.SVG_TRANSFORM_TRANSLATE) {
+	    switch (transform.type) {
+	    case SVGTransform.SVG_TRANSFORM_TRANSLATE:
 		fxObj = new fx.Transform.createTranslation(transform.matrix.e, transform.matrix.f, fxObj);
-	    } else if (transform.type == SVGTransform.SVG_TRANSFORM_SCALE) {
+		break;
+	    case SVGTransform.SVG_TRANSFORM_SCALE:
 		fxObj = new fx.Transform.createScale(transform.matrix.a, transform.matrix.d, fxObj);
-	    } else if (transform.type == SVGTransform.SVG_TRANSFORM_ROTATE) {
+		break;
+	    case SVGTransform.SVG_TRANSFORM_ROTATE:
 		fxObj = new fx.Transform.createRotation(transform.angle.toRadians(), fxObj);
+		break;
+	    default:
+		console.log('unhandled transform ' + transform);
 	    }
 	}
     } 
