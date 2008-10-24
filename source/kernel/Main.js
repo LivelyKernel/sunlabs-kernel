@@ -27,7 +27,7 @@ if (Config.debugExtras) exec.installStackTracers();
 // Class browser visibility can be overridden with Config.browserAnyway
 Config.showBrowser = !Config.skipMostExamples || Config.browserAnyway;
 
-ClipboardHack.ensurePasteBuffer();
+if (!Config.suppressClipboardHack) ClipboardHack.ensurePasteBuffer();
 
 function makeSlideWorld(world) {
     var link = new LinkMorph(null, pt(60, 400));

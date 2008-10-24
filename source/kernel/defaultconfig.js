@@ -145,7 +145,8 @@ var Config = {
 
     // some widgets self connect to a private model on startup, but it doesn't
     // seem necessary, turn on to override
-    selfConnect: false
+    selfConnect: false,
+    suppressClipboardHack: false
     
 }
 
