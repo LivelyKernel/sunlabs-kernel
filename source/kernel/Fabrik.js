@@ -38,7 +38,7 @@ module('Fabrik.js').requires('Helper.js').toRun(function() {
 
 // logMethod(Morph.prototype, 'onMouseDown');
 
-Fabrik = {
+Global.Fabrik = {
     
     positionComponentRelativeToOther: function(comp, otherComp, relPos) {
         comp.panel.setPosition(otherComp.panel.getPosition().addPt(relPos));

@@ -274,7 +274,8 @@ Morph.subclass("ClipMorph", {
 	    // this.fullBounds = tfm.transformRectToRect(subBounds ? subBounds.intersection(bounds) : bounds);
 	    // DI:  ClipMorph bounds should be independent of subMorphs, right?
 	    // DI:  so we should be able to replace the 2 lines above with this simpler one...
-	    this.fullBounds = tfm.transformRectToRect(bounds);  	}
+	    this.fullBounds = tfm.transformRectToRect(bounds);
+	}
 	return this.fullBounds;
     },
     

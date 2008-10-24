@@ -1,6 +1,17 @@
 
 module('TileScriptingTests.js').requires('TileScripting.js').toRun(function() {
 
+TestCase.subclass('ScriptEnvironmentTest', {
+    testRunScript: function() {
+        var sut = new ScriptEnvironment();
+        var tileHolder = sut.buildView().tileHolder;
+        var tile = new DebugTile(null, '123;');
+        tileHolder.submorphs.last().addMorph(tile);
+        var result = sut.runScript();
+        this.assertIdentity(123, result);
+    }
+});
+
 TestCase.subclass('TileHolderTest', {
     
     testAddNewDropWhenExistingOneWasUsed: function() {
@@ -12,6 +23,17 @@ TestCase.subclass('TileHolderTest', {
         holder.submorphs[0].addMorph(tile);
         this.assertEqual(holder.submorphs.length, 2, 'No new DropArea added');
         this.assert(holder.submorphs[1].isDropArea, 'No DropArea');
+    },
+    
+    testTilesAsJs: function() {
+        var holder = new TileHolder(pt(50,50).extentAsRectangle());
+        var tile1 = new DebugTile(null, '123;');
+        var tile2 = new DebugTile(null, 'console.log(\'hello world\');');
+        var expected = '123;\nconsole.log(\'hello world\');';
+        holder.submorphs.last().addMorph(tile1);
+        holder.submorphs.last().addMorph(tile2);
+        var result = holder.tilesAsJs();
+        this.assertEqual(expected,result);
     }
 });
 
@@ -89,6 +111,30 @@ TestCase.subclass('ObjectTileTest', {
         
         var menu = sut.createMenu();
         this.assertEqual(menu.items.length, 1, 'wrong number of menu items');
+    },
+    
+    testAsJsEval: function() {
+        var tile = new ObjectTile();
+        var morph = new Morph(pt(20,20).extentAsRectangle());
+        
+        tile.createAlias(morph);
+        morph.openInWorld();
+        try { var foundMorph = eval(tile.asJs()); }
+        finally { morph.remove(); };
+        this.assertIdentity(foundMorph, morph);
+    },
+    
+    testAsJsWithFunction: function() {
+        var tile = new ObjectTile();
+        var morph = new Morph(pt(20,20).extentAsRectangle());
+        
+        tile.createAlias(morph);
+        tile.addFunctionTile('getPosition');
+        
+        morph.openInWorld();
+        try { var js = tile.asJs(); }
+        finally { morph.remove(); };
+        this.assertEqual(js, 'ObjectTile.findMorph(\'' + morph.id() + '\').getPosition();');
     }
 });
 
@@ -98,6 +144,17 @@ TestCase.subclass('FunctionTileTest', {
         var tile = new FunctionTile(null, 'test');
         this.assertEqual(tile.submorphs.length, 3, 'text or dropzone are missing');
         this.assert(tile.submorphs[1].isDropArea, 'no droparea');
+    },
+    
+    testAsJsWithParameters: function() {
+        var tile = new FunctionTile(null, 'test');
+        var argTile1 = new DebugTile(null, '123');
+        var argTile2 = new DebugTile(null, '456');
+        tile.argumentDropAreas.last().addMorph(argTile1);
+        tile.argumentDropAreas.last().addMorph(argTile2);
+        var js = tile.asJs()
+        var expected = '.test(123,456);';
+        this.assertEqual(js, expected);
     }
 });
 

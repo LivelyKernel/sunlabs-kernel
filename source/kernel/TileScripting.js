@@ -6,21 +6,25 @@ Object.subclass('Layout', {
     },
     
     layout: function() {
-        this.baseMorph.layoutChanged = Morph.prototype.layoutChanged.bind(this.baseMorph);
         
-        this.baseMorph.submorphs.inject(pt(0,0), function(pos, ea) {
-            ea.setPosition(pos);
-            return this.newPosition(ea);
-        }, this);
+        // this.baseMorph.layoutChanged = Morph.prototype.layoutChanged.bind(this.baseMorph);
+        
+        this.baseMorph.submorphs
+            .reject(function(ea) { return ea instanceof HandleMorph})
+            .inject(pt(0,0), function(pos, ea) {
+                ea.setPosition(pos);
+                return this.newPosition(ea);
+            }, this);
+        
         if (this.resizeAfterLayout) {        
             var maxExtent = this.baseMorph.submorphs.inject(pt(0,0), function(maxExt, ea) {
                 return maxExt.maxPt(ea.getPosition().addPt(ea.getExtent()));
             });
             this.baseMorph.setExtent(maxExtent);
         };
-        this.baseMorph.layoutChanged();
         
-        this.baseMorph.layoutChanged = this.baseMorph.constructor.prototype.layoutChanged.bind(this.baseMorph);
+        // this.baseMorph.layoutChanged();        
+        // this.baseMorph.layoutChanged = this.baseMorph.constructor.prototype.layoutChanged.bind(this.baseMorph);
     },
     
     newPosition: function(lastLayoutedMorph) {
@@ -62,6 +66,11 @@ Morph.prototype.morphMenu = Morph.prototype.morphMenu.wrap(function(proceed, evt
     // menu.addSubmenuItem(['submenu', function(evt) { return [['1'],['2'],['3']] }])
     return menu;
 });
+Morph.prototype.removeMorph = Morph.prototype.removeMorph.wrap(function(proceed, morph) {
+    proceed(morph);
+    this.layout();
+    return this;
+})
 
 Widget.subclass('TileBox', {
 
@@ -132,12 +141,15 @@ Widget.subclass('ScriptEnvironment', {
     
     initialize: function($super) {
         $super();
+        this.repeatAction = null;
         // this.formalModel = ComponentModel.newModel({Name: "NoName"});
     },
     
     buildView: function(extent) {
         var panel = PanelMorph.makePanedPanel(this.viewExtent, [
             ['runButton', function(initialBounds) { return new ButtonMorph(initialBounds) }, new Rectangle(0, 0, 0.3, 0.1)],
+            ['delayText', function(initialBounds) { return new TextMorph(initialBounds) }, new Rectangle(0.5, 0, 0.2, 0.1)],
+            ['repeatButton', function(initialBounds) { return new ButtonMorph(initialBounds) }, new Rectangle(0.7, 0, 0.3, 0.1)],
             ['tileHolder', function(initialBounds) { return new TileHolder(initialBounds) }, new Rectangle(0, 0.1, 1, 0.9)]
         ]);
         
@@ -150,16 +162,49 @@ Widget.subclass('ScriptEnvironment', {
 		runButton.setLabel("Run Script");
 		runButton.connectModel({model: this, setValue: "runScript"});
 		
+		var repeatButton = panel.repeatButton;
+		repeatButton.setLabel("Repeat");
+		repeatButton.connectModel({model: this, setValue: "repeatScript"});
+		
 		var tileHolder = panel.tileHolder;
 		
 		panel.openAllToDnD();
 		tileHolder.openDnD();
 		panel.openDnD();
+		
+		this.panel = panel;
         return panel;
     },
     
-    runScript: function() {
+    runScript: function(btnVal) {
+        if (btnVal) return;
+        var code = this.panel.tileHolder.tilesAsJs();
+        var result;
+        try {
+            result = eval(code);
+        } catch(e) {
+            console.log('Script: Error ' + e + ' occured when evaluating:');
+            console.log(code);
+        }
+        return result;
+    },
+    
+    repeatScript: function(btnVal) {
+        if (btnVal) return
+        if (this.repeatAction) {
+            console.log('stopping tile script');
+            this.repeatAction.stop(this.panel.world());
+            this.repeatAction = null;
+            return;
+        }
         
+        
+        var delay = Number(this.panel.delayText.textString);
+        if (!delay) return;
+        this.repeatAction = new SchedulableAction(this, 'runScript', null, delay);
+        
+        console.log('starting tile script');
+        this.repeatAction.start(this.panel.world());
     },
     
     openIn: function($super, world, optLoc) {
@@ -216,6 +261,11 @@ Morph.subclass('TileHolder', {
         var dropArea = new DropArea(this.dropAreaExtent.extentAsRectangle(), cleanUp);
 
         this.addMorph(dropArea);
+    },
+    
+    tilesAsJs: function() {
+        var lines = this.submorphs.select(function(ea) { return ea.tile && ea.tile() }).collect(function(ea) { return ea.tile().asJs() });
+        return lines.join(';\n');
     }
     
 });
@@ -236,7 +286,6 @@ Morph.subclass('Tile', {
     
     addMorph: function($super, morph) {
         $super(morph);
-        if (morph instanceof HandleMorph) return morph;
         this.layout();
         return morph;
     },
@@ -318,9 +367,23 @@ Tile.subclass('ObjectTile', {
         var menu = new TileMenuCreator(this.targetMorph, this).createMenu();
         var pos = this.getGlobalTransform().transformPoint(this.menuTrigger.getPosition());
     	menu.openIn(this.world(), pos, false, this.targetMorph.toString());
+    },
+    
+    asJs: function() {
+        var result = 'ObjectTile.findMorph(\'' +  this.objectId() + '\')';
+        if (this.opTile)
+            result += this.opTile.asJs();
+        return result
     }
         
 });
+
+ObjectTile.findMorph = function(id) {
+    // FIXME arrgh, what about morphs in subworlds?
+    var result;
+    WorldMorph.current().withAllSubmorphsDo(function() { if (this.id() === id) result = this });
+    return result;
+};
 
 Object.subclass('TileMenuCreator', {
     
@@ -412,9 +475,18 @@ Tile.subclass('FunctionTile', {
     addDropArea: function() {
         this.removeMorph(this.text2.remove());
         
-        this.argumentDropAreas.push(this.addMorph(new DropArea(new Rectangle(0,0,20,15), this.addDropArea.bind(this))));
+        var dropArea = new DropArea(new Rectangle(0,0,20,15), this.addDropArea.bind(this));
+        this.argumentDropAreas.push(this.addMorph(dropArea));
         
         this.addMorph(this.text2);
+    },
+    
+    asJs: function() {
+        var result = this.text1.textString;
+        var args = this.argumentDropAreas.select(function(ea) { return ea.tile() }).collect(function(ea) { return ea.tile().asJs() });
+        result += args.join(',');
+        result += ')'
+        return  result;
     }
 
 });
@@ -429,7 +501,7 @@ Tile.subclass('IfTile', {
     },
     
     asJs: function() {
-        return 'if (' + this.testExprDropArea.tile().asJs() + ') {' + this.exprDropArea.tile().asJs() + '};';
+        return 'if (' + this.testExprDropArea.tile().asJs() + ') {' + this.exprDropArea.tile().asJs() + '}';
     }
 });
     
@@ -456,7 +528,7 @@ Morph.subclass('DropArea', {
     tile: function() {
         return this.submorphs.detect(function(ea) { return ea.isTile });
     },
-    
+        
     addMorph: function($super, morph) {
         if (this.tile() || !morph.isTile) return morph; // FIXME think that morph was accepted... overwrite acceptmorph for that or closeDnD
         this.setExtent(morph.getExtent());

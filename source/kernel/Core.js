@@ -5230,6 +5230,22 @@ PasteUpMorph.subclass("WorldMorph", {
             ["Line", function(evt) { var p = evt.point(); world.addMorph(Morph.makeLine([p, p.addXY(60, 30)], 2, Color.black));}],
             ["Rectangle", function(evt) { world.addMorph(new Morph(evt.point().extent(pt(60, 30)), "rect"));}],
             ["Ellipse", function(evt) { world.addMorph(new Morph(evt.point().extent(pt(50, 50)), "ellipse"));}],
+            ["Star", function(evt) { 
+                var makeStarVertices = function(r,center,startAngle) {
+                    var vertices = [];
+                    var nVerts = 10;
+                    for (var i=0; i <= nVerts; i++) {
+                        var a = startAngle + (2*Math.PI/nVerts*i);
+                        var p = Point.polar(r,a);
+                        if (i%2 == 0) p = p.scaleBy(0.39);
+                        vertices.push(p.addPt(center)); 
+                    }
+                    return vertices; 
+                }
+            	var widget = Morph.makePolygon(makeStarVertices(50,pt(0,0),0), 1, Color.black, Color.yellow);
+            	widget.setPosition(evt.point());
+                world.addMorph(widget)}],
+            ["SliderMorph", function(evt) { world.addMorph(new SliderMorph(evt.point().extent(pt(120, 40))))}],
             ["TextMorph", function(evt) { world.addMorph(new TextMorph(evt.point().extent(pt(120, 10)), "This is a TextMorph"));}],
             ["Class Browser", function(evt) { new SimpleBrowser().openIn(world, evt.point()); }],
             ["Object Hierarchy Browser", function(evt) { new ObjectBrowser().openIn(world, evt.point()); }],    
