@@ -1,3 +1,5 @@
+module('TileScripting.js').requires('Helper.js').toRun(function() {
+
 Object.subclass('Layout', {
     
     initialize: function(baseMorph, resizeAfterLayout) {
@@ -142,6 +144,7 @@ Widget.subclass('ScriptEnvironment', {
     initialize: function($super) {
         $super();
         this.repeatAction = null;
+        this.calls = 0;
         // this.formalModel = ComponentModel.newModel({Name: "NoName"});
     },
     
@@ -178,6 +181,7 @@ Widget.subclass('ScriptEnvironment', {
     
     runScript: function(btnVal) {
         if (btnVal) return;
+        this.calls ++;
         var code = this.panel.tileHolder.tilesAsJs();
         var result;
         try {
@@ -195,6 +199,7 @@ Widget.subclass('ScriptEnvironment', {
             console.log('stopping tile script');
             this.repeatAction.stop(this.panel.world());
             this.repeatAction = null;
+            this.panel.repeatButton.setLabel("Repeat");
             return;
         }
         
@@ -205,6 +210,7 @@ Widget.subclass('ScriptEnvironment', {
         
         console.log('starting tile script');
         this.repeatAction.start(this.panel.world());
+        this.panel.repeatButton.setLabel("Stop");
     },
     
     openIn: function($super, world, optLoc) {
@@ -428,7 +434,7 @@ Object.subclass('TileMenuCreator', {
                     "addNonMorph", "addWrapper", "addPseudoMorph", "addWrapperToDefs", "addMorphAt", "addMorphFront", "addMorphBack", "addMorphFrontOrBack",
                     "insertMorph", "removeAllMorphs", "hasSubmorphs", "withAllSubmorphsDo", "invokeOnAllSubmorphs", "topSubmorph", "shutdown",
                     "okToDuplicate", "getTransform", "pvtSetTransform", "setTransform", "transformToMorph", "getGlobalTransform", "translateBy",
-                    "defaultOrigin", "throb", "align", "centerAt", "toggleFisheye", "setFisheyeScale", "getHelpText", "showHelp", "hideHelp",
+                    "defaultOrigin", "align", "centerAt", "toggleFisheye", "setFisheyeScale", "getHelpText", "showHelp", "hideHelp",
                     "captureMouseEvent", "ignoreEvents", "enableEvents", "relayMouseEvents", "handlesMouseDown", "onMouseDown", "onMouseMove", "onMouseUp",
                     "considerShowHelp", "delayShowHelp", "onMouseOver", "onMouseOut", "onMouseWheel", "takesKeyboardFocus", "setHasKeyboardFocus",
                     "requestKeyboardFocus", "relinquishKeyboardFocus", "onFocus", "onBlur", "removeFocusHalo", "adjustFocusHalo", "addFocusHalo",
@@ -551,4 +557,6 @@ Morph.subclass('DropArea', {
     onMouseOut: function(evt) {
         this.styleNormal();
     }
+});
+
 });

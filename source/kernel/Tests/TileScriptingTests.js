@@ -27,9 +27,9 @@ TestCase.subclass('TileHolderTest', {
     
     testTilesAsJs: function() {
         var holder = new TileHolder(pt(50,50).extentAsRectangle());
-        var tile1 = new DebugTile(null, '123;');
-        var tile2 = new DebugTile(null, 'console.log(\'hello world\');');
-        var expected = '123;\nconsole.log(\'hello world\');';
+        var tile1 = new DebugTile(null, '123');
+        var tile2 = new DebugTile(null, 'console.log(\'hello world\')');
+        var expected = '123;\nconsole.log(\'hello world\')';
         holder.submorphs.last().addMorph(tile1);
         holder.submorphs.last().addMorph(tile2);
         var result = holder.tilesAsJs();
@@ -134,7 +134,7 @@ TestCase.subclass('ObjectTileTest', {
         morph.openInWorld();
         try { var js = tile.asJs(); }
         finally { morph.remove(); };
-        this.assertEqual(js, 'ObjectTile.findMorph(\'' + morph.id() + '\').getPosition();');
+        this.assertEqual(js, 'ObjectTile.findMorph(\'' + morph.id() + '\').getPosition()');
     }
 });
 
@@ -153,7 +153,7 @@ TestCase.subclass('FunctionTileTest', {
         tile.argumentDropAreas.last().addMorph(argTile1);
         tile.argumentDropAreas.last().addMorph(argTile2);
         var js = tile.asJs()
-        var expected = '.test(123,456);';
+        var expected = '.test(123,456)';
         this.assertEqual(js, expected);
     }
 });
@@ -179,7 +179,7 @@ TestCase.subclass('IfTileTest', {
         var exprTile = new DebugTile(null,'body');
         tile.testExprDropArea.addMorph(testTile);
         tile.exprDropArea.addMorph(exprTile);
-        var expected = 'if (test) {body};';
+        var expected = 'if (test) {body}';
         this.assertEqual(tile.asJs(), expected);
     }
 });
