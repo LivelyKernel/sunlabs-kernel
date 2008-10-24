@@ -49,10 +49,11 @@ Object.extend(fx, {
     Path: Packages.java.awt.geom.GeneralPath,
     Color: Packages.java.awt.Color,
     Gradient: Packages.java.awt.GradientPaint,
+    RadialGradient: Packages.java.awt.RadialGradientPaint,
     Timer: Packages.javax.swing.Timer,
 });
 
-namespace('fx::util');
+namespace('fx.util');
 
 Object.extend(fx.util, {
     antiAlias: function(shape) {
@@ -144,7 +145,7 @@ Object.extend(fx.util, {
 });
     
 
-Object.subclass('fx::util::MouseAdapter', {
+Object.subclass('fx.util.MouseAdapter', {
     mouseClicked: Functions.Null,
     mouseDragged: Functions.Null,
     mouseEntered: Functions.Null,
@@ -156,13 +157,13 @@ Object.subclass('fx::util::MouseAdapter', {
 });
 
 
-Object.subclass('fx::util::KeyAdapter', {
+Object.subclass('fx.util.KeyAdapter', {
     keyPressed: Functions.Null,
     keyReleased: Functions.Null,
     keyTyped: Functions.Null
 });
 
-Object.subclass('fx::Frame', {
+Object.subclass('fx.Frame', {
     initialize: function(width, height) {
 	this.frame = new Packages.javax.swing.JFrame();
 	this.frame.setSize(width, height);
@@ -314,7 +315,7 @@ var PaintModule = {
 	    if (name == "none") return new fx.Color(0,0,0,0); // FIXME not strictly the same thing as no color
 	    else if (name.startsWith("url")) { // FIXME specialcasing the gradients
 		// parse uri
-		var node = lk.FragmentURI.getElement(name);
+		var node = lively.FragmentURI.getElement(name);
 		if (node && node.tagName == 'linearGradient') {
 		    // go through stops
 		    var x1 = node.x1.baseVal.value*100;
@@ -326,6 +327,14 @@ var PaintModule = {
 		    var c1 = stops.item(0) ? stops.item(0).getAttributeNS(null, "stop-color") : "white";
 		    var c2 = stops.item(1) ? stops.item(1).getAttributeNS(null, "stop-color") : "gray";
 		    return new fx.Gradient(x1, y1, this.parsePaint(c1), x2, y2, this.parsePaint(c2));
+		} else if (node &&  node.tagName == 'radialGradient') {
+		    var center = new fx.Point(node.cx.baseVal.value, node.cx.baseVal.value);
+		    var r = node.r.baseVal.value;
+		    var stops = node.getElementsByTagNameNS(Namespace.SVG, "stop");
+		    
+		    var c1 = this.parsePaint(stops.item(0) ? stops.item(0).getAttributeNS(null, "stop-color") : "white");
+		    var c2 = this.parsePaint(stops.item(1) ? stops.item(1).getAttributeNS(null, "stop-color") : "gray");
+		    return new fx.RadialGradient(center, r, [0, 1], [c1, c2]);
 		} else {
 		    // wait for radial paint until java 6
 		    //console.log('unknown paint ' + id);
@@ -562,7 +571,7 @@ fx.dom.renderers[SVGGElement.tagName] = function(element, attribute) {
 	
     var clip = element.getAttributeNS(null, "clip-path");
     if (clip) {
-	var node = lk.FragmentURI.getElement(clip);
+	var node = lively.FragmentURI.getElement(clip);
 	if (node) {
 	    var clips = node.getElementsByTagNameNS(Namespace.SVG, "rect");
 	    if (clips.length > 0) {
