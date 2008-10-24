@@ -48,7 +48,7 @@ Object.extend(fx, {
     Font: Packages.java.awt.Font,
     Path: Packages.java.awt.geom.GeneralPath,
     Color: Packages.java.awt.Color,
-    Gradient: Packages.java.awt.GradientPaint,
+    LinearGradient: Packages.java.awt.LinearGradientPaint,
     RadialGradient: Packages.java.awt.RadialGradientPaint,
     Timer: Packages.javax.swing.Timer,
 });
@@ -318,23 +318,31 @@ var PaintModule = {
 		var node = lively.FragmentURI.getElement(name);
 		if (node && node.tagName == 'linearGradient') {
 		    // go through stops
-		    var x1 = node.x1.baseVal.value*100;
-		    var x2 = node.x2.baseVal.value*100;
-		    var y1 = node.y1.baseVal.value*100;
-		    var y2 = node.y2.baseVal.value*100;
-		    var stops = node.getElementsByTagNameNS(Namespace.SVG, "stop");
-		    //console.log('got vector ' + [x1, y1, x2, y2] + ' stops ' + stops._nodes);
-		    var c1 = stops.item(0) ? stops.item(0).getAttributeNS(null, "stop-color") : "white";
-		    var c2 = stops.item(1) ? stops.item(1).getAttributeNS(null, "stop-color") : "gray";
-		    return new fx.Gradient(x1, y1, this.parsePaint(c1), x2, y2, this.parsePaint(c2));
-		} else if (node &&  node.tagName == 'radialGradient') {
-		    var center = new fx.Point(node.cx.baseVal.value, node.cx.baseVal.value);
-		    var r = node.r.baseVal.value;
-		    var stops = node.getElementsByTagNameNS(Namespace.SVG, "stop");
+		    // FIXME gradients are in user space in fx!
 		    
-		    var c1 = this.parsePaint(stops.item(0) ? stops.item(0).getAttributeNS(null, "stop-color") : "white");
-		    var c2 = this.parsePaint(stops.item(1) ? stops.item(1).getAttributeNS(null, "stop-color") : "gray");
-		    return new fx.RadialGradient(center, r, [0, 1], [c1, c2]);
+		    var start = new fx.Point(node.x1.baseVal.value*100, node.y1.baseVal.value*100);
+		    var end = new fx.Point(node.x2.baseVal.value*100, node.y2.baseVal.value*100);
+		    var stops = Object.extend(node.getElementsByTagNameNS(Namespace.SVG, "stop"), Enumerable);
+		    var colors = stops.map(function(stop) {
+			return this.parsePaint(stop.getAttributeNS(null, "stop-color"));
+		    }, this);
+		    var offsets = stops.map(function(stop) {
+			return parseFloat(stop.getAttributeNS(null, "offset"));
+		    });
+		    return new fx.LinearGradient(start, end, offsets, colors);
+		} else if (node &&  node.tagName == 'radialGradient') {
+		    //var center = new fx.Point(node.fx.baseVal.value, node.fy.baseVal.value);
+		    var center = new fx.Point(0,0);
+		    var r = node.r.baseVal.value*20;
+		    var stops = node.getElementsByTagNameNS(Namespace.SVG, "stop");
+		    var stops = Object.extend(node.getElementsByTagNameNS(Namespace.SVG, "stop"), Enumerable);
+		    var colors = stops.map(function(stop) {
+			return this.parsePaint(stop.getAttributeNS(null, "stop-color"));
+		    }, this);
+		    var offsets = stops.map(function(stop) {
+			return parseFloat(stop.getAttributeNS(null, "offset"));
+		    });
+		    return new fx.RadialGradient(center, r, offsets, colors);
 		} else {
 		    // wait for radial paint until java 6
 		    //console.log('unknown paint ' + id);
