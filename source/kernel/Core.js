@@ -5259,6 +5259,7 @@ PasteUpMorph.subclass("WorldMorph", {
             ["Object Hierarchy Browser", function(evt) { new ObjectBrowser().openIn(world, evt.point()); }],    
             ["TestRunner", function(evt) { new TestRunner().openIn(world, evt.point()); }],
             ["Fabrik Component Box", function(evt) { Fabrik.openComponentBox(world, evt.point()); }],
+            ["TileScriptingBox", function(evt) { new TileBox().openIn(world, evt.point()); }],
             ["OmetaWorkspace", function(evt) { new OmetaWorkspace().openIn(world, evt.point()); }],
 	    ["Call Stack Viewer", function(evt) { 
 		if (Config.debugExtras) lively.lang.Execution.showStack("use viewer");
