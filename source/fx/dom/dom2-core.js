@@ -4,7 +4,12 @@ var NodeList = function() { this._nodes = []; };
 
 Object.extend(NodeList.prototype, {
   item: function(index) { return this._nodes[index]; },
-  get length() { return this._nodes.length; }
+  get length() { return this._nodes.length; },
+  _each: function(iterator) { // this is for the sake of prototype.
+      for (var i = 0, length = this._nodes.length; i < length; i++)
+	  iterator(this.item([i]));
+  }
+    
 });
 
 // NamedNodeMap
