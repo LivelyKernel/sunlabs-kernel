@@ -303,10 +303,10 @@ Widget.subclass('SimpleInspector', {
     initialize: function($super, targetMorph) {
         $super();
         this.relayToModel(Record.newPlainInstance({PropList: [], PropName: null, Inspectee: targetMorph, PropText: "",
-						   PropMenu: ['inspect selection', function() { 
+						   PropMenu: [['inspect selection', function() { 
 						       var name = this.getPropName();
 						       if (!name) return;
-						       new SimpleInspector(this.propValue(name)).open()}.bind(this)]}));
+						       new SimpleInspector(this.propValue(name)).open()}.bind(this)]]}));
     },
     
     onPropTextUpdate: function(input, source) {
