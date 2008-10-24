@@ -884,7 +884,7 @@ using().run(function() { // begin scoping function
 		    }
                 }
             }
-        }
+        },
 
         testTrace: function() {
 	    this.trace(function () { for (var i=0; i<10; i++) RunArray.test([3, 1, 4, 1, 5, 9]); });
