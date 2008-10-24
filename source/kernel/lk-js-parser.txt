@@ -25,19 +25,19 @@ ometa LKJSParser <: Parser {
     sc              = spacesNoNl (nl:n								    -> n
 					| &'}' | end)						                -> ''
                     | ";"	optNl:nl									    -> { ';' + nl },
-    srcElem         = "function":f (formal | empty):n funcRest:fr             -> { lk.text.createText(f).concat(fr) }
+    srcElem         = "function":f (formal | empty):n funcRest:fr             -> { lively.text.createText(f).concat(fr) }
                     | stmt:s											-> s,
-    funcRest        = "(" listOf(#formal, ','):fs ")" "{" optNl:nl srcElems:body "}" -> { lk.text.createText('(' + fs + ') {' + nl).concat(body).concat(lk.text.createText('}')) },
+    funcRest        = "(" listOf(#formal, ','):fs ")" "{" optNl:nl srcElems:body "}" -> { lively.text.createText('(' + fs + ') {' + nl).concat(body).concat(lively.text.createText('}')) },
     formal          = spaces:sps name:n								    -> { sps.join('') + n},
-    srcElems        = srcElem*:ss                                       -> ss.inject(lk.text.createText(''), function(text, ea) { return text.concat(ea) }) ,
+    srcElems        = srcElem*:ss                                       -> ss.inject(lively.text.createText(''), function(text, ea) { return text.concat(ea) }) ,
     stmt            = something:sth                                     ->  { sth },
-   something        =  spacesNoNl:spcs ( partStmt )+:parts sc:end            ->  {  parts.inject(lk.text.createText(spcs), function(text, ea) {
+   something        =  spacesNoNl:spcs ( partStmt )+:parts sc:end            ->  {  parts.inject(lively.text.createText(spcs), function(text, ea) {
                                                                                         return text.concat(ea)
-                                                                                    }).concat(lk.text.createText(end)) },
-	partStmt = str:s                                                ->  { lk.text.createText(s, {color: Color.green}) }
-	            | keyword:k									        ->  { lk.text.createText(k, {color: Color.red}) }
-				| name:n											->  { lk.text.createText(n) }
-				| (~sc anything:a)									->  { lk.text.createText(a) }
+                                                                                    }).concat(lively.text.createText(end)) },
+	partStmt = str:s                                                ->  { lively.text.createText(s, {color: Color.green}) }
+	            | keyword:k									        ->  { lively.text.createText(k, {color: Color.red}) }
+				| name:n											->  { lively.text.createText(n) }
+				| (~sc anything:a)									->  { lively.text.createText(a) }
 };
 
 
