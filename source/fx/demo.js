@@ -39,6 +39,7 @@ load('../kernel/Data.js');
 load('../kernel/Tools.js');
 load('../kernel/Examples.js');
 
+
 // example program
 
 var browser = new fx.Frame(1024, 680);
@@ -48,6 +49,13 @@ var canvas = document.getElementById("canvas");
 
 fx.dom.update();
 browser.display(canvas);
+
+
+//Config.skipMostExamples = true;
+//Config.suppressClipboardHack = true;
+//Config.loadSerializedSubworlds = false;
+//Config.showPenScript = false;
+//load('../kernel/Main.js');
 
 
 function swingDemo() {
@@ -175,6 +183,9 @@ function morphicMain() {
 	m.rotateBy(-0.2);
     	world.addMorph(m);
     });
+
+    if (Config.showTester)
+        require('Examples.js').toRun(function() { new TestWidget().openIn(world, pt(835, 450)) });
 
 }
 
