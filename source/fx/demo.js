@@ -158,16 +158,13 @@ function morphicMain() {
         var widget = new ClockMorph(pt(80, 100), 50);
         world.addMorph(widget);
         widget.startSteppingScripts();
-	widget.setFill(Color.yellow); // cheating b/c we don't have gradients
     }
     var link = new LinkMorph(null, pt(60, 400));
     world.addMorph(link);
 
     if (Config.showEngine())
         EngineMorph.makeEngine(world, pt(400, 5))
-    
 
-    canvas._fxBegin.requestFocus();
     swingDemo();
     //swingFileChooserDemo();
     
