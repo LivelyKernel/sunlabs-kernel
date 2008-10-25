@@ -216,6 +216,35 @@ module.Font.addMethods({
         return extents;
     }
 });
+} else if (Config.fontMetricsFromSVG)  {
+    
+module.Font.addMethods({
+    
+    computeExtents: function(family, size) {
+        var extents = [];
+	var canvas = document.getElementById("canvas");
+	var text = canvas.appendChild(document.createElementNS(Namespace.SVG, "text"));
+	text.setAttributeNS(null, "font-size", size);
+	text.setAttributeNS(null, "font-family", family);
+
+	//text.setAttributeNS(null, "y", "100");
+	var b = 33;
+	var string = "";
+	for (var i = b; i < 255; i++) {
+	    string += String.fromCharCode(i);
+	}
+	text.appendChild(document.createTextNode(string));
+	for (var i = b; i < 255; i++) {
+	    var end = text.getEndPositionOfChar(i - b);
+	    var start = text.getStartPositionOfChar(i - b);
+	    var ext = text.getExtentOfChar(i - b);
+	    extents[i] = new module.CharacterInfo(end.x - start.x, start.y - ext.y);
+	}
+        canvas.removeChild(text);
+	return extents;
+    }
+    
+});
 
 }    
     

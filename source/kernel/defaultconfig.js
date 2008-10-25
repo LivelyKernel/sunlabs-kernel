@@ -86,6 +86,9 @@ var Config = {
     // Derive font metrics from (X)HTML
     fontMetricsFromHTML: UserAgent.usableHTMLEnvironment,
 
+    // Derive font metrics from SVG
+    fontMetricsFromSVG: false,
+
     // Try to make up font metrics entirely (can be overriden to use the native SVG API, which rarely works)
     fakeFontMetrics: !UserAgent.usableHTMLEnvironment,
 
