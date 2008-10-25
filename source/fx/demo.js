@@ -191,7 +191,7 @@ function morphicMain() {
     
     // piano
     module('Main.js').requires('Examples.js').toRun(function() {
-        var m = new PianoKeyboard(pt(150, 550));
+        var m = new PianoKeyboard(pt(100, 650));
         m.scaleBy(1.5);  
 	m.rotateBy(-0.2);
     	world.addMorph(m);
