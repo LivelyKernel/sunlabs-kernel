@@ -59,14 +59,11 @@ Object.subclass('lively.text.Font', {
     getFamily: function() {
         return this.family;
     },
+
     toString: function() {
         return this.family + " " + this.getSize();
     },
-    getCharInfo: function(charString) {
-        var code = charString.charCodeAt(0);
-        if (!this.extents) this.extents = this.computeExtents(this.family, this.size);
-        return this.extents[code];
-    },
+
     getCharWidth: function(charString) {
         var code = charString.charCodeAt(0);
         if (!this.extents) this.extents = this.computeExtents(this.family, this.size);
@@ -77,8 +74,9 @@ Object.subclass('lively.text.Font', {
         }
 	return w;
     },
+
     getCharHeight: function(charString) {
-        var code = charString.charCodeAt(0)
+        var code = charString.charCodeAt(0);
         if (!this.extents) this.extents = this.computeExtents(this.family, this.size);
         return this.extents[code] ? this.extents[code].height : 12;
     },
@@ -208,8 +206,7 @@ module.Font.addMethods({
 
         // tjm: sanity check as Firefox seems to do this wrong with certain values
         if (spaceWidth > 100) {    
-            extents[(' '.charCodeAt(0))] = //new CharacterInfo(this.getCharInfo(' ').width - 2, this.getCharInfo(' ').height);
-            new module.CharacterInfo(2*xWidth/3, sub.offsetHeight);
+            extents[(' '.charCodeAt(0))] = new module.CharacterInfo(2*xWidth/3, sub.offsetHeight);
         } else {
             extents[(' '.charCodeAt(0))] = new module.CharacterInfo(spaceWidth, sub.offsetHeight);
         }
@@ -222,9 +219,7 @@ module.Font.addMethods({
 
 }    
     
-Wrapper.subclass('TextWord');
-
-TextWord.addMethods({
+Wrapper.subclass('TextWord', {
 
     documentation: "represents a chunk of text which might be printable or might be whitespace",
 
@@ -397,7 +392,7 @@ TextWord.addMethods({
 
 
 
-Object.subclass('TextLine', {
+Object.subclass('lively.text.TextLine', {
     documentation: 'renders lines composed of words and whitespace',
 
     lineHeightFactor: 1.2, // multiplied with the font size to set the distance between the lines, 
@@ -820,7 +815,7 @@ Morph.subclass('TextSelectionMorph', {
 
 
 
-Visual.subclass('TextContent', {
+Visual.subclass('lively.text.TextContent', {
     documentation: "wrapper around SVG Text elements",
     initialize: function() {
 	this.rawNode = NodeFactory.create("text", { "kerning": 0 });
@@ -876,7 +871,7 @@ TextMorph.addMethods({
 
     initializePersistentState: function($super, initialBounds, shapeType) {
         $super(initialBounds, shapeType);
-        this.textContent = this.addWrapper(new TextContent());
+        this.textContent = this.addWrapper(new lively.text.TextContent());
         this.resetRendering();
         // KP: set attributes on the text elt, not on the morph, so that we can retrieve it
 	this.applyStyle({fill: this.backgroundColor, borderWidth: this.borderWidth, borderColor: this.borderColor});
@@ -886,7 +881,7 @@ TextMorph.addMethods({
     restoreFromSubnode: function($super, importer, rawNode) {
 	if ($super(importer, rawNode)) return true;
 	if (rawNode.localName == "text") {
-            this.textContent = new TextContent(importer, rawNode);   
+            this.textContent = new lively.text.TextContent(importer, rawNode);   
             this.fontFamily = this.textContent.getTrait("font-family");
             this.fontSize = this.textContent.getLengthTrait("font-size");
             this.font = module.Font.forFamily(this.fontFamily, this.fontSize);
@@ -1194,10 +1189,10 @@ TextMorph.addMethods({
         var startIndex = 0;
         var stopIndex = this.textString.length - 1;
         var chunkSkeleton = null;
-	var defaultInterline = (TextLine.prototype.lineHeightFactor - 1) * this.font.getSize();
+	var defaultInterline = (lively.text.TextLine.prototype.lineHeightFactor - 1) * this.font.getSize();
 	var topLeft = initialTopLeft.addXY(0, defaultInterline/2);
         while (startIndex <= stopIndex) {
-	    var line = new TextLine(this.textString, this.textStyle, startIndex, 
+	    var line = new lively.text.TextLine(this.textString, this.textStyle, startIndex, 
 		                    topLeft, font, new TextEmphasis({}), chunkSkeleton);
             line.setTabWidth(this.tabWidth, this.tabsAsSpaces);
             line.compose(compositionWidth);
@@ -1275,7 +1270,7 @@ TextMorph.addMethods({
     },
 
     lineHeight: function() {
-	return this.font.getSize() * TextLine.prototype.lineHeightFactor;
+	return this.font.getSize() * lively.text.TextLine.prototype.lineHeightFactor;
     },
 
     fitHeight: function() { //Returns true iff height changes
