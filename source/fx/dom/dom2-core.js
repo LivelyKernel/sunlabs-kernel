@@ -11,6 +11,8 @@ Object.extend(NodeList.prototype, {
   }
     
 });
+Object.extend(NodeList.prototype, Enumerable);
+
 
 // NamedNodeMap
 
@@ -153,10 +155,11 @@ Object.extend(Node.prototype, {
 
   appendChild: function(newChild) {
     if (!this._childNodes)
-      return;
+      return newChild; // FIXME throw HIERARCHY_REQUEST_ERROR ?
     this.removeChild(newChild);
     newChild._parentNode = this;
     this.childNodes._nodes.push(newChild);
+      return newChild;
   },
 
   hasChildNodes: function() { return this.childNodes.length > 0; },
