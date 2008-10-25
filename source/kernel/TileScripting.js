@@ -487,7 +487,7 @@ Object.subclass('TileMenuCreator', {
                     "fullContainsPoint", "fullContainsWorldPoint", "removeMorph", "world", "inspect", "stopStepping", "startStepping", "addActiveScript",
                     "getStrokeOpacity", "setStrokeWidth", "getStrokeWidth", "setStroke", "getStroke", "getLineJoin", "getLineCap", "setStrokeDashArray",
                     "getStrokeDashArray", "setStyleClass", "getStyleClass", "getRecordField", "setRecordField", "removeRecordField", "newRelay",
-                    "create", "addField", "areEventsIgnored", "getLocalTransform", "addObserver", "removeObserver", "addObserversFromSetters",
+                    "create", "addField", "areEventsIgnored", "addObserver", "removeObserver", "addObserversFromSetters",
                     "getBoundingBox", "nativeBounds", "nativeWorldBounds", "canvas", "nativeContainsWorldPoint", "undisplay", "display", "isDisplayed",
                     "applyFilter", "getBaseTransform", "copy", "getType", "getEncodedType", "newId", "id", "setId", "setDerivedId", "removeRawNode",
                     "replaceRawNodeChildren", "toMarkupString", "uri", "getLivelyTrait", "setLivelyTrait", "removeLivelyTrait", "getLengthTrait",

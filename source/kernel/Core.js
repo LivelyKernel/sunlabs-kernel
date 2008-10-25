@@ -1334,8 +1334,6 @@ Visual.addMethods({
     //In this particular implementation, graphics primitives are
     //mapped onto various SVG objects and attributes.
 
-    useNativeBounds: !!Config.useNativeBounds,
-
     rawNode: null, // set by subclasses
 
     setBounds: function(bounds) { 
@@ -1357,61 +1355,8 @@ Visual.addMethods({
 	return this.getTrait("pointer-events") == "none";
     },
     
-    getLocalTransform: function() {
-	if (Config.useTransformAPI) {
-	    var impl = this.getBaseTransform().consolidate();
-	    return new Transform(impl ? impl.matrix : null); // identity if no transform specified
-	} else {
-	    // parse the attribute: by Dan Amelang
-	    var s = this.rawNode.getAttributeNS(null, "transform");
-	    var matrix = null;
-	    var match = s.match(/(\w+)\s*\((.*)\)/);
-	    if (match) {
-		matrix = this.canvas().createSVGMatrix();
-		var args = match[2].split(/(?:\s|,)+/).
-		map(function(n) { return parseFloat(n) || 0; });
-		switch (match[1]) {
-		case 'matrix':
-		    matrix.a = args[0]; matrix.b = args[1];
-		    matrix.c = args[2]; matrix.d = args[3];
-		    matrix.e = args[4]; matrix.f = args[5];
-		    break;
-		case 'translate':
-		    matrix = matrix.translate(args[0], args[1] || 0); // may be just one arg
-		    break;
-		case 'scale':
-		    matrix = matrix.scaleNonUniform(args[0], args[1] || 1.0);
-		    break;
-		case 'rotate':
-		    // FIXME check:
-		    matrix = matrix.translate(-args[1], -args[2]).rotate(args[0]).translate(args[1], args[2]);
-		    break;
-		case 'skewX':
-		    matrix = matrix.skewX(args[0]);
-		    break;
-		case 'skewY':
-		    matrix = matrix.setSkewY(args[0]);
-		    break;
-		}
-	    }
-	    return new Transform(matrix);
-	}
-    },
-
     getBoundingBox: function() { // bounds, but using native SVG functionality, and in the object's coordinates.
 	return Rectangle.ensure(this.rawNode.getBBox());
-    },
-
-    nativeBounds: function() {
-	var box = this.getBoundingBox();
-	var ltfm = this.getLocalTransform();
-	if (ltfm.isTranslation()) return box.translatedBy(ltfm.getTranslation());
-	else return ltfm.transformRectToRect(box);
-    },
-
-    nativeWorldBounds: function() {
-	var box = this.getBoundingBox();
-	return new Transform(this.rawNode.getCTM()).transformRectToRect(box);
     },
 
     canvas: function() {
@@ -1548,12 +1493,6 @@ Object.extend(Shape, {
     },
 
     bounds: function() {
-	if (this.useNativeBounds) {
-	    var b = this.nativeBounds();
-	    if (b.width && b.height) return b;
-	    // else something is suspicious
-	}
-
 	var x = this.rawNode.x.baseVal.value;
 	var y = this.rawNode.y.baseVal.value;
 	var width = this.rawNode.width.baseVal.value;
@@ -1633,11 +1572,6 @@ Shape.subclass('EllipseShape', {
     },
 
     bounds: function() {
-	if (this.useNativeBounds) {
-	    var b = this.nativeBounds();
-	    if (b.width && b.height) return b;
-	    // else something is suspicious
-	}
 	//console.log("rawNode " + this.rawNode);
 	var w = this.rawNode.rx.baseVal.value * 2;
 	var h = this.rawNode.ry.baseVal.value * 2; 
@@ -1694,11 +1628,6 @@ Shape.subclass('PolygonShape', {
     },
 
     bounds: function() {
-	if (this.useNativeBounds) {
-	    var b = this.nativeBounds();
-	    if (b.width && b.height) return b;
-	    // else something is suspicious
-	}
 	// FIXME very quick and dirty, consider caching or iterating over this.points
 	var vertices = this.vertices();
 	// Opera has been known not to update the SVGPolygonShape.points property to reflect the SVG points attribute
@@ -2577,7 +2506,7 @@ Morph.addMethods({
     copyFrom: function(copier, other) {
 	this.internalInitialize(other.rawNode.cloneNode(false), true);
 	
-	this.pvtSetTransform(this.getLocalTransform());
+	this.pvtSetTransform(this.getTransform());
 
 	this.initializePersistentState(pt(0,0).asRectangle(), "rect");
 
@@ -2612,8 +2541,8 @@ Morph.addMethods({
 	this.internalSetShape(other.shape.copy());
 	this.origin = other.origin.copy();
 
-	if (other.cachedTransform) { 
-	    this.cachedTransform = other.cachedTransform.copy();
+	if (other.pvtCachedTransform) { 
+	    this.pvtCachedTransform = other.pvtCachedTransform.copy();
 	} 
 	
 	if (other.defs) {
@@ -2641,7 +2570,7 @@ Morph.addMethods({
 	// FIXME what if id is not unique?
 	$super(importer, rawNode);
 	this.internalInitialize(rawNode, false);
-	this.pvtSetTransform(this.getLocalTransform());
+	this.pvtSetTransform(this.getTransform());
 	
 	this.restoreFromSubnodes(importer);
 	this.restorePersistentState(importer);    
@@ -3296,11 +3225,49 @@ Morph.addMethods({
 
     // SVG has transform so renamed to getTransform()
     getTransform: function() {
-	if (this.cachedTransform == null) { 
-	    // we need to include fisheyeScaling to the transformation
-	    this.cachedTransform = new Similitude(this.origin, this.rotation, this.scale * this.fisheyeScale);
+	if (this.pvtCachedTransform) return this.pvtCachedTransform;
+	
+	console.log('recalculating transfoprm ' + this);
+	if (Config.useTransformAPI) {
+	    var impl = this.getBaseTransform().consolidate();
+	    this.pvtCachedTransform = new Transform(impl ? impl.matrix : null); // identity if no transform specified
+	} else {
+	    // parse the attribute: by Dan Amelang
+	    var s = this.rawNode.getAttributeNS(null, "transform");
+	    var matrix = null;
+	    var match = s.match(/(\w+)\s*\((.*)\)/);
+	    if (match) {
+		matrix = this.canvas().createSVGMatrix();
+		var args = match[2].split(/(?:\s|,)+/).
+		map(function(n) { return parseFloat(n) || 0; });
+		switch (match[1]) {
+		case 'matrix':
+		    matrix.a = args[0]; matrix.b = args[1];
+		    matrix.c = args[2]; matrix.d = args[3];
+		    matrix.e = args[4]; matrix.f = args[5];
+		    break;
+		case 'translate':
+		    matrix = matrix.translate(args[0], args[1] || 0); // may be just one arg
+		    break;
+		case 'scale':
+		    matrix = matrix.scaleNonUniform(args[0], args[1] || 1.0);
+		    break;
+		case 'rotate':
+		    // FIXME check:
+		    matrix = matrix.translate(-args[1], -args[2]).rotate(args[0]).translate(args[1], args[2]);
+		    console.log('made ' + matrix + ' from ' + args);
+		    break;
+		case 'skewX':
+		    matrix = matrix.skewX(args[0]);
+		    break;
+		case 'skewY':
+		    matrix = matrix.setSkewY(args[0]);
+		    break;
+		}
+	    }
+	    this.pvtCachedTransform = new Transform(matrix);
 	}
-	return this.cachedTransform;
+	return this.pvtCachedTransform;
     },
 
     pvtSetTransform: function(tfm) {
@@ -3309,7 +3276,7 @@ Morph.addMethods({
 	this.scale = tfm.getScale();
 	// we must make sure the Morph keeps its original size (wrt/fisheyeScale)
 	this.scale = this.scale/this.fisheyeScale;
-	this.cachedTransform = tfm; //new Similitude(this.origin, this.rotation, this.scale);
+	this.transformChanged();
     },
 
     setTransform: function(tfm) { this.pvtSetTransform(tfm); }.wrap(Morph.onLayoutChange('transform')),
@@ -3322,7 +3289,7 @@ Morph.addMethods({
 	} else {
 	    var tfm = this.getGlobalTransform();
 	    var inv = other.getGlobalTransform().createInverse();
-	    // console.log("global: " + tfm + " inverse " + inv);
+	    //console.log("own global: " + tfm + " other inverse " + inv);
 	    tfm.preConcatenate(inv);
 	    //console.log("transforming " + this + " to " + tfm);
 	    return tfm;
@@ -3344,11 +3311,9 @@ Morph.addMethods({
     translateBy: function(delta) {
 	this.changed();
 	this.origin = this.origin.addPt(delta);
-	this.cachedTransform = null;
 	// this.layoutChanged();
 	// Only position has changed; not extent.  Thus no internal layout is needed
-	// This should become a new transformChanged() method
-	this.getTransform().applyTo(this);
+	this.transformChanged();
 	if (this.fullBounds != null) this.fullBounds = this.fullBounds.translatedBy(delta);
 	// DI: I don't think this can affect owner.  It may increase fullbounds
 	//     due to stickouts, but not the bounds for layout...
@@ -3359,12 +3324,12 @@ Morph.addMethods({
 
     setRotation: function(theta) { // in radians
 	this.rotation = theta;
-	this.cachedTransform = null;
+	// layoutChanged will cause this.transformChanged();
     }.wrap(Morph.onLayoutChange('rotation')),
-
+    
     setScale: function(scale/*:float*/) {
 	this.scale = scale;
-	this.cachedTransform = null;
+	// layoutChanged will cause this.transformChanged();
     }.wrap(Morph.onLayoutChange('scale')),
 
     defaultOrigin: function(bounds, shapeType) { 
@@ -3426,7 +3391,7 @@ Morph.addMethods({
 	var p = this.bounds().center();
 
 	this.fisheyeScale = newScale;
-	this.cachedTransform = null;
+	this.pvtCachedTransform = null;
 	this.layoutChanged();  
 	this.changed();
 
@@ -4094,15 +4059,8 @@ Morph.addMethods({
     // bounds returns the full bounding box in owner coordinates of this morph and all its submorphs
     bounds: function(ignoreTransients) {
 	if (this.fullBounds != null) return this.fullBounds;
-	if (this.useNativeBounds && !ignoreTransients && this.nativeCanvas()) {
-	    this.fullBounds = this.nativeBounds();
-	    if (this.fullBounds.width && this.fullBounds.height) {
-		return this.fullBounds;
-	    } 
-	    // else: something is suspicious, fall through
-	}
 
-	var tfm = this.getLocalTransform();
+	var tfm = this.getTransform();
 	var fullBounds = tfm.transformRectToRect(this.localBorderBounds());
 	
 	var subBounds = this.submorphBounds(ignoreTransients);
@@ -4210,12 +4168,19 @@ Morph.addMethods({
 	return true;
     },
 
+    transformChanged: function() {
+	this.pvtCachedTransform = new Similitude(this.origin, this.rotation, this.scale * this.fisheyeScale);
+	this.pvtCachedTransform.applyTo(this);
+    },
+
     layoutChanged: function Morph$layoutChanged() {
 	// layoutChanged() is called whenever the cached fullBounds may have changed
 	// It invalidates the cache, which will be recomputed when bounds() is called
 	// Naturally it must be propagated up its owner chain.
 	// Note the difference in meaning from adjustForNewBounds()
-	this.getTransform().applyTo(this);  // DI: why is this here?
+	// KP: the following may or may not be necessary:
+	this.transformChanged(); // DI: why is this here?
+	
 	this.fullBounds = null;
 	if (this.owner && this.owner.layoutOnSubmorphLayout(this) && !this.transientBounds) {     // May affect owner as well...
 	    this.owner.layoutChanged();
@@ -5025,6 +4990,10 @@ PasteUpMorph.subclass("WorldMorph", {
 
     defaultOrigin: function(bounds) { 
         return bounds.topLeft(); 
+    },
+    
+    layoutChanged: function() {
+	// do nothing
     },
 
     layoutOnSubmorphLayout: function() {

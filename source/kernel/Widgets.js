@@ -268,7 +268,7 @@ Morph.subclass("ClipMorph", {
     bounds: function(ignoreTransients) {
 	// intersection  of its shape and its children's shapes
 	if (!this.fullBounds) {
-	    var tfm = this.getLocalTransform();
+	    var tfm = this.getTransform();
 	    var bounds = this.shape.bounds();
 	    // var subBounds = this.submorphBounds(ignoreTransients);
 	    // this.fullBounds = tfm.transformRectToRect(subBounds ? subBounds.intersection(bounds) : bounds);
