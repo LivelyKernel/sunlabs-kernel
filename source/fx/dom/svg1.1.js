@@ -552,7 +552,8 @@ var SVGSVGElement = SVGElement.defineElement('svg', [SVGLocatable, SVGStylable],
 
 Object.extend(SVGSVGElement.prototype, {
   createSVGMatrix: function() { return new SVGMatrix; },
-  createSVGTransform: function() { return new SVGTransform; }
+  createSVGTransform: function() { return new SVGTransform; },
+  createSVGPoint: function() { return new SVGPoint(); }
 });
 
 // SVGDefsElement
