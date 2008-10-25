@@ -247,7 +247,6 @@ function populateWorldWithExamples(world) {
 
     if (Config.activateTileScripting)
         require('TileScripting.js').toRun(function() {
-            ScriptEnvironment.open();
             TileBox.open();
         });
         

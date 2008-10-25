@@ -112,7 +112,7 @@ Widget.subclass('TileBox', {
         panel.adjustForNewBounds = Morph.prototype.adjustForNewBounds.bind(this); // so submorphs don't scale
         panel.setFill(Color.white);
         panel.setBorderWidth(1);
-        // panel.suppressHandles = true;
+        panel.suppressHandles = true;
         
         var defaultCreateFunc = function(theClass, optExtent) {
             return new theClass(optExtent && optExtent.extentAsRectangle());
@@ -176,6 +176,9 @@ Widget.subclass('ScriptEnvironment', {
 		runButton.setLabel("Run Script");
 		runButton.connectModel({model: this, setValue: "runScript"});
 		
+		var delayText = panel.delayText;
+		delayText.autoAccept = true;
+		
 		var repeatButton = panel.repeatButton;
 		repeatButton.setLabel("Repeat");
 		repeatButton.connectModel({model: this, setValue: "repeatScript"});
@@ -227,6 +230,7 @@ Widget.subclass('ScriptEnvironment', {
     openIn: function($super, world, optLoc) {
         var window = $super(world, optLoc);
         window.openAllToDnD();
+        window.suppressHandles = true;
         window.needsToComeForward = Functions.False;
         // window.captureMouseEvent = Morph.prototype.captureMouseEvent.bind(window).wrap(function(proceed, evt, hasFocus) {
         //             var result = proceed(evt,hasFocus);
@@ -257,7 +261,7 @@ Morph.subclass('TileHolder', {
         this.setFill(Color.gray.lighter());
         this.layout = this.layout.curry(true); // no resizing on layout
         this.closeDnD();
-        // this.suppressHandles = true;
+        this.suppressHandles = true;
         this.addDropArea();
         
     },
@@ -294,8 +298,20 @@ Morph.subclass('TileHolder', {
         return lines.join(';\n');
     },
     
-    okToBeGrabbedBy: Functions.Null
+    okToBeGrabbedBy: Functions.Null,
     
+    layoutChanged: function($super) {
+        $super();
+        var maxExtent = this.submorphs.select(function(ea){ return ea.isDropArea }).inject(pt(0,0), function(maxExt, ea) {
+            return maxExt.maxPt(ea.getPosition().addPt(ea.getExtent()));
+        });
+        if (this.getExtent().x < maxExtent.x) {
+            // FIXME
+            this.owner.owner && this.owner.owner.setExtent(pt(maxExtent.x, this.owner.owner.getExtent().y));
+            this.owner && this.owner.setExtent(pt(maxExtent.x, this.owner.getExtent().y));
+            this.setExtent(pt(maxExtent.x, this.getExtent().y));
+        }
+    }
 });
     
 Morph.subclass('Tile', {
@@ -318,10 +334,10 @@ Morph.subclass('Tile', {
         return morph;
     },
     
-    layoutChanged: function($super) {
-        $super();
-        // this.layouterClass && new this.layouterClass(this, true).layout();
-    },
+    // layoutChanged: function($super) {
+    //     $super();
+    //     // this.layouterClass && new this.layouterClass(this, true).layout();
+    // },
     
     asJs: function() {
         return '';
@@ -336,17 +352,15 @@ Tile.subclass('DebugTile', {
     initialize: function($super, bounds, sourceString) {
         $super(bounds, "rect");
         
-        this.myString = '';
         this.text = this.addMorph(new TextMorph(this.shape.bounds().insetBy(5)));
-        this.text.connectModel({model: {setMyString: function(string) { this.myString = string }.bind(this) }, setText: "setMyString"});
-        this.text.setText(sourceString);
+        this.text.autoAccept
+        this.text.setTextString(sourceString);
         
         this.closeAllToDnD();
-        // FIXME why is it so hard to use a SIMPLE TextMorph??!  
     },
     
     asJs: function() {
-        return this.myString;
+        return this.text.textString;
     }
 });
 
