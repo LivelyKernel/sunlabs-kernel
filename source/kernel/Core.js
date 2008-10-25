@@ -3720,7 +3720,6 @@ Morph.addMethods({
 	var menu = this.morphMenu(evt);
 	// if (evt.mouseButtonPressed) evt.hand.setMouseFocus(menu);
 	// evt.hand.setMouseFocus(menu);
-console.log("showMorphMenu.evt.point = " + evt.point());
 	menu.openIn(this.world(), evt.point(), false, Object.inspect(this).truncate()); 
     },
 
@@ -3892,7 +3891,6 @@ console.log("showMorphMenu.evt.point = " + evt.point());
     },
 
     showOwnerChain: function(evt) {
-console.log("showOwnerChain.evt.point = " + evt.point());
 	var items = this.ownerChain().reverse().map(
 	    function(each) { return [Object.inspect(each).truncate(), function(evt2) { each.showMorphMenu(evt) }]; });
 	new MenuMorph(items, this).openIn(this.world(), evt.point(), false, "Top item is topmost");

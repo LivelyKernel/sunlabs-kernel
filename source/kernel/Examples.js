@@ -195,13 +195,14 @@ Morph.subclass('PianoKeyboard', {
 	$super(loc.extent(pt(100, 20)), "rect");
 	var wtWid, bkWid, keyRect, key, octavePt, nWhite, nBlack;
 	var nOctaves = 6;
+	var margin = pt(4, 4);
 	wtWid = 8; bkWid = 5;
 
 
 	for (var i=0; i<nOctaves+1; i++) {
 	    if (i < nOctaves) {nWhite = 7;  nBlack = 5; }
 	    else {nWhite = 1;  nBlack = 0; } // Hich C
-	    octavePt = this.innerBounds().topLeft().addXY(7*wtWid*i-1, -1);
+	    octavePt = this.innerBounds().topLeft().addPt(margin).addXY(7*wtWid*i, -1);
 	    for (var j=0; j<nWhite; j++) {
 		keyRect = octavePt.addXY((j)*wtWid, 0).extent(pt(wtWid+1, 36));
 		key = new Morph(keyRect, "rect");  key.setFill(Color.white);  key.myFill = Color.white;
@@ -218,7 +219,8 @@ Morph.subclass('PianoKeyboard', {
 	    }
 	}
 	// New bounds encloses all keys but no more
-	this.setExtent(this.bounds().extent().addXY(-1,-1));
+	this.setExtent(this.bounds().extent().addPt(margin));
+	this.setFill(Color.darkGray.darker());
     },
 
     initializeTransientState: function($super, initialBounds) {
