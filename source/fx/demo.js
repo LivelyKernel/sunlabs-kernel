@@ -190,13 +190,14 @@ function morphicMain() {
     //swingFileChooserDemo();
     
     // piano
-/*    module('Main.js').requires('Examples.js').toRun(function() {
+    if (false) { // Can be opened from menu - show it later in demo
+	module('Main.js').requires('Examples.js').toRun(function() {
         var m = new PianoKeyboard(pt(100, 650));
         m.scaleBy(1.5);  
 	m.rotateBy(-0.2);
     	world.addMorph(m);
-    });
-*/
+    }); }
+
     
     if (Config.showTester)
         require('Examples.js').toRun(function() { new TestWidget().openIn(world, pt(835, 450)) });
