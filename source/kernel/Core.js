@@ -1176,6 +1176,10 @@ var Event = (function() {
 	    this.mouseButtonPressed = false;
 	},
 
+	simpleCopy: function() {
+	    return new Event(this.rawEvent);
+	},
+
 	canvas: function() {
 	    if (!UserAgent.usableOwnerSVGElement) {
 		// so much for multiple worlds on one page
@@ -5098,7 +5102,7 @@ PasteUpMorph.subclass("WorldMorph", {
 	var timeOfNextStep = Infinity;
         var list = this.scheduledActions;  // shorthand
         var timeStarted = msTime;  // for tallying script overheads
-        while (list.length > 0 && list[list.length - 1][0] <= msTime) {
+	while (list.length > 0 && list[list.length - 1][0] <= msTime) {
             var schedNode = list.pop();  // [time, action] -- now removed
             var action = schedNode[1];
             this.currentScript = action; // so visible from stopStepping
@@ -5126,6 +5130,10 @@ PasteUpMorph.subclass("WorldMorph", {
             if (ticks > 0) action.ticks += ticks;  // tally time spent in that script
             timeStarted = timeNow;
         }
+	//  Need to generate a mouseMove if any ticking scripts have run
+	//  Allows simulations to respond where, eg, a morph moves under the mouse
+	var myHand = this.firstHand();
+	if (myHand) myHand.makeAMove();
 
         if (list.length > 0) timeOfNextStep = Math.min(list[list.length-1][0], timeOfNextStep);
 
@@ -5388,9 +5396,7 @@ PasteUpMorph.subclass("WorldMorph", {
 	// this should be much smarter than the following:
 	return relatedMorph ?
 	    relatedMorph.bounds().topLeft().addPt(pt(5, 0)) :
-	    //this.firstHand().lastMouseDownPoint; // returns sometimes very odd positions
-	    this.hands.first().getPosition();
-        // this.getExtent().scaleBy(0.5);
+	    this.firstHand().getPosition();
     },
 
     reactiveAddMorph: function(morph, relatedMorph) { 	// add morph in response to a user action, make it prominent
@@ -5541,6 +5547,20 @@ Morph.subclass("HandMorph", {
 	this.profileArmed = evtType;  // either "MouseDown" or "MouseUp"
     },
 
+    makeAMove: function() { 
+	// Process a null mouseMove event -- no change in x, y
+	// Allows simulations to respond where, eg, a morph moves under the mouse
+	var last = this.lastMouseEvent;
+	if (!last) return;
+	var nullMove = new Event(last.rawEvent);
+	nullMove.type = "MouseMove";
+	nullMove.hand = this;
+	// console.log("last = " + Object.inspect(this.lastMouseEvent));
+	// console.log("null = " + Object.inspect(nullMove));
+	this.reallyHandleMouseEvent(nullMove);
+	this.lastMouseEvent = last;  // Restore -- necess??
+    },
+
     handleMouseEvent: function HandMorph$handleMouseEvent(evt) { 
 	if(!Config.debugExtras || !this.profileArmed || this.profileArmed != evt.type) {
 		// Profile not armed or event doesnt match
@@ -5576,15 +5596,8 @@ Morph.subclass("HandMorph", {
             if (this.mouseFocus) { // if mouseFocus is set, events go to that morph
                 this.mouseFocus.captureMouseEvent(evt, true);
             } else if (world) {
-                // console.log("world.morphToReceiveEvent " + evt)
                 var receiver = world.morphToReceiveEvent(evt);
-                // console.log("looked up morph " + receiver)
-                if (receiver !== this.mouseOverMorph) {
-                    // if over a new morph, send onMouseOut, onMouseOver
-                    if (this.mouseOverMorph) this.mouseOverMorph.onMouseOut(evt);
-                    this.mouseOverMorph = receiver;
-                    // console.log('msOverMorph set to: ' + Object.inspect(this.mouseOverMorph));
-                    if (this.mouseOverMorph) this.mouseOverMorph.onMouseOver(evt);
+                if (this.checkMouseOverAndOut(receiver, evt)) {  // mouseOverMorph has changed...
                     if (!receiver || !receiver.canvas()) return false;  // prevent errors after world-switch
                     // Note if onMouseOver sets focus, it will get onMouseMove
                     if (this.mouseFocus) this.mouseFocus.captureMouseEvent(evt, true);
@@ -5636,6 +5649,17 @@ Morph.subclass("HandMorph", {
 	return true;
     },
     
+    checkMouseOverAndOut: function(newMouseOverMorph, evt) {
+	if (newMouseOverMorph === this.mouseOverMorph) return false;
+
+	// if over a new morph, send onMouseOut, onMouseOver
+	if (this.mouseOverMorph) this.mouseOverMorph.onMouseOut(evt);
+	this.mouseOverMorph = newMouseOverMorph;
+	// console.log('msOverMorph set to: ' + Object.inspect(this.mouseOverMorph));
+	if (this.mouseOverMorph) this.mouseOverMorph.onMouseOver(evt);
+	return true;
+    },
+
     layoutChanged: function($super) {
 	this.layoutChangedCount ++;
 	try {

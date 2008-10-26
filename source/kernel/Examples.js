@@ -240,7 +240,7 @@ Morph.subclass('PianoKeyboard', {
 
     pianoKeyDown: function(evt, key) {
 	key.setFill(Color.green);
-	console.log("key number " + key.noteNumber + " pressed."); 
+	// console.log("key number " + key.noteNumber + " pressed."); 
 	this.audio.src = this.baseURL + "?noteNumber=" + key.noteNumber;
 	this.audio.load();
 	this.audio.play();
@@ -248,7 +248,7 @@ Morph.subclass('PianoKeyboard', {
     },
     pianoKeyUp: function(evt, key, optSuppressPause) {
 	key.setFill(key.myFill);
-	console.log("key number " + key.noteNumber + " released."); 
+	// console.log("key number " + key.noteNumber + " released."); 
 	if (!optSuppressPause) this.audio.pause();
 	this.audio.currentTime = 0;
     },
