@@ -1364,7 +1364,7 @@ Object.subclass("Point", {
 	return [ this.x, this.y ];
     },
     
-    toJSON: function() { return {x: this.x, y: this.y}; },
+    toLiteral: function() { return {x: this.x, y: this.y}; },
     
     inspect: function() {
 	return JSON.serialize(this);
@@ -1398,8 +1398,8 @@ Object.extend(Point, {
     polar: function(r, theta) { return new Point(r*Math.cos(theta), r*Math.sin(theta)); },
     random: function(scalePt) { return new Point(scalePt.x.randomSmallerInteger(), scalePt.y.randomSmallerInteger()); },
     
-    fromJSON: function(json) {
-	return pt(json.x, json.y);
+    fromLiteral: function(literal) {
+	return pt(literal.x, literal.y);
     }
 
 });
@@ -1607,7 +1607,7 @@ Rectangle.addMethods({
 	return new Rectangle(this.x + r.left(), this.y + r.top(), this.width - (r.left() + r.right()), this.height - (r.top() + r.bottom()));
     },
 
-    toJSON: function() { return {x: this.x, y: this.y, width: this.width, height: this.height}; },
+    toLiteral: function() { return {x: this.x, y: this.y, width: this.width, height: this.height}; },
     
 });
 
@@ -1619,8 +1619,8 @@ Object.extend(Rectangle, {
 	return rect(ptA.minPt(ptB), ptA.maxPt(ptB));
     },
 
-    fromJSON: function(json) {
-	return new Rectangle(json.x, json.y, json.width, json.height);
+    fromLiteral: function(literal) {
+	return new Rectangle(literal.x, literal.y, literal.width, literal.height);
     },
     
     unionPts: function(points) {
@@ -1775,7 +1775,7 @@ Object.extend(Color, {
 	return new Color(r/255, g/255, b/255);
     },
 
-    fromJSON: function(spec) {
+    fromLiteral: function(spec) {
 	return new Color(spec.r, spec.g, spec.b);
     },
 

@@ -162,7 +162,7 @@ lively.data.DOMRecord.subclass('lively.data.DOMNodeRecord', {
 		var family = LivelyNS.getAttribute(fieldElement, "family");
 		if (family) {
 		    if (!Global[family]) throw new Error('unknown type ' + family);
-		    return Global[family].fromJSON(JSON.unserialize(value, Converter.nodeDecodeFilter));
+		    return Global[family].fromLiteral(JSON.unserialize(value, Converter.nodeDecodeFilter));
     		} else {
     		    if (value == 'NaN') return NaN;
     		    if (value == 'undefined') return undefined;
@@ -2710,7 +2710,7 @@ Morph.addMethods({
 			    var family = LivelyNS.getAttribute(node, "family");
 			    if (family) {
 				if (!Global[family]) throw new Error('uknown type ' + family);
-				this[name] = Global[family].fromJSON(JSON.unserialize(value));
+				this[name] = Global[family].fromLiteral(JSON.unserialize(value));
 			    } else this[name] = JSON.unserialize(value);
 			}
 		    }
@@ -3231,13 +3231,13 @@ Morph.addMethods({
     getTransform: function() {
 	if (this.pvtCachedTransform) return this.pvtCachedTransform;
 	
-	console.log('recalculating transfoprm ' + this);
 	if (Config.useTransformAPI) {
 	    var impl = this.getBaseTransform().consolidate();
 	    this.pvtCachedTransform = new Transform(impl ? impl.matrix : null); // identity if no transform specified
 	} else {
 	    // parse the attribute: by Dan Amelang
 	    var s = this.rawNode.getAttributeNS(null, "transform");
+	    console.log('recalculating transform from ' + s);
 	    var matrix = null;
 	    var match = s.match(/(\w+)\s*\((.*)\)/);
 	    if (match) {
