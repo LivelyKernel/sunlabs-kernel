@@ -422,7 +422,7 @@ var PaintModule = {
 	shape.setDrawPaint(fxPaint);
 	return fxPaint;
     },
-
+    
     renderStrokeWidth: function(element, shape, value) {
 	var BasicStroke = Packages.java.awt.BasicStroke;
 	var width = parseFloat(value); // FIXME units
@@ -492,21 +492,18 @@ fx.dom.renderers[SVGPolygonElement.tagName] = function(element) {
     shape.setShape(path);
 
     PaintModule.render(element);
-    var attrs = element.attributes;
-    for (var i = 0; i < attrs.length; i++) {
-	var attr = attrs.item(i);
-	if (attr.name == 'points') {
-	    for (var j = 0; j < element.points.numberOfItems; j++) {
-		var point = element.points.getItem(j);
-		if (j == 0) {
-		    path.moveTo(point.x, point.y);
-		} else {
-		    path.lineTo(point.x, point.y);
-		}
+    var attr = element.attributes.getNamedItem("points");
+    if (attr) {
+	for (var j = 0; j < element.points.numberOfItems; j++) {
+	    var point = element.points.getItem(j);
+	    if (j == 0) {
+		path.moveTo(point.x, point.y);
+	    } else {
+		path.lineTo(point.x, point.y);
 	    }
-	    if (element.tagName === "polygon")
-		path.closePath();
-	} 
+	}
+	if (element.tagName === "polygon")
+	    path.closePath();
     }
     //console.log('rendering ' + element);
     return  element._fxBegin;
