@@ -217,4 +217,4 @@ Config.ballonHelpDelay = 1000; // Default
 
 Config.loadTests = [] //  e.g. ["FabrikTest", "RecordTest", "TestFrameworkTests", "ClassTest", "LKWikiTest", "DevelopTest", "MorphTest"]
 
-Config.modulesOnWorldLoad = ["Fabrik.js"]
+Config.modulesOnWorldLoad = ["Fabrik.js", 'TileScripting.js']

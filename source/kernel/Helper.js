@@ -14,9 +14,9 @@ Morph.addMethods({
 
 function getStack() {
     var result = [];
-    for(var caller = arguments.callee.caller; caller; caller = caller.caller) {
+    for (var caller = arguments.callee.caller; caller; caller = caller.caller) {
         if (result.indexOf(caller) != -1) {
-           result.push({name: "recursive call cant be traced"});
+           result.push({name: "recursive call can't be traced"});
            break;
         }
         result.push(caller);
@@ -27,10 +27,7 @@ function getStack() {
 
 function printStack() {  
     function guessFunctionName(func) {
-	if(func.qualifiedMethodName()) return func.qualifiedMethodName();
-	var m = func.toString().match(/function (.+)\(/);
-	if (m) return m[1];
-	return func
+        return func.qualifiedMethodName() || func.toString().match(/function (.+)\(/)[1] || func;
     };
     
     var string = "== Stack ==\n";
@@ -38,7 +35,7 @@ function printStack() {
     stack.shift(); // for getStack
     stack.shift(); // for printStack (me)
     var indent = "";
-    for(var i=0; i < stack.length; i++) {
+    for (var i=0; i < stack.length; i++) {
         string += indent + i + ": " +guessFunctionName(stack[i]) + "\n";
         indent += " ";        
     };
@@ -48,6 +45,19 @@ function printStack() {
 function logStack() {
     this.console.log(printStack())
 };
+
+function logStackFor(obj, methodName) {
+    obj[methodName] = obj[methodName].wrap(function(proceed) {
+        var args = $A(arguments); args.shift(); 
+        MyLogDepth++;
+        debugger;
+        var result = proceed.apply(this, args);
+        
+        logStack();
+        MyLogDepth--;
+        return result
+    })
+}
 
 function indentForDepth(depth) {
     var s=""
@@ -73,14 +83,13 @@ function logCall(args, from, shift) {
     console.log(s)
 };
 
-function logCallHelper(from, methodName, args, indent) {
-    s = indentForDepth(indent);
-    s += String(from) + " ";
-    s += methodName + "("
-    args.each(function(ea){ s += ea + ", "});
-    s += ")";
-    return s
-};
+// function logCallHelper(from, methodName, args, indent) {
+//     return Strings.format('%s%s>>%s(%s)',
+//         indentForDepth(indent),
+//         from.toString(),
+//         methodName,
+//         args.collect(function(ea) { return ea.toString() }).join(', '));
+// };
 
 
 function logMethod(obj, methodName) {

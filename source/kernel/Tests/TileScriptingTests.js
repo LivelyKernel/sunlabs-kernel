@@ -2,14 +2,14 @@
 module('TileScriptingTests.js').requires('TileScripting.js').toRun(function() {
 
 TestCase.subclass('ScriptEnvironmentTest', {
-    testRunScript: function() {
-        var sut = new ScriptEnvironment();
-        var tileHolder = sut.buildView().tileHolder;
-        var tile = new DebugTile(null, '123;');
-        tileHolder.submorphs.last().addMorph(tile);
-        var result = sut.runScript();
-        this.assertIdentity(123, result);
-    }
+    // testRunScript: function() {
+    //     var sut = new ScriptEnvironment();
+    //     var tileHolder = sut.buildView().tileHolder;
+    //     var tile = new DebugTile(null, '123;');
+    //     tileHolder.submorphs.last().addMorph(tile);
+    //     var result = sut.runScript();
+    //     this.assertIdentity(123, result);
+    // }
 });
 
 TestCase.subclass('TileHolderTest', {
@@ -20,6 +20,7 @@ TestCase.subclass('TileHolderTest', {
         
         this.assertEqual(holder.submorphs.length, 1, 'More or less than one submorph');
         this.assert(holder.submorphs[0].isDropArea, 'No DropArea');
+        // debugger;
         holder.submorphs[0].addMorph(tile);
         this.assertEqual(holder.submorphs.length, 2, 'No new DropArea added');
         this.assert(holder.submorphs[1].isDropArea, 'No DropArea');
@@ -34,6 +35,14 @@ TestCase.subclass('TileHolderTest', {
         holder.submorphs.last().addMorph(tile2);
         var result = holder.tilesAsJs();
         this.assertEqual(expected,result);
+    },
+    
+    testRunScript: function() {
+        var sut = new TileHolder(pt(50,50).extentAsRectangle());
+        var tile = new DebugTile(null, '123;');
+        sut.submorphs.last().addMorph(tile);
+        var result = sut.runScript();
+        this.assertIdentity(123, result);
     }
 });
 

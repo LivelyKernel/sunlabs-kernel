@@ -65,7 +65,6 @@ Morph.addMethods({
 Morph.prototype.morphMenu = Morph.prototype.morphMenu.wrap(function(proceed, evt) {
     var menu = proceed(evt);
     menu.addItem(["as tile", function(evt) { evt.hand.addMorph(this.asTile()) }.bind(this)], 3);
-    // menu.addSubmenuItem(['submenu', function(evt) { return [['1'],['2'],['3']] }])
     return menu;
 });
 Morph.prototype.removeMorph = Morph.prototype.removeMorph.wrap(function(proceed, morph) {
@@ -74,6 +73,13 @@ Morph.prototype.removeMorph = Morph.prototype.removeMorph.wrap(function(proceed,
     return this;
 })
 
+PanelMorph.subclass('TileBoxPanel', {
+    onDeserialize: function() {
+        this.owner.targetMorph = this.owner.addMorph(new TileBox().buildView(this.getExtent()));
+        this.owner.targetMorph.setPosition(this.getPosition());
+        this.remove();
+    }
+})
 Widget.subclass('TileBox', {
 
     viewTitle: "Tile Box",
@@ -108,7 +114,7 @@ Widget.subclass('TileBox', {
     
     // new TileBox().openIn(WorldMorph.current())
     buildView: function(extent) {
-        var panel = new PanelMorph(this.viewExtent);
+        var panel = new TileBoxPanel(this.viewExtent);
         panel.adjustForNewBounds = Morph.prototype.adjustForNewBounds.bind(this); // so submorphs don't scale
         panel.setFill(Color.white);
         panel.setBorderWidth(1);
@@ -152,13 +158,6 @@ Widget.subclass('ScriptEnvironment', {
     viewTitle: "ScriptBox",
     viewExtent: pt(200,300),
     
-    initialize: function($super) {
-        $super();
-        this.repeatAction = null;
-        this.calls = 0;
-        // this.formalModel = ComponentModel.newModel({Name: "NoName"});
-    },
-    
     buildView: function(extent) {
         var panel = PanelMorph.makePanedPanel(this.viewExtent, [
             ['runButton', function(initialBounds) { return new ButtonMorph(initialBounds) }, new Rectangle(0, 0, 0.3, 0.1)],
@@ -172,18 +171,20 @@ Widget.subclass('ScriptEnvironment', {
         // panel.tileHolder = panel.addMorph(new TileHolder(panel.bounds().scaleByRect(new Rectangle(0, 0.1, 1, 0.9))));
         panel.setFill(Color.gray.lighter());
         
+        var tileHolder = panel.tileHolder;
+        
         var runButton = panel.runButton;
 		runButton.setLabel("Run Script");
-		runButton.connectModel({model: this, setValue: "runScript"});
+		runButton.connectModel({model: tileHolder, setValue: "runScript"});
 		
 		var delayText = panel.delayText;
 		delayText.autoAccept = true;
 		
 		var repeatButton = panel.repeatButton;
 		repeatButton.setLabel("Repeat");
-		repeatButton.connectModel({model: this, setValue: "repeatScript"});
+		repeatButton.connectModel({model: tileHolder, setValue: "repeatScript"});
 		
-		var tileHolder = panel.tileHolder;
+		
 		
 		panel.openAllToDnD();
 		tileHolder.openDnD();
@@ -191,40 +192,6 @@ Widget.subclass('ScriptEnvironment', {
 		
 		this.panel = panel;
         return panel;
-    },
-    
-    runScript: function(btnVal) {
-        if (btnVal) return;
-        this.calls ++;
-        var code = this.panel.tileHolder.tilesAsJs();
-        var result;
-        try {
-            result = eval(code);
-        } catch(e) {
-            console.log('Script: Error ' + e + ' occured when evaluating:');
-            console.log(code);
-        }
-        return result;
-    },
-    
-    repeatScript: function(btnVal) {
-        if (btnVal) return
-        if (this.repeatAction) {
-            console.log('stopping tile script');
-            this.repeatAction.stop(this.panel.world());
-            this.repeatAction = null;
-            this.panel.repeatButton.setLabel("Repeat");
-            return;
-        }
-        
-        
-        var delay = Number(this.panel.delayText.textString);
-        if (!delay) return;
-        this.repeatAction = new SchedulableAction(this, 'runScript', null, delay);
-        
-        console.log('starting tile script');
-        this.repeatAction.start(this.panel.world());
-        this.panel.repeatButton.setLabel("Stop");
     },
     
     openIn: function($super, world, optLoc) {
@@ -255,6 +222,7 @@ Morph.subclass('TileHolder', {
     
     layouterClass: VLayout,
     dropAreaExtent: pt(80,20),
+    formals: ["Value"],
     
     initialize: function($super, bounds) {
         $super(bounds, "rect");
@@ -266,7 +234,19 @@ Morph.subclass('TileHolder', {
         
     },
     
+    onDeserialize: function() {
+        // FIXME just a hack...
+        console.log('------------------------------------------------>>>>>>>>>> connecting tilescripting buttons...')
+        
+        var runButton = this.owner.runButton;
+		runButton.connectModel({model: this, setValue: "runScript"});
+				
+		var repeatButton = this.owner.repeatButton;
+		repeatButton.connectModel({model: this, setValue: "repeatScript"});
+    },
+    
     addMorph: function($super, morph) {
+        if (morph instanceof SchedulableAction) return $super(morph);
         if (!morph.isDropArea) this.addDropArea().addMorph(morph);
         else $super(morph);
         this.layout();
@@ -298,6 +278,40 @@ Morph.subclass('TileHolder', {
         return lines.join(';\n');
     },
     
+    runScript: function(btnVal) {
+        if (btnVal) return;
+        // debugger;
+        if (!this.calls) this.calls = 0;
+        this.calls++;
+        var code = this.tilesAsJs();
+        var result;
+        try {
+            result = eval(code);
+        } catch(e) {
+            console.log('Script: Error ' + e + ' occured when evaluating:');
+            console.log(code);
+        }
+        return result;
+    },
+    
+    repeatScript: function(btnVal) {
+        if (btnVal) return
+        if (this.activeScripts) {
+            this.owner.repeatButton.setLabel("Repeat");
+            
+            console.log('stopping tile script');
+            this.stopStepping();
+            return;
+        }
+        
+        
+        var delay = Number(this.owner.delayText.textString);
+        if (!delay) return;
+        this.owner.repeatButton.setLabel("Stop");
+        console.log('starting tile script');
+        this.startStepping(delay, 'runScript');
+    },
+    
     okToBeGrabbedBy: Functions.Null,
     
     layoutChanged: function($super) {
@@ -307,9 +321,9 @@ Morph.subclass('TileHolder', {
         });
         if (this.getExtent().x < maxExtent.x) {
             // FIXME
-            this.owner.owner && this.owner.owner.setExtent(pt(maxExtent.x, this.owner.owner.getExtent().y));
-            this.owner && this.owner.setExtent(pt(maxExtent.x, this.owner.getExtent().y));
-            this.setExtent(pt(maxExtent.x, this.getExtent().y));
+            // this.owner && this.owner.owner && this.owner.owner.setExtent(pt(maxExtent.x, this.owner.owner.getExtent().y));
+            // this.owner && this.owner.setExtent(pt(maxExtent.x, this.owner.getExtent().y));
+            // this.setExtent(pt(maxExtent.x, this.getExtent().y));
         }
     }
 });
@@ -378,6 +392,11 @@ Tile.subclass('ObjectTile', {
         
         if (targetMorphOrObject) this.createAlias(targetMorphOrObject);
         
+    },
+    
+    onDeserialize: function() {
+        if (this.menuTrigger) this.menuTrigger.remove();
+        this.addMenuButton();
     },
     
     createAlias: function(morph) {
