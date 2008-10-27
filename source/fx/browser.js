@@ -19,7 +19,8 @@ load('../kernel/defaultconfig.js');
 Config.useTransformAPI = false;
 Config.useGetTransformToElement = false;
 Config.logDnD = true;
-
+//Config.fakeFontMetrics = false;
+//Config.fontMetricsFromSVG = true;
 load('../kernel/Base.js');
 
 load('dom/mico.js');
@@ -143,7 +144,13 @@ Object.extend(fx.util, {
 	    }
 	}
 	return group;
+    },
+
+
+    isInstanceOf: function(object, fxClassName) {
+	return Packages.java.lang.Class.forName(fxClassName).isInstance(object);
     }
+
 });
     
 
@@ -324,7 +331,7 @@ var PaintModule = {
 		    // FIXME gradients are in user space in fx!
 		    var start = new fx.Point(node.x1.baseVal.value*100, node.y1.baseVal.value*100);
 		    var end = new fx.Point(node.x2.baseVal.value*100, node.y2.baseVal.value*100);
-		    var stops = Object.extend(node.getElementsByTagNameNS(Namespace.SVG, "stop"), Enumerable);
+		    var stops = node.getElementsByTagNameNS(Namespace.SVG, "stop");
 		    var colors = stops.map(function(stop) {
 			return this.parsePaint(stop.getAttributeNS(null, "stop-color"));
 		    }, this);
@@ -357,52 +364,59 @@ var PaintModule = {
 	} 
     },
 
-    renderAttribute: function(element, attr, value) {
+    render: function(element) {
+	var attrs = element.attributes;
 	var shape = fx.util.getShape(element);
-	switch (attr) {
-	case "fill": {
-	    var fill = PaintModule.parsePaint(value);
-	    shape.setFillPaint(fill);
-	    return true;
-	}
-	    
-	case "fill-opacity": {
-	    var fill = shape.getFillPaint();
-	    if (Packages.java.lang.Class.forName('java.awt.Color').isInstance(fill)) {
-		var alpha = parseFloat(value); // FIXME units
-		// FIXME what if fill is not a color?
-		var color = new fx.Color(fill.getRed()/255, fill.getGreen()/255, fill.getBlue()/255, alpha);
-		shape.setFillPaint(color);
-	    }
-	    return true;
-	}
+	var fxFill = null;
 
-	case "stroke-width": {
-	    var BasicStroke = Packages.java.awt.BasicStroke;
-	    var width = parseFloat(value); // FIXME units
-	    if (width > 0) {
-		shape.setDrawStroke(new BasicStroke(width,  
-						    BasicStroke.CAP_ROUND,
-						    BasicStroke.JOIN_MITER));
-		
-		shape.setMode(shape.getMode() === fx.ShapeMode.FILL ?  
-			      fx.ShapeMode.STROKE_FILL : fx.ShapeMode.STROKE);
-	    } else {
-		if (shape.getMode() === fx.ShapeMode.STROKE_FILL)
-		    shape.setMode(fx.ShapeMode.STROKE);
-	    }
-	    return true;
+	var fillAttr = attrs.getNamedItem('fill');
+	if (fillAttr && fillAttr.value) fxFill = this.renderFill(element, shape, fillAttr.value);
+
+	var fillOpacityAttr = attrs.getNamedItem('fill-opacity');
+	if (fillOpacityAttr && fillOpacityAttr.value) this.renderFillOpacity(element, shape, fillOpacityAttr.value, fxFill);
+
+	var strokeAttr = attrs.getNamedItem('stroke');
+	if (strokeAttr && strokeAttr.value) this.renderStroke(element, shape, strokeAttr.value);
+
+	var strokeWidthAttr = attrs.getNamedItem('stroke-width');
+	if (strokeWidthAttr && strokeWidthAttr.value) this.renderStrokeWidth(element, shape, strokeWidthAttr.value);
+    },
+
+    renderFill: function(element, shape, value) {
+	var fxPaint = PaintModule.parsePaint(value);
+	shape.setFillPaint(fxPaint);
+	return fxPaint;
+    },
+
+    renderStroke: function(element, shape, value) {
+	var fxPaint = PaintModule.parsePaint(value);
+	shape.setDrawPaint(fxPaint);
+	return fxPaint;
+    },
+
+    renderFillOpacity: function(element, shape, opacity, fxFill) {
+	if (fx.util.isInstanceOf(fxFill, 'java.awt.Color')) {
+	    var alpha = parseFloat(opacity); // FIXME units
+	    // FIXME what if fill is not a color?
+	    var color = new fx.Color(fxFill.getRed()/255, fxFill.getGreen()/255, fxFill.getBlue()/255, alpha);
+	    shape.setFillPaint(color);
 	}
-	    
-	case "stroke": {
-	    var stroke = PaintModule.parsePaint(value);
-	    shape.setDrawPaint(stroke);
-	    return true;
+    },
+
+    renderStrokeWidth: function(element, shape, value) {
+	var BasicStroke = Packages.java.awt.BasicStroke;
+	var width = parseFloat(value); // FIXME units
+	if (width > 0) {
+	    shape.setDrawStroke(new BasicStroke(width, BasicStroke.CAP_ROUND, BasicStroke.JOIN_MITER));
+	    shape.setMode(shape.getMode() === fx.ShapeMode.FILL ?  
+			  fx.ShapeMode.STROKE_FILL : fx.ShapeMode.STROKE);
+	} else {
+	    if (shape.getMode() === fx.ShapeMode.STROKE_FILL)
+		shape.setMode(fx.ShapeMode.STROKE);
 	}
-	default: 
-	    return false;	     
-	}
+	return true;
     }
+    
 }
 
 fx.dom.renderers[SVGRectElement.tagName] = function(element) {
@@ -420,14 +434,9 @@ fx.dom.renderers[SVGRectElement.tagName] = function(element) {
     // can't really deal with rx != ry
 //    console.log('rounding ' + [element.rx.baseVal.value, element.ry.baseVal.value]);
     element._fxBegin.setChild(shape);
-    
-    var attrs = element.attributes;
-    for (var i = 0; i < attrs.length; i++) {
-	var attr = attrs.item(i);
-	if (PaintModule.attributes.include(attr.name)) {
-	    PaintModule.renderAttribute(element, attr.name, attr.value);
-	}
-    }
+
+    PaintModule.render(element);
+
     //element.parentNode && console.log('rendering ' + element.parentNode.id);
     return element._fxBegin;
 }
@@ -445,13 +454,8 @@ fx.dom.renderers[SVGEllipseElement.tagName] = function(element) {
 
     element._fxBegin.setChild(shape);
 
-    var attrs = element.attributes;
-    for (var i = 0; i < attrs.length; i++) {
-	var attr = attrs.item(i);
-	if (PaintModule.attributes.include(attr.name)) {
-	    PaintModule.renderAttribute(element, attr.name, attr.value);
-	}
-    }
+    PaintModule.render(element);
+
     //element.parentNode && console.log('rendering ' + element.parentNode.id);
     return element._fxBegin;
 
@@ -467,12 +471,11 @@ fx.dom.renderers[SVGPolygonElement.tagName] = function(element) {
     element._fxBegin.setChild(shape);
     shape.setShape(path);
 
+    PaintModule.render(element);
     var attrs = element.attributes;
     for (var i = 0; i < attrs.length; i++) {
 	var attr = attrs.item(i);
-	if (PaintModule.attributes.include(attr.name)) {
-	    PaintModule.renderAttribute(element, attr.name, attr.value);
-	} else if (attr.name == 'points') {
+	if (attr.name == 'points') {
 	    for (var j = 0; j < element.points.numberOfItems; j++) {
 		var point = element.points.getItem(j);
 		if (j == 0) {
@@ -490,7 +493,7 @@ fx.dom.renderers[SVGPolygonElement.tagName] = function(element) {
 };
 
 // b0rken but does something
-fx.dom.renderers[SVGTextElement.tagName] = function(element) {
+fx.dom.renderers[SVGTextElement.tagName] = function(element, attr) {
     if (!element._fxBegin)
 	element._fxBegin = new fx.Parent();
 
@@ -501,30 +504,31 @@ fx.dom.renderers[SVGTextElement.tagName] = function(element) {
 
     var attrs = element.attributes;
     var fontSize = 12;
+    var fontFamily = 'Helvetica';
     for (var i = 0; i < attrs.length; i++) {
 	var attr = attrs.item(i);
 	switch (attr.name) {
 	case "font-size":
-	    //var font = text.getFont(); 
 	    fontSize = parseFloat(attr.value);
 	    break;
+	case "font-family":
+	    fontFamily = attr.value;
+	    break;
+
 	}
     }
+//    console.log('changing on ' + attr + " content  " + element.textContent);
 
-    var newFont = new fx.Font('Helvetica', fx.Font.PLAIN, fontSize);
-    element.childNodes._nodes.forEach(function(node) {
-	
-	// FIXME FIXME FIXME
-	if (node.localName == 'tspan') {
-	    var text = fx.util.antiAliasText(new fx.Text());
-	    text.setFont(newFont);
-	    // use this for tspans?
-	    text.setVerticalAlignment(Packages.com.sun.scenario.scenegraph.SGText$VAlign.BASELINE);
-	    var origin = new fx.Point(node.getAttributeNS(null, "x") || 0, node.getAttributeNS(null, "y") || 0);
-	    text.setLocation(origin);
-	    text.setText(node.firstChild.nodeValue); 
-	    element._fxEnd.add(text);
-	}
+    var newFont = new fx.Font(fontFamily, fx.Font.PLAIN, fontSize);
+    element.getElementsByTagNameNS(Namespace.SVG, 'tspan').each(function(node) {
+	var text = fx.util.antiAliasText(new fx.Text());
+	text.setFont(newFont);
+	// use this for tspans?
+	text.setVerticalAlignment(Packages.com.sun.scenario.scenegraph.SGText$VAlign.BASELINE);
+	var origin = new fx.Point(node.getAttributeNS(null, "x") || 0, node.getAttributeNS(null, "y") || 0);
+	text.setLocation(origin);
+	text.setText(node.firstChild.nodeValue); 
+	element._fxEnd.add(text);
     });
 
     element._fxBegin.setChild(element._fxEnd);
@@ -684,6 +688,39 @@ Object.subclass('Audio', { // stubbed out HTML5 Audio
 	this.channel.noteOff(this.currentNote);
     }
 
+});
+
+
+Object.extend(SVGTextElement.prototype, {
+    getNumberOfChars: function () { TODO(); },
+    getComputedTextLength: function() { TODO(); },
+    getSubStringLength: function(charnum, nchars) { TODO(); },
+    getStartPositionOfChar: function(charnum) { 
+	// get the FontRenderContext,
+	// call font.getStringBounds(this.content
+	//console.log('text is ' + (this._fxEnd && this._fxEnd.getChildren()));
+	//console.log('check position of ' + charnum);
+	return this.ownerSVGElement.createSVGPoint(); 
+    },
+    getEndPositionOfChar: function(charnum) { 
+//	console.log('text is ' + (this._fxEnd && this._fxEnd.getChildren()));
+	//console.log('check position of ' + charnum);
+	return this.ownerSVGElement.createSVGPoint(); 
+    },
+    getExtentOfChar: function(charnum) { 
+	//console.log('text is ' + (this._fxEnd && this._fxEnd.getChildren()));
+
+	//console.log('check position of ' + charnum);
+	return this.ownerSVGElement.createSVGPoint(); 
+    },
+    getRotationOfChar: function(charnum) { TODO(); },
+    getCharNumAtPosition: function(pot) { TODO(); },
+    selectSubString: function(charnum, nchars) { TODO(); },
+    get textContent() {
+	// FIXME cache?
+	return this.firstChild.nodeValue;
+	
+    }
 });
 
 

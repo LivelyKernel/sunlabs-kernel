@@ -183,11 +183,9 @@ function morphicMain() {
     var link = new LinkMorph(null, pt(60, 400));
     world.addMorph(link);
 
-    if (Config.showEngine())
-        EngineMorph.makeEngine(world, pt(400, 5))
+    if (Config.showEngine()) 
+	EngineMorph.makeEngine(world, pt(400, 5))
 
-    swingDemo();
-    //swingFileChooserDemo();
     
     // piano
     if (false) { // Can be opened from menu - show it later in demo
@@ -197,7 +195,10 @@ function morphicMain() {
 	m.rotateBy(-0.2);
     	world.addMorph(m);
     }); }
+    //return;
 
+    swingDemo();
+    //swingFileChooserDemo();
     
     if (Config.showTester)
         require('Examples.js').toRun(function() { new TestWidget().openIn(world, pt(835, 450)) });
