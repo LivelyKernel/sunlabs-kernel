@@ -271,7 +271,13 @@ Function.wrapSetter(Attr.prototype, 'value', function(func, args) {
 	fx.dom.enqueue(this.ownerElement, this);
     }
 });
+
+Function.wrap(Element.prototype, ['removeAttributeNS'], function(func, args) {
+    func.apply(this, args);
+    fx.dom.enqueue(this);
+});
  
+
 window.setTimeout = function(action, delay) {
     var timer = fx.util.setInterval(function() {
 	action.apply(this, arguments);
@@ -386,6 +392,7 @@ var PaintModule = {
 	var shape = fx.util.getShape(element);
 	var fillOpacity = NaN;
 	var strokeOpacity = NaN;
+	    
 
 	var fillOpacityAttr = attrs.getNamedItem('fill-opacity');
 	if (fillOpacityAttr) fillOpacity = parseFloat(fillOpacityAttr.value);
@@ -579,12 +586,20 @@ fx.dom.renderers[SVGGElement.tagName] = function(element, attribute) {
 	fx.util.clearGroup(element._fxEnd);
     else 
 	element._fxEnd = new fx.Group();
-    
+
     var fxObj = element._fxEnd; // grow it from the end up
     element.childNodes._nodes.forEach(function(node) {
 	var fxChild = node._fxBegin || fx.dom.render(node);
 	if (fxChild) fxObj.add(fxChild);
     });
+
+    // this should prolly apply to all elements
+    var visibility = element.attributes.getNamedItem('display');
+    if (visibility && visibility.value == 'none')
+	element._fxBegin.setVisible(false);
+    else 
+	element._fxBegin.setVisible(true);
+
 
     var clip = element.getAttributeNS(null, "clip-path");
     if (clip) {
