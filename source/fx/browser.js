@@ -32,6 +32,7 @@ print('loaded DOM implementation in JS');
 
 namespace('fx');
 
+
 Object.extend(fx, {
     Panel: Packages.com.sun.scenario.scenegraph.JSGPanel,
     Group: Packages.com.sun.scenario.scenegraph.SGGroup,
@@ -383,56 +384,44 @@ var PaintModule = {
     render: function(element) {
 	var attrs = element.attributes;
 	var shape = fx.util.getShape(element);
-	var fxFill = null;
-	var fxStroke = null;
-
-	var fillAttr = attrs.getNamedItem('fill');
-	if (fillAttr && fillAttr.value) fxFill = this.renderFill(element, shape, fillAttr.value);
+	var fillOpacity = NaN;
+	var strokeOpacity = NaN;
 
 	var fillOpacityAttr = attrs.getNamedItem('fill-opacity');
-	if (fillOpacityAttr && fillOpacityAttr.value) this.renderFillOpacity(element, shape, fillOpacityAttr.value, fxFill);
-
-	var strokeAttr = attrs.getNamedItem('stroke');
-	if (strokeAttr && strokeAttr.value) fxStroke = this.renderStroke(element, shape, strokeAttr.value);
+	if (fillOpacityAttr) fillOpacity = parseFloat(fillOpacityAttr.value);
+	
+	var fillAttr = attrs.getNamedItem('fill');
+	if (fillAttr && fillAttr.value) fxFill = this.renderFill(element, shape, fillAttr.value, fillOpacity);
 
 	var strokeOpacityAttr = attrs.getNamedItem('stroke-opacity');
-	if (strokeOpacityAttr && strokeOpacityAttr.value) this.renderStrokeOpacity(element, shape, strokeOpacityAttr.value, fxStroke);
+	if (strokeOpacityAttr) strokeOpacity = parseFloat(strokeOpacityAttr.value);
+	
+	var strokeAttr = attrs.getNamedItem('stroke');
+	if (strokeAttr && strokeAttr.value) this.renderStroke(element, shape, strokeAttr.value, strokeOpacity);
 
 	var strokeWidthAttr = attrs.getNamedItem('stroke-width');
 	if (strokeWidthAttr && strokeWidthAttr.value) this.renderStrokeWidth(element, shape, strokeWidthAttr.value);
     },
 
-    renderFill: function(element, shape, value) {
+    renderFill: function(element, shape, value, alpha) {
 	var fxPaint = PaintModule.parsePaint(value, element);
+	if (alpha && fx.util.isInstanceOf(fxPaint, 'java.awt.Color')) {
+	    // FIXME what if fill is not a color?
+	    fxPaint = new fx.Color(fxPaint.getRed()/255, fxPaint.getGreen()/255, fxPaint.getBlue()/255, alpha);
+	}
 	shape.setFillPaint(fxPaint);
 	return fxPaint;
     },
 
-    renderStroke: function(element, shape, value) {
+    renderStroke: function(element, shape, value, alpha) {
 	var fxPaint = PaintModule.parsePaint(value, element);
+	if (alpha && fx.util.isInstanceOf(fxPaint, 'java.awt.Color')) {
+	    // FIXME what if fill is not a color?
+	    fxPaint = new fx.Color(fxPaint.getRed()/255, fxPaint.getGreen()/255, fxPaint.getBlue()/255, alpha);
+	}
 	shape.setDrawPaint(fxPaint);
 	return fxPaint;
     },
-
-    renderFillOpacity: function(element, shape, opacity, fxFill) {
-	if (fx.util.isInstanceOf(fxFill, 'java.awt.Color')) {
-	    var alpha = parseFloat(opacity); // FIXME units
-	    // FIXME what if fill is not a color?
-	    var color = new fx.Color(fxFill.getRed()/255, fxFill.getGreen()/255, fxFill.getBlue()/255, alpha);
-	    shape.setFillPaint(color);
-	}
-    },
-
-
-    renderStrokeOpacity: function(element, shape, opacity, fxPaint) {
-	if (fx.util.isInstanceOf(fxPaint, 'java.awt.Color')) {
-	    var alpha = parseFloat(opacity); // FIXME units
-	    // FIXME what if fill is not a color?
-	    var color = new fx.Color(fxPaint.getRed()/255, fxPaint.getGreen()/255, fxPaint.getBlue()/255, alpha);
-	    shape.setDrawPaint(color);
-	}
-    },
-
 
     renderStrokeWidth: function(element, shape, value) {
 	var BasicStroke = Packages.java.awt.BasicStroke;
@@ -710,9 +699,12 @@ Object.subclass('Audio', { // stubbed out HTML5 Audio
 	    dict[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1]);
 	}
 	const baseOctave = 3;
-	this.currentNote = parseInt(dict['noteNumber']) - 1 + baseOctave*12;
-	var velocity = dict['velocity'] || 200;
-	this.channel.noteOn(this.currentNote, velocity);
+	var noteNumberString = dict['noteNumber'];
+	if (noteNumberString) {
+	    this.currentNote = parseInt(noteNumberString) - 1 + baseOctave*12;
+	    var velocity = parseInt(dict['velocity'] || "200");
+	    this.channel.noteOn(this.currentNote, velocity);
+	}
     },
 
     pause: function() {
