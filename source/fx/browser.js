@@ -314,60 +314,77 @@ window.setInterval = function(action, delay) {
 
 // http://www.w3.org/TR/2003/REC-SVG11-20030114/painting.html#paint-att-mod
 var PaintModule = {
-    attributes: ["stroke", "fill", "stroke-width", "fill-opacity"],
     
-    parsePaint: function(color) {
-	var rgb = Color.parse(String(color));
-	if (rgb) {
-	    return new fx.Color(rgb[0], rgb[1], rgb[2]);
-	} else {
-	    var name = String(color);
-	    if (name == "none") return new fx.Color(0,0,0,0); // FIXME not strictly the same thing as no color
-	    else if (name.startsWith("url")) { // FIXME specialcasing the gradients
-		// parse uri
-		var node = lively.FragmentURI.getElement(name);
-		if (node && node.tagName == 'linearGradient') {
-		    // go through stops
-		    // FIXME gradients are in user space in fx!
-		    var start = new fx.Point(node.x1.baseVal.value*100, node.y1.baseVal.value*100);
-		    var end = new fx.Point(node.x2.baseVal.value*100, node.y2.baseVal.value*100);
-		    var stops = node.getElementsByTagNameNS(Namespace.SVG, "stop");
-		    var colors = stops.map(function(stop) {
-			return this.parsePaint(stop.getAttributeNS(null, "stop-color"));
-		    }, this);
-		    var offsets = stops.map(function(stop) {
-			return parseFloat(stop.getAttributeNS(null, "offset"));
-		    });
-		    return new fx.LinearGradient(start, end, offsets, colors);
-		} else if (node &&  node.tagName == 'radialGradient') {
-		    //var center = new fx.Point(node.fx.baseVal.value, node.fy.baseVal.value);
-		    var center = new fx.Point(0,0);
-		    var r = node.r.baseVal.value*20;
-		    var stops = node.getElementsByTagNameNS(Namespace.SVG, "stop");
-		    var stops = Object.extend(node.getElementsByTagNameNS(Namespace.SVG, "stop"), Enumerable);
-		    var colors = stops.map(function(stop) {
-			return this.parsePaint(stop.getAttributeNS(null, "stop-color"));
-		    }, this);
-		    var offsets = stops.map(function(stop) {
-			return parseFloat(stop.getAttributeNS(null, "offset"));
-		    });
-		    return new fx.RadialGradient(center, r, offsets, colors);
-		} else {
-		    // wait for radial paint until java 6
-		    //console.log('unknown paint ' + id);
-		    return new fx.Color(0,0,0,0); // FIXME not strictly the same thing as no color
+    parseColor: function(color) {
+	if (color == "none") return new fx.Color(0,0,0,0); // FIXME not strictly the same thing as no color
+	var rgb = Color.parse(color);
+	if (rgb) return new fx.Color(rgb[0], rgb[1], rgb[2]);
+	else if (Color[color]) return fx.Color[color]; // if LK defines a constant, then FX should have it too
+	else return null;
+    },
+
+    parsePaint: function(paintString, target) {
+	var name = String(paintString);
+	var color = this.parseColor(name);
+	if (color) return color;
+	else if (name.startsWith("url")) { // FIXME specialcasing the gradients
+	    // parse uri
+	    var node = lively.FragmentURI.getElement(name);
+	    if (node && node.tagName == 'linearGradient') {
+		// go through stops
+		// FIXME gradients are in user space in fx!
+		var x1 = node.x1.baseVal.value;
+		var y1 = node.y1.baseVal.value;
+		var x2 = node.x2.baseVal.value;
+		var y2 = node.y2.baseVal.value;
+		if (target && target.width) {
+		    x1 *= target.width.baseVal.value;
+		    y1 *= target.height.baseVal.value;
+		    x2 *= target.width.baseVal.value;
+		    y2 *= target.height.baseVal.value;
 		}
-	    } else if (!fx.Color[name]) {
-		console.log('unknown fill ' + value);
-		return null;
-	    } else return fx.Color[name];
-	} 
+		var start = new fx.Point(x1, y1);
+		var end = new fx.Point(x2, y2);
+		var stops = node.getElementsByTagNameNS(Namespace.SVG, "stop");
+		var colors = stops.map(function(stop) {
+		    return this.parsePaint(stop.getAttributeNS(null, "stop-color"));
+		}, this);
+		var offsets = stops.map(function(stop) {
+		    return parseFloat(stop.getAttributeNS(null, "offset"));
+		});
+		return new fx.LinearGradient(start, end, offsets, colors);
+	    } else if (node && node.tagName == 'radialGradient') {
+		//var center = new fx.Point(node.fx.baseVal.value, node.fy.baseVal.value);
+		var center = new fx.Point(0,0);
+		var r = node.r.baseVal.value*20;
+		if (target && target.rx) { // FIXME hack, should we take the bounding box?
+		    r = target.rx.baseVal.value;
+		}
+		var stops = node.getElementsByTagNameNS(Namespace.SVG, "stop");
+		var stops = Object.extend(node.getElementsByTagNameNS(Namespace.SVG, "stop"), Enumerable);
+		var colors = stops.map(function(stop) {
+		    return this.parsePaint(stop.getAttributeNS(null, "stop-color"));
+		}, this);
+		var offsets = stops.map(function(stop) {
+		    return parseFloat(stop.getAttributeNS(null, "offset"));
+		});
+		return new fx.RadialGradient(center, r, offsets, colors);
+	    } else {
+		// wait for radial paint until java 6
+		//console.log('unknown paint ' + id);
+		return new fx.Color(0,0,0,0); // FIXME not strictly the same thing as no color
+	    }
+	} else {
+	    console.log('unknown fill ' + paintString);
+	    return null;
+	}
     },
 
     render: function(element) {
 	var attrs = element.attributes;
 	var shape = fx.util.getShape(element);
 	var fxFill = null;
+	var fxStroke = null;
 
 	var fillAttr = attrs.getNamedItem('fill');
 	if (fillAttr && fillAttr.value) fxFill = this.renderFill(element, shape, fillAttr.value);
@@ -376,20 +393,23 @@ var PaintModule = {
 	if (fillOpacityAttr && fillOpacityAttr.value) this.renderFillOpacity(element, shape, fillOpacityAttr.value, fxFill);
 
 	var strokeAttr = attrs.getNamedItem('stroke');
-	if (strokeAttr && strokeAttr.value) this.renderStroke(element, shape, strokeAttr.value);
+	if (strokeAttr && strokeAttr.value) fxStroke = this.renderStroke(element, shape, strokeAttr.value);
+
+	var strokeOpacityAttr = attrs.getNamedItem('stroke-opacity');
+	if (strokeOpacityAttr && strokeOpacityAttr.value) this.renderStrokeOpacity(element, shape, strokeOpacityAttr.value, fxStroke);
 
 	var strokeWidthAttr = attrs.getNamedItem('stroke-width');
 	if (strokeWidthAttr && strokeWidthAttr.value) this.renderStrokeWidth(element, shape, strokeWidthAttr.value);
     },
 
     renderFill: function(element, shape, value) {
-	var fxPaint = PaintModule.parsePaint(value);
+	var fxPaint = PaintModule.parsePaint(value, element);
 	shape.setFillPaint(fxPaint);
 	return fxPaint;
     },
 
     renderStroke: function(element, shape, value) {
-	var fxPaint = PaintModule.parsePaint(value);
+	var fxPaint = PaintModule.parsePaint(value, element);
 	shape.setDrawPaint(fxPaint);
 	return fxPaint;
     },
@@ -402,6 +422,17 @@ var PaintModule = {
 	    shape.setFillPaint(color);
 	}
     },
+
+
+    renderStrokeOpacity: function(element, shape, opacity, fxPaint) {
+	if (fx.util.isInstanceOf(fxPaint, 'java.awt.Color')) {
+	    var alpha = parseFloat(opacity); // FIXME units
+	    // FIXME what if fill is not a color?
+	    var color = new fx.Color(fxPaint.getRed()/255, fxPaint.getGreen()/255, fxPaint.getBlue()/255, alpha);
+	    shape.setDrawPaint(color);
+	}
+    },
+
 
     renderStrokeWidth: function(element, shape, value) {
 	var BasicStroke = Packages.java.awt.BasicStroke;
