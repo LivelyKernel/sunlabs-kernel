@@ -1,5 +1,5 @@
 
-module('TileScriptingTests.js').requires('TileScripting.js').toRun(function() {
+module('Tests/TileScriptingTests.js').requires('TileScripting.js').toRun(function() {
 
 TestCase.subclass('ScriptEnvironmentTest', {
     // testRunScript: function() {

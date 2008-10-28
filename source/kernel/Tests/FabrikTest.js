@@ -1,5 +1,4 @@
-// this seems to cause a bug with require...
-// module('FabrikTest.js').requires('Fabrik.js', 'Helper.js').toRun(function(ownModule) {
+module('Tests/FabrikTest.js').requires('Fabrik.js').toRun(function(ownModule) {
 
 TestCase.subclass('FabrikTestCase', {
     
@@ -7,9 +6,9 @@ TestCase.subclass('FabrikTestCase', {
         this.fabrikComponent = new FabrikComponent();
     },
     
-    buildFabrikWithComponents: function(number){
+    buildFabrikWithComponents: function(number, optExtent){
         var fabrik = this.fabrikComponent;
-        fabrik.buildView();
+        fabrik.buildView(optExtent);
         this.components = range(1, number).collect(function() {
             return fabrik.plugin(new TextComponent());
         });
@@ -270,10 +269,10 @@ FabrikTestCase.subclass('AUserFrameTest', {
     
     setUp: function($super) {
         $super();
-        var fab = this.buildFabrikWithComponents(2);
-        fab.morph.openInWorld();
-        fab.morph.setPosition(pt(0,0));
-        fab.morph.setExtent(pt(100,100));
+        var fab = this.buildFabrikWithComponents(2, pt(100,100));
+        WorldMorph.current().addMorphFrontOrBack(fab.panel, true, true);
+        fab.panel.setPosition(pt(0,0));
+        // fab.morph.setExtent(pt(100,100));
     },
     
     tearDown: function() {
@@ -302,6 +301,7 @@ FabrikTestCase.subclass('AUserFrameTest', {
         var handle = fab.morph.makeSelection(newFakeMouseEvent(pt(20,20)));
         handle.onMouseUp(newFakeMouseEvent(pt(80,80))); // simulate a mouse move
         var sel = fab.morph.currentSelection;
+        // debugger;
         this.assertEqual(sel.selectedMorphs.length, 1, 'no selection?');
         this.assert(sel.selectedMorphs.include(comp1.panel), 'wrong selection');
     },
@@ -1647,4 +1647,4 @@ TestCase.subclass('FabrikConverterTest', {
 
 console.log("Loaded FabrikTest.js");
 
-// }); // end of require
+}); // end of require

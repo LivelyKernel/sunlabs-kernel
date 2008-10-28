@@ -1907,6 +1907,8 @@ Widget.subclass('Component', {
 
 SelectionMorph.subclass('UserFrameMorph', {
     
+    removeWhenEmpty: false,
+    
     reshape: function($super, partName, newPoint, handle, lastCall) {
         // Initial selection might actually move in another direction than toward bottomRight
         // This code watches that and changes the control point if so
@@ -1927,7 +1929,7 @@ SelectionMorph.subclass('UserFrameMorph', {
             if (m !== this && this.bounds().containsRect(m.bounds()) && m instanceof ComponentMorph) this.selectedMorphs.push(m);
         }, this);
         this.selectedMorphs.reverse();
-            
+
         if (lastCall) this.initialSelection = false;
         // if (lastCall /*&& this.selectedMorphs.length == 0 && this.removeWhenEmpty*/) this.remove();
         if (lastCall && this.selectedMorphs.length == 0 && this.removeWhenEmpty) this.remove();
@@ -2084,11 +2086,10 @@ ComponentMorph.subclass('FabrikMorph', {
 
     makeSelection: function(evt) {  //default behavior is to grab a submorph
         if (this.currentSelection != null) this.currentSelection.remove();
-        var m = new UserFrameMorph(this.localize(evt.point()).asRectangle());
-        this.addMorph(m);
-        this.currentSelection = m;
-        this.currentSelection.fabrik = this;
-        return m.createHandle(evt.hand);
+        var frame = new UserFrameMorph(this.localize(evt.point()).asRectangle());
+        frame.fabrik = this;
+        this.currentSelection = this.addMorph(frame);
+        return frame.createHandle(evt.hand);
     },
     
     collapseToggle: function(value) {
@@ -3002,8 +3003,8 @@ Morph.subclass("FabrikClockMorph", {
 });
 
 /* Changing the behavior of the WorldMorph: when a FabrikMorph is dropped, make it framed */
-    WorldMorph.prototype.addMorphFrontOrBack = WorldMorph.prototype.addMorphFrontOrBack.wrap(function(proceed, m, front) {
-    if (m instanceof FabrikMorph/* && !m.openInWindow*/) {
+    WorldMorph.prototype.addMorphFrontOrBack = WorldMorph.prototype.addMorphFrontOrBack.wrap(function(proceed, m, front, override) {
+    if (m instanceof FabrikMorph && !override/* && !m.openInWindow*/) {
         m.halos.remove();
         m.adjustForNewBounds();
         console.log('adding fabrikmorph to world...')
