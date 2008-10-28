@@ -1832,11 +1832,30 @@ Shape.subclass('PathShape', {
 	//console.log("d=" + d);
 	if (d.length > 0)
 	    this.rawNode.setAttributeNS(null, "d", d);
-	this.verticesList = vertlist;
+        // this.verticesList = vertlist;
+    },
+    
+    verticesFromSVG: function() {
+        var d = this.rawNode.getAttribute('d');
+        var pointSpecs = $A(d).inject([], function(all, ea) {
+            if (ea === 'M' || ea === 'T') {
+                all.push({type: ea, x: ''});
+            } else if (ea === ',') {
+                all.last().y = '';
+            } else {
+                all.last().y === undefined ? all.last().x += ea : all.last().y += ea;
+            };
+            return all;
+        });
+        var points = pointSpecs.collect(function(ea) {
+                return pt(Number(ea.x), Number(ea.y));
+        });
+        return points;
     },
 
     vertices: function() {
-	return this.verticesList;
+        // return this.verticesList;
+        return this.verticesFromSVG();
     },
 
     moveTo: function(x, y) {
@@ -1857,7 +1876,7 @@ Shape.subclass('PathShape', {
     
     containsPoint: function(p) {
 	if (UserAgent.webKitVersion >= 525)
-	    return Rectangle.unionPts(this.verticesList).containsPoint(p);
+	    return Rectangle.unionPts(this.vertices()).containsPoint(p);
 	else return this.nativeContainsWorldPoint(p);
     },
 
@@ -1867,7 +1886,7 @@ Shape.subclass('PathShape', {
 	    // check the coordinates!
 	    return new Rectangle(r.x, r.y, r.width, r.height);
 	} catch (er) {
-	    var u = Rectangle.unionPts(this.verticesList);
+	    var u = Rectangle.unionPts(this.vertices());
 	    return u;
 	}
     },
@@ -2693,11 +2712,7 @@ Morph.addMethods({
 		this.shape = new PolygonShape(importer, node);
 		break;
             case "path":
-                // debugger;
-                // this.shape = new PathShape([pt(0,0), pt(50,0), pt(50,50), pt(0,50), pt(0,0)], Color.red, 3, Color.red);
 		this.shape = new PathShape(importer, node);
-		this.shape.setVertices([pt(0,0), pt(50,0), pt(50,50), pt(0,50), pt(0,0)]);
-		this.shape.rawNode.setAttribute('d', "M0,0T48.25658178329468,-5.770838260650635T85.89215588569641,15.051417827606201T61.36309051513672,32.78068518638611T53.225199699401855,46.00089120864868T25.02833652496338,68.58267283439636T1.0328261852264404,40.347657918930054T0,0");
 		break;
 	    case "defs": 
 		throw new Error();
@@ -5241,7 +5256,6 @@ PasteUpMorph.subclass("WorldMorph", {
                 widget.rotateBy(3.9);
                 world.addMorph(widget);
                 document.getElementById(widget.id()).childNodes[0].setAttribute('d', "M0,0T48.25658178329468,-5.770838260650635T85.89215588569641,15.051417827606201T61.36309051513672,32.78068518638611T53.225199699401855,46.00089120864868T25.02833652496338,68.58267283439636T1.0328261852264404,40.347657918930054T0,0")
-                widget.shape.rawNode.setAttribute("id", 'heart');
                 }],
             ["TextMorph", function(evt) { world.addMorph(new TextMorph(evt.point().extent(pt(120, 10)), "This is a TextMorph"));}],
             ["Class Browser", function(evt) { new SimpleBrowser().openIn(world, evt.point()); }],
