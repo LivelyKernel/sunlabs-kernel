@@ -757,11 +757,11 @@ Object.subclass('FileDirectory', {
 
     filesAndDirs: function() {
         var url = this.url;
-        var webFile = new lk.storage.WebFile(Record.newPlainInstance(
+        var webFile = new lively.storage.WebFile(Record.newPlainInstance(
             {File: url, RootNode: url, Content: null, DirectoryList: null}));
-            webFile.fetchContent(webFile.formalModel.getFile(), true);
-            return webFile.formalModel.getDirectoryList();
-        },
+        webFile.fetchContent(webFile.formalModel.getFile(), true);
+        return webFile.formalModel.getDirectoryList();
+    },
 
         files: function() {
             return this.filesAndDirs().select(function(ea) { return ea.isLeaf() });
@@ -809,6 +809,7 @@ Object.subclass('FileDirectory', {
     },
 
     copyFileNamed: function(srcFileName, destUrl, optNewFileName) {
+        console.log('Copy file ' + srcFileName);
         if (!optNewFileName) optNewFileName = srcFileName;
         var otherDir = new FileDirectory(destUrl);
         otherDir.writeFileNamed(optNewFileName, this.fileContent(srcFileName));
@@ -821,19 +822,24 @@ Object.subclass('FileDirectory', {
     
     copySubdirectory: function(subDirName, newDirName, toUrlOrFileDir, recursively, selectFunc) {
         if (!newDirName) newDirName = subDirName;
-        if (!this.subdirectoryNames().include(subDirName)) return;
+        if (!this.subdirectoryNames().include(subDirName)) {
+            console.log(this.url.toString() + ' has no subdirectory ' + subDirName);
+            return;
+        }
+        
         var foreignDir = toUrlOrFileDir.constructor === this.constructor ? toUrlOrFileDir : new this.constructor(toUrlOrFileDir);
         var toUrl = foreignDir.url;
-        if (!foreignDir.fileOrDirectoryExists(newDirName)) {
-            foreignDir.createDirectory(newDirName);
-        };
+        if (!foreignDir.fileOrDirectoryExists(newDirName)) foreignDir.createDirectory(newDirName);
         var subDir = new this.constructor(this.url.withFilename(subDirName));
+        
         subDir.copyAllFiles(toUrl.withFilename(newDirName), selectFunc);
-        subDir.copyAllSubdirectories(toUrl, recursively, selectFunc);
+        subDir.copyAllSubdirectories(toUrl.withFilename(newDirName), recursively, selectFunc);
     },
     
     copyAllSubdirectories: function(toUrl, recursively, selectFunc) {
+        console.log('copying subdirs to url:' + toUrl + ' recursively: ' + recursively + ' selectFunc: ' + selectFunc);
         var dirsToCopy = selectFunc ? this.subdirectoryNames().select(selectFunc) : this.subdirectoryNames();
+        
         dirsToCopy.each(function(ea) { this.copySubdirectory(ea, ea, toUrl, recursively, selectFunc) }, this);
     }
 
