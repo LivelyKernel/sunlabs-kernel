@@ -1413,11 +1413,11 @@ TestCase.subclass('ATextListComponentTest', {
     },
     
     testRemembersSelectionIndex: function() {
-        var list = [{a: 1}, {b: 2}];
+        var list = [{a: 1,  isJSONConformant: true}, {b: 2, isJSONConformant: true}];
         this.textList.setList(list);
         this.textList.setSelection(list[1]);
         this.assertEqual(this.textList.getSelectionIndex(), 1, 'wrong selection index');
-        var otherList = [{c: 3}, {d: 4}];
+        var otherList = [{c: 3, isJSONConformant: true}, {d: 4, isJSONConformant: true}];
         this.textList.setList(otherList);
         this.assertEqual(this.textList.getSelectionIndex(), 1, 'wrong selection index after assigning new list');
         // this.assertIdentity(this.textList.getSelection(), otherList[1], 'wrong selection');
@@ -1425,13 +1425,13 @@ TestCase.subclass('ATextListComponentTest', {
     },
     
     testRemembersSelectionIndexWithMorph: function() {
-        var list = [{a: 1}, {b: 2}];
+        var list = [{a: 1, isJSONConformant: true}, {b: 2, isJSONConformant: true}];
         this.textList.buildView();
         var morph = this.textList.morph;
         this.textList.setList(list);
         this.textList.setSelection(list[1]);
         this.assertEqual(morph.selectedLineNo, 1, 'wrong selectedLineNo');
-        var otherList = [{c: 3}, {d: 4}];
+        var otherList = [{c: 3, isJSONConformant: true}, {d: 4, isJSONConformant: true}];
         this.textList.setList(otherList);
         this.assertEqual(morph.selectedLineNo, 1, 'wrong selectedLineNo after assigning new list');
         this.assertEqualState(morph.getSelection(), otherList[1], 'wrong selection');

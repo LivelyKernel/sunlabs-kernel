@@ -511,7 +511,9 @@ var Converter = {
         if (value instanceof Element && value.ownerDocument === document) return false;
         // why disallow all objects?
 	// KP: because we don't know how to handle them up front, special cases handled bye encodeProperty
-        return value == null || (typeof value.valueOf()  !== 'object');
+	// this makes simple objects like {a: 1} hard to serialize
+	// fix for now: objects can determine by themselves if isJSONConformant should be true
+        return value == null || value.isJSONConformant || (typeof value.valueOf()  !== 'object');
     }
 
 };
