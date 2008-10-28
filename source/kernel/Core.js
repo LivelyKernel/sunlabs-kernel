@@ -2676,6 +2676,7 @@ Morph.addMethods({
 
 	for (var i = 0; i < children.length; i++) {
 	    var node = children[i];
+            // debugger;
 	    switch (node.localName) {
 	    case "ellipse":
 		this.shape = new EllipseShape(importer, node);
@@ -2688,6 +2689,13 @@ Morph.addMethods({
 		break;
 	    case "polygon":
 		this.shape = new PolygonShape(importer, node);
+		break;
+            case "path":
+                // debugger;
+                // this.shape = new PathShape([pt(0,0), pt(50,0), pt(50,50), pt(0,50), pt(0,0)], Color.red, 3, Color.red);
+		this.shape = new PathShape(importer, node);
+		this.shape.setVertices([pt(0,0), pt(50,0), pt(50,50), pt(0,50), pt(0,0)]);
+		this.shape.rawNode.setAttribute('d', "M0,0T48.25658178329468,-5.770838260650635T85.89215588569641,15.051417827606201T61.36309051513672,32.78068518638611T53.225199699401855,46.00089120864868T25.02833652496338,68.58267283439636T1.0328261852264404,40.347657918930054T0,0");
 		break;
 	    case "defs": 
 		throw new Error();
@@ -5226,18 +5234,19 @@ PasteUpMorph.subclass("WorldMorph", {
             ["SliderMorph", function(evt) { world.addMorph(new SliderMorph(evt.point().extent(pt(120, 40))))}],
             ["Heart", function(evt) { 
                 var shape1 = [pt(0,0), pt(50,0), pt(50,50), pt(0,50), pt(0,0)];
-                var widget = new Morph(evt.point().extent(pt(100,100)),"rect");
+                var widget = new Morph(evt.point().extent(pt(100,100)),"path");
                 widget.setShape(new PathShape(shape1, Color.red, 3, Color.red));
                 widget.rotateBy(3.9);
                 world.addMorph(widget);
                 document.getElementById(widget.id()).childNodes[0].setAttribute('d', "M0,0T48.25658178329468,-5.770838260650635T85.89215588569641,15.051417827606201T61.36309051513672,32.78068518638611T53.225199699401855,46.00089120864868T25.02833652496338,68.58267283439636T1.0328261852264404,40.347657918930054T0,0")
+                widget.shape.rawNode.setAttribute("id", 'heart');
                 }],
             ["TextMorph", function(evt) { world.addMorph(new TextMorph(evt.point().extent(pt(120, 10)), "This is a TextMorph"));}],
             ["Class Browser", function(evt) { new SimpleBrowser().openIn(world, evt.point()); }],
             ["Object Hierarchy Browser", function(evt) { new ObjectBrowser().openIn(world, evt.point()); }],    
             ["TestRunner", function(evt) { new TestRunner().openIn(world, evt.point()); }],
             ["Fabrik Component Box", function(evt) { Fabrik.openComponentBox(world, evt.point()); }],
-            ["TileScriptingBox", function(evt) { new TileBox().openIn(world, evt.point()); }],
+            ["TileScriptingBox", function(evt) { require('TileScripting.js').toRun(function() {new TileBox().openIn(world, evt.point()); }) }],
             ["OmetaWorkspace", function(evt) { new OmetaWorkspace().openIn(world, evt.point()); }],
 	    ["Call Stack Viewer", function(evt) { 
 		if (Config.debugExtras) lively.lang.Execution.showStack("use viewer");
