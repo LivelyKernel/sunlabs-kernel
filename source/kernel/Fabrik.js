@@ -2925,7 +2925,7 @@ Global.FabrikConverter = {
     xmlToStringArray: function(xml, indent) {
         if (!indent) indent = '';
         
-        var objCreator = function(string, xml) { return {string: string, xml: xml, js: FabrikConverter.xmlToJs(xml)} };
+        var objCreator = function(string, xml) { return {string: string, xml: xml, js: FabrikConverter.xmlToJs(xml), isJSONConformant: true} };
         
         if (!xml || xml instanceof DocumentType) return [];
         if (!xml.parentNode) return FabrikConverter.xmlToStringArray(xml.firstChild, indent); // omit root
