@@ -944,7 +944,6 @@ Object.subclass('Similitude', {
 
     /**
       * createSimilitude: a similitude is a combination of translation rotation and scale.
-      * one could argue that Similitude is a superclass of Transform, not subclass.
       * @param [Point] delta
       * @param [float] angleInRadians
       * @param [float] scale
@@ -1832,13 +1831,12 @@ Shape.subclass('PathShape', {
 	//console.log("d=" + d);
 	if (d.length > 0)
 	    this.rawNode.setAttributeNS(null, "d", d);
-        // this.verticesList = vertlist;
     },
     
     verticesFromSVG: function() {
         var d = this.rawNode.getAttribute('d');
         var pointSpecs = $A(d).inject([], function(all, ea) {
-            if (ea === 'M' || ea === 'T') {
+            if (ea === 'M' || ea === 'T') { // FIXME support other vertice types and use them for points
                 all.push({type: ea, x: ''});
             } else if (ea === ',') {
                 all.last().y = '';
@@ -1854,7 +1852,6 @@ Shape.subclass('PathShape', {
     },
 
     vertices: function() {
-        // return this.verticesList;
         return this.verticesFromSVG();
     },
 
