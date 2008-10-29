@@ -1,4 +1,5 @@
- 
+module('Helper.js').requires().toRun(function() {
+     
 // extension to Morphs
 Morph.addMethods({
     openInWorld: function(loc) {
@@ -143,3 +144,5 @@ function range(begin, end) {
 
 
 console.log('Helper.js loaded');
+
+});
