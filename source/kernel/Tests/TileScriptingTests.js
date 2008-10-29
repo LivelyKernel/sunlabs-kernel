@@ -209,6 +209,21 @@ TestCase.subclass('LayoutTests', {
                     m1 + '('+ m1.getPosition() + ') not left from ' + m2 + '(' + m2.getPosition() + ')');
     },
     
+    assertSubmorphsDoNoOverlap: function(morph) {
+        morph.submorphs.each(function(ea) {
+            morph.submorphs.each(function(ea2) {
+                this.assert(ea === ea2 || !ea.bounds().containsRect(ea2.bounds()),
+                    ea.constructor.type + ' overlaps ' + ea2.constructor.type);
+            }, this); 
+        }, this);
+    },
+    
+    assertMorphsInsideBounds: function(morph) {
+        morph.submorphs.each(function(ea) {
+            this.assert(morph.shape.bounds().containsRect(ea.bounds()), 'Morph: ' + ea + ' overlaps its ownerBounds!');
+        }, this)
+    },
+    
     testVLayoutThreeMorphsAboveEachOther: function() {
         var sut = new VLayout(this.baseMorph);
         this.assertIdentity(sut.baseMorph, this.baseMorph);
@@ -225,7 +240,7 @@ TestCase.subclass('LayoutTests', {
     },
     
     testHLayoutTwoMorphsHorizontalAndResize: function() {
-        var sut = new HLayout(this.baseMorph, true);
+        var sut = new HLayout(this.baseMorph, {noResize: false});
         var morph1 = new Morph(new Rectangle(0,0,20,30)),
             morph2 = new Morph(new Rectangle(0,0,30,40));
         this.baseMorph.addMorph(morph1);
@@ -233,6 +248,22 @@ TestCase.subclass('LayoutTests', {
         sut.layout();
         this.assertLeft(morph1, morph2);
         this.assertEqual(sut.baseMorph.getExtent(), pt(50, 40));
+    },
+    
+    testHLayoutCenterMorphs: function() {
+        var sut = new HLayout(this.baseMorph, {center: true});
+        var morph1 = new Morph(new Rectangle(0,0,20,20)),
+            morph2 = new Morph(new Rectangle(0,0,40,40));
+        this.baseMorph.addMorph(morph1);
+        this.baseMorph.addMorph(morph2);
+        this.baseMorph.setPosition(pt(100,200));
+        sut.layout();
+        this.assertLeft(morph1, morph2);
+        sut.baseMorph.openInWorld();
+        this.assertEqual(sut.baseMorph.getExtent(), pt(60, 40));
+        this.assertSubmorphsDoNoOverlap(sut.baseMorph);
+        this.assertMorphsInsideBounds(sut.baseMorph);
+        this.assertEqual(morph1.getPosition().y, 10);
     }
 })
 

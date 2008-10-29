@@ -2,9 +2,9 @@ module('TileScripting.js').requires('Helper.js').toRun(function() {
 
 Object.subclass('Layout', {
     
-    initialize: function(baseMorph, resizeAfterLayout) {
+    initialize: function(baseMorph, layoutSpec) {
+        this.layoutSpec = layoutSpec || {};
         this.baseMorph = baseMorph;
-        this.resizeAfterLayout = resizeAfterLayout;
     },
     
     layout: function() {
@@ -17,13 +17,15 @@ Object.subclass('Layout', {
                 ea.setPosition(pos);
                 return this.newPosition(ea);
             }, this);
-        
-        if (this.resizeAfterLayout) {        
+
+        if (!this.layoutSpec.noResize) {        
             var maxExtent = this.baseMorph.submorphs.inject(pt(0,0), function(maxExt, ea) {
                 return maxExt.maxPt(ea.getPosition().addPt(ea.getExtent()));
             });
             this.baseMorph.setExtent(maxExtent);
         };
+        
+        if (this.layoutSpec.center) { this.centerMorphs() };
         
         // this.baseMorph.layoutChanged();        
         // this.baseMorph.layoutChanged = this.baseMorph.constructor.prototype.layoutChanged.bind(this.baseMorph);
@@ -31,13 +33,22 @@ Object.subclass('Layout', {
     
     newPosition: function(lastLayoutedMorph) {
         return lastLayoutedMorph.getPosition();
-    }
+    },
+    
+    centerMorphs: function() {}
 });
 
 Layout.subclass('VLayout', {
     
-    newPosition: function(lastLayoutedMorph) {
+    newPosition: function($super, lastLayoutedMorph) {
         return lastLayoutedMorph.getPosition().addXY(0, lastLayoutedMorph.getExtent().y);
+    },
+    
+    centerMorphs: function() {
+        var centerX = this.baseMorph.shape.bounds().center().x;
+        this.baseMorph.submorphs.each(function(ea) {
+            ea.setPosition(ea.getPosition().withX(centerX - ea.getExtent().x/2));
+        }, this)
     }
     
 });
@@ -46,16 +57,23 @@ Layout.subclass('HLayout', {
     
     newPosition: function(lastLayoutedMorph) {
         return lastLayoutedMorph.getPosition().addXY(lastLayoutedMorph.getExtent().x, 0);
+    },
+    
+    centerMorphs: function() {
+        var centerY = this.baseMorph.shape.bounds().center().y;
+        this.baseMorph.submorphs.each(function(ea) {
+            ea.setPosition(ea.getPosition().withY(centerY - ea.getExtent().y/2));
+        }, this)
     }
     
 });
 
-// Extensions
+// Some Mokeypatching :-)
 // TODO: Merge
 
 Morph.addMethods({
    layout: function(notResizeSelf) {
-       this.layouterClass && new this.layouterClass(this, !notResizeSelf).layout();
+       this.layoutSpec && this.layoutSpec.layouterClass && new this.layoutSpec.layouterClass(this, this.layoutSpec).layout();
        this.owner && this.owner.layout();
    },
    asTile: function() {
@@ -75,6 +93,7 @@ Morph.prototype.removeMorph = Morph.prototype.removeMorph.wrap(function(proceed,
 
 PanelMorph.subclass('TileBoxPanel', {
     onDeserialize: function() {
+        // FIXME complete new morph is build, is this really necessary?
         this.owner.targetMorph = this.owner.addMorph(new TileBox().buildView(this.getExtent()));
         this.owner.targetMorph.setPosition(this.getPosition());
         this.remove();
@@ -137,7 +156,7 @@ Widget.subclass('TileBox', {
         this.add(buildScriptBox, new TitleBarMorph('ScriptBox', 150), 'ScriptBox', panel);
         
         // dbgOn(true);
-        new VLayout(panel, true).layout();
+        new VLayout(panel, {}).layout();
         // panel.openDnD();
         
         return panel;
@@ -220,7 +239,7 @@ Object.extend(ScriptEnvironment, {
 
 Morph.subclass('TileHolder', {
     
-    layouterClass: VLayout,
+    layoutSpec: {layouterClass: VLayout},
     dropAreaExtent: pt(80,20),
     formals: ["Value"],
     
@@ -332,7 +351,7 @@ Morph.subclass('Tile', {
 
     isTile: true,
     defaultExtent: pt(100,20),
-    layouterClass: HLayout,
+    layoutSpec: {layouterClass: HLayout},
     
     initialize: function($super, bounds) {
         if (!bounds) bounds = this.defaultExtent.extentAsRectangle();
@@ -361,7 +380,7 @@ Morph.subclass('Tile', {
 Tile.subclass('DebugTile', {
     
     defaultExtent: pt(100,35),
-    layouterClass: null,
+    layoutSpec: {layouterClass: null},
     
     initialize: function($super, bounds, sourceString) {
         $super(bounds, "rect");
@@ -379,6 +398,8 @@ Tile.subclass('DebugTile', {
 });
 
 Tile.subclass('ObjectTile', {
+    
+    layoutSpec: {layouterClass: HLayout, center: true},
     
     initialize: function($super, bounds, targetMorphOrObject) {
         $super(bounds, "rect");
@@ -403,6 +424,7 @@ Tile.subclass('ObjectTile', {
         this.targetMorph = morph;
         this.label.setTextString(this.objectId());
         this.addMenuButton();
+        this.layout();
     },
     
     objectId: function() {
@@ -410,7 +432,7 @@ Tile.subclass('ObjectTile', {
     },
         
     addMenuButton: function() {
-        var extent = pt(8,8);
+        var extent = pt(10,10);
         this.menuTrigger = this.addMorph(new ButtonMorph(extent.extentAsRectangle()));
         this.menuTrigger.moveBy(pt(0,this.getExtent().y/2 - extent.x/2));
         this.menuTrigger.setFill(this.getFill().darker());
@@ -518,8 +540,6 @@ Object.subclass('TileMenuCreator', {
 
 Tile.subclass('FunctionTile', {
     
-    layouterClass: HLayout,
-    
     initialize: function($super, bounds, methodName) {
         $super(bounds, "rect");
 
@@ -569,7 +589,7 @@ Tile.subclass('IfTile', {
 Morph.subclass('DropArea', {
 
     isDropArea: true,
-    layouterClass: VLayout,
+    layoutSpec: {layouterClass: VLayout},
     
     initialize: function($super, bounds, actionWhenDropped) {
         $super(bounds, "rect");
