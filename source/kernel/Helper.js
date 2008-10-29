@@ -13,7 +13,7 @@ Morph.addMethods({
  * Stack Viewer when Dans StackTracer is not available
  */
 
-function getStack() {
+Global.getStack = function() {
     var result = [];
     for (var caller = arguments.callee.caller; caller; caller = caller.caller) {
         if (result.indexOf(caller) != -1) {
@@ -26,7 +26,7 @@ function getStack() {
 };
 
 
-function printStack() {  
+Global.printStack = function() {  
     function guessFunctionName(func) {
         return func.qualifiedMethodName() || func.toString().match(/function (.+)\(/)[1] || func;
     };
@@ -43,11 +43,11 @@ function printStack() {
     return string;
 };
 
-function logStack() {
+Global.logStack = function() {
     this.console.log(printStack())
 };
 
-function logStackFor(obj, methodName) {
+Global.logStackFor = function(obj, methodName) {
     obj[methodName] = obj[methodName].wrap(function(proceed) {
         var args = $A(arguments); args.shift(); 
         MyLogDepth++;
@@ -60,18 +60,18 @@ function logStackFor(obj, methodName) {
     })
 }
 
-function indentForDepth(depth) {
+Global.indentForDepth = function(depth) {
     var s=""
     for(var i=depth; i > 0; i--) s += " ";
     return s
 };
 
-function resetLogDepth() {
+Global.resetLogDepth = function() {
     MyLogDepth = 0;    
 };
-resetLogDepth();
+Global.resetLogDepth();
 
-function logCall(args, from, shift) {
+Global.logCall = function(args, from, shift) {
     s = ""
     s += indentForDepth(MyLogDepth);
     if(from)
@@ -93,7 +93,7 @@ function logCall(args, from, shift) {
 // };
 
 
-function logMethod(obj, methodName) {
+Global.logMethod = function(obj, methodName) {
     obj[methodName] = obj[methodName].wrap(function(proceed) {
         var args = $A(arguments); args.shift(); 
         MyLogDepth++;
@@ -104,7 +104,7 @@ function logMethod(obj, methodName) {
     })
 }
 
-function printObject(obj) {
+Global.printObject = function(obj) {
     var s = String(obj) + ":";
     for(ea in obj) { 
         if (!Object.isFunction(obj[ea]))
@@ -113,7 +113,7 @@ function printObject(obj) {
     return s
 }
 
-function printObjectFull(obj) {
+Global.printObjectFull = function(obj) {
     var s = "{";
     for(ea in obj) { 
         s += " " + ea + ":" + String(obj[ea]) + ", \n"
@@ -121,20 +121,20 @@ function printObjectFull(obj) {
     return s + "}"
 }
 
-function logObject(obj) {
+Global.logObject = function(obj) {
     console.log(printObject(obj))
 }
 
-function xmlToString(xml) {
+Global.xmlToString = function(xml) {
     return new XMLSerializer().serializeToString(xml);
 }
 
-function stringToXML(string) {
+Global.stringToXML = function(string) {
     return new DOMParser().parseFromString(string, "text/xml");
 }
 
 // Generator for an array
-function range(begin, end) {
+Global.range = function(begin, end) {
     result = [];
     for (var i = begin; i <= end; i++) {
         result.push(i);
@@ -143,6 +143,6 @@ function range(begin, end) {
 }
 
 
-console.log('Helper.js loaded');
+console.log('Helper.js is loaded');
 
 });
