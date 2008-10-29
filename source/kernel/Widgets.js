@@ -1355,7 +1355,9 @@ MenuItem.subclass("SubListMenuItem", {
     showMenu: function(evt, originalMenu) {
         var target = originalMenu.targetMorph;
         var menu = this.menu || new MenuMorph(this.getList(evt, target), target);
-        var pos = evt.point().withX(originalMenu.getPosition().x + originalMenu.listMorph.getExtent().x);
+        var ownIndex = originalMenu.items.indexOf(this);
+        var pos = pt(originalMenu.getPosition().x + originalMenu.listMorph.getExtent().x,
+                     originalMenu.getPosition().y + originalMenu.listMorph.submorphs[ownIndex].getPosition().y);
         menu.openIn(originalMenu.owner, pos, false, Object.inspect(target).truncate()); 
         this.menu = menu;
     },
@@ -1556,6 +1558,9 @@ Morph.subclass("MenuMorph", {
     },
     
     removeOnEvent: function(evt) {
+        for (var i = 0; i < this.items.length; i++)
+            this.items[i].isSubListMenuItem && this.items[i].closeMenu()
+
         this.remove();
         if (evt.hand.mouseFocus === this) {
             evt.hand.setMouseFocus(null);
