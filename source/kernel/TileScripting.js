@@ -351,7 +351,7 @@ Morph.subclass('Tile', {
 
     isTile: true,
     defaultExtent: pt(100,20),
-    layoutSpec: {layouterClass: HLayout},
+    layoutSpec: {layouterClass: HLayout, center: true},
     
     initialize: function($super, bounds) {
         if (!bounds) bounds = this.defaultExtent.extentAsRectangle();
@@ -399,8 +399,6 @@ Tile.subclass('DebugTile', {
 
 Tile.subclass('ObjectTile', {
     
-    layoutSpec: {layouterClass: HLayout, center: true},
-    
     initialize: function($super, bounds, targetMorphOrObject) {
         $super(bounds, "rect");
         
@@ -446,7 +444,7 @@ Tile.subclass('ObjectTile', {
     },
     
     openMenu: function(btnVal) {
-        if (!btnVal) return;
+        if (btnVal) return;
         var menu = new TileMenuCreator(this.targetMorph, this).createMenu();
         var pos = this.getGlobalTransform().transformPoint(this.menuTrigger.getPosition());
     	menu.openIn(this.world(), pos, false, this.targetMorph.toString());
@@ -585,7 +583,42 @@ Tile.subclass('IfTile', {
         return 'if (' + this.testExprDropArea.tile().asJs() + ') {' + this.exprDropArea.tile().asJs() + '}';
     }
 });
+
+Tile.subclass('NumberTile', {
     
+    initialize: function($super, bounds) {
+        $super(bounds, "rect");
+        this.numberText = this.addMorph(new TextMorph(pt(20,20).extentAsRectangle(), '1').beLabel());
+        this.addUpDownButtons();
+        this.layout();
+    },
+    
+    onDeserialize: function() {
+        this.upButton.remove();
+        this.downButton.remove();
+        this.addUpDownButtons();
+    },
+
+    addUpDownButtons: function() {
+        var extent = pt(10,10);
+        this.upButton = this.addMorph(new ButtonMorph(extent.extentAsRectangle()));
+        this.upButton.connectModel({model: this, setValue: "countUp"});
+        this.downButton = this.addMorph(new ButtonMorph(extent.extentAsRectangle()));
+        this.downButton.connectModel({model: this, setValue: "countDown"});
+    },
+    
+    countUp: function() {
+        var number = Number(this.numberText.textString);
+        number += number < 1 ? 0.1 : 1;
+        this.numberText.setTextString(number.toString());
+    },
+    
+    countDown: function() {
+        var number = Number(this.numberText.textString);
+        number -= number > 1 ? 1 : 0.1;
+        this.numberText.setTextString(number.toString());
+    },
+});
 Morph.subclass('DropArea', {
 
     isDropArea: true,

@@ -193,6 +193,39 @@ TestCase.subclass('IfTileTest', {
     }
 });
 
+TestCase.subclass('NumberTileTest', {
+    
+    testHasNumberTextAndTwoButtons: function() {
+        var tile = new NumberTile();
+        this.assert(tile.numberText instanceof TextMorph, 'no numberText');
+        this.assertEqual(tile.numberText.textString, '1');
+        this.assert(tile.upButton instanceof ButtonMorph, 'no upBtn');
+        this.assert(tile.downButton instanceof ButtonMorph, 'no upBtn');
+    },
+    
+    testCountUp: function() {
+        var tile = new NumberTile();
+        tile.numberText.setTextString('0.8');
+        tile.countUp();
+        this.assertEqual(tile.numberText.textString, '0.9');
+        tile.countUp();
+        this.assertEqual(tile.numberText.textString, '1');
+        tile.countUp();
+        this.assertEqual(tile.numberText.textString, '2');
+    },
+    
+    testCountDown: function() {
+        var tile = new NumberTile();
+        tile.numberText.setTextString('2');
+        tile.countDown();
+        this.assertEqual(tile.numberText.textString, '1');
+        tile.countDown();
+        this.assertEqual(tile.numberText.textString, '0.9');
+        tile.countDown();
+        this.assertEqual(tile.numberText.textString, '0.8');
+    }
+});
+
 TestCase.subclass('LayoutTests', {
     
     setUp: function() {

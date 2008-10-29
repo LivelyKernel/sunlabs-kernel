@@ -1354,17 +1354,18 @@ MenuItem.subclass("SubListMenuItem", {
     
     showMenu: function(evt, originalMenu) {
         var target = originalMenu.targetMorph;
-        var menu = this.menu || new MenuMorph(this.getList(evt, target), target);
+        var menu = this.menu || new MenuMorph(this.getList(evt, target), target, originalMenu);
         var ownIndex = originalMenu.items.indexOf(this);
         var pos = pt(originalMenu.getPosition().x + originalMenu.listMorph.getExtent().x,
                      originalMenu.getPosition().y + originalMenu.listMorph.submorphs[ownIndex].getPosition().y);
-        menu.openIn(originalMenu.owner, pos, false, Object.inspect(target).truncate()); 
+        menu.openIn(originalMenu.owner, pos, false); 
         this.menu = menu;
     },
     
     closeMenu: function(evt, originalMenu) {
         if (!this.menu) return;
         this.menu.remove();
+        this.menu = null;
     }
 });
 
@@ -1392,7 +1393,7 @@ Morph.subclass("MenuMorph", {
     suppressHandles: true,
     focusHaloBorderWidth: 0,
     
-    initialize: function($super, items, targetMorph) {
+    initialize: function($super, items, targetMorph, ownerMenu) {
         // items is an array of menuItems, each of which is an array of the form
         // 	[itemName, target, functionName, parameterIfAny]
         // At mouseUp, the item will be executed as follows:
@@ -1425,6 +1426,7 @@ Morph.subclass("MenuMorph", {
         this.targetMorph = targetMorph || this;
         this.listMorph = null;
         this.applyStyle({fill: null, borderWidth: 0, fillOpacity: 0});
+        this.ownerMenu = ownerMenu;
     },
     onDeserialize: function() {
 	this.listMorph.relayMouseEvents(this);
@@ -1532,7 +1534,7 @@ Morph.subclass("MenuMorph", {
         if (captionIfAny) { // Still under construction
             var label = new TextMorph(new Rectangle(0, 0, 200, 20), captionIfAny);
             label.applyStyle(this.labelStyle);
-            label.fitText();
+            label.beLabel();
             label.align(label.bounds().bottomCenter(), this.listMorph.shape.bounds().topCenter());
             this.label = this.addMorph(label);
 	    this.label.setFill(new LinearGradient([Color.white, 1, Color.gray]));
@@ -1557,61 +1559,87 @@ Morph.subclass("MenuMorph", {
         }
     },
     
-    removeOnEvent: function(evt) {
-        for (var i = 0; i < this.items.length; i++)
-            this.items[i].isSubListMenuItem && this.items[i].closeMenu()
+    selectedItemIndex: function(evt) {
+        var target = this.listMorph.morphToReceiveEvent(evt);
+        var index = this.listMorph.submorphs.indexOf(target);
+        if (index === -1) return null;
+        return index;
+    },
+    
+    submenuItems: function() {
+        return this.items.select(function(ea) { return ea.isSubListMenuItem });
+    },
+    
+    handOverMenu: function(hand) {
+        return this.listMorph.bounds().containsPoint(this.localize(hand.getPosition()));
+    },
+    
+    setMouseFocus: function(evt) {
+        evt.hand.setMouseFocus(this);
+        evt.hand.setKeyboardFocus(this.listMorph);    
+    },
 
+    setMouseFocusOverSubmenu: function(evt) {
+        var submenuItem = this.submenuItems().detect(function(ea) { return ea.menu && ea.menu.handOverMenu(evt.hand) }) ;
+        if (!submenuItem) return;
+        submenuItem.menu.setMouseFocus(evt);
+    },
+    
+    setMouseFocusOverOwnerMenu: function(evt) {
+        if (this.ownerMenu && this.ownerMenu.handOverMenu(evt.hand))
+            this.ownerMenu.setMouseFocus(evt);
+    },
+    
+    setMouseFocusOverOwnerMenuOrSubMenu: function(evt) {
+        this.setMouseFocusOverOwnerMenu(evt);
+        this.setMouseFocusOverSubmenu(evt);
+    },
+        
+    removeOnEvent: function(evt) {
+        this.submenuItems().invoke('closeMenu');
         this.remove();
-        if (evt.hand.mouseFocus === this) {
-            evt.hand.setMouseFocus(null);
-        }
+        this.ownerMenu && this.ownerMenu.removeOnEvent(evt);
+        if (evt.hand.mouseFocus === this) evt.hand.setMouseFocus(null);
     },
 
     onMouseUp: function(evt) {
-        // console.log("menu got " + evt);
-        var target = this.listMorph.morphToReceiveEvent(evt);
-        var index = this.listMorph.submorphs.indexOf(target);
-	if (!this.invokeItemAtIndex(evt, index) && !this.stayUp) {
-	    evt.hand.setMouseFocus(this); // moved away, don't lose the focus
-	    evt.hand.setKeyboardFocus(this.listMorph);
-	}
+	if (!this.invokeItemAtIndex(evt, this.selectedItemIndex(evt)) && !this.stayUp)
+	    this.setMouseFocus(evt); // moved away, don't lose the focus
     },
 
     onMouseDown: function(evt) {
-        var target = this.listMorph.morphToReceiveEvent(evt);
-        var index = this.listMorph.submorphs.indexOf(target);
-        if (!(index in this.items) && !this.stayUp) { 
+        if (!this.selectedItemIndex(evt) && !this.stayUp)
             this.removeOnEvent(evt);
-        }
     },
 
     onMouseMove: function(evt) {
-        evt.hand.setMouseFocus(this);
-	evt.hand.setKeyboardFocus(this.listMorph);
-        var target = this.listMorph.morphToReceiveEvent(evt);
-        var index = this.listMorph.submorphs.indexOf(target);
-        if (!(index in this.items)) return;
+        if (!this.handOverMenu(evt.hand)) {
+            this.setMouseFocusOverOwnerMenuOrSubMenu(evt);
+            return;    
+        }
+
+       this.setMouseFocus(evt);
+
+        var index = this.selectedItemIndex(evt);
+        if (index === null) return;
         this.listMorph.highlightItem(evt, index, false);
         
-        for (var i = 0; i < this.items.length; i++)
-            if (i != index && this.items[i].isSubListMenuItem)
-                this.items[i].closeMenu();
-        if (!this.items[index].isSubListMenuItem) return;
-        this.items[index].showMenu(evt, this);
+        this.submenuItems().without(this.items[index]).invoke('closeMenu');
+        this.items[index].isSubListMenuItem && !this.items[index].menu && this.items[index].showMenu(evt, this);
         
-        evt.hand.setMouseFocus(this);
-	    evt.hand.setKeyboardFocus(this.listMorph);
+        this.setMouseFocus(evt);
     },
     
     // does not work
     onMouseOut: function(evt) {
-            console.log("mouse moved away ....");
+        console.log("mouse moved away ....");
+        this.setMouseFocusOverSubmenu(evt);
         if (this.stayUp) return;
         this.removeOnEvent(evt);
     },
     
     invokeItemAtIndex: function(evt, index) {
-	if (!(index in this.items)) return false;
+	if (index === null) return false;
         try {
 	    this.invokeItem(evt, this.items[index]);
         } finally {
