@@ -5302,12 +5302,12 @@ PasteUpMorph.subclass("WorldMorph", {
     	    res.fetch();
     	    }]
         ];
-        var menu = new MenuMorph([], this);
-        menu.addSubmenuItem(['Simple morphs', function() { return morphItems }]);
-        menu.addSubmenuItem(['Complex morphs', function() { return complexMorphItems }]);
-        menu.addSubmenuItem(['Tools', function() { return toolMenuItems }]);
-        menu.addSubmenuItem(['Tools', function() { return miscItems }]);
-        menu.openIn(this.world(), evt.point());
+        var items = [
+            ['Simple morphs', morphItems],
+            ['Complex morphs', complexMorphItems],
+            ['Tools', toolMenuItems],
+            ['Misc', miscItems]];
+        var menu = new MenuMorph(items, this).openIn(this.world(), evt.point());;
     },
     
     viewport: function() {

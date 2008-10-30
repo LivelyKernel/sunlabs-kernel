@@ -1339,11 +1339,12 @@ PseudoMorph.subclass('MenuItem', {
 
 });
 
-MenuItem.subclass("SubListMenuItem", {
+MenuItem.subclass("SubMenuItem", {
         
-    isSubListMenuItem: true,
+    isSubMenuItem: true,
     
-    initialize: function($super, name, closure) {
+    initialize: function($super, name, closureOrArray) {
+        var closure = Object.isArray(closureOrArray) ? function() { return closureOrArray } : closureOrArray;
         $super(name + ' ->', closure);    
     },
     
@@ -1420,8 +1421,10 @@ Morph.subclass("MenuMorph", {
         //     menu.openIn(world,location,stayUp,captionIfAny);
 	
         $super(pt(0, 0).extentAsRectangle(), "rect");
-        this.items = items.map(function(item) { 
-	    return this.addPseudoMorph(new MenuItem(item[0], item[1], item[2], item[3])); 
+        this.items = items.map(function(item) {
+            return this.addPseudoMorph(Object.isArray(item[1]) ?
+                    new SubMenuItem(item[0], item[1], item[2], item[3]) :
+                    new MenuItem(item[0], item[1], item[2], item[3])); 
 	}, this);
         this.targetMorph = targetMorph || this;
         this.listMorph = null;
@@ -1455,7 +1458,7 @@ Morph.subclass("MenuMorph", {
     },
 
     addSubmenuItem: function(item) {
-        var item = new SubListMenuItem(item[0], item[1], item[2], item[3]);
+        var item = new SubMenuItem(item[0], item[1], item[2], item[3]);
         this.items.push(this.addPseudoMorph(item));
     },
     
@@ -1567,7 +1570,7 @@ Morph.subclass("MenuMorph", {
     },
     
     submenuItems: function() {
-        return this.items.select(function(ea) { return ea.isSubListMenuItem });
+        return this.items.select(function(ea) { return ea.isSubMenuItem });
     },
     
     handOverMenu: function(hand) {
@@ -1608,7 +1611,7 @@ Morph.subclass("MenuMorph", {
     },
 
     onMouseDown: function(evt) {
-        if (!this.selectedItemIndex(evt) && !this.stayUp)
+        if (this.selectedItemIndex(evt) === null && !this.stayUp)
             this.removeOnEvent(evt);
     },
 
@@ -1625,7 +1628,7 @@ Morph.subclass("MenuMorph", {
         this.listMorph.highlightItem(evt, index, false);
         
         this.submenuItems().without(this.items[index]).invoke('closeMenu');
-        this.items[index].isSubListMenuItem && !this.items[index].menu && this.items[index].showMenu(evt, this);
+        this.items[index].isSubMenuItem && !this.items[index].menu && this.items[index].showMenu(evt, this);
         
         this.setMouseFocus(evt);
     },
