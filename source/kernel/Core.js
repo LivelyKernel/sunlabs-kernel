@@ -3042,7 +3042,7 @@ Morph.addMethods({
 	}
 	if (this.clipPath) {
 	    // console.log('clipped to new shape ' + this.shape);
-	    this.clipToShape();
+            this.clipToShape();
 	}
     },
 
@@ -5272,8 +5272,6 @@ PasteUpMorph.subclass("WorldMorph", {
             ["Console", function(evt) {world.addFramedMorph(new ConsoleWidget(50).buildView(pt(800, 100)), "Console", evt.point()); }],
             ["Object Hierarchy Browser", function(evt) { new ObjectBrowser().openIn(world, evt.point()); }],    
             ["TestRunner", function(evt) { new TestRunner().openIn(world, evt.point()); }],
-            ["Fabrik Component Box", function(evt) { Fabrik.openComponentBox(world, evt.point()); }],
-            ["TileScriptingBox", function(evt) { require('TileScripting.js').toRun(function() {new TileBox().openIn(world, evt.point()); }) }],
             ["OmetaWorkspace", function(evt) { new OmetaWorkspace().openIn(world, evt.point()); }],
     	    ["Call Stack Viewer", function(evt) { 
     		if (Config.debugExtras) lively.lang.Execution.showStack("use viewer");
@@ -5285,6 +5283,10 @@ PasteUpMorph.subclass("WorldMorph", {
     		var xeno = new XenoBrowserWidget('sample.xhtml');
     		xeno.openIn(world, evt.point()); 
     	    }]
+        ];
+        var scriptingMenuItems = [
+            ["TileScriptingBox", function(evt) { require('TileScripting.js').toRun(function() {new TileBox().openIn(world, evt.point()); }) }],
+            ["Fabrik Component Box", function(evt) { require('Fabrik.js').toRun(function() { Fabrik.openComponentBox(world, evt.point()); }) }]
         ];
         var miscItems = [
             ["New subworld (LinkMorph)", function(evt) { world.addMorph(new LinkMorph(null, evt.point()));}],  
@@ -5306,6 +5308,7 @@ PasteUpMorph.subclass("WorldMorph", {
             ['Simple morphs', morphItems],
             ['Complex morphs', complexMorphItems],
             ['Tools', toolMenuItems],
+            ['Scripting', scriptingMenuItems],
             ['Misc', miscItems]];
         var menu = new MenuMorph(items, this).openIn(this.world(), evt.point());;
     },

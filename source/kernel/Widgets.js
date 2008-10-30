@@ -1345,7 +1345,7 @@ MenuItem.subclass("SubMenuItem", {
     
     initialize: function($super, name, closureOrArray) {
         var closure = Object.isArray(closureOrArray) ? function() { return closureOrArray } : closureOrArray;
-        $super(name + ' ->', closure);    
+        $super(name + '...', closure);    
     },
     
     getList: function(evt, targetMorph) {
@@ -1621,8 +1621,6 @@ Morph.subclass("MenuMorph", {
             return;    
         }
 
-       this.setMouseFocus(evt);
-
         var index = this.selectedItemIndex(evt);
         if (index === null) return;
         this.listMorph.highlightItem(evt, index, false);
@@ -1630,10 +1628,9 @@ Morph.subclass("MenuMorph", {
         this.submenuItems().without(this.items[index]).invoke('closeMenu');
         this.items[index].isSubMenuItem && !this.items[index].menu && this.items[index].showMenu(evt, this);
         
-        this.setMouseFocus(evt);
     },
     
-    // does not work
+    // is not called
     onMouseOut: function(evt) {
         console.log("mouse moved away ....");
         this.setMouseFocusOverSubmenu(evt);
@@ -1674,7 +1671,7 @@ Morph.subclass("SliderMorph", {
 	var modelClass = this.selfModelClass;
         var model = new modelClass({}, {});
 	this.connectModel(model.newRelay({Value: "Value", SliderExtent: "SliderExtent"}));
-        this.scale = (scaleIfAny === undefined) ? 1.0 : scaleIfAny;
+        this.valueScale = (scaleIfAny === undefined) ? 1.0 : scaleIfAny;
         var slider = new Morph(new Rectangle(0, 0, this.mss, this.mss), "rect");
         slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});
         this.slider = this.addMorph(slider);
@@ -1813,11 +1810,11 @@ Morph.subclass("SliderMorph", {
     },
 
     getScaledValue: function() {
-        return (this.getValue() || 0) / this.scale; // FIXME remove 0
+        return (this.getValue() || 0) / this.valueScale; // FIXME remove 0
     },
 
     setScaledValue: function(value) {
-        return this.setValue(value * this.scale);
+        return this.setValue(value * this.valueScale);
     },
     
     takesKeyboardFocus: Functions.True,
@@ -2788,7 +2785,7 @@ Morph.subclass('WindowMorph', {
 	this.expandedExtent = null;
 	this.ignoreEventsOnExpand = false;
 	if (Config.useStatusBar) this.statusBar = this.addMorph(new StatusBarMorph(this.titleBar));
-	this.adjustForNewBounds();
+        // this.adjustForNewBounds();
         return this;
     },
 
@@ -2960,7 +2957,7 @@ Morph.subclass('WindowMorph', {
 	    this.statusBar.setExtent(pt(newWidth, this.statusBar.innerBounds().height));
 	}
         if (this.isCollapsed()) return;
-	this.targetMorph.setExtent(pt(newWidth, newHeight - titleHeight));
+        this.targetMorph.setExtent(pt(newWidth, newHeight - titleHeight));
         this.targetMorph.setPosition(bnds.topLeft().addXY(0, titleHeight));
     }
 
