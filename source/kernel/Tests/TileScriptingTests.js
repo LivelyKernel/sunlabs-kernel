@@ -223,6 +223,12 @@ TestCase.subclass('NumberTileTest', {
         this.assertEqual(tile.numberText.textString, '0.9');
         tile.countDown();
         this.assertEqual(tile.numberText.textString, '0.8');
+    },
+    
+    testAsJs: function() {
+        var tile = new NumberTile();
+        tile.numberText.setTextString('2');
+        this.assertEqual(tile.asJs(), '2');
     }
 });
 
@@ -292,7 +298,6 @@ TestCase.subclass('LayoutTests', {
         this.baseMorph.setPosition(pt(100,200));
         sut.layout();
         this.assertLeft(morph1, morph2);
-        sut.baseMorph.openInWorld();
         this.assertEqual(sut.baseMorph.getExtent(), pt(60, 40));
         this.assertSubmorphsDoNoOverlap(sut.baseMorph);
         this.assertMorphsInsideBounds(sut.baseMorph);

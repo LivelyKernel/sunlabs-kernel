@@ -142,7 +142,7 @@ Widget.subclass('TileBox', {
         var defaultCreateFunc = function(theClass, optExtent) {
             return new theClass(optExtent && optExtent.extentAsRectangle());
         };
-        [IfTile, DebugTile].each(function(ea) {
+        [IfTile, DebugTile, NumberTile].each(function(ea) {
             this.add(defaultCreateFunc.curry(ea), null, null, panel);
         }, this);
         
@@ -586,9 +586,13 @@ Tile.subclass('IfTile', {
 
 Tile.subclass('NumberTile', {
     
+    layoutSpec: {layouterClass: null, center: true},
+    eps: 0.001,
+    
     initialize: function($super, bounds) {
+        bounds = pt(50,20).extentAsRectangle();
         $super(bounds, "rect");
-        this.numberText = this.addMorph(new TextMorph(pt(20,20).extentAsRectangle(), '1').beLabel());
+        this.numberText = this.addMorph(new TextMorph(pt(30,20).extentAsRectangle(), '1').beLabel());
         this.addUpDownButtons();
         this.layout();
     },
@@ -601,23 +605,38 @@ Tile.subclass('NumberTile', {
 
     addUpDownButtons: function() {
         var extent = pt(10,10);
-        this.upButton = this.addMorph(new ButtonMorph(extent.extentAsRectangle()));
+        this.upButton = this.addMorph(new ButtonMorph(pt(25,5).extent(extent)));
+        this.upButton.setLabel('+');
         this.upButton.connectModel({model: this, setValue: "countUp"});
-        this.downButton = this.addMorph(new ButtonMorph(extent.extentAsRectangle()));
+        this.downButton = this.addMorph(new ButtonMorph(pt(38,5).extent(extent)));
+        this.downButton.setLabel('-');
         this.downButton.connectModel({model: this, setValue: "countDown"});
     },
     
-    countUp: function() {
+    countUp: function(btnVal) {
+        if (btnVal) return;
         var number = Number(this.numberText.textString);
-        number += number < 1 ? 0.1 : 1;
+        number *= 10;
+        number += Math.abs(number) < 10 ? 1 : 10;
+        number /= 10;
         this.numberText.setTextString(number.toString());
+        this.layout();
     },
     
-    countDown: function() {
+    countDown: function(btnVal) {
+        if (btnVal) return;
         var number = Number(this.numberText.textString);
-        number -= number > 1 ? 1 : 0.1;
+        number *= 10;
+        number -= Math.abs(number) > 10 ? 10 : 1;
+        number /= 10;
         this.numberText.setTextString(number.toString());
+        this.layout();
     },
+    
+    asJs: function() {
+        return this.numberText.textString;
+    }
+    
 });
 Morph.subclass('DropArea', {
 

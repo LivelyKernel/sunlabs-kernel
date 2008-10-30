@@ -258,6 +258,8 @@ TestCase.subclass('WikiNavigatorTest', {
 
 TestCase.subclass('FileDirectoryTest', {
     
+    shouldRun: false,
+    
     setUp: function() {
         this.url = URL.source.getDirectory();
         this.sut = new FileDirectory(this.url);

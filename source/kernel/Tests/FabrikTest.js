@@ -1610,10 +1610,10 @@ TestCase.subclass('FabrikConverterTest', {
     
     testStringArrayfromXMLElement: function() {
         var result = this.converter.xmlToStringArray(this.xmlForcastInfo);
-        var expected = [{string: '<forecast_information>', xml: this.xmlForcastInfo, js: {forecast_information: {city: "Berlin, Berlin", postal_code: "12685"}}},
-                        {string: '\t<city data="Berlin, Berlin"/>', xml: this.xmlForcastInfo.childNodes[0], js: {city: "Berlin, Berlin"}},
-                        {string: '\t<postal_code data="12685"/>', xml: this.xmlForcastInfo.childNodes[1], js: {postal_code: "12685"}},
-                        {string: '</forecast_information>', xml: this.xmlForcastInfo, js: {forecast_information: {city: "Berlin, Berlin", postal_code: "12685"}}}];
+        var expected = [{string: '<forecast_information>', xml: this.xmlForcastInfo, js: {forecast_information: {city: "Berlin, Berlin", postal_code: "12685"}}, isJSONConformant: true},
+                        {string: '\t<city data="Berlin, Berlin"/>', xml: this.xmlForcastInfo.childNodes[0], js: {city: "Berlin, Berlin"}, isJSONConformant: true},
+                        {string: '\t<postal_code data="12685"/>', xml: this.xmlForcastInfo.childNodes[1], js: {postal_code: "12685"}, isJSONConformant: true},
+                        {string: '</forecast_information>', xml: this.xmlForcastInfo, js: {forecast_information: {city: "Berlin, Berlin", postal_code: "12685"}}, isJSONConformant: true}];
         this.assertEqualState(expected, result, 'error');
     },
     
