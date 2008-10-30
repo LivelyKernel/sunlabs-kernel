@@ -5225,11 +5225,11 @@ PasteUpMorph.subclass("WorldMorph", {
         //console.log("mouse point == %s", evt.mousePoint);
 	// FIXME this boilerplate code should be abstracted somehow.
         var world = this.world();
-        var items = [
-            ["New subworld (LinkMorph)", function(evt) { world.addMorph(new LinkMorph(null, evt.point()));}],
+        var morphItems = [
             ["Line", function(evt) { var p = evt.point(); world.addMorph(Morph.makeLine([p, p.addXY(60, 30)], 2, Color.black));}],
             ["Rectangle", function(evt) { world.addMorph(new Morph(evt.point().extent(pt(60, 30)), "rect"));}],
             ["Ellipse", function(evt) { world.addMorph(new Morph(evt.point().extent(pt(50, 50)), "ellipse"));}],
+            ["TextMorph", function(evt) { world.addMorph(new TextMorph(evt.point().extent(pt(120, 10)), "This is a TextMorph"));}],
             ["Star", function(evt) { 
                 var makeStarVertices = function(r,center,startAngle) {
                     var vertices = [];
@@ -5245,7 +5245,6 @@ PasteUpMorph.subclass("WorldMorph", {
             	var widget = Morph.makePolygon(makeStarVertices(50,pt(0,0),0), 1, Color.black, Color.yellow);
             	widget.setPosition(evt.point());
                 world.addMorph(widget)}],
-            ["SliderMorph", function(evt) { world.addMorph(new SliderMorph(evt.point().extent(pt(120, 40))))}],
             ["Heart", function(evt) { 
                 var shape1 = [pt(0,0), pt(50,0), pt(50,50), pt(0,50), pt(0,0)];
                 var widget = new Morph(evt.point().extent(pt(100,100)),"path");
@@ -5254,16 +5253,9 @@ PasteUpMorph.subclass("WorldMorph", {
                 world.addMorph(widget);
                 document.getElementById(widget.id()).childNodes[0].setAttribute('d', "M0,0T48.25658178329468,-5.770838260650635T85.89215588569641,15.051417827606201T61.36309051513672,32.78068518638611T53.225199699401855,46.00089120864868T25.02833652496338,68.58267283439636T1.0328261852264404,40.347657918930054T0,0")
                 }],
-            ["TextMorph", function(evt) { world.addMorph(new TextMorph(evt.point().extent(pt(120, 10)), "This is a TextMorph"));}],
-            ["Class Browser", function(evt) { new SimpleBrowser().openIn(world, evt.point()); }],
-            ["Object Hierarchy Browser", function(evt) { new ObjectBrowser().openIn(world, evt.point()); }],    
-            ["TestRunner", function(evt) { new TestRunner().openIn(world, evt.point()); }],
-            ["Fabrik Component Box", function(evt) { Fabrik.openComponentBox(world, evt.point()); }],
-            ["TileScriptingBox", function(evt) { require('TileScripting.js').toRun(function() {new TileBox().openIn(world, evt.point()); }) }],
-            ["OmetaWorkspace", function(evt) { new OmetaWorkspace().openIn(world, evt.point()); }],
-	    ["Call Stack Viewer", function(evt) { 
-		if (Config.debugExtras) lively.lang.Execution.showStack("use viewer");
-		else new StackViewer(this).openIn(world, evt.point()); }],    
+        ];
+        var complexMorphItems =  [
+            ["SliderMorph", function(evt) { world.addMorph(new SliderMorph(evt.point().extent(pt(120, 40))))}],
             ["Clock", function(evt) {
                 var m = world.addMorph(new ClockMorph(evt.point(), 50));
                 m.startSteppingScripts(); }],
@@ -5271,36 +5263,51 @@ PasteUpMorph.subclass("WorldMorph", {
                 module('Main.js').requires('Examples.js').toRun(function() {
                     var m = new PianoKeyboard(evt.point());
                     m.scaleBy(1.5);  m.rotateBy(-0.2);
-    				world.addMorph(m)})}],
-
-	    ["Console", function(evt) {
-		world.addFramedMorph(new ConsoleWidget(50).buildView(pt(800, 100)), "Console", evt.point());
-	    }],
+                    world.addMorph(m)})
+             }],
+        ];
+        var toolMenuItems = [
+            ["Class Browser", function(evt) { new SimpleBrowser().openIn(world, evt.point()); }],
+            ["File Browser", function(evt) { new FileBrowser().openIn(world, evt.point()) }],
+            ["Console", function(evt) {world.addFramedMorph(new ConsoleWidget(50).buildView(pt(800, 100)), "Console", evt.point()); }],
+            ["Object Hierarchy Browser", function(evt) { new ObjectBrowser().openIn(world, evt.point()); }],    
+            ["TestRunner", function(evt) { new TestRunner().openIn(world, evt.point()); }],
+            ["Fabrik Component Box", function(evt) { Fabrik.openComponentBox(world, evt.point()); }],
+            ["TileScriptingBox", function(evt) { require('TileScripting.js').toRun(function() {new TileBox().openIn(world, evt.point()); }) }],
+            ["OmetaWorkspace", function(evt) { new OmetaWorkspace().openIn(world, evt.point()); }],
+    	    ["Call Stack Viewer", function(evt) { 
+    		if (Config.debugExtras) lively.lang.Execution.showStack("use viewer");
+    		else new StackViewer(this).openIn(world, evt.point()); }],    
             ["FrameRateMorph", function(evt) {
                 var m = world.addMorph(new FrameRateMorph(evt.point().extent(pt(160, 10)), "FrameRateMorph"));
                 m.startSteppingScripts(); }],
-	    ["XHTML Browser", function(evt) { 
-		var xeno = new XenoBrowserWidget('sample.xhtml');
-		xeno.openIn(world, evt.point()); 
-	    }],
-	    ["External link", function(evt) { world.addMorph(new ExternalLinkMorph(URL.source.toString(), evt.point()));}],
-
+    	    ["XHTML Browser", function(evt) { 
+    		var xeno = new XenoBrowserWidget('sample.xhtml');
+    		xeno.openIn(world, evt.point()); 
+    	    }]
         ];
-        items.push(["File Browser", function(evt) { new FileBrowser().openIn(world, evt.point()) }]);
-	// FIXME this is hardcoded, remove later, shows how Subversion can be accessed directly.
-	items.push(["Model documentation", function(evt) { 
-	    var url = URL.common.project.withRelativePath("/index.fcgi/wiki/NewModelProposal?format=txt");
-	    var model = Record.newPlainInstance({URL: url,  ContentText: null});
-	    world.addTextWindow({
-		content: "fetching ... ",
-		title: "Model documentation",
-		plug: model.newRelay({Text: "-ContentText"}),
-		position: "center"
-	    });
-	    var res = new Resource(model);
-	    res.fetch();
-	}]);
-        new MenuMorph(items, this).openIn(this.world(), evt.point());
+        var miscItems = [
+            ["New subworld (LinkMorph)", function(evt) { world.addMorph(new LinkMorph(null, evt.point()));}],  
+	    ["External link", function(evt) { world.addMorph(new ExternalLinkMorph(URL.source.toString(), evt.point()));}],
+	    ["Model documentation", function(evt) { // FIXME this is hardcoded, remove later, shows how Subversion can be accessed directly.
+    	        var url = URL.common.project.withRelativePath("/index.fcgi/wiki/NewModelProposal?format=txt");
+    	        var model = Record.newPlainInstance({URL: url,  ContentText: null});
+    	        world.addTextWindow({
+    		    content: "fetching ... ",
+    		    title: "Model documentation",
+    		    plug: model.newRelay({Text: "-ContentText"}),
+    		    position: "center"
+    	        });
+    	    var res = new Resource(model);
+    	    res.fetch();
+    	    }]
+        ];
+        var menu = new MenuMorph([], this);
+        menu.addSubmenuItem(['Simple morphs', function() { return morphItems }]);
+        menu.addSubmenuItem(['Complex morphs', function() { return complexMorphItems }]);
+        menu.addSubmenuItem(['Tools', function() { return toolMenuItems }]);
+        menu.addSubmenuItem(['Tools', function() { return miscItems }]);
+        menu.openIn(this.world(), evt.point());
     },
     
     viewport: function() {
