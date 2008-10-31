@@ -2826,7 +2826,7 @@ Morph.addMethods({
 	    var n = helperNodes[i];
 	    n.parentNode.removeChild(n);
 	}
-    },
+    }
     
 });
 
@@ -2846,6 +2846,10 @@ Object.extend(Morph, {
 	    this.changed(); 
 	    return result;
 	}
+    },
+
+    fromLiteral: function(literal) {
+	return new Morph(literal.bounds, literal.shape);
     }
 
 });
