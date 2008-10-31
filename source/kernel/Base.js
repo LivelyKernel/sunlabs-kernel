@@ -114,7 +114,7 @@ function module(moduleName, context) {
     function createUri(moduleName) {
         var baseUrl = document.baseURI;  // FIXME depends on 'Document'
         var url = baseUrl.substring(0, baseUrl.lastIndexOf('/') + 1)
-        url += isNamespaceAwareModule(moduleName) ? moduleName.substr(namespacePrefix.length) + '.js' : moduleName;
+        url += isNamespaceAwareModule(moduleName) ? moduleName.substr(namespacePrefix.length).replace(/\./, '/') + '.js' : moduleName;
         dbgOn('http://localhost/lively/js.js' === url);
         return url;
     }

@@ -1,5 +1,5 @@
 
-module('lively.Tests.TileScriptingTests').requires('TileScripting.js').toRun(function(thisModule) {
+module('lively.Tests.TileScriptingTests').requires('lively.TileScripting').toRun(function(thisModule) {
 
 TestCase.subclass('ScriptEnvironmentTest', {
     // testRunScript: function() {
