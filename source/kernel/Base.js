@@ -95,10 +95,10 @@ function module(moduleName, context) {
         return moduleName.startsWith(namespacePrefix);
     }
     
-    function createNamespaceModule() {
+    function createNamespaceModule(moduleName) {
         context = context || Global;
         var namespaceIdentifier = moduleName;
-        if (!isNamespaceAwareModule(moduleName)) {
+        if (!isNamespaceAwareModule(moduleName)) { // convert relative url to namespace identifier
             namespaceIdentifier = namespacePrefix + namespaceIdentifier;
             namespaceIdentifier = namespaceIdentifier.replace(/\//, '.');
             namespaceIdentifier = namespaceIdentifier.substring(0, namespaceIdentifier.lastIndexOf('.')); // get rid of '.js'
@@ -120,7 +120,7 @@ function module(moduleName, context) {
     }
 
     function waitFor(module, requiredModules) {
-	if (!PendingRequirements[module]){
+	if (!PendingRequirements[module]) {
             PendingRequirements[module] = requiredModules;
             return;
 	}
@@ -145,7 +145,7 @@ function module(moduleName, context) {
 
     dbgOn(!Object.isString(moduleName));
 
-    var module = createNamespaceModule();
+    var module = createNamespaceModule(moduleName);
     module.uri = createUri(moduleName);
     // if (PendingRequirements[module.uri]) throw dbgOn(new Error('Module already exisiting ' + module.uri));
     PendingRequirements[module.uri] = 0;  // FIXME get rid of that Singleton, track pending requirements via module

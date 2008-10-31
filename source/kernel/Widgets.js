@@ -738,6 +738,7 @@ TextMorph.subclass("CheapListMorph", {
 
     maxSafeSize: 4e4,  // override max for subsequent updates
     formals: ["List", "Selection", "-DeletionConfirmation", "+DeletionRequest"],
+    padding: Rectangle.inset(0, 0),
     
     initialize: function($super, initialBounds, itemList) {
         // itemList is an array of strings
