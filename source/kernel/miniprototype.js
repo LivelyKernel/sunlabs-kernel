@@ -226,14 +226,6 @@ var Enumerable = {
     return this;
   },
 
-  eachSlice: function(number, iterator, context) {
-    iterator = iterator ? iterator.bind(context) : Prototype.K;
-    var index = -number, slices = [], array = this.toArray();
-    while ((index += number) < array.length)
-      slices.push(array.slice(index, index+number));
-    return slices.collect(iterator, context);
-  },
-
   all: function(iterator, context) {
     iterator = iterator ? iterator.bind(context) : Prototype.K;
     var result = true;
@@ -313,16 +305,9 @@ var Enumerable = {
     return found;
   },
 
-  inGroupsOf: function(number, fillWith) {
-    fillWith = fillWith === undefined ? null : fillWith;
-    return this.eachSlice(number, function(slice) {
-      while(slice.length < number) slice.push(fillWith);
-      return slice;
-    });
-  },
 
   inject: function(memo, iterator, context) {
-    iterator = iterator.bind(context);
+      iterator = iterator.bind(context);
     this.each(function(value, index) {
       memo = iterator(memo, value, index);
     });
@@ -421,15 +406,14 @@ var Enumerable = {
 };
 
 Object.extend(Enumerable, {
-  map:     Enumerable.collect,
   find:    Enumerable.detect,
   select:  Enumerable.findAll,
   filter:  Enumerable.findAll,
   member:  Enumerable.include,
   entries: Enumerable.toArray,
-  every:   Enumerable.all,
-  some:    Enumerable.any
+
 });
+
 function $A(iterable) {
   if (!iterable) return [];
   if (iterable.toArray) return iterable.toArray();
@@ -441,6 +425,14 @@ function $A(iterable) {
 Array.from = $A;
 
 Object.extend(Array.prototype, Enumerable);
+
+Object.extend(Enumerable, { 
+    // Lively:  we add these functions after Array is extended with Enumerable, b/c JS Arrays already have these natively
+    map:     Enumerable.collect, 
+    every:   Enumerable.all, 
+    some:    Enumerable.any 
+});
+
 
 if (!Array.prototype._reverse) Array.prototype._reverse = Array.prototype.reverse;
 
