@@ -15,7 +15,7 @@ function dbgOn(cond, optMessage) {
     return cond;
 }
 
-// namespace logic adapted frm
+// namespace logic adapted from
 // http://higher-order.blogspot.com/2008/02/designing-clientserver-web-applications.html
 function using() {
     var args = arguments; // FIXME: enable using('lively.text')
@@ -72,25 +72,51 @@ var PendingRequirements = {};
 
 // Semaphore functions
 function moduleLoaded(module) {
+    // the module is loaded, so remove it from the PendingRequirements list
     console.log('declaring ' + module + ' as loaded');
     Object.keys(PendingRequirements)
         .select(function(ea) { return Object.isArray(PendingRequirements[ea]) })
-        .each(function(ea) {
-        if (PendingRequirements[ea])
-            PendingRequirements[ea] = PendingRequirements[ea].without(module);
-    });
+        .each(function(ea) { PendingRequirements[ea] = PendingRequirements[ea].without(module) });
 };
 // FIXME depends on 'Document' and Loader
 function noPendingRequirements(module) {
     if (!PendingRequirements[module]) return true;
-    
     if (PendingRequirements[module].any(function(ea) { document.getElementById(module) && !Loader.wasLoaded[module] }))
         return false;
 
     return PendingRequirements[module].length == 0;
 };
 
-function module(moduleName) {
+function module(moduleName, context) {
+
+    var namespacePrefix = 'lively.';
+    
+    function isNamespaceAwareModule() {
+        return moduleName.startsWith(namespacePrefix);
+    }
+    
+    function createNamespaceModule() {
+        context = context || Global;
+        var namespaceIdentifier = moduleName;
+        if (!isNamespaceAwareModule()) {
+            namespaceIdentifier = namespacePrefix + namespaceIdentifier;
+            namespaceIdentifier = namespaceIdentifier.replace(/\//, '.');
+            namespaceIdentifier = namespaceIdentifier.substring(0, namespaceIdentifier.lastIndexOf('.')); // get rid of '.js'
+        }
+        namespace(namespaceIdentifier, context);
+        
+        var parts = namespaceIdentifier.split('.')
+        var module = parts.inject(context, function(context, namespace) { return context[namespace] });
+        module.namespaceIdentifier = namespaceIdentifier; // FIXME just for now...
+        return module;
+    }
+    
+    function createUri(moduleName) {
+        var baseUrl = document.baseURI;  // FIXME depends on 'Document'
+        var url = baseUrl.substring(0, baseUrl.lastIndexOf('/') + 1)
+        url += isNamespaceAwareModule() ? moduleName.substr(namespacePrefix.length) + '.js' : moduleName;
+        return url;
+    }
 
     function waitFor(module, requiredModules) {
 	if (!PendingRequirements[module]){
@@ -100,24 +126,30 @@ function module(moduleName) {
 	PendingRequirements[module] = PendingRequirements[module].concat(requiredModules);
     }
 
-    function basicRequire(/*ownModuleName, requiredModuleNameOrAnArray, anotherRequiredModuleName, ...*/) {
+    function basicRequire(/*module, requiredModuleNameOrAnArray, anotherRequiredModuleName, ...*/) {
 	var args = $A(arguments);    
-	var ownModuleName = args.shift();
-	var preReqModuleNames = Object.isArray(args[0]) ? args[0] : args;
+	var module = args.shift();
+	var preReqModuleNames = Object.isArray(args[0]) ? args[0] : args; // support modulenames as array and parameterlist
 	var requiredModuleNames = [];
 	for (var i = 0; i < preReqModuleNames.length; i++) {
-            requiredModuleNames[i] = preReqModuleNames[i];
+            requiredModuleNames[i] = createUri(preReqModuleNames[i]);
 	}
 	
-	waitFor(ownModuleName, requiredModuleNames);
+	waitFor(module.uri, requiredModuleNames);
 	return {toRun: function(code) {
-            code = code.curry(ownModuleName); // pass in the own module name for nested requirements
-            Loader.loadScripts(requiredModuleNames, onModuleLoad.curry(ownModuleName, code));
+            code = code.curry(module); // pass in own module name for nested requirements
+            Loader.loadScripts(requiredModuleNames, onModuleLoad.curry(module.uri, code));
 	}};
     };
 
-    PendingRequirements[moduleName] = 0;
-    return {requires: basicRequire.curry(moduleName)};
+    dbgOn(!Object.isString(moduleName));
+
+    var module = createNamespaceModule();
+    module.uri = createUri(moduleName);
+    // if (PendingRequirements[module.uri]) throw dbgOn(new Error('Module already exisiting ' + module.uri));
+    PendingRequirements[module.uri] = 0;  // FIXME get rid of that Singleton, track pending requirements via module
+    module.requires = basicRequire.curry(module);
+    return module;
 };
     
 function require(/*requiredModuleNameOrAnArray, anotherRequiredModuleName, ...*/) {
@@ -579,7 +611,7 @@ function getStack() {
     var result = [];
     for(var caller = arguments.callee.caller; caller; caller = caller.caller) {
         if (result.indexOf(caller) != -1) {
-           result.push({name: "recursive call cant be traced"});
+           result.push({name: "recursive call can't be traced"});
            break;
         }
         result.push(caller);

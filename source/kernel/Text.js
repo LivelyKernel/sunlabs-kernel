@@ -12,10 +12,8 @@
  * Text.js.  Text-related functionality.
  */
 
-namespace('lively.text');
-
-using(lively.text).run(function(module) {
-
+module('lively.text').requires().toRun(function(module) {
+        
 Object.subclass('lively.text.CharacterInfo', {
     // could simply use Point as extent.
     documentation: "simple printable info about a character's extent",

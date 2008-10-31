@@ -217,7 +217,7 @@ function populateWorldWithExamples(world) {
     if (Config.showTesterRunnerForDevelopment) {
         require('TestFramework.js').toRun(function(currentModule) {
             var tests = Config.loadTests.collect(function(ea) { return 'Tests/' + ea + '.js'});
-            module(currentModule).requires(tests).toRun(function() {
+            currentModule.requires(tests).toRun(function() {
                 TestRunner.openIn();
                 console.log('Tests loaded: .............................  ' + TestCase.allSubclasses().length);
             });
@@ -413,7 +413,7 @@ function populateWorldWithExamples(world) {
             require('TestFramework.js').toRun(function(currentModule) {
                 // Just show a few of our various tests
                 var tests = ['Tests/FabrikTest.js', 'Tests/TestFrameworkTests.js']
-                module(currentModule).requires(tests).toRun(function() {
+                currentModule.requires(tests).toRun(function() {
                     TestRunner.openIn(devWorld.myWorld, pt(500, 100))
                 });
             });
