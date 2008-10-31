@@ -2929,11 +2929,11 @@ Global.FabrikConverter = {
         
         if (!xml || xml instanceof DocumentType) return [];
         if (!xml.parentNode) return FabrikConverter.xmlToStringArray(xml.firstChild, indent); // omit root
-        if (!xml.hasChildNodes()) return [objCreator(indent + xmlToString(xml), xml)];
+        if (!xml.hasChildNodes()) return [objCreator(indent + Exporter.stringify(xml), xml)];
         var list = $A(xml.childNodes).inject([], function(all, ea) {
             return all.concat(FabrikConverter.xmlToStringArray(ea, indent + '\t')) });
         // get just the tag opener and closer for the string
-        var ownXMLStrings = /(<.*?>).*(<.*?>)/.exec(xmlToString(xml));
+        var ownXMLStrings = /(<.*?>).*(<.*?>)/.exec(Exporter.stringify(xml));
         list.unshift(objCreator(indent + ownXMLStrings[1], xml));
         list.push(objCreator(indent + ownXMLStrings[2], xml));
         return list;

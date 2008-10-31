@@ -432,7 +432,7 @@ var Converter = {
 	var value = baseObj[key];
 	if (value instanceof Wrapper) return value.uri();
 	if (value instanceof Document || value instanceof Element || value instanceof DocumentType)
-        return JSON.serialize({XML: new XMLSerializer().serializeToString(value)});
+        return JSON.serialize({XML: Exporter.stringify(value)});
 	return value;
     },
 
@@ -441,7 +441,7 @@ var Converter = {
 	if (!value) return value;
         if (!value.nodeType) return value;
         if (value.nodeType !== document.DOCUMENT_NODE && value.nodeType !== document.DOCUMENT_TYPE_NODE)
-            return JSON.serialize({XML: new XMLSerializer().serializeToString(value)});
+            return JSON.serialize({XML: Exporter.stringify(value)});
         throw new Error('Cannot store Document/DocumentType'); // to be removed
     },
     

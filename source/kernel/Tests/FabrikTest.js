@@ -1619,13 +1619,13 @@ TestCase.subclass('FabrikConverterTest', {
     
     testCompatibilityOfConverterWhenWritingXML: function() {
         var json = Converter.toJSONAttribute(this.xmlLeaf);
-        this.assertEqual(JSON.unserialize(unescape(json)), JSON.serialize({XML: xmlToString(this.xmlLeaf)}), 'Converter did not convert xml to string');
+        this.assertEqual(JSON.unserialize(unescape(json)), JSON.serialize({XML: Exporter.stringify(this.xmlLeaf)}), 'Converter did not convert xml to string');
     },
     
     testCompatibilityOfConverterWhenWritingStringXMLArray: function() {
         var json = Converter.toJSONAttribute(this.converter.xmlToStringArray(this.xmlForcastInfo));
         console.log('Result: -------- ' + unescape(json));
-        // this.assertEqual(unescape(json), xmlToString(this.xmlLeaf), 'Converter did not convert xml to string');
+        // this.assertEqual(unescape(json), Exporter.stringify(this.xmlLeaf), 'Converter did not convert xml to string');
     },
     
     testCompatibilityOfConverterWhenUnserializingXML: function() {

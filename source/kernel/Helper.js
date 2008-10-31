@@ -125,9 +125,6 @@ Global.logObject = function(obj) {
     console.log(printObject(obj))
 }
 
-Global.xmlToString = function(xml) {
-    return new XMLSerializer().serializeToString(xml);
-}
 
 Global.stringToXML = function(string) {
     return new DOMParser().parseFromString(string, "text/xml");
