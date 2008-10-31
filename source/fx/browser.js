@@ -46,7 +46,7 @@ Object.extend(fx, {
     Ellipse: Packages.java.awt.geom.Ellipse2D.Double,
     Point: Packages.java.awt.geom.Point2D.Double,
     RoundedRectangle: Packages.java.awt.geom.RoundRectangle2D.Double,
-    Rectangle: Packages.java.awt.geom.Rectangle2D.Double,
+    Rectangle: Packages.com.sun.scenario.scenegraph.SGRectangle,
     Font: Packages.java.awt.Font,
     Path: Packages.java.awt.geom.GeneralPath,
     Color: Packages.java.awt.Color,
@@ -610,9 +610,12 @@ fx.dom.renderers[SVGGElement.tagName] = function(element, attribute) {
 		var clipRect = clips.item(0);
 		var save = fxObj;
 		var fxObj = new fx.Clip();
-		var rect = new fx.Rectangle(clipRect.x.baseVal.value, clipRect.y.baseVal.value,
-		    clipRect.width.baseVal.value, clipRect.height.baseVal.value);
-		fxObj.setShape(rect);
+		var rect = new fx.Rectangle();
+		rect.setX(clipRect.x.baseVal.value);
+		rect.setY(clipRect.y.baseVal.value);
+		rect.setWidth(clipRect.width.baseVal.value);
+		rect.setHeight(clipRect.height.baseVal.value);
+		fxObj.setClipNode(rect);
 		fxObj.setChild(save);
 	    } else 
 		console.log("cannot deal with non-rect clip region");
