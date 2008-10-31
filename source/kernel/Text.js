@@ -1904,7 +1904,7 @@ TextMorph.addMethods({
 	    this.searchForFind(this.lastSearchString, this.lastFindLoc + this.lastSearchString.length);
     },
     doSearch: function() {
-        if (lively.tools.SourceControl) SourceControl.browseReferencesTo(this.getSelectionString()); 
+        if (lively.tools.SourceControl) lively.tools.SourceControl.browseReferencesTo(this.getSelectionString()); 
     },
     doDoit: function() {
         var strToEval = this.getSelectionString(); 

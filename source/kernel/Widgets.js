@@ -737,7 +737,7 @@ TextMorph.subclass("CheapListMorph", {
     borderColor: Color.black,
 
     maxSafeSize: 4e4,  // override max for subsequent updates
-    pins: ["List", "Selection", "-DeletionConfirmation", "+DeletionRequest"],
+    formals: ["List", "Selection", "-DeletionConfirmation", "+DeletionRequest"],
     
     initialize: function($super, initialBounds, itemList) {
         // itemList is an array of strings
@@ -752,7 +752,7 @@ TextMorph.subclass("CheapListMorph", {
 	this.setWrapStyle(text.WrapStyle.None);
         this.itemList = itemList;
         // this default self connection may get overwritten by, eg, connectModel()...
-        var model = new SyntheticModel(this.pins);
+        var model = new SyntheticModel(this.formals);
         this.modelPlug = new ModelPlug(model.makePlugSpec());
         this.setModelValue('setList', itemList);
         this.layoutChanged();
