@@ -12,7 +12,7 @@
  * Text.js.  Text-related functionality.
  */
 
-module('lively.text').requires().toRun(function(module) {
+module('lively.text').requires().toRun(function(thisModule) {
         
 Object.subclass('lively.text.CharacterInfo', {
     // could simply use Point as extent.
@@ -98,7 +98,7 @@ Object.subclass('lively.text.Font', {
 (function() {
     var cache = {};
     
-    Object.extend(module.Font, {
+    Object.extend(thisModule.Font, {
 	
 	forFamily: function(familyName, size, style) {
             var styleKey = 'n';
@@ -108,7 +108,7 @@ Object.subclass('lively.text.Font', {
 	    var key  = familyName + ":" + size + ":" + styleKey ;
             var entry = cache[key];
             if (entry) return entry;
-	    try { entry = new module.Font(familyName, size, style);
+	    try { entry = new thisModule.Font(familyName, size, style);
                 } catch(er) {
                     console.log("%s when looking for %s:%s", er, familyName, size);
                     return null;
@@ -123,7 +123,7 @@ Object.subclass('lively.text.Font', {
     
 if (Config.fakeFontMetrics) { 
     
-    module.Font.addMethods({
+    thisModule.Font.addMethods({
         // wer're faking here, b/c native calls don't seem to work
         computeExtents: function(family, size) {
 	    // adapted from the IE port branch
@@ -132,15 +132,15 @@ if (Config.fakeFontMetrics) {
 		var ch = String.fromCharCode(i);
 		switch (ch) {
                 case 'i': case 'I': case 'l': case 't': case '.': case ',': case '\'':
-                    //extents[i] = new module.CharacterInfo(size*0.245, size);
-		    extents[i] = new module.CharacterInfo(size*0.345, size);
+                    //extents[i] = new thisModule.CharacterInfo(size*0.245, size);
+		    extents[i] = new thisModule.CharacterInfo(size*0.345, size);
 		    break;
 		case 'M': case 'm': case 'W': case 'B': 
 		case 'w': case 'S': case 'D': case 'A': case 'H': case 'C': case 'E':
-                    extents[i] = new module.CharacterInfo(size*0.820, size);
+                    extents[i] = new thisModule.CharacterInfo(size*0.820, size);
 		    break;
 		default:
-                    extents[i] = new module.CharacterInfo(size*0.505, size);
+                    extents[i] = new thisModule.CharacterInfo(size*0.505, size);
 		    break;
                 }
             }
@@ -150,7 +150,7 @@ if (Config.fakeFontMetrics) {
     
 } else if (Config.fontMetricsFromHTML)  {
     
-module.Font.addMethods({
+thisModule.Font.addMethods({
 
     computeExtents: function(family, size) {
         var extents = [];
@@ -183,7 +183,7 @@ module.Font.addMethods({
         for (var i = 33; i < 255; i++) {
             var sub = d.appendChild(create("span"));
             sub.appendChild(doc.createTextNode(String.fromCharCode(i)));
-            extents[i] = new module.CharacterInfo(sub.offsetWidth,  sub.offsetHeight);
+            extents[i] = new thisModule.CharacterInfo(sub.offsetWidth,  sub.offsetHeight);
             if (i == xCode) xWidth = extents[i].width;
         }
 
@@ -204,9 +204,9 @@ module.Font.addMethods({
 
         // tjm: sanity check as Firefox seems to do this wrong with certain values
         if (spaceWidth > 100) {    
-            extents[(' '.charCodeAt(0))] = new module.CharacterInfo(2*xWidth/3, sub.offsetHeight);
+            extents[(' '.charCodeAt(0))] = new thisModule.CharacterInfo(2*xWidth/3, sub.offsetHeight);
         } else {
-            extents[(' '.charCodeAt(0))] = new module.CharacterInfo(spaceWidth, sub.offsetHeight);
+            extents[(' '.charCodeAt(0))] = new thisModule.CharacterInfo(spaceWidth, sub.offsetHeight);
         }
 
         //d.removeChild(span);
@@ -216,7 +216,7 @@ module.Font.addMethods({
 });
 } else if (Config.fontMetricsFromSVG)  {
     
-module.Font.addMethods({
+thisModule.Font.addMethods({
     
     computeExtents: function(family, size) {
         var extents = [];
@@ -236,7 +236,7 @@ module.Font.addMethods({
 	    var end = text.getEndPositionOfChar(i - b);
 	    var start = text.getStartPositionOfChar(i - b);
 	    var ext = text.getExtentOfChar(i - b);
-	    extents[i] = new module.CharacterInfo(end.x - start.x, start.y - ext.y);
+	    extents[i] = new thisModule.CharacterInfo(end.x - start.x, start.y - ext.y);
 	}
         canvas.removeChild(text);
 	return extents;
@@ -612,7 +612,7 @@ Object.subclass('lively.text.TextLine', {
 	    if (p == "align") this.alignment = v;
 	}.bind(this));
 	// console.log("adoptStyle/Font.forFamily" + fontFamily + fontSize + fontStyle + "; index = " + charIx);
-	this.currentFont = module.Font.forFamily(fontFamily, fontSize, fontStyle);
+	this.currentFont = thisModule.Font.forFamily(fontFamily, fontSize, fontStyle);
         this.spaceWidth = this.currentFont.getCharWidth(' ');
         this.tabWidth = this.spaceWidth * 4;
     },
@@ -810,7 +810,7 @@ var Locale = {
 };
 
 
-module.WrapStyle = Class.makeEnum([ 
+thisModule.WrapStyle = Class.makeEnum([ 
     "Normal",  // fits text to bounds width using word wrap and sets height
     "None", // simply sets height based on line breaks only
     "Shrink" // sets both width and height based on line breaks only
@@ -853,7 +853,7 @@ Morph.subclass("TextMorph");
 
 TextMorph.addProperties({
     StoredTextStyle: {name: "stored-style", from:Converter.fromJSONAttribute, to:Converter.toJSONAttribute },
-    Wrap: { name: "wrap", byDefault: module.WrapStyle.Normal },
+    Wrap: { name: "wrap", byDefault: thisModule.WrapStyle.Normal },
     Padding: { name: "padding", byDefault: String(Rectangle.inset(6, 4).toInsetTuple()) } // FIXME move to coercion funcions
 }, lively.data.DOMRecord);
 
@@ -911,7 +911,7 @@ TextMorph.addMethods({
             this.textContent = new lively.text.TextContent(importer, rawNode);   
             this.fontFamily = this.textContent.getTrait("font-family");
             this.fontSize = this.textContent.getLengthTrait("font-size");
-            this.font = module.Font.forFamily(this.fontFamily, this.fontSize);
+            this.font = thisModule.Font.forFamily(this.fontFamily, this.fontSize);
             this.textColor = new Color(Importer.marker, this.textContent.getTrait("fill"));
 	    return true;
 	} 
@@ -931,7 +931,7 @@ TextMorph.addMethods({
         $super(rect, "rect");
         // KP: note layoutChanged will be called on addition to the tree
         // DI: ... and yet this seems necessary!
-        if (this.textString instanceof module.Text) {
+        if (this.textString instanceof thisModule.Text) {
 	    this.textStyle = this.textString.style;
 	    this.setStoredTextStyle(this.textStyle);
 	    this.textString = this.textString.string || "";
@@ -977,7 +977,7 @@ TextMorph.addMethods({
     applyStyle: function($super, spec) { // no default actions, note: use reflection instead?
 	$super(spec);
 	if (spec.wrapStyle !== undefined) {
-	    if (spec.wrapStyle in module.WrapStyle) this.setWrapStyle(spec.wrapStyle);
+	    if (spec.wrapStyle in thisModule.WrapStyle) this.setWrapStyle(spec.wrapStyle);
 	    else console.log("unknown wrap style " + spec.wrapStyle);
 	}
 	if (spec.fontSize !== undefined) {
@@ -1010,8 +1010,8 @@ TextMorph.addMethods({
     
     setWrapStyle: function(style) {
 	// FIXME fold into coertion/validation, use just setWrap
-	if (!(style in module.WrapStyle)) { 
-	    console.log("unknown style " + style + " in " + module.WrapStyle);
+	if (!(style in thisModule.WrapStyle)) { 
+	    console.log("unknown style " + style + " in " + thisModule.WrapStyle);
 	    return; 
 	}
         if (style == TextMorph.prototype.getWrap()) {
@@ -1035,7 +1035,7 @@ TextMorph.addMethods({
     },
 
     beLabel: function() {
-	this.applyStyle({borderWidth: 0, fill: null, wrapStyle: module.WrapStyle.Shrink});
+	this.applyStyle({borderWidth: 0, fill: null, wrapStyle: thisModule.WrapStyle.Shrink});
 	this.ignoreEvents();
         // this.isAccepting = false;
         this.layoutChanged();
@@ -1045,7 +1045,7 @@ TextMorph.addMethods({
 
     beListItem: function() {
 	// specify padding, otherwise selection will overlap
-	this.applyStyle({borderWidth: 0, fill: null, wrapStyle: module.WrapStyle.None, padding: Rectangle.inset(4, 0)});
+	this.applyStyle({borderWidth: 0, fill: null, wrapStyle: thisModule.WrapStyle.None, padding: Rectangle.inset(4, 0)});
 	this.ignoreEvents();
 	this.suppressHandles = true;
 	this.acceptInput = false;
@@ -1119,7 +1119,7 @@ TextMorph.addMethods({
             {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
         // some eye candy for the help
 	this.linkToStyles(['helpText']);
-	this.setWrapStyle(module.WrapStyle.Shrink);
+	this.setWrapStyle(thisModule.WrapStyle.Shrink);
         this.openForDragAndDrop = false; // so it won't interfere with mouseovers
         return this;
     },
@@ -1179,7 +1179,7 @@ TextMorph.addMethods({
     resetRendering: function() {
 	this.textContent.replaceRawNodeChildren(null);
 	this.textContent.setFill(String(this.textColor));
-        this.font = module.Font.forFamily(this.fontFamily, this.fontSize);
+        this.font = thisModule.Font.forFamily(this.fontFamily, this.fontSize);
         this.font.applyTo(this.textContent);
         this.lines = null;
         this.lineNumberHint = 0;
@@ -1286,13 +1286,13 @@ TextMorph.addMethods({
 
     compositionWidth: function() {
 	var padding = this.getPaddingStyle();
-        if (this.getWrap() == module.WrapStyle.Normal) return this.shape.bounds().width - padding.left() - padding.right();
+        if (this.getWrap() == thisModule.WrapStyle.Normal) return this.shape.bounds().width - padding.left() - padding.right();
         else return 9999; // Huh??
     },
 
     // DI: Should rename fitWidth to be composeLineWrap and fitHeight to be composeWordWrap
     fitText: function() { 
-        if (this.getWrap() == module.WrapStyle.Normal) this.fitHeight();
+        if (this.getWrap() == thisModule.WrapStyle.Normal) this.fitHeight();
         else this.fitWidth();
     },
 
@@ -1366,9 +1366,9 @@ TextMorph.addMethods({
 
         // DI: This should just say, eg, this.shape.setBottomRight(bottomRight);
 	var b = this.shape.bounds();
-        if (this.getWrap() == module.WrapStyle.None) {
+        if (this.getWrap() == thisModule.WrapStyle.None) {
             this.shape.setBounds(b.withHeight(bottomRight.y - b.y));
-        } else if (this.getWrap() == module.WrapStyle.Shrink) {
+        } else if (this.getWrap() == thisModule.WrapStyle.Shrink) {
             this.shape.setBounds(b.withBottomRight(bottomRight));
         }
 
@@ -1574,7 +1574,7 @@ TextMorph.addMethods({
     getSelectionText: function() {
 	return this.textStyle ? 
 	    this.getRichText().subtext(this.selectionRange[0], this.selectionRange[1] + 1)
-	    : new module.Text(this.getSelectionString());
+	    : new thisModule.Text(this.getSelectionString());
     },
 
     // FIXME integrate into model of TextMorph
@@ -1586,7 +1586,7 @@ TextMorph.addMethods({
     },
     
     getRichText: function() {
-        return new module.Text(this.textString, this.textStyle); 
+        return new thisModule.Text(this.textString, this.textStyle); 
     },
 
     replaceSelectionWith: function(replacement, delayComposition, justMoreTyping) {
@@ -2036,7 +2036,7 @@ TextMorph.addMethods({
 
     emphasizeSelection: function(emph) {
 	if (this.hasNullSelection()) return;
-	var txt = new module.Text(this.textString, this.textStyle);
+	var txt = new thisModule.Text(this.textString, this.textStyle);
 	txt.emphasize(emph, this.selectionRange[0], this.selectionRange[1]);
 	this.textStyle = txt.style;
 	this.setStoredTextStyle(this.textStyle);
@@ -2126,7 +2126,7 @@ TextMorph.addMethods({
     
     setFontFamily: function(familyName) {
         this.fontFamily = familyName;
-        this.font = module.Font.forFamily(this.fontFamily, this.fontSize);
+        this.font = thisModule.Font.forFamily(this.fontFamily, this.fontSize);
         this.layoutChanged();
         this.changed();
     },
@@ -2137,7 +2137,7 @@ TextMorph.addMethods({
 	if (newSize == this.fontSize && this.font)  // make sure this.font is inited
 	    return;
         this.fontSize = newSize;
-        this.font = module.Font.forFamily(this.fontFamily, newSize);
+        this.font = thisModule.Font.forFamily(this.fontFamily, newSize);
         this.setPaddingStyle(Rectangle.inset(newSize/2 + 2, newSize/3));
         this.layoutChanged();
         this.changed();
@@ -2319,14 +2319,14 @@ Morph.subclass('LabeledTextMorph', {
         var label = new TextMorph(this.labelOffset.asRectangle(), labelString);
         label.beLabel();
         label.applyStyle({borderWidth: 0, fontSize: 11, fill: Color.veryLightGray,
-                          wrapStyle: module.WrapStyle.Shrink, padding: Rectangle.inset(1)});
+                          wrapStyle: thisModule.WrapStyle.Shrink, padding: Rectangle.inset(1)});
         label.setBounds(label.bounds()); // set the bounds again, when padding is changed, otherwise they would be wrong
         this.addMorphFront(label);
         
         /* configure the text */
         var textPos = pt(0,label.getExtent().y/2);
         var text = new TextMorph(textPos.extent(rect.extent()), textString);
-        text.applyStyle({wrapStyle: module.WrapStyle.Normal, borderColor: Color.veryLightGray.darker().darker(),
+        text.applyStyle({wrapStyle: thisModule.WrapStyle.Normal, borderColor: Color.veryLightGray.darker().darker(),
                          padding: text.getPaddingStyle().withY(label.bounds().height / 2)});
         this.addMorphBack(text);
         text.composeAfterEdits = text.composeAfterEdits.wrap(function(proceed) {
@@ -2573,15 +2573,15 @@ Object.subclass('lively.text.Text', {
     },
     substring: function (start, stop) {
 	// Return a substring with its emphasis as a Text
-	return new module.Text(this.string.substring(start, stop), this.style.slice(start, stop));
+	return new thisModule.Text(this.string.substring(start, stop), this.style.slice(start, stop));
     },
     subtext: function (start, stop) {
 	// Return a substring with its emphasis as a Text
-	return new module.Text(this.string.substring(start, stop), this.style.slice(start, stop));
+	return new thisModule.Text(this.string.substring(start, stop), this.style.slice(start, stop));
     },
     concat: function (other) {
 	// Modify the style of this text according to emph
-	return new module.Text(this.string.concat(other.string), this.style.concat(other.style));
+	return new thisModule.Text(this.string.concat(other.string), this.style.concat(other.style));
     },
     toString: function() {
 	return "Text for " + this.string + "<" + this.style + ">";

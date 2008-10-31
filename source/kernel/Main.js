@@ -246,7 +246,7 @@ function populateWorldWithExamples(world) {
     //openOmetaWorkspace();
 
     if (Config.activateTileScripting)
-        require('TileScripting.js').toRun(function() { TileBox.open() });
+        require('TileScripting.js').toRun(function() { lively.TileScripting.TileBox.open() });
         
     // add to Link?
     function addLinkLabel(link, text) {

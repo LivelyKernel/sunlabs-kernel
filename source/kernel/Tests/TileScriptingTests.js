@@ -1,5 +1,5 @@
 
-module('Tests/TileScriptingTests.js').requires('TileScripting.js').toRun(function() {
+module('lively.Tests.TileScriptingTests').requires('TileScripting.js').toRun(function(thisModule) {
 
 TestCase.subclass('ScriptEnvironmentTest', {
     // testRunScript: function() {
@@ -15,8 +15,8 @@ TestCase.subclass('ScriptEnvironmentTest', {
 TestCase.subclass('TileHolderTest', {
     
     testAddNewDropWhenExistingOneWasUsed: function() {
-        var holder = new TileHolder(pt(50,50).extentAsRectangle());
-        var tile = new Tile();
+        var holder = new lively.TileScripting.TileHolder(pt(50,50).extentAsRectangle());
+        var tile = new lively.TileScripting.Tile();
         
         this.assertEqual(holder.submorphs.length, 1, 'More or less than one submorph');
         this.assert(holder.submorphs[0].isDropArea, 'No DropArea');
@@ -27,9 +27,9 @@ TestCase.subclass('TileHolderTest', {
     },
     
     testTilesAsJs: function() {
-        var holder = new TileHolder(pt(50,50).extentAsRectangle());
-        var tile1 = new DebugTile(null, '123');
-        var tile2 = new DebugTile(null, 'console.log(\'hello world\')');
+        var holder = new lively.TileScripting.TileHolder(pt(50,50).extentAsRectangle());
+        var tile1 = new lively.TileScripting.DebugTile(null, '123');
+        var tile2 = new lively.TileScripting.DebugTile(null, 'console.log(\'hello world\')');
         var expected = '123;\nconsole.log(\'hello world\')';
         holder.submorphs.last().addMorph(tile1);
         holder.submorphs.last().addMorph(tile2);
@@ -38,8 +38,8 @@ TestCase.subclass('TileHolderTest', {
     },
     
     testRunScript: function() {
-        var sut = new TileHolder(pt(50,50).extentAsRectangle());
-        var tile = new DebugTile(null, '123;');
+        var sut = new lively.TileScripting.TileHolder(pt(50,50).extentAsRectangle());
+        var tile = new lively.TileScripting.DebugTile(null, '123;');
         sut.submorphs.last().addMorph(tile);
         var result = sut.runScript();
         this.assertIdentity(123, result);
@@ -49,8 +49,8 @@ TestCase.subclass('TileHolderTest', {
 TestCase.subclass('DropAreaTest', {
     
     testDropAcceptsTile: function() {
-        var drop = new DropArea();
-        var tile = new Tile();
+        var drop = new lively.TileScripting.DropArea();
+        var tile = new lively.TileScripting.Tile();
         
         drop.addMorph(tile);
         this.assertIdentity(tile.owner, drop);
@@ -58,9 +58,9 @@ TestCase.subclass('DropAreaTest', {
     },
     
     testDropAcceptsOnlyOneTile: function() {
-        var drop = new DropArea();
-        var tile1 = new Tile();
-        var tile2 = new Tile();
+        var drop = new lively.TileScripting.DropArea();
+        var tile1 = new lively.TileScripting.Tile();
+        var tile2 = new lively.TileScripting.Tile();
         
         drop.addMorph(tile1);
         drop.addMorph(tile2);
@@ -70,8 +70,8 @@ TestCase.subclass('DropAreaTest', {
     },
     
     testResizeWhenTileAdded: function() {
-        var drop = new DropArea(pt(20,20).extentAsRectangle());
-        var tile = new Tile(pt(50,50).extentAsRectangle());
+        var drop = new lively.TileScripting.DropArea(pt(20,20).extentAsRectangle());
+        var tile = new lively.TileScripting.Tile(pt(50,50).extentAsRectangle());
         drop.addMorph(tile);
         this.assertEqual(drop.getExtent(), tile.getExtent(), 'no resizing...');
     },
@@ -94,7 +94,7 @@ TestCase.subclass('ObjectTileTest', {
         // morph.openInWorld();
          
     testAcceptsMorph: function() {
-        var tile = new ObjectTile();
+        var tile = new lively.TileScripting.ObjectTile();
         var morph = new Morph(pt(20,20).extentAsRectangle());
         
         tile.createAlias(morph);
@@ -104,7 +104,7 @@ TestCase.subclass('ObjectTileTest', {
     testTileMenuSpecCreation: function() {
         Object.subclass('Dummy', { a: function() {}, b: function() {}, c: 123});
         var obj = new Dummy();
-        var sut = new TileMenuCreator(obj);
+        var sut = new lively.TileScripting.TileMenuCreator(obj);
         
         var classNames = sut.classNames();
         this.assertEqualState(classNames, ['Dummy']);
@@ -116,14 +116,14 @@ TestCase.subclass('ObjectTileTest', {
     testTileMenuCreation: function() {
         Object.subclass('Dummy', { a: function() {}, b: function() {}, c: 123});
         var obj = new Dummy();
-        var sut = new TileMenuCreator(obj);
+        var sut = new lively.TileScripting.TileMenuCreator(obj);
         
         var menu = sut.createMenu();
         this.assertEqual(menu.items.length, 1, 'wrong number of menu items');
     },
     
     testAsJsEval: function() {
-        var tile = new ObjectTile();
+        var tile = new lively.TileScripting.ObjectTile();
         var morph = new Morph(pt(20,20).extentAsRectangle());
         
         tile.createAlias(morph);
@@ -134,7 +134,7 @@ TestCase.subclass('ObjectTileTest', {
     },
     
     testAsJsWithFunction: function() {
-        var tile = new ObjectTile();
+        var tile = new lively.TileScripting.ObjectTile();
         var morph = new Morph(pt(20,20).extentAsRectangle());
         
         tile.createAlias(morph);
@@ -143,22 +143,22 @@ TestCase.subclass('ObjectTileTest', {
         morph.openInWorld();
         try { var js = tile.asJs(); }
         finally { morph.remove(); };
-        this.assertEqual(js, 'ObjectTile.findMorph(\'' + morph.id() + '\').getPosition()');
+        this.assertEqual(js, 'lively.TileScripting.ObjectTile.findMorph(\'' + morph.id() + '\').getPosition()');
     }
 });
 
 TestCase.subclass('FunctionTileTest', {
     
     testHasTextAndDropZone: function() {
-        var tile = new FunctionTile(null, 'test');
+        var tile = new lively.TileScripting.FunctionTile(null, 'test');
         this.assertEqual(tile.submorphs.length, 3, 'text or dropzone are missing');
         this.assert(tile.submorphs[1].isDropArea, 'no droparea');
     },
     
     testAsJsWithParameters: function() {
-        var tile = new FunctionTile(null, 'test');
-        var argTile1 = new DebugTile(null, '123');
-        var argTile2 = new DebugTile(null, '456');
+        var tile = new lively.TileScripting.FunctionTile(null, 'test');
+        var argTile1 = new lively.TileScripting.DebugTile(null, '123');
+        var argTile2 = new lively.TileScripting.DebugTile(null, '456');
         tile.argumentDropAreas.last().addMorph(argTile1);
         tile.argumentDropAreas.last().addMorph(argTile2);
         var js = tile.asJs()
@@ -170,22 +170,22 @@ TestCase.subclass('FunctionTileTest', {
 TestCase.subclass('IfTileTest', {
     
     testCanAddExprAndTestExpression: function() {
-        var tile = new IfTile();
-        var testTile = new Tile();
+        var tile = new lively.TileScripting.IfTile();
+        var testTile = new lively.TileScripting.Tile();
         this.assert(tile.testExprDropArea instanceof Morph, 'No testExpression morph');
         tile.testExprDropArea.addMorph(testTile);        
         this.assertIdentity(testTile, tile.testExprDropArea.tile());
         
         this.assert(tile.exprDropArea instanceof Morph, 'No expr morph');
-        var exprTile = new Tile();
+        var exprTile = new lively.TileScripting.Tile();
         tile.exprDropArea.addMorph(exprTile);
         this.assertIdentity(exprTile, tile.exprDropArea.tile());
     },
     
     testGetJs: function() {
-        var tile = new IfTile();
-        var testTile = new DebugTile(null,'test');
-        var exprTile = new DebugTile(null,'body');
+        var tile = new lively.TileScripting.IfTile();
+        var testTile = new lively.TileScripting.DebugTile(null,'test');
+        var exprTile = new lively.TileScripting.DebugTile(null,'body');
         tile.testExprDropArea.addMorph(testTile);
         tile.exprDropArea.addMorph(exprTile);
         var expected = 'if (test) {body}';
@@ -196,7 +196,7 @@ TestCase.subclass('IfTileTest', {
 TestCase.subclass('NumberTileTest', {
     
     testHasNumberTextAndTwoButtons: function() {
-        var tile = new NumberTile();
+        var tile = new lively.TileScripting.NumberTile();
         this.assert(tile.numberText instanceof TextMorph, 'no numberText');
         this.assertEqual(tile.numberText.textString, '1');
         this.assert(tile.upButton instanceof ButtonMorph, 'no upBtn');
@@ -204,7 +204,7 @@ TestCase.subclass('NumberTileTest', {
     },
     
     testCountUp: function() {
-        var tile = new NumberTile();
+        var tile = new lively.TileScripting.NumberTile();
         tile.numberText.setTextString('0.8');
         tile.countUp();
         this.assertEqual(tile.numberText.textString, '0.9');
@@ -215,7 +215,7 @@ TestCase.subclass('NumberTileTest', {
     },
     
     testCountDown: function() {
-        var tile = new NumberTile();
+        var tile = new lively.TileScripting.NumberTile();
         tile.numberText.setTextString('2');
         tile.countDown();
         this.assertEqual(tile.numberText.textString, '1');
@@ -226,7 +226,7 @@ TestCase.subclass('NumberTileTest', {
     },
     
     testAsJs: function() {
-        var tile = new NumberTile();
+        var tile = new lively.TileScripting.NumberTile();
         tile.numberText.setTextString('2');
         this.assertEqual(tile.asJs(), '2');
     }

@@ -91,14 +91,14 @@ function module(moduleName, context) {
 
     var namespacePrefix = 'lively.';
     
-    function isNamespaceAwareModule() {
+    function isNamespaceAwareModule(moduleName) {
         return moduleName.startsWith(namespacePrefix);
     }
     
     function createNamespaceModule() {
         context = context || Global;
         var namespaceIdentifier = moduleName;
-        if (!isNamespaceAwareModule()) {
+        if (!isNamespaceAwareModule(moduleName)) {
             namespaceIdentifier = namespacePrefix + namespaceIdentifier;
             namespaceIdentifier = namespaceIdentifier.replace(/\//, '.');
             namespaceIdentifier = namespaceIdentifier.substring(0, namespaceIdentifier.lastIndexOf('.')); // get rid of '.js'
@@ -114,7 +114,8 @@ function module(moduleName, context) {
     function createUri(moduleName) {
         var baseUrl = document.baseURI;  // FIXME depends on 'Document'
         var url = baseUrl.substring(0, baseUrl.lastIndexOf('/') + 1)
-        url += isNamespaceAwareModule() ? moduleName.substr(namespacePrefix.length) + '.js' : moduleName;
+        url += isNamespaceAwareModule(moduleName) ? moduleName.substr(namespacePrefix.length) + '.js' : moduleName;
+        dbgOn('http://localhost/lively/js.js' === url);
         return url;
     }
 
@@ -136,9 +137,9 @@ function module(moduleName, context) {
 	}
 	
 	waitFor(module.uri, requiredModuleNames);
-	return {toRun: function(code) {
-            code = code.curry(module); // pass in own module name for nested requirements
-            Loader.loadScripts(requiredModuleNames, onModuleLoad.curry(module.uri, code));
+	return {toRun: function(dependentFunction) {
+            dependentFunction = dependentFunction.curry(module); // pass in own module name for nested requirements
+            Loader.loadScripts(requiredModuleNames, onModuleLoad.curry(module.uri, dependentFunction));
 	}};
     };
 

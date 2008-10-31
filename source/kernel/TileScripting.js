@@ -1,4 +1,4 @@
-module('TileScripting.js').requires('Helper.js').toRun(function() {
+module('lively.TileScripting').requires('Helper.js').toRun(function(thisModule) {
 
 Object.subclass('Layout', {
     
@@ -77,7 +77,7 @@ Morph.addMethods({
        this.owner && this.owner.layout();
    },
    asTile: function() {
-       return new ObjectTile(null,this);
+       return new thisModule.ObjectTile(null,this);
    }
 });
 Morph.prototype.morphMenu = Morph.prototype.morphMenu.wrap(function(proceed, evt) {
@@ -91,7 +91,7 @@ Morph.prototype.removeMorph = Morph.prototype.removeMorph.wrap(function(proceed,
     return this;
 })
 
-PanelMorph.subclass('TileBoxPanel', {
+PanelMorph.subclass('lively.TileScripting.TileBoxPanel', {
     onDeserialize: function() {
         // FIXME complete new morph is build, is this really necessary?
         this.owner.targetMorph = this.owner.addMorph(new TileBox().buildView(this.getExtent()));
@@ -99,7 +99,7 @@ PanelMorph.subclass('TileBoxPanel', {
         this.remove();
     }
 })
-Widget.subclass('TileBox', {
+Widget.subclass('lively.TileScripting.TileBox', {
 
     viewTitle: "Tile Box",
     viewExtent: pt(600,300),
@@ -133,7 +133,7 @@ Widget.subclass('TileBox', {
     
     // new TileBox().openIn(WorldMorph.current())
     buildView: function(extent) {
-        var panel = new TileBoxPanel(this.viewExtent);
+        var panel = new thisModule.TileBoxPanel(this.viewExtent);
         panel.adjustForNewBounds = Morph.prototype.adjustForNewBounds.bind(this); // so submorphs don't scale
         panel.setFill(Color.white);
         panel.setBorderWidth(1);
@@ -142,13 +142,13 @@ Widget.subclass('TileBox', {
         var defaultCreateFunc = function(theClass, optExtent) {
             return new theClass(optExtent && optExtent.extentAsRectangle());
         };
-        [IfTile, DebugTile, NumberTile].each(function(ea) {
+        [thisModule.IfTile, thisModule.DebugTile, thisModule.NumberTile].each(function(ea) {
             this.add(defaultCreateFunc.curry(ea), null, null, panel);
         }, this);
         
         var buildScriptBox = function() {
             var world = WorldMorph.current();
-            var window = new ScriptEnvironment().openIn(world);
+            var window = new thisModule.ScriptEnvironment().openIn(world);
             // window.remove();
             world.removeMorph(window);
             return window;
@@ -164,15 +164,15 @@ Widget.subclass('TileBox', {
     
 });
 
-Object.extend(TileBox, {
+Object.extend(thisModule.TileBox, {
     open: function() {
-        var tileBox = new TileBox();
+        var tileBox = new thisModule.TileBox();
         tileBox.openIn(WorldMorph.current());
         return tileBox;
     }
 });
 
-Widget.subclass('ScriptEnvironment', {
+Widget.subclass('lively.TileScripting.ScriptEnvironment', {
     
     viewTitle: "ScriptBox",
     viewExtent: pt(200,300),
@@ -182,7 +182,7 @@ Widget.subclass('ScriptEnvironment', {
             ['runButton', function(initialBounds) { return new ButtonMorph(initialBounds) }, new Rectangle(0, 0, 0.3, 0.1)],
             ['delayText', function(initialBounds) { return new TextMorph(initialBounds) }, new Rectangle(0.5, 0, 0.2, 0.1)],
             ['repeatButton', function(initialBounds) { return new ButtonMorph(initialBounds) }, new Rectangle(0.7, 0, 0.3, 0.1)],
-            ['tileHolder', function(initialBounds) { return new TileHolder(initialBounds) }, new Rectangle(0, 0.1, 1, 0.9)]
+            ['tileHolder', function(initialBounds) { return new thisModule.TileHolder(initialBounds) }, new Rectangle(0, 0.1, 1, 0.9)]
         ]);
         
         // var panel = new Morph(extent.extentAsRectangle());
@@ -229,15 +229,15 @@ Widget.subclass('ScriptEnvironment', {
      
 });
    
-Object.extend(ScriptEnvironment, {
+Object.extend(thisModule.ScriptEnvironment, {
     open: function() {
-        var scrEnv = new ScriptEnvironment();
+        var scrEnv = new thisModule.ScriptEnvironment();
         scrEnv.openIn(WorldMorph.current());
         return scrEnv;
     }
 });
 
-Morph.subclass('TileHolder', {
+Morph.subclass('lively.TileScripting.TileHolder', {
     
     layoutSpec: {layouterClass: VLayout},
     dropAreaExtent: pt(80,20),
@@ -246,7 +246,7 @@ Morph.subclass('TileHolder', {
     initialize: function($super, bounds) {
         $super(bounds, "rect");
         this.setFill(Color.gray.lighter());
-        this.layout = this.layout.curry(true); // no resizing on layout
+        this.layout = this.layout.curry(true); // no resizing on layout --> FIXME
         this.closeDnD();
         this.suppressHandles = true;
         this.addDropArea();
@@ -286,7 +286,7 @@ Morph.subclass('TileHolder', {
             this.ensureEmptyDropAreaExists();
         }.bind(this);
         
-        var dropArea = new DropArea(this.dropAreaExtent.extentAsRectangle(), cleanUp);
+        var dropArea = new thisModule.DropArea(this.dropAreaExtent.extentAsRectangle(), cleanUp);
         dropArea.setExtent(pt(this.getExtent().x, dropArea.getExtent().y));
 
         return this.addMorph(dropArea);
@@ -347,7 +347,7 @@ Morph.subclass('TileHolder', {
     }
 });
     
-Morph.subclass('Tile', {
+Morph.subclass('lively.TileScripting.Tile', {
 
     isTile: true,
     defaultExtent: pt(100,20),
@@ -377,7 +377,7 @@ Morph.subclass('Tile', {
     }
 });
 
-Tile.subclass('DebugTile', {
+thisModule.Tile.subclass('lively.TileScripting.DebugTile', {
     
     defaultExtent: pt(100,35),
     layoutSpec: {layouterClass: null},
@@ -397,7 +397,7 @@ Tile.subclass('DebugTile', {
     }
 });
 
-Tile.subclass('ObjectTile', {
+thisModule.Tile.subclass('lively.TileScripting.ObjectTile', {
     
     initialize: function($super, bounds, targetMorphOrObject) {
         $super(bounds, "rect");
@@ -439,19 +439,19 @@ Tile.subclass('ObjectTile', {
     
     addFunctionTile: function(methodName) {
         this.menuTrigger && this.menuTrigger.remove();
-        this.opTile = new FunctionTile(null, methodName);
+        this.opTile = new thisModule.FunctionTile(null, methodName);
         this.addMorph(this.opTile);
     },
     
     openMenu: function(btnVal) {
         if (btnVal) return;
-        var menu = new TileMenuCreator(this.targetMorph, this).createMenu();
+        var menu = new thisModule.TileMenuCreator(this.targetMorph, this).createMenu();
         var pos = this.getGlobalTransform().transformPoint(this.menuTrigger.getPosition());
     	menu.openIn(this.world(), pos, false, this.targetMorph.toString());
     },
     
     asJs: function() {
-        var result = 'ObjectTile.findMorph(\'' +  this.objectId() + '\')';
+        var result = 'lively.TileScripting.ObjectTile.findMorph(\'' +  this.objectId() + '\')';
         if (this.opTile)
             result += this.opTile.asJs();
         return result
@@ -459,14 +459,14 @@ Tile.subclass('ObjectTile', {
         
 });
 
-ObjectTile.findMorph = function(id) {
+thisModule.ObjectTile.findMorph = function(id) {
     // FIXME arrgh, what about morphs in subworlds?
     var result;
     WorldMorph.current().withAllSubmorphsDo(function() { if (this.id() === id) result = this });
     return result;
 };
 
-Object.subclass('TileMenuCreator', {
+Object.subclass('lively.TileScripting.TileMenuCreator', {
     
     initialize: function(target, tile) {
         this.target = target;
@@ -536,7 +536,7 @@ Object.subclass('TileMenuCreator', {
                     "printOn", "delegated", "ownPropertyNames", "hasProperty", "isNumber", "isString", "isCharacter"]
 });
 
-Tile.subclass('FunctionTile', {
+thisModule.Tile.subclass('lively.TileScripting.FunctionTile', {
     
     initialize: function($super, bounds, methodName) {
         $super(bounds, "rect");
@@ -554,7 +554,7 @@ Tile.subclass('FunctionTile', {
     addDropArea: function() {
         this.removeMorph(this.text2.remove());
         
-        var dropArea = new DropArea(new Rectangle(0,0,20,15), this.addDropArea.bind(this));
+        var dropArea = new thisModule.DropArea(new Rectangle(0,0,20,15), this.addDropArea.bind(this));
         this.argumentDropAreas.push(this.addMorph(dropArea));
         
         this.addMorph(this.text2);
@@ -570,13 +570,13 @@ Tile.subclass('FunctionTile', {
 
 });
 
-Tile.subclass('IfTile', {
+thisModule.Tile.subclass('lively.TileScripting.IfTile', {
     
     initialize: function($super, bounds) {
         $super(bounds, "rect");
         this.addMorph(new TextMorph(new Rectangle(0,0,20,this.bounds().height), 'if').beLabel());
-        this.testExprDropArea = this.addMorph(new DropArea(new Rectangle(0,0,50,this.getExtent().y)));
-        this.exprDropArea = this.addMorph(new DropArea(new Rectangle(0,0,50,this.getExtent().y)));
+        this.testExprDropArea = this.addMorph(new thisModule.DropArea(new Rectangle(0,0,50,this.getExtent().y)));
+        this.exprDropArea = this.addMorph(new thisModule.DropArea(new Rectangle(0,0,50,this.getExtent().y)));
     },
     
     asJs: function() {
@@ -584,7 +584,7 @@ Tile.subclass('IfTile', {
     }
 });
 
-Tile.subclass('NumberTile', {
+thisModule.Tile.subclass('lively.TileScripting.NumberTile', {
     
     layoutSpec: {layouterClass: null, center: true},
     eps: 0.001,
@@ -638,7 +638,7 @@ Tile.subclass('NumberTile', {
     }
     
 });
-Morph.subclass('DropArea', {
+Morph.subclass('lively.TileScripting.DropArea', {
 
     isDropArea: true,
     layoutSpec: {layouterClass: VLayout},

@@ -5289,7 +5289,7 @@ PasteUpMorph.subclass("WorldMorph", {
     	    }]
         ];
         var scriptingMenuItems = [
-            ["TileScriptingBox", function(evt) { require('TileScripting.js').toRun(function() {new TileBox().openIn(world, evt.point()); }) }],
+            ["TileScriptingBox", function(evt) { require('TileScripting.js').toRun(function() {new lively.TileScripting.TileBox().openIn(world, evt.point()); }) }],
             ["Fabrik Component Box", function(evt) { require('Fabrik.js').toRun(function() { Fabrik.openComponentBox(world, evt.point()); }) }]
         ];
         var miscItems = [
