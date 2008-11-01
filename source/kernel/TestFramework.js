@@ -294,7 +294,7 @@ Widget.subclass('TestRunner', {
 		if (buttonDown) return;
 		var testClassName = this.getModel().getSelectedTestClass();
 		if (!testClassName) return;
-		var testCase = new lively.lang.Namespace.objectNamed(testClassName)();
+		var testCase = new (lively.lang.Namespace.objectNamed(testClassName))();
 		testCase.runAll();
 		this.setResultOf(testCase);
 	},

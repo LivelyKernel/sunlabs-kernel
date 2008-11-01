@@ -600,10 +600,7 @@ Object.subclass('Namespace', {
     },
     
     classes: function(recursive) {        
-        var ownClasses = Object.values(this).select(function(ea) {
-            try { return ea && ea !== this.constructor && Class.isClass(ea) }
-            catch(e) { return false }
-        });
+        var ownClasses = Object.values(this).select(function(ea) { return ea && ea !== this.constructor && Class.isClass(ea) });
         if (!recursive) return ownClasses;
         return this.subNamespaces().inject(ownClasses, function(classes, namespace) { return classes.concat(namespace.classes(true)) });
     }
