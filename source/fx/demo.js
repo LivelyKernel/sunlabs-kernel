@@ -15,8 +15,9 @@ print('loaded start document emulation');
 load('../kernel/Core.js');
 
 
-Loader.loadScript = function(url /*not really a url yet*/, onLoadAction, embedSerializable) {
-    load('../kernel/' + url);
+Loader.loadScript = function(url, onLoadAction, embedSerializable) {
+    var fileName = url.startsWith('http') ? /\/([a-zA-Z0-9]+\.js)/.exec(url)[1] : url;
+    load('../kernel/' + fileName);
     if (onLoadAction) {
         onLoadAction();
         // why signal moduleLoaded again? should already be included in onLoadAction...???
@@ -206,11 +207,14 @@ function morphicMain() {
     // tile script environment
     Config.activateTileScripting = true;
     if (Config.activateTileScripting) {
-	ScriptEnvironment.open();
-	world.topSubmorph().moveBy(pt(820, 80));
-	TileBox.open();
-	world.topSubmorph().moveBy(pt(1050, 80));
+        require('TileScripting.js').toRun(function() {
+            lively.TileScripting.ScriptEnvironment.open();
+            world.topSubmorph().moveBy(pt(820, 80));
+            lively.TileScripting.TileBox.open();
+            world.topSubmorph().moveBy(pt(1050, 80));
+        });
     }
+    
 
 
 }
