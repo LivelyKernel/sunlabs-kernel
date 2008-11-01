@@ -165,10 +165,9 @@ Object.subclass('TestSuite', {
 	},
 	
 	setTestCases: function(testCaseClasses) {
-		var self = this;
 		this.testCases = testCaseClasses.collect(function(ea) {
-			return new ea(self.result);
-		});
+			return new ea(this.result);
+		}, this);
 	},
 	
 	runAll: function() {
@@ -293,9 +292,9 @@ Widget.subclass('TestRunner', {
 	
 	runTests: function(buttonDown) {
 		if (buttonDown) return;
-		var testClass = this.getModel().getSelectedTestClass();
-		if (!testClass) return;
-		var testCase = new Global[testClass]();
+		var testClassName = this.getModel().getSelectedTestClass();
+		if (!testClassName) return;
+		var testCase = new lively.lang.Namespace.objectNamed(testClassName)();
 		testCase.runAll();
 		this.setResultOf(testCase);
 	},
@@ -306,7 +305,7 @@ Widget.subclass('TestRunner', {
 		var counter = 0;
 		//all classes from the list
 		testSuite.setTestCases(this.getModel().getTestClasses().collect(function(ea) {
-			return Global[ea];
+			return lively.lang.Namespace.objectNamed(ea);
 		}));
 		var self = this;
 		var total = self.resultBar.getExtent().x;
@@ -343,7 +342,7 @@ Widget.subclass('TestRunner', {
 		return TestCase.allSubclasses()
 		    .select(function(ea) { return ea.prototype.shouldRun })
 		    .collect(function(ea) { return ea.type })
-		    .select(function(ea) { return !ea.startsWith('Dummy') })
+		    .select(function(ea) { return !ea.include('Dummy') })
 		    .select(function(ea) { return Config.skipGuiTests ? !ea.endsWith('GuiTest') : true })
             .sort();
 	},

@@ -47,7 +47,7 @@ function namespace(spec, context) {
 		if (!Class.isValidIdentifier(spec)) {
                     throw new Error('"'+spec+'" is not a valid name for a package.');
 		}
-                context[spec] = context[spec] || {};
+                context[spec] = context[spec] || new lively.lang.Namespace();
                 context = context[spec];
             }
         })();
@@ -317,13 +317,7 @@ Object.extend(Function.prototype, {
     },
     
     allSubclasses: function() {
-        return Object.values(Global).select(function(ea) {
-            try {
-                return ea && Class.isClass(ea) && ea.isSubclassOf(this);
-            } catch(e) {
-                return false;
-            };
-        }.bind(this));
+        return Global.classes(true).select(function(ea) { return ea.isSubclassOf(this) }.bind(this));
     },
     
     superclasses: function() {
@@ -594,9 +588,44 @@ var Properties = {
     }
 };
 
-namespace('lively.lang');
+// bootstrap namespaces
+Object.subclass('Namespace', {
+    
+    isNamespace: true,
+    
+    subNamespaces: function(recursive) {
+        return Object.values(this)
+            .select(function(ea) { return ea && ea.isNamespace && ea !== this })
+            .inject([], function(all, ea) { all.push(ea); return recursive ? all.concat(ea.subNamespaces(true)) : all })
+    },
+    
+    classes: function(recursive) {        
+        var ownClasses = Object.values(this).select(function(ea) {
+            try { return ea && ea !== this.constructor && Class.isClass(ea) }
+            catch(e) { return false }
+        });
+        if (!recursive) return ownClasses;
+        return this.subNamespaces().inject(ownClasses, function(classes, namespace) { return classes.concat(namespace.classes(true)) });
+    }
+    
+});
 
-Object.subclass('lively.lang.Namespace'); // exact location is tricky
+// FIXME this is a bad method name, please change
+// The method returns an object to a given string, which can include namespaces
+// this is neccesary because e.g. Global['lively.Tests.ClassTest'] does not work
+Namespace.objectNamed = function(string) {
+    return string.split('.').inject(Global, function(context, name) { return context[name] });
+};
+
+// namespace('lively.lang');
+lively = new Namespace();
+lively.lang = new Namespace();
+lively.lang.Namespace = Namespace;
+delete Namespace;
+
+// let Glabal act like a namespace itself
+Object.extend(Global, lively.lang.Namespace.prototype);
+
 
 lively.lang.Execution = { // will be extended later
     showStack: Functions.Null,
