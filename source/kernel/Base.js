@@ -18,7 +18,7 @@ function dbgOn(cond, optMessage) {
 // namespace logic adapted from
 // http://higher-order.blogspot.com/2008/02/designing-clientserver-web-applications.html
 function using() {
-    var args = arguments; // FIXME: enable using('lively.text')
+    var args = arguments; // FIXME: enable using('lively.Text')
     return {run: function(inner) { return inner.apply(args[0], args); }};
 }
 
@@ -95,18 +95,20 @@ function module(moduleName, context) {
         return moduleName.startsWith(namespacePrefix);
     }
     
+    function convertUrlToNSIdentifier(url) {
+        var result = namespacePrefix + url;
+        result = result.replace(/\//, '.');
+        result = result.substring(0, result.lastIndexOf('.')); // get rid of '.js'
+        return result;
+    }
+    
     function createNamespaceModule(moduleName) {
+        var namespaceIdentifier = isNamespaceAwareModule(moduleName) ? moduleName : convertUrlToNSIdentifier(moduleName);
+        
         context = context || Global;
-        var namespaceIdentifier = moduleName;
-        if (!isNamespaceAwareModule(moduleName)) { // convert relative url to namespace identifier
-            namespaceIdentifier = namespacePrefix + namespaceIdentifier;
-            namespaceIdentifier = namespaceIdentifier.replace(/\//, '.');
-            namespaceIdentifier = namespaceIdentifier.substring(0, namespaceIdentifier.lastIndexOf('.')); // get rid of '.js'
-        }
         namespace(namespaceIdentifier, context);
         
-        var parts = namespaceIdentifier.split('.')
-        var module = parts.inject(context, function(context, namespace) { return context[namespace] });
+        var module = lively.lang.Namespace.objectNamed(namespaceIdentifier, context);
         module.namespaceIdentifier = namespaceIdentifier; // FIXME just for now...
         return module;
     }
@@ -137,9 +139,16 @@ function module(moduleName, context) {
 	}
 	
 	waitFor(module.uri, requiredModuleNames);
-	return {toRun: function(dependentFunction) {
-            dependentFunction = dependentFunction.curry(module); // pass in own module name for nested requirements
-            Loader.loadScripts(requiredModuleNames, onModuleLoad.curry(module.uri, dependentFunction));
+	return {toRun: function(code) {
+            code = code.curry(module); // pass in own module name for nested requirements
+            var codeWrapper = function() { // run code with namespace modules as additional parameters
+                code.apply(this, preReqModuleNames.collect(function(ea) {
+                    var nsIdentifier = isNamespaceAwareModule(ea) ? ea : convertUrlToNSIdentifier(ea);
+                    return lively.lang.Namespace.objectNamed(nsIdentifier)
+                }));
+            }
+            
+            Loader.loadScripts(requiredModuleNames, onModuleLoad.curry(module.uri, codeWrapper));
 	}};
     };
 
@@ -610,8 +619,8 @@ Object.subclass('Namespace', {
 // FIXME this is a bad method name, please change
 // The method returns an object to a given string, which can include namespaces
 // this is neccesary because e.g. Global['lively.Tests.ClassTest'] does not work
-Namespace.objectNamed = function(string) {
-    return string.split('.').inject(Global, function(context, name) { return context[name] });
+Namespace.objectNamed = function(string, context) {
+    return string.split('.').inject(context || Global, function(context, name) { return context[name] });
 };
 
 // namespace('lively.lang');
