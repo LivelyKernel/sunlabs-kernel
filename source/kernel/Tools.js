@@ -13,9 +13,7 @@
  * object inspector, style editor, and profiling and debugging capabilities.  
  */
 
-namespace('lively.tools');
-
-using(lively.text, lively.tools).run(function(text, module) {
+module('lively.Tools').requires('lively.Text').toRun(function(module, text) {
 
 // ===========================================================================
 // Class Browser -- A simple browser for Lively Kernel code

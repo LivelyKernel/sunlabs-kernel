@@ -136,7 +136,7 @@ Morph.subclass("ClockMorph", {
 	    
 	    /*
 		var label = new TextMorph((pt(labelSize*3, labelSize).extentAsRectangle()), items[i]);
-	    label.applyStyle({borderWidth: 0, fill: null, wrapStyle: lively.text.WrapStyle.Shrink, fontSize: labelSize, padding: Rectangle.inset(0)});
+	    label.applyStyle({borderWidth: 0, fill: null, wrapStyle: lively.Text.WrapStyle.Shrink, fontSize: labelSize, padding: Rectangle.inset(0)});
             label.align(label.bounds().center(), labelPosition.addXY(1, 0));
             this.addMorph(label);
 		*/
@@ -4619,7 +4619,10 @@ Morph.subclass('InertialBody', {
 	this.updatePosition();
     },
     updatePosition: function() {
-	if (this.owner === null) return;	this.rotateBy(this.angularVelocity);	this.moveBy(this.velocity);	if (!this.testInBounds()) this.isOutOfBounds();
+	if (this.owner === null) return;
+	this.rotateBy(this.angularVelocity);
+	this.moveBy(this.velocity);
+	if (!this.testInBounds()) this.isOutOfBounds();
     },
     testInBounds: function() {
 	return this.bounds().intersects(this.owner.innerBounds());
@@ -4645,7 +4648,8 @@ InertialBody.subclass('Asteroid', {
 	$super(verts, lineWidth, lineColor, fill, velocity, angularVelocity);
     }
 });
-InertialBody.subclass('Torpedo', {
+
+InertialBody.subclass('Torpedo', {
     initialize: function ($super, verts, lineWidth, lineColor, fill, velocity, angularVelocity) {
 	// Torpedos are little bullets with constant velocity.  They disappear when out of bounds
 	$super(verts, lineWidth, lineColor, fill, velocity, angularVelocity);
@@ -4654,11 +4658,13 @@ InertialBody.subclass('Asteroid', {
 	this.owner.removeMorphFromGroup(this, this.owner.torpedos)
     }
 });
-InertialBody.subclass('Ship', {
+
+InertialBody.subclass('Ship', {
     initialize: function ($super, verts, lineWidth, lineColor, fill) {
 	//  The ship's position and rotation give the initial trajectory to its missiles
 	//  Left and right keys rotate it, and 
-	//  up and down buttons add thrust and retro to its velocity	$super(verts, lineWidth, lineColor, fill);
+	//  up and down buttons add thrust and retro to its velocity
+	$super(verts, lineWidth, lineColor, fill);
 	this.cycle = 0;
     },
     keyDown: function(event, downElseUp) {

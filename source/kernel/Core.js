@@ -4761,9 +4761,9 @@ Morph.subclass("PasteUpMorph", {
 });
 
 
-namespace('lively.text');
+namespace('lively.Text');
 
-using(lively.text).run(function(text) {
+using(lively.Text).run(function(text) {
 
 /**
  * @class WorldMorph
@@ -5454,7 +5454,7 @@ Object.extend(WorldMorph, {
     
 });
 
-}); // using(lively.text)
+}); // using(lively.Text)
 
 
 /**

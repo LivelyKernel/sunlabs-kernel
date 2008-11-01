@@ -27,7 +27,7 @@
 
 
 
-using(lively.text).run(function(text) {
+using(lively.Text).run(function(text) {
 
 
 Morph.subclass('ButtonMorph', {

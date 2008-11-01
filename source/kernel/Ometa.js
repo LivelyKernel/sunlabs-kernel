@@ -71,8 +71,8 @@ OmetaWorkspace.openOmetaWorkspace = function() {
 
 // Interface for using the parser. It would be better to extend the parser directly...
 
-lively.text.createText = function(str, style) {
-    return new lively.text.Text(str, style);
+lively.Text.createText = function(str, style) {
+    return new lively.Text.Text(str, style);
 };
 
 Object.subclass('SyntaxHighlighter', {

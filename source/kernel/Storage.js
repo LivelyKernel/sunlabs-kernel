@@ -668,10 +668,10 @@ TwoPaneBrowser.subclass('FileBrowser', {
 		}]);
 	    }
 	    
-	    if (lively.tools.SourceControl) {
+	    if (lively.Tools.SourceControl) {
 		var fileName = url.filename();
 		items.unshift(['open a changeList browser', function(evt) {
-                    var chgList = lively.tools.SourceControl.changeListForFileNamed(fileName);
+                    var chgList = lively.Tools.SourceControl.changeListForFileNamed(fileName);
 		    new ChangeList(fileName, null, chgList).openIn(this.world()); 
 		}]);
 	    }

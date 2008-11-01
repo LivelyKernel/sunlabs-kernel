@@ -12,9 +12,9 @@
  * Text.js.  Text-related functionality.
  */
 
-module('lively.text').requires().toRun(function(thisModule) {
+module('lively.Text').requires().toRun(function(thisModule) {
         
-Object.subclass('lively.text.CharacterInfo', {
+Object.subclass('lively.Text.CharacterInfo', {
     // could simply use Point as extent.
     documentation: "simple printable info about a character's extent",
 
@@ -30,7 +30,7 @@ Object.subclass('lively.text.CharacterInfo', {
 });
 
 
-Object.subclass('lively.text.Font', {
+Object.subclass('lively.Text.Font', {
 
     documentation: "representation of a font",
     baselineFactor: 0.80,
@@ -419,7 +419,7 @@ Wrapper.subclass('TextWord', {
 
 
 
-Object.subclass('lively.text.TextLine', {
+Object.subclass('lively.Text.TextLine', {
     documentation: 'renders lines composed of words and whitespace',
 
     lineHeightFactor: 1.2, // multiplied with the font size to set the distance between the lines, 
@@ -842,7 +842,7 @@ Morph.subclass('TextSelectionMorph', {
 
 
 
-Visual.subclass('lively.text.TextContent', {
+Visual.subclass('lively.Text.TextContent', {
     documentation: "wrapper around SVG Text elements",
     initialize: function() {
 	this.rawNode = NodeFactory.create("text", { "kerning": 0 });
@@ -898,7 +898,7 @@ TextMorph.addMethods({
 
     initializePersistentState: function($super, initialBounds, shapeType) {
         $super(initialBounds, shapeType);
-        this.textContent = this.addWrapper(new lively.text.TextContent());
+        this.textContent = this.addWrapper(new lively.Text.TextContent());
         this.resetRendering();
         // KP: set attributes on the text elt, not on the morph, so that we can retrieve it
 	this.applyStyle({fill: this.backgroundColor, borderWidth: this.borderWidth, borderColor: this.borderColor});
@@ -908,7 +908,7 @@ TextMorph.addMethods({
     restoreFromSubnode: function($super, importer, rawNode) {
 	if ($super(importer, rawNode)) return true;
 	if (rawNode.localName == "text") {
-            this.textContent = new lively.text.TextContent(importer, rawNode);   
+            this.textContent = new lively.Text.TextContent(importer, rawNode);   
             this.fontFamily = this.textContent.getTrait("font-family");
             this.fontSize = this.textContent.getLengthTrait("font-size");
             this.font = thisModule.Font.forFamily(this.fontFamily, this.fontSize);
@@ -1216,10 +1216,10 @@ TextMorph.addMethods({
         var startIndex = 0;
         var stopIndex = this.textString.length - 1;
         var chunkSkeleton = null;
-	var defaultInterline = (lively.text.TextLine.prototype.lineHeightFactor - 1) * this.font.getSize();
+	var defaultInterline = (lively.Text.TextLine.prototype.lineHeightFactor - 1) * this.font.getSize();
 	var topLeft = initialTopLeft.addXY(0, defaultInterline/2);
         while (startIndex <= stopIndex) {
-	    var line = new lively.text.TextLine(this.textString, this.textStyle, startIndex, 
+	    var line = new lively.Text.TextLine(this.textString, this.textStyle, startIndex, 
 		                    topLeft, font, new TextEmphasis({}), chunkSkeleton);
             line.setTabWidth(this.tabWidth, this.tabsAsSpaces);
             line.compose(compositionWidth);
@@ -1297,7 +1297,7 @@ TextMorph.addMethods({
     },
 
     lineHeight: function() {
-	return this.font.getSize() * lively.text.TextLine.prototype.lineHeightFactor;
+	return this.font.getSize() * lively.Text.TextLine.prototype.lineHeightFactor;
     },
 
     fitHeight: function() { //Returns true iff height changes
@@ -1579,7 +1579,7 @@ TextMorph.addMethods({
 
     // FIXME integrate into model of TextMorph
     setRichText: function(text) {
-        if (!(text instanceof lively.text.Text)) throw dbgOn(new Error('Not text'));
+        if (!(text instanceof lively.Text.Text)) throw dbgOn(new Error('Not text'));
         this.textStyle = text.style;
         this.setStoredTextStyle(this.textStyle);
         this.setTextString(text.string);
@@ -1904,7 +1904,7 @@ TextMorph.addMethods({
 	    this.searchForFind(this.lastSearchString, this.lastFindLoc + this.lastSearchString.length);
     },
     doSearch: function() {
-        if (lively.tools.SourceControl) lively.tools.SourceControl.browseReferencesTo(this.getSelectionString()); 
+        if (lively.Tools.SourceControl) lively.Tools.SourceControl.browseReferencesTo(this.getSelectionString()); 
     },
     doDoit: function() {
         var strToEval = this.getSelectionString(); 
@@ -2214,7 +2214,7 @@ TextMorph.addMethods({
 Object.extend(TextMorph, {
     makeLabel: function(labelString, fontSize) {
 	var label = new TextMorph(new Rectangle(0,0,200,100), labelString);
-	label.applyStyle({borderWidth: 0, fill: null, wrapStyle: lively.text.WrapStyle.Shrink, fontSize: (fontSize || 12), padding: Rectangle.inset(0)});
+	label.applyStyle({borderWidth: 0, fill: null, wrapStyle: lively.Text.WrapStyle.Shrink, fontSize: (fontSize || 12), padding: Rectangle.inset(0)});
 	return label;
     }
 });
@@ -2542,7 +2542,7 @@ Object.extend(RunArray, {
 //RunArray.test([3, 1, 2]);
 
     
-Object.subclass('lively.text.Text', {
+Object.subclass('lively.Text.Text', {
     // Rich text comes to the Lively Kernel
     initialize: function(string, style) {
 	this.string = string;
