@@ -209,15 +209,13 @@ Widget.subclass('SimpleBrowser', {
     
     getMethodStringFor: function(className, methodName) { 
         if (!className || !methodName) return "no code"; 
-	var source = null;
 	if (module.SourceControl) 
-	    source = module.SourceControl.getSourceInClassForMethod(className, methodName);
-	else {
-	    var func = (className == "Global") ? Global[methodName] : Global[className].prototype[methodName];
-	    if (!func) return "no code";
-	    source = func.getOriginal().toString();
-	}
-	return source;
+	    var source = module.SourceControl.getSourceInClassForMethod(className, methodName);
+	    if(source) return source;
+	var func = (className == "Global") ? Global[methodName] : Global[className].prototype[methodName];
+	if (!func) return "-- no code --";
+	if (module.SourceControl) return "// **Decompiled code** //\n" + func.getOriginal().toString();
+	return func.getOriginal().toString();
     },
     
     buildView: function(extent) {
