@@ -19,6 +19,116 @@ module('lively.Tools').requires('lively.Text').toRun(function(module, text) {
 // Class Browser -- A simple browser for Lively Kernel code
 // ===========================================================================
 
+// Modules: "+Modules" --> setModule in model
+// Modules: "-Modules" --> getModule in model
+// Modules: "Modules" --> getModule and getModule in model, onModuleUpdate required
+
+//ModulesMenu: [
+// ['test', function() { console.log('click!') }],
+// ['sub', [['test2', function() { console.log('click2!') }]]]
+// ]
+Widget.subclass('lively.Tools.SystemBrowser', {
+    
+    viewTitle: "Enhanced Javascript Code Browser",
+    initialViewExtent: pt(600, 400),
+    formals: ["Modules", "Module", "Classes", "Class", "Methods", "Method", "MethodSource"],
+    
+    initialize: function($super) { 
+        $super();
+        var model = Record.newPlainInstance((function(){var x={};this.formals.each(function(ea){x[ea]=null});return x}.bind(this))());
+        this.relayToModel(model, {Modules: "+Modules", Module: "Module", Classes: "+Classes", Class: "Class",
+                                  Methods: "+Methods", Method: "Method", MethodSource: "MethodSource"});
+        // this.ownModel(model);
+        this.setModules(this.listModules());
+        
+        if (!module.SourceControl) module.SourceControl = new SourceDatabase();
+        module.SourceControl.scanLKFiles();
+    },
+    
+buildView: function (extent) {
+        var panel = PanelMorph.makePanedPanel(extent, [
+            ['modulesList', newRealListPane, new Rectangle(0, 0, 0.35, 0.45)],
+            ['classList', newRealListPane, new Rectangle(0.35, 0, 0.3, 0.45)],
+            ['methodList', newRealListPane, new Rectangle(0.65, 0, 0.35, 0.45)],
+            ['sourceCodePane', newTextPane, new Rectangle(0, 0.45, 1, 0.55)]
+            // ['runAllButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0.5, 0.6, 0.5, 0.05)],
+            // ['resultBar', function(initialBounds){return new TextMorph(initialBounds)}, new Rectangle(0, 0.65, 1, 0.05)],
+        ]);
+
+        var model = this.getModel();
+        var morph;
+        
+        morph = panel.modulesList;
+        morph.connectModel(model.newRelay({List: "-Modules", Selection: '+Module'}), true);
+        
+        morph = panel.classList;
+        morph.connectModel(model.newRelay({List: "-Classes", Selection: '+Class'}));
+        
+        morph = panel.methodList;
+        morph.connectModel(model.newRelay({List: "-Methods", Selection: '+Method'}));
+
+        morph = panel.sourceCodePane;
+        morph.connectModel(model.newRelay({Text: "MethodSource"}));
+	            
+        return panel;
+    },
+    listModules: function() {
+        return [Global].concat(Global.subNamespaces(true)).collect(function(ea) {
+            return {isListItem: true, string: ea.namespaceIdentifier || 'unnamed', value: ea} });
+    },
+    
+    listClasses: function(module) {
+        function classNameWithoutNS(className) {
+            if (!className) return 'unnamed class';
+            return className.substr(className.lastIndexOf('.')+1, className.length);
+        }
+        return module.classes().collect(function(ea) {
+            return {isListItem: true, string: classNameWithoutNS(ea.type), value: ea} });
+    },
+    
+    listMethods: function(theClass) {
+        return theClass.localFunctionNames().sort().collect(function(ea) {
+            return {isListItem: true, string: ea, value: ea}
+        });
+    },
+    
+    onModuleUpdate: function(module) {
+        console.log('got ' + module.namespaceIdentifier);
+        this.setClasses(this.listClasses(module));
+    },
+        
+    onClassUpdate: function(theClass) {
+        console.log('got ' + theClass.type);
+        this.setMethods(this.listMethods(theClass));
+    },
+    
+    onMethodUpdate: function(methodName) {
+        console.log('got ' + methodName);
+        this.setMethodSource(this.getClass().prototype[methodName].toString());
+    },
+    
+    onMethodSourceUpdate: function(methodString) {
+        // FIXME just a quick hack to see if things work...
+        console.log('got new source ' + methodString);
+        if (this.getClass().prototype[this.getMethod()].toString() == methodString) return;
+        var methodDict = module.SourceControl.methodDictFor(this.getClass().type);
+        var methodDescr = methodDict[this.getMethod()];
+        // ------------------
+        var methodDef = this.getClass().type + ".prototype." + this.getMethod() + " = " + methodString;
+        try {
+            eval(methodDef);
+            console.log('redefined ' + this.getMethod());
+        } catch (er) {
+            WorldMorph.current().alert("error evaluating method " + methodDef);
+        }
+        // ChangeSet.current().logChange({type: 'method', className: className, methodName: methodName, methodString: methodString});
+        // ------------------
+        if (!methodString.startsWith(this.getMethod())) methodString = this.getMethod() + ': ' + methodString;
+        if (!methodString.endsWith(',')) methodString += ',';
+        methodDescr.putSourceCode(methodString);
+    }
+});
+
 Widget.subclass('SimpleBrowser', {
 
     viewTitle: "Javascript Code Browser",
@@ -1241,9 +1351,9 @@ Object.subclass('FileParser', {
 
     scanClassDef: function(line) {
         // *** Need to catch Object.extend both Foo and Foo.prototype ***
-        var match = line.match(/^[\s]*([\w]+)\.subclass\([\'\"]([\w]+)[\'\"]/);
+        var match = line.match(/^[\s]*([\w\.]+)\.subclass\([\'\"]([\w\.]+)[\'\"]/);
         if (match == null) {
-            var match = line.match(/^[\s]*([\w]+)\.subclass\(Global\,[\s]*[\'\"]([\w]+)[\'\"]/);
+            var match = line.match(/^[\s]*([\w\.]+)\.subclass\(Global\,[\s]*[\'\"]([\w\.]+)[\'\"]/);
         }
         if (match == null)  return false;
         this.processCurrentDef();
@@ -1575,6 +1685,10 @@ ChangeList.subclass('SourceDatabase', {
             new FileParser().parseFile(fileName, this.currentVersion(fileName), fileString, this, "import");
         }
     },
+    
+    scanLKFiles: function() {
+        this.scanKernelFiles(this.interestingLKFileNames());
+    },
 
     getSourceCodeRange: function(fileName, versionNo, startIndex, stopIndex) {
         // Remember the JS convention that str[stopindex] is not included!!
@@ -1648,6 +1762,18 @@ ChangeList.subclass('SourceDatabase', {
         ms = new Date().getTime() - ms;
         console.log(fileName + " read in " + ms + " ms.");
         return fileString;
+    },
+    
+    interestingLKFileNames: function() {
+        var kernelFileNames = new FileDirectory(URL.source).filenames();
+        var testFileNames = new FileDirectory(URL.source.withFilename('Tests/')).filenames();
+        var jsFiles = kernelFileNames.concat(testFileNames).select(function(ea) { return ea.endsWith('.js') });
+        jsFiles = jsFiles.uniq();
+        // FIXME remove
+        var rejects = ["Contributions.js", "Develop.js", "GridLayout.js", "obsolete.js", "requireTest01.js", "rhino-compat.js",
+                       "Serialization.js", "test.js", "test1.js", "test2.js", "test3.js", "test4.js", "testaudio.js",
+                       "workspace.js"]
+        return jsFiles.reject(function(ea) { return rejects.include(ea) });
     },
 
     getViewTitle: function() {

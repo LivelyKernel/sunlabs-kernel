@@ -1288,6 +1288,7 @@ TextListMorph.subclass("ListMorph", {
             this.savedFill = item.getFill();
             item.setFill(TextSelectionMorph.prototype.style.fill);
             selectionContent = this.itemList[lineNo];
+            if (selectionContent.isListItem) selectionContent = selectionContent.value;
             this.scrollItemIntoView(item);
         }
         shouldUpdateModel && this.setSelection(selectionContent);
@@ -1423,6 +1424,7 @@ Morph.subclass("MenuMorph", {
 	
         $super(pt(0, 0).extentAsRectangle(), "rect");
         this.items = items.map(function(item) {
+            if (Object.isString()) throw dbgOn(new Error('String instead of item specification for menu, maybe one array missing?'));
             return this.addPseudoMorph(Object.isArray(item[1]) ?
                     new SubMenuItem(item[0], item[1], item[2], item[3]) :
                     new MenuItem(item[0], item[1], item[2], item[3])); 
