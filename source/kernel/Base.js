@@ -34,7 +34,7 @@ function namespace(spec, context) {
         }
         else {//spec is a specification object e.g, {com: {trifork: ['model,view']}}
             for (i in spec) if (spec.hasOwnProperty(i)) {
-                context[i] = context[i] || new lively.lang.Namespace();
+                context[i] = context[i] || new lively.lang.Namespace(context, i);
                 namespace(spec[i], context[i]);//recursively descend tree
             }
         }
@@ -47,7 +47,7 @@ function namespace(spec, context) {
 		if (!Class.isValidIdentifier(spec)) {
                     throw new Error('"'+spec+'" is not a valid name for a package.');
 		}
-                context[spec] = context[spec] || new lively.lang.Namespace();
+                context[spec] = context[spec] || new lively.lang.Namespace(context, spec);
                 context = context[spec];
             }
         })();
@@ -109,7 +109,7 @@ function module(moduleName, context) {
         namespace(namespaceIdentifier, context);
         
         var module = lively.lang.Namespace.objectNamed(namespaceIdentifier, context);
-        module.namespaceIdentifier = namespaceIdentifier; // FIXME just for now...
+        // module.namespaceIdentifier = namespaceIdentifier; // FIXME just for now...
         return module;
     }
     
@@ -602,6 +602,10 @@ Object.subclass('Namespace', {
     
     isNamespace: true,
     
+    initialize: function(context, nsName) {
+        this.namespaceIdentifier = context.namespaceIdentifier + '.' + nsName;
+    },
+    
     subNamespaces: function(recursive) {
         return Object.values(this)
             .select(function(ea) { try { return ea && ea.isNamespace && ea !== this } catch(e) {return false} })
@@ -623,14 +627,17 @@ Namespace.objectNamed = function(string, context) {
     return string.split('.').inject(context || Global, function(context, name) { return context[name] });
 };
 
+// let Glabal act like a namespace itself
+Object.extend(Global, Namespace.prototype);
+Global.namespaceIdentifier = 'Global';
+
 // namespace('lively.lang');
-lively = new Namespace();
-lively.lang = new Namespace();
+lively = new Namespace(Global, 'lively');
+lively.lang = new Namespace(lively, 'lang');
 lively.lang.Namespace = Namespace;
 delete Namespace;
 
-// let Glabal act like a namespace itself
-Object.extend(Global, lively.lang.Namespace.prototype);
+
 
 
 lively.lang.Execution = { // will be extended later
