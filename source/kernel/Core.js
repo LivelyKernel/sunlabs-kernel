@@ -298,8 +298,12 @@ Record.subclass('lively.data.StyleRecord', {
     
     if (platformConsole.warn && platformConsole.info && platformConsole.assert) {
 	// it's a Firebug/Firebug lite console, it does all we want, so no extra work necessary
-	Global.console = platformConsole;
-	Global.console.consumers = [platformConsole]; // compatibility fix
+	try {
+            Global.console = platformConsole;
+            Global.console.consumers = [platformConsole]; // compatibility fix	        
+	} catch (e) {
+	    platformConsole.log('Problem with setting Global.console?');
+	}
     } else {
 	// rebind to something that has all the calls
 	Global.console = {

@@ -604,7 +604,7 @@ Object.subclass('Namespace', {
     
     subNamespaces: function(recursive) {
         return Object.values(this)
-            .select(function(ea) { return ea && ea.isNamespace && ea !== this })
+            .select(function(ea) { try { return ea && ea.isNamespace && ea !== this } catch(e) {return false} })
             .inject([], function(all, ea) { all.push(ea); return recursive ? all.concat(ea.subNamespaces(true)) : all })
     },
     
