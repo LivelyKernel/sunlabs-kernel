@@ -38,6 +38,18 @@ TestCase.subclass('ClassTest', {
 		A.subclass('B', {});
 		var result = A.superclasses();
 		this.assertEqualState(result, [Object, TestCase, A]);
+	},
+	
+	testSuperMethodsAreAssignedCorrectly: function() {
+	    var className = 'DummyTestSuperMethods';
+	    this.assert(!Global[className], 'Test already there');
+	    Object.subclass(className, {
+            a: function($super) { 1 },
+            b: function($super) { 2 }
+        });
+        var aSource = Global[className].prototype.a.toString();
+        delete Global[className];
+        this.assertEqual(aSource, 'function ($super) { 1 }');
 	}
 });
 
