@@ -618,6 +618,12 @@ Object.subclass('Namespace', {
         var ownClasses = Object.values(this).select(function(ea) { return ea && ea !== this.constructor && Class.isClass(ea) });
         if (!recursive) return ownClasses;
         return this.subNamespaces().inject(ownClasses, function(classes, namespace) { return classes.concat(namespace.classes(true)) });
+    },
+    
+    functions: function(recursive) {        
+        var ownFunctions = Object.values(this).select(function(ea) { return ea && !Class.isClass(ea) && Object.isFunction(ea) && !ea.declaredClass && this.requires !== ea }, this);
+        if (!recursive) return ownFunctions;
+        return this.subNamespaces().inject(ownFunctions, function(functions, namespace) { return functions.concat(namespace.functions(true)) });
     }
     
 });

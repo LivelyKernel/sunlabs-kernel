@@ -60,10 +60,13 @@ TestCase.subclass('NamespaceTest', {
         namespace('testNamespace.one');
         namespace('testNamespace.two');
         namespace('testNamespace.three.threeOne');        
-        //create classes
+        // create classes
         Object.subclass('testNamespace.Dummy');
         Object.subclass('testNamespace.one.Dummy');
         Object.subclass('testNamespace.three.threeOne.Dummy');
+        // create functions
+        testNamespace.dummyFunc = function() { return 1 };
+        testNamespace.three.threeOne.dummyFunc = function() { return 2 };
     },
     
     tearDown: function() {
@@ -102,5 +105,18 @@ TestCase.subclass('NamespaceTest', {
         this.assert(result.include(testNamespace.Dummy));
         this.assert(result.include(testNamespace.one.Dummy));
         this.assert(result.include(testNamespace.three.threeOne.Dummy));
-    }
+    },
+    
+    testGetAllNamespaceFunctions: function() {
+        result = testNamespace.functions(false);
+        this.assertEqual(result.length, 1);
+        this.assert(result.include(testNamespace.dummyFunc));
+    },
+    
+    testGetAllNamespaceFunctionsrecursive: function() {
+        result = testNamespace.functions(true);
+        this.assertEqual(result.length, 2);
+        this.assert(result.include(testNamespace.dummyFunc));
+        this.assert(result.include(testNamespace.three.threeOne.dummyFunc));
+    },
 })

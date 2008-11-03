@@ -41,17 +41,21 @@ Widget.subclass('lively.Tools.SystemBrowser', {
         // this.ownModel(model);
         this.setModules(this.listModules());
         
+        // FIXME modes just for now, better solution reqiured
+        this.mode = 'class'; /* also: function, object*/
+        
         if (!module.SourceControl) module.SourceControl = new SourceDatabase();
         module.SourceControl.scanLKFiles();
     },
     
-buildView: function (extent) {
+    buildView: function (extent) {
         var panel = PanelMorph.makePanedPanel(extent, [
             ['modulesList', newRealListPane, new Rectangle(0, 0, 0.35, 0.45)],
             ['classList', newRealListPane, new Rectangle(0.35, 0, 0.3, 0.45)],
             ['methodList', newRealListPane, new Rectangle(0.65, 0, 0.35, 0.45)],
-            ['sourceCodePane', newTextPane, new Rectangle(0, 0.45, 1, 0.55)]
-            // ['runAllButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0.5, 0.6, 0.5, 0.05)],
+            ['sourceCodePane', newTextPane, new Rectangle(0, 0.5, 1, 0.5)],
+            ['showClassesBtn', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0, 0.45, 0.18, 0.05)],
+            ['showFunctionsBtn', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0.18, 0.45, 0.17, 0.05)],
             // ['resultBar', function(initialBounds){return new TextMorph(initialBounds)}, new Rectangle(0, 0.65, 1, 0.05)],
         ]);
 
@@ -69,9 +73,18 @@ buildView: function (extent) {
 
         morph = panel.sourceCodePane;
         morph.connectModel(model.newRelay({Text: "MethodSource"}));
-	            
+	    
+	    morph = panel.showFunctionsBtn;
+	    morph.setLabel('functions')
+	    morph.connectModel({model: this, setValue: "showFunctions"});
+	    
+	    morph = panel.showClassesBtn;
+	    morph.setLabel('classes');
+	    morph.connectModel({model: this, setValue: "showClasses"});
+	    
         return panel;
     },
+    
     listModules: function() {
         return [Global].concat(Global.subNamespaces(true)).collect(function(ea) {
             return {isListItem: true, string: ea.namespaceIdentifier || 'unnamed', value: ea} });
@@ -92,14 +105,37 @@ buildView: function (extent) {
         });
     },
     
+    listFunctions: function(module) {
+        return module.functions().collect(function(ea) {
+            return {isListItem: true, string: ea.name || 'anonymous function', value: ea} });
+    },
+    
+    showFunctions: function(val) {
+        if (val) return;
+        this.mode = 'function';
+        if (this.getModule()) this.onModuleUpdate(this.getModule());
+    },
+    
+    showClasses: function(val) {
+        if (val) return;
+        this.mode = 'class';
+        if (this.getModule()) this.onModuleUpdate(this.getModule());
+    },
+    
     onModuleUpdate: function(module) {
-        console.log('got ' + module.namespaceIdentifier);
-        this.setClasses(this.listClasses(module));
+        console.log('got ' + module.namespaceIdentifier + ' , showing ' + this.mode);
+        
+        // FIXME Whoohaaa, get rid of modes!
+        if (this.mode === 'class') this.setClasses(this.listClasses(module));
+        else if (this.mode === 'function') this.setClasses(this.listFunctions(module));
+        
     },
         
     onClassUpdate: function(theClass) {
         console.log('got ' + theClass.type);
-        this.setMethods(this.listMethods(theClass));
+        
+        if (this.mode === 'class')  this.setMethods(this.listMethods(theClass));
+        else if (this.mode === 'function') this.setMethodSource(theClass.toString());
     },
     
     onMethodUpdate: function(methodName) {
@@ -111,10 +147,16 @@ buildView: function (extent) {
     onMethodSourceUpdate: function(methodString) {
         // FIXME just a quick hack to see if things work...
         // console.log('got new source ' + methodString);
+        
+        if (this.mode === 'function') {
+            
+            return;
+        }
+        
+        // ----- show method source ----
         if (this.getClass().prototype[this.getMethod()].toString() == methodString) return;
-        var methodDict = module.SourceControl.methodDictFor(this.getClass().type);
-        var methodDescr = methodDict[this.getMethod()];
-        // ------------------
+
+        // ----- evaluating -------
         var methodDef = this.getClass().type + ".prototype." + this.getMethod() + " = " + methodString;
         try {
             eval(methodDef);
@@ -124,7 +166,14 @@ buildView: function (extent) {
             return;
         }
         // ChangeSet.current().logChange({type: 'method', className: className, methodName: methodName, methodString: methodString});
-        // ------------------
+        
+        // ----- writing -------
+        var methodDict = module.SourceControl.methodDictFor(this.getClass().type);
+        var methodDescr = methodDict[this.getMethod()];
+        if (!methodDescr) {
+            console.log('can\'t find method descriptor for ' + this.getMethod());
+            return
+        }
         if (!methodString.startsWith(this.getMethod())) methodString = this.getMethod() + ': ' + methodString;
         if (!methodString.endsWith(',')) methodString += ',';
         methodDescr.putSourceCode(methodString);
@@ -1789,7 +1838,7 @@ ChangeList.subclass('SourceDatabase', {
     
     interestingLKFileNames: function() {
         var kernelFileNames = new FileDirectory(URL.source).filenames();
-        var testFileNames = new FileDirectory(URL.source.withFilename('Tests/')).filenames();
+        var testFileNames = []/*new FileDirectory(URL.source.withFilename('Tests/')).filenames()*/;
         var jsFiles = kernelFileNames.concat(testFileNames).select(function(ea) { return ea.endsWith('.js') });
         jsFiles = jsFiles.uniq();
         // FIXME remove
