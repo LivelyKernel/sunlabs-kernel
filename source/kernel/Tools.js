@@ -104,12 +104,13 @@ buildView: function (extent) {
     
     onMethodUpdate: function(methodName) {
         console.log('got ' + methodName);
+        Global.y && dbgOn(true);
         this.setMethodSource(this.getClass().prototype[methodName].toString());
     },
     
     onMethodSourceUpdate: function(methodString) {
         // FIXME just a quick hack to see if things work...
-        console.log('got new source ' + methodString);
+        // console.log('got new source ' + methodString);
         if (this.getClass().prototype[this.getMethod()].toString() == methodString) return;
         var methodDict = module.SourceControl.methodDictFor(this.getClass().type);
         var methodDescr = methodDict[this.getMethod()];
@@ -120,6 +121,7 @@ buildView: function (extent) {
             console.log('redefined ' + this.getMethod());
         } catch (er) {
             WorldMorph.current().alert("error evaluating method " + methodDef);
+            return;
         }
         // ChangeSet.current().logChange({type: 'method', className: className, methodName: methodName, methodString: methodString});
         // ------------------
@@ -1283,7 +1285,7 @@ Object.subclass('FileParser', {
         this.mode = mode;  // one of ["scan", "search", "import"]
         if (mode == "search") this.searchString = str;
 
-        this.verbose = false;
+        this.verbose = this.verbose || false;
         // this.verbose = (fname == "Examples.js");
         this.ptr = 0;
         this.lineNo = 0;
@@ -1298,6 +1300,7 @@ Object.subclass('FileParser', {
             if (this.lineNo > 100) this.verbose = false;
 
             if (this.scanComment(line)) {
+            } else if (this.scanModuleDef(line)) {
             } else if (this.scanClassDef(line)) {
             } else if (this.scanMethodDef(line)) {
             } else if (this.scanMainConfigBlock(line)) {
@@ -1347,6 +1350,16 @@ Object.subclass('FileParser', {
         return false;
     },
 
+    scanModuleDef: function(line) {
+        // FIXME module defs ending on the same line
+        var match = line.match(/\s*module\([\'\"]([a-zA-Z\.]*)[\'\"]\).*\(\{\s*/);
+        if (match == null)  return false;
+        this.processCurrentDef();
+        if (this.verbose) console.log("Module def: " + match[1]);
+        this.currentDef = {type: "moduleDef", name: match[1], startPos: this.ptr, lineNo: this.lineNo};
+        return true;
+    },
+    
     scanClassDef: function(line) {
         // *** Need to catch Object.extend both Foo and Foo.prototype ***
         var match = line.match(/^[\s]*([\w\.]+)\.subclass\([\'\"]([\w\.]+)[\'\"]/);

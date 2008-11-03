@@ -177,7 +177,7 @@ Widget.subclass('lively.TileScripting.ScriptEnvironment', {
     viewTitle: "ScriptBox",
     viewExtent: pt(200,300),
     
-    buildView: function(extent) {
+buildView: function (extent) {
         var panel = PanelMorph.makePanedPanel(this.viewExtent, [
             ['runButton', function(initialBounds) { return new ButtonMorph(initialBounds) }, new Rectangle(0, 0, 0.3, 0.1)],
             ['delayText', function(initialBounds) { return new TextMorph(initialBounds) }, new Rectangle(0.5, 0, 0.2, 0.1)],
@@ -212,7 +212,6 @@ Widget.subclass('lively.TileScripting.ScriptEnvironment', {
 		this.panel = panel;
         return panel;
     },
-    
     openIn: function($super, world, optLoc) {
         var window = $super(world, optLoc);
         window.openAllToDnD();
@@ -332,21 +331,29 @@ Morph.subclass('lively.TileScripting.TileHolder', {
     },
     
     okToBeGrabbedBy: Functions.Null,
-    
-    layoutChanged: function($super) {
-        $super();
-        var maxExtent = this.submorphs.select(function(ea){ return ea.isDropArea }).inject(pt(0,0), function(maxExt, ea) {
-            return maxExt.maxPt(ea.getPosition().addPt(ea.getExtent()));
-        });
-        if (this.getExtent().x < maxExtent.x) {
-            // FIXME
-            // this.owner && this.owner.owner && this.owner.owner.setExtent(pt(maxExtent.x, this.owner.owner.getExtent().y));
-            // this.owner && this.owner.setExtent(pt(maxExtent.x, this.owner.getExtent().y));
-            // this.setExtent(pt(maxExtent.x, this.getExtent().y));
-        }
-    }
+     
+     layoutChanged: function($super) {
+         $super();
+         var maxExtent = this.submorphs.select(function(ea){ return ea.isDropArea }).inject(pt(0,0), function(maxExt, ea) {
+             return maxExt.maxPt(ea.getPosition().addPt(ea.getExtent()));
+         });
+         if (this.getExtent().x < maxExtent.x) {
+             // FIXME
+             // this.owner && this.owner.owner && this.owner.owner.setExtent(pt(maxExtent.x, this.owner.owner.getExtent().y));
+             // this.owner && this.owner.setExtent(pt(maxExtent.x, this.owner.getExtent().y));
+             // this.setExtent(pt(maxExtent.x, this.getExtent().y));
+         }
+     }
 });
-    
+
+Object.subclass('Test', {
+
+    a: function($super) { 1 },
+        
+    b: function($super) { 2 }
+
+});
+
 Morph.subclass('lively.TileScripting.Tile', {
 
     isTile: true,
