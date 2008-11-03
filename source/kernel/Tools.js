@@ -27,6 +27,9 @@ module('lively.Tools').requires('lively.Text').toRun(function(module, text) {
 // ['test', function() { console.log('click!') }],
 // ['sub', [['test2', function() { console.log('click2!') }]]]
 // ]
+
+
+
 Widget.subclass('lively.Tools.SystemBrowser', {
     
     viewTitle: "Enhanced Javascript Code Browser",
@@ -149,10 +152,32 @@ Widget.subclass('lively.Tools.SystemBrowser', {
         // console.log('got new source ' + methodString);
         
         if (this.mode === 'function') {
+            var func = this.getClass();
+            var newSource = methodString;
+            if (func.toString() == newSource) return;
+            if (!func.name) {
+                console.log('Cannot define or write anonymous function!');
+                return;
+            }
+            // eval
+            try {
+                eval(newSource);
+                console.log('redefined ' + func.name);
+            } catch (er) {
+                WorldMorph.current().alert("error evaluating function " + newSource);
+                return;
+            }
             
+            // writing
+            var funcDescr = module.SourceControl.functionDefFor(func.name);
+            if (!funcDescr) {
+                console.log('can\'t find function descriptor for ' + func.name);
+                return
+            }
+            funcDescr.putSourceCode(newSource);
             return;
-        }
-        
+        };
+        //-----------------------------------------------------------------------------
         // ----- show method source ----
         if (this.getClass().prototype[this.getMethod()].toString() == methodString) return;
 
@@ -1411,9 +1436,9 @@ Object.subclass('FileParser', {
     },
     
     scanFunctionDef: function(line) {
-        var match = line.match(/^[\s]*function[\s]+([\w]+)[\s]*\([\w\,]*\)[\s]*\{.*/);
+        var match = line.match(/^[\s]*function[\s]+([\w]+)[\s]*\(.*\)[\s]*\{.*/);
         if (!match)
-            match = line.match(/^[\s]*var[\s]+([\w]+)[\s]*\=[\s]*function\([\w\,]*\)[\s]*\{.*/);
+            match = line.match(/^[\s]*var[\s]+([\w]+)[\s]*\=[\s]*function\(.*\)[\s]*\{.*/);
         if (match == null) return false;
         this.processCurrentDef();
         if (this.verbose) console.log("Function def: " + match[1]);
@@ -1471,6 +1496,8 @@ Object.subclass('FileParser', {
                 this.sourceDB.methodDictFor(this.currentClassName)["*definition"] = descriptor;
             } else if (def.type == "methodDef") {
                 this.sourceDB.methodDictFor(this.currentClassName)[def.name] = descriptor;
+            } else if (def.type == "functionDef") {
+                this.sourceDB.addFunctionDef(descriptor);
             }
             this.changeList.push(descriptor);
         }
@@ -1706,10 +1733,20 @@ ChangeList.subclass('SourceDatabase', {
 
     initialize: function($super) {
         this.methodDicts = {};
+        this.functionDefs = {};
         this.cachedFullText = {};
         this.editHistory = {};
     },
 
+    addFunctionDef: function(def) {
+        if (def.type !== 'functionDef') throw dbgOn(new Error('Wrong def'));
+        this.functionDefs[def.name] = def;
+    },
+    
+    functionDefFor: function(functionName) {
+        return this.functionDefs[functionName];
+    },
+    
     methodDictFor: function(className) {
         if (!this.methodDicts[className]) this.methodDicts[className] = {}; 
         return this.methodDicts[className];

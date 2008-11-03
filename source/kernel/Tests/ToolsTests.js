@@ -56,6 +56,14 @@ TestCase.subclass('lively.Tests.ToolsTests.FileParserTest', {
         this.sut.parseFile('4', 0, source, null/*db*/, 'scan', null/*search_str*/)
         this.assertEqual(this.sut.changeList.length, 3);
         this.assertEqual(this.sut.changeList[1].type, 'functionDef');
+    },
+    
+    testScanFunctionDefInDB: function() {
+        var source = "function abc(a,b,c) {\n return 1+2;\n};"
+        var db = new SourceDatabase();
+        this.sut.parseFile('5', 0, source, db, 'import', null/*search_str*/)
+        this.assertEqual(this.sut.changeList.length, 1);
+        this.assertEqual(this.sut.changeList[0].type, 'functionDef');
     }
     
   
