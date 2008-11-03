@@ -1301,6 +1301,7 @@ Object.subclass('FileParser', {
 
             if (this.scanComment(line)) {
             } else if (this.scanModuleDef(line)) {
+            } else if (this.scanFunctionDef(line)) {
             } else if (this.scanClassDef(line)) {
             } else if (this.scanMethodDef(line)) {
             } else if (this.scanMainConfigBlock(line)) {
@@ -1357,6 +1358,17 @@ Object.subclass('FileParser', {
         this.processCurrentDef();
         if (this.verbose) console.log("Module def: " + match[1]);
         this.currentDef = {type: "moduleDef", name: match[1], startPos: this.ptr, lineNo: this.lineNo};
+        return true;
+    },
+    
+    scanFunctionDef: function(line) {
+        var match = line.match(/^[\s]*function[\s]+([\w]+)[\s]*\([\w\,]*\)[\s]*\{.*/);
+        if (!match)
+            match = line.match(/^[\s]*var[\s]+([\w]+)[\s]*\=[\s]*function\([\w\,]*\)[\s]*\{.*/);
+        if (match == null) return false;
+        this.processCurrentDef();
+        if (this.verbose) console.log("Function def: " + match[1]);
+        this.currentDef = {type: "functionDef", name: match[1], startPos: this.ptr, lineNo: this.lineNo};
         return true;
     },
     
