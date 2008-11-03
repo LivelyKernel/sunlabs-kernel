@@ -283,19 +283,21 @@ Object.extend(Function.prototype, {
 	    
 	    if (ancestor && Object.isFunction(value) && value.argumentNames
 		&& value.argumentNames().first() == "$super") {
-		var method = value;
-		var advice = (function(m) {
-		    return function callSuper() { 
-			return ancestor[m].apply(this, arguments);
-		    };
-		})(property);
-		advice.methodName = "$super:" + (this.superclass ? this.superclass.type + "." : "") + property;
-		
-		value = Object.extend(advice.wrap(method), {
-		    valueOf:  function() { return method },
-		    toString: function() { return method.toString() },
-		    originalFunction: method
-		});
+		(function() { // wrapped in a method to save the value of 'method' for advice
+        	    var method = value;
+                    var advice = (function(m) {
+        		return function callSuper() { 
+        		    return ancestor[m].apply(this, arguments);
+        		};
+		    })(property);
+		    advice.methodName = "$super:" + (this.superclass ? this.superclass.type + "." : "") + property;
+	
+		    value = Object.extend(advice.wrap(method), {
+	                valueOf:  function() { return method },
+		        toString: function() { return method.toString() },
+		        originalFunction: method
+		    });
+	        })();
 	    }
 	    this.prototype[property] = value;
 	    
