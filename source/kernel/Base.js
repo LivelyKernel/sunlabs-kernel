@@ -608,22 +608,28 @@ Object.subclass('Namespace', {
         this.namespaceIdentifier = context.namespaceIdentifier + '.' + nsName;
     },
     
+    gather: function(selector, condition, recursive) {
+        var result = Object.values(this).select(function(ea) { return condition.call(this, ea) }, this);
+        if (!recursive) return result;
+        return  this.subNamespaces().inject(result, function(result, ns) { return result.concat(ns[selector](true)) });
+    },
+    
     subNamespaces: function(recursive) {
-        return Object.values(this)
-            .select(function(ea) { try { return ea && ea.isNamespace && ea !== this } catch(e) {return false} })
-            .inject([], function(all, ea) { all.push(ea); return recursive ? all.concat(ea.subNamespaces(true)) : all })
+        return this.gather('subNamespaces',
+                    function(ea) { try { return ea && ea.isNamespace && ea !== this } catch(e) {return false} },
+                    recursive);
     },
     
     classes: function(recursive) {        
-        var ownClasses = Object.values(this).select(function(ea) { return ea && ea !== this.constructor && Class.isClass(ea) });
-        if (!recursive) return ownClasses;
-        return this.subNamespaces().inject(ownClasses, function(classes, namespace) { return classes.concat(namespace.classes(true)) });
+        return this.gather('classes',
+                    function(ea) { return ea && ea !== this.constructor && Class.isClass(ea) },
+                    recursive);
     },
     
-    functions: function(recursive) {        
-        var ownFunctions = Object.values(this).select(function(ea) { return ea && !Class.isClass(ea) && Object.isFunction(ea) && !ea.declaredClass && this.requires !== ea }, this);
-        if (!recursive) return ownFunctions;
-        return this.subNamespaces().inject(ownFunctions, function(functions, namespace) { return functions.concat(namespace.functions(true)) });
+    functions: function(recursive) {
+        return this.gather('functions',
+                    function(ea) { return ea && !Class.isClass(ea) && Object.isFunction(ea) && !ea.declaredClass && this.requires !== ea },
+                    recursive);
     }
     
 });
