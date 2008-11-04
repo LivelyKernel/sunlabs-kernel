@@ -76,7 +76,7 @@ function moduleLoaded(module) {
     console.log('declaring ' + module + ' as loaded');
     Object.keys(PendingRequirements)
         .select(function(ea) { return Object.isArray(PendingRequirements[ea]) })
-        .each(function(ea) { PendingRequirements[ea] = PendingRequirements[ea].without(module) });
+        .forEach(function(ea) { PendingRequirements[ea] = PendingRequirements[ea].without(module) });
 };
 // FIXME depends on 'Document' and Loader
 function noPendingRequirements(module) {
@@ -142,7 +142,7 @@ function module(moduleName, context) {
 	return {toRun: function(code) {
             code = code.curry(module); // pass in own module name for nested requirements
             var codeWrapper = function() { // run code with namespace modules as additional parameters
-                code.apply(this, preReqModuleNames.collect(function(ea) {
+                code.apply(this, preReqModuleNames.map(function(ea) {
                     var nsIdentifier = isNamespaceAwareModule(ea) ? ea : convertUrlToNSIdentifier(ea);
                     return lively.lang.Namespace.objectNamed(nsIdentifier)
                 }));

@@ -2340,10 +2340,10 @@ Morph.subclass('LabeledTextMorph', {
         this.applyStyle({borderWidth: 0, fill: Color.veryLightGray});        
         this.label = label;
         this.text = text;
-        [this, this.label, this.text].each(function(m) {
-             m.suppressHandles = true;
-             m.closeDnD();
-        });
+        [this, this.label, this.text].forEach(function() {
+            this.suppressHandles = true;
+            this.closeDnD();
+        }, this);
         this.setExtent(textPos.addPt(text.getExtent())); // include the padding in own size
     },
 
@@ -2462,7 +2462,7 @@ Object.subclass('RunArray', {
     },
     length: function() {
 	var len = 0;
-	this.runs.each(function(runLength) { len += runLength; });
+	this.runs.forEach(function(runLength) { len += runLength; });
 	return len;
     },
     clone: function() {

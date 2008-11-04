@@ -37,7 +37,7 @@ var Loader = {
             urls = urls.without(url);
             if (urls.length == 0) actionWhenDone();
         };
-        urls.each(function(ea) { Loader.loadScript(ea, notifier.curry(ea)) });
+        urls.forEach(function(ea) { Loader.loadScript(ea, notifier.curry(ea)) });
     },
     
     loadScript: function(url /*not really a url yet*/, onLoadAction, embedSerializable) {
@@ -458,7 +458,7 @@ var Converter = {
 	if (!value || !Object.isString(value) || !value.include('XML')) return value;
 	var unserialized = JSON.unserialize(value);
 	if (!unserialized.XML) return value;
-    // var xmlString = value.substring("XML:".length);
+	// var xmlString = value.substring("XML:".length);
 	// FIXME if former XML was an Element, it has now a new parentNode, seperate in Elements/Documents?
 	//dbgOn(true);
 	var node = new DOMParser().parseFromString(unserialized.XML, "text/xml");
@@ -1853,8 +1853,8 @@ Shape.subclass('PathShape', {
             };
             return all;
         });
-        var points = pointSpecs.collect(function(ea) {
-                return pt(Number(ea.x), Number(ea.y));
+        var points = pointSpecs.map(function(ea) {
+            return pt(Number(ea.x), Number(ea.y));
         });
         return points;
     },
@@ -3870,7 +3870,7 @@ Morph.addMethods({
         // Close this and all submorphs to drag and drop
         this.closeDnD(); 
         // make this recursive to give children a chance to interrupt...
-        this.submorphs.each( function(ea) { ea.closeAllToDnD(); });
+        this.submorphs.forEach( function(ea) { ea.closeAllToDnD(); });
     },
 
     openAllToDnD: function() {
@@ -6089,7 +6089,7 @@ Morph.subclass('LinkMorph', {
             newWorld.resumeAllSuspendedScripts();
         }
 
-        carriedMorphs.each(function(m) {
+        carriedMorphs.forEach(function(m) {
 	    var hand = newWorld.firstHand();
 	    hand.addMorph(m);
 	    hand.showAsGrabbed(m);
