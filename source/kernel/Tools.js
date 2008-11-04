@@ -15,10 +15,6 @@
 
 module('lively.Tools').requires('lively.Text').toRun(function(module, text) {
 
-// ===========================================================================
-// Class Browser -- A simple browser for Lively Kernel code
-// ===========================================================================
-
 // Modules: "+Modules" --> setModule in model
 // Modules: "-Modules" --> getModule in model
 // Modules: "Modules" --> getModule and getModule in model, onModuleUpdate required
@@ -31,7 +27,8 @@ module('lively.Tools').requires('lively.Text').toRun(function(module, text) {
 
 
 Widget.subclass('lively.Tools.SystemBrowser', {
-    
+
+    documentation: 'Widget with three list panes and one text pane. Uses nodes to display and manipulate content.',
     viewTitle: "Enhanced Javascript Code Browser",
     initialViewExtent: pt(600, 400),
     formals: ["Pane1Content", "Pane1Selection", "Pane2Content", "Pane2Selection", "Pane3Content", "Pane3Selection", "SourceString"],
@@ -42,18 +39,17 @@ Widget.subclass('lively.Tools.SystemBrowser', {
         this.relayToModel(model, {Pane1Content: "+Pane1Content", Pane1Selection: "Pane1Selection", Pane2Content: "+Pane2Content",
                                   Pane2Selection: "Pane2Selection", Pane3Content: "+Pane3Content", Pane3Selection: "Pane3Selection",
                                   SourceString: "SourceString"});
-        // this.ownModel(model);
-        // this.setModules(this.listModules());
         
         if (!module.SourceControl) module.SourceControl = new SourceDatabase();
-        module.SourceControl.scanLKFiles();
+        this.sourceControl = module.SourceControl;
+        this.sourceControl.scanLKFiles();
         
         this.setPane1Content(this.rootNode().childNodesAsListItems());
     },
     
     rootNode: function() {
         if (!this._rootNode)
-            this._rootNode = new module.EnvironmentNode(Global);
+            this._rootNode = new module.EnvironmentNode(Global, this);
         return this._rootNode;
     },
     
@@ -62,8 +58,7 @@ Widget.subclass('lively.Tools.SystemBrowser', {
             ['pane1', newRealListPane, new Rectangle(0, 0, 0.35, 0.45)],
             ['pane2', newRealListPane, new Rectangle(0.35, 0, 0.3, 0.45)],
             ['pane3', newRealListPane, new Rectangle(0.65, 0, 0.35, 0.45)],
-            ['sourcePane', newTextPane, new Rectangle(0, 0.5, 1, 0.5)]
-            // ['resultBar', function(initialBounds){return new TextMorph(initialBounds)}, new Rectangle(0, 0.65, 1, 0.05)],
+            ['sourcePane', newTextPane, new Rectangle(0, 0.45, 1, 0.55)]
         ]);
 
         var model = this.getModel();
@@ -71,13 +66,29 @@ Widget.subclass('lively.Tools.SystemBrowser', {
         
         morph = panel.pane1;
         morph.connectModel(model.newRelay({List: "-Pane1Content", Selection: '+Pane1Selection'}), true);
+        morph.withAllSubmorphsDo(function() {
+            if (this instanceof TextMorph) return;
+            this.onMouseOver = function(evt) { console.log('moved over pane 1') };
+            this.onMouseOut = function(evt) { console.log('leaving pane 1') };
+        })
+        
         
         morph = panel.pane2;
         morph.connectModel(model.newRelay({List: "-Pane2Content", Selection: '+Pane2Selection'}));
+        morph.withAllSubmorphsDo(function() {
+            if (this instanceof TextMorph) return;
+            this.onMouseOver = function(evt) { console.log('moved over pane 2') };
+            this.onMouseOut = function(evt) { console.log('leaving pane 2') };
+        })
         
         morph = panel.pane3;
         morph.connectModel(model.newRelay({List: "-Pane3Content", Selection: '+Pane3Selection'}));
-
+        morph.withAllSubmorphsDo(function() {
+            if (this instanceof TextMorph) return;
+            this.onMouseOver = function(evt) { console.log('moved over pane 3') };
+            this.onMouseOut = function(evt) { console.log('leaving pane 3') };
+        })
+        
         morph = panel.sourcePane;
         morph.connectModel(model.newRelay({Text: "SourceString"}));
 	    	    
@@ -87,12 +98,15 @@ Widget.subclass('lively.Tools.SystemBrowser', {
     onPane1SelectionUpdate: function(node) {
         this.setPane2Content(node.childNodesAsListItems());
         this.setPane3Content(['-----']);
+        // this.setPane2Selection(null);
+        // this.setPane3Selection(null);
         this.setSourceString(node.sourceString());
     },
     
     onPane2SelectionUpdate: function(node) {
         this.setPane3Content(node.childNodesAsListItems());
         this.setSourceString(node.sourceString());
+        // this.setPane3Selection(null);
     },
     
     onPane3SelectionUpdate: function(node) {
@@ -100,68 +114,20 @@ Widget.subclass('lively.Tools.SystemBrowser', {
     },
         
     onSourceStringUpdate: function(methodString) {
-        // FIXME just a quick hack to see if things work...
-        // console.log('got new source ' + methodString);
         if (methodString == '-----') return;
-        
-        // if (this.mode === 'function') {
-        //     var func = this.getClass();
-        //     var newSource = methodString;
-        //     if (func.toString() == newSource) return;
-        //     if (!func.name) {
-        //         console.log('Cannot define or write anonymous function!');
-        //         return;
-        //     }
-        //     // eval
-        //     try {
-        //         eval(newSource);
-        //         console.log('redefined ' + func.name);
-        //     } catch (er) {
-        //         WorldMorph.current().alert("error evaluating function " + newSource);
-        //         return;
-        //     }
-        //     
-        //     // writing
-        //     var funcDescr = module.SourceControl.functionDefFor(func.name);
-        //     if (!funcDescr) {
-        //         console.log('can\'t find function descriptor for ' + func.name);
-        //         return
-        //     }
-        //     funcDescr.putSourceCode(newSource);
-        //     return;
-        // };
-        // //-----------------------------------------------------------------------------
-        // // ----- show method source ----
-        // if (this.getClass().prototype[this.getMethod()].toString() == methodString) return;
-        // 
-        // // ----- evaluating -------
-        // var methodDef = this.getClass().type + ".prototype." + this.getMethod() + " = " + methodString;
-        // try {
-        //     eval(methodDef);
-        //     console.log('redefined ' + this.getMethod());
-        // } catch (er) {
-        //     WorldMorph.current().alert("error evaluating method " + methodDef);
-        //     return;
-        // }
-        // // ChangeSet.current().logChange({type: 'method', className: className, methodName: methodName, methodString: methodString});
-        // 
-        // // ----- writing -------
-        // var methodDict = module.SourceControl.methodDictFor(this.getClass().type);
-        // var methodDescr = methodDict[this.getMethod()];
-        // if (!methodDescr) {
-        //     console.log('can\'t find method descriptor for ' + this.getMethod());
-        //     return
-        // }
-        // if (!methodString.startsWith(this.getMethod())) methodString = this.getMethod() + ': ' + methodString;
-        // if (!methodString.endsWith(',')) methodString += ',';
-        // methodDescr.putSourceCode(methodString);
+        var responsibleNode = this.getPane3Selection() || this.getPane2Selection() || this.getPane1Selection();
+        if (responsibleNode.sourceString() == methodString) return;
+        responsibleNode.newSource(methodString);
     }
 });
 
 Object.subclass('lively.Tools.BrowserNode', {
     
-    initialize: function(target) {
+    documentation: 'Abstract node, defining the node interface',
+    
+    initialize: function(target, browser) {
         this.target = target;
+        this.browser = browser;
     },
     
     childNodes: function() {
@@ -179,7 +145,24 @@ Object.subclass('lively.Tools.BrowserNode', {
     },
     
     sourceString: function() {
-        return '---'
+        return '-----'
+    },
+    
+    newSource: function(newSource) {
+        if (!this.evalSource(newSource)) {
+            console.log('couldn\'t eval');
+            return
+        }
+        if (!this.saveSource(newSource, module.SourceControl))
+            console.log('couldn\'t save');        
+    },
+    
+    evalSource: function(newSource) {
+        return false;
+    },
+    
+    saveSource: function(newSource, sourceControl) {
+        return false;
     }
     
 });
@@ -187,14 +170,14 @@ Object.subclass('lively.Tools.BrowserNode', {
 module.BrowserNode.subclass('lively.Tools.EnvironmentNode', {
         
     childNodes: function() {
-        return this.target.subNamespaces().concat([this.target]).collect(function(ea) { return new module.NamespaceNode(ea) });
+        return this.target.subNamespaces(true).concat([this.target]).collect(function(ea) { return new module.NamespaceNode(ea, this.browser) });
     }
 });
 
 module.BrowserNode.subclass('lively.Tools.NamespaceNode', { // rename to ModuleNode
 
-    initialize: function($super, target) {
-        $super(target);
+    initialize: function($super, target, browser) {
+        $super(target, browser);
         // modes will be replaced with FilterObjects
         // for now mode can be one of: functions, classes, objects
         this.mode = 'classes';
@@ -202,7 +185,7 @@ module.BrowserNode.subclass('lively.Tools.NamespaceNode', { // rename to ModuleN
             
     childNodes: function() {
         switch (this.mode) {
-           case "classes": return this.target.classes().collect(function(ea) { return new module.ClassNode(ea) });
+           case "classes": return this.target.classes().collect(function(ea) { return new module.ClassNode(ea, this.browser) });
         }
     },
     
@@ -212,8 +195,8 @@ module.BrowserNode.subclass('lively.Tools.NamespaceNode', { // rename to ModuleN
 });
 
 module.BrowserNode.subclass('lively.Tools.ClassNode', {
-    initialize: function($super, target) {
-        $super(target);
+    initialize: function($super, target, browser) {
+        $super(target, browser);
         // again: get rid of modes
         // for now mode can be one of: class, instance
         this.mode = 'instance';
@@ -223,9 +206,9 @@ module.BrowserNode.subclass('lively.Tools.ClassNode', {
         var theClass = this.target;
         switch (this.mode) {
            case "instance":
-            return theClass.functionNames().collect(function(ea) {
-                return new module.MethodNode(theClass.prototype[ea])
-            });
+            return theClass.functionNames()
+                .select(function(ea) { return theClass.prototype.hasOwnProperty(ea) })
+                .collect(function(ea) { return new module.MethodNode(theClass.prototype[ea], this.browser, theClass) }.bind(this));
         }
     },
     
@@ -240,16 +223,52 @@ module.BrowserNode.subclass('lively.Tools.ClassNode', {
 
 module.BrowserNode.subclass('lively.Tools.MethodNode', {
     
+    initialize: function($super, target, browser, theClass) {
+        $super(target, browser);
+        this.theClass = theClass;
+    },
+    
     sourceString: function() {
         return this.target.toString();
     },
     
     asString: function() {
         return this.target.methodName || 'method without property methodName'
+    },
+    
+    evalSource: function(newSource) {
+        var methodName = this.target.methodName;
+        if (!methodName) throw dbgOn(new Error('No method name!'));
+        var methodDef = this.theClass.type + ".prototype." + methodName + " = " + newSource;
+        try {
+            eval(methodDef);
+            console.log('redefined ' + methodName);
+        } catch (er) {
+            WorldMorph.current().alert("error evaluating method " + methodDef);
+            return false;
+        }
+        // ChangeSet.current().logChange({type: 'method', className: className, methodName: methodName, methodString: methodString});
+        return true;
+    },
+    
+    saveSource: function(newSource, sourceControl) {
+        var methodName = this.target.methodName;
+        var methodDict = sourceControl.methodDictFor(this.theClass.type);
+        var methodDescr = methodDict[methodName];
+        if (!methodDescr) {
+            console.log('can\'t find method descriptor for ' + methodName);
+            return false;
+        }
+        if (!newSource.startsWith(methodName)) newSource = methodName + ': ' + newSource;
+        if (!newSource.endsWith(',')) newSource += ',';
+        methodDescr.putSourceCode(newSource);
+        return true; //FIXME test that saving successful?
     }
 })
 
-//----------------------
+// ===========================================================================
+// Class Browser -- A simple browser for Lively Kernel code
+// ===========================================================================
 
 Widget.subclass('SimpleBrowser', {
 

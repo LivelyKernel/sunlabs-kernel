@@ -2,6 +2,7 @@ module('lively.Tests.ToolsTests').requires('lively.Tools').toRun(function(thisMo
 
 thisModule.createDummyNamespace = function() {
     console.assert(!thisModule['testNS'], 'testNS already existing');
+    //creating 5 namespaces
     namespace('testNS.one', thisModule);
     namespace('testNS.two', thisModule);
     namespace('testNS.three.threeOne', thisModule);        
@@ -53,10 +54,10 @@ thisModule.NodeTest.subclass('lively.Tests.ToolsTests.EnvironmentNodeTest', {
     testEnvironmentNodeReturnsNS: function() {
         var sut = new toolsModule.EnvironmentNode(thisModule.testNS);
         this.assertIdentity(sut.target, thisModule.testNS);
-        var result = sut.childNodes();
-        this.assertEqual(result.length, 4);
-        result.detect(function(ea) { return ea.target === thisModule.testNS });
-        this.assert(result);
+        var result = sut.childNodes().collect(function(ea) { return ea.target });
+        this.assertEqual(result.length, 5);
+        this.assert(result.include(thisModule.testNS));
+        this.assert(result.include(thisModule.testNS.three.threeOne));
     }
 });
 
@@ -83,6 +84,7 @@ thisModule.NodeTest.subclass('lively.Tests.ToolsTests.ClassNodeTest', {
         sut.mode = 'instance';
         var result = sut.childNodes();
         this.assertEqual(result.length, sut.target.functionNames().length);
+        result.each(function(ea) { this.assertIdentity(ea.theClass, sut.target) }.bind(this));
         var method = result.detect(function(ea) { return ea.target.methodName === 'method1' });
         this.assert(method);
     },
@@ -96,11 +98,34 @@ thisModule.NodeTest.subclass('lively.Tests.ToolsTests.MethodNodeTest', {
     
     setUp: function($super) {
         $super();
-        this.sut = new toolsModule.MethodNode(thisModule.testNS.Dummy.prototype.method1); 
+        var theClass = thisModule.testNS.Dummy;
+        this.sut = new toolsModule.MethodNode(theClass.prototype.method1, null, theClass); 
     },
         
     testSource: function() {
         this.assertEqual(this.sut.sourceString(), thisModule.testNS.Dummy.prototype.method1.toString());
+    },
+    
+    testEvaluateNewSource: function() {
+        var newSource = 'function () { 2 }';
+        this.assert(this.sut.evalSource(newSource));
+        this.assertEqual(thisModule.testNS.Dummy.prototype.method1.toString(), newSource);
+    },
+    
+    testSaveNewSource: function() {
+        var newSource = 'function () { 2 }';
+        var sourceControl = {
+            methodDictFor: function(className) {
+                this.assertEqual(className, 'thisModule.testNS.Dummy');
+                return {
+                    method1: {putSourceCode: function(src) {
+                        this.assertEqual(src, 'method1: function () { 2 },')
+                    }.bind(this)}
+                }
+            }.bind(this)
+        }
+        this.assert(this.sut.evalSource(newSource));
+        this.assertEqual(thisModule.testNS.Dummy.prototype.method1.toString(), newSource);
     }
 });
 
