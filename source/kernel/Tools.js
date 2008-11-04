@@ -34,176 +34,222 @@ Widget.subclass('lively.Tools.SystemBrowser', {
     
     viewTitle: "Enhanced Javascript Code Browser",
     initialViewExtent: pt(600, 400),
-    formals: ["Modules", "Module", "Classes", "Class", "Methods", "Method", "MethodSource"],
+    formals: ["Pane1Content", "Pane1Selection", "Pane2Content", "Pane2Selection", "Pane3Content", "Pane3Selection", "SourceString"],
     
     initialize: function($super) { 
         $super();
         var model = Record.newPlainInstance((function(){var x={};this.formals.each(function(ea){x[ea]=null});return x}.bind(this))());
-        this.relayToModel(model, {Modules: "+Modules", Module: "Module", Classes: "+Classes", Class: "Class",
-                                  Methods: "+Methods", Method: "Method", MethodSource: "MethodSource"});
+        this.relayToModel(model, {Pane1Content: "+Pane1Content", Pane1Selection: "Pane1Selection", Pane2Content: "+Pane2Content",
+                                  Pane2Selection: "Pane2Selection", Pane3Content: "+Pane3Content", Pane3Selection: "Pane3Selection",
+                                  SourceString: "SourceString"});
         // this.ownModel(model);
-        this.setModules(this.listModules());
-        
-        // FIXME modes just for now, better solution reqiured
-        this.mode = 'class'; /* also: function, object*/
+        // this.setModules(this.listModules());
         
         if (!module.SourceControl) module.SourceControl = new SourceDatabase();
         module.SourceControl.scanLKFiles();
+        
+        this.setPane1Content(this.rootNode().childNodesAsListItems());
+    },
+    
+    rootNode: function() {
+        if (!this._rootNode)
+            this._rootNode = new module.EnvironmentNode(Global);
+        return this._rootNode;
     },
     
     buildView: function (extent) {
         var panel = PanelMorph.makePanedPanel(extent, [
-            ['modulesList', newRealListPane, new Rectangle(0, 0, 0.35, 0.45)],
-            ['classList', newRealListPane, new Rectangle(0.35, 0, 0.3, 0.45)],
-            ['methodList', newRealListPane, new Rectangle(0.65, 0, 0.35, 0.45)],
-            ['sourceCodePane', newTextPane, new Rectangle(0, 0.5, 1, 0.5)],
-            ['showClassesBtn', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0, 0.45, 0.18, 0.05)],
-            ['showFunctionsBtn', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0.18, 0.45, 0.17, 0.05)],
+            ['pane1', newRealListPane, new Rectangle(0, 0, 0.35, 0.45)],
+            ['pane2', newRealListPane, new Rectangle(0.35, 0, 0.3, 0.45)],
+            ['pane3', newRealListPane, new Rectangle(0.65, 0, 0.35, 0.45)],
+            ['sourcePane', newTextPane, new Rectangle(0, 0.5, 1, 0.5)]
             // ['resultBar', function(initialBounds){return new TextMorph(initialBounds)}, new Rectangle(0, 0.65, 1, 0.05)],
         ]);
 
         var model = this.getModel();
         var morph;
         
-        morph = panel.modulesList;
-        morph.connectModel(model.newRelay({List: "-Modules", Selection: '+Module'}), true);
+        morph = panel.pane1;
+        morph.connectModel(model.newRelay({List: "-Pane1Content", Selection: '+Pane1Selection'}), true);
         
-        morph = panel.classList;
-        morph.connectModel(model.newRelay({List: "-Classes", Selection: '+Class'}));
+        morph = panel.pane2;
+        morph.connectModel(model.newRelay({List: "-Pane2Content", Selection: '+Pane2Selection'}));
         
-        morph = panel.methodList;
-        morph.connectModel(model.newRelay({List: "-Methods", Selection: '+Method'}));
+        morph = panel.pane3;
+        morph.connectModel(model.newRelay({List: "-Pane3Content", Selection: '+Pane3Selection'}));
 
-        morph = panel.sourceCodePane;
-        morph.connectModel(model.newRelay({Text: "MethodSource"}));
-	    
-	    morph = panel.showFunctionsBtn;
-	    morph.setLabel('functions')
-	    morph.connectModel({model: this, setValue: "showFunctions"});
-	    
-	    morph = panel.showClassesBtn;
-	    morph.setLabel('classes');
-	    morph.connectModel({model: this, setValue: "showClasses"});
-	    
+        morph = panel.sourcePane;
+        morph.connectModel(model.newRelay({Text: "SourceString"}));
+	    	    
         return panel;
     },
     
-    listModules: function() {
-        return [Global].concat(Global.subNamespaces(true)).collect(function(ea) {
-            return {isListItem: true, string: ea.namespaceIdentifier || 'unnamed', value: ea} });
+    onPane1SelectionUpdate: function(node) {
+        this.setPane2Content(node.childNodesAsListItems());
+        this.setPane3Content(['-----']);
+        this.setSourceString(node.sourceString());
     },
     
-    listClasses: function(module) {
+    onPane2SelectionUpdate: function(node) {
+        this.setPane3Content(node.childNodesAsListItems());
+        this.setSourceString(node.sourceString());
+    },
+    
+    onPane3SelectionUpdate: function(node) {
+        this.setSourceString(node.sourceString());
+    },
+        
+    onSourceStringUpdate: function(methodString) {
+        // FIXME just a quick hack to see if things work...
+        // console.log('got new source ' + methodString);
+        if (methodString == '-----') return;
+        
+        // if (this.mode === 'function') {
+        //     var func = this.getClass();
+        //     var newSource = methodString;
+        //     if (func.toString() == newSource) return;
+        //     if (!func.name) {
+        //         console.log('Cannot define or write anonymous function!');
+        //         return;
+        //     }
+        //     // eval
+        //     try {
+        //         eval(newSource);
+        //         console.log('redefined ' + func.name);
+        //     } catch (er) {
+        //         WorldMorph.current().alert("error evaluating function " + newSource);
+        //         return;
+        //     }
+        //     
+        //     // writing
+        //     var funcDescr = module.SourceControl.functionDefFor(func.name);
+        //     if (!funcDescr) {
+        //         console.log('can\'t find function descriptor for ' + func.name);
+        //         return
+        //     }
+        //     funcDescr.putSourceCode(newSource);
+        //     return;
+        // };
+        // //-----------------------------------------------------------------------------
+        // // ----- show method source ----
+        // if (this.getClass().prototype[this.getMethod()].toString() == methodString) return;
+        // 
+        // // ----- evaluating -------
+        // var methodDef = this.getClass().type + ".prototype." + this.getMethod() + " = " + methodString;
+        // try {
+        //     eval(methodDef);
+        //     console.log('redefined ' + this.getMethod());
+        // } catch (er) {
+        //     WorldMorph.current().alert("error evaluating method " + methodDef);
+        //     return;
+        // }
+        // // ChangeSet.current().logChange({type: 'method', className: className, methodName: methodName, methodString: methodString});
+        // 
+        // // ----- writing -------
+        // var methodDict = module.SourceControl.methodDictFor(this.getClass().type);
+        // var methodDescr = methodDict[this.getMethod()];
+        // if (!methodDescr) {
+        //     console.log('can\'t find method descriptor for ' + this.getMethod());
+        //     return
+        // }
+        // if (!methodString.startsWith(this.getMethod())) methodString = this.getMethod() + ': ' + methodString;
+        // if (!methodString.endsWith(',')) methodString += ',';
+        // methodDescr.putSourceCode(methodString);
+    }
+});
+
+Object.subclass('lively.Tools.BrowserNode', {
+    
+    initialize: function(target) {
+        this.target = target;
+    },
+    
+    childNodes: function() {
+        return []
+    },
+    
+    childNodesAsListItems: function() {
+        return this.childNodes().collect(function(ea) {
+            return {isListItem: true, string: ea.asString(), value: ea}
+        })
+    },
+    
+    asString: function() {
+        return 'no name for node of type ' + this.constructor.type;
+    },
+    
+    sourceString: function() {
+        return '---'
+    }
+    
+});
+    
+module.BrowserNode.subclass('lively.Tools.EnvironmentNode', {
+        
+    childNodes: function() {
+        return this.target.subNamespaces().concat([this.target]).collect(function(ea) { return new module.NamespaceNode(ea) });
+    }
+});
+
+module.BrowserNode.subclass('lively.Tools.NamespaceNode', { // rename to ModuleNode
+
+    initialize: function($super, target) {
+        $super(target);
+        // modes will be replaced with FilterObjects
+        // for now mode can be one of: functions, classes, objects
+        this.mode = 'classes';
+    },
+            
+    childNodes: function() {
+        switch (this.mode) {
+           case "classes": return this.target.classes().collect(function(ea) { return new module.ClassNode(ea) });
+        }
+    },
+    
+    asString: function() {
+        return this.target.namespaceIdentifier;
+    }
+});
+
+module.BrowserNode.subclass('lively.Tools.ClassNode', {
+    initialize: function($super, target) {
+        $super(target);
+        // again: get rid of modes
+        // for now mode can be one of: class, instance
+        this.mode = 'instance';
+    },
+            
+    childNodes: function() {
+        var theClass = this.target;
+        switch (this.mode) {
+           case "instance":
+            return theClass.functionNames().collect(function(ea) {
+                return new module.MethodNode(theClass.prototype[ea])
+            });
+        }
+    },
+    
+    asString: function() {
         function classNameWithoutNS(className) {
             if (!className) return 'unnamed class';
             return className.substr(className.lastIndexOf('.')+1, className.length);
         }
-        return module.classes().collect(function(ea) {
-            return {isListItem: true, string: classNameWithoutNS(ea.type), value: ea} });
-    },
-    
-    listMethods: function(theClass) {
-        return theClass.localFunctionNames().sort().collect(function(ea) {
-            return {isListItem: true, string: ea, value: ea}
-        });
-    },
-    
-    listFunctions: function(module) {
-        return module.functions().collect(function(ea) {
-            return {isListItem: true, string: ea.name || 'anonymous function', value: ea} });
-    },
-    
-    showFunctions: function(val) {
-        if (val) return;
-        this.mode = 'function';
-        if (this.getModule()) this.onModuleUpdate(this.getModule());
-    },
-    
-    showClasses: function(val) {
-        if (val) return;
-        this.mode = 'class';
-        if (this.getModule()) this.onModuleUpdate(this.getModule());
-    },
-    
-    onModuleUpdate: function(module) {
-        console.log('got ' + module.namespaceIdentifier + ' , showing ' + this.mode);
-        
-        // FIXME Whoohaaa, get rid of modes!
-        if (this.mode === 'class') this.setClasses(this.listClasses(module));
-        else if (this.mode === 'function') this.setClasses(this.listFunctions(module));
-        
-    },
-        
-    onClassUpdate: function(theClass) {
-        console.log('got ' + theClass.type);
-        
-        if (this.mode === 'class')  this.setMethods(this.listMethods(theClass));
-        else if (this.mode === 'function') this.setMethodSource(theClass.toString());
-    },
-    
-    onMethodUpdate: function(methodName) {
-        console.log('got ' + methodName);
-        Global.y && dbgOn(true);
-        this.setMethodSource(this.getClass().prototype[methodName].toString());
-    },
-    
-    onMethodSourceUpdate: function(methodString) {
-        // FIXME just a quick hack to see if things work...
-        // console.log('got new source ' + methodString);
-        
-        if (this.mode === 'function') {
-            var func = this.getClass();
-            var newSource = methodString;
-            if (func.toString() == newSource) return;
-            if (!func.name) {
-                console.log('Cannot define or write anonymous function!');
-                return;
-            }
-            // eval
-            try {
-                eval(newSource);
-                console.log('redefined ' + func.name);
-            } catch (er) {
-                WorldMorph.current().alert("error evaluating function " + newSource);
-                return;
-            }
-            
-            // writing
-            var funcDescr = module.SourceControl.functionDefFor(func.name);
-            if (!funcDescr) {
-                console.log('can\'t find function descriptor for ' + func.name);
-                return
-            }
-            funcDescr.putSourceCode(newSource);
-            return;
-        };
-        //-----------------------------------------------------------------------------
-        // ----- show method source ----
-        if (this.getClass().prototype[this.getMethod()].toString() == methodString) return;
-
-        // ----- evaluating -------
-        var methodDef = this.getClass().type + ".prototype." + this.getMethod() + " = " + methodString;
-        try {
-            eval(methodDef);
-            console.log('redefined ' + this.getMethod());
-        } catch (er) {
-            WorldMorph.current().alert("error evaluating method " + methodDef);
-            return;
-        }
-        // ChangeSet.current().logChange({type: 'method', className: className, methodName: methodName, methodString: methodString});
-        
-        // ----- writing -------
-        var methodDict = module.SourceControl.methodDictFor(this.getClass().type);
-        var methodDescr = methodDict[this.getMethod()];
-        if (!methodDescr) {
-            console.log('can\'t find method descriptor for ' + this.getMethod());
-            return
-        }
-        if (!methodString.startsWith(this.getMethod())) methodString = this.getMethod() + ': ' + methodString;
-        if (!methodString.endsWith(',')) methodString += ',';
-        methodDescr.putSourceCode(methodString);
+        return classNameWithoutNS(this.target.type);
     }
-});
+})
+
+module.BrowserNode.subclass('lively.Tools.MethodNode', {
+    
+    sourceString: function() {
+        return this.target.toString();
+    },
+    
+    asString: function() {
+        return this.target.methodName || 'method without property methodName'
+    }
+})
+
+//----------------------
 
 Widget.subclass('SimpleBrowser', {
 

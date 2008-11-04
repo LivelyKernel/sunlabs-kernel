@@ -70,7 +70,7 @@ TestCase.subclass('NamespaceTest', {
     },
     
     tearDown: function() {
-        // delete testNamespace;
+        delete testNamespace;
     },
     
     testNamespaceIsNamespace: function() {
