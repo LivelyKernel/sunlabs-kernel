@@ -22,25 +22,44 @@ thisModule.removeDummyNamespace = function() {
 // Browser related tests
 TestCase.subclass('lively.Tests.ToolsTests.SystemBrowserTests', {
     
-    shouldRun: false,
+    shouldRun: true,
     
     setUp: function() {
-        this.sut = new toolsModule.SystemBrowser();
+        thisModule.createDummyNamespace();
+        var browser = new toolsModule.SystemBrowser();
+        browser.rootNode = function() { return new toolsModule.EnvironmentNode(thisModule.testNS, browser) };
+        browser.start();
+        this.sut = browser;
     },
     
     testModelStuff: function() {
-        this.assert(this.sut.setModules && this.sut.getModules, 'no automatic accessors');
+        this.assert(this.sut.setPane1Content && this.sut.getPane1Content, 'no automatic accessors');
         var model = this.sut.getModel();
         this.assert(model, 'No model');
-        this.sut.setModules(1);
-        this.assertEqual(model.getModules(), 1);
+        this.sut.setPane1Content(1);
+        this.assertEqual(model.getPane1Content(), 1);
         // model.setModules(2);
         // this.assertEqual(this.sut.getModules(), 2);
     },
     
+    testGetNodeSiblings: function() {
+        var node = this.sut.getPane1Content().first();
+        this.assert(node);
+        var result = this.sut.siblingsFor(node);
+        var allNodesButOne = Array.prototype.without.apply(this.sut.getPane1Content(), result);
+        this.assertEqual(allNodesButOne.length, 1);
+        this.assertIdentity(allNodesButOne.first(), node);
+    },
+    
+    tearDown: function() {
+        thisModule.removeDummyNamespace();
+    }
+        
     // testOpenSystemBrowser: function() {
     //     this.sut.openIn(WorldMorph.current());
     // }
+    
+
     
 });
 
@@ -63,13 +82,35 @@ thisModule.NodeTest.subclass('lively.Tests.ToolsTests.EnvironmentNodeTest', {
 
 thisModule.NodeTest.subclass('lively.Tests.ToolsTests.NamespaceNodeTest', {
 
+    setUp: function($super) {
+        $super();
+        this.sut = new toolsModule.NamespaceNode(thisModule.testNS);
+    },
+    
     testChildNodes: function() {
-        var sut = new toolsModule.NamespaceNode(thisModule.testNS);
-        sut.mode = 'classes';
-        var result = sut.childNodes();
+        this.sut.mode = 'classes';
+        var result = this.sut.childNodes();
         this.assertEqual(result.length, 1);
         this.assertIdentity(result[0].target, thisModule.testNS.Dummy);
     },
+    
+    testModeButtons: function() {
+        var result = this.sut.buttonSpecs();
+        this.assertEqual(result.length, 2);
+        // test if button specs are correct
+        this.assertEqual(result[0].label, 'classes');
+        this.assert(result[0].action instanceof Function);
+        this.assertEqual(result[1].label, 'functions');
+        this.assert(result[1].action instanceof Function);
+        // test the button action
+        var sibling = new toolsModule.NamespaceNode(thisModule.testNS.one);
+        sibling.mode = 'classes';
+        this.sut.siblingNodes = function() { return [sibling] };
+        this.assertEqual(this.sut.mode, 'classes');
+        result[1].action();
+        this.assertEqual(this.sut.mode, 'functions');
+        this.assertEqual(sibling.mode, 'functions');
+    }
 });
 
 thisModule.NodeTest.subclass('lively.Tests.ToolsTests.ClassNodeTest', {

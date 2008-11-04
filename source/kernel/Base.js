@@ -332,6 +332,7 @@ Object.extend(Function.prototype, {
     },
     
     superclasses: function() {
+        if (!this.superclass) return [];
         if (this.superclass === Object) return [Object];
         return this.superclass.superclasses().concat([this.superclass]);
     }
@@ -400,11 +401,21 @@ var Class = {
     },
     
     isClass: function(object) {
-	if(object === Object		|| object === Array		|| object === Function		|| object === String		|| object === Number) return true;	return (object instanceof Function) && (object.superclass);
+	if(object === Object
+		|| object === Array
+		|| object === Function
+		|| object === String
+		|| object === Number) return true;
+	return (object instanceof Function) && (object.superclass);
     },
 
     className: function(cl) {
-	if(cl === Object) return "Object"	if(cl === Array) return "Array"	if(cl === Function) return "Function"	if(cl === String) return "String"	if(cl === Number) return "Number"	return cl.type;
+	if(cl === Object) return "Object"
+	if(cl === Array) return "Array"
+	if(cl === Function) return "Function"
+	if(cl === String) return "String"
+	if(cl === Number) return "Number"
+	return cl.type;
     },
 
     withAllClassNames: function(scope, callback) {

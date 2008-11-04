@@ -31,20 +31,21 @@ Widget.subclass('lively.Tools.SystemBrowser', {
     documentation: 'Widget with three list panes and one text pane. Uses nodes to display and manipulate content.',
     viewTitle: "Enhanced Javascript Code Browser",
     initialViewExtent: pt(600, 400),
-    formals: ["Pane1Content", "Pane1Selection", "Pane2Content", "Pane2Selection", "Pane3Content", "Pane3Selection", "SourceString"],
+    formals: ["Pane1Content", "Pane1Selection", "Pane1Choicer",
+              "Pane2Content", "Pane2Selection", "Pane2Choicer",
+              "Pane3Content", "Pane3Selection", "Pane3Choicer", "SourceString"],
     
     initialize: function($super) { 
         $super();
+        Global.y = this;
+        
+        this.onPane1ContentUpdate = Functions.Null;
+        this.onPane2ContentUpdate = Functions.Null;
+        this.onPane3ContentUpdate = Functions.Null;
         var model = Record.newPlainInstance((function(){var x={};this.formals.each(function(ea){x[ea]=null});return x}.bind(this))());
-        this.relayToModel(model, {Pane1Content: "+Pane1Content", Pane1Selection: "Pane1Selection", Pane2Content: "+Pane2Content",
-                                  Pane2Selection: "Pane2Selection", Pane3Content: "+Pane3Content", Pane3Selection: "Pane3Selection",
-                                  SourceString: "SourceString"});
-        
-        if (!module.SourceControl) module.SourceControl = new SourceDatabase();
-        this.sourceControl = module.SourceControl;
-        this.sourceControl.scanLKFiles();
-        
-        this.setPane1Content(this.rootNode().childNodesAsListItems());
+        this.relayToModel(model, {Pane1Content: "Pane1Content", Pane1Selection: "Pane1Selection",
+                                  Pane2Content: "Pane2Content", Pane2Selection: "Pane2Selection",
+                                  Pane3Content: "Pane3Content", Pane3Selection: "Pane3Selection", SourceString: "SourceString"});
     },
     
     rootNode: function() {
@@ -53,7 +54,19 @@ Widget.subclass('lively.Tools.SystemBrowser', {
         return this._rootNode;
     },
     
+    start: function() {
+        // FIXME this doesn't belong here
+        if (!module.SourceControl) module.SourceControl = new SourceDatabase();
+        this.sourceControl = module.SourceControl;
+        this.sourceControl.scanLKFiles();
+        
+        this.setPane1Content(this.rootNode().childNodesAsListItems());
+    },
+    
     buildView: function (extent) {
+        
+        this.start();
+        
         var panel = PanelMorph.makePanedPanel(extent, [
             ['pane1', newRealListPane, new Rectangle(0, 0, 0.35, 0.45)],
             ['pane2', newRealListPane, new Rectangle(0.35, 0, 0.3, 0.45)],
@@ -118,6 +131,13 @@ Widget.subclass('lively.Tools.SystemBrowser', {
         var responsibleNode = this.getPane3Selection() || this.getPane2Selection() || this.getPane1Selection();
         if (responsibleNode.sourceString() == methodString) return;
         responsibleNode.newSource(methodString);
+    },
+    
+    siblingsFor: function(node) {
+        if (this.getPane1Content().include(node)) return this.getPane1Content().without(node);
+        if (this.getPane2Content().include(node)) return this.getPane2Content().without(node);
+        if (this.getPane3Content().include(node)) return this.getPane3Content().without(node);
+        return  null;
     }
 });
 
@@ -128,6 +148,11 @@ Object.subclass('lively.Tools.BrowserNode', {
     initialize: function(target, browser) {
         this.target = target;
         this.browser = browser;
+    },
+    
+    siblingNodes: function() {
+        if (!this.browser) throw dbgOn(new Error('No browser when tried siblingNodes'));
+        this.browser.siblingsFor(this);
     },
     
     childNodes: function() {
@@ -163,6 +188,10 @@ Object.subclass('lively.Tools.BrowserNode', {
     
     saveSource: function(newSource, sourceControl) {
         return false;
+    },
+    
+    buttonSpecs: function() {
+        return []
     }
     
 });
@@ -170,7 +199,7 @@ Object.subclass('lively.Tools.BrowserNode', {
 module.BrowserNode.subclass('lively.Tools.EnvironmentNode', {
         
     childNodes: function() {
-        return this.target.subNamespaces(true).concat([this.target]).collect(function(ea) { return new module.NamespaceNode(ea, this.browser) });
+        return this.target.subNamespaces(true).concat([this.target]).collect(function(ea) { return new module.NamespaceNode(ea, this.browser) }.bind(this));
     }
 });
 
@@ -185,12 +214,19 @@ module.BrowserNode.subclass('lively.Tools.NamespaceNode', { // rename to ModuleN
             
     childNodes: function() {
         switch (this.mode) {
-           case "classes": return this.target.classes().sort().collect(function(ea) { return new module.ClassNode(ea, this.browser) });
+           case "classes": return this.target.classes().collect(function(ea) { return new module.ClassNode(ea, this.browser) }.bind(this));
         }
     },
     
     asString: function() {
         return this.target.namespaceIdentifier;
+    },
+    
+    buttonSpecs: function() {
+        return [
+            {label: 'classes', action: function() { this.siblingNodes().concat([this]).each(function(ea) { ea.mode = 'classes' }) }.bind(this)},
+            {label: 'functions', action: function() { this.siblingNodes().concat([this]).each(function(ea) { ea.mode = 'functions' }) }.bind(this)}
+        ]
     }
 });
 
