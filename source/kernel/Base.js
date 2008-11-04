@@ -400,7 +400,11 @@ var Class = {
     },
     
     isClass: function(object) {
-	return (object instanceof Function) && (object.superclass || object === Object);
+	if(object === Object		|| object === Array		|| object === Function		|| object === String		|| object === Number) return true;	return (object instanceof Function) && (object.superclass);
+    },
+
+    className: function(cl) {
+	if(cl === Object) return "Object"	if(cl === Array) return "Array"	if(cl === Function) return "Function"	if(cl === String) return "String"	if(cl === Number) return "Number"	return cl.type;
     },
 
     withAllClassNames: function(scope, callback) {
@@ -599,6 +603,7 @@ var Properties = {
     }
 };
 
+
 // bootstrap namespaces
 Object.subclass('Namespace', {
     
@@ -621,9 +626,11 @@ Object.subclass('Namespace', {
     },
     
     classes: function(recursive) {        
-        return this.gather('classes',
+        var normalClasses = this.gather('classes',
                     function(ea) { return ea && ea !== this.constructor && Class.isClass(ea) },
                     recursive);
+	if (this === Global) return [Array, Number, String, Function].concat(normalClasses);
+	return normalClasses;
     },
     
     functions: function(recursive) {

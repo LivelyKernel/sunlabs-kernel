@@ -185,7 +185,7 @@ module.BrowserNode.subclass('lively.Tools.NamespaceNode', { // rename to ModuleN
             
     childNodes: function() {
         switch (this.mode) {
-           case "classes": return this.target.classes().collect(function(ea) { return new module.ClassNode(ea, this.browser) });
+           case "classes": return this.target.classes().sort().collect(function(ea) { return new module.ClassNode(ea, this.browser) });
         }
     },
     
@@ -327,14 +327,10 @@ Widget.subclass('SimpleBrowser', {
     },
 
     listClasses: function() { 
-        var list = [];
-        for (var i = 0; i < this.scopeSearchPath.length; i++) {
-            var p = this.scopeSearchPath[i];
-            var scopeCls = [];
-            Class.withAllClassNames(p, function(name) { name.startsWith("SVG") || scopeCls.push(name);});
-            list = list.concat(scopeCls.sort());
-        }
-        return list;
+        return Global.classes(true)
+		.collect(function(ea) {return Class.className(ea)})
+		.select(function(ea) {return !ea.startsWith("anonymous") && !ea.startsWith("lively.")})
+		.sort();  
     },
 
 
@@ -392,7 +388,7 @@ Widget.subclass('SimpleBrowser', {
         if (!URL.source.protocol.startsWith("file")) {
             items.push(['import source files', function() {
                 if (! module.SourceControl) module.SourceControl = new SourceDatabase();
-                module.SourceControl.scanKernelFiles(["JSON.js", "miniprototype.js", "defaultconfig.js", "localconfig.js", "Base.js", "Core.js", "Text.js", "Widgets.js", "Network.js", "Data.js", "Storage.js", "Tools.js", "Examples.js", "Main.js"]);
+                module.SourceControl.importKernelFiles(["JSON.js", "miniprototype.js", "defaultconfig.js", "localconfig.js", "Base.js", "Core.js", "Text.js", "Widgets.js", "Network.js", "Data.js", "Storage.js", "Tools.js", "Examples.js", "Main.js"]);
                 WorldMorph.current().setFill(new RadialGradient([Color.rgb(36,188,255), 1, Color.rgb(127,15,0)]));
             }]);
         }
@@ -1852,16 +1848,16 @@ ChangeList.subclass('SourceDatabase', {
         return fullList;
     },
 
-    scanKernelFiles: function(list) {
+    importKernelFiles: function(list) {
         for (var i = 0; i<list.length; i++) {
             var fileName = list[i];
             var fileString = this.getCachedText(fileName);
             new FileParser().parseFile(fileName, this.currentVersion(fileName), fileString, this, "import");
-        }
+        this.testImportFiles();}
     },
     
     scanLKFiles: function() {
-        this.scanKernelFiles(this.interestingLKFileNames());
+        this.importKernelFiles(this.interestingLKFileNames());
     },
 
     getSourceCodeRange: function(fileName, versionNo, startIndex, stopIndex) {
@@ -1952,6 +1948,10 @@ ChangeList.subclass('SourceDatabase', {
 
     getViewTitle: function() {
         return "Source Control for " + this.fileName;
+    },
+
+    testImportFiles: function() {
+        // Enumerate all classes and methods, and report cases where we have no source descriptors
     }
 
 });
