@@ -361,8 +361,8 @@ var Class = {
 	}
     },
 
-
     def: function(constr, superConstr, optProtos, optStatics) {
+	// currently not used
 	// Main method of the LK class system.
 
 	// {className} is the name of the new class constructor which this method synthesizes

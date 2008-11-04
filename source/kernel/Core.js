@@ -493,22 +493,26 @@ var Converter = {
 		encoding = NodeFactory.createCDATA(JSON.serialize(propValue, Converter.nodeEncodeFilter));
 	    }
 	    desc.appendChild(encoding);
-	} else if (propValue instanceof Color) { // FIXME all the other special cases?
-	    desc.setAttributeNS(null, "family", "Color");
-	    desc.appendChild(NodeFactory.createCDATA(JSON.serialize(propValue)));
-	} else if (propValue instanceof Point) {
-	    desc.setAttributeNS(null, "family", "Point");
-	    desc.appendChild(NodeFactory.createCDATA(JSON.serialize(propValue)));
-	} else if (propValue instanceof Rectangle) {
-	    desc.setAttributeNS(null, "family", "Rectangle");
-	    desc.appendChild(NodeFactory.createCDATA(JSON.serialize(propValue)));
-	} else if (propValue.nodeType === document.DOCUMENT_NODE && propValue.nodeType === document.DOCUMENT_TYPE_NODE) {
-            throw new Error('Cannot store Document/DocumentType'); // to be removed
-	} else if (propValue.nodeType) {
-            desc.setAttributeNS(null, "isNode", true); // Replace with DocumentFragment
-            desc.appendChild(propValue);
-	} else return null;
-	return desc;
+	    return desc;
+	} 
+	
+	if (propValue && propValue.toLiteral) {
+	    desc.setAttributeNS(null, "family", propValue.constructor.type);
+	    desc.appendChild(NodeFactory.createCDATA(JSON.serialize(propValue.toLiteral())));
+	    return desc;
+	}
+	if (propValue.nodeType) {
+	    switch (propValue.nodeType) {
+	    case document.DOCUMENT_NODE:
+	    case document.DOCUMENT_TYPE_NODE:
+		throw new Error('Cannot store Document/DocumentType'); // to be removed
+	    default:
+		desc.setAttributeNS(null, "isNode", true); // Replace with DocumentFragment
+		desc.appendChild(propValue);
+	    }
+	    return desc;
+	} 
+	return null;
     },
     
     isJSONConformant: function(value) { // for now, arrays not handled but could be
