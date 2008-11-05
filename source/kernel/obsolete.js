@@ -395,7 +395,7 @@ Visual.subclass('TextSelection', {
     },
     
     addRectangle: function(rect) {
-	this.rawNode.appendChild(new RectShape(rect).roundEdgesBy(this.borderRadius).rawNode);
+	this.rawNode.appendChild(new lively.scene.Rectangle(rect).roundEdgesBy(this.borderRadius).rawNode);
     },
 
     undraw: function() {
@@ -459,9 +459,9 @@ Object.subclass('Pen', {
         var verts = this.vertices.invoke('subPt', this.startingLocation);
     
         if (this.fillColor) 
-            morph.setShape(new PolygonShape(verts, this.fillColor, this.penWidth, this.penColor));
+            morph.setShape(new lively.scene.Polygon(verts, this.fillColor, this.penWidth, this.penColor));
         else 
-            morph.setShape(new PolylineShape(verts, this.penWidth, this.penColor));
+            morph.setShape(new lively.scene.Polyline(verts, this.penWidth, this.penColor));
     
         WorldMorph.current().addMorph(morph); 
     

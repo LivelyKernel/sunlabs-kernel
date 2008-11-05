@@ -972,7 +972,7 @@ Morph.subclass('ArrowHeadMorph', {
         width = width || 12;
 
         var verts = [pt(0,0), pt(-length, 0.5* width), pt(-length, -0.5 * width)];
-        this.head.setShape(new PolygonShape(verts, fill, 1, lineColor, fill));
+        this.head.setShape(new lively.scene.Polygon(verts, fill, 1, lineColor, fill));
         this.addMorph(this.head);
         
         this.setPosition(this.head.getPosition());
@@ -1015,7 +1015,7 @@ Morph.subclass('ConnectorMorph', {
         
         $super(verts[0].asRectangle(), "rect")
         var vertices = verts.invoke('subPt', verts[0]);
-        this.setShape(new PolylineShape(vertices, lineWidth, lineColor));
+        this.setShape(new lively.scene.Polyline(vertices, lineWidth, lineColor));
         this.customizeShapeBehavior();
         
         // this.setStrokeOpacity(0.7);

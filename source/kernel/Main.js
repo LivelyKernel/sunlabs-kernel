@@ -298,7 +298,7 @@ function populateWorldWithExamples(world) {
                 // bezier blob
                 var shape1 = [pt(0,0), pt(50,0), pt(50,50), pt(0,50), pt(0,0)];
                 var widget = new Morph(pt(100,100).asRectangle(),"rect");
-                widget.setShape(new PathShape(shape1, Color.red, 3, Color.black));
+                widget.setShape(new lively.scene.Path(shape1, Color.red, 3, Color.black));
                 this.addMorph(widget);
                 widget = new Morph(pt(250,50).asRectangle(),"rect");
 		
@@ -312,7 +312,7 @@ function populateWorldWithExamples(world) {
                     shape2[i].radius = 10; shape2[i].type = "arc";
                 }
 		
-                widget.setShape(new PathShape(shape2, Color.green, 2, Color.red));
+                widget.setShape(new lively.scene.Path(shape2, Color.green, 2, Color.red));
                 this.addMorph(widget);
             } 
             if (Config.showBitmap) { 

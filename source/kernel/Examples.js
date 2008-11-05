@@ -451,7 +451,7 @@ PanelMorph.subclass('SquiggleMorph', {
                 this.currentMorph.ignoreEvents();
             }
             */ 
-            this.currentMorph.setShape(new PolylineShape([pt(0,0)], 2, this.drawingColor));
+            this.currentMorph.setShape(new lively.scene.Polyline([pt(0,0)], 2, this.drawingColor));
             this.savedHandColor = evt.hand.getFill();
             evt.hand.setFill(this.drawingHandColor);
         } else {
@@ -820,7 +820,7 @@ Object.subclass('lively.examples.threedee.WireObject', {
         var U = 0;
     
         for (var i = 0; i < 8; i++) { 
-            var shape = new PolygonShape([pt(this.vx[U],this.vy[U])], Color.primary.blue, 2, Color.black);
+            var shape = new lively.scene.Polygon([pt(this.vx[U],this.vy[U])], Color.primary.blue, 2, Color.black);
             shape.setLineJoin(lively.scene.LineJoins.Round);
             morphArray[i].setShape(shape);
             // shape.setFill(new Color(0xAA, 0, 0xCC)); // Approximate Sun purple color
@@ -862,7 +862,7 @@ PanelMorph.subclass('lively.examples.Sun3DMorph', {
         this.morphArray = [];
         for (var i = 0; i < 8; i++) {
             this.morphArray[i] = new Morph(pt(10,10).asRectangle());
-            this.morphArray[i].setShape(new PolylineShape([pt(0,0)], 2, Color.red));
+            this.morphArray[i].setShape(new lively.scene.Polyline([pt(0,0)], 2, Color.red));
             this.contentMorph.addMorph(this.morphArray[i]);
         }
 
@@ -944,7 +944,7 @@ Object.subclass('lively.examples.asteroids.AsteroidsSprite', {
     /* double */  deltaX: 0,        // Amount to change the screen position.
     /* double */  deltaY: 0,
     /* Point[] */ shape: null,  // Initial sprite shape, centered at the origin (0,0).
-    /* PolygonShape */ sprite: null, // Final location and shape of sprite after applying rotation and
+    /* lively.scene.Polygon */ sprite: null, // Final location and shape of sprite after applying rotation and
     // moving to screen position. Used for drawing on the screen and
     // in detecting collisions.
     // Morphic-specific data
@@ -953,7 +953,7 @@ Object.subclass('lively.examples.asteroids.AsteroidsSprite', {
 
     initialize: function(vertices) {
         this.shape = vertices;
-        this.sprite = new PolygonShape([], Color.black, 1, Color.yellow);
+        this.sprite = new lively.scene.Polygon([], Color.black, 1, Color.yellow);
     },
     
     // Methods:
@@ -3835,13 +3835,13 @@ ClipMorph.subclass("lively.examples.canvascape.CanvasScapeMorph", {
             if (drawobject) {
                 morppi = new Morph(pt(0,0).asRectangle(),"rect"); // polygon
                 morppi.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseUp: "onMouseUp"});
-                morppi.setShape(new PolygonShape([pt(tl[0],tl[1]),pt(tr[0],tr[1]),pt(br[0],br[1]),pt(bl[0],bl[1])],
+                morppi.setShape(new lively.scene.Polygon([pt(tl[0],tl[1]),pt(tr[0],tr[1]),pt(br[0],br[1]),pt(bl[0],bl[1])],
                                                  Color.blue,1,Color.black));
                 this.addMorph(morppi);
             } else {
                 morppi = new Morph(pt(0,0).asRectangle(),"rect"); // polygon
                 morppi.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseUp: "onMouseUp"});
-                morppi.setShape(new PolygonShape([pt(tl[0],tl[1]),pt(tr[0],tr[1]),pt(br[0],br[1]),pt(bl[0],bl[1])],
+                morppi.setShape(new lively.scene.Polygon([pt(tl[0],tl[1]),pt(tr[0],tr[1]),pt(br[0],br[1]),pt(bl[0],bl[1])],
                                                  this.color,1,Color.black));
                 this.addMorph(morppi);
             }
@@ -4419,7 +4419,7 @@ Morph.subclass("AnimMorph", {
         this.status.setBorderWidth(0);
 	var k = new Morph(pt(0,0).asRectangle());
         this.status.addMorph(k);
-        k.setShape(new PolylineShape([pt(-20,-20),pt(30,0),pt(-20,20), pt(-20,-20)], 1, Color.blue));
+        k.setShape(new lively.scene.Polyline([pt(-20,-20),pt(30,0),pt(-20,20), pt(-20,-20)], 1, Color.blue));
         k.setFill(Color.blue.lighter());
         k.relayMouseEvents(this.status, {onMouseDown: "onMouseDown", onMouseUp: "onMouseUp"});
     },
@@ -4611,7 +4611,7 @@ Morph.subclass('InertialBody', {
     initialize: function ($super, verts, lineWidth, lineColor, fill, velocity, angularVelocity) {
 	// I'm a polygon with velocity and spin
 	$super(pt(0,0).asRectangle(), "rect");
-	this.setShape(new PolygonShape(verts, fill, lineWidth, lineColor));
+	this.setShape(new lively.scene.Polygon(verts, fill, lineWidth, lineColor));
 	this.velocity = velocity || pt(0, 0);
 	this.angularVelocity = angularVelocity || 0;
     },

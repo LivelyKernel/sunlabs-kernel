@@ -703,7 +703,7 @@ ClipMorph.subclass("DoodleMorph", {
     addLine: function() {
         var morph = new Morph(new Rectangle(this.newPos * 2, this.newPos, 60, 20), 'rect');
 	morph.applyStyle({fill: null, borderWidth: this.lineWidth, borderColor: this.drawingColor});
-        morph.setShape(new PolylineShape([pt(0,20),pt(60,0)], this.lineWidth, this.drawingColor));
+        morph.setShape(new lively.scene.Polyline([pt(0,20),pt(60,0)], this.lineWidth, this.drawingColor));
         this.addMorph(morph);
 
         this.newPos += 25;

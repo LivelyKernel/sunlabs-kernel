@@ -102,7 +102,7 @@ Morph.subclass('PhoneMorph', {
 		dial.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
 		shim.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
 
-		dial.setShape(new PathShape(p, Color.red, 0, Color.black));
+		dial.setShape(new lively.scene.Path(p, Color.red, 0, Color.black));
 		dial.setFillOpacity(.7);
 
 		// finger hook
@@ -110,7 +110,7 @@ Morph.subclass('PhoneMorph', {
 		var hook = new Morph(pt(0,0).asRectangle(),"rectangle");
 		var hp = [pt(0,0).addXY(big,0), pt(0,0).addXY(big-(2*small),0)];
 		hp[1].type="arc"; hp[1].radius=2*small; hp[1].mode="0,1";
-		hook.setShape(new PathShape(hp, null, 4, Color.black));
+		hook.setShape(new lively.scene.Path(hp, null, 4, Color.black));
 		hook.scaleBy(.95);
 		hook.rotateBy(hookAngle);
 

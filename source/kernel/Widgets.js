@@ -325,7 +325,7 @@ Morph.subclass('HandleMorph', {
     },
     
     getHelpText: function() {
-        return (this.shape instanceof RectShape) ? this.controlHelpText : this.circleHelpText;
+        return (this.shape instanceof lively.scene.Rectangle) ? this.controlHelpText : this.circleHelpText;
     },
     
     showHelp: function($super, evt) {
@@ -2089,7 +2089,7 @@ Morph.subclass("ColorPickerMorph", {
         for (var x = 0; x < r.width; x += dd) {
             for (var y = 0; y < r.height; y += dd) { // lightest down to neutral
                 var patchFill = this.colorMap(x, y, rh2, this.colorWheel(r.width + 1)).toString();
-                var element = new RectShape(new Rectangle(x + r.x, y + r.y, dd, dd), patchFill, 0, null);
+                var element = new lively.scene.Rectangle(new Rectangle(x + r.x, y + r.y, dd, dd), patchFill, 0, null);
                 // element.setAttributeNS("fill", this.colorMap(x, rh2, rh2, this.colorWheel(r.width + 1)).toString());
                 this.addWrapper(element);
             }

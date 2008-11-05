@@ -619,7 +619,8 @@ Object.subclass('Wrapper', {
     },
 
     copy: function(copier) {
-	return new Global[this.getType()](copier || Copier.marker, this);
+	var myClass = Class.forName(this.getType());
+	return new myClass(copier || Copier.marker, this);
     },
 
     getType: function() {
@@ -1478,7 +1479,7 @@ Object.extend(lively.scene,  {
 });
 
 
-lively.scene.Shape.subclass('RectShape', {
+lively.scene.Shape.subclass('lively.scene.Rectangle', {
 
 
     documentation: "Rectangle shape",
@@ -1500,7 +1501,7 @@ lively.scene.Shape.subclass('RectShape', {
 
     toPath: function() {
 	// FIXME account for rounded edges
-    return new lively.scene.PathShape(this.bounds());
+	return new lively.scene.Path(this.bounds());
     },
 
     bounds: function() {
@@ -1554,7 +1555,7 @@ lively.scene.Shape.subclass('RectShape', {
 
 });
 
-lively.scene.Shape.subclass('EllipseShape', {
+lively.scene.Shape.subclass('lively.scene.Ellipse', {
 
     documentation: "Ellipses and circles",
 
@@ -1596,13 +1597,13 @@ lively.scene.Shape.subclass('EllipseShape', {
 	return bnds.partNameNear(Rectangle.sides, p, this.controlPointProximity);
     },
 
-    reshape: RectShape.prototype.reshape,
+    reshape: lively.scene.Rectangle.prototype.reshape,
 
-    possibleHandleForControlPoint: RectShape.prototype.possibleHandleForControlPoint
+    possibleHandleForControlPoint: lively.scene.Rectangle.prototype.possibleHandleForControlPoint
 
 });
 
-lively.scene.Shape.subclass('PolygonShape', {
+lively.scene.Shape.subclass('lively.scene.Polygon', {
     documentation: "polygon",
 
     hasElbowProtrusions: true,
@@ -1643,7 +1644,7 @@ lively.scene.Shape.subclass('PolygonShape', {
 	var vertices = this.vertices();
 	// Opera has been known not to update the SVGPolygonShape.points property to reflect the SVG points attribute
 	console.assert(vertices.length > 0, 
-		       "PolygonShape.bounds: vertices has zero length, " + this.rawNode.points 
+		       "lively.scene.Polygon.bounds: vertices has zero length, " + this.rawNode.points 
 		       + " vs " + this.rawNode.getAttributeNS(null, "points"));
 	return Rectangle.unionPts(vertices);
     },
@@ -1760,7 +1761,7 @@ lively.scene.Shape.subclass('PolygonShape', {
 
 });
 
-lively.scene.Shape.subclass('PolylineShape', {
+lively.scene.Shape.subclass('lively.scene.Polyline', {
     documentation: "Like polygon but not necessarily closed and does not include the interior",
     
     hasElbowProtrusions: true,
@@ -1784,16 +1785,16 @@ lively.scene.Shape.subclass('PolylineShape', {
     },
 
     // poorman's traits :)
-    bounds: PolygonShape.prototype.bounds,
-    vertices: PolygonShape.prototype.vertices,
-    setVertices: PolygonShape.prototype.setVertices,
-    reshape: PolygonShape.prototype.reshape,
-    controlPointNear: PolygonShape.prototype.controlPointNear,
-    possibleHandleForControlPoint: PolygonShape.prototype.possibleHandleForControlPoint
+    bounds: lively.scene.Polygon.prototype.bounds,
+    vertices: lively.scene.Polygon.prototype.vertices,
+    setVertices: lively.scene.Polygon.prototype.setVertices,
+    reshape: lively.scene.Polygon.prototype.reshape,
+    controlPointNear: lively.scene.Polygon.prototype.controlPointNear,
+    possibleHandleForControlPoint: lively.scene.Polygon.prototype.possibleHandleForControlPoint
 
 });
 
-lively.scene.Shape.subclass('PathShape', {
+lively.scene.Shape.subclass('lively.scene.Path', {
     documentation: "Generic Path with arbitrary Bezier curves",
 
     hasElbowProtrusions: true,
@@ -1899,10 +1900,10 @@ lively.scene.Shape.subclass('PathShape', {
     },
     
     // poorman's traits :)
-    controlPointNear: PolygonShape.prototype.controlPointNear,
-    possibleHandleForControlPoint: PolygonShape.prototype.possibleHandleForControlPoint,
-    reshape: PolygonShape.prototype.reshape,
-    controlPointNear: PolygonShape.prototype.controlPointNear
+    controlPointNear: lively.scene.Polygon.prototype.controlPointNear,
+    possibleHandleForControlPoint: lively.scene.Polygon.prototype.possibleHandleForControlPoint,
+    reshape: lively.scene.Polygon.prototype.reshape,
+    controlPointNear: lively.scene.Polygon.prototype.controlPointNear
 
 });
 
@@ -2506,13 +2507,13 @@ lively.scene.Node.subclass('Morph', {
 	// a rect shape by default, will change later
 	switch (shapeType) {
 	case "ellipse":
-	    this.shape = new EllipseShape(initialBounds.translatedBy(this.origin.negated()),
-					  this.fill, this.borderWidth, this.borderColor);
+	    this.shape = new lively.scene.Ellipse(initialBounds.translatedBy(this.origin.negated()),
+						  this.fill, this.borderWidth, this.borderColor);
 	    break;
 	default:
 	    // polygons and polylines are set explicitly later
-	    this.shape = new RectShape(initialBounds.translatedBy(this.origin.negated()),
-				       this.fill, this.borderWidth, this.borderColor);
+	    this.shape = new lively.scene.Rectangle(initialBounds.translatedBy(this.origin.negated()),
+						    this.fill, this.borderWidth, this.borderColor);
 	    break;
 	}
 	this.rawNode.appendChild(this.shape.rawNode);
@@ -2701,19 +2702,19 @@ lively.scene.Node.subclass('Morph', {
             // debugger;
 	    switch (node.localName) {
 	    case "ellipse":
-		this.shape = new EllipseShape(importer, node);
+		this.shape = new lively.scene.Ellipse(importer, node);
 		break;
 	    case "rect":
-		this.shape = new RectShape(importer, node);
+		this.shape = new lively.scene.Rectangle(importer, node);
 		break;
 	    case "polyline":
-		this.shape = new PolylineShape(importer, node);
+		this.shape = new lively.scene.Polyline(importer, node);
 		break;
 	    case "polygon":
-		this.shape = new PolygonShape(importer, node);
+		this.shape = new lively.scene.Polygon(importer, node);
 		break;
             case "path":
-		this.shape = new PathShape(importer, node);
+		this.shape = new lively.scene.Path(importer, node);
 		break;
 	    case "defs": 
 		throw new Error();
@@ -4310,7 +4311,7 @@ Object.extend(Morph, {
 	// Note this works for simple lines (2 vertices) and general polylines
 	var line = new Morph(verts[0].asRectangle(), "rect");
 	var vertices = verts.invoke('subPt', verts[0]);
-	line.setShape(new PolylineShape(vertices, lineWidth, lineColor));
+	line.setShape(new lively.scene.Polyline(vertices, lineWidth, lineColor));
 	return line; 
     },
 
@@ -4323,7 +4324,7 @@ Object.extend(Morph, {
     makePolygon: function(verts, lineWidth, lineColor, fill) {
 	// make a polygon with its origin at the starting vertex
 	var poly = new Morph(pt(0,0).asRectangle(), "rect");
-	poly.setShape(new PolygonShape(verts, fill, lineWidth, lineColor));
+	poly.setShape(new lively.scene.Polygon(verts, fill, lineWidth, lineColor));
 	return poly; 
     }
 });
@@ -5257,7 +5258,7 @@ PasteUpMorph.subclass("WorldMorph", {
             ["Heart", function(evt) { 
                 var shape1 = [pt(0,0), pt(50,0), pt(50,50), pt(0,50), pt(0,0)];
                 var widget = new Morph(evt.point().extent(pt(100,100)),"path");
-                widget.setShape(new PathShape(shape1, Color.red, 3, Color.red));
+                widget.setShape(new lively.scene.Path(shape1, Color.red, 3, Color.red));
                 widget.rotateBy(3.9);
                 world.addMorph(widget);
                 document.getElementById(widget.id()).childNodes[0].setAttribute('d', "M0,0T48.25658178329468,-5.770838260650635T85.89215588569641,15.051417827606201T61.36309051513672,32.78068518638611T53.225199699401855,46.00089120864868T25.02833652496338,68.58267283439636T1.0328261852264404,40.347657918930054T0,0")
@@ -5484,8 +5485,8 @@ Morph.subclass("HandMorph", {
     initialize: function($super, local) {
         $super(pt(5,5).extent(pt(10,10)), "rect");
 	
-        this.setShape(new PolygonShape([pt(0,0), pt(9,5), pt(5,9), pt(0,0)], 
-				       (local ? Color.primary.blue : Color.primary.red), 1, Color.black));
+        this.setShape(new lively.scene.Polygon([pt(0,0), pt(9,5), pt(5,9), pt(0,0)], 
+					       (local ? Color.primary.blue : Color.primary.red), 1, Color.black));
         this.shape.ignoreEvents();
 	
         this.isLocal = local;
