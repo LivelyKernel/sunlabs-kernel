@@ -841,8 +841,7 @@ Morph.subclass('TextSelectionMorph', {
 });
 
 
-
-Visual.subclass('lively.Text.TextContent', {
+lively.scene.Node.subclass('lively.Text.TextContent', {
     documentation: "wrapper around SVG Text elements",
     initialize: function() {
 	this.rawNode = NodeFactory.create("text", { "kerning": 0 });

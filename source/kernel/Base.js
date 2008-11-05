@@ -29,13 +29,12 @@ function namespace(spec, context) {
     if (typeof spec === 'object') {
         if (typeof spec.length === 'number') {//assume an array-like object
             for (i = 0,N = spec.length; i < N; i++) {
-                namespace(spec[i], context);
+                return namespace(spec[i], context);
             }
-        }
-        else {//spec is a specification object e.g, {com: {trifork: ['model,view']}}
+        } else {//spec is a specification object e.g, {com: {trifork: ['model,view']}}
             for (i in spec) if (spec.hasOwnProperty(i)) {
                 context[i] = context[i] || new lively.lang.Namespace(context, i);
-                namespace(spec[i], context[i]);//recursively descend tree
+                return namespace(spec[i], context[i]);//recursively descend tree
             }
         }
     } else if (typeof spec === 'string') {
@@ -51,6 +50,7 @@ function namespace(spec, context) {
                 context = context[spec];
             }
         })();
+	return context;
     } else {
 	throw new TypeError();
     }
@@ -418,6 +418,21 @@ var Class = {
 	return cl.type;
     },
 
+    forName: function(name) {
+	// lookup the class object given the qualified name
+	var lastDot = name.lastIndexOf('.'); // lastDot may be -1
+	var ns = Class.getNamespaceFor(name);
+	var shortName = name.substring(lastDot + 1);
+	return ns[shortName];
+    },
+
+    getNamespaceFor: function(className) {
+	// get the namespace object given the qualified name
+	var lastDot = className.lastIndexOf('.');
+	if (lastDot < 0) return Global;
+	else return namespace(className.substring(0, lastDot));
+    },
+
     withAllClassNames: function(scope, callback) {
 	for (var name in scope) {
 	    try {
@@ -650,14 +665,15 @@ Object.subclass('Namespace', {
                     recursive);
     }
     
-});
+}); 
 
 // FIXME this is a bad method name, please change
 // The method returns an object to a given string, which can include namespaces
 // this is neccesary because e.g. Global['lively.Tests.ClassTest'] does not work
 Namespace.objectNamed = function(string, context) {
     return string.split('.').inject(context || Global, function(context, name) { return context[name] });
-};
+}
+
 
 // let Glabal act like a namespace itself
 Object.extend(Global, Namespace.prototype);

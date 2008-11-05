@@ -1327,9 +1327,11 @@ var Event = (function() {
 // Graphics primitives (SVG specific, browser-independent)
 // ===========================================================================
 
-Wrapper.subclass('Visual');
+namespace('lively.scene');
 
-Visual.addProperties({ 
+Wrapper.subclass('lively.scene.Node');
+
+lively.scene.Node.addProperties({ 
     FillOpacity: { name: "fill-opacity", from: Number, to: String, byDefault: 1.0},
     StrokeOpacity: { name: "stroke-opacity", from: Number, to: String, byDefault: 1.0},
     StrokeWidth: { name: "stroke-width", from: Number, to: String, byDefault: 1.0},
@@ -1341,7 +1343,7 @@ Visual.addProperties({
     StyleClass: {name: "class"}
 }, Config.useStyling ? lively.data.StyleRecord : lively.data.DOMRecord);
 
-Visual.addMethods({   
+lively.scene.Node.addMethods({   
 
     documentation:  "Objects that can be located on the screen",
     //In this particular implementation, graphics primitives are
@@ -1433,7 +1435,7 @@ Visual.addMethods({
   * @class Shape
   */ 
 
-Visual.subclass('Shape', {
+lively.scene.Node.subclass('Shape', {
 
     shouldIgnorePointerEvents: false,
     controlPointProximity: 10,
@@ -1909,7 +1911,7 @@ Shape.subclass('PathShape', {
 });
 
 
-Visual.subclass('Image', {
+lively.scene.Node.subclass('Image', {
     description: "Primitive wrapper around images",
     
     initialize: function(url, width, height) {
@@ -2452,9 +2454,7 @@ Object.subclass('MouseHandlerForRelay', {
 });
 
 
-Visual.subclass('Morph');
-
-Morph.addMethods({
+lively.scene.Node.subclass('Morph', {
 
     documentation: "Base class for every graphical, manipulatable object in the system", 
 
@@ -2739,8 +2739,9 @@ Morph.addMethods({
 			if (value) {
 			    var family = LivelyNS.getAttribute(node, "family");
 			    if (family) {
-				if (!Global[family]) throw new Error('uknown type ' + family);
-				this[name] = Global[family].fromLiteral(JSON.unserialize(value));
+				var cls = Class.forName(family);
+				if (!cls) throw new Error('uknown type ' + family);
+				this[name] = cls.fromLiteral(JSON.unserialize(value));
 			    } else this[name] = JSON.unserialize(value);
 			}
 		    }

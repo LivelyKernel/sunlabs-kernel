@@ -491,7 +491,7 @@ Object.subclass('lively.TileScripting.TileMenuCreator', {
     },
     
     methodNamesFor: function(className) {
-        var allMethods = Global[className].localFunctionNames();
+        var allMethods = Class.forName(className).localFunctionNames();
         return allMethods.without.apply(allMethods, this.ignoredMethods);
     },
     
