@@ -159,7 +159,7 @@ Object.subclass('Wrapper', {
 	} else if (propValue instanceof Wrapper) { // FIXME better instanceof
 	    if (prop === 'owner') 
 		return; // we'll deal manually
-	    if (propValue instanceof Gradient || propValue instanceof ClipPath || propValue instanceof Image) 
+	    if (propValue instanceof Gradient || propValue instanceof ClipPath || propValue instanceof lively.scene.Image) 
 		return; // these should sit in defs and be handled by restoreDefs()
 	    //console.log("serializing field name='%s', ref='%s'", prop, m.id(), m.getType());
 	    if (!propValue.rawNode) {
@@ -791,7 +791,7 @@ lively.scene.Shape.subclass('lively.scene.Path', {
 });
 
 
-lively.scene.Node.subclass('Image', {
+lively.scene.Node.subclass('lively.scene.Image', {
     description: "Primitive wrapper around images",
     
     initialize: function(url, width, height) {
@@ -887,4 +887,3 @@ lively.scene.Node.subclass('Image', {
 	}
     }
 });
-

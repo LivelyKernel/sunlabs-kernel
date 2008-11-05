@@ -205,24 +205,11 @@ Object.extend(Function.prototype, {
 	var targetScope = Global;
 	var shortName = null;
 	if (className) {
-	    var path = className.split('.');
-	    if (path.length > 1) {
-		for (var i = 0; i < path.length - 1; i++) {
-		    if (!Class.isValidIdentifier(path[i]))
-			throw new Error("invalid package name " + path[i]);
-		    targetScope = targetScope[path[i]];
-		}
-		shortName = path[path.length - 1];
-	    } else {
-		shortName = className;
-	    }
-	    if (!Class.isValidIdentifier(shortName))
-		throw new Error("invalid class name " + shortName);
-	} 
-	
-	if (shortName == null) {
+	    targetScope = Class.namespaceFor(className);
+	    shortName = Class.unqualifiedNameFor(className);
+	}  else {
 	    shortName = "anonymous_" + (Class.anonymousCounter ++);
-	    if (!className) className = shortName;
+	    className = shortName;
 	}
 	
 
@@ -414,12 +401,19 @@ var Class = {
     forName: function(name) {
 	// lookup the class object given the qualified name
 	var lastDot = name.lastIndexOf('.'); // lastDot may be -1
-	var ns = Class.getNamespaceFor(name);
-	var shortName = name.substring(lastDot + 1);
+	var ns = Class.namespaceFor(name);
+	var shortName = Class.unqualifiedNameFor(name);
 	return ns[shortName];
     },
 
-    getNamespaceFor: function(className) {
+    unqualifiedNameFor: function(name) {
+	var lastDot = name.lastIndexOf('.'); // lastDot may be -1
+	var unqualifiedName = name.substring(lastDot + 1);
+	if (!Class.isValidIdentifier(unqualifiedName)) throw new Error('not a name ' + unqualifiedName);
+	return unqualifiedName;
+    },
+
+    namespaceFor: function(className) {
 	// get the namespace object given the qualified name
 	var lastDot = className.lastIndexOf('.');
 	if (lastDot < 0) return Global;

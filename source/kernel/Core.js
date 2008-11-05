@@ -1529,7 +1529,7 @@ lively.scene.Node.subclass('Morph', {
 		    this[p] = replacement || other[p];
 		    // an instance field points to a submorph, so copy
 		    // should point to a copy of the submorph
-		} else if (other[p] instanceof Image) {
+		} else if (other[p] instanceof lively.scene.Image) {
 		    this[p] = other[p].copy(copier);
 		    this.addWrapper(this[p]);
 		} else if (!(other[p] instanceof Gradient)) {		    
