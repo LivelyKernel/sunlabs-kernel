@@ -60,9 +60,10 @@ var Loader = {
             return;
         };
         
-        var node = embedSerializable ? // add it to other script elements in svg to make it serializable
-            document.getElementsByTagName("defs")[0]:
-            document.getElementsByTagName("body")[0];
+	// add it to other script elements in svg to make it serializable
+        var node = document.getElementsByTagName(embedSerializable ? "defs" : "script")[0];
+
+	
         var script = document.createElement('script');
         script.id = url;
         script.type = 'text/javascript';
