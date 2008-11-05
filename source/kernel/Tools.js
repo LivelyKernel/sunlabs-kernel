@@ -374,7 +374,7 @@ Widget.subclass('SimpleBrowser', {
         if (className == null) return [];
         var sorted = (className == 'Global')
             ? Global.constructor.functionNames().without(className).sort()
-            : Global[className].localFunctionNames().sort();
+            : Class.forName(className).localFunctionNames().sort();
         var defStr = "*definition";
         var defRef = module.SourceControl && module.SourceControl.getSourceInClassForMethod(className, defStr);
         return defRef ? [defStr].concat(sorted) : sorted;
@@ -1184,7 +1184,7 @@ using().run(function() { // begin scoping function
             Class.withAllClassNames(Global, function(cName) { 
 		if (cName.startsWith('SVG') || cName.startsWith('Tracer')) return;
                 if (cName == 'Global' || cName == 'Object') return;
-                var theClass = Global[cName];
+                var theClass = Class.forName(cName);
                 var methodNames = theClass.localFunctionNames();
 		
                 // Replace all methods of this class with a wrapped version
@@ -1229,7 +1229,7 @@ using().run(function() { // begin scoping function
             for (var ci= 0; ci < classNames.length; ci++) {
                 var cName = classNames[ci];
                 if (cName != 'Global' && cName != 'Object') {
-                    var theClass = Global[cName];
+                    var theClass = Class.forName(cName);
                     var methodNames = theClass.localFunctionNames();
                     var loc = 0;
                     for (var mi = 0; mi < methodNames.length; mi++) {
@@ -1237,10 +1237,10 @@ using().run(function() { // begin scoping function
                         var originalMethod = theClass.prototype[mName];
                         // decompile and count lines with more than one non-blank character
                         var lines = originalMethod.toString().split("\n");
-                        lines.each( function(line) { if(line.replace(/\s/g, "").length>1) loc++ ; } );
+                        lines.forEach( function(line) { if(line.replace(/\s/g, "").length>1) loc++ ; } );
                     }
                 }
-                console.log(cName + " " + loc.toString());
+                console.log(cName + " " + loc);
                 // tallies += cName + " " + loc.toString() + "\n";
             }
         }

@@ -198,7 +198,7 @@ Global.Fabrik = {
         };
         Global.allMethodsFor = function(className) {
             if (className == null) return [];
-            return Global[className].localFunctionNames().sort();
+            return Class.forName(className).localFunctionNames().sort();
         };
         Global.getMethodStringFor = function(className, methodName) { 
             try {

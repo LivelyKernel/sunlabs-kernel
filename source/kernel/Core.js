@@ -162,8 +162,9 @@ lively.data.DOMRecord.subclass('lively.data.DOMNodeRecord', {
 	    if (value) {
 		var family = LivelyNS.getAttribute(fieldElement, "family");
 		if (family) {
-		    if (!Global[family]) throw new Error('unknown type ' + family);
-		    return Global[family].fromLiteral(JSON.unserialize(value, Converter.nodeDecodeFilter));
+		    var klass = Class.forName(family);
+		    if (klass) throw new Error('unknown type ' + family);
+		    return klass.fromLiteral(JSON.unserialize(value, Converter.nodeDecodeFilter));
     		} else {
     		    if (value == 'NaN') return NaN;
     		    if (value == 'undefined') return undefined;
