@@ -1432,11 +1432,8 @@ lively.scene.Node.addMethods({
 // that maps the behavior of the Morph to the underlying graphics system
 // in a fully portable fashion.
 
-/**
-  * @class Shape
-  */ 
 
-lively.scene.Node.subclass('Shape', {
+lively.scene.Node.subclass('lively.scene.Shape', {
 
     shouldIgnorePointerEvents: false,
     controlPointProximity: 10,
@@ -1471,19 +1468,17 @@ lively.scene.Node.subclass('Shape', {
     }
 
 });
+    
 
-// Default visual attributes for Shapes
-Object.extend(Shape, {
+Object.extend(lively.scene,  { 
 
-    translateVerticesBy: function(vertices, delta) { // utility class method
-	return vertices.invoke('addPt', delta); 
-    },
     LineJoins: Class.makeEnum(["Miter", "Round", "Bevel" ]), // note that values become attribute values
     LineCaps:  Class.makeEnum(["Butt",  "Round", "Square"])  // likewise
-
+    
 });
 
- Shape.subclass('RectShape', {
+
+lively.scene.Shape.subclass('RectShape', {
 
 
     documentation: "Rectangle shape",
@@ -1505,7 +1500,7 @@ Object.extend(Shape, {
 
     toPath: function() {
 	// FIXME account for rounded edges
-    return new PathShape(this.bounds());
+    return new lively.scene.PathShape(this.bounds());
     },
 
     bounds: function() {
@@ -1559,7 +1554,7 @@ Object.extend(Shape, {
 
 });
 
-Shape.subclass('EllipseShape', {
+lively.scene.Shape.subclass('EllipseShape', {
 
     documentation: "Ellipses and circles",
 
@@ -1607,7 +1602,7 @@ Shape.subclass('EllipseShape', {
 
 });
 
-Shape.subclass('PolygonShape', {
+lively.scene.Shape.subclass('PolygonShape', {
     documentation: "polygon",
 
     hasElbowProtrusions: true,
@@ -1765,7 +1760,7 @@ Shape.subclass('PolygonShape', {
 
 });
 
-Shape.subclass('PolylineShape', {
+lively.scene.Shape.subclass('PolylineShape', {
     documentation: "Like polygon but not necessarily closed and does not include the interior",
     
     hasElbowProtrusions: true,
@@ -1798,7 +1793,7 @@ Shape.subclass('PolylineShape', {
 
 });
 
-Shape.subclass('PathShape', {
+lively.scene.Shape.subclass('PathShape', {
     documentation: "Generic Path with arbitrary Bezier curves",
 
     hasElbowProtrusions: true,
@@ -3687,7 +3682,7 @@ Morph.addMethods({
 	this.addMorph(this.focusHalo);
 	this.focusHalo.applyStyle(this.focusStyle);
 	this.focusHalo.setBorderWidth(this.focusHaloBorderWidth);
-	this.focusHalo.setLineJoin(Shape.LineJoins.Round);
+	this.focusHalo.setLineJoin(lively.scene.LineJoins.Round);
 	this.focusHalo.ignoreEvents();
 	return true;
     }
@@ -5728,7 +5723,7 @@ Morph.subclass("HandMorph", {
 	    var bounds = grabbedMorph.bounds(true);
 	    this.grabHaloMorph = this.addMorphBack(new Morph(bounds, "rect").applyStyle({fill: null, borderWidth: 0.5 }));
 	    this.grabHaloMorph.setStrokeDashArray(String([3,2]));
-	    this.grabHaloMorph.setLineJoin(Shape.LineJoins.Round);
+	    this.grabHaloMorph.setLineJoin(lively.scene.LineJoins.Round);
 	    this.grabHaloMorph.ignoreEvents();
 
 	    var idLabel = new TextMorph(pt(20,10).extentAsRectangle(), String(grabbedMorph.id())).beLabel();

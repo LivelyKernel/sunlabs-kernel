@@ -821,7 +821,7 @@ Object.subclass('lively.examples.threedee.WireObject', {
     
         for (var i = 0; i < 8; i++) { 
             var shape = new PolygonShape([pt(this.vx[U],this.vy[U])], Color.primary.blue, 2, Color.black);
-            shape.setLineJoin(Shape.LineJoins.Round);
+            shape.setLineJoin(lively.scene.LineJoins.Round);
             morphArray[i].setShape(shape);
             // shape.setFill(new Color(0xAA, 0, 0xCC)); // Approximate Sun purple color
 
@@ -4255,7 +4255,7 @@ Morph.subclass("EngineMorph", {
         ];
         cylVerts = cylVerts.invoke('subPt', this.crank.bounds().center());
         var cylinder = Morph.makePolygon(cylVerts, 4, Color.black, Color.gray);
-        cylinder.setLineJoin(Shape.LineJoins.Round);
+        cylinder.setLineJoin(lively.scene.LineJoins.Round);
         cylinder.setPosition(cr.topLeft().addXY(0, -dHead));
         var pistonBW = 2;
         var pistonDx = (cylinder.getBorderWidth() + pistonBW) / 2 - 1;
