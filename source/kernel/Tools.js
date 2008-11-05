@@ -132,20 +132,23 @@ Widget.subclass('lively.Tools.SystemBrowser', {
     },
     
     onPane1SelectionUpdate: function(node) {
+        this.setPane2Selection(null);
+        this.setPane2Content(['-----']);
+        if (!node) return;
         this.setPane2Content(node.childNodesAsListItems());
-        this.setPane3Content(['-----']);
-        // this.setPane2Selection(null);
-        // this.setPane3Selection(null);
         this.setSourceString(node.sourceString());
     },
     
     onPane2SelectionUpdate: function(node) {
+        this.setPane3Selection(null);
+        this.setPane3Content(['-----']);
+        if (!node) return
         this.setPane3Content(node.childNodesAsListItems());
         this.setSourceString(node.sourceString());
-        // this.setPane3Selection(null);
     },
     
     onPane3SelectionUpdate: function(node) {
+        if (!node) return
         this.setSourceString(node.sourceString());
     },
         
@@ -181,7 +184,7 @@ Object.subclass('lively.Tools.BrowserNode', {
     },
     
     siblingNodes: function() {
-        if (!this.browser) throw dbgOn(new Error('No browser when tried siblingNodes'));
+        if (!(this.browser instanceof module.SystemBrowser)) throw dbgOn(new Error('No browser when tried siblingNodes'));
         return this.browser.siblingsFor(this);
     },
     
@@ -243,8 +246,10 @@ module.BrowserNode.subclass('lively.Tools.NamespaceNode', { // rename to ModuleN
     },
             
     childNodes: function() {
+        var browser = this.browser;
         switch (this.mode) {
-           case "classes": return this.target.classes().collect(function(ea) { return new module.ClassNode(ea, this.browser) }.bind(this));
+           case "classes": return this.target.classes().sort().collect(function(ea) { return new module.ClassNode(ea, browser) });
+           case "functions": return this.target.functions().sort().collect(function(ea) { return new module.FunctionNode(ea, browser) });
            default: return []
         }
     },
@@ -254,21 +259,14 @@ module.BrowserNode.subclass('lively.Tools.NamespaceNode', { // rename to ModuleN
     },
     
     buttonSpecs: function() {
+        var node = this;
         return [
-            {
-                label: 'classes',
-                action: function() {
-                    console.log('action');
-                    this.siblingNodes().concat([this]).each(function(ea) { ea.mode = 'classes' })
-                }.bind(this)
-            },
-            {
-                label: 'functions',
-                action: function() {
-                    console.log('action');
-                    this.siblingNodes().concat([this]).each(function(ea) { ea.mode = 'functions' })
-                }.bind(this)
-            }
+            {label: 'classes',action: function() {
+                node.siblingNodes().concat([node]).each(function(ea) { ea.mode = 'classes' }) 
+            }},
+            {label: 'functions', action: function() {
+                node.siblingNodes().concat([node]).each(function(ea) { ea.mode = 'functions' })
+            }}
         ]
     }
 });
@@ -283,11 +281,18 @@ module.BrowserNode.subclass('lively.Tools.ClassNode', {
             
     childNodes: function() {
         var theClass = this.target;
+        var browser = this.browser;
         switch (this.mode) {
             case "instance":
                 return theClass.functionNames()
+                    .sort()
                     .select(function(ea) { return theClass.prototype.hasOwnProperty(ea) })
-                    .collect(function(ea) { return new module.MethodNode(theClass.prototype[ea], this.browser, theClass) }.bind(this));
+                    .collect(function(ea) { return new module.MethodNode(theClass.prototype[ea], browser, theClass) });
+            case "class":
+                return Object.keys(theClass)
+                    .sort()
+                    .select(function(ea) { return theClass.hasOwnProperty(ea) && Object.isFunction(theClass[ea]) && !Class.isClass(theClass[ea])})
+                    .collect(function(ea) { return new module.ClassMethodNode(theClass[ea], browser, theClass) });
             default: return []
         }
     },
@@ -298,6 +303,18 @@ module.BrowserNode.subclass('lively.Tools.ClassNode', {
             return className.substr(className.lastIndexOf('.')+1, className.length);
         }
         return classNameWithoutNS(this.target.type);
+    },
+    
+    buttonSpecs: function() {
+        var node = this;
+        return [
+            {label: 'instance',action: function() {
+                node.siblingNodes().concat([node]).each(function(ea) { ea.mode = 'instance' })
+            }},
+            {label: 'class', action: function() {
+                node.siblingNodes().concat([node]).each(function(ea) { ea.mode = 'class' })
+            }}
+        ]
     }
 })
 
@@ -344,7 +361,25 @@ module.BrowserNode.subclass('lively.Tools.MethodNode', {
         methodDescr.putSourceCode(newSource);
         return true; //FIXME test that saving successful?
     }
-})
+});
+
+module.MethodNode.subclass('lively.Tools.ClassMethodNode', {
+
+    asString: function() {
+        return this.target.name || 'anonymous function';
+    },
+        
+});
+module.BrowserNode.subclass('lively.Tools.FunctionNode', {
+    
+    sourceString: function() {
+        return this.target.toString();
+    },
+    
+    asString: function() {
+        return this.target.name || 'anonymous function';
+    },
+});
 
 // ===========================================================================
 // Class Browser -- A simple browser for Lively Kernel code
