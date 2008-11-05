@@ -1,4 +1,6 @@
-function createPropfindResponse(filename, partOfRepoUrl, revisionNumber) {
+module('lively.Tests.LKWikiTest').requires('lively.LKWiki').toRun(function(thisModule, wikiModule) {
+
+thisModule.createPropfindResponse = function(filename, partOfRepoUrl, revisionNumber) {
 	/* e.g. fileName = 'abc', partOfRepoUrl = '/testsvn/repo1/' revisionNumber = 74 */
 	var xmlString = '<?xml version="1.0" encoding="utf-8"?>' +
 		'<D:multistatus xmlns:D="DAV:">' +
@@ -30,7 +32,7 @@ function createPropfindResponse(filename, partOfRepoUrl, revisionNumber) {
 	return new DOMParser().parseFromString(xmlString, "text/xml")
 };
 
-function createReportResponse() {
+thisModule.createReportResponse = function() {
 	var xmlString = '<?xml version="1.0" encoding="utf-8"?>' +
 		'<S:log-report xmlns:S="svn:" xmlns:D="DAV:">' +
 		'<S:log-item>' +
@@ -48,13 +50,13 @@ function createReportResponse() {
 	return new DOMParser().parseFromString(xmlString, "text/xml")
 };
 
-TestCase.subclass('SVNResourceTest', {
+TestCase.subclass('lively.Tests.LKWikiTest.SVNResourceTest', {
 	
 	setUp: function() {
 		/* Mock the NetRequest: save NetRequest */
 		this.oldNetRequest = NetRequest;
 		/* Create the mock */
-		NetRequest.subclass('MockNetRequest', {
+		NetRequest.subclass('lively.Tests.LKWikiTest.MockNetRequest', {
 			onReadyStateChange: function() {
 				this.setModelValue('setStatus', this.getStatus());
 				this.setModelValue('setResponseText', this.getResponseText());
@@ -65,7 +67,7 @@ TestCase.subclass('SVNResourceTest', {
 			}
 		});
 		/* Replace the original NetRequest with the Mock*/
-		NetRequest = MockNetRequest;
+		NetRequest = thisModule.MockNetRequest;
 		
 		var wikiUrl = URL.proxy.toString() + 'wiki';
 		var completeUrl = wikiUrl + '/directory/file123';
@@ -85,15 +87,15 @@ TestCase.subclass('SVNResourceTest', {
 		var rev = 29;
 		var wasRequested = false;
 		var test = this;
-		MockNetRequest.prototype.request = function(method, url, content) {
+		thisModule.MockNetRequest.prototype.request = function(method, url, content) {
 			test.assertEqual(method, 'PROPFIND');
 			test.assertEqual(url, test.svnResource.getURL());
 			wasRequested = true;
 			this.onReadyStateChange();
 			return this;
 		};
-		MockNetRequest.prototype.getResponseXML = function() {
-			return createPropfindResponse(test.svnResource.getLocalUrl(), '/change/me!/', rev);
+		thisModule.MockNetRequest.prototype.getResponseXML = function() {
+			return thisModule.createPropfindResponse(test.svnResource.getLocalUrl(), '/change/me!/', rev);
 		};
 		
 		this.svnResource.fetchHeadRevision();
@@ -108,14 +110,14 @@ TestCase.subclass('SVNResourceTest', {
 		var expectedContent = 'someContent';
 		var correctRequestUrl = this.svnResource.repoUrl + '/!svn/bc/' + rev + '/' + this.svnResource.getLocalUrl();
 		var test = this;
-		MockNetRequest.prototype.request = function(method, url, content) {
+		thisModule.MockNetRequest.prototype.request = function(method, url, content) {
 			test.assertEqual(method, 'GET');
 			test.assertEqual(url, correctRequestUrl);
 			wasRequested = true;
 			this.onReadyStateChange();
 			return this;
 		};
-		MockNetRequest.prototype.getResponseText = function() {
+		thisModule.MockNetRequest.prototype.getResponseText = function() {
 			return expectedContent;
 		};
 		
@@ -134,7 +136,7 @@ TestCase.subclass('SVNResourceTest', {
 		var expectedData = [{rev: 75, date: new Date(2008, 8, 8, 23, 3, 1), author: '(no author)'},
 							{rev: 18, date: new Date(2008, 8, 8, 22, 37, 7), author: '(no author)'}];
 		var test = this;
-		MockNetRequest.prototype.request = function(method, url, content) {
+		thisModule.MockNetRequest.prototype.request = function(method, url, content) {
 			test.assertEqual(method, 'REPORT');
 			test.assertEqual(url, test.svnResource.getURL());
 			test.assertEqual(content, expectedRequestContent);
@@ -142,9 +144,9 @@ TestCase.subclass('SVNResourceTest', {
 			this.onReadyStateChange();
 			return this;
 		};
-		MockNetRequest.prototype.getResponseXML = function() {
+		thisModule.MockNetRequest.prototype.getResponseXML = function() {
 			console.log('MockNetRequest.getResponseXML() called');
-			return createReportResponse();
+			return thisModule.createReportResponse();
 		};
 		
 		this.svnResource.fetchMetadata(true, null, startRev);
@@ -169,14 +171,14 @@ TestCase.subclass('SVNResourceTest', {
     //          '<hr noshade><em>Powered by <a href="http://subversion.tigris.org/">Subversion</a> version 1.5.1 (r32289).</em>'
     //         '</body></html>';
     //  var expected = [url + 'a.js', url + 'abc.js', url + 'demo1.xhtml', url + 'folder1/'];
-    //  MockNetRequest.prototype.request = function(method, url, content) {
+    //  thisModule.MockNetRequest.prototype.request = function(method, url, content) {
     //      test.assertEqual(method, 'GET');
     //      test.assertEqual(theUrl, url);
     //      wasRequested = true;
     //      this.onReadyStateChange();
     //      return this;
     //  };
-    //  MockNetRequest.prototype.getResponseText = function() {
+    //  thisModule.MockNetRequest.prototype.getResponseText = function() {
     //      return contentText;
     //  };
     //  
@@ -189,7 +191,7 @@ TestCase.subclass('SVNResourceTest', {
 	}
 });
 
-TestCase.subclass('SVNVersionInfoTest', {
+TestCase.subclass('lively.Tests.LKWikiTest.SVNVersionInfoTest', {
     testParseUTCDate: function() {
         var sut = new SVNVersionInfo(0, '', null);
         var dateString = '2008-08-08T23:03:01.342813Z';
@@ -208,7 +210,7 @@ TestCase.subclass('SVNVersionInfoTest', {
     }
 });
 
-TestCase.subclass('WikiNavigatorTest', {
+TestCase.subclass('lively.Tests.LKWikiTest.WikiNavigatorTest', {
     	
     testIsActiveForWikiUrls: function() {
         var nav = new WikiNavigator('http://localhost/lively/proxy/wiki/test.xhtml');
@@ -256,7 +258,7 @@ TestCase.subclass('WikiNavigatorTest', {
     // }
 });
 
-TestCase.subclass('FileDirectoryTest', {
+TestCase.subclass('lively.Tests.LKWikiTest.FileDirectoryTest', {
     
     shouldRun: false,
     
@@ -405,7 +407,7 @@ TestCase.subclass('FileDirectoryTest', {
 });
 
 
-function exampleSVNResource() {
+thisModule.exampleSVNResource = function() {
 	var repoUrl = URL.proxy.toString() + 'wiki';
 	var url = repoUrl + '/abc';
 	var res = new SVNResource(repoUrl, Record.newPlainInstance({URL: url}));
@@ -418,7 +420,7 @@ function exampleSVNResource() {
 
 //exampleSVNResource();
 
-function printExampleSVNResource() {
+thisModule.printExampleSVNResource = function() {
 	console.log(exampleResource.getModelValue('getHeadRevision'));
 	console.log(exampleResource.getModelValue('getContentText'));
 	var metadata = exampleResource.getModelValue('getMetadata');
@@ -429,7 +431,7 @@ function printExampleSVNResource() {
 	});
 };
 
-function endlessLoop() {
+thisModule.endlessLoop = function() {
 	var endLoop = false;
 	Global.setTimeout(function() {endLoop = true}, 1);
 	var i = 0;
@@ -440,3 +442,5 @@ function endlessLoop() {
 	};
 	
 };
+
+});
