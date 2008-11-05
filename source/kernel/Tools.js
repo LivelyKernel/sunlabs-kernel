@@ -247,9 +247,22 @@ module.BrowserNode.subclass('lively.Tools.NamespaceNode', { // rename to ModuleN
             
     childNodes: function() {
         var browser = this.browser;
+        var ns = this.target;
         switch (this.mode) {
-           case "classes": return this.target.classes().sort().collect(function(ea) { return new module.ClassNode(ea, browser) });
-           case "functions": return this.target.functions().sort().collect(function(ea) { return new module.FunctionNode(ea, browser) });
+           case "classes":
+            return this.target.classes()
+                .sort()
+                .collect(function(ea) { return new module.ClassNode(ea, browser) });
+           case "functions":
+            return Object.keys(this.target)
+                .select(function(ea) { return ns[ea] && !Class.isClass(ns[ea]) && Object.isFunction(ns[ea]) && !ns[ea].declaredClass})
+                .sort()
+                .collect(function(ea) { return new module.FunctionNode(ns[ea], browser, ea) });
+           case "objects":
+            return Object.values(this.target)
+                .reject(function(ea) { return Object.isFunction(ea) })
+                .sort()
+                .collect(function(ea) { return new module.ObjectNode(ea, browser) });
            default: return []
         }
     },
@@ -266,6 +279,9 @@ module.BrowserNode.subclass('lively.Tools.NamespaceNode', { // rename to ModuleN
             }},
             {label: 'functions', action: function() {
                 node.siblingNodes().concat([node]).each(function(ea) { ea.mode = 'functions' })
+            }},
+            {label: 'objects', action: function() {
+                node.siblingNodes().concat([node]).each(function(ea) { ea.mode = 'objects' })
             }}
         ]
     }
@@ -330,7 +346,7 @@ module.BrowserNode.subclass('lively.Tools.MethodNode', {
     },
     
     asString: function() {
-        return this.target.methodName || 'method without property methodName'
+        return this.target.methodName || this.target.name || 'method without property methodName'
     },
     
     evalSource: function(newSource) {
@@ -372,12 +388,17 @@ module.MethodNode.subclass('lively.Tools.ClassMethodNode', {
 });
 module.BrowserNode.subclass('lively.Tools.FunctionNode', {
     
+    initialize: function($super, target, browser, nameInOwner) {
+        $super(target, browser);
+        this.nameInOwner = nameInOwner;
+    },
+    
     sourceString: function() {
         return this.target.toString();
     },
     
     asString: function() {
-        return this.target.name || 'anonymous function';
+        return this.target.name || this.nameInOwner || 'anonymous function';
     },
 });
 
