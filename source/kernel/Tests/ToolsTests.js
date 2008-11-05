@@ -43,21 +43,24 @@ TestCase.subclass('lively.Tests.ToolsTests.SystemBrowserTests', {
     },
     
     testGetNodeSiblings: function() {
-        var node = this.sut.getPane1Content().first();
-        this.assert(node);
+        var node = this.sut.nodesInPane('Pane1').first()
+        this.assert(node instanceof toolsModule.NamespaceNode, 'no nsNode');
         var result = this.sut.siblingsFor(node);
-        var allNodesButOne = Array.prototype.without.apply(this.sut.getPane1Content(), result);
+        this.assert(result, 'siblingsFor returned nothing useful');
+        var allNodesButOne = Array.prototype.without.apply(this.sut.nodesInPane('Pane1'), result);
+        
         this.assertEqual(allNodesButOne.length, 1);
         this.assertIdentity(allNodesButOne.first(), node);
+    },
+
+    testOpenSystemBrowser: function() {
+        this.sut.openIn(WorldMorph.current());
     },
     
     tearDown: function() {
         thisModule.removeDummyNamespace();
     }
         
-    // testOpenSystemBrowser: function() {
-    //     this.sut.openIn(WorldMorph.current());
-    // }
     
 
     

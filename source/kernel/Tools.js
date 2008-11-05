@@ -56,9 +56,9 @@ Widget.subclass('lively.Tools.SystemBrowser', {
     
     start: function() {
         // FIXME this doesn't belong here
-        if (!module.SourceControl) module.SourceControl = new SourceDatabase();
-        this.sourceControl = module.SourceControl;
-        this.sourceControl.scanLKFiles();
+        // if (!module.SourceControl) module.SourceControl = new SourceDatabase();
+        // this.sourceControl = module.SourceControl;
+        // this.sourceControl.scanLKFiles();
         
         this.setPane1Content(this.rootNode().childNodesAsListItems());
     },
@@ -68,44 +68,67 @@ Widget.subclass('lively.Tools.SystemBrowser', {
         this.start();
         
         var panel = PanelMorph.makePanedPanel(extent, [
-            ['pane1', newRealListPane, new Rectangle(0, 0, 0.35, 0.45)],
-            ['pane2', newRealListPane, new Rectangle(0.35, 0, 0.3, 0.45)],
-            ['pane3', newRealListPane, new Rectangle(0.65, 0, 0.35, 0.45)],
+            ['Pane1', newRealListPane, new Rectangle(0, 0, 0.35, 0.45)],
+            ['Pane2', newRealListPane, new Rectangle(0.35, 0, 0.3, 0.45)],
+            ['Pane3', newRealListPane, new Rectangle(0.65, 0, 0.35, 0.45)],
             ['sourcePane', newTextPane, new Rectangle(0, 0.45, 1, 0.55)]
         ]);
 
         var model = this.getModel();
-        var morph;
+        var browser = this;
         
-        morph = panel.pane1;
-        morph.connectModel(model.newRelay({List: "-Pane1Content", Selection: '+Pane1Selection'}), true);
-        morph.withAllSubmorphsDo(function() {
-            if (this instanceof TextMorph) return;
-            this.onMouseOver = function(evt) { console.log('moved over pane 1') };
-            this.onMouseOut = function(evt) { console.log('leaving pane 1') };
-        })
+        function setupListPanes(paneName) {
+            var morph = panel[paneName];
+            morph.connectModel(model.newRelay({List: ("-" + paneName + "Content"), Selection: ('+' + paneName + 'Selection')}), true);
+            morph.withAllSubmorphsDo(function() {            
+                this.onMouseOver = function(evt) {
+                    browser.showButtons(evt, morph, paneName)
+                };
+                this.onMouseOut = function(evt) { browser.hideButtons(evt, morph) };
+            })
+        }
         
+        ['Pane1', 'Pane2', 'Pane3'].each(function(ea) { setupListPanes(ea) });
         
-        morph = panel.pane2;
-        morph.connectModel(model.newRelay({List: "-Pane2Content", Selection: '+Pane2Selection'}));
-        morph.withAllSubmorphsDo(function() {
-            if (this instanceof TextMorph) return;
-            this.onMouseOver = function(evt) { console.log('moved over pane 2') };
-            this.onMouseOut = function(evt) { console.log('leaving pane 2') };
-        })
-        
-        morph = panel.pane3;
-        morph.connectModel(model.newRelay({List: "-Pane3Content", Selection: '+Pane3Selection'}));
-        morph.withAllSubmorphsDo(function() {
-            if (this instanceof TextMorph) return;
-            this.onMouseOver = function(evt) { console.log('moved over pane 3') };
-            this.onMouseOut = function(evt) { console.log('leaving pane 3') };
-        })
-        
-        morph = panel.sourcePane;
-        morph.connectModel(model.newRelay({Text: "SourceString"}));
+        panel.sourcePane.connectModel(model.newRelay({Text: "SourceString"}));
 	    	    
         return panel;
+    },
+    
+    showButtons: function(evt, morph, paneName) {
+        var browser = this;
+        var node = browser['get' + paneName + 'Selection']();
+        if (!node) return;
+        
+        var btnSpecs = node.buttonSpecs();
+        if (btnSpecs.length === 0) return;
+        
+        var offsetX = 30;
+        var height = 20;
+        var width = (morph.getExtent().x - offsetX) / btnSpecs.length
+        var y = morph.getExtent().y - height;
+        
+        
+        btnSpecs.each(function(ea, i) {
+            var btn = new ButtonMorph(new Rectangle(offsetX + i*width, y, width, height));
+            var btnSetValueWrapper = {action: function(value) {
+                if (value) return
+                ea.action.apply(node);
+                // debugger;
+                browser['set' + paneName + 'Selection'](node, true);
+            }};
+            btn.connectModel({model: btnSetValueWrapper, setValue: 'action'});
+            btn.setLabel(ea.label);
+            btn.isBrowserButton = true;
+            morph.addMorph(btn);
+        })
+    },
+    
+    hideButtons: function(evt, morph) {
+        morph.submorphs
+            .select(function(ea) { return ea.isBrowserButton })
+            .reject(function(ea) { return ea.shape.containsPoint(ea.localize(evt.point())) })
+            .each(function(ea) { ea.remove() })
     },
     
     onPane1SelectionUpdate: function(node) {
@@ -133,11 +156,18 @@ Widget.subclass('lively.Tools.SystemBrowser', {
         responsibleNode.newSource(methodString);
     },
     
+    nodesInPane: function(paneName) { // panes have listItems, no nodes
+        var listItems = this['get' + paneName + 'Content']();
+        if (!listItems) return [];
+        return listItems.collect(function(ea) { return ea.value })    
+    },
+    
     siblingsFor: function(node) {
-        if (this.getPane1Content().include(node)) return this.getPane1Content().without(node);
-        if (this.getPane2Content().include(node)) return this.getPane2Content().without(node);
-        if (this.getPane3Content().include(node)) return this.getPane3Content().without(node);
-        return  null;
+        var siblings = ['Pane1', 'Pane2', 'Pane3']
+            .collect(function(ea) { return this.nodesInPane(ea) }.bind(this))
+            .detect(function(ea) { return ea.include(node) });
+        if (!siblings) return null;
+        return siblings.without(node);
     }
 });
 
@@ -152,7 +182,7 @@ Object.subclass('lively.Tools.BrowserNode', {
     
     siblingNodes: function() {
         if (!this.browser) throw dbgOn(new Error('No browser when tried siblingNodes'));
-        this.browser.siblingsFor(this);
+        return this.browser.siblingsFor(this);
     },
     
     childNodes: function() {
@@ -215,6 +245,7 @@ module.BrowserNode.subclass('lively.Tools.NamespaceNode', { // rename to ModuleN
     childNodes: function() {
         switch (this.mode) {
            case "classes": return this.target.classes().collect(function(ea) { return new module.ClassNode(ea, this.browser) }.bind(this));
+           default: return []
         }
     },
     
@@ -224,8 +255,20 @@ module.BrowserNode.subclass('lively.Tools.NamespaceNode', { // rename to ModuleN
     
     buttonSpecs: function() {
         return [
-            {label: 'classes', action: function() { this.siblingNodes().concat([this]).each(function(ea) { ea.mode = 'classes' }) }.bind(this)},
-            {label: 'functions', action: function() { this.siblingNodes().concat([this]).each(function(ea) { ea.mode = 'functions' }) }.bind(this)}
+            {
+                label: 'classes',
+                action: function() {
+                    console.log('action');
+                    this.siblingNodes().concat([this]).each(function(ea) { ea.mode = 'classes' })
+                }.bind(this)
+            },
+            {
+                label: 'functions',
+                action: function() {
+                    console.log('action');
+                    this.siblingNodes().concat([this]).each(function(ea) { ea.mode = 'functions' })
+                }.bind(this)
+            }
         ]
     }
 });
@@ -241,10 +284,11 @@ module.BrowserNode.subclass('lively.Tools.ClassNode', {
     childNodes: function() {
         var theClass = this.target;
         switch (this.mode) {
-           case "instance":
-            return theClass.functionNames()
-                .select(function(ea) { return theClass.prototype.hasOwnProperty(ea) })
-                .collect(function(ea) { return new module.MethodNode(theClass.prototype[ea], this.browser, theClass) }.bind(this));
+            case "instance":
+                return theClass.functionNames()
+                    .select(function(ea) { return theClass.prototype.hasOwnProperty(ea) })
+                    .collect(function(ea) { return new module.MethodNode(theClass.prototype[ea], this.browser, theClass) }.bind(this));
+            default: return []
         }
     },
     
