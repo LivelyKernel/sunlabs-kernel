@@ -1959,3 +1959,140 @@ Object.extend(Color, {
 
 console.log("Loaded platform-independent graphics primitives");
 
+// the following does not really belong to Base should be somewhere else
+namespace('lively.data');
+
+Record.subclass('lively.data.DOMRecord', {
+    description: "base class for records backed by a DOM Node",
+    initialize: function($super, store, argSpec) {
+	$super(store, argSpec);
+	this.setId(this.newId());
+	var def = this.rawNode.appendChild(NodeFactory.create("definition"));
+	def.appendChild(NodeFactory.createCDATA(String(JSON.serialize(this.definition))));
+    },
+
+    deserialize: function(importer, rawNode) {
+	this.rawNode = rawNode;
+    },
+
+    getRecordField: function(name) { 
+	dbgOn(!this.rawNode || !this.rawNode.getAttributeNS);
+	var result = this.rawNode.getAttributeNS(null, name);
+	if (result === null) return undefined;
+	else if (result === "") return null;
+	if (result.startsWith("json:")) return Converter.fromJSONAttribute(result.substring("json:".length));
+	else return result;
+    },
+    
+    setRecordField: function(name, value) {
+	if (value === undefined) {
+	    throw new Error("use removeRecordField to remove " + name);
+	}
+	if (value && Converter.needsJSONEncoding(value)) {
+	    value = "json:" + Converter.toJSONAttribute(value);
+	}
+
+	return this.rawNode.setAttributeNS(null, name, value || "");
+    },
+    
+    removeRecordField: function(name) {
+	return this.rawNode.removeAttributeNS(null, name);
+    }
+
+});
+
+lively.data.DOMRecord.subclass('lively.data.DOMNodeRecord', {
+    documentation: "uses nodes instead of attributes to store values",
+
+    getRecordField: function(name) { 
+	var fieldElement = this[name + "$Element"];
+	if (fieldElement) {
+	    if (LivelyNS.getAttribute(fieldElement, "isNode")) return fieldElement.firstChild; // Replace with DocumentFragment
+	    var value = fieldElement.textContent;
+	    if (value) {
+		var family = LivelyNS.getAttribute(fieldElement, "family");
+		if (family) {
+		    var klass = Class.forName(family);
+		    if (klass) throw new Error('unknown type ' + family);
+		    return klass.fromLiteral(JSON.unserialize(value, Converter.nodeDecodeFilter));
+    		} else {
+    		    if (value == 'NaN') return NaN;
+    		    if (value == 'undefined') return undefined;
+    		    if (value == 'null') return null;
+    		    return JSON.unserialize(value);
+                }
+	    }
+	} else {
+	    console.log('not found ' + name);
+	    return undefined;
+	}
+    },
+    
+    setRecordField: function(name, value) {
+	if (value === undefined) {
+	    throw new Error("use removeRecordField to remove " + name);
+	}
+	var fieldElement = this[name + "$Element"];
+	if (fieldElement && fieldElement.parentElement === this.rawNode) {
+	    this.rawNode.removeChild(fieldElement);
+	}
+	fieldElement = Converter.encodeProperty(name, value);
+	if (fieldElement) this.rawNode.appendChild(fieldElement);
+	else console.log("failed to encode " + name + "= " + value);
+	this[name + "$Element"] = fieldElement;
+	console.log("created cdata " + fieldElement.textContent);
+    },
+    
+    removeRecordField: function(name) {
+	var fieldElement = this[name + "$Element"];
+	if (fieldElement) {
+	    this.rawNode.removeChild(fieldElement);
+	    delete this.fieldElement;
+	}
+    },
+
+    deserialize: function(importer, rawNode) {
+	this.rawNode = rawNode;
+	
+	var bodySpec = JSON.unserialize(rawNode.getElementsByTagName('definition')[0].firstChild.textContent);
+	this.constructor.addMethods(Record.extendRecordClass(bodySpec));
+	this.definition = bodySpec;
+	
+	$A(rawNode.getElementsByTagName("field")).forEach(function(child) {
+            // this[name + "$Element"] = child.getAttributeNS(null, "name");
+	    this[child.getAttributeNS(null, "name") + "$Element"] = child;
+        }, this);
+    }
+    
+});
+
+
+
+// note: the following happens later
+//Class.addMixin(DOMRecord, Wrapper.prototype);
+
+Record.subclass('lively.data.StyleRecord', {
+    description: "base class for records backed by a DOM Node",
+    getRecordField: function(name) { 
+	dbgOn(!this.rawNode || !this.rawNode.style);
+	var result = this.rawNode.style.getPropertyValue(name);
+	
+	if (result === null) return undefined;
+	else if (result === "") return null;
+	else return result;
+    },
+
+    setRecordField: function(name, value) {
+	dbgOn(!this.rawNode || !this.rawNode.style);
+	if (value === undefined) {
+	    throw new Error("use removeRecordField to remove " + name);
+	}
+	return this.rawNode.style.setProperty(name, value || "", "");
+    },
+    
+    removeRecordField: function(name) {
+	dbgOn(!this.rawNode || !this.rawNode.style);
+	return this.rawNode.style.removeProperty(name);
+    }
+
+});
