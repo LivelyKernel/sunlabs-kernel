@@ -294,7 +294,7 @@ Widget.subclass('TestRunner', {
 		if (buttonDown) return;
 		var testClassName = this.getModel().getSelectedTestClass();
 		if (!testClassName) return;
-		var testCase = new (lively.lang.Namespace.objectNamed(testClassName))();
+		var testCase = new (Class.forName(testClassName))();
 		testCase.runAll();
 		this.setResultOf(testCase);
 	},
@@ -304,8 +304,8 @@ Widget.subclass('TestRunner', {
 		var testSuite = new TestSuite();
 		var counter = 0;
 		//all classes from the list
-		testSuite.setTestCases(this.getModel().getTestClasses().collect(function(ea) {
-			return lively.lang.Namespace.objectNamed(ea);
+		testSuite.setTestCases(this.getModel().getTestClasses().map(function(ea) {
+		    return Class.forName(ea);
 		}));
 		var self = this;
 		var total = self.resultBar.getExtent().x;

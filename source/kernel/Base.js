@@ -87,7 +87,7 @@ function noPendingRequirements(module) {
     return PendingRequirements[module].length == 0;
 };
 
-function module(moduleName, context) {
+function module(moduleName) {
 
     var namespacePrefix = 'lively.';
     
@@ -103,14 +103,7 @@ function module(moduleName, context) {
     }
     
     function createNamespaceModule(moduleName) {
-        var namespaceIdentifier = isNamespaceAwareModule(moduleName) ? moduleName : convertUrlToNSIdentifier(moduleName);
-        
-        context = context || Global;
-        namespace(namespaceIdentifier, context);
-        
-        var module = lively.lang.Namespace.objectNamed(namespaceIdentifier, context);
-        // module.namespaceIdentifier = namespaceIdentifier; // FIXME just for now...
-        return module;
+        return namespace(isNamespaceAwareModule(moduleName) ? moduleName : convertUrlToNSIdentifier(moduleName));
     }
     
     function createUri(moduleName) {
@@ -144,7 +137,7 @@ function module(moduleName, context) {
             var codeWrapper = function() { // run code with namespace modules as additional parameters
                 code.apply(this, preReqModuleNames.map(function(ea) {
                     var nsIdentifier = isNamespaceAwareModule(ea) ? ea : convertUrlToNSIdentifier(ea);
-                    return lively.lang.Namespace.objectNamed(nsIdentifier)
+                    return Class.forName(nsIdentifier);
                 }));
             }
             
@@ -666,14 +659,6 @@ Object.subclass('Namespace', {
     }
     
 }); 
-
-// FIXME this is a bad method name, please change
-// The method returns an object to a given string, which can include namespaces
-// this is neccesary because e.g. Global['lively.Tests.ClassTest'] does not work
-Namespace.objectNamed = function(string, context) {
-    return string.split('.').inject(context || Global, function(context, name) { return context[name] });
-}
-
 
 // let Glabal act like a namespace itself
 Object.extend(Global, Namespace.prototype);
