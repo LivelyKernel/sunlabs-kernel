@@ -90,7 +90,7 @@ TextMorph.subclass('XPathQueryMorph', {
 
 /// RSS Feed support (will be rewritten)
 
-Wrapper.subclass('FeedChannel', {
+lively.data.Wrapper.subclass('FeedChannel', {
     documentation: "Convenience wrapper around RSS Feed Channel XML nodes",
 
     titleQ: new Query("title"),
@@ -112,7 +112,7 @@ Wrapper.subclass('FeedChannel', {
     
 });
 
-Wrapper.subclass('FeedItem', {
+lively.data.Wrapper.subclass('FeedItem', {
     documentation: "Convenience wrapper around individual RSS feed items",
     titleQ: new Query("title"),
     descriptionQ: new Query("description"),

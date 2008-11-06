@@ -1,10 +1,21 @@
+/*
+ * Copyright ï¿½ 2006-2008 Sun Microsystems, Inc.
+ * All rights reserved.  Use is subject to license terms.
+ * This distribution may include materials developed by third parties.
+ *  
+ * Sun, Sun Microsystems, the Sun logo, Java and JavaScript are trademarks
+ * or registered trademarks of Sun Microsystems, Inc. in the U.S. and
+ * other countries.
+ */ 
+
 // ===========================================================================
 // Graphics primitives (SVG specific, browser-independent)
 // ===========================================================================
 
 namespace('lively.scene');
+namespace('lively.data');
 
-Object.subclass('Wrapper', {
+Object.subclass('lively.data.Wrapper', {
     documentation: "A wrapper around a native object, stored as rawNode",
 
     rawNode: null,
@@ -144,7 +155,7 @@ Object.subclass('Wrapper', {
 
     preparePropertyForSerialization: function(prop, propValue, extraNodes) {
 	function isWrapper(m) {
-	    return m instanceof Wrapper || m instanceof lively.data.DOMRecord;
+	    return m instanceof lively.data.Wrapper || m instanceof lively.data.DOMRecord;
 	}
 	var self = this;
 	function appendNode(node) {
@@ -156,7 +167,7 @@ Object.subclass('Wrapper', {
 
 	if (propValue instanceof Function) {
 	    return;
-	} else if (propValue instanceof Wrapper) { // FIXME better instanceof
+	} else if (propValue instanceof lively.data.Wrapper) { // FIXME better instanceof
 	    if (prop === 'owner') 
 		return; // we'll deal manually
 	    if (propValue instanceof Gradient || propValue instanceof ClipPath || propValue instanceof lively.scene.Image) 
@@ -192,7 +203,7 @@ Object.subclass('Wrapper', {
 	    var arr = LivelyNS.create("array", {name: prop});
 	    var abort = false;
 	    propValue.forEach(function iter(elt) {
-		if (elt && !(elt instanceof Wrapper)) { // FIXME what if Wrapper is a mixin?
+		if (elt && !(elt instanceof lively.data.Wrapper)) { // FIXME what if Wrapper is a mixin?
 		    abort = true;
 		    return;
 		}
@@ -214,7 +225,7 @@ Object.subclass('Wrapper', {
 });
 
 
-Wrapper.subclass('lively.scene.Node');
+lively.data.Wrapper.subclass('lively.scene.Node');
 
 lively.scene.Node.addProperties({ 
     FillOpacity: { name: "fill-opacity", from: Number, to: String, byDefault: 1.0},

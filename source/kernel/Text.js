@@ -246,7 +246,7 @@ thisModule.Font.addMethods({
 
 }    
     
-Wrapper.subclass('TextWord', {
+lively.data.Wrapper.subclass('TextWord', {
 
     documentation: "represents a chunk of text which might be printable or might be whitespace",
 

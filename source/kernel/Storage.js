@@ -105,7 +105,7 @@ Morph.subclass('PackageMorph', {
 });
 
 
-Wrapper.subclass('lively.storage.CollectionItem', {
+lively.data.Wrapper.subclass('lively.storage.CollectionItem', {
     documentation: "Wrapper around information returned from WebDAV's PROPFIND",
 
     nameQ: new Query("D:href"),

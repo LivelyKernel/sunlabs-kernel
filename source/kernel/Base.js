@@ -569,7 +569,7 @@ var Strings = {
 
 
 var Functions = {
-    documentation: "colllection of reusable functions",
+    documentation: "collection of reusable functions",
 
     Empty: function() {},
     K: function(arg) { return arg; },
@@ -2063,7 +2063,7 @@ lively.data.DOMRecord.subclass('lively.data.DOMNodeRecord', {
 
 
 // note: the following happens later
-//Class.addMixin(DOMRecord, Wrapper.prototype);
+//Class.addMixin(DOMRecord, lively.data.Wrapper.prototype);
 
 Record.subclass('lively.data.StyleRecord', {
     description: "base class for records backed by a DOM Node",

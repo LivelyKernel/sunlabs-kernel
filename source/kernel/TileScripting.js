@@ -487,7 +487,7 @@ Object.subclass('lively.TileScripting.TileMenuCreator', {
     },
     
     classNames: function() {
-        return this.classes().collect(function(ea) { return ea.type });
+        return this.classes().pluck('type');
     },
     
     methodNamesFor: function(className) {

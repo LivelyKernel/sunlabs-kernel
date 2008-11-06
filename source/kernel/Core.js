@@ -299,7 +299,7 @@ var Converter = {
 
     wrapperAndNodeEncodeFilter: function(baseObj, key) {
 	var value = baseObj[key];
-	if (value instanceof Wrapper) return value.uri();
+	if (value instanceof lively.data.Wrapper) return value.uri();
 	if (value instanceof Document || value instanceof Element || value instanceof DocumentType)
         return JSON.serialize({XML: Exporter.stringify(value)});
 	return value;
@@ -468,8 +468,8 @@ LivelyNS = {
 };
 
     
-Class.addMixin(lively.data.DOMRecord, Wrapper.prototype);
-Class.addMixin(lively.data.DOMNodeRecord, Wrapper.prototype);
+Class.addMixin(lively.data.DOMRecord, lively.data.Wrapper.prototype);
+Class.addMixin(lively.data.DOMNodeRecord, lively.data.Wrapper.prototype);
 
 
 
@@ -484,7 +484,7 @@ console.log("Loaded basic DOM manipulation code");
   * @class Gradient (NOTE: PORTING-SENSITIVE CODE)
   */
 
-Wrapper.subclass("Gradient", {
+lively.data.Wrapper.subclass("Gradient", {
 
 
     addStop: function(offset, color) {
@@ -583,7 +583,7 @@ Gradient.subclass('RadialGradient', {
     }
 });
 
-Wrapper.subclass('ClipPath', {
+lively.data.Wrapper.subclass('ClipPath', {
     initialize: function(shape) {
 	this.rawNode = NodeFactory.create('clipPath');
 	// Safari used to require a path, not just any shape
@@ -1208,14 +1208,14 @@ Copier.subclass('Importer', {
     importWrapperFromNode: function(rawNode) {
 	///console.log('making morph from %s %s', node, LivelyNS.getType(node));
 	// call reflectively b/c 'this' is not a Visual yet. 
-	var wrapperType = Wrapper.prototype.getEncodedType(rawNode);
+	var wrapperType = lively.data.Wrapper.prototype.getEncodedType(rawNode);
 	
-	if (!wrapperType || !Global[wrapperType]) {
+	if (!wrapperType || !Class.forName(wrapperType)) {
 	    throw new Error(Strings.format("node %s (parent %s) cannot be a morph of %s",
 					   rawNode.tagName, rawNode.parentNode, wrapperType));
 	}
 
-	return new Global[wrapperType](this, rawNode);
+	return new (Class.forName(wrapperType))(this, rawNode);
 	/*
 	try {
 
@@ -1656,7 +1656,7 @@ lively.scene.Node.subclass('Morph', {
 		origDefs = desc;
 		continue;
 	    } 
-	    var type = Wrapper.prototype.getEncodedType(desc);
+	    var type = lively.data.Wrapper.prototype.getEncodedType(desc);
 	    // depth first traversal
 	    if (type) {
 		var wrapper = importer.importWrapperFromNode(desc);
@@ -1721,11 +1721,11 @@ lively.scene.Node.subclass('Morph', {
 	    }
 	    case "widget": {
 		// FIXME!
-		var type = Wrapper.prototype.getEncodedType(node);
+		var type = lively.data.Wrapper.prototype.getEncodedType(node);
 		if (type) {
-		    var constructor = Global[type];
-		    if (constructor)
-		        var widget = new (Global[type])(importer, node);
+		    var klass = Class.forName(type);
+		    if (klass)
+		        var widget = new klass(importer, node);
 		    else
 		        console.log("Error in deserializing " + type + ", no class");
 		    $A(node.getElementsByTagName("record")).forEach(function(child) {
@@ -1840,7 +1840,7 @@ Morph.addMethods({
     setFill: function(fill) {
 	var old = this.fill;
 	this.fill = fill;
-	if (old instanceof Wrapper) 
+	if (old instanceof lively.data.Wrapper) 
 	    old.removeRawNode();
 	var attr;
 	if (fill == null) {
@@ -2062,7 +2062,7 @@ Morph.addMethods({
     },
 
     addNonMorph: function(node) {
-	if (node instanceof Wrapper) throw new Error("add rawNode, not the wrapper itself");
+	if (node instanceof lively.data.Wrapper) throw new Error("add rawNode, not the wrapper itself");
 	return this.rawNode.insertBefore(node, this.shape && this.shape.rawNode.nextSibling);
     },
 
@@ -3526,7 +3526,7 @@ Object.subclass('Model', {
 
 });
 
-Wrapper.subclass('ModelPlug', { // obsolete with CheapListMorph?
+lively.data.Wrapper.subclass('ModelPlug', { // obsolete with CheapListMorph?
     documentation: "A 'translation' from view's variable names to model's variable names",
 
     initialize: function(spec) {

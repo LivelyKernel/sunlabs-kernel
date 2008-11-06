@@ -2229,7 +2229,7 @@ Model.subclass('WidgetModel', {
 
 });
 
-Wrapper.subclass('Widget', ViewTrait, { // FIXME remove code duplication
+lively.data.Wrapper.subclass('Widget', ViewTrait, { // FIXME remove code duplication
 
     viewTitle: "Widget",
     initialViewExtent: pt(400, 300),
