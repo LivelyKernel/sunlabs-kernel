@@ -2749,7 +2749,7 @@ Widget.subclass('ComponentBox', {
         this.panel = panel;
         
         panel.applyStyle({borderWidth: 2,
-            fill: new LinearGradient([Color.white, 1, Color.primary.blue], LinearGradient.NorthSouth)});
+            fill: new lively.paint.LinearGradient([Color.white, 1, Color.primary.blue], LinearGradient.NorthSouth)});
 
 
         this.addMorphOfComponent(new FabrikComponent(), function() {

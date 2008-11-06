@@ -434,7 +434,7 @@ PanelMorph.subclass('SquiggleMorph', {
         this.savedHandColor = null;
 	this.contentMorph = this.addMorph(new ClipMorph(ext.extentAsRectangle().insetBy(this.borderWidth/2)));
 	this.contentMorph.ignoreEvents();
-	this.setFill(new LinearGradient([Color.white, 1, Color.primary.blue.lighter()], LinearGradient.NorthSouth));
+	this.setFill(new lively.paint.LinearGradient([Color.white, 1, Color.primary.blue.lighter()], lively.paint.LinearGradient.NorthSouth));
     },
     
     onMouseDown: function(evt) {
@@ -2284,7 +2284,7 @@ Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
 	panel.relayToModel(model, {});
 	
 	panel.applyStyle({borderWidth: 2, 
-			  fill: new LinearGradient([Color.white, 1, Color.primary.blue], LinearGradient.NorthSouth)});
+			  fill: new lively.paint.LinearGradient([Color.white, 1, Color.primary.blue], lively.paint.LinearGradient.NorthSouth)});
         //panel.setBorderColor(Color.blue);
         // TODO: add rounding to all the elements (panel, window & titlebar)
         // or make the titlebar round depending on the window
@@ -2440,7 +2440,7 @@ Widget.subclass('StockWidget', NetRequestReporterTrait, {
     
     buildView: function(extent, model) {
         var panel = new PanelMorph(extent).linkToStyles(['panel']);
-	panel.applyStyle({fill: new LinearGradient([Color.white, 1, Color.primary.blue.lighter()], LinearGradient.NorthSouth)});
+	panel.applyStyle({fill: new lively.paint.LinearGradient([Color.white, 1, Color.primary.blue.lighter()], lively.paint.LinearGradient.NorthSouth)});
 	panel.connectModel({model: model});
 
         // Marketwatch/Bigcharts logo
@@ -4171,7 +4171,7 @@ Morph.subclass("EngineMorph", {
     initialize: function($super, fullRect) {
         // A lively model by Dan Ingalls - 9/25/2007
         $super(fullRect, "rect");
-        this.setFill(new LinearGradient([Color.gray, 1, Color.darkGray], LinearGradient.NorthSouth));
+        this.setFill(new lively.paint.LinearGradient([Color.gray, 1, Color.darkGray], lively.paint.LinearGradient.NorthSouth));
         this.makeLayout(1, false);
         this.setRunning(true);
     },
@@ -4493,7 +4493,8 @@ Morph.subclass("PlayerMorph",  {
     initialize: function($super) {
         var rect = new Rectangle(0, 0, 330, 260);
         $super(rect, "rect");
-        this.setFill(new LinearGradient([Color.white, 1, Color.primary.blue], LinearGradient.NorthSouth));
+        this.setFill(new lively.paint.LinearGradient([Color.white, 1, Color.primary.blue], 
+						     lively.paint.LinearGradient.NorthSouth));
 
         this.animation = new AnimMorph(rect);
         this.animation.startup("Resources/Anim/Frame", 469, ".jpg"); 

@@ -419,7 +419,7 @@ Model.subclass('MessengerWidget', {
     
     buildView: function(extent) {
         var panel = new PanelMorph(extent);
-	var gradient = new LinearGradient([Color.white, 1, Color.primary.blue.lighter()], LinearGradient.EastWest); 
+	var gradient = new lively.paint.LinearGradient([Color.white, 1, Color.primary.blue.lighter()], LinearGradient.EastWest); 
 	panel.applyStyle({fill: gradient, borderWidth: 2});
         this.textpanel = panel.addMorph(newTextPane(new Rectangle(10, 10, 280, 180), " "));
 	this.textpanel.connectModel({model: this, getText: "getChatText", setText: "setChatText"});
@@ -439,7 +439,8 @@ Model.subclass('MessengerWidget', {
         
         this.initpanel = new PanelMorph(pt(300, 255));
         panel.addMorph(this.initpanel);
-        this.initpanel.setFill(new LinearGradient([Color.white, 1, Color.primary.blue], LinearGradient.NorthSouth));
+        this.initpanel.setFill(new lively.paint.LinearGradient([Color.white, 1, Color.primary.blue], 
+							       lively.paint.LinearGradient.NorthSouth));
         this.nickName = this.initpanel.addMorph(new TextMorph(new Rectangle(10, 10, 220, 20), 
 							      "<please enter your nickname>"));
 	//.connectModel({model: this, getText: "getIMText", setText: "setIMText"});

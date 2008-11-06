@@ -587,7 +587,7 @@ Widget.subclass('SimpleBrowser', {
             items.push(['import source files', function() {
                 if (! module.SourceControl) module.SourceControl = new SourceDatabase();
                 module.SourceControl.importKernelFiles(["JSON.js", "miniprototype.js", "defaultconfig.js", "localconfig.js", "Base.js", "scene.js", "Core.js", "Text.js", "Widgets.js", "Network.js", "Data.js", "Storage.js", "Tools.js", "Examples.js", "Main.js"]);
-                WorldMorph.current().setFill(new RadialGradient([Color.rgb(36,188,255), 1, Color.rgb(127,15,0)]));
+                WorldMorph.current().setFill(new lively.paint.RadialGradient([Color.rgb(36,188,255), 1, Color.rgb(127,15,0)]));
             }]);
         }
         if (!Config.debugExtras) {
@@ -859,7 +859,7 @@ Widget.subclass('StylePanel', {
 	this.fillDir = null;
 	this.fillType = this.actualModel.getFillType();
 	var base = targetMorph.getFill();
-	this.baseColor = (base instanceof Gradient) ? base.stopColor(0) : base;
+	this.baseColor = (base instanceof lively.paint.Gradient) ? base.stopColor(0) : base;
     },
 
     onBorderWidthUpdate: function(w) {
@@ -889,12 +889,12 @@ Widget.subclass('StylePanel', {
     
         if (this.fillType == 'linear gradient') {
             if (this.fillDir == null) this.fillDir = 'NorthSouth';
-            this.targetMorph.setFill(new LinearGradient([this.color1, 1, this.color2], 
-							LinearGradient[this.fillDir]));
+            this.targetMorph.setFill(new lively.paint.LinearGradient([this.color1, 1, this.color2], 
+								     lively.paint.LinearGradient[this.fillDir]));
         }
 	
         if (this.fillType == 'radial gradient')
-            this.targetMorph.setFill(new RadialGradient([this.color1, 1, this.color2]));
+            this.targetMorph.setFill(new lively.paint.RadialGradient([this.color1, 1, this.color2]));
     },
     
     

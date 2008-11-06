@@ -703,7 +703,8 @@ Widget.subclass('OldWeatherWidget', NetRequestReporterTrait, {
 	var model = this.getModel();
         var panel = new PanelMorph(extent);
 	panel.applyStyle({borderWidth: 2, 
-			  fill: new LinearGradient([Color.white, 1, Color.primary.blue], LinearGradient.NorthSouth)});
+			  fill: new lively.paint.LinearGradient([Color.white, 1, Color.primary.blue], 
+								lively.paint.LinearGradient.NorthSouth)});
         //panel.setBorderColor(Color.blue);
         // TODO: add rounding to all the elements (panel, window & titlebar)
         // or make the titlebar round depending on the window
@@ -829,11 +830,11 @@ WidgetModel.subclass('OldStylePanel', {
     
         if (this.fillType == 'linear gradient') {
             if (this.fillDir == null) this.fillDir = 'NorthSouth';
-            this.targetMorph.setFill(new LinearGradient([this.color1, 1, this.color2], LinearGradient[this.fillDir]));
+            this.targetMorph.setFill(new lively.paint.LinearGradient([this.color1, 1, this.color2], LinearGradient[this.fillDir]));
         }
     
         if (this.fillType == 'radial gradient')
-            this.targetMorph.setFill(new RadialGradient([this.color1, 1, this.color2]));
+            this.targetMorph.setFill(new lively.paint.RadialGradient([this.color1, 1, this.color2]));
     },
      
     getFillOpacity: function() { return this.fillOpacity; },

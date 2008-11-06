@@ -37,7 +37,7 @@ Morph.subclass('PackageMorph', {
 	var delta = this.borderWidth/2;
 	this.addMorph(Morph.makeLine([pt(delta, size/2), pt(size - delta, size/2)], 3, Color.black)).ignoreEvents();
 	this.addMorph(Morph.makeLine([pt(size/2, delta), pt(size/2, size - delta)], 3, Color.black)).ignoreEvents();
-	this.applyStyle({ fill: new RadialGradient([Color.primary.orange, 1, Color.primary.orange.lighter(), 2, Color.primary.orange]), borderRadius: 6});
+	this.applyStyle({ fill: new lively.paint.RadialGradient([Color.primary.orange, 1, Color.primary.orange.lighter(), 2, Color.primary.orange]), borderRadius: 6});
     },
 
     getHelpText: function() {

@@ -475,114 +475,6 @@ Class.addMixin(lively.data.DOMNodeRecord, lively.data.Wrapper.prototype);
 
 console.log("Loaded basic DOM manipulation code");
 
-// ===========================================================================
-// Gradient colors, stipple patterns and coordinate transformatins
-// ===========================================================================
-
-
-/**
-  * @class Gradient (NOTE: PORTING-SENSITIVE CODE)
-  */
-
-lively.data.Wrapper.subclass("Gradient", {
-
-
-    addStop: function(offset, color) {
-	this.rawNode.appendChild(NodeFactory.create("stop", {offset: offset, "stop-color": color}));
-	return this;
-    },
-
-    rawStopNodes: function() {
-	return this.rawNode.getElementsByTagNameNS(Namespace.SVG, 'stop');
-    },
-
-    stopColor: function(index) {
-	var stops = this.rawStopNodes();
-	if (!stops.item(index || 0)) return null;
-	return Color.fromString(stops.item(index || 0).getAttributeNS(null, "stop-color"));
-    },
-
-    offset: function(index) {
-	var stops = this.rawStopNodes();
-	if (!stops[index || 0]) return null;
-	return lively.Length.parse(stops[index || 0].getAttributeNS(null, "offset"));
-    },
-
-    processSpec: function(stopSpec) {
-	// spec is an array of the form [color_1, delta_1, color_2, delta_2 .... color_n],
-	// deltas are converted into stop-offsets by normalizing to the sum of all deltas,
-	// e.g [c1, 1, c2, 3, c3] results three stops at 0, 25% and 100%.
-	
-	if (stopSpec.length %2 == 0) throw new Error("invalid spec");
-	var sum = 0; // [a, 1, b]
-	for (var i = 1; i < stopSpec.length; i += 2)
-	    sum += stopSpec[i];
-	var offset = 0; 
-	for (var i = 1; i <= stopSpec.length; i += 2) {
-	    this.addStop(offset, stopSpec[i - 1]);
-	    if (i != stopSpec.length)
-		offset += stopSpec[i]/sum;
-	}
-    }
-
-});
-
-
-/**
-  * @class LinearGradient (NOTE: PORTING-SENSITIVE CODE)
-  */
-
-// note that Colors and Gradients are similar
-Gradient.subclass("LinearGradient", {
-
-    initialize: function($super, stopSpec, vector) {
-	vector = vector || LinearGradient.NorthSouth;
-	this.rawNode = NodeFactory.create("linearGradient",
-					  {x1: vector.x, y1: vector.y, 
-					   x2: vector.maxX(), y2: vector.maxY()}); 
-	this.processSpec(stopSpec);
-	return this;
-    },
-
-    mixedWith: function(color, proportion) {
-	var stops = this.rawStopNodes();
-	var rawNode = NodeFactory.create("linearGradient");
-	var result = new LinearGradient(Importer.marker, rawNode);
-	for (var i = 0; i < stops.length; i++) {
-	    result.addStop(this.offset(i), this.stopColor(i).mixedWith(color, proportion));
-	}
-	return result;
-    },
-
-    toString: function() {
-	return "#<" + this.getType() + this.toMarkupString() + ">";
-    }
-
-});
-
-Object.extend(LinearGradient, {
-    NorthSouth: rect(pt(0, 0), pt(0, 1)),
-    SouthNorth: rect(pt(0, 1), pt(0, 0)),
-    EastWest:   rect(pt(0, 0), pt(1, 0)),
-    WestEast:   rect(pt(1, 0), pt(0, 0))
-});
-
-/**
-  * @class RadialGradient (NOTE: PORTING-SENSITIVE CODE)
-  */
-
-Gradient.subclass('RadialGradient', {
-
-    initialize: function($super, stopSpec, optF) {
-	this.rawNode = NodeFactory.create("radialGradient");
-	if (optF) {
-	    this.rawNode.setAttributeNS(null, "fx", optF.x);
-	    this.rawNode.setAttributeNS(null, "fy", optF.y);
-	}
-	this.processSpec(stopSpec);
-    }
-});
-
 
 /**
   * @class Similitude (NOTE: PORTING-SENSITIVE CODE)
@@ -1522,7 +1414,7 @@ lively.scene.Node.subclass('Morph', {
 		} else if (other[p] instanceof lively.scene.Image) {
 		    this[p] = other[p].copy(copier);
 		    this.addWrapper(this[p]);
-		} else if (!(other[p] instanceof Gradient)) {		    
+		} else if (!(other[p] instanceof lively.paint.Gradient)) {		    
 		    this[p] = other[p];
 		} 
 	    }
@@ -1614,10 +1506,10 @@ lively.scene.Node.subclass('Morph', {
 		this.addWrapperToDefs(this.clipPath);
 		break;
 	    case "linearGradient":
-		this.fill = this.addWrapperToDefs(applyGradient(new LinearGradient(Importer.marker, def), this));
+		this.fill = this.addWrapperToDefs(applyGradient(new lively.paint.LinearGradient(Importer.marker, def), this));
 		break;
 	    case "radialGradient": // FIXME gradients can be used on strokes too
-		this.fill = this.addWrapperToDefs(applyGradient(new RadialGradient(Importer.marker,  def), this));
+		this.fill = this.addWrapperToDefs(applyGradient(new lively.paint.RadialGradient(Importer.marker,  def), this));
 		break;
 	    case "g":
 		this.restoreFromSubnode(importer, def);
@@ -1837,7 +1729,7 @@ Morph.addMethods({
 	    attr = "none";
 	} else if (fill instanceof Color) {
 	    attr = fill.toString();
-	} else if (fill instanceof Gradient) { 
+	} else if (fill instanceof lively.paint.Gradient) { 
 	    this.fill = fill.copy().setDerivedId(this);
 	    this.addWrapperToDefs(this.fill);
 	    attr = this.fill.uri();
@@ -3758,7 +3650,7 @@ PasteUpMorph.subclass("WorldMorph", {
             widgetPanel: { borderColor: Color.red, borderWidth: 2, borderRadius: 0,
                            fill: Color.blue.lighter()},
             clock:       { borderColor: Color.black, borderWidth: 1,
-                           fill: new RadialGradient([Color.yellow.lighter(2), 1, Color.yellow]) },
+                           fill: new lively.paint.RadialGradient([Color.yellow.lighter(2), 1, Color.yellow]) },
 	    panel:       { fill: Color.primary.blue.lighter(2), borderWidth: 2, borderColor: Color.black},
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue},
 	    helpText:    { borderRadius: 15, fill: Color.primary.yellow.lighter(3), fillOpacity: .8},
@@ -3768,16 +3660,16 @@ PasteUpMorph.subclass("WorldMorph", {
         lively: { // This is to be the style we like to show for our personality
             styleName: 'lively',
             titleBar:    { borderRadius: 8, borderWidth: 2, bordercolor: Color.black,
-                           fill: new LinearGradient([Color.primary.blue.lighter(), 1, Color.primary.blue, 1, Color.primary.blue.lighter(2)], 
-						    LinearGradient.SouthNorth)},
+                           fill: new lively.paint.LinearGradient([Color.primary.blue.lighter(), 1, Color.primary.blue, 1, Color.primary.blue.lighter(2)], 
+						    lively.paint.LinearGradient.SouthNorth)},
             slider:      { borderColor: Color.black, borderWidth: 1, 
-			   fill: new LinearGradient([Color.primary.blue.lighter(2), 1, Color.primary.blue])},
+			   fill: new lively.paint.LinearGradient([Color.primary.blue.lighter(2), 1, Color.primary.blue])},
             button:      { borderColor: Color.neutral.gray, borderWidth: 0.3, borderRadius: 4,
-                           fill: new LinearGradient([Color.darkGray, 1, Color.darkGray.lighter(2)], LinearGradient.SouthNorth) },
+                           fill: new lively.paint.LinearGradient([Color.darkGray, 1, Color.darkGray.lighter(2)], lively.paint.LinearGradient.SouthNorth) },
             widgetPanel: { borderColor: Color.blue, borderWidth: 4, borderRadius: 16,
                            fill: Color.blue.lighter(), opacity: 0.4},
             clock:       { borderColor: Color.black, borderWidth: 1,
-                           fill: new RadialGradient([Color.primary.blue.lighter(2), 1, Color.primary.blue.lighter()]) },
+                           fill: new lively.paint.RadialGradient([Color.primary.blue.lighter(2), 1, Color.primary.blue.lighter()]) },
 	    panel:       { fill: Color.primary.blue.lighter(2), borderWidth: 2, borderColor: Color.black},
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue},
 	    helpText:    { borderRadius: 15, fill: Color.primary.yellow.lighter(3), fillOpacity: .8},
@@ -3790,15 +3682,15 @@ PasteUpMorph.subclass("WorldMorph", {
         turquoise: { // Like turquoise, black and silver jewelry, [or other artistic style]
             styleName: 'turquoise',
             titleBar:    { borderRadius: 8, borderWidth: 2, bordercolor: Color.black,
-                           fill: new LinearGradient([Color.turquoise, 1, Color.turquoise.lighter(3)])},
+                           fill: new lively.paint.LinearGradient([Color.turquoise, 1, Color.turquoise.lighter(3)])},
             slider:      { borderColor: Color.black, borderWidth: 1, 
-			   fill: new LinearGradient([Color.turquoise.lighter(2), 1, Color.turquoise])},
+			   fill: new lively.paint.LinearGradient([Color.turquoise.lighter(2), 1, Color.turquoise])},
             button:      { borderColor: Color.neutral.gray.darker(), borderWidth: 2, borderRadius: 8,
-                           fill: new RadialGradient([Color.turquoise.lighter(), 1, Color.turquoise]) },
+                           fill: new lively.paint.RadialGradient([Color.turquoise.lighter(), 1, Color.turquoise]) },
             widgetPanel: { borderColor: Color.neutral.gray.darker(), borderWidth: 4,
                            fill: Color.turquoise.lighter(3), borderRadius: 16},
             clock:       { borderColor: Color.black, borderWidth: 1,
-                           fill: new RadialGradient([Color.turquoise.lighter(2), 1, Color.turquoise]) },
+                           fill: new lively.paint.RadialGradient([Color.turquoise.lighter(2), 1, Color.turquoise]) },
 	    panel:       {fill: Color.primary.blue.lighter(2), borderWidth: 2, borderColor: Color.black},
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue},
 	    helpText:    { borderRadius: 15, fill: Color.primary.yellow.lighter(3), fillOpacity: .8},
@@ -3827,7 +3719,7 @@ PasteUpMorph.subclass("WorldMorph", {
         }
         $super(bounds, "rect");
 
-	var gradient = new LinearGradient([Color.primary.blue.lighter(), 1, Color.primary.blue, 1, Color.primary.blue.lighter(), 1, Color.primary.blue, 1, Color.primary.blue.lighter()]);
+	var gradient = new lively.paint.LinearGradient([Color.primary.blue.lighter(), 1, Color.primary.blue, 1, Color.primary.blue.lighter(), 1, Color.primary.blue, 1, Color.primary.blue.lighter()]);
 	gradient.rawNode.setAttributeNS(null, "gradientTransform", "translate(0, -0.1) skewY(10)");
         this.setFill(gradient);
 	
@@ -4939,7 +4831,7 @@ Morph.subclass('LinkMorph', {
         "onto me to transport objects between worlds.",
     openForDragAndDrop: false,
     suppressHandles: true,
-    style: {borderColor: Color.black, fill: new RadialGradient([Color.blue.lighter(), 1, Color.blue, 1, Color.blue.darker()], pt(0.4, 0.2))},
+    style: {borderColor: Color.black, fill: new lively.paint.RadialGradient([Color.blue.lighter(), 1, Color.blue, 1, Color.blue.darker()], pt(0.4, 0.2))},
     
     initialize: function($super, otherWorld, initialPosition) {
         // In a scripter, type: world.addMorph(new LinkMorph(null))
@@ -4981,8 +4873,8 @@ Morph.subclass('LinkMorph', {
     
     addPathBack: function() {
 	var pathBack = new LinkMorph(WorldMorph.current(), this.bounds().center());
-        pathBack.setFill(new RadialGradient([Color.orange, 1, Color.red, 1, Color.red.darker(2)], 
-					    pt(0.4, 0.2)));
+        pathBack.setFill(new lively.paint.RadialGradient([Color.orange, 1, Color.red, 1, Color.red.darker(2)], 
+							 pt(0.4, 0.2)));
         this.myWorld.addMorph(pathBack);
 	return pathBack;
     },
@@ -5102,7 +4994,7 @@ ExternalLinkMorph.addProperties({
 ExternalLinkMorph.addMethods({
     documentation: "A link to a different web page, presumably containing another LK",
 
-    style: {borderColor: Color.black, fill: new RadialGradient([Color.green, 1, Color.yellow])},
+    style: {borderColor: Color.black, fill: new lively.paint.RadialGradient([Color.green, 1, Color.yellow])},
     
     initialize: function($super, url, position) {
 	$super(null, position || pt(0, 0));

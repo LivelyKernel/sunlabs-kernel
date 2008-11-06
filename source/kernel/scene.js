@@ -12,7 +12,7 @@
 // Graphics primitives (SVG specific, browser-independent)
 // ===========================================================================
 
-namespace('lively.scene');
+
 namespace('lively.data');
 
 Object.subclass('lively.data.Wrapper', {
@@ -170,7 +170,7 @@ Object.subclass('lively.data.Wrapper', {
 	} else if (propValue instanceof lively.data.Wrapper) { // FIXME better instanceof
 	    if (prop === 'owner') 
 		return; // we'll deal manually
-	    if (propValue instanceof Gradient || propValue instanceof lively.scene.Clip || propValue instanceof lively.scene.Image) 
+	    if (propValue instanceof lively.paint.Gradient || propValue instanceof lively.scene.Clip || propValue instanceof lively.scene.Image) 
 		return; // these should sit in defs and be handled by restoreDefs()
 	    //console.log("serializing field name='%s', ref='%s'", prop, m.id(), m.getType());
 	    if (!propValue.rawNode) {
@@ -225,9 +225,11 @@ Object.subclass('lively.data.Wrapper', {
 });
 
 
-lively.data.Wrapper.subclass('lively.scene.Node');
+using(namespace('lively.scene'), lively.data.Wrapper).run(function(unused, Wrapper) {
 
-lively.scene.Node.addProperties({ 
+Wrapper.subclass('lively.scene.Node');
+	
+this.Node.addProperties({ 
     FillOpacity: { name: "fill-opacity", from: Number, to: String, byDefault: 1.0},
     StrokeOpacity: { name: "stroke-opacity", from: Number, to: String, byDefault: 1.0},
     StrokeWidth: { name: "stroke-width", from: Number, to: String, byDefault: 1.0},
@@ -239,7 +241,7 @@ lively.scene.Node.addProperties({
     StyleClass: {name: "class"}
 }, Config.useStyling ? lively.data.StyleRecord : lively.data.DOMRecord);
 
-lively.scene.Node.addMethods({   
+this.Node.addMethods({   
 
     documentation:  "Objects that can be located on the screen",
     //In this particular implementation, graphics primitives are
@@ -328,7 +330,7 @@ lively.scene.Node.addMethods({
 // in a fully portable fashion.
 
 
-lively.scene.Node.subclass('lively.scene.Shape', {
+this.Node.subclass('lively.scene.Shape', {
 
     shouldIgnorePointerEvents: false,
     controlPointProximity: 10,
@@ -365,7 +367,7 @@ lively.scene.Node.subclass('lively.scene.Shape', {
 });
     
 
-Object.extend(lively.scene,  { 
+Object.extend(this,  { 
 
     LineJoins: Class.makeEnum(["Miter", "Round", "Bevel" ]), // note that values become attribute values
     LineCaps:  Class.makeEnum(["Butt",  "Round", "Square"])  // likewise
@@ -373,8 +375,7 @@ Object.extend(lively.scene,  {
 });
 
 
-lively.scene.Shape.subclass('lively.scene.Rectangle', {
-
+this.Shape.subclass('lively.scene.Rectangle', {
 
     documentation: "Rectangle shape",
 
@@ -449,7 +450,7 @@ lively.scene.Shape.subclass('lively.scene.Rectangle', {
 
 });
 
-lively.scene.Shape.subclass('lively.scene.Ellipse', {
+this.Shape.subclass('lively.scene.Ellipse', {
 
     documentation: "Ellipses and circles",
 
@@ -491,13 +492,13 @@ lively.scene.Shape.subclass('lively.scene.Ellipse', {
 	return bnds.partNameNear(Rectangle.sides, p, this.controlPointProximity);
     },
 
-    reshape: lively.scene.Rectangle.prototype.reshape,
+    reshape: this.Rectangle.prototype.reshape,
 
-    possibleHandleForControlPoint: lively.scene.Rectangle.prototype.possibleHandleForControlPoint
+    possibleHandleForControlPoint: this.Rectangle.prototype.possibleHandleForControlPoint
 
 });
 
-lively.scene.Shape.subclass('lively.scene.Polygon', {
+this.Shape.subclass('lively.scene.Polygon', {
     documentation: "polygon",
 
     hasElbowProtrusions: true,
@@ -679,16 +680,16 @@ lively.scene.Shape.subclass('lively.scene.Polyline', {
     },
 
     // poorman's traits :)
-    bounds: lively.scene.Polygon.prototype.bounds,
-    vertices: lively.scene.Polygon.prototype.vertices,
-    setVertices: lively.scene.Polygon.prototype.setVertices,
-    reshape: lively.scene.Polygon.prototype.reshape,
-    controlPointNear: lively.scene.Polygon.prototype.controlPointNear,
-    possibleHandleForControlPoint: lively.scene.Polygon.prototype.possibleHandleForControlPoint
+    bounds: this.Polygon.prototype.bounds,
+    vertices: this.Polygon.prototype.vertices,
+    setVertices: this.Polygon.prototype.setVertices,
+    reshape: this.Polygon.prototype.reshape,
+    controlPointNear: this.Polygon.prototype.controlPointNear,
+    possibleHandleForControlPoint: this.Polygon.prototype.possibleHandleForControlPoint
 
 });
 
-lively.scene.Shape.subclass('lively.scene.Path', {
+this.Shape.subclass('lively.scene.Path', {
     documentation: "Generic Path with arbitrary Bezier curves",
 
     hasElbowProtrusions: true,
@@ -794,15 +795,15 @@ lively.scene.Shape.subclass('lively.scene.Path', {
     },
     
     // poorman's traits :)
-    controlPointNear: lively.scene.Polygon.prototype.controlPointNear,
-    possibleHandleForControlPoint: lively.scene.Polygon.prototype.possibleHandleForControlPoint,
-    reshape: lively.scene.Polygon.prototype.reshape,
-    controlPointNear: lively.scene.Polygon.prototype.controlPointNear
+    controlPointNear: this.Polygon.prototype.controlPointNear,
+    possibleHandleForControlPoint: this.Polygon.prototype.possibleHandleForControlPoint,
+    reshape: this.Polygon.prototype.reshape,
+    controlPointNear: this.Polygon.prototype.controlPointNear
 
 });
 
 
-lively.scene.Node.subclass('lively.scene.Image', {
+this.Node.subclass('lively.scene.Image', {
     description: "Primitive wrapper around images",
     
     initialize: function(url, width, height) {
@@ -900,7 +901,7 @@ lively.scene.Node.subclass('lively.scene.Image', {
 });
 
 
-lively.data.Wrapper.subclass('lively.scene.Clip', {
+Wrapper.subclass('lively.scene.Clip', {
     initialize: function(shape) {
 	this.rawNode = NodeFactory.create('clipPath');
 	// FIXME cleanup the unused attributes (stroke width and such).
@@ -908,3 +909,107 @@ lively.data.Wrapper.subclass('lively.scene.Clip', {
     }
 
 });
+
+}); // end using lively.scene
+
+// ===========================================================================
+// Gradient colors, stipple patterns and coordinate transformatins
+// ===========================================================================
+
+
+using(namespace('lively.paint'), lively.data.Wrapper).run(function(unused, Wrapper) {
+
+
+// note that Colors and Gradients are similar but Colors don't need an SVG node
+Wrapper.subclass("lively.paint.Gradient", {
+
+    addStop: function(offset, color) {
+	this.rawNode.appendChild(NodeFactory.create("stop", {offset: offset, "stop-color": color}));
+	return this;
+    },
+
+    rawStopNodes: function() {
+	return this.rawNode.getElementsByTagNameNS(Namespace.SVG, 'stop');
+    },
+
+    stopColor: function(index) {
+	var stops = this.rawStopNodes();
+	if (!stops.item(index || 0)) return null;
+	return Color.fromString(stops.item(index || 0).getAttributeNS(null, "stop-color"));
+    },
+
+    offset: function(index) {
+	var stops = this.rawStopNodes();
+	if (!stops[index || 0]) return null;
+	return lively.Length.parse(stops[index || 0].getAttributeNS(null, "offset"));
+    },
+
+    processSpec: function(stopSpec) {
+	// spec is an array of the form [color_1, delta_1, color_2, delta_2 .... color_n],
+	// deltas are converted into stop-offsets by normalizing to the sum of all deltas,
+	// e.g [c1, 1, c2, 3, c3] results three stops at 0, 25% and 100%.
+	
+	if (stopSpec.length %2 == 0) throw new Error("invalid spec");
+	var sum = 0; // [a, 1, b]
+	for (var i = 1; i < stopSpec.length; i += 2)
+	    sum += stopSpec[i];
+	var offset = 0; 
+	for (var i = 1; i <= stopSpec.length; i += 2) {
+	    this.addStop(offset, stopSpec[i - 1]);
+	    if (i != stopSpec.length)
+		offset += stopSpec[i]/sum;
+	}
+    }
+
+});
+
+
+
+this.Gradient.subclass("lively.paint.LinearGradient", {
+
+    initialize: function($super, stopSpec, vector) {
+	vector = vector || lively.paint.LinearGradient.NorthSouth;
+	this.rawNode = NodeFactory.create("linearGradient",
+					  {x1: vector.x, y1: vector.y, 
+					   x2: vector.maxX(), y2: vector.maxY()}); 
+	this.processSpec(stopSpec);
+	return this;
+    },
+
+    mixedWith: function(color, proportion) {
+	var stops = this.rawStopNodes();
+	var rawNode = NodeFactory.create("linearGradient");
+	var result = new lively.paint.LinearGradient(Importer.marker, rawNode);
+	for (var i = 0; i < stops.length; i++) {
+	    result.addStop(this.offset(i), this.stopColor(i).mixedWith(color, proportion));
+	}
+	return result;
+    },
+
+    toString: function() {
+	return "#<" + this.getType() + this.toMarkupString() + ">";
+    }
+
+});
+
+Object.extend(this.LinearGradient, {
+    NorthSouth: rect(pt(0, 0), pt(0, 1)),
+    SouthNorth: rect(pt(0, 1), pt(0, 0)),
+    EastWest:   rect(pt(0, 0), pt(1, 0)),
+    WestEast:   rect(pt(1, 0), pt(0, 0))
+});
+
+
+this.Gradient.subclass('lively.paint.RadialGradient', {
+
+    initialize: function($super, stopSpec, optF) {
+	this.rawNode = NodeFactory.create("radialGradient");
+	if (optF) {
+	    this.rawNode.setAttributeNS(null, "fx", optF.x);
+	    this.rawNode.setAttributeNS(null, "fy", optF.y);
+	}
+	this.processSpec(stopSpec);
+    }
+});
+
+});// lively.paint
