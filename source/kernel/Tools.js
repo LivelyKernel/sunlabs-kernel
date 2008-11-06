@@ -224,12 +224,13 @@ Object.subclass('lively.Tools.BrowserNode', {
     },
     
     newSource: function(newSource) {
+        throw dbgOn(new Error("Shouldn't try to eval and save things now..."));
         if (!this.evalSource(newSource)) {
             console.log('couldn\'t eval');
             return
         }
         if (!this.saveSource(newSource, module.SourceControl))
-            console.log('couldn\'t save');        
+            console.log('couldn\'t save');
     },
     
     evalSource: function(newSource) {
@@ -377,7 +378,13 @@ module.BrowserNode.subclass('lively.Tools.ObjectNode', {
     },
     
     sourceString: function() {
-        return 'object def of ' + this.nameInOwner;
+        var source;
+        try {
+            source = JSON.serialize(this.target)
+        } catch(e) {
+            source = 'object def of ' + this.nameInOwner;
+        }
+        return source;
     },
 })
 
