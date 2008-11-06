@@ -170,7 +170,7 @@ Object.subclass('lively.data.Wrapper', {
 	} else if (propValue instanceof lively.data.Wrapper) { // FIXME better instanceof
 	    if (prop === 'owner') 
 		return; // we'll deal manually
-	    if (propValue instanceof Gradient || propValue instanceof ClipPath || propValue instanceof lively.scene.Image) 
+	    if (propValue instanceof Gradient || propValue instanceof lively.scene.Clip || propValue instanceof lively.scene.Image) 
 		return; // these should sit in defs and be handled by restoreDefs()
 	    //console.log("serializing field name='%s', ref='%s'", prop, m.id(), m.getType());
 	    if (!propValue.rawNode) {
@@ -897,4 +897,14 @@ lively.scene.Node.subclass('lively.scene.Image', {
 	    return this.rawNode;
 	}
     }
+});
+
+
+lively.data.Wrapper.subclass('lively.scene.Clip', {
+    initialize: function(shape) {
+	this.rawNode = NodeFactory.create('clipPath');
+	// FIXME cleanup the unused attributes (stroke width and such).
+	this.rawNode.appendChild(shape.rawNode.cloneNode(false));
+    }
+
 });

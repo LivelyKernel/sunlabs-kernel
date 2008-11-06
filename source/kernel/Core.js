@@ -583,16 +583,6 @@ Gradient.subclass('RadialGradient', {
     }
 });
 
-lively.data.Wrapper.subclass('ClipPath', {
-    initialize: function(shape) {
-	this.rawNode = NodeFactory.create('clipPath');
-	// Safari used to require a path, not just any shape
-	//this.rawNode.appendChild(shape.toPath().rawNode);
-	// FIXME cleanup the unused attributes (stroke width and such).
-	this.rawNode.appendChild(shape.rawNode.cloneNode(false));
-    }
-
-});
 
 /**
   * @class Similitude (NOTE: PORTING-SENSITIVE CODE)
@@ -1619,7 +1609,7 @@ lively.scene.Node.subclass('Morph', {
 		if (!this.rawNode.getAttributeNS(null, 'clip-path'))
 		    console.log('myClip is undefined on %s', this); 
 		if (this.clipPath) throw new Error("how come clipPath is set to " + this.clipPath);
-		this.clipPath = new ClipPath(Importer.marker, def).setDerivedId(this);
+		this.clipPath = new lively.scene.Clip(Importer.marker, def).setDerivedId(this);
 		this.rawNode.setAttributeNS(null, 'clip-path', this.clipPath.uri());
 		this.addWrapperToDefs(this.clipPath);
 		break;
@@ -3233,7 +3223,7 @@ Morph.addMethods({
 
     clipToPath: function(shape) {
 	if (this.clipPath) this.clipPath.removeRawNode();
-	var clip = new ClipPath(shape).setDerivedId(this);
+	var clip = new lively.scene.Clip(shape).setDerivedId(this);
 	this.addWrapperToDefs(clip);
 	this.rawNode.setAttributeNS(null, "clip-path", clip.uri());
 	this.clipPath = clip;
