@@ -81,17 +81,21 @@ Widget.subclass('lively.Tools.SystemBrowser', {
             var morph = panel[paneName];
             morph.connectModel(model.newRelay({List: ("-" + paneName + "Content"), Selection: ('+' + paneName + 'Selection')}), true);
             morph.withAllSubmorphsDo(function() {            
-                this.onMouseOver = function(evt) {
-                    browser.showButtons(evt, morph, paneName)
-                };
-                this.onMouseOut = function(evt) { browser.hideButtons(evt, morph) };
+                this.onMouseOver = function(evt) { browser.showButtons(evt, morph, paneName) };
+                this.onMouseDown = this.onMouseDown.wrap(function(proceed, evt) {
+                    proceed(evt);
+                    browser.showButtons(evt, morph, paneName);
+                });
+                this.onMouseOut = function(evt) { browser.hideButtons(evt, morph, paneName) };
             })
         }
         
         ['Pane1', 'Pane2', 'Pane3'].each(function(ea) { setupListPanes(ea) });
         
         panel.sourcePane.connectModel(model.newRelay({Text: "SourceString"}));
-	    	    
+	    
+	    this.panel = panel;
+	    
         return panel;
     },
     
@@ -124,31 +128,44 @@ Widget.subclass('lively.Tools.SystemBrowser', {
         })
     },
     
-    hideButtons: function(evt, morph) {
-        morph.submorphs
-            .select(function(ea) { return ea.isBrowserButton })
-            .reject(function(ea) { return ea.shape.containsPoint(ea.localize(evt.point())) })
-            .each(function(ea) { ea.remove() })
+    hideButtons: function(evt, morph, paneName) {
+        if (evt && morph.shape.containsPoint(morph.localize(evt.point()))) return;
+        if (this['get' + paneName + 'Selection']() !== null) return;
+        var btns = morph.submorphs.select(function(ea) { return ea.isBrowserButton });
+        btns.each(function(ea) { ea.remove() })
+        // var btns = morph.submorphs.select(function(ea) { return ea.isBrowserButton });
+        // if (btns.any(function(ea) { return ea.shape.containsPoint(ea.localize(evt.point())) }))
+        //     return
+        // btns.each(function(ea) { ea.remove() })
     },
     
     onPane1SelectionUpdate: function(node) {
-        this.setPane2Selection(null);
+        this.setPane2Selection(null, true);
         this.setPane2Content(['-----']);
-        if (!node) return;
+        if (!node) {
+            this.hideButtons(null, this.panel.Pane1, 'Pane1')
+            return
+        };
         this.setPane2Content(node.childNodesAsListItems());
         this.setSourceString(node.sourceString());
     },
     
     onPane2SelectionUpdate: function(node) {
         this.setPane3Selection(null);
-        this.setPane3Content(['-----']);
-        if (!node) return
+        this.setPane3Content(['-----']);        
+        if (!node) {
+            this.hideButtons(null, this.panel.Pane2, 'Pane2')
+            return
+        }
         this.setPane3Content(node.childNodesAsListItems());
         this.setSourceString(node.sourceString());
     },
     
     onPane3SelectionUpdate: function(node) {
-        if (!node) return
+        if (!node) {
+            this.hideButtons(null, this.panel.Pane3, 'Pane3')
+            return
+        }
         this.setSourceString(node.sourceString());
     },
         
@@ -255,14 +272,14 @@ module.BrowserNode.subclass('lively.Tools.NamespaceNode', { // rename to ModuleN
                 .collect(function(ea) { return new module.ClassNode(ea, browser) });
            case "functions":
             return Object.keys(this.target)
-                .select(function(ea) { return ns[ea] && !Class.isClass(ns[ea]) && Object.isFunction(ns[ea]) && !ns[ea].declaredClass})
+                .select(function(ea) { return ns[ea] && ns.hasOwnProperty(ea) && !Class.isClass(ns[ea]) && Object.isFunction(ns[ea]) && !ns[ea].declaredClass})
                 .sort()
                 .collect(function(ea) { return new module.FunctionNode(ns[ea], browser, ea) });
            case "objects":
-            return Object.values(this.target)
-                .reject(function(ea) { return Object.isFunction(ea) })
+            return Object.keys(ns)
+                .reject(function(ea) { return Object.isFunction(ns[ea]) })
                 .sort()
-                .collect(function(ea) { return new module.ObjectNode(ea, browser) });
+                .collect(function(ea) { return new module.ObjectNode(ns[ea], browser, ea) });
            default: return []
         }
     },
@@ -308,7 +325,7 @@ module.BrowserNode.subclass('lively.Tools.ClassNode', {
                 return Object.keys(theClass)
                     .sort()
                     .select(function(ea) { return theClass.hasOwnProperty(ea) && Object.isFunction(theClass[ea]) && !Class.isClass(theClass[ea])})
-                    .collect(function(ea) { return new module.ClassMethodNode(theClass[ea], browser, theClass) });
+                    .collect(function(ea) { return new module.ClassMethodNode(theClass[ea], browser, theClass, ea) });
             default: return []
         }
     },
@@ -331,7 +348,37 @@ module.BrowserNode.subclass('lively.Tools.ClassNode', {
                 node.siblingNodes().concat([node]).each(function(ea) { ea.mode = 'class' })
             }}
         ]
-    }
+    },
+    
+    sourceString: function() {
+        return 'class def of ' + this.target.type
+    },
+});
+
+module.BrowserNode.subclass('lively.Tools.ObjectNode', {
+    
+    initialize: function($super, target, browser, nameInOwner) {
+        $super(target, browser);
+        this.nameInOwner = nameInOwner;
+    },
+            
+    childNodes: function() {
+        // FIXME duplication with Classnode
+        var obj = this.target;
+        var browser = this.browser;
+        return Object.keys(obj)
+            .select(function(ea) { return obj[ea] && obj.hasOwnProperty(ea) && !Class.isClass(obj[ea]) && Object.isFunction(obj[ea]) && !obj[ea].declaredClass})
+            .sort()
+            .collect(function(ea) { return new module.FunctionNode(obj[ea], browser, ea) });
+    },
+    
+    asString: function() {
+        return this.nameInOwner;
+    },
+    
+    sourceString: function() {
+        return 'object def of ' + this.nameInOwner;
+    },
 })
 
 module.BrowserNode.subclass('lively.Tools.MethodNode', {
@@ -380,9 +427,14 @@ module.BrowserNode.subclass('lively.Tools.MethodNode', {
 });
 
 module.MethodNode.subclass('lively.Tools.ClassMethodNode', {
-
+    
+    initialize: function($super, target, browser, theClass, nameInOwner) {
+        $super(target, browser, theClass);
+        this.nameInOwner = nameInOwner;
+    },
+    
     asString: function() {
-        return this.target.name || 'anonymous function';
+        return this.nameInOwner || this.target.name || 'anonymous class function';
     },
         
 });
@@ -398,7 +450,7 @@ module.BrowserNode.subclass('lively.Tools.FunctionNode', {
     },
     
     asString: function() {
-        return this.target.name || this.nameInOwner || 'anonymous function';
+        return this.nameInOwner || this.target.name || 'anonymous function';
     },
 });
 

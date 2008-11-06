@@ -1258,6 +1258,11 @@ Morph.subclass("TextListMorph", {
 // it should be the other way round...
 TextListMorph.subclass("ListMorph", {
 
+    initialize: function($super, initialBounds, itemList, optMargin, optTextStyle, suppressSelectionOnUpdate) {
+        $super(initialBounds, itemList, optMargin, optTextStyle)
+        this.suppressSelectionOnUpdate = suppressSelectionOnUpdate;
+    },
+    
     generateListItem: function(value, rect) {
         if (this.itemPrinter)
             value = this.itemPrinter(value);
@@ -1296,7 +1301,7 @@ TextListMorph.subclass("ListMorph", {
     
     updateList: function($super, newList) {
         $super(newList);
-        this.selectLineAt(this.selectedLineNo);
+        this.suppressSelectionOnUpdate || this.selectLineAt(this.selectedLineNo);
     }
 });
 
@@ -2035,8 +2040,8 @@ Global.newTextListPane = function(initialBounds) {
     return new ScrollPane(new TextListMorph(initialBounds, ["-----"]), initialBounds); 
 };
 
-Global.newRealListPane = function(initialBounds) {
-    return new ScrollPane(new ListMorph(initialBounds, ["-----"]), initialBounds); 
+Global.newRealListPane = function(initialBounds, suppressSelectionOnUpdate) {
+    return new ScrollPane(new ListMorph(initialBounds, ["-----"], null, null, suppressSelectionOnUpdate), initialBounds); 
 };
 
 Global.newTextPane = function(initialBounds, defaultText) {
