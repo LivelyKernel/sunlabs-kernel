@@ -22,6 +22,7 @@ Config.logDnD = true;
 //Config.fakeFontMetrics = false;
 //Config.fontMetricsFromSVG = true;
 load('../kernel/Base.js');
+load('../kernel/scene.js');
 
 load('dom/mico.js');
 load('dom/dom2-core.js');
