@@ -465,7 +465,8 @@ Widget.subclass('SimpleBrowser', {
     listClasses: function() { 
         return Global.classes(true)
 		.collect(function(ea) {return Class.className(ea)})
-		.select(function(ea) {return !ea.startsWith("anonymous") && !ea.startsWith("lively.")})
+		.select(function(ea) {return !ea.startsWith("anonymous")})
+		.concat(["Global"])
 		.sort();  
     },
 
@@ -473,11 +474,20 @@ Widget.subclass('SimpleBrowser', {
     listMethodsFor: function(className) {
         if (className == null) return [];
         var sorted = (className == 'Global')
-            ? Global.constructor.functionNames().without(className).sort()
+            ? this.functionNames(Global).sort()
             : Class.forName(className).localFunctionNames().sort();
         var defStr = "*definition";
         var defRef = module.SourceControl && module.SourceControl.getSourceInClassForMethod(className, defStr);
         return defRef ? [defStr].concat(sorted) : sorted;
+    },
+    
+    functionNames: function(namespace) {
+	// This logic should probably be in, eg, Namespace.functionNames()
+	return Object.keys(namespace)
+		.select(function(ea) {
+			var func = namespace[ea];
+			return func && !Class.isClass(func) && Object.isFunction(func) && !func.declaredClass})
+		.collect(function(ea) { return namespace[ea].name || ea})
     },
     
     getMethodStringFor: function(className, methodName) { 
@@ -485,7 +495,7 @@ Widget.subclass('SimpleBrowser', {
 	if (module.SourceControl) 
 	    var source = module.SourceControl.getSourceInClassForMethod(className, methodName);
 	    if(source) return source;
-	var func = (className == "Global") ? Global[methodName] : Global[className].prototype[methodName];
+	var func = (className == "Global") ? Global[methodName] : Class.forName(className).prototype[methodName];
 	if (!func) return "-- no code --";
 	if (module.SourceControl) return "// **Decompiled code** //\n" + func.getOriginal().toString();
 	return func.getOriginal().toString();
