@@ -12,6 +12,7 @@ load('browser.js');
 load('dom/index.xhtml.js');
 
 print('loaded start document emulation');
+load('../kernel/scene.js');
 load('../kernel/Core.js');
 
 
