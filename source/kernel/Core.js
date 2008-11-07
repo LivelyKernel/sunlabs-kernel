@@ -1090,7 +1090,7 @@ Copier.subclass('Importer', {
     importWrapperFromNode: function(rawNode) {
 	///console.log('making morph from %s %s', node, LivelyNS.getType(node));
 	// call reflectively b/c 'this' is not a Visual yet. 
-	var wrapperType = lively.data.Wrapper.prototype.getEncodedType(rawNode);
+	var wrapperType = lively.data.Wrapper.getEncodedType(rawNode);
 	
 	if (!wrapperType || !Class.forName(wrapperType)) {
 	    throw new Error(Strings.format("node %s (parent %s) cannot be a morph of %s",
@@ -1511,9 +1511,6 @@ lively.data.Wrapper.subclass('Morph', {
 	    case "radialGradient": // FIXME gradients can be used on strokes too
 		this.fill = this.addWrapperToDefs(applyGradient(new lively.paint.RadialGradient(Importer.marker,  def), this));
 		break;
-	    case "g":
-		this.restoreFromSubnode(importer, def);
-		break;
 	    default:
 		console.warn('unknown def %s', def);
 	    }
@@ -1538,7 +1535,7 @@ lively.data.Wrapper.subclass('Morph', {
 		origDefs = desc;
 		continue;
 	    } 
-	    var type = lively.data.Wrapper.prototype.getEncodedType(desc);
+	    var type = lively.data.Wrapper.getEncodedType(desc);
 	    // depth first traversal
 	    if (type) {
 		var wrapper = importer.importWrapperFromNode(desc);
@@ -1603,7 +1600,7 @@ lively.data.Wrapper.subclass('Morph', {
 	    }
 	    case "widget": {
 		// FIXME!
-		var type = lively.data.Wrapper.prototype.getEncodedType(node);
+		var type = lively.data.Wrapper.getEncodedType(node);
 		if (type) {
 		    var klass = Class.forName(type);
 		    if (klass)

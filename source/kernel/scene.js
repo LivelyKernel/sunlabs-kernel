@@ -43,11 +43,6 @@ Object.subclass('lively.data.Wrapper', {
 	return null;
     },
 
-    getEncodedType: function(node) { // this should be merged with getType
-	var id = node.getAttribute("id");
-	return id && id.split(":")[1];
-    },
-
     newId: (function() { 
 	var wrapperCounter = 0;
 	return function() {
@@ -154,9 +149,6 @@ Object.subclass('lively.data.Wrapper', {
     },
 
     preparePropertyForSerialization: function(prop, propValue, extraNodes) {
-	function isWrapper(m) {
-	    return m instanceof lively.data.Wrapper || m instanceof lively.data.DOMRecord;
-	}
 	var self = this;
 	function appendNode(node) {
 	    try {
@@ -167,7 +159,7 @@ Object.subclass('lively.data.Wrapper', {
 
 	if (propValue instanceof Function) {
 	    return;
-	} else if (propValue instanceof lively.data.Wrapper) { // FIXME better instanceof
+	} else if (lively.data.Wrapper.isInstance(propValue)) { 
 	    if (prop === 'owner') 
 		return; // we'll deal manually
 	    if (propValue instanceof lively.paint.Gradient || propValue instanceof lively.scene.Clip || propValue instanceof lively.scene.Image) 
@@ -186,7 +178,7 @@ Object.subclass('lively.data.Wrapper', {
 	    }
 	} else if (propValue instanceof Relay) {
 	    var delegate = propValue.delegate;
-	    if (isWrapper(delegate)) { // FIXME: better instanceof
+	    if (lively.data.Wrapper.isInstance(delegate)) { // FIXME: better instanceof
 		var desc = LivelyNS.create("relay", {name: prop, ref: delegate.id()});
 		Properties.forEachOwn(propValue.definition, function(key, value) {
 		    var binding = desc.appendChild(LivelyNS.create("binding"));
@@ -203,7 +195,7 @@ Object.subclass('lively.data.Wrapper', {
 	    var arr = LivelyNS.create("array", {name: prop});
 	    var abort = false;
 	    propValue.forEach(function iter(elt) {
-		if (elt && !(elt instanceof lively.data.Wrapper)) { // FIXME what if Wrapper is a mixin?
+		if (elt && !lively.data.Wrapper.isInstance(elt)) { // FIXME what if Wrapper is a mixin?
 		    abort = true;
 		    return;
 		}
@@ -222,6 +214,18 @@ Object.subclass('lively.data.Wrapper', {
 	    node && appendNode(node);
 	}
     }
+});
+
+Object.extend(lively.data.Wrapper, {
+    getEncodedType: function(node) { // this should be merged with getType
+	var id = node.getAttribute("id");
+	return id && id.split(":")[1];
+    },
+
+    isInstance: function(m) {
+	return m instanceof lively.data.Wrapper || m instanceof lively.data.DOMRecord;
+    }
+
 });
 
 

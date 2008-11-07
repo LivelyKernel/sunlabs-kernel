@@ -1758,7 +1758,7 @@ Widget.subclass('Component', {
         // $A(this.rawNode.childNodes).each(function(node) {
         //     console.log(" node: "+ node.id)
         //     if (node.localName == "widget") {
-        //         var type = Wrapper.prototype.getEncodedType(node);
+        //         var type = Wrapper.getEncodedType(node);
         //         console.log(" found widget node (" + node.id + ")")
         //         if (node.wrapper) {
         //             widgets.push(node.wrapper)
