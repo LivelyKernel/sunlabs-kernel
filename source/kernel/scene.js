@@ -268,9 +268,6 @@ this.Node.addMethods({
 	return this.getTrait("pointer-events") == "none";
     },
     
-    getBoundingBox: function() { // bounds, but using native SVG functionality, and in the object's coordinates.
-	return Rectangle.ensure(this.rawNode.getBBox());
-    },
 
     canvas: function() {
 	if (!UserAgent.usableOwnerSVGElement) {
@@ -1011,5 +1008,8 @@ this.Gradient.subclass('lively.paint.RadialGradient', {
 	this.processSpec(stopSpec);
     }
 });
+
+//    return { Gradient: this.Gradient, RadialGradient: this.RadialGradient, LinearGradient: this.LinearGradient};
+
 
 });// lively.paint
