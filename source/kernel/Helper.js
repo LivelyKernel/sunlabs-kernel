@@ -1,4 +1,4 @@
-module('Helper.js').requires().toRun(function() {
+module('lively.Helper').requires().toRun(function() {
      
 // extension to Morphs
 Morph.addMethods({
@@ -58,7 +58,7 @@ Global.logStackFor = function(obj, methodName) {
         MyLogDepth--;
         return result
     })
-}
+};
 
 Global.indentForDepth = function(depth) {
     var s=""
@@ -102,7 +102,7 @@ Global.logMethod = function(obj, methodName) {
         MyLogDepth--;
         return result
     })
-}
+};
 
 Global.printObject = function(obj) {
     var s = String(obj) + ":";
@@ -111,7 +111,7 @@ Global.printObject = function(obj) {
             s += " " + ea + ":" + String(obj[ea]) + "\n"
     };
     return s
-}
+};
 
 Global.printObjectFull = function(obj) {
     var s = "{";
@@ -119,16 +119,16 @@ Global.printObjectFull = function(obj) {
         s += " " + ea + ":" + String(obj[ea]) + ", \n"
     };
     return s + "}"
-}
+};
 
 Global.logObject = function(obj) {
     console.log(printObject(obj))
-}
+};
 
 
 Global.stringToXML = function(string) {
     return new DOMParser().parseFromString(string, "text/xml");
-}
+};
 
 // Generator for an array
 Global.range = function(begin, end) {
@@ -137,8 +137,81 @@ Global.range = function(begin, end) {
         result.push(i);
     }
     return result;
-}
+};
 
+// -------      ----------------
+
+/*
+ * HandPositionObserver, obsverse the position change of the hand and calls the function
+ */
+Object.subclass('HandPositionObserver', {
+
+    initialize: function(func, hand) {
+        this.hand = hand || WorldMorph.current().hands.first();
+        this.func = func;
+        return this;
+    },
+
+    onGlobalPositionUpdate: function(value) {
+        if (this.func)
+        this.func.call(this, value)
+    },
+
+    start: function() {
+        this.hand.formalModel.addObserver(this);
+    },
+
+    stop: function() {
+        this.hand.formalModel.removeObserver(this);
+    },
+});
+
+Morph.subclass('lively.Helper.ToolDock', {
+    
+    initialize: function($super, bounds) {
+        $super(bounds || pt(10,100).extentAsRectangle());
+        this.handObserver = null;
+        this.showMode();
+    },
+    
+    getWorld: function() {
+        return WorldMorph.current();
+    },
+    
+    activationArea: function() {
+        var relativeActivationArea = new Rectangle(0.9,0,0.1,1);
+        return this.getWorld().bounds().scaleByRect(relativeActivationArea);
+    },
+    
+    showMode: function() {
+        this.handObserver = new HandPositionObserver(function(point) {
+            if (!this.activationArea().containsPoint(point)) return;
+            this.getWorld().addMorph(this);
+            this.setPosition(pt(this.getWorld().getExtent().x - this.getExtent().x, 0));
+            this.handObserver.stop();
+            this.hideMode();
+        }.bind(this));
+        this.handObserver.start();
+    },
+    
+    appear: function() {
+        
+    },
+    
+    hideMode: function() {
+        this.handObserver = new HandPositionObserver(function(point) {
+            if (this.activationArea().containsPoint(point)) return;
+            this.owner && this.remove();
+            this.handObserver.stop();
+            this.showMode();
+        }.bind(this));
+        this.handObserver.start();
+    },
+    
+    handlesMouseDown: function() {
+        return true;
+    }    
+});
 
 console.log('Helper.js is loaded');
 

@@ -2877,31 +2877,6 @@ Object.subclass('FlowLayout', {
     }
 
 });
- 
-/*
- * HandPositionObserver, obsverse the position change of the hand and calls the function
- */
-Object.subclass('HandPositionObserver', {
-
-    initialize: function(func) {
-        this.hand = WorldMorph.current().hands.first();
-        this.func = func;
-        return this;
-    },
-
-    onGlobalPositionUpdate: function(value) {
-        if (this.func)
-        this.func.call(this, value)
-    },
-
-    start: function() {
-        this.hand.formalModel.addObserver(this);
-    },
-
-    stop: function() {
-        this.hand.formalModel.removeObserver(this);
-    },
-});
 
 /* Very simple XML converter */
 Global.FabrikConverter = {
