@@ -852,8 +852,6 @@ Morph.subclass("TextMorph");
 
 TextMorph.addProperties({
     StoredTextStyle: {name: "stored-style", from:Converter.fromJSONAttribute, to:Converter.toJSONAttribute },
-    Wrap: { name: "wrap", byDefault: thisModule.WrapStyle.Normal },
-    Padding: { name: "padding", byDefault: String(Rectangle.inset(6, 4).toInsetTuple()) } // FIXME move to coercion funcions
 }, lively.data.DOMRecord);
 
 TextMorph.addMethods({
@@ -866,6 +864,8 @@ TextMorph.addMethods({
     backgroundColor: Color.veryLightGray,
     borderWidth: 1,
     borderColor: Color.black,
+    padding: Rectangle.inset(6, 4),
+    wrap: thisModule.WrapStyle.Normal,
 
     maxSafeSize: 20000, 
     tabWidth: 4,
@@ -986,15 +986,17 @@ TextMorph.addMethods({
 	    this.setTextColor(spec.textColor);
 	}
 	if (spec.padding !== undefined) {
-	    this.setPaddingStyle(spec.padding);
+	    if (!(spec.padding instanceof Rectangle)) 
+		throw new TypeError(spec.padding + ' not a Rectangle');
+	    this.padding = spec.padding;
 	}
 	return this;
     },
     
     makeStyleSpec: function($super, spec) {
 	var spec = $super();
-	if (this.getWrap() != TextMorph.prototype.getWrap()) {
-	    spec.wrapStyle = this.getWrap();
+	if (this.wrap != TextMorph.prototype.wrap) {
+	    spec.wrapStyle = this.wrap;
 	}
 	if (this.getFontSize() !== TextMorph.prototype.fontSize) {
 	    spec.fontSize = this.getFontSize();
@@ -1008,30 +1010,17 @@ TextMorph.addMethods({
     },
     
     setWrapStyle: function(style) {
-	// FIXME fold into coertion/validation, use just setWrap
 	if (!(style in thisModule.WrapStyle)) { 
 	    console.log("unknown style " + style + " in " + thisModule.WrapStyle);
 	    return; 
 	}
-        if (style == TextMorph.prototype.getWrap()) {
-            this.setWrap(undefined);
+        if (style == TextMorph.prototype.wrap) {
+            delete this.wrap;
         } else {
-	    this.setWrap(style);
+	    this.wrap = style;
         }
     },
     
-    getPaddingStyle: function() { // FIXME fold into coertion/validation
-	var padding = this.getPadding();
-	return padding && Converter.parseInset(padding);
-    },
-
-    setPaddingStyle: function(ext) {
-	if (!ext) {
-	    this.setPadding(undefined);
-	} else {
-	    this.setPadding(String(ext.toInsetTuple()));
-	}
-    },
 
     beLabel: function() {
 	this.applyStyle({borderWidth: 0, fill: null, wrapStyle: thisModule.WrapStyle.Shrink});
@@ -1159,12 +1148,13 @@ TextMorph.addMethods({
 
     // TextMorph composition functions
     textTopLeft: function() { 
-        return this.shape.bounds().topLeft().addPt(this.getPaddingStyle().topLeft()); 
+	if (!(this.padding instanceof Rectangle)) console.log('padding is ' + this.padding);
+        return this.shape.bounds().topLeft().addPt(this.padding.topLeft()); 
     },
     
     // ??
     innerBounds: function() { 
-        return this.shape.bounds().insetByRect(this.getPaddingStyle());
+        return this.shape.bounds().insetByRect(this.padding);
     },
     
     ensureRendered: function() { // created on demand and cached
@@ -1284,14 +1274,14 @@ TextMorph.addMethods({
     },
 
     compositionWidth: function() {
-	var padding = this.getPaddingStyle();
-        if (this.getWrap() == thisModule.WrapStyle.Normal) return this.shape.bounds().width - padding.left() - padding.right();
+	var padding = this.padding;
+        if (this.wrap == thisModule.WrapStyle.Normal) return this.shape.bounds().width - padding.left() - padding.right();
         else return 9999; // Huh??
     },
 
     // DI: Should rename fitWidth to be composeLineWrap and fitHeight to be composeWordWrap
     fitText: function() { 
-        if (this.getWrap() == thisModule.WrapStyle.Normal) this.fitHeight();
+        if (this.wrap == thisModule.WrapStyle.Normal) this.fitHeight();
         else this.fitWidth();
     },
 
@@ -1313,7 +1303,7 @@ TextMorph.addMethods({
         // console.log('last char is ' + jRect.inspect() + ' for string ' + this.textString);
         var maxY = Math.max(this.lineHeight(), jRect.maxY());
     
-	var padding  = this.getPaddingStyle();
+	var padding  = this.padding;
         if (this.shape.bounds().maxY() == maxY + padding.top()) 
             return; // No change in height  // *** check that this converges
     
@@ -1359,15 +1349,15 @@ TextMorph.addMethods({
         
         // if (this.innerBounds().width==(maxX-x0) && this.innerBounds().height==(maxY-y0)) return;
         // No change in width *** check convergence
-	var padding = this.getPaddingStyle();
+	var padding = this.padding;
         var bottomRight = padding.topLeft().addXY(maxX,maxY);
 
 
         // DI: This should just say, eg, this.shape.setBottomRight(bottomRight);
 	var b = this.shape.bounds();
-        if (this.getWrap() == thisModule.WrapStyle.None) {
+        if (this.wrap == thisModule.WrapStyle.None) {
             this.shape.setBounds(b.withHeight(bottomRight.y - b.y));
-        } else if (this.getWrap() == thisModule.WrapStyle.Shrink) {
+        } else if (this.wrap == thisModule.WrapStyle.Shrink) {
             this.shape.setBounds(b.withBottomRight(bottomRight));
         }
 
@@ -1413,7 +1403,7 @@ TextMorph.addMethods({
             this.textSelection.addRectangle(r1.union(r2));
         } else { // Selection is on two or more lines
             var localBounds = this.shape.bounds();
-	    var padding = this.getPaddingStyle();
+	    var padding = this.padding;
             r1 = r1.withBottomRight(pt(localBounds.maxX() - padding.left(), r1.maxY()));
             r2 = r2.withBottomLeft(pt(localBounds.x + padding.left(), r2.maxY()));
             this.textSelection.addRectangle(r1);
@@ -1473,7 +1463,7 @@ TextMorph.addMethods({
         // Do selecting if click is in selectable area
         if (evt.isCommandKey()) return false;
          var selectableArea = this.openForDragAndDrop
-	    ? this.shape.bounds().insetByRect(this.getPaddingStyle()) : this.shape.bounds();
+	    ? this.shape.bounds().insetByRect(this.padding) : this.shape.bounds();
        return selectableArea.containsPoint(this.localize(evt.mousePoint)); 
     },
 
@@ -2145,7 +2135,7 @@ TextMorph.addMethods({
 	    return;
         this.fontSize = newSize;
         this.font = thisModule.Font.forFamily(this.fontFamily, newSize);
-        this.setPaddingStyle(Rectangle.inset(newSize/2 + 2, newSize/3));
+        this.padding = Rectangle.inset(newSize/2 + 2, newSize/3);
         this.layoutChanged();
         this.changed();
     },
@@ -2334,7 +2324,7 @@ Morph.subclass('LabeledTextMorph', {
         var textPos = pt(0,label.getExtent().y/2);
         var text = new TextMorph(textPos.extent(rect.extent()), textString);
         text.applyStyle({wrapStyle: thisModule.WrapStyle.Normal, borderColor: Color.veryLightGray.darker().darker(),
-                         padding: text.getPaddingStyle().withY(label.bounds().height / 2)});
+                         padding: text.padding.withY(label.bounds().height / 2)});
         this.addMorphBack(text);
         text.composeAfterEdits = text.composeAfterEdits.wrap(function(proceed) {
             proceed();
