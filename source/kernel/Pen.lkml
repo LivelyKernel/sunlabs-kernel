@@ -42,9 +42,9 @@
         var verts = this.vertices.invoke('subPt', this.startingLocation);
     
         if (this.fillColor) 
-            morph.setShape(new PolygonShape(verts, this.fillColor, this.penWidth, this.penColor));
+            morph.setShape(new lively.scene.Polyline(verts, this.fillColor, this.penWidth, this.penColor));
         else 
-            morph.setShape(new PolylineShape(verts, this.penWidth, this.penColor));
+            morph.setShape(new lively.scene.Polyline(verts, this.penWidth, this.penColor));
     
         WorldMorph.current().addMorph(morph); 
     
