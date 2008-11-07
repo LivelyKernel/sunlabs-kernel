@@ -1,4 +1,4 @@
-/*
+ /*
  * Copyright � 2006-2008 Sun Microsystems, Inc.
  * All rights reserved.  Use is subject to license terms.
  * This distribution may include materials developed by third parties.
@@ -68,8 +68,8 @@ Widget.subclass('lively.Tools.SystemBrowser', {
         this.start();
         
         var panel = PanelMorph.makePanedPanel(extent, [
-            ['Pane1', newRealListPane, new Rectangle(0, 0, 0.35, 0.45)],
-            ['Pane2', newRealListPane, new Rectangle(0.35, 0, 0.3, 0.45)],
+            ['Pane1', newRealListPane, new Rectangle(0, 0, 0.35, 0.40)],
+            ['Pane2', newRealListPane, new Rectangle(0.35, 0, 0.3, 0.40)],
             ['Pane3', newRealListPane, new Rectangle(0.65, 0, 0.35, 0.45)],
             ['sourcePane', newTextPane, new Rectangle(0, 0.45, 1, 0.55)]
         ]);
@@ -107,31 +107,40 @@ Widget.subclass('lively.Tools.SystemBrowser', {
         var btnSpecs = node.buttonSpecs();
         if (btnSpecs.length === 0) return;
         
-        var offsetX = 30;
+        // get or create the buttons
+        var offsetX = morph.bounds().left();
         var height = 20;
-        var width = (morph.getExtent().x - offsetX) / btnSpecs.length
-        var y = morph.getExtent().y - height;
+        var width = (morph.getExtent().x) / btnSpecs.length
+        var y = morph.bounds().bottom() /*- height*/;
         
+        morph = morph.owner;
         
+        var btns = range(0, btnSpecs.length-1).collect(function(i) {
+            var existingBtn = morph.submorphs.detect(function(subM) { return subM.label && subM.label.textString === btnSpecs[i].label })
+            return existingBtn ? existingBtn : new ButtonMorph(new Rectangle(offsetX + i*width, y, width, height));
+        })
+                
+        // configure the buttons
         btnSpecs.each(function(ea, i) {
-            var btn = new ButtonMorph(new Rectangle(offsetX + i*width, y, width, height));
             var btnSetValueWrapper = {action: function(value) {
-                if (value) return
+                // if (value) return
                 ea.action.apply(node);
-                // debugger;
+                btns.without(btns[i]).each(function(ea) { ea.changeAppearanceFor(false) });
                 browser['set' + paneName + 'Selection'](node, true);
             }};
-            btn.connectModel({model: btnSetValueWrapper, setValue: 'action'});
-            btn.setLabel(ea.label);
-            btn.isBrowserButton = true;
-            morph.addMorph(btn);
+            btns[i].connectModel({model: btnSetValueWrapper, setValue: 'action'});
+            btns[i].toggle = true;
+            btns[i].setLabel(ea.label);
+            btns[i]['is' + paneName + 'BrowserButton'] = true;
+            morph.addMorph(btns[i]);
         })
     },
     
     hideButtons: function(evt, morph, paneName) {
         if (evt && morph.shape.containsPoint(morph.localize(evt.point()))) return;
         if (this['get' + paneName + 'Selection']() !== null) return;
-        var btns = morph.submorphs.select(function(ea) { return ea.isBrowserButton });
+        var btnHolder = morph.owner;
+        var btns = btnHolder.submorphs.select(function(ea) { return ea['is' + paneName + 'BrowserButton'] });
         btns.each(function(ea) { ea.remove() })
         // var btns = morph.submorphs.select(function(ea) { return ea.isBrowserButton });
         // if (btns.any(function(ea) { return ea.shape.containsPoint(ea.localize(evt.point())) }))
