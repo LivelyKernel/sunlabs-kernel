@@ -983,7 +983,7 @@ Object.subclass('lively.examples.asteroids.AsteroidsSprite', {
         // Render the sprite's shape and location by rotating its base shape
         // and moving it to its proper screen position.
 
-        var tfm = new Similitude(pt(this.currentX + gameWidth/2, this.currentY + gameHeight/2), -this.angle, 1);
+        var tfm = new lively.scene.Similitude(pt(this.currentX + gameWidth/2, this.currentY + gameHeight/2), -this.angle, 1);
         this.sprite.setVertices(this.shape.map(function(v) { return tfm.transformPoint(v); }));
         // Create a new morph based on the sprite
         this.morph = this.createMorph(this.sprite);

@@ -475,207 +475,6 @@ Class.addMixin(lively.data.DOMNodeRecord, lively.data.Wrapper.prototype);
 
 console.log("Loaded basic DOM manipulation code");
 
-
-/**
-  * @class Similitude (NOTE: PORTING-SENSITIVE CODE)
-  */
-
-Object.subclass('Similitude', {
-
-    documentation: "Support for object rotation, scaling, etc.",
-    translation: null, // may be set by instances to a component SVGTransform
-    rotation: null, // may be set by instances to a component SVGTransform
-    scaling: null, // may be set by instances to a component SVGTransform
-    eps: 0.0001, // precision
-
-    /**
-      * createSimilitude: a similitude is a combination of translation rotation and scale.
-      * @param [Point] delta
-      * @param [float] angleInRadians
-      * @param [float] scale
-      */
-    initialize: function(delta, angleInRadians, scale) {
-	if (angleInRadians === undefined) angleInRadians = 0.0;
-	if (scale === undefined) scale = 1.0;
-	this.a = this.ensureNumber(scale * Math.cos(angleInRadians));
-	this.b = this.ensureNumber(scale * Math.sin(angleInRadians));
-	this.c = this.ensureNumber(scale * - Math.sin(angleInRadians));
-	this.d = this.ensureNumber(scale * Math.cos(angleInRadians));
-	this.e = this.ensureNumber(delta.x);
-	this.f = this.ensureNumber(delta.y);
-	this.matrix_ = this.toMatrix();
-    },
-
-    getRotation: function() { // in degrees
-	var r =  Math.atan2(this.b, this.a).toDegrees();
-	return Math.abs(r) < this.eps ? 0 : r; // don't bother with values very close to 0
-    },
-
-    getScale: function() {
-	var a = this.a;
-	var b = this.b;
-	var s = Math.sqrt(a * a + b * b);
-	return Math.abs(s - 1) < this.eps ? 1 : s; // don't bother with values very close to 1
-    },
-
-    isTranslation: function() {
-	return this.matrix_.type === SVGTransform.SVG_TRANSFORM_TRANSLATE;
-    },
-
-    getTranslation: function() {
-	return pt(this.e, this.f);
-    },
-
-    toAttributeValue: function() {
-	var delta = this.getTranslation();
-	var attr = "translate(" + delta.x + "," + delta.y +")";
-	var theta = this.getRotation();
-
-	if (theta != 0.0)
-	    attr += " rotate(" + this.getRotation()  +")"; // in degrees
-
-	var factor = this.getScale();
-
-	if (factor != 1.0) 
-	    attr += " scale(" + this.getScale() + ")";
-
-	return attr;
-    },
-
-    applyTo: function(visual) {
-	if (Config.useTransformAPI) {
-	    var list = visual.getBaseTransform();
-	    var canvas = visual.canvas();
-
-	    if (!this.translation) this.translation = canvas.createSVGTransform();
-	    this.translation.setTranslate(this.e, this.f);
-	    list.initialize(this.translation);
-	    if (this.b || this.c) {
-		if (!this.rotation) this.rotation = canvas.createSVGTransform();
-		this.rotation.setRotate(this.getRotation(), 0, 0);
-		list.appendItem(this.rotation);
-	    }
-	    if (this.a != 1.0 || this.d != 1.0) {
-		if (!this.scaling) this.scaling = canvas.createSVGTransform();
-		var scale = this.getScale();
-		this.scaling.setScale(scale, scale);
-		list.appendItem(this.scaling);
-	    }
-	} else {
-	    visual.rawNode.setAttributeNS(null, "transform", this.toAttributeValue());
-	}
-    },
-
-    toString: function() {
-	return this.toAttributeValue();
-    },
-
-    transformPoint: function(p, acc) {
-	return p.matrixTransform(this, acc);
-    },
-
-    transformRectToRect: function(r) {
-	var p = this.transformPoint(r.topLeft());
-	var min = p.copy();
-	var max = p.copy();
-
-	p = this.transformPoint(r.topRight(), p);
-	min = min.minPt(p, min);
-	max = max.maxPt(p, max);
-
-	p = this.transformPoint(r.bottomRight(), p);
-	min = min.minPt(p, min);
-	max = max.maxPt(p, max);
-
-	p = this.transformPoint(r.bottomLeft(), p);
-	min = min.minPt(p, min);
-	max = max.maxPt(p, max);
-
-	return rect(min, max);
-    },
-
-    copy: function() {
-	return new Transform(this);
-    },
-
-    canvas: function() {
-	var world = WorldMorph.current(); // forward reference to WorldMorph :(
-	if (world) return world.canvas();
-	else return Global.document.getElementById("canvas"); // in early stages world may be null
-    },
-
-    toMatrix: function() {
-	var mx = this.canvas().createSVGMatrix();
-	mx.a = this.a;
-	mx.b = this.b;
-	mx.c = this.c;
-	mx.d = this.d;
-	mx.e = this.e;
-	mx.f = this.f;
-	return mx;
-    },
-
-    ensureNumber: function(value) {
-	// note that if a,b,.. f are not numbers, it's usually a
-	// problem, which may crash browsers (like Safari) that don't
-	// do good typechecking of SVGMatrix properties before passing
-	// them to native code.  It's probably too late to figure out
-	// the cause, but at least we won't crash.
-	if (isNaN(value)) { throw new Error('not a number');}
-	return value;
-    },
-
-
-    fromMatrix: function(mx) {
-	this.a = this.ensureNumber(mx.a);
-	this.b = this.ensureNumber(mx.b);
-	this.c = this.ensureNumber(mx.c);
-	this.d = this.ensureNumber(mx.d);
-	this.e = this.ensureNumber(mx.e);
-	this.f = this.ensureNumber(mx.f);
-	this.matrix_ = this.toMatrix();
-    },
-    
-    preConcatenate: function(t) {
-	var m = this.matrix_;
-	this.a =  t.a * m.a + t.c * m.b;
-	this.b =  t.b * m.a + t.d * m.b;
-	this.c =  t.a * m.c + t.c * m.d;
-	this.d =  t.b * m.c + t.d * m.d;
-	this.e =  t.a * m.e + t.c * m.f + t.e;
-	this.f =  t.b * m.e + t.d * m.f + t.f;
-	this.matrix_ = this.toMatrix();
-	return this;
-    }
-    
-
-});
-
-/**
-  * @class Transform (NOTE: PORTING-SENSITIVE CODE)
-  * This code is dependent on SVG transformation matrices.
-  * See: http://www.w3.org/TR/2003/REC-SVG11-20030114/coords.html#InterfaceSVGMatrix 
-  */
-
-Similitude.subclass('Transform', {
-
-    initialize: function(duck) { // matrix is a duck with a,b,c,d,e,f, could be an SVG matrix or a Lively Transform
-	// note: doesn't call $super
-	if (duck) {
-	    this.fromMatrix(duck);
-	} else {
-	    this.a = this.d = 1.0;
-	    this.b = this.c = this.e = this.f = 0.0;
-	    this.matrix_ = this.toMatrix();
-	}
-    },
-
-    createInverse: function() {
-	return new Transform(this.matrix_.inverse());
-    }
-
-});
-
 // ===========================================================================
 // Event handling foundations
 // ===========================================================================
@@ -1354,7 +1153,7 @@ lively.data.Wrapper.subclass('Morph', {
 	if(!shapeType) shapeType = "rect";
 	this.internalInitialize(NodeFactory.create("g"), true);
 
-	this.pvtSetTransform(new Similitude(this.defaultOrigin(initialBounds, shapeType)));
+	this.pvtSetTransform(new lively.scene.Similitude(this.defaultOrigin(initialBounds, shapeType)));
 	this.initializePersistentState(initialBounds, shapeType);
 	this.initializeTransientState(initialBounds);
     },
@@ -1726,13 +1525,7 @@ Morph.addMethods({  // tmp copy
 	    this.rawNode.setAttributeNS(null, "filter", filterUri);
 	else
 	    this.rawNode.removeAttributeNS(null, "filter");
-    },
-
-    getBaseTransform: function() {
-	return this.rawNode.transform.baseVal;
     }
-
-
 });
 
 
@@ -2163,8 +1956,8 @@ Morph.addMethods({
 	if (this.pvtCachedTransform) return this.pvtCachedTransform;
 	
 	if (Config.useTransformAPI) {
-	    var impl = this.getBaseTransform().consolidate();
-	    this.pvtCachedTransform = new Transform(impl ? impl.matrix : null); // identity if no transform specified
+	    var impl = this.rawNode.transform.baseVal.consolidate();
+	    this.pvtCachedTransform = new lively.scene.Transform(impl ? impl.matrix : null); // identity if no transform specified
 	} else {
 	    // parse the attribute: by Dan Amelang
 	    var s = this.rawNode.getAttributeNS(null, "transform");
@@ -2200,7 +1993,7 @@ Morph.addMethods({
 		    break;
 		}
 	    }
-	    this.pvtCachedTransform = new Transform(matrix);
+	    this.pvtCachedTransform = new lively.scene.Transform(matrix);
 	}
 	return this.pvtCachedTransform;
     },
@@ -2232,7 +2025,7 @@ Morph.addMethods({
     },
 
     getGlobalTransform: function() {
-	var globalTransform = new Transform();
+	var globalTransform = new lively.scene.Transform();
 	var world = this.world();
 	// var trace = [];
 	for (var morph = this; morph != world; morph = morph.owner) {
@@ -3096,7 +2889,7 @@ Morph.addMethods({
     },
 
     transformForNewOwner: function(newOwner) {
-	return new Transform(this.transformToMorph(newOwner));
+	return new lively.scene.Transform(this.transformToMorph(newOwner));
     },
 
     changed: function() {
@@ -3110,8 +2903,8 @@ Morph.addMethods({
     },
 
     transformChanged: function() {
-	this.pvtCachedTransform = new Similitude(this.origin, this.rotation, this.scale * this.fisheyeScale);
-	this.pvtCachedTransform.applyTo(this);
+	this.pvtCachedTransform = new lively.scene.Similitude(this.origin, this.rotation, this.scale * this.fisheyeScale);
+	this.pvtCachedTransform.applyTo(this.rawNode);
     },
 
     layoutChanged: function Morph$layoutChanged() {
