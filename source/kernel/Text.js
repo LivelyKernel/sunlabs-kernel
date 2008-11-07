@@ -848,13 +848,7 @@ lively.scene.Node.subclass('lively.Text.TextContent', {
     }
 });
 
-Morph.subclass("TextMorph");
-
-TextMorph.addProperties({
-    StoredTextStyle: {name: "stored-style", from:Converter.fromJSONAttribute, to:Converter.toJSONAttribute },
-}, lively.data.DOMRecord);
-
-TextMorph.addMethods({
+Morph.subclass("TextMorph", {
     
     documentation: "Container for Text",
     // these are prototype variables
@@ -918,9 +912,10 @@ TextMorph.addMethods({
     },
 
     restorePersistentState: function($super, importer) {
-	$super(importer);
-	var styleInfo = this.getStoredTextStyle();
-	if (styleInfo) {
+	$super(importer); // FIXME legacy code, remove the whole method
+	var attr = this.rawNode.getAttributeNS(null, "stored-style");
+	if (attr) {
+	    var styleInfo = Converter.fromJSONAttribute(attr);
 	    this.textStyle = new RunArray(styleInfo.runs, styleInfo.values); 
 	}
     },
@@ -932,7 +927,6 @@ TextMorph.addMethods({
         // DI: ... and yet this seems necessary!
         if (this.textString instanceof thisModule.Text) {
 	    this.textStyle = this.textString.style;
-	    this.setStoredTextStyle(this.textStyle);
 	    this.textString = this.textString.string || "";
 	} 
 	if (this.textString === undefined) alert('initialize: ' + this);
@@ -1570,7 +1564,6 @@ TextMorph.addMethods({
     setRichText: function(text) {
         if (!(text instanceof lively.Text.Text)) throw dbgOn(new Error('Not text'));
         this.textStyle = text.style;
-        this.setStoredTextStyle(this.textStyle);
         this.setTextString(text.string);
     },
     
@@ -1605,7 +1598,6 @@ TextMorph.addMethods({
 	    before = strStyle.slice(0, this.selectionRange[0]);
 	    after = strStyle.slice(this.selectionRange[1]+1, oldLength);
 	    this.textStyle = before.concat(repStyle).concat(after);
-	    this.setStoredTextStyle(this.textStyle);
 	    // console.log("replaceSel; textStyle = " + this.textStyle);
 	}		
         // Compute new selection, and display if not delayed
@@ -1937,7 +1929,6 @@ TextMorph.addMethods({
 	if (this.undoTextStyle) {
             t = this.textStyle;
 	    this.textStyle = this.undoTextStyle;
-	    this.setStoredTextStyle(this.textStyle);
 	    this.undoTextStyle = t;
 	}
     },
@@ -2036,7 +2027,6 @@ TextMorph.addMethods({
 	var txt = new thisModule.Text(this.textString, this.textStyle);
 	txt.emphasize(emph, this.selectionRange[0], this.selectionRange[1]);
 	this.textStyle = txt.style;
-	this.setStoredTextStyle(this.textStyle);
 	// console.log("emphasizeSelection result: " + this.textStyle);
 	this.composeAfterEdits();
     },
@@ -2514,9 +2504,18 @@ Object.subclass('RunArray', {
     },
     toString: function() {
 	return "runs = " + this.runs + ";  values = " + this.values;
+    },
+    toLiteral: function() {
+	return {runs: this.runs.clone(), values: this.values.clone() }
     }
+
 });
 Object.extend(RunArray, {
+
+    fromLiteral: function(literal) {
+	return new RunArray(literal.runs, literal.values);
+    },
+
     test: function(a) {
 	var ra = new RunArray(a, a); // eg [3, 1, 2], [3, 1, 2]
 	console.log("RunArray test for " + ra + " = " + ra.asArray());
