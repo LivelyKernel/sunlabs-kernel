@@ -253,22 +253,6 @@ this.Node.addMethods({
 	throw new Error('setBounds unsupported on type ' + this.getType());
     },
 
-    // should that be disable?
-    ignoreEvents: function() {
-	this.setTrait("pointer-events", "none");
-	return this;
-    },
-
-    enableEvents: function() {
-	this.removeTrait("pointer-events");
-	return this;
-    },
-
-    areEventsIgnored: function() {
-	return this.getTrait("pointer-events") == "none";
-    },
-    
-
     canvas: function() {
 	if (!UserAgent.usableOwnerSVGElement) {
 	    // so much for multiple worlds on one page

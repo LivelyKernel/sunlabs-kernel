@@ -2426,15 +2426,21 @@ Morph.addMethods({
 	return this.mouseHandler.handleMouseEvent(evt, this); 
     },
 
-    ignoreEvents: function($super) { // will not respond nor get focus
+
+    areEventsIgnored: function() {
+	return this.getTrait("pointer-events") == "none";
+    },
+
+    ignoreEvents: function() { // will not respond nor get focus
 	this.mouseHandler = null;
 	this.setTrait("pointer-events", "none");
 	return this;
     },
 
-    enableEvents: function($super) {
-	$super();
+    enableEvents: function() {
 	this.mouseHandler = MouseHandlerForDragging.prototype;
+	this.removeTrait("pointer-events");
+	
 	return this;
     },
 
@@ -4343,7 +4349,6 @@ Morph.subclass("HandMorph", {
 	
         this.setShape(new lively.scene.Polygon([pt(0,0), pt(9,5), pt(5,9), pt(0,0)], 
 					       (local ? Color.primary.blue : Color.primary.red), 1, Color.black));
-        this.shape.ignoreEvents();
 	
         this.isLocal = local;
 
