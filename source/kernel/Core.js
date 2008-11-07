@@ -4629,7 +4629,7 @@ Morph.subclass("HandMorph", {
 	if (Config.showGrabHalo) {
 	    var bounds = grabbedMorph.bounds(true);
 	    this.grabHaloMorph = this.addMorphBack(new Morph(bounds, "rect").applyStyle({fill: null, borderWidth: 0.5 }));
-	    this.grabHaloMorph.setStrokeDashArray(String([3,2]));
+	    this.grabHaloMorph.shape.setStrokeDashArray(String([3,2]));
 	    this.grabHaloMorph.setLineJoin(lively.scene.LineJoins.Round);
 	    this.grabHaloMorph.ignoreEvents();
 
