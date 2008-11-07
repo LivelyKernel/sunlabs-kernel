@@ -1786,7 +1786,7 @@ TextMorph.addMethods({
 		evt.stop();
 		return true;
 	    }
-        }  else if (!evt.isCommandKey() && !evt.isMetaDown()) {
+        }  else if (/*!evt.isCommandKey() &&*/ !evt.isMetaDown()) {
             this.replaceSelectionfromKeyboard(evt.getKeyChar()); 
             evt.stop(); // done
 	    return true;
@@ -1974,11 +1974,12 @@ TextMorph.addMethods({
  	case "i": { this.emphasizeBoldItalic({style: 'italic'}); return true; }
 	    
 	    // Font Size
-	case "4": { this.emphasizeSelection({size: (this.fontSize*0.8).roundTo(1)}); return true; }
-	case "5": { this.emphasizeSelection({size: (this.fontSize*1).roundTo(1)}); return true; }
-	case "6": { this.emphasizeSelection({size: (this.fontSize*1.2).roundTo(1)}); return true; }
-	case "7": { this.emphasizeSelection({size: (this.fontSize*1.5).roundTo(1)}); return true; }
-	case "8": { this.emphasizeSelection({size: (this.fontSize*2.0).roundTo(1)}); return true; }
+	// rk: prevents curly/square brackets on german keyboards
+        // case "4": { this.emphasizeSelection({size: (this.fontSize*0.8).roundTo(1)}); return true; }
+        // case "5": { this.emphasizeSelection({size: (this.fontSize*1).roundTo(1)}); return true; }
+        // case "6": { this.emphasizeSelection({size: (this.fontSize*1.2).roundTo(1)}); return true; }
+        // case "7": { this.emphasizeSelection({size: (this.fontSize*1.5).roundTo(1)}); return true; }
+        // case "8": { this.emphasizeSelection({size: (this.fontSize*2.0).roundTo(1)}); return true; }
 	    
 	    // Text Alignment
 	case "l": { this.emphasizeSelection({align: 'left'}); return true; }
@@ -1991,6 +1992,13 @@ TextMorph.addMethods({
 	    
 	case "z": { this.doUndo(); return true; }  // Undo
         }
+        
+        // Font Size
+        switch(evt.getKeyCode()) {
+        case 189/*alt+'+'*/: { this.emphasizeSelection({size: (this.fontSize*=0.8).roundTo(1)}); return true; }
+        case 187/*alt+'-'*/: { this.emphasizeSelection({size: (this.fontSize*=1.2).roundTo(1)}); return true; }
+        }
+        
 	//if (evt.type == "KeyPress") {
         var bracketIndex = this.locale.charSet.leftBrackets.indexOf(key);
 	

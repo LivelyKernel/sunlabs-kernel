@@ -219,4 +219,27 @@ TestCase.subclass('lively.Tests.ToolsTests.FileParserTest', {
     
   
 });
+
+TestCase.subclass('lively.Tests.ToolsTests.KeyboardTest', {
+    
+    testStartKeyWatcher: function() {
+        var keyWatcher = new Morph(new Rectangle(0,0,100,30));
+        var label = new TextMorph(keyWatcher.bounds());
+        label.takesKeyboardFocus = Functions.False;
+        label.onKeyDown = Functions.False;
+        label.onKeyPress = Functions.False;
+        keyWatcher.addMorph(label);
+        keyWatcher.takesKeyboardFocus = Functions.True;
+        keyWatcher.onKeyPress = function(evt) {
+                console.log('PRESS');
+             //debugger;
+            label.setTextString(evt.getKeyChar() + '---' + evt.getKeyCode());
+            // evt.stop();
+        }
+        
+        keyWatcher.openInWorld();
+        keyWatcher.requestKeyboardFocus(WorldMorph.current().hands.first());
+    }
+})
+    
 })
