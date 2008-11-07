@@ -40,6 +40,8 @@ TestCase.subclass('lively.Tests.ToolsTests.SystemBrowserTests', {
         this.assertEqual(model.getPane1Content(), 1);
         // model.setModules(2);
         // this.assertEqual(this.sut.getModules(), 2);
+        
+        this.assert(this.sut.setStatusMessage);
     },
     
     testGetNodeSiblings: function() {
@@ -221,6 +223,8 @@ TestCase.subclass('lively.Tests.ToolsTests.FileParserTest', {
 });
 
 TestCase.subclass('lively.Tests.ToolsTests.KeyboardTest', {
+    
+    shouldRun: false,
     
     testStartKeyWatcher: function() {
         var keyWatcher = new Morph(new Rectangle(0,0,100,30));

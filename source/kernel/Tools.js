@@ -30,10 +30,11 @@ Widget.subclass('lively.Tools.SystemBrowser', {
 
     documentation: 'Widget with three list panes and one text pane. Uses nodes to display and manipulate content.',
     viewTitle: "Enhanced Javascript Code Browser",
-    initialViewExtent: pt(600, 400),
+    initialViewExtent: pt(620, 450),
     formals: ["Pane1Content", "Pane1Selection", "Pane1Choicer",
               "Pane2Content", "Pane2Selection", "Pane2Choicer",
-              "Pane3Content", "Pane3Selection", "Pane3Choicer", "SourceString"],
+              "Pane3Content", "Pane3Selection", "Pane3Choicer",
+              "SourceString", "StatusMessage"],
     
     initialize: function($super) { 
         $super();
@@ -42,10 +43,12 @@ Widget.subclass('lively.Tools.SystemBrowser', {
         this.onPane1ContentUpdate = Functions.Null;
         this.onPane2ContentUpdate = Functions.Null;
         this.onPane3ContentUpdate = Functions.Null;
+        this.onStatusMessageUpdate = Functions.Null;
         var model = Record.newPlainInstance((function(){var x={};this.formals.each(function(ea){x[ea]=null});return x}.bind(this))());
         this.relayToModel(model, {Pane1Content: "Pane1Content", Pane1Selection: "Pane1Selection",
                                   Pane2Content: "Pane2Content", Pane2Selection: "Pane2Selection",
-                                  Pane3Content: "Pane3Content", Pane3Selection: "Pane3Selection", SourceString: "SourceString"});
+                                  Pane3Content: "Pane3Content", Pane3Selection: "Pane3Selection",
+                                  SourceString: "SourceString", StatusMessage: "StatusMessage"});
     },
     
     rootNode: function() {
@@ -56,9 +59,12 @@ Widget.subclass('lively.Tools.SystemBrowser', {
     
     start: function() {
         // FIXME this doesn't belong here
-        // if (!module.SourceControl) module.SourceControl = new SourceDatabase();
-        // this.sourceControl = module.SourceControl;
-        // this.sourceControl.scanLKFiles();
+        
+        if (!module.SourceControl) {
+            module.SourceControl = new SourceDatabase();
+            // module.SourceControl.scanLKFiles();
+            module.SourceControl.scanLKFilesAsync();
+        }
         
         this.setPane1Content(this.rootNode().childNodesAsListItems());
     },
@@ -71,7 +77,8 @@ Widget.subclass('lively.Tools.SystemBrowser', {
             ['Pane1', newRealListPane, new Rectangle(0, 0, 0.35, 0.40)],
             ['Pane2', newRealListPane, new Rectangle(0.35, 0, 0.3, 0.40)],
             ['Pane3', newRealListPane, new Rectangle(0.65, 0, 0.35, 0.45)],
-            ['sourcePane', newTextPane, new Rectangle(0, 0.45, 1, 0.55)]
+            ['sourcePane', newTextPane, new Rectangle(0, 0.45, 1, 0.5)],
+            ['statusPane', newTextPane, new Rectangle(0, 0.95, 1, 0.05)]
         ]);
 
         var model = this.getModel();
@@ -93,7 +100,9 @@ Widget.subclass('lively.Tools.SystemBrowser', {
         ['Pane1', 'Pane2', 'Pane3'].each(function(ea) { setupListPanes(ea) });
         
         panel.sourcePane.connectModel(model.newRelay({Text: "SourceString"}));
-	    
+	
+	panel.statusPane.connectModel(model.newRelay({Text: "-StatusMessage"}));
+	
 	    this.panel = panel;
 	    
         return panel;
@@ -149,6 +158,7 @@ Widget.subclass('lively.Tools.SystemBrowser', {
     },
     
     onPane1SelectionUpdate: function(node) {
+        this.setStatusMessage('');
         this.setPane2Selection(null, true);
         this.setPane2Content(['-----']);
         if (!node) {
@@ -160,6 +170,7 @@ Widget.subclass('lively.Tools.SystemBrowser', {
     },
     
     onPane2SelectionUpdate: function(node) {
+        this.setStatusMessage('');
         this.setPane3Selection(null);
         this.setPane3Content(['-----']);        
         if (!node) {
@@ -171,6 +182,7 @@ Widget.subclass('lively.Tools.SystemBrowser', {
     },
     
     onPane3SelectionUpdate: function(node) {
+        this.setStatusMessage('');
         if (!node) {
             this.hideButtons(null, this.panel.Pane3, 'Pane3')
             return
@@ -252,6 +264,10 @@ Object.subclass('lively.Tools.BrowserNode', {
     
     buttonSpecs: function() {
         return []
+    },
+    
+    statusMessage: function(string) {
+        this.browser.setStatusMessage(string);
     }
     
 });
@@ -361,6 +377,12 @@ module.BrowserNode.subclass('lively.Tools.ClassNode', {
     },
     
     sourceString: function() {
+        var source = module.SourceControl.methodDictFor(this.target.type)['*definition'];
+        if (source) {
+            this.statusMessage('Definition of class of SourceDB.');
+            return source.getSourceCode()
+        };
+        this.statusMessage('No definition of class in SourceDB found.');
         return 'class def of ' + this.target.type
     },
 });
@@ -391,6 +413,7 @@ module.BrowserNode.subclass('lively.Tools.ObjectNode', {
         try {
             source = JSON.serialize(this.target)
         } catch(e) {
+            this.statusMessage('Couldn\'t JSON.serialize target');
             source = 'object def of ' + this.nameInOwner;
         }
         return source;
@@ -404,12 +427,22 @@ module.BrowserNode.subclass('lively.Tools.MethodNode', {
         this.theClass = theClass;
     },
     
+    methodName: function() {
+        return this.target.methodName || this.target.name || 'method without property methodName'
+    },
+    
     sourceString: function() {
+        var source = module.SourceControl.methodDictFor(this.theClass.type)[this.methodName()];
+        if (source) {
+            this.statusMessage('Source in source control. Native version.');
+            return '// Native source:\n' + source.getSourceCode();
+        }
+        this.statusMessage('No source in source control. Decompiled version.');
         return this.target.toString();
     },
     
     asString: function() {
-        return this.target.methodName || this.target.name || 'method without property methodName'
+        return this.methodName();
     },
     
     evalSource: function(newSource) {
@@ -2067,11 +2100,18 @@ ChangeList.subclass('SourceDatabase', {
             var fileName = list[i];
             var fileString = this.getCachedText(fileName);
             new FileParser().parseFile(fileName, this.currentVersion(fileName), fileString, this, "import");
-        this.testImportFiles();}
+            this.testImportFiles();
+        }
     },
     
     scanLKFiles: function() {
-        this.importKernelFiles(this.interestingLKFileNames());
+        var list = this.interestingLKFileNames();
+        for (var i = 0; i<list.length; i++) {
+            var fileName = list[i];
+            var fileString = this.getCachedText(fileName);
+            new FileParser().parseFile(fileName, this.currentVersion(fileName), fileString, this, "import");
+            this.testImportFiles();
+        }
     },
 
     getSourceCodeRange: function(fileName, versionNo, startIndex, stopIndex) {
@@ -2139,7 +2179,7 @@ ChangeList.subclass('SourceDatabase', {
         }
         return fileString;
     },
-
+    
     getFileContents: function(fileName) { // convenient helper method
         var ms = new Date().getTime();
         var fileString = new NetRequest().beSync().get(URL.source.withFilename(fileName)).getResponseText();
@@ -2166,7 +2206,42 @@ ChangeList.subclass('SourceDatabase', {
 
     testImportFiles: function() {
         // Enumerate all classes and methods, and report cases where we have no source descriptors
-    }
+    },
+    
+    // ------ async version --------
+    getCachedTextAsync: function(fileName, action) {
+        var fileString = this.cachedFullText[fileName];
+        if (fileString) {
+            action.call(this, fileString);
+            return;
+        }
+        
+        var prepareDB = function(fileString) {
+            this.cachedFullText[fileName] = fileString;
+            this.editHistory[fileName] = [];
+            action.call(this, fileString);
+        }.bind(this);
+        this.getFileContentsAsync(fileName, prepareDB);
+    },
+    
+    getFileContentsAsync: function(fileName, action) { // convenient helper method
+        var ms = new Date().getTime();
+        var actionWrapper = function(fileString) {
+            action.call(this, fileString);
+            ms = new Date().getTime() - ms;
+            console.log(fileName + " read in " + ms + " ms.");
+        }.bind(this);
+        new NetRequest({model: {action: actionWrapper}, setResponseText: 'action'}).get(URL.source.withFilename(fileName));
+    },
+    
+    scanLKFilesAsync: function() {
+        this.interestingLKFileNames().each(function(fileName) {
+            var action = function(fileString) {
+                new FileParser().parseFile(fileName, this.currentVersion(fileName), fileString, this, "import");
+            }.bind(this);
+            this.getCachedTextAsync(fileName, action);
+        }, this);
+    },
 
 });
 
