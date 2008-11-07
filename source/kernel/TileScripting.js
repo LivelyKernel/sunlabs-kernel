@@ -534,7 +534,7 @@ Object.subclass('lively.TileScripting.TileMenuCreator', {
                     "getStrokeOpacity", "setStrokeWidth", "getStrokeWidth", "setStroke", "getStroke", "getLineJoin", "getLineCap", "setStrokeDashArray",
                     "getStrokeDashArray", "setStyleClass", "getStyleClass", "getRecordField", "setRecordField", "removeRecordField", "newRelay",
                     "create", "addField", "areEventsIgnored", "addObserver", "removeObserver", "addObserversFromSetters",
-                    "nativeWorldBounds", "canvas", "nativeContainsWorldPoint", "setVisible", "isVisible",
+                    "nativeWorldBounds", "canvas", "setVisible", "isVisible",
                     "applyFilter", "getBaseTransform", "copy", "getType", "getEncodedType", "newId", "id", "setId", "setDerivedId", "removeRawNode",
                     "replaceRawNodeChildren", "toMarkupString", "uri", "getLivelyTrait", "setLivelyTrait", "removeLivelyTrait", "getLengthTrait",
                     "setLengthTrait", "getTrait", "setTrait", "removeTrait", "preparePropertyForSerialization",

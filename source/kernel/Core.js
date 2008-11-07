@@ -1307,7 +1307,7 @@ Object.subclass('MouseHandlerForRelay', {
 });
 
 
-lively.scene.Node.subclass('Morph', {
+lively.data.Wrapper.subclass('Morph', {
 
     documentation: "Base class for every graphical, manipulatable object in the system", 
 
@@ -1692,6 +1692,51 @@ lively.scene.Node.subclass('Morph', {
     
 });
 
+Morph.addMethods({  // tmp copy
+
+    getStyleClass: function() {
+	return this.styleClass;
+    },
+
+    setStyleClass: function(value) {
+	this.styleClass = value;
+    },
+
+    canvas: function() {
+	if (!UserAgent.usableOwnerSVGElement) {
+	    // so much for multiple worlds on one page
+	    return Global.document.getElementById("canvas");
+	} else {
+	    return (this.rawNode && this.rawNode.ownerSVGElement) || Global.document.getElementById("canvas");
+	}
+    },
+    
+    setVisible: function(flag) { // FIXME delegate to sceneNode when conversion finished
+	if (flag) this.rawNode.removeAttributeNS(null, "display");
+	else this.rawNode.setAttributeNS(null, "display", "none");
+	return this;
+    },
+    
+    isVisible: function() { // FIXME delegate to sceneNode when conversion finished
+	// Note: this may not be correct in general in SVG due to inheritance,
+	// but should work in LIVELY.
+	var hidden = this.rawNode.getAttributeNS(null, "display") == "none";
+	return hidden == false;
+    },
+
+    applyFilter: function(filterUri) {// FIXME delegate to sceneNode when conversion finished
+	if (filterUri) 
+	    this.rawNode.setAttributeNS(null, "filter", filterUri);
+	else
+	    this.rawNode.removeAttributeNS(null, "filter");
+    },
+
+    getBaseTransform: function() {
+	return this.rawNode.transform.baseVal;
+    }
+
+
+});
 
 
 // Functions for change management
