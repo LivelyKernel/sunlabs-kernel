@@ -19,7 +19,11 @@ function dbgOn(cond, optMessage) {
 // http://higher-order.blogspot.com/2008/02/designing-clientserver-web-applications.html
 function using() {
     var args = arguments; // FIXME: enable using('lively.Text')
-    return {run: function(inner) { return inner.apply(args[0], args); }};
+    return {run: function module(inner) { 
+	var exports = inner.apply(args[0], args); 
+	if (exports) Object.extend(args[0], exports);
+	return exports;
+    }};
 }
 
 function namespace(spec, context) {

@@ -2830,7 +2830,7 @@ Morph.subclass('PseudoMorph', {
     
     initialize: function($super) {
 	$super(pt(0,0).extent(0,0), "rect");
-	this.undisplay();
+	this.setVisible(false);
     }
 
 });
@@ -2976,7 +2976,7 @@ Morph.addMethods({
 	    var m = this.submorphs[i];
 	    if ((ignoreTransients && m.transientBounds))
 		continue;
-	    if (!m.isDisplayed()) {
+	    if (!m.isVisible()) {
 		continue;
 	    }
 	    subBounds = subBounds == null ? m.bounds(ignoreTransients) : subBounds.union(m.bounds(ignoreTransients));

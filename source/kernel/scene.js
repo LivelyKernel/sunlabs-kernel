@@ -286,15 +286,13 @@ this.Node.addMethods({
 	return this.canvas().checkIntersection(this.rawNode, rect);
     },
 
-    undisplay: function() {
-	return this.rawNode.setAttributeNS(null, "display", "none");
+    setVisible: function(flag) {
+	if (flag) this.rawNode.removeAttributeNS(null, "display");
+	else this.rawNode.setAttributeNS(null, "display", "none");
+	return this;
     },
 
-    display: function() {
-	this.rawNode.removeAttributeNS(null, "display");
-    },
-
-    isDisplayed: function() {
+    isVisible: function() {
 	// Note: this may not be correct in general in SVG due to inheritance,
 	// but should work in LIVELY.
 	var hidden = this.rawNode.getAttributeNS(null, "display") == "none";
@@ -314,6 +312,12 @@ this.Node.addMethods({
 
 });
 
+this.Node.subclass('lively.scene.Group', {
+    documentation: 'Grouping of scene objects',
+    initialize: function() {
+	this.rawNode = NodeFactory.create("g");
+    }
+});
 
 
 // ===========================================================================

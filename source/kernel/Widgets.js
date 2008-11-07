@@ -2827,7 +2827,7 @@ Morph.subclass('WindowMorph', {
 	this.expandedExtent = this.getExtent();
 	this.ignoreEventsOnExpand = this.targetMorph.areEventsIgnored();
 	this.targetMorph.ignoreEvents(); // unconditionally
-	this.targetMorph.undisplay();
+	this.targetMorph.setVisible(false);
 	this.setTransform(this.collapsedTransform  || this.expandedTransform);
 
         this.state = WindowState.Collapsed;  // Set it now so setExtent works right
@@ -2842,7 +2842,7 @@ Morph.subclass('WindowMorph', {
         this.collapsedTransform = this.getTransform();
         this.collapsedExtent = this.innerBounds().extent();
         this.setTransform(this.expandedTransform); 
-	this.targetMorph.display();
+	this.targetMorph.setVisible(true);
 	// enable events if they weren't disabled in expanded form
 	if (!this.ignoreEventsOnExpand) this.targetMorph.enableEvents();
 
