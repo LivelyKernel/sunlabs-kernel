@@ -4157,7 +4157,7 @@ PasteUpMorph.subclass("WorldMorph", {
         ];
         var miscItems = [
             ["New subworld (LinkMorph)", function(evt) { world.addMorph(new LinkMorph(null, evt.point()));}],  
-	    ["External link", function(evt) { world.addMorph(new ExternalLinkMorph(URL.source.toString(), evt.point()));}],
+	    ["External link", function(evt) { world.addMorph(new ExternalLinkMorph(URL.source, evt.point()));}],
 	    ["Model documentation", function(evt) { // FIXME this is hardcoded, remove later, shows how Subversion can be accessed directly.
     	        var url = URL.common.project.withRelativePath("/index.fcgi/wiki/NewModelProposal?format=txt");
     	        var model = Record.newPlainInstance({URL: url,  ContentText: null});
@@ -4985,20 +4985,15 @@ Morph.subclass('LinkMorph', {
     
 });
 
-LinkMorph.subclass('ExternalLinkMorph');
+LinkMorph.subclass('ExternalLinkMorph', {
 
-ExternalLinkMorph.addProperties({
-    URL: { name: "url"}
-}, lively.data.DOMRecord);
-
-ExternalLinkMorph.addMethods({
     documentation: "A link to a different web page, presumably containing another LK",
 
     style: {borderColor: Color.black, fill: new lively.paint.RadialGradient([Color.green, 1, Color.yellow])},
     
     initialize: function($super, url, position) {
 	$super(null, position || pt(0, 0));
-	this.setURL(url.toString());
+	this.url = url;
 	this.win = null; // browser window
     },
 
@@ -5007,21 +5002,19 @@ ExternalLinkMorph.addMethods({
     addPathBack: Functions.Null,
 
     enterMyWorld: function(evt) {
-	var url = this.getURL();
 	if (evt.isCommandKey()) {
-	    this.world().confirm("Leave current runtime to enter another page?",
-				 function (answer) {
-				     if (answer) Global.location = url;
-				     else console.log("cancelled loading " + url);
-				 });
+	    this.world().confirm("Leave current runtime to enter another page?", function (answer) {
+		if (answer) Global.location = this.url.toString();
+		else console.log("cancelled loading " + this.url);
+	    });
 	} else {
 	    if (this.win && !this.win.closed) this.win.focus();
-	    else this.win = Global.window.open(url);
+	    else this.win = Global.window.open(this.url);
 	}
     },
     
     getHelpText: function() {
-	return "Click to enter " + this.getURL();
+	return "Click to enter " + this.url;
     },
 
 
@@ -5029,7 +5022,7 @@ ExternalLinkMorph.addMethods({
 	var menu = $super(evt);
 	menu.addItem(["set link target...", function() {
 	    this.world().prompt("Set new target file", function(answer) {
-		this.setURL(URL.source.withFilename(answer));
+		this.url = URL.source.withFilename(answer);
 	    }.bind(this), URL.source.toString());
 	}]);
 	return menu;

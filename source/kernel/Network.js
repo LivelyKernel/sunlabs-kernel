@@ -164,9 +164,18 @@ Object.subclass('URL', {
         // "http://localhost/livelyBranch/proxy/wiki/!svn/bc/187/test/index.xhtml"
         // --> "http://localhost/livelyBranch/proxy/wiki/index.xhtml"
         return this.withPath(this.fullPath().replace(/(.*)!svn\/bc\/[0-9]+\/(.*)/, '$1$2'));
+    },
+
+    toLiteral: function() {
+	// URLs are literal
+	return Object.clone(this);
     }
     
 });
+
+URL.fromLiteral = function(literal) {
+    return new URL(literal);
+};
 
 URL.source = new URL(document.baseURI);
 
