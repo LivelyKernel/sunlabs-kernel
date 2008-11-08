@@ -2096,8 +2096,9 @@ Morph.subclass("ColorPickerMorph", {
         //    are still full resolution
         for (var x = 0; x < r.width; x += dd) {
             for (var y = 0; y < r.height; y += dd) { // lightest down to neutral
-                var patchFill = this.colorMap(x, y, rh2, this.colorWheel(r.width + 1)).toString();
-                var element = new lively.scene.Rectangle(new Rectangle(x + r.x, y + r.y, dd, dd), patchFill, 0, null);
+                var element = new lively.scene.Rectangle(new Rectangle(x + r.x, y + r.y, dd, dd));
+		element.setFill(this.colorMap(x, y, rh2, this.colorWheel(r.width + 1)));
+		element.setStrokeWidth(0);
                 // element.setAttributeNS("fill", this.colorMap(x, rh2, rh2, this.colorWheel(r.width + 1)).toString());
 		content.shape.add(element);
             }

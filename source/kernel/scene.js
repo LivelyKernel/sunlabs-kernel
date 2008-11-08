@@ -490,7 +490,7 @@ this.Shape.subclass('lively.scene.Ellipse', {
     },
 
     reshape: this.Rectangle.prototype.reshape,
-    partPosition: this.Rectangle.prototype.positionForControlPoint
+    partPosition: this.Rectangle.prototype.partPosition
 
 });
 
@@ -673,7 +673,7 @@ lively.scene.Shape.subclass('lively.scene.Polyline', {
     setVertices: this.Polygon.prototype.setVertices,
     reshape: this.Polygon.prototype.reshape,
     partNameNear: this.Polygon.prototype.controlPointNear,
-    partPosition: this.Polygon.prototype.positionForControlPoint
+    partPosition: this.Polygon.prototype.partPosition
 
 });
 
@@ -784,7 +784,7 @@ this.Shape.subclass('lively.scene.Path', {
     
     // poorman's traits :)
     partNameNear: this.Polygon.prototype.controlPointNear,
-    partPosition: this.Polygon.prototype.positionForControlPoint,
+    partPosition: this.Polygon.prototype.partPosition,
     reshape: this.Polygon.prototype.reshape,
 
 });
@@ -819,8 +819,8 @@ this.Node.subclass('lively.scene.Group', {
     },
 
     partNameNear: this.Rectangle.prototype.controlPointNear,
-    partPosition: this.Rectangle.prototype.positionForControlPoint
-
+    partPosition: this.Rectangle.prototype.partPosition,
+    vertices: this.Rectangle.prototype.vertices
 });
 
 

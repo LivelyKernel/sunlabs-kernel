@@ -3419,9 +3419,6 @@ Morph.addMethods({
 // which contains a large number of simultaneously running applications
 // and widgets. 
 
-/**
- * @class PasteUpMorph
- */ 
 Morph.subclass("PasteUpMorph", {
 
     documentation: "used for layout, most notably the world and, e.g., palettes",
