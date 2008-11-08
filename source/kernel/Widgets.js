@@ -106,7 +106,11 @@ Morph.subclass('ButtonMorph', {
     applyStyle: function($super, spec) {
         $super(spec);
         this.baseFill = this.fill; // we may change appearance depending on the value
-        this.changeAppearanceFor(this.getValue());
+	if (this.getActualModel()) {
+	    // otherwise getValue() will fail. Note that this can happen in deserialization
+	    // when themes are applied before the widget is hooked up to the model
+            this.changeAppearanceFor(this.getValue());
+	}
     },
 
     updateView: function(aspect, controller) {
