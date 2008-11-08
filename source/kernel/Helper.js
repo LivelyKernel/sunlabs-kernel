@@ -169,11 +169,17 @@ Object.subclass('HandPositionObserver', {
 Morph.subclass('lively.Helper.ToolDock', {
     
     initialize: function($super, bounds) {
-        $super(bounds || pt(40,100).extentAsRectangle());
-        this.handObserver = null;        
+        $super(bounds || this.getWorld().bounds().withWidth(60));
+        this.handObserver = null;
+        this.applyStyle(this.style());
+    },
+    
+    style: function() {
+        return {fill: Color.blue, borderWidth: 0, fillOpacity: 0.3};
     },
     
     startUp: function() {
+        this.addItems();
         this.getWorld().addMorph(this);
         this.showPosition = pt(this.getWorld().getExtent().x - this.getExtent().x, 0);
         this.hidePosition = pt(this.getWorld().getExtent().x, 0);
@@ -227,6 +233,30 @@ Morph.subclass('lively.Helper.ToolDock', {
     
     okToBeGrabbedBy: function(evt) {
         return null; 
+    },
+    
+    addItems: function() {
+        var dock = this;
+        this.items().each(function(ea) {
+            var button = new TextMorph(new Rectangle(0,0, dock.getExtent().x, 30), ea.label);
+            button.handlesMouseDown = function(evt) {
+                return true;
+            },
+            button.onMouseDown = function(evt) {
+                ea.action.call(dock, evt);
+                return true;
+            },
+            dock.addMorph(button);
+        });
+        // new VLayout(dock, {}).layout();
+    },
+    
+    items: function() {
+        return [
+            {label: 'SystemBrowser', action: function(evt) {
+                var browserMorph = new lively.Tools.SystemBrowser().openIn(WorldMorph.current(), evt.point());
+                evt.hand.grabMorph(browserMorph, evt) }}
+        ]
     }
 });
 

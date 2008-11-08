@@ -4287,9 +4287,10 @@ Morph.subclass("HandMorph", {
 	this.profileArmed = evtType;  // either "MouseDown" or "MouseUp"
     },
 
-    makeAMove: function() { 
+    makeAMove: function() {
 	// Process a null mouseMove event -- no change in x, y
 	// Allows simulations to respond where, eg, a morph moves under the mouse
+	// Note: Fabrik generates also Mouse events with newFakeMouseEvent; to be merged
 	var last = this.lastMouseEvent;
 	if (!last) return;
 	var nullMove = new Event(last.rawEvent);
