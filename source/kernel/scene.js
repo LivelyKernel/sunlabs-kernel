@@ -365,10 +365,10 @@ this.Shape.subclass('lively.scene.Rectangle', {
 
     documentation: "Rectangle shape",
 
-    initialize: function($super, rect, color, borderWidth, borderColor) {
+    initialize: function($super, rect) {
+	$super();
 	this.rawNode = NodeFactory.create("rect");
 	this.setBounds(rect);
-	$super(color, borderWidth, borderColor);
 	return this;
     },
 
@@ -440,10 +440,10 @@ this.Shape.subclass('lively.scene.Ellipse', {
 
     documentation: "Ellipses and circles",
 
-    initialize: function($super, rect, color, borderWidth, borderColor) {
+    initialize: function($super, rect) {
+	$super();
 	this.rawNode = NodeFactory.create("ellipse");
 	this.setBounds(rect);
-	$super(color, borderWidth, borderColor);
     },
 
     setBounds: function(r) {
@@ -632,14 +632,8 @@ this.Shape.subclass('lively.scene.Polygon', {
     },
     
     partPosition: function(partName) {
-	
 	var vertices = this.vertices();
-	
-	if (partName >= 0) { 
-	    return vertices[partName]; 
-	} else { 
-	    return vertices[-partName].midPt(vertices[-partName-1]); 
-	} 
+	return (partName >= 0) ? vertices[partName] : vertices[-partName].midPt(vertices[-partName - 1]); 
     }
 
 });
@@ -672,7 +666,7 @@ lively.scene.Shape.subclass('lively.scene.Polyline', {
     vertices: this.Polygon.prototype.vertices,
     setVertices: this.Polygon.prototype.setVertices,
     reshape: this.Polygon.prototype.reshape,
-    partNameNear: this.Polygon.prototype.controlPointNear,
+    partNameNear: this.Polygon.prototype.partNameNear,
     partPosition: this.Polygon.prototype.partPosition
 
 });
@@ -783,7 +777,7 @@ this.Shape.subclass('lively.scene.Path', {
     },
     
     // poorman's traits :)
-    partNameNear: this.Polygon.prototype.controlPointNear,
+    partNameNear: this.Polygon.prototype.partNameNear,
     partPosition: this.Polygon.prototype.partPosition,
     reshape: this.Polygon.prototype.reshape,
 
@@ -818,7 +812,7 @@ this.Node.subclass('lively.scene.Group', {
 	return this.content.any(function(item) { return item.containsPoint(p); });
     },
 
-    partNameNear: this.Rectangle.prototype.controlPointNear,
+    partNameNear: this.Rectangle.prototype.partNameNear,
     partPosition: this.Rectangle.prototype.partPosition,
     vertices: this.Rectangle.prototype.vertices
 });
@@ -1137,13 +1131,11 @@ Wrapper.subclass('lively.paint.Stop', {
     },
 
     color: function() {
-	var attr = this.rawNode.getAttributeNS(null, "stop-color");
-	return Color.fromString(attr);
+	return Color.fromString(this.getTrait("stop-color"));
     },
     
     offset: function() {
-	var value = this.rawNode.getAttributeNS(null, "offset");
-	return lively.Length.parse(value);
+	return this.getLengthTrait("offset");
     },
 
     toLiteral: function() {

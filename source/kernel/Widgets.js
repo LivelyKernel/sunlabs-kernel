@@ -553,7 +553,7 @@ Morph.subclass("SelectionMorph", {
     },
     
     setBorderWidth: function($super, width) { 
-        if (this.selectedMorphs.length == 0) {
+        if (!this.selectedMorphs) {
             $super(width);
         } else { 
             this.selectedMorphs.invoke('withAllSubmorphsDo', function() { this.setBorderWidth(width)});
@@ -561,7 +561,7 @@ Morph.subclass("SelectionMorph", {
     },
     
     setFill: function($super, color) { 
-        if (this.selectedMorphs.length == 0) {
+        if (!this.selectedMorphs) {
             $super(color);
         } else {
             this.selectedMorphs.invoke('withAllSubmorphsDo', function() { this.setFill(color)});
@@ -569,14 +569,14 @@ Morph.subclass("SelectionMorph", {
     },
     
     setBorderColor: function($super, color) { 
-        if (this.selectedMorphs.length == 0) {
+        if (!this.selectedMorphs) {
             $super(color);
         } else {
             this.selectedMorphs.invoke('withAllSubmorphsDo', function() { this.setBorderColor(color)});
         }
     },
     shapeRoundEdgesBy: function($super, r) { 
-        if (this.selectedMorphs.length == 0) {
+        if (!this.selectedMorphs) {
             $super(r);
         } else {
             this.selectedMorphs.invoke('withAllSubmorphsDo', function() { this.shapeRoundEdgesBy(r)});
@@ -584,7 +584,7 @@ Morph.subclass("SelectionMorph", {
     },
     
     setFillOpacity: function($super, op) { 
-        if (this.selectedMorphs.length == 0) {
+        if (!this.selectedMorphs) {
             $super(op);
         } else { 
             this.selectedMorphs.invoke('withAllSubmorphsDo', function() { this.setFillOpacity(op)});
@@ -592,7 +592,7 @@ Morph.subclass("SelectionMorph", {
     },
     
     setStrokeOpacity: function($super, op) { 
-        if (this.selectedMorphs.length == 0) {
+        if (!this.selectedMorphs) {
             $super(op);
         } else {
             this.selectedMorphs.invoke('callOnAllSubmorphs', function() { this.setStrokeOpacity(op)});

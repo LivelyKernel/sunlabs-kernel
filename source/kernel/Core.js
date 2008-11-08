@@ -1162,15 +1162,16 @@ lively.data.Wrapper.subclass('Morph', {
 	// a rect shape by default, will change later
 	switch (shapeType) {
 	case "ellipse":
-	    this.shape = new lively.scene.Ellipse(initialBounds.translatedBy(this.origin.negated()),
-						  this.fill, this.borderWidth, this.borderColor);
+	    this.shape = new lively.scene.Ellipse(initialBounds.translatedBy(this.origin.negated()));
 	    break;
 	default:
 	    // polygons and polylines are set explicitly later
-	    this.shape = new lively.scene.Rectangle(initialBounds.translatedBy(this.origin.negated()),
-						    this.fill, this.borderWidth, this.borderColor);
+	    this.shape = new lively.scene.Rectangle(initialBounds.translatedBy(this.origin.negated()));
 	    break;
 	}
+	this.setFill(this.fill);
+	this.setBorderWidth(this.borderWidth);
+	this.setBorderColor(this.borderColor);
 	this.rawNode.appendChild(this.shape.rawNode);
 	return this;
     },
