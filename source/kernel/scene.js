@@ -805,29 +805,28 @@ this.Node.subclass('lively.scene.Group', {
     
     initialize: function() {
 	this.rawNode = NodeFactory.create("g");
-	this.children = [];
+	this.content = [];
     },
 
     add: function(node) {
 	this.rawNode.appendChild(node.rawNode);
-	this.children.push(node);
+	this.content.push(node);
     },
 
     bounds: function() {
 	// this creates duplication between morphs and scene graphs, division of labor?
 	var subBounds = null;
-	for (var i = 0; i < this.children.length; i++) {
-	    var m = this.children[i];
-	    if (!m.isVisible()) {
+	for (var i = 0; i < this.content.length; i++) {
+	    var item = this.content[i];
+	    if (!item.isVisible()) 
 		continue;
-	    }
-	    subBounds = subBounds == null ? m.bounds() : subBounds.union(m.bounds());
+	    subBounds = subBounds == null ? item.bounds() : subBounds.union(item.bounds());
 	}
 	return subBounds;
     },
 
     containsPoint: function(p) {
-	return this.children.any(function(child) { return child.containsPoint(p) });
+	return this.content.any(function(item) { return item.containsPoint(p); });
     },
 
     controlPointNear: this.Rectangle.prototype.controlPointNear,
