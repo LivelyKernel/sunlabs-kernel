@@ -413,16 +413,12 @@ this.Shape.subclass('lively.scene.Rectangle', {
 	this.setBounds(r);
     },
     
-    controlPointNear: function(p) {
-	var bnds = this.bounds();
-	return bnds.partNameNear(Rectangle.corners, p, this.controlPointProximity);
+    partNameNear: function(p) {
+	return this.bounds().partNameNear(Rectangle.corners, p, this.controlPointProximity);
     },
 
-    possibleHandleForControlPoint: function(mousePoint) {
-	var partName = this.controlPointNear(mousePoint);
-	if (partName == null) 
-	    return null;
-	return {location: this.bounds().partNamed(partName), part: partName};
+    partPosition: function(partName) {
+	return this.bounds().partNamed(partName);
     },
 
     getBorderRadius: function() {
@@ -489,13 +485,12 @@ this.Shape.subclass('lively.scene.Ellipse', {
 		b.leftCenter().addXY(0, dy), b.leftCenter().addXY(0, -dy)];
     },
 
-    controlPointNear: function(p) {
-	var bnds = this.bounds();
-	return bnds.partNameNear(Rectangle.sides, p, this.controlPointProximity);
+    partNameNear: function(p) {
+	return this.bounds().partNameNear(Rectangle.sides, p, this.controlPointProximity);
     },
 
     reshape: this.Rectangle.prototype.reshape,
-    possibleHandleForControlPoint: this.Rectangle.prototype.possibleHandleForControlPoint
+    partPosition: this.Rectangle.prototype.positionForControlPoint
 
 });
 
@@ -592,7 +587,7 @@ this.Shape.subclass('lively.scene.Polygon', {
 	this.setVertices(verts); 
     },
 
-    controlPointNear: function(p) {
+    partNameNear: function(p) {
 	var verts = this.vertices();
 
 	for (var i = 0; i < verts.length; i++) { // vertices
@@ -636,22 +631,15 @@ this.Shape.subclass('lively.scene.Polygon', {
 	}
     },
     
-    possibleHandleForControlPoint: function(mousePoint) {
-	var partName = this.controlPointNear(mousePoint);
-
-	if (partName == null) 
-	    return null;
-
+    partPosition: function(partName) {
+	
 	var vertices = this.vertices();
-
+	
 	if (partName >= 0) { 
-	    var loc = vertices[partName]; 
+	    return vertices[partName]; 
 	} else { 
-	    var loc = vertices[-partName].midPt(vertices[-partName-1]); 
+	    return vertices[-partName].midPt(vertices[-partName-1]); 
 	} 
-
-	return {location: loc, part: partName};
-
     }
 
 });
@@ -684,8 +672,8 @@ lively.scene.Shape.subclass('lively.scene.Polyline', {
     vertices: this.Polygon.prototype.vertices,
     setVertices: this.Polygon.prototype.setVertices,
     reshape: this.Polygon.prototype.reshape,
-    controlPointNear: this.Polygon.prototype.controlPointNear,
-    possibleHandleForControlPoint: this.Polygon.prototype.possibleHandleForControlPoint
+    partNameNear: this.Polygon.prototype.controlPointNear,
+    partPosition: this.Polygon.prototype.positionForControlPoint
 
 });
 
@@ -795,8 +783,8 @@ this.Shape.subclass('lively.scene.Path', {
     },
     
     // poorman's traits :)
-    controlPointNear: this.Polygon.prototype.controlPointNear,
-    possibleHandleForControlPoint: this.Polygon.prototype.possibleHandleForControlPoint,
+    partNameNear: this.Polygon.prototype.controlPointNear,
+    partPosition: this.Polygon.prototype.positionForControlPoint,
     reshape: this.Polygon.prototype.reshape,
 
 });
@@ -830,8 +818,8 @@ this.Node.subclass('lively.scene.Group', {
 	return this.content.any(function(item) { return item.containsPoint(p); });
     },
 
-    controlPointNear: this.Rectangle.prototype.controlPointNear,
-    possibleHandleForControlPoint: this.Rectangle.prototype.possibleHandleForControlPoint
+    partNameNear: this.Rectangle.prototype.controlPointNear,
+    partPosition: this.Rectangle.prototype.positionForControlPoint
 
 });
 
@@ -1111,8 +1099,6 @@ Object.subclass('lively.scene.Similitude', {
 	return new lively.scene.Transform(this.matrix_.inverse());
     }
 
-    
-
 });
 
 /**
@@ -1212,6 +1198,10 @@ Wrapper.subclass("lively.paint.Gradient", {
 	    if (i != stopSpec.length)
 		offset += stopSpec[i]/sum;
 	}
+    },
+
+    toString: function() {
+	return "#<" + this.getType() + this.toMarkupString() + ">";
     }
 
 });
@@ -1237,10 +1227,6 @@ this.Gradient.subclass("lively.paint.LinearGradient", {
 						 this.stops[i].color().mixedWith(color, proportion)));
 	}
 	return result;
-    },
-
-    toString: function() {
-	return "#<" + this.getType() + this.toMarkupString() + ">";
     }
 
 });

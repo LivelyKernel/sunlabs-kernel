@@ -2394,13 +2394,11 @@ Morph.addMethods({
     checkForControlPointNear: function(evt) {
 	if (this.suppressHandles) return false; // disabled
 	if (this.owner == null) return false; // can't reshape the world
-	var info = this.shape.possibleHandleForControlPoint(this.localize(evt.mousePoint));
-	if (info == null) return false;
+	var partName = this.shape.partNameNear(this.localize(evt.point()));
+	if (!partName) return false;
+	var loc = this.shape.partPosition(partName);
 	
-	var partName = info.part;
-	var loc = info.location;
-	var handleShape = Object.isString(partName) || partName >= 0 ? "rect" : "ellipse";
-	var handle = this.addMorph(new HandleMorph(loc, handleShape, evt.hand, this, partName));  
+	var handle = this.addMorph(this.makeHandle(loc, partName, evt.hand));  
 	// after which it should get converted appropriately here
 	handle.showHelp(evt);
 	if (evt.hand.mouseFocus instanceof HandleMorph) evt.hand.mouseFocus.remove();
@@ -2408,6 +2406,12 @@ Morph.addMethods({
 	return true; 
     },
     
+    makeHandle: function(position, partName, evt) { // can be overriden
+	var handleShape = Object.isString(partName) || partName >= 0 ? "rect" : "ellipse";
+	return new HandleMorph(position, handleShape, evt.hand, this, partName);
+    },
+
+
     copySubmorphsOnGrab: false, // acts as a palette if true.
     
     // May be overridden to preempt (by returning null) the default action of grabbing me

@@ -1048,37 +1048,37 @@ Morph.subclass('ConnectorMorph', {
     },
     
     customizeShapeBehavior: function() {
-        var self = this;
         
         this.shape.controlPointProximity = 20;
         
         // disable first and last control point of polygone 
-        this.shape.controlPointNear = this.shape.controlPointNear.wrap(function(proceed, p) { 
+        this.shape.partNameNear = this.shape.partNameNear.wrap(function(proceed, p) { 
             var part = proceed(p);
             if (part == 0 || part == (this.vertices().length - 1)) return null
             return part 
         });
-         
-        // change behavior of the control point handles 
-        this.shape.possibleHandleForControlPoint =  this.shape.possibleHandleForControlPoint.wrap(
-            function(proceed, targetMorph, mousePoint, hand) {
-                var handleMorph = proceed(targetMorph, mousePoint, hand);
-                if (!handleMorph) return;
-                handleMorph.showHelp =  handleMorph.showHelp.wrap(function(proceed, evt) {
-                    proceed(evt);
-                    self.showContextMenu(evt);
-                });
-                handleMorph.onMouseDown = handleMorph.onMouseDown.wrap(function(proceed, evt) {
-                    proceed(evt); 
-                    if (evt.isCommandKey())
-                    self.pinConnector.remove() // remove connector
-                });
-                handleMorph.onMouseMove = handleMorph.onMouseMove.wrap(function(proceed, evt) {
-                    proceed(evt); 
-                });                
-                return handleMorph;
-        });               
+	
     },
+
+    makeHandle: function($super, position, partName, evt) {
+        // change behavior of the control point handles 
+	var handleMorph = $super(position, partName, evt);
+	var self = this;
+        handleMorph.showHelp =  handleMorph.showHelp.wrap(function(proceed, evt) {
+            proceed(evt);
+            self.showContextMenu(evt);
+        });
+        handleMorph.onMouseDown = handleMorph.onMouseDown.wrap(function(proceed, evt) {
+            proceed(evt); 
+            if (evt.isCommandKey())
+                self.pinConnector.remove() // remove connector
+        });
+        handleMorph.onMouseMove = handleMorph.onMouseMove.wrap(function(proceed, evt) {
+            proceed(evt); 
+        });                
+        return handleMorph;
+    },
+    
     
     showContextMenu: function(evt) {
         if (this.contextMenu) return; // open only one context menu
@@ -2749,7 +2749,8 @@ Widget.subclass('ComponentBox', {
         this.panel = panel;
         
         panel.applyStyle({borderWidth: 2,
-            fill: new lively.paint.LinearGradient([Color.white, 1, Color.primary.blue], LinearGradient.NorthSouth)});
+            fill: new lively.paint.LinearGradient([Color.white, 1, Color.primary.blue], 
+						  lively.paint.LinearGradient.NorthSouth)});
 
 
         this.addMorphOfComponent(new FabrikComponent(), function() {
