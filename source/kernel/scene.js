@@ -22,6 +22,7 @@ Object.subclass('lively.data.Wrapper', {
 
     deserialize: function(importer, rawNode) {
 	this.rawNode = rawNode;
+	dbgOn(!rawNode);
 	var id = rawNode.getAttribute("id");
 	if (id) importer.addMapping(id, this); 
     },
@@ -1144,29 +1145,56 @@ lively.scene.Similitude.subclass('lively.scene.Transform', {
 
 using(namespace('lively.paint'), lively.data.Wrapper).run(function(unused, Wrapper) {
 
+Wrapper.subclass('lively.paint.Stop', {
+    initialize: function(offset, color) {
+	this.rawNode = NodeFactory.create("stop", { offset: offset, "stop-color": color});
+    },
+
+    color: function() {
+	var attr = this.rawNode.getAttributeNS(null, "stop-color");
+	return Color.fromString(attr);
+    },
+    
+    offset: function() {
+	var value = this.rawNode.getAttributeNS(null, "offset");
+	return lively.Length.parse(value);
+    },
+
+    toLiteral: function() {
+	return { offset: String(this.offset()), color: String(this.color()) };
+    },
+    
+    toString: function() {
+	return "#<Stop{" + JSON.serialize(this.toLiteral()) + "}>";
+    }
+
+});
 
 // note that Colors and Gradients are similar but Colors don't need an SVG node
 Wrapper.subclass("lively.paint.Gradient", {
+    
+    initialize: function($super) {
+	$super();
+	this.stops = [];
+    },
+
+    deserialize: function($super, importer, rawNode) {
+	$super(importer, rawNode);
+	var rawStopNodes = $A(this.rawNode.getElementsByTagNameNS(Namespace.SVG, 'stop'));
+	this.stops = rawStopNodes.map(function(stopNode) { return new lively.paint.Stop(importer, stopNode) });
+    },
+
+    copyFrom: function($super, copier, other) {
+	$super(copier, other);
+	dbgOn(!other.stops);
+	this.stops = [].concat(other.stops.invoke('copy', copier));
+    },
 
     addStop: function(offset, color) {
-	this.rawNode.appendChild(NodeFactory.create("stop", {offset: offset, "stop-color": color}));
+	var stop = new lively.paint.Stop(offset, color);
+	this.stops.push(stop);
+	this.rawNode.appendChild(stop.rawNode);
 	return this;
-    },
-
-    rawStopNodes: function() {
-	return this.rawNode.getElementsByTagNameNS(Namespace.SVG, 'stop');
-    },
-
-    stopColor: function(index) {
-	var stops = this.rawStopNodes();
-	if (!stops.item(index || 0)) return null;
-	return Color.fromString(stops.item(index || 0).getAttributeNS(null, "stop-color"));
-    },
-
-    offset: function(index) {
-	var stops = this.rawStopNodes();
-	if (!stops[index || 0]) return null;
-	return lively.Length.parse(stops[index || 0].getAttributeNS(null, "offset"));
     },
 
     processSpec: function(stopSpec) {
@@ -1193,6 +1221,7 @@ Wrapper.subclass("lively.paint.Gradient", {
 this.Gradient.subclass("lively.paint.LinearGradient", {
 
     initialize: function($super, stopSpec, vector) {
+	$super();
 	vector = vector || lively.paint.LinearGradient.NorthSouth;
 	this.rawNode = NodeFactory.create("linearGradient",
 					  {x1: vector.x, y1: vector.y, 
@@ -1202,11 +1231,10 @@ this.Gradient.subclass("lively.paint.LinearGradient", {
     },
 
     mixedWith: function(color, proportion) {
-	var stops = this.rawStopNodes();
-	var rawNode = NodeFactory.create("linearGradient");
-	var result = new lively.paint.LinearGradient(Importer.marker, rawNode);
+	var result = new lively.paint.LinearGradient();
 	for (var i = 0; i < stops.length; i++) {
-	    result.addStop(this.offset(i), this.stopColor(i).mixedWith(color, proportion));
+	    result.addStop(new lively.paint.Stop(this.stops[i].offset(), 
+						 this.stops[i].color().mixedWith(color, proportion)));
 	}
 	return result;
     },
@@ -1228,6 +1256,7 @@ Object.extend(this.LinearGradient, {
 this.Gradient.subclass('lively.paint.RadialGradient', {
 
     initialize: function($super, stopSpec, optF) {
+	$super();
 	this.rawNode = NodeFactory.create("radialGradient");
 	if (optF) {
 	    this.rawNode.setAttributeNS(null, "fx", optF.x);

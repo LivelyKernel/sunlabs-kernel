@@ -65,8 +65,8 @@ Morph.subclass('ButtonMorph', {
 
     getBaseColor: function() {
         if (this.fill instanceof Color) return this.fill;
-        else if (this.fill instanceof lively.paint.LinearGradient) return this.fill.stopColor(0);
-        else if (this.fill instanceof lively.paint.RadialGradient) return this.fill.stopColor(1);
+        else if (this.fill instanceof lively.paint.LinearGradient) return this.fill.stops[0].color(0);
+        else if (this.fill instanceof lively.paint.RadialGradient) return this.fill.stops[0].color(1);
         else throw new Error('cannot handle fill ' + this.fill);
     },
 
@@ -92,11 +92,11 @@ Morph.subclass('ButtonMorph', {
     changeAppearanceFor: function(value) {
         var delta = value ? 1 : 0;
         if (this.baseFill instanceof lively.paint.LinearGradient) {
-            var base = this.baseFill.stopColor(0).lighter(delta);
+            var base = this.baseFill.stops[0].color().lighter(delta);
 	    this.setFill(new lively.paint.LinearGradient([base, 1, base.lighter()], lively.paint.LinearGradient.SouthNorth));
 	    // console.log("set gradient " + gradient);
         } else if (this.baseFill instanceof lively.paint.RadialGradient) {
-            var base = this.baseFill.stopColor(0).lighter(delta);
+            var base = this.baseFill.stops[0].color().lighter(delta);
             this.setFill(new lively.paint.RadialGradient([base.lighter(), 1, base]));
         } else if (this.baseFill instanceof Color) {
             this.setFill(this.baseFill.lighter(delta)); 
@@ -1736,10 +1736,10 @@ Morph.subclass("SliderMorph", {
 
         if (this.slider.fill instanceof lively.paint.LinearGradient) {
             var direction = this.vertical() ? lively.paint.LinearGradient.EastWest : lively.paint.LinearGradient.NorthSouth;
-            var baseColor = this.slider.fill.stopColor(0);
+            var baseColor = this.slider.fill.stops[0].color();
 	    this.setFill(new lively.paint.LinearGradient([baseColor, 1, baseColor.lighter(2), 1, baseColor], direction));
 	    // FIXME: just flip the gradient
-            this.slider.setFill(new lively.paint.LinearGradient([baseColor, 1, this.slider.fill.stopColor(1)], direction));
+            this.slider.setFill(new lively.paint.LinearGradient([baseColor, 1, this.slider.fill.stops[1].color()], direction));
 	    this.setBorderWidth(this.slider.getBorderWidth());
         } else {
             this.setFill(this.slider.fill.lighter());
@@ -2720,13 +2720,13 @@ Morph.subclass("WindowControlMorph", {
     },
 
     onMouseOver: function($super, evt) {
-        var prevColor = this.fill.stopColor(1);
+        var prevColor = this.fill.stops[1].color();
         this.setFill(new lively.paint.RadialGradient([Color.white, 1, prevColor, 1, prevColor.darker()], this.focus));
         $super(evt);
     },
     
     onMouseOut: function($super, evt) {
-        var prevColor = this.fill.stopColor(1);
+        var prevColor = this.fill.stops[1].color();
         this.setFill(new lively.paint.RadialGradient([prevColor.lighter(2), 1, prevColor, 1, prevColor.darker()], this.focus));
         $super(evt);
     },

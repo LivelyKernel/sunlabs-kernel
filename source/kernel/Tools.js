@@ -908,7 +908,7 @@ Widget.subclass('StylePanel', {
 	this.fillDir = null;
 	this.fillType = this.actualModel.getFillType();
 	var base = targetMorph.getFill();
-	this.baseColor = (base instanceof lively.paint.Gradient) ? base.stopColor(0) : base;
+	this.baseColor = (base instanceof lively.paint.Gradient) ? base.stops[0].color() : base;
     },
 
     onBorderWidthUpdate: function(w) {
