@@ -2296,15 +2296,106 @@ Object.subclass('SourceCodeDescriptor', {
 
 });
 
-
-View.subclass('CodeMarkupParser', {
+Object.subclass('BasicCodeMarkupParser', {
     documentation: "Evaluates code in the lkml code format",
     // this is the first attempt, format subject to change
     classQuery: new Query("/code/class"),
     protoQuery: new Query("proto"),
     staticQuery: new Query("static"),
+
+    nameOf: function(element) {
+	var name = element.getAttributeNS(null, "name");
+	if (!name) throw new Error("no class name");
+	return name;
+    },
+
+    parseDocumentElement: function(element, isHack) {
+	var classes;
+	if (isHack) {
+	    var xpe = new XPathEvaluator();
+	    function resolver(arg) {
+		return Namespace.SVG;
+	    }
+	    var result = xpe.evaluate("/hack:code/hack:class", element, resolver, XPathResult.ANY_TYPE, null);
+	    var res = null;
+	    classes = [];
+	    while (res = result.iterateNext()) classes.push(res);
+	}  else {
+	    classes = this.classQuery.findAll(element);
+	}
+
+	for (var i = 0; i < classes.length; i++) 
+	    this.parseClass(classes[i], isHack);
+	return classes;
+    },
+
+    parseClass: function(element, isHack) {
+	// note eval oreder first parse proto methods, then static methods.
+	var className = this.nameOf(element);
+	var klass = null;
+	var superName = element.getAttributeNS(null, "super");
+	
+	if (superName) { // super is present so we are subclassing (too hackerish?)
+	    var superClass = Class.forName(superName);
+	    if (!Class.isClass(superClass)) throw new Error('no superclass');
+	    klass = superClass.subclass(className);
+	} else {
+	    klass = Class.forName(className);
+	}
+	
+	var protos;
+
+	if (isHack) {
+	    var xpe = new XPathEvaluator();
+	    function resolver(arg) {
+		return Namespace.SVG;
+	    }
+	    var result = xpe.evaluate("hack:proto", element, resolver, XPathResult.ANY_TYPE, null);
+	    protos = [];
+	    var res = null;
+	    while (res = result.iterateNext()) protos.push(res);
+	}  else {
+	    protos = this.protoQuery.findAll(element);
+	}
+
+	for (var i = 0; i < protos.length; i++)
+	    this.parseProto(protos[i], klass);
+
+	var statics = this.staticQuery.findAll(element);
+	for (var i = 0; i < statics.length; i++)
+	    this.parseStatic(statics[i], klass);
+    },
+
+    evaluateElement: function(element) {
+	try {
+	    // use intermediate value because eval doesn't seem to return function
+	    // values.
+	    // this would be a great place to insert a Cajita evaluator.
+	    return eval("BasicCodeMarkupParser._=" + element.textContent);
+	} catch (er) { 
+	    console.log("error " + er + " parsing " + element.textContent);
+	    return undefined;
+	}
+    },
+
+    parseProto: function(protoElement, cls) {
+	var name = this.nameOf(protoElement);
+	var mixin = {};
+	mixin[name] = this.evaluateElement(protoElement);
+	cls.addMethods(mixin);
+    },
+
+    parseStatic: function(staticElement, cls) {
+	var name = this.nameOf(staticElement);
+	cls[name] = this.evaluateElement(staticElement);
+    }
+
+});
+
+
+
+BasicCodeMarkupParser.subclass('CodeMarkupParser', ViewTrait, {
     formals: ["CodeDocument", "CodeText", "URL"],
-    
 
     initialize: function(url) {
 	var model = Record.newPlainInstance({ CodeDocument: null, CodeText: null, URL: url});
@@ -2327,9 +2418,7 @@ View.subclass('CodeMarkupParser', {
 
     onCodeDocumentUpdate: function(doc) {
 	if (!doc) return;
-	var classes = this.classQuery.findAll(doc);
-	for (var i = 0; i < classes.length; i++) 
-	    this.parseClass(classes[i], doc);
+	this.parseDocumentElement(doc.documentElement);
 	this.onComplete();
     },
 
@@ -2337,52 +2426,6 @@ View.subclass('CodeMarkupParser', {
 	// override to supply an action 
     }, 
 
-    nameOf: function(element) {
-	var name = element.getAttributeNS(null, "name");
-	if (!name) throw new Error("no class name");
-	return name;
-    },
-
-    parseClass: function(element, doc) {
-	// note eval oreder first parse proto methods, then static methods.
-	var superClass = Global[element.getAttributeNS(null, "super")];
-	if (!superClass || !Class.isClass(superClass)) throw new Error('no superclass');
-
-	var className = this.nameOf(element);
-	var cls = superClass.subclass(className);
-	
-	var protos = this.protoQuery.findAll(element);
-	for (var i = 0; i < protos.length; i++)
-	    this.parseProto(protos[i], cls);
-
-	var statics = this.staticQuery.findAll(element);
-	for (var i = 0; i < statics.length; i++)
-	    this.parseStatic(statics[i], cls);
-    },
-
-    evaluateElement: function(element) {
-	try {
-	    // use intermediate value because eval doesn't seem to return function
-	    // values.
-	    // this would be a great place to insert a Cajita evaluator.
-	    return eval("CodeMarkupParser._=" + element.textContent);
-	} catch (er) { 
-	    console.log("error " + er + " parsing " + element.textContent);
-	    return undefined;
-	}
-    },
-
-    parseProto: function(protoElement, cls) {
-	var name = this.nameOf(protoElement);
-	var mixin = {};
-	mixin[name] = this.evaluateElement(protoElement);
-	cls.addMethods(mixin);
-    },
-
-    parseStatic: function(staticElement, cls) {
-	var name = this.nameOf(staticElement);
-	cls[name] = this.evaluateElement(staticElement);
-    }
 });
 
 Object.extend(CodeMarkupParser, {
@@ -2399,22 +2442,40 @@ Object.extend(CodeMarkupParser, {
 // ===========================================================================
 Object.subclass('ChangeSet', {
 
-    initialize: function() {
+    initialize: function(world) {
 	// Keep track of an ordered list of changes for this world
         this.changes = [];
+	this.changesNode = LivelyNS.create("code");
+	world.addWrapperToDefs(undefined); // just ensure that defs exists
+	world.defs.appendChild(this.changesNode);
     },
     logChange: function(item) {
 	this.changes.push(item);
-	// Note this really only needs to happen once when storing the world...
-	WorldMorph.current().setLivelyTrait("changes", escape(JSON.serialize(this.changes)))
+	switch (item.type) {
+	case 'method':
+	    var classNode = this.changesNode.appendChild(LivelyNS.create("class"));
+	    classNode.setAttributeNS(null, "name", item.className);
+	    var methodNode = classNode.appendChild(LivelyNS.create("proto"));
+	    methodNode.setAttributeNS(null, "name", item.methodName);
+	    methodNode.appendChild(NodeFactory.createCDATA(item.methodString));
+	    break;
+	case 'subclass':
+	    var classNode = this.changesNode.appendChild(LivelyNS.create("class"));
+	    classNode.setAttributeNS(null, "name", item.subName);
+	    className.setAttributeNS(null, "super", item.className);
+	default:
+	    console.log('not yet handling type ' + item.type);
+	}
     },
     setChanges: function(arrayOfItems) {
 	this.changes = arrayOfItems;
     },
     evaluateAll: function() {
-	this.changes.each(function(item) {this.evalItem(item);}.bind(this));
+	// FIXME: use markup parser instead?
+	this.changes.forEach(function(item) {this.evalItem(item)}, this);
     },
     evalItem: function(item) {
+	// FIXME: use markup parser instead?
 	console.log("ChangeSet evaluating a " + item.type + " def.");
 	if(item.type == 'method') eval(item.className + '.prototype.' + item.methodName + ' = ' + item.methodString);
 	if(item.type == 'subclass') eval(item.className + '.subclass("' + item.subName + '", {})');
@@ -2427,7 +2488,7 @@ ChangeSet.current = function() {
     var world = WorldMorph.current();
     var chgs = world.changes;
     if (!chgs) {
-	chgs = new ChangeSet();
+	chgs = new ChangeSet(world);
 	world.changes = chgs;
     }
     return chgs;

@@ -1279,11 +1279,11 @@ lively.data.Wrapper.subclass('Morph', {
 	    if (isOnClone) def = def.cloneNode(true);
 	    switch (def.tagName) {
 	    case "clipPath":
-		if (!this.rawNode.getAttributeNS(null, 'clip-path'))
+		if (!this.getTrait('clip-path'))
 		    console.log('myClip is undefined on %s', this); 
 		if (this.clipPath) throw new Error("how come clipPath is set to " + this.clipPath);
 		this.clipPath = new lively.scene.Clip(Importer.marker, def).setDerivedId(this);
-		this.rawNode.setAttributeNS(null, 'clip-path', this.clipPath.uri());
+		this.setTrait('clip-path', this.clipPath.uri());
 		this.addWrapperToDefs(this.clipPath);
 		break;
 	    case "linearGradient":
@@ -1292,8 +1292,17 @@ lively.data.Wrapper.subclass('Morph', {
 	    case "radialGradient": // FIXME gradients can be used on strokes too
 		this.fill = this.addWrapperToDefs(applyGradient(new lively.paint.RadialGradient(Importer.marker,  def), this));
 		break;
+	    case "code":
+		if (!Config.skipChanges) { // Can be blocked by URL param 
+		    this.changes = new ChangeSet(this);
+		    // this.changes.evaluateAll(); 
+		    // FIXME probably wrong order, should be at the end of deserialization
+		    new BasicCodeMarkupParser().parseDocumentElement(def, true);
+		    console.log("Successfully evalled " + this.changes);
+		}
+		break;
 	    default:
-		console.warn('unknown def %s', def);
+		console.warn('unknown def %s', Exporter.stringify(def));
 	    }
 	}
     },
@@ -3573,17 +3582,6 @@ PasteUpMorph.subclass("WorldMorph", {
         return this;
     },
 
-    deserialize: function($super, importer, rawNode) {
-        $super(importer, rawNode);
-	var persistedChanges = this.getLivelyTrait("changes");
-	if (persistedChanges) {
-	    console.log("recreating changes from stored trait");
-	    this.changes = new ChangeSet;
-	    this.changes.setChanges(JSON.unserialize(unescape(persistedChanges)));
-	    if(!Config.skipChanges) this.changes.evaluateAll(); // Can be blocked by URL param 
-	    console.log("Successfully evalled " + this.changes.changes.length + " changes.");
-	}
-    },
     
     remove: function() {
         if (!this.rawNode.parentNode) return null;  // already removed
