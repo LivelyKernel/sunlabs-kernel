@@ -246,7 +246,10 @@ function populateWorldWithExamples(world) {
     //openOmetaWorkspace();
 
     if (Config.activateTileScripting)
-        require('TileScripting.js').toRun(function() { lively.TileScripting.TileBox.open() });
+        require('TileScripting.js').toRun(function(unused, tsModule) { tsModule.TileBox.open() });
+    
+    if (Config.showToolDock)
+        require('lively.Helper').toRun(function(unused, helper) { new helper.ToolDock().startUp(); });
         
     // add to Link?
     function addLinkLabel(link, text) {

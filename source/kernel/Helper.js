@@ -169,9 +169,16 @@ Object.subclass('HandPositionObserver', {
 Morph.subclass('lively.Helper.ToolDock', {
     
     initialize: function($super, bounds) {
-        $super(bounds || pt(10,100).extentAsRectangle());
-        this.handObserver = null;
-        this.showMode();
+        $super(bounds || pt(40,100).extentAsRectangle());
+        this.handObserver = null;        
+    },
+    
+    startUp: function() {
+        this.getWorld().addMorph(this);
+        this.showPosition = pt(this.getWorld().getExtent().x - this.getExtent().x, 0);
+        this.hidePosition = pt(this.getWorld().getExtent().x, 0);
+        this.setPosition(this.hidePosition);
+        this.triggerMoveTo(this.showPosition, this.activationArea());
     },
     
     getWorld: function() {
@@ -179,38 +186,48 @@ Morph.subclass('lively.Helper.ToolDock', {
     },
     
     activationArea: function() {
-        var relativeActivationArea = new Rectangle(0.9,0,0.1,1);
-        return this.getWorld().bounds().scaleByRect(relativeActivationArea);
+        var relative = new Rectangle(0.9,0,0.1,1);
+        return this.getWorld().bounds().scaleByRect(relative);
     },
     
-    showMode: function() {
+    deactivationArea: function() {
+        var relative = new Rectangle(0,0,0.9,1);
+        return this.getWorld().bounds().scaleByRect(relative);
+    },
+    
+    triggerMoveTo: function(position, activeScreenArea) {
         this.handObserver = new HandPositionObserver(function(point) {
-            if (!this.activationArea().containsPoint(point)) return;
-            this.getWorld().addMorph(this);
-            this.setPosition(pt(this.getWorld().getExtent().x - this.getExtent().x, 0));
+            if (!activeScreenArea.containsPoint(point)) return;
             this.handObserver.stop();
-            this.hideMode();
+            this.moveGradually(
+                position,
+                8,
+                function() {
+                    if (position.eqPt(this.showPosition))
+                        this.triggerMoveTo(this.hidePosition, this.deactivationArea())
+                    else
+                        this.triggerMoveTo(this.showPosition, this.activationArea())
+                });
         }.bind(this));
         this.handObserver.start();
     },
-    
-    appear: function() {
         
+    moveGradually: function(targetPos, steps, actionWhenDone) {
+        var dock = this;
+        var vect = targetPos.subPt(this.getPosition());
+        var stepVect = vect.scaleBy(1/steps);
+        var stepTime = 10;
+        var makeStep = function(remainingSteps) {
+            if (remainingSteps <= 0) return actionWhenDone.apply(dock);
+            dock.moveBy(stepVect);
+            Global.setTimeout(makeStep.curry(remainingSteps-1), stepTime);
+        };
+        Global.setTimeout(makeStep.curry(steps), stepTime);
     },
     
-    hideMode: function() {
-        this.handObserver = new HandPositionObserver(function(point) {
-            if (this.activationArea().containsPoint(point)) return;
-            this.owner && this.remove();
-            this.handObserver.stop();
-            this.showMode();
-        }.bind(this));
-        this.handObserver.start();
-    },
-    
-    handlesMouseDown: function() {
-        return true;
-    }    
+    okToBeGrabbedBy: function(evt) {
+        return null; 
+    }
 });
 
 console.log('Helper.js is loaded');

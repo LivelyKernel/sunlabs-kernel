@@ -158,12 +158,12 @@ function module(moduleName) {
     module.requires = basicRequire.curry(module);
     return module;
 };
-    
+
 function require(/*requiredModuleNameOrAnArray, anotherRequiredModuleName, ...*/) {
-    var counter = 0;
     function getUniqueName() {
-        return 'anonymous_module_' + ++counter; // What a language!
+        return 'anonymous_module_' + require.counter;
     }
+    require.counter !== undefined ? require.counter++ : require.counter = 0;
     return module(getUniqueName()).requires($A(arguments));
 };
 
@@ -178,7 +178,7 @@ function onModuleLoad(ownModuleName, code) {
         };
         return;
     };
-    console.log('Trying soon again to load requirements for ' + ownModuleName);
+    console.log('Trying soon again to load requirements for ' + ownModuleName + ': ' + PendingRequirements[ownModuleName]);
     window.setTimeout(onModuleLoad.curry(ownModuleName, code), 0);
 };
 
