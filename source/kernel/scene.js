@@ -392,6 +392,11 @@ this.Shape.subclass('lively.scene.Rectangle', {
 	return new Rectangle(x, y, width, height);
     },
 
+    vertices: function() {
+	var b = this.bounds();
+	return [b.topLeft(), b.topRight(), b.bottomLeft(), b.bottomRight()];
+    },
+
     containsPoint: function(p) {
 	var x = this.rawNode.x.baseVal.value;
 	var width = this.rawNode.width.baseVal.value;
@@ -471,13 +476,24 @@ this.Shape.subclass('lively.scene.Ellipse', {
 	return new Rectangle(x, y, w, h);
     }, 
 
+    vertices: function() {
+	var b = this.bounds();
+	var coeff = 4;
+	var dx = b.width/coeff;
+	var dy = b.height/coeff;
+	// approximating by an octagon
+	return [b.topCenter().addXY(-dx,0), b.topCenter().addXY(dx ,0),
+		b.rightCenter().addXY(0, -dy), b.rightCenter().addXY(0, dy),
+		b.bottomCenter().addXY(dx, 0), b.bottomCenter().addXY(-dx, 0),
+		b.leftCenter().addXY(0, dy), b.leftCenter().addXY(0, -dy)];
+    },
+
     controlPointNear: function(p) {
 	var bnds = this.bounds();
 	return bnds.partNameNear(Rectangle.sides, p, this.controlPointProximity);
     },
 
     reshape: this.Rectangle.prototype.reshape,
-
     possibleHandleForControlPoint: this.Rectangle.prototype.possibleHandleForControlPoint
 
 });

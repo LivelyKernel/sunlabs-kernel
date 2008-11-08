@@ -2800,8 +2800,9 @@ Morph.addMethods({
 	if (this.fullBounds != null) return this.fullBounds;
 
 	var tfm = this.getTransform();
-	var fullBounds = tfm.transformRectToRect(this.localBorderBounds());
-	
+	//var fullBounds = tfm.transformRectToRect(this.localBorderBounds());
+	var fullBounds = this.localBorderBounds(tfm);
+
 	var subBounds = this.submorphBounds(ignoreTransients);
 	if (subBounds != null) {
 	    // could be simpler when no rotation...
@@ -2835,9 +2836,11 @@ Morph.addMethods({
 	return this.shape.bounds();
     },
     
-    localBorderBounds: function() {
+    localBorderBounds: function(optTfm) {
 	// defined by the external edge of the border
-	var bounds = this.shape.bounds();
+	// if optTfm is defined, transform the vertices first, then take the union
+	var bounds = optTfm ? Rectangle.unionPts(this.shape.vertices().invoke('matrixTransform', optTfm)) : this.shape.bounds();
+	
 	// double border margin for polylines to account for elbow protrusions
 	bounds.expandBy(this.getBorderWidth()/2*(this.shape.hasElbowProtrusions ? 2 : 1));
 	return bounds;
