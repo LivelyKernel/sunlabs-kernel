@@ -182,6 +182,14 @@ TestCase.subclass('lively.Tests.ToolsTests.FileParserTest', {
         this.sut.verbose = true;
     },
     
+    testCheckExistingMethodDefs: function() {
+        var sourceControl = new SourceDatabase();
+        sourceControl.scanLKFiles();
+        var errors = sourceControl.testMethodDefs();
+        // debugger;
+        this.assertEqual(errors.length, 0);
+    },
+    
     testParseClassDef: function() {
         var source = "Object.subclass('Test', {});"
         this.sut.parseFile('1', 0, source, null/*db*/, 'scan', null/*search_str*/)

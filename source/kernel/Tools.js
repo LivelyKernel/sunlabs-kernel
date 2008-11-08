@@ -435,10 +435,10 @@ module.BrowserNode.subclass('lively.Tools.MethodNode', {
         var source = module.SourceControl.methodDictFor(this.theClass.type)[this.methodName()];
         if (source) {
             this.statusMessage('Source in source control. Native version.');
-            return '// Native source:\n' + source.getSourceCode();
+            return source.getSourceCode();
         }
         this.statusMessage('No source in source control. Decompiled version.');
-        return this.target.toString();
+        return '// Decompiled source:\n' + this.target.toString();
     },
     
     asString: function() {
@@ -2206,6 +2206,22 @@ ChangeList.subclass('SourceDatabase', {
 
     testImportFiles: function() {
         // Enumerate all classes and methods, and report cases where we have no source descriptors
+    },
+    
+    testMethodDefs: function() {
+        // test if methods were parsed correctly
+        // go to the source of all methods and use #checkBracketError for counting brackets
+        var methodDefs = Object.values(this.methodDicts).inject([], function(methodDefs, classDef) {
+            return methodDefs.concat(Object.values(classDef));
+        });
+        var defsWithError = methodDefs.select(function(ea) {
+            var error = this.checkBracketError(ea.getSourceCode());
+            if (!error) return false;
+            console.log('MethodDescriptor ' + ea.name + ' has an error.');
+            ea.error = error;
+            return true;
+        }, this);
+        return defsWithError;
     },
     
     // ------ async version --------
