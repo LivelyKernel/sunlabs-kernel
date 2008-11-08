@@ -232,6 +232,11 @@ Object.extend(lively.data.Wrapper, {
 
 using(namespace('lively.scene'), lively.data.Wrapper).run(function(unused, Wrapper) {
 
+function locateCanvas() {
+    // dirty secret
+    return Global.document.getElementById("canvas");
+}
+
 Wrapper.subclass('lively.scene.Node');
 	
 this.Node.addProperties({ 
@@ -261,9 +266,9 @@ this.Node.addMethods({
     canvas: function() {
 	if (!UserAgent.usableOwnerSVGElement) {
 	    // so much for multiple worlds on one page
-	    return Global.document.getElementById("canvas");
+	    return locateCanvas();
 	} else {
-	    return (this.rawNode && this.rawNode.ownerSVGElement) || Global.document.getElementById("canvas");
+	    return (this.rawNode && this.rawNode.ownerSVGElement) || locateCanvas();
 	}
     },
     
@@ -296,13 +301,6 @@ this.Node.addMethods({
     }
 
 
-});
-
-this.Node.subclass('lively.scene.Group', {
-    documentation: 'Grouping of scene objects',
-    initialize: function() {
-	this.rawNode = NodeFactory.create("g");
-    }
 });
 
 
@@ -414,12 +412,11 @@ this.Shape.subclass('lively.scene.Rectangle', {
 	return bnds.partNameNear(Rectangle.corners, p, this.controlPointProximity);
     },
 
-    possibleHandleForControlPoint: function(targetMorph,mousePoint,hand) {
+    possibleHandleForControlPoint: function(mousePoint) {
 	var partName = this.controlPointNear(mousePoint);
 	if (partName == null) 
 	    return null;
-	var loc = this.bounds().partNamed(partName);
-	return new HandleMorph(loc, "rect", hand, targetMorph, partName); 
+	return {location: this.bounds().partNamed(partName), part: partName};
     },
 
     getBorderRadius: function() {
@@ -621,8 +618,8 @@ this.Shape.subclass('lively.scene.Polygon', {
 	    return true;
 	}
     },
-
-    possibleHandleForControlPoint: function(targetMorph, mousePoint, hand) {
+    
+    possibleHandleForControlPoint: function(mousePoint) {
 	var partName = this.controlPointNear(mousePoint);
 
 	if (partName == null) 
@@ -632,13 +629,12 @@ this.Shape.subclass('lively.scene.Polygon', {
 
 	if (partName >= 0) { 
 	    var loc = vertices[partName]; 
-	    var shape = "rect"; 
 	} else { 
 	    var loc = vertices[-partName].midPt(vertices[-partName-1]); 
-	    var shape = "ellipse"; 
 	} 
 
-	return new HandleMorph(loc, shape, hand, targetMorph, partName); 
+	return {location: loc, part: partName};
+
     }
 
 });
@@ -785,9 +781,44 @@ this.Shape.subclass('lively.scene.Path', {
     controlPointNear: this.Polygon.prototype.controlPointNear,
     possibleHandleForControlPoint: this.Polygon.prototype.possibleHandleForControlPoint,
     reshape: this.Polygon.prototype.reshape,
-    controlPointNear: this.Polygon.prototype.controlPointNear
 
 });
+
+this.Node.subclass('lively.scene.Group', {
+    documentation: 'Grouping of scene objects',
+    
+    initialize: function() {
+	this.rawNode = NodeFactory.create("g");
+	this.children = [];
+    },
+
+    add: function(node) {
+	this.rawNode.appendChild(node.rawNode);
+	this.children.push(node);
+    },
+
+    bounds: function() {
+	// this creates duplication between morphs and scene graphs, division of labor?
+	var subBounds = null;
+	for (var i = 0; i < this.children.length; i++) {
+	    var m = this.children[i];
+	    if (!m.isVisible()) {
+		continue;
+	    }
+	    subBounds = subBounds == null ? m.bounds() : subBounds.union(m.bounds());
+	}
+	return subBounds;
+    },
+
+    containsPoint: function(p) {
+	return this.children.any(function(child) { return child.containsPoint(p) });
+    },
+
+    controlPointNear: this.Rectangle.prototype.controlPointNear,
+    possibleHandleForControlPoint: this.Rectangle.prototype.possibleHandleForControlPoint
+
+});
+
 
 
 this.Node.subclass('lively.scene.Image', {
@@ -963,7 +994,7 @@ Object.subclass('lively.scene.Similitude', {
     applyTo: function(rawNode) {
 	if (Config.useTransformAPI) {
 	    var list = rawNode.transform.baseVal;
-	    var canvas = Global.document.getElementById("canvas"); 
+	    var canvas = locateCanvas();
 
 	    if (!this.translation) this.translation = canvas.createSVGTransform();
 	    this.translation.setTranslate(this.e, this.f);
@@ -1016,14 +1047,8 @@ Object.subclass('lively.scene.Similitude', {
 	return new lively.scene.Transform(this);
     },
 
-    canvas: function() {
-	var world = WorldMorph.current(); // forward reference to WorldMorph :(
-	if (world) return world.canvas();
-	else return Global.document.getElementById("canvas"); // in early stages world may be null
-    },
-
     toMatrix: function() {
-	var mx = this.canvas().createSVGMatrix();
+	var mx = locateCanvas().createSVGMatrix();
 	mx.a = this.a;
 	mx.b = this.b;
 	mx.c = this.c;

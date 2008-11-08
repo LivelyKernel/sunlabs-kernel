@@ -2394,9 +2394,14 @@ Morph.addMethods({
     checkForControlPointNear: function(evt) {
 	if (this.suppressHandles) return false; // disabled
 	if (this.owner == null) return false; // can't reshape the world
-	var handle = this.shape.possibleHandleForControlPoint(this, this.localize(evt.mousePoint), evt.hand);
-	if (handle == null) return false;
-	this.addMorph(handle);  // after which it should get converted appropriately here
+	var info = this.shape.possibleHandleForControlPoint(this.localize(evt.mousePoint));
+	if (info == null) return false;
+	
+	var partName = info.part;
+	var loc = info.location;
+	var handleShape = Object.isString(partName) || partName >= 0 ? "rect" : "ellipse";
+	var handle = this.addMorph(new HandleMorph(loc, handleShape, evt.hand, this, partName));  
+	// after which it should get converted appropriately here
 	handle.showHelp(evt);
 	if (evt.hand.mouseFocus instanceof HandleMorph) evt.hand.mouseFocus.remove();
 	evt.hand.setMouseFocus(handle);

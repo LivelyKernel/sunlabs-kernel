@@ -2087,7 +2087,10 @@ Morph.subclass("ColorPickerMorph", {
         var r = this.shape.bounds().insetBy(this.getBorderWidth());
         var rh2 = r.height/2;
         var dd = 2; // grain for less resolution in output (input is still full resolution)
-        
+	var content = this.addMorph(new Morph(this.shape.bounds()));
+	content.ignoreEvents();
+	content.setShape(new lively.scene.Group()); // Group isn't really a shape
+
         //DI: This could be done with width*2 gradients, instead of width*height simple fills
         //    For now it seems to perform OK at 2x granularity, and actual color choices 
         //    are still full resolution
@@ -2096,7 +2099,7 @@ Morph.subclass("ColorPickerMorph", {
                 var patchFill = this.colorMap(x, y, rh2, this.colorWheel(r.width + 1)).toString();
                 var element = new lively.scene.Rectangle(new Rectangle(x + r.x, y + r.y, dd, dd), patchFill, 0, null);
                 // element.setAttributeNS("fill", this.colorMap(x, rh2, rh2, this.colorWheel(r.width + 1)).toString());
-                this.addWrapper(element);
+		content.shape.add(element);
             }
         }
     },
