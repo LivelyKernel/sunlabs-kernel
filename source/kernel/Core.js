@@ -90,25 +90,6 @@ var Loader = {
 };
 
     
-Object.extend(Object.subclass('lively.FragmentURI'), {
-    parse: function(string) {
-	var match = string.match("url\\(#(.*)\\)");
-	return match && match[1];
-	// 'ur(#fragmentURI)'
-	//return string.substring(5, string.length - 1);
-    },
-
-    fromString: function(id) {
-	return "url(#" + id + ")";
-    },
-    
-    getElement: function(string) {
-	var id = lively.FragmentURI.parse(string);
-	return id && Global.document.getElementById(id);
-    }
-    
-});
-
 
 
 // ===========================================================================

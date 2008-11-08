@@ -100,7 +100,7 @@ Object.subclass('lively.data.Wrapper', {
     },
 
     uri: function() {
-	return lively.FragmentURI.fromString(this.id());
+	return lively.data.FragmentURI.fromString(this.id());
     },
     
     // convenience attribute access
@@ -229,6 +229,27 @@ Object.extend(lively.data.Wrapper, {
     }
 
 });
+
+
+Object.extend(Object.subclass('lively.data.FragmentURI'), {
+    parse: function(string) {
+	var match = string.match("url\\(#(.*)\\)");
+	return match && match[1];
+	// 'ur(#fragmentURI)'
+	//return string.substring(5, string.length - 1);
+    },
+
+    fromString: function(id) {
+	return "url(#" + id + ")";
+    },
+    
+    getElement: function(string) {
+	var id = this.parse(string);
+	return id && Global.document.getElementById(id);
+    }
+    
+});
+
 
 
 using(namespace('lively.scene'), lively.data.Wrapper).run(function(unused, Wrapper) {
