@@ -62,7 +62,6 @@ Widget.subclass('lively.Tools.SystemBrowser', {
         
         if (!module.SourceControl) {
             module.SourceControl = new SourceDatabase();
-            // module.SourceControl.scanLKFiles();
             module.SourceControl.scanLKFilesAsync();
         }
         
@@ -2096,24 +2095,10 @@ ChangeList.subclass('SourceDatabase', {
     },
 
     importKernelFiles: function(list) {
-        for (var i = 0; i<list.length; i++) {
-            var fileName = list[i];
-            var fileString = this.getCachedText(fileName);
-            new FileParser().parseFile(fileName, this.currentVersion(fileName), fileString, this, "import");
-            this.testImportFiles();
-        }
+        this.scanLKFilesAsync();
+	this.testImportFiles();
     },
     
-    scanLKFiles: function() {
-        var list = this.interestingLKFileNames();
-        for (var i = 0; i<list.length; i++) {
-            var fileName = list[i];
-            var fileString = this.getCachedText(fileName);
-            new FileParser().parseFile(fileName, this.currentVersion(fileName), fileString, this, "import");
-            this.testImportFiles();
-        }
-    },
-
     getSourceCodeRange: function(fileName, versionNo, startIndex, stopIndex) {
         // Remember the JS convention that str[stopindex] is not included!!
         var fileString = this.getCachedText(fileName);
@@ -2240,12 +2225,11 @@ ChangeList.subclass('SourceDatabase', {
         this.getFileContentsAsync(fileName, prepareDB);
     },
     
-    getFileContentsAsync: function(fileName, action) { // convenient helper method
-        var ms = new Date().getTime();
+    getFileContentsAsync: function(fileName, action) {
+	// DI:  This should be simplified - I removed timing (meaningless here for async)
+	// convenient helper method
         var actionWrapper = function(fileString) {
             action.call(this, fileString);
-            ms = new Date().getTime() - ms;
-            console.log(fileName + " read in " + ms + " ms.");
         }.bind(this);
         new NetRequest({model: {action: actionWrapper}, setResponseText: 'action'}).get(URL.source.withFilename(fileName));
     },
