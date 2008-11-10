@@ -260,8 +260,8 @@ Morph.subclass("ClipMorph", {
     fill: null,
     borderWidth: 0,
 
-    initializeTransientState: function($super, initialBounds) {
-	$super(initialBounds);
+    initializeTransientState: function($super) {
+	$super();
 	this.clipToShape();
     },
 
@@ -642,8 +642,8 @@ Morph.subclass('PanelMorph', {
         this.lastNavigable = null;
     },
 
-    initializeTransientState: function($super, bounds) {
-        $super(bounds);
+    initializeTransientState: function($super) {
+        $super();
         this.priorExtent = this.innerBounds().extent();
     },
 

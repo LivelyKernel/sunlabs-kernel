@@ -881,8 +881,8 @@ Morph.subclass("TextMorph", {
 	DoitContext: {byDefault: null}
     },
     
-    initializeTransientState: function($super, initialBounds) {
-        $super(initialBounds);
+    initializeTransientState: function($super) {
+        $super();
         this.selectionRange = [0, -1]; // null or a pair of indices into textString
         this.priorSelection = [0, -1];  // for double-clicks
         // note selection is transient

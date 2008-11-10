@@ -1136,7 +1136,7 @@ lively.data.Wrapper.subclass('Morph', {
 
 	this.pvtSetTransform(new lively.scene.Similitude(this.defaultOrigin(initialBounds, shapeType)));
 	this.initializePersistentState(initialBounds, shapeType);
-	this.initializeTransientState(initialBounds);
+	this.initializeTransientState();
     },
 
     initializePersistentState: function(initialBounds /*:Rectangle*/, shapeType/*:String*/) {
@@ -1158,8 +1158,8 @@ lively.data.Wrapper.subclass('Morph', {
     },
 
     // setup various things 
-    initializeTransientState: function(initialBounds) { 
-	this.fullBounds = initialBounds; // a Rectangle in owner coordinates
+    initializeTransientState: function() { 
+	this.fullBounds = null; // a Rectangle in owner coordinates
 	// this includes the shape as well as any submorphs
 	// cached here and lazily computed by bounds(); invalidated by layoutChanged()
 
@@ -1213,7 +1213,7 @@ lively.data.Wrapper.subclass('Morph', {
 	    this.restoreDefs(copier, other.defs, true);
 	}
 
-	this.initializeTransientState(null);
+	this.initializeTransientState();
 	
 	if (other.activeScripts != null) { 
 	    for (var i = 0; i < other.activeScripts.length; i++) {
@@ -1239,7 +1239,7 @@ lively.data.Wrapper.subclass('Morph', {
 	this.restoreFromSubnodes(importer);
 	this.restorePersistentState(importer);    
 	
-	this.initializeTransientState(null);
+	this.initializeTransientState();
 	importer.verbose && console.log("deserialized " + this);
     },
 
@@ -3612,8 +3612,8 @@ PasteUpMorph.subclass("WorldMorph", {
 	this.enterCount = 0;
     },
 
-    initializeTransientState: function($super, initialBounds) {
-        $super(initialBounds);
+    initializeTransientState: function($super) {
+        $super();
         this.hands = [];
         this.setDisplayTheme(this.displayThemes['lively']);
 

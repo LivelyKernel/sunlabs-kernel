@@ -223,8 +223,8 @@ Morph.subclass('PianoKeyboard', {
 	this.setFill(Color.darkGray.darker());
     },
 
-    initializeTransientState: function($super, initialBounds) {
-	$super(initialBounds);
+    initializeTransientState: function($super) {
+	$super();
 	//this.audio = new Audio("data:audio/x-wav;base64," + this.click);
 	this.audio = new Audio();
 	this.audio.volume = 1.0;
