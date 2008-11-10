@@ -88,7 +88,7 @@ function populateSlideWorld(world) {
         var dx = pt(120,0);
 	
         // Create a sample rectangle       
-        widget = new Morph(loc.extent(widgetExtent), "rect");
+        widget = Morph.makeRectangle(loc, widgetExtent);
         widget.setFill(colors[0]);
         world.addMorph(widget);
 	

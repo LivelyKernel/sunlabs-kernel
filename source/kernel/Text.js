@@ -829,7 +829,7 @@ Morph.subclass('TextSelectionMorph', {
     },
 
     addRectangle: function(rect) {
-	var m = this.addMorph(new Morph(rect, "rect"));
+	var m = this.addMorph(Morph.makeRectangle(rect));
 	m.applyStyle(this.style);
 	m.ignoreEvents();
     },
@@ -2258,7 +2258,7 @@ TextMorph.subclass('TestTextMorph', {
 
     onMouseDown: function(evt) {
         this.isSelecting = true;
-        this.boundsMorph = new Morph(pt(0,0).asRectangle(), "rect");
+        this.boundsMorph = Morph.makeRectangle(0, 0, 0, 0);
 	this.boundsMorph.applyStyle({fill: null, borderColor: Color.red});
         this.addMorph(this.boundsMorph);
         this.requestKeyboardFocus(evt.hand);

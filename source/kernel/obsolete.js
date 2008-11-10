@@ -255,7 +255,7 @@ Object.extend(BouncingSpheres, {
             var cy = BouncingSpheres.getRand(r,  canvasHeight - r);
             //console.log([r, cx, cy]);
     
-            var aShape  = new Morph(new Rectangle(cx - r, cy - r, 2*r, 2*r), "ellipse");
+            var aShape  = Morph.makeCircle(pt(cx, cy), r);
             aShape.setFill(BouncingSpheres.randColor(true));
             aShape.setBorderColor(BouncingSpheres.randColor(true));
             aShape.setFillOpacity(BouncingSpheres.getRand(0, 1));

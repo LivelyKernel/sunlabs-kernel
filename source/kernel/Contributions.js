@@ -702,7 +702,7 @@ ClipMorph.subclass("DoodleMorph", {
     },
 
     addLine: function() {
-        var morph = new Morph(new Rectangle(this.newPos * 2, this.newPos, 60, 20), 'rect');
+        var morph = Morph.makeRectangle(this.newPos * 2, this.newPos, 60, 20);
 	morph.applyStyle({fill: null, borderWidth: this.lineWidth, borderColor: this.drawingColor});
         morph.setShape(new lively.scene.Polyline([pt(0,20),pt(60,0)], this.lineWidth, this.drawingColor));
         this.addMorph(morph);
@@ -712,7 +712,7 @@ ClipMorph.subclass("DoodleMorph", {
     },
 
     addRect: function() {
-        var morph = new Morph(new Rectangle(this.newPos * 2, this.newPos, 60, 20), 'rect');
+        var morph = Morph.makeRectangle(this.newPos * 2, this.newPos, 60, 20);
 	morph.applyStyle({fill: this.fillColor, borderWidth: this.lineWidth, borderColor: this.drawingColor});
         this.addMorph(morph);
 	
@@ -764,10 +764,10 @@ ClipMorph.subclass("DoodleMorph", {
             this.fillpicker = new ColorPickerMorph(new Rectangle(10, 85, 40, 20));
             this.colorMorph.addMorph(this.fillpicker);
 
-            this.colorMorph.borderRect = new Morph(new Rectangle(70, 25, 20, 20), 'ellipse');
+            this.colorMorph.borderRect = Morph.makeCircle(pt(80, 35), 10);
             this.colorMorph.borderRect.setFill(this.drawingColor);
             this.colorMorph.addMorph(this.colorMorph.borderRect);
-            this.colorMorph.fillRect = new Morph(new Rectangle(70, 85, 20, 20), 'ellipse');
+            this.colorMorph.fillRect = Morph.makeCircle(pt(80, 95), 10);
             this.colorMorph.fillRect.setFill(this.fillColor);
             this.colorMorph.addMorph(this.colorMorph.fillRect);
 

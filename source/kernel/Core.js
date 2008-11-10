@@ -2395,7 +2395,7 @@ Morph.addMethods({
 
     addFocusHalo: function() {
 	if (this.focusHalo || this.focusHaloBorderWidth <= 0) return false;
-	this.focusHalo = new Morph(this.localBorderBounds().expandBy(this.focusHaloInset), "rect");
+	this.focusHalo = Morph.makeRectangle(this.localBorderBounds().expandBy(this.focusHaloInset));
 	this.focusHalo.transientBounds = true;  // Do this before adding the halo
 	this.addMorph(this.focusHalo);
 	this.focusHalo.applyStyle(this.focusStyle);
@@ -3049,6 +3049,21 @@ Object.extend(Morph, {
 	var circle = new Morph(location.asRectangle().expandBy(radius), "ellipse");
 	return circle.applyStyle({fill: fill, borderWidth: lineWidth, borderColor: lineColor});
     },
+
+    makeRectangle: function(/**/) {
+	switch (arguments.length) {
+	case 1: // rectangle
+	    if (!(arguments[0] instanceof Rectangle)) throw new TypeError(arguments[0] + ' not a rectangle');
+	    return new Morph(arguments[0], "rect");
+	case 2: // location and extent
+	    return new Morph(arguments[0].extent(arguments[1]), "rect");
+	case 4: // x,y,width, height
+	    return new Morph(new Rectangle(arguments[0], arguments[1], arguments[2], arguments[3]), "rect");
+	default:
+	    throw new Error("bad arguments " + arguments);
+	}
+    },
+
 
     makePolygon: function(verts, lineWidth, lineColor, fill) {
 	// make a polygon with its origin at the starting vertex
@@ -3952,8 +3967,8 @@ PasteUpMorph.subclass("WorldMorph", {
         var world = this.world();
         var morphItems = [
             ["Line", function(evt) { var p = evt.point(); world.addMorph(Morph.makeLine([p, p.addXY(60, 30)], 2, Color.black));}],
-            ["Rectangle", function(evt) { world.addMorph(new Morph(evt.point().extent(pt(60, 30)), "rect"));}],
-            ["Ellipse", function(evt) { world.addMorph(new Morph(evt.point().extent(pt(50, 50)), "ellipse"));}],
+            ["Rectangle", function(evt) { world.addMorph(Morph.makeRectangle(evt.point(), pt(60, 30)));}],
+            ["Ellipse", function(evt) { world.addMorph(Morph.makeCircle(evt.point(), 25)); }],
             ["TextMorph", function(evt) { world.addMorph(new TextMorph(evt.point().extent(pt(120, 10)), "This is a TextMorph"));}],
             ["Star", function(evt) { 
                 var makeStarVertices = function(r,center,startAngle) {
@@ -4437,7 +4452,7 @@ Morph.subclass("HandMorph", {
 
 	if (Config.showGrabHalo) {
 	    var bounds = grabbedMorph.bounds(true);
-	    this.grabHaloMorph = this.addMorphBack(new Morph(bounds, "rect").applyStyle({fill: null, borderWidth: 0.5 }));
+	    this.grabHaloMorph = this.addMorphBack(Morph.makeRectangle(bounds).applyStyle({fill: null, borderWidth: 0.5 }));
 	    this.grabHaloMorph.shape.setStrokeDashArray(String([3,2]));
 	    this.grabHaloMorph.setLineJoin(lively.scene.LineJoins.Round);
 	    this.grabHaloMorph.ignoreEvents();
@@ -4815,7 +4830,7 @@ Morph.subclass('LinkMorph', {
                 console.log("disposing of a thumbnail");
                 newWorld.thumbnail.remove();
             }
-            newWorld.thumbnail = new Morph(Rectangle.fromElement(canvas), "rect");
+            newWorld.thumbnail = Morph.makeRectangle(Rectangle.fromElement(canvas));
             newWorld.thumbnail.setPosition(this.bounds().bottomRight());
             newWorld.addMorph(newWorld.thumbnail);
             newWorld.thumbnail.setScale(scale);

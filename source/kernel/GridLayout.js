@@ -654,7 +654,7 @@ GridLayoutMorph.demo = function(world, position) {
 		z.myName="sq-" + i;
 	}
 	// make a rectangle that moves to all its alignment positions
-	var r = new Morph(new Rectangle(0,0,15,15), "rect");
+        var r = Morph.makeRectangle(0,0,15,15);
 	r.setFill(Color.red);
 	r.myName = "red";
 	r.alignments = ["c", "n", "s", "e", "w", "nw", "se", "ne", "sw",

@@ -1684,7 +1684,7 @@ Morph.subclass("SliderMorph", {
         var model = new modelClass({}, {});
 	this.connectModel(model.newRelay({Value: "Value", SliderExtent: "SliderExtent"}));
         this.valueScale = (scaleIfAny === undefined) ? 1.0 : scaleIfAny;
-        var slider = new Morph(new Rectangle(0, 0, this.mss, this.mss), "rect");
+        var slider = Morph.makeRectangle(0, 0, this.mss, this.mss);
         slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});
         this.slider = this.addMorph(slider);
         this.slider.linkToStyles(['slider']);
@@ -1934,7 +1934,7 @@ Morph.subclass("ScrollPane", {
         if (this.menuButton) return;
 
         var w = this.scrollBarWidth;
-        this.menuButton = this.addMorph(new Morph(new Rectangle(0, 0, w, w)));
+        this.menuButton = this.addMorph(Morph.makeRectangle(0, 0, w, w));
         this.menuButton.setFill(Color.white);
         // Make it look like 4 tiny lines of text (doesn't work yet...)
         var p0 = this.menuButton.innerBounds().topLeft().addXY(2, 2);
@@ -2091,7 +2091,7 @@ Morph.subclass("ColorPickerMorph", {
         var r = this.shape.bounds().insetBy(this.getBorderWidth());
         var rh2 = r.height/2;
         var dd = 2; // grain for less resolution in output (input is still full resolution)
-	var content = this.addMorph(new Morph(this.shape.bounds()));
+	var content = this.addMorph(Morph.makeRectangle(this.shape.bounds()));
 	content.ignoreEvents();
 	content.setShape(new lively.scene.Group()); // Group isn't really a shape
 
@@ -2556,7 +2556,7 @@ Morph.subclass("TitleBarMorph", {
 	// contentMorph is bigger than the titleBar, so that the lower rounded part of it can be clipped off
 	// arbitrary paths could be used, but FF doesn't implement the geometry methods :(
 	// bounds will be adjusted in adjustForNewBounds()
-	var contentMorph = new Morph(bounds, "rect");
+	var contentMorph = Morph.makeRectangle(bounds);
 	this.addMorph(new ClipMorph(bounds)).addMorph(contentMorph);
 	contentMorph.linkToStyles(["titleBar"]);
 	
@@ -2756,7 +2756,7 @@ Morph.subclass('StatusBarMorph', {
 	// contentMorph is bigger than the titleBar, so that the lower rounded part of it can be clipped off
 	// arbitrary paths could be used, but FF doesn't implement the geometry methods :(
 	// bounds will be adjusted in adjustForNewBounds()
-	var contentMorph = new Morph(bounds.withHeight(bounds.height*2).withY(-bounds.height), "rect");
+	var contentMorph = Morph.makeRectangle(bounds.withHeight(bounds.height*2).withY(-bounds.height));
 	this.addMorph(new ClipMorph(bounds.withHeight(bounds.height + 2).withWidth(bounds.width + 2))).addMorph(contentMorph);
 	contentMorph.linkToStyles(["titleBar"]);
 	

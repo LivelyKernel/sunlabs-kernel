@@ -205,14 +205,14 @@ Morph.subclass('PianoKeyboard', {
 	    octavePt = this.innerBounds().topLeft().addPt(margin).addXY(7*wtWid*i, -1);
 	    for (var j=0; j<nWhite; j++) {
 		keyRect = octavePt.addXY((j)*wtWid, 0).extent(pt(wtWid+1, 36));
-		key = new Morph(keyRect, "rect");  key.setFill(Color.white);  key.myFill = Color.white;
+		key = Morph.makeRectangle(keyRect);  key.setFill(Color.white);  key.myFill = Color.white;
         	key.relayMouseEvents(this,  { onMouseDown: "pianoKeyDown", onMouseUp: "pianoKeyUp", onMouseMove: "pianoKeyMove" } );
 		key.noteNumber = i*12 + ([1, 3, 5, 6, 8, 10, 12][j]);
 		this.addMorph(key);
 	    }
 	    for (var j=0; j<nBlack; j++) {
 		keyRect = octavePt.addXY([6, 15, 29, 38, 47][j], 1).extent(pt(bkWid, 21));
-		key = new Morph(keyRect, "rect");  key.setFill(Color.black);  key.myFill = Color.black;
+		key = Morph.makeRectangle(keyRect);  key.setFill(Color.black);  key.myFill = Color.black;
         	key.relayMouseEvents(this, { onMouseDown: "pianoKeyDown", onMouseUp: "pianoKeyUp", onMouseMove: "pianoKeyMove" } );
 		key.noteNumber = i*12 + ([2, 4, 7, 9, 11][j]);
 		this.addMorph(key);
@@ -440,7 +440,7 @@ PanelMorph.subclass('SquiggleMorph', {
     onMouseDown: function(evt) {
         if (!this.currentMorph) {
             this.start = this.localize(evt.mousePoint);
-            this.currentMorph = this.contentMorph.addMorph(new Morph(this.start.asRectangle(), "rect"));
+            this.currentMorph = this.contentMorph.addMorph(Morph.makeRectangle(this.start.asRectangle()));
             // TODO: relaying events stops from moving morphs after drawing them..
             // this.currentMorph.relayMouseEvents(this, {onMouseMove: "onMouseMove"});
 
@@ -1267,7 +1267,7 @@ Object.subclass('lively.examples.asteroids.AsteroidsSprite', {
     for (var i = 0; i < numStars; i++) {
         stars[i] = pt((Math.random() * gameWidth), (Math.random() * gameHeight));
 
-        var m = new Morph(stars[i].extent(pt(1, 1)), "rect");
+        var m = Morph.makeRectangle(stars[i], pt(1, 1));
         m.applyStyle(starStyle);
         gameMorph.addMorph(m);
     }
@@ -3516,16 +3516,10 @@ Morph.subclass("lively.examples.canvascape.MiniMapMorph", {
     updatePlayerLocation: function(xloc, yloc) {
         //this.pLoc = this.worldPoint(pt(xloc,yloc));
         //console.log("location " + this.pLoc.x + " " + this.pLoc.y);
-        if (this.player) {
-          this.removeMorph(this.player)
-          this.player = new Morph(new Rectangle(xloc -3, yloc -3, 6, 6),"ellipse");   
-          this.player.setFill(Color.blue);
-          this.addMorph(this.player);
-        } else {
-          this.player = new Morph(new Rectangle(xloc -3, yloc -3, 6, 6),"ellipse");   
-          this.player.setFill(Color.blue);
-          this.addMorph(this.player);
-        }
+        if (this.player) this.removeMorph(this.player);
+        this.player = Morph.makeCircle(pt(xloc, yloc), 3);
+        this.player.setFill(Color.blue);
+        this.addMorph(this.player);
     }, 
     
     getPlayerLocation: function(){
@@ -3950,14 +3944,14 @@ ClipMorph.subclass("lively.examples.canvascape.CanvasScapeMorph", {
             for (var j=0; j<this.arena[i].length; j++) {
                 if (this.arena[i][j] && this.arena[i][j] != 2) {
                     if (this.difficulty != "hard") {
-                        morppi = new Morph(new Rectangle( i*8,  j*8, 8, 8),"rect");   
+                        morppi = Morph.makeRectangle(i*8,  j*8, 8, 8);
                         morppi.setFill(this.color);
                         this.map.addMorph(morppi);
                     }
                 } 
                 if (this.arena[i][j] == 2 && this.difficulty == "easy") {
                     //this.color = Color.red;
-                    morppi = new Morph(new Rectangle( i*8,  j*8, 8, 8),"rect");   
+                    morppi = Morph.makeRectangle( i*8,  j*8, 8, 8);
                     morppi.setFill(Color.red);
                     this.map.addMorph(morppi);
                 }
@@ -4405,7 +4399,7 @@ Morph.subclass("AnimMorph", {
             this.data.push(frameURL + index + frameType);
         }
         
-        this.status = new Morph(this.bounds().center().subPt(pt(50,50)).extent(pt(100,100)), "ellipse");
+        this.status = Morph.makeCircle(this.bounds().center(), 50);
         this.status.handlesMouseDown = function() {
             return true;
         }

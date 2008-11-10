@@ -65,9 +65,9 @@ Morph.subclass('PhoneMorph', {
 		var scale=(big-small)*.95;	// radius to locate dial holes
 		var origin = pt(big-2*small,2*small-big);	// center of the dial
 
-		var dial = new Morph(pt(0,0).asRectangle(),"rect");
+	        var dial = Morph.makeRectangle(0, 0, 0, 0);
 		this.dial=dial;	//tmp
-		var shim = new Morph(new Rectangle(-big/2,-big/2,big,big),"ellipse");
+	        var shim = Morph.makeCircle(pt(0, 0), big/2);
 		var rt2 = (1.0/Math.sqrt(2.0));
 		shim.setFillOpacity(.5);
 
@@ -107,7 +107,7 @@ Morph.subclass('PhoneMorph', {
 
 		// finger hook
 
-		var hook = new Morph(pt(0,0).asRectangle(),"rectangle");
+                var hook = Morph.makeRectangle(0, 0, 0, 0);
 		var hp = [pt(0,0).addXY(big,0), pt(0,0).addXY(big-(2*small),0)];
 		hp[1].type="arc"; hp[1].radius=2*small; hp[1].mode="0,1";
 		hook.setShape(new lively.scene.Path(hp, null, 4, Color.black));
