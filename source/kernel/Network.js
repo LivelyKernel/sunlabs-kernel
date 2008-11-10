@@ -773,7 +773,7 @@ Object.subclass('FileDirectory', {
 
     fileContent: function(localname, revision) {
         var url = this.url.withFilename(localname);
-        var resource = new SVNResource(Record.newPlainInstance({URL: url, ContentText: null}));
+        var resource = new SVNResource(this.url, Record.newPlainInstance({URL: url, ContentText: null}));
         resource.fetch(true, null, revision);
         return resource.getContentText();
     },

@@ -406,7 +406,42 @@ TestCase.subclass('lively.Tests.LKWikiTest.FileDirectoryTest', {
     
 });
 
-
+TestCase.subclass('lively.Tests.LKWikiTest.WikiPatcherTest', {
+    
+    unpatchedSrc: '<title>Lively Kernel canvas</title>\n' +
+        '<defs>\n' +
+            '<script type="text/ecmascript" xlink:href="JSON.js"/>\n' +
+            '<script type="text/ecmascript" xlink:href="miniprototype.js"/>',
+            
+    patchedSrc: '<title>Lively Kernel canvas</title>\n' +
+                '<defs>\n'+
+                    '<script type="text/ecmascript" xlink:href="http://url/to/jsSrces/!svn/bc/1000/JSON.js"/>\n' +
+                    '<script type="text/ecmascript" xlink:href="http://url/to/jsSrces/!svn/bc/1000/miniprototype.js"/>',
+                    
+    setUp: function() {
+        var url = 'http://url/to/jsSrces/';
+        this.sut = new WikiPatcher(url);
+    },
+    
+    testRewriteXHTMLSimpple: function() {
+        var revision = 1000;
+        var result = this.sut.patchSrc(this.unpatchedSrc, 1000);
+        this.assertEqual(result, this.patchedSrc);
+    },
+    
+    testPatchPatchedSrc: function() {
+        var revision = 1000;
+        var result = this.sut.patchSrc(this.patchedSrc, 1000);
+        this.assertEqual(result, this.patchedSrc);
+    },
+    
+    testUnPatchSrc: function() {
+        var revision = 1000;
+        var result = this.sut.unpatchSrc(this.patchedSrc);
+        this.assertEqual(result, this.unpatchedSrc);
+    }
+})
+    
 thisModule.exampleSVNResource = function() {
 	var repoUrl = URL.proxy.toString() + 'wiki';
 	var url = repoUrl + '/abc';

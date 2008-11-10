@@ -418,3 +418,41 @@ Dialog.subclass('WikiLinkDialog', {
     }
 
 });
+
+Object.subclass('WikiPatcher', {
+    
+    documentation: 'Wiki pages which do not run with the current source code can be fixed with this object.\n\
+                    It will rewrite te failing xhtml so that it uses compatible source code again.',
+    
+    findLinks: /(xlink\:href\=)"(.*?)(\w+\.js)"/g,
+    
+    initialize: function(repoUrl) {
+        this.repoUrl = repoUrl;
+    },
+    
+    patchFile: function(fileName, optRevision) {
+        var dir = new FileDirectory(this.repoUrl);
+        var rev = optRevision || this.findFirstRevision(fileName);
+        var unpatchedSrc = dir.fileContent(fileName);
+        var patchedSrc = this.patchSrc(unpatchedSrc, rev);
+        dir.writeFileNamed(fileName, patchedSrc);
+    },
+    
+    findFirstRevision: function(fileName) {
+        var url = this.repoUrl.toString();
+        var fullUrl = url + fileName;
+        var res = new SVNResource(url, Record.newPlainInstance({URL: fullUrl, Metadata: null, HeadRevision: null}));
+        res.fetchMetadata(true, null);
+    	timestamp = res.getMetadata().last();
+    	var rev = timestamp.toString().match(/.*Revision (.*)/)[1];
+        return Number(rev);
+    },
+    
+    patchSrc: function(src, revision) {
+        return src.replace(this.findLinks, '$1"' + this.repoUrl.toString() + '!svn/bc/' + revision + '/' + '$3"');
+    },
+    
+    unpatchSrc: function(src) {
+        return src.replace(this.findLinks, '$1"$3"');
+    },
+})
