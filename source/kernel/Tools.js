@@ -2160,34 +2160,6 @@ ChangeList.subclass('SourceDatabase', {
         return this.editHistory[fileName].length;
     },
 
-    getCachedText: function(fileName) {
-        // Return full text of the named file
-        var fileString;
-        var action = function(fileStringArg) { fileString = fileStringArg };
-        this.getCachedTextAsync(fileName, action, true);
-        return fileString;
-    },
-    
-    getFileContents: function(fileName) { // convenient helper method
-        var ms = new Date().getTime();
-        var fileString = new NetRequest().beSync().get(URL.source.withFilename(fileName)).getResponseText();
-        ms = new Date().getTime() - ms;
-        console.log(fileName + " read in " + ms + " ms.");
-        return fileString;
-    },
-    
-    interestingLKFileNames: function() {
-        var kernelFileNames = new FileDirectory(URL.source).filenames();
-        var testFileNames = []/*new FileDirectory(URL.source.withFilename('Tests/')).filenames()*/;
-        var jsFiles = kernelFileNames.concat(testFileNames).select(function(ea) { return ea.endsWith('.js') });
-        jsFiles = jsFiles.uniq();
-        // FIXME remove
-        var rejects = ["Contributions.js", "Develop.js", "GridLayout.js", "obsolete.js", "requireTest01.js", "rhino-compat.js",
-                       "Serialization.js", "test.js", "test1.js", "test2.js", "test3.js", "test4.js", "testaudio.js",
-                       "workspace.js"]
-        return jsFiles.reject(function(ea) { return rejects.include(ea) });
-    },
-
     getViewTitle: function() {
         return "Source Control for " + this.fileName;
     },
@@ -2212,7 +2184,15 @@ ChangeList.subclass('SourceDatabase', {
         return defsWithError;
     },
     
-    // ------ async version --------
+    // ------ reading files --------
+    getCachedText: function(fileName) {
+        // Return full text of the named file
+        var fileString;
+        var action = function(fileStringArg) { fileString = fileStringArg };
+        this.getCachedTextAsync(fileName, action, true);
+        return fileString;
+    },
+    
     getCachedTextAsync: function(fileName, action, beSync) {
         // Calls action with full text of the named file, installing it in cache if necessary
         var fileString = this.cachedFullText[fileName];
@@ -2253,6 +2233,18 @@ ChangeList.subclass('SourceDatabase', {
             }.bind(this);
             this.getCachedTextAsync(fileName, action, beSync);
         }, this);
+    },
+    
+    interestingLKFileNames: function() {
+        var kernelFileNames = new FileDirectory(URL.source).filenames();
+        var testFileNames = []/*new FileDirectory(URL.source.withFilename('Tests/')).filenames()*/;
+        var jsFiles = kernelFileNames.concat(testFileNames).select(function(ea) { return ea.endsWith('.js') });
+        jsFiles = jsFiles.uniq();
+        // FIXME remove
+        var rejects = ["Contributions.js", "Develop.js", "GridLayout.js", "obsolete.js", "requireTest01.js", "rhino-compat.js",
+                       "Serialization.js", "test.js", "test1.js", "test2.js", "test3.js", "test4.js", "testaudio.js",
+                       "workspace.js"]
+        return jsFiles.reject(function(ea) { return rejects.include(ea) });
     },
 
 });
