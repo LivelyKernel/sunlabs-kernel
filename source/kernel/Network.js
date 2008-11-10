@@ -556,7 +556,8 @@ View.subclass('Resource', NetRequestReporterTrait, {
     },
 
     fetchProperties: function(destModel, optSync, optRequestHeaders) {
-	// fetch the metadata 
+	// fetch the metadata
+	destModel = destModel || this.getModel().newRelay({Properties: "ContentDocument", PropertiesString: "ContentText", URL: "URL"});
 	var req = new NetRequest(Relay.newInstance({ ResponseXML: "Document", Status: "+RequestStatus"}, 
 	    Object.extend(new NetRequestReporter(), {
 		// FIXME replace with relay
@@ -667,6 +668,19 @@ Resource.subclass('SVNResource', {
 	};
 	return req;
     },
+    
+    fetchProperties: function($super, destModel, optSync, optRequestHeaders, rev) {
+        var req;
+        //Record.newPlainInstance({ Properties: null, PropertiesString: "", URL: this.getURL()});
+    	if (rev) {
+    	    this.withBaselineUriDo(rev, function() {
+    	    	req = $super(destModel, optSync, optRequestHeaders);
+    	    });
+    	} else {
+    	    req = $super(destModel, optSync, optRequestHeaders);
+    	};
+    	return req;
+    },
 	
     fetchMetadata: function(optSync, optRequestHeaders, startRev) {
 	// get the whole history if startRev is undefined
@@ -757,38 +771,39 @@ Object.subclass('FileDirectory', {
         this.writeAsync = false;
     },
 
-    fileContent: function(localname) {
+    fileContent: function(localname, revision) {
         var url = this.url.withFilename(localname);
-        var resource = new Resource(Record.newPlainInstance({URL: url, ContentText: null}));
-        resource.fetch(true);
+        var resource = new SVNResource(Record.newPlainInstance({URL: url, ContentText: null}));
+        resource.fetch(true, null, revision);
         return resource.getContentText();
     },
 
-    filesAndDirs: function() {
+    filesAndDirs: function(revision) {
         var url = this.url;
-        var webFile = new lively.storage.WebFile(Record.newPlainInstance(
-            {File: url, RootNode: url, Content: null, DirectoryList: null}));
-        webFile.fetchContent(webFile.formalModel.getFile(), true);
-        return webFile.formalModel.getDirectoryList();
+        var resource = new SVNResource(url.toString(), Record.newPlainInstance({URL: url.toString(), ContentDocument: null}));
+        var xml = resource.fetchProperties(null, true, null, revision).getResponseXML();
+        if (!xml) throw dbgOn(new Error('fetchProperties from ' + url.toString() + ' wasn\'t successful'));
+        var result = new Query("/D:multistatus/D:response").findAll(xml.documentElement);	
+	return result.map(function(rawNode) { return new lively.storage.CollectionItem(rawNode, url).toURL(); });
     },
 
-        files: function() {
-            return this.filesAndDirs().select(function(ea) { return ea.isLeaf() });
+        files: function(optRev) {
+            return this.filesAndDirs(optRev).select(function(ea) { return ea.isLeaf() });
         },
 
-        filenames: function() {
-            return this.files().collect(function(ea) { return ea.filename() } );
+        filenames: function(optRev) {
+            return this.files(optRev).collect(function(ea) { return ea.filename() } );
         },
 
-        subdirectories: function() {
+        subdirectories: function(optRev) {
             // remove the first, its the url of the current directory
-            var result = this.filesAndDirs().reject(function(ea) { return ea.isLeaf() });
+            var result = this.filesAndDirs(optRev).reject(function(ea) { return ea.isLeaf() });
             result.shift();
             return result;
         },
 
-        subdirectoryNames: function() {
-            return this.subdirectories().collect(function(ea) { return ea.filename() } );
+        subdirectoryNames: function(optRev) {
+            return this.subdirectories(optRev).collect(function(ea) { return ea.filename() } );
         },
 
         fileOrDirectoryExists: function(localname) {
@@ -817,16 +832,16 @@ Object.subclass('FileDirectory', {
         return new NetRequest().beSync().copy(srcUrl, destUrl, true /*overwrite*/).getStatus().isSuccess();
     },
 
-    copyFileNamed: function(srcFileName, destUrl, optNewFileName) {
+    copyFileNamed: function(srcFileName, optRev, destUrl, optNewFileName) {
         console.log('Copy file ' + srcFileName);
         if (!optNewFileName) optNewFileName = srcFileName;
         var otherDir = new FileDirectory(destUrl);
-        otherDir.writeFileNamed(optNewFileName, this.fileContent(srcFileName));
+        otherDir.writeFileNamed(optNewFileName, this.fileContent(srcFileName, optRev));
     },
     
-    copyAllFiles: function(destUrl, selectFunc) {
+    copyAllFiles: function(destUrl, selectFunc, optRev) {
         var filesToCopy = selectFunc ? this.filenames().select(selectFunc) : this.filenames();
-        filesToCopy.each(function(ea) { this.copyFileNamed(ea, destUrl) }, this);
+        filesToCopy.each(function(ea) { this.copyFileNamed(ea, optRev, destUrl) }, this);
     },
     
     copySubdirectory: function(subDirName, newDirName, toUrlOrFileDir, recursively, selectFunc) {

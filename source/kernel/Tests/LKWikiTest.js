@@ -345,7 +345,7 @@ TestCase.subclass('lively.Tests.LKWikiTest.FileDirectoryTest', {
         var toUrl = new URL ('http://to/url.com/bla');
         var copiedFiles = [];
         this.sut.filenames = function() { return filenames };
-        this.sut.copyFileNamed = function(srcFileName, destUrl, optNewFileName) {
+        this.sut.copyFileNamed = function(srcFileName, rev, destUrl, optNewFileName) {
             test.assertEqual(destUrl, toUrl, 'Wrong destUrl');
             test.assert(!optNewFileName || optNewFileName == srcFileName, 'problem with filename');
             copiedFiles.push(srcFileName);
