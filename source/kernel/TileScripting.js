@@ -1,76 +1,5 @@
 module('lively.TileScripting').requires('Helper.js').toRun(function(thisModule) {
 
-Object.subclass('Layout', {
-    
-    initialize: function(baseMorph, layoutSpec) {
-        this.layoutSpec = layoutSpec || {};
-        this.baseMorph = baseMorph;
-    },
-    
-    layout: function() {
-        
-        // this.baseMorph.layoutChanged = Morph.prototype.layoutChanged.bind(this.baseMorph);
-        
-        this.baseMorph.submorphs
-            .reject(function(ea) { return ea instanceof HandleMorph})
-            .inject(pt(0,0), function(pos, ea) {
-                ea.setPosition(pos);
-                return this.newPosition(ea);
-            }, this);
-
-        if (!this.layoutSpec.noResize) {        
-            var maxExtent = this.baseMorph.submorphs.inject(pt(0,0), function(maxExt, ea) {
-                return maxExt.maxPt(ea.getPosition().addPt(ea.getExtent()));
-            });
-            this.baseMorph.setExtent(maxExtent);
-        };
-        
-        if (this.layoutSpec.center) { this.centerMorphs() };
-        
-        // this.baseMorph.layoutChanged();        
-        // this.baseMorph.layoutChanged = this.baseMorph.constructor.prototype.layoutChanged.bind(this.baseMorph);
-    },
-    
-    newPosition: function(lastLayoutedMorph) {
-        return lastLayoutedMorph.getPosition();
-    },
-    
-    centerMorphs: function() {}
-});
-
-Layout.subclass('VLayout', {
-    
-    newPosition: function($super, lastLayoutedMorph) {
-        return lastLayoutedMorph.getPosition().addXY(0, lastLayoutedMorph.getExtent().y);
-    },
-    
-    centerMorphs: function() {
-        var centerX = this.baseMorph.shape.bounds().center().x;
-        this.baseMorph.submorphs.each(function(ea) {
-            ea.setPosition(ea.getPosition().withX(centerX - ea.getExtent().x/2));
-        }, this)
-    }
-    
-});
-
-Layout.subclass('HLayout', {
-    
-    newPosition: function(lastLayoutedMorph) {
-        return lastLayoutedMorph.getPosition().addXY(lastLayoutedMorph.getExtent().x, 0);
-    },
-    
-    centerMorphs: function() {
-        var centerY = this.baseMorph.shape.bounds().center().y;
-        this.baseMorph.submorphs.each(function(ea) {
-            ea.setPosition(ea.getPosition().withY(centerY - ea.getExtent().y/2));
-        }, this)
-    }
-    
-});
-
-// Some Mokeypatching :-)
-// TODO: Merge
-
 Morph.addMethods({
    layout: function(notResizeSelf) {
        this.layoutSpec && this.layoutSpec.layouterClass && new this.layoutSpec.layouterClass(this, this.layoutSpec).layout();
@@ -85,11 +14,7 @@ Morph.prototype.morphMenu = Morph.prototype.morphMenu.wrap(function(proceed, evt
     menu.addItem(["as tile", function(evt) { evt.hand.addMorph(this.asTile()) }.bind(this)], 3);
     return menu;
 });
-Morph.prototype.removeMorph = Morph.prototype.removeMorph.wrap(function(proceed, morph) {
-    proceed(morph);
-    this.layout();
-    return this;
-})
+
 
 PanelMorph.subclass('lively.TileScripting.TileBoxPanel', {
     onDeserialize: function() {

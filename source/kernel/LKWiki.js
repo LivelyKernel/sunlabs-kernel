@@ -438,6 +438,13 @@ Object.subclass('WikiPatcher', {
         dir.writeFileNamed(fileName, patchedSrc);
     },
     
+    unpatchFile: function(fileName) {
+        var dir = new FileDirectory(this.repoUrl);
+        var patchedSrc = dir.fileContent(fileName);
+        var unpatchedSrc = this.unpatchSrc(patchedSrc);
+        dir.writeFileNamed(fileName, unpatchedSrc);
+    },
+    
     findFirstRevision: function(fileName) {
         var url = this.repoUrl.toString();
         var fullUrl = url + fileName;

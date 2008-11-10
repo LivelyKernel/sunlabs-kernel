@@ -646,7 +646,7 @@ Resource.subclass('SVNResource', {
     },
 	
     getLocalUrl: function() {
-	return this.getURL().slice(this.repoUrl.length + 1);
+	return this.getURL().slice(this.repoUrl.length + (this.repoUrl.endsWith('/') ? 0 : 1));
     },
 	
     fetchHeadRevision: function(optSync) {
@@ -773,7 +773,7 @@ Object.subclass('FileDirectory', {
 
     fileContent: function(localname, revision) {
         var url = this.url.withFilename(localname);
-        var resource = new SVNResource(this.url, Record.newPlainInstance({URL: url, ContentText: null}));
+        var resource = new SVNResource(this.url.toString(), Record.newPlainInstance({URL: url.toString(), ContentText: null}));
         resource.fetch(true, null, revision);
         return resource.getContentText();
     },
