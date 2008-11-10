@@ -259,17 +259,17 @@ var Converter = {
 	var t, b, l, r;
 	switch (box.length) {
 	case 1:
-	    b = l = r = t = lively.Length.parse(box[0].strip());
+	    b = l = r = t = lively.data.Length.parse(box[0].strip());
 	    break;
 	case 2:
-	    t = b = lively.Length.parse(box[0].strip());
-	    l = r = lively.Length.parse(box[1].strip());
+	    t = b = lively.data.Length.data.parse(box[0].strip());
+	    l = r = lively.data.Length.data.parse(box[1].strip());
 	    break;
 	case 4:
-	    t = lively.Length.parse(box[0].strip());
-	    l = lively.Length.parse(box[1].strip());
-	    b = lively.Length.parse(box[2].strip());
-	    r = lively.Length.parse(box[3].strip());
+	    t = lively.data.Length.parse(box[0].strip());
+	    l = lively.data.Length.parse(box[1].strip());
+	    b = lively.data.Length.parse(box[2].strip());
+	    r = lively.data.Length.parse(box[3].strip());
 	    break;
 	default:
 	    console.log("unable to parse padding " + padding);

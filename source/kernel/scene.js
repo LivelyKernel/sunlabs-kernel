@@ -119,7 +119,7 @@ Object.subclass('lively.data.Wrapper', {
     },
     
     getLengthTrait: function(name) {
-	return lively.Length.parse(this.rawNode.getAttributeNS(null, name));
+	return lively.data.Length.parse(this.rawNode.getAttributeNS(null, name));
     },
 
     setLengthTrait: function(name, value) {
@@ -249,6 +249,27 @@ Object.extend(Object.subclass('lively.data.FragmentURI'), {
     }
     
 });
+
+
+// See http://www.w3.org/TR/css3-values/
+// and http://www.w3.org/TR/CSS2/syndata.html#values    
+
+Object.extend(Object.subclass('lively.data.Length'), {
+
+    parse: function(string) {
+	// FIXME: handle units
+	return parseFloat(string);
+    }
+});
+
+
+Object.extend(lively.data.Length.subclass('lively.data.Coordinate'), {
+    parse: function(string) {
+	// FIXME: handle units
+	return parseFloat(string);
+    }
+});
+
 
 
 
@@ -870,11 +891,11 @@ this.Node.subclass('lively.scene.Image', {
     },
 
     getWidth: function(optArg) {
-	return lively.Length.parse((optArg || this.rawNode).getAttributeNS(null, "width"));
+	return lively.data.Length.parse((optArg || this.rawNode).getAttributeNS(null, "width"));
     },
 
     getHeight: function(optArg) {
-	return lively.Length.parse((optArg || this.rawNode).getAttributeNS(null, "height"));
+	return lively.data.Length.parse((optArg || this.rawNode).getAttributeNS(null, "height"));
     },
 
     reload: function() {

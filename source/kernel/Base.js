@@ -1364,25 +1364,6 @@ Object.extend(Relay, {
 namespace('lively');
 
 
-// See http://www.w3.org/TR/css3-values/
-// and http://www.w3.org/TR/CSS2/syndata.html#values    
-
-Object.extend(Object.subclass('lively.Length'), {
-
-    parse: function(string) {
-	// FIXME: handle units
-	return parseFloat(string);
-    }
-});
-
-
-Object.extend(lively.Length.subclass('lively.Coordinate'), {
-    parse: function(string) {
-	// FIXME: handle units
-	return parseFloat(string);
-    }
-});
-
 
 
 
@@ -1404,8 +1385,8 @@ Object.subclass("Point", {
 
     deserialize: function(importer, string) { // reverse of toString
 	var array = string.substring(3, string.length - 1).split(',');
-	this.x = lively.Coordinate.parse(array[0]);
-	this.y = lively.Coordinate.parse(array[1]);
+	this.x = lively.data.Coordinate.parse(array[0]);
+	this.y = lively.data.Coordinate.parse(array[1]);
     },
 
     addPt: function(p) { return new Point(this.x + p.x, this.y + p.y); },
