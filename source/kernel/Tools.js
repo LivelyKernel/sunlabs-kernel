@@ -62,7 +62,7 @@ Widget.subclass('lively.Tools.SystemBrowser', {
         
         if (!module.SourceControl) {
             module.SourceControl = new SourceDatabase();
-            module.SourceControl.scanLKFilesAsync();
+            module.SourceControl.scanLKFiles();
         }
         
         this.setPane1Content(this.rootNode().childNodesAsListItems());
@@ -266,7 +266,7 @@ Object.subclass('lively.Tools.BrowserNode', {
     },
     
     statusMessage: function(string) {
-        this.browser.setStatusMessage(string);
+        this.browser && this.browser.setStatusMessage(string);
     }
     
 });
@@ -431,11 +431,17 @@ module.BrowserNode.subclass('lively.Tools.MethodNode', {
     },
     
     sourceString: function() {
+        if (!module.SourceControl) {
+            this.statusMessage('No SourceDB available, using decompiled source');
+            return '// Decompiled source:\n' + this.target.toString();
+        };
+        
         var source = module.SourceControl.methodDictFor(this.theClass.type)[this.methodName()];
         if (source) {
             this.statusMessage('Source in source control. Native version.');
             return source.getSourceCode();
-        }
+        };
+        
         this.statusMessage('No source in source control. Decompiled version.');
         return '// Decompiled source:\n' + this.target.toString();
     },
@@ -2095,7 +2101,7 @@ ChangeList.subclass('SourceDatabase', {
     },
 
     importKernelFiles: function(list) {
-        this.scanLKFilesAsync();
+        this.scanLKFiles();
 	this.testImportFiles();
     },
     
@@ -2155,13 +2161,10 @@ ChangeList.subclass('SourceDatabase', {
     },
 
     getCachedText: function(fileName) {
-        // Return full text of the named file, installing it in cache if necessary
-        var fileString = this.cachedFullText[fileName];  
-        if (fileString == null) { // Not in cache;  fetch and install
-            fileString = this.getFileContents(fileName);
-            this.cachedFullText[fileName] = fileString;
-            this.editHistory[fileName] = [];
-        }
+        // Return full text of the named file
+        var fileString;
+        var action = function(fileStringArg) { fileString = fileStringArg };
+        this.getCachedTextAsync(fileName, action, true);
         return fileString;
     },
     
@@ -2210,7 +2213,8 @@ ChangeList.subclass('SourceDatabase', {
     },
     
     // ------ async version --------
-    getCachedTextAsync: function(fileName, action) {
+    getCachedTextAsync: function(fileName, action, beSync) {
+        // Calls action with full text of the named file, installing it in cache if necessary
         var fileString = this.cachedFullText[fileName];
         if (fileString) {
             action.call(this, fileString);
@@ -2222,24 +2226,32 @@ ChangeList.subclass('SourceDatabase', {
             this.editHistory[fileName] = [];
             action.call(this, fileString);
         }.bind(this);
-        this.getFileContentsAsync(fileName, prepareDB);
+        this.getFileContentsAsync(fileName, prepareDB, beSync);
     },
     
-    getFileContentsAsync: function(fileName, action) {
+    getFileContentsAsync: function(fileName, action, beSync) {
 	// DI:  This should be simplified - I removed timing (meaningless here for async)
+	// rk: made async optional, added measure of timing again. Even in async mode it might be
+	//     interesting how long it takes to read a file
 	// convenient helper method
-        var actionWrapper = function(fileString) {
-            action.call(this, fileString);
-        }.bind(this);
-        new NetRequest({model: {action: actionWrapper}, setResponseText: 'action'}).get(URL.source.withFilename(fileName));
+	var ms = new Date().getTime();
+	var actionWrapper = function(fileString) {
+	    ms = new Date().getTime() - ms;
+            console.log(fileName + " read in " + ms + " ms.");
+	    action.call(this, fileString);
+	}.bind(this);
+	
+	var request = new NetRequest({model: {callback: actionWrapper}, setResponseText: 'callback'});
+	if (beSync) request.beSync();
+        request.get(URL.source.withFilename(fileName));
     },
     
-    scanLKFilesAsync: function() {
+    scanLKFiles: function(beSync) {
         this.interestingLKFileNames().each(function(fileName) {
             var action = function(fileString) {
                 new FileParser().parseFile(fileName, this.currentVersion(fileName), fileString, this, "import");
             }.bind(this);
-            this.getCachedTextAsync(fileName, action);
+            this.getCachedTextAsync(fileName, action, beSync);
         }, this);
     },
 

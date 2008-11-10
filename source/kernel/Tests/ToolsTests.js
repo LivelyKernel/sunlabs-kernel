@@ -101,7 +101,7 @@ thisModule.NodeTest.subclass('lively.Tests.ToolsTests.NamespaceNodeTest', {
     
     testModeButtons: function() {
         var result = this.sut.buttonSpecs();
-        this.assertEqual(result.length, 2);
+        this.assertEqual(result.length, 3);
         // test if button specs are correct
         this.assertEqual(result[0].label, 'classes');
         this.assert(result[0].action instanceof Function);
@@ -149,7 +149,7 @@ thisModule.NodeTest.subclass('lively.Tests.ToolsTests.MethodNodeTest', {
     },
         
     testSource: function() {
-        this.assertEqual(this.sut.sourceString(), thisModule.testNS.Dummy.prototype.method1.toString());
+        this.assert(this.sut.sourceString().endsWith(thisModule.testNS.Dummy.prototype.method1.toString()));
     },
     
     testEvaluateNewSource: function() {
