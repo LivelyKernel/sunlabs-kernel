@@ -1537,7 +1537,13 @@ Object.extend(Morph, {
     },
 
     fromLiteral: function(literal) {
-	return new Morph(literal.bounds, literal.shape);
+	var morph = new Morph(literal.bounds, literal.shape);
+	if (literal.submorphs) {
+	    if (Object.isArray(literal.submorphs))
+		morph.setSubmorphs(literal.submorphs);
+	    else throw new TypeError();
+	}
+	return morph;
     }
 
 });
@@ -1830,6 +1836,26 @@ Morph.addMethods({
 	this.layoutChanged();
 	return m;
     },
+
+    setSubmorphs: function(morphs) {
+	console.assert(morphs instanceof Array, "not an array");
+	if (morphs != null) {
+	    this.submorphs = [].concat(morphs);
+	    this.submorphs.forEach(function (m) { 
+		if (m.owner) {
+		    var tfm = m.transformForNewOwner(this);
+		    m.owner.removeMorph(m);
+		    m.setTransform(tfm); 
+		} 
+		this.rawNode.appendChild(m.rawNode); 
+		m.owner = this;
+		m.changed();
+		m.layoutChanged();
+	    }, this);
+	}
+	this.layoutChanged();
+    },
+
 
     insertMorph: function(m, isFront) { // low level
 	var insertionPt = this.submorphs.length == 0 ? this.shape.rawNode.nextSibling :
@@ -4886,9 +4912,7 @@ function interactiveEval(text) {
     }
     function $m(morph) {
 	// morphs
-	var array = [];
-	(morph || WorldMorph.current()).submorphs.forEach(function(m) { array.push(m) });
-	return array;
+	return [].concat((morph || WorldMorph.current()).submorphs);
     }
     function $i(id) { // maybe just '$'
 	return document.getElementById(id.toString());
