@@ -184,9 +184,8 @@ TestCase.subclass('lively.Tests.ToolsTests.FileParserTest', {
     
     testCheckExistingMethodDefs: function() {
         var sourceControl = new SourceDatabase();
-        sourceControl.scanLKFiles();
+        sourceControl.scanLKFiles(true);
         var errors = sourceControl.testMethodDefs();
-        // debugger;
         this.assertEqual(errors.length, 0);
     },
     

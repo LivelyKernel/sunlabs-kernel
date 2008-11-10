@@ -640,6 +640,7 @@ Widget.subclass('SimpleBrowser', {
         if (!URL.source.protocol.startsWith("file")) {
             items.push(['import source files', function() {
                 if (! module.SourceControl) module.SourceControl = new SourceDatabase();
+                // Note: the list isn't used anymore in importKernelFiles!
                 module.SourceControl.importKernelFiles(["JSON.js", "miniprototype.js", "defaultconfig.js", "localconfig.js", "Base.js", "scene.js", "Core.js", "Text.js", "Widgets.js", "Network.js", "Data.js", "Storage.js", "Tools.js", "Examples.js", "Main.js"]);
                 WorldMorph.current().setFill(new lively.paint.RadialGradient([Color.rgb(36,188,255), 1, Color.rgb(127,15,0)]));
             }]);
@@ -2101,7 +2102,9 @@ ChangeList.subclass('SourceDatabase', {
     },
 
     importKernelFiles: function(list) {
-        this.scanLKFiles();
+        // rk: list is not used anymore, can we get rid of that method?
+        //     I also assume that the scanning should be syncronous, adding flag for that
+        this.scanLKFiles(true);
 	this.testImportFiles();
     },
     
