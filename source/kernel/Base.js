@@ -2075,3 +2075,64 @@ Record.subclass('lively.data.StyleRecord', {
     }
 
 });
+
+
+
+
+Object.subclass('lively.data.Resolver', {
+    description: "resolves literals to full brown objects",
+    storedClassKey: '$', // type info, normally missing
+    defaultSearchPath: [Global],
+    
+    resolve: function(literal, optStrict, optSearchPath) {
+	var initializer = {};
+	var constr;
+	
+	var type = literal[this.storedClassKey];
+	if (type) {
+	    var path = optSearchPath || this.defaultSearchPath;
+	    for (var i = 0; i < path.length; i++)  {
+		constr = path[i][type];
+		if (constr) 
+		    break;
+	    }
+	} 
+
+	for (var name in literal) {
+	    if (name === this.storedClassKey) continue;
+	    if (!literal.hasOwnProperty(name)) continue;
+	    var value = literal[name];
+	    if (value === null || value === undefined)
+		initializer[name] = value;
+	    else switch (typeof value) {
+	    case "number":
+	    case "string":
+	    case "boolean":
+		initializer[name] = value;
+		break;
+	    case "function":
+		break; // probably an error
+	    case "object": {
+		if (value instanceof Array) {
+		    var array = initializer[name] = [];
+		    for (var i = 0; i < value.length; i++)  {
+			array.push((this.resolve(value[i], optStrict, optSearchPath)));
+		    }
+		} else {
+		    initializer[name] = this.resolve(value, optStrict, optSearchPath);
+		}
+		break;
+	    }
+	    default: 
+		throw new TypeError('unexpeced type of value ' + value);
+	    }
+	}
+
+
+	var reified;
+	if (constr) reified = constr.fromLiteral(initializer);
+	if (optStrict && reified === undefined) throw new Error('not strict?');
+	reified = reified || literal;  // maybe it's not a literal? works well for things like pt() or rect()
+	return reified;
+    }
+});

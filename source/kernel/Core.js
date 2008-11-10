@@ -1537,11 +1537,14 @@ Object.extend(Morph, {
     },
 
     fromLiteral: function(literal) {
-	var morph = new Morph(literal.bounds, literal.shape);
+	var morph = new Morph(literal.bounds, literal.shapeType);
 	if (literal.submorphs) {
 	    if (Object.isArray(literal.submorphs))
 		morph.setSubmorphs(literal.submorphs);
 	    else throw new TypeError();
+	}
+	if (literal.shape) {
+	    morph.setShape(literal.shape);
 	}
 	return morph;
     }
