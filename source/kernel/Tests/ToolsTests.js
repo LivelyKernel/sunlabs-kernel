@@ -226,7 +226,24 @@ TestCase.subclass('lively.Tests.ToolsTests.FileParserTest', {
         this.assertEqual(this.sut.changeList[0].type, 'functionDef');
     }
     
-  
+});
+
+TestCase.subclass('lively.Tests.ToolsTests.AnotherFileParserTest', {
+    
+    setUp: function() {
+        this.sut = new AnotherFileParser();
+        this.sut.verbose = true;
+    },
+    
+    testParseClass: function() {
+        var src = 'Object.subclass(\'Dummy\', {\n' +
+                  '\tsetUp: function() { thisModule.createDummyNamespace() },\n' +
+                  '\ttearDown: function() { thisModule.removeDummyNamespace() }\n' +
+                  '});';
+        this.sut.source = src;
+        this.sut.parseClass
+    }
+    
 });
 
 TestCase.subclass('lively.Tests.ToolsTests.KeyboardTest', {

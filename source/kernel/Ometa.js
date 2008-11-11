@@ -10,6 +10,12 @@ module('Ometa.js').requires('ometa/ometa-base.js', 'ometa/parser.js', 'ometa/bs-
 
 OMetaSupport = {
     
+    loadOmetaGrammarFromFile: function(fileName) {
+        var src = OMetaSupport.fileContent(fileName);
+        var grammar = OMetaSupport.ometaEval(src);
+        return grammar;
+    },
+    
     translateToJs: function(src) {
         var ometaSrc = BSOMetaJSParser.matchAll(src, "topLevel");
         var jsSrc = BSOMetaJSTranslator.match(ometaSrc, "trans");
@@ -19,9 +25,16 @@ OMetaSupport = {
     ometaEval: function(src) {
         var jsSrc = OMetaSupport.translateToJs(src);
         return eval(jsSrc);
+    },
+    
+    fileContent: function(fileName) {
+        var url = URL.source.withFilename(fileName);
+        var resource = new Resource(Record.newPlainInstance({URL: url, ContentText: null}));
+        resource.fetch(true);
+        return resource.getContentText();
     }
     
-}
+};
 
 Widget.subclass('OmetaWorkspace', {
     
@@ -51,7 +64,7 @@ OmetaWorkspace.openOmetaWorkspace = function() {
     var w = new OmetaWorkspace(); 
 	w.openIn(WorldMorph.current(), pt(540, 20));
 	w.panel.textPane.setTextString("ometa Calc {  \n\
-      digit    = super(#digit):d          -> d.digitValue(),\n\
+      digit    = super(#digit):d          -> digitValue(d),\n\
       number   = number:n digit:d         -> (n * 10 + d) \n\
                | digit,\n\
       addExpr  = addExpr:x '+' mulExpr:y  -> (x + y) \n\
@@ -124,6 +137,5 @@ Object.subclass('SyntaxHighlighter', {
         return resource.getContentText();
     }
 });
-
 
 });

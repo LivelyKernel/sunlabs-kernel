@@ -373,17 +373,19 @@ function populateWorldWithExamples(world) {
 
         // Sample executable script pane
         if (Config.showPenScript) {
-	    var parser = new CodeMarkupParser(URL.source.withFilename('Pen.lkml'));
-	    parser.onComplete = function() {
-		var widget;
-		if (Config.showTestText) widget = new TestTextMorph(pt(50,30).extent(pt(250,50)), Pen.script);
-		else widget = new TextMorph(pt(50,30).extent(pt(250,50)), Pen.script);
-		widget.align(widget.bounds().bottomRight(), world.bounds().topRight().addPt(pt(-150,100))); 
-		if (Config.showHilbertFun) Pen.hilbertFun(devWorld.myWorld, widget.bounds().bottomLeft().addXY(180,80));
-		devWorld.myWorld.addMorph(widget);
-		if(Config.tryFasteroids) lively.examples.installFasteroids(world, new Rectangle(150, 100, 600, 400));
-	    }
-	    parser.parse();
+            require('lively.Tools').toRun(function() {
+                var parser = new CodeMarkupParser(URL.source.withFilename('Pen.lkml'));
+	        parser.onComplete = function() {
+		    var widget;
+		    if (Config.showTestText) widget = new TestTextMorph(pt(50,30).extent(pt(250,50)), Pen.script);
+		    else widget = new TextMorph(pt(50,30).extent(pt(250,50)), Pen.script);
+		    widget.align(widget.bounds().bottomRight(), world.bounds().topRight().addPt(pt(-150,100))); 
+		    if (Config.showHilbertFun) Pen.hilbertFun(devWorld.myWorld, widget.bounds().bottomLeft().addXY(180,80));
+		    devWorld.myWorld.addMorph(widget);
+		    if(Config.tryFasteroids) lively.examples.installFasteroids(world, new Rectangle(150, 100, 600, 400));
+	        }
+	        parser.parse();    
+            });
         }
 
         if (Config.showWebStore()) {

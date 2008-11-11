@@ -2,7 +2,7 @@
 ometa BSNullOptimization {
   setHelped = !($elf._didSomething = true),
   helped    = ?$elf._didSomething,
-  trans     = [:t ?$elf.hasProperty(t) apply(t):ans] -> ans
+  trans     = [:t ?hasProperty($elf,t) apply(t):ans] -> ans
             | anything,
   optimize  = trans:x helped     -> x,
 

@@ -381,7 +381,7 @@ var Class = {
     },
     
     isValidIdentifier: function(str) {
-	return (/^(?:[a-zA-Z_]\w*[.])*[a-zA-Z_]\w*$/).test(str);
+	return (/^(?:[a-zA-Z_][\w\-]*[.])*[a-zA-Z_][\w\-]*$/).test(str);
     },
     
     isClass: function(object) {

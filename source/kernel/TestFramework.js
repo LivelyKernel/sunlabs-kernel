@@ -556,10 +556,13 @@ Widget.subclass('ErrorStackViewer', {
 });
 
 // For convenience
+require('lively.Tools').toRun(function() {
 SimpleInspector.inspectObj = function(object) {
     new SimpleInspector(object).openIn(WorldMorph.current(), pt(200,10))
 };
-inspectObj = SimpleInspector.inspectObj;
+Global.inspectObj = SimpleInspector.inspectObj;
+});
+
     
 /* 
  * *** Error properties for documentation: ***

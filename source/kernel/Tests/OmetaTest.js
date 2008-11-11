@@ -123,7 +123,7 @@ TestCase.subclass('OmetaTest', {
         var s = "3+ 4";
         var tree = BSOMetaJSParser.matchAll(s, "topLevel");
         this.assert(tree, " is defined");
-        this.assertEqual(tree.toOmetaString(), "[begin, [binop, +, [number, 3], [number, 4]]]");
+        this.assertEqual(toOmetaString(tree), "[begin, [binop, +, [number, 3], [number, 4]]]");
     },
 
     testBSOMetaJSTranslator: function() {
@@ -145,7 +145,7 @@ TestCase.subclass('OmetaTest', {
 });
 
 OmetaTest.ometaSampleInterpeter = "        ometa Calc {  \n\
-  digit    = super(#digit):d          -> d.digitValue(),\n\
+  digit    = super(#digit):d          -> digitValue(d),\n\
   number   = number:n digit:d         -> (n * 10 + d) \n\
            | digit,\n\
   addExpr  = addExpr:x '+' mulExpr:y  -> (x + y) \n\

@@ -13,7 +13,7 @@
  * object inspector, style editor, and profiling and debugging capabilities.  
  */
 
-module('lively.Tools').requires('lively.Text').toRun(function(module, text) {
+module('lively.Tools').requires('lively.Text', 'lively.Ometa').toRun(function(module, text) {
 
 // Modules: "+Modules" --> setModule in model
 // Modules: "-Modules" --> getModule in model
@@ -1848,6 +1848,22 @@ Object.subclass('FileParser', {
     
 });
 
+// ===========================================================================
+// Another File Parser - to see how fast OMeta is
+// ===========================================================================
+
+// Object.subclass('AnotherFileParser', {
+//     
+//     this.grammarFile = 'LKFileParser.txt',
+//     
+//     initialize: function() {
+//         this.grammar = OMetaSupport.loadOmetaGrammarFromFile(this.grammarFile);
+//     },
+//     
+//     parseClass: function() {
+//         
+//     }
+// });
 
 // ===========================================================================
 // ChangeList

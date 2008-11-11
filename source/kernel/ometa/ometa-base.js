@@ -38,8 +38,8 @@
 
 /*
 // ometa M {
-//   number = number:n digit:d -> { n * 10 + d.digitValue() }
-//          | digit:d          -> { d.digitValue() }.
+//   number = number:n digit:d -> { n * 10 + digitValue(d) }
+//          | digit:d          -> { digitValue(d) }.
 // }
 
 try {
@@ -51,12 +51,12 @@ try {
           var n, d
           n = $elf._apply("number")
           d = $elf._apply("digit")
-          return n * 10 + d.digitValue()
+          return n * 10 + digitValue(d)
         },
         function() {
           var d
           d = $elf._apply("digit")
-          return d.digitValue()
+          return digitValue(d)
         }
       )
     }
@@ -280,17 +280,17 @@ OMeta = {
   },
   number: function() {
     var r = this._apply("anything")
-    this._pred(r.isNumber())
+    this._pred(isNumber(r))
     return r
   },
   string: function() {
     var r = this._apply("anything")
-    this._pred(r.isString())
+    this._pred(Object.isString(r))
     return r
   },
   "char": function() {
     var r = this._apply("anything")
-    this._pred(r.isCharacter())
+    this._pred(isCharacter(r))
     return r
   },
   space: function() {
@@ -304,17 +304,17 @@ OMeta = {
   },
   digit: function() {
     var r = this._apply("char")
-    this._pred(r.isDigit())
+    this._pred(isDigit(r))
     return r
   },
   lower: function() {
     var r = this._apply("char")
-    this._pred(r.isLower())
+    this._pred(isLower(r))
     return r
   },
   upper: function() {
     var r = this._apply("char")
-    this._pred(r.isUpper())
+    this._pred(isUpper(r))
     return r
   },
   letter: function() {
