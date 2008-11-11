@@ -4012,7 +4012,7 @@ PasteUpMorph.subclass("WorldMorph", {
             ["File Browser", function(evt) { new FileBrowser().openIn(world, evt.point()) }],
             ["Console", function(evt) {world.addFramedMorph(new ConsoleWidget(50).buildView(pt(800, 100)), "Console", evt.point()); }],
             ["Object Hierarchy Browser", function(evt) { new ObjectBrowser().openIn(world, evt.point()); }],    
-            ["TestRunner", function(evt) { new TestRunner().openIn(world, evt.point()); }],
+            ["TestRunner", function(evt) { require('lively.TestFramework').toRun(function() { new TestRunner().openIn(world, evt.point()) }) }],
             ["OmetaWorkspace", function(evt) { new OmetaWorkspace().openIn(world, evt.point()); }],
     	    ["Call Stack Viewer", function(evt) { 
     		if (Config.debugExtras) lively.lang.Execution.showStack("use viewer");
