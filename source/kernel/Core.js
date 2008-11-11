@@ -4020,6 +4020,9 @@ PasteUpMorph.subclass("WorldMorph", {
             ["FrameRateMorph", function(evt) {
                 var m = world.addMorph(new FrameRateMorph(evt.point().extent(pt(160, 10)), "FrameRateMorph"));
                 m.startSteppingScripts(); }],
+            ["EllipseMaker", function(evt) {
+                var m = world.addMorph(new EllipseMakerMorph(evt.point()));
+                m.startSteppingScripts(); }],
     	    ["XHTML Browser", function(evt) { 
     		var xeno = new XenoBrowserWidget('sample.xhtml');
     		xeno.openIn(world, evt.point()); 

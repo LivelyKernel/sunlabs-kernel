@@ -1654,37 +1654,60 @@ TextMorph.subclass('FrameRateMorph', {
 // ===========================================================================
 ButtonMorph.subclass('EllipseMakerMorph', {
 
-    initialize: function($super, rect, textString) {
+    initialize: function($super, loc) {
 	// Under construction -- will be a button that emits bouncing ellipses
 	// to test graphical performance in conjunction with FrameRateMorph
-        $super(rect, textString);
-        this.reset(new Date());
+        $super(loc.extent(pt(200, 50)));
+	this.ellipses = [];
+        this.report();
+	this.repRate = 200; // ms
+	this.lastTick = new Date().getTime();
+    	this.connectModel({model: this, getValue: "getThisValue", setValue: "setThisValue"});
+	this.pushed = false;
     },
-
-    reset: function(date) {
-        this.lastTick = date.getSeconds();
-        this.lastMS = date.getTime();
-        this.stepsSinceTick = 0;
-        this.maxLatency = 0;
+    setThisValue: function(bool) {
+        this.pushed = bool;
+	console.log("this.pushed = " + this.pushed);
     },
+    getThisValue: function(bool) { return this.pushed },
 
+    makeNewEllipse: function(date) {
+        var e = new Morph(new Rectangle(0, 0, 50, 50), "ellipse");
+	e.setFill(Color.random());
+	e.velocity = pt(20,20).random();
+	e.bounceInBounds = this.bounceInBounds;
+	this.world().addMorph(e);
+	this.ellipses.push(e);
+	this.report()
+    },
+    report: function(date) {
+        this.setLabel("Make more ellipses (" + this.ellipses.length + ")");
+    },
     nextStep: function() {
-        var date = new Date();
-        this.stepsSinceTick ++;
-        var nowMS = date.getTime();
-        this.maxLatency = Math.max(this.maxLatency, nowMS - this.lastMS);
-        this.lastMS = nowMS;
-        var nowTick = date.getSeconds();
-        if (nowTick != this.lastTick) {
-            this.lastTick = nowTick;
-            var ms = (1000 / Math.max(this. stepsSinceTick,1)).roundTo(1);
-            this.setTextString(this.stepsSinceTick + " frames/sec (" + ms + "ms avg),\nmax latency " + this.maxLatency + " ms.");
-            this.reset(date);
-        }
+        this.stepEllipses();
+	if (!this.pushed) return;
+	var thisTick = new Date().getTime();
+	if (thisTick - this.lastTick < this.repRate) return;
+	this.makeNewEllipse();
+	this.lastTick = thisTick;
     },
-
-    startSteppingScripts: function() { this.startStepping(1,'nextStep'); }
-
+    stepEllipses: function() {
+        this.ellipses.forEach( function(e) { e.moveBy(e.velocity); e.bounceInBounds(); });
+    },
+    bounceInBounds: function() {
+	// should be in particles protocol of Morph
+        var b = this.bounds();
+	var ob = this.owner.innerBounds()
+	if (b.x < ob.x || b.maxX() > ob.maxX()) {
+		this.velocity = this.velocity.scaleByPt(pt(-1, 1));
+		this.moveBy(this.velocity);
+	}
+	if (b.y < ob.y || b.maxY() > ob.maxY()) {
+		this.velocity = this.velocity.scaleByPt(pt(1, -1));
+		this.moveBy(this.velocity);
+	}
+    },
+    startSteppingScripts: function() { this.startStepping(30,'nextStep'); }
 });
 
 
