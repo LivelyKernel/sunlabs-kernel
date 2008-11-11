@@ -276,7 +276,7 @@ Widget.subclass('TestRunner', {
 
 	viewTitle: "TestRunner",
 	initialViewExtent: pt(600,500),
-	pins: ['+TestClasses', 'SelectedTestClass', 'ResultText', 'FailureList'],
+	pins: ['+TestClasses', 'SelectedTestClass', 'ResultText', 'FailureList', 'Failure'],
 	ctx: {},
 	
 	initialize: function($super) {
@@ -391,11 +391,12 @@ Widget.subclass('TestRunner', {
 		var failuresList = panel.failuresList;
 		failuresList.connectModel({model: model, getList: "getFailureList", setSelection: "setFailure"});
 		// quick hack for building stackList
-		model.setFailure = (function(failureDescription) {
+		model.setFailure = model.setFailure.wrap(function(proceed, failureDescription) {
 			// FIXME: put his in testResult
-			var i = this.testObject.result.failureList().indexOf(failureDescription);
-			this.openErrorStackViewer(this.testObject.result.failed[i]);
-		}).bind(this);
+			proceed(failureDescription);
+			var i = self.testObject.result.failureList().indexOf(failureDescription);
+			self.openErrorStackViewer(self.testObject.result.failed[i]);
+		});
 		
 		return panel;
 		},
@@ -405,8 +406,10 @@ Widget.subclass('TestRunner', {
 	},
 	
 	openErrorStackViewer: function(testFailedObj) {
-	    if (!failedDebugObj) return;
-		var testCase = new Global[testFailedObj.classname]();
+
+	    if (!testFailedObj) return;
+	    
+		var testCase = new (Class.forName(testFailedObj.classname))();
 		var failedDebugObj = testCase.debugTest(testFailedObj.selector);
 
 		if (!failedDebugObj.err.stack) {
