@@ -157,9 +157,10 @@ Morph.subclass('ButtonMorph', {
     setLabel: function(txt) {
         this.label && this.label.remove();
         // FIXME remove random values
-        var l = this.label = new TextMorph(new Rectangle(0, 0, 50, 20), txt).beLabel();
-        l.align(l.bounds().center(), this.innerBounds().center());
-        this.addMorph(l);
+        //var l = this.label = new TextMorph(new Rectangle(0, 0, 50, 20), txt).beLabel();
+        //l.align(l.bounds().center(), this.innerBounds().center());
+	this.label = TextMorph.makeLabel(txt).centerAt(this.innerBounds().center());
+        this.addMorph(this.label);
         return this;
     }
 

@@ -1617,6 +1617,46 @@ WidgetModel.subclass('StackViewer', {
 TextMorph.subclass('FrameRateMorph', {
 
     initialize: function($super, rect, textString) {
+	// Steps at maximum speed, and gathers stats on ticks per sec and max latency
+        $super(rect, textString);
+        this.reset(new Date());
+    },
+
+    reset: function(date) {
+        this.lastTick = date.getSeconds();
+        this.lastMS = date.getTime();
+        this.stepsSinceTick = 0;
+        this.maxLatency = 0;
+    },
+
+    nextStep: function() {
+        var date = new Date();
+        this.stepsSinceTick ++;
+        var nowMS = date.getTime();
+        this.maxLatency = Math.max(this.maxLatency, nowMS - this.lastMS);
+        this.lastMS = nowMS;
+        var nowTick = date.getSeconds();
+        if (nowTick != this.lastTick) {
+            this.lastTick = nowTick;
+            var ms = (1000 / Math.max(this. stepsSinceTick,1)).roundTo(1);
+            this.setTextString(this.stepsSinceTick + " frames/sec (" + ms + "ms avg),\nmax latency " + this.maxLatency + " ms.");
+            this.reset(date);
+        }
+    },
+
+    startSteppingScripts: function() { this.startStepping(1,'nextStep'); }
+
+});
+
+
+// ===========================================================================
+// EllipseMaker
+// ===========================================================================
+ButtonMorph.subclass('EllipseMakerMorph', {
+
+    initialize: function($super, rect, textString) {
+	// Under construction -- will be a button that emits bouncing ellipses
+	// to test graphical performance in conjunction with FrameRateMorph
         $super(rect, textString);
         this.reset(new Date());
     },
