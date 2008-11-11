@@ -124,7 +124,7 @@ Object.subclass('TestCase', {
 		};
 		var cmp = function(left, right) {
 			for (var value in left) {
-				if (!(left[value] instanceof Function)) {
+				if (!(left[value] instanceof Function) && !(right[value] instanceof Function)) {
 					this.log('comparing: ' + left[value] + ' ' + right[value]);
 					try {
 					    this.assertEqualState(left[value], right[value], msg);
