@@ -52,7 +52,7 @@ Widget.subclass('OmetaWorkspace', {
         	    console.log('error evaling ometa: ' + e) };
         	return result;
          };
-        return pane;
+        return panel;
     }
     
 });

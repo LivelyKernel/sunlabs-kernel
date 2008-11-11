@@ -235,13 +235,18 @@ TestCase.subclass('lively.Tests.ToolsTests.AnotherFileParserTest', {
         this.sut.verbose = true;
     },
     
-    testParseClass: function() {
+    testParseClass01: function() {
         var src = 'Object.subclass(\'Dummy\', {\n' +
                   '\tsetUp: function() { thisModule.createDummyNamespace() },\n' +
                   '\ttearDown: function() { thisModule.removeDummyNamespace() }\n' +
-                  '});';
+                  '})';
         this.sut.source = src;
-        this.sut.parseClass
+        var descriptor = this.sut.parseClass();
+        this.assert(descriptor);
+        this.assertEqual(descriptor.name, 'Dummy');
+        this.assertEqual(descriptor.superclassName, 'Object');
+        this.assertEqual(descriptor.startIndex, 0);
+        this.assertEqual(descriptor.stopIndex, src.length-1);
     }
     
 });

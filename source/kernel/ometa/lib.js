@@ -25,7 +25,8 @@
 
 // try to use StringBuffer instead of string concatenation to improve performance
 
-
+module('ometa/lib.js').requires().toRun(function() {
+    
 function StringBuffer() {
   this.strings = []
   for (var idx = 0; idx < arguments.length; idx++)
@@ -204,3 +205,4 @@ String.prototype.toProgramString = function() {
 function tempnam(s) { return (s ? s : "_tmpnam_") + tempnam.n++ }
 tempnam.n = 0
 
+});

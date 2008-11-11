@@ -13,7 +13,7 @@
  * object inspector, style editor, and profiling and debugging capabilities.  
  */
 
-module('lively.Tools').requires('lively.Text', 'lively.Ometa').toRun(function(module, text) {
+module('lively.Tools').requires('lively.Text' /*,'lively.Ometa'*/).toRun(function(module, text) {
 
 // Modules: "+Modules" --> setModule in model
 // Modules: "-Modules" --> getModule in model
@@ -1917,14 +1917,20 @@ Object.subclass('FileParser', {
 
 // Object.subclass('AnotherFileParser', {
 //     
-//     this.grammarFile = 'LKFileParser.txt',
+//     grammarFile: 'LKFileParser.txt',
 //     
-//     initialize: function() {
+//     initialize: function(source) {
+//         this.source = source;
 //         this.grammar = OMetaSupport.loadOmetaGrammarFromFile(this.grammarFile);
 //     },
 //     
 //     parseClass: function() {
-//         
+//         var ms = new Date().getTime();
+//         this.grammar.parser = this;
+//         var classDescriptor = this.grammar.matchAll(this.source, 'klassDef');
+//         ms = new Date().getTime() - ms;
+//         console.log('parsed class in ' + ms + ' ms');
+//         return classDescriptor;
 //     }
 // });
 
@@ -2257,6 +2263,11 @@ ChangeList.subclass('SourceDatabase', {
             return methodDefs.concat(Object.values(classDef));
         });
         var defsWithError = methodDefs.select(function(ea) {
+            if (Object.isFunction(ea) || !ea.getSourceCode) {
+                console.log('No MethodDescriptor ' + ea);
+                ea.error = 'Problem with descriptor, it is itself a function!';
+                return true;
+            };
             var error = this.checkBracketError(ea.getSourceCode());
             if (!error) return false;
             console.log('MethodDescriptor ' + ea.name + ' has an error.');

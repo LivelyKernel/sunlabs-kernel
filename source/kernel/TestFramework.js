@@ -124,7 +124,7 @@ Object.subclass('TestCase', {
 		};
 		var cmp = function(left, right) {
 			for (var value in left) {
-				if (!(left[value] instanceof Function) && !(right[value] instanceof Function)) {
+				if (!(left[value] instanceof Function)) {
 					this.log('comparing: ' + left[value] + ' ' + right[value]);
 					try {
 					    this.assertEqualState(left[value], right[value], msg);
@@ -268,13 +268,10 @@ Object.subclass('TestResult', {
 	}
 });
 
-/**
- * @class TestRunner
- * Just a simple Tool for running tests in the LivelyKernel environment
- */
 Widget.subclass('TestRunner', {
 
 	viewTitle: "TestRunner",
+	documentation: 'Just a simple Tool for running tests in the Lively Kernel environment',
 	initialViewExtent: pt(600,500),
 	pins: ['+TestClasses', 'SelectedTestClass', 'ResultText', 'FailureList', 'Failure'],
 	ctx: {},
