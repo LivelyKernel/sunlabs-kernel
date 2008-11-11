@@ -2201,7 +2201,6 @@ TextMorph.addMethods({
 Object.extend(TextMorph, {
     makeLabel: function(labelString, fontSize) {
 	var label = new TextMorph(new Rectangle(0,0,200,100), labelString);
-	//label.applyStyle({borderWidth: 0, fill: null, wrapStyle: lively.Text.WrapStyle.Shrink, fontSize: (fontSize || 12), padding: Rectangle.inset(0)});
 	label.beLabel(fontSize)
 	return label;
     }
