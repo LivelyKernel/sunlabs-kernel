@@ -1224,13 +1224,13 @@ TestCase.subclass('ComponentMorphTest', {
         var pane = morph.addTextPane();
         
         // look if everything is ok
-        var expectedExtent = morph.getExtent().subPt(pt(morph.inset, morph.inset).scaleBy(2));
+        var expectedExtent = morph.getExtent().subPt(morph.padding.topLeft().scaleBy(2));
         this.assertEqual(pane.getExtent(), expectedExtent, 'initial Extent of exisiting morph not correct');
         
         
         var totalShrinkHeight = 20;
         var result = morph.getBoundsAndShrinkIfNecessary(totalShrinkHeight);
-        var i = morph.inset;
+        var i = morph.padding.left();
         // this.assertEqualState(result, new Rectangle(i, 100 - 20 - (i * 2), 100 - i, 100 - i));
         this.assert(pane.getExtent().leqPt(expectedExtent.subPt(pt(0, totalShrinkHeight))),
             'shrink not correct');
@@ -1257,7 +1257,7 @@ TestCase.subclass('ComponentMorphTest', {
     //     var morph = new ComponentMorph(new Rectangle(0,0,100,100));
     //     var pane = morph.addTextPane();
     //     var list = morph.addListPane();
-    //     var expectedExtent = morph.getExtent().subPt(pt(morph.inset, morph.inset).scaleBy(2));
+		  //     var expectedExtent = morph.getExtent().subPt(morph.padding.topLeft()).scaleBy(2));
     //     var heightTakenByPaneAndList = pane.bounds().topLeft().dist(list.bounds().bottomLeft());
     //     this.assertEqual(heightTakenByPaneAndList, expectedExtent.y, 'initial Extent of exisiting morph not correct');
     //     var totalShrinkHeight = 20;

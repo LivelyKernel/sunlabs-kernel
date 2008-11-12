@@ -1262,7 +1262,7 @@ Widget.subclass('PinConnector', {
 
 BoxMorph.subclass('ComponentMorph', {
     
-    inset: 7,
+    padding: Rectangle.inset(7),
     defaultExtent: pt(180,100),
 
     initialize: function($super, bounds) {
@@ -1342,9 +1342,6 @@ BoxMorph.subclass('ComponentMorph', {
         return this; 
     },
     
-    innerBounds: function($super) {
-        return $super().insetByRect(pt(this.inset, this.inset).asRectangle());
-    },
     
     // addMorph and layout logic
     addMorph: function($super, morph, accessorname) {
@@ -1352,8 +1349,8 @@ BoxMorph.subclass('ComponentMorph', {
         if (morph.formalModel) {
             this.submorphs.each(function(ea) { ea.remove() });
             $super(morph);
-            this.setExtent(morph.getExtent().addPt(pt(this.inset * 2, this.inset * 2)));
-            morph.setPosition(pt(this.inset, this.inset));
+            this.setExtent(morph.getExtent().addPt(pt(this.padding.left() * 2, this.padding.top() * 2)));
+            morph.setPosition(pt(this.padding.left(), this.padding.top()));
             this.component.adoptToModel(morph.formalModel);
             return morph;
         };
@@ -1383,15 +1380,15 @@ BoxMorph.subclass('ComponentMorph', {
     
     getBoundsAndShrinkIfNecessary: function(minHeight) {
         // assume that we have all the space
-        var topLeft = pt(this.inset, this.inset);
-        var bottomRight = this.getExtent().subPt(pt(this.inset, this.inset));
+        var topLeft = pt(this.padding.left(), this.padding.top());
+        var bottomRight = this.getExtent().subPt(pt(this.padding.right(), this.padding.bottom()));
         // see if other morphs are there and if yes shrink them so that minHeight fits into this
         var otherRelevantMorphs = this.submorphs.reject(function(ea) { return ea.constructor === PinMorph});
         if (otherRelevantMorphs.length > 0) {
             this.adoptSubmorphsToNewExtent(this.getPosition(), this.getExtent(),
                 this.getPosition(), this.getExtent().subPt(pt(0, minHeight)));
             // new topLeft so that we can put morph below the last one. let inset/2 space between morphs
-            topLeft = topLeft.addPt(pt(0, bottomRight.y - minHeight - this.inset / 2));
+            topLeft = topLeft.addPt(pt(0, bottomRight.y - minHeight - this.padding.top() / 2));
         };
         return rect(topLeft, bottomRight);
     },
@@ -1479,8 +1476,8 @@ BoxMorph.subclass('ComponentMorph', {
         morph.reshape = morph.reshape.wrap(function(proceed, partName, newPoint, handle, lastCall) {
             proceed(partName, newPoint, handle, lastCall);
             var owner = this.owner;
-            if (owner.getExtent().subPt(pt(owner.inset, owner.inset)).y < this.bounds().extent().y) {
-                owner.setExtent(this.getExtent().addPt(pt(owner.inset, owner.inset)));
+            if (owner.getExtent().subPt(pt(owner.padding.topLeft())).y < this.bounds().extent().y) {
+                owner.setExtent(this.getExtent().addPt(owner.padding.topLeft()));
             }
         });
         
@@ -1514,7 +1511,7 @@ BoxMorph.subclass('ComponentMorph', {
      * FIXME what about adoptToBoundsChange???
      */
     reshape: function($super, partName, newPoint, handle, lastCall) {
-        var insetPt = pt(this.inset, this.inset);
+        var insetPt = this.padding.topLeft();
         var priorExtent = this.getExtent().subPt(insetPt);
         var priorPosition = this.getPosition();
         var deltaPos = pt(0,0);
@@ -2001,7 +1998,7 @@ SelectionMorph.subclass('UserFrameMorph', {
 /* Morph and Component for encapsulating other components */
 ComponentMorph.subclass('FabrikMorph', {
     
-    inset: 0,
+    padding: Rectangle.inset(0),
     
     initialize: function($super, bounds) {
         $super(bounds);
@@ -2844,9 +2841,9 @@ Object.subclass('FlowLayout', {
     
     initialize: function(morphToLayout) {
         this.morphToLayout = morphToLayout;
-        this.inset = 20; 
-        this.positionX = this.inset;
-        this.positionY = this.inset;
+        this.padding = Rectangle.inset(20);
+        this.positionX = this.padding.left();
+        this.positionY = this.padding.top();
         this.maxHeight = 0;
     },
     
@@ -2864,13 +2861,13 @@ Object.subclass('FlowLayout', {
     setPositionFor: function(submorph) {
         //var bounds = rect(submorph.getPosition(), submorph.getExtent());
         var bounds = submorph.bounds();
-        if ((this.positionX + bounds.width + this.inset) > this.morphToLayout.bounds().right()) {
-            this.positionX = this.inset; // start left
-            this.positionY += this.maxHeight + this.inset; // on a new line
+        if ((this.positionX + bounds.width + this.padding.right()) > this.morphToLayout.bounds().right()) {
+            this.positionX = this.padding.left(); // start left
+            this.positionY += this.maxHeight + this.padding.top(); // on a new line
             this.maxHeight = 0; // and reset maxHeigth for that new line
         };
         submorph.setPosition(pt(this.positionX, this.positionY));
-        this.positionX += bounds.width + this.inset;
+        this.positionX += bounds.width + this.padding.left();
         if (bounds.height > this.maxHeight) this.maxHeight = bounds.height;
     }
 

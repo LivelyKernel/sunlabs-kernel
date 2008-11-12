@@ -973,11 +973,6 @@ BoxMorph.subclass("TextMorph", {
 	if (spec.textColor !== undefined) {
 	    this.setTextColor(spec.textColor);
 	}
-	if (spec.padding !== undefined) {
-	    if (!(spec.padding instanceof Rectangle)) 
-		throw new TypeError(spec.padding + ' not a Rectangle');
-	    this.padding = spec.padding;
-	}
 	return this;
     },
     
@@ -992,8 +987,6 @@ BoxMorph.subclass("TextMorph", {
 	if (this.textColor !== TextMorph.prototype.textColor) {
 	    spec.textColor = this.textColor;
 	}
-
-	
 	return spec;
     },
     
@@ -1140,10 +1133,6 @@ BoxMorph.subclass("TextMorph", {
         return this.shape.bounds().topLeft().addPt(this.padding.topLeft()); 
     },
     
-    // ??
-    innerBounds: function() { 
-        return this.shape.bounds().insetByRect(this.padding);
-    },
     
     ensureRendered: function() { // created on demand and cached
         if (this.ensureTextString() == null) return null;
@@ -1450,9 +1439,8 @@ BoxMorph.subclass("TextMorph", {
     handlesMouseDown: function(evt) {
         // Do selecting if click is in selectable area
         if (evt.isCommandKey()) return false;
-         var selectableArea = this.openForDragAndDrop
-	    ? this.shape.bounds().insetByRect(this.padding) : this.shape.bounds();
-       return selectableArea.containsPoint(this.localize(evt.mousePoint)); 
+        var selectableArea = this.openForDragAndDrop ? this.innerBounds() : this.shape.bounds();
+	return selectableArea.containsPoint(this.localize(evt.mousePoint)); 
     },
 
     onMouseDown: function(evt) {
