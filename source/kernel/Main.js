@@ -351,7 +351,6 @@ function populateWorldWithExamples(world) {
 	    }
 	    importer.loadMarkup(URL.source.withFilename("slide.xhtml"));
 	    
-	    
 	} else { 
 	    var link = makeSlideWorld(world);
 	    addLinkLabel(link, "Simple example morphs");

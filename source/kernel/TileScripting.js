@@ -65,7 +65,7 @@ Widget.subclass('lively.TileScripting.TileBox', {
         panel.suppressHandles = true;
         
         var defaultCreateFunc = function(theClass, optExtent) {
-            return new theClass(optExtent && optExtent.extentAsRectangle());
+            return new theClass((optExtent || pt(0,0)).extentAsRectangle());
         };
         [thisModule.IfTile, thisModule.DebugTile, thisModule.NumberTile].each(function(ea) {
             this.add(defaultCreateFunc.curry(ea), null, null, panel);
@@ -168,7 +168,7 @@ Morph.subclass('lively.TileScripting.TileHolder', {
     formals: ["Value"],
     
     initialize: function($super, bounds) {
-        $super(bounds, "rect");
+        $super(new lively.scene.Rectangle(bounds));
         this.setFill(Color.gray.lighter());
         this.layout = this.layout.curry(true); // no resizing on layout --> FIXME
         this.closeDnD();
@@ -287,7 +287,7 @@ Morph.subclass('lively.TileScripting.Tile', {
     
     initialize: function($super, bounds) {
         if (!bounds) bounds = this.defaultExtent.extentAsRectangle();
-        $super(bounds, "rect");
+        $super(new lively.scene.Rectangle(bounds));
         this.suppressHandles = true;
         this.setFill(new Color(0.6, 0.7, 0.8));
         this.setBorderWidth(0);
@@ -315,7 +315,7 @@ thisModule.Tile.subclass('lively.TileScripting.DebugTile', {
     layoutSpec: {layouterClass: null},
     
     initialize: function($super, bounds, sourceString) {
-        $super(bounds, "rect");
+        $super(new lively.scene.Rectangle(bounds));
         
         this.text = this.addMorph(new TextMorph(this.shape.bounds().insetBy(5)));
         this.text.autoAccept
@@ -332,7 +332,7 @@ thisModule.Tile.subclass('lively.TileScripting.DebugTile', {
 thisModule.Tile.subclass('lively.TileScripting.ObjectTile', {
     
     initialize: function($super, bounds, targetMorphOrObject) {
-        $super(bounds, "rect");
+        $super(new lively.scene.Rectangle(bounds));
         
         this.targetMorph = null;
         this.opTile = null;
@@ -471,7 +471,7 @@ Object.subclass('lively.TileScripting.TileMenuCreator', {
 thisModule.Tile.subclass('lively.TileScripting.FunctionTile', {
     
     initialize: function($super, bounds, methodName) {
-        $super(bounds, "rect");
+        $super(new lively.scene.Rectangle(bounds));
 
         this.text1 = this.addMorph(new TextMorph(new Rectangle(0,0,20,15), '.' + methodName + '('));
         this.text1.beLabel();
@@ -505,7 +505,7 @@ thisModule.Tile.subclass('lively.TileScripting.FunctionTile', {
 thisModule.Tile.subclass('lively.TileScripting.IfTile', {
     
     initialize: function($super, bounds) {
-        $super(bounds, "rect");
+        $super(new lively.scene.Rectangle(bounds));
         this.addMorph(new TextMorph(new Rectangle(0,0,20,this.bounds().height), 'if').beLabel());
         this.testExprDropArea = this.addMorph(new thisModule.DropArea(new Rectangle(0,0,50,this.getExtent().y)));
         this.exprDropArea = this.addMorph(new thisModule.DropArea(new Rectangle(0,0,50,this.getExtent().y)));
@@ -523,7 +523,7 @@ thisModule.Tile.subclass('lively.TileScripting.NumberTile', {
     
     initialize: function($super, bounds) {
         bounds = pt(50,20).extentAsRectangle();
-        $super(bounds, "rect");
+        $super(new lively.scene.Rectangle(bounds));
         this.numberText = this.addMorph(new TextMorph(pt(30,20).extentAsRectangle(), '1').beLabel());
         this.addUpDownButtons();
         this.layout();
@@ -576,7 +576,7 @@ Morph.subclass('lively.TileScripting.DropArea', {
     layoutSpec: {layouterClass: VLayout},
     
     initialize: function($super, bounds, actionWhenDropped) {
-        $super(bounds, "rect");
+        $super(new lively.scene.Rectangle(bounds));
         this.suppressHandles = true;
         this.styleNormal();
         this.actionWhenDropped = actionWhenDropped;
