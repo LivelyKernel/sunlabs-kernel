@@ -1002,9 +1002,10 @@ BoxMorph.subclass("TextMorph", {
         }
     },
     
-
-    beLabel: function(fontSize) {
-	this.applyStyle({borderWidth: 0, fill: null, wrapStyle: thisModule.WrapStyle.Shrink, fontSize: (fontSize || 12), padding: Rectangle.inset(0)});
+    beLabel: function(styleMods) {
+	// Note default style is applied first, then any additional specified
+	this.applyStyle({borderWidth: 0, fill: null, wrapStyle: thisModule.WrapStyle.Shrink, fontSize: 12, padding: Rectangle.inset(0)});
+	if (styleMods) this.applyStyle(styleMods);
 	this.ignoreEvents();
         // this.isAccepting = false;
         this.layoutChanged();
@@ -2181,9 +2182,9 @@ TextMorph.addMethods({
 
 
 Object.extend(TextMorph, {
-    makeLabel: function(labelString, fontSize) {
+    makeLabel: function(labelString, styleIfAny) {
 	var label = new TextMorph(new Rectangle(0,0,200,100), labelString);
-	label.beLabel(fontSize)
+	label.beLabel(styleIfAny)
 	return label;
     }
 });
@@ -2276,7 +2277,7 @@ TextMorph.subclass('TestTextMorph', {
 
 Morph.subclass('LabeledTextMorph', {
 
-    documentation: "Morph that contains a small label and a TextMorph. Clipps when TextMorphs growes larger than maxExtent",
+    documentation: "Morph that contains a small label and a TextMorph. Clips when TextMorphs grows larger than maxExtent",
     labelOffset: pt(5, 1),
     maxExtent: pt(500, 400),
     
@@ -2286,9 +2287,8 @@ Morph.subclass('LabeledTextMorph', {
         
         /* configure the label */
         var label = new TextMorph(this.labelOffset.asRectangle(), labelString);
-        label.beLabel();
-        label.applyStyle({borderWidth: 0, fontSize: 11, fill: Color.veryLightGray,
-                          wrapStyle: thisModule.WrapStyle.Shrink, padding: Rectangle.inset(1)});
+        label.beLabel({fontSize: 11, fill: Color.veryLightGray,
+                          padding: Rectangle.inset(1)});
         label.setBounds(label.bounds()); // set the bounds again, when padding is changed, otherwise they would be wrong
         this.addMorphFront(label);
         

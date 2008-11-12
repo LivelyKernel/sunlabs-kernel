@@ -130,13 +130,7 @@ Morph.subclass("ClockMorph", {
             //var labelPosition = bnds.center().addPt(Point.polar(radius*0.85, ((i/items.length - 0.25)*Math.PI*2)).addXY(labelSize/2, 0));
 	    var labelPosition = bnds.center().addPt(Point.polar(radius*0.85, ((i/items.length - 0.25)*Math.PI*2)));
 	    
-	    /*
-		var label = new TextMorph((pt(labelSize*3, labelSize).extentAsRectangle()), items[i]);
-	    label.applyStyle({borderWidth: 0, fill: null, wrapStyle: lively.Text.WrapStyle.Shrink, fontSize: labelSize, padding: Rectangle.inset(0)});
-            label.align(label.bounds().center(), labelPosition.addXY(1, 0));
-            this.addMorph(label);
-		*/
-	    this.addMorph(TextMorph.makeLabel(items[i]).centerAt(labelPosition));
+	    this.addMorph(TextMorph.makeLabel(items[i],{fontSize: 8}).centerAt(labelPosition));
         }
 	
         this.hours   = this.addMorph(Morph.makeLine([pt(0,0), pt(0, -radius*0.50)], 4, Color.blue));
@@ -4214,8 +4208,7 @@ Morph.subclass("EngineMorph", {
 
         this.addRunMenu();
 
-        var label = new TextMorph(new Rectangle(0, 0, 100, 20), "The Radial Engine").beLabel();
-        label.setFontSize(20);  this.addMorph(label);
+        var label = this.addMorph(TextMorph.makeLabel("The Radial Engine",{fontSize: 20}));
         label.align(label.bounds().topCenter(), bnds.bottomCenter().addXY(0, -20));
     },
 

@@ -1370,6 +1370,8 @@ Morph.subclass("MenuMorph", {
     },
 
     labelStyle: {
+        padding: Rectangle.inset(3),
+	borderWidth: 1, 
         borderRadius: 4, 
         fillOpacity: 0.75, 
         wrapStyle: text.WrapStyle.Shrink
@@ -1520,9 +1522,7 @@ Morph.subclass("MenuMorph", {
 
         this.label = null;
         if (captionIfAny) { // Still under construction
-            var label = new TextMorph(new Rectangle(0, 0, 200, 20), captionIfAny);
-            label.applyStyle(this.labelStyle);
-            label.beLabel();
+            var label = TextMorph.makeLabel(captionIfAny, this.labelStyle);
             label.align(label.bounds().bottomCenter(), this.listMorph.shape.bounds().topCenter());
             this.label = this.addMorph(label);
 	    this.label.setFill(new lively.paint.LinearGradient([Color.white, 1, Color.gray]));

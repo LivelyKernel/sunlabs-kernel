@@ -141,24 +141,12 @@ function populateWorldWithExamples(world) {
     var widget;
 
     if (Config.showClock) {
-        var createClock = function(clockClass) {
-            var widget = new clockClass(pt(80, 100), 50);
+        require('Examples.js').toRun(function() {
+            var widget = new ClockMorph(pt(80, 100), 50);
             world.addMorph(widget);
             widget.startSteppingScripts();
-        };
-        
-        if (Config.originalClock)
-            require('Examples.js').toRun(function() { createClock(ClockMorph) })
-        else
-            require('Fabrik.js').toRun(function() { createClock(FabrikClockMorph) });
+        });
     }
-
-    /*
-    if (Config.showClipMorph()) {
-        world.addMorph(widget = new ClipMorph(new Rectangle(600, 300, 150, 150)));
-        widget.setFill(Color.green.lighter());
-    }
-    */
 
     if (Config.showEngine())
         require('Examples.js').toRun(function() {

@@ -3974,6 +3974,11 @@ PasteUpMorph.subclass("WorldMorph", {
             ["Clock", function(evt) {
                 var m = world.addMorph(new ClockMorph(evt.point(), 50));
                 m.startSteppingScripts(); }],
+            ["FabrikClock", function(evt) {
+		require('Fabrik.js').toRun(function() {
+                    var m = world.addMorph(new FabrikClockMorph(evt.point(), 50));
+                    m.startSteppingScripts(); });
+	    }],
             ["Piano Keyboard", function(evt) {
                 module('Main.js').requires('Examples.js').toRun(function() {
                     var m = new PianoKeyboard(evt.point());
