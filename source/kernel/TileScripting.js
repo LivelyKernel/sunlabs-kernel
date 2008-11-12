@@ -65,7 +65,7 @@ Widget.subclass('lively.TileScripting.TileBox', {
         panel.suppressHandles = true;
         
         var defaultCreateFunc = function(theClass, optExtent) {
-            return new theClass((optExtent || pt(0,0)).extentAsRectangle());
+            return new theClass(optExtent && optExtent.extentAsRectangle());
         };
         [thisModule.IfTile, thisModule.DebugTile, thisModule.NumberTile].each(function(ea) {
             this.add(defaultCreateFunc.curry(ea), null, null, panel);
