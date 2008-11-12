@@ -3015,7 +3015,7 @@ Object.extend(Morph, {
 	var morph = new Morph(new lively.scene.Ellipse(location, radius));
 	morph.setBorderWidth(lineWidth);
 	morph.setBorderColor(lineColor);
-	morph.setFill(fill);
+	morph.setFill(fill || Color.blue);
 	return morph;
 	//return circle.applyStyle({fill: fill, borderWidth: lineWidth, borderColor: lineColor});
     },

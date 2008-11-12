@@ -4160,11 +4160,12 @@ Morph.subclass("EngineMorph", {
 
     documentation: "The Radial Engine demo",
     angleStep: Math.PI/8,
+    style: {  fill: new lively.paint.LinearGradient([Color.gray, 1, Color.darkGray], lively.paint.LinearGradient.NorthSouth),
+	      borderColor: Color.black, borderWidth: 1},
     
     initialize: function($super, fullRect) {
         // A lively model by Dan Ingalls - 9/25/2007
         $super(new lively.scene.Rectangle(fullRect));
-        this.setFill(new lively.paint.LinearGradient([Color.gray, 1, Color.darkGray], lively.paint.LinearGradient.NorthSouth));
         this.makeLayout(1, false);
         this.setRunning(true);
     },
