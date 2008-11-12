@@ -1281,13 +1281,17 @@ Wrapper.subclass("lively.paint.Gradient", {
 
     deserialize: function($super, importer, rawNode) {
 	$super(importer, rawNode);
+	rawNode.removeAttribute("id");
 	var rawStopNodes = $A(this.rawNode.getElementsByTagNameNS(Namespace.SVG, 'stop'));
 	this.stops = rawStopNodes.map(function(stopNode) { return new lively.paint.Stop(importer, stopNode) });
+	this.refcount = 0;
     },
 
     copyFrom: function($super, copier, other) {
 	$super(copier, other);
 	dbgOn(!other.stops);
+	// FIXME handle id
+	this.refcount = 0;
 	this.stops = [].concat(other.stops.invoke('copy', copier));
     },
 

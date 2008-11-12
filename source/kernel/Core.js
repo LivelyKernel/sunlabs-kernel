@@ -1252,7 +1252,6 @@ lively.data.Wrapper.subclass('Morph', {
     },
 
     restoreDefs: function(importer, originalDefs, isOnClone) {
-	
 	for (var def = originalDefs.firstChild; def != null; def = def.nextSibling) {
 	    if (isOnClone) def = def.cloneNode(true);
 	    switch (def.tagName) {
@@ -1265,8 +1264,15 @@ lively.data.Wrapper.subclass('Morph', {
 		this.addWrapperToDefs(this.clipPath);
 		break;
 	    case "linearGradient":
+		var gradient = new lively.paint.LinearGradient(importer, def);
+		gradient.debug = true;
+		this.shape.setFill(gradient);
+		console.warn('applied legacy gradient  ' + gradient + ", " + (gradient.id() == null));
+		break;
 	    case "radialGradient": 
-		console.warn('legacy gradient  ' + Exporter.stringify(def));
+		var gradient = new lively.paint.RadialGradient(importer, def);
+		this.shape.setFill(gradient);
+		console.warn('applied legacy gradient  ' + gradient + ", " + (gradient.id() == null));
 		break;
 	    case "code":
 		if (!Config.skipChanges) { // Can be blocked by URL param 

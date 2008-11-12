@@ -348,8 +348,6 @@ function populateWorldWithExamples(world) {
 	    importer.onWorldLoad = function(slideWorld, er) {
 		var link = world.addMorph(new LinkMorph(slideWorld, pt(60, 400)));
 		addLinkLabel(link, "Simple example morphs");
-		// FIXME: remove this when serialization is fixed
-		link.myWorld.setFill(Color.primary.blue);
 	    }
 	    importer.loadMarkup(URL.source.withFilename("slide.xhtml"));
 	    
