@@ -940,9 +940,9 @@ TestCase.subclass('ConnectorMorphTest', {
     
     testUpdatePosition: function() {
         c = new ConnectorMorph();
-        m1 = new Morph(new Rectangle(100,100,10,10),"rect");
+        m1 = Morph.makeRectangle(100,100,10,10);
         m1.getGlobalPinPosition = function(){return this.getPosition()};
-        m2 = new Morph(new Rectangle(200,200, 10,10),"rect");
+        m2 = Morph.makeRectangle(200, 200, 10,10);
         m2.getGlobalPinPosition = m1.getGlobalPinPosition;
         c.formalModel.setStartHandle(m1);
         c.formalModel.setEndHandle(m2);

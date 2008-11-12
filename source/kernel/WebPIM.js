@@ -583,7 +583,7 @@ Morph.subclass("SelectorViewItem", {
     TEXTHEIGHT: 20,
 
     initialize: function($super, initialBounds, model, indentLevel) {
-        $super(initialBounds, "rect");
+        $super(new lively.scene.Rectangle(initialBounds));
         this.setFill(Color.gray);
         this.setBorderColor(Color.gray);
         this.suppressHandles = true; // No handles!
@@ -652,7 +652,7 @@ Morph.subclass("SelectorView", {
     ITEMHEIGHT: 20,
 
     initialize: function($super, initialBounds) {
-        $super(initialBounds, "rect");
+        $super(new lively.scene.Rectangle(initialBounds));
         this.setFill(Color.gray);
 
         // Contains an array of SelectorViewItems

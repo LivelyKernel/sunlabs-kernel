@@ -574,13 +574,13 @@ Morph.subclass('GridLayoutMorph', {
 // These are our grid lines
 
 Morph.subclass("GridLineMorph", {
+    style: {borderWidth: 2},
 	initialize: function($super, pos) {
 		this.pos = pos;
 		this.npos = new Rectangle(pos.x-1, pos.y-1, pos.width+2, pos.height+2);
 		this.transientBounds = true;
 		this.openForDragAndDrop=false;
 		this.suppressHandles=true;
-    	this.borderWidth=0;
 		this.focusHaloBorderWidth=0;
 		$super(pos, "rect");
 	},

@@ -34,9 +34,6 @@ Morph.subclass('ButtonMorph', {
     
     documentation: "Simple button",
     focusHaloBorderWidth: 3, // override the default
-    borderWidth: 0.3,
-    fill: Color.neutral.gray,
-    borderColor: Color.neutral.gray,
     label: null,
     toggle: false, //if true each push toggles the model state 
     
@@ -46,7 +43,7 @@ Morph.subclass('ButtonMorph', {
     // It read and writes the boolean variable, this.model[this.propertyName]
     initialize: function($super, initialBounds) {
         this.baseFill = null;
-        $super(initialBounds, "rect");
+        $super(new lively.scene.Rectangle(initialBounds));
 	if (Config.selfConnect) {
             var model = Record.newNodeInstance({Value: false});
 	    // this default self connection may get overwritten by, eg, connectModel()...
@@ -59,16 +56,10 @@ Morph.subclass('ButtonMorph', {
     },
 
     onDeserialize: function() {
-        this.baseFill = this.fill;
+        this.baseFill = this.shape.getFill();
         this.changeAppearanceFor(this.getValue(false));
     },
 
-    getBaseColor: function() {
-        if (this.fill instanceof Color) return this.fill;
-        else if (this.fill instanceof lively.paint.LinearGradient) return this.fill.stops[0].color(0);
-        else if (this.fill instanceof lively.paint.RadialGradient) return this.fill.stops[0].color(1);
-        else throw new Error('cannot handle fill ' + this.fill);
-    },
 
     handlesMouseDown: function(evt) { return !evt.isCommandKey(); },
     
@@ -93,8 +84,8 @@ Morph.subclass('ButtonMorph', {
         var delta = value ? 1 : 0;
         if (this.baseFill instanceof lively.paint.LinearGradient) {
             var base = this.baseFill.stops[0].color().lighter(delta);
-	    this.setFill(new lively.paint.LinearGradient([base, 1, base.lighter()], lively.paint.LinearGradient.SouthNorth));
-	    // console.log("set gradient " + gradient);
+	    var gradient = new lively.paint.LinearGradient([base, 1, base.lighter()], lively.paint.LinearGradient.SouthNorth);
+	    this.setFill(gradient);
         } else if (this.baseFill instanceof lively.paint.RadialGradient) {
             var base = this.baseFill.stops[0].color().lighter(delta);
             this.setFill(new lively.paint.RadialGradient([base.lighter(), 1, base]));
@@ -105,7 +96,7 @@ Morph.subclass('ButtonMorph', {
     
     applyStyle: function($super, spec) {
         $super(spec);
-        this.baseFill = this.fill; // we may change appearance depending on the value
+        this.baseFill = this.shape.getFill(); // we may change appearance depending on the value
 	if (this.getActualModel()) {
 	    // otherwise getValue() will fail. Note that this can happen in deserialization
 	    // when themes are applied before the widget is hooked up to the model
@@ -167,12 +158,11 @@ Morph.subclass('ButtonMorph', {
 Morph.subclass("ImageMorph", {
 
     documentation: "Image container",
-    background: Color.blue.lighter(),
-    borderWidth: 0,
+    style:{ borderWidth: 0, fill:Color.blue.lighter() },
     formals: ["-URL"],
     
     initialize: function($super, viewPort, url) {
-        $super(viewPort, "rect");
+        $super(new lively.scene.Rectangle(viewPort));
         this.image = new lively.scene.Image(url, viewPort.width, viewPort.height);
         console.log("making an image from: " + url);
         if (url) this.addWrapper(this.image); // otherwise we didn't make a rawNode
@@ -200,7 +190,7 @@ Morph.subclass("ImageMorph", {
     },
 
     loadFromURL: function(url) {
-        this.setFill(this.background);
+        //this.setFill(this.background);
         var node = this.image.loadImage(url.toString());
         node && this.addNonMorph(node);
     },
@@ -255,16 +245,15 @@ Morph.subclass("ClipMorph", {
     // (optionally) reports of damage from submorphs are also clipped so that,
     // eg, scrolling can be more efficient
     
-    fill: null,
-    borderWidth: 0,
+    style: { fill: null, borderWidth: 0},
+    
+    initialize: function($super, initialBounds) {
+	$super(new lively.scene.Rectangle(initialBounds));
+    },
 
     initializeTransientState: function($super) {
 	$super();
 	this.clipToShape();
-    },
-
-    defaultOrigin: function(bounds) { 
-        return bounds.topLeft(); 
     },
 
     bounds: function(ignoreTransients) {
@@ -299,9 +288,7 @@ Morph.subclass("ClipMorph", {
 
 Morph.subclass('HandleMorph', {
     
-    fill: null,
-    borderColor: Color.blue,
-    borderWidth: 1,
+    style: {fill: null, borderColor: Color.blue, borderWidth: 1},
 
     controlHelpText: "Drag to resize this object\n" + 
         "Alt+drag to rotate the object \n" +
@@ -316,7 +303,8 @@ Morph.subclass('HandleMorph', {
     transientBounds: true,
     
     initialize: function($super, location, shapeType, hand, targetMorph, partName) {
-        $super(location.asRectangle().expandBy(5), shapeType);
+        $super(new shapeType(location.asRectangle().expandBy(5)));
+	
         this.targetMorph = targetMorph;
         this.partName = partName; // may be a name like "topRight" or a vertex index
         this.initialScale = null;
@@ -420,21 +408,21 @@ Morph.subclass("SelectionMorph", {
     removeWhenEmpty: true,
     
     initialize: function($super, viewPort, defaultworldOrNull) {
-        $super(viewPort, "rect");
+        $super(new lively.scene.Rectangle(viewPort));
         this.originalPoint = viewPort.topLeft();
         this.reshapeName = "bottomRight";
-	this.applyStyle(this.style);
         this.myWorld = defaultworldOrNull ? defaultworldOrNull : this.world();
         // this.shape.setStrokeDashArray([3,2]);
         return this;
     },
 
-    initializeTransientState: function() {
+    initializeTransientState: function($super) {
+	$super();
 	this.selectedMorphs = [];
         this.initialSelection = true;
     },
 
-    
+
     reshape: function($super, partName, newPoint, handle, lastCall) {
         // Initial selection might actually move in another direction than toward bottomRight
         // This code watches that and changes the control point if so
@@ -630,13 +618,9 @@ Morph.subclass("SelectionMorph", {
 
 Morph.subclass('PanelMorph', {
 
-    fill: undefined,        // rely on styling
-    borderWidth: undefined, // rely on styling
-    borderColor: undefined, // rely on styling
-    
     documentation: "a panel",
     initialize: function($super, extent/*:Point*/) {
-        $super(extent.extentAsRectangle(), 'rect');
+        $super(new lively.scene.Rectangle(extent.extentAsRectangle()));
         this.lastNavigable = null;
     },
 
@@ -731,12 +715,9 @@ Object.extend(PanelMorph, {
 
 });
 
-/**
- * @class CheapListMorph
- */ 
 TextMorph.subclass("CheapListMorph", {
     
-    borderColor: Color.black,
+    style: { borderColor: Color.black, borderWidth: 1 },
 
     maxSafeSize: 4e4,  // override max for subsequent updates
     formals: ["List", "Selection", "-DeletionConfirmation", "+DeletionRequest"],
@@ -974,9 +955,7 @@ Morph.addMethods({
 Morph.subclass("TextListMorph", {
 
     documentation: "A list that uses TextMorphs to display individual items",
-    borderColor: Color.black,
-    borderWidth: 1,
-    fill: Color.white,
+    style: { borderColor: Color.black, borderWidth: 1, fill: Color.white},
     formals: ["List", "Selection", "-Capacity", "-ListDelta", "-DeletionConfirmation", "+DeletionRequest"],
     itemMargin: Rectangle.inset(1), // stylize
     defaultCapacity: 50,
@@ -988,7 +967,7 @@ Morph.subclass("TextListMorph", {
 	this.baseWidth = initialBounds.width;
         var height = Math.max(initialBounds.height, itemList.length * (TextMorph.prototype.fontSize + this.itemMargin.top() + this.itemMargin.bottom()));
         initialBounds = initialBounds.withHeight(height);
-        $super(initialBounds, itemList);
+        $super(new lively.scene.Rectangle(initialBounds));
         this.itemList = itemList;
         this.selectedLineNo = -1;
 	this.textStyle = optTextStyle;
@@ -1039,10 +1018,6 @@ Morph.subclass("TextListMorph", {
 
     alignAll: function(optMargin) {
         this.leftAlignSubmorphs(this.itemMargin, optMargin || pt(0, 0));
-    },
-
-    defaultOrigin: function(bounds) { 
-        return bounds.topLeft(); 
     },
 
     takesKeyboardFocus: Functions.True,
@@ -1429,7 +1404,7 @@ Morph.subclass("MenuMorph", {
         //     menu.addLine();          // interspersed with these
         //     menu.openIn(world,location,stayUp,captionIfAny);
 	
-        $super(pt(0, 0).extentAsRectangle(), "rect");
+        $super(new lively.scene.Rectangle(pt(0, 0).extentAsRectangle()));
         this.items = items.map(function(item) {
             if (Object.isString()) throw dbgOn(new Error('String instead of item specification for menu, maybe one array missing?'));
             return this.addPseudoMorph(Object.isArray(item[1]) ?
@@ -1673,10 +1648,11 @@ Morph.subclass("SliderMorph", {
 	Value:        {byDefault: 0}, // from: function(value) { alert('from!' + value); return value;}}, 
 	SliderExtent: {mode: "-", byDefault: 0} 
     },
+    style: {borderWidth: 1, borderColor: Color.black},
     selfModelClass: PlainRecord.prototype.create({Value: { byDefault: 0 }, SliderExtent: { byDefault: 0}}),
 
     initialize: function($super, initialBounds, scaleIfAny) {
-        $super(initialBounds, "rect");
+        $super(new lively.scene.Rectangle(initialBounds));
         // this default self connection may get overwritten by, eg, connectModel()...
 	var modelClass = this.selfModelClass;
         var model = new modelClass({}, {});
@@ -1735,16 +1711,17 @@ Morph.subclass("SliderMorph", {
 	//this.slider.shapeRoundEdgesBy((this.vertical() ? sliderExt.x : sliderExt.y)/2);
 	this.slider.shapeRoundEdgesBy(Math.min(sliderExt.x, sliderExt.y)/2);
 	
-
-        if (this.slider.fill instanceof lively.paint.LinearGradient) {
+	
+	var fill = this.slider.getFill();
+        if (fill instanceof lively.paint.LinearGradient) {
             var direction = this.vertical() ? lively.paint.LinearGradient.EastWest : lively.paint.LinearGradient.NorthSouth;
-            var baseColor = this.slider.fill.stops[0].color();
+            var baseColor = fill.stops[0].color();
 	    this.setFill(new lively.paint.LinearGradient([baseColor, 1, baseColor.lighter(2), 1, baseColor], direction));
 	    // FIXME: just flip the gradient
-            this.slider.setFill(new lively.paint.LinearGradient([baseColor, 1, this.slider.fill.stops[1].color()], direction));
+            this.slider.setFill(new lively.paint.LinearGradient([baseColor, 1, fill.stops[1].color()], direction));
 	    this.setBorderWidth(this.slider.getBorderWidth());
         } else {
-            this.setFill(this.slider.fill.lighter());
+            this.setFill(fill.lighter());
         }
     },
     
@@ -1861,20 +1838,20 @@ Morph.subclass("SliderMorph", {
 Morph.subclass("ScrollPane", {
 
     description: "A scrolling container",
-    borderWidth: 2,
-    fill: null,
+    style: { borderWidth: 2, fill: null},
     scrollBarWidth: 14,
     ScrollBarFormalRelay: Relay.create({Value: "ScrollPosition", SliderExtent: "-VisibleExtent"}), // a class for relays
 
     initialize: function($super, morphToClip, initialBounds) {
-        $super(initialBounds, "rect");
+        $super(new lively.scene.Rectangle(initialBounds));
 
         var bnds = this.innerBounds();
         var clipR = bnds.withWidth(bnds.width - this.scrollBarWidth+1).insetBy(1);
         morphToClip.shape.setBounds(clipR); // FIXME what if the targetmorph should be bigger than the clipmorph?
         // Make a clipMorph with the content (morphToClip) embedded in it
         this.clipMorph = this.addMorph(new ClipMorph(clipR));    
-        this.clipMorph.shape.setFill(morphToClip.shape.getFill());
+        //this.clipMorph.shape.setFill(morphToClip.shape.getFill());
+	this.clipMorph.setFill(morphToClip.getFill());
         morphToClip.setBorderWidth(0);
         morphToClip.setPosition(clipR.topLeft());
         this.clipMorph.addMorph(morphToClip);
@@ -2067,13 +2044,12 @@ Global.newXenoPane = function(initialBounds) {
  */ 
 Morph.subclass("ColorPickerMorph", {
 
-    fill: null,
-    borderWidth: 1, 
-    borderColor: Color.black,
+
+    style: { borderWidth: 1, fill: null, borderColor: Color.black},
     formals: ["+Color"],
 
     initialize: function($super, initialBounds, targetMorph, setFillName, popup) {
-        $super(initialBounds, "rect");
+        $super(new lively.scene.Rectangle(initialBounds));
         this.targetMorph = targetMorph;
         this.setFillFunctionName = setFillName; // name like "setBorderColor"
         if (targetMorph != null) this.connectModel({model: targetMorph, setColor: setFillName});
@@ -2150,11 +2126,10 @@ Morph.subclass("ColorPickerMorph", {
 Morph.subclass('XenoMorph', {
 
     documentation: "Contains a foreign object, most likely XHTML",
-    borderWidth: 0,
-    fill: Color.gray.lighter(),
+    style: { borderWidth: 0, fill: Color.gray.lighter() },
 
     initialize: function($super, bounds) { 
-        $super(bounds, "rect"); 
+        $super(new lively.scene.Rectangle(bounds));
         this.foRawNode = NodeFactory.createNS(Namespace.SVG, "foreignObject", 
                              {x: bounds.x, y: bounds.y, 
                               width: bounds.width,
@@ -2541,15 +2516,14 @@ Morph.subclass("TitleBarMorph", {
     controlSpacing: 3,
     barHeight: 22,
     shortBarHeight: 15,
-    borderWidth: 0,
-    fill: null,
+    style: {borderWidth: 0, fill: null},
     labelStyle: { borderRadius: 8, padding: Rectangle.inset(6, 2), fill: new lively.paint.LinearGradient([Color.white, 1, Color.gray]) },
 
     initialize: function($super, headline, windowWidth, windowMorph, optSuppressControls) {
 	if (optSuppressControls)  this.barHeight = this.shortBarHeight; // for dialog boxes
 	var bounds = new Rectangle(0, 0, windowWidth, this.barHeight);
 	
-        $super(bounds, "rect");
+        $super(new lively.scene.Rectangle(bounds));
 	
 	// contentMorph is bigger than the titleBar, so that the lower rounded part of it can be clipped off
 	// arbitrary paths could be used, but FF doesn't implement the geometry methods :(
@@ -2663,7 +2637,7 @@ Morph.subclass("TitleTabMorph", {
     suppressHandles: true,
     
     initialize: function($super, headline, windowWidth, windowMorph) {
-        $super(new Rectangle(0, 0, windowWidth, this.barHeight), "rect");
+        $super(new lively.scene.Rectangle(new Rectangle(0, 0, windowWidth, this.barHeight)));
         this.windowMorph = windowMorph;
         this.linkToStyles(['titleBar']);
         this.ignoreEvents();
@@ -2703,13 +2677,13 @@ Morph.subclass("WindowControlMorph", {
 
     documentation: "Event handling for Window morphs",
 
-    borderWidth: 0,
+    style: {borderWidth: 0},
     
     focus: pt(0.4, 0.2),
     formals: ["-HelpText", "-Trigger"],
     
     initialize: function($super, rect, inset, color) {
-        $super(rect.insetBy(inset), 'ellipse');
+        $super(new lively.scene.Ellipse(rect.insetBy(inset)));
         this.setFill(new lively.paint.RadialGradient([color.lighter(2), 1, color, 1, color.darker()], this.focus));
         return this;
     },
@@ -2723,13 +2697,13 @@ Morph.subclass("WindowControlMorph", {
     },
 
     onMouseOver: function($super, evt) {
-        var prevColor = this.fill.stops[1].color();
+        var prevColor = this.getFill().stops[1].color();
         this.setFill(new lively.paint.RadialGradient([Color.white, 1, prevColor, 1, prevColor.darker()], this.focus));
         $super(evt);
     },
     
     onMouseOut: function($super, evt) {
-        var prevColor = this.fill.stops[1].color();
+        var prevColor = this.getFill().stops[1].color();
         this.setFill(new lively.paint.RadialGradient([prevColor.lighter(2), 1, prevColor, 1, prevColor.darker()], this.focus));
         $super(evt);
     },
@@ -2743,13 +2717,12 @@ Morph.subclass("WindowControlMorph", {
 
 Morph.subclass('StatusBarMorph', {
 
-    borderWidth: 0,
-    fill: null,
+    style: { borderWidth: 0, fill: null},
 
     initialize: function($super, titleBar) {
 	var bounds = titleBar.getExtent().extentAsRectangle().withHeight(8);
 	
-        $super(bounds, "rect");
+        $super(new lively.scene.Rectangle(bounds));
 	
 	// contentMorph is bigger than the titleBar, so that the lower rounded part of it can be clipped off
 	// arbitrary paths could be used, but FF doesn't implement the geometry methods :(
@@ -2780,10 +2753,11 @@ Morph.subclass('WindowMorph', {
     titleBar: null,
     statusBar: null,
     targetMorph: null,
+    style: {borderWidth: 0, fill: null, borderRadius: 0},
     
     initialize: function($super, targetMorph, headline, optSuppressControls) {
         var bounds = targetMorph.bounds();
-        $super(bounds, "rect");
+        $super(new lively.scene.Rectangle(bounds));
         var titleBar = this.makeTitleBar(headline, bounds.width, optSuppressControls);
         var titleHeight = titleBar.bounds().height;
 	this.setBounds(bounds.withHeight(bounds.height + titleHeight));
@@ -2791,7 +2765,6 @@ Morph.subclass('WindowMorph', {
         this.titleBar = this.addMorph(titleBar);
         this.contentOffset = pt(0, titleHeight - titleBar.getBorderWidth()/2); // FIXME: hack
         targetMorph.setPosition(this.contentOffset);
-	this.applyStyle({borderWidth: 0, fill: null, borderRadius: 0});
         this.closeAllToDnD();
 	this.collapsedTransform = null;
 	this.collapsedExtent = null;
@@ -3045,7 +3018,7 @@ Morph.subclass("PieMenuMorph", {
 	this.r1 = 15;  // inner radius
 	this.r2 = 50;  // outer radius
 	this.offset = offset;
-        $super(new Rectangle(100, 100, this.r2*2, this.r2*2), 'ellipse');
+        $super(new lively.scene.Ellipse(pt(100 + this.r2, 100 + this.r2), this.r2));
 	this.hasCommitted = false;  // Gesture not yet outside commitment radius
 	return this;
     },
@@ -3125,7 +3098,7 @@ Morph.subclass("PieMenuMorph", {
 	this.addMorph(TextMorph.makeLabel("menu").centerAt(pt(0, 0)));
     },
     addHandleTo: function(morph, evt, mode) {
-    	var handle = new HandleMorph(evt.mousePoint, 'ellipse', evt.hand, morph, null);
+    	var handle = new HandleMorph(evt.point(), lively.scene.Rectangle, evt.hand, morph, null);
 	handle.mode = mode;
 	handle.rollover = false;
 	morph.addMorph(handle);

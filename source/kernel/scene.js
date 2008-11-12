@@ -287,7 +287,6 @@ this.Node.addProperties({
     StrokeOpacity: { name: "stroke-opacity", from: Number, to: String, byDefault: 1.0},
     StrokeWidth: { name: "stroke-width", from: Number, to: String, byDefault: 1.0},
     Stroke: { name: "stroke", byDefault: "none"}, // FIXME byDefault should be in JS not DOM type
-    Fill: { name: "fill", byDefault: "none"}, // FIXME byDefault should be in JS not DOM type
     LineJoin: {name: "stroke-linejoin"},
     LineCap: {name: "stroke-linecap"},
     StrokeDashArray: {name: "stroke-dasharray"},
@@ -341,6 +340,32 @@ this.Node.addMethods({
 	    this.rawNode.setAttributeNS(null, "filter", filterUri);
 	else
 	    this.rawNode.removeAttributeNS(null, "filter");
+    },
+
+    translateBy: function(displacement) {
+	// todo
+    },
+
+    setFill: function(paint) {
+	if ((this.fill !== paint) && (this.fill instanceof lively.paint.Gradient)) {
+	    this.fill.dereference();
+	}
+	this.fill = paint;
+	if (paint === undefined) {
+	    this.rawNode.removeAttributeNS(null, "fill");
+	} else if (paint === null) {
+	    this.rawNode.setAttributeNS(null, "fill", "none");
+	} else if (paint instanceof Color) {
+	    this.rawNode.setAttributeNS(null, "fill", String(paint));
+	} else if (paint instanceof lively.paint.Gradient) {
+	    paint.reference();
+	    this.rawNode.setAttributeNS(null, "fill", paint.uri());
+	} else throw dbgOn(new TypeError('cannot deal with paint ' + paint));
+    },
+
+
+    getFill: function() {
+	return this.fill;
     }
 
 
@@ -368,21 +393,10 @@ this.Node.subclass('lively.scene.Shape', {
 	return Strings.format("a Shape(%s,%s)", this.getType(), this.bounds());
     },
 
-    initialize: function(fill, strokeWidth, stroke) {
-
-	if (this.shouldIgnorePointerEvents)
-	    this.ignoreEvents();
-
-	if (fill !== undefined)
-	    this.setFill(fill && fill.toString());
-
-	if (strokeWidth !== undefined)
-	    this.setStrokeWidth(strokeWidth);
-
-	if (stroke !== undefined)
-	    this.setStroke(stroke);
-
+    initialize: function() {
+	if (this.shouldIgnorePointerEvents) this.ignoreEvents();
     },
+    
 
     applyFunction: function(func,arg) { 
 	func.call(this, arg); 
@@ -390,6 +404,10 @@ this.Node.subclass('lively.scene.Shape', {
 
     toPath: function() {
 	throw new Error('unimplemented');
+    },
+
+    origin: function() {
+	return this.bounds().topLeft();
     }
 
 });
@@ -415,9 +433,10 @@ this.Shape.subclass('lively.scene.Rectangle', {
     },
 
     setBounds: function(r) {
+	dbgOn(!r);
 	this.setLengthTrait("x", r.x);
 	this.setLengthTrait("y", r.y);
-	this.setLengthTrait("width", Math.max(0, r.width));
+ 	this.setLengthTrait("width", Math.max(0, r.width));
 	this.setLengthTrait("height", Math.max(0, r.height));
 	return this;
     },
@@ -434,6 +453,13 @@ this.Shape.subclass('lively.scene.Rectangle', {
 	var height = this.rawNode.height.baseVal.value;
 	return new Rectangle(x, y, width, height);
     },
+
+
+    translateBy: function(displacement) {
+	this.setLengthTrait("x", this.getLengthTrait("x") + displacement.x);
+	this.setLengthTrait("y", this.getLengthTrait("y") + displacement.y);
+    },
+
 
     vertices: function() {
 	var b = this.bounds();
@@ -476,16 +502,26 @@ this.Shape.subclass('lively.scene.Rectangle', {
 	return this;
     }
 
+
 });
 
 this.Shape.subclass('lively.scene.Ellipse', {
 
     documentation: "Ellipses and circles",
 
-    initialize: function($super, rect) {
+    initialize: function($super /*,rest*/) {
 	$super();
 	this.rawNode = NodeFactory.create("ellipse");
-	this.setBounds(rect);
+	switch (arguments.length) {
+	case 2:
+	    this.setBounds(arguments[1]);
+	    break;
+	case 3:
+	    this.setBounds(arguments[1].asRectangle().expandBy(arguments[2]));
+	    break;
+	default:
+	    throw new Error('bad arguments ' + $A(arguments));
+	}
     },
 
     setBounds: function(r) {
@@ -495,7 +531,15 @@ this.Shape.subclass('lively.scene.Ellipse', {
 	this.setLengthTrait("ry", r.height/2);
 	return this;
     },
+    
+    center: function() {
+	return pt(this.rawNode.cx.baseVal.value, this.rawNode.cy.baseVal.value);
+    },
 
+    origin: function() {
+	return this.center();
+    },
+    
     // For ellipses, test if x*x + y*y < r*r
     containsPoint: function(p) {
 	var w = this.rawNode.rx.baseVal.value * 2;
@@ -514,6 +558,11 @@ this.Shape.subclass('lively.scene.Ellipse', {
 	var y = this.rawNode.cy.baseVal.value - this.rawNode.ry.baseVal.value;
 	return new Rectangle(x, y, w, h);
     }, 
+
+    translateBy: function(displacement) {
+	this.setLengthTrait("cx", this.getLengthTrait("cx") + displacement.x);
+	this.setLengthTrait("cy", this.getLengthTrait("cy") + displacement.y);
+    },
 
     vertices: function() {
 	var b = this.bounds();
@@ -542,10 +591,10 @@ this.Shape.subclass('lively.scene.Polygon', {
     hasElbowProtrusions: true,
     useDOM: false,
 
-    initialize: function($super, vertlist, color, borderWidth, borderColor) {
+    initialize: function($super, vertlist) {
 	this.rawNode = NodeFactory.create("polygon");
 	this.setVertices(vertlist);
-	$super(color, borderWidth, borderColor);
+	$super();
 	return this;
     },
 
@@ -567,10 +616,17 @@ this.Shape.subclass('lively.scene.Polygon', {
 	return array;
     },
 
+    translateBy: function(displacement) {
+	return; // weird, huh? FIXME
+	var newList = this.vertices().invoke('addPt', displacement);
+	this.setVertices(newList);
+    },
+
     toString: function() {
 	var pts = this.vertices();
 	return this.rawNode.tagName + "[" + pts + "]";
     },
+
 
     bounds: function() {
 	// FIXME very quick and dirty, consider caching or iterating over this.points
@@ -582,6 +638,12 @@ this.Shape.subclass('lively.scene.Polygon', {
 	return Rectangle.unionPts(vertices);
     },
 
+    origin: function() {
+	//return this.bounds().topLeft();
+	// Weird huh? FIXME
+	return this.bounds().bottomLeft();
+    },
+    
     reshape: function(partName, newPoint, handle, lastCall) {
 	var ix = partName; // better name -- it's an index into vertices
 	var verts = this.vertices();  // less verbose
@@ -685,10 +747,10 @@ lively.scene.Shape.subclass('lively.scene.Polyline', {
     
     hasElbowProtrusions: true,
 
-    initialize: function($super, vertlist, borderWidth, borderColor) {
+    initialize: function($super, vertlist) {
 	this.rawNode = NodeFactory.create("polyline");
 	this.setVertices(vertlist);
-	$super(null, borderWidth, borderColor);
+	$super();
     },
 
     containsPoint: function(p) {
@@ -705,11 +767,13 @@ lively.scene.Shape.subclass('lively.scene.Polyline', {
 
     // poorman's traits :)
     bounds: this.Polygon.prototype.bounds,
+    origin: this.Polygon.prototype.origin,
     vertices: this.Polygon.prototype.vertices,
     setVertices: this.Polygon.prototype.setVertices,
     reshape: this.Polygon.prototype.reshape,
     partNameNear: this.Polygon.prototype.partNameNear,
-    partPosition: this.Polygon.prototype.partPosition
+    partPosition: this.Polygon.prototype.partPosition,
+    translateBy: this.Polygon.prototype.translateBy
 
 });
 
@@ -833,6 +897,12 @@ this.Node.subclass('lively.scene.Group', {
 	this.content = [];
     },
 
+    copyFrom: function($super, copier, other) {
+	$super(copier, other);
+	this.content = other.content.clone();
+	// FIXME deep copy?
+    },
+
     add: function(node) {
 	this.rawNode.appendChild(node.rawNode);
 	this.content.push(node);
@@ -847,11 +917,19 @@ this.Node.subclass('lively.scene.Group', {
 		continue;
 	    subBounds = subBounds == null ? item.bounds() : subBounds.union(item.bounds());
 	}
-	return subBounds;
+	return subBounds || new Rectangle(0, 0, 0, 0);
+    },
+
+    setBounds: function(bnds) {
+	console.log('doing nothing to set bounds on group');
     },
 
     containsPoint: function(p) {
 	return this.content.any(function(item) { return item.containsPoint(p); });
+    },
+
+    origin: function(shape) { 
+	return this.bounds().topLeft();
     },
 
     partNameNear: this.Rectangle.prototype.partNameNear,
@@ -1104,7 +1182,7 @@ Object.subclass('lively.scene.Similitude', {
 	// do good typechecking of SVGMatrix properties before passing
 	// them to native code.  It's probably too late to figure out
 	// the cause, but at least we won't crash.
-	if (isNaN(value)) { throw new Error('not a number');}
+	if (isNaN(value)) { throw dbgOn(new Error('not a number'));}
 	return value;
     },
 
@@ -1193,9 +1271,12 @@ Wrapper.subclass('lively.paint.Stop', {
 // note that Colors and Gradients are similar but Colors don't need an SVG node
 Wrapper.subclass("lively.paint.Gradient", {
     
-    initialize: function($super) {
+    dictionaryNode: null,
+    initialize: function($super, node) {
 	$super();
 	this.stops = [];
+	this.refcount = 0;
+	this.rawNode = node;
     },
 
     deserialize: function($super, importer, rawNode) {
@@ -1236,6 +1317,32 @@ Wrapper.subclass("lively.paint.Gradient", {
 
     toString: function() {
 	return "#<" + this.getType() + this.toMarkupString() + ">";
+    },
+
+    reference: function() {
+	if (this.refcount == 0) {
+	    if (!this.id()) {
+		this.setId(this.newId());
+	    }
+	    this.dictionary().appendChild(this.rawNode);
+	}
+	this.refcount ++;
+    },
+
+    dereference: function() {
+	this.refcount --;
+	if (this.refcount == 0) {
+	    if (this.rawNode.parentNode) this.dictionary().removeChild(this.rawNode);
+	}
+    },
+
+    dictionary: function() {
+	if (this.dictionaryNode == null) {
+	    var canvas = Global.document.getElementById("canvas");
+	    this.constructor.prototype.dictionaryNode = canvas.appendChild(NodeFactory.create("defs"));
+	    this.dictionaryNode.setAttribute("id", "GradientDictionary"); // for debugging
+	}
+	return this.dictionaryNode;
     }
 
 });
@@ -1245,11 +1352,10 @@ Wrapper.subclass("lively.paint.Gradient", {
 this.Gradient.subclass("lively.paint.LinearGradient", {
 
     initialize: function($super, stopSpec, vector) {
-	$super();
 	vector = vector || lively.paint.LinearGradient.NorthSouth;
-	this.rawNode = NodeFactory.create("linearGradient",
-					  {x1: vector.x, y1: vector.y, 
-					   x2: vector.maxX(), y2: vector.maxY()}); 
+	$super(NodeFactory.create("linearGradient",
+				  {x1: vector.x, y1: vector.y, 
+				   x2: vector.maxX(), y2: vector.maxY()})); 
 	this.processSpec(stopSpec);
 	return this;
     },
@@ -1276,8 +1382,7 @@ Object.extend(this.LinearGradient, {
 this.Gradient.subclass('lively.paint.RadialGradient', {
 
     initialize: function($super, stopSpec, optF) {
-	$super();
-	this.rawNode = NodeFactory.create("radialGradient");
+	$super(NodeFactory.create("radialGradient"));
 	if (optF) {
 	    this.rawNode.setAttributeNS(null, "fx", optF.x);
 	    this.rawNode.setAttributeNS(null, "fy", optF.y);

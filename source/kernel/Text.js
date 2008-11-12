@@ -823,7 +823,7 @@ Morph.subclass('TextSelectionMorph', {
     transientBounds: true,
     
     initialize: function($super) {
-	$super(pt(0, 0).asRectangle(), "rect");
+	$super(new lively.scene.Group());
 	this.applyStyle({fill: null, borderWidth: 0});
 	this.ignoreEvents();
     },
@@ -856,8 +856,7 @@ Morph.subclass("TextMorph", {
     fontFamily: Config.defaultFontFamily || 'Helvetica',
     textColor: Color.black,
     backgroundColor: Color.veryLightGray,
-    borderWidth: 1,
-    borderColor: Color.black,
+    style: { borderWidth: 1, borderColor: Color.black},
     padding: Rectangle.inset(6, 4),
     wrap: thisModule.WrapStyle.Normal,
 
@@ -889,8 +888,8 @@ Morph.subclass("TextMorph", {
         this.lines = null;//: TextLine[]
     },
 
-    initializePersistentState: function($super, initialBounds, shapeType) {
-        $super(initialBounds, shapeType);
+    initializePersistentState: function($super, shape) {
+        $super(shape);
         this.textContent = this.addWrapper(new lively.Text.TextContent());
         this.resetRendering();
         // KP: set attributes on the text elt, not on the morph, so that we can retrieve it
@@ -922,7 +921,7 @@ Morph.subclass("TextMorph", {
 
     initialize: function($super, rect, textString) {
         this.textString = textString || "";
-        $super(rect, "rect");
+        $super(new lively.scene.Rectangle(rect));
         // KP: note layoutChanged will be called on addition to the tree
         // DI: ... and yet this seems necessary!
         if (this.textString instanceof thisModule.Text) {
@@ -934,8 +933,8 @@ Morph.subclass("TextMorph", {
         return this;
     },
 
-    defaultOrigin: function(bounds) { 
-        return bounds.topLeft(); 
+    defaultOrigin: function(shape) { 
+        return shape.bounds().topLeft(); 
     },
     
 
@@ -1161,7 +1160,7 @@ Morph.subclass("TextMorph", {
 
     resetRendering: function() {
 	this.textContent.replaceRawNodeChildren(null);
-	this.textContent.setFill(String(this.textColor));
+	this.textContent.setFill(this.textColor);
         this.font = thisModule.Font.forFamily(this.fontFamily, this.fontSize);
         this.font.applyTo(this.textContent);
         this.lines = null;

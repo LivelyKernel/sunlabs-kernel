@@ -44,7 +44,7 @@ TestCase.subclass('ASerializationTestCase', {
    },
    
    testAddMorphAppendsRawNode: function() {
-       var morph = new Morph(pt(100,200).extentAsRectangle());
+       var morph = Morph.makeRectangle(pt(100,200).extentAsRectangle());
        this.worldMorph.addMorph(morph);
        this.assert(this.dom.getElementById(morph.rawNode.id), 'rawNode not in DOM!');
        this.assert(this.worldMorph.submorphs.include(morph), 'rawNode not in DOM!');

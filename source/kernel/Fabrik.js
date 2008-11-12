@@ -141,8 +141,8 @@ Global.Fabrik = {
     openConnectorMorphExample: function() {
         var c = new ConnectorMorph();
         
-        var m1 = new Morph(new Rectangle(100,100,30,30),"rect");
-        var m2 = new Morph(new Rectangle(200,200, 30,30),"rect");
+        var m1 = Morph.makeRectangle(100,100,30,30);
+        var m2 = Morph.makeRectangle(200,200, 30,30);
         m1.getPinPosition = function(){return this.getPosition()};
         m2.getPinPosition = m1.getPinPosition;  
 
@@ -549,7 +549,7 @@ Morph.subclass('PinMorph', {
     isPinMorph: true,
     
     initialize: function ($super){
-        $super(new Rectangle( 0, 0, 10, 10), 'ellipse');
+        $super(new lively.scene.Ellipse(pt( 0, 0), 10));
         
         this.suppressHandles = true; // no handles
         this.okToBeGrabbedBy = Functions.Null; // no dragging
@@ -956,14 +956,14 @@ Widget.subclass('PinHandle', {
 Morph.subclass('ArrowHeadMorph', {
      
     initialize: function($super, lineWidth, lineColor, fill, length, width) {
-        $super();
+        $super(new lively.scene.Group());
         
         /* FIXME
          * Morph abuse!
          */
         this.setFillOpacity(0);
         this.setStrokeOpacity(0);
-        this.head = new Morph(pt(0,0).asRectangle(), "rect");
+
 
         lineWidth = lineWidth || 1;
         lineColor = lineColor || Color.black;
@@ -972,8 +972,8 @@ Morph.subclass('ArrowHeadMorph', {
         width = width || 12;
 
         var verts = [pt(0,0), pt(-length, 0.5* width), pt(-length, -0.5 * width)];
-        this.head.setShape(new lively.scene.Polygon(verts, fill, 1, lineColor, fill));
-        this.addMorph(this.head);
+        this.head = this.addMorph(new Morph(new lively.scene.Polygon(verts)));
+	this.head.applyStyle({fill: fill, borderWidth: 1, borderColor: lineColor});
         
         this.setPosition(this.head.getPosition());
         this.setExtent(this.head.getExtent());
@@ -1013,9 +1013,9 @@ Morph.subclass('ConnectorMorph', {
         
         this.pinConnector = pinConnector;
         
-        $super(verts[0].asRectangle(), "rect")
         var vertices = verts.invoke('subPt', verts[0]);
-        this.setShape(new lively.scene.Polyline(vertices, lineWidth, lineColor));
+        $super(new lively.scene.Polyline(vertices));
+	this.applyStyle({borderWidth: lineWidth, borderColor: lineColor});
         this.customizeShapeBehavior();
         
         // this.setStrokeOpacity(0.7);
@@ -1269,7 +1269,7 @@ Morph.subclass('ComponentMorph', {
 
     initialize: function($super, bounds) {
         bounds = bounds || this.defaultExtent.extentAsRectangle();
-        $super(bounds, "rect");
+        $super(new lively.scene.Rectangle(bounds));
         this.closeDnD();
             
         this.linkToStyles(['fabrik']);
@@ -1399,10 +1399,10 @@ Morph.subclass('ComponentMorph', {
     },
     
     addVisualChangeClue: function(textMorph) {
-        var changeClue = new Morph(new Rectangle(0,0,5,5));
+        var changeClue = Morph.makeRectangle(0,0,5,5);
         changeClue.setFill(Color.red);
         changeClue.ignoreEvents(); 
-        textMorph.replaceSelectionWith =  textMorph.replaceSelectionWith.wrap(function(proceed, replacement, delayComposition, justMoreTyping){      
+        textMorph.replaceSelectionWith = textMorph.replaceSelectionWith.wrap(function(proceed, replacement, delayComposition, justMoreTyping){      
             proceed(replacement, delayComposition, justMoreTyping);
             this.addMorph(changeClue)
         })
@@ -1588,7 +1588,7 @@ Morph.subclass('ComponentMorph', {
     },
 
     setupHalos: function() {
-        this.halos = new Morph();
+        this.halos = Morph.makeRectangle(0, 0, 100, 100);
         // to be replace by some general layout mechanism ... aber kloar
         var self = this;
         this.halos.setExtent(this.getExtent());
@@ -1784,8 +1784,8 @@ Widget.subclass('Component', {
     },
     
     buildView: function(optExtent) {
-        var bounds = optExtent && optExtent.extentAsRectangle();
-        this.panel = new this.morphClass(bounds);
+        var bounds = (optExtent || pt(0,0)).extentAsRectangle();
+        this.panel = new this.morphClass(new lively.scene.Rectangle(bounds));
         this.morph = this.panel;
        
         this.panel.setComponent(this);
@@ -1956,7 +1956,7 @@ SelectionMorph.subclass('UserFrameMorph', {
     },
     
     createHandle: function(hand) {
-        var handle = new HandleMorph(pt(0,0), "rect", hand, this, "bottomRight");
+        var handle = new HandleMorph(pt(0,0), lively.scene.Rectangle, hand, this, "bottomRight");
         handle.setExtent(pt(5, 5));
         this.addMorph(handle);
         hand.setMouseFocus(handle);
@@ -2749,9 +2749,9 @@ Widget.subclass('ComponentBox', {
         this.panel = panel;
         
         panel.applyStyle({borderWidth: 2,
-            fill: new lively.paint.LinearGradient([Color.white, 1, Color.primary.blue], 
-						  lively.paint.LinearGradient.NorthSouth)});
-
+			  fill: new lively.paint.LinearGradient([Color.white, 1, Color.primary.blue], 
+								lively.paint.LinearGradient.NorthSouth)});
+	
 
         this.addMorphOfComponent(new FabrikComponent(), function() {
             var extent = pt(300,250);
@@ -2920,11 +2920,11 @@ Global.FabrikConverter = {
  * Extending ClockMorph for PluggableComponent
  */
 Morph.subclass("FabrikClockMorph", {
-    borderWidth: 2,
+    style: {borderWidth: 2},
     openForDragAndDrop: false,
 
     initialize: function($super, position, radius) {
-        $super(position.asRectangle().expandBy(radius), "ellipse");
+        $super(new lively.scene.Ellipse(position, radius));
         this.formalModel = Record.newPlainInstance({Minutes: null, Seconds: null, Hours: null});
         this.linkToStyles(['clock']);
         this.makeNewFace(['XII','I','II','III','IV','V','VI','VII','VIII','IX','X','XI']);  // Roman

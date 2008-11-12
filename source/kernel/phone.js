@@ -7,9 +7,9 @@
 console.log("start phone.js");
 Morph.subclass('PhoneMorph', {
 	initialize: function($super, position, radius) {
-		this.radius = radius;
-		$super(position.asRectangle().expandBy(radius), "ellipse");
-		this.makeLayout();
+	    this.radius = radius;
+	    $super(new lively.scene.Ellipse(position, radius));
+	    this.makeLayout();
 	},
 
 	ringOn: function() {
@@ -187,10 +187,10 @@ console.log("end phone.js");
 console.log("start form.js");
 Morph.subclass('SimpleFormMorph', {
 	initialize: function($super, position, submit, labels, button) {
-		$super(position, "rect");
-		this.makeLayout(position, submit, labels, button);
-		this.labels = labels;
-		this.labels.push(button);
+	    $super(new lively.scene.Rectangle(position));
+	    this.makeLayout(position, submit, labels, button);
+	    this.labels = labels;
+	    this.labels.push(button);
 	},
 
 	makeLayout: function(position, submit, labels, button) {

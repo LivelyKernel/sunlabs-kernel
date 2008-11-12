@@ -93,7 +93,7 @@ function populateSlideWorld(world) {
         world.addMorph(widget);
 	
         // Create a sample ellipse
-        widget = new Morph(loc.addPt(dx).extent(widgetExtent), "ellipse");
+        widget = Morph.makeCircle(loc.addPt(dx), widgetExtent);
         widget.setFill(colors[1]);
         world.addMorph(widget);
 	
@@ -300,8 +300,8 @@ function populateWorldWithExamples(world) {
             if (Config.showCurveExample) {
                 // bezier blob
                 var shape1 = [pt(0,0), pt(50,0), pt(50,50), pt(0,50), pt(0,0)];
-                var widget = new Morph(pt(100,100).asRectangle(),"rect");
-                widget.setShape(new lively.scene.Path(shape1, Color.red, 3, Color.black));
+                //var widget = new Morph(pt(100,100).asRectangle(),"rect");
+                var widget = new Morph(new lively.scene.Path(shape1, Color.red, 3, Color.black));
                 this.addMorph(widget);
                 widget = new Morph(pt(250,50).asRectangle(),"rect");
 		
@@ -348,8 +348,11 @@ function populateWorldWithExamples(world) {
 	    importer.onWorldLoad = function(slideWorld, er) {
 		var link = world.addMorph(new LinkMorph(slideWorld, pt(60, 400)));
 		addLinkLabel(link, "Simple example morphs");
+		// FIXME: remove this when serialization is fixed
+		link.myWorld.setFill(Color.primary.blue);
 	    }
 	    importer.loadMarkup(URL.source.withFilename("slide.xhtml"));
+	    
 	    
 	} else { 
 	    var link = makeSlideWorld(world);

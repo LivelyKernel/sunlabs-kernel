@@ -22,7 +22,6 @@ Config.logDnD = true;
 //Config.fakeFontMetrics = false;
 //Config.fontMetricsFromSVG = true;
 load('../kernel/Base.js');
-load('../kernel/scene.js');
 
 load('dom/mico.js');
 load('dom/dom2-core.js');
@@ -93,13 +92,18 @@ Object.extend(fx.util, {
 	node.addKeyListener(new listenerClass(adapter));
     },
     
-    dispatchMouseEvent: function(type, evt) {
+    dispatchMouseEvent: function(type, evt, node) {
 	var event = new MouseEvent();
 	event._type = type;
 	event._shiftKey = evt.isShiftDown();
 	event._altKey = evt.isAltDown();
-	event._clientX = evt.getX();
-	event._clientY = evt.getY();
+	var point = evt.getPoint();
+	var source = evt.getSource();
+	//var loc = source.getLocation();
+	if (type == 'mousedown') console.log('origin is ' + pt(point.getX(), point.getY()) + " source " + source);
+					     
+	event._clientX = point.getX();
+	event._clientY = point.getY();
 	var result = document.documentElement.dispatchEvent(event);
 	fx.dom.update();
     },
@@ -195,8 +199,7 @@ Object.subclass('fx.Frame', {
 	});
 	
 	fx.util.addMouseListener(node, "mousePressed", function(evt) { 
-	    //console.log('dispatch to node ' + node);
-	    fx.util.dispatchMouseEvent('mousedown', evt);
+	    fx.util.dispatchMouseEvent('mousedown', evt, node);
 	});
 	
 	fx.util.addMouseListener(node, "mouseReleased", function(evt) { 
@@ -337,7 +340,7 @@ var PaintModule = {
 	if (color) return color;
 	else if (name.startsWith("url")) { // FIXME specialcasing the gradients
 	    // parse uri
-	    var node = lively.FragmentURI.getElement(name);
+	    var node = lively.data.FragmentURI.getElement(name);
 	    if (node && node.tagName == 'linearGradient') {
 		// go through stops
 		// FIXME gradients are in user space in fx!
@@ -604,7 +607,7 @@ fx.dom.renderers[SVGGElement.tagName] = function(element, attribute) {
 
     var clip = element.getAttributeNS(null, "clip-path");
     if (clip) {
-	var node = lively.FragmentURI.getElement(clip);
+	var node = lively.data.FragmentURI.getElement(clip);
 	if (node) {
 	    var clips = node.getElementsByTagNameNS(Namespace.SVG, "rect");
 	    if (clips.length > 0) {
@@ -668,7 +671,7 @@ SVGForeignObjectElement.prototype._fxSetComponent = function(component) {
 
 fx.dom.renderers[SVGForeignObjectElement.tagName] = function(element, attribute) {
     if (!element._fxBegin) element._fxBegin = new fx.Parent();
-    //console.log('render foreign object ' + element + " on " + attribute);
+    console.log('render foreign object ' + element + " on " + attribute);
     // update size here, if necessary
     if (element._fxComponent) 
 	element._fxBegin.setChild(element._fxComponent);

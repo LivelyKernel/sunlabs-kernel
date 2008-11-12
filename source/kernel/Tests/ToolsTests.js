@@ -256,7 +256,7 @@ TestCase.subclass('lively.Tests.ToolsTests.KeyboardTest', {
     shouldRun: false,
     
     testStartKeyWatcher: function() {
-        var keyWatcher = new Morph(new Rectangle(0,0,100,30));
+        var keyWatcher = Morph.makeRectangle(0,0,100,30);
         var label = new TextMorph(keyWatcher.bounds());
         label.takesKeyboardFocus = Functions.False;
         label.onKeyDown = Functions.False;

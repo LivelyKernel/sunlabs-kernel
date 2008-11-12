@@ -1094,9 +1094,7 @@ lively.data.Wrapper.subclass('Morph', {
     // prototype vars
     rotation: 0.0,
     scale: 1.0,
-    fill: Color.primary.green,
-    borderWidth: 1,
-    borderColor: Color.black,
+    style: {},
 
     focusHaloBorderWidth: 4,
 
@@ -1127,33 +1125,23 @@ lively.data.Wrapper.subclass('Morph', {
 	}
     },
 
-    initialize: function(initialBounds, shapeType) {
+    initialize: function(shape) {
 	//console.log('initializing morph %s %s', initialBounds, shapeType);
-
-	if(!initialBounds) initialBounds = new Rectangle(0,0,100,100);
-	if(!shapeType) shapeType = "rect";
 	this.internalInitialize(NodeFactory.create("g"), true);
-
-	this.pvtSetTransform(new lively.scene.Similitude(this.defaultOrigin(initialBounds, shapeType)));
-	this.initializePersistentState(initialBounds, shapeType);
+	dbgOn(!shape.bounds);
+	this.pvtSetTransform(new lively.scene.Similitude(shape.origin()));
+	this.initializePersistentState(shape);
 	this.initializeTransientState();
     },
 
-    initializePersistentState: function(initialBounds /*:Rectangle*/, shapeType/*:String*/) {
+    initializePersistentState: function(shape) {
 	// a rect shape by default, will change later
-	switch (shapeType) {
-	case "ellipse":
-	    this.shape = new lively.scene.Ellipse(initialBounds.translatedBy(this.origin.negated()));
-	    break;
-	default:
-	    // polygons and polylines are set explicitly later
-	    this.shape = new lively.scene.Rectangle(initialBounds.translatedBy(this.origin.negated()));
-	    break;
-	}
-	this.setFill(this.fill);
-	this.setBorderWidth(this.borderWidth);
-	this.setBorderColor(this.borderColor);
+	this.shape = shape;
+
+	dbgOn(!this.shape.translateBy);
+	this.shape.translateBy(this.origin.negated());
 	this.rawNode.appendChild(this.shape.rawNode);
+	this.applyStyle(this.style);
 	return this;
     },
 
@@ -1172,7 +1160,7 @@ lively.data.Wrapper.subclass('Morph', {
 	
 	this.pvtSetTransform(this.getTransform());
 
-	this.initializePersistentState(pt(0,0).asRectangle(), "rect");
+	this.initializePersistentState(other.shape.copy(copier));
 
 	if (other.hasSubmorphs()) { // deep copy of submorphs
 	    other.submorphs.forEach(function each(m) { 
@@ -1264,16 +1252,6 @@ lively.data.Wrapper.subclass('Morph', {
     },
 
     restoreDefs: function(importer, originalDefs, isOnClone) {
-	function applyGradient(gradient, owner) {
-	    gradient.setDerivedId(owner);
-	    if (owner.shape) {
-		var myFill = owner.shape.getFill();
-		if (myFill)
-		    owner.shape.setFill(gradient.uri());
-		else console.warn('myFill undefined on %s', owner);
-	    } else console.warn("cannot set fill %s (yet?), no shape...", gradient.id());
-	    return gradient;
-	}
 	
 	for (var def = originalDefs.firstChild; def != null; def = def.nextSibling) {
 	    if (isOnClone) def = def.cloneNode(true);
@@ -1287,10 +1265,8 @@ lively.data.Wrapper.subclass('Morph', {
 		this.addWrapperToDefs(this.clipPath);
 		break;
 	    case "linearGradient":
-		this.fill = this.addWrapperToDefs(applyGradient(new lively.paint.LinearGradient(Importer.marker, def), this));
-		break;
-	    case "radialGradient": // FIXME gradients can be used on strokes too
-		this.fill = this.addWrapperToDefs(applyGradient(new lively.paint.RadialGradient(Importer.marker,  def), this));
+	    case "radialGradient": 
+		console.warn('legacy gradient  ' + Exporter.stringify(def));
 		break;
 	    case "code":
 		if (!Config.skipChanges) { // Can be blocked by URL param 
@@ -1537,14 +1513,11 @@ Object.extend(Morph, {
     },
 
     fromLiteral: function(literal) {
-	var morph = new Morph(literal.bounds, literal.shapeType);
+	var morph = new Morph(literal.shape);
 	if (literal.submorphs) {
 	    if (Object.isArray(literal.submorphs))
 		morph.setSubmorphs(literal.submorphs);
 	    else throw new TypeError();
-	}
-	if (literal.shape) {
-	    morph.setShape(literal.shape);
 	}
 	return morph;
     }
@@ -1555,25 +1528,11 @@ Object.extend(Morph, {
 Morph.addMethods({
 
     setFill: function(fill) {
-	var old = this.fill;
-	this.fill = fill;
-	if (old instanceof lively.data.Wrapper) 
-	    old.removeRawNode();
-	var attr;
-	if (fill == null) {
-	    attr = "none";
-	} else if (fill instanceof Color) {
-	    attr = fill.toString();
-	} else if (fill instanceof lively.paint.Gradient) { 
-	    this.fill = fill.copy().setDerivedId(this);
-	    this.addWrapperToDefs(this.fill);
-	    attr = this.fill.uri();
-	}
-	this.shape.setFill(attr);
+	this.shape.setFill(fill);
     },
 
     getFill: function() {
-	return this.fill; 
+	return this.shape.getFill();
     },
 
     setBorderColor: function(newColor) { this.shape.setStroke(newColor); },
@@ -2080,11 +2039,8 @@ Morph.addMethods({
 	// layoutChanged will cause this.transformChanged();
     }.wrap(Morph.onLayoutChange('scale')),
 
-    defaultOrigin: function(bounds, shapeType) { 
-	return (shapeType == "rect" || shapeType == "rectangle") ? bounds.topLeft() : bounds.center(); 
-    },
 
-    getTranslation: function() { 
+    gettranslation: function() { 
 	return this.getTransform().getTranslation(); 
     },
 
@@ -2427,7 +2383,7 @@ Morph.addMethods({
     },
     
     makeHandle: function(position, partName, evt) { // can be overriden
-	var handleShape = Object.isString(partName) || partName >= 0 ? "rect" : "ellipse";
+	var handleShape = Object.isString(partName) || partName >= 0 ? lively.scene.Rectangle : lively.scene.Ellipse;
 	return new HandleMorph(position, handleShape, evt.hand, this, partName);
     },
 
@@ -2699,7 +2655,7 @@ Morph.subclass('PseudoMorph', {
     description: "This hack to make various objects serializable, despite not being morphs",
     
     initialize: function($super) {
-	$super(pt(0,0).extent(0,0), "rect");
+	$super(new lively.scene.Group());
 	this.setVisible(false);
     }
 
@@ -3038,38 +2994,54 @@ Object.extend(Morph, {
     makeLine: function(verts, lineWidth, lineColor) {
 	// make a line with its origin at the first vertex
 	// Note this works for simple lines (2 vertices) and general polylines
-	var line = new Morph(verts[0].asRectangle(), "rect");
-	var vertices = verts.invoke('subPt', verts[0]);
-	line.setShape(new lively.scene.Polyline(vertices, lineWidth, lineColor));
-	return line; 
+	verts = verts.invoke('subPt', verts[0]);
+	var shape = new lively.scene.Polyline(verts);
+	//shape.origin = function() { return pt(0,0) };
+	var morph = new Morph(shape);
+	morph.setBorderWidth(lineWidth);
+	morph.setBorderColor(lineColor);
+
+	return morph;
     },
 
     makeCircle: function(location, radius, lineWidth, lineColor, fill) {
 	// make a circle of the given radius with its origin at the center
-	var circle = new Morph(location.asRectangle().expandBy(radius), "ellipse");
-	return circle.applyStyle({fill: fill, borderWidth: lineWidth, borderColor: lineColor});
+	var morph = new Morph(new lively.scene.Ellipse(location, radius));
+	morph.setBorderWidth(lineWidth);
+	morph.setBorderColor(lineColor);
+	morph.setFill(fill);
+	return morph;
+	//return circle.applyStyle({fill: fill, borderWidth: lineWidth, borderColor: lineColor});
     },
 
     makeRectangle: function(/**/) {
+	var morph;
 	switch (arguments.length) {
 	case 1: // rectangle
 	    if (!(arguments[0] instanceof Rectangle)) throw new TypeError(arguments[0] + ' not a rectangle');
-	    return new Morph(arguments[0], "rect");
+	    morph = new Morph(new lively.scene.Rectangle(arguments[0]));
+	    break;
 	case 2: // location and extent
-	    return new Morph(arguments[0].extent(arguments[1]), "rect");
+	    morph = new Morph(new lively.scene.Rectangle(arguments[0].extent(arguments[1])));
+	    break;
 	case 4: // x,y,width, height
-	    return new Morph(new Rectangle(arguments[0], arguments[1], arguments[2], arguments[3]), "rect");
+	    morph = new Morph(new lively.scene.Rectangle(new Rectangle(arguments[0], arguments[1], arguments[2], arguments[3])));
+	    break;
 	default:
 	    throw new Error("bad arguments " + arguments);
 	}
+	return morph.applyStyle({borderWidth: 1, borderColor: Color.black, fill: Color.blue});
     },
 
 
     makePolygon: function(verts, lineWidth, lineColor, fill) {
 	// make a polygon with its origin at the starting vertex
-	var poly = new Morph(pt(0,0).asRectangle(), "rect");
-	poly.setShape(new lively.scene.Polygon(verts, fill, lineWidth, lineColor));
-	return poly; 
+	var morph = new Morph(new lively.scene.Polygon(verts));
+	morph.setBorderWidth(lineWidth);
+	morph.setBorderColor(lineColor);
+	morph.setFill(fill);
+	return morph;
+	//return morph.applyStyle({fill: fill, borderWidth: lineWidth, borderColor: lineColor});
     }
 });
 
@@ -3498,7 +3470,7 @@ Morph.subclass("PasteUpMorph", {
         var m = new SelectionMorph(evt.point().asRectangle());
         this.world().addMorph(m);
         this.world().currentSelection = m;
-        var handle = new HandleMorph(pt(0,0), "rect", evt.hand, m, "bottomRight");
+        var handle = new HandleMorph(pt(0,0), lively.scene.Rectangle, evt.hand, m, "bottomRight");
 	handle.setExtent(pt(0, 0));
 	handle.mode = 'reshape';
         m.addMorph(handle);
@@ -3602,7 +3574,7 @@ PasteUpMorph.subclass("WorldMorph", {
 	    XLinkNS.setHref(background, backgroundImageId);
             this.addNonMorph(background);
         }
-        $super(bounds, "rect");
+        $super(new lively.scene.Rectangle(bounds));
 
 	var gradient = new lively.paint.LinearGradient([Color.primary.blue.lighter(), 1, Color.primary.blue, 1, Color.primary.blue.lighter(), 1, Color.primary.blue, 1, Color.primary.blue.lighter()]);
 	gradient.rawNode.setAttributeNS(null, "gradientTransform", "translate(0, -0.1) skewY(10)");
@@ -3755,9 +3727,6 @@ PasteUpMorph.subclass("WorldMorph", {
         window.location && window.location.reload();
     },
 
-    defaultOrigin: function(bounds) { 
-        return bounds.topLeft(); 
-    },
     
     layoutChanged: function() {
 	// do nothing
@@ -3987,9 +3956,9 @@ PasteUpMorph.subclass("WorldMorph", {
                 world.addMorph(widget)}],
             ["Heart", function(evt) { 
                 var shape1 = [pt(0,0), pt(50,0), pt(50,50), pt(0,50), pt(0,0)];
-                var widget = new Morph(evt.point().extent(pt(100,100)),"path");
-                widget.setShape(new lively.scene.Path(shape1, Color.red, 3, Color.red));
-                widget.rotateBy(3.9);
+                //var widget = new Morph(evt.point().extent(pt(100,100)),"path");
+		var widget = new Morph(new lively.scene.Path(shape1, Color.red, 3, Color.red));
+		widget.rotateBy(3.9);
                 world.addMorph(widget);
                 document.getElementById(widget.id()).childNodes[0].setAttribute('d', "M0,0T48.25658178329468,-5.770838260650635T85.89215588569641,15.051417827606201T61.36309051513672,32.78068518638611T53.225199699401855,46.00089120864868T25.02833652496338,68.58267283439636T1.0328261852264404,40.347657918930054T0,0")
                 }],
@@ -4216,10 +4185,8 @@ Morph.subclass("HandMorph", {
     grabHaloLabelStyle: {fontSize: Math.floor((Config.defaultFontSize || 12) *0.85), padding: Rectangle.inset(0)},
 
     initialize: function($super, local) {
-        $super(pt(5,5).extent(pt(10,10)), "rect");
-	
-        this.setShape(new lively.scene.Polygon([pt(0,0), pt(9,5), pt(5,9), pt(0,0)], 
-					       (local ? Color.primary.blue : Color.primary.red), 1, Color.black));
+        $super(new lively.scene.Polygon([pt(0,0), pt(9,5), pt(5,9), pt(0,0)]));
+	this.applyStyle({fill: local ? Color.primary.blue : Color.primary.red, borderColor: Color.black, borderWidth: 1});
 	
         this.isLocal = local;
 
@@ -4712,24 +4679,19 @@ Morph.subclass('LinkMorph', {
     
     initialize: function($super, otherWorld, initialPosition) {
         // In a scripter, type: world.addMorph(new LinkMorph(null))
-        var bounds = initialPosition;
 
         // Note: Initial position can be specified either as a rectangle or point.
         // If no position is specified, place the icon in the lower left corner
         // of the screen.
-        if (!bounds) {
-            bounds = WorldMorph.current().bounds().bottomLeft().addXY(50, -50).asRectangle().expandBy(25);
-        } else if (bounds instanceof Point) {
-            bounds = bounds.asRectangle().expandBy(25);
-        }
-	
-        $super(bounds, "ellipse");
-	
+        initialPosition = initialPosition || WorldMorph.current().bounds().bottomLeft().addXY(50, -50);
+        $super(new lively.scene.Ellipse(initialPosition, 25));
+	var bounds = this.shape.bounds();
+	       
         // Make me look a bit like a world
-        this.applyStyle(this.style);
         [new Rectangle(0.15,0,0.7,1), new Rectangle(0.35,0,0.3,1), new Rectangle(0,0.3,1,0.4)].forEach(function(each) {
             // Make longitude / latitude lines
-            var lineMorph = new Morph(bounds.scaleByRect(each), "ellipse");
+            //var lineMorph = new Morph(bounds.scaleByRect(each), "ellipse");
+	    var lineMorph = new Morph(new lively.scene.Ellipse(bounds.scaleByRect(each)));
 	    lineMorph.applyStyle({fill: null, borderWidth: 1, borderColor: Color.black}).ignoreEvents();
             lineMorph.align(lineMorph.bounds().center(),this.shape.bounds().center());
             this.addMorph(lineMorph);

@@ -97,6 +97,7 @@ function swingDemo() {
     editorScrollPane.setPreferredSize(new Dimension(rect.width, rect.height));
     editorScrollPane.setMinimumSize(new Dimension(10, 10));
     xeno.setFXComponent(editorScrollPane);
+    //WorldMorph.current().addMorph(xeno).moveBy(pt(100,200));
     WorldMorph.current().addFramedMorph(xeno, "Swing Editor: " + url.toString(), pt(50, 50));
 }
 
@@ -128,12 +129,12 @@ function morphicMain() {
     var dy = pt(0,50); 
     var dx = pt(120,0);
     // Create a sample rectangle       
-    var widget = new Morph(loc.extent(widgetExtent), "rect");
+    var widget = Morph.makeRectangle(loc.extent(widgetExtent));
     widget.setFill(colors[0]);
     world.addMorph(widget);
      
      // Create a sample ellipse
-     widget = new Morph(loc.addPt(dx).extent(widgetExtent), "ellipse");
+    widget = new Morph(new lively.scene.Ellipse(loc.addPt(dx), widgetExtent));
      widget.setFill(colors[1]);
      world.addMorph(widget);
      

@@ -3,7 +3,7 @@
 TestCase.subclass('MorphTest', {
 	
 	createTestMorph: function(owner){
-	    var m =  new Morph(new Rectangle( 0,  0, 10, 10),"rect");
+	    var m =  Morph.makeRectangle( 0,  0, 10, 10);
 	    if(owner)
 	        owner.addMorph(m);
 	    return m
@@ -104,7 +104,7 @@ TestCase.subclass('HandMorphTest', {
         var world = WorldMorph.current();
         var hand = world.hands.first();
         hand.mouseFocus = null;
-        var morph = new Morph(new Rectangle(100,100,200,200), "rect");
+        var morph = Morph.makeRectangle(100,100,200,200);
         this.morph = morph;
         morph.getHelpText  = function(){return "This is no help text!"};
         world.addMorph(morph);
@@ -213,7 +213,7 @@ TestCase.subclass('SerializeMorphTest', {
 	
 	setUp: function() {
 		this.bounds = rect(pt(10,10), pt(100,100));
-		this.parentMorph =  new Morph(rect(pt(0,0), pt(300,300)), "rect");
+	    this.parentMorph =  Morph.makeRectangle(0,0, 300, 300);
 	},
 	
 	exportMorph: function(morph) {
@@ -223,7 +223,7 @@ TestCase.subclass('SerializeMorphTest', {
 	},
 	
 	xtestSerializeMorph: function(){
-		this.morph = new Morph(this.bounds, "rect");
+	    this.morph = new Morph(new lively.scene.Rectangle(this.bounds));
 		this.morph.simpleNumber = 1232342;
 		this.morph.simpleString = "eineZeichenkette";
 		this.parentMorph.addMorph(this.morph);
@@ -412,7 +412,7 @@ Widget.subclass('DummyWidget', {
     },
     
     buildView: function(extent) {
-        this.panel = new Morph(rect(pt(20,20), pt(150,150)), "rect");
+        this.panel = new Morph(new lively.scene.Rectangle(rect(pt(20,20), pt(150,150))));
         
         this.morph =  new TextMorph(rect(pt(10,10), pt(100,30)));
         this.morph2 =  new TextMorph(rect(pt(10,40), pt(100,60)));

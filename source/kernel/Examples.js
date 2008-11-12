@@ -108,17 +108,13 @@ Widget.subclass('TestWidget', {
 // The Clock example
 // ===========================================================================
 
-/**
- * @class ClockMorph
- */
-
 Morph.subclass("ClockMorph", {
 
-    borderWidth: 2,
+    style: {borderWidth: 2},
     openForDragAndDrop: false,
 
     initialize: function($super, position, radius) {
-        $super(position.asRectangle().expandBy(radius), "ellipse");
+        $super(new lively.scene.Ellipse(position, radius));
         this.linkToStyles(['clock']);
         this.makeNewFace(['XII','I','II','III','IV','V','VI','VII','VIII','IX','X','XI']);  // Roman
         return this;
@@ -192,7 +188,7 @@ Morph.subclass('PianoKeyboard', {
 
     initialize: function($super, loc) {
 	//  -- Lets Boogie! --
-	$super(loc.extent(pt(100, 20)), "rect");
+	$super(new lively.scene.Rectangle(loc.extent(pt(100, 20))));
 	var wtWid, bkWid, keyRect, key, octavePt, nWhite, nBlack;
 	var nOctaves = 6;
 	var margin = pt(4, 4);
@@ -424,7 +420,7 @@ PanelMorph.subclass('SquiggleMorph', {
     documentation: "An even simpler drawing program",
     drawingColor: Color.red,
     drawingHandColor: Color.yellow,
-    borderWidth: 2,
+    style: { borderWidth: 2 },
     
     initialize: function($super, ext) {
         $super(ext);
@@ -432,7 +428,7 @@ PanelMorph.subclass('SquiggleMorph', {
         this.currentMorph = null;
         this.start = null;
         this.savedHandColor = null;
-	this.contentMorph = this.addMorph(new ClipMorph(ext.extentAsRectangle().insetBy(this.borderWidth/2)));
+	this.contentMorph = this.addMorph(new ClipMorph(ext.extentAsRectangle().insetBy(this.getBorderWidth()/2)));
 	this.contentMorph.ignoreEvents();
 	this.setFill(new lively.paint.LinearGradient([Color.white, 1, Color.primary.blue.lighter()], lively.paint.LinearGradient.NorthSouth));
     },
@@ -440,7 +436,8 @@ PanelMorph.subclass('SquiggleMorph', {
     onMouseDown: function(evt) {
         if (!this.currentMorph) {
             this.start = this.localize(evt.mousePoint);
-            this.currentMorph = this.contentMorph.addMorph(Morph.makeRectangle(this.start.asRectangle()));
+            this.currentMorph = this.contentMorph.addMorph(new Morph(new lively.scene.Polyline([pt(0,0)])));
+	    this.currentMorph.applyStyle({borderWidth: 2, borderColor: this.drawingColor});
             // TODO: relaying events stops from moving morphs after drawing them..
             // this.currentMorph.relayMouseEvents(this, {onMouseMove: "onMouseMove"});
 
@@ -451,7 +448,6 @@ PanelMorph.subclass('SquiggleMorph', {
                 this.currentMorph.ignoreEvents();
             }
             */ 
-            this.currentMorph.setShape(new lively.scene.Polyline([pt(0,0)], 2, this.drawingColor));
             this.savedHandColor = evt.hand.getFill();
             evt.hand.setFill(this.drawingHandColor);
         } else {
@@ -820,7 +816,10 @@ Object.subclass('lively.examples.threedee.WireObject', {
         var U = 0;
     
         for (var i = 0; i < 8; i++) { 
-            var shape = new lively.scene.Polygon([pt(this.vx[U],this.vy[U])], Color.primary.blue, 2, Color.black);
+            var shape = new lively.scene.Polygon([pt(this.vx[U],this.vy[U])]);
+	    shape.setFill(Color.primary.blue);
+	    shape.setStrokeWidth(2);
+	    shape.setStroke(Color.black);
             shape.setLineJoin(lively.scene.LineJoins.Round);
             morphArray[i].setShape(shape);
             // shape.setFill(new Color(0xAA, 0, 0xCC)); // Approximate Sun purple color
@@ -852,7 +851,7 @@ PanelMorph.subclass('lively.examples.Sun3DMorph', {
     documentation: "Sun logo rotating in 3D",
 
     initialize: function($super, rect) {
-        $super(rect, "rect");
+        $super(rect);
 	
 	this.applyStyle({borderWidth: 2, fillOpacity: .2, fill: Color.veryLightGray});
 	this.contentMorph = this.addMorph(new ClipMorph(this.innerBounds().insetBy(this.getBorderWidth()/2)));
@@ -861,8 +860,8 @@ PanelMorph.subclass('lively.examples.Sun3DMorph', {
         // Create a bunch of polyline objects for drawing the Sun U's 
         this.morphArray = [];
         for (var i = 0; i < 8; i++) {
-            this.morphArray[i] = new Morph(pt(10,10).asRectangle());
-            this.morphArray[i].setShape(new lively.scene.Polyline([pt(0,0)], 2, Color.red));
+            this.morphArray[i] = new Morph(new lively.scene.Polyline([pt(0,0)])).applyColor({borderWidth: 2, 
+											     borderColor: Color.red});
             this.contentMorph.addMorph(this.morphArray[i]);
         }
 
@@ -953,7 +952,10 @@ Object.subclass('lively.examples.asteroids.AsteroidsSprite', {
 
     initialize: function(vertices) {
         this.shape = vertices;
-        this.sprite = new lively.scene.Polygon([], Color.black, 1, Color.yellow);
+        this.sprite = new lively.scene.Polygon([]);
+	this.sprite.setFill(Color.black);
+	this.sprite.setStrokeWidth(1);
+	this.sprite.setStroke(Color.yellow);
     },
     
     // Methods:
@@ -1015,7 +1017,7 @@ Object.subclass('lively.examples.asteroids.AsteroidsSprite', {
                 morph.setPosition(verts[0]);
                 morph.setShape(sprite);
             } else {
-                morph = new Morph(verts[0].extent(pt(20, 20)), "rect");
+                morph = new Morph(sprite);
                 morph.setShape(sprite);
                 gameMorph.addMorph(morph);
             }
@@ -2144,7 +2146,7 @@ ClipMorph.subclass("lively.examples.asteroids.GameMorph", {
     module.GameMorph.addMethods({
     
     initialize: function($super, rect) {
-        $super(rect, "rect");
+        $super(rect);
         this.timeoutID = null;
         // Set black background color for the game
         this.setFill(Color.black);
@@ -2610,12 +2612,11 @@ Mapframe has menu which can be accessed by Ctrl+MouseClick in frame area
 
 Morph.subclass("MapFrameMorph", {
 
-    borderWidth: 5,
-    fill: new Color(0.5,0.5,0.5,0.8),
+    style: { borderWidth: 5, fill: new Color(0.5,0.5,0.5,0.8) },
 
     initialize: function($super, initialBounds, online) { 
         pd("MapFrameMorph",2);
-        $super(initialBounds,"rectangle");
+        $super(new lively.scene.Rectangle(initialBounds));
         this.online = online;
         this.topLeft = this.bounds().topLeft();
         this.bottomRight = this.bounds().bottomRight();
@@ -2760,7 +2761,7 @@ Morph.subclass("MapMorph", {
 
     initialize: function($super, initialBounds, online) { 
       pd("MapMorph",2);
-      $super(initialBounds,"rect");
+	$super(new lively.scene.Rectangle(initialBounds));
 
       this.setFill(Color.blue.lighter());
       this.setBorderWidth(0);
@@ -3496,7 +3497,7 @@ using(lively.examples.canvascape).run(function(module) {
 Morph.subclass("lively.examples.canvascape.MiniMapMorph", {
     
     initialize: function($super, rect) {
-        $super(rect, "rect");
+        $super(new lively.scene.Rectangle(rect));
         console.log("minimap init"); 
         this.setFill(Color.black); 
         this.x = rect.topLeft().x;
@@ -3535,7 +3536,7 @@ Morph.subclass("lively.examples.canvascape.MiniMapMorph", {
 ClipMorph.subclass("lively.examples.canvascape.CanvasScapeMorph", {
     
     initialize: function($super, rect) {
-        $super(rect, "rect");
+        $super(new lively.scene.Rectangle(rect));
         console.log("init"); 
         this.setFill(Color.veryLightGray);
         this.initParameters();
@@ -3827,16 +3828,14 @@ ClipMorph.subclass("lively.examples.canvascape.CanvasScapeMorph", {
             }
 
             if (drawobject) {
-                morppi = new Morph(pt(0,0).asRectangle(),"rect"); // polygon
+                morppi = new Morph(new lively.scene.Polygon([pt(tl[0],tl[1]),pt(tr[0],tr[1]),pt(br[0],br[1]),pt(bl[0],bl[1])]));
+		morppi.setFill(Color.blue);
                 morppi.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseUp: "onMouseUp"});
-                morppi.setShape(new lively.scene.Polygon([pt(tl[0],tl[1]),pt(tr[0],tr[1]),pt(br[0],br[1]),pt(bl[0],bl[1])],
-                                                 Color.blue,1,Color.black));
                 this.addMorph(morppi);
             } else {
-                morppi = new Morph(pt(0,0).asRectangle(),"rect"); // polygon
+                morppi = new Morph(new lively.scene.Polygon([pt(tl[0],tl[1]),pt(tr[0],tr[1]),pt(br[0],br[1]),pt(bl[0],bl[1])]));
+		morppi.setFill(this.color);
                 morppi.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseUp: "onMouseUp"});
-                morppi.setShape(new lively.scene.Polygon([pt(tl[0],tl[1]),pt(tr[0],tr[1]),pt(br[0],br[1]),pt(bl[0],bl[1])],
-                                                 this.color,1,Color.black));
                 this.addMorph(morppi);
             }
             
@@ -4164,7 +4163,7 @@ Morph.subclass("EngineMorph", {
     
     initialize: function($super, fullRect) {
         // A lively model by Dan Ingalls - 9/25/2007
-        $super(fullRect, "rect");
+        $super(new lively.scene.Rectangle(fullRect));
         this.setFill(new lively.paint.LinearGradient([Color.gray, 1, Color.darkGray], lively.paint.LinearGradient.NorthSouth));
         this.makeLayout(1, false);
         this.setRunning(true);
@@ -4253,7 +4252,7 @@ Morph.subclass("EngineMorph", {
         cylinder.setPosition(cr.topLeft().addXY(0, -dHead));
         var pistonBW = 2;
         var pistonDx = (cylinder.getBorderWidth() + pistonBW) / 2 - 1;
-        var piston = new Morph(cr.insetByPt(pt(pistonDx, (cr.height-this.stroke)/2)), "rectangle");
+        var piston = Morph.makeRectangle(cr.insetByPt(pt(pistonDx, (cr.height-this.stroke)/2)));
 	piston.applyStyle({fill: Color.darkGray, borderWidth: pistonBW});
         cylinder.addMorph(piston);
         var wristPin = Morph.makeCircle(piston.innerBounds().center(), cr.width*0.1, 0, null, Color.black);
@@ -4373,7 +4372,7 @@ EngineMorph.makeEngine = function(world, pos) {
 Morph.subclass("AnimMorph", {
     
     initialize: function($super, rect) {  
-        $super(rect, "rect");
+        $super(new lively.scene.Rectangle(rect));
         this.dim = rect.extent();
     },
 
@@ -4411,9 +4410,9 @@ Morph.subclass("AnimMorph", {
         this.status.setFill(Color.white);
         this.status.setFillOpacity(0.7);
         this.status.setBorderWidth(0);
-	var k = new Morph(pt(0,0).asRectangle());
+	var k = new Morph(new lively.scene.Polyline([pt(-20,-20),pt(30,0),pt(-20,20), pt(-20,-20)]));
+	k.applyStyle({borderWidth: 1, borderColor:Color.blue});
         this.status.addMorph(k);
-        k.setShape(new lively.scene.Polyline([pt(-20,-20),pt(30,0),pt(-20,20), pt(-20,-20)], 1, Color.blue));
         k.setFill(Color.blue.lighter());
         k.relayMouseEvents(this.status, {onMouseDown: "onMouseDown", onMouseUp: "onMouseUp"});
     },
@@ -4486,7 +4485,7 @@ Morph.subclass("PlayerMorph",  {
 
     initialize: function($super) {
         var rect = new Rectangle(0, 0, 330, 260);
-        $super(rect, "rect");
+        $super(new lively.scene.Rectangle(rect));
         this.setFill(new lively.paint.LinearGradient([Color.white, 1, Color.primary.blue], 
 						     lively.paint.LinearGradient.NorthSouth));
 
@@ -4528,7 +4527,7 @@ ClipMorph.subclass('Fasteroids', {
     initialize: function ($super, initialBounds) {
 	// An attempt to show how small Asteroids can be in Morphic
 	// Here we set up the game board
-	$super(initialBounds, "rectangle");
+	$super(initialBounds);
 	this.asteroids = [];
 	for (var i=4; i<10; i++) this.addMorphToGroup(this.makeAsteroid(i, 200, Color.green), this.asteroids);
 	this.torpedos = [];
@@ -4605,8 +4604,8 @@ ClipMorph.subclass('Fasteroids', {
 Morph.subclass('InertialBody', {
     initialize: function ($super, verts, lineWidth, lineColor, fill, velocity, angularVelocity) {
 	// I'm a polygon with velocity and spin
-	$super(pt(0,0).asRectangle(), "rect");
-	this.setShape(new lively.scene.Polygon(verts, fill, lineWidth, lineColor));
+	$super(new lively.scene.Polygon(verts));
+	this.applyStyle({fill: fill, borderWidth: lineWidth, borderColor: lineColor});
 	this.velocity = velocity || pt(0, 0);
 	this.angularVelocity = angularVelocity || 0;
     },

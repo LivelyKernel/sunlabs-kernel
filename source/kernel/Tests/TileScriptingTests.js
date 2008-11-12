@@ -77,7 +77,7 @@ TestCase.subclass('lively.Tests.TileScriptingTests.DropAreaTest', {
     },
     
     testCreateTileFromMorph: function() {
-        var morph = new Morph(pt(20,20).extentAsRectangle());
+        var morph = Morph.makeRectangle(pt(20,20).extentAsRectangle());
         var result = morph.asTile();
         
         this.assertIdentity(morph, result.targetMorph);
@@ -95,8 +95,7 @@ TestCase.subclass('lively.Tests.TileScriptingTests.ObjectTileTest', {
          
     testAcceptsMorph: function() {
         var tile = new lively.TileScripting.ObjectTile();
-        var morph = new Morph(pt(20,20).extentAsRectangle());
-        
+        var morph = Morph.makeRectangle(pt(20,20).extentAsRectangle());
         tile.createAlias(morph);
         this.assertEqual(tile.objectId(), morph.id(), 'Morph id not added ti tile');
     },
@@ -124,7 +123,7 @@ TestCase.subclass('lively.Tests.TileScriptingTests.ObjectTileTest', {
     
     testAsJsEval: function() {
         var tile = new lively.TileScripting.ObjectTile();
-        var morph = new Morph(pt(20,20).extentAsRectangle());
+        var morph = Morph.makeRectangle(pt(20,20).extentAsRectangle());
         
         tile.createAlias(morph);
         morph.openInWorld();
@@ -135,7 +134,7 @@ TestCase.subclass('lively.Tests.TileScriptingTests.ObjectTileTest', {
     
     testAsJsWithFunction: function() {
         var tile = new lively.TileScripting.ObjectTile();
-        var morph = new Morph(pt(20,20).extentAsRectangle());
+        var morph = Morph.makeRectangle(pt(20,20).extentAsRectangle());
         
         tile.createAlias(morph);
         tile.addFunctionTile('getPosition');
@@ -235,7 +234,7 @@ TestCase.subclass('lively.Tests.TileScriptingTests.NumberTileTest', {
 TestCase.subclass('LayoutTests', {
     
     setUp: function() {
-        this.baseMorph = new Morph(new Rectangle(0,0,50,200));
+        this.baseMorph = Morph.makeRectangle(new Rectangle(0,0,50,200));
     },
     
     assertAbove: function(m1, m2) {
@@ -266,9 +265,9 @@ TestCase.subclass('LayoutTests', {
     testVLayoutThreeMorphsAboveEachOther: function() {
         var sut = new VLayout(this.baseMorph);
         this.assertIdentity(sut.baseMorph, this.baseMorph);
-        var morph1 = new Morph(new Rectangle(0,0,20,30)),
-            morph2 = new Morph(new Rectangle(0,0,30,40)),
-            morph3 = new Morph(new Rectangle(0,0,10,90));
+        var morph1 = Morph.makeRectangle(0,0,20,30),
+            morph2 = Morph.makeRectangle(0,0,30,40),
+            morph3 = Morph.makeRectangle(0,0,10,90);
         this.baseMorph.addMorph(morph1);
         this.baseMorph.addMorph(morph2);
         this.baseMorph.addMorph(morph3);
@@ -280,8 +279,8 @@ TestCase.subclass('LayoutTests', {
     
     testHLayoutTwoMorphsHorizontalAndResize: function() {
         var sut = new HLayout(this.baseMorph, {noResize: false});
-        var morph1 = new Morph(new Rectangle(0,0,20,30)),
-            morph2 = new Morph(new Rectangle(0,0,30,40));
+        var morph1 = Morph.makeRectangle0,0,20,30),
+            morph2 = Morph.makeRectangle(0,0,30,40);
         this.baseMorph.addMorph(morph1);
         this.baseMorph.addMorph(morph2);
         sut.layout();
@@ -291,8 +290,8 @@ TestCase.subclass('LayoutTests', {
     
     testHLayoutCenterMorphs: function() {
         var sut = new HLayout(this.baseMorph, {center: true});
-        var morph1 = new Morph(new Rectangle(0,0,20,20)),
-            morph2 = new Morph(new Rectangle(0,0,40,40));
+        var morph1 = Morph.makeRectangle(0,0,20,20),
+            morph2 = Morph.makeRectangle(0,0,40,40);
         this.baseMorph.addMorph(morph1);
         this.baseMorph.addMorph(morph2);
         this.baseMorph.setPosition(pt(100,200));

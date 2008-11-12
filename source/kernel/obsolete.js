@@ -1117,3 +1117,25 @@ Morph.addMethods({
         return element;
     }
  });
+
+
+Morph.addMethods({
+
+    setFill: function(fill) {
+	var old = this.fill;
+	this.fill = fill;
+	if (old instanceof lively.data.Wrapper) 
+	    old.removeRawNode();
+	var attr;
+	if (fill == null) {
+	    attr = "none";
+	} else if (fill instanceof Color) {
+	    attr = fill.toString();
+	} else if (fill instanceof lively.paint.Gradient) { 
+	    this.fill = fill.copy().setDerivedId(this);
+	    this.addWrapperToDefs(this.fill);
+	    attr = this.fill.uri();
+	}
+	this.shape.setFill(attr);
+    }
+});

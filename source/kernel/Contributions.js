@@ -582,8 +582,7 @@ Model.subclass('MessengerWidget', {
 
 ClipMorph.subclass("DoodleMorph", {
 
-    borderWidth: 0,
-    fill: Color.veryLightGray,
+    style: {borderWidth: 0, fill: Color.veryLightGray},
     imagepath: "Resources/doodle/",
 
     initialize: function($super, extent) {
@@ -681,11 +680,10 @@ ClipMorph.subclass("DoodleMorph", {
     makeSelection: function(evt) { 
         if (this.currentSelection != null) this.currentSelection.removeOnlyIt();
         if ( !evt.hand.mouseButtonPressed ) return;
-        var m = new SelectionMorph(this.localize(evt.mousePoint).extent(pt(5,5)), this);
-        m.shape.setStrokeDashArray([3,2]);
-        this.addMorph(m);
-        this.currentSelection = m;
-        var handle = new HandleMorph(evt.mousePoint, "rect", evt.hand, m, "bottomRight");
+        
+        var m = this.currentSelection = this.addMorph(new SelectionMorph(this.localize(evt.point()).extent(pt(5,5)), this));
+	m.shape.setStrokeDashArray([3,2]);
+        var handle = new HandleMorph(evt.point(), lively.scene.Rectangle, evt.hand, m, "bottomRight");
         m.addMorph(handle);
         handle.setBounds(handle.bounds().center().asRectangle());
 //        if (evt.hand.mouseFocus instanceof HandleMorph) evt.hand.mouseFocus.remove();
@@ -703,8 +701,8 @@ ClipMorph.subclass("DoodleMorph", {
 
     addLine: function() {
         var morph = Morph.makeRectangle(this.newPos * 2, this.newPos, 60, 20);
+        morph.setShape(new lively.scene.Polyline([pt(0,20),pt(60,0)]));
 	morph.applyStyle({fill: null, borderWidth: this.lineWidth, borderColor: this.drawingColor});
-        morph.setShape(new lively.scene.Polyline([pt(0,20),pt(60,0)], this.lineWidth, this.drawingColor));
         this.addMorph(morph);
 
         this.newPos += 25;

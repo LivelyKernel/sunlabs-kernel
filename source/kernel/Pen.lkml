@@ -38,13 +38,17 @@
     
 <proto name="drawLines"><![CDATA[ 
     function() {
-        var morph = new Morph(this.startingLocation.asRectangle(), "rect");
-        var verts = this.vertices.invoke('subPt', this.startingLocation);
-    
-        if (this.fillColor) 
-            morph.setShape(new lively.scene.Polyline(verts, this.fillColor, this.penWidth, this.penColor));
-        else 
-            morph.setShape(new lively.scene.Polyline(verts, this.penWidth, this.penColor));
+        var morph;
+
+        if (this.fillColor) {
+            morph = new Morph(new lively.scene.Polygon(this.vertices));
+            morph.setFill(this.fillColor);
+        } else {
+            morph = new Morph(new lively.scene.Polyline(this.vertices));
+            morph.setFill(null);
+        }
+        morph.setBorderWidth(this.penWidth);
+        morph.setBorderColor(this.penColor);
     
         WorldMorph.current().addMorph(morph); 
     
