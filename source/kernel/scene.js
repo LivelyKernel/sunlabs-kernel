@@ -428,7 +428,7 @@ this.Shape.subclass('lively.scene.Rectangle', {
     initialize: function($super, rect) {
 	$super();
 	this.rawNode = NodeFactory.create("rect");
-	this.setBounds(rect);
+	if (rect) this.setBounds(rect);
 	return this;
     },
 
