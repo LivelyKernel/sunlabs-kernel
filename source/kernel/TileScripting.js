@@ -160,14 +160,14 @@ Object.extend(thisModule.ScriptEnvironment, {
     }
 });
 
-Morph.subclass('lively.TileScripting.TileHolder', {
+BoxMorph.subclass('lively.TileScripting.TileHolder', {
     
     layoutSpec: {layouterClass: VLayout},
     dropAreaExtent: pt(80,20),
     formals: ["Value"],
     
     initialize: function($super, bounds) {
-        $super(new lively.scene.Rectangle(bounds));
+        $super(bounds);
         this.setFill(Color.gray.lighter());
         this.layout = this.layout.curry(true); // no resizing on layout --> FIXME
         this.closeDnD();

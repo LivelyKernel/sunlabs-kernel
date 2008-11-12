@@ -169,7 +169,7 @@ Morph.subclass("ClockMorph", {
 // ===========================================================================
 // Piano Keyboard
 // ===========================================================================
-Morph.subclass('PianoKeyboard', {
+BoxMorph.subclass('PianoKeyboard', {
 
     // obtained by uuencode -m
     click: "UklGRkwCAABXQVZFZm10IBAAAAABAAEAIlYAACJWAAABAAgAZGF0YSgCAACAgICAgICAgICAgICA"
@@ -188,7 +188,7 @@ Morph.subclass('PianoKeyboard', {
 
     initialize: function($super, loc) {
 	//  -- Lets Boogie! --
-	$super(new lively.scene.Rectangle(loc.extent(pt(100, 20))));
+	$super(loc.extent(pt(100, 20)));
 	var wtWid, bkWid, keyRect, key, octavePt, nWhite, nBlack;
 	var nOctaves = 6;
 	var margin = pt(4, 4);
