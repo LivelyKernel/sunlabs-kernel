@@ -34,7 +34,7 @@ Widget.subclass('lively.TileScripting.TileBox', {
         var m = demoMorph || createFunc();
 
         var textHeight = 30;
-        var wrapper = new ClipMorph(m.getExtent().addPt(pt(0,textHeight)).extentAsRectangle(), "rect");
+        var wrapper = new ClipMorph(m.getExtent().addPt(pt(0,textHeight)).extentAsRectangle());
         wrapper.applyStyle({borderWidth:1, borderColor: Color.black});
         m.applyStyle({borderWidth: 2, borderColor: Color.black});
         wrapper.addMorph(m);

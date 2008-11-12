@@ -30,16 +30,16 @@ BoxMorph.subclass('GridLayoutMorph', {
 	this.minCell = pt(0,0);	// minimum cell size
 	this.nextRow=1;		// use as default if not provided in constraints
 	this.nextCol=1;
-	if (!position) position=pt(0,0);
+	if (!position) position = pt(0,0);
 	$super(position.extent(pt(20, 20)));
     },
 
 	// set constraints and layout handler
 
-    addMorph: function(morph, cst) {
+    addMorph: function($super, morph, cst) {
 	if (morph instanceof HandleMorph) {
 	    console.log("Ignore handle morph");
-	    return this.addMorphFrontOrBack(morph, true);
+	    return $super(morph);
 	}
 	
 	// we were dropped on , do something useful (what?)
@@ -75,7 +75,7 @@ BoxMorph.subclass('GridLayoutMorph', {
 	// It should call layoutChanged() so we can pick up the change and do a layout
 	
 	morph.realSetExtent = morph.Extent;
-	morph.setExtent=function(newExtent) {
+	morph.setExtent = function(newExtent) {
 	    if (this.requestExtent && this.requestExtent.eqPt(newExtent)) {
 		return;
 	    }
@@ -84,7 +84,7 @@ BoxMorph.subclass('GridLayoutMorph', {
 		this.owner && (this.owner.needLayout = true);
 		this.layoutChanged();
 	    }
-		};
+	};
 	
 	// add alignment options, depending on where the click was ?
 	
@@ -117,7 +117,7 @@ BoxMorph.subclass('GridLayoutMorph', {
 	    }
 	};
 	
-        this.addMorphFrontOrBack(morph, true);
+        $super(morph);
 	this.needLayout=true;
 	this.layoutChanged();
 	return morph;
@@ -171,7 +171,7 @@ BoxMorph.subclass('GridLayoutMorph', {
         var c = constraints;
 	if (!c) {
 	    // if we were dropped, figure out where to pub me! (XXX)
-	    c = new Object();
+	    c = {};
 	}
 	if (c.row && c.row>0) {
 	    this.nextCol = 1;
@@ -179,7 +179,7 @@ BoxMorph.subclass('GridLayoutMorph', {
 	} else {
 	    c.row = this.nextRow;
 	}
-	if (c.col && c.col>0) {
+	if (c.col && c.col > 0) {
 	    this.nextCol = c.col + 1;
 	} else {
 	    c.col = this.nextCol;
@@ -189,7 +189,7 @@ BoxMorph.subclass('GridLayoutMorph', {
 	c.cols = Math.max(c.cols || 1, 1);
 	c.align = c.align || "c";
 	c.pad = c.pad || pt(0,0);
-	// console.log(c.row + "," + c.col + " (" + c.cols + "x" + c.rows + ") " + c.align);
+	console.log(c.row + "," + c.col + " (" + c.cols + "x" + c.rows + ") " + c.align);
 	return c;
     },
     
@@ -199,7 +199,7 @@ BoxMorph.subclass('GridLayoutMorph', {
 	for (var i in c) {
 	    m.cst[i] = c[i];
 	}
-	this.needLayout=true;
+	this.needLayout = true;
 	this.layoutChanged();
     },
     
@@ -235,8 +235,8 @@ BoxMorph.subclass('GridLayoutMorph', {
     // XXX this currently does way more work than it needs to
     
     computeGrid: function() {
-	var morphs = new Array();
-	for (var i=0; i<this.submorphs.length; i++) {
+	var morphs = [];
+	for (var i=0; i < this.submorphs.length; i++) {
 	    var m = this.submorphs[i];
 	    if (m.cst) {
 		m.requestExtent = m.requestExtent || m.bounds(true).extent();
@@ -257,15 +257,19 @@ BoxMorph.subclass('GridLayoutMorph', {
 	    var c = m.cst;
 	    var start = c.row - 1;
 	    end = start + c.rows;
-	    this.rows[end] = Math.max(this.rows[end]||0,
-				      (this.rows[start]||0) + m.requestExtent.y + 2*c.pad.y);
+	    
+	    this.rows[end] = Math.max(this.rows[end]||0, (this.rows[start]||0) + m.requestExtent.y + 2*c.pad.y);
+	    if (isNaN(this.rows[end])) alert('yea ' + [this.rows[start], m.requestExtent.y, c.pad.y]);
+	    
 	}
 	
 	// make sure rows are big enough (temp)
 	for(var i=1, incr=0;i<this.rows.length;i++) {
 	    var d = this.minCell.y - (this.rows[i]-this.rows[i-1]);
-	    if (d>incr) incr = d;
+	    if (d > incr) incr = d;
+	    if (isNaN(this.rows[i])) this.rows[i] = 0;
 	    this.rows[i] += incr;
+
 	}
 	
 	var maxY = this.rows[end];
@@ -305,7 +309,7 @@ BoxMorph.subclass('GridLayoutMorph', {
 	}
 	
 	var newExt = pt(maxX, maxY);
-	console.log((this.myName||this) + "computed Grid cols=" + this.cols + " rows=" + this.rows + " ext=" + newExt);
+	console.log((this.myName||this) + " computed Grid cols=[" + this.cols + "] rows=[" + this.rows + "] ext=" + newExt);
 	
 	// Allow the size to be bigger than required, but not smaller.
 	// If a dimension is bigger, apportion the extra space equally to all
@@ -621,12 +625,16 @@ BoxMorph.subclass("GridLineMorph", {
 console.log("end gridlayout.js");
 	
 GridLayoutMorph.demo = function(world, position) {
+    world = world || WorldMorph.current();
+    position = position || world.bounds().center();
     console.log("sample GridLayout");
     HandMorph.logDnD=true;
     var l1 = new TextMorph(new Rectangle(0,0,100,20), "Grid Demo");
     var l2 = new TextMorph(new Rectangle(0,0,100,20), "a random label");
     var b = new TextMorph(new Rectangle(0,0,100, 20) ,"Please help fix me");
+    
     var grid = new GridLayoutMorph(position);
+    grid.myName = "main grid";
     l1.myName="1";
     l2.myName="2";
     b.myName="text";
@@ -635,19 +643,20 @@ GridLayoutMorph.demo = function(world, position) {
     grid.addMorph(l1, {row: 1, col: 1});
     grid.addMorph(l2, {row: 2, col: 2});
     grid.addMorph(b, {row: 4, cols: 2, pad: {x: 0, y: 5}});
-    grid.myName = "main grid";
+
     
     var g2 = new GridLayoutMorph();
     g2.myName="sub-grid";
     g2.setBorderWidth(0);
     g2.setFillOpacity(.1);
-    g2.setFill(Color.red);
+    g2.setFill(Color.red)
+    
     var square = new Rectangle(0,0,30,30);
     // make 3 squares in a sub grid
     for(var i=1;i<4;i++) {
 	var c = {row: 1, col: 1, align: "c", pad: {x: 15, y: 15}};
 	c.col=i;
-	var z = new Morph(square, "rect");
+	var z = Morph.makeRectangle(square);
 	g2.addMorph(z,c);
 	z.myName="sq-" + i;
     }
@@ -674,6 +683,7 @@ GridLayoutMorph.demo = function(world, position) {
     
     // uncomment this to play with alignments
     // r.startStepping(700, "nextAlign");
+
     return grid;
 }
     

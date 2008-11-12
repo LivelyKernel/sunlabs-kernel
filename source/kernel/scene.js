@@ -644,6 +644,7 @@ this.Shape.subclass('lively.scene.Polygon', {
 	return this.bounds().bottomLeft();
     },
     
+    // FIXME FIXME FIXME: eliminate handle from here!
     reshape: function(partName, newPoint, handle, lastCall) {
 	var ix = partName; // better name -- it's an index into vertices
 	var verts = this.vertices();  // less verbose

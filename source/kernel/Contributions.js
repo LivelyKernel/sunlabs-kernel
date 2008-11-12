@@ -45,8 +45,8 @@ ClipMorph.subclass('DungBeetleMorph', {
 	timerID: 0,
 	
 	initialize: function($super, rect) {
-        $super(rect, "rect");
-	  	this.initLobbyRoom();
+        $super(rect);
+	    this.initLobbyRoom();
 	  	return this;
 	},	
 	
@@ -744,7 +744,7 @@ ClipMorph.subclass("DoodleMorph", {
         }
   
         if (this.colorvalue) {
-            this.colorMorph = new Morph(this.colorsbutton.bounds().topRight().subPt(pt(0,20)).extent(pt(110,110)), "rect");
+            this.colorMorph = new Morph(new lively.scene.Rectangle(this.colorsbutton.bounds().topRight().subPt(pt(0,20)).extent(pt(110,110))));
             this.colorMorph.applyStyle({fill: Color.white, fillOpacity: .7, borderRadius: 10});
 
             var m = new TextMorph(new Rectangle(10, 5, 80, 20), "Border color");

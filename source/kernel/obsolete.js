@@ -874,7 +874,7 @@ WidgetModel.subclass('OldStylePanel', {
     },
 
     buildView: function(extent) {
-        var panel = new PanelMorph(extent, "rect");
+        var panel = new PanelMorph(extent);
         panel.linkToStyles(["panel"]);
         var m;
         var y = 10;

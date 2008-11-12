@@ -2729,7 +2729,7 @@ Widget.subclass('ComponentBox', {
         });
 
         var textHeight = 30;
-        var wrapper = new ClipMorph(m.getExtent().addPt(pt(0,textHeight)).extentAsRectangle(), "rect");
+        var wrapper = new ClipMorph(m.getExtent().addPt(pt(0,textHeight)).extentAsRectangle());
         wrapper.addMorph(m);
         var text = new TextMorph(pt(0,m.getExtent().y).extent(m.getExtent().x, wrapper.getExtent().y), comp.constructor.type);
         text.beLabel();

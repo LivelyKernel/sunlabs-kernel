@@ -303,7 +303,7 @@ function populateWorldWithExamples(world) {
                 //var widget = new Morph(pt(100,100).asRectangle(),"rect");
                 var widget = new Morph(new lively.scene.Path(shape1, Color.red, 3, Color.black));
                 this.addMorph(widget);
-                widget = new Morph(pt(250,50).asRectangle(),"rect");
+                widget = Morph.makeRectangle(pt(250,50).asRectangle());
 		
                 // rectangle with rounded corners
                 var shape2 = [pt(10,0), pt(60,0), pt(70,10), pt(70,40),

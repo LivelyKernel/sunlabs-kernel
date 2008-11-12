@@ -4951,11 +4951,13 @@ HandMorph.addMethods({
 });
 
 Morph.subclass('BoxMorph', {
-    // the CSS box model, see http://www.w3.org/TR/REC-CSS2/box.html
-    
+
     documentation: "Occupies a rectangular area of the screen, can be laid out",
-    
-    padding: new Rectangle(0, 0, 0, 0), // between morph borders and its content
+
+    // FIXME: this doesn't account properly for border width
+    // the CSS box model, see http://www.w3.org/TR/REC-CSS2/box.html    
+    padding: new Rectangle(0, 0, 0, 0), // between morph borders and its content (inwards)
+    margin: new Rectangle(0, 0, 0, 0), // between morph border and its 
 
     initialize: function($super, initialBounds) {
 	$super(new lively.scene.Rectangle(initialBounds));

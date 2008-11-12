@@ -16,7 +16,7 @@ namespace('lively.storage');
  
 using(lively.storage).run(function(module) {
 
-Morph.subclass('PackageMorph', {
+BoxMorph.subclass('PackageMorph', {
     documentation: "Visual representation for a serialized morph",
     style: { borderWidth: 3, borderColor: Color.black},
     openForDragAndDrop: false,
@@ -25,7 +25,7 @@ Morph.subclass('PackageMorph', {
     
     initialize: function($super, targetMorph) {
 	var size = this.size;
-	$super(pt(size, size).extentAsRectangle(), "rect");
+	$super(pt(size, size).extentAsRectangle());
         var exporter = new Exporter(targetMorph);
 	var helpers = exporter.extendForSerialization();
 	if (!this.defs)  
