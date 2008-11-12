@@ -278,7 +278,7 @@ Object.subclass('Test', {
 
 });
 
-Morph.subclass('lively.TileScripting.Tile', {
+BoxMorph.subclass('lively.TileScripting.Tile', {
 
     isTile: true,
     defaultExtent: pt(100,20),
@@ -286,8 +286,7 @@ Morph.subclass('lively.TileScripting.Tile', {
     style: { fill: new Color(0.6, 0.7, 0.8), borderWidth: 0},
     
     initialize: function($super, bounds) {
-        if (!bounds) bounds = this.defaultExtent.extentAsRectangle();
-        $super(new lively.scene.Rectangle(bounds));
+        $super(bounds || this.defaultExtent.extentAsRectangle());
         this.suppressHandles = true;
     },
     
@@ -313,7 +312,7 @@ thisModule.Tile.subclass('lively.TileScripting.DebugTile', {
     layoutSpec: {layouterClass: null},
     
     initialize: function($super, bounds, sourceString) {
-        $super(new lively.scene.Rectangle(bounds));
+        $super(bounds);
         
         this.text = this.addMorph(new TextMorph(this.shape.bounds().insetBy(5)));
         this.text.autoAccept
@@ -330,7 +329,7 @@ thisModule.Tile.subclass('lively.TileScripting.DebugTile', {
 thisModule.Tile.subclass('lively.TileScripting.ObjectTile', {
     
     initialize: function($super, bounds, targetMorphOrObject) {
-        $super(new lively.scene.Rectangle(bounds));
+        $super(bounds);
         
         this.targetMorph = null;
         this.opTile = null;
@@ -469,7 +468,7 @@ Object.subclass('lively.TileScripting.TileMenuCreator', {
 thisModule.Tile.subclass('lively.TileScripting.FunctionTile', {
     
     initialize: function($super, bounds, methodName) {
-        $super(new lively.scene.Rectangle(bounds));
+        $super(bounds);
 
         this.text1 = this.addMorph(new TextMorph(new Rectangle(0,0,20,15), '.' + methodName + '('));
         this.text1.beLabel();
@@ -503,7 +502,7 @@ thisModule.Tile.subclass('lively.TileScripting.FunctionTile', {
 thisModule.Tile.subclass('lively.TileScripting.IfTile', {
     
     initialize: function($super, bounds) {
-        $super(new lively.scene.Rectangle(bounds));
+        $super(bounds);
         this.addMorph(new TextMorph(new Rectangle(0,0,20,this.bounds().height), 'if').beLabel());
         this.testExprDropArea = this.addMorph(new thisModule.DropArea(new Rectangle(0,0,50,this.getExtent().y)));
         this.exprDropArea = this.addMorph(new thisModule.DropArea(new Rectangle(0,0,50,this.getExtent().y)));
@@ -520,8 +519,7 @@ thisModule.Tile.subclass('lively.TileScripting.NumberTile', {
     eps: 0.001,
     
     initialize: function($super, bounds) {
-        bounds = pt(50,20).extentAsRectangle();
-        $super(new lively.scene.Rectangle(bounds));
+        $super(pt(50, 20).extentAsRectangle());
         this.numberText = this.addMorph(new TextMorph(pt(30,20).extentAsRectangle(), '1').beLabel());
         this.addUpDownButtons();
         this.layout();
@@ -568,14 +566,15 @@ thisModule.Tile.subclass('lively.TileScripting.NumberTile', {
     }
     
 });
-Morph.subclass('lively.TileScripting.DropArea', {
+
+BoxMorph.subclass('lively.TileScripting.DropArea', {
 
     isDropArea: true,
     layoutSpec: {layouterClass: VLayout},
     style: {borderWidth: 0.5, borderColor: Color.black},
     
     initialize: function($super, bounds, actionWhenDropped) {
-        $super(new lively.scene.Rectangle(bounds));
+        $super(bounds);
         this.suppressHandles = true;
         this.styleNormal();
         this.actionWhenDropped = actionWhenDropped;

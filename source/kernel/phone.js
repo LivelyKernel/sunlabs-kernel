@@ -185,9 +185,9 @@ console.log("end phone.js");
 // - should allow addMorph()
 
 console.log("start form.js");
-Morph.subclass('SimpleFormMorph', {
+BoxMorph.subclass('SimpleFormMorph', {
 	initialize: function($super, position, submit, labels, button) {
-	    $super(new lively.scene.Rectangle(position));
+	    $super(position);
 	    this.makeLayout(position, submit, labels, button);
 	    this.labels = labels;
 	    this.labels.push(button);

@@ -30,7 +30,7 @@
 using(lively.Text).run(function(text) {
 
 
-Morph.subclass('ButtonMorph', {
+BoxMorph.subclass('ButtonMorph', {
     
     documentation: "Simple button",
     focusHaloBorderWidth: 3, // override the default
@@ -43,7 +43,7 @@ Morph.subclass('ButtonMorph', {
     // It read and writes the boolean variable, this.model[this.propertyName]
     initialize: function($super, initialBounds) {
         this.baseFill = null;
-        $super(new lively.scene.Rectangle(initialBounds));
+        $super(initialBounds);
 	if (Config.selfConnect) {
             var model = Record.newNodeInstance({Value: false});
 	    // this default self connection may get overwritten by, eg, connectModel()...
@@ -155,14 +155,14 @@ Morph.subclass('ButtonMorph', {
 });
 
 
-Morph.subclass("ImageMorph", {
+BoxMorph.subclass("ImageMorph", {
 
     documentation: "Image container",
     style:{ borderWidth: 0, fill:Color.blue.lighter() },
     formals: ["-URL"],
     
     initialize: function($super, viewPort, url) {
-        $super(new lively.scene.Rectangle(viewPort));
+        $super(viewPort);
         this.image = new lively.scene.Image(url, viewPort.width, viewPort.height);
         console.log("making an image from: " + url);
         if (url) this.addWrapper(this.image); // otherwise we didn't make a rawNode
@@ -236,7 +236,7 @@ ButtonMorph.subclass("ImageButtonMorph", {
 });
 
 
-Morph.subclass("ClipMorph", {
+BoxMorph.subclass("ClipMorph", {
 
     documentation: "A clipping window/view",
     // A clipMorph is like a window through which its submorphs are seen
@@ -248,7 +248,7 @@ Morph.subclass("ClipMorph", {
     style: { fill: null, borderWidth: 0},
     
     initialize: function($super, initialBounds) {
-	$super(new lively.scene.Rectangle(initialBounds));
+	$super(initialBounds);
     },
 
     initializeTransientState: function($super) {
@@ -399,7 +399,7 @@ Morph.subclass('HandleMorph', {
     
 });
 
-Morph.subclass("SelectionMorph", {
+BoxMorph.subclass("SelectionMorph", {
     documentation: 'selection "tray" object that allows multiple objects to be moved and otherwise '
 	+ 'manipulated simultaneously',
 
@@ -408,7 +408,7 @@ Morph.subclass("SelectionMorph", {
     removeWhenEmpty: true,
     
     initialize: function($super, viewPort, defaultworldOrNull) {
-        $super(new lively.scene.Rectangle(viewPort));
+        $super(viewPort);
         this.originalPoint = viewPort.topLeft();
         this.reshapeName = "bottomRight";
         this.myWorld = defaultworldOrNull ? defaultworldOrNull : this.world();
@@ -616,11 +616,11 @@ Morph.subclass("SelectionMorph", {
 // Panels, lists, menus, sliders, panes, etc.
 // ===========================================================================
 
-Morph.subclass('PanelMorph', {
+BoxMorph.subclass('PanelMorph', {
 
     documentation: "a panel",
     initialize: function($super, extent/*:Point*/) {
-        $super(new lively.scene.Rectangle(extent.extentAsRectangle()));
+        $super(extent.extentAsRectangle());
         this.lastNavigable = null;
     },
 
@@ -952,7 +952,7 @@ Morph.addMethods({
 });
 
 
-Morph.subclass("TextListMorph", {
+BoxMorph.subclass("TextListMorph", {
 
     documentation: "A list that uses TextMorphs to display individual items",
     style: { borderColor: Color.black, borderWidth: 1, fill: Color.white},
@@ -967,7 +967,7 @@ Morph.subclass("TextListMorph", {
 	this.baseWidth = initialBounds.width;
         var height = Math.max(initialBounds.height, itemList.length * (TextMorph.prototype.fontSize + this.itemMargin.top() + this.itemMargin.bottom()));
         initialBounds = initialBounds.withHeight(height);
-        $super(new lively.scene.Rectangle(initialBounds));
+        $super(initialBounds);
         this.itemList = itemList;
         this.selectedLineNo = -1;
 	this.textStyle = optTextStyle;
@@ -1640,7 +1640,7 @@ Morph.subclass("MenuMorph", {
 
 });
 
-Morph.subclass("SliderMorph", {
+BoxMorph.subclass("SliderMorph", {
 
     documentation: "Slider/scroll control",
     mss: 12,  // minimum slider size
@@ -1652,7 +1652,7 @@ Morph.subclass("SliderMorph", {
     selfModelClass: PlainRecord.prototype.create({Value: { byDefault: 0 }, SliderExtent: { byDefault: 0}}),
 
     initialize: function($super, initialBounds, scaleIfAny) {
-        $super(new lively.scene.Rectangle(initialBounds));
+        $super(initialBounds);
         // this default self connection may get overwritten by, eg, connectModel()...
 	var modelClass = this.selfModelClass;
         var model = new modelClass({}, {});
@@ -1835,7 +1835,7 @@ Morph.subclass("SliderMorph", {
 
 });
 
-Morph.subclass("ScrollPane", {
+BoxMorph.subclass("ScrollPane", {
 
     description: "A scrolling container",
     style: { borderWidth: 2, fill: null},
@@ -1843,7 +1843,7 @@ Morph.subclass("ScrollPane", {
     ScrollBarFormalRelay: Relay.create({Value: "ScrollPosition", SliderExtent: "-VisibleExtent"}), // a class for relays
 
     initialize: function($super, morphToClip, initialBounds) {
-        $super(new lively.scene.Rectangle(initialBounds));
+        $super(initialBounds);
 
         var bnds = this.innerBounds();
         var clipR = bnds.withWidth(bnds.width - this.scrollBarWidth+1).insetBy(1);
@@ -2042,14 +2042,14 @@ Global.newXenoPane = function(initialBounds) {
 /**
  * @class ColorPickerMorph
  */ 
-Morph.subclass("ColorPickerMorph", {
+BoxMorph.subclass("ColorPickerMorph", {
 
 
     style: { borderWidth: 1, fill: null, borderColor: Color.black},
     formals: ["+Color"],
 
     initialize: function($super, initialBounds, targetMorph, setFillName, popup) {
-        $super(new lively.scene.Rectangle(initialBounds));
+        $super(initialBounds);
         this.targetMorph = targetMorph;
         this.setFillFunctionName = setFillName; // name like "setBorderColor"
         if (targetMorph != null) this.connectModel({model: targetMorph, setColor: setFillName});
@@ -2123,13 +2123,13 @@ Morph.subclass("ColorPickerMorph", {
     
 });
 
-Morph.subclass('XenoMorph', {
+BoxMorph.subclass('XenoMorph', {
 
     documentation: "Contains a foreign object, most likely XHTML",
     style: { borderWidth: 0, fill: Color.gray.lighter() },
 
     initialize: function($super, bounds) { 
-        $super(new lively.scene.Rectangle(bounds));
+        $super(bounds);
         this.foRawNode = NodeFactory.createNS(Namespace.SVG, "foreignObject", 
                              {x: bounds.x, y: bounds.y, 
                               width: bounds.width,
@@ -2509,7 +2509,7 @@ Widget.subclass('XenoBrowserWidget', {
 // ===========================================================================
 
 
-Morph.subclass("TitleBarMorph", {
+BoxMorph.subclass("TitleBarMorph", {
 
     documentation: "Title bar for WindowMorphs",
 
@@ -2523,7 +2523,7 @@ Morph.subclass("TitleBarMorph", {
 	if (optSuppressControls)  this.barHeight = this.shortBarHeight; // for dialog boxes
 	var bounds = new Rectangle(0, 0, windowWidth, this.barHeight);
 	
-        $super(new lively.scene.Rectangle(bounds));
+        $super(bounds);
 	
 	// contentMorph is bigger than the titleBar, so that the lower rounded part of it can be clipped off
 	// arbitrary paths could be used, but FF doesn't implement the geometry methods :(
@@ -2628,7 +2628,7 @@ Morph.subclass("TitleBarMorph", {
 
 });
 
-Morph.subclass("TitleTabMorph", {
+BoxMorph.subclass("TitleTabMorph", {
 
     documentation: "Title bar for tabbed window morphs",
 
@@ -2637,7 +2637,7 @@ Morph.subclass("TitleTabMorph", {
     suppressHandles: true,
     
     initialize: function($super, headline, windowWidth, windowMorph) {
-        $super(new lively.scene.Rectangle(new Rectangle(0, 0, windowWidth, this.barHeight)));
+        $super(Rectangle(0, 0, windowWidth, this.barHeight));
         this.windowMorph = windowMorph;
         this.linkToStyles(['titleBar']);
         this.ignoreEvents();
@@ -2715,14 +2715,13 @@ Morph.subclass("WindowControlMorph", {
  
 });
 
-Morph.subclass('StatusBarMorph', {
+BoxMorph.subclass('StatusBarMorph', {
 
     style: { borderWidth: 0, fill: null},
 
     initialize: function($super, titleBar) {
 	var bounds = titleBar.getExtent().extentAsRectangle().withHeight(8);
-	
-        $super(new lively.scene.Rectangle(bounds));
+        $super(bounds);
 	
 	// contentMorph is bigger than the titleBar, so that the lower rounded part of it can be clipped off
 	// arbitrary paths could be used, but FF doesn't implement the geometry methods :(

@@ -568,7 +568,7 @@ ImageMorph.subclass("CaptionImageMorph", {
  * in the selector view (tree).  Each row contains a CaptionImageMorph
  * and a CaptionTextMorph.  
  */
-Morph.subclass("SelectorViewItem", {
+BoxMorph.subclass("SelectorViewItem", {
 
     // Constants for icon placement
     ICONLEFTPADDING: 6,
@@ -583,7 +583,7 @@ Morph.subclass("SelectorViewItem", {
     TEXTHEIGHT: 20,
 
     initialize: function($super, initialBounds, model, indentLevel) {
-        $super(new lively.scene.Rectangle(initialBounds));
+        $super(initialBounds);
         this.setFill(Color.gray);
         this.setBorderColor(Color.gray);
         this.suppressHandles = true; // No handles!

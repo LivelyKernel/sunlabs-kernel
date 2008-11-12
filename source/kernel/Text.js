@@ -848,7 +848,7 @@ lively.scene.Node.subclass('lively.Text.TextContent', {
     }
 });
 
-Morph.subclass("TextMorph", {
+BoxMorph.subclass("TextMorph", {
     
     documentation: "Container for Text",
     // these are prototype variables
@@ -921,7 +921,7 @@ Morph.subclass("TextMorph", {
 
     initialize: function($super, rect, textString) {
         this.textString = textString || "";
-        $super(new lively.scene.Rectangle(rect));
+        $super(rect);
         // KP: note layoutChanged will be called on addition to the tree
         // DI: ... and yet this seems necessary!
         if (this.textString instanceof thisModule.Text) {
@@ -932,11 +932,6 @@ Morph.subclass("TextMorph", {
 	this.layoutChanged();
         return this;
     },
-
-    defaultOrigin: function(shape) { 
-        return shape.bounds().topLeft(); 
-    },
-    
 
     layoutChanged: function($super) {
 	this.verbose && console.log("changed on " + this.textString.truncate());

@@ -1698,13 +1698,13 @@ Morph.addMethods({
 
 	var priorBounds = this.bounds();
 
-	if(!newRect.topLeft().eqPt(priorBounds.topLeft())) {  // Only set position if it changes
+	if (!newRect.topLeft().eqPt(priorBounds.topLeft())) {  // Only set position if it changes
 		this.setPosition(newRect.topLeft());
 	}
-	if(!newRect.extent().eqPt(priorBounds.extent())) {  // Only set extent if it changes
-		// FIXME some shapes don't support setFromRect
-		this.shape.setBounds(newRect.extent().extentAsRectangle());
- 		this.adjustForNewBounds();
+	if (!newRect.extent().eqPt(priorBounds.extent())) {  // Only set extent if it changes
+	    // FIXME some shapes don't support setFromRect
+	    this.shape.setBounds(newRect.extent().extentAsRectangle());
+ 	    this.adjustForNewBounds();
 	}
 	if (this.clipPath) {
 	    // console.log('clipped to new shape ' + this.shape);
@@ -4949,6 +4949,17 @@ HandMorph.addMethods({
         }, this);
     }
 });
+
+Morph.subclass('BoxMorph', {
+    documentation: "Occupies a rectangular area of the screen, can be laid out",
+
+    initialize: function($super, initialBounds) {
+	$super(new lively.scene.Rectangle(initialBounds));
+    }
+
+});
+
+
 
 ClipboardHack = {
     ensurePasteBuffer: function() {

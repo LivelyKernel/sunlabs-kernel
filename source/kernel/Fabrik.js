@@ -1260,14 +1260,14 @@ Widget.subclass('PinConnector', {
     },
 });
 
-Morph.subclass('ComponentMorph', {
+BoxMorph.subclass('ComponentMorph', {
     
     inset: 7,
     defaultExtent: pt(180,100),
 
     initialize: function($super, bounds) {
         bounds = bounds || this.defaultExtent.extentAsRectangle();
-        $super(new lively.scene.Rectangle(bounds));
+        $super(bounds);
         this.closeDnD();
             
         this.linkToStyles(['fabrik']);
