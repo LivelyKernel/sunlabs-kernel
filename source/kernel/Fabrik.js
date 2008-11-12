@@ -1473,12 +1473,15 @@ BoxMorph.subclass('ComponentMorph', {
     addLabeledText: function(label) {
         var minHeight = 80;
         var morph = new LabeledTextMorph(this.getBoundsAndShrinkIfNecessary(minHeight), label , '-----');
-        morph.reshape = morph.reshape.wrap(function(proceed, partName, newPoint, handle, lastCall) {
-            proceed(partName, newPoint, handle, lastCall);
-            var owner = this.owner;
-            if (owner.getExtent().subPt(pt(owner.padding.topLeft())).y < this.bounds().extent().y) {
-                owner.setExtent(this.getExtent().addPt(owner.padding.topLeft()));
-            }
+        morph.reshape = morph.reshape.wrap(function(proceed, partName, newPoint, lastCall) {
+	    try {
+		return proceed(partName, newPoint, lastCall);
+	    } finally {
+		var owner = this.owner;
+		if (owner.getExtent().subPt(pt(owner.padding.topLeft())).y < this.bounds().extent().y) {
+                    owner.setExtent(this.getExtent().addPt(owner.padding.topLeft()));
+		}
+	    }
         });
         
         var spec = {borderWidth: 0, /*opacity: 0.9,*/ borderRadius: 3};
@@ -1510,7 +1513,7 @@ BoxMorph.subclass('ComponentMorph', {
      * submorphs can react to bounds shape by implementing adoptSubmorphsToNewExtent
      * FIXME what about adoptToBoundsChange???
      */
-    reshape: function($super, partName, newPoint, handle, lastCall) {
+    reshape: function($super, partName, newPoint, lastCall) {
         var insetPt = this.padding.topLeft();
         var priorExtent = this.getExtent().subPt(insetPt);
         var priorPosition = this.getPosition();
@@ -1519,11 +1522,11 @@ BoxMorph.subclass('ComponentMorph', {
         
         // overwrite reshape ... move stuff there or in Morph/WindowMorph? Behavior should be correct for most morphs...
         // FIXME move as much as possible from shape.reshape into this!
-        this.shape.reshape = function(partName, newPoint, handle, lastCall) {
+        this.shape.reshape = function(partName, newPoint, lastCall) {
             var bnds = this.bounds();
             var userRect = this.bounds().withPartNamed(partName, newPoint);
             // do not flip the bounds
-            if (!userRect.partNamed(partName).eqPt(newPoint)) return;
+            if (!userRect.partNamed(partName).eqPt(newPoint)) return null;
             deltaPos = userRect.topLeft(); // vector by which the morph is moved
             var minExtent = morph.minExtent();
             // adopt deltaPos and userRect so that newBounds has ar least minExtent
@@ -1541,9 +1544,10 @@ BoxMorph.subclass('ComponentMorph', {
             this.setBounds(newBounds);
         }.bind(this.shape);
         
-        $super(partName, newPoint, handle, lastCall);
+        var retval = $super(partName, newPoint, lastCall);
         this.adoptSubmorphsToNewExtent(priorPosition,priorExtent, this.getPosition(), this.getExtent().subPt(insetPt))
         this.setPosition(this.getPosition().addPt(deltaPos));
+	return retval;
     },
     
     setExtent: function($super, newExt) {
@@ -1903,9 +1907,10 @@ SelectionMorph.subclass('UserFrameMorph', {
     
     removeWhenEmpty: false,
     
-    reshape: function($super, partName, newPoint, handle, lastCall) {
+    reshape: function($super, partName, newPoint, lastCall) {
         // Initial selection might actually move in another direction than toward bottomRight
         // This code watches that and changes the control point if so
+	var result = null;
         if (this.initialSelection) {
             var selRect = new Rectangle.fromAny(pt(0,0), newPoint);
             if (selRect.width*selRect.height > 30) {
@@ -1913,10 +1918,10 @@ SelectionMorph.subclass('UserFrameMorph', {
             }
             this.setExtent(pt(0, 0)) // dont extend until we know what direction to grow
             // $super(this.reshapeName, newPoint, handle, lastCall);
-            Morph.prototype.reshape.call(this, this.reshapeName, newPoint, handle, lastCall)
+            result = Morph.prototype.reshape.call(this, this.reshapeName, newPoint, lastCall);
         } else {
             // $super(partName, newPoint, handle, lastCall);
-            Morph.prototype.reshape.call(this, partName, newPoint, handle, lastCall)
+            result = Morph.prototype.reshape.call(this, partName, newPoint, lastCall);
         }
         this.selectedMorphs = [];
         this.owner.submorphs.forEach(function(m) {
@@ -1929,10 +1934,12 @@ SelectionMorph.subclass('UserFrameMorph', {
         if (lastCall && this.selectedMorphs.length == 0 && this.removeWhenEmpty) this.remove();
         // this.selectedMorphs = [];
         
-        if (!lastCall) return;
-        if ((this.shape.bounds().extent().x < 10 && this.shape.bounds().extent().y < 10) ||
-            (this.shape.bounds().extent().x < 3 || this.shape.bounds().extent().y < 3))
-            this.remove();
+        if (lastCall) {
+            if ((this.shape.bounds().extent().x < 10 && this.shape.bounds().extent().y < 10) ||
+		(this.shape.bounds().extent().x < 3 || this.shape.bounds().extent().y < 3))
+		this.remove();
+	}
+	return result;
     },
     
     // removeWhenEmpty: false, 
@@ -2180,12 +2187,13 @@ ComponentMorph.subclass('FabrikMorph', {
         // debugger;
         var window = new WindowMorph(this, this.component.viewTitle, false);
         window.suppressHandles = true;
-        this.reshape = this.reshape.wrap(function(proceed, partName, newPoint, handle, lastCall) {
-            proceed(partName, newPoint, handle, lastCall);
+        this.reshape = this.reshape.wrap(function(proceed, partName, newPoint, lastCall) {
+            var result = proceed(partName, newPoint, lastCall);
             var windowdBnds = window.bounds().topLeft().extent(this.shape.bounds().extent().addXY(0, window.titleBar.innerBounds().height));
             // window.setExtent(windowdBnds.extent());
             window.setBounds(windowdBnds);
             window.adjustForNewBounds();
+	    return result;
         });
         
         this.collapseToggle = this.collapseToggle.wrap(function(proceed, val) {
@@ -2946,7 +2954,7 @@ Morph.subclass("FabrikClockMorph", {
         this.changed(); 
     },
 
-    reshape: function(a,b,c,d) { /*no reshaping*/ },
+    reshape: Functions.Null,
 
     startSteppingScripts: function() {
         this.startStepping(1000, "updateHands"); // once per second

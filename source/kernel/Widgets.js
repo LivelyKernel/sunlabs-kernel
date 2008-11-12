@@ -361,23 +361,33 @@ Morph.subclass('HandleMorph', {
 	var d = p1.dist(p0); //dist from mousedown
             
 	switch(this.mode) {  // Note mode is set in mouseDown
-	    case 'scale' :
-		var ratio = v1.r() / v0.r();
-		ratio = Math.max(0.1,Math.min(10,ratio));
-		this.targetMorph.setScale(this.initialScale*ratio);
-		break; 
-	    case 'rotate' :
-		this.targetMorph.setRotation(this.initialRotation + v1.theta() - v0.theta());
-		break; 
+	case 'scale' :
+	    var ratio = v1.r() / v0.r();
+	    ratio = Math.max(0.1,Math.min(10,ratio));
+	    this.targetMorph.setScale(this.initialScale*ratio);
+	    break; 
+	case 'rotate' :
+	    this.targetMorph.setRotation(this.initialRotation + v1.theta() - v0.theta());
+	    break; 
 	    case 'borderWidth' :
-		this.targetMorph.setBorderWidth(Math.max(0, Math.floor(d/3)/2), true);
-		break;
-	    case 'reshape' :
-		this.targetMorph.reshape(this.partName, this.targetMorph.localize(evt.mousePoint), this, false);
-		break;
+	    this.targetMorph.setBorderWidth(Math.max(0, Math.floor(d/3)/2), true);
+	    break;
+	case 'reshape' :
+	    this.handleReshape(this.targetMorph.reshape(this.partName, this.targetMorph.localize(evt.mousePoint), false));
+	    break;
         }
     },
     
+    handleReshape: function(result) {
+	if (!result) return;
+	if (result instanceof Color) {
+	    this.setBorderColor(result);
+	} else {
+	    this.partName = result;
+	    this.type = "rect"; // become a regular handle
+	}
+    },
+
     onMouseUp: function(evt) {
         if (!evt.isShiftDown() && !evt.isCommandKey() && !evt.isMetaDown()) {
 	    // last call for, eg, vertex deletion
@@ -426,15 +436,16 @@ BoxMorph.subclass("SelectionMorph", {
     reshape: function($super, partName, newPoint, handle, lastCall) {
         // Initial selection might actually move in another direction than toward bottomRight
         // This code watches that and changes the control point if so
+	var result;
         if (this.initialSelection) {
             var selRect = new Rectangle.fromAny(pt(0,0), newPoint);
             if (selRect.width*selRect.height > 30) {
                 this.reshapeName = selRect.partNameNearest(Rectangle.corners, newPoint);
             }
             this.setExtent(pt(0, 0)) // dont extend until we know what direction to grow
-            $super(this.reshapeName, newPoint, handle, lastCall);
+            result = $super(this.reshapeName, newPoint, handle, lastCall);
         } else {
-            $super(partName, newPoint, handle, lastCall);
+            result = $super(partName, newPoint, handle, lastCall);
         }
         this.selectedMorphs = [];
         this.owner.submorphs.forEach(function(m) {
@@ -444,6 +455,7 @@ BoxMorph.subclass("SelectionMorph", {
             
         if (lastCall) this.initialSelection = false;
         if (lastCall && this.selectedMorphs.length == 0 && this.removeWhenEmpty) this.remove();
+	return result;
     },
 
     morphMenu: function($super, evt) { 
@@ -2922,11 +2934,11 @@ Morph.subclass('WindowMorph', {
         tm.openIn(this.world(), evt.mousePoint, false, this.targetMorph.inspect().truncate()); 
     },
 
-    reshape: function($super, partName, newPoint, handle, lastCall) {
+    reshape: function($super, partName, newPoint, lastCall) {
 	// Minimum size for reshap should probably be a protoype var
 	var r = this.innerBounds().withPartNamed(partName, newPoint);
 	var maxPoint = r.withExtent(r.extent().maxPt(pt(100,120))).partNamed(partName);
-	$super(partName, maxPoint, handle, lastCall);
+	return $super(partName, maxPoint, lastCall);
     },
 
     adjustForNewBounds: function ($super) {

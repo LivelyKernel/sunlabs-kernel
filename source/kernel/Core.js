@@ -1661,15 +1661,17 @@ Morph.addMethods({
 	this.internalSetShape(newShape);
     }.wrap(Morph.onLayoutChange('shape')),
 
-    reshape: function(partName, newPoint, handle, lastCall) {
-	this.shape.reshape(partName,newPoint,handle,lastCall); 
-
-	// FIXME: consider converting polyline to polygon when vertices merge.
-	if (this.clipPath) {
-	    // console.log('clipped to new shape ' + this.shape);
-	    this.clipToShape();
+    reshape: function(partName, newPoint, lastCall) {
+	try {
+	    return this.shape.reshape(partName,newPoint,lastCall); 
+	} finally {
+	    // FIXME: consider converting polyline to polygon when vertices merge.
+	    if (this.clipPath) {
+		// console.log('clipped to new shape ' + this.shape);
+		this.clipToShape();
+	    }
+	    this.adjustForNewBounds();
 	}
-	this.adjustForNewBounds();
     }.wrap(Morph.onLayoutChange('shape')),
 
     setVertices: function(newVerts) {

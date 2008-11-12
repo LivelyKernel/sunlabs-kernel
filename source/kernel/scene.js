@@ -644,17 +644,15 @@ this.Shape.subclass('lively.scene.Polygon', {
 	return this.bounds().bottomLeft();
     },
     
-    // FIXME FIXME FIXME: eliminate handle from here!
-    reshape: function(partName, newPoint, handle, lastCall) {
+
+    reshape: function(partName, newPoint, lastCall) {
 	var ix = partName; // better name -- it's an index into vertices
 	var verts = this.vertices();  // less verbose
 	if (ix < 0) { // negative means insert a vertex
 	    ix = -partName;
-	    handle.partName = ix; 
-	    handle.type = "rect"; // become a regular handle
 	    verts.splice(ix, 0, newPoint);
 	    this.setVertices(verts);
-	    return; 
+	    return ix;
 	}
 	var closed = verts[0].eqPt(verts[verts.length - 1]);
 	if (closed && ix == 0) {  // and we're changing the shared point (will always be the first)
@@ -663,7 +661,8 @@ this.Shape.subclass('lively.scene.Polygon', {
 	} else {
 	    verts[ix] = newPoint;
 	}
-	handle.setBorderColor(Color.blue);
+
+	var handleColor = Color.blue;
 	var howClose = 6;
 	if (verts.length > 2) {
 	    // if vertex being moved is close to an adjacent vertex, make handle show it (red)
@@ -672,7 +671,7 @@ this.Shape.subclass('lively.scene.Polygon', {
 		if (lastCall) { 
 		    verts.splice(ix, 1); if (closed) verts[0] = verts[verts.length - 1]; 
 		} else {
-		    handle.setBorderColor(Color.red);
+		    handleColor = Color.red;
 		} 
 	    }
 
@@ -685,11 +684,12 @@ this.Shape.subclass('lively.scene.Polygon', {
 		    }
 
 		} else {
-		    handle.setBorderColor(Color.red);
+		    handleColor = Color.red;
 		} 
 	    }
 	}
 	this.setVertices(verts); 
+	return handleColor;
     },
 
     partNameNear: function(p) {

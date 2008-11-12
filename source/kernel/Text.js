@@ -2320,16 +2320,17 @@ Morph.subclass('LabeledTextMorph', {
         return this.owner ? this.owner.innerBounds().extent() : this.maxExtent;
     },
     
-    reshape: function($super, partName, newPoint, handle, lastCall) {
+    reshape: function($super, partName, newPoint, lastCall) {
         var priorPosition = this.getPosition();
         var priorExtent = this.getExtent();
-        $super(partName, newPoint, handle, lastCall);
+	var result = $super(partName, newPoint, handle, lastCall);
         if (lastCall && this.textHeight() < this.getExtent().y) this.setToTextHeight();
         var moveBy = this.getPosition().subPt(priorPosition);
         var extendBy = this.getExtent().subPt(priorExtent);
         this.label.setPosition(this.label.getPosition().addPt(moveBy));
         this.text.setPosition(this.text.getPosition().addPt(moveBy));
         this.text.setExtent(this.text.getExtent().addPt(extendBy));
+	return result;
     },
     
     textHeight: function() {
