@@ -1784,7 +1784,7 @@ Widget.subclass('Component', {
     },
     
     buildView: function(optExtent) {
-        var bounds = (optExtent || pt(0,0)).extentAsRectangle();
+        var bounds = optExtent && optExtent.extentAsRectangle();
         this.panel = new this.morphClass(bounds);
         this.morph = this.panel;
         this.panel.setComponent(this);
@@ -2853,7 +2853,7 @@ Object.subclass('FlowLayout', {
     },
     
     layoutSubmorphsInMorph: function() {
-        this.morphToLayout.submorphs.each(function(ea) {
+        this.morphToLayout.submorphs.forEach(function(ea) {
             this.setPositionFor(ea);
         }, this);
     },
