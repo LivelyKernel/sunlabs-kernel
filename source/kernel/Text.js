@@ -2298,7 +2298,7 @@ Morph.subclass('LabeledTextMorph', {
     maxExtent: pt(500, 400),
     
     initialize: function($super, rect, labelString, textString, maxExtent) {
-        $super(rect, 'rect');
+        $super(new lively.scene.Rectangle(rect));
         if (maxExtent) this.maxExtent = maxExtent;
         
         /* configure the label */
