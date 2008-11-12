@@ -1785,9 +1785,8 @@ Widget.subclass('Component', {
     
     buildView: function(optExtent) {
         var bounds = (optExtent || pt(0,0)).extentAsRectangle();
-        this.panel = new this.morphClass(new lively.scene.Rectangle(bounds));
+        this.panel = new this.morphClass(bounds);
         this.morph = this.panel;
-       
         this.panel.setComponent(this);
        
         
