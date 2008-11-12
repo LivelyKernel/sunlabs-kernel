@@ -1350,7 +1350,7 @@ BoxMorph.subclass('ComponentMorph', {
             this.submorphs.each(function(ea) { ea.remove() });
             $super(morph);
             this.setExtent(morph.getExtent().addPt(pt(this.padding.left() * 2, this.padding.top() * 2)));
-            morph.setPosition(pt(this.padding.left(), this.padding.top()));
+            morph.setPosition(this.padding.topLeft());
             this.component.adoptToModel(morph.formalModel);
             return morph;
         };
