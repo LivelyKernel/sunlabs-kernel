@@ -35,8 +35,8 @@ Widget.subclass('lively.TileScripting.TileBox', {
 
         var textHeight = 30;
         var wrapper = new ClipMorph(m.getExtent().addPt(pt(0,textHeight)).extentAsRectangle(), "rect");
-        wrapper.setBorderWidth(1);
-        m.setBorderWidth(2);
+        wrapper.applyStyle({borderWidth:1, borderColor: Color.black});
+        m.applyStyle({borderWidth: 2, borderColor: Color.black});
         wrapper.addMorph(m);
         var text = new TextMorph(pt(0,m.getExtent().y).extent(m.getExtent().x, wrapper.getExtent().y), caption || m.constructor.type);
         text.beLabel();
@@ -60,8 +60,7 @@ Widget.subclass('lively.TileScripting.TileBox', {
     buildView: function(extent) {
         var panel = new thisModule.TileBoxPanel(this.viewExtent);
         panel.adjustForNewBounds = Morph.prototype.adjustForNewBounds.bind(this); // so submorphs don't scale
-        panel.setFill(Color.white);
-        panel.setBorderWidth(1);
+        panel.applyStyle({fill: Color.white, borderWidth: 1, borderColor: Color.black});
         panel.suppressHandles = true;
         
         var defaultCreateFunc = function(theClass, optExtent) {
@@ -284,13 +283,12 @@ Morph.subclass('lively.TileScripting.Tile', {
     isTile: true,
     defaultExtent: pt(100,20),
     layoutSpec: {layouterClass: HLayout, center: true},
+    style: { fill: new Color(0.6, 0.7, 0.8), borderWidth: 0},
     
     initialize: function($super, bounds) {
         if (!bounds) bounds = this.defaultExtent.extentAsRectangle();
         $super(new lively.scene.Rectangle(bounds));
         this.suppressHandles = true;
-        this.setFill(new Color(0.6, 0.7, 0.8));
-        this.setBorderWidth(0);
     },
     
     addMorph: function($super, morph) {
@@ -574,6 +572,7 @@ Morph.subclass('lively.TileScripting.DropArea', {
 
     isDropArea: true,
     layoutSpec: {layouterClass: VLayout},
+    style: {borderWidth: 0.5, borderColor: Color.black},
     
     initialize: function($super, bounds, actionWhenDropped) {
         $super(new lively.scene.Rectangle(bounds));
