@@ -972,7 +972,10 @@ Morph.subclass('ArrowHeadMorph', {
         width = width || 12;
 
         var verts = [pt(0,0), pt(-length, 0.5* width), pt(-length, -0.5 * width)];
-        this.head = this.addMorph(new Morph(new lively.scene.Polygon(verts)));
+	var poly = new lively.scene.Polygon(verts);
+	// FIXME: positioning hack, remove the following
+	poly.origin = function() { return pt(0,0) }
+        this.head = this.addMorph(new Morph(poly));
 	this.head.applyStyle({fill: fill, borderWidth: 1, borderColor: lineColor});
         
         this.setPosition(this.head.getPosition());
