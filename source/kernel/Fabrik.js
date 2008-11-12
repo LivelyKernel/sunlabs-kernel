@@ -547,6 +547,7 @@ Global.Fabrik = {
 Morph.subclass('PinMorph', {
     
     isPinMorph: true,
+    style: {fill: Color.green, opacity: 0.5, borderWidth: 1, borderColor: Color.black},
     
     initialize: function ($super){
         $super(new lively.scene.Ellipse(pt( 0, 0), 10));
@@ -558,7 +559,6 @@ Morph.subclass('PinMorph', {
         this.openForDragAndDrop = true;
         this.onMouseDown = this.onMouseDown.bind(this);
     
-        this.setupMorphStyle();
         this.setExtent(pt(18,18)); // fixes ellipse pt(0,0) === center behavior
         return this;
     },
@@ -603,11 +603,6 @@ Morph.subclass('PinMorph', {
         fakePin.originPin.connectTo(this.pinHandle);
                 
         this.removeMorph(morph);
-    },
-    
-    setupMorphStyle: function() {
-        this.setFill(Color.green);
-        this.setFillOpacity(0.5);
     },
     
     setupInputMorphStyle: function() {
