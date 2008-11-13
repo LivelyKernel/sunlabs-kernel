@@ -31,6 +31,14 @@ var Loader = {
     }
 };
 
+// test which checks that all modules are loaded
+(function testModuleLoad() {
+    var modules = Global.subNamespaces(true).select(function(ea) { return ea.wasDefined });
+    modules
+        .select(function(ea) { return ea.hasPendingRequirements() })
+        .forEach(function(ea) { console.warn(ea.uri() + ' has unloaded requirements: ' + ea.pendingRequirementNames()) });
+    console.log('Module load check done. ' + modules.length + ' modules loaded.');
+}).delay(5);
 
 // ===========================================================================
 // Error/warning console (browser dependent)

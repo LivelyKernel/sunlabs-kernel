@@ -117,14 +117,6 @@ function require(/*requiredModuleNameOrAnArray, anotherRequiredModuleName, ...*/
     return module(getUniqueName()).requires(Object.isArray(args[0]) ? args[0] : args);
 };
 
-// test which checks that all modules are loaded
-(function testModuleLoad() {
-    var modules = Global.subNamespaces(true).select(function(ea) { return ea.wasDefined });
-    modules
-        .select(function(ea) { return ea.hasPendingRequirements() })
-        .forEach(function(ea) { console.warn(ea.uri() + ' has unloaded requirements: ' + ea.pendingRequirementNames()) });
-    console.log('Module load check done. ' + modules.length + ' modules loaded.');
-}).delay(5);
 
 // ===========================================================================
 // Our JS library extensions (JS 1.5, no particular browser or graphics engine)
