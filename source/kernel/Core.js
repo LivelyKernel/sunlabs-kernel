@@ -28,6 +28,17 @@ var Loader = {
         var node = document.getElementsByTagName(embedSerializable ? "defs" : "script")[0];
         if (onLoadCb) script.onload = onLoadCb;
         node.appendChild(script);
+    },
+    
+    scriptInDOM: function(url) {
+        if (document.getElementById(url)) return true;
+        var preloaded = document.getElementsByTagName('defs')[0].childNodes;
+        for (var i = 0; i < preloaded.length; i++)
+            if (preloaded[i].getAttribute &&
+                    preloaded[i].getAttribute('xlink:href') &&
+                        url.endsWith(preloaded[i].getAttribute('xlink:href')))
+                            return true
+        return false;
     }
 };
 

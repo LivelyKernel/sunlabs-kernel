@@ -674,23 +674,8 @@ Namespace.addMethods({ // module specific, should be a subclass?
         
     isLoading: function() {
         if (this.isLoaded()) return false;
-        // FIXME move this to Loader
-        if (document.getElementById(this.uri())) return true;
-        if (this.isPreLoaded()) return true;
-        return false;
-    },
-
-    isPreLoaded: function() {
-        // FIXME
         if (this.uri().include('anonymous')) return true;
-        // FIXME move this to Loader
-        var preloaded = document.getElementsByTagName('defs')[0].childNodes;
-        for (var i = 0; i < preloaded.length; i++)
-            if (preloaded[i].getAttribute &&
-                    preloaded[i].getAttribute('xlink:href') &&
-                        this.uri().endsWith(preloaded[i].getAttribute('xlink:href')))
-                            return true
-        return false;
+        return Loader.scriptInDOM(this.uri());
     },
     
     load: function() {
