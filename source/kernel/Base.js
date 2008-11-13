@@ -122,7 +122,7 @@ function require(/*requiredModuleNameOrAnArray, anotherRequiredModuleName, ...*/
     var modules = Global.subNamespaces(true).select(function(ea) { return ea.wasDefined });
     modules
         .select(function(ea) { return ea.hasPendingRequirements() })
-        .forEach(function(ea) { console.warn(ea.uri() + ' has unloaded requirements!') });
+        .forEach(function(ea) { console.warn(ea.uri() + ' has unloaded requirements: ' + ea.pendingRequirementNames()) });
     console.log('Module load check done. ' + modules.length + ' modules loaded.');
 }).delay(5);
 
@@ -598,7 +598,11 @@ Object.subclass('Namespace', {
                     recursive);
     }
     
-}); 
+});
+
+// let Glabal act like a namespace itself
+Object.extend(Global, Namespace.prototype);
+Global.namespaceIdentifier = 'Global';
 
 Namespace.addMethods({ // module specific, should be a subclass?
     
@@ -714,10 +718,6 @@ Namespace.addMethods({ // module specific, should be a subclass?
     }
     
 });
-
-// let Glabal act like a namespace itself
-Object.extend(Global, Namespace.prototype);
-Global.namespaceIdentifier = 'Global';
 
 // namespace('lively.lang');
 lively = new Namespace(Global, 'lively');
