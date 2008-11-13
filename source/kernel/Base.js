@@ -562,6 +562,7 @@ Object.subclass('Namespace', {
     
     initialize: function(context, nsName) {
         this.namespaceIdentifier = context.namespaceIdentifier + '.' + nsName;
+        this.createTime = new Date();
     },
         
     gather: function(selector, condition, recursive) {
@@ -683,7 +684,8 @@ Namespace.addMethods({ // module specific, should be a subclass?
         if (this.isLoading() && this.wasDefined && !this.hasPendingRequirements()) {
             this.runOnloadCallbacks();
             this.loaded = true;
-            console.log(this.uri() + ' is now completely loaded');
+            var time = this.createTime ? new Date() - this.createTime : 'na';
+            console.log(this.uri() + ' loaded in ' + time + ' ms');
             this.informDependendModules();
             return;
         }
