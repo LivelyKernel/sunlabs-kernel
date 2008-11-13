@@ -3916,12 +3916,17 @@ PasteUpMorph.subclass("WorldMorph", {
                 world.addMorph(widget)}],
             ["Heart", function(evt) { 
                 var shape1 = [pt(0,0), pt(50,0), pt(50,50), pt(0,50), pt(0,0)];
-                //var widget = new Morph(evt.point().extent(pt(100,100)),"path");
-		var widget = new Morph(new lively.scene.Path(shape1, Color.red, 3, Color.red));
+		var widget = new Morph(new lively.scene.Path(shape1));
+		widget.applyStyle({ fill: Color.red, borderWidth: 3, borderColor: Color.red});
+		widget.setPosition(evt.point());
 		widget.rotateBy(3.9);
+		var pathAttr = ["M0,0", "T48.25,-5.77", "T85.89,15.05", "T61.36,32.78",
+		    "T53.22,46.00", "T25.02,68.58", "T1.032,40.34", "T0,0"].join("");
+		widget.shape.rawNode.setAttributeNS(null, 'd', pathAttr);
                 world.addMorph(widget);
-                document.getElementById(widget.id()).childNodes[0].setAttribute('d', "M0,0T48.25658178329468,-5.770838260650635T85.89215588569641,15.051417827606201T61.36309051513672,32.78068518638611T53.225199699401855,46.00089120864868T25.02833652496338,68.58267283439636T1.0328261852264404,40.347657918930054T0,0")
-                }],
+		
+
+            }],
         ];
         var complexMorphItems =  [
             ["SliderMorph", function(evt) { world.addMorph(new SliderMorph(evt.point().extent(pt(120, 40))))}],
