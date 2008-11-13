@@ -16,22 +16,20 @@ load('../kernel/scene.js');
 load('../kernel/Core.js');
 
 
-Loader.loadScript = function(url, onLoadAction, embedSerializable) {
+Loader.loadedFiles = [];
+Loader.loadJs = function(url, onLoadAction, embedSerializable) {
     var fileName = url.startsWith('http') ? /\/([a-zA-Z0-9]+\.js)/.exec(url)[1] : url;
     load('../kernel/' + fileName);
-    if (onLoadAction) {
-        onLoadAction();
-        // why signal moduleLoaded again? should already be included in onLoadAction...???
-        if (noPendingRequirements(url)) moduleLoaded(url);
-    }
-    Loader.wasLoaded[url] = true;
-    Loader.pendingActionsFor(url).forEach(function(ea) {
-        // console.log(url + ' was loaded. Loading now its pending action for ' + ea.url);
-        ea.action();
-        if (noPendingRequirements(ea.url)) moduleLoaded(ea.url);
-    });
+    if (onLoadAction) onLoadAction();
+    Loader.loadedFiles.push(url);
 }
 
+Loader.scriptInDOM = function(url) {
+    var preLoaded = ['Text.js', 'Core.js', 'scene.js', 'Widgets.js', 'Network.js',
+                     'Data.js','Tools.js', 'Examples.js', 'TileScripting.js', 'Helper.js' ];
+    if (preLoaded.any(function(ea) { return url.include(ea) })) return true;
+    return Loader.loadedFiles.include(url);
+}
 
 load('../kernel/Text.js');
 load('../kernel/Widgets.js');
@@ -68,7 +66,7 @@ browser.display(canvas);
 //Config.showPenScript = false;
 //load('../kernel/Main.js');
 
-
+load('../kernel/Helper.js');
 load('../kernel/TileScripting.js');
 
 
