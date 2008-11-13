@@ -1,4 +1,4 @@
-
+module('lively.Tests.MorphTest').requires('lively.TestFramework').toRun(function() {
 
 TestCase.subclass('MorphTest', {
 	
@@ -451,6 +451,4 @@ Widget.subclass('DummyWidget', {
 //logMethod(Morph.prototype, "onMouseDown");
 //logMethod(HandMorph.prototype, "reallyHandleMouseEvent");
 
-
-
-
+}) // end of module

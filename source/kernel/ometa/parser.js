@@ -24,7 +24,7 @@
 */
 
 module('ometa/parser.js').requires('ometa/ometa-base.js').toRun(function() {
-    
+
 Global.Parser = OMeta.delegated({
   listOf: function() {
     var $elf  = this,

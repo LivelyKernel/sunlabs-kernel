@@ -1,4 +1,6 @@
+module('lively.Tests.ModuleSystemTests').requires('lively.TestFramework').toRun(function() {
 
+    
 TestCase.subclass('LoaderTest', {
 	
 	shouldRun: false,
@@ -27,3 +29,5 @@ TestCase.subclass('LoaderTest', {
 });
 
 console.log('ModuleSystemTests.js loaded');
+
+});

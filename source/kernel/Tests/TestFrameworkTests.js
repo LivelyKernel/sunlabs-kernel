@@ -1,3 +1,5 @@
+module('lively.Tests.TestFrameworkTests').requires('lively.TestFramework').toRun(function() {
+
 /* These tests are used for testing the test framework itself 
 TestCase, TestResult, and TestSuite are tested */
 
@@ -402,3 +404,5 @@ TestCase.subclass('NativeStackTest', {
 
 
 console.log('loaded TestFrameworkTests.js');
+
+}) // end of module

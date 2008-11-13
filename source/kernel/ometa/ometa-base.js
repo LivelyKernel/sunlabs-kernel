@@ -70,11 +70,11 @@ module('ometa/ometa-base.js').requires('ometa/lib.js').toRun(function() {
 // the failure exception
 
 // fail = { toString: function() { return "match failed" } }
-fail = new Error('match failed');
+Global.fail = new Error('match failed');
 
 // streams and memoization
 
-function OMInputStream(hd, tl) {
+Global.OMInputStream = function OMInputStream(hd, tl) {
   this.memo = { }
   this.hd   = hd
   this.tl   = tl
@@ -82,16 +82,16 @@ function OMInputStream(hd, tl) {
 OMInputStream.prototype.head = function() { return this.hd }
 OMInputStream.prototype.tail = function() { return this.tl }
 
-function OMInputStreamEnd() { this.memo = { } }
+Global.OMInputStreamEnd = function OMInputStreamEnd() { this.memo = { } }
 OMInputStreamEnd.prototype.head = function() { throw fail }
 OMInputStreamEnd.prototype.tail = function() { throw fail }
 
 Array.prototype.toOMInputStream  = function() { return makeArrayOMInputStream(this, 0) }
 String.prototype.toOMInputStream = Array.prototype.toOMInputStream
 
-function makeArrayOMInputStream(arr, idx) { return idx < arr.length ? new ArrayOMInputStream(arr, idx) : new OMInputStreamEnd() }
+Global.makeArrayOMInputStream = function makeArrayOMInputStream(arr, idx) { return idx < arr.length ? new ArrayOMInputStream(arr, idx) : new OMInputStreamEnd() }
 
-function ArrayOMInputStream(arr, idx) {
+Global.ArrayOMInputStream = function ArrayOMInputStream(arr, idx) {
   this.memo = { }
   this.arr  = arr
   this.idx  = idx
@@ -104,7 +104,7 @@ ArrayOMInputStream.prototype.tail = function() {
   return this.tl
 }
 
-function makeOMInputStreamProxy(target) {
+Global.makeOMInputStreamProxy = function makeOMInputStreamProxy(target) {
   return target.delegated({
     memo:   { },
     target: target,
@@ -114,7 +114,7 @@ function makeOMInputStreamProxy(target) {
 
 // Failer (i.e., that which makes things fail) is used to detect (direct) left recursion and memoize failures
 
-function Failer() { }
+Global.Failer = function Failer() { }
 Failer.prototype.used = false
 
 // the OMeta "class" and basic functionality

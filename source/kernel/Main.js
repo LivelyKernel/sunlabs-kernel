@@ -203,12 +203,11 @@ function populateWorldWithExamples(world) {
         require('Examples.js').toRun(function() { new TestWidget().openIn(world, pt(835, 450)) });
     
     if (Config.showTesterRunnerForDevelopment) {
-        require('TestFramework.js').toRun(function(currentModule) {
-            var tests = Config.loadTests.collect(function(ea) { return 'Tests/' + ea + '.js'});
-            currentModule.requires(tests).toRun(function() {
-                TestRunner.openIn();
-                console.log('Tests loaded: .............................  ' + TestCase.allSubclasses().length);
-            });
+        var requirements = Config.loadTests.collect(function(ea) { return 'Tests/' + ea + '.js'});
+        if (requirements.length === 0) requirements.push('TestFramework.js');
+        require(requirements).toRun(function(currentModule) {
+            TestRunner.openIn();
+            console.log('Tests loaded: .............................  ' + TestCase.allSubclasses().length);
         });
     }
 
@@ -403,13 +402,13 @@ function populateWorldWithExamples(world) {
 		}
 		
         if (Config.showTesterRunner) {
-            require('TestFramework.js').toRun(function(currentModule) {
-                // Just show a few of our various tests
-                var tests = ['Tests/FabrikTest.js', 'Tests/TestFrameworkTests.js']
-                currentModule.requires(tests).toRun(function() {
-                    TestRunner.openIn(devWorld.myWorld, pt(500, 100))
-                });
-            });
+            // require('TestFramework.js').toRun(function(currentModule) {
+            //     // Just show a few of our various tests
+            //     var tests = ['Tests/FabrikTest.js', 'Tests/TestFrameworkTests.js']
+            //     currentModule.requires(tests).toRun(function() {
+            //         TestRunner.openIn(devWorld.myWorld, pt(500, 100))
+            //     });
+            // });
         }
     }
 

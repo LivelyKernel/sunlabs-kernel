@@ -60,36 +60,6 @@ function namespace(spec, context) {
     }
 }
 
-// this was the beginning of all this...
-// function require(/* script file names */) {
-//     var args = $A(arguments);
-//     var loadAll = function(code) {
-//         args.reverse().inject(code, function(onLoadAction, url) {
-//             return function() { Loader.loadScript(url, onLoadAction) };
-//         })();
-//     };
-//     return {run: loadAll};
-// };
-
-
-var PendingRequirements = {};
-
-// Semaphore functions
-function moduleLoaded(module) {
-    // the module is loaded, so remove it from the PendingRequirements list
-    console.log('declaring ' + module + ' as loaded');
-    Object.keys(PendingRequirements)
-        .select(function(ea) { return Object.isArray(PendingRequirements[ea]) })
-        .forEach(function(ea) { PendingRequirements[ea] = PendingRequirements[ea].without(module) });
-};
-// FIXME depends on 'Document' and Loader
-function noPendingRequirements(module) {
-    if (!PendingRequirements[module]) return true;
-    if (PendingRequirements[module].any(function(ea) { document.getElementById(module) && !Loader.wasLoaded[module] }))
-        return false;
-
-    return PendingRequirements[module].length == 0;
-};
 
 function module(moduleName) {
 
@@ -102,7 +72,8 @@ function module(moduleName) {
     function convertUrlToNSIdentifier(url) {
         var result = namespacePrefix + url;
         result = result.replace(/\//, '.');
-        result = result.substring(0, result.lastIndexOf('.')); // get rid of '.js'
+        // get rid of '.js'
+        if (result.endsWith('.js')) result = result.substring(0, result.lastIndexOf('.'));
         return result;
     }
     
@@ -110,51 +81,29 @@ function module(moduleName) {
         return namespace(isNamespaceAwareModule(moduleName) ? moduleName : convertUrlToNSIdentifier(moduleName));
     }
     
-    function createUri(moduleName) {
-        var baseUrl = document.baseURI;  // FIXME depends on 'Document'
-        var url = baseUrl.substring(0, baseUrl.lastIndexOf('/') + 1)
-        url += isNamespaceAwareModule(moduleName) ? moduleName.substr(namespacePrefix.length).replace(/\./, '/') + '.js' : moduleName;
-        dbgOn('http://localhost/lively/js.js' === url);
-        return url;
-    }
-
-    function waitFor(module, requiredModules) {
-	if (!PendingRequirements[module]) {
-            PendingRequirements[module] = requiredModules;
-            return;
-	}
-	PendingRequirements[module] = PendingRequirements[module].concat(requiredModules);
-    }
-
     function basicRequire(/*module, requiredModuleNameOrAnArray, anotherRequiredModuleName, ...*/) {
 	var args = $A(arguments);    
 	var module = args.shift();
 	var preReqModuleNames = Object.isArray(args[0]) ? args[0] : args; // support modulenames as array and parameterlist
-	var requiredModuleNames = [];
 	for (var i = 0; i < preReqModuleNames.length; i++) {
-            requiredModuleNames[i] = createUri(preReqModuleNames[i]);
+            module.addRequiredModule(createNamespaceModule(preReqModuleNames[i]));
 	}
-	
-	waitFor(module.uri, requiredModuleNames);
+	var requiredModules = module.pendingRequirements;
+
 	return {toRun: function(code) {
             code = code.curry(module); // pass in own module name for nested requirements
             var codeWrapper = function() { // run code with namespace modules as additional parameters
-                code.apply(this, preReqModuleNames.map(function(ea) {
-                    var nsIdentifier = isNamespaceAwareModule(ea) ? ea : convertUrlToNSIdentifier(ea);
-                    return Class.forName(nsIdentifier);
-                }));
+                code.apply(this, requiredModules);
             }
             
-            Loader.loadScripts(requiredModuleNames, onModuleLoad.curry(module.uri, codeWrapper));
+            module.addOnloadCallback(codeWrapper);
+            module.load();
 	}};
     };
 
     dbgOn(!Object.isString(moduleName));
-
     var module = createNamespaceModule(moduleName);
-    module.uri = createUri(moduleName);
-    // if (PendingRequirements[module.uri]) throw dbgOn(new Error('Module already exisiting ' + module.uri));
-    PendingRequirements[module.uri] = 0;  // FIXME get rid of that Singleton, track pending requirements via module
+    module.wasDefined = true;
     module.requires = basicRequire.curry(module);
     return module;
 };
@@ -164,25 +113,18 @@ function require(/*requiredModuleNameOrAnArray, anotherRequiredModuleName, ...*/
         return 'anonymous_module_' + require.counter;
     }
     require.counter !== undefined ? require.counter++ : require.counter = 0;
-    return module(getUniqueName()).requires($A(arguments));
+    var args = $A(arguments);
+    return module(getUniqueName()).requires(Object.isArray(args[0]) ? args[0] : args);
 };
 
-function onModuleLoad(ownModuleName, code) {
-    if (noPendingRequirements(ownModuleName)) {
-        try {
-            code();
-        } catch(e) {
-	    throw dbgOn(e, JSON.serialize(PendingRequirements));
-        } finally {
-            if (noPendingRequirements(ownModuleName)) moduleLoaded(ownModuleName);
-        };
-        return;
-    };
-    console.log('Trying soon again to load requirements for ' + ownModuleName + ': ' + PendingRequirements[ownModuleName]);
-    window.setTimeout(onModuleLoad.curry(ownModuleName, code), 0);
-};
-
-
+// test which checks that all modules are loaded
+(function testModuleLoad() {
+    var modules = Global.subNamespaces(true).select(function(ea) { return ea.wasDefined });
+    modules
+        .select(function(ea) { return ea.hasPendingRequirements() })
+        .forEach(function(ea) { console.warn(ea.uri() + ' has unloaded requirements!') });
+    console.log('Module load check done. ' + modules.length + ' modules loaded.');
+}).delay(5);
 
 // ===========================================================================
 // Our JS library extensions (JS 1.5, no particular browser or graphics engine)
@@ -629,7 +571,7 @@ Object.subclass('Namespace', {
     initialize: function(context, nsName) {
         this.namespaceIdentifier = context.namespaceIdentifier + '.' + nsName;
     },
-    
+        
     gather: function(selector, condition, recursive) {
         var result = Object.values(this).select(function(ea) { return condition.call(this, ea) }, this);
         if (!recursive) return result;
@@ -657,6 +599,121 @@ Object.subclass('Namespace', {
     }
     
 }); 
+
+Namespace.addMethods({ // module specific, should be a subclass?
+    
+    uri: function() { // FIXME cleanup necessary
+        var id = this.namespaceIdentifier;
+        var namespacePrefix;
+        if (id.startsWith('Global.')) namespacePrefix = 'Global.lively.';
+        else if (id.startsWith('lively.')) namespacePrefix = 'lively.';
+        else throw dbgOn(new Error('unknown namespaceIdentifier'));
+
+        var baseUrl = document.baseURI;  // FIXME depends on 'Document'
+        var url = baseUrl.substring(0, baseUrl.lastIndexOf('/') + 1)
+        url += this.namespaceIdentifier.substr(namespacePrefix.length).replace(/\./, '/');
+        if (!url.include('anonymous_module')) url += '.js';
+
+        return url;
+    },
+    
+    addDependendModule: function(depModule) {
+        if (!this.dependendModules) this.dependendModules = [];
+        this.dependendModules.push(depModule);
+    },
+
+    informDependendModules: function() {
+        if (!this.dependendModules) return;
+        var deps = this.dependendModules;
+        this.dependendModules = [];
+        deps.each(function(ea) { ea.removeRequiredModule(this) }, this);
+    },
+    
+    addRequiredModule: function(requiredModule) {
+        if (requiredModule.isLoaded()) return;
+        if (!this.pendingRequirements) this.pendingRequirements = [];
+        this.pendingRequirements.push(requiredModule);
+        requiredModule.addDependendModule(this);
+    },
+    
+    removeRequiredModule: function(requiredModule) {
+        if (this.pendingRequirements && !this.pendingRequirements.include(requiredModule))
+            throw dbgOn(new Error('requiredModule not there'));;
+        this.pendingRequirements = this.pendingRequirements.without(requiredModule);
+        if (!this.hasPendingRequirements()) {
+            console.log('no more requirements for ' + this.uri());
+            this.load();
+        }
+    },
+        
+    pendingRequirementNames: function() {
+        if (!this.pendingRequirements) return [];
+        return this.pendingRequirements.collect(function(ea) { return ea.uri() });    
+    },
+    
+    hasPendingRequirements: function() {
+        return this.pendingRequirements && this.pendingRequirements.length > 0;
+    },
+    
+    loadRequirementsFirst: function() {
+        this.pendingRequirements && this.pendingRequirements.invoke('load');
+    },
+    
+    addOnloadCallback: function(cb) {
+        if (!this.callbacks) this.callbacks = [];
+        this.callbacks.push(cb);
+    },
+    
+    runOnloadCallbacks: function() {
+        if (!this.callbacks) return;
+        while (this.callbacks.length > 0) {
+            var cb = this.callbacks.shift();
+            cb();
+        };
+    },
+    
+    isLoaded: function() {
+        return this.loaded;
+    },
+        
+    isLoading: function() {
+        if (this.isLoaded()) return false;
+        // FIXME move this to Loader
+        if (document.getElementById(this.uri())) return true;
+        if (this.isPreLoaded()) return true;
+        return false;
+    },
+
+    isPreLoaded: function() {
+        // FIXME
+        if (this.uri().include('anonymous')) return true;
+        // FIXME move this to Loader
+        var preloaded = document.getElementsByTagName('defs')[0].childNodes;
+        for (var i = 0; i < preloaded.length; i++)
+            if (preloaded[i].getAttribute &&
+                    preloaded[i].getAttribute('xlink:href') &&
+                        this.uri().endsWith(preloaded[i].getAttribute('xlink:href')))
+                            return true
+        return false;
+    },
+    
+    load: function() {
+        if (this.isLoaded()) return;
+        if (this.isLoading() && this.wasDefined && !this.hasPendingRequirements()) {
+            this.runOnloadCallbacks();
+            this.loaded = true;
+            console.log(this.uri() + ' is now completely loaded');
+            this.informDependendModules();
+            return;
+        }
+        if (this.isLoading()) {
+            this.loadRequirementsFirst();
+            return;
+        }
+        Loader.loadJs(this.uri());
+    }
+    
+});
 
 // let Glabal act like a namespace itself
 Object.extend(Global, Namespace.prototype);

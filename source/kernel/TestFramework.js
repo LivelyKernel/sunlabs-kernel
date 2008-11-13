@@ -3,14 +3,7 @@ creating own tests. TestResult and TestSuite are used internally for running the
 TestRunner is a Widget which creates a standard xUnit TestRunner window. All tests of 
 the system can be run from it */
 
-TestFramework = {
-    // loadTests: function(tests) {
-    //     tests.each(function(ea) {
-    //         Loader.loadScript('Tests/' + ea + '.js');
-    //     })
-    // },
-}
-
+module('lively.TestFramework').requires().toRun(function(thisModule) {
 
 Object.subclass('TestCase', {
 
@@ -575,17 +568,17 @@ Global.inspectObj = SimpleInspector.inspectObj;
  *    sourceURL: http://localhost/lk/kernel/TestFramework.js
  */
 
-function printError(e) {
+Global.printError = function printError(e) {
    var s = "";
    for(i in e) { s += i + ": " + String(e[i]) + ", "}; // get everything out....
    return s
 }
 
-function logError(e) {
+Global.logError = function logError(e) {
     console.log("Error: " + printError(e));
 }
 
-function openStackViewer() {
+Global.openStackViewer = function openStackViewer() {
    var stack = getStack();
    stack.shift();
    stack.shift();
@@ -597,3 +590,5 @@ function openStackViewer() {
 };
 
 console.log("loaded TestFramework.js");
+
+});

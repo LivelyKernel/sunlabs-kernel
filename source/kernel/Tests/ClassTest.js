@@ -1,4 +1,4 @@
-
+module('lively.Tests.ClassTest').requires('lively.TestFramework').toRun(function() {
 
 TestCase.subclass('ClassTest', {
 	
@@ -120,3 +120,5 @@ TestCase.subclass('NamespaceTest', {
         this.assert(result.include(testNamespace.three.threeOne.dummyFunc));
     },
 })
+
+}) // end of module

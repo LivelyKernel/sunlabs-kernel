@@ -1,3 +1,5 @@
+module('lively.Tests.SerializationTests').requires('lively.TestFramework').toRun(function() {
+
 /* For Serialization tests we need a own WorldMorph and thus a own SVG canvas */
 
 TestCase.subclass('ASerializationTestCase', {
@@ -105,3 +107,5 @@ TestCase.subclass('DomRecordTest', {
         this.assert(this.model.getDynamicField && this.model.setDynamicField);
     }
 });
+
+}) // end of module

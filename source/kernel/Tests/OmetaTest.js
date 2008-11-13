@@ -1,5 +1,4 @@
-
-module('Tests/OmetaTest.js').requires('Helper.js', 'Ometa.js').toRun(function() {
+module('lively.Tests.OmetaTest').requires('lively.TestFramework', 'lively.Helper', 'lively.Ometa').toRun(function() {
 
 TestCase.subclass('TextTest', {
 

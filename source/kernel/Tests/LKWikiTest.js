@@ -1,4 +1,4 @@
-module('lively.Tests.LKWikiTest').requires('lively.LKWiki').toRun(function(thisModule, wikiModule) {
+module('lively.Tests.LKWikiTest').requires('lively.TestFramework', 'lively.LKWiki').toRun(function(thisModule, wikiModule) {
 
 thisModule.createPropfindResponse = function(filename, partOfRepoUrl, revisionNumber) {
 	/* e.g. fileName = 'abc', partOfRepoUrl = '/testsvn/repo1/' revisionNumber = 74 */

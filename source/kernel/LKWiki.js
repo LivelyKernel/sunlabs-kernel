@@ -1,3 +1,5 @@
+module('lively.LKWiki').requires().toRun(function(ownModule) {
+
 URL.common.localWiki = URL.proxy.withFilename('wiki/');
 
 // Deprecated
@@ -463,3 +465,5 @@ Object.subclass('WikiPatcher', {
         return src.replace(this.findLinks, '$1"$3"');
     },
 })
+
+}) // end of module

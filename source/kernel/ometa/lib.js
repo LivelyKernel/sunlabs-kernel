@@ -27,7 +27,7 @@
 
 module('ometa/lib.js').requires().toRun(function() {
     
-function StringBuffer() {
+Global.StringBuffer = function StringBuffer() {
   this.strings = []
   for (var idx = 0; idx < arguments.length; idx++)
     this.nextPutAll(arguments[idx])
@@ -40,10 +40,10 @@ String.prototype.writeStream      = function() { return new StringBuffer(this) }
 
 
 
-function toOmetaString(array) { var ws = "".writeStream(); printOn(array,ws); return ws.contents() };
+Global.toOmetaString = function toOmetaString(array) { var ws = "".writeStream(); printOn(array,ws); return ws.contents() };
 // Array.prototype.toOmetaString = function() { var ws = "".writeStream(); this.printOn(ws); return ws.contents() }
 
-function printOn(objOrArray, ws) {
+Global.printOn = function printOn(objOrArray, ws) {
     if (Object.isArray(objOrArray)) {
         ws.nextPutAll("[")
          for (var idx = 0; idx < objOrArray.length; idx++) {
@@ -80,7 +80,7 @@ Object.prototype.delegated = function(props) {
 }
 
 // some reflective stuff
-function ownPropertyNames(obj) {
+Global.ownPropertyNames = function ownPropertyNames(obj) {
     var r = []
     for (name in obj)
       if (obj.hasOwnProperty(name))
@@ -95,31 +95,31 @@ function ownPropertyNames(obj) {
 //   return r
 // }
 
-function hasProperty(obj, p) { { return obj[p] != undefined } }
+Global.hasProperty = function hasProperty(obj, p) { { return obj[p] != undefined } }
 // Object.prototype.hasProperty = function(p) { return this[p] != undefined }
 
-function isNumber(obj)  { return Object.isNumber(obj) }
+Global.isNumber = function isNumber(obj)  { return Object.isNumber(obj) }
 //Object.prototype.isNumber    = function() { return false }
 //Number.prototype.isNumber    = function() { return true }
 
-function isString(obj)  { return Object.isString(obj) }
+Global.isString = function isString(obj)  { return Object.isString(obj) }
 //Object.prototype.isString    = function() { return false }
 //String.prototype.isString    = function() { return true }
 
-function isCharacter(obj)  { return Object.isString(obj) && obj.length == 1 }
+Global.isCharacter = function isCharacter(obj)  { return Object.isString(obj) && obj.length == 1 }
 //Object.prototype.isCharacter = function() { return false }
 //String.prototype.isCharacter = function() { return this.length == 1 }
 
-function isSpace(obj)  { return isCharacter(obj) && obj.charCodeAt(0) <= 32   }
+Global.isSpace = function isSpace(obj)  { return isCharacter(obj) && obj.charCodeAt(0) <= 32   }
 //String.prototype.isSpace     = function() { return this.isCharacter() && this.charCodeAt(0) <= 32   }
-function isDigit(obj)  { return isCharacter(obj) && obj >= "0" && obj <= "9" }
+Global.isDigit = function isDigit(obj)  { return isCharacter(obj) && obj >= "0" && obj <= "9" }
 //String.prototype.isDigit     = function() { return this.isCharacter() && this >= "0" && this <= "9" }
-function isLower(obj)  { return isCharacter(obj) && obj >= "a" && obj <= "z" }
+Global.isLower = function isLower(obj)  { return isCharacter(obj) && obj >= "a" && obj <= "z" }
 //String.prototype.isLower     = function() { return this.isCharacter() && this >= "a" && this <= "z" }
-function isUpper(obj)  { return isCharacter(obj) && obj >= "A" && obj <= "Z" }
+Global.isUpper = function isUpper(obj)  { return isCharacter(obj) && obj >= "A" && obj <= "Z" }
 //String.prototype.isUpper     = function() { return this.isCharacter() && this >= "A" && this <= "Z" }
   
-function digitValue(obj)  { return Object.isString(obj) && obj.charCodeAt(0) - "0".charCodeAt(0) };
+Global.digitValue = function digitValue(obj)  { return Object.isString(obj) && obj.charCodeAt(0) - "0".charCodeAt(0) };
 //String.prototype.digitValue  = function() { return this.charCodeAt(0) - "0".charCodeAt(0) }
 
 // Why aren't these functions???
@@ -156,7 +156,7 @@ function digitValue(obj)  { return Object.isString(obj) && obj.charCodeAt(0) - "
 
 // Squeak's ReadStream, kind of
 
-function ReadStream(anArrayOrString) {
+Global.ReadStream = function ReadStream(anArrayOrString) {
   this.src = anArrayOrString
   this.pos = 0
 }
@@ -174,12 +174,12 @@ escapeStringFor["'".charCodeAt(0)]  = "\\'"
 escapeStringFor["\r".charCodeAt(0)] = "\\r"
 escapeStringFor["\n".charCodeAt(0)] = "\\n"
 escapeStringFor["\t".charCodeAt(0)] = "\\t"
-escapeChar = function(c) {
+Global.escapeChar = function escapeChar(c) {
   var charCode = c.charCodeAt(0)
   return charCode > 255 ? String.fromCharCode(charCode) : escapeStringFor[charCode]
 }
 
-function ometaUnescape(s) {
+Global.ometaUnescape = function ometaUnescape(s) {
   if (s[0] == '\\')
     switch (s[1]) {
       case '\\': return '\\'
@@ -202,7 +202,7 @@ String.prototype.toProgramString = function() {
 
 // C-style tempnam function
 
-function tempnam(s) { return (s ? s : "_tmpnam_") + tempnam.n++ }
+Global.tempnam = function tempnam(s) { return (s ? s : "_tmpnam_") + tempnam.n++ }
 tempnam.n = 0
 
 });

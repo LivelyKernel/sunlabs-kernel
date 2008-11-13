@@ -13,11 +13,7 @@
  * that will be included in the system when it starts. 
  */
 
-
-namespace('lively.examples');
-
-
-using(lively.examples).run(function(module) {
+module('lively.Examples').requires().toRun(function(module) {
 
 // ===========================================================================
 // Widget (panel) Tester Demo

@@ -1,4 +1,4 @@
-module('Tests/FabrikTest.js').requires('Fabrik.js').toRun(function(ownModule) {
+module('lively.Tests.FabrikTest').requires('lively.TestFramework', 'lively.Fabrik').toRun(function(ownModule) {
 
 TestCase.subclass('FabrikTestCase', {
     

@@ -1,3 +1,4 @@
+module('lively.Tests.RecordTest').requires('lively.TestFramework').toRun(function() {
 
 TestCase.subclass('SharedNodeModelTest', {
     
@@ -51,5 +52,4 @@ TestCase.subclass('DomRecordTest', {
 
 });
 
-
-
+}) // end of module
