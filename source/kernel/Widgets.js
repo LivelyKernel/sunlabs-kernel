@@ -1403,6 +1403,9 @@ Morph.subclass("MenuMorph", {
 	// See MenuItem for yet another form of invocation for targets matching
 	//	var responder = (targetMorph || this).getModelValue("getMenuTarget");
 
+	// Finally, note that if the itemName is followed by an array
+	//	then that array is the specification for a subMenu,
+	//	and, the itemName will appear followed by '...'
 
         // The optional parameter lineList is an array of indices into items.
         // It will cause a line to be displayed below each item so indexed
@@ -1443,14 +1446,19 @@ Morph.subclass("MenuMorph", {
     addItems: function(items) {
 	items.forEach( function(item) { this.addItem(item); }.bind(this));
     },
-    arrayItems: function() {
-	return this.items.map( function(item) { return item.asArrayItem(); });
+    getRawItems: function() {
+	return this.items  // Private protocol for pie-menu access
     },
+    addRawItem: function(item) {
+	this.items.push(this.addPseudoMorph(item));  // Private protocol for pie-menu access
+    },
+
     addLine: function(item) { // Not yet supported
         // The idea is for this to add a real line on top of the text
         this.items.push(this.addPseudoMorph(new MenuItem('-----')));
     },
     addSubmenuItem: function(item) {
+	// FIXME: Isn't this now just equivalent to addItem?
         var item = new SubMenuItem(item[0], item[1], item[2], item[3]);
         this.items.push(this.addPseudoMorph(item));
     },
@@ -3034,7 +3042,7 @@ Morph.subclass("PieMenuMorph", {
 	help += "\nyou will see a map of the directions and actions.";
 	help += "\nThis menu has the same items with words to";
 	help += "\nexplain the abbreviated captions in the map.";
-	help += "\nRelease in the center to get the normal menu.";
+	help += "\nYou can disable pie menus in world-menu/preferences.";
 	return help;
     },
     open: function(evt) {
@@ -3064,19 +3072,18 @@ Morph.subclass("PieMenuMorph", {
     },
     onMouseUp: function(evt) {
         // This should only happen inside the commitment radius.
-	// If the help disk has not been shown, then show it,
-	// otherwise, display the default (normal) menu.
+	// Display the default (normal) menu with a help item at the top.
 	if (this.hasCommitted) return;  // shouldn't happen
 	var world = this.world();
-	var menuItems = [
+	this.remove();
+	var normalMenu = new MenuMorph([
 		["pie menu help", function(helpEvt) {
 			var helpMenu = new MenuMorph(this.items, this.targetMorph);
 			helpMenu.openIn(world, evt.mousePoint, false, this.helpString());
-			}.bind(this)],
-		["-----"]
-		].concat(this.targetMorph.morphMenu(evt).arrayItems());
-	var normalMenu = new MenuMorph(menuItems, this.targetMorph);
-	this.remove();
+			}.bind(this)]
+	    ], this.targetMorph);
+	normalMenu.addLine();
+	this.targetMorph.morphMenu(evt).getRawItems().forEach( function (item) { normalMenu.addRawItem(item); });
 	normalMenu.openIn(world, evt.mousePoint, false, Object.inspect(this.targetMorph).truncate());
 	evt.hand.setMouseFocus(normalMenu);
     },
