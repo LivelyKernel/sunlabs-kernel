@@ -684,6 +684,9 @@ Namespace.addMethods({ // module specific, should be a subclass?
         if (this.isLoading() && this.wasDefined && !this.hasPendingRequirements()) {
             this.runOnloadCallbacks();
             this.loaded = true;
+            // time is not only the time needed for the Netrequest and code evaluation
+            // but the complete time span from the creation of the module (when the module is first encountered)
+            // to evaluation the evaluation of its code, including load time of all requirements
             var time = this.createTime ? new Date() - this.createTime : 'na';
             console.log(this.uri() + ' loaded in ' + time + ' ms');
             this.informDependendModules();
