@@ -2275,20 +2275,19 @@ TextMorph.subclass('TestTextMorph', {
     }
 });
 
-Morph.subclass('LabeledTextMorph', {
+BoxMorph.subclass('LabeledTextMorph', {
 
     documentation: "Morph that contains a small label and a TextMorph. Clips when TextMorphs grows larger than maxExtent",
     labelOffset: pt(5, 1),
     maxExtent: pt(500, 400),
     
     initialize: function($super, rect, labelString, textString, maxExtent) {
-        $super(new lively.scene.Rectangle(rect));
+        $super(rect);
         if (maxExtent) this.maxExtent = maxExtent;
         
         /* configure the label */
         var label = new TextMorph(this.labelOffset.asRectangle(), labelString);
-        label.beLabel({fontSize: 11, fill: Color.veryLightGray,
-                          padding: Rectangle.inset(1)});
+        label.beLabel({fontSize: 11, fill: Color.veryLightGray, padding: Rectangle.inset(1)});
         label.setBounds(label.bounds()); // set the bounds again, when padding is changed, otherwise they would be wrong
         this.addMorphFront(label);
         
@@ -2323,7 +2322,7 @@ Morph.subclass('LabeledTextMorph', {
     reshape: function($super, partName, newPoint, lastCall) {
         var priorPosition = this.getPosition();
         var priorExtent = this.getExtent();
-	var result = $super(partName, newPoint, handle, lastCall);
+	var result = $super(partName, newPoint, lastCall);
         if (lastCall && this.textHeight() < this.getExtent().y) this.setToTextHeight();
         var moveBy = this.getPosition().subPt(priorPosition);
         var extendBy = this.getExtent().subPt(priorExtent);
