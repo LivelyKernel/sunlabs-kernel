@@ -261,10 +261,7 @@ BoxMorph.subclass("ClipMorph", {
 	if (!this.fullBounds) {
 	    var tfm = this.getTransform();
 	    var bounds = this.shape.bounds();
-	    // var subBounds = this.submorphBounds(ignoreTransients);
-	    // this.fullBounds = tfm.transformRectToRect(subBounds ? subBounds.intersection(bounds) : bounds);
-	    // DI:  ClipMorph bounds should be independent of subMorphs, right?
-	    // DI:  so we should be able to replace the 2 lines above with this simpler one...
+	    // ClipMorph bounds are independent of subMorphs
 	    this.fullBounds = tfm.transformRectToRect(bounds);
 	}
 	return this.fullBounds;
@@ -1418,12 +1415,7 @@ Morph.subclass("MenuMorph", {
         //     menu.openIn(world,location,stayUp,captionIfAny);
 	
         $super(new lively.scene.Rectangle(pt(0, 0).extentAsRectangle()));
-        this.items = items.map(function(item) {
-            if (Object.isString()) throw dbgOn(new Error('String instead of item specification for menu, maybe one array missing?'));
-            return this.addPseudoMorph(Object.isArray(item[1]) ?
-                    new SubMenuItem(item[0], item[1], item[2], item[3]) :
-                    new MenuItem(item[0], item[1], item[2], item[3])); 
-	}, this);
+        this.items = items.map(function(item) { return this.addPseudoMorph(this.checkItem(item)) }, this);
         this.targetMorph = targetMorph || this;
         this.listMorph = null;
         this.applyStyle({fill: null, borderWidth: 0, fillOpacity: 0});
@@ -1434,27 +1426,30 @@ Morph.subclass("MenuMorph", {
     },
 
     addItem: function(item, index) {
-        var item = this.addPseudoMorph(new MenuItem(item[0], item[1], item[2], item[3]));
-        if (!index) {
-            this.items.push(item);
-            return
-        }
+        var item = this.addPseudoMorph(this.checkItem(item));
+        if (!index) { this.items.push(item); return }
         if (index > this.items.length || index < 0) throw dbgOn(new Error('Strange index'));
         var parts = this.items.partition(function(ea, i) { return i < index });
         parts[0].push(item);
         this.items = parts[0].concat(parts[1]);
-        
+    },
+    checkItem: function(item) {
+	if (Object.isString(item)) throw dbgOn(new Error(
+		'Menu item specification should be an array, not just a string'));
+	return Object.isArray(item[1]) ?
+        	new SubMenuItem(item[0], item[1], item[2], item[3]) :
+		new MenuItem(item[0], item[1], item[2], item[3]); 
+    },
+    addItems: function(items) {
+	items.forEach( function(item) { this.addItem(item); }.bind(this));
     },
     arrayItems: function() {
 	return this.items.map( function(item) { return item.asArrayItem(); });
     },
-
-
     addLine: function(item) { // Not yet supported
         // The idea is for this to add a real line on top of the text
         this.items.push(this.addPseudoMorph(new MenuItem('-----')));
     },
-
     addSubmenuItem: function(item) {
         var item = new SubMenuItem(item[0], item[1], item[2], item[3]);
         this.items.push(this.addPseudoMorph(item));

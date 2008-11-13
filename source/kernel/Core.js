@@ -3622,31 +3622,26 @@ PasteUpMorph.subclass("WorldMorph", {
         var menu = $super(evt);
         menu.keepOnlyItemsNamed(["inspect", "style"]);
         menu.addLine();
-        menu.addItem(["new object...", this.addMorphs.curry(evt)]);
+        menu.addItems(this.subMenuItems(evt));
         menu.addLine();
-        menu.addItem([(Config.usePieMenus ? "don't " : "") + "use pie menus",
-                      function() { Config.usePieMenus = !Config.usePieMenus; }]);
-        menu.addItem(["choose display theme...", this.chooseDisplayTheme]);
-        menu.addItem([(Morph.prototype.suppressBalloonHelp ? "enable balloon help" : "disable balloon help"),
-                      this.toggleBalloonHelp]);
-        menu.addItem([(HandMorph.prototype.applyDropShadowFilter ? "disable " : "enable ") + "drop shadow (if supported)",
-		      function () { HandMorph.prototype.applyDropShadowFilter = !HandMorph.prototype.applyDropShadowFilter}]);
-        menu.addItem([(Config.useDebugBackground ? "use normal background" : "use debug background"),
-                      this.toggleDebugBackground]);
-        if(Config.debugExtras) {
-		menu.addItem(["arm profile for next mouseDown", function() {evt.hand.armProfileFor("MouseDown") }]);
-        	menu.addItem(["arm profile for next mouseUp", function() {evt.hand.armProfileFor("MouseUp") }]);
-	}
-        menu.addLine();
-        menu.addItem(["authenticate for write access", function() { new NetRequest().put(URL.source.withFilename('auth'));
-                      if (Config.showWikiNavigator) WikiNavigator.enableWikiNavigator(true); /* sometimes the wikiBtn seems to break after an authenticate*/ }]);
-        menu.addItem(["publish world as ... ", function() { this.prompt("world file (.xhtml)", this.exportLinkedFile.bind(this)); }]);
+	menu.addItems([
+		["New subworld (LinkMorph)", function(evt) { world.addMorph(new LinkMorph(null, evt.point()));}],  
+		["External link", function(evt) { world.addMorph(new ExternalLinkMorph(URL.source, evt.point()));}],
+        	["authenticate for write access", function() { new NetRequest().put(URL.source.withFilename('auth'));
+			// sometimes the wikiBtn seems to break after an authenticate
+			if (Config.showWikiNavigator) WikiNavigator.enableWikiNavigator(true); }],
+        	["publish world as ... ", function() { this.prompt("world file (.xhtml)", this.exportLinkedFile.bind(this)); }]
+		]);
 	if (URL.source.filename() != "index.xhtml") { 
 	    // save but only if it's not the startup world
             menu.addItem(["save current world to current URL", function() { 
 		menu.remove(); 
 		Exporter.saveDocumentToFile(Exporter.shrinkWrapMorph(this), URL.source.filename());
 	    }]);
+	}
+        if(Config.debugExtras) {
+		menu.addItem(["arm profile for next mouseDown", function() {evt.hand.armProfileFor("MouseDown") }]);
+        	menu.addItem(["arm profile for next mouseUp", function() {evt.hand.armProfileFor("MouseUp") }]);
 	}
         menu.addItem(["restart system", this.restart]);
         return menu;
@@ -3897,7 +3892,7 @@ PasteUpMorph.subclass("WorldMorph", {
         //return pt.matrixTransform(this.rawNode.parentNode.getTransformToElement(this.rawNode)); 
     },
     
-    addMorphs: function(evt) {
+    subMenuItems: function(evt) {
         //console.log("mouse point == %s", evt.mousePoint);
 	// FIXME this boilerplate code should be abstracted somehow.
         var world = this.world();
@@ -3978,31 +3973,47 @@ PasteUpMorph.subclass("WorldMorph", {
             ["TileScriptingBox", function(evt) { require('lively.TileScripting').toRun(function() {new lively.TileScripting.TileBox().openIn(world, evt.point()); }) }],
             ["Fabrik Component Box", function(evt) { require('Fabrik.js').toRun(function() { Fabrik.openComponentBox(world, evt.point()); }) }]
         ];
-        var miscItems = [
-            ["New subworld (LinkMorph)", function(evt) { world.addMorph(new LinkMorph(null, evt.point()));}],  
-	    ["External link", function(evt) { world.addMorph(new ExternalLinkMorph(URL.source, evt.point()));}],
-	    ["Model documentation", function(evt) { // FIXME this is hardcoded, remove later, shows how Subversion can be accessed directly.
-    	        var url = URL.common.project.withRelativePath("/index.fcgi/wiki/NewModelProposal?format=txt");
-    	        var model = Record.newPlainInstance({URL: url,  ContentText: null});
-    	        world.addTextWindow({
-    		    content: "fetching ... ",
-    		    title: "Model documentation",
-    		    plug: model.newRelay({Text: "-ContentText"}),
-    		    position: "center"
-    	        });
-    	    var res = new Resource(model);
-    	    res.fetch();
-    	    }]
+        var preferenceMenuItems = [
+		[(Config.usePieMenus ? "don't " : "") + "use pie menus",
+                      function() { Config.usePieMenus = !Config.usePieMenus; }],
+        	["choose display theme...", this.chooseDisplayTheme],
+        	[(Morph.prototype.suppressBalloonHelp ? "enable balloon help" : "disable balloon help"),
+                      this.toggleBalloonHelp],
+        	[(HandMorph.prototype.applyDropShadowFilter ? "disable " : "enable ") + "drop shadow (if supported)",
+		      function () { HandMorph.prototype.applyDropShadowFilter = !HandMorph.prototype.applyDropShadowFilter}],
+        	[(Config.useDebugBackground ? "use normal background" : "use debug background"),
+                      this.toggleDebugBackground]
         ];
-        var items = [
+        var helpMenuItems = [
+	    ["Model documentation", function(evt) {
+		this.openURLasText( URL.common.project.withRelativePath(
+			"/index.fcgi/wiki/NewModelProposal?format=txt")); }],
+	    ["Command key help", function(evt) {
+		this.openURLasText( URL.common.project.withRelativePath(
+			"/index.fcgi/wiki/CommandKeyHelp?format=txt")); }]
+        ];
+	return [
             ['Simple morphs', morphItems],
             ['Complex morphs', complexMorphItems],
             ['Tools', toolMenuItems],
             ['Scripting', scriptingMenuItems],
-            ['Misc', miscItems]];
-        var menu = new MenuMorph(items, this).openIn(this.world(), evt.point());;
+            ['Preferences', preferenceMenuItems],
+            ['Help', helpMenuItems]];
     },
     
+    openURLasText: function(url) {
+	// FIXME: This should be moved with other handy services like confirm, notify, etc
+	var model = Record.newPlainInstance({URL: url,  ContentText: null});
+	WorldMorph.current().addTextWindow({
+		content: "fetching ... ",
+		title: "Model documentation",
+		plug: model.newRelay({Text: "-ContentText"}),
+		position: "center"
+	});
+	var res = new Resource(model);
+	res.fetch();
+    },
+
     viewport: function() {
 	try {
 	    return Rectangle.ensure(this.canvas().viewport);
