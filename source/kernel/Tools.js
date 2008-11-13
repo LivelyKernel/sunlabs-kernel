@@ -1412,7 +1412,7 @@ using().run(function() { // begin scoping function
                     originalMethod.declaredClass = cName;
                     originalMethod.methodName = mName;
                     // Now replace each method with a wrapper function (or remove it)
-                    if (mName != "constructor") { // leave the constructor alone
+                    if (!Class.isClass(originalMethod)) {  // leave the constructor alone and other classes alone
 			if(!remove) theClass.prototype[mName] = originalMethod.tracingWrapper();
 			else if(originalMethod.originalFunction) theClass.prototype[mName] = originalMethod.originalFunction;
 		    }
@@ -1430,7 +1430,7 @@ using().run(function() { // begin scoping function
                     originalMethod.declaredClass = cName;
                     originalMethod.methodName = mName;
                     // Now replace each method with a wrapper function (or remove it)
-                    if (mName != "constructor") { // leave the constructor alone
+                    if (!Class.isClass(originalMethod)) { // leave the constructor alone and other classes alone
 			if(!remove) theClass[mName] = originalMethod.tracingWrapper();
 			else if(originalMethod.originalFunction) theClass[mName] = originalMethod.originalFunction;
 		    }
