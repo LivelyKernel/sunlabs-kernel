@@ -250,7 +250,7 @@ Object.subclass('HandPositionObserver', {
     },
 });
 
-Morph.subclass('lively.Helper.ToolDock', {
+BoxMorph.subclass('lively.Helper.ToolDock', {
     
     initialize: function($super, bounds) {
         $super(bounds || this.getWorld().bounds().withWidth(60));
