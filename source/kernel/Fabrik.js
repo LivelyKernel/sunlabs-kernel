@@ -1917,10 +1917,10 @@ SelectionMorph.subclass('UserFrameMorph', {
                 this.reshapeName = selRect.partNameNearest(Rectangle.corners, newPoint);
             }
             this.setExtent(pt(0, 0)) // dont extend until we know what direction to grow
-            // $super(this.reshapeName, newPoint, handle, lastCall);
+            // $super(this.reshapeName, newPoint, lastCall);
             result = Morph.prototype.reshape.call(this, this.reshapeName, newPoint, lastCall);
         } else {
-            // $super(partName, newPoint, handle, lastCall);
+            // $super(partName, newPoint, lastCall);
             result = Morph.prototype.reshape.call(this, partName, newPoint, lastCall);
         }
         this.selectedMorphs = [];

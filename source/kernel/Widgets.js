@@ -390,7 +390,7 @@ Morph.subclass('HandleMorph', {
     onMouseUp: function(evt) {
         if (!evt.isShiftDown() && !evt.isCommandKey() && !evt.isMetaDown()) {
 	    // last call for, eg, vertex deletion
-	    if (this.partName) this.targetMorph.reshape(this.partName, this.targetMorph.localize(evt.mousePoint), this, true); 
+	    if (this.partName) this.targetMorph.reshape(this.partName, this.targetMorph.localize(evt.mousePoint), true); 
         }
         this.remove(); 
     },
@@ -432,7 +432,7 @@ BoxMorph.subclass("SelectionMorph", {
     },
 
 
-    reshape: function($super, partName, newPoint, handle, lastCall) {
+    reshape: function($super, partName, newPoint, lastCall) {
         // Initial selection might actually move in another direction than toward bottomRight
         // This code watches that and changes the control point if so
 	var result;
@@ -442,9 +442,9 @@ BoxMorph.subclass("SelectionMorph", {
                 this.reshapeName = selRect.partNameNearest(Rectangle.corners, newPoint);
             }
             this.setExtent(pt(0, 0)) // dont extend until we know what direction to grow
-            result = $super(this.reshapeName, newPoint, handle, lastCall);
+            result = $super(this.reshapeName, newPoint, lastCall);
         } else {
-            result = $super(partName, newPoint, handle, lastCall);
+            result = $super(partName, newPoint, lastCall);
         }
         this.selectedMorphs = [];
         this.owner.submorphs.forEach(function(m) {

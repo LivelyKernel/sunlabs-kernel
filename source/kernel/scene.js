@@ -627,7 +627,7 @@ this.Shape.subclass('lively.scene.Polygon', {
 	return this.rawNode.tagName + "[" + pts + "]";
     },
 
-
+    
     bounds: function() {
 	// FIXME very quick and dirty, consider caching or iterating over this.points
 	var vertices = this.vertices();

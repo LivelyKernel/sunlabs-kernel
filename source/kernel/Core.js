@@ -4461,11 +4461,11 @@ Morph.subclass("HandMorph", {
 	    this.grabHaloMorph = null;
 	}
     },
-
+    
     alignToGrid: function(draggedMorph) {
         if(!this.grabHaloMorph) return;
         var grid = function(a) {
-                return a - (a % (Config.alignToGridSpace || 5))};
+            return a - (a % (Config.alignToGridSpace || 5))};
         if (!this.grabHaloMorph.orgSubmorphPosition)
             this.grabHaloMorph.orgSubmorphPosition = draggedMorph.getPosition();
         var oldPos = this.worldPoint(this.grabHaloMorph.orgSubmorphPosition);
