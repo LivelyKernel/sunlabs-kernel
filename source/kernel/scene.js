@@ -538,6 +538,7 @@ this.Shape.subclass('lively.scene.Ellipse', {
 
     origin: function() {
 	return this.center();
+	//return this.bounds().topLeft();
     },
     
     // For ellipses, test if x*x + y*y < r*r
@@ -558,7 +559,7 @@ this.Shape.subclass('lively.scene.Ellipse', {
 	var y = this.rawNode.cy.baseVal.value - this.rawNode.ry.baseVal.value;
 	return new Rectangle(x, y, w, h);
     }, 
-
+    
     translateBy: function(displacement) {
 	this.setLengthTrait("cx", this.getLengthTrait("cx") + displacement.x);
 	this.setLengthTrait("cy", this.getLengthTrait("cy") + displacement.y);
@@ -617,9 +618,12 @@ this.Shape.subclass('lively.scene.Polygon', {
     },
 
     translateBy: function(displacement) {
-	return; // weird, huh? FIXME
-	var newList = this.vertices().invoke('addPt', displacement);
-	this.setVertices(newList);
+	var array = [];
+	for (var i = 0; i < this.rawNode.points.numberOfItems; i++) {
+	    var item = this.rawNode.points.getItem(i);
+	    array.push(Point.ensure(item).addPt(displacement));
+	}
+	this.setVertices(array);
     },
 
     toString: function() {
@@ -637,13 +641,11 @@ this.Shape.subclass('lively.scene.Polygon', {
 		       + " vs " + this.rawNode.getAttributeNS(null, "points"));
 	return Rectangle.unionPts(vertices);
     },
-
-    origin: function() {
-	//return this.bounds().topLeft();
-	// Weird huh? FIXME
-	return this.bounds().bottomLeft();
-    },
     
+    origin: function() {
+	// no natural choice to pick the origin of a polgon/polyline
+	return pt(0, 0);
+    },
 
     reshape: function(ix, newPoint, lastCall) {
 	// ix is an index into vertices

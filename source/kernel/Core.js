@@ -1088,7 +1088,10 @@ lively.data.Wrapper.subclass('Morph', {
 	//console.log('initializing morph %s %s', initialBounds, shapeType);
 	this.internalInitialize(NodeFactory.create("g"), true);
 	dbgOn(!shape.bounds);
-	this.pvtSetTransform(new lively.scene.Similitude(shape.origin()));
+	// we must make sure the Morph keeps its original size (wrt/fisheyeScale)
+	this.scale = 1/this.fisheyeScale;
+	this.origin = shape.origin();
+	shape.translateBy(this.origin.negated());
 	this.initializePersistentState(shape);
 	this.initializeTransientState();
     },
@@ -1096,9 +1099,6 @@ lively.data.Wrapper.subclass('Morph', {
     initializePersistentState: function(shape) {
 	// a rect shape by default, will change later
 	this.shape = shape;
-
-	dbgOn(!this.shape.translateBy);
-	this.shape.translateBy(this.origin.negated());
 	this.rawNode.appendChild(this.shape.rawNode);
 	this.applyStyle(this.style);
 	return this;
@@ -2963,7 +2963,6 @@ Object.extend(Morph, {
 	// Note this works for simple lines (2 vertices) and general polylines
 	verts = verts.invoke('subPt', verts[0]);
 	var shape = new lively.scene.Polyline(verts);
-	//shape.origin = function() { return pt(0,0) };
 	var morph = new Morph(shape);
 	morph.setBorderWidth(lineWidth);
 	morph.setBorderColor(lineColor);
@@ -3002,7 +3001,6 @@ Object.extend(Morph, {
 
 
     makePolygon: function(verts, lineWidth, lineColor, fill) {
-	// make a polygon with its origin at the starting vertex
 	var morph = new Morph(new lively.scene.Polygon(verts));
 	morph.setBorderWidth(lineWidth);
 	morph.setBorderColor(lineColor);
@@ -4678,10 +4676,8 @@ Morph.subclass('LinkMorph', {
         // Make me look a bit like a world
         [new Rectangle(0.15,0,0.7,1), new Rectangle(0.35,0,0.3,1), new Rectangle(0,0.3,1,0.4)].forEach(function(each) {
             // Make longitude / latitude lines
-            //var lineMorph = new Morph(bounds.scaleByRect(each), "ellipse");
 	    var lineMorph = new Morph(new lively.scene.Ellipse(bounds.scaleByRect(each)));
 	    lineMorph.applyStyle({fill: null, borderWidth: 1, borderColor: Color.black}).ignoreEvents();
-            lineMorph.align(lineMorph.bounds().center(),this.shape.bounds().center());
             this.addMorph(lineMorph);
         }, this);
 
