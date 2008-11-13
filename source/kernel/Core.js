@@ -3987,6 +3987,11 @@ PasteUpMorph.subclass("WorldMorph", {
                     m.scaleBy(1.5);  m.rotateBy(-0.2);
                     world.addMorph(m)})
              }],
+            ["Layout Demo", function(evt) {
+                module('Main.js').requires('GridLayout.js').toRun(function() {
+		    GridLayoutMorph.demo(evt.hand.world(), evt.point());
+		});
+	    }]
         ];
         var toolMenuItems = [
             ["Class Browser", function(evt) { new SimpleBrowser().openIn(world, evt.point()); }],
