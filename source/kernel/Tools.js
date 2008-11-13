@@ -1672,7 +1672,7 @@ ButtonMorph.subclass('EllipseMakerMorph', {
     getThisValue: function(bool) { return this.pushed },
 
     makeNewEllipse: function(date) {
-        var e = new Morph(new Rectangle(0, 0, 50, 50), "ellipse");
+        var e = new Morph(new lively.scene.Ellipse(pt(25, 25), 25));
 	e.setFill(Color.random());
 	e.velocity = pt(20,20).random();
 	e.bounceInBounds = this.bounceInBounds;
@@ -1697,14 +1697,14 @@ ButtonMorph.subclass('EllipseMakerMorph', {
     bounceInBounds: function() {
 	// should be in particles protocol of Morph
         var b = this.bounds();
-	var ob = this.owner.innerBounds()
+	var ob = this.owner.innerBounds();
 	if (b.x < ob.x || b.maxX() > ob.maxX()) {
-		this.velocity = this.velocity.scaleByPt(pt(-1, 1));
-		this.moveBy(this.velocity);
+	    this.velocity = this.velocity.scaleByPt(pt(-1, 1));
+	    this.moveBy(this.velocity);
 	}
 	if (b.y < ob.y || b.maxY() > ob.maxY()) {
-		this.velocity = this.velocity.scaleByPt(pt(1, -1));
-		this.moveBy(this.velocity);
+	    this.velocity = this.velocity.scaleByPt(pt(1, -1));
+	    this.moveBy(this.velocity);
 	}
     },
     startSteppingScripts: function() { this.startStepping(30,'nextStep'); }
