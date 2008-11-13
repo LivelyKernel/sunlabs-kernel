@@ -85,10 +85,12 @@ function module(moduleName) {
 	var args = $A(arguments);    
 	var module = args.shift();
 	var preReqModuleNames = Object.isArray(args[0]) ? args[0] : args; // support modulenames as array and parameterlist
+	var requiredModules = [];
 	for (var i = 0; i < preReqModuleNames.length; i++) {
-            module.addRequiredModule(createNamespaceModule(preReqModuleNames[i]));
+	    var reqModule = createNamespaceModule(preReqModuleNames[i]);
+            module.addRequiredModule(reqModule);
+            requiredModules.push(reqModule);
 	}
-	var requiredModules = module.pendingRequirements;
 
 	return {toRun: function(code) {
             code = code.curry(module); // pass in own module name for nested requirements
@@ -638,7 +640,7 @@ Namespace.addMethods({ // module specific, should be a subclass?
             throw dbgOn(new Error('requiredModule not there'));;
         this.pendingRequirements = this.pendingRequirements.without(requiredModule);
         if (!this.hasPendingRequirements()) {
-            console.log('no more requirements for ' + this.uri());
+            // console.log('no more requirements for ' + this.uri());
             this.load();
         }
     },
@@ -663,10 +665,8 @@ Namespace.addMethods({ // module specific, should be a subclass?
     
     runOnloadCallbacks: function() {
         if (!this.callbacks) return;
-        while (this.callbacks.length > 0) {
-            var cb = this.callbacks.shift();
-            cb();
-        };
+        var cb;
+        while (cb = this.callbacks.shift()) { cb() };
     },
     
     isLoaded: function() {

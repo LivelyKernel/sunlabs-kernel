@@ -42,7 +42,7 @@ var Loader = {
     }
 };
 
-// test which checks that all modules are loaded
+// test which checks if all modules are loaded
 (function testModuleLoad() {
     var modules = Global.subNamespaces(true).select(function(ea) { return ea.wasDefined });
     modules

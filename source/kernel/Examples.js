@@ -13,7 +13,7 @@
  * that will be included in the system when it starts. 
  */
 
-module('lively.Examples').requires().toRun(function(module) {
+module('lively.Examples').requires().toRun(function(thisModule) {
 
 // ===========================================================================
 // Widget (panel) Tester Demo
@@ -472,8 +472,6 @@ PanelMorph.subclass('SquiggleMorph', {
         
 });
 
-namespace('lively.examples.threedee');
-
 // ===========================================================================
 // The 3D Rotation Example
 // ===========================================================================
@@ -484,7 +482,7 @@ namespace('lively.examples.threedee');
  * and a Java version written in 1998.
  *============================================================================*/
 
-using(lively.examples.threedee).run(function(threedee) {
+using(namespace('threedee', thisModule)).run(function(threedee) {
 
     // Rapid sin and cos functions inherited from the original
     // C program.  Note that you must supply a multiplier in 
@@ -700,7 +698,7 @@ using(lively.examples.threedee).run(function(threedee) {
  * WireObject instance constructor
  *============================================================================*/
 
-Object.subclass('lively.examples.threedee.WireObject', {
+Object.subclass('lively.Examples.threedee.WireObject', {
     // WireObject constructor: create the wireframe object
     initialize: function(hereX, hereY, hereZ) {
 
@@ -837,7 +835,7 @@ Object.subclass('lively.examples.threedee.WireObject', {
 
 }); 
 
-PanelMorph.subclass('lively.examples.Sun3DMorph', {
+PanelMorph.subclass('lively.Examples.Sun3DMorph', {
     documentation: "Sun logo rotating in 3D",
 
     initialize: function($super, rect) {
@@ -850,8 +848,8 @@ PanelMorph.subclass('lively.examples.Sun3DMorph', {
         // Create a bunch of polyline objects for drawing the Sun U's 
         this.morphArray = [];
         for (var i = 0; i < 8; i++) {
-            this.morphArray[i] = new Morph(new lively.scene.Polyline([pt(0,0)])).applyColor({borderWidth: 2, 
-											     borderColor: Color.red});
+            this.morphArray[i] = new Morph(new lively.scene.Polyline([pt(0,0)]));
+            this.morphArray[i].applyStyle({borderWidth: 2, borderColor: Color.red});
             this.contentMorph.addMorph(this.morphArray[i]);
         }
 
@@ -905,9 +903,7 @@ PanelMorph.subclass('lively.examples.Sun3DMorph', {
 
 *****************************************************************************/
 
-namespace('lively.examples.asteroids');
-
-using(lively.examples.asteroids).run(function(module) {
+using(namespace('asteroids', thisModule)).run(function(module) {
 
 // The game instance
 var gameMorph = null;
@@ -923,7 +919,7 @@ var gameHeight = 300;
   rotation. It also can detemine if two objects collide.
 ************************************************************************************************/
 
-Object.subclass('lively.examples.asteroids.AsteroidsSprite', {
+Object.subclass('lively.Examples.asteroids.AsteroidsSprite', {
 
     /* boolean */ active: false,    // Active flag.
     /* double */  angle: 0,         // Current angle of rotation.
@@ -1319,7 +1315,7 @@ Object.subclass('lively.examples.asteroids.AsteroidsSprite', {
   }
 
 
-ClipMorph.subclass("lively.examples.asteroids.GameMorph", {
+ClipMorph.subclass("lively.Examples.asteroids.GameMorph", {
     
     runAsteroidsGame: function runAsteroidsGame() {
 
@@ -2524,7 +2520,7 @@ Widget.subclass('StockWidget', NetRequestReporterTrait, {
 // The Map Widget Example
 // ===========================================================================
 
-module.maps = function() {
+thisModule.maps = function() {
 
 // 6 is largest as a system print, lower numbers are debugprints
 // 6 is to be used if user must be notified lower levels to developer use
@@ -3469,9 +3465,7 @@ Morph.subclass("MapMorph", {
 }(); // end of the map demo module
 
 
-namespace('lively.examples.canvascape');
-
-using(lively.examples.canvascape).run(function(module) { 
+using(namespace('canvascape', thisModule)).run(function(module) { 
 
 // ===========================================================================
 // The CanvasScape 3D Maze Walker Example
@@ -3484,7 +3478,7 @@ using(lively.examples.canvascape).run(function(module) {
  * @class MiniMapMorph: The "radar view" for the game
  */
 
-Morph.subclass("lively.examples.canvascape.MiniMapMorph", {
+Morph.subclass("lively.Examples.canvascape.MiniMapMorph", {
     
     initialize: function($super, rect) {
         $super(new lively.scene.Rectangle(rect));
@@ -3523,7 +3517,7 @@ Morph.subclass("lively.examples.canvascape.MiniMapMorph", {
  * @class CanvasScapeMorph: The Canvas Game Morph
  */
 
-ClipMorph.subclass("lively.examples.canvascape.CanvasScapeMorph", {
+ClipMorph.subclass("lively.Examples.canvascape.CanvasScapeMorph", {
     
     initialize: function($super, rect) {
         $super(new lively.scene.Rectangle(rect));
@@ -4504,7 +4498,7 @@ Morph.subclass("PlayerMorph",  {
 });
 
 
-lively.examples.installFasteroids = function (world, rect) {
+thisModule.installFasteroids = function (world, rect) {
 console.log("-------------- Loading Fasteroids ----------------");
 // Yet to do...
 // End game when asteroid or fragment hits ship
@@ -4692,6 +4686,4 @@ Fasteroids.openInWindow(world, pt(150, 100));
 console.log("-------------- End Fasteroids ----------------");
 };
 
-});
-
-
+}); // end of Examples module

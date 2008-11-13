@@ -154,8 +154,8 @@ function populateWorldWithExamples(world) {
         });
     
     if (Config.showAsteroids())
-        require('Examples.js').toRun(function() {
-            using(lively.examples.asteroids).run(function(app) {
+        require('Examples.js').toRun(function(unsused, examplesModule) {
+            using(examplesModule.asteroids).run(function(app) {
                 var gameMorph = app.makeGameMorph(pt(500, 360).extent(pt(600, 300)));
                 world.addMorph(new WindowMorph(gameMorph, 'Asteroids!'));
                 app.initialize();
@@ -194,8 +194,8 @@ function populateWorldWithExamples(world) {
     }
 
     if (Config.show3DLogo()) 
-        require('Examples.js').toRun(function() {
-            world.addFramedMorph(new lively.examples.Sun3DMorph(pt(200, 200)), 
+        require('Examples.js').toRun(function(unused, examplesModule) {
+            world.addFramedMorph(new examplesModule.Sun3DMorph(pt(200, 200)), 
 						            'Sun 3D Logo', pt(570, 100));
 		});
 						      
@@ -268,14 +268,14 @@ function populateWorldWithExamples(world) {
             }
 	    
             if (Config.showCanvasScape()) {
-                require('Examples.js').toRun(function() {
-                    lm1.myWorld.addMorph(new WindowMorph(new lively.examples.canvascape.CanvasScapeMorph(new Rectangle(20,50,800,300)), 'CanvasScape')).collapse();
+                require('Examples.js').toRun(function(unused, examplesModule) {
+                    lm1.myWorld.addMorph(new WindowMorph(new examplesModule.canvascape.CanvasScapeMorph(new Rectangle(20,50,800,300)), 'CanvasScape')).collapse();
                 });
             }
 	    
             if (Config.showMap) {
-                require('Examples.js').toRun(function() {
-                    var tile = lively.examples.maps.tileExtent;
+                require('Examples.js').toRun(function(unused, exampleModule) {
+                    var tile = exampleModule.maps.tileExtent;
                     var map = new MapFrameMorph(new Rectangle(0, 0, 2*tile.x, 2*tile.y), true);
                     map.setScale(0.7);
                     map.setPosition(pt(160, 250));
@@ -369,7 +369,10 @@ function populateWorldWithExamples(world) {
 		    widget.align(widget.bounds().bottomRight(), world.bounds().topRight().addPt(pt(-150,100))); 
 		    if (Config.showHilbertFun) Pen.hilbertFun(devWorld.myWorld, widget.bounds().bottomLeft().addXY(180,80));
 		    devWorld.myWorld.addMorph(widget);
-		    if(Config.tryFasteroids) lively.examples.installFasteroids(world, new Rectangle(150, 100, 600, 400));
+		    if (Config.tryFasteroids)
+		        require('lively.Examples').toRun(function() {
+		            lively.Examples.installFasteroids(world, new Rectangle(150, 100, 600, 400));
+	                });
 	        }
 	        parser.parse();    
             });
