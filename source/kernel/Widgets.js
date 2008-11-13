@@ -333,7 +333,7 @@ Morph.subclass('HandleMorph', {
         this.hideHelp();
 	if (!this.rollover) return;  // if not a rollover, mode is probably set
         if (evt.isCommandKey()) this.mode = evt.isShiftDown() ? 'scale' : 'rotate';
-		else this.mode = evt.isShiftDown() ? 'borderWidth' : 'reshape';
+	else this.mode = evt.isShiftDown() ? 'borderWidth' : 'reshape';
     },
     
     onMouseMove: function(evt) {
@@ -373,17 +373,16 @@ Morph.subclass('HandleMorph', {
 	    this.targetMorph.setBorderWidth(Math.max(0, Math.floor(d/3)/2), true);
 	    break;
 	case 'reshape' :
-	    this.handleReshape(this.targetMorph.reshape(this.partName, this.targetMorph.localize(evt.mousePoint), false));
+	    this.handleReshape(this.targetMorph.reshape(this.partName, this.targetMorph.localize(evt.point()), false));
 	    break;
         }
     },
     
     handleReshape: function(result) {
-	if (!result) return;
-	if (result instanceof Color) {
-	    this.setBorderColor(result);
+	if (typeof result == "boolean") {
+	    this.setBorderColor(result ? Color.red : Color.blue);
 	} else {
-	    this.partName = result;
+	    if (this.partName  < 0) this.partName = -this.partName;
 	    this.type = "rect"; // become a regular handle
 	}
     },

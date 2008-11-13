@@ -141,7 +141,7 @@ Morph.subclass("ClockMorph", {
         this.changed(); 
     },
 
-    reshape: function(a,b,c,d) { /*no reshaping*/ },
+    reshape: Functions.Null,
     
     startSteppingScripts: function() {
         this.startStepping(1000, "setHands"); // once per second

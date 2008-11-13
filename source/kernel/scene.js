@@ -476,7 +476,7 @@ this.Shape.subclass('lively.scene.Rectangle', {
 	return y <= p.y && p.y <= y + height;
     },
 
-    reshape: function(partName,newPoint, ignored1, ignored2) {
+    reshape: function(partName,newPoint, ignored) {
 	var r = this.bounds().withPartNamed(partName, newPoint);
 	this.setBounds(r);
     },
@@ -645,14 +645,14 @@ this.Shape.subclass('lively.scene.Polygon', {
     },
     
 
-    reshape: function(partName, newPoint, lastCall) {
-	var ix = partName; // better name -- it's an index into vertices
+    reshape: function(ix, newPoint, lastCall) {
+	// ix is an index into vertices
 	var verts = this.vertices();  // less verbose
 	if (ix < 0) { // negative means insert a vertex
-	    ix = -partName;
+	    ix = -ix;
 	    verts.splice(ix, 0, newPoint);
 	    this.setVertices(verts);
-	    return ix;
+	    return; // undefined result for insertion 
 	}
 	var closed = verts[0].eqPt(verts[verts.length - 1]);
 	if (closed && ix == 0) {  // and we're changing the shared point (will always be the first)
@@ -661,35 +661,32 @@ this.Shape.subclass('lively.scene.Polygon', {
 	} else {
 	    verts[ix] = newPoint;
 	}
-
-	var handleColor = Color.blue;
+	
+	var shouldMerge = false;
 	var howClose = 6;
 	if (verts.length > 2) {
 	    // if vertex being moved is close to an adjacent vertex, make handle show it (red)
 	    // and if its the last call (mouse up), then merge this with the other vertex
 	    if (ix > 0 && verts[ix - 1].dist(newPoint) < howClose) {
 		if (lastCall) { 
-		    verts.splice(ix, 1); if (closed) verts[0] = verts[verts.length - 1]; 
+		    verts.splice(ix, 1); 
+		    if (closed) verts[0] = verts[verts.length - 1]; 
 		} else {
-		    handleColor = Color.red;
+		    shouldMerge = true;
 		} 
 	    }
-
-	    if (ix < verts.length - 1 && verts[ix + 1].dist(newPoint)<howClose) {
+	    
+	    if (ix < verts.length - 1 && verts[ix + 1].dist(newPoint) < howClose) {
 		if (lastCall) { 
 		    verts.splice(ix, 1); 
-
-		    if (closed) { 
-			verts[verts.length - 1] = verts[0];
-		    }
-
+		    if (closed) verts[verts.length - 1] = verts[0];
 		} else {
-		    handleColor = Color.red;
+		    shouldMerge = true;
 		} 
 	    }
 	}
 	this.setVertices(verts); 
-	return handleColor;
+	return shouldMerge;
     },
 
     partNameNear: function(p) {
