@@ -115,7 +115,7 @@ TestCase.subclass('HandMorphTest', {
         this.assert(hand.mouseOverMorph === morph, "morph is not mouseOverMorph");      
         
         var oldFocus = hand.mouseFocus;
-        var m = new Morph();
+        var m = Morph.makeRectangle(100,100,200,200);
         this.morph2 = m;
         WorldMorph.current().addMorph(m);
         m.setPosition(pt(400,400));
