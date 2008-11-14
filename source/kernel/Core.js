@@ -1934,7 +1934,7 @@ Morph.addMethods({
 	    var s = this.rawNode.getAttributeNS(null, "transform");
 	    console.log('recalculating transform from ' + s);
 	    var matrix = null;
-	    var match = s.match(/(\w+)\s*\((.*)\)/);
+	    var match = s && s.match(/(\w+)\s*\((.*)\)/);
 	    if (match) {
 		matrix = this.canvas().createSVGMatrix();
 		var args = match[2].split(/(?:\s|,)+/).
